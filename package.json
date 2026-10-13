@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "vercel-build": "prisma generate && prisma migrate deploy && next build",
+    "vercel-build": "node scripts/check-deploy-env.mjs && prisma generate && prisma migrate deploy && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
@@ -46,6 +46,6 @@
     "vitest": "^5.0.4"
   },
   "engines": {
-    "node": ">=22.12"
+    "node": "22.x"
   }
 }
