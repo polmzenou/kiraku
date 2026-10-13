@@ -46,3 +46,6 @@ next-env.d.ts
 
 # police source (seul le sous-ensemble est versionné)
 /fonts/source/
+
+# rapports de l'import AniList (--dry-run)
+/.import/

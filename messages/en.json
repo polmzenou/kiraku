@@ -61,7 +61,9 @@
     "back": "Back to home"
   },
   "footer": {
-    "disclaimer": "Unofficial fan project. Characters belong to their respective rights holders."
+    "disclaimer": "Unofficial fan project. Characters belong to their respective rights holders.",
+    "nav": "Site links",
+    "wiki": "Wiki"
   },
   "auth": {
     "pending": "One moment…",
@@ -143,5 +145,57 @@
   "mail": {
     "disabled": "Sending emails isn't enabled yet: no email was sent.",
     "devHint": "In development, the link is printed in the server logs (the npm run dev terminal)."
+  },
+  "fuda": {
+    "number": "No. {number}",
+    "imageAlt": "Artwork of {name}",
+    "power": "Power {value}",
+    "ki": "Ki {value}",
+    "locked": "Card never obtained",
+    "unknown": "???"
+  },
+  "rarity": {
+    "COMMON": "Common",
+    "UNCOMMON": "Uncommon",
+    "RARE": "Rare",
+    "EPIC": "Epic",
+    "LEGENDARY": "Legendary",
+    "MYTHIC": "Mythic"
+  },
+  "wiki": {
+    "title": "Wiki",
+    "metaDescription": "Every Kiraku character: rarity, series, Power and Ki.",
+    "cardDescription": "{name} ({series}): rarity, rank, Power and Ki on Kiraku.",
+    "count": "{count, plural, =0 {No characters} one {# character} other {# characters}}",
+    "searchLabel": "Search a character or a series",
+    "searchPlaceholder": "Gojo, One Piece…",
+    "searchSubmit": "Search",
+    "rarityFilter": "Filter by rarity",
+    "allRarities": "All",
+    "empty": "No character matches your search.",
+    "emptyCatalog": "The catalog is empty for now: run the AniList import.",
+    "pagination": "Wiki pages",
+    "first": "Back to start",
+    "next": "Next",
+    "loading": "Loading the wiki…",
+    "attribution": "Character data: <anilist>AniList</anilist>.",
+    "back": "← Wiki",
+    "number": "No. {number}",
+    "outOfCatalog": "Out of the catalog: no longer in packs",
+    "rarity": "Rarity",
+    "rank": "Rank",
+    "rankOf": "{rank, number} of {total, number}",
+    "series": "Series",
+    "role": "Role",
+    "roles": {
+      "MAIN": "Main character",
+      "SUPPORTING": "Supporting",
+      "BACKGROUND": "Background"
+    },
+    "favorites": "AniList favorites",
+    "favoritesValue": "{count, number}",
+    "power": "Power",
+    "ki": "Ki",
+    "viewOnAnilist": "View on AniList"
   }
 }

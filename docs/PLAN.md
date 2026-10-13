@@ -316,45 +316,25 @@ Le catalogue (`Card` groupé par rareté) change rarement : charge-le une fois a
 
 ### Importer le catalogue
 
-L'API GraphQL publique d'AniList (`https://graphql.anilist.co`, sans clé) trie les personnages par favoris et renvoie 50 personnages par page, avec leur œuvre la plus populaire dans la même requête. La limite normale est de 90 requêtes par minute, réduite pour l'instant à 30 : les \~135 pages des 6 700 personnages passent en 5 minutes environ. Une mise à jour par semaine suffit.
+L'API GraphQL publique d'AniList (`https://graphql.anilist.co`, sans clé) trie les personnages par favoris et renvoie 50 personnages par page, avec leur œuvre la plus populaire dans la même requête. La limite normale est de 90 requêtes par minute, réduite pour l'instant à 30 : les \~136 pages des 6 736 personnages passent en 5 minutes environ. Une mise à jour par semaine suffit.
 
-```ts
-// scripts/import-characters.ts — lancé à la main ou depuis l'admin
-const QUERY = `query ($page: Int) {
-  Page(page: $page, perPage: 50) {
-    characters(sort: FAVOURITES_DESC) {
-      id favourites
-      name { full native }
-      image { large }
-      media(perPage: 1, sort: POPULARITY_DESC) { nodes { id title { romaji } } }
-    }
-  }
-}`;
-const TOTAL = 6736; // taille du catalogue, réglable dans l'admin
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+**Limite de profondeur.** AniList refuse toute page au-delà des 5 000 premières entrées d'une liste (HTTP 400 « Page depth exceeds maximum allowed », dès la page 101 à 50 par page), et l'API n'offre aucun filtre sur les favoris. L'import avance donc par **fenêtres de 5 000** : chaque nouvelle fenêtre repart de la page 1 en excluant (`id_not_in`) les personnages des fenêtres précédentes, ce qui remet la profondeur à zéro. La liste d'exclusion de 5 000 ids (\~31 Ko par requête) est acceptée.
 
-for (let page = 1, rank = 1; rank <= TOTAL; page++) {
-  const res = await fetch("https://graphql.anilist.co", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query: QUERY, variables: { page } }),
-  });
-  if (res.status === 429) { await sleep(60_000); page--; continue; }
-  const { data } = await res.json();
-  for (const c of data.Page.characters) {
-    const series = c.media.nodes[0];
-    if (!series || rank > TOTAL) continue; // personnage sans œuvre : ignoré
-    await upsertCard({
-      anilistId: c.id, name: c.name.full, nameNative: c.name.native, imageUrl: c.image.large,
-      favorites: c.favourites, rank, rarity: rarityForRank(rank, TOTAL), series, ...statsFor(rank, TOTAL),
-    });
-    rank++;
-  }
-  await sleep(2_100); // reste sous 30 requêtes par minute
-}
+L'import se fait en deux phases, avec le moteur dans `server/catalog/import.ts` (partagé par le script et, plus tard, l'admin) :
+
+1. **Récupération, reprenable.** Chaque page est validée par Zod puis écrite dans une table de staging (`CatalogImportRow`), en une transaction qui avance aussi `CatalogImport.lastPage`. Après une interruption (Ctrl+C, coupure, 429 persistant), relancer la même commande reprend à `lastPage + 1`. La fenêtre et l'exclusion se déduisent du staging, donc la reprise est exacte même d'une fenêtre à l'autre. Une page de marge est récupérée au-delà de l'objectif, parce qu'un personnage peut changer de page pendant l'import.
+2. **Finalisation, idempotente.** Le staging est trié par favoris, puis rang, rareté (percentile) et stats sont attribués. Une seule transaction écrit ensuite `Series` et `Card` en lots, avec `$executeRaw` balisé et `ON CONFLICT ("anilistId")` : les `id` restent stables d'un import à l'autre. Une carte qui sort du top N garde sa ligne, avec `rank = null`.
+
+```bash
+npm run catalog:import                                  # import complet (GameSetting catalog.size)
+npm run catalog:import -- --limit 200 --dry-run         # essai sans écriture en base, rapport dans .import/
+npm run catalog:import -- --fresh                       # repart de zéro au lieu de reprendre
+npm run catalog:import -- --finalize-only               # reclasse le dernier staging sans appeler AniList
+npm run catalog:import -- --finalize-only --rarity live # recalcule toutes les raretés pour cette fois
+# PowerShell avale le « -- » : y écrire npm run catalog:import '--' --limit 200
 ```
 
-Les rangs bougent entre deux imports : choisis dans l'admin si une carte peut changer de rareté (plus vivant) ou si sa rareté est figée à sa première apparition (plus juste pour ceux qui l'ont déjà).
+Les rangs bougent entre deux imports : choisis dans l'admin si une carte peut changer de rareté (plus vivant) ou si sa rareté est figée à sa première apparition (plus juste pour ceux qui l'ont déjà). Le réglage `catalog.rarityPolicy` vaut `FROZEN` par défaut. Un essai sur 200 personnages fige des raretés calculées sur 200 cartes : avant le premier import complet, finalise avec `--rarity live`, ou importe directement sur une base vierge.
 
 Images : utilise l'illustration AniList (`image.large`) dans le cadre de la fuda, et affiche en pied de page « Projet fan non officiel. Les personnages appartiennent à leurs ayants droit. »
 
