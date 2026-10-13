@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+/* Direction artistique Kiraku — Yoru (夜) par défaut, Washi (和紙) en option. */
+:root {
+  color-scheme: dark;
+  --k-bg: #15120f;
+  --k-surface: #221d18;
+  --k-surface-2: #2b251f;
+  --k-border: #3a322a;
+  --k-text: #f1e9da;
+  --k-text-muted: #a89f92;
+  --k-shu: #e0533f;
+  --k-shu-btn: #c8372d;
+  --k-ai: #7fa3d1;
+  --k-kin: #d9b556;
+  --k-paper-shadow: #000000;
+}
+
+[data-theme="washi"] {
+  color-scheme: light;
+  --k-bg: #f3ecdf;
+  --k-surface: #e9e0cc;
+  --k-surface-2: #e2d7c0;
+  --k-border: #d9cfbc;
+  --k-text: #1f1b17;
+  --k-text-muted: #6b645a;
+  --k-shu: #c8372d;
+  --k-shu-btn: #c8372d;
+  --k-ai: #1e3557;
+  --k-kin: #b08a2e;
+  --k-paper-shadow: #b8ab93;
+}
+
+@theme inline {
+  --color-bg: var(--k-bg);
+  --color-surface: var(--k-surface);
+  --color-surface-2: var(--k-surface-2);
+  --color-border: var(--k-border);
+  --color-text: var(--k-text);
+  --color-text-muted: var(--k-text-muted);
+  --color-shu: var(--k-shu);
+  --color-shu-btn: var(--k-shu-btn);
+  --color-ai: var(--k-ai);
+  --color-kin: var(--k-kin);
+  --color-paper-shadow: var(--k-paper-shadow);
+
+  --font-title: var(--font-shippori), "Hiragino Mincho ProN", serif;
+  --font-body: var(--font-zen-kaku), "Hiragino Sans", system-ui, sans-serif;
+  --font-seal: var(--font-yuji-syuku), var(--font-shippori), serif;
+}
+
+/* Raretés = matières (identiques dans les deux thèmes, comme les fuda) */
+@theme {
+  --color-rarity-common: #9a9184;
+  --color-rarity-uncommon: #5c7f45;
+  --color-rarity-rare: #2c5a86;
+  --color-rarity-epic: #6e4796;
+  --color-rarity-legendary: #b8902f;
+  --color-washi-paper: #f3ecdf;
+
+  --radius-button: 6px;
+  --shadow-paper: 0 3px 0 var(--k-paper-shadow);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-title);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ai);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

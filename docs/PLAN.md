@@ -8,10 +8,10 @@ L'appli tient en six briques qui partagent une seule base Postgres : boosters, c
 
 | Brique | Ce que fait l'utilisateur | Règle clé |
 | --- | --- | --- |
-| Boosters | Ouvre un booster de 4 cartes | 10 au départ, +1 toutes les 10 min, max 10 |
+| Boosters | Ouvre un booster de 6 cartes | 10 au départ, +1 toutes les 10 min, max 10 |
 | Collection | Parcourt ses cartes, filtre, voit ses doublons | Chaque carte obtenue = une instance unique |
 | Profil | Ajoute des amis, consulte leurs profils | Demande puis acceptation |
-| Vitrine | Met 4 cartes en avant | 4 emplacements, cartes possédées uniquement |
+| Vitrine | Met 6 cartes en avant | 6 emplacements, cartes possédées uniquement |
 | Enchères | Met une carte en vente, enchérit | Prix fixés par les joueurs, carte et Zeni bloquées pendant la vente |
 | Combat | Défie un joueur en 1v1 | Résolu par le serveur, rejoué en animation |
 
@@ -79,7 +79,7 @@ Kiraku (気楽, « l'esprit léger ») est un **sanctuaire de papier** : la nuit
 - **Nouveau** : un sceau vermillon 新 qui se tamponne sur la carte, légèrement penché.
 - **Titres de section** : un kanji vertical à gauche (縦書き) et un trait de pinceau sous le titre.
 - **Boutons** : coins de 6 px, ombre « papier » décalée (0 3px 0, noire en Yoru), Ouvrir en vermillon.
-- **Booster** : un sachet métallisé classique, bords sertis en dents de scie, reflet diagonal. Seuls la couleur et le motif wagara changent d'une famille à l'autre. Au centre, une étiquette tanzaku en washi porte le kanji au pinceau, un trait vermillon et la contenance en japonais (四枚入, « 4 cartes ») ; en haut, le petit sceau Kiraku. Deux formats spéciaux : le pochibukuro (enveloppe à rabat, 2 cartes) et le jūbako (boîte laquée à étages, 20 cartes). À l'ouverture, on déchire la bande du haut d'un glissement de doigt et les fuda sortent une à une.
+- **Booster** : un sachet métallisé classique, bords sertis en dents de scie, reflet diagonal. Seuls la couleur et le motif wagara changent d'une famille à l'autre. Au centre, une étiquette tanzaku en washi porte le kanji au pinceau, un trait vermillon et la contenance en japonais (四枚入, « 6 cartes ») ; en haut, le petit sceau Kiraku. Deux formats spéciaux : le pochibukuro (enveloppe à rabat, 2 cartes) et le jūbako (boîte laquée à étages, 20 cartes). À l'ouverture, on déchire la bande du haut d'un glissement de doigt et les fuda sortent une à une.
 - **Carte (fuda)** : format 5:7, cadre dans la matière de sa rareté, sceau en haut à gauche, numéro « No. 0204 », nom japonais écrit verticalement le long de l'illustration, nom latin et série en bas, stats **力 Puissance** et **気 Ki**.
 
 **Ce qu'on ne reprend pas de Kyara** : le fond noir par défaut, l'orange et le jaune, les pastilles rondes à lettre, les polices mono, le losange de monnaie, le cadre arc-en-ciel, la jauge horizontale de stock, les noms POW et AURA.
@@ -117,7 +117,7 @@ Tout se conçoit d'abord pour un écran de 375 px, puis s'élargit : sur desktop
 | Collection | `/collection` | Kyara | Filtres rareté/série, doublons, recyclage |
 | Marché | `/marche` | Kyara + toi | Enchères, achat immédiat, mes ventes |
 | Combat | `/combat`, `/combat/[id]` | Toi | Défis reçus, choix d'équipe, replay, historique, rang classé |
-| Profil public | `/u/[username]` | Kyara + toi | Vitrine 4 cartes, stats, bouton défier / ajouter |
+| Profil public | `/u/[username]` | Kyara + toi | Vitrine 6 cartes, stats, bouton défier / ajouter |
 | Amis | `/amis` | Kyara + toi | Demandes, cadeaux, défier un ami |
 | Missions | `/missions` | Kyara | Objectifs du jour et de la semaine, récompenses |
 | Parrainage | `/parrainage` | Kyara | Code d'invitation, récompense au filleul et au parrain |
@@ -151,7 +151,7 @@ Kyara affiche aussi un stock de 15 boosters et une monnaie nommée « Chakra » 
 
 Tes tuiles s'ajoutent à la grille du Compte : Combat, Boutique, et Casino avec l'étiquette « Bientôt ».
 
-**Récap d'ouverture** (`/ouvrir/[slug]`). Les cartes du booster en grille (3 + 2 chez Kyara, 2 × 2 pour tes 4 cartes), chacune avec un badge « Nouveau » si le joueur ne l'avait jamais eue. En dessous :
+**Récap d'ouverture** (`/ouvrir/[slug]`). Les cartes du booster en grille (3 + 2 chez Kyara, 3 × 3 pour tes 6 cartes), chacune avec un badge « Nouveau » si le joueur ne l'avait jamais eue. En dessous :
 
 - le compteur de pitié du booster (« Vedette garantie dans 99 boosters » pour une bannière, « Mythique garantie dans … » pour le standard) ;
 - un sélecteur ×1 / ×5 / ×10 pour ouvrir plusieurs boosters d'un coup ;
@@ -181,7 +181,7 @@ import { getCardPool } from "@/lib/card-pool";
 
 export const MAX_BOOSTERS = 10;
 export const INTERVAL_MS = 10 * 60_000;
-export const CARDS_PER_BOOSTER = 4;
+export const CARDS_PER_BOOSTER = ;
 
 export function computeStock(stock: number, anchor: Date, now = new Date()) {
   if (stock >= MAX_BOOSTERS) return { stock: MAX_BOOSTERS, anchor: now, nextAt: null };
@@ -237,7 +237,7 @@ Ajoute `"pityCount"` au `SELECT … FOR UPDATE` et affiche le compteur sur la pa
 
 Côté client, la page reçoit `stock` et `nextAt` du serveur et affiche un compte à rebours local ; à zéro, elle rappelle le serveur. Le client ne décide jamais du stock.
 
-L'animation d'ouverture (déchirer le paquet, retourner les 4 cartes une par une, flash selon la rareté) se joue après la réponse : le tirage est déjà enregistré, donc fermer l'onglet ne fait rien perdre.
+L'animation d'ouverture (déchirer le paquet, retourner les 6 cartes une par une, flash selon la rareté) se joue après la réponse : le tirage est déjà enregistré, donc fermer l'onglet ne fait rien perdre.
 
 ## Raretés et taux de drop
 
@@ -258,7 +258,7 @@ Deux stats sur chaque carte : **力 Puissance** et **気 Ki**, qui baissent avec
 
 Composition : Kyara met 5 cartes par booster, ce plan en garde 4.
 
-| Carte | Kyara (5 cartes) | Ce plan (4 cartes) |
+| Carte | Kyara (5 cartes) | Ce plan (6 cartes) |
 | --- | --- | --- |
 | 1 | Commune ou mieux | Commune ou mieux |
 | 2 | Commune ou mieux | Commune ou mieux |
@@ -414,11 +414,11 @@ Pour l'import, la requête AniList récupère en plus, pour l'œuvre principale 
 
 ## Profil, amis et vitrine
 
-Une seule page publique `/u/[username]` sert à la fois de « Mon compte » et de profil d'ami : en-tête (avatar, pseudo, rang classé, % du catalogue complété), vitrine de 4 cartes, puis collection. Les boutons d'édition n'apparaissent que si c'est ton propre profil.
+Une seule page publique `/u/[username]` sert à la fois de « Mon compte » et de profil d'ami : en-tête (avatar, pseudo, rang classé, % du catalogue complété), vitrine de 6 cartes, puis collection. Les boutons d'édition n'apparaissent que si c'est ton propre profil.
 
 | Écran | Route | Données |
 | --- | --- | --- |
-| Profil | `/u/[username]` | user + 4 `ShowcaseSlot` + stats |
+| Profil | `/u/[username]` | user + 6 `ShowcaseSlot` + stats |
 | Collection | `/u/[username]/collection` | `UserCard` groupées par `cardId` avec compteur de doublons |
 | Amis | `/friends` | demandes reçues, envoyées, amis acceptés |
 | Album | `/collection/album` | tout le catalogue, cartes non possédées en silhouette |

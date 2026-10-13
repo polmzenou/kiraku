@@ -1,0 +1,147 @@
+{
+  "metadata": {
+    "title": "Kiraku",
+    "description": "Open packs, collect anime character fuda and challenge your friends."
+  },
+  "common": {
+    "appName": "Kiraku",
+    "zeni": "{amount, number} Zeni",
+    "boosters": "{count}/{max}"
+  },
+  "account": {
+    "title": "Account",
+    "guestName": "Guest-{code}",
+    "preparing": "Setting up your account…",
+    "rateLimited": "Too many accounts created from this connection. Try again in a while.",
+    "retry": "Try again",
+    "balance": "Balance",
+    "boosterStock": "Packs",
+    "guestBadge": "Guest",
+    "discordBadge": "Discord",
+    "linkTitle": "Keep your collection",
+    "linkBody": "You're playing as a guest: create your account so you never lose anything and get your collection on all your devices.",
+    "linkDiscord": "Link Discord",
+    "settings": "Preferences",
+    "avatarAlt": "{name}'s avatar",
+    "createAccount": "Create my account",
+    "haveAccount": "I already have an account",
+    "emailLabel": "Email",
+    "emailVerified": "Address verified",
+    "emailUnverified": "Address not verified: open the link we emailed you.",
+    "resendVerification": "Resend the email",
+    "verificationSent": "Email sent.",
+    "discordBonusTitle": "Link your Discord account",
+    "discordBonusBody": "Earn {amount, number} Zeni the first time you link it.",
+    "discordLinked": "Discord is linked to your account.",
+    "logout": "Sign out"
+  },
+  "theme": {
+    "label": "Theme",
+    "yoru": "Yoru (dark)",
+    "washi": "Washi (light)"
+  },
+  "locale": {
+    "label": "Language",
+    "fr": "Français",
+    "en": "English"
+  },
+  "authError": {
+    "title": "Sign-in failed",
+    "alreadyLinkedTitle": "This Discord account is already in use",
+    "alreadyLinkedBody": "It's linked to another Kiraku account. If you continue, you'll get that account back and this device's guest progress will be dropped.",
+    "continue": "Sign in to that account",
+    "generic": "Signing in with Discord failed. Please try again in a moment.",
+    "back": "Back to account",
+    "emailExistsTitle": "This email address already has an account",
+    "emailExistsBody": "Sign in with your email and password, then link Discord from your account."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "This path leads nowhere.",
+    "back": "Back to home"
+  },
+  "footer": {
+    "disclaimer": "Unofficial fan project. Characters belong to their respective rights holders."
+  },
+  "auth": {
+    "pending": "One moment…",
+    "register": {
+      "title": "Create an account",
+      "intro": "Your guest progress is kept: same cards, same balance.",
+      "username": "Username",
+      "usernameHint": "3 to 20 characters: letters, digits, _ and -",
+      "email": "Email",
+      "password": "Password",
+      "passwordHint": "At least 10 characters",
+      "passwordConfirm": "Confirm password",
+      "submit": "Create my account",
+      "haveAccount": "Already have an account?",
+      "login": "Sign in"
+    },
+    "login": {
+      "title": "Sign in",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "forgot": "Forgot your password?",
+      "noAccount": "No account yet?",
+      "register": "Create an account",
+      "guestWarning": "You're playing as a guest on this device: signing in to another account will drop this guest progress."
+    },
+    "forgot": {
+      "title": "Forgot password",
+      "intro": "Enter your account email and we'll send you a link to choose a new password.",
+      "email": "Email",
+      "submit": "Send the link",
+      "sent": "If an account exists for this address, an email is on its way. The link is valid for 1 hour.",
+      "back": "Back to sign in"
+    },
+    "reset": {
+      "title": "New password",
+      "password": "New password",
+      "passwordConfirm": "Confirm password",
+      "submit": "Save",
+      "missingToken": "This link is incomplete. Request a new reset email."
+    },
+    "verify": {
+      "title": "Verify my address",
+      "intro": "Confirm that this email address belongs to you.",
+      "submit": "Confirm my address",
+      "done": "Address verified, thanks!",
+      "continue": "Go to my account"
+    },
+    "errors": {
+      "rateLimited": "Too many attempts. Try again in a few minutes.",
+      "alreadyRegistered": "You already have an account.",
+      "emailTaken": "This email address is already in use.",
+      "usernameTaken": "This username is already taken.",
+      "invalidCredentials": "Wrong email or password.",
+      "banned": "This account is suspended.",
+      "tokenInvalid": "This link is no longer valid. Request a new one.",
+      "unexpected": "Something went wrong. Please try again."
+    },
+    "fieldErrors": {
+      "required": "Required.",
+      "usernameFormat": "3 to 20 characters: letters, digits, _ and -.",
+      "emailFormat": "Invalid email address.",
+      "passwordTooShort": "At least 10 characters.",
+      "passwordTooLong": "128 characters max.",
+      "passwordMismatch": "The two passwords don't match.",
+      "tokenInvalid": "Invalid link."
+    }
+  },
+  "email": {
+    "verify": {
+      "subject": "Kiraku: confirm your email address",
+      "body": "Welcome to Kiraku!\n\nConfirm your address by opening this link (valid for 48 hours):\n{link}\n\nIf you didn't create an account, ignore this message."
+    },
+    "reset": {
+      "subject": "Kiraku: new password",
+      "body": "You asked to change your Kiraku password.\n\nChoose a new one with this link (valid for 1 hour):\n{link}\n\nIf this wasn't you, ignore this message: your password stays the same."
+    }
+  },
+  "mail": {
+    "disabled": "Sending emails isn't enabled yet: no email was sent.",
+    "devHint": "In development, the link is printed in the server logs (the npm run dev terminal)."
+  }
+}
