@@ -46,6 +46,10 @@ export const mailEnabled = Boolean(env.RESEND_API_KEY && env.MAIL_FROM);
 /** Origine publique du site : jamais déduite de l'en-tête Host (empoisonnement des liens). */
 export function appUrl(): string {
   if (env.APP_URL) return env.APP_URL.replace(/\/$/, "");
+  // Preview : URL stable de la branche, pour que les liens visent la même base que la preview
+  if (process.env.VERCEL_ENV === "preview" && process.env.VERCEL_BRANCH_URL) {
+    return `https://${process.env.VERCEL_BRANCH_URL}`;
+  }
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
   return "http://localhost:3000";
 }
