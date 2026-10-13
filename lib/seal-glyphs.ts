@@ -9,4 +9,7 @@ export const SEAL_GLYPHS = [
   "力気", // stats
   "夜和紙墨朱藍", // thèmes et couleurs
   "一二三四五六七八九十百入枚", // contenance des sachets
+  "福", // emblèmes des boosters
+  "開封定番選無料", // page des boosters (titres, panneau, prix)
+  "管理", // administration
 ].join("");

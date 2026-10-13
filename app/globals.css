@@ -71,6 +71,17 @@
     -webkit-text-size-adjust: 100%;
   }
 
+  /* Filet de sécurité : rien ne doit jamais défiler horizontalement (mobile first) */
+  html,
+  body {
+    overflow-x: clip;
+  }
+
+  /* Menu burger ouvert : le fond ne défile plus */
+  html:has(dialog[open]:modal) {
+    overflow: hidden;
+  }
+
   body {
     background-color: var(--color-bg);
     color: var(--color-text);
@@ -91,7 +102,122 @@
   }
 }
 
-/* Fuda : cadre dans la matière de sa rareté. Les effets (laque, or, nacre) arrivent à l'étape 3. */
+/* Fuda : cadre dans la matière de sa rareté, effets de matière (laque, or, nacre) qui suivent
+   l'inclinaison (variables --mx / --my posées par FudaTilt, 0,5 = au repos). */
+@layer components {
+  .fuda-sheen {
+    position: absolute;
+    inset: -50%;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(calc((var(--mx, 0.5) - 0.5) * 30%), calc((var(--my, 0.5) - 0.5) * 30%));
+  }
+  .fuda[data-rarity="EPIC"] .fuda-sheen {
+    /* Laque : un reflet qui glisse */
+    background: linear-gradient(115deg, transparent 42%, rgb(255 255 255 / 0.55) 50%, transparent 58%);
+    mix-blend-mode: soft-light;
+    opacity: 0.8;
+  }
+  .fuda[data-rarity="LEGENDARY"] .fuda-sheen {
+    /* Feuille d'or : paillettes */
+    background:
+      radial-gradient(circle, rgb(255 240 190 / 0.95) 0 1px, transparent 1.6px) 0 0 / 13px 13px,
+      radial-gradient(circle, rgb(255 225 140 / 0.8) 0 0.8px, transparent 1.4px) 6px 7px / 17px 17px;
+    mix-blend-mode: screen;
+    opacity: 0.5;
+  }
+  .fuda[data-rarity="MYTHIC"] .fuda-sheen {
+    /* Nacre (raden) : irisation */
+    background: conic-gradient(from 0deg, #ffd9ec, #c9f1ff, #e6ffd4, #fff1c4, #e2d4ff, #ffd9ec);
+    mix-blend-mode: overlay;
+    opacity: 0.55;
+  }
+  .fuda-live[data-rarity="LEGENDARY"] .fuda-sheen {
+    animation: kin-twinkle 2.6s ease-in-out infinite;
+  }
+  .fuda-live[data-rarity="MYTHIC"] .fuda-sheen {
+    animation: raden-breathe 4s ease-in-out infinite;
+  }
+
+  /* Sachet métallisé : dégradé de la famille, motif wagara, reflet diagonal, bords sertis */
+  .sachet {
+    --z: 6px;
+    container-type: inline-size;
+  }
+  .sachet-metal {
+    background:
+      linear-gradient(118deg, transparent 32%, rgb(255 255 255 / 0.26) 44%, transparent 56%),
+      var(--wagara),
+      linear-gradient(165deg, var(--sachet-light) 0%, var(--sachet-base) 38%, var(--sachet-dark) 100%);
+  }
+  .sachet-crimp {
+    background:
+      repeating-linear-gradient(0deg, rgb(0 0 0 / 0.22) 0 1px, transparent 1px 4px),
+      linear-gradient(180deg, var(--sachet-light), var(--sachet-base));
+  }
+  .zig-both {
+    mask:
+      conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(2 * var(--z)) 51% repeat-x,
+      conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--z)) 51% repeat-x;
+  }
+  .zig-top {
+    mask:
+      conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(2 * var(--z)) 51% repeat-x,
+      linear-gradient(#000 0 0) bottom / 100% 50% no-repeat;
+  }
+  .zig-bottom {
+    mask:
+      conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--z)) 51% repeat-x,
+      linear-gradient(#000 0 0) top / 100% 50% no-repeat;
+  }
+  .wagara-asanoha {
+    --wagara:
+      repeating-linear-gradient(30deg, rgb(255 255 255 / 0.13) 0 1px, transparent 1px 11px),
+      repeating-linear-gradient(150deg, rgb(255 255 255 / 0.13) 0 1px, transparent 1px 11px),
+      repeating-linear-gradient(90deg, rgb(0 0 0 / 0.1) 0 1px, transparent 1px 11px);
+  }
+  .wagara-seigaiha {
+    --wagara: radial-gradient(
+        circle at 50% 100%,
+        transparent 0 28%,
+        rgb(255 255 255 / 0.14) 29% 33%,
+        transparent 34% 48%,
+        rgb(255 255 255 / 0.14) 49% 53%,
+        transparent 54%
+      )
+      0 0 / 22px 11px;
+  }
+  .wagara-ichimatsu {
+    --wagara: conic-gradient(rgb(255 255 255 / 0.1) 25%, transparent 0 50%, rgb(255 255 255 / 0.1) 0 75%, transparent 0)
+      0 0 / 14px 14px;
+  }
+  .tanzaku {
+    background:
+      repeating-linear-gradient(97deg, rgb(120 100 70 / 0.05) 0 1px, transparent 1px 5px),
+      var(--color-washi-paper);
+  }
+}
+
+@keyframes kin-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes raden-breathe {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
 @layer components {
   .fuda {
     --fuda-frame: var(--color-rarity-common);

@@ -70,6 +70,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (first.count === 1 && bonus > 0) {
           await tx.coinTransaction.create({ data: { userId, amount: bonus, reason: "DISCORD_LINK" } });
         }
+
+        // Premier administrateur : désigné par son id Discord dans l'environnement
+        if (env.ADMIN_DISCORD_ID && account.providerAccountId === env.ADMIN_DISCORD_ID) {
+          const granted = await tx.user.updateMany({ where: { id: userId, role: "USER" }, data: { role: "ADMIN" } });
+          if (granted.count === 1) {
+            await tx.adminLog.create({
+              data: {
+                adminId: userId,
+                action: "ROLE_GRANT",
+                targetType: "User",
+                targetId: userId,
+                before: "USER",
+                after: "ADMIN",
+              },
+            });
+          }
+        }
       });
     },
   },

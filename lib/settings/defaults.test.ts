@@ -30,3 +30,33 @@ describe("réglages du catalogue", () => {
     expect(parseSetting("catalog.rarityPolicy", "AUTRE")).toBe("FROZEN");
   });
 });
+
+describe("réglages des boosters", () => {
+  const rates = SETTING_DEFAULTS["booster.rates"];
+
+  it("refuse des parts négatives, décimales ou toutes nulles", () => {
+    expect(parseSetting("booster.rates", { ...rates, MYTHIC: -1 })).toEqual(rates);
+    expect(parseSetting("booster.rates", { ...rates, EPIC: 1.5 })).toEqual(rates);
+    const zero = { COMMON: 0, UNCOMMON: 0, RARE: 0, EPIC: 0, LEGENDARY: 0, MYTHIC: 0 };
+    expect(parseSetting("booster.rates", zero)).toEqual(rates);
+  });
+
+  it("accepte des parts valides", () => {
+    const custom = { ...rates, MYTHIC: 50 };
+    expect(parseSetting("booster.rates", custom)).toEqual(custom);
+  });
+
+  it("borne les emplacements entre 1 et 10 raretés connues", () => {
+    const floors = SETTING_DEFAULTS["booster.slotFloors"];
+    expect(parseSetting("booster.slotFloors", [])).toEqual(floors);
+    expect(parseSetting("booster.slotFloors", Array(11).fill("COMMON"))).toEqual(floors);
+    expect(parseSetting("booster.slotFloors", ["COMMON", "SHINY"])).toEqual(floors);
+    expect(parseSetting("booster.slotFloors", ["RARE"])).toEqual(["RARE"]);
+  });
+
+  it("accepte 0 pour désactiver le doré et le divin", () => {
+    expect(parseSetting("booster.goldenEvery", 0)).toBe(0);
+    expect(parseSetting("booster.divineOdds", 0)).toBe(0);
+    expect(parseSetting("booster.pityThreshold", 0)).toBe(250);
+  });
+});

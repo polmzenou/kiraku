@@ -6,7 +6,8 @@
   "common": {
     "appName": "Kiraku",
     "zeni": "{amount, number} Zeni",
-    "boosters": "{count}/{max}"
+    "boosters": "{count}/{max}",
+    "number": "{value, number}"
   },
   "account": {
     "title": "Compte",
@@ -197,5 +198,172 @@
     "power": "Puissance",
     "ki": "Ki",
     "viewOnAnilist": "Voir sur AniList"
+  },
+  "nav": {
+    "label": "Navigation principale",
+    "home": "Kiraku, accueil",
+    "boosters": "Boosters",
+    "collection": "Collection",
+    "combat": "Combat",
+    "market": "Marché",
+    "wiki": "Wiki",
+    "account": "Compte",
+    "admin": "Admin",
+    "soon": "Bientôt",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu",
+    "menuTitle": "Menu",
+    "preferences": "Préférences"
+  },
+  "header": {
+    "stock": "Boosters : {count} sur {max}",
+    "full": "Stock de boosters plein",
+    "nextIn": "Prochain booster dans {time}",
+    "balance": "Solde : {amount, number} Zeni"
+  },
+  "time": {
+    "minSec": "{minutes} min {seconds} s",
+    "sec": "{seconds} s",
+    "hourMin": "{hours} h {minutes} min"
+  },
+  "boosters": {
+    "title": "Choisis ton booster",
+    "metaDescription": "Ouvre gratuitement un sachet de fuda toutes les {minutes} minutes.",
+    "intro": "Un sachet gratuit toutes les {minutes} min, {max} au plus. Les autres familles de boosters arrivent bientôt.",
+    "families": {
+      "standard": {
+        "title": "Standard",
+        "subtitle": "Tout le catalogue"
+      }
+    },
+    "types": {
+      "standard": {
+        "name": "Tout anime",
+        "tagline": "Tous les persos"
+      }
+    },
+    "free": "Gratuit",
+    "selected": "Booster sélectionné",
+    "cardsPerBooster": "cartes par booster",
+    "guaranteed": "ou mieux, garantie",
+    "pityLeft": "avant Mythique sûre (pitié partagée)",
+    "goldenLeft": "avant le sachet doré",
+    "possible": "persos possibles",
+    "composition": "Composition",
+    "slot": "Carte {n} : {rarity} ou mieux",
+    "chances": "Chance par booster",
+    "chanceRow": "{rarity} ou mieux : {value}",
+    "filter": "Filtre AniList",
+    "noFilter": "Aucun filtre",
+    "open": "Ouvrir",
+    "openTile": "Ouvrir un sachet {name}",
+    "remaining": "Gratuit · {count, plural, one {# restant} other {# restants}}",
+    "emptyStock": "Plus de sachet",
+    "nextFree": "Prochain sachet gratuit dans {time}",
+    "stockFull": "Stock plein : ouvre un sachet pour relancer le chrono."
+  },
+  "opening": {
+    "title": "Ouvrir · {name}",
+    "hint": "Glisse le doigt sur la bande du haut pour déchirer le sachet",
+    "hintReduced": "Appuie sur le bouton pour ouvrir le sachet",
+    "tear": "Déchirer",
+    "tearBand": "Bande à déchirer",
+    "count": "Nombre de sachets",
+    "times": "×{n}",
+    "stacked": "{n} sachets",
+    "opening": "Ouverture…",
+    "skip": "Passer",
+    "next": "Sachet suivant ({current}/{total})",
+    "toRecap": "Voir le récap",
+    "revealLabel": "Sachet {current} sur {total}",
+    "recapTitle": "Ton tirage",
+    "boosterN": "Sachet {n}",
+    "golden": "Sachet doré",
+    "divine": "Sachet divin",
+    "pityTriggered": "Pitié : Mythique garantie",
+    "newCard": "Nouveau",
+    "newCount": "{count, plural, =0 {Aucune nouvelle carte} one {# nouvelle carte} other {# nouvelles cartes}}",
+    "pityLine": "Mythique garantie dans {count, plural, one {# booster} other {# boosters}}",
+    "goldenLine": "{count, plural, one {Le prochain sachet est doré} other {Sachet doré dans # boosters}}",
+    "openAnother": "Ouvrir un autre",
+    "openMore": "Ouvrir {n} sachets",
+    "free": "Gratuit",
+    "changeBooster": "Changer de booster",
+    "copyLink": "Copier le lien",
+    "copied": "Lien copié",
+    "stockLeft": "{count, plural, =0 {Plus de sachet} one {# sachet restant} other {# sachets restants}}",
+    "errors": {
+      "NO_SESSION": "Ta session a expiré : recharge la page.",
+      "INVALID": "Demande invalide.",
+      "RATE_LIMITED": "Doucement ! Réessaie dans un instant.",
+      "NO_BOOSTER": "Plus assez de sachets pour cette ouverture.",
+      "UNAVAILABLE": "Ouverture impossible pour le moment. Réessaie."
+    }
+  },
+  "draw": {
+    "title": "Tirage de {name}",
+    "description": "{name} a ouvert un sachet {booster} sur Kiraku.",
+    "openedBy": "Ouvert par {name}",
+    "cta": "Ouvrir mes sachets"
+  },
+  "admin": {
+    "title": "Administration",
+    "modules": "Modules",
+    "soon": "Bientôt",
+    "moduleNames": {
+      "boosters": "Boosters",
+      "users": "Utilisateurs",
+      "catalog": "Catalogue",
+      "market": "Marché",
+      "ranked": "Classé"
+    },
+    "boosters": {
+      "title": "Réglages des boosters",
+      "intro": "Chaque changement s'applique tout de suite à tout le jeu, sans redéployer, et s'inscrit au journal.",
+      "stockSection": "Stock gratuit",
+      "drawSection": "Tirage",
+      "bonusSection": "Bonus",
+      "fields": {
+        "intervalMinutes": "Délai entre deux sachets (minutes)",
+        "maxStock": "Stock maximum",
+        "slotFloors": "Emplacements (rareté minimale de chaque carte)",
+        "rates": "Parts par rareté (millièmes de %)",
+        "pityThreshold": "Pitié : Mythique garantie au N-ième booster",
+        "goldenEvery": "Sachet doré tous les N boosters (0 = désactivé)",
+        "goldenFloor": "Rareté minimale de la dernière carte du doré",
+        "divineOdds": "Sachet divin : 1 chance sur N (0 = désactivé)"
+      },
+      "slot": "Carte {n}",
+      "addSlot": "Ajouter une carte",
+      "removeSlot": "Retirer la carte {n}",
+      "ratesTotal": "Total : {total, number}",
+      "invalid": "Certaines valeurs sont hors limites : corrige-les avant d'enregistrer.",
+      "preview": "Aperçu de l'impact",
+      "metric": "Indicateur",
+      "current": "Actuel",
+      "draft": "Nouveau",
+      "metrics": {
+        "epic": "Épique+ par booster",
+        "legendary": "Légendaire+ par booster",
+        "mythic": "Mythique par booster",
+        "meanGap": "Boosters entre deux Mythiques",
+        "perDay": "Mythiques par jour (stock gratuit)"
+      },
+      "review": "Vérifier les changements",
+      "noChange": "Aucun changement.",
+      "confirmTitle": "Confirmer ces changements ?",
+      "confirm": "Enregistrer",
+      "cancel": "Annuler",
+      "saved": "{count, plural, one {# réglage enregistré} other {# réglages enregistrés}}.",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Valeurs refusées par le serveur.",
+        "RATE_LIMITED": "Trop d'enregistrements : attends une minute.",
+        "unexpected": "Erreur inattendue. Réessaie."
+      },
+      "log": "Derniers changements",
+      "logEmpty": "Aucun changement pour l'instant.",
+      "logEntry": "{key} par {admin}"
+    }
   }
 }
