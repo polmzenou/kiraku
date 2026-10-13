@@ -1,0 +1,147 @@
+{
+  "metadata": {
+    "title": "Kiraku",
+    "description": "Ouvre des sachets, collectionne des fuda de personnages d'anime et défie tes amis."
+  },
+  "common": {
+    "appName": "Kiraku",
+    "zeni": "{amount, number} Zeni",
+    "boosters": "{count}/{max}"
+  },
+  "account": {
+    "title": "Compte",
+    "guestName": "Invité-{code}",
+    "preparing": "Préparation de ton compte…",
+    "rateLimited": "Trop de comptes créés depuis cette connexion. Réessaie dans un moment.",
+    "retry": "Réessayer",
+    "balance": "Solde",
+    "boosterStock": "Boosters",
+    "guestBadge": "Invité",
+    "discordBadge": "Discord",
+    "linkTitle": "Garde ta collection",
+    "linkBody": "Tu joues en invité : crée ton compte pour ne rien perdre et retrouver ta collection sur tous tes appareils.",
+    "linkDiscord": "Lier Discord",
+    "settings": "Préférences",
+    "avatarAlt": "Avatar de {name}",
+    "createAccount": "Créer mon compte",
+    "haveAccount": "J'ai déjà un compte",
+    "emailLabel": "E-mail",
+    "emailVerified": "Adresse vérifiée",
+    "emailUnverified": "Adresse non vérifiée : ouvre le lien reçu par e-mail.",
+    "resendVerification": "Renvoyer l'e-mail",
+    "verificationSent": "E-mail envoyé.",
+    "discordBonusTitle": "Lie ton compte Discord",
+    "discordBonusBody": "Gagne {amount, number} Zeni à la première liaison.",
+    "discordLinked": "Discord est lié à ton compte.",
+    "logout": "Se déconnecter"
+  },
+  "theme": {
+    "label": "Thème",
+    "yoru": "Yoru (sombre)",
+    "washi": "Washi (clair)"
+  },
+  "locale": {
+    "label": "Langue",
+    "fr": "Français",
+    "en": "English"
+  },
+  "authError": {
+    "title": "Connexion impossible",
+    "alreadyLinkedTitle": "Ce compte Discord est déjà utilisé",
+    "alreadyLinkedBody": "Il est lié à un autre compte Kiraku. Si tu continues, tu retrouves ce compte et la progression invitée de cet appareil est abandonnée.",
+    "continue": "Me connecter à ce compte",
+    "generic": "La connexion avec Discord a échoué. Réessaie dans un instant.",
+    "back": "Retour au compte",
+    "emailExistsTitle": "Cette adresse e-mail a déjà un compte",
+    "emailExistsBody": "Connecte-toi avec ton e-mail et ton mot de passe, puis lie Discord depuis ton compte."
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "body": "Ce chemin ne mène nulle part.",
+    "back": "Retour à l'accueil"
+  },
+  "footer": {
+    "disclaimer": "Projet fan non officiel. Les personnages appartiennent à leurs ayants droit."
+  },
+  "auth": {
+    "pending": "Un instant…",
+    "register": {
+      "title": "Créer un compte",
+      "intro": "Ta progression d'invité est conservée : mêmes cartes, même solde.",
+      "username": "Pseudo",
+      "usernameHint": "3 à 20 caractères : lettres, chiffres, _ et -",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "passwordHint": "10 caractères minimum",
+      "passwordConfirm": "Confirme le mot de passe",
+      "submit": "Créer mon compte",
+      "haveAccount": "Déjà un compte ?",
+      "login": "Se connecter"
+    },
+    "login": {
+      "title": "Se connecter",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "submit": "Se connecter",
+      "forgot": "Mot de passe oublié ?",
+      "noAccount": "Pas encore de compte ?",
+      "register": "Créer un compte",
+      "guestWarning": "Tu joues en invité sur cet appareil : en te connectant à un autre compte, cette progression d'invité sera abandonnée."
+    },
+    "forgot": {
+      "title": "Mot de passe oublié",
+      "intro": "Indique l'e-mail de ton compte : on t'envoie un lien pour choisir un nouveau mot de passe.",
+      "email": "E-mail",
+      "submit": "Envoyer le lien",
+      "sent": "Si un compte existe avec cette adresse, un e-mail vient de partir. Le lien est valable 1 heure.",
+      "back": "Retour à la connexion"
+    },
+    "reset": {
+      "title": "Nouveau mot de passe",
+      "password": "Nouveau mot de passe",
+      "passwordConfirm": "Confirme le mot de passe",
+      "submit": "Enregistrer",
+      "missingToken": "Ce lien est incomplet. Redemande un e-mail de réinitialisation."
+    },
+    "verify": {
+      "title": "Vérifier mon adresse",
+      "intro": "Confirme que cette adresse e-mail t'appartient.",
+      "submit": "Confirmer mon adresse",
+      "done": "Adresse vérifiée, merci !",
+      "continue": "Aller à mon compte"
+    },
+    "errors": {
+      "rateLimited": "Trop de tentatives. Réessaie dans quelques minutes.",
+      "alreadyRegistered": "Tu as déjà un compte.",
+      "emailTaken": "Cette adresse e-mail est déjà utilisée.",
+      "usernameTaken": "Ce pseudo est déjà pris.",
+      "invalidCredentials": "E-mail ou mot de passe incorrect.",
+      "banned": "Ce compte est suspendu.",
+      "tokenInvalid": "Ce lien n'est plus valable. Demande-en un nouveau.",
+      "unexpected": "Une erreur est survenue. Réessaie."
+    },
+    "fieldErrors": {
+      "required": "Champ obligatoire.",
+      "usernameFormat": "3 à 20 caractères : lettres, chiffres, _ et -.",
+      "emailFormat": "Adresse e-mail invalide.",
+      "passwordTooShort": "10 caractères minimum.",
+      "passwordTooLong": "128 caractères maximum.",
+      "passwordMismatch": "Les deux mots de passe ne correspondent pas.",
+      "tokenInvalid": "Lien invalide."
+    }
+  },
+  "email": {
+    "verify": {
+      "subject": "Kiraku : confirme ton adresse e-mail",
+      "body": "Bienvenue sur Kiraku !\n\nConfirme ton adresse en ouvrant ce lien (valable 48 heures) :\n{link}\n\nSi tu n'as pas créé de compte, ignore ce message."
+    },
+    "reset": {
+      "subject": "Kiraku : nouveau mot de passe",
+      "body": "Tu as demandé à changer ton mot de passe Kiraku.\n\nChoisis-en un nouveau avec ce lien (valable 1 heure) :\n{link}\n\nSi ce n'est pas toi, ignore ce message : ton mot de passe ne change pas."
+    }
+  },
+  "mail": {
+    "disabled": "L'envoi d'e-mails n'est pas encore activé : aucun e-mail n'est parti.",
+    "devHint": "En développement, le lien est écrit dans les logs du serveur (terminal de npm run dev)."
+  }
+}

@@ -1,0 +1,148 @@
+// Schéma du socle (étape 1). Chaque étape suivante ajoute ses modèles
+// par sa propre migration nommée. Référence : docs/PLAN.md, « Schéma Prisma ».
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum CoinReason {
+  SIGNUP
+  BID_HOLD
+  BID_REFUND
+  SALE
+  FEE
+  DISSOLVE
+  BATTLE_WIN
+  DAILY
+  MISSION
+  REFERRAL
+  ADMIN
+  SHOP
+  DISCORD_LINK
+}
+
+enum AuthTokenType {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+model User {
+  id                  String    @id @default(cuid())
+  username            String    @unique
+  email               String?   @unique
+  emailVerified       DateTime? // requis par Auth.js
+  passwordHash        String? // argon2id, compte e-mail + mot de passe
+  discordLinkedAt     DateTime? // première liaison Discord (bonus versé une seule fois)
+  image               String?
+  // Valeurs de départ lues dans GameSetting à la création (jamais en dur)
+  coins               Int       @default(0) // solde en Zeni
+  boosterStock        Int       @default(0)
+  boosterAnchor       DateTime  @default(now()) // début du cycle de booster en cours
+  rankPoints          Int       @default(0) // points de classement (mode classé)
+  defenseTeam         String[] // 3 UserCard qui défendent en classé
+  role                Role      @default(USER)
+  bannedAt            DateTime?
+  isGuest             Boolean   @default(true)
+  pityCount           Int       @default(0) // boosters ouverts depuis la dernière Mythique
+  standardCount       Int       @default(0) // pour le booster doré
+  bannerPity          Json      @default("{}") // { boosterTypeId: boosters sans vedette }
+  discordJoinedAt     DateTime? // a cliqué sur « Rejoindre le serveur »
+  locale              String    @default("fr") // fr | en
+  birthDate           DateTime? // contrôle d'âge
+  termsVersion        Int? // version des CGU acceptée
+  deletionRequestedAt DateTime? // suppression RGPD en attente
+  referralCode        String    @unique @default(cuid())
+  referredById        String?
+  createdAt           DateTime  @default(now())
+
+  accounts   Account[]
+  sessions   Session[]
+  ledger     CoinTransaction[]
+  authTokens AuthToken[]
+
+  @@index([rankPoints])
+}
+
+// --- Auth.js ---
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Jetons à usage unique envoyés par e-mail (seul leur hash SHA-256 est stocké)
+model AuthToken {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      AuthTokenType
+  tokenHash String        @unique
+  expires   DateTime
+  usedAt    DateTime?
+  createdAt DateTime      @default(now())
+
+  @@index([userId, type])
+}
+
+// --- Réglages et économie ---
+
+model GameSetting {
+  key       String   @id // ex. booster.intervalMinutes, ranked.tiers
+  value     Json
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
+model CoinTransaction {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  amount    Int // + crédit, - débit
+  reason    CoinReason
+  refId     String? // id d'enchère, de combat…
+  createdAt DateTime   @default(now())
+
+  @@index([userId, createdAt])
+}
