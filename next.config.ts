@@ -22,6 +22,13 @@ const nextConfig: NextConfig = {
   // Le nonce CSP impose un rendu dynamique : pas de Cache Components ni de PPR.
   poweredByHeader: false,
   images: {
+    // Illustrations AniList (~230 px de large) : peu de variantes pour rester dans le quota
+    // de transformations Vercel, WebP seulement, cache long (elles ne changent quasiment jamais).
+    formats: ["image/webp"],
+    qualities: [75],
+    imageSizes: [96, 160, 240, 320],
+    deviceSizes: [480, 640, 828, 1080, 1200],
+    minimumCacheTTL: 2_678_400, // 31 jours
     remotePatterns: [
       { protocol: "https", hostname: "s4.anilist.co" },
       { protocol: "https", hostname: "cdn.discordapp.com" },

@@ -1,4 +1,4 @@
-// Schéma du socle (étape 1). Chaque étape suivante ajoute ses modèles
+// Schéma du socle (étape 1) et du catalogue (étape 2). Chaque étape ajoute ses modèles
 // par sa propre migration nommée. Référence : docs/PLAN.md, « Schéma Prisma ».
 
 generator client {
@@ -145,4 +145,95 @@ model CoinTransaction {
   createdAt DateTime   @default(now())
 
   @@index([userId, createdAt])
+}
+
+// --- Catalogue (étape 2) ---
+
+enum Rarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+  MYTHIC
+}
+
+enum CatalogImportStatus {
+  RUNNING
+  FINALIZED
+  ABANDONED
+  FAILED
+}
+
+// Œuvre principale d'un personnage sur AniList (champs de filtre des boosters)
+model Series {
+  id           String   @id @default(cuid())
+  anilistId    Int      @unique
+  type         String // ANIME | MANGA
+  titleRomaji  String
+  titleEnglish String? // affiché en anglais quand il existe
+  titleNative  String?
+  isAdult      Boolean  @default(false)
+  genres       String[]
+  tags         String[] // tags de rang ≥ catalog.minTagRank
+  year         Int?
+  season       String? // WINTER | SPRING | SUMMER | FALL
+  seasonYear   Int?
+  studio       String? // studio principal
+  cards        Card[]
+}
+
+// Le personnage (le modèle de carte) ; l'exemplaire possédé sera UserCard
+model Card {
+  id            String   @id @default(cuid())
+  anilistId     Int      @unique // id du personnage AniList = /wiki/[anilistId]
+  name          String
+  nameNative    String? // nom japonais, écrit verticalement sur la fuda
+  imageUrl      String
+  favorites     Int // favoris AniList au dernier import
+  rank          Int?     @unique // 1 = le plus populaire ; null = sorti du catalogue
+  rarity        Rarity
+  power         Int // 力 attaque en combat
+  ki            Int // 気 défense ; HP et vitesse sont dérivés
+  seriesId      String
+  series        Series   @relation(fields: [seriesId], references: [id])
+  gender        String? // Female | Male | … (AniList, souvent vide)
+  birthMonth    Int?
+  birthDay      Int?
+  role          String? // MAIN | SUPPORTING | BACKGROUND dans l'œuvre principale
+  searchText    String // nom, nom natif et titres, en minuscules sans accents
+  addedImportId String? // import qui a fait entrer la carte (nouveautés)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([rarity, rank])
+  @@index([seriesId])
+  @@index([searchText(ops: raw("gin_trgm_ops"))], type: Gin)
+}
+
+// Une exécution de l'import AniList, reprenable après interruption
+model CatalogImport {
+  id         String              @id @default(cuid())
+  status     CatalogImportStatus @default(RUNNING)
+  target     Int // nombre de personnages visés
+  lastPage   Int                 @default(0) // reprise à lastPage + 1
+  kept       Int                 @default(0) // personnages valides en staging
+  startedAt  DateTime            @default(now())
+  finishedAt DateTime?
+  error      String?
+  rows       CatalogImportRow[]
+
+  @@index([status, startedAt])
+}
+
+// Personnages récupérés, normalisés, en attente de finalisation
+model CatalogImportRow {
+  importId  String
+  import    CatalogImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+  anilistId Int
+  position  Int // ordre renvoyé par AniList (départage les égalités)
+  favorites Int
+  data      Json // ImportedCharacter (lib/catalog/anilist.ts)
+
+  @@id([importId, anilistId])
 }

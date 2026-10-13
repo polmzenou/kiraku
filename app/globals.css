@@ -56,7 +56,11 @@
   --color-rarity-rare: #2c5a86;
   --color-rarity-epic: #6e4796;
   --color-rarity-legendary: #b8902f;
+  --color-rarity-mythic: #8f7bb8;
   --color-washi-paper: #f3ecdf;
+  /* Encre des fuda : le papier reste clair dans les deux thèmes */
+  --color-sumi: #1f1b17;
+  --color-sumi-muted: #6b645a;
 
   --radius-button: 6px;
   --shadow-paper: 0 3px 0 var(--k-paper-shadow);
@@ -84,6 +88,32 @@
   :focus-visible {
     outline: 2px solid var(--color-ai);
     outline-offset: 2px;
+  }
+}
+
+/* Fuda : cadre dans la matière de sa rareté. Les effets (laque, or, nacre) arrivent à l'étape 3. */
+@layer components {
+  .fuda {
+    --fuda-frame: var(--color-rarity-common);
+    background: var(--fuda-frame-bg, var(--fuda-frame));
+  }
+  .fuda[data-rarity="UNCOMMON"] {
+    --fuda-frame: var(--color-rarity-uncommon);
+  }
+  .fuda[data-rarity="RARE"] {
+    --fuda-frame: var(--color-rarity-rare);
+  }
+  .fuda[data-rarity="EPIC"] {
+    --fuda-frame: var(--color-rarity-epic);
+  }
+  .fuda[data-rarity="LEGENDARY"] {
+    --fuda-frame: var(--color-rarity-legendary);
+    --fuda-frame-bg: linear-gradient(135deg, #8a6a1f 0%, #e4c56a 35%, #b8902f 60%, #f0d98c 100%);
+  }
+  .fuda[data-rarity="MYTHIC"] {
+    --fuda-frame: var(--color-rarity-mythic);
+    /* Nacre (raden) : irisation statique pour l'instant */
+    --fuda-frame-bg: linear-gradient(135deg, #efe3f6 0%, #c3e4e1 28%, #f5e5c4 52%, #d4c6f0 76%, #bfdcef 100%);
   }
 }
 
