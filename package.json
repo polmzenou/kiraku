@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "fonts:subset": "tsx scripts/subset-seal-font.mts"
+    "fonts:subset": "tsx scripts/subset-seal-font.mts",
+    "catalog:import": "tsx scripts/import-characters.mts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",

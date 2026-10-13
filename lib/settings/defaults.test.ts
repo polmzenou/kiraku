@@ -18,3 +18,15 @@ describe("réglages de jeu", () => {
     expect(parseSetting("booster.intervalMinutes", "10")).toBe(10);
   });
 });
+
+describe("réglages du catalogue", () => {
+  it("refuse des seuils de rareté qui ne sont pas croissants", () => {
+    const bad = { mythic: 1000, legendary: 300, epic: 2500, rare: 5000, uncommon: 7500 };
+    expect(parseSetting("catalog.rarityThresholds", bad)).toEqual(SETTING_DEFAULTS["catalog.rarityThresholds"]);
+  });
+
+  it("accepte une politique de rareté connue seulement", () => {
+    expect(parseSetting("catalog.rarityPolicy", "LIVE")).toBe("LIVE");
+    expect(parseSetting("catalog.rarityPolicy", "AUTRE")).toBe("FROZEN");
+  });
+});
