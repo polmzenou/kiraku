@@ -8,6 +8,7 @@ import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { PageShell } from "@/components/PageShell";
 import { PrivacyForm } from "@/components/profile/PrivacyForm";
 import { SealMark } from "@/components/SealMark";
+import { PushToggle } from "@/components/social/PushToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -15,7 +16,8 @@ import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { guestCode } from "@/lib/username";
 import { logout } from "@/server/actions/account";
 import { linkDiscord } from "@/server/actions/auth";
-import { discordEnabled, isProduction, mailEnabled } from "@/server/env";
+import { discordEnabled, env, isProduction, mailEnabled } from "@/server/env";
+import { pushAvailable } from "@/server/push/send";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
 
@@ -34,9 +36,10 @@ export default async function AccountPage() {
     );
   }
 
-  const [maxStock, discordBonus] = await Promise.all([
+  const [maxStock, discordBonus, push] = await Promise.all([
     getSetting("booster.maxStock"),
     getSetting("discord.linkBonusZeni"),
+    pushAvailable(),
   ]);
   const code = guestCode(user.username);
   const displayName = user.isGuest && code ? t("account.guestName", { code }) : user.username;
@@ -135,6 +138,14 @@ export default async function AccountPage() {
         <p className="text-sm text-text-muted">{t("privacy.intro")}</p>
         <PrivacyForm visibility={user.profileVisibility} showCollection={user.showCollection} />
       </section>
+
+      {/* Invités exclus : sans social, ils ne reçoivent aucune notification */}
+      {push && !user.isGuest && env.VAPID_PUBLIC_KEY && (
+        <section id="notifications" className="flex scroll-mt-20 flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+          <h2 className="text-lg font-bold">{t("push.title")}</h2>
+          <PushToggle publicKey={env.VAPID_PUBLIC_KEY} />
+        </section>
+      )}
 
       <section className="flex flex-col gap-5 rounded-lg border border-border bg-surface p-4">
         <h2 className="text-lg font-bold">{t("account.settings")}</h2>

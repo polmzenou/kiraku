@@ -37,4 +37,13 @@ describe("confidentialité du profil", () => {
   it("un compte banni n'est plus montré", () => {
     expect(profileAccess("other", owner({ bannedAt: new Date() }), noFriends).profile).toBe(false);
   });
+
+  it("un visiteur bloqué voit le profil comme un profil privé", () => {
+    expect(profileAccess("other", owner(), { friends: false, blocked: true })).toEqual({
+      isOwner: false,
+      profile: false,
+      collection: false,
+    });
+    expect(profileAccess("other", owner({ profileVisibility: "FRIENDS" }), { friends: true, blocked: true }).profile).toBe(false);
+  });
 });

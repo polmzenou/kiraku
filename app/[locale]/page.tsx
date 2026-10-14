@@ -12,6 +12,7 @@ import { RatesSheet } from "@/components/boosters/RatesSheet";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
+import { ButtonLink } from "@/components/ui/ButtonLink";
 import { getPathname, Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { poolCounts } from "@/lib/boosters/draw";
@@ -132,6 +133,20 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
               max: rules.stock.max,
             })}
           />
+
+          {user.giftBoosters > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-kin bg-surface p-4">
+              <p className="flex items-center gap-2 font-bold">
+                <span aria-hidden="true" lang="ja" className="font-seal text-xl text-kin">
+                  贈
+                </span>
+                {t("giftBoosters", { count: user.giftBoosters })}
+              </p>
+              <ButtonLink href="/ouvrir/standard?offert=1" variant="shu">
+                {t("openGift")}
+              </ButtonLink>
+            </div>
+          )}
 
           <BannerHero slides={slides} />
 

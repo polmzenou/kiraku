@@ -1,7 +1,9 @@
 import "server-only";
 import { cache } from "react";
-import { profileAccess, type ProfileVisibility } from "@/lib/collection/visibility";
+import { profileAccess, type ProfileAccess, type ProfileVisibility } from "@/lib/collection/visibility";
+import type { Relation } from "@/lib/social/relation";
 import { prisma } from "../db";
+import { getRelation } from "../social/queries";
 
 // Profil public /u/[username] : seuls des champs publics sortent d'ici (jamais l'e-mail ni le solde).
 
@@ -33,7 +35,23 @@ export const findProfileOwner = cache(async (username: string): Promise<ProfileO
   return prisma.user.findFirst({ where: { username: { equals: username, mode: "insensitive" } }, select });
 });
 
-/** Ce que `viewerId` peut voir du profil (les amis arrivent à l'étape 6). */
-export function accessFor(viewerId: string | null, owner: ProfileOwnerRow) {
-  return profileAccess(viewerId, owner, { friends: false });
+/** Ce qu'un visiteur anonyme voit du profil (métadonnées, indexation). */
+export function anonymousAccess(owner: ProfileOwnerRow): ProfileAccess {
+  return profileAccess(null, owner, { friends: false });
+}
+
+/**
+ * Ce que `viewerId` peut voir du profil, et sa relation avec le propriétaire. Un visiteur que le
+ * propriétaire a bloqué voit un profil privé et une relation « NONE » : rien ne trahit le blocage.
+ */
+export async function accessFor(
+  viewerId: string | null,
+  owner: ProfileOwnerRow,
+): Promise<ProfileAccess & { relation: Relation | null }> {
+  if (!viewerId || viewerId === owner.id) return { ...profileAccess(viewerId, owner, { friends: false }), relation: null };
+  const rel = await getRelation(viewerId, owner.id);
+  return {
+    ...profileAccess(viewerId, owner, { friends: rel.relation === "FRIENDS", blocked: rel.blockedByThem }),
+    relation: rel.relation,
+  };
 }

@@ -6,15 +6,19 @@ import { displayName, ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ShareProfileButton } from "@/components/profile/ShareProfileButton";
 import { Showcase } from "@/components/profile/Showcase";
 import { SectionTitle } from "@/components/SectionTitle";
+import { RelationActions } from "@/components/social/RelationActions";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { getPathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { completion } from "@/lib/collection/view";
 import { USERNAME_REGEX } from "@/lib/username";
-import { accessFor, findProfileOwner } from "@/server/collection/profile";
+import { anonymousAccess, findProfileOwner } from "@/server/collection/profile";
 import { loadProfile } from "@/server/collection/profile-page";
 import { getCollectionSummary, getShowcase } from "@/server/collection/queries";
 import { getSetting } from "@/server/settings";
+import { giftsSentToday } from "@/server/social/queries";
+import type { ProfileAccess } from "@/lib/collection/visibility";
+import type { Relation } from "@/lib/social/relation";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/u/[username]">): Promise<Metadata> {
   const { locale: raw, username: rawUsername } = await params;
@@ -28,7 +32,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/u/[usern
   ]);
   const name = displayName(owner.username, owner.isGuest, (code) => tAccount("guestName", { code }));
   // Indexé seulement s'il est public pour tous, et jamais pour un invité
-  const indexable = !owner.isGuest && accessFor(null, owner).profile;
+  const indexable = !owner.isGuest && anonymousAccess(owner).profile;
   const href = `/u/${owner.username}`;
   return {
     title: t("metaTitle", { name }),
@@ -41,14 +45,16 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/u/[usern
 export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[username]">) {
   const { username } = await params;
   const locale = await getLocale();
-  const { owner, access } = await loadProfile(username, locale);
+  const { owner, viewer, access } = await loadProfile(username, locale);
   const [t, tAccount, format] = await Promise.all([getTranslations("profile"), getTranslations("account"), getFormatter()]);
   const name = displayName(owner.username, owner.isGuest, (code) => tAccount("guestName", { code }));
+  const social = await socialBar({ owner, viewer, access, name });
 
   if (!access.profile) {
     return (
       <PageShell>
         <ProfileHeader username={owner.username} image={owner.image} isGuest={owner.isGuest} />
+        {social}
         <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">
           <span aria-hidden="true" className="mb-2 block font-seal text-3xl text-shu">秘</span>
           {t("private")}
@@ -69,11 +75,13 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
   return (
     <PageShell>
       <ProfileHeader username={owner.username} image={owner.image} isGuest={owner.isGuest} createdAt={owner.createdAt} />
+      {social}
 
       <div className="flex flex-wrap gap-2">
         <ShareProfileButton username={owner.username} title={t("metaTitle", { name })} />
         {access.collection && <ButtonLink href={`/u/${owner.username}/collection`}>{t("viewCollection")}</ButtonLink>}
         {access.isOwner && <ButtonLink href="/compte#confidentialite">{t("privacy")}</ButtonLink>}
+        {access.isOwner && <ButtonLink href="/amis">{t("friends")}</ButtonLink>}
       </div>
 
       {access.isOwner && owner.profileVisibility !== "PUBLIC" && (
@@ -97,4 +105,53 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
       </section>
     </PageShell>
   );
+}
+
+/**
+ * Barre sociale du profil d'un autre joueur : relation et cadeaux pour un compte inscrit, invitation
+ * à s'inscrire pour un invité, rien pour son propre profil ni pour le profil d'un invité.
+ */
+async function socialBar({
+  owner,
+  viewer,
+  access,
+  name,
+}: {
+  owner: { username: string; isGuest: boolean };
+  viewer: Awaited<ReturnType<typeof loadProfile>>["viewer"];
+  access: ProfileAccess & { relation: Relation | null };
+  name: string;
+}) {
+  if (!viewer || access.isOwner || owner.isGuest || !access.relation) return null;
+  if (!(await getSetting("social.enabled"))) return null;
+  const t = await getTranslations("friends");
+  if (viewer.isGuest) {
+    return (
+      <p className="flex flex-wrap items-center gap-2 text-sm text-text-muted">
+        {t("guestOnlyShort", { name })}
+        <ButtonLink href="/inscription">{t("signUp")}</ButtonLink>
+      </p>
+    );
+  }
+  if (viewer.bannedAt) return null;
+
+  let gift = null;
+  if (access.relation === "FRIENDS" && (await getSetting("gifts.enabled"))) {
+    const [price, perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours, timeZone] = await Promise.all([
+      getSetting("gifts.boosterPriceZeni"),
+      getSetting("gifts.perDaySent"),
+      getSetting("gifts.perDayReceived"),
+      getSetting("gifts.minAccountAgeHours"),
+      getSetting("gifts.minFriendshipHours"),
+      getSetting("game.timeZone"),
+    ]);
+    const sent = await giftsSentToday(viewer.id, timeZone);
+    gift = {
+      price,
+      coins: viewer.coins,
+      remaining: Math.max(0, perDaySent - sent),
+      limits: { perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours },
+    };
+  }
+  return <RelationActions username={owner.username} name={name} initial={access.relation} gift={gift} />;
 }

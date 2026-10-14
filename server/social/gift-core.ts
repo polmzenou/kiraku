@@ -1,0 +1,178 @@
+// Cadeaux entre amis, atomiques. Le client Prisma est injecté (serveur ou test de concurrence).
+// Les deux joueurs sont verrouillés : quotas du jour, propriété de la carte et solde sont relus
+// sous verrou, puis la carte change de propriétaire (ou les Zeni sont débités) dans la même
+// transaction que la ligne Gift et la notification.
+import type { PrismaClient } from "@/generated/prisma/client";
+import { dayKey, filterContext } from "@/lib/boosters/pool-filter";
+import type { Rarity } from "@/lib/catalog/rarity";
+import { checkGift, pickGiftCopy, type GiftRefusal, type GiftRules } from "@/lib/social/gifts";
+import { pairKey } from "@/lib/social/relation";
+import { blocksBetween, lockPlayers, type LockedPlayer, type Tx } from "./lock";
+import { notify, notifyingTransaction, type OnNotified } from "./notify";
+
+export type GiftErrorCode = GiftRefusal | "NO_USER" | "NOT_OWNED" | "RARITY" | "NOT_ENOUGH_ZENI";
+
+export class GiftError extends Error {
+  constructor(readonly code: GiftErrorCode) {
+    super(code);
+  }
+}
+
+export type GiftContext = {
+  senderId: string;
+  recipientId: string;
+  rules: GiftRules;
+  timeZone: string;
+};
+
+const TX = { maxWait: 10_000, timeout: 15_000 };
+
+/** Jour du jeu (fuseau game.timeZone) : les quotas repartent à minuit, heure du jeu. */
+export function giftDay(now: Date, timeZone: string): string {
+  return dayKey(filterContext(now, timeZone));
+}
+
+async function checkUnderLock(tx: Tx, ctx: GiftContext, now: Date): Promise<{ sender: LockedPlayer; day: string }> {
+  if (ctx.senderId === ctx.recipientId) throw new GiftError("NOT_FRIENDS");
+  const players = await lockPlayers(tx, [ctx.senderId, ctx.recipientId]);
+  const sender = players.get(ctx.senderId);
+  const recipient = players.get(ctx.recipientId);
+  if (!sender) throw new GiftError("NO_USER");
+  if (!recipient) throw new GiftError("NOT_FRIENDS");
+
+  const day = giftDay(now, ctx.timeZone);
+  const [friendship, blocks, sentToday, receivedToday] = await Promise.all([
+    tx.friendship.findUnique({
+      where: { pairKey: pairKey(ctx.senderId, ctx.recipientId) },
+      select: { status: true, acceptedAt: true, createdAt: true },
+    }),
+    blocksBetween(tx, ctx.senderId, ctx.recipientId),
+    tx.gift.count({ where: { senderId: ctx.senderId, dayKey: day } }),
+    tx.gift.count({ where: { recipientId: ctx.recipientId, dayKey: day } }),
+  ]);
+  const friendsSince = friendship?.status === "ACCEPTED" ? (friendship.acceptedAt ?? friendship.createdAt) : null;
+
+  const refusal = checkGift({
+    sender,
+    recipient,
+    friendsSince,
+    blocked: blocks.byMe || blocks.byThem,
+    sentToday,
+    receivedToday,
+    now,
+    rules: ctx.rules,
+  });
+  if (refusal) throw new GiftError(refusal);
+  return { sender, day };
+}
+
+/**
+ * Offre un exemplaire de `cardId` (id de Card) : le serveur choisit l'exemplaire, le plus récent
+ * hors vitrine. L'exemplaire garde son id : l'historique (tirage, cadeau) reste lisible.
+ */
+export async function giftCardWith(
+  db: PrismaClient,
+  ctx: GiftContext & { cardId: string; allowedRarities: readonly Rarity[] },
+  onNotified?: OnNotified,
+): Promise<{ giftId: string; userCardId: string }> {
+  return notifyingTransaction(db, async (tx) => {
+    const now = new Date();
+    const { day } = await checkUnderLock(tx, ctx, now);
+
+    const copies = await tx.userCard.findMany({
+      where: { ownerId: ctx.senderId, cardId: ctx.cardId, status: "COLLECTION" },
+      select: { id: true, obtainedAt: true, card: { select: { rarity: true } } },
+    });
+    if (copies.length === 0) throw new GiftError("NOT_OWNED");
+    if (!ctx.allowedRarities.includes(copies[0].card.rarity as Rarity)) throw new GiftError("RARITY");
+
+    const shown = await tx.showcaseSlot.findMany({
+      where: { userId: ctx.senderId, userCardId: { in: copies.map((c) => c.id) } },
+      select: { userCardId: true },
+    });
+    const copy = pickGiftCopy(copies, new Set(shown.map((s) => s.userCardId)))!;
+
+    // Transfert conditionnel : un exemplaire vendu ou recyclé entre-temps n'est jamais offert
+    const moved = await tx.userCard.updateMany({
+      where: { id: copy.id, ownerId: ctx.senderId, status: "COLLECTION" },
+      data: { ownerId: ctx.recipientId, obtainedAt: now },
+    });
+    if (moved.count !== 1) throw new GiftError("NOT_OWNED");
+    await tx.showcaseSlot.deleteMany({ where: { userCardId: copy.id } });
+    await tx.discovery.createMany({
+      data: [{ userId: ctx.recipientId, cardId: ctx.cardId, createdAt: now }],
+      skipDuplicates: true,
+    });
+
+    const gift = await tx.gift.create({
+      data: {
+        senderId: ctx.senderId,
+        recipientId: ctx.recipientId,
+        kind: "CARD",
+        cardId: ctx.cardId,
+        userCardId: copy.id,
+        dayKey: day,
+        createdAt: now,
+      },
+      select: { id: true },
+    });
+    await notify(tx, {
+      userId: ctx.recipientId,
+      type: "GIFT_RECEIVED",
+      actorId: ctx.senderId,
+      refId: gift.id,
+      payload: { kind: "CARD", cardId: ctx.cardId },
+      now,
+    });
+    return { giftId: gift.id, userCardId: copy.id };
+  }, TX, onNotified);
+}
+
+/**
+ * Offre un booster standard payé en Zeni par l'expéditeur : le stock gratuit ne se transfère
+ * jamais (un compte secondaire n'a rien à donner que ses Zeni). Le destinataire l'ouvre depuis
+ * son compteur giftBoosters, sans booster doré ni divin.
+ */
+export async function giftBoosterWith(
+  db: PrismaClient,
+  ctx: GiftContext & { price: number },
+  onNotified?: OnNotified,
+): Promise<{ giftId: string; coins: number }> {
+  if (!Number.isInteger(ctx.price) || ctx.price < 1) throw new GiftError("DISABLED");
+  return notifyingTransaction(db, async (tx) => {
+    const now = new Date();
+    const { sender, day } = await checkUnderLock(tx, ctx, now);
+    if (sender.coins < ctx.price) throw new GiftError("NOT_ENOUGH_ZENI");
+
+    const debited = await tx.user.updateMany({
+      where: { id: ctx.senderId, coins: { gte: ctx.price } },
+      data: { coins: { decrement: ctx.price } },
+    });
+    if (debited.count !== 1) throw new GiftError("NOT_ENOUGH_ZENI");
+    await tx.user.update({ where: { id: ctx.recipientId }, data: { giftBoosters: { increment: 1 } } });
+
+    const gift = await tx.gift.create({
+      data: {
+        senderId: ctx.senderId,
+        recipientId: ctx.recipientId,
+        kind: "BOOSTER",
+        zeniSpent: ctx.price,
+        dayKey: day,
+        createdAt: now,
+      },
+      select: { id: true },
+    });
+    await tx.coinTransaction.create({
+      data: { userId: ctx.senderId, amount: -ctx.price, reason: "GIFT", refId: gift.id, createdAt: now },
+    });
+    await notify(tx, {
+      userId: ctx.recipientId,
+      type: "GIFT_RECEIVED",
+      actorId: ctx.senderId,
+      refId: gift.id,
+      payload: { kind: "BOOSTER" },
+      now,
+    });
+    return { giftId: gift.id, coins: sender.coins - ctx.price };
+  }, TX, onNotified);
+}

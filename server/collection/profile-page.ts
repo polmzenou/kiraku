@@ -16,5 +16,5 @@ export async function loadProfile(rawUsername: string, locale: Locale, suffix = 
   const [owner, viewer] = await Promise.all([findProfileOwner(username), getCurrentUser()]);
   if (!owner) notFound();
   if (owner.username !== username) redirect({ href: `/u/${owner.username}${suffix}`, locale });
-  return { owner, viewer, access: accessFor(viewer?.id ?? null, owner) };
+  return { owner, viewer, access: await accessFor(viewer?.id ?? null, owner) };
 }

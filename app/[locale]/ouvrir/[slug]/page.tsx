@@ -8,6 +8,7 @@ import { contentsLabel } from "@/lib/boosters/catalog";
 import { effectiveSlotFloors, localize, SLUG_PATTERN } from "@/lib/boosters/types";
 import { readBannerPity } from "@/server/boosters/open-core";
 import { getBoosterOffers } from "@/server/boosters/pools";
+import { GIFT_BOOSTER_SLUG } from "@/server/boosters/open";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { boosterStateFrom } from "@/server/boosters/state";
 import { getCurrentUser } from "@/server/user";
@@ -29,8 +30,8 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/ouvrir/[
   return { title: t("title", { name: localize(offer.type.name, locale) }), robots: { index: false } };
 }
 
-export default async function OpenBoosterPage({ params }: PageProps<"/[locale]/ouvrir/[slug]">) {
-  const { slug } = await params;
+export default async function OpenBoosterPage({ params, searchParams }: PageProps<"/[locale]/ouvrir/[slug]">) {
+  const [{ slug }, sp] = await Promise.all([params, searchParams]);
   const offer = await loadOffer(slug);
   if (!offer) notFound();
 
@@ -78,6 +79,8 @@ export default async function OpenBoosterPage({ params }: PageProps<"/[locale]/o
               : null,
         }}
         initialState={boosterStateFrom(user, rules)}
+        // Boosters offerts par des amis, ouverts depuis le lien de l'accueil (?offert=1)
+        gifts={slug === GIFT_BOOSTER_SLUG && sp.offert === "1" ? user.giftBoosters : 0}
       />
     </PageShell>
   );

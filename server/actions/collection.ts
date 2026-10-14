@@ -55,7 +55,7 @@ export async function loadCollectionPage(input: unknown): Promise<({ ok: true } 
   let ownerId: string;
   if (parsed.data.username) {
     const owner = await findProfileOwner(parsed.data.username);
-    if (!owner || !accessFor(viewer?.id ?? null, owner).collection) return { ok: false, error: "FORBIDDEN" };
+    if (!owner || !(await accessFor(viewer?.id ?? null, owner)).collection) return { ok: false, error: "FORBIDDEN" };
     ownerId = owner.id;
   } else {
     if (!viewer) return { ok: false, error: "NO_SESSION" };

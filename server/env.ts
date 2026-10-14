@@ -14,6 +14,11 @@ const schema = z.object({
   RESEND_API_KEY: z.string().min(1).optional(),
   MAIL_FROM: z.string().min(3).optional(), // ex. « Kiraku <noreply@kiraku.app> »
   APP_URL: z.url().optional(), // origine publique, pour les liens des e-mails
+  // Web Push : paire VAPID (`npx web-push generate-vapid-keys`). La clé publique est transmise
+  // au navigateur par la page /compte ; la clé privée ne quitte jamais le serveur.
+  VAPID_PUBLIC_KEY: z.string().regex(/^[A-Za-z0-9_-]{80,100}$/).optional(),
+  VAPID_PRIVATE_KEY: z.string().regex(/^[A-Za-z0-9_-]{40,50}$/).optional(),
+  VAPID_SUBJECT: z.string().regex(/^(mailto:|https:\/\/)/).optional(), // contact pour les services push
 });
 
 // Une variable vide (ex. copiée telle quelle de .env.example) compte comme absente
@@ -42,6 +47,7 @@ export const isProduction = process.env.NODE_ENV === "production";
 
 export const discordEnabled = Boolean(env.AUTH_DISCORD_ID && env.AUTH_DISCORD_SECRET);
 export const mailEnabled = Boolean(env.RESEND_API_KEY && env.MAIL_FROM);
+export const pushConfigured = Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY && env.VAPID_SUBJECT);
 
 /** Origine publique du site : jamais déduite de l'en-tête Host (empoisonnement des liens). */
 export function appUrl(): string {

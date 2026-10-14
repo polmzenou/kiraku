@@ -5,7 +5,7 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { isActive, NAV_ITEMS } from "@/lib/nav";
 
 /**
- * Entrées de la navigation. `layout="bar"` : barre horizontale du haut (≥ 768 px), soulignement
+ * Entrées de la navigation. `layout="bar"` : barre horizontale du haut (≥ 1024 px), soulignement
  * vermillon sur la page active ; `layout="stack"` : liste verticale du menu burger.
  */
 export function NavLinks({ layout, onNavigate }: { layout: "bar" | "stack"; onNavigate?: () => void }) {

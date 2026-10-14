@@ -10,6 +10,7 @@ import {
   type CollectionSettingKey,
 } from "@/lib/settings/collection-form";
 import { parseSetting, type SettingKey } from "@/lib/settings/defaults";
+import { SOCIAL_SETTING_KEYS, socialSettingsSchema, type SocialSettingKey } from "@/lib/settings/social-form";
 import { changedSettingKeys, type SettingsOf } from "@/lib/settings/form";
 import { getAdmin } from "../admin";
 import { prisma } from "../db";
@@ -81,4 +82,8 @@ export async function updateBoosterSettings(input: unknown): Promise<UpdateSetti
 
 export async function updateCollectionSettings(input: unknown): Promise<UpdateSettingsResult<CollectionSettingKey>> {
   return saveSettings(COLLECTION_SETTING_KEYS, collectionSettingsSchema, input);
+}
+
+export async function updateSocialSettings(input: unknown): Promise<UpdateSettingsResult<SocialSettingKey>> {
+  return saveSettings(SOCIAL_SETTING_KEYS, socialSettingsSchema, input);
 }

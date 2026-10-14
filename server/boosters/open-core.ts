@@ -41,6 +41,11 @@ export type OpenInput = {
   count: number;
   /** Le joueur accepte de payer en Zeni si le stock gratuit ne couvre pas l'ouverture. */
   pay?: boolean;
+  /**
+   * Ouvre des boosters offerts par des amis (compteur giftBoosters) au lieu du stock : ni prix,
+   * ni booster doré ou divin (un cadeau ne fait pas avancer le doré) ; la pitié Mythique compte.
+   */
+  gift?: boolean;
   /** Planchers déjà effectifs pour ce type. */
   rules: { draw: DrawRules; stock: StockRules };
   tables: RarityTables;
@@ -69,6 +74,8 @@ export type OpenOutcome = {
   featuredCount: number;
   coins: number;
   zeniSpent: number;
+  /** Boosters offerts restant à ouvrir. */
+  giftBoosters: number;
 };
 
 type LockedUser = {
@@ -79,6 +86,7 @@ type LockedUser = {
   coins: number;
   bannerPity: unknown;
   bannedAt: Date | null;
+  giftBoosters: number;
 };
 
 /** Compteurs de pitié vedette par bannière ({ boosterTypeId: n }), valeurs invalides ignorées. */
@@ -99,17 +107,19 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
     async (tx) => {
       // Verrou sur la ligne du joueur : deux ouvertures simultanées passent l'une après l'autre
       const [user] = await tx.$queryRaw<LockedUser[]>`
-        SELECT "boosterStock", "boosterAnchor", "pityCount", "standardCount", "coins", "bannerPity", "bannedAt"
+        SELECT "boosterStock", "boosterAnchor", "pityCount", "standardCount", "coins", "bannerPity", "bannedAt", "giftBoosters"
         FROM "User" WHERE id = ${userId} FOR UPDATE`;
       if (!user) throw new OpenError("NO_USER");
       if (user.bannedAt) throw new OpenError("BANNED");
 
       const now = new Date();
       const current = computeStock(user.boosterStock, user.boosterAnchor, now, rules.stock);
-      const price = priceFor(type, current.stock, count);
+      const price = input.gift ? ({ kind: "gift" } as const) : priceFor(type, current.stock, count);
       let stock: StockState = current;
       let total = 0;
-      if (price.kind === "free") {
+      if (price.kind === "gift") {
+        if (!Number.isInteger(count) || count < 1 || count > user.giftBoosters) throw new OpenError("NO_BOOSTER");
+      } else if (price.kind === "free") {
         stock = consumeStock(current, count, rules.stock);
       } else if (price.kind === "zeni") {
         if (!input.pay) throw new OpenError("NEEDS_PAYMENT");
@@ -125,7 +135,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         pool: input.pool,
         rules: rules.draw,
         tables: input.tables,
-        bonuses: bonusesFor(type),
+        bonuses: input.gift ? { ...bonusesFor(type), golden: false, divine: false } : bonusesFor(type),
         featured: input.featured,
         state: {
           pityCount: user.pityCount,
@@ -197,12 +207,13 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         where: { id: userId },
         data: {
           ...(price.kind === "free" ? { boosterStock: stock.stock, boosterAnchor: stock.anchor } : {}),
+          ...(price.kind === "gift" ? { giftBoosters: { decrement: count } } : {}),
           ...(total > 0 ? { coins: { decrement: total } } : {}),
           pityCount: drawn.state.pityCount,
           standardCount: drawn.state.standardCount,
           ...(input.featured ? { bannerPity: { ...bannerPity, [type.id]: featuredCount } } : {}),
         },
-        select: { coins: true },
+        select: { coins: true, giftBoosters: true },
       });
 
       return {
@@ -213,6 +224,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         featuredCount,
         coins: updated.coins,
         zeniSpent: total,
+        giftBoosters: updated.giftBoosters,
       };
     },
     { maxWait: 10_000, timeout: 15_000 },
