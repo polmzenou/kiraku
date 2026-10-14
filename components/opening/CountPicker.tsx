@@ -3,14 +3,14 @@
 import { useTranslations } from "next-intl";
 import { OPEN_COUNTS, type OpenCount } from "@/lib/boosters/catalog";
 
-/** Sélecteur ×1 / ×5 / ×10 ; une quantité au-delà du stock est désactivée. */
+/** Sélecteur ×1 / ×5 / ×10 ; une quantité au-delà de `max` (stock ou Zeni) est désactivée. */
 export function CountPicker({
   value,
-  stock,
+  max,
   onChange,
 }: {
   value: OpenCount;
-  stock: number;
+  max: number;
   onChange: (count: OpenCount) => void;
 }) {
   const t = useTranslations("opening");
@@ -23,7 +23,7 @@ export function CountPicker({
             key={n}
             type="button"
             aria-pressed={value === n}
-            disabled={n > stock}
+            disabled={n > max}
             onClick={() => onChange(n)}
             className="min-h-11 min-w-16 rounded-button border border-border bg-surface-2 px-3 text-sm font-bold tabular-nums disabled:opacity-40 aria-pressed:border-shu aria-pressed:text-shu"
           >

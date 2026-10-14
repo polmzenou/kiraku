@@ -22,7 +22,7 @@ export function StockEnso({ stock, max, nextAt, intervalMs, serverNow }: Props) 
 
   return (
     <Link
-      href="/boosters"
+      href="/"
       aria-label={label}
       title={label}
       className="relative inline-flex size-11 shrink-0 items-center justify-center rounded-full"

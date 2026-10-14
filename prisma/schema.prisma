@@ -1,4 +1,4 @@
-// Schéma du socle (étape 1), du catalogue (étape 2) et des boosters (étape 3). Chaque étape ajoute ses modèles
+// Schéma du socle (étape 1), du catalogue (étape 2), des boosters (étape 3) et de leurs types (étape 4). Chaque étape ajoute ses modèles
 // par sa propre migration nommée. Référence : docs/PLAN.md, « Schéma Prisma ».
 
 generator client {
@@ -29,6 +29,7 @@ enum CoinReason {
   ADMIN
   SHOP
   DISCORD_LINK
+  BOOSTER // achat d'un booster en Zeni
 }
 
 enum AuthTokenType {
@@ -271,11 +272,13 @@ model BoosterOpening {
   id            String   @id @default(cuid())
   userId        String
   user          User     @relation(fields: [userId], references: [id])
-  boosterSlug   String // « standard » ; BoosterType.slug à l'étape 4
+  boosterSlug   String // BoosterType.slug
   cardIds       String[] // ids de UserCard, dans l'ordre des emplacements
   golden        Boolean  @default(false)
   divine        Boolean  @default(false)
   pityTriggered Boolean  @default(false) // dernière carte forcée en Mythique
+  featuredHit   Boolean  @default(false) // au moins une carte vedette (bannière)
+  zeniSpent     Int      @default(0) // prix payé pour ce booster (0 = stock gratuit)
   createdAt     DateTime @default(now())
 
   @@index([userId, createdAt])
@@ -305,4 +308,54 @@ model AdminLog {
   createdAt  DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// --- Types de boosters (étape 4) ---
+
+enum BoosterKind {
+  STANDARD
+  RARITY
+  FILTERED
+  BANNER
+  FORMAT
+}
+
+enum BoosterShape {
+  SACHET
+  POCHIBUKURO
+  JUBAKO
+}
+
+// Un booster proposé : filtre sur le catalogue, planchers, prix. Réglé dans /admin, chargé par seed.
+model BoosterType {
+  id              String       @id @default(cuid())
+  slug            String       @unique
+  kind            BoosterKind
+  family          String // standard | formats | rarete | demographie | genre | personnage | epoque | special
+  sortOrder       Int          @default(0)
+  name            Json // { fr, en } (repli sur fr)
+  tagline         Json // { fr, en }
+  emblem          String // kanji de l'étiquette
+  shape           BoosterShape @default(SACHET)
+  theme           Json // { base, dark, pattern, ink } (lib/boosters/types.ts)
+  filter          Json         @default("{}") // PoolFilter (lib/boosters/pool-filter.ts)
+  slotFloors      String[] // vide = réglage global booster.slotFloors
+  usesFreeStock   Boolean      @default(true)
+  priceZeni       Int? // prix en Zeni (payant, ou quand le stock gratuit est vide) ; null = pas d'achat
+  countsForPity   Boolean      @default(true) // pitié Mythique partagée
+  bonusEligible   Boolean      @default(true) // sachets doré et divin
+  featuredCardIds String[] // cartes vedettes (bannière)
+  featuredRate    Int          @default(5000) // points de base : part des tirages d'une rareté qui va aux vedettes
+  featuredPity    Int          @default(100) // vedette garantie au N-ième booster sans vedette
+  minPoolSize     Int? // sinon GameSetting booster.minPool
+  poolCardIds     String[] // recalculé après import, seed ou modification admin
+  poolCounts      Json? // { COMMON: n, … }
+  poolComputedAt  DateTime?
+  startsAt        DateTime?
+  endsAt          DateTime?
+  active          Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([family, sortOrder])
 }

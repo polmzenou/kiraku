@@ -1,6 +1,5 @@
 import "server-only";
 import { cache } from "react";
-import { isBoosterSlug, type BoosterSlug } from "@/lib/boosters/catalog";
 import type { CardView } from "@/lib/boosters/view";
 import { guestCode } from "@/lib/username";
 import { prisma } from "../db";
@@ -8,7 +7,7 @@ import { cardViews } from "./display";
 
 export type PublicOpening = {
   id: string;
-  slug: BoosterSlug;
+  slug: string;
   golden: boolean;
   divine: boolean;
   createdAt: Date;
@@ -30,7 +29,7 @@ export const getPublicOpening = cache(async (id: string, locale: string): Promis
       user: { select: { username: true } },
     },
   });
-  if (!opening || !isBoosterSlug(opening.boosterSlug)) return null;
+  if (!opening) return null;
 
   const copies = await prisma.userCard.findMany({
     where: { id: { in: opening.cardIds } },

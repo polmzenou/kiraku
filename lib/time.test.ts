@@ -21,7 +21,7 @@ describe("isActive", () => {
   const boosters = NAV_ITEMS.find((i) => i.key === "boosters")!;
 
   it("la page et ses sous-pages activent l'entrée", () => {
-    expect(isActive(boosters, "/boosters")).toBe(true);
+    expect(isActive(boosters, "/")).toBe(true);
     expect(isActive(boosters, "/ouvrir/standard")).toBe(true);
   });
 

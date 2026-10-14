@@ -17,6 +17,8 @@ import { parseSetting, type SettingKey, type SettingValue } from "../lib/setting
 import { finalizeRun, runImport, type FinalizeReport, type ImportSettings } from "../server/catalog/import.ts";
 import { memoryImportStore } from "../server/catalog/memory-store.ts";
 import { prismaImportStore } from "../server/catalog/prisma-store.ts";
+import { filterContext } from "../lib/boosters/pool-filter.ts";
+import { recomputeBoosterPools } from "../server/boosters/type-store.ts";
 
 config({ path: [".env.local", ".env"], quiet: true });
 
@@ -95,6 +97,14 @@ function printReport(report: FinalizeReport) {
   for (const c of report.top) log(`    #${String(c.rank).padStart(4, "0")} ${c.name} (${c.anilistId}) ${c.rarity}`);
 }
 
+/** Après une finalisation, les pools des types de boosters suivent le nouveau catalogue. */
+async function recomputePools() {
+  if (!db) return;
+  const tz = await db.gameSetting.findUnique({ where: { key: "game.timeZone" }, select: { value: true } });
+  const reports = await recomputeBoosterPools(db, filterContext(new Date(), parseSetting("game.timeZone", tz?.value)));
+  log(`Pools des boosters recalculés : ${reports.length} types.`);
+}
+
 async function main() {
   if (!db && !args["dry-run"]) throw new Error("DATABASE_URL manquante (.env.local).");
   const { settings, size } = await loadSettings();
@@ -108,6 +118,7 @@ async function main() {
     log(`Finalisation de l'import ${run.id} (${run.kept} personnages en staging, objectif ${run.target}, raretés ${settings.policy})`);
     const { report } = await finalizeRun(store, run, settings);
     printReport(report);
+    await recomputePools();
     return 0;
   }
 
@@ -151,6 +162,8 @@ async function main() {
     }));
     await writeFile(".import/dry-run.json", JSON.stringify({ report: result.report, cards: rows }, null, 2));
     log("\nRapport détaillé : .import/dry-run.json (rien n'a été écrit en base)");
+  } else {
+    await recomputePools();
   }
   return 0;
 }

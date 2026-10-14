@@ -43,7 +43,7 @@ export default async function AccountPage() {
 
   const discordForm = (
     <form action={linkDiscord}>
-      <input type="hidden" name="redirectTo" value="/" />
+      <input type="hidden" name="redirectTo" value="/compte" />
       <Button type="submit" className="w-full">
         {t("account.linkDiscord")}
       </Button>

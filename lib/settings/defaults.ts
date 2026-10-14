@@ -16,6 +16,15 @@ const rarityThresholds = z
 
 const rarity = z.enum(RARITIES);
 
+function isTimeZone(tz: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Parts de tirage par rareté, en millièmes de % (entiers : aucun arrondi de flottant au tirage)
 const rarityRates = z
   .object(Object.fromEntries(RARITIES.map((r) => [r, z.number().int().min(0).max(1_000_000)])) as {
@@ -45,6 +54,10 @@ export const SETTING_SCHEMAS = {
   "booster.goldenFloor": rarity,
   // Booster divin : 1 chance sur N (0 = désactivé)
   "booster.divineOdds": z.number().int().min(0).max(1_000_000),
+  // Taille minimale du pool d'un type de booster pour être proposé (un type peut l'abaisser)
+  "booster.minPool": z.number().int().min(1).max(10_000),
+  // Fuseau du jeu : « aujourd'hui » (anniversaires) et saison AniList en cours
+  "game.timeZone": z.string().min(1).max(64).refine(isTimeZone, { message: "Fuseau horaire inconnu" }),
   "guest.createPerHourPerIp": z.number().int().min(1).max(1_000),
   "discord.linkBonusZeni": z.number().int().min(0).max(100_000),
   "catalog.size": z.number().int().min(10).max(50_000),
@@ -71,6 +84,8 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "booster.goldenEvery": 10,
   "booster.goldenFloor": "EPIC",
   "booster.divineOdds": 2000,
+  "booster.minPool": 100,
+  "game.timeZone": "Europe/Paris",
   "guest.createPerHourPerIp": 5,
   "discord.linkBonusZeni": 500, // versé une seule fois, à la première liaison
   "catalog.size": 6736,

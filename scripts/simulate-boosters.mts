@@ -2,6 +2,8 @@
 //   npm run sim:boosters                               1 000 000 boosters, réglages par défaut
 //   npm run sim:boosters -- --n 5000000 --seed 7       plus de boosters, autre graine
 //   npm run sim:boosters -- --from-db                  réglages actuels de l'admin (GameSetting)
+//   npm run sim:boosters -- --type all                 composition de chaque type de départ (34 boosters)
+//   npm run sim:boosters -- --type jubako --n 500000   un seul type
 // Sous PowerShell, le « -- » est avalé : npx tsx scripts/simulate-boosters.mts --from-db
 import { parseArgs } from "node:util";
 import { PrismaNeon } from "@prisma/adapter-neon";
@@ -9,6 +11,8 @@ import { config } from "dotenv";
 import { PrismaClient } from "../generated/prisma/client.ts";
 import type { DrawRules } from "../lib/boosters/draw.ts";
 import { DEFAULT_RULES, fakePool } from "../lib/boosters/fixtures.ts";
+import { effectiveSlotFloors } from "../lib/boosters/types.ts";
+import { BOOSTER_SEEDS } from "../prisma/seed/booster-types.ts";
 import { boosterChances, mythicsPerDay, slotDistribution } from "../lib/boosters/odds.ts";
 import { seededRng } from "../lib/boosters/rng.ts";
 import { CHI2_CRITICAL_001, chiSquare, compareToOdds, simulate, type Check } from "../lib/boosters/simulation.ts";
@@ -21,6 +25,7 @@ const { values: args } = parseArgs({
     n: { type: "string", default: "1000000" },
     seed: { type: "string", default: String(Date.now() % 2 ** 31) },
     "from-db": { type: "boolean", default: false },
+    type: { type: "string" },
   },
 });
 
@@ -65,6 +70,34 @@ function printChecks(checks: Check[]) {
       "  " + c.label.padEnd(58) + fmt(c.expected).padStart(12) + String(c.observed).padStart(12) + `${fmt(c.sigma, 2)} σ`.padStart(10) + flag,
     );
   }
+}
+
+if (args.type) {
+  // Composition de chaque type (sans bonus) : planchers du seed, réglages globaux pour le reste
+  const seeds = args.type === "all" ? BOOSTER_SEEDS : BOOSTER_SEEDS.filter((s) => s.slug === args.type);
+  if (seeds.length === 0) {
+    console.error(`Type inconnu : ${args.type}. Slugs : ${BOOSTER_SEEDS.map((s) => s.slug).join(", ")}`);
+    process.exit(1);
+  }
+  const seen = new Set<string>();
+  let failures = 0;
+  for (const def of seeds) {
+    const floors = effectiveSlotFloors(def.slotFloors ?? [], rules.slotFloors);
+    const key = floors.join(",");
+    const sameAs = seen.has(key);
+    seen.add(key);
+    if (sameAs && args.type === "all") continue; // même composition qu'un type déjà simulé
+    const typeRules: DrawRules = { ...rules, slotFloors: floors, goldenEvery: 0, divineOdds: 0, pityThreshold: Number.MAX_SAFE_INTEGER };
+    const counts = simulate(seededRng(seed), typeRules, pool, n, { golden: false, divine: false, pity: false });
+    const checks = compareToOdds(counts, typeRules).filter((c) => !c.label.startsWith("boosters avec"));
+    failures += checks.filter((c) => Math.abs(c.sigma) >= 5).length;
+    console.log(`\n${def.slug} (${floors.length} cartes : ${floors.map((f) => f[0]).join(" · ")})`);
+    printChecks(checks);
+  }
+  const others = BOOSTER_SEEDS.filter((s) => !s.slotFloors).map((s) => s.slug);
+  if (args.type === "all") console.log(`\nMême composition que standard : ${others.filter((s) => s !== "standard").join(", ")}`);
+  console.log(failures === 0 ? "\nAucun écart ≥ 5 σ." : `\n${failures} écart(s) ≥ 5 σ.`);
+  process.exit(failures === 0 ? 0 : 1);
 }
 
 console.log(`Simulation de ${n.toLocaleString("fr-FR")} boosters, graine ${seed}${args["from-db"] ? " (réglages de la base)" : " (réglages par défaut)"}\n`);

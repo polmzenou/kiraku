@@ -15,6 +15,8 @@ export type BoosterState = {
   pityLeft: number;
   pityThreshold: number;
   goldenIn: number | null;
+  /** Solde en Zeni (achat d'un booster quand le stock est vide). */
+  coins: number;
 };
 
 export type BoosterCounters = {
@@ -22,6 +24,7 @@ export type BoosterCounters = {
   boosterAnchor: Date;
   pityCount: number;
   standardCount: number;
+  coins: number;
 };
 
 /** Calcul en lecture seule : rien n'est écrit, l'ouverture recalcule sous verrou. */
@@ -36,5 +39,6 @@ export function boosterStateFrom(user: BoosterCounters, rules: BoosterRules, now
     pityLeft: boostersUntilPity(user.pityCount, rules.draw.pityThreshold),
     pityThreshold: rules.draw.pityThreshold,
     goldenIn: boostersUntilGolden(user.standardCount, rules.draw.goldenEvery),
+    coins: user.coins,
   };
 }

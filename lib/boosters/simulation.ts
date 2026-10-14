@@ -1,6 +1,15 @@
 import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
-import { buildRarityTables, drawBoosters, rarityIndex, type CardPool, type DrawRules } from "./draw";
-import { atLeastOdds, longRunMythicRate, slotDistribution } from "./odds";
+import {
+  ALL_BONUSES,
+  buildRarityTables,
+  drawBoosters,
+  poolCounts,
+  rarityIndex,
+  type CardPool,
+  type DrawBonuses,
+  type DrawRules,
+} from "./draw";
+import { atLeastOdds, longRunMythicRate, slotDistribution, type PoolCounts } from "./odds";
 import type { Rng } from "./rng";
 
 // Simulation de millions de boosters, comparée aux probabilités exactes d'odds.ts.
@@ -27,7 +36,13 @@ export type SimulationCounts = {
 
 const zero = () => Object.fromEntries(RARITIES.map((r) => [r, 0])) as Record<Rarity, number>;
 
-export function simulate(rng: Rng, rules: DrawRules, pool: CardPool, boosters: number): SimulationCounts {
+export function simulate(
+  rng: Rng,
+  rules: DrawRules,
+  pool: CardPool,
+  boosters: number,
+  bonuses: DrawBonuses = ALL_BONUSES,
+): SimulationCounts {
   const tables = buildRarityTables(rules.rates);
   const counts: SimulationCounts = {
     boosters,
@@ -49,7 +64,7 @@ export function simulate(rng: Rng, rules: DrawRules, pool: CardPool, boosters: n
   for (let done = 0; done < boosters; done += chunk) {
     const count = Math.min(chunk, boosters - done);
     const startCount = state.standardCount;
-    const result = drawBoosters(rng, { pool, rules, state, count, tables });
+    const result = drawBoosters(rng, { pool, rules, state, count, tables, bonuses });
     state = result.state;
 
     result.boosters.forEach((b, i) => {
@@ -67,7 +82,7 @@ export function simulate(rng: Rng, rules: DrawRules, pool: CardPool, boosters: n
         counts.golden += 1;
         if (rarityIndex(b.cards.at(-1)!.rarity) < rarityIndex(rules.goldenFloor)) counts.goldenBelowFloor += 1;
       }
-      const shouldBeGolden = rules.goldenEvery > 0 && (startCount + i + 1) % rules.goldenEvery === 0;
+      const shouldBeGolden = bonuses.golden && rules.goldenEvery > 0 && (startCount + i + 1) % rules.goldenEvery === 0;
       if (b.golden !== shouldBeGolden) counts.goldenMisplaced += 1;
 
       if (b.golden || b.divine || b.pityTriggered) return;
@@ -94,22 +109,28 @@ function check(label: string, n: number, p: number, observed: number): Check {
   return { label, expected, observed, sigma: sd > 0 ? (observed - expected) / sd : observed === expected ? 0 : Infinity };
 }
 
-/** Écarts observés / attendus pour chaque emplacement et chaque seuil de rareté. */
-export function compareToOdds(counts: SimulationCounts, rules: DrawRules): Check[] {
+/**
+ * Écarts observés / attendus pour chaque emplacement et chaque seuil de rareté. `pool` : les chances
+ * attendues tiennent compte de ses paliers vides (même repli qu'au tirage).
+ */
+export function compareToOdds(counts: SimulationCounts, rules: DrawRules, pool?: CardPool): Check[] {
   const checks: Check[] = [];
   const n = counts.normalBoosters;
+  const present: PoolCounts | undefined = pool ? poolCounts(pool) : undefined;
   rules.slotFloors.forEach((floor, slot) => {
-    const dist = slotDistribution(rules.rates, floor);
+    const dist = slotDistribution(rules.rates, floor, present);
     for (const r of RARITIES) {
       if (dist[r] > 0) checks.push(check(`emplacement ${slot + 1} (${floor}+) · ${r}`, n, dist[r], counts.perSlot[slot][r]));
     }
   });
-  const atLeast = atLeastOdds(rules.rates, rules.slotFloors);
+  const atLeast = atLeastOdds(rules.rates, rules.slotFloors, present);
   for (const r of ["EPIC", "LEGENDARY", "MYTHIC"] as const) {
     checks.push(check(`booster normal · au moins une ${r}+`, n, atLeast[r], counts.atLeast[r]));
   }
   if (rules.divineOdds > 0) checks.push(check("boosters divins", counts.boosters, 1 / rules.divineOdds, counts.divine));
-  checks.push(check("boosters avec Mythique (pitié, doré, divin compris)", counts.boosters, longRunMythicRate(rules), counts.mythicBoosters));
+  if (!present || present.MYTHIC > 0) {
+    checks.push(check("boosters avec Mythique (pitié, doré, divin compris)", counts.boosters, longRunMythicRate(rules), counts.mythicBoosters));
+  }
   return checks;
 }
 

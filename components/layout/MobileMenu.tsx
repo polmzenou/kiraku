@@ -9,7 +9,7 @@ import { ThemeToggle } from "../ThemeToggle";
 import { NavLinks } from "./NavLinks";
 
 /**
- * Menu burger (< 768 px) : un <dialog> natif (focus piégé, Échap) qui glisse de la droite,
+ * Menu burger (< 768 px) : un <dialog> natif (focus piégé, Échap) qui descend du haut de l'écran,
  * entrées empilées verticalement. Rien ne défile horizontalement.
  */
 export function MobileMenu({ theme, isAdmin }: { theme: Theme; isAdmin: boolean }) {
@@ -52,9 +52,9 @@ export function MobileMenu({ theme, isAdmin }: { theme: Theme; isAdmin: boolean 
           // Clic sur le fond (hors du panneau) : on referme
           if (e.target === dialog.current) close();
         }}
-        className="fixed inset-y-0 right-0 left-auto m-0 h-dvh max-h-none w-[min(20rem,85vw)] max-w-none translate-x-full overflow-y-auto overscroll-contain border-l border-border bg-surface p-0 text-text opacity-0 transition-[translate,opacity,display,overlay] transition-discrete duration-300 ease-out backdrop:bg-black/60 open:translate-x-0 open:opacity-100 starting:open:translate-x-full starting:open:opacity-0 md:hidden"
+        className="fixed inset-x-0 top-0 bottom-auto m-0 max-h-[85dvh] w-full max-w-none -translate-y-full overflow-y-auto overscroll-contain rounded-b-2xl border-b border-border bg-surface p-0 text-text opacity-0 shadow-[0_12px_32px_rgb(0_0_0/0.45)] transition-[translate,opacity,display,overlay] transition-discrete duration-300 ease-out backdrop:bg-black/60 open:translate-y-0 open:opacity-100 starting:open:-translate-y-full starting:open:opacity-0 md:hidden"
       >
-        <div className="flex min-h-full flex-col gap-6 px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <div className="flex flex-col gap-6 px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-6">
           <div className="flex items-center justify-between">
             <h2 id={titleId} className="text-lg font-bold">
               {t("menuTitle")}
@@ -74,9 +74,9 @@ export function MobileMenu({ theme, isAdmin }: { theme: Theme; isAdmin: boolean 
             <ul className="flex flex-col">
               <li>
                 <Link
-                  href="/"
+                  href="/compte"
                   onClick={close}
-                  aria-current={pathname === "/" ? "page" : undefined}
+                  aria-current={pathname === "/compte" ? "page" : undefined}
                   className="flex min-h-12 items-center border-b border-border px-1 text-base text-text-muted aria-[current=page]:font-bold aria-[current=page]:text-text"
                 >
                   {t("account")}

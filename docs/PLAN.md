@@ -79,7 +79,7 @@ Kiraku (気楽, « l'esprit léger ») est un **sanctuaire de papier** : la nuit
 - **Nouveau** : un sceau vermillon 新 qui se tamponne sur la carte, légèrement penché.
 - **Titres de section** : un kanji vertical à gauche (縦書き) et un trait de pinceau sous le titre.
 - **Boutons** : coins de 6 px, ombre « papier » décalée (0 3px 0, noire en Yoru), Ouvrir en vermillon.
-- **Booster** : un sachet métallisé classique, bords sertis en dents de scie, reflet diagonal. Seuls la couleur et le motif wagara changent d'une famille à l'autre. Au centre, une étiquette tanzaku en washi porte le kanji au pinceau, un trait vermillon et la contenance en japonais (四枚入, « 6 cartes ») ; en haut, le petit sceau Kiraku. Deux formats spéciaux : le pochibukuro (enveloppe à rabat, 2 cartes) et le jūbako (boîte laquée à étages, 20 cartes). À l'ouverture, on déchire la bande du haut d'un glissement de doigt et les fuda sortent une à une.
+- **Booster** : un sachet métallisé classique, bords sertis en dents de scie, reflet diagonal. Chaque booster a sa propre couleur et son propre motif wagara (planche « Choix du booster »), réglables dans l'admin. Au centre, une étiquette tanzaku en washi porte le kanji au pinceau, un trait vermillon et la contenance en japonais (四枚入, « 4 cartes ») ; en haut, le petit sceau Kiraku. Deux formats spéciaux : le pochibukuro (enveloppe à rabat, 2 cartes) et le jūbako (boîte laquée à étages, 20 cartes). À l'ouverture, on déchire la bande du haut d'un glissement de doigt et les fuda sortent une à une.
 - **Carte (fuda)** : format 5:7, cadre dans la matière de sa rareté, sceau en haut à gauche, numéro « No. 0204 », nom japonais écrit verticalement le long de l'illustration, nom latin et série en bas, stats **力 Puissance** et **気 Ki**.
 
 **Ce qu'on ne reprend pas de Kyara** : le fond noir par défaut, l'orange et le jaune, les pastilles rondes à lettre, les polices mono, le losange de monnaie, le cadre arc-en-ciel, la jauge horizontale de stock, les noms POW et AURA.
@@ -112,8 +112,9 @@ Tout se conçoit d'abord pour un écran de 375 px, puis s'élargit : sur desktop
 
 | Écran | Route | Origine | Contenu |
 | --- | --- | --- | --- |
-| Compte | `/` | Kyara | Avatar, pseudo, lier Discord, stats (Zeni, cartes, pitié), grille de tuiles |
-| Boosters | `/boosters` | Kyara | Stock, compte à rebours, ouverture animée |
+| Boosters (accueil) | `/` | Kyara | Choix du booster par famille, stock, compte à rebours ; `/boosters` redirige ici |
+| Ouverture | `/ouvrir/[slug]` | Kyara + toi | Rituel d'ouverture animé, révélation des cartes, récap |
+| Compte | `/compte` | Kyara | Avatar, pseudo, lier Discord, stats (Zeni, cartes, pitié), grille de tuiles |
 | Collection | `/collection` | Kyara | Filtres rareté/série, doublons, recyclage |
 | Marché | `/marche` | Kyara + toi | Enchères, achat immédiat, mes ventes |
 | Combat | `/combat`, `/combat/[id]` | Toi | Défis reçus, choix d'équipe, replay, historique, rang classé |
@@ -258,7 +259,7 @@ Deux stats sur chaque carte : **力 Puissance** et **気 Ki**, qui baissent avec
 
 Composition : Kyara met 5 cartes par booster, ce plan en garde 4.
 
-| Carte | Kyara (5 cartes) | Ce plan (6 cartes) |
+| Carte | Kyara (5 cartes) | Ce plan (4 cartes) |
 | --- | --- | --- |
 | 1 | Commune ou mieux | Commune ou mieux |
 | 2 | Commune ou mieux | Commune ou mieux |
@@ -391,6 +392,14 @@ type PoolFilter = {
 ```
 
 Pour l'import, la requête AniList récupère en plus, pour l'œuvre principale : `type`, `genres`, `tags { name rank }`, `startDate { year }`, `season`, `seasonYear`, `studios(isMain: true)`, le rôle du personnage dans l'œuvre, et sur le personnage `gender` et `dateOfBirth { month day }`. Ces champs vont dans `Card` (voir le schéma).
+
+### Mise en œuvre (étape 4)
+
+- **Chargement** : `npm run seed:boosters` crée les 34 types de départ (`prisma/seed/booster-types.ts`) sans écraser ceux déjà réglés dans l'admin (`--force` pour tout réécrire), puis recalcule les pools. L'import du catalogue recalcule aussi tous les pools à la fin.
+- **Pools** : statiques en base (`poolCardIds`, `poolCounts`) et en cache ; les filtres du jour (anniversaires, saison en cours) sont recalculés une fois par jour dans le fuseau `game.timeZone`. Un type sous `booster.minPool` (ou son `minPoolSize`) est caché.
+- **Prix** : un booster gratuit se paie `priceZeni` (200 par défaut) quand le stock ne couvre pas l'ouverture ; le joueur confirme le paiement avant le geste, le serveur débite sous verrou avec une ligne `CoinTransaction` (`BOOSTER`) par booster.
+- **Bannière vedette** : son pool est son filtre plus les vedettes ; quand une rareté tirée a des vedettes, `featuredRate` (5 000 points de base = 50 %) des tirages vont à l'une d'elles ; la pitié vedette (100 par défaut, compteur par bannière dans `User.bannerPity`) force une vedette sur la dernière carte, ou l'avant-dernière si la pitié Mythique a pris la dernière.
+- **Validation des taux** : trois sources qui doivent être d'accord. Le calcul exact (`lib/boosters/odds.ts`, paliers vides du pool repliés comme au tirage) est comparé au tableau ci-dessus par `odds.test.ts` ; une simulation Monte-Carlo de chaque composition (`simulation.test.ts`, `npm run sim:boosters -- --type all`) doit rester sous 5 σ et sous le χ² critique à p = 0,001 ; l'admin affiche les chances exactes de chaque type sur son pool réel.
 
 ## Profil, amis et vitrine
 

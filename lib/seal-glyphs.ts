@@ -9,7 +9,8 @@ export const SEAL_GLYPHS = [
   "力気", // stats
   "夜和紙墨朱藍", // thèmes et couleurs
   "一二三四五六七八九十百入枚", // contenance des sachets
-  "福", // emblèmes des boosters
-  "開封定番選無料", // page des boosters (titres, panneau, prix)
+  "福小重稀秀金神少青花麗異球機怖恋魔宙日笑心音姫侍主脇祝昔千新季星匠紙", // emblèmes des 34 boosters
+  "開封定番形稀少読者類人物時代特別", // titres de la page et des familles
+  "選無料催事袋", // panneau, prix, composition du jūbako
   "管理", // administration
 ].join("");

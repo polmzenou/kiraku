@@ -63,7 +63,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
             </Link>
           )}
           <Link
-            href="/"
+            href="/compte"
             aria-label={t("nav.account")}
             title={t("nav.account")}
             className="hidden size-11 items-center justify-center md:inline-flex"

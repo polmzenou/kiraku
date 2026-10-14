@@ -24,6 +24,7 @@ export const getCurrentUser = cache(async () => {
       boosterAnchor: true,
       pityCount: true,
       standardCount: true,
+      bannerPity: true,
       role: true,
       bannedAt: true,
     },

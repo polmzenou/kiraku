@@ -19,7 +19,7 @@ export type DrawRules = {
 /** Ids de cartes du pool, par rareté (rareté globale du catalogue). */
 export type CardPool = Readonly<Record<Rarity, readonly string[]>>;
 
-export type DrawnCard = { cardId: string; rarity: Rarity };
+export type DrawnCard = { cardId: string; rarity: Rarity; /** Carte vedette d'une bannière. */ featured?: boolean };
 
 export type DrawnBooster = {
   cards: DrawnCard[];
@@ -27,6 +27,10 @@ export type DrawnBooster = {
   divine: boolean;
   /** La dernière carte a été forcée en Mythique par la pitié. */
   pityTriggered: boolean;
+  /** Au moins une carte vedette (bannière). */
+  featuredHit: boolean;
+  /** Une carte vedette a été forcée par la pitié vedette. */
+  featuredPityTriggered: boolean;
 };
 
 export const rarityIndex = (r: Rarity) => RARITIES.indexOf(r);
@@ -87,41 +91,111 @@ export function pickCard(rng: Rng, pool: CardPool, rarity: Rarity): DrawnCard {
   throw new Error("EMPTY_POOL");
 }
 
-export type DrawState = { pityCount: number; standardCount: number };
+export type DrawState = {
+  pityCount: number;
+  standardCount: number;
+  /** Boosters de cette bannière ouverts depuis la dernière vedette. */
+  featuredCount?: number;
+};
+
+/** Bonus applicables au type ouvert (tous actifs pour le booster standard). */
+export type DrawBonuses = { golden: boolean; divine: boolean; pity: boolean };
+
+export const ALL_BONUSES: DrawBonuses = { golden: true, divine: true, pity: true };
+
+/** Cartes vedettes d'une bannière. */
+export type FeaturedDraw = {
+  /** Vedettes par rareté (rareté globale). */
+  byRarity: Readonly<Record<Rarity, readonly string[]>>;
+  /** Points de base (0 à 10 000) : part des tirages d'une rareté qui tombe sur une vedette de cette rareté. */
+  rate: number;
+  /** Vedette garantie au N-ième booster sans vedette (0 = pas de pitié vedette). */
+  pityThreshold: number;
+};
+
+/** Toutes les vedettes, pour la pitié vedette (n'importe laquelle). */
+function allFeatured(featured: FeaturedDraw): { cardId: string; rarity: Rarity }[] {
+  return RARITIES.flatMap((r) => featured.byRarity[r].map((cardId) => ({ cardId, rarity: r })));
+}
 
 /**
- * Tire `count` boosters gratuits à la suite pour un joueur. Pour chacun : divin (1 chance sur
- * divineOdds), doré (chaque goldenEvery-ième), puis pitié (au pityThreshold-ième booster sans
- * Mythique, la dernière carte devient Mythique ; le compteur repart à 0 à chaque Mythique).
+ * Tire `count` boosters à la suite pour un joueur. Pour chacun, selon les bonus du type : divin
+ * (1 chance sur divineOdds), doré (chaque goldenEvery-ième booster éligible), puis pitié (au
+ * pityThreshold-ième booster sans Mythique, la dernière carte devient Mythique ; le compteur repart
+ * à 0 à chaque Mythique). Bannière : une vedette remplace le tirage d'une rareté avec la probabilité
+ * `featured.rate`, et la pitié vedette force une vedette sur l'avant-dernière carte si la pitié
+ * Mythique a déjà pris la dernière.
  */
 export function drawBoosters(
   rng: Rng,
-  input: { pool: CardPool; rules: DrawRules; state: DrawState; count: number; tables?: RarityTables },
-): { boosters: DrawnBooster[]; state: DrawState } {
+  input: {
+    pool: CardPool;
+    rules: DrawRules;
+    state: DrawState;
+    count: number;
+    tables?: RarityTables;
+    bonuses?: DrawBonuses;
+    featured?: FeaturedDraw;
+  },
+): { boosters: DrawnBooster[]; state: Required<DrawState> } {
   const { pool, rules, count } = input;
+  const bonuses = input.bonuses ?? ALL_BONUSES;
+  const featured = input.featured;
+  const featuredAll = featured ? allFeatured(featured) : [];
+  const featuredIds = new Set(featuredAll.map((f) => f.cardId));
   const tables = input.tables ?? buildRarityTables(rules.rates);
   let { pityCount, standardCount } = input.state;
+  let featuredCount = input.state.featuredCount ?? 0;
   const boosters: DrawnBooster[] = [];
 
+  const drawSlot = (floor: Rarity): DrawnCard => {
+    const rarity = rollRarity(rng, tables, floor);
+    const candidates = featured?.byRarity[rarity] ?? [];
+    if (candidates.length > 0 && rng(10_000) < featured!.rate) {
+      return { cardId: candidates[rng(candidates.length)], rarity, featured: true };
+    }
+    const card = pickCard(rng, pool, rarity);
+    return featuredIds.has(card.cardId) ? { ...card, featured: true } : card;
+  };
+
   for (let b = 0; b < count; b++) {
-    const divine = rules.divineOdds > 0 && rng(rules.divineOdds) === 0;
-    const golden = rules.goldenEvery > 0 && (standardCount + 1) % rules.goldenEvery === 0;
-    standardCount += 1;
+    const divine = bonuses.divine && rules.divineOdds > 0 && rng(rules.divineOdds) === 0;
+    const golden = bonuses.golden && rules.goldenEvery > 0 && (standardCount + 1) % rules.goldenEvery === 0;
+    if (bonuses.golden) standardCount += 1;
 
     const floors = floorsFor(rules.slotFloors, { golden, divine, goldenFloor: rules.goldenFloor });
-    const cards = floors.map((floor) => pickCard(rng, pool, rollRarity(rng, tables, floor)));
+    const cards = floors.map(drawSlot);
 
     const pity = pityCount + 1;
     let pityTriggered = false;
-    if (pity >= rules.pityThreshold && !cards.some((c) => c.rarity === "MYTHIC")) {
+    if (bonuses.pity && pity >= rules.pityThreshold && !cards.some((c) => c.rarity === "MYTHIC")) {
       cards[cards.length - 1] = pickCard(rng, pool, "MYTHIC");
       pityTriggered = true;
     }
-    pityCount = cards.some((c) => c.rarity === "MYTHIC") ? 0 : pity;
-    boosters.push({ cards, golden, divine, pityTriggered });
+
+    let featuredPityTriggered = false;
+    if (featured && featuredAll.length > 0) {
+      const sinceFeatured = featuredCount + 1;
+      if (featured.pityThreshold > 0 && sinceFeatured >= featured.pityThreshold && !cards.some((c) => c.featured)) {
+        const slot = pityTriggered ? Math.max(0, cards.length - 2) : cards.length - 1;
+        cards[slot] = { ...featuredAll[rng(featuredAll.length)], featured: true };
+        featuredPityTriggered = true;
+      }
+      featuredCount = cards.some((c) => c.featured) ? 0 : sinceFeatured;
+    }
+
+    if (bonuses.pity) pityCount = cards.some((c) => c.rarity === "MYTHIC") ? 0 : pity;
+    boosters.push({
+      cards,
+      golden,
+      divine,
+      pityTriggered,
+      featuredHit: cards.some((c) => c.featured === true),
+      featuredPityTriggered,
+    });
   }
 
-  return { boosters, state: { pityCount, standardCount } };
+  return { boosters, state: { pityCount, standardCount, featuredCount } };
 }
 
 /** Boosters restants avant le prochain doré (1 = le prochain), null si désactivé. */
@@ -133,4 +207,36 @@ export function boostersUntilGolden(standardCount: number, goldenEvery: number):
 /** Boosters restants avant la Mythique garantie (1 = le prochain est garanti). */
 export function boostersUntilPity(pityCount: number, pityThreshold: number): number {
   return Math.max(1, pityThreshold - pityCount);
+}
+
+/** Pool regroupé par rareté à partir de cartes { id, rarity }. */
+export function groupByRarity(cards: Iterable<{ id: string; rarity: Rarity }>): CardPool {
+  const pool = Object.fromEntries(RARITIES.map((r) => [r, [] as string[]])) as Record<Rarity, string[]>;
+  for (const c of cards) pool[c.rarity].push(c.id);
+  return pool;
+}
+
+/** Nombre de cartes par rareté d'un pool. */
+export function poolCounts(pool: CardPool): Record<Rarity, number> {
+  return Object.fromEntries(RARITIES.map((r) => [r, pool[r].length])) as Record<Rarity, number>;
+}
+
+export function poolSize(pool: CardPool): number {
+  return RARITIES.reduce((sum, r) => sum + pool[r].length, 0);
+}
+
+/** Vedettes d'une bannière, rangées par rareté d'après le pool (une vedette hors pool est ignorée). */
+export function featuredFromPool(
+  featuredIds: readonly string[],
+  pool: CardPool,
+  opts: { rate: number; pityThreshold: number },
+): FeaturedDraw | undefined {
+  if (featuredIds.length === 0) return undefined;
+  const wanted = new Set(featuredIds);
+  const byRarity = Object.fromEntries(RARITIES.map((r) => [r, pool[r].filter((id) => wanted.has(id))])) as Record<
+    Rarity,
+    string[]
+  >;
+  if (RARITIES.every((r) => byRarity[r].length === 0)) return undefined;
+  return { byRarity, rate: opts.rate, pityThreshold: opts.pityThreshold };
 }

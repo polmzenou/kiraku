@@ -5,6 +5,7 @@ import {
   boostersUntilPity,
   buildRarityTables,
   drawBoosters,
+  featuredFromPool,
   floorsFor,
   pickCard,
   rarityIndex,
@@ -155,6 +156,102 @@ describe("drawBoosters", () => {
       expect(b.cards.every((c) => rarityIndex(c.rarity) >= rarityIndex("EPIC"))).toBe(true);
       expect(b.cards.at(-1)!.rarity).toBe("MYTHIC");
     }
+  });
+});
+
+describe("bonus selon le type", () => {
+  const pool = fakePool();
+  const none = { golden: false, divine: false, pity: false };
+
+  it("booster de rareté : jamais doré ni divin, pitié et compteur doré inchangés", () => {
+    const rules = { ...DEFAULT_RULES, divineOdds: 1, slotFloors: ["RARE", "RARE", "RARE", "RARE"] as Rarity[] };
+    const { boosters, state } = drawBoosters(lowest, {
+      pool,
+      rules,
+      bonuses: none,
+      state: { pityCount: 249, standardCount: 9 },
+      count: 5,
+    });
+    for (const b of boosters) {
+      expect(b.golden).toBe(false);
+      expect(b.divine).toBe(false);
+      expect(b.pityTriggered).toBe(false);
+    }
+    expect(state).toMatchObject({ pityCount: 249, standardCount: 9 });
+  });
+
+  it("format : compte pour la pitié mais pas pour le doré", () => {
+    const { boosters, state } = drawBoosters(lowest, {
+      pool,
+      rules: { ...DEFAULT_RULES, slotFloors: ["COMMON", "UNCOMMON"] },
+      bonuses: { golden: false, divine: false, pity: true },
+      state: { pityCount: 249, standardCount: 9 },
+      count: 1,
+    });
+    expect(boosters[0].golden).toBe(false);
+    expect(boosters[0].pityTriggered).toBe(true);
+    expect(boosters[0].cards.at(-1)!.rarity).toBe("MYTHIC");
+    expect(state).toMatchObject({ pityCount: 0, standardCount: 9 });
+  });
+
+  it("un booster Mythique contient toujours une Mythique", () => {
+    const rules = { ...DEFAULT_RULES, slotFloors: ["EPIC", "EPIC", "EPIC", "MYTHIC"] as Rarity[] };
+    const { boosters } = drawBoosters(seededRng(3), { pool, rules, bonuses: none, state: { pityCount: 0, standardCount: 0 }, count: 200 });
+    for (const b of boosters) expect(b.cards.some((c) => c.rarity === "MYTHIC")).toBe(true);
+  });
+});
+
+describe("bannière vedette", () => {
+  const pool = fakePool();
+  const featured = featuredFromPool(["MYTHIC-0", "LEGENDARY-1"], pool, { rate: 10_000, pityThreshold: 100 })!;
+  const noBonus = { ...DEFAULT_RULES, goldenEvery: 0, divineOdds: 0 };
+
+  it("range les vedettes par rareté d'après le pool, ignore celles hors pool", () => {
+    expect(featured.byRarity.MYTHIC).toEqual(["MYTHIC-0"]);
+    expect(featured.byRarity.LEGENDARY).toEqual(["LEGENDARY-1"]);
+    expect(featuredFromPool(["inconnue"], pool, { rate: 5000, pityThreshold: 100 })).toBeUndefined();
+  });
+
+  it("taux 100 % : chaque Mythique tirée est la vedette", () => {
+    const highest: Rng = (max) => max - 1;
+    const { boosters } = drawBoosters(highest, { pool, rules: noBonus, featured, state: { pityCount: 0, standardCount: 0 }, count: 1 });
+    const mythics = boosters[0].cards.filter((c) => c.rarity === "MYTHIC");
+    expect(mythics.length).toBeGreaterThan(0);
+    for (const c of mythics) expect(c).toMatchObject({ cardId: "MYTHIC-0", featured: true });
+    expect(boosters[0].featuredHit).toBe(true);
+  });
+
+  it("pitié vedette : au 100e booster sans vedette, une vedette est forcée, jamais après", () => {
+    const { boosters, state } = drawBoosters(lowest, {
+      pool,
+      rules: noBonus,
+      featured,
+      state: { pityCount: 0, standardCount: 0, featuredCount: 97 },
+      count: 3,
+    });
+    expect(boosters.map((b) => b.featuredPityTriggered)).toEqual([false, false, true]);
+    expect(boosters[2].cards.at(-1)!.featured).toBe(true);
+    expect(state.featuredCount).toBe(0);
+  });
+
+  it("pitiés Mythique et vedette le même booster : la vedette prend l'avant-dernière carte", () => {
+    const { boosters } = drawBoosters(lowest, {
+      pool,
+      rules: noBonus,
+      featured: { ...featured, byRarity: { ...featured.byRarity, MYTHIC: [] } },
+      state: { pityCount: 249, standardCount: 0, featuredCount: 99 },
+      count: 1,
+    });
+    const b = boosters[0];
+    expect(b.pityTriggered).toBe(true);
+    expect(b.featuredPityTriggered).toBe(true);
+    expect(b.cards.at(-1)!.rarity).toBe("MYTHIC");
+    expect(b.cards.at(-2)!.featured).toBe(true);
+  });
+
+  it("sans bannière, aucune carte n'est marquée vedette", () => {
+    const { boosters } = drawBoosters(seededRng(9), { pool, rules: noBonus, state: { pityCount: 0, standardCount: 0 }, count: 50 });
+    expect(boosters.every((b) => !b.featuredHit && b.cards.every((c) => !c.featured))).toBe(true);
   });
 });
 
