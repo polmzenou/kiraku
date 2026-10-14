@@ -204,7 +204,37 @@
     "favoritesValue": "{count, number}",
     "power": "Power",
     "ki": "Ki",
-    "viewOnAnilist": "View on AniList"
+    "viewOnAnilist": "View on AniList",
+    "ownershipFilter": "Filter by ownership",
+    "ownership": {
+      "all": "All",
+      "owned": "Owned",
+      "missing": "Missing"
+    },
+    "copies": "{count, plural, one {# copy owned} other {# copies owned}}",
+    "missingCard": "Missing",
+    "emptyOwned": "No owned cards match these filters.",
+    "collectionLoading": "Loading your collection…",
+    "collectionUnavailable": "Your collection is temporarily unavailable. You can still browse the catalog without ownership indicators.",
+    "collectionUnavailableShort": "Collection unavailable",
+    "notObtained": "Not obtained",
+    "discoveredWithoutCopies": "Already discovered · No copies",
+    "discovered": "Discovered",
+    "toDiscover": "Undiscovered",
+    "breadcrumb": "Breadcrumb",
+    "cardSummary": "Card and character information",
+    "nativeName": "Japanese name",
+    "characterFile": "The character",
+    "biography": "Biography",
+    "biographyLoading": "Loading the biography…",
+    "biographyEmpty": "AniList has no biography for this character yet.",
+    "biographyUnavailable": "The biography is temporarily unavailable. Try again later or visit AniList.",
+    "biographySource": "Source: AniList · Text in its original language.",
+    "lockedTitle": "Locked profile",
+    "lockedDescription": "Obtain the {name} card in a pack or as a gift to discover their biography. The profile stays unlocked after your first discovery.",
+    "openBooster": "Open a pack",
+    "sameUniverse": "Same universe",
+    "relatedTitle": "Other characters from {series}"
   },
   "nav": {
     "label": "Main navigation",
@@ -868,7 +898,7 @@
       "completion": "Catalog"
     },
     "viewCollection": "View collection",
-    "privacy": "Privacy",
+    "accountSettings": "Account settings",
     "ownerNotice": {
       "FRIENDS": "Your profile is for your friends only.",
       "PRIVATE": "Your profile is private: nobody but you can see it."

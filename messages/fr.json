@@ -204,7 +204,37 @@
     "favoritesValue": "{count, number}",
     "power": "Puissance",
     "ki": "Ki",
-    "viewOnAnilist": "Voir sur AniList"
+    "viewOnAnilist": "Voir sur AniList",
+    "ownershipFilter": "Filtrer par possession",
+    "ownership": {
+      "all": "Toutes",
+      "owned": "Possédées",
+      "missing": "Manquantes"
+    },
+    "copies": "{count, plural, one {# exemplaire possédé} other {# exemplaires possédés}}",
+    "missingCard": "Manquante",
+    "emptyOwned": "Aucune carte possédée ne correspond à ces filtres.",
+    "collectionLoading": "Chargement de ta collection…",
+    "collectionUnavailable": "Ta collection est momentanément indisponible. Le catalogue reste accessible sans indication de possession.",
+    "collectionUnavailableShort": "Collection indisponible",
+    "notObtained": "Non obtenue",
+    "discoveredWithoutCopies": "Déjà découverte · Aucun exemplaire",
+    "discovered": "Découverte",
+    "toDiscover": "À découvrir",
+    "breadcrumb": "Fil d'Ariane",
+    "cardSummary": "Carte et informations du personnage",
+    "nativeName": "Nom japonais",
+    "characterFile": "Le personnage",
+    "biography": "Biographie",
+    "biographyLoading": "Chargement de la biographie…",
+    "biographyEmpty": "AniList ne propose pas encore de biographie pour ce personnage.",
+    "biographyUnavailable": "La biographie est momentanément indisponible. Réessaie plus tard ou consulte AniList.",
+    "biographySource": "Source : AniList · Texte dans sa langue d'origine.",
+    "lockedTitle": "Fiche verrouillée",
+    "lockedDescription": "Obtiens la carte {name} dans un booster ou en cadeau pour découvrir sa biographie. Sa fiche restera débloquée après la première obtention.",
+    "openBooster": "Ouvrir un booster",
+    "sameUniverse": "Même univers",
+    "relatedTitle": "Autres personnages de {series}"
   },
   "nav": {
     "label": "Navigation principale",
@@ -868,7 +898,7 @@
       "completion": "Catalogue"
     },
     "viewCollection": "Voir la collection",
-    "privacy": "Confidentialité",
+    "accountSettings": "Paramètres du compte",
     "ownerNotice": {
       "FRIENDS": "Ton profil est réservé à tes amis.",
       "PRIVATE": "Ton profil est privé : personne d'autre que toi ne le voit."

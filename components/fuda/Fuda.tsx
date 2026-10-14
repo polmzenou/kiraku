@@ -52,12 +52,14 @@ export function Fuda({
   series,
   size = "md",
   locked = false,
+  monochrome = false,
   preload = false,
 }: {
   card: FudaCard;
   series?: string;
   size?: FudaSize;
   locked?: boolean;
+  monochrome?: boolean;
   preload?: boolean;
 }) {
   const t = useTranslations("fuda");
@@ -81,7 +83,7 @@ export function Fuda({
               sizes={l.sizes}
               preload={preload}
               draggable={false}
-              className="object-cover object-top"
+              className={`object-cover object-top${monochrome ? " grayscale" : ""}`}
             />
           )}
 
@@ -129,7 +131,7 @@ export function Fuda({
         </div>
       </div>
       {/* Effet de matière (laque, or, nacre) au-dessus de la carte, à partir d'Épique */}
-      {!locked && RARITIES.indexOf(card.rarity) >= RARITIES.indexOf("EPIC") && (
+      {!locked && !monochrome && RARITIES.indexOf(card.rarity) >= RARITIES.indexOf("EPIC") && (
         <span aria-hidden="true" className="fuda-sheen" />
       )}
     </div>

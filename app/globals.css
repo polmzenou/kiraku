@@ -31,6 +31,11 @@
   --k-paper-shadow: #b8ab93;
 }
 
+/* Wiki labels must retain 4.5:1 contrast on Washi's surfaces and filter chips. */
+[data-theme="washi"] .wiki-content {
+  --k-text-muted: #625b52;
+}
+
 @theme inline {
   --color-bg: var(--k-bg);
   --color-surface: var(--k-surface);

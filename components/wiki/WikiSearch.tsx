@@ -5,7 +5,7 @@ import { useEffect, useRef, useTransition } from "react";
 import { buttonClasses } from "@/components/ui/Button";
 import { useRouter } from "@/i18n/navigation";
 import { SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
-import { wikiQuery } from "@/lib/catalog/wiki-params";
+import { wikiQuery, type WikiOwnership } from "@/lib/catalog/wiki-params";
 import type { Rarity } from "@/lib/catalog/rarity";
 
 const DEBOUNCE_MS = 300;
@@ -14,7 +14,7 @@ const DEBOUNCE_MS = 300;
  * Recherche du wiki : met l'URL à jour pendant la frappe (le serveur fait la recherche).
  * Sans JavaScript, le formulaire GET fonctionne tel quel.
  */
-export function WikiSearch({ initialQuery, rarity, action }: { initialQuery: string; rarity: Rarity | null; action: string }) {
+export function WikiSearch({ initialQuery, rarity, ownership, action }: { initialQuery: string; rarity: Rarity | null; ownership: WikiOwnership; action: string }) {
   const t = useTranslations("wiki");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -25,7 +25,7 @@ export function WikiSearch({ initialQuery, rarity, action }: { initialQuery: str
   function search(q: string) {
     clearTimeout(timer.current);
     startTransition(() => {
-      router.replace({ pathname: "/wiki", query: wikiQuery({ q: q.trim(), rarity }) }, { scroll: false });
+      router.replace({ pathname: "/wiki", query: wikiQuery({ q: q.trim(), rarity, ownership }) }, { scroll: false });
     });
   }
 
@@ -60,6 +60,7 @@ export function WikiSearch({ initialQuery, rarity, action }: { initialQuery: str
         className="min-h-11 min-w-0 flex-1 rounded-button border border-border bg-surface px-3 text-text placeholder:text-text-muted"
       />
       {rarity && <input type="hidden" name="rarity" value={rarity} />}
+      {ownership !== "all" && <input type="hidden" name="ownership" value={ownership} />}
       <button type="submit" aria-busy={pending} className={buttonClasses("neutral", "px-4")}>
         {t("searchSubmit")}
       </button>

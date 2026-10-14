@@ -20,6 +20,7 @@ import { ZeniCoin } from "./ZeniCoin";
  */
 export async function AppHeader({ theme }: { theme: Theme }) {
   const [t, user] = await Promise.all([getTranslations(), getCurrentUser()]);
+  const accountHref = user ? `/u/${user.username}` : "/connexion";
   const state = user ? boosterStateFrom(user, await getBoosterRules()) : null;
   const isAdmin = user?.role === "ADMIN";
   const [unread, pollSeconds] = user
@@ -70,7 +71,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
             </Link>
           )}
           <Link
-            href="/compte"
+            href={accountHref}
             aria-label={t("nav.account")}
             title={t("nav.account")}
             className="hidden size-11 items-center justify-center lg:inline-flex"
@@ -86,7 +87,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
               </span>
             )}
           </Link>
-          <MobileMenu theme={theme} isAdmin={isAdmin} />
+          <MobileMenu theme={theme} isAdmin={isAdmin} accountHref={accountHref} />
         </div>
       </div>
     </header>

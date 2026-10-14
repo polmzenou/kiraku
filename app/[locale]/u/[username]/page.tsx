@@ -80,7 +80,7 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
       <div className="flex flex-wrap gap-2">
         <ShareProfileButton username={owner.username} title={t("metaTitle", { name })} />
         {access.collection && <ButtonLink href={`/u/${owner.username}/collection`}>{t("viewCollection")}</ButtonLink>}
-        {access.isOwner && <ButtonLink href="/compte#confidentialite">{t("privacy")}</ButtonLink>}
+        {access.isOwner && <ButtonLink href="/compte">{t("accountSettings")}</ButtonLink>}
         {access.isOwner && <ButtonLink href="/amis">{t("friends")}</ButtonLink>}
       </div>
 
