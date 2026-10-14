@@ -14,10 +14,9 @@ import { Fuda } from "../fuda/Fuda";
 import { ZeniCoin } from "../layout/ZeniCoin";
 import { Button } from "../ui/Button";
 import { BoosterScene, type SceneHandle } from "./BoosterScene";
-import { CardDeck } from "./CardDeck";
+import { CardDeck, revealOrder } from "./CardDeck";
 import { CountPicker } from "./CountPicker";
 import { Recap } from "./Recap";
-import { RevealGrid } from "./RevealGrid";
 import { RitualBackdrop } from "./RitualBackdrop";
 import { SoundToggle } from "./SoundToggle";
 import { useRitualFx } from "./useRitualFx";
@@ -61,8 +60,8 @@ function maxOpenable(type: OpeningType, state: BoosterState): number {
 
 /**
  * L'ouverture, « le rituel » : la scène s'assombrit, le booster flotte et s'ouvre d'un geste, la
- * lumière qui s'échappe annonce la meilleure carte, les fuda se tirent de la pile une à une (ou se
- * retournent en vague), puis le récap se déroule. Le tirage est déjà enregistré par le serveur
+ * lumière qui s'échappe annonce la meilleure carte, toutes les fuda se tirent de la pile une à une,
+ * puis le récap se déroule. Le tirage est déjà enregistré par le serveur
  * quand l'animation commence : fermer l'onglet ne fait rien perdre.
  */
 export function OpeningStage({ type, initialState, gifts = 0 }: Props) {
@@ -164,7 +163,6 @@ export function OpeningStage({ type, initialState, gifts = 0 }: Props) {
 
   const first = boosters?.[0];
   const variant = first?.divine ? "divine" : first?.golden ? "golden" : undefined;
-  const single = boosters !== null && boosters.length === 1 && boosters[0].cards.length <= 6;
   const ritual = stage !== "recap";
 
   return (
@@ -278,11 +276,7 @@ export function OpeningStage({ type, initialState, gifts = 0 }: Props) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
             >
-              {single ? (
-                <CardDeck cards={boosters[0].cards} reduced={reduced} play={fx.play} onMythic={onMythic} onDone={toRecap} />
-              ) : (
-                <RevealGrid boosters={boosters} columns={4} reduced={reduced} play={fx.play} onMythic={onMythic} onDone={toRecap} />
-              )}
+              <CardDeck cards={boosters.flatMap((booster) => booster.cards)} reduced={reduced} play={fx.play} onMythic={onMythic} onDone={toRecap} />
             </m.div>
           )}
 
@@ -314,11 +308,11 @@ export function OpeningStage({ type, initialState, gifts = 0 }: Props) {
           )}
         </AnimatePresence>
 
-        {/* Dès la réponse du serveur, les illustrations se chargent pendant que la lumière s'échappe */}
-        {boosters && stage !== "recap" && (
+        {/* Charger les premières cartes en grand pendant l'ouverture, avant leur révélation. */}
+        {boosters && stage === "opening" && (
           <div aria-hidden="true" className="pointer-events-none invisible absolute top-0 left-0 w-40 overflow-hidden">
-            {boosters.flatMap((b) =>
-              b.cards.map((c) => <Fuda key={c.userCardId} card={c} size={single ? "lg" : "sm"} preload />),
+            {revealOrder(boosters.flatMap((booster) => booster.cards)).slice(0, 2).map((card) =>
+              <Fuda key={card.userCardId} card={card} size="lg" preload />,
             )}
           </div>
         )}

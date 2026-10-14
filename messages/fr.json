@@ -1,4 +1,9 @@
 {
+  "cardBack": {
+    "showBack": "Voir le dos",
+    "showFront": "Voir le recto",
+    "description": "Dos de carte Kiraku"
+  },
   "metadata": {
     "title": "Kiraku",
     "description": "Ouvre des sachets, collectionne des fuda de personnages d'anime et défie tes amis."
@@ -367,7 +372,10 @@
     "deckDone": "Toutes les cartes sont sorties",
     "deckHint": "Touche ou glisse la carte pour la retourner",
     "deckNextHint": "Touche ou glisse pour la suivante",
+    "deckLastHint": "Touche ou glisse pour voir le récap",
     "revealed": "Cartes révélées",
+    "revealSlots": "Emplacements du tirage",
+    "unrevealedSlot": "Carte {position} sur {total} à découvrir",
     "revealAll": "Tout révéler",
     "toRecap": "Voir le récap",
     "gridHint": "{count} cartes : touche-les une à une, ou révèle tout",

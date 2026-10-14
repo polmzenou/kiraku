@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { Fuda } from "@/components/fuda/Fuda";
+import { FudaTurnover } from "@/components/fuda/FudaTurnover";
 import { PageShell } from "@/components/PageShell";
 import { getPathname, Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
@@ -67,9 +68,9 @@ export default async function WikiCardPage({ params }: PageProps<"/[locale]/wiki
       </Link>
 
       <article className="flex flex-col gap-6 md:flex-row md:items-start md:gap-10">
-        <div className="mx-auto w-full max-w-[280px] md:mx-0 md:w-[320px] md:max-w-none md:shrink-0">
+        <FudaTurnover className="mx-auto w-full max-w-[280px] md:mx-0 md:w-[320px] md:max-w-none md:shrink-0">
           <Fuda card={card} series={series} size="lg" preload />
-        </div>
+        </FudaTurnover>
 
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <header className="flex flex-col gap-1">

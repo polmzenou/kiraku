@@ -80,6 +80,7 @@ export function Fuda({
               fill
               sizes={l.sizes}
               preload={preload}
+              draggable={false}
               className="object-cover object-top"
             />
           )}

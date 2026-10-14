@@ -1,4 +1,9 @@
 {
+  "cardBack": {
+    "showBack": "Show card back",
+    "showFront": "Show card front",
+    "description": "Kiraku card back"
+  },
   "metadata": {
     "title": "Kiraku",
     "description": "Open packs, collect anime character fuda and challenge your friends."
@@ -367,7 +372,10 @@
     "deckDone": "Every card is out",
     "deckHint": "Tap or swipe the card to flip it",
     "deckNextHint": "Tap or swipe for the next one",
+    "deckLastHint": "Tap or swipe to see the recap",
     "revealed": "Revealed cards",
+    "revealSlots": "Card slots",
+    "unrevealedSlot": "Card {position} of {total} to discover",
     "revealAll": "Reveal all",
     "toRecap": "See the recap",
     "gridHint": "{count} cards: tap them one by one, or reveal them all",

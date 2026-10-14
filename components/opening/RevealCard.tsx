@@ -5,7 +5,9 @@ import { useTranslations } from "next-intl";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { Fuda } from "../fuda/Fuda";
 import { FudaTilt } from "../fuda/FudaTilt";
+import { CardBack as FudaBack } from "../fuda/CardBack";
 import { RarityFx } from "./RarityFx";
+import { CardAura } from "./CardAura";
 
 /** Sceau vermillon 新 tamponné, légèrement penché, sur une carte jamais obtenue. */
 export function NewStamp({ delay = 0, animated = true }: { delay?: number; animated?: boolean }) {
@@ -43,20 +45,11 @@ export function FeaturedSeal({ delay = 0, animated = true }: { delay?: number; a
   );
 }
 
-/** Dos de fuda : papier washi, liseré vermillon et sceau 気楽. `glow` : lueur dorée d'anticipation. */
-export function CardBack({ glow = false }: { glow?: boolean }) {
+/** Face arrière du retournement, partagée avec les fiches collection et wiki. */
+export function CardBack({ glow = false, static: still = false }: { glow?: boolean; static?: boolean }) {
   return (
-    <div className="tanzaku absolute inset-0 flex items-center justify-center overflow-hidden rounded-[6px] border-4 border-shu-btn shadow-paper [backface-visibility:hidden] [transform:rotateY(180deg)]">
-      <span className="absolute inset-[6%] rounded-[3px] border border-shu-btn/40" aria-hidden="true" />
-      <span aria-hidden="true" lang="ja" className="font-seal text-[2.2em] leading-none text-shu-btn [writing-mode:vertical-rl]">
-        気楽
-      </span>
-      <span
-        aria-hidden="true"
-        className={`absolute inset-0 bg-[radial-gradient(circle,rgb(242_216_138/0.9),rgb(217_181_86/0.4)_50%,transparent_75%)] transition-opacity duration-500 ${
-          glow ? "opacity-100" : "opacity-0"
-        }`}
-      />
+    <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+      <FudaBack glow={glow} static={still} />
     </div>
   );
 }
@@ -83,14 +76,15 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
 
   if (reduced) {
     return (
-      <div className="relative">
+      <div className="relative isolate">
+        <CardAura rarity={front ? card.rarity : undefined} reduced compact={compactFx} />
         {front ? (
-          <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
+          <m.div className="relative z-10" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
             <Fuda card={card} series={card.series} size={size} />
           </m.div>
         ) : (
-          <div className="relative aspect-[5/7] w-full [transform-style:preserve-3d] [transform:rotateY(180deg)]">
-            <CardBack />
+          <div className="relative z-10 aspect-[5/7] w-full [transform-style:preserve-3d] [transform:rotateY(180deg)]">
+            <CardBack static />
           </div>
         )}
         {front && card.isNew && <NewStamp animated={false} />}
@@ -100,7 +94,8 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
   }
 
   return (
-    <div className="relative [perspective:1100px]">
+    <div className="relative isolate [perspective:1100px]">
+      <CardAura rarity={front ? card.rarity : undefined} compact={compactFx} />
       {front && <RarityFx rarity={card.rarity} compact={compactFx} />}
       <div className={charging && rank >= 3 ? "fx-tremble" : ""}>
         <m.div
@@ -109,10 +104,12 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
           animate={front ? { rotateY: 0, scale: [1.08, 1] } : { rotateY: 180, scale: charging ? 1.04 : 1 }}
           transition={front ? { rotateY: { duration: 0.5, ease: [0.2, 0.8, 0.2, 1] }, scale: { duration: 0.6 } } : { duration: 0.3 }}
         >
-          <FudaTilt className="[backface-visibility:hidden]">
-            <Fuda card={card} series={card.series} size={size} />
-          </FudaTilt>
-          <CardBack glow={charging && rank >= 4} />
+          <div aria-hidden={!front} inert={!front} className="[backface-visibility:hidden]">
+            <FudaTilt>
+              <Fuda card={card} series={card.series} size={size} />
+            </FudaTilt>
+          </div>
+          <CardBack glow={charging && rank >= 4} static={front} />
         </m.div>
       </div>
       {front && card.isNew && <NewStamp delay={rank >= 3 ? 0.55 : 0.3} />}
