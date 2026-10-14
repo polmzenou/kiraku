@@ -34,6 +34,13 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "cdn.discordapp.com" },
     ],
   },
+  async redirects() {
+    // L’accueil est la vue Boosters : l’ancienne adresse y renvoie
+    return [
+      { source: "/boosters", destination: "/", permanent: true },
+      { source: "/en/boosters", destination: "/en", permanent: true },
+    ];
+  },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

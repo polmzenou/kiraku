@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { cardNumber } from "@/lib/catalog/display";
-import { RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
 
 export type FudaCard = {
   name: string;
@@ -65,7 +65,7 @@ export function Fuda({
   const showNative = size !== "sm" && !locked && card.nameNative;
 
   return (
-    <div className={`fuda aspect-[5/7] w-full shadow-paper ${l.frame}`} data-rarity={card.rarity}>
+    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden shadow-paper ${l.frame}`} data-rarity={card.rarity}>
       <div className="flex h-full flex-col overflow-hidden rounded-[3px] bg-washi-paper text-sumi">
         <div className="relative flex-1 overflow-hidden bg-[#e4d9c4]">
           {locked ? (
@@ -127,6 +127,10 @@ export function Fuda({
           </div>
         </div>
       </div>
+      {/* Effet de matière (laque, or, nacre) au-dessus de la carte, à partir d'Épique */}
+      {!locked && RARITIES.indexOf(card.rarity) >= RARITIES.indexOf("EPIC") && (
+        <span aria-hidden="true" className="fuda-sheen" />
+      )}
     </div>
   );
 }

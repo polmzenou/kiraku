@@ -46,7 +46,7 @@ Thème sombre **Yoru** par défaut, thème clair **Washi** en option. Tokens (à
 
 Polices : Shippori Mincho B1 (titres), Zen Kaku Gothic New (texte, chiffres tabulaires), Yuji Syuku (kanji des sceaux, en sous-ensemble). Pas de police monospace.
 
-Raretés = matières : Commune 並 washi · Peu commune 良 bambou · Rare 稀 indigo · Épique 秀 laque · Légendaire 金 feuille d'or · Mythique 神 nacre. Booster = sachet métallisé classique serti en dents de scie, couleur et motif wagara de sa famille, étiquette tanzaku en washi avec le kanji ; formats spéciaux pochibukuro (enveloppe) et jūbako (boîte laquée). Carte = fuda en papier. Ne jamais reprendre le visuel de Kyara (voir la liste dans le plan).
+Raretés = matières : Commune 並 washi · Peu commune 良 bambou · Rare 稀 indigo · Épique 秀 laque · Légendaire 金 feuille d'or · Mythique 神 nacre. Booster = sachet métallisé classique serti en dents de scie, couleur et motif wagara propres à chaque booster (thème de `BoosterType`, réglable dans l'admin), étiquette tanzaku en washi avec le kanji ; formats spéciaux pochibukuro (enveloppe) et jūbako (boîte laquée). Carte = fuda en papier. Ne jamais reprendre le visuel de Kyara (voir la liste dans le plan).
 
 ## Façon de travailler
 

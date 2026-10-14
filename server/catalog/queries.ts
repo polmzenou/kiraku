@@ -13,7 +13,7 @@ export const CATALOG_TAG = "catalog";
 const cacheOptions = { tags: [CATALOG_TAG], revalidate: 3600 };
 
 /** Version du catalogue : une requête indexée par rendu, partagée par toute la page. */
-const getCatalogVersion = cache(async (): Promise<number> => {
+export const getCatalogVersion = cache(async (): Promise<number> => {
   const last = await prisma.catalogImport.findFirst({
     where: { status: "FINALIZED" },
     orderBy: { finishedAt: "desc" },
