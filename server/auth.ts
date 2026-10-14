@@ -5,6 +5,8 @@ import { GUEST_PREFIX } from "@/lib/username";
 import { safeRedirect } from "@/lib/safe-redirect";
 import { kirakuAdapter } from "./auth-adapter";
 import { prisma } from "./db";
+import { credit } from "./economy/ledger";
+import { attachFromCookie } from "./economy/referral";
 import { discordEnabled, env } from "./env";
 import { availableUsername, publishProfileOnSignup } from "./players";
 import { SESSION_COOKIE, SESSION_MAX_AGE } from "./session";
@@ -67,10 +69,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // Bonus de première liaison : une seule fois par compte, même après déliaison
         const first = await tx.user.updateMany({
           where: { id: userId, discordLinkedAt: null },
-          data: { discordLinkedAt: new Date(), coins: { increment: bonus } },
+          data: { discordLinkedAt: new Date() },
         });
         if (first.count === 1 && bonus > 0) {
-          await tx.coinTransaction.create({ data: { userId, amount: bonus, reason: "DISCORD_LINK" } });
+          await credit(tx, { userId, amount: bonus, reason: "DISCORD_LINK" });
         }
 
         // Premier administrateur : désigné par son id Discord dans l'environnement
@@ -90,6 +92,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
         }
       });
+
+      // Lien d'invitation suivi avant l'inscription : rattaché après la liaison, sans la bloquer
+      await attachFromCookie(userId);
     },
   },
 });

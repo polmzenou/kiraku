@@ -17,6 +17,7 @@ import { hashToken } from "@/lib/auth/tokens";
 import { sendPasswordResetEmail, sendVerificationEmail } from "../auth-emails";
 import { prisma } from "../db";
 import { mailEnabled } from "../env";
+import { attachFromCookie } from "../economy/referral";
 import { createPlayer, publishProfileOnSignup, startingValues } from "../players";
 import { clientIp, rateLimit } from "../ratelimit";
 import { destroyCurrentSession, startSession } from "../session";
@@ -86,6 +87,8 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
 
   const locale = await getLocale();
   await startSession(userId);
+  // Lien d'invitation suivi avant l'inscription : rattaché maintenant, sans jamais bloquer
+  await attachFromCookie(userId);
   await sendVerificationEmail(userId, email, locale);
   redirect({ href: "/", locale });
   return {};

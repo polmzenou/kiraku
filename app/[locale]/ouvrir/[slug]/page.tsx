@@ -8,9 +8,9 @@ import { contentsLabel } from "@/lib/boosters/catalog";
 import { effectiveSlotFloors, localize, SLUG_PATTERN } from "@/lib/boosters/types";
 import { readBannerPity } from "@/server/boosters/open-core";
 import { getBoosterOffers } from "@/server/boosters/pools";
-import { GIFT_BOOSTER_SLUG } from "@/server/boosters/open";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { boosterStateFrom } from "@/server/boosters/state";
+import { getBoosterCredits } from "@/server/economy/queries";
 import { getCurrentUser } from "@/server/user";
 
 // La scène d'ouverture (Motion complet, gestes, sons) n'est chargée que sur cette page
@@ -18,14 +18,13 @@ const OpeningStage = dynamic(() => import("@/components/opening/OpeningStage").t
 
 async function loadOffer(slug: string) {
   if (!SLUG_PATTERN.test(slug)) return null;
-  const offer = (await getBoosterOffers()).find((o) => o.type.slug === slug);
-  return offer && offer.availability !== "hidden" ? offer : null;
+  return (await getBoosterOffers()).find((o) => o.type.slug === slug) ?? null;
 }
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/ouvrir/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const offer = await loadOffer(slug);
-  if (!offer) return {};
+  if (!offer || offer.availability === "hidden") return {};
   const [t, locale] = await Promise.all([getTranslations("opening"), getLocale()]);
   return { title: t("title", { name: localize(offer.type.name, locale) }), robots: { index: false } };
 }
@@ -33,7 +32,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/ouvrir/[
 export default async function OpenBoosterPage({ params, searchParams }: PageProps<"/[locale]/ouvrir/[slug]">) {
   const [{ slug }, sp] = await Promise.all([params, searchParams]);
   const offer = await loadOffer(slug);
-  if (!offer) notFound();
+  if (!offer || offer.type.filter === null) notFound();
 
   const [t, user, rules, locale] = await Promise.all([
     getTranslations("opening"),
@@ -51,6 +50,11 @@ export default async function OpenBoosterPage({ params, searchParams }: PageProp
   }
 
   const { type } = offer;
+  // Boosters crédités (cadeau, boutique, récompense), ouverts depuis le lien de l'accueil (?credit=1,
+  // ou ?offert=1 des anciennes notifications) : ouvrables même après la fin d'un événement
+  const wantsCredit = sp.credit === "1" || sp.offert === "1";
+  const credits = wantsCredit ? ((await getBoosterCredits(user.id)).get(type.id) ?? 0) : 0;
+  if (offer.availability === "hidden" && credits === 0) notFound();
   const name = localize(type.name, locale);
   const cards = effectiveSlotFloors(type.slotFloors, rules.draw.slotFloors).length;
   const bannerPity = readBannerPity(user.bannerPity);
@@ -79,8 +83,7 @@ export default async function OpenBoosterPage({ params, searchParams }: PageProp
               : null,
         }}
         initialState={boosterStateFrom(user, rules)}
-        // Boosters offerts par des amis, ouverts depuis le lien de l'accueil (?offert=1)
-        gifts={slug === GIFT_BOOSTER_SLUG && sp.offert === "1" ? user.giftBoosters : 0}
+        credits={credits}
       />
     </PageShell>
   );

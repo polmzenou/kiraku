@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Fuda } from "@/components/fuda/Fuda";
+import { Suspense } from "react";
 import { PageShell } from "@/components/PageShell";
-import { ButtonLink } from "@/components/ui/ButtonLink";
 import { WikiSearch } from "@/components/wiki/WikiSearch";
+import { WikiGrid, WikiGridSkeleton } from "@/components/wiki/WikiGrid";
+import { WikiResults } from "@/components/wiki/WikiResults";
 import { getPathname, Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
-import { seriesTitle } from "@/lib/catalog/display";
 import { RARITIES, RARITY_SEAL } from "@/lib/catalog/rarity";
-import { parseWikiParams, wikiQuery } from "@/lib/catalog/wiki-params";
-import { getCatalogStats, searchCatalog } from "@/server/catalog/queries";
+import { parseWikiParams, wikiQuery, WIKI_OWNERSHIPS } from "@/lib/catalog/wiki-params";
+import { emptyWikiCollection, selectWikiPage } from "@/lib/catalog/wiki-state";
+import { getCatalogStats, getCatalogSearchIndex, getCatalogSummaries } from "@/server/catalog/queries";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/wiki">): Promise<Metadata> {
   const { locale: raw } = await params;
@@ -28,13 +29,15 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/wiki">):
 
 export default async function WikiPage({ searchParams }: PageProps<"/[locale]/wiki">) {
   const params = parseWikiParams(await searchParams);
-  const [t, tRarity, locale, stats, { cards, nextAfter }] = await Promise.all([
+  const [t, tRarity, locale, stats, index] = await Promise.all([
     getTranslations("wiki"),
     getTranslations("rarity"),
     getLocale(),
     getCatalogStats(),
-    searchCatalog(params),
+    getCatalogSearchIndex(params),
   ]);
+  const publicPage = selectWikiPage(index, { after: params.after, ownership: "all" }, emptyWikiCollection());
+  const publicCards = params.ownership === "all" ? await getCatalogSummaries(publicPage.ids) : [];
 
   const chip = (active: boolean) =>
     `inline-flex min-h-11 items-center gap-1.5 rounded-button border px-3 text-sm ${
@@ -43,85 +46,74 @@ export default async function WikiPage({ searchParams }: PageProps<"/[locale]/wi
 
   return (
     <PageShell>
-      <header className="flex flex-col gap-1">
-        <h1 className="text-3xl font-extrabold">{t("title")}</h1>
-        <p className="text-sm text-text-muted">{t("count", { count: stats.total })}</p>
-      </header>
+      <div className="wiki-content flex min-w-0 flex-col gap-6">
+        <header className="flex flex-col gap-1">
+          <h1 className="text-3xl font-extrabold">{t("title")}</h1>
+          <p className="text-sm text-text-muted">{t("count", { count: stats.total })}</p>
+        </header>
 
-      <WikiSearch
-        key={params.rarity ?? "all"}
-        initialQuery={params.q}
-        rarity={params.rarity}
-        action={getPathname({ href: "/wiki", locale })}
-      />
+        <WikiSearch
+          key={`${params.q}:${params.rarity}:${params.ownership}`}
+          initialQuery={params.q}
+          rarity={params.rarity}
+          ownership={params.ownership}
+          action={getPathname({ href: "/wiki", locale })}
+        />
 
-      <nav aria-label={t("rarityFilter")} className="flex flex-wrap gap-2">
-        <Link
-          href={{ pathname: "/wiki", query: wikiQuery({ q: params.q }) }}
-          className={chip(params.rarity === null)}
-          aria-current={params.rarity === null ? "page" : undefined}
-        >
-          {t("allRarities")}
-        </Link>
-        {[...RARITIES].reverse().map((r) => (
+        <nav aria-label={t("rarityFilter")} className="flex flex-wrap gap-2">
           <Link
-            key={r}
-            href={{ pathname: "/wiki", query: wikiQuery({ q: params.q, rarity: r }) }}
-            className={chip(params.rarity === r)}
-            aria-current={params.rarity === r ? "page" : undefined}
+            href={{ pathname: "/wiki", query: wikiQuery({ q: params.q, ownership: params.ownership }) }}
+            className={chip(params.rarity === null)}
+            aria-current={params.rarity === null ? "page" : undefined}
           >
-            <span aria-hidden="true" className="font-seal text-base">
-              {RARITY_SEAL[r]}
-            </span>
-            {tRarity(r)}
-            <span className="tabular-nums text-text-muted">{stats.byRarity[r]}</span>
+            {t("allRarities")}
           </Link>
-        ))}
-      </nav>
-
-      {cards.length === 0 ? (
-        <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">
-          {stats.total === 0 ? t("emptyCatalog") : t("empty")}
-        </p>
-      ) : (
-        <ul className="grid grid-cols-3 gap-2 md:grid-cols-4 md:gap-3 lg:grid-cols-6 xl:grid-cols-8">
-          {cards.map((card, i) => (
-            <li key={card.anilistId}>
-              <Link
-                href={`/wiki/${card.anilistId}`}
-                className="block rounded-[5px] transition-transform active:scale-[0.97]"
-              >
-                <Fuda card={card} series={seriesTitle(card.series, locale)} size="sm" preload={i < 3 && !params.after} />
-              </Link>
-            </li>
+          {[...RARITIES].reverse().map((r) => (
+            <Link
+              key={r}
+              href={{ pathname: "/wiki", query: wikiQuery({ q: params.q, rarity: r, ownership: params.ownership }) }}
+              className={chip(params.rarity === r)}
+              aria-current={params.rarity === r ? "page" : undefined}
+            >
+              <span aria-hidden="true" className="font-seal text-base">
+                {RARITY_SEAL[r]}
+              </span>
+              {tRarity(r)}
+              <span className="tabular-nums text-text-muted">{stats.byRarity[r]}</span>
+            </Link>
           ))}
-        </ul>
-      )}
-
-      {(nextAfter || params.after) && (
-        <nav aria-label={t("pagination")} className="flex flex-wrap justify-center gap-3">
-          {params.after && (
-            <ButtonLink href={{ pathname: "/wiki", query: wikiQuery({ q: params.q, rarity: params.rarity }) }}>
-              {t("first")}
-            </ButtonLink>
-          )}
-          {nextAfter && (
-            <ButtonLink href={{ pathname: "/wiki", query: wikiQuery({ q: params.q, rarity: params.rarity, after: nextAfter }) }}>
-              {t("next")}
-            </ButtonLink>
-          )}
         </nav>
-      )}
 
-      <p className="text-xs text-text-muted">
-        {t.rich("attribution", {
-          anilist: (chunks) => (
-            <a href="https://anilist.co" rel="noopener noreferrer" target="_blank" className="text-ai underline">
-              {chunks}
-            </a>
-          ),
-        })}
-      </p>
+        <nav aria-label={t("ownershipFilter")} className="flex flex-wrap gap-2">
+          {WIKI_OWNERSHIPS.map((ownership) => (
+            <Link
+              key={ownership}
+              href={{ pathname: "/wiki", query: wikiQuery({ q: params.q, rarity: params.rarity, ownership }) }}
+              className={chip(params.ownership === ownership)}
+              aria-current={params.ownership === ownership ? "page" : undefined}
+            >
+              {t(`ownership.${ownership}`)}
+            </Link>
+          ))}
+        </nav>
+
+        <Suspense key={JSON.stringify(params)} fallback={params.ownership === "all"
+          ? <WikiGrid cards={publicCards} nextAfter={publicPage.nextAfter} params={params} locale={locale} collection={null} emptyCatalog={stats.total === 0} />
+          : <WikiGridSkeleton />}
+        >
+          <WikiResults index={index} params={params} locale={locale} emptyCatalog={stats.total === 0} />
+        </Suspense>
+
+        <p className="text-xs text-text-muted">
+          {t.rich("attribution", {
+            anilist: (chunks) => (
+              <a href="https://anilist.co" rel="noopener noreferrer" target="_blank" className="text-ai underline">
+                {chunks}
+              </a>
+            ),
+          })}
+        </p>
+      </div>
     </PageShell>
   );
 }

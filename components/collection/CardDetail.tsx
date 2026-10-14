@@ -1,6 +1,6 @@
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { Fuda } from "@/components/fuda/Fuda";
-import { FudaTilt } from "@/components/fuda/FudaTilt";
+import { FudaTurnover } from "@/components/fuda/FudaTurnover";
 import { Link } from "@/i18n/navigation";
 import { cardNumber, seriesTitle } from "@/lib/catalog/display";
 import { RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
@@ -43,9 +43,9 @@ export async function CardDetail({
 
   return (
     <article className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
-      <FudaTilt className="mx-auto w-full max-w-[260px] md:mx-0 md:w-[300px] md:max-w-none md:shrink-0">
+      <FudaTurnover className="mx-auto w-full max-w-[260px] md:mx-0 md:w-[300px] md:max-w-none md:shrink-0">
         <Fuda card={card} series={series} size="lg" preload />
-      </FudaTilt>
+      </FudaTurnover>
 
       <div className="flex min-w-0 flex-1 flex-col gap-5">
         <header className="flex flex-col gap-1">

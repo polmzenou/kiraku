@@ -8,6 +8,7 @@ describe("paramètres du wiki", () => {
       terms: ["satoru", "gojou"],
       rarity: "MYTHIC",
       after: 48,
+      ownership: "all",
     });
   });
 
@@ -17,6 +18,7 @@ describe("paramètres du wiki", () => {
       terms: ["drop"],
       rarity: null,
       after: null,
+      ownership: "all",
     });
     expect(parseWikiParams({ q: "x".repeat(500), after: "1.5" })).toMatchObject({ q: "", after: null });
   });
@@ -29,5 +31,13 @@ describe("paramètres du wiki", () => {
   it("construit des liens sans valeurs vides", () => {
     expect(wikiQuery({ q: "", rarity: "EPIC", after: null })).toEqual({ rarity: "EPIC" });
     expect(wikiQuery({ q: "levi", after: 96 })).toEqual({ q: "levi", after: "96" });
+    expect(wikiQuery({ q: "levi", rarity: "MYTHIC", ownership: "owned", after: 96 })).toEqual({ q: "levi", rarity: "MYTHIC", ownership: "owned", after: "96" });
+    expect(wikiQuery({ ownership: "all" })).toEqual({});
+  });
+
+  it("valide le filtre de possession et les paramètres répétés", () => {
+    expect(parseWikiParams({ ownership: "owned" }).ownership).toBe("owned");
+    expect(parseWikiParams({ ownership: ["missing", "owned"] }).ownership).toBe("missing");
+    expect(parseWikiParams({ ownership: "other" }).ownership).toBe("all");
   });
 });

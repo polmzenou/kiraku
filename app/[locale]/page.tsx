@@ -21,9 +21,10 @@ import { BOOSTER_FAMILIES, FAMILY_KANJI, localize, type BoosterFamily } from "@/
 import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
 import { readBannerPity } from "@/server/boosters/open-core";
 import { cardViews } from "@/server/boosters/display";
-import { getBoosterOffers, getBoosterPool, getBoosterTypeEntry, getFilterContext } from "@/server/boosters/pools";
+import { getBoosterOffers, getBoosterPool, getBoosterTypeEntry, getBoosterTypes, getFilterContext } from "@/server/boosters/pools";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { boosterStateFrom } from "@/server/boosters/state";
+import { getBoosterCredits } from "@/server/economy/queries";
 import { getCurrentUser } from "@/server/user";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]">): Promise<Metadata> {
@@ -77,6 +78,12 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
   const askedFamily = first(query.f);
   const activeFamily: BoosterFamily | undefined =
     families.find((f) => f === askedFamily) ?? selected?.type.family ?? families[0];
+
+  // Boosters crédités (cadeaux d'amis, boutique, récompenses), par type, à ouvrir en premier
+  const [credits, allTypes] = await Promise.all([getBoosterCredits(user.id), getBoosterTypes()]);
+  const credited = allTypes
+    .filter((e) => (credits.get(e.type.id) ?? 0) > 0 && e.type.filter !== null)
+    .map((e) => ({ slug: e.type.slug, name: localize(e.type.name, locale), count: credits.get(e.type.id)! }));
 
   const bannerPity = readBannerPity(user.bannerPity);
   const userCounters = { stock: state.stock, pityCount: user.pityCount, standardCount: user.standardCount };
@@ -134,18 +141,25 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
             })}
           />
 
-          {user.giftBoosters > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-kin bg-surface p-4">
-              <p className="flex items-center gap-2 font-bold">
-                <span aria-hidden="true" lang="ja" className="font-seal text-xl text-kin">
-                  贈
-                </span>
-                {t("giftBoosters", { count: user.giftBoosters })}
-              </p>
-              <ButtonLink href="/ouvrir/standard?offert=1" variant="shu">
-                {t("openGift")}
-              </ButtonLink>
-            </div>
+          {credited.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {credited.map((c) => (
+                <li
+                  key={c.slug}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-kin bg-surface p-4"
+                >
+                  <p className="flex items-center gap-2 font-bold">
+                    <span aria-hidden="true" lang="ja" className="font-seal text-xl text-kin">
+                      贈
+                    </span>
+                    {t("creditBoosters", { count: c.count, name: c.name })}
+                  </p>
+                  <ButtonLink href={`/ouvrir/${c.slug}?credit=1`} variant="shu">
+                    {t("openCredit")}
+                  </ButtonLink>
+                </li>
+              ))}
+            </ul>
           )}
 
           <BannerHero slides={slides} />

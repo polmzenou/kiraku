@@ -1,6 +1,6 @@
 // Notifications : types connus et pastille de la cloche.
 
-export const NOTIFICATION_TYPES = ["FRIEND_REQUEST", "FRIEND_ACCEPTED", "GIFT_RECEIVED"] as const;
+export const NOTIFICATION_TYPES = ["FRIEND_REQUEST", "FRIEND_ACCEPTED", "GIFT_RECEIVED", "REFERRAL_QUALIFIED"] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 /** Texte de la pastille : rien à 0, « 9+ » au-delà de 9. */

@@ -7,7 +7,8 @@ import type { NotificationView } from "@/server/social/queries";
 
 /** Kanji du sceau de chaque type de notification. */
 export function notificationSeal(type: NotificationType): string {
-  return type === "GIFT_RECEIVED" ? "贈" : "友";
+  if (type === "GIFT_RECEIVED") return "贈";
+  return type === "REFERRAL_QUALIFIED" ? "招" : "友";
 }
 
 /**

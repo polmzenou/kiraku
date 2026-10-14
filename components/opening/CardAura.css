@@ -1,0 +1,69 @@
+@property --card-aura-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #d9b556;
+}
+
+.card-aura-fx {
+  --card-aura-color: #d9b556;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: --card-aura-color .45s ease;
+}
+.card-aura-fx[data-rarity="COMMON"] { --card-aura-color: var(--color-rarity-common); }
+.card-aura-fx[data-rarity="UNCOMMON"] { --card-aura-color: var(--color-rarity-uncommon); }
+.card-aura-fx[data-rarity="RARE"] { --card-aura-color: var(--color-rarity-rare); }
+.card-aura-fx[data-rarity="EPIC"] { --card-aura-color: var(--color-rarity-epic); }
+.card-aura-fx[data-rarity="LEGENDARY"] { --card-aura-color: var(--color-rarity-legendary); }
+.card-aura-fx[data-rarity="MYTHIC"] { --card-aura-color: var(--color-rarity-mythic); }
+
+.card-aura-glow {
+  position: absolute;
+  inset: -35% -50%;
+  z-index: 0;
+  /* Chaque dégradé devient transparent avant son bord. Aucune découpe arrondie du halo. */
+  background:
+    radial-gradient(ellipse closest-side at 46% 43%,
+      color-mix(in srgb, var(--card-aura-color) 38%, transparent) 0%,
+      color-mix(in srgb, var(--card-aura-color) 22%, transparent) 28%,
+      color-mix(in srgb, var(--card-aura-color) 9%, transparent) 50%,
+      color-mix(in srgb, var(--card-aura-color) 2%, transparent) 70%,
+      transparent 90%),
+    radial-gradient(ellipse closest-side at 55% 59%,
+      color-mix(in srgb, var(--card-aura-color) 18%, transparent) 0%,
+      color-mix(in srgb, var(--card-aura-color) 5%, transparent) 48%,
+      transparent 85%);
+  filter: blur(12px);
+}
+.card-aura-mote {
+  position: absolute;
+  z-index: 20;
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--card-aura-color) 60%, #fff6e2);
+  box-shadow: 0 0 6px 1px color-mix(in srgb, var(--card-aura-color) 50%, transparent);
+  opacity: .7;
+}
+.card-aura-fx[data-compact] .card-aura-glow { opacity: .65; filter: blur(8px); }
+.card-aura-fx[data-static] { transition: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .card-aura-fx:not([data-static]) .card-aura-glow { animation: card-aura-breathe 4.8s ease-in-out infinite; }
+  .card-aura-fx:not([data-static]) .card-aura-mote { animation: card-aura-float var(--t) ease-in-out var(--d) infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-aura-fx { transition: none; }
+  .card-aura-mote { display: none; }
+}
+@keyframes card-aura-breathe {
+  0%, 100% { opacity: .7; transform: scale(.97); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+@keyframes card-aura-float {
+  0%, 100% { opacity: .15; transform: translate(0, 5px) scale(.65); }
+  40% { opacity: .9; }
+  75% { opacity: .55; transform: translate(var(--dx), var(--dy)) scale(1); }
+}

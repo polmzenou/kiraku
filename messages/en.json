@@ -1,4 +1,9 @@
 {
+  "cardBack": {
+    "showBack": "Show card back",
+    "showFront": "Show card front",
+    "description": "Kiraku card back"
+  },
   "metadata": {
     "title": "Kiraku",
     "description": "Open packs, collect anime character fuda and challenge your friends."
@@ -36,7 +41,14 @@
     "discordBonusBody": "Earn {amount, number} Zeni the first time you link it.",
     "discordLinked": "Discord is linked to your account.",
     "logout": "Sign out",
-    "publicProfile": "View my public profile"
+    "publicProfile": "View my public profile",
+    "tilesLabel": "Account shortcuts",
+    "tiles": {
+      "missions": "Missions",
+      "shop": "Shop",
+      "referral": "Referrals",
+      "ledger": "Zeni history"
+    }
   },
   "theme": {
     "label": "Theme",
@@ -199,7 +211,37 @@
     "favoritesValue": "{count, number}",
     "power": "Power",
     "ki": "Ki",
-    "viewOnAnilist": "View on AniList"
+    "viewOnAnilist": "View on AniList",
+    "ownershipFilter": "Filter by ownership",
+    "ownership": {
+      "all": "All",
+      "owned": "Owned",
+      "missing": "Missing"
+    },
+    "copies": "{count, plural, one {# copy owned} other {# copies owned}}",
+    "missingCard": "Missing",
+    "emptyOwned": "No owned cards match these filters.",
+    "collectionLoading": "Loading your collection…",
+    "collectionUnavailable": "Your collection is temporarily unavailable. You can still browse the catalog without ownership indicators.",
+    "collectionUnavailableShort": "Collection unavailable",
+    "notObtained": "Not obtained",
+    "discoveredWithoutCopies": "Already discovered · No copies",
+    "discovered": "Discovered",
+    "toDiscover": "Undiscovered",
+    "breadcrumb": "Breadcrumb",
+    "cardSummary": "Card and character information",
+    "nativeName": "Japanese name",
+    "characterFile": "The character",
+    "biography": "Biography",
+    "biographyLoading": "Loading the biography…",
+    "biographyEmpty": "AniList has no biography for this character yet.",
+    "biographyUnavailable": "The biography is temporarily unavailable. Try again later or visit AniList.",
+    "biographySource": "Source: AniList · Text in its original language.",
+    "lockedTitle": "Locked profile",
+    "lockedDescription": "Obtain the {name} card in a pack or as a gift to discover their biography. The profile stays unlocked after your first discovery.",
+    "openBooster": "Open a pack",
+    "sameUniverse": "Same universe",
+    "relatedTitle": "Other characters from {series}"
   },
   "nav": {
     "label": "Main navigation",
@@ -216,7 +258,11 @@
     "closeMenu": "Close menu",
     "menuTitle": "Menu",
     "preferences": "Preferences",
-    "friends": "Friends"
+    "friends": "Friends",
+    "missions": "Missions",
+    "shop": "Shop",
+    "referral": "Referrals",
+    "more": "More"
   },
   "header": {
     "stock": "Boosters: {count} of {max}",
@@ -340,8 +386,8 @@
       "see": "See the banner",
       "days": "{count, plural, one {# day} other {# days}}"
     },
-    "giftBoosters": "{count, plural, one {A friend gave you # booster} other {Your friends gave you # boosters}}",
-    "openGift": "Open"
+    "creditBoosters": "{count, plural, one {# {name} booster to open} other {# {name} boosters to open}}",
+    "openCredit": "Open"
   },
   "opening": {
     "title": "Open · {name}",
@@ -367,7 +413,10 @@
     "deckDone": "Every card is out",
     "deckHint": "Tap or swipe the card to flip it",
     "deckNextHint": "Tap or swipe for the next one",
+    "deckLastHint": "Tap or swipe to see the recap",
     "revealed": "Revealed cards",
+    "revealSlots": "Card slots",
+    "unrevealedSlot": "Card {position} of {total} to discover",
     "revealAll": "Reveal all",
     "toRecap": "See the recap",
     "gridHint": "{count} cards: tap them one by one, or reveal them all",
@@ -406,7 +455,7 @@
       "NOT_FOR_SALE": "This booster isn't available right now.",
       "UNAVAILABLE": "Can't open right now. Try again."
     },
-    "giftLeft": "{count, plural, one {Gifted booster · # to open} other {Gifted boosters · # to open}}"
+    "creditLeft": "{count, plural, one {Credited booster · # to open} other {Credited boosters · # to open}}"
   },
   "draw": {
     "title": "{name}'s pull",
@@ -427,7 +476,12 @@
       "types": "Booster types",
       "banners": "Banners",
       "collection": "Collection",
-      "social": "Social"
+      "social": "Social",
+      "economy": "Economy",
+      "lots": "Rewards",
+      "missions": "Missions",
+      "shop": "Shop",
+      "referral": "Referrals"
     },
     "boosters": {
       "title": "Booster settings",
@@ -683,6 +737,140 @@
       "log": "Latest changes",
       "logEmpty": "No changes yet.",
       "logEntry": "{key} by {admin}"
+    },
+    "economy": {
+      "title": "Economy",
+      "intro": "Mission and shop switches, referral anti-fraud rules and the health of the Zeni ledger.",
+      "circulating": "Zeni in circulation",
+      "zeni": "{amount, number} Zeni",
+      "ledgerSum": "Ledger total",
+      "integrity": "Integrity",
+      "integrityOk": "Balances = ledger",
+      "integrityKo": "{count, plural, one {# mismatch} other {# mismatches}}",
+      "mismatches": "Balances that don't match the ledger",
+      "mismatch": "{name}: balance {coins, number}, ledger {ledger, number}",
+      "flows": "Movements in the last 24 h",
+      "flowsEmpty": "No movements.",
+      "flow": "{amount, number} ({count, number})",
+      "log": "Recent changes",
+      "logEmpty": "No changes yet.",
+      "logEntry": "{key} · by {admin}",
+      "switches": "Switches",
+      "keys": {
+        "missionsEnabled": "Missions on",
+        "shopEnabled": "Shop open",
+        "premiumEnabled": "Premium packs (card payment)",
+        "referralEnabled": "Referrals on",
+        "requireVerified": "Verified referral required (email or Discord)",
+        "attachWindowDays": "Days to enter a code after signing up",
+        "maxPerMonth": "Max referrals per referrer (30 days)",
+        "minAccountAgeHours": "Minimum referral account age (hours)",
+        "minBoostersOpened": "Boosters the referral must open",
+        "referrerLot": "Referrer reward",
+        "refereeLot": "Referral reward"
+      },
+      "premiumHint": "No effect until a payment provider is connected. Read the legal notes in the plan first.",
+      "referral": "Referrals",
+      "noLot": "No reward",
+      "saved": "{count, plural, =0 {Nothing changed.} one {# setting saved.} other {# settings saved.}}",
+      "saving": "Saving…",
+      "save": "Save",
+      "errors": {
+        "FORBIDDEN": "Admins only.",
+        "INVALID": "Invalid values.",
+        "RATE_LIMITED": "Too many changes: wait a minute.",
+        "NOT_FOUND": "Not found.",
+        "KEY_TAKEN": "This identifier is already taken.",
+        "UNKNOWN_REF": "A reward, booster type or card doesn't exist.",
+        "unexpected": "Something went wrong."
+      },
+      "lotSaved": "Reward saved.",
+      "editLot": "Edit reward",
+      "newLot": "New reward",
+      "nameFr": "Name (French)",
+      "nameEn": "Name (English)",
+      "lotZeni": "Zeni",
+      "active": "Active",
+      "inactive": "inactive",
+      "lotItems": "Contents",
+      "lotItemsEmpty": "No boosters or cards.",
+      "itemKinds": {
+        "BOOSTER": "Booster",
+        "CARD": "Specific card",
+        "RARITY_CARD": "Random card of a rarity"
+      },
+      "quantity": "Quantity",
+      "remove": "Remove",
+      "addBooster": "Add boosters",
+      "addRarityCard": "Add a card by rarity",
+      "addCard": "Add a specific card (search)",
+      "search": "Search",
+      "cancelEdit": "Cancel editing",
+      "needLot": "Create a reward in “Rewards” first.",
+      "missionSaved": "Mission saved.",
+      "editMission": "Edit mission",
+      "newMission": "New mission",
+      "missionKey": "Identifier",
+      "missionKeyHint": "Lowercase and dashes, e.g. day-open-5",
+      "period": "Period",
+      "metric": "Goal",
+      "goal": "Target number",
+      "minRarity": "Minimum rarity",
+      "lot": "Reward",
+      "titleFr": "Custom title (French)",
+      "titleHint": "Empty: text generated from the goal",
+      "titleEn": "Custom title (English)",
+      "sortOrder": "Order",
+      "itemSaved": "Item saved.",
+      "editItem": "Edit item",
+      "newItem": "New item",
+      "slug": "Identifier",
+      "descriptionFr": "Description (French)",
+      "descriptionEn": "Description (English)",
+      "priceZeni": "Price in Zeni",
+      "perUserLimit": "Limit per player (empty = none)",
+      "limitPeriod": "Limit period",
+      "limitPeriods": {
+        "ONCE": "Once",
+        "DAILY": "Per day",
+        "WEEKLY": "Per week"
+      },
+      "startsAt": "Start (optional)",
+      "endsAt": "End (optional)",
+      "cardPayment": "Card payment (inactive)",
+      "cardPaymentHint": "Stored for later: nothing is sold in euros until a provider is connected.",
+      "priceCents": "Price in euro cents",
+      "stripePriceId": "Stripe price id",
+      "lotsTitle": "Rewards",
+      "lotsIntro": "Rewards reused by missions, referrals and the shop. Editing a reward doesn't change what was already handed out.",
+      "lotUsage": "{missions, plural, =0 {No missions} one {# mission} other {# missions}} · {items, plural, =0 {no items} one {# item} other {# items}}",
+      "edit": "Edit",
+      "missionsTitle": "Missions",
+      "missionsIntro": "Daily and weekly goals. A mission that was already claimed gets turned off instead of deleted.",
+      "missionMeta": "{key} · reward {lot} · {claims, plural, =0 {never claimed} one {# claim} other {# claims}}",
+      "shopTitle": "Shop",
+      "shopIntro": "Zeni items: each one hands out a reward. The price the player saw is checked again at purchase.",
+      "itemMeta": "{slug} · {price, number} Zeni · {sold, plural, =0 {no sales} one {# sale} other {# sales}}",
+      "purchases": "Recent purchases",
+      "purchasesEmpty": "No purchases yet.",
+      "purchase": "{user}: {item} ({amount, number} {currency}, {status})",
+      "referralTitle": "Referrals",
+      "referralIntro": "Spot clusters of referrals under one referrer and revoke in case of fraud.",
+      "referralSettingsLink": "Referral settings",
+      "topReferrers": "Most active referrers (30 days)",
+      "referralsEmpty": "No referrals yet.",
+      "recentReferrals": "Recent referrals",
+      "referralLine": "{referrer} → {referee}",
+      "referralStatus": {
+        "PENDING": "Pending",
+        "QUALIFIED": "Qualified",
+        "REVOKED": "Revoked"
+      },
+      "referrerClaimed": "referrer paid",
+      "refereeClaimed": "referral paid",
+      "revoke": "Revoke",
+      "revokeConfirm": "Confirm revocation",
+      "cancel": "Cancel"
     }
   },
   "collection": {
@@ -860,7 +1048,7 @@
       "completion": "Catalog"
     },
     "viewCollection": "View collection",
-    "privacy": "Privacy",
+    "accountSettings": "Account settings",
     "ownerNotice": {
       "FRIENDS": "Your profile is for your friends only.",
       "PRIVATE": "Your profile is private: nobody but you can see it."
@@ -1014,6 +1202,7 @@
     "giftCard": "{name} gave you {card} ({rarity}).",
     "giftCardGone": "{name} gave you a card.",
     "giftBooster": "{name} gave you a booster: open it from the home page.",
+    "referralQualified": "Your referral {name} qualified: claim your referral reward.",
     "empty": "No notifications yet.",
     "unreadCount": "{count, plural, =0 {All read} one {# unread} other {# unread}}",
     "unread": "Unread",
@@ -1049,6 +1238,195 @@
       "RATE_LIMITED": "Too many attempts: wait a minute.",
       "DISABLED": "Notifications are turned off for now.",
       "unexpected": "Couldn't turn on notifications. Try again."
+    }
+  },
+  "economy": {
+    "claim": "Claim",
+    "claiming": "Claiming…",
+    "errors": {
+      "NO_SESSION": "Your session expired: reload the page.",
+      "INVALID": "Invalid request.",
+      "DISABLED": "This feature is turned off for now.",
+      "RATE_LIMITED": "Too many attempts: try again in a moment.",
+      "UNAVAILABLE": "This can't be done right now.",
+      "NOT_DONE": "Goal not reached yet.",
+      "ALREADY_CLAIMED": "Reward already claimed.",
+      "NOT_FOR_SALE": "This item is no longer for sale.",
+      "STALE": "The price changed: reload the page to see the new one.",
+      "LIMIT_REACHED": "Purchase limit reached for this item.",
+      "NOT_ENOUGH_ZENI": "Not enough Zeni.",
+      "GUEST": "Create an account to use a referral code.",
+      "SELF": "You can't refer yourself.",
+      "ALREADY_REFERRED": "You already have a referrer.",
+      "TOO_LATE": "A referral code can only be entered in the first days after signing up.",
+      "INVALID_CODE": "Unknown referral code.",
+      "REFERRER_FULL": "This referrer has already invited many players this month.",
+      "NOT_QUALIFIED": "Your referral hasn't qualified yet.",
+      "NO_REWARD": "No reward is set for now.",
+      "unexpected": "Something went wrong. Try again."
+    },
+    "lot": {
+      "label": "Reward",
+      "missing": "Reward unavailable",
+      "zeni": "{amount, number} Zeni",
+      "booster": "{count, plural, one {# {name} booster} other {# {name} boosters}}",
+      "card": "{count, plural, one {{name}} other {# × {name}}} ({rarity})",
+      "rarityCard": "{count, plural, one {# random {rarity} card} other {# random {rarity} cards}}",
+      "zeniBonus": "+{amount, number}"
+    },
+    "reward": {
+      "received": "Received: {list}",
+      "nothing": "nothing",
+      "zeni": "{amount, number} Zeni",
+      "boosters": "{count, plural, one {# booster} other {# boosters}}",
+      "cards": "{count, plural, one {# card} other {# cards}}"
+    },
+    "missions": {
+      "title": "Missions",
+      "intro": "Daily and weekly goals, each with a reward to claim.",
+      "disabled": "Missions are paused for now.",
+      "empty": "No missions right now. Check back soon!",
+      "progress": "{value, number} / {goal, number}",
+      "claimed": "Claimed",
+      "period": {
+        "DAILY": "Today",
+        "WEEKLY": "This week"
+      },
+      "metric": {
+        "VISIT": "Drop by",
+        "OPEN_BOOSTERS": "Open {count, plural, one {# booster} other {# boosters}}",
+        "PULL_RARITY": "Pull {count, plural, one {# card} other {# cards}} of {rarity} or better",
+        "DISCOVER_CARDS": "Discover {count, plural, one {# new card} other {# new cards}}",
+        "RECYCLE_ZENI": "Earn {count, number} Zeni by recycling",
+        "SPEND_ZENI": "Spend {count, number} Zeni",
+        "SEND_GIFTS": "Send {count, plural, one {# gift} other {# gifts}} to friends",
+        "ADD_FRIENDS": "Add {count, plural, one {# friend} other {# friends}}"
+      },
+      "resetsDays": "Resets in {days} d {hours} h",
+      "resetsHours": "Resets in {hours} h {minutes} min",
+      "claimedCount": "{done} / {total}",
+      "ready": "To claim"
+    },
+    "shop": {
+      "title": "Shop",
+      "intro": "Boosters and packs to buy with your Zeni. Zeni can't be bought with real money.",
+      "disabled": "The shop is closed for now.",
+      "empty": "Nothing for sale right now. Check back soon!",
+      "limit": {
+        "ONCE": "{count, plural, =0 {Already bought} one {Once per player} other {# purchases left}}",
+        "DAILY": "{count, plural, =0 {Daily limit reached} other {# more today (out of {limit})}}",
+        "WEEKLY": "{count, plural, =0 {Weekly limit reached} other {# more this week (out of {limit})}}"
+      },
+      "until": "Until {date, date, medium}",
+      "premium": "Premium packs",
+      "premiumSoon": "Card payment isn't open yet.",
+      "soldOut": "No longer available to you",
+      "buying": "Buying…",
+      "confirm": "Confirm · {price, number} Zeni",
+      "cancel": "Cancel",
+      "buy": "Buy",
+      "notEnough": "Not enough Zeni yet.",
+      "balance": "Your balance: {amount, number} Zeni",
+      "amount": "{amount, number}",
+      "endsSoon": "Ending soon",
+      "earnTitle": "Need Zeni?",
+      "earnBody": "Daily missions and recycling your duplicates bring some in every day.",
+      "toMissions": "Missions",
+      "toRecycle": "Recycle duplicates",
+      "openNow": "Open my boosters"
+    },
+    "referral": {
+      "title": "Referrals",
+      "intro": "Invite your friends: once your referral has really settled in, you each get a reward.",
+      "disabled": "Referrals are paused for now.",
+      "rewardReferrer": "For you, the referrer",
+      "rewardReferee": "For your referral",
+      "noReward": "No reward for now",
+      "guestInvited": "A friend invited you! Create your account to become their referral.",
+      "guestBody": "Create an account to get your code and invite your friends.",
+      "inviteTitle": "Your invitation",
+      "yourCode": "Your code",
+      "copyLink": "Copy link",
+      "copyCode": "Copy code",
+      "copied": "Copied!",
+      "share": "Share",
+      "shareTitle": "Join me on Kiraku",
+      "shareText": "Open packs of anime fuda with me on Kiraku.",
+      "refereesTitle": "{count, plural, =0 {Your referrals} one {Your referral (#)} other {Your referrals (#)}}",
+      "refereesEmpty": "Nobody yet. Share your link!",
+      "claimed": "Reward received",
+      "myReferrerTitle": "Your referrer",
+      "referredBy": "Your referrer is {name}.",
+      "tooLate": "A referrer's code can be entered within {days} days of signing up.",
+      "enterCode": "Did a friend invite you? Enter their code:",
+      "attach": "Confirm",
+      "attached": "Got it! Your rewards will arrive once you qualify.",
+      "howTitle": "How it works",
+      "how1": "Share your link or code with a friend who doesn't play yet.",
+      "how2": "They create and verify their account, then open {boosters} boosters over at least {hours} h.",
+      "how3": "You each claim your reward here, once.",
+      "inviteBody": "Your friend arrives through this link: their code is kept until they sign up.",
+      "statInvited": "Invited",
+      "statQualified": "Qualified",
+      "status": {
+        "PENDING": "On the way",
+        "QUALIFIED": "Qualified",
+        "REVOKED": "Cancelled"
+      },
+      "check": {
+        "account": "Account created",
+        "verified": "Verified",
+        "age": "{hours} / {total} h",
+        "boosters": "{count} / {total} boosters",
+        "done": "done:",
+        "todo": "to do:"
+      }
+    },
+    "ledger": {
+      "title": "Zeni history",
+      "intro": "Every Zeni earned or spent, newest first.",
+      "balance": "Balance",
+      "number": "{value, number}",
+      "earned30": "Earned (30 d)",
+      "spent30": "Spent (30 d)",
+      "filters": "Filter history",
+      "filter": {
+        "all": "All",
+        "in": "Earned",
+        "out": "Spent"
+      },
+      "empty": "No movements yet.",
+      "amountIn": "+{amount, number}",
+      "amountOut": "−{amount, number}",
+      "balanceAfter": "Balance: {amount, number}",
+      "error": "Couldn't load more. Try again.",
+      "loading": "Loading…",
+      "more": "Show more",
+      "reasons": {
+        "SIGNUP": "Starting Zeni",
+        "BID_HOLD": "Bid held (auction)",
+        "BID_REFUND": "Bid returned (auction)",
+        "SALE": "Market sale",
+        "FEE": "Sales tax",
+        "DISSOLVE": "Duplicate recycling",
+        "BATTLE_WIN": "Battle victory",
+        "DAILY": "Daily bonus",
+        "MISSION": "Mission reward",
+        "REFERRAL": "Referral reward",
+        "ADMIN": "Adjustment by the team",
+        "SHOP": "Shop",
+        "DISCORD_LINK": "Discord link bonus",
+        "BOOSTER": "Booster purchase",
+        "GIFT": "Booster gifted to a friend"
+      }
+    },
+    "reveal": {
+      "title": "Your new fuda",
+      "progress": "Card {current} of {total}",
+      "new": "New!",
+      "close": "Keep it",
+      "toCollection": "See it in my collection",
+      "next": "Next card"
     }
   }
 }

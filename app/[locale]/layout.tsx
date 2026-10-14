@@ -15,7 +15,13 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
     title: { default: t("title"), template: `%s · ${t("title")}` },
     description: t("description"),
     appleWebApp: { capable: true, title: t("title"), statusBarStyle: "black-translucent" },
-    icons: { apple: "/icons/apple-touch-icon.png" },
+    icons: {
+      icon: [
+        { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
+        { url: "/icons/favicon.svg", sizes: "any", type: "image/svg+xml" },
+      ],
+      apple: "/icons/apple-touch-icon.png",
+    },
   };
 }
 

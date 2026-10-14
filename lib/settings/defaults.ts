@@ -46,6 +46,9 @@ const cardStats = z.object({
   kiSpan: z.number().int().min(0).max(999),
 });
 
+// Id d'un Lot (cuid), ou null
+const lotRef = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/).nullable();
+
 // Réglages de jeu modifiables depuis /admin (table GameSetting).
 // Le code ne garde que les valeurs par défaut ; chaque clé a son schéma Zod.
 export const SETTING_SCHEMAS = {
@@ -86,6 +89,19 @@ export const SETTING_SCHEMAS = {
   "notifications.pollSeconds": z.number().int().min(10).max(600),
   // Web Push (onglet fermé) : interrupteur global, l'abonnement reste un choix du joueur
   "notifications.pushEnabled": z.boolean(),
+  // Économie (étape 7) : interrupteurs, parrainage et paiement par carte (inerte sans fournisseur)
+  "missions.enabled": z.boolean(),
+  "shop.enabled": z.boolean(),
+  "shop.premiumEnabled": z.boolean(),
+  "referral.enabled": z.boolean(),
+  "referral.attachWindowDays": z.number().int().min(0).max(365),
+  "referral.maxPerMonth": z.number().int().min(0).max(1_000),
+  "referral.minAccountAgeHours": z.number().int().min(0).max(24 * 365),
+  "referral.minBoostersOpened": z.number().int().min(0).max(10_000),
+  "referral.requireVerified": z.boolean(),
+  // Lots versés à la qualification ; null = pas de récompense de ce côté
+  "referral.referrerLotId": lotRef,
+  "referral.refereeLotId": lotRef,
   "guest.createPerHourPerIp": z.number().int().min(1).max(1_000),
   "discord.linkBonusZeni": z.number().int().min(0).max(100_000),
   "catalog.size": z.number().int().min(10).max(50_000),
@@ -131,6 +147,17 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "notifications.retentionDays": 30,
   "notifications.pollSeconds": 20,
   "notifications.pushEnabled": true,
+  "missions.enabled": true,
+  "shop.enabled": true,
+  "shop.premiumEnabled": false, // jamais visible tant qu'aucun fournisseur de paiement n'est branché
+  "referral.enabled": true,
+  "referral.attachWindowDays": 7,
+  "referral.maxPerMonth": 10,
+  "referral.minAccountAgeHours": 48, // comme les cadeaux et les enchères
+  "referral.minBoostersOpened": 20,
+  "referral.requireVerified": true,
+  "referral.referrerLotId": null,
+  "referral.refereeLotId": null,
   "guest.createPerHourPerIp": 5,
   "discord.linkBonusZeni": 500, // versé une seule fois, à la première liaison
   "catalog.size": 6736,

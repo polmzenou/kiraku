@@ -12,7 +12,7 @@ import { NavLinks } from "./NavLinks";
  * Menu burger (< 1024 px) : un <dialog> natif (focus piégé, Échap) qui descend du haut de l'écran,
  * entrées empilées verticalement. Rien ne défile horizontalement.
  */
-export function MobileMenu({ theme, isAdmin }: { theme: Theme; isAdmin: boolean }) {
+export function MobileMenu({ theme, isAdmin, accountHref }: { theme: Theme; isAdmin: boolean; accountHref: string }) {
   const t = useTranslations("nav");
   const dialog = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
@@ -74,9 +74,9 @@ export function MobileMenu({ theme, isAdmin }: { theme: Theme; isAdmin: boolean 
             <ul className="flex flex-col">
               <li>
                 <Link
-                  href="/compte"
+                  href={accountHref}
                   onClick={close}
-                  aria-current={pathname === "/compte" ? "page" : undefined}
+                  aria-current={pathname === accountHref ? "page" : undefined}
                   className="flex min-h-12 items-center border-b border-border px-1 text-base text-text-muted aria-[current=page]:font-bold aria-[current=page]:text-text"
                 >
                   {t("account")}

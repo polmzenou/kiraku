@@ -20,6 +20,7 @@ import { ZeniCoin } from "./ZeniCoin";
  */
 export async function AppHeader({ theme }: { theme: Theme }) {
   const [t, user] = await Promise.all([getTranslations(), getCurrentUser()]);
+  const accountHref = user ? `/u/${user.username}` : "/connexion";
   const state = user ? boosterStateFrom(user, await getBoosterRules()) : null;
   const isAdmin = user?.role === "ADMIN";
   const [unread, pollSeconds] = user
@@ -49,8 +50,9 @@ export async function AppHeader({ theme }: { theme: Theme }) {
             />
           )}
           {user && (
-            <span
-              className="inline-flex min-h-9 min-w-0 items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 text-sm font-bold"
+            <Link
+              href="/compte/historique"
+              className="inline-flex min-h-11 min-w-0 items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 text-sm font-bold"
               aria-label={t("header.balance", { amount: user.coins })}
               title={t("header.balance", { amount: user.coins })}
             >
@@ -58,7 +60,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
               <span aria-hidden="true" className="truncate tabular-nums">
                 {t("common.number", { value: user.coins })}
               </span>
-            </span>
+            </Link>
           )}
           {user && <NotificationBell initial={unread} serverNow={new Date().toISOString()} pollSeconds={pollSeconds} />}
           {isAdmin && (
@@ -70,7 +72,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
             </Link>
           )}
           <Link
-            href="/compte"
+            href={accountHref}
             aria-label={t("nav.account")}
             title={t("nav.account")}
             className="hidden size-11 items-center justify-center lg:inline-flex"
@@ -86,7 +88,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
               </span>
             )}
           </Link>
-          <MobileMenu theme={theme} isAdmin={isAdmin} />
+          <MobileMenu theme={theme} isAdmin={isAdmin} accountHref={accountHref} />
         </div>
       </div>
     </header>

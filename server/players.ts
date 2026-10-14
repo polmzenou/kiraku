@@ -2,6 +2,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import { guestUsername, sanitizeUsername } from "@/lib/username";
+import { credit } from "./economy/ledger";
 import { getSetting } from "./settings";
 
 type Tx = Prisma.TransactionClient;
@@ -69,14 +70,13 @@ export async function createPlayer(
       image: player.image ?? null,
       passwordHash: player.passwordHash ?? null,
       profileVisibility: defaultVisibility(player.isGuest),
-      coins: start.zeni,
       boosterStock: start.boosters,
     },
   });
   if (start.zeni > 0) {
-    await tx.coinTransaction.create({
-      data: { userId: user.id, amount: start.zeni, reason: "SIGNUP" },
-    });
+    // Le solde de départ passe par le journal comme tout autre mouvement
+    const coins = await credit(tx, { userId: user.id, amount: start.zeni, reason: "SIGNUP" });
+    return { ...user, coins };
   }
   return user;
 }

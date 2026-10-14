@@ -14,10 +14,9 @@ import { Fuda } from "../fuda/Fuda";
 import { ZeniCoin } from "../layout/ZeniCoin";
 import { Button } from "../ui/Button";
 import { BoosterScene, type SceneHandle } from "./BoosterScene";
-import { CardDeck } from "./CardDeck";
+import { CardDeck, revealOrder } from "./CardDeck";
 import { CountPicker } from "./CountPicker";
 import { Recap } from "./Recap";
-import { RevealGrid } from "./RevealGrid";
 import { RitualBackdrop } from "./RitualBackdrop";
 import { SoundToggle } from "./SoundToggle";
 import { useRitualFx } from "./useRitualFx";
@@ -42,8 +41,11 @@ export type OpeningType = {
   featured: { threshold: number; count: number } | null;
 };
 
-/** `gifts` : boosters offerts par des amis à ouvrir en premier (un à la fois, sans doré ni divin). */
-type Props = { type: OpeningType; initialState: BoosterState; gifts?: number };
+/**
+ * `credits` : boosters crédités de ce type (cadeaux d'amis, boutique, récompenses) à ouvrir en
+ * premier, sans doré ni divin.
+ */
+type Props = { type: OpeningType; initialState: BoosterState; credits?: number };
 
 const bestRarity = (boosters: OpenedBoosterView[]): Rarity =>
   boosters
@@ -61,11 +63,11 @@ function maxOpenable(type: OpeningType, state: BoosterState): number {
 
 /**
  * L'ouverture, « le rituel » : la scène s'assombrit, le booster flotte et s'ouvre d'un geste, la
- * lumière qui s'échappe annonce la meilleure carte, les fuda se tirent de la pile une à une (ou se
- * retournent en vague), puis le récap se déroule. Le tirage est déjà enregistré par le serveur
+ * lumière qui s'échappe annonce la meilleure carte, toutes les fuda se tirent de la pile une à une,
+ * puis le récap se déroule. Le tirage est déjà enregistré par le serveur
  * quand l'animation commence : fermer l'onglet ne fait rien perdre.
  */
-export function OpeningStage({ type, initialState, gifts = 0 }: Props) {
+export function OpeningStage({ type, initialState, credits = 0 }: Props) {
   const t = useTranslations("opening");
   const reduced = useReducedMotion() ?? false;
   const fx = useRitualFx();
@@ -80,18 +82,18 @@ export function OpeningStage({ type, initialState, gifts = 0 }: Props) {
   const [confirmed, setConfirmed] = useState<number | null>(null);
   const [depth, setDepth] = useState(0);
   const [shake, setShake] = useState(0);
-  const [giftLeft, setGiftLeft] = useState(gifts);
-  const [openedGift, setOpenedGift] = useState(false);
+  const [creditLeft, setCreditLeft] = useState(credits);
+  const [openedCredit, setOpenedCredit] = useState(false);
   const opened = useRef(false);
   const result = useRef<OpenedBoosterView[] | null>(null);
   const scene = useRef<SceneHandle | null>(null);
 
   // État le plus récent entre la page (rafraîchie par le serveur) et la réponse de l'ouverture
   const state = latest && latest.serverNow > initialState.serverNow ? latest : initialState;
-  const giftMode = giftLeft > 0;
-  const maxCount = giftMode ? 1 : maxOpenable(type, state);
+  const creditMode = creditLeft > 0;
+  const maxCount = creditMode ? (OPEN_COUNTS.filter((n) => n <= creditLeft).at(-1) ?? 1) : maxOpenable(type, state);
   const effectiveCount: OpenCount = count <= maxCount ? count : ((OPEN_COUNTS.filter((n) => n <= maxCount).at(-1) ?? 1) as OpenCount);
-  const price: Price = giftMode ? { kind: "free" } : priceFor(type, state.stock, effectiveCount);
+  const price: Price = creditMode ? { kind: "free" } : priceFor(type, state.stock, effectiveCount);
   const unaffordable = price.kind === "zeni" && price.amount > state.coins;
   const needsConfirm = price.kind === "zeni" && !unaffordable && confirmed !== price.amount;
   const armed = stage === "ready" && !unaffordable && price.kind !== "unavailable" && !needsConfirm;
@@ -112,8 +114,8 @@ export function OpeningStage({ type, initialState, gifts = 0 }: Props) {
     setDepth(0.15);
     result.current = null;
     const res = await openBoosterAction(
-      giftMode
-        ? { booster: type.slug, count: 1, gift: true }
+      creditMode
+        ? { booster: type.slug, count: effectiveCount, credit: true }
         : { booster: type.slug, count: effectiveCount, pay: price.kind === "zeni" },
     );
     if (!res.ok) {
@@ -128,8 +130,8 @@ export function OpeningStage({ type, initialState, gifts = 0 }: Props) {
     setLatest(res.state);
     setFeaturedCount(res.featuredCount);
     setZeniSpent(res.zeniSpent);
-    setOpenedGift(giftMode);
-    setGiftLeft(giftMode ? res.giftBoosters : 0);
+    setOpenedCredit(creditMode);
+    setCreditLeft(creditMode ? res.credits : 0);
     setBoosters(res.boosters);
     result.current = res.boosters;
     goReveal();
@@ -164,7 +166,6 @@ export function OpeningStage({ type, initialState, gifts = 0 }: Props) {
 
   const first = boosters?.[0];
   const variant = first?.divine ? "divine" : first?.golden ? "golden" : undefined;
-  const single = boosters !== null && boosters.length === 1 && boosters[0].cards.length <= 6;
   const ritual = stage !== "recap";
 
   return (
@@ -244,17 +245,17 @@ export function OpeningStage({ type, initialState, gifts = 0 }: Props) {
                     </Button>
                   )}
 
-                  {giftMode ? (
+                  {creditMode ? (
                     <p className="flex items-center gap-1.5 text-sm font-bold text-kin">
                       <span aria-hidden="true" lang="ja" className="font-seal">
                         贈
                       </span>
-                      {t("giftLeft", { count: giftLeft })}
+                      {t("creditLeft", { count: creditLeft })}
                     </p>
                   ) : (
                     <PriceLine price={price} unaffordable={unaffordable} coins={state.coins} stock={state.stock} />
                   )}
-                  {type.usesFreeStock && !giftMode && <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} />}
+                  {type.usesFreeStock && !creditMode && <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} />}
                   {maxCount > 1 && <CountPicker value={effectiveCount} max={maxCount} onChange={(n) => {
                         setCount(n);
                         setConfirmed(null);
@@ -278,11 +279,7 @@ export function OpeningStage({ type, initialState, gifts = 0 }: Props) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
             >
-              {single ? (
-                <CardDeck cards={boosters[0].cards} reduced={reduced} play={fx.play} onMythic={onMythic} onDone={toRecap} />
-              ) : (
-                <RevealGrid boosters={boosters} columns={4} reduced={reduced} play={fx.play} onMythic={onMythic} onDone={toRecap} />
-              )}
+              <CardDeck cards={boosters.flatMap((booster) => booster.cards)} reduced={reduced} play={fx.play} onMythic={onMythic} onDone={toRecap} />
             </m.div>
           )}
 
@@ -295,7 +292,7 @@ export function OpeningStage({ type, initialState, gifts = 0 }: Props) {
                 play={fx.play}
                 counters={{
                   pity: type.countsForPity,
-                  golden: type.bonusEligible && !openedGift,
+                  golden: type.bonusEligible && !openedCredit,
                   featured: type.featured
                     ? { left: Math.max(1, type.featured.threshold - featuredCount), threshold: type.featured.threshold }
                     : null,
@@ -314,11 +311,11 @@ export function OpeningStage({ type, initialState, gifts = 0 }: Props) {
           )}
         </AnimatePresence>
 
-        {/* Dès la réponse du serveur, les illustrations se chargent pendant que la lumière s'échappe */}
-        {boosters && stage !== "recap" && (
+        {/* Charger les premières cartes en grand pendant l'ouverture, avant leur révélation. */}
+        {boosters && stage === "opening" && (
           <div aria-hidden="true" className="pointer-events-none invisible absolute top-0 left-0 w-40 overflow-hidden">
-            {boosters.flatMap((b) =>
-              b.cards.map((c) => <Fuda key={c.userCardId} card={c} size={single ? "lg" : "sm"} preload />),
+            {revealOrder(boosters.flatMap((booster) => booster.cards)).slice(0, 2).map((card) =>
+              <Fuda key={card.userCardId} card={card} size="lg" preload />,
             )}
           </div>
         )}

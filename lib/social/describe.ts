@@ -15,7 +15,7 @@ type Values = Record<string, string | number>;
 /** Traductions nécessaires, déjà liées à la langue du lecteur. */
 export type DescribeTranslators = {
   notifications: (
-    key: "someone" | "friendRequest" | "friendAccepted" | "giftCard" | "giftCardGone" | "giftBooster",
+    key: "someone" | "friendRequest" | "friendAccepted" | "giftCard" | "giftCardGone" | "giftBooster" | "referralQualified",
     values?: Values,
   ) => string;
   guestName: (code: string) => string;
@@ -32,8 +32,10 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
       return { text: t("friendRequest", { name }), href: "/amis?onglet=demandes" };
     case "FRIEND_ACCEPTED":
       return { text: t("friendAccepted", { name }), href: n.actor ? `/u/${n.actor.username}` : "/amis" };
+    case "REFERRAL_QUALIFIED":
+      return { text: t("referralQualified", { name }), href: "/parrainage" };
     case "GIFT_RECEIVED":
-      if (n.gift?.kind === "BOOSTER") return { text: t("giftBooster", { name }), href: "/ouvrir/standard?offert=1" };
+      if (n.gift?.kind === "BOOSTER") return { text: t("giftBooster", { name }), href: "/ouvrir/standard?credit=1" };
       return n.card
         ? {
             text: t("giftCard", { name, card: n.card.name, rarity: tr.rarity(n.card.rarity) }),
