@@ -7,7 +7,8 @@
     "appName": "Kiraku",
     "zeni": "{amount, number} Zeni",
     "boosters": "{count}/{max}",
-    "number": "{value, number}"
+    "number": "{value, number}",
+    "close": "Fermer"
   },
   "account": {
     "title": "Compte",
@@ -34,7 +35,8 @@
     "discordBonusTitle": "Lie ton compte Discord",
     "discordBonusBody": "Gagne {amount, number} Zeni à la première liaison.",
     "discordLinked": "Discord est lié à ton compte.",
-    "logout": "Se déconnecter"
+    "logout": "Se déconnecter",
+    "publicProfile": "Voir mon profil public"
   },
   "theme": {
     "label": "Thème",
@@ -419,7 +421,8 @@
       "market": "Marché",
       "ranked": "Classé",
       "types": "Types de boosters",
-      "banners": "Bannières"
+      "banners": "Bannières",
+      "collection": "Collection"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -593,6 +596,246 @@
       "dates": "Du {start} au {end}",
       "noDates": "Sans dates",
       "featured": "{count, plural, one {# vedette} other {# vedettes}}"
+    },
+    "collection": {
+      "title": "Réglages de la collection",
+      "intro": "Zeni rendus par doublon recyclé et taille de la vitrine. Chaque changement s'applique tout de suite et s'inscrit au journal.",
+      "recycleSection": "Recyclage d'un doublon (Zeni)",
+      "showcaseSection": "Vitrine du profil",
+      "fields": {
+        "showcaseSlots": "Nombre de cases"
+      },
+      "showcaseHint": "En réduisant ce nombre, les cartes des dernières cases ne s'affichent plus (elles restent enregistrées).",
+      "keys": {
+        "recycleValues": "Valeurs de recyclage",
+        "showcaseSlots": "Nombre de cases de la vitrine"
+      },
+      "invalid": "Certaines valeurs sont hors limites : corrige-les avant d'enregistrer.",
+      "review": "Vérifier les changements",
+      "noChange": "Aucun changement.",
+      "confirmTitle": "Confirmer ces changements ?",
+      "confirm": "Enregistrer",
+      "cancel": "Annuler",
+      "saved": "{count, plural, one {# réglage enregistré} other {# réglages enregistrés}}.",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Valeurs refusées par le serveur.",
+        "RATE_LIMITED": "Trop d'enregistrements : attends une minute.",
+        "unexpected": "Erreur inattendue. Réessaie."
+      },
+      "log": "Derniers changements",
+      "logEmpty": "Aucun changement pour l'instant.",
+      "logEntry": "{key} par {admin}"
     }
+  },
+  "collection": {
+    "title": "Collection",
+    "myProfile": "Mon profil",
+    "recyclableHint": "{count, plural, one {# doublon recyclable} other {# doublons recyclables}} pour {zeni, number} Zeni.",
+    "empty": "Ta collection est vide pour l'instant : ouvre un booster pour obtenir tes premières fuda.",
+    "openBoosters": "Ouvrir un booster",
+    "noMatch": "Aucune carte ne correspond à ces filtres.",
+    "loading": "Chargement de la collection…",
+    "back": "← Collection",
+    "copiesLabel": "{count, plural, one {# exemplaire} other {# exemplaires}}",
+    "inShowcaseBadge": "Vitrine",
+    "listLabel": "Cartes de la collection",
+    "retry": "Réessayer",
+    "searchLabel": "Chercher dans la collection",
+    "searchPlaceholder": "Nom ou série…",
+    "sortAndSeries": "Tri et série",
+    "rarityFilter": "Filtrer par rareté",
+    "dupesOnly": "Doublons",
+    "seriesActive": "Série :",
+    "clearSeries": "Toutes les séries",
+    "sortBy": "Trier par",
+    "sorts": {
+      "rarity": "Rareté",
+      "recent": "Obtention",
+      "number": "Numéro",
+      "name": "Nom",
+      "copies": "Exemplaires",
+      "power": "Puissance 力",
+      "ki": "Ki 気"
+    },
+    "direction": "Ordre",
+    "dirs": {
+      "rarity": {
+        "desc": "Plus rares d'abord",
+        "asc": "Plus courantes d'abord"
+      },
+      "recent": {
+        "desc": "Plus récentes d'abord",
+        "asc": "Plus anciennes d'abord"
+      },
+      "number": {
+        "desc": "Numéros décroissants",
+        "asc": "Numéros croissants"
+      },
+      "name": {
+        "desc": "Z → A",
+        "asc": "A → Z"
+      },
+      "copies": {
+        "desc": "Plus d'exemplaires d'abord",
+        "asc": "Moins d'exemplaires d'abord"
+      },
+      "power": {
+        "desc": "Plus forte d'abord",
+        "asc": "Plus faible d'abord"
+      },
+      "ki": {
+        "desc": "Plus haut d'abord",
+        "asc": "Plus bas d'abord"
+      }
+    },
+    "series": "Série",
+    "allSeries": "Toutes les séries",
+    "seriesOption": "{title} ({count})",
+    "done": "Voir les cartes",
+    "stats": {
+      "unique": "Cartes uniques",
+      "copies": "Exemplaires",
+      "completion": "Catalogue"
+    },
+    "recycleAll": {
+      "open": "Recycler les doublons",
+      "title": "Recycler les doublons",
+      "intro": "Chaque doublon rapporte des Zeni selon sa rareté. Tu gardes toujours un exemplaire de chaque carte, et celui en vitrine.",
+      "upTo": "Recycler jusqu'à la rareté",
+      "recap": "Récapitulatif du recyclage",
+      "rarity": "Rareté",
+      "copies": "Doublons",
+      "zeni": "Zeni",
+      "total": "Total",
+      "keepOne": "Les cartes en vente ou en combat ne sont pas touchées.",
+      "cancel": "Annuler",
+      "confirm": "Recycler (+{zeni, number} Zeni)",
+      "done": "{count, plural, one {# doublon recyclé} other {# doublons recyclés}} : +{zeni, number} Zeni.",
+      "errors": {
+        "NO_SESSION": "Ta session a expiré : recharge la page.",
+        "INVALID": "Demande refusée.",
+        "FORBIDDEN": "Accès refusé.",
+        "RATE_LIMITED": "Doucement : attends quelques secondes.",
+        "NOTHING": "Plus aucun doublon à recycler.",
+        "STALE": "Ta collection a changé entre-temps : vérifie le récap et recommence.",
+        "NOT_OWNED": "Tu ne possèdes plus cette carte.",
+        "FULL": "Ta vitrine est pleine.",
+        "UNAVAILABLE": "Action impossible pour le moment. Réessaie."
+      }
+    },
+    "card": {
+      "number": "No. {number}",
+      "power": "Puissance",
+      "ki": "Ki",
+      "notOwned": "Tu ne possèdes pas cette carte.",
+      "copiesTitle": "{count, plural, one {# exemplaire} other {# exemplaires}}",
+      "inCollection": "{count, plural, =0 {Aucun en collection} one {# en collection} other {# en collection}}",
+      "inAuction": "{count, plural, one {# en vente} other {# en vente}}",
+      "inBattle": "{count, plural, one {# en combat} other {# en combat}}",
+      "firstObtained": "Première obtention : {date}",
+      "recycleTitle": "Recycler les doublons",
+      "unitValue": "{zeni, number} Zeni par doublon.",
+      "noDuplicates": "Aucun doublon à recycler.",
+      "less": "Un de moins",
+      "more": "Un de plus",
+      "count": "{count} / {max}",
+      "recycle": "Recycler {count} (+{zeni, number} Zeni)",
+      "confirm": "Confirmer (+{zeni, number} Zeni)",
+      "cancel": "Annuler",
+      "keepOne": "Tu gardes toujours un exemplaire, et celui de ta vitrine.",
+      "recycled": "{count, plural, one {# doublon recyclé} other {# doublons recyclés}} : +{zeni, number} Zeni.",
+      "addToShowcase": "Mettre en vitrine",
+      "removeFromShowcase": "Retirer de la vitrine",
+      "showcaseFull": "Ta vitrine est pleine : <link>retire une carte depuis ton profil</link>.",
+      "sell": "Mettre en vente",
+      "soon": "Bientôt",
+      "wiki": "Fiche du wiki",
+      "errors": {
+        "NO_SESSION": "Ta session a expiré : recharge la page.",
+        "INVALID": "Demande refusée.",
+        "FORBIDDEN": "Accès refusé.",
+        "RATE_LIMITED": "Doucement : attends quelques secondes.",
+        "NOTHING": "Plus aucun doublon à recycler.",
+        "STALE": "Ta collection a changé entre-temps : vérifie le récap et recommence.",
+        "NOT_OWNED": "Tu ne possèdes plus cette carte.",
+        "FULL": "Ta vitrine est pleine.",
+        "UNAVAILABLE": "Action impossible pour le moment. Réessaie."
+      }
+    }
+  },
+  "showcase": {
+    "label": "Vitrine",
+    "slot": "Case {n}",
+    "edit": "Modifier la vitrine",
+    "done": "Terminé",
+    "dragHint": "Glisse une carte sur une autre case pour les échanger.",
+    "emptyOwner": "Ta vitrine est vide : choisis jusqu'à quatre cartes à montrer.",
+    "emptyPublic": "Aucune carte en vitrine pour l'instant.",
+    "addTo": "Choisir une carte pour la case {n}",
+    "moveLeft": "Décaler {name} vers la gauche",
+    "moveRight": "Décaler {name} vers la droite",
+    "remove": "Retirer {name} de la vitrine",
+    "change": "Remplacer {name}",
+    "changeShort": "Changer",
+    "removeShort": "Retirer",
+    "error": "La vitrine n'a pas pu être enregistrée : elle est revenue à son état précédent.",
+    "pickTitle": "Choisir une carte",
+    "searchLabel": "Chercher une carte",
+    "searchPlaceholder": "Nom ou série…",
+    "pickEmpty": "Aucune carte trouvée.",
+    "pick": "Mettre {name} en vitrine",
+    "alreadyShown": "En vitrine",
+    "loading": "Chargement…",
+    "retry": "Réessayer",
+    "more": "Voir plus"
+  },
+  "profile": {
+    "metaTitle": "Profil de {name}",
+    "metaDescription": "La vitrine et la collection de {name} sur Kiraku.",
+    "since": "Sur Kiraku depuis {date}",
+    "share": "Partager le profil",
+    "copied": "Lien copié",
+    "private": "Ce profil est privé.",
+    "stats": {
+      "unique": "Cartes uniques",
+      "mythic": "Mythiques",
+      "completion": "Catalogue"
+    },
+    "viewCollection": "Voir la collection",
+    "privacy": "Confidentialité",
+    "ownerNotice": {
+      "FRIENDS": "Ton profil est réservé à tes amis : en attendant les amis, personne d'autre que toi ne le voit.",
+      "PRIVATE": "Ton profil est privé : personne d'autre que toi ne le voit."
+    },
+    "showcase": "Vitrine",
+    "backToProfile": "← Profil de {name}",
+    "collectionHidden": "Cette collection n'est pas visible.",
+    "collectionOf": "Collection de {name}",
+    "noMatch": "Aucune carte ne correspond à ces filtres.",
+    "collectionEmpty": "Cette collection est vide."
+  },
+  "privacy": {
+    "title": "Confidentialité",
+    "intro": "Choisis qui voit ton profil public, ta vitrine et ta collection.",
+    "who": "Qui voit mon profil",
+    "levels": {
+      "PUBLIC": {
+        "label": "Tout le monde",
+        "hint": "Ton lien de profil se partage et s'ouvre pour tous."
+      },
+      "FRIENDS": {
+        "label": "Mes amis",
+        "hint": "Les amis arrivent bientôt : en attendant, équivaut à « Moi seulement »."
+      },
+      "PRIVATE": {
+        "label": "Moi seulement",
+        "hint": "Les autres ne voient que ton pseudo."
+      }
+    },
+    "showCollection": "Montrer ma collection complète",
+    "showCollectionHint": "Sinon, seuls ta vitrine et tes chiffres sont visibles.",
+    "saved": "Enregistré.",
+    "error": "Enregistrement impossible. Réessaie."
   }
 }

@@ -11,7 +11,7 @@ L'appli tient en six briques qui partagent une seule base Postgres : boosters, c
 | Boosters | Ouvre un booster de 6 cartes | 10 au départ, +1 toutes les 10 min, max 10 |
 | Collection | Parcourt ses cartes, filtre, voit ses doublons | Chaque carte obtenue = une instance unique |
 | Profil | Ajoute des amis, consulte leurs profils | Demande puis acceptation |
-| Vitrine | Met 6 cartes en avant | 6 emplacements, cartes possédées uniquement |
+| Vitrine | Met 6 cartes en avant | 4 emplacements (réglable : `showcase.slots`), cartes possédées uniquement |
 | Enchères | Met une carte en vente, enchérit | Prix fixés par les joueurs, carte et Zeni bloquées pendant la vente |
 | Combat | Défie un joueur en 1v1 | Résolu par le serveur, rejoué en animation |
 
@@ -118,7 +118,7 @@ Tout se conçoit d'abord pour un écran de 375 px, puis s'élargit : sur desktop
 | Collection | `/collection` | Kyara | Filtres rareté/série, doublons, recyclage |
 | Marché | `/marche` | Kyara + toi | Enchères, achat immédiat, mes ventes |
 | Combat | `/combat`, `/combat/[id]` | Toi | Défis reçus, choix d'équipe, replay, historique, rang classé |
-| Profil public | `/u/[username]` | Kyara + toi | Vitrine 6 cartes, stats, bouton défier / ajouter |
+| Profil public | `/u/[username]` | Kyara + toi | Vitrine 4 cartes, stats, bouton défier / ajouter |
 | Amis | `/amis` | Kyara + toi | Demandes, cadeaux, défier un ami |
 | Missions | `/missions` | Kyara | Objectifs du jour et de la semaine, récompenses |
 | Parrainage | `/parrainage` | Kyara | Code d'invitation, récompense au filleul et au parrain |
@@ -160,7 +160,7 @@ Tes tuiles s'ajoutent à la grille du Compte : Combat, Boutique, et Casino avec 
 - « Changer de booster », « Voir la collection », « Copier le lien » (page publique `/tirage/[id]`, d'où le modèle `BoosterOpening`) et « Image » (image partageable générée avec `next/og`) ;
 - un bouton son, mémorisé.
 
-**Carte (fuda).** Un seul composant `<Fuda size="sm | md | lg" />`, réutilisé partout (récap, collection, marché, vitrine, combat), dessiné selon la direction artistique : cadre dans la matière de la rareté, sceau kanji, numéro, nom japonais vertical, nom latin, série, stats 力 et 気. L'effet de matière (laque, or, nacre) se fait en CSS (dégradés et `mix-blend-mode`) et suit l'inclinaison du téléphone (`deviceorientation`) ou la souris sur desktop ; il est coupé si `prefers-reduced-motion`. Un appui ouvre la fiche : grande carte, stats de combat dérivées, exemplaires possédés, recycler les doublons, mettre en vente, mettre en vitrine, fiche wiki.
+**Carte (fuda).** Un seul composant `<Fuda size="sm | md | lg" />`, réutilisé partout (récap, collection, marché, vitrine, combat), dessiné selon la direction artistique : cadre dans la matière de la rareté, sceau kanji, numéro, nom japonais vertical, nom latin, série, stats 力 et 気. L'effet de matière (laque, or, nacre) se fait en CSS (dégradés et `mix-blend-mode`) et suit l'inclinaison du téléphone (`deviceorientation`) ou la souris sur desktop ; il est coupé si `prefers-reduced-motion`. Un appui ouvre la fiche : grande carte, stats (les stats de combat dérivées arrivent avec le combat, étape 9), exemplaires possédés, recycler les doublons, mettre en vente, mettre en vitrine, fiche wiki.
 
 **Pied de page.** Raretés, Règles, Nouveautés, Classement, Avis et bugs, choix de la langue, et la mention « Projet fan non officiel ».
 
@@ -403,11 +403,11 @@ Pour l'import, la requête AniList récupère en plus, pour l'œuvre principale 
 
 ## Profil, amis et vitrine
 
-Une seule page publique `/u/[username]` sert à la fois de « Mon compte » et de profil d'ami : en-tête (avatar, pseudo, rang classé, % du catalogue complété), vitrine de 6 cartes, puis collection. Les boutons d'édition n'apparaissent que si c'est ton propre profil.
+Une seule page publique `/u/[username]` sert à la fois de « Mon compte » et de profil d'ami : en-tête (avatar, pseudo, rang classé, % du catalogue complété), vitrine de 4 cartes, puis collection. Les boutons d'édition n'apparaissent que si c'est ton propre profil.
 
 | Écran | Route | Données |
 | --- | --- | --- |
-| Profil | `/u/[username]` | user + 6 `ShowcaseSlot` + stats |
+| Profil | `/u/[username]` | user + 4 `ShowcaseSlot` + stats |
 | Collection | `/u/[username]/collection` | `UserCard` groupées par `cardId` avec compteur de doublons |
 | Amis | `/friends` | demandes reçues, envoyées, amis acceptés |
 | Album | `/collection/album` | tout le catalogue, cartes non possédées en silhouette |
@@ -416,9 +416,17 @@ Trois écrans repris de Kyara complètent le tableau : le wiki `/wiki/[anilistId
 
 Amis : une demande crée une `Friendship` en `PENDING` ; l'accepter la passe en `ACCEPTED`. Avant de créer, vérifie qu'aucune ligne n'existe dans l'autre sens (A→B ou B→A). La liste d'amis = les lignes `ACCEPTED` où tu es d'un côté ou de l'autre.
 
-Vitrine : `setShowcase(position, userCardId)` vérifie que la carte t'appartient et est en `COLLECTION`, puis fait un `upsert` sur `[userId, position]`. Comme `userCardId` est unique, une carte ne peut occuper qu'un emplacement. Quand une carte est vendue, supprime son emplacement dans la même transaction.
+Vitrine : `setShowcaseWith(userId, cardIds)` remplace toute la vitrine d'un bloc (un échange de deux cases ne heurte pas l'unicité de `userCardId`). Le client envoie des ids de `Card` ; le serveur choisit l'exemplaire (celui déjà exposé, sinon le plus ancien en `COLLECTION`) sous le verrou de la ligne `User`, le même que le recyclage. Quand une carte est vendue, supprime son emplacement dans la même transaction.
 
-Collection performante : un `groupBy` sur `cardId` avec `_count`, paginé par 48 cartes, puis un seul `findMany` sur `Card` pour les infos d'affichage. Ne charge jamais toutes les instances d'un coup : un joueur actif en accumule plusieurs milliers en quelques semaines.
+Collection performante : un `GROUP BY cardId` en SQL (`$queryRaw` balisé, jointure `Card` et `Series`, tri tiré d'une liste fermée de fragments), paginé par 48 cartes. Ne charge jamais toutes les instances d'un coup : un joueur actif en accumule plusieurs milliers en quelques semaines.
+
+### Mise en œuvre (étape 5)
+
+- **Collection** (`/collection`) : filtres dans l'URL (recherche, raretés, série, doublons, 7 tris), liste virtualisée par lignes (TanStack Virtual), pages suivantes chargées par `loadCollectionPage` à l'approche du bas. Pagination par décalage : un joueur a au plus autant de lignes que de cartes au catalogue (~6 700), un `OFFSET` reste bon marché.
+- **Fiche carte** : `/collection/[anilistId]`, ouverte en feuille au-dessus de la liste par une route interceptée (`@sheet/(.)[anilistId]`) pour garder la liste montée et sa position.
+- **Recyclage** : par carte (fiche) ou « tout recycler jusqu'à la rareté X » avec récap ; le serveur refuse (`STALE`) si le gain n'est plus celui affiché. Transaction : verrou `User`, suppression conditionnelle sur `status = COLLECTION`, crédit et ligne `CoinTransaction` `DISSOLVE`. Valeurs par rareté dans `collection.recycleValues` (`/admin/collection`). Les exemplaires recyclés sont supprimés ; `BoosterOpening.catalogCardIds` garde les ids de `Card` pour que `/tirage/[id]` reste lisible.
+- **Vitrine** : mode édition, glisser-déposer au doigt (Motion `drag` + `layoutId`), boutons ← → × et sélecteur pour le clavier.
+- **Confidentialité** : `User.profileVisibility` (`PUBLIC`, `FRIENDS`, `PRIVATE` ; `FRIENDS` vaut `PRIVATE` jusqu'à l'étape 6) et `showCollection`. Un invité naît `PRIVATE` et passe `PUBLIC` à l'inscription, sauf s'il a déjà choisi (`privacyChosenAt`). Un profil privé répond comme un public (200), avec le pseudo seul ; un invité ou un profil non public n'est pas indexé.
 
 ## Hôtel des ventes
 
@@ -676,7 +684,7 @@ Performance :
 - Pages en Server Components ; seuls les éléments interactifs (ouverture, enchère, timer) sont des Client Components.
 - Catalogue et pages de cartes en cache (`revalidateTag` à l'ajout de cartes).
 - Images de cartes en WebP, deux tailles (vignette \~300 px, détail \~800 px), via CDN.
-- Pagination par curseur partout (collection, marché, historique).
+- Pagination par curseur partout (marché, historique) ; la collection, bornée par la taille du catalogue, pagine par décalage.
 
 Sécurité et anti-triche :
 
@@ -773,6 +781,9 @@ model User {
   deletionRequestedAt DateTime?        // suppression RGPD en attente
   referralCode  String   @unique @default(cuid())
   referredById  String?
+  profileVisibility ProfileVisibility @default(PUBLIC) // invités créés en PRIVATE
+  showCollection    Boolean  @default(true)
+  privacyChosenAt   DateTime?          // choix du joueur : l'inscription ne le change plus
   createdAt     DateTime @default(now())
 
   cards        UserCard[]
@@ -965,6 +976,7 @@ model BoosterOpening {       // un tirage, partageable par lien
   userId        String
   boosterTypeId String
   cardIds       String[] // ids de UserCard
+  catalogCardIds String[] // ids de Card dans le même ordre (lisible après recyclage ou vente)
   golden        Boolean  @default(false)
   divine        Boolean  @default(false)
   createdAt     DateTime @default(now())

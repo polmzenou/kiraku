@@ -176,6 +176,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
           userId,
           boosterSlug: type.slug,
           cardIds: b.cards.map((c) => c.userCardId),
+          catalogCardIds: b.cards.map((c) => c.cardId),
           golden: b.golden,
           divine: b.divine,
           pityTriggered: b.pityTriggered,

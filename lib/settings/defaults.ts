@@ -32,6 +32,13 @@ const rarityRates = z
   })
   .refine((rates) => RARITIES.some((r) => rates[r] > 0), { message: "Au moins une rareté doit avoir une part" });
 
+// Zeni rendus par doublon recyclé, par rareté
+const recycleValues = z.object(
+  Object.fromEntries(RARITIES.map((r) => [r, z.number().int().min(0).max(100_000)])) as {
+    [R in (typeof RARITIES)[number]]: z.ZodNumber;
+  },
+);
+
 const cardStats = z.object({
   powerMax: z.number().int().min(1).max(999),
   powerSpan: z.number().int().min(0).max(999),
@@ -58,6 +65,9 @@ export const SETTING_SCHEMAS = {
   "booster.minPool": z.number().int().min(1).max(10_000),
   // Fuseau du jeu : « aujourd'hui » (anniversaires) et saison AniList en cours
   "game.timeZone": z.string().min(1).max(64).refine(isTimeZone, { message: "Fuseau horaire inconnu" }),
+  "collection.recycleValues": recycleValues,
+  // Nombre d'emplacements de la vitrine du profil
+  "showcase.slots": z.number().int().min(1).max(8),
   "guest.createPerHourPerIp": z.number().int().min(1).max(1_000),
   "discord.linkBonusZeni": z.number().int().min(0).max(100_000),
   "catalog.size": z.number().int().min(10).max(50_000),
@@ -86,6 +96,9 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "booster.divineOdds": 2000,
   "booster.minPool": 100,
   "game.timeZone": "Europe/Paris",
+  // Valeurs de Kyara : 1 · 1 · 3 · 10 · 40 · 150 Zeni
+  "collection.recycleValues": { COMMON: 1, UNCOMMON: 1, RARE: 3, EPIC: 10, LEGENDARY: 40, MYTHIC: 150 },
+  "showcase.slots": 4,
   "guest.createPerHourPerIp": 5,
   "discord.linkBonusZeni": 500, // versé une seule fois, à la première liaison
   "catalog.size": 6736,

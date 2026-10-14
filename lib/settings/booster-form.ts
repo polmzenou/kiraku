@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { SETTING_SCHEMAS, type SettingKey, type SettingValue } from "./defaults";
+import type { SettingKey } from "./defaults";
+import { changedSettingKeys, settingsSchemaFor, type SettingsOf } from "./form";
 
 // Réglages du panneau /admin/boosters : chaque clé garde son propre schéma Zod (defaults.ts).
 
@@ -16,15 +16,11 @@ export const BOOSTER_SETTING_KEYS = [
 
 export type BoosterSettingKey = (typeof BOOSTER_SETTING_KEYS)[number];
 
-export type BoosterSettings = { [K in BoosterSettingKey]: SettingValue<K> };
+export type BoosterSettings = SettingsOf<BoosterSettingKey>;
 
-export const boosterSettingsSchema = z.object(
-  Object.fromEntries(BOOSTER_SETTING_KEYS.map((k) => [k, SETTING_SCHEMAS[k]])) as {
-    [K in BoosterSettingKey]: (typeof SETTING_SCHEMAS)[K];
-  },
-);
+export const boosterSettingsSchema = settingsSchemaFor(BOOSTER_SETTING_KEYS);
 
 /** Clés dont la valeur change (comparaison par valeur, ordre des clés d'objet compris). */
 export function changedKeys(before: BoosterSettings, after: BoosterSettings): BoosterSettingKey[] {
-  return BOOSTER_SETTING_KEYS.filter((k) => JSON.stringify(before[k]) !== JSON.stringify(after[k]));
+  return changedSettingKeys(BOOSTER_SETTING_KEYS, before, after);
 }

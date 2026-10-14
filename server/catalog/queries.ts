@@ -38,6 +38,7 @@ export type CatalogCardSummary = Prisma.CardGetPayload<{ select: typeof summaryS
 
 const detailSelect = {
   ...summarySelect,
+  id: true,
   favorites: true,
   role: true,
   series: { select: { titleRomaji: true, titleEnglish: true, titleNative: true, type: true } },

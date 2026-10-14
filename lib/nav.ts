@@ -7,7 +7,7 @@ export type NavItem = { key: NavKey; href: string; ready: boolean; also?: readon
 
 export const NAV_ITEMS: readonly NavItem[] = [
   { key: "boosters", href: "/", ready: true, also: ["/ouvrir", "/tirage"] },
-  { key: "collection", href: "/collection", ready: false },
+  { key: "collection", href: "/collection", ready: true, also: ["/u"] },
   { key: "combat", href: "/combat", ready: false },
   { key: "market", href: "/marche", ready: false },
   { key: "wiki", href: "/wiki", ready: true },

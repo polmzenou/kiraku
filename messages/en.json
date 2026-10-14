@@ -7,7 +7,8 @@
     "appName": "Kiraku",
     "zeni": "{amount, number} Zeni",
     "boosters": "{count}/{max}",
-    "number": "{value, number}"
+    "number": "{value, number}",
+    "close": "Close"
   },
   "account": {
     "title": "Account",
@@ -34,7 +35,8 @@
     "discordBonusTitle": "Link your Discord account",
     "discordBonusBody": "Earn {amount, number} Zeni the first time you link it.",
     "discordLinked": "Discord is linked to your account.",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "publicProfile": "View my public profile"
   },
   "theme": {
     "label": "Theme",
@@ -419,7 +421,8 @@
       "market": "Market",
       "ranked": "Ranked",
       "types": "Booster types",
-      "banners": "Banners"
+      "banners": "Banners",
+      "collection": "Collection"
     },
     "boosters": {
       "title": "Booster settings",
@@ -593,6 +596,246 @@
       "dates": "From {start} to {end}",
       "noDates": "No dates",
       "featured": "{count, plural, one {# featured card} other {# featured cards}}"
+    },
+    "collection": {
+      "title": "Collection settings",
+      "intro": "Zeni given per recycled duplicate and showcase size. Every change applies immediately and is logged.",
+      "recycleSection": "Recycling a duplicate (Zeni)",
+      "showcaseSection": "Profile showcase",
+      "fields": {
+        "showcaseSlots": "Number of slots"
+      },
+      "showcaseHint": "Lowering this hides the cards in the last slots (they stay saved).",
+      "keys": {
+        "recycleValues": "Recycling values",
+        "showcaseSlots": "Showcase slots"
+      },
+      "invalid": "Some values are out of range: fix them before saving.",
+      "review": "Review changes",
+      "noChange": "No changes.",
+      "confirmTitle": "Confirm these changes?",
+      "confirm": "Save",
+      "cancel": "Cancel",
+      "saved": "{count, plural, one {# setting saved} other {# settings saved}}.",
+      "errors": {
+        "FORBIDDEN": "Access denied.",
+        "INVALID": "Values refused by the server.",
+        "RATE_LIMITED": "Too many saves: wait a minute.",
+        "unexpected": "Unexpected error. Try again."
+      },
+      "log": "Recent changes",
+      "logEmpty": "No changes yet.",
+      "logEntry": "{key} by {admin}"
     }
+  },
+  "collection": {
+    "title": "Collection",
+    "myProfile": "My profile",
+    "recyclableHint": "{count, plural, one {# recyclable duplicate} other {# recyclable duplicates}} for {zeni, number} Zeni.",
+    "empty": "Your collection is empty for now: open a booster to get your first fuda.",
+    "openBoosters": "Open a booster",
+    "noMatch": "No card matches these filters.",
+    "loading": "Loading the collection…",
+    "back": "← Collection",
+    "copiesLabel": "{count, plural, one {# copy} other {# copies}}",
+    "inShowcaseBadge": "Showcase",
+    "listLabel": "Collection cards",
+    "retry": "Try again",
+    "searchLabel": "Search the collection",
+    "searchPlaceholder": "Name or series…",
+    "sortAndSeries": "Sort and series",
+    "rarityFilter": "Filter by rarity",
+    "dupesOnly": "Duplicates",
+    "seriesActive": "Series:",
+    "clearSeries": "All series",
+    "sortBy": "Sort by",
+    "sorts": {
+      "rarity": "Rarity",
+      "recent": "Obtained",
+      "number": "Number",
+      "name": "Name",
+      "copies": "Copies",
+      "power": "Power 力",
+      "ki": "Ki 気"
+    },
+    "direction": "Order",
+    "dirs": {
+      "rarity": {
+        "desc": "Rarest first",
+        "asc": "Most common first"
+      },
+      "recent": {
+        "desc": "Newest first",
+        "asc": "Oldest first"
+      },
+      "number": {
+        "desc": "Highest number first",
+        "asc": "Lowest number first"
+      },
+      "name": {
+        "desc": "Z → A",
+        "asc": "A → Z"
+      },
+      "copies": {
+        "desc": "Most copies first",
+        "asc": "Fewest copies first"
+      },
+      "power": {
+        "desc": "Strongest first",
+        "asc": "Weakest first"
+      },
+      "ki": {
+        "desc": "Highest first",
+        "asc": "Lowest first"
+      }
+    },
+    "series": "Series",
+    "allSeries": "All series",
+    "seriesOption": "{title} ({count})",
+    "done": "Show cards",
+    "stats": {
+      "unique": "Unique cards",
+      "copies": "Copies",
+      "completion": "Catalog"
+    },
+    "recycleAll": {
+      "open": "Recycle duplicates",
+      "title": "Recycle duplicates",
+      "intro": "Each duplicate gives Zeni based on its rarity. You always keep one copy of each card, and the one in your showcase.",
+      "upTo": "Recycle up to rarity",
+      "recap": "Recycling summary",
+      "rarity": "Rarity",
+      "copies": "Duplicates",
+      "zeni": "Zeni",
+      "total": "Total",
+      "keepOne": "Cards on sale or in battle are left alone.",
+      "cancel": "Cancel",
+      "confirm": "Recycle (+{zeni, number} Zeni)",
+      "done": "{count, plural, one {# duplicate recycled} other {# duplicates recycled}}: +{zeni, number} Zeni.",
+      "errors": {
+        "NO_SESSION": "Your session expired: reload the page.",
+        "INVALID": "Request refused.",
+        "FORBIDDEN": "Access denied.",
+        "RATE_LIMITED": "Easy there: wait a few seconds.",
+        "NOTHING": "No duplicates left to recycle.",
+        "STALE": "Your collection changed in the meantime: check the summary and try again.",
+        "NOT_OWNED": "You no longer own this card.",
+        "FULL": "Your showcase is full.",
+        "UNAVAILABLE": "Not possible right now. Try again."
+      }
+    },
+    "card": {
+      "number": "No. {number}",
+      "power": "Power",
+      "ki": "Ki",
+      "notOwned": "You don't own this card.",
+      "copiesTitle": "{count, plural, one {# copy} other {# copies}}",
+      "inCollection": "{count, plural, =0 {None in collection} one {# in collection} other {# in collection}}",
+      "inAuction": "{count, plural, one {# on sale} other {# on sale}}",
+      "inBattle": "{count, plural, one {# in battle} other {# in battle}}",
+      "firstObtained": "First obtained: {date}",
+      "recycleTitle": "Recycle duplicates",
+      "unitValue": "{zeni, number} Zeni per duplicate.",
+      "noDuplicates": "No duplicates to recycle.",
+      "less": "One fewer",
+      "more": "One more",
+      "count": "{count} / {max}",
+      "recycle": "Recycle {count} (+{zeni, number} Zeni)",
+      "confirm": "Confirm (+{zeni, number} Zeni)",
+      "cancel": "Cancel",
+      "keepOne": "You always keep one copy, and the one in your showcase.",
+      "recycled": "{count, plural, one {# duplicate recycled} other {# duplicates recycled}}: +{zeni, number} Zeni.",
+      "addToShowcase": "Add to showcase",
+      "removeFromShowcase": "Remove from showcase",
+      "showcaseFull": "Your showcase is full: <link>remove a card from your profile</link>.",
+      "sell": "Put up for sale",
+      "soon": "Soon",
+      "wiki": "Wiki page",
+      "errors": {
+        "NO_SESSION": "Your session expired: reload the page.",
+        "INVALID": "Request refused.",
+        "FORBIDDEN": "Access denied.",
+        "RATE_LIMITED": "Easy there: wait a few seconds.",
+        "NOTHING": "No duplicates left to recycle.",
+        "STALE": "Your collection changed in the meantime: check the summary and try again.",
+        "NOT_OWNED": "You no longer own this card.",
+        "FULL": "Your showcase is full.",
+        "UNAVAILABLE": "Not possible right now. Try again."
+      }
+    }
+  },
+  "showcase": {
+    "label": "Showcase",
+    "slot": "Slot {n}",
+    "edit": "Edit showcase",
+    "done": "Done",
+    "dragHint": "Drag a card onto another slot to swap them.",
+    "emptyOwner": "Your showcase is empty: pick up to four cards to show off.",
+    "emptyPublic": "No cards in the showcase yet.",
+    "addTo": "Pick a card for slot {n}",
+    "moveLeft": "Move {name} left",
+    "moveRight": "Move {name} right",
+    "remove": "Remove {name} from the showcase",
+    "change": "Replace {name}",
+    "changeShort": "Change",
+    "removeShort": "Remove",
+    "error": "The showcase couldn't be saved: it went back to how it was.",
+    "pickTitle": "Pick a card",
+    "searchLabel": "Search for a card",
+    "searchPlaceholder": "Name or series…",
+    "pickEmpty": "No card found.",
+    "pick": "Put {name} in the showcase",
+    "alreadyShown": "Shown",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "more": "Show more"
+  },
+  "profile": {
+    "metaTitle": "{name}'s profile",
+    "metaDescription": "{name}'s showcase and collection on Kiraku.",
+    "since": "On Kiraku since {date}",
+    "share": "Share profile",
+    "copied": "Link copied",
+    "private": "This profile is private.",
+    "stats": {
+      "unique": "Unique cards",
+      "mythic": "Mythics",
+      "completion": "Catalog"
+    },
+    "viewCollection": "View collection",
+    "privacy": "Privacy",
+    "ownerNotice": {
+      "FRIENDS": "Your profile is for friends only: until friends arrive, nobody but you can see it.",
+      "PRIVATE": "Your profile is private: nobody but you can see it."
+    },
+    "showcase": "Showcase",
+    "backToProfile": "← {name}'s profile",
+    "collectionHidden": "This collection isn't visible.",
+    "collectionOf": "{name}'s collection",
+    "noMatch": "No card matches these filters.",
+    "collectionEmpty": "This collection is empty."
+  },
+  "privacy": {
+    "title": "Privacy",
+    "intro": "Choose who sees your public profile, showcase and collection.",
+    "who": "Who can see my profile",
+    "levels": {
+      "PUBLIC": {
+        "label": "Everyone",
+        "hint": "Your profile link can be shared and opened by anyone."
+      },
+      "FRIENDS": {
+        "label": "My friends",
+        "hint": "Friends are coming soon: until then, same as “Only me”."
+      },
+      "PRIVATE": {
+        "label": "Only me",
+        "hint": "Others only see your username."
+      }
+    },
+    "showCollection": "Show my full collection",
+    "showCollectionHint": "Otherwise, only your showcase and numbers are visible.",
+    "saved": "Saved.",
+    "error": "Couldn't save. Try again."
   }
 }

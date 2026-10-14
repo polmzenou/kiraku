@@ -6,6 +6,7 @@ import { ResendVerificationButton } from "@/components/auth/ResendVerificationBu
 import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { PageShell } from "@/components/PageShell";
+import { PrivacyForm } from "@/components/profile/PrivacyForm";
 import { SealMark } from "@/components/SealMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/Button";
@@ -76,6 +77,8 @@ export default async function AccountPage() {
         </div>
       </section>
 
+      <ButtonLink href={`/u/${user.username}`}>{t("account.publicProfile")}</ButtonLink>
+
       <dl className="grid grid-cols-2 gap-3">
         <div className="rounded-lg border border-border bg-surface p-4">
           <dt className="text-sm text-text-muted">{t("account.balance")}</dt>
@@ -126,6 +129,12 @@ export default async function AccountPage() {
           {user.discordLinkedAt && <p className="text-sm text-text-muted">{t("account.discordLinked")}</p>}
         </>
       )}
+
+      <section id="confidentialite" className="flex scroll-mt-20 flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+        <h2 className="text-lg font-bold">{t("privacy.title")}</h2>
+        <p className="text-sm text-text-muted">{t("privacy.intro")}</p>
+        <PrivacyForm visibility={user.profileVisibility} showCollection={user.showCollection} />
+      </section>
 
       <section className="flex flex-col gap-5 rounded-lg border border-border bg-surface p-4">
         <h2 className="text-lg font-bold">{t("account.settings")}</h2>
