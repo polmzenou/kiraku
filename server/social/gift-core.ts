@@ -7,6 +7,8 @@ import { dayKey, filterContext } from "@/lib/boosters/pool-filter";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { checkGift, pickGiftCopy, type GiftRefusal, type GiftRules } from "@/lib/social/gifts";
 import { pairKey } from "@/lib/social/relation";
+import { grantBoosters } from "../economy/credits";
+import { debit, LedgerError } from "../economy/ledger";
 import { blocksBetween, lockPlayers, type LockedPlayer, type Tx } from "./lock";
 import { notify, notifyingTransaction, type OnNotified } from "./notify";
 
@@ -128,10 +130,13 @@ export async function giftCardWith(
   }, TX, onNotified);
 }
 
+/** Type des boosters offerts entre amis. */
+export const GIFT_BOOSTER_SLUG = "standard";
+
 /**
  * Offre un booster standard payé en Zeni par l'expéditeur : le stock gratuit ne se transfère
- * jamais (un compte secondaire n'a rien à donner que ses Zeni). Le destinataire l'ouvre depuis
- * son compteur giftBoosters, sans booster doré ni divin.
+ * jamais (un compte secondaire n'a rien à donner que ses Zeni). Le destinataire le reçoit en
+ * crédit (BoosterCredit) et l'ouvre sans booster doré ni divin.
  */
 export async function giftBoosterWith(
   db: PrismaClient,
@@ -143,13 +148,8 @@ export async function giftBoosterWith(
     const now = new Date();
     const { sender, day } = await checkUnderLock(tx, ctx, now);
     if (sender.coins < ctx.price) throw new GiftError("NOT_ENOUGH_ZENI");
-
-    const debited = await tx.user.updateMany({
-      where: { id: ctx.senderId, coins: { gte: ctx.price } },
-      data: { coins: { decrement: ctx.price } },
-    });
-    if (debited.count !== 1) throw new GiftError("NOT_ENOUGH_ZENI");
-    await tx.user.update({ where: { id: ctx.recipientId }, data: { giftBoosters: { increment: 1 } } });
+    const standard = await tx.boosterType.findUnique({ where: { slug: GIFT_BOOSTER_SLUG }, select: { id: true } });
+    if (!standard) throw new GiftError("DISABLED");
 
     const gift = await tx.gift.create({
       data: {
@@ -162,9 +162,14 @@ export async function giftBoosterWith(
       },
       select: { id: true },
     });
-    await tx.coinTransaction.create({
-      data: { userId: ctx.senderId, amount: -ctx.price, reason: "GIFT", refId: gift.id, createdAt: now },
-    });
+    let coins: number;
+    try {
+      coins = await debit(tx, { userId: ctx.senderId, amount: ctx.price, reason: "GIFT", refId: gift.id, now });
+    } catch (e) {
+      if (e instanceof LedgerError && e.code === "NOT_ENOUGH_ZENI") throw new GiftError("NOT_ENOUGH_ZENI");
+      throw e;
+    }
+    await grantBoosters(tx, ctx.recipientId, standard.id, 1);
     await notify(tx, {
       userId: ctx.recipientId,
       type: "GIFT_RECEIVED",
@@ -173,6 +178,6 @@ export async function giftBoosterWith(
       payload: { kind: "BOOSTER" },
       now,
     });
-    return { giftId: gift.id, coins: sender.coins - ctx.price };
+    return { giftId: gift.id, coins };
   }, TX, onNotified);
 }

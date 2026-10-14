@@ -143,10 +143,10 @@ describe.skipIf(!url)("amis et cadeaux atomiques (base réelle)", () => {
     expect(ok).toBe(3);
     const [sender, recipient] = await Promise.all([
       prisma.user.findUniqueOrThrow({ where: { id: a }, select: { coins: true } }),
-      prisma.user.findUniqueOrThrow({ where: { id: b }, select: { giftBoosters: true } }),
+      prisma.boosterCredit.findFirst({ where: { userId: b, boosterType: { slug: "standard" } }, select: { count: true } }),
     ]);
     expect(sender.coins).toBe(START - ok * 300);
-    expect(recipient.giftBoosters).toBe(ok);
+    expect(recipient?.count ?? 0).toBe(ok);
     expect(await balanceMatchesLedger(a)).toBe(true);
   }, 60_000);
 

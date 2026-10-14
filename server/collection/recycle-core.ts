@@ -3,6 +3,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import { planRecycle, type RecyclePlan, type RecycleValues } from "@/lib/collection/recycle";
+import { credit } from "../economy/ledger";
 
 export type RecycleErrorCode = "NO_USER" | "BANNED" | "NOTHING" | "STALE";
 
@@ -77,23 +78,17 @@ export async function recycleWith(
       }
       if (deleted !== plan.ids.length) throw new RecycleError("STALE");
 
-      const updated = await tx.user.update({
-        where: { id: userId },
-        data: { coins: { increment: plan.gain } },
-        select: { coins: true },
-      });
-      if (plan.gain > 0) {
-        await tx.coinTransaction.create({
-          data: {
-            userId,
-            amount: plan.gain,
-            reason: "DISSOLVE",
-            refId: request.kind === "card" ? request.cardId : null,
-          },
-        });
-      }
+      const coins =
+        plan.gain > 0
+          ? await credit(tx, {
+              userId,
+              amount: plan.gain,
+              reason: "DISSOLVE",
+              refId: request.kind === "card" ? request.cardId : null,
+            })
+          : (await tx.user.findUniqueOrThrow({ where: { id: userId }, select: { coins: true } })).coins;
 
-      return { recycled: plan.ids.length, gain: plan.gain, coins: updated.coins, byRarity: plan.byRarity };
+      return { recycled: plan.ids.length, gain: plan.gain, coins, byRarity: plan.byRarity };
     },
     { maxWait: 10_000, timeout: 20_000 },
   );

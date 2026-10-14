@@ -50,8 +50,9 @@ export async function AppHeader({ theme }: { theme: Theme }) {
             />
           )}
           {user && (
-            <span
-              className="inline-flex min-h-9 min-w-0 items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 text-sm font-bold"
+            <Link
+              href="/compte/historique"
+              className="inline-flex min-h-11 min-w-0 items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 text-sm font-bold"
               aria-label={t("header.balance", { amount: user.coins })}
               title={t("header.balance", { amount: user.coins })}
             >
@@ -59,7 +60,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
               <span aria-hidden="true" className="truncate tabular-nums">
                 {t("common.number", { value: user.coins })}
               </span>
-            </span>
+            </Link>
           )}
           {user && <NotificationBell initial={unread} serverNow={new Date().toISOString()} pollSeconds={pollSeconds} />}
           {isAdmin && (

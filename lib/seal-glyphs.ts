@@ -15,4 +15,5 @@ export const SEAL_GLYPHS = [
   "管理", // administration
   "蒐集飾札公友秘", // collection, vitrine, fiche carte, confidentialité
   "贈報", // cadeaux, notifications
+  "任務商店招待済訪週", // missions, boutique, parrainage, réclamé, objectifs
 ].join("");

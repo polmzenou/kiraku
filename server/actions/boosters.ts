@@ -10,6 +10,7 @@ import { boosterStateFrom, type BoosterState } from "../boosters/state";
 import { cardViews } from "../boosters/display";
 import { openBoosters } from "../boosters/open";
 import { OpenError, type OpenErrorCode } from "../boosters/open-core";
+import { qualifyLater } from "../economy/referral";
 import { rateLimit } from "../ratelimit";
 import { getCurrentUser } from "../user";
 
@@ -34,7 +35,8 @@ export type OpenBoosterResult =
       state: BoosterState;
       featuredCount: number;
       zeniSpent: number;
-      giftBoosters: number;
+      /** Boosters crédités de ce type restant à ouvrir (mode crédit). */
+      credits: number;
     }
   | { ok: false; error: OpenBoosterError };
 
@@ -42,9 +44,9 @@ const openSchema = z.object({
   booster: slugSchema,
   count: z.union(OPEN_COUNTS.map((n) => z.literal(n))),
   pay: z.boolean().default(false),
-  // Booster offert par un ami : un seul à la fois, toujours le standard
-  gift: z.boolean().default(false),
-}).refine((v) => !v.gift || (v.count === 1 && !v.pay));
+  // Booster crédité (cadeau, boutique, récompense) : jamais payé en plus
+  credit: z.boolean().default(false),
+}).refine((v) => !v.credit || !v.pay);
 
 const PUBLIC_ERRORS: Partial<Record<OpenErrorCode, OpenBoosterError>> = {
   NO_BOOSTER: "NO_BOOSTER",
@@ -69,7 +71,7 @@ export async function openBoosterAction(input: unknown): Promise<OpenBoosterResu
 
   let opened: Awaited<ReturnType<typeof openBoosters>>;
   try {
-    opened = await openBoosters(user.id, parsed.data.booster, parsed.data.count, parsed.data.pay, parsed.data.gift);
+    opened = await openBoosters(user.id, parsed.data.booster, parsed.data.count, parsed.data.pay, parsed.data.credit);
   } catch (e) {
     if (e instanceof OpenError) return { ok: false, error: PUBLIC_ERRORS[e.code] ?? "UNAVAILABLE" };
     console.error("[boosters] ouverture impossible", e);
@@ -107,6 +109,9 @@ export async function openBoosterAction(input: unknown): Promise<OpenBoosterResu
     rules,
   );
 
+  // Un filleul qui ouvre des boosters avance vers sa qualification (vérifiée après la réponse)
+  if (user.referredById) qualifyLater(user.id);
+
   // En-tête (stock, ensō, solde) à jour sans recharger la page
   refresh();
   return {
@@ -115,6 +120,6 @@ export async function openBoosterAction(input: unknown): Promise<OpenBoosterResu
     state,
     featuredCount: outcome.featuredCount,
     zeniSpent: outcome.zeniSpent,
-    giftBoosters: outcome.giftBoosters,
+    credits: outcome.credits,
   };
 }

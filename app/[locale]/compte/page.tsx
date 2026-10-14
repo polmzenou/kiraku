@@ -12,6 +12,7 @@ import { PushToggle } from "@/components/social/PushToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
+import { Link } from "@/i18n/navigation";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { guestCode } from "@/lib/username";
 import { logout } from "@/server/actions/account";
@@ -20,6 +21,14 @@ import { discordEnabled, env, isProduction, mailEnabled } from "@/server/env";
 import { pushAvailable } from "@/server/push/send";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
+
+// Grille de tuiles du Compte (comme Kyara) : les écrans hors barre de navigation
+const ACCOUNT_TILES = [
+  { key: "missions", href: "/missions", kanji: "任" },
+  { key: "shop", href: "/boutique", kanji: "商" },
+  { key: "referral", href: "/parrainage", kanji: "招" },
+  { key: "ledger", href: "/compte/historique", kanji: "銭" },
+] as const;
 
 export default async function AccountPage() {
   const [t, user, theme] = await Promise.all([
@@ -83,15 +92,38 @@ export default async function AccountPage() {
       <ButtonLink href={`/u/${user.username}`}>{t("account.publicProfile")}</ButtonLink>
 
       <dl className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg border border-border bg-surface p-4">
+        <div className="relative rounded-lg border border-border bg-surface p-4">
           <dt className="text-sm text-text-muted">{t("account.balance")}</dt>
-          <dd className="text-lg font-bold text-kin">{t("common.zeni", { amount: user.coins })}</dd>
+          <dd className="text-lg font-bold text-kin">
+            {/* Toute la case mène à l'historique des Zeni */}
+            <Link href="/compte/historique" className="after:absolute after:inset-0 after:content-['']">
+              {t("common.zeni", { amount: user.coins })}
+            </Link>
+          </dd>
         </div>
         <div className="rounded-lg border border-border bg-surface p-4">
           <dt className="text-sm text-text-muted">{t("account.boosterStock")}</dt>
           <dd className="text-lg font-bold">{t("common.boosters", { count: user.boosterStock, max: maxStock })}</dd>
         </div>
       </dl>
+
+      <nav aria-label={t("account.tilesLabel")}>
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {ACCOUNT_TILES.map((tile) => (
+            <li key={tile.key}>
+              <Link
+                href={tile.href}
+                className="flex min-h-20 flex-col items-start justify-between gap-1 rounded-lg border border-border bg-surface p-3 font-bold hover:border-shu"
+              >
+                <span aria-hidden="true" lang="ja" className="font-seal text-xl text-shu">
+                  {tile.kanji}
+                </span>
+                {t(`account.tiles.${tile.key}`)}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
 
       {user.isGuest ? (
         <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">

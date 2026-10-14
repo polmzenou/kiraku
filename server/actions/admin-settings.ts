@@ -10,6 +10,7 @@ import {
   type CollectionSettingKey,
 } from "@/lib/settings/collection-form";
 import { parseSetting, type SettingKey } from "@/lib/settings/defaults";
+import { ECONOMY_SETTING_KEYS, economySettingsSchema, type EconomySettingKey } from "@/lib/settings/economy-form";
 import { SOCIAL_SETTING_KEYS, socialSettingsSchema, type SocialSettingKey } from "@/lib/settings/social-form";
 import { changedSettingKeys, type SettingsOf } from "@/lib/settings/form";
 import { getAdmin } from "../admin";
@@ -86,4 +87,20 @@ export async function updateCollectionSettings(input: unknown): Promise<UpdateSe
 
 export async function updateSocialSettings(input: unknown): Promise<UpdateSettingsResult<SocialSettingKey>> {
   return saveSettings(SOCIAL_SETTING_KEYS, socialSettingsSchema, input);
+}
+
+export async function updateEconomySettings(input: unknown): Promise<UpdateSettingsResult<EconomySettingKey>> {
+  if (!(await getAdmin())) return { ok: false, error: "FORBIDDEN" };
+  const parsed = economySettingsSchema.safeParse(input);
+  // Un lot de parrainage doit exister : sinon la réclamation échouerait chez les joueurs
+  if (parsed.success) {
+    const lotIds = [parsed.data["referral.referrerLotId"], parsed.data["referral.refereeLotId"]].filter(
+      (id): id is string => id !== null,
+    );
+    if (lotIds.length > 0) {
+      const found = await prisma.lot.count({ where: { id: { in: [...new Set(lotIds)] } } });
+      if (found !== new Set(lotIds).size) return { ok: false, error: "INVALID" };
+    }
+  }
+  return saveSettings(ECONOMY_SETTING_KEYS, economySettingsSchema, input);
 }
