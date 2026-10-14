@@ -12,6 +12,7 @@ const MODULES = [
   { key: "types", href: "/admin/boosters/types", ready: true },
   { key: "banners", href: "/admin/bannieres", ready: true },
   { key: "collection", href: "/admin/collection", ready: true },
+  { key: "social", href: "/admin/social", ready: true },
   { key: "users", href: "/admin/utilisateurs", ready: false },
   { key: "catalog", href: "/admin/catalogue", ready: false },
   { key: "market", href: "/admin/marche", ready: false },

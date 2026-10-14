@@ -426,7 +426,19 @@ Collection performante : un `GROUP BY cardId` en SQL (`$queryRaw` balisé, joint
 - **Fiche carte** : `/collection/[anilistId]`, ouverte en feuille au-dessus de la liste par une route interceptée (`@sheet/(.)[anilistId]`) pour garder la liste montée et sa position.
 - **Recyclage** : par carte (fiche) ou « tout recycler jusqu'à la rareté X » avec récap ; le serveur refuse (`STALE`) si le gain n'est plus celui affiché. Transaction : verrou `User`, suppression conditionnelle sur `status = COLLECTION`, crédit et ligne `CoinTransaction` `DISSOLVE`. Valeurs par rareté dans `collection.recycleValues` (`/admin/collection`). Les exemplaires recyclés sont supprimés ; `BoosterOpening.catalogCardIds` garde les ids de `Card` pour que `/tirage/[id]` reste lisible.
 - **Vitrine** : mode édition, glisser-déposer au doigt (Motion `drag` + `layoutId`), boutons ← → × et sélecteur pour le clavier.
-- **Confidentialité** : `User.profileVisibility` (`PUBLIC`, `FRIENDS`, `PRIVATE` ; `FRIENDS` vaut `PRIVATE` jusqu'à l'étape 6) et `showCollection`. Un invité naît `PRIVATE` et passe `PUBLIC` à l'inscription, sauf s'il a déjà choisi (`privacyChosenAt`). Un profil privé répond comme un public (200), avec le pseudo seul ; un invité ou un profil non public n'est pas indexé.
+- **Confidentialité** : `User.profileVisibility` (`PUBLIC`, `FRIENDS`, `PRIVATE` ; `FRIENDS` = amis acceptés depuis l'étape 6) et `showCollection`. Un invité naît `PRIVATE` et passe `PUBLIC` à l'inscription, sauf s'il a déjà choisi (`privacyChosenAt`). Un profil privé répond comme un public (200), avec le pseudo seul ; un invité ou un profil non public n'est pas indexé.
+
+### Mise en œuvre (étape 6)
+
+- **Amis** (`/amis`, onglets Amis · Demandes · Bloqués) : `Friendship` porte une `pairKey` unique (ids triés), une seule ligne par paire quel que soit le sens, garantie par la base. Les deux `User` sont verrouillés dans l'ordre des ids (`server/social/lock.ts`) : deux demandes croisées donnent une amitié acceptée. Envoyer une demande à quelqu'un qui t'a déjà demandé l'accepte. Décisions pures dans `lib/social/relation.ts`.
+- **Refus silencieux** : refuser pose `declinedAt` ; l'expéditeur voit toujours « Demande envoyée », ne peut pas relancer et n'est pas prévenu. Annuler une demande ou retirer un ami pose un délai (`FriendRequestCooldown`, `friends.requestCooldownHours`).
+- **Blocage** (`UserBlock`) : supprime l'amitié, les demandes et les notifications du bloqué ; son profil voit le bloqueur comme un profil privé ; ses demandes suivantes sont enregistrées déjà refusées.
+- **Anti-énumération** : ajout par pseudo exact seulement (aucune recherche approximative hors de sa propre liste d'amis) ; une demande vers un joueur qui t'a bloqué, invité, banni, plein ou en délai répond « envoyée » comme une vraie ; seuls « introuvable » et « déjà en cours » diffèrent. Rate limit par joueur (10/h, 30/jour) et par IP (30/h). Invités exclus du social.
+- **Cadeaux** (`Gift`, envoi direct) : comptes inscrits, compte ≥ `gifts.minAccountAgeHours` (48 h), amitié ≥ `gifts.minFriendshipHours` (24 h), `gifts.perDaySent` (3) et `gifts.perDayReceived` (5) par jour du fuseau du jeu, comptés sous verrou. Carte : le serveur choisit l'exemplaire (le plus récent hors vitrine), transfert par `updateMany` conditionnel sur `status = COLLECTION`, case de vitrine retirée, `Discovery` du destinataire. Booster : payé `gifts.boosterPriceZeni` Zeni par l'expéditeur (ligne `CoinTransaction` `GIFT`), crédité dans `User.giftBoosters` ; il s'ouvre depuis l'accueil (`/ouvrir/standard?offert=1`), un à la fois, sans doré ni divin, pitié Mythique comprise. Le stock gratuit ne se transfère jamais.
+- **Notifications** (`Notification`, types `FRIEND_REQUEST`, `FRIEND_ACCEPTED`, `GIFT_RECEIVED`) : créées dans la transaction de l'événement, payload d'ids seulement, texte rendu à la lecture. Cloche dans l'en-tête (compteur serveur, sondage 60 s onglet visible), page `/notifications` par curseur, purge paresseuse des lues après `notifications.retentionDays`.
+- **Web Push** (onglet fermé) : opt-in depuis `/compte` (permission demandée au clic seulement, invités exclus), un `PushSubscription` par navigateur (endpoint unique, limité aux services push des navigateurs). Envoi après la validation de la transaction qui crée la notification, via `after()`, texte rendu dans `User.locale` ; abonnements en 404/410 supprimés. Clés `VAPID_*` côté serveur (la publique est passée par la page), interrupteur `notifications.pushEnabled`. Service worker `public/sw.js` et manifest (`app/manifest.ts`) posés en avance sur l'étape 10 ; sur iPhone, le push exige Kiraku installé sur l'écran d'accueil.
+- **Admin** : `/admin/social` (interrupteurs, limites, raretés offrables, journal des derniers cadeaux).
+- **Tests** : `lib/social/*.test.ts` ; `server/social/social.db.test.ts` (demandes croisées, quotas sous concurrence, double cadeau d'un exemplaire, solde = journal), sauté sans `DATABASE_URL_TEST`.
 
 ## Hôtel des ventes
 
@@ -860,16 +872,21 @@ model ShowcaseSlot {
 
 model Friendship {
   id          String       @id @default(cuid())
+  pairKey     String       @unique // ids triés : une ligne par paire, quel que soit le sens
   requesterId String
   addresseeId String
   requester   User         @relation("requester", fields: [requesterId], references: [id])
   addressee   User         @relation("addressee", fields: [addresseeId], references: [id])
   status      FriendStatus @default(PENDING)
   createdAt   DateTime     @default(now())
+  acceptedAt  DateTime?
+  declinedAt  DateTime?    // refus silencieux
 
-  @@unique([requesterId, addresseeId])
   @@index([addresseeId, status])
+  @@index([requesterId, status])
 }
+
+// Étape 6 : UserBlock, FriendRequestCooldown et Gift, voir prisma/schema.prisma
 
 model Auction {
   id              String        @id @default(cuid())
@@ -924,8 +941,10 @@ model UserMission {
 model Notification {
   id        String   @id @default(cuid())
   userId    String
-  type      String   // OUTBID | SOLD | BATTLE_CHALLENGE | FRIEND_REQUEST
-  payload   Json
+  type      NotificationType // FRIEND_REQUEST | FRIEND_ACCEPTED | GIFT_RECEIVED, puis OUTBID | SOLD | BATTLE_CHALLENGE
+  actorId   String?
+  refId     String?
+  payload   Json     // ids et nombres uniquement
   readAt    DateTime?
   createdAt DateTime @default(now())
 

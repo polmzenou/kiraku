@@ -14,4 +14,5 @@ export const SEAL_GLYPHS = [
   "選無料催事袋", // panneau, prix, composition du jūbako
   "管理", // administration
   "蒐集飾札公友秘", // collection, vitrine, fiche carte, confidentialité
+  "贈報", // cadeaux, notifications
 ].join("");

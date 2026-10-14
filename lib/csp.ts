@@ -11,6 +11,9 @@ export function buildCsp(nonce: string, isDev: boolean): string {
     "img-src": ["'self'", "data:", "blob:", ...IMAGE_HOSTS],
     "font-src": ["'self'"],
     "connect-src": ["'self'"],
+    // service worker du Web Push (public/sw.js)
+    "worker-src": ["'self'"],
+    "manifest-src": ["'self'"],
     "form-action": ["'self'", "https://discord.com"],
     "frame-ancestors": ["'none'"],
     "base-uri": ["'self'"],

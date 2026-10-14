@@ -14,6 +14,8 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
   return {
     title: { default: t("title"), template: `%s · ${t("title")}` },
     description: t("description"),
+    appleWebApp: { capable: true, title: t("title"), statusBarStyle: "black-translucent" },
+    icons: { apple: "/icons/apple-touch-icon.png" },
   };
 }
 

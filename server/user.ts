@@ -25,10 +25,12 @@ export const getCurrentUser = cache(async () => {
       pityCount: true,
       standardCount: true,
       bannerPity: true,
+      giftBoosters: true,
       role: true,
       bannedAt: true,
       profileVisibility: true,
       showCollection: true,
+      locale: true,
     },
   });
   if (!user) return null;

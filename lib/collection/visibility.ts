@@ -13,15 +13,20 @@ export type ProfileOwner = {
 export type ProfileAccess = { isOwner: boolean; profile: boolean; collection: boolean };
 
 /**
- * `friends` : le visiteur est un ami accepté. Les amis arrivent à l'étape 6 : en attendant,
- * l'appelant passe false et FRIENDS se comporte comme PRIVATE.
+ * `friends` : le visiteur est un ami accepté. `blocked` : le propriétaire a bloqué le visiteur ;
+ * son profil lui répond alors exactement comme un profil privé (rien ne révèle le blocage).
  */
-export function profileAccess(viewerId: string | null, owner: ProfileOwner, rel: { friends: boolean }): ProfileAccess {
+export function profileAccess(
+  viewerId: string | null,
+  owner: ProfileOwner,
+  rel: { friends: boolean; blocked?: boolean },
+): ProfileAccess {
   const isOwner = viewerId !== null && viewerId === owner.id;
   if (isOwner) return { isOwner, profile: true, collection: true };
   // Un compte banni n'est plus montré aux autres
   const profile =
     owner.bannedAt === null &&
+    !rel.blocked &&
     (owner.profileVisibility === "PUBLIC" || (owner.profileVisibility === "FRIENDS" && rel.friends));
   return { isOwner, profile, collection: profile && owner.showCollection };
 }
