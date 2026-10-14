@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "vercel-build": "node scripts/check-deploy-env.mjs && prisma generate && prisma migrate deploy && next build",
+    "vercel-build": "node scripts/check-deploy-env.mjs && prisma generate && prisma migrate deploy && tsx scripts/seed-boosters.mts && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
@@ -14,7 +14,10 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "fonts:subset": "tsx scripts/subset-seal-font.mts",
-    "catalog:import": "tsx scripts/import-characters.mts"
+    "catalog:import": "tsx scripts/import-characters.mts",
+    "sim:boosters": "tsx scripts/simulate-boosters.mts",
+    "admin:grant": "tsx scripts/grant-admin.mts",
+    "seed:boosters": "tsx scripts/seed-boosters.mts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
@@ -23,6 +26,7 @@
     "@prisma/client": "^7.10.0",
     "@upstash/ratelimit": "^2.2.0",
     "@upstash/redis": "^1.39.0",
+    "motion": "^12.43.0",
     "next": "16.4.0",
     "next-auth": "^5.0.0-beta.32",
     "next-intl": "^4.14.9",

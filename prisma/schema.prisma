@@ -1,4 +1,4 @@
-// Schéma du socle (étape 1) et du catalogue (étape 2). Chaque étape ajoute ses modèles
+// Schéma du socle (étape 1), du catalogue (étape 2), des boosters (étape 3) et de leurs types (étape 4). Chaque étape ajoute ses modèles
 // par sa propre migration nommée. Référence : docs/PLAN.md, « Schéma Prisma ».
 
 generator client {
@@ -29,6 +29,7 @@ enum CoinReason {
   ADMIN
   SHOP
   DISCORD_LINK
+  BOOSTER // achat d'un booster en Zeni
 }
 
 enum AuthTokenType {
@@ -65,10 +66,14 @@ model User {
   referredById        String?
   createdAt           DateTime  @default(now())
 
-  accounts   Account[]
-  sessions   Session[]
-  ledger     CoinTransaction[]
-  authTokens AuthToken[]
+  accounts    Account[]
+  sessions    Session[]
+  ledger      CoinTransaction[]
+  authTokens  AuthToken[]
+  cards       UserCard[]
+  openings    BoosterOpening[]
+  discoveries Discovery[]
+  adminLogs   AdminLog[]
 
   @@index([rankPoints])
 }
@@ -185,26 +190,28 @@ model Series {
 
 // Le personnage (le modèle de carte) ; l'exemplaire possédé sera UserCard
 model Card {
-  id            String   @id @default(cuid())
-  anilistId     Int      @unique // id du personnage AniList = /wiki/[anilistId]
+  id            String      @id @default(cuid())
+  anilistId     Int         @unique // id du personnage AniList = /wiki/[anilistId]
   name          String
   nameNative    String? // nom japonais, écrit verticalement sur la fuda
   imageUrl      String
   favorites     Int // favoris AniList au dernier import
-  rank          Int?     @unique // 1 = le plus populaire ; null = sorti du catalogue
+  rank          Int?        @unique // 1 = le plus populaire ; null = sorti du catalogue
   rarity        Rarity
   power         Int // 力 attaque en combat
   ki            Int // 気 défense ; HP et vitesse sont dérivés
   seriesId      String
-  series        Series   @relation(fields: [seriesId], references: [id])
+  series        Series      @relation(fields: [seriesId], references: [id])
   gender        String? // Female | Male | … (AniList, souvent vide)
   birthMonth    Int?
   birthDay      Int?
   role          String? // MAIN | SUPPORTING | BACKGROUND dans l'œuvre principale
   searchText    String // nom, nom natif et titres, en minuscules sans accents
   addedImportId String? // import qui a fait entrer la carte (nouveautés)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  copies        UserCard[]
+  discoveries   Discovery[]
 
   @@index([rarity, rank])
   @@index([seriesId])
@@ -236,4 +243,119 @@ model CatalogImportRow {
   data      Json // ImportedCharacter (lib/catalog/anilist.ts)
 
   @@id([importId, anilistId])
+}
+
+// --- Boosters (étape 3) ---
+
+enum CardStatus {
+  COLLECTION
+  AUCTION
+  BATTLE
+}
+
+// Exemplaire possédé d'une carte : c'est lui qui se vend, se met en vitrine et combat
+model UserCard {
+  id         String     @id @default(cuid())
+  ownerId    String
+  owner      User       @relation(fields: [ownerId], references: [id])
+  cardId     String
+  card       Card       @relation(fields: [cardId], references: [id])
+  status     CardStatus @default(COLLECTION)
+  obtainedAt DateTime   @default(now())
+
+  @@index([ownerId, cardId])
+  @@index([ownerId, status])
+}
+
+// Un booster ouvert, partageable par lien (/tirage/[id])
+model BoosterOpening {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  boosterSlug   String // BoosterType.slug
+  cardIds       String[] // ids de UserCard, dans l'ordre des emplacements
+  golden        Boolean  @default(false)
+  divine        Boolean  @default(false)
+  pityTriggered Boolean  @default(false) // dernière carte forcée en Mythique
+  featuredHit   Boolean  @default(false) // au moins une carte vedette (bannière)
+  zeniSpent     Int      @default(0) // prix payé pour ce booster (0 = stock gratuit)
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// Carte déjà obtenue au moins une fois (badge « Nouveau », fiche wiki), même si elle a été revendue
+model Discovery {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@id([userId, cardId])
+}
+
+// Journal de toutes les écritures faites depuis /admin
+model AdminLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  admin      User     @relation(fields: [adminId], references: [id])
+  action     String // ex. SETTING_UPDATE, ROLE_GRANT
+  targetType String
+  targetId   String?
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// --- Types de boosters (étape 4) ---
+
+enum BoosterKind {
+  STANDARD
+  RARITY
+  FILTERED
+  BANNER
+  FORMAT
+}
+
+enum BoosterShape {
+  SACHET
+  POCHIBUKURO
+  JUBAKO
+}
+
+// Un booster proposé : filtre sur le catalogue, planchers, prix. Réglé dans /admin, chargé par seed.
+model BoosterType {
+  id              String       @id @default(cuid())
+  slug            String       @unique
+  kind            BoosterKind
+  family          String // standard | formats | rarete | demographie | genre | personnage | epoque | special
+  sortOrder       Int          @default(0)
+  name            Json // { fr, en } (repli sur fr)
+  tagline         Json // { fr, en }
+  emblem          String // kanji de l'étiquette
+  shape           BoosterShape @default(SACHET)
+  theme           Json // { base, dark, pattern, ink } (lib/boosters/types.ts)
+  filter          Json         @default("{}") // PoolFilter (lib/boosters/pool-filter.ts)
+  slotFloors      String[] // vide = réglage global booster.slotFloors
+  usesFreeStock   Boolean      @default(true)
+  priceZeni       Int? // prix en Zeni (payant, ou quand le stock gratuit est vide) ; null = pas d'achat
+  countsForPity   Boolean      @default(true) // pitié Mythique partagée
+  bonusEligible   Boolean      @default(true) // sachets doré et divin
+  featuredCardIds String[] // cartes vedettes (bannière)
+  featuredRate    Int          @default(5000) // points de base : part des tirages d'une rareté qui va aux vedettes
+  featuredPity    Int          @default(100) // vedette garantie au N-ième booster sans vedette
+  minPoolSize     Int? // sinon GameSetting booster.minPool
+  poolCardIds     String[] // recalculé après import, seed ou modification admin
+  poolCounts      Json? // { COMMON: n, … }
+  poolComputedAt  DateTime?
+  startsAt        DateTime?
+  endsAt          DateTime?
+  active          Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([family, sortOrder])
 }
