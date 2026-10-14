@@ -1,29 +1,38 @@
+import type { Metadata } from "next";
+import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
-import { cookies } from "next/headers";
-import Image from "next/image";
-import { MailNotSent } from "@/components/auth/MailNotSent";
-import { ResendVerificationButton } from "@/components/auth/ResendVerificationButton";
+import { BoosterPanel } from "@/components/boosters/BoosterPanel";
+import { NextFreeIn } from "@/components/boosters/NextFreeIn";
+import { OpenLink } from "@/components/boosters/OpenLink";
+import { Sachet } from "@/components/boosters/Sachet";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
-import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { PageShell } from "@/components/PageShell";
-import { SealMark } from "@/components/SealMark";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { Button } from "@/components/ui/Button";
-import { ButtonLink } from "@/components/ui/ButtonLink";
-import { parseTheme, THEME_COOKIE } from "@/lib/theme";
-import { guestCode } from "@/lib/username";
-import { logout } from "@/server/actions/account";
-import { linkDiscord } from "@/server/actions/auth";
-import { discordEnabled, isProduction, mailEnabled } from "@/server/env";
-import { getSetting } from "@/server/settings";
+import { SectionTitle } from "@/components/SectionTitle";
+import { getPathname, Link } from "@/i18n/navigation";
+import { routing } from "@/i18n/routing";
+import { BOOSTER_FAMILIES, BOOSTERS, contentsLabel, FAMILY_KANJI } from "@/lib/boosters/catalog";
+import { atLeastOdds } from "@/lib/boosters/odds";
+import { getStandardPool, poolSize } from "@/server/boosters/pool";
+import { getBoosterRules } from "@/server/boosters/rules";
+import { boosterStateFrom } from "@/server/boosters/state";
 import { getCurrentUser } from "@/server/user";
 
-export default async function AccountPage() {
-  const [t, user, theme] = await Promise.all([
-    getTranslations(),
-    getCurrentUser(),
-    cookies().then((c) => parseTheme(c.get(THEME_COOKIE)?.value)),
-  ]);
+export async function generateMetadata({ params }: PageProps<"/[locale]/boosters">): Promise<Metadata> {
+  const { locale: raw } = await params;
+  const locale = hasLocale(routing.locales, raw) ? raw : routing.defaultLocale;
+  const [t, rules] = await Promise.all([getTranslations({ locale, namespace: "boosters" }), getBoosterRules()]);
+  return {
+    title: t("title"),
+    description: t("metaDescription", { minutes: rules.intervalMinutes }),
+    alternates: {
+      canonical: getPathname({ href: "/boosters", locale }),
+      languages: Object.fromEntries(routing.locales.map((l) => [l, getPathname({ href: "/boosters", locale: l })])),
+    },
+  };
+}
+
+export default async function BoostersPage() {
+  const [t, user, rules] = await Promise.all([getTranslations("boosters"), getCurrentUser(), getBoosterRules()]);
 
   if (!user) {
     return (
@@ -33,113 +42,79 @@ export default async function AccountPage() {
     );
   }
 
-  const [maxStock, discordBonus] = await Promise.all([
-    getSetting("booster.maxStock"),
-    getSetting("discord.linkBonusZeni"),
-  ]);
-  const code = guestCode(user.username);
-  const displayName = user.isGuest && code ? t("account.guestName", { code }) : user.username;
-  const canLinkDiscord = discordEnabled && !user.discordLinkedAt;
-
-  const discordForm = (
-    <form action={linkDiscord}>
-      <input type="hidden" name="redirectTo" value="/" />
-      <Button type="submit" className="w-full">
-        {t("account.linkDiscord")}
-      </Button>
-    </form>
-  );
+  const state = boosterStateFrom(user, rules);
+  const pool = await getStandardPool();
+  const odds = atLeastOdds(rules.draw.rates, rules.draw.slotFloors);
+  const contents = contentsLabel(rules.draw.slotFloors.length);
+  const selected = BOOSTERS.standard;
 
   return (
-    <PageShell>
-      <h1 className="sr-only">{t("account.title")}</h1>
-
-      <section className="flex items-center gap-4 rounded-lg border border-border bg-surface p-4">
-        {user.image ? (
-          <Image
-            src={user.image}
-            alt={t("account.avatarAlt", { name: displayName })}
-            width={56}
-            height={56}
-            className="rounded-full"
+    <PageShell bottomBar>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+        <div className="flex min-w-0 flex-col gap-8">
+          <SectionTitle
+            level={1}
+            kanji="開封"
+            title={t("title")}
+            subtitle={t("intro", { minutes: rules.intervalMinutes, max: rules.stock.max })}
           />
-        ) : (
-          <SealMark glyphs="新" size={56} />
-        )}
-        <div className="flex min-w-0 flex-col gap-1">
-          <p className="truncate font-title text-xl font-bold">{displayName}</p>
-          {user.isGuest && (
-            <span className="w-fit rounded-sm border border-border px-2 text-xs text-text-muted">
-              {t("account.guestBadge")}
-            </span>
-          )}
+
+          {BOOSTER_FAMILIES.map((family) => {
+            const boosters = Object.values(BOOSTERS).filter((b) => b.family === family);
+            return (
+              <section key={family} className="flex flex-col gap-4">
+                <SectionTitle
+                  kanji={FAMILY_KANJI[family]}
+                  title={t(`families.${family}.title`)}
+                  subtitle={t(`families.${family}.subtitle`)}
+                />
+                <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6">
+                  {boosters.map((b) => {
+                    const name = t(`types.${b.slug}.name`);
+                    const isSelected = b.slug === selected.slug;
+                    return (
+                      <li key={b.slug}>
+                        <Link
+                          href={`/ouvrir/${b.slug}`}
+                          aria-label={t("openTile", { name })}
+                          aria-current={isSelected ? "true" : undefined}
+                          className={`flex flex-col items-center gap-2 rounded-lg border p-2 transition-transform active:scale-[0.98] ${
+                            isSelected ? "border-shu bg-surface" : "border-transparent"
+                          }`}
+                        >
+                          <Sachet theme={b.theme} name={name} tagline={t(`types.${b.slug}.tagline`)} contents={contents} />
+                          <span className="flex items-center gap-1 text-xs font-bold text-shu">
+                            <span aria-hidden="true" lang="ja" className="font-seal">
+                              無料
+                            </span>
+                            · {t("free")}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            );
+          })}
         </div>
-      </section>
 
-      <dl className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg border border-border bg-surface p-4">
-          <dt className="text-sm text-text-muted">{t("account.balance")}</dt>
-          <dd className="text-lg font-bold text-kin">{t("common.zeni", { amount: user.coins })}</dd>
-        </div>
-        <div className="rounded-lg border border-border bg-surface p-4">
-          <dt className="text-sm text-text-muted">{t("account.boosterStock")}</dt>
-          <dd className="text-lg font-bold">{t("common.boosters", { count: user.boosterStock, max: maxStock })}</dd>
-        </div>
-      </dl>
+        <aside className="lg:sticky lg:top-20">
+          <BoosterPanel
+            booster={selected}
+            slotFloors={rules.draw.slotFloors}
+            odds={odds}
+            poolSize={poolSize(pool)}
+            state={state}
+          />
+        </aside>
+      </div>
 
-      {user.isGuest ? (
-        <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
-          <h2 className="text-lg font-bold">{t("account.linkTitle")}</h2>
-          <p className="text-sm text-text-muted">{t("account.linkBody")}</p>
-          <ButtonLink href="/inscription" variant="shu">
-            {t("account.createAccount")}
-          </ButtonLink>
-          {canLinkDiscord && discordForm}
-          <ButtonLink href="/connexion">{t("account.haveAccount")}</ButtonLink>
-        </section>
-      ) : (
-        <>
-          {user.email && (
-            <section className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4">
-              <p className="text-sm text-text-muted">{t("account.emailLabel")}</p>
-              <p className="break-all">{user.email}</p>
-              {user.emailVerified ? (
-                <p className="text-sm text-text-muted">{t("account.emailVerified")}</p>
-              ) : (
-                <>
-                  <p className="text-sm text-shu">{t("account.emailUnverified")}</p>
-                  {mailEnabled || !isProduction ? <ResendVerificationButton /> : <MailNotSent />}
-                </>
-              )}
-            </section>
-          )}
-
-          {canLinkDiscord && (
-            <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
-              <h2 className="text-lg font-bold">{t("account.discordBonusTitle")}</h2>
-              {discordBonus > 0 && (
-                <p className="text-sm text-kin">{t("account.discordBonusBody", { amount: discordBonus })}</p>
-              )}
-              {discordForm}
-            </section>
-          )}
-          {user.discordLinkedAt && <p className="text-sm text-text-muted">{t("account.discordLinked")}</p>}
-        </>
-      )}
-
-      <section className="flex flex-col gap-5 rounded-lg border border-border bg-surface p-4">
-        <h2 className="text-lg font-bold">{t("account.settings")}</h2>
-        <ThemeToggle initial={theme} />
-        <LocaleSwitcher />
-      </section>
-
-      {!user.isGuest && (
-        <form action={logout}>
-          <Button type="submit" className="w-full">
-            {t("account.logout")}
-          </Button>
-        </form>
-      )}
+      {/* Mobile : l'action principale reste à portée du pouce */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-bg/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:hidden">
+        <OpenLink slug={selected.slug} stock={state.stock} />
+        <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} className="mt-1 text-center" />
+      </div>
     </PageShell>
   );
 }
