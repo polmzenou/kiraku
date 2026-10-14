@@ -27,6 +27,8 @@ export const getCurrentUser = cache(async () => {
       bannerPity: true,
       role: true,
       bannedAt: true,
+      profileVisibility: true,
+      showCollection: true,
     },
   });
   if (!user) return null;

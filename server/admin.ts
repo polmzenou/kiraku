@@ -22,8 +22,13 @@ export async function requireAdmin() {
 
 /** Derniers changements de réglages des boosters, pour le journal de /admin/boosters. */
 export async function recentBoosterSettingLogs(take = 15) {
+  return recentSettingLogs(["booster."], take);
+}
+
+/** Derniers changements de réglages dont la clé commence par l'un des préfixes. */
+export async function recentSettingLogs(prefixes: readonly string[], take = 15) {
   return prisma.adminLog.findMany({
-    where: { action: "SETTING_UPDATE", targetId: { startsWith: "booster." } },
+    where: { action: "SETTING_UPDATE", OR: prefixes.map((p) => ({ targetId: { startsWith: p } })) },
     orderBy: { createdAt: "desc" },
     take,
     select: {

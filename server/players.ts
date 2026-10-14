@@ -39,6 +39,19 @@ type NewPlayer = {
   passwordHash?: string | null;
 };
 
+/** Visibilité par défaut : un invité est privé, un compte inscrit est public. */
+export function defaultVisibility(isGuest: boolean) {
+  return isGuest ? ("PRIVATE" as const) : ("PUBLIC" as const);
+}
+
+/** Un invité devient un compte : profil public, sauf s'il a déjà choisi sa confidentialité. */
+export async function publishProfileOnSignup(tx: Tx, userId: string) {
+  await tx.user.updateMany({
+    where: { id: userId, privacyChosenAt: null },
+    data: { profileVisibility: defaultVisibility(false) },
+  });
+}
+
 /**
  * Crée un joueur avec ses valeurs de départ (lues dans GameSetting) et la ligne
  * CoinTransaction SIGNUP qui justifie son solde. À appeler dans une transaction.
@@ -55,6 +68,7 @@ export async function createPlayer(
       email: player.email ?? null,
       image: player.image ?? null,
       passwordHash: player.passwordHash ?? null,
+      profileVisibility: defaultVisibility(player.isGuest),
       coins: start.zeni,
       boosterStock: start.boosters,
     },

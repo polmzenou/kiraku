@@ -17,7 +17,7 @@ import { hashToken } from "@/lib/auth/tokens";
 import { sendPasswordResetEmail, sendVerificationEmail } from "../auth-emails";
 import { prisma } from "../db";
 import { mailEnabled } from "../env";
-import { createPlayer, startingValues } from "../players";
+import { createPlayer, publishProfileOnSignup, startingValues } from "../players";
 import { clientIp, rateLimit } from "../ratelimit";
 import { destroyCurrentSession, startSession } from "../session";
 import { getCurrentUser } from "../user";
@@ -72,6 +72,7 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
           data: { username, email, passwordHash, isGuest: false },
         });
         if (upgraded.count !== 1) throw new FormError("alreadyRegistered");
+        await publishProfileOnSignup(tx, current.id);
         return current.id;
       }
       const user = await createPlayer(tx, { username, email, passwordHash, isGuest: false }, start!);

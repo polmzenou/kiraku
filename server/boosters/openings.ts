@@ -22,7 +22,7 @@ export const getPublicOpening = cache(async (id: string, locale: string): Promis
     select: {
       id: true,
       boosterSlug: true,
-      cardIds: true,
+      catalogCardIds: true,
       golden: true,
       divine: true,
       createdAt: true,
@@ -31,14 +31,10 @@ export const getPublicOpening = cache(async (id: string, locale: string): Promis
   });
   if (!opening) return null;
 
-  const copies = await prisma.userCard.findMany({
-    where: { id: { in: opening.cardIds } },
-    select: { id: true, cardId: true },
-  });
-  const cardOf = new Map(copies.map((c) => [c.id, c.cardId]));
-  const views = await cardViews([...cardOf.values()], locale);
-  const cards = opening.cardIds.flatMap((id) => {
-    const view = views.get(cardOf.get(id) ?? "");
+  // Ids de Card copiés au tirage : les cartes restent visibles même recyclées ou vendues depuis
+  const views = await cardViews(opening.catalogCardIds, locale);
+  const cards = opening.catalogCardIds.flatMap((cardId) => {
+    const view = views.get(cardId);
     return view ? [view] : [];
   });
 
