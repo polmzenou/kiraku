@@ -7,7 +7,8 @@
     "appName": "Kiraku",
     "zeni": "{amount, number} Zeni",
     "boosters": "{count}/{max}",
-    "number": "{value, number}"
+    "number": "{value, number}",
+    "close": "Fermer"
   },
   "account": {
     "title": "Compte",
@@ -34,7 +35,8 @@
     "discordBonusTitle": "Lie ton compte Discord",
     "discordBonusBody": "Gagne {amount, number} Zeni à la première liaison.",
     "discordLinked": "Discord est lié à ton compte.",
-    "logout": "Se déconnecter"
+    "logout": "Se déconnecter",
+    "publicProfile": "Voir mon profil public"
   },
   "theme": {
     "label": "Thème",
@@ -213,7 +215,8 @@
     "openMenu": "Ouvrir le menu",
     "closeMenu": "Fermer le menu",
     "menuTitle": "Menu",
-    "preferences": "Préférences"
+    "preferences": "Préférences",
+    "friends": "Amis"
   },
   "header": {
     "stock": "Boosters : {count} sur {max}",
@@ -336,7 +339,9 @@
       "pity": "Vedette garantie dans {count, plural, one {# booster} other {# boosters}}",
       "see": "Voir la bannière",
       "days": "{count, plural, one {# jour} other {# jours}}"
-    }
+    },
+    "giftBoosters": "{count, plural, one {Un ami t'a offert # booster} other {Tes amis t'ont offert # boosters}}",
+    "openGift": "Ouvrir"
   },
   "opening": {
     "title": "Ouvrir · {name}",
@@ -400,7 +405,8 @@
       "NOT_ENOUGH_ZENI": "Pas assez de Zeni pour cette ouverture.",
       "NOT_FOR_SALE": "Ce booster n'est pas disponible en ce moment.",
       "UNAVAILABLE": "Ouverture impossible pour le moment. Réessaie."
-    }
+    },
+    "giftLeft": "{count, plural, one {Booster offert · # à ouvrir} other {Boosters offerts · # à ouvrir}}"
   },
   "draw": {
     "title": "Tirage de {name}",
@@ -419,7 +425,9 @@
       "market": "Marché",
       "ranked": "Classé",
       "types": "Types de boosters",
-      "banners": "Bannières"
+      "banners": "Bannières",
+      "collection": "Collection",
+      "social": "Social"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -593,6 +601,454 @@
       "dates": "Du {start} au {end}",
       "noDates": "Sans dates",
       "featured": "{count, plural, one {# vedette} other {# vedettes}}"
+    },
+    "collection": {
+      "title": "Réglages de la collection",
+      "intro": "Zeni rendus par doublon recyclé et taille de la vitrine. Chaque changement s'applique tout de suite et s'inscrit au journal.",
+      "recycleSection": "Recyclage d'un doublon (Zeni)",
+      "showcaseSection": "Vitrine du profil",
+      "fields": {
+        "showcaseSlots": "Nombre de cases"
+      },
+      "showcaseHint": "En réduisant ce nombre, les cartes des dernières cases ne s'affichent plus (elles restent enregistrées).",
+      "keys": {
+        "recycleValues": "Valeurs de recyclage",
+        "showcaseSlots": "Nombre de cases de la vitrine"
+      },
+      "invalid": "Certaines valeurs sont hors limites : corrige-les avant d'enregistrer.",
+      "review": "Vérifier les changements",
+      "noChange": "Aucun changement.",
+      "confirmTitle": "Confirmer ces changements ?",
+      "confirm": "Enregistrer",
+      "cancel": "Annuler",
+      "saved": "{count, plural, one {# réglage enregistré} other {# réglages enregistrés}}.",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Valeurs refusées par le serveur.",
+        "RATE_LIMITED": "Trop d'enregistrements : attends une minute.",
+        "unexpected": "Erreur inattendue. Réessaie."
+      },
+      "log": "Derniers changements",
+      "logEmpty": "Aucun changement pour l'instant.",
+      "logEntry": "{key} par {admin}"
+    },
+    "social": {
+      "title": "Réglages du social",
+      "intro": "Amis, cadeaux et notifications : limites anti-spam et règles anti-multicomptes. Chaque changement s'applique tout de suite et s'inscrit au journal.",
+      "friendsSection": "Amis",
+      "giftsSection": "Cadeaux",
+      "notificationsSection": "Notifications",
+      "giftsHint": "Les quotas reçus par jour empêchent d'alimenter un compte principal avec des comptes secondaires. Le booster offert est payé en Zeni par l'expéditeur.",
+      "keys": {
+        "social": {
+          "enabled": "Amis et cadeaux activés"
+        },
+        "friends": {
+          "max": "Amis au maximum",
+          "maxOutgoingPending": "Demandes envoyées en attente au maximum",
+          "requestCooldownHours": "Délai avant de redemander après une annulation (h)"
+        },
+        "gifts": {
+          "enabled": "Cadeaux activés",
+          "perDaySent": "Cadeaux envoyés par jour",
+          "perDayReceived": "Cadeaux reçus par jour",
+          "minAccountAgeHours": "Ancienneté minimale du compte (h)",
+          "minFriendshipHours": "Ancienneté minimale de l'amitié (h)",
+          "boosterPriceZeni": "Prix d'un booster offert (Zeni)",
+          "allowedRarities": "Raretés qu'on peut offrir"
+        },
+        "notifications": {
+          "retentionDays": "Conservation des notifications lues (jours)",
+          "pollSeconds": "Intervalle de vérification des notifications (s)",
+          "pushEnabled": "Notifications push (onglet fermé)"
+        }
+      },
+      "invalid": "Certaines valeurs sont hors limites : corrige-les avant d'enregistrer.",
+      "review": "Vérifier les changements",
+      "noChange": "Aucun changement.",
+      "confirmTitle": "Confirmer ces changements ?",
+      "confirm": "Enregistrer",
+      "cancel": "Annuler",
+      "saved": "{count, plural, one {# réglage enregistré} other {# réglages enregistrés}}.",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Valeurs refusées par le serveur.",
+        "RATE_LIMITED": "Trop d'enregistrements : attends une minute.",
+        "unexpected": "Erreur inattendue. Réessaie."
+      },
+      "giftLog": "Derniers cadeaux",
+      "giftLogEmpty": "Aucun cadeau pour l'instant.",
+      "giftCard": "{from} → {to} : une carte",
+      "giftBooster": "{from} → {to} : un booster ({zeni, number} Zeni)",
+      "log": "Derniers changements",
+      "logEmpty": "Aucun changement pour l'instant.",
+      "logEntry": "{key} par {admin}"
+    }
+  },
+  "collection": {
+    "title": "Collection",
+    "myProfile": "Mon profil",
+    "recyclableHint": "{count, plural, one {# doublon recyclable} other {# doublons recyclables}} pour {zeni, number} Zeni.",
+    "empty": "Ta collection est vide pour l'instant : ouvre un booster pour obtenir tes premières fuda.",
+    "openBoosters": "Ouvrir un booster",
+    "noMatch": "Aucune carte ne correspond à ces filtres.",
+    "loading": "Chargement de la collection…",
+    "back": "← Collection",
+    "copiesLabel": "{count, plural, one {# exemplaire} other {# exemplaires}}",
+    "inShowcaseBadge": "Vitrine",
+    "listLabel": "Cartes de la collection",
+    "retry": "Réessayer",
+    "searchLabel": "Chercher dans la collection",
+    "searchPlaceholder": "Nom ou série…",
+    "sortAndSeries": "Tri et série",
+    "rarityFilter": "Filtrer par rareté",
+    "dupesOnly": "Doublons",
+    "seriesActive": "Série :",
+    "clearSeries": "Toutes les séries",
+    "sortBy": "Trier par",
+    "sorts": {
+      "rarity": "Rareté",
+      "recent": "Obtention",
+      "number": "Numéro",
+      "name": "Nom",
+      "copies": "Exemplaires",
+      "power": "Puissance 力",
+      "ki": "Ki 気"
+    },
+    "direction": "Ordre",
+    "dirs": {
+      "rarity": {
+        "desc": "Plus rares d'abord",
+        "asc": "Plus courantes d'abord"
+      },
+      "recent": {
+        "desc": "Plus récentes d'abord",
+        "asc": "Plus anciennes d'abord"
+      },
+      "number": {
+        "desc": "Numéros décroissants",
+        "asc": "Numéros croissants"
+      },
+      "name": {
+        "desc": "Z → A",
+        "asc": "A → Z"
+      },
+      "copies": {
+        "desc": "Plus d'exemplaires d'abord",
+        "asc": "Moins d'exemplaires d'abord"
+      },
+      "power": {
+        "desc": "Plus forte d'abord",
+        "asc": "Plus faible d'abord"
+      },
+      "ki": {
+        "desc": "Plus haut d'abord",
+        "asc": "Plus bas d'abord"
+      }
+    },
+    "series": "Série",
+    "allSeries": "Toutes les séries",
+    "seriesOption": "{title} ({count})",
+    "done": "Voir les cartes",
+    "stats": {
+      "unique": "Cartes uniques",
+      "copies": "Exemplaires",
+      "completion": "Catalogue"
+    },
+    "recycleAll": {
+      "open": "Recycler les doublons",
+      "title": "Recycler les doublons",
+      "intro": "Chaque doublon rapporte des Zeni selon sa rareté. Tu gardes toujours un exemplaire de chaque carte, et celui en vitrine.",
+      "upTo": "Recycler jusqu'à la rareté",
+      "recap": "Récapitulatif du recyclage",
+      "rarity": "Rareté",
+      "copies": "Doublons",
+      "zeni": "Zeni",
+      "total": "Total",
+      "keepOne": "Les cartes en vente ou en combat ne sont pas touchées.",
+      "cancel": "Annuler",
+      "confirm": "Recycler (+{zeni, number} Zeni)",
+      "done": "{count, plural, one {# doublon recyclé} other {# doublons recyclés}} : +{zeni, number} Zeni.",
+      "errors": {
+        "NO_SESSION": "Ta session a expiré : recharge la page.",
+        "INVALID": "Demande refusée.",
+        "FORBIDDEN": "Accès refusé.",
+        "RATE_LIMITED": "Doucement : attends quelques secondes.",
+        "NOTHING": "Plus aucun doublon à recycler.",
+        "STALE": "Ta collection a changé entre-temps : vérifie le récap et recommence.",
+        "NOT_OWNED": "Tu ne possèdes plus cette carte.",
+        "FULL": "Ta vitrine est pleine.",
+        "UNAVAILABLE": "Action impossible pour le moment. Réessaie."
+      }
+    },
+    "card": {
+      "number": "No. {number}",
+      "power": "Puissance",
+      "ki": "Ki",
+      "notOwned": "Tu ne possèdes pas cette carte.",
+      "copiesTitle": "{count, plural, one {# exemplaire} other {# exemplaires}}",
+      "inCollection": "{count, plural, =0 {Aucun en collection} one {# en collection} other {# en collection}}",
+      "inAuction": "{count, plural, one {# en vente} other {# en vente}}",
+      "inBattle": "{count, plural, one {# en combat} other {# en combat}}",
+      "firstObtained": "Première obtention : {date}",
+      "recycleTitle": "Recycler les doublons",
+      "unitValue": "{zeni, number} Zeni par doublon.",
+      "noDuplicates": "Aucun doublon à recycler.",
+      "less": "Un de moins",
+      "more": "Un de plus",
+      "count": "{count} / {max}",
+      "recycle": "Recycler {count} (+{zeni, number} Zeni)",
+      "confirm": "Confirmer (+{zeni, number} Zeni)",
+      "cancel": "Annuler",
+      "keepOne": "Tu gardes toujours un exemplaire, et celui de ta vitrine.",
+      "recycled": "{count, plural, one {# doublon recyclé} other {# doublons recyclés}} : +{zeni, number} Zeni.",
+      "addToShowcase": "Mettre en vitrine",
+      "removeFromShowcase": "Retirer de la vitrine",
+      "showcaseFull": "Ta vitrine est pleine : <link>retire une carte depuis ton profil</link>.",
+      "sell": "Mettre en vente",
+      "soon": "Bientôt",
+      "wiki": "Fiche du wiki",
+      "errors": {
+        "NO_SESSION": "Ta session a expiré : recharge la page.",
+        "INVALID": "Demande refusée.",
+        "FORBIDDEN": "Accès refusé.",
+        "RATE_LIMITED": "Doucement : attends quelques secondes.",
+        "NOTHING": "Plus aucun doublon à recycler.",
+        "STALE": "Ta collection a changé entre-temps : vérifie le récap et recommence.",
+        "NOT_OWNED": "Tu ne possèdes plus cette carte.",
+        "FULL": "Ta vitrine est pleine.",
+        "UNAVAILABLE": "Action impossible pour le moment. Réessaie."
+      }
+    }
+  },
+  "showcase": {
+    "label": "Vitrine",
+    "slot": "Case {n}",
+    "edit": "Modifier la vitrine",
+    "done": "Terminé",
+    "dragHint": "Glisse une carte sur une autre case pour les échanger.",
+    "emptyOwner": "Ta vitrine est vide : choisis jusqu'à quatre cartes à montrer.",
+    "emptyPublic": "Aucune carte en vitrine pour l'instant.",
+    "addTo": "Choisir une carte pour la case {n}",
+    "moveLeft": "Décaler {name} vers la gauche",
+    "moveRight": "Décaler {name} vers la droite",
+    "remove": "Retirer {name} de la vitrine",
+    "change": "Remplacer {name}",
+    "changeShort": "Changer",
+    "removeShort": "Retirer",
+    "error": "La vitrine n'a pas pu être enregistrée : elle est revenue à son état précédent.",
+    "pickTitle": "Choisir une carte",
+    "searchLabel": "Chercher une carte",
+    "searchPlaceholder": "Nom ou série…",
+    "pickEmpty": "Aucune carte trouvée.",
+    "pick": "Mettre {name} en vitrine",
+    "alreadyShown": "En vitrine",
+    "loading": "Chargement…",
+    "retry": "Réessayer",
+    "more": "Voir plus"
+  },
+  "profile": {
+    "metaTitle": "Profil de {name}",
+    "metaDescription": "La vitrine et la collection de {name} sur Kiraku.",
+    "since": "Sur Kiraku depuis {date}",
+    "share": "Partager le profil",
+    "copied": "Lien copié",
+    "private": "Ce profil est privé.",
+    "stats": {
+      "unique": "Cartes uniques",
+      "mythic": "Mythiques",
+      "completion": "Catalogue"
+    },
+    "viewCollection": "Voir la collection",
+    "privacy": "Confidentialité",
+    "ownerNotice": {
+      "FRIENDS": "Ton profil est réservé à tes amis.",
+      "PRIVATE": "Ton profil est privé : personne d'autre que toi ne le voit."
+    },
+    "showcase": "Vitrine",
+    "backToProfile": "← Profil de {name}",
+    "collectionHidden": "Cette collection n'est pas visible.",
+    "collectionOf": "Collection de {name}",
+    "noMatch": "Aucune carte ne correspond à ces filtres.",
+    "collectionEmpty": "Cette collection est vide.",
+    "friends": "Mes amis"
+  },
+  "privacy": {
+    "title": "Confidentialité",
+    "intro": "Choisis qui voit ton profil public, ta vitrine et ta collection.",
+    "who": "Qui voit mon profil",
+    "levels": {
+      "PUBLIC": {
+        "label": "Tout le monde",
+        "hint": "Ton lien de profil se partage et s'ouvre pour tous."
+      },
+      "FRIENDS": {
+        "label": "Mes amis",
+        "hint": "Seuls tes amis acceptés voient ton profil et ta vitrine."
+      },
+      "PRIVATE": {
+        "label": "Moi seulement",
+        "hint": "Les autres ne voient que ton pseudo."
+      }
+    },
+    "showCollection": "Montrer ma collection complète",
+    "showCollectionHint": "Sinon, seuls ta vitrine et tes chiffres sont visibles.",
+    "saved": "Enregistré.",
+    "error": "Enregistrement impossible. Réessaie."
+  },
+  "friends": {
+    "title": "Amis",
+    "subtitle": "Tes amis, tes demandes et les joueurs que tu as bloqués.",
+    "guestOnly": "Les amis et les cadeaux sont réservés aux comptes : crée le tien, ta collection d'invité est conservée.",
+    "guestOnlyShort": "Crée ton compte pour ajouter {name} en ami.",
+    "disabled": "Les amis sont désactivés pour le moment.",
+    "signUp": "Créer mon compte",
+    "tabsLabel": "Sections des amis",
+    "tabs": {
+      "friends": "Amis",
+      "requests": "Demandes",
+      "blocked": "Bloqués"
+    },
+    "addLabel": "Ajouter un ami",
+    "addPlaceholder": "Pseudo exact",
+    "addHint": "Saisis son pseudo exact (majuscules indifférentes), ou ouvre son profil.",
+    "add": "Ajouter",
+    "pending": "Un instant…",
+    "requestSent": "Demande envoyée.",
+    "requestSentTo": "Demande envoyée à {name}.",
+    "already": "{name} est déjà ton ami ou une demande est en cours.",
+    "nowFriends": "Toi et {name} êtes maintenant amis.",
+    "requestPending": "Demande envoyée",
+    "cancelRequest": "Annuler",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "accepted": "Acceptée",
+    "declined": "Refusée",
+    "cancelled": "Annulée",
+    "unblocked": "Débloqué",
+    "isFriend": "Ami",
+    "gift": "Offrir",
+    "more": "Plus d'actions pour {name}",
+    "remove": "Retirer des amis",
+    "removeConfirm": "Retirer {name} de tes amis ? Il faudra attendre un peu avant de pouvoir le redemander.",
+    "block": "Bloquer",
+    "blockHint": "Il ne pourra plus t'envoyer de demande ni de cadeau, et ne verra plus ton profil. Il n'est pas prévenu.",
+    "blockConfirm": "Bloquer {name} ? Votre amitié et vos demandes sont supprimées.",
+    "blocked": "{name} est bloqué.",
+    "unblock": "Débloquer",
+    "back": "Retour",
+    "listTitle": "Mes amis",
+    "searchLabel": "Chercher parmi mes amis",
+    "searchPlaceholder": "Chercher parmi mes amis…",
+    "search": "Chercher",
+    "empty": "Pas encore d'amis : ajoute quelqu'un par son pseudo.",
+    "noMatch": "Aucun ami ne correspond.",
+    "pagination": "Pages d'amis",
+    "previous": "← Précédents",
+    "next": "Suivants →",
+    "incoming": "Demandes reçues",
+    "outgoing": "Demandes envoyées",
+    "noIncoming": "Aucune demande reçue.",
+    "noOutgoing": "Aucune demande envoyée.",
+    "blockedIntro": "Les joueurs bloqués ne peuvent ni te demander en ami, ni t'offrir de cadeau, ni voir ton profil.",
+    "noBlocked": "Tu n'as bloqué personne.",
+    "errors": {
+      "NO_SESSION": "Ta session a expiré : recharge la page.",
+      "INVALID": "Pseudo invalide.",
+      "GUEST": "Crée ton compte pour utiliser les amis.",
+      "DISABLED": "Les amis sont désactivés pour le moment.",
+      "RATE_LIMITED": "Doucement ! Réessaie dans un moment.",
+      "NOT_FOUND": "Aucun joueur avec ce pseudo, ou cette demande n'existe plus.",
+      "SELF": "C'est toi !",
+      "BLOCKED_BY_ME": "Tu as bloqué ce joueur : débloque-le d'abord.",
+      "LIMIT_FRIENDS": "Tu as atteint le nombre maximum d'amis.",
+      "LIMIT_OUTGOING": "Trop de demandes en attente : annule-en quelques-unes d'abord.",
+      "UNAVAILABLE": "Action impossible pour le moment. Réessaie."
+    }
+  },
+  "gifts": {
+    "title": "Offrir à {name}",
+    "remaining": "{count, plural, =0 {Plus de cadeau possible aujourd'hui} one {Encore # cadeau possible aujourd'hui} other {Encore # cadeaux possibles aujourd'hui}} (sur {max}).",
+    "card": "Une carte",
+    "booster": "Un booster ({price, number} Zeni)",
+    "pickTitle": "Quelle carte offrir à {name} ?",
+    "pickCard": "Offrir {card}",
+    "confirmCard": "Offrir un exemplaire de {card} à {name} ? Il quitte ta collection.",
+    "confirmBooster": "Offrir un booster standard à {name} pour {price, number} Zeni ?",
+    "balance": "Ton solde : {amount, number} Zeni",
+    "back": "Retour",
+    "confirm": "Offrir",
+    "sending": "Envoi…",
+    "sentCard": "{card} est parti chez {name} !",
+    "sentBooster": "Booster offert à {name} !",
+    "rules": "Entre amis depuis {minFriendshipHours} h au moins. {perDaySent} cadeaux envoyés et {perDayReceived} reçus par jour au plus. Le booster offert s'ouvre sans doré ni divin.",
+    "errors": {
+      "NO_SESSION": "Ta session a expiré : recharge la page.",
+      "INVALID": "Pseudo invalide.",
+      "GUEST": "Crée ton compte pour utiliser les amis.",
+      "DISABLED": "Les amis sont désactivés pour le moment.",
+      "RATE_LIMITED": "Doucement ! Réessaie dans un moment.",
+      "NOT_FOUND": "Aucun joueur avec ce pseudo, ou cette demande n'existe plus.",
+      "SELF": "C'est toi !",
+      "BLOCKED_BY_ME": "Tu as bloqué ce joueur : débloque-le d'abord.",
+      "LIMIT_FRIENDS": "Tu as atteint le nombre maximum d'amis.",
+      "LIMIT_OUTGOING": "Trop de demandes en attente : annule-en quelques-unes d'abord.",
+      "UNAVAILABLE": "Action impossible pour le moment. Réessaie.",
+      "NOT_FRIENDS": "Tu ne peux offrir qu'à un ami.",
+      "ACCOUNT_TOO_NEW": "Ton compte doit avoir au moins {minAccountAgeHours} h pour offrir.",
+      "FRIENDSHIP_TOO_NEW": "Vous devez être amis depuis au moins {minFriendshipHours} h pour vous offrir des cadeaux.",
+      "SENT_LIMIT": "Tu as déjà offert {perDaySent} cadeaux aujourd'hui. Reviens demain !",
+      "RECEIVED_LIMIT": "{name} a déjà reçu assez de cadeaux aujourd'hui.",
+      "NOT_OWNED": "Tu n'as plus cette carte dans ta collection.",
+      "RARITY": "Cette rareté ne peut pas être offerte.",
+      "NOT_ENOUGH_ZENI": "Pas assez de Zeni ({price} nécessaires)."
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "bell": "Notifications",
+    "bellUnread": "{count, plural, one {# notification non lue} other {# notifications non lues}}",
+    "someone": "Un joueur",
+    "friendRequest": "{name} veut devenir ton ami.",
+    "friendAccepted": "{name} a accepté ta demande d'ami.",
+    "giftCard": "{name} t'a offert {card} ({rarity}).",
+    "giftCardGone": "{name} t'a offert une carte.",
+    "giftBooster": "{name} t'a offert un booster : ouvre-le depuis l'accueil.",
+    "empty": "Aucune notification pour l'instant.",
+    "unreadCount": "{count, plural, =0 {Tout est lu} one {# non lue} other {# non lues}}",
+    "unread": "Non lue",
+    "markAll": "Tout marquer comme lu",
+    "more": "Voir plus",
+    "loading": "Chargement…",
+    "errors": {
+      "NO_SESSION": "Ta session a expiré : recharge la page.",
+      "INVALID": "Demande invalide.",
+      "RATE_LIMITED": "Doucement ! Réessaie dans un moment.",
+      "unexpected": "Erreur inattendue. Réessaie."
+    },
+    "toastsLabel": "Nouvelles notifications",
+    "toastMore": "{count, plural, one {Et # autre notification} other {Et # autres notifications}}",
+    "toastOpen": "(ouvrir)",
+    "push": {
+      "title": "Kiraku"
+    }
+  },
+  "push": {
+    "title": "Notifications sur ce téléphone",
+    "intro": "Reçois tes demandes d'ami et tes cadeaux même quand Kiraku est fermé. Tu peux les couper à tout moment.",
+    "enable": "Activer les notifications",
+    "disable": "Désactiver sur cet appareil",
+    "enabled": "Activées sur cet appareil.",
+    "denied": "Les notifications sont bloquées pour Kiraku : autorise-les dans les réglages de ton navigateur, puis reviens ici.",
+    "needsInstall": "Sur iPhone, ajoute d'abord Kiraku à l'écran d'accueil (Partager → Sur l'écran d'accueil), puis ouvre-le depuis l'icône.",
+    "unsupported": "Ce navigateur ne gère pas les notifications.",
+    "errors": {
+      "NO_SESSION": "Ta session a expiré : recharge la page.",
+      "INVALID": "Ce navigateur a renvoyé un abonnement inattendu.",
+      "GUEST": "Crée un compte pour recevoir des notifications.",
+      "RATE_LIMITED": "Trop d'essais : attends une minute.",
+      "DISABLED": "Les notifications sont désactivées pour le moment.",
+      "unexpected": "Impossible d'activer les notifications. Réessaie."
     }
   }
 }

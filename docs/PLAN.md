@@ -11,7 +11,7 @@ L'appli tient en six briques qui partagent une seule base Postgres : boosters, c
 | Boosters | Ouvre un booster de 6 cartes | 10 au départ, +1 toutes les 10 min, max 10 |
 | Collection | Parcourt ses cartes, filtre, voit ses doublons | Chaque carte obtenue = une instance unique |
 | Profil | Ajoute des amis, consulte leurs profils | Demande puis acceptation |
-| Vitrine | Met 6 cartes en avant | 6 emplacements, cartes possédées uniquement |
+| Vitrine | Met 6 cartes en avant | 4 emplacements (réglable : `showcase.slots`), cartes possédées uniquement |
 | Enchères | Met une carte en vente, enchérit | Prix fixés par les joueurs, carte et Zeni bloquées pendant la vente |
 | Combat | Défie un joueur en 1v1 | Résolu par le serveur, rejoué en animation |
 
@@ -118,7 +118,7 @@ Tout se conçoit d'abord pour un écran de 375 px, puis s'élargit : sur desktop
 | Collection | `/collection` | Kyara | Filtres rareté/série, doublons, recyclage |
 | Marché | `/marche` | Kyara + toi | Enchères, achat immédiat, mes ventes |
 | Combat | `/combat`, `/combat/[id]` | Toi | Défis reçus, choix d'équipe, replay, historique, rang classé |
-| Profil public | `/u/[username]` | Kyara + toi | Vitrine 6 cartes, stats, bouton défier / ajouter |
+| Profil public | `/u/[username]` | Kyara + toi | Vitrine 4 cartes, stats, bouton défier / ajouter |
 | Amis | `/amis` | Kyara + toi | Demandes, cadeaux, défier un ami |
 | Missions | `/missions` | Kyara | Objectifs du jour et de la semaine, récompenses |
 | Parrainage | `/parrainage` | Kyara | Code d'invitation, récompense au filleul et au parrain |
@@ -160,7 +160,7 @@ Tes tuiles s'ajoutent à la grille du Compte : Combat, Boutique, et Casino avec 
 - « Changer de booster », « Voir la collection », « Copier le lien » (page publique `/tirage/[id]`, d'où le modèle `BoosterOpening`) et « Image » (image partageable générée avec `next/og`) ;
 - un bouton son, mémorisé.
 
-**Carte (fuda).** Un seul composant `<Fuda size="sm | md | lg" />`, réutilisé partout (récap, collection, marché, vitrine, combat), dessiné selon la direction artistique : cadre dans la matière de la rareté, sceau kanji, numéro, nom japonais vertical, nom latin, série, stats 力 et 気. L'effet de matière (laque, or, nacre) se fait en CSS (dégradés et `mix-blend-mode`) et suit l'inclinaison du téléphone (`deviceorientation`) ou la souris sur desktop ; il est coupé si `prefers-reduced-motion`. Un appui ouvre la fiche : grande carte, stats de combat dérivées, exemplaires possédés, recycler les doublons, mettre en vente, mettre en vitrine, fiche wiki.
+**Carte (fuda).** Un seul composant `<Fuda size="sm | md | lg" />`, réutilisé partout (récap, collection, marché, vitrine, combat), dessiné selon la direction artistique : cadre dans la matière de la rareté, sceau kanji, numéro, nom japonais vertical, nom latin, série, stats 力 et 気. L'effet de matière (laque, or, nacre) se fait en CSS (dégradés et `mix-blend-mode`) et suit l'inclinaison du téléphone (`deviceorientation`) ou la souris sur desktop ; il est coupé si `prefers-reduced-motion`. Un appui ouvre la fiche : grande carte, stats (les stats de combat dérivées arrivent avec le combat, étape 9), exemplaires possédés, recycler les doublons, mettre en vente, mettre en vitrine, fiche wiki.
 
 **Pied de page.** Raretés, Règles, Nouveautés, Classement, Avis et bugs, choix de la langue, et la mention « Projet fan non officiel ».
 
@@ -403,11 +403,11 @@ Pour l'import, la requête AniList récupère en plus, pour l'œuvre principale 
 
 ## Profil, amis et vitrine
 
-Une seule page publique `/u/[username]` sert à la fois de « Mon compte » et de profil d'ami : en-tête (avatar, pseudo, rang classé, % du catalogue complété), vitrine de 6 cartes, puis collection. Les boutons d'édition n'apparaissent que si c'est ton propre profil.
+Une seule page publique `/u/[username]` sert à la fois de « Mon compte » et de profil d'ami : en-tête (avatar, pseudo, rang classé, % du catalogue complété), vitrine de 4 cartes, puis collection. Les boutons d'édition n'apparaissent que si c'est ton propre profil.
 
 | Écran | Route | Données |
 | --- | --- | --- |
-| Profil | `/u/[username]` | user + 6 `ShowcaseSlot` + stats |
+| Profil | `/u/[username]` | user + 4 `ShowcaseSlot` + stats |
 | Collection | `/u/[username]/collection` | `UserCard` groupées par `cardId` avec compteur de doublons |
 | Amis | `/friends` | demandes reçues, envoyées, amis acceptés |
 | Album | `/collection/album` | tout le catalogue, cartes non possédées en silhouette |
@@ -416,9 +416,29 @@ Trois écrans repris de Kyara complètent le tableau : le wiki `/wiki/[anilistId
 
 Amis : une demande crée une `Friendship` en `PENDING` ; l'accepter la passe en `ACCEPTED`. Avant de créer, vérifie qu'aucune ligne n'existe dans l'autre sens (A→B ou B→A). La liste d'amis = les lignes `ACCEPTED` où tu es d'un côté ou de l'autre.
 
-Vitrine : `setShowcase(position, userCardId)` vérifie que la carte t'appartient et est en `COLLECTION`, puis fait un `upsert` sur `[userId, position]`. Comme `userCardId` est unique, une carte ne peut occuper qu'un emplacement. Quand une carte est vendue, supprime son emplacement dans la même transaction.
+Vitrine : `setShowcaseWith(userId, cardIds)` remplace toute la vitrine d'un bloc (un échange de deux cases ne heurte pas l'unicité de `userCardId`). Le client envoie des ids de `Card` ; le serveur choisit l'exemplaire (celui déjà exposé, sinon le plus ancien en `COLLECTION`) sous le verrou de la ligne `User`, le même que le recyclage. Quand une carte est vendue, supprime son emplacement dans la même transaction.
 
-Collection performante : un `groupBy` sur `cardId` avec `_count`, paginé par 48 cartes, puis un seul `findMany` sur `Card` pour les infos d'affichage. Ne charge jamais toutes les instances d'un coup : un joueur actif en accumule plusieurs milliers en quelques semaines.
+Collection performante : un `GROUP BY cardId` en SQL (`$queryRaw` balisé, jointure `Card` et `Series`, tri tiré d'une liste fermée de fragments), paginé par 48 cartes. Ne charge jamais toutes les instances d'un coup : un joueur actif en accumule plusieurs milliers en quelques semaines.
+
+### Mise en œuvre (étape 5)
+
+- **Collection** (`/collection`) : filtres dans l'URL (recherche, raretés, série, doublons, 7 tris), liste virtualisée par lignes (TanStack Virtual), pages suivantes chargées par `loadCollectionPage` à l'approche du bas. Pagination par décalage : un joueur a au plus autant de lignes que de cartes au catalogue (~6 700), un `OFFSET` reste bon marché.
+- **Fiche carte** : `/collection/[anilistId]`, ouverte en feuille au-dessus de la liste par une route interceptée (`@sheet/(.)[anilistId]`) pour garder la liste montée et sa position.
+- **Recyclage** : par carte (fiche) ou « tout recycler jusqu'à la rareté X » avec récap ; le serveur refuse (`STALE`) si le gain n'est plus celui affiché. Transaction : verrou `User`, suppression conditionnelle sur `status = COLLECTION`, crédit et ligne `CoinTransaction` `DISSOLVE`. Valeurs par rareté dans `collection.recycleValues` (`/admin/collection`). Les exemplaires recyclés sont supprimés ; `BoosterOpening.catalogCardIds` garde les ids de `Card` pour que `/tirage/[id]` reste lisible.
+- **Vitrine** : mode édition, glisser-déposer au doigt (Motion `drag` + `layoutId`), boutons ← → × et sélecteur pour le clavier.
+- **Confidentialité** : `User.profileVisibility` (`PUBLIC`, `FRIENDS`, `PRIVATE` ; `FRIENDS` = amis acceptés depuis l'étape 6) et `showCollection`. Un invité naît `PRIVATE` et passe `PUBLIC` à l'inscription, sauf s'il a déjà choisi (`privacyChosenAt`). Un profil privé répond comme un public (200), avec le pseudo seul ; un invité ou un profil non public n'est pas indexé.
+
+### Mise en œuvre (étape 6)
+
+- **Amis** (`/amis`, onglets Amis · Demandes · Bloqués) : `Friendship` porte une `pairKey` unique (ids triés), une seule ligne par paire quel que soit le sens, garantie par la base. Les deux `User` sont verrouillés dans l'ordre des ids (`server/social/lock.ts`) : deux demandes croisées donnent une amitié acceptée. Envoyer une demande à quelqu'un qui t'a déjà demandé l'accepte. Décisions pures dans `lib/social/relation.ts`.
+- **Refus silencieux** : refuser pose `declinedAt` ; l'expéditeur voit toujours « Demande envoyée », ne peut pas relancer et n'est pas prévenu. Annuler une demande ou retirer un ami pose un délai (`FriendRequestCooldown`, `friends.requestCooldownHours`).
+- **Blocage** (`UserBlock`) : supprime l'amitié, les demandes et les notifications du bloqué ; son profil voit le bloqueur comme un profil privé ; ses demandes suivantes sont enregistrées déjà refusées.
+- **Anti-énumération** : ajout par pseudo exact seulement (aucune recherche approximative hors de sa propre liste d'amis) ; une demande vers un joueur qui t'a bloqué, invité, banni, plein ou en délai répond « envoyée » comme une vraie ; seuls « introuvable » et « déjà en cours » diffèrent. Rate limit par joueur (10/h, 30/jour) et par IP (30/h). Invités exclus du social.
+- **Cadeaux** (`Gift`, envoi direct) : comptes inscrits, compte ≥ `gifts.minAccountAgeHours` (48 h), amitié ≥ `gifts.minFriendshipHours` (24 h), `gifts.perDaySent` (3) et `gifts.perDayReceived` (5) par jour du fuseau du jeu, comptés sous verrou. Carte : le serveur choisit l'exemplaire (le plus récent hors vitrine), transfert par `updateMany` conditionnel sur `status = COLLECTION`, case de vitrine retirée, `Discovery` du destinataire. Booster : payé `gifts.boosterPriceZeni` Zeni par l'expéditeur (ligne `CoinTransaction` `GIFT`), crédité dans `User.giftBoosters` ; il s'ouvre depuis l'accueil (`/ouvrir/standard?offert=1`), un à la fois, sans doré ni divin, pitié Mythique comprise. Le stock gratuit ne se transfère jamais.
+- **Notifications** (`Notification`, types `FRIEND_REQUEST`, `FRIEND_ACCEPTED`, `GIFT_RECEIVED`) : créées dans la transaction de l'événement, payload d'ids seulement, texte rendu à la lecture. Cloche dans l'en-tête (compteur serveur, sondage 60 s onglet visible), page `/notifications` par curseur, purge paresseuse des lues après `notifications.retentionDays`.
+- **Web Push** (onglet fermé) : opt-in depuis `/compte` (permission demandée au clic seulement, invités exclus), un `PushSubscription` par navigateur (endpoint unique, limité aux services push des navigateurs). Envoi après la validation de la transaction qui crée la notification, via `after()`, texte rendu dans `User.locale` ; abonnements en 404/410 supprimés. Clés `VAPID_*` côté serveur (la publique est passée par la page), interrupteur `notifications.pushEnabled`. Service worker `public/sw.js` et manifest (`app/manifest.ts`) posés en avance sur l'étape 10 ; sur iPhone, le push exige Kiraku installé sur l'écran d'accueil.
+- **Admin** : `/admin/social` (interrupteurs, limites, raretés offrables, journal des derniers cadeaux).
+- **Tests** : `lib/social/*.test.ts` ; `server/social/social.db.test.ts` (demandes croisées, quotas sous concurrence, double cadeau d'un exemplaire, solde = journal), sauté sans `DATABASE_URL_TEST`.
 
 ## Hôtel des ventes
 
@@ -676,7 +696,7 @@ Performance :
 - Pages en Server Components ; seuls les éléments interactifs (ouverture, enchère, timer) sont des Client Components.
 - Catalogue et pages de cartes en cache (`revalidateTag` à l'ajout de cartes).
 - Images de cartes en WebP, deux tailles (vignette \~300 px, détail \~800 px), via CDN.
-- Pagination par curseur partout (collection, marché, historique).
+- Pagination par curseur partout (marché, historique) ; la collection, bornée par la taille du catalogue, pagine par décalage.
 
 Sécurité et anti-triche :
 
@@ -773,6 +793,9 @@ model User {
   deletionRequestedAt DateTime?        // suppression RGPD en attente
   referralCode  String   @unique @default(cuid())
   referredById  String?
+  profileVisibility ProfileVisibility @default(PUBLIC) // invités créés en PRIVATE
+  showCollection    Boolean  @default(true)
+  privacyChosenAt   DateTime?          // choix du joueur : l'inscription ne le change plus
   createdAt     DateTime @default(now())
 
   cards        UserCard[]
@@ -849,16 +872,21 @@ model ShowcaseSlot {
 
 model Friendship {
   id          String       @id @default(cuid())
+  pairKey     String       @unique // ids triés : une ligne par paire, quel que soit le sens
   requesterId String
   addresseeId String
   requester   User         @relation("requester", fields: [requesterId], references: [id])
   addressee   User         @relation("addressee", fields: [addresseeId], references: [id])
   status      FriendStatus @default(PENDING)
   createdAt   DateTime     @default(now())
+  acceptedAt  DateTime?
+  declinedAt  DateTime?    // refus silencieux
 
-  @@unique([requesterId, addresseeId])
   @@index([addresseeId, status])
+  @@index([requesterId, status])
 }
+
+// Étape 6 : UserBlock, FriendRequestCooldown et Gift, voir prisma/schema.prisma
 
 model Auction {
   id              String        @id @default(cuid())
@@ -913,8 +941,10 @@ model UserMission {
 model Notification {
   id        String   @id @default(cuid())
   userId    String
-  type      String   // OUTBID | SOLD | BATTLE_CHALLENGE | FRIEND_REQUEST
-  payload   Json
+  type      NotificationType // FRIEND_REQUEST | FRIEND_ACCEPTED | GIFT_RECEIVED, puis OUTBID | SOLD | BATTLE_CHALLENGE
+  actorId   String?
+  refId     String?
+  payload   Json     // ids et nombres uniquement
   readAt    DateTime?
   createdAt DateTime @default(now())
 
@@ -965,6 +995,7 @@ model BoosterOpening {       // un tirage, partageable par lien
   userId        String
   boosterTypeId String
   cardIds       String[] // ids de UserCard
+  catalogCardIds String[] // ids de Card dans le même ordre (lisible après recyclage ou vente)
   golden        Boolean  @default(false)
   divine        Boolean  @default(false)
   createdAt     DateTime @default(now())

@@ -7,7 +7,8 @@
     "appName": "Kiraku",
     "zeni": "{amount, number} Zeni",
     "boosters": "{count}/{max}",
-    "number": "{value, number}"
+    "number": "{value, number}",
+    "close": "Close"
   },
   "account": {
     "title": "Account",
@@ -34,7 +35,8 @@
     "discordBonusTitle": "Link your Discord account",
     "discordBonusBody": "Earn {amount, number} Zeni the first time you link it.",
     "discordLinked": "Discord is linked to your account.",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "publicProfile": "View my public profile"
   },
   "theme": {
     "label": "Theme",
@@ -213,7 +215,8 @@
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "menuTitle": "Menu",
-    "preferences": "Preferences"
+    "preferences": "Preferences",
+    "friends": "Friends"
   },
   "header": {
     "stock": "Boosters: {count} of {max}",
@@ -336,7 +339,9 @@
       "pity": "Featured card guaranteed in {count, plural, one {# booster} other {# boosters}}",
       "see": "See the banner",
       "days": "{count, plural, one {# day} other {# days}}"
-    }
+    },
+    "giftBoosters": "{count, plural, one {A friend gave you # booster} other {Your friends gave you # boosters}}",
+    "openGift": "Open"
   },
   "opening": {
     "title": "Open · {name}",
@@ -400,7 +405,8 @@
       "NOT_ENOUGH_ZENI": "Not enough Zeni for this opening.",
       "NOT_FOR_SALE": "This booster isn't available right now.",
       "UNAVAILABLE": "Can't open right now. Try again."
-    }
+    },
+    "giftLeft": "{count, plural, one {Gifted booster · # to open} other {Gifted boosters · # to open}}"
   },
   "draw": {
     "title": "{name}'s pull",
@@ -419,7 +425,9 @@
       "market": "Market",
       "ranked": "Ranked",
       "types": "Booster types",
-      "banners": "Banners"
+      "banners": "Banners",
+      "collection": "Collection",
+      "social": "Social"
     },
     "boosters": {
       "title": "Booster settings",
@@ -593,6 +601,454 @@
       "dates": "From {start} to {end}",
       "noDates": "No dates",
       "featured": "{count, plural, one {# featured card} other {# featured cards}}"
+    },
+    "collection": {
+      "title": "Collection settings",
+      "intro": "Zeni given per recycled duplicate and showcase size. Every change applies immediately and is logged.",
+      "recycleSection": "Recycling a duplicate (Zeni)",
+      "showcaseSection": "Profile showcase",
+      "fields": {
+        "showcaseSlots": "Number of slots"
+      },
+      "showcaseHint": "Lowering this hides the cards in the last slots (they stay saved).",
+      "keys": {
+        "recycleValues": "Recycling values",
+        "showcaseSlots": "Showcase slots"
+      },
+      "invalid": "Some values are out of range: fix them before saving.",
+      "review": "Review changes",
+      "noChange": "No changes.",
+      "confirmTitle": "Confirm these changes?",
+      "confirm": "Save",
+      "cancel": "Cancel",
+      "saved": "{count, plural, one {# setting saved} other {# settings saved}}.",
+      "errors": {
+        "FORBIDDEN": "Access denied.",
+        "INVALID": "Values refused by the server.",
+        "RATE_LIMITED": "Too many saves: wait a minute.",
+        "unexpected": "Unexpected error. Try again."
+      },
+      "log": "Recent changes",
+      "logEmpty": "No changes yet.",
+      "logEntry": "{key} by {admin}"
+    },
+    "social": {
+      "title": "Social settings",
+      "intro": "Friends, gifts and notifications: anti-spam limits and anti-alt-account rules. Every change applies right away and is logged.",
+      "friendsSection": "Friends",
+      "giftsSection": "Gifts",
+      "notificationsSection": "Notifications",
+      "giftsHint": "Daily received quotas stop alt accounts from feeding a main account. A gifted booster is paid in Zeni by the sender.",
+      "keys": {
+        "social": {
+          "enabled": "Friends and gifts enabled"
+        },
+        "friends": {
+          "max": "Maximum friends",
+          "maxOutgoingPending": "Maximum pending sent requests",
+          "requestCooldownHours": "Wait before asking again after a cancellation (h)"
+        },
+        "gifts": {
+          "enabled": "Gifts enabled",
+          "perDaySent": "Gifts sent per day",
+          "perDayReceived": "Gifts received per day",
+          "minAccountAgeHours": "Minimum account age (h)",
+          "minFriendshipHours": "Minimum friendship age (h)",
+          "boosterPriceZeni": "Gifted booster price (Zeni)",
+          "allowedRarities": "Rarities that can be given"
+        },
+        "notifications": {
+          "retentionDays": "Keep read notifications for (days)",
+          "pollSeconds": "Notification check interval (s)",
+          "pushEnabled": "Push notifications (tab closed)"
+        }
+      },
+      "invalid": "Some values are out of range: fix them before saving.",
+      "review": "Review changes",
+      "noChange": "No change.",
+      "confirmTitle": "Confirm these changes?",
+      "confirm": "Save",
+      "cancel": "Cancel",
+      "saved": "{count, plural, one {# setting saved} other {# settings saved}}.",
+      "errors": {
+        "FORBIDDEN": "Access denied.",
+        "INVALID": "Values rejected by the server.",
+        "RATE_LIMITED": "Too many saves: wait a minute.",
+        "unexpected": "Unexpected error. Try again."
+      },
+      "giftLog": "Latest gifts",
+      "giftLogEmpty": "No gifts yet.",
+      "giftCard": "{from} → {to}: a card",
+      "giftBooster": "{from} → {to}: a booster ({zeni, number} Zeni)",
+      "log": "Latest changes",
+      "logEmpty": "No changes yet.",
+      "logEntry": "{key} by {admin}"
+    }
+  },
+  "collection": {
+    "title": "Collection",
+    "myProfile": "My profile",
+    "recyclableHint": "{count, plural, one {# recyclable duplicate} other {# recyclable duplicates}} for {zeni, number} Zeni.",
+    "empty": "Your collection is empty for now: open a booster to get your first fuda.",
+    "openBoosters": "Open a booster",
+    "noMatch": "No card matches these filters.",
+    "loading": "Loading the collection…",
+    "back": "← Collection",
+    "copiesLabel": "{count, plural, one {# copy} other {# copies}}",
+    "inShowcaseBadge": "Showcase",
+    "listLabel": "Collection cards",
+    "retry": "Try again",
+    "searchLabel": "Search the collection",
+    "searchPlaceholder": "Name or series…",
+    "sortAndSeries": "Sort and series",
+    "rarityFilter": "Filter by rarity",
+    "dupesOnly": "Duplicates",
+    "seriesActive": "Series:",
+    "clearSeries": "All series",
+    "sortBy": "Sort by",
+    "sorts": {
+      "rarity": "Rarity",
+      "recent": "Obtained",
+      "number": "Number",
+      "name": "Name",
+      "copies": "Copies",
+      "power": "Power 力",
+      "ki": "Ki 気"
+    },
+    "direction": "Order",
+    "dirs": {
+      "rarity": {
+        "desc": "Rarest first",
+        "asc": "Most common first"
+      },
+      "recent": {
+        "desc": "Newest first",
+        "asc": "Oldest first"
+      },
+      "number": {
+        "desc": "Highest number first",
+        "asc": "Lowest number first"
+      },
+      "name": {
+        "desc": "Z → A",
+        "asc": "A → Z"
+      },
+      "copies": {
+        "desc": "Most copies first",
+        "asc": "Fewest copies first"
+      },
+      "power": {
+        "desc": "Strongest first",
+        "asc": "Weakest first"
+      },
+      "ki": {
+        "desc": "Highest first",
+        "asc": "Lowest first"
+      }
+    },
+    "series": "Series",
+    "allSeries": "All series",
+    "seriesOption": "{title} ({count})",
+    "done": "Show cards",
+    "stats": {
+      "unique": "Unique cards",
+      "copies": "Copies",
+      "completion": "Catalog"
+    },
+    "recycleAll": {
+      "open": "Recycle duplicates",
+      "title": "Recycle duplicates",
+      "intro": "Each duplicate gives Zeni based on its rarity. You always keep one copy of each card, and the one in your showcase.",
+      "upTo": "Recycle up to rarity",
+      "recap": "Recycling summary",
+      "rarity": "Rarity",
+      "copies": "Duplicates",
+      "zeni": "Zeni",
+      "total": "Total",
+      "keepOne": "Cards on sale or in battle are left alone.",
+      "cancel": "Cancel",
+      "confirm": "Recycle (+{zeni, number} Zeni)",
+      "done": "{count, plural, one {# duplicate recycled} other {# duplicates recycled}}: +{zeni, number} Zeni.",
+      "errors": {
+        "NO_SESSION": "Your session expired: reload the page.",
+        "INVALID": "Request refused.",
+        "FORBIDDEN": "Access denied.",
+        "RATE_LIMITED": "Easy there: wait a few seconds.",
+        "NOTHING": "No duplicates left to recycle.",
+        "STALE": "Your collection changed in the meantime: check the summary and try again.",
+        "NOT_OWNED": "You no longer own this card.",
+        "FULL": "Your showcase is full.",
+        "UNAVAILABLE": "Not possible right now. Try again."
+      }
+    },
+    "card": {
+      "number": "No. {number}",
+      "power": "Power",
+      "ki": "Ki",
+      "notOwned": "You don't own this card.",
+      "copiesTitle": "{count, plural, one {# copy} other {# copies}}",
+      "inCollection": "{count, plural, =0 {None in collection} one {# in collection} other {# in collection}}",
+      "inAuction": "{count, plural, one {# on sale} other {# on sale}}",
+      "inBattle": "{count, plural, one {# in battle} other {# in battle}}",
+      "firstObtained": "First obtained: {date}",
+      "recycleTitle": "Recycle duplicates",
+      "unitValue": "{zeni, number} Zeni per duplicate.",
+      "noDuplicates": "No duplicates to recycle.",
+      "less": "One fewer",
+      "more": "One more",
+      "count": "{count} / {max}",
+      "recycle": "Recycle {count} (+{zeni, number} Zeni)",
+      "confirm": "Confirm (+{zeni, number} Zeni)",
+      "cancel": "Cancel",
+      "keepOne": "You always keep one copy, and the one in your showcase.",
+      "recycled": "{count, plural, one {# duplicate recycled} other {# duplicates recycled}}: +{zeni, number} Zeni.",
+      "addToShowcase": "Add to showcase",
+      "removeFromShowcase": "Remove from showcase",
+      "showcaseFull": "Your showcase is full: <link>remove a card from your profile</link>.",
+      "sell": "Put up for sale",
+      "soon": "Soon",
+      "wiki": "Wiki page",
+      "errors": {
+        "NO_SESSION": "Your session expired: reload the page.",
+        "INVALID": "Request refused.",
+        "FORBIDDEN": "Access denied.",
+        "RATE_LIMITED": "Easy there: wait a few seconds.",
+        "NOTHING": "No duplicates left to recycle.",
+        "STALE": "Your collection changed in the meantime: check the summary and try again.",
+        "NOT_OWNED": "You no longer own this card.",
+        "FULL": "Your showcase is full.",
+        "UNAVAILABLE": "Not possible right now. Try again."
+      }
+    }
+  },
+  "showcase": {
+    "label": "Showcase",
+    "slot": "Slot {n}",
+    "edit": "Edit showcase",
+    "done": "Done",
+    "dragHint": "Drag a card onto another slot to swap them.",
+    "emptyOwner": "Your showcase is empty: pick up to four cards to show off.",
+    "emptyPublic": "No cards in the showcase yet.",
+    "addTo": "Pick a card for slot {n}",
+    "moveLeft": "Move {name} left",
+    "moveRight": "Move {name} right",
+    "remove": "Remove {name} from the showcase",
+    "change": "Replace {name}",
+    "changeShort": "Change",
+    "removeShort": "Remove",
+    "error": "The showcase couldn't be saved: it went back to how it was.",
+    "pickTitle": "Pick a card",
+    "searchLabel": "Search for a card",
+    "searchPlaceholder": "Name or series…",
+    "pickEmpty": "No card found.",
+    "pick": "Put {name} in the showcase",
+    "alreadyShown": "Shown",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "more": "Show more"
+  },
+  "profile": {
+    "metaTitle": "{name}'s profile",
+    "metaDescription": "{name}'s showcase and collection on Kiraku.",
+    "since": "On Kiraku since {date}",
+    "share": "Share profile",
+    "copied": "Link copied",
+    "private": "This profile is private.",
+    "stats": {
+      "unique": "Unique cards",
+      "mythic": "Mythics",
+      "completion": "Catalog"
+    },
+    "viewCollection": "View collection",
+    "privacy": "Privacy",
+    "ownerNotice": {
+      "FRIENDS": "Your profile is for your friends only.",
+      "PRIVATE": "Your profile is private: nobody but you can see it."
+    },
+    "showcase": "Showcase",
+    "backToProfile": "← {name}'s profile",
+    "collectionHidden": "This collection isn't visible.",
+    "collectionOf": "{name}'s collection",
+    "noMatch": "No card matches these filters.",
+    "collectionEmpty": "This collection is empty.",
+    "friends": "My friends"
+  },
+  "privacy": {
+    "title": "Privacy",
+    "intro": "Choose who sees your public profile, showcase and collection.",
+    "who": "Who can see my profile",
+    "levels": {
+      "PUBLIC": {
+        "label": "Everyone",
+        "hint": "Your profile link can be shared and opened by anyone."
+      },
+      "FRIENDS": {
+        "label": "My friends",
+        "hint": "Only your accepted friends see your profile and showcase."
+      },
+      "PRIVATE": {
+        "label": "Only me",
+        "hint": "Others only see your username."
+      }
+    },
+    "showCollection": "Show my full collection",
+    "showCollectionHint": "Otherwise, only your showcase and numbers are visible.",
+    "saved": "Saved.",
+    "error": "Couldn't save. Try again."
+  },
+  "friends": {
+    "title": "Friends",
+    "subtitle": "Your friends, your requests and the players you blocked.",
+    "guestOnly": "Friends and gifts are for accounts only: create yours, your guest collection is kept.",
+    "guestOnlyShort": "Create your account to add {name} as a friend.",
+    "disabled": "Friends are turned off for now.",
+    "signUp": "Create my account",
+    "tabsLabel": "Friends sections",
+    "tabs": {
+      "friends": "Friends",
+      "requests": "Requests",
+      "blocked": "Blocked"
+    },
+    "addLabel": "Add a friend",
+    "addPlaceholder": "Exact username",
+    "addHint": "Type their exact username (any case), or open their profile.",
+    "add": "Add",
+    "pending": "One moment…",
+    "requestSent": "Request sent.",
+    "requestSentTo": "Request sent to {name}.",
+    "already": "{name} is already your friend or a request is pending.",
+    "nowFriends": "You and {name} are now friends.",
+    "requestPending": "Request sent",
+    "cancelRequest": "Cancel",
+    "accept": "Accept",
+    "decline": "Decline",
+    "accepted": "Accepted",
+    "declined": "Declined",
+    "cancelled": "Cancelled",
+    "unblocked": "Unblocked",
+    "isFriend": "Friend",
+    "gift": "Give",
+    "more": "More actions for {name}",
+    "remove": "Remove friend",
+    "removeConfirm": "Remove {name} from your friends? You'll have to wait a while before asking again.",
+    "block": "Block",
+    "blockHint": "They can no longer send you requests or gifts, nor see your profile. They are not told.",
+    "blockConfirm": "Block {name}? Your friendship and requests are deleted.",
+    "blocked": "{name} is blocked.",
+    "unblock": "Unblock",
+    "back": "Back",
+    "listTitle": "My friends",
+    "searchLabel": "Search my friends",
+    "searchPlaceholder": "Search my friends…",
+    "search": "Search",
+    "empty": "No friends yet: add someone by their username.",
+    "noMatch": "No friend matches.",
+    "pagination": "Friend pages",
+    "previous": "← Previous",
+    "next": "Next →",
+    "incoming": "Received requests",
+    "outgoing": "Sent requests",
+    "noIncoming": "No requests received.",
+    "noOutgoing": "No requests sent.",
+    "blockedIntro": "Blocked players can't send you friend requests or gifts, nor see your profile.",
+    "noBlocked": "You haven't blocked anyone.",
+    "errors": {
+      "NO_SESSION": "Your session expired: reload the page.",
+      "INVALID": "Invalid username.",
+      "GUEST": "Create your account to use friends.",
+      "DISABLED": "Friends are turned off for now.",
+      "RATE_LIMITED": "Easy! Try again in a moment.",
+      "NOT_FOUND": "No player with this username, or this request no longer exists.",
+      "SELF": "That's you!",
+      "BLOCKED_BY_ME": "You blocked this player: unblock them first.",
+      "LIMIT_FRIENDS": "You've reached the maximum number of friends.",
+      "LIMIT_OUTGOING": "Too many pending requests: cancel some first.",
+      "UNAVAILABLE": "Can't do that right now. Try again."
+    }
+  },
+  "gifts": {
+    "title": "Give to {name}",
+    "remaining": "{count, plural, =0 {No more gifts today} one {# more gift today} other {# more gifts today}} (out of {max}).",
+    "card": "A card",
+    "booster": "A booster ({price, number} Zeni)",
+    "pickTitle": "Which card for {name}?",
+    "pickCard": "Give {card}",
+    "confirmCard": "Give a copy of {card} to {name}? It leaves your collection.",
+    "confirmBooster": "Give a standard booster to {name} for {price, number} Zeni?",
+    "balance": "Your balance: {amount, number} Zeni",
+    "back": "Back",
+    "confirm": "Give",
+    "sending": "Sending…",
+    "sentCard": "{card} is on its way to {name}!",
+    "sentBooster": "Booster given to {name}!",
+    "rules": "Friends for at least {minFriendshipHours} h. At most {perDaySent} gifts sent and {perDayReceived} received per day. A gifted booster opens without golden or divine.",
+    "errors": {
+      "NO_SESSION": "Your session expired: reload the page.",
+      "INVALID": "Invalid username.",
+      "GUEST": "Create your account to use friends.",
+      "DISABLED": "Friends are turned off for now.",
+      "RATE_LIMITED": "Easy! Try again in a moment.",
+      "NOT_FOUND": "No player with this username, or this request no longer exists.",
+      "SELF": "That's you!",
+      "BLOCKED_BY_ME": "You blocked this player: unblock them first.",
+      "LIMIT_FRIENDS": "You've reached the maximum number of friends.",
+      "LIMIT_OUTGOING": "Too many pending requests: cancel some first.",
+      "UNAVAILABLE": "Can't do that right now. Try again.",
+      "NOT_FRIENDS": "You can only give to a friend.",
+      "ACCOUNT_TOO_NEW": "Your account must be at least {minAccountAgeHours} h old to give gifts.",
+      "FRIENDSHIP_TOO_NEW": "You must have been friends for at least {minFriendshipHours} h to exchange gifts.",
+      "SENT_LIMIT": "You already gave {perDaySent} gifts today. Come back tomorrow!",
+      "RECEIVED_LIMIT": "{name} has already received enough gifts today.",
+      "NOT_OWNED": "This card is no longer in your collection.",
+      "RARITY": "This rarity can't be given.",
+      "NOT_ENOUGH_ZENI": "Not enough Zeni ({price} needed)."
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "bell": "Notifications",
+    "bellUnread": "{count, plural, one {# unread notification} other {# unread notifications}}",
+    "someone": "A player",
+    "friendRequest": "{name} wants to be your friend.",
+    "friendAccepted": "{name} accepted your friend request.",
+    "giftCard": "{name} gave you {card} ({rarity}).",
+    "giftCardGone": "{name} gave you a card.",
+    "giftBooster": "{name} gave you a booster: open it from the home page.",
+    "empty": "No notifications yet.",
+    "unreadCount": "{count, plural, =0 {All read} one {# unread} other {# unread}}",
+    "unread": "Unread",
+    "markAll": "Mark all as read",
+    "more": "Show more",
+    "loading": "Loading…",
+    "errors": {
+      "NO_SESSION": "Your session expired: reload the page.",
+      "INVALID": "Invalid request.",
+      "RATE_LIMITED": "Easy! Try again in a moment.",
+      "unexpected": "Unexpected error. Try again."
+    },
+    "toastsLabel": "New notifications",
+    "toastMore": "{count, plural, one {And # more notification} other {And # more notifications}}",
+    "toastOpen": "(open)",
+    "push": {
+      "title": "Kiraku"
+    }
+  },
+  "push": {
+    "title": "Notifications on this device",
+    "intro": "Get your friend requests and gifts even when Kiraku is closed. You can turn them off anytime.",
+    "enable": "Turn on notifications",
+    "disable": "Turn off on this device",
+    "enabled": "On for this device.",
+    "denied": "Notifications are blocked for Kiraku: allow them in your browser settings, then come back here.",
+    "needsInstall": "On iPhone, first add Kiraku to your Home Screen (Share → Add to Home Screen), then open it from the icon.",
+    "unsupported": "This browser doesn't support notifications.",
+    "errors": {
+      "NO_SESSION": "Your session expired: reload the page.",
+      "INVALID": "This browser returned an unexpected subscription.",
+      "GUEST": "Create an account to get notifications.",
+      "RATE_LIMITED": "Too many attempts: wait a minute.",
+      "DISABLED": "Notifications are turned off for now.",
+      "unexpected": "Couldn't turn on notifications. Try again."
     }
   }
 }

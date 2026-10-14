@@ -32,6 +32,13 @@ const rarityRates = z
   })
   .refine((rates) => RARITIES.some((r) => rates[r] > 0), { message: "Au moins une rareté doit avoir une part" });
 
+// Zeni rendus par doublon recyclé, par rareté
+const recycleValues = z.object(
+  Object.fromEntries(RARITIES.map((r) => [r, z.number().int().min(0).max(100_000)])) as {
+    [R in (typeof RARITIES)[number]]: z.ZodNumber;
+  },
+);
+
 const cardStats = z.object({
   powerMax: z.number().int().min(1).max(999),
   powerSpan: z.number().int().min(0).max(999),
@@ -58,6 +65,27 @@ export const SETTING_SCHEMAS = {
   "booster.minPool": z.number().int().min(1).max(10_000),
   // Fuseau du jeu : « aujourd'hui » (anniversaires) et saison AniList en cours
   "game.timeZone": z.string().min(1).max(64).refine(isTimeZone, { message: "Fuseau horaire inconnu" }),
+  "collection.recycleValues": recycleValues,
+  // Nombre d'emplacements de la vitrine du profil
+  "showcase.slots": z.number().int().min(1).max(8),
+  // Social (étape 6) : interrupteurs, limites anti-spam et anti-farm des cadeaux
+  "social.enabled": z.boolean(),
+  "friends.max": z.number().int().min(1).max(5_000),
+  "friends.maxOutgoingPending": z.number().int().min(1).max(500),
+  // Délai avant de pouvoir redemander après un refus ou une annulation
+  "friends.requestCooldownHours": z.number().int().min(0).max(24 * 90),
+  "gifts.enabled": z.boolean(),
+  "gifts.perDaySent": z.number().int().min(0).max(100),
+  "gifts.perDayReceived": z.number().int().min(0).max(100),
+  "gifts.minAccountAgeHours": z.number().int().min(0).max(24 * 365),
+  "gifts.minFriendshipHours": z.number().int().min(0).max(24 * 365),
+  "gifts.boosterPriceZeni": z.number().int().min(1).max(1_000_000),
+  "gifts.allowedRarities": z.array(rarity).max(RARITIES.length),
+  "notifications.retentionDays": z.number().int().min(1).max(365),
+  // Intervalle de sondage de la cloche et des toasts (onglet visible seulement)
+  "notifications.pollSeconds": z.number().int().min(10).max(600),
+  // Web Push (onglet fermé) : interrupteur global, l'abonnement reste un choix du joueur
+  "notifications.pushEnabled": z.boolean(),
   "guest.createPerHourPerIp": z.number().int().min(1).max(1_000),
   "discord.linkBonusZeni": z.number().int().min(0).max(100_000),
   "catalog.size": z.number().int().min(10).max(50_000),
@@ -86,6 +114,23 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "booster.divineOdds": 2000,
   "booster.minPool": 100,
   "game.timeZone": "Europe/Paris",
+  // Valeurs de Kyara : 1 · 1 · 3 · 10 · 40 · 150 Zeni
+  "collection.recycleValues": { COMMON: 1, UNCOMMON: 1, RARE: 3, EPIC: 10, LEGENDARY: 40, MYTHIC: 150 },
+  "showcase.slots": 4,
+  "social.enabled": true,
+  "friends.max": 200,
+  "friends.maxOutgoingPending": 20,
+  "friends.requestCooldownHours": 72,
+  "gifts.enabled": true,
+  "gifts.perDaySent": 3,
+  "gifts.perDayReceived": 5,
+  "gifts.minAccountAgeHours": 48, // comme les enchères
+  "gifts.minFriendshipHours": 24,
+  "gifts.boosterPriceZeni": 200, // prix du booster standard
+  "gifts.allowedRarities": [...RARITIES],
+  "notifications.retentionDays": 30,
+  "notifications.pollSeconds": 20,
+  "notifications.pushEnabled": true,
   "guest.createPerHourPerIp": 5,
   "discord.linkBonusZeni": 500, // versé une seule fois, à la première liaison
   "catalog.size": 6736,

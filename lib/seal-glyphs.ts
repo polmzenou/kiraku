@@ -13,4 +13,6 @@ export const SEAL_GLYPHS = [
   "開封定番形稀少読者類人物時代特別", // titres de la page et des familles
   "選無料催事袋", // panneau, prix, composition du jūbako
   "管理", // administration
+  "蒐集飾札公友秘", // collection, vitrine, fiche carte, confidentialité
+  "贈報", // cadeaux, notifications
 ].join("");

@@ -6,7 +6,7 @@ import { safeRedirect } from "@/lib/safe-redirect";
 import { kirakuAdapter } from "./auth-adapter";
 import { prisma } from "./db";
 import { discordEnabled, env } from "./env";
-import { availableUsername } from "./players";
+import { availableUsername, publishProfileOnSignup } from "./players";
 import { SESSION_COOKIE, SESSION_MAX_AGE } from "./session";
 import { getSetting } from "./settings";
 
@@ -61,6 +61,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             }),
           },
         });
+
+        await publishProfileOnSignup(tx, userId);
 
         // Bonus de première liaison : une seule fois par compte, même après déliaison
         const first = await tx.user.updateMany({

@@ -104,6 +104,21 @@ describe.skipIf(!url)("ouverture atomique (base réelle)", () => {
     expect(user.pityCount).toBe(before.pityCount);
   }, 120_000);
 
+  it("chaque tirage garde les ids de Card de ses emplacements, même après suppression des exemplaires", async () => {
+    const opening = await prisma.boosterOpening.findFirstOrThrow({
+      where: { userId },
+      select: { cardIds: true, catalogCardIds: true },
+    });
+    const copies = await prisma.userCard.findMany({ where: { id: { in: opening.cardIds } }, select: { id: true, cardId: true } });
+    const cardOf = new Map(copies.map((c) => [c.id, c.cardId]));
+    expect(opening.catalogCardIds).toEqual(opening.cardIds.map((id) => cardOf.get(id)));
+
+    // Recyclage simulé : la page /tirage/[id] lit catalogCardIds, pas les exemplaires
+    await prisma.userCard.deleteMany({ where: { id: { in: opening.cardIds } } });
+    const after = await prisma.boosterOpening.findFirstOrThrow({ where: { userId }, select: { catalogCardIds: true } });
+    expect(after.catalogCardIds).toHaveLength(opening.cardIds.length);
+  }, 60_000);
+
   it("sans accord de paiement, rien n'est débité", async () => {
     await expect(
       openBoostersWith(prisma, { userId, type: rare, count: 1, rules, tables, pool, rng: seededRng(1) }),

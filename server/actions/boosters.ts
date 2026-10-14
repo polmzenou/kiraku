@@ -28,14 +28,23 @@ export type OpenBoosterError =
   | "UNAVAILABLE";
 
 export type OpenBoosterResult =
-  | { ok: true; boosters: OpenedBoosterView[]; state: BoosterState; featuredCount: number; zeniSpent: number }
+  | {
+      ok: true;
+      boosters: OpenedBoosterView[];
+      state: BoosterState;
+      featuredCount: number;
+      zeniSpent: number;
+      giftBoosters: number;
+    }
   | { ok: false; error: OpenBoosterError };
 
 const openSchema = z.object({
   booster: slugSchema,
   count: z.union(OPEN_COUNTS.map((n) => z.literal(n))),
   pay: z.boolean().default(false),
-});
+  // Booster offert par un ami : un seul à la fois, toujours le standard
+  gift: z.boolean().default(false),
+}).refine((v) => !v.gift || (v.count === 1 && !v.pay));
 
 const PUBLIC_ERRORS: Partial<Record<OpenErrorCode, OpenBoosterError>> = {
   NO_BOOSTER: "NO_BOOSTER",
@@ -60,7 +69,7 @@ export async function openBoosterAction(input: unknown): Promise<OpenBoosterResu
 
   let opened: Awaited<ReturnType<typeof openBoosters>>;
   try {
-    opened = await openBoosters(user.id, parsed.data.booster, parsed.data.count, parsed.data.pay);
+    opened = await openBoosters(user.id, parsed.data.booster, parsed.data.count, parsed.data.pay, parsed.data.gift);
   } catch (e) {
     if (e instanceof OpenError) return { ok: false, error: PUBLIC_ERRORS[e.code] ?? "UNAVAILABLE" };
     console.error("[boosters] ouverture impossible", e);
@@ -100,5 +109,12 @@ export async function openBoosterAction(input: unknown): Promise<OpenBoosterResu
 
   // En-tête (stock, ensō, solde) à jour sans recharger la page
   refresh();
-  return { ok: true, boosters, state, featuredCount: outcome.featuredCount, zeniSpent: outcome.zeniSpent };
+  return {
+    ok: true,
+    boosters,
+    state,
+    featuredCount: outcome.featuredCount,
+    zeniSpent: outcome.zeniSpent,
+    giftBoosters: outcome.giftBoosters,
+  };
 }

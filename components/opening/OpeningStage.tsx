@@ -42,7 +42,8 @@ export type OpeningType = {
   featured: { threshold: number; count: number } | null;
 };
 
-type Props = { type: OpeningType; initialState: BoosterState };
+/** `gifts` : boosters offerts par des amis à ouvrir en premier (un à la fois, sans doré ni divin). */
+type Props = { type: OpeningType; initialState: BoosterState; gifts?: number };
 
 const bestRarity = (boosters: OpenedBoosterView[]): Rarity =>
   boosters
@@ -64,7 +65,7 @@ function maxOpenable(type: OpeningType, state: BoosterState): number {
  * retournent en vague), puis le récap se déroule. Le tirage est déjà enregistré par le serveur
  * quand l'animation commence : fermer l'onglet ne fait rien perdre.
  */
-export function OpeningStage({ type, initialState }: Props) {
+export function OpeningStage({ type, initialState, gifts = 0 }: Props) {
   const t = useTranslations("opening");
   const reduced = useReducedMotion() ?? false;
   const fx = useRitualFx();
@@ -79,15 +80,18 @@ export function OpeningStage({ type, initialState }: Props) {
   const [confirmed, setConfirmed] = useState<number | null>(null);
   const [depth, setDepth] = useState(0);
   const [shake, setShake] = useState(0);
+  const [giftLeft, setGiftLeft] = useState(gifts);
+  const [openedGift, setOpenedGift] = useState(false);
   const opened = useRef(false);
   const result = useRef<OpenedBoosterView[] | null>(null);
   const scene = useRef<SceneHandle | null>(null);
 
   // État le plus récent entre la page (rafraîchie par le serveur) et la réponse de l'ouverture
   const state = latest && latest.serverNow > initialState.serverNow ? latest : initialState;
-  const maxCount = maxOpenable(type, state);
+  const giftMode = giftLeft > 0;
+  const maxCount = giftMode ? 1 : maxOpenable(type, state);
   const effectiveCount: OpenCount = count <= maxCount ? count : ((OPEN_COUNTS.filter((n) => n <= maxCount).at(-1) ?? 1) as OpenCount);
-  const price: Price = priceFor(type, state.stock, effectiveCount);
+  const price: Price = giftMode ? { kind: "free" } : priceFor(type, state.stock, effectiveCount);
   const unaffordable = price.kind === "zeni" && price.amount > state.coins;
   const needsConfirm = price.kind === "zeni" && !unaffordable && confirmed !== price.amount;
   const armed = stage === "ready" && !unaffordable && price.kind !== "unavailable" && !needsConfirm;
@@ -107,7 +111,11 @@ export function OpeningStage({ type, initialState }: Props) {
     setStage("opening");
     setDepth(0.15);
     result.current = null;
-    const res = await openBoosterAction({ booster: type.slug, count: effectiveCount, pay: price.kind === "zeni" });
+    const res = await openBoosterAction(
+      giftMode
+        ? { booster: type.slug, count: 1, gift: true }
+        : { booster: type.slug, count: effectiveCount, pay: price.kind === "zeni" },
+    );
     if (!res.ok) {
       setError(res.error);
       opened.current = false;
@@ -120,6 +128,8 @@ export function OpeningStage({ type, initialState }: Props) {
     setLatest(res.state);
     setFeaturedCount(res.featuredCount);
     setZeniSpent(res.zeniSpent);
+    setOpenedGift(giftMode);
+    setGiftLeft(giftMode ? res.giftBoosters : 0);
     setBoosters(res.boosters);
     result.current = res.boosters;
     goReveal();
@@ -234,8 +244,17 @@ export function OpeningStage({ type, initialState }: Props) {
                     </Button>
                   )}
 
-                  <PriceLine price={price} unaffordable={unaffordable} coins={state.coins} stock={state.stock} />
-                  {type.usesFreeStock && <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} />}
+                  {giftMode ? (
+                    <p className="flex items-center gap-1.5 text-sm font-bold text-kin">
+                      <span aria-hidden="true" lang="ja" className="font-seal">
+                        贈
+                      </span>
+                      {t("giftLeft", { count: giftLeft })}
+                    </p>
+                  ) : (
+                    <PriceLine price={price} unaffordable={unaffordable} coins={state.coins} stock={state.stock} />
+                  )}
+                  {type.usesFreeStock && !giftMode && <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} />}
                   {maxCount > 1 && <CountPicker value={effectiveCount} max={maxCount} onChange={(n) => {
                         setCount(n);
                         setConfirmed(null);
@@ -276,7 +295,7 @@ export function OpeningStage({ type, initialState }: Props) {
                 play={fx.play}
                 counters={{
                   pity: type.countsForPity,
-                  golden: type.bonusEligible,
+                  golden: type.bonusEligible && !openedGift,
                   featured: type.featured
                     ? { left: Math.max(1, type.featured.threshold - featuredCount), threshold: type.featured.threshold }
                     : null,

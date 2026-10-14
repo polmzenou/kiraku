@@ -9,7 +9,7 @@ import { ThemeToggle } from "../ThemeToggle";
 import { NavLinks } from "./NavLinks";
 
 /**
- * Menu burger (< 768 px) : un <dialog> natif (focus piégé, Échap) qui descend du haut de l'écran,
+ * Menu burger (< 1024 px) : un <dialog> natif (focus piégé, Échap) qui descend du haut de l'écran,
  * entrées empilées verticalement. Rien ne défile horizontalement.
  */
 export function MobileMenu({ theme, isAdmin }: { theme: Theme; isAdmin: boolean }) {
@@ -37,7 +37,7 @@ export function MobileMenu({ theme, isAdmin }: { theme: Theme; isAdmin: boolean 
           dialog.current?.showModal();
           setOpen(true);
         }}
-        className="inline-flex size-11 shrink-0 flex-col items-center justify-center gap-[5px] rounded-button md:hidden"
+        className="inline-flex size-11 shrink-0 flex-col items-center justify-center gap-[5px] rounded-button lg:hidden"
       >
         <span aria-hidden="true" className="h-0.5 w-5 rounded-full bg-text" />
         <span aria-hidden="true" className="h-0.5 w-5 rounded-full bg-text" />
@@ -52,7 +52,7 @@ export function MobileMenu({ theme, isAdmin }: { theme: Theme; isAdmin: boolean 
           // Clic sur le fond (hors du panneau) : on referme
           if (e.target === dialog.current) close();
         }}
-        className="fixed inset-x-0 top-0 bottom-auto m-0 max-h-[85dvh] w-full max-w-none -translate-y-full overflow-y-auto overscroll-contain rounded-b-2xl border-b border-border bg-surface p-0 text-text opacity-0 shadow-[0_12px_32px_rgb(0_0_0/0.45)] transition-[translate,opacity,display,overlay] transition-discrete duration-300 ease-out backdrop:bg-black/60 open:translate-y-0 open:opacity-100 starting:open:-translate-y-full starting:open:opacity-0 md:hidden"
+        className="fixed inset-x-0 top-0 bottom-auto m-0 max-h-[85dvh] w-full max-w-none -translate-y-full overflow-y-auto overscroll-contain rounded-b-2xl border-b border-border bg-surface p-0 text-text opacity-0 shadow-[0_12px_32px_rgb(0_0_0/0.45)] transition-[translate,opacity,display,overlay] transition-discrete duration-300 ease-out backdrop:bg-black/60 open:translate-y-0 open:opacity-100 starting:open:-translate-y-full starting:open:opacity-0 lg:hidden"
       >
         <div className="flex flex-col gap-6 px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-6">
           <div className="flex items-center justify-between">

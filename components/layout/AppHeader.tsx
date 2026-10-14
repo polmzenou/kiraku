@@ -4,21 +4,27 @@ import { Link } from "@/i18n/navigation";
 import type { Theme } from "@/lib/theme";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { boosterStateFrom } from "@/server/boosters/state";
+import { getSetting } from "@/server/settings";
+import { unreadNotifications } from "@/server/social/queries";
 import { getCurrentUser } from "@/server/user";
 import { SealMark } from "../SealMark";
+import { NotificationBell } from "../social/NotificationBell";
 import { MobileMenu } from "./MobileMenu";
 import { NavLinks } from "./NavLinks";
 import { StockEnso } from "./StockEnso";
 import { ZeniCoin } from "./ZeniCoin";
 
 /**
- * En-tête fixe : logo, navigation (barre ≥ 768 px, burger en dessous), stock ensō et solde.
+ * En-tête fixe : logo, navigation (barre ≥ 1024 px, burger en dessous), stock ensō et solde.
  * Le stock est calculé ici, côté serveur ; le client n'affiche que le compte à rebours.
  */
 export async function AppHeader({ theme }: { theme: Theme }) {
   const [t, user] = await Promise.all([getTranslations(), getCurrentUser()]);
   const state = user ? boosterStateFrom(user, await getBoosterRules()) : null;
   const isAdmin = user?.role === "ADMIN";
+  const [unread, pollSeconds] = user
+    ? await Promise.all([unreadNotifications(user.id), getSetting("notifications.pollSeconds")])
+    : [0, 0];
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-bg/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-bg/85">
@@ -28,7 +34,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
           <span className="font-title text-xl font-extrabold tracking-wide">{t("common.appName")}</span>
         </Link>
 
-        <nav aria-label={t("nav.label")} className="ml-4 hidden md:block">
+        <nav aria-label={t("nav.label")} className="ml-4 hidden lg:block">
           <NavLinks layout="bar" />
         </nav>
 
@@ -54,10 +60,11 @@ export async function AppHeader({ theme }: { theme: Theme }) {
               </span>
             </span>
           )}
+          {user && <NotificationBell initial={unread} serverNow={new Date().toISOString()} pollSeconds={pollSeconds} />}
           {isAdmin && (
             <Link
               href="/admin"
-              className="hidden min-h-11 items-center rounded-button px-2 text-sm text-text-muted hover:text-text md:inline-flex"
+              className="hidden min-h-11 items-center rounded-button px-2 text-sm text-text-muted hover:text-text lg:inline-flex"
             >
               {t("nav.admin")}
             </Link>
@@ -66,7 +73,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
             href="/compte"
             aria-label={t("nav.account")}
             title={t("nav.account")}
-            className="hidden size-11 items-center justify-center md:inline-flex"
+            className="hidden size-11 items-center justify-center lg:inline-flex"
           >
             {user?.image ? (
               <Image src={user.image} alt="" width={32} height={32} className="rounded-full" />
