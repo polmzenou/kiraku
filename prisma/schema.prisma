@@ -1,5 +1,6 @@
 // Schéma du socle (étape 1), du catalogue (étape 2), des boosters (étape 3), de leurs types (étape 4),
-// de la collection et du profil (étape 5), du social (étape 6), de l'économie (étape 7) et de l'hôtel des ventes (étape 8).
+// de la collection et du profil (étape 5), du social (étape 6), de l'économie (étape 7), de l'hôtel des ventes (étape 8)
+// et du combat (étape 9).
 // Chaque étape ajoute ses modèles
 // par sa propre migration nommée. Référence : docs/PLAN.md, « Schéma Prisma ».
 
@@ -60,7 +61,7 @@ model User {
   boosterStock        Int               @default(0)
   boosterAnchor       DateTime          @default(now()) // début du cycle de booster en cours
   rankPoints          Int               @default(0) // points de classement (mode classé)
-  defenseTeam         String[] // 3 UserCard qui défendent en classé
+  battleTeam          String[] // ids de Card de la dernière équipe de combat (pré-remplie au prochain combat)
   role                Role              @default(USER)
   bannedAt            DateTime?
   isGuest             Boolean           @default(true)
@@ -110,7 +111,10 @@ model User {
   leadingBids Auction[] @relation("leader")
   bids        Bid[]
 
-  review Review?
+  review      Review?
+  battlesAsP1 Battle[]     @relation("battleP1")
+  battlesAsP2 Battle[]     @relation("battleP2")
+  battleQueue BattleQueue?
 
   @@index([rankPoints])
 }
@@ -498,6 +502,7 @@ enum NotificationType {
   AUCTION_SOLD
   AUCTION_EXPIRED // aucune mise, la carte revient au vendeur
   AUCTION_CANCELLED // annulée par l'admin, mise rendue
+  BATTLE_INVITE // un ami t'invite en combat avec un code
 }
 
 // Notifications en base ; le texte est rendu à la lecture (pseudo à jour, langue du lecteur)
@@ -777,20 +782,100 @@ model Bid {
 
 // Avis public d'un joueur (note + texte brut) : un par joueur, modifiable ; masqué par la modération
 model Review {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   rating    Int // 1 à 5, contrôlé par Zod et par une contrainte CHECK
   body      String // 1 000 caractères max, texte brut
-  hidden    Boolean  @default(false)
-  pinned    Boolean  @default(false) // en tête du carrousel de l'accueil ; jamais avec hidden (CHECK)
+  hidden    Boolean   @default(false)
+  pinned    Boolean   @default(false) // en tête du carrousel de l'accueil ; jamais avec hidden (CHECK)
   pinnedAt  DateTime?
   reply     String? // réponse de l'équipe, texte brut, 1 000 caractères max (CHECK)
   repliedAt DateTime?
   // Les écritures de la modération passent par du SQL brut : elles ne touchent pas updatedAt,
   // qui reste la date de l'avis du joueur
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([hidden, updatedAt])
+}
+
+// --- Combat 1v1 en direct (étape 9) ---
+
+enum BattleMode {
+  FRIEND // salle privée avec un code, non classée
+  EXHIBITION // file d'attente, non classée
+  RANKED // file d'attente classée (étape 9b)
+}
+
+enum BattleStatus {
+  WAITING // salle d'amis ouverte, en attente du second joueur
+  ACTIVE
+  FINISHED
+  CANCELLED // salle expirée ou fermée avant le début
+}
+
+enum BattleEndReason {
+  KO
+  FORFEIT
+  TIMEOUT // trop de tours expirés d'affilée
+  TURN_LIMIT
+}
+
+// Une partie : setup figé + graine + actions (BattleAction) suffisent à la rejouer à l'identique.
+// state est le cache de l'état courant ; version sert à la concurrence optimiste.
+model Battle {
+  id            String           @id @default(cuid())
+  mode          BattleMode
+  status        BattleStatus     @default(WAITING)
+  code          String?          @unique // code ami tant que la salle attend
+  codeExpiresAt DateTime?
+  seed          Int // 0 ≤ seed < 2^31, tirée par le serveur
+  p1Id          String
+  p1            User             @relation("battleP1", fields: [p1Id], references: [id], onDelete: Cascade)
+  p2Id          String? // null = bot
+  p2            User?            @relation("battleP2", fields: [p2Id], references: [id], onDelete: Cascade)
+  botName       String? // nom du bot affiché (lib/battle/bot.ts)
+  p1Team        String[] // ids de UserCard (vides pour le bot)
+  p2Team        String[]
+  setup         Json? // BattleSetup (lib/battle/types.ts), posé au lancement
+  state         Json? // BattleState courant
+  version       Int              @default(0)
+  turnEndsAt    DateTime?
+  winnerSide    Int? // 0 = p1, 1 = p2, null = nul ou en cours
+  endReason     BattleEndReason?
+  rewardZeni    Int              @default(0) // versés au gagnant
+  createdAt     DateTime         @default(now())
+  startedAt     DateTime?
+  endedAt       DateTime?
+  actions       BattleAction[]
+
+  @@index([p1Id, createdAt])
+  @@index([p2Id, createdAt])
+  @@index([status, turnEndsAt])
+}
+
+// Journal des actions d'une partie, dans l'ordre (seq = BattleState.seq avant l'action)
+model BattleAction {
+  battleId  String
+  battle    Battle   @relation(fields: [battleId], references: [id], onDelete: Cascade)
+  seq       Int
+  side      Int
+  payload   Json // Action (lib/battle/types.ts)
+  createdAt DateTime @default(now())
+
+  @@id([battleId, seq])
+}
+
+// File d'attente : l'équipe est déjà bloquée (UserCard en BATTLE) ; seenAt prouve que le joueur attend encore
+model BattleQueue {
+  userId     String     @id
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mode       BattleMode
+  rankPoints Int
+  team       String[] // ids de UserCard
+  joinedAt   DateTime   @default(now())
+  seenAt     DateTime   @default(now())
+
+  @@index([mode, joinedAt])
 }
