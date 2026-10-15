@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
+import { sweepBattlesFor } from "../battle/queries";
 import { settleDueFor } from "../market/queries";
 import { getSetting } from "../settings";
 import { listNotifications, notificationsSince, type NotificationView } from "../social/queries";
@@ -79,6 +80,8 @@ export async function pollNotificationsAction(input: unknown): Promise<PollResul
   } catch (e) {
     console.error("[marche] clôture au sondage", e);
   }
+  // Combats oubliés du joueur (tour expiré, salle périmée, file abandonnée) : cartes rendues
+  await sweepBattlesFor(user.id);
   const now = new Date();
   // Jamais plus d'une heure en arrière : un onglet resté caché longtemps ne déverse pas tout
   const since = new Date(Math.max(new Date(parsed.data.since).getTime(), now.getTime() - 3_600_000));

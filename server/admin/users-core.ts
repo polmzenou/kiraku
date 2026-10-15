@@ -21,7 +21,7 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
     if (!actor || actor.role !== "ADMIN" || actor.bannedAt) throw new AdminUserMutationError("FORBIDDEN");
     const user = await tx.user.findUnique({ where: { id: input.userId }, select: {
       id: true, username: true, role: true, bannedAt: true, profileVisibility: true, showCollection: true,
-      coins: true, boosterStock: true, boosterAnchor: true, rankPoints: true, pityCount: true, standardCount: true, bannerPity: true, defenseTeam: true,
+      coins: true, boosterStock: true, boosterAnchor: true, rankPoints: true, pityCount: true, standardCount: true, bannerPity: true, battleTeam: true,
     } });
     if (!user) throw new AdminUserMutationError("NOT_FOUND");
     const userId = user.id;
@@ -102,10 +102,9 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
           await tx.userCard.createMany({ data: Array.from({ length: input.amount }, () => ({ ownerId: userId, cardId: input.cardId, obtainedAt: now })) });
           await tx.discovery.createMany({ data: [{ userId, cardId: input.cardId, createdAt: now }], skipDuplicates: true });
         } else {
-          // On conserve les exemplaires en vitrine, en combat, en vente ou liés à l'historique d'une vente.
+          // On conserve les exemplaires en vitrine, en combat (status BATTLE), en vente ou liés à l'historique d'une vente.
           const free = await tx.userCard.findMany({ where: {
             ownerId: userId, cardId: input.cardId, status: "COLLECTION", showcase: null, auctions: { none: {} },
-            id: { notIn: user.defenseTeam },
           }, orderBy: [{ obtainedAt: "desc" }, { id: "desc" }], take: input.amount, select: { id: true } });
           if (free.length !== input.amount) throw new AdminUserMutationError("CARDS_LOCKED");
           await tx.userCard.deleteMany({ where: { id: { in: free.map((c) => c.id) }, ownerId: userId } });

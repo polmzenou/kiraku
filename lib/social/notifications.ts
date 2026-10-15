@@ -10,6 +10,7 @@ export const NOTIFICATION_TYPES = [
   "AUCTION_SOLD",
   "AUCTION_EXPIRED",
   "AUCTION_CANCELLED",
+  "BATTLE_INVITE",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -40,4 +41,13 @@ export function parseAuctionPayload(raw: unknown): AuctionPayload | null {
   if (!id(r.auctionId) || !id(r.cardId)) return null;
   const amount = Number.isSafeInteger(r.amount) && (r.amount as number) >= 0 ? (r.amount as number) : null;
   return { auctionId: r.auctionId, cardId: r.cardId, amount };
+}
+
+/** Contenu d'une invitation en combat : la salle réservée au joueur invité. */
+export type BattlePayload = { battleId: string };
+
+export function parseBattlePayload(raw: unknown): BattlePayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const id = (raw as Record<string, unknown>).battleId;
+  return typeof id === "string" && id.length > 0 && id.length <= 40 && /^[A-Za-z0-9_-]+$/.test(id) ? { battleId: id } : null;
 }

@@ -19,6 +19,9 @@ const schema = z.object({
   VAPID_PUBLIC_KEY: z.string().regex(/^[A-Za-z0-9_-]{80,100}$/).optional(),
   VAPID_PRIVATE_KEY: z.string().regex(/^[A-Za-z0-9_-]{40,50}$/).optional(),
   VAPID_SUBJECT: z.string().regex(/^(mailto:|https:\/\/)/).optional(), // contact pour les services push
+  // Ably (temps réel du combat) : clé « appId.keyId:secret », jamais transmise au navigateur. Sans
+  // elle, le plateau sonde la partie toutes les battle.pollSeconds.
+  ABLY_API_KEY: z.string().regex(/^[^.:\s]+\.[^.:\s]+:\S+$/).optional(),
   // Vercel Cron (clôture des ventes) : envoyé par Vercel en « Authorization: Bearer … »
   CRON_SECRET: z.string().min(16).optional(),
 });
@@ -55,6 +58,7 @@ export const isProduction = process.env.NODE_ENV === "production";
 export const discordEnabled = Boolean(env.AUTH_DISCORD_ID && env.AUTH_DISCORD_SECRET);
 export const mailEnabled = Boolean(env.RESEND_API_KEY && env.MAIL_FROM);
 export const pushConfigured = Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY && env.VAPID_SUBJECT);
+export const ablyEnabled = Boolean(env.ABLY_API_KEY);
 
 /** Origine publique du site : jamais déduite de l'en-tête Host (empoisonnement des liens). */
 export function appUrl(): string {

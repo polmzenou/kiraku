@@ -10,6 +10,7 @@ import {
   type CollectionSettingKey,
 } from "@/lib/settings/collection-form";
 import { parseSetting, type SettingKey } from "@/lib/settings/defaults";
+import { COMBAT_SETTING_KEYS, combatSettingsSchema, type CombatSettingKey } from "@/lib/settings/combat-form";
 import { ECONOMY_SETTING_KEYS, economySettingsSchema, type EconomySettingKey } from "@/lib/settings/economy-form";
 import { MARKET_SETTING_KEYS, marketSettingsSchema, type MarketSettingKey } from "@/lib/settings/market-form";
 import { SOCIAL_SETTING_KEYS, socialSettingsSchema, type SocialSettingKey } from "@/lib/settings/social-form";
@@ -108,4 +109,8 @@ export async function updateEconomySettings(input: unknown): Promise<UpdateSetti
 
 export async function updateMarketSettings(input: unknown): Promise<UpdateSettingsResult<MarketSettingKey>> {
   return saveSettings(MARKET_SETTING_KEYS, marketSettingsSchema, input);
+}
+
+export async function updateCombatSettings(input: unknown): Promise<UpdateSettingsResult<CombatSettingKey>> {
+  return saveSettings(COMBAT_SETTING_KEYS, combatSettingsSchema, input);
 }

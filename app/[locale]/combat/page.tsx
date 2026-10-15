@@ -1,0 +1,114 @@
+import type { Metadata } from "next";
+import { hasLocale } from "next-intl";
+import { getFormatter, getTranslations } from "next-intl/server";
+import { CombatHub } from "@/components/battle/CombatHub";
+import { GuestBootstrap } from "@/components/GuestBootstrap";
+import { PageShell } from "@/components/PageShell";
+import { SectionTitle } from "@/components/SectionTitle";
+import { ButtonLink } from "@/components/ui/ButtonLink";
+import { Link } from "@/i18n/navigation";
+import { routing } from "@/i18n/routing";
+import type { PlayerView } from "@/lib/battle/view";
+import { battleCtx, getActivity, getCandidates, getHistory, getLastTeam, sweepBattlesFor } from "@/server/battle/queries";
+import { getCurrentUser } from "@/server/user";
+
+export async function generateMetadata({ params }: PageProps<"/[locale]/combat">): Promise<Metadata> {
+  const { locale: raw } = await params;
+  const locale = hasLocale(routing.locales, raw) ? raw : routing.defaultLocale;
+  const t = await getTranslations({ locale, namespace: "battle" });
+  return { title: t("title"), robots: { index: false, follow: false } };
+}
+
+/** Combat : exhibition, salle d'amis (code), classé à l'étape 9b, dernières parties et règles. */
+export default async function CombatPage() {
+  const [t, format, user] = await Promise.all([getTranslations("battle"), getFormatter(), getCurrentUser()]);
+  if (!user) {
+    return (
+      <PageShell>
+        <GuestBootstrap />
+      </PageShell>
+    );
+  }
+
+  const ctx = await battleCtx();
+  const header = <SectionTitle level={1} kanji="対戦" title={t("title")} subtitle={t("intro")} />;
+
+  if (user.isGuest || !ctx.rules.enabled) {
+    return (
+      <PageShell>
+        {header}
+        <aside className="flex flex-col items-start gap-3 rounded-lg border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm">{user.isGuest ? t("guest") : t("disabled")}</p>
+          {user.isGuest && (
+            <ButtonLink href="/inscription" variant="shu">
+              {t("signUp")}
+            </ButtonLink>
+          )}
+        </aside>
+      </PageShell>
+    );
+  }
+
+  await sweepBattlesFor(user.id);
+  const [activity, candidates, history] = await Promise.all([
+    getActivity(user.id, ctx.rules.queueSeconds),
+    getCandidates(user.id, ctx.rules),
+    getHistory(user.id),
+  ]);
+  const lastTeam = await getLastTeam(user.id, candidates);
+  const name = (p: PlayerView | null) => (!p ? "—" : "bot" in p ? t("board.bot", { name: t(`bots.${p.bot}` as "bots.TENGU") }) : p.username);
+
+  return (
+    <PageShell>
+      {header}
+      <CombatHub activity={activity} candidates={candidates} lastTeam={lastTeam} queueSeconds={ctx.rules.queueSeconds} />
+
+      <section className="flex flex-col gap-3">
+        <SectionTitle kanji="記" title={t("history.title")} />
+        {history.length === 0 ? (
+          <p className="text-sm text-text-muted">{t("history.empty")}</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {history.map((h) => (
+              <li key={h.id}>
+                <Link
+                  href={`/combat/${h.id}`}
+                  className="flex min-h-11 items-center justify-between gap-3 rounded-button border border-border bg-surface px-3 py-2 text-sm"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span
+                      lang="ja"
+                      aria-hidden="true"
+                      className={`font-seal text-lg ${h.result === "WIN" ? "text-kin" : h.result === "LOSS" ? "text-shu" : "text-text-muted"}`}
+                    >
+                      {h.result === "WIN" ? "勝" : h.result === "LOSS" ? "負" : "引"}
+                    </span>
+                    <span className="min-w-0 truncate">
+                      <strong>{t(`history.${h.result}`)}</strong> {t("history.vs", { name: name(h.opponent) })}
+                      <span className="text-text-muted"> · {t(`modes.${h.mode}`)}</span>
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 flex-col items-end text-xs">
+                    {h.rewardZeni > 0 && <span className="font-bold tabular-nums text-kin">{t("history.zeni", { amount: h.rewardZeni })}</span>}
+                    <span className="text-text-muted">{format.dateTime(new Date(h.endedAt), { dateStyle: "short", timeStyle: "short" })}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <SectionTitle kanji="法" title={t("rules.title")} />
+        <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-text-muted">
+          <li>{t("rules.items.turn")}</li>
+          <li>{t("rules.items.orbs", { max: ctx.rules.orbs.max })}</li>
+          <li>{t("rules.items.damage")}</li>
+          <li>{t("rules.items.timer", { seconds: ctx.rules.turnSeconds })}</li>
+          <li>{t("rules.items.end")}</li>
+        </ul>
+      </section>
+    </PageShell>
+  );
+}

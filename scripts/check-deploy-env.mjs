@@ -33,4 +33,12 @@ if (target === "production" && !env.CRON_SECRET) {
   process.exit(1);
 }
 
+if (target === "production" && !env.ABLY_API_KEY) {
+  // Pas bloquant : le combat marche sans, le plateau sonde la partie au lieu d'être prévenu en direct
+  console.warn(
+    `\n⚠ ABLY_API_KEY absente en production : le combat se rabat sur un sondage toutes les 2 s.\n` +
+      `  ably.com → ton app → API Keys (droits publish + subscribe), puis Vercel → Environment Variables.\n`,
+  );
+}
+
 console.log(`Base pour « ${target} » : ${host(pooled)}${direct ? "" : " (URL directe dérivée de DATABASE_URL)"}`);
