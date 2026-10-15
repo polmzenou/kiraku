@@ -567,9 +567,10 @@
   },
   "opening": {
     "title": "Open · {name}",
-    "hint": "Slide your finger across the top strip to tear the pack",
-    "hintLift": "Swipe up to open",
-    "hintReduced": "Press the button to open",
+    "hint": "Tap the pack or swipe across the top strip to cut it open",
+    "hintLift": "Tap the pack or swipe up to open it",
+    "hintReduced": "Tap the pack or press the button to open",
+    "openPack": "Open the {name} pack",
     "tear": "Tear",
     "lift": "Open",
     "payConfirm": "Pay {amount, number} Zeni",
@@ -960,6 +961,8 @@
       "anime": "Anime",
       "manga": "Manga",
       "seriesIds": "Specific series (AniList ids, comma-separated)",
+      "anilistIds": "Specific characters (AniList ids, comma-separated)",
+      "anilistIdsHint": "A curated selection, used for antagonists. Only these characters can be drawn.",
       "minPoolSize": "Minimum pool (empty = global setting)",
       "slotFloors": "Minimum rarity of each card",
       "slotFloorsGlobal": "Global contents ({count} cards)",
@@ -1582,6 +1585,27 @@
     "retry": "Try again",
     "more": "Show more"
   },
+  "wishlist": {
+    "title": "Wishlist",
+    "count": "{count} / {max}",
+    "hint": "Choose up to {max} cards from their wiki page, even if you don't own them.",
+    "browse": "Choose in the wiki",
+    "emptyOwner": "Your wishlist is empty. Open a wiki page to add your first card.",
+    "emptyPublic": "This player hasn't added any cards to their wishlist yet.",
+    "add": "Add to my wishlist",
+    "remove": "Remove from my wishlist",
+    "removeShort": "Remove",
+    "addNamed": "Add {name} to my wishlist",
+    "removeNamed": "Remove {name} from my wishlist",
+    "errors": {
+      "NO_SESSION": "Your session expired. Reload the page.",
+      "INVALID": "This request is invalid.",
+      "FULL": "Your wishlist already contains 20 cards. Remove a card from your profile to add another.",
+      "NOT_FOUND": "This card is no longer available in the catalog.",
+      "RATE_LIMITED": "Slow down! Try again in a moment.",
+      "UNAVAILABLE": "Couldn't save your wishlist. Try again."
+    }
+  },
   "profile": {
     "metaTitle": "{name}'s profile",
     "metaDescription": "{name}'s showcase and collection on Kiraku.",
@@ -1601,6 +1625,11 @@
       "PRIVATE": "Your profile is private: nobody but you can see it."
     },
     "showcase": "Showcase",
+    "sales": {
+      "title": "Cards for sale",
+      "empty": "No cards for sale right now.",
+      "open": "{name} · {count, plural, one {# copy for sale} other {# copies for sale}}"
+    },
     "backToProfile": "← {name}'s profile",
     "collectionHidden": "This collection isn't visible.",
     "collectionOf": "{name}'s collection",

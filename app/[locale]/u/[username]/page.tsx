@@ -5,6 +5,7 @@ import { PageShell } from "@/components/PageShell";
 import { displayName, ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ShareProfileButton } from "@/components/profile/ShareProfileButton";
 import { Showcase } from "@/components/profile/Showcase";
+import { ProfileSalesSection, WishlistSection } from "@/components/profile/ProfileCardSections";
 import { SectionTitle } from "@/components/SectionTitle";
 import { RelationActions } from "@/components/social/RelationActions";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -15,6 +16,7 @@ import { USERNAME_REGEX } from "@/lib/username";
 import { anonymousAccess, findProfileOwner } from "@/server/collection/profile";
 import { loadProfile } from "@/server/collection/profile-page";
 import { getCollectionSummary, getShowcase } from "@/server/collection/queries";
+import { getProfileSales, getWishlist } from "@/server/collection/profile-cards";
 import { getSetting } from "@/server/settings";
 import { giftsSentToday } from "@/server/social/queries";
 import type { ProfileAccess } from "@/lib/collection/visibility";
@@ -64,7 +66,10 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
   }
 
   const [size, values] = await Promise.all([getSetting("showcase.slots"), getSetting("collection.recycleValues")]);
-  const [showcase, summary] = await Promise.all([getShowcase(owner.id, size, locale), getCollectionSummary(owner.id, values)]);
+  const [showcase, summary, wishlist, sales] = await Promise.all([
+    getShowcase(owner.id, size, locale), getCollectionSummary(owner.id, values),
+    getWishlist(owner.id, locale), getProfileSales(owner.id, locale),
+  ]);
 
   const stats = [
     [t("stats.unique"), format.number(summary.unique)],
@@ -103,6 +108,8 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
         <SectionTitle kanji="飾" title={t("showcase")} />
         <Showcase initial={showcase} editable={access.isOwner} linkBase={access.isOwner ? "/collection" : "/wiki"} />
       </section>
+      <WishlistSection cards={wishlist} editable={access.isOwner} />
+      <ProfileSalesSection cards={sales} />
     </PageShell>
   );
 }

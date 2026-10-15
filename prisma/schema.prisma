@@ -90,6 +90,7 @@ model User {
   discoveries Discovery[]
   adminLogs   AdminLog[]
   showcase    ShowcaseSlot[]
+  wishlist    WishlistEntry[]
 
   sentFriends   Friendship[]       @relation("requester")
   recvFriends   Friendship[]       @relation("addressee")
@@ -257,6 +258,7 @@ model Card {
   discoveries   Discovery[]
   lotItems      LotItem[]
   auctions      Auction[]
+  wishedBy      WishlistEntry[]
 
   @@index([rarity, rank])
   @@index([seriesId])
@@ -422,6 +424,20 @@ model ShowcaseSlot {
   userCard   UserCard @relation(fields: [userCardId], references: [id], onDelete: Cascade)
 
   @@id([userId, position])
+}
+
+// Une carte souhaitée n'a pas besoin d'être possédée. Vingt positions au maximum par profil.
+model WishlistEntry {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  position  Int
+  createdAt DateTime @default(now())
+
+  @@id([userId, cardId])
+  @@unique([userId, position])
+  @@index([cardId])
 }
 
 // --- Social (étape 6) ---

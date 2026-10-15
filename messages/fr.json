@@ -567,9 +567,10 @@
   },
   "opening": {
     "title": "Ouvrir · {name}",
-    "hint": "Glisse le doigt sur la bande du haut pour déchirer le sachet",
-    "hintLift": "Glisse vers le haut pour ouvrir",
-    "hintReduced": "Appuie sur le bouton pour ouvrir",
+    "hint": "Touche le booster ou coupe la bande du haut d'un glissement du doigt",
+    "hintLift": "Touche le booster ou glisse vers le haut pour l'ouvrir",
+    "hintReduced": "Touche le booster ou appuie sur le bouton pour ouvrir",
+    "openPack": "Ouvrir le booster {name}",
     "tear": "Déchirer",
     "lift": "Ouvrir",
     "payConfirm": "Payer {amount, number} Zeni",
@@ -960,6 +961,8 @@
       "anime": "Anime",
       "manga": "Manga",
       "seriesIds": "Œuvres précises (ids AniList, séparés par des virgules)",
+      "anilistIds": "Personnages précis (ids AniList, séparés par des virgules)",
+      "anilistIdsHint": "Sélection manuelle, utilisée notamment pour les antagonistes. Seuls ces personnages peuvent être tirés.",
       "minPoolSize": "Pool minimum (vide = réglage global)",
       "slotFloors": "Rareté minimale de chaque carte",
       "slotFloorsGlobal": "Composition globale ({count} cartes)",
@@ -1582,6 +1585,27 @@
     "retry": "Réessayer",
     "more": "Voir plus"
   },
+  "wishlist": {
+    "title": "Liste de souhaits",
+    "count": "{count} / {max}",
+    "hint": "Choisis jusqu'à {max} cartes depuis leur fiche dans le wiki, même si tu ne les possèdes pas.",
+    "browse": "Choisir dans le wiki",
+    "emptyOwner": "Ta liste de souhaits est vide. Ouvre une fiche du wiki pour ajouter ta première carte.",
+    "emptyPublic": "Ce joueur n'a pas encore ajouté de carte à sa liste de souhaits.",
+    "add": "Ajouter à ma liste de souhaits",
+    "remove": "Retirer de ma liste de souhaits",
+    "removeShort": "Retirer",
+    "addNamed": "Ajouter {name} à ma liste de souhaits",
+    "removeNamed": "Retirer {name} de ma liste de souhaits",
+    "errors": {
+      "NO_SESSION": "Ta session a expiré. Recharge la page.",
+      "INVALID": "Cette demande est invalide.",
+      "FULL": "Ta liste contient déjà 20 cartes. Retire une carte depuis ton profil pour en ajouter une autre.",
+      "NOT_FOUND": "Cette carte n'est plus disponible dans le catalogue.",
+      "RATE_LIMITED": "Doucement ! Réessaie dans un moment.",
+      "UNAVAILABLE": "Impossible d'enregistrer ta liste. Réessaie."
+    }
+  },
   "profile": {
     "metaTitle": "Profil de {name}",
     "metaDescription": "La vitrine et la collection de {name} sur Kiraku.",
@@ -1601,6 +1625,11 @@
       "PRIVATE": "Ton profil est privé : personne d'autre que toi ne le voit."
     },
     "showcase": "Vitrine",
+    "sales": {
+      "title": "Cartes en vente",
+      "empty": "Aucune carte en vente pour le moment.",
+      "open": "{name} · {count, plural, one {# exemplaire en vente} other {# exemplaires en vente}}"
+    },
     "backToProfile": "← Profil de {name}",
     "collectionHidden": "Cette collection n'est pas visible.",
     "collectionOf": "Collection de {name}",

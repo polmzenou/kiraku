@@ -15,6 +15,14 @@
   --k-kin: #d9b556;
   --k-link: #d9b556;
   --k-paper-shadow: #000000;
+  /* La barre du bas et ses marges partagent la même hauteur, zone sûre comprise. */
+  --mobile-nav-height: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 64rem) {
+  :root {
+    --mobile-nav-height: 0px;
+  }
 }
 
 [data-theme="washi"] {
@@ -77,6 +85,7 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    scroll-padding-bottom: var(--mobile-nav-height);
   }
 
   /* Filet de sécurité : rien ne doit jamais défiler horizontalement (mobile first) */
@@ -85,12 +94,13 @@
     overflow-x: clip;
   }
 
-  /* Menu burger ouvert : le fond ne défile plus */
+  /* Panneau modal ouvert : le fond ne défile plus */
   html:has(dialog[open]:modal) {
     overflow: hidden;
   }
 
   body {
+    padding-bottom: var(--mobile-nav-height);
     background-color: var(--color-bg);
     color: var(--color-text);
     font-family: var(--font-body);
@@ -132,21 +142,28 @@
     opacity: 0.8;
   }
   .fuda[data-rarity="LEGENDARY"] .fuda-sheen {
-    /* Feuille d'or : paillettes */
+    /* La feuille d'or reste ancrée à la carte ; seul le reflet se déplace. */
+    inset: 0;
+    transform: none;
     background:
-      radial-gradient(circle, rgb(255 240 190 / 0.95) 0 1px, transparent 1.6px) 0 0 / 13px 13px,
-      radial-gradient(circle, rgb(255 225 140 / 0.8) 0 0.8px, transparent 1.4px) 6px 7px / 17px 17px;
+      radial-gradient(circle, rgb(255 240 190 / 0.65) 0 0.8px, transparent 1.3px) 0 0 / 13px 13px,
+      radial-gradient(circle, rgb(255 225 140 / 0.45) 0 0.6px, transparent 1.1px) 6px 7px / 17px 17px;
     mix-blend-mode: screen;
-    opacity: 0.5;
+    opacity: 0.45;
+  }
+  .fuda[data-rarity="LEGENDARY"] .fuda-sheen::after {
+    content: "";
+    position: absolute;
+    inset: -50%;
+    background: linear-gradient(115deg, transparent 36%, rgb(255 232 170 / 0.18) 43%, rgb(255 249 221 / 0.75) 50%, rgb(255 232 170 / 0.18) 57%, transparent 64%);
+    transform: translate(calc((var(--mx, 0.5) - 0.5) * 35%), calc((var(--my, 0.5) - 0.5) * 20%));
+    transition: transform 180ms ease-out;
   }
   .fuda[data-rarity="MYTHIC"] .fuda-sheen {
     /* Nacre (raden) : irisation */
     background: conic-gradient(from 0deg, #ffd9ec, #c9f1ff, #e6ffd4, #fff1c4, #e2d4ff, #ffd9ec);
     mix-blend-mode: overlay;
     opacity: 0.55;
-  }
-  .fuda-live[data-rarity="LEGENDARY"] .fuda-sheen {
-    animation: kin-twinkle 2.6s ease-in-out infinite;
   }
   .fuda-live[data-rarity="MYTHIC"] .fuda-sheen {
     animation: raden-breathe 4s ease-in-out infinite;
@@ -162,6 +179,30 @@
     --ink-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
     --booster-light: color-mix(in oklab, var(--booster-base) 72%, white);
     container-type: inline-size;
+  }
+  .booster-hover-aura {
+    position: absolute;
+    z-index: -1;
+    inset: -10% -14% -5%;
+    pointer-events: none;
+    border-radius: 50%;
+    background:
+      radial-gradient(ellipse at 50% 55%, color-mix(in oklab, var(--booster-aura) 70%, white) 0%, var(--booster-aura) 28%, transparent 68%),
+      radial-gradient(ellipse at 50% 85%, var(--booster-aura) 0%, transparent 55%);
+    filter: blur(18px);
+    opacity: 0;
+    transform: translateY(8px) scale(0.8);
+    transition: opacity 350ms ease-out, transform 500ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+  .booster-tile:focus-visible .booster-hover-aura {
+    opacity: 0.8;
+    transform: translateY(0) scale(1);
+  }
+  @media (hover: hover) {
+    .booster-tile:hover .booster-hover-aura {
+      opacity: 0.8;
+      transform: translateY(0) scale(1);
+    }
   }
   .booster-art[data-ink="dark"] {
     --wl: rgb(31 27 23 / 0.16);
@@ -291,16 +332,6 @@
   }
 }
 
-@keyframes kin-twinkle {
-  0%,
-  100% {
-    opacity: 0.35;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
 @keyframes raden-breathe {
   0%,
   100% {
@@ -353,6 +384,61 @@
   }
   .booster-idle {
     animation: booster-idle 4.5s ease-in-out infinite;
+  }
+  .booster-opening-seam {
+    position: absolute;
+    inset: -2px 5% auto;
+    height: 4px;
+    border-radius: 50%;
+    background: #fffdf2;
+    box-shadow: 0 0 10px 3px #fff5d5, 0 0 30px 10px var(--opening-light);
+  }
+  .booster-opening-beam-anchor {
+    position: absolute;
+    bottom: 0;
+    left: -35%;
+    width: 170%;
+    height: 190cqw;
+  }
+  .booster-opening-beam {
+    position: absolute;
+    inset: 0;
+    transform-origin: 50% 100%;
+    clip-path: polygon(0 0, 100% 0, 72% 100%, 28% 100%);
+    background: linear-gradient(to top, #fffdf2 0%, var(--opening-light) 18%, transparent 95%);
+    mask: linear-gradient(to right, transparent, #000 25% 75%, transparent);
+  }
+  .booster-opening-burst-anchor {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 170cqw;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+  }
+  .booster-opening-flash,
+  .booster-opening-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+  }
+  .booster-opening-flash {
+    background: radial-gradient(circle, #fffef6 0 5%, #fff9df 10%, var(--opening-light) 24%, transparent 65%);
+  }
+  .booster-opening-ring {
+    border: 2px solid #fff5d5;
+    box-shadow: 0 0 18px 2px var(--opening-light), inset 0 0 12px var(--opening-light);
+  }
+  .booster-opening-spark {
+    position: absolute;
+    top: 0;
+    width: 3px;
+    height: 8px;
+    border-radius: 50%;
+    background: #fff8e0;
+    box-shadow: 0 0 8px 2px var(--opening-light);
+    opacity: 0;
+    animation: booster-opening-spark 950ms cubic-bezier(0.15, 0.6, 0.35, 1) var(--spark-delay) both;
   }
   .light-rays {
     background: repeating-conic-gradient(from 0deg, var(--leak) 0deg 6deg, transparent 6deg 22deg);
@@ -452,6 +538,13 @@
   50% {
     transform: translateY(-8px) rotate(0.6deg);
   }
+}
+
+@keyframes booster-opening-spark {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.5); }
+  15% { opacity: 1; }
+  65% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(var(--spark-x), var(--spark-y)) scale(0.2) rotate(35deg); }
 }
 
 @keyframes light-rays {

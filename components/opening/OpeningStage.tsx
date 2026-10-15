@@ -209,6 +209,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
                 theme={type.theme}
                 emblem={type.emblem}
                 name={type.name}
+                openLabel={t("openPack", { name: type.name })}
                 tagline={type.tagline}
                 contents={type.contents}
                 count={effectiveCount}

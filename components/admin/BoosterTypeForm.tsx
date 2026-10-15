@@ -80,6 +80,7 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, globalCard
   const [tags, setTags] = useState((initial.filter.tags ?? []).join(", "));
   const [genres, setGenres] = useState((initial.filter.genres ?? []).join(", "));
   const [seriesIds, setSeriesIds] = useState((initial.filter.seriesIds ?? []).join(", "));
+  const [anilistIds, setAnilistIds] = useState((initial.filter.anilistIds ?? []).join(", "));
   const [ownFloors, setOwnFloors] = useState(initial.slotFloors.length > 0);
   const [featured, setFeatured] = useState(initialFeatured);
   const [query, setQuery] = useState("");
@@ -112,6 +113,7 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, globalCard
           seriesIds: list(seriesIds)
             .map(Number)
             .filter((n) => Number.isInteger(n) && n > 0),
+          anilistIds: list(anilistIds).map(Number).filter((n) => Number.isInteger(n) && n > 0),
         },
       };
       try {
@@ -265,6 +267,7 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, globalCard
               )}
             </Field>
             <Field label={t("seriesIds")}>{(id) => <input id={id} className={input} value={seriesIds} onChange={(e) => setSeriesIds(e.target.value)} />}</Field>
+            <Field label={t("anilistIds")} hint={t("anilistIdsHint")}>{(id) => <input id={id} className={input} value={anilistIds} onChange={(e) => setAnilistIds(e.target.value)} />}</Field>
             <Field label={t("minPoolSize")}>
               {(id) => <input id={id} type="number" inputMode="numeric" className={input} value={v.minPoolSize ?? ""} onChange={(e) => set("minPoolSize", numOrNull(e.target.value))} />}
             </Field>

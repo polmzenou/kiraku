@@ -12,6 +12,7 @@ import {
 
 const card = (over: Partial<PoolCandidate> = {}): PoolCandidate => ({
   id: "c1",
+  anilistId: 4004,
   rarity: "RARE",
   gender: "Female",
   role: "MAIN",
@@ -31,6 +32,12 @@ const card = (over: Partial<PoolCandidate> = {}): PoolCandidate => ({
 const ctx: FilterContext = { year: 2026, month: 10, day: 14, season: "FALL", seasonYear: 2026 };
 
 describe("matchesFilter", () => {
+  it("sélectionne les personnages par leur identifiant AniList, sans prendre les autres de la série", () => {
+    expect(matchesFilter(card(), { anilistIds: [4004, 12055] }, ctx)).toBe(true);
+    expect(matchesFilter(card({ anilistId: 4003 }), { anilistIds: [4004, 12055] }, ctx)).toBe(false);
+    expect(parsePoolFilter({ anilistIds: [] })).toBeNull();
+    expect(parsePoolFilter({ anilistIds: [-1] })).toBeNull();
+  });
   it("un filtre vide garde tout", () => {
     expect(matchesFilter(card(), {}, ctx)).toBe(true);
   });

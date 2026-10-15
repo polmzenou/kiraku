@@ -3,12 +3,12 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
-import { isActive, NAV_ITEMS, NAV_MORE, type NavItem } from "@/lib/nav";
+import { isActive, MOBILE_NAV_MORE, NAV_ITEMS, NAV_MORE, type NavItem } from "@/lib/nav";
 
 /**
  * Entrées de la navigation. `layout="bar"` : barre horizontale du haut (≥ 1024 px), soulignement
  * vermillon sur la page active, Collection · Amis · Parrainage · Wiki dans le menu déroulant « Plus » ;
- * `layout="stack"` : liste verticale du menu burger, les mêmes entrées sous un intertitre.
+ * `layout="stack"` : liens secondaires du panneau mobile « Plus ».
  */
 export function NavLinks({ layout, onNavigate }: { layout: "bar" | "stack"; onNavigate?: () => void }) {
   const t = useTranslations("nav");
@@ -17,23 +17,13 @@ export function NavLinks({ layout, onNavigate }: { layout: "bar" | "stack"; onNa
 
   if (!bar) {
     return (
-      <div className="flex flex-col">
-        <ul className="flex flex-col">
-          {NAV_ITEMS.map((item) => (
-            <li key={item.key}>
-              <StackLink item={item} active={isActive(item, pathname)} onNavigate={onNavigate} />
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 mb-1 px-1 text-xs font-bold tracking-wide text-text-muted uppercase">{t("more")}</p>
-        <ul className="flex flex-col">
-          {NAV_MORE.map((item) => (
-            <li key={item.key}>
-              <StackLink item={item} active={isActive(item, pathname)} onNavigate={onNavigate} />
-            </li>
-          ))}
-        </ul>
-      </div>
+      <ul className="flex flex-col">
+        {MOBILE_NAV_MORE.map((item) => (
+          <li key={item.key}>
+            <StackLink item={item} active={isActive(item, pathname)} onNavigate={onNavigate} />
+          </li>
+        ))}
+      </ul>
     );
   }
 

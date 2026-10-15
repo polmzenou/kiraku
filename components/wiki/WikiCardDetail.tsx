@@ -18,6 +18,7 @@ type DetailProps = {
   related: CatalogCardSummary[];
   locale: string;
   total: number;
+  wishlistAction?: ReactNode;
 };
 
 export async function WikiPersonalizedCardDetail(props: DetailProps) {
@@ -34,7 +35,7 @@ function LockIcon() {
   );
 }
 
-export function WikiCardDetail({ card, related, locale, total, collection }: DetailProps & { collection: WikiCollection | null }) {
+export function WikiCardDetail({ card, related, locale, total, collection, wishlistAction }: DetailProps & { collection: WikiCollection | null }) {
   const t = useTranslations("wiki");
   const tRarity = useTranslations("rarity");
   const tRole = useTranslations("wiki.roles");
@@ -84,6 +85,7 @@ export function WikiCardDetail({ card, related, locale, total, collection }: Det
           <p className="font-mono text-xs">{t("number", { number: cardNumber(card.rank) })}{card.rank !== null && ` / ${total.toLocaleString(locale)}`}</p>
         </div>
         {card.rank === null && <p className="mt-4 text-sm font-medium text-text">{t("outOfCatalog")}</p>}
+        {wishlistAction && <div className="mt-5">{wishlistAction}</div>}
       </header>
 
       {collection && !collection.available && (
