@@ -1,12 +1,14 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { BoosterArt } from "@/components/boosters/BoosterArt";
 import { RecomputePoolsButton, ToggleTypeButton } from "@/components/admin/BoosterTypeActions";
+import { RotationPicker } from "@/components/admin/RotationPicker";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
+import { ROTATING_FAMILIES } from "@/lib/boosters/rotation";
 import { BOOSTER_FAMILIES, localize, type BoosterTypeView } from "@/lib/boosters/types";
 import { RARITIES, RARITY_SEAL } from "@/lib/catalog/rarity";
 import { requireAdmin } from "@/server/admin";
-import { getBoosterOffers } from "@/server/boosters/pools";
+import { getBoosterOffers, getBoosterRotation } from "@/server/boosters/pools";
 import { getSetting } from "@/server/settings";
 
 /** Pourquoi un type n'apparaît pas sur la page des boosters. */
@@ -20,14 +22,19 @@ function hiddenReason(type: BoosterTypeView, size: number, minPool: number, now:
 
 export default async function AdminBoosterTypesPage() {
   await requireAdmin();
-  const [t, tBoosters, locale, offers, minPool] = await Promise.all([
+  const [t, tRotation, tBoosters, format, locale, offers, rotation, minPool, timeZone] = await Promise.all([
     getTranslations("admin.types"),
+    getTranslations("admin.rotation"),
     getTranslations("boosters"),
+    getFormatter(),
     getLocale(),
     getBoosterOffers(),
+    getBoosterRotation(),
     getSetting("booster.minPool"),
+    getSetting("game.timeZone"),
   ]);
   const now = new Date();
+  const bySlug = new Map(offers.map((o) => [o.type.slug, o.type]));
 
   return (
     <div className="flex flex-col gap-8">
@@ -42,6 +49,35 @@ export default async function AdminBoosterTypesPage() {
         </div>
       </div>
 
+      <section aria-labelledby="rotation-titre" className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <h3 id="rotation-titre" className="font-title text-lg font-bold">
+            {tRotation("title")}
+          </h3>
+          <p className="max-w-prose text-sm text-text-muted">
+            {tRotation("intro", {
+              hours: rotation.hours,
+              end: format.dateTime(rotation.window.endsAt, { timeStyle: "short", timeZone }),
+            })}
+          </p>
+        </div>
+        <div className="grid gap-3 lg:grid-cols-2">
+          {ROTATING_FAMILIES.map((family) => (
+            <RotationPicker
+              key={family}
+              family={family}
+              title={tBoosters(`families.${family}.title`)}
+              candidates={rotation.candidates[family].flatMap((slug) => {
+                const type = bySlug.get(slug);
+                return type ? [{ slug, name: localize(type.name, locale), emblem: type.emblem }] : [];
+              })}
+              selected={rotation.selection[family].slugs}
+              pinned={rotation.selection[family].pinned}
+            />
+          ))}
+        </div>
+      </section>
+
       {BOOSTER_FAMILIES.map((family) => {
         const items = offers.filter((o) => o.type.family === family);
         if (items.length === 0) return null;
@@ -49,9 +85,9 @@ export default async function AdminBoosterTypesPage() {
           <section key={family} className="flex flex-col gap-3">
             <h3 className="font-title text-lg font-bold">{tBoosters(`families.${family}.title`)}</h3>
             <ul className="grid gap-3 md:grid-cols-2">
-              {items.map(({ type, counts, size, availability }) => {
+              {items.map(({ type, counts, size, availability, rotation: turn }) => {
                 const min = type.minPoolSize ?? minPool;
-                const reason = availability === "hidden" ? hiddenReason(type, size, min, now) : null;
+                const reason = turn === "resting" ? "rotation" : availability === "hidden" ? hiddenReason(type, size, min, now) : null;
                 const name = localize(type.name, locale);
                 return (
                   <li key={type.slug} className="flex gap-3 rounded-lg border border-border bg-surface p-3">
@@ -74,6 +110,7 @@ export default async function AdminBoosterTypesPage() {
                         >
                           {t(`status.${availability}`)}
                           {reason && ` · ${t(`reason.${reason}`, { min })}`}
+                          {turn === "featured" && ` · ${t("reason.featured")}`}
                         </span>
                       </div>
                       <p className="text-xs text-text-muted">

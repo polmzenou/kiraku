@@ -84,11 +84,14 @@
     "disclaimer": "Projet fan non officiel. Les personnages appartiennent à leurs ayants droit.",
     "nav": "Liens du site",
     "account": "Mon compte",
-    "wiki": "Wiki"
+    "wiki": "Wiki",
+    "leaderboard": "Classement"
   },
   "auth": {
+    "or": "ou",
     "pending": "Un instant…",
     "register": {
+      "discord": "S'inscrire avec Discord",
       "title": "Créer un compte",
       "intro": "Ta progression d'invité est conservée : mêmes cartes, même solde.",
       "username": "Pseudo",
@@ -99,9 +102,12 @@
       "passwordConfirm": "Confirme le mot de passe",
       "submit": "Créer mon compte",
       "haveAccount": "Déjà un compte ?",
-      "login": "Se connecter"
+      "login": "Se connecter",
+      "subtitle": "Un compte pour garder tes cartes sur tous tes appareils.",
+      "asideTitle": "Garde tes fuda pour de bon."
     },
     "login": {
+      "discord": "Se connecter avec Discord",
       "title": "Se connecter",
       "email": "E-mail",
       "password": "Mot de passe",
@@ -109,7 +115,9 @@
       "forgot": "Mot de passe oublié ?",
       "noAccount": "Pas encore de compte ?",
       "register": "Créer un compte",
-      "guestWarning": "Tu joues en invité sur cet appareil : en te connectant à un autre compte, cette progression d'invité sera abandonnée."
+      "guestWarning": "Tu joues en invité sur cet appareil : en te connectant à un autre compte, cette progression d'invité sera abandonnée.",
+      "subtitle": "Retrouve ta collection, tes amis et tes ventes.",
+      "asideTitle": "Ta collection t'attend."
     },
     "forgot": {
       "title": "Mot de passe oublié",
@@ -141,7 +149,9 @@
       "invalidCredentials": "E-mail ou mot de passe incorrect.",
       "banned": "Ce compte est suspendu.",
       "tokenInvalid": "Ce lien n'est plus valable. Demande-en un nouveau.",
-      "unexpected": "Une erreur est survenue. Réessaie."
+      "unexpected": "Une erreur est survenue. Réessaie.",
+      "tooFast": "Envoi trop rapide : patiente un instant puis réessaie.",
+      "formExpired": "Le formulaire a expiré : recharge la page puis réessaie."
     },
     "fieldErrors": {
       "required": "Champ obligatoire.",
@@ -150,7 +160,27 @@
       "passwordTooShort": "10 caractères minimum.",
       "passwordTooLong": "128 caractères maximum.",
       "passwordMismatch": "Les deux mots de passe ne correspondent pas.",
-      "tokenInvalid": "Lien invalide."
+      "tokenInvalid": "Lien invalide.",
+      "passwordCommon": "Ce mot de passe est trop courant : choisis-en un plus personnel.",
+      "passwordPersonal": "Le mot de passe ne doit pas contenir ton pseudo ni ton e-mail.",
+      "passwordWeak": "Mot de passe trop prévisible : varie les caractères."
+    },
+    "perks": {
+      "collection": "Tes cartes et tes Zeni, sur tous tes appareils",
+      "keep": "Ta progression d'invité est conservée",
+      "market": "L'hôtel des ventes et les cadeaux entre amis",
+      "friends": "Amis, vitrine et profil public"
+    },
+    "password": {
+      "show": "Afficher le mot de passe",
+      "hide": "Masquer le mot de passe",
+      "strength": {
+        "0": "Trop court",
+        "1": "Trop faible",
+        "2": "Correct",
+        "3": "Solide",
+        "4": "Excellent"
+      }
     }
   },
   "email": {
@@ -532,7 +562,8 @@
       "days": "{count, plural, one {# jour} other {# jours}}"
     },
     "creditBoosters": "{count, plural, one {# booster {name} à ouvrir} other {# boosters {name} à ouvrir}}",
-    "openCredit": "Ouvrir"
+    "openCredit": "Ouvrir",
+    "rotationNext": "Sélection tournante · nouvelle sélection {when}"
   },
   "opening": {
     "title": "Ouvrir · {name}",
@@ -619,6 +650,114 @@
     "title": "Administration",
     "modules": "Modules",
     "soon": "Bientôt",
+    "users": {
+      "title": "Gestion des utilisateurs",
+      "intro": "Recherche un joueur pour gérer son compte, ses Zeni, ses cartes, ses boosters et sa progression. Chaque modification est tracée dans le journal admin.",
+      "search": "Rechercher un joueur",
+      "searchPlaceholder": "Pseudo, e-mail ou identifiant exact",
+      "filter": "Comptes",
+      "filters": { "all": "Tous", "registered": "Inscrits", "guests": "Invités", "admins": "Administrateurs", "banned": "Bannis" },
+      "searchButton": "Rechercher",
+      "searching": "Recherche…",
+      "total": "{count, plural, one {# utilisateur} other {# utilisateurs}}",
+      "empty": "Aucun utilisateur ne correspond à cette recherche.",
+      "player": "Joueur",
+      "status": "Statut",
+      "coins": "Zeni",
+      "cards": "Cartes possédées",
+      "discoveries": "Catalogue découvert",
+      "created": "Inscription",
+      "manage": "Gérer",
+      "noEmail": "Aucun e-mail",
+      "banned": "Banni",
+      "adminRole": "Administrateur",
+      "userRole": "Joueur",
+      "guest": "Invité",
+      "registered": "Inscrit",
+      "pagination": "Pages des utilisateurs",
+      "collectionPagination": "Pages de la collection du joueur",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "page": "Page {page} sur {pages}",
+      "back": "Tous les utilisateurs",
+      "verified": "E-mail vérifié",
+      "joined": "Inscrit le {date}",
+      "discordLinked": "Compte Discord lié",
+      "viewProfile": "Voir le profil",
+      "uniqueCards": "Cartes uniques possédées",
+      "boosters": "Boosters à ouvrir",
+      "openings": "Boosters déjà ouverts",
+      "reason": "Motif de la modification",
+      "defaultReason": "Correction administrative",
+      "reasonHint": "Ce motif sera ajouté à chaque modification effectuée depuis cette fiche.",
+      "account": "Compte et accès",
+      "username": "Pseudo",
+      "usernameHint": "3 à 20 caractères : lettres, chiffres, tirets et underscores.",
+      "role": "Rôle",
+      "ban": "Bannir ce joueur et fermer ses sessions",
+      "selfHint": "Ton propre rôle et ton accès sont protégés pour éviter de te verrouiller hors de l'administration.",
+      "visibility": "Visibilité du profil",
+      "visibilities": { "PUBLIC": "Public", "FRIENDS": "Amis uniquement", "PRIVATE": "Privé" },
+      "showCollection": "Collection visible sur le profil",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "saved": "Modification enregistrée et ajoutée au journal admin.",
+      "operation": "Opération",
+      "modes": { "SET": "Définir le total", "ADD": "Ajouter", "REMOVE": "Retirer" },
+      "cardModes": { "ADD": "Donner des exemplaires", "REMOVE": "Retirer des exemplaires" },
+      "amount": "Montant en Zeni",
+      "value": "Nouvelle valeur",
+      "quantity": "Quantité",
+      "currentBalance": "Solde actuel : {amount, number} Zeni",
+      "before": "Avant",
+      "after": "Après :",
+      "ledgerHint": "Le solde et le journal des Zeni sont modifiés ensemble. Les Zeni engagés dans des enchères restent réservés.",
+      "stats": { "boosterStock": "Stock de boosters gratuits", "rankPoints": "Points de classement", "pityCount": "Compteur de pitié Mythique", "standardCount": "Progression du sachet doré" },
+      "statHints": { "boosterStock": "La valeur inclut la recharge déjà acquise. L'enregistrement relance le délai de recharge et permet de dépasser le stock maximum.", "rankPoints": "Points utilisés pour le classement en combat.", "pityCount": "Nombre de boosters ouverts sans Mythique depuis la dernière remise à zéro.", "standardCount": "Compteur utilisé pour l'attribution du prochain sachet doré." },
+      "boosterType": "Type de booster",
+      "allBoostersHint": "Tous les types sont disponibles, y compris les événements terminés, les types inactifs et ceux hors rotation. Un booster crédité reste ouvrable si son pool contient des cartes.",
+      "inactive": "Inactif",
+      "noBoosters": "Aucun type de booster n'a encore été créé.",
+      "boosterCount": "Stock de ce type : {count, number}",
+      "bannerPity": "Pitié vedette de ce booster",
+      "bannerPityHint": "Nombre d'ouvertures sans carte vedette pour ce type. Ce compteur est utilisé par les bannières.",
+      "cardSearch": "Choisir n'importe quelle carte",
+      "cardSearchPlaceholder": "Personnage, œuvre, numéro AniList ou identifiant exact",
+      "cardSearchHint": "Recherche dans toutes les raretés et toutes les cartes, même sorties du catalogue. Les 30 premiers résultats sont affichés : précise la recherche si nécessaire.",
+      "noCards": "Aucune carte trouvée.",
+      "giveCards": "Attribution et retrait de cartes",
+      "selectCard": "Recherche une carte, puis sélectionne-la pour la donner ou la retirer.",
+      "archivedCard": "Hors catalogue actuel",
+      "giveCardHint": "Les exemplaires arrivent directement dans la collection. La carte est aussi marquée comme découverte.",
+      "removeCardHint": "Seuls les exemplaires disponibles sont retirés. Les cartes en vitrine, en combat, en vente ou liées à une ancienne vente sont protégées. La découverte est conservée.",
+      "discoveryCount": "Nombre de cartes découvertes",
+      "discoveryRange": "Minimum : {min, number} cartes encore possédées. Maximum : {max, number} cartes au catalogue actuel.",
+      "discoveryHint": "L'ajout débloque les cartes manquantes dans l'ordre du catalogue, sans donner d'exemplaires. Le retrait efface les découvertes les plus récentes parmi les cartes non possédées. Les découvertes hors catalogue restent inchangées.",
+      "discoverAll": "Débloquer tout le catalogue",
+      "sessions": "Sessions de connexion",
+      "sessionCount": "{count, plural, one {# session enregistrée} other {# sessions enregistrées}}",
+      "sessionsHint": "Ferme toutes les sessions de ce joueur. Il devra se reconnecter. Cette opération est désactivée pour ton propre compte.",
+      "revokeSessions": "Déconnecter ce joueur",
+      "collection": "Collection et découvertes du joueur",
+      "filterCollection": "Filtrer par personnage ou œuvre",
+      "collectionEmpty": "Aucune carte ou découverte ne correspond.",
+      "card": "Carte",
+      "rarity": "Rareté",
+      "copies": "Exemplaires",
+      "discovered": "Découverte",
+      "yes": "Oui",
+      "no": "Non",
+      "ledger": "20 derniers mouvements de Zeni",
+      "balance": "Solde :",
+      "recentOpenings": "15 dernières ouvertures",
+      "historyEmpty": "Aucun événement pour l'instant.",
+      "golden": "Doré",
+      "divine": "Divin",
+      "view": "Voir",
+      "audit": "30 dernières modifications admin",
+      "actions": { "USER_ACCOUNT": "Compte et accès", "USER_COINS": "Solde en Zeni", "USER_STAT": "Progression du joueur", "USER_BOOSTER": "Stock de boosters", "USER_BANNERPITY": "Pitié vedette", "USER_CARD": "Collection de cartes", "USER_DISCOVERIES": "Catalogue découvert", "USER_SESSIONS": "Déconnexion des sessions" },
+      "errors": { "FORBIDDEN": "Accès refusé : les droits administrateur sont requis.", "INVALID": "Valeurs refusées. Vérifie les champs et le motif.", "RATE_LIMITED": "Trop de modifications : attends une minute.", "NOT_FOUND": "Ce joueur, cette carte ou ce booster n'existe plus.", "USERNAME_TAKEN": "Ce pseudo est déjà utilisé.", "SELF_PROTECTED": "Tu ne peux pas retirer ton propre accès administrateur.", "INSUFFICIENT": "Le solde ou le stock disponible ne suffit pas.", "LIMIT": "Cette valeur dépasse la limite autorisée.", "CARDS_LOCKED": "Pas assez d'exemplaires disponibles : certaines cartes sont protégées ou ne sont plus possédées.", "DISCOVERY_MIN": "Impossible de descendre sous les découvertes des cartes encore possédées.", "unexpected": "Erreur inattendue. Actualise la fiche pour vérifier son état avant de réessayer." }
+    },
     "moduleNames": {
       "boosters": "Boosters",
       "users": "Utilisateurs",
@@ -633,7 +772,8 @@
       "lots": "Lots",
       "missions": "Missions",
       "shop": "Boutique",
-      "referral": "Parrainages"
+      "referral": "Parrainages",
+      "reviews": "Avis"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -649,7 +789,10 @@
         "pityThreshold": "Pitié : Mythique garantie au N-ième booster",
         "goldenEvery": "Sachet doré tous les N boosters (0 = désactivé)",
         "goldenFloor": "Rareté minimale de la dernière carte du doré",
-        "divineOdds": "Sachet divin : 1 chance sur N (0 = désactivé)"
+        "divineOdds": "Sachet divin : 1 chance sur N (0 = désactivé)",
+        "rotationHours": "Durée d'une sélection (heures)",
+        "rotationDemographie": "Boosters « Par démographie » proposés",
+        "rotationGenre": "Boosters « Par genre » proposés"
       },
       "slot": "Carte {n}",
       "addSlot": "Ajouter une carte",
@@ -681,7 +824,8 @@
       },
       "log": "Derniers changements",
       "logEmpty": "Aucun changement pour l'instant.",
-      "logEntry": "{key} par {admin}"
+      "logEntry": "{key} par {admin}",
+      "rotationSection": "Rotation des familles"
     },
     "types": {
       "title": "Types de boosters",
@@ -702,7 +846,9 @@
         "inactive": "inactif",
         "dates": "hors de ses dates",
         "pool": "pool sous {min}",
-        "filter": "filtre invalide"
+        "filter": "filtre invalide",
+        "rotation": "au repos (rotation)",
+        "featured": "en avant (rotation)"
       },
       "price": {
         "free": "Gratuit",
@@ -1078,6 +1224,78 @@
       "revoke": "Révoquer",
       "revokeConfirm": "Confirmer la révocation",
       "cancel": "Annuler"
+    },
+    "rotation": {
+      "title": "Rotation en cours",
+      "intro": "Les familles « Par démographie » et « Par genre » ne proposent que quelques boosters, tirés au hasard toutes les {hours} h. Ta sélection remplace le hasard jusqu'au prochain changement ({end}), puis le hasard reprend : le rythme ne bouge pas.",
+      "random": "Sélection tirée au hasard.",
+      "pinned": "Sélection choisie par un admin jusqu'au prochain changement.",
+      "empty": "Aucun booster proposable dans cette famille.",
+      "save": "{count, plural, =0 {Mettre en avant} one {Mettre en avant # booster} other {Mettre en avant # boosters}}",
+      "clear": "Revenir au hasard",
+      "saved": "Sélection enregistrée jusqu'au prochain changement.",
+      "cleared": "Retour au hasard."
+    },
+    "reviews": {
+      "title": "Avis des joueurs",
+      "intro": "Un avis masqué disparaît du carrousel et de la note moyenne de l'accueil, et perd son épingle. Un avis épinglé passe en tête de la première page du carrousel. La réponse de l'équipe s'affiche sous l'avis.",
+      "filters": "Filtrer les avis",
+      "filter": {
+        "all": "Tous",
+        "visible": "Visibles",
+        "hidden": "Masqués",
+        "pinned": "Épinglés"
+      },
+      "empty": {
+        "all": "Aucun avis pour l'instant.",
+        "visible": "Aucun avis visible.",
+        "hidden": "Aucun avis masqué.",
+        "pinned": "Aucun avis épinglé."
+      },
+      "ratingLabel": "{rating} sur 5",
+      "edited": "modifié",
+      "hiddenBadge": "Masqué",
+      "bannedBadge": "Auteur banni",
+      "hide": "Masquer",
+      "show": "Réafficher",
+      "pagination": "Pages",
+      "previous": "Précédents",
+      "next": "Suivants",
+      "pageOf": "Page {page, number} sur {pages, number}",
+      "log": "Dernières actions de modération",
+      "logEmpty": "Aucune action pour l'instant.",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Demande refusée par le serveur.",
+        "RATE_LIMITED": "Trop d'actions : attends une minute.",
+        "NOT_FOUND": "Avis introuvable (supprimé entre-temps ?).",
+        "UNAVAILABLE": "Action impossible pour le moment.",
+        "unexpected": "Erreur inattendue. Réessaie.",
+        "HIDDEN": "Réaffiche l'avis avant de l'épingler.",
+        "PIN_LIMIT": "Limite d'avis épinglés atteinte : désépingles-en un d'abord."
+      },
+      "pinnedCount": "Épinglés : {count, number} sur {max, number}",
+      "pinnedBadge": "Épinglé",
+      "editedAfterReply": "modifié après la réponse",
+      "pin": "Épingler",
+      "unpin": "Désépingler",
+      "reply": "Répondre",
+      "editReply": "Modifier la réponse",
+      "replyLabel": "Réponse de l'équipe (publique)",
+      "replyPlaceholder": "Merci pour ton avis…",
+      "saveReply": "Publier la réponse",
+      "deleteReply": "Retirer la réponse",
+      "chars": "{count, number} / {max, number}",
+      "replyFrom": "Réponse de l'équipe Kiraku",
+      "logActions": {
+        "REVIEW_HIDE": "{admin} a masqué l'avis {id}",
+        "REVIEW_SHOW": "{admin} a réaffiché l'avis {id}",
+        "REVIEW_PIN": "{admin} a épinglé l'avis {id}",
+        "REVIEW_UNPIN": "{admin} a désépinglé l'avis {id}",
+        "REVIEW_REPLY": "{admin} a répondu à l'avis {id}",
+        "REVIEW_REPLY_DELETE": "{admin} a retiré la réponse à l'avis {id}",
+        "OTHER": "{admin} a modifié l'avis {id}"
+      }
     }
   },
   "collection": {
@@ -1641,5 +1859,53 @@
       "toCollection": "Voir dans ma collection",
       "next": "Carte suivante"
     }
+  },
+  "home": {
+    "collectors": {
+      "title": "Top collectionneurs",
+      "subtitle": "Cartes uniques possédées",
+      "full": "Classement complet",
+      "cards": "{count, plural, one {# carte} other {# cartes}}",
+      "mythics": "{count, plural, one {# Mythique} other {# Mythiques}}",
+      "rank": "{rank, selectordinal, one {#er} other {#e}}"
+    },
+    "reviews": {
+      "title": "Ce qu’en disent les joueurs",
+      "carousel": "carrousel",
+      "carouselLabel": "Avis des joueurs",
+      "goTo": "Afficher la page {page} sur {count}",
+      "averageLabel": "Note moyenne : {rating} sur 5",
+      "ratingLabel": "{rating} sur 5",
+      "count": "{count, plural, one {# avis} other {# avis}}",
+      "empty": "Aucun avis pour l’instant. Donne le premier !",
+      "give": "Donner ton avis",
+      "edit": "Modifier ton avis",
+      "guestHint": "Crée ton compte (Discord ou e-mail) pour donner ton avis.",
+      "thanks": "Merci, ton avis est enregistré.",
+      "ratingField": "Ta note",
+      "ratingOption": "{rating, plural, one {# étoile} other {# étoiles}}",
+      "ratingValue": "{rating}/5",
+      "bodyField": "Ton message",
+      "bodyPlaceholder": "Ce que tu aimes, ce qui pourrait être mieux…",
+      "bodyCount": "{count}/{max}",
+      "submit": "Publier mon avis",
+      "sending": "Envoi…",
+      "errors": {
+        "NO_RATING": "Choisis une note de 1 à 5 étoiles.",
+        "NO_SESSION": "Ta session a expiré. Recharge la page.",
+        "INVALID": "Écris un message (1 000 caractères au plus) et choisis une note.",
+        "FORBIDDEN": "Il faut un compte lié (Discord ou e-mail) pour donner ton avis.",
+        "RATE_LIMITED": "Trop d’essais. Réessaie dans quelques minutes.",
+        "UNAVAILABLE": "Impossible d’enregistrer ton avis pour le moment."
+      },
+      "pinned": "Épinglé",
+      "replyFrom": "Réponse de l'équipe"
+    }
+  },
+  "leaderboard": {
+    "title": "Classement des collectionneurs",
+    "metaDescription": "Les {count} joueurs qui possèdent le plus de cartes uniques sur Kiraku.",
+    "intro": "Les {count} joueurs aux profils publics qui possèdent le plus de cartes uniques. À égalité, le plus de Mythiques passe devant. Mis à jour toutes les 5 minutes.",
+    "empty": "Personne n’est encore classé."
   }
 }

@@ -11,6 +11,11 @@ type Props = InputHTMLAttributes<HTMLInputElement> & {
   error?: FieldErrorCode;
 };
 
+/** Champ texte des formulaires de compte (aussi utilisé par PasswordField). */
+export const fieldInputClass =
+  "min-h-12 w-full rounded-button border border-border bg-bg px-3.5 text-base text-text placeholder:text-text-muted/70 " +
+  "transition-colors hover:border-text-muted/60 focus:border-ai aria-invalid:border-shu motion-reduce:transition-none";
+
 /** Champ de formulaire : libellé, aide, erreur traduite, zone tactile ≥ 44 px. */
 export function Field({ label, hint, error, ...input }: Props) {
   const t = useTranslations("auth.fieldErrors");
@@ -18,17 +23,11 @@ export function Field({ label, hint, error, ...input }: Props) {
   const describedBy = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined;
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-sm font-medium">
         {label}
       </label>
-      <input
-        id={id}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy}
-        className="min-h-11 rounded-button border border-border bg-surface-2 px-3 text-base text-text aria-invalid:border-shu"
-        {...input}
-      />
+      <input id={id} aria-invalid={error ? true : undefined} aria-describedby={describedBy} className={fieldInputClass} {...input} />
       {hint && (
         <p id={`${id}-hint`} className="text-xs text-text-muted">
           {hint}

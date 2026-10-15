@@ -9,6 +9,8 @@ export const FORM_ERROR_CODES = [
   "invalidCredentials",
   "banned",
   "tokenInvalid",
+  "tooFast",
+  "formExpired",
   "unexpected",
 ] as const;
 export type FormErrorCode = (typeof FORM_ERROR_CODES)[number];

@@ -12,6 +12,9 @@ export const BOOSTER_SETTING_KEYS = [
   "booster.goldenEvery",
   "booster.goldenFloor",
   "booster.divineOdds",
+  "booster.rotationHours",
+  "booster.rotationDemographie",
+  "booster.rotationGenre",
 ] as const satisfies readonly SettingKey[];
 
 export type BoosterSettingKey = (typeof BOOSTER_SETTING_KEYS)[number];

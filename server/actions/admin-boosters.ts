@@ -5,14 +5,16 @@ import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { boosterTypeFormSchema } from "@/lib/boosters/admin-form";
 import { filterContext } from "@/lib/boosters/pool-filter";
+import { ROTATING_FAMILIES, type RotationPin } from "@/lib/boosters/rotation";
 import { slugSchema } from "@/lib/boosters/types";
 import { normalizeSearch, SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
+import { parseSetting } from "@/lib/settings/defaults";
 import { getAdmin } from "../admin";
-import { BOOSTER_TYPES_TAG } from "../boosters/pools";
+import { BOOSTER_TYPES_TAG, getBoosterRotation } from "../boosters/pools";
 import { computePoolCards, loadCandidates, recomputeBoosterPools, toBoosterTypeView } from "../boosters/type-store";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
-import { getSetting } from "../settings";
+import { getSetting, SETTINGS_TAG } from "../settings";
 
 // Types de boosters et bannières depuis /admin. Ordre : rôle admin → Zod → rate limit → transaction
 // avec une ligne AdminLog (avant / après) → recalcul du pool → cache invalidé (effet immédiat).
@@ -185,4 +187,66 @@ export async function searchFeaturedCards(input: unknown): Promise<FeaturedCandi
     select: { id: true, name: true, rarity: true, rank: true, imageUrl: true, series: { select: { titleRomaji: true } } },
   });
   return rows.map((c) => ({ id: c.id, name: c.name, rarity: c.rarity, rank: c.rank, imageUrl: c.imageUrl, series: c.series.titleRomaji }));
+}
+
+const PIN_KEY = "booster.rotationPin";
+
+const rotationPinInput = z
+  .object({ family: z.enum(ROTATING_FAMILIES), slugs: z.array(slugSchema).min(1).max(50).nullable() })
+  .strict();
+
+/**
+ * Sélection d'une famille tournante choisie par l'admin (slugs null : retour au hasard). Elle vaut
+ * jusqu'à la fin de la fenêtre en cours : épinglée 3 h après le dernier changement, elle change
+ * dans 9 h avec le reste de la rotation.
+ */
+export async function setRotationPin(input: unknown): Promise<{ ok: true } | { ok: false; error: AdminBoosterError }> {
+  const g = await guard();
+  if ("error" in g) return { ok: false, error: g.error! };
+  const parsed = rotationPinInput.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  const { family, slugs } = parsed.data;
+
+  // Seuls les types proposables aujourd'hui dans cette famille peuvent être mis en avant
+  const rotation = await getBoosterRotation();
+  const wanted = slugs ? [...new Set(slugs)] : null;
+  if (wanted && wanted.some((slug) => !rotation.candidates[family].includes(slug))) return { ok: false, error: "NOT_FOUND" };
+
+  await prisma.$transaction(async (tx) => {
+    const row = await tx.gameSetting.findUnique({ where: { key: PIN_KEY }, select: { value: true } });
+    const before = parseSetting(PIN_KEY, row?.value);
+    // Une épingle d'une fenêtre passée ne compte plus : on repart de zéro
+    const live = before && before.window === rotation.window.index && before.hours === rotation.hours ? before.picks : {};
+    const picks: RotationPin["picks"] = {};
+    for (const f of ROTATING_FAMILIES) {
+      const list = f === family ? wanted : live[f];
+      if (list) picks[f] = [...list];
+    }
+    const after: RotationPin | null =
+      Object.keys(picks).length > 0 ? { window: rotation.window.index, hours: rotation.hours, picks } : null;
+
+    if (after) {
+      const value = after as Prisma.InputJsonValue;
+      await tx.gameSetting.upsert({
+        where: { key: PIN_KEY },
+        create: { key: PIN_KEY, value, updatedBy: g.admin.id },
+        update: { value, updatedBy: g.admin.id },
+      });
+    } else {
+      await tx.gameSetting.deleteMany({ where: { key: PIN_KEY } });
+    }
+    await tx.adminLog.create({
+      data: {
+        adminId: g.admin.id,
+        action: "BOOSTER_ROTATION_PIN",
+        targetType: "GameSetting",
+        targetId: PIN_KEY,
+        before: before ? (before as Prisma.InputJsonValue) : undefined,
+        after: after ? (after as Prisma.InputJsonValue) : undefined,
+      },
+    });
+  });
+
+  updateTag(SETTINGS_TAG);
+  return { ok: true };
 }

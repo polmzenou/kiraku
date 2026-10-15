@@ -18,9 +18,10 @@ const MODULES = [
   { key: "missions", href: "/admin/missions", ready: true },
   { key: "shop", href: "/admin/boutique", ready: true },
   { key: "referral", href: "/admin/parrainage", ready: true },
-  { key: "users", href: "/admin/utilisateurs", ready: false },
+  { key: "users", href: "/admin/utilisateurs", ready: true },
   { key: "catalog", href: "/admin/catalogue", ready: false },
   { key: "market", href: "/admin/marche", ready: true },
+  { key: "reviews", href: "/admin/avis", ready: true },
   { key: "ranked", href: "/admin/classe", ready: false },
 ] as const;
 

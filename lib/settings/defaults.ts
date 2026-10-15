@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { RARITIES } from "@/lib/catalog/rarity";
 import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
+import { rotationPinSchema } from "@/lib/boosters/rotation";
 
 // Seuils de rareté en points de base (300 = top 3 %), du plus rare au plus courant
 const rarityThresholds = z
@@ -67,6 +68,12 @@ export const SETTING_SCHEMAS = {
   "booster.divineOdds": z.number().int().min(0).max(1_000_000),
   // Taille minimale du pool d'un type de booster pour être proposé (un type peut l'abaisser)
   "booster.minPool": z.number().int().min(1).max(10_000),
+  // Rotation des familles « Par démographie » et « Par genre » : durée d'une sélection et nombre de types proposés
+  "booster.rotationHours": z.number().int().min(1).max(24 * 7),
+  "booster.rotationDemographie": z.number().int().min(0).max(50),
+  "booster.rotationGenre": z.number().int().min(0).max(50),
+  // Sélection épinglée par l'admin pour la fenêtre en cours (null = hasard)
+  "booster.rotationPin": rotationPinSchema.nullable(),
   // Fuseau du jeu : « aujourd'hui » (anniversaires) et saison AniList en cours
   "game.timeZone": z.string().min(1).max(64).refine(isTimeZone, { message: "Fuseau horaire inconnu" }),
   "collection.recycleValues": recycleValues,
@@ -146,6 +153,10 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "booster.goldenFloor": "EPIC",
   "booster.divineOdds": 2000,
   "booster.minPool": 100,
+  "booster.rotationHours": 12,
+  "booster.rotationDemographie": 2,
+  "booster.rotationGenre": 4,
+  "booster.rotationPin": null,
   "game.timeZone": "Europe/Paris",
   // Valeurs de Kyara : 1 · 1 · 3 · 10 · 40 · 150 Zeni
   "collection.recycleValues": { COMMON: 1, UNCOMMON: 1, RARE: 3, EPIC: 10, LEGENDARY: 40, MYTHIC: 150 },
