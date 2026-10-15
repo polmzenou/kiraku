@@ -21,9 +21,21 @@ export async function ensureGuest(): Promise<ActionResult> {
   const session = await auth();
   if (session?.user?.id) return { ok: true };
 
-  const limit = await getSetting("guest.createPerHourPerIp");
-  const { success } = await rateLimit(`guest:${await clientIp()}`, { limit, windowSeconds: 3600 });
-  if (!success) return { ok: false, error: "RATE_LIMITED" };
+  const ip = await clientIp();
+  const testIps = (process.env.GUEST_TEST_IPS ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (!testIps.includes(ip)) {
+    const limit = await getSetting("guest.createPerHourPerIp");
+    const { success } = await rateLimit(`guest:${ip}`, {
+      limit,
+      windowSeconds: 3600,
+    });
+
+    if (!success) return { ok: false, error: "RATE_LIMITED" };
+  }
 
   await setSessionCookie(await createGuestSession());
   return { ok: true };
