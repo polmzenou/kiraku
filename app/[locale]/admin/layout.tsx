@@ -22,6 +22,7 @@ const MODULES = [
   { key: "catalog", href: "/admin/catalogue", ready: false },
   { key: "market", href: "/admin/marche", ready: true },
   { key: "reviews", href: "/admin/avis", ready: true },
+  { key: "combat", href: "/admin/combat", ready: true },
   { key: "ranked", href: "/admin/classe", ready: false },
 ] as const;
 

@@ -551,6 +551,26 @@
   }
 }
 
+/* Combat : chiffre de dégâts ou de soin qui monte et s'efface au-dessus d'une fuda */
+.battle-float {
+  animation: battle-float 900ms ease-out forwards;
+}
+
+@keyframes battle-float {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.8);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-36px) scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

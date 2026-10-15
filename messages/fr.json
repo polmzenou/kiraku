@@ -656,7 +656,13 @@
       "search": "Rechercher un joueur",
       "searchPlaceholder": "Pseudo, e-mail ou identifiant exact",
       "filter": "Comptes",
-      "filters": { "all": "Tous", "registered": "Inscrits", "guests": "Invités", "admins": "Administrateurs", "banned": "Bannis" },
+      "filters": {
+        "all": "Tous",
+        "registered": "Inscrits",
+        "guests": "Invités",
+        "admins": "Administrateurs",
+        "banned": "Bannis"
+      },
       "searchButton": "Rechercher",
       "searching": "Recherche…",
       "total": "{count, plural, one {# utilisateur} other {# utilisateurs}}",
@@ -697,14 +703,25 @@
       "ban": "Bannir ce joueur et fermer ses sessions",
       "selfHint": "Ton propre rôle et ton accès sont protégés pour éviter de te verrouiller hors de l'administration.",
       "visibility": "Visibilité du profil",
-      "visibilities": { "PUBLIC": "Public", "FRIENDS": "Amis uniquement", "PRIVATE": "Privé" },
+      "visibilities": {
+        "PUBLIC": "Public",
+        "FRIENDS": "Amis uniquement",
+        "PRIVATE": "Privé"
+      },
       "showCollection": "Collection visible sur le profil",
       "save": "Enregistrer",
       "saving": "Enregistrement…",
       "saved": "Modification enregistrée et ajoutée au journal admin.",
       "operation": "Opération",
-      "modes": { "SET": "Définir le total", "ADD": "Ajouter", "REMOVE": "Retirer" },
-      "cardModes": { "ADD": "Donner des exemplaires", "REMOVE": "Retirer des exemplaires" },
+      "modes": {
+        "SET": "Définir le total",
+        "ADD": "Ajouter",
+        "REMOVE": "Retirer"
+      },
+      "cardModes": {
+        "ADD": "Donner des exemplaires",
+        "REMOVE": "Retirer des exemplaires"
+      },
       "amount": "Montant en Zeni",
       "value": "Nouvelle valeur",
       "quantity": "Quantité",
@@ -712,8 +729,18 @@
       "before": "Avant",
       "after": "Après :",
       "ledgerHint": "Le solde et le journal des Zeni sont modifiés ensemble. Les Zeni engagés dans des enchères restent réservés.",
-      "stats": { "boosterStock": "Stock de boosters gratuits", "rankPoints": "Points de classement", "pityCount": "Compteur de pitié Mythique", "standardCount": "Progression du sachet doré" },
-      "statHints": { "boosterStock": "La valeur inclut la recharge déjà acquise. L'enregistrement relance le délai de recharge et permet de dépasser le stock maximum.", "rankPoints": "Points utilisés pour le classement en combat.", "pityCount": "Nombre de boosters ouverts sans Mythique depuis la dernière remise à zéro.", "standardCount": "Compteur utilisé pour l'attribution du prochain sachet doré." },
+      "stats": {
+        "boosterStock": "Stock de boosters gratuits",
+        "rankPoints": "Points de classement",
+        "pityCount": "Compteur de pitié Mythique",
+        "standardCount": "Progression du sachet doré"
+      },
+      "statHints": {
+        "boosterStock": "La valeur inclut la recharge déjà acquise. L'enregistrement relance le délai de recharge et permet de dépasser le stock maximum.",
+        "rankPoints": "Points utilisés pour le classement en combat.",
+        "pityCount": "Nombre de boosters ouverts sans Mythique depuis la dernière remise à zéro.",
+        "standardCount": "Compteur utilisé pour l'attribution du prochain sachet doré."
+      },
       "boosterType": "Type de booster",
       "allBoostersHint": "Tous les types sont disponibles, y compris les événements terminés, les types inactifs et ceux hors rotation. Un booster crédité reste ouvrable si son pool contient des cartes.",
       "inactive": "Inactif",
@@ -755,8 +782,29 @@
       "divine": "Divin",
       "view": "Voir",
       "audit": "30 dernières modifications admin",
-      "actions": { "USER_ACCOUNT": "Compte et accès", "USER_COINS": "Solde en Zeni", "USER_STAT": "Progression du joueur", "USER_BOOSTER": "Stock de boosters", "USER_BANNERPITY": "Pitié vedette", "USER_CARD": "Collection de cartes", "USER_DISCOVERIES": "Catalogue découvert", "USER_SESSIONS": "Déconnexion des sessions" },
-      "errors": { "FORBIDDEN": "Accès refusé : les droits administrateur sont requis.", "INVALID": "Valeurs refusées. Vérifie les champs et le motif.", "RATE_LIMITED": "Trop de modifications : attends une minute.", "NOT_FOUND": "Ce joueur, cette carte ou ce booster n'existe plus.", "USERNAME_TAKEN": "Ce pseudo est déjà utilisé.", "SELF_PROTECTED": "Tu ne peux pas retirer ton propre accès administrateur.", "INSUFFICIENT": "Le solde ou le stock disponible ne suffit pas.", "LIMIT": "Cette valeur dépasse la limite autorisée.", "CARDS_LOCKED": "Pas assez d'exemplaires disponibles : certaines cartes sont protégées ou ne sont plus possédées.", "DISCOVERY_MIN": "Impossible de descendre sous les découvertes des cartes encore possédées.", "unexpected": "Erreur inattendue. Actualise la fiche pour vérifier son état avant de réessayer." }
+      "actions": {
+        "USER_ACCOUNT": "Compte et accès",
+        "USER_COINS": "Solde en Zeni",
+        "USER_STAT": "Progression du joueur",
+        "USER_BOOSTER": "Stock de boosters",
+        "USER_BANNERPITY": "Pitié vedette",
+        "USER_CARD": "Collection de cartes",
+        "USER_DISCOVERIES": "Catalogue découvert",
+        "USER_SESSIONS": "Déconnexion des sessions"
+      },
+      "errors": {
+        "FORBIDDEN": "Accès refusé : les droits administrateur sont requis.",
+        "INVALID": "Valeurs refusées. Vérifie les champs et le motif.",
+        "RATE_LIMITED": "Trop de modifications : attends une minute.",
+        "NOT_FOUND": "Ce joueur, cette carte ou ce booster n'existe plus.",
+        "USERNAME_TAKEN": "Ce pseudo est déjà utilisé.",
+        "SELF_PROTECTED": "Tu ne peux pas retirer ton propre accès administrateur.",
+        "INSUFFICIENT": "Le solde ou le stock disponible ne suffit pas.",
+        "LIMIT": "Cette valeur dépasse la limite autorisée.",
+        "CARDS_LOCKED": "Pas assez d'exemplaires disponibles : certaines cartes sont protégées ou ne sont plus possédées.",
+        "DISCOVERY_MIN": "Impossible de descendre sous les découvertes des cartes encore possédées.",
+        "unexpected": "Erreur inattendue. Actualise la fiche pour vérifier son état avant de réessayer."
+      }
     },
     "moduleNames": {
       "boosters": "Boosters",
@@ -773,7 +821,8 @@
       "missions": "Missions",
       "shop": "Boutique",
       "referral": "Parrainages",
-      "reviews": "Avis"
+      "reviews": "Avis",
+      "combat": "Combat"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -1296,6 +1345,79 @@
         "REVIEW_REPLY_DELETE": "{admin} a retiré la réponse à l'avis {id}",
         "OTHER": "{admin} a modifié l'avis {id}"
       }
+    },
+    "combat": {
+      "title": "Combat",
+      "intro": "Réglages du combat 1v1 en direct. Ceux du moteur (dégâts, orbes, passifs, techniques, limites de tours) sont figés au lancement de chaque partie : un changement ne touche que les parties suivantes.",
+      "active": "Parties en cours",
+      "waiting": "Salles ouvertes",
+      "queued": "Joueurs en file",
+      "finished24h": "Parties finies (24 h)",
+      "bots24h": "Contre un bot (24 h)",
+      "rewards24h": "Zeni versés (24 h)",
+      "count": "{count, number}",
+      "zeni": "{amount, number} Zeni",
+      "switches": "Interrupteur",
+      "flow": "Déroulé",
+      "stats": "Stats dérivées",
+      "damage": "Dégâts",
+      "orbs": "Orbes 気",
+      "keywordsByRarity": "Passifs par rareté",
+      "keywordValues": "Valeurs des passifs",
+      "techniques": "Techniques (coût en orbes, valeur)",
+      "bot": "Bot",
+      "rewards": "Récompenses (Zeni au gagnant)",
+      "keys": {
+        "enabled": "Combats ouverts",
+        "turnSeconds": "Durée d'un tour (s)",
+        "maxMissedTurns": "Tours expirés d'affilée avant forfait",
+        "maxTurns": "Limite de tours (globale)",
+        "firstTurnActions": "Actions du premier joueur à son premier tour",
+        "queueSeconds": "Attente avant un bot (s)",
+        "roomMinutes": "Durée de vie d'une salle d'amis (min)",
+        "pollSeconds": "Sondage sans Ably (s)",
+        "hpBase": "PV de base",
+        "hpPerKiPct": "PV par point de 気 (en %, 160 = 1,6)",
+        "critPermille": "Chance de critique (‰)",
+        "critPct": "Multiplicateur critique (%)",
+        "varianceMinPct": "Aléa minimum (%)",
+        "varianceMaxPct": "Aléa maximum (%)",
+        "start": "Orbes au premier tour",
+        "perTurn": "Orbes en plus par tour",
+        "max": "Orbes maximum",
+        "secondBonus": "Bonus du second joueur (1er tour)",
+        "poisonPct": "Poison : % des PV max",
+        "poisonTurns": "Poison : tours",
+        "ripostePct": "Riposte : % des dégâts",
+        "lastWillHealPct": "Dernière volonté : soin (%)",
+        "revivePct": "Renaissance : PV (%)",
+        "cost": "coût",
+        "value": "valeur",
+        "botMistakePct": "Coups au hasard du bot (%)",
+        "botUpgradePct": "Chance qu'une carte du bot monte d'une rareté (%)",
+        "exhibition": "Exhibition",
+        "bot": "Contre un bot",
+        "friend": "Entre amis",
+        "ranked": "Classé (étape 9b)",
+        "dailyCap": "Combats récompensés par jour"
+      },
+      "valueHint": "Valeur : multiplicateur en % (Issen, Ranbu, Kantsū), soin ou bonus en % (Iyashi, Kobu), inutilisée (Shugo, Fūin).",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "saved": "{count, plural, one {# réglage enregistré} other {# réglages enregistrés}}.",
+      "invalid": "Une valeur est hors bornes.",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Valeurs refusées par le serveur.",
+        "RATE_LIMITED": "Trop d'enregistrements : attends une minute.",
+        "unexpected": "Erreur inattendue. Réessaie.",
+        "CLOSED": "Cette vente est déjà terminée.",
+        "NOT_FOUND": "Vente introuvable.",
+        "UNAVAILABLE": "Action impossible pour le moment."
+      },
+      "log": "Derniers changements",
+      "logEmpty": "Aucun changement pour l'instant.",
+      "logEntry": "{key} par {admin}"
     }
   },
   "collection": {
@@ -1651,7 +1773,8 @@
     "toastOpen": "(ouvrir)",
     "push": {
       "title": "Kiraku"
-    }
+    },
+    "battleInvite": "{name} t'invite en combat : choisis ton équipe."
   },
   "push": {
     "title": "Notifications sur ce téléphone",
@@ -1907,5 +2030,255 @@
     "metaDescription": "Les {count} joueurs qui possèdent le plus de cartes uniques sur Kiraku.",
     "intro": "Les {count} joueurs aux profils publics qui possèdent le plus de cartes uniques. À égalité, le plus de Mythiques passe devant. Mis à jour toutes les 5 minutes.",
     "empty": "Personne n’est encore classé."
+  },
+  "battle": {
+    "title": "Combat",
+    "intro": "Trois fuda contre trois. À ton tour, chaque carte agit une fois : une attaque, ou sa technique 技 payée en orbes 気.",
+    "guest": "Crée un compte pour combattre : ta collection et tes gains seront gardés.",
+    "signUp": "Créer un compte",
+    "disabled": "Les combats sont fermés pour le moment.",
+    "modes": {
+      "FRIEND": "Amical",
+      "EXHIBITION": "Exhibition",
+      "RANKED": "Classé"
+    },
+    "exhibition": {
+      "title": "Exhibition",
+      "text": "Un adversaire connecté, au hasard. Personne en vue ? Un bot prend sa place au bout de {seconds} s.",
+      "cta": "Trouver un adversaire"
+    },
+    "ranked": {
+      "title": "Classé",
+      "text": "Divisions de Bronze à Champion, saisons et récompenses.",
+      "soon": "Bientôt"
+    },
+    "friend": {
+      "title": "Code ami",
+      "text": "Ouvre une salle et partage son code, ou entre celui d'un ami.",
+      "create": "Créer une salle",
+      "codeLabel": "Code de la salle",
+      "codePlaceholder": "ABC123",
+      "join": "Rejoindre",
+      "challenge": "Défier",
+      "challengeTitle": "Défier {name}"
+    },
+    "activity": {
+      "QUEUE": "Tu es en file d'attente.",
+      "ROOM": "Ta salle d'amis est ouverte.",
+      "BATTLE": "Une partie est en cours.",
+      "resume": "Reprendre"
+    },
+    "history": {
+      "title": "Dernières parties",
+      "empty": "Aucune partie pour l'instant.",
+      "WIN": "Victoire",
+      "LOSS": "Défaite",
+      "DRAW": "Nul",
+      "vs": "contre {name}",
+      "replay": "Revoir",
+      "zeni": "+{amount, number} Zeni",
+      "when": "{date, date, short} {date, time, short}"
+    },
+    "rules": {
+      "title": "Règles",
+      "items": {
+        "turn": "À ton tour, chaque carte debout agit une fois : attaque gratuite ou technique 技.",
+        "orbs": "Les orbes 気 paient les techniques : 1 au premier tour, un de plus à chaque tour, jusqu'à {max}.",
+        "damage": "Dégâts : 力 de l'attaquant × 100 / (100 + 気 de la cible), avec 10 % de coups critiques.",
+        "timer": "{seconds} s par tour. Deux tours expirés d'affilée valent un abandon.",
+        "end": "La première équipe sans carte debout perd. Tes cartes reviennent toujours dans ta collection."
+      }
+    },
+    "team": {
+      "title": "Ton équipe",
+      "hint": "Choisis 3 cartes différentes. Elles restent bloquées le temps de la partie.",
+      "slot": "Emplacement {n}",
+      "empty": "Vide",
+      "search": "Chercher une carte",
+      "none": "Aucune carte disponible : ouvre des boosters !",
+      "noMatch": "Aucune carte ne correspond.",
+      "confirm": "Valider l'équipe",
+      "remove": "Retirer {name}",
+      "add": "Ajouter {name}",
+      "stats": "力 {atk} · {hp} PV",
+      "count": "{count}/3"
+    },
+    "queue": {
+      "title": "Recherche d'un adversaire",
+      "elapsed": "{seconds} s",
+      "botSoon": "Personne ? Un bot te rejoint dans {seconds} s.",
+      "botNow": "Un adversaire bot rejoint la partie…",
+      "cancel": "Annuler"
+    },
+    "room": {
+      "title": "Salle d'amis",
+      "code": "Code de la salle",
+      "copy": "Copier le code",
+      "copied": "Copié !",
+      "share": "Partager",
+      "shareText": "Rejoins-moi en combat sur Kiraku avec le code {code}",
+      "waiting": "En attente de ton ami…",
+      "expires": "La salle se ferme dans {time}.",
+      "reserved": "Salle réservée à ton ami : il a reçu une notification.",
+      "cancel": "Fermer la salle",
+      "invited": "{name} t'invite en combat.",
+      "accept": "Choisir mon équipe et rejoindre",
+      "closed": "Cette salle est fermée.",
+      "back": "Retour aux combats"
+    },
+    "board": {
+      "you": "Toi",
+      "bot": "Bot · {name}",
+      "yourTurn": "À toi de jouer",
+      "theirTurn": "Tour de {name}",
+      "turn": "Tour {turn}",
+      "orbs": "{count, plural, one {# orbe} other {# orbes}} 気",
+      "attack": "Attaque",
+      "technique": "{name} · {cost} 気",
+      "endTurn": "Fin du tour",
+      "forfeit": "Abandonner",
+      "forfeitConfirm": "Abandonner la partie ? Elle compte comme une défaite.",
+      "forfeitYes": "Oui, abandonner",
+      "cancel": "Annuler",
+      "pickTarget": "Choisis une cible",
+      "pickAlly": "Choisis un allié",
+      "pickActor": "Touche une de tes cartes pour agir",
+      "noActions": "Plus aucune action ce tour : termine-le.",
+      "waitOpponent": "L'adversaire réfléchit…",
+      "timer": "{seconds} s restantes",
+      "hp": "{hp}/{max}",
+      "fighter": "{name} : {hp} PV sur {max}, 力 {atk}",
+      "dead": "{name}, hors combat",
+      "sealed": "Scellée",
+      "poisoned": "Empoisonnée",
+      "buffed": "+{pct} % de 力",
+      "barrier": "Barrière",
+      "crit": "Critique",
+      "block": "Bloqué",
+      "acted": "A déjà agi",
+      "resync": "Resynchronisation…",
+      "keywordsLabel": "Passifs",
+      "techniqueLabel": "Technique"
+    },
+    "errors": {
+      "STALE": "La partie a avancé : resynchronisation.",
+      "ILLEGAL": "Coup impossible.",
+      "RATE_LIMITED": "Doucement !",
+      "UNAVAILABLE": "Action impossible pour le moment.",
+      "INVALID": "Demande invalide.",
+      "NO_SESSION": "Session expirée : recharge la page.",
+      "IN_BATTLE": "Tu as déjà une partie en cours.",
+      "IN_QUEUE": "Tu es déjà en file d'attente.",
+      "NOT_QUEUED": "Tu n'es plus en file d'attente.",
+      "NOT_OWNED": "Une de ces cartes n'est plus disponible.",
+      "NOT_FOUND": "Salle introuvable : vérifie le code.",
+      "CLOSED": "Cette partie est fermée.",
+      "OWN_ROOM": "C'est ta propre salle.",
+      "RESERVED": "Cette salle est réservée à un autre joueur.",
+      "BLOCKED": "Impossible avec ce joueur.",
+      "NOT_FRIENDS": "Vous devez être amis.",
+      "GUEST": "Crée un compte pour combattre.",
+      "DISABLED": "Les combats sont fermés.",
+      "BAD_TEAM": "Choisis 3 cartes différentes.",
+      "NO_BOT_CARDS": "Aucun bot disponible pour le moment.",
+      "TOO_EARLY": "Encore un instant…",
+      "NOT_PARTICIPANT": "Cette partie n'est pas la tienne."
+    },
+    "result": {
+      "WIN": "Victoire",
+      "LOSS": "Défaite",
+      "DRAW": "Match nul",
+      "reason": {
+        "KO": "Toutes les cartes adverses sont hors combat.",
+        "FORFEIT": "Abandon.",
+        "TIMEOUT": "Trop de tours expirés d'affilée.",
+        "TURN_LIMIT": "Limite de tours atteinte : la victoire va aux PV restants."
+      },
+      "zeni": "+{amount, number} Zeni",
+      "noZeni": "Pas de Zeni pour cette partie.",
+      "again": "Nouveau combat",
+      "replay": "Revoir la partie",
+      "back": "Retour aux combats",
+      "cardsBack": "Tes cartes sont de retour dans ta collection."
+    },
+    "replay": {
+      "title": "Replay",
+      "play": "Lecture",
+      "pause": "Pause",
+      "step": "Action suivante",
+      "end": "Aller à la fin",
+      "restart": "Recommencer",
+      "progress": "Action {n} sur {total}"
+    },
+    "keywords": {
+      "TAUNT": {
+        "name": "Provocation",
+        "desc": "Les attaques ennemies doivent la viser tant qu'elle est debout."
+      },
+      "BARRIER": {
+        "name": "Barrière",
+        "desc": "Annule entièrement le prochain coup reçu."
+      },
+      "FLURRY": {
+        "name": "Rafale",
+        "desc": "Agit deux fois par tour."
+      },
+      "POISON": {
+        "name": "Poison",
+        "desc": "Ses coups empoisonnent : {pct} % des PV max au début des {turns} tours suivants de la cible."
+      },
+      "RIPOSTE": {
+        "name": "Riposte",
+        "desc": "Rend {pct} % des dégâts d'une attaque simple reçue."
+      },
+      "LAST_WILL": {
+        "name": "Dernière volonté",
+        "desc": "À sa chute, soigne ses alliés de {pct} % de leurs PV max."
+      },
+      "REVIVE": {
+        "name": "Renaissance",
+        "desc": "Revient une fois avec {pct} % de ses PV."
+      }
+    },
+    "techniques": {
+      "ISSEN": {
+        "name": "Issen",
+        "desc": "Un coup à ×{mult}."
+      },
+      "KANTSU": {
+        "name": "Kantsū",
+        "desc": "Un coup qui ignore le 気 de la cible."
+      },
+      "RANBU": {
+        "name": "Ranbu",
+        "desc": "Frappe tous les ennemis à ×{mult}."
+      },
+      "IYASHI": {
+        "name": "Iyashi",
+        "desc": "Soigne un allié de {pct} % de ses PV max."
+      },
+      "SHUGO": {
+        "name": "Shugo",
+        "desc": "Donne une barrière 結界 à un allié."
+      },
+      "KOBU": {
+        "name": "Kobu",
+        "desc": "+{pct} % de 力 à ses alliés, ce tour et le suivant."
+      },
+      "FUIN": {
+        "name": "Fūin",
+        "desc": "La cible ne peut pas agir à son prochain tour."
+      }
+    },
+    "bots": {
+      "TENGU": "Tengu",
+      "KITSUNE": "Kitsune",
+      "KAPPA": "Kappa",
+      "TANUKI": "Tanuki",
+      "ONI": "Oni",
+      "KARASU": "Karasu",
+      "YUREI": "Yūrei",
+      "RONIN": "Rōnin"
+    }
   }
 }

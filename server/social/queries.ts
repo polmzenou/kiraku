@@ -3,8 +3,10 @@ import { cache } from "react";
 import { Prisma } from "@/generated/prisma/client";
 import {
   parseAuctionPayload,
+  parseBattlePayload,
   parseGiftPayload,
   type AuctionPayload,
+  type BattlePayload,
   type GiftPayload,
   type NotificationType,
 } from "@/lib/social/notifications";
@@ -120,6 +122,7 @@ export type NotificationView = {
   actor: PlayerRef | null;
   gift: GiftPayload | null;
   auction: AuctionPayload | null;
+  battle: BattlePayload | null;
   card: { anilistId: number; name: string; rarity: string } | null;
 };
 
@@ -182,6 +185,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
       actor: r.actor,
       gift,
       auction,
+      battle: r.type === "BATTLE_INVITE" ? parseBattlePayload(r.payload) : null,
       card: card ? { anilistId: card.anilistId, name: card.name, rarity: card.rarity } : null,
     };
   });

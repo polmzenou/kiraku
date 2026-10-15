@@ -16,4 +16,7 @@ export const SEAL_GLYPHS = [
   "蒐集飾札公友秘", // collection, vitrine, fiche carte, confidentialité
   "贈報", // cadeaux, notifications
   "任務商店招待済訪週", // missions, boutique, parrainage, réclamé, objectifs
+  "戦対勝負引技気記法封", // combat : titres, victoire, défaite, nul, technique, orbes, historique, règles, sceau
+  "挑発結界疾風毒反撃遺言復活", // passifs du combat
+  "一閃貫通乱舞癒守護鼓封印", // techniques du combat
 ].join("");

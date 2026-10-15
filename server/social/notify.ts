@@ -1,7 +1,7 @@
 // Création des notifications, toujours dans la transaction de l'événement qui les cause. Le Web
 // Push part après la validation de cette transaction, jamais dedans (voir notifyingTransaction).
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
-import type { AuctionPayload, GiftPayload, NotificationType } from "@/lib/social/notifications";
+import type { AuctionPayload, BattlePayload, GiftPayload, NotificationType } from "@/lib/social/notifications";
 import type { Tx } from "./lock";
 
 type NewNotification = {
@@ -9,7 +9,7 @@ type NewNotification = {
   type: NotificationType;
   actorId: string;
   refId?: string;
-  payload?: GiftPayload | AuctionPayload;
+  payload?: GiftPayload | AuctionPayload | BattlePayload;
   now: Date;
 };
 

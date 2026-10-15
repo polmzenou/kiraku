@@ -9,6 +9,7 @@ import type { NotificationView } from "@/server/social/queries";
 export function notificationSeal(type: NotificationType): string {
   if (type === "GIFT_RECEIVED") return "贈";
   if (type === "OUTBID" || type.startsWith("AUCTION_")) return "競";
+  if (type === "BATTLE_INVITE") return "戦";
   return type === "REFERRAL_QUALIFIED" ? "招" : "友";
 }
 

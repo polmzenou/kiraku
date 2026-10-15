@@ -6,7 +6,7 @@ import { mutateAdminUserWith } from "./users-core";
 const base = { userId: "player", reason: "Correction" };
 const target = {
   id: "player", username: "Player", role: "USER", bannedAt: null, profileVisibility: "PUBLIC", showCollection: true,
-  coins: 500, boosterStock: 2, boosterAnchor: new Date(0), rankPoints: 0, pityCount: 3, standardCount: 4, bannerPity: {}, defenseTeam: ["defender"],
+  coins: 500, boosterStock: 2, boosterAnchor: new Date(0), rankPoints: 0, pityCount: 3, standardCount: 4, bannerPity: {}, battleTeam: [],
 };
 
 function setup({ role = "ADMIN", banned = false, exists = true } = {}) {
@@ -88,7 +88,7 @@ describe("mutations admin atomiques", () => {
   it("refuse de retirer une carte protégée", async () => {
     const { tx, db } = setup();
     await expect(mutateAdminUserWith(db, "admin", { ...base, kind: "card", cardId: "card", mode: "REMOVE", amount: 1 })).rejects.toMatchObject({ code: "CARDS_LOCKED" });
-    expect(tx.userCard.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ ownerId: "player", status: "COLLECTION", showcase: null, auctions: { none: {} }, id: { notIn: ["defender"] } }) }));
+    expect(tx.userCard.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ ownerId: "player", status: "COLLECTION", showcase: null, auctions: { none: {} } }) }));
     expect(tx.userCard.deleteMany).not.toHaveBeenCalled();
   });
   it("définit les crédits d'un type existant, même inactif", async () => {

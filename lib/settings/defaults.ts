@@ -2,6 +2,7 @@ import { z } from "zod";
 import { RARITIES } from "@/lib/catalog/rarity";
 import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
 import { rotationPinSchema } from "@/lib/boosters/rotation";
+import { KEYWORDS, TECHNIQUES } from "@/lib/battle/types";
 
 // Seuils de rareté en points de base (300 = top 3 %), du plus rare au plus courant
 const rarityThresholds = z
@@ -46,6 +47,58 @@ const cardStats = z.object({
   powerSpan: z.number().int().min(0).max(999),
   kiMin: z.number().int().min(0).max(999),
   kiSpan: z.number().int().min(0).max(999),
+});
+
+// Combat (étape 9) : PV = hpBase + ki × hpPerKiPct / 100
+const battleStats = z.object({
+  hpBase: z.number().int().min(1).max(9_999),
+  hpPerKiPct: z.number().int().min(0).max(10_000),
+});
+
+// Critique en ‰, multiplicateurs et aléa en %
+const battleDamage = z
+  .object({
+    critPermille: z.number().int().min(0).max(1_000),
+    critPct: z.number().int().min(100).max(1_000),
+    varianceMinPct: z.number().int().min(1).max(200),
+    varianceMaxPct: z.number().int().min(1).max(200),
+  })
+  .refine((d) => d.varianceMinPct <= d.varianceMaxPct, { message: "Aléa minimum au-dessus du maximum" });
+
+const battleOrbs = z.object({
+  start: z.number().int().min(0).max(20),
+  perTurn: z.number().int().min(0).max(20),
+  max: z.number().int().min(1).max(20),
+  secondBonus: z.number().int().min(0).max(20),
+});
+
+const battleKeywordValues = z.object({
+  poisonPct: z.number().int().min(0).max(100),
+  poisonTurns: z.number().int().min(0).max(10),
+  ripostePct: z.number().int().min(0).max(200),
+  lastWillHealPct: z.number().int().min(0).max(100),
+  revivePct: z.number().int().min(1).max(100),
+});
+
+const battleTechniques = z.object(
+  Object.fromEntries(
+    TECHNIQUES.map((t) => [t, z.object({ cost: z.number().int().min(0).max(20), value: z.number().int().min(0).max(1_000) })]),
+  ) as { [T in (typeof TECHNIQUES)[number]]: z.ZodObject<{ cost: z.ZodNumber; value: z.ZodNumber }> },
+);
+
+const keywordsByRarity = z.object(
+  Object.fromEntries(RARITIES.map((r) => [r, z.number().int().min(0).max(KEYWORDS.length)])) as {
+    [R in (typeof RARITIES)[number]]: z.ZodNumber;
+  },
+);
+
+// Zeni versés au gagnant selon le mode, et nombre de combats récompensés par jour
+const battleRewards = z.object({
+  exhibition: z.number().int().min(0).max(100_000),
+  bot: z.number().int().min(0).max(100_000),
+  friend: z.number().int().min(0).max(100_000),
+  ranked: z.number().int().min(0).max(100_000),
+  dailyCap: z.number().int().min(0).max(1_000),
 });
 
 // Id d'un Lot (cuid), ou null
@@ -126,6 +179,30 @@ export const SETTING_SCHEMAS = {
   "market.minStartPrice": z.number().int().min(1).max(1_000_000),
   "market.maxPrice": z.number().int().min(1).max(100_000_000),
   "market.pollSeconds": z.number().int().min(2).max(120),
+  // Combat 1v1 en direct (étape 9)
+  "battle.enabled": z.boolean(),
+  "battle.stats": battleStats,
+  "battle.damage": battleDamage,
+  "battle.orbs": battleOrbs,
+  // Actions du premier joueur à son tout premier tour (compense l'avantage de commencer)
+  "battle.firstTurnActions": z.number().int().min(0).max(6),
+  "battle.keywordsByRarity": keywordsByRarity,
+  "battle.keywordValues": battleKeywordValues,
+  "battle.techniques": battleTechniques,
+  // Durée d'un tour ; au-delà de maxMissedTurns tours expirés d'affilée, forfait
+  "battle.turnSeconds": z.number().int().min(10).max(300),
+  "battle.maxMissedTurns": z.number().int().min(1).max(10),
+  // Tours globaux (chaque camp en joue la moitié) ; ensuite, le plus fort % de PV gagne
+  "battle.maxTurns": z.number().int().min(2).max(200),
+  // Attente en file avant de proposer un bot ; durée de vie d'un code ami
+  "battle.queueSeconds": z.number().int().min(5).max(300),
+  "battle.roomMinutes": z.number().int().min(1).max(24 * 60),
+  // Bot : part de coups au hasard, chance qu'une de ses cartes monte d'une rareté
+  "battle.botMistakePct": z.number().int().min(0).max(100),
+  "battle.botUpgradePct": z.number().int().min(0).max(100),
+  "battle.rewards": battleRewards,
+  // Sondage de secours du plateau quand le temps réel (Ably) n'est pas configuré
+  "battle.pollSeconds": z.number().int().min(1).max(30),
   "guest.createPerHourPerIp": z.number().int().min(1).max(1_000),
   "discord.linkBonusZeni": z.number().int().min(0).max(100_000),
   "catalog.size": z.number().int().min(10).max(50_000),
@@ -197,6 +274,31 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "market.minStartPrice": 1,
   "market.maxPrice": 10_000_000,
   "market.pollSeconds": 5, // rafraîchissement du prix d'une vente ouverte
+  "battle.enabled": true,
+  "battle.stats": { hpBase: 80, hpPerKiPct: 160 }, // 128 à 218 PV
+  "battle.damage": { critPermille: 100, critPct: 150, varianceMinPct: 90, varianceMaxPct: 110 },
+  "battle.orbs": { start: 1, perTurn: 1, max: 5, secondBonus: 1 },
+  "battle.firstTurnActions": 2, // ~53 % de victoires pour le premier joueur en simulation (65 % sans limite)
+  "battle.keywordsByRarity": { COMMON: 0, UNCOMMON: 0, RARE: 1, EPIC: 1, LEGENDARY: 2, MYTHIC: 2 },
+  "battle.keywordValues": { poisonPct: 8, poisonTurns: 2, ripostePct: 50, lastWillHealPct: 20, revivePct: 25 },
+  "battle.techniques": {
+    ISSEN: { cost: 2, value: 160 }, // coup à ×1,6
+    KANTSU: { cost: 2, value: 100 }, // ignore la DEF
+    RANBU: { cost: 3, value: 60 }, // tous les ennemis à ×0,6
+    IYASHI: { cost: 2, value: 30 }, // soigne 30 % des PV max
+    SHUGO: { cost: 2, value: 0 }, // donne 結界
+    KOBU: { cost: 2, value: 20 }, // +20 % d'ATK pendant 2 tours
+    FUIN: { cost: 3, value: 0 }, // la cible passe son prochain tour
+  },
+  "battle.turnSeconds": 30,
+  "battle.maxMissedTurns": 2,
+  "battle.maxTurns": 30,
+  "battle.queueSeconds": 20,
+  "battle.roomMinutes": 10,
+  "battle.botMistakePct": 20,
+  "battle.botUpgradePct": 10,
+  "battle.rewards": { exhibition: 20, bot: 10, friend: 0, ranked: 25, dailyCap: 10 },
+  "battle.pollSeconds": 2,
   "guest.createPerHourPerIp": 5,
   "discord.linkBonusZeni": 500, // versé une seule fois, à la première liaison
   "catalog.size": 6736,

@@ -10,7 +10,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { key: "boosters", href: "/", ready: true, also: ["/ouvrir", "/tirage"] },
   { key: "missions", href: "/missions", ready: true },
   { key: "shop", href: "/boutique", ready: true },
-  { key: "combat", href: "/combat", ready: false },
+  { key: "combat", href: "/combat", ready: true },
   { key: "market", href: "/marche", ready: true },
 ];
 

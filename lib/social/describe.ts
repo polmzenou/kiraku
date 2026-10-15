@@ -1,7 +1,7 @@
 // Texte et lien d'une notification, sans dépendance au rendu : la page /notifications, les toasts
 // (côté client) et le Web Push (côté serveur, dans la langue du joueur) partagent ce code.
 import { guestCode } from "../username";
-import type { AuctionPayload, GiftPayload, NotificationType } from "./notifications";
+import type { AuctionPayload, BattlePayload, GiftPayload, NotificationType } from "./notifications";
 
 export type DescribableNotification = {
   type: NotificationType;
@@ -9,6 +9,8 @@ export type DescribableNotification = {
   gift: GiftPayload | null;
   /** Vente concernée (notifications de l'hôtel des ventes). */
   auction?: AuctionPayload | null;
+  /** Salle de combat (invitation). */
+  battle?: BattlePayload | null;
   card: { anilistId: number; name: string; rarity: string } | null;
 };
 
@@ -30,6 +32,7 @@ export type DescribeTranslators = {
       | "auctionSold"
       | "auctionExpired"
       | "auctionCancelled"
+      | "battleInvite"
       | "aCard",
     values?: Values,
   ) => string;
@@ -74,5 +77,7 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
       const card = n.card?.name ?? t("aCard");
       return { text: t(key, { name, card, amount: n.auction?.amount ?? 0 }), href: n.auction ? `/marche/${n.auction.auctionId}` : "/marche" };
     }
+    case "BATTLE_INVITE":
+      return { text: t("battleInvite", { name }), href: n.battle ? `/combat/${n.battle.battleId}` : "/combat" };
   }
 }
