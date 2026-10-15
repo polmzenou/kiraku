@@ -3,12 +3,13 @@
 import { animate, m, useMotionValue, useTransform, type MotionValue } from "motion/react";
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import type { BoosterShape, BoosterTheme } from "@/lib/boosters/types";
+import { openingGestureProgress, startOpeningGesture, type OpeningGesture } from "@/lib/boosters/opening-gesture";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { BoosterArt, JUBAKO_CORD, JUBAKO_LID, POCHI_BODY } from "../boosters/BoosterArt";
 import { LEAK_COLOR } from "./RarityFx";
 
 /** Part du geste à partir de laquelle l'ouverture est envoyée au serveur. */
-const TRIGGER_AT = 0.3;
+const TRIGGER_AT = 0.55;
 /** Segments de la bande du sachet : chacun se détache quand le doigt le dépasse. */
 const SEGMENTS = 12;
 
@@ -19,6 +20,7 @@ type Props = {
   theme: BoosterTheme;
   emblem: string;
   name: string;
+  openLabel: string;
   tagline: string;
   contents: string;
   /** Sachets ouverts d'un coup (pile derrière quand > 1). */
@@ -30,7 +32,7 @@ type Props = {
   leak: Rarity | null;
   /** Le serveur a décidé d'un sachet doré ou divin : la matière se révèle pendant l'ouverture. */
   variant?: "golden" | "divine";
-  /** Appelé une fois, dès 30 % du geste (ou au bouton). */
+  /** Appelé une fois, une fois la coupe engagée (ou au clic). */
   onTrigger: () => void;
   /** L'ouverture est finie (bande envolée, rabat ouvert, couvercle levé). */
   onOpened: () => void;
@@ -48,13 +50,30 @@ export function BoosterScene(props: Props) {
   const { shape, theme, emblem, name, tagline, contents, count, armed, reduced, leak, variant } = props;
   const progress = useMotionValue(0);
   const [opened, setOpened] = useState(false);
+  const [direction, setDirection] = useState<1 | -1>(1);
   const fired = useRef(false);
   const completing = useRef(false);
+  const finished = useRef(false);
+  const suppressClick = useRef(false);
+  const fallback = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const animation = useRef<{ stop: () => void } | null>(null);
   const tilt = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ id: number; x: number; y: number; size: number } | null>(null);
+  const drag = useRef<(OpeningGesture & { id: number }) | null>(null);
   const { onTrigger, onOpened, onTearSound, openRef } = props;
 
-  useTilt(tilt, !reduced);
+  useTilt(tilt, !reduced && !opened);
+
+  useEffect(() => () => {
+    if (fallback.current) clearTimeout(fallback.current);
+    animation.current?.stop();
+  }, []);
+
+  const finish = () => {
+    if (finished.current) return;
+    finished.current = true;
+    if (fallback.current) clearTimeout(fallback.current);
+    onOpened();
+  };
 
   const fire = () => {
     if (fired.current || !armed) return;
@@ -63,22 +82,26 @@ export function BoosterScene(props: Props) {
   };
 
   const complete = () => {
-    if (completing.current || !armed) return;
+    // Le serveur désarme la scène dès le déclenchement ; le geste en cours doit pouvoir finir.
+    if (completing.current || (!armed && !fired.current)) return;
     completing.current = true;
     fire();
     onTearSound();
     if (reduced) {
       progress.set(1);
       setOpened(true);
-      onOpened();
+      finish();
       return;
     }
-    animate(progress, 1, { duration: 0.18 }).then(() => setOpened(true));
+    animation.current?.stop();
+    const opening = animate(progress, 1, { duration: 0.22, ease: "easeOut" });
+    animation.current = opening;
+    opening.then(() => setOpened(true));
     // Filet de sécurité : si l'onglet ne dessine plus (arrière-plan), l'ouverture ne reste pas bloquée
-    setTimeout(() => {
+    fallback.current = setTimeout(() => {
       setOpened(true);
-      onOpened();
-    }, 1400);
+      finish();
+    }, 1700);
   };
 
   useEffect(() => {
@@ -87,40 +110,49 @@ export function BoosterScene(props: Props) {
 
   const vertical = shape !== "SACHET";
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    if (!armed || completing.current) return;
+    if (!armed || completing.current || drag.current || !e.isPrimary || e.button !== 0) return;
+    animation.current?.stop();
+    suppressClick.current = false;
     e.currentTarget.setPointerCapture(e.pointerId);
     const r = e.currentTarget.getBoundingClientRect();
-    drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, size: vertical ? r.height : r.width };
+    const started = startOpeningGesture(e.clientX, e.clientY, r, vertical);
+    drag.current = { ...started, id: e.pointerId };
+    setDirection(started.direction);
   };
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
     const d = drag.current;
-    if (!d || d.id !== e.pointerId) return;
-    const travel = vertical ? d.y - e.clientY : Math.abs(e.clientX - d.x);
-    const p = Math.min(1, Math.max(0, travel / (d.size * (vertical ? 0.45 : 0.75))));
+    if (!d || d.id !== e.pointerId || completing.current) return;
+    if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 8) suppressClick.current = true;
+    const p = openingGestureProgress(d, e.clientX, e.clientY);
     if (p > progress.get()) progress.set(p);
     if (p >= TRIGGER_AT) fire();
     if (p >= 1) complete();
   };
   const onPointerEnd = (e: PointerEvent<HTMLDivElement>) => {
-    if (drag.current?.id !== e.pointerId) return;
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    if (e.type === "pointerup") onPointerMove(e);
+    if (e.type !== "pointerup" || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 8) suppressClick.current = true;
     drag.current = null;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
     // Une fois l'ouverture envoyée, on termine le geste ; sinon tout revient en place
     if (fired.current) complete();
-    else animate(progress, 0, { duration: 0.25 });
+    else animation.current = animate(progress, 0, { duration: reduced ? 0 : 0.25 });
   };
   const gesture = {
     onPointerDown,
     onPointerMove,
     onPointerUp: onPointerEnd,
     onPointerCancel: onPointerEnd,
+    onLostPointerCapture: onPointerEnd,
   };
 
-  const leakColor = leak ? LEAK_COLOR[leak] : "rgb(244 237 224 / 0.35)";
+  const leakColor = leak ? LEAK_COLOR[leak] : theme.base;
 
   const overlay = (
     <>
       {/* Lumière qui s'échappe de l'ouverture */}
-      <Leak progress={progress} color={leakColor} strong={leak !== null && opened} shape={shape} reduced={reduced} />
+      <Leak progress={progress} color={leakColor} strong={opened} shape={shape} reduced={reduced} />
       {/* Matière du sachet doré ou divin, révélée pendant l'ouverture */}
       {variant && (
         <m.span
@@ -140,24 +172,62 @@ export function BoosterScene(props: Props) {
           transition={{ duration: 0.6 }}
         />
       )}
-      {shape === "POCHIBUKURO" && <PochiFlap progress={progress} gesture={armed ? gesture : undefined} />}
-      {shape === "JUBAKO" && <JubakoLid progress={progress} gesture={armed ? gesture : undefined} />}
+      {shape === "POCHIBUKURO" && <PochiFlap progress={progress} gesture={gesture} />}
+      {shape === "JUBAKO" && <JubakoLid progress={progress} gesture={gesture} />}
     </>
   );
 
   return (
-    <div className="relative w-[min(16rem,66vw)] [perspective:1000px]">
+    <div
+      role="button"
+      tabIndex={armed ? 0 : -1}
+      aria-label={props.openLabel}
+      aria-disabled={!armed}
+      className={`relative w-[min(16rem,66vw)] rounded-xl outline-offset-8 [perspective:1000px] ${armed ? "cursor-pointer" : ""}`}
+      onPointerDownCapture={(e) => {
+        if (e.isPrimary && e.button === 0 && !drag.current) suppressClick.current = false;
+      }}
+      onClick={() => {
+        if (suppressClick.current) {
+          suppressClick.current = false;
+          return;
+        }
+        if (armed) complete();
+      }}
+      onKeyDown={(e) => {
+        if ((e.key === "Enter" || e.key === " ") && armed) {
+          e.preventDefault();
+          complete();
+        }
+      }}
+    >
       {count > 1 && (
         <>
-          <div aria-hidden="true" className="absolute inset-0 translate-x-4 translate-y-3 rotate-[4deg] opacity-45">
+          <m.div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 translate-x-4 translate-y-3 rotate-[4deg]"
+            initial={false}
+            animate={{ opacity: opened ? 0 : 0.45 }}
+            transition={{ duration: reduced ? 0 : 0.18 }}
+          >
             <BoosterArt shape={shape} theme={theme} emblem={emblem} name="" contents={contents} compact />
-          </div>
-          <div aria-hidden="true" className="absolute inset-0 translate-x-2 translate-y-1.5 rotate-2 opacity-70">
+          </m.div>
+          <m.div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 translate-x-2 translate-y-1.5 rotate-2"
+            initial={false}
+            animate={{ opacity: opened ? 0 : 0.7 }}
+            transition={{ duration: reduced ? 0 : 0.18 }}
+          >
             <BoosterArt shape={shape} theme={theme} emblem={emblem} name="" contents={contents} compact />
-          </div>
+          </m.div>
         </>
       )}
-      <div className={reduced ? "" : "booster-idle"}>
+      <m.div
+        className={reduced || opened ? "" : "booster-idle"}
+        animate={opened && !reduced ? { y: [0, 9, -4, 0], scale: [1, 0.97, 1.025, 1] } : undefined}
+        transition={{ duration: 0.55, ease: "easeOut" }}
+      >
         <div ref={tilt} className="relative transition-transform duration-150 ease-out [transform-style:preserve-3d]">
           <BoosterArt
             shape={shape}
@@ -176,18 +246,19 @@ export function BoosterScene(props: Props) {
                       progress={progress}
                       opened={opened}
                       reduced={reduced}
+                      direction={direction}
                       armed={armed}
                       gesture={gesture}
-                      onFlown={() => onOpened()}
+                      onFlown={finish}
                     />
                   )
                 : undefined
             }
           />
         </div>
-      </div>
+      </m.div>
       {/* Pochibukuro et jūbako : fin de l'ouverture quand le rabat ou le couvercle est parti */}
-      {shape !== "SACHET" && opened && <Done onDone={onOpened} delay={reduced ? 0 : 450} />}
+      {shape !== "SACHET" && opened && <Done onDone={finish} delay={reduced ? 0 : 800} />}
     </div>
   );
 }
@@ -210,6 +281,7 @@ type Gesture = {
   onPointerMove: (e: PointerEvent<HTMLDivElement>) => void;
   onPointerUp: (e: PointerEvent<HTMLDivElement>) => void;
   onPointerCancel: (e: PointerEvent<HTMLDivElement>) => void;
+  onLostPointerCapture: (e: PointerEvent<HTMLDivElement>) => void;
 };
 
 /**
@@ -221,16 +293,29 @@ function TearBand(props: {
   progress: MotionValue<number>;
   opened: boolean;
   reduced: boolean;
+  direction: 1 | -1;
   armed: boolean;
   gesture: Gesture;
   onFlown: () => void;
 }) {
-  const { band, progress, opened, reduced, armed, gesture, onFlown } = props;
-  const flown = useRef(0);
+  const { band, progress, opened, reduced, direction, armed, gesture, onFlown } = props;
+  const [removed, setRemoved] = useState(false);
+  const onFlownRef = useRef(onFlown);
+  useEffect(() => { onFlownRef.current = onFlown; }, [onFlown]);
+  useEffect(() => {
+    if (!opened) return;
+    // Retirer le DOM après le dernier segment, même si Motion interrompt un callback.
+    const timeout = setTimeout(() => {
+      setRemoved(true);
+      onFlownRef.current();
+    }, reduced ? 0 : 850);
+    return () => clearTimeout(timeout);
+  }, [opened, reduced]);
+  if (removed) return null;
   return (
     <div
       aria-hidden="true"
-      className={`absolute inset-x-0 top-0 z-30 h-[13%] touch-pan-y ${armed ? "cursor-grab active:cursor-grabbing" : ""}`}
+      className={`absolute inset-x-0 top-0 z-30 h-[13%] min-h-11 touch-none ${armed ? "cursor-crosshair" : ""}`}
       {...gesture}
     >
       {Array.from({ length: SEGMENTS }, (_, i) => (
@@ -241,18 +326,15 @@ function TearBand(props: {
           progress={progress}
           opened={opened}
           reduced={reduced}
-          onFlown={() => {
-            flown.current += 1;
-            if (flown.current === SEGMENTS) onFlown();
-          }}
+          direction={direction}
         />
       ))}
       {/* Ligne lumineuse qui suit la déchirure */}
       <m.span
-        className="absolute inset-x-[4%] bottom-0 h-[3px] origin-left rounded-full bg-washi-paper shadow-[0_0_8px_rgb(255_255_255/0.9)]"
-        style={{ scaleX: progress }}
+        className="pointer-events-none absolute inset-x-[4%] bottom-0 h-[3px] rounded-full bg-washi-paper shadow-[0_0_8px_rgb(255_255_255/0.9)]"
+        style={{ scaleX: progress, transformOrigin: direction === 1 ? "left" : "right" }}
       />
-      {!reduced && <Fibers progress={progress} />}
+      {!reduced && <Fibers progress={progress} direction={direction} />}
     </div>
   );
 }
@@ -263,17 +345,18 @@ function Segment({
   progress,
   opened,
   reduced,
-  onFlown,
+  direction,
 }: {
   index: number;
   band: ReactNode;
   progress: MotionValue<number>;
   opened: boolean;
   reduced: boolean;
-  onFlown: () => void;
+  direction: 1 | -1;
 }) {
-  const start = index / SEGMENTS;
-  const end = (index + 1) / SEGMENTS;
+  const order = direction === 1 ? index : SEGMENTS - 1 - index;
+  const start = order / SEGMENTS;
+  const end = (order + 1) / SEGMENTS;
   // Soulèvement progressif du segment quand la déchirure le traverse
   const lift = useTransform(progress, [start, end], [0, -5]);
   const tiltZ = useTransform(progress, [start, end], [0, index % 2 ? -5 : 4]);
@@ -290,10 +373,7 @@ function Segment({
             : { y: "-220%", x: `${(index - SEGMENTS / 2) * 6}%`, rotate: (index % 2 ? -1 : 1) * (20 + index * 3), opacity: 0 }
           : undefined
       }
-      transition={{ duration: reduced ? 0.15 : 0.55, delay: reduced ? 0 : index * 0.025, ease: [0.3, 0.6, 0.3, 1] }}
-      onAnimationComplete={() => {
-        if (opened) onFlown();
-      }}
+      transition={{ duration: reduced ? 0.15 : 0.55, delay: reduced ? 0 : order * 0.025, ease: [0.3, 0.6, 0.3, 1] }}
     >
       {band}
     </m.div>
@@ -301,7 +381,7 @@ function Segment({
 }
 
 /** Fibres de papier qui jaillissent du point de déchirure (8 au plus, rejouées en suivant le doigt). */
-function Fibers({ progress }: { progress: MotionValue<number> }) {
+function Fibers({ progress, direction }: { progress: MotionValue<number>; direction: 1 | -1 }) {
   const [burst, setBurst] = useState<{ at: number; step: number } | null>(null);
   const step = useRef(-1);
   useEffect(
@@ -317,7 +397,7 @@ function Fibers({ progress }: { progress: MotionValue<number> }) {
   );
   if (burst === null) return null;
   return (
-    <span key={burst.step} className="pointer-events-none absolute bottom-0" style={{ left: `${4 + burst.at * 92}%` }}>
+    <span key={burst.step} className="pointer-events-none absolute bottom-0" style={{ left: `${4 + (direction === 1 ? burst.at : 1 - burst.at) * 92}%` }}>
       {Array.from({ length: 8 }, (_, i) => (
         <span
           key={i}
@@ -361,7 +441,7 @@ function JubakoLid({ progress, gesture }: { progress: MotionValue<number>; gestu
   );
 }
 
-/** Lueur à l'ouverture : discrète pendant le geste, puis rayons à la couleur de la meilleure carte. */
+/** Lumière issue de la fente : charge, flash unique, faisceau et étincelles. */
 function Leak({
   progress,
   color,
@@ -375,22 +455,56 @@ function Leak({
   shape: BoosterShape;
   reduced: boolean;
 }) {
-  const opacity = useTransform(progress, [0, 1], [0, 0.85]);
+  const opacity = useTransform(progress, [0, 0.35, 1], [0, 0.3, reduced ? 0.4 : 0.85]);
   const top = shape === "SACHET" ? "top-[13%]" : shape === "POCHIBUKURO" ? "top-[20%]" : "top-[8%]";
   return (
-    <span aria-hidden="true" className={`pointer-events-none absolute inset-x-0 ${top} z-10 h-0`}>
+    <span
+      aria-hidden="true"
+      className={`booster-opening-light pointer-events-none absolute inset-x-0 ${top} z-40 h-0`}
+      style={{ "--opening-light": color } as CSSProperties}
+    >
       <m.span
-        className="absolute left-1/2 size-[120cqw] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        className="absolute left-1/2 size-[150cqw] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{ opacity, background: `radial-gradient(circle, ${color}, transparent 60%)` }}
       />
+      <m.span className="booster-opening-seam" style={{ opacity, scaleX: progress }} />
       {strong && !reduced && (
-        <m.span
-          className="light-rays absolute left-1/2 size-[200cqw] -translate-x-1/2 -translate-y-1/2 rounded-full"
-          style={{ ["--leak" as string]: color }}
-          initial={{ opacity: 0, scale: 0.6 }}
-          animate={{ opacity: 0.9, scale: 1 }}
-          transition={{ duration: 0.5 }}
-        />
+        <>
+          <span className="booster-opening-beam-anchor">
+            <m.span
+              className="booster-opening-beam"
+              initial={{ opacity: 0, scaleX: 0.2, scaleY: 0.15 }}
+              animate={{ opacity: [0, 1, 0.65], scaleX: [0.2, 1.15, 1], scaleY: [0.15, 1, 1] }}
+              transition={{ duration: 0.8, times: [0, 0.25, 1], ease: "easeOut" }}
+            />
+          </span>
+          <span className="booster-opening-burst-anchor">
+            <m.span
+              className="booster-opening-flash"
+              initial={{ opacity: 0, scale: 0.15 }}
+              animate={{ opacity: [0, 1, 0.75, 0], scale: [0.15, 0.65, 1.1, 1.5] }}
+              transition={{ duration: 0.85, times: [0, 0.14, 0.35, 1], ease: "easeOut" }}
+            />
+            <m.span
+              className="booster-opening-ring"
+              initial={{ opacity: 0.85, scale: 0.2 }}
+              animate={{ opacity: 0, scale: 1.4 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            />
+          </span>
+          {Array.from({ length: 14 }, (_, i) => (
+            <span
+              key={i}
+              className="booster-opening-spark"
+              style={{
+                "--spark-x": `${(i - 6.5) * 16}px`,
+                "--spark-y": `${-70 - ((i * 37) % 140)}px`,
+                "--spark-delay": `${(i % 4) * 0.035}s`,
+                left: `${15 + (i / 13) * 70}%`,
+              } as CSSProperties}
+            />
+          ))}
+        </>
       )}
     </span>
   );
@@ -426,6 +540,8 @@ function useTilt(ref: React.RefObject<HTMLDivElement | null>, enabled: boolean) 
       window.removeEventListener("pointermove", onPointer);
       window.removeEventListener("deviceorientation", onTilt);
       if (frame) cancelAnimationFrame(frame);
+      el.style.removeProperty("transform");
+      el.style.removeProperty("--tx");
     };
   }, [ref, enabled]);
 }

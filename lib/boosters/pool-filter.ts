@@ -28,6 +28,8 @@ export const poolFilterSchema = z
     seriesIds: z.array(z.number().int().positive()).min(1).max(200).optional(),
     /** Cartes précises (ids Card). */
     cardIds: z.array(z.string().min(1).max(40)).min(1).max(1000).optional(),
+    /** Sélection éditoriale de personnages, stable entre imports et environnements. */
+    anilistIds: z.array(z.number().int().positive()).min(1).max(1000).optional(),
   })
   .strict()
   .refine((f) => f.yearMin === undefined || f.yearMax === undefined || f.yearMin <= f.yearMax, {
@@ -45,6 +47,7 @@ export function parsePoolFilter(raw: unknown): PoolFilter | null {
 /** Ce qu'il faut savoir d'une carte pour l'évaluer (carte + œuvre principale). */
 export type PoolCandidate = {
   id: string;
+  anilistId: number;
   rarity: Rarity;
   gender: string | null;
   role: string | null;
@@ -102,6 +105,7 @@ const someOf = (wanted: readonly string[] | undefined, have: readonly string[]) 
 /** La carte entre-t-elle dans le pool ? Toutes les conditions présentes doivent être vraies. */
 export function matchesFilter(card: PoolCandidate, filter: PoolFilter, ctx: FilterContext): boolean {
   if (filter.cardIds && !filter.cardIds.includes(card.id)) return false;
+  if (filter.anilistIds && !filter.anilistIds.includes(card.anilistId)) return false;
   if (filter.seriesIds && !filter.seriesIds.includes(card.seriesAnilistId)) return false;
   if (!someOf(filter.tags, card.tags)) return false;
   if (!someOf(filter.genres, card.genres)) return false;

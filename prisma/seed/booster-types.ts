@@ -1,8 +1,9 @@
 import type { PoolFilter } from "../../lib/boosters/pool-filter.ts";
 import type { BoosterFamily, BoosterKind, BoosterShape, BoosterTheme, Localized } from "../../lib/boosters/types.ts";
 import type { Rarity } from "../../lib/catalog/rarity.ts";
+import { ANTAGONIST_ANILIST_IDS } from "./antagonists.ts";
 
-// Les 34 boosters en 8 familles (planche « Choix du booster »). Valeurs de départ seulement :
+// Les boosters en 8 familles (planche « Choix du booster »). Valeurs de départ seulement :
 // une fois en base, tout se règle dans /admin/boosters/types (le seed ne réécrase qu'avec --force).
 
 export type BoosterSeed = {
@@ -177,6 +178,7 @@ export const BOOSTER_SEEDS: BoosterSeed[] = [
   filtered("personnage", "waifus", "姫", ["Waifus", "Waifus"], ["Personnages féminins", "Female characters"], theme("#F2C2D0", "#C77892", "sakura", "dark"), { gender: "Female" }),
   filtered("personnage", "husbandos", "侍", ["Husbandos", "Husbandos"], ["Personnages masculins", "Male characters"], theme("#2E4470", "#0A1222", "yagasuri"), { gender: "Male" }),
   filtered("personnage", "protagonistes", "主", ["Protagonistes", "Protagonists"], ["Rôles principaux", "Main roles"], theme("#C4452F", "#4A120A", "uroko"), { role: "MAIN" }),
+  filtered("personnage", "antagonistes", "悪", ["Antagonistes", "Antagonists"], ["Les visages de l'opposition", "The faces of opposition"], theme("#713E80", "#200E2B", "uroko"), { anilistIds: ANTAGONIST_ANILIST_IDS }, { minPoolSize: 10 }),
   filtered("personnage", "seconds-roles", "脇", ["Seconds rôles", "Supporting cast"], ["Ceux qu'on oublie", "The unsung ones"], theme("#7A8676", "#2A3028", "ichimatsu"), { role: "SUPPORTING" }),
   filtered("personnage", "anniversaires", "祝", ["Anniversaires", "Birthdays"], ["Nés aujourd'hui", "Born today"], theme("#C8372D", "#5E1712", "kin"), { birthdayToday: true }, { minPoolSize: 20 }),
 

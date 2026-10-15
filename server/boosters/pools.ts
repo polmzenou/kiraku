@@ -40,10 +40,14 @@ function revive(row: TypeRow): TypeRow {
   return out;
 }
 
-// La version du catalogue est dans la clé : un import lancé par script est vu tout de suite
+// Les versions du catalogue et des types sont dans la clé : imports et seeds
+// lancés par script sont visibles immédiatement, sans attendre l'expiration du cache.
 const loadTypeRows = unstable_cache(
-  async (_catalogVersion: number) =>
-    prisma.boosterType.findMany({ omit: { poolCardIds: true }, orderBy: [{ family: "asc" }, { sortOrder: "asc" }] }),
+  async (_catalogVersion: number, _typesVersion: string) => {
+    void _catalogVersion;
+    void _typesVersion;
+    return prisma.boosterType.findMany({ omit: { poolCardIds: true }, orderBy: [{ family: "asc" }, { sortOrder: "asc" }] });
+  },
   ["booster-types"],
   { tags: [BOOSTER_TYPES_TAG], revalidate: 3600 },
 );
@@ -65,7 +69,12 @@ function parseCounts(raw: unknown): Record<Rarity, number> | null {
 
 /** Tous les types (actifs ou non), dans l'ordre des familles. Lu une fois par requête. */
 export const getBoosterTypes = cache(async (): Promise<BoosterTypeEntry[]> => {
-  const rows = (await loadTypeRows(await getCatalogVersion())).map(revive);
+  const [catalogVersion, types] = await Promise.all([
+    getCatalogVersion(),
+    prisma.boosterType.aggregate({ _count: { _all: true }, _max: { updatedAt: true } }),
+  ]);
+  const typesVersion = `${types._count._all}:${types._max.updatedAt?.getTime() ?? 0}`;
+  const rows = (await loadTypeRows(catalogVersion, typesVersion)).map(revive);
   return rows.map((row) => {
     const type = toBoosterTypeView(row);
     return {

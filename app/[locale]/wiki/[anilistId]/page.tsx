@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { PageShell } from "@/components/PageShell";
 import { WikiCardDetail, WikiPersonalizedCardDetail } from "@/components/wiki/WikiCardDetail";
+import { WikiWishlistAction } from "@/components/wiki/WikiWishlistAction";
 import { getPathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { seriesTitle } from "@/lib/catalog/display";
@@ -44,7 +45,8 @@ export default async function WikiCardPage({ params }: PageProps<"/[locale]/wiki
     getCatalogStats(),
     getRelatedCatalogCards(card.seriesId, card.anilistId),
   ]);
-  const detail = { card, locale, total: stats.total, related };
+  const wishlistAction = <Suspense fallback={null}><WikiWishlistAction cardId={card.id} name={card.name} /></Suspense>;
+  const detail = { card, locale, total: stats.total, related, wishlistAction };
   return (
     <PageShell>
       <Suspense fallback={<WikiCardDetail {...detail} collection={null} />}>

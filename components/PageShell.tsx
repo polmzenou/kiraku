@@ -25,9 +25,9 @@ export function PageShell({ children, bottomBar = false }: { children: ReactNode
   const t = useTranslations();
   return (
     <div
-      className={`mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-[1200px] flex-col px-4 md:min-h-[calc(100dvh-4rem)] ${
+      className={`mx-auto flex min-h-[calc(100dvh-3.5rem-var(--mobile-nav-height))] w-full max-w-[1200px] flex-col px-4 md:min-h-[calc(100dvh-4rem-var(--mobile-nav-height))] ${
         bottomBar === "tall"
-          ? "pb-[calc(10rem+env(safe-area-inset-bottom))] lg:pb-6"
+          ? "pb-40 lg:pb-6"
           : bottomBar
             ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-6"
             : "pb-[max(1.5rem,env(safe-area-inset-bottom))]"

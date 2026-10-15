@@ -64,11 +64,11 @@ describe("contenu admin", () => {
   });
 });
 
-describe("les 34 boosters de départ", () => {
-  it("34 boosters en 8 familles, slugs uniques", () => {
-    expect(BOOSTER_SEEDS).toHaveLength(34);
+describe("les 35 boosters de départ", () => {
+  it("35 boosters en 8 familles, slugs uniques", () => {
+    expect(BOOSTER_SEEDS).toHaveLength(35);
     expect(new Set(BOOSTER_SEEDS.map((s) => s.family))).toEqual(new Set(BOOSTER_FAMILIES));
-    expect(new Set(BOOSTER_SEEDS.map((s) => s.slug)).size).toBe(34);
+    expect(new Set(BOOSTER_SEEDS.map((s) => s.slug)).size).toBe(35);
   });
 
   it.each(BOOSTER_SEEDS.map((s) => [s.slug, s] as const))("%s : données valides", (_slug, s) => {

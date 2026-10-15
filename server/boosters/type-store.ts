@@ -53,6 +53,7 @@ export async function loadCandidates(db: Pick<PrismaClient, "card">): Promise<Po
     orderBy: { rank: "asc" },
     select: {
       id: true,
+      anilistId: true,
       rarity: true,
       gender: true,
       role: true,
@@ -65,6 +66,7 @@ export async function loadCandidates(db: Pick<PrismaClient, "card">): Promise<Po
   });
   return rows.map((c) => ({
     id: c.id,
+    anilistId: c.anilistId,
     rarity: c.rarity as Rarity,
     gender: c.gender,
     role: c.role,
@@ -139,7 +141,7 @@ export async function recomputeBoosterPools(
 export async function upsertBoosterSeeds(
   db: Pick<PrismaClient, "boosterType">,
   seeds: readonly BoosterSeed[],
-  opts: { force?: boolean } = {},
+  opts: { force?: boolean; slugs?: readonly string[] } = {},
 ): Promise<{ created: string[]; updated: string[]; kept: string[] }> {
   const existing = new Set((await db.boosterType.findMany({ select: { slug: true } })).map((r) => r.slug));
   const order = new Map<string, number>();
@@ -148,6 +150,7 @@ export async function upsertBoosterSeeds(
   for (const seed of seeds) {
     const sortOrder = order.get(seed.family) ?? 0;
     order.set(seed.family, sortOrder + 1);
+    if (opts.slugs && !opts.slugs.includes(seed.slug)) continue;
     const data = {
       kind: seed.kind,
       family: seed.family,

@@ -276,7 +276,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
 
       {/* Mobile : le booster choisi et l'action principale restent à portée du pouce */}
       {selected && panel && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
+        <div className="fixed inset-x-0 bottom-[var(--mobile-nav-height)] z-30 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur lg:hidden">
           <div className="mx-auto flex max-w-xl flex-col gap-2.5">
             <div className="flex items-center gap-3">
               <div className="w-8 shrink-0">
