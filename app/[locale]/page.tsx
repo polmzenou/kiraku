@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { hasLocale, useTranslations } from "next-intl";
-import { getFormatter, getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { ArcadeBanner } from "@/components/ArcadeBanner";
 import { BannerHero, type BannerSlide } from "@/components/boosters/BannerHero";
 import { BoosterArt } from "@/components/boosters/BoosterArt";
 import { BoosterPanel } from "@/components/boosters/BoosterPanel";
@@ -80,6 +81,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
   if (!user) {
     return (
       <PageShell>
+        <ArcadeBanner />
         <GuestBootstrap />
       </PageShell>
     );
@@ -156,6 +158,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
 
   return (
     <PageShell bottomBar="tall">
+      <ArcadeBanner />
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="flex min-w-0 flex-col gap-6">
           <SectionTitle
