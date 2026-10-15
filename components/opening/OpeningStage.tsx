@@ -16,6 +16,7 @@ import { Button } from "../ui/Button";
 import { BoosterScene, type SceneHandle } from "./BoosterScene";
 import { CardDeck, revealOrder } from "./CardDeck";
 import { CountPicker } from "./CountPicker";
+import { GuestSignupPrompt } from "./GuestSignupPrompt";
 import { Recap } from "./Recap";
 import { RitualBackdrop } from "./RitualBackdrop";
 import { SoundToggle } from "./SoundToggle";
@@ -45,7 +46,7 @@ export type OpeningType = {
  * `credits` : boosters crédités de ce type (cadeaux d'amis, boutique, récompenses) à ouvrir en
  * premier, sans doré ni divin.
  */
-type Props = { type: OpeningType; initialState: BoosterState; credits?: number };
+type Props = { type: OpeningType; initialState: BoosterState; isGuest: boolean; credits?: number };
 
 const bestRarity = (boosters: OpenedBoosterView[]): Rarity =>
   boosters
@@ -67,7 +68,7 @@ function maxOpenable(type: OpeningType, state: BoosterState): number {
  * puis le récap se déroule. Le tirage est déjà enregistré par le serveur
  * quand l'animation commence : fermer l'onglet ne fait rien perdre.
  */
-export function OpeningStage({ type, initialState, credits = 0 }: Props) {
+export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props) {
   const t = useTranslations("opening");
   const reduced = useReducedMotion() ?? false;
   const fx = useRitualFx();
@@ -307,6 +308,7 @@ export function OpeningStage({ type, initialState, credits = 0 }: Props) {
                 nextPrice={unaffordable ? { kind: "unavailable" } : price}
                 onAgain={again}
               />
+              {isGuest && <GuestSignupPrompt />}
             </m.div>
           )}
         </AnimatePresence>
@@ -315,7 +317,7 @@ export function OpeningStage({ type, initialState, credits = 0 }: Props) {
         {boosters && stage === "opening" && (
           <div aria-hidden="true" className="pointer-events-none invisible absolute top-0 left-0 w-40 overflow-hidden">
             {revealOrder(boosters.flatMap((booster) => booster.cards)).slice(0, 2).map((card) =>
-              <Fuda key={card.userCardId} card={card} size="lg" preload />,
+              <Fuda key={card.userCardId} card={card} size="lg" preload tilt={false} />,
             )}
           </div>
         )}

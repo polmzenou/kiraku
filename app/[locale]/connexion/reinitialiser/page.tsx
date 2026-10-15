@@ -25,7 +25,7 @@ export default async function ResetPasswordPage({ searchParams }: PageProps<"/[l
             <p className="text-text-muted">{t("reset.missingToken")}</p>
             <Link
               href="/connexion/mot-de-passe-oublie"
-              className="inline-flex min-h-11 w-fit items-center text-ai underline underline-offset-4"
+              className="inline-flex min-h-11 w-fit items-center text-link underline underline-offset-4"
             >
               {t("forgot.title")}
             </Link>

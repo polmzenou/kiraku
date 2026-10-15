@@ -83,6 +83,7 @@ export default async function OpenBoosterPage({ params, searchParams }: PageProp
               : null,
         }}
         initialState={boosterStateFrom(user, rules)}
+        isGuest={user.isGuest}
         credits={credits}
       />
     </PageShell>

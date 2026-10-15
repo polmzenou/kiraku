@@ -1,0 +1,17 @@
+.kf-tilt {
+  min-width: 0;
+  width: 100%;
+  perspective: 900px;
+}
+
+.kf-tilt > .fuda {
+  transform: rotateX(var(--fuda-rotate-x, 0deg)) rotateY(var(--fuda-rotate-y, 0deg));
+  transition: transform 160ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kf-tilt > .fuda {
+    transform: none;
+    transition: none;
+  }
+}

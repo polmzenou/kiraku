@@ -107,7 +107,7 @@ export default async function WikiPage({ searchParams }: PageProps<"/[locale]/wi
         <p className="text-xs text-text-muted">
           {t.rich("attribution", {
             anilist: (chunks) => (
-              <a href="https://anilist.co" rel="noopener noreferrer" target="_blank" className="text-ai underline">
+              <a href="https://anilist.co" rel="noopener noreferrer" target="_blank" className="text-link underline">
                 {chunks}
               </a>
             ),

@@ -11,6 +11,7 @@ import {
 } from "@/lib/settings/collection-form";
 import { parseSetting, type SettingKey } from "@/lib/settings/defaults";
 import { ECONOMY_SETTING_KEYS, economySettingsSchema, type EconomySettingKey } from "@/lib/settings/economy-form";
+import { MARKET_SETTING_KEYS, marketSettingsSchema, type MarketSettingKey } from "@/lib/settings/market-form";
 import { SOCIAL_SETTING_KEYS, socialSettingsSchema, type SocialSettingKey } from "@/lib/settings/social-form";
 import { changedSettingKeys, type SettingsOf } from "@/lib/settings/form";
 import { getAdmin } from "../admin";
@@ -103,4 +104,8 @@ export async function updateEconomySettings(input: unknown): Promise<UpdateSetti
     }
   }
   return saveSettings(ECONOMY_SETTING_KEYS, economySettingsSchema, input);
+}
+
+export async function updateMarketSettings(input: unknown): Promise<UpdateSettingsResult<MarketSettingKey>> {
+  return saveSettings(MARKET_SETTING_KEYS, marketSettingsSchema, input);
 }

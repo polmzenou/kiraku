@@ -32,7 +32,7 @@ export default async function AuthErrorPage({ searchParams }: PageProps<"/[local
         )}
         <Link
           href={emailExists ? "/connexion" : "/"}
-          className="inline-flex min-h-11 items-center text-ai underline underline-offset-4"
+          className="inline-flex min-h-11 items-center text-link underline underline-offset-4"
         >
           {t("back")}
         </Link>

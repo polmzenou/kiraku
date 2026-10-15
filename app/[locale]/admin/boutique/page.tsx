@@ -75,7 +75,7 @@ export default async function AdminShopPage({ searchParams }: PageProps<"/[local
                 {t("itemMeta", { slug: item.slug, price: item.priceZeni ?? 0, sold: item._count.purchases })}
               </p>
             </div>
-            <Link href={{ pathname: "/admin/boutique", query: { id: item.id } }} className="inline-flex min-h-11 items-center text-sm text-ai underline underline-offset-4">
+            <Link href={{ pathname: "/admin/boutique", query: { id: item.id } }} className="inline-flex min-h-11 items-center text-sm text-link underline underline-offset-4">
               {t("edit")}
             </Link>
           </li>

@@ -1,5 +1,6 @@
 // Schéma du socle (étape 1), du catalogue (étape 2), des boosters (étape 3), de leurs types (étape 4),
-// de la collection et du profil (étape 5), du social (étape 6) et de l'économie (étape 7). Chaque étape ajoute ses modèles
+// de la collection et du profil (étape 5), du social (étape 6), de l'économie (étape 7) et de l'hôtel des ventes (étape 8).
+// Chaque étape ajoute ses modèles
 // par sa propre migration nommée. Référence : docs/PLAN.md, « Schéma Prisma ».
 
 generator client {
@@ -104,6 +105,10 @@ model User {
   purchases      Purchase[]
   referralsMade  Referral[]      @relation("referrer")
   referral       Referral?       @relation("referee")
+
+  auctions    Auction[] @relation("seller")
+  leadingBids Auction[] @relation("leader")
+  bids        Bid[]
 
   @@index([rankPoints])
 }
@@ -245,6 +250,7 @@ model Card {
   copies        UserCard[]
   discoveries   Discovery[]
   lotItems      LotItem[]
+  auctions      Auction[]
 
   @@index([rarity, rank])
   @@index([seriesId])
@@ -296,6 +302,7 @@ model UserCard {
   status     CardStatus    @default(COLLECTION)
   obtainedAt DateTime      @default(now())
   showcase   ShowcaseSlot?
+  auctions   Auction[]
 
   @@index([ownerId, cardId])
   @@index([ownerId, status, cardId]) // collection groupée par carte (couvre aussi [ownerId, status])
@@ -484,6 +491,11 @@ enum NotificationType {
   FRIEND_ACCEPTED
   GIFT_RECEIVED
   REFERRAL_QUALIFIED
+  OUTBID // quelqu'un a surenchéri : la mise est rendue
+  AUCTION_WON
+  AUCTION_SOLD
+  AUCTION_EXPIRED // aucune mise, la carte revient au vendeur
+  AUCTION_CANCELLED // annulée par l'admin, mise rendue
 }
 
 // Notifications en base ; le texte est rendu à la lecture (pseudo à jour, langue du lecteur)
@@ -698,4 +710,65 @@ model Purchase {
 
   @@index([userId, shopItemId, periodKey])
   @@index([createdAt])
+}
+
+// --- Hôtel des ventes (étape 8) ---
+
+enum AuctionStatus {
+  ACTIVE
+  SOLD
+  EXPIRED
+  CANCELLED
+}
+
+// Une vente aux enchères en Zeni. La carte est réservée (UserCard.status = AUCTION) et la mise en
+// tête est en séquestre : déjà débitée du meneur (BID_HOLD), rendue s'il est dépassé (BID_REFUND).
+// Invariant : Σ soldes + Σ currentBid des ventes ACTIVE + Σ taxes (FEE) ne bouge pas.
+// Dans la migration : une seule vente ACTIVE par exemplaire (index unique partiel) et CHECK sur les prix.
+model Auction {
+  id              String        @id @default(cuid())
+  sellerId        String
+  seller          User          @relation("seller", fields: [sellerId], references: [id])
+  userCardId      String? // null si l'exemplaire a été recyclé après la vente
+  userCard        UserCard?     @relation(fields: [userCardId], references: [id], onDelete: SetNull)
+  cardId          String // la carte du catalogue : historique et filtres
+  card            Card          @relation(fields: [cardId], references: [id])
+  startPrice      Int
+  buyoutPrice     Int? // achat immédiat ; proposé tant qu'aucune mise ne l'atteint
+  currentBid      Int? // mise en tête, en séquestre
+  currentBidderId String?
+  currentBidder   User?         @relation("leader", fields: [currentBidderId], references: [id], onDelete: Restrict) // une mise en séquestre ne perd jamais son propriétaire
+  price           Int // currentBid ?? startPrice, pour trier et filtrer
+  bidCount        Int           @default(0)
+  feeBp           Int // taxe figée à la mise en vente (points de base)
+  endsAt          DateTime // repoussée par l'anti-sniping
+  status          AuctionStatus @default(ACTIVE)
+  finalPrice      Int?
+  fee             Int?
+  settledAt       DateTime?
+  cancelledAt     DateTime?
+  cancelledById   String? // vendeur ou admin
+  createdAt       DateTime      @default(now())
+  bids            Bid[]
+
+  @@index([status, endsAt, id]) // balayage de clôture et tri « finit bientôt »
+  @@index([status, price, id])
+  @@index([status, createdAt, id])
+  @@index([sellerId, status])
+  @@index([currentBidderId, status])
+  @@index([cardId, status])
+}
+
+// Journal immuable des mises acceptées
+model Bid {
+  id        String   @id @default(cuid())
+  auctionId String
+  auction   Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  bidderId  String
+  bidder    User     @relation(fields: [bidderId], references: [id])
+  amount    Int
+  createdAt DateTime @default(now())
+
+  @@index([auctionId, createdAt])
+  @@index([bidderId, createdAt])
 }

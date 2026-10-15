@@ -7,7 +7,7 @@ import { isActive, NAV_ITEMS, NAV_MORE, type NavItem } from "@/lib/nav";
 
 /**
  * Entrées de la navigation. `layout="bar"` : barre horizontale du haut (≥ 1024 px), soulignement
- * vermillon sur la page active, Collection · Amis · Wiki dans le menu déroulant « Plus » ;
+ * vermillon sur la page active, Collection · Amis · Parrainage · Wiki dans le menu déroulant « Plus » ;
  * `layout="stack"` : liste verticale du menu burger, les mêmes entrées sous un intertitre.
  */
 export function NavLinks({ layout, onNavigate }: { layout: "bar" | "stack"; onNavigate?: () => void }) {
@@ -41,7 +41,7 @@ export function NavLinks({ layout, onNavigate }: { layout: "bar" | "stack"; onNa
     <ul className="flex items-center gap-0.5">
       {NAV_ITEMS.map((item) => {
         const active = isActive(item, pathname);
-        const base = "relative inline-flex min-h-11 items-center gap-1.5 px-2.5 text-sm whitespace-nowrap";
+        const base = "relative inline-flex min-h-11 items-center gap-1.5 px-2 text-sm whitespace-nowrap";
         if (!item.ready) {
           return (
             <li key={item.key}>
@@ -144,7 +144,7 @@ function MoreMenu({ pathname }: { pathname: string }) {
           setOpenedAt(pathname);
           setOpen((o) => !o);
         }}
-        className={`relative inline-flex min-h-11 items-center gap-1 px-2.5 text-sm whitespace-nowrap ${
+        className={`relative inline-flex min-h-11 items-center gap-1 px-2 text-sm whitespace-nowrap ${
           activeChild ? "font-bold text-text" : "text-text-muted hover:text-text"
         }`}
       >

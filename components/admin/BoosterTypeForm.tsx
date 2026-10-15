@@ -373,7 +373,7 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, globalCard
                         <span className="min-w-0 flex-1 truncate">
                           {c.name} <span className="text-text-muted">· #{c.rank} · {c.series}</span>
                         </span>
-                        <span className="text-ai">{t("add")}</span>
+                        <span className="text-link">{t("add")}</span>
                       </button>
                     </li>
                   ))}

@@ -6,7 +6,9 @@ import { cardNumber, seriesTitle } from "@/lib/catalog/display";
 import { RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
 import type { CatalogCardDetail } from "@/server/catalog/queries";
 import { getOwnedCopies } from "@/server/collection/queries";
+import { openAuctionsForCard, sellInfoFor } from "@/server/market/queries";
 import { getSetting } from "@/server/settings";
+import { SellButton } from "../market/SellButton";
 import { RecycleControl } from "./RecycleControl";
 import { ShowcaseToggle } from "./ShowcaseToggle";
 
@@ -25,13 +27,16 @@ export async function CardDetail({
   username: string;
   headingLevel?: 1 | 2;
 }) {
-  const [t, tRarity, format, locale, copies, values] = await Promise.all([
+  const [t, tMarket, tRarity, format, locale, copies, values, sellInfo, onSale] = await Promise.all([
     getTranslations("collection.card"),
+    getTranslations("market.sell"),
     getTranslations("rarity"),
     getFormatter(),
     getLocale(),
     getOwnedCopies(ownerId, card.id),
     getSetting("collection.recycleValues"),
+    sellInfoFor(ownerId, new Date()),
+    openAuctionsForCard(ownerId, card.id),
   ]);
   const rarity = card.rarity as Rarity;
   const series = seriesTitle(card.series, locale);
@@ -109,19 +114,23 @@ export async function CardDetail({
                 available={inCollection > 0}
                 profileHref={`/u/${username}`}
               />
-              <button
-                type="button"
-                disabled
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-button border border-border px-5 text-text-muted"
-              >
-                {t("sell")}
-                <span className="text-[10px] uppercase">{t("soon")}</span>
-              </button>
+              <SellButton cardId={card.id} cardName={card.name} available={inCollection} info={sellInfo} />
+              {onSale.length > 0 && (
+                <ul className="flex flex-col gap-1 text-sm">
+                  {onSale.map((a) => (
+                    <li key={a.id}>
+                      <Link href={`/marche/${a.id}`} className="inline-flex min-h-11 items-center text-link underline underline-offset-4">
+                        {tMarket("saleLink", { amount: a.price })}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </section>
           </>
         )}
 
-        <Link href={`/wiki/${card.anilistId}`} className="inline-flex min-h-11 w-fit items-center text-ai underline underline-offset-4">
+        <Link href={`/wiki/${card.anilistId}`} className="inline-flex min-h-11 w-fit items-center text-link underline underline-offset-4">
           {t("wiki")}
         </Link>
       </div>

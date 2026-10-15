@@ -1,6 +1,16 @@
 // Notifications : types connus et pastille de la cloche.
 
-export const NOTIFICATION_TYPES = ["FRIEND_REQUEST", "FRIEND_ACCEPTED", "GIFT_RECEIVED", "REFERRAL_QUALIFIED"] as const;
+export const NOTIFICATION_TYPES = [
+  "FRIEND_REQUEST",
+  "FRIEND_ACCEPTED",
+  "GIFT_RECEIVED",
+  "REFERRAL_QUALIFIED",
+  "OUTBID",
+  "AUCTION_WON",
+  "AUCTION_SOLD",
+  "AUCTION_EXPIRED",
+  "AUCTION_CANCELLED",
+] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 /** Texte de la pastille : rien à 0, « 9+ » au-delà de 9. */
@@ -18,4 +28,16 @@ export function parseGiftPayload(raw: unknown): GiftPayload | null {
   if (r.kind === "BOOSTER") return { kind: "BOOSTER" };
   if (r.kind === "CARD" && typeof r.cardId === "string" && r.cardId.length <= 40) return { kind: "CARD", cardId: r.cardId };
   return null;
+}
+
+/** Contenu d'une notification de l'hôtel des ventes : la vente, la carte et le montant en jeu. */
+export type AuctionPayload = { auctionId: string; cardId: string; amount: number | null };
+
+export function parseAuctionPayload(raw: unknown): AuctionPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const id = (v: unknown): v is string => typeof v === "string" && v.length > 0 && v.length <= 40;
+  if (!id(r.auctionId) || !id(r.cardId)) return null;
+  const amount = Number.isSafeInteger(r.amount) && (r.amount as number) >= 0 ? (r.amount as number) : null;
+  return { auctionId: r.auctionId, cardId: r.cardId, amount };
 }

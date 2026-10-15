@@ -62,7 +62,7 @@ export function LedgerList({
             <li key={row.id} className="flex min-h-14 items-center justify-between gap-3 px-4 py-2">
               <div className="flex min-w-0 flex-col">
                 {href ? (
-                  <Link href={href} className="truncate font-bold text-ai underline-offset-4 hover:underline">
+                  <Link href={href} className="truncate font-bold text-link underline-offset-4 hover:underline">
                     {label}
                   </Link>
                 ) : (

@@ -13,7 +13,6 @@ import type { BoosterState } from "@/server/boosters/state";
 import { RARITY_BG } from "../boosters/format";
 import { NextFreeIn } from "../boosters/NextFreeIn";
 import { Fuda } from "../fuda/Fuda";
-import { FudaTilt } from "../fuda/FudaTilt";
 import { ZeniCoin } from "../layout/ZeniCoin";
 import { Button, buttonClasses } from "../ui/Button";
 import { CopyLinkButton } from "./CopyLinkButton";
@@ -128,9 +127,7 @@ export function Recap({ boosters, state, reduced, play, counters, zeniSpent, cou
               transition={{ delay: unroll + 0.1, type: "spring", stiffness: 220, damping: 22 }}
             >
               <p className="mb-2 text-center text-xs font-bold tracking-wide text-sumi-muted">{t("bestPull")}</p>
-              <FudaTilt>
-                <Fuda card={best} series={best.series} size="lg" />
-              </FudaTilt>
+              <Fuda card={best} series={best.series} size="lg" />
               {best.isNew && <NewStamp animated={!reduced} delay={unroll + 0.5} />}
               {best.featured && <FeaturedSeal animated={!reduced} delay={unroll + 0.55} />}
             </m.div>

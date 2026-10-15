@@ -25,4 +25,12 @@ if (!pooled) {
   process.exit(1);
 }
 
+if (target === "production" && !env.CRON_SECRET) {
+  console.error(
+    `\n✖ CRON_SECRET manquant pour la production : sans lui, les ventes du marché ne seraient jamais closes\n` +
+      `  par le cron. Vercel → Settings → Environment Variables : ajoute CRON_SECRET (openssl rand -hex 32).\n`,
+  );
+  process.exit(1);
+}
+
 console.log(`Base pour « ${target} » : ${host(pooled)}${direct ? "" : " (URL directe dérivée de DATABASE_URL)"}`);

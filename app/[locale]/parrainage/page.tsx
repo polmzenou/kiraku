@@ -199,6 +199,40 @@ export default async function ReferralPage() {
 
       {howItWorks}
 
+      <section
+        className="flex flex-col gap-4 rounded-xl border border-shu/40 border-l-4 border-l-shu bg-surface bg-linear-to-br from-shu/10 via-surface to-surface p-5 shadow-paper sm:p-6"
+        aria-labelledby="parrain"
+      >
+        <div className="flex items-center gap-3">
+          <span
+            aria-hidden="true"
+            lang="ja"
+            className="flex size-10 shrink-0 items-center justify-center rounded-button bg-shu-btn font-seal text-2xl text-washi-paper shadow-paper"
+          >
+            招
+          </span>
+          <h2 id="parrain" className="font-title text-xl font-extrabold">{t("myReferrerTitle")}</h2>
+        </div>
+        {mine ? (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p>{t("referredBy", { name: mine.referrer.username })}</p>
+              {statusChip(mine.status)}
+            </div>
+            {mine.status === "PENDING" && myProgress && <RefereeChecklist progress={myProgress} rules={rules} now={now} />}
+            {mine.status === "QUALIFIED" && refereeLotId && (
+              <div className="flex justify-end">
+                <ClaimReferralButton referralId={mine.id} claimed={mine.refereeClaimedAt !== null} />
+              </div>
+            )}
+          </div>
+        ) : canAttach ? (
+          <ReferralCodeForm initialCode={cookieCode ?? ""} />
+        ) : (
+          <p className="text-sm text-text-muted">{t("tooLate", { days: rules.attachWindowDays })}</p>
+        )}
+      </section>
+
       <section className="flex flex-col gap-3" aria-labelledby="filleuls">
         <h2 id="filleuls" className="font-title text-lg font-bold">
           {t("refereesTitle", { count: referees.length })}
@@ -233,28 +267,6 @@ export default async function ReferralPage() {
               );
             })}
           </ul>
-        )}
-      </section>
-
-      <section className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
-        <h2 className="font-title text-lg font-bold">{t("myReferrerTitle")}</h2>
-        {mine ? (
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p>{t("referredBy", { name: mine.referrer.username })}</p>
-              {statusChip(mine.status)}
-            </div>
-            {mine.status === "PENDING" && myProgress && <RefereeChecklist progress={myProgress} rules={rules} now={now} />}
-            {mine.status === "QUALIFIED" && refereeLotId && (
-              <div className="flex justify-end">
-                <ClaimReferralButton referralId={mine.id} claimed={mine.refereeClaimedAt !== null} />
-              </div>
-            )}
-          </div>
-        ) : canAttach ? (
-          <ReferralCodeForm initialCode={cookieCode ?? ""} />
-        ) : (
-          <p className="text-sm text-text-muted">{t("tooLate", { days: rules.attachWindowDays })}</p>
         )}
       </section>
     </PageShell>

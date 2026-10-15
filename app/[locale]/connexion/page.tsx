@@ -21,13 +21,13 @@ export default async function LoginPage() {
         <LoginForm />
         <Link
           href="/connexion/mot-de-passe-oublie"
-          className="inline-flex min-h-11 w-fit items-center text-sm text-ai underline underline-offset-4"
+          className="inline-flex min-h-11 w-fit items-center text-sm text-link underline underline-offset-4"
         >
           {t("login.forgot")}
         </Link>
         <p className="text-sm text-text-muted">
           {t("login.noAccount")}{" "}
-          <Link href="/inscription" className="inline-flex min-h-11 items-center text-ai underline underline-offset-4">
+          <Link href="/inscription" className="inline-flex min-h-11 items-center text-link underline underline-offset-4">
             {t("login.register")}
           </Link>
         </p>

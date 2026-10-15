@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import type { Theme } from "@/lib/theme";
+import { logout } from "@/server/actions/account";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { boosterStateFrom } from "@/server/boosters/state";
 import { getSetting } from "@/server/settings";
@@ -23,6 +24,10 @@ export async function AppHeader({ theme }: { theme: Theme }) {
   const accountHref = user ? `/u/${user.username}` : "/connexion";
   const state = user ? boosterStateFrom(user, await getBoosterRules()) : null;
   const isAdmin = user?.role === "ADMIN";
+  const signedIn = user && !user.isGuest;
+  const authLabel = signedIn ? t("account.logout") : t("auth.login.title");
+  const authClasses =
+    "inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-shu/40 bg-shu/10 text-shu transition-colors hover:bg-shu/20";
   const [unread, pollSeconds] = user
     ? await Promise.all([unreadNotifications(user.id), getSetting("notifications.pollSeconds")])
     : [0, 0];
@@ -32,14 +37,14 @@ export async function AppHeader({ theme }: { theme: Theme }) {
       <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center gap-2 px-4 md:h-16 md:gap-4">
         <Link href="/" aria-label={t("nav.home")} className="flex min-h-11 min-w-0 shrink-0 items-center gap-2">
           <SealMark glyphs="気楽" size={32} />
-          <span className="font-title text-xl font-extrabold tracking-wide">{t("common.appName")}</span>
+          <span className="hidden font-title text-xl font-extrabold tracking-wide sm:inline">{t("common.appName")}</span>
         </Link>
 
-        <nav aria-label={t("nav.label")} className="ml-4 hidden lg:block">
+        <nav aria-label={t("nav.label")} className="ml-2 hidden lg:block">
           <NavLinks layout="bar" />
         </nav>
 
-        <div className="ml-auto flex min-w-0 items-center gap-1.5 md:gap-3">
+        <div className="ml-auto flex min-w-0 items-center gap-1.5 md:gap-2">
           {state && (
             <StockEnso
               stock={state.stock}
@@ -52,12 +57,12 @@ export async function AppHeader({ theme }: { theme: Theme }) {
           {user && (
             <Link
               href="/compte/historique"
-              className="inline-flex min-h-11 min-w-0 items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 text-sm font-bold"
+              className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-border bg-surface px-3.5 text-sm font-bold"
               aria-label={t("header.balance", { amount: user.coins })}
               title={t("header.balance", { amount: user.coins })}
             >
               <ZeniCoin size={16} />
-              <span aria-hidden="true" className="truncate tabular-nums">
+              <span aria-hidden="true" className="whitespace-nowrap tabular-nums">
                 {t("common.number", { value: user.coins })}
               </span>
             </Link>
@@ -71,26 +76,57 @@ export async function AppHeader({ theme }: { theme: Theme }) {
               {t("nav.admin")}
             </Link>
           )}
-          <Link
-            href={accountHref}
-            aria-label={t("nav.account")}
-            title={t("nav.account")}
-            className="hidden size-11 items-center justify-center lg:inline-flex"
-          >
-            {user?.image ? (
-              <Image src={user.image} alt="" width={32} height={32} className="rounded-full" />
-            ) : (
-              <span
-                aria-hidden="true"
-                className="flex size-8 items-center justify-center rounded-full border border-border bg-surface-2 font-title text-sm font-bold"
-              >
-                {user?.username.charAt(0).toUpperCase() ?? "?"}
-              </span>
-            )}
-          </Link>
+          {user && (
+            <Link
+              href={accountHref}
+              aria-label={t("nav.account")}
+              title={t("nav.account")}
+              className="hidden size-11 shrink-0 items-center justify-center lg:inline-flex"
+            >
+              {user.image ? (
+                <Image src={user.image} alt="" width={32} height={32} className="rounded-full" />
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className="flex size-8 items-center justify-center rounded-full border border-border bg-surface-2 font-title text-sm font-bold"
+                >
+                  {user.username.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </Link>
+          )}
+          {signedIn ? (
+            <form action={logout} className="shrink-0">
+              <button type="submit" aria-label={authLabel} title={authLabel} className={authClasses}>
+                <AuthIcon signOut />
+              </button>
+            </form>
+          ) : (
+            <Link href="/connexion" aria-label={authLabel} title={authLabel} className={authClasses}>
+              <AuthIcon />
+            </Link>
+          )}
           <MobileMenu theme={theme} isAdmin={isAdmin} accountHref={accountHref} />
         </div>
       </div>
     </header>
+  );
+}
+
+function AuthIcon({ signOut = false }: { signOut?: boolean }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+      {signOut ? (
+        <>
+          <path d="M9 5H5v14h4M13 12h8m-3-3 3 3-3 3" />
+          <path d="m9 3 6 2v14l-6 2V3Z" />
+        </>
+      ) : (
+        <>
+          <path d="M15 3h4v18h-4M3 12h10m-3-3 3 3-3 3" />
+          <path d="m9 3 6 2v14l-6 2V3Z" />
+        </>
+      )}
+    </svg>
   );
 }

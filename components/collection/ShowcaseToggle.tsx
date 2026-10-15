@@ -52,7 +52,7 @@ export function ShowcaseToggle({
         <p role="status" className="text-sm text-shu">
           {t.rich("showcaseFull", {
             link: (chunks) => (
-              <Link href={profileHref} className="text-ai underline underline-offset-4">
+              <Link href={profileHref} className="text-link underline underline-offset-4">
                 {chunks}
               </Link>
             ),

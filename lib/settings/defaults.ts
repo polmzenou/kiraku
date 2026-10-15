@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { RARITIES } from "@/lib/catalog/rarity";
+import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
 
 // Seuils de rareté en points de base (300 = top 3 %), du plus rare au plus courant
 const rarityThresholds = z
@@ -70,7 +71,7 @@ export const SETTING_SCHEMAS = {
   "game.timeZone": z.string().min(1).max(64).refine(isTimeZone, { message: "Fuseau horaire inconnu" }),
   "collection.recycleValues": recycleValues,
   // Nombre d'emplacements de la vitrine du profil
-  "showcase.slots": z.number().int().min(1).max(8),
+  "showcase.slots": z.number().int().min(1).max(MAX_SHOWCASE_SLOTS),
   // Social (étape 6) : interrupteurs, limites anti-spam et anti-farm des cadeaux
   "social.enabled": z.boolean(),
   "friends.max": z.number().int().min(1).max(5_000),
@@ -102,6 +103,22 @@ export const SETTING_SCHEMAS = {
   // Lots versés à la qualification ; null = pas de récompense de ce côté
   "referral.referrerLotId": lotRef,
   "referral.refereeLotId": lotRef,
+  // Hôtel des ventes (étape 8) ; taux en points de base (500 = 5 %)
+  "market.enabled": z.boolean(),
+  "market.feeBp": z.number().int().min(0).max(5_000),
+  "market.minIncrementBp": z.number().int().min(0).max(10_000),
+  "market.antiSnipeSeconds": z.number().int().min(0).max(3_600),
+  "market.extendSeconds": z.number().int().min(0).max(3_600),
+  "market.durationsHours": z
+    .array(z.number().int().min(1).max(24 * 14))
+    .min(1)
+    .max(8)
+    .refine((d) => new Set(d).size === d.length, { message: "Durées en double" }),
+  "market.maxActivePerSeller": z.number().int().min(1).max(1_000),
+  "market.minAccountAgeHours": z.number().int().min(0).max(24 * 365),
+  "market.minStartPrice": z.number().int().min(1).max(1_000_000),
+  "market.maxPrice": z.number().int().min(1).max(100_000_000),
+  "market.pollSeconds": z.number().int().min(2).max(120),
   "guest.createPerHourPerIp": z.number().int().min(1).max(1_000),
   "discord.linkBonusZeni": z.number().int().min(0).max(100_000),
   "catalog.size": z.number().int().min(10).max(50_000),
@@ -158,6 +175,17 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "referral.requireVerified": true,
   "referral.referrerLotId": null,
   "referral.refereeLotId": null,
+  "market.enabled": true,
+  "market.feeBp": 500, // taxe de 5 % : retire des Zeni du jeu
+  "market.minIncrementBp": 500, // surenchère minimale de 5 % (au moins 1 Zeni)
+  "market.antiSnipeSeconds": 120, // une mise dans les 2 dernières minutes…
+  "market.extendSeconds": 120, // …prolonge la vente de 2 minutes
+  "market.durationsHours": [1, 6, 24, 48],
+  "market.maxActivePerSeller": 10,
+  "market.minAccountAgeHours": 48, // anti-multicomptes
+  "market.minStartPrice": 1,
+  "market.maxPrice": 10_000_000,
+  "market.pollSeconds": 5, // rafraîchissement du prix d'une vente ouverte
   "guest.createPerHourPerIp": 5,
   "discord.linkBonusZeni": 500, // versé une seule fois, à la première liaison
   "catalog.size": 6736,

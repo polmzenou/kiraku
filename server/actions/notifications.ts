@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
+import { settleDueFor } from "../market/queries";
 import { getSetting } from "../settings";
 import { listNotifications, notificationsSince, type NotificationView } from "../social/queries";
 import { getCurrentUser } from "../user";
@@ -71,6 +72,12 @@ export async function pollNotificationsAction(input: unknown): Promise<PollResul
   if (!parsed.success) return { ok: false, error: "INVALID" };
   if (!(await rateLimit(`notif-poll:${user.id}`, { limit: 12, windowSeconds: 60 })).success) {
     return { ok: false, error: "RATE_LIMITED" };
+  }
+  // Ventes terminées du joueur closes avant de lire : « Tu as remporté… » arrive dans ce sondage
+  try {
+    await settleDueFor(user.id, new Date());
+  } catch (e) {
+    console.error("[marche] clôture au sondage", e);
   }
   const now = new Date();
   // Jamais plus d'une heure en arrière : un onglet resté caché longtemps ne déverse pas tout

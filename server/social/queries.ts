@@ -1,7 +1,13 @@
 import "server-only";
 import { cache } from "react";
 import { Prisma } from "@/generated/prisma/client";
-import { parseGiftPayload, type GiftPayload, type NotificationType } from "@/lib/social/notifications";
+import {
+  parseAuctionPayload,
+  parseGiftPayload,
+  type AuctionPayload,
+  type GiftPayload,
+  type NotificationType,
+} from "@/lib/social/notifications";
 import { pairKey, relationBetween, type Relation } from "@/lib/social/relation";
 import { prisma } from "../db";
 import { giftDay } from "./gift-core";
@@ -113,6 +119,7 @@ export type NotificationView = {
   read: boolean;
   actor: PlayerRef | null;
   gift: GiftPayload | null;
+  auction: AuctionPayload | null;
   card: { anilistId: number; name: string; rarity: string } | null;
 };
 
@@ -140,10 +147,24 @@ type NotificationRow = {
   actor: PlayerRef | null;
 };
 
-/** Lignes → vues : cartes offertes résolues en une seule requête. */
+const AUCTION_TYPES: ReadonlySet<NotificationType> = new Set([
+  "OUTBID",
+  "AUCTION_WON",
+  "AUCTION_SOLD",
+  "AUCTION_EXPIRED",
+  "AUCTION_CANCELLED",
+]);
+
+/** Lignes → vues : cartes offertes ou vendues résolues en une seule requête. */
 async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
   const gifts = rows.map((r) => (r.type === "GIFT_RECEIVED" ? parseGiftPayload(r.payload) : null));
-  const cardIds = [...new Set(gifts.flatMap((g) => (g?.kind === "CARD" ? [g.cardId] : [])))];
+  const auctions = rows.map((r) => (AUCTION_TYPES.has(r.type) ? parseAuctionPayload(r.payload) : null));
+  const cardIds = [
+    ...new Set([
+      ...gifts.flatMap((g) => (g?.kind === "CARD" ? [g.cardId] : [])),
+      ...auctions.flatMap((a) => (a ? [a.cardId] : [])),
+    ]),
+  ];
   const cards = cardIds.length
     ? await prisma.card.findMany({ where: { id: { in: cardIds } }, select: { id: true, anilistId: true, name: true, rarity: true } })
     : [];
@@ -151,7 +172,8 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
 
   return rows.map((r, i) => {
     const gift = gifts[i];
-    const card = gift?.kind === "CARD" ? cardById.get(gift.cardId) : undefined;
+    const auction = auctions[i];
+    const card = gift?.kind === "CARD" ? cardById.get(gift.cardId) : auction ? cardById.get(auction.cardId) : undefined;
     return {
       id: r.id,
       type: r.type,
@@ -159,6 +181,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
       read: r.readAt !== null,
       actor: r.actor,
       gift,
+      auction,
       card: card ? { anilistId: card.anilistId, name: card.name, rarity: card.rarity } : null,
     };
   });

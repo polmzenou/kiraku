@@ -6,7 +6,7 @@ import { BoosterArt } from "./BoosterArt";
 import { PriceTag } from "./PriceTag";
 
 /** Tuile d'un booster : le dessin, puis son prix. Un appui le sélectionne (panneau à droite ou en bas). */
-export function BoosterTile({ type, cards, selected }: { type: BoosterTypeView; cards: number; selected: boolean }) {
+export function BoosterTile({ type, cards, selected, stock }: { type: BoosterTypeView; cards: number; selected: boolean; stock: number }) {
   const t = useTranslations("boosters");
   const locale = useLocale();
   const name = localize(type.name, locale);
@@ -29,7 +29,7 @@ export function BoosterTile({ type, cards, selected }: { type: BoosterTypeView; 
         contents={contentsLabel(cards)}
         className="transition-transform duration-300 group-hover:-translate-y-1"
       />
-      <PriceTag type={type} />
+      <PriceTag type={type} stock={stock} />
     </Link>
   );
 }

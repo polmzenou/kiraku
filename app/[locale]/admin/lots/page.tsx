@@ -71,7 +71,7 @@ export default async function AdminLotsPage({ searchParams }: PageProps<"/[local
               <LotRewards lot={views.get(lot.id)} />
               <p className="text-xs text-text-muted">{t("lotUsage", { missions: lot._count.missions, items: lot._count.shopItems })}</p>
             </div>
-            <Link href={{ pathname: "/admin/lots", query: { id: lot.id } }} className="inline-flex min-h-11 items-center text-sm text-ai underline underline-offset-4">
+            <Link href={{ pathname: "/admin/lots", query: { id: lot.id } }} className="inline-flex min-h-11 items-center text-sm text-link underline underline-offset-4">
               {t("edit")}
             </Link>
           </li>

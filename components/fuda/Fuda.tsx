@@ -2,6 +2,7 @@ import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { cardNumber } from "@/lib/catalog/display";
 import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { FudaTilt } from "./FudaTilt";
 
 export type FudaCard = {
   name: string;
@@ -54,6 +55,8 @@ export function Fuda({
   locked = false,
   monochrome = false,
   preload = false,
+  tilt = true,
+  sizes,
 }: {
   card: FudaCard;
   series?: string;
@@ -61,12 +64,15 @@ export function Fuda({
   locked?: boolean;
   monochrome?: boolean;
   preload?: boolean;
+  /** Désactivé pendant le glisser-déposer ou pour un préchargement invisible. */
+  tilt?: boolean;
+  sizes?: string;
 }) {
   const t = useTranslations("fuda");
   const l = layout[size];
   const showNative = size !== "sm" && !locked && card.nameNative;
 
-  return (
+  const content = (
     <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden shadow-paper ${l.frame}`} data-rarity={card.rarity}>
       <div className="flex h-full flex-col overflow-hidden rounded-[3px] bg-washi-paper text-sumi">
         <div className="relative flex-1 overflow-hidden bg-[#e4d9c4]">
@@ -80,7 +86,7 @@ export function Fuda({
               src={card.imageUrl}
               alt={size === "sm" ? "" : t("imageAlt", { name: card.name })}
               fill
-              sizes={l.sizes}
+              sizes={sizes ?? l.sizes}
               preload={preload}
               draggable={false}
               className={`object-cover object-top${monochrome ? " grayscale" : ""}`}
@@ -136,4 +142,6 @@ export function Fuda({
       )}
     </div>
   );
+
+  return tilt ? <FudaTilt>{content}</FudaTilt> : content;
 }

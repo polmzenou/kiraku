@@ -32,7 +32,7 @@ export default async function AdminBoosterTypePage({ params }: PageProps<"/[loca
 
   return (
     <div className="flex flex-col gap-6">
-      <Link href="/admin/boosters/types" className="text-sm text-ai underline underline-offset-4">
+      <Link href="/admin/boosters/types" className="text-sm text-link underline underline-offset-4">
         ← {t("back")}
       </Link>
       <h2 className="font-title text-2xl font-bold">{t("editTitle", { name: localize(type.name, locale) })}</h2>

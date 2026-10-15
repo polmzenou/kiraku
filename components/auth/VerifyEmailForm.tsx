@@ -18,7 +18,7 @@ export function VerifyEmailForm({ token }: { token: string }) {
     return (
       <div className="flex flex-col gap-3">
         <p role="status">{t("verify.done")}</p>
-        <Link href="/" className="inline-flex min-h-11 items-center text-ai underline underline-offset-4">
+        <Link href="/" className="inline-flex min-h-11 items-center text-link underline underline-offset-4">
           {t("verify.continue")}
         </Link>
       </div>

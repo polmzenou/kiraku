@@ -24,7 +24,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pag
   const [t, tAccount] = await Promise.all([getTranslations("profile"), getTranslations("account")]);
   const name = displayName(owner.username, owner.isGuest, (code) => tAccount("guestName", { code }));
   const back = (
-    <Link href={`/u/${owner.username}`} className="inline-flex min-h-11 w-fit items-center text-ai underline underline-offset-4">
+    <Link href={`/u/${owner.username}`} className="inline-flex min-h-11 w-fit items-center text-link underline underline-offset-4">
       {t("backToProfile", { name })}
     </Link>
   );

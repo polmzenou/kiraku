@@ -21,7 +21,7 @@ export default async function RegisterPage() {
         <RegisterForm />
         <p className="text-sm text-text-muted">
           {t("register.haveAccount")}{" "}
-          <Link href="/connexion" className="inline-flex min-h-11 items-center text-ai underline underline-offset-4">
+          <Link href="/connexion" className="inline-flex min-h-11 items-center text-link underline underline-offset-4">
             {t("register.login")}
           </Link>
         </p>

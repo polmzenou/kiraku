@@ -105,7 +105,7 @@ export function WikiCardDetail({ card, related, locale, total, collection }: Det
             {row(t("power"), <span><span aria-hidden="true" className="font-seal">力</span> {card.power}</span>)}
             {row(t("ki"), <span><span aria-hidden="true" className="font-seal">気</span> {card.ki}</span>)}
           </dl>
-          <a href={`https://anilist.co/character/${card.anilistId}`} rel="noopener noreferrer" target="_blank" className="mt-3 inline-flex min-h-11 items-center text-sm text-ai underline underline-offset-4">
+          <a href={`https://anilist.co/character/${card.anilistId}`} rel="noopener noreferrer" target="_blank" className="mt-3 inline-flex min-h-11 items-center text-sm text-link underline underline-offset-4">
             {t("viewOnAnilist")}
           </a>
         </aside>
