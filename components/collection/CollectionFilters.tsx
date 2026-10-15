@@ -119,7 +119,7 @@ export function CollectionFilters({
         <p className="flex flex-wrap items-center gap-2 text-sm">
           <span className="text-text-muted">{t("seriesActive")}</span>
           <span className="font-bold">{currentSeries.title}</span>
-          <button type="button" onClick={() => go({ series: null })} className="inline-flex min-h-11 items-center text-ai underline underline-offset-4">
+          <button type="button" onClick={() => go({ series: null })} className="inline-flex min-h-11 items-center text-link underline underline-offset-4">
             {t("clearSeries")}
           </button>
         </p>

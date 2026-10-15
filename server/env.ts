@@ -19,6 +19,8 @@ const schema = z.object({
   VAPID_PUBLIC_KEY: z.string().regex(/^[A-Za-z0-9_-]{80,100}$/).optional(),
   VAPID_PRIVATE_KEY: z.string().regex(/^[A-Za-z0-9_-]{40,50}$/).optional(),
   VAPID_SUBJECT: z.string().regex(/^(mailto:|https:\/\/)/).optional(), // contact pour les services push
+  // Vercel Cron (clôture des ventes) : envoyé par Vercel en « Authorization: Bearer … »
+  CRON_SECRET: z.string().min(16).optional(),
 });
 
 // Une variable vide (ex. copiée telle quelle de .env.example) compte comme absente
@@ -40,6 +42,11 @@ if (
   !(parsed.data.UPSTASH_REDIS_REST_URL && parsed.data.UPSTASH_REDIS_REST_TOKEN)
 ) {
   throw new Error("Upstash est obligatoire en production (UPSTASH_REDIS_REST_* ou KV_REST_API_*).");
+}
+
+if (process.env.VERCEL_ENV === "production" && !parsed.data.CRON_SECRET) {
+  // Sans lui, la clôture planifiée des ventes refuserait chaque appel du cron
+  throw new Error("CRON_SECRET est obligatoire en production (clôture des ventes).");
 }
 
 export const env = parsed.data;

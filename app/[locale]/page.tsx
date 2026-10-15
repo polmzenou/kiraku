@@ -218,7 +218,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
                 <ul className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
                   {items.map((o) => (
                     <li key={o.type.slug}>
-                      <BoosterTile type={o.type} cards={cardsOf(o)} selected={o.type.slug === selected?.type.slug} />
+                      <BoosterTile type={o.type} cards={cardsOf(o)} selected={o.type.slug === selected?.type.slug} stock={state.stock} />
                     </li>
                   ))}
                 </ul>

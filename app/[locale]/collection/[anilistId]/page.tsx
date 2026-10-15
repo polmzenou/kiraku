@@ -33,7 +33,7 @@ export default async function CollectionCardPage({ params }: PageProps<"/[locale
 
   return (
     <PageShell>
-      <Link href="/collection" className="inline-flex min-h-11 w-fit items-center text-ai underline underline-offset-4">
+      <Link href="/collection" className="inline-flex min-h-11 w-fit items-center text-link underline underline-offset-4">
         {t("back")}
       </Link>
       <CardDetail card={card} ownerId={user.id} username={user.username} />

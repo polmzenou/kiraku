@@ -2,6 +2,8 @@
 
 export type ShowcaseSlots = (string | null)[];
 
+export const MAX_SHOWCASE_SLOTS = 100;
+
 /** Vitrine complétée à `size` cases, ou null si elle est trop longue ou contient une carte deux fois. */
 export function normalizeShowcase(slots: readonly (string | null)[], size: number): ShowcaseSlots | null {
   if (slots.length > size) return null;

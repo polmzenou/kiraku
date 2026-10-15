@@ -81,7 +81,7 @@ export default async function AdminMissionsPage({ searchParams }: PageProps<"/[l
                 {t("missionMeta", { key: m.key, lot: lotName.get(m.lotId) ?? "?", claims: m._count.claims })}
               </p>
             </div>
-            <Link href={{ pathname: "/admin/missions", query: { id: m.id } }} className="inline-flex min-h-11 items-center text-sm text-ai underline underline-offset-4">
+            <Link href={{ pathname: "/admin/missions", query: { id: m.id } }} className="inline-flex min-h-11 items-center text-sm text-link underline underline-offset-4">
               {t("edit")}
             </Link>
           </li>

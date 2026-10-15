@@ -3,13 +3,14 @@ import { EconomySettingsForm } from "@/components/admin/EconomySettingsForm";
 import { ECONOMY_SETTING_KEYS, type EconomySettings } from "@/lib/settings/economy-form";
 import { recentSettingLogs, requireAdmin } from "@/server/admin";
 import { economyTotals, flowsLastDay, ledgerMismatches, lotOptions } from "@/server/economy/admin-queries";
+import { marketTotals } from "@/server/market/queries";
 import { getSetting } from "@/server/settings";
 
 /** Économie : interrupteurs, parrainage, Zeni en circulation et contrôle d'intégrité du journal. */
 export default async function AdminEconomyPage() {
   await requireAdmin();
   const locale = await getLocale();
-  const [t, tReason, values, totals, mismatches, flows, lots, logs] = await Promise.all([
+  const [t, tReason, values, totals, mismatches, flows, lots, logs, market] = await Promise.all([
     getTranslations("admin.economy"),
     getTranslations("economy.ledger.reasons"),
     Promise.all(ECONOMY_SETTING_KEYS.map((k) => getSetting(k))),
@@ -18,6 +19,7 @@ export default async function AdminEconomyPage() {
     flowsLastDay(),
     lotOptions(locale),
     recentSettingLogs(["missions.", "shop.", "referral."]),
+    marketTotals(new Date()),
   ]);
   const settings = Object.fromEntries(ECONOMY_SETTING_KEYS.map((k, i) => [k, values[i]])) as EconomySettings;
 
@@ -28,7 +30,7 @@ export default async function AdminEconomyPage() {
         <p className="max-w-prose text-sm text-text-muted">{t("intro")}</p>
       </div>
 
-      <dl className="grid gap-3 sm:grid-cols-3">
+      <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border border-border bg-surface p-4">
           <dt className="text-sm text-text-muted">{t("circulating")}</dt>
           <dd className="text-xl font-bold tabular-nums text-kin">{t("zeni", { amount: totals.circulating })}</dd>
@@ -36,6 +38,11 @@ export default async function AdminEconomyPage() {
         <div className="rounded-lg border border-border bg-surface p-4">
           <dt className="text-sm text-text-muted">{t("ledgerSum")}</dt>
           <dd className="text-xl font-bold tabular-nums">{t("zeni", { amount: totals.ledger })}</dd>
+        </div>
+        <div className="rounded-lg border border-border bg-surface p-4">
+          <dt className="text-sm text-text-muted">{t("escrow")}</dt>
+          <dd className="text-xl font-bold tabular-nums">{t("zeni", { amount: market.escrow })}</dd>
+          <p className="mt-1 text-xs text-text-muted">{t("escrowHint")}</p>
         </div>
         <div className="rounded-lg border border-border bg-surface p-4">
           <dt className="text-sm text-text-muted">{t("integrity")}</dt>

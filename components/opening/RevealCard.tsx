@@ -4,7 +4,6 @@ import { m } from "motion/react";
 import { useTranslations } from "next-intl";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { Fuda } from "../fuda/Fuda";
-import { FudaTilt } from "../fuda/FudaTilt";
 import { CardBack as FudaBack } from "../fuda/CardBack";
 import { RarityFx } from "./RarityFx";
 import { CardAura } from "./CardAura";
@@ -80,7 +79,7 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
         <CardAura rarity={front ? card.rarity : undefined} reduced compact={compactFx} />
         {front ? (
           <m.div className="relative z-10" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
-            <Fuda card={card} series={card.series} size={size} />
+            <Fuda card={card} series={card.series} size={size} tilt={false} />
           </m.div>
         ) : (
           <div className="relative z-10 aspect-[5/7] w-full [transform-style:preserve-3d] [transform:rotateY(180deg)]">
@@ -105,9 +104,7 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
           transition={front ? { rotateY: { duration: 0.5, ease: [0.2, 0.8, 0.2, 1] }, scale: { duration: 0.6 } } : { duration: 0.3 }}
         >
           <div aria-hidden={!front} inert={!front} className="[backface-visibility:hidden]">
-            <FudaTilt>
-              <Fuda card={card} series={card.series} size={size} />
-            </FudaTilt>
+            <Fuda card={card} series={card.series} size={size} />
           </div>
           <CardBack glow={charging && rank >= 4} static={front} />
         </m.div>

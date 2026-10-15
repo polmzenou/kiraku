@@ -16,7 +16,7 @@ export default async function ForgotPasswordPage() {
         <h1 className="text-2xl font-bold">{t("title")}</h1>
         <p className="text-sm text-text-muted">{t("intro")}</p>
         <ForgotPasswordForm />
-        <Link href="/connexion" className="inline-flex min-h-11 w-fit items-center text-sm text-ai underline underline-offset-4">
+        <Link href="/connexion" className="inline-flex min-h-11 w-fit items-center text-sm text-link underline underline-offset-4">
           {t("back")}
         </Link>
       </section>

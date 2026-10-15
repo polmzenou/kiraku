@@ -13,6 +13,7 @@
   --k-shu-btn: #c8372d;
   --k-ai: #7fa3d1;
   --k-kin: #d9b556;
+  --k-link: #d9b556;
   --k-paper-shadow: #000000;
 }
 
@@ -28,6 +29,7 @@
   --k-shu-btn: #c8372d;
   --k-ai: #1e3557;
   --k-kin: #b08a2e;
+  --k-link: #75541c;
   --k-paper-shadow: #b8ab93;
 }
 
@@ -47,6 +49,7 @@
   --color-shu-btn: var(--k-shu-btn);
   --color-ai: var(--k-ai);
   --color-kin: var(--k-kin);
+  --color-link: var(--k-link);
   --color-paper-shadow: var(--k-paper-shadow);
 
   --font-title: var(--font-shippori), "Hiragino Mincho ProN", serif;
@@ -104,6 +107,11 @@
   :focus-visible {
     outline: 2px solid var(--color-ai);
     outline-offset: 2px;
+  }
+
+  a:focus-visible,
+  .text-link:focus-visible {
+    outline-color: var(--color-link);
   }
 }
 

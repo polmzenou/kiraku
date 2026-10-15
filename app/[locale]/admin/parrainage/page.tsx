@@ -32,7 +32,7 @@ export default async function AdminReferralPage() {
         <h2 className="font-title text-2xl font-bold">{t("referralTitle")}</h2>
         <p className="max-w-prose text-sm text-text-muted">
           {t("referralIntro")}{" "}
-          <Link href="/admin/economie" className="text-ai underline underline-offset-4">
+          <Link href="/admin/economie" className="text-link underline underline-offset-4">
             {t("referralSettingsLink")}
           </Link>
         </p>

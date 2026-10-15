@@ -35,8 +35,8 @@ export function ReferralCodeForm({ initialCode }: { initialCode: string }) {
     );
   }
   return (
-    <form onSubmit={submit} className="flex flex-col gap-2">
-      <label htmlFor="referral-code" className="text-sm text-text-muted">
+    <form onSubmit={submit} className="flex flex-col gap-3">
+      <label htmlFor="referral-code" className="text-sm font-medium">
         {t("referral.enterCode")}
       </label>
       <div className="flex flex-wrap gap-2">
@@ -48,9 +48,9 @@ export function ReferralCodeForm({ initialCode }: { initialCode: string }) {
           autoComplete="off"
           autoCapitalize="characters"
           spellCheck={false}
-          className="min-h-11 min-w-0 flex-1 rounded-button border border-border bg-surface-2 px-3 font-bold tracking-[0.15em] uppercase"
+          className="min-h-12 min-w-0 flex-1 rounded-button border border-shu/40 bg-bg px-4 font-bold tracking-[0.15em] uppercase"
         />
-        <Button type="submit" disabled={pending || code.trim().length === 0}>
+        <Button type="submit" variant="shu" disabled={pending || code.trim().length === 0}>
           {t("referral.attach")}
         </Button>
       </div>

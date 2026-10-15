@@ -16,6 +16,8 @@ type Slot = ShowcaseCard | null;
 const iconButton =
   "inline-flex size-11 items-center justify-center rounded-button border border-border bg-surface-2 text-lg disabled:opacity-30";
 
+const cardSizes = "(min-width: 1200px) 274px, (min-width: 768px) calc((100vw - 104px) / 4), calc((100vw - 44px) / 2)";
+
 /**
  * Vitrine du profil (4 cartes par défaut). En mode édition, chaque carte se glisse au doigt vers
  * une autre case (échange) ; les boutons ← → × et la case vide (+) font la même chose au clavier.
@@ -80,8 +82,7 @@ export function Showcase({ initial, editable, linkBase }: { initial: Slot[]; edi
         <div className="flex flex-col gap-3">
           <ol
             aria-label={t("label")}
-            className="grid max-w-2xl gap-2 md:gap-4"
-            style={{ gridTemplateColumns: `repeat(${slots.length}, minmax(0, 1fr))` }}
+            className="grid w-full grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-4 md:gap-x-6 md:gap-y-6"
           >
             {slots.map((card, i) => (
               <li
@@ -89,7 +90,7 @@ export function Showcase({ initial, editable, linkBase }: { initial: Slot[]; edi
                 ref={(el) => {
                   cells.current[i] = el;
                 }}
-                className="relative flex min-w-0 flex-col gap-1.5"
+                className="relative flex min-w-0 flex-col gap-2"
               >
                 <span className="sr-only">{t("slot", { n: i + 1 })}</span>
                 {card ? (
@@ -105,12 +106,12 @@ export function Showcase({ initial, editable, linkBase }: { initial: Slot[]; edi
                       style={{ touchAction: "none" }}
                       className="relative cursor-grab rounded-[5px] ring-2 ring-ai/60 ring-offset-2 ring-offset-bg active:cursor-grabbing"
                     >
-                      <Fuda card={card} series={card.series} size="sm" />
+                      <Fuda card={card} series={card.series} size="md" sizes={cardSizes} tilt={false} />
                     </m.div>
                   ) : (
                     <m.div layoutId={`showcase-${card.cardId}`}>
                       <Link href={`${linkBase}/${card.anilistId}`} scroll={false} className="block rounded-[5px]">
-                        <Fuda card={card} series={card.series} size="sm" />
+                        <Fuda card={card} series={card.series} size="md" sizes={cardSizes} />
                       </Link>
                     </m.div>
                   )
@@ -160,7 +161,7 @@ export function Showcase({ initial, editable, linkBase }: { initial: Slot[]; edi
                 {editing ? t("done") : t("edit")}
               </Button>
               {editing && <p className="text-sm text-text-muted">{t("dragHint")}</p>}
-              {!editing && isEmpty && <p className="text-sm text-text-muted">{t("emptyOwner")}</p>}
+              {!editing && isEmpty && <p className="text-sm text-text-muted">{t("emptyOwner", { count: slots.length })}</p>}
             </div>
           )}
           <p role="status" className="text-sm text-shu">

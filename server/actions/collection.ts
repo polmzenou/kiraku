@@ -5,7 +5,7 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { RARITIES } from "@/lib/catalog/rarity";
 import { parseCollectionParams } from "@/lib/collection/params";
-import { placeInSlot } from "@/lib/collection/showcase";
+import { MAX_SHOWCASE_SLOTS, placeInSlot } from "@/lib/collection/showcase";
 import type { CollectionPage } from "@/lib/collection/view";
 import { PROFILE_VISIBILITIES } from "@/lib/collection/visibility";
 import { USERNAME_REGEX } from "@/lib/username";
@@ -122,7 +122,7 @@ export async function recycleAllAction(input: unknown): Promise<RecycleResult> {
 
 export type ShowcaseResult = { ok: true; slots: (string | null)[] } | Failure;
 
-const showcaseSchema = z.object({ slots: z.array(cardIdSchema.nullable()).max(8) });
+const showcaseSchema = z.object({ slots: z.array(cardIdSchema.nullable()).max(MAX_SHOWCASE_SLOTS) });
 const showcaseCardSchema = z.object({ cardId: cardIdSchema });
 
 async function saveShowcase(userId: string, slots: (string | null)[], size: number): Promise<ShowcaseResult> {

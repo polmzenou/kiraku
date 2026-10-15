@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 import { RARITIES, RARITY_SEAL } from "@/lib/catalog/rarity";
+import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
 import {
   changedCollectionKeys,
   collectionSettingsSchema,
@@ -107,7 +108,7 @@ export function CollectionSettingsForm({ initial }: { initial: CollectionSetting
           value={draft["showcase.slots"]}
           onChange={(v) => update({ ...draft, "showcase.slots": v })}
           min={1}
-          max={8}
+          max={MAX_SHOWCASE_SLOTS}
         />
         <p className="text-xs text-text-muted">{t("showcaseHint")}</p>
       </fieldset>

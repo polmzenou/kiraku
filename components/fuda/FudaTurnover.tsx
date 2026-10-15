@@ -3,7 +3,6 @@
 import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { CardBack } from "./CardBack";
-import { FudaTilt } from "./FudaTilt";
 import "./FudaTurnover.css";
 
 /** Même dos que l'ouverture ; les fiches gardent leur recto et leur contenu serveur. */
@@ -15,7 +14,7 @@ export function FudaTurnover({ children, className = "" }: { children: ReactNode
       <div className="kf-scene">
         <div className="kf-turn" data-back={back}>
           <div className="kf-front" aria-hidden={back} inert={back}>
-            <FudaTilt>{children}</FudaTilt>
+            {children}
           </div>
           <div className="kf-reverse" aria-hidden={!back} inert={!back}>
             <CardBack static={!back} />

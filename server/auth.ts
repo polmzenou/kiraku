@@ -22,7 +22,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "database", maxAge: SESSION_MAX_AGE, updateAge: 24 * 60 * 60 },
   cookies: { sessionToken: SESSION_COOKIE },
   providers: discordEnabled
-    ? [Discord({ clientId: env.AUTH_DISCORD_ID, clientSecret: env.AUTH_DISCORD_SECRET })]
+    ? [
+        Discord({
+          clientId: env.AUTH_DISCORD_ID,
+          clientSecret: env.AUTH_DISCORD_SECRET,
+          // Discord renvoie désormais « iss » dans la réponse d'autorisation (RFC 9207) ; sans
+          // émetteur déclaré, Auth.js attend « https://authjs.dev » et refuse le retour.
+          issuer: "https://discord.com",
+        }),
+      ]
     : [],
   pages: { error: "/connexion/erreur" },
   callbacks: {

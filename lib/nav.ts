@@ -10,14 +10,14 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { key: "boosters", href: "/", ready: true, also: ["/ouvrir", "/tirage"] },
   { key: "missions", href: "/missions", ready: true },
   { key: "shop", href: "/boutique", ready: true },
-  { key: "referral", href: "/parrainage", ready: true, also: ["/i"] },
   { key: "combat", href: "/combat", ready: false },
-  { key: "market", href: "/marche", ready: false },
+  { key: "market", href: "/marche", ready: true },
 ];
 
 export const NAV_MORE: readonly NavItem[] = [
   { key: "collection", href: "/collection", ready: true },
   { key: "friends", href: "/amis", ready: true, also: ["/u"] },
+  { key: "referral", href: "/parrainage", ready: true, also: ["/i"] },
   { key: "wiki", href: "/wiki", ready: true },
 ];
 

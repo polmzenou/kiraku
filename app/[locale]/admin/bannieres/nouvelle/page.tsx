@@ -10,7 +10,7 @@ export default async function NewBannerPage() {
   const [t, rules] = await Promise.all([getTranslations("admin"), getBoosterRules()]);
   return (
     <div className="flex flex-col gap-6">
-      <Link href="/admin/bannieres" className="text-sm text-ai underline underline-offset-4">
+      <Link href="/admin/bannieres" className="text-sm text-link underline underline-offset-4">
         ← {t("banners.title")}
       </Link>
       <h2 className="font-title text-2xl font-bold">{t("types.newBannerTitle")}</h2>

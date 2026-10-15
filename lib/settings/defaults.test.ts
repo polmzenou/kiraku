@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseSetting, SETTING_DEFAULTS, SETTING_SCHEMAS, type SettingKey } from "./defaults";
+import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
+import { collectionSettingsSchema } from "./collection-form";
 
 const keys = Object.keys(SETTING_SCHEMAS) as SettingKey[];
 
@@ -16,6 +18,22 @@ describe("réglages de jeu", () => {
     expect(parseSetting("economy.startingZeni", undefined)).toBe(500);
     expect(parseSetting("booster.maxStock", -3)).toBe(10);
     expect(parseSetting("booster.intervalMinutes", "10")).toBe(10);
+  });
+});
+
+describe("réglages de la vitrine", () => {
+  it("accepte plus de huit emplacements dans les réglages et le formulaire admin", () => {
+    expect(parseSetting("showcase.slots", 10)).toBe(10);
+    expect(collectionSettingsSchema.safeParse({
+      "collection.recycleValues": SETTING_DEFAULTS["collection.recycleValues"],
+      "showcase.slots": 10,
+    }).success).toBe(true);
+  });
+
+  it("refuse un nombre d'emplacements nul, fractionnaire ou excessif", () => {
+    for (const size of [0, 1.5, MAX_SHOWCASE_SLOTS + 1]) {
+      expect(SETTING_SCHEMAS["showcase.slots"].safeParse(size).success).toBe(false);
+    }
   });
 });
 
