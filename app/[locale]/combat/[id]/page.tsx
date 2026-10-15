@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { BattleScreen } from "@/components/battle/BattleScreen";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { routing } from "@/i18n/routing";
+import { parseBoardTier } from "@/lib/battle/tiers";
 import { battleCtx, getBattleView, getCandidates, getLastTeam, sweepBattlesFor } from "@/server/battle/queries";
 import { getCurrentUser } from "@/server/user";
 
@@ -18,8 +19,9 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/combat/[
 const ID = /^[A-Za-z0-9_-]{1,40}$/;
 
 /** Une partie : visible de ses deux joueurs seulement (et de l'invité d'une salle réservée). */
-export default async function BattlePage({ params }: PageProps<"/[locale]/combat/[id]">) {
+export default async function BattlePage({ params, searchParams }: PageProps<"/[locale]/combat/[id]">) {
   const { id } = await params;
+  const { rang } = await searchParams;
   if (!ID.test(id)) notFound();
   const user = await getCurrentUser();
   if (!user) return <GuestBootstrap />;
@@ -27,7 +29,9 @@ export default async function BattlePage({ params }: PageProps<"/[locale]/combat
   // Tour expiré pendant l'absence : réglé avant l'affichage
   await sweepBattlesFor(user.id);
   const ctx = await battleCtx();
-  const view = await getBattleView(id, user.id, { pollSeconds: ctx.rules.pollSeconds, turnSeconds: ctx.rules.turnSeconds });
+  // ?rang=GOLD : aperçu de la couleur d'un rang sur le plateau, réservé aux admins (classé en 9b)
+  const previewTier = user.role === "ADMIN" ? parseBoardTier(rang) : null;
+  const view = await getBattleView(id, user.id, { pollSeconds: ctx.rules.pollSeconds, turnSeconds: ctx.rules.turnSeconds }, previewTier);
   if (!view) notFound();
   const candidates = view.canJoin ? await getCandidates(user.id, ctx.rules) : [];
   const lastTeam = view.canJoin ? await getLastTeam(user.id, candidates) : [];

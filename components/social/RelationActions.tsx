@@ -12,7 +12,8 @@ import {
   unblockUserAction,
   type SocialActionError,
 } from "@/server/actions/social";
-import { Button } from "../ui/Button";
+import { Link } from "@/i18n/navigation";
+import { Button, buttonClasses } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
 import { GiftSheet, type GiftInfo } from "./GiftSheet";
 
@@ -35,6 +36,7 @@ export function RelationActions({
   gift: GiftInfo | null;
 }) {
   const t = useTranslations("friends");
+  const tBattle = useTranslations("battle");
   const [relation, setRelation] = useState<Relation>(initial);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -149,6 +151,12 @@ export function RelationActions({
                 {t("gift")}
               </Button>
             )}
+            <Link href={`/combat?defier=${encodeURIComponent(username)}`} className={buttonClasses("neutral")}>
+              <span aria-hidden="true" lang="ja" className="font-seal text-shu">
+                戦
+              </span>
+              {tBattle("friend.challenge")}
+            </Link>
           </>
         )}
         {relation === "BLOCKED_BY_ME" && (

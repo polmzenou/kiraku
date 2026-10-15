@@ -39,6 +39,17 @@ describe("buildCsp", () => {
     ]);
   });
 
+  it("n'ouvre les connexions qu'au site et à Ably (temps réel du combat)", () => {
+    const d = directives(buildCsp("n", false));
+    expect(d.get("connect-src")).toEqual([
+      "'self'",
+      "wss://*.ably.io",
+      "https://*.ably.io",
+      "https://*.ably-realtime.com",
+      "wss://*.ably-realtime.com",
+    ]);
+  });
+
   it("force HTTPS en prod uniquement", () => {
     expect(buildCsp("n", false)).toContain("upgrade-insecure-requests");
     expect(buildCsp("n", true)).not.toContain("upgrade-insecure-requests");

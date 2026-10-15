@@ -10,7 +10,8 @@ export function buildCsp(nonce: string, isDev: boolean): string {
     "style-src": ["'self'", "'unsafe-inline'"],
     "img-src": ["'self'", "data:", "blob:", ...IMAGE_HOSTS],
     "font-src": ["'self'"],
-    "connect-src": ["'self'"],
+    // Ably : temps réel du combat (WebSocket, et repli HTTP vers ses hôtes de secours)
+    "connect-src": ["'self'", "wss://*.ably.io", "https://*.ably.io", "https://*.ably-realtime.com", "wss://*.ably-realtime.com"],
     // service worker du Web Push (public/sw.js)
     "worker-src": ["'self'"],
     "manifest-src": ["'self'"],

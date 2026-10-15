@@ -5,12 +5,14 @@ import { replay } from "@/lib/battle/engine";
 import { combatStats, keywordsFor, techniqueFor } from "@/lib/battle/stats";
 import type { Action, BattleSetup, BattleState, Side } from "@/lib/battle/types";
 import type { Activity, BattleUpdateView, BattleView, CandidateCard, HistoryItem, PlayerView } from "@/lib/battle/view";
+import type { BoardTier } from "@/lib/battle/tiers";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { periodWindow } from "@/lib/economy/period";
 import type { SettingValue } from "@/lib/settings/defaults";
 import { prisma } from "../db";
 import { ablyEnabled } from "../env";
 import { getSetting } from "../settings";
+import { getRelation } from "../social/queries";
 import { sweepStaleWith, type Ctx } from "./battle-core";
 import { publishBattle } from "./realtime";
 
@@ -51,6 +53,8 @@ export async function getBattleView(
   battleId: string,
   viewerId: string,
   timing: { pollSeconds: number; turnSeconds: number },
+  /** Aperçu d'un rang sur le plateau (admins seulement, en attendant le classé). */
+  previewTier: BoardTier | null = null,
 ): Promise<BattleView | null> {
   const b = await prisma.battle.findUnique({
     where: { id: battleId },
@@ -105,6 +109,8 @@ export async function getBattleView(
     realtime: ablyEnabled,
     pollSeconds: timing.pollSeconds,
     turnSeconds: timing.turnSeconds,
+    // Le rang d'une partie classée sera figé au lancement (étape 9b)
+    tier: previewTier,
   };
 }
 
@@ -243,4 +249,13 @@ export async function combatTotals(now: Date) {
     prisma.coinTransaction.aggregate({ where: { reason: "BATTLE_WIN", createdAt: { gte: since } }, _sum: { amount: true } }),
   ]);
   return { active, waiting, queued, finished24h, bots24h, rewards24h: rewards._sum.amount ?? 0 };
+}
+
+/** Ami à défier depuis son profil : null si le pseudo n'est pas un ami accepté. */
+export async function challengeTarget(viewerId: string, username: string): Promise<{ id: string; name: string } | null> {
+  if (!/^[\w.-]{1,40}$/.test(username)) return null;
+  const other = await prisma.user.findUnique({ where: { username }, select: { id: true, username: true } });
+  if (!other || other.id === viewerId) return null;
+  const { relation } = await getRelation(viewerId, other.id);
+  return relation === "FRIENDS" ? { id: other.id, name: other.username } : null;
 }

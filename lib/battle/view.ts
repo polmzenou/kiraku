@@ -1,4 +1,5 @@
 import type { Rarity } from "@/lib/catalog/rarity";
+import type { BoardTier } from "./tiers";
 import type { BattleEvent, BattleSetup, BattleState, EndReason, Keyword, Side, Technique } from "./types";
 
 // Ce que les écrans de combat reçoivent du serveur (sérialisable, dates en ISO).
@@ -34,6 +35,8 @@ export type BattleView = {
   realtime: boolean;
   pollSeconds: number;
   turnSeconds: number;
+  /** Rang affiché par le plateau (classé, étape 9b) ; null hors classé. */
+  tier: BoardTier | null;
 };
 
 /** Ce que pousse le serveur après chaque action (Ably ou sondage). */

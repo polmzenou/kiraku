@@ -11,7 +11,8 @@ import type { ClientAction } from "@/server/battle/battle-core";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
 import { BattleResult } from "./BattleResult";
-import { BoardLayout, Orbs, usePlayerName } from "./BoardLayout";
+import { BattleLog, CardDetail } from "./BattleLog";
+import { BoardLayout, Medallion, Orbs, usePlayerName } from "./BoardLayout";
 import { TurnTimer, useSecondsLeft } from "./TurnTimer";
 import { useBattleError } from "./useBattleError";
 import { useEventPlayer } from "./useEventPlayer";
@@ -177,17 +178,36 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
     setMode(mode === "TECHNIQUE" ? "ATTACK" : "TECHNIQUE");
   };
 
-  const hint = !myTurn
-    ? t("board.waitOpponent")
-    : ready.size === 0
-      ? t("board.noActions")
-      : selected === null
-        ? t("board.pickActor")
-        : mode === "TECHNIQUE" && techniqueKind === "ALLY"
-          ? t("board.pickAlly")
-          : t("board.pickTarget");
+  const hint = shown.finished
+    ? null
+    : !myTurn
+      ? t("board.waitOpponent")
+      : ready.size === 0
+        ? t("board.noActions")
+        : selected === null
+          ? t("board.pickActor")
+          : mode === "TECHNIQUE" && techniqueKind === "ALLY"
+            ? t("board.pickAlly")
+            : t("board.pickTarget");
 
   const cost = technique ? setup.rules.techniques[technique].cost : 0;
+  const timer = <TurnTimer secondsLeft={secondsLeft} total={view.turnSeconds} />;
+  const orbs = (n: number) => <Orbs count={n} max={setup.rules.orbs.max} label={t("board.orbs", { count: n })} />;
+  const endTurn = (
+    <button
+      type="button"
+      disabled={!canAct}
+      onClick={() => void send({ type: "END_TURN" })}
+      className={`battle-rim flex size-24 items-center justify-center rounded-full p-[3px] transition-transform active:scale-95 disabled:opacity-40 ${
+        canAct && ready.size === 0 ? "animate-pulse" : ""
+      }`}
+    >
+      <span className="flex size-full items-center justify-center rounded-full bg-[radial-gradient(circle_at_35%_30%,#ff7a5f,#C8372D_55%,#7d1a14)] px-2 text-center text-sm leading-tight font-bold text-washi-paper">
+        {t("board.endTurn")}
+      </span>
+    </button>
+  );
+  const detailCard = selected !== null ? setup.teams[mySide][selected] : null;
 
   return (
     <>
@@ -195,26 +215,47 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
         setup={setup}
         shown={shown}
         fx={player.fx}
-        lunge={player.lunge}
         mySide={mySide}
-        players={view.players as BattleView["players"]}
+        players={view.players}
+        tier={view.tier}
+        boardRef={player.boardRef}
+        cardRef={player.cardRef}
         theirs={{ targets: enemyTargets, onPress: pressTheirs }}
         mine={{ selected, ready: canAct && selected === null ? ready : undefined, targets: allyTargets, onPress: pressMine }}
-        middle={
+        theirPlate={!shown.finished && shown.active === opp ? <>{orbs(shown.orbs)}{timer}</> : null}
+        myPlate={!shown.finished && shown.active === mySide ? <>{orbs(shown.orbs)}{timer}</> : null}
+        front={
           <>
-            <span className="flex min-w-0 flex-col">
-              <span className={`text-sm font-bold ${myTurn ? "text-kin" : ""}`} aria-live="polite">
-                {shown.finished ? t(`result.${shown.winner === null ? "DRAW" : shown.winner === mySide ? "WIN" : "LOSS"}`) : myTurn ? t("board.yourTurn") : t("board.theirTurn", { name: name(view.players[opp]) })}
+            <Medallion highlight={myTurn}>
+              <span className="text-[9px] text-[#a89f92] md:text-[10px]">{t("board.turnShort")}</span>
+              <span className="font-title text-lg font-extrabold tabular-nums md:text-2xl">{Math.ceil(shown.turn / 2)}</span>
+            </Medallion>
+            {/* Bannière qui traverse le plateau à chaque changement de tour */}
+            {!shown.finished && (
+              <span
+                key={`${shown.turn}-${shown.active}`}
+                aria-live="polite"
+                className={`battle-banner pointer-events-none absolute top-1/2 left-1/2 w-max -translate-x-1/2 -translate-y-1/2 rounded-md border px-5 py-1.5 font-title text-lg font-extrabold shadow-paper md:text-2xl ${
+                  myTurn ? "border-[var(--board-accent)] bg-[#2b1a10] text-kin" : "border-[#4a3f33] bg-[#15120f] text-washi-paper"
+                }`}
+              >
+                {myTurn ? t("board.yourTurn") : t("board.theirTurn", { name: name(view.players[opp]) })}
               </span>
-              <span className="text-xs text-text-muted">{t("board.turn", { turn: Math.ceil(shown.turn / 2) })}</span>
-            </span>
-            <Orbs count={shown.orbs} max={setup.rules.orbs.max} label={t("board.orbs", { count: shown.orbs })} />
-            <TurnTimer secondsLeft={secondsLeft} total={view.turnSeconds} />
+            )}
+          </>
+        }
+        frontAction={endTurn}
+        side={
+          <>
+            <CardDetail card={detailCard} hp={detailCard ? shown.fighters[mySide][selected!].hp : 0} maxHp={detailCard ? shown.fighters[mySide][selected!].maxHp : 0} rules={setup.rules} />
+            <BattleLog feed={player.feed} setup={setup} players={view.players} />
           </>
         }
         controls={
-          <div className="flex flex-col gap-2 pb-[env(safe-area-inset-bottom)]">
-            <p className="min-h-5 text-center text-xs text-text-muted">{error ?? hint}</p>
+          <div className="flex flex-col gap-2 pb-[env(safe-area-inset-bottom)] lg:rounded-lg lg:border lg:border-border lg:bg-surface lg:p-4">
+            <p className={`min-h-6 text-center text-sm font-medium ${error ? "text-shu" : myTurn ? "text-kin" : "text-text-muted"}`} aria-live="polite">
+              {error ?? hint}
+            </p>
             <div className="grid grid-cols-2 gap-2">
               <Button
                 variant={mode === "ATTACK" && selected !== null ? "shu" : "neutral"}
@@ -236,15 +277,15 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
               </Button>
             </div>
             {technique && (
-              <p className="text-center text-xs text-text-muted">
+              <p className="text-center text-xs text-text-muted lg:hidden">
                 {t(`techniques.${technique}.desc`, {
                   mult: (setup.rules.techniques[technique].value / 100).toLocaleString(),
                   pct: setup.rules.techniques[technique].value,
                 })}
               </p>
             )}
-            <div className="grid grid-cols-[1fr_auto] gap-2">
-              <Button variant="shu" disabled={!canAct} onClick={() => void send({ type: "END_TURN" })}>
+            <div className="grid grid-cols-[1fr_auto] gap-2 md:grid-cols-[auto] md:justify-end">
+              <Button variant="shu" className="md:hidden" disabled={!canAct} onClick={() => void send({ type: "END_TURN" })}>
                 {t("board.endTurn")}
               </Button>
               <Button disabled={shown.finished || pending} onClick={() => setConfirmForfeit(true)}>

@@ -644,23 +644,149 @@
   }
 }
 
-/* Combat : chiffre de dégâts ou de soin qui monte et s'efface au-dessus d'une fuda */
-.battle-float {
-  animation: battle-float 900ms ease-out forwards;
+/* --- Combat : plateau ---------------------------------------------------------------------
+   Table laquée sumi, liseré et ligne de front à la couleur du rang (data-tier, classé).
+   Hors classé : liseré neutre or pâle. Toutes les animations : transform et opacity. */
+.battle-board {
+  --board-rim: linear-gradient(135deg, #6b5a3e, #b39a63 45%, #6b5a3e);
+  --board-accent: #c9ae6a;
+  --board-glow: rgba(217, 181, 86, 0.25);
+  --board-felt: #1d1813;
+  --board-felt-2: #241d17;
+}
+.battle-board[data-tier="BRONZE"] {
+  --board-rim: linear-gradient(135deg, #6e4322, #c58652 45%, #7a4a26);
+  --board-accent: #cd8a55;
+  --board-glow: rgba(205, 138, 85, 0.35);
+}
+.battle-board[data-tier="SILVER"] {
+  --board-rim: linear-gradient(135deg, #7d848c, #e3e7ec 45%, #8a9199);
+  --board-accent: #d5dbe2;
+  --board-glow: rgba(213, 219, 226, 0.3);
+}
+.battle-board[data-tier="GOLD"] {
+  --board-rim: linear-gradient(135deg, #8c6a1f, #f0d27a 45%, #a07c27);
+  --board-accent: #e6c35c;
+  --board-glow: rgba(230, 195, 92, 0.4);
+}
+.battle-board[data-tier="EMERALD"] {
+  --board-rim: linear-gradient(135deg, #1f5c45, #6fd1a6 45%, #2a7356);
+  --board-accent: #5cc496;
+  --board-glow: rgba(92, 196, 150, 0.35);
+}
+.battle-board[data-tier="ELITE"] {
+  --board-rim: linear-gradient(135deg, #1e3557, #7fa3d1 45%, #2c5a86);
+  --board-accent: #7fa3d1;
+  --board-glow: rgba(127, 163, 209, 0.4);
+}
+.battle-board[data-tier="CHAMPION"] {
+  --board-rim: linear-gradient(135deg, #7d1a14, #ff5a45 45%, #a8231a);
+  --board-accent: #e0533f;
+  --board-glow: rgba(224, 83, 63, 0.45);
+}
+.battle-board[data-tier="GRAND_CHAMPION"] {
+  --board-rim: linear-gradient(135deg, #6b4f9e, #f6f0ff 30%, #b7a3e0 55%, #ffffff 75%, #7d63b5);
+  --board-accent: #d9ccf5;
+  --board-glow: rgba(190, 168, 240, 0.5);
 }
 
-@keyframes battle-float {
+/* Le liseré : un fond dégradé derrière la table (un border ne prend pas de dégradé arrondi) */
+.battle-rim {
+  background: var(--board-rim);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 0 28px var(--board-glow),
+    0 12px 30px rgba(0, 0, 0, 0.55);
+}
+.battle-table {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.04), transparent 65%),
+    /* seigaiha très discret dans la laque */
+    radial-gradient(circle at 50% 100%, transparent 58%, rgba(255, 255, 255, 0.025) 59% 62%, transparent 63%) 0 0 / 36px 18px,
+    linear-gradient(180deg, #17120e, #201914 50%, #17120e);
+}
+.battle-field {
+  background: linear-gradient(180deg, var(--board-felt-2), var(--board-felt));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+.battle-front {
+  background: linear-gradient(90deg, transparent, var(--board-accent) 18%, var(--board-accent) 82%, transparent);
+  -webkit-mask: radial-gradient(ellipse 50% 100% at 50% 50%, #000 60%, transparent 100%);
+  mask: radial-gradient(ellipse 50% 100% at 50% 50%, #000 60%, transparent 100%);
+}
+
+/* Chiffres de combat : gros, détourés d'encre pour rester lisibles sur n'importe quelle illustration */
+.battle-number {
+  -webkit-text-stroke: 6px #15120f;
+  paint-order: stroke fill;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.55);
+  animation: battle-pop 1150ms cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+.battle-number[data-crit="true"] {
+  animation-duration: 1400ms;
+}
+@keyframes battle-pop {
   0% {
     opacity: 0;
-    transform: translateY(8px) scale(0.8);
+    transform: translateY(6px) scale(0.3);
   }
-  15% {
+  14% {
     opacity: 1;
-    transform: translateY(0) scale(1.1);
+    transform: translateY(0) scale(1.35);
+  }
+  26% {
+    transform: translateY(0) scale(1);
+  }
+  72% {
+    opacity: 1;
+    transform: translateY(-18px) scale(1);
   }
   100% {
     opacity: 0;
-    transform: translateY(-36px) scale(1);
+    transform: translateY(-40px) scale(0.95);
+  }
+}
+
+/* Impact : éclaboussure d'encre qui s'ouvre puis s'efface */
+.battle-impact {
+  animation: battle-impact 520ms ease-out forwards;
+}
+@keyframes battle-impact {
+  0% {
+    opacity: 0.95;
+    transform: scale(0.25) rotate(0deg);
+  }
+  60% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.45) rotate(25deg);
+  }
+}
+
+/* Bannière de tour au centre du plateau */
+.battle-banner {
+  animation: battle-banner 1100ms ease-out forwards;
+}
+@keyframes battle-banner {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.4);
+  }
+  20% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  80% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(1.05);
   }
 }
 

@@ -11,7 +11,11 @@ import { QueueWaiting } from "./QueueWaiting";
 import { useBattleError } from "./useBattleError";
 import { TeamPicker } from "./TeamPicker";
 
-type Intent = { kind: "EXHIBITION" } | { kind: "CREATE_ROOM" } | { kind: "JOIN_CODE"; code: string };
+type Intent =
+  | { kind: "EXHIBITION" }
+  | { kind: "CREATE_ROOM" }
+  | { kind: "JOIN_CODE"; code: string }
+  | { kind: "CHALLENGE"; inviteeId: string; name: string };
 
 /** Accueil du combat : exhibition, classé (9b), salle d'amis ; partie en cours à reprendre. */
 export function CombatHub({
@@ -19,15 +23,20 @@ export function CombatHub({
   candidates,
   lastTeam,
   queueSeconds,
+  challenge,
 }: {
   activity: Activity;
   candidates: CandidateCard[];
   lastTeam: string[];
   queueSeconds: number;
+  /** Ami à défier (lien « Défier » de son profil) : le choix d'équipe s'ouvre directement. */
+  challenge: { id: string; name: string } | null;
 }) {
   const t = useTranslations("battle");
   const router = useRouter();
-  const [intent, setIntent] = useState<Intent | null>(null);
+  const [intent, setIntent] = useState<Intent | null>(() =>
+    challenge && activity.kind === "NONE" ? { kind: "CHALLENGE", inviteeId: challenge.id, name: challenge.name } : null,
+  );
   const [queue, setQueue] = useState(activity.kind === "QUEUE" ? { joinedAt: activity.joinedAt, botAt: activity.botAt } : null);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +61,11 @@ export function CombatHub({
         return;
       }
       const res =
-        intent.kind === "CREATE_ROOM" ? await createRoomAction({ cardIds, inviteeId: null }) : await joinRoomAction({ cardIds, code: intent.code });
+        intent.kind === "CREATE_ROOM"
+          ? await createRoomAction({ cardIds, inviteeId: null })
+          : intent.kind === "CHALLENGE"
+            ? await createRoomAction({ cardIds, inviteeId: intent.inviteeId })
+            : await joinRoomAction({ cardIds, code: intent.code });
       if (!res.ok) return fail(res.error, res.battleId);
       setIntent(null);
       router.push(`/combat/${res.battleId}`);
@@ -158,7 +171,15 @@ export function CombatHub({
           candidates={candidates}
           initial={lastTeam}
           pending={pending}
-          confirmLabel={intent.kind === "EXHIBITION" ? t("exhibition.cta") : intent.kind === "CREATE_ROOM" ? t("friend.create") : t("friend.join")}
+          confirmLabel={
+            intent.kind === "EXHIBITION"
+              ? t("exhibition.cta")
+              : intent.kind === "CREATE_ROOM"
+                ? t("friend.create")
+                : intent.kind === "CHALLENGE"
+                  ? t("friend.challengeTitle", { name: intent.name })
+                  : t("friend.join")
+          }
           onConfirm={confirm}
         />
       )}

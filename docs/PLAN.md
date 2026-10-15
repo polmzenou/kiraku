@@ -102,7 +102,7 @@ La tâche planifiée appelle une route du serveur ; elle ne parle jamais directe
 | Images | Vercel Blob ou Cloudinary + `next/image` | WebP redimensionné, servi par CDN |
 | Anti-abus | Upstash Ratelimit | Limite ouvertures, enchères, défis |
 | UI | Tailwind + Framer Motion | Animation d'ouverture et effet holo des cartes |
-| Temps réel (plus tard) | Pusher, Ably ou PartyKit | Seulement si tu fais du combat en direct |
+| Temps réel | Ably (`ABLY_API_KEY`, facultatif en dev) | Combat en direct : le serveur publie, les navigateurs s'abonnent avec un jeton limité |
 
 Mets la région Neon et la région des fonctions Vercel au même endroit (ex. Francfort) : c'est le gain de latence le plus simple.
 
@@ -507,32 +507,25 @@ Pour la page du marché : liste paginée par curseur, filtres rareté/série/pri
 
 ## Combat 1v1
 
-Commence par du combat asynchrone résolu par le serveur : chaque joueur choisit une équipe de 3 cartes, le serveur simule le duel en une fois et enregistre le journal, le client le rejoue en animation. Zéro WebSocket, zéro triche possible, et l'adversaire n'a pas besoin d'être en ligne au même moment.
+Duel **joué en direct**, façon Hearthstone : chaque joueur agit pendant son tour, le serveur arbitre tout. Trois façons de jouer : **code ami** (salle privée, non classée), **exhibition** (file d'attente, non classée) et **classé** (file d'attente, étape 9b). Personne en vue après `battle.queueSeconds` (20 s) : un **bot** prend la place, affiché comme tel, avec une équipe de même rareté que celle du joueur, différente à chaque fois.
 
-Déroulé :
+Règles (moteur pur `lib/battle/engine.ts`, tous les chiffres dans `GameSetting` `battle.*`, figés dans le setup au lancement) :
 
-1. Le challenger choisit 3 cartes et défie un ami (ou lance une partie classée) → `Battle` en `PENDING`, cartes en `status = BATTLE`.
-2. L'adversaire accepte en choisissant ses 3 cartes, ou refuse ; sans réponse en 24 h → `EXPIRED`, cartes libérées.
-3. À l'acceptation, le serveur tire un `seed`, simule, écrit `log` + `winnerId`, met à jour les points de classement si la partie est classée, verse la récompense, libère les cartes.
-4. Les deux joueurs voient le replay depuis `/battle/[id]`.
+- 3 fuda par camp, toutes sur le plateau. ATK = 力, DEF = 気, PV = 80 + 1,6 × 気, VIT = moyenne (désigne qui commence).
+- À son tour, chaque carte debout agit **une fois** (deux avec 疾風) : **attaque** gratuite ou **technique 技** payée en orbes 気 (1 au premier tour, +1 par tour, 5 au plus, +1 au premier tour du second joueur). Le premier joueur n'a que `battle.firstTurnActions` (2) actions à son tout premier tour : 53 % de victoires pour lui en simulation, contre 65 % sans limite.
+- Dégâts : `max(1, ATK × 100 / (100 + DEF) × critique × aléa × multiplicateur)`, critique 10 % ×1,5, aléa 0,9–1,1, en arithmétique entière.
+- Passifs selon la rareté (0 Commune et Peu commune, 1 Rare et Épique, 2 Légendaire et Mythique), stables par personnage : 挑発 Provocation, 結界 Barrière, 疾風 Rafale, 毒 Poison, 反撃 Riposte, 遺言 Dernière volonté, 復活 Renaissance. Une technique par carte : 一閃 Issen, 貫通 Kantsū, 乱舞 Ranbu, 癒し Iyashi, 守護 Shugo, 鼓舞 Kobu, 封印 Fūin.
+- Minuteur `battle.turnSeconds` (30 s) ; deux tours expirés d'affilée = forfait ; abandon à tout moment ; limite de 30 tours globaux, puis le plus fort % de PV gagne (égalité = nul).
 
-Règles de simulation :
+Mise en œuvre (étape 9a) :
 
-- Les cartes combattent dans l'ordre choisi ; la plus rapide (`spd`) frappe en premier.
-- Une carte à 0 HP est remplacée par la suivante ; la première équipe sans carte perd.
-- 3 types en triangle (Force > Technique > Vitesse > Force) : ×1,25 contre le type faible. Ajoute un champ `type` à `Card` si tu le retiens.
-- Coup critique : 10 % de chance, ×1,5.
-- Limite de 50 tours ; au-delà, l'équipe avec le plus de HP restants gagne.
-
-Dégâts d'une attaque :
-
-```latex
-\text{dégâts} = \max\left(1,\ \text{ATK} \times \frac{100}{100 + \text{DEF}} \times \text{type} \times \text{crit} \times \text{alea}_{[0{,}9;\,1{,}1]}\right)
-```
-
-Sur téléphone, le choix d'équipe se fait dans une feuille qui monte du bas : la collection filtrée en grille, 3 emplacements fixés en haut, un bouton « Défier » toujours visible. Le replay occupe tout l'écran en portrait, une carte par joueur face à face, avec un bouton pour passer à la fin. Utilise un générateur pseudo-aléatoire initialisé par le `seed` (ex. mulberry32) : la même graine redonne exactement le même combat, ce qui te permet de rejouer et déboguer n'importe quel duel. Le journal stocke une liste d'événements (`attack`, `crit`, `ko`, `switch`) que le client anime.
-
-Récompenses : quelques Zeni pour le gagnant, points de classement selon la section Mode classé, et une limite de 10 combats récompensés par jour pour éviter le farm entre amis. Le combat en temps réel (tour par tour avec choix d'actions) peut venir plus tard avec Pusher/Ably/PartyKit en réutilisant le même moteur.
+- **Déterminisme** : une partie = setup + graine (mulberry32, `lib/rng.ts`) + actions (`BattleAction`). Le hasard de l'action n° `seq` vient de `seededRng(mixSeed(graine, seq))`. La graine reste secrète tant que la partie se joue (sinon on prédirait les critiques) ; le replay la reçoit une fois la partie finie.
+- **Serveur** (`server/battle/battle-core.ts`, client injecté) : chaque action est relue sous le verrou de la partie (`FOR UPDATE` + `version`), le bot joue dans la même requête. Cartes engagées en `BATTLE` par `updateMany` conditionnel, rendues à chaque fin. File d'attente sérialisée par mode (`pg_advisory_xact_lock`). Gains `BATTLE_WIN` via le journal, dans la limite de `battle.rewards.dailyCap` (10) par jour ; aucun gain avant le 3e tour (anti-farm), ni entre amis par défaut.
+- **Temps réel** : Ably, le serveur publie après le commit (`ABLY_API_KEY`, jeton d'abonnement limité aux canaux du joueur, `/api/realtime/token`). Chaque mise à jour porte sa version de départ ; un trou se rattrape en rejouant le journal côté serveur (`battleSinceAction`). Sans clé, le plateau sonde toutes les `battle.pollSeconds`.
+- **Clôture paresseuse** : tours expirés, salles périmées et places de file abandonnées réglés à l'affichage, au sondage de la cloche, et par `/api/cron/battle` une fois par jour.
+- **Écrans** : `/combat` (exhibition, classé, code ami, historique, règles ; choix d'équipe dans une feuille, dernière équipe pré-remplie), `/combat/[id]` (salle d'attente, plateau en direct chargé en import dynamique, replay). « Défier » sur le profil d'un ami ouvre une salle qui lui est réservée (notification `BATTLE_INVITE`). Réglages dans `/admin/combat`.
+- **Plateau** : table laquée, un tapis par camp, ligne de front avec médaillon du tour ; gemmes 力/PV aux coins des fuda ; l'attaquant fonce sur sa cible et revient (Web Animations, transform seulement), éclaboussure d'encre, gros chiffres détourés, 会心 sur un critique ; journal et détail de la carte en colonne sur desktop. En classé, le liseré, la ligne de front et le médaillon prennent la couleur du rang (`data-tier` : bronze, argent, or, émeraude, élite indigo, champion écarlate, grand champion nacre violet et blanc) ; aperçu admin avec `?rang=GOLD`.
+- **Tests** : `lib/battle/*.test.ts` (formule, chaque passif et technique, orbes, minuteur, limite de tours, replay identique, 2 000 parties bot contre bot) ; `server/battle/battle.db.test.ts` (actions simultanées, appariement simultané de 4 joueurs, file contre mise en vente, plafond quotidien, balayage, salles, bot), sauté sans `DATABASE_URL_TEST`.
 
 ### Mode classé
 
@@ -555,7 +548,7 @@ Règles :
 - **Plancher** : 0 PC, on ne descend pas sous Bronze III.
 - **Protection** : après une montée de rang (Argent → Or, par exemple), 3 parties sans pouvoir redescendre au rang inférieur. Rien entre divisions d'un même rang.
 - **Grand Champion** : recalculé toutes les minutes (`ORDER BY "rankPoints" DESC LIMIT 100` parmi les joueurs à 1 800 PC ou plus, avec un index sur `rankPoints`). Qui sort du top 100 redevient Champion I sans perdre de PC.
-- **Adversaires** : une partie classée affronte l'équipe de défense enregistrée (`defenseTeam`) d'un joueur à ±150 PC, donc personne n'attend que l'autre soit en ligne. Le défenseur gagne ou perd la moitié des points. Les défis entre amis restent non classés, ce qui bloque le farm entre amis.
+- **Adversaires** : file d'attente classée en direct, adversaire à ±150 PC (fourchette qui s'élargit avec l'attente) ; personne en vue → un bot affiché comme tel, qui rapporte ou coûte une part réduite des PC (réglable). Les défis entre amis restent non classés, ce qui bloque le farm entre amis. (L'ancienne idée d'une `defenseTeam` hors ligne est abandonnée.)
 - **Saisons** : tous les 2 mois. Au reset, PC = 600 + (PC − 600) × 0,5 pour les joueurs au-dessus de 600, et un lot de fin de saison par rang atteint.
 
 ```ts
@@ -790,7 +783,6 @@ enum Role { USER ADMIN }
 enum CardStatus { COLLECTION AUCTION BATTLE }
 enum FriendStatus { PENDING ACCEPTED }
 enum AuctionStatus { ACTIVE SOLD EXPIRED CANCELLED }
-enum BattleStatus { PENDING FINISHED DECLINED EXPIRED }
 enum CoinReason { SIGNUP BID_HOLD BID_REFUND SALE FEE DISSOLVE BATTLE_WIN DAILY MISSION REFERRAL ADMIN SHOP }
 
 model User {
@@ -802,7 +794,7 @@ model User {
   boosterStock  Int      @default(10)
   boosterAnchor DateTime @default(now()) // début du cycle de 10 min en cours
   rankPoints    Int      @default(0)   // points de classement (mode classé)
-  defenseTeam   String[]               // 3 UserCard qui défendent en classé
+  battleTeam    String[]               // ids de Card de la dernière équipe de combat
   role          Role     @default(USER)
   bannedAt      DateTime?
   isGuest       Boolean  @default(true)
@@ -1125,23 +1117,82 @@ model CoinTransaction {
   @@index([userId, createdAt])
 }
 
-model Battle {
-  id             String       @id @default(cuid())
-  challengerId   String
-  opponentId     String
-  challengerTeam String[]     // ids de UserCard
-  opponentTeam   String[]
-  status         BattleStatus @default(PENDING)
-  seed           Int
-  winnerId       String?
-  ranked         Boolean      @default(false)
-  crushing       Boolean      @default(false) // victoire écrasante
-  pcDelta        Int?                         // points gagnés/perdus par le challenger
-  log            Json?
-  createdAt      DateTime     @default(now())
+enum BattleMode {
+  FRIEND // salle privée avec un code, non classée
+  EXHIBITION // file d'attente, non classée
+  RANKED // file d'attente classée (étape 9b)
+}
 
-  @@index([opponentId, status])
-  @@index([challengerId, createdAt])
+enum BattleStatus {
+  WAITING // salle d'amis ouverte, en attente du second joueur
+  ACTIVE
+  FINISHED
+  CANCELLED // salle expirée ou fermée avant le début
+}
+
+enum BattleEndReason {
+  KO
+  FORFEIT
+  TIMEOUT // trop de tours expirés d'affilée
+  TURN_LIMIT
+}
+
+// Une partie : setup figé + graine + actions (BattleAction) suffisent à la rejouer à l'identique.
+// state est le cache de l'état courant ; version sert à la concurrence optimiste.
+model Battle {
+  id            String           @id @default(cuid())
+  mode          BattleMode
+  status        BattleStatus     @default(WAITING)
+  code          String?          @unique // code ami tant que la salle attend
+  codeExpiresAt DateTime?
+  seed          Int // 0 ≤ seed < 2^31, tirée par le serveur
+  p1Id          String
+  p1            User             @relation("battleP1", fields: [p1Id], references: [id], onDelete: Cascade)
+  p2Id          String? // null = bot
+  p2            User?            @relation("battleP2", fields: [p2Id], references: [id], onDelete: Cascade)
+  botName       String? // nom du bot affiché (lib/battle/bot.ts)
+  p1Team        String[] // ids de UserCard (vides pour le bot)
+  p2Team        String[]
+  setup         Json? // BattleSetup (lib/battle/types.ts), posé au lancement
+  state         Json? // BattleState courant
+  version       Int              @default(0)
+  turnEndsAt    DateTime?
+  winnerSide    Int? // 0 = p1, 1 = p2, null = nul ou en cours
+  endReason     BattleEndReason?
+  rewardZeni    Int              @default(0) // versés au gagnant
+  createdAt     DateTime         @default(now())
+  startedAt     DateTime?
+  endedAt       DateTime?
+  actions       BattleAction[]
+
+  @@index([p1Id, createdAt])
+  @@index([p2Id, createdAt])
+  @@index([status, turnEndsAt])
+}
+
+// Journal des actions d'une partie, dans l'ordre (seq = BattleState.seq avant l'action)
+model BattleAction {
+  battleId  String
+  battle    Battle   @relation(fields: [battleId], references: [id], onDelete: Cascade)
+  seq       Int
+  side      Int
+  payload   Json // Action (lib/battle/types.ts)
+  createdAt DateTime @default(now())
+
+  @@id([battleId, seq])
+}
+
+// File d'attente : l'équipe est déjà bloquée (UserCard en BATTLE) ; seenAt prouve que le joueur attend encore
+model BattleQueue {
+  userId     String     @id
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mode       BattleMode
+  rankPoints Int
+  team       String[] // ids de UserCard
+  joinedAt   DateTime   @default(now())
+  seenAt     DateTime   @default(now())
+
+  @@index([mode, joinedAt])
 }
 ```
 
@@ -1169,7 +1220,7 @@ Construis dans cet ordre : chaque étape est jouable seule et sert de base à la
 6. **Social** — amis, cadeaux, notifications.
 7. **Économie** — Zeni, journal `CoinTransaction`, missions, parrainage, boutique en Zeni.
 8. **Hôtel des ventes** — ventes, enchères, clôture planifiée. Avant la mise en ligne, un test lance 50 enchères simultanées et vérifie que la somme des soldes ne bouge pas.
-9. **Combat** — moteur avec seed, défis, replay ; puis mode classé et saisons.
+9. **Combat** — 9a : combat en direct (moteur avec seed, code ami, exhibition, bot, Ably, replay) ; 9b : mode classé et saisons.
 10. **Conformité et finitions** — pages légales, « Mes données », contrôle d'âge, modal Discord (désactivé), tuile Casino « Bientôt », PWA, admin complet, tests sur un vrai téléphone en 375 px.
 
 Hors de ce plan : Stripe et le casino, après un avis juridique.

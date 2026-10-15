@@ -19,4 +19,5 @@ export const SEAL_GLYPHS = [
   "戦対勝負引技気記法封", // combat : titres, victoire, défaite, nul, technique, orbes, historique, règles, sceau
   "挑発結界疾風毒反撃遺言復活", // passifs du combat
   "一閃貫通乱舞癒守護鼓封印", // techniques du combat
+  "会心滅", // coup critique, carte hors combat
 ].join("");
