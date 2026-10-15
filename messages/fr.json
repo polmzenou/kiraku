@@ -15,6 +15,11 @@
     "number": "{value, number}",
     "close": "Fermer"
   },
+  "arcadePromo": {
+    "label": "Publicité pour Anime Arcade",
+    "description": "Encore plus de mini jeux pour jouer ensemble ou entre amis sur votre anime préféré !",
+    "discover": "Découvrir"
+  },
   "account": {
     "title": "Compte",
     "guestName": "Invité-{code}",
