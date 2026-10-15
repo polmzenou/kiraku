@@ -75,8 +75,8 @@ export function QueueWaiting({ joinedAt, botAt, onLeft }: { joinedAt: string; bo
       <span aria-hidden="true" className="relative inline-flex size-24 items-center justify-center">
         <span className="absolute inset-0 rounded-full border-4 border-border" />
         <span className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-shu [animation-duration:1.6s] motion-reduce:animate-none" />
-        <span lang="ja" className="font-seal text-3xl text-shu">
-          戦
+        <span className="max-w-20 text-sm font-bold text-shu">
+          {t("searching")}
         </span>
       </span>
       <div className="flex flex-col gap-1">

@@ -1,7 +1,7 @@
 import { WIKI_PAGE_SIZE, type WikiParams } from "./wiki-params";
 
-/** Compact, public, rank-ordered search results. Never contains a viewer's collection. */
-export type CatalogSearchIndex = readonly (readonly [anilistId: number, rank: number])[];
+/** Public results in the chosen sort order. The position is the pagination cursor. No collection data. */
+export type CatalogSearchIndex = readonly (readonly [anilistId: number, position: number])[];
 export type WikiCardState = { copies: number; discovered: boolean };
 export type WikiCollection = {
   available: boolean;
@@ -24,8 +24,8 @@ export function selectWikiPage(
   params: Pick<WikiParams, "ownership" | "after">,
   collection: WikiCollection,
 ) {
-  const rows = index.filter(([id, rank]) => {
-    if (params.after !== null && rank <= params.after) return false;
+  const rows = index.filter(([id, position]) => {
+    if (params.after !== null && position <= params.after) return false;
     if (!collection.available || params.ownership === "all") return true;
     const owned = (collection.cards.get(id)?.copies ?? 0) > 0;
     return params.ownership === "owned" ? owned : !owned;

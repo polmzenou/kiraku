@@ -8,20 +8,17 @@ import { CardBack as FudaBack } from "../fuda/CardBack";
 import { RarityFx } from "./RarityFx";
 import { CardAura } from "./CardAura";
 
-/** Sceau vermillon 新 tamponné, légèrement penché, sur une carte jamais obtenue. */
+/** Étiquette vermillon tamponnée, légèrement penchée, sur une carte jamais obtenue. */
 export function NewStamp({ delay = 0, animated = true }: { delay?: number; animated?: boolean }) {
   const t = useTranslations("opening");
   return (
     <m.span
-      className="absolute -top-2 -right-2 z-40 flex size-9 items-center justify-center rounded-[4px] bg-shu-btn font-seal text-xl leading-none text-washi-paper shadow-paper"
+      className="absolute -top-2 -right-2 z-40 inline-flex min-h-7 items-center justify-center whitespace-nowrap rounded-[4px] bg-shu-btn px-2 py-1 text-xs font-bold leading-none text-washi-paper shadow-paper"
       initial={animated ? { opacity: 0, scale: 2.2, rotate: -28 } : false}
       animate={{ opacity: 1, scale: 1, rotate: -12 }}
       transition={{ delay, type: "spring", stiffness: 520, damping: 18 }}
     >
-      <span aria-hidden="true" lang="ja">
-        新
-      </span>
-      <span className="sr-only">{t("newCard")}</span>
+      {t("newCard")}
     </m.span>
   );
 }

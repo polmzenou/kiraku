@@ -7,7 +7,7 @@
 // en cours se verrouille seule (FOR UPDATE) : deux actions sur la même version, une seule passe.
 // Les cartes engagées passent en BATTLE par updateMany conditionnel et reviennent en COLLECTION à la
 // fin, quelle qu'elle soit (K.O., abandon, minuteur, salle expirée, file quittée).
-import type { BattleMode, Prisma, PrismaClient } from "@/generated/prisma/client";
+import { Prisma, type BattleMode, type PrismaClient } from "@/generated/prisma/client";
 import { BOT_NAMES, botAction, botRarities } from "@/lib/battle/bot";
 import { engineRules, type BattleRules } from "@/lib/battle/config";
 import { applyAction, createState } from "@/lib/battle/engine";
@@ -26,7 +26,9 @@ import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import { mixSeed, seededRng, type Rng } from "@/lib/rng";
 import { pickGiftCopy } from "@/lib/social/gifts";
 import { pairKey } from "@/lib/social/relation";
+import type { RankedRules } from "@/lib/ranked/rules";
 import { credit } from "../economy/ledger";
+import { applyRankedWith, startTiers, type RankedOutcome } from "../ranked/ranked-core";
 import { blocksBetween, lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 
@@ -81,10 +83,12 @@ export type BattleUpdate = {
   turnEndsAt: Date | null;
   finished: boolean;
   rewardZeni: number;
+  /** Partie classée terminée : PC de chaque camp. */
+  ranked: RankedOutcome | null;
 };
 
 /** Contexte commun : réglages courants, horloge, hasard du serveur et début du jour de jeu (plafond des récompenses). */
-export type Ctx = { now: Date; rules: BattleRules; random: Rng; dayStart: Date };
+export type Ctx = { now: Date; rules: BattleRules; random: Rng; dayStart: Date; ranked: RankedRules; timeZone: string };
 
 // --- Lecture verrouillée d'une partie ---
 
@@ -276,6 +280,7 @@ async function persist(tx: Tx, b: LockedBattle, p: Progress, ctx: Ctx, nextDeadl
     });
   }
   let rewardZeni = 0;
+  let ranked: { outcome: RankedOutcome; data: Prisma.BattleUncheckedUpdateManyInput } | null = null;
   if (p.state.finished) {
     await releaseTeam(tx, b.p1Id, b.p1Team);
     await releaseTeam(tx, b.p2Id, b.p2Team);
@@ -284,6 +289,8 @@ async function persist(tx: Tx, b: LockedBattle, p: Progress, ctx: Ctx, nextDeadl
       rewardZeni = await rewardFor(tx, b, winnerId, p.state, ctx);
       if (rewardZeni > 0) await credit(tx, { userId: winnerId, amount: rewardZeni, reason: "BATTLE_WIN", refId: b.id, now: ctx.now });
     }
+    // Classé : PC des deux camps, dans la même transaction que la fin de partie
+    if (b.mode === "RANKED") ranked = await applyRankedWith(tx, b, setupOf(b), p.state, ctx.ranked);
   }
   const turnEndsAt = p.state.finished ? null : nextDeadline(prev);
   // version = nombre d'actions appliquées : le client renvoie celle qu'il a vue
@@ -294,15 +301,15 @@ async function persist(tx: Tx, b: LockedBattle, p: Progress, ctx: Ctx, nextDeadl
       version: p.state.seq,
       turnEndsAt,
       ...(p.state.finished
-        ? { status: "FINISHED", winnerSide: p.state.winner, endReason: p.state.endReason, endedAt: ctx.now, rewardZeni }
+        ? { status: "FINISHED", winnerSide: p.state.winner, endReason: p.state.endReason, endedAt: ctx.now, rewardZeni, ...ranked?.data }
         : {}),
     },
   });
   if (updated.count !== 1) throw new BattleError("STALE");
-  return { turnEndsAt, rewardZeni };
+  return { turnEndsAt, rewardZeni, ranked: ranked?.outcome ?? null };
 }
 
-function update(b: LockedBattle, p: Progress, saved: { turnEndsAt: Date | null; rewardZeni: number }): BattleUpdate {
+function update(b: LockedBattle, p: Progress, saved: { turnEndsAt: Date | null; rewardZeni: number; ranked: RankedOutcome | null }): BattleUpdate {
   return {
     battleId: b.id,
     from: b.version,
@@ -312,6 +319,7 @@ function update(b: LockedBattle, p: Progress, saved: { turnEndsAt: Date | null; 
     turnEndsAt: saved.turnEndsAt,
     finished: p.state.finished,
     rewardZeni: saved.rewardZeni,
+    ranked: saved.ranked,
   };
 }
 
@@ -337,7 +345,11 @@ async function start(
   const side = base.p2Id === null && base.botName ? 1 : null;
   runBot(setup, base.seed, p, side, ctx.rules.botMistakePct);
   const turnEndsAt = p.state.finished ? null : new Date(ctx.now.getTime() + ctx.rules.turnSeconds * 1_000);
+  // Classé : rang de chaque camp figé au lancement (couleur du plateau)
+  const tiers = base.mode === "RANKED" ? await startTiers(tx, base.p1Id, base.p2Id, ctx.ranked) : null;
   const data = {
+    p1Tier: tiers?.[0] ?? null,
+    p2Tier: tiers?.[1] ?? null,
     mode: base.mode,
     status: "ACTIVE" as const,
     code: null,
@@ -362,7 +374,7 @@ async function start(
       data: p.actions.map((a) => ({ battleId: row.id, seq: a.seq, side: a.side, payload: json(a.action), createdAt: ctx.now })),
     });
   }
-  return { battleId: row.id, from: 0, version: p.state.seq, events: p.events, state: p.state, turnEndsAt, finished: false, rewardZeni: 0 };
+  return { battleId: row.id, from: 0, version: p.state.seq, events: p.events, state: p.state, turnEndsAt, finished: false, rewardZeni: 0, ranked: null };
 }
 
 // --- Actions en partie ---
@@ -468,12 +480,25 @@ async function lockOwnQueue(tx: Tx, userId: string): Promise<QueueRow | null> {
 }
 
 /** Cherche un autre joueur présent dans la même file ; lignes déjà prises par un autre appariement sautées. */
+/**
+ * Classé : écart de PC accepté, qui s'élargit avec l'attente du plus patient des deux
+ * (ranked.matchRange). Toujours vrai pour les autres files.
+ */
+function rankedRange(me: QueueRow, ctx: Ctx): Prisma.Sql {
+  if (me.mode !== "RANKED") return Prisma.sql`TRUE`;
+  const { base, perSecond, max } = ctx.ranked.matchRange;
+  const myWait = Math.max(0, Math.floor((ctx.now.getTime() - me.joinedAt.getTime()) / 1_000));
+  const theirWait = Prisma.sql`floor(extract(epoch FROM (${ctx.now}::timestamptz - q."joinedAt"::timestamptz)))::int`;
+  return Prisma.sql`abs(q."rankPoints" - ${me.rankPoints}::int) <= LEAST(${max}::int, ${base}::int + ${perSecond}::int * GREATEST(${myWait}::int, ${theirWait}))`;
+}
+
 async function findOpponent(tx: Tx, me: QueueRow, ctx: Ctx): Promise<QueueRow | null> {
   const fresh = new Date(ctx.now.getTime() - QUEUE_STALE_SECONDS * 1_000);
   const rows = await tx.$queryRaw<QueueRow[]>`
     SELECT q."userId", q.mode::text AS mode, q."rankPoints", q.team, q."joinedAt"
     FROM "BattleQueue" q
     WHERE q.mode = ${me.mode}::"BattleMode" AND q."userId" <> ${me.userId} AND q."seenAt" > ${fresh}
+      AND ${rankedRange(me, ctx)}
       AND NOT EXISTS (
         SELECT 1 FROM "UserBlock" b
         WHERE (b."blockerId" = ${me.userId} AND b."blockedId" = q."userId")

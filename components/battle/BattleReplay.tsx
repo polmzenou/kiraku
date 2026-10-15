@@ -7,6 +7,8 @@ import { applyAction, createState } from "@/lib/battle/engine";
 import type { Action, BattleSetup, BattleState } from "@/lib/battle/types";
 import type { BattleView } from "@/lib/battle/view";
 import { Button, buttonClasses } from "../ui/Button";
+import { LADDER, rankOf } from "@/lib/ranked/rules";
+import { RankedResult } from "../ranked/RankedResult";
 import { BattleResult } from "./BattleResult";
 import { BattleLog } from "./BattleLog";
 import { BoardLayout, Medallion, Orbs } from "./BoardLayout";
@@ -73,6 +75,17 @@ export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup
   const showResult = index >= total && !animating && !resultHidden;
 
   const shown = player.shown;
+  // Bilan classé relu de la partie (montée ou descente déduite des PC ; le top 100 n'est pas rejoué)
+  const before = view.ranked?.before[view.mySide] ?? null;
+  const delta = view.ranked?.delta[view.mySide] ?? null;
+  const rankedSide =
+    before !== null && delta !== null && view.ladder
+      ? (() => {
+          const ladder = view.ladder!;
+          const idx = (pc: number) => LADDER.indexOf(rankOf(pc, false, ladder).tier as (typeof LADDER)[number]);
+          return { before, after: before + delta, delta, promoted: idx(before + delta) > idx(before), demoted: idx(before + delta) < idx(before), saved: false, protection: 0, grandBefore: false, grandAfter: false };
+        })()
+      : null;
   const orbs = <Orbs count={shown.orbs} max={view.setup.rules.orbs.max} label={t("board.orbs", { count: shown.orbs })} />;
   return (
     <>
@@ -119,7 +132,22 @@ export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup
         }
       />
       {showResult && (
-        <BattleResult winner={view.winnerSide} mySide={view.mySide} reason={view.endReason} rewardZeni={view.rewardZeni} onReplay={restart} />
+        <BattleResult
+          winner={view.winnerSide}
+          mySide={view.mySide}
+          reason={view.endReason}
+          rewardZeni={view.rewardZeni}
+          onReplay={restart}
+          ranked={rankedSide && view.ladder ? (
+            <RankedResult
+              side={rankedSide}
+              won={view.winnerSide === null ? null : view.winnerSide === view.mySide}
+              crushing={view.ranked!.crushing}
+              ladder={view.ladder}
+              bot={view.players[1] !== null && "bot" in view.players[1]}
+            />
+          ) : null}
+        />
       )}
     </>
   );

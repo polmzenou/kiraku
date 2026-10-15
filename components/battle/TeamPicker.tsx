@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { Fuda } from "@/components/fuda/Fuda";
-import { KEYWORD_KANJI, TEAM_SIZE, TECHNIQUE_KANJI } from "@/lib/battle/types";
+import { TEAM_SIZE } from "@/lib/battle/types";
 import type { CandidateCard } from "@/lib/battle/view";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
@@ -64,7 +64,7 @@ export function TeamPicker({
               aria-label={t("remove", { name: card.name })}
               className="relative rounded-[6px] active:scale-[0.97] motion-reduce:transition-none"
             >
-              <Fuda card={card} size="sm" tilt={false} sizes="30vw" />
+              <Fuda card={card} size="sm" variant="battle" tilt={false} sizes="30vw" />
               <span aria-hidden="true" className="absolute top-0 right-0 flex size-6 items-center justify-center rounded-bl-md bg-sumi/85 text-sm text-washi-paper">
                 ×
               </span>
@@ -110,15 +110,15 @@ export function TeamPicker({
                   aria-label={picked ? t("remove", { name: c.name }) : t("add", { name: c.name })}
                   className={`relative flex w-full flex-col gap-1 rounded-[6px] text-left transition-opacity disabled:opacity-40 ${picked ? "opacity-50" : ""}`}
                 >
-                  <Fuda card={c} size="sm" tilt={false} sizes="(min-width: 768px) 160px, 30vw" />
+                  <Fuda card={c} size="sm" variant="battle" tilt={false} sizes="(min-width: 768px) 160px, 30vw" />
                   <span className="flex flex-wrap items-center gap-1 text-[11px] leading-tight">
                     <span className="tabular-nums">{t("stats", { atk: c.power, hp: c.hp })}</span>
-                    <span lang="ja" className="font-seal text-shu" title={tk(`techniques.${c.technique}.name`)}>
-                      {TECHNIQUE_KANJI[c.technique]}
+                    <span className="text-shu">
+                      {tk(`techniques.${c.technique}.name`)}
                     </span>
                     {c.keywords.map((k) => (
-                      <span key={k} lang="ja" className="rounded-sm bg-surface-2 px-0.5 font-seal" title={tk(`keywords.${k}.name`)}>
-                        {KEYWORD_KANJI[k]}
+                      <span key={k} className="rounded-sm bg-surface-2 px-0.5">
+                        {tk(`keywords.${k}.name`)}
                       </span>
                     ))}
                   </span>

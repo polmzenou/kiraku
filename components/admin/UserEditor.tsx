@@ -104,8 +104,8 @@ function BoosterForms({ boosters }: { boosters: Booster[] }) {
     <section className="flex flex-col gap-4" aria-label={t("boosters")}>
       <SelectField label={t("boosterType")} value={id} onChange={setId} options={options} hint={t("allBoostersHint")} />
       {booster ? <div className="grid gap-4 md:grid-cols-2">
-        <BoosterCreditForm key={`${id}:${booster.count}`} booster={booster} />
-        <BannerPityForm key={`${id}:${booster.pity}`} booster={booster} />
+        <BoosterCreditForm key={`credit:${id}:${booster.count}`} booster={booster} />
+        <BannerPityForm key={`pity:${id}:${booster.pity}`} booster={booster} />
       </div> : <p className="text-sm text-text-muted">{t("noBoosters")}</p>}
       <ul className="flex flex-wrap gap-2 text-sm">{boosters.filter((b) => b.count > 0).map((b) => <li key={b.id} className="rounded-button border border-border bg-surface px-3 py-2">{b.name} <strong className="ml-1 tabular-nums">×{b.count}</strong></li>)}</ul>
     </section>

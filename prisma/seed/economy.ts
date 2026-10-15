@@ -17,6 +17,12 @@ type LotSeed = {
 };
 
 const LOTS: LotSeed[] = [
+  { id: "seed-lot-daily-easy", name: { fr: "Mission du jour · Facile", en: "Daily mission · Easy" }, zeni: 60 },
+  { id: "seed-lot-daily-medium", name: { fr: "Mission du jour · Intermédiaire", en: "Daily mission · Medium" }, zeni: 120 },
+  { id: "seed-lot-daily-hard", name: { fr: "Défi du jour", en: "Daily challenge" }, zeni: 200, standardBoosters: 1 },
+  { id: "seed-lot-weekly-easy", name: { fr: "Mission de la semaine · Facile", en: "Weekly mission · Easy" }, zeni: 200 },
+  { id: "seed-lot-weekly-medium", name: { fr: "Mission de la semaine · Intermédiaire", en: "Weekly mission · Medium" }, zeni: 400, standardBoosters: 1 },
+  { id: "seed-lot-weekly-hard", name: { fr: "Défi de la semaine", en: "Weekly challenge" }, zeni: 800, standardBoosters: 2 },
   { id: "seed-lot-jour-visite", name: { fr: "Bonjour du jour", en: "Daily hello" }, zeni: 50 },
   { id: "seed-lot-jour-ouvrir", name: { fr: "Petit sac de Zeni", en: "Small Zeni pouch" }, zeni: 100 },
   { id: "seed-lot-jour-rare", name: { fr: "Un sachet offert", en: "A free booster" }, zeni: 0, standardBoosters: 1 },
@@ -31,12 +37,51 @@ const LOTS: LotSeed[] = [
 
 type MissionSeed = { key: string; period: MissionPeriod; metric: MissionMetric; goal: number; rarity?: Rarity; lotId: string };
 
-const MISSIONS: MissionSeed[] = [
+export const MISSION_SEEDS: MissionSeed[] = [
   { key: "jour-visite", period: "DAILY", metric: "VISIT", goal: 1, lotId: "seed-lot-jour-visite" },
   { key: "jour-ouvrir-5", period: "DAILY", metric: "OPEN_BOOSTERS", goal: 5, lotId: "seed-lot-jour-ouvrir" },
   { key: "jour-rare", period: "DAILY", metric: "PULL_RARITY", goal: 1, rarity: "RARE", lotId: "seed-lot-jour-rare" },
   { key: "semaine-ouvrir-40", period: "WEEKLY", metric: "OPEN_BOOSTERS", goal: 40, lotId: "seed-lot-semaine-ouvrir" },
   { key: "semaine-decouvrir-20", period: "WEEKLY", metric: "DISCOVER_CARDS", goal: 20, lotId: "seed-lot-semaine-decouvrir" },
+  // Quotidiennes : les objectifs faciles se font en une courte session.
+  { key: "jour-ouvrir-3", period: "DAILY", metric: "OPEN_BOOSTERS", goal: 3, lotId: "seed-lot-daily-easy" },
+  { key: "jour-peu-communes-3", period: "DAILY", metric: "PULL_RARITY", goal: 3, rarity: "UNCOMMON", lotId: "seed-lot-daily-easy" },
+  { key: "jour-decouvrir-3", period: "DAILY", metric: "DISCOVER_CARDS", goal: 3, lotId: "seed-lot-daily-easy" },
+  { key: "jour-recycler-20", period: "DAILY", metric: "RECYCLE_ZENI", goal: 20, lotId: "seed-lot-daily-easy" },
+  { key: "jour-depenser-200", period: "DAILY", metric: "SPEND_ZENI", goal: 200, lotId: "seed-lot-daily-easy" },
+  { key: "jour-ami-1", period: "DAILY", metric: "ADD_FRIENDS", goal: 1, lotId: "seed-lot-daily-easy" },
+  { key: "jour-ouvrir-10", period: "DAILY", metric: "OPEN_BOOSTERS", goal: 10, lotId: "seed-lot-daily-medium" },
+  { key: "jour-rares-5", period: "DAILY", metric: "PULL_RARITY", goal: 5, rarity: "RARE", lotId: "seed-lot-daily-medium" },
+  { key: "jour-epique-1", period: "DAILY", metric: "PULL_RARITY", goal: 1, rarity: "EPIC", lotId: "seed-lot-daily-medium" },
+  { key: "jour-decouvrir-8", period: "DAILY", metric: "DISCOVER_CARDS", goal: 8, lotId: "seed-lot-daily-medium" },
+  { key: "jour-recycler-75", period: "DAILY", metric: "RECYCLE_ZENI", goal: 75, lotId: "seed-lot-daily-medium" },
+  { key: "jour-depenser-600", period: "DAILY", metric: "SPEND_ZENI", goal: 600, lotId: "seed-lot-daily-medium" },
+  { key: "jour-cadeau-1", period: "DAILY", metric: "SEND_GIFTS", goal: 1, lotId: "seed-lot-daily-medium" },
+  { key: "jour-ouvrir-20", period: "DAILY", metric: "OPEN_BOOSTERS", goal: 20, lotId: "seed-lot-daily-hard" },
+  { key: "jour-epiques-3", period: "DAILY", metric: "PULL_RARITY", goal: 3, rarity: "EPIC", lotId: "seed-lot-daily-hard" },
+  { key: "jour-decouvrir-18", period: "DAILY", metric: "DISCOVER_CARDS", goal: 18, lotId: "seed-lot-daily-hard" },
+  { key: "jour-recycler-200", period: "DAILY", metric: "RECYCLE_ZENI", goal: 200, lotId: "seed-lot-daily-hard" },
+  { key: "jour-depenser-1500", period: "DAILY", metric: "SPEND_ZENI", goal: 1_500, lotId: "seed-lot-daily-hard" },
+  { key: "jour-cadeaux-3", period: "DAILY", metric: "SEND_GIFTS", goal: 3, lotId: "seed-lot-daily-hard" },
+  // Hebdomadaires : davantage de régularité, sans demander de rareté mythique.
+  { key: "semaine-ouvrir-15", period: "WEEKLY", metric: "OPEN_BOOSTERS", goal: 15, lotId: "seed-lot-weekly-easy" },
+  { key: "semaine-rares-10", period: "WEEKLY", metric: "PULL_RARITY", goal: 10, rarity: "RARE", lotId: "seed-lot-weekly-easy" },
+  { key: "semaine-decouvrir-8", period: "WEEKLY", metric: "DISCOVER_CARDS", goal: 8, lotId: "seed-lot-weekly-easy" },
+  { key: "semaine-recycler-100", period: "WEEKLY", metric: "RECYCLE_ZENI", goal: 100, lotId: "seed-lot-weekly-easy" },
+  { key: "semaine-depenser-800", period: "WEEKLY", metric: "SPEND_ZENI", goal: 800, lotId: "seed-lot-weekly-easy" },
+  { key: "semaine-cadeaux-2", period: "WEEKLY", metric: "SEND_GIFTS", goal: 2, lotId: "seed-lot-weekly-easy" },
+  { key: "semaine-ami-1", period: "WEEKLY", metric: "ADD_FRIENDS", goal: 1, lotId: "seed-lot-weekly-easy" },
+  { key: "semaine-epiques-3", period: "WEEKLY", metric: "PULL_RARITY", goal: 3, rarity: "EPIC", lotId: "seed-lot-weekly-medium" },
+  { key: "semaine-recycler-400", period: "WEEKLY", metric: "RECYCLE_ZENI", goal: 400, lotId: "seed-lot-weekly-medium" },
+  { key: "semaine-depenser-2500", period: "WEEKLY", metric: "SPEND_ZENI", goal: 2_500, lotId: "seed-lot-weekly-medium" },
+  { key: "semaine-cadeaux-6", period: "WEEKLY", metric: "SEND_GIFTS", goal: 6, lotId: "seed-lot-weekly-medium" },
+  { key: "semaine-amis-3", period: "WEEKLY", metric: "ADD_FRIENDS", goal: 3, lotId: "seed-lot-weekly-medium" },
+  { key: "semaine-ouvrir-120", period: "WEEKLY", metric: "OPEN_BOOSTERS", goal: 120, lotId: "seed-lot-weekly-hard" },
+  { key: "semaine-legendaire-1", period: "WEEKLY", metric: "PULL_RARITY", goal: 1, rarity: "LEGENDARY", lotId: "seed-lot-weekly-hard" },
+  { key: "semaine-decouvrir-60", period: "WEEKLY", metric: "DISCOVER_CARDS", goal: 60, lotId: "seed-lot-weekly-hard" },
+  { key: "semaine-recycler-1000", period: "WEEKLY", metric: "RECYCLE_ZENI", goal: 1_000, lotId: "seed-lot-weekly-hard" },
+  { key: "semaine-depenser-6000", period: "WEEKLY", metric: "SPEND_ZENI", goal: 6_000, lotId: "seed-lot-weekly-hard" },
+  { key: "semaine-cadeaux-12", period: "WEEKLY", metric: "SEND_GIFTS", goal: 12, lotId: "seed-lot-weekly-hard" },
 ];
 
 type ShopSeed = {
@@ -77,11 +122,10 @@ const SHOP: ShopSeed[] = [
   },
 ];
 
-export async function upsertEconomySeeds(db: PrismaClient) {
+async function upsertLots(db: PrismaClient, lots: readonly LotSeed[]) {
   const standard = await db.boosterType.findUnique({ where: { slug: "standard" }, select: { id: true } });
-  const created = { lots: 0, missions: 0, shopItems: 0, settings: 0 };
-
-  for (const lot of LOTS) {
+  let created = 0;
+  for (const lot of lots) {
     if (await db.lot.findUnique({ where: { id: lot.id }, select: { id: true } })) continue;
     const items = [
       ...(lot.standardBoosters && standard
@@ -92,17 +136,34 @@ export async function upsertEconomySeeds(db: PrismaClient) {
     // Sans booster standard en base, un lot qui n'aurait plus rien à donner n'est pas créé
     if (lot.zeni === 0 && items.length === 0) continue;
     await db.lot.create({ data: { id: lot.id, name: lot.name, zeni: lot.zeni, items: { create: items } } });
-    created.lots++;
+    created++;
   }
-  const lotIds = new Set((await db.lot.findMany({ select: { id: true } })).map((l) => l.id));
+  return created;
+}
 
-  for (const [i, m] of MISSIONS.entries()) {
+async function upsertMissions(db: PrismaClient) {
+  const lotIds = new Set((await db.lot.findMany({ select: { id: true } })).map((l) => l.id));
+  let created = 0;
+  for (const [i, m] of MISSION_SEEDS.entries()) {
     if (!lotIds.has(m.lotId) || (await db.mission.findUnique({ where: { key: m.key }, select: { id: true } }))) continue;
     await db.mission.create({
       data: { key: m.key, period: m.period, metric: m.metric, goal: m.goal, rarity: m.rarity ?? null, lotId: m.lotId, sortOrder: i },
     });
-    created.missions++;
+    created++;
   }
+  return created;
+}
+
+/** Ajout du catalogue de missions et de ses lots, sans modifier les réglages existants. */
+export async function upsertMissionSeeds(db: PrismaClient) {
+  const wanted = new Set(MISSION_SEEDS.map((m) => m.lotId));
+  const lots = await upsertLots(db, LOTS.filter((lot) => wanted.has(lot.id)));
+  return { lots, missions: await upsertMissions(db) };
+}
+
+export async function upsertEconomySeeds(db: PrismaClient) {
+  const created = { lots: await upsertLots(db, LOTS), missions: await upsertMissions(db), shopItems: 0, settings: 0 };
+  const lotIds = new Set((await db.lot.findMany({ select: { id: true } })).map((l) => l.id));
 
   for (const [i, s] of SHOP.entries()) {
     if (!lotIds.has(s.lotId) || (await db.shopItem.findUnique({ where: { slug: s.slug }, select: { id: true } }))) continue;

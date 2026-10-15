@@ -12,7 +12,7 @@ export function usePlayerName() {
   return (p: PlayerView | null) => (!p ? "—" : "bot" in p ? t("board.bot", { name: t(`bots.${p.bot}` as "bots.TENGU") }) : p.username);
 }
 
-/** Orbes 気 : cristaux en losange, pleins jusqu'au nombre disponible. */
+/** Orbes : cristaux en losange, pleins jusqu'au nombre disponible. */
 export function Orbs({ count, max, label }: { count: number; max: number; label: string }) {
   return (
     <span className="flex items-center gap-1.5" role="img" aria-label={label}>
@@ -79,16 +79,15 @@ function Row({
 function Plate({ player, standing, active, children }: { player: PlayerView | null; standing: number; active: boolean; children?: ReactNode }) {
   const t = useTranslations("battle.board");
   const name = usePlayerName();
-  const initial = !player ? "?" : "bot" in player ? "鬼" : player.username.slice(0, 1).toUpperCase();
+  const initial = !player ? "?" : name(player).slice(0, 1).toUpperCase();
   return (
     <div className="flex min-h-12 items-center justify-between gap-3 px-1">
       <div className="flex min-w-0 items-center gap-2.5">
         <span
           aria-hidden="true"
-          lang={player && "bot" in player ? "ja" : undefined}
           className={`flex size-10 shrink-0 items-center justify-center rounded-full border-2 bg-[radial-gradient(circle_at_35%_30%,#3a3029,#15120f)] font-title text-lg font-extrabold text-washi-paper transition-shadow md:size-12 md:text-xl ${
             active ? "border-[var(--board-accent)] shadow-[0_0_16px_var(--board-glow)]" : "border-[#4a3f33]"
-          } ${player && "bot" in player ? "font-seal" : ""}`}
+          }`}
         >
           {initial}
         </span>

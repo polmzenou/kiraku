@@ -34,6 +34,7 @@ enum CoinReason {
   DISCORD_LINK
   BOOSTER // achat d'un booster en Zeni
   GIFT // booster offert à un ami
+  SEASON // récompense de fin de saison du classé
 }
 
 // Qui voit le profil public (/u/[username]) ; FRIENDS = amis acceptés seulement
@@ -62,6 +63,11 @@ model User {
   boosterAnchor       DateTime          @default(now()) // début du cycle de booster en cours
   rankPoints          Int               @default(0) // points de classement (mode classé)
   battleTeam          String[] // ids de Card de la dernière équipe de combat (pré-remplie au prochain combat)
+  // Classé (étape 9b) : protection après une montée de rang, meilleur rang de la saison
+  rankProtection      Int               @default(0) // parties classées encore protégées
+  seasonPeakPc        Int               @default(0)
+  seasonPeakGrand     Boolean           @default(false) // a été Grand Champion cette saison
+  seasonGames         Int               @default(0)
   role                Role              @default(USER)
   bannedAt            DateTime?
   isGuest             Boolean           @default(true)
@@ -112,10 +118,11 @@ model User {
   leadingBids Auction[] @relation("leader")
   bids        Bid[]
 
-  review      Review?
-  battlesAsP1 Battle[]     @relation("battleP1")
-  battlesAsP2 Battle[]     @relation("battleP2")
-  battleQueue BattleQueue?
+  review        Review?
+  battlesAsP1   Battle[]       @relation("battleP1")
+  battlesAsP2   Battle[]       @relation("battleP2")
+  battleQueue   BattleQueue?
+  seasonResults SeasonResult[]
 
   @@index([rankPoints])
 }
@@ -234,26 +241,26 @@ model Series {
 
 // Le personnage (le modèle de carte) ; l'exemplaire possédé sera UserCard
 model Card {
-  id            String      @id @default(cuid())
-  anilistId     Int         @unique // id du personnage AniList = /wiki/[anilistId]
+  id            String          @id @default(cuid())
+  anilistId     Int             @unique // id du personnage AniList = /wiki/[anilistId]
   name          String
   nameNative    String? // nom japonais, écrit verticalement sur la fuda
   imageUrl      String
   favorites     Int // favoris AniList au dernier import
-  rank          Int?        @unique // 1 = le plus populaire ; null = sorti du catalogue
+  rank          Int?            @unique // 1 = le plus populaire ; null = sorti du catalogue
   rarity        Rarity
   power         Int // 力 attaque en combat
   ki            Int // 気 défense ; HP et vitesse sont dérivés
   seriesId      String
-  series        Series      @relation(fields: [seriesId], references: [id])
+  series        Series          @relation(fields: [seriesId], references: [id])
   gender        String? // Female | Male | … (AniList, souvent vide)
   birthMonth    Int?
   birthDay      Int?
   role          String? // MAIN | SUPPORTING | BACKGROUND dans l'œuvre principale
   searchText    String // nom, nom natif et titres, en minuscules sans accents
   addedImportId String? // import qui a fait entrer la carte (nouveautés)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
   copies        UserCard[]
   discoveries   Discovery[]
   lotItems      LotItem[]
@@ -861,6 +868,16 @@ model Battle {
   winnerSide    Int? // 0 = p1, 1 = p2, null = nul ou en cours
   endReason     BattleEndReason?
   rewardZeni    Int              @default(0) // versés au gagnant
+  // Classé (étape 9b) : rang de chaque camp au lancement (couleur du plateau), PC avant et variation
+  seasonId      String?
+  season        Season?          @relation(fields: [seasonId], references: [id])
+  p1Tier        String?
+  p2Tier        String?
+  pcBeforeP1    Int?
+  pcBeforeP2    Int?
+  pcDeltaP1     Int?
+  pcDeltaP2     Int?
+  crushing      Boolean          @default(false) // victoire écrasante
   createdAt     DateTime         @default(now())
   startedAt     DateTime?
   endedAt       DateTime?
@@ -894,4 +911,37 @@ model BattleQueue {
   seenAt     DateTime   @default(now())
 
   @@index([mode, joinedAt])
+}
+
+// --- Classé (étape 9b) ---
+
+// Saison du classé, calée sur le calendrier (ranked.seasonMonths) ; closedAt pose la fin une seule fois
+model Season {
+  id       String         @id @default(cuid())
+  number   Int            @unique
+  startsAt DateTime
+  endsAt   DateTime
+  closedAt DateTime?
+  results  SeasonResult[]
+  battles  Battle[]
+
+  @@index([closedAt, endsAt])
+}
+
+// Bilan d'un joueur en fin de saison ; la récompense (lot du meilleur rang atteint) se réclame une fois
+model SeasonResult {
+  seasonId  String
+  season    Season    @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  finalPc   Int
+  peakPc    Int
+  peakTier  String
+  games     Int
+  lotId     String?
+  claimedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@id([seasonId, userId])
+  @@index([userId, claimedAt])
 }

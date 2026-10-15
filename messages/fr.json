@@ -81,6 +81,7 @@
     "back": "Retour à l'accueil"
   },
   "footer": {
+    "versionNotice": "Ceci n'est que la v0.8 du site, des mises à jour sont susceptibles d'arriver rapidement.",
     "disclaimer": "Projet fan non officiel. Les personnages appartiennent à leurs ayants droit.",
     "nav": "Liens du site",
     "account": "Mon compte",
@@ -223,6 +224,92 @@
     "searchSubmit": "Chercher",
     "rarityFilter": "Filtrer par rareté",
     "allRarities": "Toutes",
+    "sortAndFilters": "Tri et filtres",
+    "sortBy": "Trier par",
+    "direction": "Ordre",
+    "sortSummary": "{sort} · {direction}",
+    "sorts": {
+      "number": "Numéro",
+      "rarity": "Rareté",
+      "name": "Nom",
+      "power": "Puissance 力",
+      "ki": "Ki 気",
+      "favorites": "Popularité"
+    },
+    "dirs": {
+      "number": {
+        "asc": "Numéros croissants",
+        "desc": "Numéros décroissants"
+      },
+      "rarity": {
+        "asc": "Plus courantes d'abord",
+        "desc": "Plus rares d'abord"
+      },
+      "name": {
+        "asc": "A → Z",
+        "desc": "Z → A"
+      },
+      "power": {
+        "asc": "Plus faible d'abord",
+        "desc": "Plus forte d'abord"
+      },
+      "ki": {
+        "asc": "Plus bas d'abord",
+        "desc": "Plus haut d'abord"
+      },
+      "favorites": {
+        "asc": "Moins populaires d'abord",
+        "desc": "Plus populaires d'abord"
+      }
+    },
+    "allSeries": "Toutes les séries",
+    "searchSeries": "Chercher une série…",
+    "noSeries": "Aucune série ne correspond.",
+    "seriesOption": "{title} ({count})",
+    "demographic": "Catégorie de l'œuvre",
+    "allDemographics": "Toutes",
+    "demographics": {
+      "Shounen": "Shōnen",
+      "Seinen": "Seinen",
+      "Shoujo": "Shōjo",
+      "Josei": "Josei",
+      "Kids": "Jeunesse"
+    },
+    "genre": "Genre de l'œuvre",
+    "allGenres": "Tous les genres",
+    "genres": {
+      "Action": "Action",
+      "Adventure": "Aventure",
+      "Comedy": "Comédie",
+      "Drama": "Drame",
+      "Ecchi": "Ecchi",
+      "Fantasy": "Fantasy",
+      "Hentai": "Hentai",
+      "Horror": "Horreur",
+      "Mahou Shoujo": "Magical girl",
+      "Mecha": "Mecha",
+      "Music": "Musique",
+      "Mystery": "Mystère",
+      "Psychological": "Psychologique",
+      "Romance": "Romance",
+      "Sci-Fi": "Science-fiction",
+      "Slice of Life": "Tranche de vie",
+      "Sports": "Sport",
+      "Supernatural": "Surnaturel",
+      "Thriller": "Thriller"
+    },
+    "gender": "Sexe du personnage",
+    "allGenders": "Tous",
+    "genders": {
+      "Male": "Homme",
+      "Female": "Femme",
+      "Non-binary": "Non-binaire",
+      "unknown": "Non renseigné"
+    },
+    "activeFilters": "Filtres actifs",
+    "removeFilter": "Retirer le filtre {filter}",
+    "resetFilters": "Tout réinitialiser",
+    "done": "Voir les personnages",
     "empty": "Aucun personnage ne correspond à ta recherche.",
     "emptyCatalog": "Le catalogue est vide pour l'instant : lance l'import AniList.",
     "pagination": "Pages du wiki",
@@ -1251,7 +1338,7 @@
       "lotUsage": "{missions, plural, =0 {Aucune mission} one {# mission} other {# missions}} · {items, plural, =0 {aucun article} one {# article} other {# articles}}",
       "edit": "Modifier",
       "missionsTitle": "Missions",
-      "missionsIntro": "Objectifs quotidiens et hebdomadaires. Une mission déjà réclamée se désactive au lieu d'être supprimée.",
+      "missionsIntro": "Catalogue de la rotation : 5 missions par période, avec 2 faciles, 2 intermédiaires et 1 difficile selon les objectifs. La sélection change à minuit et le lundi. Une mission déjà réclamée se désactive au lieu d'être supprimée.",
       "missionMeta": "{key} · lot {lot} · {claims, plural, =0 {jamais réclamée} one {# réclamation} other {# réclamations}}",
       "shopTitle": "Boutique",
       "shopIntro": "Articles en Zeni : chacun livre un lot. Le prix vu par le joueur est revérifié à l'achat.",
@@ -1364,7 +1451,7 @@
       "flow": "Déroulé",
       "stats": "Stats dérivées",
       "damage": "Dégâts",
-      "orbs": "Orbes 気",
+      "orbs": "Orbes",
       "keywordsByRarity": "Passifs par rareté",
       "keywordValues": "Valeurs des passifs",
       "techniques": "Techniques (coût en orbes, valeur)",
@@ -1380,7 +1467,7 @@
         "roomMinutes": "Durée de vie d'une salle d'amis (min)",
         "pollSeconds": "Sondage sans Ably (s)",
         "hpBase": "PV de base",
-        "hpPerKiPct": "PV par point de 気 (en %, 160 = 1,6)",
+        "hpPerKiPct": "PV par point de défense (en %, 160 = 1,6)",
         "critPermille": "Chance de critique (‰)",
         "critPct": "Multiplicateur critique (%)",
         "varianceMinPct": "Aléa minimum (%)",
@@ -1409,6 +1496,66 @@
       "saving": "Enregistrement…",
       "saved": "{count, plural, one {# réglage enregistré} other {# réglages enregistrés}}.",
       "invalid": "Une valeur est hors bornes.",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Valeurs refusées par le serveur.",
+        "RATE_LIMITED": "Trop d'enregistrements : attends une minute.",
+        "unexpected": "Erreur inattendue. Réessaie.",
+        "CLOSED": "Cette vente est déjà terminée.",
+        "NOT_FOUND": "Vente introuvable.",
+        "UNAVAILABLE": "Action impossible pour le moment."
+      },
+      "log": "Derniers changements",
+      "logEmpty": "Aucun changement pour l'instant.",
+      "logEntry": "{key} par {admin}"
+    },
+    "ranked": {
+      "title": "Classé",
+      "intro": "Rangs, barème des PC, appariement, saisons et récompenses. Les changements valent pour les parties suivantes.",
+      "season": "Saison en cours",
+      "seasonInfo": "Saison {number} · fin le {date, date, long}",
+      "players": "Joueurs classés cette saison",
+      "games": "Parties classées (24 h)",
+      "grand": "Grands Champions",
+      "count": "{count, number}",
+      "close": "Clore la saison maintenant",
+      "closeConfirm": "Clore la saison {number} maintenant ? Les PC au-dessus du pivot sont réduits et chaque joueur reçoit sa récompense à réclamer. Irréversible.",
+      "closeYes": "Oui, clore la saison",
+      "cancel": "Annuler",
+      "closed": "Saison {number} close : {count, plural, one {# bilan} other {# bilans}}.",
+      "gallery": "Emblèmes",
+      "switches": "Interrupteur",
+      "tiers": "Rangs (PC minimum et barème)",
+      "grandRow": "Grand Champion",
+      "scale": "Barème",
+      "matching": "Appariement",
+      "seasonRules": "Saisons",
+      "rewardLots": "Récompense de fin de saison par meilleur rang",
+      "noLot": "Aucune",
+      "keys": {
+        "enabled": "Classé ouvert",
+        "min": "PC minimum",
+        "win": "Victoire",
+        "crushWin": "Victoire écrasante",
+        "loss": "Défaite",
+        "crushLoss": "Défaite écrasante",
+        "top": "Taille du top",
+        "gapDivisor": "Diviseur de l'écart de niveau",
+        "gapCapPct": "Écart de niveau max (%)",
+        "crushHpPct": "Écrasante : PV restants (%)",
+        "protectionGames": "Parties protégées après une montée",
+        "base": "Écart de PC de départ",
+        "perSecond": "Élargissement par seconde",
+        "max": "Écart maximum",
+        "botPcPct": "PC contre un bot (%)",
+        "seasonMonths": "Durée d'une saison (mois)",
+        "pivot": "Pivot de remise à zéro (PC)",
+        "keepPct": "Part gardée au-dessus du pivot (%)"
+      },
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "saved": "{count, plural, one {# réglage enregistré} other {# réglages enregistrés}}.",
+      "invalid": "Une valeur est hors bornes ou les rangs ne montent pas.",
       "errors": {
         "FORBIDDEN": "Accès refusé.",
         "INVALID": "Valeurs refusées par le serveur.",
@@ -1866,7 +2013,13 @@
     },
     "missions": {
       "title": "Missions",
-      "intro": "Des objectifs chaque jour et chaque semaine, avec une récompense à réclamer.",
+      "intro": "5 missions du jour et 5 de la semaine : une sélection qui tourne, des objectifs faciles aux défis plus corsés. Les missions du jour changent à minuit et celles de la semaine le lundi, à l'heure du jeu.",
+      "difficulty": {
+        "EASY": "Facile",
+        "MEDIUM": "Intermédiaire",
+        "HARD": "Difficile"
+      },
+      "refreshing": "Renouvellement des missions…",
       "disabled": "Les missions sont en pause pour le moment.",
       "empty": "Aucune mission en ce moment. Reviens bientôt !",
       "progress": "{value, number} / {goal, number}",
@@ -2000,7 +2153,8 @@
         "SHOP": "Boutique",
         "DISCORD_LINK": "Bonus de liaison Discord",
         "BOOSTER": "Achat de booster",
-        "GIFT": "Booster offert à un ami"
+        "GIFT": "Booster offert à un ami",
+        "SEASON": "Récompense de saison (classé)"
       }
     },
     "reveal": {
@@ -2062,7 +2216,7 @@
   },
   "battle": {
     "title": "Combat",
-    "intro": "Trois fuda contre trois. À ton tour, chaque carte agit une fois : une attaque, ou sa technique 技 payée en orbes 気.",
+    "intro": "Trois cartes contre trois. À ton tour, chaque carte agit une fois : une attaque, ou sa technique payée en orbes.",
     "guest": "Crée un compte pour combattre : ta collection et tes gains seront gardés.",
     "signUp": "Créer un compte",
     "disabled": "Les combats sont fermés pour le moment.",
@@ -2111,9 +2265,9 @@
     "rules": {
       "title": "Règles",
       "items": {
-        "turn": "À ton tour, chaque carte debout agit une fois : attaque gratuite ou technique 技.",
-        "orbs": "Les orbes 気 paient les techniques : 1 au premier tour, un de plus à chaque tour, jusqu'à {max}.",
-        "damage": "Dégâts : 力 de l'attaquant × 100 / (100 + 気 de la cible), avec 10 % de coups critiques.",
+        "turn": "À ton tour, chaque carte debout agit une fois : attaque gratuite ou technique.",
+        "orbs": "Les orbes paient les techniques : 1 au premier tour, un de plus à chaque tour, jusqu'à {max}.",
+        "damage": "Dégâts : attaque de l'attaquant × 100 / (100 + défense de la cible), avec 10 % de coups critiques.",
         "timer": "{seconds} s par tour. Deux tours expirés d'affilée valent un abandon.",
         "end": "La première équipe sans carte debout perd. Tes cartes reviennent toujours dans ta collection."
       }
@@ -2129,11 +2283,12 @@
       "confirm": "Valider l'équipe",
       "remove": "Retirer {name}",
       "add": "Ajouter {name}",
-      "stats": "力 {atk} · {hp} PV",
+      "stats": "ATQ {atk} · {hp} PV",
       "count": "{count}/3"
     },
     "queue": {
       "title": "Recherche d'un adversaire",
+      "searching": "Recherche",
       "elapsed": "{seconds} s",
       "botSoon": "Personne ? Un bot te rejoint dans {seconds} s.",
       "botNow": "Un adversaire bot rejoint la partie…",
@@ -2161,9 +2316,11 @@
       "yourTurn": "À toi de jouer",
       "theirTurn": "Tour de {name}",
       "turn": "Tour {turn}",
-      "orbs": "{count, plural, one {# orbe} other {# orbes}} 気",
+      "orbs": "{count, plural, one {# orbe} other {# orbes}}",
       "attack": "Attaque",
-      "technique": "{name} · {cost} 気",
+      "attackShort": "ATQ",
+      "defenseShort": "DEF",
+      "technique": "{name} · {cost, plural, one {# orbe} other {# orbes}}",
       "endTurn": "Fin du tour",
       "forfeit": "Abandonner",
       "forfeitConfirm": "Abandonner la partie ? Elle compte comme une défaite.",
@@ -2176,11 +2333,12 @@
       "waitOpponent": "L'adversaire réfléchit…",
       "timer": "{seconds} s restantes",
       "hp": "{hp}/{max}",
-      "fighter": "{name} : {hp} PV sur {max}, 力 {atk}",
+      "fighter": "{name} : {hp} PV sur {max}, attaque {atk}",
       "dead": "{name}, hors combat",
+      "ko": "K.-O.",
       "sealed": "Scellée",
       "poisoned": "Empoisonnée",
-      "buffed": "+{pct} % de 力",
+      "buffed": "+{pct} % d'attaque",
       "barrier": "Barrière",
       "crit": "Critique",
       "block": "Bloqué",
@@ -2223,7 +2381,8 @@
         "KO": "Toutes les cartes adverses sont hors combat.",
         "FORFEIT": "Abandon.",
         "TIMEOUT": "Trop de tours expirés d'affilée.",
-        "TURN_LIMIT": "Limite de tours atteinte : la victoire va aux PV restants."
+        "TURN_LIMIT": "Limite de tours atteinte : la victoire va aux PV restants.",
+        "KO_LOSS": "Toutes tes cartes sont hors combat."
       },
       "zeni": "+{amount, number} Zeni",
       "noZeni": "Pas de Zeni pour cette partie.",
@@ -2273,31 +2432,31 @@
     },
     "techniques": {
       "ISSEN": {
-        "name": "Issen",
+        "name": "Éclair",
         "desc": "Un coup à ×{mult}."
       },
       "KANTSU": {
-        "name": "Kantsū",
-        "desc": "Un coup qui ignore le 気 de la cible."
+        "name": "Percée",
+        "desc": "Un coup qui ignore la défense de la cible."
       },
       "RANBU": {
-        "name": "Ranbu",
+        "name": "Danse des lames",
         "desc": "Frappe tous les ennemis à ×{mult}."
       },
       "IYASHI": {
-        "name": "Iyashi",
+        "name": "Soin",
         "desc": "Soigne un allié de {pct} % de ses PV max."
       },
       "SHUGO": {
-        "name": "Shugo",
-        "desc": "Donne une barrière 結界 à un allié."
+        "name": "Protection",
+        "desc": "Donne une barrière à un allié."
       },
       "KOBU": {
-        "name": "Kobu",
-        "desc": "+{pct} % de 力 à ses alliés, ce tour et le suivant."
+        "name": "Encouragement",
+        "desc": "+{pct} % d'attaque à ses alliés, ce tour et le suivant."
       },
       "FUIN": {
-        "name": "Fūin",
+        "name": "Sceau",
         "desc": "La cible ne peut pas agir à son prochain tour."
       }
     },
@@ -2327,7 +2486,7 @@
       "ko": "{target} est hors combat.",
       "revive": "{target} renaît avec {hp} PV.",
       "barrier": "{target} reçoit une barrière.",
-      "buff": "L'équipe de {player} gagne +{pct} % de 力.",
+      "buff": "L'équipe de {player} gagne +{pct} % d'attaque.",
       "seal": "{target} est scellée.",
       "turn": "Tour de {player}.",
       "timeout": "{player} laisse filer son tour.",
@@ -2336,7 +2495,74 @@
     "detail": {
       "title": "Carte",
       "hint": "Touche une de tes cartes pour voir sa technique et ses passifs.",
-      "stats": "力 {atk} · 気 {def} · {hp}/{max} PV"
+      "stats": "ATQ {atk} · DEF {def} · {hp}/{max} PV"
+    }
+  },
+  "ranked": {
+    "tiers": {
+      "BRONZE": "Bronze",
+      "SILVER": "Argent",
+      "GOLD": "Or",
+      "EMERALD": "Émeraude",
+      "ELITE": "Élite",
+      "CHAMPION": "Champion",
+      "GRAND_CHAMPION": "Grand Champion"
+    },
+    "divisions": {
+      "1": "I",
+      "2": "II",
+      "3": "III"
+    },
+    "rank": "{tier} {division}",
+    "pc": "{pc, number} PC",
+    "toNext": "{count, number} PC avant {target}",
+    "toGrand": "Top {top} à partir de {min, number} PC pour devenir Grand Champion",
+    "grand": "Grand Champion : top {top} du classement",
+    "protection": "{count, plural, one {Protégé encore # partie} other {Protégé encore # parties}}",
+    "protectionHint": "Tu viens de monter de rang : une défaite ne te fera pas redescendre.",
+    "season": "Saison {number}",
+    "seasonEnds": "Fin de saison le {date, date, long}",
+    "play": "Jouer en classé",
+    "disabled": "Le classé est fermé pour le moment.",
+    "games": "{count, plural, =0 {Aucune partie cette saison} one {# partie cette saison} other {# parties cette saison}}",
+    "reward": {
+      "title": "Récompense de la saison {number}",
+      "text": "Meilleur rang atteint : {tier}. Ta récompense t'attend.",
+      "claim": "Recevoir ma récompense",
+      "claimed": "Récompense reçue !",
+      "zeni": "+{amount, number} Zeni",
+      "boosters": "{count, plural, one {# booster} other {# boosters}}",
+      "cards": "{count, plural, one {# carte} other {# cartes}}"
+    },
+    "result": {
+      "title": "Classé",
+      "crushing": "Victoire écrasante",
+      "crushed": "Défaite écrasante",
+      "promoted": "Montée en {tier} !",
+      "demoted": "Retour en {tier}",
+      "grand": "Tu es Grand Champion !",
+      "saved": "Protection : tu restes en {tier}",
+      "delta": "{value} PC",
+      "bot": "Contre un bot : la moitié des PC"
+    },
+    "errors": {
+      "NOT_FOUND": "Aucune récompense pour cette saison.",
+      "NO_REWARD": "Pas de récompense pour ce rang.",
+      "ALREADY_CLAIMED": "Récompense déjà reçue.",
+      "RATE_LIMITED": "Doucement !",
+      "UNAVAILABLE": "Action impossible pour le moment.",
+      "INVALID": "Demande invalide.",
+      "NO_SESSION": "Session expirée : recharge la page.",
+      "GUEST": "Crée un compte pour jouer en classé."
+    },
+    "board": {
+      "tabs": "Classements",
+      "collectors": "Collectionneurs",
+      "ranked": "Classé",
+      "rankedTitle": "Classé · saison {number}",
+      "empty": "Personne n'a encore joué en classé cette saison.",
+      "hidden": "Les profils privés comptent dans le classement mais n'y sont pas affichés.",
+      "grandChampions": "Grands Champions"
     }
   }
 }

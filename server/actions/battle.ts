@@ -23,6 +23,7 @@ import {
 import { battleCtx, getActivity, getBattleView, getUpdateSince, sweepBattlesFor } from "../battle/queries";
 import { publishBattle, publishMatched, toMessage } from "../battle/realtime";
 import { pushLater } from "../market/queries";
+import { ensureSeason } from "../ranked/queries";
 import { rateLimit } from "../ratelimit";
 import { getCurrentUser } from "../user";
 
@@ -95,7 +96,7 @@ async function queueResult(s: QueueStatus): Promise<QueueResult> {
   return { ok: true, state: "NONE" };
 }
 
-const joinQueueSchema = z.object({ cardIds: teamSchema, mode: z.literal("EXHIBITION") }).strict();
+const joinQueueSchema = z.object({ cardIds: teamSchema, mode: z.enum(["EXHIBITION", "RANKED"]) }).strict();
 
 export async function joinQueueAction(input: unknown): Promise<QueueResult> {
   const parsed = joinQueueSchema.safeParse(input);
@@ -103,7 +104,13 @@ export async function joinQueueAction(input: unknown): Promise<QueueResult> {
   const g = await session("battle-queue", { limit: 12, windowSeconds: MINUTE });
   if ("error" in g) return { ok: false, error: g.error };
   try {
-    return await queueResult(await joinQueueWith(prisma, { userId: g.user.id, ...parsed.data }, await battleCtx()));
+    const ctx = await battleCtx();
+    if (parsed.data.mode === "RANKED") {
+      if (!ctx.ranked.enabled) return { ok: false, error: "DISABLED" };
+      // Saison terminée : clôturée avant d'entrer en file (les PC repartent remis à zéro)
+      await ensureSeason(ctx.ranked, ctx.now);
+    }
+    return await queueResult(await joinQueueWith(prisma, { userId: g.user.id, ...parsed.data }, ctx));
   } catch (e) {
     return failure("file", e);
   }
@@ -262,7 +269,7 @@ export async function battleViewAction(input: unknown): Promise<ViewResult> {
   }
   await sweepBattlesFor(user.id);
   const ctx = await battleCtx();
-  const view = await getBattleView(parsed.data.battleId, user.id, ctx.rules);
+  const view = await getBattleView(parsed.data.battleId, user.id, ctx.rules, null, ctx.ranked);
   return view ? { ok: true, view } : { ok: false, error: "NOT_FOUND" };
 }
 

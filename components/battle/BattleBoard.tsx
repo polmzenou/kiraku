@@ -5,11 +5,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { legalActions, other } from "@/lib/battle/engine";
 import { TECHNIQUE_TARGET, type Action, type BattleSetup, type BattleState } from "@/lib/battle/types";
-import type { BattleUpdateView, BattleView } from "@/lib/battle/view";
+import type { BattleUpdateView, BattleView, RankedOutcomeView } from "@/lib/battle/view";
 import { battleSinceAction, claimTimeoutAction, playAction } from "@/server/actions/battle";
 import type { ClientAction } from "@/server/battle/battle-core";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
+import { RankedResult } from "../ranked/RankedResult";
 import { BattleResult } from "./BattleResult";
 import { BattleLog, CardDetail } from "./BattleLog";
 import { BoardLayout, Medallion, Orbs, usePlayerName } from "./BoardLayout";
@@ -44,7 +45,11 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
 
   const version = useRef(view.version);
   const [turnEndsAt, setTurnEndsAt] = useState(view.turnEndsAt);
-  const [final, setFinal] = useState<{ finished: boolean; rewardZeni: number }>({ finished: false, rewardZeni: 0 });
+  const [final, setFinal] = useState<{ finished: boolean; rewardZeni: number; ranked: RankedOutcomeView | null }>({
+    finished: false,
+    rewardZeni: 0,
+    ranked: null,
+  });
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
@@ -58,7 +63,7 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
     (u: BattleUpdateView) => {
       version.current = u.version;
       setTurnEndsAt(u.turnEndsAt);
-      if (u.finished) setFinal({ finished: true, rewardZeni: u.rewardZeni });
+      if (u.finished) setFinal({ finished: true, rewardZeni: u.rewardZeni, ranked: u.ranked });
       setSelected(null);
       play(u.events, u.state);
     },
@@ -268,11 +273,9 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
                 variant={mode === "TECHNIQUE" ? "shu" : "neutral"}
                 disabled={!canAct || techniqueActions.length === 0}
                 onClick={pressTechnique}
+                className="min-w-0 px-2 py-2 text-sm"
                 title={technique ? t(`techniques.${technique}.name`) : undefined}
               >
-                <span lang="ja" aria-hidden="true" className="font-seal">
-                  技
-                </span>
                 {technique ? t("board.technique", { name: t(`techniques.${technique}.name`), cost }) : t("board.techniqueLabel")}
               </Button>
             </div>
@@ -319,6 +322,17 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
           reason={shown.endReason}
           rewardZeni={final.rewardZeni}
           onReplay={() => router.refresh()}
+          ranked={
+            final.ranked?.sides[mySide] && view.ladder ? (
+              <RankedResult
+                side={final.ranked.sides[mySide]!}
+                won={shown.winner === null ? null : shown.winner === mySide}
+                crushing={final.ranked.crushing}
+                ladder={view.ladder}
+                bot={view.players[1] !== null && "bot" in view.players[1]}
+              />
+            ) : null
+          }
         />
       )}
     </>

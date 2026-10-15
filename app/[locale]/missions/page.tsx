@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ClaimMissionButton } from "@/components/economy/ClaimButton";
 import { LotRewards } from "@/components/economy/LotRewards";
+import { MissionResetTimer } from "@/components/economy/MissionResetTimer";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
@@ -29,8 +30,6 @@ const METRIC_KANJI: Record<MissionMetric, string> = {
   SEND_GIFTS: "贈",
   ADD_FRIENDS: "友",
 };
-
-const HOUR = 3_600_000;
 
 /** Missions du jour et de la semaine : progression, récompense, bouton Réclamer. */
 export default async function MissionsPage() {
@@ -60,11 +59,6 @@ export default async function MissionsPage() {
     const custom = localizedSchema.safeParse(m.title);
     if (custom.success) return localize(custom.data, locale);
     return t(`metric.${m.metric}`, { count: m.goal, rarity: m.rarity ? tRarity(m.rarity) : "" });
-  };
-  const resetsIn = (endsAt: Date) => {
-    const hours = Math.max(0, Math.floor((endsAt.getTime() - now.getTime()) / HOUR));
-    const minutes = Math.max(1, Math.ceil(((endsAt.getTime() - now.getTime()) % HOUR) / 60_000));
-    return hours >= 24 ? t("resetsDays", { days: Math.floor(hours / 24), hours: hours % 24 }) : t("resetsHours", { hours, minutes });
   };
   const claimable = missions.filter((m) => m.state === "CLAIMABLE").length;
 
@@ -112,9 +106,7 @@ export default async function MissionsPage() {
                 </span>
                 {t(`period.${period}`)}
               </h2>
-              <p className="rounded-full border border-border bg-surface px-3 py-1 text-xs text-text-muted tabular-nums">
-                {resetsIn(list[0].endsAt)}
-              </p>
+              <MissionResetTimer endsAt={list[0].endsAt.getTime()} initialNow={now.getTime()} />
             </div>
 
             <ul className="grid gap-3 md:grid-cols-2">
@@ -145,6 +137,11 @@ export default async function MissionsPage() {
                     </span>
 
                     <div className="flex min-w-0 flex-1 flex-col gap-2.5">
+                      <span className={`self-start rounded-full border px-2 py-0.5 text-xs font-bold ${
+                        m.difficulty === "HARD" ? "border-shu/40 bg-shu/10 text-shu"
+                          : m.difficulty === "MEDIUM" ? "border-kin/40 bg-kin/10 text-kin"
+                            : "border-border bg-surface-2 text-text-muted"
+                      }`}>{t(`difficulty.${m.difficulty}`)}</span>
                       <div className="flex items-start justify-between gap-3">
                         <p className="font-bold leading-snug">{title}</p>
                         <p className={`shrink-0 text-sm font-bold tabular-nums ${ready || claimed ? "text-kin" : "text-text-muted"}`}>

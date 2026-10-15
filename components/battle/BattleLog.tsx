@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { other } from "@/lib/battle/engine";
-import { KEYWORD_KANJI, TECHNIQUE_KANJI, type BattleEvent, type BattleSetup, type FighterSetup, type Side } from "@/lib/battle/types";
+import type { BattleEvent, BattleSetup, FighterSetup, Side } from "@/lib/battle/types";
 import type { PlayerView } from "@/lib/battle/view";
 import { usePlayerName } from "./BoardLayout";
 
@@ -108,22 +108,16 @@ export function CardDetail({ card, hp, maxHp, rules }: { card: FighterSetup | nu
         <p className="text-sm tabular-nums text-text-muted">{t("detail.stats", { atk: card.atk, def: card.def, hp, max: maxHp })}</p>
       </div>
       <div className="flex gap-2">
-        <span lang="ja" aria-hidden="true" className="font-seal text-2xl text-shu">
-          {TECHNIQUE_KANJI[card.technique]}
-        </span>
         <p className="text-sm">
-          <strong>{t("board.technique", { name: t(`techniques.${card.technique}.name`), cost: tech.cost })}</strong>
+          <strong className="text-shu">{t("board.technique", { name: t(`techniques.${card.technique}.name`), cost: tech.cost })}</strong>
           <br />
           <span className="text-text-muted">{t(`techniques.${card.technique}.desc`, { mult: (tech.value / 100).toLocaleString(), pct: tech.value })}</span>
         </p>
       </div>
       {card.keywords.map((kw) => (
         <div key={kw} className="flex gap-2">
-          <span lang="ja" aria-hidden="true" className="min-w-8 font-seal text-lg text-kin">
-            {KEYWORD_KANJI[kw]}
-          </span>
           <p className="text-sm">
-            <strong>{t(`keywords.${kw}.name`)}</strong>
+            <strong className="text-kin">{t(`keywords.${kw}.name`)}</strong>
             <br />
             <span className="text-text-muted">{t(`keywords.${kw}.desc`, { ...kwValues, pct: kwPct[kw] })}</span>
           </p>

@@ -49,8 +49,8 @@ export function RoomLobby({ view, candidates, lastTeam }: { view: BattleView; ca
   if (view.canJoin) {
     return (
       <section className="flex flex-col items-center gap-4 rounded-lg border border-border bg-surface px-4 py-8 text-center">
-        <span aria-hidden="true" lang="ja" className="font-seal text-5xl text-shu">
-          戦
+        <span aria-hidden="true" className="font-title text-3xl font-bold text-shu">
+          {t("title")}
         </span>
         <h2 className="font-title text-xl font-bold">{t("room.invited", { name: name(view.players[0]) })}</h2>
         {time && <p className="text-sm text-text-muted">{t("room.expires", { time })}</p>}

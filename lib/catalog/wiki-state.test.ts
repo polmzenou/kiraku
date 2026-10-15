@@ -17,7 +17,7 @@ describe("wiki possession et découverte", () => {
     expect(selectWikiPage(index, { ownership: "owned", after: null }, collection)).toEqual({ ids: [60, 99], nextAfter: null });
   });
 
-  it("filtre les manquantes avant de paginer, en conservant un curseur de rang", () => {
+  it("filtre les manquantes avant de paginer, en conservant un curseur de position", () => {
     const owned = { ...collection, cards: new Map(Array.from({ length: 10 }, (_, i) => [i + 1, { copies: 1, discovered: true }])) };
     const first = selectWikiPage(index, { ownership: "missing", after: null }, owned);
     expect(first.ids).toHaveLength(48);
@@ -52,5 +52,16 @@ describe("wiki possession et découverte", () => {
     const unavailable = emptyWikiCollection(false);
     expect(wikiCardState(unavailable, 60)).toBeNull();
     expect(selectWikiPage(index, { ownership: "owned", after: null }, unavailable)).toEqual(selectWikiPage(index, { ownership: "all", after: null }, unavailable));
+  });
+
+  it("pagine dans l'ordre choisi, même quand les numéros des cartes sont décroissants", () => {
+    const reversed: CatalogSearchIndex = Array.from({ length: 100 }, (_, i) => [100 - i, i + 1]);
+    const first = selectWikiPage(reversed, { ownership: "all", after: null }, collection);
+    const second = selectWikiPage(reversed, { ownership: "all", after: first.nextAfter }, collection);
+    const third = selectWikiPage(reversed, { ownership: "all", after: second.nextAfter }, collection);
+    expect(first.ids).toEqual(Array.from({ length: 48 }, (_, i) => 100 - i));
+    expect([...first.ids, ...second.ids, ...third.ids]).toEqual(reversed.map(([id]) => id));
+    expect(third.nextAfter).toBeNull();
+    expect(selectWikiPage(reversed, { ownership: "owned", after: null }, collection).ids).toEqual([99, 60]);
   });
 });

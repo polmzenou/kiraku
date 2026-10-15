@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { botAction } from "@/lib/battle/bot";
 import { DEFAULT_BATTLE_RULES, type BattleRules } from "@/lib/battle/config";
+import { DEFAULT_RANKED_RULES } from "@/lib/ranked/defaults";
 import type { Action, BattleSetup, BattleState } from "@/lib/battle/types";
 import { seededRng } from "@/lib/rng";
 import { createAuctionWith } from "../market/auction-core";
@@ -57,6 +58,8 @@ describe.skipIf(!url)("combat atomique (base réelle)", () => {
       rules: { ...DEFAULT_BATTLE_RULES, ...over },
       random: seededRng(seed++),
       dayStart: new Date(now.getTime() - 12 * HOUR),
+      ranked: DEFAULT_RANKED_RULES,
+      timeZone: "Europe/Paris",
     };
   }
 

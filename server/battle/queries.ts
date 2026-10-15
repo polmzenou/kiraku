@@ -5,12 +5,13 @@ import { replay } from "@/lib/battle/engine";
 import { combatStats, keywordsFor, techniqueFor } from "@/lib/battle/stats";
 import type { Action, BattleSetup, BattleState, Side } from "@/lib/battle/types";
 import type { Activity, BattleUpdateView, BattleView, CandidateCard, HistoryItem, PlayerView } from "@/lib/battle/view";
-import type { BoardTier } from "@/lib/battle/tiers";
+import { parseBoardTier, type BoardTier } from "@/lib/battle/tiers";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { periodWindow } from "@/lib/economy/period";
 import type { SettingValue } from "@/lib/settings/defaults";
 import { prisma } from "../db";
 import { ablyEnabled } from "../env";
+import { getRankedRules } from "../ranked/queries";
 import { getSetting } from "../settings";
 import { getRelation } from "../social/queries";
 import { sweepStaleWith, type Ctx } from "./battle-core";
@@ -27,8 +28,8 @@ export async function getBattleRules(): Promise<BattleRules> {
 
 /** Contexte du cœur : réglages, horloge, hasard cryptographique et début du jour de jeu. */
 export async function battleCtx(now = new Date()): Promise<Ctx> {
-  const [rules, timeZone] = await Promise.all([getBattleRules(), getSetting("game.timeZone")]);
-  return { now, rules, random: (max) => randomInt(0, max), dayStart: periodWindow("DAILY", now, timeZone).start };
+  const [rules, timeZone, ranked] = await Promise.all([getBattleRules(), getSetting("game.timeZone"), getRankedRules()]);
+  return { now, rules, random: (max) => randomInt(0, max), dayStart: periodWindow("DAILY", now, timeZone).start, ranked, timeZone };
 }
 
 /** Règle les tours expirés, salles périmées et places de file d'un joueur. Ne fait jamais échouer l'affichage. */
@@ -53,8 +54,9 @@ export async function getBattleView(
   battleId: string,
   viewerId: string,
   timing: { pollSeconds: number; turnSeconds: number },
-  /** Aperçu d'un rang sur le plateau (admins seulement, en attendant le classé). */
+  /** Aperçu d'un rang sur le plateau (admins seulement). */
   previewTier: BoardTier | null = null,
+  ladder: BattleView["ladder"] = null,
 ): Promise<BattleView | null> {
   const b = await prisma.battle.findUnique({
     where: { id: battleId },
@@ -75,6 +77,13 @@ export async function getBattleView(
       winnerSide: true,
       endReason: true,
       rewardZeni: true,
+      p1Tier: true,
+      p2Tier: true,
+      pcBeforeP1: true,
+      pcBeforeP2: true,
+      pcDeltaP1: true,
+      pcDeltaP2: true,
+      crushing: true,
       p1: { select: playerSelect },
       p2: { select: playerSelect },
     },
@@ -110,7 +119,12 @@ export async function getBattleView(
     pollSeconds: timing.pollSeconds,
     turnSeconds: timing.turnSeconds,
     // Le rang d'une partie classée sera figé au lancement (étape 9b)
-    tier: previewTier,
+    tier: previewTier ?? parseBoardTier(mySide === 0 ? b.p1Tier : b.p2Tier),
+    ranked:
+      b.mode === "RANKED" && finished
+        ? { crushing: b.crushing, before: [b.pcBeforeP1, b.pcBeforeP2], delta: [b.pcDeltaP1, b.pcDeltaP2] }
+        : null,
+    ladder: b.mode === "RANKED" && ladder ? { tiers: ladder.tiers, grandChampion: ladder.grandChampion } : null,
   };
 }
 
@@ -137,6 +151,8 @@ export async function getUpdateSince(battleId: string, viewerId: string, from: n
     turnEndsAt: b.turnEndsAt?.toISOString() ?? null,
     finished: b.status === "FINISHED",
     rewardZeni: b.rewardZeni,
+    // Le détail classé arrive avec la mise à jour en direct ; un rattrapage relit la page
+    ranked: null,
   };
 }
 
@@ -217,6 +233,8 @@ export async function getHistory(userId: string, take = 20): Promise<HistoryItem
       winnerSide: true,
       endReason: true,
       rewardZeni: true,
+      pcDeltaP1: true,
+      pcDeltaP2: true,
       endedAt: true,
       p1: { select: playerSelect },
       p2: { select: playerSelect },
@@ -232,6 +250,7 @@ export async function getHistory(userId: string, take = 20): Promise<HistoryItem
       result: b.winnerSide === null ? "DRAW" : b.winnerSide === mySide ? "WIN" : "LOSS",
       endReason: b.endReason,
       rewardZeni: b.winnerSide === mySide ? b.rewardZeni : 0,
+      pcDelta: mySide === 0 ? b.pcDeltaP1 : b.pcDeltaP2,
       endedAt: (b.endedAt ?? new Date()).toISOString(),
     };
   });

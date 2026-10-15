@@ -7,7 +7,7 @@ export function SectionTitle({
   id,
 }: {
   id?: string;
-  kanji: string;
+  kanji?: string;
   title: string;
   subtitle?: string;
   level?: 1 | 2;
@@ -15,13 +15,13 @@ export function SectionTitle({
   const Heading = level === 1 ? "h1" : "h2";
   return (
     <div className="flex min-w-0 items-start gap-3">
-      <span
+      {kanji && <span
         aria-hidden="true"
         lang="ja"
         className={`shrink-0 font-seal leading-none text-shu [writing-mode:vertical-rl] ${level === 1 ? "text-4xl" : "text-lg"}`}
       >
         {kanji}
-      </span>
+      </span>}
       <div className="flex min-w-0 flex-col gap-1">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <Heading id={id} className={`font-title font-extrabold ${level === 1 ? "text-3xl" : "text-xl"}`}>{title}</Heading>
