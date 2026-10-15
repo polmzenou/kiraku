@@ -21,6 +21,7 @@ import { attachFromCookie } from "../economy/referral";
 import { createPlayer, publishProfileOnSignup, startingValues } from "../players";
 import { clientIp, rateLimit } from "../ratelimit";
 import { destroyCurrentSession, startSession } from "../session";
+import { checkFormGuard } from "../form-guard";
 import { getCurrentUser } from "../user";
 
 // Formulaires de compte. Ordre des contrôles : session → Zod → propriété → rate limit.
@@ -45,12 +46,20 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
     password: formData.get("password"),
     passwordConfirm: formData.get("passwordConfirm"),
   });
+  // Robots : jeton signé de la page (délai minimal de remplissage) et champ piège
+  const guard = checkFormGuard(formData, "register");
+  if (guard === "tooFast") return { error: "tooFast", values };
+  if (guard !== "ok") return { error: "formExpired", values };
+
   if (!parsed.success) return { fields: fieldErrors(parsed.error), values };
   const { username, email, password } = parsed.data;
 
-  if (!(await rateLimit(`register:${await clientIp()}`, { limit: 5, windowSeconds: HOUR })).success) {
-    return { error: "rateLimited", values };
-  }
+  // Par IP, et par e-mail : on ne teste pas des adresses en série depuis plusieurs IP
+  const [byIp, byEmail] = await Promise.all([
+    rateLimit(`register:${await clientIp()}`, { limit: 5, windowSeconds: HOUR }),
+    rateLimit(`register:email:${email}`, { limit: 3, windowSeconds: HOUR }),
+  ]);
+  if (!byIp.success || !byEmail.success) return { error: "rateLimited", values };
 
   const passwordHash = await hashPassword(password);
   const start = current ? null : await startingValues();

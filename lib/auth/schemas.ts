@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { USERNAME_REGEX } from "../username";
+import { passwordProblem } from "./password-policy";
 
 // Les messages sont des codes, traduits côté interface (auth.fieldErrors.*).
 export const PASSWORD_MIN = 10;
@@ -28,6 +29,11 @@ export const registerSchema = z
   .refine((d) => d.password === d.passwordConfirm, {
     path: ["passwordConfirm"],
     message: "passwordMismatch",
+  })
+  // Ni mot de passe courant, ni pseudo ou e-mail dedans, ni suite prévisible
+  .superRefine((d, ctx) => {
+    const problem = passwordProblem(d.password, { username: d.username, email: d.email });
+    if (problem) ctx.addIssue({ code: "custom", path: ["password"], message: problem });
   });
 
 export const loginSchema = z.object({
@@ -49,6 +55,10 @@ export const resetPasswordSchema = z
   .refine((d) => d.password === d.passwordConfirm, {
     path: ["passwordConfirm"],
     message: "passwordMismatch",
+  })
+  .superRefine((d, ctx) => {
+    const problem = passwordProblem(d.password);
+    if (problem) ctx.addIssue({ code: "custom", path: ["password"], message: problem });
   });
 
 export const FIELD_ERROR_CODES = [
@@ -58,6 +68,9 @@ export const FIELD_ERROR_CODES = [
   "passwordTooShort",
   "passwordTooLong",
   "passwordMismatch",
+  "passwordCommon",
+  "passwordPersonal",
+  "passwordWeak",
   "tokenInvalid",
 ] as const;
 export type FieldErrorCode = (typeof FIELD_ERROR_CODES)[number];

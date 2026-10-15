@@ -82,8 +82,10 @@
     "wiki": "Wiki"
   },
   "auth": {
+    "or": "or",
     "pending": "One moment…",
     "register": {
+      "discord": "Sign up with Discord",
       "title": "Create an account",
       "intro": "Your guest progress is kept: same cards, same balance.",
       "username": "Username",
@@ -94,9 +96,12 @@
       "passwordConfirm": "Confirm password",
       "submit": "Create my account",
       "haveAccount": "Already have an account?",
-      "login": "Sign in"
+      "login": "Sign in",
+      "subtitle": "One account to keep your cards on every device.",
+      "asideTitle": "Keep your fuda for good."
     },
     "login": {
+      "discord": "Log in with Discord",
       "title": "Sign in",
       "email": "Email",
       "password": "Password",
@@ -104,7 +109,9 @@
       "forgot": "Forgot your password?",
       "noAccount": "No account yet?",
       "register": "Create an account",
-      "guestWarning": "You're playing as a guest on this device: signing in to another account will drop this guest progress."
+      "guestWarning": "You're playing as a guest on this device: signing in to another account will drop this guest progress.",
+      "subtitle": "Get back to your collection, friends and sales.",
+      "asideTitle": "Your collection is waiting."
     },
     "forgot": {
       "title": "Forgot password",
@@ -136,7 +143,9 @@
       "invalidCredentials": "Wrong email or password.",
       "banned": "This account is suspended.",
       "tokenInvalid": "This link is no longer valid. Request a new one.",
-      "unexpected": "Something went wrong. Please try again."
+      "unexpected": "Something went wrong. Please try again.",
+      "tooFast": "Sent too quickly: wait a moment and try again.",
+      "formExpired": "The form expired: reload the page and try again."
     },
     "fieldErrors": {
       "required": "Required.",
@@ -145,7 +154,27 @@
       "passwordTooShort": "At least 10 characters.",
       "passwordTooLong": "128 characters max.",
       "passwordMismatch": "The two passwords don't match.",
-      "tokenInvalid": "Invalid link."
+      "tokenInvalid": "Invalid link.",
+      "passwordCommon": "This password is too common: pick a more personal one.",
+      "passwordPersonal": "The password must not contain your username or email.",
+      "passwordWeak": "Password too predictable: mix up the characters."
+    },
+    "perks": {
+      "collection": "Your cards and Zeni, on every device",
+      "keep": "Your guest progress is kept",
+      "market": "The auction house and gifts between friends",
+      "friends": "Friends, showcase and public profile"
+    },
+    "password": {
+      "show": "Show password",
+      "hide": "Hide password",
+      "strength": {
+        "0": "Too short",
+        "1": "Too weak",
+        "2": "Fair",
+        "3": "Strong",
+        "4": "Excellent"
+      }
     }
   },
   "email": {

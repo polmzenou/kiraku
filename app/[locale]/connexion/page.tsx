@@ -1,12 +1,14 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { DiscordButton } from "@/components/auth/DiscordButton";
 import { LoginForm } from "@/components/auth/LoginForm";
-import { PageShell } from "@/components/PageShell";
 import { Link, redirect } from "@/i18n/navigation";
+import { discordEnabled } from "@/server/env";
 import { getCurrentUser } from "@/server/user";
 
 export async function generateMetadata() {
   const t = await getTranslations("auth.login");
-  return { title: t("title") };
+  return { title: t("title"), robots: { index: false, follow: false } };
 }
 
 export default async function LoginPage() {
@@ -14,24 +16,30 @@ export default async function LoginPage() {
   if (user && !user.isGuest) redirect({ href: "/", locale: await getLocale() });
 
   return (
-    <PageShell>
-      <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4">
-        <h1 className="text-2xl font-bold">{t("login.title")}</h1>
-        {user?.isGuest && <p className="text-sm text-text-muted">{t("login.guestWarning")}</p>}
-        <LoginForm />
-        <Link
-          href="/connexion/mot-de-passe-oublie"
-          className="inline-flex min-h-11 w-fit items-center text-sm text-link underline underline-offset-4"
-        >
-          {t("login.forgot")}
-        </Link>
-        <p className="text-sm text-text-muted">
+    <AuthShell
+      kanji="入場"
+      title={t("login.title")}
+      subtitle={t("login.subtitle")}
+      asideTitle={t("login.asideTitle")}
+      perks={[
+        { kanji: "札", text: t("perks.collection") },
+        { kanji: "市", text: t("perks.market") },
+        { kanji: "友", text: t("perks.friends") },
+      ]}
+      notice={user?.isGuest ? t("login.guestWarning") : undefined}
+      footer={
+        <p>
           {t("login.noAccount")}{" "}
-          <Link href="/inscription" className="inline-flex min-h-11 items-center text-link underline underline-offset-4">
+          <Link href="/inscription" className="inline-flex min-h-11 items-center font-medium text-link underline underline-offset-4">
             {t("login.register")}
           </Link>
         </p>
-      </section>
-    </PageShell>
+      }
+    >
+      <div className="flex flex-col gap-4">
+        {discordEnabled && <DiscordButton intent="login" />}
+        <LoginForm />
+      </div>
+    </AuthShell>
   );
 }

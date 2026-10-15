@@ -82,8 +82,10 @@
     "wiki": "Wiki"
   },
   "auth": {
+    "or": "ou",
     "pending": "Un instant…",
     "register": {
+      "discord": "S'inscrire avec Discord",
       "title": "Créer un compte",
       "intro": "Ta progression d'invité est conservée : mêmes cartes, même solde.",
       "username": "Pseudo",
@@ -94,9 +96,12 @@
       "passwordConfirm": "Confirme le mot de passe",
       "submit": "Créer mon compte",
       "haveAccount": "Déjà un compte ?",
-      "login": "Se connecter"
+      "login": "Se connecter",
+      "subtitle": "Un compte pour garder tes cartes sur tous tes appareils.",
+      "asideTitle": "Garde tes fuda pour de bon."
     },
     "login": {
+      "discord": "Se connecter avec Discord",
       "title": "Se connecter",
       "email": "E-mail",
       "password": "Mot de passe",
@@ -104,7 +109,9 @@
       "forgot": "Mot de passe oublié ?",
       "noAccount": "Pas encore de compte ?",
       "register": "Créer un compte",
-      "guestWarning": "Tu joues en invité sur cet appareil : en te connectant à un autre compte, cette progression d'invité sera abandonnée."
+      "guestWarning": "Tu joues en invité sur cet appareil : en te connectant à un autre compte, cette progression d'invité sera abandonnée.",
+      "subtitle": "Retrouve ta collection, tes amis et tes ventes.",
+      "asideTitle": "Ta collection t'attend."
     },
     "forgot": {
       "title": "Mot de passe oublié",
@@ -136,7 +143,9 @@
       "invalidCredentials": "E-mail ou mot de passe incorrect.",
       "banned": "Ce compte est suspendu.",
       "tokenInvalid": "Ce lien n'est plus valable. Demande-en un nouveau.",
-      "unexpected": "Une erreur est survenue. Réessaie."
+      "unexpected": "Une erreur est survenue. Réessaie.",
+      "tooFast": "Envoi trop rapide : patiente un instant puis réessaie.",
+      "formExpired": "Le formulaire a expiré : recharge la page puis réessaie."
     },
     "fieldErrors": {
       "required": "Champ obligatoire.",
@@ -145,7 +154,27 @@
       "passwordTooShort": "10 caractères minimum.",
       "passwordTooLong": "128 caractères maximum.",
       "passwordMismatch": "Les deux mots de passe ne correspondent pas.",
-      "tokenInvalid": "Lien invalide."
+      "tokenInvalid": "Lien invalide.",
+      "passwordCommon": "Ce mot de passe est trop courant : choisis-en un plus personnel.",
+      "passwordPersonal": "Le mot de passe ne doit pas contenir ton pseudo ni ton e-mail.",
+      "passwordWeak": "Mot de passe trop prévisible : varie les caractères."
+    },
+    "perks": {
+      "collection": "Tes cartes et tes Zeni, sur tous tes appareils",
+      "keep": "Ta progression d'invité est conservée",
+      "market": "L'hôtel des ventes et les cadeaux entre amis",
+      "friends": "Amis, vitrine et profil public"
+    },
+    "password": {
+      "show": "Afficher le mot de passe",
+      "hide": "Masquer le mot de passe",
+      "strength": {
+        "0": "Trop court",
+        "1": "Trop faible",
+        "2": "Correct",
+        "3": "Solide",
+        "4": "Excellent"
+      }
     }
   },
   "email": {
