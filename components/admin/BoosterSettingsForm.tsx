@@ -16,7 +16,18 @@ import { updateBoosterSettings, type UpdateSettingsResult } from "@/server/actio
 import { usePercent } from "../boosters/format";
 import { Button } from "../ui/Button";
 
-type FieldName = "intervalMinutes" | "maxStock" | "slotFloors" | "rates" | "pityThreshold" | "goldenEvery" | "goldenFloor" | "divineOdds";
+type FieldName =
+  | "intervalMinutes"
+  | "maxStock"
+  | "slotFloors"
+  | "rates"
+  | "pityThreshold"
+  | "goldenEvery"
+  | "goldenFloor"
+  | "divineOdds"
+  | "rotationHours"
+  | "rotationDemographie"
+  | "rotationGenre";
 const field = (key: BoosterSettingKey) => key.slice("booster.".length) as FieldName;
 
 const toRules = (s: BoosterSettings): DrawRules => ({
@@ -270,6 +281,32 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
               onChange={(v) => set("booster.divineOdds", v)}
               min={0}
               max={1_000_000}
+            />
+          </div>
+        </Fieldset>
+
+        <Fieldset legend={t("rotationSection")}>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <NumberField
+              label={t("fields.rotationHours")}
+              value={draft["booster.rotationHours"]}
+              onChange={(v) => set("booster.rotationHours", v)}
+              min={1}
+              max={24 * 7}
+            />
+            <NumberField
+              label={t("fields.rotationDemographie")}
+              value={draft["booster.rotationDemographie"]}
+              onChange={(v) => set("booster.rotationDemographie", v)}
+              min={0}
+              max={50}
+            />
+            <NumberField
+              label={t("fields.rotationGenre")}
+              value={draft["booster.rotationGenre"]}
+              onChange={(v) => set("booster.rotationGenre", v)}
+              min={0}
+              max={50}
             />
           </div>
         </Fieldset>
