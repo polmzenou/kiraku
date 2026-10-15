@@ -4,6 +4,15 @@ import { cache } from "react";
 import type { BoosterType as BoosterTypeRow } from "@/generated/prisma/client";
 import { groupByRarity, poolCounts, poolSize, type CardPool } from "@/lib/boosters/draw";
 import { dayKey, filterContext, isDynamicFilter, type FilterContext } from "@/lib/boosters/pool-filter";
+import {
+  isRotatingFamily,
+  ROTATING_FAMILIES,
+  rotationSelection,
+  rotationWindow,
+  type RotatingFamily,
+  type RotationPick,
+  type RotationWindow,
+} from "@/lib/boosters/rotation";
 import { availability, type Availability, type BoosterTypeView } from "@/lib/boosters/types";
 import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import { getCatalogVersion } from "../catalog/queries";
@@ -112,10 +121,21 @@ export type BoosterOffer = {
   counts: Record<Rarity, number>;
   size: number;
   availability: Availability;
+  /** Familles tournantes : proposé dans la sélection en cours, ou au repos (caché). */
+  rotation: "featured" | "resting" | null;
 };
 
-/** Ce que la page propose : chaque type avec la taille de son pool du jour et sa disponibilité. */
-export const getBoosterOffers = cache(async (): Promise<BoosterOffer[]> => {
+export type BoosterRotation = {
+  window: RotationWindow;
+  hours: number;
+  /** Types qui seraient proposés sans rotation, dans l'ordre d'affichage. */
+  candidates: Record<RotatingFamily, string[]>;
+  selection: Record<RotatingFamily, RotationPick>;
+};
+
+type BaseOffer = Omit<BoosterOffer, "rotation">;
+
+const loadBaseOffers = cache(async (): Promise<BaseOffer[]> => {
   const [entries, minPool] = await Promise.all([getBoosterTypes(), getSetting("booster.minPool")]);
   const now = new Date();
   return Promise.all(
@@ -125,6 +145,37 @@ export const getBoosterOffers = cache(async (): Promise<BoosterOffer[]> => {
       return { type: entry.type, counts, size, availability: availability(entry.type, now, size, entry.type.minPoolSize ?? minPool) };
     }),
   );
+});
+
+/** Sélection en cours des familles « Par démographie » et « Par genre » (même résultat sur tous les serveurs). */
+export const getBoosterRotation = cache(async (): Promise<BoosterRotation> => {
+  const [offers, hours, timeZone, demographie, genre, pin] = await Promise.all([
+    loadBaseOffers(),
+    getSetting("booster.rotationHours"),
+    getSetting("game.timeZone"),
+    getSetting("booster.rotationDemographie"),
+    getSetting("booster.rotationGenre"),
+    getSetting("booster.rotationPin"),
+  ]);
+  const window = rotationWindow(new Date(), hours, timeZone);
+  const candidates = Object.fromEntries(
+    ROTATING_FAMILIES.map((f) => [f, offers.filter((o) => o.type.family === f && o.availability !== "hidden").map((o) => o.type.slug)]),
+  ) as Record<RotatingFamily, string[]>;
+  const selection = rotationSelection({ candidates, counts: { demographie, genre }, window: window.index, hours, pin });
+  return { window, hours, candidates, selection };
+});
+
+/** Ce que la page propose : chaque type avec la taille de son pool du jour et sa disponibilité. */
+export const getBoosterOffers = cache(async (): Promise<BoosterOffer[]> => {
+  const [offers, rotation] = await Promise.all([loadBaseOffers(), getBoosterRotation()]);
+  return offers.map((offer) => {
+    const family = offer.type.family;
+    if (!isRotatingFamily(family) || offer.availability === "hidden") return { ...offer, rotation: null };
+    // Hors de la sélection en cours : caché comme un type inactif (ni affiché, ni ouvrable hors crédit)
+    return rotation.selection[family].slugs.includes(offer.type.slug)
+      ? { ...offer, rotation: "featured" as const }
+      : { ...offer, availability: "hidden" as const, rotation: "resting" as const };
+  });
 });
 
 export { poolSize };

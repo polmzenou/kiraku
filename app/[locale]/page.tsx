@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { hasLocale, useTranslations } from "next-intl";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { BannerHero, type BannerSlide } from "@/components/boosters/BannerHero";
 import { BoosterArt } from "@/components/boosters/BoosterArt";
 import { BoosterPanel } from "@/components/boosters/BoosterPanel";
@@ -10,6 +10,8 @@ import { NextFreeIn } from "@/components/boosters/NextFreeIn";
 import { OpenLink } from "@/components/boosters/OpenLink";
 import { RatesSheet } from "@/components/boosters/RatesSheet";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
+import { ReviewsSection, type ReviewViewer } from "@/components/home/ReviewsSection";
+import { TopCollectors } from "@/components/home/TopCollectors";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -17,14 +19,25 @@ import { getPathname, Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { poolCounts } from "@/lib/boosters/draw";
 import { boosterPanelData } from "@/lib/boosters/panel";
+import { isRotatingFamily } from "@/lib/boosters/rotation";
 import { BOOSTER_FAMILIES, FAMILY_KANJI, localize, type BoosterFamily } from "@/lib/boosters/types";
 import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { canReview, pinnedFirst } from "@/lib/social/reviews";
 import { readBannerPity } from "@/server/boosters/open-core";
 import { cardViews } from "@/server/boosters/display";
-import { getBoosterOffers, getBoosterPool, getBoosterTypeEntry, getBoosterTypes, getFilterContext } from "@/server/boosters/pools";
+import {
+  getBoosterOffers,
+  getBoosterPool,
+  getBoosterRotation,
+  getBoosterTypeEntry,
+  getBoosterTypes,
+  getFilterContext,
+} from "@/server/boosters/pools";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { boosterStateFrom } from "@/server/boosters/state";
+import { getTopCollectors } from "@/server/collection/leaderboard";
 import { getBoosterCredits } from "@/server/economy/queries";
+import { getOwnReview, getReviewSample, getReviewSummary } from "@/server/social/reviews";
 import { getCurrentUser } from "@/server/user";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]">): Promise<Metadata> {
@@ -52,11 +65,13 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
 
 /** Accueil : choix du booster (planche « Choix du booster »), onglets par famille sur mobile. */
 export default async function BoostersPage({ searchParams }: PageProps<"/[locale]">) {
-  const [t, user, rules, offers, ctx, query, locale] = await Promise.all([
+  const [t, format, user, rules, offers, rotation, ctx, query, locale] = await Promise.all([
     getTranslations("boosters"),
+    getFormatter(),
     getCurrentUser(),
     getBoosterRules(),
     getBoosterOffers(),
+    getBoosterRotation(),
     getFilterContext(),
     searchParams,
     getLocale(),
@@ -79,8 +94,22 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
   const activeFamily: BoosterFamily | undefined =
     families.find((f) => f === askedFamily) ?? selected?.type.family ?? families[0];
 
-  // Boosters crédités (cadeaux d'amis, boutique, récompenses), par type, à ouvrir en premier
-  const [credits, allTypes] = await Promise.all([getBoosterCredits(user.id), getBoosterTypes()]);
+  // Boosters crédités (cadeaux d'amis, boutique, récompenses), par type, à ouvrir en premier ;
+  // en bas de page, avis des joueurs et podium des collectionneurs
+  const member = canReview(user);
+  const [credits, allTypes, reviews, reviewSummary, ownReview, collectors] = await Promise.all([
+    getBoosterCredits(user.id),
+    getBoosterTypes(),
+    getReviewSample(),
+    getReviewSummary(),
+    member ? getOwnReview(user.id) : null,
+    getTopCollectors(3),
+  ]);
+  const reviewViewer: ReviewViewer = member
+    ? { kind: "member", own: ownReview }
+    : user.isGuest && !user.bannedAt
+      ? { kind: "guest" }
+      : { kind: "none" };
   const credited = allTypes
     .filter((e) => (credits.get(e.type.id) ?? 0) > 0 && e.type.filter !== null)
     .map((e) => ({ slug: e.type.slug, name: localize(e.type.name, locale), count: credits.get(e.type.id)! }));
@@ -212,6 +241,11 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
                       </h2>
                       <p className="text-xs text-text-muted">{t(`families.${family}.subtitle`)}</p>
                     </div>
+                    {isRotatingFamily(family) && (
+                      <p className="text-xs text-text-muted">
+                        {t("rotationNext", { when: format.relativeTime(rotation.window.endsAt, state.serverNow) })}
+                      </p>
+                    )}
                     <span aria-hidden="true" className="h-[3px] w-12 -skew-x-12 rounded-full bg-shu" />
                   </div>
                 </div>
@@ -233,6 +267,9 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
           </aside>
         )}
       </div>
+
+      <ReviewsSection reviews={pinnedFirst(reviews)} summary={reviewSummary} viewer={reviewViewer} />
+      <TopCollectors collectors={collectors} />
 
       {/* Mobile : le booster choisi et l'action principale restent à portée du pouce */}
       {selected && panel && (

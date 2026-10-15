@@ -46,6 +46,30 @@ export async function linkDiscord(formData: FormData): Promise<void> {
   await signIn("discord", { redirectTo: parsed.success ? parsed.data : "/" });
 }
 
+const discordIntent = z.enum(["login", "register"]);
+
+/**
+ * Bouton « … avec Discord » de /connexion et /inscription, sans être déjà inscrit.
+ * - login : retrouver un compte existant. La session invitée de cet appareil est abandonnée
+ *   d'abord (comme pour la connexion par e-mail), sinon Auth.js rattacherait ce Discord à l'invité.
+ * - register : créer son compte. L'invité est gardé et Discord lui est rattaché (cartes et
+ *   solde conservés) ; si ce Discord a déjà un compte, /connexion/erreur propose d'y aller.
+ */
+export async function continueWithDiscord(formData: FormData): Promise<void> {
+  if (!discordEnabled) return;
+  const intent = discordIntent.safeParse(formData.get("intent"));
+  if (!intent.success) return;
+  const user = await getCurrentUser();
+  // Un compte inscrit lie Discord depuis /compte (linkDiscord), pas d'ici
+  if (user && !user.isGuest) return;
+
+  const { success } = await rateLimit(`auth:${user?.id ?? await clientIp()}`, { limit: 10, windowSeconds: 60 });
+  if (!success) return;
+
+  if (user && intent.data === "login") await signOut({ redirect: false });
+  await signIn("discord", { redirectTo: "/" });
+}
+
 /**
  * Le compte Discord appartient déjà à un autre joueur : on abandonne la session
  * invitée de cet appareil, puis on se connecte au compte existant.

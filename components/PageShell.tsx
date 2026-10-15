@@ -12,6 +12,7 @@ const FOOTER_LINKS = [
   { label: "nav.shop", href: "/boutique" },
   { label: "nav.market", href: "/marche" },
   { label: "nav.friends", href: "/amis" },
+  { label: "footer.leaderboard", href: "/classement" },
   { label: "footer.wiki", href: "/wiki" },
 ] as const;
 
