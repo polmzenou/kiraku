@@ -20,4 +20,5 @@ export const SEAL_GLYPHS = [
   "挑発結界疾風毒反撃遺言復活", // passifs du combat
   "一閃貫通乱舞癒守護鼓封印", // techniques du combat
   "会心滅", // coup critique, carte hors combat
+  "銅銀翠精覇極番付季", // emblèmes des rangs du classé, classement, saison
 ].join("");

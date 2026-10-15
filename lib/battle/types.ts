@@ -11,30 +11,9 @@ export type Side = 0 | 1;
 export const KEYWORDS = ["TAUNT", "BARRIER", "FLURRY", "POISON", "RIPOSTE", "LAST_WILL", "REVIVE"] as const;
 export type Keyword = (typeof KEYWORDS)[number];
 
-/** Kanji affiché sur les pastilles (police des sceaux, voir lib/seal-glyphs.ts). */
-export const KEYWORD_KANJI: Record<Keyword, string> = {
-  TAUNT: "挑発",
-  BARRIER: "結界",
-  FLURRY: "疾風",
-  POISON: "毒",
-  RIPOSTE: "反撃",
-  LAST_WILL: "遺言",
-  REVIVE: "復活",
-};
-
-/** Une technique 技 par carte, payée en orbes 気. */
+/** Une technique par carte, payée en orbes. */
 export const TECHNIQUES = ["ISSEN", "KANTSU", "RANBU", "IYASHI", "SHUGO", "KOBU", "FUIN"] as const;
 export type Technique = (typeof TECHNIQUES)[number];
-
-export const TECHNIQUE_KANJI: Record<Technique, string> = {
-  ISSEN: "一閃",
-  KANTSU: "貫通",
-  RANBU: "乱舞",
-  IYASHI: "癒し",
-  SHUGO: "守護",
-  KOBU: "鼓舞",
-  FUIN: "封印",
-};
 
 /** Ce que vise une technique : un ennemi, un allié (soi compris) ou personne (effet de zone). */
 export const TECHNIQUE_TARGET: Record<Technique, "ENEMY" | "ALLY" | "NONE"> = {

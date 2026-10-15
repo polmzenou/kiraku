@@ -52,6 +52,7 @@ export function Fuda({
   card,
   series,
   size = "md",
+  variant = "default",
   locked = false,
   monochrome = false,
   preload = false,
@@ -61,6 +62,8 @@ export function Fuda({
   card: FudaCard;
   series?: string;
   size?: FudaSize;
+  /** En combat, les sceaux et stats utilisent des libellés traduits. */
+  variant?: "default" | "battle";
   locked?: boolean;
   monochrome?: boolean;
   preload?: boolean;
@@ -69,8 +72,11 @@ export function Fuda({
   sizes?: string;
 }) {
   const t = useTranslations("fuda");
+  const rarity = useTranslations("rarity");
+  const battle = useTranslations("battle.board");
   const l = layout[size];
-  const showNative = size !== "sm" && !locked && card.nameNative;
+  const inBattle = variant === "battle";
+  const showNative = !inBattle && size !== "sm" && !locked && card.nameNative;
 
   const content = (
     <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden shadow-paper ${l.frame}`} data-rarity={card.rarity}>
@@ -95,10 +101,10 @@ export function Fuda({
 
           <span
             aria-hidden="true"
-            className={`absolute left-1 top-1 flex items-center justify-center rounded-[3px] font-seal leading-none text-washi-paper ${l.seal}`}
+            className={`absolute left-1 flex items-center justify-center rounded-[3px] text-washi-paper ${inBattle ? "bottom-1 max-w-[calc(100%-0.5rem)] px-1 py-0.5 text-[9px] font-bold leading-tight" : `top-1 font-seal leading-none ${l.seal}`}`}
             style={{ background: "var(--fuda-frame)" }}
           >
-            {RARITY_SEAL[card.rarity]}
+            {inBattle ? rarity(card.rarity) : RARITY_SEAL[card.rarity]}
           </span>
           <span className={`absolute right-1 top-1 rounded-[3px] bg-washi-paper/85 font-medium ${l.number}`}>
             {t("number", { number: cardNumber(card.rank) })}
@@ -122,13 +128,13 @@ export function Fuda({
                 <span>
                   <span className="sr-only">{t("power", { value: card.power })}</span>
                   <span aria-hidden="true">
-                    <span className="font-seal">力</span> {card.power}
+                    <span className={inBattle ? undefined : "font-seal"}>{inBattle ? battle("attackShort") : "力"}</span> {card.power}
                   </span>
                 </span>
                 <span>
                   <span className="sr-only">{t("ki", { value: card.ki })}</span>
                   <span aria-hidden="true">
-                    <span className="font-seal">気</span> {card.ki}
+                    <span className={inBattle ? undefined : "font-seal"}>{inBattle ? battle("defenseShort") : "気"}</span> {card.ki}
                   </span>
                 </span>
               </span>

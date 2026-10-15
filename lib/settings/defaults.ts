@@ -101,8 +101,30 @@ const battleRewards = z.object({
   dailyCap: z.number().int().min(0).max(1_000),
 });
 
+// Classé (étape 9b) : barème d'un rang, PC minimum compris
+const tierRow = z.object({
+  min: z.number().int().min(0).max(100_000),
+  win: z.number().int().min(0).max(1_000),
+  crushWin: z.number().int().min(0).max(1_000),
+  loss: z.number().int().min(0).max(1_000),
+  crushLoss: z.number().int().min(0).max(1_000),
+});
+const LADDER_KEYS = ["BRONZE", "SILVER", "GOLD", "EMERALD", "ELITE", "CHAMPION"] as const;
+const rankedTiers = z
+  .object(Object.fromEntries(LADDER_KEYS.map((k) => [k, tierRow])) as { [K in (typeof LADDER_KEYS)[number]]: typeof tierRow })
+  .refine((t) => t.BRONZE.min === 0 && LADDER_KEYS.every((k, i) => i === 0 || t[k].min > t[LADDER_KEYS[i - 1]].min), {
+    message: "Les rangs doivent commencer à 0 PC et monter strictement",
+  });
+
 // Id d'un Lot (cuid), ou null
 const lotRef = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/).nullable();
+
+// Lot de fin de saison par meilleur rang atteint
+const rankedRewardLots = z.object(
+  Object.fromEntries([...LADDER_KEYS, "GRAND_CHAMPION"].map((k) => [k, lotRef])) as {
+    [K in (typeof LADDER_KEYS)[number] | "GRAND_CHAMPION"]: typeof lotRef;
+  },
+);
 
 // Réglages de jeu modifiables depuis /admin (table GameSetting).
 // Le code ne garde que les valeurs par défaut ; chaque clé a son schéma Zod.
@@ -203,6 +225,29 @@ export const SETTING_SCHEMAS = {
   "battle.rewards": battleRewards,
   // Sondage de secours du plateau quand le temps réel (Ably) n'est pas configuré
   "battle.pollSeconds": z.number().int().min(1).max(30),
+  // Classé (étape 9b)
+  "ranked.enabled": z.boolean(),
+  "ranked.tiers": rankedTiers,
+  // Grand Champion : PC minimum, taille du top et barème
+  "ranked.grandChampion": tierRow.extend({ top: z.number().int().min(1).max(10_000) }),
+  // Écart de niveau : (PC adverse − PC) / gapDivisor, borné à ±gapCapPct %
+  "ranked.gapDivisor": z.number().int().min(1).max(100_000),
+  "ranked.gapCapPct": z.number().int().min(0).max(100),
+  // Victoire écrasante : au moins crushHpPct % des PV restants (ou aucune carte perdue)
+  "ranked.crushHpPct": z.number().int().min(1).max(100),
+  "ranked.protectionGames": z.number().int().min(0).max(50),
+  // Écart de PC accepté en file : base + perSecond × secondes d'attente, au plus max
+  "ranked.matchRange": z.object({
+    base: z.number().int().min(0).max(100_000),
+    perSecond: z.number().int().min(0).max(1_000),
+    max: z.number().int().min(0).max(100_000),
+  }),
+  // Part des PC gagnés ou perdus contre un bot
+  "ranked.botPcPct": z.number().int().min(0).max(100),
+  "ranked.seasonMonths": z.number().int().min(1).max(12),
+  // Fin de saison : au-dessus du pivot, on garde keepPct % de l'excédent
+  "ranked.reset": z.object({ pivot: z.number().int().min(0).max(100_000), keepPct: z.number().int().min(0).max(100) }),
+  "ranked.rewardLots": rankedRewardLots,
   "guest.createPerHourPerIp": z.number().int().min(1).max(1_000),
   "discord.linkBonusZeni": z.number().int().min(0).max(100_000),
   "catalog.size": z.number().int().min(10).max(50_000),
@@ -299,6 +344,26 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "battle.botUpgradePct": 10,
   "battle.rewards": { exhibition: 20, bot: 10, friend: 0, ranked: 25, dailyCap: 10 },
   "battle.pollSeconds": 2,
+  "ranked.enabled": true,
+  // Barème du plan (section « Mode classé »)
+  "ranked.tiers": {
+    BRONZE: { min: 0, win: 30, crushWin: 40, loss: 10, crushLoss: 15 },
+    SILVER: { min: 300, win: 27, crushWin: 38, loss: 13, crushLoss: 19 },
+    GOLD: { min: 600, win: 24, crushWin: 36, loss: 16, crushLoss: 24 },
+    EMERALD: { min: 900, win: 21, crushWin: 34, loss: 19, crushLoss: 28 },
+    ELITE: { min: 1200, win: 18, crushWin: 32, loss: 22, crushLoss: 33 },
+    CHAMPION: { min: 1500, win: 15, crushWin: 30, loss: 25, crushLoss: 38 },
+  },
+  "ranked.grandChampion": { min: 1800, top: 100, win: 12, crushWin: 28, loss: 28, crushLoss: 42 },
+  "ranked.gapDivisor": 400,
+  "ranked.gapCapPct": 50,
+  "ranked.crushHpPct": 60,
+  "ranked.protectionGames": 3,
+  "ranked.matchRange": { base: 150, perSecond: 5, max: 600 },
+  "ranked.botPcPct": 50,
+  "ranked.seasonMonths": 2,
+  "ranked.reset": { pivot: 600, keepPct: 50 },
+  "ranked.rewardLots": { BRONZE: null, SILVER: null, GOLD: null, EMERALD: null, ELITE: null, CHAMPION: null, GRAND_CHAMPION: null },
   "guest.createPerHourPerIp": 5,
   "discord.linkBonusZeni": 500, // versé une seule fois, à la première liaison
   "catalog.size": 6736,

@@ -55,6 +55,7 @@ export function PageShell({ children, bottomBar = false }: { children: ReactNode
             </ul>
           </nav>
         </div>
+        <p className="leading-relaxed">{t("footer.versionNotice")}</p>
         <p className="leading-relaxed">{t("footer.disclaimer")}</p>
       </footer>
     </div>

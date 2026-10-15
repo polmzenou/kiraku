@@ -7,12 +7,16 @@ import type { Activity, CandidateCard } from "@/lib/battle/view";
 import { createRoomAction, joinQueueAction, joinRoomAction, type BattleActionError } from "@/server/actions/battle";
 import { Button } from "../ui/Button";
 import { buttonClasses } from "../ui/Button";
+import type { RankView } from "@/server/ranked/queries";
+import { RankBadge } from "../ranked/RankBadge";
+import { SeasonReward } from "../ranked/SeasonReward";
 import { QueueWaiting } from "./QueueWaiting";
 import { useBattleError } from "./useBattleError";
 import { TeamPicker } from "./TeamPicker";
 
 type Intent =
   | { kind: "EXHIBITION" }
+  | { kind: "RANKED" }
   | { kind: "CREATE_ROOM" }
   | { kind: "JOIN_CODE"; code: string }
   | { kind: "CHALLENGE"; inviteeId: string; name: string };
@@ -24,6 +28,7 @@ export function CombatHub({
   lastTeam,
   queueSeconds,
   challenge,
+  rank,
 }: {
   activity: Activity;
   candidates: CandidateCard[];
@@ -31,8 +36,11 @@ export function CombatHub({
   queueSeconds: number;
   /** Ami à défier (lien « Défier » de son profil) : le choix d'équipe s'ouvre directement. */
   challenge: { id: string; name: string } | null;
+  /** Rang du joueur ; null si le classé est fermé. */
+  rank: RankView | null;
 }) {
   const t = useTranslations("battle");
+  const tRanked = useTranslations("ranked");
   const router = useRouter();
   const [intent, setIntent] = useState<Intent | null>(() =>
     challenge && activity.kind === "NONE" ? { kind: "CHALLENGE", inviteeId: challenge.id, name: challenge.name } : null,
@@ -52,8 +60,8 @@ export function CombatHub({
     startTransition(async () => {
       if (!intent) return;
       setError(null);
-      if (intent.kind === "EXHIBITION") {
-        const res = await joinQueueAction({ cardIds, mode: "EXHIBITION" });
+      if (intent.kind === "EXHIBITION" || intent.kind === "RANKED") {
+        const res = await joinQueueAction({ cardIds, mode: intent.kind });
         if (!res.ok) return fail(res.error, res.battleId);
         setIntent(null);
         if (res.state === "MATCHED") return router.push(`/combat/${res.battleId}`);
@@ -101,12 +109,42 @@ export function CombatHub({
         </p>
       )}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      {rank?.reward && <SeasonReward {...rank.reward} />}
+
+      {/* Classé : le panneau prend la couleur du rang du joueur */}
+      <section className="battle-board battle-rim rounded-[18px] p-[3px]" data-tier={rank?.tier}>
+        <div className="battle-table flex flex-col gap-4 rounded-[15px] p-4 text-washi-paper md:flex-row md:items-center md:gap-8 md:p-6">
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            <h2 className="flex items-center gap-2 font-title text-xl font-extrabold">
+              {t("ranked.title")}
+              {rank?.season && <span className="text-sm font-medium text-[#a89f92]">· {tRanked("season", { number: rank.season.number })}</span>}
+            </h2>
+            {rank ? (
+              <RankBadge tier={rank.tier} division={rank.division} pc={rank.pc} progress={rank.progress} next={rank.next} nextRank={rank.nextRank} size={84} />
+            ) : (
+              <p className="text-sm text-[#a89f92]">{tRanked("disabled")}</p>
+            )}
+          </div>
+          {rank && (
+            <div className="flex flex-col gap-2 text-sm md:w-72">
+              {rank.protection > 0 && (
+                <p className="rounded-button border border-[var(--board-accent)]/60 px-3 py-2" title={tRanked("protectionHint")}>
+                  {tRanked("protection", { count: rank.protection })}
+                </p>
+              )}
+              <p className="text-[#a89f92]">{tRanked("games", { count: rank.seasonGames })}</p>
+              {rank.season && <p className="text-[#a89f92]">{tRanked("seasonEnds", { date: new Date(rank.season.endsAt) })}</p>}
+              <Button variant="shu" disabled={busy || pending} onClick={() => setIntent({ kind: "RANKED" })}>
+                {tRanked("play")}
+              </Button>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <div className="grid gap-4 md:grid-cols-2">
         <article className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
           <h2 className="flex items-center gap-2 font-title text-lg font-bold">
-            <span aria-hidden="true" lang="ja" className="font-seal text-shu">
-              戦
-            </span>
             {t("exhibition.title")}
           </h2>
           <p className="flex-1 text-sm text-text-muted">{t("exhibition.text", { seconds: queueSeconds })}</p>
@@ -115,22 +153,9 @@ export function CombatHub({
           </Button>
         </article>
 
-        <article className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 opacity-70">
-          <h2 className="flex items-center gap-2 font-title text-lg font-bold">
-            <span aria-hidden="true" lang="ja" className="font-seal text-kin">
-              勝
-            </span>
-            {t("ranked.title")}
-          </h2>
-          <p className="flex-1 text-sm text-text-muted">{t("ranked.text")}</p>
-          <Button disabled>{t("ranked.soon")}</Button>
-        </article>
 
         <article className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
           <h2 className="flex items-center gap-2 font-title text-lg font-bold">
-            <span aria-hidden="true" lang="ja" className="font-seal text-ai">
-              友
-            </span>
             {t("friend.title")}
           </h2>
           <p className="text-sm text-text-muted">{t("friend.text")}</p>
@@ -174,6 +199,8 @@ export function CombatHub({
           confirmLabel={
             intent.kind === "EXHIBITION"
               ? t("exhibition.cta")
+              : intent.kind === "RANKED"
+                ? tRanked("play")
               : intent.kind === "CREATE_ROOM"
                 ? t("friend.create")
                 : intent.kind === "CHALLENGE"

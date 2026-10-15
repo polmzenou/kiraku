@@ -584,6 +584,15 @@ export function pcDelta(pc: number, oppPc: number, won: boolean, crushing: boole
 
 Applique le delta dans la même transaction que le résultat du combat, avec `Math.max(0, pc + delta)`, et enregistre `ranked`, `crushing` et `pcDelta` sur le `Battle` pour l'historique. Sur le téléphone, l'écran de fin affiche l'emblème du rang, la barre de la division qui se remplit ou se vide, et « Victoire écrasante » quand c'est le cas.
 
+Mise en œuvre (étape 9b) :
+
+- **Règles pures** (`lib/ranked/rules.ts`, `season.ts`, testées) : `rankOf`, `pcDelta`, `applyResult` (plancher, protection), `matchRange`, `botDelta` (50 %, arrondi qui s'éloigne de zéro), `nextSeasonBoundary`, `resetPc`. Tout le barème est dans `GameSetting` `ranked.*`, éditable dans `/admin/classe`.
+- **PC** : appliqués par `applyRankedWith` (`server/ranked/ranked-core.ts`) dans la transaction qui termine la partie (`persist`), les deux joueurs verrouillés ; top 100 relu en base. Anti-boost : un abandon ou un minuteur avant le 3e tour ne rapporte rien au gagnant. Le rang de chaque camp est figé au lancement (`Battle.p1Tier`/`p2Tier`) et colore le plateau.
+- **Appariement** : la file `RANKED` n'accepte qu'un écart de PC de `base` + `perSecond` × attente (au plus `max`), calculé en SQL ; bot au bout de `battle.queueSeconds`.
+- **Saisons** (`Season`, `SeasonResult`) : calées sur le calendrier, tous les `ranked.seasonMonths` mois, le 1er à minuit (fuseau du jeu). Clôture idempotente (verrou sur la saison) à l'affichage de `/combat`, à l'entrée en file classée et par `/api/cron/battle` ; clôture anticipée depuis `/admin/classe`. Récompense : le lot du meilleur rang atteint (`ranked.rewardLots`), à réclamer une fois depuis `/combat` (`CoinReason.SEASON`).
+- **Écrans** : panneau classé de `/combat` (emblème, division, PC, protection, fin de saison), bilan classé de l'écran de fin et du replay, ±PC dans l'historique, onglet « Classé » de `/classement` (top 100 en cache 60 s, profils publics), emblèmes SVG des 7 rangs (`components/ranked/RankEmblem.tsx`).
+- **Tests** : `lib/ranked/rules.test.ts` ; `server/ranked/ranked.db.test.ts` (fourchette, PC appliqués une fois, fins simultanées, anti-boost, bot, protection, Grand Champion, fin de saison et réclamation), sauté sans `DATABASE_URL_TEST` (il clôt la saison ouverte de la base de test).
+
 ## Boutique, casino et serveur Discord
 
 **Boutique** (`/boutique`). Boosters et bannières vedettes payables en Zeni dès le lancement. Une zone « Packs premium » est prévue pour le paiement par carte via Stripe Checkout, mais reste masquée tant que l'interrupteur admin est coupé (voir Points légaux avant de l'activer). Les articles viennent de `ShopItem` ; chaque achat crée un `Purchase`.

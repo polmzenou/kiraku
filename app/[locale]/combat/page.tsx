@@ -10,6 +10,7 @@ import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import type { PlayerView } from "@/lib/battle/view";
 import { battleCtx, challengeTarget, getActivity, getCandidates, getHistory, getLastTeam, sweepBattlesFor } from "@/server/battle/queries";
+import { getRankView } from "@/server/ranked/queries";
 import { getCurrentUser } from "@/server/user";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/combat">): Promise<Metadata> {
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/combat">
 
 /** Combat : exhibition, salle d'amis (code), classé à l'étape 9b, dernières parties et règles. */
 export default async function CombatPage({ searchParams }: PageProps<"/[locale]/combat">) {
-  const [t, format, user] = await Promise.all([getTranslations("battle"), getFormatter(), getCurrentUser()]);
+  const [t, tRanked, format, user] = await Promise.all([getTranslations("battle"), getTranslations("ranked"), getFormatter(), getCurrentUser()]);
   if (!user) {
     return (
       <PageShell>
@@ -31,7 +32,7 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
   }
 
   const ctx = await battleCtx();
-  const header = <SectionTitle level={1} kanji="対戦" title={t("title")} subtitle={t("intro")} />;
+  const header = <SectionTitle level={1} title={t("title")} subtitle={t("intro")} />;
 
   if (user.isGuest || !ctx.rules.enabled) {
     return (
@@ -50,10 +51,11 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
   }
 
   await sweepBattlesFor(user.id);
-  const [activity, candidates, history] = await Promise.all([
+  const [activity, candidates, history, rank] = await Promise.all([
     getActivity(user.id, ctx.rules.queueSeconds),
     getCandidates(user.id, ctx.rules),
     getHistory(user.id),
+    ctx.ranked.enabled ? getRankView(user.id, ctx.ranked) : null,
   ]);
   const lastTeam = await getLastTeam(user.id, candidates);
   // ?defier=pseudo (bouton du profil) : seulement un ami accepté, la salle le revérifie à la création
@@ -64,10 +66,10 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
   return (
     <PageShell>
       {header}
-      <CombatHub activity={activity} candidates={candidates} lastTeam={lastTeam} queueSeconds={ctx.rules.queueSeconds} challenge={challenge} />
+      <CombatHub activity={activity} candidates={candidates} lastTeam={lastTeam} queueSeconds={ctx.rules.queueSeconds} challenge={challenge} rank={rank} />
 
       <section className="flex flex-col gap-3">
-        <SectionTitle kanji="記" title={t("history.title")} />
+        <SectionTitle title={t("history.title")} />
         {history.length === 0 ? (
           <p className="text-sm text-text-muted">{t("history.empty")}</p>
         ) : (
@@ -79,20 +81,18 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
                   className="flex min-h-11 items-center justify-between gap-3 rounded-button border border-border bg-surface px-3 py-2 text-sm"
                 >
                   <span className="flex min-w-0 items-center gap-2">
-                    <span
-                      lang="ja"
-                      aria-hidden="true"
-                      className={`font-seal text-lg ${h.result === "WIN" ? "text-kin" : h.result === "LOSS" ? "text-shu" : "text-text-muted"}`}
-                    >
-                      {h.result === "WIN" ? "勝" : h.result === "LOSS" ? "負" : "引"}
-                    </span>
                     <span className="min-w-0 truncate">
-                      <strong>{t(`history.${h.result}`)}</strong> {t("history.vs", { name: name(h.opponent) })}
+                      <strong className={h.result === "WIN" ? "text-kin" : h.result === "LOSS" ? "text-shu" : "text-text-muted"}>{t(`history.${h.result}`)}</strong> {t("history.vs", { name: name(h.opponent) })}
                       <span className="text-text-muted"> · {t(`modes.${h.mode}`)}</span>
                     </span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end text-xs">
                     {h.rewardZeni > 0 && <span className="font-bold tabular-nums text-kin">{t("history.zeni", { amount: h.rewardZeni })}</span>}
+                    {h.pcDelta !== null && (
+                      <span className={`font-bold tabular-nums ${h.pcDelta >= 0 ? "text-[#8fc06a]" : "text-shu"}`}>
+                        {tRanked("result.delta", { value: `${h.pcDelta >= 0 ? "+" : "−"}${Math.abs(h.pcDelta)}` })}
+                      </span>
+                    )}
                     <span className="text-text-muted">{format.dateTime(new Date(h.endedAt), { dateStyle: "short", timeStyle: "short" })}</span>
                   </span>
                 </Link>
@@ -103,7 +103,7 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
       </section>
 
       <section className="flex flex-col gap-3">
-        <SectionTitle kanji="法" title={t("rules.title")} />
+        <SectionTitle title={t("rules.title")} />
         <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-text-muted">
           <li>{t("rules.items.turn")}</li>
           <li>{t("rules.items.orbs", { max: ctx.rules.orbs.max })}</li>

@@ -23,7 +23,7 @@ const MODULES = [
   { key: "market", href: "/admin/marche", ready: true },
   { key: "reviews", href: "/admin/avis", ready: true },
   { key: "combat", href: "/admin/combat", ready: true },
-  { key: "ranked", href: "/admin/classe", ready: false },
+  { key: "ranked", href: "/admin/classe", ready: true },
 ] as const;
 
 /** Toute la section /admin : rôle vérifié côté serveur (404 sinon), chaque action le revérifie. */

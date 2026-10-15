@@ -12,6 +12,7 @@ import {
 import { parseSetting, type SettingKey } from "@/lib/settings/defaults";
 import { COMBAT_SETTING_KEYS, combatSettingsSchema, type CombatSettingKey } from "@/lib/settings/combat-form";
 import { ECONOMY_SETTING_KEYS, economySettingsSchema, type EconomySettingKey } from "@/lib/settings/economy-form";
+import { RANKED_FORM_KEYS, rankedSettingsSchema, type RankedSettingKey } from "@/lib/settings/ranked-form";
 import { MARKET_SETTING_KEYS, marketSettingsSchema, type MarketSettingKey } from "@/lib/settings/market-form";
 import { SOCIAL_SETTING_KEYS, socialSettingsSchema, type SocialSettingKey } from "@/lib/settings/social-form";
 import { changedSettingKeys, type SettingsOf } from "@/lib/settings/form";
@@ -113,4 +114,17 @@ export async function updateMarketSettings(input: unknown): Promise<UpdateSettin
 
 export async function updateCombatSettings(input: unknown): Promise<UpdateSettingsResult<CombatSettingKey>> {
   return saveSettings(COMBAT_SETTING_KEYS, combatSettingsSchema, input);
+}
+
+export async function updateRankedSettings(input: unknown): Promise<UpdateSettingsResult<RankedSettingKey>> {
+  if (!(await getAdmin())) return { ok: false, error: "FORBIDDEN" };
+  const parsed = rankedSettingsSchema.safeParse(input);
+  // Chaque lot de fin de saison doit exister : sinon la réclamation échouerait chez les joueurs
+  if (parsed.success) {
+    const lotIds = [...new Set(Object.values(parsed.data["ranked.rewardLots"]).filter((id): id is string => id !== null))];
+    if (lotIds.length > 0 && (await prisma.lot.count({ where: { id: { in: lotIds } } })) !== lotIds.length) {
+      return { ok: false, error: "INVALID" };
+    }
+  }
+  return saveSettings(RANKED_FORM_KEYS, rankedSettingsSchema, input);
 }

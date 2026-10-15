@@ -17,7 +17,8 @@
     "catalog:import": "tsx scripts/import-characters.mts",
     "sim:boosters": "tsx scripts/simulate-boosters.mts",
     "admin:grant": "tsx scripts/grant-admin.mts",
-    "seed:boosters": "tsx scripts/seed-boosters.mts"
+    "seed:boosters": "tsx scripts/seed-boosters.mts",
+    "seed:missions": "tsx scripts/seed-missions.mts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",

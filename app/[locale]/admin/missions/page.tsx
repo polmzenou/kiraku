@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { localizedSchema } from "@/lib/boosters/types";
 import type { Rarity } from "@/lib/catalog/rarity";
 import type { MissionInput } from "@/lib/economy/missions";
+import { missionDifficulty } from "@/lib/economy/mission-rotation";
 import { requireAdmin } from "@/server/admin";
 import { prisma } from "@/server/db";
 import { lotOptions } from "@/server/economy/admin-queries";
@@ -11,10 +12,11 @@ import { lotOptions } from "@/server/economy/admin-queries";
 /** Missions quotidiennes et hebdomadaires : objectif, période, lot ; activer ou désactiver. */
 export default async function AdminMissionsPage({ searchParams }: PageProps<"/[locale]/admin/missions">) {
   await requireAdmin();
-  const [t, tMetric, tPeriod, tRarity, locale, sp] = await Promise.all([
+  const [t, tMetric, tPeriod, tDifficulty, tRarity, locale, sp] = await Promise.all([
     getTranslations("admin.economy"),
     getTranslations("economy.missions.metric"),
     getTranslations("economy.missions.period"),
+    getTranslations("economy.missions.difficulty"),
     getTranslations("rarity"),
     getLocale(),
     searchParams,
@@ -74,6 +76,7 @@ export default async function AdminMissionsPage({ searchParams }: PageProps<"/[l
             <div className="flex min-w-0 flex-col gap-1">
               <p className="font-bold">
                 <span className="mr-2 text-xs text-text-muted">{tPeriod(m.period)}</span>
+                <span className="mr-2 text-xs text-text-muted">{tDifficulty(missionDifficulty(m))}</span>
                 {tMetric(m.metric, { count: m.goal, rarity: m.rarity ? tRarity(m.rarity as Rarity) : "" })}
                 {!m.active && <span className="ml-2 text-xs text-text-muted">{t("inactive")}</span>}
               </p>

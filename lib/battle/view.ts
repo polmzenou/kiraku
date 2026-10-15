@@ -1,4 +1,5 @@
 import type { Rarity } from "@/lib/catalog/rarity";
+import type { RankedRules } from "@/lib/ranked/rules";
 import type { BoardTier } from "./tiers";
 import type { BattleEvent, BattleSetup, BattleState, EndReason, Keyword, Side, Technique } from "./types";
 
@@ -35,8 +36,12 @@ export type BattleView = {
   realtime: boolean;
   pollSeconds: number;
   turnSeconds: number;
-  /** Rang affiché par le plateau (classé, étape 9b) ; null hors classé. */
+  /** Rang de mon camp au lancement (couleur du plateau) ; null hors classé. */
   tier: BoardTier | null;
+  /** Partie classée terminée : PC avant et variation de chaque camp. */
+  ranked: { crushing: boolean; before: [number | null, number | null]; delta: [number | null, number | null] } | null;
+  /** Classé : rangs et barème, pour situer les PC dans l'écran de fin. */
+  ladder: Pick<RankedRules, "tiers" | "grandChampion"> | null;
 };
 
 /** Ce que pousse le serveur après chaque action (Ably ou sondage). */
@@ -50,7 +55,22 @@ export type BattleUpdateView = {
   turnEndsAt: string | null;
   finished: boolean;
   rewardZeni: number;
+  ranked: RankedOutcomeView | null;
 };
+
+/** Résultat classé d'un camp (diffusé avec la fin de partie). */
+export type RankedSideView = {
+  before: number;
+  after: number;
+  delta: number;
+  promoted: boolean;
+  demoted: boolean;
+  saved: boolean;
+  protection: number;
+  grandBefore: boolean;
+  grandAfter: boolean;
+};
+export type RankedOutcomeView = { crushing: boolean; sides: [RankedSideView | null, RankedSideView | null] };
 
 /** Carte proposée au choix d'équipe, avec ce qu'elle deviendra en combat. */
 export type CandidateCard = {
@@ -75,6 +95,8 @@ export type HistoryItem = {
   result: "WIN" | "LOSS" | "DRAW";
   endReason: EndReason | null;
   rewardZeni: number;
+  /** Classé : PC gagnés ou perdus. */
+  pcDelta: number | null;
   endedAt: string;
 };
 

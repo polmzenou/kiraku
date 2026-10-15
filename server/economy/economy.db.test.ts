@@ -5,6 +5,7 @@ import { PrismaClient } from "@/generated/prisma/client";
 import { groupByRarity, type CardPool } from "@/lib/boosters/draw";
 import { seededRng } from "@/lib/boosters/rng";
 import type { Rarity } from "@/lib/catalog/rarity";
+import { selectMissionRotation } from "@/lib/economy/mission-rotation";
 import type { ReferralRules } from "@/lib/economy/referral";
 import { debit, LedgerError } from "./ledger";
 import type { LotDeps } from "./lots";
@@ -26,6 +27,7 @@ describe.skipIf(!url)("économie atomique (base réelle)", () => {
   const users: string[] = [];
   let lotId: string;
   let missionId: string;
+  let missionNow: Date;
   let shopItemId: string;
   let standardId: string;
   let pool: CardPool;
@@ -82,6 +84,16 @@ describe.skipIf(!url)("économie atomique (base réelle)", () => {
     });
     lotId = lot.id;
     missionId = (await prisma.mission.create({ data: { key: `test-${tag}`, period: "DAILY", metric: "VISIT", goal: 1, lotId } })).id;
+    const candidates = await prisma.mission.findMany({ where: { active: true } });
+    // La mission jetable doit appartenir à la rotation testée, sans changer les autres missions.
+    for (let day = 0; day < 365; day++) {
+      const at = new Date(Date.now() + day * 86_400_000);
+      if (selectMissionRotation(candidates, at, TZ).some((m) => m.id === missionId)) {
+        missionNow = at;
+        break;
+      }
+    }
+    if (!missionNow) throw new Error("La mission de test n'a jamais été sélectionnée");
     shopItemId = (
       await prisma.shopItem.create({
         data: {
@@ -133,7 +145,7 @@ describe.skipIf(!url)("économie atomique (base réelle)", () => {
   it("20 réclamations simultanées d'une mission : une seule récompense", async () => {
     const { id } = await player();
     const attempts = await Promise.allSettled(
-      Array.from({ length: 20 }, () => claimMissionWith(prisma, { userId: id, missionId, now: new Date(), timeZone: TZ }, deps)),
+      Array.from({ length: 20 }, () => claimMissionWith(prisma, { userId: id, missionId, now: missionNow, timeZone: TZ }, deps)),
     );
     expect(attempts.filter((a) => a.status === "fulfilled")).toHaveLength(1);
     for (const r of attempts.filter((a) => a.status === "rejected")) {

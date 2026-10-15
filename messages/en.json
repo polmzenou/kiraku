@@ -81,6 +81,7 @@
     "back": "Back to home"
   },
   "footer": {
+    "versionNotice": "This is only v0.8 of the site; updates may arrive quickly.",
     "disclaimer": "Unofficial fan project. Characters belong to their respective rights holders.",
     "nav": "Site links",
     "account": "My account",
@@ -223,6 +224,92 @@
     "searchSubmit": "Search",
     "rarityFilter": "Filter by rarity",
     "allRarities": "All",
+    "sortAndFilters": "Sort & filters",
+    "sortBy": "Sort by",
+    "direction": "Order",
+    "sortSummary": "{sort} · {direction}",
+    "sorts": {
+      "number": "Number",
+      "rarity": "Rarity",
+      "name": "Name",
+      "power": "Power 力",
+      "ki": "Ki 気",
+      "favorites": "Popularity"
+    },
+    "dirs": {
+      "number": {
+        "asc": "Lowest number first",
+        "desc": "Highest number first"
+      },
+      "rarity": {
+        "asc": "Most common first",
+        "desc": "Rarest first"
+      },
+      "name": {
+        "asc": "A → Z",
+        "desc": "Z → A"
+      },
+      "power": {
+        "asc": "Weakest first",
+        "desc": "Strongest first"
+      },
+      "ki": {
+        "asc": "Lowest first",
+        "desc": "Highest first"
+      },
+      "favorites": {
+        "asc": "Least popular first",
+        "desc": "Most popular first"
+      }
+    },
+    "allSeries": "All series",
+    "searchSeries": "Find a series…",
+    "noSeries": "No matching series.",
+    "seriesOption": "{title} ({count})",
+    "demographic": "Series demographic",
+    "allDemographics": "All",
+    "demographics": {
+      "Shounen": "Shōnen",
+      "Seinen": "Seinen",
+      "Shoujo": "Shōjo",
+      "Josei": "Josei",
+      "Kids": "Kids"
+    },
+    "genre": "Series genre",
+    "allGenres": "All genres",
+    "genres": {
+      "Action": "Action",
+      "Adventure": "Adventure",
+      "Comedy": "Comedy",
+      "Drama": "Drama",
+      "Ecchi": "Ecchi",
+      "Fantasy": "Fantasy",
+      "Hentai": "Hentai",
+      "Horror": "Horror",
+      "Mahou Shoujo": "Magical girl",
+      "Mecha": "Mecha",
+      "Music": "Music",
+      "Mystery": "Mystery",
+      "Psychological": "Psychological",
+      "Romance": "Romance",
+      "Sci-Fi": "Sci-Fi",
+      "Slice of Life": "Slice of life",
+      "Sports": "Sports",
+      "Supernatural": "Supernatural",
+      "Thriller": "Thriller"
+    },
+    "gender": "Character gender",
+    "allGenders": "All",
+    "genders": {
+      "Male": "Male",
+      "Female": "Female",
+      "Non-binary": "Non-binary",
+      "unknown": "Unspecified"
+    },
+    "activeFilters": "Active filters",
+    "removeFilter": "Remove filter {filter}",
+    "resetFilters": "Reset all",
+    "done": "View characters",
     "empty": "No character matches your search.",
     "emptyCatalog": "The catalog is empty for now: run the AniList import.",
     "pagination": "Wiki pages",
@@ -1251,7 +1338,7 @@
       "lotUsage": "{missions, plural, =0 {No missions} one {# mission} other {# missions}} · {items, plural, =0 {no items} one {# item} other {# items}}",
       "edit": "Edit",
       "missionsTitle": "Missions",
-      "missionsIntro": "Daily and weekly goals. A mission that was already claimed gets turned off instead of deleted.",
+      "missionsIntro": "Rotation pool: 5 missions per period, with 2 easy, 2 medium and 1 hard based on their goals. The selection changes at midnight and on Mondays. Claimed missions are deactivated instead of deleted.",
       "missionMeta": "{key} · reward {lot} · {claims, plural, =0 {never claimed} one {# claim} other {# claims}}",
       "shopTitle": "Shop",
       "shopIntro": "Zeni items: each one hands out a reward. The price the player saw is checked again at purchase.",
@@ -1364,7 +1451,7 @@
       "flow": "Flow",
       "stats": "Derived stats",
       "damage": "Damage",
-      "orbs": "気 orbs",
+      "orbs": "Orbs",
       "keywordsByRarity": "Passives per rarity",
       "keywordValues": "Passive values",
       "techniques": "Techniques (orb cost, value)",
@@ -1380,7 +1467,7 @@
         "roomMinutes": "Friend room lifetime (min)",
         "pollSeconds": "Polling without Ably (s)",
         "hpBase": "Base HP",
-        "hpPerKiPct": "HP per 気 point (in %, 160 = 1.6)",
+        "hpPerKiPct": "HP per defense point (in %, 160 = 1.6)",
         "critPermille": "Critical chance (‰)",
         "critPct": "Critical multiplier (%)",
         "varianceMinPct": "Minimum variance (%)",
@@ -1409,6 +1496,66 @@
       "saving": "Saving…",
       "saved": "{count, plural, one {# setting saved} other {# settings saved}}.",
       "invalid": "A value is out of bounds.",
+      "errors": {
+        "FORBIDDEN": "Access denied.",
+        "INVALID": "Values rejected by the server.",
+        "RATE_LIMITED": "Too many saves: wait a minute.",
+        "unexpected": "Unexpected error. Try again.",
+        "CLOSED": "This sale has already ended.",
+        "NOT_FOUND": "Sale not found.",
+        "UNAVAILABLE": "Action not possible right now."
+      },
+      "log": "Latest changes",
+      "logEmpty": "No change yet.",
+      "logEntry": "{key} by {admin}"
+    },
+    "ranked": {
+      "title": "Ranked",
+      "intro": "Ranks, RP scale, matchmaking, seasons and rewards. Changes apply to later games.",
+      "season": "Current season",
+      "seasonInfo": "Season {number} · ends {date, date, long}",
+      "players": "Ranked players this season",
+      "games": "Ranked games (24 h)",
+      "grand": "Grand Champions",
+      "count": "{count, number}",
+      "close": "Close the season now",
+      "closeConfirm": "Close season {number} now? RP above the pivot are reduced and every player gets a reward to claim. Cannot be undone.",
+      "closeYes": "Yes, close the season",
+      "cancel": "Cancel",
+      "closed": "Season {number} closed: {count, plural, one {# result} other {# results}}.",
+      "gallery": "Emblems",
+      "switches": "Switch",
+      "tiers": "Ranks (minimum RP and scale)",
+      "grandRow": "Grand Champion",
+      "scale": "Scale",
+      "matching": "Matchmaking",
+      "seasonRules": "Seasons",
+      "rewardLots": "End-of-season reward by best rank",
+      "noLot": "None",
+      "keys": {
+        "enabled": "Ranked open",
+        "min": "Minimum RP",
+        "win": "Win",
+        "crushWin": "Crushing win",
+        "loss": "Loss",
+        "crushLoss": "Crushing loss",
+        "top": "Top size",
+        "gapDivisor": "Level gap divisor",
+        "gapCapPct": "Max level gap (%)",
+        "crushHpPct": "Crushing: HP left (%)",
+        "protectionGames": "Protected games after a promotion",
+        "base": "Starting RP range",
+        "perSecond": "Widening per second",
+        "max": "Maximum range",
+        "botPcPct": "RP against a bot (%)",
+        "seasonMonths": "Season length (months)",
+        "pivot": "Reset pivot (RP)",
+        "keepPct": "Kept above the pivot (%)"
+      },
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "{count, plural, one {# setting saved} other {# settings saved}}.",
+      "invalid": "A value is out of bounds or ranks don't go up.",
       "errors": {
         "FORBIDDEN": "Access denied.",
         "INVALID": "Values rejected by the server.",
@@ -1866,7 +2013,13 @@
     },
     "missions": {
       "title": "Missions",
-      "intro": "Daily and weekly goals, each with a reward to claim.",
+      "intro": "5 daily and 5 weekly missions: a rotating selection, from easy goals to tougher challenges. Daily missions change at midnight and weekly missions on Monday, in game time.",
+      "difficulty": {
+        "EASY": "Easy",
+        "MEDIUM": "Medium",
+        "HARD": "Hard"
+      },
+      "refreshing": "Refreshing missions…",
       "disabled": "Missions are paused for now.",
       "empty": "No missions right now. Check back soon!",
       "progress": "{value, number} / {goal, number}",
@@ -2000,7 +2153,8 @@
         "SHOP": "Shop",
         "DISCORD_LINK": "Discord link bonus",
         "BOOSTER": "Booster purchase",
-        "GIFT": "Booster gifted to a friend"
+        "GIFT": "Booster gifted to a friend",
+        "SEASON": "Season reward (ranked)"
       }
     },
     "reveal": {
@@ -2062,7 +2216,7 @@
   },
   "battle": {
     "title": "Battle",
-    "intro": "Three fuda against three. On your turn, each card acts once: an attack, or its 技 technique paid with 気 orbs.",
+    "intro": "Three cards against three. On your turn, each card acts once: an attack, or its technique paid with orbs.",
     "guest": "Create an account to battle: your collection and winnings will be kept.",
     "signUp": "Create an account",
     "disabled": "Battles are closed for now.",
@@ -2111,9 +2265,9 @@
     "rules": {
       "title": "Rules",
       "items": {
-        "turn": "On your turn, each standing card acts once: a free attack or a 技 technique.",
-        "orbs": "気 orbs pay for techniques: 1 on the first turn, one more each turn, up to {max}.",
-        "damage": "Damage: attacker's 力 × 100 / (100 + target's 気), with 10% critical hits.",
+        "turn": "On your turn, each standing card acts once: a free attack or a technique.",
+        "orbs": "Orbs pay for techniques: 1 on the first turn, one more each turn, up to {max}.",
+        "damage": "Damage: attacker's attack × 100 / (100 + target's defense), with 10% critical hits.",
         "timer": "{seconds} s per turn. Two expired turns in a row count as a forfeit.",
         "end": "The first team with no card standing loses. Your cards always return to your collection."
       }
@@ -2129,11 +2283,12 @@
       "confirm": "Confirm team",
       "remove": "Remove {name}",
       "add": "Add {name}",
-      "stats": "力 {atk} · {hp} HP",
+      "stats": "ATK {atk} · {hp} HP",
       "count": "{count}/3"
     },
     "queue": {
       "title": "Looking for an opponent",
+      "searching": "Searching",
       "elapsed": "{seconds} s",
       "botSoon": "Nobody? A bot joins you in {seconds} s.",
       "botNow": "A bot opponent is joining…",
@@ -2161,9 +2316,11 @@
       "yourTurn": "Your turn",
       "theirTurn": "{name}'s turn",
       "turn": "Turn {turn}",
-      "orbs": "{count, plural, one {# orb} other {# orbs}} 気",
+      "orbs": "{count, plural, one {# orb} other {# orbs}}",
       "attack": "Attack",
-      "technique": "{name} · {cost} 気",
+      "attackShort": "ATK",
+      "defenseShort": "DEF",
+      "technique": "{name} · {cost, plural, one {# orb} other {# orbs}}",
       "endTurn": "End turn",
       "forfeit": "Forfeit",
       "forfeitConfirm": "Forfeit the battle? It counts as a defeat.",
@@ -2176,11 +2333,12 @@
       "waitOpponent": "Your opponent is thinking…",
       "timer": "{seconds} s left",
       "hp": "{hp}/{max}",
-      "fighter": "{name}: {hp} HP out of {max}, 力 {atk}",
+      "fighter": "{name}: {hp} HP out of {max}, attack {atk}",
       "dead": "{name}, knocked out",
+      "ko": "K.O.",
       "sealed": "Sealed",
       "poisoned": "Poisoned",
-      "buffed": "+{pct}% 力",
+      "buffed": "+{pct}% attack",
       "barrier": "Barrier",
       "crit": "Critical",
       "block": "Blocked",
@@ -2223,7 +2381,8 @@
         "KO": "All enemy cards are knocked out.",
         "FORFEIT": "Forfeit.",
         "TIMEOUT": "Too many expired turns in a row.",
-        "TURN_LIMIT": "Turn limit reached: remaining HP decides."
+        "TURN_LIMIT": "Turn limit reached: remaining HP decides.",
+        "KO_LOSS": "All your cards are knocked out."
       },
       "zeni": "+{amount, number} Zeni",
       "noZeni": "No Zeni for this battle.",
@@ -2273,31 +2432,31 @@
     },
     "techniques": {
       "ISSEN": {
-        "name": "Issen",
+        "name": "Flash",
         "desc": "A strike at ×{mult}."
       },
       "KANTSU": {
-        "name": "Kantsū",
-        "desc": "A strike that ignores the target's 気."
+        "name": "Piercing strike",
+        "desc": "A strike that ignores the target's defense."
       },
       "RANBU": {
-        "name": "Ranbu",
+        "name": "Blade dance",
         "desc": "Hits every enemy at ×{mult}."
       },
       "IYASHI": {
-        "name": "Iyashi",
+        "name": "Healing",
         "desc": "Heals an ally for {pct}% of their max HP."
       },
       "SHUGO": {
-        "name": "Shugo",
-        "desc": "Gives an ally a 結界 barrier."
+        "name": "Protection",
+        "desc": "Gives an ally a barrier."
       },
       "KOBU": {
-        "name": "Kobu",
-        "desc": "+{pct}% 力 to its allies, this turn and the next."
+        "name": "Encouragement",
+        "desc": "+{pct}% attack to its allies, this turn and the next."
       },
       "FUIN": {
-        "name": "Fūin",
+        "name": "Seal",
         "desc": "The target cannot act on its next turn."
       }
     },
@@ -2327,7 +2486,7 @@
       "ko": "{target} is knocked out.",
       "revive": "{target} is reborn with {hp} HP.",
       "barrier": "{target} gains a barrier.",
-      "buff": "{player}'s team gains +{pct}% 力.",
+      "buff": "{player}'s team gains +{pct}% attack.",
       "seal": "{target} is sealed.",
       "turn": "{player}'s turn.",
       "timeout": "{player} lets their turn slip.",
@@ -2336,7 +2495,74 @@
     "detail": {
       "title": "Card",
       "hint": "Tap one of your cards to see its technique and passives.",
-      "stats": "力 {atk} · 気 {def} · {hp}/{max} HP"
+      "stats": "ATK {atk} · DEF {def} · {hp}/{max} HP"
+    }
+  },
+  "ranked": {
+    "tiers": {
+      "BRONZE": "Bronze",
+      "SILVER": "Silver",
+      "GOLD": "Gold",
+      "EMERALD": "Emerald",
+      "ELITE": "Elite",
+      "CHAMPION": "Champion",
+      "GRAND_CHAMPION": "Grand Champion"
+    },
+    "divisions": {
+      "1": "I",
+      "2": "II",
+      "3": "III"
+    },
+    "rank": "{tier} {division}",
+    "pc": "{pc, number} RP",
+    "toNext": "{count, number} RP to {target}",
+    "toGrand": "Top {top} from {min, number} RP to become Grand Champion",
+    "grand": "Grand Champion: top {top} of the ladder",
+    "protection": "{count, plural, one {Protected for # more game} other {Protected for # more games}}",
+    "protectionHint": "You just ranked up: a defeat won't drop you back down.",
+    "season": "Season {number}",
+    "seasonEnds": "Season ends on {date, date, long}",
+    "play": "Play ranked",
+    "disabled": "Ranked is closed for now.",
+    "games": "{count, plural, =0 {No games this season} one {# game this season} other {# games this season}}",
+    "reward": {
+      "title": "Season {number} reward",
+      "text": "Best rank reached: {tier}. Your reward is waiting.",
+      "claim": "Claim my reward",
+      "claimed": "Reward received!",
+      "zeni": "+{amount, number} Zeni",
+      "boosters": "{count, plural, one {# booster} other {# boosters}}",
+      "cards": "{count, plural, one {# card} other {# cards}}"
+    },
+    "result": {
+      "title": "Ranked",
+      "crushing": "Crushing victory",
+      "crushed": "Crushing defeat",
+      "promoted": "Promoted to {tier}!",
+      "demoted": "Back to {tier}",
+      "grand": "You are Grand Champion!",
+      "saved": "Protection: you stay in {tier}",
+      "delta": "{value} RP",
+      "bot": "Against a bot: half the RP"
+    },
+    "errors": {
+      "NOT_FOUND": "No reward for this season.",
+      "NO_REWARD": "No reward for this rank.",
+      "ALREADY_CLAIMED": "Reward already received.",
+      "RATE_LIMITED": "Slow down!",
+      "UNAVAILABLE": "Action unavailable right now.",
+      "INVALID": "Invalid request.",
+      "NO_SESSION": "Session expired: reload the page.",
+      "GUEST": "Create an account to play ranked."
+    },
+    "board": {
+      "tabs": "Leaderboards",
+      "collectors": "Collectors",
+      "ranked": "Ranked",
+      "rankedTitle": "Ranked · season {number}",
+      "empty": "Nobody has played ranked this season yet.",
+      "hidden": "Private profiles count in the ladder but aren't shown.",
+      "grandChampions": "Grand Champions"
     }
   }
 }

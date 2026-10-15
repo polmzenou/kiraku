@@ -3,6 +3,7 @@
 // clé primaire interdit la double réclamation) → lot versé, dans la même transaction.
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { Rarity } from "@/lib/catalog/rarity";
+import { missionDifficulty, selectMissionRotation, type MissionDifficulty } from "@/lib/economy/mission-rotation";
 import {
   measureKey,
   missionRefId,
@@ -37,17 +38,19 @@ export type PlayerMission = {
   state: MissionState;
   periodKey: string;
   endsAt: Date;
+  difficulty: MissionDifficulty;
 };
 
 const TX = { maxWait: 10_000, timeout: 20_000 };
 
 /** Missions actives et où en est le joueur, période en cours. Deux missions qui mesurent la même chose partagent le calcul. */
 export async function playerMissionsWith(db: PrismaClient, userId: string, now: Date, timeZone: string): Promise<PlayerMission[]> {
-  const missions = await db.mission.findMany({
+  const candidates = await db.mission.findMany({
     where: { active: true },
     orderBy: [{ period: "asc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
     select: { id: true, key: true, period: true, metric: true, goal: true, rarity: true, title: true, lotId: true },
   });
+  const missions = selectMissionRotation(candidates, now, timeZone);
   if (missions.length === 0) return [];
 
   const windows: Record<MissionPeriod, PeriodWindow> = {
@@ -79,6 +82,7 @@ export async function playerMissionsWith(db: PrismaClient, userId: string, now: 
         state: missionState(progress, m.goal, claimed.has(m.id)),
         periodKey: windows[m.period].key,
         endsAt: windows[m.period].end,
+        difficulty: missionDifficulty(m),
       };
     }),
   );
@@ -95,10 +99,12 @@ export async function claimMissionWith(
     if (!player) throw new MissionError("NO_USER");
     if (player.bannedAt) throw new MissionError("BANNED");
 
-    const mission = await tx.mission.findFirst({
-      where: { id: input.missionId, active: true },
-      select: { id: true, period: true, metric: true, goal: true, rarity: true, lotId: true },
+    const candidates = await tx.mission.findMany({
+      where: { active: true },
+      select: { id: true, key: true, period: true, metric: true, goal: true, rarity: true, lotId: true },
     });
+    // Une ancienne URL ou un identifiant deviné ne donne pas accès au reste du pool.
+    const mission = selectMissionRotation(candidates, input.now, input.timeZone).find((m) => m.id === input.missionId);
     if (!mission) throw new MissionError("NOT_FOUND");
 
     const window = periodWindow(mission.period, input.now, input.timeZone);

@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Fuda } from "@/components/fuda/Fuda";
-import { KEYWORD_KANJI, type FighterSetup, type FighterState } from "@/lib/battle/types";
+import type { FighterSetup, FighterState } from "@/lib/battle/types";
 
 /** Effet posé sur une carte : impact, chiffre de dégâts, soin, poison ou blocage. */
 export type Fx = { id: number; kind: "impact" | "damage" | "crit" | "heal" | "poison" | "block"; amount: number; crit?: boolean };
@@ -34,12 +34,13 @@ function InkSplash({ crit }: { crit?: boolean }) {
 }
 
 /**
- * Fuda en combat, lisible à distance : gemme 力 (vermillon) et gemme PV (encre) aux coins du bas
- * comme sur une table de jeu de cartes, barre de PV, passifs en sceaux, états. Les chiffres de
+ * Fuda en combat, lisible à distance : gemme ATQ (vermillon) et gemme PV (encre) aux coins du bas
+ * comme sur une table de jeu de cartes, barre de PV, passifs et états traduits. Les chiffres de
  * combat sont gros et détourés ; les animations ne touchent que transform et opacity.
  */
 export function BattleFuda({ card, state, selected, targetable, ready, fx, onPress, label, cardRef }: Props) {
   const t = useTranslations("battle.board");
+  const keywords = useTranslations("battle.keywords");
   const dead = state.hp <= 0;
   const hpPct = Math.max(0, Math.min(100, (state.hp / state.maxHp) * 100));
   const buffed = state.buffTurns > 0 && state.buffPct > 0;
@@ -74,41 +75,35 @@ export function BattleFuda({ card, state, selected, targetable, ready, fx, onPre
         />
 
         <div className={`transition-opacity duration-500 motion-reduce:transition-none ${dead ? "opacity-35" : "opacity-100"}`}>
-          <Fuda card={card} size="sm" tilt={false} sizes="(min-width: 1024px) 190px, (min-width: 768px) 150px, 30vw" />
+          <Fuda card={card} size="sm" variant="battle" tilt={false} sizes="(min-width: 1024px) 190px, (min-width: 768px) 150px, 30vw" />
         </div>
 
-        {/* Barrière 結界 : halo indigo */}
+        {/* Barrière : halo indigo */}
         {state.barrier && !dead && (
           <span aria-hidden="true" className="pointer-events-none absolute -inset-1 rounded-[9px] border-[3px] border-ai shadow-[0_0_18px_4px_rgba(127,163,209,0.6),inset_0_0_14px_rgba(127,163,209,0.5)]" />
         )}
 
-        {/* Passifs en sceaux */}
-        {card.keywords.length > 0 && (
-          <span aria-hidden="true" className="absolute top-7 right-0.5 flex flex-col items-end gap-0.5">
-            {card.keywords.map((k) => (
-              <span key={k} lang="ja" className="rounded-[3px] border border-washi-paper/30 bg-sumi/90 px-1 font-seal text-[11px] leading-tight text-washi-paper shadow-paper md:text-xs">
-                {KEYWORD_KANJI[k]}
-              </span>
-            ))}
-          </span>
-        )}
-
-        {/* États */}
-        <span aria-hidden="true" className="absolute top-7 left-0.5 flex flex-col gap-0.5 text-[11px] font-bold leading-tight md:text-xs">
+        {/* Passifs et états sur une seule colonne pour éviter les chevauchements. */}
+        <span aria-hidden="true" className="absolute top-7 right-0.5 left-0.5 flex flex-col items-end gap-0.5 text-[9px] font-bold leading-tight md:text-[11px]">
+          {card.keywords.map((k) => (
+            <span key={k} className="max-w-full rounded-[3px] border border-washi-paper/30 bg-sumi/90 px-1 text-right text-washi-paper shadow-paper">
+              {keywords(`${k}.name`)}
+            </span>
+          ))}
           {state.sealed && !dead && (
-            <span className="rounded-[3px] bg-sumi/90 px-1 font-seal text-shu" lang="ja">
-              封
+            <span className="max-w-full rounded-[3px] bg-sumi/90 px-1 text-shu">
+              {t("sealed")}
             </span>
           )}
           {state.poisonTurns > 0 && !dead && (
-            <span className="rounded-[3px] bg-[#3f5a26] px-1 font-seal text-washi-paper" lang="ja">
-              毒
+            <span className="max-w-full rounded-[3px] bg-[#3f5a26] px-1 text-washi-paper">
+              {t("poisoned")}
             </span>
           )}
           {buffed && !dead && <span className="rounded-[3px] bg-kin px-1 text-sumi">+{state.buffPct}%</span>}
         </span>
 
-        {/* Gemmes 力 et PV, débordant du cadre comme sur une table */}
+        {/* Gemmes ATQ et PV, débordant du cadre comme sur une table */}
         <span aria-hidden="true" className="absolute -bottom-2 -left-2 md:-bottom-3 md:-left-3">
           <span
             className={`flex size-9 items-center justify-center rounded-full border-2 border-[#3b1410] bg-[radial-gradient(circle_at_35%_30%,#ff7a5f,#C8372D_55%,#7d1a14)] text-base font-extrabold tabular-nums text-washi-paper shadow-[0_3px_0_rgba(0,0,0,0.6)] [-webkit-text-stroke:3px_#3b1410] [paint-order:stroke_fill] md:size-12 md:text-xl ${
@@ -146,8 +141,8 @@ export function BattleFuda({ card, state, selected, targetable, ready, fx, onPre
           }`}
         />
         {dead && (
-          <span aria-hidden="true" lang="ja" className="pointer-events-none absolute inset-0 flex items-center justify-center font-seal text-5xl text-shu/80 md:text-6xl">
-            滅
+          <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center font-title text-3xl font-extrabold text-shu/80 md:text-5xl">
+            {t("ko")}
           </span>
         )}
       </button>
@@ -174,8 +169,8 @@ export function BattleFuda({ card, state, selected, targetable, ready, fx, onPre
               }`}
             >
               {f.kind === "crit" && (
-                <span lang="ja" className="mb-0.5 font-seal text-xl text-washi-paper md:text-3xl">
-                  会心
+                <span className="mb-0.5 text-sm text-washi-paper md:text-xl">
+                  {t("crit")}
                 </span>
               )}
               {f.kind === "heal" ? `+${f.amount}` : f.kind === "block" ? t("block") : `−${f.amount}`}

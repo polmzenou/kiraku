@@ -18,6 +18,7 @@ export const COIN_REASONS = [
   "DISCORD_LINK",
   "BOOSTER",
   "GIFT",
+  "SEASON",
 ] as const;
 export type CoinReason = (typeof COIN_REASONS)[number];
 
@@ -54,6 +55,10 @@ export function ledgerHref(reason: CoinReason, refId: string | null): string | n
       return "/amis";
     case "DISSOLVE":
       return "/collection";
+    case "BATTLE_WIN":
+      return refId ? `/combat/${refId}` : "/combat";
+    case "SEASON":
+      return "/combat";
     default:
       return null;
   }
