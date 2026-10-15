@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { hasLocale, useTranslations } from "next-intl";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { ArcadeBanner } from "@/components/ArcadeBanner";
 import { BannerHero, type BannerSlide } from "@/components/boosters/BannerHero";
 import { BoosterArt } from "@/components/boosters/BoosterArt";
