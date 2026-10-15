@@ -8,7 +8,8 @@ import type { Action, BattleSetup, BattleState } from "@/lib/battle/types";
 import type { BattleView } from "@/lib/battle/view";
 import { Button, buttonClasses } from "../ui/Button";
 import { BattleResult } from "./BattleResult";
-import { BoardLayout, Orbs } from "./BoardLayout";
+import { BattleLog } from "./BattleLog";
+import { BoardLayout, Medallion, Orbs } from "./BoardLayout";
 import { useEventPlayer } from "./useEventPlayer";
 
 /**
@@ -72,26 +73,34 @@ export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup
   const showResult = index >= total && !animating && !resultHidden;
 
   const shown = player.shown;
+  const orbs = <Orbs count={shown.orbs} max={view.setup.rules.orbs.max} label={t("board.orbs", { count: shown.orbs })} />;
   return (
     <>
       <BoardLayout
         setup={view.setup}
         shown={shown}
         fx={player.fx}
-        lunge={player.lunge}
         mySide={view.mySide}
         players={view.players}
-        middle={
-          <>
-            <span className="flex flex-col">
-              <span className="text-sm font-bold">{t("replay.title")}</span>
-              <span className="text-xs tabular-nums text-text-muted">{t("replay.progress", { n: index, total })}</span>
+        tier={view.tier}
+        boardRef={player.boardRef}
+        cardRef={player.cardRef}
+        myPlate={shown.active === view.mySide ? orbs : null}
+        theirPlate={shown.active !== view.mySide ? orbs : null}
+        front={
+          <Medallion highlight>
+            <span className="text-[9px] text-[#a89f92] md:text-[10px]">{t("replay.title")}</span>
+            <span className="font-title text-sm font-extrabold tabular-nums md:text-base">
+              {index}/{total}
             </span>
-            <Orbs count={shown.orbs} max={view.setup.rules.orbs.max} label={t("board.orbs", { count: shown.orbs })} />
-          </>
+          </Medallion>
         }
+        side={<BattleLog feed={player.feed} setup={view.setup} players={view.players} />}
         controls={
           <div className="flex flex-col gap-2">
+            <p className="text-center text-xs tabular-nums text-text-muted" aria-live="polite">
+              {t("replay.progress", { n: index, total })}
+            </p>
             <div className="grid grid-cols-3 gap-2">
               <Button onClick={() => (index >= total ? restart() : setPlaying(!playing))}>
                 {index >= total ? t("replay.restart") : playing ? t("replay.pause") : t("replay.play")}

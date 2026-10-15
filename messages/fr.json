@@ -2187,7 +2187,9 @@
       "acted": "A déjà agi",
       "resync": "Resynchronisation…",
       "keywordsLabel": "Passifs",
-      "techniqueLabel": "Technique"
+      "techniqueLabel": "Technique",
+      "standing": "{count}/3 debout",
+      "turnShort": "Tour"
     },
     "errors": {
       "STALE": "La partie a avancé : resynchronisation.",
@@ -2308,6 +2310,33 @@
       "KARASU": "Karasu",
       "YUREI": "Yūrei",
       "RONIN": "Rōnin"
+    },
+    "log": {
+      "title": "Journal du combat",
+      "empty": "Le combat commence.",
+      "attack": "{actor} attaque {target}.",
+      "technique": "{actor} lance {technique}.",
+      "techniqueOn": "{actor} lance {technique} sur {target}.",
+      "damage": "{target} perd {amount} PV.",
+      "crit": "Coup critique ! {target} perd {amount} PV.",
+      "block": "{target} bloque le coup.",
+      "heal": "{target} récupère {amount} PV.",
+      "poisoned": "{target} est empoisonnée.",
+      "poison": "Le poison retire {amount} PV à {target}.",
+      "riposte": "{target} riposte !",
+      "ko": "{target} est hors combat.",
+      "revive": "{target} renaît avec {hp} PV.",
+      "barrier": "{target} reçoit une barrière.",
+      "buff": "L'équipe de {player} gagne +{pct} % de 力.",
+      "seal": "{target} est scellée.",
+      "turn": "Tour de {player}.",
+      "timeout": "{player} laisse filer son tour.",
+      "forfeit": "{player} abandonne."
+    },
+    "detail": {
+      "title": "Carte",
+      "hint": "Touche une de tes cartes pour voir sa technique et ses passifs.",
+      "stats": "力 {atk} · 気 {def} · {hp}/{max} PV"
     }
   }
 }

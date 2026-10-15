@@ -2187,7 +2187,9 @@
       "acted": "Already acted",
       "resync": "Resyncing…",
       "keywordsLabel": "Passives",
-      "techniqueLabel": "Technique"
+      "techniqueLabel": "Technique",
+      "standing": "{count}/3 standing",
+      "turnShort": "Turn"
     },
     "errors": {
       "STALE": "The battle moved on: resyncing.",
@@ -2308,6 +2310,33 @@
       "KARASU": "Karasu",
       "YUREI": "Yūrei",
       "RONIN": "Rōnin"
+    },
+    "log": {
+      "title": "Battle log",
+      "empty": "The battle begins.",
+      "attack": "{actor} attacks {target}.",
+      "technique": "{actor} uses {technique}.",
+      "techniqueOn": "{actor} uses {technique} on {target}.",
+      "damage": "{target} loses {amount} HP.",
+      "crit": "Critical hit! {target} loses {amount} HP.",
+      "block": "{target} blocks the hit.",
+      "heal": "{target} recovers {amount} HP.",
+      "poisoned": "{target} is poisoned.",
+      "poison": "Poison deals {amount} HP to {target}.",
+      "riposte": "{target} strikes back!",
+      "ko": "{target} is knocked out.",
+      "revive": "{target} is reborn with {hp} HP.",
+      "barrier": "{target} gains a barrier.",
+      "buff": "{player}'s team gains +{pct}% 力.",
+      "seal": "{target} is sealed.",
+      "turn": "{player}'s turn.",
+      "timeout": "{player} lets their turn slip.",
+      "forfeit": "{player} forfeits."
+    },
+    "detail": {
+      "title": "Card",
+      "hint": "Tap one of your cards to see its technique and passives.",
+      "stats": "力 {atk} · 気 {def} · {hp}/{max} HP"
     }
   }
 }

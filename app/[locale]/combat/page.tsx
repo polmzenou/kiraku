@@ -9,7 +9,7 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import type { PlayerView } from "@/lib/battle/view";
-import { battleCtx, getActivity, getCandidates, getHistory, getLastTeam, sweepBattlesFor } from "@/server/battle/queries";
+import { battleCtx, challengeTarget, getActivity, getCandidates, getHistory, getLastTeam, sweepBattlesFor } from "@/server/battle/queries";
 import { getCurrentUser } from "@/server/user";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/combat">): Promise<Metadata> {
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/combat">
 }
 
 /** Combat : exhibition, salle d'amis (code), classé à l'étape 9b, dernières parties et règles. */
-export default async function CombatPage() {
+export default async function CombatPage({ searchParams }: PageProps<"/[locale]/combat">) {
   const [t, format, user] = await Promise.all([getTranslations("battle"), getFormatter(), getCurrentUser()]);
   if (!user) {
     return (
@@ -56,12 +56,15 @@ export default async function CombatPage() {
     getHistory(user.id),
   ]);
   const lastTeam = await getLastTeam(user.id, candidates);
+  // ?defier=pseudo (bouton du profil) : seulement un ami accepté, la salle le revérifie à la création
+  const { defier } = await searchParams;
+  const challenge = typeof defier === "string" ? await challengeTarget(user.id, defier) : null;
   const name = (p: PlayerView | null) => (!p ? "—" : "bot" in p ? t("board.bot", { name: t(`bots.${p.bot}` as "bots.TENGU") }) : p.username);
 
   return (
     <PageShell>
       {header}
-      <CombatHub activity={activity} candidates={candidates} lastTeam={lastTeam} queueSeconds={ctx.rules.queueSeconds} />
+      <CombatHub activity={activity} candidates={candidates} lastTeam={lastTeam} queueSeconds={ctx.rules.queueSeconds} challenge={challenge} />
 
       <section className="flex flex-col gap-3">
         <SectionTitle kanji="記" title={t("history.title")} />
