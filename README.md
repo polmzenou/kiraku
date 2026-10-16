@@ -20,6 +20,15 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Images
+
+Les illustrations AniList et les avatars Discord sont chargés directement depuis leurs CDN.
+L'optimisation de `next/image` est désactivée globalement avec `images.unoptimized: true`
+dans `next.config.ts` pour éviter que les quotas de transformation Vercel bloquent leur affichage
+(`402 OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED`). Ce réglage couvre aussi les futures images.
+Le chargement différé et les dimensions des composants `Image` sont conservés.
+La disponibilité des fichiers dépend toujours des CDN d'origine.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
