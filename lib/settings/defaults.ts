@@ -1,8 +1,9 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { RARITIES } from "@/lib/catalog/rarity";
 import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
 import { rotationPinSchema } from "@/lib/boosters/rotation";
 import { KEYWORDS, TECHNIQUES } from "@/lib/battle/types";
+import { JOIN_MODAL_DEFAULT, joinModalSchema } from "@/lib/discord/join-modal";
 
 // Seuils de rareté en points de base (300 = top 3 %), du plus rare au plus courant
 const rarityThresholds = z
@@ -250,6 +251,16 @@ export const SETTING_SCHEMAS = {
   "ranked.rewardLots": rankedRewardLots,
   "guest.createPerHourPerIp": z.number().int().min(1).max(1_000),
   "discord.linkBonusZeni": z.number().int().min(0).max(100_000),
+  // Modal « Rejoins notre Discord » : lien, textes fr/en, déclencheur et fréquence
+  "discord.joinModal": joinModalSchema,
+  // Interrupteurs de fonctionnalités sans module propre (casino : tuile « Bientôt » seulement)
+  "features.casino": z.boolean(),
+  // Conformité (étape 10) : version des CGU que tout compte inscrit doit avoir acceptée
+  "legal.termsRequiredVersion": z.number().int().min(1).max(10_000),
+  // Suppression du compte : délai (annulable) avant l'anonymisation
+  "account.deletionGraceDays": z.number().int().min(0).max(365),
+  "account.usernameChangeDays": z.number().int().min(0).max(365),
+  "account.exportsPerDay": z.number().int().min(1).max(50),
   "catalog.size": z.number().int().min(10).max(50_000),
   "catalog.rarityThresholds": rarityThresholds,
   // FROZEN : une carte garde la rareté de sa première apparition ; LIVE : elle suit son rang
@@ -366,6 +377,12 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "ranked.rewardLots": { BRONZE: null, SILVER: null, GOLD: null, EMERALD: null, ELITE: null, CHAMPION: null, GRAND_CHAMPION: null },
   "guest.createPerHourPerIp": 5,
   "discord.linkBonusZeni": 500, // versé une seule fois, à la première liaison
+  "discord.joinModal": JOIN_MODAL_DEFAULT, // désactivé par défaut
+  "features.casino": true,
+  "legal.termsRequiredVersion": 1,
+  "account.deletionGraceDays": 30, // anonymisation sous 30 jours (plan, « Pages légales, RGPD »)
+  "account.usernameChangeDays": 30,
+  "account.exportsPerDay": 3,
   "catalog.size": 6736,
   "catalog.rarityThresholds": { mythic: 300, legendary: 1000, epic: 2500, rare: 5000, uncommon: 7500 },
   "catalog.rarityPolicy": "FROZEN",

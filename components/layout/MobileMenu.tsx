@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
-import { isActive, MOBILE_NAV_ITEMS } from "@/lib/nav";
+import { isActive, MOBILE_NAV_ITEMS, type NavFeatures } from "@/lib/nav";
 import type { Theme } from "@/lib/theme";
 import { logout } from "@/server/actions/account";
 import { LocaleSwitcher } from "../LocaleSwitcher";
@@ -14,7 +14,19 @@ import { NavLinks } from "./NavLinks";
  * Navigation mobile fixe et panneau « Plus » qui monte du bas.
  * Le <dialog> natif piège le focus et se ferme avec Échap ou un appui sur le fond.
  */
-export function MobileMenu({ theme, isAdmin, accountHref, signedIn }: { theme: Theme; isAdmin: boolean; accountHref: string; signedIn: boolean }) {
+export function MobileMenu({
+  theme,
+  isAdmin,
+  accountHref,
+  signedIn,
+  features,
+}: {
+  theme: Theme;
+  isAdmin: boolean;
+  accountHref: string;
+  signedIn: boolean;
+  features: NavFeatures;
+}) {
   const t = useTranslations("nav");
   const tAccount = useTranslations("account");
   const tAuth = useTranslations("auth.login");
@@ -112,7 +124,7 @@ export function MobileMenu({ theme, isAdmin, accountHref, signedIn }: { theme: T
           </div>
 
           <nav aria-label={t("label")}>
-            <NavLinks layout="stack" onNavigate={close} />
+            <NavLinks layout="stack" features={features} onNavigate={close} />
             <ul className="flex flex-col">
               <li>
                 <Link

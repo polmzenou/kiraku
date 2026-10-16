@@ -21,8 +21,9 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Le nonce CSP impose un rendu dynamique : pas de Cache Components ni de PPR.
   poweredByHeader: false,
+  // Les métadonnées restent dans <head> pour les lecteurs HTML et les outils SEO.
+  htmlLimitedBots: /.*/,
   images: {
-    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "s4.anilist.co" },
       { protocol: "https", hostname: "cdn.discordapp.com" },

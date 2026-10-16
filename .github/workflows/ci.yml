@@ -1,0 +1,33 @@
+# Contrôles de chaque push et pull request (CLAUDE.md, « Façon de travailler »).
+# Les tests sur base réelle (*.db.test.ts) sont sautés ici : ils demandent DATABASE_URL_TEST
+# (branche Neon de dev) et se lancent à la main avant une mise en production.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run audit:actions
+      - run: npm run audit:dependencies

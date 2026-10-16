@@ -38,6 +38,8 @@ type NewPlayer = {
   email?: string | null;
   image?: string | null;
   passwordHash?: string | null;
+  /** Version des CGU acceptée à l'inscription (null : invité, ou Discord qui l'accepte ensuite). */
+  termsVersion?: number | null;
 };
 
 /** Visibilité par défaut : un invité est privé, un compte inscrit est public. */
@@ -69,6 +71,7 @@ export async function createPlayer(
       email: player.email ?? null,
       image: player.image ?? null,
       passwordHash: player.passwordHash ?? null,
+      termsVersion: player.termsVersion ?? null,
       profileVisibility: defaultVisibility(player.isGuest),
       boosterStock: start.boosters,
     },

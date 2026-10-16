@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 
 // Avis des joueurs : règles pures partagées par l'action, la requête et le carrousel.
 

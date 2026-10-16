@@ -1,6 +1,6 @@
 "use client";
 
-import { domMax, LazyMotion, m, MotionConfig } from "motion/react";
+import { LazyMotion, m, MotionConfig } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useRef, useState, useTransition } from "react";
 import { Fuda } from "@/components/fuda/Fuda";
@@ -10,6 +10,7 @@ import type { CollectionItem, ShowcaseCard } from "@/lib/collection/view";
 import { setShowcaseAction } from "@/server/actions/collection";
 import { Button } from "../ui/Button";
 import { ShowcasePicker } from "./ShowcasePicker";
+import { loadDomMax } from "../motion/load-features";
 
 type Slot = ShowcaseCard | null;
 
@@ -77,7 +78,7 @@ export function Showcase({ initial, editable, linkBase }: { initial: Slot[]; edi
   if (!editable && isEmpty) return <p className="rounded-lg border border-border bg-surface p-4 text-sm text-text-muted">{t("emptyPublic")}</p>;
 
   return (
-    <LazyMotion features={domMax} strict>
+    <LazyMotion features={loadDomMax} strict>
       <MotionConfig reducedMotion="user">
         <div className="flex flex-col gap-3">
           <ol
@@ -110,8 +111,8 @@ export function Showcase({ initial, editable, linkBase }: { initial: Slot[]; edi
                     </m.div>
                   ) : (
                     <m.div layoutId={`showcase-${card.cardId}`}>
-                      <Link href={`${linkBase}/${card.anilistId}`} scroll={false} className="block rounded-[5px]">
-                        <Fuda card={card} series={card.series} size="md" sizes={cardSizes} />
+                      <Link href={`${linkBase}/${card.anilistId}`} prefetch={false} scroll={false} className="block rounded-[5px]">
+                        <Fuda card={card} series={card.series} size="md" sizes={cardSizes} preload={i < 2} />
                       </Link>
                     </m.div>
                   )

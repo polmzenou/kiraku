@@ -1,16 +1,22 @@
 import "server-only";
 import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
+import { after } from "next/server";
 import { GUEST_PREFIX } from "@/lib/username";
 import { safeRedirect } from "@/lib/safe-redirect";
 import { kirakuAdapter } from "./auth-adapter";
 import { prisma } from "./db";
 import { credit } from "./economy/ledger";
 import { attachFromCookie } from "./economy/referral";
-import { discordEnabled, env } from "./env";
+import { discordEnabled, discordLinkConfigured, env } from "./env";
+import { notifyDiscordLink } from "./discord/link-notification";
 import { availableUsername, publishProfileOnSignup } from "./players";
 import { SESSION_COOKIE, SESSION_MAX_AGE } from "./session";
 import { getSetting } from "./settings";
+import { writeAdminLog } from "./admin/log";
+
+// Garde le calcul d'avatar et du nom d'affichage fourni par Auth.js.
+const defaultDiscordProfile = Discord({}).profile!;
 
 // Auth.js gère les sessions en base et, quand il est configuré, Discord.
 // Les comptes invités et e-mail + mot de passe ouvrent leurs sessions eux-mêmes
@@ -29,6 +35,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // Discord renvoie désormais « iss » dans la réponse d'autorisation (RFC 9207) ; sans
           // émetteur déclaré, Auth.js attend « https://authjs.dev » et refuse le retour.
           issuer: "https://discord.com",
+          profile: async (profile, tokens) => ({
+            ...(await defaultDiscordProfile(profile, tokens)),
+            discordUsername: profile.username,
+          }),
         }),
       ]
     : [],
@@ -49,7 +59,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const userId = user.id;
       const bonus = await getSetting("discord.linkBonusZeni");
 
-      await prisma.$transaction(async (tx) => {
+      const firstLink = await prisma.$transaction(async (tx) => {
         const current = await tx.user.findUnique({
           where: { id: userId },
           select: { username: true, email: true },
@@ -87,19 +97,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (env.ADMIN_DISCORD_ID && account.providerAccountId === env.ADMIN_DISCORD_ID) {
           const granted = await tx.user.updateMany({ where: { id: userId, role: "USER" }, data: { role: "ADMIN" } });
           if (granted.count === 1) {
-            await tx.adminLog.create({
-              data: {
-                adminId: userId,
-                action: "ROLE_GRANT",
-                targetType: "User",
-                targetId: userId,
-                before: "USER",
-                after: "ADMIN",
-              },
+            await writeAdminLog(tx, {
+              adminId: userId,
+              action: "ROLE_GRANT",
+              targetType: "User",
+              targetId: userId,
+              before: "USER",
+              after: "ADMIN",
             });
           }
         }
+        return first.count === 1;
       });
+
+      // Après validation de la transaction et envoi de la réponse : Discord ne ralentit pas
+      // la connexion. Les reconnexions et les nouvelles liaisons du même joueur n'annoncent rien.
+      if (firstLink && discordLinkConfigured) {
+        after(async () => {
+          await notifyDiscordLink({
+            discordId: account.providerAccountId,
+            username: profile.discordUsername,
+            displayName: profile.name,
+          });
+        });
+      }
 
       // Lien d'invitation suivi avant l'inscription : rattaché après la liaison, sans la bloquer
       await attachFromCookie(userId);

@@ -46,6 +46,7 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
       <div className="flex flex-wrap items-end justify-between gap-4">
         <SectionTitle level={1} kanji="競売" title={t("title")} subtitle={t("intro")} />
         <div
+          role="group"
           className="flex items-center gap-2 rounded-full border border-kin/50 bg-surface px-4 py-2"
           aria-label={t("balance", { amount: user.coins })}
         >

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { normalizeReviewBody, REVIEW_BODY_MAX, REVIEW_PAGE_SIZE } from "../social/reviews";
 
 // Modération des avis (/admin/avis) : filtres, pagination et entrées des actions, sans base.

@@ -23,15 +23,19 @@ import { ZeniCoin } from "./ZeniCoin";
 export async function AppHeader({ theme }: { theme: Theme }) {
   const [t, user] = await Promise.all([getTranslations(), getCurrentUser()]);
   const accountHref = user ? `/u/${user.username}` : "/connexion";
-  const state = user ? boosterStateFrom(user, await getBoosterRules()) : null;
   const isAdmin = user?.role === "ADMIN";
   const signedIn = Boolean(user && !user.isGuest);
   const authLabel = signedIn ? t("account.logout") : t("auth.login.title");
   const authClasses =
     "size-11 shrink-0 items-center justify-center rounded-full border border-shu/40 bg-shu/10 text-shu transition-colors hover:bg-shu/20";
-  const [unread, pollSeconds] = user
-    ? await Promise.all([unreadNotifications(user.id), getSetting("notifications.pollSeconds")])
-    : [0, 0];
+  const [unread, pollSeconds, casino, boosterRules] = await Promise.all([
+    user ? unreadNotifications(user.id) : 0,
+    user ? getSetting("notifications.pollSeconds") : 0,
+    getSetting("features.casino"),
+    user ? getBoosterRules() : null,
+  ]);
+  const state = user && boosterRules ? boosterStateFrom(user, boosterRules) : null;
+  const features = { casino };
 
   return (
     <>
@@ -43,7 +47,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
           </Link>
 
           <nav aria-label={t("nav.label")} className="ml-2 hidden lg:block">
-            <NavLinks layout="bar" />
+            <NavLinks layout="bar" features={features} />
           </nav>
 
           <div className="ml-auto flex min-w-0 items-center gap-1.5 md:gap-2">
@@ -86,7 +90,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
                 className="hidden size-11 shrink-0 items-center justify-center lg:inline-flex"
               >
                 {user.image ? (
-                  <Image src={user.image} alt="" width={32} height={32} className="rounded-full" />
+                  <Image src={user.image} alt="" width={32} height={32} crossOrigin="anonymous" referrerPolicy="no-referrer" className="rounded-full" />
                 ) : (
                   <span
                     aria-hidden="true"
@@ -111,7 +115,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
           </div>
         </div>
       </header>
-      <MobileMenu theme={theme} isAdmin={isAdmin} accountHref={accountHref} signedIn={signedIn} />
+      <MobileMenu theme={theme} isAdmin={isAdmin} accountHref={accountHref} signedIn={signedIn} features={features} />
     </>
   );
 }

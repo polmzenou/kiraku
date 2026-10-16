@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import { isFrozen } from "@/lib/account/deletion";
 import { auth } from "./auth";
 import { prisma } from "./db";
 
@@ -31,6 +32,12 @@ export const getCurrentUser = cache(async () => {
       profileVisibility: true,
       showCollection: true,
       locale: true,
+      termsVersion: true,
+      deletionRequestedAt: true,
+      anonymizedAt: true,
+      usernameChangedAt: true,
+      discordJoinedAt: true,
+      v1WelcomeSeenAt: true,
     },
   });
   if (!user) return null;
@@ -38,3 +45,14 @@ export const getCurrentUser = cache(async () => {
   const { passwordHash, ...rest } = user;
   return { ...rest, hasPassword: passwordHash !== null };
 });
+
+/**
+ * Joueur actif : connecté, non banni, sans suppression de compte en cours ni anonymisation.
+ * Les actions de jeu, lectures et sondages s'en servent ; les actions RGPD (annuler la suppression, exporter) lisent
+ * getCurrentUser directement.
+ */
+export async function requireActiveUser() {
+  const user = await getCurrentUser();
+  if (!user || user.bannedAt || isFrozen(user)) return null;
+  return user;
+}

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { seededRng } from "./rng";
 import { slugSchema } from "./types";
 

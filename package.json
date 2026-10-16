@@ -5,29 +5,36 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "vercel-build": "node scripts/check-deploy-env.mjs && prisma generate && prisma migrate deploy && tsx scripts/seed-boosters.mts && next build",
+    "vercel-build": "node scripts/check-deploy-env.mjs && prisma generate && prisma migrate deploy && tsx scripts/seed-boosters.mts && tsx scripts/seed-legal.mts && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "audit:actions": "tsx scripts/audit-actions.mts",
+    "audit:dependencies": "node scripts/audit-dependencies.mjs",
+    "lighthouse": "node scripts/lighthouse.mjs",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:status": "prisma migrate status",
+    "db:deploy": "prisma migrate deploy",
     "fonts:subset": "tsx scripts/subset-seal-font.mts",
     "catalog:import": "tsx scripts/import-characters.mts",
     "sim:boosters": "tsx scripts/simulate-boosters.mts",
     "admin:grant": "tsx scripts/grant-admin.mts",
     "seed:boosters": "tsx scripts/seed-boosters.mts",
-    "seed:missions": "tsx scripts/seed-missions.mts"
+    "seed:missions": "tsx scripts/seed-missions.mts",
+    "seed:legal": "tsx scripts/seed-legal.mts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
     "@node-rs/argon2": "^2.2.2",
-    "@prisma/adapter-neon": "^7.10.0",
-    "@prisma/client": "^7.10.0",
+    "@prisma/adapter-neon": "^7.10.1",
+    "@prisma/client": "^7.10.1",
     "@tanstack/react-virtual": "^3.13.12",
     "@upstash/ratelimit": "^2.2.0",
     "@upstash/redis": "^1.39.0",
+    "@vercel/speed-insights": "^1.3.1",
     "ably": "^2.29.0",
     "motion": "^12.43.0",
     "next": "16.4.0",
@@ -35,6 +42,7 @@
     "next-intl": "^4.14.9",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "react-markdown": "^10.1.0",
     "server-only": "^0.0.1",
     "web-push": "^3.6.7",
     "zod": "^4.6.7"
@@ -45,10 +53,12 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
+    "chrome-launcher": "^1.2.2",
     "dotenv": "^18.0.7",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
-    "prisma": "^7.10.0",
+    "lighthouse": "^13.5.0",
+    "prisma": "^7.10.1",
     "subset-font": "^2.9.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
@@ -56,6 +66,6 @@
     "vitest": "^5.0.4"
   },
   "engines": {
-    "node": "22.x"
+    "node": ">=22.19.0 <23"
   }
 }

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 
 // Historique des Zeni (/compte/historique) : filtres et liens vers la source de chaque ligne.
 

@@ -2,14 +2,15 @@
 
 import { getLocale } from "next-intl/server";
 import { refresh } from "next/cache";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { decodeMarketCursor, parseMarketParams } from "@/lib/market/filters";
+import { isFrozen } from "@/lib/account/deletion";
 import { prisma } from "../db";
 import { adminCancelAuctionWith, AuctionError, buyNowWith, cancelAuctionWith, createAuctionWith, placeBidWith } from "../market/auction-core";
 import { auctionLive, getMarketRules, listAuctions, pushLater, type AuctionListItem, type AuctionLive } from "../market/queries";
 import { getAdmin } from "../admin";
 import { rateLimit } from "../ratelimit";
-import { getCurrentUser } from "../user";
+import { getCurrentUser, requireActiveUser } from "../user";
 
 // Hôtel des ventes. Ordre des contrôles : session → Zod → compte autorisé → rate limit, puis tout
 // est relu sous verrou dans la transaction (server/market/auction-core.ts). Le client n'envoie que
@@ -53,7 +54,7 @@ async function session(
 ): Promise<{ user: Player } | { error: "NO_SESSION" | "UNAVAILABLE" | "RATE_LIMITED" | "GUEST" }> {
   const user = await getCurrentUser();
   if (!user) return { error: "NO_SESSION" };
-  if (user.bannedAt) return { error: "UNAVAILABLE" };
+  if (user.bannedAt || isFrozen(user)) return { error: "UNAVAILABLE" };
   // Invités en consultation seule ; la transaction le revérifie
   if (user.isGuest) return { error: "GUEST" };
   if (!(await rateLimit(`${bucket}:${user.id}`, rule)).success) return { error: "RATE_LIMITED" };
@@ -203,7 +204,7 @@ export async function loadMarketPageAction(input: unknown): Promise<MarketPageRe
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const cursor = decodeMarketCursor(parsed.data.cursor);
   if (!cursor) return { ok: false, error: "INVALID" };
-  const user = await getCurrentUser();
+  const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
   if (!(await rateLimit(`market-page:${user.id}`, { limit: 60, windowSeconds: MINUTE })).success) {
     return { ok: false, error: "RATE_LIMITED" };
@@ -224,7 +225,7 @@ export type LiveResult = { ok: true; live: AuctionLive } | Failure;
 export async function auctionLiveAction(input: unknown): Promise<LiveResult> {
   const parsed = auctionSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
-  const user = await getCurrentUser();
+  const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
   if (!(await rateLimit(`market-live:${user.id}`, { limit: 60, windowSeconds: MINUTE })).success) {
     return { ok: false, error: "RATE_LIMITED" };

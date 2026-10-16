@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { localizedSchema } from "@/lib/boosters/types";
 import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
 

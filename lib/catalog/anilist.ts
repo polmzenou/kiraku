@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 
 // API GraphQL publique d'AniList (sans clé). Section « Importer le catalogue » du plan.
 export const ANILIST_ENDPOINT = "https://graphql.anilist.co";

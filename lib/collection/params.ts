@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { RARITIES, type Rarity } from "../catalog/rarity";
 import { normalizeSearch, SEARCH_MAX_LENGTH } from "../catalog/search";
 

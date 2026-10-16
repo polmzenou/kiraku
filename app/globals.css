@@ -128,6 +128,13 @@
 /* Fuda : cadre dans la matière de sa rareté, effets de matière (laque, or, nacre) qui suivent
    l'inclinaison (variables --mx / --my posées par FudaTilt, 0,5 = au repos). */
 @layer components {
+  .welcome-v1-card {
+    background:
+      linear-gradient(135deg, rgb(217 181 86 / 0.18), transparent 55%),
+      repeating-linear-gradient(45deg, transparent 0 7px, rgb(217 181 86 / 0.06) 7px 8px),
+      var(--k-surface);
+  }
+
   .fuda-sheen {
     position: absolute;
     inset: -50%;

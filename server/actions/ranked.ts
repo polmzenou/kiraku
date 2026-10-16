@@ -1,7 +1,8 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { z } from "zod";
+import { z } from "@/lib/zod";
+import { isFrozen } from "@/lib/account/deletion";
 import { LotError } from "../economy/lots";
 import { lotDeps } from "../economy/deps";
 import { prisma } from "../db";
@@ -21,7 +22,7 @@ export async function claimSeasonRewardAction(input: unknown): Promise<{ ok: tru
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
-  if (user.bannedAt) return { ok: false, error: "UNAVAILABLE" };
+  if (user.bannedAt || isFrozen(user)) return { ok: false, error: "UNAVAILABLE" };
   if (user.isGuest) return { ok: false, error: "GUEST" };
   if (!(await rateLimit(`ranked-claim:${user.id}`, { limit: 6, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
   try {

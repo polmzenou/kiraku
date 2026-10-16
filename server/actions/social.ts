@@ -2,8 +2,9 @@
 
 import { refresh } from "next/cache";
 import { after } from "next/server";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { USERNAME_REGEX } from "@/lib/username";
+import { isFrozen } from "@/lib/account/deletion";
 import { findProfileOwner } from "../collection/profile";
 import { prisma } from "../db";
 import { pushNotifications } from "../push/send";
@@ -67,7 +68,7 @@ async function guard<S extends z.ZodType>(input: unknown, schema: S, bucket: str
   if (!parsed.success) return { error: "INVALID" as const };
   // Invités exclus du social : ils se créent en série, ce serait l'outil idéal du spam
   if (user.isGuest) return { error: "GUEST" as const };
-  if (user.bannedAt) return { error: "UNAVAILABLE" as const };
+  if (user.bannedAt || isFrozen(user)) return { error: "UNAVAILABLE" as const };
   if (!(await getSetting("social.enabled"))) return { error: "DISABLED" as const };
   if (!(await rateLimit(`${bucket}:${user.id}`, rule)).success) return { error: "RATE_LIMITED" as const };
   return { user, data: parsed.data as z.infer<S> };

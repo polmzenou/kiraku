@@ -173,7 +173,9 @@ export function AuctionPanel({
         {open && <Countdown endsAt={endsAt} serverNow={serverNow} refreshOnEnd className="text-sm" />}
       </div>
 
-      {open && shown.leaderName && !shown.leading && <p className="text-sm">{t("detail.leader", { name: shown.leaderName })}</p>}
+      {open && shown.bidCount > 0 && !shown.leading && (
+        <p className="text-sm">{t("detail.leader", { name: shown.leaderName ?? t("detail.anonymous") })}</p>
+      )}
       {open && shown.leading && <p className="rounded-button border border-kin/60 p-3 text-sm">{t("detail.youLead")}</p>}
 
       {!open && (
@@ -181,7 +183,7 @@ export function AuctionPanel({
           {shown.status === "SOLD"
             ? shown.leading
               ? t("detail.soldYou", { amount: shown.finalPrice ?? shown.price })
-              : t("detail.soldFor", { amount: shown.finalPrice ?? shown.price, name: shown.leaderName ?? "?" })
+              : t("detail.soldFor", { amount: shown.finalPrice ?? shown.price, name: shown.leaderName ?? t("detail.anonymous") })
             : shown.status === "EXPIRED"
               ? t("detail.expired")
               : t("detail.cancelled")}

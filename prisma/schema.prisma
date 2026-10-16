@@ -1,6 +1,6 @@
 // Schéma du socle (étape 1), du catalogue (étape 2), des boosters (étape 3), de leurs types (étape 4),
 // de la collection et du profil (étape 5), du social (étape 6), de l'économie (étape 7), de l'hôtel des ventes (étape 8)
-// et du combat (étape 9).
+// du combat (étape 9) et de la conformité (étape 10).
 // Chaque étape ajoute ses modèles
 // par sa propre migration nommée. Référence : docs/PLAN.md, « Schéma Prisma ».
 
@@ -75,10 +75,13 @@ model User {
   standardCount       Int               @default(0) // pour le booster doré
   bannerPity          Json              @default("{}") // { boosterTypeId: boosters sans vedette }
   discordJoinedAt     DateTime? // a cliqué sur « Rejoindre le serveur »
+  v1WelcomeSeenAt     DateTime? // présentation de la v1 affichée une seule fois par compte
   locale              String            @default("fr") // fr | en
-  birthDate           DateTime? // contrôle d'âge
+  birthDate           DateTime? // inutilisé : pas de contrôle d'âge (décision de l'étape 10)
   termsVersion        Int? // version des CGU acceptée
-  deletionRequestedAt DateTime? // suppression RGPD en attente
+  deletionRequestedAt DateTime? // suppression RGPD en attente : compte gelé jusqu'à l'anonymisation
+  anonymizedAt        DateTime? // compte anonymisé (RGPD) : plus aucune donnée personnelle
+  usernameChangedAt   DateTime? // dernier changement de pseudo par le joueur (délai account.usernameChangeDays)
   // Code de parrainage court (8 caractères sans 0/O/1/I), généré par la base
   referralCode        String            @unique @default(dbgenerated("kiraku_referral_code()"))
   referredById        String? // parrain, posé au rattachement (Referral fait foi)
@@ -123,6 +126,13 @@ model User {
   battlesAsP2   Battle[]       @relation("battleP2")
   battleQueue   BattleQueue?
   seasonResults SeasonResult[]
+
+  dataRequests       DataRequest[]  @relation("dataRequester")
+  processedRequests  DataRequest[]  @relation("dataProcessor")
+  publishedLegalDocs LegalPage[]
+  lotGrants          LotGrant[]     @relation("lotGrantee")
+  lotGrantsGiven     LotGrant[]     @relation("lotGranter")
+  lotBroadcasts      LotBroadcast[]
 
   @@index([rankPoints])
 }
@@ -526,6 +536,7 @@ enum NotificationType {
   AUCTION_EXPIRED // aucune mise, la carte revient au vendeur
   AUCTION_CANCELLED // annulée par l'admin, mise rendue
   BATTLE_INVITE // un ami t'invite en combat avec un code
+  LOT_GRANTED // cadeau de l'équipe (lot envoyé depuis /admin/lots)
 }
 
 // Notifications en base ; le texte est rendu à la lecture (pseudo à jour, langue du lecteur)
@@ -583,15 +594,17 @@ enum LotItemKind {
 
 // Récompense réutilisable (missions, parrainage, boutique)
 model Lot {
-  id        String     @id @default(cuid())
-  name      Json // { fr, en }
-  zeni      Int        @default(0)
-  active    Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  items     LotItem[]
-  missions  Mission[]
-  shopItems ShopItem[]
+  id         String         @id @default(cuid())
+  name       Json // { fr, en }
+  zeni       Int            @default(0)
+  active     Boolean        @default(true)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  items      LotItem[]
+  missions   Mission[]
+  shopItems  ShopItem[]
+  grants     LotGrant[]
+  broadcasts LotBroadcast[]
 }
 
 model LotItem {
@@ -944,4 +957,103 @@ model SeasonResult {
 
   @@id([seasonId, userId])
   @@index([userId, claimedAt])
+}
+
+// --- Conformité (étape 10) ---
+
+enum LegalStatus {
+  DRAFT
+  PUBLISHED
+}
+
+// Une version d'une page légale dans une langue. La version en vigueur d'un slug est la plus haute
+// version publiée ; l'anglais absent retombe sur le français de la même version.
+model LegalPage {
+  id            String      @id @default(cuid())
+  slug          String // mentions-legales | confidentialite | cookies | cgu | cgv
+  locale        String // fr | en
+  version       Int
+  title         String
+  body          String // markdown, rendu sans HTML brut (react-markdown)
+  status        LegalStatus @default(DRAFT)
+  publishedAt   DateTime?
+  publishedById String?
+  publishedBy   User?       @relation(fields: [publishedById], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([slug, locale, version])
+  @@index([slug, status, version])
+}
+
+enum DataRequestKind {
+  EXPORT
+  DELETION
+}
+
+enum DataRequestStatus {
+  PENDING
+  CANCELLED
+  DONE
+}
+
+// Demandes RGPD (export, suppression) : historique du module « Données personnelles » de l'admin
+model DataRequest {
+  id            String            @id @default(cuid())
+  userId        String
+  user          User              @relation("dataRequester", fields: [userId], references: [id])
+  kind          DataRequestKind
+  status        DataRequestStatus @default(PENDING)
+  requestedAt   DateTime          @default(now())
+  dueAt         DateTime? // suppression : anonymisation à cette date
+  processedAt   DateTime?
+  processedById String? // admin qui a exécuté ou annulé ; null = joueur ou cron
+  processedBy   User?             @relation("dataProcessor", fields: [processedById], references: [id])
+
+  @@index([kind, status, dueAt])
+  @@index([userId, requestedAt])
+}
+
+// Lot envoyé par un admin à un joueur (seul ou dans un envoi à tous). La contrainte unique rend
+// l'envoi à tous reprenable sans jamais verser deux fois au même joueur.
+model LotGrant {
+  id          String        @id @default(cuid())
+  lotId       String
+  lot         Lot           @relation(fields: [lotId], references: [id])
+  userId      String
+  user        User          @relation("lotGrantee", fields: [userId], references: [id])
+  adminId     String
+  admin       User          @relation("lotGranter", fields: [adminId], references: [id])
+  broadcastId String?
+  broadcast   LotBroadcast? @relation(fields: [broadcastId], references: [id])
+  reason      String? // motif saisi par l'admin (200 caractères max)
+  createdAt   DateTime      @default(now())
+
+  @@unique([broadcastId, userId])
+  @@index([userId, createdAt])
+  @@index([lotId])
+}
+
+enum LotBroadcastStatus {
+  RUNNING
+  DONE
+}
+
+// Envoi d'un lot à tous les joueurs, traité par paquets (budget de temps) et reprenable
+model LotBroadcast {
+  id         String             @id @default(cuid())
+  lotId      String
+  lot        Lot                @relation(fields: [lotId], references: [id])
+  adminId    String
+  admin      User               @relation(fields: [adminId], references: [id])
+  audience   String // ALL | REGISTERED (jamais les bannis ni les comptes anonymisés)
+  reason     String?
+  status     LotBroadcastStatus @default(RUNNING)
+  lastUserId String? // curseur : dernier joueur traité (ordre des ids)
+  granted    Int                @default(0)
+  createdAt  DateTime           @default(now())
+  finishedAt DateTime?
+  grants     LotGrant[]
+
+  @@index([status, createdAt])
 }

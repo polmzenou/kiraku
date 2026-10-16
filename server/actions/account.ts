@@ -22,6 +22,8 @@ import { createPlayer, publishProfileOnSignup, startingValues } from "../players
 import { clientIp, rateLimit } from "../ratelimit";
 import { destroyCurrentSession, startSession } from "../session";
 import { checkFormGuard } from "../form-guard";
+import { currentTermsVersion } from "../legal";
+import { getSetting } from "../settings";
 import { getCurrentUser } from "../user";
 
 // Formulaires de compte. Ordre des contrôles : session → Zod → propriété → rate limit.
@@ -45,6 +47,7 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
     email: formData.get("email"),
     password: formData.get("password"),
     passwordConfirm: formData.get("passwordConfirm"),
+    terms: formData.get("terms"),
   });
   // Robots : jeton signé de la page (délai minimal de remplissage) et champ piège
   const guard = checkFormGuard(formData, "register");
@@ -63,6 +66,8 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
 
   const passwordHash = await hashPassword(password);
   const start = current ? null : await startingValues();
+  // Version des CGU acceptée par la case cochée, écrite avec le compte
+  const termsVersion = await currentTermsVersion(await getSetting("legal.termsRequiredVersion"));
   let userId: string;
   try {
     userId = await prisma.$transaction(async (tx) => {
@@ -79,13 +84,13 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
       if (current) {
         const upgraded = await tx.user.updateMany({
           where: { id: current.id, isGuest: true },
-          data: { username, email, passwordHash, isGuest: false },
+          data: { username, email, passwordHash, isGuest: false, termsVersion },
         });
         if (upgraded.count !== 1) throw new FormError("alreadyRegistered");
         await publishProfileOnSignup(tx, current.id);
         return current.id;
       }
-      const user = await createPlayer(tx, { username, email, passwordHash, isGuest: false }, start!);
+      const user = await createPlayer(tx, { username, email, passwordHash, isGuest: false, termsVersion }, start!);
       return user.id;
     });
   } catch (e) {
@@ -135,6 +140,7 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
 export async function logout(): Promise<void> {
   const user = await getCurrentUser();
   if (!user) return;
+  if (!(await rateLimit(`logout:${user.id}`, { limit: 20, windowSeconds: HOUR })).success) return;
   await destroyCurrentSession();
   redirect({ href: "/connexion", locale: await getLocale() });
 }

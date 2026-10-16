@@ -13,6 +13,7 @@ export function BoosterTile({ type, cards, selected, stock }: { type: BoosterTyp
   const name = localize(type.name, locale);
   return (
     <Link
+      prefetch={false}
       href={`/?b=${type.slug}&f=${type.family}`}
       scroll={false}
       aria-label={t("selectTile", { name })}

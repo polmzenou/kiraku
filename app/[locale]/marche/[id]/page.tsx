@@ -70,7 +70,7 @@ export default async function AuctionPage({ params }: PageProps<"/[locale]/march
             </p>
             <h1 className="text-2xl font-extrabold md:text-3xl">{detail.card.name}</h1>
             <p className="text-sm text-text-muted">{detail.card.series}</p>
-            <p className="text-sm">{t("detail.seller", { name: detail.sellerName })}</p>
+            <p className="text-sm">{t("detail.seller", { name: detail.sellerName ?? t("detail.anonymous") })}</p>
           </header>
 
           <AuctionPanel
@@ -99,7 +99,7 @@ export default async function AuctionPage({ params }: PageProps<"/[locale]/march
                 {detail.bids.map((b) => (
                   <li key={b.id} className="flex items-center justify-between gap-2 rounded-button border border-border bg-surface px-3 py-2">
                     <span className="min-w-0 truncate">
-                      {b.me ? <strong>{t("detail.you")}</strong> : b.bidderName}
+                      {b.me ? <strong>{t("detail.you")}</strong> : (b.bidderName ?? t("detail.anonymous"))}
                     </span>
                     <span className="flex shrink-0 items-center gap-3">
                       <span className="font-bold tabular-nums text-kin">{t("zeni", { amount: b.amount })}</span>

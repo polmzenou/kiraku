@@ -3,14 +3,22 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
-import { isActive, MOBILE_NAV_MORE, NAV_ITEMS, NAV_MORE, type NavItem } from "@/lib/nav";
+import { isActive, MOBILE_NAV_MORE, NAV_ITEMS, NAV_MORE, visibleItems, type NavFeatures, type NavItem } from "@/lib/nav";
 
 /**
  * Entrées de la navigation. `layout="bar"` : barre horizontale du haut (≥ 1024 px), soulignement
  * vermillon sur la page active, Collection · Amis · Parrainage · Wiki dans le menu déroulant « Plus » ;
  * `layout="stack"` : liens secondaires du panneau mobile « Plus ».
  */
-export function NavLinks({ layout, onNavigate }: { layout: "bar" | "stack"; onNavigate?: () => void }) {
+export function NavLinks({
+  layout,
+  features,
+  onNavigate,
+}: {
+  layout: "bar" | "stack";
+  features: NavFeatures;
+  onNavigate?: () => void;
+}) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const bar = layout === "bar";
@@ -18,7 +26,7 @@ export function NavLinks({ layout, onNavigate }: { layout: "bar" | "stack"; onNa
   if (!bar) {
     return (
       <ul className="flex flex-col">
-        {MOBILE_NAV_MORE.map((item) => (
+        {visibleItems(MOBILE_NAV_MORE, features).map((item) => (
           <li key={item.key}>
             <StackLink item={item} active={isActive(item, pathname)} onNavigate={onNavigate} />
           </li>
@@ -58,7 +66,7 @@ export function NavLinks({ layout, onNavigate }: { layout: "bar" | "stack"; onNa
         );
       })}
       <li>
-        <MoreMenu pathname={pathname} />
+        <MoreMenu pathname={pathname} items={visibleItems(NAV_MORE, features)} />
       </li>
     </ul>
   );
@@ -82,21 +90,29 @@ function StackLink({ item, active, onNavigate }: { item: NavItem; active: boolea
       onClick={onNavigate}
       className={`${base} ${active ? "font-bold text-text" : "text-text-muted hover:text-text"}`}
     >
-      {t(item.key)}
+      <span className="inline-flex items-center gap-2">
+        {t(item.key)}
+        {item.soon && <SoonBadge />}
+      </span>
       {active && <span aria-hidden="true" className="size-2 rounded-full bg-shu" />}
     </Link>
   );
 }
 
+function SoonBadge() {
+  const t = useTranslations("nav");
+  return <span className="rounded-sm border border-border px-1.5 text-[10px] tracking-wide text-text-muted uppercase">{t("soon")}</span>;
+}
+
 /** Menu déroulant « Plus » de la barre du haut : se ferme au clic dehors, à Échap et en changeant de page. */
-function MoreMenu({ pathname }: { pathname: string }) {
+function MoreMenu({ pathname, items }: { pathname: string; items: readonly NavItem[] }) {
   const t = useTranslations("nav");
   const [open, setOpen] = useState(false);
   const [openedAt, setOpenedAt] = useState(pathname);
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
   const panelId = useId();
-  const activeChild = NAV_MORE.some((item) => isActive(item, pathname));
+  const activeChild = items.some((item) => isActive(item, pathname));
 
   // Changement de page : le menu se referme (comparé au rendu, sans effet)
   if (open && openedAt !== pathname) {
@@ -149,7 +165,7 @@ function MoreMenu({ pathname }: { pathname: string }) {
         hidden={!open}
         className="absolute top-full left-0 z-50 mt-1 flex min-w-48 flex-col overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-[0_12px_32px_rgb(0_0_0/0.35)]"
       >
-        {NAV_MORE.map((item) => {
+        {items.map((item) => {
           const active = isActive(item, pathname);
           return (
             <li key={item.key}>
@@ -161,7 +177,10 @@ function MoreMenu({ pathname }: { pathname: string }) {
                   active ? "font-bold text-text" : "text-text-muted hover:text-text"
                 }`}
               >
-                {t(item.key)}
+                <span className="inline-flex items-center gap-2">
+                  {t(item.key)}
+                  {item.soon && <SoonBadge />}
+                </span>
                 {active && <span aria-hidden="true" className="size-2 rounded-full bg-shu" />}
               </Link>
             </li>

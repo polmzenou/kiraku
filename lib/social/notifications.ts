@@ -11,6 +11,7 @@ export const NOTIFICATION_TYPES = [
   "AUCTION_EXPIRED",
   "AUCTION_CANCELLED",
   "BATTLE_INVITE",
+  "LOT_GRANTED",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

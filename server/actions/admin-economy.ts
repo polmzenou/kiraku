@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { lotInputSchema } from "@/lib/economy/lots";
 import { missionInputSchema } from "@/lib/economy/missions";
@@ -9,6 +9,7 @@ import { shopItemInputSchema } from "@/lib/economy/shop";
 import { getAdmin } from "../admin";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
+import { writeAdminLog } from "../admin/log";
 
 // Lots, missions, articles de boutique et parrainages depuis /admin. Ordre : rôle admin → Zod →
 // rate limit → références vérifiées → transaction avec une ligne AdminLog (avant / après).
@@ -70,15 +71,13 @@ export async function saveLotAction(input: unknown): Promise<AdminEconomyResult>
       // Le contenu est remplacé d'un bloc : un lot déjà versé ne change rien à ce qui a été reçu
       await tx.lotItem.deleteMany({ where: { lotId: lot.id } });
       if (items.length) await tx.lotItem.createMany({ data: items.map((i) => ({ ...i, lotId: lot.id })) });
-      await tx.adminLog.create({
-        data: {
-          adminId: g.adminId,
-          action: before ? "LOT_UPDATE" : "LOT_CREATE",
-          targetType: "Lot",
-          targetId: lot.id,
-          before: before ? json(before) : undefined,
-          after: json({ ...data, items }),
-        },
+      await writeAdminLog(tx, {
+        adminId: g.adminId,
+        action: before ? "LOT_UPDATE" : "LOT_CREATE",
+        targetType: "Lot",
+        targetId: lot.id,
+        before: before ? json(before) : undefined,
+        after: json({ ...data, items }),
       });
       return lot.id;
     });
@@ -125,15 +124,13 @@ export async function saveMissionAction(input: unknown): Promise<AdminEconomyRes
       const mission = before
         ? await tx.mission.update({ where: { id: before.id }, data: write })
         : await tx.mission.create({ data: write });
-      await tx.adminLog.create({
-        data: {
-          adminId: g.adminId,
-          action: before ? "MISSION_UPDATE" : "MISSION_CREATE",
-          targetType: "Mission",
-          targetId: mission.id,
-          before: before ? json(before) : undefined,
-          after: json(mission),
-        },
+      await writeAdminLog(tx, {
+        adminId: g.adminId,
+        action: before ? "MISSION_UPDATE" : "MISSION_CREATE",
+        targetType: "Mission",
+        targetId: mission.id,
+        before: before ? json(before) : undefined,
+        after: json(mission),
       });
       return mission.id;
     });
@@ -182,15 +179,13 @@ export async function saveShopItemAction(input: unknown): Promise<AdminEconomyRe
       const item = before
         ? await tx.shopItem.update({ where: { id: before.id }, data })
         : await tx.shopItem.create({ data });
-      await tx.adminLog.create({
-        data: {
-          adminId: g.adminId,
-          action: before ? "SHOP_ITEM_UPDATE" : "SHOP_ITEM_CREATE",
-          targetType: "ShopItem",
-          targetId: item.id,
-          before: before ? json(before) : undefined,
-          after: json(item),
-        },
+      await writeAdminLog(tx, {
+        adminId: g.adminId,
+        action: before ? "SHOP_ITEM_UPDATE" : "SHOP_ITEM_CREATE",
+        targetType: "ShopItem",
+        targetId: item.id,
+        before: before ? json(before) : undefined,
+        after: json(item),
       });
       return item.id;
     });
@@ -218,15 +213,13 @@ export async function revokeReferralAction(input: unknown): Promise<AdminEconomy
     const before = await tx.referral.findUnique({ where: { id: referralId } });
     if (!before || before.status === "REVOKED") return false;
     await tx.referral.update({ where: { id: referralId }, data: { status: "REVOKED" } });
-    await tx.adminLog.create({
-      data: {
-        adminId: g.adminId,
-        action: "REFERRAL_REVOKE",
-        targetType: "Referral",
-        targetId: referralId,
-        before: json(before),
-        after: { status: "REVOKED" },
-      },
+    await writeAdminLog(tx, {
+      adminId: g.adminId,
+      action: "REFERRAL_REVOKE",
+      targetType: "Referral",
+      targetId: referralId,
+      before: json(before),
+      after: { status: "REVOKED" },
     });
     return true;
   });

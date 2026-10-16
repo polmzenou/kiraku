@@ -24,7 +24,7 @@ export function ProfileHeader({
   return (
     <header className="flex items-center gap-4">
       {image ? (
-        <Image src={image} alt={tAccount("avatarAlt", { name })} width={64} height={64} className="rounded-full" />
+        <Image src={image} alt={tAccount("avatarAlt", { name })} width={64} height={64} crossOrigin="anonymous" referrerPolicy="no-referrer" className="rounded-full" />
       ) : (
         <SealMark glyphs="札" size={64} />
       )}

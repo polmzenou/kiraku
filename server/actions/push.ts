@@ -3,6 +3,7 @@
 import { getLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { pushEndpointSchema, pushSubscriptionSchema } from "@/lib/push/subscription";
+import { isFrozen } from "@/lib/account/deletion";
 import { prisma } from "../db";
 import { pushAvailable } from "../push/send";
 import { rateLimit } from "../ratelimit";
@@ -24,7 +25,7 @@ export async function subscribePushAction(input: unknown): Promise<{ ok: true } 
   const parsed = pushSubscriptionSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
   // Les invités n'ont pas de social, donc rien à leur notifier
-  if (user.isGuest) return { ok: false, error: "GUEST" };
+  if (user.isGuest || isFrozen(user)) return { ok: false, error: "GUEST" };
   if (!(await rateLimit(`push-sub:${user.id}`, RULE)).success) return { ok: false, error: "RATE_LIMITED" };
   if (!(await pushAvailable())) return { ok: false, error: "DISABLED" };
 

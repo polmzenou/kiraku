@@ -2,13 +2,14 @@
 
 import { getLocale } from "next-intl/server";
 import { refresh } from "next/cache";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { RARITIES } from "@/lib/catalog/rarity";
 import { parseCollectionParams } from "@/lib/collection/params";
 import { MAX_SHOWCASE_SLOTS, placeInSlot } from "@/lib/collection/showcase";
 import type { CollectionPage } from "@/lib/collection/view";
 import { PROFILE_VISIBILITIES } from "@/lib/collection/visibility";
 import { USERNAME_REGEX } from "@/lib/username";
+import { isFrozen } from "@/lib/account/deletion";
 import { accessFor, findProfileOwner } from "../collection/profile";
 import { getCollectionPage, MAX_OFFSET } from "../collection/queries";
 import { RecycleError, recycleWith, type RecycleRequest } from "../collection/recycle-core";
@@ -16,7 +17,7 @@ import { setShowcaseWith, ShowcaseError } from "../collection/showcase-core";
 import { prisma } from "../db";
 import { clientIp, rateLimit } from "../ratelimit";
 import { getSetting } from "../settings";
-import { getCurrentUser } from "../user";
+import { getCurrentUser, requireActiveUser } from "../user";
 
 // Collection, recyclage, vitrine et confidentialité. Ordre des contrôles : session → Zod →
 // propriété → rate limit. Le client n'envoie que des ids et des intentions ; les exemplaires,
@@ -48,6 +49,7 @@ const pageSchema = z.object({
 /** Pages suivantes de la liste (la première est rendue par le serveur). */
 export async function loadCollectionPage(input: unknown): Promise<({ ok: true } & CollectionPage) | Failure> {
   const viewer = await getCurrentUser();
+  if (viewer && !(await requireActiveUser())) return { ok: false, error: "NO_SESSION" };
   const parsed = pageSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
 
@@ -104,7 +106,7 @@ export async function recycleCardAction(input: unknown): Promise<RecycleResult> 
   const parsed = recycleCardSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
   // Propriété : seuls les exemplaires du joueur de la session sont lus, dans la transaction
-  if (user.bannedAt) return { ok: false, error: "UNAVAILABLE" };
+  if (user.bannedAt || isFrozen(user)) return { ok: false, error: "UNAVAILABLE" };
   return runRecycle({ kind: "card", cardId: parsed.data.cardId, count: parsed.data.count }, user.id);
 }
 
@@ -114,7 +116,7 @@ export async function recycleAllAction(input: unknown): Promise<RecycleResult> {
   if (!user) return { ok: false, error: "NO_SESSION" };
   const parsed = recycleAllSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
-  if (user.bannedAt) return { ok: false, error: "UNAVAILABLE" };
+  if (user.bannedAt || isFrozen(user)) return { ok: false, error: "UNAVAILABLE" };
   return runRecycle({ kind: "all", maxRarity: parsed.data.maxRarity, expected: parsed.data.expected }, user.id);
 }
 
@@ -142,7 +144,7 @@ async function showcaseGuard(input: unknown, schema: z.ZodType) {
   if (!user) return { error: "NO_SESSION" as const };
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { error: "INVALID" as const };
-  if (user.bannedAt) return { error: "UNAVAILABLE" as const };
+  if (user.bannedAt || isFrozen(user)) return { error: "UNAVAILABLE" as const };
   if (!(await rateLimit(`showcase:${user.id}`, { limit: 20, windowSeconds: 60 })).success) {
     return { error: "RATE_LIMITED" as const };
   }
@@ -193,7 +195,7 @@ export async function removeFromShowcaseAction(input: unknown): Promise<Showcase
 const privacySchema = z.object({ visibility: z.enum(PROFILE_VISIBILITIES), showCollection: z.boolean() });
 
 export async function updatePrivacyAction(input: unknown): Promise<{ ok: true } | Failure> {
-  const user = await getCurrentUser();
+  const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
   const parsed = privacySchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };

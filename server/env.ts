@@ -1,5 +1,5 @@
 import "server-only";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 
 const schema = z.object({
   DATABASE_URL: z.url(), // URL poolée Neon (-pooler), utilisée à l'exécution
@@ -7,6 +7,9 @@ const schema = z.object({
   // Discord en attente : sans ces deux variables, la liaison est simplement masquée
   AUTH_DISCORD_ID: z.string().min(1).optional(),
   AUTH_DISCORD_SECRET: z.string().min(1).optional(),
+  // Annonce de première liaison dans un salon Discord (facultatif, côté serveur seulement).
+  DISCORD_BOT_TOKEN: z.string().trim().min(1).optional(),
+  DISCORD_LINK_CHANNEL_ID: z.string().regex(/^[0-9]{17,20}$/).optional(),
   UPSTASH_REDIS_REST_URL: z.url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
   ADMIN_DISCORD_ID: z.string().optional(),
@@ -56,6 +59,7 @@ export const env = parsed.data;
 export const isProduction = process.env.NODE_ENV === "production";
 
 export const discordEnabled = Boolean(env.AUTH_DISCORD_ID && env.AUTH_DISCORD_SECRET);
+export const discordLinkConfigured = Boolean(env.DISCORD_BOT_TOKEN && env.DISCORD_LINK_CHANNEL_ID);
 export const mailEnabled = Boolean(env.RESEND_API_KEY && env.MAIL_FROM);
 export const pushConfigured = Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY && env.VAPID_SUBJECT);
 export const ablyEnabled = Boolean(env.ABLY_API_KEY);

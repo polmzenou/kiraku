@@ -10,7 +10,6 @@ import { usePercent } from "@/components/boosters/format";
 import { NextFreeIn } from "@/components/boosters/NextFreeIn";
 import { OpenLink } from "@/components/boosters/OpenLink";
 import { RatesSheet } from "@/components/boosters/RatesSheet";
-import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { ReviewsSection, type ReviewViewer } from "@/components/home/ReviewsSection";
 import { TopCollectors } from "@/components/home/TopCollectors";
 import { PageShell } from "@/components/PageShell";
@@ -40,6 +39,7 @@ import { getTopCollectors } from "@/server/collection/leaderboard";
 import { getBoosterCredits } from "@/server/economy/queries";
 import { getOwnReview, getReviewSample, getReviewSummary } from "@/server/social/reviews";
 import { getCurrentUser } from "@/server/user";
+import { getSetting } from "@/server/settings";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]">): Promise<Metadata> {
   const { locale: raw } = await params;
@@ -78,16 +78,11 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
     getLocale(),
   ]);
 
-  if (!user) {
-    return (
-      <PageShell>
-        <ArcadeBanner />
-        <GuestBootstrap />
-      </PageShell>
-    );
-  }
-
-  const state = boosterStateFrom(user, rules);
+  // Le catalogue est public. Créer l'invité au moment de jouer évite de remplacer tout l'écran
+  // après hydratation (LCP/CLS) et de créer un compte pour chaque simple consultation.
+  const state = boosterStateFrom(user ?? {
+    boosterStock: rules.stock.max, boosterAnchor: new Date(), coins: await getSetting("economy.startingZeni"), pityCount: 0, standardCount: 0,
+  }, rules);
   const visible = offers.filter((o) => o.availability !== "hidden");
   const families = BOOSTER_FAMILIES.filter((f) => visible.some((o) => o.type.family === f));
   const selected =
@@ -98,26 +93,26 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
 
   // Boosters crédités (cadeaux d'amis, boutique, récompenses), par type, à ouvrir en premier ;
   // en bas de page, avis des joueurs et podium des collectionneurs
-  const member = canReview(user);
+  const member = user !== null && canReview(user);
   const [credits, allTypes, reviews, reviewSummary, ownReview, collectors] = await Promise.all([
-    getBoosterCredits(user.id),
+    user ? getBoosterCredits(user.id) : new Map<string, number>(),
     getBoosterTypes(),
     getReviewSample(),
     getReviewSummary(),
-    member ? getOwnReview(user.id) : null,
+    member && user ? getOwnReview(user.id) : null,
     getTopCollectors(3),
   ]);
   const reviewViewer: ReviewViewer = member
     ? { kind: "member", own: ownReview }
-    : user.isGuest && !user.bannedAt
+    : !user || (user.isGuest && !user.bannedAt)
       ? { kind: "guest" }
       : { kind: "none" };
   const credited = allTypes
     .filter((e) => (credits.get(e.type.id) ?? 0) > 0 && e.type.filter !== null)
     .map((e) => ({ slug: e.type.slug, name: localize(e.type.name, locale), count: credits.get(e.type.id)! }));
 
-  const bannerPity = readBannerPity(user.bannerPity);
-  const userCounters = { stock: state.stock, pityCount: user.pityCount, standardCount: user.standardCount };
+  const bannerPity = readBannerPity(user?.bannerPity ?? {});
+  const userCounters = { stock: state.stock, pityCount: user?.pityCount ?? 0, standardCount: user?.standardCount ?? 0 };
 
   // Bannières ouvertes : vedettes du pool et pitié vedette du joueur
   const banners = visible.filter((o) => o.type.kind === "BANNER" && o.type.featuredCardIds.length > 0);
@@ -207,6 +202,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
                 return (
                   <li key={family} className="shrink-0">
                     <Link
+                      prefetch={false}
                       href={`/?b=${selected?.type.family === family ? selected.type.slug : visible.find((o) => o.type.family === family)!.type.slug}&f=${family}#famille-${family}`}
                       aria-current={active ? "true" : undefined}
                       className={`flex min-h-11 items-center gap-1.5 border-b-[3px] px-3 text-sm font-bold whitespace-nowrap ${

@@ -13,6 +13,8 @@ export default function proxy(request: NextRequest) {
   // next-intl recopie ces en-têtes dans sa réécriture.
   request.headers.set("x-nonce", nonce);
   request.headers.set("Content-Security-Policy", csp);
+  // Chemin demandé, pour l'écran d'acceptation des CGU (les pages légales restent lisibles)
+  request.headers.set("x-kiraku-path", request.nextUrl.pathname);
 
   const response = handleI18nRouting(request);
   response.headers.set("Content-Security-Policy", csp);
@@ -24,10 +26,6 @@ export const config = {
     {
       // tout sauf les routes API, les fichiers internes de Next et les fichiers avec extension
       source: "/((?!api|_next|_vercel|.*\\..*).*)",
-      missing: [
-        { type: "header", key: "next-router-prefetch" },
-        { type: "header", key: "purpose", value: "prefetch" },
-      ],
     },
   ],
 };

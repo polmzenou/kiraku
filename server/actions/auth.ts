@@ -1,6 +1,6 @@
 "use server";
 
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { auth, signIn, signOut } from "../auth";
 import { discordEnabled } from "../env";
 import { createGuestSession } from "../guest";

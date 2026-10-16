@@ -1,8 +1,9 @@
 "use server";
 
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { TEAM_SIZE } from "@/lib/battle/types";
 import type { Activity, BattleUpdateView, BattleView } from "@/lib/battle/view";
+import { isFrozen } from "@/lib/account/deletion";
 import { prisma } from "../db";
 import {
   BattleError,
@@ -25,7 +26,7 @@ import { publishBattle, publishMatched, toMessage } from "../battle/realtime";
 import { pushLater } from "../market/queries";
 import { ensureSeason } from "../ranked/queries";
 import { rateLimit } from "../ratelimit";
-import { getCurrentUser } from "../user";
+import { getCurrentUser, requireActiveUser } from "../user";
 
 // Combat 1v1. Ordre des contrôles : Zod → session → rate limit, puis tout est relu sous verrou dans
 // la transaction (server/battle/battle-core.ts). Le client n'envoie que des ids de Card, un code,
@@ -55,7 +56,7 @@ async function session(
 ): Promise<{ user: Player } | { error: "NO_SESSION" | "UNAVAILABLE" | "RATE_LIMITED" | "GUEST" }> {
   const user = await getCurrentUser();
   if (!user) return { error: "NO_SESSION" };
-  if (user.bannedAt) return { error: "UNAVAILABLE" };
+  if (user.bannedAt || isFrozen(user)) return { error: "UNAVAILABLE" };
   // Les invités regardent ; la transaction le revérifie
   if (user.isGuest) return { error: "GUEST" };
   if (!(await rateLimit(`${bucket}:${user.id}`, rule)).success) return { error: "RATE_LIMITED" };
@@ -118,7 +119,7 @@ export async function joinQueueAction(input: unknown): Promise<QueueResult> {
 
 /** Sondé par l'écran d'attente : présence + nouvel essai d'appariement. */
 export async function pollQueueAction(): Promise<QueueResult> {
-  const user = await getCurrentUser();
+  const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
   if (!(await rateLimit(`battle-queue-poll:${user.id}`, { limit: 40, windowSeconds: MINUTE })).success) {
     return { ok: false, error: "RATE_LIMITED" };
@@ -262,7 +263,7 @@ export type ViewResult = { ok: true; view: BattleView } | Failure;
 export async function battleViewAction(input: unknown): Promise<ViewResult> {
   const parsed = battleSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
-  const user = await getCurrentUser();
+  const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
   if (!(await rateLimit(`battle-view:${user.id}`, { limit: 90, windowSeconds: MINUTE })).success) {
     return { ok: false, error: "RATE_LIMITED" };
@@ -281,7 +282,7 @@ const sinceSchema = z.object({ battleId: idSchema, version: z.number().int().min
 export async function battleSinceAction(input: unknown): Promise<SinceResult> {
   const parsed = sinceSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
-  const user = await getCurrentUser();
+  const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
   if (!(await rateLimit(`battle-view:${user.id}`, { limit: 90, windowSeconds: MINUTE })).success) {
     return { ok: false, error: "RATE_LIMITED" };
@@ -293,8 +294,11 @@ export async function battleSinceAction(input: unknown): Promise<SinceResult> {
 export type ActivityResult = { ok: true; activity: Activity } | Failure;
 
 export async function activityAction(): Promise<ActivityResult> {
-  const user = await getCurrentUser();
+  const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
+  if (!(await rateLimit(`battle-activity:${user.id}`, { limit: 30, windowSeconds: MINUTE })).success) {
+    return { ok: false, error: "RATE_LIMITED" };
+  }
   const ctx = await battleCtx();
   return { ok: true, activity: await getActivity(user.id, ctx.rules.queueSeconds) };
 }

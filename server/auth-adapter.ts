@@ -1,6 +1,6 @@
 import "server-only";
 import type { Adapter, AdapterAccount, AdapterSession, AdapterUser } from "next-auth/adapters";
-import type { User } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "./db";
 import { availableUsername, createPlayer, startingValues } from "./players";
 
@@ -8,7 +8,11 @@ import { availableUsername, createPlayer, startingValues } from "./players";
 // explicitement (jamais l'objet reçu tel quel) et la création d'un joueur
 // passe par createPlayer (valeurs de départ + journal de Zeni).
 
-function toAdapterUser(u: User): AdapterUser {
+// Auth.js ne lit que son identité : ni hash de mot de passe, ni données de jeu/RGPD.
+const authUserSelect = { id: true, username: true, email: true, emailVerified: true, image: true } as const;
+type AuthUser = Prisma.UserGetPayload<{ select: typeof authUserSelect }>;
+
+function toAdapterUser(u: AuthUser): AdapterUser {
   return {
     id: u.id,
     name: u.username,
@@ -42,19 +46,19 @@ export function kirakuAdapter(): Adapter {
     },
 
     async getUser(id) {
-      const u = await prisma.user.findUnique({ where: { id } });
+      const u = await prisma.user.findUnique({ where: { id }, select: authUserSelect });
       return u ? toAdapterUser(u) : null;
     },
 
     async getUserByEmail(email) {
-      const u = await prisma.user.findUnique({ where: { email } });
+      const u = await prisma.user.findUnique({ where: { email }, select: authUserSelect });
       return u ? toAdapterUser(u) : null;
     },
 
     async getUserByAccount({ provider, providerAccountId }) {
       const account = await prisma.account.findUnique({
         where: { provider_providerAccountId: { provider, providerAccountId } },
-        select: { user: true },
+        select: { user: { select: authUserSelect } },
       });
       return account ? toAdapterUser(account.user) : null;
     },
@@ -94,7 +98,10 @@ export function kirakuAdapter(): Adapter {
     },
 
     async getSessionAndUser(sessionToken) {
-      const s = await prisma.session.findUnique({ where: { sessionToken }, include: { user: true } });
+      const s = await prisma.session.findUnique({
+        where: { sessionToken },
+        select: { sessionToken: true, userId: true, expires: true, user: { select: authUserSelect } },
+      });
       if (!s) return null;
       const session: AdapterSession = {
         sessionToken: s.sessionToken,

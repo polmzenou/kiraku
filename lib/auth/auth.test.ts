@@ -8,6 +8,7 @@ const valid = {
   email: "  Kata@Example.COM ",
   password: "correct-horse-battery",
   passwordConfirm: "correct-horse-battery",
+  terms: "on",
 };
 
 describe("registerSchema", () => {
@@ -22,6 +23,7 @@ describe("registerSchema", () => {
       email: "pas-un-email",
       password: "court",
       passwordConfirm: "autre",
+      terms: "on",
     });
     expect(result.success).toBe(false);
     expect(fieldErrors(result.error!)).toEqual({
@@ -30,6 +32,11 @@ describe("registerSchema", () => {
       password: "passwordTooShort",
       passwordConfirm: "passwordMismatch",
     });
+  });
+
+  it("exige la case des conditions d'utilisation", () => {
+    expect(fieldErrors(registerSchema.safeParse({ ...valid, terms: null }).error!)).toEqual({ terms: "termsRequired" });
+    expect(fieldErrors(registerSchema.safeParse({ ...valid, terms: "off" }).error!)).toEqual({ terms: "termsRequired" });
   });
 
   it("refuse deux mots de passe différents", () => {

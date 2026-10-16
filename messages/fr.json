@@ -1,4 +1,28 @@
 {
+  "v1Welcome": {
+    "badge": "Le grand départ · v1.0",
+    "title": "Bienvenue sur",
+    "titleAccent": "Kiraku-kun !",
+    "intro": "Ça y est, l'aventure prend une nouvelle dimension ! On est ravis de partager cette première version avec toi. Prêt à trouver tes prochaines cartes préférées ?",
+    "available": "À toi de jouer",
+    "features": {
+      "boosters": { "title": "La magie des boosters", "body": "Ouvre tes boosters, découvre tes personnages favoris et fais grandir ta collection. La prochaine pépite t'attend !" },
+      "wiki": { "title": "Le wiki, ton allié", "body": "Explore les personnages, leurs raretés et leurs caractéristiques pour tout savoir sur les cartes que tu convoites." },
+      "shop": { "title": "Un détour en boutique", "body": "Fais le plein de boosters et découvre les offres pour donner un coup de pouce à ta collection." },
+      "battles": { "title": "Place aux combats !", "body": "Compose ton équipe, fais briller tes cartes et relève le défi en duel amical ou en mode classé." }
+    },
+    "discord": {
+      "title": "Encore mieux avec Discord",
+      "body": "Lie ton compte Discord pour te reconnecter facilement et retrouver ta collection sur tous tes appareils, sans perdre ta progression.",
+      "bonus": "Et hop : {amount, number} Zeni offerts à ta première liaison !"
+    },
+    "soon": {
+      "title": "Et la suite s'annonce encore plus belle…",
+      "body": "Les <strong>échanges entre amis ET dans le Marché</strong> arrivent bientôt ! Au programme aussi : de <strong>nouveaux types de boosters</strong>, un <strong>casino pour miser tes Zeni et tenter de faire fortune</strong>, de toutes nouvelles <strong>cartes gold et alternatives</strong>, et de la <strong>personnalisation de profil</strong> pour afficher ton style. On a hâte de te faire découvrir tout ça !"
+    },
+    "thanks": "Merci d'écrire le début de l'aventure avec nous.",
+    "letsGo": "C'est parti !"
+  },
   "cardBack": {
     "showBack": "Voir le dos",
     "showFront": "Voir le recto",
@@ -13,7 +37,8 @@
     "zeni": "{amount, number} Zeni",
     "boosters": "{count}/{max}",
     "number": "{value, number}",
-    "close": "Fermer"
+    "close": "Fermer",
+    "loading": "Chargement…"
   },
   "arcadePromo": {
     "label": "Publicité pour Anime Arcade",
@@ -52,7 +77,9 @@
       "missions": "Missions",
       "shop": "Boutique",
       "referral": "Parrainage",
-      "ledger": "Historique des Zeni"
+      "ledger": "Historique des Zeni",
+      "data": "Mes données",
+      "casino": "Casino"
     }
   },
   "theme": {
@@ -81,12 +108,14 @@
     "back": "Retour à l'accueil"
   },
   "footer": {
-    "versionNotice": "Ceci n'est que la v0.8 du site, des mises à jour sont susceptibles d'arriver rapidement.",
+    "versionNotice": "Kiraku-kun v1.0 est là ! L'aventure continue, avec de nouvelles surprises à venir.",
     "disclaimer": "Projet fan non officiel. Les personnages appartiennent à leurs ayants droit.",
     "nav": "Liens du site",
     "account": "Mon compte",
     "wiki": "Wiki",
-    "leaderboard": "Classement"
+    "leaderboard": "Classement",
+    "legalNav": "Informations légales",
+    "useNotice": "En utilisant Kiraku, tu acceptes les conditions d'utilisation."
   },
   "auth": {
     "or": "ou",
@@ -105,7 +134,8 @@
       "haveAccount": "Déjà un compte ?",
       "login": "Se connecter",
       "subtitle": "Un compte pour garder tes cartes sur tous tes appareils.",
-      "asideTitle": "Garde tes fuda pour de bon."
+      "asideTitle": "Garde tes fuda pour de bon.",
+      "terms": "J'ai lu et j'accepte les <terms>conditions d'utilisation</terms> et la <privacy>politique de confidentialité</privacy>."
     },
     "login": {
       "discord": "Se connecter avec Discord",
@@ -164,7 +194,8 @@
       "tokenInvalid": "Lien invalide.",
       "passwordCommon": "Ce mot de passe est trop courant : choisis-en un plus personnel.",
       "passwordPersonal": "Le mot de passe ne doit pas contenir ton pseudo ni ton e-mail.",
-      "passwordWeak": "Mot de passe trop prévisible : varie les caractères."
+      "passwordWeak": "Mot de passe trop prévisible : varie les caractères.",
+      "termsRequired": "Accepte les conditions pour créer ton compte."
     },
     "perks": {
       "collection": "Tes cartes et tes Zeni, sur tous tes appareils",
@@ -385,7 +416,8 @@
     "missions": "Missions",
     "shop": "Boutique",
     "referral": "Parrainage",
-    "more": "Plus"
+    "more": "Plus",
+    "casino": "Casino"
   },
   "header": {
     "stock": "Boosters : {count} sur {max}",
@@ -481,7 +513,8 @@
       "expired": "Personne n'a misé : la carte est revenue au vendeur.",
       "cancelled": "Cette vente a été annulée.",
       "toCollection": "Voir ma collection",
-      "notEnough": "Ton solde ({amount, number} Zeni) ne suffit pas pour cette mise."
+      "notEnough": "Ton solde ({amount, number} Zeni) ne suffit pas pour cette mise.",
+      "anonymous": "Joueur mystère"
     },
     "sell": {
       "button": "Mettre en vente",
@@ -732,7 +765,8 @@
     "title": "Tirage de {name}",
     "description": "{name} a ouvert un sachet {booster} sur Kiraku.",
     "openedBy": "Ouvert par {name}",
-    "cta": "Ouvrir mes sachets"
+    "cta": "Ouvrir mes sachets",
+    "anonymous": "Joueur mystère"
   },
   "admin": {
     "title": "Administration",
@@ -892,7 +926,15 @@
         "CARDS_LOCKED": "Pas assez d'exemplaires disponibles : certaines cartes sont protégées ou ne sont plus possédées.",
         "DISCOVERY_MIN": "Impossible de descendre sous les découvertes des cartes encore possédées.",
         "unexpected": "Erreur inattendue. Actualise la fiche pour vérifier son état avant de réessayer."
-      }
+      },
+      "anonymized": "Anonymisé",
+      "deletionPending": "Suppression demandée",
+      "gdprTitle": "Données personnelles",
+      "gdprAnonymized": "Compte anonymisé le {date}.",
+      "gdprPending": "Suppression demandée le {date} : compte gelé.",
+      "gdprNone": "Aucune demande de suppression.",
+      "termsAccepted": "CGU v{version} acceptées",
+      "termsNotAccepted": "CGU pas encore acceptées"
     },
     "moduleNames": {
       "boosters": "Boosters",
@@ -910,7 +952,14 @@
       "shop": "Boutique",
       "referral": "Parrainages",
       "reviews": "Avis",
-      "combat": "Combat"
+      "combat": "Combat",
+      "legal": "Pages légales",
+      "data": "Données personnelles",
+      "discord": "Discord",
+      "features": "Fonctionnalités",
+      "dashboard": "Tableau de bord",
+      "journal": "Journal",
+      "general": "Général"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -1568,6 +1617,336 @@
       "log": "Derniers changements",
       "logEmpty": "Aucun changement pour l'instant.",
       "logEntry": "{key} par {admin}"
+    },
+    "confirm": {
+      "typeToConfirm": "Tape « {value} » pour confirmer",
+      "cancel": "Annuler",
+      "pending": "Un instant…",
+      "unexpected": "Erreur inattendue. Réessaie."
+    },
+    "legal": {
+      "title": "Pages légales",
+      "intro": "Chaque page a des versions numérotées. On modifie le brouillon de la version suivante (français obligatoire, anglais facultatif), puis on le publie ; les anciennes versions restent consultables.",
+      "requiredVersion": "Version des CGU exigée des comptes inscrits : v{version}",
+      "current": "En vigueur : v{version}, publiée le {date}",
+      "nothingPublished": "Rien de publié",
+      "draftPending": "Brouillon en cours : v{version}",
+      "editLink": "Modifier",
+      "language": "Langue",
+      "locales": {
+        "fr": "Français",
+        "en": "English"
+      },
+      "titleLabel": "Titre",
+      "bodyLabel": "Texte (markdown)",
+      "markdownHint": "Markdown simple : ## titres, listes, **gras**, liens https ou internes (/cgu). Pas de HTML ni d'images.",
+      "preview": "Aperçu",
+      "edit": "Modifier",
+      "saveDraft": "Enregistrer le brouillon {locale} (v{version})",
+      "saved": "Brouillon v{version} enregistré.",
+      "publish": "Publier la v{version}",
+      "publishTitle": "Publier la version {version}",
+      "publishBody": "Elle remplace la version en vigueur pour tout le monde. Une version publiée ne peut plus être modifiée : il faudra en publier une nouvelle.",
+      "publishConfirm": "Publier",
+      "forceReaccept": "Changement important : chaque compte inscrit devra réaccepter les CGU à sa prochaine visite.",
+      "history": "Versions",
+      "publishedBy": "Publiée le {date} par {admin}",
+      "draft": "Brouillon",
+      "view": "Voir",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Saisie invalide (titre obligatoire, texte trop long ?).",
+        "RATE_LIMITED": "Trop d'actions. Réessaie dans une minute.",
+        "NO_DRAFT": "Aucun brouillon à publier.",
+        "MISSING_FR": "Le texte français du brouillon est vide.",
+        "STALE": "Cette version vient d'être publiée par ailleurs."
+      }
+    },
+    "data": {
+      "title": "Données personnelles",
+      "intro": "Demandes RGPD des joueurs. Une suppression gèle le compte puis l'anonymise à l'échéance (cron quotidien) ; tu peux l'exécuter tout de suite ou l'annuler à la demande du joueur.",
+      "pendingCount": "{count, plural, =0 {Aucune suppression en attente} one {# suppression en attente} other {# suppressions en attente}}",
+      "filters": "Filtres",
+      "filter": {
+        "pending": "En attente",
+        "deletion": "Suppressions",
+        "export": "Exports",
+        "all": "Tout"
+      },
+      "empty": "Aucune demande.",
+      "kinds": {
+        "EXPORT": "Export",
+        "DELETION": "Suppression"
+      },
+      "statuses": {
+        "PENDING": "En attente",
+        "CANCELLED": "Annulée",
+        "DONE": "Traitée"
+      },
+      "requestedAt": "Demandée le {date}",
+      "dueAt": "échéance le {date}",
+      "processedAt": "traitée le {date}",
+      "anonymizeNow": "Anonymiser maintenant",
+      "anonymizeTitle": "Anonymiser {username}",
+      "anonymizeBody": "Pseudo remplacé, e-mail, avatar, mot de passe et lien Discord effacés, sessions, amis, avis, liste de souhaits et vitrine supprimés. Le journal des Zeni, les cartes, tirages, combats et ventes restent, sans lien avec une personne. Irréversible.",
+      "anonymizeConfirm": "Anonymiser",
+      "cancelDeletion": "Annuler la suppression",
+      "cancelTitle": "Annuler la suppression de {username}",
+      "cancelBody": "Le compte est dégelé et redevient normal.",
+      "cancelConfirm": "Annuler la suppression",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Saisie invalide.",
+        "RATE_LIMITED": "Trop d'actions. Réessaie dans une minute.",
+        "NOT_FOUND": "Joueur introuvable.",
+        "CONFIRM_MISMATCH": "Le pseudo saisi ne correspond pas.",
+        "SELF": "Tu ne peux pas anonymiser ton propre compte d'ici.",
+        "NOT_REQUESTED": "Aucune suppression en cours pour ce joueur.",
+        "ANONYMIZED": "Ce compte est déjà anonymisé."
+      }
+    },
+    "settingsForm": {
+      "invalid": "Une valeur est hors des bornes ou invalide.",
+      "noChange": "Aucun changement",
+      "review": "Relire {count, plural, one {# changement} other {# changements}}",
+      "confirmTitle": "Confirmer ces changements",
+      "cancel": "Annuler",
+      "confirm": "Enregistrer",
+      "saved": "{count, plural, =0 {Rien à enregistrer.} one {# réglage enregistré.} other {# réglages enregistrés.}}",
+      "log": "Derniers changements",
+      "logEmpty": "Aucun changement pour l'instant.",
+      "logEntry": "{key} · par {admin}",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Valeurs refusées par le serveur.",
+        "RATE_LIMITED": "Trop d'enregistrements. Réessaie dans une minute.",
+        "unexpected": "Erreur inattendue. Réessaie."
+      }
+    },
+    "discord": {
+      "title": "Discord",
+      "intro": "Le modal « Rejoins notre Discord » est désactivé par défaut. Il est distinct de la connexion Discord du compte. Un clic sur « Rejoindre » le fait disparaître pour ce joueur.",
+      "joinedCount": "{count, plural, =0 {Personne n'a encore cliqué sur « Rejoindre »} one {# joueur a cliqué sur « Rejoindre »} other {# joueurs ont cliqué sur « Rejoindre »}}",
+      "modalSection": "Modal « Rejoins notre Discord »",
+      "enabled": "Afficher le modal",
+      "inviteUrl": "Lien d'invitation",
+      "inviteUrlHint": "https://discord.gg/… ou https://discord.com/invite/… uniquement. Obligatoire pour activer.",
+      "title_fr": "Titre (français)",
+      "title_en": "Titre (anglais, facultatif)",
+      "body_fr": "Texte (français)",
+      "body_en": "Texte (anglais, facultatif)",
+      "trigger": "Moment d'affichage",
+      "triggers": {
+        "AFTER_BOOSTERS": "Après un nombre de boosters ouverts",
+        "ON_VISIT": "Dès la visite"
+      },
+      "afterBoosters": "Boosters ouverts avant d'afficher",
+      "cooldownDays": "Jours avant de le remontrer après « Plus tard »",
+      "showInFooter": "Lien « Notre Discord » dans le pied de page",
+      "linkSection": "Connexion Discord du compte",
+      "linkBonusZeni": "Bonus de première liaison (Zeni)",
+      "linkBonusHint": "Versé une seule fois, quand un joueur lie Discord à son compte.",
+      "keys": {
+        "discord": {
+          "joinModal": "Modal « Rejoins notre Discord »",
+          "linkBonusZeni": "Bonus de liaison Discord"
+        }
+      }
+    },
+    "features": {
+      "title": "Fonctionnalités",
+      "intro": "Tous les interrupteurs réunis. Chaque module garde aussi le sien : c'est le même réglage.",
+      "premiumInert": "Sans effet : aucun fournisseur de paiement n'est branché.",
+      "keys": {
+        "features": {
+          "casino": "Casino (tuile « Bientôt »)"
+        },
+        "shop": {
+          "enabled": "Boutique",
+          "premiumEnabled": "Packs premium (paiement par carte)"
+        },
+        "market": {
+          "enabled": "Hôtel des ventes"
+        },
+        "battle": {
+          "enabled": "Combats"
+        },
+        "ranked": {
+          "enabled": "Mode classé"
+        },
+        "social": {
+          "enabled": "Amis"
+        },
+        "gifts": {
+          "enabled": "Cadeaux"
+        },
+        "missions": {
+          "enabled": "Missions"
+        },
+        "referral": {
+          "enabled": "Parrainage"
+        },
+        "notifications": {
+          "pushEnabled": "Notifications push"
+        }
+      },
+      "help": {
+        "features": {
+          "casino": "Entrée de menu, tuile du Compte et page d'attente /casino."
+        },
+        "shop": {
+          "enabled": "Achats d'articles en Zeni.",
+          "premiumEnabled": "Zone « Packs premium » de la boutique."
+        },
+        "market": {
+          "enabled": "Mises en vente et enchères."
+        },
+        "battle": {
+          "enabled": "Exhibition, bot et défis entre amis."
+        },
+        "ranked": {
+          "enabled": "File classée et saisons."
+        },
+        "social": {
+          "enabled": "Demandes d'amis et liste d'amis."
+        },
+        "gifts": {
+          "enabled": "Cartes et boosters offerts entre amis."
+        },
+        "missions": {
+          "enabled": "Missions quotidiennes et hebdomadaires."
+        },
+        "referral": {
+          "enabled": "Liens d'invitation et récompenses."
+        },
+        "notifications": {
+          "pushEnabled": "Envoi des notifications quand l'onglet est fermé."
+        }
+      }
+    },
+    "dashboard": {
+      "title": "Tableau de bord",
+      "intro": "Activité des dernières 24 heures et points qui demandent ton attention. Toutes les valeurs sont lues en direct.",
+      "players": "Joueurs",
+      "active24h": "Actifs (24 h)",
+      "signups24h": "Comptes créés (24 h)",
+      "guests24h": "{count, plural, =0 {aucun invité} one {+ # invité} other {+ # invités}}",
+      "boosters24h": "Boosters ouverts (24 h)",
+      "totalPlayers": "Joueurs au total",
+      "economy": "Économie",
+      "circulating": "Zeni en circulation",
+      "zeni": "{amount, number} Zeni",
+      "ledger": "Soldes = journal",
+      "ledgerOk": "Juste",
+      "ledgerKo": "Écart à vérifier",
+      "escrow": "Zeni en séquestre",
+      "activeAuctions": "{count, plural, =0 {aucune vente ouverte} one {# vente ouverte} other {# ventes ouvertes}}",
+      "today": "Dernières 24 heures",
+      "sales24h": "Ventes conclues",
+      "volume": "{amount, number} Zeni échangés",
+      "battles24h": "Combats terminés",
+      "bots": "{count, plural, =0 {aucun contre un bot} one {# contre un bot} other {# contre un bot}}",
+      "liveBattles": "Combats en cours",
+      "queued": "{count, plural, =0 {personne en file} one {# en file} other {# en file}}",
+      "attention": "À surveiller",
+      "pendingDeletions": "Suppressions en attente",
+      "banned": "Comptes bannis",
+      "termsVersion": "CGU exigées"
+    },
+    "journal": {
+      "title": "Journal des actions admin",
+      "intro": "Chaque écriture faite depuis /admin : qui, quoi, sur quoi, avant et après. Filtre par action (début du nom), type de cible, cible, admin ou période.",
+      "action": "Action",
+      "type": "Type de cible",
+      "target": "Cible (id)",
+      "admin": "Admin (pseudo)",
+      "from": "Du",
+      "to": "Au",
+      "filter": "Filtrer",
+      "reset": "Réinitialiser",
+      "empty": "Aucune action pour ces filtres.",
+      "by": "par {admin}",
+      "changes": "Avant / après",
+      "before": "Avant",
+      "after": "Après",
+      "pagination": "Pages du journal",
+      "first": "Plus récentes",
+      "older": "Plus anciennes"
+    },
+    "lotSend": {
+      "title": "Envoyer un lot",
+      "noActiveLot": "Aucun lot actif à envoyer.",
+      "lot": "Lot",
+      "reason": "Motif (facultatif, visible dans le journal)",
+      "username": "Pseudo du joueur",
+      "sendToUser": "Envoyer à ce joueur",
+      "audience": "Destinataires",
+      "audiences": {
+        "REGISTERED": "Comptes inscrits",
+        "ALL": "Tous, invités compris"
+      },
+      "sendToAll": "Envoyer à tous…",
+      "sendToAllTitle": "Envoyer ce lot à tous les joueurs",
+      "sendToAllBody": "Chaque joueur éligible (ni banni, ni en cours de suppression) reçoit le lot une seule fois, avec une notification. L'envoi se fait par paquets : s'il n'est pas fini, reprends-le depuis l'historique.",
+      "sendToAllConfirm": "Envoyer",
+      "confirmWord": "TOUS",
+      "sent": "{count, plural, one {# joueur servi} other {# joueurs servis}}.",
+      "partial": "{count, plural, one {# joueur servi} other {# joueurs servis}} pour l'instant : reprends l'envoi pour continuer.",
+      "history": "Derniers envois",
+      "broadcastDone": "Terminé : {count, plural, one {# joueur} other {# joueurs}}",
+      "broadcastRunning": "En cours : {count, plural, one {# joueur} other {# joueurs}}",
+      "resume": "Reprendre",
+      "pending": "Envoi…",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Saisie invalide.",
+        "RATE_LIMITED": "Trop d'actions. Réessaie dans une minute.",
+        "CONFIRM_MISMATCH": "Tape TOUS pour confirmer.",
+        "NO_LOT": "Lot introuvable.",
+        "INACTIVE_LOT": "Ce lot est désactivé.",
+        "NO_USER": "Joueur introuvable.",
+        "NOT_ELIGIBLE": "Ce joueur ne peut pas recevoir de lot (banni ou compte en suppression).",
+        "NOT_FOUND": "Envoi introuvable.",
+        "DONE": "Cet envoi est déjà terminé."
+      }
+    },
+    "general": {
+      "title": "Général",
+      "intro": "Réglages qui n'appartiennent à aucun module. La version exigée des CGU se change en publiant les CGU (Pages légales).",
+      "gameSection": "Jeu",
+      "accountSection": "Droits des joueurs sur leurs données",
+      "keys": {
+        "economy": {
+          "startingZeni": "Zeni de départ"
+        },
+        "game": {
+          "timeZone": "Fuseau horaire du jeu"
+        },
+        "guest": {
+          "createPerHourPerIp": "Comptes invités par heure et par IP"
+        },
+        "account": {
+          "deletionGraceDays": "Délai avant anonymisation (jours)",
+          "usernameChangeDays": "Délai entre deux changements de pseudo (jours)",
+          "exportsPerDay": "Exports de données par jour et par joueur"
+        }
+      },
+      "hints": {
+        "economy": {
+          "startingZeni": "Versés à la création de chaque compte."
+        },
+        "game": {
+          "timeZone": "Nom IANA, par exemple Europe/Paris : jours des missions et anniversaires."
+        },
+        "guest": {
+          "createPerHourPerIp": "Limite la création de comptes en série."
+        },
+        "account": {
+          "deletionGraceDays": "Pendant ce délai, le compte est gelé et la suppression annulable. 30 jours conseillés.",
+          "usernameChangeDays": "0 = sans délai.",
+          "exportsPerDay": "Fichier JSON « Télécharger mes données »."
+        }
+      }
     }
   },
   "collection": {
@@ -1950,7 +2329,8 @@
     "push": {
       "title": "Kiraku"
     },
-    "battleInvite": "{name} t'invite en combat : choisis ton équipe."
+    "battleInvite": "{name} t'invite en combat : choisis ton équipe.",
+    "teamGift": "L'équipe Kiraku t'a envoyé un cadeau : regarde ton historique et tes boosters."
   },
   "push": {
     "title": "Notifications sur ce téléphone",
@@ -2564,5 +2944,184 @@
       "hidden": "Les profils privés comptent dans le classement mais n'y sont pas affichés.",
       "grandChampions": "Grands Champions"
     }
+  },
+  "legal": {
+    "titles": {
+      "mentions-legales": "Mentions légales",
+      "confidentialite": "Politique de confidentialité",
+      "cookies": "Politique cookies",
+      "cgu": "Conditions d'utilisation"
+    },
+    "version": "Version {version}",
+    "versionShort": "v{version}",
+    "versionPublished": "Version {version}, publiée le {date}",
+    "currentVersion": "Voir la version en vigueur",
+    "versionsLabel": "Versions publiées",
+    "fallbackNotice": "Cette page n'est pas encore traduite : la version française est affichée.",
+    "missing": "Cette page est en cours de rédaction.",
+    "cookieTableTitle": "Cookies et stockages utilisés",
+    "accept": {
+      "titleFirst": "Bienvenue sur Kiraku",
+      "titleUpdated": "Les conditions d'utilisation ont changé",
+      "bodyFirst": "Avant de continuer, lis et accepte les conditions d'utilisation et la politique de confidentialité.",
+      "bodyUpdated": "Une nouvelle version (v{version}) des conditions d'utilisation est en vigueur. Lis-la et accepte-la pour continuer à jouer.",
+      "readTerms": "Lire les conditions d'utilisation",
+      "readPrivacy": "Lire la politique de confidentialité",
+      "checkbox": "J'ai lu et j'accepte les conditions d'utilisation et la politique de confidentialité.",
+      "submit": "Accepter et continuer",
+      "pending": "Un instant…",
+      "rateLimited": "Trop d'essais. Réessaie dans un moment.",
+      "error": "Impossible d'enregistrer ton choix. Réessaie."
+    }
+  },
+  "consent": {
+    "manage": "Gérer les cookies",
+    "bannerLabel": "Choix des cookies",
+    "bannerBody": "Kiraku aimerait utiliser des traceurs facultatifs. Tu peux tout accepter, tout refuser ou choisir catégorie par catégorie.",
+    "learnMore": "En savoir plus",
+    "refuseAll": "Tout refuser",
+    "acceptAll": "Tout accepter",
+    "customize": "Personnaliser",
+    "save": "Enregistrer mes choix",
+    "panelTitle": "Cookies et stockages",
+    "panelIntro": "Choisis les catégories que tu autorises. Les cookies nécessaires au fonctionnement ne demandent pas d'accord.",
+    "onlyNecessary": "Kiraku n'utilise que des cookies et stockages nécessaires au site ou à tes préférences (thème, langue, son). Aucun n'a besoin de ton accord, et rien ne sert à la publicité ni au suivi.",
+    "alwaysOn": "Toujours actifs",
+    "categories": {
+      "necessary": "Nécessaires",
+      "preferences": "Préférences",
+      "measure": "Mesure d'audience"
+    },
+    "categoryHelp": {
+      "necessary": "Session, sécurité de la connexion, parrainage et ton choix de cookies.",
+      "preferences": "Thème, langue et son, choisis par toi.",
+      "measure": "Statistiques de fréquentation."
+    },
+    "purposes": {
+      "session": "Garde ta session ouverte (invité ou compte).",
+      "referral": "Retient le lien de parrainage suivi, jusqu'à ton inscription.",
+      "discordSignIn": "Sécurise la connexion avec Discord (protection contre la falsification de requête).",
+      "consent": "Retient tes choix de cookies.",
+      "theme": "Retient le thème Yoru ou Washi.",
+      "locale": "Retient la langue choisie.",
+      "sound": "Retient si le son est activé.",
+      "discordLater": "Retient quand tu as repoussé l'invitation Discord (« Plus tard »).",
+      "speedInsights": "Mesure des performances Vercel (sans cookie ni identifiant persistant)"
+    },
+    "kinds": {
+      "cookie": "Cookie",
+      "localStorage": "Stockage local",
+      "none": "Aucun stockage"
+    },
+    "table": {
+      "kind": "Type",
+      "category": "Catégorie",
+      "duration": "Durée",
+      "consent": "Accord",
+      "exempt": "Non requis (exempté)",
+      "required": "Requis"
+    },
+    "durations": {
+      "session": "Fin de la session du navigateur",
+      "persistent": "Jusqu'à ce que tu le supprimes",
+      "minutes": "{count, plural, one {# minute} other {# minutes}}",
+      "days": "{count, plural, one {# jour} other {# jours}}",
+      "none": "Aucun stockage sur l’appareil"
+    }
+  },
+  "data": {
+    "title": "Mes données",
+    "intro": "Tes droits sur tes données personnelles : les consulter, les corriger, les supprimer.",
+    "back": "Retour au compte",
+    "export": {
+      "title": "Télécharger mes données",
+      "body": "Un fichier JSON avec ton profil, tes cartes, ton journal de Zeni, tes combats, tes ventes, tes amis et ton avis.",
+      "submit": "Télécharger",
+      "limit": "{count, plural, one {# export} other {# exports}} par jour au plus."
+    },
+    "rectify": {
+      "title": "Modifier mes informations",
+      "username": "Pseudo",
+      "usernameHint": "3 à 20 caractères : lettres, chiffres, _ et -",
+      "cooldown": "Un changement de pseudo tous les {days} jours au plus.",
+      "submit": "Changer de pseudo",
+      "saved": "Pseudo modifié.",
+      "guest": "Crée un compte pour choisir ton pseudo.",
+      "localeHint": "La langue sert aussi pour les e-mails et les notifications.",
+      "privacyLink": "Visibilité du profil"
+    },
+    "cookies": {
+      "title": "Cookies",
+      "body": "Revois à tout moment ce que Kiraku dépose dans ton navigateur."
+    },
+    "deletion": {
+      "title": "Supprimer mon compte",
+      "body": "Ton compte sera anonymisé au bout de {days} jours : pseudo remplacé, e-mail, avatar et lien Discord effacés, amis, avis et liste de souhaits supprimés. Le journal des Zeni et les cartes restent, sans lien avec toi, pour que l'économie du jeu reste juste.",
+      "freeze": "Pendant ce délai, ton compte est gelé (ventes sans enchère retirées, plus d'ouverture ni d'échange) et tu peux annuler à tout moment.",
+      "open": "Supprimer mon compte…",
+      "confirmLabel": "Tape ton pseudo ({username}) pour confirmer",
+      "submit": "Demander la suppression",
+      "pendingTitle": "Suppression demandée",
+      "pendingBody": "Ton compte sera anonymisé le {date}.",
+      "cancel": "Annuler la suppression",
+      "cancelled": "Suppression annulée.",
+      "pendingNotice": "Ton compte sera supprimé le {date}.",
+      "cancelLink": "Annuler"
+    },
+    "history": {
+      "title": "Mes demandes",
+      "empty": "Aucune demande pour l'instant.",
+      "kinds": {
+        "EXPORT": "Export",
+        "DELETION": "Suppression"
+      },
+      "statuses": {
+        "PENDING": "En attente",
+        "CANCELLED": "Annulée",
+        "DONE": "Traitée"
+      }
+    },
+    "errors": {
+      "INVALID": "Saisie invalide.",
+      "USERNAME_TAKEN": "Ce pseudo est déjà pris.",
+      "TOO_SOON": "Tu as changé de pseudo récemment. Réessaie plus tard.",
+      "RATE_LIMITED": "Trop d'essais. Réessaie dans un moment.",
+      "FROZEN": "Ton compte est en cours de suppression.",
+      "CONFIRM_MISMATCH": "Le pseudo saisi ne correspond pas.",
+      "ALREADY_REQUESTED": "La suppression est déjà demandée.",
+      "NOT_REQUESTED": "Aucune suppression en cours.",
+      "GENERIC": "Une erreur est survenue. Réessaie."
+    }
+  },
+  "discordJoin": {
+    "join": "Rejoindre",
+    "later": "Plus tard",
+    "footer": "Notre Discord"
+  },
+  "casino": {
+    "title": "Casino",
+    "soon": "Bientôt",
+    "body": "Le casino de Kiraku est en préparation. Il arrivera plus tard, sans jamais accepter d'argent réel.",
+    "back": "Retour aux boosters"
+  },
+  "pwa": {
+    "title": "Installer l'app",
+    "body": "Ajoute Kiraku à ton écran d'accueil : ouverture en plein écran et notifications sur iPhone.",
+    "install": "Installer l'app",
+    "iosTitle": "Installer sur iPhone ou iPad",
+    "iosStep1": "Ouvre Kiraku dans Safari.",
+    "iosStep2": "Touche le bouton Partager (carré avec une flèche vers le haut).",
+    "iosStep3": "Choisis « Sur l'écran d'accueil », puis « Ajouter »."
+  },
+  "error": {
+    "title": "Quelque chose s'est mal passé",
+    "body": "Une erreur inattendue a interrompu la page. Tes cartes et tes Zeni ne sont pas touchés : le serveur valide chaque action.",
+    "reference": "Référence : {digest}",
+    "retry": "Réessayer",
+    "home": "Retour à l'accueil"
+  },
+  "playerName": {
+    "hidden": "Joueur",
+    "deleted": "Compte supprimé"
   }
 }

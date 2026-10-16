@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh, updateTag } from "next/cache";
-import type { z } from "zod";
+import type { z } from "@/lib/zod";
 import { REVIEW_MAX_PINNED, replyReviewSchema, setReviewHiddenSchema, setReviewPinnedSchema } from "@/lib/admin/reviews";
 import { getAdmin } from "../admin";
 import { prisma } from "../db";

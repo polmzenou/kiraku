@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { RARITIES } from "@/lib/catalog/rarity";
 import { poolFilterSchema, type PoolFilter } from "./pool-filter";
 import {

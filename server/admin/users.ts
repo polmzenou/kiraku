@@ -15,6 +15,7 @@ export async function listAdminUsers(query: string, filter: UserFilter, requeste
   const page = Math.min(requestedPage, pages - 1);
   const users = await prisma.user.findMany({ where, orderBy: [{ createdAt: "desc" }, { id: "desc" }], skip: page * ADMIN_USER_PAGE_SIZE, take: ADMIN_USER_PAGE_SIZE,
     select: { id: true, username: true, email: true, role: true, bannedAt: true, isGuest: true, coins: true, createdAt: true,
+      deletionRequestedAt: true, anonymizedAt: true,
       _count: { select: { cards: true, discoveries: { where: { card: { rank: { not: null } } } } } } },
   });
   return { users, total, page, pages };
@@ -25,6 +26,7 @@ export async function getAdminUser(userId: string, locale: string) {
     id: true, username: true, email: true, emailVerified: true, isGuest: true, role: true, bannedAt: true, createdAt: true,
     coins: true, boosterStock: true, boosterAnchor: true, rankPoints: true, pityCount: true, standardCount: true, bannerPity: true,
     profileVisibility: true, showCollection: true, discordLinkedAt: true, referralCode: true,
+    deletionRequestedAt: true, anonymizedAt: true, termsVersion: true,
     boosterCredits: { select: { boosterTypeId: true, count: true } },
     _count: { select: { cards: true, openings: true, sessions: true } },
   } });

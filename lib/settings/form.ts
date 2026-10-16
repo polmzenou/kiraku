@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { SETTING_SCHEMAS, type SettingKey, type SettingValue } from "./defaults";
 
 // Outils communs aux formulaires de réglages de /admin : chaque clé garde son schéma Zod (defaults.ts).
