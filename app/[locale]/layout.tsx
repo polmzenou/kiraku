@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { ConsentManager } from "@/components/consent/ConsentManager";
 import { AppHeader } from "@/components/layout/AppHeader";
-import { DiscordJoinGate } from "@/components/discord/DiscordJoinGate";
+import { PlayerAnnouncements } from "@/components/welcome/PlayerAnnouncements";
 import { AccountGate } from "@/components/legal/AccountGate";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { routing } from "@/i18n/routing";
@@ -57,7 +57,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
           <AppHeader theme={theme} />
           <AccountGate>
             {children}
-            <DiscordJoinGate />
+            <PlayerAnnouncements />
           </AccountGate>
           <ConsentManager />
           <ServiceWorkerRegister />

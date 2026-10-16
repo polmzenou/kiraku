@@ -1,4 +1,28 @@
 {
+  "v1Welcome": {
+    "badge": "Le grand départ · v1.0",
+    "title": "Bienvenue sur",
+    "titleAccent": "Kiraku-kun !",
+    "intro": "Ça y est, l'aventure prend une nouvelle dimension ! On est ravis de partager cette première version avec toi. Prêt à trouver tes prochaines cartes préférées ?",
+    "available": "À toi de jouer",
+    "features": {
+      "boosters": { "title": "La magie des boosters", "body": "Ouvre tes boosters, découvre tes personnages favoris et fais grandir ta collection. La prochaine pépite t'attend !" },
+      "wiki": { "title": "Le wiki, ton allié", "body": "Explore les personnages, leurs raretés et leurs caractéristiques pour tout savoir sur les cartes que tu convoites." },
+      "shop": { "title": "Un détour en boutique", "body": "Fais le plein de boosters et découvre les offres pour donner un coup de pouce à ta collection." },
+      "battles": { "title": "Place aux combats !", "body": "Compose ton équipe, fais briller tes cartes et relève le défi en duel amical ou en mode classé." }
+    },
+    "discord": {
+      "title": "Encore mieux avec Discord",
+      "body": "Lie ton compte Discord pour te reconnecter facilement et retrouver ta collection sur tous tes appareils, sans perdre ta progression.",
+      "bonus": "Et hop : {amount, number} Zeni offerts à ta première liaison !"
+    },
+    "soon": {
+      "title": "Et la suite s'annonce encore plus belle…",
+      "body": "Les <strong>échanges entre amis ET dans le Marché</strong> arrivent bientôt ! Au programme aussi : de <strong>nouveaux types de boosters</strong>, un <strong>casino pour miser tes Zeni et tenter de faire fortune</strong>, de toutes nouvelles <strong>cartes gold et alternatives</strong>, et de la <strong>personnalisation de profil</strong> pour afficher ton style. On a hâte de te faire découvrir tout ça !"
+    },
+    "thanks": "Merci d'écrire le début de l'aventure avec nous.",
+    "letsGo": "C'est parti !"
+  },
   "cardBack": {
     "showBack": "Voir le dos",
     "showFront": "Voir le recto",
@@ -84,7 +108,7 @@
     "back": "Retour à l'accueil"
   },
   "footer": {
-    "versionNotice": "Ceci n'est que la v0.8 du site, des mises à jour sont susceptibles d'arriver rapidement.",
+    "versionNotice": "Kiraku-kun v1.0 est là ! L'aventure continue, avec de nouvelles surprises à venir.",
     "disclaimer": "Projet fan non officiel. Les personnages appartiennent à leurs ayants droit.",
     "nav": "Liens du site",
     "account": "Mon compte",

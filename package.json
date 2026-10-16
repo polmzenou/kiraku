@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "audit:actions": "tsx scripts/audit-actions.mts",
+    "audit:dependencies": "node scripts/audit-dependencies.mjs",
     "lighthouse": "node scripts/lighthouse.mjs",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",

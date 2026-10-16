@@ -24,6 +24,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       termsVersion: true,
       discordLinkedAt: true,
       discordJoinedAt: true,
+      v1WelcomeSeenAt: true,
       deletionRequestedAt: true,
       createdAt: true,
     },

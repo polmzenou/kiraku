@@ -30,4 +30,4 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run audit:actions
-      - run: npm audit --audit-level=high
+      - run: npm run audit:dependencies

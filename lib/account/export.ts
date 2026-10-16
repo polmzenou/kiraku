@@ -24,6 +24,7 @@ export const EXPORT_FIELDS = {
     "termsVersion",
     "discordLinkedAt",
     "discordJoinedAt",
+    "v1WelcomeSeenAt",
     "deletionRequestedAt",
     "createdAt",
   ],

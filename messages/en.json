@@ -1,4 +1,28 @@
 {
+  "v1Welcome": {
+    "badge": "A new beginning · v1.0",
+    "title": "Welcome to",
+    "titleAccent": "Kiraku-kun!",
+    "intro": "It's here, and the adventure is getting bigger! We're so happy to share this first version with you. Ready to find your next favourite cards?",
+    "available": "Your adventure starts here",
+    "features": {
+      "boosters": { "title": "The magic of boosters", "body": "Open your boosters, discover your favourite characters and grow your collection. Your next gem is waiting!" },
+      "wiki": { "title": "Your trusty wiki", "body": "Explore characters, rarities and stats to learn all about the cards you've got your eye on." },
+      "shop": { "title": "A stop at the shop", "body": "Stock up on boosters and discover offers to give your collection a little boost." },
+      "battles": { "title": "Time to battle!", "body": "Build your team, let your cards shine and take on a friendly duel or climb the ranked ladder." }
+    },
+    "discord": {
+      "title": "Even better with Discord",
+      "body": "Link your Discord account to sign back in easily and access your collection across your devices without losing your progress.",
+      "bonus": "Plus: {amount, number} Zeni as a gift for your first link!"
+    },
+    "soon": {
+      "title": "And there's so much more on the way…",
+      "body": "<strong>Trading with friends AND in the Market</strong> is coming soon! There's more to look forward to: <strong>new booster types</strong>, a <strong>casino to wager your Zeni and try to make your fortune</strong>, brand-new <strong>gold and alternative cards</strong>, and <strong>profile customisation</strong> to show off your style. We can't wait to share it all with you!"
+    },
+    "thanks": "Thanks for being part of our adventure from the start.",
+    "letsGo": "Let's go!"
+  },
   "cardBack": {
     "showBack": "Show card back",
     "showFront": "Show card front",
@@ -84,7 +108,7 @@
     "back": "Back to home"
   },
   "footer": {
-    "versionNotice": "This is only v0.8 of the site; updates may arrive quickly.",
+    "versionNotice": "Kiraku-kun v1.0 is here! The adventure continues, with more surprises on the way.",
     "disclaimer": "Unofficial fan project. Characters belong to their respective rights holders.",
     "nav": "Site links",
     "account": "My account",

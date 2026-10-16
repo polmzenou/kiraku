@@ -75,6 +75,7 @@ model User {
   standardCount       Int               @default(0) // pour le booster doré
   bannerPity          Json              @default("{}") // { boosterTypeId: boosters sans vedette }
   discordJoinedAt     DateTime? // a cliqué sur « Rejoindre le serveur »
+  v1WelcomeSeenAt     DateTime? // présentation de la v1 affichée une seule fois par compte
   locale              String            @default("fr") // fr | en
   birthDate           DateTime? // inutilisé : pas de contrôle d'âge (décision de l'étape 10)
   termsVersion        Int? // version des CGU acceptée

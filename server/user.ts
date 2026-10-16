@@ -37,6 +37,7 @@ export const getCurrentUser = cache(async () => {
       anonymizedAt: true,
       usernameChangedAt: true,
       discordJoinedAt: true,
+      v1WelcomeSeenAt: true,
     },
   });
   if (!user) return null;
