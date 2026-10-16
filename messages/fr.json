@@ -53,7 +53,8 @@
       "shop": "Boutique",
       "referral": "Parrainage",
       "ledger": "Historique des Zeni",
-      "data": "Mes données"
+      "data": "Mes données",
+      "casino": "Casino"
     }
   },
   "theme": {
@@ -390,7 +391,8 @@
     "missions": "Missions",
     "shop": "Boutique",
     "referral": "Parrainage",
-    "more": "Plus"
+    "more": "Plus",
+    "casino": "Casino"
   },
   "header": {
     "stock": "Boosters : {count} sur {max}",
@@ -917,7 +919,9 @@
       "reviews": "Avis",
       "combat": "Combat",
       "legal": "Pages légales",
-      "data": "Données personnelles"
+      "data": "Données personnelles",
+      "discord": "Discord",
+      "features": "Fonctionnalités"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -1661,6 +1665,125 @@
         "SELF": "Tu ne peux pas anonymiser ton propre compte d'ici.",
         "NOT_REQUESTED": "Aucune suppression en cours pour ce joueur.",
         "ANONYMIZED": "Ce compte est déjà anonymisé."
+      }
+    },
+    "settingsForm": {
+      "invalid": "Une valeur est hors des bornes ou invalide.",
+      "noChange": "Aucun changement",
+      "review": "Relire {count, plural, one {# changement} other {# changements}}",
+      "confirmTitle": "Confirmer ces changements",
+      "cancel": "Annuler",
+      "confirm": "Enregistrer",
+      "saved": "{count, plural, =0 {Rien à enregistrer.} one {# réglage enregistré.} other {# réglages enregistrés.}}",
+      "log": "Derniers changements",
+      "logEmpty": "Aucun changement pour l'instant.",
+      "logEntry": "{key} · par {admin}",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Valeurs refusées par le serveur.",
+        "RATE_LIMITED": "Trop d'enregistrements. Réessaie dans une minute.",
+        "unexpected": "Erreur inattendue. Réessaie."
+      }
+    },
+    "discord": {
+      "title": "Discord",
+      "intro": "Le modal « Rejoins notre Discord » est désactivé par défaut. Il est distinct de la connexion Discord du compte. Un clic sur « Rejoindre » le fait disparaître pour ce joueur.",
+      "joinedCount": "{count, plural, =0 {Personne n'a encore cliqué sur « Rejoindre »} one {# joueur a cliqué sur « Rejoindre »} other {# joueurs ont cliqué sur « Rejoindre »}}",
+      "modalSection": "Modal « Rejoins notre Discord »",
+      "enabled": "Afficher le modal",
+      "inviteUrl": "Lien d'invitation",
+      "inviteUrlHint": "https://discord.gg/… ou https://discord.com/invite/… uniquement. Obligatoire pour activer.",
+      "title_fr": "Titre (français)",
+      "title_en": "Titre (anglais, facultatif)",
+      "body_fr": "Texte (français)",
+      "body_en": "Texte (anglais, facultatif)",
+      "trigger": "Moment d'affichage",
+      "triggers": {
+        "AFTER_BOOSTERS": "Après un nombre de boosters ouverts",
+        "ON_VISIT": "Dès la visite"
+      },
+      "afterBoosters": "Boosters ouverts avant d'afficher",
+      "cooldownDays": "Jours avant de le remontrer après « Plus tard »",
+      "showInFooter": "Lien « Notre Discord » dans le pied de page",
+      "linkSection": "Connexion Discord du compte",
+      "linkBonusZeni": "Bonus de première liaison (Zeni)",
+      "linkBonusHint": "Versé une seule fois, quand un joueur lie Discord à son compte.",
+      "keys": {
+        "discord": {
+          "joinModal": "Modal « Rejoins notre Discord »",
+          "linkBonusZeni": "Bonus de liaison Discord"
+        }
+      }
+    },
+    "features": {
+      "title": "Fonctionnalités",
+      "intro": "Tous les interrupteurs réunis. Chaque module garde aussi le sien : c'est le même réglage.",
+      "premiumInert": "Sans effet : aucun fournisseur de paiement n'est branché.",
+      "keys": {
+        "features": {
+          "casino": "Casino (tuile « Bientôt »)"
+        },
+        "shop": {
+          "enabled": "Boutique",
+          "premiumEnabled": "Packs premium (paiement par carte)"
+        },
+        "market": {
+          "enabled": "Hôtel des ventes"
+        },
+        "battle": {
+          "enabled": "Combats"
+        },
+        "ranked": {
+          "enabled": "Mode classé"
+        },
+        "social": {
+          "enabled": "Amis"
+        },
+        "gifts": {
+          "enabled": "Cadeaux"
+        },
+        "missions": {
+          "enabled": "Missions"
+        },
+        "referral": {
+          "enabled": "Parrainage"
+        },
+        "notifications": {
+          "pushEnabled": "Notifications push"
+        }
+      },
+      "help": {
+        "features": {
+          "casino": "Entrée de menu, tuile du Compte et page d'attente /casino."
+        },
+        "shop": {
+          "enabled": "Achats d'articles en Zeni.",
+          "premiumEnabled": "Zone « Packs premium » de la boutique."
+        },
+        "market": {
+          "enabled": "Mises en vente et enchères."
+        },
+        "battle": {
+          "enabled": "Exhibition, bot et défis entre amis."
+        },
+        "ranked": {
+          "enabled": "File classée et saisons."
+        },
+        "social": {
+          "enabled": "Demandes d'amis et liste d'amis."
+        },
+        "gifts": {
+          "enabled": "Cartes et boosters offerts entre amis."
+        },
+        "missions": {
+          "enabled": "Missions quotidiennes et hebdomadaires."
+        },
+        "referral": {
+          "enabled": "Liens d'invitation et récompenses."
+        },
+        "notifications": {
+          "pushEnabled": "Envoi des notifications quand l'onglet est fermé."
+        }
       }
     }
   },
@@ -2718,7 +2841,8 @@
       "consent": "Retient tes choix de cookies.",
       "theme": "Retient le thème Yoru ou Washi.",
       "locale": "Retient la langue choisie.",
-      "sound": "Retient si le son est activé."
+      "sound": "Retient si le son est activé.",
+      "discordLater": "Retient quand tu as repoussé l'invitation Discord (« Plus tard »)."
     },
     "kinds": {
       "cookie": "Cookie",
@@ -2802,5 +2926,25 @@
       "NOT_REQUESTED": "Aucune suppression en cours.",
       "GENERIC": "Une erreur est survenue. Réessaie."
     }
+  },
+  "discordJoin": {
+    "join": "Rejoindre",
+    "later": "Plus tard",
+    "footer": "Notre Discord"
+  },
+  "casino": {
+    "title": "Casino",
+    "soon": "Bientôt",
+    "body": "Le casino de Kiraku est en préparation. Il arrivera plus tard, sans jamais accepter d'argent réel.",
+    "back": "Retour aux boosters"
+  },
+  "pwa": {
+    "title": "Installer l'app",
+    "body": "Ajoute Kiraku à ton écran d'accueil : ouverture en plein écran et notifications sur iPhone.",
+    "install": "Installer l'app",
+    "iosTitle": "Installer sur iPhone ou iPad",
+    "iosStep1": "Ouvre Kiraku dans Safari.",
+    "iosStep2": "Touche le bouton Partager (carré avec une flèche vers le haut).",
+    "iosStep3": "Choisis « Sur l'écran d'accueil », puis « Ajouter »."
   }
 }

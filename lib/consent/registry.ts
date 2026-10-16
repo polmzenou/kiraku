@@ -8,7 +8,15 @@ export const CONSENT_CATEGORIES = ["necessary", "preferences", "measure"] as con
 export type ConsentCategory = (typeof CONSENT_CATEGORIES)[number];
 
 /** Rôles décrits sur la page Cookies (clés i18n `consent.purposes.*`). */
-export type StoragePurpose = "session" | "referral" | "discordSignIn" | "consent" | "theme" | "locale" | "sound";
+export type StoragePurpose =
+  | "session"
+  | "referral"
+  | "discordSignIn"
+  | "consent"
+  | "theme"
+  | "locale"
+  | "sound"
+  | "discordLater";
 
 export type StorageDuration = { unit: "session" } | { unit: "minutes" | "days"; value: number } | { unit: "persistent" };
 
@@ -83,6 +91,15 @@ export const STORAGE_REGISTRY: readonly StorageEntry[] = [
     kind: "localStorage",
     category: "preferences",
     purpose: "sound",
+    duration: { unit: "persistent" },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
+    name: "kiraku.discord-later",
+    kind: "localStorage",
+    category: "preferences",
+    purpose: "discordLater",
     duration: { unit: "persistent" },
     provider: "kiraku",
     exempt: true,

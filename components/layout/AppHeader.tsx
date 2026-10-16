@@ -29,9 +29,12 @@ export async function AppHeader({ theme }: { theme: Theme }) {
   const authLabel = signedIn ? t("account.logout") : t("auth.login.title");
   const authClasses =
     "size-11 shrink-0 items-center justify-center rounded-full border border-shu/40 bg-shu/10 text-shu transition-colors hover:bg-shu/20";
-  const [unread, pollSeconds] = user
-    ? await Promise.all([unreadNotifications(user.id), getSetting("notifications.pollSeconds")])
-    : [0, 0];
+  const [unread, pollSeconds, casino] = await Promise.all([
+    user ? unreadNotifications(user.id) : 0,
+    user ? getSetting("notifications.pollSeconds") : 0,
+    getSetting("features.casino"),
+  ]);
+  const features = { casino };
 
   return (
     <>
@@ -43,7 +46,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
           </Link>
 
           <nav aria-label={t("nav.label")} className="ml-2 hidden lg:block">
-            <NavLinks layout="bar" />
+            <NavLinks layout="bar" features={features} />
           </nav>
 
           <div className="ml-auto flex min-w-0 items-center gap-1.5 md:gap-2">
@@ -111,7 +114,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
           </div>
         </div>
       </header>
-      <MobileMenu theme={theme} isAdmin={isAdmin} accountHref={accountHref} signedIn={signedIn} />
+      <MobileMenu theme={theme} isAdmin={isAdmin} accountHref={accountHref} signedIn={signedIn} features={features} />
     </>
   );
 }

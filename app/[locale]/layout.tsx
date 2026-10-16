@@ -5,7 +5,9 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { ConsentManager } from "@/components/consent/ConsentManager";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { DiscordJoinGate } from "@/components/discord/DiscordJoinGate";
 import { AccountGate } from "@/components/legal/AccountGate";
+import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { routing } from "@/i18n/routing";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { fontVariables } from "../fonts";
@@ -48,8 +50,12 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
       <body className="min-h-dvh">
         <NextIntlClientProvider>
           <AppHeader theme={theme} />
-          <AccountGate>{children}</AccountGate>
+          <AccountGate>
+            {children}
+            <DiscordJoinGate />
+          </AccountGate>
           <ConsentManager />
+          <ServiceWorkerRegister />
         </NextIntlClientProvider>
       </body>
     </html>

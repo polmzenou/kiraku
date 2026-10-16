@@ -7,6 +7,7 @@ import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { PageShell } from "@/components/PageShell";
 import { PrivacyForm } from "@/components/profile/PrivacyForm";
+import { InstallAppButton } from "@/components/pwa/InstallAppButton";
 import { SealMark } from "@/components/SealMark";
 import { PushToggle } from "@/components/social/PushToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -29,6 +30,7 @@ const ACCOUNT_TILES = [
   { key: "referral", href: "/parrainage", kanji: "招" },
   { key: "ledger", href: "/compte/historique", kanji: "銭" },
   { key: "data", href: "/compte/donnees", kanji: "私" },
+  { key: "casino", href: "/casino", kanji: "賭", soon: true },
 ] as const;
 
 export default async function AccountPage() {
@@ -46,11 +48,13 @@ export default async function AccountPage() {
     );
   }
 
-  const [maxStock, discordBonus, push] = await Promise.all([
+  const [maxStock, discordBonus, push, casino] = await Promise.all([
     getSetting("booster.maxStock"),
     getSetting("discord.linkBonusZeni"),
     pushAvailable(),
+    getSetting("features.casino"),
   ]);
+  const tiles = ACCOUNT_TILES.filter((tile) => tile.key !== "casino" || casino);
   const code = guestCode(user.username);
   const displayName = user.isGuest && code ? t("account.guestName", { code }) : user.username;
   const canLinkDiscord = discordEnabled && !user.discordLinkedAt;
@@ -110,7 +114,7 @@ export default async function AccountPage() {
 
       <nav aria-label={t("account.tilesLabel")}>
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {ACCOUNT_TILES.map((tile) => (
+          {tiles.map((tile) => (
             <li key={tile.key}>
               <Link
                 href={tile.href}
@@ -119,7 +123,14 @@ export default async function AccountPage() {
                 <span aria-hidden="true" lang="ja" className="font-seal text-xl text-shu">
                   {tile.kanji}
                 </span>
-                {t(`account.tiles.${tile.key}`)}
+                <span className="flex flex-wrap items-center gap-2">
+                  {t(`account.tiles.${tile.key}`)}
+                  {"soon" in tile && (
+                    <span className="rounded-sm border border-border px-1.5 text-[10px] font-normal tracking-wide text-text-muted uppercase">
+                      {t("nav.soon")}
+                    </span>
+                  )}
+                </span>
               </Link>
             </li>
           ))}
@@ -179,6 +190,8 @@ export default async function AccountPage() {
           <PushToggle publicKey={env.VAPID_PUBLIC_KEY} />
         </section>
       )}
+
+      <InstallAppButton />
 
       <section className="flex flex-col gap-5 rounded-lg border border-border bg-surface p-4">
         <h2 className="text-lg font-bold">{t("account.settings")}</h2>

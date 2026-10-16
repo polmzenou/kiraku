@@ -26,6 +26,8 @@ const MODULES = [
   { key: "ranked", href: "/admin/classe", ready: true },
   { key: "legal", href: "/admin/legal", ready: true },
   { key: "data", href: "/admin/donnees", ready: true },
+  { key: "discord", href: "/admin/discord", ready: true },
+  { key: "features", href: "/admin/fonctionnalites", ready: true },
 ] as const;
 
 /** Toute la section /admin : rôle vérifié côté serveur (404 sinon), chaque action le revérifie. */

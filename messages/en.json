@@ -53,7 +53,8 @@
       "shop": "Shop",
       "referral": "Referrals",
       "ledger": "Zeni history",
-      "data": "My data"
+      "data": "My data",
+      "casino": "Casino"
     }
   },
   "theme": {
@@ -390,7 +391,8 @@
     "missions": "Missions",
     "shop": "Shop",
     "referral": "Referrals",
-    "more": "More"
+    "more": "More",
+    "casino": "Casino"
   },
   "header": {
     "stock": "Boosters: {count} of {max}",
@@ -917,7 +919,9 @@
       "reviews": "Reviews",
       "combat": "Battle",
       "legal": "Legal pages",
-      "data": "Personal data"
+      "data": "Personal data",
+      "discord": "Discord",
+      "features": "Features"
     },
     "boosters": {
       "title": "Booster settings",
@@ -1661,6 +1665,125 @@
         "SELF": "You cannot anonymize your own account from here.",
         "NOT_REQUESTED": "No deletion in progress for this player.",
         "ANONYMIZED": "This account is already anonymized."
+      }
+    },
+    "settingsForm": {
+      "invalid": "A value is out of bounds or invalid.",
+      "noChange": "No change",
+      "review": "Review {count, plural, one {# change} other {# changes}}",
+      "confirmTitle": "Confirm these changes",
+      "cancel": "Cancel",
+      "confirm": "Save",
+      "saved": "{count, plural, =0 {Nothing to save.} one {# setting saved.} other {# settings saved.}}",
+      "log": "Latest changes",
+      "logEmpty": "No change yet.",
+      "logEntry": "{key} · by {admin}",
+      "errors": {
+        "FORBIDDEN": "Access denied.",
+        "INVALID": "Values rejected by the server.",
+        "RATE_LIMITED": "Too many saves. Try again in a minute.",
+        "unexpected": "Unexpected error. Try again."
+      }
+    },
+    "discord": {
+      "title": "Discord",
+      "intro": "The \"Join our Discord\" modal is off by default. It is separate from signing in with Discord. Clicking \"Join\" hides it for that player.",
+      "joinedCount": "{count, plural, =0 {Nobody has clicked \"Join\" yet} one {# player clicked \"Join\"} other {# players clicked \"Join\"}}",
+      "modalSection": "\"Join our Discord\" modal",
+      "enabled": "Show the modal",
+      "inviteUrl": "Invite link",
+      "inviteUrlHint": "https://discord.gg/… or https://discord.com/invite/… only. Required to enable it.",
+      "title_fr": "Title (French)",
+      "title_en": "Title (English, optional)",
+      "body_fr": "Text (French)",
+      "body_en": "Text (English, optional)",
+      "trigger": "When to show it",
+      "triggers": {
+        "AFTER_BOOSTERS": "After a number of opened boosters",
+        "ON_VISIT": "On visit"
+      },
+      "afterBoosters": "Boosters opened before showing it",
+      "cooldownDays": "Days before showing it again after \"Later\"",
+      "showInFooter": "\"Our Discord\" link in the footer",
+      "linkSection": "Discord account sign-in",
+      "linkBonusZeni": "First link bonus (Zeni)",
+      "linkBonusHint": "Paid once, when a player links Discord to their account.",
+      "keys": {
+        "discord": {
+          "joinModal": "\"Join our Discord\" modal",
+          "linkBonusZeni": "Discord link bonus"
+        }
+      }
+    },
+    "features": {
+      "title": "Features",
+      "intro": "All switches in one place. Each module also keeps its own: it is the same setting.",
+      "premiumInert": "No effect: no payment provider is connected.",
+      "keys": {
+        "features": {
+          "casino": "Casino (\"Soon\" tile)"
+        },
+        "shop": {
+          "enabled": "Shop",
+          "premiumEnabled": "Premium packs (card payment)"
+        },
+        "market": {
+          "enabled": "Auction house"
+        },
+        "battle": {
+          "enabled": "Battles"
+        },
+        "ranked": {
+          "enabled": "Ranked mode"
+        },
+        "social": {
+          "enabled": "Friends"
+        },
+        "gifts": {
+          "enabled": "Gifts"
+        },
+        "missions": {
+          "enabled": "Missions"
+        },
+        "referral": {
+          "enabled": "Referral"
+        },
+        "notifications": {
+          "pushEnabled": "Push notifications"
+        }
+      },
+      "help": {
+        "features": {
+          "casino": "Menu entry, Account tile and /casino waiting page."
+        },
+        "shop": {
+          "enabled": "Buying items with Zeni.",
+          "premiumEnabled": "\"Premium packs\" area of the shop."
+        },
+        "market": {
+          "enabled": "Listings and bids."
+        },
+        "battle": {
+          "enabled": "Exhibition, bot and friend challenges."
+        },
+        "ranked": {
+          "enabled": "Ranked queue and seasons."
+        },
+        "social": {
+          "enabled": "Friend requests and friends list."
+        },
+        "gifts": {
+          "enabled": "Cards and boosters given between friends."
+        },
+        "missions": {
+          "enabled": "Daily and weekly missions."
+        },
+        "referral": {
+          "enabled": "Invite links and rewards."
+        },
+        "notifications": {
+          "pushEnabled": "Sending notifications when the tab is closed."
+        }
       }
     }
   },
@@ -2718,7 +2841,8 @@
       "consent": "Remembers your cookie choices.",
       "theme": "Remembers the Yoru or Washi theme.",
       "locale": "Remembers the chosen language.",
-      "sound": "Remembers whether sound is on."
+      "sound": "Remembers whether sound is on.",
+      "discordLater": "Remembers when you postponed the Discord invitation (\"Later\")."
     },
     "kinds": {
       "cookie": "Cookie",
@@ -2802,5 +2926,25 @@
       "NOT_REQUESTED": "No deletion in progress.",
       "GENERIC": "Something went wrong. Try again."
     }
+  },
+  "discordJoin": {
+    "join": "Join",
+    "later": "Later",
+    "footer": "Our Discord"
+  },
+  "casino": {
+    "title": "Casino",
+    "soon": "Soon",
+    "body": "Kiraku's casino is being prepared. It will come later, and will never accept real money.",
+    "back": "Back to boosters"
+  },
+  "pwa": {
+    "title": "Install the app",
+    "body": "Add Kiraku to your home screen: full-screen launch and notifications on iPhone.",
+    "install": "Install the app",
+    "iosTitle": "Install on iPhone or iPad",
+    "iosStep1": "Open Kiraku in Safari.",
+    "iosStep2": "Tap the Share button (square with an arrow pointing up).",
+    "iosStep3": "Choose \"Add to Home Screen\", then \"Add\"."
   }
 }
