@@ -24,6 +24,9 @@ const nextConfig: NextConfig = {
   // Les métadonnées restent dans <head> pour les lecteurs HTML et les outils SEO.
   htmlLimitedBots: /.*/,
   images: {
+    // Garder les originaux pour les cartes, avatars et logos : l'optimiseur Vercel
+    // renvoie 402 OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED quand son quota est atteint.
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "s4.anilist.co" },
       { protocol: "https", hostname: "cdn.discordapp.com" },
