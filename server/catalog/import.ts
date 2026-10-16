@@ -27,7 +27,8 @@ export type ImportRunStatus = "RUNNING" | "FINALIZED" | "ABANDONED" | "FAILED";
 export type ImportRun = { id: string; status: ImportRunStatus; target: number; lastPage: number; kept: number };
 export type StagedRow = { anilistId: number; position: number; favorites: number; data: ImportedCharacter };
 export type FinalEntry = RankedEntry<StagedRow>;
-export type CatalogSnapshotRow = { anilistId: number; rank: number | null; rarity: Rarity };
+export type CatalogSnapshotRow = { anilistId: number; rank: number | null; rarity: Rarity; power: number; ki: number };
+export type FinalizeOptions = { preserveExisting?: boolean; target?: number };
 
 /** Stockage de l'import : Prisma en vrai (prisma-store.ts), mémoire pour le dry-run et les tests. */
 export interface ImportStore {
@@ -47,7 +48,7 @@ export interface ImportStore {
   loadRows(runId: string): Promise<StagedRow[]>;
   catalogSnapshot(): Promise<CatalogSnapshotRow[]>;
   /** Écrit le catalogue final en une transaction et marque l'import FINALIZED. */
-  finalize(runId: string, entries: FinalEntry[]): Promise<void>;
+  finalize(runId: string, entries: FinalEntry[], options?: FinalizeOptions): Promise<void>;
 }
 
 export type ImportSettings = {
@@ -57,6 +58,7 @@ export type ImportSettings = {
   thresholds: RarityThresholds;
   stats: StatCoefficients;
   policy: RarityPolicy;
+  preserveExisting?: boolean;
 };
 
 export type ImportDeps = {
@@ -82,7 +84,7 @@ export type FinalizeReport = {
 };
 
 export type ImportResult =
-  | { status: "finalized"; runId: string; pagesFetched: number; skipped: Record<SkipReason, number>; report: FinalizeReport; entries: FinalEntry[] }
+  | { status: "finalized" | "staged"; runId: string; pagesFetched: number; skipped: Record<SkipReason, number>; report: FinalizeReport; entries: FinalEntry[] }
   | { status: "interrupted"; runId: string; lastPage: number; kept: number }
   | { status: "failed"; runId: string; lastPage: number; error: string };
 
@@ -165,20 +167,40 @@ export function diffReport(before: CatalogSnapshotRow[], entries: FinalEntry[]):
   };
 }
 
-/** Phase B : classe le staging et écrit le catalogue. Idempotente pour un même staging. */
-export async function finalizeRun(store: ImportStore, run: ImportRun, settings: ImportSettings) {
+export function preserveExistingEntries(entries: FinalEntry[], before: CatalogSnapshotRow[], target: number): FinalEntry[] {
+  const existing = new Set(before.map((card) => card.anilistId));
+  const active = before.filter((card) => card.rank !== null);
+  const lastRank = active.reduce((maximum, card) => Math.max(maximum, card.rank!), 0);
+  const remaining = Math.max(0, target - active.length);
+  return entries.filter((entry) => !existing.has(entry.anilistId)).slice(0, remaining)
+    .map((entry, index) => ({ ...entry, rank: lastRank + index + 1 }));
+}
+
+export async function previewRun(store: ImportStore, run: Pick<ImportRun, "id" | "target">, settings: ImportSettings) {
   const [rows, before] = await Promise.all([store.loadRows(run.id), store.catalogSnapshot()]);
   const existingRarity = new Map(before.map((c) => [c.anilistId, c.rarity]));
-  const entries = rankCatalog(rows, {
+  const ranked = rankCatalog(rows, {
     target: run.target,
     thresholds: settings.thresholds,
     stats: settings.stats,
-    policy: settings.policy,
+    policy: settings.preserveExisting ? "FROZEN" : settings.policy,
     existingRarity,
   });
-  const report = diffReport(before, entries);
-  await store.finalize(run.id, entries);
+  const entries = settings.preserveExisting ? preserveExistingEntries(ranked, before, run.target) : ranked;
+  const report = diffReport(settings.preserveExisting ? [] : before, entries);
+  if (settings.preserveExisting) {
+    const active = before.filter((card) => card.rank !== null);
+    report.total = active.length + entries.length;
+    report.byRarity = countByRarity([...active, ...entries]);
+  }
   return { report, entries };
+}
+
+/** Phase B : classe le staging et écrit le catalogue. Idempotente pour un même staging. */
+export async function finalizeRun(store: ImportStore, run: ImportRun, settings: ImportSettings) {
+  const result = await previewRun(store, run, settings);
+  await store.finalize(run.id, result.entries, { preserveExisting: settings.preserveExisting, target: run.target });
+  return result;
 }
 
 /**
@@ -186,7 +208,7 @@ export async function finalizeRun(store: ImportStore, run: ImportRun, settings: 
  * On récupère une page de marge au-delà de l'objectif : un personnage peut changer de page pendant l'import.
  */
 export async function runImport(
-  deps: ImportDeps & { target: number; fresh?: boolean },
+  deps: ImportDeps & { target: number; fresh?: boolean; stageOnly?: boolean },
 ): Promise<ImportResult> {
   const full = {
     settings: deps.settings,
@@ -251,6 +273,6 @@ export async function runImport(
     if (kept < goal && more) await full.sleep(result.delayMs);
   }
 
-  const { report, entries } = await finalizeRun(store, run, settings);
-  return { status: "finalized", runId: run.id, pagesFetched, skipped, report, entries };
+  const { report, entries } = deps.stageOnly ? await previewRun(store, run, settings) : await finalizeRun(store, run, settings);
+  return { status: deps.stageOnly ? "staged" : "finalized", runId: run.id, pagesFetched, skipped, report, entries };
 }

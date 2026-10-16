@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { rawCharacter, rawPage } from "@/lib/catalog/fixtures";
 import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
-import { finalizeRun, runImport, type ImportSettings } from "./import";
+import { finalizeRun, previewRun, runImport, type ImportSettings } from "./import";
 import { memoryImportStore } from "./memory-store";
 
 const settings: ImportSettings = {
@@ -150,6 +150,77 @@ describe("deux imports en même temps", () => {
     await runImport({ store, settings, target: 30, fresh: true, fetch: fakeAniList(10).fetchFn, sleep: noSleep });
     await expect(store.savePage(staleRun.id, 2, [])).rejects.toThrow(/abandonné/);
     await expect(finalizeRun(store, staleRun, settings)).rejects.toThrow(/abandonné/);
+  });
+});
+
+describe("extension protégée du catalogue", () => {
+  const protectedSettings = { ...settings, policy: "LIVE" as const, preserveExisting: true };
+
+  it("prépare les ajouts sans publication et conserve ensuite les ids, raretés et statistiques existants", async () => {
+    const store = memoryImportStore();
+    await runImport({ store, settings, target: 30, fetch: fakeAniList(10).fetchFn, sleep: noSleep });
+    const before = JSON.stringify([...store.cards]);
+    const existing = new Map([...store.cards].map(([anilistId, card]) => [anilistId, { ...card }]));
+
+    const api = fakeAniList(10);
+    const changedMetadata = (async (url, init) => {
+      const response = await api.fetchFn(url, init);
+      const body = await response.json();
+      for (const character of body.data.Page.characters) character.name.full = `Nom actualisé ${character.id}`;
+      return Response.json(body);
+    }) as typeof fetch;
+    const staged = await runImport({ store, settings: protectedSettings, target: 50, stageOnly: true, fetch: changedMetadata, sleep: noSleep });
+    expect(staged.status).toBe("staged");
+    expect(JSON.stringify([...store.cards])).toBe(before);
+    expect(staged.status === "staged" && staged.report).toMatchObject({ inserted: 20, removed: 0, rarityChanged: 0 });
+    const run = (await store.latestRun())!;
+    expect(run.status).toBe("RUNNING");
+
+    await finalizeRun(store, run, protectedSettings);
+    expect(store.cards.size).toBe(50);
+    for (const [anilistId, card] of existing) expect(store.cards.get(anilistId)).toEqual(card);
+    const published = JSON.stringify([...store.cards]);
+    await finalizeRun(store, run, protectedSettings);
+    expect(JSON.stringify([...store.cards])).toBe(published);
+  });
+
+  it("ne modifie aucune carte si l'objectif est inférieur à la taille actuelle", async () => {
+    const store = memoryImportStore();
+    await runImport({ store, settings, target: 30, fetch: fakeAniList(10).fetchFn, sleep: noSleep });
+    const before = JSON.stringify([...store.cards]);
+    const result = await runImport({ store, settings: protectedSettings, target: 20, fetch: fakeAniList(10).fetchFn, sleep: noSleep });
+    expect(result.status === "finalized" && result.report).toMatchObject({ total: 30, inserted: 0, removed: 0, rarityChanged: 0 });
+    expect(JSON.stringify([...store.cards])).toBe(before);
+  });
+
+  it("compare un aperçu mémoire au véritable catalogue de départ", async () => {
+    const store = memoryImportStore([{ anilistId: 1, rank: 1, rarity: "EPIC", power: 65, ki: 42 }]);
+    const result = await runImport({ store, settings: protectedSettings, target: 20, fetch: fakeAniList(10).fetchFn, sleep: noSleep });
+    expect(result.status === "finalized" && result.report).toMatchObject({ total: 20, inserted: 19, rarityChanged: 0, removed: 0 });
+    expect(store.cards.has(1)).toBe(false);
+    expect(await store.catalogSnapshot()).toContainEqual({ anilistId: 1, rank: 1, rarity: "EPIC", power: 65, ki: 42 });
+  });
+
+  it("revérifie les statistiques présentes au moment de la publication", async () => {
+    const store = memoryImportStore();
+    await runImport({ store, settings, target: 30, fetch: fakeAniList(10).fetchFn, sleep: noSleep });
+    await runImport({ store, settings: protectedSettings, target: 40, stageOnly: true, fetch: fakeAniList(10).fetchFn, sleep: noSleep });
+    const run = (await store.latestRun())!;
+    const { entries } = await previewRun(store, run, protectedSettings);
+    store.cards.get(1)!.power = 77;
+    await store.finalize(run.id, entries, { preserveExisting: true });
+    expect(store.cards.get(1)!.power).toBe(77);
+  });
+
+  it("préserve une carte qu'AniList ne renvoie plus et numérote seulement les ajouts", async () => {
+    const preserved = { anilistId: 999, rank: 7, rarity: "MYTHIC" as const, power: 98, ki: 83 };
+    const store = memoryImportStore([preserved]);
+    const result = await runImport({ store, settings: protectedSettings, target: 20, fetch: fakeAniList(10).fetchFn, sleep: noSleep });
+    expect(result.status === "finalized" && result.report).toMatchObject({ total: 20, inserted: 19, removed: 0, rarityChanged: 0 });
+    expect(store.cards.get(1)).toMatchObject({ rank: 8, rarity: "LEGENDARY", power: 97, ki: 73 });
+    expect(store.cards.get(19)!.rank).toBe(26);
+    expect(store.cards.has(20)).toBe(false);
+    expect(await store.catalogSnapshot()).toContainEqual(preserved);
   });
 });
 

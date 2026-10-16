@@ -30,13 +30,15 @@ const { values: args, positionals } = parseArgs({
     fresh: { type: "boolean", default: false },
     "finalize-only": { type: "boolean", default: false },
     rarity: { type: "string" },
+    "preserve-existing": { type: "boolean", default: false },
+    "stage-only": { type: "boolean", default: false },
   },
 });
 
 // Une valeur sans option (« live », « 200 ») : npm a pris les options pour lui, le « -- » a disparu.
 // On s'arrête plutôt que de lancer un import complet par erreur.
 // Une option avalée seule (« --fresh ») laisse une trace npm_config_fresh dans l'environnement.
-const swallowed = ["limit", "fresh", "finalize_only", "rarity", "dry_run"].filter(
+const swallowed = ["limit", "fresh", "finalize_only", "rarity", "dry_run", "preserve_existing", "stage_only"].filter(
   (name) => process.env[`npm_config_${name}`] !== undefined && process.env.npm_lifecycle_event === "catalog:import",
 );
 if (positionals.length > 0 || swallowed.length > 0) {
@@ -60,6 +62,13 @@ if (args.rarity !== undefined && args.rarity !== "live" && args.rarity !== "froz
   process.exit(1);
 }
 
+if (args["finalize-only"] && (args["dry-run"] || args["stage-only"])) {
+  throw new Error("--finalize-only ne peut pas être combiné avec --dry-run ou --stage-only.");
+}
+if (args["preserve-existing"] && args.rarity === "live") {
+  throw new Error("--preserve-existing conserve les raretés : --rarity live est incompatible.");
+}
+
 const log = (message: string) => console.log(message);
 const databaseUrl = process.env.DATABASE_URL;
 const db = databaseUrl ? new PrismaClient({ adapter: new PrismaNeon({ connectionString: databaseUrl }) }) : null;
@@ -72,7 +81,7 @@ async function loadSettings() {
       const rows = await db.gameSetting.findMany({ select: { key: true, value: true } });
       stored = Object.fromEntries(rows.map((r) => [r.key, r.value]));
     } catch {
-      if (!args["dry-run"]) throw new Error("Lecture de GameSetting impossible : la base est-elle migrée ?");
+      if (!args["dry-run"] || args["preserve-existing"]) throw new Error("Lecture de GameSetting impossible : la base est-elle migrée ?");
       log("GameSetting illisible : valeurs par défaut utilisées pour le dry-run.");
     }
   }
@@ -83,7 +92,8 @@ async function loadSettings() {
     minTagRank: get("catalog.minTagRank"),
     thresholds: get("catalog.rarityThresholds"),
     stats: get("catalog.stats"),
-    policy: args.rarity === undefined ? get("catalog.rarityPolicy") : args.rarity === "live" ? "LIVE" : "FROZEN",
+    policy: args["preserve-existing"] ? "FROZEN" : args.rarity === undefined ? get("catalog.rarityPolicy") : args.rarity === "live" ? "LIVE" : "FROZEN",
+    preserveExisting: args["preserve-existing"],
   };
   return { settings, size: get("catalog.size") };
 }
@@ -107,6 +117,7 @@ async function recomputePools() {
 
 async function main() {
   if (!db && !args["dry-run"]) throw new Error("DATABASE_URL manquante (.env.local).");
+  if (!db && args["preserve-existing"]) throw new Error("--preserve-existing a besoin de la base pour protéger le catalogue existant.");
   const { settings, size } = await loadSettings();
   const target = limit ?? size;
 
@@ -115,6 +126,7 @@ async function main() {
     const store = prismaImportStore(db);
     const run = await store.latestRun();
     if (!run) throw new Error("Aucun import à finaliser.");
+    if (limit !== null && run.target !== limit) throw new Error(`Le dernier import vise ${run.target} personnages, pas ${limit}.`);
     log(`Finalisation de l'import ${run.id} (${run.kept} personnages en staging, objectif ${run.target}, raretés ${settings.policy})`);
     const { report } = await finalizeRun(store, run, settings);
     printReport(report);
@@ -130,7 +142,8 @@ async function main() {
   });
 
   const dryRun = args["dry-run"];
-  const store = dryRun ? memoryImportStore() : prismaImportStore(db!);
+  const snapshot = dryRun && db ? await prismaImportStore(db).catalogSnapshot() : [];
+  const store = dryRun ? memoryImportStore(snapshot) : prismaImportStore(db!);
   log(`${dryRun ? "[dry-run] " : ""}Objectif ${target} personnages, ${settings.perPage} par page, ${settings.requestDelayMs} ms entre les pages, raretés ${settings.policy}`);
 
   const result = await runImport({
@@ -138,16 +151,17 @@ async function main() {
     settings,
     target,
     fresh: args.fresh,
+    stageOnly: args["stage-only"],
     log,
     shouldStop: () => stopRequested,
   });
 
-  if (result.status !== "finalized") return result.status === "interrupted" ? 130 : 1;
+  if (result.status !== "finalized" && result.status !== "staged") return result.status === "interrupted" ? 130 : 1;
 
   log(`\n${result.pagesFetched} pages récupérées ; ignorés : ${Object.entries(result.skipped).map(([k, n]) => `${k} ${n}`).join(" · ")}`);
   printReport(result.report);
 
-  if (dryRun) {
+  if (dryRun || result.status === "staged") {
     await mkdir(".import", { recursive: true });
     const rows = result.entries.map((e) => ({
       rank: e.rank,
@@ -160,8 +174,9 @@ async function main() {
       power: e.power,
       ki: e.ki,
     }));
-    await writeFile(".import/dry-run.json", JSON.stringify({ report: result.report, cards: rows }, null, 2));
-    log("\nRapport détaillé : .import/dry-run.json (rien n'a été écrit en base)");
+    const reportPath = dryRun ? ".import/dry-run.json" : ".import/staged-preview.json";
+    await writeFile(reportPath, JSON.stringify({ runId: result.runId, report: result.report, cards: rows }, null, 2));
+    log(`\nRapport détaillé : ${reportPath} (${dryRun ? "rien n'a été écrit en base" : "staging enregistré, catalogue inchangé"})`);
   } else {
     await recomputePools();
   }
