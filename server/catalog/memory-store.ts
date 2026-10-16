@@ -1,6 +1,7 @@
 // Stockage en mémoire de l'import : sert au --dry-run (aucune écriture en base) et aux tests.
 
 import type { CatalogSnapshotRow, FinalEntry, ImportRun, ImportStore, StagedRow } from "./import";
+import { preserveExistingEntries } from "./import";
 import { RUN_NOT_ACTIVE } from "./run-guard";
 
 export type MemoryCard = Omit<FinalEntry, "rank"> & { id: string; rank: number | null };
@@ -68,14 +69,24 @@ export function memoryImportStore(initialCards: CatalogSnapshotRow[] = []): Memo
       return [...(rows.get(runId)?.values() ?? [])];
     },
     async catalogSnapshot() {
-      if (cards.size === 0) return [...snapshotSeed.values()];
-      return [...cards.values()].map((c) => ({ anilistId: c.anilistId, rank: c.rank, rarity: c.rarity }));
+      const snapshot = new Map(snapshotSeed);
+      for (const card of cards.values()) snapshot.set(card.anilistId, { anilistId: card.anilistId, rank: card.rank, rarity: card.rarity, power: card.power, ki: card.ki });
+      return [...snapshot.values()];
     },
-    async finalize(runId, entries) {
+    async finalize(runId, entries, options) {
       const status = runs.get(runId)?.status;
       if (status !== "RUNNING" && status !== "FINALIZED") throw new Error(RUN_NOT_ACTIVE);
+      if (options?.preserveExisting) {
+        const snapshot = new Map(snapshotSeed);
+        for (const card of cards.values()) snapshot.set(card.anilistId, card);
+        const before = [...snapshot.values()];
+        entries = preserveExistingEntries(entries, before, options.target ?? before.filter((card) => card.rank !== null).length + entries.length);
+      }
       const ranked = new Set(entries.map((e) => e.anilistId));
-      for (const [id, card] of cards) if (!ranked.has(id)) cards.set(id, { ...card, rank: null });
+      if (!options?.preserveExisting) {
+        for (const [id, card] of cards) if (!ranked.has(id)) cards.set(id, { ...card, rank: null });
+        for (const [id, card] of snapshotSeed) if (!ranked.has(id)) snapshotSeed.set(id, { ...card, rank: null });
+      }
       for (const e of entries) cards.set(e.anilistId, { ...e, id: cards.get(e.anilistId)?.id ?? `card-${e.anilistId}` });
       runs.get(runId)!.status = "FINALIZED";
       for (const [id] of rows) if (id !== runId) rows.delete(id);

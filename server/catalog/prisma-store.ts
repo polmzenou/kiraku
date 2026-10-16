@@ -3,6 +3,7 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { buildSearchText } from "@/lib/catalog/search";
 import type { ImportRun, ImportStore, StagedRow } from "./import";
+import { preserveExistingEntries } from "./import";
 import { RUN_NOT_ACTIVE } from "./run-guard";
 
 const BATCH = 1000;
@@ -100,14 +101,14 @@ export function prismaImportStore(db: PrismaClient): ImportStore {
     },
 
     async catalogSnapshot() {
-      return db.card.findMany({ select: { anilistId: true, rank: true, rarity: true } });
+      return db.card.findMany({ select: { anilistId: true, rank: true, rarity: true, power: true, ki: true } });
     },
 
-    async finalize(runId, entries) {
+    async finalize(runId, entries, options) {
       // Une série par œuvre ; la carte la mieux classée fait foi si deux lignes diffèrent (dernière écrite)
       const series = new Map([...entries].reverse().map((e) => [e.data.series.anilistId, e.data.series] as const));
 
-      const cards = entries.map((e) => ({
+      let cards = entries.map((e) => ({
         anilistId: e.anilistId,
         name: e.data.name,
         nameNative: e.data.nameNative,
@@ -130,9 +131,21 @@ export function prismaImportStore(db: PrismaClient): ImportStore {
           e.data.series.titleNative,
         ]),
       }));
+      let catalogSize = entries.length;
 
       await db.$transaction(
         async (tx) => {
+          if (options?.preserveExisting) {
+            await tx.$executeRaw`LOCK TABLE "Card" IN SHARE ROW EXCLUSIVE MODE`;
+            const before = await tx.card.findMany({ select: { anilistId: true, rank: true, rarity: true, power: true, ki: true } });
+            const activeCount = before.filter((card) => card.rank !== null).length;
+            const protectedEntries = preserveExistingEntries(entries, before, options.target ?? activeCount + entries.length);
+            const additions = new Map(protectedEntries.map((entry) => [entry.anilistId, entry]));
+            cards = cards.filter((card) => additions.has(card.anilistId))
+              .map((card) => ({ ...card, rank: additions.get(card.anilistId)!.rank }));
+            catalogSize = activeCount + cards.length;
+          }
+
           // Un import abandonné ne publie jamais son classement (refinaliser un import FINALIZED reste permis)
           const claimed = await tx.catalogImport.updateMany({
             where: { id: runId, status: { in: ["RUNNING", "FINALIZED"] } },
@@ -141,7 +154,7 @@ export function prismaImportStore(db: PrismaClient): ImportStore {
           if (claimed.count === 0) throw new Error(RUN_NOT_ACTIVE);
 
           // Libère l'unicité des rangs : les cartes absentes de ce classement sortent du catalogue
-          await tx.$executeRaw`UPDATE "Card" SET "rank" = NULL WHERE "rank" IS NOT NULL`;
+          if (!options?.preserveExisting) await tx.$executeRaw`UPDATE "Card" SET "rank" = NULL WHERE "rank" IS NOT NULL`;
 
           for (const batch of chunks([...series.values()], BATCH)) {
             await tx.$executeRaw`
@@ -157,7 +170,8 @@ export function prismaImportStore(db: PrismaClient): ImportStore {
                 "titleEnglish" = EXCLUDED."titleEnglish", "titleNative" = EXCLUDED."titleNative",
                 "isAdult" = EXCLUDED."isAdult", "genres" = EXCLUDED."genres", "tags" = EXCLUDED."tags",
                 "year" = EXCLUDED."year", "season" = EXCLUDED."season", "seasonYear" = EXCLUDED."seasonYear",
-                "studio" = EXCLUDED."studio"`;
+                "studio" = EXCLUDED."studio"
+              WHERE NOT ${options?.preserveExisting ?? false}`;
           }
 
           for (const batch of chunks(cards, BATCH)) {
@@ -178,7 +192,16 @@ export function prismaImportStore(db: PrismaClient): ImportStore {
                 "favorites" = EXCLUDED."favorites", "rank" = EXCLUDED."rank", "rarity" = EXCLUDED."rarity",
                 "power" = EXCLUDED."power", "ki" = EXCLUDED."ki", "seriesId" = EXCLUDED."seriesId",
                 "gender" = EXCLUDED."gender", "birthMonth" = EXCLUDED."birthMonth", "birthDay" = EXCLUDED."birthDay",
-                "role" = EXCLUDED."role", "searchText" = EXCLUDED."searchText", "updatedAt" = now()`;
+                "role" = EXCLUDED."role", "searchText" = EXCLUDED."searchText", "updatedAt" = now()
+              WHERE NOT ${options?.preserveExisting ?? false}`;
+          }
+
+          if (options?.preserveExisting) {
+            await tx.gameSetting.upsert({
+              where: { key: "catalog.size" },
+              create: { key: "catalog.size", value: catalogSize },
+              update: { value: catalogSize },
+            });
           }
         },
         { timeout: 120_000, maxWait: 10_000 },
