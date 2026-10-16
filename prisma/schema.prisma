@@ -126,9 +126,12 @@ model User {
   battleQueue   BattleQueue?
   seasonResults SeasonResult[]
 
-  dataRequests       DataRequest[] @relation("dataRequester")
-  processedRequests  DataRequest[] @relation("dataProcessor")
+  dataRequests       DataRequest[]  @relation("dataRequester")
+  processedRequests  DataRequest[]  @relation("dataProcessor")
   publishedLegalDocs LegalPage[]
+  lotGrants          LotGrant[]     @relation("lotGrantee")
+  lotGrantsGiven     LotGrant[]     @relation("lotGranter")
+  lotBroadcasts      LotBroadcast[]
 
   @@index([rankPoints])
 }
@@ -532,6 +535,7 @@ enum NotificationType {
   AUCTION_EXPIRED // aucune mise, la carte revient au vendeur
   AUCTION_CANCELLED // annulée par l'admin, mise rendue
   BATTLE_INVITE // un ami t'invite en combat avec un code
+  LOT_GRANTED // cadeau de l'équipe (lot envoyé depuis /admin/lots)
 }
 
 // Notifications en base ; le texte est rendu à la lecture (pseudo à jour, langue du lecteur)
@@ -589,15 +593,17 @@ enum LotItemKind {
 
 // Récompense réutilisable (missions, parrainage, boutique)
 model Lot {
-  id        String     @id @default(cuid())
-  name      Json // { fr, en }
-  zeni      Int        @default(0)
-  active    Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  items     LotItem[]
-  missions  Mission[]
-  shopItems ShopItem[]
+  id         String         @id @default(cuid())
+  name       Json // { fr, en }
+  zeni       Int            @default(0)
+  active     Boolean        @default(true)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  items      LotItem[]
+  missions   Mission[]
+  shopItems  ShopItem[]
+  grants     LotGrant[]
+  broadcasts LotBroadcast[]
 }
 
 model LotItem {
@@ -1005,4 +1011,48 @@ model DataRequest {
 
   @@index([kind, status, dueAt])
   @@index([userId, requestedAt])
+}
+
+// Lot envoyé par un admin à un joueur (seul ou dans un envoi à tous). La contrainte unique rend
+// l'envoi à tous reprenable sans jamais verser deux fois au même joueur.
+model LotGrant {
+  id          String        @id @default(cuid())
+  lotId       String
+  lot         Lot           @relation(fields: [lotId], references: [id])
+  userId      String
+  user        User          @relation("lotGrantee", fields: [userId], references: [id])
+  adminId     String
+  admin       User          @relation("lotGranter", fields: [adminId], references: [id])
+  broadcastId String?
+  broadcast   LotBroadcast? @relation(fields: [broadcastId], references: [id])
+  reason      String? // motif saisi par l'admin (200 caractères max)
+  createdAt   DateTime      @default(now())
+
+  @@unique([broadcastId, userId])
+  @@index([userId, createdAt])
+  @@index([lotId])
+}
+
+enum LotBroadcastStatus {
+  RUNNING
+  DONE
+}
+
+// Envoi d'un lot à tous les joueurs, traité par paquets (budget de temps) et reprenable
+model LotBroadcast {
+  id         String             @id @default(cuid())
+  lotId      String
+  lot        Lot                @relation(fields: [lotId], references: [id])
+  adminId    String
+  admin      User               @relation(fields: [adminId], references: [id])
+  audience   String // ALL | REGISTERED (jamais les bannis ni les comptes anonymisés)
+  reason     String?
+  status     LotBroadcastStatus @default(RUNNING)
+  lastUserId String? // curseur : dernier joueur traité (ordre des ids)
+  granted    Int                @default(0)
+  createdAt  DateTime           @default(now())
+  finishedAt DateTime?
+  grants     LotGrant[]
+
+  @@index([status, createdAt])
 }

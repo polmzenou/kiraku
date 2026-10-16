@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
+import { DataRequestActions } from "@/components/admin/DataRequestActions";
 import { UserEditor } from "@/components/admin/UserEditor";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
@@ -56,6 +57,22 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
       <UserEditor userId={userId} account={{ username: user.username, role: user.role, banned: !!user.bannedAt, profileVisibility: user.profileVisibility, showCollection: user.showCollection }} self={admin.id === userId}
         coins={user.coins} stats={{ boosterStock: stock.stock, rankPoints: user.rankPoints, pityCount: user.pityCount, standardCount: user.standardCount }}
         boosters={boosterTypes.map((b) => ({ ...b, pity: pity[b.id] ?? 0 }))} discoveries={discoveries} catalogTotal={catalogTotal} ownedCatalogCards={ownedCatalogCards} selectedCard={selectedCard} sessions={user._count.sessions} />
+
+      <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+        <h3 className="font-title text-xl font-bold">{t("gdprTitle")}</h3>
+        <p className="text-sm text-text-muted">
+          {user.anonymizedAt
+            ? t("gdprAnonymized", { date: format.dateTime(user.anonymizedAt, { dateStyle: "medium" }) })
+            : user.deletionRequestedAt
+              ? t("gdprPending", { date: format.dateTime(user.deletionRequestedAt, { dateStyle: "medium" }) })
+              : t("gdprNone")}
+          {" · "}
+          {user.termsVersion ? t("termsAccepted", { version: user.termsVersion }) : t("termsNotAccepted")}
+        </p>
+        {!user.anonymizedAt && admin.id !== userId && (
+          <DataRequestActions userId={userId} username={user.username} showCancel={user.deletionRequestedAt !== null} />
+        )}
+      </section>
 
       <section id="user-collection" className="flex scroll-mt-8 flex-col gap-3">
         <h3 className="font-title text-xl font-bold">{t("collection")}</h3>

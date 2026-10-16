@@ -11,6 +11,7 @@ import { discordEnabled, env } from "./env";
 import { availableUsername, publishProfileOnSignup } from "./players";
 import { SESSION_COOKIE, SESSION_MAX_AGE } from "./session";
 import { getSetting } from "./settings";
+import { writeAdminLog } from "./admin/log";
 
 // Auth.js gère les sessions en base et, quand il est configuré, Discord.
 // Les comptes invités et e-mail + mot de passe ouvrent leurs sessions eux-mêmes
@@ -87,15 +88,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (env.ADMIN_DISCORD_ID && account.providerAccountId === env.ADMIN_DISCORD_ID) {
           const granted = await tx.user.updateMany({ where: { id: userId, role: "USER" }, data: { role: "ADMIN" } });
           if (granted.count === 1) {
-            await tx.adminLog.create({
-              data: {
-                adminId: userId,
-                action: "ROLE_GRANT",
-                targetType: "User",
-                targetId: userId,
-                before: "USER",
-                after: "ADMIN",
-              },
+            await writeAdminLog(tx, {
+              adminId: userId,
+              action: "ROLE_GRANT",
+              targetType: "User",
+              targetId: userId,
+              before: "USER",
+              after: "ADMIN",
             });
           }
         }

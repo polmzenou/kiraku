@@ -8,6 +8,10 @@ import { requireAdmin } from "@/server/admin";
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 const MODULES = [
+  { key: "dashboard", href: "/admin", ready: true },
+  { key: "journal", href: "/admin/journal", ready: true },
+  { key: "general", href: "/admin/general", ready: true },
+  { key: "features", href: "/admin/fonctionnalites", ready: true },
   { key: "boosters", href: "/admin/boosters", ready: true },
   { key: "types", href: "/admin/boosters/types", ready: true },
   { key: "banners", href: "/admin/bannieres", ready: true },
@@ -27,7 +31,6 @@ const MODULES = [
   { key: "legal", href: "/admin/legal", ready: true },
   { key: "data", href: "/admin/donnees", ready: true },
   { key: "discord", href: "/admin/discord", ready: true },
-  { key: "features", href: "/admin/fonctionnalites", ready: true },
 ] as const;
 
 /** Toute la section /admin : rôle vérifié côté serveur (404 sinon), chaque action le revérifie. */

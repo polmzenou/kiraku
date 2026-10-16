@@ -4,6 +4,7 @@
 // l'avis du joueur (Prisma le changerait). Un double clic n'écrit qu'une ligne AdminLog.
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { Tx } from "./lock";
+import { writeAdminLog } from "../admin/log";
 
 export type ReviewModerationCode = "NOT_FOUND" | "HIDDEN" | "PIN_LIMIT";
 
@@ -23,7 +24,7 @@ async function lockReview(tx: Tx, reviewId: string): Promise<Row> {
 }
 
 async function log(tx: Tx, adminId: string, action: string, reviewId: string, before: object, after: object) {
-  await tx.adminLog.create({ data: { adminId, action, targetType: "Review", targetId: reviewId, before, after } });
+  await writeAdminLog(tx, { adminId, action, targetType: "Review", targetId: reviewId, before, after });
 }
 
 /** Masque (et désépingle) ou réaffiche. true si l'état a changé, false s'il était déjà celui demandé. */

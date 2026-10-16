@@ -26,6 +26,7 @@ import { pickGiftCopy } from "@/lib/social/gifts";
 import { applyEntries, credit, debit, LedgerError } from "../economy/ledger";
 import { lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
+import { writeAdminLog } from "../admin/log";
 
 export type AuctionErrorCode =
   | TraderRefusal
@@ -435,15 +436,13 @@ export async function adminCancelAuctionWith(
       }
       await returnCard(tx, a);
       await notify(tx, { userId: a.sellerId, type: "AUCTION_CANCELLED", actorId: a.sellerId, refId: a.id, payload, now: input.now });
-      await tx.adminLog.create({
-        data: {
-          adminId: input.adminId,
-          action: "AUCTION_CANCEL",
-          targetType: "Auction",
-          targetId: a.id,
-          before: { status: a.status, currentBid: a.currentBid, currentBidderId: a.currentBidderId },
-          after: { status: "CANCELLED", refunded: a.currentBid ?? 0 },
-        },
+      await writeAdminLog(tx, {
+        adminId: input.adminId,
+        action: "AUCTION_CANCEL",
+        targetType: "Auction",
+        targetId: a.id,
+        before: { status: a.status, currentBid: a.currentBid, currentBidderId: a.currentBidderId },
+        after: { status: "CANCELLED", refunded: a.currentBid ?? 0 },
       });
     },
     TX,

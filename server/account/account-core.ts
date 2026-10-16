@@ -10,6 +10,7 @@ import { anonymizedUsername, deletionDueAt } from "@/lib/account/deletion";
 import { leaveQueueWith } from "../battle/battle-core";
 import { AuctionError, cancelAuctionWith } from "../market/auction-core";
 import type { Tx } from "../social/lock";
+import { writeAdminLog } from "../admin/log";
 
 export type AccountErrorCode = "NO_USER" | "ALREADY_REQUESTED" | "NOT_REQUESTED" | "ANONYMIZED";
 
@@ -90,15 +91,13 @@ export async function cancelDeletionWith(
       data: { status: "CANCELLED", processedAt: input.now, processedById: input.adminId ?? null },
     });
     if (input.adminId) {
-      await tx.adminLog.create({
-        data: {
-          adminId: input.adminId,
-          action: "USER_DELETION_CANCEL",
-          targetType: "User",
-          targetId: input.userId,
-          before: { deletionRequestedAt: user.deletionRequestedAt.toISOString() },
-          after: { deletionRequestedAt: null },
-        },
+      await writeAdminLog(tx, {
+        adminId: input.adminId,
+        action: "USER_DELETION_CANCEL",
+        targetType: "User",
+        targetId: input.userId,
+        before: { deletionRequestedAt: user.deletionRequestedAt.toISOString() },
+        after: { deletionRequestedAt: null },
       });
     }
   }, TX);
@@ -164,16 +163,14 @@ export async function anonymizeUserWith(
       data: { status: "DONE", processedAt: input.now, processedById: input.adminId ?? null },
     });
     if (input.adminId) {
-      await tx.adminLog.create({
-        data: {
-          adminId: input.adminId,
-          action: "USER_ANONYMIZE",
-          targetType: "User",
-          targetId: userId,
-          // Pas d'e-mail ni d'id Discord dans le journal : il garderait ce qu'on vient d'effacer
-          before: { role: before.role, hadPendingRequest: user.deletionRequestedAt !== null },
-          after: { username },
-        },
+      await writeAdminLog(tx, {
+        adminId: input.adminId,
+        action: "USER_ANONYMIZE",
+        targetType: "User",
+        targetId: userId,
+        // Pas d'e-mail ni d'id Discord dans le journal : il garderait ce qu'on vient d'effacer
+        before: { role: before.role, hadPendingRequest: user.deletionRequestedAt !== null },
+        after: { username },
       });
     }
     return true;

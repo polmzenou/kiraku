@@ -33,6 +33,7 @@ export type DescribeTranslators = {
       | "auctionExpired"
       | "auctionCancelled"
       | "battleInvite"
+      | "teamGift"
       | "aCard",
     values?: Values,
   ) => string;
@@ -79,5 +80,8 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
     }
     case "BATTLE_INVITE":
       return { text: t("battleInvite", { name }), href: n.battle ? `/combat/${n.battle.battleId}` : "/combat" };
+    case "LOT_GRANTED":
+      // Cadeau de l'équipe : l'admin qui l'envoie n'est jamais nommé
+      return { text: t("teamGift"), href: "/compte/historique" };
   }
 }

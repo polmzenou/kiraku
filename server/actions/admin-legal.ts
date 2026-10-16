@@ -8,6 +8,7 @@ import { prisma } from "../db";
 import { LEGAL_TAG } from "../legal";
 import { rateLimit } from "../ratelimit";
 import { SETTINGS_TAG } from "../settings";
+import { writeAdminLog } from "../admin/log";
 
 // Pages légales depuis /admin/legal. Ordre : rôle admin → Zod → rate limit → écriture + AdminLog.
 // Une version publiée n'est jamais modifiée : on écrit le brouillon de la version suivante, puis on
@@ -39,14 +40,12 @@ export async function saveLegalDraftAction(input: unknown): Promise<AdminLegalRe
     } else {
       await tx.legalPage.create({ data: { slug, locale, version: target, title, body, status: "DRAFT" } });
     }
-    await tx.adminLog.create({
-      data: {
-        adminId: admin.id,
-        action: "LEGAL_DRAFT_SAVE",
-        targetType: "LegalPage",
-        targetId: `${slug}:${locale}:v${target}`,
-        after: { title, length: body.length },
-      },
+    await writeAdminLog(tx, {
+      adminId: admin.id,
+      action: "LEGAL_DRAFT_SAVE",
+      targetType: "LegalPage",
+      targetId: `${slug}:${locale}:v${target}`,
+      after: { title, length: body.length },
     });
     return target;
   });
@@ -92,15 +91,13 @@ export async function publishLegalAction(input: unknown): Promise<AdminLegalResu
         update: { value, updatedBy: admin.id },
       });
     }
-    await tx.adminLog.create({
-      data: {
-        adminId: admin.id,
-        action: "LEGAL_PUBLISH",
-        targetType: "LegalPage",
-        targetId: `${slug}:v${version}`,
-        ...(force ? { before: { termsRequiredVersion: before } } : {}),
-        after: { locales: drafts.map((d) => d.locale), forceReaccept: force },
-      },
+    await writeAdminLog(tx, {
+      adminId: admin.id,
+      action: "LEGAL_PUBLISH",
+      targetType: "LegalPage",
+      targetId: `${slug}:v${version}`,
+      ...(force ? { before: { termsRequiredVersion: before } } : {}),
+      after: { locales: drafts.map((d) => d.locale), forceReaccept: force },
     });
     return "OK" as const;
   });

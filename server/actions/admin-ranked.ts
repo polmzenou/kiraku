@@ -9,6 +9,7 @@ import { rateLimit } from "../ratelimit";
 import { rollSeasonWith } from "../ranked/ranked-core";
 import { getRankedRules, RANKED_TAG } from "../ranked/queries";
 import { getSetting } from "../settings";
+import { writeAdminLog } from "../admin/log";
 
 // Clôture anticipée de la saison depuis /admin/classe. Rôle admin revérifié, numéro de saison
 // confirmé (on ne clôt jamais une autre saison que celle affichée), trace dans AdminLog.
@@ -29,14 +30,12 @@ export async function closeSeasonAction(
     const [rules, timeZone] = await Promise.all([getRankedRules(), getSetting("game.timeZone")]);
     const res = await rollSeasonWith(prisma, new Date(), rules, timeZone, { force: true });
     if (!res.closed) return { ok: false, error: "STALE" };
-    await prisma.adminLog.create({
-      data: {
-        adminId: admin.id,
-        action: "SEASON_CLOSE",
-        targetType: "Season",
-        targetId: res.closed.id,
-        after: { number: res.closed.number, results: res.results } as Prisma.InputJsonValue,
-      },
+    await writeAdminLog(prisma, {
+      adminId: admin.id,
+      action: "SEASON_CLOSE",
+      targetType: "Season",
+      targetId: res.closed.id,
+      after: { number: res.closed.number, results: res.results } as Prisma.InputJsonValue,
     });
     updateTag(RANKED_TAG);
     return { ok: true, number: res.closed.number, results: res.results };

@@ -15,6 +15,7 @@ import { computePoolCards, loadCandidates, recomputeBoosterPools, toBoosterTypeV
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
 import { getSetting, SETTINGS_TAG } from "../settings";
+import { writeAdminLog } from "../admin/log";
 
 // Types de boosters et bannières depuis /admin. Ordre : rôle admin → Zod → rate limit → transaction
 // avec une ligne AdminLog (avant / après) → recalcul du pool → cache invalidé (effet immédiat).
@@ -103,15 +104,13 @@ export async function saveBoosterType(input: unknown): Promise<AdminBoosterResul
       v.mode === "create"
         ? await tx.boosterType.create({ data: { slug: v.slug, sortOrder, ...data } })
         : await tx.boosterType.update({ where: { slug: v.slug }, data });
-    await tx.adminLog.create({
-      data: {
-        adminId: g.admin.id,
-        action: v.mode === "create" ? (v.kind === "BANNER" ? "BANNER_CREATE" : "BOOSTER_TYPE_CREATE") : "BOOSTER_TYPE_UPDATE",
-        targetType: "BoosterType",
-        targetId: v.slug,
-        before: before ? snapshot(before) : undefined,
-        after: snapshot(after),
-      },
+    await writeAdminLog(tx, {
+      adminId: g.admin.id,
+      action: v.mode === "create" ? (v.kind === "BANNER" ? "BANNER_CREATE" : "BOOSTER_TYPE_CREATE") : "BOOSTER_TYPE_UPDATE",
+      targetType: "BoosterType",
+      targetId: v.slug,
+      before: before ? snapshot(before) : undefined,
+      after: snapshot(after),
     });
     return null;
   });
@@ -139,19 +138,17 @@ export async function toggleBoosterType(input: unknown): Promise<AdminBoosterRes
   const minPool = type.minPoolSize ?? (await getSetting("booster.minPool"));
   if (active && poolSize < minPool) return { ok: false, error: "POOL_TOO_SMALL", poolSize };
 
-  await prisma.$transaction([
-    prisma.boosterType.update({ where: { slug }, data: { active } }),
-    prisma.adminLog.create({
-      data: {
-        adminId: g.admin.id,
-        action: "BOOSTER_TYPE_UPDATE",
-        targetType: "BoosterType",
-        targetId: slug,
-        before: { active: row.active },
-        after: { active },
-      },
-    }),
-  ]);
+  await prisma.$transaction(async (tx) => {
+    await tx.boosterType.update({ where: { slug }, data: { active } });
+    await writeAdminLog(tx, {
+      adminId: g.admin.id,
+      action: "BOOSTER_TYPE_UPDATE",
+      targetType: "BoosterType",
+      targetId: slug,
+      before: { active: row.active },
+      after: { active },
+    });
+  });
   updateTag(BOOSTER_TYPES_TAG);
   return { ok: true, poolSize };
 }
@@ -161,9 +158,7 @@ export async function recomputePoolsAction(): Promise<{ ok: true; count: number 
   const g = await guard();
   if ("error" in g) return { ok: false, error: g.error! };
   const reports = await recomputeBoosterPools(prisma, filterContext(new Date(), await getSetting("game.timeZone")));
-  await prisma.adminLog.create({
-    data: { adminId: g.admin.id, action: "BOOSTER_POOLS_RECOMPUTE", targetType: "BoosterType", after: { count: reports.length } },
-  });
+  await writeAdminLog(prisma, { adminId: g.admin.id, action: "BOOSTER_POOLS_RECOMPUTE", targetType: "BoosterType", after: { count: reports.length } });
   updateTag(BOOSTER_TYPES_TAG);
   return { ok: true, count: reports.length };
 }
@@ -235,15 +230,13 @@ export async function setRotationPin(input: unknown): Promise<{ ok: true } | { o
     } else {
       await tx.gameSetting.deleteMany({ where: { key: PIN_KEY } });
     }
-    await tx.adminLog.create({
-      data: {
-        adminId: g.admin.id,
-        action: "BOOSTER_ROTATION_PIN",
-        targetType: "GameSetting",
-        targetId: PIN_KEY,
-        before: before ? (before as Prisma.InputJsonValue) : undefined,
-        after: after ? (after as Prisma.InputJsonValue) : undefined,
-      },
+    await writeAdminLog(tx, {
+      adminId: g.admin.id,
+      action: "BOOSTER_ROTATION_PIN",
+      targetType: "GameSetting",
+      targetId: PIN_KEY,
+      before: before ? (before as Prisma.InputJsonValue) : undefined,
+      after: after ? (after as Prisma.InputJsonValue) : undefined,
     });
   });
 

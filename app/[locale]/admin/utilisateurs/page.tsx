@@ -1,4 +1,5 @@
 import { getFormatter, getTranslations } from "next-intl/server";
+import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
 import { parseUserListParams, USER_FILTERS } from "@/lib/admin/users";
@@ -32,24 +33,48 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/[loca
       </form>
       <p className="text-sm text-text-muted">{t("total", { count: result.total })}</p>
       {result.users.length === 0 ? <p>{t("empty")}</p> : (
-        <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-surface-2"><tr>
-              {(["player", "status", "coins", "cards", "discoveries", "created", "manage"] as const).map((key) => <th key={key} scope="col" className="whitespace-nowrap p-3">{t(key)}</th>)}
-            </tr></thead>
-            <tbody>{result.users.map((u) => (
-              <tr key={u.id} className="border-b border-border last:border-0">
-                <td className="p-3"><Link href={`/admin/utilisateurs/${u.id}`} className="font-bold text-link underline underline-offset-4">{u.username}</Link><p className="text-xs text-text-muted">{u.email ?? t("noEmail")}</p></td>
-                <td className="whitespace-nowrap p-3">{t(u.bannedAt ? "banned" : u.role === "ADMIN" ? "adminRole" : u.isGuest ? "guest" : "registered")}</td>
-                <td className="p-3 tabular-nums text-kin">{format.number(u.coins)}</td>
-                <td className="p-3 tabular-nums">{format.number(u._count.cards)}</td>
-                <td className="p-3 tabular-nums">{format.number(u._count.discoveries)}</td>
-                <td className="whitespace-nowrap p-3">{format.dateTime(u.createdAt, { dateStyle: "short" })}</td>
-                <td className="p-3"><Link href={`/admin/utilisateurs/${u.id}`} className={buttonClasses()}>{t("manage")}<span className="sr-only"> {u.username}</span></Link></td>
-              </tr>
-            ))}</tbody>
-          </table>
-        </div>
+        <ResponsiveTable
+          caption={t("total", { count: result.total })}
+          columns={[
+            { key: "player", label: t("player"), primary: true },
+            { key: "status", label: t("status"), className: "whitespace-nowrap" },
+            { key: "coins", label: t("coins"), className: "tabular-nums text-kin" },
+            { key: "cards", label: t("cards"), className: "tabular-nums" },
+            { key: "discoveries", label: t("discoveries"), className: "tabular-nums" },
+            { key: "created", label: t("created"), className: "whitespace-nowrap" },
+            { key: "manage", label: t("manage"), actions: true },
+          ]}
+          rows={result.users.map((u) => ({
+            id: u.id,
+            cells: {
+              player: (
+                <>
+                  <Link href={`/admin/utilisateurs/${u.id}`} className="font-bold text-link underline underline-offset-4">{u.username}</Link>
+                  <p className="text-xs break-all text-text-muted">{u.email ?? t("noEmail")}</p>
+                </>
+              ),
+              status: (
+                <span className="flex flex-col">
+                  {t(u.bannedAt ? "banned" : u.role === "ADMIN" ? "adminRole" : u.isGuest ? "guest" : "registered")}
+                  {u.anonymizedAt ? (
+                    <span className="text-xs text-text-muted">{t("anonymized")}</span>
+                  ) : u.deletionRequestedAt ? (
+                    <span className="text-xs text-shu">{t("deletionPending")}</span>
+                  ) : null}
+                </span>
+              ),
+              coins: format.number(u.coins),
+              cards: format.number(u._count.cards),
+              discoveries: format.number(u._count.discoveries),
+              created: format.dateTime(u.createdAt, { dateStyle: "short" }),
+              manage: (
+                <Link href={`/admin/utilisateurs/${u.id}`} className={buttonClasses()}>
+                  {t("manage")}<span className="sr-only"> {u.username}</span>
+                </Link>
+              ),
+            },
+          }))}
+        />
       )}
       <nav aria-label={t("pagination")} className="flex flex-wrap items-center justify-between gap-3">
         {result.page > 0 ? <Link href={href(result.page - 1)} className={buttonClasses()}>{t("previous")}</Link> : <span />}

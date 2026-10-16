@@ -6,6 +6,7 @@ import { MAX_MOVEMENT } from "@/lib/economy/amount";
 import { applyEntries, type LedgerEntry } from "../economy/ledger";
 import { readBannerPity } from "../boosters/open-core";
 import { lockPlayers } from "../social/lock";
+import { writeAdminLog } from "./log";
 
 export class AdminUserMutationError extends Error {
   constructor(readonly code: AdminUserError) { super(code); }
@@ -148,9 +149,9 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
         break;
       }
     }
-    await tx.adminLog.create({ data: {
+    await writeAdminLog(tx, {
       adminId, action: `USER_${input.kind.toUpperCase()}`, targetType: "User", targetId: userId,
       before: json(before), after: json({ values: after, reason: input.reason }),
-    } });
+    });
   }, { maxWait: 10_000, timeout: 20_000 });
 }

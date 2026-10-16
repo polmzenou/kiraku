@@ -13,6 +13,7 @@ import { parseSetting, type SettingKey } from "@/lib/settings/defaults";
 import { COMBAT_SETTING_KEYS, combatSettingsSchema, type CombatSettingKey } from "@/lib/settings/combat-form";
 import { DISCORD_SETTING_KEYS, discordSettingsSchema, type DiscordSettingKey } from "@/lib/settings/discord-form";
 import { FEATURE_SETTING_KEYS, featureSettingsSchema, type FeatureSettingKey } from "@/lib/settings/features-form";
+import { GENERAL_SETTING_KEYS, generalSettingsSchema, type GeneralSettingKey } from "@/lib/settings/general-form";
 import { ECONOMY_SETTING_KEYS, economySettingsSchema, type EconomySettingKey } from "@/lib/settings/economy-form";
 import { RANKED_FORM_KEYS, rankedSettingsSchema, type RankedSettingKey } from "@/lib/settings/ranked-form";
 import { MARKET_SETTING_KEYS, marketSettingsSchema, type MarketSettingKey } from "@/lib/settings/market-form";
@@ -22,6 +23,7 @@ import { getAdmin } from "../admin";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
 import { SETTINGS_TAG } from "../settings";
+import { writeAdminLog } from "../admin/log";
 
 // Réglages de jeu depuis /admin. Ordre : rôle admin vérifié → Zod par clé → rate limit.
 // Chaque clé modifiée écrit sa ligne GameSetting et une ligne AdminLog (avant / après).
@@ -63,15 +65,13 @@ async function saveSettings<K extends SettingKey>(
         create: { key, value, updatedBy: admin.id },
         update: { value, updatedBy: admin.id },
       });
-      await tx.adminLog.create({
-        data: {
-          adminId: admin.id,
-          action: "SETTING_UPDATE",
-          targetType: "GameSetting",
-          targetId: key,
-          before: before[key] as Prisma.InputJsonValue,
-          after: value,
-        },
+      await writeAdminLog(tx, {
+        adminId: admin.id,
+        action: "SETTING_UPDATE",
+        targetType: "GameSetting",
+        targetId: key,
+        before: before[key] as Prisma.InputJsonValue,
+        after: value,
       });
     }
     return changedKeys;
@@ -137,4 +137,8 @@ export async function updateDiscordSettings(input: unknown): Promise<UpdateSetti
 
 export async function updateFeatureSettings(input: unknown): Promise<UpdateSettingsResult<FeatureSettingKey>> {
   return saveSettings(FEATURE_SETTING_KEYS, featureSettingsSchema, input);
+}
+
+export async function updateGeneralSettings(input: unknown): Promise<UpdateSettingsResult<GeneralSettingKey>> {
+  return saveSettings(GENERAL_SETTING_KEYS, generalSettingsSchema, input);
 }

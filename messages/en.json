@@ -899,7 +899,15 @@
         "CARDS_LOCKED": "Not enough available copies: some cards are protected or no longer owned.",
         "DISCOVERY_MIN": "Discoveries for cards still owned cannot be removed.",
         "unexpected": "Unexpected error. Refresh the page to check its state before retrying."
-      }
+      },
+      "anonymized": "Anonymized",
+      "deletionPending": "Deletion requested",
+      "gdprTitle": "Personal data",
+      "gdprAnonymized": "Account anonymized on {date}.",
+      "gdprPending": "Deletion requested on {date}: account frozen.",
+      "gdprNone": "No deletion request.",
+      "termsAccepted": "Terms v{version} accepted",
+      "termsNotAccepted": "Terms not accepted yet"
     },
     "moduleNames": {
       "boosters": "Boosters",
@@ -921,7 +929,10 @@
       "legal": "Legal pages",
       "data": "Personal data",
       "discord": "Discord",
-      "features": "Features"
+      "features": "Features",
+      "dashboard": "Dashboard",
+      "journal": "Log",
+      "general": "General"
     },
     "boosters": {
       "title": "Booster settings",
@@ -1785,6 +1796,130 @@
           "pushEnabled": "Sending notifications when the tab is closed."
         }
       }
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "intro": "Activity over the last 24 hours and what needs your attention. All values are read live.",
+      "players": "Players",
+      "active24h": "Active (24 h)",
+      "signups24h": "Accounts created (24 h)",
+      "guests24h": "{count, plural, =0 {no guest} one {+ # guest} other {+ # guests}}",
+      "boosters24h": "Boosters opened (24 h)",
+      "totalPlayers": "Players in total",
+      "economy": "Economy",
+      "circulating": "Zeni in circulation",
+      "zeni": "{amount, number} Zeni",
+      "ledger": "Balances = ledger",
+      "ledgerOk": "Correct",
+      "ledgerKo": "Mismatch to check",
+      "escrow": "Zeni in escrow",
+      "activeAuctions": "{count, plural, =0 {no open auction} one {# open auction} other {# open auctions}}",
+      "today": "Last 24 hours",
+      "sales24h": "Completed sales",
+      "volume": "{amount, number} Zeni traded",
+      "battles24h": "Finished battles",
+      "bots": "{count, plural, =0 {none against a bot} one {# against a bot} other {# against a bot}}",
+      "liveBattles": "Battles in progress",
+      "queued": "{count, plural, =0 {nobody queued} one {# queued} other {# queued}}",
+      "attention": "To watch",
+      "pendingDeletions": "Pending deletions",
+      "banned": "Banned accounts",
+      "termsVersion": "Required terms"
+    },
+    "journal": {
+      "title": "Admin action log",
+      "intro": "Every write made from /admin: who, what, on what, before and after. Filter by action (name prefix), target type, target, admin or period.",
+      "action": "Action",
+      "type": "Target type",
+      "target": "Target (id)",
+      "admin": "Admin (username)",
+      "from": "From",
+      "to": "To",
+      "filter": "Filter",
+      "reset": "Reset",
+      "empty": "No action for these filters.",
+      "by": "by {admin}",
+      "changes": "Before / after",
+      "before": "Before",
+      "after": "After",
+      "pagination": "Log pages",
+      "first": "Most recent",
+      "older": "Older"
+    },
+    "lotSend": {
+      "title": "Send a lot",
+      "noActiveLot": "No active lot to send.",
+      "lot": "Lot",
+      "reason": "Reason (optional, shown in the log)",
+      "username": "Player's username",
+      "sendToUser": "Send to this player",
+      "audience": "Recipients",
+      "audiences": {
+        "REGISTERED": "Registered accounts",
+        "ALL": "Everyone, guests included"
+      },
+      "sendToAll": "Send to everyone…",
+      "sendToAllTitle": "Send this lot to every player",
+      "sendToAllBody": "Each eligible player (not banned, not being deleted) receives the lot once, with a notification. Sending runs in batches: if it is not finished, resume it from the history.",
+      "sendToAllConfirm": "Send",
+      "confirmWord": "ALL",
+      "sent": "{count, plural, one {# player served} other {# players served}}.",
+      "partial": "{count, plural, one {# player served} other {# players served}} so far: resume sending to continue.",
+      "history": "Latest sends",
+      "broadcastDone": "Done: {count, plural, one {# player} other {# players}}",
+      "broadcastRunning": "In progress: {count, plural, one {# player} other {# players}}",
+      "resume": "Resume",
+      "pending": "Sending…",
+      "errors": {
+        "FORBIDDEN": "Access denied.",
+        "INVALID": "Invalid input.",
+        "RATE_LIMITED": "Too many actions. Try again in a minute.",
+        "CONFIRM_MISMATCH": "Type ALL to confirm.",
+        "NO_LOT": "Lot not found.",
+        "INACTIVE_LOT": "This lot is disabled.",
+        "NO_USER": "Player not found.",
+        "NOT_ELIGIBLE": "This player cannot receive a lot (banned or account being deleted).",
+        "NOT_FOUND": "Send not found.",
+        "DONE": "This send is already finished."
+      }
+    },
+    "general": {
+      "title": "General",
+      "intro": "Settings that belong to no module. The required terms version changes when you publish the terms (Legal pages).",
+      "gameSection": "Game",
+      "accountSection": "Players' rights over their data",
+      "keys": {
+        "economy": {
+          "startingZeni": "Starting Zeni"
+        },
+        "game": {
+          "timeZone": "Game time zone"
+        },
+        "guest": {
+          "createPerHourPerIp": "Guest accounts per hour and per IP"
+        },
+        "account": {
+          "deletionGraceDays": "Delay before anonymization (days)",
+          "usernameChangeDays": "Delay between two username changes (days)",
+          "exportsPerDay": "Data exports per day and per player"
+        }
+      },
+      "hints": {
+        "economy": {
+          "startingZeni": "Paid when each account is created."
+        },
+        "game": {
+          "timeZone": "IANA name, for example Europe/Paris: mission days and birthdays."
+        },
+        "guest": {
+          "createPerHourPerIp": "Limits mass account creation."
+        },
+        "account": {
+          "deletionGraceDays": "During this period the account is frozen and the deletion can be cancelled. 30 days recommended.",
+          "usernameChangeDays": "0 = no delay.",
+          "exportsPerDay": "\"Download my data\" JSON file."
+        }
+      }
     }
   },
   "collection": {
@@ -2167,7 +2302,8 @@
     "push": {
       "title": "Kiraku"
     },
-    "battleInvite": "{name} invites you to a battle: pick your team."
+    "battleInvite": "{name} invites you to a battle: pick your team.",
+    "teamGift": "The Kiraku team sent you a gift: check your history and your boosters."
   },
   "push": {
     "title": "Notifications on this device",
