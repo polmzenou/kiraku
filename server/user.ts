@@ -46,8 +46,8 @@ export const getCurrentUser = cache(async () => {
 });
 
 /**
- * Joueur qui peut encore écrire : connecté, non banni, sans suppression de compte en cours.
- * Les actions de jeu s'en servent ; les actions RGPD (annuler la suppression, exporter) lisent
+ * Joueur actif : connecté, non banni, sans suppression de compte en cours ni anonymisation.
+ * Les actions de jeu, lectures et sondages s'en servent ; les actions RGPD (annuler la suppression, exporter) lisent
  * getCurrentUser directement.
  */
 export async function requireActiveUser() {

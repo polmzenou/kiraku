@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { MAX_MOVEMENT } from "@/lib/economy/amount";
 import { USERNAME_REGEX } from "@/lib/username";
 import type { Rarity } from "@/lib/catalog/rarity";

@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { isFrozen } from "@/lib/account/deletion";
 import { LotError } from "../economy/lots";
 import { lotDeps } from "../economy/deps";

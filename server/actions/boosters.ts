@@ -2,7 +2,7 @@
 
 import { getLocale } from "next-intl/server";
 import { refresh } from "next/cache";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { OPEN_COUNTS } from "@/lib/boosters/catalog";
 import { slugSchema } from "@/lib/boosters/types";
 import type { OpenedBoosterView } from "@/lib/boosters/view";

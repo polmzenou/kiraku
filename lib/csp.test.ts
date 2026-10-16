@@ -21,6 +21,13 @@ describe("buildCsp", () => {
     expect(buildCsp("n", false)).not.toContain("'unsafe-eval'");
   });
 
+  it("protège les balises style par nonce et réserve unsafe-inline aux attributs Motion", () => {
+    const d = directives(buildCsp("n", false));
+    expect(d.get("style-src-elem")).toEqual(["'self'", "'nonce-n'"]);
+    expect(d.get("style-src-attr")).toEqual(["'unsafe-inline'"]);
+    expect(d.get("style-src")).not.toContain("'unsafe-inline'");
+  });
+
   it("bloque l'intégration en iframe et les objets", () => {
     const d = directives(buildCsp("n", false));
     expect(d.get("frame-ancestors")).toEqual(["'none'"]);

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { LEGAL_LOCALES, LEGAL_SLUGS } from "./legal";
 
 // Saisie de l'admin des pages légales : brouillon d'une langue, puis publication d'une version.

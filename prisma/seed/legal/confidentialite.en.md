@@ -11,6 +11,7 @@
 - **Account**: username, e-mail address and password, stored as a hash and never in plain text (e-mail account), or Discord id, username and avatar (Discord sign-in). *Purpose*: create and secure your account. *Legal basis*: performance of the terms of use.
 - **Game**: cards, opened boosters, Zeni and their ledger, auctions and bids, battles, missions, friends, gifts, review, wishlist, preferences (language, profile visibility). *Purpose*: run the game and keep the economy fair. *Legal basis*: performance of the terms of use.
 - **Security**: IP address and technical connection data. *Purpose*: limit abuse (mass account creation, bots, cheating). *Legal basis*: legitimate interest in protecting the service.
+- **Performance measurement**: page load and response times (Vercel Speed Insights), without cookies or identifiers. *Legal basis*: legitimate interest in keeping the site fast.
 - **Push notifications** (if you turn them on): your browser's subscription address. *Legal basis*: your consent, which you can withdraw at any time from your Account.
 
 Kiraku sells no data, shows no advertising and does no profiling.

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 
 // Modal « Rejoins notre Discord » (étape 10) : désactivé par défaut, piloté depuis /admin/discord.
 // Distinct de la connexion Discord du compte.

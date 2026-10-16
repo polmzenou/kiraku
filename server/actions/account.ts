@@ -140,6 +140,7 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
 export async function logout(): Promise<void> {
   const user = await getCurrentUser();
   if (!user) return;
+  if (!(await rateLimit(`logout:${user.id}`, { limit: 20, windowSeconds: HOUR })).success) return;
   await destroyCurrentSession();
   redirect({ href: "/connexion", locale: await getLocale() });
 }

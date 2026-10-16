@@ -1,4 +1,3 @@
-import { z } from "zod";
 import type { ConsentCategory } from "./registry";
 
 // Choix de consentement aux traceurs, gardé dans le cookie `kiraku.consent` (côté navigateur).
@@ -21,18 +20,19 @@ export type ConsentState = {
   choices: Partial<Record<ConsentCategory, boolean>>;
 };
 
-const stateSchema = z.object({
-  v: z.number().int(),
-  at: z.number().int().nonnegative(),
-  // partialRecord : une catégorie absente = pas encore de choix pour elle
-  choices: z.partialRecord(z.enum(["preferences", "measure"]), z.boolean()),
-});
-
 export function parseConsent(raw: string | null | undefined): ConsentState | null {
-  if (!raw) return null;
+  if (!raw || raw.length > 4096) return null;
   try {
-    const parsed = stateSchema.safeParse(JSON.parse(decodeURIComponent(raw)));
-    return parsed.success ? parsed.data : null;
+    // Ce petit format interne est lu sur chaque page : validation explicite sans embarquer Zod
+    // dans le fournisseur commun. Les entrées des Server Actions restent validées avec Zod.
+    const value: unknown = JSON.parse(decodeURIComponent(raw));
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const { v, at, choices } = value as Record<string, unknown>;
+    if (typeof v !== "number" || !Number.isSafeInteger(v) || typeof at !== "number" || !Number.isSafeInteger(at) || at < 0) return null;
+    if (!choices || typeof choices !== "object" || Array.isArray(choices)) return null;
+    const entries = Object.entries(choices);
+    if (entries.some(([key, choice]) => !["preferences", "measure"].includes(key) || typeof choice !== "boolean")) return null;
+    return { v, at, choices: Object.fromEntries(entries) };
   } catch {
     return null;
   }

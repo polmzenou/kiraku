@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh, updateTag } from "next/cache";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { adminUserMutationSchema, type AdminCardCandidate, type AdminUserResult } from "@/lib/admin/users";
 import { normalizeSearch } from "@/lib/catalog/search";
 import { getAdmin } from "../admin";

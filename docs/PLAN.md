@@ -685,9 +685,20 @@ Droits des joueurs, dans un onglet « Mes données » du Compte :
 
 Cookies : au départ, n'utilise que ce qui est strictement nécessaire (cookie de session, protection anti-abus) et du stockage local pour la langue et le son. Ces usages sont exemptés de consentement, donc pas de bandeau à afficher, juste la page d'information. Dès que tu ajoutes de la mesure d'audience non exemptée, de la pub ou des intégrations tierces qui déposent des traceurs, il faut un bandeau : « Accepter » et « Refuser » aussi visibles l'un que l'autre, un choix « Personnaliser », rien de déposé avant le choix, et le choix redemandé au bout de 6 mois.
 
-Âge : en France, un mineur de moins de 15 ans a besoin de l'accord d'un parent pour ce type de service. Avec des boosters aléatoires et un futur casino, le plus simple est de demander la date de naissance à l'inscription et d'exiger 15 ans minimum (18 ans pour le casino et les achats).
+Âge : en France, un mineur de moins de 15 ans a besoin de l'accord d'un parent pour ce type de service. **Décision de l'étape 10 : pas de contrôle d'âge technique.** Les CGU portent une clause déclarative (15 ans ou accord d'un parent) ; `User.birthDate` reste en base, inutilisé. À revoir avant le casino ou tout achat en argent réel (18 ans).
 
 Acceptation des CGU : chaque page légale porte un numéro de version. Le joueur accepte la version en cours à l'inscription ; si tu changes les CGU, il voit un écran d'acceptation à sa prochaine visite (`User.termsVersion`).
+
+### Mise en œuvre (étape 10)
+
+- **Pages légales versionnées** (`LegalPage`) : `/mentions-legales`, `/confidentialite`, `/cookies`, `/cgu`, rendues avec `react-markdown` sans HTML brut (liens https, mailto et internes seulement), anciennes versions via `?v=N`. Textes v1 à compléter dans `prisma/seed/legal/*.md` (repères `[[…]]`), publiés par `npm run seed:legal` (aussi dans `vercel-build`, seulement si la table est vide). `/admin/legal` : brouillon fr/en, aperçu, publication, réacceptation forcée des CGU (`legal.termsRequiredVersion`).
+- **CGU** : case obligatoire à l'inscription e-mail ; `AccountGate` (layout) montre l'écran d'acceptation à tout compte inscrit en retard de version, Discord compris. Les invités voient une mention dans le pied de page.
+- **Mes données** (`/compte/donnees`) : export JSON (`POST /api/me/export`, liste blanche de champs, `account.exportsPerDay`), changement de pseudo (`account.usernameChangeDays`), langue mémorisée, suppression annulable (`account.deletionGraceDays`, compte gelé), anonymisation par `/api/cron/accounts` ou depuis `/admin/donnees`. Historique dans `DataRequest`.
+- **Cookies** : registre unique `lib/consent/registry.ts` (page Cookies générée depuis lui) ; bandeau CNIL prêt mais masqué tant que tout est exempté ; « Gérer les cookies » en pied de page.
+- **Discord** : `discord.joinModal` (désactivé par défaut), `/admin/discord`. **Casino** : `features.casino`, entrée « Bientôt » et `/casino`. `/admin/fonctionnalites` réunit les interrupteurs.
+- **PWA** : service worker à chaque visite, page hors ligne (aucun cache de données), raccourcis, bouton « Installer l'app ».
+- **Admin** : tableau de bord, journal `AdminLog` (`writeAdminLog` partout), envoi de lots à un joueur ou à tous (`LotGrant`, `LotBroadcast`, notification `LOT_GRANTED`), `/admin/general`, tableaux responsives.
+- **Sécurité** : `npm run audit:actions` (session, Zod, rate limit sur chaque Server Action), pseudos masqués selon la visibilité du profil sur `/tirage` et le marché, CI GitHub Actions. **Performance** : messages admin hors du bundle des joueurs, `domMax` chargé à la demande, squelettes `loading.tsx`, Speed Insights, `npm run lighthouse` (375 px).
 
 ### Français et anglais
 
@@ -812,7 +823,7 @@ model User {
   bannerPity    Json     @default("{}") // { boosterTypeId: boosters sans vedette }
   discordJoinedAt DateTime?          // a cliqué sur « Rejoindre le serveur »
   locale        String   @default("fr") // fr | en
-  birthDate     DateTime?              // contrôle d'âge à l'inscription
+  birthDate     DateTime?              // inutilisé : pas de contrôle d'âge (étape 10)
   termsVersion  Int?                   // version des CGU acceptée
   deletionRequestedAt DateTime?        // suppression RGPD en attente
   referralCode  String   @unique @default(cuid())
@@ -1230,7 +1241,7 @@ Construis dans cet ordre : chaque étape est jouable seule et sert de base à la
 7. **Économie** — Zeni, journal `CoinTransaction`, missions, parrainage, boutique en Zeni.
 8. **Hôtel des ventes** — ventes, enchères, clôture planifiée. Avant la mise en ligne, un test lance 50 enchères simultanées et vérifie que la somme des soldes ne bouge pas.
 9. **Combat** — 9a : combat en direct (moteur avec seed, code ami, exhibition, bot, Ably, replay) ; 9b : mode classé et saisons.
-10. **Conformité et finitions** — pages légales, « Mes données », contrôle d'âge, modal Discord (désactivé), tuile Casino « Bientôt », PWA, admin complet, tests sur un vrai téléphone en 375 px.
+10. **Conformité et finitions** — pages légales, « Mes données », modal Discord (désactivé), tuile Casino « Bientôt », PWA, admin complet, audits de sécurité et de performance, tests sur un vrai téléphone en 375 px. Pas de contrôle d'âge (clause déclarative dans les CGU). Checklist de mise en ligne : `docs/MISE-EN-PRODUCTION.md`.
 
 Hors de ce plan : Stripe et le casino, après un avis juridique.
 

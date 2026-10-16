@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import type { PoolFilter } from "./pool-filter";
 

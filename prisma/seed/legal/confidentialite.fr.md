@@ -11,6 +11,7 @@
 - **Compte** : pseudo, adresse e-mail et mot de passe, stocké sous forme d'empreinte et jamais en clair (compte e-mail), ou identifiant, pseudo et avatar Discord (connexion Discord). *Finalité* : créer et sécuriser ton compte. *Base légale* : exécution des conditions d'utilisation.
 - **Jeu** : cartes, boosters ouverts, Zeni et leur journal, ventes et enchères, combats, missions, amis, cadeaux, avis, liste de souhaits, préférences (langue, visibilité du profil). *Finalité* : faire fonctionner le jeu et garder une économie juste. *Base légale* : exécution des conditions d'utilisation.
 - **Sécurité** : adresse IP et données techniques de connexion. *Finalité* : limiter les abus (création de comptes en série, robots, triche). *Base légale* : intérêt légitime à protéger le service.
+- **Mesure des performances** : temps de chargement et de réponse des pages (Vercel Speed Insights), sans cookie ni identifiant. *Base légale* : intérêt légitime à garder le site rapide.
 - **Notifications push** (si tu les actives) : adresse d'abonnement de ton navigateur. *Base légale* : ton consentement, retirable à tout moment depuis le Compte.
 
 Kiraku ne vend aucune donnée, n'affiche aucune publicité et ne fait aucun profilage.

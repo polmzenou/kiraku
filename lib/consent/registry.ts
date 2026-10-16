@@ -16,22 +16,32 @@ export type StoragePurpose =
   | "theme"
   | "locale"
   | "sound"
-  | "discordLater";
+  | "discordLater"
+  | "speedInsights";
 
-export type StorageDuration = { unit: "session" } | { unit: "minutes" | "days"; value: number } | { unit: "persistent" };
+export type StorageDuration = { unit: "session" | "none" } | { unit: "minutes" | "days"; value: number } | { unit: "persistent" };
 
 export type StorageEntry = {
   /** Nom exact (en production, les cookies httpOnly portent le préfixe __Secure-). */
   name: string;
-  kind: "cookie" | "localStorage";
+  kind: "cookie" | "localStorage" | "none";
   category: ConsentCategory;
   purpose: StoragePurpose;
   duration: StorageDuration;
-  provider: "kiraku" | "authjs";
+  provider: "kiraku" | "authjs" | "vercel";
   exempt: boolean;
 };
 
 export const STORAGE_REGISTRY: readonly StorageEntry[] = [
+  {
+    name: "Vercel Speed Insights",
+    kind: "none",
+    category: "measure",
+    purpose: "speedInsights",
+    duration: { unit: "none" },
+    provider: "vercel",
+    exempt: true,
+  },
   {
     name: "__Secure-kiraku.session",
     kind: "cookie",

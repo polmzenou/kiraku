@@ -95,6 +95,7 @@ export const getFilterContext = cache(async (): Promise<FilterContext> => filter
 
 const loadStaticPool = unstable_cache(
   async (slug: string, _stamp: number): Promise<CardPool> => {
+    void _stamp; // Fait partie de la clé du cache, même sans être lu par la requête.
     const row = await prisma.boosterType.findUnique({ where: { slug }, select: { poolCardIds: true } });
     if (!row || row.poolCardIds.length === 0) return groupByRarity([]);
     const cards = await prisma.card.findMany({
@@ -110,6 +111,7 @@ const loadStaticPool = unstable_cache(
 
 const loadDailyPool = unstable_cache(
   async (slug: string, _stamp: number, _catalogVersion: number, _day: string): Promise<CardPool> => {
+    void [_stamp, _catalogVersion, _day]; // Invalidation par version et par jour.
     const entry = await getBoosterTypeEntry(slug);
     if (!entry) return groupByRarity([]);
     return computePool(entry.type, await loadCandidates(prisma), await getFilterContext());

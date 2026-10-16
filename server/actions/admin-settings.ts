@@ -1,7 +1,7 @@
 "use server";
 
 import { updateTag } from "next/cache";
-import type { z } from "zod";
+import type { z } from "@/lib/zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { BOOSTER_SETTING_KEYS, boosterSettingsSchema, type BoosterSettingKey } from "@/lib/settings/booster-form";
 import {
@@ -95,8 +95,11 @@ export async function updateSocialSettings(input: unknown): Promise<UpdateSettin
 }
 
 export async function updateEconomySettings(input: unknown): Promise<UpdateSettingsResult<EconomySettingKey>> {
-  if (!(await getAdmin())) return { ok: false, error: "FORBIDDEN" };
+  const admin = await getAdmin();
+  if (!admin) return { ok: false, error: "FORBIDDEN" };
   const parsed = economySettingsSchema.safeParse(input);
+  // Limité avant la vérification des lots en base (bucket à part de celui de l'écriture)
+  if (!(await rateLimit(`admin-check:${admin.id}`, { limit: 20, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
   // Un lot de parrainage doit exister : sinon la réclamation échouerait chez les joueurs
   if (parsed.success) {
     const lotIds = [parsed.data["referral.referrerLotId"], parsed.data["referral.refereeLotId"]].filter(
@@ -119,8 +122,11 @@ export async function updateCombatSettings(input: unknown): Promise<UpdateSettin
 }
 
 export async function updateRankedSettings(input: unknown): Promise<UpdateSettingsResult<RankedSettingKey>> {
-  if (!(await getAdmin())) return { ok: false, error: "FORBIDDEN" };
+  const admin = await getAdmin();
+  if (!admin) return { ok: false, error: "FORBIDDEN" };
   const parsed = rankedSettingsSchema.safeParse(input);
+  // Limité avant la vérification des lots en base (bucket à part de celui de l'écriture)
+  if (!(await rateLimit(`admin-check:${admin.id}`, { limit: 20, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
   // Chaque lot de fin de saison doit exister : sinon la réclamation échouerait chez les joueurs
   if (parsed.success) {
     const lotIds = [...new Set(Object.values(parsed.data["ranked.rewardLots"]).filter((id): id is string => id !== null))];

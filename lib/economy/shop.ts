@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { localizedSchema } from "@/lib/boosters/types";
 import { periodWindow } from "./period";
 

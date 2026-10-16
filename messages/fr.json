@@ -13,7 +13,8 @@
     "zeni": "{amount, number} Zeni",
     "boosters": "{count}/{max}",
     "number": "{value, number}",
-    "close": "Fermer"
+    "close": "Fermer",
+    "loading": "Chargement…"
   },
   "arcadePromo": {
     "label": "Publicité pour Anime Arcade",
@@ -488,7 +489,8 @@
       "expired": "Personne n'a misé : la carte est revenue au vendeur.",
       "cancelled": "Cette vente a été annulée.",
       "toCollection": "Voir ma collection",
-      "notEnough": "Ton solde ({amount, number} Zeni) ne suffit pas pour cette mise."
+      "notEnough": "Ton solde ({amount, number} Zeni) ne suffit pas pour cette mise.",
+      "anonymous": "Joueur mystère"
     },
     "sell": {
       "button": "Mettre en vente",
@@ -739,7 +741,8 @@
     "title": "Tirage de {name}",
     "description": "{name} a ouvert un sachet {booster} sur Kiraku.",
     "openedBy": "Ouvert par {name}",
-    "cta": "Ouvrir mes sachets"
+    "cta": "Ouvrir mes sachets",
+    "anonymous": "Joueur mystère"
   },
   "admin": {
     "title": "Administration",
@@ -2978,11 +2981,13 @@
       "theme": "Retient le thème Yoru ou Washi.",
       "locale": "Retient la langue choisie.",
       "sound": "Retient si le son est activé.",
-      "discordLater": "Retient quand tu as repoussé l'invitation Discord (« Plus tard »)."
+      "discordLater": "Retient quand tu as repoussé l'invitation Discord (« Plus tard »).",
+      "speedInsights": "Mesure des performances Vercel (sans cookie ni identifiant persistant)"
     },
     "kinds": {
       "cookie": "Cookie",
-      "localStorage": "Stockage local"
+      "localStorage": "Stockage local",
+      "none": "Aucun stockage"
     },
     "table": {
       "kind": "Type",
@@ -2996,7 +3001,8 @@
       "session": "Fin de la session du navigateur",
       "persistent": "Jusqu'à ce que tu le supprimes",
       "minutes": "{count, plural, one {# minute} other {# minutes}}",
-      "days": "{count, plural, one {# jour} other {# jours}}"
+      "days": "{count, plural, one {# jour} other {# jours}}",
+      "none": "Aucun stockage sur l’appareil"
     }
   },
   "data": {
@@ -3082,5 +3088,16 @@
     "iosStep1": "Ouvre Kiraku dans Safari.",
     "iosStep2": "Touche le bouton Partager (carré avec une flèche vers le haut).",
     "iosStep3": "Choisis « Sur l'écran d'accueil », puis « Ajouter »."
+  },
+  "error": {
+    "title": "Quelque chose s'est mal passé",
+    "body": "Une erreur inattendue a interrompu la page. Tes cartes et tes Zeni ne sont pas touchés : le serveur valide chaque action.",
+    "reference": "Référence : {digest}",
+    "retry": "Réessayer",
+    "home": "Retour à l'accueil"
+  },
+  "playerName": {
+    "hidden": "Joueur",
+    "deleted": "Compte supprimé"
   }
 }

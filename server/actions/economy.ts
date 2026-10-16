@@ -2,7 +2,7 @@
 
 import { getLocale } from "next-intl/server";
 import { refresh } from "next/cache";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { parseLedgerFilter } from "@/lib/economy/ledger-view";
 import { isFrozen } from "@/lib/account/deletion";
@@ -18,7 +18,7 @@ import { claimReferralWith, ReferralError } from "../economy/referral-core";
 import { buyWithZeniWith, ShopError } from "../economy/shop-core";
 import { rateLimit } from "../ratelimit";
 import { getSetting } from "../settings";
-import { getCurrentUser } from "../user";
+import { getCurrentUser, requireActiveUser } from "../user";
 
 // Missions, boutique, parrainage et historique des Zeni. Ordre des contrôles : session → Zod →
 // propriété → rate limit, puis tout est relu sous verrou dans la transaction (server/economy).
@@ -241,7 +241,7 @@ const ledgerSchema = z.object({ filter: z.string().max(20), cursor: idSchema.nul
 export async function loadLedgerPageAction(input: unknown): Promise<LedgerPageResult> {
   const parsed = ledgerSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
-  const user = await getCurrentUser();
+  const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
   if (!(await rateLimit(`ledger:${user.id}`, { limit: 60, windowSeconds: MINUTE })).success) {
     return { ok: false, error: "RATE_LIMITED" };

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import type { Rarity } from "@/lib/catalog/rarity";
 
 // Filtre d'un type de booster sur le catalogue (section « Types de boosters » du plan).

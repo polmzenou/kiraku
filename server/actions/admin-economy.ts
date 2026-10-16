@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { lotInputSchema } from "@/lib/economy/lots";
 import { missionInputSchema } from "@/lib/economy/missions";

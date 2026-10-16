@@ -5,7 +5,7 @@ import { STORAGE_REGISTRY, type StorageDuration } from "@/lib/consent/registry";
 export async function CookieTable() {
   const t = await getTranslations("consent");
   const duration = (d: StorageDuration) =>
-    d.unit === "session" || d.unit === "persistent" ? t(`durations.${d.unit}`) : t(`durations.${d.unit}`, { count: d.value });
+    "value" in d ? t(`durations.${d.unit}`, { count: d.value }) : t(`durations.${d.unit}`);
 
   return (
     <ul className="flex flex-col gap-3">

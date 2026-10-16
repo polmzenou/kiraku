@@ -1,7 +1,7 @@
 "use server";
 
 import { updateTag } from "next/cache";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { boosterTypeFormSchema } from "@/lib/boosters/admin-form";
 import { filterContext } from "@/lib/boosters/pool-filter";
@@ -173,6 +173,8 @@ export async function searchFeaturedCards(input: unknown): Promise<FeaturedCandi
   if (!admin) return [];
   const parsed = searchSchema.safeParse(input);
   if (!parsed.success) return [];
+  // Recherche à la frappe : bucket à part, plus large que celui des écritures admin
+  if (!(await rateLimit(`admin-search:${admin.id}`, { limit: 60, windowSeconds: 60 })).success) return [];
   const terms = normalizeSearch(parsed.data);
   if (!terms) return [];
   const rows = await prisma.card.findMany({

@@ -1,14 +1,14 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
 import { sweepBattlesFor } from "../battle/queries";
 import { settleDueFor } from "../market/queries";
 import { getSetting } from "../settings";
 import { listNotifications, notificationsSince, type NotificationView } from "../social/queries";
-import { getCurrentUser } from "../user";
+import { requireActiveUser } from "../user";
 
 // Notifications du joueur connecté. Ordre : session → Zod → rate limit ; la propriété est dans
 // chaque requête (userId de la session), jamais un id de joueur venu du client.
@@ -21,7 +21,7 @@ const pageSchema = z.object({ cursor: idSchema.nullable() });
 
 /** Marque comme lues des notifications du joueur (ou toutes). */
 export async function markNotificationsReadAction(input: unknown): Promise<{ ok: true } | Failure> {
-  const user = await getCurrentUser();
+  const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
   const parsed = markSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
@@ -40,7 +40,7 @@ export async function markNotificationsReadAction(input: unknown): Promise<{ ok:
 export async function loadNotificationsAction(
   input: unknown,
 ): Promise<{ ok: true; items: NotificationView[]; nextCursor: string | null } | Failure> {
-  const user = await getCurrentUser();
+  const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
   const parsed = pageSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
@@ -67,21 +67,25 @@ export type PollResult =
  * prochain sondage : l'horloge du téléphone n'entre jamais en jeu.
  */
 export async function pollNotificationsAction(input: unknown): Promise<PollResult> {
-  const user = await getCurrentUser();
+  const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
   const parsed = pollSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
   if (!(await rateLimit(`notif-poll:${user.id}`, { limit: 12, windowSeconds: 60 })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
-  // Ventes terminées du joueur closes avant de lire : « Tu as remporté… » arrive dans ce sondage
-  try {
-    await settleDueFor(user.id, new Date());
-  } catch (e) {
-    console.error("[marche] clôture au sondage", e);
+  // Balayages paresseux (écritures en base) au plus une fois toutes les 30 s par joueur, pas à
+  // chaque sondage ; les crons quotidiens et l'affichage des pages restent les filets de sécurité.
+  if ((await rateLimit(`notif-sweep:${user.id}`, { limit: 1, windowSeconds: 30 })).success) {
+    // Ventes terminées du joueur closes avant de lire : « Tu as remporté… » arrive dans ce sondage
+    try {
+      await settleDueFor(user.id, new Date());
+    } catch (e) {
+      console.error("[marche] clôture au sondage", e);
+    }
+    // Combats oubliés du joueur (tour expiré, salle périmée, file abandonnée) : cartes rendues
+    await sweepBattlesFor(user.id);
   }
-  // Combats oubliés du joueur (tour expiré, salle périmée, file abandonnée) : cartes rendues
-  await sweepBattlesFor(user.id);
   const now = new Date();
   // Jamais plus d'une heure en arrière : un onglet resté caché longtemps ne déverse pas tout
   const since = new Date(Math.max(new Date(parsed.data.since).getTime(), now.getTime() - 3_600_000));

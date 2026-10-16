@@ -17,6 +17,8 @@ export function PlayerAvatar({
       <Image
         src={image}
         alt=""
+        crossOrigin="anonymous"
+        referrerPolicy="no-referrer"
         width={size}
         height={size}
         className={`shrink-0 rounded-full object-cover ${className}`}

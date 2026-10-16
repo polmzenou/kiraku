@@ -11,6 +11,7 @@ import {
 } from "@/lib/market/filters";
 import { buyoutAvailable, checkTrader, minNextBid, type MarketRules } from "@/lib/market/rules";
 import { cardViews } from "../boosters/display";
+import { namedPlayerSelect, publicNamesFor } from "../collection/public-names";
 import { prisma } from "../db";
 import { pushNotifications } from "../push/send";
 import { getSetting } from "../settings";
@@ -88,7 +89,8 @@ export type AuctionListItem = {
   /** Prix d'achat immédiat s'il est encore proposé. */
   buyoutPrice: number | null;
   endsAt: Date;
-  sellerName: string;
+  /** null : profil caché à ce visiteur (« Un joueur »). */
+  sellerName: string | null;
   mine: boolean;
   leading: boolean;
 };
@@ -105,7 +107,7 @@ const listSelect = {
   endsAt: true,
   createdAt: true,
   sellerId: true,
-  seller: { select: { username: true } },
+  seller: { select: namedPlayerSelect },
 } as const;
 
 type ListRow = Prisma.AuctionGetPayload<{ select: typeof listSelect }>;
@@ -174,10 +176,13 @@ export async function listAuctions(input: {
     select: listSelect,
   });
   const page = rows.slice(0, MARKET_PAGE_SIZE);
-  const views = await cardViews(
-    page.map((r) => r.cardId),
-    input.locale,
-  );
+  const [views, nameOf] = await Promise.all([
+    cardViews(
+      page.map((r) => r.cardId),
+      input.locale,
+    ),
+    publicNamesFor(viewerId, page.map((r) => r.seller)),
+  ]);
   const last = page.at(-1);
   return {
     items: page.flatMap((r) => {
@@ -193,7 +198,7 @@ export async function listAuctions(input: {
           bidCount: r.bidCount,
           buyoutPrice: r.status === "ACTIVE" && buyoutAvailable(r.buyoutPrice, r.currentBid) ? r.buyoutPrice : null,
           endsAt: r.endsAt,
-          sellerName: r.seller.username,
+          sellerName: nameOf(r.seller),
           mine: r.sellerId === viewerId,
           leading: viewerId !== null && r.currentBidderId === viewerId,
         },
@@ -228,10 +233,15 @@ const liveSelect = {
   endsAt: true,
   buyoutPrice: true,
   finalPrice: true,
-  currentBidder: { select: { username: true } },
+  currentBidder: { select: namedPlayerSelect },
 } as const;
 
-function toLive(a: Prisma.AuctionGetPayload<{ select: typeof liveSelect }>, viewerId: string | null, incrementBp: number): AuctionLive {
+function toLive(
+  a: Prisma.AuctionGetPayload<{ select: typeof liveSelect }>,
+  viewerId: string | null,
+  incrementBp: number,
+  leaderName: string | null,
+): AuctionLive {
   return {
     status: a.status,
     price: a.price,
@@ -240,7 +250,7 @@ function toLive(a: Prisma.AuctionGetPayload<{ select: typeof liveSelect }>, view
     bidCount: a.bidCount,
     endsAt: a.endsAt,
     buyoutPrice: a.status === "ACTIVE" && buyoutAvailable(a.buyoutPrice, a.currentBid) ? a.buyoutPrice : null,
-    leaderName: a.currentBidder?.username ?? null,
+    leaderName,
     leading: viewerId !== null && a.currentBidderId === viewerId,
     finalPrice: a.finalPrice,
   };
@@ -252,24 +262,26 @@ export async function auctionLive(id: string, viewerId: string | null, now: Date
     prisma.auction.findUnique({ where: { id }, select: liveSelect }),
   ]);
   if (!first) return null;
-  if (first.status !== "ACTIVE" || first.endsAt > now) return toLive(first, viewerId, incrementBp);
+  const withName = async (a: typeof first) =>
+    toLive(a, viewerId, incrementBp, a.currentBidder ? (await publicNamesFor(viewerId, [a.currentBidder]))(a.currentBidder) : null);
+  if (first.status !== "ACTIVE" || first.endsAt > now) return withName(first);
   // Terminée mais pas encore close : on la clôt avant de répondre
   await settleDue({ id }, now);
   const a = await prisma.auction.findUnique({ where: { id }, select: liveSelect });
-  return a ? toLive(a, viewerId, incrementBp) : null;
+  return a ? withName(a) : null;
 }
 
 export type AuctionDetail = {
   id: string;
   card: CardView;
-  sellerName: string;
+  sellerName: string | null;
   startPrice: number;
   feeBp: number;
   fee: number | null;
   createdAt: Date;
   mine: boolean;
   live: AuctionLive;
-  bids: { id: string; amount: number; createdAt: Date; bidderName: string; me: boolean }[];
+  bids: { id: string; amount: number; createdAt: Date; bidderName: string | null; me: boolean }[];
 };
 
 export const BID_HISTORY = 20;
@@ -288,28 +300,32 @@ export async function getAuctionDetail(id: string, viewerId: string | null, loca
       feeBp: true,
       fee: true,
       createdAt: true,
-      seller: { select: { username: true } },
+      seller: { select: namedPlayerSelect },
       bids: {
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: BID_HISTORY,
-        select: { id: true, amount: true, createdAt: true, bidderId: true, bidder: { select: { username: true } } },
+        select: { id: true, amount: true, createdAt: true, bidderId: true, bidder: { select: namedPlayerSelect } },
       },
     },
   });
   if (!a) return null;
-  const card = (await cardViews([a.cardId], locale)).get(a.cardId);
+  const [views, nameOf] = await Promise.all([
+    cardViews([a.cardId], locale),
+    publicNamesFor(viewerId, [a.seller, ...a.bids.map((b) => b.bidder)]),
+  ]);
+  const card = views.get(a.cardId);
   if (!card) return null;
   return {
     id: a.id,
     card,
-    sellerName: a.seller.username,
+    sellerName: nameOf(a.seller),
     startPrice: a.startPrice,
     feeBp: a.feeBp,
     fee: a.fee,
     createdAt: a.createdAt,
     mine: a.sellerId === viewerId,
     live,
-    bids: a.bids.map((b) => ({ id: b.id, amount: b.amount, createdAt: b.createdAt, bidderName: b.bidder.username, me: b.bidderId === viewerId })),
+    bids: a.bids.map((b) => ({ id: b.id, amount: b.amount, createdAt: b.createdAt, bidderName: nameOf(b.bidder), me: b.bidderId === viewerId })),
   };
 }
 

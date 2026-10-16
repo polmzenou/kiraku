@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { USERNAME_REGEX } from "../username";
 
 // Filtres du journal /admin/journal, lus dans l'URL (formulaire GET) : tout paramètre invalide est ignoré.

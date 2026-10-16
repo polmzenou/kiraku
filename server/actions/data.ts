@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { refresh } from "next/cache";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { Prisma } from "@/generated/prisma/client";
 import { ANONYMIZED_PREFIX, confirmsUsername, isFrozen } from "@/lib/account/deletion";
 import { USERNAME_REGEX } from "@/lib/username";

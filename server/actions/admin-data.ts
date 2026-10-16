@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { confirmsUsername } from "@/lib/account/deletion";
 import { AccountError, anonymizeUserWith, cancelDeletionWith } from "../account/account-core";
 import { getAdmin } from "../admin";

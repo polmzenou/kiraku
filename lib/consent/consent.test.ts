@@ -41,6 +41,13 @@ describe("registre des traceurs", () => {
 });
 
 describe("choix de consentement", () => {
+  it.each([
+    null, [], { v: 1, at: 0, choices: [] }, { v: 1, at: 0, choices: { measure: "true" } },
+    { v: 1, at: 0, choices: { advertising: true } }, { v: 1, at: -1, choices: {} },
+    { v: 1.5, at: 0, choices: {} }, { v: 1, at: Number.MAX_VALUE, choices: {} },
+  ])("refuse un choix mal formé (%j)", (value) => {
+    expect(parseConsent(encodeURIComponent(JSON.stringify(value)))).toBeNull();
+  });
   it("relit ce qu'il écrit et ignore un cookie abîmé", () => {
     const state = makeConsent(["measure"], false, now);
     expect(parseConsent(serializeConsent(state))).toEqual(state);

@@ -26,10 +26,6 @@ export const config = {
     {
       // tout sauf les routes API, les fichiers internes de Next et les fichiers avec extension
       source: "/((?!api|_next|_vercel|.*\\..*).*)",
-      missing: [
-        { type: "header", key: "next-router-prefetch" },
-        { type: "header", key: "purpose", value: "prefetch" },
-      ],
     },
   ],
 };

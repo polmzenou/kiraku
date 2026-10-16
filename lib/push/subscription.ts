@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 
 // Web Push : validation de l'abonnement envoyé par le navigateur et contenu des messages.
 // Le serveur envoie une requête à l'endpoint fourni par le client : seuls les services push

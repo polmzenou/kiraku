@@ -2,7 +2,7 @@
 
 import { getLocale } from "next-intl/server";
 import { refresh } from "next/cache";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { RARITIES } from "@/lib/catalog/rarity";
 import { parseCollectionParams } from "@/lib/collection/params";
 import { MAX_SHOWCASE_SLOTS, placeInSlot } from "@/lib/collection/showcase";
@@ -17,7 +17,7 @@ import { setShowcaseWith, ShowcaseError } from "../collection/showcase-core";
 import { prisma } from "../db";
 import { clientIp, rateLimit } from "../ratelimit";
 import { getSetting } from "../settings";
-import { getCurrentUser } from "../user";
+import { getCurrentUser, requireActiveUser } from "../user";
 
 // Collection, recyclage, vitrine et confidentialité. Ordre des contrôles : session → Zod →
 // propriété → rate limit. Le client n'envoie que des ids et des intentions ; les exemplaires,
@@ -49,6 +49,7 @@ const pageSchema = z.object({
 /** Pages suivantes de la liste (la première est rendue par le serveur). */
 export async function loadCollectionPage(input: unknown): Promise<({ ok: true } & CollectionPage) | Failure> {
   const viewer = await getCurrentUser();
+  if (viewer && !(await requireActiveUser())) return { ok: false, error: "NO_SESSION" };
   const parsed = pageSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
 
@@ -194,7 +195,7 @@ export async function removeFromShowcaseAction(input: unknown): Promise<Showcase
 const privacySchema = z.object({ visibility: z.enum(PROFILE_VISIBILITIES), showCollection: z.boolean() });
 
 export async function updatePrivacyAction(input: unknown): Promise<{ ok: true } | Failure> {
-  const user = await getCurrentUser();
+  const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
   const parsed = privacySchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };

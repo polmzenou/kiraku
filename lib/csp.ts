@@ -6,8 +6,10 @@ export function buildCsp(nonce: string, isDev: boolean): string {
   const directives: Record<string, string[]> = {
     "default-src": ["'self'"],
     "script-src": ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", ...(isDev ? ["'unsafe-eval'"] : [])],
-    // styles inline de next/font et des animations (attributs style)
-    "style-src": ["'self'", "'unsafe-inline'"],
+    "style-src": ["'self'", `'nonce-${nonce}'`],
+    "style-src-elem": ["'self'", `'nonce-${nonce}'`],
+    // Motion et les composants utilisent des attributs style ; les balises restent protégées.
+    "style-src-attr": ["'unsafe-inline'"],
     "img-src": ["'self'", "data:", "blob:", ...IMAGE_HOSTS],
     "font-src": ["'self'"],
     // Ably : temps réel du combat (WebSocket, et repli HTTP vers ses hôtes de secours)

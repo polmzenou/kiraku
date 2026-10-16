@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { USERNAME_REGEX } from "@/lib/username";
 import { getAdmin } from "../admin";
 import { prisma } from "../db";

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { RARITIES } from "@/lib/catalog/rarity";
 import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
 import { rotationPinSchema } from "@/lib/boosters/rotation";

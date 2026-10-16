@@ -10,16 +10,26 @@ import { contentsLabel } from "@/lib/boosters/catalog";
 import { FALLBACK_THEME, localize } from "@/lib/boosters/types";
 import { getPublicOpening } from "@/server/boosters/openings";
 import { getBoosterTypeEntry } from "@/server/boosters/pools";
+import { getCurrentUser } from "@/server/user";
 
 const ID = /^[A-Za-z0-9-]{8,64}$/;
 
 async function load(id: string) {
   if (!ID.test(id)) return null;
   const locale = await getLocale();
-  const opening = await getPublicOpening(id, locale);
+  const viewer = await getCurrentUser();
+  const opening = await getPublicOpening(id, locale, viewer?.id ?? null);
   if (!opening) return null;
   const entry = await getBoosterTypeEntry(opening.slug);
   return { opening, type: entry?.type ?? null, boosterName: entry ? localize(entry.type.name, locale) : opening.slug };
+}
+
+/** Pseudo affiché : « Un joueur » si le profil le cache, « Invité-XXXX » pour un invité. */
+function ownerName(
+  loaded: { opening: { owner: { name: string; guestCode: string | null } } },
+  t: { anonymous: () => string; guest: (code: string) => string },
+): string {
+  return loaded.opening.owner.guestCode ? t.guest(loaded.opening.owner.guestCode) : loaded.opening.owner.name;
 }
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/tirage/[id]">): Promise<Metadata> {
@@ -27,8 +37,8 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/tirage/[
   const loaded = await load(id);
   if (!loaded) return {};
   const [t, tAccount] = await Promise.all([getTranslations("draw"), getTranslations("account")]);
-  const { opening, boosterName } = loaded;
-  const name = opening.owner.guestCode ? tAccount("guestName", { code: opening.owner.guestCode }) : opening.owner.username;
+  const { boosterName } = loaded;
+  const name = ownerName(loaded, { anonymous: () => t("anonymous"), guest: (code) => tAccount("guestName", { code }) });
   return {
     title: t("title", { name }),
     description: t("description", { name, booster: boosterName }),
@@ -49,7 +59,7 @@ export default async function DrawPage({ params }: PageProps<"/[locale]/tirage/[
     getTranslations("opening"),
     getFormatter(),
   ]);
-  const name = opening.owner.guestCode ? tAccount("guestName", { code: opening.owner.guestCode }) : opening.owner.username;
+  const name = ownerName(loaded, { anonymous: () => t("anonymous"), guest: (code) => tAccount("guestName", { code }) });
 
   return (
     <PageShell>

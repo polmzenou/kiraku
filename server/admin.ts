@@ -1,15 +1,15 @@
 import "server-only";
 import { notFound } from "next/navigation";
 import { prisma } from "./db";
-import { getCurrentUser } from "./user";
+import { requireActiveUser } from "./user";
 
 // Accès à /admin : vérifié côté serveur dans le layout ET dans chaque Server Action admin.
 // Un bouton masqué ne protège rien.
 
 /** Administrateur connecté, ou null. */
 export async function getAdmin() {
-  const user = await getCurrentUser();
-  if (!user || user.role !== "ADMIN" || user.bannedAt) return null;
+  const user = await requireActiveUser();
+  if (!user || user.role !== "ADMIN") return null;
   return user;
 }
 

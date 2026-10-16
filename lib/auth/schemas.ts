@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { USERNAME_REGEX } from "../username";
 import { passwordProblem } from "./password-policy";
 

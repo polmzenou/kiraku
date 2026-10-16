@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { after } from "next/server";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { USERNAME_REGEX } from "@/lib/username";
 import { isFrozen } from "@/lib/account/deletion";
 import { findProfileOwner } from "../collection/profile";

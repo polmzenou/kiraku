@@ -13,7 +13,8 @@
     "zeni": "{amount, number} Zeni",
     "boosters": "{count}/{max}",
     "number": "{value, number}",
-    "close": "Close"
+    "close": "Close",
+    "loading": "Loading…"
   },
   "arcadePromo": {
     "label": "Advertisement for Anime Arcade",
@@ -488,7 +489,8 @@
       "expired": "Nobody bid: the card went back to the seller.",
       "cancelled": "This sale was cancelled.",
       "toCollection": "See my collection",
-      "notEnough": "Your balance ({amount, number} Zeni) isn't enough for this bid."
+      "notEnough": "Your balance ({amount, number} Zeni) isn't enough for this bid.",
+      "anonymous": "Mystery player"
     },
     "sell": {
       "button": "Sell",
@@ -739,7 +741,8 @@
     "title": "{name}'s pull",
     "description": "{name} opened a {booster} pack on Kiraku.",
     "openedBy": "Opened by {name}",
-    "cta": "Open my packs"
+    "cta": "Open my packs",
+    "anonymous": "Mystery player"
   },
   "admin": {
     "title": "Administration",
@@ -2978,11 +2981,13 @@
       "theme": "Remembers the Yoru or Washi theme.",
       "locale": "Remembers the chosen language.",
       "sound": "Remembers whether sound is on.",
-      "discordLater": "Remembers when you postponed the Discord invitation (\"Later\")."
+      "discordLater": "Remembers when you postponed the Discord invitation (\"Later\").",
+      "speedInsights": "Vercel performance measurement (no cookies or persistent identifiers)"
     },
     "kinds": {
       "cookie": "Cookie",
-      "localStorage": "Local storage"
+      "localStorage": "Local storage",
+      "none": "No storage"
     },
     "table": {
       "kind": "Type",
@@ -2996,7 +3001,8 @@
       "session": "End of the browser session",
       "persistent": "Until you delete it",
       "minutes": "{count, plural, one {# minute} other {# minutes}}",
-      "days": "{count, plural, one {# day} other {# days}}"
+      "days": "{count, plural, one {# day} other {# days}}",
+      "none": "No storage on your device"
     }
   },
   "data": {
@@ -3082,5 +3088,16 @@
     "iosStep1": "Open Kiraku in Safari.",
     "iosStep2": "Tap the Share button (square with an arrow pointing up).",
     "iosStep3": "Choose \"Add to Home Screen\", then \"Add\"."
+  },
+  "error": {
+    "title": "Something went wrong",
+    "body": "An unexpected error interrupted the page. Your cards and Zeni are safe: the server validates every action.",
+    "reference": "Reference: {digest}",
+    "retry": "Try again",
+    "home": "Back to home"
+  },
+  "playerName": {
+    "hidden": "Player",
+    "deleted": "Deleted account"
   }
 }

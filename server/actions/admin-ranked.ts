@@ -1,7 +1,7 @@
 "use server";
 
 import { updateTag } from "next/cache";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { getAdmin } from "../admin";
 import { prisma } from "../db";
