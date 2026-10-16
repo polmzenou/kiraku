@@ -4,6 +4,7 @@
   "regions": ["lhr1"],
   "crons": [
     { "path": "/api/cron/market", "schedule": "0 4 * * *" },
-    { "path": "/api/cron/battle", "schedule": "15 4 * * *" }
+    { "path": "/api/cron/battle", "schedule": "15 4 * * *" },
+    { "path": "/api/cron/accounts", "schedule": "30 4 * * *" }
   ]
 }

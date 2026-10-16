@@ -24,6 +24,8 @@ const MODULES = [
   { key: "reviews", href: "/admin/avis", ready: true },
   { key: "combat", href: "/admin/combat", ready: true },
   { key: "ranked", href: "/admin/classe", ready: true },
+  { key: "legal", href: "/admin/legal", ready: true },
+  { key: "data", href: "/admin/donnees", ready: true },
 ] as const;
 
 /** Toute la section /admin : rôle vérifié côté serveur (404 sinon), chaque action le revérifie. */

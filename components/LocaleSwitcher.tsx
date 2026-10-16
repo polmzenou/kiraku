@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import { setLocaleAction } from "@/server/actions/data";
 
 export function LocaleSwitcher() {
   const t = useTranslations("locale");
@@ -22,7 +23,13 @@ export function LocaleSwitcher() {
             type="button"
             lang={locale}
             aria-pressed={current === locale}
-            onClick={() => startTransition(() => router.replace(pathname, { locale }))}
+            onClick={() =>
+              startTransition(async () => {
+                // Mémorisée sur le compte (e-mails, notifications) ; sans session, l'action ne fait rien
+                await setLocaleAction({ locale });
+                router.replace(pathname, { locale });
+              })
+            }
             className="min-h-11 rounded-button border border-border bg-surface-2 px-3 text-sm aria-pressed:border-shu aria-pressed:text-shu"
           >
             {t(locale)}

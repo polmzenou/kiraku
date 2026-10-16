@@ -1,6 +1,5 @@
-import { timingSafeEqual } from "node:crypto";
 import { prisma } from "@/server/db";
-import { env } from "@/server/env";
+import { cronAuthorized } from "@/server/cron-auth";
 import { sweepStaleWith } from "@/server/battle/battle-core";
 import { battleCtx } from "@/server/battle/queries";
 import { publishBattle } from "@/server/battle/realtime";
@@ -14,15 +13,8 @@ import { rollSeasonWith } from "@/server/ranked/ranked-core";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-function authorized(header: string | null): boolean {
-  if (!env.CRON_SECRET || !header) return false;
-  const expected = Buffer.from(`Bearer ${env.CRON_SECRET}`);
-  const given = Buffer.from(header);
-  return given.length === expected.length && timingSafeEqual(given, expected);
-}
-
 export async function GET(request: Request) {
-  if (!authorized(request.headers.get("authorization"))) {
+  if (!cronAuthorized(request.headers.get("authorization"))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
   const started = Date.now();

@@ -25,6 +25,8 @@ export const registerSchema = z
     email,
     password: newPassword,
     passwordConfirm: z.string("required"),
+    // Case « J'accepte les CGU » : cochée = "on" (valeur d'une case HTML)
+    terms: z.literal("on", "termsRequired"),
   })
   .refine((d) => d.password === d.passwordConfirm, {
     path: ["passwordConfirm"],
@@ -72,6 +74,7 @@ export const FIELD_ERROR_CODES = [
   "passwordPersonal",
   "passwordWeak",
   "tokenInvalid",
+  "termsRequired",
 ] as const;
 export type FieldErrorCode = (typeof FIELD_ERROR_CODES)[number];
 

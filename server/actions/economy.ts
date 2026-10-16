@@ -5,6 +5,7 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { parseLedgerFilter } from "@/lib/economy/ledger-view";
+import { isFrozen } from "@/lib/account/deletion";
 import { cardViews } from "../boosters/display";
 import { normalizeReferralCode } from "@/lib/economy/referral";
 import { prisma } from "../db";
@@ -75,7 +76,7 @@ async function session(
 ): Promise<{ user: Player } | { error: "NO_SESSION" | "UNAVAILABLE" | "RATE_LIMITED" }> {
   const user = await getCurrentUser();
   if (!user) return { error: "NO_SESSION" };
-  if (user.bannedAt) return { error: "UNAVAILABLE" };
+  if (user.bannedAt || isFrozen(user)) return { error: "UNAVAILABLE" };
   if (!(await rateLimit(`${bucket}:${user.id}`, rule)).success) return { error: "RATE_LIMITED" };
   return { user };
 }

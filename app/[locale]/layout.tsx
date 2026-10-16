@@ -3,7 +3,9 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
+import { ConsentManager } from "@/components/consent/ConsentManager";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { AccountGate } from "@/components/legal/AccountGate";
 import { routing } from "@/i18n/routing";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { fontVariables } from "../fonts";
@@ -46,7 +48,8 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
       <body className="min-h-dvh">
         <NextIntlClientProvider>
           <AppHeader theme={theme} />
-          {children}
+          <AccountGate>{children}</AccountGate>
+          <ConsentManager />
         </NextIntlClientProvider>
       </body>
     </html>

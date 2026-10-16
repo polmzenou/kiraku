@@ -1,6 +1,8 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Link } from "@/i18n/navigation";
+import { LEGAL_SLUGS } from "@/lib/legal/legal";
+import { ManageCookiesButton } from "./consent/ManageCookiesButton";
 import { SealMark } from "./SealMark";
 
 const FOOTER_LINKS = [
@@ -55,6 +57,24 @@ export function PageShell({ children, bottomBar = false }: { children: ReactNode
             </ul>
           </nav>
         </div>
+        <nav aria-label={t("footer.legalNav")}>
+          <ul className="flex flex-wrap gap-x-5">
+            {LEGAL_SLUGS.map((slug) => (
+              <li key={slug}>
+                <Link
+                  href={`/${slug}`}
+                  className="inline-flex min-h-11 items-center py-2 underline-offset-4 transition-colors hover:text-text hover:underline"
+                >
+                  {t(`legal.titles.${slug}`)}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <ManageCookiesButton variant="link" className="text-xs font-normal" />
+            </li>
+          </ul>
+        </nav>
+        <p className="leading-relaxed">{t("footer.useNotice")}</p>
         <p className="leading-relaxed">{t("footer.versionNotice")}</p>
         <p className="leading-relaxed">{t("footer.disclaimer")}</p>
       </footer>

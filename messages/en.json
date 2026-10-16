@@ -52,7 +52,8 @@
       "missions": "Missions",
       "shop": "Shop",
       "referral": "Referrals",
-      "ledger": "Zeni history"
+      "ledger": "Zeni history",
+      "data": "My data"
     }
   },
   "theme": {
@@ -86,7 +87,9 @@
     "nav": "Site links",
     "account": "My account",
     "wiki": "Wiki",
-    "leaderboard": "Leaderboard"
+    "leaderboard": "Leaderboard",
+    "legalNav": "Legal information",
+    "useNotice": "By using Kiraku, you accept the terms of use."
   },
   "auth": {
     "or": "or",
@@ -105,7 +108,8 @@
       "haveAccount": "Already have an account?",
       "login": "Sign in",
       "subtitle": "One account to keep your cards on every device.",
-      "asideTitle": "Keep your fuda for good."
+      "asideTitle": "Keep your fuda for good.",
+      "terms": "I have read and accept the <terms>terms of use</terms> and the <privacy>privacy policy</privacy>."
     },
     "login": {
       "discord": "Log in with Discord",
@@ -164,7 +168,8 @@
       "tokenInvalid": "Invalid link.",
       "passwordCommon": "This password is too common: pick a more personal one.",
       "passwordPersonal": "The password must not contain your username or email.",
-      "passwordWeak": "Password too predictable: mix up the characters."
+      "passwordWeak": "Password too predictable: mix up the characters.",
+      "termsRequired": "Accept the terms to create your account."
     },
     "perks": {
       "collection": "Your cards and Zeni, on every device",
@@ -910,7 +915,9 @@
       "shop": "Shop",
       "referral": "Referrals",
       "reviews": "Reviews",
-      "combat": "Battle"
+      "combat": "Battle",
+      "legal": "Legal pages",
+      "data": "Personal data"
     },
     "boosters": {
       "title": "Booster settings",
@@ -1568,6 +1575,93 @@
       "log": "Latest changes",
       "logEmpty": "No change yet.",
       "logEntry": "{key} by {admin}"
+    },
+    "confirm": {
+      "typeToConfirm": "Type “{value}” to confirm",
+      "cancel": "Cancel",
+      "pending": "One moment…",
+      "unexpected": "Unexpected error. Try again."
+    },
+    "legal": {
+      "title": "Legal pages",
+      "intro": "Each page has numbered versions. Edit the draft of the next version (French required, English optional), then publish it; previous versions remain available.",
+      "requiredVersion": "Terms version required from registered accounts: v{version}",
+      "current": "In force: v{version}, published on {date}",
+      "nothingPublished": "Nothing published",
+      "draftPending": "Draft in progress: v{version}",
+      "editLink": "Edit",
+      "language": "Language",
+      "locales": {
+        "fr": "Français",
+        "en": "English"
+      },
+      "titleLabel": "Title",
+      "bodyLabel": "Text (markdown)",
+      "markdownHint": "Simple markdown: ## headings, lists, **bold**, https or internal links (/cgu). No HTML or images.",
+      "preview": "Preview",
+      "edit": "Edit",
+      "saveDraft": "Save the {locale} draft (v{version})",
+      "saved": "Draft v{version} saved.",
+      "publish": "Publish v{version}",
+      "publishTitle": "Publish version {version}",
+      "publishBody": "It replaces the version in force for everyone. A published version can no longer be edited: you will have to publish a new one.",
+      "publishConfirm": "Publish",
+      "forceReaccept": "Significant change: every registered account will have to accept the terms again at their next visit.",
+      "history": "Versions",
+      "publishedBy": "Published on {date} by {admin}",
+      "draft": "Draft",
+      "view": "View",
+      "errors": {
+        "FORBIDDEN": "Access denied.",
+        "INVALID": "Invalid input (title required, text too long?).",
+        "RATE_LIMITED": "Too many actions. Try again in a minute.",
+        "NO_DRAFT": "No draft to publish.",
+        "MISSING_FR": "The French text of the draft is empty.",
+        "STALE": "This version has just been published elsewhere."
+      }
+    },
+    "data": {
+      "title": "Personal data",
+      "intro": "Players' GDPR requests. A deletion freezes the account then anonymizes it when due (daily cron); you can run it now or cancel it at the player's request.",
+      "pendingCount": "{count, plural, =0 {No pending deletion} one {# pending deletion} other {# pending deletions}}",
+      "filters": "Filters",
+      "filter": {
+        "pending": "Pending",
+        "deletion": "Deletions",
+        "export": "Exports",
+        "all": "All"
+      },
+      "empty": "No request.",
+      "kinds": {
+        "EXPORT": "Export",
+        "DELETION": "Deletion"
+      },
+      "statuses": {
+        "PENDING": "Pending",
+        "CANCELLED": "Cancelled",
+        "DONE": "Done"
+      },
+      "requestedAt": "Requested on {date}",
+      "dueAt": "due on {date}",
+      "processedAt": "processed on {date}",
+      "anonymizeNow": "Anonymize now",
+      "anonymizeTitle": "Anonymize {username}",
+      "anonymizeBody": "Username replaced, e-mail, avatar, password and Discord link erased, sessions, friends, review, wishlist and showcase deleted. The Zeni ledger, cards, draws, battles and auctions remain, no longer linked to a person. Irreversible.",
+      "anonymizeConfirm": "Anonymize",
+      "cancelDeletion": "Cancel deletion",
+      "cancelTitle": "Cancel {username}'s deletion",
+      "cancelBody": "The account is unfrozen and back to normal.",
+      "cancelConfirm": "Cancel deletion",
+      "errors": {
+        "FORBIDDEN": "Access denied.",
+        "INVALID": "Invalid input.",
+        "RATE_LIMITED": "Too many actions. Try again in a minute.",
+        "NOT_FOUND": "Player not found.",
+        "CONFIRM_MISMATCH": "The username you typed does not match.",
+        "SELF": "You cannot anonymize your own account from here.",
+        "NOT_REQUESTED": "No deletion in progress for this player.",
+        "ANONYMIZED": "This account is already anonymized."
+      }
     }
   },
   "collection": {
@@ -2563,6 +2657,150 @@
       "empty": "Nobody has played ranked this season yet.",
       "hidden": "Private profiles count in the ladder but aren't shown.",
       "grandChampions": "Grand Champions"
+    }
+  },
+  "legal": {
+    "titles": {
+      "mentions-legales": "Legal notice",
+      "confidentialite": "Privacy policy",
+      "cookies": "Cookie policy",
+      "cgu": "Terms of use"
+    },
+    "version": "Version {version}",
+    "versionShort": "v{version}",
+    "versionPublished": "Version {version}, published on {date}",
+    "currentVersion": "See the current version",
+    "versionsLabel": "Published versions",
+    "fallbackNotice": "This page is not translated yet: the French version is shown.",
+    "missing": "This page is being written.",
+    "cookieTableTitle": "Cookies and storage in use",
+    "accept": {
+      "titleFirst": "Welcome to Kiraku",
+      "titleUpdated": "The terms of use have changed",
+      "bodyFirst": "Before you continue, read and accept the terms of use and the privacy policy.",
+      "bodyUpdated": "A new version (v{version}) of the terms of use is in force. Read and accept it to keep playing.",
+      "readTerms": "Read the terms of use",
+      "readPrivacy": "Read the privacy policy",
+      "checkbox": "I have read and accept the terms of use and the privacy policy.",
+      "submit": "Accept and continue",
+      "pending": "One moment…",
+      "rateLimited": "Too many attempts. Try again in a moment.",
+      "error": "Your choice could not be saved. Try again."
+    }
+  },
+  "consent": {
+    "manage": "Manage cookies",
+    "bannerLabel": "Cookie choices",
+    "bannerBody": "Kiraku would like to use optional trackers. You can accept all, refuse all or choose category by category.",
+    "learnMore": "Learn more",
+    "refuseAll": "Refuse all",
+    "acceptAll": "Accept all",
+    "customize": "Customize",
+    "save": "Save my choices",
+    "panelTitle": "Cookies and storage",
+    "panelIntro": "Choose the categories you allow. Cookies needed for the site to work do not require consent.",
+    "onlyNecessary": "Kiraku only uses cookies and storage needed for the site or your preferences (theme, language, sound). None of them requires your consent, and nothing is used for advertising or tracking.",
+    "alwaysOn": "Always on",
+    "categories": {
+      "necessary": "Necessary",
+      "preferences": "Preferences",
+      "measure": "Audience measurement"
+    },
+    "categoryHelp": {
+      "necessary": "Session, sign-in security, referral and your cookie choice.",
+      "preferences": "Theme, language and sound, chosen by you.",
+      "measure": "Traffic statistics."
+    },
+    "purposes": {
+      "session": "Keeps your session open (guest or account).",
+      "referral": "Remembers the referral link you followed, until you sign up.",
+      "discordSignIn": "Secures signing in with Discord (protection against request forgery).",
+      "consent": "Remembers your cookie choices.",
+      "theme": "Remembers the Yoru or Washi theme.",
+      "locale": "Remembers the chosen language.",
+      "sound": "Remembers whether sound is on."
+    },
+    "kinds": {
+      "cookie": "Cookie",
+      "localStorage": "Local storage"
+    },
+    "table": {
+      "kind": "Type",
+      "category": "Category",
+      "duration": "Duration",
+      "consent": "Consent",
+      "exempt": "Not required (exempt)",
+      "required": "Required"
+    },
+    "durations": {
+      "session": "End of the browser session",
+      "persistent": "Until you delete it",
+      "minutes": "{count, plural, one {# minute} other {# minutes}}",
+      "days": "{count, plural, one {# day} other {# days}}"
+    }
+  },
+  "data": {
+    "title": "My data",
+    "intro": "Your rights over your personal data: see it, correct it, delete it.",
+    "back": "Back to account",
+    "export": {
+      "title": "Download my data",
+      "body": "A JSON file with your profile, cards, Zeni ledger, battles, auctions, friends and review.",
+      "submit": "Download",
+      "limit": "At most {count, plural, one {# export} other {# exports}} per day."
+    },
+    "rectify": {
+      "title": "Edit my information",
+      "username": "Username",
+      "usernameHint": "3 to 20 characters: letters, digits, _ and -",
+      "cooldown": "One username change every {days} days at most.",
+      "submit": "Change username",
+      "saved": "Username changed.",
+      "guest": "Create an account to choose your username.",
+      "localeHint": "The language is also used for e-mails and notifications.",
+      "privacyLink": "Profile visibility"
+    },
+    "cookies": {
+      "title": "Cookies",
+      "body": "Review at any time what Kiraku stores in your browser."
+    },
+    "deletion": {
+      "title": "Delete my account",
+      "body": "Your account will be anonymized after {days} days: username replaced, e-mail, avatar and Discord link erased, friends, review and wishlist deleted. The Zeni ledger and the cards remain, no longer linked to you, so the game economy stays fair.",
+      "freeze": "During this period your account is frozen (auctions without bids withdrawn, no more openings or trades) and you can cancel at any time.",
+      "open": "Delete my account…",
+      "confirmLabel": "Type your username ({username}) to confirm",
+      "submit": "Request deletion",
+      "pendingTitle": "Deletion requested",
+      "pendingBody": "Your account will be anonymized on {date}.",
+      "cancel": "Cancel deletion",
+      "cancelled": "Deletion cancelled.",
+      "pendingNotice": "Your account will be deleted on {date}.",
+      "cancelLink": "Cancel"
+    },
+    "history": {
+      "title": "My requests",
+      "empty": "No request yet.",
+      "kinds": {
+        "EXPORT": "Export",
+        "DELETION": "Deletion"
+      },
+      "statuses": {
+        "PENDING": "Pending",
+        "CANCELLED": "Cancelled",
+        "DONE": "Done"
+      }
+    },
+    "errors": {
+      "INVALID": "Invalid input.",
+      "USERNAME_TAKEN": "This username is already taken.",
+      "TOO_SOON": "You changed your username recently. Try again later.",
+      "RATE_LIMITED": "Too many attempts. Try again in a moment.",
+      "FROZEN": "Your account is being deleted.",
+      "CONFIRM_MISMATCH": "The username you typed does not match.",
+      "ALREADY_REQUESTED": "Deletion has already been requested.",
+      "NOT_REQUESTED": "No deletion in progress.",
+      "GENERIC": "Something went wrong. Try again."
     }
   }
 }

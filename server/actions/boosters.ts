@@ -6,6 +6,7 @@ import { z } from "zod";
 import { OPEN_COUNTS } from "@/lib/boosters/catalog";
 import { slugSchema } from "@/lib/boosters/types";
 import type { OpenedBoosterView } from "@/lib/boosters/view";
+import { isFrozen } from "@/lib/account/deletion";
 import { boosterStateFrom, type BoosterState } from "../boosters/state";
 import { cardViews } from "../boosters/display";
 import { openBoosters } from "../boosters/open";
@@ -63,7 +64,7 @@ export async function openBoosterAction(input: unknown): Promise<OpenBoosterResu
   if (!parsed.success) return { ok: false, error: "INVALID" };
 
   // Propriété : aucun id de joueur n'est reçu, l'ouverture porte toujours sur le compte de la session
-  if (user.bannedAt) return { ok: false, error: "UNAVAILABLE" };
+  if (user.bannedAt || isFrozen(user)) return { ok: false, error: "UNAVAILABLE" };
 
   if (!(await rateLimit(`open:${user.id}`, { limit: 20, windowSeconds: 10 })).success) {
     return { ok: false, error: "RATE_LIMITED" };

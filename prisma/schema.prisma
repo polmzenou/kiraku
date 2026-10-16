@@ -1,6 +1,6 @@
 // Schéma du socle (étape 1), du catalogue (étape 2), des boosters (étape 3), de leurs types (étape 4),
 // de la collection et du profil (étape 5), du social (étape 6), de l'économie (étape 7), de l'hôtel des ventes (étape 8)
-// et du combat (étape 9).
+// du combat (étape 9) et de la conformité (étape 10).
 // Chaque étape ajoute ses modèles
 // par sa propre migration nommée. Référence : docs/PLAN.md, « Schéma Prisma ».
 
@@ -76,9 +76,11 @@ model User {
   bannerPity          Json              @default("{}") // { boosterTypeId: boosters sans vedette }
   discordJoinedAt     DateTime? // a cliqué sur « Rejoindre le serveur »
   locale              String            @default("fr") // fr | en
-  birthDate           DateTime? // contrôle d'âge
+  birthDate           DateTime? // inutilisé : pas de contrôle d'âge (décision de l'étape 10)
   termsVersion        Int? // version des CGU acceptée
-  deletionRequestedAt DateTime? // suppression RGPD en attente
+  deletionRequestedAt DateTime? // suppression RGPD en attente : compte gelé jusqu'à l'anonymisation
+  anonymizedAt        DateTime? // compte anonymisé (RGPD) : plus aucune donnée personnelle
+  usernameChangedAt   DateTime? // dernier changement de pseudo par le joueur (délai account.usernameChangeDays)
   // Code de parrainage court (8 caractères sans 0/O/1/I), généré par la base
   referralCode        String            @unique @default(dbgenerated("kiraku_referral_code()"))
   referredById        String? // parrain, posé au rattachement (Referral fait foi)
@@ -123,6 +125,10 @@ model User {
   battlesAsP2   Battle[]       @relation("battleP2")
   battleQueue   BattleQueue?
   seasonResults SeasonResult[]
+
+  dataRequests       DataRequest[] @relation("dataRequester")
+  processedRequests  DataRequest[] @relation("dataProcessor")
+  publishedLegalDocs LegalPage[]
 
   @@index([rankPoints])
 }
@@ -944,4 +950,59 @@ model SeasonResult {
 
   @@id([seasonId, userId])
   @@index([userId, claimedAt])
+}
+
+// --- Conformité (étape 10) ---
+
+enum LegalStatus {
+  DRAFT
+  PUBLISHED
+}
+
+// Une version d'une page légale dans une langue. La version en vigueur d'un slug est la plus haute
+// version publiée ; l'anglais absent retombe sur le français de la même version.
+model LegalPage {
+  id            String      @id @default(cuid())
+  slug          String // mentions-legales | confidentialite | cookies | cgu | cgv
+  locale        String // fr | en
+  version       Int
+  title         String
+  body          String // markdown, rendu sans HTML brut (react-markdown)
+  status        LegalStatus @default(DRAFT)
+  publishedAt   DateTime?
+  publishedById String?
+  publishedBy   User?       @relation(fields: [publishedById], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([slug, locale, version])
+  @@index([slug, status, version])
+}
+
+enum DataRequestKind {
+  EXPORT
+  DELETION
+}
+
+enum DataRequestStatus {
+  PENDING
+  CANCELLED
+  DONE
+}
+
+// Demandes RGPD (export, suppression) : historique du module « Données personnelles » de l'admin
+model DataRequest {
+  id            String            @id @default(cuid())
+  userId        String
+  user          User              @relation("dataRequester", fields: [userId], references: [id])
+  kind          DataRequestKind
+  status        DataRequestStatus @default(PENDING)
+  requestedAt   DateTime          @default(now())
+  dueAt         DateTime? // suppression : anonymisation à cette date
+  processedAt   DateTime?
+  processedById String? // admin qui a exécuté ou annulé ; null = joueur ou cron
+  processedBy   User?             @relation("dataProcessor", fields: [processedById], references: [id])
+
+  @@index([kind, status, dueAt])
+  @@index([userId, requestedAt])
 }

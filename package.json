@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "vercel-build": "node scripts/check-deploy-env.mjs && prisma generate && prisma migrate deploy && tsx scripts/seed-boosters.mts && next build",
+    "vercel-build": "node scripts/check-deploy-env.mjs && prisma generate && prisma migrate deploy && tsx scripts/seed-boosters.mts && tsx scripts/seed-legal.mts && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
@@ -18,7 +18,8 @@
     "sim:boosters": "tsx scripts/simulate-boosters.mts",
     "admin:grant": "tsx scripts/grant-admin.mts",
     "seed:boosters": "tsx scripts/seed-boosters.mts",
-    "seed:missions": "tsx scripts/seed-missions.mts"
+    "seed:missions": "tsx scripts/seed-missions.mts",
+    "seed:legal": "tsx scripts/seed-legal.mts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
@@ -35,6 +36,7 @@
     "next-intl": "^4.14.9",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "react-markdown": "^10.1.0",
     "server-only": "^0.0.1",
     "web-push": "^3.6.7",
     "zod": "^4.6.7"

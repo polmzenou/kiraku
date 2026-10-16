@@ -1,6 +1,7 @@
 "use server";
 
 import { updateTag } from "next/cache";
+import { isFrozen } from "@/lib/account/deletion";
 import { canReview, reviewInputSchema } from "@/lib/social/reviews";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
@@ -23,7 +24,7 @@ export async function submitReview(input: unknown): Promise<SubmitReviewResult> 
   if (!parsed.success) return { ok: false, error: "INVALID" };
 
   // Invités et bannis exclus (anti-spam : il faut un compte lié)
-  if (!canReview(user)) return { ok: false, error: "FORBIDDEN" };
+  if (!canReview(user) || isFrozen(user)) return { ok: false, error: "FORBIDDEN" };
 
   if (!(await rateLimit(`review:${user.id}`, { limit: 5, windowSeconds: 600 })).success) {
     return { ok: false, error: "RATE_LIMITED" };

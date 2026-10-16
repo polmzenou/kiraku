@@ -13,6 +13,8 @@ export default function proxy(request: NextRequest) {
   // next-intl recopie ces en-têtes dans sa réécriture.
   request.headers.set("x-nonce", nonce);
   request.headers.set("Content-Security-Policy", csp);
+  // Chemin demandé, pour l'écran d'acceptation des CGU (les pages légales restent lisibles)
+  request.headers.set("x-kiraku-path", request.nextUrl.pathname);
 
   const response = handleI18nRouting(request);
   response.headers.set("Content-Security-Policy", csp);

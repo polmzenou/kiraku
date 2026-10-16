@@ -9,6 +9,7 @@ import { MAX_SHOWCASE_SLOTS, placeInSlot } from "@/lib/collection/showcase";
 import type { CollectionPage } from "@/lib/collection/view";
 import { PROFILE_VISIBILITIES } from "@/lib/collection/visibility";
 import { USERNAME_REGEX } from "@/lib/username";
+import { isFrozen } from "@/lib/account/deletion";
 import { accessFor, findProfileOwner } from "../collection/profile";
 import { getCollectionPage, MAX_OFFSET } from "../collection/queries";
 import { RecycleError, recycleWith, type RecycleRequest } from "../collection/recycle-core";
@@ -104,7 +105,7 @@ export async function recycleCardAction(input: unknown): Promise<RecycleResult> 
   const parsed = recycleCardSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
   // Propriété : seuls les exemplaires du joueur de la session sont lus, dans la transaction
-  if (user.bannedAt) return { ok: false, error: "UNAVAILABLE" };
+  if (user.bannedAt || isFrozen(user)) return { ok: false, error: "UNAVAILABLE" };
   return runRecycle({ kind: "card", cardId: parsed.data.cardId, count: parsed.data.count }, user.id);
 }
 
@@ -114,7 +115,7 @@ export async function recycleAllAction(input: unknown): Promise<RecycleResult> {
   if (!user) return { ok: false, error: "NO_SESSION" };
   const parsed = recycleAllSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
-  if (user.bannedAt) return { ok: false, error: "UNAVAILABLE" };
+  if (user.bannedAt || isFrozen(user)) return { ok: false, error: "UNAVAILABLE" };
   return runRecycle({ kind: "all", maxRarity: parsed.data.maxRarity, expected: parsed.data.expected }, user.id);
 }
 
@@ -142,7 +143,7 @@ async function showcaseGuard(input: unknown, schema: z.ZodType) {
   if (!user) return { error: "NO_SESSION" as const };
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { error: "INVALID" as const };
-  if (user.bannedAt) return { error: "UNAVAILABLE" as const };
+  if (user.bannedAt || isFrozen(user)) return { error: "UNAVAILABLE" as const };
   if (!(await rateLimit(`showcase:${user.id}`, { limit: 20, windowSeconds: 60 })).success) {
     return { error: "RATE_LIMITED" as const };
   }

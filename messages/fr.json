@@ -52,7 +52,8 @@
       "missions": "Missions",
       "shop": "Boutique",
       "referral": "Parrainage",
-      "ledger": "Historique des Zeni"
+      "ledger": "Historique des Zeni",
+      "data": "Mes données"
     }
   },
   "theme": {
@@ -86,7 +87,9 @@
     "nav": "Liens du site",
     "account": "Mon compte",
     "wiki": "Wiki",
-    "leaderboard": "Classement"
+    "leaderboard": "Classement",
+    "legalNav": "Informations légales",
+    "useNotice": "En utilisant Kiraku, tu acceptes les conditions d'utilisation."
   },
   "auth": {
     "or": "ou",
@@ -105,7 +108,8 @@
       "haveAccount": "Déjà un compte ?",
       "login": "Se connecter",
       "subtitle": "Un compte pour garder tes cartes sur tous tes appareils.",
-      "asideTitle": "Garde tes fuda pour de bon."
+      "asideTitle": "Garde tes fuda pour de bon.",
+      "terms": "J'ai lu et j'accepte les <terms>conditions d'utilisation</terms> et la <privacy>politique de confidentialité</privacy>."
     },
     "login": {
       "discord": "Se connecter avec Discord",
@@ -164,7 +168,8 @@
       "tokenInvalid": "Lien invalide.",
       "passwordCommon": "Ce mot de passe est trop courant : choisis-en un plus personnel.",
       "passwordPersonal": "Le mot de passe ne doit pas contenir ton pseudo ni ton e-mail.",
-      "passwordWeak": "Mot de passe trop prévisible : varie les caractères."
+      "passwordWeak": "Mot de passe trop prévisible : varie les caractères.",
+      "termsRequired": "Accepte les conditions pour créer ton compte."
     },
     "perks": {
       "collection": "Tes cartes et tes Zeni, sur tous tes appareils",
@@ -910,7 +915,9 @@
       "shop": "Boutique",
       "referral": "Parrainages",
       "reviews": "Avis",
-      "combat": "Combat"
+      "combat": "Combat",
+      "legal": "Pages légales",
+      "data": "Données personnelles"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -1568,6 +1575,93 @@
       "log": "Derniers changements",
       "logEmpty": "Aucun changement pour l'instant.",
       "logEntry": "{key} par {admin}"
+    },
+    "confirm": {
+      "typeToConfirm": "Tape « {value} » pour confirmer",
+      "cancel": "Annuler",
+      "pending": "Un instant…",
+      "unexpected": "Erreur inattendue. Réessaie."
+    },
+    "legal": {
+      "title": "Pages légales",
+      "intro": "Chaque page a des versions numérotées. On modifie le brouillon de la version suivante (français obligatoire, anglais facultatif), puis on le publie ; les anciennes versions restent consultables.",
+      "requiredVersion": "Version des CGU exigée des comptes inscrits : v{version}",
+      "current": "En vigueur : v{version}, publiée le {date}",
+      "nothingPublished": "Rien de publié",
+      "draftPending": "Brouillon en cours : v{version}",
+      "editLink": "Modifier",
+      "language": "Langue",
+      "locales": {
+        "fr": "Français",
+        "en": "English"
+      },
+      "titleLabel": "Titre",
+      "bodyLabel": "Texte (markdown)",
+      "markdownHint": "Markdown simple : ## titres, listes, **gras**, liens https ou internes (/cgu). Pas de HTML ni d'images.",
+      "preview": "Aperçu",
+      "edit": "Modifier",
+      "saveDraft": "Enregistrer le brouillon {locale} (v{version})",
+      "saved": "Brouillon v{version} enregistré.",
+      "publish": "Publier la v{version}",
+      "publishTitle": "Publier la version {version}",
+      "publishBody": "Elle remplace la version en vigueur pour tout le monde. Une version publiée ne peut plus être modifiée : il faudra en publier une nouvelle.",
+      "publishConfirm": "Publier",
+      "forceReaccept": "Changement important : chaque compte inscrit devra réaccepter les CGU à sa prochaine visite.",
+      "history": "Versions",
+      "publishedBy": "Publiée le {date} par {admin}",
+      "draft": "Brouillon",
+      "view": "Voir",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Saisie invalide (titre obligatoire, texte trop long ?).",
+        "RATE_LIMITED": "Trop d'actions. Réessaie dans une minute.",
+        "NO_DRAFT": "Aucun brouillon à publier.",
+        "MISSING_FR": "Le texte français du brouillon est vide.",
+        "STALE": "Cette version vient d'être publiée par ailleurs."
+      }
+    },
+    "data": {
+      "title": "Données personnelles",
+      "intro": "Demandes RGPD des joueurs. Une suppression gèle le compte puis l'anonymise à l'échéance (cron quotidien) ; tu peux l'exécuter tout de suite ou l'annuler à la demande du joueur.",
+      "pendingCount": "{count, plural, =0 {Aucune suppression en attente} one {# suppression en attente} other {# suppressions en attente}}",
+      "filters": "Filtres",
+      "filter": {
+        "pending": "En attente",
+        "deletion": "Suppressions",
+        "export": "Exports",
+        "all": "Tout"
+      },
+      "empty": "Aucune demande.",
+      "kinds": {
+        "EXPORT": "Export",
+        "DELETION": "Suppression"
+      },
+      "statuses": {
+        "PENDING": "En attente",
+        "CANCELLED": "Annulée",
+        "DONE": "Traitée"
+      },
+      "requestedAt": "Demandée le {date}",
+      "dueAt": "échéance le {date}",
+      "processedAt": "traitée le {date}",
+      "anonymizeNow": "Anonymiser maintenant",
+      "anonymizeTitle": "Anonymiser {username}",
+      "anonymizeBody": "Pseudo remplacé, e-mail, avatar, mot de passe et lien Discord effacés, sessions, amis, avis, liste de souhaits et vitrine supprimés. Le journal des Zeni, les cartes, tirages, combats et ventes restent, sans lien avec une personne. Irréversible.",
+      "anonymizeConfirm": "Anonymiser",
+      "cancelDeletion": "Annuler la suppression",
+      "cancelTitle": "Annuler la suppression de {username}",
+      "cancelBody": "Le compte est dégelé et redevient normal.",
+      "cancelConfirm": "Annuler la suppression",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Saisie invalide.",
+        "RATE_LIMITED": "Trop d'actions. Réessaie dans une minute.",
+        "NOT_FOUND": "Joueur introuvable.",
+        "CONFIRM_MISMATCH": "Le pseudo saisi ne correspond pas.",
+        "SELF": "Tu ne peux pas anonymiser ton propre compte d'ici.",
+        "NOT_REQUESTED": "Aucune suppression en cours pour ce joueur.",
+        "ANONYMIZED": "Ce compte est déjà anonymisé."
+      }
     }
   },
   "collection": {
@@ -2563,6 +2657,150 @@
       "empty": "Personne n'a encore joué en classé cette saison.",
       "hidden": "Les profils privés comptent dans le classement mais n'y sont pas affichés.",
       "grandChampions": "Grands Champions"
+    }
+  },
+  "legal": {
+    "titles": {
+      "mentions-legales": "Mentions légales",
+      "confidentialite": "Politique de confidentialité",
+      "cookies": "Politique cookies",
+      "cgu": "Conditions d'utilisation"
+    },
+    "version": "Version {version}",
+    "versionShort": "v{version}",
+    "versionPublished": "Version {version}, publiée le {date}",
+    "currentVersion": "Voir la version en vigueur",
+    "versionsLabel": "Versions publiées",
+    "fallbackNotice": "Cette page n'est pas encore traduite : la version française est affichée.",
+    "missing": "Cette page est en cours de rédaction.",
+    "cookieTableTitle": "Cookies et stockages utilisés",
+    "accept": {
+      "titleFirst": "Bienvenue sur Kiraku",
+      "titleUpdated": "Les conditions d'utilisation ont changé",
+      "bodyFirst": "Avant de continuer, lis et accepte les conditions d'utilisation et la politique de confidentialité.",
+      "bodyUpdated": "Une nouvelle version (v{version}) des conditions d'utilisation est en vigueur. Lis-la et accepte-la pour continuer à jouer.",
+      "readTerms": "Lire les conditions d'utilisation",
+      "readPrivacy": "Lire la politique de confidentialité",
+      "checkbox": "J'ai lu et j'accepte les conditions d'utilisation et la politique de confidentialité.",
+      "submit": "Accepter et continuer",
+      "pending": "Un instant…",
+      "rateLimited": "Trop d'essais. Réessaie dans un moment.",
+      "error": "Impossible d'enregistrer ton choix. Réessaie."
+    }
+  },
+  "consent": {
+    "manage": "Gérer les cookies",
+    "bannerLabel": "Choix des cookies",
+    "bannerBody": "Kiraku aimerait utiliser des traceurs facultatifs. Tu peux tout accepter, tout refuser ou choisir catégorie par catégorie.",
+    "learnMore": "En savoir plus",
+    "refuseAll": "Tout refuser",
+    "acceptAll": "Tout accepter",
+    "customize": "Personnaliser",
+    "save": "Enregistrer mes choix",
+    "panelTitle": "Cookies et stockages",
+    "panelIntro": "Choisis les catégories que tu autorises. Les cookies nécessaires au fonctionnement ne demandent pas d'accord.",
+    "onlyNecessary": "Kiraku n'utilise que des cookies et stockages nécessaires au site ou à tes préférences (thème, langue, son). Aucun n'a besoin de ton accord, et rien ne sert à la publicité ni au suivi.",
+    "alwaysOn": "Toujours actifs",
+    "categories": {
+      "necessary": "Nécessaires",
+      "preferences": "Préférences",
+      "measure": "Mesure d'audience"
+    },
+    "categoryHelp": {
+      "necessary": "Session, sécurité de la connexion, parrainage et ton choix de cookies.",
+      "preferences": "Thème, langue et son, choisis par toi.",
+      "measure": "Statistiques de fréquentation."
+    },
+    "purposes": {
+      "session": "Garde ta session ouverte (invité ou compte).",
+      "referral": "Retient le lien de parrainage suivi, jusqu'à ton inscription.",
+      "discordSignIn": "Sécurise la connexion avec Discord (protection contre la falsification de requête).",
+      "consent": "Retient tes choix de cookies.",
+      "theme": "Retient le thème Yoru ou Washi.",
+      "locale": "Retient la langue choisie.",
+      "sound": "Retient si le son est activé."
+    },
+    "kinds": {
+      "cookie": "Cookie",
+      "localStorage": "Stockage local"
+    },
+    "table": {
+      "kind": "Type",
+      "category": "Catégorie",
+      "duration": "Durée",
+      "consent": "Accord",
+      "exempt": "Non requis (exempté)",
+      "required": "Requis"
+    },
+    "durations": {
+      "session": "Fin de la session du navigateur",
+      "persistent": "Jusqu'à ce que tu le supprimes",
+      "minutes": "{count, plural, one {# minute} other {# minutes}}",
+      "days": "{count, plural, one {# jour} other {# jours}}"
+    }
+  },
+  "data": {
+    "title": "Mes données",
+    "intro": "Tes droits sur tes données personnelles : les consulter, les corriger, les supprimer.",
+    "back": "Retour au compte",
+    "export": {
+      "title": "Télécharger mes données",
+      "body": "Un fichier JSON avec ton profil, tes cartes, ton journal de Zeni, tes combats, tes ventes, tes amis et ton avis.",
+      "submit": "Télécharger",
+      "limit": "{count, plural, one {# export} other {# exports}} par jour au plus."
+    },
+    "rectify": {
+      "title": "Modifier mes informations",
+      "username": "Pseudo",
+      "usernameHint": "3 à 20 caractères : lettres, chiffres, _ et -",
+      "cooldown": "Un changement de pseudo tous les {days} jours au plus.",
+      "submit": "Changer de pseudo",
+      "saved": "Pseudo modifié.",
+      "guest": "Crée un compte pour choisir ton pseudo.",
+      "localeHint": "La langue sert aussi pour les e-mails et les notifications.",
+      "privacyLink": "Visibilité du profil"
+    },
+    "cookies": {
+      "title": "Cookies",
+      "body": "Revois à tout moment ce que Kiraku dépose dans ton navigateur."
+    },
+    "deletion": {
+      "title": "Supprimer mon compte",
+      "body": "Ton compte sera anonymisé au bout de {days} jours : pseudo remplacé, e-mail, avatar et lien Discord effacés, amis, avis et liste de souhaits supprimés. Le journal des Zeni et les cartes restent, sans lien avec toi, pour que l'économie du jeu reste juste.",
+      "freeze": "Pendant ce délai, ton compte est gelé (ventes sans enchère retirées, plus d'ouverture ni d'échange) et tu peux annuler à tout moment.",
+      "open": "Supprimer mon compte…",
+      "confirmLabel": "Tape ton pseudo ({username}) pour confirmer",
+      "submit": "Demander la suppression",
+      "pendingTitle": "Suppression demandée",
+      "pendingBody": "Ton compte sera anonymisé le {date}.",
+      "cancel": "Annuler la suppression",
+      "cancelled": "Suppression annulée.",
+      "pendingNotice": "Ton compte sera supprimé le {date}.",
+      "cancelLink": "Annuler"
+    },
+    "history": {
+      "title": "Mes demandes",
+      "empty": "Aucune demande pour l'instant.",
+      "kinds": {
+        "EXPORT": "Export",
+        "DELETION": "Suppression"
+      },
+      "statuses": {
+        "PENDING": "En attente",
+        "CANCELLED": "Annulée",
+        "DONE": "Traitée"
+      }
+    },
+    "errors": {
+      "INVALID": "Saisie invalide.",
+      "USERNAME_TAKEN": "Ce pseudo est déjà pris.",
+      "TOO_SOON": "Tu as changé de pseudo récemment. Réessaie plus tard.",
+      "RATE_LIMITED": "Trop d'essais. Réessaie dans un moment.",
+      "FROZEN": "Ton compte est en cours de suppression.",
+      "CONFIRM_MISMATCH": "Le pseudo saisi ne correspond pas.",
+      "ALREADY_REQUESTED": "La suppression est déjà demandée.",
+      "NOT_REQUESTED": "Aucune suppression en cours.",
+      "GENERIC": "Une erreur est survenue. Réessaie."
     }
   }
 }

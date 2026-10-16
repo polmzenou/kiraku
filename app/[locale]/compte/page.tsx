@@ -28,6 +28,7 @@ const ACCOUNT_TILES = [
   { key: "shop", href: "/boutique", kanji: "商" },
   { key: "referral", href: "/parrainage", kanji: "招" },
   { key: "ledger", href: "/compte/historique", kanji: "銭" },
+  { key: "data", href: "/compte/donnees", kanji: "私" },
 ] as const;
 
 export default async function AccountPage() {

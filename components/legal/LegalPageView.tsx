@@ -1,0 +1,100 @@
+import { hasLocale } from "next-intl";
+import { getFormatter, getTranslations } from "next-intl/server";
+import { PageShell } from "@/components/PageShell";
+import { SectionTitle } from "@/components/SectionTitle";
+import { Link } from "@/i18n/navigation";
+import { routing } from "@/i18n/routing";
+import type { LegalSlug } from "@/lib/legal/legal";
+import { getLegalDocument } from "@/server/legal";
+import { CookieTable } from "../consent/CookieTable";
+import { ManageCookiesButton } from "../consent/ManageCookiesButton";
+import { LegalMarkdown } from "./LegalMarkdown";
+
+const KANJI: Record<LegalSlug, string> = {
+  "mentions-legales": "記",
+  confidentialite: "秘",
+  cookies: "菓",
+  cgu: "約",
+};
+
+/** Lit `?v=N` : une ancienne version publiée reste consultable. */
+export function requestedVersion(raw: string | string[] | undefined): number | null {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (!value || !/^\d{1,4}$/.test(value)) return null;
+  return Number(value);
+}
+
+/** Page légale publique : texte en vigueur (ou version archivée), date, liste des versions. */
+export async function LegalPageView({ slug, locale, version }: { slug: LegalSlug; locale: string; version: number | null }) {
+  const [t, format, { doc, versions }] = await Promise.all([
+    getTranslations("legal"),
+    getFormatter(),
+    getLegalDocument(slug, locale, version),
+  ]);
+
+  return (
+    <PageShell>
+      <SectionTitle level={1} kanji={KANJI[slug]} title={doc?.title ?? t(`titles.${slug}`)} />
+      {doc ? (
+        <>
+          <p className="text-sm text-text-muted">
+            {doc.publishedAt
+              ? t("versionPublished", { version: doc.version, date: format.dateTime(doc.publishedAt, { dateStyle: "long" }) })
+              : t("version", { version: doc.version })}
+            {doc.version !== versions[0] && (
+              <>
+                {" · "}
+                <Link href={`/${slug}`} className="font-medium text-ai underline underline-offset-4">
+                  {t("currentVersion")}
+                </Link>
+              </>
+            )}
+          </p>
+          {doc.fallback && (
+            <p lang="en" className="rounded-lg border border-border bg-surface p-3 text-sm text-text-muted">
+              {t("fallbackNotice")}
+            </p>
+          )}
+          <article lang={doc.locale}>
+            <LegalMarkdown body={doc.body} />
+          </article>
+        </>
+      ) : (
+        <p className="text-text-muted">{t("missing")}</p>
+      )}
+
+      {slug === "cookies" && (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-title text-xl font-extrabold">{t("cookieTableTitle")}</h2>
+          <CookieTable />
+          <ManageCookiesButton className="self-start" />
+        </section>
+      )}
+
+      {versions.length > 1 && (
+        <nav aria-label={t("versionsLabel")} className="flex flex-col gap-2 text-sm">
+          <h2 className="font-bold">{t("versionsLabel")}</h2>
+          <ul className="flex flex-wrap gap-2">
+            {versions.map((v) => (
+              <li key={v}>
+                <Link
+                  href={v === versions[0] ? `/${slug}` : `/${slug}?v=${v}`}
+                  aria-current={doc?.version === v ? "page" : undefined}
+                  className="inline-flex min-h-11 items-center rounded-button border border-border bg-surface-2 px-3 aria-[current=page]:border-shu aria-[current=page]:text-shu"
+                >
+                  {t("versionShort", { version: v })}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
+    </PageShell>
+  );
+}
+
+/** Métadonnées communes : titre traduit, indexable seulement pour la version en vigueur. */
+export async function legalMetadata(slug: LegalSlug, locale: string, version: number | null) {
+  const t = await getTranslations({ locale: hasLocale(routing.locales, locale) ? locale : routing.defaultLocale, namespace: "legal" });
+  return { title: t(`titles.${slug}`), robots: version ? { index: false, follow: true } : undefined };
+}

@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { z } from "zod";
+import { isFrozen } from "@/lib/account/deletion";
 import { setWishlistWith, WishlistError } from "../collection/wishlist-core";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
@@ -16,7 +17,7 @@ export async function setWishlistAction(input: unknown): Promise<{ ok: true; wis
   if (!user) return { ok: false, error: "NO_SESSION" };
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
-  if (user.bannedAt) return { ok: false, error: "UNAVAILABLE" };
+  if (user.bannedAt || isFrozen(user)) return { ok: false, error: "UNAVAILABLE" };
   if (!(await rateLimit(`wishlist:${user.id}`, { limit: 60, windowSeconds: 60 })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }

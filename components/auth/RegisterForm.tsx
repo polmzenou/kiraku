@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useActionState, useState } from "react";
+import { Link } from "@/i18n/navigation";
 import { initialFormState } from "@/lib/auth/form-state";
 import { PASSWORD_MAX, PASSWORD_MIN } from "@/lib/auth/schemas";
 import { register } from "@/server/actions/account";
@@ -79,6 +80,37 @@ export function RegisterForm({ formToken, honeypot }: { formToken: string; honey
         maxLength={PASSWORD_MAX}
         required
       />
+      <div className="flex flex-col gap-1">
+        <label className="flex min-h-11 items-start gap-3 text-sm">
+          <input
+            type="checkbox"
+            name="terms"
+            required
+            aria-invalid={state.fields?.terms ? true : undefined}
+            aria-describedby={state.fields?.terms ? "terms-error" : undefined}
+            className="mt-0.5 size-6 shrink-0 accent-shu-btn"
+          />
+          <span>
+            {t.rich("register.terms", {
+              terms: (chunks) => (
+                <Link href="/cgu" target="_blank" className="font-medium text-ai underline underline-offset-4">
+                  {chunks}
+                </Link>
+              ),
+              privacy: (chunks) => (
+                <Link href="/confidentialite" target="_blank" className="font-medium text-ai underline underline-offset-4">
+                  {chunks}
+                </Link>
+              ),
+            })}
+          </span>
+        </label>
+        {state.fields?.terms && (
+          <p id="terms-error" className="text-sm text-shu">
+            {t(`fieldErrors.${state.fields.terms}`)}
+          </p>
+        )}
+      </div>
       <Button type="submit" variant="shu" disabled={pending} className="mt-2 min-h-12 text-base">
         {pending ? t("pending") : t("register.submit")}
       </Button>

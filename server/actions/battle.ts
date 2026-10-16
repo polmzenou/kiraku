@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { TEAM_SIZE } from "@/lib/battle/types";
 import type { Activity, BattleUpdateView, BattleView } from "@/lib/battle/view";
+import { isFrozen } from "@/lib/account/deletion";
 import { prisma } from "../db";
 import {
   BattleError,
@@ -55,7 +56,7 @@ async function session(
 ): Promise<{ user: Player } | { error: "NO_SESSION" | "UNAVAILABLE" | "RATE_LIMITED" | "GUEST" }> {
   const user = await getCurrentUser();
   if (!user) return { error: "NO_SESSION" };
-  if (user.bannedAt) return { error: "UNAVAILABLE" };
+  if (user.bannedAt || isFrozen(user)) return { error: "UNAVAILABLE" };
   // Les invités regardent ; la transaction le revérifie
   if (user.isGuest) return { error: "GUEST" };
   if (!(await rateLimit(`${bucket}:${user.id}`, rule)).success) return { error: "RATE_LIMITED" };
