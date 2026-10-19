@@ -15,7 +15,7 @@ export default function CollectionLoading() {
       </div>
       <div className="grid grid-cols-3 gap-3" aria-hidden="true">
         {Array.from({ length: 3 }, (_, i) => (
-          <div key={i} className="h-16 rounded-lg bg-surface" />
+          <div key={i} className="h-16 rounded-card bg-surface" />
         ))}
       </div>
       <div className="h-11 rounded-control bg-surface" aria-hidden="true" />

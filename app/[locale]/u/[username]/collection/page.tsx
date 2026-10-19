@@ -33,7 +33,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pag
     return (
       <PageShell>
         {back}
-        <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">{t("collectionHidden")}</p>
+        <p className="lacquer rounded-card p-6 text-center text-text-muted">{t("collectionHidden")}</p>
       </PageShell>
     );
   }
@@ -54,7 +54,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pag
       <CollectionStats summary={summary} />
       <CollectionFilters params={filters} pathname={`/u/${owner.username}/collection`} series={series} />
       {page.items.length === 0 ? (
-        <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">
+        <p className="lacquer rounded-card p-6 text-center text-text-muted">
           {hasFilters(filters) ? t("noMatch") : t("collectionEmpty")}
         </p>
       ) : (

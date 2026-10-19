@@ -72,7 +72,7 @@ export default async function AccountPage() {
     <PageShell>
       <h1 className="sr-only">{t("account.title")}</h1>
 
-      <section className="flex items-center gap-4 rounded-lg border border-border bg-surface p-4">
+      <section className="flex items-center gap-4 lacquer rounded-card p-4">
         {user.image ? (
           <Image
             src={user.image}
@@ -97,7 +97,7 @@ export default async function AccountPage() {
       <ButtonLink href={`/u/${user.username}`}>{t("account.publicProfile")}</ButtonLink>
 
       <dl className="grid grid-cols-2 gap-3">
-        <div className="relative rounded-lg border border-border bg-surface p-4">
+        <div className="relative lacquer rounded-card p-4">
           <dt className="text-sm text-text-muted">{t("account.balance")}</dt>
           <dd className="text-lg font-bold text-kin">
             {/* Toute la case mène à l'historique des Zeni */}
@@ -106,7 +106,7 @@ export default async function AccountPage() {
             </Link>
           </dd>
         </div>
-        <div className="rounded-lg border border-border bg-surface p-4">
+        <div className="lacquer rounded-card p-4">
           <dt className="text-sm text-text-muted">{t("account.boosterStock")}</dt>
           <dd className="text-lg font-bold">{t("common.boosters", { count: user.boosterStock, max: maxStock })}</dd>
         </div>
@@ -118,7 +118,7 @@ export default async function AccountPage() {
             <li key={tile.key}>
               <Link
                 href={tile.href}
-                className="flex min-h-20 flex-col items-start justify-between gap-1 rounded-lg border border-border bg-surface p-3 font-bold hover:border-shu"
+                className="flex min-h-20 flex-col items-start justify-between gap-1 lacquer rounded-card p-3 font-bold hover:border-shu"
               >
                 <span aria-hidden="true" lang="ja" className="font-seal text-xl text-shu">
                   {tile.kanji}
@@ -138,7 +138,7 @@ export default async function AccountPage() {
       </nav>
 
       {user.isGuest ? (
-        <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+        <section className="flex flex-col gap-3 lacquer rounded-card p-4">
           <h2 className="text-lg font-bold">{t("account.linkTitle")}</h2>
           <p className="text-sm text-text-muted">{t("account.linkBody")}</p>
           <ButtonLink href="/inscription" variant="primary">
@@ -150,7 +150,7 @@ export default async function AccountPage() {
       ) : (
         <>
           {user.email && (
-            <section className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4">
+            <section className="flex flex-col gap-2 lacquer rounded-card p-4">
               <p className="text-sm text-text-muted">{t("account.emailLabel")}</p>
               <p className="break-all">{user.email}</p>
               {user.emailVerified ? (
@@ -165,7 +165,7 @@ export default async function AccountPage() {
           )}
 
           {canLinkDiscord && (
-            <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+            <section className="flex flex-col gap-3 lacquer rounded-card p-4">
               <h2 className="text-lg font-bold">{t("account.discordBonusTitle")}</h2>
               {discordBonus > 0 && (
                 <p className="text-sm text-kin">{t("account.discordBonusBody", { amount: discordBonus })}</p>
@@ -177,7 +177,7 @@ export default async function AccountPage() {
         </>
       )}
 
-      <section id="confidentialite" className="flex scroll-mt-20 flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+      <section id="confidentialite" className="flex scroll-mt-20 flex-col gap-3 lacquer rounded-card p-4">
         <h2 className="text-lg font-bold">{t("privacy.title")}</h2>
         <p className="text-sm text-text-muted">{t("privacy.intro")}</p>
         <PrivacyForm visibility={user.profileVisibility} showCollection={user.showCollection} />
@@ -185,7 +185,7 @@ export default async function AccountPage() {
 
       {/* Invités exclus : sans social, ils ne reçoivent aucune notification */}
       {push && !user.isGuest && env.VAPID_PUBLIC_KEY && (
-        <section id="notifications" className="flex scroll-mt-20 flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+        <section id="notifications" className="flex scroll-mt-20 flex-col gap-3 lacquer rounded-card p-4">
           <h2 className="text-lg font-bold">{t("push.title")}</h2>
           <PushToggle publicKey={env.VAPID_PUBLIC_KEY} />
         </section>
@@ -193,7 +193,7 @@ export default async function AccountPage() {
 
       <InstallAppButton />
 
-      <section className="flex flex-col gap-5 rounded-lg border border-border bg-surface p-4">
+      <section className="flex flex-col gap-5 lacquer rounded-card p-4">
         <h2 className="text-lg font-bold">{t("account.settings")}</h2>
         <ThemeToggle initial={theme} />
         <LocaleSwitcher />

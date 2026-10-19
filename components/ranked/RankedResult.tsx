@@ -50,7 +50,7 @@ export function RankedResult({
           : null;
 
   return (
-    <div className="battle-board flex w-full flex-col items-center gap-2 rounded-xl border border-[var(--board-accent)]/50 bg-[#15120f] p-3 text-washi-paper" data-tier={after.tier}>
+    <div className="battle-board flex w-full flex-col items-center gap-2 rounded-card border border-[var(--board-accent)]/50 bg-[#15120f] p-3 text-washi-paper" data-tier={after.tier}>
       <div className="flex w-full items-center gap-3">
         <RankEmblem tier={after.tier} division={after.division} size={56} label={name(after.tier, after.division)} />
         <div className="flex min-w-0 flex-1 flex-col items-start gap-1">

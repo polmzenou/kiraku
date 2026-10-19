@@ -61,7 +61,7 @@ function OddsTable({
   const percent = usePercent();
   const odds = atLeastOdds(rates, floors, counts);
   return (
-    <section className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4">
+    <section className="flex flex-col gap-2 lacquer rounded-card p-4">
       <h3 className="font-bold">{t("oddsTitle")}</h3>
       <p className="text-xs text-text-muted">
         {t("oddsHint")} {t("pool", { count: size })} ·{" "}

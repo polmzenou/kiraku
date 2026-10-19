@@ -87,7 +87,7 @@ export function ReviewsCarousel({ reviews }: { reviews: ReviewCard[] }) {
         className="grid grid-cols-1 gap-3 transition-[opacity,translate] duration-500 ease-out starting:translate-y-1 starting:opacity-0 motion-reduce:transition-none sm:grid-cols-2 lg:grid-cols-3"
       >
         {current.map((r, i) => (
-          <li key={r.id} className={`${VISIBILITY[i]} min-h-36 flex-col gap-3 rounded-xl border border-border bg-surface p-4`}>
+          <li key={r.id} className={`${VISIBILITY[i]} min-h-36 flex-col gap-3 lacquer rounded-card p-4`}>
             <div className="flex items-start gap-3">
               <PlayerAvatar username={r.username} image={r.image} size={40} />
               <div className="flex min-w-0 flex-1 flex-col gap-1">

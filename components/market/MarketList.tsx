@@ -54,7 +54,7 @@ export function MarketList({
     });
 
   if (items.length === 0) {
-    return <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">{emptyText}</p>;
+    return <p className="lacquer rounded-card p-6 text-center text-text-muted">{emptyText}</p>;
   }
   return (
     <div className="flex flex-col gap-4">

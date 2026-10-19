@@ -16,7 +16,7 @@ export function FeatureSettingsForm({ initial, premiumReady }: { initial: Featur
 
   return (
     <form className="flex max-w-2xl flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
-      <ul className="flex flex-col divide-y divide-border rounded-lg border border-border bg-surface">
+      <ul className="flex flex-col divide-y divide-border lacquer rounded-card">
         {FEATURE_SETTING_KEYS.map((key) => (
           <li key={key}>
             <label className="flex min-h-14 items-center justify-between gap-4 px-4 py-2">
@@ -30,7 +30,8 @@ export function FeatureSettingsForm({ initial, premiumReady }: { initial: Featur
                 type="checkbox"
                 checked={draft[key]}
                 onChange={(e) => setDraft((d) => ({ ...d, [key]: e.target.checked }))}
-                className="size-6 shrink-0 accent-shu-btn"
+                role="switch"
+                className="switch"
               />
             </label>
           </li>

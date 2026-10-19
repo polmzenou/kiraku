@@ -54,7 +54,7 @@ export function ReviewsSection({
       {cards.length > 0 ? (
         <ReviewsCarousel reviews={cards} />
       ) : (
-        <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-text-muted">{t("empty")}</p>
+        <p className="rounded-card border border-dashed border-border p-6 text-center text-sm text-text-muted">{t("empty")}</p>
       )}
 
       {viewer.kind === "member" && <ReviewButton own={viewer.own} />}

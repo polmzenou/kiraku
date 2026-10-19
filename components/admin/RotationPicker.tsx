@@ -62,7 +62,7 @@ export function RotationPicker({
   };
 
   return (
-    <fieldset className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+    <fieldset className="flex min-w-0 flex-col gap-3 lacquer rounded-card p-4">
       <legend className="px-1 font-title text-lg font-bold">{title}</legend>
       <p className="text-xs text-text-muted">{pinned ? t("rotation.pinned") : t("rotation.random")}</p>
       {candidates.length === 0 ? (
@@ -76,7 +76,7 @@ export function RotationPicker({
                   type="checkbox"
                   checked={draft.includes(c.slug)}
                   onChange={() => toggle(c.slug)}
-                  className="size-5 accent-shu-btn"
+                  className="choice"
                 />
                 <span aria-hidden="true" lang="ja" className="font-seal text-shu">
                   {c.emblem}

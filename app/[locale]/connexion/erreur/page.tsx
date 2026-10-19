@@ -20,7 +20,7 @@ export default async function AuthErrorPage({ searchParams }: PageProps<"/[local
 
   return (
     <PageShell>
-      <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4">
+      <section className="flex flex-col gap-4 lacquer rounded-card p-4">
         <h1 className="text-xl font-bold">{title}</h1>
         <p className="text-text-muted">{body}</p>
         {alreadyLinked && (

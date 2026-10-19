@@ -5,8 +5,8 @@ import { Link } from "@/i18n/navigation";
 import { parseUserListParams, USER_FILTERS } from "@/lib/admin/users";
 import { requireAdmin } from "@/server/admin";
 import { listAdminUsers } from "@/server/admin/users";
+import { inputClass, selectClass } from "@/components/ui/Field";
 
-const inputClass = "min-h-11 w-full min-w-0 rounded-control border border-border bg-surface-2 px-3 text-base";
 
 export default async function AdminUsersPage({ searchParams }: PageProps<"/[locale]/admin/utilisateurs">) {
   await requireAdmin();
@@ -25,7 +25,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/[loca
           <input name="q" defaultValue={params.query} maxLength={100} placeholder={t("searchPlaceholder")} className={inputClass} />
         </label>
         <label className="flex flex-col gap-1 text-sm">{t("filter")}
-          <select name="filter" defaultValue={params.filter} className={inputClass}>
+          <select name="filter" defaultValue={params.filter} className={selectClass}>
             {USER_FILTERS.map((f) => <option key={f} value={f}>{t(`filters.${f}`)}</option>)}
           </select>
         </label>

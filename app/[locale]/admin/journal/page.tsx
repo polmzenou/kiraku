@@ -4,8 +4,8 @@ import { Link } from "@/i18n/navigation";
 import { logQuery, parseAdminLogParams } from "@/lib/admin/logs";
 import { requireAdmin } from "@/server/admin";
 import { adminTargetHref, listAdminLogs } from "@/server/admin/logs";
+import { inputClass } from "@/components/ui/Field";
 
-const inputClass = "min-h-11 w-full min-w-0 rounded-control border border-border bg-surface-2 px-3 text-base";
 
 /** Lisible et échappé par React : jamais de HTML injecté depuis le journal. */
 function json(value: unknown): string {
@@ -30,7 +30,7 @@ export default async function AdminLogPage({ searchParams }: PageProps<"/[locale
         <p className="max-w-prose text-sm text-text-muted">{t("intro")}</p>
       </div>
 
-      <form className="grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-3">
+      <form className="grid gap-3 lacquer rounded-card p-4 sm:grid-cols-2 lg:grid-cols-3">
         {(
           [
             ["action", "text", t("action"), "SETTING_UPDATE"],
@@ -72,7 +72,7 @@ export default async function AdminLogPage({ searchParams }: PageProps<"/[locale
           {items.map((log) => {
             const href = adminTargetHref(log.targetType, log.targetId);
             return (
-              <li key={log.id} className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3 text-sm">
+              <li key={log.id} className="flex flex-col gap-2 lacquer rounded-card p-3 text-sm">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="font-bold">{log.action}</span>
                   <time dateTime={log.createdAt.toISOString()} className="text-xs text-text-muted tabular-nums">

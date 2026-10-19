@@ -69,7 +69,7 @@ export function BattleLog({
   });
 
   return (
-    <section className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4">
+    <section className="flex flex-col gap-2 lacquer rounded-card p-4">
       <h2 className="font-title text-base font-bold">{t("log.title")}</h2>
       {lines.length === 0 ? (
         <p className="text-sm text-text-muted">{t("log.empty")}</p>
@@ -91,7 +91,7 @@ export function CardDetail({ card, hp, maxHp, rules }: { card: FighterSetup | nu
   const t = useTranslations("battle");
   if (!card) {
     return (
-      <section className="rounded-lg border border-border bg-surface p-4">
+      <section className="lacquer rounded-card p-4">
         <h2 className="font-title text-base font-bold">{t("detail.title")}</h2>
         <p className="mt-1 text-sm text-text-muted">{t("detail.hint")}</p>
       </section>
@@ -102,7 +102,7 @@ export function CardDetail({ card, hp, maxHp, rules }: { card: FighterSetup | nu
   const kwValues = { pct: 0, turns: k.poisonTurns };
   const kwPct = { TAUNT: 0, BARRIER: 0, FLURRY: 0, POISON: k.poisonPct, RIPOSTE: k.ripostePct, LAST_WILL: k.lastWillHealPct, REVIVE: k.revivePct };
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+    <section className="flex flex-col gap-3 lacquer rounded-card p-4">
       <div>
         <h2 className="font-title text-lg font-bold">{card.name}</h2>
         <p className="text-sm tabular-nums text-text-muted">{t("detail.stats", { atk: card.atk, def: card.def, hp, max: maxHp })}</p>

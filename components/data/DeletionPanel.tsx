@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { cancelDeletionAction, requestDeletionAction, type DataActionError } from "@/server/actions/data";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
+import { inputClass } from "../ui/Field";
 
 /** Suppression du compte : demande confirmée par le pseudo, annulable jusqu'à l'échéance. */
 export function DeletionPanel({ username, graceDays, dueAt }: { username: string; graceDays: number; dueAt: string | null }) {
@@ -81,7 +82,7 @@ export function DeletionPanel({ username, graceDays, dueAt }: { username: string
             autoCapitalize="none"
             spellCheck={false}
             maxLength={40}
-            className="min-h-11 rounded-control border border-border bg-surface px-3"
+            className={inputClass}
           />
           {error && (
             <p role="alert" className="text-sm text-shu">

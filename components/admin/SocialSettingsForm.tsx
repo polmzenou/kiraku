@@ -55,7 +55,7 @@ function NumberInput({ label, value, onChange, min, max }: { label: string; valu
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <label className="flex min-h-11 items-center gap-3">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="size-5 accent-shu-btn" />
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="choice" />
       <span>{label}</span>
     </label>
   );
@@ -111,7 +111,7 @@ export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
 
   return (
     <form className="flex max-w-2xl flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-lg border border-border bg-surface p-4">
+      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
         <legend className="px-1 font-title text-lg font-bold">{t("friendsSection")}</legend>
         <Toggle label={t("keys.social.enabled")} checked={draft["social.enabled"]} onChange={(v) => update("social.enabled", v)} />
         <div className="grid gap-3 sm:grid-cols-3">
@@ -121,7 +121,7 @@ export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
         </div>
       </fieldset>
 
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-lg border border-border bg-surface p-4">
+      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
         <legend className="px-1 font-title text-lg font-bold">{t("giftsSection")}</legend>
         <Toggle label={t("keys.gifts.enabled")} checked={draft["gifts.enabled"]} onChange={(v) => update("gifts.enabled", v)} />
         <div className="grid gap-3 sm:grid-cols-2">
@@ -138,7 +138,7 @@ export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
               <label key={r} className="flex min-h-11 items-center gap-2">
                 <input
                   type="checkbox"
-                  className="size-5 accent-shu-btn"
+                  className="choice"
                   checked={rarities.includes(r)}
                   onChange={(e) =>
                     update(
@@ -158,7 +158,7 @@ export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
         <p className="text-xs text-text-muted">{t("giftsHint")}</p>
       </fieldset>
 
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-lg border border-border bg-surface p-4">
+      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
         <legend className="px-1 font-title text-lg font-bold">{t("notificationsSection")}</legend>
         <Toggle
           label={t("keys.notifications.pushEnabled")}
@@ -178,7 +178,7 @@ export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
       )}
 
       {reviewing && valid && changed.length > 0 ? (
-        <section className="flex flex-col gap-3 rounded-lg border border-shu bg-surface p-4" aria-live="polite">
+        <section className="flex flex-col gap-3 rounded-card border border-shu bg-surface p-4" aria-live="polite">
           <h3 className="font-bold">{t("confirmTitle")}</h3>
           <ul className="list-inside list-disc text-sm">
             {changed.map((k) => (

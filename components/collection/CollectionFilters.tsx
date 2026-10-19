@@ -15,13 +15,12 @@ import {
 } from "@/lib/collection/params";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
+import { chipClasses } from "../ui/Chip";
+import { inputClass, selectClass } from "../ui/Field";
 
 const DEBOUNCE_MS = 300;
 
-const chip = (active: boolean) =>
-  `inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-control border px-3 text-sm ${
-    active ? "border-text bg-surface-2 font-bold" : "border-border bg-surface text-text-muted"
-  }`;
+const chip = (active: boolean) => chipClasses(active);
 
 /**
  * Filtres de la collection : recherche, raretés, doublons, puis tri et série dans une feuille.
@@ -89,7 +88,7 @@ export function CollectionFilters({
             clearTimeout(timer.current);
             timer.current = setTimeout(() => go({ q: value }), DEBOUNCE_MS);
           }}
-          className="min-h-11 min-w-0 flex-1 rounded-control border border-border bg-surface px-3 text-text placeholder:text-text-muted"
+          className={`${inputClass} flex-1`}
         />
         <Button type="button" onClick={() => setSheetOpen(true)} aria-haspopup="dialog" className="px-4">
           {t("sortAndSeries")}
@@ -165,7 +164,7 @@ export function CollectionFilters({
             id={seriesId}
             value={params.series ?? ""}
             onChange={(e) => go({ series: e.target.value || null })}
-            className="min-h-11 w-full rounded-control border border-border bg-surface-2 px-3 text-base"
+            className={selectClass}
           >
             <option value="">{t("allSeries")}</option>
             {series.map((s) => (

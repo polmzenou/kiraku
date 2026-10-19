@@ -170,7 +170,7 @@ export function Recap({ boosters, state, reduced, play, counters, zeniSpent, cou
 
       {/* Compteurs et suite */}
       <m.div
-        className="mx-auto flex w-full max-w-sm flex-col items-center gap-4 rounded-lg border border-border bg-surface p-4"
+        className="mx-auto flex w-full max-w-sm flex-col items-center gap-4 lacquer rounded-card p-4"
         initial={reduced ? false : { opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: unroll + 0.6 }}

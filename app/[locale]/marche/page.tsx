@@ -8,6 +8,7 @@ import { MarketList } from "@/components/market/MarketList";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { ButtonLink } from "@/components/ui/ButtonLink";
+import { segmentedItemClass, segmentedTrackClass } from "@/components/ui/Segmented";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { MARKET_TABS, marketSearchParams, parseMarketParams } from "@/lib/market/filters";
@@ -58,11 +59,11 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
       </div>
 
       {!page ? (
-        <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">{t("disabled")}</p>
+        <p className="lacquer rounded-card p-6 text-center text-text-muted">{t("disabled")}</p>
       ) : (
         <>
           {user.isGuest && (
-            <aside className="flex flex-col items-start gap-3 rounded-lg border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+            <aside className="flex flex-col items-start gap-3 lacquer rounded-card p-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm">{t("guest")}</p>
               <ButtonLink href="/inscription" variant="primary">
                 {t("signUp")}
@@ -71,8 +72,8 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
           )}
 
           {tabs.length > 1 && (
-            <nav aria-label={t("tabs.label")} className="-mx-4 overflow-x-auto px-4">
-              <ul className="flex gap-2">
+            <nav aria-label={t("tabs.label")} className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:px-0">
+              <ul className={segmentedTrackClass}>
                 {tabs.map((tab) => {
                   const current = params.tab === tab;
                   return (
@@ -80,9 +81,7 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
                       <Link
                         href={tab === "all" ? "/marche" : `/marche?onglet=${tab}`}
                         aria-current={current ? "page" : undefined}
-                        className={`inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-bold whitespace-nowrap ${
-                          current ? "border-shu bg-shu-btn text-washi-paper" : "border-border bg-surface-2"
-                        }`}
+                        className={segmentedItemClass}
                       >
                         {t(`tabs.${tab}`)}
                       </Link>

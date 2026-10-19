@@ -65,7 +65,7 @@ export default async function AdminShopPage({ searchParams }: PageProps<"/[local
 
       <ul className="flex flex-col gap-2">
         {items.map((item) => (
-          <li key={item.id} className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-3 sm:flex-row sm:items-center sm:justify-between">
+          <li key={item.id} className="flex flex-col gap-1 lacquer rounded-card p-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 flex-col gap-1">
               <p className="font-bold">
                 {localize(parseLocalized(item.name), locale)}

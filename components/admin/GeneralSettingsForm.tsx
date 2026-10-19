@@ -40,7 +40,7 @@ export function GeneralSettingsForm({ initial }: { initial: GeneralSettings }) {
 
   return (
     <form className="flex max-w-2xl flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-lg border border-border bg-surface p-4">
+      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
         <legend className="px-1 font-title text-lg font-bold">{t("gameSection")}</legend>
         {num("economy.startingZeni")}
         <Field label={label("game.timeZone")} hint={t("hints.game.timeZone")}>
@@ -58,7 +58,7 @@ export function GeneralSettingsForm({ initial }: { initial: GeneralSettings }) {
         </Field>
         {num("guest.createPerHourPerIp")}
       </fieldset>
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-lg border border-border bg-surface p-4">
+      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
         <legend className="px-1 font-title text-lg font-bold">{t("accountSection")}</legend>
         {num("account.deletionGraceDays")}
         {num("account.usernameChangeDays")}

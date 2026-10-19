@@ -106,7 +106,8 @@ export function ConsentManager() {
                 type="checkbox"
                 checked={draft[c] === true}
                 onChange={(e) => setDraft((d) => ({ ...d, [c]: e.target.checked }))}
-                className="size-6 shrink-0 accent-shu-btn"
+                role="switch"
+                className="switch"
               />
             </li>
           ))}

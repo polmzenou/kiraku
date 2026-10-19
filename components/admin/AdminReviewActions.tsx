@@ -10,6 +10,7 @@ import {
   type AdminReviewResult,
 } from "@/server/actions/admin-reviews";
 import { Button } from "../ui/Button";
+import { textareaClass } from "../ui/Field";
 
 /**
  * Actions de modération d'un avis : masquer / réafficher, épingler / désépingler (avis visible
@@ -104,7 +105,7 @@ export function AdminReviewActions({
             onChange={(e) => setDraft(e.target.value)}
             maxLength={REVIEW_BODY_MAX}
             rows={4}
-            className="min-h-24 w-full rounded-control border border-border bg-surface p-3 text-text placeholder:text-text-muted"
+            className={textareaClass}
             placeholder={t("replyPlaceholder")}
           />
           <div className="flex flex-wrap items-center gap-2">

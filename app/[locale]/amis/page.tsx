@@ -6,12 +6,14 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { AddFriendForm } from "@/components/social/AddFriendForm";
 import { PlayerRow } from "@/components/social/PlayerRow";
 import { RowActions } from "@/components/social/RowActions";
+import { buttonClasses } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
 import { SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
 import { countIncomingRequests, listBlocked, listFriends, listRequests } from "@/server/social/queries";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
+import { inputClass } from "@/components/ui/Field";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -40,7 +42,7 @@ export default async function FriendsPage({ searchParams }: PageProps<"/[locale]
     return (
       <PageShell>
         {title}
-        <div className="flex flex-col items-start gap-3 rounded-lg border border-border bg-surface p-4">
+        <div className="flex flex-col items-start gap-3 lacquer rounded-card p-4">
           <p>{user.isGuest ? t("guestOnly") : t("disabled")}</p>
           {user.isGuest && (
             <ButtonLink href="/inscription" variant="primary">
@@ -78,7 +80,7 @@ export default async function FriendsPage({ searchParams }: PageProps<"/[locale]
       {title}
 
       <nav aria-label={t("tabsLabel")}>
-        <ul className="flex flex-wrap gap-1 rounded-lg border border-border bg-surface p-1">
+        <ul className="flex flex-wrap gap-1 lacquer rounded-card p-1">
           {tabLink("amis", t("tabs.friends"))}
           {tabLink("demandes", t("tabs.requests"), incomingCount)}
           {tabLink("bloques", t("tabs.blocked"))}
@@ -121,17 +123,17 @@ async function FriendsTab({ userId, q, page }: { userId: string; q: string; page
             defaultValue={q}
             maxLength={SEARCH_MAX_LENGTH}
             placeholder={t("searchPlaceholder")}
-            className="min-h-11 min-w-0 flex-1 rounded-control border border-border bg-surface px-3 text-text placeholder:text-text-muted"
+            className={`${inputClass} flex-1`}
           />
-          <button type="submit" className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface-2 px-4">
+          <button type="submit" className={buttonClasses("secondary")}>
             {t("search")}
           </button>
         </form>
 
         {items.length === 0 ? (
-          <p className="rounded-lg border border-border bg-surface p-4 text-sm text-text-muted">{q ? t("noMatch") : t("empty")}</p>
+          <p className="lacquer rounded-card p-4 text-sm text-text-muted">{q ? t("noMatch") : t("empty")}</p>
         ) : (
-          <ul className="rounded-lg border border-border bg-surface px-3">
+          <ul className="lacquer rounded-card px-3">
             {items.map((f) => (
               <PlayerRow key={f.id} player={f} />
             ))}
@@ -159,9 +161,9 @@ async function RequestsTab({ userId, format }: { userId: string; format: Awaited
       <section className="flex flex-col gap-3">
         <SectionTitle kanji="友" title={t("incoming")} />
         {incoming.length === 0 ? (
-          <p className="rounded-lg border border-border bg-surface p-4 text-sm text-text-muted">{t("noIncoming")}</p>
+          <p className="lacquer rounded-card p-4 text-sm text-text-muted">{t("noIncoming")}</p>
         ) : (
-          <ul className="rounded-lg border border-border bg-surface px-3">
+          <ul className="lacquer rounded-card px-3">
             {incoming.map((p) => (
               <PlayerRow key={p.id} player={p} detail={since(p.since)}>
                 <RowActions username={p.username} mode="incoming" />
@@ -173,9 +175,9 @@ async function RequestsTab({ userId, format }: { userId: string; format: Awaited
       <section className="flex flex-col gap-3">
         <SectionTitle kanji="友" title={t("outgoing")} />
         {outgoing.length === 0 ? (
-          <p className="rounded-lg border border-border bg-surface p-4 text-sm text-text-muted">{t("noOutgoing")}</p>
+          <p className="lacquer rounded-card p-4 text-sm text-text-muted">{t("noOutgoing")}</p>
         ) : (
-          <ul className="rounded-lg border border-border bg-surface px-3">
+          <ul className="lacquer rounded-card px-3">
             {outgoing.map((p) => (
               <PlayerRow key={p.id} player={p} detail={since(p.since)}>
                 <RowActions username={p.username} mode="outgoing" />
@@ -195,9 +197,9 @@ async function BlockedTab({ userId }: { userId: string }) {
     <section className="flex flex-col gap-3">
       <p className="text-sm text-text-muted">{t("blockedIntro")}</p>
       {blocked.length === 0 ? (
-        <p className="rounded-lg border border-border bg-surface p-4 text-sm text-text-muted">{t("noBlocked")}</p>
+        <p className="lacquer rounded-card p-4 text-sm text-text-muted">{t("noBlocked")}</p>
       ) : (
-        <ul className="rounded-lg border border-border bg-surface px-3">
+        <ul className="lacquer rounded-card px-3">
           {blocked.map((p) => (
             <PlayerRow key={p.id} player={p}>
               <RowActions username={p.username} mode="blocked" />

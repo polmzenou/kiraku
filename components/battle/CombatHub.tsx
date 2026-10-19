@@ -13,6 +13,7 @@ import { SeasonReward } from "../ranked/SeasonReward";
 import { QueueWaiting } from "./QueueWaiting";
 import { useBattleError } from "./useBattleError";
 import { TeamPicker } from "./TeamPicker";
+import { inputClass } from "../ui/Field";
 
 type Intent =
   | { kind: "EXHIBITION" }
@@ -95,7 +96,7 @@ export function CombatHub({
   return (
     <div className="flex flex-col gap-4">
       {busy && (
-        <aside className="flex flex-col items-start gap-3 rounded-lg border border-kin/60 bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+        <aside className="flex flex-col items-start gap-3 rounded-card border border-kin/60 bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm font-medium">{t(`activity.${activity.kind}`)}</p>
           <Link href={`/combat/${activity.battleId}`} className={buttonClasses("primary")}>
             {t("activity.resume")}
@@ -143,7 +144,7 @@ export function CombatHub({
       </section>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <article className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+        <article className="flex flex-col gap-3 lacquer rounded-card p-4">
           <h2 className="flex items-center gap-2 font-title text-lg font-bold">
             {t("exhibition.title")}
           </h2>
@@ -154,7 +155,7 @@ export function CombatHub({
         </article>
 
 
-        <article className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+        <article className="flex flex-col gap-3 lacquer rounded-card p-4">
           <h2 className="flex items-center gap-2 font-title text-lg font-bold">
             {t("friend.title")}
           </h2>
@@ -179,7 +180,7 @@ export function CombatHub({
                 autoComplete="off"
                 spellCheck={false}
                 inputMode="text"
-                className="min-h-11 w-full rounded-control border border-border bg-bg px-3 font-bold tracking-[0.3em] tabular-nums uppercase"
+                className={`${inputClass} font-bold tracking-[0.3em] tabular-nums uppercase`}
               />
             </label>
             <Button type="submit" disabled={busy || pending || code.length !== 6}>

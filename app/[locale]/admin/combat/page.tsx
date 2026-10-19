@@ -34,7 +34,7 @@ export default async function AdminCombatPage() {
 
       <dl className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         {stats.map((s) => (
-          <div key={s.label} className="rounded-lg border border-border bg-surface p-4">
+          <div key={s.label} className="lacquer rounded-card p-4">
             <dt className="text-sm text-text-muted">{s.label}</dt>
             <dd className="text-xl font-bold tabular-nums text-kin">{s.value}</dd>
           </div>

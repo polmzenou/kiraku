@@ -21,7 +21,7 @@ export function DiscordSettingsForm({ initial }: { initial: DiscordSettings }) {
 
   return (
     <form className="flex max-w-2xl flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-lg border border-border bg-surface p-4">
+      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
         <legend className="px-1 font-title text-lg font-bold">{t("modalSection")}</legend>
         <Toggle label={t("enabled")} checked={modal.enabled} onChange={(v) => setModal({ enabled: v })} />
         <Field label={t("inviteUrl")} hint={t("inviteUrlHint")}>
@@ -91,7 +91,7 @@ export function DiscordSettingsForm({ initial }: { initial: DiscordSettings }) {
         <Toggle label={t("showInFooter")} checked={modal.showInFooter} onChange={(v) => setModal({ showInFooter: v })} />
       </fieldset>
 
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-lg border border-border bg-surface p-4">
+      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
         <legend className="px-1 font-title text-lg font-bold">{t("linkSection")}</legend>
         <NumberField
           label={t("linkBonusZeni")}

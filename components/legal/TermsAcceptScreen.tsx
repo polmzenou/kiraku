@@ -47,7 +47,7 @@ export function TermsAcceptScreen({ version, firstTime }: { version: number; fir
           type="checkbox"
           checked={checked}
           onChange={(e) => setChecked(e.target.checked)}
-          className="mt-0.5 size-6 shrink-0 accent-shu-btn"
+          className="mt-0.5 choice shrink-0 "
         />
         <span>{t("checkbox")}</span>
       </label>

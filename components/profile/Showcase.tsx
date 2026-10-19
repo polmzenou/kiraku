@@ -75,7 +75,7 @@ export function Showcase({ initial, editable, linkBase }: { initial: Slot[]; edi
   const shownIds = new Set(slots.flatMap((s) => (s ? [s.cardId] : [])));
   const isEmpty = shownIds.size === 0;
 
-  if (!editable && isEmpty) return <p className="rounded-lg border border-border bg-surface p-4 text-sm text-text-muted">{t("emptyPublic")}</p>;
+  if (!editable && isEmpty) return <p className="lacquer rounded-card p-4 text-sm text-text-muted">{t("emptyPublic")}</p>;
 
   return (
     <LazyMotion features={loadDomMax} strict>

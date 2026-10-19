@@ -101,7 +101,7 @@ function RaritySelect({ value, onChange, label }: { value: Rarity; onChange: (r:
 
 function Fieldset({ legend, children }: { legend: string; children: ReactNode }) {
   return (
-    <fieldset className="flex min-w-0 flex-col gap-4 rounded-lg border border-border bg-surface p-4">
+    <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
       <legend className="px-1 font-title text-lg font-bold">{legend}</legend>
       {children}
     </fieldset>
@@ -313,7 +313,7 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
       </form>
 
       <aside className="flex flex-col gap-4 lg:sticky lg:top-20">
-        <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+        <section className="flex flex-col gap-3 lacquer rounded-card p-4">
           <h3 className="font-title text-lg font-bold">{t("preview")}</h3>
           <table className="w-full text-sm">
             <thead>
@@ -350,7 +350,7 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
         )}
 
         {reviewing && valid && changed.length > 0 ? (
-          <section className="flex flex-col gap-3 rounded-lg border border-shu bg-surface p-4" aria-live="polite">
+          <section className="flex flex-col gap-3 rounded-card border border-shu bg-surface p-4" aria-live="polite">
             <h3 className="font-bold">{t("confirmTitle")}</h3>
             <ul className="list-inside list-disc text-sm">
               {changed.map((k) => (

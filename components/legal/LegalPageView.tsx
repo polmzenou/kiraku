@@ -51,7 +51,7 @@ export async function LegalPageView({ slug, locale, version }: { slug: LegalSlug
             )}
           </p>
           {doc.fallback && (
-            <p lang="en" className="rounded-lg border border-border bg-surface p-3 text-sm text-text-muted">
+            <p lang="en" className="lacquer rounded-card p-3 text-sm text-text-muted">
               {t("fallbackNotice")}
             </p>
           )}

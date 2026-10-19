@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useId, type InputHTMLAttributes } from "react";
 import type { FieldErrorCode } from "@/lib/auth/schemas";
+import { inputClass } from "../ui/Field";
 
 type Props = InputHTMLAttributes<HTMLInputElement> & {
   name: string;
@@ -12,9 +13,7 @@ type Props = InputHTMLAttributes<HTMLInputElement> & {
 };
 
 /** Champ texte des formulaires de compte (aussi utilisé par PasswordField). */
-export const fieldInputClass =
-  "min-h-12 w-full rounded-control border border-border bg-bg px-3.5 text-base text-text placeholder:text-text-muted/70 " +
-  "transition-colors hover:border-text-muted/60 focus:border-ai aria-invalid:border-shu motion-reduce:transition-none";
+export const fieldInputClass = `${inputClass} min-h-12`;
 
 /** Champ de formulaire : libellé, aide, erreur traduite, zone tactile ≥ 44 px. */
 export function Field({ label, hint, error, ...input }: Props) {

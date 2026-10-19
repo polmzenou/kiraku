@@ -9,6 +9,7 @@ import { recycleAllAction } from "@/server/actions/collection";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
 import { useCollectionStore } from "./CollectionStore";
+import { selectClass } from "../ui/Field";
 
 /**
  * « Recycler les doublons » : choix de la rareté la plus haute (Épique par défaut, pour ne jamais
@@ -73,7 +74,7 @@ export function RecycleAllSheet({ byRarity }: { byRarity: CollectionSummary["byR
               setMaxRarity(e.target.value as Rarity);
               setMessage(null);
             }}
-            className="min-h-11 w-full rounded-control border border-border bg-surface-2 px-3 text-base"
+            className={selectClass}
           >
             {RARITIES.map((r) => (
               <option key={r} value={r}>

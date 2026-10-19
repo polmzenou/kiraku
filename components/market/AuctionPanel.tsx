@@ -16,6 +16,7 @@ import { ButtonLink } from "../ui/ButtonLink";
 import { ZeniCoin } from "../layout/ZeniCoin";
 import { Button } from "../ui/Button";
 import { Countdown } from "./Countdown";
+import { inputClass } from "../ui/Field";
 
 type Confirming = { kind: "bid"; amount: number } | { kind: "buy"; amount: number } | { kind: "withdraw" } | null;
 
@@ -158,7 +159,7 @@ export function AuctionPanel({
   const endsAt = new Date(shown.endsAt).getTime();
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4" aria-live="polite">
+    <section className="flex flex-col gap-4 lacquer rounded-card p-4" aria-live="polite">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col">
           <span className="text-sm text-text-muted">
@@ -259,7 +260,7 @@ export function AuctionPanel({
                   step={1}
                   value={amount}
                   onChange={(e) => setTyped(e.target.value)}
-                  className="min-h-11 rounded-control border border-border bg-surface-2 px-3 text-lg tabular-nums"
+                  className={`${inputClass} text-lg tabular-nums`}
                 />
               </label>
               <p className="text-xs text-text-muted">{t("detail.minNext", { amount: shown.minNext })}</p>

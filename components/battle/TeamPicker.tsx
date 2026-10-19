@@ -7,6 +7,7 @@ import { TEAM_SIZE } from "@/lib/battle/types";
 import type { CandidateCard } from "@/lib/battle/view";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
+import { inputClass } from "../ui/Field";
 
 const fold = (s: string) =>
   s
@@ -87,12 +88,12 @@ export function TeamPicker({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("search")}
-          className="min-h-11 rounded-control border border-border bg-surface px-3"
+          className={inputClass}
         />
       </label>
 
       {candidates.length === 0 ? (
-        <p className="rounded-lg border border-border bg-surface p-4 text-center text-sm text-text-muted">{t("none")}</p>
+        <p className="lacquer rounded-card p-4 text-center text-sm text-text-muted">{t("none")}</p>
       ) : shown.length === 0 ? (
         <p className="text-center text-sm text-text-muted">{t("noMatch")}</p>
       ) : (

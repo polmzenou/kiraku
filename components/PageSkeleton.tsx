@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 import { PageShell } from "./PageShell";
 
-const block = "rounded-lg bg-surface animate-pulse motion-reduce:animate-none";
+const block = "rounded-card bg-surface animate-pulse motion-reduce:animate-none";
 
 /**
  * Squelette aux couleurs Yoru pendant le chargement d'une page (loading.tsx) : titre, puis une

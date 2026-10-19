@@ -15,7 +15,7 @@ type Mode = "SET" | "ADD" | "REMOVE";
 type Account = { username: string; role: "USER" | "ADMIN"; banned: boolean; profileVisibility: "PUBLIC" | "FRIENDS" | "PRIVATE"; showCollection: boolean };
 type Booster = { id: string; name: string; active: boolean; count: number; pity: number };
 const EditorContext = createContext<{ userId: string; reason: string; report: (result: AdminUserResult | "unexpected") => void }>({ userId: "", reason: "", report: () => {} });
-const panel = "flex flex-col gap-4 rounded-lg border border-border bg-surface p-4";
+const panel = "flex flex-col gap-4 lacquer rounded-card p-4";
 
 function MutationForm({ title, change, children, disabled = false, button }: { title: string; change: Change; children?: ReactNode; disabled?: boolean; button?: string }) {
   const t = useTranslations("admin.users");
@@ -200,7 +200,7 @@ export function UserEditor({ userId, account, self, stats, coins, boosters, disc
   const [reason, setReason] = useState(t("defaultReason"));
   const [lastResult, report] = useState<AdminUserResult | "unexpected" | null>(null);
   return <EditorContext.Provider value={{ userId, reason, report }}>
-    <section className="rounded-lg border border-border bg-surface-2 p-4">
+    <section className="rounded-card border border-border bg-surface-2 p-4">
       <TextField label={t("reason")} value={reason} onChange={setReason} maxLength={300} hint={t("reasonHint")} invalid={!reason.trim()} />
       <FormMessage message={lastResult ? { tone: lastResult !== "unexpected" && lastResult.ok ? "ok" : "error", text: lastResult === "unexpected" ? t("errors.unexpected") : lastResult.ok ? t("saved") : t(`errors.${lastResult.error}`) } : null} />
     </section>

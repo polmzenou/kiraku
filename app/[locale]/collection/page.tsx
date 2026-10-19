@@ -61,7 +61,7 @@ export default async function CollectionPage({ searchParams }: PageProps<"/[loca
       )}
 
       {summary.unique === 0 ? (
-        <section className="flex flex-col items-center gap-4 rounded-lg border border-border bg-surface p-6 text-center">
+        <section className="flex flex-col items-center gap-4 lacquer rounded-card p-6 text-center">
           <p className="text-text-muted">{t("empty")}</p>
           <ButtonLink href="/" variant="primary">
             {t("openBoosters")}
@@ -71,7 +71,7 @@ export default async function CollectionPage({ searchParams }: PageProps<"/[loca
         <>
           <CollectionFilters params={params} pathname="/collection" series={series} counts={counts} />
           {page.items.length === 0 ? (
-            <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">
+            <p className="lacquer rounded-card p-6 text-center text-text-muted">
               {hasFilters(params) ? t("noMatch") : t("empty")}
             </p>
           ) : (

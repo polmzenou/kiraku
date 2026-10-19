@@ -33,7 +33,7 @@ export function LotSendPanel({ lots }: { lots: { id: string; name: string }[] })
   if (lots.length === 0) return <p className="text-sm text-text-muted">{t("noActiveLot")}</p>;
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4">
+    <section className="flex flex-col gap-4 lacquer rounded-card p-4">
       <h3 className="font-title text-lg font-bold">{t("title")}</h3>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1">

@@ -16,7 +16,7 @@ import { getCurrentUser } from "@/server/user";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-const card = "flex flex-col gap-3 rounded-lg border border-border bg-surface p-4";
+const card = "flex flex-col gap-3 lacquer rounded-card p-4";
 
 /** « Mes données » : accès et portabilité, rectification, suppression, cookies (RGPD). */
 export default async function MyDataPage() {

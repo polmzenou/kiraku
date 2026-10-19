@@ -25,7 +25,7 @@ export default async function AdminBannersPage() {
       ) : (
         <ul className="grid gap-3 md:grid-cols-2">
           {banners.map((b) => (
-            <li key={b.slug} className="flex gap-3 rounded-lg border border-border bg-surface p-3">
+            <li key={b.slug} className="flex gap-3 lacquer rounded-card p-3">
               <div className="w-12 shrink-0">
                 <BoosterArt shape={b.shape} theme={b.theme} emblem={b.emblem} name="" contents="" compact />
               </div>

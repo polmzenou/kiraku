@@ -57,7 +57,7 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
       <PageShell>
         <ProfileHeader username={owner.username} image={owner.image} isGuest={owner.isGuest} />
         {social}
-        <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">
+        <p className="lacquer rounded-card p-6 text-center text-text-muted">
           <span aria-hidden="true" className="mb-2 block font-seal text-3xl text-shu">秘</span>
           {t("private")}
         </p>
@@ -90,14 +90,14 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
       </div>
 
       {access.isOwner && owner.profileVisibility !== "PUBLIC" && (
-        <p className="rounded-lg border border-border bg-surface p-3 text-sm text-text-muted">
+        <p className="lacquer rounded-card p-3 text-sm text-text-muted">
           {t(`ownerNotice.${owner.profileVisibility}`)}
         </p>
       )}
 
       <dl className="grid grid-cols-3 gap-2 md:gap-3">
         {stats.map(([label, value]) => (
-          <div key={label} className="flex min-w-0 flex-col gap-0.5 rounded-lg border border-border bg-surface p-3">
+          <div key={label} className="flex min-w-0 flex-col gap-0.5 lacquer rounded-card p-3">
             <dt className="truncate text-xs text-text-muted">{label}</dt>
             <dd className="text-lg font-bold tabular-nums">{value}</dd>
           </div>

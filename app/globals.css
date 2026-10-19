@@ -16,8 +16,7 @@
   --k-link: #d9b556;
   /* Laque (urushi) : reflet du bord haut et fond des surfaces */
   --k-sheen: rgb(255 255 255 / 0.06);
-  --k-lacquer-from: #26201a;
-  --k-lacquer-to: #1d1814;
+  --k-lacquer-light: rgb(255 255 255 / 0.035);
   --k-float-shadow: 0 12px 28px rgb(0 0 0 / 0.55);
   --k-raised-shadow: 0 10px 24px rgb(0 0 0 / 0.4);
   /* La capsule de nav flotte : sa hauteur, ses marges et la zone sûre forment la réserve du bas. */
@@ -47,8 +46,7 @@
   --k-kin: #b08a2e;
   --k-link: #75541c;
   --k-sheen: rgb(255 255 255 / 0.7);
-  --k-lacquer-from: #ede5d3;
-  --k-lacquer-to: #e4dac4;
+  --k-lacquer-light: rgb(255 255 255 / 0.4);
   --k-float-shadow: 0 12px 28px rgb(70 52 30 / 0.22);
   --k-raised-shadow: 0 10px 24px rgb(70 52 30 / 0.16);
 }
@@ -149,9 +147,11 @@
 
 /* Urushi : surfaces laquées et contrôles de formulaire dessinés (aucun JS, transitions courtes). */
 @layer components {
+  /* Le reflet est une image par-dessus la couleur : les utilitaires bg-* (survol, état) restent visibles. */
   .lacquer {
     border: 1px solid var(--color-border);
-    background: linear-gradient(180deg, var(--k-lacquer-from), var(--k-lacquer-to));
+    background-color: var(--color-surface);
+    background-image: linear-gradient(180deg, var(--k-lacquer-light), transparent 70%);
     box-shadow: var(--shadow-sheen);
   }
 

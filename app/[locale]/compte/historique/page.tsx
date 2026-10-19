@@ -31,18 +31,18 @@ export default async function LedgerPage({ searchParams }: PageProps<"/[locale]/
       <SectionTitle level={1} kanji="銭" title={t("title")} subtitle={t("intro")} />
 
       <dl className="grid grid-cols-3 gap-2">
-        <div className="rounded-lg border border-border bg-surface p-3">
+        <div className="lacquer rounded-card p-3">
           <dt className="text-xs text-text-muted">{t("balance")}</dt>
           <dd className="flex items-center gap-1.5 text-lg font-bold tabular-nums text-kin">
             <ZeniCoin size={14} />
             {t("number", { value: user.coins })}
           </dd>
         </div>
-        <div className="rounded-lg border border-border bg-surface p-3">
+        <div className="lacquer rounded-card p-3">
           <dt className="text-xs text-text-muted">{t("earned30")}</dt>
           <dd className="text-lg font-bold tabular-nums">{t("number", { value: totals.earned })}</dd>
         </div>
-        <div className="rounded-lg border border-border bg-surface p-3">
+        <div className="lacquer rounded-card p-3">
           <dt className="text-xs text-text-muted">{t("spent30")}</dt>
           <dd className="text-lg font-bold tabular-nums">{t("number", { value: totals.spent })}</dd>
         </div>

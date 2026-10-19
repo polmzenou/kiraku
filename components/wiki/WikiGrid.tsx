@@ -27,7 +27,7 @@ export function WikiGrid({ cards, nextAfter, params, locale, collection, emptyCa
         </p>
       )}
       {cards.length === 0 ? (
-        <p role="status" className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">
+        <p role="status" className="lacquer rounded-card p-6 text-center text-text-muted">
           {emptyCatalog ? t("emptyCatalog") : params.ownership === "owned" ? t("emptyOwned") : t("empty")}
         </p>
       ) : (

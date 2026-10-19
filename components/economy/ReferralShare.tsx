@@ -40,7 +40,7 @@ export function ReferralShare({ code }: { code: string }) {
     <div className="flex flex-col gap-3">
       <p className="flex flex-col gap-1">
         <span className="text-xs font-bold tracking-wide text-text-muted uppercase">{t("yourCode")}</span>
-        <span className="self-start rounded-lg border-2 border-dashed border-kin/70 bg-bg/60 px-4 py-2 font-title text-2xl font-extrabold tracking-[0.3em] text-kin sm:text-3xl">
+        <span className="self-start rounded-card border-2 border-dashed border-kin/70 bg-bg/60 px-4 py-2 font-title text-2xl font-extrabold tracking-[0.3em] text-kin sm:text-3xl">
           {code}
         </span>
       </p>

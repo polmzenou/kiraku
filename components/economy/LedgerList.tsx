@@ -48,12 +48,12 @@ export function LedgerList({
     });
 
   if (items.length === 0) {
-    return <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">{t("empty")}</p>;
+    return <p className="lacquer rounded-card p-6 text-center text-text-muted">{t("empty")}</p>;
   }
 
   return (
     <div className="flex flex-col gap-3">
-      <ul className="flex flex-col divide-y divide-border rounded-lg border border-border bg-surface">
+      <ul className="flex flex-col divide-y divide-border lacquer rounded-card">
         {items.map((row) => {
           const href = ledgerHref(row.reason, row.refId);
           const label = t(`reasons.${row.reason}`);

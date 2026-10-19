@@ -6,6 +6,7 @@ import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { PlayerRow } from "@/components/social/PlayerRow";
 import { RankEmblem } from "@/components/ranked/RankEmblem";
+import { segmentedItemClass, segmentedTrackClass } from "@/components/ui/Segmented";
 import { getPathname, Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { getTopCollectors, LEADERBOARD_SIZE, type Collector } from "@/server/collection/leaderboard";
@@ -35,8 +36,8 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/[loc
   const [t, tRanked, collectors] = await Promise.all([getTranslations("leaderboard"), getTranslations("ranked"), ranked ? [] : getTopCollectors()]);
 
   const tabs = (
-    <nav aria-label={tRanked("board.tabs")} className="-mx-4 overflow-x-auto px-4">
-      <ul className="flex gap-2">
+    <nav aria-label={tRanked("board.tabs")} className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:px-0">
+      <ul className={segmentedTrackClass}>
         {([
           ["collectors", "/classement", !ranked],
           ["ranked", "/classement?vue=classe", ranked],
@@ -45,9 +46,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/[loc
             <Link
               href={href}
               aria-current={current ? "page" : undefined}
-              className={`inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-medium ${
-                current ? "border-shu bg-shu-btn text-washi-paper" : "border-border bg-surface"
-              }`}
+              className={segmentedItemClass}
             >
               {tRanked(`board.${key}`)}
             </Link>
@@ -76,7 +75,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/[loc
       ) : (
         <>
           <TopCollectors collectors={collectors.slice(0, 3)} withHeader={false} />
-          <ol className="flex flex-col rounded-xl border border-border bg-surface px-4">
+          <ol className="flex flex-col lacquer rounded-card px-4">
             {collectors.map((c) => (
               <Row key={c.username} collector={c} />
             ))}
@@ -119,7 +118,7 @@ async function RankedBoard() {
           e ? (
             <li
               key={e.username}
-              className={`battle-board battle-rim rounded-xl p-[3px] ${i === 1 ? "order-2" : i === 0 ? "order-1" : "order-3"}`}
+              className={`battle-board battle-rim rounded-card p-[3px] ${i === 1 ? "order-2" : i === 0 ? "order-1" : "order-3"}`}
               data-tier={e.tier}
             >
               <Link
@@ -137,7 +136,7 @@ async function RankedBoard() {
           ),
         )}
       </ol>
-      <ol className="flex flex-col rounded-xl border border-border bg-surface px-4">
+      <ol className="flex flex-col lacquer rounded-card px-4">
         {entries.map((e) => (
           <PlayerRow key={e.username} player={{ username: e.username, image: e.image, isGuest: false }} detail={`${rankName(e)} · ${tRanked("pc", { pc: e.pc })}`}>
             <RankEmblem tier={e.tier} division={e.division} size={28} />

@@ -7,6 +7,7 @@ import { submitReview, type ReviewActionError } from "@/server/actions/reviews";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
 import { STAR_PATH } from "./Stars";
+import { textareaClass } from "../ui/Field";
 
 type Own = { rating: number; body: string } | null;
 
@@ -110,7 +111,7 @@ function ReviewForm({ own, onDone }: { own: Own; onDone: (saved: { rating: numbe
           onChange={(e) => setBody(e.target.value)}
           placeholder={t("bodyPlaceholder")}
           aria-describedby={countId}
-          className="min-h-32 w-full resize-y rounded-lg border border-border bg-surface p-3 text-base text-text placeholder:text-text-muted focus-visible:border-kin focus-visible:outline-none"
+          className={`${textareaClass} min-h-32 resize-y`}
         />
         <p id={countId} className="self-end text-xs text-text-muted tabular-nums">
           {t("bodyCount", { count: body.length, max: REVIEW_BODY_MAX })}

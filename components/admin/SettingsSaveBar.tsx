@@ -49,7 +49,7 @@ export function SettingsSaveBar({
         </p>
       )}
       {reviewing && valid && changedLabels.length > 0 ? (
-        <section className="flex flex-col gap-3 rounded-lg border border-shu bg-surface p-4" aria-live="polite">
+        <section className="flex flex-col gap-3 rounded-card border border-shu bg-surface p-4" aria-live="polite">
           <h3 className="font-bold">{t("confirmTitle")}</h3>
           <ul className="list-inside list-disc text-sm">
             {changedLabels.map((label) => (

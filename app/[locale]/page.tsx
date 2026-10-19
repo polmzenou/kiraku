@@ -174,7 +174,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
               {credited.map((c) => (
                 <li
                   key={c.slug}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-kin bg-surface p-4"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-kin bg-surface p-4"
                 >
                   <p className="flex items-center gap-2 font-bold">
                     <span aria-hidden="true" lang="ja" className="font-seal text-xl text-kin">

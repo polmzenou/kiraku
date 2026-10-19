@@ -45,7 +45,7 @@ export function PrivacyForm({ visibility, showCollection }: { visibility: Profil
               value={v}
               checked={value.visibility === v}
               onChange={() => save({ ...value, visibility: v })}
-              className="mt-1 size-4 accent-shu"
+              className="mt-1 choice "
             />
             <span className="flex flex-col">
               <span className="font-bold">{t(`levels.${v}.label`)}</span>
@@ -60,7 +60,7 @@ export function PrivacyForm({ visibility, showCollection }: { visibility: Profil
           type="checkbox"
           checked={value.showCollection}
           onChange={(e) => save({ ...value, showCollection: e.target.checked })}
-          className="mt-1 size-4 accent-shu"
+          className="mt-1 choice "
         />
         <span className="flex flex-col">
           <span className="font-bold">{t("showCollection")}</span>

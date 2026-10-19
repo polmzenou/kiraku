@@ -257,7 +257,7 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
           </>
         }
         controls={
-          <div className="flex flex-col gap-2 pb-[env(safe-area-inset-bottom)] lg:rounded-lg lg:border lg:border-border lg:bg-surface lg:p-4">
+          <div className="flex flex-col gap-2 pb-[env(safe-area-inset-bottom)] lg:rounded-card lg:border lg:border-border lg:bg-surface lg:p-4">
             <p className={`min-h-6 text-center text-sm font-medium ${error ? "text-shu" : myTurn ? "text-kin" : "text-text-muted"}`} aria-live="polite">
               {error ?? hint}
             </p>

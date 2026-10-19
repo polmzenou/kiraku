@@ -31,20 +31,20 @@ export default async function AdminEconomyPage() {
       </div>
 
       <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-lg border border-border bg-surface p-4">
+        <div className="lacquer rounded-card p-4">
           <dt className="text-sm text-text-muted">{t("circulating")}</dt>
           <dd className="text-xl font-bold tabular-nums text-kin">{t("zeni", { amount: totals.circulating })}</dd>
         </div>
-        <div className="rounded-lg border border-border bg-surface p-4">
+        <div className="lacquer rounded-card p-4">
           <dt className="text-sm text-text-muted">{t("ledgerSum")}</dt>
           <dd className="text-xl font-bold tabular-nums">{t("zeni", { amount: totals.ledger })}</dd>
         </div>
-        <div className="rounded-lg border border-border bg-surface p-4">
+        <div className="lacquer rounded-card p-4">
           <dt className="text-sm text-text-muted">{t("escrow")}</dt>
           <dd className="text-xl font-bold tabular-nums">{t("zeni", { amount: market.escrow })}</dd>
           <p className="mt-1 text-xs text-text-muted">{t("escrowHint")}</p>
         </div>
-        <div className="rounded-lg border border-border bg-surface p-4">
+        <div className="lacquer rounded-card p-4">
           <dt className="text-sm text-text-muted">{t("integrity")}</dt>
           <dd className={`text-xl font-bold ${mismatches.length === 0 ? "text-kin" : "text-shu"}`}>
             {mismatches.length === 0 ? t("integrityOk") : t("integrityKo", { count: mismatches.length })}

@@ -76,12 +76,12 @@ export function MarketSettingsForm({ initial }: { initial: MarketSettings }) {
         save();
       }}
     >
-      <fieldset className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4">
+      <fieldset className="flex flex-col gap-2 lacquer rounded-card p-4">
         <legend className="px-1 font-bold">{t("switches")}</legend>
         <Toggle label={t("keys.enabled")} checked={draft["market.enabled"]} onChange={(v) => update("market.enabled", v)} />
       </fieldset>
 
-      <fieldset className="grid gap-4 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2">
+      <fieldset className="grid gap-4 lacquer rounded-card p-4 sm:grid-cols-2">
         <legend className="px-1 font-bold">{t("rules")}</legend>
         {num("market.feeBp", t("feeHint"))}
         {num("market.minIncrementBp")}
@@ -105,7 +105,7 @@ export function MarketSettingsForm({ initial }: { initial: MarketSettings }) {
         {num("market.pollSeconds")}
       </fieldset>
 
-      <fieldset className="grid gap-4 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2">
+      <fieldset className="grid gap-4 lacquer rounded-card p-4 sm:grid-cols-2">
         <legend className="px-1 font-bold">{t("limits")}</legend>
         {num("market.maxActivePerSeller")}
         {num("market.minAccountAgeHours")}

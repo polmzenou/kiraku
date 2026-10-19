@@ -64,7 +64,7 @@ export function LotForm({
 
   return (
     <form
-      className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4"
+      className="flex flex-col gap-4 lacquer rounded-card p-4"
       onSubmit={(e) => {
         e.preventDefault();
         save();

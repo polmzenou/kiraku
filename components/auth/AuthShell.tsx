@@ -31,7 +31,7 @@ export function AuthShell({
   return (
     <PageShell>
       <div className="mx-auto grid w-full max-w-5xl gap-8 py-4 md:py-10 lg:grid-cols-[minmax(0,1fr)_28rem] lg:items-stretch lg:gap-14">
-        <aside className="relative hidden overflow-hidden rounded-2xl border border-border bg-surface p-10 lg:flex lg:flex-col lg:justify-end">
+        <aside className="relative hidden overflow-hidden lacquer rounded-hero p-10 lg:flex lg:flex-col lg:justify-end">
           <span
             aria-hidden="true"
             lang="ja"
@@ -52,7 +52,7 @@ export function AuthShell({
           </div>
         </aside>
 
-        <section className="relative w-full overflow-hidden rounded-2xl border border-border bg-surface">
+        <section className="relative w-full overflow-hidden lacquer rounded-hero">
           <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-shu-btn" />
           <div className="flex flex-col gap-6 px-5 pt-8 pb-6 sm:px-8">
             <header className="flex items-start gap-4">

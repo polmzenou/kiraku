@@ -90,7 +90,7 @@ export default async function AdminBoosterTypesPage() {
                 const reason = turn === "resting" ? "rotation" : availability === "hidden" ? hiddenReason(type, size, min, now) : null;
                 const name = localize(type.name, locale);
                 return (
-                  <li key={type.slug} className="flex gap-3 rounded-lg border border-border bg-surface p-3">
+                  <li key={type.slug} className="flex gap-3 lacquer rounded-card p-3">
                     <div className="w-12 shrink-0">
                       <BoosterArt shape={type.shape} theme={type.theme} emblem={type.emblem} name="" contents="" compact />
                     </div>

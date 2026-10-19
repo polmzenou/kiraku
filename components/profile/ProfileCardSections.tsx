@@ -22,7 +22,7 @@ export function WishlistSection({ cards, editable }: { cards: CardView[]; editab
         </div>
       )}
       {cards.length === 0 ? (
-        <p className="rounded-lg border border-border bg-surface p-4 text-sm text-text-muted">{t(editable ? "emptyOwner" : "emptyPublic")}</p>
+        <p className="lacquer rounded-card p-4 text-sm text-text-muted">{t(editable ? "emptyOwner" : "emptyPublic")}</p>
       ) : (
         <ol aria-label={t("title")} className="grid grid-cols-4 gap-x-2 gap-y-5 md:gap-x-6">
           {cards.map((card) => (
@@ -47,7 +47,7 @@ export function ProfileSalesSection({ cards }: { cards: ProfileSaleCard[] }) {
     <section className="flex min-w-0 flex-col gap-4" aria-labelledby="profile-sales-title">
       <SectionTitle id="profile-sales-title" kanji="売" title={t("title")} />
       {cards.length === 0 ? (
-        <p className="rounded-lg border border-border bg-surface p-4 text-sm text-text-muted">{t("empty")}</p>
+        <p className="lacquer rounded-card p-4 text-sm text-text-muted">{t("empty")}</p>
       ) : (
         <ul aria-label={t("title")} className="grid grid-cols-6 gap-1 sm:gap-2 md:gap-4 max-sm:[&_.fuda_span]:hidden">
           {cards.map((card) => (

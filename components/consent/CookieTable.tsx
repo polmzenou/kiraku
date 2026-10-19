@@ -10,7 +10,7 @@ export async function CookieTable() {
   return (
     <ul className="flex flex-col gap-3">
       {STORAGE_REGISTRY.map((entry) => (
-        <li key={entry.name} className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-3 text-sm">
+        <li key={entry.name} className="flex flex-col gap-1 lacquer rounded-card p-3 text-sm">
           <p className="font-bold break-all">{entry.name}</p>
           <p className="text-text-muted">{t(`purposes.${entry.purpose}`)}</p>
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">

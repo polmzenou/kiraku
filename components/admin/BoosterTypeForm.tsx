@@ -55,7 +55,7 @@ function Check({ label, checked, onChange }: { label: string; checked: boolean; 
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <fieldset className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4">
+    <fieldset className="flex flex-col gap-4 lacquer rounded-card p-4">
       <legend className="px-1 font-title text-lg font-bold">{title}</legend>
       {children}
     </fieldset>

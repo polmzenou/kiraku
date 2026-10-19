@@ -59,7 +59,7 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
 
   return (
     <article className="wiki-content flex min-w-0 flex-col gap-8" aria-busy={collection === null}>
-      <header className="relative isolate overflow-hidden rounded-xl border border-border bg-surface px-5 py-6 md:px-8 md:py-8">
+      <header className="relative isolate overflow-hidden lacquer rounded-card px-5 py-6 md:px-8 md:py-8">
         {card.nameNative && (
           <span aria-hidden="true" lang="ja" className="pointer-events-none absolute inset-y-0 right-0 -z-10 flex max-w-full items-center whitespace-nowrap font-title text-[clamp(5rem,12vw,10rem)] font-bold text-text/[0.045]">
             {card.nameNative}
@@ -93,7 +93,7 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
       )}
 
       <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-8">
-        <aside aria-label={t("cardSummary")} className="order-first min-w-0 rounded-xl border border-border bg-surface p-4 lg:order-last">
+        <aside aria-label={t("cardSummary")} className="order-first min-w-0 lacquer rounded-card p-4 lg:order-last">
           <FudaTurnover className="mx-auto w-full max-w-[260px]">
             <Fuda card={card} series={series} size="lg" monochrome={!discovered} preload />
           </FudaTurnover>
@@ -118,8 +118,8 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
               <WikiBiography anilistId={card.anilistId} />
             </Suspense>
           ) : (
-            <section aria-labelledby="wiki-locked-title" className="relative overflow-hidden rounded-xl border border-dashed border-text-muted/50 bg-surface p-5 md:p-7">
-              <div className="mb-4 flex size-12 items-center justify-center rounded-lg border border-border bg-bg text-text"><LockIcon /></div>
+            <section aria-labelledby="wiki-locked-title" className="relative overflow-hidden rounded-card border border-dashed border-text-muted/50 bg-surface p-5 md:p-7">
+              <div className="mb-4 flex size-12 items-center justify-center rounded-card border border-border bg-bg text-text"><LockIcon /></div>
               <h2 id="wiki-locked-title" className="text-2xl font-extrabold md:text-3xl">{t("lockedTitle")}</h2>
               <p className="mt-3 max-w-lg text-sm leading-7 text-text-muted">{t("lockedDescription", { name: card.name })}</p>
               <ButtonLink href="/" variant="primary" className="mt-5 w-fit">{t("openBooster")}</ButtonLink>
@@ -143,7 +143,7 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
                   const name = known ? other.name : "???";
                   return (
                     <li key={other.anilistId} className="min-w-0">
-                      <Link href={`/wiki/${other.anilistId}`} aria-label={`${name} · ${tRarity(other.rarity)} · ${relatedStatus}`} className="flex min-h-24 items-center gap-3 rounded-xl border border-border bg-surface p-3 transition-colors hover:bg-surface-2">
+                      <Link href={`/wiki/${other.anilistId}`} aria-label={`${name} · ${tRarity(other.rarity)} · ${relatedStatus}`} className="flex min-h-24 items-center gap-3 lacquer rounded-card p-3 transition-colors hover:bg-surface-2">
                         <div aria-hidden="true" className="relative aspect-[5/7] w-12 shrink-0 overflow-hidden rounded-md border border-border bg-surface-2">
                           <Image src={other.imageUrl} alt="" fill sizes="48px" className={`object-cover object-top${known ? "" : " grayscale"}`} />
                           {!known && <span className="absolute inset-0 flex items-center justify-center bg-bg/70 font-title text-3xl font-bold text-text">?</span>}

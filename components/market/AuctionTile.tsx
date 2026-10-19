@@ -14,7 +14,7 @@ export function AuctionTile({ item, serverNow, preload }: { item: AuctionListIte
   return (
     <Link
       href={`/marche/${item.id}`}
-      className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-2 transition-transform active:scale-[0.98] motion-reduce:transition-none"
+      className="flex flex-col gap-2 lacquer rounded-card p-2 transition-transform active:scale-[0.98] motion-reduce:transition-none"
     >
       <Fuda card={item.card} series={item.card.series} size="sm" preload={preload} monochrome={!open && item.status !== "SOLD"} />
       <div className="flex min-w-0 flex-col gap-0.5 px-0.5">

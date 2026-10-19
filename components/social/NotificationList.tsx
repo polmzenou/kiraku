@@ -62,7 +62,7 @@ export function NotificationList({ initial, initialCursor }: { initial: Notifica
     });
 
   if (items.length === 0) {
-    return <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">{t("empty")}</p>;
+    return <p className="lacquer rounded-card p-6 text-center text-text-muted">{t("empty")}</p>;
   }
 
   return (
@@ -84,7 +84,7 @@ export function NotificationList({ initial, initialCursor }: { initial: Notifica
               <button
                 type="button"
                 onClick={() => open(n, href)}
-                className={`flex min-h-14 w-full items-start gap-3 rounded-lg border p-3 text-left ${
+                className={`flex min-h-14 w-full items-start gap-3 rounded-card border p-3 text-left ${
                   n.read ? "border-border bg-surface text-text-muted" : "border-shu/60 bg-surface-2 text-text"
                 }`}
               >
