@@ -94,7 +94,7 @@ export function ShowcasePicker({
             clearTimeout(timer.current);
             timer.current = setTimeout(() => void load(value.trim(), 0), DEBOUNCE_MS);
           }}
-          className="min-h-11 min-w-0 flex-1 rounded-button border border-border bg-surface px-3 text-text placeholder:text-text-muted"
+          className="min-h-11 min-w-0 flex-1 rounded-control border border-border bg-surface px-3 text-text placeholder:text-text-muted"
         />
       </div>
 

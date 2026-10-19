@@ -26,7 +26,7 @@ export default async function AdminLegalPage() {
         {pages.map((p) => (
           <li
             key={p.slug}
-            className="flex flex-col gap-2 rounded-button border border-border bg-surface p-3 sm:flex-row sm:items-center sm:justify-between"
+            className="flex flex-col gap-2 rounded-control border border-border bg-surface p-3 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="flex flex-col gap-0.5 text-sm">
               <p className="font-bold">{tLegal(`titles.${p.slug}`)}</p>
@@ -42,7 +42,7 @@ export default async function AdminLegalPage() {
             </div>
             <Link
               href={`/admin/legal/${p.slug}`}
-              className="inline-flex min-h-11 items-center justify-center rounded-button border border-border bg-surface-2 px-4 text-sm font-bold"
+              className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface-2 px-4 text-sm font-bold"
             >
               {t("editLink")}
             </Link>

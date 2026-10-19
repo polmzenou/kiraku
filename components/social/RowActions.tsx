@@ -54,7 +54,7 @@ export function RowActions({ username, mode }: { username: string; mode: Mode })
           <>
             <Button
               type="button"
-              variant="shu"
+              variant="primary"
               className="px-3"
               disabled={pending}
               onClick={() => run(t("accepted"), () => respondFriendRequestAction({ username, accept: true }))}

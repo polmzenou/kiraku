@@ -24,7 +24,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
       <p className="text-text-muted">{t("body")}</p>
       {error.digest && <p className="text-xs text-text-muted">{t("reference", { digest: error.digest })}</p>}
       <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="shu" onClick={reset}>
+        <Button type="button" variant="primary" onClick={reset}>
           {t("retry")}
         </Button>
         <Link href="/" className="inline-flex min-h-11 items-center px-2 text-link underline underline-offset-4">

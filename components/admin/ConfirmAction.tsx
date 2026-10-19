@@ -17,7 +17,7 @@ export function ConfirmAction({
   description,
   confirmLabel,
   typeToConfirm,
-  variant = "shu",
+  variant = "primary",
   onConfirm,
   children,
 }: {
@@ -84,7 +84,7 @@ export function ConfirmAction({
           </Button>
           <Button
             type="button"
-            variant="shu"
+            variant="primary"
             disabled={!matches || pending}
             onClick={() =>
               startTransition(async () => {

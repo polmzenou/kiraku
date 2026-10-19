@@ -176,10 +176,10 @@ export function AuctionPanel({
       {open && shown.bidCount > 0 && !shown.leading && (
         <p className="text-sm">{t("detail.leader", { name: shown.leaderName ?? t("detail.anonymous") })}</p>
       )}
-      {open && shown.leading && <p className="rounded-button border border-kin/60 p-3 text-sm">{t("detail.youLead")}</p>}
+      {open && shown.leading && <p className="rounded-control border border-kin/60 p-3 text-sm">{t("detail.youLead")}</p>}
 
       {!open && (
-        <p className="rounded-button border border-border bg-surface-2 p-3 text-sm">
+        <p className="rounded-control border border-border bg-surface-2 p-3 text-sm">
           {shown.status === "SOLD"
             ? shown.leading
               ? t("detail.soldYou", { amount: shown.finalPrice ?? shown.price })
@@ -206,7 +206,7 @@ export function AuctionPanel({
                 <Button type="button" onClick={() => setConfirming(null)} disabled={pending}>
                   {t("detail.cancel")}
                 </Button>
-                <Button type="button" variant="shu" onClick={() => run({ kind: "withdraw" })} disabled={pending}>
+                <Button type="button" variant="primary" onClick={() => run({ kind: "withdraw" })} disabled={pending}>
                   {pending ? t("detail.withdrawing") : t("detail.confirmWithdraw")}
                 </Button>
               </div>
@@ -226,12 +226,12 @@ export function AuctionPanel({
       {open && !mine && !block && !shown.leading && (
         <div className="flex flex-col gap-3">
           {confirming?.kind === "bid" || confirming?.kind === "buy" ? (
-            <div className="flex flex-col gap-2 rounded-button border border-shu p-3">
+            <div className="flex flex-col gap-2 rounded-control border border-shu p-3">
               <div className="grid grid-cols-2 gap-2">
                 <Button type="button" onClick={() => setConfirming(null)} disabled={pending}>
                   {t("detail.change")}
                 </Button>
-                <Button type="button" variant="shu" onClick={() => run(confirming)} disabled={pending}>
+                <Button type="button" variant="primary" onClick={() => run(confirming)} disabled={pending}>
                   <ZeniCoin size={14} />
                   {confirming.kind === "bid"
                     ? t("detail.confirmBid", { amount: confirming.amount })
@@ -259,11 +259,11 @@ export function AuctionPanel({
                   step={1}
                   value={amount}
                   onChange={(e) => setTyped(e.target.value)}
-                  className="min-h-11 rounded-button border border-border bg-surface-2 px-3 text-lg tabular-nums"
+                  className="min-h-11 rounded-control border border-border bg-surface-2 px-3 text-lg tabular-nums"
                 />
               </label>
               <p className="text-xs text-text-muted">{t("detail.minNext", { amount: shown.minNext })}</p>
-              <Button type="submit" variant="shu" disabled={pending || !validBid}>
+              <Button type="submit" variant="primary" disabled={pending || !validBid}>
                 {pending ? t("detail.bidding") : t("detail.bid")}
               </Button>
             </form>

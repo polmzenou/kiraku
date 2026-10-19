@@ -22,7 +22,7 @@ export function WikiGrid({ cards, nextAfter, params, locale, collection, emptyCa
   return (
     <>
       {collection && !collection.available && (
-        <p role="status" className="rounded-button border border-border bg-surface p-3 text-sm text-text-muted">
+        <p role="status" className="rounded-control border border-border bg-surface p-3 text-sm text-text-muted">
           {t("collectionUnavailable")}
         </p>
       )}

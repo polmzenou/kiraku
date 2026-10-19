@@ -141,7 +141,7 @@ export default async function AccountPage() {
         <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
           <h2 className="text-lg font-bold">{t("account.linkTitle")}</h2>
           <p className="text-sm text-text-muted">{t("account.linkBody")}</p>
-          <ButtonLink href="/inscription" variant="shu">
+          <ButtonLink href="/inscription" variant="primary">
             {t("account.createAccount")}
           </ButtonLink>
           {canLinkDiscord && discordForm}

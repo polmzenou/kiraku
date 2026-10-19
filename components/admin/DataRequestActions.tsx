@@ -25,7 +25,7 @@ export function DataRequestActions({ userId, username, showCancel = true }: { us
           title={t("cancelTitle", { username })}
           description={<p>{t("cancelBody")}</p>}
           confirmLabel={t("cancelConfirm")}
-          variant="neutral"
+          variant="secondary"
           onConfirm={async () => message(await adminCancelDeletionAction({ userId }))}
         />
       )}

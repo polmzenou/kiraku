@@ -4,6 +4,8 @@ import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { isActive, MOBILE_NAV_MORE, NAV_ITEMS, NAV_MORE, visibleItems, type NavFeatures, type NavItem } from "@/lib/nav";
+import { Badge } from "../ui/Badge";
+import { segmentedItemClass, segmentedTrackClass } from "../ui/Segmented";
 
 /**
  * Entrées de la navigation. `layout="bar"` : barre horizontale du haut (≥ 1024 px), soulignement
@@ -25,7 +27,7 @@ export function NavLinks({
 
   if (!bar) {
     return (
-      <ul className="flex flex-col">
+      <ul className="flex flex-col gap-1">
         {visibleItems(MOBILE_NAV_MORE, features).map((item) => (
           <li key={item.key}>
             <StackLink item={item} active={isActive(item, pathname)} onNavigate={onNavigate} />
@@ -36,18 +38,16 @@ export function NavLinks({
   }
 
   return (
-    <ul className="flex items-center gap-0.5">
+    <ul className={segmentedTrackClass}>
       {NAV_ITEMS.map((item) => {
         const active = isActive(item, pathname);
-        const base = "relative inline-flex min-h-11 items-center gap-1.5 px-2 text-sm whitespace-nowrap";
+        const base = segmentedItemClass;
         if (!item.ready) {
           return (
             <li key={item.key}>
               <span aria-disabled="true" className={`${base} text-text-muted/70`}>
                 {t(item.key)}
-                <span className="hidden rounded-sm border border-border px-1.5 text-[10px] tracking-wide uppercase xl:inline">
-                  {t("soon")}
-                </span>
+                <SoonBadge />
               </span>
             </li>
           );
@@ -57,10 +57,9 @@ export function NavLinks({
             <Link
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`${base} ${active ? "font-bold text-text" : "text-text-muted hover:text-text"}`}
+              className={base}
             >
               {t(item.key)}
-              {active && <span aria-hidden="true" className="absolute inset-x-2.5 bottom-1 h-[3px] rounded-full bg-shu" />}
             </Link>
           </li>
         );
@@ -74,12 +73,12 @@ export function NavLinks({
 
 function StackLink({ item, active, onNavigate }: { item: NavItem; active: boolean; onNavigate?: () => void }) {
   const t = useTranslations("nav");
-  const base = "flex min-h-12 items-center justify-between gap-3 border-b border-border px-1 text-base";
+  const base = stackRowClass;
   if (!item.ready) {
     return (
       <span aria-disabled="true" className={`${base} text-text-muted/70`}>
         {t(item.key)}
-        <span className="rounded-sm border border-border px-1.5 text-[10px] tracking-wide uppercase">{t("soon")}</span>
+        <SoonBadge />
       </span>
     );
   }
@@ -88,7 +87,7 @@ function StackLink({ item, active, onNavigate }: { item: NavItem; active: boolea
       href={item.href}
       aria-current={active ? "page" : undefined}
       onClick={onNavigate}
-      className={`${base} ${active ? "font-bold text-text" : "text-text-muted hover:text-text"}`}
+      className={base}
     >
       <span className="inline-flex items-center gap-2">
         {t(item.key)}
@@ -101,8 +100,13 @@ function StackLink({ item, active, onNavigate }: { item: NavItem; active: boolea
 
 function SoonBadge() {
   const t = useTranslations("nav");
-  return <span className="rounded-sm border border-border px-1.5 text-[10px] tracking-wide text-text-muted uppercase">{t("soon")}</span>;
+  return <Badge tone="muted" className="uppercase tracking-wide">{t("soon")}</Badge>;
 }
+
+/** Rangée de 52 px des listes de liens (panneau « Plus » mobile). */
+export const stackRowClass =
+  "flex min-h-13 items-center justify-between gap-3 rounded-control px-3.5 text-base text-text-muted transition-colors hover:bg-surface-2 hover:text-text " +
+  "aria-[current=page]:bg-surface-2 aria-[current=page]:font-bold aria-[current=page]:text-text";
 
 /** Menu déroulant « Plus » de la barre du haut : se ferme au clic dehors, à Échap et en changeant de page. */
 function MoreMenu({ pathname, items }: { pathname: string; items: readonly NavItem[] }) {
@@ -150,20 +154,18 @@ function MoreMenu({ pathname, items }: { pathname: string; items: readonly NavIt
           setOpenedAt(pathname);
           setOpen((o) => !o);
         }}
-        className={`relative inline-flex min-h-11 items-center gap-1 px-2 text-sm whitespace-nowrap ${
-          activeChild ? "font-bold text-text" : "text-text-muted hover:text-text"
-        }`}
+        aria-current={activeChild ? "true" : undefined}
+        className={segmentedItemClass}
       >
         {t("more")}
-        <span aria-hidden="true" className={`text-[10px] transition-transform duration-200 ${open ? "rotate-180" : ""}`}>
-          ▼
+        <span aria-hidden="true" className={`flex transition-transform duration-200 ${open ? "rotate-180" : ""}`}>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
         </span>
-        {activeChild && <span aria-hidden="true" className="absolute inset-x-2.5 bottom-1 h-[3px] rounded-full bg-shu" />}
       </button>
       <ul
         id={panelId}
         hidden={!open}
-        className="absolute top-full left-0 z-50 mt-1 flex min-w-48 flex-col overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-[0_12px_32px_rgb(0_0_0/0.35)]"
+        className="absolute top-full right-0 z-50 mt-2 flex min-w-52 flex-col gap-0.5 rounded-card border border-border bg-surface p-1.5 shadow-float"
       >
         {items.map((item) => {
           const active = isActive(item, pathname);
@@ -173,9 +175,7 @@ function MoreMenu({ pathname, items }: { pathname: string; items: readonly NavIt
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 onClick={() => setOpen(false)}
-                className={`flex min-h-11 items-center justify-between gap-3 px-4 text-sm hover:bg-surface-2 ${
-                  active ? "font-bold text-text" : "text-text-muted hover:text-text"
-                }`}
+                className="flex min-h-11 items-center justify-between gap-3 rounded-control px-3.5 text-sm text-text-muted hover:bg-surface-2 hover:text-text aria-[current=page]:font-bold aria-[current=page]:text-text"
               >
                 <span className="inline-flex items-center gap-2">
                   {t(item.key)}

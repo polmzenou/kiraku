@@ -13,7 +13,7 @@ export function NewStamp({ delay = 0, animated = true }: { delay?: number; anima
   const t = useTranslations("opening");
   return (
     <m.span
-      className="absolute -top-2 -right-2 z-40 inline-flex min-h-7 items-center justify-center whitespace-nowrap rounded-[4px] bg-shu-btn px-2 py-1 text-xs font-bold leading-none text-washi-paper shadow-paper"
+      className="absolute -top-2 -right-2 z-40 inline-flex min-h-7 items-center justify-center whitespace-nowrap rounded-[4px] bg-shu-btn px-2 py-1 text-xs font-bold leading-none text-washi-paper"
       initial={animated ? { opacity: 0, scale: 2.2, rotate: -28 } : false}
       animate={{ opacity: 1, scale: 1, rotate: -12 }}
       transition={{ delay, type: "spring", stiffness: 520, damping: 18 }}
@@ -28,7 +28,7 @@ export function FeaturedSeal({ delay = 0, animated = true }: { delay?: number; a
   const t = useTranslations("opening");
   return (
     <m.span
-      className="absolute -top-2 -left-2 z-40 flex h-7 items-center gap-1 rounded-full bg-kin px-2 text-[11px] font-bold text-sumi shadow-paper"
+      className="absolute -top-2 -left-2 z-40 flex h-7 items-center gap-1 rounded-full bg-kin px-2 text-[11px] font-bold text-sumi"
       initial={animated ? { opacity: 0, scale: 1.8 } : false}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay, type: "spring", stiffness: 420, damping: 20 }}

@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 export function MailNotSent() {
   const t = useTranslations("mail");
   return (
-    <div role="status" className="flex flex-col gap-1 rounded-button border border-kin px-3 py-2 text-sm">
+    <div role="status" className="flex flex-col gap-1 rounded-control border border-kin px-3 py-2 text-sm">
       <p>{t("disabled")}</p>
       {process.env.NODE_ENV === "development" && <p className="text-text-muted">{t("devHint")}</p>}
     </div>

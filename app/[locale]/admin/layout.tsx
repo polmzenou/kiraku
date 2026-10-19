@@ -53,7 +53,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/[locale]/a
                 <li key={m.key}>
                   <Link
                     href={m.href}
-                    className="inline-flex min-h-11 items-center rounded-button border border-border bg-surface-2 px-3 text-sm font-bold"
+                    className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface-2 px-3 text-sm font-bold"
                   >
                     {t(`moduleNames.${m.key}`)}
                   </Link>
@@ -62,7 +62,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/[locale]/a
                 <li key={m.key}>
                   <span
                     aria-disabled="true"
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-button border border-border px-3 text-sm text-text-muted"
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-border px-3 text-sm text-text-muted"
                   >
                     {t(`moduleNames.${m.key}`)}
                     <span className="text-[10px] uppercase">{t("soon")}</span>

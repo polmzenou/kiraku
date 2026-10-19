@@ -56,7 +56,7 @@ export function AdminReviewActions({
       <div className="flex flex-wrap gap-2 sm:justify-end">
         <Button
           type="button"
-          variant={hidden ? "neutral" : "shu"}
+          variant={hidden ? "secondary" : "primary"}
           onClick={() => send(() => setReviewHiddenAction({ reviewId, hidden: !hidden }))}
           disabled={pending}
         >
@@ -104,11 +104,11 @@ export function AdminReviewActions({
             onChange={(e) => setDraft(e.target.value)}
             maxLength={REVIEW_BODY_MAX}
             rows={4}
-            className="min-h-24 w-full rounded-button border border-border bg-surface p-3 text-text placeholder:text-text-muted"
+            className="min-h-24 w-full rounded-control border border-border bg-surface p-3 text-text placeholder:text-text-muted"
             placeholder={t("replyPlaceholder")}
           />
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="submit" variant="shu" disabled={pending || draft.trim() === ""}>
+            <Button type="submit" variant="primary" disabled={pending || draft.trim() === ""}>
               {t("saveReply")}
             </Button>
             {reply && (

@@ -82,7 +82,7 @@ export function LotForm({
         <legend className="text-sm font-bold">{t("lotItems")}</legend>
         {draft.items.length === 0 && <p className="text-sm text-text-muted">{t("lotItemsEmpty")}</p>}
         {draft.items.map((item, i) => (
-          <div key={i} className="grid items-end gap-2 rounded-button border border-border p-3 sm:grid-cols-[1fr_8rem_auto]">
+          <div key={i} className="grid items-end gap-2 rounded-control border border-border p-3 sm:grid-cols-[1fr_8rem_auto]">
             {item.kind === "BOOSTER" && (
               <SelectField
                 label={kindLabel("BOOSTER")}
@@ -153,7 +153,7 @@ export function LotForm({
                   <li key={c.id}>
                     <button
                       type="button"
-                      className="flex min-h-11 w-full items-center justify-between gap-2 rounded-button border border-border px-3 text-left text-sm hover:border-shu"
+                      className="flex min-h-11 w-full items-center justify-between gap-2 rounded-control border border-border px-3 text-left text-sm hover:border-shu"
                       onClick={() => {
                         setNames({ ...names, [c.id]: c.name });
                         addItem({ kind: "CARD", cardId: c.id, quantity: 1 });
@@ -173,7 +173,7 @@ export function LotForm({
       </fieldset>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" variant="shu" disabled={pending || !valid}>
+        <Button type="submit" variant="primary" disabled={pending || !valid}>
           {pending ? t("saving") : t("save")}
         </Button>
         {draft.id && (

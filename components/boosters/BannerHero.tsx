@@ -36,7 +36,7 @@ export function BannerHero({ slides }: { slides: BannerSlide[] }) {
               <Link
                 href={`/?b=${type.slug}&f=${type.family}`}
                 scroll={false}
-                className="booster-art relative flex min-h-44 overflow-hidden rounded-xl border border-border shadow-paper"
+                className="booster-art relative flex min-h-44 overflow-hidden rounded-xl border border-border"
                 data-ink={type.theme.ink}
                 style={{ ["--booster-base" as string]: type.theme.base, ["--booster-dark" as string]: type.theme.dark }}
               >
@@ -72,7 +72,7 @@ export function BannerHero({ slides }: { slides: BannerSlide[] }) {
                     <span
                       aria-hidden="true"
                       lang="ja"
-                      className="absolute right-2 bottom-2 flex size-8 items-center justify-center rounded-[4px] bg-shu-btn font-seal text-lg text-washi-paper shadow-paper"
+                      className="absolute right-2 bottom-2 flex size-8 items-center justify-center rounded-[4px] bg-shu-btn font-seal text-lg text-washi-paper"
                     >
                       {RARITY_SEAL[hero.rarity]}
                     </span>

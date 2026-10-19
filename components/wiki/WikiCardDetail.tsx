@@ -73,11 +73,11 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
           <span className="text-text">{card.name}</span>
         </nav>
         <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-bold">
-          <span className="rounded-button bg-shu-btn px-3 py-1.5 text-white">{series}</span>
-          <span className="inline-flex items-center gap-1.5 rounded-button border border-border bg-bg px-3 py-1.5 text-text">
+          <span className="rounded-control bg-shu-btn px-3 py-1.5 text-white">{series}</span>
+          <span className="inline-flex items-center gap-1.5 rounded-control border border-border bg-bg px-3 py-1.5 text-text">
             <span aria-hidden="true" className="font-seal">{RARITY_SEAL[card.rarity]}</span>{tRarity(card.rarity)}
           </span>
-          <span role="status" className="rounded-button border border-border bg-bg px-3 py-1.5 text-text-muted">{status}</span>
+          <span role="status" className="rounded-control border border-border bg-bg px-3 py-1.5 text-text-muted">{status}</span>
         </div>
         <h1 className="break-words text-4xl font-extrabold leading-tight md:text-6xl">{card.name}</h1>
         <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-text-muted">
@@ -89,7 +89,7 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
       </header>
 
       {collection && !collection.available && (
-        <p role="status" className="rounded-button border border-border bg-surface p-4 text-sm text-text-muted">{t("collectionUnavailable")}</p>
+        <p role="status" className="rounded-control border border-border bg-surface p-4 text-sm text-text-muted">{t("collectionUnavailable")}</p>
       )}
 
       <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-8">
@@ -122,7 +122,7 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
               <div className="mb-4 flex size-12 items-center justify-center rounded-lg border border-border bg-bg text-text"><LockIcon /></div>
               <h2 id="wiki-locked-title" className="text-2xl font-extrabold md:text-3xl">{t("lockedTitle")}</h2>
               <p className="mt-3 max-w-lg text-sm leading-7 text-text-muted">{t("lockedDescription", { name: card.name })}</p>
-              <ButtonLink href="/" variant="shu" className="mt-5 w-fit">{t("openBooster")}</ButtonLink>
+              <ButtonLink href="/" variant="primary" className="mt-5 w-fit">{t("openBooster")}</ButtonLink>
               <div aria-hidden="true" className="pointer-events-none mt-7 select-none space-y-3 blur-[3px]">
                 {["w-full", "w-full", "w-5/6", "w-3/5"].map((width, i) => <div key={i} className={`h-2.5 rounded-full bg-text-muted/20 ${width}`} />)}
               </div>

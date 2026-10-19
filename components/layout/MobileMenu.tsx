@@ -8,7 +8,9 @@ import type { Theme } from "@/lib/theme";
 import { logout } from "@/server/actions/account";
 import { LocaleSwitcher } from "../LocaleSwitcher";
 import { ThemeToggle } from "../ThemeToggle";
-import { NavLinks } from "./NavLinks";
+import { buttonClasses } from "../ui/Button";
+import { CloseIcon, IconButton } from "../ui/IconButton";
+import { NavLinks, stackRowClass } from "./NavLinks";
 
 /**
  * Navigation mobile fixe et panneau « Plus » qui monte du bas.
@@ -59,25 +61,22 @@ export function MobileMenu({
     <>
       <nav
         aria-label={t("label")}
-        className="fixed inset-x-0 bottom-0 z-40 h-[var(--mobile-nav-height)] border-t border-border bg-surface/95 pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] shadow-[0_-4px_24px_rgb(0_0_0/0.12)] backdrop-blur lg:hidden"
+        className="fixed inset-x-[max(0.75rem,env(safe-area-inset-left))] bottom-[calc(var(--mobile-nav-gap)+env(safe-area-inset-bottom))] z-40 mx-auto h-[var(--mobile-nav-bar)] max-w-md rounded-[26px] border border-border bg-surface shadow-float lg:hidden"
       >
-        <ul className="mx-auto grid h-full max-w-xl grid-cols-5">
+        {/* Capsule flottante : l'onglet actif s'élargit en pilule icône + libellé, les autres restent en icône. */}
+        <ul className="flex h-full items-center justify-between gap-1 px-2 shadow-sheen [border-radius:inherit]">
           {MOBILE_NAV_ITEMS.map((item) => {
             const active = isActive(item, pathname);
             return (
-              <li key={item.key} className="min-w-0">
-                <Link
-                  href={item.href}
-                  aria-current={active ? "page" : undefined}
-                  className={`flex h-full min-h-11 flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium transition-colors hover:text-text ${active ? "font-bold text-shu" : "text-text-muted"}`}
-                >
+              <li key={item.key} className={active ? "min-w-0 shrink" : "shrink-0"}>
+                <Link href={item.href} aria-current={active ? "page" : undefined} className={navItemClass(active)}>
                   <MobileNavIcon name={item.key} />
-                  <span>{t(item.key)}</span>
+                  <NavLabel active={active}>{t(item.key)}</NavLabel>
                 </Link>
               </li>
             );
           })}
-          <li className="min-w-0">
+          <li className={open || moreActive ? "min-w-0 shrink" : "shrink-0"}>
             <button
               type="button"
               aria-expanded={open}
@@ -87,10 +86,10 @@ export function MobileMenu({
                 dialog.current?.showModal();
                 setOpen(true);
               }}
-              className={`flex h-full min-h-11 w-full flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium transition-colors hover:text-text ${open || moreActive ? "font-bold text-shu" : "text-text-muted"}`}
+              className={navItemClass(open || moreActive)}
             >
               <MobileNavIcon name="more" />
-              <span>{t("more")}</span>
+              <NavLabel active={open || moreActive}>{t("more")}</NavLabel>
             </button>
           </li>
         </ul>
@@ -105,33 +104,28 @@ export function MobileMenu({
           // Clic sur le fond (hors du panneau) : on referme
           if (e.target === dialog.current) close();
         }}
-        className="fixed inset-x-0 top-auto bottom-0 m-0 max-h-[85dvh] w-full max-w-none translate-y-full overflow-y-auto overscroll-contain rounded-t-2xl border-t border-border bg-surface p-0 text-text opacity-0 shadow-[0_-12px_32px_rgb(0_0_0/0.3)] transition-[translate,opacity,display,overlay] transition-discrete duration-300 ease-out backdrop:bg-black/60 open:translate-y-0 open:opacity-100 starting:open:translate-y-full starting:open:opacity-0 motion-reduce:transition-none lg:hidden"
+        className="fixed inset-x-0 top-auto bottom-0 m-0 max-h-[85dvh] w-full max-w-none translate-y-full overflow-y-auto overscroll-contain rounded-t-[24px] border-t border-border bg-surface p-0 text-text opacity-0 shadow-float transition-[translate,opacity,display,overlay] transition-discrete duration-300 ease-out backdrop:bg-black/60 open:translate-y-0 open:opacity-100 starting:open:translate-y-full starting:open:opacity-0 motion-reduce:transition-none lg:hidden"
       >
         <div className="mx-auto flex max-w-xl flex-col gap-6 px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-          <span aria-hidden="true" className="-mb-4 h-1 w-10 self-center rounded-full bg-text-muted/30" />
+          <span aria-hidden="true" className="-mb-4 h-1.5 w-10 self-center rounded-full bg-text-muted/30" />
           <div className="sticky top-0 z-10 -mx-4 flex items-center justify-between bg-surface px-4">
             <h2 id={titleId} className="text-lg font-bold">
               {t("more")}
             </h2>
-            <button
-              type="button"
-              aria-label={t("closeMenu")}
-              onClick={close}
-              className="inline-flex size-11 items-center justify-center rounded-button text-2xl leading-none"
-            >
-              <span aria-hidden="true">×</span>
-            </button>
+            <IconButton aria-label={t("closeMenu")} onClick={close} tone="lacquer">
+              <CloseIcon />
+            </IconButton>
           </div>
 
           <nav aria-label={t("label")}>
             <NavLinks layout="stack" features={features} onNavigate={close} />
-            <ul className="flex flex-col">
+            <ul className="mt-2 flex flex-col gap-1">
               <li>
                 <Link
                   href={accountHref}
                   onClick={close}
                   aria-current={pathname === accountHref ? "page" : undefined}
-                  className="flex min-h-12 items-center border-b border-border px-1 text-base text-text-muted aria-[current=page]:font-bold aria-[current=page]:text-text"
+                  className={stackRowClass}
                 >
                   {t("account")}
                 </Link>
@@ -142,7 +136,7 @@ export function MobileMenu({
                     href="/admin"
                     onClick={close}
                     aria-current={pathname.startsWith("/admin") ? "page" : undefined}
-                    className="flex min-h-12 items-center border-b border-border px-1 text-base text-text-muted aria-[current=page]:font-bold aria-[current=page]:text-text"
+                    className={stackRowClass}
                   >
                     {t("admin")}
                   </Link>
@@ -159,12 +153,12 @@ export function MobileMenu({
 
           {signedIn ? (
             <form action={logout}>
-              <button type="submit" className="flex min-h-12 w-full items-center rounded-button border border-shu/40 bg-shu/10 px-4 text-sm font-bold text-shu hover:bg-shu/20">
+              <button type="submit" className={buttonClasses("danger", "w-full", "lg")}>
                 {tAccount("logout")}
               </button>
             </form>
           ) : (
-            <Link href="/connexion" onClick={close} className="flex min-h-12 items-center rounded-button border border-shu/40 bg-shu/10 px-4 text-sm font-bold text-shu hover:bg-shu/20">
+            <Link href="/connexion" onClick={close} className={buttonClasses("primary", "w-full", "lg")}>
               {tAuth("title")}
             </Link>
           )}
@@ -172,6 +166,19 @@ export function MobileMenu({
       </dialog>
     </>
   );
+}
+
+function navItemClass(active: boolean) {
+  return (
+    "flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-pill text-[13px] font-bold transition-[background-color,color,transform] duration-200 active:scale-[.94] motion-reduce:transition-none " +
+    (active ? "bg-shu/15 px-3.5 text-shu" : "px-2.5 text-text-muted hover:text-text")
+  );
+}
+
+/** Libellé visible sur l'onglet actif seulement ; ailleurs il reste lu par les lecteurs d'écran. */
+function NavLabel({ active, children }: { active: boolean; children: string }) {
+  if (!active) return <span className="sr-only">{children}</span>;
+  return <span className="nav-label-in truncate">{children}</span>;
 }
 
 function MobileNavIcon({ name }: { name: string }) {

@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { THEMES, type Theme } from "@/lib/theme";
 import { applyTheme } from "@/lib/theme-dom";
+import { segmentedFillClass, segmentedItemClass, segmentedTrackClass } from "./ui/Segmented";
 
 export function ThemeToggle({ initial }: { initial: Theme }) {
   const t = useTranslations("theme");
@@ -16,15 +17,15 @@ export function ThemeToggle({ initial }: { initial: Theme }) {
 
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="mb-2 text-sm text-text-muted">{t("label")}</legend>
-      <div className="grid grid-cols-2 gap-2">
+      <legend className="mb-2 text-sm font-bold text-text-muted">{t("label")}</legend>
+      <div className={`${segmentedTrackClass} ${segmentedFillClass}`}>
         {THEMES.map((value) => (
           <button
             key={value}
             type="button"
             aria-pressed={theme === value}
             onClick={() => choose(value)}
-            className="min-h-11 rounded-button border border-border bg-surface-2 px-3 text-sm aria-pressed:border-shu aria-pressed:text-shu"
+            className={segmentedItemClass}
           >
             {t(value)}
           </button>

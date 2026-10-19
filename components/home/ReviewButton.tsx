@@ -19,7 +19,7 @@ export function ReviewButton({ own: initial }: { own: Own }) {
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <Button type="button" variant="neutral" onClick={() => setOpen(true)}>
+      <Button type="button" variant="secondary" onClick={() => setOpen(true)}>
         {own ? t("edit") : t("give")}
       </Button>
       <p role="status" className="text-sm text-text-muted">
@@ -82,7 +82,7 @@ function ReviewForm({ own, onDone }: { own: Own; onDone: (saved: { rating: numbe
               <span className="sr-only">{t("ratingOption", { rating: value })}</span>
               <span
                 aria-hidden="true"
-                className={`flex size-11 items-center justify-center rounded-button transition-transform peer-focus-visible:outline-2 peer-focus-visible:outline-kin active:scale-90 motion-reduce:transition-none ${
+                className={`flex size-11 items-center justify-center rounded-control transition-transform peer-focus-visible:outline-2 peer-focus-visible:outline-kin active:scale-90 motion-reduce:transition-none ${
                   value <= shown ? "text-kin" : "text-border"
                 }`}
               >
@@ -123,7 +123,7 @@ function ReviewForm({ own, onDone }: { own: Own; onDone: (saved: { rating: numbe
         </p>
       )}
 
-      <Button type="submit" variant="shu" disabled={pending}>
+      <Button type="submit" variant="primary" disabled={pending}>
         {pending ? t("sending") : t("submit")}
       </Button>
     </form>

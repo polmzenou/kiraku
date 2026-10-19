@@ -73,7 +73,7 @@ export function RecycleAllSheet({ byRarity }: { byRarity: CollectionSummary["byR
               setMaxRarity(e.target.value as Rarity);
               setMessage(null);
             }}
-            className="min-h-11 w-full rounded-button border border-border bg-surface-2 px-3 text-base"
+            className="min-h-11 w-full rounded-control border border-border bg-surface-2 px-3 text-base"
           >
             {RARITIES.map((r) => (
               <option key={r} value={r}>
@@ -123,7 +123,7 @@ export function RecycleAllSheet({ byRarity }: { byRarity: CollectionSummary["byR
           <Button type="button" onClick={() => setOpen(false)} disabled={pending}>
             {t("cancel")}
           </Button>
-          <Button type="button" variant="shu" onClick={confirm} disabled={pending || copies === 0}>
+          <Button type="button" variant="primary" onClick={confirm} disabled={pending || copies === 0}>
             {t("confirm", { zeni })}
           </Button>
         </div>

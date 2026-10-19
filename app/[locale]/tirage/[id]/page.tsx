@@ -96,7 +96,7 @@ export default async function DrawPage({ params }: PageProps<"/[locale]/tirage/[
         ))}
       </ul>
 
-      <Link href="/" className={buttonClasses("shu", "w-full sm:w-auto sm:self-start")}>
+      <Link href="/" className={buttonClasses("primary", "w-full sm:w-auto sm:self-start")}>
         {t("cta")}
       </Link>
     </PageShell>

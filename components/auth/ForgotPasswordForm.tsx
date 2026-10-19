@@ -16,7 +16,7 @@ export function ForgotPasswordForm() {
   if (state.done && state.mailNotSent) return <MailNotSent />;
   if (state.done) {
     return (
-      <p role="status" className="rounded-button border border-border bg-surface-2 px-3 py-2">
+      <p role="status" className="rounded-control border border-border bg-surface-2 px-3 py-2">
         {t("forgot.sent")}
       </p>
     );
@@ -35,7 +35,7 @@ export function ForgotPasswordForm() {
         maxLength={254}
         required
       />
-      <Button type="submit" variant="shu" disabled={pending}>
+      <Button type="submit" variant="primary" disabled={pending}>
         {pending ? t("pending") : t("forgot.submit")}
       </Button>
     </form>

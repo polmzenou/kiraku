@@ -61,7 +61,7 @@ export function DiscordJoinModal({
         <p className="text-sm">{body}</p>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <button type="button" onClick={later} className={buttonClasses("neutral")}>
+        <button type="button" onClick={later} className={buttonClasses("secondary")}>
           {t("later")}
         </button>
         <a
@@ -72,7 +72,7 @@ export function DiscordJoinModal({
             void joinDiscordAction();
             setOpen(false);
           }}
-          className={buttonClasses("shu")}
+          className={buttonClasses("primary")}
         >
           {t("join")}
         </a>

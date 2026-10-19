@@ -107,7 +107,7 @@ export default async function ShopPage() {
           return (
             <li
               key={item.id}
-              className="group flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-paper transition-colors hover:border-kin/60"
+              className="group flex flex-col overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-kin/60"
             >
               <div className="relative">
                 <LotStage lot={lot} className="h-44 transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none" />

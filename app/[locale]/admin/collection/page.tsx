@@ -30,7 +30,7 @@ export default async function AdminCollectionPage() {
         ) : (
           <ul className="flex flex-col gap-2">
             {logs.map((log) => (
-              <li key={log.id} className="flex flex-col gap-1 rounded-button border border-border bg-surface p-3 text-sm">
+              <li key={log.id} className="flex flex-col gap-1 rounded-control border border-border bg-surface p-3 text-sm">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="font-bold">{t("logEntry", { key: log.targetId ?? "", admin: log.admin.username })}</span>
                   <time dateTime={log.createdAt.toISOString()} className="text-xs text-text-muted">

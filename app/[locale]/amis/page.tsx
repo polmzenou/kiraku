@@ -43,7 +43,7 @@ export default async function FriendsPage({ searchParams }: PageProps<"/[locale]
         <div className="flex flex-col items-start gap-3 rounded-lg border border-border bg-surface p-4">
           <p>{user.isGuest ? t("guestOnly") : t("disabled")}</p>
           {user.isGuest && (
-            <ButtonLink href="/inscription" variant="shu">
+            <ButtonLink href="/inscription" variant="primary">
               {t("signUp")}
             </ButtonLink>
           )}
@@ -63,7 +63,7 @@ export default async function FriendsPage({ searchParams }: PageProps<"/[locale]
       <Link
         href={key === "amis" ? "/amis" : `/amis?onglet=${key}`}
         aria-current={tab === key ? "page" : undefined}
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-button px-3 text-sm text-text-muted aria-[current=page]:bg-surface-2 aria-[current=page]:font-bold aria-[current=page]:text-text"
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-3 text-sm text-text-muted aria-[current=page]:bg-surface-2 aria-[current=page]:font-bold aria-[current=page]:text-text"
       >
         {label}
         {badge ? (
@@ -121,9 +121,9 @@ async function FriendsTab({ userId, q, page }: { userId: string; q: string; page
             defaultValue={q}
             maxLength={SEARCH_MAX_LENGTH}
             placeholder={t("searchPlaceholder")}
-            className="min-h-11 min-w-0 flex-1 rounded-button border border-border bg-surface px-3 text-text placeholder:text-text-muted"
+            className="min-h-11 min-w-0 flex-1 rounded-control border border-border bg-surface px-3 text-text placeholder:text-text-muted"
           />
-          <button type="submit" className="inline-flex min-h-11 items-center rounded-button border border-border bg-surface-2 px-4">
+          <button type="submit" className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface-2 px-4">
             {t("search")}
           </button>
         </form>

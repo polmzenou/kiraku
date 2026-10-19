@@ -24,7 +24,7 @@ export function GuestSignupPrompt() {
         <p className="font-title text-2xl font-extrabold">{t("title")}</p>
         <p className="max-w-sm text-sm text-text-muted">{t("body")}</p>
         <div className="mt-2 flex w-full flex-col gap-3">
-          <ButtonLink href="/inscription" variant="shu" onClick={() => setOpen(false)}>
+          <ButtonLink href="/inscription" variant="primary" onClick={() => setOpen(false)}>
             {t("signUp")}
           </ButtonLink>
           <Button type="button" onClick={() => setOpen(false)}>

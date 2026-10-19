@@ -98,7 +98,7 @@ export function LegalEditor({
           maxLength={LEGAL_BODY_MAX}
           rows={20}
           onChange={(e) => setTexts((x) => ({ ...x, [locale]: { ...x[locale], body: e.target.value } }))}
-          className="min-h-80 w-full rounded-button border border-border bg-surface-2 p-3 text-sm leading-relaxed"
+          className="min-h-80 w-full rounded-control border border-border bg-surface-2 p-3 text-sm leading-relaxed"
         />
       )}
       <p className="text-xs text-text-muted">{t("markdownHint")}</p>

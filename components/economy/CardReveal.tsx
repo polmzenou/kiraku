@@ -105,7 +105,7 @@ export function CardReveal({ cards, onClose }: { cards: OpenedCardView[]; onClos
             <div className="flex flex-wrap justify-center gap-2">
               {last ? (
                 <>
-                  <Button type="button" variant="shu" onClick={() => dialog.current?.close()} autoFocus={front}>
+                  <Button type="button" variant="primary" onClick={() => dialog.current?.close()} autoFocus={front}>
                     {t("close")}
                   </Button>
                   <Link
@@ -116,7 +116,7 @@ export function CardReveal({ cards, onClose }: { cards: OpenedCardView[]; onClos
                   </Link>
                 </>
               ) : (
-                <Button type="button" variant="shu" onClick={next}>
+                <Button type="button" variant="primary" onClick={next}>
                   {t("next")}
                 </Button>
               )}

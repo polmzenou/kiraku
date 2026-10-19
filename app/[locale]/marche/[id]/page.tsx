@@ -97,7 +97,7 @@ export default async function AuctionPage({ params }: PageProps<"/[locale]/march
             ) : (
               <ol className="flex flex-col gap-1 text-sm">
                 {detail.bids.map((b) => (
-                  <li key={b.id} className="flex items-center justify-between gap-2 rounded-button border border-border bg-surface px-3 py-2">
+                  <li key={b.id} className="flex items-center justify-between gap-2 rounded-control border border-border bg-surface px-3 py-2">
                     <span className="min-w-0 truncate">
                       {b.me ? <strong>{t("detail.you")}</strong> : (b.bidderName ?? t("detail.anonymous"))}
                     </span>

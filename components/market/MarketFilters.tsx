@@ -4,7 +4,7 @@ import { RARITIES } from "@/lib/catalog/rarity";
 import { MARKET_SORTS, type MarketParams } from "@/lib/market/filters";
 import { buttonClasses } from "../ui/Button";
 
-const input = "min-h-11 w-full rounded-button border border-border bg-surface-2 px-3 text-text placeholder:text-text-muted";
+const input = "min-h-11 w-full rounded-control border border-border bg-surface-2 px-3 text-text placeholder:text-text-muted";
 
 /**
  * Filtres du marché : un simple formulaire GET (fonctionne sans JavaScript, l'URL se partage).
@@ -66,10 +66,10 @@ export async function MarketFilters({ params }: { params: MarketParams }) {
           {t("buyout")}
         </label>
         <div className="col-span-2 flex gap-2 md:col-span-3 md:justify-end">
-          <Link href={reset} className={buttonClasses("neutral", "flex-1 md:flex-none")}>
+          <Link href={reset} className={buttonClasses("secondary", "flex-1 md:flex-none")}>
             {t("reset")}
           </Link>
-          <button type="submit" className={buttonClasses("shu", "flex-1 md:flex-none")}>
+          <button type="submit" className={buttonClasses("primary", "flex-1 md:flex-none")}>
             {t("apply")}
           </button>
         </div>

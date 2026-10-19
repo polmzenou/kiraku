@@ -125,7 +125,7 @@ export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup
                 {t("replay.end")}
               </Button>
             </div>
-            <Link href="/combat" className={buttonClasses("neutral")}>
+            <Link href="/combat" className={buttonClasses("secondary")}>
               {t("result.back")}
             </Link>
           </div>

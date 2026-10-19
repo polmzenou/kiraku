@@ -111,7 +111,7 @@ export function MissionForm({ initial, lots }: { initial: MissionInput | null; l
         <Toggle label={t("active")} checked={draft.active} onChange={(active) => update({ active })} />
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" variant="shu" disabled={pending || !valid}>
+        <Button type="submit" variant="primary" disabled={pending || !valid}>
           {pending ? t("saving") : t("save")}
         </Button>
         {draft.id && (

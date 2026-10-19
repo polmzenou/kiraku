@@ -99,13 +99,13 @@ export function RelationActions({
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-2">
         {relation === "NONE" && (
-          <Button type="button" variant="shu" onClick={send} disabled={pending}>
+          <Button type="button" variant="primary" onClick={send} disabled={pending}>
             {busy("send") ? t("pending") : t("add")}
           </Button>
         )}
         {relation === "OUTGOING" && (
           <>
-            <span className="inline-flex min-h-11 items-center rounded-button border border-border px-4 text-sm text-text-muted">
+            <span className="inline-flex min-h-11 items-center rounded-control border border-border px-4 text-sm text-text-muted">
               {t("requestPending")}
             </span>
             <Button
@@ -121,7 +121,7 @@ export function RelationActions({
           <>
             <Button
               type="button"
-              variant="shu"
+              variant="primary"
               disabled={pending}
               onClick={() =>
                 run("accept", "FRIENDS", () => respondFriendRequestAction({ username, accept: true }), t("nowFriends", { name }))
@@ -140,18 +140,18 @@ export function RelationActions({
         )}
         {relation === "FRIENDS" && (
           <>
-            <span className="inline-flex min-h-11 items-center gap-1.5 rounded-button border border-border px-4 text-sm">
+            <span className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-border px-4 text-sm">
               <span aria-hidden="true" lang="ja" className="font-seal text-shu">
                 友
               </span>
               {t("isFriend")}
             </span>
             {gift && (
-              <Button type="button" variant="shu" onClick={() => setGiftOpen(true)}>
+              <Button type="button" variant="primary" onClick={() => setGiftOpen(true)}>
                 {t("gift")}
               </Button>
             )}
-            <Link href={`/combat?defier=${encodeURIComponent(username)}`} className={buttonClasses("neutral")}>
+            <Link href={`/combat?defier=${encodeURIComponent(username)}`} className={buttonClasses("secondary")}>
               <span aria-hidden="true" lang="ja" className="font-seal text-shu">
                 戦
               </span>
@@ -192,7 +192,7 @@ export function RelationActions({
               </Button>
               <Button
                 type="button"
-                variant="shu"
+                variant="primary"
                 onClick={() => {
                   setMoreOpen(false);
                   setConfirm(null);

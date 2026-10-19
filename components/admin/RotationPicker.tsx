@@ -71,7 +71,7 @@ export function RotationPicker({
         <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {candidates.map((c) => (
             <li key={c.slug}>
-              <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-button border border-border bg-surface-2 px-3 has-checked:border-shu">
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-control border border-border bg-surface-2 px-3 has-checked:border-shu">
                 <input
                   type="checkbox"
                   checked={draft.includes(c.slug)}
@@ -88,7 +88,7 @@ export function RotationPicker({
         </ul>
       )}
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="shu" disabled={pending || draft.length === 0 || !changed} onClick={() => send(draft)}>
+        <Button type="button" variant="primary" disabled={pending || draft.length === 0 || !changed} onClick={() => send(draft)}>
           {t("rotation.save", { count: draft.length })}
         </Button>
         {pinned && (

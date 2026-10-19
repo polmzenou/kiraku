@@ -57,7 +57,7 @@ export default async function MyDataPage() {
         <p className="text-sm text-text-muted">{t("export.body")}</p>
         {/* Formulaire POST classique : le navigateur télécharge le fichier, sans JavaScript */}
         <form method="post" action="/api/me/export" className="flex flex-col gap-2">
-          <Button type="submit" variant="shu" className="self-start">
+          <Button type="submit" variant="primary" className="self-start">
             {t("export.submit")}
           </Button>
           <p className="text-xs text-text-muted">{t("export.limit", { count: exportsPerDay })}</p>

@@ -37,7 +37,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
         maxLength={PASSWORD_MAX}
         required
       />
-      <Button type="submit" variant="shu" disabled={pending}>
+      <Button type="submit" variant="primary" disabled={pending}>
         {pending ? t("pending") : t("reset.submit")}
       </Button>
     </form>

@@ -11,7 +11,7 @@ import { adminCardById, getAdminUser, getAdminUserCards } from "@/server/admin/u
 import { readBannerPity } from "@/server/boosters/open-core";
 import { getBoosterRules } from "@/server/boosters/rules";
 
-const inputClass = "min-h-11 w-full min-w-0 rounded-button border border-border bg-surface-2 px-3 text-base";
+const inputClass = "min-h-11 w-full min-w-0 rounded-control border border-border bg-surface-2 px-3 text-base";
 
 export default async function AdminUserPage({ params, searchParams }: PageProps<"/[locale]/admin/utilisateurs/[userId]">) {
   const admin = await requireAdmin();

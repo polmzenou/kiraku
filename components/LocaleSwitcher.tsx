@@ -5,6 +5,7 @@ import { useTransition } from "react";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { setLocaleAction } from "@/server/actions/data";
+import { segmentedFillClass, segmentedItemClass, segmentedTrackClass } from "./ui/Segmented";
 
 export function LocaleSwitcher() {
   const t = useTranslations("locale");
@@ -15,8 +16,8 @@ export function LocaleSwitcher() {
 
   return (
     <fieldset className="flex flex-col gap-2" disabled={pending}>
-      <legend className="mb-2 text-sm text-text-muted">{t("label")}</legend>
-      <div className="grid grid-cols-2 gap-2">
+      <legend className="mb-2 text-sm font-bold text-text-muted">{t("label")}</legend>
+      <div className={`${segmentedTrackClass} ${segmentedFillClass}`}>
         {routing.locales.map((locale) => (
           <button
             key={locale}
@@ -30,7 +31,7 @@ export function LocaleSwitcher() {
                 router.replace(pathname, { locale });
               })
             }
-            className="min-h-11 rounded-button border border-border bg-surface-2 px-3 text-sm aria-pressed:border-shu aria-pressed:text-shu"
+            className={segmentedItemClass}
           >
             {t(locale)}
           </button>

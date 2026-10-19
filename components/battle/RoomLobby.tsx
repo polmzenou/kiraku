@@ -59,7 +59,7 @@ export function RoomLobby({ view, candidates, lastTeam }: { view: BattleView; ca
             {error}
           </p>
         )}
-        <Button variant="shu" onClick={() => setPicking(true)} disabled={pending}>
+        <Button variant="primary" onClick={() => setPicking(true)} disabled={pending}>
           {t("room.accept")}
         </Button>
         <TeamPicker
@@ -138,7 +138,7 @@ export function RoomLobby({ view, candidates, lastTeam }: { view: BattleView; ca
         >
           {t("room.cancel")}
         </Button>
-        <Link href="/combat" className={buttonClasses("neutral")}>
+        <Link href="/combat" className={buttonClasses("secondary")}>
           {t("room.back")}
         </Link>
       </div>

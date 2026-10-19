@@ -115,7 +115,7 @@ export function PushToggle({ publicKey }: { publicKey: string }) {
         </>
       )}
       {state === "off" && (
-        <Button type="button" variant="shu" onClick={enable} disabled={pending} className="w-full">
+        <Button type="button" variant="primary" onClick={enable} disabled={pending} className="w-full">
           {t("enable")}
         </Button>
       )}

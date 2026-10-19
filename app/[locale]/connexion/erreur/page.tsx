@@ -25,7 +25,7 @@ export default async function AuthErrorPage({ searchParams }: PageProps<"/[local
         <p className="text-text-muted">{body}</p>
         {alreadyLinked && (
           <form action={abandonGuestAndSignIn}>
-            <Button type="submit" variant="shu" className="w-full">
+            <Button type="submit" variant="primary" className="w-full">
               {t("continue")}
             </Button>
           </form>

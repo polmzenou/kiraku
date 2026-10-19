@@ -43,7 +43,7 @@ export default async function AdminBoosterTypesPage() {
         <p className="max-w-prose text-sm text-text-muted">{t("intro", { min: minPool })}</p>
         <div className="flex flex-wrap gap-2">
           <RecomputePoolsButton />
-          <ButtonLink href="/admin/bannieres/nouvelle" variant="shu">
+          <ButtonLink href="/admin/bannieres/nouvelle" variant="primary">
             {t("newBanner")}
           </ButtonLink>
         </div>

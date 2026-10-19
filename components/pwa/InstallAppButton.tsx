@@ -57,7 +57,7 @@ export function InstallAppButton() {
       <p className="text-sm text-text-muted">{t("body")}</p>
       <Button
         type="button"
-        variant="shu"
+        variant="primary"
         className="self-start"
         onClick={async () => {
           if (mode === "ios" || !deferred) {

@@ -57,7 +57,7 @@ export default async function AdminEconomyPage() {
           <h3 className="font-bold text-shu">{t("mismatches")}</h3>
           <ul className="flex flex-col gap-1 text-sm">
             {mismatches.map((m) => (
-              <li key={m.id} className="rounded-button border border-shu bg-surface p-2">
+              <li key={m.id} className="rounded-control border border-shu bg-surface p-2">
                 {t("mismatch", { name: m.username, coins: m.coins, ledger: Number(m.ledger) })}
               </li>
             ))}
@@ -72,7 +72,7 @@ export default async function AdminEconomyPage() {
         ) : (
           <ul className="grid gap-1 text-sm sm:grid-cols-2">
             {flows.map((f) => (
-              <li key={f.reason} className="flex justify-between gap-2 rounded-button border border-border bg-surface p-2">
+              <li key={f.reason} className="flex justify-between gap-2 rounded-control border border-border bg-surface p-2">
                 <span>{tReason(f.reason)}</span>
                 <span className="tabular-nums">{t("flow", { amount: f.amount, count: f.count })}</span>
               </li>
@@ -90,7 +90,7 @@ export default async function AdminEconomyPage() {
         ) : (
           <ul className="flex flex-col gap-2">
             {logs.map((log) => (
-              <li key={log.id} className="flex flex-col gap-1 rounded-button border border-border bg-surface p-3 text-sm">
+              <li key={log.id} className="flex flex-col gap-1 rounded-control border border-border bg-surface p-3 text-sm">
                 <span className="font-bold">{t("logEntry", { key: log.targetId ?? "", admin: log.admin.username })}</span>
                 <p className="break-all text-xs text-text-muted">
                   {JSON.stringify(log.before)} → {JSON.stringify(log.after)}

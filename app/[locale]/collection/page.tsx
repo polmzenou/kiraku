@@ -63,7 +63,7 @@ export default async function CollectionPage({ searchParams }: PageProps<"/[loca
       {summary.unique === 0 ? (
         <section className="flex flex-col items-center gap-4 rounded-lg border border-border bg-surface p-6 text-center">
           <p className="text-text-muted">{t("empty")}</p>
-          <ButtonLink href="/" variant="shu">
+          <ButtonLink href="/" variant="primary">
             {t("openBoosters")}
           </ButtonLink>
         </section>

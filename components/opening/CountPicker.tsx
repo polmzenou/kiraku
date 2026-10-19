@@ -25,7 +25,7 @@ export function CountPicker({
             aria-pressed={value === n}
             disabled={n > max}
             onClick={() => onChange(n)}
-            className="min-h-11 min-w-16 rounded-button border border-border bg-surface-2 px-3 text-sm font-bold tabular-nums disabled:opacity-40 aria-pressed:border-shu aria-pressed:text-shu"
+            className="min-h-11 min-w-16 rounded-control border border-border bg-surface-2 px-3 text-sm font-bold tabular-nums disabled:opacity-40 aria-pressed:border-shu aria-pressed:text-shu"
           >
             {t("times", { n })}
           </button>

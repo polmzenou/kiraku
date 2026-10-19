@@ -60,7 +60,7 @@ export function SettingsSaveBar({
             <Button type="button" onClick={() => setReviewing(false)} disabled={pending}>
               {t("cancel")}
             </Button>
-            <Button type="button" variant="shu" onClick={confirm} disabled={pending}>
+            <Button type="button" variant="primary" onClick={confirm} disabled={pending}>
               {t("confirm")}
             </Button>
           </div>
@@ -68,7 +68,7 @@ export function SettingsSaveBar({
       ) : (
         <Button
           type="button"
-          variant="shu"
+          variant="primary"
           className="self-start"
           disabled={!valid || changedLabels.length === 0 || pending}
           onClick={() => {

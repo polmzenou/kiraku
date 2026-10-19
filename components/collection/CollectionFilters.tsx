@@ -19,7 +19,7 @@ import { Sheet } from "../ui/Sheet";
 const DEBOUNCE_MS = 300;
 
 const chip = (active: boolean) =>
-  `inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-button border px-3 text-sm ${
+  `inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-control border px-3 text-sm ${
     active ? "border-text bg-surface-2 font-bold" : "border-border bg-surface text-text-muted"
   }`;
 
@@ -89,7 +89,7 @@ export function CollectionFilters({
             clearTimeout(timer.current);
             timer.current = setTimeout(() => go({ q: value }), DEBOUNCE_MS);
           }}
-          className="min-h-11 min-w-0 flex-1 rounded-button border border-border bg-surface px-3 text-text placeholder:text-text-muted"
+          className="min-h-11 min-w-0 flex-1 rounded-control border border-border bg-surface px-3 text-text placeholder:text-text-muted"
         />
         <Button type="button" onClick={() => setSheetOpen(true)} aria-haspopup="dialog" className="px-4">
           {t("sortAndSeries")}
@@ -165,7 +165,7 @@ export function CollectionFilters({
             id={seriesId}
             value={params.series ?? ""}
             onChange={(e) => go({ series: e.target.value || null })}
-            className="min-h-11 w-full rounded-button border border-border bg-surface-2 px-3 text-base"
+            className="min-h-11 w-full rounded-control border border-border bg-surface-2 px-3 text-base"
           >
             <option value="">{t("allSeries")}</option>
             {series.map((s) => (
@@ -176,7 +176,7 @@ export function CollectionFilters({
           </select>
         </div>
 
-        <Button type="button" variant="shu" onClick={() => setSheetOpen(false)}>
+        <Button type="button" variant="primary" onClick={() => setSheetOpen(false)}>
           {t("done")}
         </Button>
       </Sheet>

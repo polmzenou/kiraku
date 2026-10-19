@@ -5,7 +5,7 @@ import { logQuery, parseAdminLogParams } from "@/lib/admin/logs";
 import { requireAdmin } from "@/server/admin";
 import { adminTargetHref, listAdminLogs } from "@/server/admin/logs";
 
-const inputClass = "min-h-11 w-full min-w-0 rounded-button border border-border bg-surface-2 px-3 text-base";
+const inputClass = "min-h-11 w-full min-w-0 rounded-control border border-border bg-surface-2 px-3 text-base";
 
 /** Lisible et échappé par React : jamais de HTML injecté depuis le journal. */
 function json(value: unknown): string {
@@ -56,7 +56,7 @@ export default async function AdminLogPage({ searchParams }: PageProps<"/[locale
           </label>
         ))}
         <div className="flex gap-2 sm:col-span-2 lg:col-span-3">
-          <Button type="submit" variant="shu">
+          <Button type="submit" variant="primary">
             {t("filter")}
           </Button>
           <Link href="/admin/journal" className={buttonClasses()}>
@@ -100,11 +100,11 @@ export default async function AdminLogPage({ searchParams }: PageProps<"/[locale
                     <div className="grid gap-2 md:grid-cols-2">
                       <div className="flex flex-col gap-1">
                         <span className="text-xs text-text-muted">{t("before")}</span>
-                        <pre className="max-h-64 overflow-auto rounded-button bg-surface-2 p-2 font-body text-xs whitespace-pre-wrap break-all">{json(log.before)}</pre>
+                        <pre className="max-h-64 overflow-auto rounded-control bg-surface-2 p-2 font-body text-xs whitespace-pre-wrap break-all">{json(log.before)}</pre>
                       </div>
                       <div className="flex flex-col gap-1">
                         <span className="text-xs text-text-muted">{t("after")}</span>
-                        <pre className="max-h-64 overflow-auto rounded-button bg-surface-2 p-2 font-body text-xs whitespace-pre-wrap break-all">{json(log.after)}</pre>
+                        <pre className="max-h-64 overflow-auto rounded-control bg-surface-2 p-2 font-body text-xs whitespace-pre-wrap break-all">{json(log.after)}</pre>
                       </div>
                     </div>
                   </details>

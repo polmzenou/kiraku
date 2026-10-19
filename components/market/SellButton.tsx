@@ -20,7 +20,7 @@ export type SellInfo = {
   block: "GUEST" | "TOO_NEW" | "BANNED" | "DISABLED" | null;
 };
 
-const field = "min-h-11 w-full rounded-button border border-border bg-surface-2 px-3 text-lg tabular-nums";
+const field = "min-h-11 w-full rounded-control border border-border bg-surface-2 px-3 text-lg tabular-nums";
 
 /**
  * « Mettre en vente » depuis la fiche d'une carte : prix de départ, achat immédiat facultatif,
@@ -81,7 +81,7 @@ export function SellButton({ cardId, cardName, available, info }: { cardId: stri
         {created ? (
           <div className="flex flex-col gap-3" role="status">
             <p className="font-bold">{t("sell.done")}</p>
-            <ButtonLink href={`/marche/${created}`} variant="shu">
+            <ButtonLink href={`/marche/${created}`} variant="primary">
               {t("sell.viewSale")}
             </ButtonLink>
           </div>
@@ -155,7 +155,7 @@ export function SellButton({ cardId, cardName, available, info }: { cardId: stri
             <p className="text-xs text-text-muted">{t("sell.reserved")}</p>
             <p className="text-xs text-text-muted">{t("sell.limit", { count: info.active, max: info.maxActive })}</p>
 
-            <Button type="submit" variant="shu" disabled={pending || !valid}>
+            <Button type="submit" variant="primary" disabled={pending || !valid}>
               {pending ? t("sell.sending") : t("sell.confirm")}
             </Button>
             {error && (

@@ -115,7 +115,7 @@ export default async function ReferralPage() {
         {header}
         <section className="flex flex-col gap-3 rounded-xl border border-kin/60 bg-[linear-gradient(135deg,var(--color-surface),var(--color-surface-2))] p-5">
           <p className="font-title text-lg font-bold">{cookieCode ? t("guestInvited") : t("guestBody")}</p>
-          <ButtonLink href="/inscription" variant="shu" className="self-start">
+          <ButtonLink href="/inscription" variant="primary" className="self-start">
             {tAccount("createAccount")}
           </ButtonLink>
         </section>
@@ -176,7 +176,7 @@ export default async function ReferralPage() {
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start">
         {/* Carte d'invitation : le code comme une étiquette tanzaku, bordure dorée */}
-        <section className="relative flex flex-col gap-4 overflow-hidden rounded-xl border border-kin/60 bg-[linear-gradient(135deg,var(--color-surface),var(--color-surface-2))] p-5 shadow-paper">
+        <section className="relative flex flex-col gap-4 overflow-hidden rounded-xl border border-kin/60 bg-[linear-gradient(135deg,var(--color-surface),var(--color-surface-2))] p-5">
           <span aria-hidden="true" lang="ja" className="pointer-events-none absolute -right-3 -bottom-6 font-seal text-[7rem] leading-none text-kin/10">
             招
           </span>
@@ -200,14 +200,14 @@ export default async function ReferralPage() {
       {howItWorks}
 
       <section
-        className="flex flex-col gap-4 rounded-xl border border-shu/40 border-l-4 border-l-shu bg-surface bg-linear-to-br from-shu/10 via-surface to-surface p-5 shadow-paper sm:p-6"
+        className="flex flex-col gap-4 rounded-xl border border-shu/40 border-l-4 border-l-shu bg-surface bg-linear-to-br from-shu/10 via-surface to-surface p-5 sm:p-6"
         aria-labelledby="parrain"
       >
         <div className="flex items-center gap-3">
           <span
             aria-hidden="true"
             lang="ja"
-            className="flex size-10 shrink-0 items-center justify-center rounded-button bg-shu-btn font-seal text-2xl text-washi-paper shadow-paper"
+            className="flex size-10 shrink-0 items-center justify-center rounded-control bg-shu-btn font-seal text-2xl text-washi-paper"
           >
             招
           </span>

@@ -35,7 +35,7 @@ export function PrivacyForm({ visibility, showCollection }: { visibility: Profil
         {PROFILE_VISIBILITIES.map((v) => (
           <label
             key={v}
-            className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-button border px-3 py-2.5 ${
+            className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-control border px-3 py-2.5 ${
               value.visibility === v ? "border-text bg-surface-2" : "border-border"
             }`}
           >
@@ -55,7 +55,7 @@ export function PrivacyForm({ visibility, showCollection }: { visibility: Profil
         ))}
       </fieldset>
 
-      <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-button border border-border px-3 py-2.5">
+      <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-control border border-border px-3 py-2.5">
         <input
           type="checkbox"
           checked={value.showCollection}

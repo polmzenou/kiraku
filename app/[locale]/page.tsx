@@ -15,6 +15,7 @@ import { TopCollectors } from "@/components/home/TopCollectors";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { ButtonLink } from "@/components/ui/ButtonLink";
+import { segmentedItemClass, segmentedScrollClass, segmentedTrackClass } from "@/components/ui/Segmented";
 import { getPathname, Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { poolCounts } from "@/lib/boosters/draw";
@@ -181,7 +182,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
                     </span>
                     {t("creditBoosters", { count: c.count, name: c.name })}
                   </p>
-                  <ButtonLink href={`/ouvrir/${c.slug}?credit=1`} variant="shu">
+                  <ButtonLink href={`/ouvrir/${c.slug}?credit=1`} variant="primary">
                     {t("openCredit")}
                   </ButtonLink>
                 </li>
@@ -194,9 +195,9 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
           {/* Onglets de famille : filtrent la grille sur mobile, ancres sur desktop */}
           <nav
             aria-label={t("familiesLabel")}
-            className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 -mx-4 border-b border-border bg-bg/95 backdrop-blur md:top-[calc(4rem+env(safe-area-inset-top))] lg:mx-0"
+            className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 -mx-4 bg-bg/95 px-4 py-2 md:top-[calc(4rem+env(safe-area-inset-top))] lg:mx-0 lg:px-0"
           >
-            <ul className="flex gap-1 overflow-x-auto px-3 [scrollbar-width:none] lg:px-0">
+            <ul className={`${segmentedTrackClass} ${segmentedScrollClass}`}>
               {families.map((family) => {
                 const active = family === activeFamily;
                 return (
@@ -205,9 +206,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
                       prefetch={false}
                       href={`/?b=${selected?.type.family === family ? selected.type.slug : visible.find((o) => o.type.family === family)!.type.slug}&f=${family}#famille-${family}`}
                       aria-current={active ? "true" : undefined}
-                      className={`flex min-h-11 items-center gap-1.5 border-b-[3px] px-3 text-sm font-bold whitespace-nowrap ${
-                        active ? "border-shu text-text" : "border-transparent text-text-muted hover:text-text"
-                      }`}
+                      className={segmentedItemClass}
                     >
                       <span aria-hidden="true" lang="ja" className="font-seal text-[15px] text-shu">
                         {FAMILY_KANJI[family]}
@@ -245,7 +244,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
                         {t("rotationNext", { when: format.relativeTime(rotation.window.endsAt, state.serverNow) })}
                       </p>
                     )}
-                    <span aria-hidden="true" className="h-[3px] w-12 -skew-x-12 rounded-full bg-shu" />
+                    <span aria-hidden="true" className="h-[3px] w-12 rounded-pill bg-shu" />
                   </div>
                 </div>
                 <ul className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
@@ -272,7 +271,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
 
       {/* Mobile : le booster choisi et l'action principale restent à portée du pouce */}
       {selected && panel && (
-        <div className="fixed inset-x-0 bottom-[var(--mobile-nav-height)] z-30 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="fixed inset-x-[max(0.75rem,env(safe-area-inset-left))] bottom-[var(--mobile-nav-height)] z-30 mx-auto max-w-md rounded-hero border border-border bg-surface px-4 py-3 shadow-float lg:hidden">
           <div className="mx-auto flex max-w-xl flex-col gap-2.5">
             <div className="flex items-center gap-3">
               <div className="w-8 shrink-0">

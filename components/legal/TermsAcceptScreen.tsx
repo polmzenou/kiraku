@@ -56,7 +56,7 @@ export function TermsAcceptScreen({ version, firstTime }: { version: number; fir
           {error}
         </p>
       )}
-      <Button type="button" variant="shu" disabled={!checked || pending} onClick={accept} className="min-h-12 text-base">
+      <Button type="button" variant="primary" disabled={!checked || pending} onClick={accept} className="min-h-12 text-base">
         {pending ? t("pending") : t("submit")}
       </Button>
     </main>

@@ -79,7 +79,7 @@ export function Fuda({
   const showNative = !inBattle && size !== "sm" && !locked && card.nameNative;
 
   const content = (
-    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden shadow-paper ${l.frame}`} data-rarity={card.rarity}>
+    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity}>
       <div className="flex h-full flex-col overflow-hidden rounded-[3px] bg-washi-paper text-sumi">
         <div className="relative flex-1 overflow-hidden bg-[#e4d9c4]">
           {locked ? (

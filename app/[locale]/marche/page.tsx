@@ -64,7 +64,7 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
           {user.isGuest && (
             <aside className="flex flex-col items-start gap-3 rounded-lg border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm">{t("guest")}</p>
-              <ButtonLink href="/inscription" variant="shu">
+              <ButtonLink href="/inscription" variant="primary">
                 {t("signUp")}
               </ButtonLink>
             </aside>

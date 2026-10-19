@@ -45,7 +45,7 @@ export default async function AdminReferralPage() {
         ) : (
           <ul className="grid gap-1 text-sm sm:grid-cols-2">
             {top.map((r) => (
-              <li key={r.referrerId} className="flex justify-between rounded-button border border-border bg-surface p-2">
+              <li key={r.referrerId} className="flex justify-between rounded-control border border-border bg-surface p-2">
                 <span>{r.username}</span>
                 <span className="tabular-nums">{r.count}</span>
               </li>

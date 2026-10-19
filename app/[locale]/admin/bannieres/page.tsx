@@ -16,7 +16,7 @@ export default async function AdminBannersPage() {
       <div className="flex flex-col gap-3">
         <h2 className="font-title text-2xl font-bold">{t("banners.title")}</h2>
         <p className="max-w-prose text-sm text-text-muted">{t("banners.intro")}</p>
-        <ButtonLink href="/admin/bannieres/nouvelle" variant="shu" className="self-start">
+        <ButtonLink href="/admin/bannieres/nouvelle" variant="primary" className="self-start">
           {t("types.newBanner")}
         </ButtonLink>
       </div>

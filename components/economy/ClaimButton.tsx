@@ -59,7 +59,7 @@ function ClaimButton({ claim, claimed, claimedLabel }: { claim: () => Promise<Cl
         </p>
       ) : (
         <div className="flex flex-col items-stretch gap-1 sm:items-end">
-          <Button type="button" variant="shu" onClick={run} disabled={pending} className="min-w-32">
+          <Button type="button" variant="primary" onClick={run} disabled={pending} className="min-w-32">
             {pending ? t("claiming") : t("claim")}
           </Button>
           {error && (

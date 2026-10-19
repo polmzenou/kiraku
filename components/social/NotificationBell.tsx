@@ -6,6 +6,8 @@ import { Link } from "@/i18n/navigation";
 import { formatBadge } from "@/lib/social/notifications";
 import { pollNotificationsAction } from "@/server/actions/notifications";
 import type { NotificationView } from "@/server/social/queries";
+import { badgeClasses } from "../ui/Badge";
+import { iconButtonClasses } from "../ui/IconButton";
 import { NotificationToasts } from "./NotificationToasts";
 
 /**
@@ -96,16 +98,16 @@ export function NotificationBell({
         href="/notifications"
         aria-label={label}
         title={label}
-        className="relative inline-flex size-11 shrink-0 items-center justify-center rounded-button text-text-muted hover:text-text"
+        className={iconButtonClasses("lacquer")}
       >
-        <svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 9a6 6 0 1 1 12 0c0 5 2 7 2 7H4s2-2 2-7" />
           <path d="M10 20a2 2 0 0 0 4 0" />
         </svg>
         {badge && (
           <span
             aria-hidden="true"
-            className="absolute top-1 right-0.5 min-w-[18px] rounded-full bg-shu-btn px-1 text-center text-[11px] leading-[18px] font-bold text-washi-paper tabular-nums"
+            className={badgeClasses("shu", "absolute -top-0.5 -right-0.5 ring-2 ring-bg")}
           >
             {badge}
           </span>

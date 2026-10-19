@@ -86,7 +86,7 @@ export function BattleFuda({ card, state, selected, targetable, ready, fx, onPre
         {/* Passifs et états sur une seule colonne pour éviter les chevauchements. */}
         <span aria-hidden="true" className="absolute top-7 right-0.5 left-0.5 flex flex-col items-end gap-0.5 text-[9px] font-bold leading-tight md:text-[11px]">
           {card.keywords.map((k) => (
-            <span key={k} className="max-w-full rounded-[3px] border border-washi-paper/30 bg-sumi/90 px-1 text-right text-washi-paper shadow-paper">
+            <span key={k} className="max-w-full rounded-[3px] border border-washi-paper/30 bg-sumi/90 px-1 text-right text-washi-paper">
               {keywords(`${k}.name`)}
             </span>
           ))}

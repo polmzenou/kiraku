@@ -109,7 +109,7 @@ export function EconomySettingsForm({ initial, lots }: { initial: EconomySetting
       </fieldset>
 
       <div className="flex flex-col gap-2">
-        <Button type="submit" variant="shu" disabled={pending || !valid || changed.length === 0} className="self-start">
+        <Button type="submit" variant="primary" disabled={pending || !valid || changed.length === 0} className="self-start">
           {pending ? t("saving") : t("save")}
         </Button>
         <FormMessage message={message} />

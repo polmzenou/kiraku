@@ -21,11 +21,11 @@ import {
 
 const DEBOUNCE_MS = 300;
 const chip = (active: boolean) =>
-  `inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-button border px-3 text-sm ${
+  `inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-control border px-3 text-sm ${
     active ? "border-text bg-surface-2 font-bold" : "border-border bg-surface text-text-muted"
   }`;
 const radio = (active: boolean) => `${chip(active)} cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-text`;
-const selectClass = "min-h-11 w-full min-w-0 rounded-button border border-border bg-surface-2 px-3 text-base";
+const selectClass = "min-h-11 w-full min-w-0 rounded-control border border-border bg-surface-2 px-3 text-base";
 
 /** Filtres combinables, comme dans la collection ; l'URL porte aussi le tri et la pagination. */
 export function WikiFilters({ params, options, counts, action }: {
@@ -114,7 +114,7 @@ export function WikiFilters({ params, options, counts, action }: {
             clearTimeout(timer.current);
             timer.current = setTimeout(() => go({ q: value.trim() }), DEBOUNCE_MS);
           }}
-          className="min-h-11 min-w-0 flex-1 rounded-button border border-border bg-surface px-3 text-text placeholder:text-text-muted"
+          className="min-h-11 min-w-0 flex-1 rounded-control border border-border bg-surface px-3 text-text placeholder:text-text-muted"
         />
         {Object.entries(wikiQuery({ ...filters, q: "", after: null })).map(([name, value]) => (
           <input key={name} type="hidden" name={name} value={value} />
@@ -252,7 +252,7 @@ export function WikiFilters({ params, options, counts, action }: {
 
         <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-border bg-bg px-4 pt-3 md:-mx-6 md:px-6">
           {canReset && <Button type="button" onClick={reset} className="px-3">{t("resetFilters")}</Button>}
-          <Button type="button" variant="shu" onClick={() => setSheetOpen(false)} className="flex-1">{t("done")}</Button>
+          <Button type="button" variant="primary" onClick={() => setSheetOpen(false)} className="flex-1">{t("done")}</Button>
         </div>
       </Sheet>
     </div>

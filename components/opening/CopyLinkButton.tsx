@@ -25,7 +25,7 @@ export function CopyLinkButton({ openingId }: { openingId: string }) {
     <button
       type="button"
       onClick={copy}
-      className="inline-flex min-h-11 items-center rounded-button px-2 text-sm text-link underline underline-offset-4"
+      className="inline-flex min-h-11 items-center rounded-control px-2 text-sm text-link underline underline-offset-4"
     >
       <span aria-live="polite">{copied ? t("copied") : t("copyLink")}</span>
     </button>

@@ -5,7 +5,7 @@ import { useId, type ReactNode } from "react";
 // Champs communs des formulaires de l'économie dans /admin (zones tactiles ≥ 44 px).
 
 export const inputClass =
-  "min-h-11 w-full min-w-0 rounded-button border border-border bg-surface-2 px-3 text-base aria-invalid:border-shu";
+  "min-h-11 w-full min-w-0 rounded-control border border-border bg-surface-2 px-3 text-base aria-invalid:border-shu";
 
 export function Field({ label, children, hint }: { label: string; children: (id: string) => ReactNode; hint?: string }) {
   const id = useId();

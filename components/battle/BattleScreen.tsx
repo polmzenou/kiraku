@@ -25,7 +25,7 @@ export function BattleScreen({ view, candidates, lastTeam }: { view: BattleView;
   return (
     <section className="flex flex-col items-center gap-4 rounded-lg border border-border bg-surface px-4 py-8 text-center">
       <p>{t("room.closed")}</p>
-      <Link href="/combat" className={buttonClasses("shu")}>
+      <Link href="/combat" className={buttonClasses("primary")}>
         {t("room.back")}
       </Link>
     </section>

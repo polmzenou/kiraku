@@ -59,7 +59,7 @@ export function ConsentManager() {
       {banner && !panel && (
         <section
           aria-label={t("bannerLabel")}
-          className="fixed inset-x-0 bottom-[var(--mobile-nav-height)] z-40 border-t border-border bg-bg/95 px-4 py-3 shadow-paper backdrop-blur md:bottom-0"
+          className="fixed inset-x-[max(0.75rem,env(safe-area-inset-left))] bottom-[var(--mobile-nav-height)] z-40 mx-auto max-w-[1200px] rounded-hero border border-border bg-surface px-4 py-3 shadow-float md:bottom-4 md:px-5"
         >
           <div className="mx-auto flex max-w-[1200px] flex-col gap-3 md:flex-row md:items-center">
             <p className="flex-1 text-sm">
@@ -88,7 +88,7 @@ export function ConsentManager() {
       <Sheet open={panel} onClose={() => setPanel(false)} title={t("panelTitle")}>
         <p className="text-sm text-text-muted">{OPTIONAL.length === 0 ? t("onlyNecessary") : t("panelIntro")}</p>
         <ul className="flex flex-col gap-2">
-          <li className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface p-3">
+          <li className="lacquer flex items-start justify-between gap-3 rounded-card p-3.5">
             <div className="flex flex-col gap-1">
               <p className="font-bold">{t("categories.necessary")}</p>
               <p className="text-xs text-text-muted">{t("categoryHelp.necessary")}</p>
@@ -96,7 +96,7 @@ export function ConsentManager() {
             <span className="shrink-0 text-xs text-text-muted">{t("alwaysOn")}</span>
           </li>
           {OPTIONAL.map((c) => (
-            <li key={c} className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface p-3">
+            <li key={c} className="lacquer flex items-start justify-between gap-3 rounded-card p-3.5">
               <label htmlFor={`consent-${c}`} className="flex flex-col gap-1">
                 <span className="font-bold">{t(`categories.${c}`)}</span>
                 <span className="text-xs text-text-muted">{t(`categoryHelp.${c}`)}</span>
@@ -114,7 +114,7 @@ export function ConsentManager() {
         {OPTIONAL.length > 0 && (
           <>
             {choiceButtons}
-            <Button type="button" variant="shu" onClick={() => decide(draft)}>
+            <Button type="button" variant="primary" onClick={() => decide(draft)}>
               {t("save")}
             </Button>
           </>

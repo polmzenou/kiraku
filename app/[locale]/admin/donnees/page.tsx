@@ -46,7 +46,7 @@ export default async function AdminDataPage({ searchParams }: PageProps<"/[local
           {items.map((r) => (
             <li
               key={r.id}
-              className="flex flex-col gap-2 rounded-button border border-border bg-surface p-3 text-sm md:flex-row md:items-center md:justify-between"
+              className="flex flex-col gap-2 rounded-control border border-border bg-surface p-3 text-sm md:flex-row md:items-center md:justify-between"
             >
               <div className="flex flex-col gap-0.5">
                 <p>

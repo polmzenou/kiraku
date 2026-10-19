@@ -43,7 +43,7 @@ export function SeasonReward({ seasonId, seasonNumber, peakTier }: { seasonId: s
           )}
         </div>
         {!done && (
-          <Button variant="shu" onClick={claim} disabled={pending}>
+          <Button variant="primary" onClick={claim} disabled={pending}>
             {t("reward.claim")}
           </Button>
         )}

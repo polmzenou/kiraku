@@ -93,7 +93,7 @@ export function GiftSheet({ username, name, info, onClose }: { username: string;
             <Button type="button" onClick={() => setChoice(null)} disabled={pending}>
               {t("back")}
             </Button>
-            <Button type="button" variant="shu" onClick={confirm} disabled={pending}>
+            <Button type="button" variant="primary" onClick={confirm} disabled={pending}>
               {pending ? t("sending") : t("confirm")}
             </Button>
           </div>

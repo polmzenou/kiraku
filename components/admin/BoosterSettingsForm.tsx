@@ -45,7 +45,7 @@ function metrics(s: BoosterSettings) {
 }
 
 const input =
-  "min-h-11 w-full min-w-0 rounded-button border border-border bg-surface-2 px-3 text-base tabular-nums aria-invalid:border-shu";
+  "min-h-11 w-full min-w-0 rounded-control border border-border bg-surface-2 px-3 text-base tabular-nums aria-invalid:border-shu";
 
 function NumberField({
   label,
@@ -208,7 +208,7 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
                     aria-label={t("removeSlot", { n: i + 1 })}
                     disabled={floors.length <= 1}
                     onClick={() => set("booster.slotFloors", floors.filter((_, j) => j !== i))}
-                    className="size-11 rounded-button border border-border text-lg disabled:opacity-40"
+                    className="size-11 rounded-control border border-border text-lg disabled:opacity-40"
                   >
                     <span aria-hidden="true">−</span>
                   </button>
@@ -361,7 +361,7 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
               <Button type="button" onClick={() => setReviewing(false)} disabled={pending}>
                 {t("cancel")}
               </Button>
-              <Button type="button" variant="shu" onClick={save} disabled={pending}>
+              <Button type="button" variant="primary" onClick={save} disabled={pending}>
                 {t("confirm")}
               </Button>
             </div>
@@ -369,7 +369,7 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
         ) : (
           <Button
             type="button"
-            variant="shu"
+            variant="primary"
             disabled={!valid || pending}
             onClick={() => {
               if (changed.length === 0) setMessage({ tone: "ok", text: t("noChange") });

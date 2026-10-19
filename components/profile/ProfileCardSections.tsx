@@ -54,7 +54,7 @@ export function ProfileSalesSection({ cards }: { cards: ProfileSaleCard[] }) {
             <li key={card.cardId} className="relative min-w-0">
               <Link href={`/marche/${card.auctionId}`} aria-label={t("open", { name: card.name, count: card.copies })} className="relative block rounded-[5px]">
                 <Fuda card={card} series={card.series} size="sm" sizes="(min-width: 1200px) 181px, 17vw" />
-                {card.copies > 1 && <span aria-hidden="true" className="absolute top-1 right-1 z-10 flex min-h-6 min-w-6 items-center justify-center rounded-full border border-bg bg-shu-btn px-1.5 text-xs font-bold text-white shadow-paper">×{card.copies}</span>}
+                {card.copies > 1 && <span aria-hidden="true" className="absolute top-1 right-1 z-10 flex min-h-6 min-w-6 items-center justify-center rounded-full border border-bg bg-shu-btn px-1.5 text-xs font-bold text-white">×{card.copies}</span>}
               </Link>
             </li>
           ))}

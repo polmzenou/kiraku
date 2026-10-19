@@ -111,7 +111,7 @@ export function RegisterForm({ formToken, honeypot }: { formToken: string; honey
           </p>
         )}
       </div>
-      <Button type="submit" variant="shu" disabled={pending} className="mt-2 min-h-12 text-base">
+      <Button type="submit" variant="primary" disabled={pending} className="mt-2 min-h-12 text-base">
         {pending ? t("pending") : t("register.submit")}
       </Button>
     </form>

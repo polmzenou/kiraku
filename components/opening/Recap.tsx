@@ -79,7 +79,7 @@ export function Recap({ boosters, state, reduced, play, counters, zeniSpent, cou
             transition={{ duration: unroll, ease: [0.3, 0.7, 0.2, 1] }}
           >
             <span
-              className={`absolute inset-y-0 w-3 rounded-full bg-[linear-gradient(90deg,#3a2414,#8a5e3a_45%,#3a2414)] shadow-paper ${
+              className={`absolute inset-y-0 w-3 rounded-full bg-[linear-gradient(90deg,#3a2414,#8a5e3a_45%,#3a2414)] ${
                 side === "left" ? "left-0" : "right-0"
               }`}
             />
@@ -107,7 +107,7 @@ export function Recap({ boosters, state, reduced, play, counters, zeniSpent, cou
             {tally.map(([r, n], i) => (
               <m.li
                 key={r}
-                className={`flex h-9 items-center gap-1 rounded-[4px] px-2.5 font-seal text-lg text-washi-paper shadow-paper ${RARITY_BG[r]}`}
+                className={`flex h-9 items-center gap-1 rounded-[4px] px-2.5 font-seal text-lg text-washi-paper ${RARITY_BG[r]}`}
                 initial={reduced ? false : { opacity: 0, scale: 2, rotate: -14 }}
                 animate={{ opacity: 1, scale: 1, rotate: i % 2 ? 3 : -3 }}
                 transition={{ delay: unroll + 0.15 + i * 0.16, type: "spring", stiffness: 520, damping: 17 }}
@@ -170,7 +170,7 @@ export function Recap({ boosters, state, reduced, play, counters, zeniSpent, cou
 
       {/* Compteurs et suite */}
       <m.div
-        className="mx-auto flex w-full max-w-sm flex-col items-center gap-4 rounded-lg border border-border bg-surface p-4 shadow-paper"
+        className="mx-auto flex w-full max-w-sm flex-col items-center gap-4 rounded-lg border border-border bg-surface p-4"
         initial={reduced ? false : { opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: unroll + 0.6 }}
@@ -203,7 +203,7 @@ export function Recap({ boosters, state, reduced, play, counters, zeniSpent, cou
         </ul>
 
         {maxCount > 1 && <CountPicker value={count} max={maxCount} onChange={onCount} />}
-        <Button variant="shu" onClick={onAgain} disabled={nextPrice.kind === "unavailable"} className="w-full justify-between">
+        <Button variant="primary" onClick={onAgain} disabled={nextPrice.kind === "unavailable"} className="w-full justify-between">
           <span className="font-title text-lg font-bold">{count > 1 ? t("openMore", { n: count }) : t("openAnother")}</span>
           <span className="inline-flex items-center gap-1.5 text-xs">
             {nextPrice.kind === "zeni" && <ZeniCoin size={14} />}
@@ -215,10 +215,10 @@ export function Recap({ boosters, state, reduced, play, counters, zeniSpent, cou
           <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} />
         </div>
         <div className="grid w-full grid-cols-2 gap-2">
-          <Link href="/" className={buttonClasses("neutral", "w-full text-sm")}>
+          <Link href="/" className={buttonClasses("secondary", "w-full text-sm")}>
             {t("changeBooster")}
           </Link>
-          <Link href="/wiki" className={buttonClasses("neutral", "w-full text-sm")}>
+          <Link href="/wiki" className={buttonClasses("secondary", "w-full text-sm")}>
             {t("toWiki")}
           </Link>
         </div>

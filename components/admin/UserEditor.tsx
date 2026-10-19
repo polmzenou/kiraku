@@ -38,7 +38,7 @@ function MutationForm({ title, change, children, disabled = false, button }: { t
       <h3 className="font-title text-lg font-bold">{title}</h3>
       <fieldset disabled={pending} className="flex min-w-0 flex-col gap-4">{children}</fieldset>
       <FormMessage message={result ? { tone: result !== "unexpected" && result.ok ? "ok" : "error", text } : null} />
-      <Button type="submit" variant="shu" disabled={disabled || pending || !valid} className="self-start">{pending ? t("saving") : button ?? t("save")}</Button>
+      <Button type="submit" variant="primary" disabled={disabled || pending || !valid} className="self-start">{pending ? t("saving") : button ?? t("save")}</Button>
     </form>
   );
 }
@@ -107,7 +107,7 @@ function BoosterForms({ boosters }: { boosters: Booster[] }) {
         <BoosterCreditForm key={`credit:${id}:${booster.count}`} booster={booster} />
         <BannerPityForm key={`pity:${id}:${booster.pity}`} booster={booster} />
       </div> : <p className="text-sm text-text-muted">{t("noBoosters")}</p>}
-      <ul className="flex flex-wrap gap-2 text-sm">{boosters.filter((b) => b.count > 0).map((b) => <li key={b.id} className="rounded-button border border-border bg-surface px-3 py-2">{b.name} <strong className="ml-1 tabular-nums">×{b.count}</strong></li>)}</ul>
+      <ul className="flex flex-wrap gap-2 text-sm">{boosters.filter((b) => b.count > 0).map((b) => <li key={b.id} className="rounded-control border border-border bg-surface px-3 py-2">{b.name} <strong className="ml-1 tabular-nums">×{b.count}</strong></li>)}</ul>
     </section>
   );
 }
@@ -167,7 +167,7 @@ function CardForm({ initial }: { initial: AdminCardCandidate | null }) {
       {failed && <p role="alert" className="text-sm text-shu">{t("errors.unexpected")}</p>}
       {searched && cards.length === 0 && <p role="status" className="text-sm text-text-muted">{t("noCards")}</p>}
       {cards.length > 0 && <ul className="grid max-h-80 gap-2 overflow-y-auto sm:grid-cols-2">
-        {cards.map((c) => <li key={c.id}><button type="button" aria-pressed={selected?.id === c.id} className={`flex min-h-16 w-full items-center gap-3 rounded-button border p-2 text-left ${selected?.id === c.id ? "border-kin bg-surface-2" : "border-border bg-surface"}`} onClick={() => setSelected(c)}>
+        {cards.map((c) => <li key={c.id}><button type="button" aria-pressed={selected?.id === c.id} className={`flex min-h-16 w-full items-center gap-3 rounded-control border p-2 text-left ${selected?.id === c.id ? "border-kin bg-surface-2" : "border-border bg-surface"}`} onClick={() => setSelected(c)}>
           <Image src={c.imageUrl} width={40} height={56} alt="" className="h-14 w-10 rounded object-cover" />
           <span className="min-w-0 text-sm"><strong>{c.name}</strong><span className="block text-xs text-text-muted">{tRarity(c.rarity)} · {c.series}</span></span>
         </button></li>)}

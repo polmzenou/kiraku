@@ -28,7 +28,7 @@ export function BattleResult({
   const outcome = winner === null ? "DRAW" : winner === mySide ? "WIN" : "LOSS";
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="battle-result-title" className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-4 sm:items-center">
-      <div className="flex w-full max-w-sm flex-col items-center gap-4 rounded-2xl border border-border bg-bg p-6 text-center shadow-paper">
+      <div className="flex w-full max-w-sm flex-col items-center gap-4 rounded-2xl border border-border bg-bg p-6 text-center">
         <h2
           id="battle-result-title"
           className={`flex min-h-24 rotate-[-6deg] items-center justify-center rounded-md border-4 px-4 py-3 font-title text-3xl font-extrabold ${
@@ -49,7 +49,7 @@ export function BattleResult({
         )}
         <p className="text-xs text-text-muted">{t("cardsBack")}</p>
         <div className="flex w-full flex-col gap-2">
-          <Link href="/combat" className={buttonClasses("shu", "w-full")}>
+          <Link href="/combat" className={buttonClasses("primary", "w-full")}>
             {t("again")}
           </Link>
           {onReplay && (

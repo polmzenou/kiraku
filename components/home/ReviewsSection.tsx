@@ -60,7 +60,7 @@ export function ReviewsSection({
       {viewer.kind === "member" && <ReviewButton own={viewer.own} />}
       {viewer.kind === "guest" && (
         <div className="flex flex-wrap items-center gap-3">
-          <ButtonLink href="/inscription" variant="neutral">
+          <ButtonLink href="/inscription" variant="secondary">
             {t("give")}
           </ButtonLink>
           <p className="text-sm text-text-muted">{t("guestHint")}</p>

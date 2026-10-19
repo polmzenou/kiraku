@@ -45,7 +45,7 @@ export function ReferralShare({ code }: { code: string }) {
         </span>
       </p>
       <div className="flex flex-wrap gap-2" aria-live="polite">
-        <Button type="button" variant="shu" onClick={() => copy("link")}>
+        <Button type="button" variant="primary" onClick={() => copy("link")}>
           {copied === "link" ? t("copied") : t("copyLink")}
         </Button>
         <Button type="button" onClick={() => copy("code")}>

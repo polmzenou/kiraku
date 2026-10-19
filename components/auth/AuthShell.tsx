@@ -52,7 +52,7 @@ export function AuthShell({
           </div>
         </aside>
 
-        <section className="relative w-full overflow-hidden rounded-2xl border border-border bg-surface shadow-paper">
+        <section className="relative w-full overflow-hidden rounded-2xl border border-border bg-surface">
           <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-shu-btn" />
           <div className="flex flex-col gap-6 px-5 pt-8 pb-6 sm:px-8">
             <header className="flex items-start gap-4">
@@ -74,7 +74,7 @@ export function AuthShell({
               ))}
             </ul>
 
-            {notice && <div className="rounded-button border border-kin/50 bg-surface-2 px-3 py-2 text-sm">{notice}</div>}
+            {notice && <div className="rounded-control border border-kin/50 bg-surface-2 px-3 py-2 text-sm">{notice}</div>}
 
             {children}
           </div>

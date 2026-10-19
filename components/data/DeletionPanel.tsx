@@ -32,7 +32,7 @@ export function DeletionPanel({ username, graceDays, dueAt }: { username: string
         )}
         <Button
           type="button"
-          variant="shu"
+          variant="primary"
           disabled={pending}
           className="self-start"
           onClick={() =>
@@ -81,14 +81,14 @@ export function DeletionPanel({ username, graceDays, dueAt }: { username: string
             autoCapitalize="none"
             spellCheck={false}
             maxLength={40}
-            className="min-h-11 rounded-button border border-border bg-surface px-3"
+            className="min-h-11 rounded-control border border-border bg-surface px-3"
           />
           {error && (
             <p role="alert" className="text-sm text-shu">
               {error}
             </p>
           )}
-          <Button type="submit" variant="shu" disabled={pending || confirm.trim().toLowerCase() !== username.toLowerCase()}>
+          <Button type="submit" variant="primary" disabled={pending || confirm.trim().toLowerCase() !== username.toLowerCase()}>
             {t("deletion.submit")}
           </Button>
         </form>

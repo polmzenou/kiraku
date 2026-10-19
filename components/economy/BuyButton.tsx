@@ -66,7 +66,7 @@ export function BuyButton({
         <p className="text-sm font-bold text-text-muted">{t("shop.soldOut")}</p>
       ) : confirming ? (
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="shu" onClick={buy} disabled={pending} className="flex-1">
+          <Button type="button" variant="primary" onClick={buy} disabled={pending} className="flex-1">
             <ZeniCoin size={14} />
             {pending ? t("shop.buying") : t("shop.confirm", { price })}
           </Button>
@@ -77,7 +77,7 @@ export function BuyButton({
       ) : (
         <Button
           type="button"
-          variant="shu"
+          variant="primary"
           onClick={() => {
             setReward(null);
             setConfirming(true);
@@ -95,7 +95,7 @@ export function BuyButton({
         </p>
       )}
       {reward && reward.boosters > 0 && openHref && (
-        <ButtonLink href={openHref} variant="shu">
+        <ButtonLink href={openHref} variant="primary">
           {t("shop.openNow")}
         </ButtonLink>
       )}

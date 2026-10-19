@@ -189,7 +189,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
         </p>
 
         {error && (
-          <p role="alert" className="rounded-button border border-shu bg-bg px-3 py-2 text-sm text-shu">
+          <p role="alert" className="rounded-control border border-shu bg-bg px-3 py-2 text-sm text-shu">
             {t(`errors.${error}`)}
           </p>
         )}
@@ -232,13 +232,13 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
                   </p>
 
                   {needsConfirm && price.kind === "zeni" ? (
-                    <Button variant="shu" onClick={() => setConfirmed(price.amount)} className="min-w-48 gap-2">
+                    <Button variant="primary" onClick={() => setConfirmed(price.amount)} className="min-w-48 gap-2">
                       <ZeniCoin size={16} />
                       {t("payConfirm", { amount: price.amount })}
                     </Button>
                   ) : (
                     <Button
-                      variant="shu"
+                      variant="primary"
                       onClick={() => scene.current?.open()}
                       disabled={!armed}
                       className="min-w-48"

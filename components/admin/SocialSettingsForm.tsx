@@ -9,7 +9,7 @@ import { updateSocialSettings } from "@/server/actions/admin-settings";
 import { Button } from "../ui/Button";
 
 const input =
-  "min-h-11 w-full min-w-0 rounded-button border border-border bg-surface-2 px-3 text-base tabular-nums aria-invalid:border-shu";
+  "min-h-11 w-full min-w-0 rounded-control border border-border bg-surface-2 px-3 text-base tabular-nums aria-invalid:border-shu";
 
 type NumberKey = {
   [K in keyof SocialSettings]: SocialSettings[K] extends number ? K : never;
@@ -189,7 +189,7 @@ export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
             <Button type="button" onClick={() => setReviewing(false)} disabled={pending}>
               {t("cancel")}
             </Button>
-            <Button type="button" variant="shu" onClick={save} disabled={pending}>
+            <Button type="button" variant="primary" onClick={save} disabled={pending}>
               {t("confirm")}
             </Button>
           </div>
@@ -197,7 +197,7 @@ export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
       ) : (
         <Button
           type="button"
-          variant="shu"
+          variant="primary"
           className="self-start"
           disabled={!valid || pending}
           onClick={() => {

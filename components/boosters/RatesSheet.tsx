@@ -33,7 +33,7 @@ export function RatesSheet({ children }: { children: ReactNode }) {
           dialog.current?.showModal();
           setOpen(true);
         }}
-        className="min-h-11 shrink-0 rounded-button border border-border bg-surface-2 px-3.5 text-sm font-bold"
+        className="min-h-11 shrink-0 rounded-control border border-border bg-surface-2 px-3.5 text-sm font-bold"
       >
         {t("rates")}
       </button>
@@ -55,7 +55,7 @@ export function RatesSheet({ children }: { children: ReactNode }) {
               type="button"
               aria-label={t("close")}
               onClick={close}
-              className="inline-flex size-11 items-center justify-center rounded-button text-2xl leading-none"
+              className="inline-flex size-11 items-center justify-center rounded-control text-2xl leading-none"
             >
               <span aria-hidden="true">×</span>
             </button>

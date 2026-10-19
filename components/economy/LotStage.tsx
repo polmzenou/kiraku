@@ -67,7 +67,7 @@ export function LotStage({ lot, className = "" }: { lot: LotView | undefined; cl
           <CardBack static className="absolute inset-0" />
         </div>
         <span
-          className="absolute -top-2 -right-3 flex items-center gap-1 rounded-full bg-kin px-2 py-0.5 text-[11px] font-bold text-sumi shadow-paper"
+          className="absolute -top-2 -right-3 flex items-center gap-1 rounded-full bg-kin px-2 py-0.5 text-[11px] font-bold text-sumi"
           aria-hidden="true"
         >
           <span lang="ja" className="font-seal">

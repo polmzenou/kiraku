@@ -125,7 +125,7 @@ export function RankedSettingsForm({ initial, lots }: { initial: RankedSettings;
 
       {!valid && <p className="text-sm text-shu">{t("invalid")}</p>}
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" variant="shu" disabled={pending || !valid || changed.length === 0}>
+        <Button type="submit" variant="primary" disabled={pending || !valid || changed.length === 0}>
           {pending ? t("saving") : t("save")}
         </Button>
         <FormMessage message={message} />
