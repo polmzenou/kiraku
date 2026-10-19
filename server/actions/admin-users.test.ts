@@ -1,15 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ getAdmin: vi.fn(), mutate: vi.fn(), limit: vi.fn(), refresh: vi.fn(), updateTag: vi.fn(), findFirst: vi.fn(), findMany: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getAdmin: vi.fn(), mutate: vi.fn(), limit: vi.fn(), refresh: vi.fn(), updateTag: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), remove: vi.fn() }));
 vi.mock("../admin", () => ({ getAdmin: mocks.getAdmin }));
 vi.mock("../db", () => ({ prisma: { card: { findFirst: mocks.findFirst, findMany: mocks.findMany } } }));
 vi.mock("../ratelimit", () => ({ rateLimit: mocks.limit }));
 vi.mock("next/cache", () => ({ refresh: mocks.refresh, updateTag: mocks.updateTag }));
 vi.mock("../collection/leaderboard", () => ({ LEADERBOARD_TAG: "leaderboard" }));
 vi.mock("../social/reviews", () => ({ REVIEWS_TAG: "reviews" }));
+vi.mock("../market/queries", () => ({ pushLater: vi.fn() }));
+vi.mock("../admin/users-delete-core", async (original) => ({ ...await original<typeof import("../admin/users-delete-core")>(), deleteUserWith: mocks.remove }));
 vi.mock("../admin/users-core", async (original) => ({ ...await original<typeof import("../admin/users-core")>(), mutateAdminUserWith: mocks.mutate }));
 
-import { mutateAdminUserAction, searchAdminCards } from "./admin-users";
+import { adminDeleteUsersAction, mutateAdminUserAction, searchAdminCards } from "./admin-users";
+import { UserDeleteError } from "../admin/users-delete-core";
 import { AdminUserMutationError } from "../admin/users-core";
 
 const input = { userId: "player", reason: "Correction", kind: "coins", mode: "ADD", amount: 100 };
@@ -59,5 +62,24 @@ describe("frontière des actions admin utilisateurs", () => {
   it("ne transforme pas la ponctuation seule en recherche de tout le catalogue", async () => {
     expect(await searchAdminCards("%%%" )).toEqual([]);
     expect(mocks.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("suppression de comptes depuis l'admin", () => {
+  const del = { ids: ["a", "b", "a"], reason: "Spam", confirm: "SUPPRIMER" };
+
+  it("refuse un visiteur, un mot de confirmation faux ou trop de comptes", async () => {
+    mocks.getAdmin.mockResolvedValueOnce(null);
+    expect(await adminDeleteUsersAction(del)).toEqual({ ok: false, error: "FORBIDDEN" });
+    expect(await adminDeleteUsersAction({ ...del, confirm: "oui" })).toEqual({ ok: false, error: "INVALID" });
+    expect(await adminDeleteUsersAction({ ...del, ids: Array.from({ length: 51 }, (_, i) => `u${i}`) })).toEqual({ ok: false, error: "INVALID" });
+    expect(mocks.remove).not.toHaveBeenCalled();
+  });
+
+  it("supprime chaque compte une fois et rapporte les refus sans s'arrêter", async () => {
+    mocks.remove.mockRejectedValueOnce(new UserDeleteError("ADMIN_PROTECTED")).mockResolvedValueOnce({ username: "b" });
+    expect(await adminDeleteUsersAction(del)).toEqual({ ok: true, deleted: ["b"], failed: [{ id: "a", error: "ADMIN_PROTECTED" }] });
+    expect(mocks.remove).toHaveBeenCalledTimes(2);
+    expect(mocks.refresh).toHaveBeenCalled();
   });
 });
