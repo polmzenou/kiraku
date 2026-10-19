@@ -10,6 +10,7 @@ import type { TradeView } from "@/server/social/trades";
 import { Fuda } from "../fuda/Fuda";
 import { displayName } from "../profile/ProfileHeader";
 import { Button } from "../ui/Button";
+import { ChatWithButton } from "../chat/ChatDock";
 import { PlayerAvatar } from "./PlayerAvatar";
 
 const CardReveal = dynamic(() => import("../economy/CardReveal").then((m) => m.CardReveal), { ssr: false });
@@ -155,6 +156,7 @@ function TradeCard({ trade, mode }: { trade: TradeView; mode: Mode }) {
             </>
           ) : (
             <>
+              {other && <ChatWithButton username={other.username} className="mr-auto" />}
               {mode === "received" ? (
                 <>
                   <Button type="button" onClick={() => run(() => declineTradeAction({ tradeId: trade.id }))} disabled={pending}>

@@ -135,8 +135,10 @@ model User {
   lotGrantsGiven     LotGrant[]     @relation("lotGranter")
   lotBroadcasts      LotBroadcast[]
 
-  tradesProposed Trade[] @relation("tradeProposer")
-  tradesReceived Trade[] @relation("tradeRecipient")
+  tradesProposed Trade[]       @relation("tradeProposer")
+  tradesReceived Trade[]       @relation("tradeRecipient")
+  chatSent       ChatMessage[] @relation("chatSender")
+  chatReceived   ChatMessage[] @relation("chatRecipient")
 
   @@index([rankPoints])
 }
@@ -1128,4 +1130,23 @@ model TradeOffer {
   card    Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
 
   @@id([tradeId, cardId])
+}
+
+// --- Chat entre amis (étape 12g) ---
+
+// Message privé entre deux amis. Texte brut (jamais de HTML), purgé après chat.retentionDays.
+model ChatMessage {
+  id          String    @id @default(cuid())
+  pairKey     String // ids des deux joueurs triés (comme Friendship)
+  senderId    String
+  sender      User      @relation("chatSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientId String
+  recipient   User      @relation("chatRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  body        String    @db.VarChar(500)
+  createdAt   DateTime  @default(now())
+  readAt      DateTime?
+
+  @@index([pairKey, createdAt])
+  @@index([recipientId, readAt])
+  @@index([createdAt])
 }

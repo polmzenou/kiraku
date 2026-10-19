@@ -10,6 +10,7 @@ import { buttonClasses } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
 import { SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
+import { ChatWithButton } from "@/components/chat/ChatDock";
 import { TradeList, TradeReveals } from "@/components/social/TradeList";
 import { countIncomingRequests, listBlocked, listFriends, listRequests } from "@/server/social/queries";
 import { expireTradesFor } from "@/server/social/trade-core";
@@ -145,7 +146,9 @@ async function FriendsTab({ userId, q, page }: { userId: string; q: string; page
         ) : (
           <ul className="lacquer rounded-card px-3">
             {items.map((f) => (
-              <PlayerRow key={f.id} player={f} />
+              <PlayerRow key={f.id} player={f}>
+                <ChatWithButton username={f.username} />
+              </PlayerRow>
             ))}
           </ul>
         )}

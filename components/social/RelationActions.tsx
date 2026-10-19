@@ -17,6 +17,7 @@ import { Button, buttonClasses } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
 import { GiftSheet, type GiftInfo } from "./GiftSheet";
 import { TradeComposer } from "./TradeComposer";
+import { ChatWithButton } from "../chat/ChatDock";
 
 type Pending = "send" | "accept" | "decline" | "cancel" | "remove" | "block" | "unblock";
 
@@ -156,6 +157,7 @@ export function RelationActions({
                 {t("gift")}
               </Button>
             )}
+            <ChatWithButton username={username} />
             {trade && (
               <Button type="button" onClick={() => setTradeOpen(true)}>
                 <span aria-hidden="true" lang="ja" className="font-seal text-shu">

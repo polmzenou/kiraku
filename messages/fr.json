@@ -1249,6 +1249,13 @@
           "maxPendingSent": "Propositions en attente par joueur",
           "perDay": "Propositions par joueur sur 24 h",
           "allowedRarities": "Raretés échangeables"
+        },
+        "chat": {
+          "enabled": "Chat entre amis ouvert",
+          "maxLength": "Longueur maximale d'un message",
+          "perMinute": "Messages par joueur et par minute",
+          "retentionDays": "Conservation des messages (jours)",
+          "pollSeconds": "Sondage sans temps réel (secondes)"
         }
       },
       "invalid": "Certaines valeurs sont hors limites : corrige-les avant d'enregistrer.",
@@ -1272,7 +1279,9 @@
       "logEmpty": "Aucun changement pour l'instant.",
       "logEntry": "{key} par {admin}",
       "tradesSection": "Échanges entre amis",
-      "tradesHint": "Rien n'est bloqué pendant l'attente : propriété, amitié et raretés sont revérifiées au moment d'accepter."
+      "tradesHint": "Rien n'est bloqué pendant l'attente : propriété, amitié et raretés sont revérifiées au moment d'accepter.",
+      "chatSection": "Chat entre amis",
+      "chatHint": "Messages privés entre amis acceptés, en texte brut. Un blocage coupe la conversation."
     },
     "market": {
       "title": "Marché",
@@ -3315,6 +3324,32 @@
       "CLOSED": "Cet échange n'est plus ouvert.",
       "NOT_OFFERED": "Cette carte ne fait pas partie de l'offre.",
       "CARD_GONE": "Une des cartes n'est plus disponible : l'échange est annulé."
+    }
+  },
+  "chat": {
+    "title": "Messages",
+    "open": "{count, plural, =0 {Ouvrir le chat} one {Ouvrir le chat, # message non lu} other {Ouvrir le chat, # messages non lus}}",
+    "close": "Fermer le chat",
+    "back": "Retour aux conversations",
+    "loading": "Chargement…",
+    "noFriends": "Ajoute des amis pour discuter avec eux.",
+    "startTalking": "Dis bonjour !",
+    "you": "Toi : {body}",
+    "older": "Messages plus anciens",
+    "empty": "Aucun message avec {name} pour l'instant.",
+    "inputLabel": "Message à {name}",
+    "placeholder": "Écris un message…",
+    "send": "Envoyer",
+    "discuss": "Discuter",
+    "errors": {
+      "NO_SESSION": "Ta session a expiré. Recharge la page.",
+      "INVALID": "Message invalide.",
+      "GUEST": "Crée ton compte pour discuter avec tes amis.",
+      "DISABLED": "Le chat est fermé pour le moment.",
+      "RATE_LIMITED": "Tu écris trop vite. Patiente un instant.",
+      "UNAVAILABLE": "Impossible d'envoyer pour le moment.",
+      "NOT_FRIENDS": "Vous n'êtes pas (ou plus) amis.",
+      "EMPTY": "Message vide ou trop long."
     }
   }
 }

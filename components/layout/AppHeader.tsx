@@ -2,11 +2,15 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import type { Theme } from "@/lib/theme";
 import { logout } from "@/server/actions/account";
+import { isFrozen } from "@/lib/account/deletion";
 import { getBoosterRules } from "@/server/boosters/rules";
+import { unreadChatCount } from "@/server/chat/queries";
+import { ablyEnabled } from "@/server/env";
 import { boosterStateFrom } from "@/server/boosters/state";
 import { getSetting } from "@/server/settings";
 import { unreadNotifications } from "@/server/social/queries";
 import { getCurrentUser } from "@/server/user";
+import { ChatDock, ChatHeaderButton } from "../chat/ChatDock";
 import { SealMark } from "../SealMark";
 import { NotificationBell } from "../social/NotificationBell";
 import { PlayerAvatar } from "../social/PlayerAvatar";
@@ -35,6 +39,15 @@ export async function AppHeader({ theme }: { theme: Theme }) {
   ]);
   const state = user && boosterRules ? boosterStateFrom(user, boosterRules) : null;
   const features = { casino };
+  // Chat entre amis : comptes inscrits, actifs, avec le social et le chat ouverts
+  const chatUser = user && !user.isGuest && !user.bannedAt && !isFrozen(user) ? user : null;
+  const [socialOn, chatOn] = chatUser ? await Promise.all([getSetting("social.enabled"), getSetting("chat.enabled")]) : [false, false];
+  const chat =
+    chatUser && socialOn && chatOn
+      ? await Promise.all([unreadChatCount(chatUser.id), getSetting("chat.pollSeconds"), getSetting("chat.maxLength")]).then(
+          ([initialUnread, chatPoll, maxLength]) => ({ initialUnread, pollSeconds: chatPoll, maxLength }),
+        )
+      : null;
 
   return (
     <>
@@ -78,6 +91,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
                 </Link>
               </div>
             )}
+            {chat && <ChatHeaderButton />}
             {user && <NotificationBell initial={unread} serverNow={new Date().toISOString()} pollSeconds={pollSeconds} />}
             {isAdmin && (
               <Link
@@ -112,6 +126,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
         </div>
       </header>
       <MobileMenu theme={theme} isAdmin={isAdmin} accountHref={accountHref} signedIn={signedIn} features={features} />
+      {chat && <ChatDock realtime={ablyEnabled} {...chat} />}
     </>
   );
 }

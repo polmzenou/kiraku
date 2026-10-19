@@ -1,7 +1,7 @@
 import type { SettingKey } from "./defaults";
 import { changedSettingKeys, settingsSchemaFor, type SettingsOf } from "./form";
 
-// Réglages du panneau /admin/social : amis, cadeaux, échanges et notifications.
+// Réglages du panneau /admin/social : amis, cadeaux, échanges, chat et notifications.
 
 export const SOCIAL_SETTING_KEYS = [
   "social.enabled",
@@ -21,6 +21,11 @@ export const SOCIAL_SETTING_KEYS = [
   "trades.maxPendingSent",
   "trades.perDay",
   "trades.allowedRarities",
+  "chat.enabled",
+  "chat.maxLength",
+  "chat.perMinute",
+  "chat.retentionDays",
+  "chat.pollSeconds",
   "notifications.retentionDays",
   "notifications.pollSeconds",
   "notifications.pushEnabled",

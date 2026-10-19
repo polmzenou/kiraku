@@ -1249,6 +1249,13 @@
           "maxPendingSent": "Pending proposals per player",
           "perDay": "Proposals per player over 24 h",
           "allowedRarities": "Tradable rarities"
+        },
+        "chat": {
+          "enabled": "Chat between friends open",
+          "maxLength": "Maximum message length",
+          "perMinute": "Messages per player per minute",
+          "retentionDays": "Message retention (days)",
+          "pollSeconds": "Polling without realtime (seconds)"
         }
       },
       "invalid": "Some values are out of range: fix them before saving.",
@@ -1272,7 +1279,9 @@
       "logEmpty": "No changes yet.",
       "logEntry": "{key} by {admin}",
       "tradesSection": "Trades between friends",
-      "tradesHint": "Nothing is locked while waiting: ownership, friendship and rarities are checked again on acceptance."
+      "tradesHint": "Nothing is locked while waiting: ownership, friendship and rarities are checked again on acceptance.",
+      "chatSection": "Chat between friends",
+      "chatHint": "Private plain-text messages between accepted friends. A block ends the conversation."
     },
     "market": {
       "title": "Market",
@@ -3315,6 +3324,32 @@
       "CLOSED": "This trade is no longer open.",
       "NOT_OFFERED": "This card isn't part of the offer.",
       "CARD_GONE": "One of the cards is no longer available: the trade is cancelled."
+    }
+  },
+  "chat": {
+    "title": "Messages",
+    "open": "{count, plural, =0 {Open chat} one {Open chat, # unread message} other {Open chat, # unread messages}}",
+    "close": "Close chat",
+    "back": "Back to conversations",
+    "loading": "Loading…",
+    "noFriends": "Add friends to chat with them.",
+    "startTalking": "Say hi!",
+    "you": "You: {body}",
+    "older": "Older messages",
+    "empty": "No messages with {name} yet.",
+    "inputLabel": "Message to {name}",
+    "placeholder": "Write a message…",
+    "send": "Send",
+    "discuss": "Chat",
+    "errors": {
+      "NO_SESSION": "Your session expired. Reload the page.",
+      "INVALID": "Invalid message.",
+      "GUEST": "Create your account to chat with friends.",
+      "DISABLED": "Chat is closed for now.",
+      "RATE_LIMITED": "You're typing too fast. Wait a moment.",
+      "UNAVAILABLE": "Can't send right now.",
+      "NOT_FRIENDS": "You are not (or no longer) friends.",
+      "EMPTY": "Empty or too long message."
     }
   }
 }

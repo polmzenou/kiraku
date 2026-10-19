@@ -28,6 +28,10 @@ const LIMITS: Record<NumberKey, [number, number]> = {
   "trades.maxOffered": [1, 10],
   "trades.maxPendingSent": [1, 100],
   "trades.perDay": [1, 500],
+  "chat.maxLength": [20, 500],
+  "chat.perMinute": [1, 120],
+  "chat.retentionDays": [1, 365],
+  "chat.pollSeconds": [3, 300],
   "notifications.retentionDays": [1, 365],
   "notifications.pollSeconds": [10, 600],
 };
@@ -175,6 +179,18 @@ export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
         </div>
         {rarityChoice("trades.allowedRarities")}
         <p className="text-xs text-text-muted">{t("tradesHint")}</p>
+      </fieldset>
+
+      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
+        <legend className="px-1 font-title text-lg font-bold">{t("chatSection")}</legend>
+        <Toggle label={t("keys.chat.enabled")} checked={draft["chat.enabled"]} onChange={(v) => update("chat.enabled", v)} />
+        <div className="grid gap-3 sm:grid-cols-2">
+          {num("chat.maxLength")}
+          {num("chat.perMinute")}
+          {num("chat.retentionDays")}
+          {num("chat.pollSeconds")}
+        </div>
+        <p className="text-xs text-text-muted">{t("chatHint")}</p>
       </fieldset>
 
       <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
