@@ -160,5 +160,7 @@ async function socialBar({
       limits: { perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours },
     };
   }
-  return <RelationActions username={owner.username} name={name} initial={access.relation} gift={gift} />;
+  const trade =
+    access.relation === "FRIENDS" && (await getSetting("trades.enabled")) ? { maxOffered: await getSetting("trades.maxOffered") } : null;
+  return <RelationActions username={owner.username} name={name} initial={access.relation} gift={gift} trade={trade} />;
 }

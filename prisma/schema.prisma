@@ -135,6 +135,9 @@ model User {
   lotGrantsGiven     LotGrant[]     @relation("lotGranter")
   lotBroadcasts      LotBroadcast[]
 
+  tradesProposed Trade[] @relation("tradeProposer")
+  tradesReceived Trade[] @relation("tradeRecipient")
+
   @@index([rankPoints])
 }
 
@@ -278,6 +281,9 @@ model Card {
   auctions      Auction[]
   wishedBy      WishlistEntry[]
   notablePulls  NotablePull[]
+  tradesWanted  Trade[]         @relation("tradeWanted")
+  tradesChosen  Trade[]         @relation("tradeChosen")
+  tradeOffers   TradeOffer[]
 
   @@index([rarity, rank])
   @@index([seriesId])
@@ -554,6 +560,9 @@ enum NotificationType {
   AUCTION_CANCELLED // annulée par l'admin, mise rendue
   BATTLE_INVITE // un ami t'invite en combat avec un code
   LOT_GRANTED // cadeau de l'équipe (lot envoyé depuis /admin/lots)
+  TRADE_PROPOSED // un ami propose un échange
+  TRADE_ACCEPTED // l'ami a accepté : la carte voulue est arrivée
+  TRADE_DECLINED // l'ami a refusé
 }
 
 // Notifications en base ; le texte est rendu à la lecture (pseudo à jour, langue du lecteur)
@@ -1073,4 +1082,50 @@ model LotBroadcast {
   grants     LotGrant[]
 
   @@index([status, createdAt])
+}
+
+// --- Échanges entre amis (étape 12f) ---
+
+enum TradeStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED // retiré par le proposant
+  EXPIRED
+  FAILED // une carte n'était plus disponible au moment d'accepter
+}
+
+// « Je veux ta carte X, contre l'une de celles-ci. » Rien n'est bloqué pendant l'attente : tout est
+// revérifié sous verrou à l'acceptation, où l'ami choisit une des cartes offertes.
+model Trade {
+  id             String       @id @default(cuid())
+  proposerId     String
+  proposer       User         @relation("tradeProposer", fields: [proposerId], references: [id], onDelete: Cascade)
+  recipientId    String
+  recipient      User         @relation("tradeRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  wantedCardId   String // carte demandée à l'ami (id de Card)
+  wantedCard     Card         @relation("tradeWanted", fields: [wantedCardId], references: [id], onDelete: Cascade)
+  chosenCardId   String? // carte offerte choisie par l'ami à l'acceptation
+  chosenCard     Card?        @relation("tradeChosen", fields: [chosenCardId], references: [id], onDelete: SetNull)
+  status         TradeStatus  @default(PENDING)
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  resolvedAt     DateTime?
+  proposerSeenAt DateTime? // le proposant a vu la révélation de la carte reçue
+  proposerNew    Boolean      @default(false) // la carte reçue par le proposant était nouvelle pour lui (badge à la révélation)
+  offers         TradeOffer[]
+
+  @@index([recipientId, status, createdAt])
+  @@index([proposerId, status, createdAt])
+  @@index([status, expiresAt])
+}
+
+// Une carte offerte par le proposant (id de Card ; l'exemplaire est choisi à l'acceptation)
+model TradeOffer {
+  tradeId String
+  trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  cardId  String
+  card    Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@id([tradeId, cardId])
 }

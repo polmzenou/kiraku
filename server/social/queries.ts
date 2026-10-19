@@ -5,10 +5,12 @@ import {
   parseAuctionPayload,
   parseBattlePayload,
   parseGiftPayload,
+  parseTradePayload,
   type AuctionPayload,
   type BattlePayload,
   type GiftPayload,
   type NotificationType,
+  type TradePayload,
 } from "@/lib/social/notifications";
 import { pairKey, relationBetween, type Relation } from "@/lib/social/relation";
 import { prisma } from "../db";
@@ -123,6 +125,7 @@ export type NotificationView = {
   gift: GiftPayload | null;
   auction: AuctionPayload | null;
   battle: BattlePayload | null;
+  trade: TradePayload | null;
   card: { anilistId: number; name: string; rarity: string } | null;
 };
 
@@ -162,10 +165,12 @@ const AUCTION_TYPES: ReadonlySet<NotificationType> = new Set([
 async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
   const gifts = rows.map((r) => (r.type === "GIFT_RECEIVED" ? parseGiftPayload(r.payload) : null));
   const auctions = rows.map((r) => (AUCTION_TYPES.has(r.type) ? parseAuctionPayload(r.payload) : null));
+  const trades = rows.map((r) => (r.type.startsWith("TRADE_") ? parseTradePayload(r.payload) : null));
   const cardIds = [
     ...new Set([
       ...gifts.flatMap((g) => (g?.kind === "CARD" ? [g.cardId] : [])),
       ...auctions.flatMap((a) => (a ? [a.cardId] : [])),
+      ...trades.flatMap((tr) => (tr ? [tr.cardId] : [])),
     ]),
   ];
   const cards = cardIds.length
@@ -176,7 +181,15 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
   return rows.map((r, i) => {
     const gift = gifts[i];
     const auction = auctions[i];
-    const card = gift?.kind === "CARD" ? cardById.get(gift.cardId) : auction ? cardById.get(auction.cardId) : undefined;
+    const trade = trades[i];
+    const card =
+      gift?.kind === "CARD"
+        ? cardById.get(gift.cardId)
+        : auction
+          ? cardById.get(auction.cardId)
+          : trade
+            ? cardById.get(trade.cardId)
+            : undefined;
     return {
       id: r.id,
       type: r.type,
@@ -186,6 +199,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
       gift,
       auction,
       battle: r.type === "BATTLE_INVITE" ? parseBattlePayload(r.payload) : null,
+      trade,
       card: card ? { anilistId: card.anilistId, name: card.name, rarity: card.rarity } : null,
     };
   });

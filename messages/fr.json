@@ -1241,6 +1241,14 @@
           "retentionDays": "Conservation des notifications lues (jours)",
           "pollSeconds": "Intervalle de vérification des notifications (s)",
           "pushEnabled": "Notifications push (onglet fermé)"
+        },
+        "trades": {
+          "enabled": "Échanges entre amis ouverts",
+          "expiryHours": "Durée d'une proposition (heures)",
+          "maxOffered": "Cartes offertes au plus par proposition",
+          "maxPendingSent": "Propositions en attente par joueur",
+          "perDay": "Propositions par joueur sur 24 h",
+          "allowedRarities": "Raretés échangeables"
         }
       },
       "invalid": "Certaines valeurs sont hors limites : corrige-les avant d'enregistrer.",
@@ -1262,7 +1270,9 @@
       "giftBooster": "{from} → {to} : un booster ({zeni, number} Zeni)",
       "log": "Derniers changements",
       "logEmpty": "Aucun changement pour l'instant.",
-      "logEntry": "{key} par {admin}"
+      "logEntry": "{key} par {admin}",
+      "tradesSection": "Échanges entre amis",
+      "tradesHint": "Rien n'est bloqué pendant l'attente : propriété, amitié et raretés sont revérifiées au moment d'accepter."
     },
     "market": {
       "title": "Marché",
@@ -2191,7 +2201,8 @@
     "alreadyShown": "En vitrine",
     "loading": "Chargement…",
     "retry": "Réessayer",
-    "more": "Voir plus"
+    "more": "Voir plus",
+    "privateCollection": "Sa collection n'est pas visible : impossible d'y choisir une carte."
   },
   "wishlist": {
     "title": "Liste de souhaits",
@@ -2279,7 +2290,8 @@
     "tabs": {
       "friends": "Amis",
       "requests": "Demandes",
-      "blocked": "Bloqués"
+      "blocked": "Bloqués",
+      "trades": "Échanges"
     },
     "addLabel": "Ajouter un ami",
     "addPlaceholder": "Pseudo exact",
@@ -2336,7 +2348,8 @@
       "LIMIT_FRIENDS": "Tu as atteint le nombre maximum d'amis.",
       "LIMIT_OUTGOING": "Trop de demandes en attente : annule-en quelques-unes d'abord.",
       "UNAVAILABLE": "Action impossible pour le moment. Réessaie."
-    }
+    },
+    "trade": "Échanger"
   },
   "gifts": {
     "title": "Offrir à {name}",
@@ -2412,7 +2425,10 @@
       "title": "Kiraku"
     },
     "battleInvite": "{name} t'invite en combat : choisis ton équipe.",
-    "teamGift": "L'équipe Kiraku t'a envoyé un cadeau : regarde ton historique et tes boosters."
+    "teamGift": "L'équipe Kiraku t'a envoyé un cadeau : regarde ton historique et tes boosters.",
+    "tradeProposed": "{name} te propose un échange contre ta carte {card}.",
+    "tradeAccepted": "{name} a accepté ton échange : {card} est à toi !",
+    "tradeDeclined": "{name} a refusé ton échange pour {card}."
   },
   "push": {
     "title": "Notifications sur ce téléphone",
@@ -3211,5 +3227,94 @@
   "playerName": {
     "hidden": "Joueur",
     "deleted": "Compte supprimé"
+  },
+  "trades": {
+    "intro": "Tes propositions et celles de tes amis. Pour en faire une, va sur le profil d'un ami et touche « Échanger ».",
+    "received": "Reçues",
+    "sent": "Envoyées",
+    "history": "Historique",
+    "empty": {
+      "received": "Aucune proposition reçue.",
+      "sent": "Aucune proposition en attente.",
+      "history": "Aucun échange terminé pour l'instant."
+    },
+    "from": "De {name}",
+    "to": "À {name}",
+    "between": "{proposer} → {recipient}",
+    "expires": "expire {when}",
+    "youGive": "Tu donnes",
+    "youGet": "Tu reçois",
+    "wanted": "Carte demandée",
+    "youGetOne": "Tu reçois l'une de celles-ci (choisis-la)",
+    "theyChooseOne": "Contre l'une de celles-ci (au choix de ton ami)",
+    "chosen": "Carte choisie",
+    "offered": "Cartes proposées",
+    "choose": "Choisir {card}",
+    "pickFirst": "Choisis une carte",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "withdraw": "Retirer",
+    "discuss": "Discuter",
+    "confirm": "Accepter cet échange ? C'est définitif.",
+    "cancelConfirm": "Annuler",
+    "yesAccept": "Oui, accepter",
+    "pending": "Échange…",
+    "status": {
+      "PENDING": "En attente",
+      "ACCEPTED": "Échangé",
+      "DECLINED": "Refusé",
+      "CANCELLED": "Retiré",
+      "EXPIRED": "Expiré",
+      "FAILED": "Carte indisponible"
+    },
+    "compose": {
+      "stepsLabel": "Étapes de l'échange",
+      "steps": {
+        "want": "Sa carte",
+        "offer": "Tes cartes",
+        "review": "Envoi"
+      },
+      "wantTitle": "Échanger avec {name}",
+      "offerTitle": "Ce que tu proposes",
+      "reviewTitle": "Récapitulatif",
+      "wantHint": "Choisis la carte de {name} que tu veux.",
+      "offerHint": "Choisis jusqu'à {max, plural, one {# carte} other {# cartes}} à proposer : ton ami en gardera une.",
+      "pickWanted": "Demander {card}",
+      "pickOffered": "Proposer {card}",
+      "offeredCount": "{count}/{max}",
+      "youGet": "TU REÇOIS",
+      "theyChoose": "{name} CHOISIT L'UNE DE CELLES-CI",
+      "rules": "Tes cartes restent à toi tant que l'échange n'est pas accepté. S'il manque une carte au moment d'accepter, l'échange n'a pas lieu.",
+      "back": "Retour",
+      "next": "Continuer",
+      "send": "Envoyer la proposition",
+      "sending": "Envoi…",
+      "sent": "Proposition envoyée à {name}. Tu seras prévenu de sa réponse.",
+      "close": "Fermer"
+    },
+    "errors": {
+      "NO_SESSION": "Ta session a expiré. Recharge la page.",
+      "INVALID": "Proposition invalide.",
+      "GUEST": "Crée ton compte pour échanger avec tes amis.",
+      "DISABLED": "Les échanges sont fermés pour le moment.",
+      "RATE_LIMITED": "Trop d'essais. Réessaie dans une minute.",
+      "UNAVAILABLE": "Impossible pour le moment. Réessaie plus tard.",
+      "NOT_FRIENDS": "Vous n'êtes plus amis.",
+      "BLOCKED": "Échange impossible avec ce joueur.",
+      "NO_OFFER": "Propose au moins une carte.",
+      "TOO_MANY_OFFERED": "Trop de cartes proposées (au plus {max}).",
+      "SAME_CARD": "Tu ne peux pas proposer la carte que tu demandes.",
+      "RARITY": "Cette rareté ne s'échange pas.",
+      "PENDING_LIMIT": "Tu as trop de propositions en attente : attends des réponses.",
+      "DAILY_LIMIT": "Tu as atteint le nombre de propositions sur 24 h.",
+      "DUPLICATE": "Tu as déjà une proposition en attente pour cette carte.",
+      "NO_USER": "Joueur introuvable.",
+      "WANTED_GONE": "Ton ami n'a plus d'exemplaire libre de cette carte.",
+      "OFFER_GONE": "Une des cartes proposées n'est plus libre dans ta collection.",
+      "NOT_FOUND": "Échange introuvable.",
+      "CLOSED": "Cet échange n'est plus ouvert.",
+      "NOT_OFFERED": "Cette carte ne fait pas partie de l'offre.",
+      "CARD_GONE": "Une des cartes n'est plus disponible : l'échange est annulé."
+    }
   }
 }

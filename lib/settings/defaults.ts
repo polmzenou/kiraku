@@ -168,6 +168,13 @@ export const SETTING_SCHEMAS = {
   "gifts.minFriendshipHours": z.number().int().min(0).max(24 * 365),
   "gifts.boosterPriceZeni": z.number().int().min(1).max(1_000_000),
   "gifts.allowedRarities": z.array(rarity).max(RARITIES.length),
+  // Échanges entre amis (étape 12f) : rien n'est bloqué pendant l'attente, tout est revérifié à l'acceptation
+  "trades.enabled": z.boolean(),
+  "trades.expiryHours": z.number().int().min(1).max(24 * 30),
+  "trades.maxOffered": z.number().int().min(1).max(10),
+  "trades.maxPendingSent": z.number().int().min(1).max(100),
+  "trades.perDay": z.number().int().min(1).max(500),
+  "trades.allowedRarities": z.array(rarity).max(RARITIES.length),
   "notifications.retentionDays": z.number().int().min(1).max(365),
   // Intervalle de sondage de la cloche et des toasts (onglet visible seulement)
   "notifications.pollSeconds": z.number().int().min(10).max(600),
@@ -311,6 +318,12 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "gifts.minFriendshipHours": 24,
   "gifts.boosterPriceZeni": 200, // prix du booster standard
   "gifts.allowedRarities": [...RARITIES],
+  "trades.enabled": true,
+  "trades.expiryHours": 48,
+  "trades.maxOffered": 5,
+  "trades.maxPendingSent": 10,
+  "trades.perDay": 20,
+  "trades.allowedRarities": [...RARITIES],
   "notifications.retentionDays": 30,
   "notifications.pollSeconds": 20,
   "notifications.pushEnabled": true,

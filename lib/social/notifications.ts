@@ -12,6 +12,9 @@ export const NOTIFICATION_TYPES = [
   "AUCTION_CANCELLED",
   "BATTLE_INVITE",
   "LOT_GRANTED",
+  "TRADE_PROPOSED",
+  "TRADE_ACCEPTED",
+  "TRADE_DECLINED",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -51,4 +54,14 @@ export function parseBattlePayload(raw: unknown): BattlePayload | null {
   if (!raw || typeof raw !== "object") return null;
   const id = (raw as Record<string, unknown>).battleId;
   return typeof id === "string" && id.length > 0 && id.length <= 40 && /^[A-Za-z0-9_-]+$/.test(id) ? { battleId: id } : null;
+}
+
+/** Contenu d'une notification d'échange : la proposition et la carte demandée. */
+export type TradePayload = { tradeId: string; cardId: string };
+
+export function parseTradePayload(raw: unknown): TradePayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const id = (v: unknown): v is string => typeof v === "string" && v.length > 0 && v.length <= 40 && /^[A-Za-z0-9_-]+$/.test(v);
+  return id(r.tradeId) && id(r.cardId) ? { tradeId: r.tradeId, cardId: r.cardId } : null;
 }

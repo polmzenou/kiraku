@@ -16,6 +16,7 @@ import { Link } from "@/i18n/navigation";
 import { Button, buttonClasses } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
 import { GiftSheet, type GiftInfo } from "./GiftSheet";
+import { TradeComposer } from "./TradeComposer";
 
 type Pending = "send" | "accept" | "decline" | "cancel" | "remove" | "block" | "unblock";
 
@@ -29,11 +30,14 @@ export function RelationActions({
   name,
   initial,
   gift,
+  trade = null,
 }: {
   username: string;
   name: string;
   initial: Relation;
   gift: GiftInfo | null;
+  /** Échanges ouverts entre amis : nombre maximal de cartes offertes. */
+  trade?: { maxOffered: number } | null;
 }) {
   const t = useTranslations("friends");
   const tBattle = useTranslations("battle");
@@ -44,6 +48,7 @@ export function RelationActions({
   const [moreOpen, setMoreOpen] = useState(false);
   const [confirm, setConfirm] = useState<"remove" | "block" | null>(null);
   const [giftOpen, setGiftOpen] = useState(false);
+  const [tradeOpen, setTradeOpen] = useState(false);
 
   function run(kind: Pending, optimistic: Relation, call: () => Promise<{ ok: true } | { ok: false; error: SocialActionError }>, done?: string) {
     const before = relation;
@@ -151,6 +156,14 @@ export function RelationActions({
                 {t("gift")}
               </Button>
             )}
+            {trade && (
+              <Button type="button" onClick={() => setTradeOpen(true)}>
+                <span aria-hidden="true" lang="ja" className="font-seal text-shu">
+                  換
+                </span>
+                {t("trade")}
+              </Button>
+            )}
             <Link href={`/combat?defier=${encodeURIComponent(username)}`} className={buttonClasses("secondary")}>
               <span aria-hidden="true" lang="ja" className="font-seal text-shu">
                 戦
@@ -223,6 +236,9 @@ export function RelationActions({
         )}
       </Sheet>
 
+      {trade && relation === "FRIENDS" && tradeOpen && (
+        <TradeComposer username={username} name={name} maxOffered={trade.maxOffered} onClose={() => setTradeOpen(false)} />
+      )}
       {gift && relation === "FRIENDS" && giftOpen && (
         <GiftSheet username={username} name={name} info={gift} onClose={() => setGiftOpen(false)} />
       )}

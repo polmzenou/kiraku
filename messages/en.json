@@ -1241,6 +1241,14 @@
           "retentionDays": "Keep read notifications for (days)",
           "pollSeconds": "Notification check interval (s)",
           "pushEnabled": "Push notifications (tab closed)"
+        },
+        "trades": {
+          "enabled": "Trades between friends open",
+          "expiryHours": "Offer lifetime (hours)",
+          "maxOffered": "Most cards offered per proposal",
+          "maxPendingSent": "Pending proposals per player",
+          "perDay": "Proposals per player over 24 h",
+          "allowedRarities": "Tradable rarities"
         }
       },
       "invalid": "Some values are out of range: fix them before saving.",
@@ -1262,7 +1270,9 @@
       "giftBooster": "{from} → {to}: a booster ({zeni, number} Zeni)",
       "log": "Latest changes",
       "logEmpty": "No changes yet.",
-      "logEntry": "{key} by {admin}"
+      "logEntry": "{key} by {admin}",
+      "tradesSection": "Trades between friends",
+      "tradesHint": "Nothing is locked while waiting: ownership, friendship and rarities are checked again on acceptance."
     },
     "market": {
       "title": "Market",
@@ -2191,7 +2201,8 @@
     "alreadyShown": "Shown",
     "loading": "Loading…",
     "retry": "Try again",
-    "more": "Show more"
+    "more": "Show more",
+    "privateCollection": "Their collection is hidden: you can't pick a card from it."
   },
   "wishlist": {
     "title": "Wishlist",
@@ -2279,7 +2290,8 @@
     "tabs": {
       "friends": "Friends",
       "requests": "Requests",
-      "blocked": "Blocked"
+      "blocked": "Blocked",
+      "trades": "Trades"
     },
     "addLabel": "Add a friend",
     "addPlaceholder": "Exact username",
@@ -2336,7 +2348,8 @@
       "LIMIT_FRIENDS": "You've reached the maximum number of friends.",
       "LIMIT_OUTGOING": "Too many pending requests: cancel some first.",
       "UNAVAILABLE": "Can't do that right now. Try again."
-    }
+    },
+    "trade": "Trade"
   },
   "gifts": {
     "title": "Give to {name}",
@@ -2412,7 +2425,10 @@
       "title": "Kiraku"
     },
     "battleInvite": "{name} invites you to a battle: pick your team.",
-    "teamGift": "The Kiraku team sent you a gift: check your history and your boosters."
+    "teamGift": "The Kiraku team sent you a gift: check your history and your boosters.",
+    "tradeProposed": "{name} offers you a trade for your {card}.",
+    "tradeAccepted": "{name} accepted your trade: {card} is yours!",
+    "tradeDeclined": "{name} declined your trade for {card}."
   },
   "push": {
     "title": "Notifications on this device",
@@ -3211,5 +3227,94 @@
   "playerName": {
     "hidden": "Player",
     "deleted": "Deleted account"
+  },
+  "trades": {
+    "intro": "Your proposals and your friends'. To make one, open a friend's profile and tap “Trade”.",
+    "received": "Received",
+    "sent": "Sent",
+    "history": "History",
+    "empty": {
+      "received": "No proposals received.",
+      "sent": "No pending proposals.",
+      "history": "No finished trades yet."
+    },
+    "from": "From {name}",
+    "to": "To {name}",
+    "between": "{proposer} → {recipient}",
+    "expires": "expires {when}",
+    "youGive": "You give",
+    "youGet": "You get",
+    "wanted": "Requested card",
+    "youGetOne": "You get one of these (pick it)",
+    "theyChooseOne": "For one of these (your friend picks)",
+    "chosen": "Card picked",
+    "offered": "Cards offered",
+    "choose": "Pick {card}",
+    "pickFirst": "Pick a card",
+    "accept": "Accept",
+    "decline": "Decline",
+    "withdraw": "Withdraw",
+    "discuss": "Chat",
+    "confirm": "Accept this trade? It's final.",
+    "cancelConfirm": "Cancel",
+    "yesAccept": "Yes, accept",
+    "pending": "Trading…",
+    "status": {
+      "PENDING": "Pending",
+      "ACCEPTED": "Traded",
+      "DECLINED": "Declined",
+      "CANCELLED": "Withdrawn",
+      "EXPIRED": "Expired",
+      "FAILED": "Card unavailable"
+    },
+    "compose": {
+      "stepsLabel": "Trade steps",
+      "steps": {
+        "want": "Their card",
+        "offer": "Your cards",
+        "review": "Send"
+      },
+      "wantTitle": "Trade with {name}",
+      "offerTitle": "What you offer",
+      "reviewTitle": "Summary",
+      "wantHint": "Pick the card you want from {name}.",
+      "offerHint": "Pick up to {max, plural, one {# card} other {# cards}} to offer: your friend keeps one.",
+      "pickWanted": "Ask for {card}",
+      "pickOffered": "Offer {card}",
+      "offeredCount": "{count}/{max}",
+      "youGet": "YOU GET",
+      "theyChoose": "{name} PICKS ONE OF THESE",
+      "rules": "Your cards stay yours until the trade is accepted. If a card is missing at that point, the trade doesn't happen.",
+      "back": "Back",
+      "next": "Continue",
+      "send": "Send the proposal",
+      "sending": "Sending…",
+      "sent": "Proposal sent to {name}. You'll be notified of their answer.",
+      "close": "Close"
+    },
+    "errors": {
+      "NO_SESSION": "Your session expired. Reload the page.",
+      "INVALID": "Invalid proposal.",
+      "GUEST": "Create your account to trade with friends.",
+      "DISABLED": "Trades are closed for now.",
+      "RATE_LIMITED": "Too many attempts. Try again in a minute.",
+      "UNAVAILABLE": "Not possible right now. Try again later.",
+      "NOT_FRIENDS": "You are no longer friends.",
+      "BLOCKED": "You can't trade with this player.",
+      "NO_OFFER": "Offer at least one card.",
+      "TOO_MANY_OFFERED": "Too many cards offered (at most {max}).",
+      "SAME_CARD": "You can't offer the card you're asking for.",
+      "RARITY": "This rarity can't be traded.",
+      "PENDING_LIMIT": "You have too many pending proposals: wait for answers.",
+      "DAILY_LIMIT": "You've reached the proposal limit for 24 h.",
+      "DUPLICATE": "You already have a pending proposal for this card.",
+      "NO_USER": "Player not found.",
+      "WANTED_GONE": "Your friend no longer has a free copy of this card.",
+      "OFFER_GONE": "One of your offered cards is no longer free in your collection.",
+      "NOT_FOUND": "Trade not found.",
+      "CLOSED": "This trade is no longer open.",
+      "NOT_OFFERED": "This card isn't part of the offer.",
+      "CARD_GONE": "One of the cards is no longer available: the trade is cancelled."
+    }
   }
 }

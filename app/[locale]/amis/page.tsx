@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getFormatter, getTranslations } from "next-intl/server";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
@@ -10,14 +10,18 @@ import { buttonClasses } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
 import { SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
+import { TradeList, TradeReveals } from "@/components/social/TradeList";
 import { countIncomingRequests, listBlocked, listFriends, listRequests } from "@/server/social/queries";
+import { expireTradesFor } from "@/server/social/trade-core";
+import { countIncomingTrades, listTrades } from "@/server/social/trades";
+import { prisma } from "@/server/db";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
 import { inputClass } from "@/components/ui/Field";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-const TABS = ["amis", "demandes", "bloques"] as const;
+const TABS = ["amis", "demandes", "echanges", "bloques"] as const;
 type Tab = (typeof TABS)[number];
 
 function one(v: string | string[] | undefined) {
@@ -58,7 +62,11 @@ export default async function FriendsPage({ searchParams }: PageProps<"/[locale]
   const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : "amis";
   const q = (one(sp.q) ?? "").trim().slice(0, SEARCH_MAX_LENGTH);
   const page = Math.min(Math.max(Number.parseInt(one(sp.page) ?? "0", 10) || 0, 0), 1000);
-  const incomingCount = await countIncomingRequests(user.id);
+  const [incomingCount, incomingTrades, tradesEnabled] = await Promise.all([
+    countIncomingRequests(user.id),
+    countIncomingTrades(user.id),
+    getSetting("trades.enabled"),
+  ]);
 
   const tabLink = (key: Tab, label: string, badge?: number) => (
     <li key={key}>
@@ -83,12 +91,14 @@ export default async function FriendsPage({ searchParams }: PageProps<"/[locale]
         <ul className="flex flex-wrap gap-1 lacquer rounded-card p-1">
           {tabLink("amis", t("tabs.friends"))}
           {tabLink("demandes", t("tabs.requests"), incomingCount)}
+          {tradesEnabled && tabLink("echanges", t("tabs.trades"), incomingTrades)}
           {tabLink("bloques", t("tabs.blocked"))}
         </ul>
       </nav>
 
       {tab === "amis" && <FriendsTab userId={user.id} q={q} page={page} />}
       {tab === "demandes" && <RequestsTab userId={user.id} format={format} />}
+      {tab === "echanges" && <TradesTab userId={user.id} />}
       {tab === "bloques" && <BlockedTab userId={user.id} />}
     </PageShell>
   );
@@ -208,5 +218,30 @@ async function BlockedTab({ userId }: { userId: string }) {
         </ul>
       )}
     </section>
+  );
+}
+
+async function TradesTab({ userId }: { userId: string }) {
+  const [t, locale] = await Promise.all([getTranslations("trades"), getLocale()]);
+  // Les propositions échues passent en « Expiré » avant l'affichage
+  await expireTradesFor(prisma, userId);
+  const { received, sent, history, reveals } = await listTrades(userId, locale);
+  return (
+    <>
+      <p className="text-sm text-text-muted">{t("intro")}</p>
+      <TradeReveals tradeIds={reveals.tradeIds} cards={reveals.cards} />
+      <section className="flex flex-col gap-3">
+        <SectionTitle kanji="換" title={t("received")} />
+        <TradeList trades={received} mode="received" />
+      </section>
+      <section className="flex flex-col gap-3">
+        <SectionTitle kanji="換" title={t("sent")} />
+        <TradeList trades={sent} mode="sent" />
+      </section>
+      <section className="flex flex-col gap-3">
+        <SectionTitle kanji="記" title={t("history")} />
+        <TradeList trades={history} mode="history" />
+      </section>
+    </>
   );
 }
