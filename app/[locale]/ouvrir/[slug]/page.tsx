@@ -65,6 +65,7 @@ export default async function OpenBoosterPage({ params, searchParams }: PageProp
       <OpeningStage
         type={{
           slug: type.slug,
+          family: type.family,
           shape: type.shape,
           theme: type.theme,
           emblem: type.emblem,

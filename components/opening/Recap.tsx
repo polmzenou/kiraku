@@ -3,9 +3,7 @@
 import { m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
-import { Link } from "@/i18n/navigation";
 import type { OpenCount } from "@/lib/boosters/catalog";
-import type { Price } from "@/lib/boosters/types";
 import type { OpenedBoosterView, OpenedCardView } from "@/lib/boosters/view";
 import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
 import type { SoundName } from "@/lib/sound/synth";
@@ -14,7 +12,6 @@ import { RARITY_BG } from "../boosters/format";
 import { NextFreeIn } from "../boosters/NextFreeIn";
 import { Fuda } from "../fuda/Fuda";
 import { ZeniCoin } from "../layout/ZeniCoin";
-import { Button, buttonClasses } from "../ui/Button";
 import { CopyLinkButton } from "./CopyLinkButton";
 import { CountPicker } from "./CountPicker";
 import { FeaturedSeal, NewStamp } from "./RevealCard";
@@ -32,16 +29,15 @@ type Props = {
   count: OpenCount;
   maxCount: number;
   onCount: (n: OpenCount) => void;
-  nextPrice: Price;
-  onAgain: () => void;
 };
 
 /**
  * Récap « makimono » : un rouleau de papier se déroule, la meilleure carte en grand, les autres
  * tombent en place triées par rareté, le décompte se tamponne sceau par sceau ; puis les compteurs
- * (ensō de pitié qui se referme) et de quoi enchaîner.
+ * (ensō de pitié qui se referme). Les actions pour enchaîner vivent dans `RecapActionBar`, toujours
+ * à portée du pouce.
  */
-export function Recap({ boosters, state, reduced, play, counters, zeniSpent, count, maxCount, onCount, nextPrice, onAgain }: Props) {
+export function Recap({ boosters, state, reduced, play, counters, zeniSpent, count, maxCount, onCount }: Props) {
   const t = useTranslations("opening");
   const tRarity = useTranslations("rarity");
   const cards = boosters.flatMap((b) => b.cards);
@@ -203,24 +199,9 @@ export function Recap({ boosters, state, reduced, play, counters, zeniSpent, cou
         </ul>
 
         {maxCount > 1 && <CountPicker value={count} max={maxCount} onChange={onCount} />}
-        <Button variant="primary" onClick={onAgain} disabled={nextPrice.kind === "unavailable"} className="w-full justify-between">
-          <span className="font-title text-lg font-bold">{count > 1 ? t("openMore", { n: count }) : t("openAnother")}</span>
-          <span className="inline-flex items-center gap-1.5 text-xs">
-            {nextPrice.kind === "zeni" && <ZeniCoin size={14} />}
-            {nextPrice.kind === "free" ? t("free") : nextPrice.kind === "zeni" ? t("cost", { amount: nextPrice.amount }) : t("unavailable")}
-          </span>
-        </Button>
         <div className="flex flex-col items-center gap-1 text-center">
           <p className="text-sm font-bold">{t("stockLeft", { count: state.stock })}</p>
           <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} />
-        </div>
-        <div className="grid w-full grid-cols-2 gap-2">
-          <Link href="/" className={buttonClasses("secondary", "w-full text-sm")}>
-            {t("changeBooster")}
-          </Link>
-          <Link href="/wiki" className={buttonClasses("secondary", "w-full text-sm")}>
-            {t("toWiki")}
-          </Link>
         </div>
       </m.div>
     </div>

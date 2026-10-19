@@ -2,7 +2,7 @@
 
 import { AnimatePresence, domMax, LazyMotion, m, useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { OPEN_COUNTS, type OpenCount } from "@/lib/boosters/catalog";
 import { priceFor, type BoosterShape, type BoosterTheme, type Price } from "@/lib/boosters/types";
 import type { OpenedBoosterView } from "@/lib/boosters/view";
@@ -18,6 +18,7 @@ import { CardDeck, revealOrder } from "./CardDeck";
 import { CountPicker } from "./CountPicker";
 import { GuestSignupPrompt } from "./GuestSignupPrompt";
 import { Recap } from "./Recap";
+import { RecapActionBar } from "./RecapActionBar";
 import { RitualBackdrop } from "./RitualBackdrop";
 import { SoundToggle } from "./SoundToggle";
 import { useRitualFx } from "./useRitualFx";
@@ -26,6 +27,8 @@ type Stage = "ready" | "opening" | "reveal" | "recap";
 
 export type OpeningType = {
   slug: string;
+  /** Famille du booster : « Changer de booster » y ramène, booster sélectionné. */
+  family: string;
   shape: BoosterShape;
   theme: BoosterTheme;
   emblem: string;
@@ -88,6 +91,15 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
   const opened = useRef(false);
   const result = useRef<OpenedBoosterView[] | null>(null);
   const scene = useRef<SceneHandle | null>(null);
+  const stageTop = useRef<HTMLDivElement | null>(null);
+  const wantFocus = useRef(false);
+  // Après « Ouvrir un autre », le bouton du nouveau booster reçoit le focus dès qu'il apparaît
+  const readyActions = useCallback((el: HTMLDivElement | null) => {
+    if (!el || !wantFocus.current) return;
+    wantFocus.current = false;
+    el.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus({ preventScroll: true });
+  }, []);
+  const mounted = useRef(false);
 
   // État le plus récent entre la page (rafraîchie par le serveur) et la réponse de l'ouverture
   const state = latest && latest.serverNow > initialState.serverNow ? latest : initialState;
@@ -156,6 +168,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
   }, []);
 
   const again = () => {
+    wantFocus.current = true;
     opened.current = false;
     result.current = null;
     setBoosters(null);
@@ -164,6 +177,17 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
     setAttempt((a) => a + 1);
     setStage("ready");
   };
+
+  // Chaque changement d'étape ramène la scène sous l'en-tête : « Ouvrir un autre » depuis le bas du
+  // récap remonte au nouveau booster, la pile de cartes et le récap s'ouvrent par le haut.
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    if (stage === "opening") return;
+    stageTop.current?.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
+  }, [stage, attempt, reduced]);
 
   const first = boosters?.[0];
   const variant = first?.divine ? "divine" : first?.golden ? "golden" : undefined;
@@ -175,7 +199,8 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
 
       {/* Une Mythique fait trembler la scène (le compteur change les images clés et relance l'animation) */}
       <m.div
-        className="relative z-50 flex flex-col items-center gap-6"
+        ref={stageTop}
+        className="relative z-50 flex scroll-mt-20 flex-col items-center gap-6 md:scroll-mt-24"
         initial={false}
         animate={reduced ? undefined : { x: shake % 2 ? [0, -7, 7, -5, 5, -2, 0] : [0, 7, -7, 5, -5, 2, 0] }}
         transition={{ duration: 0.45 }}
@@ -226,7 +251,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
               />
 
               {stage === "ready" && (
-                <div className="flex w-full max-w-sm flex-col items-center gap-4">
+                <div ref={readyActions} className="flex w-full max-w-sm flex-col items-center gap-4">
                   <p className="text-center text-sm text-text-muted">
                     {reduced ? t("hintReduced") : type.shape === "SACHET" ? t("hint") : t("hintLift")}
                   </p>
@@ -316,8 +341,6 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
                   setCount(n);
                   setConfirmed(null);
                 }}
-                nextPrice={unaffordable ? { kind: "unavailable" } : price}
-                onAgain={again}
               />
               {isGuest && <GuestSignupPrompt />}
             </m.div>
@@ -333,6 +356,17 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
           </div>
         )}
       </m.div>
+
+      {/* Hors du calque qui tremble : un `transform` ancêtre casserait le `fixed` mobile */}
+      {stage === "recap" && boosters && (
+        <RecapActionBar
+          count={effectiveCount}
+          nextPrice={unaffordable ? { kind: "unavailable" } : price}
+          onAgain={again}
+          changeHref={`/?b=${type.slug}&f=${type.family}`}
+          reduced={reduced}
+        />
+      )}
     </LazyMotion>
   );
 }

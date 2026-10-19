@@ -6,6 +6,7 @@ import { BannerHero, type BannerSlide } from "@/components/boosters/BannerHero";
 import { BoosterArt } from "@/components/boosters/BoosterArt";
 import { BoosterPanel } from "@/components/boosters/BoosterPanel";
 import { BoosterTile } from "@/components/boosters/BoosterTile";
+import { FamilyNav } from "@/components/boosters/FamilyNav";
 import { usePercent } from "@/components/boosters/format";
 import { NextFreeIn } from "@/components/boosters/NextFreeIn";
 import { OpenLink } from "@/components/boosters/OpenLink";
@@ -15,8 +16,7 @@ import { TopCollectors } from "@/components/home/TopCollectors";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { ButtonLink } from "@/components/ui/ButtonLink";
-import { segmentedItemClass, segmentedScrollClass, segmentedTrackClass } from "@/components/ui/Segmented";
-import { getPathname, Link } from "@/i18n/navigation";
+import { getPathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { poolCounts } from "@/lib/boosters/draw";
 import { boosterPanelData } from "@/lib/boosters/panel";
@@ -193,31 +193,16 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
           <BannerHero slides={slides} />
 
           {/* Onglets de famille : filtrent la grille sur mobile, ancres sur desktop */}
-          <nav
-            aria-label={t("familiesLabel")}
-            className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 -mx-4 bg-bg/95 px-4 py-2 md:top-[calc(4rem+env(safe-area-inset-top))] lg:mx-0 lg:px-0"
-          >
-            <ul className={`${segmentedTrackClass} ${segmentedScrollClass}`}>
-              {families.map((family) => {
-                const active = family === activeFamily;
-                return (
-                  <li key={family} className="shrink-0">
-                    <Link
-                      prefetch={false}
-                      href={`/?b=${selected?.type.family === family ? selected.type.slug : visible.find((o) => o.type.family === family)!.type.slug}&f=${family}#famille-${family}`}
-                      aria-current={active ? "true" : undefined}
-                      className={segmentedItemClass}
-                    >
-                      <span aria-hidden="true" lang="ja" className="font-seal text-[15px] text-shu">
-                        {FAMILY_KANJI[family]}
-                      </span>
-                      {t(`families.${family}.title`)}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
+          <FamilyNav
+            active={activeFamily}
+            items={families.map((family) => ({
+              family,
+              kanji: FAMILY_KANJI[family],
+              title: t(`families.${family}.title`),
+              count: visible.filter((o) => o.type.family === family).length,
+              href: `/?b=${selected?.type.family === family ? selected.type.slug : visible.find((o) => o.type.family === family)!.type.slug}&f=${family}#famille-${family}`,
+            }))}
+          />
 
           {families.map((family) => {
             const items = visible.filter((o) => o.type.family === family);

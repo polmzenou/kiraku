@@ -575,6 +575,8 @@
     "metaDescription": "Ouvre gratuitement un sachet de fuda toutes les {minutes} minutes, parmi {count} boosters.",
     "intro": "{count} boosters en {families} familles. Les sachets gratuits puisent dans ton stock (un toutes les {minutes} min, {max} au plus) ; les boosters de rareté et les formats se paient en Zeni.",
     "familiesLabel": "Familles de boosters",
+    "allFamilies": "Toutes",
+    "familyCount": "{count, plural, one {# booster} other {# boosters}}",
     "families": {
       "standard": {
         "title": "Standard",
@@ -745,7 +747,9 @@
     "cost": "{amount, number} Zeni",
     "unavailable": "Indisponible",
     "changeBooster": "Changer de booster",
-    "toWiki": "Voir le wiki",
+    "toWiki": "Wiki",
+    "toCollection": "Collection",
+    "recapActions": "Et maintenant ?",
     "copyLink": "Copier le lien",
     "copied": "Lien copié",
     "stockLeft": "{count, plural, =0 {Plus de sachet gratuit} one {# sachet gratuit restant} other {# sachets gratuits restants}}",

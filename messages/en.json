@@ -575,6 +575,8 @@
     "metaDescription": "Open a free pack of fuda every {minutes} minutes, from {count} boosters.",
     "intro": "{count} boosters in {families} families. Free packs come out of your stock (one every {minutes} min, up to {max}); rarity boosters and formats are paid in Zeni.",
     "familiesLabel": "Booster families",
+    "allFamilies": "All",
+    "familyCount": "{count, plural, one {# booster} other {# boosters}}",
     "families": {
       "standard": {
         "title": "Standard",
@@ -745,7 +747,9 @@
     "cost": "{amount, number} Zeni",
     "unavailable": "Unavailable",
     "changeBooster": "Pick another booster",
-    "toWiki": "Open the wiki",
+    "toWiki": "Wiki",
+    "toCollection": "Collection",
+    "recapActions": "What next?",
     "copyLink": "Copy link",
     "copied": "Link copied",
     "stockLeft": "{count, plural, =0 {No free packs left} one {# free pack left} other {# free packs left}}",
