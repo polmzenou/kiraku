@@ -1,3 +1,4 @@
+import { DeleteUserButton } from "@/components/admin/UserDeletion";
 import { notFound } from "next/navigation";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { DataRequestActions } from "@/components/admin/DataRequestActions";
@@ -71,6 +72,14 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
         </p>
         {!user.anonymizedAt && admin.id !== userId && (
           <DataRequestActions userId={userId} username={user.username} showCancel={user.deletionRequestedAt !== null} />
+        )}
+        {admin.id !== userId && user.role !== "ADMIN" && (
+          <div className="flex flex-col gap-2 border-t border-border pt-3">
+            <p className="text-sm text-text-muted">{t("deletion.hint")}</p>
+            <div>
+              <DeleteUserButton id={userId} username={user.username} />
+            </div>
+          </div>
         )}
       </section>
 

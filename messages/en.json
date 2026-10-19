@@ -950,7 +950,31 @@
       "gdprPending": "Deletion requested on {date}: account frozen.",
       "gdprNone": "No deletion request.",
       "termsAccepted": "Terms v{version} accepted",
-      "termsNotAccepted": "Terms not accepted yet"
+      "termsNotAccepted": "Terms not accepted yet",
+      "deletion": {
+        "selectPage": "Select all on this page",
+        "selectOne": "Select {name}",
+        "selected": "{count, plural, =0 {No account selected} one {# selected} other {# selected}}",
+        "deleteSelected": "{count, plural, one {Delete account} other {Delete # accounts}}",
+        "deleteOne": "Delete this account",
+        "title": "{count, plural, one {Permanently delete this account?} other {Permanently delete # accounts?}}",
+        "description": "The account, its cards, Zeni history, openings and messages are erased. Its live auctions are cancelled and bids refunded; auctions it was leading restart without a leader. This cannot be undone.",
+        "hint": "Permanent deletion (unlike GDPR anonymisation): nothing is kept except the admin log entry.",
+        "reason": "Reason (admin log)",
+        "defaultReason": "Deleted from the admin panel",
+        "word": "DELETE",
+        "confirm": "Delete permanently",
+        "partial": "{deleted} deleted, {failed} refused. {reasons}",
+        "errors": {
+          "FORBIDDEN": "Admins only.",
+          "INVALID": "Invalid request: type the confirmation word again.",
+          "RATE_LIMITED": "Too many deletions at once. Try again in a minute.",
+          "NOT_FOUND": "Account not found (already deleted?).",
+          "SELF_PROTECTED": "You cannot delete your own account.",
+          "ADMIN_PROTECTED": "An admin cannot be deleted: remove the role first.",
+          "HAS_ADMIN_HISTORY": "Former admin: their past actions must stay attributed, anonymise the account instead."
+        }
+      }
     },
     "moduleNames": {
       "boosters": "Boosters",

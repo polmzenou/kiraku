@@ -6,7 +6,9 @@ import { adminUserMutationSchema, type AdminCardCandidate, type AdminUserResult 
 import { normalizeSearch } from "@/lib/catalog/search";
 import { getAdmin } from "../admin";
 import { mutateAdminUserWith, AdminUserMutationError } from "../admin/users-core";
+import { deleteUserWith, UserDeleteError, type UserDeleteErrorCode } from "../admin/users-delete-core";
 import { LEADERBOARD_TAG } from "../collection/leaderboard";
+import { pushLater } from "../market/queries";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
 import { REVIEWS_TAG } from "../social/reviews";
@@ -48,4 +50,47 @@ export async function searchAdminCards(input: unknown): Promise<AdminCardCandida
     select,
   });
   return rows.map((c) => ({ ...c, series: c.series.titleRomaji }));
+}
+
+const deleteUsersSchema = z
+  .object({
+    ids: z.array(z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/)).min(1).max(50),
+    reason: z.string().trim().min(1).max(300),
+    // Mot retapé dans la langue de l'admin
+    confirm: z.enum(["SUPPRIMER", "DELETE"]),
+  })
+  .strict();
+
+export type DeleteUsersResult =
+  | { ok: true; deleted: string[]; failed: { id: string; error: UserDeleteErrorCode }[] }
+  | { ok: false; error: "FORBIDDEN" | "INVALID" | "RATE_LIMITED" };
+
+/**
+ * Suppression définitive d'un ou plusieurs comptes (50 au plus). Une transaction par compte : un
+ * refus (admin, soi-même, ancien admin) n'empêche pas les autres.
+ */
+export async function adminDeleteUsersAction(input: unknown): Promise<DeleteUsersResult> {
+  const admin = await getAdmin();
+  if (!admin) return { ok: false, error: "FORBIDDEN" };
+  const parsed = deleteUsersSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (!(await rateLimit(`admin-delete-users:${admin.id}`, { limit: 5, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
+
+  const deleted: string[] = [];
+  const failed: { id: string; error: UserDeleteErrorCode }[] = [];
+  for (const id of [...new Set(parsed.data.ids)]) {
+    try {
+      await deleteUserWith(prisma, { adminId: admin.id, userId: id, reason: parsed.data.reason }, pushLater);
+      deleted.push(id);
+    } catch (e) {
+      if (e instanceof UserDeleteError) failed.push({ id, error: e.code });
+      else throw e;
+    }
+  }
+  if (deleted.length > 0) {
+    updateTag(LEADERBOARD_TAG);
+    updateTag(REVIEWS_TAG);
+    refresh();
+  }
+  return { ok: true, deleted, failed };
 }

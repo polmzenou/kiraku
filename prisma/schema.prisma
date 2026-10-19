@@ -204,7 +204,7 @@ model GameSetting {
 model CoinTransaction {
   id           String     @id @default(cuid())
   userId       String
-  user         User       @relation(fields: [userId], references: [id])
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   amount       Int // + crédit, - débit
   reason       CoinReason
   refId        String? // id d'enchère, de combat…
@@ -323,7 +323,7 @@ enum CardStatus {
 model UserCard {
   id         String        @id @default(cuid())
   ownerId    String
-  owner      User          @relation(fields: [ownerId], references: [id])
+  owner      User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   cardId     String
   card       Card          @relation(fields: [cardId], references: [id])
   status     CardStatus    @default(COLLECTION)
@@ -339,7 +339,7 @@ model UserCard {
 model BoosterOpening {
   id             String   @id @default(cuid())
   userId         String
-  user           User     @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   boosterSlug    String // BoosterType.slug
   cardIds        String[] // ids de UserCard, dans l'ordre des emplacements
   catalogCardIds String[] // ids de Card dans le même ordre : le tirage reste lisible après recyclage ou vente
@@ -788,7 +788,7 @@ enum AuctionStatus {
 model Auction {
   id              String        @id @default(cuid())
   sellerId        String
-  seller          User          @relation("seller", fields: [sellerId], references: [id])
+  seller          User          @relation("seller", fields: [sellerId], references: [id], onDelete: Cascade)
   userCardId      String? // null si l'exemplaire a été recyclé après la vente
   userCard        UserCard?     @relation(fields: [userCardId], references: [id], onDelete: SetNull)
   cardId          String // la carte du catalogue : historique et filtres
@@ -797,7 +797,7 @@ model Auction {
   buyoutPrice     Int? // achat immédiat ; proposé tant qu'aucune mise ne l'atteint
   currentBid      Int? // mise en tête, en séquestre
   currentBidderId String?
-  currentBidder   User?         @relation("leader", fields: [currentBidderId], references: [id], onDelete: Restrict) // une mise en séquestre ne perd jamais son propriétaire
+  currentBidder   User?         @relation("leader", fields: [currentBidderId], references: [id], onDelete: SetNull) // la suppression d'un compte (admin) remet d'abord la vente sans meneur
   price           Int // currentBid ?? startPrice, pour trier et filtrer
   bidCount        Int           @default(0)
   feeBp           Int // taxe figée à la mise en vente (points de base)
@@ -825,7 +825,7 @@ model Bid {
   auctionId String
   auction   Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
   bidderId  String
-  bidder    User     @relation(fields: [bidderId], references: [id])
+  bidder    User     @relation(fields: [bidderId], references: [id], onDelete: Cascade)
   amount    Int
   createdAt DateTime @default(now())
 
@@ -1018,7 +1018,7 @@ enum DataRequestStatus {
 model DataRequest {
   id            String            @id @default(cuid())
   userId        String
-  user          User              @relation("dataRequester", fields: [userId], references: [id])
+  user          User              @relation("dataRequester", fields: [userId], references: [id], onDelete: Cascade)
   kind          DataRequestKind
   status        DataRequestStatus @default(PENDING)
   requestedAt   DateTime          @default(now())
@@ -1038,7 +1038,7 @@ model LotGrant {
   lotId       String
   lot         Lot           @relation(fields: [lotId], references: [id])
   userId      String
-  user        User          @relation("lotGrantee", fields: [userId], references: [id])
+  user        User          @relation("lotGrantee", fields: [userId], references: [id], onDelete: Cascade)
   adminId     String
   admin       User          @relation("lotGranter", fields: [adminId], references: [id])
   broadcastId String?

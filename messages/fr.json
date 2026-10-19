@@ -950,7 +950,31 @@
       "gdprPending": "Suppression demandée le {date} : compte gelé.",
       "gdprNone": "Aucune demande de suppression.",
       "termsAccepted": "CGU v{version} acceptées",
-      "termsNotAccepted": "CGU pas encore acceptées"
+      "termsNotAccepted": "CGU pas encore acceptées",
+      "deletion": {
+        "selectPage": "Tout sélectionner sur la page",
+        "selectOne": "Sélectionner {name}",
+        "selected": "{count, plural, =0 {Aucun compte sélectionné} one {# sélectionné} other {# sélectionnés}}",
+        "deleteSelected": "{count, plural, one {Supprimer le compte} other {Supprimer les # comptes}}",
+        "deleteOne": "Supprimer ce compte",
+        "title": "{count, plural, one {Supprimer définitivement ce compte ?} other {Supprimer définitivement # comptes ?}}",
+        "description": "Le compte, ses cartes, son historique de Zeni, ses ouvertures et ses messages sont effacés. Ses ventes en cours sont annulées et les mises rendues ; les ventes qu'il menait repartent sans meneur. C'est irréversible.",
+        "hint": "Suppression définitive (différente de l'anonymisation RGPD) : rien n'est conservé, sauf la ligne du journal admin.",
+        "reason": "Motif (journal admin)",
+        "defaultReason": "Suppression depuis l'admin",
+        "word": "SUPPRIMER",
+        "confirm": "Supprimer définitivement",
+        "partial": "{deleted} supprimé(s), {failed} refusé(s). {reasons}",
+        "errors": {
+          "FORBIDDEN": "Action réservée aux admins.",
+          "INVALID": "Demande invalide : retape le mot de confirmation.",
+          "RATE_LIMITED": "Trop de suppressions d'un coup. Réessaie dans une minute.",
+          "NOT_FOUND": "Compte introuvable (déjà supprimé ?).",
+          "SELF_PROTECTED": "Tu ne peux pas supprimer ton propre compte.",
+          "ADMIN_PROTECTED": "Un admin ne peut pas être supprimé : retire-lui d'abord le rôle.",
+          "HAS_ADMIN_HISTORY": "Ancien admin : ses actions passées doivent rester attribuées, anonymise plutôt le compte."
+        }
+      }
     },
     "moduleNames": {
       "boosters": "Boosters",
