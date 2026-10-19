@@ -102,7 +102,7 @@ function Toast({ seal, text, onOpen, onClose }: { seal: string; text: string; on
       onPointerLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
-      className="flex items-stretch overflow-hidden rounded-lg border border-shu/60 bg-surface-2 text-text shadow-[0_8px_24px_rgb(0_0_0/0.35)] transition-[translate,opacity] duration-300 ease-out starting:-translate-y-3 starting:opacity-0 motion-reduce:transition-none"
+      className="flex items-stretch overflow-hidden rounded-card border border-shu/50 bg-surface text-text shadow-float transition-[translate,opacity] duration-300 ease-out starting:-translate-y-3 starting:opacity-0 motion-reduce:transition-none"
     >
       <button type="button" onClick={onOpen} className="flex min-h-14 min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left">
         <span aria-hidden="true" lang="ja" className="font-seal text-xl leading-none text-shu">

@@ -36,7 +36,7 @@ export function BannerHero({ slides }: { slides: BannerSlide[] }) {
               <Link
                 href={`/?b=${type.slug}&f=${type.family}`}
                 scroll={false}
-                className="booster-art relative flex min-h-44 overflow-hidden rounded-xl border border-border"
+                className="booster-art relative flex min-h-44 overflow-hidden rounded-hero border border-border shadow-sheen transition-transform active:scale-[.98] motion-reduce:transform-none"
                 data-ink={type.theme.ink}
                 style={{ ["--booster-base" as string]: type.theme.base, ["--booster-dark" as string]: type.theme.dark }}
               >
@@ -57,7 +57,7 @@ export function BannerHero({ slides }: { slides: BannerSlide[] }) {
                   <div className="flex flex-col gap-0.5 text-xs text-[var(--ink-2)]">
                     {days !== null && <span>{t("endsIn", { time: t("days", { count: days }) })}</span>}
                     {pityLeft > 0 && <span className="font-bold text-[var(--ink)]">{t("pity", { count: pityLeft })}</span>}
-                    <span className="mt-1 font-bold text-[var(--ink)] underline underline-offset-4">{t("see")}</span>
+                    <span className="mt-2 inline-flex min-h-9 w-fit items-center rounded-pill border border-current px-3.5 font-bold text-[var(--ink)]">{t("see")}</span>
                   </div>
                 </div>
                 {hero && (
@@ -72,7 +72,7 @@ export function BannerHero({ slides }: { slides: BannerSlide[] }) {
                     <span
                       aria-hidden="true"
                       lang="ja"
-                      className="absolute right-2 bottom-2 flex size-8 items-center justify-center rounded-[4px] bg-shu-btn font-seal text-lg text-washi-paper"
+                      className="absolute right-2 bottom-2 flex size-8 items-center justify-center rounded-[7px] bg-shu-btn shadow-sheen font-seal text-lg text-washi-paper"
                     >
                       {RARITY_SEAL[hero.rarity]}
                     </span>

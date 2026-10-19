@@ -231,17 +231,31 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
                     {reduced ? t("hintReduced") : type.shape === "SACHET" ? t("hint") : t("hintLift")}
                   </p>
 
+                  {maxCount > 1 && (
+                    <CountPicker
+                      value={effectiveCount}
+                      max={maxCount}
+                      onChange={(n) => {
+                        setCount(n);
+                        setConfirmed(null);
+                      }}
+                    />
+                  )}
+
                   {needsConfirm && price.kind === "zeni" ? (
-                    <Button variant="primary" onClick={() => setConfirmed(price.amount)} className="min-w-48 gap-2">
+                    <Button variant="primary" size="lg" onClick={() => setConfirmed(price.amount)} className="w-full gap-2">
                       <ZeniCoin size={16} />
                       {t("payConfirm", { amount: price.amount })}
                     </Button>
                   ) : (
                     <Button
                       variant="primary"
+                      size="lg"
                       onClick={() => scene.current?.open()}
                       disabled={!armed}
-                      className="min-w-48"
+                      className="w-full"
+                      // Bouton scindé : l'action, puis le stock gratuit restant
+                      meta={price.kind === "free" && !creditMode ? t("stockLeft", { count: state.stock }) : undefined}
                     >
                       {type.shape === "SACHET" ? t("tear") : t("lift")}
                     </Button>
@@ -255,13 +269,9 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
                       {t("creditLeft", { count: creditLeft })}
                     </p>
                   ) : (
-                    <PriceLine price={price} unaffordable={unaffordable} coins={state.coins} stock={state.stock} />
+                    price.kind !== "free" && <PriceLine price={price} unaffordable={unaffordable} coins={state.coins} stock={state.stock} />
                   )}
                   {type.usesFreeStock && !creditMode && <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} />}
-                  {maxCount > 1 && <CountPicker value={effectiveCount} max={maxCount} onChange={(n) => {
-                        setCount(n);
-                        setConfirmed(null);
-                      }} />}
                 </div>
               )}
               {stage === "opening" && (

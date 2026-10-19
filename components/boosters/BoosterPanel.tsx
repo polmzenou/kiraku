@@ -52,7 +52,7 @@ export function BoosterPanel({ type, panel, ctx, state, withOpen = true, heading
   );
 
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-5 rounded-lg border border-border bg-surface p-4 sm:p-5">
+    <section aria-labelledby={headingId} className="lacquer flex flex-col gap-5 rounded-hero p-4 sm:p-5">
       <p className="flex items-center gap-2 text-xs text-text-muted">
         <span aria-hidden="true" lang="ja" className="font-seal text-base text-shu">
           選

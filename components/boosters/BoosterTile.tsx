@@ -6,7 +6,7 @@ import { localize, type BoosterTypeView } from "@/lib/boosters/types";
 import { BoosterArt } from "./BoosterArt";
 import { PriceTag } from "./PriceTag";
 
-/** Tuile d'un booster : le dessin, puis son prix. Un appui le sélectionne (panneau à droite ou en bas). */
+/** Tuile d'un booster : le dessin sur une carte laquée avec son halo, puis son prix. Un appui le sélectionne (panneau à droite ou en bas). */
 export function BoosterTile({ type, cards, selected, stock }: { type: BoosterTypeView; cards: number; selected: boolean; stock: number }) {
   const t = useTranslations("boosters");
   const locale = useLocale();
@@ -19,12 +19,13 @@ export function BoosterTile({ type, cards, selected, stock }: { type: BoosterTyp
       aria-label={t("selectTile", { name })}
       aria-current={selected ? "true" : undefined}
       style={{ "--booster-aura": type.theme.base } as CSSProperties}
-      className={`booster-tile group flex h-full flex-col items-stretch gap-3 rounded-[14px] border-2 p-2.5 transition-transform active:scale-[0.98] sm:p-3 ${
-        selected ? "border-shu-btn bg-surface" : "border-transparent hover:bg-surface/60"
+      className={`booster-tile lacquer group relative isolate flex h-full flex-col items-stretch gap-3 overflow-hidden rounded-hero p-2.5 transition-transform active:scale-[0.98] motion-reduce:transform-none sm:p-3 ${
+        selected ? "border-shu-btn ring-2 ring-shu-btn ring-inset" : "hover:border-text-muted/40"
       }`}
     >
-      <div className="relative isolate">
-        <span aria-hidden="true" className="booster-hover-aura" />
+      {/* Halo teinté par la couleur du booster : un dégradé radial, sans filtre de flou */}
+      <span aria-hidden="true" className="booster-hover-aura" data-selected={selected || undefined} />
+      <div className="relative">
         <BoosterArt
           shape={type.shape}
           theme={type.theme}
