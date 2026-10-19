@@ -4,12 +4,14 @@ import { getLocale } from "next-intl/server";
 import { refresh } from "next/cache";
 import { z } from "@/lib/zod";
 import { RARITIES } from "@/lib/catalog/rarity";
+import { ALBUM_MAX_OFFSET, parseAlbumParams, type AlbumPage } from "@/lib/collection/albums";
 import { parseCollectionParams } from "@/lib/collection/params";
 import { MAX_SHOWCASE_SLOTS, placeInSlot } from "@/lib/collection/showcase";
 import type { CollectionPage } from "@/lib/collection/view";
 import { PROFILE_VISIBILITIES } from "@/lib/collection/visibility";
 import { USERNAME_REGEX } from "@/lib/username";
 import { isFrozen } from "@/lib/account/deletion";
+import { getAlbumPage } from "../collection/albums";
 import { accessFor, findProfileOwner } from "../collection/profile";
 import { getCollectionPage, MAX_OFFSET } from "../collection/queries";
 import { RecycleError, recycleWith, type RecycleRequest } from "../collection/recycle-core";
@@ -39,6 +41,24 @@ type Failure = { ok: false; error: CollectionActionError };
 const cardIdSchema = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
 
 // --- Lecture paginée ---
+
+const albumPageSchema = z.object({
+  query: z.record(z.string().max(16), z.string().max(200)).refine((q) => Object.keys(q).length <= 10),
+  offset: z.number().int().min(0).max(ALBUM_MAX_OFFSET),
+});
+
+/** Albums suivants de sa propre collection (la première page est rendue par le serveur). */
+export async function loadAlbumPageAction(input: unknown): Promise<({ ok: true } & AlbumPage) | Failure> {
+  const viewer = await requireActiveUser();
+  if (!viewer) return { ok: false, error: "NO_SESSION" };
+  const parsed = albumPageSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (!(await rateLimit(`collection:${viewer.id}`, { limit: 60, windowSeconds: 60 })).success) {
+    return { ok: false, error: "RATE_LIMITED" };
+  }
+  const page = await getAlbumPage(viewer.id, parseAlbumParams(parsed.data.query), parsed.data.offset, await getLocale());
+  return { ok: true, ...page };
+}
 
 const pageSchema = z.object({
   username: z.string().regex(USERNAME_REGEX).optional(),

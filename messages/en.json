@@ -2117,6 +2117,30 @@
         "FULL": "Your showcase is full.",
         "UNAVAILABLE": "Not possible right now. Try again."
       }
+    },
+    "views": {
+      "label": "Collection view",
+      "cards": "Cards",
+      "albums": "Albums"
+    },
+    "albums": {
+      "searchLabel": "Search albums",
+      "searchPlaceholder": "Search a series…",
+      "count": "{count, plural, =0 {No albums} one {# album} other {# albums}}",
+      "showAll": "All albums",
+      "sortLabel": "Sort albums",
+      "sorts": {
+        "most": "Most cards",
+        "progress": "Most complete",
+        "az": "A → Z"
+      },
+      "progress": "{owned}/{total} · {percent}",
+      "byRarity": "Cards by rarity",
+      "complete": "Complete",
+      "more": "Show more",
+      "retry": "Try again",
+      "loading": "Loading…",
+      "noMatch": "No album matches."
     }
   },
   "showcase": {

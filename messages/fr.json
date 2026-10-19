@@ -2117,6 +2117,30 @@
         "FULL": "Ta vitrine est pleine.",
         "UNAVAILABLE": "Action impossible pour le moment. Réessaie."
       }
+    },
+    "views": {
+      "label": "Affichage de la collection",
+      "cards": "Cartes",
+      "albums": "Albums"
+    },
+    "albums": {
+      "searchLabel": "Chercher un album",
+      "searchPlaceholder": "Rechercher un univers…",
+      "count": "{count, plural, =0 {Aucun album} one {# album} other {# albums}}",
+      "showAll": "Tous les albums",
+      "sortLabel": "Trier les albums",
+      "sorts": {
+        "most": "Plus de cartes",
+        "progress": "Plus avancés",
+        "az": "A → Z"
+      },
+      "progress": "{owned}/{total} · {percent}",
+      "byRarity": "Cartes par rareté",
+      "complete": "Complet",
+      "more": "Afficher plus",
+      "retry": "Réessayer",
+      "loading": "Chargement…",
+      "noMatch": "Aucun album ne correspond."
     }
   },
   "showcase": {

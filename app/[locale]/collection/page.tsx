@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
+import { AlbumFilters } from "@/components/collection/AlbumFilters";
+import { AlbumList } from "@/components/collection/AlbumList";
 import { CollectionFilters } from "@/components/collection/CollectionFilters";
 import { CollectionList } from "@/components/collection/CollectionList";
 import { CollectionStats } from "@/components/collection/CollectionStats";
+import { CollectionViewToggle } from "@/components/collection/CollectionViewToggle";
 import { RecycleAllSheet } from "@/components/collection/RecycleAllSheet";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { PageShell } from "@/components/PageShell";
@@ -11,7 +14,9 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { routing } from "@/i18n/routing";
 import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { albumQuery, isAlbumView, parseAlbumParams } from "@/lib/collection/albums";
 import { collectionQuery, hasFilters, parseCollectionParams } from "@/lib/collection/params";
+import { getAlbumPage } from "@/server/collection/albums";
 import { getCollectionPage, getCollectionSummary, getOwnedSeries } from "@/server/collection/queries";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
@@ -33,12 +38,16 @@ export default async function CollectionPage({ searchParams }: PageProps<"/[loca
     );
   }
 
-  const params = parseCollectionParams(await searchParams);
+  const raw = await searchParams;
+  const albumView = isAlbumView(raw);
+  const params = parseCollectionParams(raw);
+  const albumParams = parseAlbumParams(raw);
   const values = await getSetting("collection.recycleValues");
-  const [summary, page, series] = await Promise.all([
+  const [summary, page, series, albums] = await Promise.all([
     getCollectionSummary(user.id, values),
-    getCollectionPage(user.id, params, 0, locale),
-    getOwnedSeries(user.id, locale),
+    albumView ? null : getCollectionPage(user.id, params, 0, locale),
+    albumView ? [] : getOwnedSeries(user.id, locale),
+    albumView ? getAlbumPage(user.id, albumParams, 0, locale) : null,
   ]);
   const query = collectionQuery(params);
   const counts = Object.fromEntries(RARITIES.map((r) => [r, summary.byRarity[r].unique])) as Record<Rarity, number>;
@@ -69,13 +78,31 @@ export default async function CollectionPage({ searchParams }: PageProps<"/[loca
         </section>
       ) : (
         <>
-          <CollectionFilters params={params} pathname="/collection" series={series} counts={counts} />
-          {page.items.length === 0 ? (
-            <p className="lacquer rounded-card p-6 text-center text-text-muted">
-              {hasFilters(params) ? t("noMatch") : t("empty")}
-            </p>
+          <div className="flex justify-end">
+            <CollectionViewToggle view={albumView ? "albums" : "cards"} />
+          </div>
+          {albums ? (
+            <>
+              <AlbumFilters params={albumParams} total={albums.total} />
+              {albums.items.length === 0 ? (
+                <p className="lacquer rounded-card p-6 text-center text-text-muted">{t("albums.noMatch")}</p>
+              ) : (
+                <AlbumList key={JSON.stringify(albumQuery(albumParams))} initial={albums} query={albumQuery(albumParams)} />
+              )}
+            </>
           ) : (
-            <CollectionList key={JSON.stringify(query)} initial={page} query={query} linkBase="/collection" />
+            page && (
+              <>
+                <CollectionFilters params={params} pathname="/collection" series={series} counts={counts} />
+                {page.items.length === 0 ? (
+                  <p className="lacquer rounded-card p-6 text-center text-text-muted">
+                    {hasFilters(params) ? t("noMatch") : t("empty")}
+                  </p>
+                ) : (
+                  <CollectionList key={JSON.stringify(query)} initial={page} query={query} linkBase="/collection" />
+                )}
+              </>
+            )
           )}
         </>
       )}
