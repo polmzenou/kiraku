@@ -6,10 +6,22 @@
     "intro": "Ça y est, l'aventure prend une nouvelle dimension ! On est ravis de partager cette première version avec toi. Prêt à trouver tes prochaines cartes préférées ?",
     "available": "À toi de jouer",
     "features": {
-      "boosters": { "title": "La magie des boosters", "body": "Ouvre tes boosters, découvre tes personnages favoris et fais grandir ta collection. La prochaine pépite t'attend !" },
-      "wiki": { "title": "Le wiki, ton allié", "body": "Explore les personnages, leurs raretés et leurs caractéristiques pour tout savoir sur les cartes que tu convoites." },
-      "shop": { "title": "Un détour en boutique", "body": "Fais le plein de boosters et découvre les offres pour donner un coup de pouce à ta collection." },
-      "battles": { "title": "Place aux combats !", "body": "Compose ton équipe, fais briller tes cartes et relève le défi en duel amical ou en mode classé." }
+      "boosters": {
+        "title": "La magie des boosters",
+        "body": "Ouvre tes boosters, découvre tes personnages favoris et fais grandir ta collection. La prochaine pépite t'attend !"
+      },
+      "wiki": {
+        "title": "Le wiki, ton allié",
+        "body": "Explore les personnages, leurs raretés et leurs caractéristiques pour tout savoir sur les cartes que tu convoites."
+      },
+      "shop": {
+        "title": "Un détour en boutique",
+        "body": "Fais le plein de boosters et découvre les offres pour donner un coup de pouce à ta collection."
+      },
+      "battles": {
+        "title": "Place aux combats !",
+        "body": "Compose ton équipe, fais briller tes cartes et relève le défi en duel amical ou en mode classé."
+      }
     },
     "discord": {
       "title": "Encore mieux avec Discord",
@@ -1933,6 +1945,15 @@
           "deletionGraceDays": "Délai avant anonymisation (jours)",
           "usernameChangeDays": "Délai entre deux changements de pseudo (jours)",
           "exportsPerDay": "Exports de données par jour et par joueur"
+        },
+        "home": {
+          "pullFeed": {
+            "enabled": "Afficher le carrousel des gros tirages",
+            "minRarity": "Rareté minimale affichée",
+            "size": "Nombre de tirages affichés",
+            "maxAgeHours": "Ancienneté maximale (heures)",
+            "refreshSeconds": "Rafraîchissement (secondes)"
+          }
         }
       },
       "hints": {
@@ -1949,8 +1970,17 @@
           "deletionGraceDays": "Pendant ce délai, le compte est gelé et la suppression annulable. 30 jours conseillés.",
           "usernameChangeDays": "0 = sans délai.",
           "exportsPerDay": "Fichier JSON « Télécharger mes données »."
+        },
+        "home": {
+          "pullFeed": {
+            "minRarity": "Épique, Légendaire ou Mythique : les tirages enregistrés commencent à Épique.",
+            "size": "Au-delà de 6, le ruban défile tout seul.",
+            "maxAgeHours": "Les tirages plus anciens disparaissent du carrousel, puis de la base un jour après.",
+            "refreshSeconds": "Tant que l'onglet est visible."
+          }
         }
-      }
+      },
+      "homeSection": "Accueil · Gros tirages"
     }
   },
   "collection": {
@@ -2590,6 +2620,12 @@
       },
       "pinned": "Épinglé",
       "replyFrom": "Réponse de l'équipe"
+    },
+    "pulls": {
+      "live": "EN DIRECT · LÉGENDAIRES ET MYTHIQUES",
+      "title": "Gros tirages",
+      "listLabel": "Derniers gros tirages",
+      "cardLabel": "{name}, {rarity}"
     }
   },
   "leaderboard": {

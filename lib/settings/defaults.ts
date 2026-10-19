@@ -255,6 +255,12 @@ export const SETTING_SCHEMAS = {
   "discord.joinModal": joinModalSchema,
   // Interrupteurs de fonctionnalités sans module propre (casino : tuile « Bientôt » seulement)
   "features.casino": z.boolean(),
+  // Carrousel « En direct · Gros tirages » de l'accueil (étape 12c)
+  "home.pullFeed.enabled": z.boolean(),
+  "home.pullFeed.minRarity": z.enum(["EPIC", "LEGENDARY", "MYTHIC"]),
+  "home.pullFeed.size": z.number().int().min(4).max(50),
+  "home.pullFeed.maxAgeHours": z.number().int().min(1).max(24 * 30),
+  "home.pullFeed.refreshSeconds": z.number().int().min(5).max(600),
   // Conformité (étape 10) : version des CGU que tout compte inscrit doit avoir acceptée
   "legal.termsRequiredVersion": z.number().int().min(1).max(10_000),
   // Suppression du compte : délai (annulable) avant l'anonymisation
@@ -379,6 +385,11 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "discord.linkBonusZeni": 500, // versé une seule fois, à la première liaison
   "discord.joinModal": JOIN_MODAL_DEFAULT, // désactivé par défaut
   "features.casino": true,
+  "home.pullFeed.enabled": true,
+  "home.pullFeed.minRarity": "LEGENDARY",
+  "home.pullFeed.size": 20,
+  "home.pullFeed.maxAgeHours": 72,
+  "home.pullFeed.refreshSeconds": 15,
   "legal.termsRequiredVersion": 1,
   "account.deletionGraceDays": 30, // anonymisation sous 30 jours (plan, « Pages légales, RGPD »)
   "account.usernameChangeDays": 30,

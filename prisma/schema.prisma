@@ -90,16 +90,17 @@ model User {
   privacyChosenAt     DateTime? // réglé par le joueur : l'inscription ne le change plus
   createdAt           DateTime          @default(now())
 
-  accounts    Account[]
-  sessions    Session[]
-  ledger      CoinTransaction[]
-  authTokens  AuthToken[]
-  cards       UserCard[]
-  openings    BoosterOpening[]
-  discoveries Discovery[]
-  adminLogs   AdminLog[]
-  showcase    ShowcaseSlot[]
-  wishlist    WishlistEntry[]
+  accounts     Account[]
+  sessions     Session[]
+  ledger       CoinTransaction[]
+  authTokens   AuthToken[]
+  cards        UserCard[]
+  openings     BoosterOpening[]
+  notablePulls NotablePull[]
+  discoveries  Discovery[]
+  adminLogs    AdminLog[]
+  showcase     ShowcaseSlot[]
+  wishlist     WishlistEntry[]
 
   sentFriends   Friendship[]       @relation("requester")
   recvFriends   Friendship[]       @relation("addressee")
@@ -276,6 +277,7 @@ model Card {
   lotItems      LotItem[]
   auctions      Auction[]
   wishedBy      WishlistEntry[]
+  notablePulls  NotablePull[]
 
   @@index([rarity, rank])
   @@index([seriesId])
@@ -349,6 +351,21 @@ model BoosterOpening {
   createdAt      DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+// Gros tirage (Épique ou mieux) sorti d'un booster : carrousel « En direct » de l'accueil.
+// Écrit dans la transaction d'ouverture ; la rareté affichée se règle à la lecture (home.pullFeed.*).
+model NotablePull {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardId      String
+  card        Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  rarity      Rarity
+  boosterSlug String
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 // Carte déjà obtenue au moins une fois (badge « Nouveau », fiche wiki), même si elle a été revendue

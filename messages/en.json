@@ -6,10 +6,22 @@
     "intro": "It's here, and the adventure is getting bigger! We're so happy to share this first version with you. Ready to find your next favourite cards?",
     "available": "Your adventure starts here",
     "features": {
-      "boosters": { "title": "The magic of boosters", "body": "Open your boosters, discover your favourite characters and grow your collection. Your next gem is waiting!" },
-      "wiki": { "title": "Your trusty wiki", "body": "Explore characters, rarities and stats to learn all about the cards you've got your eye on." },
-      "shop": { "title": "A stop at the shop", "body": "Stock up on boosters and discover offers to give your collection a little boost." },
-      "battles": { "title": "Time to battle!", "body": "Build your team, let your cards shine and take on a friendly duel or climb the ranked ladder." }
+      "boosters": {
+        "title": "The magic of boosters",
+        "body": "Open your boosters, discover your favourite characters and grow your collection. Your next gem is waiting!"
+      },
+      "wiki": {
+        "title": "Your trusty wiki",
+        "body": "Explore characters, rarities and stats to learn all about the cards you've got your eye on."
+      },
+      "shop": {
+        "title": "A stop at the shop",
+        "body": "Stock up on boosters and discover offers to give your collection a little boost."
+      },
+      "battles": {
+        "title": "Time to battle!",
+        "body": "Build your team, let your cards shine and take on a friendly duel or climb the ranked ladder."
+      }
     },
     "discord": {
       "title": "Even better with Discord",
@@ -1933,6 +1945,15 @@
           "deletionGraceDays": "Delay before anonymization (days)",
           "usernameChangeDays": "Delay between two username changes (days)",
           "exportsPerDay": "Data exports per day and per player"
+        },
+        "home": {
+          "pullFeed": {
+            "enabled": "Show the big pulls carousel",
+            "minRarity": "Lowest rarity shown",
+            "size": "Pulls shown",
+            "maxAgeHours": "Maximum age (hours)",
+            "refreshSeconds": "Refresh (seconds)"
+          }
         }
       },
       "hints": {
@@ -1949,8 +1970,17 @@
           "deletionGraceDays": "During this period the account is frozen and the deletion can be cancelled. 30 days recommended.",
           "usernameChangeDays": "0 = no delay.",
           "exportsPerDay": "\"Download my data\" JSON file."
+        },
+        "home": {
+          "pullFeed": {
+            "minRarity": "Epic, Legendary or Mythic: recorded pulls start at Epic.",
+            "size": "Above 6, the strip scrolls on its own.",
+            "maxAgeHours": "Older pulls leave the carousel, then the database a day later.",
+            "refreshSeconds": "While the tab is visible."
+          }
         }
-      }
+      },
+      "homeSection": "Home · Big pulls"
     }
   },
   "collection": {
@@ -2590,6 +2620,12 @@
       },
       "pinned": "Pinned",
       "replyFrom": "Team reply"
+    },
+    "pulls": {
+      "live": "LIVE · LEGENDARY AND MYTHIC",
+      "title": "Big pulls",
+      "listLabel": "Latest big pulls",
+      "cardLabel": "{name}, {rarity}"
     }
   },
   "leaderboard": {

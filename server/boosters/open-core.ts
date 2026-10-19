@@ -92,6 +92,9 @@ type LockedUser = {
 };
 
 /** Compteurs de pitié vedette par bannière ({ boosterTypeId: n }), valeurs invalides ignorées. */
+/** Raretés enregistrées comme gros tirages : le réglage home.pullFeed.minRarity choisit parmi elles. */
+const NOTABLE_RARITIES = new Set<Rarity>(["EPIC", "LEGENDARY", "MYTHIC"]);
+
 export function readBannerPity(raw: unknown): Record<string, number> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
   return Object.fromEntries(
@@ -203,6 +206,13 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
           createdAt: now,
         })),
       });
+      // Gros tirages pour le carrousel « En direct » de l'accueil (la rareté affichée se règle à la lecture)
+      const notable = boosters.flatMap((b) => b.cards.filter((c) => NOTABLE_RARITIES.has(c.rarity)));
+      if (notable.length > 0) {
+        await tx.notablePull.createMany({
+          data: notable.map((c) => ({ userId, cardId: c.cardId, rarity: c.rarity, boosterSlug: type.slug, createdAt: now })),
+        });
+      }
       let coins = user.coins;
       if (total > 0) {
         // Une ligne de journal par booster acheté, un seul débit : le journal de l'économie reste juste

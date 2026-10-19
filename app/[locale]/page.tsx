@@ -11,6 +11,7 @@ import { usePercent } from "@/components/boosters/format";
 import { NextFreeIn } from "@/components/boosters/NextFreeIn";
 import { OpenLink } from "@/components/boosters/OpenLink";
 import { RatesSheet } from "@/components/boosters/RatesSheet";
+import { RecentPulls } from "@/components/home/RecentPulls";
 import { ReviewsSection, type ReviewViewer } from "@/components/home/ReviewsSection";
 import { TopCollectors } from "@/components/home/TopCollectors";
 import { PageShell } from "@/components/PageShell";
@@ -37,6 +38,7 @@ import {
 import { getBoosterRules } from "@/server/boosters/rules";
 import { boosterStateFrom } from "@/server/boosters/state";
 import { getTopCollectors } from "@/server/collection/leaderboard";
+import { getRecentPulls } from "@/server/home/pulls";
 import { getBoosterCredits } from "@/server/economy/queries";
 import { getOwnReview, getReviewSample, getReviewSummary } from "@/server/social/reviews";
 import { getCurrentUser } from "@/server/user";
@@ -95,13 +97,15 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
   // Boosters crédités (cadeaux d'amis, boutique, récompenses), par type, à ouvrir en premier ;
   // en bas de page, avis des joueurs et podium des collectionneurs
   const member = user !== null && canReview(user);
-  const [credits, allTypes, reviews, reviewSummary, ownReview, collectors] = await Promise.all([
+  const [credits, allTypes, reviews, reviewSummary, ownReview, collectors, pulls, pullRefresh] = await Promise.all([
     user ? getBoosterCredits(user.id) : new Map<string, number>(),
     getBoosterTypes(),
     getReviewSample(),
     getReviewSummary(),
     member && user ? getOwnReview(user.id) : null,
     getTopCollectors(3),
+    getRecentPulls(locale),
+    getSetting("home.pullFeed.refreshSeconds"),
   ]);
   const reviewViewer: ReviewViewer = member
     ? { kind: "member", own: ownReview }
@@ -251,6 +255,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
         )}
       </div>
 
+      {pulls && <RecentPulls initial={pulls} refreshSeconds={pullRefresh} serverNow={state.serverNow} />}
       <ReviewsSection reviews={pinnedFirst(reviews)} summary={reviewSummary} viewer={reviewViewer} />
       <TopCollectors collectors={collectors} />
 

@@ -950,6 +950,22 @@
   }
 }
 
+/* Carrousel « Gros tirages » : la piste contient deux fois la liste, -50 % boucle sans saut */
+@keyframes pull-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.pull-marquee {
+  animation: pull-marquee var(--marquee-duration, 60s) linear infinite;
+}
+
+.pull-marquee-host:hover .pull-marquee,
+.pull-marquee-host:focus-within .pull-marquee {
+  animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
