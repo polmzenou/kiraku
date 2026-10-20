@@ -200,9 +200,9 @@ const MAX_CANDIDATES = 500;
 /** Cartes du joueur disponibles pour combattre (au moins un exemplaire en collection), les plus fortes d'abord. */
 export async function getCandidates(userId: string, rules: BattleRules): Promise<CandidateCard[]> {
   const rows = await prisma.$queryRaw<CandidateRow[]>`
-    SELECT c.id AS "cardId", c."publicId" AS "anilistId", c.appearance, c.name, c."nameNative", c."imageUrl", c.rank, c.rarity::text AS rarity, c.power, c.ki
+    SELECT c.id AS "cardId", c."publicId" AS "anilistId", c.appearance, c.name, c."nameNative", c."imageUrl", c.rank, c."rarityKey" AS rarity, c.power, c.ki
     FROM "Card" c
-    JOIN "RarityDefinition" rd ON rd.key = c.rarity
+    JOIN "RarityDefinition" rd ON rd.key = c."rarityKey"
     WHERE EXISTS (SELECT 1 FROM "UserCard" uc WHERE uc."cardId" = c.id AND uc."ownerId" = ${userId} AND uc.status = 'COLLECTION')
     ORDER BY rd."sortOrder" DESC, (c.power + c.ki) DESC, c.id ASC
     LIMIT ${MAX_CANDIDATES}`;
