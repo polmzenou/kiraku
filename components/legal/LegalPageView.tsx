@@ -5,6 +5,7 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import type { LegalSlug } from "@/lib/legal/legal";
+import { getAdmin } from "@/server/admin";
 import { getLegalDocument } from "@/server/legal";
 import { CookieTable } from "../consent/CookieTable";
 import { ManageCookiesButton } from "../consent/ManageCookiesButton";
@@ -26,10 +27,11 @@ export function requestedVersion(raw: string | string[] | undefined): number | n
 
 /** Page légale publique : texte en vigueur (ou version archivée), date, liste des versions. */
 export async function LegalPageView({ slug, locale, version }: { slug: LegalSlug; locale: string; version: number | null }) {
-  const [t, format, { doc, versions }] = await Promise.all([
+  const [t, format, { doc, versions }, isAdmin] = await Promise.all([
     getTranslations("legal"),
     getFormatter(),
     getLegalDocument(slug, locale, version),
+    slug === "cookies" ? getAdmin().then(Boolean) : false,
   ]);
 
   return (
@@ -65,8 +67,13 @@ export async function LegalPageView({ slug, locale, version }: { slug: LegalSlug
 
       {slug === "cookies" && (
         <section className="flex flex-col gap-3">
-          <h2 className="font-title text-xl font-extrabold">{t("cookieTableTitle")}</h2>
-          <CookieTable />
+          {/* La liste détaillée n'est montrée qu'aux admins, pour contrôle */}
+          {isAdmin && (
+            <>
+              <h2 className="font-title text-xl font-extrabold">{t("cookieTableTitle")}</h2>
+              <CookieTable />
+            </>
+          )}
           <ManageCookiesButton className="self-start" />
         </section>
       )}
