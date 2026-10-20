@@ -1,27 +1,35 @@
 {
   "v1Welcome": {
-    "badge": "Le grand départ · v1.0",
-    "title": "Bienvenue sur",
-    "titleAccent": "Kiraku-kun !",
-    "intro": "Ça y est, l'aventure prend une nouvelle dimension ! On est ravis de partager cette première version avec toi. Prêt à trouver tes prochaines cartes préférées ?",
-    "available": "À toi de jouer",
+    "badge": "Mise à jour · v1.5",
+    "title": "La v1.5 est là,",
+    "titleAccent": "et elle est chargée !",
+    "intro": "Chat entre amis, échanges au Marché, profils à ton image, nouvelles cartes Gold et AR… Cette mise à jour est notre plus grosse depuis le lancement. Voici le récap !",
+    "available": "Les nouveautés",
     "features": {
-      "boosters": {
-        "title": "La magie des boosters",
-        "body": "Ouvre tes boosters, découvre tes personnages favoris et fais grandir ta collection. La prochaine pépite t'attend !"
+      "chat": {
+        "title": "Le chat entre amis",
+        "body": "Discute directement avec tes amis depuis leur page : prépare un échange, montre ta dernière pépite ou lance un défi."
       },
-      "wiki": {
-        "title": "Le wiki, ton allié",
-        "body": "Explore les personnages, leurs raretés et leurs caractéristiques pour tout savoir sur les cartes que tu convoites."
+      "profile": {
+        "title": "Un profil à ton image",
+        "body": "Personnalise ton profil : choisis ce que tu mets en avant et affiche ton style aux autres joueurs."
       },
-      "shop": {
-        "title": "Un détour en boutique",
-        "body": "Fais le plein de boosters et découvre les offres pour donner un coup de pouce à ta collection."
+      "cards": {
+        "title": "Nouvelles cartes Gold et AR",
+        "body": "Des versions dorées et des formes alternatives (AR) rejoignent les boosters. Sauras-tu toutes les trouver ?"
       },
-      "battles": {
-        "title": "Place aux combats !",
-        "body": "Compose ton équipe, fais briller tes cartes et relève le défi en duel amical ou en mode classé."
+      "animations": {
+        "title": "De nouvelles animations",
+        "body": "Ouvertures, cartes et transitions gagnent en éclat pour rendre chaque tirage encore plus excitant."
       }
+    },
+    "trades": {
+      "title": "Les échanges arrivent au Marché",
+      "badge": "En développement",
+      "body": "Propose tes doubles, indique les cartes que tu recherches et échange avec tous les joueurs, en plus des échanges entre amis.",
+      "dev": "Cette fonctionnalité est <strong>encore en développement</strong> et plein de nouvelles choses arrivent encore ! Si tu constates un bug, <strong>n'hésite pas à nous contacter</strong>.",
+      "cta": "Voir les échanges",
+      "contact": "Signaler un bug"
     },
     "discord": {
       "title": "Encore mieux avec Discord",
@@ -29,10 +37,10 @@
       "bonus": "Et hop : {amount, number} Zeni offerts à ta première liaison !"
     },
     "soon": {
-      "title": "Et la suite s'annonce encore plus belle…",
-      "body": "Les <strong>échanges entre amis ET dans le Marché</strong> arrivent bientôt ! Au programme aussi : de <strong>nouveaux types de boosters</strong>, un <strong>casino pour miser tes Zeni et tenter de faire fortune</strong>, de toutes nouvelles <strong>cartes gold et alternatives</strong>, et de la <strong>personnalisation de profil</strong> pour afficher ton style. On a hâte de te faire découvrir tout ça !"
+      "title": "Et plein d'autres choses…",
+      "body": "Des <strong>corrections</strong>, des <strong>finitions</strong> et de <strong>petites surprises</strong> un peu partout sur le site. Et ce n'est pas fini : de <strong>nouveaux boosters</strong> et d'autres nouveautés sont déjà en préparation !"
     },
-    "thanks": "Merci d'écrire le début de l'aventure avec nous.",
+    "thanks": "Merci de faire vivre l'aventure avec nous.",
     "letsGo": "C'est parti !"
   },
   "cardBack": {
@@ -120,7 +128,7 @@
     "back": "Retour à l'accueil"
   },
   "footer": {
-    "versionNotice": "Kiraku-kun v1.0 est là ! L'aventure continue, avec de nouvelles surprises à venir.",
+    "versionNotice": "Kiraku-kun v1.5 est là ! Chat entre amis, échanges au Marché, profils personnalisables, nouvelles cartes Gold et AR, et l'aventure continue.",
     "disclaimer": "Projet fan non officiel. Les personnages appartiennent à leurs ayants droit.",
     "nav": "Liens du site",
     "account": "Mon compte",

@@ -1,27 +1,35 @@
 {
   "v1Welcome": {
-    "badge": "A new beginning · v1.0",
-    "title": "Welcome to",
-    "titleAccent": "Kiraku-kun!",
-    "intro": "It's here, and the adventure is getting bigger! We're so happy to share this first version with you. Ready to find your next favourite cards?",
-    "available": "Your adventure starts here",
+    "badge": "Update · v1.5",
+    "title": "v1.5 is here,",
+    "titleAccent": "and it's packed!",
+    "intro": "Friend chat, trades on the Market, custom profiles, new Gold and AR cards… This is our biggest update since launch. Here's the recap!",
+    "available": "What's new",
     "features": {
-      "boosters": {
-        "title": "The magic of boosters",
-        "body": "Open your boosters, discover your favourite characters and grow your collection. Your next gem is waiting!"
+      "chat": {
+        "title": "Chat with friends",
+        "body": "Talk to your friends right from their page: set up a trade, show off your latest pull or throw down a challenge."
       },
-      "wiki": {
-        "title": "Your trusty wiki",
-        "body": "Explore characters, rarities and stats to learn all about the cards you've got your eye on."
+      "profile": {
+        "title": "A profile that's all you",
+        "body": "Customize your profile: choose what to highlight and show your style to other players."
       },
-      "shop": {
-        "title": "A stop at the shop",
-        "body": "Stock up on boosters and discover offers to give your collection a little boost."
+      "cards": {
+        "title": "New Gold and AR cards",
+        "body": "Golden versions and alternate forms (AR) join the boosters. Can you find them all?"
       },
-      "battles": {
-        "title": "Time to battle!",
-        "body": "Build your team, let your cards shine and take on a friendly duel or climb the ranked ladder."
+      "animations": {
+        "title": "Fresh animations",
+        "body": "Openings, cards and transitions shine brighter to make every pull even more exciting."
       }
+    },
+    "trades": {
+      "title": "Trades are coming to the Market",
+      "badge": "In development",
+      "body": "List your duplicates, say which cards you're looking for and trade with every player, on top of trades between friends.",
+      "dev": "This feature is <strong>still in development</strong> and lots of new things are on the way! If you spot a bug, <strong>don't hesitate to contact us</strong>.",
+      "cta": "See trades",
+      "contact": "Report a bug"
     },
     "discord": {
       "title": "Even better with Discord",
@@ -29,10 +37,10 @@
       "bonus": "Plus: {amount, number} Zeni as a gift for your first link!"
     },
     "soon": {
-      "title": "And there's so much more on the way…",
-      "body": "<strong>Trading with friends AND in the Market</strong> is coming soon! There's more to look forward to: <strong>new booster types</strong>, a <strong>casino to wager your Zeni and try to make your fortune</strong>, brand-new <strong>gold and alternative cards</strong>, and <strong>profile customisation</strong> to show off your style. We can't wait to share it all with you!"
+      "title": "And plenty more…",
+      "body": "<strong>Fixes</strong>, <strong>polish</strong> and <strong>little surprises</strong> all over the site. And we're not done: <strong>new boosters</strong> and more features are already in the works!"
     },
-    "thanks": "Thanks for being part of our adventure from the start.",
+    "thanks": "Thanks for sharing the adventure with us.",
     "letsGo": "Let's go!"
   },
   "cardBack": {
@@ -120,7 +128,7 @@
     "back": "Back to home"
   },
   "footer": {
-    "versionNotice": "Kiraku-kun v1.0 is here! The adventure continues, with more surprises on the way.",
+    "versionNotice": "Kiraku-kun v1.5 is here! Friend chat, Market trades, custom profiles, new Gold and AR cards, and the adventure goes on.",
     "disclaimer": "Unofficial fan project. Characters belong to their respective rights holders.",
     "nav": "Site links",
     "account": "My account",

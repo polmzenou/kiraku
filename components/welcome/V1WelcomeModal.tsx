@@ -5,17 +5,28 @@ import { useEffect, useId, useRef } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { claimV1WelcomeAction } from "@/server/actions/welcome";
 
+// Nouveautés de la v1.5 ; les échanges du Marché ont leur propre encart plus bas.
 const FEATURES = [
-  { key: "boosters", glyph: "開", href: "/" },
-  { key: "wiki", glyph: "読", href: "/wiki" },
-  { key: "shop", glyph: "商", href: "/boutique" },
-  { key: "battles", glyph: "戦", href: "/combat" },
+  { key: "chat", glyph: "話", href: "/amis" },
+  { key: "profile", glyph: "飾", href: null },
+  { key: "cards", glyph: "金", href: "/wiki" },
+  { key: "animations", glyph: "動", href: "/" },
 ] as const;
 
 // On attend un écran de découverte : aucune interruption d'ouverture, de combat ou de connexion.
 const DISCOVERY_ROUTES = new Set(["", "wiki", "collection", "boutique", "amis", "marche", "compte", "missions", "classement", "parrainage", "notifications", "combat"]);
 
-export function V1WelcomeModal({ userId, discordBonus }: { userId: string; discordBonus: number }) {
+export function V1WelcomeModal({
+  userId,
+  username,
+  discordBonus,
+  contactUrl,
+}: {
+  userId: string;
+  username: string;
+  discordBonus: number;
+  contactUrl: string | null;
+}) {
   const t = useTranslations("v1Welcome");
   const common = useTranslations("common");
   const pathname = usePathname();
@@ -101,8 +112,8 @@ export function V1WelcomeModal({ userId, discordBonus }: { userId: string; disco
             <span className="absolute top-2 -left-4 h-36 w-24 -rotate-18 rounded-xl border border-shu/35 bg-shu/10" />
             <span className="absolute top-1 right-0 h-36 w-24 rotate-15 rounded-xl border border-ai/40 bg-ai/10" />
             <div className="welcome-v1-card absolute top-0 left-2 flex h-36 w-24 -rotate-3 flex-col items-center justify-center gap-2 rounded-xl border border-kin/65 text-kin shadow-xl">
-              <span className="font-seal text-4xl" lang="ja">祝</span>
-              <span className="font-title text-2xl font-extrabold">1.0</span>
+              <span className="font-seal text-4xl" lang="ja">新</span>
+              <span className="font-title text-2xl font-extrabold">1.5</span>
               <span className="text-[8px] font-bold tracking-[0.2em]">KIRAKU-KUN</span>
             </div>
             <span className="absolute -top-4 right-1 text-2xl text-kin">✦</span>
@@ -116,7 +127,7 @@ export function V1WelcomeModal({ userId, discordBonus }: { userId: string; disco
             <h3 id={`${titleId}-features`} className="mb-3 text-xs font-bold tracking-widest text-text-muted uppercase">{t("available")}</h3>
             <div className="grid gap-2.5 sm:grid-cols-2">
               {FEATURES.map(({ key, glyph, href }) => (
-                <Link key={key} href={href} onClick={close} className="group flex gap-3 rounded-2xl border border-border bg-surface/70 p-3.5 transition-colors hover:border-kin/50 hover:bg-surface-2">
+                <Link key={key} href={href ?? `/u/${encodeURIComponent(username)}`} onClick={close} className="group flex gap-3 rounded-2xl border border-border bg-surface/70 p-3.5 transition-colors hover:border-kin/50 hover:bg-surface-2">
                   <span aria-hidden="true" lang="ja" className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-kin/20 bg-kin/8 font-seal text-2xl text-link">{glyph}</span>
                   <div className="min-w-0 flex-1">
                     <h4 className="mb-1 flex items-center justify-between gap-2 text-sm font-bold">
@@ -127,6 +138,41 @@ export function V1WelcomeModal({ userId, discordBonus }: { userId: string; disco
                   </div>
                 </Link>
               ))}
+            </div>
+          </section>
+
+          <section aria-labelledby={`${titleId}-trades`} className="rounded-2xl border border-shu/35 bg-shu/8 p-4">
+            <div className="flex gap-3">
+              <span aria-hidden="true" lang="ja" className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-shu/30 bg-shu/10 font-seal text-2xl text-shu">換</span>
+              <div className="min-w-0 flex-1">
+                <h3 id={`${titleId}-trades`} className="flex flex-wrap items-center gap-2 text-sm font-bold">
+                  {t("trades.title")}
+                  <span className="rounded-full border border-kin/40 bg-kin/10 px-2 py-0.5 text-[11px] font-bold text-link">{t("trades.badge")}</span>
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-text-muted">{t("trades.body")}</p>
+                <p className="mt-2 text-xs leading-relaxed text-text-muted">
+                  {t.rich("trades.dev", { strong: (chunks) => <strong className="font-medium text-text">{chunks}</strong> })}
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Link
+                href="/marche?onglet=echanges"
+                onClick={close}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-shu-btn px-5 text-sm font-bold text-washi-paper transition-colors hover:bg-shu"
+              >
+                {t("trades.cta")} <span aria-hidden="true">→</span>
+              </Link>
+              {contactUrl && (
+                <a
+                  href={contactUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-bg/60 px-5 text-sm font-bold transition-colors hover:bg-surface-2"
+                >
+                  {t("trades.contact")} <span aria-hidden="true">↗</span>
+                </a>
+              )}
             </div>
           </section>
 
