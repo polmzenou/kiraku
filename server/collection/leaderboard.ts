@@ -23,7 +23,7 @@ const loadTopCollectors = unstable_cache(
     const rows = await prisma.$queryRaw<Omit<Collector, "rank">[]>`
       SELECT u."username", u."image", u."isGuest",
         COUNT(DISTINCT uc."cardId")::int AS "uniqueCards",
-        (COUNT(DISTINCT uc."cardId") FILTER (WHERE c."rarity" = 'MYTHIC'))::int AS "mythics"
+        (COUNT(DISTINCT uc."cardId") FILTER (WHERE c."rarityKey" = 'MYTHIC'))::int AS "mythics"
       FROM "UserCard" uc
       JOIN "User" u ON u."id" = uc."ownerId"
       JOIN "Card" c ON c."id" = uc."cardId"
