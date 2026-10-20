@@ -91,7 +91,7 @@ export default async function AdminLotsPage({ searchParams }: PageProps<"/[local
           <h3 className="font-title text-lg font-bold">{tSend("history")}</h3>
           <ul className="flex flex-col gap-2 text-sm">
             {broadcasts.map((b) => (
-              <li key={b.id} className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3 sm:flex-row sm:items-center sm:justify-between">
+              <li key={b.id} className="flex flex-col gap-2 lacquer rounded-card p-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-col gap-0.5">
                   <p className="font-bold">
                     {lotName(b.lotId)} · {tSend(`audiences.${b.audience === "ALL" ? "ALL" : "REGISTERED"}`)}
@@ -105,7 +105,7 @@ export default async function AdminLotsPage({ searchParams }: PageProps<"/[local
               </li>
             ))}
             {recentGrants.map((g) => (
-              <li key={g.id} className="rounded-lg border border-border bg-surface p-3">
+              <li key={g.id} className="lacquer rounded-card p-3">
                 <p>
                   <span className="font-bold">{lotName(g.lotId)}</span> →{" "}
                   <Link href={`/admin/utilisateurs/${g.user.id}`} className="text-link underline underline-offset-4">
@@ -124,7 +124,7 @@ export default async function AdminLotsPage({ searchParams }: PageProps<"/[local
 
       <ul className="flex flex-col gap-2">
         {lots.map((lot) => (
-          <li key={lot.id} className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3 sm:flex-row sm:items-center sm:justify-between">
+          <li key={lot.id} className="flex flex-col gap-2 lacquer rounded-card p-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 flex-col gap-1">
               <p className="font-bold">
                 {localize(parseLocalized(lot.name), locale)}

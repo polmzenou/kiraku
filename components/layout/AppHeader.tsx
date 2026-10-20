@@ -1,15 +1,20 @@
 import { getTranslations } from "next-intl/server";
-import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import type { Theme } from "@/lib/theme";
 import { logout } from "@/server/actions/account";
+import { isFrozen } from "@/lib/account/deletion";
 import { getBoosterRules } from "@/server/boosters/rules";
+import { unreadChatCount, visibleSince } from "@/server/chat/queries";
+import { ablyEnabled } from "@/server/env";
 import { boosterStateFrom } from "@/server/boosters/state";
 import { getSetting } from "@/server/settings";
 import { unreadNotifications } from "@/server/social/queries";
 import { getCurrentUser } from "@/server/user";
+import { ChatDock, ChatHeaderButton } from "../chat/ChatDock";
 import { SealMark } from "../SealMark";
 import { NotificationBell } from "../social/NotificationBell";
+import { PlayerAvatar } from "../social/PlayerAvatar";
+import { iconButtonClasses } from "../ui/IconButton";
 import { MobileMenu } from "./MobileMenu";
 import { NavLinks } from "./NavLinks";
 import { StockEnso } from "./StockEnso";
@@ -26,8 +31,6 @@ export async function AppHeader({ theme }: { theme: Theme }) {
   const isAdmin = user?.role === "ADMIN";
   const signedIn = Boolean(user && !user.isGuest);
   const authLabel = signedIn ? t("account.logout") : t("auth.login.title");
-  const authClasses =
-    "size-11 shrink-0 items-center justify-center rounded-full border border-shu/40 bg-shu/10 text-shu transition-colors hover:bg-shu/20";
   const [unread, pollSeconds, casino, boosterRules] = await Promise.all([
     user ? unreadNotifications(user.id) : 0,
     user ? getSetting("notifications.pollSeconds") : 0,
@@ -36,10 +39,24 @@ export async function AppHeader({ theme }: { theme: Theme }) {
   ]);
   const state = user && boosterRules ? boosterStateFrom(user, boosterRules) : null;
   const features = { casino };
+  // Chat entre amis : comptes inscrits, actifs, avec le social et le chat ouverts
+  const chatUser = user && !user.isGuest && !user.bannedAt && !isFrozen(user) ? user : null;
+  const [socialOn, chatOn] = chatUser ? await Promise.all([getSetting("social.enabled"), getSetting("chat.enabled")]) : [false, false];
+  const chat =
+    chatUser && socialOn && chatOn
+      ? await Promise.all([getSetting("chat.retentionHours"), getSetting("chat.pollSeconds"), getSetting("chat.maxLength")]).then(
+          async ([retentionHours, chatPoll, maxLength]) => ({
+            initialUnread: await unreadChatCount(chatUser.id, visibleSince(retentionHours)),
+            pollSeconds: chatPoll,
+            maxLength,
+            retentionHours,
+          }),
+        )
+      : null;
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-border bg-bg/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-bg/85">
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-bg/95 pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center gap-2 px-4 md:h-16 md:gap-4">
           <Link href="/" aria-label={t("nav.home")} className="flex min-h-11 min-w-0 shrink-0 items-center gap-2">
             <SealMark glyphs="気楽" size={32} />
@@ -51,33 +68,40 @@ export async function AppHeader({ theme }: { theme: Theme }) {
           </nav>
 
           <div className="ml-auto flex min-w-0 items-center gap-1.5 md:gap-2">
-            {state && (
-              <StockEnso
-                stock={state.stock}
-                max={state.max}
-                nextAt={state.nextAt}
-                intervalMs={state.intervalMs}
-                serverNow={state.serverNow}
-              />
-            )}
+            {/* Capsule de statut : stock ensō | solde Zeni, séparés par un filet */}
             {user && (
-              <Link
-                href="/compte/historique"
-                className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-border bg-surface px-3.5 text-sm font-bold"
-                aria-label={t("header.balance", { amount: user.coins })}
-                title={t("header.balance", { amount: user.coins })}
-              >
-                <ZeniCoin size={16} />
-                <span aria-hidden="true" className="whitespace-nowrap tabular-nums">
-                  {t("common.number", { value: user.coins })}
-                </span>
-              </Link>
+              <div className="lacquer flex min-w-0 shrink-0 items-center rounded-pill">
+                {state && (
+                  <>
+                    <StockEnso
+                      stock={state.stock}
+                      max={state.max}
+                      nextAt={state.nextAt}
+                      intervalMs={state.intervalMs}
+                      serverNow={state.serverNow}
+                    />
+                    <span aria-hidden="true" className="h-4 w-px bg-border" />
+                  </>
+                )}
+                <Link
+                  href="/compte/historique"
+                  className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-r-pill pr-3.5 text-sm font-bold ${state ? "pl-2.5" : "rounded-l-pill pl-3.5"}`}
+                  aria-label={t("header.balance", { amount: user.coins })}
+                  title={t("header.balance", { amount: user.coins })}
+                >
+                  <ZeniCoin size={16} />
+                  <span aria-hidden="true" className="whitespace-nowrap tabular-nums">
+                    {t("common.number", { value: user.coins })}
+                  </span>
+                </Link>
+              </div>
             )}
+            {chat && <ChatHeaderButton />}
             {user && <NotificationBell initial={unread} serverNow={new Date().toISOString()} pollSeconds={pollSeconds} />}
             {isAdmin && (
               <Link
                 href="/admin"
-                className="hidden min-h-11 items-center rounded-button px-2 text-sm text-text-muted hover:text-text lg:inline-flex"
+                className="hidden min-h-11 items-center rounded-pill px-3 text-sm text-text-muted hover:bg-surface-2 hover:text-text lg:inline-flex"
               >
                 {t("nav.admin")}
               </Link>
@@ -87,28 +111,19 @@ export async function AppHeader({ theme }: { theme: Theme }) {
                 href={accountHref}
                 aria-label={t("nav.account")}
                 title={t("nav.account")}
-                className="hidden size-11 shrink-0 items-center justify-center lg:inline-flex"
+                className="hidden size-11 shrink-0 items-center justify-center rounded-full lg:inline-flex"
               >
-                {user.image ? (
-                  <Image src={user.image} alt="" width={32} height={32} crossOrigin="anonymous" referrerPolicy="no-referrer" className="rounded-full" />
-                ) : (
-                  <span
-                    aria-hidden="true"
-                    className="flex size-8 items-center justify-center rounded-full border border-border bg-surface-2 font-title text-sm font-bold"
-                  >
-                    {user.username.charAt(0).toUpperCase()}
-                  </span>
-                )}
+                <PlayerAvatar username={user.username} image={user.image} size={34} />
               </Link>
             )}
             {signedIn ? (
               <form action={logout} className="hidden shrink-0 lg:block">
-                <button type="submit" aria-label={authLabel} title={authLabel} className={`inline-flex ${authClasses}`}>
+                <button type="submit" aria-label={authLabel} title={authLabel} className={iconButtonClasses("shu")}>
                   <AuthIcon signOut />
                 </button>
               </form>
             ) : (
-              <Link href="/connexion" aria-label={authLabel} title={authLabel} className={`hidden lg:inline-flex ${authClasses}`}>
+              <Link href="/connexion" aria-label={authLabel} title={authLabel} className={iconButtonClasses("shu", "max-lg:hidden")}>
                 <AuthIcon />
               </Link>
             )}
@@ -116,6 +131,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
         </div>
       </header>
       <MobileMenu theme={theme} isAdmin={isAdmin} accountHref={accountHref} signedIn={signedIn} features={features} />
+      {chat && <ChatDock realtime={ablyEnabled} {...chat} />}
     </>
   );
 }

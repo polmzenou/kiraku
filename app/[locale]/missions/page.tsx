@@ -7,7 +7,7 @@ import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { localize, localizedSchema } from "@/lib/boosters/types";
-import { RARITY_SEAL } from "@/lib/catalog/rarity";
+import { getRaritySeals } from "@/server/catalog/rarities";
 import { MISSION_PERIODS, shownProgress, type MissionMetric } from "@/lib/economy/missions";
 import { prisma } from "@/server/db";
 import { lotViews } from "@/server/economy/lot-view";
@@ -33,6 +33,7 @@ const METRIC_KANJI: Record<MissionMetric, string> = {
 
 /** Missions du jour et de la semaine : progression, récompense, bouton Réclamer. */
 export default async function MissionsPage() {
+  const RARITY_SEAL = await getRaritySeals();
   const [t, tRarity, user, locale] = await Promise.all([
     getTranslations("economy.missions"),
     getTranslations("rarity"),
@@ -66,9 +67,9 @@ export default async function MissionsPage() {
     <PageShell>
       <SectionTitle level={1} kanji="任務" title={t("title")} subtitle={t("intro")} />
 
-      {!enabled && <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">{t("disabled")}</p>}
+      {!enabled && <p className="lacquer rounded-card p-6 text-center text-text-muted">{t("disabled")}</p>}
       {enabled && missions.length === 0 && (
-        <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">{t("empty")}</p>
+        <p className="lacquer rounded-card p-6 text-center text-text-muted">{t("empty")}</p>
       )}
 
       {missions.length > 0 && (
@@ -77,13 +78,13 @@ export default async function MissionsPage() {
             const list = missions.filter((m) => m.period === period);
             const done = list.filter((m) => m.state === "CLAIMED").length;
             return (
-              <div key={period} className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-3">
+              <div key={period} className="flex flex-col gap-1 lacquer rounded-card p-3">
                 <dt className="text-xs text-text-muted">{t(`period.${period}`)}</dt>
                 <dd className="text-lg font-bold tabular-nums">{t("claimedCount", { done, total: list.length })}</dd>
               </div>
             );
           })}
-          <div className={`flex flex-col gap-1 rounded-lg border p-3 ${claimable > 0 ? "border-kin bg-kin/10" : "border-border bg-surface"}`}>
+          <div className={`flex flex-col gap-1 rounded-card border p-3 ${claimable > 0 ? "border-kin bg-kin/10" : "border-border bg-surface"}`}>
             <dt className="text-xs text-text-muted">{t("ready")}</dt>
             <dd className={`text-lg font-bold tabular-nums ${claimable > 0 ? "text-kin" : ""}`}>{claimable}</dd>
           </div>
@@ -118,7 +119,7 @@ export default async function MissionsPage() {
                 return (
                   <li
                     key={m.id}
-                    className={`relative flex gap-3 rounded-xl border bg-surface p-4 transition-colors ${
+                    className={`relative flex gap-3 rounded-card border bg-surface p-4 transition-colors ${
                       ready
                         ? "border-kin shadow-[0_0_0_1px_var(--color-kin),0_0_28px_-10px_var(--color-kin)]"
                         : claimed
@@ -129,7 +130,7 @@ export default async function MissionsPage() {
                     <span
                       aria-hidden="true"
                       lang="ja"
-                      className={`flex size-12 shrink-0 items-center justify-center rounded-lg border font-seal text-2xl ${
+                      className={`flex size-12 shrink-0 items-center justify-center rounded-control border font-seal text-2xl ${
                         ready ? "border-kin bg-kin/15 text-kin" : "border-border bg-surface-2 text-shu"
                       }`}
                     >

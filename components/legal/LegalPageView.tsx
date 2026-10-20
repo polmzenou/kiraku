@@ -51,7 +51,7 @@ export async function LegalPageView({ slug, locale, version }: { slug: LegalSlug
             )}
           </p>
           {doc.fallback && (
-            <p lang="en" className="rounded-lg border border-border bg-surface p-3 text-sm text-text-muted">
+            <p lang="en" className="lacquer rounded-card p-3 text-sm text-text-muted">
               {t("fallbackNotice")}
             </p>
           )}
@@ -80,7 +80,7 @@ export async function LegalPageView({ slug, locale, version }: { slug: LegalSlug
                 <Link
                   href={v === versions[0] ? `/${slug}` : `/${slug}?v=${v}`}
                   aria-current={doc?.version === v ? "page" : undefined}
-                  className="inline-flex min-h-11 items-center rounded-button border border-border bg-surface-2 px-3 aria-[current=page]:border-shu aria-[current=page]:text-shu"
+                  className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface-2 px-3 aria-[current=page]:border-shu aria-[current=page]:text-shu"
                 >
                   {t("versionShort", { version: v })}
                 </Link>

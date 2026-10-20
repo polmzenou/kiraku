@@ -7,13 +7,15 @@ import { Fuda } from "../fuda/Fuda";
 import { CardBack as FudaBack } from "../fuda/CardBack";
 import { RarityFx } from "./RarityFx";
 import { CardAura } from "./CardAura";
+import { resolveAppearance } from "@/lib/catalog/appearance";
+import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 
 /** Étiquette vermillon tamponnée, légèrement penchée, sur une carte jamais obtenue. */
 export function NewStamp({ delay = 0, animated = true }: { delay?: number; animated?: boolean }) {
   const t = useTranslations("opening");
   return (
     <m.span
-      className="absolute -top-2 -right-2 z-40 inline-flex min-h-7 items-center justify-center whitespace-nowrap rounded-[4px] bg-shu-btn px-2 py-1 text-xs font-bold leading-none text-washi-paper shadow-paper"
+      className="absolute -top-2 -right-2 z-40 inline-flex min-h-7 items-center justify-center whitespace-nowrap rounded-[4px] bg-shu-btn px-2 py-1 text-xs font-bold leading-none text-washi-paper"
       initial={animated ? { opacity: 0, scale: 2.2, rotate: -28 } : false}
       animate={{ opacity: 1, scale: 1, rotate: -12 }}
       transition={{ delay, type: "spring", stiffness: 520, damping: 18 }}
@@ -28,7 +30,7 @@ export function FeaturedSeal({ delay = 0, animated = true }: { delay?: number; a
   const t = useTranslations("opening");
   return (
     <m.span
-      className="absolute -top-2 -left-2 z-40 flex h-7 items-center gap-1 rounded-full bg-kin px-2 text-[11px] font-bold text-sumi shadow-paper"
+      className="absolute -top-2 -left-2 z-40 flex h-7 items-center gap-1 rounded-full bg-kin px-2 text-[11px] font-bold text-sumi"
       initial={animated ? { opacity: 0, scale: 1.8 } : false}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay, type: "spring", stiffness: 420, damping: 20 }}
@@ -66,9 +68,11 @@ type Props = {
  * une Légendaire+ s'illumine d'or ; à l'endroit, l'effet de sa rareté se joue autour d'elle.
  */
 export function FlipCard({ card, phase, size, reduced, compactFx = false }: Props) {
+  const definitions = useRarityDefinitions();
+  const visual = resolveAppearance(definitions.find((r) => r.key === card.rarity)?.appearance, card.appearance);
   const front = phase === "front";
   const charging = phase === "charging";
-  const rank = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC"].indexOf(card.rarity);
+  const rank = definitions.findIndex((r) => r.key === card.rarity);
 
   if (reduced) {
     return (
@@ -89,6 +93,18 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
     );
   }
 
+  if (visual.reveal !== "flip") {
+    return <div className="relative isolate">
+      <CardAura rarity={front ? card.rarity : undefined} compact={compactFx} />
+      {front ? <m.div className="relative z-10" initial={{ opacity: 0, scale: visual.reveal === "zoom" ? 0.6 : 1 }}
+        animate={{ opacity: 1, scale: 1 }} transition={{ duration: visual.duration, delay: visual.delay, ease: visual.easing }}>
+        <Fuda card={card} series={card.series} size={size} />
+      </m.div> : <div className="relative aspect-[5/7] w-full [transform:rotateY(180deg)]"><CardBack static /></div>}
+      {front && card.isNew && <NewStamp delay={visual.delay + visual.duration} />}
+      {front && card.featured && <FeaturedSeal delay={visual.delay + visual.duration} />}
+    </div>;
+  }
+
   return (
     <div className="relative isolate [perspective:1100px]">
       <CardAura rarity={front ? card.rarity : undefined} compact={compactFx} />
@@ -98,7 +114,7 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
           className="relative z-10 [transform-style:preserve-3d]"
           initial={false}
           animate={front ? { rotateY: 0, scale: [1.08, 1] } : { rotateY: 180, scale: charging ? 1.04 : 1 }}
-          transition={front ? { rotateY: { duration: 0.5, ease: [0.2, 0.8, 0.2, 1] }, scale: { duration: 0.6 } } : { duration: 0.3 }}
+          transition={front ? { duration: visual.duration, delay: visual.delay, ease: visual.easing } : { duration: 0.3 }}
         >
           <div aria-hidden={!front} inert={!front} className="[backface-visibility:hidden]">
             <Fuda card={card} series={card.series} size={size} />

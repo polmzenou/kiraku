@@ -10,6 +10,7 @@ export function notificationSeal(type: NotificationType): string {
   if (type === "GIFT_RECEIVED") return "贈";
   if (type === "OUTBID" || type.startsWith("AUCTION_")) return "競";
   if (type === "BATTLE_INVITE") return "戦";
+  if (type.startsWith("TRADE_") || type.startsWith("LISTING_")) return "換";
   return type === "REFERRAL_QUALIFIED" ? "招" : "友";
 }
 

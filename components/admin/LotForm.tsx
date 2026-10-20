@@ -1,9 +1,11 @@
 "use client";
 
+import { useRarities } from "@/lib/catalog/use-rarities";
+
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { lotInputSchema, MAX_LOT_ITEMS, MAX_LOT_QUANTITY, MAX_LOT_ZENI, type LotInput, type LotItemInput } from "@/lib/economy/lots";
 import { searchFeaturedCards, type FeaturedCandidate } from "@/server/actions/admin-boosters";
 import { saveLotAction } from "@/server/actions/admin-economy";
@@ -24,6 +26,7 @@ export function LotForm({
   boosterTypes: Option[];
   cardNames: Record<string, string>;
 }) {
+  const RARITIES = useRarities();
   const t = useTranslations("admin.economy");
   const tRarity = useTranslations("rarity");
   const router = useRouter();
@@ -64,7 +67,7 @@ export function LotForm({
 
   return (
     <form
-      className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4"
+      className="flex flex-col gap-4 lacquer rounded-card p-4"
       onSubmit={(e) => {
         e.preventDefault();
         save();
@@ -82,7 +85,7 @@ export function LotForm({
         <legend className="text-sm font-bold">{t("lotItems")}</legend>
         {draft.items.length === 0 && <p className="text-sm text-text-muted">{t("lotItemsEmpty")}</p>}
         {draft.items.map((item, i) => (
-          <div key={i} className="grid items-end gap-2 rounded-button border border-border p-3 sm:grid-cols-[1fr_8rem_auto]">
+          <div key={i} className="grid items-end gap-2 rounded-control border border-border p-3 sm:grid-cols-[1fr_8rem_auto]">
             {item.kind === "BOOSTER" && (
               <SelectField
                 label={kindLabel("BOOSTER")}
@@ -153,7 +156,7 @@ export function LotForm({
                   <li key={c.id}>
                     <button
                       type="button"
-                      className="flex min-h-11 w-full items-center justify-between gap-2 rounded-button border border-border px-3 text-left text-sm hover:border-shu"
+                      className="flex min-h-11 w-full items-center justify-between gap-2 rounded-control border border-border px-3 text-left text-sm hover:border-shu"
                       onClick={() => {
                         setNames({ ...names, [c.id]: c.name });
                         addItem({ kind: "CARD", cardId: c.id, quantity: 1 });
@@ -173,7 +176,7 @@ export function LotForm({
       </fieldset>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" variant="shu" disabled={pending || !valid}>
+        <Button type="submit" variant="primary" disabled={pending || !valid}>
           {pending ? t("saving") : t("save")}
         </Button>
         {draft.id && (

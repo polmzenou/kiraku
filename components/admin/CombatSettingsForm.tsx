@@ -1,10 +1,11 @@
 "use client";
 
+
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { TECHNIQUES } from "@/lib/battle/types";
-import { RARITIES } from "@/lib/catalog/rarity";
+
 import { COMBAT_SETTING_KEYS, combatSettingsSchema, type CombatSettings } from "@/lib/settings/combat-form";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { updateCombatSettings } from "@/server/actions/admin-settings";
@@ -65,7 +66,7 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
       }
     });
 
-  const box = "grid gap-4 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2";
+  const box = "grid gap-4 lacquer rounded-card p-4 sm:grid-cols-2";
   return (
     <form
       className="flex flex-col gap-6"
@@ -74,7 +75,7 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
         save();
       }}
     >
-      <fieldset className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4">
+      <fieldset className="flex flex-col gap-2 lacquer rounded-card p-4">
         <legend className="px-1 font-bold">{t("switches")}</legend>
         <Toggle label={key("enabled")} checked={draft["battle.enabled"]} onChange={(v) => set({ ...draft, "battle.enabled": v })} />
       </fieldset>
@@ -107,7 +108,7 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
 
       <fieldset className={box}>
         <legend className="px-1 font-bold">{t("keywordsByRarity")}</legend>
-        {group("battle.keywordsByRarity", (r) => tRarity(r as (typeof RARITIES)[number]))}
+        {group("battle.keywordsByRarity", (r) => tRarity(r))}
       </fieldset>
 
       <fieldset className={box}>
@@ -147,7 +148,7 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
 
       {!valid && <p className="text-sm text-shu">{t("invalid")}</p>}
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" variant="shu" disabled={pending || !valid || changed.length === 0}>
+        <Button type="submit" variant="primary" disabled={pending || !valid || changed.length === 0}>
           {pending ? t("saving") : t("save")}
         </Button>
         <FormMessage message={message} />

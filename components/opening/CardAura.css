@@ -17,6 +17,8 @@
 .card-aura-fx[data-rarity="EPIC"] { --card-aura-color: var(--color-rarity-epic); }
 .card-aura-fx[data-rarity="LEGENDARY"] { --card-aura-color: var(--color-rarity-legendary); }
 .card-aura-fx[data-rarity="MYTHIC"] { --card-aura-color: var(--color-rarity-mythic); }
+.card-aura-fx[data-rarity="AR"] { --card-aura-color: var(--color-rarity-ar); }
+.card-aura-fx[data-rarity="GOLD"] { --card-aura-color: var(--color-rarity-gold); }
 
 .card-aura-glow {
   position: absolute;

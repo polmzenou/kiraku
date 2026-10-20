@@ -7,7 +7,8 @@ import { useBoosterCountdown, useFormatCountdown } from "../boosters/useBoosterC
 type Props = { stock: number; max: number; nextAt: number | null; intervalMs: number; serverNow: number };
 
 /**
- * Stock de boosters : un ensō (円相) qui se referme pendant le délai, « 7/10 » au centre.
+ * Stock de boosters : un ensō (円相) qui se referme pendant le délai, suivi de « 7/10 ».
+ * Il occupe la moitié gauche de la capsule de statut de l'en-tête.
  * L'anneau est fait de deux demi-cercles qui tournent : uniquement des transform.
  */
 export function StockEnso({ stock, max, nextAt, intervalMs, serverNow }: Props) {
@@ -25,24 +26,26 @@ export function StockEnso({ stock, max, nextAt, intervalMs, serverNow }: Props) 
       href="/"
       aria-label={label}
       title={label}
-      className="relative inline-flex size-11 shrink-0 items-center justify-center rounded-full"
+      className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-l-pill pr-2.5 pl-3 text-sm font-bold tabular-nums"
     >
-      <span aria-hidden="true" className="absolute inset-[3px] rounded-full border-[3px] border-border" />
-      {/* Moitié droite : les 180 premiers degrés */}
-      <span aria-hidden="true" className="absolute inset-[3px] [clip-path:inset(0_0_0_50%)]">
-        <span
-          className={`absolute inset-0 rounded-full border-[3px] [clip-path:inset(0_50%_0_0)] ${full ? "border-kin" : "border-shu"}`}
-          style={{ transform: `rotate(${first}deg)` }}
-        />
+      <span aria-hidden="true" className="relative size-[18px] shrink-0 md:size-[22px]">
+        <span className="absolute inset-0 rounded-full border-[3px] border-border" />
+        {/* Moitié droite : les 180 premiers degrés */}
+        <span className="absolute inset-0 [clip-path:inset(0_0_0_50%)]">
+          <span
+            className={`absolute inset-0 rounded-full border-[3px] [clip-path:inset(0_50%_0_0)] ${full ? "border-kin" : "border-shu"}`}
+            style={{ transform: `rotate(${first}deg)` }}
+          />
+        </span>
+        {/* Moitié gauche : les 180 suivants */}
+        <span className="absolute inset-0 [clip-path:inset(0_50%_0_0)]">
+          <span
+            className={`absolute inset-0 rounded-full border-[3px] [clip-path:inset(0_0_0_50%)] ${full ? "border-kin" : "border-shu"}`}
+            style={{ transform: `rotate(${second}deg)` }}
+          />
+        </span>
       </span>
-      {/* Moitié gauche : les 180 suivants */}
-      <span aria-hidden="true" className="absolute inset-[3px] [clip-path:inset(0_50%_0_0)]">
-        <span
-          className={`absolute inset-0 rounded-full border-[3px] [clip-path:inset(0_0_0_50%)] ${full ? "border-kin" : "border-shu"}`}
-          style={{ transform: `rotate(${second}deg)` }}
-        />
-      </span>
-      <span aria-hidden="true" className="relative text-[10px] font-bold leading-none tabular-nums">
+      <span aria-hidden="true">
         {stock}/{max}
       </span>
     </Link>

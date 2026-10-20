@@ -88,7 +88,7 @@ export function RegisterForm({ formToken, honeypot }: { formToken: string; honey
             required
             aria-invalid={state.fields?.terms ? true : undefined}
             aria-describedby={state.fields?.terms ? "terms-error" : undefined}
-            className="mt-0.5 size-6 shrink-0 accent-shu-btn"
+            className="mt-0.5 choice shrink-0 "
           />
           <span>
             {t.rich("register.terms", {
@@ -111,7 +111,7 @@ export function RegisterForm({ formToken, honeypot }: { formToken: string; honey
           </p>
         )}
       </div>
-      <Button type="submit" variant="shu" disabled={pending} className="mt-2 min-h-12 text-base">
+      <Button type="submit" variant="primary" disabled={pending} className="mt-2 min-h-12 text-base">
         {pending ? t("pending") : t("register.submit")}
       </Button>
     </form>

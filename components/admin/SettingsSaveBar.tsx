@@ -49,7 +49,7 @@ export function SettingsSaveBar({
         </p>
       )}
       {reviewing && valid && changedLabels.length > 0 ? (
-        <section className="flex flex-col gap-3 rounded-lg border border-shu bg-surface p-4" aria-live="polite">
+        <section className="flex flex-col gap-3 rounded-card border border-shu bg-surface p-4" aria-live="polite">
           <h3 className="font-bold">{t("confirmTitle")}</h3>
           <ul className="list-inside list-disc text-sm">
             {changedLabels.map((label) => (
@@ -60,7 +60,7 @@ export function SettingsSaveBar({
             <Button type="button" onClick={() => setReviewing(false)} disabled={pending}>
               {t("cancel")}
             </Button>
-            <Button type="button" variant="shu" onClick={confirm} disabled={pending}>
+            <Button type="button" variant="primary" onClick={confirm} disabled={pending}>
               {t("confirm")}
             </Button>
           </div>
@@ -68,7 +68,7 @@ export function SettingsSaveBar({
       ) : (
         <Button
           type="button"
-          variant="shu"
+          variant="primary"
           className="self-start"
           disabled={!valid || changedLabels.length === 0 || pending}
           onClick={() => {

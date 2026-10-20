@@ -1,3 +1,5 @@
+
+import { getRarities, getRaritySeals } from "@/server/catalog/rarities";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { BoosterArt } from "@/components/boosters/BoosterArt";
 import { RecomputePoolsButton, ToggleTypeButton } from "@/components/admin/BoosterTypeActions";
@@ -6,7 +8,6 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
 import { ROTATING_FAMILIES } from "@/lib/boosters/rotation";
 import { BOOSTER_FAMILIES, localize, type BoosterTypeView } from "@/lib/boosters/types";
-import { RARITIES, RARITY_SEAL } from "@/lib/catalog/rarity";
 import { requireAdmin } from "@/server/admin";
 import { getBoosterOffers, getBoosterRotation } from "@/server/boosters/pools";
 import { getSetting } from "@/server/settings";
@@ -21,6 +22,8 @@ function hiddenReason(type: BoosterTypeView, size: number, minPool: number, now:
 }
 
 export default async function AdminBoosterTypesPage() {
+  const RARITIES = await getRarities();
+  const RARITY_SEAL = await getRaritySeals();
   await requireAdmin();
   const [t, tRotation, tBoosters, format, locale, offers, rotation, minPool, timeZone] = await Promise.all([
     getTranslations("admin.types"),
@@ -43,7 +46,7 @@ export default async function AdminBoosterTypesPage() {
         <p className="max-w-prose text-sm text-text-muted">{t("intro", { min: minPool })}</p>
         <div className="flex flex-wrap gap-2">
           <RecomputePoolsButton />
-          <ButtonLink href="/admin/bannieres/nouvelle" variant="shu">
+          <ButtonLink href="/admin/bannieres/nouvelle" variant="primary">
             {t("newBanner")}
           </ButtonLink>
         </div>
@@ -90,7 +93,7 @@ export default async function AdminBoosterTypesPage() {
                 const reason = turn === "resting" ? "rotation" : availability === "hidden" ? hiddenReason(type, size, min, now) : null;
                 const name = localize(type.name, locale);
                 return (
-                  <li key={type.slug} className="flex gap-3 rounded-lg border border-border bg-surface p-3">
+                  <li key={type.slug} className="flex gap-3 lacquer rounded-card p-3">
                     <div className="w-12 shrink-0">
                       <BoosterArt shape={type.shape} theme={type.theme} emblem={type.emblem} name="" contents="" compact />
                     </div>

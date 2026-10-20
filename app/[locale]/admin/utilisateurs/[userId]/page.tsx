@@ -1,3 +1,4 @@
+import { DeleteUserButton } from "@/components/admin/UserDeletion";
 import { notFound } from "next/navigation";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { DataRequestActions } from "@/components/admin/DataRequestActions";
@@ -10,8 +11,7 @@ import { requireAdmin } from "@/server/admin";
 import { adminCardById, getAdminUser, getAdminUserCards } from "@/server/admin/users";
 import { readBannerPity } from "@/server/boosters/open-core";
 import { getBoosterRules } from "@/server/boosters/rules";
-
-const inputClass = "min-h-11 w-full min-w-0 rounded-button border border-border bg-surface-2 px-3 text-base";
+import { inputClass } from "@/components/ui/Field";
 
 export default async function AdminUserPage({ params, searchParams }: PageProps<"/[locale]/admin/utilisateurs/[userId]">) {
   const admin = await requireAdmin();
@@ -52,13 +52,13 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
         <Link href={`/u/${user.username}`} className={buttonClasses()}>{t("viewProfile")}</Link>
       </header>
       <dl className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        {metrics.map((m) => <div key={m.label} className="rounded-lg border border-border bg-surface p-4"><dt className="text-xs text-text-muted">{t(m.label)}</dt><dd className="mt-1 text-xl font-bold tabular-nums">{m.value}</dd></div>)}
+        {metrics.map((m) => <div key={m.label} className="lacquer rounded-card p-4"><dt className="text-xs text-text-muted">{t(m.label)}</dt><dd className="mt-1 text-xl font-bold tabular-nums">{m.value}</dd></div>)}
       </dl>
       <UserEditor userId={userId} account={{ username: user.username, role: user.role, banned: !!user.bannedAt, profileVisibility: user.profileVisibility, showCollection: user.showCollection }} self={admin.id === userId}
         coins={user.coins} stats={{ boosterStock: stock.stock, rankPoints: user.rankPoints, pityCount: user.pityCount, standardCount: user.standardCount }}
         boosters={boosterTypes.map((b) => ({ ...b, pity: pity[b.id] ?? 0 }))} discoveries={discoveries} catalogTotal={catalogTotal} ownedCatalogCards={ownedCatalogCards} selectedCard={selectedCard} sessions={user._count.sessions} />
 
-      <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+      <section className="flex flex-col gap-3 lacquer rounded-card p-4">
         <h3 className="font-title text-xl font-bold">{t("gdprTitle")}</h3>
         <p className="text-sm text-text-muted">
           {user.anonymizedAt
@@ -72,6 +72,14 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
         {!user.anonymizedAt && admin.id !== userId && (
           <DataRequestActions userId={userId} username={user.username} showCancel={user.deletionRequestedAt !== null} />
         )}
+        {admin.id !== userId && user.role !== "ADMIN" && (
+          <div className="flex flex-col gap-2 border-t border-border pt-3">
+            <p className="text-sm text-text-muted">{t("deletion.hint")}</p>
+            <div>
+              <DeleteUserButton id={userId} username={user.username} />
+            </div>
+          </div>
+        )}
       </section>
 
       <section id="user-collection" className="flex scroll-mt-8 flex-col gap-3">
@@ -81,7 +89,7 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
           <input id="user-collection-search" name="cardQuery" defaultValue={cardParams.query} maxLength={100} className={inputClass} placeholder={t("filterCollection")} />
           <Button type="submit">{t("searchButton")}</Button>
         </form>
-        {collection.cards.length === 0 ? <p className="text-sm text-text-muted">{t("collectionEmpty")}</p> : <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+        {collection.cards.length === 0 ? <p className="text-sm text-text-muted">{t("collectionEmpty")}</p> : <div className="overflow-x-auto lacquer rounded-card">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-border bg-surface-2"><tr>{(["card", "rarity", "copies", "discovered", "manage"] as const).map((k) => <th key={k} scope="col" className="p-3">{t(k)}</th>)}</tr></thead>
             <tbody>{collection.cards.map((c) => <tr key={c.id} className="border-b border-border last:border-0">
@@ -101,13 +109,13 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <section className="flex flex-col gap-3">
           <h3 className="font-title text-xl font-bold">{t("ledger")}</h3>
-          {ledger.length === 0 ? <p className="text-sm text-text-muted">{t("historyEmpty")}</p> : <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
+          {ledger.length === 0 ? <p className="text-sm text-text-muted">{t("historyEmpty")}</p> : <ul className="divide-y divide-border lacquer rounded-card">
             {ledger.map((entry) => <li key={entry.id} className="flex items-center justify-between gap-3 p-3 text-sm"><div><p>{reason(entry.reason)}</p><time className="text-xs text-text-muted">{format.dateTime(entry.createdAt, { dateStyle: "short", timeStyle: "short" })}</time></div><div className="text-right tabular-nums"><p className={entry.amount >= 0 ? "font-bold text-kin" : "font-bold text-shu"}>{entry.amount > 0 ? "+" : ""}{format.number(entry.amount)}</p>{entry.balanceAfter !== null && <p className="text-xs text-text-muted">{t("balance")} {format.number(entry.balanceAfter)}</p>}</div></li>)}
           </ul>}
         </section>
         <section className="flex flex-col gap-3">
           <h3 className="font-title text-xl font-bold">{t("recentOpenings")}</h3>
-          {openings.length === 0 ? <p className="text-sm text-text-muted">{t("historyEmpty")}</p> : <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
+          {openings.length === 0 ? <p className="text-sm text-text-muted">{t("historyEmpty")}</p> : <ul className="divide-y divide-border lacquer rounded-card">
             {openings.map((opening) => <li key={opening.id} className="flex items-center justify-between gap-3 p-3 text-sm"><div><p>{boosterTypes.find((b) => b.slug === opening.boosterSlug)?.name ?? opening.boosterSlug}{opening.divine ? ` · ${t("divine")}` : opening.golden ? ` · ${t("golden")}` : ""}</p><time className="text-xs text-text-muted">{format.dateTime(opening.createdAt, { dateStyle: "short", timeStyle: "short" })}</time></div><Link href={`/tirage/${opening.id}`} className="inline-flex min-h-11 items-center text-link underline underline-offset-4">{t("view")}</Link></li>)}
           </ul>}
         </section>
@@ -115,7 +123,7 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
       <section className="flex flex-col gap-3">
         <h3 className="font-title text-xl font-bold">{t("audit")}</h3>
         {logs.length === 0 ? <p className="text-sm text-text-muted">{t("historyEmpty")}</p> : <ul className="flex flex-col gap-2">
-          {logs.map((log) => <li key={log.id}><details className="rounded-lg border border-border bg-surface p-3 text-sm"><summary className="cursor-pointer"><strong>{actionNames.get(log.action) ?? log.action}</strong> · {log.admin.username} · {format.dateTime(log.createdAt, { dateStyle: "short", timeStyle: "short" })}</summary><div className="mt-3 grid gap-3 sm:grid-cols-2"><div><h4 className="mb-1 font-bold">{t("before")}</h4><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all text-xs text-text-muted">{JSON.stringify(log.before, null, 2)}</pre></div><div><h4 className="mb-1 font-bold">{t("after")}</h4><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all text-xs text-text-muted">{JSON.stringify(log.after, null, 2)}</pre></div></div></details></li>)}
+          {logs.map((log) => <li key={log.id}><details className="lacquer rounded-card p-3 text-sm"><summary className="cursor-pointer"><strong>{actionNames.get(log.action) ?? log.action}</strong> · {log.admin.username} · {format.dateTime(log.createdAt, { dateStyle: "short", timeStyle: "short" })}</summary><div className="mt-3 grid gap-3 sm:grid-cols-2"><div><h4 className="mb-1 font-bold">{t("before")}</h4><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all text-xs text-text-muted">{JSON.stringify(log.before, null, 2)}</pre></div><div><h4 className="mb-1 font-bold">{t("after")}</h4><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all text-xs text-text-muted">{JSON.stringify(log.after, null, 2)}</pre></div></div></details></li>)}
         </ul>}
       </section>
     </div>

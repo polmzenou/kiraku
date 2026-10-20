@@ -1,9 +1,11 @@
 "use client";
 
+import { useRarities } from "@/lib/catalog/use-rarities";
+
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { MISSION_METRICS, MISSION_PERIODS, missionInputSchema, type MissionInput } from "@/lib/economy/missions";
 import { saveMissionAction } from "@/server/actions/admin-economy";
 import { Button } from "../ui/Button";
@@ -23,6 +25,7 @@ const emptyMission = (lotId: string): MissionInput => ({
 
 /** Création ou modification d'une mission : période, ce qu'elle compte, objectif, lot. */
 export function MissionForm({ initial, lots }: { initial: MissionInput | null; lots: { id: string; name: string }[] }) {
+  const RARITIES = useRarities();
   const t = useTranslations("admin.economy");
   const tMetric = useTranslations("economy.missions.metric");
   const tPeriod = useTranslations("economy.missions.period");
@@ -57,7 +60,7 @@ export function MissionForm({ initial, lots }: { initial: MissionInput | null; l
 
   return (
     <form
-      className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4"
+      className="flex flex-col gap-4 lacquer rounded-card p-4"
       onSubmit={(e) => {
         e.preventDefault();
         save();
@@ -111,7 +114,7 @@ export function MissionForm({ initial, lots }: { initial: MissionInput | null; l
         <Toggle label={t("active")} checked={draft.active} onChange={(active) => update({ active })} />
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" variant="shu" disabled={pending || !valid}>
+        <Button type="submit" variant="primary" disabled={pending || !valid}>
           {pending ? t("saving") : t("save")}
         </Button>
         {draft.id && (

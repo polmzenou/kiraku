@@ -1,15 +1,35 @@
 {
   "v1Welcome": {
-    "badge": "Le grand départ · v1.0",
-    "title": "Bienvenue sur",
-    "titleAccent": "Kiraku-kun !",
-    "intro": "Ça y est, l'aventure prend une nouvelle dimension ! On est ravis de partager cette première version avec toi. Prêt à trouver tes prochaines cartes préférées ?",
-    "available": "À toi de jouer",
+    "badge": "Mise à jour · v1.5",
+    "title": "La v1.5 est là,",
+    "titleAccent": "et elle est chargée !",
+    "intro": "Chat entre amis, échanges au Marché, profils à ton image, nouvelles cartes Gold et AR… Cette mise à jour est notre plus grosse depuis le lancement. Voici le récap !",
+    "available": "Les nouveautés",
     "features": {
-      "boosters": { "title": "La magie des boosters", "body": "Ouvre tes boosters, découvre tes personnages favoris et fais grandir ta collection. La prochaine pépite t'attend !" },
-      "wiki": { "title": "Le wiki, ton allié", "body": "Explore les personnages, leurs raretés et leurs caractéristiques pour tout savoir sur les cartes que tu convoites." },
-      "shop": { "title": "Un détour en boutique", "body": "Fais le plein de boosters et découvre les offres pour donner un coup de pouce à ta collection." },
-      "battles": { "title": "Place aux combats !", "body": "Compose ton équipe, fais briller tes cartes et relève le défi en duel amical ou en mode classé." }
+      "chat": {
+        "title": "Le chat entre amis",
+        "body": "Discute directement avec tes amis depuis leur page : prépare un échange, montre ta dernière pépite ou lance un défi."
+      },
+      "profile": {
+        "title": "Un profil à ton image",
+        "body": "Personnalise ton profil : choisis ce que tu mets en avant et affiche ton style aux autres joueurs."
+      },
+      "cards": {
+        "title": "Nouvelles cartes Gold et AR",
+        "body": "Des versions dorées et des formes alternatives (AR) rejoignent les boosters. Sauras-tu toutes les trouver ?"
+      },
+      "animations": {
+        "title": "De nouvelles animations",
+        "body": "Ouvertures, cartes et transitions gagnent en éclat pour rendre chaque tirage encore plus excitant."
+      }
+    },
+    "trades": {
+      "title": "Les échanges arrivent au Marché",
+      "badge": "Opérationnel !",
+      "body": "Propose tes doubles, indique les cartes que tu recherches et échange avec tous les joueurs, en plus des échanges entre amis.",
+      "dev": "Cette fonctionnalité est <strong>toute neuve</strong> et plein de nouvelles choses arrivent encore ! Si tu constates un bug, <strong>n'hésite pas à nous contacter</strong>.",
+      "cta": "Voir les échanges",
+      "contact": "Signaler un bug"
     },
     "discord": {
       "title": "Encore mieux avec Discord",
@@ -17,10 +37,10 @@
       "bonus": "Et hop : {amount, number} Zeni offerts à ta première liaison !"
     },
     "soon": {
-      "title": "Et la suite s'annonce encore plus belle…",
-      "body": "Les <strong>échanges entre amis ET dans le Marché</strong> arrivent bientôt ! Au programme aussi : de <strong>nouveaux types de boosters</strong>, un <strong>casino pour miser tes Zeni et tenter de faire fortune</strong>, de toutes nouvelles <strong>cartes gold et alternatives</strong>, et de la <strong>personnalisation de profil</strong> pour afficher ton style. On a hâte de te faire découvrir tout ça !"
+      "title": "Et plein d'autres choses…",
+      "body": "Des <strong>corrections</strong>, des <strong>finitions</strong> et de <strong>petites surprises</strong> un peu partout sur le site. Et ce n'est pas fini : de <strong>nouveaux boosters</strong> et d'autres nouveautés sont déjà en préparation !"
     },
-    "thanks": "Merci d'écrire le début de l'aventure avec nous.",
+    "thanks": "Merci de faire vivre l'aventure avec nous.",
     "letsGo": "C'est parti !"
   },
   "cardBack": {
@@ -108,7 +128,7 @@
     "back": "Retour à l'accueil"
   },
   "footer": {
-    "versionNotice": "Kiraku-kun v1.0 est là ! L'aventure continue, avec de nouvelles surprises à venir.",
+    "versionNotice": "Kiraku-kun v1.5 est là ! Chat entre amis, échanges au Marché, profils personnalisables, nouvelles cartes Gold et AR, et l'aventure continue.",
     "disclaimer": "Projet fan non officiel. Les personnages appartiennent à leurs ayants droit.",
     "nav": "Liens du site",
     "account": "Mon compte",
@@ -395,7 +415,10 @@
     "lockedDescription": "Obtiens la carte {name} dans un booster ou en cadeau pour découvrir sa biographie. Sa fiche restera débloquée après la première obtention.",
     "openBooster": "Ouvrir un booster",
     "sameUniverse": "Même univers",
-    "relatedTitle": "Autres personnages de {series}"
+    "relatedTitle": "Autres personnages de {series}",
+    "formsKicker": "Formes",
+    "formsTitle": "Autres formes de {name}",
+    "baseFormTitle": "Forme de base"
   },
   "nav": {
     "label": "Navigation principale",
@@ -436,7 +459,10 @@
       "label": "Ventes",
       "all": "Toutes",
       "selling": "Mes ventes",
-      "bidding": "Mes enchères"
+      "bidding": "Mes enchères",
+      "echanges": "Échanges",
+      "mes-echanges": "Mes échanges",
+      "incoming": "{count, plural, one {# offre reçue} other {# offres reçues}}"
     },
     "filters": {
       "label": "Filtres",
@@ -575,6 +601,8 @@
     "metaDescription": "Ouvre gratuitement un sachet de fuda toutes les {minutes} minutes, parmi {count} boosters.",
     "intro": "{count} boosters en {families} familles. Les sachets gratuits puisent dans ton stock (un toutes les {minutes} min, {max} au plus) ; les boosters de rareté et les formats se paient en Zeni.",
     "familiesLabel": "Familles de boosters",
+    "allFamilies": "Toutes",
+    "familyCount": "{count, plural, one {# booster} other {# boosters}}",
     "families": {
       "standard": {
         "title": "Standard",
@@ -745,7 +773,9 @@
     "cost": "{amount, number} Zeni",
     "unavailable": "Indisponible",
     "changeBooster": "Changer de booster",
-    "toWiki": "Voir le wiki",
+    "toWiki": "Wiki",
+    "toCollection": "Collection",
+    "recapActions": "Et maintenant ?",
     "copyLink": "Copier le lien",
     "copied": "Lien copié",
     "stockLeft": "{count, plural, =0 {Plus de sachet gratuit} one {# sachet gratuit restant} other {# sachets gratuits restants}}",
@@ -934,7 +964,31 @@
       "gdprPending": "Suppression demandée le {date} : compte gelé.",
       "gdprNone": "Aucune demande de suppression.",
       "termsAccepted": "CGU v{version} acceptées",
-      "termsNotAccepted": "CGU pas encore acceptées"
+      "termsNotAccepted": "CGU pas encore acceptées",
+      "deletion": {
+        "selectPage": "Tout sélectionner sur la page",
+        "selectOne": "Sélectionner {name}",
+        "selected": "{count, plural, =0 {Aucun compte sélectionné} one {# sélectionné} other {# sélectionnés}}",
+        "deleteSelected": "{count, plural, one {Supprimer le compte} other {Supprimer les # comptes}}",
+        "deleteOne": "Supprimer ce compte",
+        "title": "{count, plural, one {Supprimer définitivement ce compte ?} other {Supprimer définitivement # comptes ?}}",
+        "description": "Le compte, ses cartes, son historique de Zeni, ses ouvertures et ses messages sont effacés. Ses ventes en cours sont annulées et les mises rendues ; les ventes qu'il menait repartent sans meneur. C'est irréversible.",
+        "hint": "Suppression définitive (différente de l'anonymisation RGPD) : rien n'est conservé, sauf la ligne du journal admin.",
+        "reason": "Motif (journal admin)",
+        "defaultReason": "Suppression depuis l'admin",
+        "word": "SUPPRIMER",
+        "confirm": "Supprimer définitivement",
+        "partial": "{deleted} supprimé(s), {failed} refusé(s). {reasons}",
+        "errors": {
+          "FORBIDDEN": "Action réservée aux admins.",
+          "INVALID": "Demande invalide : retape le mot de confirmation.",
+          "RATE_LIMITED": "Trop de suppressions d'un coup. Réessaie dans une minute.",
+          "NOT_FOUND": "Compte introuvable (déjà supprimé ?).",
+          "SELF_PROTECTED": "Tu ne peux pas supprimer ton propre compte.",
+          "ADMIN_PROTECTED": "Un admin ne peut pas être supprimé : retire-lui d'abord le rôle.",
+          "HAS_ADMIN_HISTORY": "Ancien admin : ses actions passées doivent rester attribuées, anonymise plutôt le compte."
+        }
+      }
     },
     "moduleNames": {
       "boosters": "Boosters",
@@ -959,7 +1013,8 @@
       "features": "Fonctionnalités",
       "dashboard": "Tableau de bord",
       "journal": "Journal",
-      "general": "Général"
+      "general": "Général",
+      "cosmetics": "Titres et cadres"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -1201,6 +1256,21 @@
           "retentionDays": "Conservation des notifications lues (jours)",
           "pollSeconds": "Intervalle de vérification des notifications (s)",
           "pushEnabled": "Notifications push (onglet fermé)"
+        },
+        "trades": {
+          "enabled": "Échanges entre amis ouverts",
+          "expiryHours": "Durée d'une proposition (heures)",
+          "maxOffered": "Cartes offertes au plus par proposition",
+          "maxPendingSent": "Propositions en attente par joueur",
+          "perDay": "Propositions par joueur sur 24 h",
+          "allowedRarities": "Raretés échangeables"
+        },
+        "chat": {
+          "enabled": "Chat entre amis ouvert",
+          "maxLength": "Longueur maximale d'un message",
+          "perMinute": "Messages par joueur et par minute",
+          "pollSeconds": "Sondage sans temps réel (secondes)",
+          "retentionHours": "Durée de vie d'un message (heures)"
         }
       },
       "invalid": "Certaines valeurs sont hors limites : corrige-les avant d'enregistrer.",
@@ -1222,7 +1292,11 @@
       "giftBooster": "{from} → {to} : un booster ({zeni, number} Zeni)",
       "log": "Derniers changements",
       "logEmpty": "Aucun changement pour l'instant.",
-      "logEntry": "{key} par {admin}"
+      "logEntry": "{key} par {admin}",
+      "tradesSection": "Échanges entre amis",
+      "tradesHint": "Rien n'est bloqué pendant l'attente : propriété, amitié et raretés sont revérifiées au moment d'accepter.",
+      "chatSection": "Chat entre amis",
+      "chatHint": "Messages privés entre amis acceptés, en texte brut, supprimés après leur durée de vie (24 h par défaut). Un blocage coupe la conversation."
     },
     "market": {
       "title": "Marché",
@@ -1257,7 +1331,17 @@
         "minAccountAgeHours": "Âge minimal du compte (h)",
         "minStartPrice": "Prix de départ minimal",
         "maxPrice": "Prix maximal",
-        "pollSeconds": "Rafraîchissement d'une vente (s)"
+        "pollSeconds": "Rafraîchissement d'une vente (s)",
+        "listings": {
+          "enabled": "Échanges ouverts actifs",
+          "allowOther": "Autoriser les offres hors liste (« Proposer autre chose »)",
+          "expiryHours": "Durée d'une annonce (heures)",
+          "maxWants": "Cartes demandées au plus",
+          "maxActive": "Annonces ouvertes max. par joueur",
+          "perDay": "Annonces par joueur sur 24 h",
+          "maxPendingOffers": "Offres en attente max. par joueur",
+          "allowedRarities": "Raretés échangeables"
+        }
       },
       "feeHint": "La taxe est figée à la mise en vente : un changement ne touche pas les ventes déjà ouvertes.",
       "invalid": "Certaines valeurs sont hors limites : corrige-les avant d'enregistrer.",
@@ -1275,7 +1359,9 @@
         "CLOSED": "Cette vente est déjà terminée.",
         "NOT_FOUND": "Vente introuvable.",
         "UNAVAILABLE": "Action impossible pour le moment."
-      }
+      },
+      "listings": "Échanges ouverts",
+      "listingsHint": "Annonces « celle-ci contre l'une de celles-là » ouvertes à tous. L'âge minimal du compte est celui de l'hôtel des ventes."
     },
     "economy": {
       "title": "Économie",
@@ -1929,6 +2015,15 @@
           "deletionGraceDays": "Délai avant anonymisation (jours)",
           "usernameChangeDays": "Délai entre deux changements de pseudo (jours)",
           "exportsPerDay": "Exports de données par jour et par joueur"
+        },
+        "home": {
+          "pullFeed": {
+            "enabled": "Afficher le carrousel des gros tirages",
+            "minRarity": "Rareté minimale affichée",
+            "size": "Nombre de tirages affichés",
+            "maxAgeHours": "Ancienneté maximale (heures)",
+            "refreshSeconds": "Rafraîchissement (secondes)"
+          }
         }
       },
       "hints": {
@@ -1945,7 +2040,318 @@
           "deletionGraceDays": "Pendant ce délai, le compte est gelé et la suppression annulable. 30 jours conseillés.",
           "usernameChangeDays": "0 = sans délai.",
           "exportsPerDay": "Fichier JSON « Télécharger mes données »."
+        },
+        "home": {
+          "pullFeed": {
+            "minRarity": "Épique, Légendaire ou Mythique : les tirages enregistrés commencent à Épique.",
+            "size": "Au-delà de 6, le ruban défile tout seul.",
+            "maxAgeHours": "Les tirages plus anciens disparaissent du carrousel, puis de la base un jour après.",
+            "refreshSeconds": "Tant que l'onglet est visible."
+          }
         }
+      },
+      "homeSection": "Accueil · Gros tirages"
+    },
+    "catalog": {
+      "title": "Catalogue de cartes",
+      "intro": "Crée des cartes et des raretés personnalisées, puis publie-les dans les boosters de ton choix.",
+      "create": "Créer une carte",
+      "edit": "Modifier",
+      "duplicate": "Dupliquer",
+      "archive": "Archiver",
+      "restore": "Restaurer en brouillon",
+      "back": "Retour au catalogue",
+      "manageRarities": "Gérer les raretés",
+      "newRarity": "Nouvelle rareté",
+      "editRarity": "Modifier la rareté",
+      "information": "Informations",
+      "image": "Image",
+      "appearance": "Apparence",
+      "animations": "Animations",
+      "distribution": "Distribution",
+      "name": "Nom",
+      "nameNative": "Nom natif",
+      "nameFr": "Nom français",
+      "nameEn": "Nom anglais",
+      "descriptionFr": "Description française",
+      "descriptionEn": "Description anglaise",
+      "rarity": "Rareté",
+      "power": "Puissance",
+      "ki": "Ki / défense",
+      "series": "Série ou univers",
+      "chooseSeries": "Choisir un univers",
+      "newSeries": "Créer un univers",
+      "seriesTitle": "Titre de l’univers",
+      "seriesTitleEn": "Titre anglais",
+      "mediaType": "Type d’univers",
+      "genres": "Genres (séparés par des virgules)",
+      "tags": "Tags (séparés par des virgules)",
+      "metadata": "Métadonnées et filtres",
+      "gender": "Genre du personnage",
+      "female": "Féminin",
+      "male": "Masculin",
+      "role": "Rôle",
+      "birthMonth": "Mois de naissance",
+      "birthDay": "Jour de naissance",
+      "frame": "Couleur du cadre",
+      "paper": "Couleur du papier",
+      "ink": "Couleur du texte",
+      "effectColor": "Couleur des effets",
+      "seal": "Sceau",
+      "inherit": "Hériter de la rareté",
+      "effects": "Effets combinables",
+      "holographic": "Holographie",
+      "gold": "Métal / or",
+      "pearl": "Nacre",
+      "sparkles": "Paillettes",
+      "aura": "Aura",
+      "intensity": "Intensité",
+      "speed": "Vitesse",
+      "reactive": "Réagir à la souris et à l’inclinaison",
+      "focalX": "Cadrage horizontal",
+      "focalY": "Cadrage vertical",
+      "zoom": "Zoom",
+      "tilt": "Inclinaison maximale",
+      "reveal": "Animation de révélation",
+      "flip": "Retournement",
+      "fade": "Fondu",
+      "duration": "Durée (secondes)",
+      "delay": "Délai (secondes)",
+      "easing": "Courbe de mouvement",
+      "easeOut": "Décélération",
+      "easeInOut": "Accélération puis décélération",
+      "linear": "Linéaire",
+      "preview": "Aperçu en direct",
+      "previewName": "Nouvelle carte",
+      "previewHint": "L’aperçu suit tes changements. Survole la carte pour voir ses reflets.",
+      "replay": "Rejouer la révélation",
+      "unsaved": "Changements non enregistrés",
+      "unsavedLeave": "Quitter sans enregistrer tes modifications ?",
+      "saved": "Modifications enregistrées.",
+      "save": "Enregistrer les modifications",
+      "saveDraft": "Enregistrer le brouillon",
+      "saving": "Enregistrement…",
+      "publish": "Publier",
+      "archiveConfirm": "Archiver cette carte ? Les exemplaires possédés et l’historique seront conservés. Une restauration la remettra en brouillon.",
+      "restoreConfirm": "Restaurer cette carte en brouillon ? Elle ne sera pas distribuée avant sa publication.",
+      "dropImage": "Dépose une image ici ou choisis un fichier",
+      "imageHint": "JPEG, PNG ou WebP · 4 Mo maximum · optimisée avant envoi",
+      "storageSetup": "Le stockage d’images doit être connecté pour envoyer de nouveaux fichiers. Les autres champs restent modifiables.",
+      "dropWeight": "Poids de la carte",
+      "weightHint": "1 = poids standard dans sa rareté. 0 = exclue de tous les tirages, garanties comprises.",
+      "boosters": "Boosters choisis",
+      "inactive": "inactif",
+      "odds": "Chance d’obtenir cette carte",
+      "scenario": "Scénario",
+      "normal": "Normal",
+      "golden": "Doré",
+      "divine": "Divin",
+      "pity": "Garantie Mythique atteinte",
+      "featuredPity": "Garantie de carte vedette atteinte",
+      "oddsHint": "Probabilité d’au moins un exemplaire après publication, puis détail par emplacement. Les bonus ne s’appliquent qu’aux boosters éligibles.",
+      "oddsError": "Le calcul est momentanément indisponible. Tes modifications sont conservées.",
+      "noBoosters": "Sélectionne des boosters pour afficher les probabilités.",
+      "search": "Rechercher",
+      "all": "Tous",
+      "status": "Statut",
+      "origin": "Origine",
+      "custom": "Personnalisée",
+      "filter": "Filtrer",
+      "results": "{count, plural, =0 {Aucune carte} one {# carte} other {# cartes}}",
+      "empty": "Aucune carte ne correspond à ces filtres.",
+      "pagination": "Pagination du catalogue",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "statuses": {
+        "DRAFT": "Brouillon",
+        "PUBLISHED": "Publiée",
+        "ARCHIVED": "Archivée"
+      },
+      "template": "Modèle de départ",
+      "rarityKey": "Clé (majuscules, chiffres, _)",
+      "sortOrder": "Ordre de rareté (croissant)",
+      "rarityWeight": "Poids global de tirage",
+      "recycleValue": "Zeni par doublon recyclé",
+      "keywords": "Nombre de passifs en combat",
+      "gifts": "Autoriser les cadeaux",
+      "trades": "Autoriser les échanges",
+      "rarityHint": "Les réglages visuels sont hérités par les cartes sans personnalisation. Le poids global à zéro retire les tirages ordinaires, mais un plancher ou une garantie peut encore viser cette rareté.",
+      "errors": {
+        "FORBIDDEN": "Accès administrateur requis.",
+        "INVALID": "Vérifie les champs du formulaire.",
+        "RATE_LIMITED": "Trop de demandes. Réessaie dans un instant.",
+        "NOT_FOUND": "Cette carte ou rareté n’existe plus.",
+        "CONFLICT": "Cette fiche a changé depuis son ouverture. Recharge-la avant d’enregistrer.",
+        "UNKNOWN_RARITY": "Cette rareté n’existe pas.",
+        "UNKNOWN_BOOSTER": "Un booster sélectionné n’existe plus.",
+        "IMAGE_INVALID": "Image invalide. Utilise un JPEG, PNG ou WebP de 4 Mo maximum.",
+        "KEY_TAKEN": "Cette clé de rareté existe déjà.",
+        "SAVE_FAILED": "L’enregistrement a échoué. Tes changements sont conservés ; réessaie.",
+        "STORAGE_UNAVAILABLE": "Le stockage d’images n’est pas encore configuré.",
+        "UPLOAD_FAILED": "L’envoi de l’image a échoué. Ton formulaire est conservé.",
+        "IMAGE_TOO_LARGE": "L’image dépasse la limite de 4 Mo.",
+        "IMAGE_REQUIRED": "Une image est obligatoire pour publier.",
+        "VARIANT_REQUIRED": "Cette rareté exige une carte de base.",
+        "VARIANT_INVALID": "Carte de base invalide : elle doit exister et ne pas être elle-même une variante (une carte qui a des variantes reste une base).",
+        "VARIANT_IMAGE_REUSED": "Une variante a besoin de sa propre image, différente de la carte de base.",
+        "IN_USE": "Suppression impossible : seule une création originale jamais publiée ni distribuée peut être supprimée. Archive-la plutôt."
+      },
+      "year": "Année de sortie",
+      "studio": "Studio",
+      "season": "Saison",
+      "seasonYear": "Année de la saison",
+      "change": "Changer",
+      "clearChoice": "Retirer : {label}",
+      "searchPlaceholder": "Tape pour rechercher…",
+      "searchError": "La recherche est momentanément indisponible.",
+      "searching": "Recherche…",
+      "noResults": "Aucun résultat.",
+      "createVariant": "Nouvelle variante",
+      "sections": "Sections de la fiche",
+      "statsMedian": "Médiane des cartes {rarity} publiées : 力 {power} · 気 {ki}",
+      "suggestStats": "Appliquer ces stats",
+      "existingSeries": "Choisir un univers existant",
+      "variant": "Variante",
+      "variantOf": "Carte de base",
+      "formName": "Nom de la forme",
+      "formNameHint": "Affiché sous le nom : « Gear 5 », « Bankai », « Mode Baryon »…",
+      "variantRequiredHint": "Une carte {rarity} est une variante : choisis le personnage de base et envoie une nouvelle image.",
+      "variantHint": "Cette carte est liée à une carte de base.",
+      "variantImageHint": "Image obligatoire et propre à cette variante : l’image de la carte de base est refusée.",
+      "openBase": "Ouvrir la carte de base : {name}",
+      "variants": "Variantes de ce personnage",
+      "variantsHint": "Crée une forme alternative ou une version dorée. Le nom, la série et les boosters sont repris ; l’image reste à choisir.",
+      "createVariantOf": "Créer la version {rarity}",
+      "saveShortcut": "Ctrl + S",
+      "delete": "Supprimer définitivement",
+      "deleteConfirm": "Supprimer définitivement « {name} » ? Cette action est irréversible. Elle n’est possible que pour une création jamais publiée ni distribuée.",
+      "kind": "Type de carte",
+      "kinds": {
+        "bases": "Cartes de base",
+        "variants": "Variantes",
+        "variant": "Variante"
+      },
+      "sort": "Trier par",
+      "sorts": {
+        "updated": "Dernière modification",
+        "name": "Nom",
+        "rarity": "Rareté (la plus haute)",
+        "power": "Puissance",
+        "number": "Numéro"
+      },
+      "selectPage": "Tout sélectionner (page)",
+      "selectCard": "Sélectionner {name}",
+      "variantCount": "{count, plural, one {# variante} other {# variantes}}",
+      "selected": "{count, plural, one {# carte sélectionnée} other {# cartes sélectionnées}}",
+      "bulkAction": "Action",
+      "bulk": {
+        "publish": "Publier",
+        "archive": "Archiver",
+        "restore": "Restaurer en brouillon",
+        "setRarity": "Changer la rareté",
+        "addBooster": "Ajouter à un booster",
+        "removeBooster": "Retirer d’un booster"
+      },
+      "booster": "Booster",
+      "apply": "Appliquer",
+      "clearSelection": "Vider la sélection",
+      "bulkConfirm": "{action} : {count, plural, one {# carte} other {# cartes}} ?",
+      "bulkDone": "{count, plural, =0 {Aucune carte modifiée.} one {# carte modifiée.} other {# cartes modifiées.}}",
+      "bulkRejected": "{count, plural, one {# carte refusée :} other {# cartes refusées :}}",
+      "variantRequired": "Variante obligatoire (carte de base et image propre)",
+      "variantRequiredRarityHint": "Les cartes de cette rareté se créent depuis la fiche d’un personnage existant. L’import AniList ne l’attribue jamais.",
+      "artTone": "Artwork",
+      "artToneHint": "« Doré » vire toute l’image à l’or et pose une feuille d’or par-dessus.",
+      "artTones": {
+        "natural": "Naturel",
+        "gold": "Doré"
+      }
+    },
+    "cosmetics": {
+      "title": "Titres et cadres de profil",
+      "intro": "Ce que les joueurs débloquent en avançant : un titre affiché sous leur pseudo, un cadre autour de leur avatar. Chaque entrée a une condition ; le serveur la revérifie quand le joueur l'équipe.",
+      "new": "Nouveau titre ou cadre",
+      "newTitle": "Nouveau",
+      "editTitle": "Modifier « {slug} »",
+      "empty": "Aucun titre ni cadre pour l'instant. Lance npm run seed:cosmetics pour une première série.",
+      "edit": "Modifier",
+      "active": "Actif",
+      "inactive": "Masqué",
+      "brokenCondition": "Condition illisible",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "saved": "Enregistré.",
+      "invalid": "Formulaire incomplet : libellé, identifiant et condition sont requis (et un style pour un cadre).",
+      "seriesPlaceholder": "Chercher une série (2 lettres au moins)…",
+      "badgesTitle": "Badges",
+      "columns": {
+        "label": "Libellé",
+        "kind": "Type",
+        "condition": "Condition",
+        "state": "État",
+        "edit": "Modifier"
+      },
+      "kinds": {
+        "TITLE": "Titre",
+        "FRAME": "Cadre"
+      },
+      "fields": {
+        "kind": "Type",
+        "slug": "Identifiant",
+        "labelFr": "Libellé (français)",
+        "labelFrFem": "Libellé accordé au féminin",
+        "labelEn": "Libellé (anglais)",
+        "hintFr": "Comment l'obtenir (français)",
+        "hintEn": "Comment l'obtenir (anglais)",
+        "frameStyle": "Matière du cadre",
+        "condition": "Condition de déblocage",
+        "conditionType": "Type de condition",
+        "n": "Nombre",
+        "rarity": "Rareté",
+        "tier": "Rang minimal (meilleur rang atteint)",
+        "series": "Série à compléter",
+        "sortOrder": "Ordre d'affichage",
+        "active": "Visible des joueurs"
+      },
+      "hints": {
+        "slug": "Minuscules, chiffres et tirets : devil-hunter.",
+        "labelFrFem": "Vide si identique (Devil Hunter).",
+        "hint": "Montré sur les titres et cadres verrouillés.",
+        "series": "Tape le titre de l'œuvre, puis choisis-la.",
+        "seriesChosen": "Série choisie : {title}"
+      },
+      "conditions": {
+        "ALWAYS": "Toujours débloqué",
+        "UNIQUE_CARDS": "Cartes uniques possédées",
+        "RARITY_OWNED": "Cartes d'une rareté possédées",
+        "SERIES_COMPLETE": "Série complétée",
+        "SERIES_COMPLETED_COUNT": "Séries complétées",
+        "BOOSTERS_OPENED": "Boosters ouverts",
+        "TRADES_DONE": "Échanges réussis",
+        "RANK_TIER": "Rang classé atteint"
+      },
+      "frames": {
+        "washi": "Washi",
+        "bambou": "Bambou",
+        "aizome": "Aizome",
+        "urushi": "Urushi",
+        "kinpaku": "Kinpaku",
+        "raden": "Raden",
+        "sakura": "Sakura",
+        "kintsugi": "Kintsugi"
+      },
+      "settings": {
+        "pioneerUntil": "Badge Pionnier : inscrits jusqu'au",
+        "pioneerHint": "Vide : plus personne ne le reçoit.",
+        "ambassadorReferrals": "Badge Ambassadeur : filleuls qualifiés requis",
+        "ambassadorHint": "0 : badge désactivé."
+      },
+      "errors": {
+        "FORBIDDEN": "Action réservée aux admins.",
+        "INVALID": "Valeurs invalides (rareté ou série introuvable ?).",
+        "RATE_LIMITED": "Trop d'enregistrements. Réessaie dans une minute.",
+        "SLUG_TAKEN": "Cet identifiant est déjà pris.",
+        "NOT_FOUND": "Cette entrée n'existe plus."
       }
     }
   },
@@ -2083,6 +2489,30 @@
         "FULL": "Ta vitrine est pleine.",
         "UNAVAILABLE": "Action impossible pour le moment. Réessaie."
       }
+    },
+    "views": {
+      "label": "Affichage de la collection",
+      "cards": "Cartes",
+      "albums": "Albums"
+    },
+    "albums": {
+      "searchLabel": "Chercher un album",
+      "searchPlaceholder": "Rechercher un univers…",
+      "count": "{count, plural, =0 {Aucun album} one {# album} other {# albums}}",
+      "showAll": "Tous les albums",
+      "sortLabel": "Trier les albums",
+      "sorts": {
+        "most": "Plus de cartes",
+        "progress": "Plus avancés",
+        "az": "A → Z"
+      },
+      "progress": "{owned}/{total} · {percent}",
+      "byRarity": "Cartes par rareté",
+      "complete": "Complet",
+      "more": "Afficher plus",
+      "retry": "Réessayer",
+      "loading": "Chargement…",
+      "noMatch": "Aucun album ne correspond."
     }
   },
   "showcase": {
@@ -2109,7 +2539,8 @@
     "alreadyShown": "En vitrine",
     "loading": "Chargement…",
     "retry": "Réessayer",
-    "more": "Voir plus"
+    "more": "Voir plus",
+    "privateCollection": "Sa collection n'est pas visible : impossible d'y choisir une carte."
   },
   "wishlist": {
     "title": "Liste de souhaits",
@@ -2161,7 +2592,48 @@
     "collectionOf": "Collection de {name}",
     "noMatch": "Aucune carte ne correspond à ces filtres.",
     "collectionEmpty": "Cette collection est vide.",
-    "friends": "Mes amis"
+    "friends": "Mes amis",
+    "customize": {
+      "open": "Personnaliser",
+      "title": "Personnaliser mon profil",
+      "tabsLabel": "Réglages du profil",
+      "tabs": {
+        "look": "Apparence",
+        "privacy": "Confidentialité"
+      },
+      "bio": "Bio",
+      "bioPlaceholder": "Une phrase sur toi : tes œuvres préférées, ce que tu cherches…",
+      "agreement": "Accords",
+      "agreementHint": "de tes titres",
+      "agreements": {
+        "MASC": "Masculin",
+        "FEM": "Féminin"
+      },
+      "titleLabel": "Titre",
+      "frame": "Cadre d'avatar",
+      "unlocked": "{count} débloqués sur {total}",
+      "none": "Aucun",
+      "badges": "Badges affichés",
+      "badgesHint": "touche-les dans l'ordre voulu ; aucun choix = tous",
+      "badgeNames": {
+        "PIONEER": "Pionnier",
+        "AMBASSADOR": "Ambassadeur",
+        "VERIFIED": "Compte vérifié"
+      },
+      "noHint": "Continue ta collection pour le débloquer.",
+      "progress": "{current}/{goal}",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "errors": {
+        "NO_SESSION": "Ta session a expiré. Recharge la page.",
+        "INVALID": "Bio trop longue ou choix invalide.",
+        "GUEST": "Crée ton compte pour personnaliser ton profil.",
+        "UNAVAILABLE": "Impossible pour le moment.",
+        "RATE_LIMITED": "Trop d'essais. Réessaie dans une minute.",
+        "LOCKED": "Ce titre ou ce cadre n'est pas encore débloqué."
+      }
+    }
   },
   "privacy": {
     "title": "Confidentialité",
@@ -2197,7 +2669,8 @@
     "tabs": {
       "friends": "Amis",
       "requests": "Demandes",
-      "blocked": "Bloqués"
+      "blocked": "Bloqués",
+      "trades": "Échanges"
     },
     "addLabel": "Ajouter un ami",
     "addPlaceholder": "Pseudo exact",
@@ -2254,7 +2727,8 @@
       "LIMIT_FRIENDS": "Tu as atteint le nombre maximum d'amis.",
       "LIMIT_OUTGOING": "Trop de demandes en attente : annule-en quelques-unes d'abord.",
       "UNAVAILABLE": "Action impossible pour le moment. Réessaie."
-    }
+    },
+    "trade": "Échanger"
   },
   "gifts": {
     "title": "Offrir à {name}",
@@ -2330,7 +2804,18 @@
       "title": "Kiraku"
     },
     "battleInvite": "{name} t'invite en combat : choisis ton équipe.",
-    "teamGift": "L'équipe Kiraku t'a envoyé un cadeau : regarde ton historique et tes boosters."
+    "teamGift": "L'équipe Kiraku t'a envoyé un cadeau : regarde ton historique et tes boosters.",
+    "tradeProposed": "{name} te propose un échange contre ta carte {card}.",
+    "tradeAccepted": "{name} a accepté ton échange : {card} est à toi !",
+    "tradeDeclined": "{name} a refusé ton échange pour {card}.",
+    "listingOffer": "{name} te propose {offered} contre ta carte {card}.",
+    "listingAccepted": "{name} a accepté ton échange : tu as donné {offered} et reçu {card} !",
+    "listingDeclined": "{name} n'a pas retenu ton offre ({offered} contre {card}). Ta carte reste dans ta collection.",
+    "listing": {
+      "youGive": "Tu donnes",
+      "youGet": "Tu reçois",
+      "closed": "Cette offre n'attend plus de réponse."
+    }
   },
   "push": {
     "title": "Notifications sur ce téléphone",
@@ -2586,6 +3071,12 @@
       },
       "pinned": "Épinglé",
       "replyFrom": "Réponse de l'équipe"
+    },
+    "pulls": {
+      "live": "EN DIRECT · LÉGENDAIRES ET MYTHIQUES",
+      "title": "Gros tirages",
+      "listLabel": "Derniers gros tirages",
+      "cardLabel": "{name}, {rarity}"
     }
   },
   "leaderboard": {
@@ -3123,5 +3614,266 @@
   "playerName": {
     "hidden": "Joueur",
     "deleted": "Compte supprimé"
+  },
+  "trades": {
+    "intro": "Tes propositions et celles de tes amis. Pour en faire une, va sur le profil d'un ami et touche « Échanger ».",
+    "received": "Reçues",
+    "sent": "Envoyées",
+    "history": "Historique",
+    "empty": {
+      "received": "Aucune proposition reçue.",
+      "sent": "Aucune proposition en attente.",
+      "history": "Aucun échange terminé pour l'instant."
+    },
+    "from": "De {name}",
+    "to": "À {name}",
+    "between": "{proposer} → {recipient}",
+    "expires": "expire {when}",
+    "youGive": "Tu donnes",
+    "youGet": "Tu reçois",
+    "wanted": "Carte demandée",
+    "youGetOne": "Tu reçois l'une de celles-ci (choisis-la)",
+    "theyChooseOne": "Contre l'une de celles-ci (au choix de ton ami)",
+    "chosen": "Carte choisie",
+    "offered": "Cartes proposées",
+    "choose": "Choisir {card}",
+    "pickFirst": "Choisis une carte",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "withdraw": "Retirer",
+    "discuss": "Discuter",
+    "confirm": "Accepter cet échange ? C'est définitif.",
+    "cancelConfirm": "Annuler",
+    "yesAccept": "Oui, accepter",
+    "pending": "Échange…",
+    "status": {
+      "PENDING": "En attente",
+      "ACCEPTED": "Échangé",
+      "DECLINED": "Refusé",
+      "CANCELLED": "Retiré",
+      "EXPIRED": "Expiré",
+      "FAILED": "Carte indisponible"
+    },
+    "compose": {
+      "stepsLabel": "Étapes de l'échange",
+      "steps": {
+        "want": "Sa carte",
+        "offer": "Tes cartes",
+        "review": "Envoi"
+      },
+      "wantTitle": "Échanger avec {name}",
+      "offerTitle": "Ce que tu proposes",
+      "reviewTitle": "Récapitulatif",
+      "wantHint": "Choisis la carte de {name} que tu veux.",
+      "offerHint": "Choisis jusqu'à {max, plural, one {# carte} other {# cartes}} à proposer : ton ami en gardera une.",
+      "pickWanted": "Demander {card}",
+      "pickOffered": "Proposer {card}",
+      "offeredCount": "{count}/{max}",
+      "youGet": "TU REÇOIS",
+      "theyChoose": "{name} CHOISIT L'UNE DE CELLES-CI",
+      "rules": "Tes cartes restent à toi tant que l'échange n'est pas accepté. S'il manque une carte au moment d'accepter, l'échange n'a pas lieu.",
+      "back": "Retour",
+      "next": "Continuer",
+      "send": "Envoyer la proposition",
+      "sending": "Envoi…",
+      "sent": "Proposition envoyée à {name}. Tu seras prévenu de sa réponse.",
+      "close": "Fermer"
+    },
+    "errors": {
+      "NO_SESSION": "Ta session a expiré. Recharge la page.",
+      "INVALID": "Proposition invalide.",
+      "GUEST": "Crée ton compte pour échanger avec tes amis.",
+      "DISABLED": "Les échanges sont fermés pour le moment.",
+      "RATE_LIMITED": "Trop d'essais. Réessaie dans une minute.",
+      "UNAVAILABLE": "Impossible pour le moment. Réessaie plus tard.",
+      "NOT_FRIENDS": "Vous n'êtes plus amis.",
+      "BLOCKED": "Échange impossible avec ce joueur.",
+      "NO_OFFER": "Propose au moins une carte.",
+      "TOO_MANY_OFFERED": "Trop de cartes proposées (au plus {max}).",
+      "SAME_CARD": "Tu ne peux pas proposer la carte que tu demandes.",
+      "RARITY": "Cette rareté ne s'échange pas.",
+      "PENDING_LIMIT": "Tu as trop de propositions en attente : attends des réponses.",
+      "DAILY_LIMIT": "Tu as atteint le nombre de propositions sur 24 h.",
+      "DUPLICATE": "Tu as déjà une proposition en attente pour cette carte.",
+      "NO_USER": "Joueur introuvable.",
+      "WANTED_GONE": "Ton ami n'a plus d'exemplaire libre de cette carte.",
+      "OFFER_GONE": "Une des cartes proposées n'est plus libre dans ta collection.",
+      "NOT_FOUND": "Échange introuvable.",
+      "CLOSED": "Cet échange n'est plus ouvert.",
+      "NOT_OFFERED": "Cette carte ne fait pas partie de l'offre.",
+      "CARD_GONE": "Une des cartes n'est plus disponible : l'échange est annulé."
+    }
+  },
+  "chat": {
+    "title": "Messages",
+    "open": "{count, plural, =0 {Ouvrir le chat} one {Ouvrir le chat, # message non lu} other {Ouvrir le chat, # messages non lus}}",
+    "close": "Fermer le chat",
+    "back": "Retour aux conversations",
+    "loading": "Chargement…",
+    "noFriends": "Ajoute des amis pour discuter avec eux.",
+    "startTalking": "Dis bonjour !",
+    "you": "Toi : {body}",
+    "older": "Messages plus anciens",
+    "empty": "Aucun message avec {name} pour l'instant.",
+    "inputLabel": "Message à {name}",
+    "placeholder": "Écris un message…",
+    "send": "Envoyer",
+    "discuss": "Discuter",
+    "errors": {
+      "NO_SESSION": "Ta session a expiré. Recharge la page.",
+      "INVALID": "Message invalide.",
+      "GUEST": "Crée ton compte pour discuter avec tes amis.",
+      "DISABLED": "Le chat est fermé pour le moment.",
+      "RATE_LIMITED": "Tu écris trop vite. Patiente un instant.",
+      "UNAVAILABLE": "Impossible d'envoyer pour le moment.",
+      "NOT_FRIENDS": "Vous n'êtes pas (ou plus) amis.",
+      "EMPTY": "Message vide ou trop long."
+    },
+    "ephemeral": "Les messages s'effacent {hours, plural, one {# heure} other {# heures}} après leur envoi."
+  },
+  "listings": {
+    "boardTitle": "Cartes proposées à l'échange",
+    "boardIntro": "« Je donne celle-ci contre l'une de celles-là. » Propose une de tes cartes : l'auteur de l'annonce accepte ou refuse.",
+    "create": "Proposer une carte",
+    "searchLabel": "Chercher une annonce",
+    "searchPlaceholder": "Chercher une carte, une série, un joueur…",
+    "filtersLabel": "Filtres",
+    "filters": {
+      "missing": "Que je n'ai pas",
+      "canAccept": "Que je peux donner",
+      "mine": "Mes offres"
+    },
+    "empty": {
+      "all": "Aucune annonce d'échange pour l'instant. Lance la première !",
+      "missing": "Aucune annonce pour une carte que tu n'as pas.",
+      "canAccept": "Tu n'as aucune des cartes demandées dans les annonces ouvertes.",
+      "mine": "Tu n'as aucune offre en attente."
+    },
+    "loading": "Chargement…",
+    "more": "Voir plus",
+    "cardMeta": "{rarity} · {series}",
+    "by": "par {name}",
+    "byYou": "ton annonce",
+    "expires": "expire {when}",
+    "againstOne": "Contre l'une de ces cartes",
+    "offerCount": "{count, plural, =0 {Aucune offre pour l'instant.} one {# offre en attente.} other {# offres en attente.}}",
+    "cancelListing": "Retirer l'annonce",
+    "offerSent": "Offre envoyée : {card}. En attente de réponse.",
+    "offerSentShort": "Offre envoyée. En attente de réponse.",
+    "withdraw": "Retirer mon offre",
+    "confirmOffer": "Proposer {give} contre {get} ?",
+    "back": "Retour",
+    "pending": "Un instant…",
+    "send": "Envoyer l'offre",
+    "noneFree": "Tu n'as aucune de ces cartes libre.",
+    "give": "Donner {card}",
+    "proposeOther": "Proposer autre chose",
+    "otherTitle": "Proposer une carte contre {card}",
+    "otherHint": "Choisis la carte que tu proposes. L'auteur de l'annonce acceptera ou refusera.",
+    "pickOther": "Proposer {card}",
+    "youGive": "Tu donnes",
+    "youGet": "Tu reçois",
+    "offerRules": "Rien n'est bloqué pendant l'attente : si ta carte n'est plus dans ta collection au moment où l'offre est acceptée, l'échange n'a pas lieu.",
+    "confirmAccept": "Échanger contre {card} ?",
+    "yesAccept": "Oui, échanger",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "mine": {
+      "listings": "Mes annonces et offres reçues",
+      "noListings": "Tu n'as aucune annonce ouverte.",
+      "goBoard": "Proposer une carte",
+      "sent": "Mes offres envoyées",
+      "noSent": "Aucune offre en attente.",
+      "history": "Historique",
+      "noHistory": "Aucun échange terminé pour l'instant.",
+      "giving": "Tu donnes {card}",
+      "noOffers": "Aucune offre pour l'instant.",
+      "offersLabel": "Offres reçues",
+      "offerFrom": "{name} propose {card}",
+      "outsideList": "(hors de ta liste)",
+      "sentTo": "Offre à {name}"
+    },
+    "history": {
+      "line": "{gave} contre {got}",
+      "lineAlone": "{gave}",
+      "with": "avec {name}",
+      "status": {
+        "listing": {
+          "OPEN": "Ouverte",
+          "TRADED": "Échangée",
+          "CANCELLED": "Retirée",
+          "EXPIRED": "Expirée",
+          "FAILED": "Carte indisponible"
+        },
+        "offer": {
+          "PENDING": "En attente",
+          "ACCEPTED": "Acceptée",
+          "DECLINED": "Refusée",
+          "WITHDRAWN": "Retirée",
+          "CLOSED": "Annonce fermée",
+          "FAILED": "Carte indisponible"
+        }
+      }
+    },
+    "compose": {
+      "giveTitle": "Quelle carte proposes-tu ?",
+      "wantTitle": "Que veux-tu en échange ?",
+      "reviewTitle": "Vérifie ton annonce",
+      "stepsLabel": "Étapes",
+      "steps": {
+        "give": "Ta carte",
+        "want": "Tes envies",
+        "review": "Récap"
+      },
+      "giveHint": "Choisis une carte de ta collection. Elle reste à toi tant qu'aucune offre n'est acceptée.",
+      "pickGive": "Proposer {card}",
+      "wantHint": "Choisis jusqu'à {max} cartes que tu n'as pas encore. Les autres joueurs pourront aussi te proposer autre chose.",
+      "wantCount": "{count}/{max}",
+      "next": "Suivant",
+      "back": "Retour",
+      "youGive": "Tu donnes",
+      "againstOne": "Contre l'une de ces cartes",
+      "rules": "Tu reçois une notification à chaque offre et tu choisis d'accepter ou de refuser. L'annonce se ferme au premier échange accepté.",
+      "publish": "Publier l'annonce",
+      "publishing": "Publication…",
+      "published": "Annonce publiée ! Tu seras prévenu à chaque offre.",
+      "close": "Fermer",
+      "searchLabel": "Chercher une carte",
+      "searchPlaceholder": "Nom du personnage ou de la série…",
+      "wantEmpty": "Aucune carte trouvée parmi celles que tu n'as pas.",
+      "pickWanted": "Demander {card}",
+      "loading": "Chargement…",
+      "retry": "Réessayer",
+      "more": "Voir plus"
+    },
+    "errors": {
+      "NO_WANT": "Choisis au moins une carte demandée.",
+      "TOO_MANY_WANTS": "Trop de cartes demandées.",
+      "SAME_CARD": "Tu ne peux pas échanger une carte contre elle-même.",
+      "ALREADY_OWNED": "Tu possèdes déjà une des cartes demandées.",
+      "RARITY": "Cette rareté ne s'échange pas pour l'instant.",
+      "DUPLICATE": "Tu as déjà une annonce ouverte pour cette carte.",
+      "ACTIVE_LIMIT": "Tu as atteint le nombre maximal d'annonces ouvertes.",
+      "DAILY_LIMIT": "Tu as publié assez d'annonces pour aujourd'hui.",
+      "OWN_LISTING": "C'est ton annonce.",
+      "CLOSED": "Cette annonce ou cette offre est déjà fermée.",
+      "BLOCKED": "Échange impossible avec ce joueur.",
+      "NOT_WANTED": "Seules les cartes demandées peuvent être proposées.",
+      "ALREADY_OFFERED": "Tu as déjà une offre en attente sur cette annonce.",
+      "OFFER_LIMIT": "Tu as trop d'offres en attente : retires-en une d'abord.",
+      "GUEST": "Crée un compte pour échanger.",
+      "BANNED": "Ton compte ne peut pas échanger.",
+      "TOO_NEW": "Ton compte est trop récent pour échanger au Marché.",
+      "NO_USER": "Ce joueur n'est plus disponible.",
+      "CARD_GONE": "La carte de l'annonce n'est plus disponible.",
+      "OFFER_GONE": "La carte proposée n'est plus disponible.",
+      "WANT_GONE": "Une des cartes demandées n'existe plus.",
+      "NOT_FOUND": "Annonce ou offre introuvable.",
+      "NO_SESSION": "Session expirée : recharge la page.",
+      "INVALID": "Demande invalide.",
+      "DISABLED": "Les échanges du Marché sont fermés pour le moment.",
+      "RATE_LIMITED": "Doucement : réessaie dans un instant.",
+      "UNAVAILABLE": "Action impossible pour le moment."
+    }
   }
 }

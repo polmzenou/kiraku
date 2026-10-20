@@ -9,6 +9,7 @@ vi.mock("../db", () => ({
     card: { findMany: mocks.cards },
     series: { findMany: mocks.series },
     catalogImport: { findFirst: mocks.version },
+    gameSetting: { findUnique: vi.fn().mockResolvedValue(null) },
   },
 }));
 
@@ -28,11 +29,11 @@ describe("filtres et tri publics du wiki", () => {
     }));
     expect(mocks.cards).toHaveBeenCalledWith({
       where: {
-        rank: { not: null }, rarity: { in: ["RARE", "EPIC"] }, seriesId: "series-a",
+        status: "PUBLISHED", rarity: { in: ["RARE", "EPIC"] }, seriesId: "series-a",
         series: { tags: { has: "Shounen" }, genres: { has: "Action" } }, gender: "Male",
         AND: [{ searchText: { contains: "eren" } }, { searchText: { contains: "titan" } }],
       },
-      orderBy: [{ rank: "asc" }], select: { anilistId: true },
+      orderBy: [{ rank: "asc" }, { publicId: "asc" }], select: { publicId: true },
     });
   });
 
@@ -41,22 +42,22 @@ describe("filtres et tri publics du wiki", () => {
       for (const dir of ["asc", "desc"] as const) {
         await getCatalogSearchIndex(parseWikiParams({ sort, dir }));
         expect(mocks.cards).toHaveBeenLastCalledWith(expect.objectContaining({
-          orderBy: sort === "number" ? [{ rank: dir }] : [{ [sort]: dir }, { rank: "asc" }],
+          orderBy: sort === "number" ? [{ rank: dir }, { publicId: "asc" }] : [sort === "rarity" ? { rarityDefinition: { sortOrder: dir } } : { [sort]: dir }, { rank: "asc" }, { publicId: "asc" }],
         }));
       }
     }
   });
 
   it("attribue des curseurs selon le tri et ne met aucune possession en cache", async () => {
-    mocks.cards.mockResolvedValue([{ anilistId: 90 }, { anilistId: 3 }, { anilistId: 45 }]);
+    mocks.cards.mockResolvedValue([{ publicId: 90 }, { publicId: 3 }, { publicId: 45 }]);
     expect(await getCatalogSearchIndex(parseWikiParams({ sort: "name", ownership: "owned", after: "48" }))).toEqual([[90, 1], [3, 2], [45, 3]]);
-    expect(mocks.cards).toHaveBeenCalledWith(expect.objectContaining({ where: { rank: { not: null }, AND: [] } }));
+    expect(mocks.cards).toHaveBeenCalledWith(expect.objectContaining({ where: { status: "PUBLISHED", AND: [] } }));
   });
 
   it("permet de trouver les personnages dont le sexe est absent", async () => {
     await getCatalogSearchIndex(parseWikiParams({ gender: "unknown" }));
     expect(mocks.cards).toHaveBeenCalledWith(expect.objectContaining({ where: {
-      rank: { not: null }, AND: [], OR: [{ gender: null }, { gender: "" }],
+      status: "PUBLISHED", AND: [], OR: [{ gender: null }, { gender: "" }],
     } }));
   });
 
@@ -69,6 +70,6 @@ describe("filtres et tri publics du wiki", () => {
       series: [{ id: "a", title: "Alpha", cards: 3 }, { id: "z", title: "Zulu", cards: 2 }], genres: ["Action", "Comedy", "Drama"],
     });
     expect((await getCatalogFilterOptions("en")).series[0]).toEqual({ id: "z", title: "Alpha", cards: 2 });
-    expect(mocks.series).toHaveBeenCalledWith(expect.objectContaining({ where: { cards: { some: { rank: { not: null } } } } }));
+    expect(mocks.series).toHaveBeenCalledWith(expect.objectContaining({ where: { cards: { some: { status: "PUBLISHED" } } } }));
   });
 });

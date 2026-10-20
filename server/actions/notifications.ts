@@ -1,5 +1,6 @@
 "use server";
 
+import { expireTradesFor } from "../social/trade-core";
 import { refresh } from "next/cache";
 import { z } from "@/lib/zod";
 import { prisma } from "../db";
@@ -85,6 +86,8 @@ export async function pollNotificationsAction(input: unknown): Promise<PollResul
     }
     // Combats oubliés du joueur (tour expiré, salle périmée, file abandonnée) : cartes rendues
     await sweepBattlesFor(user.id);
+    // Propositions d'échange échues
+    await expireTradesFor(prisma, user.id).catch((e) => console.error("[echanges] expiration au sondage", e));
   }
   const now = new Date();
   // Jamais plus d'une heure en arrière : un onglet resté caché longtemps ne déverse pas tout

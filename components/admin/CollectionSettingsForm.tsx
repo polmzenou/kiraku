@@ -1,9 +1,11 @@
 "use client";
 
+import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
+
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
-import { RARITIES, RARITY_SEAL } from "@/lib/catalog/rarity";
+
 import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
 import {
   changedCollectionKeys,
@@ -14,7 +16,7 @@ import { updateCollectionSettings } from "@/server/actions/admin-settings";
 import { Button } from "../ui/Button";
 
 const input =
-  "min-h-11 w-full min-w-0 rounded-button border border-border bg-surface-2 px-3 text-base tabular-nums aria-invalid:border-shu";
+  "min-h-11 w-full min-w-0 rounded-control border border-border bg-surface-2 px-3 text-base tabular-nums aria-invalid:border-shu";
 
 function NumberInput({ label, value, onChange, min, max }: { label: React.ReactNode; value: number; onChange: (v: number) => void; min: number; max: number }) {
   const id = useId();
@@ -42,6 +44,8 @@ function NumberInput({ label, value, onChange, min, max }: { label: React.ReactN
 
 /** Réglages de la collection : Zeni par doublon recyclé et taille de la vitrine. */
 export function CollectionSettingsForm({ initial }: { initial: CollectionSettings }) {
+  const RARITIES = useRarities();
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("admin.collection");
   const tRarity = useTranslations("rarity");
   const router = useRouter();
@@ -78,7 +82,7 @@ export function CollectionSettingsForm({ initial }: { initial: CollectionSetting
 
   return (
     <form className="flex max-w-2xl flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-lg border border-border bg-surface p-4">
+      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
         <legend className="px-1 font-title text-lg font-bold">{t("recycleSection")}</legend>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {[...RARITIES].reverse().map((r) => (
@@ -101,7 +105,7 @@ export function CollectionSettingsForm({ initial }: { initial: CollectionSetting
         </div>
       </fieldset>
 
-      <fieldset className="flex min-w-0 flex-col gap-4 rounded-lg border border-border bg-surface p-4">
+      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
         <legend className="px-1 font-title text-lg font-bold">{t("showcaseSection")}</legend>
         <NumberInput
           label={t("fields.showcaseSlots")}
@@ -120,7 +124,7 @@ export function CollectionSettingsForm({ initial }: { initial: CollectionSetting
       )}
 
       {reviewing && valid && changed.length > 0 ? (
-        <section className="flex flex-col gap-3 rounded-lg border border-shu bg-surface p-4" aria-live="polite">
+        <section className="flex flex-col gap-3 rounded-card border border-shu bg-surface p-4" aria-live="polite">
           <h3 className="font-bold">{t("confirmTitle")}</h3>
           <ul className="list-inside list-disc text-sm">
             {changed.map((k) => (
@@ -131,7 +135,7 @@ export function CollectionSettingsForm({ initial }: { initial: CollectionSetting
             <Button type="button" onClick={() => setReviewing(false)} disabled={pending}>
               {t("cancel")}
             </Button>
-            <Button type="button" variant="shu" onClick={save} disabled={pending}>
+            <Button type="button" variant="primary" onClick={save} disabled={pending}>
               {t("confirm")}
             </Button>
           </div>
@@ -139,7 +143,7 @@ export function CollectionSettingsForm({ initial }: { initial: CollectionSetting
       ) : (
         <Button
           type="button"
-          variant="shu"
+          variant="primary"
           className="self-start"
           disabled={!valid || pending}
           onClick={() => {

@@ -71,7 +71,7 @@ export function QueueWaiting({ joinedAt, botAt, onLeft }: { joinedAt: string; bo
   const untilBot = Math.max(0, Math.ceil((bot - now) / 1_000));
 
   return (
-    <section aria-live="polite" className="flex flex-col items-center gap-5 rounded-lg border border-border bg-surface px-4 py-8 text-center">
+    <section aria-live="polite" className="flex flex-col items-center gap-5 lacquer rounded-card px-4 py-8 text-center">
       <span aria-hidden="true" className="relative inline-flex size-24 items-center justify-center">
         <span className="absolute inset-0 rounded-full border-4 border-border" />
         <span className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-shu [animation-duration:1.6s] motion-reduce:animate-none" />

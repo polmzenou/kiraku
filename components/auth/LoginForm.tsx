@@ -47,7 +47,7 @@ export function LoginForm() {
           {t("login.forgot")}
         </Link>
       </div>
-      <Button type="submit" variant="shu" disabled={pending} className="min-h-12 text-base">
+      <Button type="submit" variant="primary" disabled={pending} className="min-h-12 text-base">
         {pending ? t("pending") : t("login.submit")}
       </Button>
     </form>

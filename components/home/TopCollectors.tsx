@@ -62,7 +62,7 @@ function Place({ collector }: { collector: Collector }) {
     <li className={`flex min-w-0 flex-col items-center gap-2 ${order}`}>
       <Link
         href={`/u/${collector.username}`}
-        className="group flex min-w-0 max-w-full flex-col items-center gap-1.5 rounded-lg px-1 pt-1"
+        className="group flex min-w-0 max-w-full flex-col items-center gap-1.5 rounded-card px-1 pt-1"
       >
         <span className="relative">
           <PlayerAvatar

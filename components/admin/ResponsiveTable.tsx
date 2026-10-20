@@ -31,7 +31,7 @@ export function ResponsiveTable<K extends string>({
 
   return (
     <>
-      <div className="hidden overflow-x-auto rounded-lg border border-border bg-surface md:block">
+      <div className="hidden overflow-x-auto lacquer rounded-card md:block">
         <table className="w-full text-left text-sm">
           {caption && <caption className="sr-only">{caption}</caption>}
           <thead className="border-b border-border bg-surface-2">
@@ -59,7 +59,7 @@ export function ResponsiveTable<K extends string>({
 
       <ul className="flex flex-col gap-2 md:hidden" aria-label={caption}>
         {rows.map((r) => (
-          <li key={r.id} className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3 text-sm">
+          <li key={r.id} className="flex flex-col gap-2 lacquer rounded-card p-3 text-sm">
             {primary && <div className="min-w-0">{r.cells[primary.key]}</div>}
             <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
               {fields.map((c) => (

@@ -4,8 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { logQuery, parseAdminLogParams } from "@/lib/admin/logs";
 import { requireAdmin } from "@/server/admin";
 import { adminTargetHref, listAdminLogs } from "@/server/admin/logs";
-
-const inputClass = "min-h-11 w-full min-w-0 rounded-button border border-border bg-surface-2 px-3 text-base";
+import { inputClass } from "@/components/ui/Field";
 
 /** Lisible et échappé par React : jamais de HTML injecté depuis le journal. */
 function json(value: unknown): string {
@@ -30,7 +29,7 @@ export default async function AdminLogPage({ searchParams }: PageProps<"/[locale
         <p className="max-w-prose text-sm text-text-muted">{t("intro")}</p>
       </div>
 
-      <form className="grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-3">
+      <form className="grid gap-3 lacquer rounded-card p-4 sm:grid-cols-2 lg:grid-cols-3">
         {(
           [
             ["action", "text", t("action"), "SETTING_UPDATE"],
@@ -56,7 +55,7 @@ export default async function AdminLogPage({ searchParams }: PageProps<"/[locale
           </label>
         ))}
         <div className="flex gap-2 sm:col-span-2 lg:col-span-3">
-          <Button type="submit" variant="shu">
+          <Button type="submit" variant="primary">
             {t("filter")}
           </Button>
           <Link href="/admin/journal" className={buttonClasses()}>
@@ -72,7 +71,7 @@ export default async function AdminLogPage({ searchParams }: PageProps<"/[locale
           {items.map((log) => {
             const href = adminTargetHref(log.targetType, log.targetId);
             return (
-              <li key={log.id} className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3 text-sm">
+              <li key={log.id} className="flex flex-col gap-2 lacquer rounded-card p-3 text-sm">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="font-bold">{log.action}</span>
                   <time dateTime={log.createdAt.toISOString()} className="text-xs text-text-muted tabular-nums">
@@ -100,11 +99,11 @@ export default async function AdminLogPage({ searchParams }: PageProps<"/[locale
                     <div className="grid gap-2 md:grid-cols-2">
                       <div className="flex flex-col gap-1">
                         <span className="text-xs text-text-muted">{t("before")}</span>
-                        <pre className="max-h-64 overflow-auto rounded-button bg-surface-2 p-2 font-body text-xs whitespace-pre-wrap break-all">{json(log.before)}</pre>
+                        <pre className="max-h-64 overflow-auto rounded-control bg-surface-2 p-2 font-body text-xs whitespace-pre-wrap break-all">{json(log.before)}</pre>
                       </div>
                       <div className="flex flex-col gap-1">
                         <span className="text-xs text-text-muted">{t("after")}</span>
-                        <pre className="max-h-64 overflow-auto rounded-button bg-surface-2 p-2 font-body text-xs whitespace-pre-wrap break-all">{json(log.after)}</pre>
+                        <pre className="max-h-64 overflow-auto rounded-control bg-surface-2 p-2 font-body text-xs whitespace-pre-wrap break-all">{json(log.after)}</pre>
                       </div>
                     </div>
                   </details>

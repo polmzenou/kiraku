@@ -45,7 +45,7 @@ export default async function AdminReferralPage() {
         ) : (
           <ul className="grid gap-1 text-sm sm:grid-cols-2">
             {top.map((r) => (
-              <li key={r.referrerId} className="flex justify-between rounded-button border border-border bg-surface p-2">
+              <li key={r.referrerId} className="flex justify-between rounded-control border border-border bg-surface p-2">
                 <span>{r.username}</span>
                 <span className="tabular-nums">{r.count}</span>
               </li>
@@ -61,7 +61,7 @@ export default async function AdminReferralPage() {
         ) : (
           <ul className="flex flex-col gap-2">
             {referrals.map((r) => (
-              <li key={r.id} className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3 sm:flex-row sm:items-center sm:justify-between">
+              <li key={r.id} className="flex flex-col gap-2 lacquer rounded-card p-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 flex-col gap-1 text-sm">
                   <span className="font-bold">{t("referralLine", { referrer: r.referrer.username, referee: r.referee.username })}</span>
                   <span className="text-xs text-text-muted">

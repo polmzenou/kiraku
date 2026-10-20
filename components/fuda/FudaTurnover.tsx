@@ -22,7 +22,7 @@ export function FudaTurnover({ children, className = "" }: { children: ReactNode
           </div>
         </div>
       </div>
-      <button type="button" onClick={() => setBack(!back)} aria-pressed={back} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-button border border-border bg-surface px-3 text-sm text-text hover:border-kin">
+      <button type="button" onClick={() => setBack(!back)} aria-pressed={back} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-control border border-border bg-surface px-3 text-sm text-text hover:border-kin">
         <span aria-hidden="true">↻</span>{back ? t("showFront") : t("showBack")}
       </button>
     </div>

@@ -1,3 +1,6 @@
+
+import { useRaritySeals } from "@/lib/catalog/use-rarities";
+import { getRarities } from "@/server/catalog/rarities";
 import type { Metadata } from "next";
 import { hasLocale, useTranslations } from "next-intl";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
@@ -6,22 +9,24 @@ import { BannerHero, type BannerSlide } from "@/components/boosters/BannerHero";
 import { BoosterArt } from "@/components/boosters/BoosterArt";
 import { BoosterPanel } from "@/components/boosters/BoosterPanel";
 import { BoosterTile } from "@/components/boosters/BoosterTile";
+import { FamilyNav } from "@/components/boosters/FamilyNav";
 import { usePercent } from "@/components/boosters/format";
 import { NextFreeIn } from "@/components/boosters/NextFreeIn";
 import { OpenLink } from "@/components/boosters/OpenLink";
 import { RatesSheet } from "@/components/boosters/RatesSheet";
+import { RecentPulls } from "@/components/home/RecentPulls";
 import { ReviewsSection, type ReviewViewer } from "@/components/home/ReviewsSection";
 import { TopCollectors } from "@/components/home/TopCollectors";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { ButtonLink } from "@/components/ui/ButtonLink";
-import { getPathname, Link } from "@/i18n/navigation";
+import { getPathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { poolCounts } from "@/lib/boosters/draw";
 import { boosterPanelData } from "@/lib/boosters/panel";
 import { isRotatingFamily } from "@/lib/boosters/rotation";
 import { BOOSTER_FAMILIES, FAMILY_KANJI, localize, type BoosterFamily } from "@/lib/boosters/types";
-import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { canReview, pinnedFirst } from "@/lib/social/reviews";
 import { readBannerPity } from "@/server/boosters/open-core";
 import { cardViews } from "@/server/boosters/display";
@@ -36,6 +41,7 @@ import {
 import { getBoosterRules } from "@/server/boosters/rules";
 import { boosterStateFrom } from "@/server/boosters/state";
 import { getTopCollectors } from "@/server/collection/leaderboard";
+import { getRecentPulls } from "@/server/home/pulls";
 import { getBoosterCredits } from "@/server/economy/queries";
 import { getOwnReview, getReviewSample, getReviewSummary } from "@/server/social/reviews";
 import { getCurrentUser } from "@/server/user";
@@ -66,6 +72,7 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
 
 /** Accueil : choix du booster (planche « Choix du booster »), onglets par famille sur mobile. */
 export default async function BoostersPage({ searchParams }: PageProps<"/[locale]">) {
+  const RARITIES = await getRarities();
   const [t, format, user, rules, offers, rotation, ctx, query, locale] = await Promise.all([
     getTranslations("boosters"),
     getFormatter(),
@@ -94,13 +101,15 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
   // Boosters crédités (cadeaux d'amis, boutique, récompenses), par type, à ouvrir en premier ;
   // en bas de page, avis des joueurs et podium des collectionneurs
   const member = user !== null && canReview(user);
-  const [credits, allTypes, reviews, reviewSummary, ownReview, collectors] = await Promise.all([
+  const [credits, allTypes, reviews, reviewSummary, ownReview, collectors, pulls, pullRefresh] = await Promise.all([
     user ? getBoosterCredits(user.id) : new Map<string, number>(),
     getBoosterTypes(),
     getReviewSample(),
     getReviewSummary(),
     member && user ? getOwnReview(user.id) : null,
     getTopCollectors(3),
+    getRecentPulls(locale),
+    getSetting("home.pullFeed.refreshSeconds"),
   ]);
   const reviewViewer: ReviewViewer = member
     ? { kind: "member", own: ownReview }
@@ -173,7 +182,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
               {credited.map((c) => (
                 <li
                   key={c.slug}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-kin bg-surface p-4"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-kin bg-surface p-4"
                 >
                   <p className="flex items-center gap-2 font-bold">
                     <span aria-hidden="true" lang="ja" className="font-seal text-xl text-kin">
@@ -181,7 +190,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
                     </span>
                     {t("creditBoosters", { count: c.count, name: c.name })}
                   </p>
-                  <ButtonLink href={`/ouvrir/${c.slug}?credit=1`} variant="shu">
+                  <ButtonLink href={`/ouvrir/${c.slug}?credit=1`} variant="primary">
                     {t("openCredit")}
                   </ButtonLink>
                 </li>
@@ -192,33 +201,16 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
           <BannerHero slides={slides} />
 
           {/* Onglets de famille : filtrent la grille sur mobile, ancres sur desktop */}
-          <nav
-            aria-label={t("familiesLabel")}
-            className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 -mx-4 border-b border-border bg-bg/95 backdrop-blur md:top-[calc(4rem+env(safe-area-inset-top))] lg:mx-0"
-          >
-            <ul className="flex gap-1 overflow-x-auto px-3 [scrollbar-width:none] lg:px-0">
-              {families.map((family) => {
-                const active = family === activeFamily;
-                return (
-                  <li key={family} className="shrink-0">
-                    <Link
-                      prefetch={false}
-                      href={`/?b=${selected?.type.family === family ? selected.type.slug : visible.find((o) => o.type.family === family)!.type.slug}&f=${family}#famille-${family}`}
-                      aria-current={active ? "true" : undefined}
-                      className={`flex min-h-11 items-center gap-1.5 border-b-[3px] px-3 text-sm font-bold whitespace-nowrap ${
-                        active ? "border-shu text-text" : "border-transparent text-text-muted hover:text-text"
-                      }`}
-                    >
-                      <span aria-hidden="true" lang="ja" className="font-seal text-[15px] text-shu">
-                        {FAMILY_KANJI[family]}
-                      </span>
-                      {t(`families.${family}.title`)}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
+          <FamilyNav
+            active={activeFamily}
+            items={families.map((family) => ({
+              family,
+              kanji: FAMILY_KANJI[family],
+              title: t(`families.${family}.title`),
+              count: visible.filter((o) => o.type.family === family).length,
+              href: `/?b=${selected?.type.family === family ? selected.type.slug : visible.find((o) => o.type.family === family)!.type.slug}&f=${family}#famille-${family}`,
+            }))}
+          />
 
           {families.map((family) => {
             const items = visible.filter((o) => o.type.family === family);
@@ -245,7 +237,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
                         {t("rotationNext", { when: format.relativeTime(rotation.window.endsAt, state.serverNow) })}
                       </p>
                     )}
-                    <span aria-hidden="true" className="h-[3px] w-12 -skew-x-12 rounded-full bg-shu" />
+                    <span aria-hidden="true" className="h-[3px] w-12 rounded-pill bg-shu" />
                   </div>
                 </div>
                 <ul className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
@@ -267,12 +259,13 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
         )}
       </div>
 
+      {pulls && <RecentPulls initial={pulls} refreshSeconds={pullRefresh} serverNow={state.serverNow} />}
       <ReviewsSection reviews={pinnedFirst(reviews)} summary={reviewSummary} viewer={reviewViewer} />
       <TopCollectors collectors={collectors} />
 
       {/* Mobile : le booster choisi et l'action principale restent à portée du pouce */}
       {selected && panel && (
-        <div className="fixed inset-x-0 bottom-[var(--mobile-nav-height)] z-30 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="fixed inset-x-[max(0.75rem,env(safe-area-inset-left))] bottom-[var(--mobile-nav-height)] z-30 mx-auto max-w-md rounded-hero border border-border bg-surface px-4 py-3 shadow-float lg:hidden">
           <div className="mx-auto flex max-w-xl flex-col gap-2.5">
             <div className="flex items-center gap-3">
               <div className="w-8 shrink-0">
@@ -312,6 +305,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
 
 /** « 秀+ 18,4 % · 神 0,31 % » : la ligne de chances de la barre du bas. */
 function OddsSummary({ odds }: { odds: Record<Rarity, number> }) {
+  const RARITY_SEAL = useRaritySeals();
   const percent = usePercent();
   const tRarity = useTranslations("rarity");
   const best: Rarity[] = odds.EPIC >= 0.999 ? (odds.LEGENDARY >= 0.999 ? ["MYTHIC"] : ["LEGENDARY", "MYTHIC"]) : ["EPIC", "MYTHIC"];

@@ -55,7 +55,7 @@ function price(value: string | undefined): number | null {
 }
 
 /** Paramètres d'URL → filtres valides ; toute valeur inconnue retombe sur le défaut. */
-export function parseMarketParams(raw: RawParams): MarketParams {
+export function parseMarketParams(raw: RawParams, knownRarities: readonly string[] = RARITIES): MarketParams {
   const q = normalizeSearch((one(raw, "q") ?? "").slice(0, SEARCH_MAX_LENGTH));
   let minPrice = price(one(raw, "min"));
   let maxPrice = price(one(raw, "max"));
@@ -64,7 +64,7 @@ export function parseMarketParams(raw: RawParams): MarketParams {
   return {
     tab: pick(one(raw, "onglet"), MARKET_TABS, "all"),
     sort: pick(one(raw, "tri"), MARKET_SORTS, "ending"),
-    rarity: rarity && (RARITIES as readonly string[]).includes(rarity) ? (rarity as Rarity) : null,
+    rarity: rarity && knownRarities.includes(rarity) ? (rarity as Rarity) : null,
     q,
     minPrice,
     maxPrice,

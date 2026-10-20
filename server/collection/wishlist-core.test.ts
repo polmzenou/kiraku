@@ -10,7 +10,7 @@ function setup({ entries = [], banned = false, exists = true, rank = 1 as number
     wishlistEntry: {
       findMany: vi.fn().mockResolvedValue(entries), create: vi.fn(), deleteMany: vi.fn(),
     },
-    card: { findUnique: vi.fn().mockResolvedValue({ rank }) },
+    card: { findUnique: vi.fn().mockResolvedValue({ status: rank === null ? "ARCHIVED" : "PUBLISHED" }) },
   };
   const db = { $transaction: vi.fn(async (run: (client: typeof tx) => Promise<unknown>) => run(tx)) } as unknown as PrismaClient;
   return { tx, db };
@@ -21,6 +21,12 @@ describe("liste de souhaits", () => {
     const { tx, db } = setup();
     await expect(setWishlistWith(db, "viewer", "unowned", true)).resolves.toBe(true);
     expect(tx.wishlistEntry.create).toHaveBeenCalledWith({ data: { userId: "viewer", cardId: "unowned", position: 1 } });
+  });
+
+  it("accepte une carte personnalisée publiée sans rang AniList", async () => {
+    const { tx, db } = setup({ rank: null });
+    tx.card.findUnique.mockResolvedValue({ status: "PUBLISHED" });
+    await expect(setWishlistWith(db, "viewer", "custom", true)).resolves.toBe(true);
   });
 
   it("refuse une 21e carte et conserve les vingt autres", async () => {

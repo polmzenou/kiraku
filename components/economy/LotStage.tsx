@@ -1,6 +1,8 @@
+
+import { useRaritySeals } from "@/lib/catalog/use-rarities";
 import { useTranslations } from "next-intl";
 import type { CSSProperties, ReactNode } from "react";
-import { RARITY_SEAL } from "@/lib/catalog/rarity";
+
 import type { LotView } from "@/server/economy/lot-view";
 import { BoosterArt } from "../boosters/BoosterArt";
 import { Fuda } from "../fuda/Fuda";
@@ -23,6 +25,7 @@ const FAN = [
  * par LotRewards juste en dessous.
  */
 export function LotStage({ lot, className = "" }: { lot: LotView | undefined; className?: string }) {
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("economy.lot");
   const tRarity = useTranslations("rarity");
   const booster = lot?.lines.find((l) => l.kind === "BOOSTER");
@@ -67,7 +70,7 @@ export function LotStage({ lot, className = "" }: { lot: LotView | undefined; cl
           <CardBack static className="absolute inset-0" />
         </div>
         <span
-          className="absolute -top-2 -right-3 flex items-center gap-1 rounded-full bg-kin px-2 py-0.5 text-[11px] font-bold text-sumi shadow-paper"
+          className="absolute -top-2 -right-3 flex items-center gap-1 rounded-full bg-kin px-2 py-0.5 text-[11px] font-bold text-sumi"
           aria-hidden="true"
         >
           <span lang="ja" className="font-seal">

@@ -19,7 +19,7 @@ const tables = buildRarityTables(rates);
 
 /** Toutes les valeurs possibles du hasard, une par une : compte exact, sans statistique. */
 function enumerate(floor: Rarity) {
-  const counts = Object.fromEntries(RARITIES.map((r) => [r, 0])) as Record<Rarity, number>;
+  const counts = Object.fromEntries(Object.keys(rates).map((r) => [r, 0])) as Record<Rarity, number>;
   const { total } = tables[floor];
   for (let x = 0; x < total; x++) counts[rollRarity(() => x, tables, floor)] += 1;
   return { counts, total };
@@ -29,7 +29,8 @@ describe("rollRarity : correspondance exacte avec le tableau des parts", () => {
   it("sans plancher, chaque rareté reçoit exactement sa part (total 99 975)", () => {
     const { counts, total } = enumerate("COMMON");
     expect(total).toBe(99_975);
-    expect(counts).toEqual({ COMMON: 62_000, UNCOMMON: 25_000, RARE: 11_400, EPIC: 1_400, LEGENDARY: 150, MYTHIC: 25 });
+    // AR et Gold prennent 10 des 25 parts Mythique : « Mythique ou mieux » reste à 25.
+    expect(counts).toEqual({ COMMON: 62_000, UNCOMMON: 25_000, RARE: 11_400, EPIC: 1_400, LEGENDARY: 150, MYTHIC: 15, AR: 8, GOLD: 2 });
   });
 
   it.each(RARITIES)("plancher %s : jamais en dessous, parts du dessus inchangées", (floor) => {
@@ -40,7 +41,7 @@ describe("rollRarity : correspondance exacte avec le tableau des parts", () => {
   });
 
   it("un plancher dont toutes les parts sont nulles donne le plancher lui-même", () => {
-    const t = buildRarityTables({ ...rates, MYTHIC: 0 });
+    const t = buildRarityTables({ ...rates, MYTHIC: 0, AR: 0, GOLD: 0 });
     expect(rollRarity(() => 0, t, "MYTHIC")).toBe("MYTHIC");
   });
 });
@@ -194,15 +195,17 @@ describe("bonus selon le type", () => {
     expect(state).toMatchObject({ pityCount: 0, standardCount: 9 });
   });
 
-  it("un booster Mythique contient toujours une Mythique", () => {
+  it("un booster Mythique contient toujours une Mythique ou mieux", () => {
     const rules = { ...DEFAULT_RULES, slotFloors: ["EPIC", "EPIC", "EPIC", "MYTHIC"] as Rarity[] };
+    const order = Object.keys(rates);
     const { boosters } = drawBoosters(seededRng(3), { pool, rules, bonuses: none, state: { pityCount: 0, standardCount: 0 }, count: 200 });
-    for (const b of boosters) expect(b.cards.some((c) => c.rarity === "MYTHIC")).toBe(true);
+    for (const b of boosters) expect(b.cards.some((c) => rarityIndex(c.rarity, order) >= rarityIndex("MYTHIC", order))).toBe(true);
   });
 });
 
 describe("bannière vedette", () => {
-  const pool = fakePool();
+  // Sans carte AR ni Gold publiée : ces tirages retombent sur Mythique et gardent la part vedette.
+  const pool = fakePool(10, ["AR", "GOLD"]);
   const featured = featuredFromPool(["MYTHIC-0", "LEGENDARY-1"], pool, { rate: 10_000, pityThreshold: 100 })!;
   const noBonus = { ...DEFAULT_RULES, goldenEvery: 0, divineOdds: 0 };
 

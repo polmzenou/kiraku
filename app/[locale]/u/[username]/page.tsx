@@ -3,6 +3,7 @@ import { hasLocale } from "next-intl";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { PageShell } from "@/components/PageShell";
 import { displayName, ProfileHeader } from "@/components/profile/ProfileHeader";
+import { ProfileCustomizeButton } from "@/components/profile/ProfileCustomizeSheet";
 import { ShareProfileButton } from "@/components/profile/ShareProfileButton";
 import { Showcase } from "@/components/profile/Showcase";
 import { ProfileSalesSection, WishlistSection } from "@/components/profile/ProfileCardSections";
@@ -18,6 +19,9 @@ import { loadProfile } from "@/server/collection/profile-page";
 import { getCollectionSummary, getShowcase } from "@/server/collection/queries";
 import { getProfileSales, getWishlist } from "@/server/collection/profile-cards";
 import { getSetting } from "@/server/settings";
+import { prisma } from "@/server/db";
+import { getCosmeticOptions, getEarnedBadges, getProfileDecor } from "@/server/profile/progress";
+import type { Badge } from "@/lib/profile/conditions";
 import { giftsSentToday } from "@/server/social/queries";
 import type { ProfileAccess } from "@/lib/collection/visibility";
 import type { Relation } from "@/lib/social/relation";
@@ -57,7 +61,7 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
       <PageShell>
         <ProfileHeader username={owner.username} image={owner.image} isGuest={owner.isGuest} />
         {social}
-        <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">
+        <p className="lacquer rounded-card p-6 text-center text-text-muted">
           <span aria-hidden="true" className="mb-2 block font-seal text-3xl text-shu">秘</span>
           {t("private")}
         </p>
@@ -65,7 +69,13 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
     );
   }
 
-  const [size, values] = await Promise.all([getSetting("showcase.slots"), getSetting("collection.recycleValues")]);
+  const [size, values, decor] = await Promise.all([
+    getSetting("showcase.slots"),
+    getSetting("collection.recycleValues"),
+    getProfileDecor(owner.id, locale),
+  ]);
+  // Son propre profil (compte inscrit) : de quoi le personnaliser
+  const customize = access.isOwner && viewer && !viewer.isGuest ? await customizeData(owner.id, locale) : null;
   const [showcase, summary, wishlist, sales] = await Promise.all([
     getShowcase(owner.id, size, locale), getCollectionSummary(owner.id, values),
     getWishlist(owner.id, locale), getProfileSales(owner.id, locale),
@@ -79,7 +89,25 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
 
   return (
     <PageShell>
-      <ProfileHeader username={owner.username} image={owner.image} isGuest={owner.isGuest} createdAt={owner.createdAt} />
+      <ProfileHeader
+        username={owner.username}
+        image={owner.image}
+        isGuest={owner.isGuest}
+        createdAt={owner.createdAt}
+        decor={decor}
+        action={
+          customize && (
+            <ProfileCustomizeButton
+              username={owner.username}
+              image={owner.image}
+              initial={customize.initial}
+              options={customize.options}
+              badges={customize.badges}
+              privacy={{ visibility: owner.profileVisibility, showCollection: owner.showCollection }}
+            />
+          )
+        }
+      />
       {social}
 
       <div className="flex flex-wrap gap-2">
@@ -90,14 +118,14 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
       </div>
 
       {access.isOwner && owner.profileVisibility !== "PUBLIC" && (
-        <p className="rounded-lg border border-border bg-surface p-3 text-sm text-text-muted">
+        <p className="lacquer rounded-card p-3 text-sm text-text-muted">
           {t(`ownerNotice.${owner.profileVisibility}`)}
         </p>
       )}
 
       <dl className="grid grid-cols-3 gap-2 md:gap-3">
         {stats.map(([label, value]) => (
-          <div key={label} className="flex min-w-0 flex-col gap-0.5 rounded-lg border border-border bg-surface p-3">
+          <div key={label} className="flex min-w-0 flex-col gap-0.5 lacquer rounded-card p-3">
             <dt className="truncate text-xs text-text-muted">{label}</dt>
             <dd className="text-lg font-bold tabular-nums">{value}</dd>
           </div>
@@ -160,5 +188,27 @@ async function socialBar({
       limits: { perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours },
     };
   }
-  return <RelationActions username={owner.username} name={name} initial={access.relation} gift={gift} />;
+  const trade =
+    access.relation === "FRIENDS" && (await getSetting("trades.enabled")) ? { maxOffered: await getSetting("trades.maxOffered") } : null;
+  return <RelationActions username={owner.username} name={name} initial={access.relation} gift={gift} trade={trade} />;
+}
+
+/** Choix actuels, titres et cadres avec leur progression, badges obtenus. */
+async function customizeData(userId: string, locale: string) {
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { id: true, bio: true, titleAgreement: true, titleId: true, frameId: true, badgeOrder: true, createdAt: true, discordLinkedAt: true },
+  });
+  const [options, badges] = await Promise.all([getCosmeticOptions(userId, locale), getEarnedBadges(user)]);
+  return {
+    options,
+    badges,
+    initial: {
+      bio: user.bio ?? "",
+      titleAgreement: user.titleAgreement,
+      titleId: user.titleId,
+      frameId: user.frameId,
+      badgeOrder: user.badgeOrder.filter((b): b is Badge => (badges as string[]).includes(b)),
+    },
+  };
 }

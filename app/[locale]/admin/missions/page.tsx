@@ -72,7 +72,7 @@ export default async function AdminMissionsPage({ searchParams }: PageProps<"/[l
 
       <ul className="flex flex-col gap-2">
         {missions.map((m) => (
-          <li key={m.id} className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-3 sm:flex-row sm:items-center sm:justify-between">
+          <li key={m.id} className="flex flex-col gap-1 lacquer rounded-card p-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 flex-col gap-1">
               <p className="font-bold">
                 <span className="mr-2 text-xs text-text-muted">{tPeriod(m.period)}</span>

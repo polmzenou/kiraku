@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { cancelDeletionAction, requestDeletionAction, type DataActionError } from "@/server/actions/data";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
+import { inputClass } from "../ui/Field";
 
 /** Suppression du compte : demande confirmée par le pseudo, annulable jusqu'à l'échéance. */
 export function DeletionPanel({ username, graceDays, dueAt }: { username: string; graceDays: number; dueAt: string | null }) {
@@ -32,7 +33,7 @@ export function DeletionPanel({ username, graceDays, dueAt }: { username: string
         )}
         <Button
           type="button"
-          variant="shu"
+          variant="primary"
           disabled={pending}
           className="self-start"
           onClick={() =>
@@ -81,14 +82,14 @@ export function DeletionPanel({ username, graceDays, dueAt }: { username: string
             autoCapitalize="none"
             spellCheck={false}
             maxLength={40}
-            className="min-h-11 rounded-button border border-border bg-surface px-3"
+            className={inputClass}
           />
           {error && (
             <p role="alert" className="text-sm text-shu">
               {error}
             </p>
           )}
-          <Button type="submit" variant="shu" disabled={pending || confirm.trim().toLowerCase() !== username.toLowerCase()}>
+          <Button type="submit" variant="primary" disabled={pending || confirm.trim().toLowerCase() !== username.toLowerCase()}>
             {t("deletion.submit")}
           </Button>
         </form>

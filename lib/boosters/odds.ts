@@ -6,24 +6,25 @@ import { floorsFor, ratesFrom, rarityIndex, type DrawBonuses, type DrawRules, ty
 
 export type RarityOdds = Record<Rarity, number>;
 
-const zeroOdds = (): RarityOdds => Object.fromEntries(RARITIES.map((r) => [r, 0])) as RarityOdds;
+const zeroOdds = (order: readonly string[] = RARITIES): RarityOdds => Object.fromEntries(order.map((r) => [r, 0])) as RarityOdds;
 
 /** Nombre de cartes par rareté dans le pool d'un type (un palier vide se replie au tirage). */
 export type PoolCounts = Readonly<Record<Rarity, number>>;
 
 /** Rareté réellement obtenue quand on tire `r` : même repli que pickCard (descend, puis remonte). */
-export function resolveRarity(r: Rarity, counts?: PoolCounts): Rarity {
+export function resolveRarity(r: Rarity, counts?: PoolCounts, rarities?: readonly string[]): Rarity {
   if (!counts) return r;
-  const i = rarityIndex(r);
-  const order = [...RARITIES.slice(0, i + 1).reverse(), ...RARITIES.slice(i + 1)];
-  return order.find((x) => counts[x] > 0) ?? r;
+  const order = rarities ?? Object.keys(counts);
+  const i = order.indexOf(r);
+  const fallback = [...order.slice(0, i + 1).reverse(), ...order.slice(i + 1)];
+  return fallback.find((x) => counts[x] > 0) ?? r;
 }
 
 /** Rareté tirée (avant repli) pour un emplacement de plancher `floor`. */
 export function rolledDistribution(rates: RarityRates, floor: Rarity): RarityOdds {
   const table = ratesFrom(rates, floor);
   const total = table.reduce((s, [, w]) => s + w, 0);
-  const odds = zeroOdds();
+  const odds = zeroOdds(Object.keys(rates));
   if (total <= 0) {
     odds[floor] = 1;
     return odds;
@@ -36,19 +37,20 @@ export function rolledDistribution(rates: RarityRates, floor: Rarity): RarityOdd
 export function slotDistribution(rates: RarityRates, floor: Rarity, counts?: PoolCounts): RarityOdds {
   const rolled = rolledDistribution(rates, floor);
   if (!counts) return rolled;
-  const odds = zeroOdds();
-  for (const r of RARITIES) odds[resolveRarity(r, counts)] += rolled[r];
+  const odds = zeroOdds(Object.keys(rates));
+  for (const r of Object.keys(rates)) odds[resolveRarity(r, counts, Object.keys(rates))] += rolled[r];
   return odds;
 }
 
 /** P(au moins une carte de rareté ≥ R dans le booster), pour chaque R. */
 export function atLeastOdds(rates: RarityRates, floors: readonly Rarity[], counts?: PoolCounts): RarityOdds {
   const slots = floors.map((f) => slotDistribution(rates, f, counts));
-  const result = zeroOdds();
-  for (const target of RARITIES) {
-    const t = rarityIndex(target);
+  const order = Object.keys(rates);
+  const result = zeroOdds(order);
+  for (const target of order) {
+    const t = rarityIndex(target, order);
     const none = slots.reduce((p, slot) => {
-      const atLeast = RARITIES.reduce((s, r) => (rarityIndex(r) >= t ? s + slot[r] : s), 0);
+      const atLeast = order.reduce((s, r) => (rarityIndex(r, order) >= t ? s + slot[r] : s), 0);
       return p * (1 - atLeast);
     }, 1);
     result[target] = 1 - none;
@@ -78,10 +80,10 @@ export function featuredSlotChance(
   const share = Math.min(Math.max(input.rate, 0), 10_000) / 10_000;
   const rolled = rolledDistribution(rates, floor);
   let p = 0;
-  for (const r of RARITIES) {
+  for (const r of Object.keys(rates)) {
     if (rolled[r] === 0) continue;
-    const direct = input.featured[r] > 0 ? share : 0;
-    const res = resolveRarity(r, input.counts);
+    const res = resolveRarity(r, input.counts, Object.keys(rates));
+    const direct = input.featured[res] > 0 ? share : 0;
     const inPool = input.counts[res] > 0 ? Math.min(1, input.featured[res] / input.counts[res]) : 0;
     p += rolled[r] * (direct + (1 - direct) * inPool);
   }
@@ -118,7 +120,7 @@ export function longRunMythicRate(rules: DrawRules): number {
   const golden = (c: number) => rules.goldenEvery > 0 && (c + 1) % G === 0;
   const d = rules.divineOdds > 0 ? 1 / rules.divineOdds : 0;
   const mythicIn = (g: boolean) =>
-    atLeastOdds(rules.rates, floorsFor(rules.slotFloors, { golden: g, divine: false, goldenFloor: rules.goldenFloor }))
+    atLeastOdds(rules.rates, floorsFor(rules.slotFloors, { golden: g, divine: false, goldenFloor: rules.goldenFloor, rarities: rules.rarities ?? Object.keys(rules.rates) }))
       .MYTHIC;
   const qNormal = mythicIn(false);
   const qGolden = mythicIn(true);

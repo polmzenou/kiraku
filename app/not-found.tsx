@@ -1,11 +1,13 @@
-import { getTranslations } from "next-intl/server";
+import { createTranslator } from "next-intl";
 import Link from "next/link";
 import { routing } from "@/i18n/routing";
 import { fontVariables } from "./fonts";
+import fr from "@/messages/fr.json";
+import en from "@/messages/en.json";
 
 // Hors des routes localisées (ex. locale inconnue) : rendu en langue par défaut.
 export default async function RootNotFound() {
-  const t = await getTranslations({ locale: routing.defaultLocale, namespace: "notFound" });
+  const t = createTranslator({ locale: routing.defaultLocale, messages: { fr, en }[routing.defaultLocale], namespace: "notFound" });
   return (
     <html lang={routing.defaultLocale} data-theme="yoru" className={fontVariables}>
       <body className="flex min-h-dvh flex-col items-start gap-4 px-4 py-8">

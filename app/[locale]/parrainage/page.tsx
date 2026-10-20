@@ -30,7 +30,7 @@ const STEP_KANJI = ["一", "二", "三"] as const;
 /** Une récompense de parrainage sur sa scène (pour le parrain ou pour le filleul). */
 function RewardCard({ title, lot, empty }: { title: string; lot: LotView | undefined; empty: string }) {
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-surface">
+    <div className="flex flex-col overflow-hidden lacquer rounded-card">
       <LotStage lot={lot} className="h-32" />
       <div className="flex flex-col gap-2 p-3">
         <p className="text-sm font-bold">{title}</p>
@@ -64,7 +64,7 @@ export default async function ReferralPage() {
     return (
       <PageShell>
         {header}
-        <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">{t("disabled")}</p>
+        <p className="lacquer rounded-card p-6 text-center text-text-muted">{t("disabled")}</p>
       </PageShell>
     );
   }
@@ -93,7 +93,7 @@ export default async function ReferralPage() {
           t("how2", { hours: rules.minAccountAgeHours, boosters: rules.minBoostersOpened }),
           t("how3"),
         ].map((text, i) => (
-          <li key={i} className="relative flex items-start gap-3 rounded-xl border border-border bg-surface p-4">
+          <li key={i} className="relative flex items-start gap-3 lacquer rounded-card p-4">
             <span
               aria-hidden="true"
               lang="ja"
@@ -113,9 +113,9 @@ export default async function ReferralPage() {
     return (
       <PageShell>
         {header}
-        <section className="flex flex-col gap-3 rounded-xl border border-kin/60 bg-[linear-gradient(135deg,var(--color-surface),var(--color-surface-2))] p-5">
+        <section className="flex flex-col gap-3 rounded-card border border-kin/60 bg-[linear-gradient(135deg,var(--color-surface),var(--color-surface-2))] p-5">
           <p className="font-title text-lg font-bold">{cookieCode ? t("guestInvited") : t("guestBody")}</p>
-          <ButtonLink href="/inscription" variant="shu" className="self-start">
+          <ButtonLink href="/inscription" variant="primary" className="self-start">
             {tAccount("createAccount")}
           </ButtonLink>
         </section>
@@ -176,7 +176,7 @@ export default async function ReferralPage() {
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start">
         {/* Carte d'invitation : le code comme une étiquette tanzaku, bordure dorée */}
-        <section className="relative flex flex-col gap-4 overflow-hidden rounded-xl border border-kin/60 bg-[linear-gradient(135deg,var(--color-surface),var(--color-surface-2))] p-5 shadow-paper">
+        <section className="relative flex flex-col gap-4 overflow-hidden rounded-card border border-kin/60 bg-[linear-gradient(135deg,var(--color-surface),var(--color-surface-2))] p-5">
           <span aria-hidden="true" lang="ja" className="pointer-events-none absolute -right-3 -bottom-6 font-seal text-[7rem] leading-none text-kin/10">
             招
           </span>
@@ -200,14 +200,14 @@ export default async function ReferralPage() {
       {howItWorks}
 
       <section
-        className="flex flex-col gap-4 rounded-xl border border-shu/40 border-l-4 border-l-shu bg-surface bg-linear-to-br from-shu/10 via-surface to-surface p-5 shadow-paper sm:p-6"
+        className="flex flex-col gap-4 rounded-card border border-shu/40 border-l-4 border-l-shu bg-surface bg-linear-to-br from-shu/10 via-surface to-surface p-5 sm:p-6"
         aria-labelledby="parrain"
       >
         <div className="flex items-center gap-3">
           <span
             aria-hidden="true"
             lang="ja"
-            className="flex size-10 shrink-0 items-center justify-center rounded-button bg-shu-btn font-seal text-2xl text-washi-paper shadow-paper"
+            className="flex size-10 shrink-0 items-center justify-center rounded-control bg-shu-btn font-seal text-2xl text-washi-paper"
           >
             招
           </span>
@@ -238,13 +238,13 @@ export default async function ReferralPage() {
           {t("refereesTitle", { count: referees.length })}
         </h2>
         {referees.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border bg-surface p-6 text-center text-sm text-text-muted">{t("refereesEmpty")}</p>
+          <p className="rounded-card border border-dashed border-border bg-surface p-6 text-center text-sm text-text-muted">{t("refereesEmpty")}</p>
         ) : (
           <ul className="grid gap-2 md:grid-cols-2">
             {referees.map((r) => {
               const progress = progressById.get(r.id);
               return (
-                <li key={r.id} className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
+                <li key={r.id} className="flex flex-col gap-3 lacquer rounded-card p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
                       <span

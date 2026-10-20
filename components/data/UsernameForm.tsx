@@ -51,7 +51,7 @@ export function UsernameForm({ current, cooldownDays }: { current: string; coold
         maxLength={20}
         pattern="[A-Za-z0-9_\-]{3,20}"
         aria-describedby="username-hint"
-        className="min-h-11 rounded-button border border-border bg-bg px-3"
+        className="min-h-11 rounded-control border border-border bg-bg px-3"
       />
       <p id="username-hint" className="text-xs text-text-muted">
         {t("rectify.usernameHint")} · {t("rectify.cooldown", { days: cooldownDays })}

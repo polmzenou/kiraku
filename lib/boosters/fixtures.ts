@@ -1,4 +1,4 @@
-import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { RARITIES, VARIANT_RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
 import type { CardPool, DrawRules } from "./draw";
 
@@ -13,10 +13,10 @@ export const DEFAULT_RULES: DrawRules = {
   divineOdds: SETTING_DEFAULTS["booster.divineOdds"],
 };
 
-/** Pool factice : `perRarity` cartes par rareté, ids « MYTHIC-0 », « RARE-3 »… */
+/** Pool factice : `perRarity` cartes par rareté (AR et Gold compris), ids « MYTHIC-0 », « RARE-3 »… */
 export function fakePool(perRarity = 10, empty: Rarity[] = []): CardPool {
   const pool = {} as Record<Rarity, string[]>;
-  for (const r of RARITIES) {
+  for (const r of [...RARITIES, ...VARIANT_RARITIES]) {
     pool[r] = empty.includes(r) ? [] : Array.from({ length: perRarity }, (_, i) => `${r}-${i}`);
   }
   return pool;

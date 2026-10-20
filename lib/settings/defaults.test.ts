@@ -68,7 +68,8 @@ describe("réglages des boosters", () => {
     const floors = SETTING_DEFAULTS["booster.slotFloors"];
     expect(parseSetting("booster.slotFloors", [])).toEqual(floors);
     expect(parseSetting("booster.slotFloors", Array(11).fill("COMMON"))).toEqual(floors);
-    expect(parseSetting("booster.slotFloors", ["COMMON", "SHINY"])).toEqual(floors);
+    expect(parseSetting("booster.slotFloors", ["COMMON", "SHINY"])).toEqual(["COMMON", "SHINY"]);
+    expect(parseSetting("booster.slotFloors", ["COMMON", "bad key"])).toEqual(floors);
     expect(parseSetting("booster.slotFloors", ["RARE"])).toEqual(["RARE"]);
   });
 

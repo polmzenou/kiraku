@@ -30,7 +30,7 @@ export function RevokeReferralButton({ referralId }: { referralId: string }) {
     <div className="flex flex-col items-end gap-1">
       {confirming ? (
         <div className="flex gap-2">
-          <Button type="button" variant="shu" onClick={revoke} disabled={pending}>
+          <Button type="button" variant="primary" onClick={revoke} disabled={pending}>
             {t("revokeConfirm")}
           </Button>
           <Button type="button" onClick={() => setConfirming(false)} disabled={pending}>

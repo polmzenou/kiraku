@@ -1,15 +1,15 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
+import { UserSelectCheckbox, UserSelection } from "@/components/admin/UserDeletion";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
 import { parseUserListParams, USER_FILTERS } from "@/lib/admin/users";
 import { requireAdmin } from "@/server/admin";
 import { listAdminUsers } from "@/server/admin/users";
-
-const inputClass = "min-h-11 w-full min-w-0 rounded-button border border-border bg-surface-2 px-3 text-base";
+import { inputClass, selectClass } from "@/components/ui/Field";
 
 export default async function AdminUsersPage({ searchParams }: PageProps<"/[locale]/admin/utilisateurs">) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const params = parseUserListParams(await searchParams);
   const [t, format, result] = await Promise.all([getTranslations("admin.users"), getFormatter(), listAdminUsers(params.query, params.filter, params.page)]);
   const href = (page: number) => ({ pathname: "/admin/utilisateurs", query: { q: params.query, filter: params.filter, page } });
@@ -25,7 +25,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/[loca
           <input name="q" defaultValue={params.query} maxLength={100} placeholder={t("searchPlaceholder")} className={inputClass} />
         </label>
         <label className="flex flex-col gap-1 text-sm">{t("filter")}
-          <select name="filter" defaultValue={params.filter} className={inputClass}>
+          <select name="filter" defaultValue={params.filter} className={selectClass}>
             {USER_FILTERS.map((f) => <option key={f} value={f}>{t(`filters.${f}`)}</option>)}
           </select>
         </label>
@@ -33,6 +33,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/[loca
       </form>
       <p className="text-sm text-text-muted">{t("total", { count: result.total })}</p>
       {result.users.length === 0 ? <p>{t("empty")}</p> : (
+        <UserSelection selectable={result.users.filter((u) => u.role !== "ADMIN" && u.id !== admin.id).map((u) => ({ id: u.id, username: u.username }))}>
         <ResponsiveTable
           caption={t("total", { count: result.total })}
           columns={[
@@ -48,10 +49,13 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/[loca
             id: u.id,
             cells: {
               player: (
-                <>
-                  <Link href={`/admin/utilisateurs/${u.id}`} className="font-bold text-link underline underline-offset-4">{u.username}</Link>
-                  <p className="text-xs break-all text-text-muted">{u.email ?? t("noEmail")}</p>
-                </>
+                <span className="flex items-start gap-3">
+                  <UserSelectCheckbox id={u.id} username={u.username} disabled={u.role === "ADMIN" || u.id === admin.id} />
+                  <span className="min-w-0">
+                    <Link href={`/admin/utilisateurs/${u.id}`} className="font-bold text-link underline underline-offset-4">{u.username}</Link>
+                    <p className="text-xs break-all text-text-muted">{u.email ?? t("noEmail")}</p>
+                  </span>
+                </span>
               ),
               status: (
                 <span className="flex flex-col">
@@ -75,6 +79,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/[loca
             },
           }))}
         />
+        </UserSelection>
       )}
       <nav aria-label={t("pagination")} className="flex flex-wrap items-center justify-between gap-3">
         {result.page > 0 ? <Link href={href(result.page - 1)} className={buttonClasses()}>{t("previous")}</Link> : <span />}

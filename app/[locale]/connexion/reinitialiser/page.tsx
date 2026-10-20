@@ -16,7 +16,7 @@ export default async function ResetPasswordPage({ searchParams }: PageProps<"/[l
 
   return (
     <PageShell>
-      <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4">
+      <section className="flex flex-col gap-4 lacquer rounded-card p-4">
         <h1 className="text-2xl font-bold">{t("reset.title")}</h1>
         {parsed.success ? (
           <ResetPasswordForm token={parsed.data} />

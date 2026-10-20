@@ -19,7 +19,8 @@ export async function measureProgress(db: Db, userId: string, measure: Measure, 
     case "OPEN_BOOSTERS":
       return db.boosterOpening.count({ where: { userId, createdAt } });
     case "PULL_RARITY": {
-      const wanted = raritiesFrom(measure.rarity ?? "COMMON");
+      const registry = await db.rarityDefinition.findMany({ orderBy: [{ sortOrder: "asc" }, { key: "asc" }], select: { key: true } });
+      const wanted = raritiesFrom(measure.rarity ?? "COMMON", registry.map((r) => r.key));
       // Cartes tirées (ids de Card gardés par chaque ouverture, même après recyclage ou vente)
       const [row] = await db.$queryRaw<{ n: number }[]>`
         SELECT count(*)::int AS n
@@ -27,7 +28,7 @@ export async function measureProgress(db: Db, userId: string, measure: Measure, 
         CROSS JOIN LATERAL unnest(o."catalogCardIds") AS pulled(card_id)
         JOIN "Card" c ON c.id = pulled.card_id
         WHERE o."userId" = ${userId} AND o."createdAt" >= ${window.start} AND o."createdAt" < ${window.end}
-          AND c.rarity::text = ANY(${wanted})`;
+          AND c."rarityKey" = ANY(${wanted})`;
       return Number(row?.n ?? 0);
     }
     case "DISCOVER_CARDS":

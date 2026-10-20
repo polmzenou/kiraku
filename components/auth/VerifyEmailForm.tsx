@@ -29,7 +29,7 @@ export function VerifyEmailForm({ token }: { token: string }) {
     <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name="token" value={token} />
       <FormAlert error={state.error} />
-      <Button type="submit" variant="shu" disabled={pending}>
+      <Button type="submit" variant="primary" disabled={pending}>
         {pending ? t("pending") : t("verify.submit")}
       </Button>
     </form>

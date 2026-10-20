@@ -1,3 +1,4 @@
+import { getRarities } from "@/server/catalog/rarities";
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { CollectionFilters } from "@/components/collection/CollectionFilters";
@@ -33,12 +34,12 @@ export default async function PublicCollectionPage({ params, searchParams }: Pag
     return (
       <PageShell>
         {back}
-        <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">{t("collectionHidden")}</p>
+        <p className="lacquer rounded-card p-6 text-center text-text-muted">{t("collectionHidden")}</p>
       </PageShell>
     );
   }
 
-  const filters = parseCollectionParams(await searchParams);
+  const filters = parseCollectionParams(await searchParams, await getRarities());
   const values = await getSetting("collection.recycleValues");
   const [summary, page, series] = await Promise.all([
     getCollectionSummary(owner.id, values),
@@ -54,7 +55,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pag
       <CollectionStats summary={summary} />
       <CollectionFilters params={filters} pathname={`/u/${owner.username}/collection`} series={series} />
       {page.items.length === 0 ? (
-        <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">
+        <p className="lacquer rounded-card p-6 text-center text-text-muted">
           {hasFilters(filters) ? t("noMatch") : t("collectionEmpty")}
         </p>
       ) : (

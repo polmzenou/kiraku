@@ -1,14 +1,17 @@
 "use client";
 
+import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
+
 import { useTranslations } from "next-intl";
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import type { CollectionSummary } from "@/lib/collection/view";
 import { recycleAllAction } from "@/server/actions/collection";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
 import { useCollectionStore } from "./CollectionStore";
+import { selectClass } from "../ui/Field";
 
 /**
  * « Recycler les doublons » : choix de la rareté la plus haute (Épique par défaut, pour ne jamais
@@ -16,6 +19,8 @@ import { useCollectionStore } from "./CollectionStore";
  * Le serveur recalcule tout et refuse si le gain n'est plus celui affiché.
  */
 export function RecycleAllSheet({ byRarity }: { byRarity: CollectionSummary["byRarity"] }) {
+  const RARITIES = useRarities();
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("collection.recycleAll");
   const tRarity = useTranslations("rarity");
   const router = useRouter();
@@ -73,7 +78,7 @@ export function RecycleAllSheet({ byRarity }: { byRarity: CollectionSummary["byR
               setMaxRarity(e.target.value as Rarity);
               setMessage(null);
             }}
-            className="min-h-11 w-full rounded-button border border-border bg-surface-2 px-3 text-base"
+            className={selectClass}
           >
             {RARITIES.map((r) => (
               <option key={r} value={r}>
@@ -123,7 +128,7 @@ export function RecycleAllSheet({ byRarity }: { byRarity: CollectionSummary["byR
           <Button type="button" onClick={() => setOpen(false)} disabled={pending}>
             {t("cancel")}
           </Button>
-          <Button type="button" variant="shu" onClick={confirm} disabled={pending || copies === 0}>
+          <Button type="button" variant="primary" onClick={confirm} disabled={pending || copies === 0}>
             {t("confirm", { zeni })}
           </Button>
         </div>

@@ -61,7 +61,7 @@ export function RecycleControl({
       }
     });
 
-  const stepper = "inline-flex size-11 items-center justify-center rounded-button border border-border bg-surface-2 text-xl disabled:opacity-40";
+  const stepper = "inline-flex size-11 items-center justify-center rounded-control border border-border bg-surface-2 text-xl disabled:opacity-40";
 
   return (
     <div className="flex flex-col gap-3">
@@ -100,12 +100,12 @@ export function RecycleControl({
           <Button type="button" onClick={() => setConfirming(false)} disabled={pending}>
             {t("cancel")}
           </Button>
-          <Button type="button" variant="shu" onClick={recycle} disabled={pending}>
+          <Button type="button" variant="primary" onClick={recycle} disabled={pending}>
             {t("confirm", { zeni: gain })}
           </Button>
         </div>
       ) : (
-        <Button type="button" variant="shu" onClick={() => setConfirming(true)} disabled={pending}>
+        <Button type="button" variant="primary" onClick={() => setConfirming(true)} disabled={pending}>
           {t("recycle", { count: n, zeni: gain })}
         </Button>
       )}

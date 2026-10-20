@@ -48,6 +48,7 @@ export type FighterSetup = {
   name: string;
   nameNative: string | null;
   imageUrl: string;
+  appearance?: unknown;
   rank: number | null;
   rarity: Rarity;
   power: number;

@@ -7,6 +7,7 @@ import { TEAM_SIZE } from "@/lib/battle/types";
 import type { CandidateCard } from "@/lib/battle/view";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
+import { inputClass } from "../ui/Field";
 
 const fold = (s: string) =>
   s
@@ -87,12 +88,12 @@ export function TeamPicker({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("search")}
-          className="min-h-11 rounded-button border border-border bg-surface px-3"
+          className={inputClass}
         />
       </label>
 
       {candidates.length === 0 ? (
-        <p className="rounded-lg border border-border bg-surface p-4 text-center text-sm text-text-muted">{t("none")}</p>
+        <p className="lacquer rounded-card p-4 text-center text-sm text-text-muted">{t("none")}</p>
       ) : shown.length === 0 ? (
         <p className="text-center text-sm text-text-muted">{t("noMatch")}</p>
       ) : (
@@ -137,7 +138,7 @@ export function TeamPicker({
       {/* Validation toujours visible */}
       <div className="sticky bottom-0 -mx-4 flex items-center justify-between gap-3 border-t border-border bg-bg px-4 py-3 md:-mx-6 md:px-6">
         <span className="text-sm tabular-nums text-text-muted">{t("count", { count: team.length })}</span>
-        <Button variant="shu" disabled={team.length !== TEAM_SIZE || pending} onClick={() => onConfirm(team)}>
+        <Button variant="primary" disabled={team.length !== TEAM_SIZE || pending} onClick={() => onConfirm(team)}>
           {confirmLabel}
         </Button>
       </div>

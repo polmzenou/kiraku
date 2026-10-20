@@ -4,6 +4,7 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { buildSearchText } from "@/lib/catalog/search";
 import type { ImportRun, ImportStore, StagedRow } from "./import";
 import { preserveExistingEntries } from "./import";
+import { lockCatalog, bumpCatalogRevision } from "./admin-core";
 import { RUN_NOT_ACTIVE } from "./run-guard";
 
 const BATCH = 1000;
@@ -101,7 +102,8 @@ export function prismaImportStore(db: PrismaClient): ImportStore {
     },
 
     async catalogSnapshot() {
-      return db.card.findMany({ select: { anilistId: true, rank: true, rarity: true, power: true, ki: true } });
+      const rows = await db.card.findMany({ where: { origin: "ANILIST", anilistId: { not: null } }, select: { anilistId: true, rank: true, rarity: true, power: true, ki: true } });
+      return rows.filter((c): c is typeof c & { anilistId: number } => c.anilistId !== null);
     },
 
     async finalize(runId, entries, options) {
@@ -135,9 +137,11 @@ export function prismaImportStore(db: PrismaClient): ImportStore {
 
       await db.$transaction(
         async (tx) => {
+          await lockCatalog(tx);
           if (options?.preserveExisting) {
             await tx.$executeRaw`LOCK TABLE "Card" IN SHARE ROW EXCLUSIVE MODE`;
-            const before = await tx.card.findMany({ select: { anilistId: true, rank: true, rarity: true, power: true, ki: true } });
+            const snapshot = await tx.card.findMany({ where: { origin: "ANILIST", anilistId: { not: null } }, select: { anilistId: true, rank: true, rarity: true, power: true, ki: true } });
+            const before = snapshot.filter((c): c is typeof c & { anilistId: number } => c.anilistId !== null);
             const activeCount = before.filter((card) => card.rank !== null).length;
             const protectedEntries = preserveExistingEntries(entries, before, options.target ?? activeCount + entries.length);
             const additions = new Map(protectedEntries.map((entry) => [entry.anilistId, entry]));
@@ -154,7 +158,7 @@ export function prismaImportStore(db: PrismaClient): ImportStore {
           if (claimed.count === 0) throw new Error(RUN_NOT_ACTIVE);
 
           // Libère l'unicité des rangs : les cartes absentes de ce classement sortent du catalogue
-          if (!options?.preserveExisting) await tx.$executeRaw`UPDATE "Card" SET "rank" = NULL WHERE "rank" IS NOT NULL`;
+          if (!options?.preserveExisting) await tx.$executeRaw`UPDATE "Card" SET "rank" = NULL, "status" = CASE WHEN 'status' = ANY("adminOverrides") THEN "status" ELSE 'ARCHIVED'::"CatalogCardStatus" END WHERE "origin" = 'ANILIST' AND "rank" IS NOT NULL`;
 
           for (const batch of chunks([...series.values()], BATCH)) {
             await tx.$executeRaw`
@@ -176,11 +180,11 @@ export function prismaImportStore(db: PrismaClient): ImportStore {
 
           for (const batch of chunks(cards, BATCH)) {
             await tx.$executeRaw`
-              INSERT INTO "Card" ("id", "anilistId", "name", "nameNative", "imageUrl", "favorites", "rank", "rarity",
+              INSERT INTO "Card" ("id", "anilistId", "name", "nameNative", "imageUrl", "favorites", "rank", "rarityKey",
                 "power", "ki", "seriesId", "gender", "birthMonth", "birthDay", "role", "searchText", "addedImportId",
                 "createdAt", "updatedAt")
               SELECT gen_random_uuid()::text, c."anilistId", c."name", c."nameNative", c."imageUrl", c."favorites",
-                c."rank", c."rarity"::"Rarity", c."power", c."ki", s."id", c."gender", c."birthMonth", c."birthDay",
+                c."rank", c."rarity", c."power", c."ki", s."id", c."gender", c."birthMonth", c."birthDay",
                 c."role", c."searchText", ${runId}, now(), now()
               FROM jsonb_to_recordset(${JSON.stringify(batch)}::jsonb) AS c(
                 "anilistId" int, "name" text, "nameNative" text, "imageUrl" text, "favorites" int, "rank" int,
@@ -188,14 +192,26 @@ export function prismaImportStore(db: PrismaClient): ImportStore {
                 "birthDay" int, "role" text, "searchText" text)
               JOIN "Series" s ON s."anilistId" = c."seriesAnilistId"
               ON CONFLICT ("anilistId") DO UPDATE SET
-                "name" = EXCLUDED."name", "nameNative" = EXCLUDED."nameNative", "imageUrl" = EXCLUDED."imageUrl",
-                "favorites" = EXCLUDED."favorites", "rank" = EXCLUDED."rank", "rarity" = EXCLUDED."rarity",
-                "power" = EXCLUDED."power", "ki" = EXCLUDED."ki", "seriesId" = EXCLUDED."seriesId",
-                "gender" = EXCLUDED."gender", "birthMonth" = EXCLUDED."birthMonth", "birthDay" = EXCLUDED."birthDay",
-                "role" = EXCLUDED."role", "searchText" = EXCLUDED."searchText", "updatedAt" = now()
+                "name" = CASE WHEN 'name' = ANY("Card"."adminOverrides") THEN "Card"."name" ELSE EXCLUDED."name" END,
+                "nameNative" = CASE WHEN 'nameNative' = ANY("Card"."adminOverrides") THEN "Card"."nameNative" ELSE EXCLUDED."nameNative" END,
+                "imageUrl" = CASE WHEN 'imageUrl' = ANY("Card"."adminOverrides") THEN "Card"."imageUrl" ELSE EXCLUDED."imageUrl" END,
+                "favorites" = CASE WHEN 'favorites' = ANY("Card"."adminOverrides") THEN "Card"."favorites" ELSE EXCLUDED."favorites" END,
+                "rank" = CASE WHEN 'rank' = ANY("Card"."adminOverrides") THEN "Card"."rank" ELSE EXCLUDED."rank" END,
+                "rarityKey" = CASE WHEN 'rarity' = ANY("Card"."adminOverrides") THEN "Card"."rarityKey" ELSE EXCLUDED."rarityKey" END,
+                "power" = CASE WHEN 'power' = ANY("Card"."adminOverrides") THEN "Card"."power" ELSE EXCLUDED."power" END,
+                "ki" = CASE WHEN 'ki' = ANY("Card"."adminOverrides") THEN "Card"."ki" ELSE EXCLUDED."ki" END,
+                "seriesId" = CASE WHEN 'seriesId' = ANY("Card"."adminOverrides") THEN "Card"."seriesId" ELSE EXCLUDED."seriesId" END,
+                "gender" = CASE WHEN 'gender' = ANY("Card"."adminOverrides") THEN "Card"."gender" ELSE EXCLUDED."gender" END,
+                "birthMonth" = CASE WHEN 'birthMonth' = ANY("Card"."adminOverrides") THEN "Card"."birthMonth" ELSE EXCLUDED."birthMonth" END,
+                "birthDay" = CASE WHEN 'birthDay' = ANY("Card"."adminOverrides") THEN "Card"."birthDay" ELSE EXCLUDED."birthDay" END,
+                "role" = CASE WHEN 'role' = ANY("Card"."adminOverrides") THEN "Card"."role" ELSE EXCLUDED."role" END,
+                "searchText" = CASE WHEN 'searchText' = ANY("Card"."adminOverrides") THEN "Card"."searchText" ELSE EXCLUDED."searchText" END,
+                "status" = CASE WHEN 'status' = ANY("Card"."adminOverrides") THEN "Card"."status" ELSE 'PUBLISHED'::"CatalogCardStatus" END,
+                "updatedAt" = now()
               WHERE NOT ${options?.preserveExisting ?? false}`;
           }
 
+          await bumpCatalogRevision(tx);
           if (options?.preserveExisting) {
             await tx.gameSetting.upsert({
               where: { key: "catalog.size" },

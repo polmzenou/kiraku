@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({ user: vi.fn(), updateMany: vi.fn(), rateLimit:
 vi.mock("../user", () => ({ requireActiveUser: mocks.user }));
 vi.mock("../db", () => ({ prisma: { user: { updateMany: mocks.updateMany } } }));
 vi.mock("../ratelimit", () => ({ rateLimit: mocks.rateLimit }));
+import { RELEASE_ANNOUNCED_AT } from "@/lib/welcome/release";
 import { claimV1WelcomeAction } from "./welcome";
 
 beforeEach(() => {
@@ -32,15 +33,27 @@ describe("présentation v1 unique par compte", () => {
   });
 
   it("ne représente pas le modal après reconnexion ou changement d'appareil", async () => {
-    mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: new Date() });
+    mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: new Date(RELEASE_ANNOUNCED_AT.getTime() + 1000) });
     expect(await claimV1WelcomeAction("player")).toBe(false);
     expect(mocks.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("présente une fois la nouvelle version à qui n'avait vu que l'ancienne", async () => {
+    mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: new Date(RELEASE_ANNOUNCED_AT.getTime() - 1000) });
+    expect(await claimV1WelcomeAction("player")).toBe(true);
+    expect(mocks.updateMany).toHaveBeenCalledOnce();
   });
 
   it("enregistre l'affichage sur le joueur de la session", async () => {
     expect(await claimV1WelcomeAction("player")).toBe(true);
     expect(mocks.updateMany).toHaveBeenCalledWith({
-      where: { id: "player", v1WelcomeSeenAt: null, bannedAt: null, deletionRequestedAt: null, anonymizedAt: null },
+      where: {
+        id: "player",
+        OR: [{ v1WelcomeSeenAt: null }, { v1WelcomeSeenAt: { lt: RELEASE_ANNOUNCED_AT } }],
+        bannedAt: null,
+        deletionRequestedAt: null,
+        anonymizedAt: null,
+      },
       data: { v1WelcomeSeenAt: expect.any(Date) },
     });
   });

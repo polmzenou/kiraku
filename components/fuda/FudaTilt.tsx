@@ -9,7 +9,7 @@ import "./FudaTilt.css";
  * la carte est à l'écran, et jamais si l'utilisateur préfère réduire les animations.
  * `rotate` ajoute une inclinaison 3D au survol et au toucher.
  */
-export function FudaTilt({ children, className = "", rotate = true }: { children: ReactNode; className?: string; rotate?: boolean }) {
+export function FudaTilt({ children, className = "", rotate = true, angle = 16, reactive = true }: { children: ReactNode; className?: string; rotate?: boolean; angle?: number; reactive?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,11 +24,11 @@ export function FudaTilt({ children, className = "", rotate = true }: { children
     let target = { x: 0.5, y: 0.5 };
     const apply = () => {
       frame = 0;
-      fuda.style.setProperty("--mx", target.x.toFixed(3));
-      fuda.style.setProperty("--my", target.y.toFixed(3));
+      fuda.style.setProperty("--mx", (reactive ? target.x : 0.5).toFixed(3));
+      fuda.style.setProperty("--my", (reactive ? target.y : 0.5).toFixed(3));
       if (rotate) {
-        fuda.style.setProperty("--fuda-rotate-x", `${((0.5 - target.y) * 24).toFixed(2)}deg`);
-        fuda.style.setProperty("--fuda-rotate-y", `${((target.x - 0.5) * 32).toFixed(2)}deg`);
+        fuda.style.setProperty("--fuda-rotate-x", `${((0.5 - target.y) * angle * 1.5).toFixed(2)}deg`);
+        fuda.style.setProperty("--fuda-rotate-y", `${((target.x - 0.5) * angle * 2).toFixed(2)}deg`);
       }
     };
     const schedule = (x: number, y: number) => {
@@ -101,7 +101,7 @@ export function FudaTilt({ children, className = "", rotate = true }: { children
       document.removeEventListener("visibilitychange", sync);
       stop();
     };
-  }, [rotate]);
+  }, [rotate, angle, reactive]);
 
   return (
     <div ref={ref} className={`${rotate ? "kf-tilt" : ""} ${className}`}>

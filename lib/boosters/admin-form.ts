@@ -1,5 +1,5 @@
+import { rarityKeySchema } from "@/lib/catalog/definitions";
 import { z } from "@/lib/zod";
-import { RARITIES } from "@/lib/catalog/rarity";
 import { poolFilterSchema, type PoolFilter } from "./pool-filter";
 import {
   BOOSTER_FAMILIES,
@@ -39,7 +39,7 @@ export const boosterTypeFormSchema = z
     theme: boosterThemeSchema,
     // Le formulaire envoie des champs vides : on les retire avant de valider le filtre
     filter: z.preprocess((raw) => (raw && typeof raw === "object" ? cleanFilter(raw as Record<string, unknown>) : raw), poolFilterSchema),
-    slotFloors: z.array(z.enum(RARITIES)).max(20),
+    slotFloors: z.array(rarityKeySchema).max(20),
     usesFreeStock: z.boolean(),
     priceZeni: z.number().int().min(0).max(1_000_000).nullable(),
     countsForPity: z.boolean(),

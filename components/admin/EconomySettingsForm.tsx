@@ -48,7 +48,7 @@ export function EconomySettingsForm({ initial, lots }: { initial: EconomySetting
         save();
       }}
     >
-      <fieldset className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4">
+      <fieldset className="flex flex-col gap-2 lacquer rounded-card p-4">
         <legend className="px-1 font-bold">{t("switches")}</legend>
         <Toggle label={t("keys.missionsEnabled")} checked={draft["missions.enabled"]} onChange={(v) => update("missions.enabled", v)} />
         <Toggle label={t("keys.shopEnabled")} checked={draft["shop.enabled"]} onChange={(v) => update("shop.enabled", v)} />
@@ -56,7 +56,7 @@ export function EconomySettingsForm({ initial, lots }: { initial: EconomySetting
         <p className="text-xs text-text-muted">{t("premiumHint")}</p>
       </fieldset>
 
-      <fieldset className="grid gap-4 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2">
+      <fieldset className="grid gap-4 lacquer rounded-card p-4 sm:grid-cols-2">
         <legend className="px-1 font-bold">{t("referral")}</legend>
         <div className="sm:col-span-2">
           <Toggle label={t("keys.referralEnabled")} checked={draft["referral.enabled"]} onChange={(v) => update("referral.enabled", v)} />
@@ -109,7 +109,7 @@ export function EconomySettingsForm({ initial, lots }: { initial: EconomySetting
       </fieldset>
 
       <div className="flex flex-col gap-2">
-        <Button type="submit" variant="shu" disabled={pending || !valid || changed.length === 0} className="self-start">
+        <Button type="submit" variant="primary" disabled={pending || !valid || changed.length === 0} className="self-start">
           {pending ? t("saving") : t("save")}
         </Button>
         <FormMessage message={message} />

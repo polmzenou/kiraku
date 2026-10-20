@@ -68,13 +68,13 @@ export async function CardDetail({
         </header>
 
         <dl className="grid grid-cols-2 gap-3">
-          <div className="rounded-lg border border-border bg-surface p-3">
+          <div className="lacquer rounded-card p-3">
             <dt className="text-sm text-text-muted">{t("power")}</dt>
             <dd className="text-xl font-bold tabular-nums">
               <span aria-hidden="true" className="font-seal">力</span> {card.power}
             </dd>
           </div>
-          <div className="rounded-lg border border-border bg-surface p-3">
+          <div className="lacquer rounded-card p-3">
             <dt className="text-sm text-text-muted">{t("ki")}</dt>
             <dd className="text-xl font-bold tabular-nums">
               <span aria-hidden="true" className="font-seal">気</span> {card.ki}
@@ -83,10 +83,10 @@ export async function CardDetail({
         </dl>
 
         {copies.length === 0 ? (
-          <p className="rounded-lg border border-border bg-surface p-4 text-sm text-text-muted">{t("notOwned")}</p>
+          <p className="lacquer rounded-card p-4 text-sm text-text-muted">{t("notOwned")}</p>
         ) : (
           <>
-            <section className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4">
+            <section className="flex flex-col gap-2 lacquer rounded-card p-4">
               <h3 className="font-bold">{t("copiesTitle", { count: copies.length })}</h3>
               <ul className="flex flex-col gap-1 text-sm text-text-muted">
                 <li>{t("inCollection", { count: inCollection })}</li>
@@ -96,7 +96,7 @@ export async function CardDetail({
               </ul>
             </section>
 
-            <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+            <section className="flex flex-col gap-3 lacquer rounded-card p-4">
               <h3 className="font-bold">{t("recycleTitle")}</h3>
               <p className="text-sm text-text-muted">{t("unitValue", { zeni: values[rarity] })}</p>
               <RecycleControl

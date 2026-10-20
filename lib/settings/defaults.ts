@@ -1,5 +1,6 @@
 import { z } from "@/lib/zod";
-import { RARITIES } from "@/lib/catalog/rarity";
+import { rarityKeySchema } from "@/lib/catalog/definitions";
+import { RARITIES, VARIANT_RARITIES } from "@/lib/catalog/rarity";
 import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
 import { rotationPinSchema } from "@/lib/boosters/rotation";
 import { KEYWORDS, TECHNIQUES } from "@/lib/battle/types";
@@ -18,7 +19,7 @@ const rarityThresholds = z
     message: "Les seuils doivent être strictement croissants",
   });
 
-const rarity = z.enum(RARITIES);
+const rarity = rarityKeySchema;
 
 function isTimeZone(tz: string): boolean {
   try {
@@ -30,18 +31,9 @@ function isTimeZone(tz: string): boolean {
 }
 
 // Parts de tirage par rareté, en millièmes de % (entiers : aucun arrondi de flottant au tirage)
-const rarityRates = z
-  .object(Object.fromEntries(RARITIES.map((r) => [r, z.number().int().min(0).max(1_000_000)])) as {
-    [R in (typeof RARITIES)[number]]: z.ZodNumber;
-  })
-  .refine((rates) => RARITIES.some((r) => rates[r] > 0), { message: "Au moins une rareté doit avoir une part" });
-
-// Zeni rendus par doublon recyclé, par rareté
-const recycleValues = z.object(
-  Object.fromEntries(RARITIES.map((r) => [r, z.number().int().min(0).max(100_000)])) as {
-    [R in (typeof RARITIES)[number]]: z.ZodNumber;
-  },
-);
+const rarityRates = z.record(rarityKeySchema, z.number().int().min(0).max(1_000_000))
+  .refine((rates) => Object.values(rates).some((r) => r > 0), { message: "Au moins une rareté doit avoir une part" });
+const recycleValues = z.record(rarityKeySchema, z.number().int().min(0).max(100_000));
 
 const cardStats = z.object({
   powerMax: z.number().int().min(1).max(999),
@@ -87,11 +79,7 @@ const battleTechniques = z.object(
   ) as { [T in (typeof TECHNIQUES)[number]]: z.ZodObject<{ cost: z.ZodNumber; value: z.ZodNumber }> },
 );
 
-const keywordsByRarity = z.object(
-  Object.fromEntries(RARITIES.map((r) => [r, z.number().int().min(0).max(KEYWORDS.length)])) as {
-    [R in (typeof RARITIES)[number]]: z.ZodNumber;
-  },
-);
+const keywordsByRarity = z.record(rarityKeySchema, z.number().int().min(0).max(KEYWORDS.length));
 
 // Zeni versés au gagnant selon le mode, et nombre de combats récompensés par jour
 const battleRewards = z.object({
@@ -167,7 +155,24 @@ export const SETTING_SCHEMAS = {
   "gifts.minAccountAgeHours": z.number().int().min(0).max(24 * 365),
   "gifts.minFriendshipHours": z.number().int().min(0).max(24 * 365),
   "gifts.boosterPriceZeni": z.number().int().min(1).max(1_000_000),
-  "gifts.allowedRarities": z.array(rarity).max(RARITIES.length),
+  "gifts.allowedRarities": z.array(rarity).max(200),
+  // Échanges entre amis (étape 12f) : rien n'est bloqué pendant l'attente, tout est revérifié à l'acceptation
+  "trades.enabled": z.boolean(),
+  "trades.expiryHours": z.number().int().min(1).max(24 * 30),
+  "trades.maxOffered": z.number().int().min(1).max(10),
+  "trades.maxPendingSent": z.number().int().min(1).max(100),
+  "trades.perDay": z.number().int().min(1).max(500),
+  "trades.allowedRarities": z.array(rarity).max(200),
+  // Chat entre amis (étape 12g)
+  "chat.enabled": z.boolean(),
+  "chat.maxLength": z.number().int().min(20).max(500),
+  "chat.perMinute": z.number().int().min(1).max(120),
+  // Durée de vie d'un message, comme une discussion éphémère : supprimé passé ce délai
+  "chat.retentionHours": z.number().int().min(1).max(24 * 365),
+  "chat.pollSeconds": z.number().int().min(3).max(300),
+  // Profil (étape 12h) : badge Pionnier (inscrits jusqu'à cette date, AAAA-MM-JJ, ou aucun) et Ambassadeur
+  "profile.pioneerUntil": z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+  "profile.ambassadorReferrals": z.number().int().min(0).max(1_000),
   "notifications.retentionDays": z.number().int().min(1).max(365),
   // Intervalle de sondage de la cloche et des toasts (onglet visible seulement)
   "notifications.pollSeconds": z.number().int().min(10).max(600),
@@ -202,6 +207,16 @@ export const SETTING_SCHEMAS = {
   "market.minStartPrice": z.number().int().min(1).max(1_000_000),
   "market.maxPrice": z.number().int().min(1).max(100_000_000),
   "market.pollSeconds": z.number().int().min(2).max(120),
+  // Échanges ouverts du Marché : annonces « celle-ci contre l'une de celles-là », offres acceptées ou refusées
+  "listings.enabled": z.boolean(),
+  "listings.expiryHours": z.number().int().min(1).max(24 * 30),
+  "listings.maxWants": z.number().int().min(1).max(10),
+  "listings.maxActive": z.number().int().min(1).max(100),
+  "listings.perDay": z.number().int().min(1).max(500),
+  "listings.maxPendingOffers": z.number().int().min(1).max(200),
+  // Offrir une carte hors de la liste demandée (« Proposer autre chose »)
+  "listings.allowOther": z.boolean(),
+  "listings.allowedRarities": z.array(rarity).max(200),
   // Combat 1v1 en direct (étape 9)
   "battle.enabled": z.boolean(),
   "battle.stats": battleStats,
@@ -255,6 +270,12 @@ export const SETTING_SCHEMAS = {
   "discord.joinModal": joinModalSchema,
   // Interrupteurs de fonctionnalités sans module propre (casino : tuile « Bientôt » seulement)
   "features.casino": z.boolean(),
+  // Carrousel « En direct · Gros tirages » de l'accueil (étape 12c)
+  "home.pullFeed.enabled": z.boolean(),
+  "home.pullFeed.minRarity": rarityKeySchema,
+  "home.pullFeed.size": z.number().int().min(4).max(50),
+  "home.pullFeed.maxAgeHours": z.number().int().min(1).max(24 * 30),
+  "home.pullFeed.refreshSeconds": z.number().int().min(5).max(600),
   // Conformité (étape 10) : version des CGU que tout compte inscrit doit avoir acceptée
   "legal.termsRequiredVersion": z.number().int().min(1).max(10_000),
   // Suppression du compte : délai (annulable) avant l'anonymisation
@@ -279,7 +300,9 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "booster.maxStock": 10,
   "booster.intervalMinutes": 10,
   // Parts de Kyara (total 99 975) : 0,025 % · 0,15 % · 1,4 % · 11,4 % · 25 % · 62 %
-  "booster.rates": { COMMON: 62_000, UNCOMMON: 25_000, RARE: 11_400, EPIC: 1_400, LEGENDARY: 150, MYTHIC: 25 },
+  // AR et Gold (variantes au-dessus de Mythique) prennent 10 des 25 parts Mythique : « Mythique ou mieux »
+  // reste à 0,025 %, et sans carte AR/Gold publiée le tirage retombe sur Mythique.
+  "booster.rates": { COMMON: 62_000, UNCOMMON: 25_000, RARE: 11_400, EPIC: 1_400, LEGENDARY: 150, MYTHIC: 15, AR: 8, GOLD: 2 },
   "booster.slotFloors": ["COMMON", "COMMON", "UNCOMMON", "RARE"],
   "booster.pityThreshold": 250,
   "booster.goldenEvery": 10,
@@ -292,7 +315,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "booster.rotationPin": null,
   "game.timeZone": "Europe/Paris",
   // Valeurs de Kyara : 1 · 1 · 3 · 10 · 40 · 150 Zeni
-  "collection.recycleValues": { COMMON: 1, UNCOMMON: 1, RARE: 3, EPIC: 10, LEGENDARY: 40, MYTHIC: 150 },
+  "collection.recycleValues": { COMMON: 1, UNCOMMON: 1, RARE: 3, EPIC: 10, LEGENDARY: 40, MYTHIC: 150, AR: 450, GOLD: 1050 },
   "showcase.slots": 4,
   "social.enabled": true,
   "friends.max": 200,
@@ -304,7 +327,20 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "gifts.minAccountAgeHours": 48, // comme les enchères
   "gifts.minFriendshipHours": 24,
   "gifts.boosterPriceZeni": 200, // prix du booster standard
-  "gifts.allowedRarities": [...RARITIES],
+  "gifts.allowedRarities": [...RARITIES, ...VARIANT_RARITIES],
+  "trades.enabled": true,
+  "trades.expiryHours": 48,
+  "trades.maxOffered": 5,
+  "trades.maxPendingSent": 10,
+  "trades.perDay": 20,
+  "trades.allowedRarities": [...RARITIES, ...VARIANT_RARITIES],
+  "chat.enabled": true,
+  "chat.maxLength": 500,
+  "chat.perMinute": 20,
+  "chat.retentionHours": 24,
+  "chat.pollSeconds": 10,
+  "profile.pioneerUntil": "2026-12-31",
+  "profile.ambassadorReferrals": 3,
   "notifications.retentionDays": 30,
   "notifications.pollSeconds": 20,
   "notifications.pushEnabled": true,
@@ -330,12 +366,20 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "market.minStartPrice": 1,
   "market.maxPrice": 10_000_000,
   "market.pollSeconds": 5, // rafraîchissement du prix d'une vente ouverte
+  "listings.enabled": true,
+  "listings.expiryHours": 48,
+  "listings.maxWants": 5,
+  "listings.maxActive": 10,
+  "listings.perDay": 20,
+  "listings.maxPendingOffers": 20,
+  "listings.allowOther": true,
+  "listings.allowedRarities": [...RARITIES, ...VARIANT_RARITIES],
   "battle.enabled": true,
   "battle.stats": { hpBase: 80, hpPerKiPct: 160 }, // 128 à 218 PV
   "battle.damage": { critPermille: 100, critPct: 150, varianceMinPct: 90, varianceMaxPct: 110 },
   "battle.orbs": { start: 1, perTurn: 1, max: 5, secondBonus: 1 },
   "battle.firstTurnActions": 2, // ~53 % de victoires pour le premier joueur en simulation (65 % sans limite)
-  "battle.keywordsByRarity": { COMMON: 0, UNCOMMON: 0, RARE: 1, EPIC: 1, LEGENDARY: 2, MYTHIC: 2 },
+  "battle.keywordsByRarity": { COMMON: 0, UNCOMMON: 0, RARE: 1, EPIC: 1, LEGENDARY: 2, MYTHIC: 2, AR: 2, GOLD: 3 },
   "battle.keywordValues": { poisonPct: 8, poisonTurns: 2, ripostePct: 50, lastWillHealPct: 20, revivePct: 25 },
   "battle.techniques": {
     ISSEN: { cost: 2, value: 160 }, // coup à ×1,6
@@ -379,6 +423,11 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "discord.linkBonusZeni": 500, // versé une seule fois, à la première liaison
   "discord.joinModal": JOIN_MODAL_DEFAULT, // désactivé par défaut
   "features.casino": true,
+  "home.pullFeed.enabled": true,
+  "home.pullFeed.minRarity": "LEGENDARY",
+  "home.pullFeed.size": 20,
+  "home.pullFeed.maxAgeHours": 72,
+  "home.pullFeed.refreshSeconds": 15,
   "legal.termsRequiredVersion": 1,
   "account.deletionGraceDays": 30, // anonymisation sous 30 jours (plan, « Pages légales, RGPD »)
   "account.usernameChangeDays": 30,

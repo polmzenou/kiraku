@@ -240,7 +240,7 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
               <span
                 key={`${shown.turn}-${shown.active}`}
                 aria-live="polite"
-                className={`battle-banner pointer-events-none absolute top-1/2 left-1/2 w-max -translate-x-1/2 -translate-y-1/2 rounded-md border px-5 py-1.5 font-title text-lg font-extrabold shadow-paper md:text-2xl ${
+                className={`battle-banner pointer-events-none absolute top-1/2 left-1/2 w-max -translate-x-1/2 -translate-y-1/2 rounded-md border px-5 py-1.5 font-title text-lg font-extrabold md:text-2xl ${
                   myTurn ? "border-[var(--board-accent)] bg-[#2b1a10] text-kin" : "border-[#4a3f33] bg-[#15120f] text-washi-paper"
                 }`}
               >
@@ -257,20 +257,20 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
           </>
         }
         controls={
-          <div className="flex flex-col gap-2 pb-[env(safe-area-inset-bottom)] lg:rounded-lg lg:border lg:border-border lg:bg-surface lg:p-4">
+          <div className="flex flex-col gap-2 pb-[env(safe-area-inset-bottom)] lg:rounded-card lg:border lg:border-border lg:bg-surface lg:p-4">
             <p className={`min-h-6 text-center text-sm font-medium ${error ? "text-shu" : myTurn ? "text-kin" : "text-text-muted"}`} aria-live="polite">
               {error ?? hint}
             </p>
             <div className="grid grid-cols-2 gap-2">
               <Button
-                variant={mode === "ATTACK" && selected !== null ? "shu" : "neutral"}
+                variant={mode === "ATTACK" && selected !== null ? "primary" : "secondary"}
                 disabled={!canAct || selected === null}
                 onClick={() => setMode("ATTACK")}
               >
                 {t("board.attack")}
               </Button>
               <Button
-                variant={mode === "TECHNIQUE" ? "shu" : "neutral"}
+                variant={mode === "TECHNIQUE" ? "primary" : "secondary"}
                 disabled={!canAct || techniqueActions.length === 0}
                 onClick={pressTechnique}
                 className="min-w-0 px-2 py-2 text-sm"
@@ -288,7 +288,7 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
               </p>
             )}
             <div className="grid grid-cols-[1fr_auto] gap-2 md:grid-cols-[auto] md:justify-end">
-              <Button variant="shu" className="md:hidden" disabled={!canAct} onClick={() => void send({ type: "END_TURN" })}>
+              <Button variant="primary" className="md:hidden" disabled={!canAct} onClick={() => void send({ type: "END_TURN" })}>
                 {t("board.endTurn")}
               </Button>
               <Button disabled={shown.finished || pending} onClick={() => setConfirmForfeit(true)}>
@@ -304,7 +304,7 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
         <div className="flex justify-end gap-2">
           <Button onClick={() => setConfirmForfeit(false)}>{t("board.cancel")}</Button>
           <Button
-            variant="shu"
+            variant="primary"
             onClick={() => {
               setConfirmForfeit(false);
               void send({ type: "FORFEIT" });

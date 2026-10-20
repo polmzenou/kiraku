@@ -11,7 +11,7 @@ import { getCurrentUser } from "@/server/user";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-const idSchema = z.coerce.number().int().positive().max(10_000_000);
+const idSchema = z.coerce.number().int().positive().max(2_147_483_647);
 
 /** Fiche carte en page complète (lien direct, rechargement) ; depuis la liste, elle s'ouvre en feuille. */
 export default async function CollectionCardPage({ params }: PageProps<"/[locale]/collection/[anilistId]">) {

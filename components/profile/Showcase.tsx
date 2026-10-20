@@ -15,7 +15,7 @@ import { loadDomMax } from "../motion/load-features";
 type Slot = ShowcaseCard | null;
 
 const iconButton =
-  "inline-flex size-11 items-center justify-center rounded-button border border-border bg-surface-2 text-lg disabled:opacity-30";
+  "inline-flex size-11 items-center justify-center rounded-control border border-border bg-surface-2 text-lg disabled:opacity-30";
 
 const cardSizes = "(min-width: 1200px) 274px, (min-width: 768px) calc((100vw - 104px) / 4), calc((100vw - 44px) / 2)";
 
@@ -75,7 +75,7 @@ export function Showcase({ initial, editable, linkBase }: { initial: Slot[]; edi
   const shownIds = new Set(slots.flatMap((s) => (s ? [s.cardId] : [])));
   const isEmpty = shownIds.size === 0;
 
-  if (!editable && isEmpty) return <p className="rounded-lg border border-border bg-surface p-4 text-sm text-text-muted">{t("emptyPublic")}</p>;
+  if (!editable && isEmpty) return <p className="lacquer rounded-card p-4 text-sm text-text-muted">{t("emptyPublic")}</p>;
 
   return (
     <LazyMotion features={loadDomMax} strict>
@@ -144,10 +144,10 @@ export function Showcase({ initial, editable, linkBase }: { initial: Slot[]; edi
                 )}
                 {editing && card && (
                   <div className="flex flex-col gap-1 md:hidden">
-                    <button type="button" aria-label={t("change", { name: card.name })} onClick={() => setPicking(i)} className="min-h-11 rounded-button border border-border bg-surface-2 text-xs">
+                    <button type="button" aria-label={t("change", { name: card.name })} onClick={() => setPicking(i)} className="min-h-11 rounded-control border border-border bg-surface-2 text-xs">
                       {t("changeShort")}
                     </button>
-                    <button type="button" aria-label={t("remove", { name: card.name })} disabled={pending} onClick={() => save(withPositions(slots.map((s, j) => (j === i ? null : s))))} className="min-h-11 rounded-button border border-border text-xs text-text-muted">
+                    <button type="button" aria-label={t("remove", { name: card.name })} disabled={pending} onClick={() => save(withPositions(slots.map((s, j) => (j === i ? null : s))))} className="min-h-11 rounded-control border border-border text-xs text-text-muted">
                       {t("removeShort")}
                     </button>
                   </div>
@@ -158,7 +158,7 @@ export function Showcase({ initial, editable, linkBase }: { initial: Slot[]; edi
 
           {editable && (
             <div className="flex flex-wrap items-center gap-3">
-              <Button type="button" variant={editing ? "shu" : "neutral"} onClick={() => setEditing((e) => !e)} aria-pressed={editing}>
+              <Button type="button" variant={editing ? "primary" : "secondary"} onClick={() => setEditing((e) => !e)} aria-pressed={editing}>
                 {editing ? t("done") : t("edit")}
               </Button>
               {editing && <p className="text-sm text-text-muted">{t("dragHint")}</p>}

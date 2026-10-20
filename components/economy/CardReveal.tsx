@@ -1,12 +1,15 @@
 "use client";
 
+import { useRaritySeals } from "@/lib/catalog/use-rarities";
+
 import { domAnimation, LazyMotion, m, useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import type { OpenedCardView } from "@/lib/boosters/view";
-import { RARITY_SEAL } from "@/lib/catalog/rarity";
-import { CHARGE_MS, LEAK_COLOR } from "../opening/RarityFx";
+
+import { chargeFor, leakFor } from "../opening/RarityFx";
+import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import { FlipCard, type FlipPhase } from "../opening/RevealCard";
 import { Button } from "../ui/Button";
 
@@ -19,6 +22,7 @@ const BACK_MS = 550;
  * une à la fois. Un <dialog> natif (focus piégé, Échap pour fermer).
  */
 export function CardReveal({ cards, onClose }: { cards: OpenedCardView[]; onClose: () => void }) {
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("economy.reveal");
   const tRarity = useTranslations("rarity");
   const reduced = useReducedMotion() ?? false;
@@ -26,6 +30,7 @@ export function CardReveal({ cards, onClose }: { cards: OpenedCardView[]; onClos
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<FlipPhase>("back");
   const card = cards[index];
+  const definitions = useRarityDefinitions();
   const last = index === cards.length - 1;
 
   useEffect(() => {
@@ -39,12 +44,12 @@ export function CardReveal({ cards, onClose }: { cards: OpenedCardView[]; onClos
       return () => clearTimeout(id);
     }
     const charge = setTimeout(() => setPhase("charging"), BACK_MS);
-    const flip = setTimeout(() => setPhase("front"), BACK_MS + CHARGE_MS[card.rarity]);
+    const flip = setTimeout(() => setPhase("front"), BACK_MS + (chargeFor(card.rarity, definitions) ?? 480));
     return () => {
       clearTimeout(charge);
       clearTimeout(flip);
     };
-  }, [index, card.rarity, reduced]);
+  }, [index, card.rarity, reduced, definitions]);
 
   const next = () => {
     setPhase("back");
@@ -64,7 +69,7 @@ export function CardReveal({ cards, onClose }: { cards: OpenedCardView[]; onClos
         <m.span
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
-          style={{ background: `radial-gradient(circle at 50% 42%, ${LEAK_COLOR[card.rarity]} 0%, transparent 55%)` }}
+          style={{ background: `radial-gradient(circle at 50% 42%, ${leakFor(card.rarity, definitions) ?? "#f0d0fa"} 0%, transparent 55%)` }}
           initial={false}
           animate={{ opacity: front ? 0.55 : 0.12 }}
           transition={{ duration: reduced ? 0 : 0.6 }}
@@ -105,7 +110,7 @@ export function CardReveal({ cards, onClose }: { cards: OpenedCardView[]; onClos
             <div className="flex flex-wrap justify-center gap-2">
               {last ? (
                 <>
-                  <Button type="button" variant="shu" onClick={() => dialog.current?.close()} autoFocus={front}>
+                  <Button type="button" variant="primary" onClick={() => dialog.current?.close()} autoFocus={front}>
                     {t("close")}
                   </Button>
                   <Link
@@ -116,7 +121,7 @@ export function CardReveal({ cards, onClose }: { cards: OpenedCardView[]; onClos
                   </Link>
                 </>
               ) : (
-                <Button type="button" variant="shu" onClick={next}>
+                <Button type="button" variant="primary" onClick={next}>
                   {t("next")}
                 </Button>
               )}

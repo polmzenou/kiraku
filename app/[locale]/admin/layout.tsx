@@ -19,13 +19,14 @@ const MODULES = [
   { key: "banners", href: "/admin/bannieres", ready: true },
   { key: "collection", href: "/admin/collection", ready: true },
   { key: "social", href: "/admin/social", ready: true },
+  { key: "cosmetics", href: "/admin/cosmetiques", ready: true },
   { key: "economy", href: "/admin/economie", ready: true },
   { key: "lots", href: "/admin/lots", ready: true },
   { key: "missions", href: "/admin/missions", ready: true },
   { key: "shop", href: "/admin/boutique", ready: true },
   { key: "referral", href: "/admin/parrainage", ready: true },
   { key: "users", href: "/admin/utilisateurs", ready: true },
-  { key: "catalog", href: "/admin/catalogue", ready: false },
+  { key: "catalog", href: "/admin/catalogue", ready: true },
   { key: "market", href: "/admin/marche", ready: true },
   { key: "reviews", href: "/admin/avis", ready: true },
   { key: "combat", href: "/admin/combat", ready: true },
@@ -53,7 +54,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/[locale]/a
                 <li key={m.key}>
                   <Link
                     href={m.href}
-                    className="inline-flex min-h-11 items-center rounded-button border border-border bg-surface-2 px-3 text-sm font-bold"
+                    className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface-2 px-3 text-sm font-bold"
                   >
                     {t(`moduleNames.${m.key}`)}
                   </Link>
@@ -62,7 +63,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/[locale]/a
                 <li key={m.key}>
                   <span
                     aria-disabled="true"
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-button border border-border px-3 text-sm text-text-muted"
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-border px-3 text-sm text-text-muted"
                   >
                     {t(`moduleNames.${m.key}`)}
                     <span className="text-[10px] uppercase">{t("soon")}</span>

@@ -62,7 +62,7 @@ export function RotationPicker({
   };
 
   return (
-    <fieldset className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+    <fieldset className="flex min-w-0 flex-col gap-3 lacquer rounded-card p-4">
       <legend className="px-1 font-title text-lg font-bold">{title}</legend>
       <p className="text-xs text-text-muted">{pinned ? t("rotation.pinned") : t("rotation.random")}</p>
       {candidates.length === 0 ? (
@@ -71,12 +71,12 @@ export function RotationPicker({
         <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {candidates.map((c) => (
             <li key={c.slug}>
-              <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-button border border-border bg-surface-2 px-3 has-checked:border-shu">
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-control border border-border bg-surface-2 px-3 has-checked:border-shu">
                 <input
                   type="checkbox"
                   checked={draft.includes(c.slug)}
                   onChange={() => toggle(c.slug)}
-                  className="size-5 accent-shu-btn"
+                  className="choice"
                 />
                 <span aria-hidden="true" lang="ja" className="font-seal text-shu">
                   {c.emblem}
@@ -88,7 +88,7 @@ export function RotationPicker({
         </ul>
       )}
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="shu" disabled={pending || draft.length === 0 || !changed} onClick={() => send(draft)}>
+        <Button type="button" variant="primary" disabled={pending || draft.length === 0 || !changed} onClick={() => send(draft)}>
           {t("rotation.save", { count: draft.length })}
         </Button>
         {pinned && (

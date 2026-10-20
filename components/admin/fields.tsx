@@ -1,11 +1,11 @@
 "use client";
 
 import { useId, type ReactNode } from "react";
+import { inputClass, selectClass } from "../ui/Field";
 
 // Champs communs des formulaires de l'économie dans /admin (zones tactiles ≥ 44 px).
 
-export const inputClass =
-  "min-h-11 w-full min-w-0 rounded-button border border-border bg-surface-2 px-3 text-base aria-invalid:border-shu";
+export { inputClass, selectClass };
 
 export function Field({ label, children, hint }: { label: string; children: (id: string) => ReactNode; hint?: string }) {
   const id = useId();
@@ -140,7 +140,7 @@ export function SelectField<V extends string>({
   return (
     <Field label={label} hint={hint}>
       {(id) => (
-        <select id={id} value={value} onChange={(e) => onChange(e.target.value as V)} className={inputClass}>
+        <select id={id} value={value} onChange={(e) => onChange(e.target.value as V)} className={selectClass}>
           {options.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
@@ -155,7 +155,7 @@ export function SelectField<V extends string>({
 export function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <label className="flex min-h-11 items-center gap-3">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="size-5 accent-shu-btn" />
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="choice" />
       <span>{label}</span>
     </label>
   );

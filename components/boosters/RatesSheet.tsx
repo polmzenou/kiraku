@@ -3,6 +3,8 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { buttonClasses } from "../ui/Button";
+import { CloseIcon, IconButton } from "../ui/IconButton";
 
 /**
  * Bouton « Taux » de la barre du bas (mobile) : ouvre le panneau complet du booster dans une
@@ -33,7 +35,7 @@ export function RatesSheet({ children }: { children: ReactNode }) {
           dialog.current?.showModal();
           setOpen(true);
         }}
-        className="min-h-11 shrink-0 rounded-button border border-border bg-surface-2 px-3.5 text-sm font-bold"
+        className={buttonClasses("secondary", "shrink-0")}
       >
         {t("rates")}
       </button>
@@ -44,21 +46,17 @@ export function RatesSheet({ children }: { children: ReactNode }) {
         onClick={(e) => {
           if (e.target === dialog.current) close();
         }}
-        className="fixed inset-x-0 top-auto bottom-0 m-0 max-h-[88dvh] w-full max-w-none translate-y-full overflow-y-auto overscroll-contain rounded-t-2xl border-t border-border bg-bg p-0 text-text opacity-0 transition-[translate,opacity,display,overlay] transition-discrete duration-300 ease-out backdrop:bg-black/60 open:translate-y-0 open:opacity-100 starting:open:translate-y-full starting:open:opacity-0"
+        className="fixed inset-x-0 top-auto bottom-0 m-0 max-h-[88dvh] w-full max-w-none translate-y-full overflow-y-auto overscroll-contain rounded-t-[24px] border-t border-border bg-bg p-0 text-text opacity-0 shadow-float transition-[translate,opacity,display,overlay] transition-discrete duration-300 ease-out backdrop:bg-black/60 open:translate-y-0 open:opacity-100 starting:open:translate-y-full starting:open:opacity-0 motion-reduce:transition-none"
       >
-        <div className="flex flex-col gap-3 px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <div className="flex flex-col gap-3 px-4 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          <span aria-hidden="true" className="h-1.5 w-10 self-center rounded-full bg-text-muted/30" />
           <div className="flex items-center justify-between">
-            <h2 id={titleId} className="text-base font-bold">
+            <h2 id={titleId} className="font-title text-lg font-extrabold">
               {t("ratesTitle")}
             </h2>
-            <button
-              type="button"
-              aria-label={t("close")}
-              onClick={close}
-              className="inline-flex size-11 items-center justify-center rounded-button text-2xl leading-none"
-            >
-              <span aria-hidden="true">×</span>
-            </button>
+            <IconButton aria-label={t("close")} onClick={close} tone="lacquer">
+              <CloseIcon />
+            </IconButton>
           </div>
           {children}
         </div>

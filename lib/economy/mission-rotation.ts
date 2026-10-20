@@ -17,7 +17,7 @@ export type RotationMission = {
 };
 
 /** Difficulté relative à la durée disponible, y compris pour les missions créées dans l'admin. */
-export function missionDifficulty(mission: Pick<RotationMission, "period" | "metric" | "goal" | "rarity">): MissionDifficulty {
+export function missionDifficulty(mission: Pick<RotationMission, "period" | "metric" | "goal" | "rarity">, order: readonly Rarity[] = RARITIES): MissionDifficulty {
   const weekly = mission.period === "WEEKLY";
   let limits: readonly [easy: number, medium: number];
   switch (mission.metric) {
@@ -29,10 +29,10 @@ export function missionDifficulty(mission: Pick<RotationMission, "period" | "met
     case "SEND_GIFTS": limits = weekly ? [2, 7] : [0, 1]; break;
     case "ADD_FRIENDS": limits = weekly ? [1, 3] : [1, 1]; break;
     case "PULL_RARITY": {
-      const rarity = RARITIES.indexOf(mission.rarity ?? "COMMON");
-      if (rarity >= RARITIES.indexOf("LEGENDARY")) return "HARD";
-      if (rarity >= RARITIES.indexOf("EPIC")) limits = weekly ? [0, 4] : [0, 1];
-      else if (rarity >= RARITIES.indexOf("RARE")) limits = weekly ? [12, 35] : [1, 8];
+      const rarity = order.indexOf(mission.rarity ?? "COMMON");
+      if (rarity < 0 || rarity >= order.indexOf("LEGENDARY")) return "HARD";
+      if (rarity >= order.indexOf("EPIC")) limits = weekly ? [0, 4] : [0, 1];
+      else if (rarity >= order.indexOf("RARE")) limits = weekly ? [12, 35] : [1, 8];
       else limits = weekly ? [30, 80] : [5, 15];
       break;
     }
@@ -58,7 +58,7 @@ function cycle<T>(values: readonly T[], index: number, step: number): T[] {
  * Deux faciles, deux intermédiaires et un défi ; les autres paliers complètent un pool réduit.
  * Chaque type d'activité n'apparaît qu'une fois tant que le catalogue offre assez de variété.
  */
-export function selectMissionRotation<T extends RotationMission>(missions: readonly T[], now: Date, timeZone: string): T[] {
+export function selectMissionRotation<T extends RotationMission>(missions: readonly T[], now: Date, timeZone: string, order: readonly Rarity[] = RARITIES): T[] {
   return MISSION_PERIODS.flatMap((period) => {
     const pool = missions.filter((m) => m.period === period).sort((a, b) => a.key.localeCompare(b.key, "en"));
     if (pool.length <= MISSIONS_PER_PERIOD) return pool;
@@ -80,7 +80,7 @@ export function selectMissionRotation<T extends RotationMission>(missions: reado
       }
     };
     for (const difficulty of MISSION_DIFFICULTIES) {
-      const candidates = pool.filter((m) => missionDifficulty(m) === difficulty);
+      const candidates = pool.filter((m) => missionDifficulty(m, order) === difficulty);
       add(cycle(candidates, index, SLOTS[difficulty]), SLOTS[difficulty]);
     }
     add(cycle(pool, index, MISSIONS_PER_PERIOD), MISSIONS_PER_PERIOD - picked.length);

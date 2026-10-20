@@ -48,9 +48,9 @@ export function ReferralCodeForm({ initialCode }: { initialCode: string }) {
           autoComplete="off"
           autoCapitalize="characters"
           spellCheck={false}
-          className="min-h-12 min-w-0 flex-1 rounded-button border border-shu/40 bg-bg px-4 font-bold tracking-[0.15em] uppercase"
+          className="min-h-12 min-w-0 flex-1 rounded-control border border-shu/40 bg-bg px-4 font-bold tracking-[0.15em] uppercase"
         />
-        <Button type="submit" variant="shu" disabled={pending || code.trim().length === 0}>
+        <Button type="submit" variant="primary" disabled={pending || code.trim().length === 0}>
           {t("referral.attach")}
         </Button>
       </div>

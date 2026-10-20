@@ -48,7 +48,7 @@ export function RoomLobby({ view, candidates, lastTeam }: { view: BattleView; ca
 
   if (view.canJoin) {
     return (
-      <section className="flex flex-col items-center gap-4 rounded-lg border border-border bg-surface px-4 py-8 text-center">
+      <section className="flex flex-col items-center gap-4 lacquer rounded-card px-4 py-8 text-center">
         <span aria-hidden="true" className="font-title text-3xl font-bold text-shu">
           {t("title")}
         </span>
@@ -59,7 +59,7 @@ export function RoomLobby({ view, candidates, lastTeam }: { view: BattleView; ca
             {error}
           </p>
         )}
-        <Button variant="shu" onClick={() => setPicking(true)} disabled={pending}>
+        <Button variant="primary" onClick={() => setPicking(true)} disabled={pending}>
           {t("room.accept")}
         </Button>
         <TeamPicker
@@ -85,14 +85,14 @@ export function RoomLobby({ view, candidates, lastTeam }: { view: BattleView; ca
 
   const code = view.code ?? "";
   return (
-    <section className="flex flex-col items-center gap-4 rounded-lg border border-border bg-surface px-4 py-8 text-center">
+    <section className="flex flex-col items-center gap-4 lacquer rounded-card px-4 py-8 text-center">
       <h2 className="font-title text-xl font-bold">{t("room.title")}</h2>
       {view.players[1] ? (
         <p className="text-sm text-text-muted">{t("room.reserved")}</p>
       ) : (
         <>
           <p className="text-xs text-text-muted">{t("room.code")}</p>
-          <p className="rounded-lg border-2 border-dashed border-kin px-5 py-3 font-title text-4xl font-extrabold tracking-[0.25em] tabular-nums text-kin" aria-live="polite">
+          <p className="rounded-card border-2 border-dashed border-kin px-5 py-3 font-title text-4xl font-extrabold tracking-[0.25em] tabular-nums text-kin" aria-live="polite">
             {code}
           </p>
           <div className="flex flex-wrap justify-center gap-2">
@@ -138,7 +138,7 @@ export function RoomLobby({ view, candidates, lastTeam }: { view: BattleView; ca
         >
           {t("room.cancel")}
         </Button>
-        <Link href="/combat" className={buttonClasses("neutral")}>
+        <Link href="/combat" className={buttonClasses("secondary")}>
           {t("room.back")}
         </Link>
       </div>

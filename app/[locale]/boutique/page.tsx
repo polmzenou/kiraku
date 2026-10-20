@@ -90,9 +90,9 @@ export default async function ShopPage() {
         </div>
       </div>
 
-      {!enabled && <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">{t("disabled")}</p>}
+      {!enabled && <p className="lacquer rounded-card p-6 text-center text-text-muted">{t("disabled")}</p>}
       {enabled && items.length === 0 && (
-        <p className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">{t("empty")}</p>
+        <p className="lacquer rounded-card p-6 text-center text-text-muted">{t("empty")}</p>
       )}
 
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -107,7 +107,7 @@ export default async function ShopPage() {
           return (
             <li
               key={item.id}
-              className="group flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-paper transition-colors hover:border-kin/60"
+              className="group flex flex-col overflow-hidden lacquer rounded-card transition-colors hover:border-kin/60"
             >
               <div className="relative">
                 <LotStage lot={lot} className="h-44 transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none" />
@@ -153,7 +153,7 @@ export default async function ShopPage() {
         })}
       </ul>
 
-      <aside className="flex flex-col items-start gap-3 rounded-xl border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+      <aside className="flex flex-col items-start gap-3 lacquer rounded-card p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1">
           <p className="font-bold">{t("earnTitle")}</p>
           <p className="text-sm text-text-muted">{t("earnBody")}</p>
@@ -166,7 +166,7 @@ export default async function ShopPage() {
 
       {/* Zone « Packs premium » : les articles en euros s'y ajouteront avec le fournisseur de paiement */}
       {premium && (
-        <section className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4">
+        <section className="flex flex-col gap-2 lacquer rounded-card p-4">
           <h2 className="font-title text-lg font-bold">{t("premium")}</h2>
           <p className="text-sm text-text-muted">{t("premiumSoon")}</p>
         </section>

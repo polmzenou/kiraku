@@ -1,7 +1,7 @@
 // Texte et lien d'une notification, sans dépendance au rendu : la page /notifications, les toasts
 // (côté client) et le Web Push (côté serveur, dans la langue du joueur) partagent ce code.
 import { guestCode } from "../username";
-import type { AuctionPayload, BattlePayload, GiftPayload, NotificationType } from "./notifications";
+import type { AuctionPayload, BattlePayload, GiftPayload, NotificationType, TradePayload } from "./notifications";
 
 export type DescribableNotification = {
   type: NotificationType;
@@ -11,6 +11,10 @@ export type DescribableNotification = {
   auction?: AuctionPayload | null;
   /** Salle de combat (invitation). */
   battle?: BattlePayload | null;
+  /** Proposition d'échange (la carte demandée est dans `card`). */
+  trade?: TradePayload | null;
+  /** Carte proposée par l'offrant (échanges ouverts du Marché ; la carte de l'annonce est dans `card`). */
+  offeredCard?: { name: string } | null;
   card: { anilistId: number; name: string; rarity: string } | null;
 };
 
@@ -34,6 +38,12 @@ export type DescribeTranslators = {
       | "auctionCancelled"
       | "battleInvite"
       | "teamGift"
+      | "tradeProposed"
+      | "tradeAccepted"
+      | "tradeDeclined"
+      | "listingOffer"
+      | "listingAccepted"
+      | "listingDeclined"
       | "aCard",
     values?: Values,
   ) => string;
@@ -83,5 +93,18 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
     case "LOT_GRANTED":
       // Cadeau de l'équipe : l'admin qui l'envoie n'est jamais nommé
       return { text: t("teamGift"), href: "/compte/historique" };
+    case "TRADE_PROPOSED":
+    case "TRADE_ACCEPTED":
+    case "TRADE_DECLINED": {
+      const key = n.type === "TRADE_PROPOSED" ? "tradeProposed" : n.type === "TRADE_ACCEPTED" ? "tradeAccepted" : "tradeDeclined";
+      return { text: t(key, { name, card: n.card?.name ?? t("aCard") }), href: "/amis?onglet=echanges" };
+    }
+    case "LISTING_OFFER":
+    case "LISTING_ACCEPTED":
+    case "LISTING_DECLINED": {
+      const key = n.type === "LISTING_OFFER" ? "listingOffer" : n.type === "LISTING_ACCEPTED" ? "listingAccepted" : "listingDeclined";
+      const values = { name, card: n.card?.name ?? t("aCard"), offered: n.offeredCard?.name ?? t("aCard") };
+      return { text: t(key, values), href: "/marche?onglet=mes-echanges" };
+    }
   }
 }

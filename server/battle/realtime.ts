@@ -1,16 +1,13 @@
 import "server-only";
-import Ably from "ably";
-import { ablyEnabled, env } from "../env";
+import { ablyRest as rest, publishToUser, userChannel } from "../realtime";
 import type { BattleUpdate } from "./battle-core";
 
 // Temps réel du combat (Ably). Le serveur publie après chaque transaction validée, jamais dedans ;
 // les navigateurs ne font que s'abonner, avec un jeton limité à leurs propres canaux. Sans clé
 // (dev), rien ne part et le plateau sonde la partie : le jeu reste jouable, juste moins vif.
 
-const rest = ablyEnabled ? new Ably.Rest({ key: env.ABLY_API_KEY! }) : null;
-
 export const battleChannel = (battleId: string) => `kiraku:battle:${battleId}`;
-export const userChannel = (userId: string) => `kiraku:user:${userId}`;
+export { userChannel };
 
 /** Message diffusé aux deux joueurs : tout l'état est public, rien n'est caché. */
 export type BattleMessage = Omit<BattleUpdate, "turnEndsAt"> & { turnEndsAt: string | null };
@@ -31,12 +28,7 @@ export async function publishBattle(update: BattleUpdate) {
 
 /** Prévient un joueur en file qu'un adversaire l'a trouvé. */
 export async function publishMatched(userId: string, battleId: string) {
-  if (!rest) return;
-  try {
-    await rest.channels.get(userChannel(userId)).publish("matched", { battleId });
-  } catch (e) {
-    console.error("[combat] publication Ably", e);
-  }
+  await publishToUser(userId, "matched", { battleId });
 }
 
 /** Jeton d'abonnement : son propre canal, plus celui d'une partie dont le joueur est participant. */

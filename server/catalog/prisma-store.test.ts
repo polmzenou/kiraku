@@ -30,7 +30,7 @@ describe("publication protégée de l'import Prisma", () => {
     const { store, transaction } = database([{ anilistId: 1, rank: 1, rarity: "MYTHIC", power: 99, ki: 83 }]);
     const incoming = [entry(1, 1), entry(2, 2)];
     await store.finalize("run", incoming, { preserveExisting: true });
-    expect(transaction.$executeRaw.mock.calls[0][0].join("")).toContain('LOCK TABLE "Card" IN SHARE ROW EXCLUSIVE MODE');
+    expect(transaction.$executeRaw.mock.calls.some(([query]) => query.join("").includes('LOCK TABLE "Card" IN SHARE ROW EXCLUSIVE MODE'))).toBe(true);
     const insert = transaction.$executeRaw.mock.calls.find(([query]) => query.join("").includes('INSERT INTO "Card"'))!;
     const payload = JSON.parse(insert[2]);
     expect(payload).toHaveLength(1);
@@ -40,7 +40,7 @@ describe("publication protégée de l'import Prisma", () => {
     const series = transaction.$executeRaw.mock.calls.find(([query]) => query.join("").includes('INSERT INTO "Series"'))!;
     expect(series[2]).toBe(true);
     expect(incoming[0]).toMatchObject({ rarity: "COMMON", power: 40, ki: 30 });
-    expect(transaction.gameSetting.upsert).toHaveBeenCalledExactlyOnceWith({
+    expect(transaction.gameSetting.upsert).toHaveBeenCalledWith({
       where: { key: "catalog.size" },
       create: { key: "catalog.size", value: 2 },
       update: { value: 2 },
@@ -59,7 +59,7 @@ describe("publication protégée de l'import Prisma", () => {
     const { store, transaction } = database([{ anilistId: 1, rank: 1, rarity: "MYTHIC", power: 99, ki: 83 }]);
     await store.finalize("run", [entry(1, 1)]);
     expect(transaction.card.findMany).not.toHaveBeenCalled();
-    expect(transaction.gameSetting.upsert).not.toHaveBeenCalled();
+    expect(transaction.gameSetting.upsert).toHaveBeenCalledWith(expect.objectContaining({ where: { key: "catalog.revision" } }));
     const insert = transaction.$executeRaw.mock.calls.find(([query]) => query.join("").includes('INSERT INTO "Card"'))!;
     expect(JSON.parse(insert[2])[0]).toMatchObject({ rarity: "COMMON", power: 40, ki: 30 });
   });

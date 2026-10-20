@@ -14,9 +14,16 @@
   --k-ai: #7fa3d1;
   --k-kin: #d9b556;
   --k-link: #d9b556;
-  --k-paper-shadow: #000000;
+  /* Laque (urushi) : reflet du bord haut et fond des surfaces */
+  --k-sheen: rgb(255 255 255 / 0.06);
+  --k-lacquer-light: rgb(255 255 255 / 0.035);
+  --k-float-shadow: 0 12px 28px rgb(0 0 0 / 0.55);
+  --k-raised-shadow: 0 10px 24px rgb(0 0 0 / 0.4);
+  /* La capsule de nav flotte : sa hauteur, ses marges et la zone sûre forment la réserve du bas. */
+  --mobile-nav-bar: 3.75rem;
+  --mobile-nav-gap: 0.75rem;
   /* La barre du bas et ses marges partagent la même hauteur, zone sûre comprise. */
-  --mobile-nav-height: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+  --mobile-nav-height: calc(var(--mobile-nav-bar) + 2 * var(--mobile-nav-gap) + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 64rem) {
@@ -38,7 +45,10 @@
   --k-ai: #1e3557;
   --k-kin: #b08a2e;
   --k-link: #75541c;
-  --k-paper-shadow: #b8ab93;
+  --k-sheen: rgb(255 255 255 / 0.7);
+  --k-lacquer-light: rgb(255 255 255 / 0.4);
+  --k-float-shadow: 0 12px 28px rgb(70 52 30 / 0.22);
+  --k-raised-shadow: 0 10px 24px rgb(70 52 30 / 0.16);
 }
 
 /* Wiki labels must retain 4.5:1 contrast on Washi's surfaces and filter chips. */
@@ -58,7 +68,6 @@
   --color-ai: var(--k-ai);
   --color-kin: var(--k-kin);
   --color-link: var(--k-link);
-  --color-paper-shadow: var(--k-paper-shadow);
 
   --font-title: var(--font-shippori), "Hiragino Mincho ProN", serif;
   --font-body: var(--font-zen-kaku), "Hiragino Sans", system-ui, sans-serif;
@@ -73,13 +82,26 @@
   --color-rarity-epic: #6e4796;
   --color-rarity-legendary: #b8902f;
   --color-rarity-mythic: #8f7bb8;
+  --color-rarity-ar: #6f8fd8;
+  --color-rarity-gold: #d9b556;
   --color-washi-paper: #f3ecdf;
   /* Encre des fuda : le papier reste clair dans les deux thèmes */
   --color-sumi: #1f1b17;
   --color-sumi-muted: #6b645a;
 
-  --radius-button: 6px;
-  --shadow-paper: 0 3px 0 var(--k-paper-shadow);
+  /* Urushi : contrôles à 14 px, cartes à 18 px, panneaux héros à 22 px, pilules pour boutons et onglets */
+  --radius-control: 14px;
+  --radius-card: 18px;
+  --radius-hero: 22px;
+  --radius-pill: 999px;
+  --radius-fuda: 10px;
+}
+
+@theme inline {
+  --shadow-raised: var(--k-raised-shadow);
+  --shadow-float: var(--k-float-shadow);
+  --shadow-shu: inset 0 1px 0 rgb(255 255 255 / 0.3), 0 8px 20px rgb(200 55 45 / 0.32);
+  --shadow-sheen: inset 0 1px 0 var(--k-sheen);
 }
 
 @layer base {
@@ -122,6 +144,105 @@
   a:focus-visible,
   .text-link:focus-visible {
     outline-color: var(--color-link);
+  }
+}
+
+/* Urushi : surfaces laquées et contrôles de formulaire dessinés (aucun JS, transitions courtes). */
+@layer components {
+  /* Le reflet est une image par-dessus la couleur : les utilitaires bg-* (survol, état) restent visibles. */
+  .lacquer {
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    background-image: linear-gradient(180deg, var(--k-lacquer-light), transparent 70%);
+    box-shadow: var(--shadow-sheen);
+  }
+
+  .field-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a89f92' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 0.85rem center;
+    background-repeat: no-repeat;
+    background-size: 1.1rem;
+  }
+
+  .choice {
+    appearance: none;
+    display: inline-grid;
+    flex: none;
+    place-content: center;
+    width: 1.375rem;
+    height: 1.375rem;
+    margin: 0;
+    border: 1.5px solid var(--color-border);
+    border-radius: 7px;
+    background: var(--color-surface-2);
+    cursor: pointer;
+    transition: background-color 150ms, border-color 150ms;
+  }
+  .choice::before {
+    content: "";
+    width: 0.75rem;
+    height: 0.75rem;
+    background: var(--color-washi-paper);
+    clip-path: polygon(12% 48%, 0 64%, 40% 100%, 100% 20%, 86% 6%, 40% 70%);
+    transform: scale(0);
+    transition: transform 150ms;
+  }
+  .choice[type="radio"] {
+    border-radius: 50%;
+  }
+  .choice[type="radio"]::before {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    clip-path: none;
+  }
+  .choice:checked {
+    border-color: var(--color-shu-btn);
+    background: var(--color-shu-btn);
+  }
+  .choice:checked::before {
+    transform: scale(1);
+  }
+  .choice[aria-invalid="true"] {
+    border-color: var(--color-shu);
+  }
+
+  .switch {
+    appearance: none;
+    position: relative;
+    flex: none;
+    width: 2.75rem;
+    height: 1.625rem;
+    margin: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-surface-2);
+    cursor: pointer;
+    transition: background-color 150ms, border-color 150ms;
+  }
+  .switch::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    background: var(--color-text-muted);
+    transition: transform 200ms ease-out, background-color 200ms;
+  }
+  .switch:checked {
+    border-color: var(--color-shu-btn);
+    background: var(--color-shu-btn);
+  }
+  .switch:checked::before {
+    background: var(--color-washi-paper);
+    transform: translateX(1.125rem);
+  }
+  .choice:disabled,
+  .switch:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 }
 
@@ -175,6 +296,22 @@
   .fuda-live[data-rarity="MYTHIC"] .fuda-sheen {
     animation: raden-breathe 4s ease-in-out infinite;
   }
+  .fuda[data-rarity="AR"] .fuda-sheen {
+    /* AR : prisme shu, ai et kin, qui suit l'inclinaison */
+    background: linear-gradient(115deg, transparent 30%, rgb(224 83 63 / 0.55) 40%, rgb(127 163 209 / 0.6) 50%, rgb(217 181 86 / 0.55) 60%, transparent 70%);
+    mix-blend-mode: color-dodge;
+    opacity: 0.6;
+  }
+  .fuda-live[data-rarity="AR"] .fuda-sheen,
+  .fuda-live[data-rarity="GOLD"] .fuda-sheen {
+    animation: raden-breathe 3s ease-in-out infinite;
+  }
+  .fuda[data-rarity="GOLD"] .fuda-sheen {
+    /* Gold : éclat de feuille d'or sur toute la carte */
+    background: linear-gradient(115deg, transparent 34%, rgb(255 236 170 / 0.25) 42%, rgb(255 251 230 / 0.9) 50%, rgb(255 236 170 / 0.25) 58%, transparent 66%);
+    mix-blend-mode: screen;
+    opacity: 0.7;
+  }
 
   /* Boosters (sachet, pochibukuro, jūbako) : couleur, ombre et motif wagara propres à chaque type
      (--booster-base / --booster-dark posées par BoosterArt), encre claire ou sombre selon le fond. */
@@ -187,28 +324,25 @@
     --booster-light: color-mix(in oklab, var(--booster-base) 72%, white);
     container-type: inline-size;
   }
+  /* Halo derrière le sachet : dégradés radiaux seulement (pas de filter: blur), opacity au survol. */
   .booster-hover-aura {
     position: absolute;
     z-index: -1;
-    inset: -10% -14% -5%;
+    inset: 0;
     pointer-events: none;
-    border-radius: 50%;
     background:
-      radial-gradient(ellipse at 50% 55%, color-mix(in oklab, var(--booster-aura) 70%, white) 0%, var(--booster-aura) 28%, transparent 68%),
-      radial-gradient(ellipse at 50% 85%, var(--booster-aura) 0%, transparent 55%);
-    filter: blur(18px);
-    opacity: 0;
-    transform: translateY(8px) scale(0.8);
-    transition: opacity 350ms ease-out, transform 500ms cubic-bezier(0.2, 0.7, 0.3, 1);
+      radial-gradient(ellipse 70% 55% at 50% 42%, color-mix(in oklab, var(--booster-aura) 55%, transparent) 0%, transparent 70%),
+      radial-gradient(ellipse 90% 40% at 50% 100%, color-mix(in oklab, var(--booster-aura) 30%, transparent) 0%, transparent 70%);
+    opacity: 0.45;
+    transition: opacity 300ms ease-out;
   }
-  .booster-tile:focus-visible .booster-hover-aura {
-    opacity: 0.8;
-    transform: translateY(0) scale(1);
+  .booster-tile:focus-visible .booster-hover-aura,
+  .booster-hover-aura[data-selected] {
+    opacity: 0.9;
   }
   @media (hover: hover) {
     .booster-tile:hover .booster-hover-aura {
-      opacity: 0.8;
-      transform: translateY(0) scale(1);
+      opacity: 0.9;
     }
   }
   .booster-art[data-ink="dark"] {
@@ -354,14 +488,40 @@
     --fuda-frame: var(--color-rarity-common);
     background: var(--fuda-frame-bg, var(--fuda-frame));
   }
+  /* Liseré clair du cadre (reflet de laque) et ombre douce, sans filtre */
+  .fuda {
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), inset 0 0 0 1px rgb(0 0 0 / 0.18), 0 6px 14px rgb(0 0 0 / 0.28);
+  }
+  .fuda[data-rarity="COMMON"] {
+    /* Washi : fibres du papier */
+    --fuda-frame-bg:
+      repeating-linear-gradient(97deg, rgb(255 255 255 / 0.07) 0 1px, transparent 1px 5px),
+      repeating-linear-gradient(7deg, rgb(0 0 0 / 0.05) 0 1px, transparent 1px 6px),
+      var(--color-rarity-common);
+  }
+  .fuda-paper {
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.35);
+  }
   .fuda[data-rarity="UNCOMMON"] {
     --fuda-frame: var(--color-rarity-uncommon);
+    /* Bambou : fibres verticales et nœuds */
+    --fuda-frame-bg:
+      repeating-linear-gradient(0deg, transparent 0 46px, rgb(0 0 0 / 0.18) 46px 48px, rgb(255 255 255 / 0.12) 48px 49px),
+      repeating-linear-gradient(90deg, rgb(255 255 255 / 0.08) 0 1px, transparent 1px 4px, rgb(0 0 0 / 0.06) 4px 5px),
+      linear-gradient(90deg, #4f7039, #6d9152 50%, #4f7039);
   }
   .fuda[data-rarity="RARE"] {
     --fuda-frame: var(--color-rarity-rare);
+    /* Indigo : vagues seigaiha dans le cadre */
+    --fuda-frame-bg:
+      radial-gradient(circle at 50% 100%, transparent 30%, rgb(255 255 255 / 0.14) 31% 36%, transparent 37% 52%, rgb(255 255 255 / 0.14) 53% 58%, transparent 59%) 0 0 / 16px 8px,
+      radial-gradient(circle at 50% 100%, transparent 30%, rgb(255 255 255 / 0.14) 31% 36%, transparent 37% 52%, rgb(255 255 255 / 0.14) 53% 58%, transparent 59%) 8px 4px / 16px 8px,
+      linear-gradient(160deg, #3a6d9c, #2c5a86 50%, #1f4366);
   }
   .fuda[data-rarity="EPIC"] {
     --fuda-frame: var(--color-rarity-epic);
+    /* Laque : profondeur et reflet fixe, le sheen glissant est posé par .fuda-sheen */
+    --fuda-frame-bg: linear-gradient(160deg, #8a62b3, #6e4796 40%, #3f2858);
   }
   .fuda[data-rarity="LEGENDARY"] {
     --fuda-frame: var(--color-rarity-legendary);
@@ -371,6 +531,18 @@
     --fuda-frame: var(--color-rarity-mythic);
     /* Nacre (raden) : irisation statique pour l'instant */
     --fuda-frame-bg: linear-gradient(135deg, #efe3f6 0%, #c3e4e1 28%, #f5e5c4 52%, #d4c6f0 76%, #bfdcef 100%);
+  }
+  .fuda[data-rarity="AR"] {
+    --fuda-frame: var(--color-rarity-ar);
+    /* AR (forme alternative) : cadre irisé shu, ai et kin */
+    --fuda-frame-bg: conic-gradient(from 210deg, #c8372d, #e0533f, #d9b556, #7fa3d1, #1e3557, #7fa3d1, #c8372d);
+  }
+  .fuda[data-rarity="GOLD"] {
+    --fuda-frame: var(--color-rarity-gold);
+    /* Gold : feuille d'or épaisse, paillettes fixes dans le cadre */
+    --fuda-frame-bg:
+      radial-gradient(circle, rgb(255 248 220 / 0.8) 0 0.7px, transparent 1.2px) 0 0 / 9px 9px,
+      linear-gradient(135deg, #7a5a16 0%, #f6e3a1 22%, #c99a33 45%, #fff2c2 62%, #a87d22 82%, #e8cb75 100%);
   }
 }
 
@@ -795,6 +967,33 @@
     opacity: 0;
     transform: scaleX(1.05);
   }
+}
+
+/* Nav mobile : le libellé de l'onglet actif glisse en place (opacity + transform). */
+.nav-label-in {
+  animation: nav-label-in 220ms ease-out both;
+}
+@keyframes nav-label-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+}
+
+/* Carrousel « Gros tirages » : la piste contient deux fois la liste, -50 % boucle sans saut */
+@keyframes pull-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.pull-marquee {
+  animation: pull-marquee var(--marquee-duration, 60s) linear infinite;
+}
+
+.pull-marquee-host:hover .pull-marquee,
+.pull-marquee-host:focus-within .pull-marquee {
+  animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {

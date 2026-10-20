@@ -24,6 +24,8 @@ const schema = z.object({
   VAPID_SUBJECT: z.string().regex(/^(mailto:|https:\/\/)/).optional(), // contact pour les services push
   // Ably (temps réel du combat) : clé « appId.keyId:secret », jamais transmise au navigateur. Sans
   // elle, le plateau sonde la partie toutes les battle.pollSeconds.
+  BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
+  BLOB_PUBLIC_HOST: z.string().regex(/^[a-z0-9-]+\.public\.blob\.vercel-storage\.com$/).optional(),
   ABLY_API_KEY: z.string().regex(/^[^.:\s]+\.[^.:\s]+:\S+$/).optional(),
   // Vercel Cron (clôture des ventes) : envoyé par Vercel en « Authorization: Bearer … »
   CRON_SECRET: z.string().min(16).optional(),

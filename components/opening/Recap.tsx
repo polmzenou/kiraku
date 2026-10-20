@@ -1,26 +1,22 @@
 "use client";
 
+import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
+
 import { m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
-import { Link } from "@/i18n/navigation";
 import type { OpenCount } from "@/lib/boosters/catalog";
-import type { Price } from "@/lib/boosters/types";
-import type { OpenedBoosterView, OpenedCardView } from "@/lib/boosters/view";
-import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import type { OpenedBoosterView } from "@/lib/boosters/view";
+import { type Rarity } from "@/lib/catalog/rarity";
 import type { SoundName } from "@/lib/sound/synth";
 import type { BoosterState } from "@/server/boosters/state";
 import { RARITY_BG } from "../boosters/format";
 import { NextFreeIn } from "../boosters/NextFreeIn";
 import { Fuda } from "../fuda/Fuda";
 import { ZeniCoin } from "../layout/ZeniCoin";
-import { Button, buttonClasses } from "../ui/Button";
 import { CopyLinkButton } from "./CopyLinkButton";
 import { CountPicker } from "./CountPicker";
 import { FeaturedSeal, NewStamp } from "./RevealCard";
-
-const byRarityDesc = (a: OpenedCardView, b: OpenedCardView) =>
-  RARITIES.indexOf(b.rarity) - RARITIES.indexOf(a.rarity) || Number(b.featured) - Number(a.featured);
 
 type Props = {
   boosters: OpenedBoosterView[];
@@ -32,20 +28,21 @@ type Props = {
   count: OpenCount;
   maxCount: number;
   onCount: (n: OpenCount) => void;
-  nextPrice: Price;
-  onAgain: () => void;
 };
 
 /**
  * Récap « makimono » : un rouleau de papier se déroule, la meilleure carte en grand, les autres
  * tombent en place triées par rareté, le décompte se tamponne sceau par sceau ; puis les compteurs
- * (ensō de pitié qui se referme) et de quoi enchaîner.
+ * (ensō de pitié qui se referme). Les actions pour enchaîner vivent dans `RecapActionBar`, toujours
+ * à portée du pouce.
  */
-export function Recap({ boosters, state, reduced, play, counters, zeniSpent, count, maxCount, onCount, nextPrice, onAgain }: Props) {
+export function Recap({ boosters, state, reduced, play, counters, zeniSpent, count, maxCount, onCount }: Props) {
+  const RARITIES = useRarities();
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("opening");
   const tRarity = useTranslations("rarity");
   const cards = boosters.flatMap((b) => b.cards);
-  const sorted = [...cards].sort(byRarityDesc);
+  const sorted = [...cards].sort((a, b) => RARITIES.indexOf(b.rarity) - RARITIES.indexOf(a.rarity) || Number(b.featured) - Number(a.featured));
   const best = sorted[0];
   const rest = sorted.slice(1);
   const newCount = cards.filter((c) => c.isNew).length;
@@ -79,7 +76,7 @@ export function Recap({ boosters, state, reduced, play, counters, zeniSpent, cou
             transition={{ duration: unroll, ease: [0.3, 0.7, 0.2, 1] }}
           >
             <span
-              className={`absolute inset-y-0 w-3 rounded-full bg-[linear-gradient(90deg,#3a2414,#8a5e3a_45%,#3a2414)] shadow-paper ${
+              className={`absolute inset-y-0 w-3 rounded-full bg-[linear-gradient(90deg,#3a2414,#8a5e3a_45%,#3a2414)] ${
                 side === "left" ? "left-0" : "right-0"
               }`}
             />
@@ -107,7 +104,7 @@ export function Recap({ boosters, state, reduced, play, counters, zeniSpent, cou
             {tally.map(([r, n], i) => (
               <m.li
                 key={r}
-                className={`flex h-9 items-center gap-1 rounded-[4px] px-2.5 font-seal text-lg text-washi-paper shadow-paper ${RARITY_BG[r]}`}
+                className={`flex h-9 items-center gap-1 rounded-[4px] px-2.5 font-seal text-lg text-washi-paper ${RARITY_BG[r]}`}
                 initial={reduced ? false : { opacity: 0, scale: 2, rotate: -14 }}
                 animate={{ opacity: 1, scale: 1, rotate: i % 2 ? 3 : -3 }}
                 transition={{ delay: unroll + 0.15 + i * 0.16, type: "spring", stiffness: 520, damping: 17 }}
@@ -170,7 +167,7 @@ export function Recap({ boosters, state, reduced, play, counters, zeniSpent, cou
 
       {/* Compteurs et suite */}
       <m.div
-        className="mx-auto flex w-full max-w-sm flex-col items-center gap-4 rounded-lg border border-border bg-surface p-4 shadow-paper"
+        className="mx-auto flex w-full max-w-sm flex-col items-center gap-4 lacquer rounded-card p-4"
         initial={reduced ? false : { opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: unroll + 0.6 }}
@@ -203,24 +200,9 @@ export function Recap({ boosters, state, reduced, play, counters, zeniSpent, cou
         </ul>
 
         {maxCount > 1 && <CountPicker value={count} max={maxCount} onChange={onCount} />}
-        <Button variant="shu" onClick={onAgain} disabled={nextPrice.kind === "unavailable"} className="w-full justify-between">
-          <span className="font-title text-lg font-bold">{count > 1 ? t("openMore", { n: count }) : t("openAnother")}</span>
-          <span className="inline-flex items-center gap-1.5 text-xs">
-            {nextPrice.kind === "zeni" && <ZeniCoin size={14} />}
-            {nextPrice.kind === "free" ? t("free") : nextPrice.kind === "zeni" ? t("cost", { amount: nextPrice.amount }) : t("unavailable")}
-          </span>
-        </Button>
         <div className="flex flex-col items-center gap-1 text-center">
           <p className="text-sm font-bold">{t("stockLeft", { count: state.stock })}</p>
           <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} />
-        </div>
-        <div className="grid w-full grid-cols-2 gap-2">
-          <Link href="/" className={buttonClasses("neutral", "w-full text-sm")}>
-            {t("changeBooster")}
-          </Link>
-          <Link href="/wiki" className={buttonClasses("neutral", "w-full text-sm")}>
-            {t("toWiki")}
-          </Link>
         </div>
       </m.div>
     </div>

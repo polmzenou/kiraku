@@ -38,10 +38,10 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
     return (
       <PageShell>
         {header}
-        <aside className="flex flex-col items-start gap-3 rounded-lg border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+        <aside className="flex flex-col items-start gap-3 lacquer rounded-card p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm">{user.isGuest ? t("guest") : t("disabled")}</p>
           {user.isGuest && (
-            <ButtonLink href="/inscription" variant="shu">
+            <ButtonLink href="/inscription" variant="primary">
               {t("signUp")}
             </ButtonLink>
           )}
@@ -78,7 +78,7 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
               <li key={h.id}>
                 <Link
                   href={`/combat/${h.id}`}
-                  className="flex min-h-11 items-center justify-between gap-3 rounded-button border border-border bg-surface px-3 py-2 text-sm"
+                  className="flex min-h-11 items-center justify-between gap-3 rounded-control border border-border bg-surface px-3 py-2 text-sm"
                 >
                   <span className="flex min-w-0 items-center gap-2">
                     <span className="min-w-0 truncate">

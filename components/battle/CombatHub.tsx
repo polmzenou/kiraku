@@ -13,6 +13,7 @@ import { SeasonReward } from "../ranked/SeasonReward";
 import { QueueWaiting } from "./QueueWaiting";
 import { useBattleError } from "./useBattleError";
 import { TeamPicker } from "./TeamPicker";
+import { inputClass } from "../ui/Field";
 
 type Intent =
   | { kind: "EXHIBITION" }
@@ -95,16 +96,16 @@ export function CombatHub({
   return (
     <div className="flex flex-col gap-4">
       {busy && (
-        <aside className="flex flex-col items-start gap-3 rounded-lg border border-kin/60 bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+        <aside className="flex flex-col items-start gap-3 rounded-card border border-kin/60 bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm font-medium">{t(`activity.${activity.kind}`)}</p>
-          <Link href={`/combat/${activity.battleId}`} className={buttonClasses("shu")}>
+          <Link href={`/combat/${activity.battleId}`} className={buttonClasses("primary")}>
             {t("activity.resume")}
           </Link>
         </aside>
       )}
 
       {error && (
-        <p role="alert" className="rounded-button border border-shu/60 bg-surface p-3 text-sm text-shu">
+        <p role="alert" className="rounded-control border border-shu/60 bg-surface p-3 text-sm text-shu">
           {error}
         </p>
       )}
@@ -128,13 +129,13 @@ export function CombatHub({
           {rank && (
             <div className="flex flex-col gap-2 text-sm md:w-72">
               {rank.protection > 0 && (
-                <p className="rounded-button border border-[var(--board-accent)]/60 px-3 py-2" title={tRanked("protectionHint")}>
+                <p className="rounded-control border border-[var(--board-accent)]/60 px-3 py-2" title={tRanked("protectionHint")}>
                   {tRanked("protection", { count: rank.protection })}
                 </p>
               )}
               <p className="text-[#a89f92]">{tRanked("games", { count: rank.seasonGames })}</p>
               {rank.season && <p className="text-[#a89f92]">{tRanked("seasonEnds", { date: new Date(rank.season.endsAt) })}</p>}
-              <Button variant="shu" disabled={busy || pending} onClick={() => setIntent({ kind: "RANKED" })}>
+              <Button variant="primary" disabled={busy || pending} onClick={() => setIntent({ kind: "RANKED" })}>
                 {tRanked("play")}
               </Button>
             </div>
@@ -143,18 +144,17 @@ export function CombatHub({
       </section>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <article className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+        <article className="flex flex-col gap-3 lacquer rounded-card p-4">
           <h2 className="flex items-center gap-2 font-title text-lg font-bold">
             {t("exhibition.title")}
           </h2>
           <p className="flex-1 text-sm text-text-muted">{t("exhibition.text", { seconds: queueSeconds })}</p>
-          <Button variant="shu" disabled={busy || pending} onClick={() => setIntent({ kind: "EXHIBITION" })}>
+          <Button variant="primary" disabled={busy || pending} onClick={() => setIntent({ kind: "EXHIBITION" })}>
             {t("exhibition.cta")}
           </Button>
         </article>
 
-
-        <article className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+        <article className="flex flex-col gap-3 lacquer rounded-card p-4">
           <h2 className="flex items-center gap-2 font-title text-lg font-bold">
             {t("friend.title")}
           </h2>
@@ -179,7 +179,7 @@ export function CombatHub({
                 autoComplete="off"
                 spellCheck={false}
                 inputMode="text"
-                className="min-h-11 w-full rounded-button border border-border bg-bg px-3 font-bold tracking-[0.3em] tabular-nums uppercase"
+                className={`${inputClass} font-bold tracking-[0.3em] tabular-nums uppercase`}
               />
             </label>
             <Button type="submit" disabled={busy || pending || code.length !== 6}>

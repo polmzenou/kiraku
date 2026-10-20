@@ -7,6 +7,7 @@ import { submitReview, type ReviewActionError } from "@/server/actions/reviews";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
 import { STAR_PATH } from "./Stars";
+import { textareaClass } from "../ui/Field";
 
 type Own = { rating: number; body: string } | null;
 
@@ -19,7 +20,7 @@ export function ReviewButton({ own: initial }: { own: Own }) {
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <Button type="button" variant="neutral" onClick={() => setOpen(true)}>
+      <Button type="button" variant="secondary" onClick={() => setOpen(true)}>
         {own ? t("edit") : t("give")}
       </Button>
       <p role="status" className="text-sm text-text-muted">
@@ -82,7 +83,7 @@ function ReviewForm({ own, onDone }: { own: Own; onDone: (saved: { rating: numbe
               <span className="sr-only">{t("ratingOption", { rating: value })}</span>
               <span
                 aria-hidden="true"
-                className={`flex size-11 items-center justify-center rounded-button transition-transform peer-focus-visible:outline-2 peer-focus-visible:outline-kin active:scale-90 motion-reduce:transition-none ${
+                className={`flex size-11 items-center justify-center rounded-control transition-transform peer-focus-visible:outline-2 peer-focus-visible:outline-kin active:scale-90 motion-reduce:transition-none ${
                   value <= shown ? "text-kin" : "text-border"
                 }`}
               >
@@ -110,7 +111,7 @@ function ReviewForm({ own, onDone }: { own: Own; onDone: (saved: { rating: numbe
           onChange={(e) => setBody(e.target.value)}
           placeholder={t("bodyPlaceholder")}
           aria-describedby={countId}
-          className="min-h-32 w-full resize-y rounded-lg border border-border bg-surface p-3 text-base text-text placeholder:text-text-muted focus-visible:border-kin focus-visible:outline-none"
+          className={`${textareaClass} min-h-32 resize-y`}
         />
         <p id={countId} className="self-end text-xs text-text-muted tabular-nums">
           {t("bodyCount", { count: body.length, max: REVIEW_BODY_MAX })}
@@ -123,7 +124,7 @@ function ReviewForm({ own, onDone }: { own: Own; onDone: (saved: { rating: numbe
         </p>
       )}
 
-      <Button type="submit" variant="shu" disabled={pending}>
+      <Button type="submit" variant="primary" disabled={pending}>
         {pending ? t("sending") : t("submit")}
       </Button>
     </form>

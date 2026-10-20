@@ -39,7 +39,7 @@ export default async function AdminRankedPage() {
       </div>
 
       {season && (
-        <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+        <section className="flex flex-col gap-3 lacquer rounded-card p-4">
           <h3 className="font-title text-lg font-bold">{t("season")}</h3>
           <p className="text-sm">{t("seasonInfo", { number: season.number, date: season.endsAt })}</p>
           <div className="flex flex-wrap items-center gap-3">
@@ -50,7 +50,7 @@ export default async function AdminRankedPage() {
 
       <dl className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         {stats.map((s) => (
-          <div key={s.label} className="rounded-lg border border-border bg-surface p-4">
+          <div key={s.label} className="lacquer rounded-card p-4">
             <dt className="text-sm text-text-muted">{s.label}</dt>
             <dd className="text-xl font-bold tabular-nums text-kin">{s.value}</dd>
           </div>
@@ -59,7 +59,7 @@ export default async function AdminRankedPage() {
 
       <section className="flex flex-col gap-3">
         <h3 className="font-title text-lg font-bold">{t("gallery")}</h3>
-        <ul className="grid grid-cols-2 gap-4 rounded-lg border border-border bg-[#15120f] p-4 sm:grid-cols-4 lg:grid-cols-7">
+        <ul className="grid grid-cols-2 gap-4 rounded-card border border-border bg-[#15120f] p-4 sm:grid-cols-4 lg:grid-cols-7">
           {BOARD_TIERS.map((tier) => (
             <li key={tier} className="flex flex-col items-center gap-2 text-center text-sm text-washi-paper">
               <RankEmblem tier={tier} division={tier === "GRAND_CHAMPION" ? null : 2} size={88} label={tRanked(`tiers.${tier}`)} />
@@ -78,7 +78,7 @@ export default async function AdminRankedPage() {
         ) : (
           <ul className="flex flex-col gap-2">
             {logs.map((log) => (
-              <li key={log.id} className="flex flex-col gap-1 rounded-button border border-border bg-surface p-3 text-sm">
+              <li key={log.id} className="flex flex-col gap-1 rounded-control border border-border bg-surface p-3 text-sm">
                 <span className="font-bold">{t("logEntry", { key: log.targetId ?? "", admin: log.admin.username })}</span>
                 <p className="break-all text-xs text-text-muted">
                   {JSON.stringify(log.before)} → {JSON.stringify(log.after)}

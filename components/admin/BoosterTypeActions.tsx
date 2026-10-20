@@ -42,7 +42,7 @@ export function ToggleTypeButton({ slug, active }: { slug: string; active: boole
   return (
     <span className="flex flex-wrap items-center gap-2">
       <Button
-        variant={active ? "neutral" : "shu"}
+        variant={active ? "secondary" : "primary"}
         className="min-h-9 px-3 text-sm"
         disabled={pending}
         onClick={() =>

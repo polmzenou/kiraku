@@ -12,7 +12,7 @@ import { routing } from "@/i18n/routing";
 import { seriesTitle } from "@/lib/catalog/display";
 import { getCatalogCard, getCatalogStats, getRelatedCatalogCards } from "@/server/catalog/queries";
 
-const idSchema = z.coerce.number().int().positive().max(10_000_000);
+const idSchema = z.coerce.number().int().positive().max(2_147_483_647);
 
 async function loadCard(raw: string) {
   const id = idSchema.safeParse(raw);

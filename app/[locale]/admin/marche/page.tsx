@@ -37,7 +37,7 @@ export default async function AdminMarketPage() {
 
       <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map((s) => (
-          <div key={s.label} className="rounded-lg border border-border bg-surface p-4">
+          <div key={s.label} className="lacquer rounded-card p-4">
             <dt className="text-sm text-text-muted">{s.label}</dt>
             <dd className="text-xl font-bold tabular-nums text-kin">{s.value}</dd>
           </div>
@@ -53,7 +53,7 @@ export default async function AdminMarketPage() {
             {auctions.map((a) => (
               <li
                 key={a.id}
-                className="flex flex-col gap-2 rounded-button border border-border bg-surface p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-2 rounded-control border border-border bg-surface p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <Link href={`/marche/${a.id}`} className="font-bold text-link underline underline-offset-4">
@@ -80,7 +80,7 @@ export default async function AdminMarketPage() {
         ) : (
           <ul className="flex flex-col gap-2">
             {logs.map((log) => (
-              <li key={log.id} className="flex flex-col gap-1 rounded-button border border-border bg-surface p-3 text-sm">
+              <li key={log.id} className="flex flex-col gap-1 rounded-control border border-border bg-surface p-3 text-sm">
                 <span className="font-bold">{t("logEntry", { key: log.targetId ?? "", admin: log.admin.username })}</span>
                 <p className="break-all text-xs text-text-muted">
                   {JSON.stringify(log.before)} → {JSON.stringify(log.after)}

@@ -22,12 +22,12 @@ export function WikiGrid({ cards, nextAfter, params, locale, collection, emptyCa
   return (
     <>
       {collection && !collection.available && (
-        <p role="status" className="rounded-button border border-border bg-surface p-3 text-sm text-text-muted">
+        <p role="status" className="rounded-control border border-border bg-surface p-3 text-sm text-text-muted">
           {t("collectionUnavailable")}
         </p>
       )}
       {cards.length === 0 ? (
-        <p role="status" className="rounded-lg border border-border bg-surface p-6 text-center text-text-muted">
+        <p role="status" className="lacquer rounded-card p-6 text-center text-text-muted">
           {emptyCatalog ? t("emptyCatalog") : params.ownership === "owned" ? t("emptyOwned") : t("empty")}
         </p>
       ) : (

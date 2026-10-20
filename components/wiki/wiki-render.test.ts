@@ -7,6 +7,7 @@ import { parseWikiParams } from "@/lib/catalog/wiki-params";
 import type { CatalogCardDetail, CatalogCardSummary } from "@/server/catalog/queries";
 import { WikiGrid } from "./WikiGrid";
 import { WikiCardDetail } from "./WikiCardDetail";
+import { Fuda } from "@/components/fuda/Fuda";
 
 const { biographyCalls } = vi.hoisted(() => ({ biographyCalls: vi.fn() }));
 
@@ -34,9 +35,9 @@ vi.mock("./WikiBiography", () => ({
 }));
 
 const card: CatalogCardDetail = {
-  id: "card-a", anilistId: 1, name: "Levi", nameNative: "リヴァイ", imageUrl: "https://s4.anilist.co/levi.png",
+  id: "card-a", anilistId: 1, publicId: 1, sourceAnilistId: 1, status: "PUBLISHED", appearance: {}, description: {}, name: "Levi", nameNative: "リヴァイ", imageUrl: "https://s4.anilist.co/levi.png",
   rank: 2, rarity: "MYTHIC", power: 100, ki: 84, favorites: 38199, role: "MAIN", seriesId: "series-a",
-  series: { titleRomaji: "Attack on Titan", titleEnglish: null, titleNative: null, type: "ANIME" },
+  series: { titleRomaji: "Attack on Titan", titleEnglish: null, titleNative: null, type: "ANIME" }, formName: null, variantOf: null, variants: [],
 };
 const related: CatalogCardSummary = { ...card, anilistId: 2, name: "SECRET RELATED NAME", nameNative: "秘密" };
 const collection: WikiCollection = { available: true, hasCards: true, cards: new Map([[1, { copies: 2, discovered: true }]]) };
@@ -44,6 +45,28 @@ const collection: WikiCollection = { available: true, hasCards: true, cards: new
 beforeEach(() => biographyCalls.mockClear());
 
 describe("rendu accessible du wiki", () => {
+  it("applique les couleurs personnalisées au cadre et aux statistiques d’une rareté existante", () => {
+    const html = renderToStaticMarkup(createElement(Fuda, {
+      card: { ...card, appearance: { frame: "#123456", ink: "#abcdef", effects: [] } }, tilt: false,
+    }));
+    expect(html).toContain("--fuda-frame-bg:#123456");
+    expect(html).toContain("color:#abcdef");
+    expect(html).not.toContain('class="fuda-sheen"');
+  });
+  it("dore l'artwork d'une carte Gold et affiche le nom de forme d'une variante AR", () => {
+    const gold = renderToStaticMarkup(createElement(Fuda, { card: { ...card, rarity: "GOLD", formName: "Gold" }, series: "Jujutsu Kaisen", tilt: false }));
+    expect(gold).toContain("fuda-art-gold");
+    expect(gold).toContain('class="fuda-gilt"');
+    expect(gold).toContain('data-rarity="GOLD"');
+    // Rareté au-dessus de Mythique : reflet de matière comme les paliers Épique et plus.
+    expect(gold).toContain('class="fuda-sheen"');
+    const natural = renderToStaticMarkup(createElement(Fuda, { card: { ...card, rarity: "GOLD", appearance: { artTone: "natural" } }, tilt: false }));
+    expect(natural).not.toContain("fuda-art-gold");
+    const ar = renderToStaticMarkup(createElement(Fuda, { card: { ...card, rarity: "AR", formName: "Mode Baryon" }, series: "Naruto", tilt: false }));
+    expect(ar).toContain("Mode Baryon");
+    expect(ar).not.toContain(">Naruto<");
+    expect(ar).not.toContain("fuda-art-gold");
+  });
   it("atténue seulement les manquantes, en gardant des liens nommés et des compteurs lisibles", () => {
     const html = renderToStaticMarkup(createElement(WikiGrid, {
       cards: [card, related], nextAfter: null, params: parseWikiParams({}), locale: "fr", collection, emptyCatalog: false,

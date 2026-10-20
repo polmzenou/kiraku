@@ -58,6 +58,12 @@ describe("bot", () => {
     expect(botRarities(["COMMON", "EPIC", "MYTHIC"], () => 0, 10)).toEqual(["UNCOMMON", "LEGENDARY", "MYTHIC"]);
   });
 
+  it("respecte les paliers personnalisés et ne transforme pas un palier inconnu en Commune", () => {
+    const order = [...RARITIES, "CELESTIAL"];
+    expect(botRarities(["MYTHIC", "CELESTIAL"], () => 0, 100, order)).toEqual(["CELESTIAL", "CELESTIAL"]);
+    expect(botRarities(["UNKNOWN"], () => 0, 100, order)).toEqual(["UNKNOWN"]);
+  });
+
   it("achève une carte plutôt que de taper au hasard", () => {
     const setup = setupOf([fighter({ power: 80 })], [fighter({ ki: 60 }), fighter({ ki: 60 })]);
     const { state } = createState(setup);

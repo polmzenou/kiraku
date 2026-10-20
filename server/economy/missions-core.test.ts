@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { selectMissionRotation } from "@/lib/economy/mission-rotation";
+import { BASE_RARITIES } from "@/lib/catalog/rarity";
 import { periodWindow } from "@/lib/economy/period";
 import { MISSION_SEEDS } from "@/prisma/seed/economy";
 import type { LotDeps } from "./lots";
@@ -20,6 +21,7 @@ const findClaims = vi.fn();
 const findClaim = vi.fn();
 const createClaim = vi.fn();
 const db = {
+  rarityDefinition: { findMany: vi.fn(async () => BASE_RARITIES.map((key) => ({ key }))) },
   mission: { findMany: findMissions },
   userMission: { findMany: findClaims, findUnique: findClaim, create: createClaim },
   $transaction: (run: (tx: unknown) => Promise<unknown>) => run(db),

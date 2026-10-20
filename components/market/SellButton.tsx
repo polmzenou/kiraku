@@ -7,6 +7,8 @@ import { createAuctionAction, type MarketActionError } from "@/server/actions/ma
 import { ButtonLink } from "../ui/ButtonLink";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
+import { inputClass } from "../ui/Field";
+import { segmentedFillClass, segmentedItemClass, segmentedTrackClass } from "../ui/Segmented";
 
 /** Ce que la feuille doit savoir pour s'afficher ; le serveur revérifie tout à la mise en vente. */
 export type SellInfo = {
@@ -20,7 +22,7 @@ export type SellInfo = {
   block: "GUEST" | "TOO_NEW" | "BANNED" | "DISABLED" | null;
 };
 
-const field = "min-h-11 w-full rounded-button border border-border bg-surface-2 px-3 text-lg tabular-nums";
+const field = `${inputClass} text-lg tabular-nums`;
 
 /**
  * « Mettre en vente » depuis la fiche d'une carte : prix de départ, achat immédiat facultatif,
@@ -81,7 +83,7 @@ export function SellButton({ cardId, cardName, available, info }: { cardId: stri
         {created ? (
           <div className="flex flex-col gap-3" role="status">
             <p className="font-bold">{t("sell.done")}</p>
-            <ButtonLink href={`/marche/${created}`} variant="shu">
+            <ButtonLink href={`/marche/${created}`} variant="primary">
               {t("sell.viewSale")}
             </ButtonLink>
           </div>
@@ -109,7 +111,7 @@ export function SellButton({ cardId, cardName, available, info }: { cardId: stri
             </label>
 
             <label className="flex min-h-11 items-center gap-2 text-sm">
-              <input type="checkbox" checked={withBuyout} onChange={(e) => setWithBuyout(e.target.checked)} className="size-5 accent-shu" />
+              <input type="checkbox" checked={withBuyout} onChange={(e) => setWithBuyout(e.target.checked)} className="choice" />
               {t("sell.buyoutOn")}
             </label>
             {withBuyout && (
@@ -132,14 +134,9 @@ export function SellButton({ cardId, cardName, available, info }: { cardId: stri
 
             <fieldset className="flex flex-col gap-2">
               <legend className="mb-1 text-sm">{t("sell.duration")}</legend>
-              <div className="flex flex-wrap gap-2">
+              <div className={`${segmentedTrackClass} ${segmentedFillClass}`}>
                 {info.durationsHours.map((h) => (
-                  <label
-                    key={h}
-                    className={`inline-flex min-h-11 cursor-pointer items-center rounded-full border px-4 text-sm font-bold has-focus-visible:outline-2 has-focus-visible:outline-ai ${
-                      duration === h ? "border-shu bg-shu-btn text-washi-paper" : "border-border bg-surface-2"
-                    }`}
-                  >
+                  <label key={h} className={segmentedItemClass}>
                     <input type="radio" name="duration" value={h} checked={duration === h} onChange={() => setDuration(h)} className="sr-only" />
                     {t("sell.hours", { count: h })}
                   </label>
@@ -155,7 +152,7 @@ export function SellButton({ cardId, cardName, available, info }: { cardId: stri
             <p className="text-xs text-text-muted">{t("sell.reserved")}</p>
             <p className="text-xs text-text-muted">{t("sell.limit", { count: info.active, max: info.maxActive })}</p>
 
-            <Button type="submit" variant="shu" disabled={pending || !valid}>
+            <Button type="submit" variant="primary" disabled={pending || !valid}>
               {pending ? t("sell.sending") : t("sell.confirm")}
             </Button>
             {error && (

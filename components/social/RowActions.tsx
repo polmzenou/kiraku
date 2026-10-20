@@ -54,8 +54,8 @@ export function RowActions({ username, mode }: { username: string; mode: Mode })
           <>
             <Button
               type="button"
-              variant="shu"
-              className="px-3"
+              variant="primary"
+              size="sm"
               disabled={pending}
               onClick={() => run(t("accepted"), () => respondFriendRequestAction({ username, accept: true }))}
             >
@@ -63,7 +63,7 @@ export function RowActions({ username, mode }: { username: string; mode: Mode })
             </Button>
             <Button
               type="button"
-              className="px-3"
+              size="sm"
               disabled={pending}
               onClick={() => run(t("declined"), () => respondFriendRequestAction({ username, accept: false }))}
             >
@@ -74,7 +74,7 @@ export function RowActions({ username, mode }: { username: string; mode: Mode })
         {mode === "outgoing" && (
           <Button
             type="button"
-            className="px-3"
+            size="sm"
             disabled={pending}
             onClick={() => run(t("cancelled"), () => cancelFriendRequestAction({ username }))}
           >
@@ -84,7 +84,7 @@ export function RowActions({ username, mode }: { username: string; mode: Mode })
         {mode === "blocked" && (
           <Button
             type="button"
-            className="px-3"
+            size="sm"
             disabled={pending}
             onClick={() => run(t("unblocked"), () => unblockUserAction({ username }))}
           >

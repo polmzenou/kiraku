@@ -1,3 +1,5 @@
+
+import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
 import { useTranslations } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -7,7 +9,7 @@ import { Link } from "@/i18n/navigation";
 import { formFromType } from "@/lib/boosters/admin-form";
 import { atLeastOdds } from "@/lib/boosters/odds";
 import { effectiveSlotFloors, localize, SLUG_PATTERN } from "@/lib/boosters/types";
-import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { requireAdmin } from "@/server/admin";
 import { adminBoosterType, featuredCandidates } from "@/server/admin-boosters";
 import { getBoosterOffers } from "@/server/boosters/pools";
@@ -56,12 +58,14 @@ function OddsTable({
   counts: Record<Rarity, number>;
   size: number;
 }) {
+  const RARITIES = useRarities();
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("admin.types");
   const tRarity = useTranslations("rarity");
   const percent = usePercent();
   const odds = atLeastOdds(rates, floors, counts);
   return (
-    <section className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4">
+    <section className="flex flex-col gap-2 lacquer rounded-card p-4">
       <h3 className="font-bold">{t("oddsTitle")}</h3>
       <p className="text-xs text-text-muted">
         {t("oddsHint")} {t("pool", { count: size })} ·{" "}

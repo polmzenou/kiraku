@@ -30,7 +30,7 @@ export function AdminCancelAuctionButton({ auctionId }: { auctionId: string }) {
     <div className="flex flex-col items-stretch gap-1 sm:items-end">
       {confirming ? (
         <div className="flex gap-2">
-          <Button type="button" variant="shu" onClick={cancel} disabled={pending}>
+          <Button type="button" variant="primary" onClick={cancel} disabled={pending}>
             {t("confirmCancel")}
           </Button>
           <Button type="button" onClick={() => setConfirming(false)} disabled={pending}>

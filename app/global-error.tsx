@@ -15,7 +15,7 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
         <button
           type="button"
           onClick={reset}
-          className="inline-flex min-h-11 items-center rounded-button bg-shu-btn px-5 font-medium text-washi-paper"
+          className="inline-flex min-h-11 items-center rounded-control bg-shu-btn px-5 font-medium text-washi-paper"
         >
           Réessayer · Try again
         </button>

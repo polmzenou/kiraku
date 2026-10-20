@@ -47,7 +47,7 @@ export function TermsAcceptScreen({ version, firstTime }: { version: number; fir
           type="checkbox"
           checked={checked}
           onChange={(e) => setChecked(e.target.checked)}
-          className="mt-0.5 size-6 shrink-0 accent-shu-btn"
+          className="mt-0.5 choice shrink-0 "
         />
         <span>{t("checkbox")}</span>
       </label>
@@ -56,7 +56,7 @@ export function TermsAcceptScreen({ version, firstTime }: { version: number; fir
           {error}
         </p>
       )}
-      <Button type="button" variant="shu" disabled={!checked || pending} onClick={accept} className="min-h-12 text-base">
+      <Button type="button" variant="primary" disabled={!checked || pending} onClick={accept} className="min-h-12 text-base">
         {pending ? t("pending") : t("submit")}
       </Button>
     </main>

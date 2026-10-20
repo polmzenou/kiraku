@@ -30,7 +30,7 @@ export function SeasonReward({ seasonId, seasonNumber, peakTier }: { seasonId: s
     });
 
   return (
-    <aside className="battle-board battle-rim rounded-xl p-[3px]" data-tier={peakTier}>
+    <aside className="battle-board battle-rim rounded-card p-[3px]" data-tier={peakTier}>
       <div className="battle-table flex flex-col items-center gap-3 rounded-[10px] p-4 text-center text-washi-paper sm:flex-row sm:text-left">
         <RankEmblem tier={peakTier} size={64} />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -43,7 +43,7 @@ export function SeasonReward({ seasonId, seasonNumber, peakTier }: { seasonId: s
           )}
         </div>
         {!done && (
-          <Button variant="shu" onClick={claim} disabled={pending}>
+          <Button variant="primary" onClick={claim} disabled={pending}>
             {t("reward.claim")}
           </Button>
         )}

@@ -71,13 +71,13 @@ export default async function AdminHome() {
             {g.tiles.map((tile) => (
               <div
                 key={tile.label}
-                className={`relative flex min-h-20 flex-col gap-0.5 rounded-lg border bg-surface p-3 ${tile.alert ? "border-shu" : "border-border"}`}
+                className={`relative flex min-h-20 flex-col gap-0.5 rounded-card border bg-surface p-3 ${tile.alert ? "border-shu" : "border-border"}`}
               >
                 <dt className="text-xs text-text-muted">{tile.label}</dt>
                 <dd className={`text-lg font-bold tabular-nums ${tile.alert ? "text-shu" : ""}`}>{tile.value}</dd>
                 {tile.hint && <dd className="text-xs text-text-muted">{tile.hint}</dd>}
                 {/* Toute la case mène au module concerné */}
-                {tile.href && <Link href={tile.href} aria-label={tile.label} className="absolute inset-0 rounded-lg" />}
+                {tile.href && <Link href={tile.href} aria-label={tile.label} className="absolute inset-0 rounded-card" />}
               </div>
             ))}
           </dl>

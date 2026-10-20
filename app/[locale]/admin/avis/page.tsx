@@ -74,7 +74,7 @@ export default async function AdminReviewsPage({ searchParams }: PageProps<"/[lo
           {items.map((r) => (
             <li
               key={r.id}
-              className={`flex flex-col gap-3 rounded-button border border-border p-3 text-sm sm:flex-row sm:items-start sm:justify-between ${
+              className={`flex flex-col gap-3 rounded-control border border-border p-3 text-sm sm:flex-row sm:items-start sm:justify-between ${
                 r.hidden ? "bg-surface-2" : "bg-surface"
               }`}
             >
@@ -113,7 +113,7 @@ export default async function AdminReviewsPage({ searchParams }: PageProps<"/[lo
       {pages > 1 && (
         <nav aria-label={t("pagination")} className="flex items-center justify-between gap-2">
           {page > 0 ? (
-            <Link href={href(filter, page - 1)} className="inline-flex min-h-11 items-center rounded-button border border-border bg-surface-2 px-4 text-sm">
+            <Link href={href(filter, page - 1)} className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface-2 px-4 text-sm">
               {t("previous")}
             </Link>
           ) : (
@@ -121,7 +121,7 @@ export default async function AdminReviewsPage({ searchParams }: PageProps<"/[lo
           )}
           <span className="text-sm text-text-muted tabular-nums">{t("pageOf", { page: Math.min(page, pages - 1) + 1, pages })}</span>
           {page < pages - 1 ? (
-            <Link href={href(filter, page + 1)} className="inline-flex min-h-11 items-center rounded-button border border-border bg-surface-2 px-4 text-sm">
+            <Link href={href(filter, page + 1)} className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface-2 px-4 text-sm">
               {t("next")}
             </Link>
           ) : (
@@ -137,7 +137,7 @@ export default async function AdminReviewsPage({ searchParams }: PageProps<"/[lo
         ) : (
           <ul className="flex flex-col gap-2">
             {logs.map((log) => (
-              <li key={log.id} className="flex flex-wrap items-baseline justify-between gap-2 rounded-button border border-border bg-surface p-3 text-sm">
+              <li key={log.id} className="flex flex-wrap items-baseline justify-between gap-2 rounded-control border border-border bg-surface p-3 text-sm">
                 <span>
                   {t(`logActions.${logKey(log.action)}`, { admin: log.admin.username, id: log.targetId ?? "" })}
                 </span>

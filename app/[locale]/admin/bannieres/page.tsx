@@ -16,7 +16,7 @@ export default async function AdminBannersPage() {
       <div className="flex flex-col gap-3">
         <h2 className="font-title text-2xl font-bold">{t("banners.title")}</h2>
         <p className="max-w-prose text-sm text-text-muted">{t("banners.intro")}</p>
-        <ButtonLink href="/admin/bannieres/nouvelle" variant="shu" className="self-start">
+        <ButtonLink href="/admin/bannieres/nouvelle" variant="primary" className="self-start">
           {t("types.newBanner")}
         </ButtonLink>
       </div>
@@ -25,7 +25,7 @@ export default async function AdminBannersPage() {
       ) : (
         <ul className="grid gap-3 md:grid-cols-2">
           {banners.map((b) => (
-            <li key={b.slug} className="flex gap-3 rounded-lg border border-border bg-surface p-3">
+            <li key={b.slug} className="flex gap-3 lacquer rounded-card p-3">
               <div className="w-12 shrink-0">
                 <BoosterArt shape={b.shape} theme={b.theme} emblem={b.emblem} name="" contents="" compact />
               </div>

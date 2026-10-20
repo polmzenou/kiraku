@@ -35,7 +35,7 @@ export function RankedSettingsForm({ initial, lots }: { initial: RankedSettings;
     <NumberField key={label} label={label} value={value} onChange={onChange} min={0} max={MAX} />
   );
   const row = (label: string, value: TierRow, onChange: (v: TierRow) => void, tier: (typeof LADDER)[number] | "GRAND_CHAMPION") => (
-    <fieldset key={label} className="flex flex-col gap-3 rounded-lg border border-border bg-surface-2 p-3">
+    <fieldset key={label} className="flex flex-col gap-3 rounded-card border border-border bg-surface-2 p-3">
       <legend className="flex items-center gap-2 px-1 font-bold">
         <RankEmblem tier={tier} size={28} />
         {label}
@@ -62,7 +62,7 @@ export function RankedSettingsForm({ initial, lots }: { initial: RankedSettings;
       }
     });
 
-  const box = "grid gap-4 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2";
+  const box = "grid gap-4 lacquer rounded-card p-4 sm:grid-cols-2";
   const gc = draft["ranked.grandChampion"];
   return (
     <form
@@ -72,12 +72,12 @@ export function RankedSettingsForm({ initial, lots }: { initial: RankedSettings;
         save();
       }}
     >
-      <fieldset className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4">
+      <fieldset className="flex flex-col gap-2 lacquer rounded-card p-4">
         <legend className="px-1 font-bold">{t("switches")}</legend>
         <Toggle label={key("enabled")} checked={draft["ranked.enabled"]} onChange={(v) => set({ ...draft, "ranked.enabled": v })} />
       </fieldset>
 
-      <fieldset className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+      <fieldset className="flex flex-col gap-3 lacquer rounded-card p-4">
         <legend className="px-1 font-bold">{t("tiers")}</legend>
         {LADDER.map((tier) =>
           row(tRanked(`tiers.${tier}`), draft["ranked.tiers"][tier], (v) => set({ ...draft, "ranked.tiers": { ...draft["ranked.tiers"], [tier]: v } }), tier),
@@ -125,7 +125,7 @@ export function RankedSettingsForm({ initial, lots }: { initial: RankedSettings;
 
       {!valid && <p className="text-sm text-shu">{t("invalid")}</p>}
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" variant="shu" disabled={pending || !valid || changed.length === 0}>
+        <Button type="submit" variant="primary" disabled={pending || !valid || changed.length === 0}>
           {pending ? t("saving") : t("save")}
         </Button>
         <FormMessage message={message} />

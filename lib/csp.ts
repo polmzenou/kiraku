@@ -10,7 +10,7 @@ export function buildCsp(nonce: string, isDev: boolean): string {
     "style-src-elem": ["'self'", `'nonce-${nonce}'`],
     // Motion et les composants utilisent des attributs style ; les balises restent protégées.
     "style-src-attr": ["'unsafe-inline'"],
-    "img-src": ["'self'", "data:", "blob:", ...IMAGE_HOSTS],
+    "img-src": ["'self'", "data:", "blob:", ...IMAGE_HOSTS, ...(process.env.BLOB_PUBLIC_HOST && /^[a-z0-9-]+\.public\.blob\.vercel-storage\.com$/.test(process.env.BLOB_PUBLIC_HOST) ? [`https://${process.env.BLOB_PUBLIC_HOST}`] : [])],
     "font-src": ["'self'"],
     // Ably : temps réel du combat (WebSocket, et repli HTTP vers ses hôtes de secours)
     "connect-src": ["'self'", "wss://*.ably.io", "https://*.ably.io", "https://*.ably-realtime.com", "wss://*.ably-realtime.com"],

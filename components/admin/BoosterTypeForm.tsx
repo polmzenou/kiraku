@@ -1,5 +1,7 @@
 "use client";
 
+import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
+
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { useEffect, useId, useState, useTransition, type ReactNode } from "react";
@@ -7,13 +9,13 @@ import { useRouter } from "@/i18n/navigation";
 import type { BoosterTypeForm as FormValues } from "@/lib/boosters/admin-form";
 import { contentsLabel } from "@/lib/boosters/catalog";
 import { BOOSTER_FAMILIES, BOOSTER_SHAPES, WAGARA } from "@/lib/boosters/types";
-import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { saveBoosterType, searchFeaturedCards, type FeaturedCandidate } from "@/server/actions/admin-boosters";
 import { BoosterArt } from "../boosters/BoosterArt";
 import { Button } from "../ui/Button";
 
 const input =
-  "min-h-11 w-full min-w-0 rounded-button border border-border bg-surface-2 px-3 text-base aria-invalid:border-shu";
+  "min-h-11 w-full min-w-0 rounded-control border border-border bg-surface-2 px-3 text-base aria-invalid:border-shu";
 
 const list = (s: string) =>
   s
@@ -55,7 +57,7 @@ function Check({ label, checked, onChange }: { label: string; checked: boolean; 
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <fieldset className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4">
+    <fieldset className="flex flex-col gap-4 lacquer rounded-card p-4">
       <legend className="px-1 font-title text-lg font-bold">{title}</legend>
       {children}
     </fieldset>
@@ -72,6 +74,8 @@ type Props = {
 
 /** Création ou modification d'un type de booster (ou d'une bannière vedette), avec aperçu du sachet. */
 export function BoosterTypeForm({ initial, featured: initialFeatured, globalCards }: Props) {
+  const RARITIES = useRarities();
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("admin.form");
   const tFamilies = useTranslations("boosters.families");
   const tRarity = useTranslations("rarity");
@@ -304,7 +308,7 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, globalCard
                       type="button"
                       aria-label={t("removeSlot", { n: i + 1 })}
                       onClick={() => set("slotFloors", floors.filter((_, j) => j !== i))}
-                      className="inline-flex size-11 items-center justify-center rounded-button text-xl"
+                      className="inline-flex size-11 items-center justify-center rounded-control text-xl"
                     >
                       ×
                     </button>
@@ -338,7 +342,7 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, globalCard
             ) : (
               <ul className="flex flex-col gap-2">
                 {featured.map((c) => (
-                  <li key={c.id} className="flex items-center gap-3 rounded-button bg-surface-2 p-2">
+                  <li key={c.id} className="flex items-center gap-3 rounded-control bg-surface-2 p-2">
                     <Image src={c.imageUrl} alt="" width={32} height={45} className="h-[45px] w-8 rounded-[3px] object-cover" />
                     <span className="min-w-0 flex-1 text-sm">
                       <span className="font-bold">{c.name}</span>{" "}
@@ -350,7 +354,7 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, globalCard
                       type="button"
                       aria-label={t("remove", { name: c.name })}
                       onClick={() => setFeatured((f) => f.filter((x) => x.id !== c.id))}
-                      className="inline-flex size-11 items-center justify-center rounded-button text-xl"
+                      className="inline-flex size-11 items-center justify-center rounded-control text-xl"
                     >
                       ×
                     </button>
@@ -370,7 +374,7 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, globalCard
                       <button
                         type="button"
                         onClick={() => setFeatured((f) => [...f, c])}
-                        className="flex min-h-11 w-full items-center gap-3 rounded-button px-2 text-left text-sm hover:bg-surface-2"
+                        className="flex min-h-11 w-full items-center gap-3 rounded-control px-2 text-left text-sm hover:bg-surface-2"
                       >
                         <Image src={c.imageUrl} alt="" width={24} height={34} className="h-[34px] w-6 rounded-[2px] object-cover" />
                         <span className="min-w-0 flex-1 truncate">
@@ -448,7 +452,7 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, globalCard
             contents={contentsLabel(ownFloors && floors.length > 0 ? floors.length : globalCards)}
           />
         </div>
-        <Button type="submit" variant="shu" disabled={pending}>
+        <Button type="submit" variant="primary" disabled={pending}>
           {t("save")}
         </Button>
         {message && (

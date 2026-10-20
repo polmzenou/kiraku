@@ -20,7 +20,7 @@ const TECHNIQUE_SALT = 0x7463; // « tc »
 
 /** Passifs d'une carte : toujours les mêmes pour un personnage donné, leur nombre dépend de la rareté. */
 export function keywordsFor(anilistId: number, rarity: Rarity, perRarity: BattleRules["keywordsByRarity"]): Keyword[] {
-  const count = Math.min(perRarity[rarity], KEYWORDS.length);
+  const count = Math.min(perRarity[rarity] ?? 0, KEYWORDS.length);
   const rng = seededRng(mixSeed(anilistId, KEYWORD_SALT));
   const pool: Keyword[] = [...KEYWORDS];
   const picked: Keyword[] = [];
@@ -35,6 +35,7 @@ export function techniqueFor(anilistId: number): Technique {
 
 export type FighterCard = {
   id: string;
+  appearance?: unknown;
   anilistId: number;
   name: string;
   nameNative: string | null;
@@ -52,6 +53,7 @@ export function fighterFrom(card: FighterCard, rules: BattleRules): FighterSetup
     name: card.name,
     nameNative: card.nameNative,
     imageUrl: card.imageUrl,
+    appearance: card.appearance,
     rank: card.rank,
     rarity: card.rarity,
     power: card.power,

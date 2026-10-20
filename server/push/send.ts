@@ -37,7 +37,9 @@ async function renderMessage(notificationId: string, locale: Locale): Promise<{ 
     getTranslations({ locale, namespace: "rarity" }),
   ]);
   const { text, href } = describeNotification(view, {
-    notifications: (key, values) => t(key, values),
+    // Les clés sont celles de DescribeTranslators (toutes présentes) : l'union est trop large pour
+    // l'inférence des arguments ICU de getTranslations, d'où la signature simplifiée
+    notifications: (key, values) => (t as (k: string, v?: Record<string, string | number>) => string)(key, values),
     guestName: (code) => tAccount("guestName", { code }),
     rarity: (r) => tRarity(r as "COMMON"),
   });

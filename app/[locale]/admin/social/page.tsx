@@ -33,7 +33,7 @@ export default async function AdminSocialPage() {
         ) : (
           <ul className="flex flex-col gap-2">
             {gifts.map((g) => (
-              <li key={g.id} className="flex flex-wrap items-baseline justify-between gap-2 rounded-button border border-border bg-surface p-3 text-sm">
+              <li key={g.id} className="flex flex-wrap items-baseline justify-between gap-2 rounded-control border border-border bg-surface p-3 text-sm">
                 <span>
                   {t(g.kind === "CARD" ? "giftCard" : "giftBooster", {
                     from: g.sender.username,
@@ -57,7 +57,7 @@ export default async function AdminSocialPage() {
         ) : (
           <ul className="flex flex-col gap-2">
             {logs.map((log) => (
-              <li key={log.id} className="flex flex-col gap-1 rounded-button border border-border bg-surface p-3 text-sm">
+              <li key={log.id} className="flex flex-col gap-1 rounded-control border border-border bg-surface p-3 text-sm">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="font-bold">{t("logEntry", { key: log.targetId ?? "", admin: log.admin.username })}</span>
                   <time dateTime={log.createdAt.toISOString()} className="text-xs text-text-muted">

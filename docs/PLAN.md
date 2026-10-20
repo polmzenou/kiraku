@@ -440,6 +440,16 @@ Collection performante : un `GROUP BY cardId` en SQL (`$queryRaw` balisé, joint
 - **Admin** : `/admin/social` (interrupteurs, limites, raretés offrables, journal des derniers cadeaux).
 - **Tests** : `lib/social/*.test.ts` ; `server/social/social.db.test.ts` (demandes croisées, quotas sous concurrence, double cadeau d'un exemplaire, solde = journal), sauté sans `DATABASE_URL_TEST`.
 
+### Étape 12 : échanges, chat et profil personnalisable
+
+**Échanges entre amis** (`Trade`, `TradeOffer`, `server/social/trade-core.ts`). Depuis le profil d'un ami : « je veux ta carte X contre l'une de celles-ci ». Rien n'est bloqué pendant l'attente ; à l'acceptation, la proposition puis les deux joueurs sont verrouillés, l'amitié, les blocages et un exemplaire libre de chaque côté sont relus, puis les deux exemplaires changent de propriétaire par des `updateMany` conditionnels (sinon la proposition passe en `FAILED`). L'ami choisit la carte qu'il reçoit ; chacun voit la révélation comme au sortir d'un booster. Réglages `trades.*` (durée, cartes offertes, quotas, raretés) dans `/admin/social`.
+
+**Échanges ouverts du Marché** (`TradeListing`, `TradeListingWant`, `ListingOffer`, `server/market/listing-core.ts`). Onglets « Échanges » et « Mes échanges » de `/marche`, sans amitié requise : une carte de sa collection contre 1 à `listings.maxWants` cartes qu'on n'a pas. Les autres joueurs voient en or les cartes demandées qu'ils peuvent donner (« Donner X ») ou proposent une autre carte (« Proposer autre chose », `listings.allowOther`). L'auteur reçoit `LISTING_OFFER` avec les deux visuels et accepte ou refuse depuis la notification ; l'offrant reçoit `LISTING_ACCEPTED` ou `LISTING_DECLINED`. Rien n'est bloqué pendant l'attente : à l'acceptation, l'annonce, l'offre puis les joueurs sont verrouillés et les exemplaires changent de main par `updateMany` conditionnels ; la première offre acceptée ferme les autres. Réglages `listings.*` dans `/admin/marche`, âge minimal du compte partagé avec l'hôtel des ventes.
+
+**Chat entre amis** (`ChatMessage`). Amis acceptés seulement, texte brut nettoyé, blocage respecté. Messages éphémères : ils disparaissent `chat.retentionHours` après leur envoi (24 h par défaut), filtrés dès la lecture puis supprimés par un ménage paresseux ; un rappel s'affiche en tête de chaque discussion. Temps réel par Ably sur le canal privé du joueur, sinon sondage tant que l'onglet est visible. Desktop : bulle en bas à droite ; mobile : icône 話 dans l'en-tête.
+
+**Profil personnalisable** (`Cosmetic`, `lib/profile/conditions.ts`). Bio, accord des titres (masculin / féminin), titre et cadre d'avatar choisis parmi ceux débloqués, badges dérivés (Pionnier, Ambassadeur, Compte vérifié) dans l'ordre choisi. Titres et cadres sont gérés dans `/admin/cosmetiques` avec une condition : toujours, cartes uniques, cartes d'une rareté, série complétée (ex. « Devil Hunter » pour Chainsaw Man), nombre de séries complétées, boosters ouverts, échanges réussis, rang classé. Le serveur revérifie chaque choix à l'enregistrement. Cadres dans les matières de la DA (washi, bambou, aizome, urushi, kinpaku, raden, sakura, kintsugi), jamais le cadre arc-en-ciel de Kyara. Premiers titres et cadres : `npm run seed:cosmetics`.
+
 ## Hôtel des ventes
 
 Les joueurs paient en Zeni, la monnaie virtuelle du jeu, jamais en argent réel. Une vente bloque la carte (`status = AUCTION`) et chaque enchère bloque les Zeni de l'enchérisseur : impossible de vendre deux fois la même carte ou de miser de l'argent qu'on n'a pas.
@@ -1242,6 +1252,14 @@ Construis dans cet ordre : chaque étape est jouable seule et sert de base à la
 8. **Hôtel des ventes** — ventes, enchères, clôture planifiée. Avant la mise en ligne, un test lance 50 enchères simultanées et vérifie que la somme des soldes ne bouge pas.
 9. **Combat** — 9a : combat en direct (moteur avec seed, code ami, exhibition, bot, Ably, replay) ; 9b : mode classé et saisons.
 10. **Conformité et finitions** — pages légales, « Mes données », modal Discord (désactivé), tuile Casino « Bientôt », PWA, admin complet, audits de sécurité et de performance, tests sur un vrai téléphone en 375 px. Pas de contrôle d'âge (clause déclarative dans les CGU). Checklist de mise en ligne : `docs/MISE-EN-PRODUCTION.md`.
+11. **Urushi** — jetons de la DA, primitives UI, nav en capsule flottante, fuda et sachets revus, passage écran par écran (11a à 11c).
+12. **Social et confort de jeu** (12a à 12h) — voir « Étape 12 » ci-dessous :
+    - ouverture : recentrage sur le nouveau booster, actions du récap fixées au-dessus de la nav ;
+    - familles de boosters toutes atteignables (feuille « Toutes » sur mobile, retour à la ligne et scroll-spy sur desktop) ;
+    - carrousel « En direct · Gros tirages » (`NotablePull`) ;
+    - collection par albums (une tuile par série) ;
+    - suppression définitive de comptes dans l'admin, avec sélection multiple ;
+    - échanges entre amis, chat éphémère entre amis, profil personnalisable (titres, cadres, badges).
 
 Hors de ce plan : Stripe et le casino, après un avis juridique.
 

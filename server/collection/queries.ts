@@ -1,11 +1,12 @@
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { seriesTitle } from "@/lib/catalog/display";
-import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { COLLECTION_PAGE_SIZE, type CollectionParams } from "@/lib/collection/params";
 import { recycleValue, type RecycleValues } from "@/lib/collection/recycle";
 import type { CollectionItem, CollectionPage, CollectionSummary, RarityTotals, ShowcaseCard } from "@/lib/collection/view";
 import { getCatalogStats } from "../catalog/queries";
+import { getRarities } from "../catalog/rarities";
 import { prisma } from "../db";
 
 // Lectures de la collection d'un joueur. Les exemplaires sont groupés par carte en SQL : on ne
@@ -19,6 +20,7 @@ type Row = {
   cardId: string;
   anilistId: number;
   name: string;
+  appearance: unknown;
   nameNative: string | null;
   imageUrl: string;
   rank: number | null;
@@ -37,7 +39,7 @@ function orderBy(params: CollectionParams): Prisma.Sql {
   const byRank = Prisma.sql`c.rank ASC NULLS LAST`;
   switch (params.sort) {
     case "rarity":
-      return asc ? Prisma.sql`c.rarity ASC, ${byRank}` : Prisma.sql`c.rarity DESC, ${byRank}`;
+      return asc ? Prisma.sql`rd."sortOrder" ASC, ${byRank}` : Prisma.sql`rd."sortOrder" DESC, ${byRank}`;
     case "recent":
       return asc ? Prisma.sql`MAX(uc."obtainedAt") ASC` : Prisma.sql`MAX(uc."obtainedAt") DESC`;
     case "number":
@@ -45,7 +47,7 @@ function orderBy(params: CollectionParams): Prisma.Sql {
     case "name":
       return asc ? Prisma.sql`lower(c.name) ASC` : Prisma.sql`lower(c.name) DESC`;
     case "copies":
-      return asc ? Prisma.sql`COUNT(*) ASC, c.rarity DESC` : Prisma.sql`COUNT(*) DESC, c.rarity DESC`;
+      return asc ? Prisma.sql`COUNT(*) ASC, rd."sortOrder" DESC` : Prisma.sql`COUNT(*) DESC, rd."sortOrder" DESC`;
     case "power":
       return asc ? Prisma.sql`c.power ASC, ${byRank}` : Prisma.sql`c.power DESC, ${byRank}`;
     case "ki":
@@ -55,7 +57,7 @@ function orderBy(params: CollectionParams): Prisma.Sql {
 
 function filters(ownerId: string, params: CollectionParams): Prisma.Sql {
   const conditions = [Prisma.sql`uc."ownerId" = ${ownerId}`];
-  if (params.rarities.length > 0) conditions.push(Prisma.sql`c.rarity::text = ANY(${params.rarities})`);
+  if (params.rarities.length > 0) conditions.push(Prisma.sql`c."rarityKey" = ANY(${params.rarities})`);
   if (params.series) conditions.push(Prisma.sql`c."seriesId" = ${params.series}`);
   // Termes déjà normalisés (lettres et chiffres seulement) : ni % ni _ ne peuvent s'y glisser
   for (const term of params.terms) conditions.push(Prisma.sql`c."searchText" LIKE ${`%${term}%`}`);
@@ -69,6 +71,7 @@ function toItem(row: Row, locale: string): CollectionItem {
     name: row.name,
     nameNative: row.nameNative,
     imageUrl: row.imageUrl,
+    appearance: row.appearance,
     rank: row.rank,
     rarity: row.rarity,
     power: row.power,
@@ -89,7 +92,7 @@ export async function getCollectionPage(
 ): Promise<CollectionPage> {
   const start = Math.min(Math.max(0, Math.trunc(offset)), MAX_OFFSET);
   const rows = await prisma.$queryRaw<Row[]>`
-    SELECT c.id AS "cardId", c."anilistId", c.name, c."nameNative", c."imageUrl", c.rank, c.rarity::text AS rarity,
+    SELECT c.id AS "cardId", c."publicId" AS "anilistId", c.appearance, c.name, c."nameNative", c."imageUrl", c.rank, c."rarityKey" AS rarity,
            c.power, c.ki, s."titleRomaji", s."titleEnglish",
            COUNT(*)::int AS copies,
            (COUNT(*) FILTER (WHERE uc.status = 'COLLECTION'))::int AS free,
@@ -97,9 +100,10 @@ export async function getCollectionPage(
     FROM "UserCard" uc
     JOIN "Card" c ON c.id = uc."cardId"
     JOIN "Series" s ON s.id = c."seriesId"
+    JOIN "RarityDefinition" rd ON rd.key = c."rarityKey"
     LEFT JOIN "ShowcaseSlot" sh ON sh."userCardId" = uc.id
     WHERE ${filters(ownerId, params)}
-    GROUP BY c.id, s.id
+    GROUP BY c.id, s.id, rd."sortOrder"
     HAVING ${params.dupes ? Prisma.sql`COUNT(*) FILTER (WHERE uc.status = 'COLLECTION') >= 2` : Prisma.sql`TRUE`}
     ORDER BY ${orderBy(params)}, c.id ASC
     LIMIT ${COLLECTION_PAGE_SIZE + 1} OFFSET ${start}`;
@@ -120,7 +124,7 @@ export async function getCollectionSummary(ownerId: string, values: RecycleValue
              SUM(GREATEST(g.free - 1, 0))::int AS recyclable,
              (COUNT(*) FILTER (WHERE g.listed))::int AS "inCatalog"
       FROM (
-        SELECT c.rarity::text AS rarity, c.rank IS NOT NULL AS listed, COUNT(*) AS copies,
+        SELECT c."rarityKey" AS rarity, c.status = 'PUBLISHED' AS listed, COUNT(*) AS copies,
                COUNT(*) FILTER (WHERE uc.status = 'COLLECTION') AS free
         FROM "UserCard" uc
         JOIN "Card" c ON c.id = uc."cardId"
@@ -131,6 +135,7 @@ export async function getCollectionSummary(ownerId: string, values: RecycleValue
     getCatalogStats(),
   ]);
 
+  const RARITIES = await getRarities();
   const byRarity = Object.fromEntries(
     RARITIES.map((r) => [r, { unique: 0, copies: 0, recyclable: 0, zeni: 0 }]),
   ) as Record<Rarity, RarityTotals>;
@@ -162,6 +167,7 @@ export async function getOwnedSeries(ownerId: string, locale: string) {
     FROM "UserCard" uc
     JOIN "Card" c ON c.id = uc."cardId"
     JOIN "Series" s ON s.id = c."seriesId"
+    JOIN "RarityDefinition" rd ON rd.key = c."rarityKey"
     WHERE uc."ownerId" = ${ownerId}
     GROUP BY s.id
     ORDER BY cards DESC, s."titleRomaji" ASC
@@ -195,7 +201,7 @@ export async function getShowcase(ownerId: string, size: number, locale: string)
           card: {
             select: {
               id: true,
-              anilistId: true,
+              anilistId: true, publicId: true, appearance: true,
               name: true,
               nameNative: true,
               imageUrl: true,
@@ -216,10 +222,11 @@ export async function getShowcase(ownerId: string, size: number, locale: string)
     result[slot.position - 1] = {
       position: slot.position,
       cardId: c.id,
-      anilistId: c.anilistId,
+      anilistId: c.publicId,
       name: c.name,
       nameNative: c.nameNative,
       imageUrl: c.imageUrl,
+      appearance: c.appearance,
       rank: c.rank,
       rarity: c.rarity as Rarity,
       power: c.power,

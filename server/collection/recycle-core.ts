@@ -1,7 +1,7 @@
 // Recyclage atomique des doublons en Zeni. Le client Prisma est injecté (serveur ou test de
 // concurrence) : pas de server/db.ts ici. Le serveur choisit les exemplaires et calcule le gain.
 import type { PrismaClient } from "@/generated/prisma/client";
-import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { planRecycle, type RecyclePlan, type RecycleValues } from "@/lib/collection/recycle";
 import { credit } from "../economy/ledger";
 
@@ -43,6 +43,7 @@ export async function recycleWith(
       if (!user) throw new RecycleError("NO_USER");
       if (user.bannedAt) throw new RecycleError("BANNED");
 
+      const RARITIES = (await tx.rarityDefinition.findMany({ orderBy: [{ sortOrder: "asc" }, { key: "asc" }], select: { key: true } })).map((r) => r.key);
       const allowed = request.kind === "all" ? RARITIES.slice(0, RARITIES.indexOf(request.maxRarity) + 1) : RARITIES;
       const [copies, showcase] = await Promise.all([
         tx.userCard.findMany({
@@ -60,6 +61,7 @@ export async function recycleWith(
         copies.map((c) => ({ id: c.id, cardId: c.cardId, status: c.status, obtainedAt: c.obtainedAt, rarity: c.card.rarity as Rarity })),
         {
           values,
+          rarities: RARITIES,
           protectedIds: new Set(showcase.map((s) => s.userCardId)),
           ...(request.kind === "all" ? { maxRarity: request.maxRarity } : { maxPerCard: request.count }),
         },

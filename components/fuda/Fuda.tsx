@@ -1,8 +1,13 @@
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { cardNumber } from "@/lib/catalog/display";
-import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { BASE_RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { fxTier } from "@/lib/catalog/tiers";
 import { FudaTilt } from "./FudaTilt";
+import type { CSSProperties } from "react";
+import { resolveAppearance } from "@/lib/catalog/appearance";
+import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
+import "./FudaEffects.css";
 
 export type FudaCard = {
   name: string;
@@ -12,13 +17,17 @@ export type FudaCard = {
   rarity: Rarity;
   power: number;
   ki: number;
+  appearance?: unknown;
+  /** Nom de la forme d'une variante (« Gear 5 ») : remplace la série sur la ligne du bas. */
+  formName?: string | null;
 };
 
 type FudaSize = "sm" | "md" | "lg";
 
-const layout: Record<FudaSize, { frame: string; seal: string; number: string; name: string; meta: string; sizes: string }> = {
+const layout: Record<FudaSize, { frame: string; inner: string; seal: string; number: string; name: string; meta: string; sizes: string }> = {
   sm: {
-    frame: "p-[3px] rounded-[5px]",
+    frame: "p-[3px] rounded-[7px]",
+    inner: "rounded-[4px]",
     seal: "size-5 text-[13px]",
     number: "text-[9px] px-1",
     name: "text-[11px] leading-tight",
@@ -26,7 +35,8 @@ const layout: Record<FudaSize, { frame: string; seal: string; number: string; na
     sizes: "(min-width: 1280px) 140px, (min-width: 1024px) 180px, (min-width: 768px) 25vw, 33vw",
   },
   md: {
-    frame: "p-1 rounded-[6px]",
+    frame: "p-1 rounded-fuda",
+    inner: "rounded-[7px]",
     seal: "size-7 text-lg",
     number: "text-[10px] px-1.5",
     name: "text-sm leading-tight",
@@ -34,7 +44,8 @@ const layout: Record<FudaSize, { frame: string; seal: string; number: string; na
     sizes: "(min-width: 768px) 240px, 50vw",
   },
   lg: {
-    frame: "p-1.5 rounded-[8px]",
+    frame: "p-1.5 rounded-[14px]",
+    inner: "rounded-[9px]",
     seal: "size-10 text-[26px]",
     number: "text-xs px-2 py-0.5",
     name: "text-xl leading-snug",
@@ -75,12 +86,23 @@ export function Fuda({
   const rarity = useTranslations("rarity");
   const battle = useTranslations("battle.board");
   const l = layout[size];
+  const definitions = useRarityDefinitions();
+  const definition = definitions.find((r) => r.key === card.rarity);
+  const tier = BASE_RARITIES.indexOf(fxTier(card.rarity, definitions));
+  const visual = resolveAppearance(definition?.appearance, card.appearance);
+  const customStyle = {
+    ...(visual.frame && { "--fuda-frame": visual.frame, "--fuda-frame-bg": visual.frame }),
+    "--fx-color": visual.effectColor, "--fx-intensity": visual.intensity,
+    "--fx-duration": `${8 / visual.speed}s`,
+  } as CSSProperties;
   const inBattle = variant === "battle";
   const showNative = !inBattle && size !== "sm" && !locked && card.nameNative;
+  const gilded = !locked && !monochrome && visual.artTone === "gold";
+  const subtitle = (!locked && card.formName) || series;
 
   const content = (
-    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden shadow-paper ${l.frame}`} data-rarity={card.rarity}>
-      <div className="flex h-full flex-col overflow-hidden rounded-[3px] bg-washi-paper text-sumi">
+    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} style={customStyle}>
+      <div className={`fuda-paper flex h-full flex-col overflow-hidden bg-washi-paper text-sumi ${l.inner}`} style={{ backgroundColor: visual.paper, color: visual.ink }}>
         <div className="relative flex-1 overflow-hidden bg-[#e4d9c4]">
           {locked ? (
             <div className="flex h-full items-center justify-center font-title text-5xl text-sumi-muted/50">
@@ -95,24 +117,26 @@ export function Fuda({
               sizes={sizes ?? l.sizes}
               preload={preload}
               draggable={false}
-              className={`object-cover object-top${monochrome ? " grayscale" : ""}`}
+              className={`object-cover object-top${monochrome ? " grayscale" : ""}${gilded ? " fuda-art-gold" : ""}`}
+              style={{ objectPosition: `${visual.focalX}% ${visual.focalY}%`, transform: `scale(${visual.zoom})`, transformOrigin: `${visual.focalX}% ${visual.focalY}%` }}
             />
           )}
+          {gilded && <span aria-hidden="true" className="fuda-gilt" />}
 
           <span
             aria-hidden="true"
-            className={`absolute left-1 flex items-center justify-center rounded-[3px] text-washi-paper ${inBattle ? "bottom-1 max-w-[calc(100%-0.5rem)] px-1 py-0.5 text-[9px] font-bold leading-tight" : `top-1 font-seal leading-none ${l.seal}`}`}
+            className={`absolute left-1 flex items-center justify-center rounded-[5px] text-washi-paper shadow-sheen ${inBattle ? "bottom-1 max-w-[calc(100%-0.5rem)] px-1 py-0.5 text-[9px] font-bold leading-tight" : `top-1 font-seal leading-none ${l.seal}`}`}
             style={{ background: "var(--fuda-frame)" }}
           >
-            {inBattle ? rarity(card.rarity) : RARITY_SEAL[card.rarity]}
+            {inBattle ? rarity(card.rarity) : visual.seal || definition?.seal || RARITY_SEAL[card.rarity]}
           </span>
-          <span className={`absolute right-1 top-1 rounded-[3px] bg-washi-paper/85 font-medium ${l.number}`}>
+          <span className={`absolute right-1 top-1 rounded-pill bg-washi-paper/85 font-medium ${l.number}`}>
             {t("number", { number: cardNumber(card.rank) })}
           </span>
           {showNative && (
             <span
               lang="ja"
-              className="absolute bottom-1 right-1 max-h-[70%] overflow-hidden rounded-[3px] bg-washi-paper/85 px-0.5 py-1 font-title font-bold [writing-mode:vertical-rl]"
+              className="absolute bottom-1 right-1 max-h-[70%] overflow-hidden rounded-pill bg-washi-paper/85 px-0.5 py-1 font-title font-bold [writing-mode:vertical-rl]"
             >
               {card.nameNative}
             </span>
@@ -121,10 +145,10 @@ export function Fuda({
 
         <div className="flex flex-col gap-0.5 px-1.5 py-1">
           <p className={`truncate font-title font-bold ${l.name}`}>{locked ? t("unknown") : card.name}</p>
-          <div className={`${l.meta} flex items-center justify-between gap-2 text-sumi-muted`}>
-            {series && <span className="truncate">{series}</span>}
+          <div className={`${l.meta} flex items-center justify-between gap-2 text-sumi-muted`} style={{ color: visual.ink }}>
+            {subtitle && <span className="truncate">{subtitle}</span>}
             {!locked && (
-              <span className="flex shrink-0 gap-2 font-medium text-sumi">
+              <span className="flex shrink-0 gap-2 font-medium text-sumi" style={{ color: visual.ink }}>
                 <span>
                   <span className="sr-only">{t("power", { value: card.power })}</span>
                   <span aria-hidden="true">
@@ -143,11 +167,12 @@ export function Fuda({
         </div>
       </div>
       {/* Effet de matière (laque, or, nacre) au-dessus de la carte, à partir d'Épique */}
-      {!locked && !monochrome && RARITIES.indexOf(card.rarity) >= RARITIES.indexOf("EPIC") && (
+      {!locked && !monochrome && visual.effects === undefined && tier >= BASE_RARITIES.indexOf("EPIC") && (
         <span aria-hidden="true" className="fuda-sheen" />
       )}
+      {!locked && !monochrome && visual.effects?.map((effect) => <span key={effect} aria-hidden="true" className={`fuda-effect fuda-effect-${effect}`} />)}
     </div>
   );
 
-  return tilt ? <FudaTilt>{content}</FudaTilt> : content;
+  return tilt || visual.effects?.length ? <FudaTilt rotate={tilt && visual.tilt > 0} angle={visual.tilt} reactive={visual.reactive}>{content}</FudaTilt> : content;
 }

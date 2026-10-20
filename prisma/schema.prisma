@@ -75,7 +75,7 @@ model User {
   standardCount       Int               @default(0) // pour le booster doré
   bannerPity          Json              @default("{}") // { boosterTypeId: boosters sans vedette }
   discordJoinedAt     DateTime? // a cliqué sur « Rejoindre le serveur »
-  v1WelcomeSeenAt     DateTime? // présentation de la v1 affichée une seule fois par compte
+  v1WelcomeSeenAt     DateTime? // dernier affichage du modal de version (relancé une fois par version, lib/welcome/release.ts)
   locale              String            @default("fr") // fr | en
   birthDate           DateTime? // inutilisé : pas de contrôle d'âge (décision de l'étape 10)
   termsVersion        Int? // version des CGU acceptée
@@ -88,18 +88,27 @@ model User {
   profileVisibility   ProfileVisibility @default(PUBLIC) // invités créés en PRIVATE
   showCollection      Boolean           @default(true) // collection complète visible sur le profil
   privacyChosenAt     DateTime? // réglé par le joueur : l'inscription ne le change plus
+  // Personnalisation du profil (étape 12h) : bio, accord des titres, titre et cadre débloqués, ordre des badges
+  bio                 String?           @db.VarChar(160)
+  titleAgreement      TitleAgreement    @default(MASC)
+  titleId             String?
+  title               Cosmetic?         @relation("userTitle", fields: [titleId], references: [id], onDelete: SetNull)
+  frameId             String?
+  frame               Cosmetic?         @relation("userFrame", fields: [frameId], references: [id], onDelete: SetNull)
+  badgeOrder          String[]          @default([])
   createdAt           DateTime          @default(now())
 
-  accounts    Account[]
-  sessions    Session[]
-  ledger      CoinTransaction[]
-  authTokens  AuthToken[]
-  cards       UserCard[]
-  openings    BoosterOpening[]
-  discoveries Discovery[]
-  adminLogs   AdminLog[]
-  showcase    ShowcaseSlot[]
-  wishlist    WishlistEntry[]
+  accounts     Account[]
+  sessions     Session[]
+  ledger       CoinTransaction[]
+  authTokens   AuthToken[]
+  cards        UserCard[]
+  openings     BoosterOpening[]
+  notablePulls NotablePull[]
+  discoveries  Discovery[]
+  adminLogs    AdminLog[]
+  showcase     ShowcaseSlot[]
+  wishlist     WishlistEntry[]
 
   sentFriends   Friendship[]       @relation("requester")
   recvFriends   Friendship[]       @relation("addressee")
@@ -133,6 +142,13 @@ model User {
   lotGrants          LotGrant[]     @relation("lotGrantee")
   lotGrantsGiven     LotGrant[]     @relation("lotGranter")
   lotBroadcasts      LotBroadcast[]
+
+  tradesProposed Trade[]        @relation("tradeProposer")
+  tradesReceived Trade[]        @relation("tradeRecipient")
+  tradeListings  TradeListing[]
+  listingOffers  ListingOffer[]
+  chatSent       ChatMessage[]  @relation("chatSender")
+  chatReceived   ChatMessage[]  @relation("chatRecipient")
 
   @@index([rankPoints])
 }
@@ -203,7 +219,7 @@ model GameSetting {
 model CoinTransaction {
   id           String     @id @default(cuid())
   userId       String
-  user         User       @relation(fields: [userId], references: [id])
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   amount       Int // + crédit, - débit
   reason       CoinReason
   refId        String? // id d'enchère, de combat…
@@ -215,6 +231,7 @@ model CoinTransaction {
 
 // --- Catalogue (étape 2) ---
 
+// Compatibilité avec les versions déjà déployées : les anciennes colonnes restent en place.
 enum Rarity {
   COMMON
   UNCOMMON
@@ -222,6 +239,29 @@ enum Rarity {
   EPIC
   LEGENDARY
   MYTHIC
+}
+
+model RarityDefinition {
+  key             String        @id
+  nameFr          String
+  nameEn          String
+  sortOrder       Int
+  seal            String
+  appearance      Json          @default("{}")
+  legacyBase      Rarity        @default(COMMON)
+  /// Les cartes de cette rareté sont des variantes (AR, Gold) : carte de base et image propre obligatoires.
+  variantRequired Boolean       @default(false)
+  updatedAt       DateTime      @updatedAt
+  cards           Card[]
+  notablePulls    NotablePull[]
+  lotItems        LotItem[]
+  missions        Mission[]
+}
+
+enum CatalogCardStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
 
 enum CatalogImportStatus {
@@ -234,7 +274,7 @@ enum CatalogImportStatus {
 // Œuvre principale d'un personnage sur AniList (champs de filtre des boosters)
 model Series {
   id           String   @id @default(cuid())
-  anilistId    Int      @unique
+  anilistId    Int?     @unique
   type         String // ANIME | MANGA
   titleRomaji  String
   titleEnglish String? // affiché en anglais quand il existe
@@ -251,34 +291,58 @@ model Series {
 
 // Le personnage (le modèle de carte) ; l'exemplaire possédé sera UserCard
 model Card {
-  id            String          @id @default(cuid())
-  anilistId     Int             @unique // id du personnage AniList = /wiki/[anilistId]
-  name          String
-  nameNative    String? // nom japonais, écrit verticalement sur la fuda
-  imageUrl      String
-  favorites     Int // favoris AniList au dernier import
-  rank          Int?            @unique // 1 = le plus populaire ; null = sorti du catalogue
-  rarity        Rarity
-  power         Int // 力 attaque en combat
-  ki            Int // 気 défense ; HP et vitesse sont dérivés
-  seriesId      String
-  series        Series          @relation(fields: [seriesId], references: [id])
-  gender        String? // Female | Male | … (AniList, souvent vide)
-  birthMonth    Int?
-  birthDay      Int?
-  role          String? // MAIN | SUPPORTING | BACKGROUND dans l'œuvre principale
-  searchText    String // nom, nom natif et titres, en minuscules sans accents
-  addedImportId String? // import qui a fait entrer la carte (nouveautés)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  copies        UserCard[]
-  discoveries   Discovery[]
-  lotItems      LotItem[]
-  auctions      Auction[]
-  wishedBy      WishlistEntry[]
+  id               String             @id @default(cuid())
+  anilistId        Int?               @unique // source AniList uniquement
+  publicId         Int                @unique @default(autoincrement())
+  origin           String             @default("ANILIST")
+  status           CatalogCardStatus  @default(PUBLISHED)
+  description      Json               @default("{}")
+  appearance       Json               @default("{}")
+  dropWeight       Int                @default(1)
+  adminOverrides   String[]           @default([])
+  boosterIds       String[]           @default([]) // types explicitement sélectionnés pour les cartes manuelles
+  name             String
+  nameNative       String? // nom japonais, écrit verticalement sur la fuda
+  imageUrl         String
+  favorites        Int // favoris AniList au dernier import
+  rank             Int?               @unique // 1 = le plus populaire ; null = sorti du catalogue
+  rarity           String             @map("rarityKey")
+  legacyRarity     Rarity             @default(COMMON) @map("rarity")
+  rarityDefinition RarityDefinition   @relation(fields: [rarity], references: [key])
+  power            Int // 力 attaque en combat
+  ki               Int // 気 défense ; HP et vitesse sont dérivés
+  seriesId         String
+  series           Series             @relation(fields: [seriesId], references: [id])
+  gender           String? // Female | Male | … (AniList, souvent vide)
+  birthMonth       Int?
+  birthDay         Int?
+  role             String? // MAIN | SUPPORTING | BACKGROUND dans l'œuvre principale
+  searchText       String // nom, nom natif et titres, en minuscules sans accents
+  variantOfId      String? // carte de base d'une variante (forme alternative AR, version Gold)
+  variantOf        Card?              @relation("cardVariants", fields: [variantOfId], references: [id], onDelete: Restrict)
+  variants         Card[]             @relation("cardVariants")
+  formName         String? // nom de la forme : « Gear 5 », « Bankai »
+  addedImportId    String? // import qui a fait entrer la carte (nouveautés)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  copies           UserCard[]
+  discoveries      Discovery[]
+  lotItems         LotItem[]
+  auctions         Auction[]
+  wishedBy         WishlistEntry[]
+  notablePulls     NotablePull[]
+  tradesWanted     Trade[]            @relation("tradeWanted")
+  tradesChosen     Trade[]            @relation("tradeChosen")
+  tradeOffers      TradeOffer[]
+  tradeListings    TradeListing[]
+  listingWants     TradeListingWant[]
+  listingOffers    ListingOffer[]
 
-  @@index([rarity, rank])
+  @@index([rarity, rank], map: "Card_rarityKey_rank_idx")
+  @@index([legacyRarity, rank], map: "Card_rarity_rank_idx")
   @@index([seriesId])
+  @@index([status, origin])
+  @@index([variantOfId])
   @@index([searchText(ops: raw("gin_trgm_ops"))], type: Gin)
 }
 
@@ -321,7 +385,7 @@ enum CardStatus {
 model UserCard {
   id         String        @id @default(cuid())
   ownerId    String
-  owner      User          @relation(fields: [ownerId], references: [id])
+  owner      User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   cardId     String
   card       Card          @relation(fields: [cardId], references: [id])
   status     CardStatus    @default(COLLECTION)
@@ -337,7 +401,7 @@ model UserCard {
 model BoosterOpening {
   id             String   @id @default(cuid())
   userId         String
-  user           User     @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   boosterSlug    String // BoosterType.slug
   cardIds        String[] // ids de UserCard, dans l'ordre des emplacements
   catalogCardIds String[] // ids de Card dans le même ordre : le tirage reste lisible après recyclage ou vente
@@ -349,6 +413,23 @@ model BoosterOpening {
   createdAt      DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+// Gros tirage (Épique ou mieux) sorti d'un booster : carrousel « En direct » de l'accueil.
+// Écrit dans la transaction d'ouverture ; la rareté affichée se règle à la lecture (home.pullFeed.*).
+model NotablePull {
+  id               String           @id @default(cuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardId           String
+  card             Card             @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  rarity           String           @map("rarityKey")
+  legacyRarity     Rarity           @default(COMMON) @map("rarity")
+  rarityDefinition RarityDefinition @relation(fields: [rarity], references: [key])
+  boosterSlug      String
+  createdAt        DateTime         @default(now())
+
+  @@index([createdAt])
 }
 
 // Carte déjà obtenue au moins une fois (badge « Nouveau », fiche wiki), même si elle a été revendue
@@ -537,6 +618,12 @@ enum NotificationType {
   AUCTION_CANCELLED // annulée par l'admin, mise rendue
   BATTLE_INVITE // un ami t'invite en combat avec un code
   LOT_GRANTED // cadeau de l'équipe (lot envoyé depuis /admin/lots)
+  TRADE_PROPOSED // un ami propose un échange
+  TRADE_ACCEPTED // l'ami a accepté : la carte voulue est arrivée
+  TRADE_DECLINED // l'ami a refusé
+  LISTING_OFFER // un joueur propose une carte sur ton annonce d'échange du Marché
+  LISTING_ACCEPTED // ton offre a été acceptée : la carte est arrivée
+  LISTING_DECLINED // ton offre a été refusée (ou l'annonce s'est fermée sans elle)
 }
 
 // Notifications en base ; le texte est rendu à la lecture (pseudo à jour, langue du lecteur)
@@ -608,16 +695,18 @@ model Lot {
 }
 
 model LotItem {
-  id            String       @id @default(cuid())
-  lotId         String
-  lot           Lot          @relation(fields: [lotId], references: [id], onDelete: Cascade)
-  kind          LotItemKind
-  boosterTypeId String?
-  boosterType   BoosterType? @relation(fields: [boosterTypeId], references: [id])
-  cardId        String?
-  card          Card?        @relation(fields: [cardId], references: [id])
-  rarity        Rarity?
-  quantity      Int          @default(1)
+  id               String            @id @default(cuid())
+  lotId            String
+  lot              Lot               @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  kind             LotItemKind
+  boosterTypeId    String?
+  boosterType      BoosterType?      @relation(fields: [boosterTypeId], references: [id])
+  cardId           String?
+  card             Card?             @relation(fields: [cardId], references: [id])
+  rarity           String?           @map("rarityKey")
+  legacyRarity     Rarity?           @map("rarity")
+  rarityDefinition RarityDefinition? @relation(fields: [rarity], references: [key])
+  quantity         Int               @default(1)
 
   @@index([lotId])
 }
@@ -640,20 +729,22 @@ enum MissionMetric {
 }
 
 model Mission {
-  id        String        @id @default(cuid())
-  key       String        @unique // ex. daily-open-5
-  period    MissionPeriod
-  metric    MissionMetric
-  goal      Int
-  rarity    Rarity? // PULL_RARITY seulement
-  title     Json? // { fr, en } ; absent = texte généré depuis metric et goal
-  lotId     String
-  lot       Lot           @relation(fields: [lotId], references: [id])
-  active    Boolean       @default(true)
-  sortOrder Int           @default(0)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  claims    UserMission[]
+  id               String            @id @default(cuid())
+  key              String            @unique // ex. daily-open-5
+  period           MissionPeriod
+  metric           MissionMetric
+  goal             Int
+  rarity           String?           @map("rarityKey") // PULL_RARITY seulement
+  legacyRarity     Rarity?           @map("rarity")
+  rarityDefinition RarityDefinition? @relation(fields: [rarity], references: [key])
+  title            Json? // { fr, en } ; absent = texte généré depuis metric et goal
+  lotId            String
+  lot              Lot               @relation(fields: [lotId], references: [id])
+  active           Boolean           @default(true)
+  sortOrder        Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  claims           UserMission[]
 
   @@index([active, period, sortOrder])
 }
@@ -771,7 +862,7 @@ enum AuctionStatus {
 model Auction {
   id              String        @id @default(cuid())
   sellerId        String
-  seller          User          @relation("seller", fields: [sellerId], references: [id])
+  seller          User          @relation("seller", fields: [sellerId], references: [id], onDelete: Cascade)
   userCardId      String? // null si l'exemplaire a été recyclé après la vente
   userCard        UserCard?     @relation(fields: [userCardId], references: [id], onDelete: SetNull)
   cardId          String // la carte du catalogue : historique et filtres
@@ -780,7 +871,7 @@ model Auction {
   buyoutPrice     Int? // achat immédiat ; proposé tant qu'aucune mise ne l'atteint
   currentBid      Int? // mise en tête, en séquestre
   currentBidderId String?
-  currentBidder   User?         @relation("leader", fields: [currentBidderId], references: [id], onDelete: Restrict) // une mise en séquestre ne perd jamais son propriétaire
+  currentBidder   User?         @relation("leader", fields: [currentBidderId], references: [id], onDelete: SetNull) // la suppression d'un compte (admin) remet d'abord la vente sans meneur
   price           Int // currentBid ?? startPrice, pour trier et filtrer
   bidCount        Int           @default(0)
   feeBp           Int // taxe figée à la mise en vente (points de base)
@@ -808,7 +899,7 @@ model Bid {
   auctionId String
   auction   Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
   bidderId  String
-  bidder    User     @relation(fields: [bidderId], references: [id])
+  bidder    User     @relation(fields: [bidderId], references: [id], onDelete: Cascade)
   amount    Int
   createdAt DateTime @default(now())
 
@@ -1001,7 +1092,7 @@ enum DataRequestStatus {
 model DataRequest {
   id            String            @id @default(cuid())
   userId        String
-  user          User              @relation("dataRequester", fields: [userId], references: [id])
+  user          User              @relation("dataRequester", fields: [userId], references: [id], onDelete: Cascade)
   kind          DataRequestKind
   status        DataRequestStatus @default(PENDING)
   requestedAt   DateTime          @default(now())
@@ -1021,7 +1112,7 @@ model LotGrant {
   lotId       String
   lot         Lot           @relation(fields: [lotId], references: [id])
   userId      String
-  user        User          @relation("lotGrantee", fields: [userId], references: [id])
+  user        User          @relation("lotGrantee", fields: [userId], references: [id], onDelete: Cascade)
   adminId     String
   admin       User          @relation("lotGranter", fields: [adminId], references: [id])
   broadcastId String?
@@ -1056,4 +1147,171 @@ model LotBroadcast {
   grants     LotGrant[]
 
   @@index([status, createdAt])
+}
+
+// --- Échanges entre amis (étape 12f) ---
+
+enum TradeStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED // retiré par le proposant
+  EXPIRED
+  FAILED // une carte n'était plus disponible au moment d'accepter
+}
+
+// « Je veux ta carte X, contre l'une de celles-ci. » Rien n'est bloqué pendant l'attente : tout est
+// revérifié sous verrou à l'acceptation, où l'ami choisit une des cartes offertes.
+model Trade {
+  id             String       @id @default(cuid())
+  proposerId     String
+  proposer       User         @relation("tradeProposer", fields: [proposerId], references: [id], onDelete: Cascade)
+  recipientId    String
+  recipient      User         @relation("tradeRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  wantedCardId   String // carte demandée à l'ami (id de Card)
+  wantedCard     Card         @relation("tradeWanted", fields: [wantedCardId], references: [id], onDelete: Cascade)
+  chosenCardId   String? // carte offerte choisie par l'ami à l'acceptation
+  chosenCard     Card?        @relation("tradeChosen", fields: [chosenCardId], references: [id], onDelete: SetNull)
+  status         TradeStatus  @default(PENDING)
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  resolvedAt     DateTime?
+  proposerSeenAt DateTime? // le proposant a vu la révélation de la carte reçue
+  proposerNew    Boolean      @default(false) // la carte reçue par le proposant était nouvelle pour lui (badge à la révélation)
+  offers         TradeOffer[]
+
+  @@index([recipientId, status, createdAt])
+  @@index([proposerId, status, createdAt])
+  @@index([status, expiresAt])
+}
+
+// Une carte offerte par le proposant (id de Card ; l'exemplaire est choisi à l'acceptation)
+model TradeOffer {
+  tradeId String
+  trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  cardId  String
+  card    Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@id([tradeId, cardId])
+}
+
+// --- Échanges ouverts du Marché ---
+
+enum ListingStatus {
+  OPEN
+  TRADED
+  CANCELLED // retirée par son auteur
+  EXPIRED
+  FAILED // la carte de l'auteur n'était plus disponible à l'acceptation
+}
+
+// « Je donne celle-ci contre l'une de celles-là », ouvert à tous les joueurs. Rien n'est bloqué
+// pendant l'attente : tout est revérifié sous verrou quand l'auteur accepte une offre.
+model TradeListing {
+  id         String             @id @default(cuid())
+  ownerId    String
+  owner      User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  cardId     String // carte donnée (id de Card ; l'exemplaire est choisi à l'acceptation)
+  card       Card               @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  status     ListingStatus      @default(OPEN)
+  expiresAt  DateTime
+  createdAt  DateTime           @default(now())
+  resolvedAt DateTime?
+  wants      TradeListingWant[]
+  offers     ListingOffer[]
+
+  @@index([status, createdAt, id])
+  @@index([status, expiresAt])
+  @@index([ownerId, status])
+  @@index([cardId, status])
+}
+
+// Une carte demandée par l'auteur (qu'il ne possède pas à la création)
+model TradeListingWant {
+  listingId String
+  listing   TradeListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  cardId    String
+  card      Card         @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@id([listingId, cardId])
+  @@index([cardId])
+}
+
+enum ListingOfferStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WITHDRAWN // retirée par l'offrant
+  CLOSED // annonce conclue avec un autre, retirée ou expirée
+  FAILED // la carte de l'offrant n'était plus disponible à l'acceptation
+}
+
+// Offre d'un joueur sur une annonce : une de ses cartes, demandée ou non
+model ListingOffer {
+  id           String             @id @default(cuid())
+  listingId    String
+  listing      TradeListing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  bidderId     String
+  bidder       User               @relation(fields: [bidderId], references: [id], onDelete: Cascade)
+  cardId       String // carte proposée (id de Card)
+  card         Card               @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  fromWants    Boolean // la carte faisait partie des cartes demandées
+  status       ListingOfferStatus @default(PENDING)
+  createdAt    DateTime           @default(now())
+  resolvedAt   DateTime?
+  bidderSeenAt DateTime? // l'offrant a vu la révélation de la carte reçue
+  bidderNew    Boolean            @default(false) // la carte reçue était nouvelle pour l'offrant
+
+  @@index([listingId, status])
+  @@index([bidderId, status, createdAt])
+}
+
+// --- Chat entre amis (étape 12g) ---
+
+// Message privé entre deux amis. Texte brut (jamais de HTML), purgé après chat.retentionDays.
+model ChatMessage {
+  id          String    @id @default(cuid())
+  pairKey     String // ids des deux joueurs triés (comme Friendship)
+  senderId    String
+  sender      User      @relation("chatSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientId String
+  recipient   User      @relation("chatRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  body        String    @db.VarChar(500)
+  createdAt   DateTime  @default(now())
+  readAt      DateTime?
+
+  @@index([pairKey, createdAt])
+  @@index([recipientId, readAt])
+  @@index([createdAt])
+}
+
+// --- Personnalisation du profil (étape 12h) ---
+
+enum TitleAgreement {
+  MASC
+  FEM
+}
+
+enum CosmeticKind {
+  TITLE
+  FRAME
+}
+
+// Titre ou cadre d'avatar, débloqué par une condition (lib/profile/conditions.ts), géré dans /admin/cosmetiques.
+model Cosmetic {
+  id          String       @id @default(cuid())
+  kind        CosmeticKind
+  slug        String       @unique
+  label       Json // { fr, frFem?, en }
+  hint        Json         @default("{}") // { fr, en } : comment le débloquer
+  frameStyle  String? // style visuel d'un cadre (lib/profile/frames.ts)
+  condition   Json // ProfileCondition
+  sortOrder   Int          @default(0)
+  active      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  titledUsers User[]       @relation("userTitle")
+  framedUsers User[]       @relation("userFrame")
+
+  @@index([kind, active, sortOrder])
 }

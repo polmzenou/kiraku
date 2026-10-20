@@ -2,10 +2,12 @@ import { getTranslations } from "next-intl/server";
 import { useTranslations } from "next-intl";
 import { getCharacterBiography } from "@/server/catalog/biography";
 
-export async function WikiBiography({ anilistId }: { anilistId: number }) {
-  const [t, biography] = await Promise.all([getTranslations("wiki"), getCharacterBiography(anilistId)]);
+export async function WikiBiography({ anilistId, description, locale = "fr" }: { anilistId: number | null; description?: unknown; locale?: string }) {
+  const descriptions = description && typeof description === "object" ? description as Record<string, unknown> : {};
+  const custom = String(descriptions[locale] || descriptions.fr || "");
+  const [t, biography] = await Promise.all([getTranslations("wiki"), custom ? { status: "ready", text: custom } : anilistId ? getCharacterBiography(anilistId) : { status: "empty", text: null }]);
   return (
-    <section aria-labelledby="wiki-biography-title" className="rounded-xl border border-border bg-surface p-5 md:p-7">
+    <section aria-labelledby="wiki-biography-title" className="lacquer rounded-card p-5 md:p-7">
       <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-text-muted">{t("characterFile")}</p>
       <h2 id="wiki-biography-title" className="text-2xl font-extrabold md:text-3xl">{t("biography")}</h2>
       {biography.status === "ready" ? (
@@ -19,7 +21,7 @@ export async function WikiBiography({ anilistId }: { anilistId: number }) {
           {t(biography.status === "empty" ? "biographyEmpty" : "biographyUnavailable")}
         </p>
       )}
-      <p className="mt-6 border-t border-border pt-4 text-xs leading-5 text-text-muted">{t("biographySource")}</p>
+      {!custom && anilistId && <p className="mt-6 border-t border-border pt-4 text-xs leading-5 text-text-muted">{t("biographySource")}</p>}
     </section>
   );
 }
@@ -27,7 +29,7 @@ export async function WikiBiography({ anilistId }: { anilistId: number }) {
 export function WikiBiographySkeleton() {
   const t = useTranslations("wiki");
   return (
-    <section aria-busy="true" className="rounded-xl border border-border bg-surface p-5 md:p-7">
+    <section aria-busy="true" className="lacquer rounded-card p-5 md:p-7">
       <h2 className="text-2xl font-extrabold">{t("biography")}</h2>
       <p role="status" className="sr-only">{t("biographyLoading")}</p>
       <div aria-hidden="true" className="mt-5 space-y-3 animate-pulse">

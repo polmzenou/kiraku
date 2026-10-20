@@ -77,7 +77,7 @@ export function GiftSheet({ username, name, info, onClose }: { username: string;
       <p className="text-sm text-text-muted">{t("remaining", { count: remaining, max: info.limits.perDaySent })}</p>
 
       {choice ? (
-        <div className="flex flex-col gap-3 rounded-lg border border-shu bg-surface p-4" aria-live="polite">
+        <div className="flex flex-col gap-3 rounded-card border border-shu bg-surface p-4" aria-live="polite">
           <p>
             {choice.kind === "card"
               ? t("confirmCard", { card: choice.card.name, name })
@@ -93,7 +93,7 @@ export function GiftSheet({ username, name, info, onClose }: { username: string;
             <Button type="button" onClick={() => setChoice(null)} disabled={pending}>
               {t("back")}
             </Button>
-            <Button type="button" variant="shu" onClick={confirm} disabled={pending}>
+            <Button type="button" variant="primary" onClick={confirm} disabled={pending}>
               {pending ? t("sending") : t("confirm")}
             </Button>
           </div>

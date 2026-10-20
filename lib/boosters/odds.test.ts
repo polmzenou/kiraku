@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { RARITIES, VARIANT_RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import { BOOSTER_SEEDS } from "@/prisma/seed/booster-types";
 import { DEFAULT_RULES } from "./fixtures";
 import {
@@ -41,13 +41,19 @@ describe("chances par booster (tableau du plan)", () => {
 
   it("un emplacement sans plancher suit les parts de la section Raretés", () => {
     const slot = slotDistribution(rates, "COMMON");
-    expect(pct(slot.MYTHIC)).toBeCloseTo(0.025, 3);
+    expect(pct(slot.MYTHIC + slot.AR + slot.GOLD)).toBeCloseTo(0.025, 3);
+    expect(pct(slot.MYTHIC)).toBeCloseTo(0.015, 3);
     expect(pct(slot.COMMON)).toBeCloseTo(62.016, 2);
     expect(Object.values(slot).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 12);
   });
 });
 
 describe("taux de Mythique sur le long terme", () => {
+  it("prend en compte un plancher doré au-dessus de Mythique", () => {
+    const rarities = [...RARITIES, "CELESTIAL"];
+    const rules = { ...DEFAULT_RULES, rarities, rates: { ...rates, CELESTIAL: 0 }, goldenEvery: 1, goldenFloor: "CELESTIAL", divineOdds: 0 };
+    expect(longRunMythicRate(rules)).toBeCloseTo(1, 12);
+  });
   it("sans bonus ni pitié atteignable, égal à la chance d'un booster normal", () => {
     const rules = { ...DEFAULT_RULES, goldenEvery: 0, divineOdds: 0, pityThreshold: 10_000 };
     expect(longRunMythicRate(rules)).toBeCloseTo(atLeastOdds(rates, rules.slotFloors).MYTHIC, 6);
@@ -112,7 +118,7 @@ describe("chances de chaque type de départ (sur le catalogue complet)", () => {
 });
 
 const counts = (over: Partial<Record<Rarity, number>> = {}): PoolCounts =>
-  ({ ...Object.fromEntries(RARITIES.map((r) => [r, 100])), ...over }) as PoolCounts;
+  ({ ...Object.fromEntries([...RARITIES, ...VARIANT_RARITIES].map((r) => [r, 100])), ...over }) as PoolCounts;
 
 describe("pools troués : les chances suivent le repli du tirage", () => {
   it("un palier vide descend au palier inférieur, puis remonte", () => {
@@ -123,11 +129,20 @@ describe("pools troués : les chances suivent le repli du tirage", () => {
 
   it("sans Mythique dans le pool (Josei), la part Mythique passe en Légendaire", () => {
     const full = slotDistribution(rates, "COMMON");
-    const holed = slotDistribution(rates, "COMMON", counts({ MYTHIC: 0 }));
+    const noTop = counts({ MYTHIC: 0, AR: 0, GOLD: 0 });
+    const holed = slotDistribution(rates, "COMMON", noTop);
     expect(holed.MYTHIC).toBe(0);
-    expect(holed.LEGENDARY).toBeCloseTo(full.LEGENDARY + full.MYTHIC, 12);
+    expect(holed.LEGENDARY).toBeCloseTo(full.LEGENDARY + full.MYTHIC + full.AR + full.GOLD, 12);
     expect(Object.values(holed).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 12);
-    expect(atLeastOdds(rates, DEFAULT_RULES.slotFloors, counts({ MYTHIC: 0 })).MYTHIC).toBe(0);
+    expect(atLeastOdds(rates, DEFAULT_RULES.slotFloors, noTop).MYTHIC).toBe(0);
+  });
+
+  it("sans carte AR ni Gold publiée, leurs tirages retombent sur Mythique", () => {
+    const full = slotDistribution(rates, "COMMON");
+    const holed = slotDistribution(rates, "COMMON", counts({ AR: 0, GOLD: 0 }));
+    expect(holed.AR + holed.GOLD).toBe(0);
+    expect(holed.MYTHIC).toBeCloseTo(full.MYTHIC + full.AR + full.GOLD, 12);
+    expect(atLeastOdds(rates, DEFAULT_RULES.slotFloors, counts({ AR: 0, GOLD: 0 })).MYTHIC).toBeCloseTo(atLeastOdds(rates, DEFAULT_RULES.slotFloors).MYTHIC, 12);
   });
 
   it("un pool complet donne les mêmes chances que sans pool", () => {
@@ -139,7 +154,7 @@ describe("chances vedette (bannière)", () => {
   const featured = counts({ COMMON: 0, UNCOMMON: 0, RARE: 0, EPIC: 0, LEGENDARY: 0, MYTHIC: 1 });
 
   it("une Mythique vedette à 50 % : la moitié des Mythiques, plus sa part du pool", () => {
-    const pool = counts({ MYTHIC: 200 });
+    const pool = counts({ MYTHIC: 200, AR: 0, GOLD: 0 }); // AR et Gold vides : repli sur Mythique
     const p = featuredBoosterChance(rates, DEFAULT_RULES.slotFloors, { rate: 5000, featured, counts: pool });
     const mythic = atLeastOdds(rates, DEFAULT_RULES.slotFloors).MYTHIC;
     // ≈ P(Mythique) × (50 % + 50 % × 1/200)
@@ -147,7 +162,7 @@ describe("chances vedette (bannière)", () => {
   });
 
   it("taux vedette nul : seulement la part de la vedette dans le pool", () => {
-    const pool = counts({ MYTHIC: 200 });
+    const pool = counts({ MYTHIC: 200, AR: 0, GOLD: 0 }); // AR et Gold vides : repli sur Mythique
     const p = featuredBoosterChance(rates, DEFAULT_RULES.slotFloors, { rate: 0, featured, counts: pool });
     expect(p).toBeCloseTo(atLeastOdds(rates, DEFAULT_RULES.slotFloors).MYTHIC / 200, 6);
   });

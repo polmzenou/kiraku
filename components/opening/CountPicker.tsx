@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { OPEN_COUNTS, type OpenCount } from "@/lib/boosters/catalog";
+import { segmentedItemClass, segmentedTrackClass } from "../ui/Segmented";
 
 /** Sélecteur ×1 / ×5 / ×10 ; une quantité au-delà de `max` (stock ou Zeni) est désactivée. */
 export function CountPicker({
@@ -15,9 +16,9 @@ export function CountPicker({
 }) {
   const t = useTranslations("opening");
   return (
-    <fieldset className="flex flex-col items-center gap-2">
+    <fieldset className="flex flex-col items-center">
       <legend className="sr-only">{t("count")}</legend>
-      <div className="grid grid-cols-3 gap-2">
+      <div className={segmentedTrackClass}>
         {OPEN_COUNTS.map((n) => (
           <button
             key={n}
@@ -25,7 +26,7 @@ export function CountPicker({
             aria-pressed={value === n}
             disabled={n > max}
             onClick={() => onChange(n)}
-            className="min-h-11 min-w-16 rounded-button border border-border bg-surface-2 px-3 text-sm font-bold tabular-nums disabled:opacity-40 aria-pressed:border-shu aria-pressed:text-shu"
+            className={`${segmentedItemClass} min-w-16 tabular-nums disabled:cursor-not-allowed disabled:opacity-40`}
           >
             {t("times", { n })}
           </button>

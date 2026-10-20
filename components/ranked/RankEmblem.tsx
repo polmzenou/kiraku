@@ -1,12 +1,23 @@
 import { useId } from "react";
-import { useTranslations } from "next-intl";
 import type { BoardTier } from "@/lib/battle/tiers";
 
 // Emblèmes du classé : SVG en ligne, une forme et une matière par rang (même famille que le dos de
-// carte : dégradés métalliques, ensō au pinceau, initiales du rang traduit). La division s'écrit en
-// traits de pinceau vermillon sous l'emblème : III (bas du rang), II, I.
+// carte : dégradés métalliques, ensō au pinceau, kanji du rang en police de sceau). La division s'écrit
+// en traits de pinceau vermillon sous l'emblème : III (bas du rang), II, I. Pas de filtre : le halo
+// est un dégradé radial dessiné derrière la plaque.
 
 type Material = { stops: string[]; edge: string; ink: string; glyph: string; glow: string };
+
+/** Kanji de chaque rang (glyphes présents dans le sous-ensemble Yuji Syuku, lib/seal-glyphs.ts). */
+const TIER_KANJI: Record<BoardTier, string> = {
+  BRONZE: "銅",
+  SILVER: "銀",
+  GOLD: "金",
+  EMERALD: "翠",
+  ELITE: "精",
+  CHAMPION: "覇",
+  GRAND_CHAMPION: "極",
+};
 
 const MATERIAL: Record<BoardTier, Material> = {
   BRONZE: { stops: ["#4a2a12", "#c98a55", "#f0c49a", "#8a5228", "#4a2a12"], edge: "#2e190a", ink: "#2e190a", glyph: "#2e190a", glow: "#cd8a55" },
@@ -54,8 +65,8 @@ function Plate({ tier, fill, edge }: { tier: BoardTier; fill: string; edge: stri
     case "BRONZE":
       return (
         <>
-          <circle cx={C} cy={C} r={50} {...common} />
-          <circle cx={C} cy={C} r={42} fill="none" stroke={edge} strokeWidth={1.5} opacity={0.55} />
+          <polygon points={polygon(6, 50, 0)} {...common} />
+          <polygon points={polygon(6, 41, 0)} fill="none" stroke={edge} strokeWidth={1.5} opacity={0.55} />
         </>
       );
     case "SILVER":
@@ -159,12 +170,10 @@ export function RankEmblem({
   className?: string;
 }) {
   const id = useId().replace(/:/g, "");
-  const t = useTranslations("ranked.tiers");
-  const words = t(tier).split(" ");
-  const initials = words.length > 1 ? words.map((word) => word[0]).join("") : words[0].slice(0, 2);
   const m = MATERIAL[tier];
   const grad = `rk-mat-${id}`;
   const sheen = `rk-sheen-${id}`;
+  const halo = `rk-halo-${id}`;
   const strokes = division ?? 0; // III = 3 traits, I = 1
   return (
     <svg
@@ -175,7 +184,6 @@ export function RankEmblem({
       aria-label={label}
       aria-hidden={label ? undefined : true}
       className={`shrink-0 overflow-visible ${className}`}
-      style={{ filter: `drop-shadow(0 0 ${Math.max(2, size / 14)}px ${m.glow}66)` }}
     >
       <defs>
         <linearGradient id={grad} x1="0" y1="0" x2="1" y2="1">
@@ -183,12 +191,17 @@ export function RankEmblem({
             <stop key={i} offset={i / (m.stops.length - 1)} stopColor={c} />
           ))}
         </linearGradient>
+        <radialGradient id={halo}>
+          <stop offset="0.55" stopColor={m.glow} stopOpacity={0.45} />
+          <stop offset="1" stopColor={m.glow} stopOpacity={0} />
+        </radialGradient>
         <linearGradient id={sheen} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#ffffff" stopOpacity={0.45} />
           <stop offset="0.45" stopColor="#ffffff" stopOpacity={0} />
         </linearGradient>
       </defs>
 
+      <circle cx={C} cy={C} r={66} fill={`url(#${halo})`} />
       <Plate tier={tier} fill={`url(#${grad})`} edge={m.edge} />
       {/* Reflet : la moitié haute de la matière accroche la lumière */}
       <circle cx={C} cy={C - 6} r={38} fill={`url(#${sheen})`} />
@@ -200,11 +213,11 @@ export function RankEmblem({
         y={C + 1}
         textAnchor="middle"
         dominantBaseline="central"
-        fontSize={28}
+        fontSize={34}
         fill={m.glyph}
-        style={{ fontFamily: "var(--font-title)", fontWeight: 800 }}
+        style={{ fontFamily: "var(--font-seal)" }}
       >
-        {initials}
+        {TIER_KANJI[tier]}
       </text>
 
       {/* Division : traits de pinceau vermillon */}

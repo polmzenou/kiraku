@@ -1,9 +1,11 @@
 "use client";
 
+import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
+
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
 import {
   COLLECTION_SORTS,
@@ -15,13 +17,12 @@ import {
 } from "@/lib/collection/params";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
+import { chipClasses } from "../ui/Chip";
+import { inputClass, selectClass } from "../ui/Field";
 
 const DEBOUNCE_MS = 300;
 
-const chip = (active: boolean) =>
-  `inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-button border px-3 text-sm ${
-    active ? "border-text bg-surface-2 font-bold" : "border-border bg-surface text-text-muted"
-  }`;
+const chip = (active: boolean) => chipClasses(active);
 
 /**
  * Filtres de la collection : recherche, raretés, doublons, puis tri et série dans une feuille.
@@ -38,6 +39,8 @@ export function CollectionFilters({
   series: { id: string; title: string; cards: number }[];
   counts?: Partial<Record<Rarity, number>>;
 }) {
+  const RARITIES = useRarities();
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("collection");
   const tRarity = useTranslations("rarity");
   const router = useRouter();
@@ -89,7 +92,7 @@ export function CollectionFilters({
             clearTimeout(timer.current);
             timer.current = setTimeout(() => go({ q: value }), DEBOUNCE_MS);
           }}
-          className="min-h-11 min-w-0 flex-1 rounded-button border border-border bg-surface px-3 text-text placeholder:text-text-muted"
+          className={`${inputClass} flex-1`}
         />
         <Button type="button" onClick={() => setSheetOpen(true)} aria-haspopup="dialog" className="px-4">
           {t("sortAndSeries")}
@@ -165,7 +168,7 @@ export function CollectionFilters({
             id={seriesId}
             value={params.series ?? ""}
             onChange={(e) => go({ series: e.target.value || null })}
-            className="min-h-11 w-full rounded-button border border-border bg-surface-2 px-3 text-base"
+            className={selectClass}
           >
             <option value="">{t("allSeries")}</option>
             {series.map((s) => (
@@ -176,7 +179,7 @@ export function CollectionFilters({
           </select>
         </div>
 
-        <Button type="button" variant="shu" onClick={() => setSheetOpen(false)}>
+        <Button type="button" variant="primary" onClick={() => setSheetOpen(false)}>
           {t("done")}
         </Button>
       </Sheet>

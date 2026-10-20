@@ -23,7 +23,7 @@ export function OpenLink({ slug, price, availability, stock, coins, className = 
   if (availability === "locked") {
     return (
       <p
-        className={`flex min-h-12 items-center justify-center rounded-button border border-dashed border-text-muted px-4 text-center text-sm text-text-muted ${className}`}
+        className={`flex min-h-12 items-center justify-center rounded-control border border-dashed border-text-muted px-4 text-center text-sm text-text-muted ${className}`}
       >
         {t("eventOnly")}
       </p>
@@ -51,7 +51,7 @@ export function OpenLink({ slug, price, availability, stock, coins, className = 
       <span className="text-xs leading-tight">{detail}</span>
     </>
   );
-  const classes = buttonClasses("shu", `min-h-12 w-full justify-center gap-4 ${className}`);
+  const classes = buttonClasses("primary", `min-h-12 w-full justify-center gap-4 ${className}`);
 
   if (disabled) {
     return (

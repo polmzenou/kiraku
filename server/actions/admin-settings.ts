@@ -18,12 +18,14 @@ import { ECONOMY_SETTING_KEYS, economySettingsSchema, type EconomySettingKey } f
 import { RANKED_FORM_KEYS, rankedSettingsSchema, type RankedSettingKey } from "@/lib/settings/ranked-form";
 import { MARKET_SETTING_KEYS, marketSettingsSchema, type MarketSettingKey } from "@/lib/settings/market-form";
 import { SOCIAL_SETTING_KEYS, socialSettingsSchema, type SocialSettingKey } from "@/lib/settings/social-form";
+import { PROFILE_SETTING_KEYS, profileSettingsSchema, type ProfileSettingKey } from "@/lib/settings/profile-form";
 import { changedSettingKeys, type SettingsOf } from "@/lib/settings/form";
 import { getAdmin } from "../admin";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
 import { SETTINGS_TAG } from "../settings";
 import { writeAdminLog } from "../admin/log";
+import { getRarities } from "../catalog/rarities";
 
 // Réglages de jeu depuis /admin. Ordre : rôle admin vérifié → Zod par clé → rate limit.
 // Chaque clé modifiée écrit sa ligne GameSetting et une ligne AdminLog (avant / après).
@@ -43,6 +45,16 @@ async function saveSettings<K extends SettingKey>(
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const next = parsed.data as SettingsOf<K>;
+  const rarityKeys = ["booster.rates", "collection.recycleValues", "battle.keywordsByRarity", "booster.slotFloors", "booster.goldenFloor", "gifts.allowedRarities", "trades.allowedRarities", "home.pullFeed.minRarity"];
+  if (keys.some((k) => rarityKeys.includes(k))) {
+    const registry = await getRarities();
+    for (const key of keys.filter((k) => rarityKeys.includes(k))) {
+      const value = next[key];
+      const selected = typeof value === "string" ? [value] : Array.isArray(value) ? value : Object.keys(value as object);
+      if (selected.some((r) => !registry.includes(String(r)))) return { ok: false, error: "INVALID" };
+      if (["booster.rates", "collection.recycleValues", "battle.keywordsByRarity"].includes(key) && selected.length !== registry.length) return { ok: false, error: "INVALID" };
+    }
+  }
 
   if (!(await rateLimit(`admin:${admin.id}`, { limit: 20, windowSeconds: 60 })).success) {
     return { ok: false, error: "RATE_LIMITED" };
@@ -92,6 +104,10 @@ export async function updateCollectionSettings(input: unknown): Promise<UpdateSe
 
 export async function updateSocialSettings(input: unknown): Promise<UpdateSettingsResult<SocialSettingKey>> {
   return saveSettings(SOCIAL_SETTING_KEYS, socialSettingsSchema, input);
+}
+
+export async function updateProfileSettings(input: unknown): Promise<UpdateSettingsResult<ProfileSettingKey>> {
+  return saveSettings(PROFILE_SETTING_KEYS, profileSettingsSchema, input);
 }
 
 export async function updateEconomySettings(input: unknown): Promise<UpdateSettingsResult<EconomySettingKey>> {

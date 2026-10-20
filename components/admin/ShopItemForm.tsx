@@ -80,7 +80,7 @@ export function ShopItemForm({ initial, lots }: { initial: ShopItemInput | null;
 
   return (
     <form
-      className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4"
+      className="flex flex-col gap-4 lacquer rounded-card p-4"
       onSubmit={(e) => {
         e.preventDefault();
         save();
@@ -126,7 +126,7 @@ export function ShopItemForm({ initial, lots }: { initial: ShopItemInput | null;
         <Toggle label={t("active")} checked={draft.active} onChange={(active) => update({ active })} />
       </div>
 
-      <fieldset className="grid gap-4 rounded-button border border-border p-3 sm:grid-cols-2">
+      <fieldset className="grid gap-4 rounded-control border border-border p-3 sm:grid-cols-2">
         <legend className="px-1 text-sm font-bold">{t("cardPayment")}</legend>
         <p className="text-xs text-text-muted sm:col-span-2">{t("cardPaymentHint")}</p>
         <OptionalNumberField label={t("priceCents")} value={draft.priceCents} onChange={(priceCents) => update({ priceCents })} min={50} max={100_000} />
@@ -139,7 +139,7 @@ export function ShopItemForm({ initial, lots }: { initial: ShopItemInput | null;
       </fieldset>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" variant="shu" disabled={pending || !valid}>
+        <Button type="submit" variant="primary" disabled={pending || !valid}>
           {pending ? t("saving") : t("save")}
         </Button>
         {draft.id && (

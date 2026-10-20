@@ -68,9 +68,9 @@ export function AddFriendForm() {
           autoCapitalize="none"
           spellCheck={false}
           placeholder={t("addPlaceholder")}
-          className="min-h-11 min-w-0 flex-1 rounded-button border border-border bg-surface px-3 text-text placeholder:text-text-muted"
+          className="min-h-11 min-w-0 flex-1 rounded-control border border-border bg-surface px-3 text-text placeholder:text-text-muted"
         />
-        <Button type="submit" variant="shu" disabled={!valid || pending}>
+        <Button type="submit" variant="primary" disabled={!valid || pending}>
           {pending ? t("pending") : t("add")}
         </Button>
       </div>

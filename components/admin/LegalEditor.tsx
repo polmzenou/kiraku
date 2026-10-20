@@ -10,6 +10,7 @@ import { LegalMarkdown } from "../legal/LegalMarkdown";
 import { Button } from "../ui/Button";
 import { ConfirmAction } from "./ConfirmAction";
 import { Field, inputClass } from "./fields";
+import { textareaClass } from "../ui/Field";
 
 export type LegalEditorText = { title: string; body: string };
 
@@ -88,7 +89,7 @@ export function LegalEditor({
         </Button>
       </div>
       {preview ? (
-        <div className="rounded-lg border border-border bg-bg p-4">
+        <div className="rounded-card border border-border bg-bg p-4">
           <LegalMarkdown body={current.body} />
         </div>
       ) : (
@@ -98,7 +99,7 @@ export function LegalEditor({
           maxLength={LEGAL_BODY_MAX}
           rows={20}
           onChange={(e) => setTexts((x) => ({ ...x, [locale]: { ...x[locale], body: e.target.value } }))}
-          className="min-h-80 w-full rounded-button border border-border bg-surface-2 p-3 text-sm leading-relaxed"
+          className={`${textareaClass} min-h-80 text-sm leading-relaxed`}
         />
       )}
       <p className="text-xs text-text-muted">{t("markdownHint")}</p>
@@ -131,7 +132,7 @@ export function LegalEditor({
                   type="checkbox"
                   checked={forceReaccept}
                   onChange={(e) => setForceReaccept(e.target.checked)}
-                  className="mt-0.5 size-5 shrink-0 accent-shu-btn"
+                  className="mt-0.5 choice shrink-0 "
                 />
                 <span>{t("forceReaccept")}</span>
               </label>

@@ -1,8 +1,10 @@
+
+import { useRaritySeals } from "@/lib/catalog/use-rarities";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import type { BoosterPanelData } from "@/lib/boosters/panel";
 import type { FilterContext } from "@/lib/boosters/pool-filter";
 import { localize, type BoosterTypeView } from "@/lib/boosters/types";
-import { RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import type { BoosterState } from "@/server/boosters/state";
 import { BoosterArt } from "./BoosterArt";
 import { FilterText } from "./FilterText";
@@ -34,6 +36,7 @@ type Props = {
 
 /** Panneau « Booster sélectionné » : contenu, garanties, compteurs, chances calculées et bouton Ouvrir. */
 export function BoosterPanel({ type, panel, ctx, state, withOpen = true, headingId = "selected-booster" }: Props) {
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("boosters");
   const tRarity = useTranslations("rarity");
   const format = useFormatter();
@@ -45,14 +48,14 @@ export function BoosterPanel({ type, panel, ctx, state, withOpen = true, heading
   const slots = isBox ? null : panel.slotFloors;
 
   const stat = (value: string, label: string, tone = "") => (
-    <div className="flex min-w-0 flex-col gap-1 rounded-button bg-surface-2 p-3">
+    <div className="flex min-w-0 flex-col gap-1 rounded-control bg-surface-2 p-3">
       <dd className={`font-title text-lg leading-none font-bold tabular-nums ${tone}`}>{value}</dd>
       <dt className="text-xs leading-snug text-text-muted">{label}</dt>
     </div>
   );
 
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-5 rounded-lg border border-border bg-surface p-4 shadow-paper sm:p-5">
+    <section aria-labelledby={headingId} className="lacquer flex flex-col gap-5 rounded-hero p-4 sm:p-5">
       <p className="flex items-center gap-2 text-xs text-text-muted">
         <span aria-hidden="true" lang="ja" className="font-seal text-base text-shu">
           選
@@ -92,7 +95,7 @@ export function BoosterPanel({ type, panel, ctx, state, withOpen = true, heading
             {slots.map((floor, i) => (
               <li
                 key={i}
-                className={`inline-flex h-8 min-w-9 flex-1 items-center justify-center gap-0.5 rounded-button px-2 font-seal text-base text-washi-paper ${RARITY_BG[floor]}`}
+                className={`inline-flex h-8 min-w-9 flex-1 items-center justify-center gap-0.5 rounded-control px-2 font-seal text-base text-washi-paper ${RARITY_BG[floor]}`}
               >
                 <span aria-hidden="true">{RARITY_SEAL[floor]}</span>
                 {floor !== "COMMON" && floor !== "MYTHIC" && <span aria-hidden="true">+</span>}
@@ -104,10 +107,10 @@ export function BoosterPanel({ type, panel, ctx, state, withOpen = true, heading
           </ol>
         ) : (
           <p className="flex gap-1.5">
-            <span className="inline-flex h-8 flex-1 items-center justify-center rounded-button bg-surface-2 text-sm font-bold">
+            <span className="inline-flex h-8 flex-1 items-center justify-center rounded-control bg-surface-2 text-sm font-bold">
               5 × <span aria-hidden="true" lang="ja" className="ml-1 font-seal">袋</span>
             </span>
-            <span className={`inline-flex h-8 flex-1 items-center justify-center gap-0.5 rounded-button font-seal text-base text-washi-paper ${RARITY_BG[panel.best]}`}>
+            <span className={`inline-flex h-8 flex-1 items-center justify-center gap-0.5 rounded-control font-seal text-base text-washi-paper ${RARITY_BG[panel.best]}`}>
               <span aria-hidden="true">{RARITY_SEAL[panel.best]}+</span>
               <span className="sr-only">{t("guaranteedBox")}</span>
             </span>

@@ -84,5 +84,8 @@ describe("rotation des missions", () => {
     expect(missionDifficulty(m)).toBe("HARD");
     expect(missionDifficulty({ ...m, period: "WEEKLY" })).toBe("EASY");
     expect(missionDifficulty({ ...m, metric: "PULL_RARITY", rarity: "MYTHIC", goal: 1 })).toBe("HARD");
+    const order = ["COMMON", "UNCOMMON", "RARE", "SUPER_RARE", "EPIC", "LEGENDARY", "MYTHIC", "CELESTIAL"];
+    expect(missionDifficulty({ ...m, metric: "PULL_RARITY", rarity: "SUPER_RARE", goal: 1 }, order)).toBe("EASY");
+    expect(missionDifficulty({ ...m, metric: "PULL_RARITY", rarity: "CELESTIAL", goal: 1 }, order)).toBe("HARD");
   });
 });

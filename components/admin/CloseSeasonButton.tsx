@@ -23,7 +23,7 @@ export function CloseSeasonButton({ number }: { number: number }) {
         <div className="flex justify-end gap-2">
           <Button onClick={() => setOpen(false)}>{t("cancel")}</Button>
           <Button
-            variant="shu"
+            variant="primary"
             disabled={pending}
             onClick={() =>
               startTransition(async () => {

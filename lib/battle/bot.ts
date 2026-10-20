@@ -9,10 +9,10 @@ export const BOT_NAMES = ["TENGU", "KITSUNE", "KAPPA", "TANUKI", "ONI", "KARASU"
 export type BotName = (typeof BOT_NAMES)[number];
 
 /** Raretés de l'équipe du bot : celles du joueur, chacune avec une petite chance de monter d'un cran. */
-export function botRarities(player: readonly Rarity[], rng: Rng, upgradePct: number): Rarity[] {
+export function botRarities(player: readonly Rarity[], rng: Rng, upgradePct: number, order: readonly Rarity[] = RARITIES): Rarity[] {
   return player.map((r) => {
-    const i = RARITIES.indexOf(r);
-    return rng(100) < upgradePct && i < RARITIES.length - 1 ? RARITIES[i + 1] : r;
+    const i = order.indexOf(r);
+    return rng(100) < upgradePct && i >= 0 && i < order.length - 1 ? order[i + 1] : r;
   });
 }
 
