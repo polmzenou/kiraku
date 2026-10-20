@@ -32,6 +32,9 @@ export function CardReveal({ cards, onClose }: { cards: OpenedCardView[]; onClos
   const card = cards[index];
   const definitions = useRarityDefinitions();
   const last = index === cards.length - 1;
+  // Un nombre et non `definitions` (un nouveau tableau à chaque rendu) : sinon l'effet ci-dessous
+  // repart à chaque changement de phase et la carte se retourne en boucle.
+  const chargeMs = chargeFor(card.rarity, definitions) ?? 480;
 
   useEffect(() => {
     dialog.current?.showModal();
@@ -44,12 +47,12 @@ export function CardReveal({ cards, onClose }: { cards: OpenedCardView[]; onClos
       return () => clearTimeout(id);
     }
     const charge = setTimeout(() => setPhase("charging"), BACK_MS);
-    const flip = setTimeout(() => setPhase("front"), BACK_MS + (chargeFor(card.rarity, definitions) ?? 480));
+    const flip = setTimeout(() => setPhase("front"), BACK_MS + chargeMs);
     return () => {
       clearTimeout(charge);
       clearTimeout(flip);
     };
-  }, [index, card.rarity, reduced, definitions]);
+  }, [index, chargeMs, reduced]);
 
   const next = () => {
     setPhase("back");
