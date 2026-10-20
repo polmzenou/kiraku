@@ -15,6 +15,9 @@ export const NOTIFICATION_TYPES = [
   "TRADE_PROPOSED",
   "TRADE_ACCEPTED",
   "TRADE_DECLINED",
+  "LISTING_OFFER",
+  "LISTING_ACCEPTED",
+  "LISTING_DECLINED",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -64,4 +67,19 @@ export function parseTradePayload(raw: unknown): TradePayload | null {
   const r = raw as Record<string, unknown>;
   const id = (v: unknown): v is string => typeof v === "string" && v.length > 0 && v.length <= 40 && /^[A-Za-z0-9_-]+$/.test(v);
   return id(r.tradeId) && id(r.cardId) ? { tradeId: r.tradeId, cardId: r.cardId } : null;
+}
+
+/**
+ * Contenu d'une notification d'échange ouvert du Marché : l'annonce, l'offre, la carte de l'annonce
+ * (`cardId`) et la carte proposée par l'offrant (`offeredCardId`).
+ */
+export type ListingPayload = { listingId: string; offerId: string; cardId: string; offeredCardId: string };
+
+export function parseListingPayload(raw: unknown): ListingPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const id = (v: unknown): v is string => typeof v === "string" && v.length > 0 && v.length <= 40 && /^[A-Za-z0-9_-]+$/.test(v);
+  return id(r.listingId) && id(r.offerId) && id(r.cardId) && id(r.offeredCardId)
+    ? { listingId: r.listingId, offerId: r.offerId, cardId: r.cardId, offeredCardId: r.offeredCardId }
+    : null;
 }

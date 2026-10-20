@@ -7,9 +7,9 @@
 // des updateMany conditionnels. Si une carte n'est plus là, la proposition passe en FAILED.
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { Rarity } from "@/lib/catalog/rarity";
-import { pickGiftCopy } from "@/lib/social/gifts";
 import { pairKey } from "@/lib/social/relation";
 import { checkProposal, isTradeOpen, tradeExpiresAt, uniqueOffered, type TradeRefusal, type TradeRules } from "@/lib/social/trades";
+import { freeCopy } from "./free-copy";
 import { blocksBetween, lockPlayers, type Tx } from "./lock";
 import { notify, notifyingTransaction, type OnNotified } from "./notify";
 
@@ -38,20 +38,6 @@ async function friendsAndBlocks(tx: Tx, a: string, b: string) {
     blocksBetween(tx, a, b),
   ]);
   return { friends: friendship?.status === "ACCEPTED", blocked: blocks.byMe || blocks.byThem };
-}
-
-/** Exemplaire libre (en collection) d'une carte, le plus récent hors vitrine. */
-async function freeCopy(tx: Tx, ownerId: string, cardId: string) {
-  const copies = await tx.userCard.findMany({
-    where: { ownerId, cardId, status: "COLLECTION" },
-    select: { id: true, obtainedAt: true },
-  });
-  if (copies.length === 0) return null;
-  const shown = await tx.showcaseSlot.findMany({
-    where: { userId: ownerId, userCardId: { in: copies.map((c) => c.id) } },
-    select: { userCardId: true },
-  });
-  return pickGiftCopy(copies, new Set(shown.map((s) => s.userCardId)));
 }
 
 export type ProposeInput = {

@@ -5,15 +5,20 @@ import {
   parseAuctionPayload,
   parseBattlePayload,
   parseGiftPayload,
+  parseListingPayload,
   parseTradePayload,
   type AuctionPayload,
   type BattlePayload,
   type GiftPayload,
+  type ListingPayload,
   type NotificationType,
   type TradePayload,
 } from "@/lib/social/notifications";
 import { pairKey, relationBetween, type Relation } from "@/lib/social/relation";
+import { getLocale } from "next-intl/server";
+import type { CardView } from "@/lib/boosters/view";
 import { prisma } from "../db";
+import { listingOfferNotices } from "../market/listings";
 import { giftDay } from "./gift-core";
 
 // Lectures du social. Seuls des champs publics des autres joueurs sortent d'ici (pseudo, avatar,
@@ -126,6 +131,12 @@ export type NotificationView = {
   auction: AuctionPayload | null;
   battle: BattlePayload | null;
   trade: TradePayload | null;
+  /** Échange ouvert du Marché (la carte de l'annonce est dans `card`). */
+  listing: ListingPayload | null;
+  /** Carte proposée par l'offrant (échanges ouverts). */
+  offeredCard: { anilistId: number; name: string; rarity: string } | null;
+  /** Visuels d'un échange ouvert, et si l'offre attend encore une réponse (page /notifications). */
+  listingNotice: { pending: boolean; own: CardView; offered: CardView } | null;
   card: { anilistId: number; name: string; rarity: string } | null;
 };
 
@@ -166,11 +177,13 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
   const gifts = rows.map((r) => (r.type === "GIFT_RECEIVED" ? parseGiftPayload(r.payload) : null));
   const auctions = rows.map((r) => (AUCTION_TYPES.has(r.type) ? parseAuctionPayload(r.payload) : null));
   const trades = rows.map((r) => (r.type.startsWith("TRADE_") ? parseTradePayload(r.payload) : null));
+  const listings = rows.map((r) => (r.type.startsWith("LISTING_") ? parseListingPayload(r.payload) : null));
   const cardIds = [
     ...new Set([
       ...gifts.flatMap((g) => (g?.kind === "CARD" ? [g.cardId] : [])),
       ...auctions.flatMap((a) => (a ? [a.cardId] : [])),
       ...trades.flatMap((tr) => (tr ? [tr.cardId] : [])),
+      ...listings.flatMap((l) => (l ? [l.cardId, l.offeredCardId] : [])),
     ]),
   ];
   const cards = cardIds.length
@@ -182,6 +195,8 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
     const gift = gifts[i];
     const auction = auctions[i];
     const trade = trades[i];
+    const listing = listings[i];
+    const offered = listing ? cardById.get(listing.offeredCardId) : undefined;
     const card =
       gift?.kind === "CARD"
         ? cardById.get(gift.cardId)
@@ -189,7 +204,9 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
           ? cardById.get(auction.cardId)
           : trade
             ? cardById.get(trade.cardId)
-            : undefined;
+            : listing
+              ? cardById.get(listing.cardId)
+              : undefined;
     return {
       id: r.id,
       type: r.type,
@@ -200,6 +217,9 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
       auction,
       battle: r.type === "BATTLE_INVITE" ? parseBattlePayload(r.payload) : null,
       trade,
+      listing,
+      offeredCard: offered ? { anilistId: offered.publicId, name: offered.name, rarity: offered.rarity } : null,
+      listingNotice: null,
       card: card ? { anilistId: card.publicId, name: card.name, rarity: card.rarity } : null,
     };
   });
@@ -218,7 +238,14 @@ export async function listNotifications(userId: string, cursor: string | null) {
     select: notificationSelect,
   });
   const page = rows.slice(0, NOTIFICATIONS_PAGE);
-  return { items: await toViews(page), nextCursor: rows.length > NOTIFICATIONS_PAGE ? page[page.length - 1].id : null };
+  const views = await toViews(page);
+  // Échanges ouverts : les deux cartes en visuel, et les boutons tant que l'offre attend
+  const offerIds = views.flatMap((v) => (v.listing ? [v.listing.offerId] : []));
+  if (offerIds.length > 0) {
+    const notices = await listingOfferNotices(offerIds, await getLocale());
+    for (const v of views) if (v.listing) v.listingNotice = notices.get(v.listing.offerId) ?? null;
+  }
+  return { items: views, nextCursor: rows.length > NOTIFICATIONS_PAGE ? page[page.length - 1].id : null };
 }
 
 export const TOASTS_MAX = 3;

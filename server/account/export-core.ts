@@ -43,6 +43,8 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     battles,
     auctions,
     bids,
+    tradeListings,
+    listingOffers,
     friendships,
     blocks,
     gifts,
@@ -105,6 +107,16 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       select: { id: true, cardId: true, startPrice: true, buyoutPrice: true, finalPrice: true, fee: true, status: true, createdAt: true, endsAt: true },
     }),
     db.bid.findMany({ where: { bidderId: userId }, orderBy: { createdAt: "asc" }, select: { auctionId: true, amount: true, createdAt: true } }),
+    db.tradeListing.findMany({
+      where: { ownerId: userId },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, cardId: true, status: true, createdAt: true, expiresAt: true, resolvedAt: true, wants: { select: { cardId: true } } },
+    }),
+    db.listingOffer.findMany({
+      where: { bidderId: userId },
+      orderBy: { createdAt: "asc" },
+      select: { listingId: true, cardId: true, status: true, createdAt: true, resolvedAt: true },
+    }),
     db.friendship.findMany({
       where: { OR: [{ requesterId: userId }, { addresseeId: userId }] },
       select: {
@@ -189,6 +201,8 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     }),
     auctions,
     bids,
+    tradeListings: tradeListings.map((l) => ({ ...l, wants: l.wants.map((w) => w.cardId) })),
+    listingOffers,
     friends: friendships.map((f) => {
       const outgoing = f.requesterId === userId;
       return {

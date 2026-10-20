@@ -451,7 +451,10 @@
       "label": "Ventes",
       "all": "Toutes",
       "selling": "Mes ventes",
-      "bidding": "Mes enchères"
+      "bidding": "Mes enchères",
+      "echanges": "Échanges",
+      "mes-echanges": "Mes échanges",
+      "incoming": "{count, plural, one {# offre reçue} other {# offres reçues}}"
     },
     "filters": {
       "label": "Filtres",
@@ -1320,7 +1323,17 @@
         "minAccountAgeHours": "Âge minimal du compte (h)",
         "minStartPrice": "Prix de départ minimal",
         "maxPrice": "Prix maximal",
-        "pollSeconds": "Rafraîchissement d'une vente (s)"
+        "pollSeconds": "Rafraîchissement d'une vente (s)",
+        "listings": {
+          "enabled": "Échanges ouverts actifs",
+          "allowOther": "Autoriser les offres hors liste (« Proposer autre chose »)",
+          "expiryHours": "Durée d'une annonce (heures)",
+          "maxWants": "Cartes demandées au plus",
+          "maxActive": "Annonces ouvertes max. par joueur",
+          "perDay": "Annonces par joueur sur 24 h",
+          "maxPendingOffers": "Offres en attente max. par joueur",
+          "allowedRarities": "Raretés échangeables"
+        }
       },
       "feeHint": "La taxe est figée à la mise en vente : un changement ne touche pas les ventes déjà ouvertes.",
       "invalid": "Certaines valeurs sont hors limites : corrige-les avant d'enregistrer.",
@@ -1338,7 +1351,9 @@
         "CLOSED": "Cette vente est déjà terminée.",
         "NOT_FOUND": "Vente introuvable.",
         "UNAVAILABLE": "Action impossible pour le moment."
-      }
+      },
+      "listings": "Échanges ouverts",
+      "listingsHint": "Annonces « celle-ci contre l'une de celles-là » ouvertes à tous. L'âge minimal du compte est celui de l'hôtel des ventes."
     },
     "economy": {
       "title": "Économie",
@@ -2784,7 +2799,15 @@
     "teamGift": "L'équipe Kiraku t'a envoyé un cadeau : regarde ton historique et tes boosters.",
     "tradeProposed": "{name} te propose un échange contre ta carte {card}.",
     "tradeAccepted": "{name} a accepté ton échange : {card} est à toi !",
-    "tradeDeclined": "{name} a refusé ton échange pour {card}."
+    "tradeDeclined": "{name} a refusé ton échange pour {card}.",
+    "listingOffer": "{name} te propose {offered} contre ta carte {card}.",
+    "listingAccepted": "{name} a accepté ton échange : tu as donné {offered} et reçu {card} !",
+    "listingDeclined": "{name} n'a pas retenu ton offre ({offered} contre {card}). Ta carte reste dans ta collection.",
+    "listing": {
+      "youGive": "Tu donnes",
+      "youGet": "Tu reçois",
+      "closed": "Cette offre n'attend plus de réponse."
+    }
   },
   "push": {
     "title": "Notifications sur ce téléphone",
@@ -3699,5 +3722,150 @@
       "EMPTY": "Message vide ou trop long."
     },
     "ephemeral": "Les messages s'effacent {hours, plural, one {# heure} other {# heures}} après leur envoi."
+  },
+  "listings": {
+    "boardTitle": "Cartes proposées à l'échange",
+    "boardIntro": "« Je donne celle-ci contre l'une de celles-là. » Propose une de tes cartes : l'auteur de l'annonce accepte ou refuse.",
+    "create": "Proposer une carte",
+    "searchLabel": "Chercher une annonce",
+    "searchPlaceholder": "Chercher une carte, une série, un joueur…",
+    "filtersLabel": "Filtres",
+    "filters": {
+      "missing": "Que je n'ai pas",
+      "canAccept": "Que je peux donner",
+      "mine": "Mes offres"
+    },
+    "empty": {
+      "all": "Aucune annonce d'échange pour l'instant. Lance la première !",
+      "missing": "Aucune annonce pour une carte que tu n'as pas.",
+      "canAccept": "Tu n'as aucune des cartes demandées dans les annonces ouvertes.",
+      "mine": "Tu n'as aucune offre en attente."
+    },
+    "loading": "Chargement…",
+    "more": "Voir plus",
+    "cardMeta": "{rarity} · {series}",
+    "by": "par {name}",
+    "byYou": "ton annonce",
+    "expires": "expire {when}",
+    "againstOne": "Contre l'une de ces cartes",
+    "offerCount": "{count, plural, =0 {Aucune offre pour l'instant.} one {# offre en attente.} other {# offres en attente.}}",
+    "cancelListing": "Retirer l'annonce",
+    "offerSent": "Offre envoyée : {card}. En attente de réponse.",
+    "offerSentShort": "Offre envoyée. En attente de réponse.",
+    "withdraw": "Retirer mon offre",
+    "confirmOffer": "Proposer {give} contre {get} ?",
+    "back": "Retour",
+    "pending": "Un instant…",
+    "send": "Envoyer l'offre",
+    "noneFree": "Tu n'as aucune de ces cartes libre.",
+    "give": "Donner {card}",
+    "proposeOther": "Proposer autre chose",
+    "otherTitle": "Proposer une carte contre {card}",
+    "otherHint": "Choisis la carte que tu proposes. L'auteur de l'annonce acceptera ou refusera.",
+    "pickOther": "Proposer {card}",
+    "youGive": "Tu donnes",
+    "youGet": "Tu reçois",
+    "offerRules": "Rien n'est bloqué pendant l'attente : si ta carte n'est plus dans ta collection au moment où l'offre est acceptée, l'échange n'a pas lieu.",
+    "confirmAccept": "Échanger contre {card} ?",
+    "yesAccept": "Oui, échanger",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "mine": {
+      "listings": "Mes annonces et offres reçues",
+      "noListings": "Tu n'as aucune annonce ouverte.",
+      "goBoard": "Proposer une carte",
+      "sent": "Mes offres envoyées",
+      "noSent": "Aucune offre en attente.",
+      "history": "Historique",
+      "noHistory": "Aucun échange terminé pour l'instant.",
+      "giving": "Tu donnes {card}",
+      "noOffers": "Aucune offre pour l'instant.",
+      "offersLabel": "Offres reçues",
+      "offerFrom": "{name} propose {card}",
+      "outsideList": "(hors de ta liste)",
+      "sentTo": "Offre à {name}"
+    },
+    "history": {
+      "line": "{gave} contre {got}",
+      "lineAlone": "{gave}",
+      "with": "avec {name}",
+      "status": {
+        "listing": {
+          "OPEN": "Ouverte",
+          "TRADED": "Échangée",
+          "CANCELLED": "Retirée",
+          "EXPIRED": "Expirée",
+          "FAILED": "Carte indisponible"
+        },
+        "offer": {
+          "PENDING": "En attente",
+          "ACCEPTED": "Acceptée",
+          "DECLINED": "Refusée",
+          "WITHDRAWN": "Retirée",
+          "CLOSED": "Annonce fermée",
+          "FAILED": "Carte indisponible"
+        }
+      }
+    },
+    "compose": {
+      "giveTitle": "Quelle carte proposes-tu ?",
+      "wantTitle": "Que veux-tu en échange ?",
+      "reviewTitle": "Vérifie ton annonce",
+      "stepsLabel": "Étapes",
+      "steps": {
+        "give": "Ta carte",
+        "want": "Tes envies",
+        "review": "Récap"
+      },
+      "giveHint": "Choisis une carte de ta collection. Elle reste à toi tant qu'aucune offre n'est acceptée.",
+      "pickGive": "Proposer {card}",
+      "wantHint": "Choisis jusqu'à {max} cartes que tu n'as pas encore. Les autres joueurs pourront aussi te proposer autre chose.",
+      "wantCount": "{count}/{max}",
+      "next": "Suivant",
+      "back": "Retour",
+      "youGive": "Tu donnes",
+      "againstOne": "Contre l'une de ces cartes",
+      "rules": "Tu reçois une notification à chaque offre et tu choisis d'accepter ou de refuser. L'annonce se ferme au premier échange accepté.",
+      "publish": "Publier l'annonce",
+      "publishing": "Publication…",
+      "published": "Annonce publiée ! Tu seras prévenu à chaque offre.",
+      "close": "Fermer",
+      "searchLabel": "Chercher une carte",
+      "searchPlaceholder": "Nom du personnage ou de la série…",
+      "wantEmpty": "Aucune carte trouvée parmi celles que tu n'as pas.",
+      "pickWanted": "Demander {card}",
+      "loading": "Chargement…",
+      "retry": "Réessayer",
+      "more": "Voir plus"
+    },
+    "errors": {
+      "NO_WANT": "Choisis au moins une carte demandée.",
+      "TOO_MANY_WANTS": "Trop de cartes demandées.",
+      "SAME_CARD": "Tu ne peux pas échanger une carte contre elle-même.",
+      "ALREADY_OWNED": "Tu possèdes déjà une des cartes demandées.",
+      "RARITY": "Cette rareté ne s'échange pas pour l'instant.",
+      "DUPLICATE": "Tu as déjà une annonce ouverte pour cette carte.",
+      "ACTIVE_LIMIT": "Tu as atteint le nombre maximal d'annonces ouvertes.",
+      "DAILY_LIMIT": "Tu as publié assez d'annonces pour aujourd'hui.",
+      "OWN_LISTING": "C'est ton annonce.",
+      "CLOSED": "Cette annonce ou cette offre est déjà fermée.",
+      "BLOCKED": "Échange impossible avec ce joueur.",
+      "NOT_WANTED": "Seules les cartes demandées peuvent être proposées.",
+      "ALREADY_OFFERED": "Tu as déjà une offre en attente sur cette annonce.",
+      "OFFER_LIMIT": "Tu as trop d'offres en attente : retires-en une d'abord.",
+      "GUEST": "Crée un compte pour échanger.",
+      "BANNED": "Ton compte ne peut pas échanger.",
+      "TOO_NEW": "Ton compte est trop récent pour échanger au Marché.",
+      "NO_USER": "Ce joueur n'est plus disponible.",
+      "CARD_GONE": "La carte de l'annonce n'est plus disponible.",
+      "OFFER_GONE": "La carte proposée n'est plus disponible.",
+      "WANT_GONE": "Une des cartes demandées n'existe plus.",
+      "NOT_FOUND": "Annonce ou offre introuvable.",
+      "NO_SESSION": "Session expirée : recharge la page.",
+      "INVALID": "Demande invalide.",
+      "DISABLED": "Les échanges du Marché sont fermés pour le moment.",
+      "RATE_LIMITED": "Doucement : réessaie dans un instant.",
+      "UNAVAILABLE": "Action impossible pour le moment."
+    }
   }
 }

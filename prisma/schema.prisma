@@ -75,7 +75,7 @@ model User {
   standardCount       Int               @default(0) // pour le booster doré
   bannerPity          Json              @default("{}") // { boosterTypeId: boosters sans vedette }
   discordJoinedAt     DateTime? // a cliqué sur « Rejoindre le serveur »
-  v1WelcomeSeenAt     DateTime? // présentation de la v1 affichée une seule fois par compte
+  v1WelcomeSeenAt     DateTime? // dernier affichage du modal de version (relancé une fois par version, lib/welcome/release.ts)
   locale              String            @default("fr") // fr | en
   birthDate           DateTime? // inutilisé : pas de contrôle d'âge (décision de l'étape 10)
   termsVersion        Int? // version des CGU acceptée
@@ -143,10 +143,12 @@ model User {
   lotGrantsGiven     LotGrant[]     @relation("lotGranter")
   lotBroadcasts      LotBroadcast[]
 
-  tradesProposed Trade[]       @relation("tradeProposer")
-  tradesReceived Trade[]       @relation("tradeRecipient")
-  chatSent       ChatMessage[] @relation("chatSender")
-  chatReceived   ChatMessage[] @relation("chatRecipient")
+  tradesProposed Trade[]        @relation("tradeProposer")
+  tradesReceived Trade[]        @relation("tradeRecipient")
+  tradeListings  TradeListing[]
+  listingOffers  ListingOffer[]
+  chatSent       ChatMessage[]  @relation("chatSender")
+  chatReceived   ChatMessage[]  @relation("chatRecipient")
 
   @@index([rankPoints])
 }
@@ -289,49 +291,52 @@ model Series {
 
 // Le personnage (le modèle de carte) ; l'exemplaire possédé sera UserCard
 model Card {
-  id               String            @id @default(cuid())
-  anilistId        Int?              @unique // source AniList uniquement
-  publicId         Int               @unique @default(autoincrement())
-  origin           String            @default("ANILIST")
-  status           CatalogCardStatus @default(PUBLISHED)
-  description      Json              @default("{}")
-  appearance       Json              @default("{}")
-  dropWeight       Int               @default(1)
-  adminOverrides   String[]          @default([])
-  boosterIds       String[]          @default([]) // types explicitement sélectionnés pour les cartes manuelles
+  id               String             @id @default(cuid())
+  anilistId        Int?               @unique // source AniList uniquement
+  publicId         Int                @unique @default(autoincrement())
+  origin           String             @default("ANILIST")
+  status           CatalogCardStatus  @default(PUBLISHED)
+  description      Json               @default("{}")
+  appearance       Json               @default("{}")
+  dropWeight       Int                @default(1)
+  adminOverrides   String[]           @default([])
+  boosterIds       String[]           @default([]) // types explicitement sélectionnés pour les cartes manuelles
   name             String
   nameNative       String? // nom japonais, écrit verticalement sur la fuda
   imageUrl         String
   favorites        Int // favoris AniList au dernier import
-  rank             Int?              @unique // 1 = le plus populaire ; null = sorti du catalogue
-  rarity           String            @map("rarityKey")
-  legacyRarity     Rarity            @default(COMMON) @map("rarity")
-  rarityDefinition RarityDefinition  @relation(fields: [rarity], references: [key])
+  rank             Int?               @unique // 1 = le plus populaire ; null = sorti du catalogue
+  rarity           String             @map("rarityKey")
+  legacyRarity     Rarity             @default(COMMON) @map("rarity")
+  rarityDefinition RarityDefinition   @relation(fields: [rarity], references: [key])
   power            Int // 力 attaque en combat
   ki               Int // 気 défense ; HP et vitesse sont dérivés
   seriesId         String
-  series           Series            @relation(fields: [seriesId], references: [id])
+  series           Series             @relation(fields: [seriesId], references: [id])
   gender           String? // Female | Male | … (AniList, souvent vide)
   birthMonth       Int?
   birthDay         Int?
   role             String? // MAIN | SUPPORTING | BACKGROUND dans l'œuvre principale
   searchText       String // nom, nom natif et titres, en minuscules sans accents
   variantOfId      String? // carte de base d'une variante (forme alternative AR, version Gold)
-  variantOf        Card?             @relation("cardVariants", fields: [variantOfId], references: [id], onDelete: Restrict)
-  variants         Card[]            @relation("cardVariants")
+  variantOf        Card?              @relation("cardVariants", fields: [variantOfId], references: [id], onDelete: Restrict)
+  variants         Card[]             @relation("cardVariants")
   formName         String? // nom de la forme : « Gear 5 », « Bankai »
   addedImportId    String? // import qui a fait entrer la carte (nouveautés)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
   copies           UserCard[]
   discoveries      Discovery[]
   lotItems         LotItem[]
   auctions         Auction[]
   wishedBy         WishlistEntry[]
   notablePulls     NotablePull[]
-  tradesWanted     Trade[]           @relation("tradeWanted")
-  tradesChosen     Trade[]           @relation("tradeChosen")
+  tradesWanted     Trade[]            @relation("tradeWanted")
+  tradesChosen     Trade[]            @relation("tradeChosen")
   tradeOffers      TradeOffer[]
+  tradeListings    TradeListing[]
+  listingWants     TradeListingWant[]
+  listingOffers    ListingOffer[]
 
   @@index([rarity, rank], map: "Card_rarityKey_rank_idx")
   @@index([legacyRarity, rank], map: "Card_rarity_rank_idx")
@@ -616,6 +621,9 @@ enum NotificationType {
   TRADE_PROPOSED // un ami propose un échange
   TRADE_ACCEPTED // l'ami a accepté : la carte voulue est arrivée
   TRADE_DECLINED // l'ami a refusé
+  LISTING_OFFER // un joueur propose une carte sur ton annonce d'échange du Marché
+  LISTING_ACCEPTED // ton offre a été acceptée : la carte est arrivée
+  LISTING_DECLINED // ton offre a été refusée (ou l'annonce s'est fermée sans elle)
 }
 
 // Notifications en base ; le texte est rendu à la lecture (pseudo à jour, langue du lecteur)
@@ -1185,6 +1193,77 @@ model TradeOffer {
   card    Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
 
   @@id([tradeId, cardId])
+}
+
+// --- Échanges ouverts du Marché ---
+
+enum ListingStatus {
+  OPEN
+  TRADED
+  CANCELLED // retirée par son auteur
+  EXPIRED
+  FAILED // la carte de l'auteur n'était plus disponible à l'acceptation
+}
+
+// « Je donne celle-ci contre l'une de celles-là », ouvert à tous les joueurs. Rien n'est bloqué
+// pendant l'attente : tout est revérifié sous verrou quand l'auteur accepte une offre.
+model TradeListing {
+  id         String             @id @default(cuid())
+  ownerId    String
+  owner      User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  cardId     String // carte donnée (id de Card ; l'exemplaire est choisi à l'acceptation)
+  card       Card               @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  status     ListingStatus      @default(OPEN)
+  expiresAt  DateTime
+  createdAt  DateTime           @default(now())
+  resolvedAt DateTime?
+  wants      TradeListingWant[]
+  offers     ListingOffer[]
+
+  @@index([status, createdAt, id])
+  @@index([status, expiresAt])
+  @@index([ownerId, status])
+  @@index([cardId, status])
+}
+
+// Une carte demandée par l'auteur (qu'il ne possède pas à la création)
+model TradeListingWant {
+  listingId String
+  listing   TradeListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  cardId    String
+  card      Card         @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@id([listingId, cardId])
+  @@index([cardId])
+}
+
+enum ListingOfferStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WITHDRAWN // retirée par l'offrant
+  CLOSED // annonce conclue avec un autre, retirée ou expirée
+  FAILED // la carte de l'offrant n'était plus disponible à l'acceptation
+}
+
+// Offre d'un joueur sur une annonce : une de ses cartes, demandée ou non
+model ListingOffer {
+  id           String             @id @default(cuid())
+  listingId    String
+  listing      TradeListing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  bidderId     String
+  bidder       User               @relation(fields: [bidderId], references: [id], onDelete: Cascade)
+  cardId       String // carte proposée (id de Card)
+  card         Card               @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  fromWants    Boolean // la carte faisait partie des cartes demandées
+  status       ListingOfferStatus @default(PENDING)
+  createdAt    DateTime           @default(now())
+  resolvedAt   DateTime?
+  bidderSeenAt DateTime? // l'offrant a vu la révélation de la carte reçue
+  bidderNew    Boolean            @default(false) // la carte reçue était nouvelle pour l'offrant
+
+  @@index([listingId, status])
+  @@index([bidderId, status, createdAt])
 }
 
 // --- Chat entre amis (étape 12g) ---

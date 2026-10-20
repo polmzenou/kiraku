@@ -1,7 +1,7 @@
 import type { SettingKey } from "./defaults";
 import { settingsSchemaFor, type SettingsOf } from "./form";
 
-// Réglages du panneau /admin/marche : interrupteur, règles des enchères et limites.
+// Réglages du panneau /admin/marche : interrupteur, règles des enchères, limites et échanges ouverts.
 
 export const MARKET_SETTING_KEYS = [
   "market.enabled",
@@ -15,6 +15,14 @@ export const MARKET_SETTING_KEYS = [
   "market.minStartPrice",
   "market.maxPrice",
   "market.pollSeconds",
+  "listings.enabled",
+  "listings.expiryHours",
+  "listings.maxWants",
+  "listings.maxActive",
+  "listings.perDay",
+  "listings.maxPendingOffers",
+  "listings.allowOther",
+  "listings.allowedRarities",
 ] as const satisfies readonly SettingKey[];
 
 export type MarketSettingKey = (typeof MARKET_SETTING_KEYS)[number];

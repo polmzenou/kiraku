@@ -55,7 +55,11 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
           WHERE c.status = 'PUBLISHED' AND c."seriesId" = ANY(${[...seriesIds]})
           GROUP BY c."seriesId"`,
     prisma.boosterOpening.count({ where: { userId } }),
-    prisma.trade.count({ where: { status: "ACCEPTED", OR: [{ proposerId: userId }, { recipientId: userId }] } }),
+    // Échanges réussis : entre amis et au Marché (annonce conclue ou offre acceptée)
+    Promise.all([
+      prisma.trade.count({ where: { status: "ACCEPTED", OR: [{ proposerId: userId }, { recipientId: userId }] } }),
+      prisma.listingOffer.count({ where: { status: "ACCEPTED", OR: [{ bidderId: userId }, { listing: { ownerId: userId } }] } }),
+    ]).then(([friends, market]) => friends + market),
     prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { rankPoints: true, seasonPeakPc: true } }),
     getSetting("ranked.tiers"),
   ]);

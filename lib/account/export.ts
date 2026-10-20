@@ -39,6 +39,8 @@ export const EXPORT_FIELDS = {
   battles: ["id", "mode", "status", "side", "opponent", "won", "endReason", "rewardZeni", "pcDelta", "createdAt", "endedAt"],
   auctions: ["id", "cardId", "startPrice", "buyoutPrice", "finalPrice", "fee", "status", "createdAt", "endsAt"],
   bids: ["auctionId", "amount", "createdAt"],
+  tradeListings: ["id", "cardId", "wants", "status", "createdAt", "expiresAt", "resolvedAt"],
+  listingOffers: ["listingId", "cardId", "status", "createdAt", "resolvedAt"],
   friends: ["username", "status", "direction", "createdAt", "acceptedAt"],
   blocked: ["username", "createdAt"],
   gifts: ["direction", "kind", "cardId", "zeniSpent", "otherUsername", "createdAt"],

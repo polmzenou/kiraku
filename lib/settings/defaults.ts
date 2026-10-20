@@ -207,6 +207,16 @@ export const SETTING_SCHEMAS = {
   "market.minStartPrice": z.number().int().min(1).max(1_000_000),
   "market.maxPrice": z.number().int().min(1).max(100_000_000),
   "market.pollSeconds": z.number().int().min(2).max(120),
+  // Échanges ouverts du Marché : annonces « celle-ci contre l'une de celles-là », offres acceptées ou refusées
+  "listings.enabled": z.boolean(),
+  "listings.expiryHours": z.number().int().min(1).max(24 * 30),
+  "listings.maxWants": z.number().int().min(1).max(10),
+  "listings.maxActive": z.number().int().min(1).max(100),
+  "listings.perDay": z.number().int().min(1).max(500),
+  "listings.maxPendingOffers": z.number().int().min(1).max(200),
+  // Offrir une carte hors de la liste demandée (« Proposer autre chose »)
+  "listings.allowOther": z.boolean(),
+  "listings.allowedRarities": z.array(rarity).max(200),
   // Combat 1v1 en direct (étape 9)
   "battle.enabled": z.boolean(),
   "battle.stats": battleStats,
@@ -356,6 +366,14 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "market.minStartPrice": 1,
   "market.maxPrice": 10_000_000,
   "market.pollSeconds": 5, // rafraîchissement du prix d'une vente ouverte
+  "listings.enabled": true,
+  "listings.expiryHours": 48,
+  "listings.maxWants": 5,
+  "listings.maxActive": 10,
+  "listings.perDay": 20,
+  "listings.maxPendingOffers": 20,
+  "listings.allowOther": true,
+  "listings.allowedRarities": [...RARITIES, ...VARIANT_RARITIES],
   "battle.enabled": true,
   "battle.stats": { hpBase: 80, hpPerKiPct: 160 }, // 128 à 218 PV
   "battle.damage": { critPermille: 100, critPct: 150, varianceMinPct: 90, varianceMaxPct: 110 },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { changedSettingKeys } from "@/lib/settings/form";
@@ -9,7 +10,10 @@ import { updateMarketSettings } from "@/server/actions/admin-settings";
 import { Button } from "../ui/Button";
 import { Field, FormMessage, inputClass, NumberField, Toggle } from "./fields";
 
-type NumKey = Exclude<keyof MarketSettings, "market.enabled" | "market.durationsHours">;
+type NumKey = Exclude<
+  keyof MarketSettings,
+  "market.enabled" | "market.durationsHours" | "listings.enabled" | "listings.allowOther" | "listings.allowedRarities"
+>;
 
 // Bornes des champs (les mêmes que les schémas Zod de lib/settings/defaults.ts)
 const BOUNDS: Record<NumKey, [number, number]> = {
@@ -22,11 +26,22 @@ const BOUNDS: Record<NumKey, [number, number]> = {
   "market.minStartPrice": [1, 1_000_000],
   "market.maxPrice": [1, 100_000_000],
   "market.pollSeconds": [2, 120],
+  "listings.expiryHours": [1, 24 * 30],
+  "listings.maxWants": [1, 10],
+  "listings.maxActive": [1, 100],
+  "listings.perDay": [1, 500],
+  "listings.maxPendingOffers": [1, 200],
 };
 
-/** Interrupteur, règles des enchères (taxe, surenchère, anti-sniping, durées) et limites anti-abus. */
+/**
+ * Interrupteur, règles des enchères (taxe, surenchère, anti-sniping, durées), limites anti-abus et
+ * échanges ouverts (annonces « celle-ci contre l'une de celles-là »).
+ */
 export function MarketSettingsForm({ initial }: { initial: MarketSettings }) {
   const t = useTranslations("admin.market");
+  const tRarity = useTranslations("rarity");
+  const rarities = useRarities();
+  const seals = useRaritySeals();
   const router = useRouter();
   const [draft, setDraft] = useState(initial);
   const [durations, setDurations] = useState(initial["market.durationsHours"].join(", "));
@@ -43,7 +58,7 @@ export function MarketSettingsForm({ initial }: { initial: MarketSettings }) {
   };
   const num = (key: NumKey, hint?: string) => (
     <NumberField
-      label={t(`keys.${key.slice("market.".length) as "feeBp"}`)}
+      label={t(`keys.${key.replace(/^market\./, "") as "feeBp"}`)}
       value={draft[key]}
       onChange={(v) => update(key, v)}
       min={BOUNDS[key][0]}
@@ -111,6 +126,47 @@ export function MarketSettingsForm({ initial }: { initial: MarketSettings }) {
         {num("market.minAccountAgeHours")}
         {num("market.minStartPrice")}
         {num("market.maxPrice")}
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-4 lacquer rounded-card p-4">
+        <legend className="px-1 font-bold">{t("listings")}</legend>
+        <Toggle label={t("keys.listings.enabled")} checked={draft["listings.enabled"]} onChange={(v) => update("listings.enabled", v)} />
+        <Toggle label={t("keys.listings.allowOther")} checked={draft["listings.allowOther"]} onChange={(v) => update("listings.allowOther", v)} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          {num("listings.expiryHours")}
+          {num("listings.maxWants")}
+          {num("listings.maxActive")}
+          {num("listings.perDay")}
+          {num("listings.maxPendingOffers")}
+        </div>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-sm">{t("keys.listings.allowedRarities")}</legend>
+          <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
+            {rarities.map((r) => {
+              const allowed = draft["listings.allowedRarities"];
+              return (
+                <label key={r} className="flex min-h-11 items-center gap-2">
+                  <input
+                    type="checkbox"
+                    className="choice"
+                    checked={allowed.includes(r)}
+                    onChange={(e) =>
+                      update(
+                        "listings.allowedRarities",
+                        e.target.checked ? rarities.filter((x) => x === r || allowed.includes(x)) : allowed.filter((x) => x !== r),
+                      )
+                    }
+                  />
+                  <span aria-hidden="true" lang="ja" className="font-seal">
+                    {seals[r]}
+                  </span>
+                  {tRarity(r as "COMMON")}
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+        <p className="text-xs text-text-muted">{t("listingsHint")}</p>
       </fieldset>
 
       {!valid && <p className="text-sm text-shu">{t("invalid")}</p>}

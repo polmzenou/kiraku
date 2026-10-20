@@ -451,7 +451,10 @@
       "label": "Sales",
       "all": "All",
       "selling": "My sales",
-      "bidding": "My bids"
+      "bidding": "My bids",
+      "echanges": "Trades",
+      "mes-echanges": "My trades",
+      "incoming": "{count, plural, one {# offer received} other {# offers received}}"
     },
     "filters": {
       "label": "Filters",
@@ -1320,7 +1323,17 @@
         "minAccountAgeHours": "Minimum account age (h)",
         "minStartPrice": "Minimum starting price",
         "maxPrice": "Maximum price",
-        "pollSeconds": "Sale refresh interval (s)"
+        "pollSeconds": "Sale refresh interval (s)",
+        "listings": {
+          "enabled": "Open trades active",
+          "allowOther": "Allow offers outside the list (“Offer something else”)",
+          "expiryHours": "Listing duration (hours)",
+          "maxWants": "Max wanted cards",
+          "maxActive": "Max open listings per player",
+          "perDay": "Listings per player per 24 h",
+          "maxPendingOffers": "Max pending offers per player",
+          "allowedRarities": "Tradable rarities"
+        }
       },
       "feeHint": "The fee is locked when a sale is listed: a change doesn't affect sales already open.",
       "invalid": "Some values are out of range: fix them before saving.",
@@ -1338,7 +1351,9 @@
         "CLOSED": "This sale has already ended.",
         "NOT_FOUND": "Sale not found.",
         "UNAVAILABLE": "Action not possible right now."
-      }
+      },
+      "listings": "Open trades",
+      "listingsHint": "“This one for one of those” listings open to everyone. The minimum account age is the auction house one."
     },
     "economy": {
       "title": "Economy",
@@ -2784,7 +2799,15 @@
     "teamGift": "The Kiraku team sent you a gift: check your history and your boosters.",
     "tradeProposed": "{name} offers you a trade for your {card}.",
     "tradeAccepted": "{name} accepted your trade: {card} is yours!",
-    "tradeDeclined": "{name} declined your trade for {card}."
+    "tradeDeclined": "{name} declined your trade for {card}.",
+    "listingOffer": "{name} offers {offered} for your {card}.",
+    "listingAccepted": "{name} accepted your trade: you gave {offered} and got {card}!",
+    "listingDeclined": "{name} passed on your offer ({offered} for {card}). Your card stays in your collection.",
+    "listing": {
+      "youGive": "You give",
+      "youGet": "You get",
+      "closed": "This offer no longer awaits an answer."
+    }
   },
   "push": {
     "title": "Notifications on this device",
@@ -3699,5 +3722,150 @@
       "EMPTY": "Empty or too long message."
     },
     "ephemeral": "Messages disappear {hours, plural, one {# hour} other {# hours}} after they are sent."
+  },
+  "listings": {
+    "boardTitle": "Cards up for trade",
+    "boardIntro": "“I give this one for one of those.” Offer one of your cards: the poster accepts or declines.",
+    "create": "Offer a card",
+    "searchLabel": "Search listings",
+    "searchPlaceholder": "Search a card, a series, a player…",
+    "filtersLabel": "Filters",
+    "filters": {
+      "missing": "Cards I don't have",
+      "canAccept": "I can give",
+      "mine": "My offers"
+    },
+    "empty": {
+      "all": "No trade listings yet. Post the first one!",
+      "missing": "No listing for a card you don't have.",
+      "canAccept": "You don't have any of the cards wanted in open listings.",
+      "mine": "You have no pending offers."
+    },
+    "loading": "Loading…",
+    "more": "Show more",
+    "cardMeta": "{rarity} · {series}",
+    "by": "by {name}",
+    "byYou": "your listing",
+    "expires": "expires {when}",
+    "againstOne": "For one of these cards",
+    "offerCount": "{count, plural, =0 {No offers yet.} one {# pending offer.} other {# pending offers.}}",
+    "cancelListing": "Remove listing",
+    "offerSent": "Offer sent: {card}. Waiting for an answer.",
+    "offerSentShort": "Offer sent. Waiting for an answer.",
+    "withdraw": "Withdraw my offer",
+    "confirmOffer": "Offer {give} for {get}?",
+    "back": "Back",
+    "pending": "One moment…",
+    "send": "Send offer",
+    "noneFree": "You have none of these cards free.",
+    "give": "Give {card}",
+    "proposeOther": "Offer something else",
+    "otherTitle": "Offer a card for {card}",
+    "otherHint": "Pick the card you offer. The poster will accept or decline.",
+    "pickOther": "Offer {card}",
+    "youGive": "You give",
+    "youGet": "You get",
+    "offerRules": "Nothing is locked while waiting: if your card is no longer in your collection when the offer is accepted, the trade doesn't happen.",
+    "confirmAccept": "Trade for {card}?",
+    "yesAccept": "Yes, trade",
+    "accept": "Accept",
+    "decline": "Decline",
+    "mine": {
+      "listings": "My listings and offers received",
+      "noListings": "You have no open listing.",
+      "goBoard": "Offer a card",
+      "sent": "My offers sent",
+      "noSent": "No pending offers.",
+      "history": "History",
+      "noHistory": "No finished trades yet.",
+      "giving": "You give {card}",
+      "noOffers": "No offers yet.",
+      "offersLabel": "Offers received",
+      "offerFrom": "{name} offers {card}",
+      "outsideList": "(not on your list)",
+      "sentTo": "Offer to {name}"
+    },
+    "history": {
+      "line": "{gave} for {got}",
+      "lineAlone": "{gave}",
+      "with": "with {name}",
+      "status": {
+        "listing": {
+          "OPEN": "Open",
+          "TRADED": "Traded",
+          "CANCELLED": "Removed",
+          "EXPIRED": "Expired",
+          "FAILED": "Card unavailable"
+        },
+        "offer": {
+          "PENDING": "Pending",
+          "ACCEPTED": "Accepted",
+          "DECLINED": "Declined",
+          "WITHDRAWN": "Withdrawn",
+          "CLOSED": "Listing closed",
+          "FAILED": "Card unavailable"
+        }
+      }
+    },
+    "compose": {
+      "giveTitle": "Which card do you offer?",
+      "wantTitle": "What do you want for it?",
+      "reviewTitle": "Check your listing",
+      "stepsLabel": "Steps",
+      "steps": {
+        "give": "Your card",
+        "want": "Your wishes",
+        "review": "Summary"
+      },
+      "giveHint": "Pick a card from your collection. It stays yours until an offer is accepted.",
+      "pickGive": "Offer {card}",
+      "wantHint": "Pick up to {max} cards you don't have yet. Other players can also offer something else.",
+      "wantCount": "{count}/{max}",
+      "next": "Next",
+      "back": "Back",
+      "youGive": "You give",
+      "againstOne": "For one of these cards",
+      "rules": "You get a notification for each offer and choose to accept or decline. The listing closes at the first accepted trade.",
+      "publish": "Post listing",
+      "publishing": "Posting…",
+      "published": "Listing posted! You'll be notified of every offer.",
+      "close": "Close",
+      "searchLabel": "Search a card",
+      "searchPlaceholder": "Character or series name…",
+      "wantEmpty": "No card found among those you don't have.",
+      "pickWanted": "Ask for {card}",
+      "loading": "Loading…",
+      "retry": "Retry",
+      "more": "Show more"
+    },
+    "errors": {
+      "NO_WANT": "Pick at least one wanted card.",
+      "TOO_MANY_WANTS": "Too many wanted cards.",
+      "SAME_CARD": "You can't trade a card for itself.",
+      "ALREADY_OWNED": "You already own one of the wanted cards.",
+      "RARITY": "This rarity can't be traded right now.",
+      "DUPLICATE": "You already have an open listing for this card.",
+      "ACTIVE_LIMIT": "You've reached the maximum number of open listings.",
+      "DAILY_LIMIT": "You've posted enough listings for today.",
+      "OWN_LISTING": "This is your listing.",
+      "CLOSED": "This listing or offer is already closed.",
+      "BLOCKED": "You can't trade with this player.",
+      "NOT_WANTED": "Only the wanted cards can be offered.",
+      "ALREADY_OFFERED": "You already have a pending offer on this listing.",
+      "OFFER_LIMIT": "Too many pending offers: withdraw one first.",
+      "GUEST": "Create an account to trade.",
+      "BANNED": "Your account can't trade.",
+      "TOO_NEW": "Your account is too new to trade on the Market.",
+      "NO_USER": "This player is no longer available.",
+      "CARD_GONE": "The listed card is no longer available.",
+      "OFFER_GONE": "The offered card is no longer available.",
+      "WANT_GONE": "One of the wanted cards no longer exists.",
+      "NOT_FOUND": "Listing or offer not found.",
+      "NO_SESSION": "Session expired: reload the page.",
+      "INVALID": "Invalid request.",
+      "DISABLED": "Market trades are closed for now.",
+      "RATE_LIMITED": "Easy there: try again in a moment.",
+      "UNAVAILABLE": "Can't do that right now."
+    }
   }
 }

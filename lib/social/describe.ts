@@ -13,6 +13,8 @@ export type DescribableNotification = {
   battle?: BattlePayload | null;
   /** Proposition d'échange (la carte demandée est dans `card`). */
   trade?: TradePayload | null;
+  /** Carte proposée par l'offrant (échanges ouverts du Marché ; la carte de l'annonce est dans `card`). */
+  offeredCard?: { name: string } | null;
   card: { anilistId: number; name: string; rarity: string } | null;
 };
 
@@ -39,6 +41,9 @@ export type DescribeTranslators = {
       | "tradeProposed"
       | "tradeAccepted"
       | "tradeDeclined"
+      | "listingOffer"
+      | "listingAccepted"
+      | "listingDeclined"
       | "aCard",
     values?: Values,
   ) => string;
@@ -93,6 +98,13 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
     case "TRADE_DECLINED": {
       const key = n.type === "TRADE_PROPOSED" ? "tradeProposed" : n.type === "TRADE_ACCEPTED" ? "tradeAccepted" : "tradeDeclined";
       return { text: t(key, { name, card: n.card?.name ?? t("aCard") }), href: "/amis?onglet=echanges" };
+    }
+    case "LISTING_OFFER":
+    case "LISTING_ACCEPTED":
+    case "LISTING_DECLINED": {
+      const key = n.type === "LISTING_OFFER" ? "listingOffer" : n.type === "LISTING_ACCEPTED" ? "listingAccepted" : "listingDeclined";
+      const values = { name, card: n.card?.name ?? t("aCard"), offered: n.offeredCard?.name ?? t("aCard") };
+      return { text: t(key, values), href: "/marche?onglet=mes-echanges" };
     }
   }
 }
