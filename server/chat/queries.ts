@@ -24,8 +24,14 @@ const view = (me: string) => (m: { id: string; senderId: string; body: string; c
   at: m.createdAt.toISOString(),
 });
 
+/**
+ * Messages éphémères : seuls ceux envoyés après `since` (maintenant moins chat.retentionHours)
+ * existent encore aux yeux des joueurs, même avant le passage du ménage.
+ */
+export const visibleSince = (retentionHours: number, now = new Date()) => new Date(now.getTime() - retentionHours * 3_600_000);
+
 /** Amis acceptés, triés par dernier message, avec les non-lus de chacun. */
-export async function listConversations(me: string): Promise<Conversation[]> {
+export async function listConversations(me: string, since: Date): Promise<Conversation[]> {
   const rows = await prisma.$queryRaw<
     { username: string; image: string | null; isGuest: boolean; body: string | null; lastAt: Date | null; lastMine: boolean | null; unread: number }[]
   >`
@@ -38,12 +44,13 @@ export async function listConversations(me: string): Promise<Conversation[]> {
       SELECT DISTINCT ON (m."pairKey") m."pairKey", m.body, m."createdAt", m."senderId"
       FROM "ChatMessage" m
       JOIN friends fr ON fr."pairKey" = m."pairKey"
+      WHERE m."createdAt" > ${since}
       ORDER BY m."pairKey", m."createdAt" DESC
     ),
     unread AS (
       SELECT m."senderId", COUNT(*)::int AS n
       FROM "ChatMessage" m
-      WHERE m."recipientId" = ${me} AND m."readAt" IS NULL
+      WHERE m."recipientId" = ${me} AND m."readAt" IS NULL AND m."createdAt" > ${since}
       GROUP BY m."senderId"
     )
     SELECT u.username, u.image, u."isGuest", l.body, l."createdAt" AS "lastAt", (l."senderId" = ${me}) AS "lastMine",
@@ -65,8 +72,8 @@ export async function listConversations(me: string): Promise<Conversation[]> {
 }
 
 /** Total des messages non lus (pastille). */
-export function unreadChatCount(me: string) {
-  return prisma.chatMessage.count({ where: { recipientId: me, readAt: null } });
+export function unreadChatCount(me: string, since: Date) {
+  return prisma.chatMessage.count({ where: { recipientId: me, readAt: null, createdAt: { gt: since } } });
 }
 
 /** Les deux joueurs sont-ils amis, sans blocage dans un sens ou l'autre ? */
@@ -83,13 +90,13 @@ export async function canChat(me: string, other: string): Promise<boolean> {
  * Messages d'une conversation, les plus récents d'abord côté requête puis remis dans l'ordre :
  * `before` remonte l'historique, `after` récupère seulement les nouveaux. Marque les reçus comme lus.
  */
-export async function loadMessages(me: string, other: string, cursor: { before?: Date; after?: Date }) {
+export async function loadMessages(me: string, other: string, since: Date, cursor: { before?: Date; after?: Date }) {
   const key = pairKey(me, other);
+  const after = cursor.after && cursor.after > since ? cursor.after : since;
   const rows = await prisma.chatMessage.findMany({
     where: {
       pairKey: key,
-      ...(cursor.before ? { createdAt: { lt: cursor.before } } : {}),
-      ...(cursor.after ? { createdAt: { gt: cursor.after } } : {}),
+      createdAt: { gt: after, ...(cursor.before ? { lt: cursor.before } : {}) },
     },
     orderBy: { createdAt: "desc" },
     take: CHAT_PAGE,
@@ -107,7 +114,7 @@ export async function createMessage(me: string, other: string, body: string): Pr
   return view(me)(row);
 }
 
-/** Ménage paresseux : messages plus vieux que la durée de conservation. */
-export async function purgeOldMessages(retentionDays: number, now = new Date()) {
-  await prisma.chatMessage.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - retentionDays * 86_400_000) } } });
+/** Ménage paresseux : messages arrivés au bout de leur durée de vie. */
+export async function purgeOldMessages(retentionHours: number, now = new Date()) {
+  await prisma.chatMessage.deleteMany({ where: { createdAt: { lte: visibleSince(retentionHours, now) } } });
 }

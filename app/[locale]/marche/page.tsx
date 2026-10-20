@@ -1,3 +1,4 @@
+import { getRarities } from "@/server/catalog/rarities";
 import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -35,7 +36,7 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
   }
 
   const enabled = await getSetting("market.enabled");
-  const parsed = parseMarketParams(await searchParams);
+  const parsed = parseMarketParams(await searchParams, await getRarities());
   // Les invités n'ont ni ventes ni mises : seulement la liste générale
   const params = user.isGuest ? { ...parsed, tab: "all" as const } : parsed;
   const tabs = user.isGuest ? (["all"] as const) : MARKET_TABS;

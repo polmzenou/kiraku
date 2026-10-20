@@ -1,5 +1,6 @@
+import { rarityKeySchema } from "@/lib/catalog/definitions";
 import { z } from "@/lib/zod";
-import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import type { PoolFilter } from "./pool-filter";
 
 // Types de boosters (modèle BoosterType) : familles, thème du sachet, prix et disponibilité.
@@ -119,7 +120,7 @@ export type BoosterTypeView = {
 };
 
 export function isRarity(value: string): value is Rarity {
-  return (RARITIES as readonly string[]).includes(value);
+  return rarityKeySchema.safeParse(value).success;
 }
 
 /** Planchers effectifs : ceux du type, sinon le réglage global. */

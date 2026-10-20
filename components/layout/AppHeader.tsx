@@ -4,7 +4,7 @@ import type { Theme } from "@/lib/theme";
 import { logout } from "@/server/actions/account";
 import { isFrozen } from "@/lib/account/deletion";
 import { getBoosterRules } from "@/server/boosters/rules";
-import { unreadChatCount } from "@/server/chat/queries";
+import { unreadChatCount, visibleSince } from "@/server/chat/queries";
 import { ablyEnabled } from "@/server/env";
 import { boosterStateFrom } from "@/server/boosters/state";
 import { getSetting } from "@/server/settings";
@@ -44,8 +44,13 @@ export async function AppHeader({ theme }: { theme: Theme }) {
   const [socialOn, chatOn] = chatUser ? await Promise.all([getSetting("social.enabled"), getSetting("chat.enabled")]) : [false, false];
   const chat =
     chatUser && socialOn && chatOn
-      ? await Promise.all([unreadChatCount(chatUser.id), getSetting("chat.pollSeconds"), getSetting("chat.maxLength")]).then(
-          ([initialUnread, chatPoll, maxLength]) => ({ initialUnread, pollSeconds: chatPoll, maxLength }),
+      ? await Promise.all([getSetting("chat.retentionHours"), getSetting("chat.pollSeconds"), getSetting("chat.maxLength")]).then(
+          async ([retentionHours, chatPoll, maxLength]) => ({
+            initialUnread: await unreadChatCount(chatUser.id, visibleSince(retentionHours)),
+            pollSeconds: chatPoll,
+            maxLength,
+            retentionHours,
+          }),
         )
       : null;
 

@@ -13,10 +13,11 @@ import {
 import type { ChatMessageView, Conversation } from "@/server/chat/queries";
 import { displayName } from "../profile/ProfileHeader";
 import { PlayerAvatar } from "../social/PlayerAvatar";
-import { CloseIcon, IconButton } from "../ui/IconButton";
+import { badgeClasses } from "../ui/Badge";
+import { CloseIcon, IconButton, iconButtonClasses } from "../ui/IconButton";
 import { closeChat, openChat, setChatAvailable, setUnread, showConversation, useChatState } from "./chat-store";
 
-type Props = { realtime: boolean; pollSeconds: number; initialUnread: number; maxLength: number };
+type Props = { realtime: boolean; pollSeconds: number; initialUnread: number; maxLength: number; retentionHours: number };
 
 type IncomingChat = { from: string; message: ChatMessageView };
 type Thread = { username: string; messages: ChatMessageView[]; hasMore: boolean; error: string | null };
@@ -31,7 +32,7 @@ const SAFETY_POLL_MS = 60_000;
  * Mobile : l'icône de l'en-tête (ChatHeaderButton) ouvre le même panneau en plein écran.
  * Messages poussés par Ably sur le canal privé du joueur, sinon sondés tant que l'onglet est visible.
  */
-export function ChatDock({ realtime, pollSeconds, initialUnread, maxLength }: Props) {
+export function ChatDock({ realtime, pollSeconds, initialUnread, maxLength, retentionHours }: Props) {
   const t = useTranslations("chat");
   const pathname = usePathname();
   const chat = useChatState();
@@ -179,30 +180,30 @@ export function ChatDock({ realtime, pollSeconds, initialUnread, maxLength }: Pr
 
   return (
     <>
-      {!chat.open && !ritual && (
+      {!chat.open && !chat.closing && !ritual && (
         <button
           type="button"
           onClick={() => openChat()}
           aria-label={t("open", { count: chat.unread })}
           className="fixed right-6 bottom-6 z-[999999] hidden size-14 items-center justify-center rounded-full bg-linear-to-b from-shu to-shu-btn text-washi-paper shadow-shu transition-transform active:scale-95 motion-reduce:transition-none lg:flex"
         >
-          <span aria-hidden="true" lang="ja" className="font-seal text-2xl">
-            話
-          </span>
+          <ChatIcon size={24} />
           {badge && (
-            <span aria-hidden="true" className="absolute -top-1 -right-1 min-w-5 rounded-pill bg-kin px-1.5 text-xs font-bold text-sumi tabular-nums">
+            <span aria-hidden="true" className={badgeClasses("kin", "absolute -top-0.5 -right-0.5 ring-2 ring-bg")}>
               {badge}
             </span>
           )}
         </button>
       )}
 
-      {chat.open && (
+      {(chat.open || chat.closing) && (
         <section
+          data-closing={chat.closing || undefined}
+          inert={chat.closing || undefined}
           role="dialog"
           aria-label={t("title")}
           onKeyDown={(e) => e.key === "Escape" && closeChat()}
-          className="fixed inset-0 z-[999999] flex flex-col bg-bg pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] lg:inset-auto lg:right-6 lg:bottom-6 lg:h-[min(560px,calc(100dvh-7rem))] lg:w-[380px] lg:overflow-hidden lg:rounded-hero lg:border lg:border-border lg:p-0 lg:shadow-float"
+          className="fixed inset-0 z-[999999] flex translate-y-0 flex-col bg-bg pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] opacity-100 transition-[translate,opacity] duration-300 ease-out starting:translate-y-full starting:opacity-0 motion-reduce:transition-none lg:inset-auto lg:right-6 lg:bottom-6 lg:h-[min(560px,calc(100dvh-7rem))] lg:w-[380px] lg:overflow-hidden lg:rounded-hero lg:border lg:border-border lg:p-0 lg:shadow-float lg:starting:translate-y-12 data-closing:translate-y-full data-closing:opacity-0 lg:data-closing:translate-y-12"
         >
           <header className="flex items-center gap-2 border-b border-border px-3 py-2">
             {chat.with ? (
@@ -234,6 +235,7 @@ export function ChatDock({ realtime, pollSeconds, initialUnread, maxLength }: Pr
               hasMore={current?.hasMore ?? false}
               error={current?.error ?? null}
               maxLength={maxLength}
+              retentionHours={retentionHours}
               onOlder={loadOlder}
               onSent={(m) => append(chat.with!, [m])}
             />
@@ -296,6 +298,7 @@ function ConversationView({
   hasMore,
   error,
   maxLength,
+  retentionHours,
   onOlder,
   onSent,
 }: {
@@ -305,6 +308,7 @@ function ConversationView({
   hasMore: boolean;
   error: string | null;
   maxLength: number;
+  retentionHours: number;
   onOlder: () => void;
   onSent: (m: ChatMessageView) => void;
 }) {
@@ -354,6 +358,13 @@ function ConversationView({
   return (
     <>
       <div ref={scroller} className="flex flex-1 flex-col gap-2 overflow-y-auto overscroll-contain p-3" aria-live="polite">
+        {/* Messages éphémères : rappelé en tête de chaque discussion */}
+        <p className="mx-auto flex max-w-[90%] items-center gap-1.5 rounded-pill border border-border px-3 py-1 text-center text-xs text-text-muted">
+          <span aria-hidden="true" lang="ja" className="font-seal text-shu">
+            消
+          </span>
+          {t("ephemeral", { hours: retentionHours })}
+        </p>
         {hasMore && (
           <button type="button" onClick={onOlder} className="mx-auto min-h-11 rounded-pill px-3 text-sm text-text-muted hover:bg-surface-2">
             {t("older")}
@@ -433,13 +444,12 @@ export function ChatHeaderButton() {
       type="button"
       onClick={() => openChat()}
       aria-label={t("open", { count: chat.unread })}
-      className="relative inline-flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-surface-2 lg:hidden"
+      title={t("title")}
+      className={iconButtonClasses("lacquer", "lg:hidden")}
     >
-      <span aria-hidden="true" lang="ja" className="font-seal text-xl text-shu">
-        話
-      </span>
+      <ChatIcon size={20} />
       {badge && (
-        <span aria-hidden="true" className="absolute top-0.5 right-0.5 min-w-4 rounded-pill bg-shu-btn px-1 text-[10px] font-bold text-washi-paper tabular-nums">
+        <span aria-hidden="true" className={badgeClasses("shu", "absolute -top-0.5 -right-0.5 ring-2 ring-bg")}>
           {badge}
         </span>
       )}
@@ -463,5 +473,15 @@ export function ChatWithButton({ username, className = "" }: { username: string;
       </span>
       {t("discuss")}
     </button>
+  );
+}
+
+/** Bulle de discussion, au trait comme la cloche des notifications. */
+function ChatIcon({ size }: { size: number }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 12.5c0 3.9-3.6 7-8 7-1.2 0-2.3-.2-3.3-.6L4 20l1.2-3.5C4.4 15.3 4 13.9 4 12.5c0-3.9 3.6-7 8-7s8 3.1 8 7Z" />
+      <path d="M8.5 12.5h.01M12 12.5h.01M15.5 12.5h.01" strokeWidth="2.4" />
+    </svg>
   );
 }

@@ -1,5 +1,7 @@
 "use server";
 
+import { getRarities } from "@/server/catalog/rarities";
+
 import { getLocale } from "next-intl/server";
 import { refresh } from "next/cache";
 import { z } from "@/lib/zod";
@@ -210,7 +212,7 @@ export async function loadMarketPageAction(input: unknown): Promise<MarketPageRe
     return { ok: false, error: "RATE_LIMITED" };
   }
   const page = await listAuctions({
-    params: parseMarketParams(parsed.data.params),
+    params: parseMarketParams(parsed.data.params, await getRarities()),
     cursor,
     viewerId: user.id,
     locale: await getLocale(),

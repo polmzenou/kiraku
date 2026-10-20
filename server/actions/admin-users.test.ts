@@ -54,7 +54,7 @@ describe("frontière des actions admin utilisateurs", () => {
     expect(mocks.refresh).toHaveBeenCalledOnce();
   });
   it("donne priorité à un numéro AniList exact, même hors catalogue", async () => {
-    const card = { id: "card", name: "Levi", anilistId: 456, rank: null, rarity: "MYTHIC", imageUrl: "https://s4.anilist.co/card.jpg", series: { titleRomaji: "Attack on Titan" } };
+    const card = { id: "card", name: "Levi", anilistId: 456, publicId: 456, rank: null, rarity: "MYTHIC", imageUrl: "https://s4.anilist.co/card.jpg", series: { titleRomaji: "Attack on Titan" } };
     mocks.findFirst.mockResolvedValue(card);
     expect(await searchAdminCards("456")).toEqual([{ ...card, series: "Attack on Titan" }]);
     expect(mocks.findMany).not.toHaveBeenCalled();

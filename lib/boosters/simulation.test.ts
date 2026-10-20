@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BOOSTER_SEEDS } from "@/prisma/seed/booster-types";
 import { DEFAULT_RULES, fakePool } from "./fixtures";
-import { poolCounts } from "./draw";
+import { groupByRarity, poolCounts } from "./draw";
 import { effectiveSlotFloors } from "./types";
 import { slotDistribution } from "./odds";
 import { seededRng } from "./rng";
@@ -13,6 +13,16 @@ import { CHI2_CRITICAL_001, chiSquare, compareToOdds, simulate } from "./simulat
 
 const N = 1_000_000;
 const pool = fakePool();
+
+it("compte les raretés supplémentaires et leurs garanties dans les statistiques", () => {
+  const rarities = [...Object.keys(DEFAULT_RULES.rates), "CELESTIAL"];
+  const rules = { ...DEFAULT_RULES, rarities, rates: { ...DEFAULT_RULES.rates, CELESTIAL: 0 }, goldenEvery: 1, goldenFloor: "CELESTIAL", divineOdds: 0 };
+  const counts = simulate(seededRng(42), rules, groupByRarity([{ id: "custom", rarity: "CELESTIAL" }]), 20);
+  expect(counts.mythicBoosters).toBe(20);
+  expect(counts.longestDrought).toBe(0);
+  expect(counts.goldenBelowFloor).toBe(0);
+  expect(counts.atLeast.CELESTIAL).toBe(0); // Les boosters dorés ne sont pas comptés parmi les normaux.
+});
 
 describe("simulation d'un million de boosters", () => {
   it("composition seule : chaque emplacement et chaque seuil suivent les parts", { timeout: 60_000 }, () => {
@@ -67,7 +77,8 @@ const typeCases = [
 describe("simulation par type de booster", () => {
   it.each(typeCases)("%s", { timeout: 60_000 }, (_label, floors, typePool) => {
     const rules = { ...plainRules, slotFloors: [...floors] };
-    const counts = simulate(seededRng(20261014), rules, typePool, TYPE_N, noBonus);
+    // Graine renouvelée quand le pool factice a reçu AR et Gold : le flux aléatoire a changé.
+    const counts = simulate(seededRng(20261020), rules, typePool, TYPE_N, noBonus);
     for (const c of compareToOdds(counts, rules, typePool)) {
       expect(Math.abs(c.sigma), `${c.label} : attendu ${c.expected.toFixed(1)}, observé ${c.observed}`).toBeLessThan(5);
     }

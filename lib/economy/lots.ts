@@ -1,6 +1,7 @@
+import { rarityKeySchema } from "@/lib/catalog/definitions";
 import { z } from "@/lib/zod";
 import { localizedSchema } from "@/lib/boosters/types";
-import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 
 // Lots : récompense réutilisable (missions, parrainage, boutique). Zeni, boosters d'un type,
 // cartes précises ou cartes tirées dans une rareté. Saisis dans /admin/lots.
@@ -18,7 +19,7 @@ const quantity = z.number().int().min(1).max(MAX_LOT_QUANTITY);
 export const lotItemSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("BOOSTER"), boosterTypeId: id, quantity }).strict(),
   z.object({ kind: z.literal("CARD"), cardId: id, quantity }).strict(),
-  z.object({ kind: z.literal("RARITY_CARD"), rarity: z.enum(RARITIES), quantity }).strict(),
+  z.object({ kind: z.literal("RARITY_CARD"), rarity: rarityKeySchema, quantity }).strict(),
 ]);
 export type LotItemInput = z.infer<typeof lotItemSchema>;
 

@@ -24,7 +24,7 @@ export const SOCIAL_SETTING_KEYS = [
   "chat.enabled",
   "chat.maxLength",
   "chat.perMinute",
-  "chat.retentionDays",
+  "chat.retentionHours",
   "chat.pollSeconds",
   "notifications.retentionDays",
   "notifications.pollSeconds",

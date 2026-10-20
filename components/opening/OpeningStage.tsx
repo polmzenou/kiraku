@@ -6,7 +6,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { OPEN_COUNTS, type OpenCount } from "@/lib/boosters/catalog";
 import { priceFor, type BoosterShape, type BoosterTheme, type Price } from "@/lib/boosters/types";
 import type { OpenedBoosterView } from "@/lib/boosters/view";
-import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import type { Rarity } from "@/lib/catalog/rarity";
+import { useRarities } from "@/lib/catalog/use-rarities";
 import { openBoosterAction, type OpenBoosterError } from "@/server/actions/boosters";
 import type { BoosterState } from "@/server/boosters/state";
 import { NextFreeIn } from "../boosters/NextFreeIn";
@@ -51,7 +52,8 @@ export type OpeningType = {
  */
 type Props = { type: OpeningType; initialState: BoosterState; isGuest: boolean; credits?: number };
 
-const bestRarity = (boosters: OpenedBoosterView[]): Rarity =>
+/** Meilleure carte du tirage, dans l'ordre du registre (AR et Gold au-dessus de Mythique). */
+const bestRarity = (boosters: OpenedBoosterView[], RARITIES: readonly Rarity[]): Rarity =>
   boosters
     .flatMap((b) => b.cards)
     .reduce<Rarity>((best, c) => (RARITIES.indexOf(c.rarity) > RARITIES.indexOf(best) ? c.rarity : best), "COMMON");
@@ -72,6 +74,7 @@ function maxOpenable(type: OpeningType, state: BoosterState): number {
  * quand l'animation commence : fermer l'onglet ne fait rien perdre.
  */
 export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props) {
+  const rarities = useRarities();
   const t = useTranslations("opening");
   const reduced = useReducedMotion() ?? false;
   const fx = useRitualFx();
@@ -240,7 +243,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
                 count={effectiveCount}
                 armed={armed}
                 reduced={reduced}
-                leak={boosters ? bestRarity(boosters) : null}
+                leak={boosters ? bestRarity(boosters, rarities) : null}
                 variant={variant}
                 onTrigger={() => void trigger()}
                 onOpened={onOpened}

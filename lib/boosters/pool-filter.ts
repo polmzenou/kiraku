@@ -46,14 +46,16 @@ export function parsePoolFilter(raw: unknown): PoolFilter | null {
 
 /** Ce qu'il faut savoir d'une carte pour l'évaluer (carte + œuvre principale). */
 export type PoolCandidate = {
+  origin?: string;
+  boosterIds?: string[];
   id: string;
-  anilistId: number;
+  anilistId: number | null;
   rarity: Rarity;
   gender: string | null;
   role: string | null;
   birthMonth: number | null;
   birthDay: number | null;
-  seriesAnilistId: number;
+  seriesAnilistId: number | null;
   mediaType: string;
   genres: readonly string[];
   tags: readonly string[];
@@ -105,8 +107,8 @@ const someOf = (wanted: readonly string[] | undefined, have: readonly string[]) 
 /** La carte entre-t-elle dans le pool ? Toutes les conditions présentes doivent être vraies. */
 export function matchesFilter(card: PoolCandidate, filter: PoolFilter, ctx: FilterContext): boolean {
   if (filter.cardIds && !filter.cardIds.includes(card.id)) return false;
-  if (filter.anilistIds && !filter.anilistIds.includes(card.anilistId)) return false;
-  if (filter.seriesIds && !filter.seriesIds.includes(card.seriesAnilistId)) return false;
+  if (filter.anilistIds && (card.anilistId === null || !filter.anilistIds.includes(card.anilistId))) return false;
+  if (filter.seriesIds && (card.seriesAnilistId === null || !filter.seriesIds.includes(card.seriesAnilistId))) return false;
   if (!someOf(filter.tags, card.tags)) return false;
   if (!someOf(filter.genres, card.genres)) return false;
   if (filter.gender && card.gender !== filter.gender) return false;

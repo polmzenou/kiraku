@@ -1,0 +1,70 @@
+import { describe, expect, it } from "vitest";
+import {
+  earnedBadges,
+  evaluateCondition,
+  labelFor,
+  orderedBadges,
+  parseCondition,
+  referencedSeries,
+  type ProfileStats,
+} from "./conditions";
+
+const stats: ProfileStats = {
+  uniqueCards: 120,
+  byRarity: { MYTHIC: 2, LEGENDARY: 7 },
+  completedSeries: new Set(["csm"]),
+  seriesProgress: { csm: { owned: 12, total: 12 }, op: { owned: 2, total: 195 } },
+  boostersOpened: 340,
+  tradesDone: 3,
+  tier: "GOLD",
+};
+
+describe("conditions de déblocage", () => {
+  it.each([
+    [{ type: "ALWAYS" }, true, 1, 1],
+    [{ type: "UNIQUE_CARDS", n: 100 }, true, 100, 100],
+    [{ type: "UNIQUE_CARDS", n: 1000 }, false, 120, 1000],
+    [{ type: "RARITY_OWNED", rarity: "MYTHIC", n: 3 }, false, 2, 3],
+    [{ type: "RARITY_OWNED", rarity: "LEGENDARY", n: 5 }, true, 5, 5],
+    [{ type: "SERIES_COMPLETE", seriesId: "csm" }, true, 12, 12],
+    [{ type: "SERIES_COMPLETE", seriesId: "op" }, false, 2, 195],
+    [{ type: "SERIES_COMPLETED_COUNT", n: 10 }, false, 1, 10],
+    [{ type: "BOOSTERS_OPENED", n: 100 }, true, 100, 100],
+    [{ type: "TRADES_DONE", n: 25 }, false, 3, 25],
+    [{ type: "RANK_TIER", tier: "SILVER" }, true, 2, 2],
+    [{ type: "RANK_TIER", tier: "CHAMPION" }, false, 3, 6],
+  ])("%o", (raw, unlocked, current, goal) => {
+    expect(evaluateCondition(parseCondition(raw), stats)).toEqual({ unlocked, current, goal });
+  });
+
+  it("une condition illisible ou une série inconnue ne débloque rien", () => {
+    expect(evaluateCondition(parseCondition({ type: "NOPE" }), stats).unlocked).toBe(false);
+    expect(evaluateCondition(parseCondition({ type: "SERIES_COMPLETE", seriesId: "inconnue" }), stats).unlocked).toBe(false);
+  });
+
+  it("liste les séries à charger", () => {
+    expect(referencedSeries([parseCondition({ type: "SERIES_COMPLETE", seriesId: "a" }), null, parseCondition({ type: "SERIES_COMPLETE", seriesId: "a" })])).toEqual(["a"]);
+  });
+});
+
+describe("libellés accordés", () => {
+  const label = { fr: "Collectionneur", frFem: "Collectionneuse", en: "Collector" };
+  it("accorde en français, garde l'anglais tel quel", () => {
+    expect(labelFor(label, "fr", "MASC")).toBe("Collectionneur");
+    expect(labelFor(label, "fr", "FEM")).toBe("Collectionneuse");
+    expect(labelFor(label, "en", "FEM")).toBe("Collector");
+    expect(labelFor({ fr: "Devil Hunter" }, "en", "FEM")).toBe("Devil Hunter");
+  });
+});
+
+describe("badges", () => {
+  const base = { createdAt: new Date("2026-10-01"), pioneerUntil: new Date("2026-12-31"), qualifiedReferrals: 3, ambassadorReferrals: 3, discordLinked: true };
+  it("dérive les badges du compte", () => {
+    expect(earnedBadges(base)).toEqual(["PIONEER", "AMBASSADOR", "VERIFIED"]);
+    expect(earnedBadges({ ...base, pioneerUntil: null, qualifiedReferrals: 1, discordLinked: false })).toEqual([]);
+  });
+  it("respecte l'ordre choisi parmi les badges obtenus", () => {
+    expect(orderedBadges(["PIONEER", "VERIFIED"], ["VERIFIED", "AMBASSADOR"])).toEqual(["VERIFIED"]);
+    expect(orderedBadges(["PIONEER", "VERIFIED"], [])).toEqual(["PIONEER", "VERIFIED"]);
+  });
+});

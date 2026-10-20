@@ -24,6 +24,7 @@
     "admin:grant": "tsx scripts/grant-admin.mts",
     "seed:boosters": "tsx scripts/seed-boosters.mts",
     "seed:missions": "tsx scripts/seed-missions.mts",
+    "seed:cosmetics": "tsx scripts/seed-cosmetics.mts",
     "seed:legal": "tsx scripts/seed-legal.mts"
   },
   "dependencies": {
@@ -34,6 +35,7 @@
     "@tanstack/react-virtual": "^3.13.12",
     "@upstash/ratelimit": "^2.2.0",
     "@upstash/redis": "^1.39.0",
+    "@vercel/blob": "^2.8.2",
     "@vercel/speed-insights": "^1.3.1",
     "ably": "^2.29.0",
     "motion": "^12.43.0",
@@ -48,6 +50,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.4.3",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^22.20.5",
     "@types/react": "^19",

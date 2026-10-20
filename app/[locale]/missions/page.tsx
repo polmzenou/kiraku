@@ -7,7 +7,7 @@ import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { localize, localizedSchema } from "@/lib/boosters/types";
-import { RARITY_SEAL } from "@/lib/catalog/rarity";
+import { getRaritySeals } from "@/server/catalog/rarities";
 import { MISSION_PERIODS, shownProgress, type MissionMetric } from "@/lib/economy/missions";
 import { prisma } from "@/server/db";
 import { lotViews } from "@/server/economy/lot-view";
@@ -33,6 +33,7 @@ const METRIC_KANJI: Record<MissionMetric, string> = {
 
 /** Missions du jour et de la semaine : progression, récompense, bouton Réclamer. */
 export default async function MissionsPage() {
+  const RARITY_SEAL = await getRaritySeals();
   const [t, tRarity, user, locale] = await Promise.all([
     getTranslations("economy.missions"),
     getTranslations("rarity"),

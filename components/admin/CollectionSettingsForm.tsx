@@ -1,9 +1,11 @@
 "use client";
 
+import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
+
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
-import { RARITIES, RARITY_SEAL } from "@/lib/catalog/rarity";
+
 import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
 import {
   changedCollectionKeys,
@@ -42,6 +44,8 @@ function NumberInput({ label, value, onChange, min, max }: { label: React.ReactN
 
 /** Réglages de la collection : Zeni par doublon recyclé et taille de la vitrine. */
 export function CollectionSettingsForm({ initial }: { initial: CollectionSettings }) {
+  const RARITIES = useRarities();
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("admin.collection");
   const tRarity = useTranslations("rarity");
   const router = useRouter();

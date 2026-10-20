@@ -1,3 +1,5 @@
+
+import { getRarities } from "@/server/catalog/rarities";
 import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -13,7 +15,7 @@ import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { routing } from "@/i18n/routing";
-import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { albumQuery, isAlbumView, parseAlbumParams } from "@/lib/collection/albums";
 import { collectionQuery, hasFilters, parseCollectionParams } from "@/lib/collection/params";
 import { getAlbumPage } from "@/server/collection/albums";
@@ -29,6 +31,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/collecti
 }
 
 export default async function CollectionPage({ searchParams }: PageProps<"/[locale]/collection">) {
+  const RARITIES = await getRarities();
   const [t, user, locale] = await Promise.all([getTranslations("collection"), getCurrentUser(), getLocale()]);
   if (!user) {
     return (
@@ -40,7 +43,7 @@ export default async function CollectionPage({ searchParams }: PageProps<"/[loca
 
   const raw = await searchParams;
   const albumView = isAlbumView(raw);
-  const params = parseCollectionParams(raw);
+  const params = parseCollectionParams(raw, await getRarities());
   const albumParams = parseAlbumParams(raw);
   const values = await getSetting("collection.recycleValues");
   const [summary, page, series, albums] = await Promise.all([

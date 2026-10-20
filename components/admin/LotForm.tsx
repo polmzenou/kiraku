@@ -1,9 +1,11 @@
 "use client";
 
+import { useRarities } from "@/lib/catalog/use-rarities";
+
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { lotInputSchema, MAX_LOT_ITEMS, MAX_LOT_QUANTITY, MAX_LOT_ZENI, type LotInput, type LotItemInput } from "@/lib/economy/lots";
 import { searchFeaturedCards, type FeaturedCandidate } from "@/server/actions/admin-boosters";
 import { saveLotAction } from "@/server/actions/admin-economy";
@@ -24,6 +26,7 @@ export function LotForm({
   boosterTypes: Option[];
   cardNames: Record<string, string>;
 }) {
+  const RARITIES = useRarities();
   const t = useTranslations("admin.economy");
   const tRarity = useTranslations("rarity");
   const router = useRouter();

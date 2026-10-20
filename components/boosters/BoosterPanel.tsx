@@ -1,8 +1,10 @@
+
+import { useRaritySeals } from "@/lib/catalog/use-rarities";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import type { BoosterPanelData } from "@/lib/boosters/panel";
 import type { FilterContext } from "@/lib/boosters/pool-filter";
 import { localize, type BoosterTypeView } from "@/lib/boosters/types";
-import { RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import type { BoosterState } from "@/server/boosters/state";
 import { BoosterArt } from "./BoosterArt";
 import { FilterText } from "./FilterText";
@@ -34,6 +36,7 @@ type Props = {
 
 /** Panneau « Booster sélectionné » : contenu, garanties, compteurs, chances calculées et bouton Ouvrir. */
 export function BoosterPanel({ type, panel, ctx, state, withOpen = true, headingId = "selected-booster" }: Props) {
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("boosters");
   const tRarity = useTranslations("rarity");
   const format = useFormatter();

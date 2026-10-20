@@ -16,7 +16,7 @@ export async function listAdminUsers(query: string, filter: UserFilter, requeste
   const users = await prisma.user.findMany({ where, orderBy: [{ createdAt: "desc" }, { id: "desc" }], skip: page * ADMIN_USER_PAGE_SIZE, take: ADMIN_USER_PAGE_SIZE,
     select: { id: true, username: true, email: true, role: true, bannedAt: true, isGuest: true, coins: true, createdAt: true,
       deletionRequestedAt: true, anonymizedAt: true,
-      _count: { select: { cards: true, discoveries: { where: { card: { rank: { not: null } } } } } } },
+      _count: { select: { cards: true, discoveries: { where: { card: { status: "PUBLISHED" } } } } } },
   });
   return { users, total, page, pages };
 }
@@ -32,10 +32,10 @@ export async function getAdminUser(userId: string, locale: string) {
   } });
   if (!user) return null;
   const [discoveries, catalogTotal, uniqueCards, ownedCatalogCards, boosterTypes, ledger, openings, logs] = await Promise.all([
-    prisma.discovery.count({ where: { userId, card: { rank: { not: null } } } }),
-    prisma.card.count({ where: { rank: { not: null } } }),
+    prisma.discovery.count({ where: { userId, card: { status: "PUBLISHED" } } }),
+    prisma.card.count({ where: { status: "PUBLISHED" } }),
     prisma.card.count({ where: { copies: { some: { ownerId: userId } } } }),
-    prisma.card.count({ where: { rank: { not: null }, copies: { some: { ownerId: userId } } } }),
+    prisma.card.count({ where: { status: "PUBLISHED", copies: { some: { ownerId: userId } } } }),
     prisma.boosterType.findMany({ orderBy: [{ family: "asc" }, { sortOrder: "asc" }, { id: "asc" }], select: { id: true, name: true, active: true, slug: true } }),
     prisma.coinTransaction.findMany({ where: { userId }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 20, select: { id: true, amount: true, reason: true, balanceAfter: true, createdAt: true } }),
     prisma.boosterOpening.findMany({ where: { userId }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 15, select: { id: true, boosterSlug: true, createdAt: true, golden: true, divine: true } }),
@@ -57,13 +57,13 @@ export async function getAdminUserCards(userId: string, query: string, requested
   const pages = Math.max(1, Math.ceil(total / ADMIN_USER_PAGE_SIZE));
   const page = Math.min(requestedPage, pages - 1);
   const cards = await prisma.card.findMany({ where, orderBy: [{ rank: { sort: "asc", nulls: "last" } }, { id: "asc" }], skip: page * ADMIN_USER_PAGE_SIZE, take: ADMIN_USER_PAGE_SIZE,
-    select: { id: true, anilistId: true, name: true, rarity: true, rank: true, discoveries: { where: { userId }, select: { cardId: true } },
+    select: { id: true, anilistId: true, publicId: true, appearance: true, name: true, rarity: true, rank: true, discoveries: { where: { userId }, select: { cardId: true } },
       _count: { select: { copies: { where: { ownerId: userId } } } } },
   });
   return { cards, total, page, pages };
 }
 
 export async function adminCardById(id: string) {
-  const card = await prisma.card.findUnique({ where: { id }, select: { id: true, anilistId: true, name: true, imageUrl: true, rarity: true, rank: true, series: { select: { titleRomaji: true } } } });
-  return card ? { ...card, series: card.series.titleRomaji } : null;
+  const card = await prisma.card.findUnique({ where: { id }, select: { id: true, anilistId: true, publicId: true, appearance: true, name: true, imageUrl: true, rarity: true, rank: true, series: { select: { titleRomaji: true } } } });
+  return card ? { ...card, anilistId: card.publicId, series: card.series.titleRomaji } : null;
 }

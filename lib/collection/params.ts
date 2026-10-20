@@ -1,3 +1,4 @@
+import { rarityKeySchema } from "@/lib/catalog/definitions";
 import { z } from "@/lib/zod";
 import { RARITIES, type Rarity } from "../catalog/rarity";
 import { normalizeSearch, SEARCH_MAX_LENGTH } from "../catalog/search";
@@ -46,13 +47,13 @@ type Raw = Record<string, string | string[] | undefined>;
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 const qSchema = z.string().max(SEARCH_MAX_LENGTH * 2);
-const raritySchema = z.enum(RARITIES);
+const raritySchema = rarityKeySchema;
 const seriesSchema = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
 const sortSchema = z.enum(COLLECTION_SORTS);
 const dirSchema = z.enum(["asc", "desc"]);
 
 /** Paramètres d'URL de la collection ; une valeur invalide est simplement ignorée. */
-export function parseCollectionParams(raw: Raw): CollectionParams {
+export function parseCollectionParams(raw: Raw, knownRarities: readonly string[] = RARITIES): CollectionParams {
   const qRaw = qSchema.safeParse(first(raw.q) ?? "");
   const q = qRaw.success ? qRaw.data.trim().slice(0, SEARCH_MAX_LENGTH) : "";
   const terms = normalizeSearch(q).split(" ").filter(Boolean).slice(0, MAX_TERMS);
@@ -64,7 +65,7 @@ export function parseCollectionParams(raw: Raw): CollectionParams {
       .map((r) => raritySchema.safeParse(r.trim()))
       .flatMap((r) => (r.success ? [r.data] : [])),
   );
-  const rarities = RARITIES.filter((r) => wanted.has(r));
+  const rarities = knownRarities.filter((r) => wanted.has(r));
 
   const series = seriesSchema.safeParse(first(raw.series));
   const sort = sortSchema.safeParse(first(raw.sort));

@@ -1,6 +1,6 @@
 // Types de boosters en base : lecture validée, pools filtrés et seed. Volontairement sans
 // "server-only" ni server/db.ts : le client Prisma est injecté (serveur, scripts, tests).
-import type { BoosterType as BoosterTypeRow, PrismaClient } from "@/generated/prisma/client";
+import type { BoosterType as BoosterTypeRow, PrismaClient, Prisma } from "@/generated/prisma/client";
 import { groupByRarity, poolCounts, type CardPool } from "@/lib/boosters/draw";
 import { filterPool, parsePoolFilter, type FilterContext, type PoolCandidate } from "@/lib/boosters/pool-filter";
 import {
@@ -14,7 +14,7 @@ import {
 import type { Rarity } from "@/lib/catalog/rarity";
 import type { BoosterSeed } from "@/prisma/seed/booster-types";
 
-type Db = Pick<PrismaClient, "boosterType" | "card">;
+type Db = Pick<PrismaClient, "boosterType" | "card"> | Pick<Prisma.TransactionClient, "boosterType" | "card">;
 
 /** Ligne BoosterType → vue validée (thème, noms et filtre contrôlés par Zod). */
 export function toBoosterTypeView(row: Omit<BoosterTypeRow, "poolCardIds">): BoosterTypeView {
@@ -49,11 +49,13 @@ export function toBoosterTypeView(row: Omit<BoosterTypeRow, "poolCardIds">): Boo
 /** Toutes les cartes classées avec les champs de filtre de leur œuvre principale (rang croissant). */
 export async function loadCandidates(db: Pick<PrismaClient, "card">): Promise<PoolCandidate[]> {
   const rows = await db.card.findMany({
-    where: { rank: { not: null } },
+    where: { status: "PUBLISHED", dropWeight: { gt: 0 } },
     orderBy: { rank: "asc" },
     select: {
       id: true,
       anilistId: true,
+      origin: true,
+      boosterIds: true,
       rarity: true,
       gender: true,
       role: true,
@@ -66,6 +68,8 @@ export async function loadCandidates(db: Pick<PrismaClient, "card">): Promise<Po
   });
   return rows.map((c) => ({
     id: c.id,
+    origin: c.origin,
+    boosterIds: c.boosterIds,
     anilistId: c.anilistId,
     rarity: c.rarity as Rarity,
     gender: c.gender,
@@ -88,20 +92,23 @@ export async function loadCandidates(db: Pick<PrismaClient, "card">): Promise<Po
  * (toujours tirables, même hors filtre). Un filtre invalide donne un pool vide.
  */
 export function computePoolCards(
-  type: Pick<BoosterTypeView, "filter" | "featuredCardIds">,
+  type: Pick<BoosterTypeView, "filter" | "featuredCardIds"> & { id?: string },
   candidates: readonly PoolCandidate[],
   ctx: FilterContext,
 ): { id: string; rarity: Rarity }[] {
   if (!type.filter) return [];
-  const kept = filterPool(candidates, type.filter, ctx);
+  const kept = [
+    ...filterPool(candidates.filter((c) => c.origin !== "CUSTOM"), type.filter, ctx),
+    ...candidates.filter((c) => c.origin === "CUSTOM" && type.id && c.boosterIds?.includes(type.id)),
+  ];
   if (type.featuredCardIds.length === 0) return kept;
   const ids = new Set(kept.map((c) => c.id));
   const featured = new Set(type.featuredCardIds);
-  return [...kept, ...candidates.filter((c) => featured.has(c.id) && !ids.has(c.id))];
+  return [...kept, ...candidates.filter((c) => featured.has(c.id) && !ids.has(c.id) && (c.origin !== "CUSTOM" || (type.id && c.boosterIds?.includes(type.id))))];
 }
 
 export function computePool(
-  type: Pick<BoosterTypeView, "filter" | "featuredCardIds">,
+  type: Pick<BoosterTypeView, "filter" | "featuredCardIds"> & { id?: string },
   candidates: readonly PoolCandidate[],
   ctx: FilterContext,
 ): CardPool {

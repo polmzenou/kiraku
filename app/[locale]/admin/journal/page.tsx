@@ -6,7 +6,6 @@ import { requireAdmin } from "@/server/admin";
 import { adminTargetHref, listAdminLogs } from "@/server/admin/logs";
 import { inputClass } from "@/components/ui/Field";
 
-
 /** Lisible et échappé par React : jamais de HTML injecté depuis le journal. */
 function json(value: unknown): string {
   if (value === null || value === undefined) return "—";

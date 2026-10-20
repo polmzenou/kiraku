@@ -1,9 +1,11 @@
 "use client";
 
+import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
+
 import { useTranslations } from "next-intl";
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import type { CollectionSummary } from "@/lib/collection/view";
 import { recycleAllAction } from "@/server/actions/collection";
 import { Button } from "../ui/Button";
@@ -17,6 +19,8 @@ import { selectClass } from "../ui/Field";
  * Le serveur recalcule tout et refuse si le gain n'est plus celui affiché.
  */
 export function RecycleAllSheet({ byRarity }: { byRarity: CollectionSummary["byRarity"] }) {
+  const RARITIES = useRarities();
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("collection.recycleAll");
   const tRarity = useTranslations("rarity");
   const router = useRouter();

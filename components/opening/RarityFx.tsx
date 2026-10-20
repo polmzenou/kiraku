@@ -1,7 +1,9 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import type { Rarity } from "@/lib/catalog/rarity";
+import type { BaseRarity, Rarity } from "@/lib/catalog/rarity";
+import { fxTier } from "@/lib/catalog/tiers";
+import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 
 // Mise en scène de la révélation, par rareté (particules en CSS : transform et opacity seulement).
 // Rendu au-dessus et autour de la carte qui vient de se retourner ; rien pour Commune et Peu commune.
@@ -14,6 +16,8 @@ export const CHARGE_MS: Record<Rarity, number> = {
   EPIC: 480,
   LEGENDARY: 950,
   MYTHIC: 1500,
+  AR: 1700,
+  GOLD: 1900,
 };
 
 /** Couleur de la lumière qui s'échappe du sachet, selon la meilleure carte. */
@@ -24,7 +28,14 @@ export const LEAK_COLOR: Record<Rarity, string> = {
   EPIC: "rgb(179 145 219 / 0.9)",
   LEGENDARY: "rgb(242 216 138 / 0.95)",
   MYTHIC: "rgb(255 236 246 / 0.95)",
+  AR: "rgb(160 190 240 / 0.95)",
+  GOLD: "rgb(255 226 140 / 0.98)",
 };
+
+type Ordered = readonly { key: string; sortOrder: number }[];
+/** Raretés personnalisées sans réglage propre : celui de leur palier de base (fxTier). */
+export const chargeFor = (rarity: Rarity, definitions: Ordered) => CHARGE_MS[rarity] ?? CHARGE_MS[fxTier(rarity, definitions)];
+export const leakFor = (rarity: Rarity, definitions: Ordered) => LEAK_COLOR[rarity] ?? LEAK_COLOR[fxTier(rarity, definitions)];
 
 const v = (vars: Record<string, string | number>) => vars as CSSProperties;
 
@@ -36,6 +47,41 @@ const spread = (i: number, n: number, radius: number) => {
 };
 
 export function RarityFx({ rarity, compact = false }: { rarity: Rarity; compact?: boolean }) {
+  const tier = fxTier(rarity, useRarityDefinitions());
+  return (
+    <>
+      <TierFx rarity={tier} compact={compact} />
+      {rarity === "AR" && <PrismFx />}
+      {rarity === "GOLD" && <GoldLeafFx compact={compact} />}
+    </>
+  );
+}
+
+/** AR : anneaux prismatiques shu, ai et kin autour de la forme alternative. */
+function PrismFx() {
+  return (
+    <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-0">
+      {(["#7fa3d1", "#d9b556", "#e0533f"] as const).map((ring, i) => (
+        <span key={ring} className="fx-ring aspect-square w-[105%]" style={v({ "--ring": ring, "--d": `${0.9 + i * 0.14}s` })} />
+      ))}
+    </span>
+  );
+}
+
+/** Gold : pluie d'éclats de feuille d'or autour de la carte. */
+function GoldLeafFx({ compact }: { compact: boolean }) {
+  const n = compact ? 14 : 32, scale = compact ? 0.55 : 1;
+  return (
+    <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-30">
+      {Array.from({ length: n }, (_, i) => {
+        const { dx, dy } = spread(i, n, 210 * scale);
+        return <span key={i} className="fx-flake" style={v({ "--dx": dx, "--dy": dy, "--d": `${0.8 + (i % 6) * 0.05}s`, "--r": `${160 + i * 41}deg`, "--s": `${6 + (i % 4) * 2}px` })} />;
+      })}
+    </span>
+  );
+}
+
+function TierFx({ rarity, compact = false }: { rarity: BaseRarity; compact?: boolean }) {
   const scale = compact ? 0.55 : 1;
 
   if (rarity === "RARE") {

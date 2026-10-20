@@ -1,3 +1,4 @@
+import { getRarities } from "@/server/catalog/rarities";
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { CollectionFilters } from "@/components/collection/CollectionFilters";
@@ -38,7 +39,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pag
     );
   }
 
-  const filters = parseCollectionParams(await searchParams);
+  const filters = parseCollectionParams(await searchParams, await getRarities());
   const values = await getSetting("collection.recycleValues");
   const [summary, page, series] = await Promise.all([
     getCollectionSummary(owner.id, values),

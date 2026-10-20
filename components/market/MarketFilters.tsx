@@ -1,6 +1,7 @@
+
+import { getRarities } from "@/server/catalog/rarities";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { RARITIES } from "@/lib/catalog/rarity";
 import { MARKET_SORTS, type MarketParams } from "@/lib/market/filters";
 import { badgeClasses } from "../ui/Badge";
 import { buttonClasses } from "../ui/Button";
@@ -14,6 +15,7 @@ const input = inputClass;
  * téléphone. Le serveur revalide chaque paramètre (lib/market/filters.ts).
  */
 export async function MarketFilters({ params }: { params: MarketParams }) {
+  const RARITIES = await getRarities();
   const [t, tRarity] = await Promise.all([getTranslations("market.filters"), getTranslations("rarity")]);
   const reset = params.tab === "all" ? "/marche" : `/marche?onglet=${params.tab}`;
   const count = [params.rarity, params.q || null, params.minPrice, params.maxPrice, params.buyout || null].filter((v) => v !== null).length;

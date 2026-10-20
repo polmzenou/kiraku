@@ -88,6 +88,14 @@ model User {
   profileVisibility   ProfileVisibility @default(PUBLIC) // invités créés en PRIVATE
   showCollection      Boolean           @default(true) // collection complète visible sur le profil
   privacyChosenAt     DateTime? // réglé par le joueur : l'inscription ne le change plus
+  // Personnalisation du profil (étape 12h) : bio, accord des titres, titre et cadre débloqués, ordre des badges
+  bio                 String?           @db.VarChar(160)
+  titleAgreement      TitleAgreement    @default(MASC)
+  titleId             String?
+  title               Cosmetic?         @relation("userTitle", fields: [titleId], references: [id], onDelete: SetNull)
+  frameId             String?
+  frame               Cosmetic?         @relation("userFrame", fields: [frameId], references: [id], onDelete: SetNull)
+  badgeOrder          String[]          @default([])
   createdAt           DateTime          @default(now())
 
   accounts     Account[]
@@ -221,6 +229,7 @@ model CoinTransaction {
 
 // --- Catalogue (étape 2) ---
 
+// Compatibilité avec les versions déjà déployées : les anciennes colonnes restent en place.
 enum Rarity {
   COMMON
   UNCOMMON
@@ -228,6 +237,29 @@ enum Rarity {
   EPIC
   LEGENDARY
   MYTHIC
+}
+
+model RarityDefinition {
+  key             String        @id
+  nameFr          String
+  nameEn          String
+  sortOrder       Int
+  seal            String
+  appearance      Json          @default("{}")
+  legacyBase      Rarity        @default(COMMON)
+  /// Les cartes de cette rareté sont des variantes (AR, Gold) : carte de base et image propre obligatoires.
+  variantRequired Boolean       @default(false)
+  updatedAt       DateTime      @updatedAt
+  cards           Card[]
+  notablePulls    NotablePull[]
+  lotItems        LotItem[]
+  missions        Mission[]
+}
+
+enum CatalogCardStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
 
 enum CatalogImportStatus {
@@ -240,7 +272,7 @@ enum CatalogImportStatus {
 // Œuvre principale d'un personnage sur AniList (champs de filtre des boosters)
 model Series {
   id           String   @id @default(cuid())
-  anilistId    Int      @unique
+  anilistId    Int?     @unique
   type         String // ANIME | MANGA
   titleRomaji  String
   titleEnglish String? // affiché en anglais quand il existe
@@ -257,38 +289,55 @@ model Series {
 
 // Le personnage (le modèle de carte) ; l'exemplaire possédé sera UserCard
 model Card {
-  id            String          @id @default(cuid())
-  anilistId     Int             @unique // id du personnage AniList = /wiki/[anilistId]
-  name          String
-  nameNative    String? // nom japonais, écrit verticalement sur la fuda
-  imageUrl      String
-  favorites     Int // favoris AniList au dernier import
-  rank          Int?            @unique // 1 = le plus populaire ; null = sorti du catalogue
-  rarity        Rarity
-  power         Int // 力 attaque en combat
-  ki            Int // 気 défense ; HP et vitesse sont dérivés
-  seriesId      String
-  series        Series          @relation(fields: [seriesId], references: [id])
-  gender        String? // Female | Male | … (AniList, souvent vide)
-  birthMonth    Int?
-  birthDay      Int?
-  role          String? // MAIN | SUPPORTING | BACKGROUND dans l'œuvre principale
-  searchText    String // nom, nom natif et titres, en minuscules sans accents
-  addedImportId String? // import qui a fait entrer la carte (nouveautés)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  copies        UserCard[]
-  discoveries   Discovery[]
-  lotItems      LotItem[]
-  auctions      Auction[]
-  wishedBy      WishlistEntry[]
-  notablePulls  NotablePull[]
-  tradesWanted  Trade[]         @relation("tradeWanted")
-  tradesChosen  Trade[]         @relation("tradeChosen")
-  tradeOffers   TradeOffer[]
+  id               String            @id @default(cuid())
+  anilistId        Int?              @unique // source AniList uniquement
+  publicId         Int               @unique @default(autoincrement())
+  origin           String            @default("ANILIST")
+  status           CatalogCardStatus @default(PUBLISHED)
+  description      Json              @default("{}")
+  appearance       Json              @default("{}")
+  dropWeight       Int               @default(1)
+  adminOverrides   String[]          @default([])
+  boosterIds       String[]          @default([]) // types explicitement sélectionnés pour les cartes manuelles
+  name             String
+  nameNative       String? // nom japonais, écrit verticalement sur la fuda
+  imageUrl         String
+  favorites        Int // favoris AniList au dernier import
+  rank             Int?              @unique // 1 = le plus populaire ; null = sorti du catalogue
+  rarity           String            @map("rarityKey")
+  legacyRarity     Rarity            @default(COMMON) @map("rarity")
+  rarityDefinition RarityDefinition  @relation(fields: [rarity], references: [key])
+  power            Int // 力 attaque en combat
+  ki               Int // 気 défense ; HP et vitesse sont dérivés
+  seriesId         String
+  series           Series            @relation(fields: [seriesId], references: [id])
+  gender           String? // Female | Male | … (AniList, souvent vide)
+  birthMonth       Int?
+  birthDay         Int?
+  role             String? // MAIN | SUPPORTING | BACKGROUND dans l'œuvre principale
+  searchText       String // nom, nom natif et titres, en minuscules sans accents
+  variantOfId      String? // carte de base d'une variante (forme alternative AR, version Gold)
+  variantOf        Card?             @relation("cardVariants", fields: [variantOfId], references: [id], onDelete: Restrict)
+  variants         Card[]            @relation("cardVariants")
+  formName         String? // nom de la forme : « Gear 5 », « Bankai »
+  addedImportId    String? // import qui a fait entrer la carte (nouveautés)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  copies           UserCard[]
+  discoveries      Discovery[]
+  lotItems         LotItem[]
+  auctions         Auction[]
+  wishedBy         WishlistEntry[]
+  notablePulls     NotablePull[]
+  tradesWanted     Trade[]           @relation("tradeWanted")
+  tradesChosen     Trade[]           @relation("tradeChosen")
+  tradeOffers      TradeOffer[]
 
-  @@index([rarity, rank])
+  @@index([rarity, rank], map: "Card_rarityKey_rank_idx")
+  @@index([legacyRarity, rank], map: "Card_rarity_rank_idx")
   @@index([seriesId])
+  @@index([status, origin])
+  @@index([variantOfId])
   @@index([searchText(ops: raw("gin_trgm_ops"))], type: Gin)
 }
 
@@ -364,14 +413,16 @@ model BoosterOpening {
 // Gros tirage (Épique ou mieux) sorti d'un booster : carrousel « En direct » de l'accueil.
 // Écrit dans la transaction d'ouverture ; la rareté affichée se règle à la lecture (home.pullFeed.*).
 model NotablePull {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cardId      String
-  card        Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
-  rarity      Rarity
-  boosterSlug String
-  createdAt   DateTime @default(now())
+  id               String           @id @default(cuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardId           String
+  card             Card             @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  rarity           String           @map("rarityKey")
+  legacyRarity     Rarity           @default(COMMON) @map("rarity")
+  rarityDefinition RarityDefinition @relation(fields: [rarity], references: [key])
+  boosterSlug      String
+  createdAt        DateTime         @default(now())
 
   @@index([createdAt])
 }
@@ -636,16 +687,18 @@ model Lot {
 }
 
 model LotItem {
-  id            String       @id @default(cuid())
-  lotId         String
-  lot           Lot          @relation(fields: [lotId], references: [id], onDelete: Cascade)
-  kind          LotItemKind
-  boosterTypeId String?
-  boosterType   BoosterType? @relation(fields: [boosterTypeId], references: [id])
-  cardId        String?
-  card          Card?        @relation(fields: [cardId], references: [id])
-  rarity        Rarity?
-  quantity      Int          @default(1)
+  id               String            @id @default(cuid())
+  lotId            String
+  lot              Lot               @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  kind             LotItemKind
+  boosterTypeId    String?
+  boosterType      BoosterType?      @relation(fields: [boosterTypeId], references: [id])
+  cardId           String?
+  card             Card?             @relation(fields: [cardId], references: [id])
+  rarity           String?           @map("rarityKey")
+  legacyRarity     Rarity?           @map("rarity")
+  rarityDefinition RarityDefinition? @relation(fields: [rarity], references: [key])
+  quantity         Int               @default(1)
 
   @@index([lotId])
 }
@@ -668,20 +721,22 @@ enum MissionMetric {
 }
 
 model Mission {
-  id        String        @id @default(cuid())
-  key       String        @unique // ex. daily-open-5
-  period    MissionPeriod
-  metric    MissionMetric
-  goal      Int
-  rarity    Rarity? // PULL_RARITY seulement
-  title     Json? // { fr, en } ; absent = texte généré depuis metric et goal
-  lotId     String
-  lot       Lot           @relation(fields: [lotId], references: [id])
-  active    Boolean       @default(true)
-  sortOrder Int           @default(0)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  claims    UserMission[]
+  id               String            @id @default(cuid())
+  key              String            @unique // ex. daily-open-5
+  period           MissionPeriod
+  metric           MissionMetric
+  goal             Int
+  rarity           String?           @map("rarityKey") // PULL_RARITY seulement
+  legacyRarity     Rarity?           @map("rarity")
+  rarityDefinition RarityDefinition? @relation(fields: [rarity], references: [key])
+  title            Json? // { fr, en } ; absent = texte généré depuis metric et goal
+  lotId            String
+  lot              Lot               @relation(fields: [lotId], references: [id])
+  active           Boolean           @default(true)
+  sortOrder        Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  claims           UserMission[]
 
   @@index([active, period, sortOrder])
 }
@@ -1149,4 +1204,35 @@ model ChatMessage {
   @@index([pairKey, createdAt])
   @@index([recipientId, readAt])
   @@index([createdAt])
+}
+
+// --- Personnalisation du profil (étape 12h) ---
+
+enum TitleAgreement {
+  MASC
+  FEM
+}
+
+enum CosmeticKind {
+  TITLE
+  FRAME
+}
+
+// Titre ou cadre d'avatar, débloqué par une condition (lib/profile/conditions.ts), géré dans /admin/cosmetiques.
+model Cosmetic {
+  id          String       @id @default(cuid())
+  kind        CosmeticKind
+  slug        String       @unique
+  label       Json // { fr, frFem?, en }
+  hint        Json         @default("{}") // { fr, en } : comment le débloquer
+  frameStyle  String? // style visuel d'un cadre (lib/profile/frames.ts)
+  condition   Json // ProfileCondition
+  sortOrder   Int          @default(0)
+  active      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  titledUsers User[]       @relation("userTitle")
+  framedUsers User[]       @relation("userFrame")
+
+  @@index([kind, active, sortOrder])
 }

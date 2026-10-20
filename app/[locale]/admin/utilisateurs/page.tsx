@@ -8,7 +8,6 @@ import { requireAdmin } from "@/server/admin";
 import { listAdminUsers } from "@/server/admin/users";
 import { inputClass, selectClass } from "@/components/ui/Field";
 
-
 export default async function AdminUsersPage({ searchParams }: PageProps<"/[locale]/admin/utilisateurs">) {
   const admin = await requireAdmin();
   const params = parseUserListParams(await searchParams);

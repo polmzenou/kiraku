@@ -1,9 +1,11 @@
 "use client";
 
+import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
+
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
-import { RARITIES, RARITY_SEAL } from "@/lib/catalog/rarity";
+
 import { changedSocialKeys, socialSettingsSchema, type SocialSettings } from "@/lib/settings/social-form";
 import { updateSocialSettings } from "@/server/actions/admin-settings";
 import { Button } from "../ui/Button";
@@ -30,7 +32,7 @@ const LIMITS: Record<NumberKey, [number, number]> = {
   "trades.perDay": [1, 500],
   "chat.maxLength": [20, 500],
   "chat.perMinute": [1, 120],
-  "chat.retentionDays": [1, 365],
+  "chat.retentionHours": [1, 24 * 365],
   "chat.pollSeconds": [3, 300],
   "notifications.retentionDays": [1, 365],
   "notifications.pollSeconds": [10, 600],
@@ -71,6 +73,8 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
 
 /** Réglages du social : interrupteurs, limites anti-spam et règles anti-farm des cadeaux. */
 export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
+  const RARITIES = useRarities();
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("admin.social");
   const tRarity = useTranslations("rarity");
   const router = useRouter();
@@ -187,7 +191,7 @@ export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
         <div className="grid gap-3 sm:grid-cols-2">
           {num("chat.maxLength")}
           {num("chat.perMinute")}
-          {num("chat.retentionDays")}
+          {num("chat.retentionHours")}
           {num("chat.pollSeconds")}
         </div>
         <p className="text-xs text-text-muted">{t("chatHint")}</p>

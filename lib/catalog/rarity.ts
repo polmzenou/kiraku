@@ -2,8 +2,12 @@ import type { SettingValue } from "@/lib/settings/defaults";
 
 // Rareté par percentile de rang et stats de combat (section « Raretés et taux de drop » du plan).
 
-export const RARITIES = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC"] as const;
-export type Rarity = (typeof RARITIES)[number];
+export const BASE_RARITIES = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC"] as const;
+export const RARITIES: readonly string[] = BASE_RARITIES;
+export type BaseRarity = (typeof BASE_RARITIES)[number];
+/** Raretés de variantes au-dessus de Mythique, jamais attribuées par l'import AniList. */
+export const VARIANT_RARITIES = ["AR", "GOLD"] as const;
+export type Rarity = string;
 
 export type RarityThresholds = SettingValue<"catalog.rarityThresholds">;
 export type StatCoefficients = SettingValue<"catalog.stats">;
@@ -77,7 +81,7 @@ export function rankCatalog<T extends RankInput>(rows: readonly T[], opts: RankO
 /** Nombre de cartes par rareté. */
 export function countByRarity(entries: readonly { rarity: Rarity }[]): Record<Rarity, number> {
   const counts = Object.fromEntries(RARITIES.map((r) => [r, 0])) as Record<Rarity, number>;
-  for (const e of entries) counts[e.rarity] += 1;
+  for (const e of entries) counts[e.rarity] = (counts[e.rarity] ?? 0) + 1;
   return counts;
 }
 
@@ -89,4 +93,6 @@ export const RARITY_SEAL: Record<Rarity, string> = {
   EPIC: "秀",
   LEGENDARY: "金",
   MYTHIC: "神",
+  AR: "異",
+  GOLD: "煌",
 };

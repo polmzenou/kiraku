@@ -8,7 +8,7 @@ import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { AuctionPanel, type TradeBlock } from "@/components/market/AuctionPanel";
 import { PageShell } from "@/components/PageShell";
 import { Link } from "@/i18n/navigation";
-import { RARITY_SEAL } from "@/lib/catalog/rarity";
+import { getRaritySeals } from "@/server/catalog/rarities";
 import { checkTrader } from "@/lib/market/rules";
 import { prisma } from "@/server/db";
 import { getAuctionDetail, getMarketRules } from "@/server/market/queries";
@@ -21,6 +21,7 @@ const idSchema = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
 
 /** Fiche d'une vente : carte, prix en direct, mise, achat immédiat et dernières mises. */
 export default async function AuctionPage({ params }: PageProps<"/[locale]/marche/[id]">) {
+  const RARITY_SEAL = await getRaritySeals();
   const { id: raw } = await params;
   const id = idSchema.safeParse(raw);
   if (!id.success) notFound();

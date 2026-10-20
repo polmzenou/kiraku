@@ -1,10 +1,12 @@
 "use client";
 
+import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
+
 import Image from "next/image";
 import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Link } from "@/i18n/navigation";
-import { RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { albumRarities, albumRatio, type Album, type AlbumPage } from "@/lib/collection/albums";
 import { loadAlbumPageAction } from "@/server/actions/collection";
 import { Button } from "../ui/Button";
@@ -71,6 +73,8 @@ export function AlbumList({ initial, query }: { initial: AlbumPage; query: Recor
 }
 
 function AlbumTile({ album }: { album: Album }) {
+  const RARITY_SEAL = useRaritySeals();
+  const RARITIES = useRarities();
   const t = useTranslations("collection.albums");
   const tRarity = useTranslations("rarity");
   const format = useFormatter();
@@ -112,7 +116,7 @@ function AlbumTile({ album }: { album: Album }) {
           <span className="block h-full origin-left rounded-pill bg-shu" style={{ transform: `scaleX(${ratio})` }} />
         </span>
         <ul className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs tabular-nums" aria-label={t("byRarity")}>
-          {albumRarities(album.byRarity).map((r) => (
+          {albumRarities(album.byRarity, RARITIES).map((r) => (
             <li key={r} className={`flex items-center gap-1 ${album.byRarity[r].owned === 0 ? "text-text-muted" : RARITY_TEXT[r]}`}>
               <span aria-hidden="true" lang="ja" className="font-seal">
                 {RARITY_SEAL[r]}

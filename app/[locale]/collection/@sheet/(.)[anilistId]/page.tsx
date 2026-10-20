@@ -4,7 +4,7 @@ import { CardSheet } from "@/components/collection/CardSheet";
 import { getCatalogCard } from "@/server/catalog/queries";
 import { getCurrentUser } from "@/server/user";
 
-const idSchema = z.coerce.number().int().positive().max(10_000_000);
+const idSchema = z.coerce.number().int().positive().max(2_147_483_647);
 
 /** Fiche carte en feuille, au-dessus de la liste (navigation depuis /collection). */
 export default async function CollectionCardSheet({ params }: PageProps<"/[locale]/collection/[anilistId]">) {

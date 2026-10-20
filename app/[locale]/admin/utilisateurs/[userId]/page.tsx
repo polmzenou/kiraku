@@ -13,7 +13,6 @@ import { readBannerPity } from "@/server/boosters/open-core";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { inputClass } from "@/components/ui/Field";
 
-
 export default async function AdminUserPage({ params, searchParams }: PageProps<"/[locale]/admin/utilisateurs/[userId]">) {
   const admin = await requireAdmin();
   const [{ userId }, raw, locale, t, reason, format, rarity] = await Promise.all([params, searchParams, getLocale(), getTranslations("admin.users"), getTranslations("economy.ledger.reasons"), getFormatter(), getTranslations("rarity")]);

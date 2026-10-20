@@ -16,6 +16,7 @@ import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
 import { getSetting, SETTINGS_TAG } from "../settings";
 import { writeAdminLog } from "../admin/log";
+import { getRarities } from "../catalog/rarities";
 
 // Types de boosters et bannières depuis /admin. Ordre : rôle admin → Zod → rate limit → transaction
 // avec une ligne AdminLog (avant / après) → recalcul du pool → cache invalidé (effet immédiat).
@@ -57,12 +58,14 @@ export async function saveBoosterType(input: unknown): Promise<AdminBoosterResul
   const parsed = boosterTypeFormSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const v = parsed.data;
+  const rarities = await getRarities();
+  if (v.slotFloors.some((r) => !rarities.includes(r))) return { ok: false, error: "INVALID" };
   const filter = v.filter;
 
   // Vedettes : des cartes existantes du catalogue actif seulement
   const featured = [...new Set(v.featuredCardIds)];
   if (featured.length > 0) {
-    const found = await prisma.card.count({ where: { id: { in: featured }, rank: { not: null } } });
+    const found = await prisma.card.count({ where: { id: { in: featured }, status: "PUBLISHED" } });
     if (found !== featured.length) return { ok: false, error: "UNKNOWN_CARDS" };
   }
 
@@ -178,7 +181,7 @@ export async function searchFeaturedCards(input: unknown): Promise<FeaturedCandi
   const terms = normalizeSearch(parsed.data);
   if (!terms) return [];
   const rows = await prisma.card.findMany({
-    where: { rank: { not: null }, searchText: { contains: terms } },
+    where: { status: "PUBLISHED", searchText: { contains: terms } },
     orderBy: { rank: "asc" },
     take: 10,
     select: { id: true, name: true, rarity: true, rank: true, imageUrl: true, series: { select: { titleRomaji: true } } },

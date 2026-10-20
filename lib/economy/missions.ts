@@ -1,3 +1,4 @@
+import { rarityKeySchema } from "@/lib/catalog/definitions";
 import { z } from "@/lib/zod";
 import { localizedSchema } from "@/lib/boosters/types";
 import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
@@ -24,8 +25,8 @@ export type MissionMetric = (typeof MISSION_METRICS)[number];
 export const SPEND_REASONS = ["BOOSTER", "GIFT", "SHOP"] as const;
 
 /** Raretés « au moins `min` » : un objectif « tirer une Épique » accepte aussi Légendaire et Mythique. */
-export function raritiesFrom(min: Rarity): Rarity[] {
-  return RARITIES.slice(RARITIES.indexOf(min));
+export function raritiesFrom(min: Rarity, rarities: readonly string[] = RARITIES): Rarity[] {
+  return rarities.slice(Math.max(0, rarities.indexOf(min)));
 }
 
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
@@ -37,7 +38,7 @@ export const missionInputSchema = z
     period: z.enum(MISSION_PERIODS),
     metric: z.enum(MISSION_METRICS),
     goal: z.number().int().min(1).max(1_000_000),
-    rarity: z.enum(RARITIES).nullable(),
+    rarity: rarityKeySchema.nullable(),
     // Titre libre facultatif ; sinon le texte est généré depuis l'objectif
     title: localizedSchema.nullable(),
     lotId: id,

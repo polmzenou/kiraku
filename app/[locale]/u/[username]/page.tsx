@@ -3,6 +3,7 @@ import { hasLocale } from "next-intl";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { PageShell } from "@/components/PageShell";
 import { displayName, ProfileHeader } from "@/components/profile/ProfileHeader";
+import { ProfileCustomizeButton } from "@/components/profile/ProfileCustomizeSheet";
 import { ShareProfileButton } from "@/components/profile/ShareProfileButton";
 import { Showcase } from "@/components/profile/Showcase";
 import { ProfileSalesSection, WishlistSection } from "@/components/profile/ProfileCardSections";
@@ -18,6 +19,9 @@ import { loadProfile } from "@/server/collection/profile-page";
 import { getCollectionSummary, getShowcase } from "@/server/collection/queries";
 import { getProfileSales, getWishlist } from "@/server/collection/profile-cards";
 import { getSetting } from "@/server/settings";
+import { prisma } from "@/server/db";
+import { getCosmeticOptions, getEarnedBadges, getProfileDecor } from "@/server/profile/progress";
+import type { Badge } from "@/lib/profile/conditions";
 import { giftsSentToday } from "@/server/social/queries";
 import type { ProfileAccess } from "@/lib/collection/visibility";
 import type { Relation } from "@/lib/social/relation";
@@ -65,7 +69,13 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
     );
   }
 
-  const [size, values] = await Promise.all([getSetting("showcase.slots"), getSetting("collection.recycleValues")]);
+  const [size, values, decor] = await Promise.all([
+    getSetting("showcase.slots"),
+    getSetting("collection.recycleValues"),
+    getProfileDecor(owner.id, locale),
+  ]);
+  // Son propre profil (compte inscrit) : de quoi le personnaliser
+  const customize = access.isOwner && viewer && !viewer.isGuest ? await customizeData(owner.id, locale) : null;
   const [showcase, summary, wishlist, sales] = await Promise.all([
     getShowcase(owner.id, size, locale), getCollectionSummary(owner.id, values),
     getWishlist(owner.id, locale), getProfileSales(owner.id, locale),
@@ -79,7 +89,25 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
 
   return (
     <PageShell>
-      <ProfileHeader username={owner.username} image={owner.image} isGuest={owner.isGuest} createdAt={owner.createdAt} />
+      <ProfileHeader
+        username={owner.username}
+        image={owner.image}
+        isGuest={owner.isGuest}
+        createdAt={owner.createdAt}
+        decor={decor}
+        action={
+          customize && (
+            <ProfileCustomizeButton
+              username={owner.username}
+              image={owner.image}
+              initial={customize.initial}
+              options={customize.options}
+              badges={customize.badges}
+              privacy={{ visibility: owner.profileVisibility, showCollection: owner.showCollection }}
+            />
+          )
+        }
+      />
       {social}
 
       <div className="flex flex-wrap gap-2">
@@ -163,4 +191,24 @@ async function socialBar({
   const trade =
     access.relation === "FRIENDS" && (await getSetting("trades.enabled")) ? { maxOffered: await getSetting("trades.maxOffered") } : null;
   return <RelationActions username={owner.username} name={name} initial={access.relation} gift={gift} trade={trade} />;
+}
+
+/** Choix actuels, titres et cadres avec leur progression, badges obtenus. */
+async function customizeData(userId: string, locale: string) {
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { id: true, bio: true, titleAgreement: true, titleId: true, frameId: true, badgeOrder: true, createdAt: true, discordLinkedAt: true },
+  });
+  const [options, badges] = await Promise.all([getCosmeticOptions(userId, locale), getEarnedBadges(user)]);
+  return {
+    options,
+    badges,
+    initial: {
+      bio: user.bio ?? "",
+      titleAgreement: user.titleAgreement,
+      titleId: user.titleId,
+      frameId: user.frameId,
+      badgeOrder: user.badgeOrder.filter((b): b is Badge => (badges as string[]).includes(b)),
+    },
+  };
 }

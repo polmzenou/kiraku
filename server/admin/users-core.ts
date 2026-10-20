@@ -96,7 +96,7 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
         break;
       }
       case "card": {
-        if (!await tx.card.findUnique({ where: { id: input.cardId }, select: { id: true } })) throw new AdminUserMutationError("NOT_FOUND");
+        if (!await tx.card.findUnique({ where: { id: input.cardId, status: { not: "DRAFT" } }, select: { id: true } })) throw new AdminUserMutationError("NOT_FOUND");
         const copies = await tx.userCard.count({ where: { ownerId: userId, cardId: input.cardId } });
         before = { cardId: input.cardId, copies };
         if (input.mode === "ADD") {
@@ -114,8 +114,8 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
         break;
       }
       case "discoveries": {
-        const count = await tx.discovery.count({ where: { userId, card: { rank: { not: null } } } });
-        const total = await tx.card.count({ where: { rank: { not: null } } });
+        const count = await tx.discovery.count({ where: { userId, card: { status: "PUBLISHED" } } });
+        const total = await tx.card.count({ where: { status: "PUBLISHED" } });
         if (input.value > total) throw new AdminUserMutationError("LIMIT");
         before = { count };
         let added: { cardId: string }[] = [];
@@ -124,7 +124,7 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
           added = await tx.$queryRaw<{ cardId: string }[]>`
             INSERT INTO "Discovery" ("userId", "cardId", "createdAt")
             SELECT ${userId}, c.id, ${now} FROM "Card" c
-            WHERE c.rank IS NOT NULL AND NOT EXISTS (
+            WHERE c.status = 'PUBLISHED' AND NOT EXISTS (
               SELECT 1 FROM "Discovery" d WHERE d."userId" = ${userId} AND d."cardId" = c.id
             ) ORDER BY c.rank ASC LIMIT ${input.value - count}
             ON CONFLICT DO NOTHING RETURNING "cardId"`;
@@ -132,7 +132,7 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
           removed = await tx.$queryRaw<{ cardId: string }[]>`
             DELETE FROM "Discovery" WHERE "userId" = ${userId} AND "cardId" IN (
               SELECT d."cardId" FROM "Discovery" d JOIN "Card" c ON c.id = d."cardId"
-              WHERE d."userId" = ${userId} AND c.rank IS NOT NULL AND NOT EXISTS (
+              WHERE d."userId" = ${userId} AND c.status = 'PUBLISHED' AND NOT EXISTS (
                 SELECT 1 FROM "UserCard" uc WHERE uc."ownerId" = ${userId} AND uc."cardId" = d."cardId"
               ) ORDER BY d."createdAt" DESC, d."cardId" ASC LIMIT ${count - input.value}
             ) RETURNING "cardId"`;

@@ -1,9 +1,10 @@
+
+import { useRaritySeals } from "@/lib/catalog/use-rarities";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { localize, type BoosterTypeView } from "@/lib/boosters/types";
 import type { CardView } from "@/lib/boosters/view";
-import { RARITY_SEAL } from "@/lib/catalog/rarity";
 
 export type BannerSlide = {
   type: BoosterTypeView;
@@ -20,6 +21,7 @@ export type BannerSlide = {
  * en grand sur le fond aux couleurs de la bannière, la fin et la pitié vedette du joueur.
  */
 export function BannerHero({ slides }: { slides: BannerSlide[] }) {
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("boosters.banners");
   const locale = useLocale();
   const format = useFormatter();

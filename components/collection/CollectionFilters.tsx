@@ -1,9 +1,11 @@
 "use client";
 
+import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
+
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
 import {
   COLLECTION_SORTS,
@@ -37,6 +39,8 @@ export function CollectionFilters({
   series: { id: string; title: string; cards: number }[];
   counts?: Partial<Record<Rarity, number>>;
 }) {
+  const RARITIES = useRarities();
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("collection");
   const tRarity = useTranslations("rarity");
   const router = useRouter();

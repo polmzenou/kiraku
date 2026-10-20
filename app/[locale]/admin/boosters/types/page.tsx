@@ -1,3 +1,5 @@
+
+import { getRarities, getRaritySeals } from "@/server/catalog/rarities";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { BoosterArt } from "@/components/boosters/BoosterArt";
 import { RecomputePoolsButton, ToggleTypeButton } from "@/components/admin/BoosterTypeActions";
@@ -6,7 +8,6 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
 import { ROTATING_FAMILIES } from "@/lib/boosters/rotation";
 import { BOOSTER_FAMILIES, localize, type BoosterTypeView } from "@/lib/boosters/types";
-import { RARITIES, RARITY_SEAL } from "@/lib/catalog/rarity";
 import { requireAdmin } from "@/server/admin";
 import { getBoosterOffers, getBoosterRotation } from "@/server/boosters/pools";
 import { getSetting } from "@/server/settings";
@@ -21,6 +22,8 @@ function hiddenReason(type: BoosterTypeView, size: number, minPool: number, now:
 }
 
 export default async function AdminBoosterTypesPage() {
+  const RARITIES = await getRarities();
+  const RARITY_SEAL = await getRaritySeals();
   await requireAdmin();
   const [t, tRotation, tBoosters, format, locale, offers, rotation, minPool, timeZone] = await Promise.all([
     getTranslations("admin.types"),

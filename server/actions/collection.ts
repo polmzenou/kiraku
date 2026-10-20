@@ -1,9 +1,11 @@
 "use server";
 
+import { getRarities } from "@/server/catalog/rarities";
+import { rarityKeySchema } from "@/lib/catalog/definitions";
+
 import { getLocale } from "next-intl/server";
 import { refresh } from "next/cache";
 import { z } from "@/lib/zod";
-import { RARITIES } from "@/lib/catalog/rarity";
 import { ALBUM_MAX_OFFSET, parseAlbumParams, type AlbumPage } from "@/lib/collection/albums";
 import { parseCollectionParams } from "@/lib/collection/params";
 import { MAX_SHOWCASE_SLOTS, placeInSlot } from "@/lib/collection/showcase";
@@ -89,7 +91,7 @@ export async function loadCollectionPage(input: unknown): Promise<({ ok: true } 
     return { ok: false, error: "RATE_LIMITED" };
   }
 
-  const page = await getCollectionPage(ownerId, parseCollectionParams(parsed.data.query), parsed.data.offset, await getLocale());
+  const page = await getCollectionPage(ownerId, parseCollectionParams(parsed.data.query, await getRarities()), parsed.data.offset, await getLocale());
   return { ok: true, ...page };
 }
 
@@ -99,7 +101,7 @@ export type RecycleResult = { ok: true; recycled: number; gain: number; coins: n
 
 const recycleCardSchema = z.object({ cardId: cardIdSchema, count: z.number().int().min(1).max(10_000) });
 const recycleAllSchema = z.object({
-  maxRarity: z.enum(RARITIES),
+  maxRarity: rarityKeySchema,
   expected: z.number().int().min(1).max(100_000_000),
 });
 

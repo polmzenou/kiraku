@@ -16,6 +16,7 @@ export type OwnedCopy = {
 
 export type RecycleOptions = {
   values: RecycleValues;
+  rarities?: readonly Rarity[];
   /** Exemplaires à ne jamais recycler (vitrine) ; ils comptent comme l'exemplaire gardé. */
   protectedIds?: ReadonlySet<string>;
   /** Rareté la plus haute recyclée (« tout recycler jusqu'à Épique »). */
@@ -33,7 +34,7 @@ export type RecyclePlan = {
 };
 
 export function recycleValue(rarity: Rarity, count: number, values: RecycleValues): number {
-  return values[rarity] * count;
+  return (values[rarity] ?? 0) * count;
 }
 
 function emptyByRarity(): RecyclePlan["byRarity"] {
@@ -46,6 +47,7 @@ function emptyByRarity(): RecyclePlan["byRarity"] {
  * (ils peuvent partir). Fonction pure et déterministe (départage par id).
  */
 export function planRecycle(copies: readonly OwnedCopy[], opts: RecycleOptions): RecyclePlan {
+  const RARITIES = opts.rarities ?? Object.keys(opts.values);
   const protectedIds = opts.protectedIds ?? new Set<string>();
   const maxIndex = opts.maxRarity ? RARITIES.indexOf(opts.maxRarity) : RARITIES.length - 1;
   const maxPerCard = Math.max(0, opts.maxPerCard ?? Infinity);
@@ -75,6 +77,7 @@ export function planRecycle(copies: readonly OwnedCopy[], opts: RecycleOptions):
     plan.ids.push(...taken.map((c) => c.id));
     plan.byCard.set(cardId, taken.length);
     const zeni = recycleValue(rarity, taken.length, opts.values);
+    plan.byRarity[rarity] ??= { copies: 0, zeni: 0 };
     plan.byRarity[rarity].copies += taken.length;
     plan.byRarity[rarity].zeni += zeni;
     plan.gain += zeni;

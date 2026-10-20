@@ -1,11 +1,13 @@
 "use client";
 
+import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
+
 import { useTranslations, type Messages } from "next-intl";
 import { useEffect, useId, useOptimistic, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Sheet";
 import { useRouter } from "@/i18n/navigation";
-import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { normalizeSearch, SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
 import {
   parseWikiParams,
@@ -32,6 +34,8 @@ export function WikiFilters({ params, options, counts, action }: {
   counts: Record<Rarity, number>;
   action: string;
 }) {
+  const RARITIES = useRarities();
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("wiki");
   const tRarity = useTranslations("rarity");
   const router = useRouter();

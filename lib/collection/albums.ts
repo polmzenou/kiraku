@@ -67,8 +67,8 @@ export function albumRatio(album: Pick<Album, "owned" | "total">): number {
 }
 
 /** Raretés présentes dans l'album, de la plus courante à la plus rare. */
-export function albumRarities(byRarity: AlbumProgress): Rarity[] {
-  return RARITIES.filter((r) => byRarity[r].total > 0);
+export function albumRarities(byRarity: AlbumProgress, order: readonly string[] = RARITIES): Rarity[] {
+  return [...order, ...Object.keys(byRarity).filter((r) => !order.includes(r))].filter((r) => (byRarity[r]?.total ?? 0) > 0);
 }
 
 /** Motif ILIKE d'une recherche libre : `%` et `_` du joueur sont pris au pied de la lettre. */

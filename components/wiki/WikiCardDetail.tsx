@@ -1,3 +1,5 @@
+
+import { useRaritySeals } from "@/lib/catalog/use-rarities";
 import { Suspense, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
@@ -6,7 +8,7 @@ import { FudaTurnover } from "@/components/fuda/FudaTurnover";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
 import { cardNumber, seriesTitle } from "@/lib/catalog/display";
-import { RARITY_SEAL } from "@/lib/catalog/rarity";
+
 import { wikiCardState, type WikiCollection } from "@/lib/catalog/wiki-state";
 import { getWikiCollection } from "@/server/catalog/ownership";
 import type { CatalogCardDetail, CatalogCardSummary } from "@/server/catalog/queries";
@@ -36,6 +38,7 @@ function LockIcon() {
 }
 
 export function WikiCardDetail({ card, related, locale, total, collection, wishlistAction }: DetailProps & { collection: WikiCollection | null }) {
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("wiki");
   const tRarity = useTranslations("rarity");
   const tRole = useTranslations("wiki.roles");
@@ -56,6 +59,27 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
       <dd className="min-w-0 break-words text-right text-sm font-medium text-text">{value}</dd>
     </div>
   );
+  const forms = card.variantOf ? [card.variantOf] : card.variants;
+  const cardLink = (other: CatalogCardSummary) => {
+    const otherState = collection ? wikiCardState(collection, other.anilistId) : null;
+    const known = otherState?.discovered === true;
+    const relatedStatus = !otherState ? t("collectionUnavailableShort") : known ? t("discovered") : t("toDiscover");
+    const name = known ? [other.name, other.formName].filter(Boolean).join(" · ") : "???";
+    return (
+      <li key={other.anilistId} className="min-w-0">
+        <Link href={`/wiki/${other.anilistId}`} aria-label={`${name} · ${tRarity(other.rarity)} · ${relatedStatus}`} className="flex min-h-24 items-center gap-3 lacquer rounded-card p-3 transition-colors hover:bg-surface-2">
+          <div aria-hidden="true" className="relative aspect-[5/7] w-12 shrink-0 overflow-hidden rounded-md border border-border bg-surface-2">
+            <Image src={other.imageUrl} alt="" fill sizes="48px" className={`object-cover object-top${known ? "" : " grayscale"}`} />
+            {!known && <span className="absolute inset-0 flex items-center justify-center bg-bg/70 font-title text-3xl font-bold text-text">?</span>}
+          </div>
+          <div aria-hidden="true" className="min-w-0">
+            <p className="truncate text-sm font-bold text-text">{name}</p>
+            <p className="mt-1 text-[11px] leading-4 text-text-muted">{tRarity(other.rarity)} · {relatedStatus}</p>
+          </div>
+        </Link>
+      </li>
+    );
+  };
 
   return (
     <article className="wiki-content flex min-w-0 flex-col gap-8" aria-busy={collection === null}>
@@ -77,6 +101,7 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
           <span className="inline-flex items-center gap-1.5 rounded-control border border-border bg-bg px-3 py-1.5 text-text">
             <span aria-hidden="true" className="font-seal">{RARITY_SEAL[card.rarity]}</span>{tRarity(card.rarity)}
           </span>
+          {card.formName && <span className="rounded-control border border-kin px-3 py-1.5 text-kin">{card.formName}</span>}
           <span role="status" className="rounded-control border border-border bg-bg px-3 py-1.5 text-text-muted">{status}</span>
         </div>
         <h1 className="break-words text-4xl font-extrabold leading-tight md:text-6xl">{card.name}</h1>
@@ -84,7 +109,7 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
           {card.nameNative && <p lang="ja" className="font-title text-base">{card.nameNative}</p>}
           <p className="font-mono text-xs">{t("number", { number: cardNumber(card.rank) })}{card.rank !== null && ` / ${total.toLocaleString(locale)}`}</p>
         </div>
-        {card.rank === null && <p className="mt-4 text-sm font-medium text-text">{t("outOfCatalog")}</p>}
+        {card.status === "ARCHIVED" && <p className="mt-4 text-sm font-medium text-text">{t("outOfCatalog")}</p>}
         {wishlistAction && <div className="mt-5">{wishlistAction}</div>}
       </header>
 
@@ -107,15 +132,15 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
             {row(t("power"), <span><span aria-hidden="true" className="font-seal">力</span> {card.power}</span>)}
             {row(t("ki"), <span><span aria-hidden="true" className="font-seal">気</span> {card.ki}</span>)}
           </dl>
-          <a href={`https://anilist.co/character/${card.anilistId}`} rel="noopener noreferrer" target="_blank" className="mt-3 inline-flex min-h-11 items-center text-sm text-link underline underline-offset-4">
+          {card.sourceAnilistId && <a href={`https://anilist.co/character/${card.sourceAnilistId}`} rel="noopener noreferrer" target="_blank" className="mt-3 inline-flex min-h-11 items-center text-sm text-link underline underline-offset-4">
             {t("viewOnAnilist")}
-          </a>
+          </a>}
         </aside>
 
         <div className="flex min-w-0 flex-col gap-8">
           {discovered ? (
             <Suspense fallback={<WikiBiographySkeleton />}>
-              <WikiBiography anilistId={card.anilistId} />
+              <WikiBiography anilistId={card.sourceAnilistId} description={card.description} locale={locale} />
             </Suspense>
           ) : (
             <section aria-labelledby="wiki-locked-title" className="relative overflow-hidden rounded-card border border-dashed border-text-muted/50 bg-surface p-5 md:p-7">
@@ -131,32 +156,19 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
 
           <WikiCardValuation />
 
+          {forms.length > 0 && (
+            <section aria-labelledby="wiki-forms-title" className="min-w-0">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-text-muted">{t("formsKicker")}</p>
+              <h2 id="wiki-forms-title" className="text-2xl font-extrabold md:text-3xl">{card.variantOf ? t("baseFormTitle") : t("formsTitle", { name: card.name })}</h2>
+              <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">{forms.map(cardLink)}</ul>
+            </section>
+          )}
+
           {related.length > 0 && (
             <section aria-labelledby="wiki-related-title" className="min-w-0">
               <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-text-muted">{t("sameUniverse")}</p>
               <h2 id="wiki-related-title" className="text-2xl font-extrabold md:text-3xl">{t("relatedTitle", { series })}</h2>
-              <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {related.map((other) => {
-                  const otherState = collection ? wikiCardState(collection, other.anilistId) : null;
-                  const known = otherState?.discovered === true;
-                  const relatedStatus = !otherState ? t("collectionUnavailableShort") : known ? t("discovered") : t("toDiscover");
-                  const name = known ? other.name : "???";
-                  return (
-                    <li key={other.anilistId} className="min-w-0">
-                      <Link href={`/wiki/${other.anilistId}`} aria-label={`${name} · ${tRarity(other.rarity)} · ${relatedStatus}`} className="flex min-h-24 items-center gap-3 lacquer rounded-card p-3 transition-colors hover:bg-surface-2">
-                        <div aria-hidden="true" className="relative aspect-[5/7] w-12 shrink-0 overflow-hidden rounded-md border border-border bg-surface-2">
-                          <Image src={other.imageUrl} alt="" fill sizes="48px" className={`object-cover object-top${known ? "" : " grayscale"}`} />
-                          {!known && <span className="absolute inset-0 flex items-center justify-center bg-bg/70 font-title text-3xl font-bold text-text">?</span>}
-                        </div>
-                        <div aria-hidden="true" className="min-w-0">
-                          <p className="truncate text-sm font-bold text-text">{name}</p>
-                          <p className="mt-1 text-[11px] leading-4 text-text-muted">{tRarity(other.rarity)} · {relatedStatus}</p>
-                        </div>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
+              <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">{related.map(cardLink)}</ul>
             </section>
           )}
         </div>

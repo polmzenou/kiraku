@@ -5,7 +5,17 @@ import { cleanChatBody } from "@/lib/chat/message";
 import { z } from "@/lib/zod";
 import { USERNAME_REGEX } from "@/lib/username";
 import { isFrozen } from "@/lib/account/deletion";
-import { canChat, createMessage, listConversations, loadMessages, purgeOldMessages, unreadChatCount, type ChatMessageView, type Conversation } from "../chat/queries";
+import {
+  canChat,
+  createMessage,
+  listConversations,
+  loadMessages,
+  purgeOldMessages,
+  unreadChatCount,
+  visibleSince,
+  type ChatMessageView,
+  type Conversation,
+} from "../chat/queries";
 import { findProfileOwner } from "../collection/profile";
 import { rateLimit } from "../ratelimit";
 import { publishToUser } from "../realtime";
@@ -47,18 +57,17 @@ async function friend(me: string, username: string) {
 export async function chatStatusAction(input: unknown): Promise<{ ok: true; unread: number } | Failure> {
   const g = await guard(input, empty, "chat-status", { limit: 30, windowSeconds: 60 });
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
-  // Ménage des vieux messages, au plus une fois par heure pour tout le site
-  if ((await rateLimit("chat:purge", { limit: 1, windowSeconds: 3600 })).success) {
-    const days = await getSetting("chat.retentionDays");
-    after(() => purgeOldMessages(days));
-  }
-  return { ok: true, unread: await unreadChatCount(g.user.id) };
+  const hours = await getSetting("chat.retentionHours");
+  // Ménage des messages expirés, au plus une fois toutes les 10 min pour tout le site (les lectures
+  // les ignorent déjà : ils disparaissent à l'heure dite, la suppression suit)
+  if ((await rateLimit("chat:purge", { limit: 1, windowSeconds: 600 })).success) after(() => purgeOldMessages(hours));
+  return { ok: true, unread: await unreadChatCount(g.user.id, visibleSince(hours)) };
 }
 
 export async function listConversationsAction(input: unknown): Promise<{ ok: true; conversations: Conversation[] } | Failure> {
   const g = await guard(input, empty, "chat-list", { limit: 30, windowSeconds: 60 });
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
-  return { ok: true, conversations: await listConversations(g.user.id) };
+  return { ok: true, conversations: await listConversations(g.user.id, visibleSince(await getSetting("chat.retentionHours"))) };
 }
 
 /** Messages avec un ami (les reçus passent en lus). */
@@ -67,7 +76,7 @@ export async function loadConversationAction(input: unknown): Promise<{ ok: true
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
   const other = await friend(g.user.id, g.data.username);
   if (!other) return { ok: false, error: "NOT_FRIENDS" };
-  const res = await loadMessages(g.user.id, other.id, {
+  const res = await loadMessages(g.user.id, other.id, visibleSince(await getSetting("chat.retentionHours")), {
     before: g.data.before ? new Date(g.data.before) : undefined,
     after: g.data.after ? new Date(g.data.after) : undefined,
   });

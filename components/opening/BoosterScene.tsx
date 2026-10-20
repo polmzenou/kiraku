@@ -4,14 +4,20 @@ import { animate, m, useMotionValue, useTransform, type MotionValue } from "moti
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import type { BoosterShape, BoosterTheme } from "@/lib/boosters/types";
 import { openingGestureProgress, startOpeningGesture, type OpeningGesture } from "@/lib/boosters/opening-gesture";
+import { belowClip, pieceTorn, tearLine, tornRange, type TearPoint } from "@/lib/boosters/tear-line";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { BoosterArt, JUBAKO_CORD, JUBAKO_LID, POCHI_BODY } from "../boosters/BoosterArt";
-import { LEAK_COLOR } from "./RarityFx";
+import { leakFor } from "./RarityFx";
+import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 
 /** Part du geste à partir de laquelle l'ouverture est envoyée au serveur. */
 const TRIGGER_AT = 0.55;
-/** Segments de la bande du sachet : chacun se détache quand le doigt le dépasse. */
-const SEGMENTS = 12;
+/** Ligne de déchirure du sachet : la bande se découpe en autant de morceaux que de pas. */
+const TEAR_STEPS = 18;
+const TEAR_LINE = tearLine(TEAR_STEPS);
+const TEAR_BELOW = belowClip(TEAR_LINE);
+/** Durée de la déchirure jouée au bouton (le geste, lui, suit le doigt). */
+const AUTO_TEAR = 0.38;
 
 export type SceneHandle = { open: () => void };
 
@@ -43,11 +49,13 @@ type Props = {
 
 /**
  * Le booster présenté seul au centre de la scène : il flotte, suit l'inclinaison du téléphone (ou
- * la souris) et s'ouvre d'un geste. Sachet : on déchire la bande du haut d'un glissement horizontal ;
+ * la souris) et s'ouvre d'un geste. Sachet : on déchire la bande du haut d'un glissement horizontal
+ * (au bouton, la même déchirure se joue seule) ;
  * pochibukuro et jūbako : on glisse vers le haut pour soulever le rabat ou le couvercle.
  */
 export function BoosterScene(props: Props) {
   const { shape, theme, emblem, name, tagline, contents, count, armed, reduced, leak, variant } = props;
+  const definitions = useRarityDefinitions();
   const progress = useMotionValue(0);
   const [opened, setOpened] = useState(false);
   const [direction, setDirection] = useState<1 | -1>(1);
@@ -94,7 +102,10 @@ export function BoosterScene(props: Props) {
       return;
     }
     animation.current?.stop();
-    const opening = animate(progress, 1, { duration: 0.22, ease: "easeOut" });
+    // Au bouton, la déchirure se joue seule de gauche à droite ; après un geste, elle finit vite.
+    const auto = progress.get() < 0.05;
+    if (auto) setDirection(1);
+    const opening = animate(progress, 1, auto ? { duration: AUTO_TEAR, ease: "easeOut" } : { duration: 0.15, ease: "easeOut" });
     animation.current = opening;
     opening.then(() => setOpened(true));
     // Filet de sécurité : si l'onglet ne dessine plus (arrière-plan), l'ouverture ne reste pas bloquée
@@ -147,7 +158,7 @@ export function BoosterScene(props: Props) {
     onLostPointerCapture: onPointerEnd,
   };
 
-  const leakColor = leak ? LEAK_COLOR[leak] : theme.base;
+  const leakColor = leak ? leakFor(leak, definitions) ?? theme.base : theme.base;
 
   const overlay = (
     <>
@@ -285,8 +296,9 @@ type Gesture = {
 };
 
 /**
- * Bande du sachet en 12 segments (copies de la bande découpées, découpe fixe) : chacun se soulève
- * quand le doigt le dépasse, puis tous s'envolent l'un après l'autre. Des fibres de washi jaillissent.
+ * Bande du sachet déchirée comme du washi : la ligne de déchirure est irrégulière, la partie déjà
+ * arrachée se soulève en pivotant autour du front de déchirure (un liseré de fibres blanches apparaît
+ * dessous), puis toute la bande s'envole. Morceaux à découpe fixe : seuls transform et opacity bougent.
  */
 function TearBand(props: {
   band: ReactNode;
@@ -299,36 +311,65 @@ function TearBand(props: {
   onFlown: () => void;
 }) {
   const { band, progress, opened, reduced, direction, armed, gesture, onFlown } = props;
-  const [removed, setRemoved] = useState(false);
+  const [flown, setFlown] = useState(false);
   const onFlownRef = useRef(onFlown);
   useEffect(() => { onFlownRef.current = onFlown; }, [onFlown]);
   useEffect(() => {
     if (!opened) return;
-    // Retirer le DOM après le dernier segment, même si Motion interrompt un callback.
+    // Retirer la bande après l'envol, même si Motion interrompt un callback.
     const timeout = setTimeout(() => {
-      setRemoved(true);
+      setFlown(true);
       onFlownRef.current();
-    }, reduced ? 0 : 850);
+    }, reduced ? 0 : 900);
     return () => clearTimeout(timeout);
   }, [opened, reduced]);
-  if (removed) return null;
+  // La partie arrachée pivote autour du front de déchirure
+  const originX = useTransform(progress, (p) => tornRange(p, direction).front / 100);
   return (
     <div
       aria-hidden="true"
       className={`absolute inset-x-0 top-0 z-30 h-[13%] min-h-11 touch-none ${armed ? "cursor-crosshair" : ""}`}
       {...gesture}
     >
-      {Array.from({ length: SEGMENTS }, (_, i) => (
-        <Segment
-          key={i}
-          index={i}
-          band={band}
-          progress={progress}
-          opened={opened}
-          reduced={reduced}
-          direction={direction}
-        />
+      {/* Reste de bande serti sous la déchirure */}
+      <div className="absolute inset-0" style={{ clipPath: TEAR_BELOW }}>
+        {band}
+      </div>
+      {TEAR_LINE.slice(1).map((to, i) => (
+        <FiberEdge key={i} from={TEAR_LINE[i] ?? to} to={to} progress={progress} direction={direction} />
       ))}
+      {!flown && (
+        <m.div
+          className="absolute inset-0"
+          initial={false}
+          animate={
+            opened
+              ? reduced
+                ? { opacity: 0 }
+                : {
+                    x: ["0%", `${direction * 30}%`, `${direction * 55}%`],
+                    y: ["0%", "-120%", "160%"],
+                    rotate: [0, direction * 50, direction * 120],
+                    opacity: [1, 1, 0],
+                  }
+              : undefined
+          }
+          transition={reduced ? { duration: 0.15 } : { duration: 0.9, times: [0, 0.45, 1], ease: [0.25, 0.6, 0.35, 1] }}
+        >
+          {TEAR_LINE.slice(1).map((to, i) => (
+            <TearPiece
+              key={i}
+              from={TEAR_LINE[i] ?? to}
+              to={to}
+              band={band}
+              progress={progress}
+              direction={direction}
+              originX={originX}
+              reduced={reduced}
+            />
+          ))}
+        </m.div>
+      )}
       {/* Ligne lumineuse qui suit la déchirure */}
       <m.span
         className="pointer-events-none absolute inset-x-[4%] bottom-0 h-[3px] rounded-full bg-washi-paper shadow-[0_0_8px_rgb(255_255_255/0.9)]"
@@ -339,44 +380,44 @@ function TearBand(props: {
   );
 }
 
-function Segment({
-  index,
-  band,
-  progress,
-  opened,
-  reduced,
-  direction,
-}: {
-  index: number;
+/** Morceau de bande entre deux sommets de la ligne de déchirure (découpe fixe, bord du bas dentelé). */
+function TearPiece(props: {
+  from: TearPoint;
+  to: TearPoint;
   band: ReactNode;
   progress: MotionValue<number>;
-  opened: boolean;
-  reduced: boolean;
   direction: 1 | -1;
+  originX: MotionValue<number>;
+  reduced: boolean;
 }) {
-  const order = direction === 1 ? index : SEGMENTS - 1 - index;
-  const start = order / SEGMENTS;
-  const end = (order + 1) / SEGMENTS;
-  // Soulèvement progressif du segment quand la déchirure le traverse
-  const lift = useTransform(progress, [start, end], [0, -5]);
-  const tiltZ = useTransform(progress, [start, end], [0, index % 2 ? -5 : 4]);
-  const left = `${(index / SEGMENTS) * 100}%`;
-  const right = `${100 - ((index + 1) / SEGMENTS) * 100}%`;
+  const { from, to, band, progress, direction, originX, reduced } = props;
+  // Une fois arraché, le morceau se soulève avec le reste de la partie déchirée
+  const rotate = useTransform(progress, (p) => (!reduced && pieceTorn(p, direction, from[0], to[0]) ? direction * Math.min(16, p * 32) : 0));
+  const y = useTransform(progress, (p) => (!reduced && pieceTorn(p, direction, from[0], to[0]) ? -p * 6 : 0));
+  // Léger recouvrement pour qu'aucune fente n'apparaisse entre deux morceaux à plat
+  const left = Math.max(0, from[0] - 0.3);
+  const right = Math.min(100, to[0] + 0.3);
   return (
     <m.div
       className="absolute inset-0"
-      style={{ clipPath: `inset(0 ${right} 0 ${left})`, y: opened ? undefined : lift, rotate: opened ? undefined : tiltZ }}
-      animate={
-        opened
-          ? reduced
-            ? { opacity: 0 }
-            : { y: "-220%", x: `${(index - SEGMENTS / 2) * 6}%`, rotate: (index % 2 ? -1 : 1) * (20 + index * 3), opacity: 0 }
-          : undefined
-      }
-      transition={{ duration: reduced ? 0.15 : 0.55, delay: reduced ? 0 : order * 0.025, ease: [0.3, 0.6, 0.3, 1] }}
+      style={{ clipPath: `polygon(${left}% 0, ${right}% 0, ${right}% ${to[1]}%, ${left}% ${from[1]}%)`, originX, originY: 0.9, rotate, y }}
     >
       {band}
     </m.div>
+  );
+}
+
+/** Liseré de fibres blanches qui apparaît sous un morceau une fois arraché. */
+function FiberEdge({ from, to, progress, direction }: { from: TearPoint; to: TearPoint; progress: MotionValue<number>; direction: 1 | -1 }) {
+  const opacity = useTransform(progress, (p) => (pieceTorn(p, direction, from[0], to[0]) ? 0.9 : 0));
+  return (
+    <m.span
+      className="pointer-events-none absolute inset-0 bg-washi-paper"
+      style={{
+        opacity,
+        clipPath: `polygon(${from[0]}% ${from[1] - 2}%, ${to[0]}% ${to[1] - 2}%, ${to[0]}% ${to[1] + 6}%, ${from[0]}% ${from[1] + 6}%)`,
+      }}
+    />
   );
 }
 

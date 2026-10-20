@@ -1,11 +1,13 @@
 "use client";
 
+import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
+
 import { m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import type { OpenCount } from "@/lib/boosters/catalog";
-import type { OpenedBoosterView, OpenedCardView } from "@/lib/boosters/view";
-import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import type { OpenedBoosterView } from "@/lib/boosters/view";
+import { type Rarity } from "@/lib/catalog/rarity";
 import type { SoundName } from "@/lib/sound/synth";
 import type { BoosterState } from "@/server/boosters/state";
 import { RARITY_BG } from "../boosters/format";
@@ -15,9 +17,6 @@ import { ZeniCoin } from "../layout/ZeniCoin";
 import { CopyLinkButton } from "./CopyLinkButton";
 import { CountPicker } from "./CountPicker";
 import { FeaturedSeal, NewStamp } from "./RevealCard";
-
-const byRarityDesc = (a: OpenedCardView, b: OpenedCardView) =>
-  RARITIES.indexOf(b.rarity) - RARITIES.indexOf(a.rarity) || Number(b.featured) - Number(a.featured);
 
 type Props = {
   boosters: OpenedBoosterView[];
@@ -38,10 +37,12 @@ type Props = {
  * à portée du pouce.
  */
 export function Recap({ boosters, state, reduced, play, counters, zeniSpent, count, maxCount, onCount }: Props) {
+  const RARITIES = useRarities();
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("opening");
   const tRarity = useTranslations("rarity");
   const cards = boosters.flatMap((b) => b.cards);
-  const sorted = [...cards].sort(byRarityDesc);
+  const sorted = [...cards].sort((a, b) => RARITIES.indexOf(b.rarity) - RARITIES.indexOf(a.rarity) || Number(b.featured) - Number(a.featured));
   const best = sorted[0];
   const rest = sorted.slice(1);
   const newCount = cards.filter((c) => c.isNew).length;

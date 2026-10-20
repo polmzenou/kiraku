@@ -1,5 +1,6 @@
 "use client";
 
+import { useRarities } from "@/lib/catalog/use-rarities";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { changedSettingKeys } from "@/lib/settings/form";
@@ -10,7 +11,7 @@ import { SettingsSaveBar } from "./SettingsSaveBar";
 
 type NumberKey = Exclude<keyof GeneralSettings, "game.timeZone" | "home.pullFeed.enabled" | "home.pullFeed.minRarity">;
 
-const PULL_RARITIES = ["EPIC", "LEGENDARY", "MYTHIC"] as const;
+
 
 const LIMITS: Record<NumberKey, [number, number]> = {
   "economy.startingZeni": [0, 1_000_000],
@@ -27,6 +28,8 @@ const LIMITS: Record<NumberKey, [number, number]> = {
 export function GeneralSettingsForm({ initial }: { initial: GeneralSettings }) {
   const t = useTranslations("admin.general");
   const tRarity = useTranslations("rarity");
+  const rarities = useRarities();
+  const PULL_RARITIES = rarities.slice(rarities.indexOf("EPIC"));
   const [draft, setDraft] = useState(initial);
   const valid = generalSettingsSchema.safeParse(draft).success;
   const changed = valid ? changedSettingKeys(GENERAL_SETTING_KEYS, initial, draft) : [];

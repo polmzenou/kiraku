@@ -5,14 +5,21 @@ import { useSyncExternalStore } from "react";
 // État partagé du chat entre l'icône de l'en-tête (mobile), la bulle (desktop), le panneau et les
 // boutons « Discuter » ailleurs dans l'app : panneau ouvert, ami ciblé, nombre de non-lus.
 
-type ChatState = { open: boolean; with: string | null; unread: number; available: boolean };
+type ChatState = {
+  open: boolean;
+  /** Le panneau redescend : il reste affiché le temps de l'animation de fermeture. */
+  closing: boolean;
+  with: string | null;
+  unread: number;
+  available: boolean;
+};
 type Store = { state: ChatState; listeners: Set<() => void> };
 
 // Une seule instance pour toute la page, même si le module est dupliqué entre deux chunks
 // (en-tête du layout et composants d'une page) : le store vit sur globalThis.
 const holder = globalThis as typeof globalThis & { __kirakuChat?: Store };
 const store: Store = (holder.__kirakuChat ??= {
-  state: { open: false, with: null, unread: 0, available: false },
+  state: { open: false, closing: false, with: null, unread: 0, available: false },
   listeners: new Set(),
 });
 
@@ -26,7 +33,11 @@ const subscribe = (l: () => void) => {
   return () => store.listeners.delete(l);
 };
 
-const SERVER_STATE: ChatState = { open: false, with: null, unread: 0, available: false };
+const SERVER_STATE: ChatState = { open: false, closing: false, with: null, unread: 0, available: false };
+
+/** Durée de l'animation d'ouverture et de fermeture du panneau (classes duration-300 de ChatDock). */
+export const CHAT_PANEL_MS = 300;
+let closeTimer: ReturnType<typeof setTimeout> | undefined;
 
 export function useChatState(): ChatState {
   return useSyncExternalStore(subscribe, () => store.state, () => SERVER_STATE);
@@ -34,11 +45,18 @@ export function useChatState(): ChatState {
 
 /** Ouvre le chat, sur la conversation d'un ami si `username` est donné. */
 export function openChat(username?: string) {
-  set({ open: true, with: username ?? null });
+  clearTimeout(closeTimer);
+  set({ open: true, closing: false, with: username ?? null });
 }
 
+/** Ferme le panneau en le laissant redescendre (immédiat si le mouvement est réduit). */
 export function closeChat() {
-  set({ open: false });
+  if (!store.state.open) return;
+  const reduced = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  set({ open: false, closing: !reduced });
+  if (reduced) return;
+  clearTimeout(closeTimer);
+  closeTimer = setTimeout(() => set({ closing: false }), CHAT_PANEL_MS);
 }
 
 export function showConversation(username: string | null) {

@@ -1,10 +1,11 @@
 "use client";
 
+
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { TECHNIQUES } from "@/lib/battle/types";
-import { RARITIES } from "@/lib/catalog/rarity";
+
 import { COMBAT_SETTING_KEYS, combatSettingsSchema, type CombatSettings } from "@/lib/settings/combat-form";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { updateCombatSettings } from "@/server/actions/admin-settings";
@@ -107,7 +108,7 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
 
       <fieldset className={box}>
         <legend className="px-1 font-bold">{t("keywordsByRarity")}</legend>
-        {group("battle.keywordsByRarity", (r) => tRarity(r as (typeof RARITIES)[number]))}
+        {group("battle.keywordsByRarity", (r) => tRarity(r))}
       </fieldset>
 
       <fieldset className={box}>

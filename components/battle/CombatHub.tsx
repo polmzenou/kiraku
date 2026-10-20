@@ -154,7 +154,6 @@ export function CombatHub({
           </Button>
         </article>
 
-
         <article className="flex flex-col gap-3 lacquer rounded-card p-4">
           <h2 className="flex items-center gap-2 font-title text-lg font-bold">
             {t("friend.title")}

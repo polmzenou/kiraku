@@ -1,6 +1,8 @@
+
+import { useRaritySeals } from "@/lib/catalog/use-rarities";
 import { useTranslations } from "next-intl";
 import type { CSSProperties, ReactNode } from "react";
-import { RARITY_SEAL } from "@/lib/catalog/rarity";
+
 import type { LotView } from "@/server/economy/lot-view";
 import { BoosterArt } from "../boosters/BoosterArt";
 import { Fuda } from "../fuda/Fuda";
@@ -23,6 +25,7 @@ const FAN = [
  * par LotRewards juste en dessous.
  */
 export function LotStage({ lot, className = "" }: { lot: LotView | undefined; className?: string }) {
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("economy.lot");
   const tRarity = useTranslations("rarity");
   const booster = lot?.lines.find((l) => l.kind === "BOOSTER");

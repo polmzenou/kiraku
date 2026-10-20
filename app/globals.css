@@ -82,6 +82,8 @@
   --color-rarity-epic: #6e4796;
   --color-rarity-legendary: #b8902f;
   --color-rarity-mythic: #8f7bb8;
+  --color-rarity-ar: #6f8fd8;
+  --color-rarity-gold: #d9b556;
   --color-washi-paper: #f3ecdf;
   /* Encre des fuda : le papier reste clair dans les deux thèmes */
   --color-sumi: #1f1b17;
@@ -293,6 +295,22 @@
   }
   .fuda-live[data-rarity="MYTHIC"] .fuda-sheen {
     animation: raden-breathe 4s ease-in-out infinite;
+  }
+  .fuda[data-rarity="AR"] .fuda-sheen {
+    /* AR : prisme shu, ai et kin, qui suit l'inclinaison */
+    background: linear-gradient(115deg, transparent 30%, rgb(224 83 63 / 0.55) 40%, rgb(127 163 209 / 0.6) 50%, rgb(217 181 86 / 0.55) 60%, transparent 70%);
+    mix-blend-mode: color-dodge;
+    opacity: 0.6;
+  }
+  .fuda-live[data-rarity="AR"] .fuda-sheen,
+  .fuda-live[data-rarity="GOLD"] .fuda-sheen {
+    animation: raden-breathe 3s ease-in-out infinite;
+  }
+  .fuda[data-rarity="GOLD"] .fuda-sheen {
+    /* Gold : éclat de feuille d'or sur toute la carte */
+    background: linear-gradient(115deg, transparent 34%, rgb(255 236 170 / 0.25) 42%, rgb(255 251 230 / 0.9) 50%, rgb(255 236 170 / 0.25) 58%, transparent 66%);
+    mix-blend-mode: screen;
+    opacity: 0.7;
   }
 
   /* Boosters (sachet, pochibukuro, jūbako) : couleur, ombre et motif wagara propres à chaque type
@@ -513,6 +531,18 @@
     --fuda-frame: var(--color-rarity-mythic);
     /* Nacre (raden) : irisation statique pour l'instant */
     --fuda-frame-bg: linear-gradient(135deg, #efe3f6 0%, #c3e4e1 28%, #f5e5c4 52%, #d4c6f0 76%, #bfdcef 100%);
+  }
+  .fuda[data-rarity="AR"] {
+    --fuda-frame: var(--color-rarity-ar);
+    /* AR (forme alternative) : cadre irisé shu, ai et kin */
+    --fuda-frame-bg: conic-gradient(from 210deg, #c8372d, #e0533f, #d9b556, #7fa3d1, #1e3557, #7fa3d1, #c8372d);
+  }
+  .fuda[data-rarity="GOLD"] {
+    --fuda-frame: var(--color-rarity-gold);
+    /* Gold : feuille d'or épaisse, paillettes fixes dans le cadre */
+    --fuda-frame-bg:
+      radial-gradient(circle, rgb(255 248 220 / 0.8) 0 0.7px, transparent 1.2px) 0 0 / 9px 9px,
+      linear-gradient(135deg, #7a5a16 0%, #f6e3a1 22%, #c99a33 45%, #fff2c2 62%, #a87d22 82%, #e8cb75 100%);
   }
 }
 

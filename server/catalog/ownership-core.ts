@@ -13,7 +13,7 @@ export async function readWikiCollection(db: Pick<PrismaClient, "$queryRaw">, us
     ), discovered AS (
       SELECT "cardId" FROM "Discovery" WHERE "userId" = ${userId}
     )
-    SELECT c."anilistId", COALESCE(o.copies, 0)::int AS copies,
+    SELECT c."publicId" AS "anilistId", COALESCE(o.copies, 0)::int AS copies,
            (d."cardId" IS NOT NULL OR COALESCE(o.copies, 0) > 0) AS discovered
     FROM owned o
     FULL OUTER JOIN discovered d ON d."cardId" = o."cardId"

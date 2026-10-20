@@ -2,11 +2,12 @@ import "server-only";
 import { getTranslations } from "next-intl/server";
 import { unstable_cache } from "next/cache";
 import type { CardView } from "@/lib/boosters/view";
-import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { displayNameFor } from "@/lib/collection/display-name";
 import { prisma } from "../db";
 import { cardViews } from "../boosters/display";
 import { namedPlayerSelect } from "../collection/public-names";
+import { getRarities } from "../catalog/rarities";
 import { getSetting } from "../settings";
 
 export type RecentPull = {
@@ -48,6 +49,7 @@ export async function getRecentPulls(locale: string): Promise<RecentPull[] | nul
     getSetting("home.pullFeed.maxAgeHours"),
   ]);
   if (!enabled) return null;
+  const RARITIES = await getRarities();
   const rarities = RARITIES.slice(RARITIES.indexOf(minRarity));
   // Fenêtre arrondie à la minute : la clé de cache reste stable entre deux requêtes
   const since = Math.floor((Date.now() - maxAgeHours * 3_600_000) / 60_000) * 60_000;

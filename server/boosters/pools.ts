@@ -14,7 +14,8 @@ import {
   type RotationWindow,
 } from "@/lib/boosters/rotation";
 import { availability, type Availability, type BoosterTypeView } from "@/lib/boosters/types";
-import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
+import { getRarities } from "../catalog/rarities";
 import { getCatalogVersion } from "../catalog/queries";
 import { prisma } from "../db";
 import { getSetting } from "../settings";
@@ -61,14 +62,15 @@ export type BoosterTypeEntry = {
   dynamic: boolean;
 };
 
-function parseCounts(raw: unknown): Record<Rarity, number> | null {
+function parseCounts(raw: unknown, rarities: readonly string[]): Record<Rarity, number> | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
-  return Object.fromEntries(RARITIES.map((k) => [k, typeof r[k] === "number" ? (r[k] as number) : 0])) as Record<Rarity, number>;
+  return Object.fromEntries(rarities.map((k) => [k, typeof r[k] === "number" ? (r[k] as number) : 0])) as Record<Rarity, number>;
 }
 
 /** Tous les types (actifs ou non), dans l'ordre des familles. Lu une fois par requête. */
 export const getBoosterTypes = cache(async (): Promise<BoosterTypeEntry[]> => {
+  const rarities = await getRarities();
   const [catalogVersion, types] = await Promise.all([
     getCatalogVersion(),
     prisma.boosterType.aggregate({ _count: { _all: true }, _max: { updatedAt: true } }),
@@ -79,7 +81,7 @@ export const getBoosterTypes = cache(async (): Promise<BoosterTypeEntry[]> => {
     const type = toBoosterTypeView(row);
     return {
       type,
-      storedCounts: parseCounts(row.poolCounts),
+      storedCounts: parseCounts(row.poolCounts, rarities),
       stamp: Math.max(row.updatedAt.getTime(), row.poolComputedAt?.getTime() ?? 0),
       dynamic: type.filter !== null && isDynamicFilter(type.filter),
     };
@@ -99,7 +101,7 @@ const loadStaticPool = unstable_cache(
     const row = await prisma.boosterType.findUnique({ where: { slug }, select: { poolCardIds: true } });
     if (!row || row.poolCardIds.length === 0) return groupByRarity([]);
     const cards = await prisma.card.findMany({
-      where: { id: { in: row.poolCardIds }, rank: { not: null } },
+      where: { id: { in: row.poolCardIds }, status: "PUBLISHED", dropWeight: { gt: 0 } },
       select: { id: true, rarity: true },
       orderBy: { rank: "asc" },
     });
@@ -122,9 +124,10 @@ const loadDailyPool = unstable_cache(
 
 /** Pool d'un type, groupé par rareté (rareté globale du catalogue). */
 export async function getBoosterPool(entry: BoosterTypeEntry): Promise<CardPool> {
-  if (!entry.dynamic) return loadStaticPool(entry.type.slug, entry.stamp);
+  const order = await getRarities();
   const [version, ctx] = await Promise.all([getCatalogVersion(), getFilterContext()]);
-  return loadDailyPool(entry.type.slug, entry.stamp, version, dayKey(ctx));
+  const pool = !entry.dynamic ? await loadStaticPool(entry.type.slug, entry.stamp) : await loadDailyPool(entry.type.slug, entry.stamp, version, dayKey(ctx));
+  return Object.fromEntries(order.map((r) => [r, pool[r] ?? []]));
 }
 
 export type BoosterOffer = {
@@ -152,7 +155,7 @@ const loadBaseOffers = cache(async (): Promise<BaseOffer[]> => {
   return Promise.all(
     entries.map(async (entry) => {
       const counts = entry.dynamic || !entry.storedCounts ? poolCounts(await getBoosterPool(entry)) : entry.storedCounts;
-      const size = RARITIES.reduce((s, r) => s + counts[r], 0);
+      const size = Object.values(counts).reduce((s, n) => s + n, 0);
       return { type: entry.type, counts, size, availability: availability(entry.type, now, size, entry.type.minPoolSize ?? minPool) };
     }),
   );

@@ -1,3 +1,4 @@
+import { getRarities } from "@/server/catalog/rarities";
 import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -27,7 +28,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/wiki">):
 }
 
 export default async function WikiPage({ searchParams }: PageProps<"/[locale]/wiki">) {
-  const params = parseWikiParams(await searchParams);
+  const params = parseWikiParams(await searchParams, await getRarities());
   const locale = await getLocale();
   const [t, stats, index, options] = await Promise.all([
     getTranslations("wiki"),

@@ -1,3 +1,6 @@
+
+import { useRaritySeals } from "@/lib/catalog/use-rarities";
+import { getRarities } from "@/server/catalog/rarities";
 import type { Metadata } from "next";
 import { hasLocale, useTranslations } from "next-intl";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
@@ -23,7 +26,7 @@ import { poolCounts } from "@/lib/boosters/draw";
 import { boosterPanelData } from "@/lib/boosters/panel";
 import { isRotatingFamily } from "@/lib/boosters/rotation";
 import { BOOSTER_FAMILIES, FAMILY_KANJI, localize, type BoosterFamily } from "@/lib/boosters/types";
-import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { canReview, pinnedFirst } from "@/lib/social/reviews";
 import { readBannerPity } from "@/server/boosters/open-core";
 import { cardViews } from "@/server/boosters/display";
@@ -69,6 +72,7 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
 
 /** Accueil : choix du booster (planche « Choix du booster »), onglets par famille sur mobile. */
 export default async function BoostersPage({ searchParams }: PageProps<"/[locale]">) {
+  const RARITIES = await getRarities();
   const [t, format, user, rules, offers, rotation, ctx, query, locale] = await Promise.all([
     getTranslations("boosters"),
     getFormatter(),
@@ -301,6 +305,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
 
 /** « 秀+ 18,4 % · 神 0,31 % » : la ligne de chances de la barre du bas. */
 function OddsSummary({ odds }: { odds: Record<Rarity, number> }) {
+  const RARITY_SEAL = useRaritySeals();
   const percent = usePercent();
   const tRarity = useTranslations("rarity");
   const best: Rarity[] = odds.EPIC >= 0.999 ? (odds.LEGENDARY >= 0.999 ? ["MYTHIC"] : ["LEGENDARY", "MYTHIC"]) : ["EPIC", "MYTHIC"];

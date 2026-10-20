@@ -12,12 +12,7 @@ type AlbumRow = {
   owned: number;
   total: number;
   fullCount: number;
-  tC: number; oC: number;
-  tU: number; oU: number;
-  tR: number; oR: number;
-  tE: number; oE: number;
-  tL: number; oL: number;
-  tM: number; oM: number;
+  byRarity: Album["byRarity"];
 };
 
 /**
@@ -42,28 +37,24 @@ export async function getAlbumPage(ownerId: string, params: AlbumParams, offset:
     WITH owned AS (SELECT DISTINCT "cardId" FROM "UserCard" WHERE "ownerId" = ${ownerId})
     SELECT s.id, s."titleRomaji", s."titleEnglish",
       COALESCE(
-        (array_agg(c."imageUrl" ORDER BY c.rarity DESC, c.rank ASC) FILTER (WHERE o."cardId" IS NOT NULL))[1],
+        (array_agg(c."imageUrl" ORDER BY rd."sortOrder" DESC, c.rank ASC) FILTER (WHERE o."cardId" IS NOT NULL))[1],
         (array_agg(c."imageUrl" ORDER BY c.rank ASC))[1]
       ) AS cover,
       COUNT(o."cardId")::int AS owned,
       COUNT(*)::int AS total,
       (COUNT(*) OVER ())::int AS "fullCount",
-      COUNT(*) FILTER (WHERE c.rarity = 'COMMON')::int AS "tC",
-      COUNT(o."cardId") FILTER (WHERE c.rarity = 'COMMON')::int AS "oC",
-      COUNT(*) FILTER (WHERE c.rarity = 'UNCOMMON')::int AS "tU",
-      COUNT(o."cardId") FILTER (WHERE c.rarity = 'UNCOMMON')::int AS "oU",
-      COUNT(*) FILTER (WHERE c.rarity = 'RARE')::int AS "tR",
-      COUNT(o."cardId") FILTER (WHERE c.rarity = 'RARE')::int AS "oR",
-      COUNT(*) FILTER (WHERE c.rarity = 'EPIC')::int AS "tE",
-      COUNT(o."cardId") FILTER (WHERE c.rarity = 'EPIC')::int AS "oE",
-      COUNT(*) FILTER (WHERE c.rarity = 'LEGENDARY')::int AS "tL",
-      COUNT(o."cardId") FILTER (WHERE c.rarity = 'LEGENDARY')::int AS "oL",
-      COUNT(*) FILTER (WHERE c.rarity = 'MYTHIC')::int AS "tM",
-      COUNT(o."cardId") FILTER (WHERE c.rarity = 'MYTHIC')::int AS "oM"
+      (SELECT jsonb_object_agg(x.rarity, jsonb_build_object('owned', x.owned, 'total', x.total)) FROM (
+        SELECT c2."rarityKey" AS rarity, COUNT(*)::int AS total, COUNT(o2."cardId")::int AS owned
+        FROM "Card" c2 LEFT JOIN owned o2 ON o2."cardId" = c2.id
+        JOIN "RarityDefinition" rd2 ON rd2.key = c2."rarityKey"
+        WHERE c2."seriesId" = s.id AND c2.status = 'PUBLISHED'
+        GROUP BY c2."rarityKey", rd2."sortOrder" ORDER BY rd2."sortOrder", c2."rarityKey"
+      ) x) AS "byRarity"
     FROM "Card" c
     JOIN "Series" s ON s.id = c."seriesId"
+    JOIN "RarityDefinition" rd ON rd.key = c."rarityKey"
     LEFT JOIN owned o ON o."cardId" = c.id
-    WHERE c.rank IS NOT NULL ${search}
+    WHERE c.status = 'PUBLISHED' ${search}
     GROUP BY s.id
     ${started}
     ${order}
@@ -75,14 +66,7 @@ export async function getAlbumPage(ownerId: string, params: AlbumParams, offset:
     cover: r.cover,
     owned: r.owned,
     total: r.total,
-    byRarity: {
-      COMMON: { owned: r.oC, total: r.tC },
-      UNCOMMON: { owned: r.oU, total: r.tU },
-      RARE: { owned: r.oR, total: r.tR },
-      EPIC: { owned: r.oE, total: r.tE },
-      LEGENDARY: { owned: r.oL, total: r.tL },
-      MYTHIC: { owned: r.oM, total: r.tM },
-    },
+    byRarity: r.byRarity,
   }));
   const total = rows[0]?.fullCount ?? 0;
   const next = offset + items.length;

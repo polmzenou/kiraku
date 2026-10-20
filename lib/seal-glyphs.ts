@@ -2,7 +2,7 @@
 // à ces seuls caractères par scripts/subset-seal-font.mts : ajoute ici tout
 // nouveau kanji de sceau, puis relance `npm run fonts:subset`.
 export const SEAL_GLYPHS = [
-  "並良稀秀金神", // raretés
+  "並良稀秀金神異煌", // raretés (dont AR et Gold)
   "気楽", // logo
   "新", // nouvelle carte
   "銭", // Zeni

@@ -1,14 +1,16 @@
 import type { MetadataRoute } from "next";
-import { getTranslations } from "next-intl/server";
+import { createTranslator } from "next-intl";
 import { routing } from "@/i18n/routing";
+import fr from "@/messages/fr.json";
+import en from "@/messages/en.json";
 
 // Manifest PWA : installer Kiraku sur l'écran d'accueil (indispensable au Web Push sur iPhone).
 // Un seul manifest pour le site : textes dans la langue par défaut.
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
-  const [t, tNav] = await Promise.all([
-    getTranslations({ locale: routing.defaultLocale, namespace: "metadata" }),
-    getTranslations({ locale: routing.defaultLocale, namespace: "nav" }),
-  ]);
+  // Static metadata must not load the request-scoped catalogue or require a database at build time.
+  const messages = { fr, en }[routing.defaultLocale];
+  const t = createTranslator({ locale: routing.defaultLocale, messages, namespace: "metadata" });
+  const tNav = createTranslator({ locale: routing.defaultLocale, messages, namespace: "nav" });
   const shortcutIcon = [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }];
   return {
     id: "/",

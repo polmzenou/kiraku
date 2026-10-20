@@ -50,7 +50,8 @@ export async function playerMissionsWith(db: PrismaClient, userId: string, now: 
     orderBy: [{ period: "asc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
     select: { id: true, key: true, period: true, metric: true, goal: true, rarity: true, title: true, lotId: true },
   });
-  const missions = selectMissionRotation(candidates, now, timeZone);
+  const order = (await db.rarityDefinition.findMany({ orderBy: [{ sortOrder: "asc" }, { key: "asc" }], select: { key: true } })).map((r) => r.key);
+  const missions = selectMissionRotation(candidates, now, timeZone, order);
   if (missions.length === 0) return [];
 
   const windows: Record<MissionPeriod, PeriodWindow> = {
@@ -82,7 +83,7 @@ export async function playerMissionsWith(db: PrismaClient, userId: string, now: 
         state: missionState(progress, m.goal, claimed.has(m.id)),
         periodKey: windows[m.period].key,
         endsAt: windows[m.period].end,
-        difficulty: missionDifficulty(m),
+        difficulty: missionDifficulty(m, order),
       };
     }),
   );
@@ -104,7 +105,8 @@ export async function claimMissionWith(
       select: { id: true, key: true, period: true, metric: true, goal: true, rarity: true, lotId: true },
     });
     // Une ancienne URL ou un identifiant deviné ne donne pas accès au reste du pool.
-    const mission = selectMissionRotation(candidates, input.now, input.timeZone).find((m) => m.id === input.missionId);
+    const order = (await tx.rarityDefinition.findMany({ orderBy: [{ sortOrder: "asc" }, { key: "asc" }], select: { key: true } })).map((r) => r.key);
+    const mission = selectMissionRotation(candidates, input.now, input.timeZone, order).find((m) => m.id === input.missionId);
     if (!mission) throw new MissionError("NOT_FOUND");
 
     const window = periodWindow(mission.period, input.now, input.timeZone);

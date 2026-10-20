@@ -1,11 +1,13 @@
 "use client";
 
+import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
+
 import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useDeferredValue, useId, useMemo, useState, useTransition, type ReactNode } from "react";
 import type { DrawRules } from "@/lib/boosters/draw";
 import { boosterChances, mythicsPerDay } from "@/lib/boosters/odds";
-import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import {
   boosterSettingsSchema,
   changedKeys,
@@ -30,8 +32,9 @@ type FieldName =
   | "rotationGenre";
 const field = (key: BoosterSettingKey) => key.slice("booster.".length) as FieldName;
 
-const toRules = (s: BoosterSettings): DrawRules => ({
-  rates: s["booster.rates"],
+const toRules = (s: BoosterSettings, order: readonly string[]): DrawRules => ({
+  rates: Object.fromEntries(order.map((r) => [r, s["booster.rates"][r] ?? 0])),
+  rarities: order,
   slotFloors: s["booster.slotFloors"],
   pityThreshold: s["booster.pityThreshold"],
   goldenEvery: s["booster.goldenEvery"],
@@ -39,8 +42,8 @@ const toRules = (s: BoosterSettings): DrawRules => ({
   divineOdds: s["booster.divineOdds"],
 });
 
-function metrics(s: BoosterSettings) {
-  const chances = boosterChances(toRules(s));
+function metrics(s: BoosterSettings, order: readonly string[]) {
+  const chances = boosterChances(toRules(s, order));
   return { ...chances, perDay: mythicsPerDay(chances.mythicRate, s["booster.intervalMinutes"]) };
 }
 
@@ -87,6 +90,8 @@ function NumberField({
 }
 
 function RaritySelect({ value, onChange, label }: { value: Rarity; onChange: (r: Rarity) => void; label: string }) {
+  const RARITIES = useRarities();
+  const RARITY_SEAL = useRaritySeals();
   const tRarity = useTranslations("rarity");
   return (
     <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value as Rarity)} className={input}>
@@ -114,6 +119,8 @@ function Fieldset({ legend, children }: { legend: string; children: ReactNode })
  * revalide tout avec les mêmes schémas Zod.
  */
 export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
+  const RARITIES = useRarities();
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("admin.boosters");
   const tRarity = useTranslations("rarity");
   const format = useFormatter();
@@ -133,10 +140,11 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
   const valid = boosterSettingsSchema.safeParse(draft).success;
   const changed = valid ? changedKeys(initial, draft) : [];
   const deferred = useDeferredValue(draft);
-  const current = useMemo(() => metrics(initial), [initial]);
+  const orderKey = JSON.stringify(RARITIES);
+  const current = useMemo(() => metrics(initial, JSON.parse(orderKey)), [initial, orderKey]);
   const next = useMemo(
-    () => (boosterSettingsSchema.safeParse(deferred).success ? metrics(deferred) : null),
-    [deferred],
+    () => (boosterSettingsSchema.safeParse(deferred).success ? metrics(deferred, JSON.parse(orderKey)) : null),
+    [deferred, orderKey],
   );
 
   const rates = draft["booster.rates"];

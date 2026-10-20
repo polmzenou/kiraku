@@ -1,9 +1,11 @@
 "use client";
 
+import { useRarities } from "@/lib/catalog/use-rarities";
+
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { MISSION_METRICS, MISSION_PERIODS, missionInputSchema, type MissionInput } from "@/lib/economy/missions";
 import { saveMissionAction } from "@/server/actions/admin-economy";
 import { Button } from "../ui/Button";
@@ -23,6 +25,7 @@ const emptyMission = (lotId: string): MissionInput => ({
 
 /** Création ou modification d'une mission : période, ce qu'elle compte, objectif, lot. */
 export function MissionForm({ initial, lots }: { initial: MissionInput | null; lots: { id: string; name: string }[] }) {
+  const RARITIES = useRarities();
   const t = useTranslations("admin.economy");
   const tMetric = useTranslations("economy.missions.metric");
   const tPeriod = useTranslations("economy.missions.period");

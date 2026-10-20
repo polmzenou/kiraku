@@ -1,4 +1,7 @@
 "use client";
+import { useRarities, useRarityDefinitions } from "@/lib/catalog/use-rarities";
+import { fxTier } from "@/lib/catalog/tiers";
+
 
 import { AnimatePresence, m } from "motion/react";
 import { useTranslations } from "next-intl";
@@ -8,12 +11,13 @@ import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import { Fuda } from "../fuda/Fuda";
 import { CardBack } from "../fuda/CardBack";
 import { Button } from "../ui/Button";
-import { CHARGE_MS } from "./RarityFx";
+import { chargeFor } from "./RarityFx";
 import { FlipCard, type FlipPhase } from "./RevealCard";
 import type { SoundName } from "@/lib/sound/synth";
 
 /** Ordre de révélation : de la moins rare à la plus rare (une vedette après les autres de sa rareté). */
-export function revealOrder<T extends { rarity: Rarity; featured?: boolean }>(cards: readonly T[]): T[] {
+export function revealOrder<T extends { rarity: Rarity; featured?: boolean }>(cards: readonly T[], order: readonly string[] = RARITIES): T[] {
+  const RARITIES = order;
   return cards
     .map((card, i) => ({ card, i }))
     .sort(
@@ -56,7 +60,9 @@ type Props = {
  */
 export function CardDeck({ cards, reduced, play, onMythic, onDone }: Props) {
   const t = useTranslations("opening");
-  const [order] = useState(() => revealOrder(cards));
+  const rarities = useRarities();
+  const definitions = useRarityDefinitions();
+  const [order] = useState(() => revealOrder(cards, rarities));
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<FlipPhase>("back");
   const [topVisible, setTopVisible] = useState(true);
@@ -108,15 +114,16 @@ export function CardDeck({ cards, reduced, play, onMythic, onDone }: Props) {
 
   const flip = () => {
     if (!current || phaseRef.current !== "back" || advancing.current || finished.current) return;
-    const charge = reduced ? 0 : CHARGE_MS[current.rarity];
-    if (current.rarity === "MYTHIC" && !reduced) {
+    const charge = reduced ? 0 : (chargeFor(current.rarity, definitions) ?? 480);
+    const tier = fxTier(current.rarity, definitions);
+    if (tier === "MYTHIC" && !reduced) {
       onMythic();
       play("taiko", [80]);
     }
     if (charge === 0) {
       phaseRef.current = "front";
       setPhase("front");
-      for (const [s, h] of revealFx(current.rarity)) play(s, h);
+      for (const [s, h] of revealFx(tier)) play(s, h);
       return;
     }
     phaseRef.current = "charging";
@@ -126,7 +133,7 @@ export function CardDeck({ cards, reduced, play, onMythic, onDone }: Props) {
       if (finished.current) return;
       phaseRef.current = "front";
       setPhase("front");
-      for (const [s, h] of revealFx(current.rarity)) play(s, h);
+      for (const [s, h] of revealFx(tier)) play(s, h);
     }, charge);
   };
 

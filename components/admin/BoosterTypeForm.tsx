@@ -1,5 +1,7 @@
 "use client";
 
+import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
+
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { useEffect, useId, useState, useTransition, type ReactNode } from "react";
@@ -7,7 +9,7 @@ import { useRouter } from "@/i18n/navigation";
 import type { BoosterTypeForm as FormValues } from "@/lib/boosters/admin-form";
 import { contentsLabel } from "@/lib/boosters/catalog";
 import { BOOSTER_FAMILIES, BOOSTER_SHAPES, WAGARA } from "@/lib/boosters/types";
-import { RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { saveBoosterType, searchFeaturedCards, type FeaturedCandidate } from "@/server/actions/admin-boosters";
 import { BoosterArt } from "../boosters/BoosterArt";
 import { Button } from "../ui/Button";
@@ -72,6 +74,8 @@ type Props = {
 
 /** Création ou modification d'un type de booster (ou d'une bannière vedette), avec aperçu du sachet. */
 export function BoosterTypeForm({ initial, featured: initialFeatured, globalCards }: Props) {
+  const RARITIES = useRarities();
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("admin.form");
   const tFamilies = useTranslations("boosters.families");
   const tRarity = useTranslations("rarity");

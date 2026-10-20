@@ -1,9 +1,11 @@
 "use client";
 
+import { useRaritySeals } from "@/lib/catalog/use-rarities";
+
 import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
-import { RARITY_SEAL } from "@/lib/catalog/rarity";
+
 import { recentPullsAction } from "@/server/actions/home";
 import type { RecentPull } from "@/server/home/pulls";
 import { Fuda } from "../fuda/Fuda";
@@ -75,6 +77,7 @@ export function RecentPulls({ initial, refreshSeconds, serverNow }: { initial: R
 }
 
 function PullList({ pulls, now }: { pulls: RecentPull[]; now: number }) {
+  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("home.pulls");
   const tRarity = useTranslations("rarity");
   const format = useFormatter();

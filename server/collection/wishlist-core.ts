@@ -29,8 +29,8 @@ export async function setWishlistWith(db: PrismaClient, userId: string, cardId: 
     while (used.has(position)) position++;
     if (position > MAX_WISHLIST_CARDS) throw new WishlistError("FULL");
 
-    const card = await tx.card.findUnique({ where: { id: cardId }, select: { rank: true } });
-    if (!card || card.rank === null) throw new WishlistError("NOT_FOUND");
+    const card = await tx.card.findUnique({ where: { id: cardId }, select: { status: true } });
+    if (!card || card.status !== "PUBLISHED") throw new WishlistError("NOT_FOUND");
     await tx.wishlistEntry.create({ data: { userId, cardId, position } });
     return true;
   });

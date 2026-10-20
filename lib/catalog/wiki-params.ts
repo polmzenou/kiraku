@@ -1,3 +1,4 @@
+import { rarityKeySchema } from "@/lib/catalog/definitions";
 import { z } from "@/lib/zod";
 import { RARITIES, type Rarity } from "./rarity";
 import { normalizeSearch, SEARCH_MAX_LENGTH } from "./search";
@@ -41,7 +42,7 @@ export type WikiFilterOptions = {
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 const qSchema = z.string().max(SEARCH_MAX_LENGTH * 2);
-const raritySchema = z.enum(RARITIES);
+const raritySchema = rarityKeySchema;
 const afterSchema = z.coerce.number().int().positive().max(1_000_000);
 const ownershipSchema = z.enum(WIKI_OWNERSHIPS);
 const seriesSchema = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
@@ -52,7 +53,7 @@ const sortSchema = z.enum(WIKI_SORTS);
 const dirSchema = z.enum(["asc", "desc"]);
 
 /** Paramètres d'URL du wiki ; une valeur invalide est simplement ignorée. */
-export function parseWikiParams(raw: Record<string, string | string[] | undefined>): WikiParams {
+export function parseWikiParams(raw: Record<string, string | string[] | undefined>, knownRarities: readonly string[] = RARITIES): WikiParams {
   const qRaw = qSchema.safeParse(first(raw.q) ?? "");
   const q = qRaw.success ? qRaw.data.trim().slice(0, SEARCH_MAX_LENGTH) : "";
   const terms = normalizeSearch(q).split(" ").filter(Boolean).slice(0, MAX_TERMS);
@@ -74,7 +75,7 @@ export function parseWikiParams(raw: Record<string, string | string[] | undefine
   return {
     q,
     terms,
-    rarities: RARITIES.filter((rarity) => wanted.has(rarity)),
+    rarities: knownRarities.filter((rarity) => wanted.has(rarity)),
     after: after.success ? after.data : null,
     ownership: ownership.success ? ownership.data : "all",
     series: series.success ? series.data : null,

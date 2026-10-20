@@ -93,7 +93,6 @@ type LockedUser = {
 
 /** Compteurs de pitié vedette par bannière ({ boosterTypeId: n }), valeurs invalides ignorées. */
 /** Raretés enregistrées comme gros tirages : le réglage home.pullFeed.minRarity choisit parmi elles. */
-const NOTABLE_RARITIES = new Set<Rarity>(["EPIC", "LEGENDARY", "MYTHIC"]);
 
 export function readBannerPity(raw: unknown): Record<string, number> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
@@ -110,6 +109,8 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
 
   return db.$transaction(
     async (tx) => {
+      // Publication takes the exclusive version of this lock. Concurrent openings stay parallel.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock_shared(740_210_001)`;
       // Verrou sur la ligne du joueur : deux ouvertures simultanées passent l'une après l'autre
       const [user] = await tx.$queryRaw<LockedUser[]>`
         SELECT "boosterStock", "boosterAnchor", "pityCount", "standardCount", "coins", "bannerPity", "bannedAt"
@@ -158,6 +159,13 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
 
       // « Nouveau » : jamais obtenue avant, et seulement le premier exemplaire de ce tirage
       const drawnIds = [...new Set(drawn.boosters.flatMap((b) => b.cards.map((c) => c.cardId)))];
+      const eligible = await tx.card.findMany({ where: { id: { in: drawnIds } }, select: { id: true, status: true, rarity: true, dropWeight: true, origin: true, boosterIds: true } });
+      const liveCards = new Map(eligible.map((c) => [c.id, c]));
+      if (drawn.boosters.some((b) => b.cards.some((c) => {
+        const row = liveCards.get(c.cardId);
+        return !row || row.status !== "PUBLISHED" || row.rarity !== c.rarity || row.dropWeight <= 0 ||
+          row.dropWeight !== (rules.draw.cardWeights?.[row.id] ?? 1) || (row.origin === "CUSTOM" && !row.boosterIds.includes(type.id));
+      }))) throw new OpenError("NOT_FOR_SALE");
       const known = await tx.discovery.findMany({
         where: { userId, cardId: { in: drawnIds } },
         select: { cardId: true },
@@ -207,7 +215,8 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         })),
       });
       // Gros tirages pour le carrousel « En direct » de l'accueil (la rareté affichée se règle à la lecture)
-      const notable = boosters.flatMap((b) => b.cards.filter((c) => NOTABLE_RARITIES.has(c.rarity)));
+      const rarityOrder = rules.draw.rarities ?? Object.keys(rules.draw.rates);
+      const notable = boosters.flatMap((b) => b.cards.filter((c) => rarityOrder.indexOf(c.rarity) >= rarityOrder.indexOf("EPIC")));
       if (notable.length > 0) {
         await tx.notablePull.createMany({
           data: notable.map((c) => ({ userId, cardId: c.cardId, rarity: c.rarity, boosterSlug: type.slug, createdAt: now })),

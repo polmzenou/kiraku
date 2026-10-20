@@ -22,7 +22,7 @@ import {
   type FighterSetup,
   type Side,
 } from "@/lib/battle/types";
-import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { type Rarity } from "@/lib/catalog/rarity";
 import { mixSeed, seededRng, type Rng } from "@/lib/rng";
 import { pickGiftCopy } from "@/lib/social/gifts";
 import { pairKey } from "@/lib/social/relation";
@@ -198,7 +198,7 @@ async function releaseTeam(tx: Tx, userId: string | null, userCardIds: readonly 
 
 const cardSelect = {
   id: true,
-  anilistId: true,
+  anilistId: true, publicId: true, appearance: true,
   name: true,
   nameNative: true,
   imageUrl: true,
@@ -214,22 +214,24 @@ async function fightersOf(tx: Tx, userCardIds: readonly string[], rules: BattleR
   return userCardIds.map((id) => {
     const card = byId.get(id);
     if (!card) throw new BattleError("NOT_OWNED");
-    return fighterFrom(card as FighterCard, rules);
+    return fighterFrom({ ...card, anilistId: card.publicId } as FighterCard, rules);
   });
 }
 
 /** Une carte au hasard de chaque rareté demandée, toutes différentes. */
 async function botFighters(tx: Tx, rarities: readonly Rarity[], ctx: Ctx): Promise<FighterSetup[]> {
+  const RARITIES = (await tx.rarityDefinition.findMany({ orderBy: [{ sortOrder: "asc" }, { key: "asc" }], select: { key: true } })).map((r) => r.key);
   const picked: FighterSetup[] = [];
-  for (const wanted of rarities) {
+  for (const wanted of botRarities(rarities, ctx.random, ctx.rules.botUpgradePct, RARITIES)) {
     // Rareté vide (petit catalogue) : on descend jusqu'à en trouver une
     let card: FighterCard | null = null;
     for (let i = RARITIES.indexOf(wanted); i >= 0 && !card; i--) {
       const rarity = RARITIES[i];
-      const where = { rarity, rank: { not: null }, id: { notIn: picked.map((f) => f.cardId) } };
+      const where: Prisma.CardWhereInput = { rarity, status: "PUBLISHED", id: { notIn: picked.map((f) => f.cardId) } };
       const count = await tx.card.count({ where });
       if (count === 0) continue;
-      card = (await tx.card.findFirst({ where, select: cardSelect, orderBy: { id: "asc" }, skip: ctx.random(count) })) as FighterCard | null;
+      const row = await tx.card.findFirst({ where, select: cardSelect, orderBy: { id: "asc" }, skip: ctx.random(count) });
+      card = row ? { ...row, anilistId: row.publicId } : null;
     }
     if (!card) throw new BattleError("NO_BOT_CARDS");
     picked.push(fighterFrom(card, ctx.rules));
@@ -593,7 +595,7 @@ export async function startBotBattleWith(db: PrismaClient, input: { userId: stri
     if (matched) return matched;
     await tx.battleQueue.delete({ where: { userId: input.userId } });
     const mine = await fightersOf(tx, row.team, ctx.rules);
-    const bot = await botFighters(tx, botRarities(mine.map((f) => f.rarity), ctx.random, ctx.rules.botUpgradePct), ctx);
+    const bot = await botFighters(tx, mine.map((f) => f.rarity), ctx);
     return start(
       tx,
       {

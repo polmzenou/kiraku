@@ -40,16 +40,16 @@ export async function searchAdminCards(input: unknown): Promise<AdminCardCandida
   if (!parsed.success || !(await rateLimit(`admin-card-search:${admin.id}`, { limit: 60, windowSeconds: 60 })).success) return [];
   const q = parsed.data;
   const terms = normalizeSearch(q).split(" ").filter(Boolean);
-  const select = { id: true, anilistId: true, name: true, rarity: true, imageUrl: true, rank: true, series: { select: { titleRomaji: true } } } as const;
+  const select = { id: true, anilistId: true, publicId: true, appearance: true, name: true, rarity: true, imageUrl: true, rank: true, series: { select: { titleRomaji: true } } } as const;
   const exact = await prisma.card.findFirst({ where: { OR: [{ id: q }, ...(/^\d{1,9}$/.test(q) ? [{ anilistId: Number(q) }] : [])] }, select });
-  if (exact) return [{ ...exact, series: exact.series.titleRomaji }];
+  if (exact) return [{ ...exact, anilistId: exact.publicId, series: exact.series.titleRomaji }];
   if (!terms.length) return [];
   const rows = await prisma.card.findMany({
     where: { AND: terms.map((term) => ({ searchText: { contains: term } })) },
     orderBy: [{ rank: { sort: "asc", nulls: "last" } }, { id: "asc" }], take: 30,
     select,
   });
-  return rows.map((c) => ({ ...c, series: c.series.titleRomaji }));
+  return rows.map((c) => ({ ...c, anilistId: c.publicId, series: c.series.titleRomaji }));
 }
 
 const deleteUsersSchema = z

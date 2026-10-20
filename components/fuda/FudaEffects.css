@@ -1,0 +1,13 @@
+.fuda-effect { position:absolute; inset:0; z-index:5; pointer-events:none; border-radius:inherit; opacity:var(--fx-intensity,.45); mix-blend-mode:screen; background-size:250% 250%; background-position:calc(var(--mx,.5)*100%) calc(var(--my,.5)*100%); animation:fuda-fx-shift var(--fx-duration,8s) ease-in-out infinite alternate paused; }
+.fuda-live .fuda-effect { animation-play-state:running; }
+.fuda-effect-holographic { background-image:linear-gradient(115deg,transparent 12%,#ff67ba 27%,#78bfff 39%,#63ffba 51%,#ffe881 63%,transparent 80%); mix-blend-mode:color-dodge; }
+.fuda-effect-gold { background-image:linear-gradient(125deg,transparent 20%,#976821 30%,#ffeab0 43%,#bb8c34 55%,transparent 70%); }
+.fuda-effect-pearl { background-image:conic-gradient(from 45deg at calc(var(--mx,.5)*100%) calc(var(--my,.5)*100%),#ffd4ef88,#b8edff88,#fff4d088,#ddceff88,#ffd4ef88); }
+.fuda-effect-sparkles { background-image:radial-gradient(circle,#fff 0 1px,transparent 2px),radial-gradient(circle,var(--fx-color) 0 1px,transparent 2px); background-size:23px 31px,41px 37px; }
+.fuda-effect-aura { box-shadow:inset 0 0 24px 10px var(--fx-color); }
+@keyframes fuda-fx-shift { from { background-position:0% 20%; } to { background-position:100% 80%; } }
+@media(prefers-reduced-motion:reduce) { .fuda-live .fuda-effect { animation:none; } }
+/* Artwork doré (rareté Gold) : virage or statique de l'image et feuille d'or en calque, sans animation de filtre. */
+.fuda-art-gold { filter:sepia(1) saturate(2.4) hue-rotate(-14deg) brightness(1.04) contrast(1.08); }
+.fuda-gilt { position:absolute; inset:0; pointer-events:none; mix-blend-mode:soft-light; opacity:.75;
+  background:linear-gradient(150deg,#fff3c4 0%,#d9b556 30%,#8a6a1f 55%,#f0d98c 80%,#b8902f 100%); }

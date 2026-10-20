@@ -73,7 +73,6 @@ function TradeCard({ trade, mode }: { trade: TradeView; mode: Mode }) {
       }
     });
 
-
   return (
     <article className="flex flex-col gap-3 lacquer rounded-card p-3 md:p-4">
       <header className="flex flex-wrap items-center justify-between gap-2">

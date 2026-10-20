@@ -30,6 +30,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "s4.anilist.co" },
       { protocol: "https", hostname: "cdn.discordapp.com" },
+      ...(process.env.BLOB_PUBLIC_HOST ? [{ protocol: "https" as const, hostname: process.env.BLOB_PUBLIC_HOST, pathname: "/cards/**" }] : []),
     ],
   },
   async redirects() {

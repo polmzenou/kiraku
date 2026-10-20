@@ -7,10 +7,10 @@ import { prisma } from "../db";
 /** Infos d'affichage (fuda) d'un lot de cartes, par id de carte. */
 export async function cardViews(cardIds: readonly string[], locale: string): Promise<Map<string, CardView>> {
   const rows = await prisma.card.findMany({
-    where: { id: { in: [...new Set(cardIds)] } },
+    where: { id: { in: [...new Set(cardIds)] }, status: { not: "DRAFT" } },
     select: {
       id: true,
-      anilistId: true,
+      anilistId: true, publicId: true, appearance: true,
       name: true,
       nameNative: true,
       imageUrl: true,
@@ -26,10 +26,11 @@ export async function cardViews(cardIds: readonly string[], locale: string): Pro
       c.id,
       {
         cardId: c.id,
-        anilistId: c.anilistId,
+        anilistId: c.publicId,
         name: c.name,
         nameNative: c.nameNative,
         imageUrl: c.imageUrl,
+        appearance: c.appearance,
         rank: c.rank,
         rarity: c.rarity as Rarity,
         power: c.power,

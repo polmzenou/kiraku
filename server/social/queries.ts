@@ -174,7 +174,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
     ]),
   ];
   const cards = cardIds.length
-    ? await prisma.card.findMany({ where: { id: { in: cardIds } }, select: { id: true, anilistId: true, name: true, rarity: true } })
+    ? await prisma.card.findMany({ where: { id: { in: cardIds } }, select: { id: true, anilistId: true, publicId: true, appearance: true, name: true, rarity: true } })
     : [];
   const cardById = new Map(cards.map((c) => [c.id, c]));
 
@@ -200,7 +200,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
       auction,
       battle: r.type === "BATTLE_INVITE" ? parseBattlePayload(r.payload) : null,
       trade,
-      card: card ? { anilistId: card.anilistId, name: card.name, rarity: card.rarity } : null,
+      card: card ? { anilistId: card.publicId, name: card.name, rarity: card.rarity } : null,
     };
   });
 }
