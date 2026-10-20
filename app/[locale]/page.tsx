@@ -207,7 +207,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
               family,
               kanji: FAMILY_KANJI[family],
               title: t(`families.${family}.title`),
-              count: visible.filter((o) => o.type.family === family).length,
+              short: t(`families.${family}.short`),
               href: `/?b=${selected?.type.family === family ? selected.type.slug : visible.find((o) => o.type.family === family)!.type.slug}&f=${family}#famille-${family}`,
             }))}
           />
