@@ -601,39 +601,45 @@
     "metaDescription": "Open a free pack of fuda every {minutes} minutes, from {count} boosters.",
     "intro": "{count} boosters in {families} families. Free packs come out of your stock (one every {minutes} min, up to {max}); rarity boosters and formats are paid in Zeni.",
     "familiesLabel": "Booster families",
-    "allFamilies": "All",
-    "familyCount": "{count, plural, one {# booster} other {# boosters}}",
     "families": {
       "standard": {
         "title": "Standard",
+        "short": "Standard",
         "subtitle": "The whole catalogue"
       },
       "formats": {
         "title": "Formats",
+        "short": "Formats",
         "subtitle": "Other sizes, paid in Zeni"
       },
       "rarete": {
         "title": "By rarity",
+        "short": "Rarity",
         "subtitle": "Raised floors, paid in Zeni"
       },
       "demographie": {
         "title": "By demographic",
+        "short": "Demographic",
         "subtitle": "Who the series is for"
       },
       "genre": {
         "title": "By genre",
+        "short": "Genre",
         "subtitle": "AniList genres of the main series"
       },
       "personnage": {
         "title": "By character",
+        "short": "Character",
         "subtitle": "Filters on the character itself"
       },
       "epoque": {
         "title": "By era",
+        "short": "Era",
         "subtitle": "Year of the main series"
       },
       "special": {
         "title": "Specials",
+        "short": "Specials",
         "subtitle": "Banners, studio and manga"
       }
     },

@@ -11,7 +11,7 @@ import { MarketList } from "@/components/market/MarketList";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { ButtonLink } from "@/components/ui/ButtonLink";
-import { segmentedItemClass, segmentedTrackClass } from "@/components/ui/Segmented";
+import { segmentedCompactItemClass, segmentedFillClass, segmentedTrackClass } from "@/components/ui/Segmented";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { MARKET_TABS, marketSearchParams, parseMarketParams } from "@/lib/market/filters";
@@ -60,8 +60,14 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
   const parsed = parseMarketParams(raw, await getRarities());
   // Les invités n'ont ni ventes ni mises : seulement la liste générale
   const params = user.isGuest ? { ...parsed, tab: "all" as const } : parsed;
-  const auctionTabs = user.isGuest ? (["all"] as const) : MARKET_TABS;
-  const exchangeTabs = !exchangesOn ? [] : user.isGuest ? (["echanges"] as const) : EXCHANGE_TABS;
+  // Invités : une seule piste « Toutes · Échanges » ; membres : une piste pour les ventes, une pour les échanges
+  const tabGroups: (readonly ((typeof MARKET_TABS)[number] | ExchangeTab)[])[] = user.isGuest
+    ? exchangesOn
+      ? [["all", "echanges"]]
+      : []
+    : exchangesOn
+      ? [MARKET_TABS, EXCHANGE_TABS]
+      : [MARKET_TABS];
   const now = new Date();
   const page = enabled && !exchangeTab ? await listAuctions({ params, cursor: null, viewerId: user.id, locale, now }) : null;
   const incoming = exchangesOn && !user.isGuest ? await countIncomingOffers(user.id, now) : 0;
@@ -97,23 +103,26 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
             </aside>
           )}
 
-          {auctionTabs.length + exchangeTabs.length > 1 && (
-            <nav aria-label={t("tabs.label")} className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:px-0">
-              <ul className={segmentedTrackClass}>
-                {[...auctionTabs, ...exchangeTabs].map((tab) => (
-                  <li key={tab}>
-                    <Link href={tabHref(tab)} aria-current={current === tab ? "page" : undefined} className={segmentedItemClass}>
-                      {t(`tabs.${tab}`)}
-                      {tab === "mes-echanges" && incoming > 0 && (
-                        <span className="rounded-pill bg-shu px-1.5 text-xs font-bold text-washi-paper tabular-nums">
-                          <span className="sr-only">{t("tabs.incoming", { count: incoming })}</span>
-                          <span aria-hidden="true">{incoming > 9 ? "9+" : incoming}</span>
-                        </span>
-                      )}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+          {tabGroups.length > 0 && (
+            // Une piste par famille d'onglets (ventes, échanges), empilées sur mobile : tout reste visible sans défiler
+            <nav aria-label={t("tabs.label")} className="flex flex-col gap-2 md:flex-row md:flex-wrap">
+              {tabGroups.map((group) => (
+                <ul key={group[0]} className={`${segmentedTrackClass} ${segmentedFillClass} md:w-auto`}>
+                  {group.map((tab) => (
+                    <li key={tab} className="flex min-w-0">
+                      <Link href={tabHref(tab)} aria-current={current === tab ? "page" : undefined} className={segmentedCompactItemClass}>
+                        {t(`tabs.${tab}`)}
+                        {tab === "mes-echanges" && incoming > 0 && (
+                          <span className="rounded-pill bg-shu px-1.5 text-xs font-bold text-washi-paper tabular-nums">
+                            <span className="sr-only">{t("tabs.incoming", { count: incoming })}</span>
+                            <span aria-hidden="true">{incoming > 9 ? "9+" : incoming}</span>
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ))}
             </nav>
           )}
 

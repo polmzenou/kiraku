@@ -601,39 +601,45 @@
     "metaDescription": "Ouvre gratuitement un sachet de fuda toutes les {minutes} minutes, parmi {count} boosters.",
     "intro": "{count} boosters en {families} familles. Les sachets gratuits puisent dans ton stock (un toutes les {minutes} min, {max} au plus) ; les boosters de rareté et les formats se paient en Zeni.",
     "familiesLabel": "Familles de boosters",
-    "allFamilies": "Toutes",
-    "familyCount": "{count, plural, one {# booster} other {# boosters}}",
     "families": {
       "standard": {
         "title": "Standard",
+        "short": "Standard",
         "subtitle": "Tout le catalogue"
       },
       "formats": {
         "title": "Formats",
+        "short": "Formats",
         "subtitle": "Autres contenances, payées en Zeni"
       },
       "rarete": {
         "title": "Par rareté",
+        "short": "Rareté",
         "subtitle": "Planchers relevés, payés en Zeni"
       },
       "demographie": {
         "title": "Par démographie",
+        "short": "Démographie",
         "subtitle": "Public visé par l'œuvre"
       },
       "genre": {
         "title": "Par genre",
+        "short": "Genre",
         "subtitle": "Genres AniList de l'œuvre principale"
       },
       "personnage": {
         "title": "Par personnage",
+        "short": "Personnage",
         "subtitle": "Filtre sur le personnage lui-même"
       },
       "epoque": {
         "title": "Par époque",
+        "short": "Époque",
         "subtitle": "Année de l'œuvre principale"
       },
       "special": {
         "title": "Spéciaux",
+        "short": "Spéciaux",
         "subtitle": "Bannières, studio et manga"
       }
     },
