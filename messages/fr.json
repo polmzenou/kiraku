@@ -25,9 +25,9 @@
     },
     "trades": {
       "title": "Les échanges arrivent au Marché",
-      "badge": "En développement",
+      "badge": "Opérationnel !",
       "body": "Propose tes doubles, indique les cartes que tu recherches et échange avec tous les joueurs, en plus des échanges entre amis.",
-      "dev": "Cette fonctionnalité est <strong>encore en développement</strong> et plein de nouvelles choses arrivent encore ! Si tu constates un bug, <strong>n'hésite pas à nous contacter</strong>.",
+      "dev": "Cette fonctionnalité est <strong>toute neuve</strong> et plein de nouvelles choses arrivent encore ! Si tu constates un bug, <strong>n'hésite pas à nous contacter</strong>.",
       "cta": "Voir les échanges",
       "contact": "Signaler un bug"
     },
