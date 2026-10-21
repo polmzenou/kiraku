@@ -46,7 +46,7 @@ export function WikiGrid({ cards, nextAfter, params, locale, collection, emptyCa
                   className="group relative flex h-full flex-col gap-2 rounded-[5px] transition-transform active:scale-[0.97]"
                 >
                   <div aria-hidden="true" className={dimmed ? "opacity-35 transition-opacity group-hover:opacity-55 group-focus-visible:opacity-55" : ""}>
-                    <Fuda card={card} series={series} size="sm" preload={i < 3 && !params.after} />
+                    <Fuda card={card} series={series} size="sm" preload={i < 3 && !params.after} describeImage />
                   </div>
                   {missing && collection?.hasCards && (
                     <span aria-hidden="true" className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full border border-text-muted bg-bg text-xs text-text">

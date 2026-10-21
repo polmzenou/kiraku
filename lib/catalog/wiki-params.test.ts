@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseWikiParams, wikiQuery, WIKI_DEFAULT_DIR, WIKI_SORTS } from "./wiki-params";
+import { parseWikiParams, wikiIndexing, wikiQuery, WIKI_DEFAULT_DIR, WIKI_SORTS } from "./wiki-params";
 
 const defaults = {
   q: "", terms: [], rarities: [], after: null, ownership: "all",
@@ -70,5 +70,18 @@ describe("paramètres du wiki", () => {
       expect(parseWikiParams(wikiQuery({ ...params, dir: "asc" })).dir).toBe("asc");
       expect(parseWikiParams(wikiQuery({ ...params, dir: "desc" })).dir).toBe("desc");
     }
+  });
+});
+
+describe("wikiIndexing", () => {
+  it("indexe la liste et ses pages suivantes", () => {
+    expect(wikiIndexing(parseWikiParams({}))).toEqual({ search: "", indexable: true });
+    expect(wikiIndexing(parseWikiParams({ after: "48" }))).toEqual({ search: "after=48", indexable: true });
+  });
+
+  it("n'indexe ni recherche, ni filtre, ni tri", () => {
+    expect(wikiIndexing(parseWikiParams({ q: "levi", after: "48" }))).toEqual({ search: "", indexable: false });
+    expect(wikiIndexing(parseWikiParams({ rarity: "MYTHIC" }))).toEqual({ search: "", indexable: false });
+    expect(wikiIndexing(parseWikiParams({ sort: "name" }))).toEqual({ search: "", indexable: false });
   });
 });

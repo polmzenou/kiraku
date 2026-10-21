@@ -7,23 +7,26 @@ import { PageShell } from "@/components/PageShell";
 import { WikiFilters } from "@/components/wiki/WikiFilters";
 import { WikiGrid, WikiGridSkeleton } from "@/components/wiki/WikiGrid";
 import { WikiResults } from "@/components/wiki/WikiResults";
-import { getPathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
-import { parseWikiParams } from "@/lib/catalog/wiki-params";
+import { parseWikiParams, wikiIndexing } from "@/lib/catalog/wiki-params";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { getPathname } from "@/i18n/navigation";
+import { localeAlternates, localePath } from "@/lib/seo/alternates";
+import { breadcrumbs } from "@/lib/seo/structured-data";
+import { appUrl } from "@/server/env";
 import { emptyWikiCollection, selectWikiPage } from "@/lib/catalog/wiki-state";
 import { getCatalogStats, getCatalogSearchIndex, getCatalogSummaries, getCatalogFilterOptions } from "@/server/catalog/queries";
 
-export async function generateMetadata({ params }: PageProps<"/[locale]/wiki">): Promise<Metadata> {
-  const { locale: raw } = await params;
+export async function generateMetadata({ params, searchParams }: PageProps<"/[locale]/wiki">): Promise<Metadata> {
+  const [{ locale: raw }, query, rarities] = await Promise.all([params, searchParams, getRarities()]);
   const locale = hasLocale(routing.locales, raw) ? raw : routing.defaultLocale;
   const t = await getTranslations({ locale, namespace: "wiki" });
+  const { search, indexable } = wikiIndexing(parseWikiParams(query, rarities));
   return {
     title: t("title"),
     description: t("metaDescription"),
-    alternates: {
-      canonical: getPathname({ href: "/wiki", locale }),
-      languages: Object.fromEntries(routing.locales.map((l) => [l, getPathname({ href: "/wiki", locale: l })])),
-    },
+    alternates: localeAlternates("/wiki", locale, search),
+    robots: indexable ? undefined : { index: false, follow: true },
   };
 }
 
@@ -39,8 +42,15 @@ export default async function WikiPage({ searchParams }: PageProps<"/[locale]/wi
   const publicPage = selectWikiPage(index, { after: params.after, ownership: "all" }, emptyWikiCollection());
   const publicCards = params.ownership === "all" ? await getCatalogSummaries(publicPage.ids) : [];
 
+  const current = hasLocale(routing.locales, locale) ? locale : routing.defaultLocale;
+  const trail = breadcrumbs(appUrl(), [
+    { name: (await getTranslations("metadata"))("title"), path: localePath("/", current) },
+    { name: t("title"), path: localePath("/wiki", current) },
+  ]);
+
   return (
     <PageShell>
+      <JsonLd data={trail} />
       <div className="wiki-content flex min-w-0 flex-col gap-6">
         <header className="flex flex-col gap-1">
           <h1 className="text-3xl font-extrabold">{t("title")}</h1>

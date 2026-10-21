@@ -103,3 +103,13 @@ export function wikiQuery(params: Partial<WikiParams>) {
   if (params.dir && params.dir !== WIKI_DEFAULT_DIR[sort]) query.dir = params.dir;
   return query;
 }
+
+/**
+ * Indexation d'une page du wiki : la liste complète et ses pages suivantes (`?after=`) sont indexables
+ * et canoniques d'elles-mêmes ; une recherche, un filtre ou un tri renvoie vers /wiki sans être indexé.
+ */
+export function wikiIndexing(params: WikiParams): { search: string; indexable: boolean } {
+  const { after, ...rest } = wikiQuery(params);
+  if (Object.keys(rest).length > 0) return { search: "", indexable: false };
+  return { search: after ? `after=${after}` : "", indexable: true };
+}

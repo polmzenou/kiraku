@@ -4,6 +4,7 @@ import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import { localeAlternates } from "@/lib/seo/alternates";
 import type { LegalSlug } from "@/lib/legal/legal";
 import { getAdmin } from "@/server/admin";
 import { getLegalDocument } from "@/server/legal";
@@ -102,6 +103,11 @@ export async function LegalPageView({ slug, locale, version }: { slug: LegalSlug
 
 /** Métadonnées communes : titre traduit, indexable seulement pour la version en vigueur. */
 export async function legalMetadata(slug: LegalSlug, locale: string, version: number | null) {
-  const t = await getTranslations({ locale: hasLocale(routing.locales, locale) ? locale : routing.defaultLocale, namespace: "legal" });
-  return { title: t(`titles.${slug}`), robots: version ? { index: false, follow: true } : undefined };
+  const current = hasLocale(routing.locales, locale) ? locale : routing.defaultLocale;
+  const t = await getTranslations({ locale: current, namespace: "legal" });
+  return {
+    title: t(`titles.${slug}`),
+    alternates: localeAlternates(`/${slug}`, current),
+    robots: version ? { index: false, follow: true } : undefined,
+  };
 }

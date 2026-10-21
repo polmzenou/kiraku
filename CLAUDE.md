@@ -19,7 +19,7 @@ Le plan complet est dans `docs/PLAN.md`. Lis la section concernée avant chaque 
 2. **Argent virtuel et cartes** : toute écriture sur Zeni ou `UserCard` se fait dans une transaction, avec `SELECT … FOR UPDATE` ou un `updateMany` conditionnel, et une ligne `CoinTransaction`.
 3. **Sécurité** (section « Sécurité applicative » du plan) :
    - jamais de `$queryRawUnsafe` / `$executeRawUnsafe`, seulement `$queryRaw` en template balisé ;
-   - jamais de `dangerouslySetInnerHTML` (sauf markdown légal via `react-markdown` sans HTML brut) ;
+   - jamais de `dangerouslySetInnerHTML` (sauf markdown légal via `react-markdown` sans HTML brut, et `components/seo/JsonLd.tsx` : données schema.org typées construites côté serveur, `<` échappé) ;
    - chaque Server Action : session vérifiée → entrées validées par Zod → propriété vérifiée → rate limit ;
    - on écrit en base des champs choisis un par un, jamais un objet venant du client ;
    - secrets uniquement côté serveur (`server-only`), jamais en `NEXT_PUBLIC_`.
