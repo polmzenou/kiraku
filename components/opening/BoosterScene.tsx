@@ -1,12 +1,13 @@
 "use client";
 
 import { animate, m, useMotionValue, useTransform, type MotionValue } from "motion/react";
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode, type Ref } from "react";
 import type { BoosterShape, BoosterTheme } from "@/lib/boosters/types";
 import { openingGestureProgress, startOpeningGesture, type OpeningGesture } from "@/lib/boosters/opening-gesture";
 import { belowClip, pieceTorn, tearLine, tornRange, type TearPoint } from "@/lib/boosters/tear-line";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { BoosterArt, JUBAKO_CORD, JUBAKO_LID, POCHI_BODY } from "../boosters/BoosterArt";
+import { CardBack } from "../fuda/CardBack";
 import { leakFor } from "./RarityFx";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 
@@ -21,8 +22,19 @@ const AUTO_TEAR = 0.38;
 /** Envol de la bande arrachée (s) : elle saute, puis retombe en tournoyant hors du sachet. */
 const BAND_FLIGHT = 1.15;
 const BAND_REST = { x: "0%", y: "0%", rotate: 0, scale: 1, opacity: 1 };
+/** Dos de cartes qui sortent par l'ouverture, quel que soit le tirage. */
+const PEEK_MAX = 5;
+/** Montée d'une carte hors du booster, et décalage entre deux cartes (s). */
+const PEEK_RISE = 0.55;
+const PEEK_STAGGER = 0.07;
+/** Chute du booster vidé, qui découvre les cartes (s). */
+const PACK_DROP = 0.6;
 
-export type SceneHandle = { open: () => void };
+export type SceneHandle = {
+  open: () => void;
+  /** Position à l'écran de la carte du dessus sortie du booster (point de départ de la pile). */
+  cards: () => DOMRect | null;
+};
 
 type Props = {
   shape: BoosterShape;
@@ -41,9 +53,14 @@ type Props = {
   leak: Rarity | null;
   /** Le serveur a décidé d'un sachet divin : la nacre se révèle pendant l'ouverture (le doré a ses particules, dans la scène). */
   divine: boolean;
+  /** Cartes du tirage, dès que le serveur a répondu (0 avant) : leurs dos sortent par l'ouverture. */
+  cards: number;
   /** Appelé une fois, une fois la coupe engagée (ou au clic). */
   onTrigger: () => void;
-  /** L'ouverture est finie (bande envolée, rabat ouvert, couvercle levé). */
+  /**
+   * L'ouverture est finie : bande envolée (rabat ouvert, couvercle levé), cartes sorties et booster
+   * tombé. En mouvement réduit, dès la fin de l'ouverture.
+   */
   onOpened: () => void;
   onTearSound: () => void;
   /** Le parent déclenche l'ouverture au bouton. */
@@ -57,10 +74,14 @@ type Props = {
  * pochibukuro et jūbako : on glisse vers le haut pour soulever le rabat ou le couvercle.
  */
 export function BoosterScene(props: Props) {
-  const { shape, theme, emblem, name, tagline, contents, count, armed, reduced, leak, divine } = props;
+  const { shape, theme, emblem, name, tagline, contents, count, armed, reduced, leak, divine, cards } = props;
   const definitions = useRarityDefinitions();
   const progress = useMotionValue(0);
   const [opened, setOpened] = useState(false);
+  const [flown, setFlown] = useState(false);
+  const [dropped, setDropped] = useState(false);
+  const front = useRef<HTMLDivElement>(null);
+  const handedOff = useRef(false);
   const [direction, setDirection] = useState<1 | -1>(1);
   const fired = useRef(false);
   const completing = useRef(false);
@@ -71,6 +92,8 @@ export function BoosterScene(props: Props) {
   const tilt = useRef<HTMLDivElement>(null);
   const drag = useRef<(OpeningGesture & { id: number }) | null>(null);
   const { onTrigger, onOpened, onTearSound, openRef } = props;
+  const onOpenedRef = useRef(onOpened);
+  useEffect(() => { onOpenedRef.current = onOpened; }, [onOpened]);
 
   useTilt(tilt, !reduced && !opened);
 
@@ -83,8 +106,33 @@ export function BoosterScene(props: Props) {
     if (finished.current) return;
     finished.current = true;
     if (fallback.current) clearTimeout(fallback.current);
-    onOpened();
+    setFlown(true);
   };
+
+  // Booster ouvert et tirage connu : les cartes montent par l'ouverture, puis le booster tombe et les
+  // découvre. Minuteries plutôt que fins d'animation : un onglet en arrière-plan ne bloque rien.
+  const shown = Math.min(cards, PEEK_MAX);
+  const emerging = flown && !reduced && shown > 0;
+  useEffect(() => {
+    if (!flown) return;
+    const handOff = () => {
+      if (handedOff.current) return;
+      handedOff.current = true;
+      onOpenedRef.current();
+    };
+    if (reduced) {
+      handOff();
+      return;
+    }
+    if (shown === 0) return;
+    const rise = (PEEK_RISE + (shown - 1) * PEEK_STAGGER) * 1000;
+    const drop = setTimeout(() => setDropped(true), rise);
+    const end = setTimeout(handOff, rise + (PACK_DROP + (shown - 1) * PEEK_STAGGER * 0.6) * 1000);
+    return () => {
+      clearTimeout(drop);
+      clearTimeout(end);
+    };
+  }, [flown, reduced, shown]);
 
   const fire = () => {
     if (fired.current || !armed) return;
@@ -119,7 +167,7 @@ export function BoosterScene(props: Props) {
   };
 
   useEffect(() => {
-    openRef?.({ open: complete });
+    openRef?.({ open: complete, cards: () => front.current?.getBoundingClientRect() ?? null });
   });
 
   const vertical = shape !== "SACHET";
@@ -166,8 +214,16 @@ export function BoosterScene(props: Props) {
 
   const overlay = (
     <>
-      {/* Lumière qui s'échappe de l'ouverture */}
-      <Leak progress={progress} color={leakColor} strong={opened && leakColor !== null} shape={shape} reduced={reduced} />
+      {/* Lumière qui s'échappe de l'ouverture ; elle s'éteint quand les cartes la traversent */}
+      <m.span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-40"
+        initial={false}
+        animate={{ opacity: emerging ? 0 : 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Leak progress={progress} color={leakColor} strong={opened && leakColor !== null} shape={shape} reduced={reduced} />
+      </m.span>
       {/* Nacre du sachet divin, révélée pendant l'ouverture */}
       {divine && (
         <m.span
@@ -178,8 +234,12 @@ export function BoosterScene(props: Props) {
           transition={{ duration: 0.6 }}
         />
       )}
-      {shape === "POCHIBUKURO" && <PochiFlap progress={progress} gesture={gesture} />}
-      {shape === "JUBAKO" && <JubakoLid progress={progress} gesture={gesture} />}
+      {/* Le rabat ou le couvercle s'efface pour laisser passer les cartes */}
+      {shape !== "SACHET" && (
+        <m.div className="absolute inset-0 z-30" initial={false} animate={{ opacity: emerging ? 0 : 1 }} transition={{ duration: 0.25 }}>
+          {shape === "POCHIBUKURO" ? <PochiFlap progress={progress} gesture={gesture} /> : <JubakoLid progress={progress} gesture={gesture} />}
+        </m.div>
+      )}
     </>
   );
 
@@ -236,36 +296,73 @@ export function BoosterScene(props: Props) {
         transition={{ duration: 0.55, ease: "easeOut" }}
       >
         <div ref={tilt} className="relative transition-transform duration-150 ease-out [transform-style:preserve-3d]">
-          <BoosterArt
-            shape={shape}
-            theme={theme}
-            emblem={emblem}
-            name={name}
-            tagline={tagline}
-            contents={contents}
-            hideCover={shape !== "SACHET"}
-            overlay={overlay}
-            renderBand={
-              shape === "SACHET"
-                ? (band) => (
-                    <TearBand
-                      band={band}
-                      progress={progress}
-                      opened={opened}
-                      reduced={reduced}
-                      direction={direction}
-                      armed={armed}
-                      gesture={gesture}
-                      onFlown={finish}
-                    />
-                  )
-                : undefined
-            }
-          />
+          {emerging && <PeekCards count={shown} dropped={dropped} frontRef={front} />}
+          {/* Une fois les cartes sorties, le booster vidé tombe et les découvre */}
+          <m.div
+            className="relative z-10"
+            initial={false}
+            animate={dropped ? { y: "120%", opacity: 0 } : { y: "0%", opacity: 1 }}
+            transition={{ duration: PACK_DROP, ease: [0.55, 0, 0.8, 0.4] }}
+          >
+            <BoosterArt
+              shape={shape}
+              theme={theme}
+              emblem={emblem}
+              name={name}
+              tagline={tagline}
+              contents={contents}
+              hideCover={shape !== "SACHET"}
+              overlay={overlay}
+              renderBand={
+                shape === "SACHET"
+                  ? (band) => (
+                      <TearBand
+                        band={band}
+                        progress={progress}
+                        opened={opened}
+                        reduced={reduced}
+                        direction={direction}
+                        armed={armed}
+                        gesture={gesture}
+                        onFlown={finish}
+                      />
+                    )
+                  : undefined
+              }
+            />
+          </m.div>
         </div>
       </m.div>
       {/* Pochibukuro et jūbako : fin de l'ouverture quand le rabat ou le couvercle est parti */}
       {shape !== "SACHET" && opened && <Done onDone={finish} delay={reduced ? 0 : 800} />}
+    </div>
+  );
+}
+
+/**
+ * Dos des cartes du tirage, glissés derrière l'avant du booster : ils montent par l'ouverture l'un
+ * après l'autre (celui du fond ouvre la marche, celui du dessus le rattrape), puis redescendent
+ * doucement pendant que le booster tombe (celui du dessus mène, les autres suivent).
+ */
+function PeekCards({ count, dropped, frontRef }: { count: number; dropped: boolean; frontRef: Ref<HTMLDivElement> }) {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-x-[11%] top-[15%] aspect-[5/7]">
+      {Array.from({ length: count }, (_, i) => (
+        <m.div
+          key={i}
+          ref={i === count - 1 ? frontRef : undefined}
+          className="absolute inset-0"
+          initial={{ y: "0%" }}
+          animate={{ y: dropped ? "-12%" : "-32%" }}
+          transition={
+            dropped
+              ? { type: "spring", visualDuration: PACK_DROP, bounce: 0.1, delay: (count - 1 - i) * PEEK_STAGGER * 0.6 }
+              : { type: "spring", visualDuration: PEEK_RISE, bounce: 0.18, delay: i * PEEK_STAGGER }
+          }
+        >
+          <CardBack static />
+        </m.div>
+      ))}
     </div>
   );
 }
