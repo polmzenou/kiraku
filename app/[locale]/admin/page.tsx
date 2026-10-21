@@ -64,25 +64,27 @@ export default async function AdminHome() {
         <h2 className="font-title text-2xl font-bold">{t("title")}</h2>
         <p className="max-w-prose text-sm text-text-muted">{t("intro")}</p>
       </div>
-      {groups.map((g) => (
-        <section key={g.title} className="flex flex-col gap-2">
-          <h3 className="text-sm font-bold text-text-muted">{g.title}</h3>
-          <dl className="grid grid-cols-2 gap-2 md:grid-cols-4">
-            {g.tiles.map((tile) => (
-              <div
-                key={tile.label}
-                className={`relative flex min-h-20 flex-col gap-0.5 rounded-card border bg-surface p-3 ${tile.alert ? "border-shu" : "border-border"}`}
-              >
-                <dt className="text-xs text-text-muted">{tile.label}</dt>
-                <dd className={`text-lg font-bold tabular-nums ${tile.alert ? "text-shu" : ""}`}>{tile.value}</dd>
-                {tile.hint && <dd className="text-xs text-text-muted">{tile.hint}</dd>}
-                {/* Toute la case mène au module concerné */}
-                {tile.href && <Link href={tile.href} aria-label={tile.label} className="absolute inset-0 rounded-card" />}
-              </div>
-            ))}
-          </dl>
-        </section>
-      ))}
+      <div className="grid gap-6 xl:grid-cols-2">
+        {groups.map((g) => (
+          <section key={g.title} className="flex flex-col gap-2">
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-text-muted">{g.title}</h3>
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 2xl:grid-cols-4">
+              {g.tiles.map((tile) => (
+                <div
+                  key={tile.label}
+                  className={`relative flex min-h-24 flex-col gap-1 rounded-card border bg-surface p-4 transition-colors ${tile.alert ? "border-shu" : "border-border"} ${tile.href && !tile.alert ? "hover:border-kin" : ""}`}
+                >
+                  <dt className="text-xs text-text-muted">{tile.label}</dt>
+                  <dd className={`text-2xl font-bold tabular-nums ${tile.alert ? "text-shu" : ""}`}>{tile.value}</dd>
+                  {tile.hint && <dd className="text-xs text-text-muted">{tile.hint}</dd>}
+                  {/* Toute la case mène au module concerné */}
+                  {tile.href && <Link href={tile.href} aria-label={tile.label} className="absolute inset-0 rounded-card" />}
+                </div>
+              ))}
+            </dl>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

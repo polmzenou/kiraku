@@ -7,6 +7,7 @@
 .fuda-effect-aura { box-shadow:inset 0 0 24px 10px var(--fx-color); }
 @keyframes fuda-fx-shift { from { background-position:0% 20%; } to { background-position:100% 80%; } }
 @media(prefers-reduced-motion:reduce) { .fuda-live .fuda-effect { animation:none; } }
+:root[data-motion="reduced"] .fuda-live .fuda-effect { animation:none; }
 /* Artwork doré (rareté Gold) : virage or statique de l'image et feuille d'or en calque, sans animation de filtre. */
 .fuda-art-gold { filter:sepia(1) saturate(2.4) hue-rotate(-14deg) brightness(1.04) contrast(1.08); }
 .fuda-gilt { position:absolute; inset:0; pointer-events:none; mix-blend-mode:soft-light; opacity:.75;

@@ -3,7 +3,7 @@
 import { useFormatter, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { loadNotificationsAction, markNotificationsReadAction } from "@/server/actions/notifications";
+import { deleteReadNotificationsAction, loadNotificationsAction, markNotificationsReadAction } from "@/server/actions/notifications";
 import type { NotificationView } from "@/server/social/queries";
 import { CardThumb } from "../market/listings/CardThumb";
 import { OfferDecision } from "../market/listings/OfferDecision";
@@ -30,6 +30,31 @@ export function NotificationList({ initial, initialCursor }: { initial: Notifica
         if (!res.ok) {
           setItems(before);
           setError(t(`errors.${res.error}`));
+        }
+      } catch {
+        setItems(before);
+        setError(t("errors.unexpected"));
+      }
+    });
+
+  const clearRead = () =>
+    startTransition(async () => {
+      const before = items;
+      setItems((list) => list.filter((n) => !n.read));
+      try {
+        const res = await deleteReadNotificationsAction();
+        if (!res.ok) {
+          setItems(before);
+          setError(t(`errors.${res.error}`));
+          return;
+        }
+        // Des pages restaient à charger : on repart du début pour garder un curseur valide
+        if (cursor) {
+          const page = await loadNotificationsAction({ cursor: null });
+          if (page.ok) {
+            setItems(page.items);
+            setCursor(page.nextCursor);
+          }
         }
       } catch {
         setItems(before);
@@ -69,13 +94,18 @@ export function NotificationList({ initial, initialCursor }: { initial: Notifica
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-text-muted" aria-live="polite">
           {t("unreadCount", { count: unread })}
         </p>
-        <Button type="button" onClick={markAll} disabled={pending || unread === 0}>
-          {t("markAll")}
-        </Button>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button type="button" onClick={clearRead} disabled={pending || (unread === items.length && !cursor)}>
+            {t("clearRead")}
+          </Button>
+          <Button type="button" onClick={markAll} disabled={pending || unread === 0}>
+            {t("markAll")}
+          </Button>
+        </div>
       </div>
 
       <ul className="flex flex-col gap-2">

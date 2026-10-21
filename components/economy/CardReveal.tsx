@@ -2,7 +2,7 @@
 
 import { useRaritySeals } from "@/lib/catalog/use-rarities";
 
-import { domAnimation, LazyMotion, m, useReducedMotion } from "motion/react";
+import { domAnimation, LazyMotion, m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
@@ -12,6 +12,7 @@ import { chargeFor, leakFor } from "../opening/RarityFx";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import { FlipCard, type FlipPhase } from "../opening/RevealCard";
 import { Button } from "../ui/Button";
+import { useReducedFx } from "@/components/motion/MotionPreference";
 
 /** Temps face cachée avant que la carte commence à frémir. */
 const BACK_MS = 550;
@@ -25,7 +26,7 @@ export function CardReveal({ cards, onClose }: { cards: OpenedCardView[]; onClos
   const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("economy.reveal");
   const tRarity = useTranslations("rarity");
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedFx();
   const dialog = useRef<HTMLDialogElement>(null);
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<FlipPhase>("back");

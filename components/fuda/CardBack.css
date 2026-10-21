@@ -56,3 +56,4 @@
 @media (prefers-reduced-motion: reduce) {
   .kb-back { --mx: .5 !important; --my: .5 !important; }
 }
+:root[data-motion="reduced"] .kb-back { --mx: .5 !important; --my: .5 !important; }

@@ -1,9 +1,10 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { BaseRarity, Rarity } from "@/lib/catalog/rarity";
 import { fxTier } from "@/lib/catalog/tiers";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
+import "./RevealFx.css";
 
 // Mise en scène de la révélation, par rareté (particules en CSS : transform et opacity seulement).
 // Rendu au-dessus et autour de la carte qui vient de se retourner ; rien pour Commune et Peu commune.
@@ -48,35 +49,142 @@ const spread = (i: number, n: number, radius: number) => {
 
 export function RarityFx({ rarity, compact = false }: { rarity: Rarity; compact?: boolean }) {
   const tier = fxTier(rarity, useRarityDefinitions());
+  // AR et Gold ont leur propre mise en scène ; les autres raretés suivent leur palier de base
+  if (rarity === "AR") return <ArFx compact={compact} />;
+  if (rarity === "GOLD") return <GoldFx compact={compact} />;
+  return <TierFx rarity={tier} compact={compact} />;
+}
+
+/**
+ * Reflets posés sur la carte elle-même (passés à Fuda en `overlay`) : ils suivent son inclinaison.
+ * Laque : un reflet la traverse ; nacre : irisation tournante ; Gold : reflet doré qui repasse.
+ */
+export function RarityCardFx({ rarity }: { rarity: Rarity }) {
+  const tier = fxTier(rarity, useRarityDefinitions());
+  if (rarity === "GOLD") return <span aria-hidden="true" className="fx-gold-glint" />;
+  if (rarity === "AR") return null;
+  if (tier === "EPIC") return <span aria-hidden="true" className="fx-sheen absolute inset-0" style={v({ "--d": "0.05s" })} />;
+  if (tier === "MYTHIC") return <span aria-hidden="true" className="fx-nacre absolute -inset-1/2 opacity-60" />;
+  return null;
+}
+
+const AR_TINTS = ["#7fa3d1", "#d9b556", "#e0533f"] as const;
+
+/**
+ * AR 異 « Kagami » : une faille de lumière s'ouvre, des éclats prismatiques en jaillissent et un
+ * kaléidoscope shu, ai et kin tourne derrière la forme alternative (les copies fantômes sont dans FlipCard).
+ */
+function ArFx({ compact }: { compact: boolean }) {
+  const n = compact ? 8 : 18, scale = compact ? 0.55 : 1;
   return (
     <>
-      <TierFx rarity={tier} compact={compact} />
-      {rarity === "AR" && <PrismFx />}
-      {rarity === "GOLD" && <GoldLeafFx compact={compact} />}
+      <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-0">
+        <span className="fx-ar-kaleido" />
+      </span>
+      <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-20">
+        <span className="fx-ar-slit" />
+      </span>
+      <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-30">
+        {Array.from({ length: n }, (_, i) => {
+          const { dx, dy } = spread(i, n, 190 * scale);
+          return (
+            <span
+              key={i}
+              className="fx-ar-shard"
+              style={v({ "--dx": dx, "--dy": dy, "--d": `${0.25 + (i % 5) * 0.04}s`, "--r": `${180 + i * 53}deg`, "--s": `${7 + (i % 4) * 3}px`, "--c": AR_TINTS[i % 3] })}
+            />
+          );
+        })}
+      </span>
     </>
   );
 }
 
-/** AR : anneaux prismatiques shu, ai et kin autour de la forme alternative. */
-function PrismFx() {
+/**
+ * Gold 煌 « Kintsugi » : flash d'or, soleil de rayons dorés et pluie de feuille d'or sur tout l'écran
+ * (le reflet est dans RarityCardFx, les fissures et les éclats du dos dans FlipCard).
+ */
+function GoldFx({ compact }: { compact: boolean }) {
+  const leaves = compact ? 0 : 26;
   return (
-    <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-0">
-      {(["#7fa3d1", "#d9b556", "#e0533f"] as const).map((ring, i) => (
-        <span key={ring} className="fx-ring aspect-square w-[105%]" style={v({ "--ring": ring, "--d": `${0.9 + i * 0.14}s` })} />
+    <>
+      {!compact && <span aria-hidden="true" className="fx-gold-flash pointer-events-none z-[60]" />}
+      <span
+        aria-hidden="true"
+        className="light-rays pointer-events-none absolute -inset-[60%] z-0 rounded-full opacity-90"
+        style={v({ "--leak": "rgb(242 216 138 / 0.6)" })}
+      />
+      {leaves > 0 && (
+        <span aria-hidden="true" className="pointer-events-none fixed inset-0 z-[60] overflow-hidden">
+          {Array.from({ length: leaves }, (_, i) => (
+            <span
+              key={i}
+              className="fx-leaf"
+              style={v({
+                "--x": `${(i * 47 + 7) % 100}%`,
+                "--dx": `${((i * 31) % 90) - 45}px`,
+                "--d": `${0.3 + (i % 9) * 0.16}s`,
+                "--t": `${2.4 + (i % 5) * 0.45}s`,
+                "--r": `${420 + i * 37}deg`,
+                "--s": `${6 + (i % 4) * 2}px`,
+              })}
+            />
+          ))}
+        </span>
+      )}
+    </>
+  );
+}
+
+/** Copies fantômes teintées qui convergent vers la carte AR (forme alternative). */
+export function ArGhosts({ children }: { children: ReactNode }) {
+  const offsets = [["-18px", "-6px"], ["16px", "10px"], ["2px", "-16px"]] as const;
+  return (
+    <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-20">
+      {AR_TINTS.map((tint, i) => (
+        <span key={tint} className="fx-ar-ghost" style={v({ "--tint": tint, "--gx": offsets[i][0], "--gy": offsets[i][1], "--d": `${0.18 + i * 0.06}s` })}>
+          {children}
+        </span>
       ))}
     </span>
   );
 }
 
-/** Gold : pluie d'éclats de feuille d'or autour de la carte. */
-function GoldLeafFx({ compact }: { compact: boolean }) {
-  const n = compact ? 14 : 32, scale = compact ? 0.55 : 1;
+/** Fissures d'or (viewBox 100 × 100, étirées sur la carte) : elles suivent les bords des éclats. */
+const CRACKS = [
+  "M50 0 L46 13", "M46 13 L54 23", "M54 23 L44 37", "M44 37 L30 44", "M30 44 L14 36 L0 40",
+  "M44 37 L52 50", "M52 50 L70 56", "M70 56 L86 52 L100 58", "M52 50 L54 69", "M54 69 L48 86 L52 100",
+  "M54 23 L68 18", "M30 44 L26 58", "M70 56 L74 70",
+];
+const SHARDS = [
+  { clip: "polygon(0 0, 50% 0, 46% 13%, 54% 23%, 44% 37%, 30% 44%, 14% 36%, 0 40%)", sx: "-70px", sy: "-60px", sr: "-18deg" },
+  { clip: "polygon(50% 0, 100% 0, 100% 58%, 86% 52%, 70% 56%, 52% 50%, 44% 37%, 54% 23%, 46% 13%)", sx: "75px", sy: "-65px", sr: "16deg" },
+  { clip: "polygon(0 40%, 14% 36%, 30% 44%, 44% 37%, 52% 50%, 54% 69%, 48% 86%, 52% 100%, 0 100%)", sx: "-80px", sy: "70px", sr: "14deg" },
+  { clip: "polygon(52% 50%, 70% 56%, 86% 52%, 100% 58%, 100% 100%, 52% 100%, 48% 86%, 54% 69%)", sx: "80px", sy: "80px", sr: "-20deg" },
+];
+
+/** Pendant la charge d'une Gold : les fissures d'or courent une à une sur le dos de la carte. */
+export function GoldCracks({ duration }: { duration: number }) {
+  const step = Math.max(0.05, (duration / 1000 - 0.3) / CRACKS.length);
+  return (
+    <svg aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none" className="fx-gold-cracks pointer-events-none z-30">
+      {CRACKS.map((d, i) => <path key={d} d={d} className="fx-crack" style={v({ "--d": `${0.1 + i * step}s` })} />)}
+    </svg>
+  );
+}
+
+/** Au retournement d'une Gold : le dos fissuré se brise en quatre éclats qui s'envolent. */
+export function GoldShatter({ children }: { children: ReactNode }) {
   return (
     <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-30">
-      {Array.from({ length: n }, (_, i) => {
-        const { dx, dy } = spread(i, n, 210 * scale);
-        return <span key={i} className="fx-flake" style={v({ "--dx": dx, "--dy": dy, "--d": `${0.8 + (i % 6) * 0.05}s`, "--r": `${160 + i * 41}deg`, "--s": `${6 + (i % 4) * 2}px` })} />;
-      })}
+      {SHARDS.map((s) => (
+        <span key={s.clip} className="fx-gold-shard" style={v({ "--clip": s.clip, "--sx": s.sx, "--sy": s.sy, "--sr": s.sr })}>
+          {children}
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="fx-gold-cracks">
+            {CRACKS.map((d) => <path key={d} d={d} className="fx-crack" style={{ opacity: 1, animation: "none" }} />)}
+          </svg>
+        </span>
+      ))}
     </span>
   );
 }
@@ -96,14 +204,9 @@ function TierFx({ rarity, compact = false }: { rarity: BaseRarity; compact?: boo
   }
 
   if (rarity === "EPIC") {
-    // Laque : un reflet traverse la carte, l'encre violette éclot derrière
+    // Laque : l'encre violette éclot derrière (le reflet est dans RarityCardFx)
     return (
-      <>
-        <span aria-hidden="true" className="fx-ink pointer-events-none absolute -inset-[30%] z-0 rounded-full" />
-        <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-[6px]">
-          <span className="fx-sheen absolute inset-0" style={v({ "--d": "0.05s" })} />
-        </span>
-      </>
+      <span aria-hidden="true" className="fx-ink pointer-events-none absolute -inset-[30%] z-0 rounded-full" />
     );
   }
 
@@ -134,7 +237,7 @@ function TierFx({ rarity, compact = false }: { rarity: BaseRarity; compact?: boo
   }
 
   if (rarity === "MYTHIC") {
-    // Nacre : ensō vermillon qui se referme derrière la carte, sceau 神, onde de choc, irisation, pétales
+    // Nacre : éclat nacré, rayons pâles, irisation et pétales
     const petals = compact ? 0 : 16;
     return (
       <>
@@ -143,15 +246,9 @@ function TierFx({ rarity, compact = false }: { rarity: BaseRarity; compact?: boo
             className="light-rays absolute inset-0 rounded-full opacity-80"
             style={v({ "--leak": "rgb(255 236 246 / 0.5)" })}
           />
-          <EnsoDraw />
-        </span>
-        <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-[6px] opacity-60">
-          <span className="fx-nacre absolute -inset-1/2" />
         </span>
         <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-0">
-          {[0.55, 0.75].map((d) => (
-            <span key={d} className="fx-ring aspect-square w-[120%]" style={v({ "--ring": "#e0533f", "--d": `${d}s` })} />
-          ))}
+          <span className="fx-pearl-bloom" />
         </span>
         {petals > 0 && (
           <span aria-hidden="true" className="pointer-events-none fixed inset-0 z-[60] overflow-hidden">
@@ -175,25 +272,4 @@ function TierFx({ rarity, compact = false }: { rarity: BaseRarity; compact?: boo
   }
 
   return null;
-}
-
-/**
- * Ensō qui se trace en 0,7 s, comme l'ensō du stock : chaque moitié est un anneau masqué sur la
- * moitié opposée qui tourne de 180° pour entrer dans sa moitié visible (transform seulement).
- */
-function EnsoDraw() {
-  const ring = "absolute inset-0 rounded-full border-[12px] border-shu shadow-[0_0_18px_rgb(224_83_63/0.55)]";
-  return (
-    <span className="absolute inset-[6%]">
-      <span className="absolute inset-0 [clip-path:inset(0_0_0_50%)]">
-        <span className={`${ring} [clip-path:inset(0_50%_0_0)]`} style={{ animation: "enso-sweep 0.35s ease-in forwards" }} />
-      </span>
-      <span className="absolute inset-0 [clip-path:inset(0_50%_0_0)]">
-        <span
-          className={`${ring} [clip-path:inset(0_0_0_50%)]`}
-          style={{ transform: "rotate(0deg)", animation: "enso-sweep 0.35s ease-out 0.35s forwards" }}
-        />
-      </span>
-    </span>
-  );
 }

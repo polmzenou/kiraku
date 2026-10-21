@@ -2,41 +2,16 @@ import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 import { pickClientMessages } from "@/i18n/client-messages";
-import { PageShell } from "@/components/PageShell";
+import { AdminNav } from "@/components/admin/AdminNav";
 import { SectionTitle } from "@/components/SectionTitle";
-import { Link } from "@/i18n/navigation";
 import { requireAdmin } from "@/server/admin";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-const MODULES = [
-  { key: "dashboard", href: "/admin", ready: true },
-  { key: "journal", href: "/admin/journal", ready: true },
-  { key: "general", href: "/admin/general", ready: true },
-  { key: "features", href: "/admin/fonctionnalites", ready: true },
-  { key: "boosters", href: "/admin/boosters", ready: true },
-  { key: "types", href: "/admin/boosters/types", ready: true },
-  { key: "banners", href: "/admin/bannieres", ready: true },
-  { key: "collection", href: "/admin/collection", ready: true },
-  { key: "social", href: "/admin/social", ready: true },
-  { key: "cosmetics", href: "/admin/cosmetiques", ready: true },
-  { key: "economy", href: "/admin/economie", ready: true },
-  { key: "lots", href: "/admin/lots", ready: true },
-  { key: "missions", href: "/admin/missions", ready: true },
-  { key: "shop", href: "/admin/boutique", ready: true },
-  { key: "referral", href: "/admin/parrainage", ready: true },
-  { key: "users", href: "/admin/utilisateurs", ready: true },
-  { key: "catalog", href: "/admin/catalogue", ready: true },
-  { key: "market", href: "/admin/marche", ready: true },
-  { key: "reviews", href: "/admin/avis", ready: true },
-  { key: "combat", href: "/admin/combat", ready: true },
-  { key: "ranked", href: "/admin/classe", ready: true },
-  { key: "legal", href: "/admin/legal", ready: true },
-  { key: "data", href: "/admin/donnees", ready: true },
-  { key: "discord", href: "/admin/discord", ready: true },
-] as const;
-
-/** Toute la section /admin : rôle vérifié côté serveur (404 sinon), chaque action le revérifie. */
+/**
+ * Toute la section /admin : rôle vérifié côté serveur (404 sinon), chaque action le revérifie.
+ * Pleine largeur, sans le pied de page public : barre latérale en desktop, puces en mobile.
+ */
 export default async function AdminLayout({ children }: LayoutProps<"/[locale]/admin">) {
   await requireAdmin();
   const t = await getTranslations("admin");
@@ -45,36 +20,20 @@ export default async function AdminLayout({ children }: LayoutProps<"/[locale]/a
   // Tous les messages, admin compris, pour les formulaires de l'admin (le layout racine les retire)
   return (
     <NextIntlClientProvider messages={{ ...pickClientMessages(messages), admin: messages.admin }}>
-      <PageShell>
-        <SectionTitle level={1} kanji="管理" title={t("title")} />
-        <nav aria-label={t("modules")}>
-          <ul className="flex flex-wrap gap-2">
-            {MODULES.map((m) =>
-              m.ready ? (
-                <li key={m.key}>
-                  <Link
-                    href={m.href}
-                    className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface-2 px-3 text-sm font-bold"
-                  >
-                    {t(`moduleNames.${m.key}`)}
-                  </Link>
-                </li>
-              ) : (
-                <li key={m.key}>
-                  <span
-                    aria-disabled="true"
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-border px-3 text-sm text-text-muted"
-                  >
-                    {t(`moduleNames.${m.key}`)}
-                    <span className="text-[10px] uppercase">{t("soon")}</span>
-                  </span>
-                </li>
-              ),
-            )}
-          </ul>
-        </nav>
-        {children}
-      </PageShell>
+      <div className="w-full px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-8 lg:px-8 2xl:grid-cols-[16rem_minmax(0,1fr)]">
+        <div className="flex min-w-0 flex-col gap-4 pt-6 lg:pt-0">
+          <div className="lg:hidden">
+            <SectionTitle level={1} kanji="管理" title={t("title")} />
+          </div>
+          <AdminNav />
+        </div>
+        <main className="flex min-w-0 flex-col gap-6 py-6">
+          <div className="hidden lg:block">
+            <SectionTitle level={1} kanji="管理" title={t("title")} />
+          </div>
+          {children}
+        </main>
+      </div>
     </NextIntlClientProvider>
   );
 }

@@ -7,10 +7,9 @@ import { ImageResponse } from "next/og";
 
 const font = await readFile(new URL("../fonts/source/YujiSyuku-Regular.ttf", import.meta.url));
 const SHU = "#C8372D";
-const BG = "#15120F";
 const PAPER = "#F3ECDF";
 
-/** `inset` : marge autour du sceau (les icônes maskable sont rognées en cercle par Android). */
+/** Sceau arrondi (favicon, manifest « any ») ; `inset` : marge autour du sceau. */
 function seal(size: number, inset: number, background: string) {
   const inner = size - inset * 2;
   return h(
@@ -37,6 +36,33 @@ function seal(size: number, inset: number, background: string) {
       h("span", null, "気"),
       h("span", null, "楽"),
     ),
+  );
+}
+
+/**
+ * Écran d'accueil (iOS, Android maskable) : vermillon bord à bord, sans coins ni fond sombre,
+ * le système applique son propre masque. `glyph` : taille du kanji par rapport à l'icône.
+ */
+function fullSeal(size: number, glyph: number) {
+  return h(
+    "div",
+    {
+      style: {
+        width: size,
+        height: size,
+        background: SHU,
+        color: PAPER,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: "Yuji Syuku",
+        fontSize: size * glyph,
+        lineHeight: 1.05,
+      },
+    },
+    h("span", null, "気"),
+    h("span", null, "楽"),
   );
 }
 
@@ -68,6 +94,6 @@ async function render(file: string, node: ReturnType<typeof h>, size: number) {
 
 await render("icon-192.png", seal(192, 0, "transparent"), 192);
 await render("icon-512.png", seal(512, 0, "transparent"), 512);
-await render("maskable-512.png", seal(512, 92, BG), 512);
-await render("apple-touch-icon.png", seal(180, 14, BG), 180);
+await render("maskable-512.png", fullSeal(512, 0.3), 512);
+await render("apple-touch-icon.png", fullSeal(180, 0.36), 180);
 await render("badge-96.png", badge(96), 96);

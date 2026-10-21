@@ -1,6 +1,6 @@
 "use client";
 
-import { m } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import type { CSSProperties } from "react";
 
 /** Positions fixes de la poussière d'or (pas de hasard au rendu : même affichage serveur et client). */
@@ -13,11 +13,14 @@ const DUST = Array.from({ length: 14 }, (_, i) => ({
   s: `${2 + (i % 3)}px`,
 }));
 
+export type RitualTint = { id: string; style: CSSProperties; delay: number };
+
 /**
  * Fond du rituel : la page s'assombrit (vignette sumi) et une poussière d'or monte lentement.
  * `depth` 0 → 1 : ambiance normale → l'écran s'éteint presque (une Mythique arrive).
+ * `tint` : teinte de la rareté pendant le grand moment d'une Légendaire ou mieux.
  */
-export function RitualBackdrop({ depth, reduced }: { depth: number; reduced: boolean }) {
+export function RitualBackdrop({ depth, reduced, tint = null }: { depth: number; reduced: boolean; tint?: RitualTint | null }) {
   return (
     <m.div
       aria-hidden="true"
@@ -33,6 +36,19 @@ export function RitualBackdrop({ depth, reduced }: { depth: number; reduced: boo
         animate={{ opacity: depth * 0.7 }}
         transition={{ duration: depth > 0 ? 0.5 : 1.2 }}
       />
+      <AnimatePresence>
+        {tint && (
+          <m.span
+            key={tint.id}
+            className="absolute inset-0"
+            style={tint.style}
+            initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.6 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.4 } }}
+            transition={{ duration: reduced ? 0.2 : 0.7, delay: reduced ? 0 : tint.delay, ease: "easeOut" }}
+          />
+        )}
+      </AnimatePresence>
       {!reduced &&
         DUST.map((p, i) => (
           <span

@@ -10,7 +10,9 @@ import { recentPullsAction } from "@/server/actions/home";
 import type { RecentPull } from "@/server/home/pulls";
 import { Fuda } from "../fuda/Fuda";
 import { SectionTitle } from "../SectionTitle";
+import { useReducedFx } from "../motion/MotionPreference";
 import { PlayerAvatar } from "../social/PlayerAvatar";
+import { useMarquee } from "./useMarquee";
 
 // En dessous, la liste tient à l'écran : pas de défilement automatique
 const MARQUEE_MIN = 6;
@@ -18,13 +20,16 @@ const SECONDS_PER_CARD = 4;
 
 /**
  * « En direct · Gros tirages » : les dernières Légendaires et Mythiques sorties des boosters, en
- * ruban qui défile sans fin (pause au survol ou au focus). Sans animation, c'est une rangée à faire
- * défiler du doigt. Rafraîchi tant que l'onglet est visible.
+ * ruban qui défile sans fin et qu'on peut faire glisser (pause au survol ou au focus). Sans
+ * animation, c'est une rangée à faire défiler du doigt. Rafraîchi tant que l'onglet est visible.
  */
 export function RecentPulls({ initial, refreshSeconds, serverNow }: { initial: RecentPull[]; refreshSeconds: number; serverNow: number }) {
   const t = useTranslations("home.pulls");
   const [pulls, setPulls] = useState(initial);
   const [now, setNow] = useState(serverNow);
+  const reduced = useReducedFx();
+  const marquee = pulls.length >= MARQUEE_MIN && !reduced;
+  const { track, handlers: drag } = useMarquee<HTMLDivElement>({ enabled: marquee, periodSeconds: pulls.length * SECONDS_PER_CARD });
 
   useEffect(() => {
     let stopped = false;
@@ -42,7 +47,6 @@ export function RecentPulls({ initial, refreshSeconds, serverNow }: { initial: R
   }, [refreshSeconds]);
 
   if (pulls.length === 0) return null;
-  const marquee = pulls.length >= MARQUEE_MIN;
 
   return (
     <section aria-labelledby="gros-tirages" className="flex flex-col gap-4">
@@ -55,14 +59,12 @@ export function RecentPulls({ initial, refreshSeconds, serverNow }: { initial: R
       </div>
 
       <div
-        className={`pull-marquee-host -mx-4 px-4 lg:mx-0 lg:px-0 ${
-          marquee ? "overflow-hidden motion-reduce:overflow-x-auto" : "overflow-x-auto"
+        {...(marquee ? drag : {})}
+        className={`-mx-4 px-4 lg:mx-0 lg:px-0 ${
+          marquee ? "cursor-grab touch-pan-y overflow-hidden select-none active:cursor-grabbing motion-reduce:overflow-x-auto" : "overflow-x-auto"
         } [mask-image:linear-gradient(90deg,transparent,#000_1rem,#000_calc(100%-1rem),transparent)] [scrollbar-width:thin]`}
       >
-        <div
-          className={`flex w-max gap-3 py-1 ${marquee ? "pull-marquee motion-reduce:[animation:none]" : ""}`}
-          style={marquee ? ({ "--marquee-duration": `${pulls.length * SECONDS_PER_CARD}s` } as React.CSSProperties) : undefined}
-        >
+        <div ref={track} className="flex w-max gap-3 py-1 will-change-transform">
           <PullList pulls={pulls} now={now} />
           {/* Deuxième passage pour la boucle : invisible aux lecteurs d'écran et au clavier */}
           {marquee && (

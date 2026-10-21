@@ -1,11 +1,15 @@
 .kf-scene { perspective: 1100px; }
-.kf-turn { display: grid; transform-style: preserve-3d; transition: transform .55s cubic-bezier(.2,.8,.2,1); }
+/* Recto dans le flux, verso posé dessus : pas de grille, dont WebKit calculait mal la hauteur des faces 5:7 */
+.kf-turn { position: relative; transform-style: preserve-3d; transition: transform .55s cubic-bezier(.2,.8,.2,1); }
 .kf-turn[data-back="true"] { transform: rotateY(180deg); }
-.kf-front, .kf-reverse { grid-area: 1 / 1; backface-visibility: hidden; }
+.kf-front, .kf-reverse { backface-visibility: hidden; }
 .kf-front { min-width: 0; }
-.kf-reverse { transform: rotateY(180deg); }
+.kf-reverse { position: absolute; inset: 0; transform: rotateY(180deg); }
 @media (prefers-reduced-motion: reduce) {
   .kf-scene { perspective: none; }
   .kf-turn, .kf-turn[data-back="true"], .kf-reverse { transform: none; transition: none; }
   .kf-turn[data-back="false"] .kf-reverse, .kf-turn[data-back="true"] .kf-front { visibility: hidden; }
 }
+:root[data-motion="reduced"] .kf-scene { perspective: none; }
+:root[data-motion="reduced"] .kf-turn, :root[data-motion="reduced"] .kf-turn[data-back="true"], :root[data-motion="reduced"] .kf-reverse { transform: none; transition: none; }
+:root[data-motion="reduced"] .kf-turn[data-back="false"] .kf-reverse, :root[data-motion="reduced"] .kf-turn[data-back="true"] .kf-front { visibility: hidden; }

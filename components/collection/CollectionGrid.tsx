@@ -27,21 +27,33 @@ function CollectionCard({ item, href, preload }: { item: CollectionItem; href: s
       scroll={false}
       className="relative block rounded-[5px] transition-transform active:scale-[0.97] motion-reduce:transition-none"
     >
-      <Fuda card={item} series={item.series} size="sm" preload={preload} />
+      {/* Pastilles posées sur la carte : elles s'inclinent avec elle */}
+      <Fuda
+        card={item}
+        series={item.series}
+        size="sm"
+        preload={preload}
+        overlay={
+          (item.copies > 1 || item.inShowcase) && (
+            <>
+              {item.copies > 1 && (
+                <span
+                  aria-hidden="true"
+                  className="absolute right-1 bottom-6 rounded-sm bg-sumi/85 px-1 text-[11px] font-bold tabular-nums text-washi-paper"
+                >
+                  ×{item.copies}
+                </span>
+              )}
+              {item.inShowcase && (
+                <span className="absolute bottom-6 left-1 rounded-sm bg-kin px-1 text-[10px] font-bold text-sumi">
+                  {t("inShowcaseBadge")}
+                </span>
+              )}
+            </>
+          )
+        }
+      />
       <span className="sr-only">{t("copiesLabel", { count: item.copies })}</span>
-      {item.copies > 1 && (
-        <span
-          aria-hidden="true"
-          className="absolute right-1 bottom-6 rounded-sm bg-sumi/85 px-1 text-[11px] font-bold tabular-nums text-washi-paper"
-        >
-          ×{item.copies}
-        </span>
-      )}
-      {item.inShowcase && (
-        <span className="absolute bottom-6 left-1 rounded-sm bg-kin px-1 text-[10px] font-bold text-sumi">
-          {t("inShowcaseBadge")}
-        </span>
-      )}
     </Link>
   );
 }

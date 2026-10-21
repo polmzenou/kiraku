@@ -14,6 +14,7 @@ export type StoragePurpose =
   | "discordSignIn"
   | "consent"
   | "theme"
+  | "motion"
   | "locale"
   | "sound"
   | "discordLater"
@@ -83,6 +84,15 @@ export const STORAGE_REGISTRY: readonly StorageEntry[] = [
     kind: "cookie",
     category: "preferences",
     purpose: "theme",
+    duration: { unit: "days", value: 365 },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
+    name: "kiraku-motion",
+    kind: "cookie",
+    category: "preferences",
+    purpose: "motion",
     duration: { unit: "days", value: 365 },
     provider: "kiraku",
     exempt: true,

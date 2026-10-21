@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, domMax, LazyMotion, m, useReducedMotion } from "motion/react";
+import { AnimatePresence, domMax, LazyMotion, m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OPEN_COUNTS, type OpenCount } from "@/lib/boosters/catalog";
@@ -17,12 +17,16 @@ import { Button } from "../ui/Button";
 import { BoosterScene, type SceneHandle } from "./BoosterScene";
 import { CardDeck, revealOrder } from "./CardDeck";
 import { CountPicker } from "./CountPicker";
+import { GoldenDust } from "./GoldenDust";
 import { GuestSignupPrompt } from "./GuestSignupPrompt";
 import { Recap } from "./Recap";
 import { RecapActionBar } from "./RecapActionBar";
+import { RevealOverlay, momentTint, TINT_DELAY, useMomentFor, type Moment } from "./RevealMoment";
 import { RitualBackdrop } from "./RitualBackdrop";
+import { SettingsMenu } from "./SettingsMenu";
 import { SoundToggle } from "./SoundToggle";
 import { useRitualFx } from "./useRitualFx";
+import { useReducedFx } from "@/components/motion/MotionPreference";
 
 type Stage = "ready" | "opening" | "reveal" | "recap";
 
@@ -76,7 +80,7 @@ function maxOpenable(type: OpeningType, state: BoosterState): number {
 export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props) {
   const rarities = useRarities();
   const t = useTranslations("opening");
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedFx();
   const fx = useRitualFx();
   const [stage, setStage] = useState<Stage>("ready");
   const [count, setCount] = useState<OpenCount>(1);
@@ -91,6 +95,9 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
   const [shake, setShake] = useState(0);
   const [creditLeft, setCreditLeft] = useState(credits);
   const [openedCredit, setOpenedCredit] = useState(false);
+  const [momentCard, setMomentCard] = useState<Pick<Moment, "id" | "rarity"> | null>(null);
+  const momentFor = useMomentFor();
+  const moment = momentCard ? momentFor(momentCard.id, momentCard.rarity) : null;
   const opened = useRef(false);
   const result = useRef<OpenedBoosterView[] | null>(null);
   const scene = useRef<SceneHandle | null>(null);
@@ -198,17 +205,29 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
 
   return (
     <LazyMotion features={domMax} strict>
-      <AnimatePresence>{ritual && <RitualBackdrop key="backdrop" depth={depth} reduced={reduced} />}</AnimatePresence>
+      <AnimatePresence>
+        {ritual && (
+          <RitualBackdrop
+            key="backdrop"
+            depth={depth}
+            reduced={reduced}
+            tint={moment ? { id: moment.id, style: momentTint(moment.color), delay: TINT_DELAY } : null}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Une Mythique fait trembler la scène (le compteur change les images clés et relance l'animation) */}
+      {/* Une Mythique fait trembler la scène (le compteur change les images clés et relance l'animation).
+          Au repos, une cible fixe plutôt que `undefined` : sinon Motion ne monte son animation qu'au premier
+          tremblement, le prend pour un premier rendu et `initial={false}` l'annule. */}
       <m.div
         ref={stageTop}
         className="relative z-50 flex scroll-mt-20 flex-col items-center gap-6 md:scroll-mt-24"
         initial={false}
-        animate={reduced ? undefined : { x: shake % 2 ? [0, -7, 7, -5, 5, -2, 0] : [0, 7, -7, 5, -5, 2, 0] }}
+        animate={reduced || shake === 0 ? { x: 0 } : { x: shake % 2 ? [0, -7, 7, -5, 5, -2, 0] : [0, 7, -7, 5, -5, 2, 0] }}
         transition={{ duration: 0.45 }}
       >
-        <div className="flex w-full justify-end">
+        <div className="flex w-full items-center justify-end gap-2">
+          <SettingsMenu />
           <SoundToggle enabled={fx.enabled} onChange={fx.setEnabled} />
         </div>
 
@@ -244,7 +263,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
                 armed={armed}
                 reduced={reduced}
                 leak={boosters ? bestRarity(boosters, rarities) : null}
-                variant={variant}
+                divine={variant === "divine"}
                 onTrigger={() => void trigger()}
                 onOpened={onOpened}
                 onTearSound={() => fx.play("tear", 15)}
@@ -319,7 +338,14 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
             >
-              <CardDeck cards={boosters.flatMap((booster) => booster.cards)} reduced={reduced} play={fx.play} onMythic={onMythic} onDone={toRecap} />
+              <CardDeck
+                cards={boosters.flatMap((booster) => booster.cards)}
+                reduced={reduced}
+                play={fx.play}
+                onMythic={onMythic}
+                onMoment={setMomentCard}
+                onDone={toRecap}
+              />
             </m.div>
           )}
 
@@ -361,6 +387,8 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
       </m.div>
 
       {/* Hors du calque qui tremble : un `transform` ancêtre casserait le `fixed` mobile */}
+      {stage === "reveal" && moment && !reduced && <RevealOverlay key={moment.id} moment={moment} />}
+      {variant === "golden" && ritual && !reduced && <GoldenDust key={`dust-${attempt}`} />}
       {stage === "recap" && boosters && (
         <RecapActionBar
           count={effectiveCount}

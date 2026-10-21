@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { Fuda } from "../fuda/Fuda";
 import { CardBack as FudaBack } from "../fuda/CardBack";
-import { RarityFx } from "./RarityFx";
+import { ArGhosts, chargeFor, GoldCracks, GoldShatter, RarityCardFx, RarityFx } from "./RarityFx";
 import { CardAura } from "./CardAura";
 import { resolveAppearance } from "@/lib/catalog/appearance";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
@@ -73,6 +73,8 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
   const front = phase === "front";
   const charging = phase === "charging";
   const rank = definitions.findIndex((r) => r.key === card.rarity);
+  // AR sort d'une faille (étirée depuis le centre), Gold brise son dos : pas de retournement
+  const variant = card.rarity === "AR" || card.rarity === "GOLD" ? card.rarity : null;
 
   if (reduced) {
     return (
@@ -109,18 +111,33 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
     <div className="relative isolate [perspective:1100px]">
       <CardAura rarity={front ? card.rarity : undefined} compact={compactFx} />
       {front && <RarityFx rarity={card.rarity} compact={compactFx} />}
-      <div className={charging && rank >= 3 ? "fx-tremble" : ""}>
+      <div className={`relative ${charging && rank >= 3 ? "fx-tremble" : ""}`}>
         <m.div
           className="relative z-10 [transform-style:preserve-3d]"
           initial={false}
-          animate={front ? { rotateY: 0, scale: [1.08, 1] } : { rotateY: 180, scale: charging ? 1.04 : 1 }}
-          transition={front ? { duration: visual.duration, delay: visual.delay, ease: visual.easing } : { duration: 0.3 }}
+          animate={
+            !front
+              ? { rotateY: 180, scale: charging ? 1.04 : 1 }
+              : variant === "AR"
+                ? { rotateY: 0, scaleX: [0.04, 1], scale: 1 }
+                : { rotateY: 0, scale: [1.08, 1] }
+          }
+          transition={
+            !front
+              ? { duration: 0.3 }
+              : variant
+                ? { rotateY: { duration: 0 }, scaleX: { duration: 0.55, delay: 0.12, ease: [0.2, 0.9, 0.3, 1.15] }, scale: { duration: 0.5, ease: visual.easing } }
+                : { duration: visual.duration, delay: visual.delay, ease: visual.easing }
+          }
         >
           <div aria-hidden={!front} inert={!front} className="[backface-visibility:hidden]">
-            <Fuda card={card} series={card.series} size={size} />
+            <Fuda card={card} series={card.series} size={size} overlay={front && <RarityCardFx rarity={card.rarity} />} />
           </div>
           <CardBack glow={charging && rank >= 4} static={front} />
         </m.div>
+        {charging && card.rarity === "GOLD" && <GoldCracks duration={chargeFor(card.rarity, definitions)} />}
+        {front && variant === "GOLD" && <GoldShatter><FudaBack static /></GoldShatter>}
+        {front && variant === "AR" && <ArGhosts><Fuda card={card} series={card.series} size={size} tilt={false} /></ArGhosts>}
       </div>
       {front && card.isNew && <NewStamp delay={rank >= 3 ? 0.55 : 0.3} />}
       {front && card.featured && <FeaturedSeal delay={0.45} />}

@@ -27,9 +27,16 @@ export function resolveAppearance(base: unknown, card: unknown) {
   return { ...APPEARANCE_DEFAULTS, ...parseAppearance(base), ...parseAppearance(card) };
 }
 
+const MATERIAL_COLORS: Record<string, string> = { COMMON: "#897e6d", UNCOMMON: "#618d68", RARE: "#557ca5", EPIC: "#9872bc", LEGENDARY: "#c8a140", MYTHIC: "#d4a9c8", AR: "#6f8fd8", GOLD: "#d9b556" };
+
+/** Couleur d'une rareté (teinte du grand moment) : cadre réglé dans l'admin, sinon celui de sa matière. */
+export function rarityColor(key: string, appearance: unknown): string {
+  return parseAppearance(appearance).frame ?? MATERIAL_COLORS[key] ?? "#c8a140";
+}
+
 /** Concrete versions of the existing CSS materials when starting a new rarity. */
 export function materialAppearance(key: string): CardAppearance {
-  const colors: Record<string, string> = { COMMON: "#897e6d", UNCOMMON: "#618d68", RARE: "#557ca5", EPIC: "#9872bc", LEGENDARY: "#c8a140", MYTHIC: "#d4a9c8", AR: "#6f8fd8", GOLD: "#d9b556" };
+  const colors = MATERIAL_COLORS;
   const effects: Record<string, CardAppearance["effects"]> = { MYTHIC: ["pearl", "holographic"], LEGENDARY: ["gold"], EPIC: ["pearl"], AR: ["holographic", "sparkles"], GOLD: ["gold", "sparkles"] };
   return { frame: colors[key] || "#897e6d", effects: effects[key] ?? [], ...(key === "GOLD" && { artTone: "gold" as const }) };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { prefersReducedMotion } from "@/lib/motion-pref-dom";
 
 // État partagé du chat entre l'icône de l'en-tête (mobile), la bulle (desktop), le panneau et les
 // boutons « Discuter » ailleurs dans l'app : panneau ouvert, ami ciblé, nombre de non-lus.
@@ -52,7 +53,7 @@ export function openChat(username?: string) {
 /** Ferme le panneau en le laissant redescendre (immédiat si le mouvement est réduit). */
 export function closeChat() {
   if (!store.state.open) return;
-  const reduced = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduced = typeof window !== "undefined" && prefersReducedMotion();
   set({ open: false, closing: !reduced });
   if (reduced) return;
   clearTimeout(closeTimer);

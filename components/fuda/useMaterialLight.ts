@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, type RefObject } from "react";
+import { MOTION_EVENT, prefersReducedMotion } from "@/lib/motion-pref-dom";
 
 /** Reflet sans rendu React, un seul RAF en attente, écoute uniquement à l'écran. */
 export function useMaterialLight(ref: RefObject<HTMLElement | null>, disabled = false) {
@@ -44,7 +45,7 @@ export function useMaterialLight(ref: RefObject<HTMLElement | null>, disabled = 
       listening = false;
     };
     const sync = () => {
-      if (!visible || reduced.matches || document.hidden) return stop();
+      if (!visible || prefersReducedMotion() || document.hidden) return stop();
       if (listening) return;
       listening = true;
       el.setAttribute("data-live", "true");
@@ -59,10 +60,12 @@ export function useMaterialLight(ref: RefObject<HTMLElement | null>, disabled = 
     });
     observer.observe(el);
     reduced.addEventListener("change", sync);
+    window.addEventListener(MOTION_EVENT, sync);
     document.addEventListener("visibilitychange", sync);
     return () => {
       observer.disconnect();
       reduced.removeEventListener("change", sync);
+      window.removeEventListener(MOTION_EVENT, sync);
       document.removeEventListener("visibilitychange", sync);
       stop();
     };
