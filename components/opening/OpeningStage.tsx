@@ -15,7 +15,7 @@ import { Fuda } from "../fuda/Fuda";
 import { ZeniCoin } from "../layout/ZeniCoin";
 import { Button } from "../ui/Button";
 import { BoosterScene, type SceneHandle } from "./BoosterScene";
-import { CardDeck, revealOrder } from "./CardDeck";
+import { CardDeck, revealOrder, type DeckFrom } from "./CardDeck";
 import { CountPicker } from "./CountPicker";
 import { GoldenDust } from "./GoldenDust";
 import { GuestSignupPrompt } from "./GuestSignupPrompt";
@@ -96,6 +96,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
   const [creditLeft, setCreditLeft] = useState(credits);
   const [openedCredit, setOpenedCredit] = useState(false);
   const [momentCard, setMomentCard] = useState<Pick<Moment, "id" | "rarity"> | null>(null);
+  const [deckFrom, setDeckFrom] = useState<DeckFrom | null>(null);
   const momentFor = useMomentFor();
   const moment = momentCard ? momentFor(momentCard.id, momentCard.rarity) : null;
   const opened = useRef(false);
@@ -123,12 +124,15 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
 
   const goReveal = () => {
     if (!opened.current || !result.current) return;
-    // Laisser la lumière s'épanouir un instant avant de sortir les cartes
-    setTimeout(() => {
-      setStage("reveal");
-      setDepth(0.25);
-      fx.play("whoosh");
-    }, reduced ? 0 : 650);
+    // Les cartes sorties du booster rejoignent la pile depuis leur place dans la scène
+    const cards = reduced ? null : scene.current?.cards();
+    const base = stageTop.current?.getBoundingClientRect();
+    setDeckFrom(
+      cards && base ? { x: cards.left - base.left, y: cards.top - base.top, width: cards.width, height: cards.height } : null,
+    );
+    setStage("reveal");
+    setDepth(0.25);
+    fx.play("whoosh");
   };
 
   const trigger = async () => {
@@ -248,7 +252,8 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
               className="flex w-full flex-col items-center gap-6"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={reduced ? { opacity: 0 } : { opacity: 0, y: 80, scale: 0.9 }}
+              // Tirage reçu : les cartes sorties restent affichées jusqu'à ce que la pile prenne le relais
+              exit={reduced ? { opacity: 0 } : boosters ? { opacity: 1, transition: { duration: 0 } } : { opacity: 0, y: 80, scale: 0.9 }}
               transition={{ duration: 0.35 }}
             >
               <BoosterScene
@@ -264,6 +269,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
                 reduced={reduced}
                 leak={boosters ? bestRarity(boosters, rarities) : null}
                 divine={variant === "divine"}
+                cards={boosters ? boosters.reduce((n, booster) => n + booster.cards.length, 0) : 0}
                 onTrigger={() => void trigger()}
                 onOpened={onOpened}
                 onTearSound={() => fx.play("tear", 15)}
@@ -321,7 +327,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
                   {type.usesFreeStock && !creditMode && <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} />}
                 </div>
               )}
-              {stage === "opening" && (
+              {stage === "opening" && !boosters && (
                 <p className="animate-pulse text-sm text-text-muted" aria-hidden="true">
                   {t("opening")}
                 </p>
@@ -333,13 +339,15 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
             <m.div
               key="reveal"
               className="flex w-full flex-col items-center"
-              initial={{ opacity: 0 }}
+              initial={deckFrom ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
             >
               <CardDeck
                 cards={boosters.flatMap((booster) => booster.cards)}
+                from={deckFrom}
+                origin={stageTop}
                 reduced={reduced}
                 play={fx.play}
                 onMythic={onMythic}
