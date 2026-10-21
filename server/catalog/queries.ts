@@ -97,6 +97,25 @@ const loadCard = unstable_cache(
   cacheOptions,
 );
 
+const loadSitemapCards = unstable_cache(
+  async (_version: number) => {
+    void _version;
+    const rows = await prisma.card.findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: { publicId: "asc" },
+      select: { publicId: true, updatedAt: true },
+    });
+    return rows.map((row) => ({ id: row.publicId, updatedAt: row.updatedAt.toISOString() }));
+  },
+  ["catalog-sitemap"],
+  cacheOptions,
+);
+
+/** Fiches publiées du wiki pour le sitemap : identifiant public et dernière modification. */
+export async function getSitemapCards() {
+  return loadSitemapCards(await getCatalogVersion());
+}
+
 /** Taille du catalogue actif et nombre de cartes par rareté. */
 export async function getCatalogStats() {
   return loadStats(await getCatalogVersion());

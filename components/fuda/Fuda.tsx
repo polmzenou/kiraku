@@ -73,6 +73,7 @@ export function Fuda({
   tilt = true,
   sizes,
   overlay,
+  describeImage = size !== "sm",
 }: {
   card: FudaCard;
   series?: string;
@@ -87,6 +88,12 @@ export function Fuda({
   sizes?: string;
   /** Posé sur la carte (pastilles, reflets de révélation) : il s'incline avec elle. */
   overlay?: ReactNode;
+  /**
+   * Texte alternatif « nom du personnage ». Vide par défaut en petite taille (le nom est déjà lu par
+   * le lien parent) ; à activer quand la carte est dans un lien étiqueté ou masqué (`aria-hidden`),
+   * pour la recherche d'images sans double lecture.
+   */
+  describeImage?: boolean;
 }) {
   const t = useTranslations("fuda");
   const rarity = useTranslations("rarity");
@@ -119,7 +126,7 @@ export function Fuda({
           ) : (
             <Image
               src={card.imageUrl}
-              alt={size === "sm" ? "" : t("imageAlt", { name: card.name })}
+              alt={describeImage ? t("imageAlt", { name: card.name }) : ""}
               fill
               sizes={sizes ?? l.sizes}
               preload={preload}

@@ -16,14 +16,19 @@ import { MOTION_COOKIE, parseMotionPref } from "@/lib/motion-pref";
 import { MotionPreferenceProvider } from "@/components/motion/MotionPreference";
 import { fontVariables } from "../fonts";
 import { appUrl } from "@/server/env";
+import { localePath } from "@/lib/seo/alternates";
+import { baseOpenGraph } from "@/lib/seo/open-graph";
 
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale: hasLocale(routing.locales, locale) ? locale : "fr", namespace: "metadata" });
+  const current = hasLocale(routing.locales, locale) ? locale : routing.defaultLocale;
+  const t = await getTranslations({ locale: current, namespace: "metadata" });
   return {
     metadataBase: new URL(appUrl()),
     title: { default: t("title"), template: `%s · ${t("title")}` },
     description: t("description"),
+    openGraph: baseOpenGraph(current),
+    twitter: { card: "summary_large_image", images: [localePath("/og-image", current)] },
     appleWebApp: { capable: true, title: t("title"), statusBarStyle: "black-translucent" },
     icons: {
       icon: [

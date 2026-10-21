@@ -37,13 +37,14 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/u/[usern
     getTranslations({ locale, namespace: "account" }),
   ]);
   const name = displayName(owner.username, owner.isGuest, (code) => tAccount("guestName", { code }));
-  // Indexé seulement s'il est public pour tous, et jamais pour un invité
-  const indexable = !owner.isGuest && anonymousAccess(owner).profile;
+  // Profils jamais indexés (le sitemap n'expose aucun joueur) ; liens suivis seulement s'il est public
+  // pour tous, et jamais pour un invité
+  const followable = !owner.isGuest && anonymousAccess(owner).profile;
   const href = `/u/${owner.username}`;
   return {
     title: t("metaTitle", { name }),
     description: t("metaDescription", { name }),
-    robots: indexable ? undefined : { index: false, follow: false },
+    robots: { index: false, follow: followable },
     alternates: { canonical: getPathname({ href, locale }) },
   };
 }

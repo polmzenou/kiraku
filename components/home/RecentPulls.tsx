@@ -88,7 +88,7 @@ function PullList({ pulls, now }: { pulls: RecentPull[]; now: number }) {
       {pulls.map((p) => (
         <li key={p.id} className="flex w-32 shrink-0 flex-col gap-2 sm:w-36">
           <Link href={`/wiki/${p.card.anilistId}`} aria-label={t("cardLabel", { name: p.card.name, rarity: tRarity(p.card.rarity) })}>
-            <Fuda card={p.card} series={p.card.series} size="sm" tilt={false} sizes="144px" />
+            <Fuda card={p.card} series={p.card.series} size="sm" tilt={false} sizes="144px" describeImage />
           </Link>
           <div className="flex min-w-0 items-center gap-2">
             {p.profile ? (

@@ -7,8 +7,9 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { PlayerRow } from "@/components/social/PlayerRow";
 import { RankEmblem } from "@/components/ranked/RankEmblem";
 import { segmentedItemClass, segmentedTrackClass } from "@/components/ui/Segmented";
-import { getPathname, Link } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import { localeAlternates } from "@/lib/seo/alternates";
 import { getTopCollectors, LEADERBOARD_SIZE, type Collector } from "@/server/collection/leaderboard";
 import { ensureSeason, getRankedLeaderboard, getRankedRules, type RankedEntry } from "@/server/ranked/queries";
 
@@ -19,10 +20,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/classeme
   return {
     title: t("title"),
     description: t("metaDescription", { count: LEADERBOARD_SIZE }),
-    alternates: {
-      canonical: getPathname({ href: "/classement", locale }),
-      languages: Object.fromEntries(routing.locales.map((l) => [l, getPathname({ href: "/classement", locale: l })])),
-    },
+    alternates: localeAlternates("/classement", locale),
   };
 }
 

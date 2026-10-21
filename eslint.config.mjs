@@ -23,6 +23,8 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // Seule exception à react/no-danger : JSON-LD typé construit côté serveur, `<` échappé
+  { files: ["components/seo/JsonLd.tsx"], rules: { "react/no-danger": "off" } },
   globalIgnores([".next/**", "out/**", "build/**", "reports/**", "next-env.d.ts", "generated/**"]),
 ]);
 

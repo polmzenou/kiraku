@@ -50,7 +50,8 @@
   },
   "metadata": {
     "title": "Kiraku",
-    "description": "Open packs, collect anime character fuda and challenge your friends."
+    "description": "Open packs, collect anime character fuda and challenge your friends.",
+    "ogTagline": "Open free anime card packs"
   },
   "common": {
     "appName": "Kiraku",
@@ -601,7 +602,8 @@
   },
   "boosters": {
     "title": "Pick your booster",
-    "metaDescription": "Open a free pack of fuda every {minutes} minutes, from {count} boosters.",
+    "metaTitle": "Kiraku · Open free anime card packs",
+    "metaDescription": "Free anime character card collecting game: open a pack every {minutes} minutes from {count} boosters, trade on the market and battle your friends.",
     "intro": "{count} boosters in {families} families. Free packs come out of your stock (one every {minutes} min, up to {max}); rarity boosters and formats are paid in Zeni.",
     "familiesLabel": "Booster families",
     "families": {

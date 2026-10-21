@@ -50,7 +50,8 @@
   },
   "metadata": {
     "title": "Kiraku",
-    "description": "Ouvre des sachets, collectionne des fuda de personnages d'anime et défie tes amis."
+    "description": "Ouvre des sachets, collectionne des fuda de personnages d'anime et défie tes amis.",
+    "ogTagline": "Ouvre des boosters de cartes anime gratuits"
   },
   "common": {
     "appName": "Kiraku",
@@ -601,7 +602,8 @@
   },
   "boosters": {
     "title": "Choisis ton booster",
-    "metaDescription": "Ouvre gratuitement un sachet de fuda toutes les {minutes} minutes, parmi {count} boosters.",
+    "metaTitle": "Kiraku · Ouvre des boosters de cartes anime gratuits",
+    "metaDescription": "Jeu gratuit de collection de cartes de personnages d'anime : ouvre un sachet toutes les {minutes} minutes parmi {count} boosters, échange au marché et défie tes amis.",
     "intro": "{count} boosters en {families} familles. Les sachets gratuits puisent dans ton stock (un toutes les {minutes} min, {max} au plus) ; les boosters de rareté et les formats se paient en Zeni.",
     "familiesLabel": "Familles de boosters",
     "families": {

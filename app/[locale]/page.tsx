@@ -20,8 +20,11 @@ import { TopCollectors } from "@/components/home/TopCollectors";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { ButtonLink } from "@/components/ui/ButtonLink";
-import { getPathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { localeAlternates, localePath } from "@/lib/seo/alternates";
+import { homeGraph } from "@/lib/seo/structured-data";
+import { appUrl } from "@/server/env";
 import { poolCounts } from "@/lib/boosters/draw";
 import { boosterPanelData } from "@/lib/boosters/panel";
 import { isRotatingFamily } from "@/lib/boosters/rotation";
@@ -56,15 +59,12 @@ export async function generateMetadata({ params }: PageProps<"/[locale]">): Prom
     getBoosterOffers(),
   ]);
   return {
-    title: t("title"),
+    title: { absolute: t("metaTitle") },
     description: t("metaDescription", {
       minutes: rules.intervalMinutes,
       count: offers.filter((o) => o.availability !== "hidden").length,
     }),
-    alternates: {
-      canonical: getPathname({ href: "/", locale }),
-      languages: Object.fromEntries(routing.locales.map((l) => [l, getPathname({ href: "/", locale: l })])),
-    },
+    alternates: localeAlternates("/", locale),
   };
 }
 
@@ -160,8 +160,12 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
 
   const cardsOf = (o: (typeof visible)[number]) => (o.type.slotFloors.length > 0 ? o.type.slotFloors.length : rules.draw.slotFloors.length);
 
+  const tMeta = await getTranslations("metadata");
+  const structuredData = homeGraph(appUrl(), localePath("/", hasLocale(routing.locales, locale) ? locale : routing.defaultLocale), { name: tMeta("title"), description: tMeta("description"), language: locale });
+
   return (
     <PageShell bottomBar="tall">
+      <JsonLd data={structuredData} />
       <ArcadeBanner />
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="flex min-w-0 flex-col gap-6">
