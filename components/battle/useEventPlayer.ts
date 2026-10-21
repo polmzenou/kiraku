@@ -1,10 +1,10 @@
 "use client";
 
-import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { applyEvent, eventDuration } from "@/lib/battle/display";
 import type { BattleEvent, BattleState, Side } from "@/lib/battle/types";
 import type { Fx } from "./BattleFuda";
+import { useReducedFx } from "@/components/motion/MotionPreference";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const key = (side: Side, index: number) => `${side}-${index}`;
@@ -22,7 +22,7 @@ const IMPACT_AT = 0.5;
  * prefers-reduced-motion, tout s'applique sans mouvement.
  */
 export function useEventPlayer(initial: BattleState) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedFx();
   const [shown, setShown] = useState(initial);
   const [fx, setFx] = useState<Record<string, Fx[]>>({});
   const [animating, setAnimating] = useState(false);

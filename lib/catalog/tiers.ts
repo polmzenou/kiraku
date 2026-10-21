@@ -24,3 +24,8 @@ export function atLeastRarity(rarity: Rarity, floor: Rarity, definitions: readon
   const rank = (key: string) => definitions.find((d) => d.key === key)?.sortOrder ?? -Infinity;
   return rank(rarity) >= rank(floor);
 }
+
+/** Grand moment de révélation (nom de la rareté en grand, fond teinté) : Légendaire et au-dessus. */
+export function isBigMoment(rarity: Rarity, definitions: readonly Ordered[]) {
+  return atLeastRarity(rarity, "LEGENDARY", definitions);
+}

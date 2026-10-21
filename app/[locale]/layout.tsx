@@ -12,6 +12,8 @@ import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { routing } from "@/i18n/routing";
 import { pickClientMessages } from "@/i18n/client-messages";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
+import { MOTION_COOKIE, parseMotionPref } from "@/lib/motion-pref";
+import { MotionPreferenceProvider } from "@/components/motion/MotionPreference";
 import { fontVariables } from "../fonts";
 import { appUrl } from "@/server/env";
 
@@ -47,20 +49,24 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
 
-  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
+  const jar = await cookies();
+  const theme = parseTheme(jar.get(THEME_COOKIE)?.value);
+  const motion = parseMotionPref(jar.get(MOTION_COOKIE)?.value);
   const clientMessages = pickClientMessages(await getMessages());
 
   return (
-    <html lang={locale} data-theme={theme} className={fontVariables}>
+    <html lang={locale} data-theme={theme} data-motion={motion === "reduced" ? "reduced" : undefined} className={fontVariables}>
       <body className="min-h-dvh">
         <NextIntlClientProvider messages={clientMessages}>
-          <AppHeader theme={theme} />
-          <AccountGate>
-            {children}
-            <PlayerAnnouncements />
-          </AccountGate>
-          <ConsentManager />
-          <ServiceWorkerRegister />
+          <MotionPreferenceProvider initial={motion}>
+            <AppHeader theme={theme} />
+            <AccountGate>
+              {children}
+              <PlayerAnnouncements />
+            </AccountGate>
+            <ConsentManager />
+            <ServiceWorkerRegister />
+          </MotionPreferenceProvider>
         </NextIntlClientProvider>
         {/* Mesure des performances (LCP, INP, CLS) sans cookie ni identifiant : exemptée de consentement */}
         {process.env.VERCEL === "1" && <SpeedInsights />}

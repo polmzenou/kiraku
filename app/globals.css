@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/* Mouvement réduit : réglage du système, ou animations coupées dans l'engrenage (<html data-motion="reduced">) */
+@custom-variant motion-reduce {
+  @media (prefers-reduced-motion: reduce) {
+    @slot;
+  }
+  &:where([data-motion="reduced"], [data-motion="reduced"] *) {
+    @slot;
+  }
+}
+@custom-variant motion-safe {
+  @media (prefers-reduced-motion: no-preference) {
+    &:not(:where([data-motion="reduced"], [data-motion="reduced"] *)) {
+      @slot;
+    }
+  }
+}
+
 /* Direction artistique Kiraku — Yoru (夜) par défaut, Washi (和紙) en option. */
 :root {
   color-scheme: dark;
@@ -564,6 +581,28 @@
   .booster-idle {
     animation: booster-idle 4.5s ease-in-out infinite;
   }
+  /* Halo du booster au repos (couleur de son thème) et reflet au sol synchronisé avec le flottement */
+  .booster-halo {
+    position: absolute;
+    inset: -22% -30%;
+    border-radius: 9999px;
+    background: radial-gradient(closest-side, var(--halo) 50%, color-mix(in srgb, var(--halo) 55%, transparent) 68%, color-mix(in srgb, var(--halo) 18%, transparent) 85%, transparent);
+  }
+  .booster-halo-breathe {
+    animation: booster-halo 4.5s ease-in-out infinite;
+  }
+  .booster-floor {
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    bottom: -14%;
+    height: 9%;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--halo) 70%, transparent), transparent);
+  }
+  .booster-floor-float {
+    animation: booster-floor 4.5s ease-in-out infinite;
+  }
   .booster-opening-seam {
     position: absolute;
     inset: -2px 5% auto;
@@ -700,15 +739,6 @@
   }
 }
 
-@keyframes enso-sweep {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(180deg);
-  }
-}
-
 @keyframes booster-idle {
   0%,
   100% {
@@ -716,6 +746,30 @@
   }
   50% {
     transform: translateY(-8px) rotate(0.6deg);
+  }
+}
+
+@keyframes booster-halo {
+  0%,
+  100% {
+    opacity: 0.75;
+    transform: scale(0.97);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes booster-floor {
+  0%,
+  100% {
+    opacity: 0.9;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scaleX(0.82);
   }
 }
 
@@ -981,21 +1035,6 @@
 }
 
 /* Carrousel « Gros tirages » : la piste contient deux fois la liste, -50 % boucle sans saut */
-@keyframes pull-marquee {
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-.pull-marquee {
-  animation: pull-marquee var(--marquee-duration, 60s) linear infinite;
-}
-
-.pull-marquee-host:hover .pull-marquee,
-.pull-marquee-host:focus-within .pull-marquee {
-  animation-play-state: paused;
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1005,4 +1044,13 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
 }

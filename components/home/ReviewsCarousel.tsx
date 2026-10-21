@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { MOTION_EVENT, prefersReducedMotion } from "@/lib/motion-pref-dom";
 import { paginate, pinnedFirst, REVIEW_MAX_PAGES, REVIEW_PAGE_SIZE } from "@/lib/social/reviews";
 import { PlayerAvatar } from "../social/PlayerAvatar";
 import { Stars } from "./Stars";
@@ -24,9 +25,12 @@ const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 function subscribeReducedMotion(onChange: () => void) {
   const query = window.matchMedia(REDUCED_MOTION);
   query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
+  window.addEventListener(MOTION_EVENT, onChange);
+  return () => {
+    query.removeEventListener("change", onChange);
+    window.removeEventListener(MOTION_EVENT, onChange);
+  };
 }
-const prefersReducedMotion = () => window.matchMedia(REDUCED_MOTION).matches;
 
 // Sur petit écran, une page n'affiche que ses premiers avis (2, puis 4 en 2 colonnes, 6 en 3) :
 // l'échantillon est aléatoire, rien ne manque vraiment et la mise en page ne saute pas.

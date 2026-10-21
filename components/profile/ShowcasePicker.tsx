@@ -109,13 +109,17 @@ export function ShowcasePicker({
                 onClick={() => onPick(item)}
                 className="relative block w-full rounded-[5px] text-left transition-transform active:scale-[0.97] motion-reduce:transition-none"
               >
-                <Fuda card={item} series={item.series} size="sm" />
+                <Fuda
+                  card={item}
+                  series={item.series}
+                  size="sm"
+                  overlay={
+                    shownIds.has(item.cardId) && (
+                      <span className="absolute bottom-6 left-1 rounded-sm bg-kin px-1 text-[10px] font-bold text-sumi">{t("alreadyShown")}</span>
+                    )
+                  }
+                />
                 <span className="sr-only">{pickLabel ? pickLabel(item.name) : t("pick", { name: item.name })}</span>
-                {shownIds.has(item.cardId) && (
-                  <span className="absolute bottom-6 left-1 rounded-sm bg-kin px-1 text-[10px] font-bold text-sumi">
-                    {t("alreadyShown")}
-                  </span>
-                )}
               </button>
             </li>
           ))}

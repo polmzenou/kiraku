@@ -49,12 +49,17 @@ export function ProfileSalesSection({ cards }: { cards: ProfileSaleCard[] }) {
       {cards.length === 0 ? (
         <p className="lacquer rounded-card p-4 text-sm text-text-muted">{t("empty")}</p>
       ) : (
-        <ul aria-label={t("title")} className="grid grid-cols-6 gap-1 sm:gap-2 md:gap-4 max-sm:[&_.fuda_span]:hidden">
+        <ul aria-label={t("title")} className="grid grid-cols-6 gap-1 sm:gap-2 md:gap-4 max-sm:[&_.fuda>span]:hidden max-sm:[&_.fuda-paper_span]:hidden">
           {cards.map((card) => (
             <li key={card.cardId} className="relative min-w-0">
               <Link href={`/marche/${card.auctionId}`} aria-label={t("open", { name: card.name, count: card.copies })} className="relative block rounded-[5px]">
-                <Fuda card={card} series={card.series} size="sm" sizes="(min-width: 1200px) 181px, 17vw" />
-                {card.copies > 1 && <span aria-hidden="true" className="absolute top-1 right-1 z-10 flex min-h-6 min-w-6 items-center justify-center rounded-full border border-bg bg-shu-btn px-1.5 text-xs font-bold text-white">×{card.copies}</span>}
+                <Fuda
+                  card={card}
+                  series={card.series}
+                  size="sm"
+                  sizes="(min-width: 1200px) 181px, 17vw"
+                  overlay={card.copies > 1 && <span aria-hidden="true" className="absolute top-1 right-1 flex min-h-6 min-w-6 items-center justify-center rounded-full border border-bg bg-shu-btn px-1.5 text-xs font-bold text-white">×{card.copies}</span>}
+                />
               </Link>
             </li>
           ))}

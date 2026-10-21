@@ -446,7 +446,10 @@
     "stock": "Boosters: {count} of {max}",
     "full": "Booster stock full",
     "nextIn": "Next booster in {time}",
-    "balance": "Balance: {amount, number} Zeni"
+    "balance": "Balance: {amount, number} Zeni",
+    "settings": "Settings",
+    "animations": "Animations",
+    "animationsHint": "Turn them off if your phone lags."
   },
   "market": {
     "title": "Auction house",
@@ -807,6 +810,13 @@
   "admin": {
     "title": "Administration",
     "modules": "Modules",
+    "navGroups": {
+      "overview": "Overview",
+      "settings": "Settings",
+      "content": "Content",
+      "players": "Players",
+      "compliance": "Compliance"
+    },
     "soon": "Soon",
     "users": {
       "title": "User management",
@@ -2795,6 +2805,7 @@
     "unreadCount": "{count, plural, =0 {All read} one {# unread} other {# unread}}",
     "unread": "Unread",
     "markAll": "Mark all as read",
+    "clearRead": "Delete read",
     "more": "Show more",
     "loading": "Loading…",
     "errors": {
@@ -3500,6 +3511,7 @@
       "discordSignIn": "Secures signing in with Discord (protection against request forgery).",
       "consent": "Remembers your cookie choices.",
       "theme": "Remembers the Yoru or Washi theme.",
+      "motion": "Remembers whether animations are turned off.",
       "locale": "Remembers the chosen language.",
       "sound": "Remembers whether sound is on.",
       "discordLater": "Remembers when you postponed the Discord invitation (\"Later\").",

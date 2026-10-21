@@ -5,7 +5,7 @@ import { fxTier } from "@/lib/catalog/tiers";
 
 import { AnimatePresence, m } from "motion/react";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import { Fuda } from "../fuda/Fuda";
@@ -13,6 +13,7 @@ import { CardBack } from "../fuda/CardBack";
 import { Button } from "../ui/Button";
 import { chargeFor } from "./RarityFx";
 import { FlipCard, type FlipPhase } from "./RevealCard";
+import { RevealTitle, titleGone, useMomentFor, type Moment } from "./RevealMoment";
 import type { SoundName } from "@/lib/sound/synth";
 
 /** Ordre de révélation : de la moins rare à la plus rare (une vedette après les autres de sa rareté). */
@@ -51,6 +52,8 @@ type Props = {
   play: (name: SoundName, haptic?: number | number[]) => void;
   /** Une Mythique va sortir : la scène s'assombrit et tremble. */
   onMythic: () => void;
+  /** Carte à l'endroit qui a droit au grand moment (Légendaire et au-delà), ou null. */
+  onMoment: (moment: Pick<Moment, "id" | "rarity"> | null) => void;
   onDone: () => void;
 };
 
@@ -58,7 +61,7 @@ type Props = {
  * Toutes les fuda du tirage sont empilées face cachée. Un geste retourne celle du dessus ;
  * le suivant la retire du tas, puis la prochaine devient manipulable après sa sortie.
  */
-export function CardDeck({ cards, reduced, play, onMythic, onDone }: Props) {
+export function CardDeck({ cards, reduced, play, onMythic, onMoment, onDone }: Props) {
   const t = useTranslations("opening");
   const rarities = useRarities();
   const definitions = useRarityDefinitions();
@@ -76,6 +79,16 @@ export function CardDeck({ cards, reduced, play, onMythic, onDone }: Props) {
   const dragged = useRef(false);
   const done = index >= order.length;
   const current = order[index];
+  const momentFor = useMomentFor();
+  const moment = current && phase === "front" && topVisible ? momentFor(current.userCardId, current.rarity) : null;
+  const momentId = moment?.id ?? null;
+  const momentRarity = moment?.rarity ?? null;
+
+  // Le fond et l'entrée plein écran vivent dans OpeningStage : on lui signale chaque changement
+  useEffect(() => {
+    onMoment(momentId && momentRarity ? { id: momentId, rarity: momentRarity } : null);
+  }, [momentId, momentRarity, onMoment]);
+  useEffect(() => () => onMoment(null), [onMoment]);
 
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
@@ -154,9 +167,22 @@ export function CardDeck({ cards, reduced, play, onMythic, onDone }: Props) {
 
   return (
     <div className="flex w-full flex-col items-center gap-5">
-      <p className="text-sm text-text-muted" aria-live="polite">
-        {done ? t("deckDone") : t("deckProgress", { current: index + 1, total: order.length })}
-      </p>
+      {/* Le nom d'une grande rareté prend un moment la place du compteur, au-dessus de la carte */}
+      <div className="relative flex min-h-14 w-full flex-col items-center justify-end">
+        <p
+          key={moment?.id ?? "progress"}
+          className={`text-sm text-text-muted ${moment ? "moment-return" : ""}`}
+          style={moment ? ({ "--d": `${titleGone(moment.name)}s` } as CSSProperties) : undefined}
+          aria-live="polite"
+        >
+          {done ? t("deckDone") : t("deckProgress", { current: index + 1, total: order.length })}
+        </p>
+        {moment && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0">
+            <RevealTitle key={moment.id} moment={moment} />
+          </div>
+        )}
+      </div>
 
       <div className="card-deck-stack relative isolate mb-6 aspect-[5/7] w-[min(15rem,62vw)]">
         {/* Un dos par carte restante ; l'épaisseur totale reste contenue pour les gros tirages. */}

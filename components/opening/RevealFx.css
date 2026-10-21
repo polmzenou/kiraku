@@ -1,0 +1,283 @@
+/* Révélations des grandes raretés : effets AR, Gold et nacre, et le grand moment (sceau Hanko).
+   Animations en transform et opacity uniquement ; le coupe-tout de globals.css les fige si le
+   mouvement est réduit (système ou engrenage), et la branche « reduced » de FlipCard ne les monte pas. */
+
+/* --- Mythique : éclat nacré ------------------------------------------------------------------ */
+.fx-pearl-bloom {
+  position: absolute;
+  inset: -30%;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgb(255 250 252 / 0.95), rgb(255 217 236 / 0.55) 30%, rgb(201 241 255 / 0.25) 50%, transparent 70%);
+  opacity: 0;
+  animation: fx-pearl-bloom 1.3s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
+/* --- AR 異 « Kagami » : faille de miroir ------------------------------------------------------ */
+.fx-ar-slit {
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  left: 27%;
+  width: 46%;
+  background: linear-gradient(90deg, transparent, rgb(127 163 209 / 0.7) 38%, #f4f9ff 50%, rgb(127 163 209 / 0.7) 62%, transparent);
+  opacity: 0;
+  transform: scaleX(0.02) scaleY(0.3);
+  animation: fx-ar-slit 1s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+.fx-ar-kaleido {
+  position: absolute;
+  inset: -48%;
+  border-radius: 9999px;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgb(127 163 209 / 0.55) 0deg 9deg,
+    rgb(217 181 86 / 0.45) 9deg 18deg,
+    rgb(224 83 63 / 0.35) 18deg 27deg,
+    transparent 27deg 40deg
+  );
+  mask: radial-gradient(circle, #000 0 18%, transparent 68%);
+  opacity: 0;
+  animation:
+    fx-fade-in 0.8s ease-out 0.35s forwards,
+    light-rays 18s linear infinite reverse;
+}
+.fx-ar-ghost {
+  position: absolute;
+  inset: 0;
+  isolation: isolate;
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: fx-ar-ghost 0.75s cubic-bezier(0.3, 0.6, 0.3, 1) var(--d, 0.2s) both;
+}
+.fx-ar-ghost::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: var(--tint);
+  mix-blend-mode: multiply;
+}
+.fx-ar-shard {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: var(--s, 10px);
+  height: calc(var(--s, 10px) * 1.4);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  background: linear-gradient(160deg, #f4f9ff, var(--c, #7fa3d1) 60%);
+  opacity: 0;
+  animation: fx-flake 1.4s cubic-bezier(0.15, 0.6, 0.35, 1) var(--d, 0s) forwards;
+}
+
+/* --- Gold 煌 « Kintsugi » : fissures d'or, dos brisé, pluie de feuille d'or ---------------------- */
+.fx-gold-cracks {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  filter: drop-shadow(0 0 3px rgb(255 226 140 / 0.9));
+}
+.fx-crack {
+  fill: none;
+  stroke: #ffe8a3;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0;
+  animation: fx-crack 0.22s ease-out var(--d, 0s) forwards;
+}
+.fx-gold-shard {
+  position: absolute;
+  inset: 0;
+  clip-path: var(--clip);
+  animation: fx-gold-shard 0.75s cubic-bezier(0.2, 0.6, 0.35, 1) forwards;
+}
+.fx-gold-flash {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 50% 45%, rgb(255 250 230 / 0.95), rgb(242 216 138 / 0.7) 30%, rgb(184 144 47 / 0.25) 60%, transparent 85%);
+  opacity: 0;
+  animation: fx-flash 0.9s ease-out forwards;
+}
+.fx-leaf {
+  position: absolute;
+  left: var(--x);
+  top: -6%;
+  width: var(--s, 9px);
+  height: var(--s, 9px);
+  background: linear-gradient(135deg, #fff1c4, #d9b556 55%, #8a6a1e);
+  opacity: 0;
+  animation: fx-petal var(--t, 3.2s) linear var(--d, 0s) forwards;
+}
+.fx-gold-glint {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 32%, rgb(255 246 214 / 0.85) 48%, rgb(242 216 138 / 0.6) 53%, transparent 68%);
+  mix-blend-mode: overlay;
+  transform: translateX(-120%);
+  animation: fx-gold-glint 3.4s ease-in-out 1s infinite;
+}
+
+/* --- Sachet doré : poussière d'or sur tout l'écran -------------------------------------------- */
+.golden-dust {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow: hidden;
+  pointer-events: none;
+}
+.golden-mote {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--s, 4px);
+  height: var(--s, 4px);
+  border-radius: 9999px;
+  background: radial-gradient(circle, #fff6d6 0 30%, #f2d88a 55%, #d9b556);
+  box-shadow: 0 0 6px 1px rgb(255 214 120 / 0.75);
+  opacity: 0;
+  animation: golden-mote var(--t, 2.4s) ease-in-out var(--d, 0s) forwards;
+}
+
+/* --- Grand moment (Légendaire et au-delà) ------------------------------------------------------ */
+.moment-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  overflow: hidden;
+  pointer-events: none;
+  --fly: -34vh;
+}
+.moment-overlay[data-contained] {
+  position: absolute;
+  z-index: 40;
+  --fly: -42%;
+}
+.moment-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 45%, rgb(255 253 242 / 0.9), color-mix(in srgb, var(--moment) 55%, transparent) 30%, transparent 70%);
+  opacity: 0;
+  animation: fx-flash 0.9s ease-out var(--d, 0.18s) forwards;
+}
+
+/* Hanko : le sceau géant s'écrase, puis s'envole se poser près du nom */
+.moment-hanko-stamp {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  display: grid;
+  place-items: center;
+  width: min(62vw, 300px);
+  aspect-ratio: 1;
+  border: 6px solid var(--moment);
+  border-radius: 14%;
+  background: rgb(21 18 15 / 0.55);
+  color: var(--moment);
+  font-size: min(40vw, 190px);
+  line-height: 1;
+  text-shadow: 0 0 24px var(--moment);
+  box-shadow: 0 0 40px color-mix(in srgb, var(--moment) 60%, transparent), inset 0 0 30px color-mix(in srgb, var(--moment) 35%, transparent);
+  opacity: 0;
+  animation: moment-hanko 1.35s cubic-bezier(0.2, 0.9, 0.3, 1.15) forwards;
+}
+.moment-overlay[data-contained] .moment-hanko-stamp {
+  width: 62%;
+  font-size: 7rem;
+}
+
+/* Nom de la rareté au-dessus de la carte */
+.moment-title {
+  color: color-mix(in srgb, var(--moment) 55%, #fff);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--moment) 80%, transparent), 0 2px 0 rgb(0 0 0 / 0.6);
+}
+.moment-title-seal {
+  color: var(--moment);
+  text-shadow: 0 0 14px var(--moment);
+}
+/* Lettres et sceau : entrée, 2 s de pause, puis envol (deux animations, la seconde prend le relais) */
+.moment-letter {
+  opacity: 0;
+  animation:
+    moment-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) var(--d, 0s) forwards,
+    moment-out 0.5s cubic-bezier(0.5, 0, 0.8, 0.4) var(--o, 999s) forwards;
+}
+.moment-seal {
+  opacity: 0;
+  animation:
+    moment-stamp-in 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) var(--d, 0s) forwards,
+    moment-seal-out 0.5s cubic-bezier(0.5, 0, 0.8, 0.4) var(--o, 999s) forwards;
+}
+/* Le compteur de cartes revient quand le nom est parti */
+.moment-return {
+  opacity: 0;
+  animation: fx-fade-in 0.3s ease-out var(--d, 0s) forwards;
+}
+
+@keyframes fx-fade-in {
+  to { opacity: 1; }
+}
+@keyframes fx-flash {
+  0% { opacity: 0; }
+  20% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+@keyframes fx-pearl-bloom {
+  0% { opacity: 0.9; transform: scale(0.3); }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+@keyframes fx-ar-slit {
+  0% { opacity: 1; transform: scaleX(0.02) scaleY(0.3); }
+  30% { opacity: 1; transform: scaleX(0.06) scaleY(1); }
+  60% { opacity: 0.9; transform: scaleX(1.5) scaleY(1); }
+  100% { opacity: 0; transform: scaleX(2.4) scaleY(1); }
+}
+@keyframes fx-ar-ghost {
+  0% { opacity: 0.85; transform: translate(var(--gx), var(--gy)) scale(1.04); }
+  100% { opacity: 0; transform: translate(0, 0) scale(1); }
+}
+@keyframes fx-crack {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fx-gold-shard {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+  100% { opacity: 0; transform: translate(var(--sx), var(--sy)) rotate(var(--sr)) scale(0.9); }
+}
+@keyframes fx-gold-glint {
+  0% { opacity: 0; transform: translateX(-120%); }
+  8% { opacity: 1; }
+  32% { opacity: 0; transform: translateX(120%); }
+  100% { opacity: 0; transform: translateX(120%); }
+}
+@keyframes golden-mote {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.3); }
+  15% { opacity: 1; transform: translate(calc(var(--dx) * 0.2), calc(var(--dy) * 0.1)) scale(1.15); }
+  30% { opacity: 0.55; }
+  45% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.5); }
+}
+@keyframes moment-hanko {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(2.6) rotate(-14deg); }
+  20% { opacity: 1; transform: translate(-50%, -50%) scale(0.94) rotate(-4deg); }
+  28% { transform: translate(-50%, -50%) scale(1.03) rotate(-4deg); }
+  34%, 62% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-4deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) translateY(var(--fly)) scale(0.16) rotate(0deg); }
+}
+@keyframes moment-in {
+  0% { opacity: 0; transform: translateY(14px) scale(0.92); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes moment-out {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-26px) scale(1.25); }
+}
+@keyframes moment-seal-out {
+  0% { opacity: 1; transform: scale(1) rotate(-4deg); }
+  35% { opacity: 1; transform: scale(1.25) rotate(-10deg); }
+  100% { opacity: 0; transform: scale(0.2) rotate(30deg); }
+}
+@keyframes moment-stamp-in {
+  0% { opacity: 0; transform: scale(2.2) rotate(-12deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-4deg); }
+}

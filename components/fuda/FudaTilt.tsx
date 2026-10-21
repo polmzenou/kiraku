@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { MOTION_EVENT, prefersReducedMotion } from "@/lib/motion-pref-dom";
 import "./FudaTilt.css";
 
 /**
@@ -72,7 +73,7 @@ export function FudaTilt({ children, className = "", rotate = true, angle = 16, 
       }
     };
     const sync = () => {
-      if (!visible || reduced.matches || document.hidden) return stop();
+      if (!visible || prefersReducedMotion() || document.hidden) return stop();
       if (listening) return;
       listening = true;
       fuda.classList.add("fuda-live");
@@ -94,10 +95,12 @@ export function FudaTilt({ children, className = "", rotate = true, angle = 16, 
     });
     observer.observe(el);
     reduced.addEventListener("change", sync);
+    window.addEventListener(MOTION_EVENT, sync);
     document.addEventListener("visibilitychange", sync);
     return () => {
       observer.disconnect();
       reduced.removeEventListener("change", sync);
+      window.removeEventListener(MOTION_EVENT, sync);
       document.removeEventListener("visibilitychange", sync);
       stop();
     };

@@ -446,7 +446,10 @@
     "stock": "Boosters : {count} sur {max}",
     "full": "Stock de boosters plein",
     "nextIn": "Prochain booster dans {time}",
-    "balance": "Solde : {amount, number} Zeni"
+    "balance": "Solde : {amount, number} Zeni",
+    "settings": "Réglages",
+    "animations": "Animations",
+    "animationsHint": "Désactive-les si ton téléphone rame."
   },
   "market": {
     "title": "Hôtel des ventes",
@@ -807,6 +810,13 @@
   "admin": {
     "title": "Administration",
     "modules": "Modules",
+    "navGroups": {
+      "overview": "Pilotage",
+      "settings": "Réglages",
+      "content": "Contenu",
+      "players": "Joueurs",
+      "compliance": "Conformité"
+    },
     "soon": "Bientôt",
     "users": {
       "title": "Gestion des utilisateurs",
@@ -2795,6 +2805,7 @@
     "unreadCount": "{count, plural, =0 {Tout est lu} one {# non lue} other {# non lues}}",
     "unread": "Non lue",
     "markAll": "Tout marquer comme lu",
+    "clearRead": "Supprimer les lues",
     "more": "Voir plus",
     "loading": "Chargement…",
     "errors": {
@@ -3500,6 +3511,7 @@
       "discordSignIn": "Sécurise la connexion avec Discord (protection contre la falsification de requête).",
       "consent": "Retient tes choix de cookies.",
       "theme": "Retient le thème Yoru ou Washi.",
+      "motion": "Retient si les animations sont coupées.",
       "locale": "Retient la langue choisie.",
       "sound": "Retient si le son est activé.",
       "discordLater": "Retient quand tu as repoussé l'invitation Discord (« Plus tard »).",

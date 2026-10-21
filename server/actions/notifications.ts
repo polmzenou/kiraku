@@ -37,6 +37,18 @@ export async function markNotificationsReadAction(input: unknown): Promise<{ ok:
   return { ok: true };
 }
 
+/** Supprime toutes les notifications déjà lues du joueur. */
+export async function deleteReadNotificationsAction(): Promise<{ ok: true; deleted: number } | Failure> {
+  const user = await requireActiveUser();
+  if (!user) return { ok: false, error: "NO_SESSION" };
+  if (!(await rateLimit(`notif-clear:${user.id}`, { limit: 10, windowSeconds: 60 })).success) {
+    return { ok: false, error: "RATE_LIMITED" };
+  }
+  const { count } = await prisma.notification.deleteMany({ where: { userId: user.id, readAt: { not: null } } });
+  refresh();
+  return { ok: true, deleted: count };
+}
+
 /** Page suivante de /notifications (la première est rendue par le serveur). */
 export async function loadNotificationsAction(
   input: unknown,

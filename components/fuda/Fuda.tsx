@@ -4,7 +4,7 @@ import { cardNumber } from "@/lib/catalog/display";
 import { BASE_RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
 import { fxTier } from "@/lib/catalog/tiers";
 import { FudaTilt } from "./FudaTilt";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { resolveAppearance } from "@/lib/catalog/appearance";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import "./FudaEffects.css";
@@ -24,9 +24,10 @@ export type FudaCard = {
 
 type FudaSize = "sm" | "md" | "lg";
 
-const layout: Record<FudaSize, { frame: string; inner: string; seal: string; number: string; name: string; meta: string; sizes: string }> = {
+const layout: Record<FudaSize, { frame: string; inset: string; inner: string; seal: string; number: string; name: string; meta: string; sizes: string }> = {
   sm: {
-    frame: "p-[3px] rounded-[7px]",
+    frame: "rounded-[7px]",
+    inset: "inset-[3px]",
     inner: "rounded-[4px]",
     seal: "size-5 text-[13px]",
     number: "text-[9px] px-1",
@@ -35,7 +36,8 @@ const layout: Record<FudaSize, { frame: string; inner: string; seal: string; num
     sizes: "(min-width: 1280px) 140px, (min-width: 1024px) 180px, (min-width: 768px) 25vw, 33vw",
   },
   md: {
-    frame: "p-1 rounded-fuda",
+    frame: "rounded-fuda",
+    inset: "inset-1",
     inner: "rounded-[7px]",
     seal: "size-7 text-lg",
     number: "text-[10px] px-1.5",
@@ -44,7 +46,8 @@ const layout: Record<FudaSize, { frame: string; inner: string; seal: string; num
     sizes: "(min-width: 768px) 240px, 50vw",
   },
   lg: {
-    frame: "p-1.5 rounded-[14px]",
+    frame: "rounded-[14px]",
+    inset: "inset-1.5",
     inner: "rounded-[9px]",
     seal: "size-10 text-[26px]",
     number: "text-xs px-2 py-0.5",
@@ -69,6 +72,7 @@ export function Fuda({
   preload = false,
   tilt = true,
   sizes,
+  overlay,
 }: {
   card: FudaCard;
   series?: string;
@@ -81,6 +85,8 @@ export function Fuda({
   /** Désactivé pendant le glisser-déposer ou pour un préchargement invisible. */
   tilt?: boolean;
   sizes?: string;
+  /** Posé sur la carte (pastilles, reflets de révélation) : il s'incline avec elle. */
+  overlay?: ReactNode;
 }) {
   const t = useTranslations("fuda");
   const rarity = useTranslations("rarity");
@@ -102,7 +108,8 @@ export function Fuda({
 
   const content = (
     <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} style={customStyle}>
-      <div className={`fuda-paper flex h-full flex-col overflow-hidden bg-washi-paper text-sumi ${l.inner}`} style={{ backgroundColor: visual.paper, color: visual.ink }}>
+      {/* Papier posé en absolu dans le cadre : sa hauteur ne dépend pas d'un pourcentage (WebKit la résolvait mal sous aspect-ratio) */}
+      <div className={`fuda-paper absolute ${l.inset} flex flex-col overflow-hidden bg-washi-paper text-sumi ${l.inner}`} style={{ backgroundColor: visual.paper, color: visual.ink }}>
         <div className="relative flex-1 overflow-hidden bg-[#e4d9c4]">
           {locked ? (
             <div className="flex h-full items-center justify-center font-title text-5xl text-sumi-muted/50">
@@ -171,6 +178,7 @@ export function Fuda({
         <span aria-hidden="true" className="fuda-sheen" />
       )}
       {!locked && !monochrome && visual.effects?.map((effect) => <span key={effect} aria-hidden="true" className={`fuda-effect fuda-effect-${effect}`} />)}
+      {overlay && <div className="pointer-events-none absolute inset-0 z-30">{overlay}</div>}
     </div>
   );
 

@@ -18,6 +18,9 @@ const TEAR_LINE = tearLine(TEAR_STEPS);
 const TEAR_BELOW = belowClip(TEAR_LINE);
 /** Durée de la déchirure jouée au bouton (le geste, lui, suit le doigt). */
 const AUTO_TEAR = 0.38;
+/** Envol de la bande arrachée (s) : elle saute, puis retombe en tournoyant hors du sachet. */
+const BAND_FLIGHT = 1.15;
+const BAND_REST = { x: "0%", y: "0%", rotate: 0, scale: 1, opacity: 1 };
 
 export type SceneHandle = { open: () => void };
 
@@ -36,8 +39,8 @@ type Props = {
   reduced: boolean;
   /** Meilleure rareté du tirage, dès que le serveur a répondu : couleur de la lumière qui s'échappe. */
   leak: Rarity | null;
-  /** Le serveur a décidé d'un sachet doré ou divin : la matière se révèle pendant l'ouverture. */
-  variant?: "golden" | "divine";
+  /** Le serveur a décidé d'un sachet divin : la nacre se révèle pendant l'ouverture (le doré a ses particules, dans la scène). */
+  divine: boolean;
   /** Appelé une fois, une fois la coupe engagée (ou au clic). */
   onTrigger: () => void;
   /** L'ouverture est finie (bande envolée, rabat ouvert, couvercle levé). */
@@ -54,7 +57,7 @@ type Props = {
  * pochibukuro et jūbako : on glisse vers le haut pour soulever le rabat ou le couvercle.
  */
 export function BoosterScene(props: Props) {
-  const { shape, theme, emblem, name, tagline, contents, count, armed, reduced, leak, variant } = props;
+  const { shape, theme, emblem, name, tagline, contents, count, armed, reduced, leak, divine } = props;
   const definitions = useRarityDefinitions();
   const progress = useMotionValue(0);
   const [opened, setOpened] = useState(false);
@@ -112,7 +115,7 @@ export function BoosterScene(props: Props) {
     fallback.current = setTimeout(() => {
       setOpened(true);
       finish();
-    }, 1700);
+    }, (AUTO_TEAR + BAND_FLIGHT) * 1000 + 400);
   };
 
   useEffect(() => {
@@ -158,26 +161,18 @@ export function BoosterScene(props: Props) {
     onLostPointerCapture: onPointerEnd,
   };
 
-  const leakColor = leak ? leakFor(leak, definitions) ?? theme.base : theme.base;
+  // Seule la meilleure rareté colore la lumière : avant la réponse du serveur, la fente reste blanche
+  const leakColor = leak ? leakFor(leak, definitions) ?? null : null;
 
   const overlay = (
     <>
       {/* Lumière qui s'échappe de l'ouverture */}
-      <Leak progress={progress} color={leakColor} strong={opened} shape={shape} reduced={reduced} />
-      {/* Matière du sachet doré ou divin, révélée pendant l'ouverture */}
-      {variant && (
+      <Leak progress={progress} color={leakColor} strong={opened && leakColor !== null} shape={shape} reduced={reduced} />
+      {/* Nacre du sachet divin, révélée pendant l'ouverture */}
+      {divine && (
         <m.span
           aria-hidden="true"
-          className={`pointer-events-none absolute inset-0 z-20 ${variant === "divine" ? "fx-nacre opacity-80" : ""}`}
-          style={
-            variant === "golden"
-              ? {
-                  background:
-                    "radial-gradient(circle, rgb(255 246 214 / 0.95) 0 1px, transparent 1.6px) 0 0 / 11px 15px, linear-gradient(135deg, rgb(242 216 138 / 0.75), rgb(184 144 47 / 0.55) 50%, rgb(242 216 138 / 0.75))",
-                  mixBlendMode: "hard-light",
-                }
-              : undefined
-          }
+          className="fx-nacre pointer-events-none absolute inset-0 z-20 opacity-80"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6 }}
@@ -194,7 +189,7 @@ export function BoosterScene(props: Props) {
       tabIndex={armed ? 0 : -1}
       aria-label={props.openLabel}
       aria-disabled={!armed}
-      className={`relative w-[min(16rem,66vw)] rounded-xl outline-offset-8 [perspective:1000px] ${armed ? "cursor-pointer" : ""}`}
+      className={`relative isolate w-[min(16rem,66vw)] rounded-xl outline-offset-8 [perspective:1000px] ${armed ? "cursor-pointer" : ""}`}
       onPointerDownCapture={(e) => {
         if (e.isPrimary && e.button === 0 && !drag.current) suppressClick.current = false;
       }}
@@ -212,6 +207,7 @@ export function BoosterScene(props: Props) {
         }
       }}
     >
+      {!opened && <IdleHalo progress={progress} color={theme.base} reduced={reduced} />}
       {count > 1 && (
         <>
           <m.div
@@ -320,7 +316,7 @@ function TearBand(props: {
     const timeout = setTimeout(() => {
       setFlown(true);
       onFlownRef.current();
-    }, reduced ? 0 : 900);
+    }, reduced ? 0 : BAND_FLIGHT * 1000);
     return () => clearTimeout(timeout);
   }, [opened, reduced]);
   // La partie arrachée pivote autour du front de déchirure
@@ -342,19 +338,32 @@ function TearBand(props: {
         <m.div
           className="absolute inset-0"
           initial={false}
+          // Cible de repos explicite : avec `undefined`, Motion ne monte son animation qu'à l'ouverture,
+          // la prend pour un premier rendu et `initial={false}` l'annule (la bande disparaissait sans bouger).
           animate={
             opened
               ? reduced
                 ? { opacity: 0 }
                 : {
-                    x: ["0%", `${direction * 30}%`, `${direction * 55}%`],
-                    y: ["0%", "-120%", "160%"],
-                    rotate: [0, direction * 50, direction * 120],
-                    opacity: [1, 1, 0],
+                    // Saut vers le côté de la déchirure, puis chute accélérée qui passe sous le sachet
+                    x: ["0%", `${direction * 28}%`, `${direction * 70}%`],
+                    y: ["0%", "-190%", "900%"],
+                    rotate: [0, direction * 28, direction * 230],
+                    scale: [1, 1.06, 0.82],
+                    opacity: [1, 1, 1, 0],
                   }
-              : undefined
+              : BAND_REST
           }
-          transition={reduced ? { duration: 0.15 } : { duration: 0.9, times: [0, 0.45, 1], ease: [0.25, 0.6, 0.35, 1] }}
+          transition={
+            reduced
+              ? { duration: 0.15 }
+              : {
+                  duration: BAND_FLIGHT,
+                  times: [0, 0.32, 1],
+                  ease: ["easeOut", "easeIn"],
+                  opacity: { duration: BAND_FLIGHT, times: [0, 0.32, 0.78, 1], ease: "linear" },
+                }
+          }
         >
           {TEAR_LINE.slice(1).map((to, i) => (
             <TearPiece
@@ -482,7 +491,23 @@ function JubakoLid({ progress, gesture }: { progress: MotionValue<number>; gestu
   );
 }
 
-/** Lumière issue de la fente : charge, flash unique, faisceau et étincelles. */
+/**
+ * Au repos : halo à la couleur du booster qui respire derrière lui, et reflet au sol qui suit le
+ * flottement. Il s'éteint dès que le geste d'ouverture commence.
+ */
+function IdleHalo({ progress, color, reduced }: { progress: MotionValue<number>; color: string; reduced: boolean }) {
+  const opacity = useTransform(progress, [0, 0.12], [1, 0]);
+  return (
+    <m.span aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10" style={{ opacity }}>
+      <span className="absolute inset-0" style={{ "--halo": color } as CSSProperties}>
+        <span className={`booster-halo ${reduced ? "" : "booster-halo-breathe"}`} />
+        <span className={`booster-floor ${reduced ? "" : "booster-floor-float"}`} />
+      </span>
+    </m.span>
+  );
+}
+
+/** Lumière issue de la fente : charge, flash unique, faisceau et étincelles, à la couleur de la meilleure carte. */
 function Leak({
   progress,
   color,
@@ -491,7 +516,8 @@ function Leak({
   reduced,
 }: {
   progress: MotionValue<number>;
-  color: string;
+  /** null tant que le serveur n'a pas répondu : fente blanche, pas de halo coloré. */
+  color: string | null;
   strong: boolean;
   shape: BoosterShape;
   reduced: boolean;
@@ -502,12 +528,14 @@ function Leak({
     <span
       aria-hidden="true"
       className={`booster-opening-light pointer-events-none absolute inset-x-0 ${top} z-40 h-0`}
-      style={{ "--opening-light": color } as CSSProperties}
+      style={{ "--opening-light": color ?? "rgb(255 250 235 / 0.3)" } as CSSProperties}
     >
-      <m.span
-        className="absolute left-1/2 size-[150cqw] -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{ opacity, background: `radial-gradient(circle, ${color}, transparent 60%)` }}
-      />
+      {color && (
+        <m.span
+          className="absolute left-1/2 size-[150cqw] -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{ opacity, background: `radial-gradient(circle, ${color}, transparent 60%)` }}
+        />
+      )}
       <m.span className="booster-opening-seam" style={{ opacity, scaleX: progress }} />
       {strong && !reduced && (
         <>
