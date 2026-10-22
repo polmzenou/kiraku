@@ -261,7 +261,8 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0, open = 
           tremblement, le prend pour un premier rendu et `initial={false}` l'annule. */}
       <m.div
         ref={stageTop}
-        className="relative z-50 flex scroll-mt-20 flex-col items-center gap-6 md:scroll-mt-24"
+        // Au-dessus du fond assombri pendant le rituel ; au récap, sous l'en-tête et la nav qui restent devant
+        className={`relative flex scroll-mt-20 flex-col items-center gap-6 md:scroll-mt-24 ${ritual ? "z-50" : ""}`}
         initial={false}
         animate={reduced || shake === 0 ? { x: 0 } : { x: shake % 2 ? [0, -7, 7, -5, 5, -2, 0] : [0, 7, -7, 5, -5, 2, 0] }}
         transition={{ duration: 0.45 }}
@@ -398,6 +399,8 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0, open = 
           {stage === "recap" && boosters && (
             <m.div key="recap" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <Recap
+                name={type.name}
+                emblem={type.emblem}
                 boosters={boosters}
                 state={state}
                 reduced={reduced}
@@ -439,6 +442,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0, open = 
         <RecapActionBar
           count={effectiveCount}
           nextPrice={unaffordable ? { kind: "unavailable" } : price}
+          stock={creditMode ? null : state.stock}
           onAgain={again}
           changeHref={`/?b=${type.slug}&f=${type.family}`}
           reduced={reduced}
