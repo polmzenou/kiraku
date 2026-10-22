@@ -12,7 +12,7 @@ import { Field, FormMessage, inputClass, NumberField, Toggle } from "./fields";
 
 type NumKey = Exclude<
   keyof MarketSettings,
-  "market.enabled" | "market.durationsHours" | "listings.enabled" | "listings.allowOther" | "listings.allowedRarities"
+  "market.enabled" | "market.durationsHours" | "market.maxPriceByRarity" | "listings.enabled" | "listings.allowOther" | "listings.allowedRarities"
 >;
 
 // Bornes des champs (les mêmes que les schémas Zod de lib/settings/defaults.ts)
@@ -126,6 +126,40 @@ export function MarketSettingsForm({ initial }: { initial: MarketSettings }) {
         {num("market.minAccountAgeHours")}
         {num("market.minStartPrice")}
         {num("market.maxPrice")}
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-3 lacquer rounded-card p-4">
+        <legend className="px-1 font-bold">{t("rarityCaps")}</legend>
+        <p className="text-xs text-text-muted">{t("rarityCapsHint")}</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {rarities.map((r) => {
+            const caps = draft["market.maxPriceByRarity"];
+            const value = caps[r];
+            const invalid = value !== undefined && (!Number.isSafeInteger(value) || value < draft["market.minStartPrice"] || value > BOUNDS["market.maxPrice"][1]);
+            return (
+              <Field key={r} label={<><span aria-hidden="true" lang="ja" className="font-seal">{seals[r]}</span> {tRarity(r as "COMMON")}</>}>
+                {(id) => (
+                  <input
+                    id={id}
+                    type="number"
+                    inputMode="numeric"
+                    min={draft["market.minStartPrice"]}
+                    max={BOUNDS["market.maxPrice"][1]}
+                    step={1}
+                    value={value ?? ""}
+                    placeholder={t("rarityCapNone")}
+                    aria-invalid={invalid || undefined}
+                    onChange={(e) => {
+                      const rest = Object.fromEntries(Object.entries(caps).filter(([k]) => k !== r));
+                      update("market.maxPriceByRarity", e.target.value === "" ? rest : { ...rest, [r]: e.target.valueAsNumber });
+                    }}
+                    className={`${inputClass} tabular-nums`}
+                  />
+                )}
+              </Field>
+            );
+          })}
+        </div>
       </fieldset>
 
       <fieldset className="flex flex-col gap-4 lacquer rounded-card p-4">

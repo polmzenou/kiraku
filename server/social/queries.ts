@@ -6,12 +6,14 @@ import {
   parseBattlePayload,
   parseGiftPayload,
   parseListingPayload,
+  parseTeamGiftPayload,
   parseTradePayload,
   type AuctionPayload,
   type BattlePayload,
   type GiftPayload,
   type ListingPayload,
   type NotificationType,
+  type TeamGiftPayload,
   type TradePayload,
 } from "@/lib/social/notifications";
 import { pairKey, relationBetween, type Relation } from "@/lib/social/relation";
@@ -137,6 +139,10 @@ export type NotificationView = {
   offeredCard: { anilistId: number; name: string; rarity: string } | null;
   /** Visuels d'un échange ouvert, et si l'offre attend encore une réponse (page /notifications). */
   listingNotice: { pending: boolean; own: CardView; offered: CardView } | null;
+  /** Cadeau de l'équipe depuis la fiche du joueur. */
+  team: (TeamGiftPayload & { boosterSlug: string | null }) | null;
+  /** Texte libre joint : mot de l'équipe (cadeaux, lots) ou motif d'un refus d'échange. */
+  note: string | null;
   card: { anilistId: number; name: string; rarity: string } | null;
 };
 
@@ -146,6 +152,7 @@ const notificationSelect = {
   createdAt: true,
   readAt: true,
   payload: true,
+  refId: true,
   actor: { select: playerSelect },
 } as const;
 
@@ -161,6 +168,7 @@ type NotificationRow = {
   createdAt: Date;
   readAt: Date | null;
   payload: Prisma.JsonValue;
+  refId: string | null;
   actor: PlayerRef | null;
 };
 
@@ -172,30 +180,60 @@ const AUCTION_TYPES: ReadonlySet<NotificationType> = new Set([
   "AUCTION_CANCELLED",
 ]);
 
+/**
+ * Textes libres joints aux notifications, lus dans leur ligne d'origine (jamais dans le payload) :
+ * mot de l'équipe d'un cadeau ou d'un lot, motif d'un refus d'échange ou d'offre.
+ */
+async function notesFor(rows: { id: string; type: NotificationType; refId: string | null }[]): Promise<Map<string, string>> {
+  const refs = (types: NotificationType[]) => [...new Set(rows.flatMap((r) => (types.includes(r.type) && r.refId ? [r.refId] : [])))];
+  const [teamIds, lotIds, tradeIds, offerIds] = [refs(["TEAM_GIFT"]), refs(["LOT_GRANTED"]), refs(["TRADE_DECLINED"]), refs(["LISTING_DECLINED"])];
+  const [teams, grants, broadcasts, trades, offers] = await Promise.all([
+    teamIds.length ? prisma.teamGift.findMany({ where: { id: { in: teamIds } }, select: { id: true, message: true } }) : [],
+    // Un lot envoyé à un joueur pointe sur son LotGrant, un envoi à tous sur le LotBroadcast
+    lotIds.length ? prisma.lotGrant.findMany({ where: { id: { in: lotIds } }, select: { id: true, message: true } }) : [],
+    lotIds.length ? prisma.lotBroadcast.findMany({ where: { id: { in: lotIds } }, select: { id: true, message: true } }) : [],
+    tradeIds.length ? prisma.trade.findMany({ where: { id: { in: tradeIds } }, select: { id: true, declineNote: true } }) : [],
+    offerIds.length ? prisma.listingOffer.findMany({ where: { id: { in: offerIds } }, select: { id: true, declineNote: true } }) : [],
+  ]);
+  const byRef = new Map<string, string>();
+  for (const row of [...teams, ...grants, ...broadcasts]) if (row.message) byRef.set(row.id, row.message);
+  for (const row of [...trades, ...offers]) if (row.declineNote) byRef.set(row.id, row.declineNote);
+  return new Map(rows.flatMap((r) => (r.refId && byRef.has(r.refId) ? [[r.id, byRef.get(r.refId)!] as const] : [])));
+}
+
 /** Lignes → vues : cartes offertes ou vendues résolues en une seule requête. */
 async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
   const gifts = rows.map((r) => (r.type === "GIFT_RECEIVED" ? parseGiftPayload(r.payload) : null));
   const auctions = rows.map((r) => (AUCTION_TYPES.has(r.type) ? parseAuctionPayload(r.payload) : null));
   const trades = rows.map((r) => (r.type.startsWith("TRADE_") ? parseTradePayload(r.payload) : null));
   const listings = rows.map((r) => (r.type.startsWith("LISTING_") ? parseListingPayload(r.payload) : null));
+  const teams = rows.map((r) => (r.type === "TEAM_GIFT" ? parseTeamGiftPayload(r.payload) : null));
   const cardIds = [
     ...new Set([
       ...gifts.flatMap((g) => (g?.kind === "CARD" ? [g.cardId] : [])),
       ...auctions.flatMap((a) => (a ? [a.cardId] : [])),
       ...trades.flatMap((tr) => (tr ? [tr.cardId] : [])),
       ...listings.flatMap((l) => (l ? [l.cardId, l.offeredCardId] : [])),
+      ...teams.flatMap((g) => (g?.kind === "CARD" ? [g.cardId] : [])),
     ]),
   ];
-  const cards = cardIds.length
-    ? await prisma.card.findMany({ where: { id: { in: cardIds } }, select: { id: true, anilistId: true, publicId: true, appearance: true, name: true, rarity: true } })
-    : [];
+  const boosterTypeIds = [...new Set(teams.flatMap((g) => (g?.kind === "BOOSTER" ? [g.boosterTypeId] : [])))];
+  const [cards, boosterTypes, notes] = await Promise.all([
+    cardIds.length
+      ? prisma.card.findMany({ where: { id: { in: cardIds } }, select: { id: true, anilistId: true, publicId: true, appearance: true, name: true, rarity: true } })
+      : [],
+    boosterTypeIds.length ? prisma.boosterType.findMany({ where: { id: { in: boosterTypeIds } }, select: { id: true, slug: true } }) : [],
+    notesFor(rows),
+  ]);
   const cardById = new Map(cards.map((c) => [c.id, c]));
+  const slugById = new Map(boosterTypes.map((b) => [b.id, b.slug]));
 
   return rows.map((r, i) => {
     const gift = gifts[i];
     const auction = auctions[i];
     const trade = trades[i];
     const listing = listings[i];
+    const team = teams[i];
     const offered = listing ? cardById.get(listing.offeredCardId) : undefined;
     const card =
       gift?.kind === "CARD"
@@ -206,7 +244,9 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
             ? cardById.get(trade.cardId)
             : listing
               ? cardById.get(listing.cardId)
-              : undefined;
+              : team?.kind === "CARD"
+                ? cardById.get(team.cardId)
+                : undefined;
     return {
       id: r.id,
       type: r.type,
@@ -220,6 +260,8 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
       listing,
       offeredCard: offered ? { anilistId: offered.publicId, name: offered.name, rarity: offered.rarity } : null,
       listingNotice: null,
+      team: team ? { ...team, boosterSlug: team.kind === "BOOSTER" ? (slugById.get(team.boosterTypeId) ?? null) : null } : null,
+      note: notes.get(r.id) ?? null,
       card: card ? { anilistId: card.publicId, name: card.name, rarity: card.rarity } : null,
     };
   });

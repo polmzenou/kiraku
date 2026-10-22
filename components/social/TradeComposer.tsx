@@ -8,6 +8,7 @@ import { proposeTradeAction } from "@/server/actions/trades";
 import { CardPickGrid } from "../collection/CardPickGrid";
 import { Fuda } from "../fuda/Fuda";
 import { Button } from "../ui/Button";
+import { NoteField } from "../ui/NoteField";
 import { Sheet } from "../ui/Sheet";
 
 type Step = "want" | "offer" | "review" | "sent";
@@ -28,6 +29,7 @@ export function TradeComposer({ username, name, maxOffered, allowedRarities, onC
   const [step, setStep] = useState<Step>("want");
   const [wanted, setWanted] = useState<CollectionItem | null>(null);
   const [offered, setOffered] = useState<CollectionItem[]>([]);
+  const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const offeredIds = new Set(offered.map((c) => c.cardId));
@@ -47,7 +49,7 @@ export function TradeComposer({ username, name, maxOffered, allowedRarities, onC
     if (!wanted || offered.length === 0) return;
     startTransition(async () => {
       try {
-        const res = await proposeTradeAction({ username, wantedCardId: wanted.cardId, offeredCardIds: offered.map((c) => c.cardId) });
+        const res = await proposeTradeAction({ username, wantedCardId: wanted.cardId, offeredCardIds: offered.map((c) => c.cardId), note });
         if (!res.ok) setError(tErrors(res.error, { max: maxOffered }));
         else setStep("sent");
       } catch {
@@ -134,6 +136,7 @@ export function TradeComposer({ username, name, maxOffered, allowedRarities, onC
               </ul>
             </div>
           </div>
+          <NoteField label={t("note")} placeholder={t("notePlaceholder", { name })} value={note} onChange={setNote} disabled={pending} />
           <p className="text-xs text-text-muted">{t("rules")}</p>
           {error && (
             <p role="alert" className="text-sm text-shu">

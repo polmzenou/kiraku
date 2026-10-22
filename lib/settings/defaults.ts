@@ -206,6 +206,8 @@ export const SETTING_SCHEMAS = {
   "market.minAccountAgeHours": z.number().int().min(0).max(24 * 365),
   "market.minStartPrice": z.number().int().min(1).max(1_000_000),
   "market.maxPrice": z.number().int().min(1).max(100_000_000),
+  // Plafond de prix par rareté (départ, achat immédiat et mises) ; rareté absente = plafond global seul
+  "market.maxPriceByRarity": z.record(rarityKeySchema, z.number().int().min(1).max(100_000_000)),
   "market.pollSeconds": z.number().int().min(2).max(120),
   // Échanges ouverts du Marché : annonces « celle-ci contre l'une de celles-là », offres acceptées ou refusées
   "listings.enabled": z.boolean(),
@@ -365,6 +367,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "market.minAccountAgeHours": 48, // anti-multicomptes
   "market.minStartPrice": 1,
   "market.maxPrice": 10_000_000,
+  "market.maxPriceByRarity": {},
   "market.pollSeconds": 5, // rafraîchissement du prix d'une vente ouverte
   "listings.enabled": true,
   "listings.expiryHours": 48,

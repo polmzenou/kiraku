@@ -40,7 +40,7 @@ async function activeLot(db: PrismaClient | Prisma.TransactionClient, lotId: str
 /** Verse un lot à un seul joueur (un seul envoi = un versement, AdminLog LOT_GRANT). */
 export async function grantLotToUserWith(
   db: PrismaClient,
-  input: { adminId: string; lotId: string; userId: string; reason: string | null; now: Date },
+  input: { adminId: string; lotId: string; userId: string; reason: string | null; message?: string | null; now: Date },
   deps: LotDeps,
   onNotified?: OnNotified,
 ): Promise<{ grantId: string }> {
@@ -55,7 +55,7 @@ export async function grantLotToUserWith(
       }
 
       const grant = await tx.lotGrant.create({
-        data: { lotId: input.lotId, userId: input.userId, adminId: input.adminId, reason: input.reason },
+        data: { lotId: input.lotId, userId: input.userId, adminId: input.adminId, reason: input.reason, message: input.message ?? null },
         select: { id: true },
       });
       const granted = await grantLot(tx, input.userId, input.lotId, { reason: "ADMIN", refId: grant.id }, deps, input.now).catch((e) => {
@@ -71,6 +71,7 @@ export async function grantLotToUserWith(
           lotId: input.lotId,
           grantId: grant.id,
           reason: input.reason,
+          message: input.message ?? null,
           zeni: granted.zeni,
           boosters: granted.boosters.reduce((n, b) => n + b.count, 0),
           cards: granted.cards.length,
@@ -86,13 +87,13 @@ export async function grantLotToUserWith(
 /** Ouvre un envoi à tous (traité ensuite par runLotBroadcastWith). */
 export async function startLotBroadcastWith(
   db: PrismaClient,
-  input: { adminId: string; lotId: string; audience: BroadcastAudience; reason: string | null },
+  input: { adminId: string; lotId: string; audience: BroadcastAudience; reason: string | null; message?: string | null },
 ): Promise<{ broadcastId: string; eligible: number }> {
   await activeLot(db, input.lotId);
   const eligible = await db.user.count({ where: eligibleWhere(input.audience) });
   const broadcast = await db.$transaction(async (tx) => {
     const row = await tx.lotBroadcast.create({
-      data: { lotId: input.lotId, adminId: input.adminId, audience: input.audience, reason: input.reason },
+      data: { lotId: input.lotId, adminId: input.adminId, audience: input.audience, reason: input.reason, message: input.message ?? null },
       select: { id: true },
     });
     await writeAdminLog(tx, {
@@ -100,7 +101,7 @@ export async function startLotBroadcastWith(
       action: "LOT_BROADCAST_START",
       targetType: "Lot",
       targetId: input.lotId,
-      after: { broadcastId: row.id, audience: input.audience, eligible, reason: input.reason },
+      after: { broadcastId: row.id, audience: input.audience, eligible, reason: input.reason, message: input.message ?? null },
     });
     return row;
   });

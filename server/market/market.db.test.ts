@@ -38,6 +38,7 @@ const rules: MarketRules = {
   minAccountAgeHours: SETTING_DEFAULTS["market.minAccountAgeHours"],
   minStartPrice: SETTING_DEFAULTS["market.minStartPrice"],
   maxPrice: SETTING_DEFAULTS["market.maxPrice"],
+  maxPriceByRarity: {},
 };
 
 function codeOf(r: PromiseSettledResult<unknown>): string {
@@ -247,6 +248,27 @@ describe.skipIf(!url)("hôtel des ventes atomique (base réelle)", () => {
       expect(await settleAuctionWith(prisma, auctionId, new Date())).toEqual({ settled: false });
       expect((await sumCoins(all)) + fee).toBe(TOTAL);
     }, 120_000);
+  });
+
+  it("plafond de la rareté : départ, achat immédiat et mises bornés", async () => {
+    const card = await prisma.card.findUniqueOrThrow({ where: { id: cardId }, select: { rarity: true } });
+    const capped = { ...rules, maxPriceByRarity: { [card.rarity]: 300 } };
+    const sellerId = await player();
+    await prisma.userCard.create({ data: { ownerId: sellerId, cardId } });
+    const sell = (startPrice: number, buyoutPrice: number | null) =>
+      createAuctionWith(prisma, { sellerId, cardId, startPrice, buyoutPrice, durationHours: 24, note: "Mot du vendeur", now: new Date(), rules: capped });
+    await expect(sell(301, null)).rejects.toMatchObject({ code: "INVALID_PRICE" });
+    await expect(sell(100, 301)).rejects.toMatchObject({ code: "INVALID_BUYOUT" });
+    const { auctionId } = await sell(290, null);
+    expect((await auction(auctionId)).note).toBe("Mot du vendeur");
+
+    const [a, b] = await players(2);
+    const before = await sumCoins([a, b, sellerId]);
+    await expect(placeBidWith(prisma, { bidderId: a, auctionId, amount: 301, now: new Date(), rules: capped })).rejects.toMatchObject({ code: "INVALID_PRICE" });
+    await placeBidWith(prisma, { bidderId: a, auctionId, amount: 300, now: new Date(), rules: capped });
+    await expect(placeBidWith(prisma, { bidderId: b, auctionId, amount: 300, now: new Date(), rules: capped })).rejects.toMatchObject({ code: "CAP_REACHED" });
+    const after = await sumCoins([a, b, sellerId]);
+    expect(after + ((await auction(auctionId)).currentBid ?? 0)).toBe(before);
   });
 
   it("un enchérisseur, 50 ventes, 1 000 Zeni : 10 mises de 100 tiennent, jamais plus", async () => {

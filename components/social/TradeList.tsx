@@ -10,6 +10,8 @@ import type { TradeView } from "@/server/social/trades";
 import { Fuda } from "../fuda/Fuda";
 import { displayName } from "../profile/ProfileHeader";
 import { Button } from "../ui/Button";
+import { NoteField } from "../ui/NoteField";
+import { NoteText } from "../ui/NoteText";
 import { ChatWithButton } from "../chat/ChatDock";
 import { PlayerAvatar } from "./PlayerAvatar";
 
@@ -39,6 +41,8 @@ function TradeCard({ trade, mode }: { trade: TradeView; mode: Mode }) {
   const router = useRouter();
   const [chosen, setChosen] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [declining, setDeclining] = useState(false);
+  const [declineNote, setDeclineNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [reveal, setReveal] = useState<OpenedCardView | null>(null);
   const [pending, startTransition] = useTransition();
@@ -135,15 +139,37 @@ function TradeCard({ trade, mode }: { trade: TradeView; mode: Mode }) {
         </div>
       </div>
 
+      {trade.note && <NoteText text={trade.note} label={t("noteFrom", { name: name(trade.proposer) })} />}
+      {trade.declineNote && <NoteText text={trade.declineNote} label={t("declineNoteFrom", { name: name(trade.recipient) })} />}
+
       {error && (
         <p role="alert" className="text-sm text-shu">
           {error}
         </p>
       )}
 
+      {mode === "received" && declining && (
+        <NoteField
+          label={t("declineNote")}
+          placeholder={t("declineNotePlaceholder")}
+          value={declineNote}
+          onChange={setDeclineNote}
+          disabled={pending}
+        />
+      )}
+
       {mode !== "history" && (
         <footer className="flex flex-wrap items-center justify-end gap-2">
-          {confirming ? (
+          {declining ? (
+            <>
+              <Button type="button" onClick={() => setDeclining(false)} disabled={pending}>
+                {t("cancelConfirm")}
+              </Button>
+              <Button type="button" variant="primary" onClick={() => run(() => declineTradeAction({ tradeId: trade.id, note: declineNote }))} disabled={pending}>
+                {pending ? t("pending") : t("confirmDecline")}
+              </Button>
+            </>
+          ) : confirming ? (
             <>
               <p className="mr-auto text-sm font-bold">{t("confirm")}</p>
               <Button type="button" onClick={() => setConfirming(false)} disabled={pending}>
@@ -158,7 +184,7 @@ function TradeCard({ trade, mode }: { trade: TradeView; mode: Mode }) {
               {other && <ChatWithButton username={other.username} className="mr-auto" />}
               {mode === "received" ? (
                 <>
-                  <Button type="button" onClick={() => run(() => declineTradeAction({ tradeId: trade.id }))} disabled={pending}>
+                  <Button type="button" onClick={() => setDeclining(true)} disabled={pending}>
                     {t("decline")}
                   </Button>
                   <Button type="button" variant="primary" disabled={!chosen || pending} onClick={() => setConfirming(true)}>

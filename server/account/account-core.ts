@@ -156,6 +156,11 @@ export async function anonymizeUserWith(
     await tx.wishlistEntry.deleteMany({ where: { userId } });
     await tx.showcaseSlot.deleteMany({ where: { userId } });
     await tx.review.deleteMany({ where: { userId } });
+    await tx.tradeListing.updateMany({ where: { ownerId: userId, note: { not: null } }, data: { note: null } });
+    await tx.auction.updateMany({ where: { sellerId: userId, note: { not: null } }, data: { note: null } });
+    await tx.trade.updateMany({ where: { proposerId: userId, note: { not: null } }, data: { note: null } });
+    await tx.trade.updateMany({ where: { recipientId: userId, declineNote: { not: null } }, data: { declineNote: null } });
+    await tx.listingOffer.updateMany({ where: { listing: { ownerId: userId }, declineNote: { not: null } }, data: { declineNote: null } });
     await tx.battleQueue.deleteMany({ where: { userId } });
 
     await tx.dataRequest.updateMany({

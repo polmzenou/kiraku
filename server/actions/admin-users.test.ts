@@ -49,7 +49,7 @@ describe("frontière des actions admin utilisateurs", () => {
   });
   it("utilise l'admin de la session et actualise les données", async () => {
     expect(await mutateAdminUserAction(input)).toEqual({ ok: true });
-    expect(mocks.mutate).toHaveBeenCalledWith(expect.anything(), "admin", input);
+    expect(mocks.mutate).toHaveBeenCalledWith(expect.anything(), "admin", input, expect.any(Function));
     expect(mocks.updateTag).toHaveBeenCalledWith("leaderboard");
     expect(mocks.refresh).toHaveBeenCalledOnce();
   });

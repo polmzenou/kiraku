@@ -89,7 +89,15 @@ async function closePendingOffers(tx: Tx, listing: LockedListing, now: Date, exc
   }
 }
 
-export type CreateListingInput = { ownerId: string; cardId: string; wantedCardIds: readonly string[]; rules: ListingRules; now?: Date };
+export type CreateListingInput = {
+  ownerId: string;
+  cardId: string;
+  wantedCardIds: readonly string[];
+  /** Commentaire public de l'auteur, déjà nettoyé (texte brut). */
+  note?: string | null;
+  rules: ListingRules;
+  now?: Date;
+};
 
 /** Publie « ma carte X contre l'une de celles-ci » : tout est vérifié sous le verrou de l'auteur. */
 export async function createListingWith(db: PrismaClient, input: CreateListingInput): Promise<{ listingId: string }> {
@@ -131,6 +139,7 @@ export async function createListingWith(db: PrismaClient, input: CreateListingIn
         cardId: input.cardId,
         expiresAt: listingExpiresAt(now, input.rules.expiryHours),
         createdAt: now,
+        note: input.note ?? null,
         wants: { create: wants.map((cardId) => ({ cardId })) },
       },
       select: { id: true },
@@ -331,8 +340,12 @@ export async function acceptOfferWith(
   );
 }
 
-/** L'auteur refuse une offre : l'offrant est prévenu, l'annonce reste ouverte. */
-export async function declineOfferWith(db: PrismaClient, input: { userId: string; offerId: string; now?: Date }, onNotified?: OnNotified) {
+/** L'auteur refuse une offre (motif facultatif, déjà nettoyé) : l'offrant est prévenu, l'annonce reste ouverte. */
+export async function declineOfferWith(
+  db: PrismaClient,
+  input: { userId: string; offerId: string; note?: string | null; now?: Date },
+  onNotified?: OnNotified,
+) {
   const now = input.now ?? new Date();
   await notifyingTransaction(
     db,
@@ -344,7 +357,7 @@ export async function declineOfferWith(db: PrismaClient, input: { userId: string
       if (!offer || offer.listing.ownerId !== input.userId) throw new ListingError("NOT_FOUND");
       const closed = await tx.listingOffer.updateMany({
         where: { id: offer.id, status: "PENDING" },
-        data: { status: "DECLINED", resolvedAt: now },
+        data: { status: "DECLINED", resolvedAt: now, declineNote: input.note ?? null },
       });
       if (closed.count !== 1) throw new ListingError("CLOSED");
       await tx.notification.updateMany({ where: { type: "LISTING_OFFER", refId: offer.id, readAt: null }, data: { readAt: now } });

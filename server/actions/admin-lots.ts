@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { noteSchema } from "@/lib/text/plain";
 import { z } from "@/lib/zod";
 import { USERNAME_REGEX } from "@/lib/username";
 import { getAdmin } from "../admin";
@@ -30,8 +31,8 @@ const reason = z.string().trim().max(200).transform((r) => (r === "" ? null : r)
 // Budget d'un appel : un envoi à tous se poursuit par « Reprendre »
 const BUDGET_MS = 20_000;
 
-const userSchema = z.object({ lotId: id, username: z.string().trim().regex(USERNAME_REGEX), reason });
-const broadcastSchema = z.object({ lotId: id, audience: z.enum(BROADCAST_AUDIENCES), reason, confirm: z.string().max(20) });
+const userSchema = z.object({ lotId: id, username: z.string().trim().regex(USERNAME_REGEX), reason, message: noteSchema });
+const broadcastSchema = z.object({ lotId: id, audience: z.enum(BROADCAST_AUDIENCES), reason, message: noteSchema, confirm: z.string().max(20) });
 const resumeSchema = z.object({ broadcastId: id });
 
 const limited = async (adminId: string) => !(await rateLimit(`admin:${adminId}`, { limit: 20, windowSeconds: 60 })).success;
@@ -57,7 +58,7 @@ export async function grantLotToUserAction(input: unknown): Promise<AdminLotResu
   try {
     await grantLotToUserWith(
       prisma,
-      { adminId: admin.id, lotId: parsed.data.lotId, userId: user.id, reason: parsed.data.reason, now: new Date() },
+      { adminId: admin.id, lotId: parsed.data.lotId, userId: user.id, reason: parsed.data.reason, message: parsed.data.message, now: new Date() },
       lotDeps(),
       pushLater,
     );
@@ -84,6 +85,7 @@ export async function startLotBroadcastAction(input: unknown): Promise<AdminLotR
       lotId: parsed.data.lotId,
       audience: parsed.data.audience,
       reason: parsed.data.reason,
+      message: parsed.data.message,
     });
     const run = await runLotBroadcastWith(prisma, { broadcastId, now: new Date(), budgetMs: BUDGET_MS }, lotDeps(), pushLater);
     refresh();

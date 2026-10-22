@@ -11,12 +11,14 @@
 // triés par id (lockPlayers). Deux mises croisées attendent l'une l'autre sans s'interbloquer.
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
+  bidBounds,
   buyoutAvailable,
   checkListing,
   checkTrader,
   extendedEndsAt,
   listingEndsAt,
   minNextBid,
+  priceCap,
   saleFee,
   type ListingRefusal,
   type MarketRules,
@@ -40,6 +42,7 @@ export type AuctionErrorCode =
   | "OWN_AUCTION"
   | "ALREADY_LEADING"
   | "TOO_LOW"
+  | "CAP_REACHED"
   | "NOT_ENOUGH_ZENI"
   | "HAS_BIDS"
   | "NO_BUYOUT"
@@ -89,6 +92,8 @@ export type CreateAuctionInput = {
   startPrice: number;
   buyoutPrice: number | null;
   durationHours: number;
+  /** Commentaire du vendeur, déjà nettoyé (texte brut). */
+  note?: string | null;
   now: Date;
   rules: MarketRules;
 };
@@ -102,7 +107,10 @@ export async function createAuctionWith(
   db: PrismaClient,
   input: CreateAuctionInput,
 ): Promise<{ auctionId: string; userCardId: string; endsAt: Date }> {
-  const refusal = checkListing(input, input.rules);
+  // Plafond de la rareté : lu en base, jamais envoyé par le client
+  const card = await db.card.findUnique({ where: { id: input.cardId }, select: { rarity: true } });
+  if (!card) throw new AuctionError("NOT_OWNED");
+  const refusal = checkListing(input, input.rules, card.rarity);
   if (refusal) throw new AuctionError(refusal);
 
   return db.$transaction(async (tx) => {
@@ -145,6 +153,7 @@ export async function createAuctionWith(
         price: input.startPrice,
         feeBp: input.rules.feeBp,
         endsAt,
+        note: input.note ?? null,
         createdAt: input.now,
       },
       select: { id: true },
@@ -187,10 +196,17 @@ async function bidInTx(tx: Tx, req: BidRequest): Promise<BidOutcome> {
     if (a.buyoutPrice !== req.expectedPrice) throw new AuctionError("STALE");
     amount = a.buyoutPrice;
   } else {
-    if (!Number.isSafeInteger(req.amount) || req.amount > rules.maxPrice) throw new AuctionError("INVALID_PRICE");
+    if (!Number.isSafeInteger(req.amount)) throw new AuctionError("INVALID_PRICE");
     // Une mise qui atteint l'achat immédiat achète au prix d'achat immédiat, pas au-delà
     amount = canBuyout && req.amount >= a.buyoutPrice! ? a.buyoutPrice! : req.amount;
-    if (amount < minNextBid(a.currentBid, a.startPrice, rules.minIncrementBp)) throw new AuctionError("TOO_LOW");
+    const card = await tx.card.findUnique({ where: { id: a.cardId }, select: { rarity: true } });
+    const bounds = bidBounds(a.currentBid, a.startPrice, rules.minIncrementBp, priceCap(rules, card?.rarity ?? null));
+    // L'achat immédiat affiché reste honoré même si le plafond a baissé depuis la mise en vente
+    if (!(canBuyout && amount === a.buyoutPrice)) {
+      if (!bounds) throw new AuctionError("CAP_REACHED");
+      if (amount > bounds.max) throw new AuctionError("INVALID_PRICE");
+    }
+    if (amount < (bounds?.min ?? minNextBid(a.currentBid, a.startPrice, rules.minIncrementBp))) throw new AuctionError("TOO_LOW");
   }
   const sold = canBuyout && amount === a.buyoutPrice;
 

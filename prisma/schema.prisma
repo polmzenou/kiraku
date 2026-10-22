@@ -142,6 +142,7 @@ model User {
   lotGrants          LotGrant[]     @relation("lotGrantee")
   lotGrantsGiven     LotGrant[]     @relation("lotGranter")
   lotBroadcasts      LotBroadcast[]
+  teamGifts          TeamGift[]
 
   tradesProposed Trade[]        @relation("tradeProposer")
   tradesReceived Trade[]        @relation("tradeRecipient")
@@ -624,6 +625,7 @@ enum NotificationType {
   LISTING_OFFER // un joueur propose une carte sur ton annonce d'échange du Marché
   LISTING_ACCEPTED // ton offre a été acceptée : la carte est arrivée
   LISTING_DECLINED // ton offre a été refusée (ou l'annonce s'est fermée sans elle)
+  TEAM_GIFT // cartes ou boosters ajoutés par l'équipe depuis la fiche du joueur (TeamGift)
 }
 
 // Notifications en base ; le texte est rendu à la lecture (pseudo à jour, langue du lecteur)
@@ -882,6 +884,7 @@ model Auction {
   settledAt       DateTime?
   cancelledAt     DateTime?
   cancelledById   String? // vendeur ou admin
+  note            String?       @db.VarChar(200) // commentaire du vendeur (texte brut, effaçable par l'admin)
   createdAt       DateTime      @default(now())
   bids            Bid[]
 
@@ -1117,7 +1120,8 @@ model LotGrant {
   admin       User          @relation("lotGranter", fields: [adminId], references: [id])
   broadcastId String?
   broadcast   LotBroadcast? @relation(fields: [broadcastId], references: [id])
-  reason      String? // motif saisi par l'admin (200 caractères max)
+  reason      String? // motif saisi par l'admin (200 caractères max), interne
+  message     String?       @db.VarChar(200) // mot de l'équipe affiché au joueur avec la notification
   createdAt   DateTime      @default(now())
 
   @@unique([broadcastId, userId])
@@ -1130,6 +1134,24 @@ enum LotBroadcastStatus {
   DONE
 }
 
+// Cartes ou boosters ajoutés par un admin depuis la fiche d'un joueur (mode « Ajouter ») : lu par la
+// notification TEAM_GIFT, avec le mot de l'équipe. Ids de Card / BoosterType gardés en clair (lisibles
+// après archivage), l'admin n'est jamais montré au joueur.
+model TeamGift {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adminId       String
+  kind          GiftKind
+  cardId        String?
+  boosterTypeId String?
+  quantity      Int
+  message       String?  @db.VarChar(200)
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
 // Envoi d'un lot à tous les joueurs, traité par paquets (budget de temps) et reprenable
 model LotBroadcast {
   id         String             @id @default(cuid())
@@ -1139,6 +1161,7 @@ model LotBroadcast {
   admin      User               @relation(fields: [adminId], references: [id])
   audience   String // ALL | REGISTERED (jamais les bannis ni les comptes anonymisés)
   reason     String?
+  message    String?            @db.VarChar(200) // mot de l'équipe affiché aux joueurs
   status     LotBroadcastStatus @default(RUNNING)
   lastUserId String? // curseur : dernier joueur traité (ordre des ids)
   granted    Int                @default(0)
@@ -1178,6 +1201,8 @@ model Trade {
   resolvedAt     DateTime?
   proposerSeenAt DateTime? // le proposant a vu la révélation de la carte reçue
   proposerNew    Boolean      @default(false) // la carte reçue par le proposant était nouvelle pour lui (badge à la révélation)
+  note           String?      @db.VarChar(200) // mot du proposant (texte brut)
+  declineNote    String?      @db.VarChar(200) // motif du refus, écrit par l'ami
   offers         TradeOffer[]
 
   @@index([recipientId, status, createdAt])
@@ -1217,6 +1242,7 @@ model TradeListing {
   expiresAt  DateTime
   createdAt  DateTime           @default(now())
   resolvedAt DateTime?
+  note       String?            @db.VarChar(200) // commentaire public de l'auteur (texte brut, effaçable par l'admin)
   wants      TradeListingWant[]
   offers     ListingOffer[]
 
@@ -1261,6 +1287,7 @@ model ListingOffer {
   resolvedAt   DateTime?
   bidderSeenAt DateTime? // l'offrant a vu la révélation de la carte reçue
   bidderNew    Boolean            @default(false) // la carte reçue était nouvelle pour l'offrant
+  declineNote  String?            @db.VarChar(200) // motif du refus, écrit par l'auteur de l'annonce
 
   @@index([listingId, status])
   @@index([bidderId, status, createdAt])

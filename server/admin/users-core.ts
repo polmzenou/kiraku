@@ -1,11 +1,14 @@
 // Toutes les modifications d'un joueur et leur audit partagent une transaction et le verrou User.
-// Client injecté pour vérifier ces opérations sans importer la connexion de production.
+// Un ajout de cartes ou de boosters est un cadeau de l'équipe : ligne TeamGift (avec le mot de
+// l'admin) et notification TEAM_GIFT dans la même transaction. Client injecté pour vérifier ces
+// opérations sans importer la connexion de production.
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { adjustedValue, type AdminUserError, type AdminUserMutation } from "@/lib/admin/users";
 import { MAX_MOVEMENT } from "@/lib/economy/amount";
 import { applyEntries, type LedgerEntry } from "../economy/ledger";
 import { readBannerPity } from "../boosters/open-core";
-import { lockPlayers } from "../social/lock";
+import { lockPlayers, type Tx } from "../social/lock";
+import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { writeAdminLog } from "./log";
 import { consumeWishlist } from "../collection/wishlist-core";
 
@@ -15,8 +18,42 @@ export class AdminUserMutationError extends Error {
 
 const json = (v: unknown): Prisma.InputJsonValue => JSON.parse(JSON.stringify(v));
 
-export async function mutateAdminUserWith(db: PrismaClient, adminId: string, input: AdminUserMutation) {
-  return db.$transaction(async (tx) => {
+/** Cadeau de l'équipe : le joueur est notifié, l'admin n'est jamais nommé. */
+async function giftFromTeam(
+  tx: Tx,
+  gift: { userId: string; adminId: string; quantity: number; message: string | null; now: Date } & (
+    | { kind: "CARD"; cardId: string }
+    | { kind: "BOOSTER"; boosterTypeId: string }
+  ),
+) {
+  const row = await tx.teamGift.create({
+    data: {
+      userId: gift.userId,
+      adminId: gift.adminId,
+      kind: gift.kind,
+      cardId: gift.kind === "CARD" ? gift.cardId : null,
+      boosterTypeId: gift.kind === "BOOSTER" ? gift.boosterTypeId : null,
+      quantity: gift.quantity,
+      message: gift.message,
+      createdAt: gift.now,
+    },
+    select: { id: true },
+  });
+  await notify(tx, {
+    userId: gift.userId,
+    type: "TEAM_GIFT",
+    actorId: gift.adminId,
+    refId: row.id,
+    payload:
+      gift.kind === "CARD"
+        ? { kind: "CARD", cardId: gift.cardId, quantity: gift.quantity }
+        : { kind: "BOOSTER", boosterTypeId: gift.boosterTypeId, quantity: gift.quantity },
+    now: gift.now,
+  });
+}
+
+export async function mutateAdminUserWith(db: PrismaClient, adminId: string, input: AdminUserMutation, onNotified?: OnNotified) {
+  return notifyingTransaction(db, async (tx) => {
     await lockPlayers(tx, [adminId, input.userId]);
     // Le rôle est revérifié sous verrou : une session ouverte ne conserve pas les droits retirés.
     const actor = await tx.user.findUnique({ where: { id: adminId }, select: { role: true, bannedAt: true } });
@@ -93,6 +130,9 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
           before = { boosterTypeId: input.boosterTypeId, count: credit?.count ?? 0 };
           after = { boosterTypeId: input.boosterTypeId, count };
           await tx.boosterCredit.upsert({ where, create: { userId, boosterTypeId: input.boosterTypeId, count }, update: { count } });
+          if (input.mode === "ADD") {
+            await giftFromTeam(tx, { kind: "BOOSTER", userId, adminId, boosterTypeId: input.boosterTypeId, quantity: input.amount, message: input.message, now });
+          }
         }
         break;
       }
@@ -104,6 +144,7 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
           await tx.userCard.createMany({ data: Array.from({ length: input.amount }, () => ({ ownerId: userId, cardId: input.cardId, obtainedAt: now })) });
           await tx.discovery.createMany({ data: [{ userId, cardId: input.cardId, createdAt: now }], skipDuplicates: true });
           await consumeWishlist(tx, userId, [input.cardId]);
+          await giftFromTeam(tx, { kind: "CARD", userId, adminId, cardId: input.cardId, quantity: input.amount, message: input.message, now });
         } else {
           // On conserve les exemplaires en vitrine, en combat (status BATTLE), en vente ou liés à l'historique d'une vente.
           const free = await tx.userCard.findMany({ where: {
@@ -153,7 +194,8 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
     }
     await writeAdminLog(tx, {
       adminId, action: `USER_${input.kind.toUpperCase()}`, targetType: "User", targetId: userId,
-      before: json(before), after: json({ values: after, reason: input.reason }),
+      before: json(before),
+      after: json({ values: after, reason: input.reason, ...("message" in input && input.message ? { message: input.message } : {}) }),
     });
-  }, { maxWait: 10_000, timeout: 20_000 });
+  }, { maxWait: 10_000, timeout: 20_000 }, onNotified);
 }

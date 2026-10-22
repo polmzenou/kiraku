@@ -25,6 +25,8 @@ export type ListingView = {
   expiresAt: Date;
   owner: PlayerRef;
   card: CardView;
+  /** Commentaire public de l'auteur (texte brut). */
+  note: string | null;
   wants: ListingWantView[];
   /** Annonce du lecteur. */
   mine: boolean;
@@ -92,6 +94,7 @@ export async function listListings(input: {
       createdAt: true,
       expiresAt: true,
       cardId: true,
+      note: true,
       owner: { select: playerSelect },
       wants: { select: { cardId: true } },
       offers: { where: { status: "PENDING" }, select: { id: true, bidderId: true, cardId: true } },
@@ -127,6 +130,7 @@ export async function listListings(input: {
         expiresAt: r.expiresAt,
         owner: r.owner,
         card,
+        note: r.note,
         wants: r.wants.flatMap((w) => {
           const view = views.get(w.cardId);
           return view ? [{ ...view, givable: !mine && givable.has(w.cardId) }] : [];
@@ -147,11 +151,17 @@ export type MyListingView = {
   createdAt: Date;
   expiresAt: Date;
   card: CardView;
+  note: string | null;
   wants: CardView[];
   offers: ReceivedOfferView[];
 };
 
-export type SentOfferView = { id: string; createdAt: Date; card: CardView; listing: { id: string; expiresAt: Date; owner: PlayerRef; card: CardView } };
+export type SentOfferView = {
+  id: string;
+  createdAt: Date;
+  card: CardView;
+  listing: { id: string; expiresAt: Date; owner: PlayerRef; card: CardView; note: string | null };
+};
 
 export type ExchangeHistoryView = {
   id: string;
@@ -161,6 +171,8 @@ export type ExchangeHistoryView = {
   gave: CardView;
   got: CardView | null;
   other: PlayerRef | null;
+  /** Motif écrit par l'auteur de l'annonce quand il a refusé l'offre du lecteur. */
+  declineNote: string | null;
 };
 
 export type MyExchanges = {
@@ -184,6 +196,7 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
         createdAt: true,
         expiresAt: true,
         cardId: true,
+        note: true,
         wants: { select: { cardId: true } },
         offers: {
           where: { status: "PENDING", bidder: { bannedAt: null } },
@@ -200,7 +213,7 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
         id: true,
         createdAt: true,
         cardId: true,
-        listing: { select: { id: true, expiresAt: true, cardId: true, owner: { select: playerSelect } } },
+        listing: { select: { id: true, expiresAt: true, cardId: true, note: true, owner: { select: playerSelect } } },
       },
     }),
     prisma.tradeListing.findMany({
@@ -219,7 +232,7 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
       where: { bidderId: userId, status: { not: "PENDING" } },
       orderBy: { resolvedAt: "desc" },
       take: HISTORY_SIZE,
-      select: { id: true, status: true, resolvedAt: true, cardId: true, listing: { select: { cardId: true, owner: { select: playerSelect } } } },
+      select: { id: true, status: true, resolvedAt: true, cardId: true, declineNote: true, listing: { select: { cardId: true, owner: { select: playerSelect } } } },
     }),
     prisma.listingOffer.findMany({
       where: { bidderId: userId, status: "ACCEPTED", bidderSeenAt: null },
@@ -244,13 +257,13 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
       const gave = views.get(l.cardId);
       const accepted = l.offers[0];
       return gave
-        ? [{ id: l.id, kind: "listing", status: l.status, resolvedAt: l.resolvedAt, gave, got: accepted ? (views.get(accepted.cardId) ?? null) : null, other: accepted?.bidder ?? null }]
+        ? [{ id: l.id, kind: "listing", status: l.status, resolvedAt: l.resolvedAt, gave, got: accepted ? (views.get(accepted.cardId) ?? null) : null, other: accepted?.bidder ?? null, declineNote: null }]
         : [];
     }),
     ...pastOffers.flatMap((o): ExchangeHistoryView[] => {
       const gave = views.get(o.cardId);
       return gave
-        ? [{ id: o.id, kind: "offer", status: o.status, resolvedAt: o.resolvedAt, gave, got: views.get(o.listing.cardId) ?? null, other: o.listing.owner }]
+        ? [{ id: o.id, kind: "offer", status: o.status, resolvedAt: o.resolvedAt, gave, got: views.get(o.listing.cardId) ?? null, other: o.listing.owner, declineNote: o.declineNote }]
         : [];
     }),
   ]
@@ -267,6 +280,7 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
           createdAt: l.createdAt,
           expiresAt: l.expiresAt,
           card,
+          note: l.note,
           wants: l.wants.flatMap((w) => views.get(w.cardId) ?? []),
           offers: l.offers.flatMap((o) => {
             const offered = views.get(o.cardId);
@@ -279,7 +293,7 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
       const card = views.get(o.cardId);
       const listingCard = views.get(o.listing.cardId);
       return card && listingCard
-        ? [{ id: o.id, createdAt: o.createdAt, card, listing: { id: o.listing.id, expiresAt: o.listing.expiresAt, owner: o.listing.owner, card: listingCard } }]
+        ? [{ id: o.id, createdAt: o.createdAt, card, listing: { id: o.listing.id, expiresAt: o.listing.expiresAt, owner: o.listing.owner, card: listingCard, note: o.listing.note } }]
         : [];
     }),
     history,

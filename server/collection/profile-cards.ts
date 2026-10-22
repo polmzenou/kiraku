@@ -14,6 +14,12 @@ export async function getWishlist(ownerId: string, locale: string) {
   });
 }
 
+/** Ids des cartes souhaitées par le joueur (panneau du booster sélectionné). */
+export async function getWishlistCardIds(userId: string): Promise<string[]> {
+  const entries = await prisma.wishlistEntry.findMany({ where: { userId }, select: { cardId: true } });
+  return entries.map((entry) => entry.cardId);
+}
+
 /** Une seule fuda par carte, avec le nombre exact de ventes encore ouvertes. */
 export async function getProfileSales(ownerId: string, locale: string, now = new Date()) {
   const groups = await prisma.auction.groupBy({

@@ -7,7 +7,7 @@ import { inputClass, selectClass } from "../ui/Field";
 
 export { inputClass, selectClass };
 
-export function Field({ label, children, hint }: { label: string; children: (id: string) => ReactNode; hint?: string }) {
+export function Field({ label, children, hint }: { label: ReactNode; children: (id: string) => ReactNode; hint?: string }) {
   const id = useId();
   return (
     <div className="flex min-w-0 flex-col gap-1">

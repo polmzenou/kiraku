@@ -118,6 +118,14 @@ export function NotificationList({ initial, initialCursor }: { initial: Notifica
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className={n.read ? "" : "font-bold"}>{text}</span>
+                {n.note && (
+                  <span className="whitespace-pre-line break-words border-l-2 border-kin/60 pl-2 text-sm">
+                    <span className="block text-xs text-text-muted">
+                      {t(n.type === "TEAM_GIFT" || n.type === "LOT_GRANTED" ? "teamNote" : "declineNote")}
+                    </span>
+                    {n.note}
+                  </span>
+                )}
                 <time dateTime={new Date(n.createdAt).toISOString()} className="text-xs text-text-muted">
                   {format.relativeTime(new Date(n.createdAt))}
                 </time>

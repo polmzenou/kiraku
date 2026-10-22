@@ -18,6 +18,7 @@ export const NOTIFICATION_TYPES = [
   "LISTING_OFFER",
   "LISTING_ACCEPTED",
   "LISTING_DECLINED",
+  "TEAM_GIFT",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -82,4 +83,21 @@ export function parseListingPayload(raw: unknown): ListingPayload | null {
   return id(r.listingId) && id(r.offerId) && id(r.cardId) && id(r.offeredCardId)
     ? { listingId: r.listingId, offerId: r.offerId, cardId: r.cardId, offeredCardId: r.offeredCardId }
     : null;
+}
+
+/**
+ * Contenu d'un cadeau de l'équipe ajouté depuis la fiche du joueur : la carte ou le type de booster
+ * et le nombre. Le mot de l'équipe, texte libre, reste dans sa ligne TeamGift (lu par refId).
+ */
+export type TeamGiftPayload = { kind: "CARD"; cardId: string; quantity: number } | { kind: "BOOSTER"; boosterTypeId: string; quantity: number };
+
+export function parseTeamGiftPayload(raw: unknown): TeamGiftPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const id = (v: unknown): v is string => typeof v === "string" && v.length > 0 && v.length <= 40 && /^[A-Za-z0-9_-]+$/.test(v);
+  const quantity = Number.isSafeInteger(r.quantity) && (r.quantity as number) > 0 ? (r.quantity as number) : null;
+  if (quantity === null) return null;
+  if (r.kind === "CARD" && id(r.cardId)) return { kind: "CARD", cardId: r.cardId, quantity };
+  if (r.kind === "BOOSTER" && id(r.boosterTypeId)) return { kind: "BOOSTER", boosterTypeId: r.boosterTypeId, quantity };
+  return null;
 }

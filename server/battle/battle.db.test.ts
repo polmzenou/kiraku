@@ -196,6 +196,7 @@ describe.skipIf(!url)("combat atomique (base réelle)", () => {
       minAccountAgeHours: 0,
       minStartPrice: 1,
       maxPrice: SETTING_DEFAULTS["market.maxPrice"],
+      maxPriceByRarity: {},
     };
     const results = await Promise.allSettled([
       joinQueueWith(prisma, { userId: solo.id, cardIds: team(), mode: "EXHIBITION" }, ctx()),

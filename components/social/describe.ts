@@ -7,7 +7,7 @@ import type { NotificationView } from "@/server/social/queries";
 
 /** Kanji du sceau de chaque type de notification. */
 export function notificationSeal(type: NotificationType): string {
-  if (type === "GIFT_RECEIVED") return "贈";
+  if (type === "GIFT_RECEIVED" || type === "TEAM_GIFT" || type === "LOT_GRANTED") return "贈";
   if (type === "OUTBID" || type.startsWith("AUCTION_")) return "競";
   if (type === "BATTLE_INVITE") return "戦";
   if (type.startsWith("TRADE_") || type.startsWith("LISTING_")) return "換";

@@ -1,7 +1,7 @@
 
 import { useRaritySeals } from "@/lib/catalog/use-rarities";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
-import type { BoosterPanelData } from "@/lib/boosters/panel";
+import type { BoosterPanelData, WishlistInPool } from "@/lib/boosters/panel";
 import type { FilterContext } from "@/lib/boosters/pool-filter";
 import { localize, type BoosterTypeView } from "@/lib/boosters/types";
 import { type Rarity } from "@/lib/catalog/rarity";
@@ -29,13 +29,15 @@ type Props = {
   panel: BoosterPanelData;
   ctx: FilterContext;
   state: BoosterState;
+  /** Souhaits du joueur présents dans le pool ; null sans liste de souhaits. */
+  wishlist?: WishlistInPool | null;
   /** Dans la feuille « Taux » du mobile, le bouton Ouvrir vit déjà dans la barre du bas. */
   withOpen?: boolean;
   headingId?: string;
 };
 
 /** Panneau « Booster sélectionné » : contenu, garanties, compteurs, chances calculées et bouton Ouvrir. */
-export function BoosterPanel({ type, panel, ctx, state, withOpen = true, headingId = "selected-booster" }: Props) {
+export function BoosterPanel({ type, panel, ctx, state, wishlist = null, withOpen = true, headingId = "selected-booster" }: Props) {
   const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("boosters");
   const tRarity = useTranslations("rarity");
@@ -87,6 +89,27 @@ export function BoosterPanel({ type, panel, ctx, state, withOpen = true, heading
         {panel.featured && panel.featured.left > 0 && stat(format.number(panel.featured.left), t("featuredLeft"), "text-kin")}
         {stat(format.number(panel.poolSize), t("possible"))}
       </dl>
+
+      {wishlist && (
+        <div className="flex flex-col gap-2">
+          <h3 className="text-xs font-bold">{t("wishlist.title")}</h3>
+          <p className="flex items-center gap-3 rounded-control border border-sakura/60 bg-surface-2 p-3">
+            <span aria-hidden="true" lang="ja" className={`font-seal text-xl leading-none ${wishlist.inPool > 0 ? "text-sakura" : "text-text-muted"}`}>
+              望
+            </span>
+            {wishlist.inPool > 0 ? (
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="font-title text-lg leading-none font-bold tabular-nums text-sakura">
+                  {t("wishlist.count", { inPool: wishlist.inPool, total: wishlist.total })}
+                </span>
+                <span className="text-xs leading-snug text-text-muted">{t("wishlist.label", { count: wishlist.inPool })}</span>
+              </span>
+            ) : (
+              <span className="text-xs leading-snug text-text-muted">{t("wishlist.none")}</span>
+            )}
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <h3 className="text-xs font-bold">{t("composition")}</h3>

@@ -8,6 +8,7 @@ import { createListingAction } from "@/server/actions/listings";
 import { CardPickGrid } from "../../collection/CardPickGrid";
 import { Fuda } from "../../fuda/Fuda";
 import { Button } from "../../ui/Button";
+import { NoteField } from "../../ui/NoteField";
 import { Sheet } from "../../ui/Sheet";
 import { WantPickGrid } from "./WantPickGrid";
 
@@ -15,7 +16,7 @@ type Step = "give" | "want" | "review" | "sent";
 
 /**
  * Publier une annonce d'échange, en trois temps : la carte donnée (dans sa collection), puis jusqu'à
- * `maxWants` cartes demandées (parmi celles qu'on n'a pas), puis le récap.
+ * `maxWants` cartes demandées (parmi celles qu'on n'a pas), puis le récap avec un commentaire facultatif.
  */
 export function ListingComposer({ maxWants, onClose }: { maxWants: number; onClose: () => void }) {
   const t = useTranslations("listings.compose");
@@ -23,6 +24,7 @@ export function ListingComposer({ maxWants, onClose }: { maxWants: number; onClo
   const [step, setStep] = useState<Step>("give");
   const [give, setGive] = useState<CollectionItem | null>(null);
   const [wants, setWants] = useState<CardView[]>([]);
+  const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const wantIds = new Set(wants.map((c) => c.cardId));
@@ -42,7 +44,7 @@ export function ListingComposer({ maxWants, onClose }: { maxWants: number; onClo
     if (!give || wants.length === 0) return;
     startTransition(async () => {
       try {
-        const res = await createListingAction({ cardId: give.cardId, wantedCardIds: wants.map((c) => c.cardId) });
+        const res = await createListingAction({ cardId: give.cardId, wantedCardIds: wants.map((c) => c.cardId), note });
         if (!res.ok) setError(tErrors(res.error as "UNAVAILABLE", { max: maxWants }));
         else setStep("sent");
       } catch {
@@ -123,6 +125,7 @@ export function ListingComposer({ maxWants, onClose }: { maxWants: number; onClo
               </ul>
             </div>
           </div>
+          <NoteField label={t("note")} placeholder={t("notePlaceholder")} value={note} onChange={setNote} disabled={pending} />
           <p className="text-xs text-text-muted">{t("rules")}</p>
           {error && (
             <p role="alert" className="text-sm text-shu">

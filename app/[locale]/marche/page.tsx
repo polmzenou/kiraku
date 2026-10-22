@@ -126,7 +126,7 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
             </nav>
           )}
 
-          {exchangeTab === "echanges" && <ExchangeBoard userId={user.id} guest={user.isGuest} locale={locale} raw={raw} />}
+          {exchangeTab === "echanges" && <ExchangeBoard userId={user.id} guest={user.isGuest} isAdmin={user.role === "ADMIN"} locale={locale} raw={raw} />}
           {exchangeTab === "mes-echanges" && <MyExchangesTab userId={user.id} locale={locale} />}
         </>
       )}
@@ -151,11 +151,13 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
 async function ExchangeBoard({
   userId,
   guest,
+  isAdmin,
   locale,
   raw,
 }: {
   userId: string;
   guest: boolean;
+  isAdmin: boolean;
   locale: string;
   raw: Record<string, string | string[] | undefined>;
 }) {
@@ -173,6 +175,7 @@ async function ExchangeBoard({
       filter={filter}
       q={q}
       guest={guest}
+      isAdmin={isAdmin}
       maxWants={maxWants}
       allowOther={allowOther}
     />

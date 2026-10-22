@@ -29,6 +29,8 @@ function setup({ role = "ADMIN", banned = false, exists = true } = {}) {
     userCard: { count: vi.fn().mockResolvedValue(3), createMany: vi.fn(), findMany: vi.fn().mockResolvedValue([]), deleteMany: vi.fn() },
     discovery: { createMany: vi.fn(), count: vi.fn().mockResolvedValue(3) },
     wishlistEntry: { findMany: vi.fn().mockResolvedValue([]), deleteMany: vi.fn() },
+    teamGift: { create: vi.fn().mockResolvedValue({ id: "gift" }) },
+    notification: { create: vi.fn().mockResolvedValue({ id: "notif" }) },
   };
   const db = { $transaction: vi.fn(async (run: (client: typeof tx) => Promise<unknown>) => run(tx)) } as unknown as PrismaClient;
   return { tx, db };
@@ -82,22 +84,40 @@ describe("mutations admin atomiques", () => {
   });
   it("ajoute des cartes sans doublonner leur découverte", async () => {
     const { tx, db } = setup();
-    await mutateAdminUserWith(db, "admin", { ...base, kind: "card", cardId: "card", mode: "ADD", amount: 3 });
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "card", cardId: "card", mode: "ADD", amount: 3, message: null });
     expect(tx.userCard.createMany.mock.calls[0][0].data).toHaveLength(3);
     expect(tx.discovery.createMany).toHaveBeenCalledWith({ data: [expect.objectContaining({ userId: "player", cardId: "card" })], skipDuplicates: true });
   });
+  it("notifie le joueur d'un ajout, avec le mot de l'équipe", async () => {
+    const { tx, db } = setup();
+    const notified = vi.fn();
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "card", cardId: "card", mode: "ADD", amount: 2, message: "Récompense événement" }, notified);
+    expect(tx.teamGift.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ userId: "player", adminId: "admin", kind: "CARD", cardId: "card", quantity: 2, message: "Récompense événement" }),
+    }));
+    expect(tx.notification.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ userId: "player", type: "TEAM_GIFT", refId: "gift", payload: { kind: "CARD", cardId: "card", quantity: 2 } }),
+    }));
+    expect(notified).toHaveBeenCalledWith(["notif"]);
+  });
+  it("ne notifie ni un retrait ni un crédit fixé", async () => {
+    const { tx, db } = setup();
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "booster", boosterTypeId: "type", mode: "SET", amount: 3, message: null });
+    expect(tx.teamGift.create).not.toHaveBeenCalled();
+    expect(tx.notification.create).not.toHaveBeenCalled();
+  });
   it("refuse de retirer une carte protégée", async () => {
     const { tx, db } = setup();
-    await expect(mutateAdminUserWith(db, "admin", { ...base, kind: "card", cardId: "card", mode: "REMOVE", amount: 1 })).rejects.toMatchObject({ code: "CARDS_LOCKED" });
+    await expect(mutateAdminUserWith(db, "admin", { ...base, kind: "card", cardId: "card", mode: "REMOVE", amount: 1, message: null })).rejects.toMatchObject({ code: "CARDS_LOCKED" });
     expect(tx.userCard.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ ownerId: "player", status: "COLLECTION", showcase: null, auctions: { none: {} } }) }));
     expect(tx.userCard.deleteMany).not.toHaveBeenCalled();
   });
   it("définit les crédits d'un type existant, même inactif", async () => {
     const { tx, db } = setup();
-    await mutateAdminUserWith(db, "admin", { ...base, kind: "booster", boosterTypeId: "type", mode: "ADD", amount: 7 });
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "booster", boosterTypeId: "type", mode: "ADD", amount: 7, message: null });
     expect(tx.boosterCredit.upsert).toHaveBeenCalledWith(expect.objectContaining({ update: { count: 12 } }));
     tx.boosterType.findUnique.mockResolvedValueOnce(null);
-    await expect(mutateAdminUserWith(db, "admin", { ...base, kind: "booster", boosterTypeId: "missing", mode: "SET", amount: 1 })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(mutateAdminUserWith(db, "admin", { ...base, kind: "booster", boosterTypeId: "missing", mode: "SET", amount: 1, message: null })).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
   it("empêche d'effacer les découvertes des cartes possédées", async () => {
     const { tx, db } = setup();

@@ -35,7 +35,7 @@ export async function CardDetail({
     getLocale(),
     getOwnedCopies(ownerId, card.id),
     getSetting("collection.recycleValues"),
-    sellInfoFor(ownerId, new Date()),
+    sellInfoFor(ownerId, new Date(), card.rarity),
     openAuctionsForCard(ownerId, card.id),
   ]);
   const rarity = card.rarity as Rarity;

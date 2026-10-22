@@ -7,6 +7,7 @@ import { isFrozen } from "@/lib/account/deletion";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
 import { LISTING_FILTERS, type ListingRules } from "@/lib/market/listings";
+import { noteSchema } from "@/lib/text/plain";
 import { z } from "@/lib/zod";
 import { cardViews } from "../boosters/display";
 import { prisma } from "../db";
@@ -35,10 +36,11 @@ export type ListingActionError = ListingErrorCode | "NO_SESSION" | "INVALID" | "
 type Failure = { ok: false; error: ListingActionError };
 
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
-const createSchema = z.object({ cardId: id, wantedCardIds: z.array(id).min(1).max(10) }).strict();
+const createSchema = z.object({ cardId: id, wantedCardIds: z.array(id).min(1).max(10), note: noteSchema }).strict();
 const listingIdSchema = z.object({ listingId: id }).strict();
 const offerSchema = z.object({ listingId: id, cardId: id }).strict();
 const offerIdSchema = z.object({ offerId: id }).strict();
+const declineSchema = z.object({ offerId: id, note: noteSchema }).strict();
 const seenSchema = z.object({ offerIds: z.array(id).min(1).max(50) }).strict();
 const pageSchema = z
   .object({ q: z.string().max(SEARCH_MAX_LENGTH), filter: z.enum(LISTING_FILTERS), cursor: id.nullable() })
@@ -90,7 +92,13 @@ export async function createListingAction(input: unknown): Promise<{ ok: true } 
   const g = await guard(input, createSchema, "listing-create", { limit: 10, windowSeconds: 60 });
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
   try {
-    await createListingWith(prisma, { ownerId: g.user.id, cardId: g.data.cardId, wantedCardIds: g.data.wantedCardIds, rules: await listingRules() });
+    await createListingWith(prisma, {
+      ownerId: g.user.id,
+      cardId: g.data.cardId,
+      wantedCardIds: g.data.wantedCardIds,
+      note: g.data.note,
+      rules: await listingRules(),
+    });
     refresh();
     return { ok: true };
   } catch (e) {
@@ -156,10 +164,10 @@ export async function acceptOfferAction(input: unknown): Promise<{ ok: true; car
 }
 
 export async function declineOfferAction(input: unknown): Promise<{ ok: true } | Failure> {
-  const g = await guard(input, offerIdSchema, "listing-respond", { limit: 30, windowSeconds: 60 });
+  const g = await guard(input, declineSchema, "listing-respond", { limit: 30, windowSeconds: 60 });
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
   try {
-    await declineOfferWith(prisma, { userId: g.user.id, offerId: g.data.offerId }, pushLater);
+    await declineOfferWith(prisma, { userId: g.user.id, offerId: g.data.offerId, note: g.data.note }, pushLater);
     refresh();
     return { ok: true };
   } catch (e) {

@@ -20,6 +20,10 @@ export type TradeView = {
   wanted: CardView;
   offers: CardView[];
   chosen: CardView | null;
+  /** Mot du proposant (texte brut). */
+  note: string | null;
+  /** Motif écrit par l'ami au refus. */
+  declineNote: string | null;
 };
 
 export type TradeLists = {
@@ -40,6 +44,8 @@ const tradeSelect = {
   chosenCardId: true,
   proposerNew: true,
   proposerSeenAt: true,
+  note: true,
+  declineNote: true,
   proposer: { select: playerSelect },
   recipient: { select: playerSelect },
   offers: { select: { cardId: true } },
@@ -79,6 +85,8 @@ export async function listTrades(userId: string, locale: string, now = new Date(
       wanted,
       offers: r.offers.flatMap((o) => views.get(o.cardId) ?? []),
       chosen: r.chosenCardId ? (views.get(r.chosenCardId) ?? null) : null,
+      note: r.note,
+      declineNote: r.declineNote,
     };
   };
   const unseen = history.filter((r) => r.status === "ACCEPTED" && r.proposer.id === userId && r.proposerSeenAt === null);

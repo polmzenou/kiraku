@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { RARITIES } from "@/lib/catalog/rarity";
 import type { ListingRules } from "@/lib/market/listings";
-import { acceptOfferWith, createListingWith, ListingError, makeOfferWith } from "./listing-core";
+import { acceptOfferWith, createListingWith, declineOfferWith, ListingError, makeOfferWith } from "./listing-core";
 
 // Concurrence des échanges ouverts du Marché sur une vraie base (branche Neon de dev) : sauté sans
 // DATABASE_URL_TEST.
@@ -74,6 +74,20 @@ describe.skipIf(!url)("échanges ouverts atomiques (base réelle)", () => {
     const listing = await prisma.tradeListing.findUniqueOrThrow({ where: { id: listingId }, select: { status: true } });
     expect(listing.status).toBe("TRADED");
   }, 60_000);
+
+  it("garde le commentaire de l'annonce et le motif d'un refus", async () => {
+    const [owner, bidder] = [await player(), await player()];
+    const [listed, wanted] = cards;
+    await give(owner, listed);
+    await give(bidder, wanted);
+    const { listingId } = await createListingWith(prisma, { ownerId: owner, cardId: listed, wantedCardIds: [wanted], note: "La première de préférence", rules });
+    const { offerId } = await makeOfferWith(prisma, { bidderId: bidder, listingId, cardId: wanted, rules });
+    await declineOfferWith(prisma, { userId: owner, offerId, note: "Déjà en double" });
+
+    expect((await prisma.tradeListing.findUniqueOrThrow({ where: { id: listingId }, select: { note: true } })).note).toBe("La première de préférence");
+    const offer = await prisma.listingOffer.findUniqueOrThrow({ where: { id: offerId }, select: { status: true, declineNote: true } });
+    expect(offer).toEqual({ status: "DECLINED", declineNote: "Déjà en double" });
+  });
 
   it("refuse une annonce qui demande une carte déjà possédée, et une offre sur sa propre annonce", async () => {
     const owner = await player();

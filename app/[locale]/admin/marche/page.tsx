@@ -1,10 +1,11 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { AdminCancelAuctionButton } from "@/components/admin/AdminCancelAuctionButton";
+import { AdminNoteDelete } from "@/components/market/AdminNoteDelete";
 import { MarketSettingsForm } from "@/components/admin/MarketSettingsForm";
 import { Link } from "@/i18n/navigation";
 import { MARKET_SETTING_KEYS, type MarketSettings } from "@/lib/settings/market-form";
 import { recentSettingLogs, requireAdmin } from "@/server/admin";
-import { adminActiveAuctions, marketTotals } from "@/server/market/queries";
+import { adminActiveAuctions, adminRecentNotes, marketTotals } from "@/server/market/queries";
 import { getSetting } from "@/server/settings";
 
 /** Marché : santé (ventes ouvertes, séquestre, taxes), annulation forcée et réglages. */
@@ -12,11 +13,12 @@ export default async function AdminMarketPage() {
   await requireAdmin();
   const locale = await getLocale();
   const now = new Date();
-  const [t, values, totals, auctions, logs] = await Promise.all([
+  const [t, values, totals, auctions, notes, logs] = await Promise.all([
     getTranslations("admin.market"),
     Promise.all(MARKET_SETTING_KEYS.map((k) => getSetting(k))),
     marketTotals(now),
     adminActiveAuctions(locale),
+    adminRecentNotes(locale),
     recentSettingLogs(["market."]),
   ]);
   const settings = Object.fromEntries(MARKET_SETTING_KEYS.map((k, i) => [k, values[i]])) as MarketSettings;
@@ -65,6 +67,31 @@ export default async function AdminMarketPage() {
                   </span>
                 </div>
                 <AdminCancelAuctionButton auctionId={a.id} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h3 className="font-title text-lg font-bold">{t("notes.title")}</h3>
+        <p className="max-w-prose text-sm text-text-muted">{t("notes.intro")}</p>
+        {notes.length === 0 ? (
+          <p className="text-sm text-text-muted">{t("notes.empty")}</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {notes.map((n) => (
+              <li key={`${n.kind}-${n.id}`} className="flex items-start gap-3 rounded-control border border-border bg-surface p-3 text-sm">
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <Link
+                    href={n.kind === "AUCTION" ? `/marche/${n.id}` : "/marche?onglet=echanges"}
+                    className="w-fit font-bold text-link underline underline-offset-4"
+                  >
+                    {t(n.kind === "AUCTION" ? "notes.auction" : "notes.listing", { card: n.cardName, name: n.author })}
+                  </Link>
+                  <p className="whitespace-pre-line break-words">{n.note}</p>
+                </div>
+                <AdminNoteDelete kind={n.kind} id={n.id} />
               </li>
             ))}
           </ul>
