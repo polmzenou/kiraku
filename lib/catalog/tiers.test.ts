@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BASE_DEFINITIONS } from "./definitions";
-import { atLeastRarity, fxTier, isBigMoment } from "./tiers";
+import { atLeastRarity, fxTier, isBigMoment, isTopTier } from "./tiers";
 
 describe("fxTier", () => {
   it("garde les raretés de base", () => {
@@ -30,5 +30,17 @@ describe("isBigMoment", () => {
   });
   it("suit l'ordre d'une rareté personnalisée", () => {
     expect(isBigMoment("JADE", [...BASE_DEFINITIONS, { key: "JADE", sortOrder: 450 }])).toBe(true);
+  });
+});
+
+describe("isTopTier", () => {
+  it("réunit Mythique, AR et Gold", () => {
+    for (const key of ["MYTHIC", "AR", "GOLD"]) expect(isTopTier(key, BASE_DEFINITIONS)).toBe(true);
+  });
+  it("laisse la Légendaire et en dessous au dos classique", () => {
+    for (const key of ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "UNKNOWN"]) expect(isTopTier(key, BASE_DEFINITIONS)).toBe(false);
+  });
+  it("suit les raretés ajoutées au-dessus de Mythique", () => {
+    expect(isTopTier("ONYX", [...BASE_DEFINITIONS, { key: "ONYX", sortOrder: 900 }])).toBe(true);
   });
 });

@@ -1,8 +1,6 @@
 "use client";
 import { useRarities, useRarityDefinitions } from "@/lib/catalog/use-rarities";
-import { fxTier } from "@/lib/catalog/tiers";
-
-
+import { fxTier, isTopTier } from "@/lib/catalog/tiers";
 import { AnimatePresence, m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
@@ -11,7 +9,8 @@ import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import { Fuda } from "../fuda/Fuda";
 import { CardBack } from "../fuda/CardBack";
 import { Button } from "../ui/Button";
-import { chargeFor } from "./RarityFx";
+import { Aurora } from "./Aurora";
+import { chargeFor, leakFor } from "./RarityFx";
 import { FlipCard, type FlipPhase } from "./RevealCard";
 import { RevealTitle, titleGone, useMomentFor, type Moment } from "./RevealMoment";
 import type { SoundName } from "@/lib/sound/synth";
@@ -53,10 +52,12 @@ export type DeckFrom = { x: number; y: number; width: number; height: number };
 const ARRIVE = { type: "spring", visualDuration: 0.55, bounce: 0.16 } as const;
 const ARRIVE_STAGGER = 0.05;
 const ARRIVE_MAX_DELAY = 0.4;
-/** Dos animés sous la carte du dessus ; le reste de la pile n'est qu'une tranche immobile. */
+/**
+ * Dos visibles sous la carte du dessus et décalage entre deux dos (px) : la pile a la même allure
+ * pour un booster ou pour dix, les cartes suivantes attendent au fond sans être dessinées.
+ */
 const VISIBLE_BACKS = 4;
-/** Épaisseur maximale de la pile (px), atteinte à partir de 7 cartes. */
-const STACK_DEPTH = 20;
+const STEP_PX = 3;
 
 type Props = {
   cards: OpenedCardView[];
@@ -202,20 +203,19 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
 
   // Balayage (glisser la carte) ou simple appui : même action
   const act = () => (phaseRef.current === "back" ? flip() : phaseRef.current === "front" ? next() : undefined);
-  const remaining = order.length - index - 1;
   const last = index === order.length - 1;
   const interactive = topVisible && phase !== "charging";
   const discovered = index + (phase === "front" ? 1 : 0);
   const slotColumns = Math.min(5, order.length);
-  // Décalage entre deux dos et épaisseur totale de la pile restante
-  const stepPx = Math.min(3, STACK_DEPTH / Math.max(1, remaining));
   const backs = order.slice(index + 1, index + 1 + VISIBLE_BACKS);
-  const edge = remaining > VISIBLE_BACKS ? remaining * stepPx : 0;
+  // Aurore tant qu'une Mythique, AR ou Gold reste dans la pile (retournée comprise)
+  const topTier = order.slice(index).filter((card) => isTopTier(card.rarity, definitions));
+  const best = topTier.at(-1);
 
   return (
     <div className="flex w-full flex-col items-center gap-5">
       {/* Le nom d'une grande rareté prend un moment la place du compteur, au-dessus de la carte */}
-      <m.div className="relative flex min-h-14 w-full flex-col items-center justify-end" {...appear(0.3)}>
+      <m.div className="relative z-10 flex min-h-14 w-full flex-col items-center justify-end" {...appear(0.3)}>
         <p
           key={moment?.id ?? "progress"}
           className={`text-sm text-text-muted ${moment ? "moment-return" : ""}`}
@@ -232,30 +232,38 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
       </m.div>
 
       <div ref={stack} className="card-deck-stack relative isolate mb-6 aspect-[5/7] w-[min(15rem,62vw)]">
-        {/* Les premiers dos sous la carte du dessus ; au-delà, une seule tranche immobile donne
-            l'épaisseur de la pile (un tirage de 50 cartes n'anime plus 50 dos à chaque geste).
-            Quand la pile bouge, chaque carte suit celle de devant avec un léger retard. */}
-        {intro !== "measure" && edge > 0 && (
-          <m.div
-            aria-hidden="true"
-            className="card-deck-edge pointer-events-none absolute inset-0 rounded-[8px] bg-[#0b0e0d] shadow-[0_2px_1px_#0008,inset_0_0_0_1px_#f2d88a55]"
-            style={{ zIndex: 0 }}
-            initial={start ? { x: start.x, y: start.y, scale: start.scale } : false}
-            animate={{ x: edge * 0.55, y: edge, scale: 1 }}
-            transition={reduced ? { duration: 0 } : arriving ? { ...ARRIVE, delay: ARRIVE_MAX_DELAY } : { duration: 0.25 }}
-          />
-        )}
+        <AnimatePresence>
+          {intro !== "measure" && best && (
+            <Aurora
+              key="aurora"
+              accent={leakFor(best.rarity, definitions)}
+              near={current !== undefined && isTopTier(current.rarity, definitions)}
+              lite={lite}
+              reduced={reduced}
+              delay={arrival ? 0.6 : 0.2}
+            />
+          )}
+        </AnimatePresence>
+        {/* Quelques dos sous la carte du dessus, comme pour un seul booster : quand la pile bouge,
+            chaque carte suit celle de devant avec un léger retard. Un dos qui entre au fond après
+            l'arrivée apparaît à sa place (il ne repart pas de la position du booster). */}
         {intro !== "measure" && backs.map((card, i) => {
           const depth = i + 1;
-          const offset = depth * stepPx;
+          const offset = depth * STEP_PX;
           const rotate = ((depth % 3) - 1) * Math.min(1.8, 0.35 + depth * 0.08);
           return <m.div
             key={card.userCardId}
             aria-hidden="true"
             className="card-deck-layer pointer-events-none absolute inset-0"
             style={{ zIndex: VISIBLE_BACKS + 1 - i }}
-            initial={start ? { x: start.x, y: start.y, scale: start.scale, rotate: 0 } : false}
-            animate={{ x: offset * 0.55, y: offset, rotate, scale: 1 }}
+            initial={
+              start && arriving
+                ? { x: start.x, y: start.y, scale: start.scale, rotate: 0 }
+                : index === 0 || reduced
+                  ? false
+                  : { x: offset * 0.55, y: offset, rotate, scale: 1, opacity: 0 }
+            }
+            animate={{ x: offset * 0.55, y: offset, rotate, scale: 1, opacity: 1 }}
             transition={
               reduced
                 ? { duration: 0 }
@@ -264,6 +272,7 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
                   : { duration: 0.25, delay: Math.min(i, 6) * 0.03 }
             }
           >
+            {/* Toujours le dos classique : seule la carte du dessus montre son dos premium */}
             <CardBack flat />
           </m.div>;
         })}
@@ -303,7 +312,15 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
                 }}
                 aria-label={phase === "front" ? t(last ? "toRecap" : "nextCard") : t("revealCard")}
                 className="card-deck-top absolute inset-0 block w-full touch-none text-base outline-offset-8 aria-disabled:cursor-default"
-                initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
+                // Elle prend la place exacte de son dos dans la pile, sans transparence (on ne voit jamais
+                // la carte d'en dessous) ; une Mythique, AR ou Gold dévoile son dos premium en fondu.
+                initial={
+                  index > 0 && !isTopTier(current.rarity, definitions)
+                    ? { opacity: 1, x: STEP_PX * 0.55, y: STEP_PX }
+                    : reduced
+                      ? { opacity: 0 }
+                      : { opacity: 0, scale: 0.98 }
+                }
                 animate={{ opacity: 1, x: 0, y: 0, rotate: 0, scale: 1 }}
                 exit={reduced
                   ? { opacity: 0, transition: { duration: 0.12 } }

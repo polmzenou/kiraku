@@ -119,7 +119,7 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
 
       <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-8">
         <aside aria-label={t("cardSummary")} className="order-first min-w-0 lacquer rounded-card p-4 lg:order-last">
-          <FudaTurnover className="mx-auto w-full max-w-[260px]">
+          <FudaTurnover rarity={card.rarity} className="mx-auto w-full max-w-[260px]">
             <Fuda card={card} series={series} size="lg" monochrome={!discovered} preload />
           </FudaTurnover>
           <p className="mt-4 text-sm font-bold text-text">{tRarity(card.rarity)} · {status}</p>

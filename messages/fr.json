@@ -1085,7 +1085,8 @@
       "dashboard": "Tableau de bord",
       "journal": "Journal",
       "general": "Général",
-      "cosmetics": "Titres et cadres"
+      "cosmetics": "Titres et cadres",
+      "openingTest": "Test d'ouverture"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -2436,6 +2437,21 @@
         "RATE_LIMITED": "Trop d'enregistrements. Réessaie dans une minute.",
         "SLUG_TAKEN": "Cet identifiant est déjà pris.",
         "NOT_FOUND": "Cette entrée n'existe plus."
+      }
+    },
+    "openingTest": {
+      "title": "Test d'ouverture",
+      "intro": "Le vrai rituel d'ouverture avec de vraies cartes, sur un tirage factice : rien n'est enregistré, ni Zeni ni carte. Les actions du récap (vente, etc.) ne fonctionnent pas sur ces cartes.",
+      "noBooster": "Aucun booster à tester.",
+      "booster": "Booster",
+      "scenario": "Fin du tirage",
+      "hint": "Choisis 1, 5 ou 10 boosters sous le sachet. L'aurore n'apparaît que si la pile contient une Mythique, une AR ou une Gold.",
+      "scenarios": {
+        "all": "Mythique + AR + Gold",
+        "mythic": "Mythique",
+        "ar": "AR",
+        "gold": "Gold",
+        "none": "Sans grosse rareté"
       }
     }
   },

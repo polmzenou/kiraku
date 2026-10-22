@@ -22,6 +22,7 @@ const GROUPS = [
       { key: "collection", href: "/admin/collection" },
       { key: "boosters", href: "/admin/boosters" },
       { key: "types", href: "/admin/boosters/types" },
+      { key: "openingTest", href: "/admin/test-ouverture" },
       { key: "banners", href: "/admin/bannieres" },
       { key: "cosmetics", href: "/admin/cosmetiques" },
       { key: "lots", href: "/admin/lots" },

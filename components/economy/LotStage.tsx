@@ -1,5 +1,6 @@
 
-import { useRaritySeals } from "@/lib/catalog/use-rarities";
+import { useRarityDefinitions, useRaritySeals } from "@/lib/catalog/use-rarities";
+import { isTopTier } from "@/lib/catalog/tiers";
 import { useTranslations } from "next-intl";
 import type { CSSProperties, ReactNode } from "react";
 
@@ -26,6 +27,7 @@ const FAN = [
  */
 export function LotStage({ lot, className = "" }: { lot: LotView | undefined; className?: string }) {
   const RARITY_SEAL = useRaritySeals();
+  const definitions = useRarityDefinitions();
   const t = useTranslations("economy.lot");
   const tRarity = useTranslations("rarity");
   const booster = lot?.lines.find((l) => l.kind === "BOOSTER");
@@ -67,7 +69,7 @@ export function LotStage({ lot, className = "" }: { lot: LotView | undefined; cl
     content = (
       <div className="relative w-[32%] max-w-28 rotate-2">
         <div className="relative aspect-[5/7]">
-          <CardBack static className="absolute inset-0" />
+          <CardBack static premium={isTopTier(mystery.rarity, definitions)} className="absolute inset-0" />
         </div>
         <span
           className="absolute -top-2 -right-3 flex items-center gap-1 rounded-full bg-kin px-2 py-0.5 text-[11px] font-bold text-sumi"

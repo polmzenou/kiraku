@@ -35,7 +35,7 @@
     rgb(224 83 63 / 0.35) 18deg 27deg,
     transparent 27deg 40deg
   );
-  mask: radial-gradient(circle, #000 0 18%, transparent 68%);
+  mask: radial-gradient(closest-side, #000 0 30%, transparent 100%);
   opacity: 0;
   animation:
     fx-fade-in 0.8s ease-out 0.35s forwards,

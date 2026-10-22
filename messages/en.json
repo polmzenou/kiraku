@@ -1085,7 +1085,8 @@
       "dashboard": "Dashboard",
       "journal": "Log",
       "general": "General",
-      "cosmetics": "Titles and frames"
+      "cosmetics": "Titles and frames",
+      "openingTest": "Opening test"
     },
     "boosters": {
       "title": "Booster settings",
@@ -2436,6 +2437,21 @@
         "RATE_LIMITED": "Too many saves. Try again in a minute.",
         "SLUG_TAKEN": "This identifier is already taken.",
         "NOT_FOUND": "This entry no longer exists."
+      }
+    },
+    "openingTest": {
+      "title": "Opening test",
+      "intro": "The real opening ritual with real cards, on a fake pull: nothing is saved, no Zeni and no card. Recap actions (selling, etc.) do not work on these cards.",
+      "noBooster": "No booster to test.",
+      "booster": "Booster",
+      "scenario": "End of the pull",
+      "hint": "Pick 1, 5 or 10 boosters under the pack. The aurora only shows when the stack holds a Mythic, an AR or a Gold.",
+      "scenarios": {
+        "all": "Mythic + AR + Gold",
+        "mythic": "Mythic",
+        "ar": "AR",
+        "gold": "Gold",
+        "none": "No top rarity"
       }
     }
   },

@@ -10,6 +10,7 @@ import { ArGhosts, chargeFor, GoldCracks, GoldShatter, RarityCardFx, RarityFx } 
 import { CardAura } from "./CardAura";
 import { resolveAppearance } from "@/lib/catalog/appearance";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
+import { isTopTier } from "@/lib/catalog/tiers";
 
 /**
  * Pastilles du coin haut-droit, empilées : « Nouveau » (jamais obtenue), puis « Souhait exaucé »
@@ -73,10 +74,10 @@ export function FeaturedSeal({ delay = 0, animated = true }: { delay?: number; a
 }
 
 /** Face arrière du retournement, partagée avec les fiches collection et wiki. */
-export function CardBack({ glow = false, static: still = false }: { glow?: boolean; static?: boolean }) {
+export function CardBack({ glow = false, static: still = false, premium = false }: { glow?: boolean; static?: boolean; premium?: boolean }) {
   return (
     <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]">
-      <FudaBack glow={glow} static={still} />
+      <FudaBack glow={glow} static={still} premium={premium} />
     </div>
   );
 }
@@ -104,6 +105,8 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
   const rank = definitions.findIndex((r) => r.key === card.rarity);
   // AR sort d'une faille (étirée depuis le centre), Gold brise son dos : pas de retournement
   const variant = card.rarity === "AR" || card.rarity === "GOLD" ? card.rarity : null;
+  // Dos premium : la grosse carte se trahit en arrivant en haut de la pile
+  const premium = isTopTier(card.rarity, definitions);
 
   if (reduced) {
     return (
@@ -115,7 +118,7 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
           </m.div>
         ) : (
           <div className="relative z-10 aspect-[5/7] w-full [transform-style:preserve-3d] [transform:rotateY(180deg)]">
-            <CardBack static />
+            <CardBack static premium={premium} />
           </div>
         )}
         {front && <CardStamps card={card} animated={false} />}
@@ -130,7 +133,7 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
       {front ? <m.div className="relative z-10" initial={{ opacity: 0, scale: visual.reveal === "zoom" ? 0.6 : 1 }}
         animate={{ opacity: 1, scale: 1 }} transition={{ duration: visual.duration, delay: visual.delay, ease: visual.easing }}>
         <Fuda card={card} series={card.series} size={size} />
-      </m.div> : <div className="relative aspect-[5/7] w-full [transform:rotateY(180deg)]"><CardBack static /></div>}
+      </m.div> : <div className="relative aspect-[5/7] w-full [transform:rotateY(180deg)]"><CardBack static premium={premium} /></div>}
       {front && <CardStamps card={card} delay={visual.delay + visual.duration} />}
       {front && card.featured && <FeaturedSeal delay={visual.delay + visual.duration} />}
     </div>;
@@ -162,10 +165,10 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
           <div aria-hidden={!front} inert={!front} className="[backface-visibility:hidden]">
             <Fuda card={card} series={card.series} size={size} overlay={front && <RarityCardFx rarity={card.rarity} />} />
           </div>
-          <CardBack glow={charging && rank >= 4} static={front} />
+          <CardBack glow={charging && rank >= 4} static={front} premium={premium} />
         </m.div>
         {charging && card.rarity === "GOLD" && <GoldCracks duration={chargeFor(card.rarity, definitions)} />}
-        {front && variant === "GOLD" && <GoldShatter><FudaBack flat /></GoldShatter>}
+        {front && variant === "GOLD" && <GoldShatter><FudaBack flat premium={premium} /></GoldShatter>}
         {/* Fantômes AR : l'image seule (déjà chargée), pas trois cartes complètes ; rien en effets allégés */}
         {front && variant === "AR" && !compactFx && <ArGhosts><GhostArt card={card} /></ArGhosts>}
       </div>

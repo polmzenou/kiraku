@@ -2,12 +2,17 @@
 
 import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
+import type { Rarity } from "@/lib/catalog/rarity";
+import { isTopTier } from "@/lib/catalog/tiers";
+import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import { CardBack } from "./CardBack";
 import "./FudaTurnover.css";
 
-/** Même dos que l'ouverture ; les fiches gardent leur recto et leur contenu serveur. */
-export function FudaTurnover({ children, className = "" }: { children: ReactNode; className?: string }) {
+/** Même dos que l'ouverture (premium selon `rarity`) ; les fiches gardent leur recto et leur contenu serveur. */
+export function FudaTurnover({ children, rarity, className = "" }: { children: ReactNode; rarity?: Rarity; className?: string }) {
   const t = useTranslations("cardBack");
+  const definitions = useRarityDefinitions();
+  const premium = rarity !== undefined && isTopTier(rarity, definitions);
   const [back, setBack] = useState(false);
   return (
     <div className={className}>
@@ -17,7 +22,7 @@ export function FudaTurnover({ children, className = "" }: { children: ReactNode
             {children}
           </div>
           <div className="kf-reverse" aria-hidden={!back} inert={!back}>
-            <CardBack static={!back} />
+            <CardBack static={!back} premium={premium} />
             <span className="sr-only">{t("description")}</span>
           </div>
         </div>
