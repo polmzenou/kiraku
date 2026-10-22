@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import type { Relation } from "@/lib/social/relation";
+import type { Rarity } from "@/lib/catalog/rarity";
 import {
   blockUserAction,
   cancelFriendRequestAction,
@@ -37,8 +38,8 @@ export function RelationActions({
   name: string;
   initial: Relation;
   gift: GiftInfo | null;
-  /** Échanges ouverts entre amis : nombre maximal de cartes offertes. */
-  trade?: { maxOffered: number } | null;
+  /** Échanges ouverts entre amis : nombre maximal de cartes offertes et raretés échangeables. */
+  trade?: { maxOffered: number; allowedRarities: Rarity[] } | null;
 }) {
   const t = useTranslations("friends");
   const tBattle = useTranslations("battle");
@@ -239,7 +240,7 @@ export function RelationActions({
       </Sheet>
 
       {trade && relation === "FRIENDS" && tradeOpen && (
-        <TradeComposer username={username} name={name} maxOffered={trade.maxOffered} onClose={() => setTradeOpen(false)} />
+        <TradeComposer username={username} name={name} maxOffered={trade.maxOffered} allowedRarities={trade.allowedRarities} onClose={() => setTradeOpen(false)} />
       )}
       {gift && relation === "FRIENDS" && giftOpen && (
         <GiftSheet username={username} name={name} info={gift} onClose={() => setGiftOpen(false)} />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adjustedValue, adminUserMutationSchema, MAX_ADMIN_VALUE, parseUserListParams } from "./users";
+import { adjustedValue, adminUserMutationSchema, adminUsersQuery, MAX_ADMIN_VALUE, parseUserListParams, sortToggle } from "./users";
 import fr from "@/messages/fr.json";
 import en from "@/messages/en.json";
 
@@ -48,10 +48,27 @@ describe("ajustements numériques", () => {
 
 describe("filtres et traductions", () => {
   it("borne la recherche et ignore les paramètres de pagination invalides", () => {
-    expect(parseUserListParams({ q: "  abc  ", filter: "banned", page: "12" })).toEqual({ query: "abc", filter: "banned", page: 12 });
-    expect(parseUserListParams({ q: ["a"], filter: "unknown", page: "-1" })).toEqual({ query: "", filter: "all", page: 0 });
+    expect(parseUserListParams({ q: "  abc  ", filter: "banned", page: "12" })).toEqual({ query: "abc", filter: "banned", page: 12, sort: "created", dir: "desc" });
+    expect(parseUserListParams({ q: ["a"], filter: "unknown", page: "-1" })).toEqual({ query: "", filter: "all", page: 0, sort: "created", dir: "desc" });
     expect(parseUserListParams({ q: "a".repeat(500), page: "99999" }).query).toHaveLength(100);
     expect(parseUserListParams({ page: "99999" }).page).toBe(2000);
+  });
+  it("lit le tri et prend le sens naturel de la colonne par défaut", () => {
+    expect(parseUserListParams({ sort: "name" })).toMatchObject({ sort: "name", dir: "asc" });
+    expect(parseUserListParams({ sort: "coins", dir: "asc" })).toMatchObject({ sort: "coins", dir: "asc" });
+    expect(parseUserListParams({ sort: "passwordHash", dir: "up" })).toMatchObject({ sort: "created", dir: "desc" });
+    expect(parseUserListParams({ sort: ["name"] })).toMatchObject({ sort: "created" });
+  });
+  it("construit des liens courts et revient à la première page quand le tri change", () => {
+    const params = parseUserListParams({ q: "abc", page: "3" });
+    expect(adminUsersQuery(params)).toEqual({ q: "abc", page: "3" });
+    expect(adminUsersQuery(params, { sort: "name", dir: "asc" })).toEqual({ q: "abc", sort: "name" });
+    expect(adminUsersQuery(params, { sort: "name", dir: "desc" })).toEqual({ q: "abc", sort: "name", dir: "desc" });
+    expect(adminUsersQuery(params, { page: 4 })).toEqual({ q: "abc", page: "4" });
+  });
+  it("inverse le sens de la colonne déjà triée", () => {
+    expect(sortToggle({ sort: "name", dir: "asc" }, "name")).toEqual({ sort: "name", dir: "desc" });
+    expect(sortToggle({ sort: "name", dir: "desc" }, "coins")).toEqual({ sort: "coins", dir: "desc" });
   });
   it("fournit les mêmes textes en français et en anglais", () => {
     const keys = (obj: object, prefix = ""): string[] => Object.entries(obj).flatMap(([key, value]) => typeof value === "object" ? keys(value, `${prefix}${key}.`) : [`${prefix}${key}`]);

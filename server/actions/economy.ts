@@ -63,7 +63,7 @@ async function summarize(grant: LotGrant): Promise<RewardSummary> {
     boosters: grant.boosters.reduce((s, b) => s + b.count, 0),
     cards: grant.cards.flatMap((c) => {
       const view = views.get(c.cardId);
-      return view ? [{ ...view, userCardId: c.userCardId, isNew: c.isNew, featured: false }] : [];
+      return view ? [{ ...view, userCardId: c.userCardId, isNew: c.isNew, wished: c.wished, featured: false }] : [];
     }),
   };
 }

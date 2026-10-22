@@ -13,10 +13,12 @@ import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 
 /** Part du geste à partir de laquelle l'ouverture est envoyée au serveur. */
 const TRIGGER_AT = 0.55;
-/** Ligne de déchirure du sachet : la bande se découpe en autant de morceaux que de pas. */
-const TEAR_STEPS = 18;
-const TEAR_LINE = tearLine(TEAR_STEPS);
-const TEAR_BELOW = belowClip(TEAR_LINE);
+/**
+ * Ligne de déchirure du sachet : la bande se découpe en autant de morceaux que de pas (chaque morceau
+ * redessine la bande entière, découpée). Effets allégés : deux fois moins de morceaux.
+ */
+const TEAR = { full: tearLine(18), lite: tearLine(8) };
+const TEAR_BELOW = { full: belowClip(TEAR.full), lite: belowClip(TEAR.lite) };
 /** Durée de la déchirure jouée au bouton (le geste, lui, suit le doigt). */
 const AUTO_TEAR = 0.38;
 /** Envol de la bande arrachée (s) : elle saute, puis retombe en tournoyant hors du sachet. */
@@ -49,6 +51,8 @@ type Props = {
   /** Le geste est possible (stock ou paiement confirmé). */
   armed: boolean;
   reduced: boolean;
+  /** Effets allégés (appareil qui rame ou réglage). */
+  lite?: boolean;
   /** Meilleure rareté du tirage, dès que le serveur a répondu : couleur de la lumière qui s'échappe. */
   leak: Rarity | null;
   /** Le serveur a décidé d'un sachet divin : la nacre se révèle pendant l'ouverture (le doré a ses particules, dans la scène). */
@@ -74,7 +78,7 @@ type Props = {
  * pochibukuro et jūbako : on glisse vers le haut pour soulever le rabat ou le couvercle.
  */
 export function BoosterScene(props: Props) {
-  const { shape, theme, emblem, name, tagline, contents, count, armed, reduced, leak, divine, cards } = props;
+  const { shape, theme, emblem, name, tagline, contents, count, armed, reduced, leak, divine, cards, lite = false } = props;
   const definitions = useRarityDefinitions();
   const progress = useMotionValue(0);
   const [opened, setOpened] = useState(false);
@@ -295,7 +299,7 @@ export function BoosterScene(props: Props) {
         animate={opened && !reduced ? { y: [0, 9, -4, 0], scale: [1, 0.97, 1.025, 1] } : undefined}
         transition={{ duration: 0.55, ease: "easeOut" }}
       >
-        <div ref={tilt} className="relative transition-transform duration-150 ease-out [transform-style:preserve-3d]">
+        <div ref={tilt} className="relative [transform-style:preserve-3d]">
           {emerging && <PeekCards count={shown} dropped={dropped} frontRef={front} />}
           {/* Une fois les cartes sorties, le booster vidé tombe et les découvre */}
           <m.div
@@ -313,11 +317,13 @@ export function BoosterScene(props: Props) {
               contents={contents}
               hideCover={shape !== "SACHET"}
               overlay={overlay}
+              flatShadow
               renderBand={
                 shape === "SACHET"
                   ? (band) => (
                       <TearBand
                         band={band}
+                        lite={lite}
                         progress={progress}
                         opened={opened}
                         reduced={reduced}
@@ -360,7 +366,7 @@ function PeekCards({ count, dropped, frontRef }: { count: number; dropped: boole
               : { type: "spring", visualDuration: PEEK_RISE, bounce: 0.18, delay: i * PEEK_STAGGER }
           }
         >
-          <CardBack static />
+          <CardBack flat />
         </m.div>
       ))}
     </div>
@@ -395,6 +401,7 @@ type Gesture = {
  */
 function TearBand(props: {
   band: ReactNode;
+  lite: boolean;
   progress: MotionValue<number>;
   opened: boolean;
   reduced: boolean;
@@ -403,7 +410,8 @@ function TearBand(props: {
   gesture: Gesture;
   onFlown: () => void;
 }) {
-  const { band, progress, opened, reduced, direction, armed, gesture, onFlown } = props;
+  const { band, lite, progress, opened, reduced, direction, armed, gesture, onFlown } = props;
+  const line = lite ? TEAR.lite : TEAR.full;
   const [flown, setFlown] = useState(false);
   const onFlownRef = useRef(onFlown);
   useEffect(() => { onFlownRef.current = onFlown; }, [onFlown]);
@@ -425,11 +433,11 @@ function TearBand(props: {
       {...gesture}
     >
       {/* Reste de bande serti sous la déchirure */}
-      <div className="absolute inset-0" style={{ clipPath: TEAR_BELOW }}>
+      <div className="absolute inset-0" style={{ clipPath: lite ? TEAR_BELOW.lite : TEAR_BELOW.full }}>
         {band}
       </div>
-      {TEAR_LINE.slice(1).map((to, i) => (
-        <FiberEdge key={i} from={TEAR_LINE[i] ?? to} to={to} progress={progress} direction={direction} />
+      {line.slice(1).map((to, i) => (
+        <FiberEdge key={i} from={line[i] ?? to} to={to} progress={progress} direction={direction} />
       ))}
       {!flown && (
         <m.div
@@ -462,10 +470,10 @@ function TearBand(props: {
                 }
           }
         >
-          {TEAR_LINE.slice(1).map((to, i) => (
+          {line.slice(1).map((to, i) => (
             <TearPiece
               key={i}
-              from={TEAR_LINE[i] ?? to}
+              from={line[i] ?? to}
               to={to}
               band={band}
               progress={progress}
@@ -478,7 +486,7 @@ function TearBand(props: {
       )}
       {/* Ligne lumineuse qui suit la déchirure */}
       <m.span
-        className="pointer-events-none absolute inset-x-[4%] bottom-0 h-[3px] rounded-full bg-washi-paper shadow-[0_0_8px_rgb(255_255_255/0.9)]"
+        className="pointer-events-none absolute inset-x-[4%] bottom-0 h-[3px] rounded-full bg-washi-paper shadow-[0_0_8px_rgb(255_255_255/0.9)] will-change-transform"
         style={{ scaleX: progress, transformOrigin: direction === 1 ? "left" : "right" }}
       />
       {!reduced && <Fibers progress={progress} direction={direction} />}
@@ -676,17 +684,22 @@ function Leak({
   );
 }
 
-/** Inclinaison 3D du booster (souris ou gyroscope), appliquée en requestAnimationFrame. */
+/**
+ * Inclinaison 3D du booster (souris ou gyroscope), appliquée en requestAnimationFrame. `--tx` n'est
+ * posée que sur le reflet qui la lit : sur le booster entier, elle invalidait le style de tout le
+ * dessin (et des morceaux de bande) à chaque image.
+ */
 function useTilt(ref: React.RefObject<HTMLDivElement | null>, enabled: boolean) {
   useEffect(() => {
     const el = ref.current;
     if (!el || !enabled) return;
+    const glints = Array.from(el.querySelectorAll<HTMLElement>(".booster-glint"));
     let frame = 0;
     let target = { x: 0.5, y: 0.5 };
     const apply = () => {
       frame = 0;
       el.style.transform = `rotateY(${((target.x - 0.5) * 18).toFixed(2)}deg) rotateX(${((0.5 - target.y) * 14).toFixed(2)}deg)`;
-      el.style.setProperty("--tx", target.x.toFixed(3));
+      for (const glint of glints) glint.style.setProperty("--tx", target.x.toFixed(3));
     };
     const schedule = (x: number, y: number) => {
       target = { x: Math.min(1, Math.max(0, x)), y: Math.min(1, Math.max(0, y)) };
@@ -707,7 +720,7 @@ function useTilt(ref: React.RefObject<HTMLDivElement | null>, enabled: boolean) 
       window.removeEventListener("deviceorientation", onTilt);
       if (frame) cancelAnimationFrame(frame);
       el.style.removeProperty("transform");
-      el.style.removeProperty("--tx");
+      for (const glint of glints) glint.style.removeProperty("--tx");
     };
   }, [ref, enabled]);
 }

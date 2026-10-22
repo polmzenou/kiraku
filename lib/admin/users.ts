@@ -10,6 +10,13 @@ export const USER_FILTERS = ["all", "registered", "guests", "admins", "banned"] 
 export const USER_STATS = ["boosterStock", "rankPoints", "pityCount", "standardCount"] as const;
 export const USER_ADMIN_ACTIONS = ["USER_ACCOUNT", "USER_COINS", "USER_STAT", "USER_BOOSTER", "USER_BANNERPITY", "USER_CARD", "USER_DISCOVERIES", "USER_SESSIONS"] as const;
 export type UserFilter = (typeof USER_FILTERS)[number];
+/** Colonnes triables de la liste des joueurs, et le sens naturel de chacune. */
+export const USER_SORTS = ["created", "name", "email", "status", "coins", "cards", "discoveries"] as const;
+export type UserSort = (typeof USER_SORTS)[number];
+export type SortDir = "asc" | "desc";
+export const DEFAULT_USER_DIR: Record<UserSort, SortDir> = {
+  created: "desc", name: "asc", email: "asc", status: "asc", coins: "desc", cards: "desc", discoveries: "desc",
+};
 export type UserStat = (typeof USER_STATS)[number];
 
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
@@ -41,11 +48,39 @@ export function adjustedValue(current: number, mode: "SET" | "ADD" | "REMOVE", a
   return next;
 }
 
-export function parseUserListParams(raw: Record<string, string | string[] | undefined>) {
+export type UserListParams = { query: string; filter: UserFilter; page: number; sort: UserSort; dir: SortDir };
+
+export function parseUserListParams(raw: Record<string, string | string[] | undefined>): UserListParams {
   const query = typeof raw.q === "string" ? raw.q.trim().slice(0, 100) : "";
   const parsed = z.enum(USER_FILTERS).safeParse(raw.filter);
   const page = typeof raw.page === "string" && /^\d{1,5}$/.test(raw.page) ? Math.min(Number(raw.page), 2_000) : 0;
-  return { query, filter: parsed.success ? parsed.data : "all" as UserFilter, page };
+  const sort = z.enum(USER_SORTS).catch("created").parse(raw.sort);
+  const dir = z.enum(["asc", "desc"]).catch(DEFAULT_USER_DIR[sort]).parse(raw.dir);
+  return { query, filter: parsed.success ? parsed.data : "all", page, sort, dir };
+}
+
+/**
+ * Paramètres d'URL de la liste, sans les valeurs par défaut. Changer de tri, de filtre ou de
+ * recherche revient à la première page.
+ */
+export function adminUsersQuery(params: UserListParams, patch: Partial<UserListParams> = {}): Record<string, string> {
+  const next = { ...params, ...patch };
+  if (patch.sort !== undefined || patch.dir !== undefined || patch.filter !== undefined || patch.query !== undefined) {
+    next.page = patch.page ?? 0;
+  }
+  const query: Record<string, string> = {};
+  if (next.query) query.q = next.query;
+  if (next.filter !== "all") query.filter = next.filter;
+  if (next.sort !== "created") query.sort = next.sort;
+  if (next.dir !== DEFAULT_USER_DIR[next.sort]) query.dir = next.dir;
+  if (next.page > 0) query.page = String(next.page);
+  return query;
+}
+
+/** Clic sur un en-tête : la colonne déjà triée change de sens, une autre part dans son sens naturel. */
+export function sortToggle(params: Pick<UserListParams, "sort" | "dir">, sort: UserSort): { sort: UserSort; dir: SortDir } {
+  if (params.sort !== sort) return { sort, dir: DEFAULT_USER_DIR[sort] };
+  return { sort, dir: params.dir === "asc" ? "desc" : "asc" };
 }
 
 export type AdminCardCandidate = {

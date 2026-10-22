@@ -3,7 +3,7 @@ import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
 import { UserSelectCheckbox, UserSelection } from "@/components/admin/UserDeletion";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
-import { parseUserListParams, USER_FILTERS } from "@/lib/admin/users";
+import { adminUsersQuery, parseUserListParams, sortToggle, USER_FILTERS, USER_SORTS, type UserSort } from "@/lib/admin/users";
 import { requireAdmin } from "@/server/admin";
 import { listAdminUsers } from "@/server/admin/users";
 import { inputClass, selectClass } from "@/components/ui/Field";
@@ -11,8 +11,20 @@ import { inputClass, selectClass } from "@/components/ui/Field";
 export default async function AdminUsersPage({ searchParams }: PageProps<"/[locale]/admin/utilisateurs">) {
   const admin = await requireAdmin();
   const params = parseUserListParams(await searchParams);
-  const [t, format, result] = await Promise.all([getTranslations("admin.users"), getFormatter(), listAdminUsers(params.query, params.filter, params.page)]);
-  const href = (page: number) => ({ pathname: "/admin/utilisateurs", query: { q: params.query, filter: params.filter, page } });
+  const [t, format, result] = await Promise.all([getTranslations("admin.users"), getFormatter(), listAdminUsers(params)]);
+  const href = (page: number) => ({ pathname: "/admin/utilisateurs", query: adminUsersQuery(params, { page }) });
+  // En-tête cliquable : trie par cette colonne, ou inverse le sens si elle l'est déjà
+  const column = (key: UserSort, label: string) => {
+    const next = sortToggle(params, key);
+    return {
+      label,
+      sort: {
+        href: { pathname: "/admin/utilisateurs", query: adminUsersQuery(params, next) },
+        active: params.sort === key ? params.dir : undefined,
+        label: t(next.dir === "asc" ? "sortAsc" : "sortDesc", { column: label }),
+      },
+    };
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -20,13 +32,24 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/[loca
         <h2 className="font-title text-2xl font-bold">{t("title")}</h2>
         <p className="mt-1 max-w-prose text-sm text-text-muted">{t("intro")}</p>
       </div>
-      <form className="grid items-end gap-3 sm:grid-cols-[1fr_auto_auto]">
+      <form className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto_auto_auto]">
         <label className="flex flex-col gap-1 text-sm">{t("search")}
           <input name="q" defaultValue={params.query} maxLength={100} placeholder={t("searchPlaceholder")} className={inputClass} />
         </label>
         <label className="flex flex-col gap-1 text-sm">{t("filter")}
           <select name="filter" defaultValue={params.filter} className={selectClass}>
             {USER_FILTERS.map((f) => <option key={f} value={f}>{t(`filters.${f}`)}</option>)}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm">{t("sortBy")}
+          <select name="sort" defaultValue={params.sort} className={selectClass}>
+            {USER_SORTS.map((s) => <option key={s} value={s}>{t(`sorts.${s}`)}</option>)}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm">{t("sortDir")}
+          <select name="dir" defaultValue={params.dir} className={selectClass}>
+            <option value="asc">{t("dirAsc")}</option>
+            <option value="desc">{t("dirDesc")}</option>
           </select>
         </label>
         <Button type="submit">{t("searchButton")}</Button>
@@ -37,12 +60,12 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/[loca
         <ResponsiveTable
           caption={t("total", { count: result.total })}
           columns={[
-            { key: "player", label: t("player"), primary: true },
-            { key: "status", label: t("status"), className: "whitespace-nowrap" },
-            { key: "coins", label: t("coins"), className: "tabular-nums text-kin" },
-            { key: "cards", label: t("cards"), className: "tabular-nums" },
-            { key: "discoveries", label: t("discoveries"), className: "tabular-nums" },
-            { key: "created", label: t("created"), className: "whitespace-nowrap" },
+            { key: "player", ...column("name", t("player")), primary: true },
+            { key: "status", ...column("status", t("status")), className: "whitespace-nowrap" },
+            { key: "coins", ...column("coins", t("coins")), className: "tabular-nums text-kin" },
+            { key: "cards", ...column("cards", t("cards")), className: "tabular-nums" },
+            { key: "discoveries", ...column("discoveries", t("discoveries")), className: "tabular-nums" },
+            { key: "created", ...column("created", t("created")), className: "whitespace-nowrap" },
             { key: "manage", label: t("manage"), actions: true },
           ]}
           rows={result.users.map((u) => ({

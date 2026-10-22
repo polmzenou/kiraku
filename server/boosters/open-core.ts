@@ -15,6 +15,7 @@ import { bonusesFor, priceFor, type BoosterTypeView } from "@/lib/boosters/types
 import type { Rarity } from "@/lib/catalog/rarity";
 import { consumeBoosters, CreditError } from "../economy/credits";
 import { applyEntries, LedgerError } from "../economy/ledger";
+import { consumeWishlist } from "../collection/wishlist-core";
 
 export type OpenErrorCode =
   | "NO_USER"
@@ -65,7 +66,7 @@ export type OpenedBoosterRow = {
   featuredHit: boolean;
   featuredPityTriggered: boolean;
   zeniSpent: number;
-  cards: { userCardId: string; cardId: string; rarity: Rarity; isNew: boolean; featured: boolean }[];
+  cards: { userCardId: string; cardId: string; rarity: Rarity; isNew: boolean; featured: boolean; /** Était dans la liste de souhaits (premier exemplaire). */ wished: boolean }[];
 };
 
 export type OpenOutcome = {
@@ -171,6 +172,8 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         select: { cardId: true },
       });
       const seen = new Set(known.map((k) => k.cardId));
+      // Les cartes obtenues quittent la liste de souhaits ; le premier exemplaire garde la pastille
+      const wished = await consumeWishlist(tx, userId, drawnIds);
 
       const boosters: OpenedBoosterRow[] = drawn.boosters.map((b) => ({
         id: randomUUID(),
@@ -183,7 +186,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         cards: b.cards.map((c) => {
           const isNew = !seen.has(c.cardId);
           seen.add(c.cardId);
-          return { userCardId: randomUUID(), cardId: c.cardId, rarity: c.rarity, isNew, featured: c.featured === true };
+          return { userCardId: randomUUID(), cardId: c.cardId, rarity: c.rarity, isNew, featured: c.featured === true, wished: wished.delete(c.cardId) };
         }),
       }));
       const discovered = boosters.flatMap((b) => b.cards.filter((c) => c.isNew).map((c) => c.cardId));

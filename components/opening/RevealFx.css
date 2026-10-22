@@ -74,17 +74,24 @@
   position: absolute;
   inset: 0;
   overflow: visible;
-  filter: drop-shadow(0 0 3px rgb(255 226 140 / 0.9));
 }
+/* La lueur est un trait large et translucide sous le trait fin : pas de filtre drop-shadow, qui se
+   recalculait sur tout le SVG à chaque fissure qui apparaît. */
 .fx-crack {
   fill: none;
   stroke: #ffe8a3;
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
   opacity: 0;
   animation: fx-crack 0.22s ease-out var(--d, 0s) forwards;
+}
+.fx-crack path {
+  vector-effect: non-scaling-stroke;
+}
+.fx-crack .fx-crack-glow {
+  stroke: rgb(255 226 140 / 0.35);
+  stroke-width: 7;
 }
 .fx-gold-shard {
   position: absolute;

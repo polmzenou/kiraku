@@ -450,7 +450,15 @@
     "balance": "Solde : {amount, number} Zeni",
     "settings": "Réglages",
     "animations": "Animations",
-    "animationsHint": "Désactive-les si ton téléphone rame."
+    "animationsHint": "Si ton téléphone rame, choisis Allégées ou Réduites.",
+    "motion": {
+      "auto": "Auto (selon ton appareil)",
+      "full": "Complètes",
+      "lite": "Allégées",
+      "reduced": "Réduites"
+    },
+    "motionAutoFull": "Ton appareil suit : effets complets.",
+    "motionAutoLite": "Ton appareil peine : effets allégés."
   },
   "market": {
     "title": "Hôtel des ventes",
@@ -800,7 +808,9 @@
       "NOT_FOR_SALE": "Ce booster n'est pas disponible en ce moment.",
       "UNAVAILABLE": "Ouverture impossible pour le moment. Réessaie."
     },
-    "creditLeft": "{count, plural, one {Booster crédité · # à ouvrir} other {Boosters crédités · # à ouvrir}}"
+    "creditLeft": "{count, plural, one {Booster crédité · # à ouvrir} other {Boosters crédités · # à ouvrir}}",
+    "wishedCard": "Souhait exaucé",
+    "wishedCardLong": "Était dans ta liste de souhaits"
   },
   "draw": {
     "title": "Tirage de {name}",
@@ -1006,6 +1016,21 @@
           "ADMIN_PROTECTED": "Un admin ne peut pas être supprimé : retire-lui d'abord le rôle.",
           "HAS_ADMIN_HISTORY": "Ancien admin : ses actions passées doivent rester attribuées, anonymise plutôt le compte."
         }
+      },
+      "sortBy": "Trier par",
+      "sortDir": "Ordre",
+      "dirAsc": "Croissant (A → Z, 0 → 9)",
+      "dirDesc": "Décroissant (Z → A, 9 → 0)",
+      "sortAsc": "Trier par {column}, ordre croissant",
+      "sortDesc": "Trier par {column}, ordre décroissant",
+      "sorts": {
+        "created": "Date d'inscription",
+        "name": "Pseudo",
+        "email": "E-mail",
+        "status": "Statut",
+        "coins": "Zeni",
+        "cards": "Cartes",
+        "discoveries": "Découvertes"
       }
     },
     "moduleNames": {
@@ -2563,7 +2588,7 @@
   "wishlist": {
     "title": "Liste de souhaits",
     "count": "{count} / {max}",
-    "hint": "Choisis jusqu'à {max} cartes depuis leur fiche dans le wiki, même si tu ne les possèdes pas.",
+    "hint": "Choisis jusqu'à {max} cartes que tu ne possèdes pas encore, depuis leur fiche dans le wiki. Elles quittent la liste dès que tu les obtiens.",
     "browse": "Choisir dans le wiki",
     "emptyOwner": "Ta liste de souhaits est vide. Ouvre une fiche du wiki pour ajouter ta première carte.",
     "emptyPublic": "Ce joueur n'a pas encore ajouté de carte à sa liste de souhaits.",
@@ -2578,8 +2603,10 @@
       "FULL": "Ta liste contient déjà 20 cartes. Retire une carte depuis ton profil pour en ajouter une autre.",
       "NOT_FOUND": "Cette carte n'est plus disponible dans le catalogue.",
       "RATE_LIMITED": "Doucement ! Réessaie dans un moment.",
-      "UNAVAILABLE": "Impossible d'enregistrer ta liste. Réessaie."
-    }
+      "UNAVAILABLE": "Impossible d'enregistrer ta liste. Réessaie.",
+      "OWNED": "Tu possèdes déjà cette carte : elle ne peut pas aller dans ta liste de souhaits."
+    },
+    "owned": "Déjà dans ta collection : elle ne peut pas aller dans ta liste de souhaits."
   },
   "profile": {
     "metaTitle": "Profil de {name}",
@@ -3047,7 +3074,8 @@
       "new": "Nouvelle !",
       "close": "Garder",
       "toCollection": "Voir dans ma collection",
-      "next": "Carte suivante"
+      "next": "Carte suivante",
+      "wished": "Était dans ta liste de souhaits"
     }
   },
   "home": {
@@ -3482,7 +3510,9 @@
       "pending": "Un instant…",
       "rateLimited": "Trop d'essais. Réessaie dans un moment.",
       "error": "Impossible d'enregistrer ton choix. Réessaie."
-    }
+    },
+    "followTitle": "Nous suivre",
+    "followText": "Nouveautés, nouveaux boosters et plus beaux tirages : suis Kiraku sur X."
   },
   "consent": {
     "manage": "Gérer les cookies",
@@ -3895,5 +3925,9 @@
       "RATE_LIMITED": "Doucement : réessaie dans un instant.",
       "UNAVAILABLE": "Action impossible pour le moment."
     }
+  },
+  "social": {
+    "x": "X",
+    "followX": "Suivre Kiraku sur X ({handle})"
   }
 }

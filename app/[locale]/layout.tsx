@@ -60,7 +60,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   const clientMessages = pickClientMessages(await getMessages());
 
   return (
-    <html lang={locale} data-theme={theme} data-motion={motion === "reduced" ? "reduced" : undefined} className={fontVariables}>
+    <html lang={locale} data-theme={theme} data-motion={motion === "reduced" ? "reduced" : undefined} data-fx={motion === "lite" ? "lite" : undefined} className={fontVariables}>
       <body className="min-h-dvh">
         <NextIntlClientProvider messages={clientMessages}>
           <MotionPreferenceProvider initial={motion}>

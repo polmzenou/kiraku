@@ -23,6 +23,7 @@ import {
 import { freeCopy } from "../social/free-copy";
 import { blocksBetween, lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
+import { consumeWishlist } from "../collection/wishlist-core";
 
 export type ListingErrorCode =
   | TradeListingRefusal
@@ -231,7 +232,7 @@ export async function withdrawOfferWith(db: PrismaClient, input: { userId: strin
 }
 
 export type AcceptOfferOutcome =
-  | { ok: true; received: { cardId: string; userCardId: string; isNew: boolean } }
+  | { ok: true; received: { cardId: string; userCardId: string; isNew: boolean; wished: boolean } }
   | { ok: false; code: "CLOSED" | "CARD_GONE" | "OFFER_GONE" };
 
 /**
@@ -313,13 +314,17 @@ export async function acceptOfferWith(
         ],
         skipDuplicates: true,
       });
+      const [, ownerWished] = await Promise.all([
+        consumeWishlist(tx, offer.bidderId, [listing.cardId]),
+        consumeWishlist(tx, listing.ownerId, [offer.cardId]),
+      ]);
 
       await tx.tradeListing.update({ where: { id: listing.id }, data: { status: "TRADED", resolvedAt: now } });
       await tx.listingOffer.update({ where: { id: offer.id }, data: { status: "ACCEPTED", resolvedAt: now, bidderNew: !bidderKnew } });
       await tx.notification.updateMany({ where: { type: "LISTING_OFFER", refId: offer.id, readAt: null }, data: { readAt: now } });
       await closePendingOffers(tx, listing, now, offer.id);
       await notify(tx, { userId: offer.bidderId, type: "LISTING_ACCEPTED", actorId: listing.ownerId, refId: offer.id, payload, now });
-      return { ok: true, received: { cardId: offer.cardId, userCardId: bidderCopy.id, isNew: !ownerKnew } };
+      return { ok: true, received: { cardId: offer.cardId, userCardId: bidderCopy.id, isNew: !ownerKnew, wished: ownerWished.size > 0 } };
     },
     TX,
     onNotified,

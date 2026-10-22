@@ -1,6 +1,8 @@
 // Objets schema.org (JSON-LD) des pages publiques. Fonctions pures : l'origine est passée en
 // paramètre (appUrl côté serveur), les chemins viennent de localePath.
 
+import { X_URL } from "../links";
+
 export type StructuredData = { "@type": string } & Record<string, unknown>;
 
 type Crumb = { name: string; path: string };
@@ -11,7 +13,7 @@ export function homeGraph(origin: string, home: string, { name, description, lan
   const organization = { "@id": `${origin}/#organization` };
   return [
     { "@type": "WebSite", "@id": `${origin}/#website`, name, url, inLanguage: language, publisher: organization },
-    { "@type": "Organization", "@id": organization["@id"], name, url: origin, logo: `${origin}/icons/icon-512.png` },
+    { "@type": "Organization", "@id": organization["@id"], name, url: origin, logo: `${origin}/icons/icon-512.png`, sameAs: [X_URL] },
     {
       "@type": "WebApplication",
       name,

@@ -11,6 +11,7 @@ import { grantBoosters } from "../economy/credits";
 import { debit, LedgerError } from "../economy/ledger";
 import { blocksBetween, lockPlayers, type LockedPlayer, type Tx } from "./lock";
 import { notify, notifyingTransaction, type OnNotified } from "./notify";
+import { consumeWishlist } from "../collection/wishlist-core";
 
 export type GiftErrorCode = GiftRefusal | "NO_USER" | "NOT_OWNED" | "RARITY" | "NOT_ENOUGH_ZENI";
 
@@ -105,6 +106,7 @@ export async function giftCardWith(
       data: [{ userId: ctx.recipientId, cardId: ctx.cardId, createdAt: now }],
       skipDuplicates: true,
     });
+    await consumeWishlist(tx, ctx.recipientId, [ctx.cardId]);
 
     const gift = await tx.gift.create({
       data: {

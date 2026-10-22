@@ -3,17 +3,20 @@
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Fuda } from "@/components/fuda/Fuda";
+import type { Rarity } from "@/lib/catalog/rarity";
 import { SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
+import { pickerQuery } from "@/lib/collection/params";
 import type { CollectionItem } from "@/lib/collection/view";
 import { loadCollectionPage } from "@/server/actions/collection";
 import { Button } from "../ui/Button";
 import { inputClass } from "../ui/Field";
+import { RarityChips } from "./RarityChips";
 
 const DEBOUNCE_MS = 300;
 
 /**
  * Grille de cartes à choisir dans une collection (la sienne, ou celle d'un joueur dont le profil
- * l'autorise) : recherche, « Voir plus », cartes cochées. Le serveur revérifie tout ensuite.
+ * l'autorise) : recherche, raretés, « Voir plus », cartes cochées. Le serveur revérifie tout ensuite.
  */
 export function CardPickGrid({
   username,
@@ -21,6 +24,7 @@ export function CardPickGrid({
   onPick,
   pickLabel,
   disabled,
+  allowed,
 }: {
   /** Collection d'un autre joueur ; absent = la sienne. */
   username?: string;
@@ -29,9 +33,12 @@ export function CardPickGrid({
   pickLabel: (name: string) => string;
   /** Cartes impossibles à choisir (ex. la carte demandée, quand on choisit les siennes). */
   disabled?: ReadonlySet<string>;
+  /** Raretés acceptées par le serveur pour cet usage : les autres ne sont ni proposées ni listées. */
+  allowed?: readonly Rarity[];
 }) {
   const t = useTranslations("showcase");
   const [q, setQ] = useState("");
+  const [rarities, setRarities] = useState<Rarity[]>([]);
   const [items, setItems] = useState<CollectionItem[]>([]);
   const [nextOffset, setNextOffset] = useState<number | null>(0);
   const [loading, setLoading] = useState(true);
@@ -40,10 +47,12 @@ export function CardPickGrid({
   const request = useRef(0);
   const searchId = useId();
 
+  const allowedKey = allowed?.join(",");
   const fetchPage = useCallback(
-    (query: string, offset: number) => {
+    (query: string, picked: readonly Rarity[], offset: number) => {
       const id = ++request.current;
-      return loadCollectionPage({ ...(username ? { username } : {}), query: query ? { q: query } : {}, offset }).then(
+      const only = allowedKey === undefined ? undefined : allowedKey.split(",").filter(Boolean);
+      return loadCollectionPage({ ...(username ? { username } : {}), query: pickerQuery(query, picked, only), offset }).then(
         (res) => {
           if (id !== request.current) return;
           setLoading(false);
@@ -61,17 +70,17 @@ export function CardPickGrid({
         },
       );
     },
-    [username],
+    [username, allowedKey],
   );
 
-  const load = (query: string, offset: number) => {
+  const load = (query: string, picked: readonly Rarity[], offset: number) => {
     setLoading(true);
     setError(null);
-    return fetchPage(query, offset);
+    return fetchPage(query, picked, offset);
   };
 
   useEffect(() => {
-    void fetchPage("", 0);
+    void fetchPage("", [], 0);
   }, [fetchPage]);
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -93,9 +102,18 @@ export function CardPickGrid({
           const value = e.currentTarget.value;
           setQ(value);
           clearTimeout(timer.current);
-          timer.current = setTimeout(() => void load(value.trim(), 0), DEBOUNCE_MS);
+          timer.current = setTimeout(() => void load(value.trim(), rarities, 0), DEBOUNCE_MS);
         }}
         className={inputClass}
+      />
+      <RarityChips
+        value={rarities}
+        allowed={allowed}
+        onChange={(next) => {
+          clearTimeout(timer.current);
+          setRarities(next);
+          void load(q.trim(), next, 0);
+        }}
       />
 
       {items.length === 0 && !loading && !error ? (
@@ -131,12 +149,12 @@ export function CardPickGrid({
       <div aria-live="polite" className="flex justify-center">
         {loading && <p className="text-sm text-text-muted">{t("loading")}</p>}
         {error === "OTHER" && (
-          <Button type="button" onClick={() => void load(q.trim(), items.length === 0 ? 0 : (nextOffset ?? 0))}>
+          <Button type="button" onClick={() => void load(q.trim(), rarities, items.length === 0 ? 0 : (nextOffset ?? 0))}>
             {t("retry")}
           </Button>
         )}
         {!loading && !error && nextOffset !== null && items.length > 0 && (
-          <Button type="button" onClick={() => void load(q.trim(), nextOffset)}>
+          <Button type="button" onClick={() => void load(q.trim(), rarities, nextOffset)}>
             {t("more")}
           </Button>
         )}

@@ -1,7 +1,5 @@
 "use client";
 
-import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
-
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
@@ -19,6 +17,7 @@ import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
 import { chipClasses } from "../ui/Chip";
 import { inputClass, selectClass } from "../ui/Field";
+import { RarityChips } from "./RarityChips";
 
 const DEBOUNCE_MS = 300;
 
@@ -39,10 +38,7 @@ export function CollectionFilters({
   series: { id: string; title: string; cards: number }[];
   counts?: Partial<Record<Rarity, number>>;
 }) {
-  const RARITIES = useRarities();
-  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("collection");
-  const tRarity = useTranslations("rarity");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -58,9 +54,6 @@ export function CollectionFilters({
       router.replace({ pathname, query: collectionQuery({ ...params, ...next }) }, { scroll: false });
     });
   }
-
-  const toggleRarity = (r: Rarity) =>
-    go({ rarities: params.rarities.includes(r) ? params.rarities.filter((x) => x !== r) : [...params.rarities, r] });
 
   const currentSeries = series.find((s) => s.id === params.series);
   const sortChanged = params.sort !== DEFAULT_PARAMS.sort || params.dir !== DEFAULT_PARAMS.dir;
@@ -100,23 +93,16 @@ export function CollectionFilters({
         </Button>
       </form>
 
-      <div role="group" aria-label={t("rarityFilter")} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0">
-        <button type="button" aria-pressed={params.dupes} onClick={() => go({ dupes: !params.dupes })} className={chip(params.dupes)}>
-          {t("dupesOnly")}
-        </button>
-        {[...RARITIES].reverse().map((r) => {
-          const active = params.rarities.includes(r);
-          return (
-            <button key={r} type="button" aria-pressed={active} onClick={() => toggleRarity(r)} className={chip(active)}>
-              <span aria-hidden="true" className="font-seal text-base">
-                {RARITY_SEAL[r]}
-              </span>
-              {tRarity(r)}
-              {counts?.[r] !== undefined && <span className="tabular-nums text-text-muted">{counts[r]}</span>}
-            </button>
-          );
-        })}
-      </div>
+      <RarityChips
+        value={params.rarities}
+        onChange={(rarities) => go({ rarities })}
+        counts={counts}
+        leading={
+          <button type="button" aria-pressed={params.dupes} onClick={() => go({ dupes: !params.dupes })} className={chip(params.dupes)}>
+            {t("dupesOnly")}
+          </button>
+        }
+      />
 
       {currentSeries && (
         <p className="flex flex-wrap items-center gap-2 text-sm">

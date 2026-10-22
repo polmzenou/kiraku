@@ -4,7 +4,14 @@ import type { FudaCard } from "@/components/fuda/Fuda";
 
 export type CardView = FudaCard & { cardId: string; anilistId: number; series: string };
 
-export type OpenedCardView = CardView & { userCardId: string; isNew: boolean; /** Vedette de la bannière. */ featured: boolean };
+export type OpenedCardView = CardView & {
+  userCardId: string;
+  isNew: boolean;
+  /** Vedette de la bannière. */
+  featured: boolean;
+  /** Était dans la liste de souhaits du joueur (absent pour les révélations différées). */
+  wished?: boolean;
+};
 
 export type OpenedBoosterView = {
   id: string;

@@ -149,7 +149,7 @@ export async function acceptOfferAction(input: unknown): Promise<{ ok: true; car
     if (!res.ok) return { ok: false, error: res.code };
     const view = (await cardViews([res.received.cardId], await getLocale())).get(res.received.cardId);
     if (!view) return { ok: false, error: "UNAVAILABLE" };
-    return { ok: true, card: { ...view, userCardId: res.received.userCardId, isNew: res.received.isNew, featured: false } };
+    return { ok: true, card: { ...view, userCardId: res.received.userCardId, isNew: res.received.isNew, wished: res.received.wished, featured: false } };
   } catch (e) {
     return failure(e);
   }

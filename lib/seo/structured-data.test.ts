@@ -5,7 +5,7 @@ describe("homeGraph", () => {
   it("relie le site, l'éditeur et le jeu par leurs @id", () => {
     const [site, org, app] = homeGraph("https://k.test", "/en", { name: "Kiraku", description: "d", language: "en" });
     expect(site).toMatchObject({ "@type": "WebSite", url: "https://k.test/en", publisher: { "@id": "https://k.test/#organization" } });
-    expect(org).toMatchObject({ "@type": "Organization", "@id": "https://k.test/#organization", logo: "https://k.test/icons/icon-512.png" });
+    expect(org).toMatchObject({ "@type": "Organization", "@id": "https://k.test/#organization", logo: "https://k.test/icons/icon-512.png", sameAs: ["https://x.com/kirakukuntcg"] });
     expect(app).toMatchObject({ "@type": "WebApplication", applicationCategory: "GameApplication", offers: { price: 0 } });
   });
 });

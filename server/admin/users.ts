@@ -1,11 +1,27 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
-import { ADMIN_USER_PAGE_SIZE, type UserFilter } from "@/lib/admin/users";
+import { ADMIN_USER_PAGE_SIZE, type SortDir, type UserListParams, type UserSort } from "@/lib/admin/users";
 import { localize, parseLocalized } from "@/lib/boosters/types";
 import { normalizeSearch } from "@/lib/catalog/search";
 import { prisma } from "../db";
 
-export async function listAdminUsers(query: string, filter: UserFilter, requestedPage: number) {
+/** Tri de la liste : une colonne et un sens, toujours départagés par l'identifiant (pages stables). */
+const USER_ORDER = {
+  created: (dir) => [{ createdAt: dir }],
+  name: (dir) => [{ username: dir }],
+  email: (dir) => [{ email: { sort: dir, nulls: "last" } }],
+  // Bannis, admins, inscrits, invités (et l'inverse)
+  status: (dir) => [
+    { bannedAt: { sort: dir === "asc" ? "desc" : "asc", nulls: dir === "asc" ? "last" : "first" } },
+    { role: dir === "asc" ? "desc" : "asc" },
+    { isGuest: dir },
+  ],
+  coins: (dir) => [{ coins: dir }],
+  cards: (dir) => [{ cards: { _count: dir } }],
+  discoveries: (dir) => [{ discoveries: { _count: dir } }],
+} satisfies Record<UserSort, (dir: SortDir) => Prisma.UserOrderByWithRelationInput[]>;
+
+export async function listAdminUsers({ query, filter, page: requestedPage, sort, dir }: UserListParams) {
   const where: Prisma.UserWhereInput = {
     ...(query ? { OR: [{ username: { contains: query, mode: "insensitive" } }, { email: { contains: query, mode: "insensitive" } }, { id: query }] } : {}),
     ...(filter === "registered" ? { isGuest: false } : filter === "guests" ? { isGuest: true } : filter === "admins" ? { role: "ADMIN" } : filter === "banned" ? { bannedAt: { not: null } } : {}),
@@ -13,7 +29,7 @@ export async function listAdminUsers(query: string, filter: UserFilter, requeste
   const total = await prisma.user.count({ where });
   const pages = Math.max(1, Math.ceil(total / ADMIN_USER_PAGE_SIZE));
   const page = Math.min(requestedPage, pages - 1);
-  const users = await prisma.user.findMany({ where, orderBy: [{ createdAt: "desc" }, { id: "desc" }], skip: page * ADMIN_USER_PAGE_SIZE, take: ADMIN_USER_PAGE_SIZE,
+  const users = await prisma.user.findMany({ where, orderBy: [...USER_ORDER[sort](dir), { id: dir }], skip: page * ADMIN_USER_PAGE_SIZE, take: ADMIN_USER_PAGE_SIZE,
     select: { id: true, username: true, email: true, role: true, bannedAt: true, isGuest: true, coins: true, createdAt: true,
       deletionRequestedAt: true, anonymizedAt: true,
       _count: { select: { cards: true, discoveries: { where: { card: { status: "PUBLISHED" } } } } } },

@@ -28,6 +28,7 @@ function setup({ role = "ADMIN", banned = false, exists = true } = {}) {
     card: { findUnique: vi.fn().mockResolvedValue({ id: "card" }), count: vi.fn().mockResolvedValue(100) },
     userCard: { count: vi.fn().mockResolvedValue(3), createMany: vi.fn(), findMany: vi.fn().mockResolvedValue([]), deleteMany: vi.fn() },
     discovery: { createMany: vi.fn(), count: vi.fn().mockResolvedValue(3) },
+    wishlistEntry: { findMany: vi.fn().mockResolvedValue([]), deleteMany: vi.fn() },
   };
   const db = { $transaction: vi.fn(async (run: (client: typeof tx) => Promise<unknown>) => run(tx)) } as unknown as PrismaClient;
   return { tx, db };

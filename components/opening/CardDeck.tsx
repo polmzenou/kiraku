@@ -5,7 +5,7 @@ import { fxTier } from "@/lib/catalog/tiers";
 
 import { AnimatePresence, m } from "motion/react";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import { Fuda } from "../fuda/Fuda";
@@ -53,6 +53,10 @@ export type DeckFrom = { x: number; y: number; width: number; height: number };
 const ARRIVE = { type: "spring", visualDuration: 0.55, bounce: 0.16 } as const;
 const ARRIVE_STAGGER = 0.05;
 const ARRIVE_MAX_DELAY = 0.4;
+/** Dos animés sous la carte du dessus ; le reste de la pile n'est qu'une tranche immobile. */
+const VISIBLE_BACKS = 4;
+/** Épaisseur maximale de la pile (px), atteinte à partir de 7 cartes. */
+const STACK_DEPTH = 20;
 
 type Props = {
   cards: OpenedCardView[];
@@ -60,6 +64,8 @@ type Props = {
   from?: DeckFrom | null;
   origin?: RefObject<HTMLElement | null>;
   reduced: boolean;
+  /** Effets allégés (appareil qui rame ou réglage) : moins de particules autour des cartes. */
+  lite?: boolean;
   play: (name: SoundName, haptic?: number | number[]) => void;
   /** Une Mythique va sortir : la scène s'assombrit et tremble. */
   onMythic: () => void;
@@ -72,7 +78,7 @@ type Props = {
  * Toutes les fuda du tirage sont empilées face cachée. Un geste retourne celle du dessus ;
  * le suivant la retire du tas, puis la prochaine devient manipulable après sa sortie.
  */
-export function CardDeck({ cards, from, origin, reduced, play, onMythic, onMoment, onDone }: Props) {
+export function CardDeck({ cards, from, origin, reduced, lite = false, play, onMythic, onMoment, onDone }: Props) {
   const t = useTranslations("opening");
   const rarities = useRarities();
   const definitions = useRarityDefinitions();
@@ -201,6 +207,10 @@ export function CardDeck({ cards, from, origin, reduced, play, onMythic, onMomen
   const interactive = topVisible && phase !== "charging";
   const discovered = index + (phase === "front" ? 1 : 0);
   const slotColumns = Math.min(5, order.length);
+  // Décalage entre deux dos et épaisseur totale de la pile restante
+  const stepPx = Math.min(3, STACK_DEPTH / Math.max(1, remaining));
+  const backs = order.slice(index + 1, index + 1 + VISIBLE_BACKS);
+  const edge = remaining > VISIBLE_BACKS ? remaining * stepPx : 0;
 
   return (
     <div className="flex w-full flex-col items-center gap-5">
@@ -222,17 +232,28 @@ export function CardDeck({ cards, from, origin, reduced, play, onMythic, onMomen
       </m.div>
 
       <div ref={stack} className="card-deck-stack relative isolate mb-6 aspect-[5/7] w-[min(15rem,62vw)]">
-        {/* Un dos par carte restante ; l'épaisseur totale reste contenue pour les gros tirages.
+        {/* Les premiers dos sous la carte du dessus ; au-delà, une seule tranche immobile donne
+            l'épaisseur de la pile (un tirage de 50 cartes n'anime plus 50 dos à chaque geste).
             Quand la pile bouge, chaque carte suit celle de devant avec un léger retard. */}
-        {intro !== "measure" && order.slice(index + 1).map((card, i) => {
+        {intro !== "measure" && edge > 0 && (
+          <m.div
+            aria-hidden="true"
+            className="card-deck-edge pointer-events-none absolute inset-0 rounded-[8px] bg-[#0b0e0d] shadow-[0_2px_1px_#0008,inset_0_0_0_1px_#f2d88a55]"
+            style={{ zIndex: 0 }}
+            initial={start ? { x: start.x, y: start.y, scale: start.scale } : false}
+            animate={{ x: edge * 0.55, y: edge, scale: 1 }}
+            transition={reduced ? { duration: 0 } : arriving ? { ...ARRIVE, delay: ARRIVE_MAX_DELAY } : { duration: 0.25 }}
+          />
+        )}
+        {intro !== "measure" && backs.map((card, i) => {
           const depth = i + 1;
-          const offset = depth * Math.min(3, 20 / Math.max(1, remaining));
+          const offset = depth * stepPx;
           const rotate = ((depth % 3) - 1) * Math.min(1.8, 0.35 + depth * 0.08);
           return <m.div
             key={card.userCardId}
             aria-hidden="true"
             className="card-deck-layer pointer-events-none absolute inset-0"
-            style={{ zIndex: remaining - i }}
+            style={{ zIndex: VISIBLE_BACKS + 1 - i }}
             initial={start ? { x: start.x, y: start.y, scale: start.scale, rotate: 0 } : false}
             animate={{ x: offset * 0.55, y: offset, rotate, scale: 1 }}
             transition={
@@ -243,7 +264,7 @@ export function CardDeck({ cards, from, origin, reduced, play, onMythic, onMomen
                   : { duration: 0.25, delay: Math.min(i, 6) * 0.03 }
             }
           >
-            <CardBack static />
+            <CardBack flat />
           </m.div>;
         })}
 
@@ -289,7 +310,7 @@ export function CardDeck({ cards, from, origin, reduced, play, onMythic, onMomen
                   : { opacity: 0, x: 170, y: 50, rotate: 16, scale: 0.8, transition: { duration: 0.32 } }}
                 transition={{ duration: reduced ? 0.12 : 0.2 }}
               >
-                <FlipCard card={current} phase={phase} size="lg" reduced={reduced} />
+                <FlipCard card={current} phase={phase} size="lg" reduced={reduced} compactFx={lite} />
               </m.button>
             )}
           </AnimatePresence>
@@ -308,18 +329,7 @@ export function CardDeck({ cards, from, origin, reduced, play, onMythic, onMomen
         {...appear(0.5)}
       >
         {order.map((card, i) => (
-          <li key={card.userCardId} className="card-deck-slot relative aspect-[5/7] min-w-0" data-discovered={i < discovered}>
-            {i < discovered ? (
-              <m.div className="absolute inset-0" initial={reduced ? false : { opacity: 0, y: 6, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.2 }}>
-                <Fuda card={card} series={card.series} size="sm" />
-              </m.div>
-            ) : (
-              <div className="card-deck-empty flex h-full items-center justify-center rounded-[5px] border border-dashed border-kin/25 bg-[radial-gradient(ellipse_at_center,rgb(217_181_86/0.04),transparent_75%)]">
-                <span aria-hidden="true" className="font-title text-3xl text-kin/50 [text-shadow:0_0_10px_rgb(217_181_86/0.15)]">?</span>
-                <span className="sr-only">{t("unrevealedSlot", { position: i + 1, total: order.length })}</span>
-              </div>
-            )}
-          </li>
+          <DeckSlot key={card.userCardId} card={card} discovered={i < discovered} reduced={reduced} label={t("unrevealedSlot", { position: i + 1, total: order.length })} />
         ))}
       </m.ul>}
 
@@ -333,3 +343,24 @@ export function CardDeck({ cards, from, origin, reduced, play, onMythic, onMomen
     </div>
   );
 }
+
+/**
+ * Emplacement du récapitulatif sous la pile : mémoïsé et figé, il ne se redessine que lorsque sa
+ * carte est découverte (pas à chaque geste ni à chaque changement de la scène).
+ */
+const DeckSlot = memo(function DeckSlot({ card, discovered, reduced, label }: { card: OpenedCardView; discovered: boolean; reduced: boolean; label: string }) {
+  return (
+    <li className="card-deck-slot relative aspect-[5/7] min-w-0" data-discovered={discovered}>
+      {discovered ? (
+        <m.div className="absolute inset-0" initial={reduced ? false : { opacity: 0, y: 6, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.2 }}>
+          <Fuda card={card} series={card.series} size="sm" still />
+        </m.div>
+      ) : (
+        <div className="card-deck-empty flex h-full items-center justify-center rounded-[5px] border border-dashed border-kin/25 bg-[radial-gradient(ellipse_at_center,rgb(217_181_86/0.04),transparent_75%)]">
+          <span aria-hidden="true" className="font-title text-3xl text-kin/50 [text-shadow:0_0_10px_rgb(217_181_86/0.15)]">?</span>
+          <span className="sr-only">{label}</span>
+        </div>
+      )}
+    </li>
+  );
+});

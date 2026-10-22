@@ -9,6 +9,7 @@ Kiraku is a non-commercial fan project published by **[[ÉDITEUR]]** (private in
 Under article 6, III, 2 of French law no. 2004-575 of 21 June 2004 on confidence in the digital economy, the publisher, acting in a non-professional capacity, has chosen to remain anonymous: their name and address have been given to the host.
 
 - Contact: [[CONTACT]]
+- X (Twitter): [@kirakukuntcg](https://x.com/kirakukuntcg)
 - Publication director: [[DIRECTEUR_PUBLICATION]]
 
 ## Host

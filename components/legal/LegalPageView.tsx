@@ -11,6 +11,7 @@ import { getLegalDocument } from "@/server/legal";
 import { CookieTable } from "../consent/CookieTable";
 import { ManageCookiesButton } from "../consent/ManageCookiesButton";
 import { LegalMarkdown } from "./LegalMarkdown";
+import { XFollowLink } from "../layout/XFollowLink";
 
 const KANJI: Record<LegalSlug, string> = {
   "mentions-legales": "記",
@@ -64,6 +65,14 @@ export async function LegalPageView({ slug, locale, version }: { slug: LegalSlug
         </>
       ) : (
         <p className="text-text-muted">{t("missing")}</p>
+      )}
+
+      {slug === "mentions-legales" && (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-title text-xl font-extrabold">{t("followTitle")}</h2>
+          <p className="text-sm text-text-muted">{t("followText")}</p>
+          <XFollowLink variant="button" />
+        </section>
       )}
 
       {slug === "cookies" && (

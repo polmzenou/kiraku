@@ -23,6 +23,11 @@ export type BoosterArtProps = {
   hideCover?: boolean;
   /** Calque posé au-dessus du dessin, qui hérite de ses couleurs (rabat animé, lumière, matière). */
   overlay?: ReactNode;
+  /**
+   * Ombre portée posée sous le booster plutôt qu'un filtre drop-shadow sur tout le dessin : dans la
+   * scène d'ouverture, le filtre se recalculait à chaque image de la déchirure et de l'inclinaison.
+   */
+  flatShadow?: boolean;
   className?: string;
 };
 
@@ -32,10 +37,11 @@ export type BoosterArtProps = {
  * propres à chaque type. Purement décoratif : le nom accessible est porté par le parent.
  */
 export function BoosterArt(props: BoosterArtProps) {
-  const { shape, theme, variant, overlay, className = "" } = props;
+  const { shape, theme, variant, overlay, flatShadow = false, className = "" } = props;
   const vars = { "--booster-base": theme.base, "--booster-dark": theme.dark } as CSSProperties;
   return (
-    <div aria-hidden="true" className={`w-full select-none drop-shadow-[0_10px_10px_rgb(0_0_0/0.5)] ${className}`}>
+    <div aria-hidden="true" className={`w-full select-none ${flatShadow ? "relative" : "drop-shadow-[0_10px_10px_rgb(0_0_0/0.5)]"} ${className}`}>
+      {flatShadow && <span className="pointer-events-none absolute inset-x-[2%] top-[3%] bottom-0 translate-y-[10px] rounded-[6%] shadow-[0_0_14px_6px_rgb(0_0_0/0.45)]" />}
       <div
         className={`booster-art wagara-${theme.pattern} relative aspect-[5/7] w-full`}
         data-ink={variant === "divine" ? "dark" : theme.ink}

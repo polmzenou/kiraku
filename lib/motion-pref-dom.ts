@@ -14,6 +14,11 @@ export function applyMotionPref(pref: MotionPref) {
   window.dispatchEvent(new Event(MOTION_EVENT));
 }
 
+/** Effets allégés : posé sur <html> par MotionPreferenceProvider (réglage, ou appareil qui rame). */
+export function liteFx() {
+  return document.documentElement.dataset.fx === "lite";
+}
+
 /** Animations à couper : réglage du système ou engrenage de l'en-tête. */
 export function prefersReducedMotion() {
   return document.documentElement.dataset.motion === "reduced" || matchMedia("(prefers-reduced-motion: reduce)").matches;

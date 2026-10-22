@@ -53,6 +53,8 @@
 .kb-charge { position: absolute; inset: 0; background: radial-gradient(ellipse, #f2d88a7d, #d9b5562b 50%, transparent 75%); pointer-events: none; opacity: 0; transition: opacity .5s; }
 .kb-back[data-glow] .kb-charge { opacity: 1; }
 .kb-back[data-static] { --mx: .5 !important; --my: .5 !important; }
+.kb-back[data-flat] .kb-emboss { filter: none; }
+.kb-back[data-flat] .kb-iridescence { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .kb-back { --mx: .5 !important; --my: .5 !important; }
 }

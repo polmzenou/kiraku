@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { collectionQuery, DEFAULT_PARAMS, hasFilters, parseCollectionParams } from "./params";
+import { collectionQuery, DEFAULT_PARAMS, hasFilters, parseCollectionParams, pickerQuery } from "./params";
 
 describe("paramètres de la collection", () => {
   it("valeurs par défaut sans paramètre", () => {
@@ -38,5 +38,19 @@ describe("paramètres de la collection", () => {
     expect(hasFilters(DEFAULT_PARAMS)).toBe(false);
     expect(hasFilters(parseCollectionParams({ dupes: "1" }))).toBe(true);
     expect(hasFilters(parseCollectionParams({ sort: "name" }))).toBe(false);
+  });
+});
+
+describe("requête d'un sélecteur de cartes", () => {
+  it("sans restriction : recherche et raretés cochées", () => {
+    expect(pickerQuery("", [])).toEqual({});
+    expect(pickerQuery("gojo", ["EPIC", "MYTHIC"])).toEqual({ q: "gojo", rarity: "EPIC,MYTHIC" });
+  });
+
+  it("avec raretés autorisées : toutes par défaut, sinon l'intersection", () => {
+    expect(pickerQuery("", [], ["COMMON", "RARE"])).toEqual({ rarity: "COMMON,RARE" });
+    expect(pickerQuery("", ["RARE", "MYTHIC"], ["COMMON", "RARE"])).toEqual({ rarity: "RARE" });
+    // Une case hors des raretés autorisées n'élargit jamais la liste
+    expect(pickerQuery("", ["MYTHIC"], ["COMMON"])).toEqual({ rarity: "COMMON" });
   });
 });

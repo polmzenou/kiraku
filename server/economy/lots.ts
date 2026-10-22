@@ -9,6 +9,8 @@ import type { Rarity } from "@/lib/catalog/rarity";
 import { parseLotItemRow } from "@/lib/economy/lots";
 import { grantBoosters } from "./credits";
 import { credit } from "./ledger";
+import { consumeWishlist } from "../collection/wishlist-core";
+import { markWished } from "@/lib/collection/wishlist";
 
 type Tx = Prisma.TransactionClient;
 
@@ -22,7 +24,7 @@ export type LotGrant = {
   zeni: number;
   boosters: { boosterTypeId: string; count: number }[];
   /** `isNew` : jamais obtenue avant ce versement (badge 新 à la révélation). */
-  cards: { userCardId: string; cardId: string; rarity: Rarity; isNew: boolean }[];
+  cards: { userCardId: string; cardId: string; rarity: Rarity; isNew: boolean; /** Était dans la liste de souhaits. */ wished: boolean }[];
   /** Solde après le versement (null si le lot ne contient pas de Zeni). */
   coins: number | null;
 };
@@ -81,7 +83,8 @@ export async function grantLot(
       select: { cardId: true },
     });
     const seen = new Set(known.map((k) => k.cardId));
-    grant.cards = drawn.map((c) => {
+    const wished = await consumeWishlist(tx, userId, drawn.map((c) => c.cardId));
+    grant.cards = markWished(drawn, wished).map((c) => {
       const isNew = !seen.has(c.cardId);
       seen.add(c.cardId);
       return { ...c, userCardId: randomUUID(), isNew };
