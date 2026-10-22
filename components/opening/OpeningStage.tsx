@@ -3,6 +3,7 @@
 import { AnimatePresence, domMax, LazyMotion, m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { preload } from "react-dom";
 import { OPEN_COUNTS, type OpenCount } from "@/lib/boosters/catalog";
 import { priceFor, type BoosterShape, type BoosterTheme, type Price } from "@/lib/boosters/types";
 import type { OpenedBoosterView } from "@/lib/boosters/view";
@@ -11,6 +12,7 @@ import { useRarities } from "@/lib/catalog/use-rarities";
 import { openBoosterAction, type OpenBoosterError } from "@/server/actions/boosters";
 import type { BoosterState } from "@/server/boosters/state";
 import { NextFreeIn } from "../boosters/NextFreeIn";
+import { CARD_BACKS } from "../fuda/CardBack";
 import { Fuda } from "../fuda/Fuda";
 import { ZeniCoin } from "../layout/ZeniCoin";
 import { Button } from "../ui/Button";
@@ -55,7 +57,14 @@ export type OpeningType = {
  * `credits` : boosters crédités de ce type (cadeaux d'amis, boutique, récompenses) à ouvrir en
  * premier, sans doré ni divin.
  */
-type Props = { type: OpeningType; initialState: BoosterState; isGuest: boolean; credits?: number };
+type Props = {
+  type: OpeningType;
+  initialState: BoosterState;
+  isGuest: boolean;
+  credits?: number;
+  /** Ouverture à appeler : l'action serveur, ou un tirage factice pour le banc de test de l'admin. */
+  open?: typeof openBoosterAction;
+};
 
 /** Meilleure carte du tirage, dans l'ordre du registre (AR et Gold au-dessus de Mythique). */
 const bestRarity = (boosters: OpenedBoosterView[], RARITIES: readonly Rarity[]): Rarity =>
@@ -78,7 +87,7 @@ function maxOpenable(type: OpeningType, state: BoosterState): number {
  * puis le récap se déroule. Le tirage est déjà enregistré par le serveur
  * quand l'animation commence : fermer l'onglet ne fait rien perdre.
  */
-export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props) {
+export function OpeningStage({ type, initialState, isGuest, credits = 0, open = openBoosterAction }: Props) {
   const rarities = useRarities();
   const t = useTranslations("opening");
   const level = useFxLevel();
@@ -86,6 +95,9 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
   const lite = level === "lite";
   const { pref } = useMotionPreference();
   const fx = useRitualFx();
+  // Les deux dos servent à chaque ouverture : chargés avant que la pile n'apparaisse
+  preload(CARD_BACKS.standard, { as: "image", fetchPriority: "low" });
+  preload(CARD_BACKS.premium, { as: "image", fetchPriority: "low" });
   const [stage, setStage] = useState<Stage>("ready");
   const [count, setCount] = useState<OpenCount>(1);
   const [boosters, setBoosters] = useState<OpenedBoosterView[] | null>(null);
@@ -144,7 +156,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
     setStage("opening");
     setDepth(0.15);
     result.current = null;
-    const res = await openBoosterAction(
+    const res = await open(
       creditMode
         ? { booster: type.slug, count: effectiveCount, credit: true }
         : { booster: type.slug, count: effectiveCount, pay: price.kind === "zeni" },
@@ -249,7 +261,8 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
           tremblement, le prend pour un premier rendu et `initial={false}` l'annule. */}
       <m.div
         ref={stageTop}
-        className="relative z-50 flex scroll-mt-20 flex-col items-center gap-6 md:scroll-mt-24"
+        // Au-dessus du fond assombri pendant le rituel ; au récap, sous l'en-tête et la nav qui restent devant
+        className={`relative flex scroll-mt-20 flex-col items-center gap-6 md:scroll-mt-24 ${ritual ? "z-50" : ""}`}
         initial={false}
         animate={reduced || shake === 0 ? { x: 0 } : { x: shake % 2 ? [0, -7, 7, -5, 5, -2, 0] : [0, 7, -7, 5, -5, 2, 0] }}
         transition={{ duration: 0.45 }}
@@ -386,6 +399,8 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
           {stage === "recap" && boosters && (
             <m.div key="recap" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <Recap
+                name={type.name}
+                emblem={type.emblem}
                 boosters={boosters}
                 state={state}
                 reduced={reduced}
@@ -427,6 +442,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
         <RecapActionBar
           count={effectiveCount}
           nextPrice={unaffordable ? { kind: "unavailable" } : price}
+          stock={creditMode ? null : state.stock}
           onAgain={again}
           changeHref={`/?b=${type.slug}&f=${type.family}`}
           reduced={reduced}

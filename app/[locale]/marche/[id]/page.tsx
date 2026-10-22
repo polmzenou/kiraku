@@ -59,7 +59,7 @@ export default async function AuctionPage({ params }: PageProps<"/[locale]/march
         {t("detail.back")}
       </Link>
       <article className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
-        <FudaTurnover className="mx-auto w-full max-w-[200px] md:mx-0 md:w-[300px] md:max-w-none md:shrink-0">
+        <FudaTurnover rarity={detail.card.rarity} className="mx-auto w-full max-w-[200px] md:mx-0 md:w-[300px] md:max-w-none md:shrink-0">
           <Fuda card={detail.card} series={detail.card.series} size="lg" preload />
         </FudaTurnover>
 

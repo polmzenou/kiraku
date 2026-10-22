@@ -668,7 +668,8 @@
   }
   .light-rays {
     background: repeating-conic-gradient(from 0deg, var(--leak) 0deg 6deg, transparent 6deg 22deg);
-    mask: radial-gradient(circle, #000 0 20%, transparent 70%);
+    /* closest-side : les rayons s'éteignent avant le bord du calque (ovale), sinon coupés net en desktop */
+    mask: radial-gradient(closest-side, #000 0 34%, transparent 100%);
     animation: light-rays 14s linear infinite;
   }
   .fx-ring {

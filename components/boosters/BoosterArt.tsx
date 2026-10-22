@@ -41,7 +41,8 @@ export function BoosterArt(props: BoosterArtProps) {
   const vars = { "--booster-base": theme.base, "--booster-dark": theme.dark } as CSSProperties;
   return (
     <div aria-hidden="true" className={`w-full select-none ${flatShadow ? "relative" : "drop-shadow-[0_10px_10px_rgb(0_0_0/0.5)]"} ${className}`}>
-      {flatShadow && <span className="pointer-events-none absolute inset-x-[2%] top-[3%] bottom-0 translate-y-[10px] rounded-[6%] shadow-[0_0_14px_6px_rgb(0_0_0/0.45)]" />}
+      {/* Ombre de contact sous le booster seulement : une boîte ombrée autour se voyait entre les dents du serti */}
+      {flatShadow && <span className="pointer-events-none absolute inset-x-[6%] top-[97%] h-[8%] bg-[radial-gradient(closest-side,rgb(0_0_0/0.5),transparent)]" />}
       <div
         className={`booster-art wagara-${theme.pattern} relative aspect-[5/7] w-full`}
         data-ink={variant === "divine" ? "dark" : theme.ink}

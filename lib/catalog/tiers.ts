@@ -29,3 +29,11 @@ export function atLeastRarity(rarity: Rarity, floor: Rarity, definitions: readon
 export function isBigMoment(rarity: Rarity, definitions: readonly Ordered[]) {
   return atLeastRarity(rarity, "LEGENDARY", definitions);
 }
+
+/**
+ * Haut de gamme : Mythique et tout ce qui reçoit sa cérémonie (AR, Gold, raretés au-dessus).
+ * Dos de carte premium, et aurore derrière la pile tant qu'une telle carte y reste.
+ */
+export function isTopTier(rarity: Rarity, definitions: readonly Ordered[]) {
+  return fxTier(rarity, definitions) === "MYTHIC";
+}
