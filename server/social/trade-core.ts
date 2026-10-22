@@ -46,6 +46,8 @@ export type ProposeInput = {
   recipientId: string;
   wantedCardId: string;
   offeredCardIds: readonly string[];
+  /** Mot du proposant, déjà nettoyé (texte brut). */
+  note?: string | null;
   rules: TradeRules;
   now?: Date;
 };
@@ -111,6 +113,7 @@ export async function proposeTradeWith(db: PrismaClient, input: ProposeInput, on
           wantedCardId: input.wantedCardId,
           expiresAt: tradeExpiresAt(now, input.rules.expiryHours),
           createdAt: now,
+          note: input.note ?? null,
           offers: { create: offeredIds.map((cardId) => ({ cardId })) },
         },
         select: { id: true },
@@ -249,8 +252,12 @@ export async function acceptTradeWith(
   );
 }
 
-/** L'ami refuse : le proposant est prévenu. */
-export async function declineTradeWith(db: PrismaClient, input: { userId: string; tradeId: string; now?: Date }, onNotified?: OnNotified) {
+/** L'ami refuse (motif facultatif, déjà nettoyé) : le proposant est prévenu. */
+export async function declineTradeWith(
+  db: PrismaClient,
+  input: { userId: string; tradeId: string; note?: string | null; now?: Date },
+  onNotified?: OnNotified,
+) {
   const now = input.now ?? new Date();
   await notifyingTransaction(
     db,
@@ -259,7 +266,7 @@ export async function declineTradeWith(db: PrismaClient, input: { userId: string
       if (!trade || trade.recipientId !== input.userId) throw new TradeError("NOT_FOUND");
       const closed = await tx.trade.updateMany({
         where: { id: input.tradeId, recipientId: input.userId, status: "PENDING" },
-        data: { status: "DECLINED", resolvedAt: now },
+        data: { status: "DECLINED", resolvedAt: now, declineNote: input.note ?? null },
       });
       if (closed.count !== 1) throw new TradeError("CLOSED");
       await notify(tx, {

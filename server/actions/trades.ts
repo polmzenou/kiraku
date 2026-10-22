@@ -4,6 +4,7 @@ import { getLocale } from "next-intl/server";
 import { refresh } from "next/cache";
 import { after } from "next/server";
 import type { OpenedCardView } from "@/lib/boosters/view";
+import { noteSchema } from "@/lib/text/plain";
 import { z } from "@/lib/zod";
 import { USERNAME_REGEX } from "@/lib/username";
 import { isFrozen } from "@/lib/account/deletion";
@@ -33,9 +34,12 @@ export type TradeActionError = TradeErrorCode | "NO_SESSION" | "INVALID" | "GUES
 type Failure = { ok: false; error: TradeActionError };
 
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
-const proposeSchema = z.object({ username: z.string().regex(USERNAME_REGEX), wantedCardId: id, offeredCardIds: z.array(id).min(1).max(10) }).strict();
+const proposeSchema = z
+  .object({ username: z.string().regex(USERNAME_REGEX), wantedCardId: id, offeredCardIds: z.array(id).min(1).max(10), note: noteSchema })
+  .strict();
 const acceptSchema = z.object({ tradeId: id, chosenCardId: id }).strict();
 const tradeIdSchema = z.object({ tradeId: id }).strict();
+const declineSchema = z.object({ tradeId: id, note: noteSchema }).strict();
 const seenSchema = z.object({ tradeIds: z.array(id).min(1).max(50) }).strict();
 
 const pushLater = (ids: string[]) => after(() => pushNotifications(ids));
@@ -79,7 +83,7 @@ export async function proposeTradeAction(input: unknown): Promise<{ ok: true } |
   try {
     await proposeTradeWith(
       prisma,
-      { proposerId: g.user.id, recipientId: owner.id, wantedCardId: g.data.wantedCardId, offeredCardIds: g.data.offeredCardIds, rules: await tradeRules() },
+      { proposerId: g.user.id, recipientId: owner.id, wantedCardId: g.data.wantedCardId, offeredCardIds: g.data.offeredCardIds, note: g.data.note, rules: await tradeRules() },
       pushLater,
     );
     refresh();
@@ -110,10 +114,10 @@ export async function acceptTradeAction(input: unknown): Promise<{ ok: true; car
 }
 
 export async function declineTradeAction(input: unknown): Promise<{ ok: true } | Failure> {
-  const g = await guard(input, tradeIdSchema, "trade-respond", { limit: 20, windowSeconds: 60 });
+  const g = await guard(input, declineSchema, "trade-respond", { limit: 20, windowSeconds: 60 });
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
   try {
-    await declineTradeWith(prisma, { userId: g.user.id, tradeId: g.data.tradeId }, pushLater);
+    await declineTradeWith(prisma, { userId: g.user.id, tradeId: g.data.tradeId, note: g.data.note }, pushLater);
     refresh();
     return { ok: true };
   } catch (e) {

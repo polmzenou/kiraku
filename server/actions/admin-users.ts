@@ -20,7 +20,7 @@ export async function mutateAdminUserAction(input: unknown): Promise<AdminUserRe
   if (!parsed.success) return { ok: false, error: "INVALID" };
   if (!(await rateLimit(`admin-users:${admin.id}`, { limit: 30, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
   try {
-    await mutateAdminUserWith(prisma, admin.id, parsed.data);
+    await mutateAdminUserWith(prisma, admin.id, parsed.data, pushLater);
   } catch (e) {
     if (e instanceof AdminUserMutationError) return { ok: false, error: e.code };
     if (e && typeof e === "object" && "code" in e && e.code === "P2002") return { ok: false, error: "USERNAME_TAKEN" };

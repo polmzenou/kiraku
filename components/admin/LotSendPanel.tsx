@@ -9,6 +9,7 @@ import {
   type AdminLotResult,
 } from "@/server/actions/admin-lots";
 import { Button } from "../ui/Button";
+import { NoteField } from "../ui/NoteField";
 import { ConfirmAction } from "./ConfirmAction";
 import { inputClass } from "./fields";
 
@@ -19,6 +20,7 @@ export function LotSendPanel({ lots }: { lots: { id: string; name: string }[] })
   const [lotId, setLotId] = useState(lots[0]?.id ?? "");
   const [username, setUsername] = useState("");
   const [reason, setReason] = useState("");
+  const [note, setNote] = useState("");
   const [audience, setAudience] = useState<"ALL" | "REGISTERED">("REGISTERED");
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
@@ -53,8 +55,10 @@ export function LotSendPanel({ lots }: { lots: { id: string; name: string }[] })
             {t("reason")}
           </label>
           <input id={ids.reason} value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} className={inputClass} />
+          <p className="text-xs text-text-muted">{t("reasonHint")}</p>
         </div>
       </div>
+      <NoteField label={t("message")} placeholder={t("messagePlaceholder")} value={note} onChange={setNote} />
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <div className="flex flex-1 flex-col gap-1">
@@ -76,7 +80,7 @@ export function LotSendPanel({ lots }: { lots: { id: string; name: string }[] })
           disabled={pending || username.trim().length < 3}
           onClick={() =>
             startTransition(async () => {
-              const r = await grantLotToUserAction({ lotId, username, reason });
+              const r = await grantLotToUserAction({ lotId, username, reason, message: note });
               setMessage({ ok: r.ok, text: describe(r) });
             })
           }
@@ -107,7 +111,7 @@ export function LotSendPanel({ lots }: { lots: { id: string; name: string }[] })
           confirmLabel={t("sendToAllConfirm")}
           typeToConfirm={t("confirmWord")}
           onConfirm={async (typed) => {
-            const r = await startLotBroadcastAction({ lotId, audience, reason, confirm: typed });
+            const r = await startLotBroadcastAction({ lotId, audience, reason, message: note, confirm: typed });
             setMessage({ ok: r.ok, text: describe(r) });
             return r.ok ? null : t(`errors.${r.error}`);
           }}

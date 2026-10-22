@@ -30,6 +30,8 @@
   --k-shu-btn: #c8372d;
   --k-ai: #7fa3d1;
   --k-kin: #d9b556;
+  /* Sakura (桜) : liste de souhaits */
+  --k-sakura: #e89ab4;
   --k-link: #d9b556;
   /* Laque (urushi) : reflet du bord haut et fond des surfaces */
   --k-sheen: rgb(255 255 255 / 0.06);
@@ -61,6 +63,7 @@
   --k-shu-btn: #c8372d;
   --k-ai: #1e3557;
   --k-kin: #b08a2e;
+  --k-sakura: #a63d63;
   --k-link: #75541c;
   --k-sheen: rgb(255 255 255 / 0.7);
   --k-lacquer-light: rgb(255 255 255 / 0.4);
@@ -84,6 +87,7 @@
   --color-shu-btn: var(--k-shu-btn);
   --color-ai: var(--k-ai);
   --color-kin: var(--k-kin);
+  --color-sakura: var(--k-sakura);
   --color-link: var(--k-link);
 
   --font-title: var(--font-shippori), "Hiragino Mincho ProN", serif;

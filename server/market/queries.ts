@@ -9,7 +9,7 @@ import {
   type MarketParams,
   type MarketSort,
 } from "@/lib/market/filters";
-import { buyoutAvailable, checkTrader, minNextBid, type MarketRules } from "@/lib/market/rules";
+import { bidBounds, buyoutAvailable, checkTrader, minNextBid, priceCap, type MarketRules } from "@/lib/market/rules";
 import { cardViews } from "../boosters/display";
 import { namedPlayerSelect, publicNamesFor } from "../collection/public-names";
 import { prisma } from "../db";
@@ -24,7 +24,7 @@ import { settleAuctionWith } from "./auction-core";
 export const pushLater = (ids: string[]) => after(() => pushNotifications(ids));
 
 export async function getMarketRules(): Promise<MarketRules> {
-  const [enabled, feeBp, minIncrementBp, antiSnipeSeconds, extendSeconds, durationsHours, maxActivePerSeller, minAccountAgeHours, minStartPrice, maxPrice] =
+  const [enabled, feeBp, minIncrementBp, antiSnipeSeconds, extendSeconds, durationsHours, maxActivePerSeller, minAccountAgeHours, minStartPrice, maxPrice, maxPriceByRarity] =
     await Promise.all([
       getSetting("market.enabled"),
       getSetting("market.feeBp"),
@@ -36,6 +36,7 @@ export async function getMarketRules(): Promise<MarketRules> {
       getSetting("market.minAccountAgeHours"),
       getSetting("market.minStartPrice"),
       getSetting("market.maxPrice"),
+      getSetting("market.maxPriceByRarity"),
     ]);
   return {
     enabled,
@@ -48,6 +49,7 @@ export async function getMarketRules(): Promise<MarketRules> {
     minAccountAgeHours,
     minStartPrice,
     maxPrice,
+    maxPriceByRarity,
   };
 }
 
@@ -214,6 +216,8 @@ export type AuctionLive = {
   price: number;
   currentBid: number | null;
   minNext: number;
+  /** Mise la plus haute acceptée (plafond de la rareté), null si le plafond est atteint. */
+  maxBid: number | null;
   bidCount: number;
   endsAt: Date;
   buyoutPrice: number | null;
@@ -234,19 +238,22 @@ const liveSelect = {
   buyoutPrice: true,
   finalPrice: true,
   currentBidder: { select: namedPlayerSelect },
+  card: { select: { rarity: true } },
 } as const;
 
 function toLive(
   a: Prisma.AuctionGetPayload<{ select: typeof liveSelect }>,
   viewerId: string | null,
-  incrementBp: number,
+  rules: Pick<MarketRules, "minIncrementBp" | "maxPrice" | "maxPriceByRarity">,
   leaderName: string | null,
 ): AuctionLive {
+  const bounds = bidBounds(a.currentBid, a.startPrice, rules.minIncrementBp, priceCap(rules, a.card.rarity));
   return {
     status: a.status,
     price: a.price,
     currentBid: a.currentBid,
-    minNext: minNextBid(a.currentBid, a.startPrice, incrementBp),
+    minNext: bounds?.min ?? minNextBid(a.currentBid, a.startPrice, rules.minIncrementBp),
+    maxBid: bounds?.max ?? null,
     bidCount: a.bidCount,
     endsAt: a.endsAt,
     buyoutPrice: a.status === "ACTIVE" && buyoutAvailable(a.buyoutPrice, a.currentBid) ? a.buyoutPrice : null,
@@ -257,13 +264,16 @@ function toLive(
 }
 
 export async function auctionLive(id: string, viewerId: string | null, now: Date): Promise<AuctionLive | null> {
-  const [incrementBp, first] = await Promise.all([
+  const [minIncrementBp, maxPrice, maxPriceByRarity, first] = await Promise.all([
     getSetting("market.minIncrementBp"),
+    getSetting("market.maxPrice"),
+    getSetting("market.maxPriceByRarity"),
     prisma.auction.findUnique({ where: { id }, select: liveSelect }),
   ]);
   if (!first) return null;
+  const rules = { minIncrementBp, maxPrice, maxPriceByRarity };
   const withName = async (a: typeof first) =>
-    toLive(a, viewerId, incrementBp, a.currentBidder ? (await publicNamesFor(viewerId, [a.currentBidder]))(a.currentBidder) : null);
+    toLive(a, viewerId, rules, a.currentBidder ? (await publicNamesFor(viewerId, [a.currentBidder]))(a.currentBidder) : null);
   if (first.status !== "ACTIVE" || first.endsAt > now) return withName(first);
   // Terminée mais pas encore close : on la clôt avant de répondre
   await settleDue({ id }, now);
@@ -275,6 +285,8 @@ export type AuctionDetail = {
   id: string;
   card: CardView;
   sellerName: string | null;
+  /** Commentaire du vendeur (texte brut). */
+  note: string | null;
   startPrice: number;
   feeBp: number;
   fee: number | null;
@@ -300,6 +312,7 @@ export async function getAuctionDetail(id: string, viewerId: string | null, loca
       feeBp: true,
       fee: true,
       createdAt: true,
+      note: true,
       seller: { select: namedPlayerSelect },
       bids: {
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
@@ -319,6 +332,7 @@ export async function getAuctionDetail(id: string, viewerId: string | null, loca
     id: a.id,
     card,
     sellerName: nameOf(a.seller),
+    note: a.note,
     startPrice: a.startPrice,
     feeBp: a.feeBp,
     fee: a.fee,
@@ -335,17 +349,20 @@ export async function activeAuctionCount(sellerId: string): Promise<number> {
 }
 
 /** Ce que la feuille « Mettre en vente » doit savoir ; createAuctionWith revérifie tout sous verrou. */
-export async function sellInfoFor(userId: string, now: Date) {
+export async function sellInfoFor(userId: string, now: Date, rarity: string) {
   const [rules, player, active] = await Promise.all([
     getMarketRules(),
     prisma.user.findUnique({ where: { id: userId }, select: { isGuest: true, bannedAt: true, createdAt: true } }),
     activeAuctionCount(userId),
   ]);
+  const maxPrice = priceCap(rules, rarity);
   return {
     durationsHours: [...rules.durationsHours],
     feeBp: rules.feeBp,
     minStartPrice: rules.minStartPrice,
-    maxPrice: rules.maxPrice,
+    maxPrice,
+    /** Le plafond vient de la rareté (et non du plafond global). */
+    rarityCapped: maxPrice < rules.maxPrice,
     active,
     maxActive: rules.maxActivePerSeller,
     minAccountAgeHours: rules.minAccountAgeHours,
@@ -409,4 +426,32 @@ export async function adminActiveAuctions(locale: string, take = 50) {
     sellerName: r.seller.username,
     leaderName: r.currentBidder?.username ?? null,
   }));
+}
+
+/**
+ * Commentaires publics les plus récents (annonces d'échange ouvertes et ventes en cours), pour la
+ * modération de /admin/marche.
+ */
+export async function adminRecentNotes(locale: string, take = 50) {
+  const [listings, auctions] = await Promise.all([
+    prisma.tradeListing.findMany({
+      where: { status: "OPEN", note: { not: null } },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take,
+      select: { id: true, cardId: true, note: true, createdAt: true, owner: { select: { username: true } } },
+    }),
+    prisma.auction.findMany({
+      where: { status: "ACTIVE", note: { not: null } },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take,
+      select: { id: true, cardId: true, note: true, createdAt: true, seller: { select: { username: true } } },
+    }),
+  ]);
+  const views = await cardViews([...listings, ...auctions].map((r) => r.cardId), locale);
+  return [
+    ...listings.map((r) => ({ kind: "LISTING" as const, id: r.id, note: r.note!, createdAt: r.createdAt, author: r.owner.username, cardName: views.get(r.cardId)?.name ?? "?" })),
+    ...auctions.map((r) => ({ kind: "AUCTION" as const, id: r.id, note: r.note!, createdAt: r.createdAt, author: r.seller.username, cardName: views.get(r.cardId)?.name ?? "?" })),
+  ]
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, take);
 }

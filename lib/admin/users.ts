@@ -1,5 +1,6 @@
 import { z } from "@/lib/zod";
 import { MAX_MOVEMENT } from "@/lib/economy/amount";
+import { noteSchema } from "@/lib/text/plain";
 import { USERNAME_REGEX } from "@/lib/username";
 import type { Rarity } from "@/lib/catalog/rarity";
 
@@ -29,9 +30,10 @@ export const adminUserMutationSchema = z.discriminatedUnion("kind", [
   z.object({ ...base, kind: z.literal("account"), username: z.string().regex(USERNAME_REGEX), role: z.enum(["USER", "ADMIN"]), banned: z.boolean(), profileVisibility: z.enum(["PUBLIC", "FRIENDS", "PRIVATE"]), showCollection: z.boolean() }).strict(),
   z.object({ ...base, kind: z.literal("coins"), mode, amount: value }).strict(),
   z.object({ ...base, kind: z.literal("stat"), field: z.enum(USER_STATS), value }).strict(),
-  z.object({ ...base, kind: z.literal("booster"), boosterTypeId: id, mode, amount: value }).strict(),
+  // `message` : mot de l'équipe montré au joueur avec la notification d'un ajout (mode ADD)
+  z.object({ ...base, kind: z.literal("booster"), boosterTypeId: id, mode, amount: value, message: noteSchema }).strict(),
   z.object({ ...base, kind: z.literal("bannerPity"), boosterTypeId: id, value }).strict(),
-  z.object({ ...base, kind: z.literal("card"), cardId: id, mode: z.enum(["ADD", "REMOVE"]), amount: z.number().int().min(1).max(MAX_ADMIN_QUANTITY) }).strict(),
+  z.object({ ...base, kind: z.literal("card"), cardId: id, mode: z.enum(["ADD", "REMOVE"]), amount: z.number().int().min(1).max(MAX_ADMIN_QUANTITY), message: noteSchema }).strict(),
   z.object({ ...base, kind: z.literal("discoveries"), value: z.number().int().min(0).max(50_000) }).strict(),
   z.object({ ...base, kind: z.literal("sessions") }).strict(),
 ]).refine((v) => !(v.kind === "coins" && v.mode !== "SET" && (v.amount < 1 || v.amount > MAX_MOVEMENT)), { message: "Invalid movement" })

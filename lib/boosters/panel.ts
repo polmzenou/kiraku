@@ -1,5 +1,5 @@
 import { type Rarity } from "@/lib/catalog/rarity";
-import { boostersUntilGolden, boostersUntilPity, rarityIndex, type DrawRules } from "./draw";
+import { boostersUntilGolden, boostersUntilPity, rarityIndex, type CardPool, type DrawRules } from "./draw";
 import { atLeastOdds, featuredBoosterChance, type PoolCounts, type RarityOdds } from "./odds";
 import { effectiveSlotFloors, priceFor, type Availability, type BoosterTypeView, type Price } from "./types";
 
@@ -61,3 +61,12 @@ export function boosterPanelData(input: {
   };
 }
 
+/** Souhaits du joueur : combien peuvent sortir de ce booster, sur combien au total. */
+export type WishlistInPool = { inPool: number; total: number };
+
+export function wishlistInPool(pool: CardPool, wished: readonly string[]): WishlistInPool {
+  const wanted = new Set(wished);
+  let inPool = 0;
+  for (const ids of Object.values(pool)) for (const id of ids) if (wanted.has(id)) inPool++;
+  return { inPool, total: wanted.size };
+}

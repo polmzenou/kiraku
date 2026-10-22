@@ -8,6 +8,7 @@ import { ButtonLink } from "../ui/ButtonLink";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
 import { inputClass } from "../ui/Field";
+import { NoteField } from "../ui/NoteField";
 import { segmentedFillClass, segmentedItemClass, segmentedTrackClass } from "../ui/Segmented";
 
 /** Ce que la feuille doit savoir pour s'afficher ; le serveur revérifie tout à la mise en vente. */
@@ -16,6 +17,8 @@ export type SellInfo = {
   feeBp: number;
   minStartPrice: number;
   maxPrice: number;
+  /** Le plafond vient de la rareté de la carte. */
+  rarityCapped: boolean;
   active: number;
   maxActive: number;
   minAccountAgeHours: number;
@@ -35,6 +38,7 @@ export function SellButton({ cardId, cardName, available, info }: { cardId: stri
   const [start, setStart] = useState("100");
   const [withBuyout, setWithBuyout] = useState(false);
   const [buyout, setBuyout] = useState("");
+  const [note, setNote] = useState("");
   const [duration, setDuration] = useState(info.durationsHours.includes(24) ? 24 : info.durationsHours[0]);
   const [error, setError] = useState<MarketActionError | "unexpected" | null>(null);
   const [created, setCreated] = useState<string | null>(null);
@@ -64,7 +68,7 @@ export function SellButton({ cardId, cardName, available, info }: { cardId: stri
     startTransition(async () => {
       setError(null);
       try {
-        const res = await createAuctionAction({ cardId, startPrice, buyoutPrice, durationHours: duration });
+        const res = await createAuctionAction({ cardId, startPrice, buyoutPrice, durationHours: duration, note });
         if (res.ok) setCreated(res.auctionId);
         else setError(res.error);
       } catch {
@@ -108,6 +112,9 @@ export function SellButton({ cardId, cardName, available, info }: { cardId: stri
                 className={field}
                 required
               />
+              <span className="text-xs text-text-muted">
+                {t(info.rarityCapped ? "sell.rarityCap" : "sell.cap", { amount: info.maxPrice })}
+              </span>
             </label>
 
             <label className="flex min-h-11 items-center gap-2 text-sm">
@@ -143,6 +150,8 @@ export function SellButton({ cardId, cardName, available, info }: { cardId: stri
                 ))}
               </div>
             </fieldset>
+
+            <NoteField label={t("sell.note")} placeholder={t("sell.notePlaceholder")} value={note} onChange={setNote} />
 
             {priceOk(startPrice) && (
               <p className="text-sm text-text-muted">

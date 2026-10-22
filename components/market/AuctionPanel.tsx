@@ -155,7 +155,11 @@ export function AuctionPanel({
   const open = shown.status === "ACTIVE";
   const amount = typed ?? String(shown.minNext);
   const bid = Number(amount);
-  const validBid = Number.isSafeInteger(bid) && bid >= shown.minNext;
+  const capReached = shown.maxBid === null;
+  const validBid =
+    Number.isSafeInteger(bid) &&
+    bid >= shown.minNext &&
+    (bid <= (shown.maxBid ?? 0) || (shown.buyoutPrice !== null && bid >= shown.buyoutPrice));
   const endsAt = new Date(shown.endsAt).getTime();
 
   return (
@@ -240,6 +244,8 @@ export function AuctionPanel({
                 </Button>
               </div>
             </div>
+          ) : capReached ? (
+            <p className="rounded-control border border-border bg-surface-2 p-3 text-sm">{t("detail.capReached")}</p>
           ) : (
             <form
               className="flex flex-col gap-2"
@@ -257,13 +263,16 @@ export function AuctionPanel({
                   type="number"
                   inputMode="numeric"
                   min={shown.minNext}
+                  max={shown.buyoutPrice ?? shown.maxBid ?? undefined}
                   step={1}
                   value={amount}
                   onChange={(e) => setTyped(e.target.value)}
                   className={`${inputClass} text-lg tabular-nums`}
                 />
               </label>
-              <p className="text-xs text-text-muted">{t("detail.minNext", { amount: shown.minNext })}</p>
+              <p className="text-xs text-text-muted">
+                {t("detail.minNext", { amount: shown.minNext })} · {t("detail.maxBid", { amount: shown.maxBid ?? 0 })}
+              </p>
               <Button type="submit" variant="primary" disabled={pending || !validBid}>
                 {pending ? t("detail.bidding") : t("detail.bid")}
               </Button>

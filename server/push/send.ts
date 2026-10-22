@@ -46,7 +46,7 @@ async function renderMessage(notificationId: string, locale: Locale): Promise<{ 
   return {
     userId: view.userId,
     // Même tag pour un même type : une rafale de demandes remplace la précédente au lieu d'empiler
-    message: { title: t("push.title"), body: text, url: safePushPath(getPathname({ href, locale })), tag: view.type },
+    message: { title: t("push.title"), body: view.note ? t("push.withNote", { text, note: view.note }) : text, url: safePushPath(getPathname({ href, locale })), tag: view.type },
   };
 }
 

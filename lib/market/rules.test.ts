@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  bidBounds,
   buyoutAvailable,
   checkListing,
   checkTrader,
   extendedEndsAt,
   listingEndsAt,
   minNextBid,
+  priceCap,
   saleFee,
   sellerNet,
   type MarketRules,
@@ -22,6 +24,7 @@ const rules: MarketRules = {
   minAccountAgeHours: 48,
   minStartPrice: 1,
   maxPrice: 10_000_000,
+  maxPriceByRarity: {},
 };
 
 describe("surenchère minimale", () => {
@@ -131,5 +134,35 @@ describe("achat immédiat", () => {
     expect(buyoutAvailable(500, 499)).toBe(true);
     expect(buyoutAvailable(500, 500)).toBe(false);
     expect(buyoutAvailable(null, null)).toBe(false);
+  });
+});
+
+describe("plafond par rareté", () => {
+  const capped = { ...rules, maxPriceByRarity: { COMMON: 500, MYTHIC: 50_000_000 } };
+
+  it("prend le plus bas du plafond global et de celui de la rareté", () => {
+    expect(priceCap(capped, "COMMON")).toBe(500);
+    expect(priceCap(capped, "MYTHIC")).toBe(10_000_000);
+    expect(priceCap(capped, "RARE")).toBe(10_000_000);
+    expect(priceCap(capped, null)).toBe(10_000_000);
+  });
+
+  it("borne le prix de départ et l'achat immédiat", () => {
+    expect(checkListing({ startPrice: 500, buyoutPrice: null, durationHours: 24 }, capped, "COMMON")).toBeNull();
+    expect(checkListing({ startPrice: 501, buyoutPrice: null, durationHours: 24 }, capped, "COMMON")).toBe("INVALID_PRICE");
+    expect(checkListing({ startPrice: 100, buyoutPrice: 600, durationHours: 24 }, capped, "COMMON")).toBe("INVALID_BUYOUT");
+    expect(checkListing({ startPrice: 501, buyoutPrice: null, durationHours: 24 }, capped, "RARE")).toBeNull();
+  });
+
+  it("ramène la mise minimale au plafond, puis ferme les mises", () => {
+    expect(bidBounds(null, 100, 500, 500)).toEqual({ min: 100, max: 500 });
+    expect(bidBounds(400, 100, 500, 500)).toEqual({ min: 420, max: 500 });
+    expect(bidBounds(490, 100, 500, 500)).toEqual({ min: 500, max: 500 }); // 490 + 5 % dépasserait
+    expect(bidBounds(500, 100, 500, 500)).toBeNull();
+  });
+
+  it("garde le prix de départ d'une vente ouverte avant une baisse du plafond", () => {
+    expect(bidBounds(null, 800, 500, 500)).toEqual({ min: 800, max: 800 });
+    expect(bidBounds(800, 800, 500, 500)).toBeNull();
   });
 });

@@ -552,7 +552,10 @@
       "cancelled": "Cette vente a été annulée.",
       "toCollection": "Voir ma collection",
       "notEnough": "Ton solde ({amount, number} Zeni) ne suffit pas pour cette mise.",
-      "anonymous": "Joueur mystère"
+      "anonymous": "Joueur mystère",
+      "capReached": "Le plafond de prix de cette rareté est atteint : plus personne ne peut surenchérir.",
+      "maxBid": "plafond : {amount, number} Zeni",
+      "note": "Mot du vendeur"
     },
     "sell": {
       "button": "Mettre en vente",
@@ -576,7 +579,11 @@
       "guest": "Inscris-toi pour vendre tes cartes.",
       "tooNew": "Ton compte doit avoir au moins {hours, number} h pour vendre.",
       "full": "Tu as déjà {max, number} ventes en cours.",
-      "closed": "L'hôtel des ventes est fermé pour le moment."
+      "closed": "L'hôtel des ventes est fermé pour le moment.",
+      "cap": "Prix maximal : {amount, number} Zeni.",
+      "rarityCap": "Plafond pour cette rareté : {amount, number} Zeni (départ et achat immédiat).",
+      "note": "Commentaire (facultatif)",
+      "notePlaceholder": "Un mot pour les acheteurs, visible sur la vente."
     },
     "errors": {
       "NO_SESSION": "Ta session a expiré : recharge la page.",
@@ -600,7 +607,20 @@
       "HAS_BIDS": "Quelqu'un a déjà misé : la vente ne peut plus être retirée.",
       "NO_BUYOUT": "L'achat immédiat n'est plus proposé.",
       "STALE": "Le prix a changé : vérifie avant de confirmer.",
-      "unexpected": "Erreur inattendue. Réessaie."
+      "unexpected": "Erreur inattendue. Réessaie.",
+      "CAP_REACHED": "Le plafond de prix de cette rareté est atteint."
+    },
+    "adminNote": {
+      "delete": "Effacer ce commentaire (modération)",
+      "confirm": "Effacer",
+      "keep": "Garder",
+      "errors": {
+        "FORBIDDEN": "Réservé aux admins.",
+        "INVALID": "Demande invalide.",
+        "RATE_LIMITED": "Trop d'actions d'affilée : attends un instant.",
+        "NOT_FOUND": "Ce commentaire n'existe plus.",
+        "UNAVAILABLE": "Action impossible pour le moment."
+      }
     }
   },
   "time": {
@@ -730,7 +750,13 @@
     },
     "creditBoosters": "{count, plural, one {# booster {name} à ouvrir} other {# boosters {name} à ouvrir}}",
     "openCredit": "Ouvrir",
-    "rotationNext": "Sélection tournante · nouvelle sélection {when}"
+    "rotationNext": "Sélection tournante · nouvelle sélection {when}",
+    "wishlist": {
+      "title": "Liste de souhaits",
+      "count": "{inPool, number} / {total, number}",
+      "label": "{count, plural, one {de tes souhaits peut sortir de ce booster} other {de tes souhaits peuvent sortir de ce booster}}",
+      "none": "Aucun de tes souhaits ne peut sortir de ce booster."
+    }
   },
   "opening": {
     "title": "Ouvrir · {name}",
@@ -1031,7 +1057,9 @@
         "coins": "Zeni",
         "cards": "Cartes",
         "discoveries": "Découvertes"
-      }
+      },
+      "giftMessage": "Message au joueur (facultatif)",
+      "giftMessagePlaceholder": "Ex. : cadeau, récompense événement…"
     },
     "moduleNames": {
       "boosters": "Boosters",
@@ -1404,7 +1432,17 @@
         "UNAVAILABLE": "Action impossible pour le moment."
       },
       "listings": "Échanges ouverts",
-      "listingsHint": "Annonces « celle-ci contre l'une de celles-là » ouvertes à tous. L'âge minimal du compte est celui de l'hôtel des ventes."
+      "listingsHint": "Annonces « celle-ci contre l'une de celles-là » ouvertes à tous. L'âge minimal du compte est celui de l'hôtel des ventes.",
+      "rarityCaps": "Plafond de prix par rareté",
+      "rarityCapsHint": "Borne le prix de départ, l'achat immédiat et les mises des cartes de chaque rareté (jamais au-dessus du prix maximal global). Vide : seulement le prix maximal global.",
+      "rarityCapNone": "Aucun",
+      "notes": {
+        "title": "Commentaires récents",
+        "intro": "Commentaires publics des annonces d'échange ouvertes et des ventes en cours. Effacer un commentaire le retire partout et l'inscrit au journal.",
+        "empty": "Aucun commentaire public en ce moment.",
+        "auction": "Vente de {card} · {name}",
+        "listing": "Annonce d'échange de {card} · {name}"
+      }
     },
     "economy": {
       "title": "Économie",
@@ -2037,7 +2075,10 @@
         "NOT_ELIGIBLE": "Ce joueur ne peut pas recevoir de lot (banni ou compte en suppression).",
         "NOT_FOUND": "Envoi introuvable.",
         "DONE": "Cet envoi est déjà terminé."
-      }
+      },
+      "reasonHint": "Interne : visible seulement dans le journal admin.",
+      "message": "Message au joueur (facultatif)",
+      "messagePlaceholder": "Ex. : récompense événement. Affiché avec la notification."
     },
     "general": {
       "title": "Général",
@@ -2847,7 +2888,8 @@
     "toastMore": "{count, plural, one {Et # autre notification} other {Et # autres notifications}}",
     "toastOpen": "(ouvrir)",
     "push": {
-      "title": "Kiraku"
+      "title": "Kiraku",
+      "withNote": "{text} « {note} »"
     },
     "battleInvite": "{name} t'invite en combat : choisis ton équipe.",
     "teamGift": "L'équipe Kiraku t'a envoyé un cadeau : regarde ton historique et tes boosters.",
@@ -2861,7 +2903,11 @@
       "youGive": "Tu donnes",
       "youGet": "Tu reçois",
       "closed": "Cette offre n'attend plus de réponse."
-    }
+    },
+    "teamGiftCards": "L'équipe Kiraku t'offre {count, plural, one {la carte {card}} other {# × {card}}}.",
+    "teamGiftBoosters": "L'équipe Kiraku t'offre {count, plural, one {un booster} other {# boosters}} : ouvre-{count, plural, one {le} other {les}} !",
+    "teamNote": "Mot de l'équipe",
+    "declineNote": "Motif du refus"
   },
   "push": {
     "title": "Notifications sur ce téléphone",
@@ -3727,7 +3773,9 @@
       "send": "Envoyer la proposition",
       "sending": "Envoi…",
       "sent": "Proposition envoyée à {name}. Tu seras prévenu de sa réponse.",
-      "close": "Fermer"
+      "close": "Fermer",
+      "note": "Message (facultatif)",
+      "notePlaceholder": "Un mot pour {name}."
     },
     "errors": {
       "NO_SESSION": "Ta session a expiré. Recharge la page.",
@@ -3752,7 +3800,12 @@
       "CLOSED": "Cet échange n'est plus ouvert.",
       "NOT_OFFERED": "Cette carte ne fait pas partie de l'offre.",
       "CARD_GONE": "Une des cartes n'est plus disponible : l'échange est annulé."
-    }
+    },
+    "noteFrom": "Mot de {name}",
+    "declineNoteFrom": "Motif du refus de {name}",
+    "declineNote": "Motif du refus (facultatif)",
+    "declineNotePlaceholder": "Pour que ton ami sache pourquoi.",
+    "confirmDecline": "Confirmer le refus"
   },
   "chat": {
     "title": "Messages",
@@ -3894,7 +3947,9 @@
       "pickWanted": "Demander {card}",
       "loading": "Chargement…",
       "retry": "Réessayer",
-      "more": "Voir plus"
+      "more": "Voir plus",
+      "note": "Commentaire (facultatif)",
+      "notePlaceholder": "Ex. : je préfère la première, mais les autres m'intéressent aussi."
     },
     "errors": {
       "NO_WANT": "Choisis au moins une carte demandée.",
@@ -3924,7 +3979,13 @@
       "DISABLED": "Les échanges du Marché sont fermés pour le moment.",
       "RATE_LIMITED": "Doucement : réessaie dans un instant.",
       "UNAVAILABLE": "Action impossible pour le moment."
-    }
+    },
+    "declineNote": "Motif du refus (facultatif)",
+    "declineNotePlaceholder": "Pour que l'autre joueur sache pourquoi.",
+    "confirmDecline": "Confirmer le refus",
+    "yourNote": "Ton commentaire",
+    "ownerNote": "Mot de {name}",
+    "declineNoteLabel": "Motif du refus"
   },
   "social": {
     "x": "X",

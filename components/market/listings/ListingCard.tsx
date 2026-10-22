@@ -10,7 +10,9 @@ import { CardPickGrid } from "../../collection/CardPickGrid";
 import { Fuda } from "../../fuda/Fuda";
 import { displayName } from "../../profile/ProfileHeader";
 import { Button } from "../../ui/Button";
+import { NoteText } from "../../ui/NoteText";
 import { Sheet } from "../../ui/Sheet";
+import { AdminNoteDelete } from "../AdminNoteDelete";
 import { CardThumb } from "./CardThumb";
 
 /** Ce que le joueur s'apprête à proposer : une carte demandée, ou une carte choisie dans sa collection. */
@@ -24,11 +26,13 @@ type Pending = { cardId: string; name: string };
 export function ListingCard({
   listing,
   guest,
+  isAdmin,
   allowOther,
   onChanged,
 }: {
   listing: ListingView;
   guest: boolean;
+  isAdmin: boolean;
   allowOther: boolean;
   onChanged: () => void;
 }) {
@@ -103,6 +107,10 @@ export function ListingCard({
           </ul>
         </div>
       </div>
+
+      {listing.note && (
+        <NoteText text={listing.note} action={isAdmin ? <AdminNoteDelete kind="LISTING" id={listing.id} /> : null} />
+      )}
 
       {error && (
         <p role="alert" className="text-sm text-shu">

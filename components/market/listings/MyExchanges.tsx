@@ -13,6 +13,7 @@ import { displayName } from "../../profile/ProfileHeader";
 import { SectionTitle } from "../../SectionTitle";
 import { PlayerAvatar } from "../../social/PlayerAvatar";
 import { Button } from "../../ui/Button";
+import { NoteText } from "../../ui/NoteText";
 import { CardThumb } from "./CardThumb";
 import { OfferDecision } from "./OfferDecision";
 
@@ -124,6 +125,7 @@ function MyListing({ listing }: { listing: MyListingView }) {
           {t("cancelListing")}
         </Button>
       </header>
+      {listing.note && <NoteText text={listing.note} label={t("yourNote")} />}
       {error && (
         <p role="alert" className="text-sm text-shu">
           {error}
@@ -201,6 +203,7 @@ function SentOffer({ offer }: { offer: SentOfferView }) {
           <Fuda card={offer.listing.card} series={offer.listing.card.series} size="sm" tilt={false} />
         </div>
       </div>
+      {offer.listing.note && <NoteText text={offer.listing.note} label={t("ownerNote", { name: name(offer.listing.owner) })} />}
       {error && (
         <p role="alert" className="text-sm text-shu">
           {error}
@@ -220,26 +223,29 @@ function HistoryRow({ entry }: { entry: ExchangeHistoryView }) {
   const format = useFormatter();
   const name = usePlayerName();
   return (
-    <div className="flex items-center gap-3 rounded-card border border-border bg-surface p-3">
-      <CardThumb card={entry.gave} size="sm" />
-      <span aria-hidden="true" className="text-text-muted">
-        ⇄
-      </span>
-      {entry.got ? <CardThumb card={entry.got} size="sm" /> : <span className="w-10" />}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <p className="truncate text-sm">
-          {entry.got
-            ? t("history.line", { gave: entry.gave.name, got: entry.got.name })
-            : t("history.lineAlone", { gave: entry.gave.name })}
-        </p>
-        <p className="truncate text-xs text-text-muted">
-          {entry.other ? `${t("history.with", { name: name(entry.other) })} · ` : ""}
-          {entry.resolvedAt ? format.relativeTime(entry.resolvedAt) : ""}
-        </p>
+    <div className="flex flex-col gap-2 rounded-card border border-border bg-surface p-3">
+      <div className="flex items-center gap-3">
+        <CardThumb card={entry.gave} size="sm" />
+        <span aria-hidden="true" className="text-text-muted">
+          ⇄
+        </span>
+        {entry.got ? <CardThumb card={entry.got} size="sm" /> : <span className="w-10" />}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <p className="truncate text-sm">
+            {entry.got
+              ? t("history.line", { gave: entry.gave.name, got: entry.got.name })
+              : t("history.lineAlone", { gave: entry.gave.name })}
+          </p>
+          <p className="truncate text-xs text-text-muted">
+            {entry.other ? `${t("history.with", { name: name(entry.other) })} · ` : ""}
+            {entry.resolvedAt ? format.relativeTime(entry.resolvedAt) : ""}
+          </p>
+        </div>
+        <span className="shrink-0 rounded-pill border border-border px-2 py-0.5 text-xs font-bold text-text-muted">
+          {t(`history.status.${entry.kind}.${entry.status}` as "history.status.offer.ACCEPTED")}
+        </span>
       </div>
-      <span className="shrink-0 rounded-pill border border-border px-2 py-0.5 text-xs font-bold text-text-muted">
-        {t(`history.status.${entry.kind}.${entry.status}` as "history.status.offer.ACCEPTED")}
-      </span>
+      {entry.declineNote && <NoteText text={entry.declineNote} label={t("declineNoteLabel")} />}
     </div>
   );
 }

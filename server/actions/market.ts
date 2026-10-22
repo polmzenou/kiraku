@@ -4,6 +4,7 @@ import { getRarities } from "@/server/catalog/rarities";
 
 import { getLocale } from "next-intl/server";
 import { refresh } from "next/cache";
+import { noteSchema } from "@/lib/text/plain";
 import { z } from "@/lib/zod";
 import { decodeMarketCursor, parseMarketParams } from "@/lib/market/filters";
 import { isFrozen } from "@/lib/account/deletion";
@@ -37,6 +38,7 @@ export type MarketActionError =
   | "OWN_AUCTION"
   | "ALREADY_LEADING"
   | "TOO_LOW"
+  | "CAP_REACHED"
   | "NOT_ENOUGH_ZENI"
   | "HAS_BIDS"
   | "NO_BUYOUT"
@@ -83,6 +85,7 @@ const createSchema = z
     startPrice: zeni,
     buyoutPrice: zeni.nullable(),
     durationHours: z.number().int().min(1).max(24 * 14),
+    note: noteSchema,
   })
   .strict();
 
@@ -99,6 +102,7 @@ export async function createAuctionAction(input: unknown): Promise<CreateAuction
       startPrice: parsed.data.startPrice,
       buyoutPrice: parsed.data.buyoutPrice,
       durationHours: parsed.data.durationHours,
+      note: parsed.data.note,
       now: new Date(),
       rules: await getMarketRules(),
     });

@@ -14,6 +14,7 @@ export const MARKET_SETTING_KEYS = [
   "market.minAccountAgeHours",
   "market.minStartPrice",
   "market.maxPrice",
+  "market.maxPriceByRarity",
   "market.pollSeconds",
   "listings.enabled",
   "listings.expiryHours",
@@ -29,11 +30,12 @@ export type MarketSettingKey = (typeof MARKET_SETTING_KEYS)[number];
 
 export type MarketSettings = SettingsOf<MarketSettingKey>;
 
-// Le prix de départ minimal ne peut pas dépasser le prix maximal (sinon aucune vente possible)
-export const marketSettingsSchema = settingsSchemaFor(MARKET_SETTING_KEYS).refine(
-  (s) => s["market.minStartPrice"] < s["market.maxPrice"],
-  { message: "Prix de départ minimal ≥ prix maximal" },
-);
+// Le prix de départ minimal ne peut pas dépasser un plafond (sinon aucune vente possible)
+export const marketSettingsSchema = settingsSchemaFor(MARKET_SETTING_KEYS)
+  .refine((s) => s["market.minStartPrice"] < s["market.maxPrice"], { message: "Prix de départ minimal ≥ prix maximal" })
+  .refine((s) => Object.values(s["market.maxPriceByRarity"]).every((cap) => cap >= s["market.minStartPrice"]), {
+    message: "Plafond de rareté < prix de départ minimal",
+  });
 
 /** « 1, 6, 24 » → [1, 6, 24] ; null si la saisie n'est pas une liste d'entiers. */
 export function parseDurations(text: string): number[] | null {

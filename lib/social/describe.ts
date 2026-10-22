@@ -1,7 +1,7 @@
 // Texte et lien d'une notification, sans dépendance au rendu : la page /notifications, les toasts
 // (côté client) et le Web Push (côté serveur, dans la langue du joueur) partagent ce code.
 import { guestCode } from "../username";
-import type { AuctionPayload, BattlePayload, GiftPayload, NotificationType, TradePayload } from "./notifications";
+import type { AuctionPayload, BattlePayload, GiftPayload, NotificationType, TeamGiftPayload, TradePayload } from "./notifications";
 
 export type DescribableNotification = {
   type: NotificationType;
@@ -15,6 +15,8 @@ export type DescribableNotification = {
   trade?: TradePayload | null;
   /** Carte proposée par l'offrant (échanges ouverts du Marché ; la carte de l'annonce est dans `card`). */
   offeredCard?: { name: string } | null;
+  /** Cadeau de l'équipe depuis la fiche du joueur (la carte est dans `card`). */
+  team?: (TeamGiftPayload & { boosterSlug: string | null }) | null;
   card: { anilistId: number; name: string; rarity: string } | null;
 };
 
@@ -38,6 +40,8 @@ export type DescribeTranslators = {
       | "auctionCancelled"
       | "battleInvite"
       | "teamGift"
+      | "teamGiftCards"
+      | "teamGiftBoosters"
       | "tradeProposed"
       | "tradeAccepted"
       | "tradeDeclined"
@@ -93,6 +97,14 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
     case "LOT_GRANTED":
       // Cadeau de l'équipe : l'admin qui l'envoie n'est jamais nommé
       return { text: t("teamGift"), href: "/compte/historique" };
+    case "TEAM_GIFT":
+      if (n.team?.kind === "BOOSTER") {
+        return { text: t("teamGiftBoosters", { count: n.team.quantity }), href: n.team.boosterSlug ? `/ouvrir/${n.team.boosterSlug}?credit=1` : "/" };
+      }
+      return {
+        text: t("teamGiftCards", { count: n.team?.quantity ?? 1, card: n.card?.name ?? t("aCard") }),
+        href: n.card ? `/collection/${n.card.anilistId}` : "/collection",
+      };
     case "TRADE_PROPOSED":
     case "TRADE_ACCEPTED":
     case "TRADE_DECLINED": {

@@ -7,6 +7,7 @@ import { adminUserMutationSchema, adjustedValue, MAX_ADMIN_QUANTITY, MAX_ADMIN_V
 import { MAX_MOVEMENT } from "@/lib/economy/amount";
 import { mutateAdminUserAction, searchAdminCards } from "@/server/actions/admin-users";
 import { Button } from "../ui/Button";
+import { NoteField } from "../ui/NoteField";
 import { Field, FormMessage, inputClass, NumberField, SelectField, TextField, Toggle } from "./fields";
 
 type ChangeOf<T> = T extends AdminUserMutation ? Omit<T, "userId" | "reason"> : never;
@@ -116,14 +117,16 @@ function BoosterCreditForm({ booster }: { booster: Booster }) {
   const t = useTranslations("admin.users");
   const [mode, setMode] = useState<Mode>("ADD");
   const [amount, setAmount] = useState(1);
+  const [message, setMessage] = useState("");
   let next: number | null = null;
   try { next = adjustedValue(booster.count, mode, amount); } catch { /* Quantité refusée. */ }
   return (
-    <MutationForm title={t("boosters")} change={{ kind: "booster", boosterTypeId: booster.id, mode, amount }} disabled={next === null}>
+    <MutationForm title={t("boosters")} change={{ kind: "booster", boosterTypeId: booster.id, mode, amount, message: mode === "ADD" ? message : "" }} disabled={next === null}>
       <p className="text-sm">{t("boosterCount", { count: booster.count })}</p>
       <ModeField value={mode} onChange={(v) => { setMode(v); setAmount(v === "SET" ? booster.count : 1); }} />
       <NumberField label={t("quantity")} min={mode === "SET" ? 0 : 1} max={mode === "SET" ? MAX_ADMIN_VALUE : MAX_ADMIN_QUANTITY} value={amount} onChange={setAmount} />
       <p className="text-sm font-bold">{t("after")} {next ?? "—"}</p>
+      {mode === "ADD" && <NoteField label={t("giftMessage")} placeholder={t("giftMessagePlaceholder")} value={message} onChange={setMessage} />}
     </MutationForm>
   );
 }
@@ -144,6 +147,7 @@ function CardForm({ initial }: { initial: AdminCardCandidate | null }) {
   const [selected, setSelected] = useState(initial);
   const [mode, setMode] = useState<"ADD" | "REMOVE">("ADD");
   const [amount, setAmount] = useState(1);
+  const [message, setMessage] = useState("");
   const [searched, setSearched] = useState(false);
   const [failed, setFailed] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -172,11 +176,12 @@ function CardForm({ initial }: { initial: AdminCardCandidate | null }) {
           <span className="min-w-0 text-sm"><strong>{c.name}</strong><span className="block text-xs text-text-muted">{tRarity(c.rarity)} · {c.series}</span></span>
         </button></li>)}
       </ul>}
-      <MutationForm title={t("giveCards")} change={{ kind: "card", cardId: selected?.id ?? "", mode, amount }} disabled={!selected}>
+      <MutationForm title={t("giveCards")} change={{ kind: "card", cardId: selected?.id ?? "", mode, amount, message: mode === "ADD" ? message : "" }} disabled={!selected}>
         {selected ? <div className="flex items-center gap-3"><Image src={selected.imageUrl} width={56} height={80} alt="" className="h-20 w-14 rounded object-cover" /><div><p className="font-bold">{selected.name}</p><p className="text-sm text-text-muted">{tRarity(selected.rarity)} · {selected.series}</p><p className="text-xs text-text-muted">AniList #{selected.anilistId}{selected.rank === null ? ` · ${t("archivedCard")}` : ""}</p></div></div> : <p className="text-sm text-text-muted">{t("selectCard")}</p>}
         <SelectField label={t("operation")} value={mode} onChange={setMode} options={(["ADD", "REMOVE"] as const).map((v) => ({ value: v, label: t(`cardModes.${v}`) }))} />
         <NumberField label={t("quantity")} min={1} max={MAX_ADMIN_QUANTITY} value={amount} onChange={setAmount} />
         <p className="text-xs text-text-muted">{mode === "ADD" ? t("giveCardHint") : t("removeCardHint")}</p>
+        {mode === "ADD" && <NoteField label={t("giftMessage")} placeholder={t("giftMessagePlaceholder")} value={message} onChange={setMessage} />}
       </MutationForm>
     </section>
   );

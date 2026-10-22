@@ -552,7 +552,10 @@
       "cancelled": "This sale was cancelled.",
       "toCollection": "See my collection",
       "notEnough": "Your balance ({amount, number} Zeni) isn't enough for this bid.",
-      "anonymous": "Mystery player"
+      "anonymous": "Mystery player",
+      "capReached": "This rarity's price cap has been reached: nobody can outbid anymore.",
+      "maxBid": "cap: {amount, number} Zeni",
+      "note": "Seller's note"
     },
     "sell": {
       "button": "Sell",
@@ -576,7 +579,11 @@
       "guest": "Sign up to sell your cards.",
       "tooNew": "Your account must be at least {hours, number} h old to sell.",
       "full": "You already have {max, number} open sales.",
-      "closed": "The auction house is closed for now."
+      "closed": "The auction house is closed for now.",
+      "cap": "Maximum price: {amount, number} Zeni.",
+      "rarityCap": "Cap for this rarity: {amount, number} Zeni (starting price and buyout).",
+      "note": "Comment (optional)",
+      "notePlaceholder": "A word for buyers, shown on the sale."
     },
     "errors": {
       "NO_SESSION": "Your session expired: reload the page.",
@@ -600,7 +607,20 @@
       "HAS_BIDS": "Someone has already bid: the sale can no longer be withdrawn.",
       "NO_BUYOUT": "Buyout is no longer offered.",
       "STALE": "The price changed: check before confirming.",
-      "unexpected": "Unexpected error. Try again."
+      "unexpected": "Unexpected error. Try again.",
+      "CAP_REACHED": "This rarity's price cap has been reached."
+    },
+    "adminNote": {
+      "delete": "Delete this comment (moderation)",
+      "confirm": "Delete",
+      "keep": "Keep",
+      "errors": {
+        "FORBIDDEN": "Admins only.",
+        "INVALID": "Invalid request.",
+        "RATE_LIMITED": "Too many actions in a row: wait a moment.",
+        "NOT_FOUND": "This comment no longer exists.",
+        "UNAVAILABLE": "Action unavailable right now."
+      }
     }
   },
   "time": {
@@ -730,7 +750,13 @@
     },
     "creditBoosters": "{count, plural, one {# {name} booster to open} other {# {name} boosters to open}}",
     "openCredit": "Open",
-    "rotationNext": "Rotating picks · new picks {when}"
+    "rotationNext": "Rotating picks · new picks {when}",
+    "wishlist": {
+      "title": "Wishlist",
+      "count": "{inPool, number} / {total, number}",
+      "label": "{count, plural, one {of your wishes can drop from this booster} other {of your wishes can drop from this booster}}",
+      "none": "None of your wishes can drop from this booster."
+    }
   },
   "opening": {
     "title": "Open · {name}",
@@ -1031,7 +1057,9 @@
         "coins": "Zeni",
         "cards": "Cards",
         "discoveries": "Discoveries"
-      }
+      },
+      "giftMessage": "Message to the player (optional)",
+      "giftMessagePlaceholder": "E.g. gift, event reward…"
     },
     "moduleNames": {
       "boosters": "Boosters",
@@ -1404,7 +1432,17 @@
         "UNAVAILABLE": "Action not possible right now."
       },
       "listings": "Open trades",
-      "listingsHint": "“This one for one of those” listings open to everyone. The minimum account age is the auction house one."
+      "listingsHint": "“This one for one of those” listings open to everyone. The minimum account age is the auction house one.",
+      "rarityCaps": "Price cap per rarity",
+      "rarityCapsHint": "Caps the starting price, buyout and bids for cards of each rarity (never above the global maximum price). Empty: only the global maximum price.",
+      "rarityCapNone": "None",
+      "notes": {
+        "title": "Recent comments",
+        "intro": "Public comments on open trade listings and running sales. Deleting a comment removes it everywhere and records it in the log.",
+        "empty": "No public comments right now.",
+        "auction": "Sale of {card} · {name}",
+        "listing": "Trade listing for {card} · {name}"
+      }
     },
     "economy": {
       "title": "Economy",
@@ -2037,7 +2075,10 @@
         "NOT_ELIGIBLE": "This player cannot receive a lot (banned or account being deleted).",
         "NOT_FOUND": "Send not found.",
         "DONE": "This send is already finished."
-      }
+      },
+      "reasonHint": "Internal: only shown in the admin log.",
+      "message": "Message to the player (optional)",
+      "messagePlaceholder": "E.g. event reward. Shown with the notification."
     },
     "general": {
       "title": "General",
@@ -2847,7 +2888,8 @@
     "toastMore": "{count, plural, one {And # more notification} other {And # more notifications}}",
     "toastOpen": "(open)",
     "push": {
-      "title": "Kiraku"
+      "title": "Kiraku",
+      "withNote": "{text} “{note}”"
     },
     "battleInvite": "{name} invites you to a battle: pick your team.",
     "teamGift": "The Kiraku team sent you a gift: check your history and your boosters.",
@@ -2861,7 +2903,11 @@
       "youGive": "You give",
       "youGet": "You get",
       "closed": "This offer no longer awaits an answer."
-    }
+    },
+    "teamGiftCards": "The Kiraku team gives you {count, plural, one {the card {card}} other {# × {card}}}.",
+    "teamGiftBoosters": "The Kiraku team gives you {count, plural, one {a booster} other {# boosters}}: open {count, plural, one {it} other {them}}!",
+    "teamNote": "Note from the team",
+    "declineNote": "Reason for declining"
   },
   "push": {
     "title": "Notifications on this device",
@@ -3727,7 +3773,9 @@
       "send": "Send the proposal",
       "sending": "Sending…",
       "sent": "Proposal sent to {name}. You'll be notified of their answer.",
-      "close": "Close"
+      "close": "Close",
+      "note": "Message (optional)",
+      "notePlaceholder": "A word for {name}."
     },
     "errors": {
       "NO_SESSION": "Your session expired. Reload the page.",
@@ -3752,7 +3800,12 @@
       "CLOSED": "This trade is no longer open.",
       "NOT_OFFERED": "This card isn't part of the offer.",
       "CARD_GONE": "One of the cards is no longer available: the trade is cancelled."
-    }
+    },
+    "noteFrom": "Note from {name}",
+    "declineNoteFrom": "{name}'s reason for declining",
+    "declineNote": "Reason for declining (optional)",
+    "declineNotePlaceholder": "So your friend knows why.",
+    "confirmDecline": "Confirm decline"
   },
   "chat": {
     "title": "Messages",
@@ -3894,7 +3947,9 @@
       "pickWanted": "Ask for {card}",
       "loading": "Loading…",
       "retry": "Retry",
-      "more": "Show more"
+      "more": "Show more",
+      "note": "Comment (optional)",
+      "notePlaceholder": "E.g. I'd rather have the first one, but the others work too."
     },
     "errors": {
       "NO_WANT": "Pick at least one wanted card.",
@@ -3924,7 +3979,13 @@
       "DISABLED": "Market trades are closed for now.",
       "RATE_LIMITED": "Easy there: try again in a moment.",
       "UNAVAILABLE": "Can't do that right now."
-    }
+    },
+    "declineNote": "Reason for declining (optional)",
+    "declineNotePlaceholder": "So the other player knows why.",
+    "confirmDecline": "Confirm decline",
+    "yourNote": "Your comment",
+    "ownerNote": "Note from {name}",
+    "declineNoteLabel": "Reason for declining"
   },
   "social": {
     "x": "X",

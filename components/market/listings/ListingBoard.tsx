@@ -33,6 +33,7 @@ export function ListingBoard({
   filter,
   q: initialQ,
   guest,
+  isAdmin,
   maxWants,
   allowOther,
 }: {
@@ -41,6 +42,8 @@ export function ListingBoard({
   filter: ListingFilter;
   q: string;
   guest: boolean;
+  /** Le lecteur est admin : poubelle à côté des commentaires. */
+  isAdmin: boolean;
   maxWants: number;
   allowOther: boolean;
 }) {
@@ -144,7 +147,7 @@ export function ListingBoard({
         <ul className="flex flex-col gap-3">
           {items.map((listing) => (
             <li key={listing.id}>
-              <ListingCard listing={listing} guest={guest} allowOther={allowOther} onChanged={() => router.refresh()} />
+              <ListingCard listing={listing} guest={guest} isAdmin={isAdmin} allowOther={allowOther} onChanged={() => router.refresh()} />
             </li>
           ))}
         </ul>

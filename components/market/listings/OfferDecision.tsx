@@ -7,17 +7,20 @@ import { useRouter } from "@/i18n/navigation";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { acceptOfferAction, declineOfferAction } from "@/server/actions/listings";
 import { Button } from "../../ui/Button";
+import { NoteField } from "../../ui/NoteField";
 
 const CardReveal = dynamic(() => import("../../economy/CardReveal").then((m) => m.CardReveal), { ssr: false });
 
 /**
- * Accepter (après confirmation, puis révélation de la carte reçue) ou refuser une offre reçue sur
+ * Accepter (après confirmation, puis révélation de la carte reçue) ou refuser (motif facultatif) une offre reçue sur
  * une de ses annonces. Sert à « Mes échanges » et à la notification « nouvelle offre ».
  */
 export function OfferDecision({ offerId, offeredName, onDone }: { offerId: string; offeredName: string; onDone?: () => void }) {
   const t = useTranslations("listings");
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
+  const [declining, setDeclining] = useState(false);
+  const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [reveal, setReveal] = useState<OpenedCardView | null>(null);
   const [pending, startTransition] = useTransition();
@@ -41,7 +44,7 @@ export function OfferDecision({ offerId, offeredName, onDone }: { offerId: strin
     startTransition(async () => {
       setError(null);
       try {
-        const res = await declineOfferAction({ offerId });
+        const res = await declineOfferAction({ offerId, note });
         if (!res.ok) return fail(res.error);
         onDone?.();
       } catch {
@@ -56,8 +59,20 @@ export function OfferDecision({ offerId, offeredName, onDone }: { offerId: strin
           {error}
         </p>
       )}
+      {declining && (
+        <NoteField label={t("declineNote")} placeholder={t("declineNotePlaceholder")} value={note} onChange={setNote} disabled={pending} />
+      )}
       <div className="flex flex-wrap items-center justify-end gap-2">
-        {confirming ? (
+        {declining ? (
+          <>
+            <Button type="button" onClick={() => setDeclining(false)} disabled={pending}>
+              {t("back")}
+            </Button>
+            <Button type="button" variant="primary" onClick={decline} disabled={pending}>
+              {pending ? t("pending") : t("confirmDecline")}
+            </Button>
+          </>
+        ) : confirming ? (
           <>
             <p className="mr-auto text-sm font-bold">{t("confirmAccept", { card: offeredName })}</p>
             <Button type="button" onClick={() => setConfirming(false)} disabled={pending}>
@@ -69,7 +84,7 @@ export function OfferDecision({ offerId, offeredName, onDone }: { offerId: strin
           </>
         ) : (
           <>
-            <Button type="button" onClick={decline} disabled={pending}>
+            <Button type="button" onClick={() => setDeclining(true)} disabled={pending}>
               {t("decline")}
             </Button>
             <Button type="button" variant="primary" onClick={() => setConfirming(true)} disabled={pending}>

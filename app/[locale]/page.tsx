@@ -26,7 +26,7 @@ import { localeAlternates, localePath } from "@/lib/seo/alternates";
 import { homeGraph } from "@/lib/seo/structured-data";
 import { appUrl } from "@/server/env";
 import { poolCounts } from "@/lib/boosters/draw";
-import { boosterPanelData } from "@/lib/boosters/panel";
+import { boosterPanelData, wishlistInPool, type WishlistInPool } from "@/lib/boosters/panel";
 import { isRotatingFamily } from "@/lib/boosters/rotation";
 import { BOOSTER_FAMILIES, FAMILY_KANJI, localize, type BoosterFamily } from "@/lib/boosters/types";
 import { type Rarity } from "@/lib/catalog/rarity";
@@ -44,6 +44,7 @@ import {
 import { getBoosterRules } from "@/server/boosters/rules";
 import { boosterStateFrom } from "@/server/boosters/state";
 import { getTopCollectors } from "@/server/collection/leaderboard";
+import { getWishlistCardIds } from "@/server/collection/profile-cards";
 import { getRecentPulls } from "@/server/home/pulls";
 import { getBoosterCredits } from "@/server/economy/queries";
 import { getOwnReview, getReviewSample, getReviewSummary } from "@/server/social/reviews";
@@ -136,12 +137,15 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
   }));
 
   let panel = null;
+  let wishlist: WishlistInPool | null = null;
   if (selected) {
     let featuredCounts: Record<Rarity, number> | undefined;
-    if (selected.type.featuredCardIds.length > 0) {
+    const wished = user ? await getWishlistCardIds(user.id) : [];
+    if (selected.type.featuredCardIds.length > 0 || wished.length > 0) {
       const entry = await getBoosterTypeEntry(selected.type.slug);
       const pool = entry ? await getBoosterPool(entry) : null;
-      if (pool) {
+      if (pool && wished.length > 0) wishlist = wishlistInPool(pool, wished);
+      if (pool && selected.type.featuredCardIds.length > 0) {
         const wanted = new Set(selected.type.featuredCardIds);
         featuredCounts = poolCounts(
           Object.fromEntries(RARITIES.map((r) => [r, pool[r].filter((id) => wanted.has(id))])) as Record<Rarity, string[]>,
@@ -258,7 +262,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
 
         {selected && panel && (
           <aside className="hidden lg:sticky lg:top-24 lg:block">
-            <BoosterPanel type={selected.type} panel={panel} ctx={ctx} state={state} />
+            <BoosterPanel type={selected.type} panel={panel} ctx={ctx} state={state} wishlist={wishlist} />
           </aside>
         )}
       </div>
@@ -287,7 +291,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
                 <OddsSummary odds={panel.odds} />
               </div>
               <RatesSheet>
-                <BoosterPanel type={selected.type} panel={panel} ctx={ctx} state={state} withOpen={false} headingId="selected-booster-sheet" />
+                <BoosterPanel type={selected.type} panel={panel} ctx={ctx} state={state} wishlist={wishlist} withOpen={false} headingId="selected-booster-sheet" />
               </RatesSheet>
             </div>
             <OpenLink

@@ -5,7 +5,9 @@ import { z } from "zod";
 import { Fuda } from "@/components/fuda/Fuda";
 import { FudaTurnover } from "@/components/fuda/FudaTurnover";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
+import { AdminNoteDelete } from "@/components/market/AdminNoteDelete";
 import { AuctionPanel, type TradeBlock } from "@/components/market/AuctionPanel";
+import { NoteText } from "@/components/ui/NoteText";
 import { PageShell } from "@/components/PageShell";
 import { Link } from "@/i18n/navigation";
 import { getRaritySeals } from "@/server/catalog/rarities";
@@ -73,6 +75,14 @@ export default async function AuctionPage({ params }: PageProps<"/[locale]/march
             <p className="text-sm text-text-muted">{detail.card.series}</p>
             <p className="text-sm">{t("detail.seller", { name: detail.sellerName ?? t("detail.anonymous") })}</p>
           </header>
+
+          {detail.note && (
+            <NoteText
+              text={detail.note}
+              label={t("detail.note")}
+              action={user.role === "ADMIN" ? <AdminNoteDelete kind="AUCTION" id={detail.id} /> : null}
+            />
+          )}
 
           <AuctionPanel
             auctionId={detail.id}
