@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
+import type { Rarity } from "@/lib/catalog/rarity";
 import type { CollectionItem } from "@/lib/collection/view";
 import { giftBoosterAction, giftCardAction } from "@/server/actions/social";
 import { ZeniCoin } from "../layout/ZeniCoin";
@@ -15,6 +16,8 @@ export type GiftInfo = {
   coins: number;
   remaining: number;
   limits: { perDaySent: number; perDayReceived: number; minAccountAgeHours: number; minFriendshipHours: number };
+  /** Raretés qu'on peut offrir : le sélecteur ne montre que celles-ci. */
+  allowedRarities: Rarity[];
 };
 
 type Choice = { kind: "card"; card: CollectionItem } | { kind: "booster" } | null;
@@ -62,6 +65,7 @@ export function GiftSheet({ username, name, info, onClose }: { username: string;
         title={t("pickTitle", { name })}
         pickLabel={(card) => t("pickCard", { card })}
         shownIds={new Set()}
+        allowed={info.allowedRarities}
         onClose={() => setPicking(false)}
         onPick={(card) => {
           setPicking(false);

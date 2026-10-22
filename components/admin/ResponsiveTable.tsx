@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
+import { Link } from "@/i18n/navigation";
 
 export type TableColumn<K extends string> = {
   key: K;
@@ -8,6 +9,8 @@ export type TableColumn<K extends string> = {
   /** Colonne d'actions : en bas de la carte sur mobile, sans libellé. */
   actions?: boolean;
   className?: string;
+  /** Colonne triable : lien de l'en-tête et sens actuel si c'est la colonne triée. */
+  sort?: { href: ComponentProps<typeof Link>["href"]; active?: "asc" | "desc"; label: string };
 };
 
 export type TableRow<K extends string> = { id: string; cells: Record<K, ReactNode> };
@@ -37,8 +40,29 @@ export function ResponsiveTable<K extends string>({
           <thead className="border-b border-border bg-surface-2">
             <tr>
               {columns.map((c) => (
-                <th key={c.key} scope="col" className="p-3 whitespace-nowrap">
-                  {c.actions ? <span className="sr-only">{c.label}</span> : c.label}
+                <th
+                  key={c.key}
+                  scope="col"
+                  aria-sort={c.sort?.active === "asc" ? "ascending" : c.sort?.active === "desc" ? "descending" : undefined}
+                  className={`whitespace-nowrap ${c.sort ? "p-0" : "p-3"}`}
+                >
+                  {c.actions ? (
+                    <span className="sr-only">{c.label}</span>
+                  ) : c.sort ? (
+                    <Link
+                      href={c.sort.href}
+                      scroll={false}
+                      aria-label={c.sort.label}
+                      className={`flex min-h-11 items-center gap-1 p-3 underline-offset-4 hover:underline ${c.sort.active ? "text-shu" : ""}`}
+                    >
+                      {c.label}
+                      <span aria-hidden="true" className={`text-xs ${c.sort.active ? "" : "opacity-30"}`}>
+                        {c.sort.active === "asc" ? "▲" : c.sort.active === "desc" ? "▼" : "↕"}
+                      </span>
+                    </Link>
+                  ) : (
+                    c.label
+                  )}
                 </th>
               ))}
             </tr>

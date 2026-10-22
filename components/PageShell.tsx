@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { LEGAL_SLUGS } from "@/lib/legal/legal";
 import { ManageCookiesButton } from "./consent/ManageCookiesButton";
 import { DiscordFooterLink } from "./discord/DiscordFooterLink";
+import { XFollowLink } from "./layout/XFollowLink";
 import { SealMark } from "./SealMark";
 
 const FOOTER_LINKS = [
@@ -74,6 +75,9 @@ export function PageShell({ children, bottomBar = false }: { children: ReactNode
               <ManageCookiesButton variant="link" className="text-xs font-normal" />
             </li>
             <DiscordFooterLink />
+            <li>
+              <XFollowLink />
+            </li>
           </ul>
         </nav>
         <p className="leading-relaxed">{t("footer.useNotice")}</p>

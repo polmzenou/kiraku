@@ -1,11 +1,15 @@
-.fuda-effect { position:absolute; inset:0; z-index:5; pointer-events:none; border-radius:inherit; opacity:var(--fx-intensity,.45); mix-blend-mode:screen; background-size:250% 250%; background-position:calc(var(--mx,.5)*100%) calc(var(--my,.5)*100%); animation:fuda-fx-shift var(--fx-duration,8s) ease-in-out infinite alternate paused; }
+/* Calque 2,5 fois plus grand que la carte (rognée par .fuda) qui glisse en transform : même rendu
+   qu'un background-position animé, sans repeindre la carte à chaque image. */
+.fuda-effect { position:absolute; left:0; top:0; width:250%; height:250%; z-index:5; pointer-events:none; opacity:var(--fx-intensity,.45); mix-blend-mode:screen; background-size:100% 100%; transform:translate(calc(var(--mx,.5) * -60%),calc(var(--my,.5) * -60%)); animation:fuda-fx-shift var(--fx-duration,8s) ease-in-out infinite alternate paused; }
 .fuda-live .fuda-effect { animation-play-state:running; }
 .fuda-effect-holographic { background-image:linear-gradient(115deg,transparent 12%,#ff67ba 27%,#78bfff 39%,#63ffba 51%,#ffe881 63%,transparent 80%); mix-blend-mode:color-dodge; }
 .fuda-effect-gold { background-image:linear-gradient(125deg,transparent 20%,#976821 30%,#ffeab0 43%,#bb8c34 55%,transparent 70%); }
 .fuda-effect-pearl { background-image:conic-gradient(from 45deg at calc(var(--mx,.5)*100%) calc(var(--my,.5)*100%),#ffd4ef88,#b8edff88,#fff4d088,#ddceff88,#ffd4ef88); }
 .fuda-effect-sparkles { background-image:radial-gradient(circle,#fff 0 1px,transparent 2px),radial-gradient(circle,var(--fx-color) 0 1px,transparent 2px); background-size:23px 31px,41px 37px; }
-.fuda-effect-aura { box-shadow:inset 0 0 24px 10px var(--fx-color); }
-@keyframes fuda-fx-shift { from { background-position:0% 20%; } to { background-position:100% 80%; } }
+.fuda-effect-aura { width:100%; height:100%; transform:none; animation:none; border-radius:inherit; box-shadow:inset 0 0 24px 10px var(--fx-color); }
+@keyframes fuda-fx-shift { from { transform:translate(0,-12%); } to { transform:translate(-60%,-48%); } }
+/* Effets allégés : les reflets restent, figés */
+:root[data-fx="lite"] .fuda-live .fuda-effect { animation-play-state:paused; }
 @media(prefers-reduced-motion:reduce) { .fuda-live .fuda-effect { animation:none; } }
 :root[data-motion="reduced"] .fuda-live .fuda-effect { animation:none; }
 /* Artwork doré (rareté Gold) : virage or statique de l'image et feuille d'or en calque, sans animation de filtre. */

@@ -23,8 +23,24 @@ export const APPEARANCE_DEFAULTS = {
   focalX: 50, focalY: 0, zoom: 1, effectColor: "#f7c75d", intensity: 0.45,
   speed: 1, reactive: true, tilt: 16, reveal: "flip", duration: 0.5, delay: 0, easing: "easeOut",
 } satisfies CardAppearance;
-export function resolveAppearance(base: unknown, card: unknown) {
-  return { ...APPEARANCE_DEFAULTS, ...parseAppearance(base), ...parseAppearance(card) };
+const merge = (base: unknown, card: unknown) => ({ ...APPEARANCE_DEFAULTS, ...parseAppearance(base), ...parseAppearance(card) });
+type ResolvedAppearance = ReturnType<typeof merge>;
+
+// Chaque fuda résout son apparence à chaque rendu (deux validations Zod) : on garde le résultat par
+// couple d'objets (rareté, carte), qui restent les mêmes tant que le catalogue ne change pas.
+const NONE = {};
+const resolved = new WeakMap<object, WeakMap<object, ResolvedAppearance>>();
+const key = (value: unknown): object | null => (value === undefined || value === null ? NONE : typeof value === "object" ? value : null);
+
+export function resolveAppearance(base: unknown, card: unknown): ResolvedAppearance {
+  const baseKey = key(base);
+  const cardKey = key(card);
+  if (!baseKey || !cardKey) return merge(base, card);
+  let byCard = resolved.get(baseKey);
+  if (!byCard) resolved.set(baseKey, (byCard = new WeakMap()));
+  let value = byCard.get(cardKey);
+  if (!value) byCard.set(cardKey, (value = merge(base, card)));
+  return value;
 }
 
 const MATERIAL_COLORS: Record<string, string> = { COMMON: "#897e6d", UNCOMMON: "#618d68", RARE: "#557ca5", EPIC: "#9872bc", LEGENDARY: "#c8a140", MYTHIC: "#d4a9c8", AR: "#6f8fd8", GOLD: "#d9b556" };

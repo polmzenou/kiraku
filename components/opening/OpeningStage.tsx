@@ -2,7 +2,7 @@
 
 import { AnimatePresence, domMax, LazyMotion, m } from "motion/react";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OPEN_COUNTS, type OpenCount } from "@/lib/boosters/catalog";
 import { priceFor, type BoosterShape, type BoosterTheme, type Price } from "@/lib/boosters/types";
 import type { OpenedBoosterView } from "@/lib/boosters/view";
@@ -26,7 +26,8 @@ import { RitualBackdrop } from "./RitualBackdrop";
 import { SettingsMenu } from "./SettingsMenu";
 import { SoundToggle } from "./SoundToggle";
 import { useRitualFx } from "./useRitualFx";
-import { useReducedFx } from "@/components/motion/MotionPreference";
+import { useFxLevel, useMotionPreference } from "@/components/motion/MotionPreference";
+import { hasMeasuredTier, probeFrames, watchFrames } from "@/components/motion/fx-tier";
 
 type Stage = "ready" | "opening" | "reveal" | "recap";
 
@@ -80,7 +81,10 @@ function maxOpenable(type: OpeningType, state: BoosterState): number {
 export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props) {
   const rarities = useRarities();
   const t = useTranslations("opening");
-  const reduced = useReducedFx();
+  const level = useFxLevel();
+  const reduced = level === "reduced";
+  const lite = level === "lite";
+  const { pref } = useMotionPreference();
   const fx = useRitualFx();
   const [stage, setStage] = useState<Stage>("ready");
   const [count, setCount] = useState<OpenCount>(1);
@@ -203,6 +207,25 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
     stageTop.current?.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
   }, [stage, attempt, reduced]);
 
+  // Réglage « auto » : on mesure la fluidité de l'appareil au repos (une fois, puis tous les 14 jours),
+  // et pendant la révélation un appareil qui saccade passe en effets allégés pour la suite.
+  useEffect(() => {
+    if (pref !== "auto" || stage !== "ready" || hasMeasuredTier()) return;
+    let stop = () => {};
+    const id = setTimeout(() => (stop = probeFrames(1500)), 800);
+    return () => {
+      clearTimeout(id);
+      stop();
+    };
+  }, [pref, stage]);
+  useEffect(() => {
+    if (pref !== "auto" || stage !== "reveal" || level !== "full") return;
+    return watchFrames();
+  }, [pref, stage, level]);
+
+  // Même tableau d'un rendu à l'autre : la pile ne recalcule rien quand la scène change autour d'elle
+  const deckCards = useMemo(() => boosters?.flatMap((booster) => booster.cards) ?? [], [boosters]);
+
   const first = boosters?.[0];
   const variant = first?.divine ? "divine" : first?.golden ? "golden" : undefined;
   const ritual = stage !== "recap";
@@ -215,6 +238,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
             key="backdrop"
             depth={depth}
             reduced={reduced}
+            lite={lite}
             tint={moment ? { id: moment.id, style: momentTint(moment.color), delay: TINT_DELAY } : null}
           />
         )}
@@ -267,6 +291,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
                 count={effectiveCount}
                 armed={armed}
                 reduced={reduced}
+                lite={lite}
                 leak={boosters ? bestRarity(boosters, rarities) : null}
                 divine={variant === "divine"}
                 cards={boosters ? boosters.reduce((n, booster) => n + booster.cards.length, 0) : 0}
@@ -345,10 +370,11 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
               transition={{ duration: 0.25 }}
             >
               <CardDeck
-                cards={boosters.flatMap((booster) => booster.cards)}
+                cards={deckCards}
                 from={deckFrom}
                 origin={stageTop}
                 reduced={reduced}
+                lite={lite}
                 play={fx.play}
                 onMythic={onMythic}
                 onMoment={setMomentCard}
@@ -396,7 +422,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0 }: Props
 
       {/* Hors du calque qui tremble : un `transform` ancêtre casserait le `fixed` mobile */}
       {stage === "reveal" && moment && !reduced && <RevealOverlay key={moment.id} moment={moment} />}
-      {variant === "golden" && ritual && !reduced && <GoldenDust key={`dust-${attempt}`} />}
+      {variant === "golden" && ritual && !reduced && <GoldenDust key={`dust-${attempt}`} lite={lite} />}
       {stage === "recap" && boosters && (
         <RecapActionBar
           count={effectiveCount}

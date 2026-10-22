@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { BaseRarity, Rarity } from "@/lib/catalog/rarity";
 import { fxTier } from "@/lib/catalog/tiers";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
@@ -39,6 +40,14 @@ export const chargeFor = (rarity: Rarity, definitions: Ordered) => CHARGE_MS[rar
 export const leakFor = (rarity: Rarity, definitions: Ordered) => LEAK_COLOR[rarity] ?? LEAK_COLOR[fxTier(rarity, definitions)];
 
 const v = (vars: Record<string, string | number>) => vars as CSSProperties;
+
+/**
+ * Effet plein écran : rendu dans <body>, car la carte qui se retourne a une perspective CSS, qui
+ * ferait d'un `position: fixed` une boîte de la taille de la carte (les feuilles y restaient coincées).
+ */
+function FullScreen({ children }: { children: ReactNode }) {
+  return typeof document === "undefined" ? null : createPortal(children, document.body);
+}
 
 /** Petites valeurs pseudo-aléatoires mais stables (pas de Math.random au rendu). */
 const spread = (i: number, n: number, radius: number) => {
@@ -108,29 +117,35 @@ function GoldFx({ compact }: { compact: boolean }) {
   const leaves = compact ? 0 : 26;
   return (
     <>
-      {!compact && <span aria-hidden="true" className="fx-gold-flash pointer-events-none z-[60]" />}
+      {!compact && (
+        <FullScreen>
+          <span aria-hidden="true" className="fx-gold-flash pointer-events-none z-[60]" />
+        </FullScreen>
+      )}
       <span
         aria-hidden="true"
         className="light-rays pointer-events-none absolute -inset-[60%] z-0 rounded-full opacity-90"
         style={v({ "--leak": "rgb(242 216 138 / 0.6)" })}
       />
       {leaves > 0 && (
-        <span aria-hidden="true" className="pointer-events-none fixed inset-0 z-[60] overflow-hidden">
-          {Array.from({ length: leaves }, (_, i) => (
-            <span
-              key={i}
-              className="fx-leaf"
-              style={v({
-                "--x": `${(i * 47 + 7) % 100}%`,
-                "--dx": `${((i * 31) % 90) - 45}px`,
-                "--d": `${0.3 + (i % 9) * 0.16}s`,
-                "--t": `${2.4 + (i % 5) * 0.45}s`,
-                "--r": `${420 + i * 37}deg`,
-                "--s": `${6 + (i % 4) * 2}px`,
-              })}
-            />
-          ))}
-        </span>
+        <FullScreen>
+          <span aria-hidden="true" className="pointer-events-none fixed inset-0 z-[60] overflow-hidden">
+            {Array.from({ length: leaves }, (_, i) => (
+              <span
+                key={i}
+                className="fx-leaf"
+                style={v({
+                  "--x": `${(i * 47 + 7) % 100}%`,
+                  "--dx": `${((i * 31) % 90) - 45}px`,
+                  "--d": `${0.3 + (i % 9) * 0.16}s`,
+                  "--t": `${2.4 + (i % 5) * 0.45}s`,
+                  "--r": `${420 + i * 37}deg`,
+                  "--s": `${6 + (i % 4) * 2}px`,
+                })}
+              />
+            ))}
+          </span>
+        </FullScreen>
       )}
     </>
   );
@@ -168,7 +183,12 @@ export function GoldCracks({ duration }: { duration: number }) {
   const step = Math.max(0.05, (duration / 1000 - 0.3) / CRACKS.length);
   return (
     <svg aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none" className="fx-gold-cracks pointer-events-none z-30">
-      {CRACKS.map((d, i) => <path key={d} d={d} className="fx-crack" style={v({ "--d": `${0.1 + i * step}s` })} />)}
+      {CRACKS.map((d, i) => (
+        <g key={d} className="fx-crack" style={v({ "--d": `${0.1 + i * step}s` })}>
+          <path d={d} className="fx-crack-glow" />
+          <path d={d} />
+        </g>
+      ))}
     </svg>
   );
 }
@@ -181,7 +201,12 @@ export function GoldShatter({ children }: { children: ReactNode }) {
         <span key={s.clip} className="fx-gold-shard" style={v({ "--clip": s.clip, "--sx": s.sx, "--sy": s.sy, "--sr": s.sr })}>
           {children}
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="fx-gold-cracks">
-            {CRACKS.map((d) => <path key={d} d={d} className="fx-crack" style={{ opacity: 1, animation: "none" }} />)}
+            {CRACKS.map((d) => (
+              <g key={d} className="fx-crack" style={{ opacity: 1, animation: "none" }}>
+                <path d={d} className="fx-crack-glow" />
+                <path d={d} />
+              </g>
+            ))}
           </svg>
         </span>
       ))}
@@ -251,21 +276,23 @@ function TierFx({ rarity, compact = false }: { rarity: BaseRarity; compact?: boo
           <span className="fx-pearl-bloom" />
         </span>
         {petals > 0 && (
-          <span aria-hidden="true" className="pointer-events-none fixed inset-0 z-[60] overflow-hidden">
-            {Array.from({ length: petals }, (_, i) => (
-              <span
-                key={i}
-                className="fx-petal"
-                style={v({
-                  "--x": `${(i * 61) % 100}%`,
-                  "--dx": `${((i * 29) % 80) - 40}px`,
-                  "--d": `${0.6 + (i % 8) * 0.18}s`,
-                  "--t": `${2.6 + (i % 5) * 0.4}s`,
-                  "--r": `${360 + i * 45}deg`,
-                })}
-              />
-            ))}
-          </span>
+          <FullScreen>
+            <span aria-hidden="true" className="pointer-events-none fixed inset-0 z-[60] overflow-hidden">
+              {Array.from({ length: petals }, (_, i) => (
+                <span
+                  key={i}
+                  className="fx-petal"
+                  style={v({
+                    "--x": `${(i * 61) % 100}%`,
+                    "--dx": `${((i * 29) % 80) - 40}px`,
+                    "--d": `${0.6 + (i % 8) * 0.18}s`,
+                    "--t": `${2.6 + (i % 5) * 0.4}s`,
+                    "--r": `${360 + i * 45}deg`,
+                  })}
+                />
+              ))}
+            </span>
+          </FullScreen>
         )}
       </>
     );

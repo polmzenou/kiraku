@@ -12,6 +12,7 @@ import { checkProposal, isTradeOpen, tradeExpiresAt, uniqueOffered, type TradeRe
 import { freeCopy } from "./free-copy";
 import { blocksBetween, lockPlayers, type Tx } from "./lock";
 import { notify, notifyingTransaction, type OnNotified } from "./notify";
+import { consumeWishlist } from "../collection/wishlist-core";
 
 export type TradeErrorCode =
   | TradeRefusal
@@ -146,7 +147,7 @@ async function lockTrade(tx: Tx, tradeId: string): Promise<LockedTrade | null> {
 }
 
 export type AcceptOutcome =
-  | { ok: true; received: { cardId: string; userCardId: string; isNew: boolean } }
+  | { ok: true; received: { cardId: string; userCardId: string; isNew: boolean; wished: boolean } }
   | { ok: false; code: "CARD_GONE" | "CLOSED" };
 
 /**
@@ -224,6 +225,10 @@ export async function acceptTradeWith(
         ],
         skipDuplicates: true,
       });
+      const [, recipientWished] = await Promise.all([
+        consumeWishlist(tx, trade.proposerId, [trade.wantedCardId]),
+        consumeWishlist(tx, trade.recipientId, [input.chosenCardId]),
+      ]);
 
       await tx.trade.update({
         where: { id: trade.id },
@@ -237,7 +242,7 @@ export async function acceptTradeWith(
         payload: { tradeId: trade.id, cardId: trade.wantedCardId },
         now,
       });
-      return { ok: true, received: { cardId: input.chosenCardId, userCardId: chosenCopy.id, isNew: !recipientKnew } };
+      return { ok: true, received: { cardId: input.chosenCardId, userCardId: chosenCopy.id, isNew: !recipientKnew, wished: recipientWished.size > 0 } };
     },
     TX,
     onNotified,

@@ -603,6 +603,7 @@
   .booster-floor-float {
     animation: booster-floor 4.5s ease-in-out infinite;
   }
+  /* Calques animés à chaque image (scale, opacity) : chacun sur sa couche, sans repeindre leur lueur */
   .booster-opening-seam {
     position: absolute;
     inset: -2px 5% auto;
@@ -610,6 +611,7 @@
     border-radius: 50%;
     background: #fffdf2;
     box-shadow: 0 0 10px 3px #fff5d5, 0 0 30px 10px var(--opening-light);
+    will-change: transform, opacity;
   }
   .booster-opening-beam-anchor {
     position: absolute;
@@ -625,6 +627,7 @@
     clip-path: polygon(0 0, 100% 0, 72% 100%, 28% 100%);
     background: linear-gradient(to top, #fffdf2 0%, var(--opening-light) 18%, transparent 95%);
     mask: linear-gradient(to right, transparent, #000 25% 75%, transparent);
+    will-change: transform, opacity;
   }
   .booster-opening-burst-anchor {
     position: absolute;
@@ -639,6 +642,7 @@
     position: absolute;
     inset: 0;
     border-radius: 50%;
+    will-change: transform, opacity;
   }
   .booster-opening-flash {
     background: radial-gradient(circle, #fffef6 0 5%, #fff9df 10%, var(--opening-light) 24%, transparent 65%);
@@ -1032,6 +1036,25 @@
     opacity: 0;
     transform: translateX(-6px);
   }
+}
+
+/* Effets allégés (appareil qui rame, ou réglage « Allégées ») : on garde les révélations, mais plus
+   d'animation infinie ni de poussière d'ambiance ; les compteurs de particules baissent côté React. */
+:root[data-fx="lite"] .ritual-dust {
+  display: none;
+}
+:root[data-fx="lite"] .light-rays,
+:root[data-fx="lite"] .fx-nacre,
+:root[data-fx="lite"] .fuda-live .fuda-sheen,
+:root[data-fx="lite"] .booster-halo-breathe,
+:root[data-fx="lite"] .booster-floor-float {
+  animation-play-state: paused;
+}
+:root[data-fx="lite"] .fx-gold-glint {
+  animation-iteration-count: 1;
+}
+:root[data-fx="lite"] .fx-ar-kaleido {
+  animation: fx-fade-in 0.8s ease-out 0.35s forwards;
 }
 
 /* Carrousel « Gros tirages » : la piste contient deux fois la liste, -50 % boucle sans saut */

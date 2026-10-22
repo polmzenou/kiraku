@@ -97,6 +97,7 @@ export async function openBoosterAction(input: unknown): Promise<OpenBoosterResu
       userCardId: c.userCardId,
       isNew: c.isNew,
       featured: c.featured,
+      wished: c.wished,
     })),
   }));
   const state = boosterStateFrom(

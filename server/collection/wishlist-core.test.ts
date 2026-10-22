@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type { PrismaClient } from "@/generated/prisma/client";
-import { setWishlistWith } from "./wishlist-core";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
+import { consumeWishlist, setWishlistWith } from "./wishlist-core";
 
-function setup({ entries = [], banned = false, exists = true, rank = 1 as number | null }: {
-  entries?: { cardId: string; position: number }[]; banned?: boolean; exists?: boolean; rank?: number | null;
+function setup({ entries = [], banned = false, exists = true, rank = 1 as number | null, owned = 0 }: {
+  entries?: { cardId: string; position: number }[]; banned?: boolean; exists?: boolean; rank?: number | null; owned?: number;
 } = {}) {
   const tx = {
     $queryRaw: vi.fn().mockResolvedValue(exists ? [{ bannedAt: banned ? new Date() : null }] : []),
@@ -11,6 +11,7 @@ function setup({ entries = [], banned = false, exists = true, rank = 1 as number
       findMany: vi.fn().mockResolvedValue(entries), create: vi.fn(), deleteMany: vi.fn(),
     },
     card: { findUnique: vi.fn().mockResolvedValue({ status: rank === null ? "ARCHIVED" : "PUBLISHED" }) },
+    userCard: { count: vi.fn().mockResolvedValue(owned) },
   };
   const db = { $transaction: vi.fn(async (run: (client: typeof tx) => Promise<unknown>) => run(tx)) } as unknown as PrismaClient;
   return { tx, db };
@@ -69,5 +70,46 @@ describe("liste de souhaits", () => {
     if (kind === "missing") tx.card.findUnique.mockResolvedValue(null);
     await expect(setWishlistWith(db, "viewer", "invalid", true)).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(tx.wishlistEntry.create).not.toHaveBeenCalled();
+  });
+
+  it("refuse une carte déjà possédée, quel que soit l'état de l'exemplaire", async () => {
+    const { tx, db } = setup({ owned: 1 });
+    await expect(setWishlistWith(db, "viewer", "mine", true)).rejects.toMatchObject({ code: "OWNED" });
+    expect(tx.userCard.count).toHaveBeenCalledWith({ where: { ownerId: "viewer", cardId: "mine" } });
+    expect(tx.wishlistEntry.create).not.toHaveBeenCalled();
+  });
+
+  it("une carte possédée encore dans la liste peut toujours en être retirée", async () => {
+    const { tx, db } = setup({ owned: 2 });
+    await expect(setWishlistWith(db, "viewer", "mine", false)).resolves.toBe(false);
+    expect(tx.wishlistEntry.deleteMany).toHaveBeenCalled();
+  });
+});
+
+describe("consumeWishlist", () => {
+  function txWith(entries: { cardId: string }[]) {
+    return {
+      wishlistEntry: { findMany: vi.fn().mockResolvedValue(entries), deleteMany: vi.fn() },
+    };
+  }
+
+  it("retire les cartes obtenues qui étaient souhaitées et les renvoie", async () => {
+    const tx = txWith([{ cardId: "b" }]);
+    const wished = await consumeWishlist(tx as unknown as Prisma.TransactionClient, "u", ["a", "b", "b"]);
+    expect([...wished]).toEqual(["b"]);
+    expect(tx.wishlistEntry.findMany).toHaveBeenCalledWith({ where: { userId: "u", cardId: { in: ["a", "b"] } }, select: { cardId: true } });
+    expect(tx.wishlistEntry.deleteMany).toHaveBeenCalledWith({ where: { userId: "u", cardId: { in: ["b"] } } });
+  });
+
+  it("ne touche à rien quand aucune carte n'était souhaitée", async () => {
+    const tx = txWith([]);
+    expect((await consumeWishlist(tx as unknown as Prisma.TransactionClient, "u", ["a"])).size).toBe(0);
+    expect(tx.wishlistEntry.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("ne lit rien pour un versement vide", async () => {
+    const tx = txWith([]);
+    await consumeWishlist(tx as unknown as Prisma.TransactionClient, "u", []);
+    expect(tx.wishlistEntry.findMany).not.toHaveBeenCalled();
   });
 });

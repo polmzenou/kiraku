@@ -110,6 +110,7 @@ export function CardReveal({ cards, onClose }: { cards: OpenedCardView[]; onClos
             <p className="text-sm text-washi-paper/70">
               {tRarity(card.rarity)}
               {card.isNew && ` · ${t("new")}`}
+              {card.wished && ` · ${t("wished")}`}
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               {last ? (

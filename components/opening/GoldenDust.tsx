@@ -2,6 +2,8 @@ import type { CSSProperties } from "react";
 import "./RevealFx.css";
 
 const MOTES = 38;
+/** Effets allégés : moins de grains, même mouvement. */
+const LITE_MOTES = 14;
 
 const v = (vars: Record<string, string>) => vars as CSSProperties;
 
@@ -9,10 +11,10 @@ const v = (vars: Record<string, string>) => vars as CSSProperties;
  * Sachet doré : une poussière d'or scintille sur tout l'écran pendant l'ouverture, puis retombe et
  * s'éteint (une seule fois, environ 3 s). Positions déterministes : rien ne change d'un rendu à l'autre.
  */
-export function GoldenDust() {
+export function GoldenDust({ lite = false }: { lite?: boolean }) {
   return (
     <div aria-hidden="true" className="golden-dust">
-      {Array.from({ length: MOTES }, (_, i) => (
+      {Array.from({ length: lite ? LITE_MOTES : MOTES }, (_, i) => (
         <span
           key={i}
           className="golden-mote"

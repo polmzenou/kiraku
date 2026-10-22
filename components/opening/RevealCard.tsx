@@ -2,6 +2,7 @@
 
 import { m } from "motion/react";
 import { useTranslations } from "next-intl";
+import Image from "next/image";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { Fuda } from "../fuda/Fuda";
 import { CardBack as FudaBack } from "../fuda/CardBack";
@@ -10,18 +11,46 @@ import { CardAura } from "./CardAura";
 import { resolveAppearance } from "@/lib/catalog/appearance";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 
-/** Étiquette vermillon tamponnée, légèrement penchée, sur une carte jamais obtenue. */
-export function NewStamp({ delay = 0, animated = true }: { delay?: number; animated?: boolean }) {
+/**
+ * Pastilles du coin haut-droit, empilées : « Nouveau » (jamais obtenue), puis « Souhait exaucé »
+ * (la carte était dans la liste de souhaits). Sur une petite carte, le souhait se réduit au cœur.
+ */
+export function CardStamps({ card, delay = 0, animated = true, small = false }: {
+  card: Pick<OpenedCardView, "isNew" | "wished">;
+  delay?: number;
+  animated?: boolean;
+  small?: boolean;
+}) {
   const t = useTranslations("opening");
+  if (!card.isNew && !card.wished) return null;
+  const stamp = (i: number) => ({
+    initial: animated ? { opacity: 0, scale: 2.2, rotate: -28 } : false,
+    animate: { opacity: 1, scale: 1, rotate: -12 },
+    transition: { delay: delay + i * 0.18, type: "spring", stiffness: 520, damping: 18 },
+  } as const);
   return (
-    <m.span
-      className="absolute -top-2 -right-2 z-40 inline-flex min-h-7 items-center justify-center whitespace-nowrap rounded-[4px] bg-shu-btn px-2 py-1 text-xs font-bold leading-none text-washi-paper"
-      initial={animated ? { opacity: 0, scale: 2.2, rotate: -28 } : false}
-      animate={{ opacity: 1, scale: 1, rotate: -12 }}
-      transition={{ delay, type: "spring", stiffness: 520, damping: 18 }}
-    >
-      {t("newCard")}
-    </m.span>
+    <span className="absolute -top-2 -right-2 z-40 flex flex-col items-end gap-1">
+      {card.isNew && (
+        <m.span
+          className="inline-flex min-h-7 items-center justify-center whitespace-nowrap rounded-[4px] bg-shu-btn px-2 py-1 text-xs font-bold leading-none text-washi-paper"
+          {...stamp(0)}
+        >
+          {t("newCard")}
+        </m.span>
+      )}
+      {card.wished && (
+        <m.span
+          className="inline-flex min-h-7 items-center justify-center gap-1 whitespace-nowrap rounded-[4px] bg-ai px-2 py-1 text-xs font-bold leading-none text-washi-paper"
+          title={t("wishedCardLong")}
+          {...stamp(card.isNew ? 1 : 0)}
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="size-3.5 shrink-0" fill="currentColor">
+            <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" />
+          </svg>
+          {small ? <span className="sr-only">{t("wishedCardLong")}</span> : <span>{t("wishedCard")}</span>}
+        </m.span>
+      )}
+    </span>
   );
 }
 
@@ -89,7 +118,7 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
             <CardBack static />
           </div>
         )}
-        {front && card.isNew && <NewStamp animated={false} />}
+        {front && <CardStamps card={card} animated={false} />}
         {front && card.featured && <FeaturedSeal animated={false} />}
       </div>
     );
@@ -102,7 +131,7 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
         animate={{ opacity: 1, scale: 1 }} transition={{ duration: visual.duration, delay: visual.delay, ease: visual.easing }}>
         <Fuda card={card} series={card.series} size={size} />
       </m.div> : <div className="relative aspect-[5/7] w-full [transform:rotateY(180deg)]"><CardBack static /></div>}
-      {front && card.isNew && <NewStamp delay={visual.delay + visual.duration} />}
+      {front && <CardStamps card={card} delay={visual.delay + visual.duration} />}
       {front && card.featured && <FeaturedSeal delay={visual.delay + visual.duration} />}
     </div>;
   }
@@ -136,11 +165,23 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
           <CardBack glow={charging && rank >= 4} static={front} />
         </m.div>
         {charging && card.rarity === "GOLD" && <GoldCracks duration={chargeFor(card.rarity, definitions)} />}
-        {front && variant === "GOLD" && <GoldShatter><FudaBack static /></GoldShatter>}
-        {front && variant === "AR" && <ArGhosts><Fuda card={card} series={card.series} size={size} tilt={false} /></ArGhosts>}
+        {front && variant === "GOLD" && <GoldShatter><FudaBack flat /></GoldShatter>}
+        {/* Fantômes AR : l'image seule (déjà chargée), pas trois cartes complètes ; rien en effets allégés */}
+        {front && variant === "AR" && !compactFx && <ArGhosts><GhostArt card={card} /></ArGhosts>}
       </div>
-      {front && card.isNew && <NewStamp delay={rank >= 3 ? 0.55 : 0.3} />}
+      {front && <CardStamps card={card} delay={rank >= 3 ? 0.55 : 0.3} />}
       {front && card.featured && <FeaturedSeal delay={0.45} />}
     </div>
+  );
+}
+
+/** Copie fantôme d'une AR : cadre et image de la carte, sans texte, effets ni inclinaison. */
+function GhostArt({ card }: { card: OpenedCardView }) {
+  return (
+    <span className="absolute inset-0 overflow-hidden rounded-[14px] bg-[var(--fuda-frame,#6f8fd8)]">
+      <span className="absolute inset-1.5 overflow-hidden rounded-[9px]">
+        <Image src={card.imageUrl} alt="" fill sizes="(min-width: 768px) 320px, 80vw" draggable={false} className="object-cover object-top" />
+      </span>
+    </span>
   );
 }

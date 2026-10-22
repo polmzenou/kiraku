@@ -100,3 +100,17 @@ export function collectionQuery(params: Partial<CollectionParams>): Record<strin
 export function hasFilters(params: CollectionParams): boolean {
   return params.terms.length > 0 || params.rarities.length > 0 || params.series !== null || params.dupes;
 }
+
+/**
+ * Requête d'un sélecteur de cartes (cadeau, échange, vitrine) : recherche et raretés cochées.
+ * Avec `allowed`, seules ces raretés sont demandées, même sans case cochée : le joueur ne voit pas
+ * de carte que le serveur refuserait ensuite.
+ */
+export function pickerQuery(q: string, picked: readonly string[], allowed?: readonly string[]): Record<string, string> {
+  const kept = allowed ? picked.filter((r) => allowed.includes(r)) : picked;
+  const rarities = allowed && kept.length === 0 ? allowed : kept;
+  const query: Record<string, string> = {};
+  if (q) query.q = q;
+  if (rarities.length > 0) query.rarity = rarities.join(",");
+  return query;
+}

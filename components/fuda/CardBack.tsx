@@ -4,18 +4,22 @@ import { useId, useRef } from "react";
 import { useMaterialLight } from "./useMaterialLight";
 import "./CardBack.css";
 
-/** Dos commun Kiraku : laque noire, asanoha gravé, ensō d'or et sceau vermillon. */
-export function CardBack({ glow = false, static: still = false, className = "" }: {
+/**
+ * Dos commun Kiraku : laque noire, asanoha gravé, ensō d'or et sceau vermillon. `flat` : dos de
+ * pile ou d'éclat, toujours immobile, sans relief filtré ni irisation en fusion (bien moins coûteux).
+ */
+export function CardBack({ glow = false, static: still = false, flat = false, className = "" }: {
   glow?: boolean;
   static?: boolean;
+  flat?: boolean;
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
-  useMaterialLight(ref, still);
+  useMaterialLight(ref, still || flat);
 
   return (
-    <div ref={ref} aria-hidden="true" className={`kb-back ${className}`} data-static={still || undefined} data-glow={glow || undefined}>
+    <div ref={ref} aria-hidden="true" className={`kb-back ${className}`} data-static={still || flat || undefined} data-flat={flat || undefined} data-glow={glow || undefined}>
       <svg className="kb-art" viewBox="0 0 250 350" fill="none" focusable="false">
         <defs>
           <linearGradient id={`${id}-gold`} x1="20" y1="20" x2="230" y2="330" gradientUnits="userSpaceOnUse">

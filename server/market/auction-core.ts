@@ -26,6 +26,7 @@ import { pickGiftCopy } from "@/lib/social/gifts";
 import { applyEntries, credit, debit, LedgerError } from "../economy/ledger";
 import { lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
+import { consumeWishlist } from "../collection/wishlist-core";
 import { writeAdminLog } from "../admin/log";
 
 export type AuctionErrorCode =
@@ -280,6 +281,7 @@ async function deliverSale(tx: Tx, a: SoldAuction, now: Date) {
   if (moved.count !== 1) throw new Error(`Vente ${a.id} : exemplaire réservé introuvable`);
   await tx.showcaseSlot.deleteMany({ where: { userCardId: a.userCardId! } });
   await tx.discovery.createMany({ data: [{ userId: buyerId, cardId: a.cardId, createdAt: now }], skipDuplicates: true });
+  await consumeWishlist(tx, buyerId, [a.cardId]);
 
   const fee = saleFee(a.currentBid, a.feeBp);
   await applyEntries(

@@ -173,13 +173,14 @@ async function socialBar({
 
   let gift = null;
   if (access.relation === "FRIENDS" && (await getSetting("gifts.enabled"))) {
-    const [price, perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours, timeZone] = await Promise.all([
+    const [price, perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours, timeZone, allowedRarities] = await Promise.all([
       getSetting("gifts.boosterPriceZeni"),
       getSetting("gifts.perDaySent"),
       getSetting("gifts.perDayReceived"),
       getSetting("gifts.minAccountAgeHours"),
       getSetting("gifts.minFriendshipHours"),
       getSetting("game.timeZone"),
+      getSetting("gifts.allowedRarities"),
     ]);
     const sent = await giftsSentToday(viewer.id, timeZone);
     gift = {
@@ -187,10 +188,13 @@ async function socialBar({
       coins: viewer.coins,
       remaining: Math.max(0, perDaySent - sent),
       limits: { perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours },
+      allowedRarities,
     };
   }
   const trade =
-    access.relation === "FRIENDS" && (await getSetting("trades.enabled")) ? { maxOffered: await getSetting("trades.maxOffered") } : null;
+    access.relation === "FRIENDS" && (await getSetting("trades.enabled"))
+      ? { maxOffered: await getSetting("trades.maxOffered"), allowedRarities: await getSetting("trades.allowedRarities") }
+      : null;
   return <RelationActions username={owner.username} name={name} initial={access.relation} gift={gift} trade={trade} />;
 }
 

@@ -2,13 +2,15 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
-import { useMotionPreference } from "../motion/MotionPreference";
-import { Switch } from "../ui/Choice";
+import { MOTION_PREFS } from "@/lib/motion-pref";
+import { useFxLevel, useMotionPreference } from "../motion/MotionPreference";
+import { Radio } from "../ui/Choice";
 
-/** Engrenage de l'ouverture, à côté du son : réglages d'affichage de l'appareil (animations). */
+/** Engrenage de l'ouverture, à côté du son : niveau des animations sur cet appareil. */
 export function SettingsMenu() {
   const t = useTranslations("header");
   const { pref, setPref } = useMotionPreference();
+  const level = useFxLevel();
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const panelId = useId();
@@ -51,21 +53,23 @@ export function SettingsMenu() {
           id={panelId}
           role="group"
           aria-label={t("settings")}
-          className="absolute top-full right-0 z-50 mt-2 w-64 rounded-card border border-border bg-surface p-3 shadow-[0_12px_32px_rgb(0_0_0/0.35)]"
+          className="absolute top-full right-0 z-50 mt-2 w-72 rounded-card border border-border bg-surface p-3 shadow-[0_12px_32px_rgb(0_0_0/0.35)]"
         >
-          <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3">
-            <span className="flex flex-col">
-              <span className="text-sm font-bold">{t("animations")}</span>
-              <span id={hintId} className="text-xs text-text-muted">
-                {t("animationsHint")}
-              </span>
-            </span>
-            <Switch
-              checked={pref === "full"}
-              aria-describedby={hintId}
-              onChange={(e) => setPref(e.currentTarget.checked ? "full" : "reduced")}
-            />
-          </label>
+          <fieldset aria-describedby={hintId} className="flex flex-col gap-1">
+            <legend className="text-sm font-bold">{t("animations")}</legend>
+            <p id={hintId} className="mb-1 text-xs text-text-muted">
+              {t("animationsHint")}
+            </p>
+            {MOTION_PREFS.map((value) => (
+              <label key={value} className="flex min-h-11 cursor-pointer items-center gap-3">
+                <Radio name={`${panelId}-motion`} value={value} checked={pref === value} onChange={() => setPref(value)} />
+                <span className="flex flex-col">
+                  <span className="text-sm">{t(`motion.${value}`)}</span>
+                  {value === "auto" && pref === "auto" && <span className="text-xs text-text-muted">{t(level === "lite" ? "motionAutoLite" : "motionAutoFull")}</span>}
+                </span>
+              </label>
+            ))}
+          </fieldset>
         </div>
       )}
     </div>

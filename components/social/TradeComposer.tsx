@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
+import type { Rarity } from "@/lib/catalog/rarity";
 import type { CollectionItem } from "@/lib/collection/view";
 import { proposeTradeAction } from "@/server/actions/trades";
 import { CardPickGrid } from "../collection/CardPickGrid";
@@ -15,7 +16,13 @@ type Step = "want" | "offer" | "review" | "sent";
  * Proposer un échange à un ami, en trois temps : la carte voulue dans sa collection, puis une ou
  * plusieurs des siennes en contrepartie, puis le récap. L'ami choisira l'une d'elles en acceptant.
  */
-export function TradeComposer({ username, name, maxOffered, onClose }: { username: string; name: string; maxOffered: number; onClose: () => void }) {
+export function TradeComposer({ username, name, maxOffered, allowedRarities, onClose }: {
+  username: string;
+  name: string;
+  maxOffered: number;
+  allowedRarities: Rarity[];
+  onClose: () => void;
+}) {
   const t = useTranslations("trades.compose");
   const tErrors = useTranslations("trades.errors");
   const [step, setStep] = useState<Step>("want");
@@ -70,6 +77,7 @@ export function TradeComposer({ username, name, maxOffered, onClose }: { usernam
           <p className="text-sm text-text-muted">{t("wantHint", { name })}</p>
           <CardPickGrid
             username={username}
+            allowed={allowedRarities}
             selected={wanted ? new Set([wanted.cardId]) : new Set()}
             pickLabel={(card) => t("pickWanted", { card })}
             onPick={(card) => {
@@ -86,6 +94,7 @@ export function TradeComposer({ username, name, maxOffered, onClose }: { usernam
           <p className="text-sm text-text-muted">{t("offerHint", { max: maxOffered })}</p>
           <CardPickGrid
             selected={offeredIds}
+            allowed={allowedRarities}
             disabled={new Set([wanted.cardId])}
             pickLabel={(card) => t("pickOffered", { card })}
             onPick={toggleOffer}

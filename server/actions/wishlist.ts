@@ -8,7 +8,7 @@ import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
 import { getCurrentUser } from "../user";
 
-export type WishlistActionError = "NO_SESSION" | "INVALID" | "FULL" | "NOT_FOUND" | "RATE_LIMITED" | "UNAVAILABLE";
+export type WishlistActionError = "NO_SESSION" | "INVALID" | "FULL" | "NOT_FOUND" | "OWNED" | "RATE_LIMITED" | "UNAVAILABLE";
 const schema = z.object({ cardId: z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/), wished: z.boolean() }).strict();
 
 /** Le joueur ciblé vient uniquement de la session ; les invités peuvent également préparer leur liste. */
@@ -26,7 +26,7 @@ export async function setWishlistAction(input: unknown): Promise<{ ok: true; wis
     refresh();
     return { ok: true, wished };
   } catch (e) {
-    if (e instanceof WishlistError && (e.code === "FULL" || e.code === "NOT_FOUND")) return { ok: false, error: e.code };
+    if (e instanceof WishlistError && (e.code === "FULL" || e.code === "NOT_FOUND" || e.code === "OWNED")) return { ok: false, error: e.code };
     if (!(e instanceof WishlistError)) console.error("[wishlist] enregistrement impossible", e);
     return { ok: false, error: "UNAVAILABLE" };
   }

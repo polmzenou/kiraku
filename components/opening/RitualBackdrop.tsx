@@ -20,7 +20,7 @@ export type RitualTint = { id: string; style: CSSProperties; delay: number };
  * `depth` 0 → 1 : ambiance normale → l'écran s'éteint presque (une Mythique arrive).
  * `tint` : teinte de la rareté pendant le grand moment d'une Légendaire ou mieux.
  */
-export function RitualBackdrop({ depth, reduced, tint = null }: { depth: number; reduced: boolean; tint?: RitualTint | null }) {
+export function RitualBackdrop({ depth, reduced, lite = false, tint = null }: { depth: number; reduced: boolean; lite?: boolean; tint?: RitualTint | null }) {
   return (
     <m.div
       aria-hidden="true"
@@ -49,7 +49,8 @@ export function RitualBackdrop({ depth, reduced, tint = null }: { depth: number;
           />
         )}
       </AnimatePresence>
-      {!reduced &&
+      {/* Effets allégés : pas de poussière d'ambiance (14 particules animées en continu) */}
+      {!reduced && !lite &&
         DUST.map((p, i) => (
           <span
             key={i}

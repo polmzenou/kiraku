@@ -7,6 +7,7 @@ import { applyEntries, type LedgerEntry } from "../economy/ledger";
 import { readBannerPity } from "../boosters/open-core";
 import { lockPlayers } from "../social/lock";
 import { writeAdminLog } from "./log";
+import { consumeWishlist } from "../collection/wishlist-core";
 
 export class AdminUserMutationError extends Error {
   constructor(readonly code: AdminUserError) { super(code); }
@@ -102,6 +103,7 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
         if (input.mode === "ADD") {
           await tx.userCard.createMany({ data: Array.from({ length: input.amount }, () => ({ ownerId: userId, cardId: input.cardId, obtainedAt: now })) });
           await tx.discovery.createMany({ data: [{ userId, cardId: input.cardId, createdAt: now }], skipDuplicates: true });
+          await consumeWishlist(tx, userId, [input.cardId]);
         } else {
           // On conserve les exemplaires en vitrine, en combat (status BATTLE), en vente ou liés à l'historique d'une vente.
           const free = await tx.userCard.findMany({ where: {

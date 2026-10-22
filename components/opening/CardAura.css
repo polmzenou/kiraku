@@ -36,7 +36,8 @@
       color-mix(in srgb, var(--card-aura-color) 18%, transparent) 0%,
       color-mix(in srgb, var(--card-aura-color) 5%, transparent) 48%,
       transparent 85%);
-  filter: blur(12px);
+  /* Pas de filter: blur : les dégradés s'éteignent déjà en douceur, et un flou sur un calque qui
+     respire en continu se recalculait à chaque image sur les téléphones. */
 }
 .card-aura-mote {
   position: absolute;
@@ -50,12 +51,15 @@
   box-shadow: 0 0 6px 1px color-mix(in srgb, var(--card-aura-color) 50%, transparent);
   opacity: .7;
 }
-.card-aura-fx[data-compact] .card-aura-glow { opacity: .65; filter: blur(8px); }
+.card-aura-fx[data-compact] .card-aura-glow { opacity: .65; }
 .card-aura-fx[data-static] { transition: none; }
 @media (prefers-reduced-motion: no-preference) {
   :root:not([data-motion="reduced"]) .card-aura-fx:not([data-static]) .card-aura-glow { animation: card-aura-breathe 4.8s ease-in-out infinite; }
   :root:not([data-motion="reduced"]) .card-aura-fx:not([data-static]) .card-aura-mote { animation: card-aura-float var(--t) ease-in-out var(--d) infinite; }
 }
+/* Effets allégés : halo immobile, sans particules */
+:root[data-fx="lite"] .card-aura-glow { animation: none !important; }
+:root[data-fx="lite"] .card-aura-mote { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .card-aura-fx { transition: none; }
   .card-aura-mote { display: none; }

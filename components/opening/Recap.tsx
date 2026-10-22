@@ -16,7 +16,7 @@ import { Fuda } from "../fuda/Fuda";
 import { ZeniCoin } from "../layout/ZeniCoin";
 import { CopyLinkButton } from "./CopyLinkButton";
 import { CountPicker } from "./CountPicker";
-import { FeaturedSeal, NewStamp } from "./RevealCard";
+import { CardStamps, FeaturedSeal } from "./RevealCard";
 
 type Props = {
   boosters: OpenedBoosterView[];
@@ -125,7 +125,7 @@ export function Recap({ boosters, state, reduced, play, counters, zeniSpent, cou
             >
               <p className="mb-2 text-center text-xs font-bold tracking-wide text-sumi-muted">{t("bestPull")}</p>
               <Fuda card={best} series={best.series} size="lg" />
-              {best.isNew && <NewStamp animated={!reduced} delay={unroll + 0.5} />}
+              <CardStamps card={best} animated={!reduced} delay={unroll + 0.5} />
               {best.featured && <FeaturedSeal animated={!reduced} delay={unroll + 0.55} />}
             </m.div>
           )}
@@ -140,8 +140,9 @@ export function Recap({ boosters, state, reduced, play, counters, zeniSpent, cou
                   animate={{ opacity: 1, y: 0, rotate: 0 }}
                   transition={{ delay: unroll + 0.35 + Math.min(i, 20) * 0.05, type: "spring", stiffness: 300, damping: 24 }}
                 >
-                  <Fuda card={card} series={card.series} size="sm" />
-                  {card.isNew && <NewStamp animated={false} />}
+                  {/* Grille figée : jusqu'à 49 cartes, sans inclinaison ni reflet animé chacune */}
+                  <Fuda card={card} series={card.series} size="sm" still />
+                  <CardStamps card={card} animated={false} small />
                   {card.featured && <FeaturedSeal animated={false} />}
                 </m.li>
               ))}

@@ -71,6 +71,7 @@ export function Fuda({
   monochrome = false,
   preload = false,
   tilt = true,
+  still = false,
   sizes,
   overlay,
   describeImage = size !== "sm",
@@ -85,6 +86,11 @@ export function Fuda({
   preload?: boolean;
   /** Désactivé pendant le glisser-déposer ou pour un préchargement invisible. */
   tilt?: boolean;
+  /**
+   * Carte figée (emplacements de la pile, grilles du récap) : ni inclinaison, ni reflets animés,
+   * aucun écouteur. Les petites cartes nombreuses ne coûtent ainsi plus rien pendant les animations.
+   */
+  still?: boolean;
   sizes?: string;
   /** Posé sur la carte (pastilles, reflets de révélation) : il s'incline avec elle. */
   overlay?: ReactNode;
@@ -189,5 +195,6 @@ export function Fuda({
     </div>
   );
 
+  if (still) return content;
   return tilt || visual.effects?.length ? <FudaTilt rotate={tilt && visual.tilt > 0} angle={visual.tilt} reactive={visual.reactive}>{content}</FudaTilt> : content;
 }

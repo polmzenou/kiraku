@@ -1,7 +1,7 @@
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { MAX_WISHLIST_CARDS } from "@/lib/collection/wishlist";
 
-export type WishlistErrorCode = "NO_USER" | "BANNED" | "NOT_FOUND" | "FULL";
+export type WishlistErrorCode = "NO_USER" | "BANNED" | "NOT_FOUND" | "FULL" | "OWNED";
 
 export class WishlistError extends Error {
   constructor(readonly code: WishlistErrorCode) {
@@ -9,7 +9,7 @@ export class WishlistError extends Error {
   }
 }
 
-/** Écriture idempotente, sans condition de propriété de carte ; limite protégée par le verrou du joueur. */
+/** Écriture idempotente ; une carte déjà possédée ne s'ajoute pas. Limite protégée par le verrou du joueur. */
 export async function setWishlistWith(db: PrismaClient, userId: string, cardId: string, wished: boolean): Promise<boolean> {
   return db.$transaction(async (tx) => {
     const [user] = await tx.$queryRaw<{ bannedAt: Date | null }[]>`
@@ -31,7 +31,22 @@ export async function setWishlistWith(db: PrismaClient, userId: string, cardId: 
 
     const card = await tx.card.findUnique({ where: { id: cardId }, select: { status: true } });
     if (!card || card.status !== "PUBLISHED") throw new WishlistError("NOT_FOUND");
+    // Tous les exemplaires comptent, même en vente ou engagés en combat
+    if ((await tx.userCard.count({ where: { ownerId: userId, cardId } })) > 0) throw new WishlistError("OWNED");
     await tx.wishlistEntry.create({ data: { userId, cardId, position } });
     return true;
   });
+}
+
+/**
+ * Le joueur vient d'obtenir ces cartes : elles quittent sa liste de souhaits, dans la transaction
+ * du versement. Renvoie celles qui y figuraient (pastille au reveal).
+ */
+export async function consumeWishlist(tx: Prisma.TransactionClient, userId: string, cardIds: readonly string[]): Promise<Set<string>> {
+  if (cardIds.length === 0) return new Set();
+  const ids = [...new Set(cardIds)];
+  const entries = await tx.wishlistEntry.findMany({ where: { userId, cardId: { in: ids } }, select: { cardId: true } });
+  if (entries.length === 0) return new Set();
+  await tx.wishlistEntry.deleteMany({ where: { userId, cardId: { in: entries.map((e) => e.cardId) } } });
+  return new Set(entries.map((e) => e.cardId));
 }

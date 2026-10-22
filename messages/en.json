@@ -450,7 +450,15 @@
     "balance": "Balance: {amount, number} Zeni",
     "settings": "Settings",
     "animations": "Animations",
-    "animationsHint": "Turn them off if your phone lags."
+    "animationsHint": "If your phone lags, pick Light or Reduced.",
+    "motion": {
+      "auto": "Auto (based on your device)",
+      "full": "Full",
+      "lite": "Light",
+      "reduced": "Reduced"
+    },
+    "motionAutoFull": "Your device keeps up: full effects.",
+    "motionAutoLite": "Your device struggles: light effects."
   },
   "market": {
     "title": "Auction house",
@@ -800,7 +808,9 @@
       "NOT_FOR_SALE": "This booster isn't available right now.",
       "UNAVAILABLE": "Can't open right now. Try again."
     },
-    "creditLeft": "{count, plural, one {Credited booster · # to open} other {Credited boosters · # to open}}"
+    "creditLeft": "{count, plural, one {Credited booster · # to open} other {Credited boosters · # to open}}",
+    "wishedCard": "Wish granted",
+    "wishedCardLong": "Was on your wishlist"
   },
   "draw": {
     "title": "{name}'s pull",
@@ -1006,6 +1016,21 @@
           "ADMIN_PROTECTED": "An admin cannot be deleted: remove the role first.",
           "HAS_ADMIN_HISTORY": "Former admin: their past actions must stay attributed, anonymise the account instead."
         }
+      },
+      "sortBy": "Sort by",
+      "sortDir": "Order",
+      "dirAsc": "Ascending (A → Z, 0 → 9)",
+      "dirDesc": "Descending (Z → A, 9 → 0)",
+      "sortAsc": "Sort by {column}, ascending",
+      "sortDesc": "Sort by {column}, descending",
+      "sorts": {
+        "created": "Sign-up date",
+        "name": "Username",
+        "email": "Email",
+        "status": "Status",
+        "coins": "Zeni",
+        "cards": "Cards",
+        "discoveries": "Discoveries"
       }
     },
     "moduleNames": {
@@ -2563,7 +2588,7 @@
   "wishlist": {
     "title": "Wishlist",
     "count": "{count} / {max}",
-    "hint": "Choose up to {max} cards from their wiki page, even if you don't own them.",
+    "hint": "Choose up to {max} cards you don't own yet from their wiki page. They leave the list as soon as you get them.",
     "browse": "Choose in the wiki",
     "emptyOwner": "Your wishlist is empty. Open a wiki page to add your first card.",
     "emptyPublic": "This player hasn't added any cards to their wishlist yet.",
@@ -2578,8 +2603,10 @@
       "FULL": "Your wishlist already contains 20 cards. Remove a card from your profile to add another.",
       "NOT_FOUND": "This card is no longer available in the catalog.",
       "RATE_LIMITED": "Slow down! Try again in a moment.",
-      "UNAVAILABLE": "Couldn't save your wishlist. Try again."
-    }
+      "UNAVAILABLE": "Couldn't save your wishlist. Try again.",
+      "OWNED": "You already own this card: it can't go on your wishlist."
+    },
+    "owned": "Already in your collection: it can't go on your wishlist."
   },
   "profile": {
     "metaTitle": "{name}'s profile",
@@ -3047,7 +3074,8 @@
       "new": "New!",
       "close": "Keep it",
       "toCollection": "See it in my collection",
-      "next": "Next card"
+      "next": "Next card",
+      "wished": "Was on your wishlist"
     }
   },
   "home": {
@@ -3482,7 +3510,9 @@
       "pending": "One moment…",
       "rateLimited": "Too many attempts. Try again in a moment.",
       "error": "Your choice could not be saved. Try again."
-    }
+    },
+    "followTitle": "Follow us",
+    "followText": "News, new boosters and the best pulls: follow Kiraku on X."
   },
   "consent": {
     "manage": "Manage cookies",
@@ -3895,5 +3925,9 @@
       "RATE_LIMITED": "Easy there: try again in a moment.",
       "UNAVAILABLE": "Can't do that right now."
     }
+  },
+  "social": {
+    "x": "X",
+    "followX": "Follow Kiraku on X ({handle})"
   }
 }
