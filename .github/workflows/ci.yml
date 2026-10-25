@@ -1,6 +1,6 @@
 # Contrôles de chaque push et pull request (CLAUDE.md, « Façon de travailler »).
 # Les tests sur base réelle (*.db.test.ts) sont sautés ici : ils demandent DATABASE_URL_TEST
-# (branche Neon de dev) et se lancent à la main avant une mise en production.
+# (base de test isolée, jamais la prod) et se lancent à la main avant une mise en production.
 name: CI
 
 on:

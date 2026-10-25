@@ -43,6 +43,10 @@ function revive(row: TypeRow): TypeRow {
 
 // Les versions du catalogue et des types sont dans la clé : imports et seeds
 // lancés par script sont visibles immédiatement, sans attendre l'expiration du cache.
+// Aucune expiration ici ni pour les pools : leurs clés changent avec ce qui les modifie, et
+// relire toutes les heures des pools de ~10 000 ids ne servait qu'à consommer du trafic.
+const NO_EXPIRY: { tags: string[]; revalidate: false } = { tags: [BOOSTER_TYPES_TAG], revalidate: false };
+
 const loadTypeRows = unstable_cache(
   async (_catalogVersion: number, _typesVersion: string) => {
     void _catalogVersion;
@@ -50,7 +54,7 @@ const loadTypeRows = unstable_cache(
     return prisma.boosterType.findMany({ omit: { poolCardIds: true }, orderBy: [{ family: "asc" }, { sortOrder: "asc" }] });
   },
   ["booster-types"],
-  { tags: [BOOSTER_TYPES_TAG], revalidate: 3600 },
+  NO_EXPIRY,
 );
 
 export type BoosterTypeEntry = {
@@ -108,7 +112,7 @@ const loadStaticPool = unstable_cache(
     return groupByRarity(cards.map((c) => ({ id: c.id, rarity: c.rarity as Rarity })));
   },
   ["booster-pool-static"],
-  { tags: [BOOSTER_TYPES_TAG], revalidate: 3600 },
+  NO_EXPIRY,
 );
 
 const loadDailyPool = unstable_cache(
@@ -119,7 +123,7 @@ const loadDailyPool = unstable_cache(
     return computePool(entry.type, await loadCandidates(prisma), await getFilterContext());
   },
   ["booster-pool-daily"],
-  { tags: [BOOSTER_TYPES_TAG], revalidate: 3600 },
+  NO_EXPIRY,
 );
 
 /** Pool d'un type, groupé par rareté (rareté globale du catalogue). */

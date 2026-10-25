@@ -1,4 +1,5 @@
 import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 
 // Adaptateur Prisma sur `pg` (TCP), partagé par l'app, les scripts et les tests d'intégration.
 // Pas de `server-only` ici pour que les scripts tsx puissent l'importer ; aucun secret dans ce fichier.
@@ -50,7 +51,17 @@ export function pgConfig(connectionString: string): { connectionString: string; 
   return { connectionString: url.toString(), ssl: pgSsl(url.hostname) };
 }
 
+// Supabase (plan nano) n'accepte que 60 connexions en tout, partagées par toutes les instances
+// Vercel : 5 par instance suffisent, le pooler fait le reste. Sans délai de connexion, une requête
+// attendrait indéfiniment quand le pooler sature.
+const POOL_OPTIONS = { max: 5, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 10_000 } satisfies pg.PoolConfig;
+
+/** Pool `pg` explicite, pour pouvoir l'attacher au cycle de vie des fonctions Vercel (server/db.ts). */
+export function createPgPool(connectionString: string): pg.Pool {
+  return new pg.Pool({ ...pgConfig(connectionString), ...POOL_OPTIONS });
+}
+
+/** Adaptateur avec son propre pool, libéré par `$disconnect` (scripts et tests). */
 export function createPgAdapter(connectionString: string): PrismaPg {
-  // Sans délai, une requête attendrait indéfiniment une connexion quand le pooler sature.
-  return new PrismaPg({ ...pgConfig(connectionString), connectionTimeoutMillis: 10_000 });
+  return new PrismaPg({ ...pgConfig(connectionString), ...POOL_OPTIONS });
 }

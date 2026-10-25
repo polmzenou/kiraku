@@ -7,24 +7,21 @@ import { seriesTitle } from "@/lib/catalog/display";
 import type { WikiCatalogParams, WikiFilterOptions, WikiParams } from "@/lib/catalog/wiki-params";
 import { emptyWikiCollection, selectWikiPage, type CatalogSearchIndex } from "@/lib/catalog/wiki-state";
 import { getRarities } from "./rarities";
+import { readCatalogVersion } from "./version";
 import { prisma } from "../db";
 
 // Lectures du catalogue pour le wiki. La CSP à nonce rend les pages dynamiques : on met en cache
 // les données. La clé de cache contient la version du catalogue (fin du dernier import finalisé) :
-// un import lancé hors de Next (script) est donc visible tout de suite, sans revalidateTag.
+// l'admin invalide CATALOG_TAG tout de suite, un import lancé hors de Next (script) est visible
+// en une minute au plus. Les données ne changent qu'avec la version : l'expiration d'un jour
+// ne sert qu'à purger les clés ouvertes (recherches, listes d'ids).
 export const CATALOG_TAG = "catalog";
-const cacheOptions = { tags: [CATALOG_TAG], revalidate: 3600 };
+const cacheOptions = { tags: [CATALOG_TAG], revalidate: 86_400 };
 
-/** Version du catalogue : une requête indexée par rendu, partagée par toute la page. */
-export const getCatalogVersion = cache(async (): Promise<number> => {
-  const last = await prisma.catalogImport.findFirst({
-    where: { status: "FINALIZED" },
-    orderBy: { finishedAt: "desc" },
-    select: { finishedAt: true },
-  });
-  const revision = await prisma.gameSetting.findUnique({ where: { key: "catalog.revision" }, select: { value: true } });
-  return Math.max(last?.finishedAt?.getTime() ?? 0, Number(revision?.value) || 0);
-});
+const loadCatalogVersion = unstable_cache(() => readCatalogVersion(prisma), ["catalog-version"], { tags: [CATALOG_TAG], revalidate: 60 });
+
+/** Version du catalogue : relue au plus une fois par minute, partagée par toute la page. */
+export const getCatalogVersion = cache((): Promise<number> => loadCatalogVersion());
 
 const summarySelect = {
   anilistId: true,
