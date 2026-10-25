@@ -3,11 +3,12 @@
 // unique (broadcastId, userId) garantit qu'un envoi à tous ne verse jamais deux fois au même joueur,
 // même relancé en parallèle. Client injecté : pas de server/db.ts ici.
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
+import { directLotItems, directLotName, type DirectRewards } from "@/lib/economy/direct-send";
 import { writeAdminLog } from "../admin/log";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { grantLot, LotError, type LotDeps } from "./lots";
 
-export type LotGrantErrorCode = "NO_LOT" | "INACTIVE_LOT" | "NO_USER" | "NOT_ELIGIBLE" | "NOT_FOUND" | "DONE";
+export type LotGrantErrorCode = "NO_LOT" | "INACTIVE_LOT" | "NO_USER" | "NOT_ELIGIBLE" | "NOT_FOUND" | "DONE" | "UNKNOWN_REF";
 
 export class LotGrantError extends Error {
   constructor(readonly code: LotGrantErrorCode) {
@@ -106,6 +107,62 @@ export async function startLotBroadcastWith(
     return row;
   });
   return { broadcastId: broadcast.id, eligible };
+}
+
+/**
+ * Envoi direct à tous les inscrits : crée un lot inactif (absent des missions, de la boutique et du
+ * sélecteur de lots) avec les récompenses choisies, puis ouvre l'envoi, dans une seule transaction.
+ */
+export async function startDirectBroadcastWith(
+  db: PrismaClient,
+  input: { adminId: string; rewards: DirectRewards; reason: string | null; message?: string | null; now: Date },
+): Promise<{ broadcastId: string; lotId: string; eligible: number }> {
+  const items = directLotItems(input.rewards);
+  const typeIds = items.flatMap((i) => (i.kind === "BOOSTER" ? [i.boosterTypeId] : []));
+  const cardIds = items.flatMap((i) => (i.kind === "CARD" ? [i.cardId] : []));
+  const [types, cards] = await Promise.all([
+    typeIds.length ? db.boosterType.count({ where: { id: { in: typeIds } } }) : 0,
+    cardIds.length ? db.card.count({ where: { id: { in: cardIds } } }) : 0,
+  ]);
+  if (types !== typeIds.length || cards !== cardIds.length) throw new LotGrantError("UNKNOWN_REF");
+
+  const audience: BroadcastAudience = "REGISTERED";
+  const eligible = await db.user.count({ where: eligibleWhere(audience) });
+  const name = directLotName(input.now);
+  const rows = items.map((i) => ({
+    kind: i.kind,
+    boosterTypeId: i.kind === "BOOSTER" ? i.boosterTypeId : null,
+    cardId: i.kind === "CARD" ? i.cardId : null,
+    quantity: i.quantity,
+  }));
+  return db.$transaction(async (tx) => {
+    const lot = await tx.lot.create({ data: { name: { fr: name.fr, en: name.en }, zeni: input.rewards.zeni, active: false }, select: { id: true } });
+    if (rows.length) await tx.lotItem.createMany({ data: rows.map((r) => ({ ...r, lotId: lot.id })) });
+    await writeAdminLog(tx, {
+      adminId: input.adminId,
+      action: "LOT_CREATE",
+      targetType: "Lot",
+      targetId: lot.id,
+      after: { name, zeni: input.rewards.zeni, active: false, items: rows, direct: true },
+    });
+    const broadcast = await tx.lotBroadcast.create({
+      data: { lotId: lot.id, adminId: input.adminId, audience, reason: input.reason, message: input.message ?? null },
+      select: { id: true },
+    });
+    await writeAdminLog(tx, {
+      adminId: input.adminId,
+      action: "LOT_BROADCAST_START",
+      targetType: "Lot",
+      targetId: lot.id,
+      after: { broadcastId: broadcast.id, audience, eligible, reason: input.reason, message: input.message ?? null, direct: true },
+    });
+    return { broadcastId: broadcast.id, lotId: lot.id, eligible };
+  }, TX);
+}
+
+/** Nombre de joueurs visés par un envoi à tous. */
+export function countBroadcastAudience(db: PrismaClient, audience: BroadcastAudience): Promise<number> {
+  return db.user.count({ where: eligibleWhere(audience) });
 }
 
 /**

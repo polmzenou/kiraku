@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { directRewardsSchema } from "@/lib/economy/direct-send";
 import { noteSchema } from "@/lib/text/plain";
 import { z } from "@/lib/zod";
 import { USERNAME_REGEX } from "@/lib/username";
@@ -12,6 +13,7 @@ import {
   grantLotToUserWith,
   LotGrantError,
   runLotBroadcastWith,
+  startDirectBroadcastWith,
   startLotBroadcastWith,
   type LotGrantErrorCode,
 } from "../economy/lot-grant-core";
@@ -34,6 +36,7 @@ const BUDGET_MS = 20_000;
 const userSchema = z.object({ lotId: id, username: z.string().trim().regex(USERNAME_REGEX), reason, message: noteSchema });
 const broadcastSchema = z.object({ lotId: id, audience: z.enum(BROADCAST_AUDIENCES), reason, message: noteSchema, confirm: z.string().max(20) });
 const resumeSchema = z.object({ broadcastId: id });
+const directSchema = z.object({ rewards: directRewardsSchema, reason, message: noteSchema, confirm: z.string().max(20) }).strict();
 
 const limited = async (adminId: string) => !(await rateLimit(`admin:${adminId}`, { limit: 20, windowSeconds: 60 })).success;
 
@@ -88,6 +91,32 @@ export async function startLotBroadcastAction(input: unknown): Promise<AdminLotR
       message: parsed.data.message,
     });
     const run = await runLotBroadcastWith(prisma, { broadcastId, now: new Date(), budgetMs: BUDGET_MS }, lotDeps(), pushLater);
+    refresh();
+    return { ok: true, broadcastId, ...run };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+/** Envoi direct (Zeni, booster, carte) à tous les inscrits, sans lot préparé ; confirmé en tapant « TOUS ». */
+export async function startDirectBroadcastAction(input: unknown): Promise<AdminLotResult> {
+  const admin = await getAdmin();
+  if (!admin) return { ok: false, error: "FORBIDDEN" };
+  const parsed = directSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (await limited(admin.id)) return { ok: false, error: "RATE_LIMITED" };
+  const confirm = parsed.data.confirm.trim().toUpperCase();
+  if (confirm !== "TOUS" && confirm !== "ALL") return { ok: false, error: "CONFIRM_MISMATCH" };
+  try {
+    const now = new Date();
+    const { broadcastId } = await startDirectBroadcastWith(prisma, {
+      adminId: admin.id,
+      rewards: parsed.data.rewards,
+      reason: parsed.data.reason,
+      message: parsed.data.message,
+      now,
+    });
+    const run = await runLotBroadcastWith(prisma, { broadcastId, now, budgetMs: BUDGET_MS }, lotDeps(), pushLater);
     refresh();
     return { ok: true, broadcastId, ...run };
   } catch (e) {

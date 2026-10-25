@@ -1,5 +1,5 @@
 import "server-only";
-import type { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { parseAppearance } from "@/lib/catalog/appearance";
 import { blankCard, type CardDraft } from "@/lib/catalog/admin-form";
 import { parseAdminCatalogParams, type AdminCatalogParams } from "@/lib/catalog/admin-list";
@@ -34,7 +34,11 @@ export async function adminCatalogList(raw: Record<string, string | string[] | u
   const rows = await prisma.card.findMany({ where, orderBy: [...orderBy, { id: "asc" }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE,
     select: { id: true, publicId: true, name: true, nameNative: true, formName: true, imageUrl: true, appearance: true, rarity: true, rank: true, power: true, ki: true,
       status: true, origin: true, updatedAt: true, variantOfId: true, series: { select: { titleRomaji: true } }, _count: { select: usage } } });
-  const cards = rows.map(({ _count, ...c }) => ({ ...c, updatedAt: c.updatedAt.toISOString(), variants: _count.variants, deletable: deletableCard(c, _count) }));
+  // Détenteurs distincts des cartes de la page (le nombre d'exemplaires vient déjà de _count.copies)
+  const owned = rows.length ? await prisma.$queryRaw<{ cardId: string; owners: number }[]>`
+    SELECT "cardId", COUNT(DISTINCT "ownerId")::int AS owners FROM "UserCard" WHERE "cardId" IN (${Prisma.join(rows.map((r) => r.id))}) GROUP BY "cardId"` : [];
+  const owners = new Map(owned.map((o) => [o.cardId, o.owners]));
+  const cards = rows.map(({ _count, ...c }) => ({ ...c, updatedAt: c.updatedAt.toISOString(), variants: _count.variants, copies: _count.copies, owners: owners.get(c.id) ?? 0, deletable: deletableCard(c, _count) }));
   const counts = Object.fromEntries(grouped.map((g) => [g.status, g._count._all])) as Partial<Record<"DRAFT" | "PUBLISHED" | "ARCHIVED", number>>;
   return { cards, total, page, pages, filters: { ...filters, page }, counts };
 }
@@ -104,4 +108,24 @@ export async function rarityEditorDraft(key: string | null) {
   return { ...r, variantRequired: Boolean(r.variantRequired), key: key ? r.key : "", create: !key, template: r.key,
     ...(key ? {} : { updatedAt: undefined, nameFr: "", nameEn: "", sortOrder: Math.max(...definitions.map((d) => d.sortOrder)) + 100 }),
     rate: key ? rates[r.key] ?? 0 : 0, recycleValue: values[r.key] ?? 0, keywords: keywords[r.key] ?? 0, gifts: gifts.includes(r.key), trades: trades.includes(r.key) };
+}
+
+export const CARD_OWNERS_SHOWN = 200;
+
+/** Qui possède une carte et en combien d'exemplaires : les plus gros détenteurs d'abord. */
+export async function cardOwners(cardId: string) {
+  const [copies, [distinct], grouped] = await Promise.all([
+    prisma.userCard.count({ where: { cardId } }),
+    prisma.$queryRaw<{ owners: number }[]>`SELECT COUNT(DISTINCT "ownerId")::int AS owners FROM "UserCard" WHERE "cardId" = ${cardId}`,
+    prisma.userCard.groupBy({ by: ["ownerId"], where: { cardId }, _count: { _all: true }, orderBy: [{ _count: { id: "desc" } }, { ownerId: "asc" }], take: CARD_OWNERS_SHOWN }),
+  ]);
+  const users = grouped.length
+    ? await prisma.user.findMany({ where: { id: { in: grouped.map((g) => g.ownerId) } }, select: { id: true, username: true, isGuest: true } })
+    : [];
+  const byId = new Map(users.map((u) => [u.id, u]));
+  const list = grouped.flatMap((g) => {
+    const user = byId.get(g.ownerId);
+    return user ? [{ userId: user.id, username: user.username, isGuest: user.isGuest, copies: g._count._all }] : [];
+  });
+  return { owners: distinct?.owners ?? 0, copies, list };
 }

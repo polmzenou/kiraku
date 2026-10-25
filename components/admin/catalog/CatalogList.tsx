@@ -72,7 +72,8 @@ export function CatalogList({ data, rarities, boosters, series }: {
           <p className="truncate text-xs text-text-muted">{c.formName ? `${c.formName} · ` : ""}{c.series.titleRomaji}</p>
           <p className="mt-1 text-xs"><span className="font-seal">{rarities.find((r) => r.key === c.rarity)?.seal}</span> {tr(c.rarity)} · <span className="tabular-nums">{c.power} / {c.ki}</span> · #{c.publicId}</p>
           <p className="mt-1 flex flex-wrap gap-1 text-xs text-text-muted"><span className="rounded-pill border border-border px-2">{t(`statuses.${c.status}`)}</span><span className="rounded-pill border border-border px-2">{c.origin === "CUSTOM" ? t("custom") : "AniList"}</span>
-            {c.variantOfId && <span className="rounded-pill border border-kin px-2 text-kin">{t("kinds.variant")}</span>}{c.variants > 0 && <span className="rounded-pill border border-border px-2">{t("variantCount", { count: c.variants })}</span>}</p>
+            {c.variantOfId && <span className="rounded-pill border border-kin px-2 text-kin">{t("kinds.variant")}</span>}{c.variants > 0 && <span className="rounded-pill border border-border px-2">{t("variantCount", { count: c.variants })}</span>}
+            <span className="rounded-pill border border-border px-2 tabular-nums">{t("ownedSummary", { owners: c.owners, copies: c.copies })}</span></p>
           <div className="mt-1 flex flex-wrap items-center gap-x-3"><Link href={`/admin/catalogue/${c.id}`} className="inline-flex min-h-11 items-center text-xs text-link underline">{t("edit")}</Link><Link href={`/admin/catalogue/nouvelle?duplicate=${c.id}`} className="inline-flex min-h-11 items-center text-xs text-link underline">{t("duplicate")}</Link><CatalogStatusButton id={c.id} updatedAt={c.updatedAt} archived={c.status === "ARCHIVED"} deletable={c.deletable} name={c.name} /></div>
         </div>
       </li>;
