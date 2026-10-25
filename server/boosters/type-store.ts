@@ -2,7 +2,8 @@
 // "server-only" ni server/db.ts : le client Prisma est injecté (serveur, scripts, tests).
 import type { BoosterType as BoosterTypeRow, PrismaClient, Prisma } from "@/generated/prisma/client";
 import { groupByRarity, poolCounts, type CardPool } from "@/lib/boosters/draw";
-import { filterPool, parsePoolFilter, type FilterContext, type PoolCandidate } from "@/lib/boosters/pool-filter";
+import { filterPool, isDynamicFilter, parsePoolFilter, type FilterContext, type PoolCandidate } from "@/lib/boosters/pool-filter";
+import { isPoolStale } from "@/lib/boosters/pool-freshness";
 import {
   BOOSTER_FAMILIES,
   isRarity,
@@ -117,24 +118,37 @@ export function computePool(
 
 export type PoolReport = { slug: string; size: number; counts: Record<Rarity, number> };
 
-/** Recalcule et enregistre le pool de chaque type (ou des slugs donnés). */
+/**
+ * Recalcule et enregistre le pool de chaque type (ou des slugs donnés). Avec `onlyStale`, seuls les
+ * pools périmés sont refaits, et le catalogue n'est pas lu s'il n'y en a aucun.
+ */
 export async function recomputeBoosterPools(
   db: Db,
   ctx: FilterContext,
-  opts: { slugs?: string[]; now?: Date } = {},
+  opts: { slugs?: string[]; now?: Date; onlyStale?: { catalogVersion: number; timeZone: string } } = {},
 ): Promise<PoolReport[]> {
-  const [rows, candidates] = await Promise.all([
-    db.boosterType.findMany({ where: opts.slugs ? { slug: { in: opts.slugs } } : undefined }),
-    loadCandidates(db),
-  ]);
   const now = opts.now ?? new Date();
+  // Requêtes l'une après l'autre : `db` peut être une transaction, qui n'a qu'une connexion.
+  const all = await db.boosterType.findMany({ where: opts.slugs ? { slug: { in: opts.slugs } } : undefined, omit: { poolCardIds: true } });
+  const stale = opts.onlyStale;
+  const rows = stale
+    ? all.filter((row) => {
+        const view = toBoosterTypeView(row);
+        const dynamic = view.filter !== null && isDynamicFilter(view.filter);
+        return isPoolStale({ poolComputedAt: row.poolComputedAt, updatedAt: row.updatedAt, dynamic }, stale.catalogVersion, now, stale.timeZone);
+      })
+    : all;
+  if (rows.length === 0) return [];
+  const candidates = await loadCandidates(db);
   const reports: PoolReport[] = [];
   for (const row of rows) {
     const cards = computePoolCards(toBoosterTypeView(row), candidates, ctx);
     const counts = poolCounts(groupByRarity(cards));
     await db.boosterType.update({
       where: { id: row.id },
-      data: { poolCardIds: cards.map((c) => c.id), poolCounts: counts, poolComputedAt: now },
+      // updatedAt explicite : sinon Prisma le pose un instant après poolComputedAt, et le pool
+      // paraîtrait toujours plus ancien que son type.
+      data: { poolCardIds: cards.map((c) => c.id), poolCounts: counts, poolComputedAt: now, updatedAt: now },
     });
     reports.push({ slug: row.slug, size: cards.length, counts });
   }

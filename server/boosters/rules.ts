@@ -10,7 +10,7 @@ import { CATALOG_TAG, getCatalogVersion } from "../catalog/queries";
 const loadWeights = unstable_cache(async (_version: number) => {
   void _version;
   return Object.fromEntries((await prisma.card.findMany({ where: { dropWeight: { not: 1 } }, select: { id: true, dropWeight: true } })).map((c) => [c.id, c.dropWeight]));
-}, ["catalog-card-weights"], { tags: [CATALOG_TAG], revalidate: 3600 });
+}, ["catalog-card-weights"], { tags: [CATALOG_TAG], revalidate: false }); // clé = version du catalogue
 
 export type BoosterRules = { draw: DrawRules; stock: StockRules; intervalMinutes: number };
 

@@ -396,6 +396,7 @@ model UserCard {
 
   @@index([ownerId, cardId])
   @@index([ownerId, status, cardId]) // collection groupée par carte (couvre aussi [ownerId, status])
+  @@index([cardId]) // exemplaires d'une carte (marché, échanges, fiche)
 }
 
 // Un booster ouvert, partageable par lien (/tirage/[id])
@@ -431,6 +432,7 @@ model NotablePull {
   createdAt        DateTime         @default(now())
 
   @@index([createdAt])
+  @@index([userId]) // suppression d'un compte (cascade)
 }
 
 // Carte déjà obtenue au moins une fois (badge « Nouveau », fiche wiki), même si elle a été revendue
@@ -443,6 +445,7 @@ model Discovery {
 
   @@id([userId, cardId])
   @@index([userId, createdAt]) // missions « découvrir des cartes »
+  @@index([cardId])
 }
 
 // Journal de toutes les écritures faites depuis /admin

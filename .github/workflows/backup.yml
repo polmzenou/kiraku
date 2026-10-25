@@ -1,0 +1,52 @@
+# Sauvegarde quotidienne de la base : le plan gratuit Supabase n'en fait aucune.
+# Dump du schéma public, chiffré (AES-256) avant l'envoi : un artefact se télécharge par toute
+# personne ayant accès au dépôt. Restauration : docs/MIGRATION-SUPABASE.md, « Restaurer une sauvegarde ».
+# Secrets requis : BACKUP_DATABASE_URL (pooler Supabase en mode session, port 5432) et BACKUP_PASSPHRASE.
+name: Sauvegarde base
+
+on:
+  schedule:
+    - cron: "17 3 * * *" # 03 h 17 UTC : creux de trafic, avant les crons Vercel de 04 h
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: server/pg-adapter.ts
+          sparse-checkout-cone-mode: false
+      - name: Dump chiffré
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          if [ -z "$DATABASE_URL" ] || [ -z "$PASSPHRASE" ]; then echo "Secrets BACKUP_DATABASE_URL et BACKUP_PASSPHRASE requis"; exit 1; fi
+          # TLS vérifié avec la CA Supabase épinglée dans le code de l'app.
+          mkdir -p ca && sed -n '/BEGIN CERTIFICATE/,/END CERTIFICATE/p' server/pg-adapter.ts | sed 's/^.*`-----BEGIN/-----BEGIN/; s/`;$//' > ca/root.pem
+          grep -q "END CERTIFICATE" ca/root.pem
+          stamp=$(date -u +%Y-%m-%dT%H%MZ)
+          # --user : le dump appartient à l'utilisateur du runner, qui peut ensuite l'effacer.
+          docker run --rm --user "$(id -u):$(id -g)" -e DATABASE_URL -e PGSSLMODE=verify-full -e PGSSLROOTCERT=/ca/root.pem \
+            -v "$PWD/ca:/ca:ro" -v "$PWD:/out" postgres:17 \
+            sh -c 'pg_dump "$DATABASE_URL" --format=custom --no-owner --no-privileges --schema=public --file=/out/kiraku.dump'
+          gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 --symmetric --cipher-algo AES256 \
+            --output "kiraku-$stamp.dump.gpg" kiraku.dump 3<<<"$PASSPHRASE"
+          shred -u kiraku.dump
+          echo "BACKUP_FILE=kiraku-$stamp.dump.gpg" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kiraku-db-${{ github.run_id }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 7
+          if-no-files-found: error

@@ -1,7 +1,9 @@
 import "server-only";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { attachDatabasePool } from "@vercel/functions";
 import { PrismaClient } from "@/generated/prisma/client";
 import { env, isProduction } from "./env";
-import { createPgAdapter } from "./pg-adapter";
+import { createPgPool } from "./pg-adapter";
 
 // Un seul client par processus ; en dev, survit au rechargement à chaud. On garde aussi la classe
 // qui l'a créé : après un `prisma generate` (nouveau modèle), la classe change et le client est
@@ -9,7 +11,12 @@ import { createPgAdapter } from "./pg-adapter";
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient; prismaClass?: typeof PrismaClient };
 
 function createClient() {
-  return new PrismaClient({ adapter: createPgAdapter(env.DATABASE_URL) });
+  const pool = createPgPool(env.DATABASE_URL);
+  // Fluid compute : l'instance reste en vie le temps de fermer les connexions inactives,
+  // au lieu de les laisser ouvertes côté Supabase quand elle se met en veille.
+  if (isProduction) attachDatabasePool(pool);
+  // disposeExternalPool : en dev, le client remplacé après un `prisma generate` ferme son pool.
+  return new PrismaClient({ adapter: new PrismaPg(pool, { disposeExternalPool: true }) });
 }
 
 function sharedClient(): PrismaClient {

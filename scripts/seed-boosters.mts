@@ -1,8 +1,8 @@
-// Charge les boosters de départ (prisma/seed/booster-types.ts), recalcule leurs pools, puis
+// Charge les boosters de départ (prisma/seed/booster-types.ts), recalcule les pools périmés, puis
 // l'économie de départ (prisma/seed/economy.ts : lots, missions, boutique ; ce qui manque seulement). Usage :
 //   npm run seed:boosters              crée les types manquants, garde ceux déjà réglés dans l'admin
 //   npm run seed:boosters -- --force   réécrit aussi les types existants avec les valeurs de départ
-//   npm run seed:boosters -- --pools   recalcule seulement les pools (après un changement de catalogue)
+//   npm run seed:boosters -- --pools   recalcule tous les pools, même à jour (et seulement eux)
 //   npx tsx scripts/seed-boosters.mts --slug antagonistes   cible un seul type, sans toucher à l'économie
 // Sous PowerShell, le « -- » est avalé : npx tsx scripts/seed-boosters.mts --force
 import { parseArgs } from "node:util";
@@ -13,6 +13,7 @@ import { parseSetting } from "../lib/settings/defaults.ts";
 import { BOOSTER_SEEDS } from "../prisma/seed/booster-types.ts";
 import { upsertEconomySeeds } from "../prisma/seed/economy.ts";
 import { recomputeBoosterPools, upsertBoosterSeeds } from "../server/boosters/type-store.ts";
+import { readCatalogVersion } from "../server/catalog/version.ts";
 import { createPgAdapter } from "../server/pg-adapter.ts";
 
 config({ path: [".env.local", ".env"], quiet: true });
@@ -33,8 +34,11 @@ try {
     console.log(`Types créés : ${r.created.length}, réécrits : ${r.updated.length}, gardés : ${r.kept.length}`);
   }
   const tz = await prisma.gameSetting.findUnique({ where: { key: "game.timeZone" }, select: { value: true } });
-  const reports = await recomputeBoosterPools(prisma, filterContext(new Date(), parseSetting("game.timeZone", tz?.value)), { slugs: args.slug });
-  console.log("\nPools recalculés :");
+  const timeZone = parseSetting("game.timeZone", tz?.value);
+  // Au déploiement, seuls les pools périmés sont refaits ; --pools et --force recalculent tout.
+  const onlyStale = args.pools || args.force ? undefined : { catalogVersion: await readCatalogVersion(prisma), timeZone };
+  const reports = await recomputeBoosterPools(prisma, filterContext(new Date(), timeZone), { slugs: args.slug, onlyStale });
+  console.log(reports.length > 0 ? "\nPools recalculés :" : "\nPools à jour : aucun recalcul.");
   for (const r of reports.sort((a, b) => b.size - a.size)) {
     const detail = Object.entries(r.counts)
       .map(([rarity, n]) => `${rarity[0]} ${n}`)
