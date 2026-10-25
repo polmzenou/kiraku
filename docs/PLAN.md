@@ -95,8 +95,8 @@ La tâche planifiée appelle une route du serveur ; elle ne parle jamais directe
 | Besoin | Choix | Pourquoi |
 | --- | --- | --- |
 | Framework | Next.js App Router, TypeScript | Server Components pour les pages, Server Actions pour les mutations |
-| ORM | Prisma + `@prisma/adapter-neon` | Driver serverless de Neon, transactions interactives OK via WebSocket |
-| BDD | Neon Postgres | URL poolée (`-pooler`) au runtime, URL directe pour les migrations |
+| ORM | Prisma + `@prisma/adapter-pg` | Driver `pg` en TCP, transactions interactives OK ; TLS vérifié avec la CA Supabase épinglée (`server/pg-adapter.ts`) |
+| BDD | Supabase Postgres (Neon jusqu'au 25/10/2026) | Pooler en mode transaction (6543) au runtime, mode session (5432) pour les migrations ; Data API désactivée, RLS active sans politique |
 | Auth | Auth.js (NextAuth) + adaptateur Prisma | Discord/Google en un clic, sessions en base |
 | Validation | Zod | Chaque Server Action valide ses entrées |
 | Images | Vercel Blob ou Cloudinary + `next/image` | WebP redimensionné, servi par CDN |
@@ -104,7 +104,7 @@ La tâche planifiée appelle une route du serveur ; elle ne parle jamais directe
 | UI | Tailwind + Framer Motion | Animation d'ouverture et effet holo des cartes |
 | Temps réel | Ably (`ABLY_API_KEY`, facultatif en dev) | Combat en direct : le serveur publie, les navigateurs s'abonnent avec un jeton limité |
 
-Mets la région Neon et la région des fonctions Vercel au même endroit (ex. Francfort) : c'est le gain de latence le plus simple.
+Mets la région de la base et la région des fonctions Vercel au même endroit (Supabase eu-west-1 et Vercel lhr1) : c'est le gain de latence le plus simple.
 
 ## Écrans et navigation (mobile first)
 
@@ -738,7 +738,7 @@ Les trois risques réels sont la duplication de cartes ou de Zeni (concurrence),
 
 Performance :
 
-- Un seul `PrismaClient` partagé (singleton dans `lib/prisma.ts`), branché sur l'adaptateur Neon et l'URL poolée.
+- Un seul `PrismaClient` partagé (singleton dans `lib/prisma.ts`), branché sur `@prisma/adapter-pg` et l'URL poolée (mode transaction).
 - Pages en Server Components ; seuls les éléments interactifs (ouverture, enchère, timer) sont des Client Components.
 - Catalogue et pages de cartes en cache (`revalidateTag` à l'ajout de cartes).
 - Images de cartes en WebP, deux tailles (vignette \~300 px, détail \~800 px), via CDN.
@@ -804,8 +804,8 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")  // URL poolée Neon
-  directUrl = env("DIRECT_URL")    // URL directe, pour migrate
+  url       = env("DATABASE_URL")  // URL poolée (Supabase, mode transaction)
+  directUrl = env("DIRECT_URL")    // pooler en mode session, pour migrate
 }
 
 enum Rarity { COMMON UNCOMMON RARE EPIC LEGENDARY MYTHIC }

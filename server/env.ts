@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "@/lib/zod";
 
 const schema = z.object({
-  DATABASE_URL: z.url(), // URL poolée Neon (-pooler), utilisée à l'exécution
+  DATABASE_URL: z.url(), // URL poolée (Supabase : pooler en mode transaction, port 6543), utilisée à l'exécution
   AUTH_SECRET: z.string().min(32),
   // Discord en attente : sans ces deux variables, la liaison est simplement masquée
   AUTH_DISCORD_ID: z.string().min(1).optional(),

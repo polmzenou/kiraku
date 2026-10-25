@@ -26,7 +26,7 @@ Kiraku ne vend aucune donnée, n'affiche aucune publicité et ne fait aucun prof
 ## Sous-traitants
 
 - **Vercel** (hébergement du site) — États-Unis, région d'exécution à Londres.
-- **Neon** (base de données) — région [[RÉGION_NEON]].
+- **Supabase** (base de données) — région [[RÉGION_SUPABASE]].
 - **Upstash** (limitation anti-abus) — région [[RÉGION_UPSTASH]].
 - **Resend** (envoi des e-mails de vérification et de mot de passe).
 - **Ably** (temps réel des combats).

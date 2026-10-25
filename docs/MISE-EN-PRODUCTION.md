@@ -3,18 +3,21 @@
 Cette liste est à cocher pour **chaque lancement**. Une case vide reste une vérification à faire,
 même si le code est livré. Ne jamais lancer les tests `*.db.test.ts` contre la base utilisée par
 les joueurs. Le développement utilise actuellement la même base que la production : créer une
-branche Neon isolée pour ces tests et pour les futurs développements qui modifient des données.
+base isolée (projet ou branche Supabase distinct) pour ces tests et pour les futurs développements
+qui modifient des données.
 
 ## Environnement et base
 
 - [ ] Relire toutes les variables de `.env.example` dans Vercel, en distinguant Production et Preview.
-  `DATABASE_URL` est poolée ; `DIRECT_URL` (ou `DATABASE_URL_UNPOOLED` / `POSTGRES_URL_NON_POOLING`)
-  vise la même branche et la même base sans pooler. `AUTH_SECRET` a au moins 32 caractères.
-- [ ] Configurer `DATABASE_URL_TEST` sur une branche Neon **distincte** et appliquer les migrations
-  sur cette branche avant les tests. Garder cette variable hors du déploiement public.
+  `DATABASE_URL` est le pooler Supabase en mode transaction (port 6543) ; `DIRECT_URL` vise le même
+  projet par le pooler en mode session (port 5432) : l'hôte direct `db.<ref>.supabase.co` est en IPv6
+  seulement, injoignable depuis Vercel. `AUTH_SECRET` a au moins 32 caractères.
+- [ ] Configurer `DATABASE_URL_TEST` sur une base **distincte** et appliquer les migrations
+  sur cette base avant les tests. Garder cette variable hors du déploiement public.
 - [ ] `node scripts/check-deploy-env.mjs --production` termine sans erreur avec les valeurs de production.
   Le script masque les secrets et vérifie les groupes de clés, les URL et la séparation de la base de test.
-- [ ] Branche Neon de production choisie ; PITR et sauvegardes activés et restauration vérifiée.
+- [ ] Projet Supabase de production choisi ; sauvegardes (et PITR selon le plan) activées et restauration vérifiée.
+- [ ] Data API Supabase désactivée et RLS active sur toutes les tables de `public` (advisors Supabase sans alerte de sécurité).
 - [ ] `npm run db:status`, puis `npm run db:deploy` si nécessaire (`prisma migrate deploy`, jamais `db push`).
   `vercel-build` fait déjà ce déploiement avant les seeds et le build.
 

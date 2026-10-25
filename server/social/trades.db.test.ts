@@ -1,14 +1,14 @@
 import { randomBytes } from "node:crypto";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { RARITIES } from "@/lib/catalog/rarity";
 import { pairKey } from "@/lib/social/relation";
 import type { TradeRules } from "@/lib/social/trades";
+import { createPgAdapter } from "@/server/pg-adapter";
 import { giftCardWith } from "./gift-core";
 import { acceptTradeWith, proposeTradeWith } from "./trade-core";
 
-// Concurrence des échanges sur une vraie base (branche Neon de dev) : sauté sans DATABASE_URL_TEST.
+// Concurrence des échanges sur une vraie base (base de test isolée) : sauté sans DATABASE_URL_TEST.
 //   DATABASE_URL_TEST="postgresql://…" npx vitest run server/social/trades.db.test.ts
 // Les joueurs jetables sont supprimés à la fin (leurs cartes, échanges et notifications partent en cascade).
 
@@ -17,7 +17,7 @@ const OLD = new Date(Date.now() - 30 * 86_400_000);
 const rules: TradeRules = { expiryHours: 48, maxOffered: 5, maxPendingSent: 10, perDay: 20, allowedRarities: [...RARITIES] };
 
 describe.skipIf(!url)("échanges atomiques (base réelle)", () => {
-  const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString: url! }) });
+  const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });
   const ids: string[] = [];
   let cards: string[] = [];
 

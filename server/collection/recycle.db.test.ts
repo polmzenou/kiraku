@@ -1,12 +1,12 @@
 import { randomBytes } from "node:crypto";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
+import { createPgAdapter } from "@/server/pg-adapter";
 import { RecycleError, recycleWith } from "./recycle-core";
 import { setShowcaseWith } from "./showcase-core";
 
-// Concurrence du recyclage et de la vitrine sur une vraie base (branche Neon de dev) : sauté sans
+// Concurrence du recyclage et de la vitrine sur une vraie base (base de test isolée) : sauté sans
 // DATABASE_URL_TEST.
 //   DATABASE_URL_TEST="postgresql://…" npx vitest run server/collection/recycle.db.test.ts
 // Crée un joueur jetable, puis supprime uniquement ce qu'il a créé.
@@ -16,7 +16,7 @@ const values = SETTING_DEFAULTS["collection.recycleValues"];
 const START = 1000;
 
 describe.skipIf(!url)("recyclage atomique (base réelle)", () => {
-  const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString: url! }) });
+  const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });
   let userId: string;
   let common: { id: string; rarity: string };
   let other: { id: string; rarity: string };

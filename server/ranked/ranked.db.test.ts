@@ -1,5 +1,4 @@
 import { randomBytes } from "node:crypto";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { DEFAULT_BATTLE_RULES } from "@/lib/battle/config";
@@ -7,10 +6,11 @@ import type { BattleState } from "@/lib/battle/types";
 import { DEFAULT_RANKED_RULES } from "@/lib/ranked/defaults";
 import type { RankedRules } from "@/lib/ranked/rules";
 import { seededRng } from "@/lib/rng";
+import { createPgAdapter } from "@/server/pg-adapter";
 import { joinQueueWith, playActionWith, pollQueueWith, startBotBattleWith, type Ctx } from "../battle/battle-core";
 import { claimSeasonRewardWith, currentSeasonWith, rollSeasonWith } from "./ranked-core";
 
-// Classé sur une vraie base (branche Neon de dev) : sauté sans DATABASE_URL_TEST.
+// Classé sur une vraie base (base de test isolée) : sauté sans DATABASE_URL_TEST.
 //   DATABASE_URL_TEST="postgresql://…" npx vitest run server/ranked/ranked.db.test.ts
 //
 // Vérifié : PC des deux camps appliqués une seule fois dans la transaction de fin de partie,
@@ -22,7 +22,7 @@ const url = process.env.DATABASE_URL_TEST;
 const HOUR = 3_600_000;
 
 describe.skipIf(!url)("classé atomique (base réelle)", () => {
-  const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString: url! }) });
+  const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });
   const users: string[] = [];
   const lots: string[] = [];
   let cardIds: string[] = [];

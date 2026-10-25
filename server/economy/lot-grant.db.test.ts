@@ -1,11 +1,11 @@
 import { randomBytes } from "node:crypto";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
+import { createPgAdapter } from "@/server/pg-adapter";
 import { grantLotToUserWith, LotGrantError } from "./lot-grant-core";
 import type { LotDeps } from "./lots";
 
-// Envoi d'un lot par un admin sur une vraie base (branche Neon de dev) : sauté sans DATABASE_URL_TEST.
+// Envoi d'un lot par un admin sur une vraie base (base de test isolée) : sauté sans DATABASE_URL_TEST.
 //   DATABASE_URL_TEST="postgresql://…" npx vitest run server/economy/lot-grant.db.test.ts
 // (L'envoi à tous n'est pas testé ici : il servirait tous les joueurs de la base de test.)
 
@@ -13,7 +13,7 @@ const url = process.env.DATABASE_URL_TEST;
 const deps: LotDeps = { rng: () => 0, loadPool: async () => ({ COMMON: [], UNCOMMON: [], RARE: [], EPIC: [], LEGENDARY: [], MYTHIC: [] }) };
 
 describe.skipIf(!url)("envoi d'un lot par l'admin (base réelle)", () => {
-  const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString: url! }) });
+  const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });
   const users: string[] = [];
   let lotId: string;
 

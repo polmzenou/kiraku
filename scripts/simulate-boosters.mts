@@ -6,7 +6,6 @@
 //   npm run sim:boosters -- --type jubako --n 500000   un seul type
 // Sous PowerShell, le « -- » est avalé : npx tsx scripts/simulate-boosters.mts --from-db
 import { parseArgs } from "node:util";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { config } from "dotenv";
 import { PrismaClient } from "../generated/prisma/client.ts";
 import type { DrawRules } from "../lib/boosters/draw.ts";
@@ -17,6 +16,7 @@ import { boosterChances, mythicsPerDay, slotDistribution } from "../lib/boosters
 import { seededRng } from "../lib/boosters/rng.ts";
 import { CHI2_CRITICAL_001, chiSquare, compareToOdds, simulate, type Check } from "../lib/boosters/simulation.ts";
 import { parseSetting, type SettingKey } from "../lib/settings/defaults.ts";
+import { createPgAdapter } from "../server/pg-adapter.ts";
 
 config({ path: [".env.local", ".env"], quiet: true });
 
@@ -37,7 +37,7 @@ if (!Number.isInteger(n) || n < 1000 || n > 100_000_000 || !Number.isInteger(see
 }
 
 async function rulesFromDb(): Promise<{ rules: DrawRules; intervalMinutes: number }> {
-  const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString: process.env.DATABASE_URL! }) });
+  const prisma = new PrismaClient({ adapter: createPgAdapter(process.env.DATABASE_URL!) });
   try {
     const rows = await prisma.gameSetting.findMany({ select: { key: true, value: true } });
     const stored = new Map(rows.map((r) => [r.key, r.value]));

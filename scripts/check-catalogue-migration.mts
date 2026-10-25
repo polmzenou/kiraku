@@ -3,8 +3,8 @@ import { config } from "dotenv";
 import { createHash } from "node:crypto";
 import { readFile, readdir, mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { Prisma, PrismaClient } from "../generated/prisma/client.ts";
+import { createPgAdapter } from "../server/pg-adapter.ts";
 
 config({ path: [".env.local", ".env"], quiet: true });
 const migration = "20261020010000_admin_catalogue";
@@ -14,7 +14,7 @@ if (!url) throw new Error("DATABASE_URL manquante");
 const identity = (value: string) => { const u = new URL(value); return `${u.hostname.replace("-pooler.", ".")}:${u.port || "5432"}${u.pathname}`; };
 const direct = process.env.DIRECT_URL || process.env.DATABASE_URL_UNPOOLED || process.env.POSTGRES_URL_NON_POOLING;
 if (direct && identity(url) !== identity(direct)) throw new Error("Application et migrations ciblent des bases différentes.");
-const db = new PrismaClient({ adapter: new PrismaNeon({ connectionString: url }) });
+const db = new PrismaClient({ adapter: createPgAdapter(url) });
 const root = resolve("prisma/migrations");
 const reportRoot = resolve("reports/catalogue");
 const additions: Record<string, string[]> = {

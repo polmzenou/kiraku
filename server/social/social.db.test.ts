@@ -1,13 +1,13 @@
 import { randomBytes } from "node:crypto";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { pairKey } from "@/lib/social/relation";
+import { createPgAdapter } from "@/server/pg-adapter";
 import { setShowcaseWith } from "../collection/showcase-core";
 import { blockWith, sendRequestWith, type FriendLimits } from "./friendship-core";
 import { GiftError, giftBoosterWith, giftCardWith, type GiftContext } from "./gift-core";
 
-// Concurrence des amis et des cadeaux sur une vraie base (branche Neon de dev) : sauté sans
+// Concurrence des amis et des cadeaux sur une vraie base (base de test isolée) : sauté sans
 // DATABASE_URL_TEST.
 //   DATABASE_URL_TEST="postgresql://…" npx vitest run server/social/social.db.test.ts
 // Crée des joueurs jetables, puis supprime uniquement ce qu'ils ont créé.
@@ -19,7 +19,7 @@ const rules = { enabled: true, perDaySent: 3, perDayReceived: 5, minAccountAgeHo
 const OLD = new Date(Date.now() - 30 * 86_400_000);
 
 describe.skipIf(!url)("amis et cadeaux atomiques (base réelle)", () => {
-  const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString: url! }) });
+  const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });
   const ids: string[] = [];
   let cardId: string;
 

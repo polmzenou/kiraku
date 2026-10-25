@@ -7,7 +7,7 @@ Le plan complet est dans `docs/PLAN.md`. Lis la section concernée avant chaque 
 ## Stack
 
 - Next.js (App Router, Server Components, Server Actions), TypeScript strict
-- Prisma + Neon Postgres (`@prisma/adapter-neon`, `DATABASE_URL` poolée, `DIRECT_URL` pour les migrations)
+- Prisma + Supabase Postgres (`@prisma/adapter-pg` via `server/pg-adapter.ts` ; `DATABASE_URL` = pooler en mode transaction, port 6543 ; `DIRECT_URL` = pooler en mode session, port 5432, pour les migrations)
 - Auth.js : compte invité automatique, puis connexion Discord
 - next-intl : français par défaut (sans préfixe), anglais sous `/en`
 - Tailwind avec les tokens de la DA Kiraku, Motion (`LazyMotion`) pour les animations

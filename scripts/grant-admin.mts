@@ -4,9 +4,9 @@
 //   npx tsx scripts/grant-admin.mts <pseudo> --revoke
 // En production, le premier admin est désigné par ADMIN_DISCORD_ID (liaison Discord).
 import { parseArgs } from "node:util";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { config } from "dotenv";
 import { PrismaClient } from "../generated/prisma/client.ts";
+import { createPgAdapter } from "../server/pg-adapter.ts";
 
 config({ path: [".env.local", ".env"], quiet: true });
 
@@ -24,7 +24,7 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
-const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString: process.env.DATABASE_URL }) });
+const prisma = new PrismaClient({ adapter: createPgAdapter(process.env.DATABASE_URL) });
 const [from, to] = values.revoke ? (["ADMIN", "USER"] as const) : (["USER", "ADMIN"] as const);
 
 try {

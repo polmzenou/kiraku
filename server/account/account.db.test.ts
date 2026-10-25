@@ -1,11 +1,11 @@
 import { randomBytes } from "node:crypto";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
+import { createPgAdapter } from "@/server/pg-adapter";
 import { AccountError, anonymizeUserWith, cancelDeletionWith, processDueDeletionsWith, requestDeletionWith } from "./account-core";
 import { collectExportWith } from "./export-core";
 
-// Droits RGPD sur une vraie base (branche Neon de dev) : sauté sans DATABASE_URL_TEST.
+// Droits RGPD sur une vraie base (base de test isolée) : sauté sans DATABASE_URL_TEST.
 //   DATABASE_URL_TEST="postgresql://…" npx vitest run server/account/account.db.test.ts
 // Crée deux joueurs jetables, puis supprime uniquement ce qu'ils ont créé.
 
@@ -13,7 +13,7 @@ const url = process.env.DATABASE_URL_TEST;
 const START = 500;
 
 describe.skipIf(!url)("suppression et anonymisation du compte (base réelle)", () => {
-  const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString: url! }) });
+  const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });
   const ids: string[] = [];
 
   async function makePlayer(tag: string) {
