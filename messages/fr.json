@@ -1,47 +1,30 @@
 {
   "v1Welcome": {
-    "badge": "Mise à jour · v1.5",
-    "title": "La v1.5 est là,",
-    "titleAccent": "et elle est chargée !",
-    "intro": "Chat entre amis, échanges au Marché, profils à ton image, nouvelles cartes Gold et AR… Cette mise à jour est notre plus grosse depuis le lancement. Voici le récap !",
-    "available": "Les nouveautés",
-    "features": {
-      "chat": {
-        "title": "Le chat entre amis",
-        "body": "Discute directement avec tes amis depuis leur page : prépare un échange, montre ta dernière pépite ou lance un défi."
+    "badge": "Message de l'équipe",
+    "title": "Toutes nos excuses,",
+    "titleAccent": "Kiraku est de retour !",
+    "intro": "Pendant environ 24 heures, Kiraku était inaccessible à cause d'un problème technique. On sait à quel point c'est frustrant, surtout en pleine chasse aux cartes. Tout est rentré dans l'ordre et ta collection t'attend.",
+    "gifts": {
+      "title": "Pour nous faire pardonner",
+      "intro": "Kiraku offre à tous les joueurs inscrits :",
+      "booster": {
+        "title": "1 booster Légendaire",
+        "body": "1 Légendaire garantie"
       },
-      "profile": {
-        "title": "Un profil à ton image",
-        "body": "Personnalise ton profil : choisis ce que tu mets en avant et affiche ton style aux autres joueurs."
+      "zeni": {
+        "title": "1 000 Zeni",
+        "body": "Directement sur ton solde"
       },
-      "cards": {
-        "title": "Nouvelles cartes Gold et AR",
-        "body": "Des versions dorées et des formes alternatives (AR) rejoignent les boosters. Sauras-tu toutes les trouver ?"
-      },
-      "animations": {
-        "title": "De nouvelles animations",
-        "body": "Ouvertures, cartes et transitions gagnent en éclat pour rendre chaque tirage encore plus excitant."
-      }
+      "registered": "Tes cadeaux sont <strong>déjà sur ton compte</strong>.",
+      "guest": "Ces cadeaux ont été versés aux <strong>comptes inscrits</strong>. <link>Lie ton compte Discord</link> pour profiter des prochains."
     },
-    "trades": {
-      "title": "Les échanges arrivent au Marché",
-      "badge": "Opérationnel !",
-      "body": "Propose tes doubles, indique les cartes que tu recherches et échange avec tous les joueurs, en plus des échanges entre amis.",
-      "dev": "Cette fonctionnalité est <strong>toute neuve</strong> et plein de nouvelles choses arrivent encore ! Si tu constates un bug, <strong>n'hésite pas à nous contacter</strong>.",
-      "cta": "Voir les échanges",
-      "contact": "Signaler un bug"
+    "x": {
+      "title": "Suis-nous sur X",
+      "body": "Abonne-toi à <strong>{handle}</strong> pour être au courant des mises à jour et être prévenu en cas de problème technique comme celui-ci.",
+      "cta": "Suivre {handle}"
     },
-    "discord": {
-      "title": "Encore mieux avec Discord",
-      "body": "Lie ton compte Discord pour te reconnecter facilement et retrouver ta collection sur tous tes appareils, sans perdre ta progression.",
-      "bonus": "Et hop : {amount, number} Zeni offerts à ta première liaison !"
-    },
-    "soon": {
-      "title": "Et plein d'autres choses…",
-      "body": "Des <strong>corrections</strong>, des <strong>finitions</strong> et de <strong>petites surprises</strong> un peu partout sur le site. Et ce n'est pas fini : de <strong>nouveaux boosters</strong> et d'autres nouveautés sont déjà en préparation !"
-    },
-    "thanks": "Merci de faire vivre l'aventure avec nous.",
-    "letsGo": "C'est parti !"
+    "thanks": "Merci pour ta patience et ta fidélité.",
+    "letsGo": "C'est reparti !"
   },
   "cardBack": {
     "showBack": "Voir le dos",
@@ -2076,7 +2059,8 @@
         "NO_USER": "Joueur introuvable.",
         "NOT_ELIGIBLE": "Ce joueur ne peut pas recevoir de lot (banni ou compte en suppression).",
         "NOT_FOUND": "Envoi introuvable.",
-        "DONE": "Cet envoi est déjà terminé."
+        "DONE": "Cet envoi est déjà terminé.",
+        "UNKNOWN_REF": "Booster ou carte introuvable."
       },
       "reasonHint": "Interne : visible seulement dans le journal admin.",
       "message": "Message au joueur (facultatif)",
@@ -2351,7 +2335,17 @@
       "artTones": {
         "natural": "Naturel",
         "gold": "Doré"
-      }
+      },
+      "owners": {
+        "title": "Détenteurs",
+        "owners": "Joueurs",
+        "copies": "Exemplaires",
+        "empty": "Personne ne possède encore cette carte.",
+        "guest": "invité",
+        "copiesOf": "{count, plural, one {# exemplaire} other {# exemplaires}}",
+        "truncated": "Seuls les {count} plus gros détenteurs sont affichés."
+      },
+      "ownedSummary": "{owners, plural, =0 {Aucun détenteur} one {# joueur} other {# joueurs}} · {copies, plural, one {# ex.} other {# ex.}}"
     },
     "cosmetics": {
       "title": "Titres et cadres de profil",
@@ -2453,6 +2447,50 @@
         "ar": "AR",
         "gold": "Gold",
         "none": "Sans grosse rareté"
+      }
+    },
+    "directSend": {
+      "title": "Envoyer à tous les inscrits",
+      "intro": "Verse des Zeni, des boosters et/ou une carte à {count, plural, one {# joueur inscrit} other {# joueurs inscrits}} (comptes non invités, ni bannis, ni en cours de suppression), avec une notification. Chaque joueur n'est servi qu'une fois.",
+      "zeni": "Zeni",
+      "booster": "Booster",
+      "none": "Aucun",
+      "quantity": "Quantité",
+      "card": "Carte (facultatif)",
+      "search": "Chercher",
+      "cardChosen": "Carte : {name}",
+      "removeCard": "Retirer",
+      "reason": "Motif (facultatif, visible dans le journal)",
+      "reasonHint": "Interne : visible seulement dans le journal admin.",
+      "message": "Message aux joueurs (facultatif)",
+      "messagePlaceholder": "Ex. : désolés pour la panne ! Affiché avec la notification.",
+      "empty": "Choisis au moins une récompense.",
+      "summary": {
+        "zeni": "{amount, number} Zeni",
+        "booster": "{count} × booster {name}",
+        "card": "{count} × {name}",
+        "line": "{items}, pour {count, plural, one {# joueur} other {# joueurs}}."
+      },
+      "send": "Envoyer à tous…",
+      "confirmTitle": "Envoyer à tous les inscrits",
+      "confirmBody": "{items} à {count, plural, one {# joueur inscrit} other {# joueurs inscrits}}. L'envoi se fait par paquets : s'il n'est pas fini, reprends-le depuis l'historique des lots. Action irréversible.",
+      "confirm": "Envoyer",
+      "confirmWord": "TOUS",
+      "sent": "{count, plural, one {# joueur servi} other {# joueurs servis}}.",
+      "partial": "{count, plural, one {# joueur servi} other {# joueurs servis}} pour l'instant : reprends l'envoi depuis l'historique des lots.",
+      "history": "Historique et reprise des envois",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Saisie invalide.",
+        "RATE_LIMITED": "Trop d'actions. Réessaie dans une minute.",
+        "CONFIRM_MISMATCH": "Tape TOUS pour confirmer.",
+        "NO_LOT": "Lot introuvable.",
+        "INACTIVE_LOT": "Ce lot est désactivé.",
+        "NO_USER": "Joueur introuvable.",
+        "NOT_ELIGIBLE": "Ce joueur ne peut pas recevoir de lot (banni ou compte en suppression).",
+        "NOT_FOUND": "Envoi introuvable.",
+        "DONE": "Cet envoi est déjà terminé.",
+        "UNKNOWN_REF": "Booster ou carte introuvable."
       }
     }
   },

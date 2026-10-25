@@ -1,47 +1,30 @@
 {
   "v1Welcome": {
-    "badge": "Update · v1.5",
-    "title": "v1.5 is here,",
-    "titleAccent": "and it's packed!",
-    "intro": "Friend chat, trades on the Market, custom profiles, new Gold and AR cards… This is our biggest update since launch. Here's the recap!",
-    "available": "What's new",
-    "features": {
-      "chat": {
-        "title": "Chat with friends",
-        "body": "Talk to your friends right from their page: set up a trade, show off your latest pull or throw down a challenge."
+    "badge": "A word from the team",
+    "title": "We're so sorry,",
+    "titleAccent": "Kiraku is back!",
+    "intro": "For about 24 hours, Kiraku was unavailable because of a technical problem. We know how frustrating that is, especially in the middle of a card hunt. Everything is back to normal and your collection is waiting for you.",
+    "gifts": {
+      "title": "To make it up to you",
+      "intro": "Kiraku is giving every registered player:",
+      "booster": {
+        "title": "1 Legendary booster",
+        "body": "1 Legendary guaranteed"
       },
-      "profile": {
-        "title": "A profile that's all you",
-        "body": "Customize your profile: choose what to highlight and show your style to other players."
+      "zeni": {
+        "title": "1,000 Zeni",
+        "body": "Straight to your balance"
       },
-      "cards": {
-        "title": "New Gold and AR cards",
-        "body": "Golden versions and alternate forms (AR) join the boosters. Can you find them all?"
-      },
-      "animations": {
-        "title": "Fresh animations",
-        "body": "Openings, cards and transitions shine brighter to make every pull even more exciting."
-      }
+      "registered": "Your gifts are <strong>already in your account</strong>.",
+      "guest": "These gifts went to <strong>registered accounts</strong>. <link>Link your Discord account</link> so you don't miss the next ones."
     },
-    "trades": {
-      "title": "Trades are coming to the Market",
-      "badge": "In development",
-      "body": "List your duplicates, say which cards you're looking for and trade with every player, on top of trades between friends.",
-      "dev": "This feature is <strong>still in development</strong> and lots of new things are on the way! If you spot a bug, <strong>don't hesitate to contact us</strong>.",
-      "cta": "See trades",
-      "contact": "Report a bug"
+    "x": {
+      "title": "Follow us on X",
+      "body": "Follow <strong>{handle}</strong> to hear about updates and get warned about technical problems like this one.",
+      "cta": "Follow {handle}"
     },
-    "discord": {
-      "title": "Even better with Discord",
-      "body": "Link your Discord account to sign back in easily and access your collection across your devices without losing your progress.",
-      "bonus": "Plus: {amount, number} Zeni as a gift for your first link!"
-    },
-    "soon": {
-      "title": "And plenty more…",
-      "body": "<strong>Fixes</strong>, <strong>polish</strong> and <strong>little surprises</strong> all over the site. And we're not done: <strong>new boosters</strong> and more features are already in the works!"
-    },
-    "thanks": "Thanks for sharing the adventure with us.",
-    "letsGo": "Let's go!"
+    "thanks": "Thank you for your patience and loyalty.",
+    "letsGo": "Let's go again!"
   },
   "cardBack": {
     "showBack": "Show card back",
@@ -2076,7 +2059,8 @@
         "NO_USER": "Player not found.",
         "NOT_ELIGIBLE": "This player cannot receive a lot (banned or account being deleted).",
         "NOT_FOUND": "Send not found.",
-        "DONE": "This send is already finished."
+        "DONE": "This send is already finished.",
+        "UNKNOWN_REF": "Booster or card not found."
       },
       "reasonHint": "Internal: only shown in the admin log.",
       "message": "Message to the player (optional)",
@@ -2351,7 +2335,17 @@
       "artTones": {
         "natural": "Natural",
         "gold": "Golden"
-      }
+      },
+      "owners": {
+        "title": "Owners",
+        "owners": "Players",
+        "copies": "Copies",
+        "empty": "Nobody owns this card yet.",
+        "guest": "guest",
+        "copiesOf": "{count, plural, one {# copy} other {# copies}}",
+        "truncated": "Only the top {count} owners are shown."
+      },
+      "ownedSummary": "{owners, plural, =0 {No owners} one {# player} other {# players}} · {copies, plural, one {# copy} other {# copies}}"
     },
     "cosmetics": {
       "title": "Profile titles and frames",
@@ -2453,6 +2447,50 @@
         "ar": "AR",
         "gold": "Gold",
         "none": "No top rarity"
+      }
+    },
+    "directSend": {
+      "title": "Send to all registered players",
+      "intro": "Give Zeni, boosters and/or a card to {count, plural, one {# registered player} other {# registered players}} (non-guest accounts that aren't banned or being deleted), with a notification. Each player is served only once.",
+      "zeni": "Zeni",
+      "booster": "Booster",
+      "none": "None",
+      "quantity": "Quantity",
+      "card": "Card (optional)",
+      "search": "Search",
+      "cardChosen": "Card: {name}",
+      "removeCard": "Remove",
+      "reason": "Reason (optional, shown in the log)",
+      "reasonHint": "Internal: only visible in the admin log.",
+      "message": "Message to players (optional)",
+      "messagePlaceholder": "E.g. sorry for the outage! Shown with the notification.",
+      "empty": "Pick at least one reward.",
+      "summary": {
+        "zeni": "{amount, number} Zeni",
+        "booster": "{count} × {name} booster",
+        "card": "{count} × {name}",
+        "line": "{items}, for {count, plural, one {# player} other {# players}}."
+      },
+      "send": "Send to all…",
+      "confirmTitle": "Send to all registered players",
+      "confirmBody": "{items} to {count, plural, one {# registered player} other {# registered players}}. Sending happens in batches: if it doesn't finish, resume it from the lot history. This can't be undone.",
+      "confirm": "Send",
+      "confirmWord": "ALL",
+      "sent": "{count, plural, one {# player served} other {# players served}}.",
+      "partial": "{count, plural, one {# player served} other {# players served}} so far: resume the send from the lot history.",
+      "history": "Send history and resume",
+      "errors": {
+        "FORBIDDEN": "Access denied.",
+        "INVALID": "Invalid input.",
+        "RATE_LIMITED": "Too many actions. Try again in a minute.",
+        "CONFIRM_MISMATCH": "Type ALL to confirm.",
+        "NO_LOT": "Lot not found.",
+        "INACTIVE_LOT": "This lot is disabled.",
+        "NO_USER": "Player not found.",
+        "NOT_ELIGIBLE": "This player cannot receive a lot (banned or account being deleted).",
+        "NOT_FOUND": "Send not found.",
+        "DONE": "This send is already finished.",
+        "UNKNOWN_REF": "Booster or card not found."
       }
     }
   },

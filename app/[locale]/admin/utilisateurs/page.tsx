@@ -1,17 +1,28 @@
-import { getFormatter, getTranslations } from "next-intl/server";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
+import { DirectSendPanel } from "@/components/admin/DirectSendPanel";
 import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
 import { UserSelectCheckbox, UserSelection } from "@/components/admin/UserDeletion";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
 import { adminUsersQuery, parseUserListParams, sortToggle, USER_FILTERS, USER_SORTS, type UserSort } from "@/lib/admin/users";
+import { localize, parseLocalized } from "@/lib/boosters/types";
 import { requireAdmin } from "@/server/admin";
+import { prisma } from "@/server/db";
+import { countBroadcastAudience } from "@/server/economy/lot-grant-core";
 import { listAdminUsers } from "@/server/admin/users";
 import { inputClass, selectClass } from "@/components/ui/Field";
 
 export default async function AdminUsersPage({ searchParams }: PageProps<"/[locale]/admin/utilisateurs">) {
   const admin = await requireAdmin();
   const params = parseUserListParams(await searchParams);
-  const [t, format, result] = await Promise.all([getTranslations("admin.users"), getFormatter(), listAdminUsers(params)]);
+  const [t, format, locale, result, boosterTypes, registered] = await Promise.all([
+    getTranslations("admin.users"),
+    getFormatter(),
+    getLocale(),
+    listAdminUsers(params),
+    prisma.boosterType.findMany({ orderBy: [{ family: "asc" }, { sortOrder: "asc" }], select: { id: true, name: true } }),
+    countBroadcastAudience(prisma, "REGISTERED"),
+  ]);
   const href = (page: number) => ({ pathname: "/admin/utilisateurs", query: adminUsersQuery(params, { page }) });
   // En-tête cliquable : trie par cette colonne, ou inverse le sens si elle l'est déjà
   const column = (key: UserSort, label: string) => {
@@ -32,6 +43,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/[loca
         <h2 className="font-title text-2xl font-bold">{t("title")}</h2>
         <p className="mt-1 max-w-prose text-sm text-text-muted">{t("intro")}</p>
       </div>
+      <DirectSendPanel boosterTypes={boosterTypes.map((b) => ({ id: b.id, name: localize(parseLocalized(b.name), locale) }))} registered={registered} />
       <form className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto_auto_auto]">
         <label className="flex flex-col gap-1 text-sm">{t("search")}
           <input name="q" defaultValue={params.query} maxLength={100} placeholder={t("searchPlaceholder")} className={inputClass} />
