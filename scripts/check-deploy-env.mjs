@@ -24,19 +24,29 @@ if (present("AUTH_SECRET") && env.AUTH_SECRET.length < 32) errors.push("AUTH_SEC
 const db = url("DATABASE_URL", ["postgres:", "postgresql:"]);
 const directKey = ["DIRECT_URL", "DATABASE_URL_UNPOOLED", "POSTGRES_URL_NON_POOLING"].find(present);
 const direct = directKey ? url(directKey, ["postgres:", "postgresql:"]) : null;
-const databaseIdentity = (value) => `${value.hostname.replace("-pooler.", ".")}:${value.port || "5432"}${value.pathname}`;
+// Chez Supabase, le projet se lit dans l'utilisateur du pooler (postgres.<ref>, ports 6543 et 5432)
+// ou dans l'hôte direct (db.<ref>.supabase.co) ; ailleurs, hôte et port (Neon : sans « -pooler »).
+const databaseIdentity = (value) => {
+  const pooler = value.hostname.endsWith(".pooler.supabase.com") && /^[^.]+\.([a-z0-9]+)$/.exec(decodeURIComponent(value.username));
+  const supabase = pooler?.[1] ?? /^db\.([a-z0-9]+)\.supabase\.co$/.exec(value.hostname)?.[1];
+  if (supabase) return `supabase:${supabase}${value.pathname}`;
+  return `${value.hostname.replace("-pooler.", ".")}:${value.port || "5432"}${value.pathname}`;
+};
 if (db && direct && databaseIdentity(db) !== databaseIdentity(direct)) errors.push("DATABASE_URL et l'URL directe visent des bases différentes");
+if (db?.hostname.endsWith(".pooler.supabase.com") && db.port !== "6543") warnings.push("DATABASE_URL : pooler Supabase hors mode transaction (port 6543 attendu à l'exécution)");
+if (env.VERCEL && direct && /^db\.[a-z0-9]+\.supabase\.co$/.test(direct.hostname)) warnings.push(`${directKey} : l'hôte direct Supabase est en IPv6 seulement, injoignable depuis Vercel ; utiliser le pooler en mode session (port 5432)`);
 const test = url("DATABASE_URL_TEST", ["postgres:", "postgresql:"]);
-if (db && test && databaseIdentity(db) === databaseIdentity(test)) errors.push("DATABASE_URL_TEST doit viser une branche isolée, jamais la base de l'application");
-if (!test) warnings.push("DATABASE_URL_TEST absente : tests d'intégration à exécuter sur une branche Neon isolée avant lancement");
+if (db && test && databaseIdentity(db) === databaseIdentity(test)) errors.push("DATABASE_URL_TEST doit viser une base isolée, jamais la base de l'application");
+if (!test) warnings.push("DATABASE_URL_TEST absente : tests d'intégration à exécuter sur une base isolée avant lancement");
 
 group(["AUTH_DISCORD_ID", "AUTH_DISCORD_SECRET"]);
 group(["DISCORD_BOT_TOKEN", "DISCORD_LINK_CHANNEL_ID"]);
 if (present("DISCORD_LINK_CHANNEL_ID") && !/^[0-9]{17,20}$/.test(env.DISCORD_LINK_CHANNEL_ID)) errors.push("DISCORD_LINK_CHANNEL_ID invalide");
 group(["RESEND_API_KEY", "MAIL_FROM"]);
 group(["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"]);
-env.UPSTASH_REDIS_REST_URL ||= env.KV_REST_API_URL;
-env.UPSTASH_REDIS_REST_TOKEN ||= env.KV_REST_API_TOKEN;
+// process.env convertit `undefined` en chaîne « undefined » : on ne copie l'alias que s'il existe.
+if (!present("UPSTASH_REDIS_REST_URL") && present("KV_REST_API_URL")) env.UPSTASH_REDIS_REST_URL = env.KV_REST_API_URL;
+if (!present("UPSTASH_REDIS_REST_TOKEN") && present("KV_REST_API_TOKEN")) env.UPSTASH_REDIS_REST_TOKEN = env.KV_REST_API_TOKEN;
 group(["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]);
 url("UPSTASH_REDIS_REST_URL", ["https:"]);
 const app = url("APP_URL", production ? ["https:"] : ["http:", "https:"]);

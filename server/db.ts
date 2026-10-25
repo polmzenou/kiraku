@@ -1,7 +1,7 @@
 import "server-only";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@/generated/prisma/client";
 import { env, isProduction } from "./env";
+import { createPgAdapter } from "./pg-adapter";
 
 // Un seul client par processus ; en dev, survit au rechargement à chaud. On garde aussi la classe
 // qui l'a créé : après un `prisma generate` (nouveau modèle), la classe change et le client est
@@ -9,8 +9,7 @@ import { env, isProduction } from "./env";
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient; prismaClass?: typeof PrismaClient };
 
 function createClient() {
-  const adapter = new PrismaNeon({ connectionString: env.DATABASE_URL });
-  return new PrismaClient({ adapter });
+  return new PrismaClient({ adapter: createPgAdapter(env.DATABASE_URL) });
 }
 
 function sharedClient(): PrismaClient {

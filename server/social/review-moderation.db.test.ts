@@ -1,10 +1,10 @@
 import { randomBytes } from "node:crypto";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
+import { createPgAdapter } from "@/server/pg-adapter";
 import { ReviewModerationError, setReviewHiddenWith, setReviewPinnedWith, setReviewReplyWith } from "./review-moderation-core";
 
-// Modération des avis sur une vraie base (branche Neon de dev) : sauté sans DATABASE_URL_TEST.
+// Modération des avis sur une vraie base (base de test isolée) : sauté sans DATABASE_URL_TEST.
 //   DATABASE_URL_TEST="postgresql://…" npx vitest run server/social/review-moderation.db.test.ts
 // Crée un admin et des joueurs jetables, puis supprime uniquement ce qu'ils ont créé. Les tests
 // d'épinglage supposent qu'aucun autre avis n'est épinglé sur la branche de test.
@@ -12,7 +12,7 @@ import { ReviewModerationError, setReviewHiddenWith, setReviewPinnedWith, setRev
 const url = process.env.DATABASE_URL_TEST;
 
 describe.skipIf(!url)("modération des avis (base réelle)", () => {
-  const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString: url! }) });
+  const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });
   const ids: string[] = [];
   const reviews: string[] = [];
   let adminId: string;

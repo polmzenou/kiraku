@@ -10,7 +10,6 @@
 // PowerShell avale le « -- » : y écrire npm run catalog:import '--' --limit 200 (ou npm.cmd run …).
 import { mkdir, writeFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { config } from "dotenv";
 import { PrismaClient } from "../generated/prisma/client.ts";
 import { parseSetting, type SettingKey, type SettingValue } from "../lib/settings/defaults.ts";
@@ -19,6 +18,7 @@ import { memoryImportStore } from "../server/catalog/memory-store.ts";
 import { prismaImportStore } from "../server/catalog/prisma-store.ts";
 import { filterContext } from "../lib/boosters/pool-filter.ts";
 import { recomputeBoosterPools } from "../server/boosters/type-store.ts";
+import { createPgAdapter } from "../server/pg-adapter.ts";
 
 config({ path: [".env.local", ".env"], quiet: true });
 
@@ -71,7 +71,7 @@ if (args["preserve-existing"] && args.rarity === "live") {
 
 const log = (message: string) => console.log(message);
 const databaseUrl = process.env.DATABASE_URL;
-const db = databaseUrl ? new PrismaClient({ adapter: new PrismaNeon({ connectionString: databaseUrl }) }) : null;
+const db = databaseUrl ? new PrismaClient({ adapter: createPgAdapter(databaseUrl) }) : null;
 
 // Réglages lus directement dans GameSetting (unstable_cache n'existe pas hors de Next)
 async function loadSettings() {

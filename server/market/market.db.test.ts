@@ -1,10 +1,10 @@
 import { randomBytes } from "node:crypto";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { seededRng } from "@/lib/boosters/rng";
 import { minNextBid, saleFee, type MarketRules } from "@/lib/market/rules";
 import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
+import { createPgAdapter } from "@/server/pg-adapter";
 import {
   adminCancelAuctionWith,
   AuctionError,
@@ -16,7 +16,7 @@ import {
   settleDueWith,
 } from "./auction-core";
 
-// Hôtel des ventes sous concurrence, sur une vraie base (branche Neon de dev) : sauté sans DATABASE_URL_TEST.
+// Hôtel des ventes sous concurrence, sur une vraie base (base de test isolée) : sauté sans DATABASE_URL_TEST.
 //   DATABASE_URL_TEST="postgresql://…" npx vitest run server/market/market.db.test.ts
 //
 // Invariant vérifié partout : Σ soldes + Σ séquestre (currentBid des ventes ACTIVE) + Σ taxes = Σ dépôts.
@@ -57,7 +57,7 @@ function shuffle<T>(items: readonly T[], seed: number): T[] {
 }
 
 describe.skipIf(!url)("hôtel des ventes atomique (base réelle)", () => {
-  const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString: url! }) });
+  const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });
   const users: string[] = [];
   let cardId: string;
 

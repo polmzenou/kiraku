@@ -1,13 +1,13 @@
 // Ajoute seulement les titres et cadres de départ manquants ; ceux édités dans l'admin sont conservés.
 // Usage : npm run seed:cosmetics
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { config } from "dotenv";
 import { PrismaClient, type Prisma } from "../generated/prisma/client.ts";
+import { createPgAdapter } from "../server/pg-adapter.ts";
 
 config({ path: [".env.local", ".env"], quiet: true });
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL manquante");
-const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString }) });
+const prisma = new PrismaClient({ adapter: createPgAdapter(connectionString) });
 
 type Seed = {
   slug: string;

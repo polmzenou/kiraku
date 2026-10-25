@@ -1,21 +1,21 @@
 import { randomBytes } from "node:crypto";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { buildRarityTables, type CardPool } from "@/lib/boosters/draw";
 import { DEFAULT_RULES } from "@/lib/boosters/fixtures";
 import { seededRng } from "@/lib/boosters/rng";
 import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { createPgAdapter } from "@/server/pg-adapter";
 import { OpenError, openBoostersWith, type OpenType } from "./open-core";
 
-// Test de concurrence sur une vraie base (branche Neon de dev) : sauté sans DATABASE_URL_TEST.
+// Test de concurrence sur une vraie base (base de test isolée) : sauté sans DATABASE_URL_TEST.
 //   DATABASE_URL_TEST="postgresql://…" npx vitest run server/boosters/open.db.test.ts
 // Crée un joueur jetable, puis supprime uniquement ce qu'il a créé.
 
 const url = process.env.DATABASE_URL_TEST;
 
 describe.skipIf(!url)("ouverture atomique (base réelle)", () => {
-  const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString: url! }) });
+  const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });
   const rules = { draw: DEFAULT_RULES, stock: { max: 10, intervalMs: 10 * 60_000 } };
   const tables = buildRarityTables(DEFAULT_RULES.rates);
   let pool: CardPool;

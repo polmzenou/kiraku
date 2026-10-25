@@ -6,7 +6,6 @@
 //   npx tsx scripts/seed-boosters.mts --slug antagonistes   cible un seul type, sans toucher à l'économie
 // Sous PowerShell, le « -- » est avalé : npx tsx scripts/seed-boosters.mts --force
 import { parseArgs } from "node:util";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { config } from "dotenv";
 import { PrismaClient } from "../generated/prisma/client.ts";
 import { filterContext } from "../lib/boosters/pool-filter.ts";
@@ -14,6 +13,7 @@ import { parseSetting } from "../lib/settings/defaults.ts";
 import { BOOSTER_SEEDS } from "../prisma/seed/booster-types.ts";
 import { upsertEconomySeeds } from "../prisma/seed/economy.ts";
 import { recomputeBoosterPools, upsertBoosterSeeds } from "../server/boosters/type-store.ts";
+import { createPgAdapter } from "../server/pg-adapter.ts";
 
 config({ path: [".env.local", ".env"], quiet: true });
 
@@ -25,7 +25,7 @@ for (const slug of args.slug ?? []) {
   if (!BOOSTER_SEEDS.some((seed) => seed.slug === slug)) throw new Error(`Type de booster inconnu : ${slug}`);
 }
 
-const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString: process.env.DATABASE_URL! }) });
+const prisma = new PrismaClient({ adapter: createPgAdapter(process.env.DATABASE_URL!) });
 
 try {
   if (!args.pools) {

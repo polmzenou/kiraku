@@ -1,5 +1,4 @@
 import { randomBytes } from "node:crypto";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { botAction } from "@/lib/battle/bot";
@@ -9,6 +8,7 @@ import type { Action, BattleSetup, BattleState } from "@/lib/battle/types";
 import { seededRng } from "@/lib/rng";
 import { createAuctionWith } from "../market/auction-core";
 import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
+import { createPgAdapter } from "@/server/pg-adapter";
 import {
   BattleError,
   cancelRoomWith,
@@ -25,7 +25,7 @@ import {
   type Ctx,
 } from "./battle-core";
 
-// Combat sous concurrence, sur une vraie base (branche Neon de dev) : sauté sans DATABASE_URL_TEST.
+// Combat sous concurrence, sur une vraie base (base de test isolée) : sauté sans DATABASE_URL_TEST.
 //   DATABASE_URL_TEST="postgresql://…" npx vitest run server/battle/battle.db.test.ts
 //
 // Vérifié partout : les cartes engagées reviennent en collection quelle que soit la fin, une action
@@ -47,7 +47,7 @@ function codeOf(r: PromiseSettledResult<unknown>): string {
 }
 
 describe.skipIf(!url)("combat atomique (base réelle)", () => {
-  const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString: url! }) });
+  const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });
   const users: string[] = [];
   let cardIds: string[] = [];
   let seed = 1;

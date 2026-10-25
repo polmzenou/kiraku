@@ -1,5 +1,4 @@
 import { randomBytes } from "node:crypto";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { groupByRarity, type CardPool } from "@/lib/boosters/draw";
@@ -7,13 +6,14 @@ import { seededRng } from "@/lib/boosters/rng";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { selectMissionRotation } from "@/lib/economy/mission-rotation";
 import type { ReferralRules } from "@/lib/economy/referral";
+import { createPgAdapter } from "@/server/pg-adapter";
 import { debit, LedgerError } from "./ledger";
 import type { LotDeps } from "./lots";
 import { claimMissionWith, MissionError } from "./missions-core";
 import { attachReferralWith, claimReferralWith, ReferralError } from "./referral-core";
 import { buyWithZeniWith, ShopError } from "./shop-core";
 
-// Concurrence de l'économie sur une vraie base (branche Neon de dev) : sauté sans DATABASE_URL_TEST.
+// Concurrence de l'économie sur une vraie base (base de test isolée) : sauté sans DATABASE_URL_TEST.
 //   DATABASE_URL_TEST="postgresql://…" npx vitest run server/economy/economy.db.test.ts
 // Crée des joueurs, un lot, une mission et un article jetables, puis supprime ce qu'il a créé.
 
@@ -22,7 +22,7 @@ const START = 1_000;
 const TZ = "Europe/Paris";
 
 describe.skipIf(!url)("économie atomique (base réelle)", () => {
-  const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString: url! }) });
+  const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });
   const tag = randomBytes(4).toString("hex");
   const users: string[] = [];
   let lotId: string;

@@ -9,7 +9,9 @@ afterAll(() => {
   if (path.dirname(path.resolve(cwd)) !== path.resolve(os.tmpdir()) || !path.basename(cwd).startsWith("kiraku-env-test-")) throw new Error("Répertoire de test inattendu");
   rmSync(cwd, { recursive: true, force: true });
 });
-const valid = { DATABASE_URL: "postgresql://user:secret@ep-example-pooler.neon.tech/kiraku", AUTH_SECRET: "x".repeat(32) };
+const POOLER = "aws-0-eu-west-1.pooler.supabase.com";
+const valid = { DATABASE_URL: `postgresql://postgres.abcref:secret@${POOLER}:6543/postgres`, AUTH_SECRET: "x".repeat(32) };
+const session = valid.DATABASE_URL.replace(":6543/", ":5432/");
 function check(values: Record<string, string>) {
   return spawnSync(process.execPath, [path.resolve("scripts/check-deploy-env.mjs")], {
     cwd,
@@ -20,15 +22,29 @@ function check(values: Record<string, string>) {
 
 describe("précontrôle de déploiement", () => {
   it("refuse de lancer les tests contre l'application même via l'hôte direct", () => {
-    const result = check({ DATABASE_URL_TEST: valid.DATABASE_URL.replace("-pooler", "") });
+    const result = check({ DATABASE_URL_TEST: "postgresql://postgres:secret@db.abcref.supabase.co:5432/postgres" });
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain("branche isolée");
-    expect(result.stderr).not.toContain("user:secret");
+    expect(result.stderr).toContain("base isolée");
+    expect(result.stderr).not.toContain("secret");
   });
-  it("refuse une URL de migration qui vise une autre branche", () => {
-    const result = check({ DIRECT_URL: valid.DATABASE_URL.replace("ep-example-pooler", "ep-other") });
+  it("refuse une URL de migration qui vise un autre projet", () => {
+    const result = check({ DIRECT_URL: session.replace("postgres.abcref", "postgres.otherref") });
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("bases différentes");
+  });
+  it("accepte le pooler en mode session comme URL de migration du même projet", () => {
+    const result = check({ DIRECT_URL: session });
+    expect(result.status, result.stderr).toBe(0);
+  });
+  it("garde la règle Neon : l'hôte direct est l'hôte poolé sans « -pooler »", () => {
+    const neon = "postgresql://user:secret@ep-example-pooler.neon.tech/kiraku";
+    expect(check({ DATABASE_URL: neon, DIRECT_URL: neon.replace("-pooler", "") }).status).toBe(0);
+    expect(check({ DATABASE_URL: neon, DIRECT_URL: neon.replace("ep-example-pooler", "ep-other") }).status).toBe(1);
+  });
+  it("prévient quand Vercel migrerait par l'hôte direct Supabase (IPv6 seulement)", () => {
+    const result = check({ VERCEL: "1", DIRECT_URL: "postgresql://postgres:secret@db.abcref.supabase.co:5432/postgres" });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stderr).toContain("IPv6");
   });
   it("refuse une production sans Redis, cron ni origine HTTPS", () => {
     const result = check({ VERCEL_ENV: "production", APP_URL: "http://localhost:3000" });
@@ -36,7 +52,7 @@ describe("précontrôle de déploiement", () => {
     for (const key of ["APP_URL", "CRON_SECRET", "UPSTASH_REDIS_REST_URL"]) expect(result.stderr).toContain(key);
   });
   it("accepte une production cohérente et les alias Upstash de Vercel", () => {
-    const result = check({ VERCEL_ENV: "production", APP_URL: "https://kiraku.example", CRON_SECRET: "c".repeat(32), KV_REST_API_URL: "https://redis.example", KV_REST_API_TOKEN: "token", DIRECT_URL: valid.DATABASE_URL.replace("-pooler", "") });
+    const result = check({ VERCEL_ENV: "production", APP_URL: "https://kiraku.example", CRON_SECRET: "c".repeat(32), KV_REST_API_URL: "https://redis.example", KV_REST_API_TOKEN: "token", DIRECT_URL: session });
     expect(result.status, result.stderr).toBe(0);
   });
 });
