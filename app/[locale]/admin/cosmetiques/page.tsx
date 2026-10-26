@@ -4,11 +4,13 @@ import { ProfileSettingsForm } from "@/components/admin/ProfileSettingsForm";
 import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
 import { SettingLogList } from "@/components/admin/SettingLogList";
 import { AvatarFrame } from "@/components/profile/AvatarFrame";
+import { PlayerName } from "@/components/social/PlayerName";
 import { buttonClasses } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
 import { parseCondition, parseLabel, type ProfileCondition } from "@/lib/profile/conditions";
 import type { CosmeticInput } from "@/lib/profile/cosmetic-form";
 import { isFrameStyle } from "@/lib/profile/frames";
+import { isNameColorStyle } from "@/lib/profile/name-colors";
 import { PROFILE_SETTING_KEYS, type ProfileSettings } from "@/lib/settings/profile-form";
 import { recentSettingLogs, requireAdmin } from "@/server/admin";
 import { prisma } from "@/server/db";
@@ -21,6 +23,7 @@ const NEW: CosmeticInput = {
   label: { fr: "", frFem: "", en: "" },
   hint: { fr: "", en: "" },
   frameStyle: null,
+  nameColor: null,
   condition: { type: "UNIQUE_CARDS", n: 100 },
   sortOrder: 0,
   active: true,
@@ -28,7 +31,7 @@ const NEW: CosmeticInput = {
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
-/** Titres et cadres de profil débloquables, et réglages des badges. */
+/** Titres, cadres et couleurs de pseudo débloquables, et réglages des badges. */
 export default async function AdminCosmeticsPage({ searchParams }: PageProps<"/[locale]/admin/cosmetiques">) {
   await requireAdmin();
   const sp = await searchParams;
@@ -58,6 +61,7 @@ export default async function AdminCosmeticsPage({ searchParams }: PageProps<"/[
       label: { fr: label.fr, frFem: label.frFem ?? "", en: label.en ?? "" },
       hint: { fr: hint.fr ?? "", en: hint.en ?? "" },
       frameStyle: isFrameStyle(editing.frameStyle) ? editing.frameStyle : null,
+      nameColor: isNameColorStyle(editing.nameColor) ? editing.nameColor : null,
       condition,
       sortOrder: editing.sortOrder,
       active: editing.active,
@@ -109,7 +113,12 @@ export default async function AdminCosmeticsPage({ searchParams }: PageProps<"/[
                       </AvatarFrame>
                     )}
                     <span className="flex flex-col">
-                      <span className="font-bold">{label.frFem && label.frFem !== label.fr ? `${label.fr} / ${label.frFem}` : label.fr}</span>
+                      <span className="font-bold">
+                        <PlayerName
+                          name={label.frFem && label.frFem !== label.fr ? `${label.fr} / ${label.frFem}` : label.fr}
+                          color={r.kind === "NAME_COLOR" && isNameColorStyle(r.nameColor) ? r.nameColor : null}
+                        />
+                      </span>
                       <span className="text-xs text-text-muted">{r.slug}</span>
                     </span>
                   </span>

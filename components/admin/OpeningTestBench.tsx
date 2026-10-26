@@ -55,12 +55,11 @@ export function OpeningTestBench({
   );
 
   const openSealed = useCallback(
-    async (request: unknown): Promise<OpenSealedResult> => {
+    async (): Promise<OpenSealedResult> => {
       await new Promise((resolve) => setTimeout(resolve, 250));
       run.current += 1;
-      const id = typeof request === "object" && request !== null && "drop" in request ? String(request.drop) : "";
-      const kind = id.startsWith("test-drop-") && scenario === "dropApocalypse" ? "apocalypse" : "divin";
-      return { ok: true, booster: testSealedBooster(pool, kind, run.current), karma: 0 };
+      // Le sachet ouvert est celui du scénario : Divin, Apocalyptique épargné ou ruiné
+      return { ok: true, booster: testSealedBooster(pool, scenario, run.current), karma: 0 };
     },
     [pool, scenario],
   );

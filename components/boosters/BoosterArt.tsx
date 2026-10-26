@@ -10,8 +10,8 @@ export type BoosterArtProps = {
   tagline?: string;
   /** Contenance en japonais, ex. « 四枚入 ». */
   contents: string;
-  /** Sachet doré (feuille d'or) ou divin (nacre) dans la scène d'ouverture. */
-  variant?: "golden" | "divine";
+  /** Sachet doré (feuille d'or) dans la scène d'ouverture. Le Divin garde le dessin de son type. */
+  variant?: "golden";
   /** Vignette (panneau, barre du bas) : sans nom ni accroche. */
   compact?: boolean;
   /**
@@ -45,7 +45,7 @@ export function BoosterArt(props: BoosterArtProps) {
       {flatShadow && <span className="pointer-events-none absolute inset-x-[6%] top-[97%] h-[8%] bg-[radial-gradient(closest-side,rgb(0_0_0/0.5),transparent)]" />}
       <div
         className={`booster-art wagara-${theme.pattern} relative aspect-[5/7] w-full`}
-        data-ink={variant === "divine" ? "dark" : theme.ink}
+        data-ink={theme.ink}
         data-variant={variant}
         style={vars}
       >

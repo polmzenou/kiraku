@@ -6,9 +6,11 @@ import { ResendVerificationButton } from "@/components/auth/ResendVerificationBu
 import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { PageShell } from "@/components/PageShell";
+import { AvatarFrame } from "@/components/profile/AvatarFrame";
 import { PrivacyForm } from "@/components/profile/PrivacyForm";
 import { InstallAppButton } from "@/components/pwa/InstallAppButton";
 import { SealMark } from "@/components/SealMark";
+import { PlayerName } from "@/components/social/PlayerName";
 import { PushToggle } from "@/components/social/PushToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/Button";
@@ -73,19 +75,23 @@ export default async function AccountPage() {
       <h1 className="sr-only">{t("account.title")}</h1>
 
       <section className="flex items-center gap-4 lacquer rounded-card p-4">
-        {user.image ? (
-          <Image
-            src={user.image}
-            alt={t("account.avatarAlt", { name: displayName })}
-            width={56}
-            height={56}
-            className="rounded-full"
-          />
-        ) : (
-          <SealMark glyphs="新" size={56} />
-        )}
+        <AvatarFrame frame={user.decor.frame} size={56}>
+          {user.image ? (
+            <Image
+              src={user.image}
+              alt={t("account.avatarAlt", { name: displayName })}
+              width={56}
+              height={56}
+              className="rounded-full"
+            />
+          ) : (
+            <SealMark glyphs="新" size={56} />
+          )}
+        </AvatarFrame>
         <div className="flex min-w-0 flex-col gap-1">
-          <p className="truncate font-title text-xl font-bold">{displayName}</p>
+          <p className="truncate font-title text-xl font-bold">
+            <PlayerName name={displayName} color={user.decor.nameColor} className="truncate" />
+          </p>
           {user.isGuest && (
             <span className="w-fit rounded-sm border border-border px-2 text-xs text-text-muted">
               {t("account.guestBadge")}

@@ -42,7 +42,6 @@ export function SealedDropsRow({
                   emblem={display.emblem}
                   name={display.name}
                   contents={display.contents}
-                  variant={d.kind === "divin" ? "divine" : undefined}
                   compact
                 />
               </div>

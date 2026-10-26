@@ -13,6 +13,7 @@ import {
 import type { ChatMessageView, Conversation } from "@/server/chat/queries";
 import { displayName } from "../profile/ProfileHeader";
 import { PlayerAvatar } from "../social/PlayerAvatar";
+import { PlayerName } from "../social/PlayerName";
 import { badgeClasses } from "../ui/Badge";
 import { CloseIcon, IconButton, iconButtonClasses } from "../ui/IconButton";
 import { closeChat, openChat, setChatAvailable, setUnread, showConversation, useChatState } from "./chat-store";
@@ -220,7 +221,13 @@ export function ChatDock({ realtime, pollSeconds, initialUnread, maxLength, rete
                 話
               </span>
             )}
-            <h2 className="min-w-0 flex-1 truncate font-heading text-lg font-extrabold">{chat.with ?? t("title")}</h2>
+            <h2 className="min-w-0 flex-1 truncate font-heading text-lg font-extrabold">
+              {chat.with ? (
+                <PlayerName name={chat.with} color={conversations?.find((c) => c.username === chat.with)?.decor.nameColor} className="truncate" />
+              ) : (
+                t("title")
+              )}
+            </h2>
             <IconButton aria-label={t("close")} onClick={closeChat} tone="plain">
               <CloseIcon />
             </IconButton>
@@ -269,10 +276,14 @@ function ConversationList({ conversations }: { conversations: Conversation[] | n
             onClick={() => showConversation(c.username)}
             className="flex min-h-16 w-full items-center gap-3 rounded-control px-2 py-2 text-left hover:bg-surface-2"
           >
-            <PlayerAvatar username={c.username} image={c.image} size={40} />
+            <PlayerAvatar username={c.username} image={c.image} size={40} frame={c.decor.frame} />
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="flex items-baseline justify-between gap-2">
-                <span className="truncate font-bold">{displayName(c.username, c.isGuest, (code) => tAccount("guestName", { code }))}</span>
+                <PlayerName
+                  name={displayName(c.username, c.isGuest, (code) => tAccount("guestName", { code }))}
+                  color={c.decor.nameColor}
+                  className="truncate font-bold"
+                />
                 {c.last && <span className="shrink-0 text-xs text-text-muted">{format.relativeTime(new Date(c.last.at))}</span>}
               </span>
               <span className={`truncate text-sm ${c.unread > 0 ? "font-bold text-text" : "text-text-muted"}`}>

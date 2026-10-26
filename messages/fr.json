@@ -553,12 +553,12 @@
     "ended": "Terminée",
     "detail": {
       "back": "Retour au marché",
-      "seller": "Mise en vente par {name}",
+      "seller": "Mise en vente par <player>{name}</player>",
       "finalPrice": "Prix final",
       "currentBid": "Enchère actuelle",
       "startPrice": "Prix de départ",
       "noBids": "Aucune mise pour l'instant.",
-      "leader": "En tête : {name}",
+      "leader": "En tête : <player>{name}</player>",
       "youLead": "Tu es en tête : ta mise est bloquée jusqu'à la fin ou jusqu'à ce qu'on te dépasse.",
       "minNext": "Mise minimale : {amount, number} Zeni",
       "bidLabel": "Ta mise (Zeni)",
@@ -582,7 +582,7 @@
       "historyEmpty": "Personne n'a encore misé.",
       "you": "toi",
       "rules": "Surenchère minimale de {increment, number} %. Une mise dans les {window, number} dernières minutes prolonge la vente de {extend, number} min. Le vendeur paie une taxe de {fee, number} %.",
-      "soldFor": "Vendue {amount, number} Zeni à {name}.",
+      "soldFor": "Vendue {amount, number} Zeni à <player>{name}</player>.",
       "soldYou": "Tu l'as remportée pour {amount, number} Zeni.",
       "expired": "Personne n'a misé : la carte est revenue au vendeur.",
       "cancelled": "Cette vente a été annulée.",
@@ -2450,7 +2450,8 @@
       },
       "kinds": {
         "TITLE": "Titre",
-        "FRAME": "Cadre"
+        "FRAME": "Cadre",
+        "NAME_COLOR": "Couleur de pseudo"
       },
       "fields": {
         "kind": "Type",
@@ -2468,7 +2469,10 @@
         "tier": "Rang minimal (meilleur rang atteint)",
         "series": "Série à compléter",
         "sortOrder": "Ordre d'affichage",
-        "active": "Visible des joueurs"
+        "active": "Visible des joueurs",
+        "nameColor": "Couleur",
+        "percent": "Pourcentage du catalogue",
+        "rarities": "Raretés comptées"
       },
       "hints": {
         "slug": "Minuscules, chiffres et tirets : devil-hunter.",
@@ -2486,7 +2490,9 @@
         "BOOSTERS_OPENED": "Boosters ouverts",
         "TRADES_DONE": "Échanges réussis",
         "RANK_TIER": "Rang classé atteint",
-        "APOCALYPSE_RUINED": "Apocalyptiques ruinés"
+        "APOCALYPSE_RUINED": "Apocalyptiques ruinés",
+        "CATALOG_DISCOVERED_PERCENT": "% du catalogue découvert",
+        "RARITIES_DISCOVERED": "Cartes découvertes de certaines raretés"
       },
       "frames": {
         "washi": "Washi",
@@ -2496,7 +2502,12 @@
         "kinpaku": "Kinpaku",
         "raden": "Raden",
         "sakura": "Sakura",
-        "kintsugi": "Kintsugi"
+        "kintsugi": "Kintsugi",
+        "kumo": "Kumo",
+        "seigaiha": "Seigaiha",
+        "momiji": "Momiji",
+        "tsuki": "Tsuki",
+        "hoo": "Hōō"
       },
       "settings": {
         "pioneerUntil": "Badge Pionnier : inscrits jusqu'au",
@@ -2510,6 +2521,15 @@
         "RATE_LIMITED": "Trop d'enregistrements. Réessaie dans une minute.",
         "SLUG_TAKEN": "Cet identifiant est déjà pris.",
         "NOT_FOUND": "Cette entrée n'existe plus."
+      },
+      "colors": {
+        "lime": "Vert lime",
+        "azure": "Bleu azur",
+        "violet": "Violet",
+        "ember": "Orange incandescent",
+        "scarlet": "Rouge écarlate",
+        "rainbow": "Arc-en-ciel",
+        "pastel": "Arc-en-ciel pastel"
       }
     },
     "openingTest": {
@@ -2526,7 +2546,8 @@
         "gold": "Gold",
         "none": "Sans grosse rareté",
         "dropDivin": "Chute d'un Divin",
-        "dropApocalypse": "Chute d'un Apocalyptique"
+        "dropSpared": "Apocalyptique épargné",
+        "dropRuined": "Apocalyptique ruiné"
       }
     },
     "directSend": {
@@ -2853,7 +2874,13 @@
         "UNAVAILABLE": "Impossible pour le moment.",
         "RATE_LIMITED": "Trop d'essais. Réessaie dans une minute.",
         "LOCKED": "Ce titre ou ce cadre n'est pas encore débloqué."
-      }
+      },
+      "nameColor": "Couleur du pseudo",
+      "nameColorDefault": "Par défaut",
+      "discovered": "Catalogue découvert",
+      "percent": "{value} %",
+      "discoveredHint": "Découvre de nouvelles cartes pour débloquer des cadres et des couleurs de pseudo.",
+      "equipped": "équipé"
     }
   },
   "privacy": {
@@ -3374,7 +3401,7 @@
       "WIN": "Victoire",
       "LOSS": "Défaite",
       "DRAW": "Nul",
-      "vs": "contre {name}",
+      "vs": "contre <player>{name}</player>",
       "replay": "Revoir",
       "zeni": "+{amount, number} Zeni",
       "when": "{date, date, short} {date, time, short}"
@@ -3883,9 +3910,9 @@
       "sent": "Aucune proposition en attente.",
       "history": "Aucun échange terminé pour l'instant."
     },
-    "from": "De {name}",
-    "to": "À {name}",
-    "between": "{proposer} → {recipient}",
+    "from": "De <player>{name}</player>",
+    "to": "À <player>{name}</player>",
+    "between": "<proposerName>{proposer}</proposerName> → <recipientName>{recipient}</recipientName>",
     "expires": "expire {when}",
     "youGive": "Tu donnes",
     "youGet": "Tu reçois",
@@ -4017,7 +4044,7 @@
     "loading": "Chargement…",
     "more": "Voir plus",
     "cardMeta": "{rarity} · {series}",
-    "by": "par {name}",
+    "by": "par <player>{name}</player>",
     "byYou": "ton annonce",
     "expires": "expire {when}",
     "againstOne": "Contre l'une de ces cartes",
@@ -4054,9 +4081,9 @@
       "giving": "Tu donnes {card}",
       "noOffers": "Aucune offre pour l'instant.",
       "offersLabel": "Offres reçues",
-      "offerFrom": "{name} propose {card}",
+      "offerFrom": "<player>{name}</player> propose {card}",
       "outsideList": "(hors de ta liste)",
-      "sentTo": "Offre à {name}"
+      "sentTo": "Offre à <player>{name}</player>"
     },
     "history": {
       "line": "{gave} contre {got}",

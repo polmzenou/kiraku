@@ -2,11 +2,10 @@ import "server-only";
 import type { CardView, OpenedCardView } from "@/lib/boosters/view";
 import { prisma } from "../db";
 import { cardViews } from "../boosters/display";
-import type { PlayerRef } from "./queries";
+import { playerRefSelect as playerSelect, toPlayerRef, type PlayerRef } from "../profile/decor";
 
 // Lectures des échanges d'un joueur (onglet « Échanges » de /amis).
 
-const playerSelect = { id: true, username: true, image: true, isGuest: true } as const;
 const HISTORY_SIZE = 20;
 
 export type TradeView = {
@@ -80,8 +79,8 @@ export async function listTrades(userId: string, locale: string, now = new Date(
       createdAt: r.createdAt,
       expiresAt: r.expiresAt,
       resolvedAt: r.resolvedAt,
-      proposer: r.proposer,
-      recipient: r.recipient,
+      proposer: toPlayerRef(r.proposer),
+      recipient: toPlayerRef(r.recipient),
       wanted,
       offers: r.offers.flatMap((o) => views.get(o.cardId) ?? []),
       chosen: r.chosenCardId ? (views.get(r.chosenCardId) ?? null) : null,

@@ -553,12 +553,12 @@
     "ended": "Ended",
     "detail": {
       "back": "Back to the market",
-      "seller": "Listed by {name}",
+      "seller": "Listed by <player>{name}</player>",
       "finalPrice": "Final price",
       "currentBid": "Current bid",
       "startPrice": "Starting price",
       "noBids": "No bids yet.",
-      "leader": "Leading: {name}",
+      "leader": "Leading: <player>{name}</player>",
       "youLead": "You're in the lead: your bid is held until the end or until someone outbids you.",
       "minNext": "Minimum bid: {amount, number} Zeni",
       "bidLabel": "Your bid (Zeni)",
@@ -582,7 +582,7 @@
       "historyEmpty": "Nobody has bid yet.",
       "you": "you",
       "rules": "Minimum raise of {increment, number}%. A bid in the last {window, number} minutes extends the sale by {extend, number} min. The seller pays a {fee, number}% fee.",
-      "soldFor": "Sold for {amount, number} Zeni to {name}.",
+      "soldFor": "Sold for {amount, number} Zeni to <player>{name}</player>.",
       "soldYou": "You won it for {amount, number} Zeni.",
       "expired": "Nobody bid: the card went back to the seller.",
       "cancelled": "This sale was cancelled.",
@@ -2450,7 +2450,8 @@
       },
       "kinds": {
         "TITLE": "Title",
-        "FRAME": "Frame"
+        "FRAME": "Frame",
+        "NAME_COLOR": "Username colour"
       },
       "fields": {
         "kind": "Type",
@@ -2468,7 +2469,10 @@
         "tier": "Minimum tier (best tier reached)",
         "series": "Series to complete",
         "sortOrder": "Display order",
-        "active": "Visible to players"
+        "active": "Visible to players",
+        "nameColor": "Colour",
+        "percent": "Catalogue percentage",
+        "rarities": "Counted rarities"
       },
       "hints": {
         "slug": "Lowercase, digits and dashes: devil-hunter.",
@@ -2486,7 +2490,9 @@
         "BOOSTERS_OPENED": "Boosters opened",
         "TRADES_DONE": "Successful trades",
         "RANK_TIER": "Ranked tier reached",
-        "APOCALYPSE_RUINED": "Ruined Apocalyptic boosters"
+        "APOCALYPSE_RUINED": "Ruined Apocalyptic boosters",
+        "CATALOG_DISCOVERED_PERCENT": "% of catalogue discovered",
+        "RARITIES_DISCOVERED": "Cards discovered of given rarities"
       },
       "frames": {
         "washi": "Washi",
@@ -2496,7 +2502,12 @@
         "kinpaku": "Kinpaku",
         "raden": "Raden",
         "sakura": "Sakura",
-        "kintsugi": "Kintsugi"
+        "kintsugi": "Kintsugi",
+        "kumo": "Kumo",
+        "seigaiha": "Seigaiha",
+        "momiji": "Momiji",
+        "tsuki": "Tsuki",
+        "hoo": "Hōō"
       },
       "settings": {
         "pioneerUntil": "Pioneer badge: signed up until",
@@ -2510,6 +2521,15 @@
         "RATE_LIMITED": "Too many saves. Try again in a minute.",
         "SLUG_TAKEN": "This identifier is already taken.",
         "NOT_FOUND": "This entry no longer exists."
+      },
+      "colors": {
+        "lime": "Lime green",
+        "azure": "Azure blue",
+        "violet": "Violet",
+        "ember": "Glowing orange",
+        "scarlet": "Scarlet red",
+        "rainbow": "Rainbow",
+        "pastel": "Pastel rainbow"
       }
     },
     "openingTest": {
@@ -2526,7 +2546,8 @@
         "gold": "Gold",
         "none": "No top rarity",
         "dropDivin": "Divine drop",
-        "dropApocalypse": "Apocalyptic drop"
+        "dropSpared": "Apocalyptic, spared",
+        "dropRuined": "Apocalyptic, ruined"
       }
     },
     "directSend": {
@@ -2853,7 +2874,13 @@
         "UNAVAILABLE": "Not possible right now.",
         "RATE_LIMITED": "Too many attempts. Try again in a minute.",
         "LOCKED": "This title or frame isn't unlocked yet."
-      }
+      },
+      "nameColor": "Username colour",
+      "nameColorDefault": "Default",
+      "discovered": "Catalogue discovered",
+      "percent": "{value}%",
+      "discoveredHint": "Discover new cards to unlock frames and username colours.",
+      "equipped": "equipped"
     }
   },
   "privacy": {
@@ -3374,7 +3401,7 @@
       "WIN": "Victory",
       "LOSS": "Defeat",
       "DRAW": "Draw",
-      "vs": "vs {name}",
+      "vs": "vs <player>{name}</player>",
       "replay": "Replay",
       "zeni": "+{amount, number} Zeni",
       "when": "{date, date, short} {date, time, short}"
@@ -3883,9 +3910,9 @@
       "sent": "No pending proposals.",
       "history": "No finished trades yet."
     },
-    "from": "From {name}",
-    "to": "To {name}",
-    "between": "{proposer} → {recipient}",
+    "from": "From <player>{name}</player>",
+    "to": "To <player>{name}</player>",
+    "between": "<proposerName>{proposer}</proposerName> → <recipientName>{recipient}</recipientName>",
     "expires": "expires {when}",
     "youGive": "You give",
     "youGet": "You get",
@@ -4017,7 +4044,7 @@
     "loading": "Loading…",
     "more": "Show more",
     "cardMeta": "{rarity} · {series}",
-    "by": "by {name}",
+    "by": "by <player>{name}</player>",
     "byYou": "your listing",
     "expires": "expires {when}",
     "againstOne": "For one of these cards",
@@ -4054,9 +4081,9 @@
       "giving": "You give {card}",
       "noOffers": "No offers yet.",
       "offersLabel": "Offers received",
-      "offerFrom": "{name} offers {card}",
+      "offerFrom": "<player>{name}</player> offers {card}",
       "outsideList": "(not on your list)",
-      "sentTo": "Offer to {name}"
+      "sentTo": "Offer to <player>{name}</player>"
     },
     "history": {
       "line": "{gave} for {got}",

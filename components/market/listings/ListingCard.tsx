@@ -10,6 +10,7 @@ import { CardPickGrid } from "../../collection/CardPickGrid";
 import { Fuda } from "../../fuda/Fuda";
 import { displayName } from "../../profile/ProfileHeader";
 import { Button } from "../../ui/Button";
+import { playerTag } from "../../social/PlayerName";
 import { NoteText } from "../../ui/NoteText";
 import { Sheet } from "../../ui/Sheet";
 import { AdminNoteDelete } from "../AdminNoteDelete";
@@ -87,7 +88,7 @@ export function ListingCard({
               {t("cardMeta", { rarity: tRarity(listing.card.rarity as "COMMON"), series: listing.card.series })}
             </p>
             <p className="truncate text-xs text-text-muted">
-              {listing.mine ? t("byYou") : t("by", { name: owner })} · {t("expires", { when: format.relativeTime(listing.expiresAt) })}
+              {listing.mine ? t("byYou") : t.rich("by", { name: owner, player: playerTag(listing.owner.decor.nameColor) })} · {t("expires", { when: format.relativeTime(listing.expiresAt) })}
             </p>
           </div>
         </div>

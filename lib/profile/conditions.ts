@@ -1,4 +1,4 @@
-// Conditions de déblocage des titres et cadres de profil (catalogue Cosmetic géré dans l'admin).
+// Conditions de déblocage des titres, cadres et couleurs de pseudo (catalogue Cosmetic géré dans l'admin).
 // Fonctions pures : les statistiques du joueur sont rassemblées par server/profile/progress.ts.
 import { z } from "@/lib/zod";
 import { rarityKeySchema } from "../catalog/definitions";
@@ -17,6 +17,8 @@ export const CONDITION_TYPES = [
   "TRADES_DONE",
   "RANK_TIER",
   "APOCALYPSE_RUINED",
+  "CATALOG_DISCOVERED_PERCENT",
+  "RARITIES_DISCOVERED",
 ] as const;
 export type ConditionType = (typeof CONDITION_TYPES)[number];
 
@@ -30,6 +32,8 @@ export const conditionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("TRADES_DONE"), n: count }).strict(),
   z.object({ type: z.literal("RANK_TIER"), tier: z.enum(LADDER) }).strict(),
   z.object({ type: z.literal("APOCALYPSE_RUINED"), n: count }).strict(),
+  z.object({ type: z.literal("CATALOG_DISCOVERED_PERCENT"), n: z.number().int().min(1).max(100) }).strict(),
+  z.object({ type: z.literal("RARITIES_DISCOVERED"), rarities: z.array(rarityKeySchema).min(1).max(8), n: count }).strict(),
 ]);
 export type ProfileCondition = z.infer<typeof conditionSchema>;
 
@@ -53,7 +57,17 @@ export type ProfileStats = {
   apocalypseRuined: number;
   /** Meilleur rang atteint (cette saison ou actuel). */
   tier: LadderTier;
+  /** Part du catalogue publié déjà découverte, en % entier arrondi à l'inférieur. */
+  discoveredPercent: number;
+  /** Cartes publiées découvertes par clé de rareté. */
+  discoveredByRarity: Record<string, number>;
 };
+
+/** % découvert arrondi à l'inférieur : 99,9 % ne vaut pas 100 %, seul le catalogue entier y mène. */
+export function discoveredPercent(discovered: number, total: number): number {
+  if (total <= 0) return 0;
+  return Math.min(100, Math.floor((discovered / total) * 100));
+}
 
 export type ConditionProgress = { unlocked: boolean; current: number; goal: number };
 
@@ -85,6 +99,12 @@ export function evaluateCondition(condition: ProfileCondition | null, stats: Pro
     case "RANK_TIER": {
       const goal = LADDER.indexOf(condition.tier) + 1;
       return capped(LADDER.indexOf(stats.tier) + 1, goal);
+    }
+    case "CATALOG_DISCOVERED_PERCENT":
+      return capped(stats.discoveredPercent, condition.n);
+    case "RARITIES_DISCOVERED": {
+      const found = [...new Set(condition.rarities)].reduce((sum, r) => sum + (stats.discoveredByRarity[r] ?? 0), 0);
+      return capped(found, condition.n);
     }
   }
 }

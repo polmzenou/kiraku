@@ -1,8 +1,10 @@
 import "server-only";
 import { cache } from "react";
 import { isFrozen } from "@/lib/account/deletion";
+import { decorFromRelations } from "@/lib/profile/decor";
 import { auth } from "./auth";
 import { prisma } from "./db";
+import { decorSelect } from "./profile/decor";
 
 /** Joueur connecté (invité, e-mail ou Discord), lu une fois par requête. */
 export const getCurrentUser = cache(async () => {
@@ -39,12 +41,13 @@ export const getCurrentUser = cache(async () => {
       usernameChangedAt: true,
       discordJoinedAt: true,
       v1WelcomeSeenAt: true,
+      ...decorSelect,
     },
   });
   if (!user) return null;
   // Le hash ne quitte jamais ce module
-  const { passwordHash, ...rest } = user;
-  return { ...rest, hasPassword: passwordHash !== null };
+  const { passwordHash, frame, nameColor, ...rest } = user;
+  return { ...rest, hasPassword: passwordHash !== null, decor: decorFromRelations({ frame, nameColor }) };
 });
 
 /**

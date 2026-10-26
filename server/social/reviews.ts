@@ -1,7 +1,9 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
+import { decorFromColumns, type PlayerDecor } from "@/lib/profile/decor";
 import { averageRating } from "@/lib/social/reviews";
 import { prisma } from "../db";
+import { decorColumns, type DecorColumns } from "../profile/decor";
 
 // Avis des joueurs pour l'accueil. La page est dynamique (nonce CSP) : on met en cache un
 // échantillon tiré au hasard (avis épinglés toujours inclus, en tête), que le carrousel remélange
@@ -24,6 +26,7 @@ export type PublicReview = {
   pinned: boolean;
   /** Réponse de l'équipe, texte brut. */
   reply: string | null;
+  decor: PlayerDecor;
 };
 
 export type ReviewSummary = { average: number | null; count: number };
@@ -31,16 +34,16 @@ export type ReviewSummary = { average: number | null; count: number };
 // Avis visibles d'auteurs non bannis : épinglés d'abord (date d'épinglage), puis au hasard
 const loadSample = unstable_cache(
   async (): Promise<PublicReview[]> => {
-    const rows = await prisma.$queryRaw<(Omit<PublicReview, "updatedAt"> & { updatedAt: Date })[]>`
-      SELECT r."id", r."rating", r."body", r."updatedAt", r."pinned", r."reply", u."username", u."image", u."isGuest"
+    const rows = await prisma.$queryRaw<(Omit<PublicReview, "updatedAt" | "decor"> & DecorColumns & { updatedAt: Date })[]>`
+      SELECT r."id", r."rating", r."body", r."updatedAt", r."pinned", r."reply", u."username", u."image", u."isGuest", ${decorColumns}
       FROM "Review" r
       JOIN "User" u ON u."id" = r."userId"
       WHERE r."hidden" = false AND u."bannedAt" IS NULL
       ORDER BY r."pinned" DESC, r."pinnedAt" ASC, random()
       LIMIT ${SAMPLE_SIZE}`;
-    return rows.map((r) => ({ ...r, updatedAt: r.updatedAt.toISOString() }));
+    return rows.map(({ frameStyle, nameColor, ...r }) => ({ ...r, updatedAt: r.updatedAt.toISOString(), decor: decorFromColumns(frameStyle, nameColor) }));
   },
-  ["reviews-sample-v2"],
+  ["reviews-sample-v3"],
   { tags: [REVIEWS_TAG], revalidate: 300 },
 );
 

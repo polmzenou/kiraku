@@ -11,7 +11,8 @@ import {
 } from "@/lib/market/filters";
 import { bidBounds, buyoutAvailable, checkTrader, minNextBid, priceCap, type MarketRules } from "@/lib/market/rules";
 import { cardViews } from "../boosters/display";
-import { namedPlayerSelect, publicNamesFor } from "../collection/public-names";
+import type { NameColorStyle } from "@/lib/profile/name-colors";
+import { namedPlayerSelect, publicNamesFor, shownNameColor } from "../collection/public-names";
 import { prisma } from "../db";
 import { pushNotifications } from "../push/send";
 import { getSetting } from "../settings";
@@ -222,6 +223,7 @@ export type AuctionLive = {
   endsAt: Date;
   buyoutPrice: number | null;
   leaderName: string | null;
+  leaderColor: NameColorStyle | null;
   leading: boolean;
   finalPrice: number | null;
 };
@@ -258,6 +260,7 @@ function toLive(
     endsAt: a.endsAt,
     buyoutPrice: a.status === "ACTIVE" && buyoutAvailable(a.buyoutPrice, a.currentBid) ? a.buyoutPrice : null,
     leaderName,
+    leaderColor: a.currentBidder ? shownNameColor(leaderName, a.currentBidder) : null,
     leading: viewerId !== null && a.currentBidderId === viewerId,
     finalPrice: a.finalPrice,
   };
@@ -285,6 +288,7 @@ export type AuctionDetail = {
   id: string;
   card: CardView;
   sellerName: string | null;
+  sellerColor: NameColorStyle | null;
   /** Commentaire du vendeur (texte brut). */
   note: string | null;
   startPrice: number;
@@ -293,7 +297,7 @@ export type AuctionDetail = {
   createdAt: Date;
   mine: boolean;
   live: AuctionLive;
-  bids: { id: string; amount: number; createdAt: Date; bidderName: string | null; me: boolean }[];
+  bids: { id: string; amount: number; createdAt: Date; bidderName: string | null; bidderColor: NameColorStyle | null; me: boolean }[];
 };
 
 export const BID_HISTORY = 20;
@@ -332,6 +336,7 @@ export async function getAuctionDetail(id: string, viewerId: string | null, loca
     id: a.id,
     card,
     sellerName: nameOf(a.seller),
+    sellerColor: shownNameColor(nameOf(a.seller), a.seller),
     note: a.note,
     startPrice: a.startPrice,
     feeBp: a.feeBp,
@@ -339,7 +344,7 @@ export async function getAuctionDetail(id: string, viewerId: string | null, loca
     createdAt: a.createdAt,
     mine: a.sellerId === viewerId,
     live,
-    bids: a.bids.map((b) => ({ id: b.id, amount: b.amount, createdAt: b.createdAt, bidderName: nameOf(b.bidder), me: b.bidderId === viewerId })),
+    bids: a.bids.map((b) => ({ id: b.id, amount: b.amount, createdAt: b.createdAt, bidderName: nameOf(b.bidder), bidderColor: shownNameColor(nameOf(b.bidder), b.bidder), me: b.bidderId === viewerId })),
   };
 }
 

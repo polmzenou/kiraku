@@ -90,9 +90,10 @@ export function Recap({ name, emblem, boosters, state, reduced, play, counters, 
       {/* Halo à la couleur de la meilleure carte et kanji du booster en filigrane */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-[-1rem] -top-6 bottom-0 -z-10 overflow-hidden">
         {glow && (
+          // Ellipse mesurée sur le récap et éteinte avant ses bords : le cadre qui la découpe ne se voit pas
           <m.span
-            className="absolute top-24 left-1/2 aspect-[4/3] w-[min(60rem,170vw)] -translate-x-1/2 rounded-full"
-            style={{ background: `radial-gradient(ellipse at center, ${glow} 0%, transparent 62%)` }}
+            className="absolute inset-0"
+            style={{ background: `radial-gradient(ellipse 50% 42% at 50% 42%, ${glow} 0%, transparent 100%)` }}
             initial={reduced ? false : { opacity: 0 }}
             animate={{ opacity: 0.32 }}
             transition={{ duration: 0.9 }}

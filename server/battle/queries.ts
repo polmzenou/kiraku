@@ -9,7 +9,10 @@ import { parseBoardTier, type BoardTier } from "@/lib/battle/tiers";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { periodWindow } from "@/lib/economy/period";
 import type { SettingValue } from "@/lib/settings/defaults";
+import type { Prisma } from "@/generated/prisma/client";
+import { decorFromRelations } from "@/lib/profile/decor";
 import { prisma } from "../db";
+import { decorSelect } from "../profile/decor";
 import { ablyEnabled } from "../env";
 import { getRankedRules } from "../ranked/queries";
 import { getSetting } from "../settings";
@@ -42,10 +45,10 @@ export async function sweepBattlesFor(userId: string) {
   }
 }
 
-const playerSelect = { username: true, image: true, isGuest: true } as const;
+const playerSelect = { username: true, image: true, isGuest: true, ...decorSelect } as const;
 
-function playerView(p: { username: string; image: string | null; isGuest: boolean } | null, botName: string | null): PlayerView | null {
-  if (p) return { username: p.username, image: p.image, isGuest: p.isGuest };
+function playerView(p: Prisma.UserGetPayload<{ select: typeof playerSelect }> | null, botName: string | null): PlayerView | null {
+  if (p) return { username: p.username, image: p.image, isGuest: p.isGuest, decor: decorFromRelations(p) };
   return botName ? { bot: botName } : null;
 }
 

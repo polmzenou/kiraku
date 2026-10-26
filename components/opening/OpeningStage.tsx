@@ -430,9 +430,8 @@ export function OpeningStage({
                 armed={armed}
                 reduced={reduced}
                 lite={lite}
-                leak={boosters && !veiled ? bestRarity(boosters, rarities) : null}
-                divine={variant === "divine" && !veiled}
-                cards={boosters ? boosters.reduce((n, booster) => n + booster.cards.length, 0) : 0}
+                leak={boosters && !veiled && deckCards.length > 0 ? bestRarity(boosters, rarities) : null}
+                cards={boosters ? boosters.reduce((n, booster) => n + booster.cards.length, 0) : null}
                 onTrigger={() => void trigger()}
                 onOpened={onOpened}
                 onTearSound={() => fx.play("tear", 15)}

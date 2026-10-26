@@ -113,7 +113,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
                 title={t("nav.account")}
                 className="hidden size-11 shrink-0 items-center justify-center rounded-full lg:inline-flex"
               >
-                <PlayerAvatar username={user.username} image={user.image} size={34} />
+                <PlayerAvatar username={user.username} image={user.image} size={34} frame={user.decor.frame} />
               </Link>
             )}
             {signedIn ? (

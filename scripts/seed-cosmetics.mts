@@ -1,4 +1,4 @@
-// Ajoute seulement les titres et cadres de départ manquants ; ceux édités dans l'admin sont conservés.
+// Ajoute seulement les titres, cadres et couleurs de pseudo de départ manquants ; ceux édités dans l'admin sont conservés.
 // Usage : npm run seed:cosmetics
 import { config } from "dotenv";
 import { PrismaClient, type Prisma } from "../generated/prisma/client.ts";
@@ -11,10 +11,11 @@ const prisma = new PrismaClient({ adapter: createPgAdapter(connectionString) });
 
 type Seed = {
   slug: string;
-  kind: "TITLE" | "FRAME";
+  kind: "TITLE" | "FRAME" | "NAME_COLOR";
   label: { fr: string; frFem?: string; en: string };
   hint: { fr: string; en: string };
   frameStyle?: string;
+  nameColor?: string;
   condition: Prisma.InputJsonValue;
 };
 
@@ -40,6 +41,41 @@ const SERIES_TITLES: { slug: string; title: string; name: string; label: Seed["l
   { slug: "alchimiste-etat", title: "Fullmetal Alchemist: Brotherhood", name: "Fullmetal Alchemist: Brotherhood", label: { fr: "Alchimiste d'État", en: "State Alchemist" } },
   { slug: "eclaireur", title: "Shingeki no Kyojin", name: "L'Attaque des Titans", label: { fr: "Éclaireur", frFem: "Éclaireuse", en: "Scout" } },
   { slug: "manieur-de-stand", title: "JoJo no Kimyou na Bouken (TV)", name: "JoJo's Bizarre Adventure", label: { fr: "Manieur de Stand", frFem: "Manieuse de Stand", en: "Stand User" } },
+];
+
+const discovered = (n: number) => ({ fr: `Découvrir ${n} % du catalogue.`, en: `Discover ${n}% of the catalogue.` });
+
+/** Cadres du catalogue découvert. */
+const discoveryFrames: Seed[] = (
+  [
+    ["kumo", "Kumo", "Kumo", 10],
+    ["seigaiha", "Seigaiha", "Seigaiha", 25],
+    ["momiji", "Momiji", "Momiji", 50],
+    ["tsuki", "Tsuki", "Tsuki", 75],
+    ["hoo", "Hōō", "Hōō", 100],
+  ] as const
+).map(([style, fr, en, n]): Seed => ({ slug: `cadre-${style}`, kind: "FRAME", label: { fr, en }, hint: discovered(n), frameStyle: style, condition: { type: "CATALOG_DISCOVERED_PERCENT", n } }));
+
+/** Couleurs de pseudo : paliers du catalogue découvert, et l'arc-en-ciel pastel des grandes raretés. */
+const nameColors: Seed[] = [
+  ...(
+    [
+      ["lime", "Vert lime", "Lime green", 20],
+      ["azure", "Bleu azur", "Azure blue", 35],
+      ["violet", "Violet améthyste", "Amethyst violet", 50],
+      ["ember", "Orange incandescent", "Glowing orange", 70],
+      ["scarlet", "Rouge écarlate", "Scarlet red", 90],
+      ["rainbow", "Arc-en-ciel", "Rainbow", 100],
+    ] as const
+  ).map(([style, fr, en, n]): Seed => ({ slug: `pseudo-${style}`, kind: "NAME_COLOR", label: { fr, en }, hint: discovered(n), nameColor: style, condition: { type: "CATALOG_DISCOVERED_PERCENT", n } })),
+  {
+    slug: "pseudo-pastel",
+    kind: "NAME_COLOR",
+    label: { fr: "Arc-en-ciel pastel", en: "Pastel rainbow" },
+    hint: { fr: "Découvrir 20 cartes Mythique, AR ou Gold.", en: "Discover 20 Mythic, AR or Gold cards." },
+    nameColor: "pastel",
+    condition: { type: "RARITIES_DISCOVERED", rarities: ["MYTHIC", "AR", "GOLD"], n: 20 },
+  },
 ];
 
 try {
@@ -69,15 +105,17 @@ try {
     { slug: "cadre-raden", kind: "FRAME", label: { fr: "Raden", en: "Raden" }, hint: { fr: "Posséder 3 Mythiques différentes.", en: "Own 3 different Mythics." }, frameStyle: "raden", condition: { type: "RARITY_OWNED", rarity: "MYTHIC", n: 3 } },
     { slug: "cadre-sakura", kind: "FRAME", label: { fr: "Sakura", en: "Sakura" }, hint: { fr: "Compléter une série.", en: "Complete a series." }, frameStyle: "sakura", condition: { type: "SERIES_COMPLETED_COUNT", n: 1 } },
     { slug: "cadre-kintsugi", kind: "FRAME", label: { fr: "Kintsugi", en: "Kintsugi" }, hint: { fr: "Compléter 10 séries.", en: "Complete 10 series." }, frameStyle: "kintsugi", condition: { type: "SERIES_COMPLETED_COUNT", n: 10 } },
+    ...discoveryFrames,
+    ...nameColors,
   ];
   const current = await prisma.cosmetic.findMany({ select: { slug: true, kind: true, sortOrder: true } });
   const existing = new Set(current.map((c) => c.slug));
   const missing = seeds.filter((s) => !existing.has(s.slug));
   // Les nouveaux se rangent après ceux déjà en base, sans bousculer l'ordre réglé dans l'admin
-  const next = { TITLE: 0, FRAME: 0 };
+  const next = { TITLE: 0, FRAME: 0, NAME_COLOR: 0 };
   for (const c of current) next[c.kind] = Math.max(next[c.kind], c.sortOrder);
   await prisma.cosmetic.createMany({
-    data: missing.map((s) => ({ slug: s.slug, kind: s.kind, label: s.label, hint: s.hint, frameStyle: s.frameStyle ?? null, condition: s.condition, sortOrder: (next[s.kind] += 10) })),
+    data: missing.map((s) => ({ slug: s.slug, kind: s.kind, label: s.label, hint: s.hint, frameStyle: s.frameStyle ?? null, nameColor: s.nameColor ?? null, condition: s.condition, sortOrder: (next[s.kind] += 10) })),
   });
   console.log(`Cosmétiques : ${missing.length} créés${absent.length ? ` (séries absentes : ${absent.join(", ")})` : ""}.`);
 } finally {

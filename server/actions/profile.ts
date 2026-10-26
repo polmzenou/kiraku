@@ -12,7 +12,9 @@ import { rateLimit } from "../ratelimit";
 import { getCurrentUser } from "../user";
 
 // Personnalisation de son profil. Session → Zod → compte inscrit actif → rate limit → chaque titre,
-// cadre et badge choisi est revérifié comme débloqué ici ; les champs sont écrits un par un.
+// cadre, couleur de pseudo et badge choisi est revérifié comme débloqué ici ; les champs sont écrits un
+// par un. Un cosmétique déjà porté le reste même si le joueur est repassé sous son palier (le catalogue
+// grandit, le % découvert baisse) : seul un nouveau choix est revérifié.
 
 export type ProfileSaveError = "NO_SESSION" | "INVALID" | "GUEST" | "UNAVAILABLE" | "RATE_LIMITED" | "LOCKED";
 
@@ -23,6 +25,7 @@ const saveSchema = z
     titleAgreement: z.enum(["MASC", "FEM"]),
     titleId: id.nullable(),
     frameId: id.nullable(),
+    nameColorId: id.nullable(),
     badgeOrder: z.array(z.enum(BADGES)).max(BADGES.length),
   })
   .strict();
@@ -40,21 +43,25 @@ export async function saveProfileAction(input: unknown): Promise<{ ok: true } | 
   const bio = data.bio.trim() === "" ? null : cleanChatBody(data.bio, BIO_MAX);
   if (data.bio.trim() !== "" && bio === null) return { ok: false, error: "INVALID" };
 
-  // Propriété : un titre ou un cadre se porte seulement s'il est débloqué (et du bon type)
-  if (data.titleId || data.frameId) {
+  const worn = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { createdAt: true, titleId: true, frameId: true, nameColorId: true } });
+  // Propriété : un titre, un cadre ou une couleur se porte seulement s'il est débloqué (et du bon type)
+  const picks = [
+    { id: data.titleId, kind: "TITLE", worn: worn.titleId },
+    { id: data.frameId, kind: "FRAME", worn: worn.frameId },
+    { id: data.nameColorId, kind: "NAME_COLOR", worn: worn.nameColorId },
+  ] as const;
+  const toCheck = picks.filter((p) => p.id !== null && p.id !== p.worn);
+  if (toCheck.length > 0) {
     const options = await getCosmeticOptions(user.id, await getLocale());
-    const allowed = (optionId: string, kind: "TITLE" | "FRAME") => options.some((o) => o.id === optionId && o.kind === kind && o.progress.unlocked);
-    if ((data.titleId && !allowed(data.titleId, "TITLE")) || (data.frameId && !allowed(data.frameId, "FRAME"))) {
-      return { ok: false, error: "LOCKED" };
-    }
+    const allowed = (p: (typeof picks)[number]) => options.some((o) => o.id === p.id && o.kind === p.kind && o.progress.unlocked);
+    if (!toCheck.every(allowed)) return { ok: false, error: "LOCKED" };
   }
-  const created = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { createdAt: true } });
-  const earned = new Set<string>(await getEarnedBadges({ ...user, createdAt: created.createdAt }));
+  const earned = new Set<string>(await getEarnedBadges({ ...user, createdAt: worn.createdAt }));
   const badgeOrder = [...new Set(data.badgeOrder)].filter((b) => earned.has(b));
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { bio, titleAgreement: data.titleAgreement, titleId: data.titleId, frameId: data.frameId, badgeOrder },
+    data: { bio, titleAgreement: data.titleAgreement, titleId: data.titleId, frameId: data.frameId, nameColorId: data.nameColorId, badgeOrder },
     select: { id: true },
   });
   refresh();

@@ -461,21 +461,13 @@
   .wagara-none {
     --wagara: linear-gradient(transparent, transparent);
   }
-  /* Sachet doré (feuille d'or) et divin (nacre) : la matière remplace la couleur du type */
+  /* Sachet doré (feuille d'or) : la matière remplace la couleur du type */
   .booster-art[data-variant="golden"] {
     --booster-base: #d9b556;
     --booster-dark: #6e5418;
     --wagara:
       radial-gradient(circle, rgb(255 246 214 / 0.95) 0 1px, transparent 1.6px) 0 0 / 11px 15px,
       radial-gradient(circle, rgb(255 240 190 / 0.8) 0 1px, transparent 1.6px) 5px 8px / 17px 9px;
-  }
-  .booster-art[data-variant="divine"] {
-    --booster-base: #ede6f2;
-    --booster-dark: #a996c4;
-    --ink: #1f1b17;
-    --ink-2: rgb(31 27 23 / 0.72);
-    --ink-shadow: none;
-    --wagara: conic-gradient(from 210deg at 50% 40%, #d9e8f0, #f1d9e6, #e8f0d8, #d8e2f3, #f3e6d6, #e6d8f1, #d9e8f0);
   }
   .tanzaku {
     background:
@@ -1099,4 +1091,158 @@
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
+}
+
+/*
+ * Couleurs de pseudo (Cosmetic NAME_COLOR, lib/profile/name-colors.ts). Dégradé vertical clippé au
+ * texte, contour sombre et halo en drop-shadow (un text-shadow peindrait par-dessus le texte
+ * transparent). Les effets animés passent par un calque ::after dont seule l'opacité varie.
+ */
+@layer components {
+  .name-color {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    vertical-align: bottom;
+    color: transparent;
+    background-image: linear-gradient(180deg, var(--nc-light) 0%, var(--nc-base) 55%, var(--nc-dark) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    filter: drop-shadow(0 1px 0 var(--nc-edge)) drop-shadow(0 0 6px color-mix(in srgb, var(--nc-base) var(--nc-glow), transparent));
+    --nc-edge: rgb(0 0 0 / 0.55);
+    --nc-glow: 70%;
+  }
+  [data-theme="washi"] .name-color {
+    --nc-edge: rgb(255 255 255 / 0.7);
+    --nc-glow: 35%;
+  }
+
+  .name-color-lime {
+    --nc-light: #eaffb8;
+    --nc-base: #a3e635;
+    --nc-dark: #4d9a00;
+  }
+  .name-color-azure {
+    --nc-light: #c8efff;
+    --nc-base: #38bdf8;
+    --nc-dark: #1d6fe0;
+  }
+  .name-color-violet {
+    --nc-light: #ece4ff;
+    --nc-base: #a78bfa;
+    --nc-dark: #6d3fe0;
+  }
+  .name-color-ember {
+    --nc-light: #fff1a8;
+    --nc-base: #ff9a1f;
+    --nc-dark: #e0400a;
+  }
+  .name-color-scarlet {
+    --nc-light: #ffc2c8;
+    --nc-base: #ff2d4a;
+    --nc-dark: #b0001c;
+  }
+  [data-theme="washi"] .name-color-lime {
+    --nc-light: #7cc21a;
+    --nc-base: #4d9a00;
+    --nc-dark: #2f6400;
+  }
+  [data-theme="washi"] .name-color-azure {
+    --nc-light: #2e9be0;
+    --nc-base: #1d6fe0;
+    --nc-dark: #123f8c;
+  }
+  [data-theme="washi"] .name-color-violet {
+    --nc-light: #8b6af0;
+    --nc-base: #6d3fe0;
+    --nc-dark: #45209c;
+  }
+  [data-theme="washi"] .name-color-ember {
+    --nc-light: #f08a1a;
+    --nc-base: #e0600a;
+    --nc-dark: #a33300;
+  }
+  [data-theme="washi"] .name-color-scarlet {
+    --nc-light: #e63b52;
+    --nc-base: #c8102e;
+    --nc-dark: #85000f;
+  }
+
+  .name-color-rainbow,
+  .name-color-pastel {
+    --nc-base: #ffffff;
+    --nc-glow: 30%;
+  }
+  .name-color-rainbow {
+    background-image: linear-gradient(90deg, #ff2d4a, #ff9a1f, #ffe600, #a3ff12, #2de2d0, #38bdf8, #b44dff);
+  }
+  .name-color-pastel {
+    background-image: linear-gradient(90deg, #ffb3c7, #ffd6a5, #fdffb6, #caffbf, #9bf6ff, #a0c4ff, #bdb2ff);
+  }
+  [data-theme="washi"] .name-color-rainbow,
+  [data-theme="washi"] .name-color-pastel {
+    --nc-edge: rgb(31 27 23 / 0.45);
+    --nc-base: #1f1b17;
+    --nc-glow: 0%;
+  }
+  [data-theme="washi"] .name-color-rainbow {
+    background-image: linear-gradient(90deg, #d4142f, #e06a00, #c9a400, #4d9a00, #0f9e94, #1d6fe0, #7a2fd6);
+  }
+  [data-theme="washi"] .name-color-pastel {
+    background-image: linear-gradient(90deg, #e87fa0, #e8a865, #c9c24a, #74c67f, #4cbcd0, #6f94e0, #9a86e6);
+  }
+
+  /* Calque animé : même texte, autre dégradé, seule son opacité bouge. */
+  .name-color-rainbow::after,
+  .name-color-pastel::after,
+  .name-color-ember::after {
+    content: attr(data-name);
+    content: attr(data-name) / "";
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    white-space: inherit;
+    text-overflow: inherit;
+    color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    pointer-events: none;
+    opacity: 0;
+    animation: name-color-fade 4s ease-in-out infinite;
+  }
+  .name-color-rainbow::after {
+    background-image: linear-gradient(90deg, #b44dff, #38bdf8, #2de2d0, #a3ff12, #ffe600, #ff9a1f, #ff2d4a);
+  }
+  .name-color-pastel::after {
+    background-image: linear-gradient(90deg, #bdb2ff, #a0c4ff, #9bf6ff, #caffbf, #fdffb6, #ffd6a5, #ffb3c7);
+  }
+  [data-theme="washi"] .name-color-rainbow::after {
+    background-image: linear-gradient(90deg, #7a2fd6, #1d6fe0, #0f9e94, #4d9a00, #c9a400, #e06a00, #d4142f);
+  }
+  [data-theme="washi"] .name-color-pastel::after {
+    background-image: linear-gradient(90deg, #9a86e6, #6f94e0, #4cbcd0, #74c67f, #c9c24a, #e8a865, #e87fa0);
+  }
+  .name-color-ember::after {
+    background-image: linear-gradient(180deg, #ffffff 0%, #ffe066 50%, #ff8a1f 100%);
+    animation-duration: 2.4s;
+  }
+  [data-theme="washi"] .name-color-ember::after {
+    background-image: linear-gradient(180deg, #ffb020 0%, #ff7a00 50%, #c43a00 100%);
+  }
+
+  @keyframes name-color-fade {
+    0%,
+    100% {
+      opacity: 0;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .name-color::after {
+      animation: none;
+    }
+  }
 }

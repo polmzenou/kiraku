@@ -22,13 +22,16 @@ import { pairKey, relationBetween, type Relation } from "@/lib/social/relation";
 import { getLocale } from "next-intl/server";
 import type { CardView } from "@/lib/boosters/view";
 import { prisma } from "../db";
+import { playerRefSelect, toPlayerRef, type PlayerRef } from "../profile/decor";
 import { listingOfferNotices } from "../market/listings";
 import { giftDay } from "./gift-core";
 
 // Lectures du social. Seuls des champs publics des autres joueurs sortent d'ici (pseudo, avatar,
 // statut invité), jamais l'e-mail, le solde ni un joueur qui n'est pas lié au lecteur.
 
-export type PlayerRef = { id: string; username: string; image: string | null; isGuest: boolean };
+export type { PlayerRef };
+/** Auteur d'une notification (sans décor : il n'apparaît que dans une phrase). */
+export type PlayerBase = Omit<PlayerRef, "decor">;
 
 const playerSelect = { id: true, username: true, image: true, isGuest: true } as const;
 
@@ -70,9 +73,9 @@ export async function listFriends(userId: string, q: string, page: number): Prom
     orderBy: { username: "asc" },
     skip: page * FRIENDS_PAGE,
     take: FRIENDS_PAGE + 1,
-    select: playerSelect,
+    select: playerRefSelect,
   });
-  return { items: rows.slice(0, FRIENDS_PAGE), hasMore: rows.length > FRIENDS_PAGE };
+  return { items: rows.slice(0, FRIENDS_PAGE).map(toPlayerRef), hasMore: rows.length > FRIENDS_PAGE };
 }
 
 /** Demandes reçues encore visibles (un refus les cache) et demandes envoyées. */
@@ -82,19 +85,19 @@ export async function listRequests(userId: string) {
       where: { addresseeId: userId, status: "PENDING", declinedAt: null },
       orderBy: { createdAt: "desc" },
       take: 100,
-      select: { createdAt: true, requester: { select: playerSelect } },
+      select: { createdAt: true, requester: { select: playerRefSelect } },
     }),
     // Une demande refusée reste « en attente » pour l'expéditeur : le refus ne se voit pas
     prisma.friendship.findMany({
       where: { requesterId: userId, status: "PENDING" },
       orderBy: { createdAt: "desc" },
       take: 100,
-      select: { createdAt: true, addressee: { select: playerSelect } },
+      select: { createdAt: true, addressee: { select: playerRefSelect } },
     }),
   ]);
   return {
-    incoming: incoming.map((r) => ({ ...r.requester, since: r.createdAt })),
-    outgoing: outgoing.map((r) => ({ ...r.addressee, since: r.createdAt })),
+    incoming: incoming.map((r) => ({ ...toPlayerRef(r.requester), since: r.createdAt })),
+    outgoing: outgoing.map((r) => ({ ...toPlayerRef(r.addressee), since: r.createdAt })),
   };
 }
 
@@ -103,9 +106,9 @@ export async function listBlocked(userId: string): Promise<PlayerRef[]> {
     where: { blockerId: userId },
     orderBy: { createdAt: "desc" },
     take: 200,
-    select: { blocked: { select: playerSelect } },
+    select: { blocked: { select: playerRefSelect } },
   });
-  return rows.map((r) => r.blocked);
+  return rows.map((r) => toPlayerRef(r.blocked));
 }
 
 export const countIncomingRequests = cache((userId: string) =>
@@ -130,7 +133,7 @@ export type NotificationView = {
   type: NotificationType;
   createdAt: Date;
   read: boolean;
-  actor: PlayerRef | null;
+  actor: PlayerBase | null;
   gift: GiftPayload | null;
   auction: AuctionPayload | null;
   battle: BattlePayload | null;
@@ -173,7 +176,7 @@ type NotificationRow = {
   readAt: Date | null;
   payload: Prisma.JsonValue;
   refId: string | null;
-  actor: PlayerRef | null;
+  actor: PlayerBase | null;
 };
 
 const AUCTION_TYPES: ReadonlySet<NotificationType> = new Set([

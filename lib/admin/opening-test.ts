@@ -4,7 +4,7 @@ import type { Rarity } from "@/lib/catalog/rarity";
 
 // Banc de test de l'ouverture (admin) : tirages factices, jamais envoyés au serveur ni enregistrés.
 
-export const OPENING_TEST_SCENARIOS = ["all", "mythic", "ar", "gold", "none", "dropDivin", "dropApocalypse"] as const;
+export const OPENING_TEST_SCENARIOS = ["all", "mythic", "ar", "gold", "none", "dropDivin", "dropSpared", "dropRuined"] as const;
 export type OpeningTestScenario = (typeof OPENING_TEST_SCENARIOS)[number];
 
 /** Grosses cartes de chaque scénario ; « none » finit sur une Légendaire, qui n'allume pas l'aurore. */
@@ -15,21 +15,24 @@ const FINALE: Record<OpeningTestScenario, Rarity[]> = {
   gold: ["GOLD"],
   none: ["LEGENDARY"],
   dropDivin: ["LEGENDARY"],
-  dropApocalypse: ["LEGENDARY"],
+  dropSpared: ["LEGENDARY"],
+  dropRuined: ["LEGENDARY"],
 };
 
 /** Sachet scellé qui tombe dans le scénario (le dernier booster se transforme), sinon null. */
 export function testDrop(scenario: OpeningTestScenario, run: number): DroppedSealedView | null {
-  if (scenario !== "dropDivin" && scenario !== "dropApocalypse") return null;
-  return { id: `test-drop-${run}`, kind: scenario === "dropDivin" ? "divin" : "apocalypse", position: 0 };
+  if (scenario === "dropDivin") return { id: `test-drop-${run}`, kind: "divin", position: 0 };
+  if (scenario === "dropSpared" || scenario === "dropRuined") return { id: `test-drop-${run}`, kind: "apocalypse", position: 0 };
+  return null;
 }
 
 /**
- * Ouverture factice d'un sachet scellé : Divin (Épiques puis une Mythique ou mieux), ou Apocalyptique
- * épargné un essai sur deux et ruiné l'autre (Communes et Peu communes).
+ * Ouverture factice du sachet scellé du scénario : Divin (Épiques puis une Mythique ou mieux), ou
+ * Apocalyptique épargné (contenu divin) ou ruiné (Communes et Peu communes).
  */
-export function testSealedBooster(pool: OpeningTestPool, kind: SealedKind, run: number): OpenedBoosterView {
-  const apocalypse = kind === "apocalypse" ? (run % 2 ? "RUINED" : "SPARED") : null;
+export function testSealedBooster(pool: OpeningTestPool, scenario: OpeningTestScenario, run: number): OpenedBoosterView {
+  const kind: SealedKind = scenario === "dropSpared" || scenario === "dropRuined" ? "apocalypse" : "divin";
+  const apocalypse = scenario === "dropRuined" ? "RUINED" : scenario === "dropSpared" ? "SPARED" : null;
   const rarities: Rarity[] = apocalypse === "RUINED" ? ["COMMON", "COMMON", "COMMON", "UNCOMMON"] : ["EPIC", "EPIC", "LEGENDARY", run % 3 ? "MYTHIC" : "AR"];
   const cards = rarities.flatMap((rarity, i): OpenedCardView[] => {
     const card = pick(pool, rarity, run * 4 + i);

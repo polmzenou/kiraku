@@ -11,20 +11,25 @@ import {
   type Badge,
   type ConditionProgress,
   type ProfileStats,
+  discoveredPercent,
 } from "@/lib/profile/conditions";
+import { decorFromRelations, type PlayerDecor } from "@/lib/profile/decor";
 import { isFrameStyle, type FrameStyle } from "@/lib/profile/frames";
+import { isNameColorStyle, type NameColorStyle } from "@/lib/profile/name-colors";
+import { getCatalogStats } from "../catalog/queries";
 import { prisma } from "../db";
 import { getSetting } from "../settings";
 
-// Progression du joueur vers les titres et cadres, badges dérivés, et ce que son profil affiche.
+// Progression du joueur vers les titres, cadres et couleurs de pseudo, badges dérivés, et ce que son profil affiche.
 
 export type CosmeticOption = {
   id: string;
-  kind: "TITLE" | "FRAME";
+  kind: "TITLE" | "FRAME" | "NAME_COLOR";
   /** Libellé dans la langue du lecteur, pour chaque accord (l'aperçu suit le choix sans recharger). */
   labels: { MASC: string; FEM: string };
   hint: string;
   frameStyle: FrameStyle | null;
+  nameColor: NameColorStyle | null;
   progress: ConditionProgress;
 };
 
@@ -32,7 +37,7 @@ type Hint = { fr?: string; en?: string };
 
 /** Statistiques utiles aux conditions, en quelques requêtes. */
 export async function getProfileStats(userId: string, seriesIds: readonly string[]): Promise<ProfileStats> {
-  const [unique, byRarity, completed, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined] = await Promise.all([
+  const [unique, byRarity, completed, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog] = await Promise.all([
     prisma.userCard.findMany({ where: { ownerId: userId }, distinct: ["cardId"], select: { cardId: true } }).then((r) => r.length),
     prisma.$queryRaw<{ rarity: string; n: number }[]>`
       SELECT c."rarityKey" AS rarity, COUNT(DISTINCT uc."cardId")::int AS n
@@ -63,6 +68,13 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
     prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { rankPoints: true, seasonPeakPc: true } }),
     getSetting("ranked.tiers"),
     prisma.boosterOpening.count({ where: { userId, apocalypse: "RUINED" } }),
+    // Cartes publiées découvertes (une découverte ne se perd pas, même si la carte est vendue)
+    prisma.$queryRaw<{ rarity: string; n: number }[]>`
+      SELECT c."rarityKey" AS rarity, COUNT(*)::int AS n
+      FROM "Discovery" d JOIN "Card" c ON c.id = d."cardId"
+      WHERE d."userId" = ${userId} AND c.status = 'PUBLISHED'
+      GROUP BY c."rarityKey"`,
+    getCatalogStats(),
   ]);
   // Meilleur des deux : un titre de rang ne se reperd pas après une défaite
   const tier = ladderTier(Math.max(user.rankPoints, user.seasonPeakPc), { tiers });
@@ -75,19 +87,29 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
     tradesDone,
     apocalypseRuined,
     tier: LADDER.includes(tier) ? tier : "BRONZE",
+    discoveredPercent: discoveredPercent(
+      discovered.reduce((sum, r) => sum + r.n, 0),
+      catalog.total,
+    ),
+    discoveredByRarity: Object.fromEntries(discovered.map((r) => [r.rarity, r.n])),
   };
 }
 
-/** Titres et cadres actifs, avec la progression du joueur vers chacun. */
+/** Titres, cadres et couleurs actifs, avec la progression du joueur vers chacun. */
 export async function getCosmeticOptions(userId: string, locale: string): Promise<CosmeticOption[]> {
+  return (await getCosmeticProgress(userId, locale)).options;
+}
+
+/** Les options et les statistiques qui les ont jugées (le sélecteur affiche le % découvert). */
+export async function getCosmeticProgress(userId: string, locale: string): Promise<{ options: CosmeticOption[]; stats: ProfileStats }> {
   const rows = await prisma.cosmetic.findMany({
     where: { active: true },
     orderBy: [{ kind: "asc" }, { sortOrder: "asc" }, { slug: "asc" }],
-    select: { id: true, kind: true, label: true, hint: true, frameStyle: true, condition: true },
+    select: { id: true, kind: true, label: true, hint: true, frameStyle: true, nameColor: true, condition: true },
   });
   const conditions = rows.map((r) => parseCondition(r.condition));
   const stats = await getProfileStats(userId, referencedSeries(conditions));
-  return rows.map((r, i) => {
+  const options = rows.map((r, i): CosmeticOption => {
     const hint = (r.hint ?? {}) as Hint;
     return {
       id: r.id,
@@ -95,9 +117,11 @@ export async function getCosmeticOptions(userId: string, locale: string): Promis
       labels: { MASC: labelFor(parseLabel(r.label), locale, "MASC"), FEM: labelFor(parseLabel(r.label), locale, "FEM") },
       hint: (locale === "en" ? hint.en || hint.fr : hint.fr) ?? "",
       frameStyle: isFrameStyle(r.frameStyle) ? r.frameStyle : null,
+      nameColor: isNameColorStyle(r.nameColor) ? r.nameColor : null,
       progress: evaluateCondition(conditions[i], stats),
     };
   });
+  return { options, stats };
 }
 
 /** Badges obtenus par le joueur (ordre par défaut). */
@@ -117,14 +141,13 @@ export async function getEarnedBadges(user: { id: string; createdAt: Date; disco
   });
 }
 
-export type ProfileDecor = {
+export type ProfileDecor = PlayerDecor & {
   bio: string | null;
   title: string | null;
-  frame: FrameStyle | null;
   badges: Badge[];
 };
 
-/** Ce que l'en-tête d'un profil affiche : bio, titre accordé, cadre et badges dans l'ordre choisi. */
+/** Ce que l'en-tête d'un profil affiche : bio, titre accordé, cadre, couleur et badges dans l'ordre choisi. */
 export async function getProfileDecor(userId: string, locale: string): Promise<ProfileDecor> {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
@@ -137,13 +160,14 @@ export async function getProfileDecor(userId: string, locale: string): Promise<P
       badgeOrder: true,
       title: { select: { label: true, active: true } },
       frame: { select: { frameStyle: true, active: true } },
+      nameColor: { select: { nameColor: true, active: true } },
     },
   });
   const badges = orderedBadges(await getEarnedBadges(user), user.badgeOrder);
   return {
     bio: user.bio,
     title: user.title?.active ? labelFor(parseLabel(user.title.label), locale, user.titleAgreement) : null,
-    frame: user.frame?.active && isFrameStyle(user.frame.frameStyle) ? user.frame.frameStyle : null,
+    ...decorFromRelations(user),
     badges,
   };
 }

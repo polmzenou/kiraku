@@ -1,9 +1,11 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import type { BoardTier } from "@/lib/battle/tiers";
+import { decorFromColumns, type PlayerDecor } from "@/lib/profile/decor";
 import { rankedRulesFrom, rankOf, RANKED_SETTING_KEYS, type RankedRules } from "@/lib/ranked/rules";
 import type { SettingValue } from "@/lib/settings/defaults";
 import { prisma } from "../db";
+import { decorColumns, type DecorColumns } from "../profile/decor";
 import { getSetting } from "../settings";
 import { currentSeasonWith, rollSeasonWith, type SeasonRow } from "./ranked-core";
 
@@ -74,9 +76,17 @@ export async function getRankView(userId: string, r: RankedRules): Promise<RankV
   };
 }
 
-export type RankedEntry = { position: number; username: string; image: string | null; pc: number; tier: BoardTier; division: 1 | 2 | 3 | null };
+export type RankedEntry = {
+  position: number;
+  username: string;
+  image: string | null;
+  pc: number;
+  tier: BoardTier;
+  division: 1 | 2 | 3 | null;
+  decor: PlayerDecor;
+};
 
-type Row = { position: number; username: string; image: string | null; pc: number; public: boolean };
+type Row = { position: number; username: string; image: string | null; pc: number; public: boolean } & DecorColumns;
 
 /**
  * Top du classé : la position compte tous les joueurs inscrits non bannis (c'est elle qui fait les
@@ -87,13 +97,13 @@ const loadRankedTop = unstable_cache(
     prisma.$queryRaw<Row[]>`
       SELECT * FROM (
         SELECT (ROW_NUMBER() OVER (ORDER BY u."rankPoints" DESC, u."createdAt" ASC))::int AS position,
-               u.username, u.image, u."rankPoints" AS pc, (u."profileVisibility" = 'PUBLIC') AS public
+               u.username, u.image, u."rankPoints" AS pc, (u."profileVisibility" = 'PUBLIC') AS public, ${decorColumns}
         FROM "User" u
         WHERE u."bannedAt" IS NULL AND u."isGuest" = false AND u."rankPoints" > 0
       ) ranked
       WHERE position <= ${size}
       ORDER BY position`,
-  ["ranked-top"],
+  ["ranked-top-v2"],
   { tags: [RANKED_TAG], revalidate: 60 },
 );
 
@@ -103,7 +113,15 @@ export async function getRankedLeaderboard(r: RankedRules): Promise<RankedEntry[
     .filter((row) => row.public)
     .map((row) => {
       const rank = rankOf(row.pc, row.position <= r.grandChampion.top, r);
-      return { position: row.position, username: row.username, image: row.image, pc: row.pc, tier: rank.tier, division: rank.division };
+      return {
+        position: row.position,
+        username: row.username,
+        image: row.image,
+        pc: row.pc,
+        tier: rank.tier,
+        division: rank.division,
+        decor: decorFromColumns(row.frameStyle, row.nameColor),
+      };
     });
 }
 

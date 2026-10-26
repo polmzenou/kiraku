@@ -12,6 +12,7 @@ import { Fuda } from "../../fuda/Fuda";
 import { displayName } from "../../profile/ProfileHeader";
 import { SectionTitle } from "../../SectionTitle";
 import { PlayerAvatar } from "../../social/PlayerAvatar";
+import { playerTag } from "../../social/PlayerName";
 import { Button } from "../../ui/Button";
 import { NoteText } from "../../ui/NoteText";
 import { CardThumb } from "./CardThumb";
@@ -139,9 +140,9 @@ function MyListing({ listing }: { listing: MyListingView }) {
           {listing.offers.map((o) => (
             <li key={o.id} className="flex flex-col gap-2 rounded-card bg-surface-2 p-3">
               <p className="flex min-w-0 items-center gap-2 text-sm">
-                <PlayerAvatar username={o.bidder.username} image={o.bidder.image} size={28} />
+                <PlayerAvatar username={o.bidder.username} image={o.bidder.image} size={28} frame={o.bidder.decor.frame} />
                 <span className="truncate">
-                  {t("mine.offerFrom", { name: name(o.bidder), card: o.card.name })}
+                  {t.rich("mine.offerFrom", { name: name(o.bidder), card: o.card.name, player: playerTag(o.bidder.decor.nameColor) })}
                   {!o.fromWants && <span className="ml-1 text-text-muted">{t("mine.outsideList")}</span>}
                 </span>
               </p>
@@ -184,8 +185,8 @@ function SentOffer({ offer }: { offer: SentOfferView }) {
   return (
     <article className="flex flex-col gap-3 lacquer rounded-card p-3 md:p-4">
       <p className="flex min-w-0 items-center gap-2 text-sm">
-        <PlayerAvatar username={offer.listing.owner.username} image={offer.listing.owner.image} size={28} />
-        <span className="truncate">{t("mine.sentTo", { name: name(offer.listing.owner) })}</span>
+        <PlayerAvatar username={offer.listing.owner.username} image={offer.listing.owner.image} size={28} frame={offer.listing.owner.decor.frame} />
+        <span className="truncate">{t.rich("mine.sentTo", { name: name(offer.listing.owner), player: playerTag(offer.listing.owner.decor.nameColor) })}</span>
         <span className="ml-auto shrink-0 rounded-pill border border-ai/50 px-2 py-0.5 text-xs font-bold text-ai tabular-nums">
           {t("expires", { when: format.relativeTime(offer.listing.expiresAt) })}
         </span>

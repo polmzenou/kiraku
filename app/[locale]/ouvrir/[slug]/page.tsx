@@ -57,10 +57,15 @@ export default async function OpenBoosterPage({ params, searchParams }: PageProp
   // ou ?offert=1 des anciennes notifications) : ouvrables même après la fin d'un événement
   const wantsCredit = sp.credit === "1" || sp.offert === "1";
   const credits = wantsCredit ? ((await getBoosterCredits(user.id)).get(type.id) ?? 0) : 0;
-  // Sachet scellé du joueur (?sachet=…, accueil ou notification) : il s'ouvre sur la page de son type
-  const sachet = typeof sp.sachet === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(sp.sachet) ? await findOwnSealed(user.id, sp.sachet) : null;
-  const sealed = sachet && sachet.kind === type.slug ? { id: sachet.id, kind: sachet.kind } : null;
-  if (offer.availability === "hidden" && credits === 0 && !sealed) notFound();
+  // Sachet scellé du joueur (?sachet=…, accueil ou notification) : il s'ouvre sur la page de son type.
+  // Déjà ouvert, il garde la page : l'ouverture la re-rend (refresh) pendant que le récap s'affiche.
+  const sachet =
+    typeof sp.sachet === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(sp.sachet)
+      ? await findOwnSealed(user.id, sp.sachet, { includeOpened: true })
+      : null;
+  const ownSachet = sachet && sachet.kind === type.slug ? sachet : null;
+  const sealed = ownSachet && !ownSachet.opened ? { id: ownSachet.id, kind: ownSachet.kind } : null;
+  if (offer.availability === "hidden" && credits === 0 && !ownSachet) notFound();
   const [sealedTypes, karmaThreshold] = await Promise.all([getSealedDisplays(locale), getSetting("booster.apocalypseKarma")]);
   const name = localize(type.name, locale);
   const cards = effectiveSlotFloors(type.slotFloors, rules.draw.slotFloors).length;
