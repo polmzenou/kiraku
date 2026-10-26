@@ -1,18 +1,27 @@
-import { getFormatter, getTranslations } from "next-intl/server";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
+import { AmbassadorSettingsForm } from "@/components/admin/AmbassadorSettingsForm";
 import { BoosterSettingsForm } from "@/components/admin/BoosterSettingsForm";
+import { localize, parseLocalized } from "@/lib/boosters/types";
+import { AMBASSADOR_SETTING_KEYS, type AmbassadorSettings } from "@/lib/settings/ambassador-form";
 import { BOOSTER_SETTING_KEYS, type BoosterSettings } from "@/lib/settings/booster-form";
 import { recentBoosterSettingLogs, requireAdmin } from "@/server/admin";
+import { prisma } from "@/server/db";
 import { getSetting } from "@/server/settings";
 
 export default async function AdminBoostersPage() {
   await requireAdmin();
-  const [t, format, values, logs] = await Promise.all([
+  const [t, format, locale, values, ambassadorValues, types, logs] = await Promise.all([
     getTranslations("admin.boosters"),
     getFormatter(),
+    getLocale(),
     Promise.all(BOOSTER_SETTING_KEYS.map((k) => getSetting(k))),
+    Promise.all(AMBASSADOR_SETTING_KEYS.map((k) => getSetting(k))),
+    // Pack hebdo des ambassadeurs : des boosters à ouvrir, jamais un sachet scellé
+    prisma.boosterType.findMany({ where: { kind: { not: "DROP" } }, orderBy: [{ family: "asc" }, { sortOrder: "asc" }, { id: "asc" }], select: { slug: true, name: true } }),
     recentBoosterSettingLogs(),
   ]);
   const settings = Object.fromEntries(BOOSTER_SETTING_KEYS.map((k, i) => [k, values[i]])) as BoosterSettings;
+  const ambassador = Object.fromEntries(AMBASSADOR_SETTING_KEYS.map((k, i) => [k, ambassadorValues[i]])) as AmbassadorSettings;
 
   return (
     <div className="flex flex-col gap-8">
@@ -22,6 +31,8 @@ export default async function AdminBoostersPage() {
       </div>
 
       <BoosterSettingsForm initial={settings} />
+
+      <AmbassadorSettingsForm initial={ambassador} boosterTypes={types.map((b) => ({ slug: b.slug, name: localize(parseLocalized(b.name), locale) }))} />
 
       <section className="flex flex-col gap-3">
         <h2 className="font-heading text-lg font-bold">{t("log")}</h2>

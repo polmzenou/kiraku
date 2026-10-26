@@ -63,6 +63,18 @@ function AccountForm({ initial, self }: { initial: Account; self: boolean }) {
   );
 }
 
+/** Rôle Ambassadeur : badge, cadre et couleur verts, stock relevé et pack hebdomadaire. */
+function AmbassadorForm({ since }: { since: Date | null }) {
+  const t = useTranslations("admin.users");
+  const format = useFormatter();
+  return (
+    <MutationForm title={t("ambassador")} change={{ kind: "ambassador", ambassador: since === null }} button={t(since ? "revokeAmbassador" : "grantAmbassador")}>
+      <p className="text-sm">{since ? t("ambassadorSince", { date: format.dateTime(since, { dateStyle: "medium" }) }) : t("notAmbassador")}</p>
+      <p className="text-xs text-text-muted">{t("ambassadorHint")}</p>
+    </MutationForm>
+  );
+}
+
 function ModeField({ value, onChange }: { value: Mode; onChange: (v: Mode) => void }) {
   const t = useTranslations("admin.users");
   return <SelectField label={t("operation")} value={value} onChange={onChange} options={(["SET", "ADD", "REMOVE"] as const).map((v) => ({ value: v, label: t(`modes.${v}`) }))} />;
@@ -197,8 +209,8 @@ function DiscoveryForm({ count, total, minimum }: { count: number; total: number
   </MutationForm>;
 }
 
-export function UserEditor({ userId, account, self, stats, coins, boosters, discoveries, catalogTotal, ownedCatalogCards, selectedCard, sessions }: {
-  userId: string; account: Account; self: boolean; stats: Record<UserStat, number>; coins: number;
+export function UserEditor({ userId, account, ambassadorSince, self, stats, coins, boosters, discoveries, catalogTotal, ownedCatalogCards, selectedCard, sessions }: {
+  userId: string; account: Account; ambassadorSince: Date | null; self: boolean; stats: Record<UserStat, number>; coins: number;
   boosters: Booster[]; discoveries: number; catalogTotal: number; ownedCatalogCards: number; selectedCard: AdminCardCandidate | null; sessions: number;
 }) {
   const t = useTranslations("admin.users");
@@ -211,6 +223,7 @@ export function UserEditor({ userId, account, self, stats, coins, boosters, disc
     </section>
     <div className="grid items-start gap-4 md:grid-cols-2">
       <AccountForm key={JSON.stringify(account)} initial={account} self={self} />
+      <AmbassadorForm key={ambassadorSince?.toISOString() ?? "none"} since={ambassadorSince} />
       <BalanceForm key={coins} coins={coins} />
       {USER_STATS.map((field) => <StatForm key={`${field}:${stats[field]}`} field={field} initial={stats[field]} />)}
       <DiscoveryForm key={discoveries} count={discoveries} total={catalogTotal} minimum={ownedCatalogCards} />

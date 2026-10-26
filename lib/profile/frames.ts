@@ -1,8 +1,8 @@
 // Cadres d'avatar : des matières de la DA Kiraku (papier, bambou, indigo, laque, feuille d'or,
-// nacre, cerisier, kintsugi, puis nuage, vagues, érable, lune et phénix). L'admin associe un style à une condition (Cosmetic.frameStyle).
+// nacre, cerisier, kintsugi, puis nuage, vagues, érable, lune et phénix ; jade réservé aux ambassadeurs). L'admin associe un style à une condition (Cosmetic.frameStyle).
 // Classes écrites en entier pour que Tailwind les détecte ; anneau peint en dégradé conique.
 
-export const FRAME_STYLES = ["washi", "bambou", "aizome", "urushi", "kinpaku", "raden", "sakura", "kintsugi", "kumo", "seigaiha", "momiji", "tsuki", "hoo"] as const;
+export const FRAME_STYLES = ["washi", "bambou", "aizome", "urushi", "kinpaku", "raden", "sakura", "kintsugi", "kumo", "seigaiha", "momiji", "tsuki", "hoo", "hisui"] as const;
 export type FrameStyle = (typeof FRAME_STYLES)[number];
 
 export const FRAME_KANJI: Record<FrameStyle, string> = {
@@ -19,6 +19,7 @@ export const FRAME_KANJI: Record<FrameStyle, string> = {
   momiji: "紅",
   tsuki: "月",
   hoo: "鳳",
+  hisui: "翠",
 };
 
 /** Anneau autour de l'avatar (le padding fait l'épaisseur). */
@@ -36,6 +37,7 @@ export const FRAME_RING: Record<FrameStyle, string> = {
   momiji: "bg-[conic-gradient(from_20deg,#8f1d14,#e0533f,#f29a3a,#c8372d,#6e1a12,#e86a2c,#8f1d14)]",
   tsuki: "bg-[conic-gradient(from_300deg,#3a3f4a,#c9ced8,#f7f8fb,#9aa2b1,#2b2f37,#dfe3ea,#3a3f4a)]",
   hoo: "bg-[conic-gradient(from_0deg,#c8372d,#d9b556,#f3dc8c,#e0533f,#8a6a1f,#f3dc8c,#c8372d)]",
+  hisui: "bg-[conic-gradient(from_160deg,#14432c,#5bbf8b,#d4f7e3,#2e8a5c,#0f3322,#8fdcb2,#14432c)]",
 };
 
 export function isFrameStyle(value: unknown): value is FrameStyle {

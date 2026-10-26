@@ -4,7 +4,9 @@
 // opérations sans importer la connexion de production.
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { adjustedValue, type AdminUserError, type AdminUserMutation } from "@/lib/admin/users";
+import { computeStock, stockRulesFor, type StockSettings } from "@/lib/boosters/stock";
 import { MAX_MOVEMENT } from "@/lib/economy/amount";
+import { parseSetting } from "@/lib/settings/defaults";
 import { applyEntries, type LedgerEntry } from "../economy/ledger";
 import { readBannerPity } from "../boosters/open-core";
 import { lockPlayers, type Tx } from "../social/lock";
@@ -17,6 +19,17 @@ export class AdminUserMutationError extends Error {
 }
 
 const json = (v: unknown): Prisma.InputJsonValue => JSON.parse(JSON.stringify(v));
+
+/** Réglages du stock lus en base dans la transaction (pas dans le cache) : le calcul est exact. */
+async function stockSettings(tx: Tx): Promise<StockSettings> {
+  const rows = await tx.gameSetting.findMany({ where: { key: { in: ["booster.maxStock", "ambassador.maxStock", "booster.intervalMinutes"] } }, select: { key: true, value: true } });
+  const stored = new Map(rows.map((r) => [r.key, r.value]));
+  return {
+    max: parseSetting("booster.maxStock", stored.get("booster.maxStock")),
+    ambassadorMax: parseSetting("ambassador.maxStock", stored.get("ambassador.maxStock")),
+    intervalMs: parseSetting("booster.intervalMinutes", stored.get("booster.intervalMinutes")) * 60_000,
+  };
+}
 
 /** Cadeau de l'équipe : le joueur est notifié, l'admin n'est jamais nommé. */
 async function giftFromTeam(
@@ -61,6 +74,7 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
     const user = await tx.user.findUnique({ where: { id: input.userId }, select: {
       id: true, username: true, role: true, bannedAt: true, profileVisibility: true, showCollection: true,
       coins: true, boosterStock: true, boosterAnchor: true, rankPoints: true, pityCount: true, standardCount: true, bannerPity: true, battleTeam: true,
+      ambassadorSince: true, titleId: true, frameId: true, nameColorId: true,
     } });
     if (!user) throw new AdminUserMutationError("NOT_FOUND");
     const userId = user.id;
@@ -203,6 +217,30 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
           if (removed.length !== count - input.value) throw new AdminUserMutationError("DISCOVERY_MIN");
         }
         after = { count: count + added.length - removed.length, addedCardIds: added.map((c) => c.cardId), removedCardIds: removed.map((c) => c.cardId) };
+        break;
+      }
+      case "ambassador": {
+        const was = user.ambassadorSince !== null;
+        // Stock arrêté avec le max en vigueur avant le changement : un joueur plein à 10 repart de
+        // maintenant vers 15 (pas d'un coup depuis sa vieille ancre), un retrait garde ce qui est acquis.
+        const stock = computeStock(user.boosterStock, user.boosterAnchor, now, stockRulesFor(await stockSettings(tx), was));
+        const since = input.ambassador ? (user.ambassadorSince ?? now) : null;
+        // Un cosmétique porté le reste même s'il se reverrouille : ceux du rôle s'enlèvent avec lui
+        const reserved = input.ambassador ? [] : (await tx.cosmetic.findMany({
+          where: { id: { in: [user.titleId, user.frameId, user.nameColorId].filter((id): id is string => id !== null) }, condition: { path: ["type"], equals: "AMBASSADOR" } },
+          select: { id: true },
+        })).map((c) => c.id);
+        before = { ambassador: was, boosterStock: user.boosterStock, boosterAnchor: user.boosterAnchor };
+        after = { ambassador: input.ambassador, boosterStock: stock.stock, boosterAnchor: stock.anchor, ...(reserved.length ? { removedCosmetics: reserved } : {}) };
+        await tx.user.update({ where: { id: userId }, data: {
+          ambassadorSince: since,
+          boosterStock: stock.stock,
+          boosterAnchor: stock.anchor,
+          ...(user.titleId && reserved.includes(user.titleId) ? { titleId: null } : {}),
+          ...(user.frameId && reserved.includes(user.frameId) ? { frameId: null } : {}),
+          ...(user.nameColorId && reserved.includes(user.nameColorId) ? { nameColorId: null } : {}),
+        } });
+        if (input.ambassador && !was) await notify(tx, { userId, type: "AMBASSADOR_GRANTED", actorId: adminId, now });
         break;
       }
       case "sessions": {

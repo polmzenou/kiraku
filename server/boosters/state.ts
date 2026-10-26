@@ -1,6 +1,6 @@
 import "server-only";
 import { boostersUntilGolden, boostersUntilPity } from "@/lib/boosters/draw";
-import { computeStock } from "@/lib/boosters/stock";
+import { computeStock, stockRulesFor } from "@/lib/boosters/stock";
 import type { BoosterRules } from "./rules";
 
 /** État des boosters envoyé au client : il affiche un compte à rebours, il ne décide jamais du stock. */
@@ -25,14 +25,17 @@ export type BoosterCounters = {
   pityCount: number;
   standardCount: number;
   coins: number;
+  /** Rôle Ambassadeur : stock max relevé. */
+  ambassadorSince: Date | null;
 };
 
 /** Calcul en lecture seule : rien n'est écrit, l'ouverture recalcule sous verrou. */
 export function boosterStateFrom(user: BoosterCounters, rules: BoosterRules, now = new Date()): BoosterState {
-  const s = computeStock(user.boosterStock, user.boosterAnchor, now, rules.stock);
+  const stock = stockRulesFor(rules.stock, user.ambassadorSince !== null);
+  const s = computeStock(user.boosterStock, user.boosterAnchor, now, stock);
   return {
     stock: s.stock,
-    max: rules.stock.max,
+    max: stock.max,
     nextAt: s.nextAt?.getTime() ?? null,
     intervalMs: rules.stock.intervalMs,
     serverNow: now.getTime(),

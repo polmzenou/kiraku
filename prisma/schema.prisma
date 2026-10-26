@@ -100,6 +100,8 @@ model User {
   nameColorId         String? // couleur du pseudo (Cosmetic NAME_COLOR)
   nameColor           Cosmetic?         @relation("userNameColor", fields: [nameColorId], references: [id], onDelete: SetNull)
   badgeOrder          String[]          @default([])
+  // Rôle Ambassadeur donné par l'admin (null = pas ambassadeur) : badge, cadre et couleur verts, stock et pack hebdo
+  ambassadorSince     DateTime?
   createdAt           DateTime          @default(now())
 
   accounts     Account[]
@@ -124,13 +126,14 @@ model User {
   notified      Notification[]     @relation("notifActor")
   pushSubs      PushSubscription[]
 
-  boosterCredits BoosterCredit[]
-  sealedDrops    SealedDrop[]    @relation("sealedOwner")
-  sealedGiven    SealedDrop[]    @relation("sealedGiver")
-  missions       UserMission[]
-  purchases      Purchase[]
-  referralsMade  Referral[]      @relation("referrer")
-  referral       Referral?       @relation("referee")
+  boosterCredits  BoosterCredit[]
+  sealedDrops     SealedDrop[]          @relation("sealedOwner")
+  sealedGiven     SealedDrop[]          @relation("sealedGiver")
+  missions        UserMission[]
+  ambassadorPacks AmbassadorPackClaim[]
+  purchases       Purchase[]
+  referralsMade   Referral[]            @relation("referrer")
+  referral        Referral?             @relation("referee")
 
   auctions    Auction[] @relation("seller")
   leadingBids Auction[] @relation("leader")
@@ -158,6 +161,7 @@ model User {
   chatReceived   ChatMessage[]  @relation("chatRecipient")
 
   @@index([rankPoints])
+  @@index([ambassadorSince])
 }
 
 // --- Auth.js ---
@@ -642,6 +646,7 @@ enum NotificationType {
   LISTING_ACCEPTED // ton offre a été acceptée : la carte est arrivée
   LISTING_DECLINED // ton offre a été refusée (ou l'annonce s'est fermée sans elle)
   TEAM_GIFT // cartes ou boosters ajoutés par l'équipe depuis la fiche du joueur (TeamGift)
+  AMBASSADOR_GRANTED // l'équipe a donné le rôle Ambassadeur
 }
 
 // Notifications en base ; le texte est rendu à la lecture (pseudo à jour, langue du lecteur)
@@ -810,6 +815,18 @@ model UserMission {
   claimedAt DateTime @default(now())
 
   @@id([userId, missionId, periodKey])
+}
+
+// Pack hebdomadaire des ambassadeurs : une ligne par semaine réclamée, la clé empêche le doublon
+model AmbassadorPackClaim {
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  periodKey     String // 2026-W42 (fuseau game.timeZone)
+  boosterTypeId String // type donné cette semaine (id gardé en clair, comme TeamGift)
+  count         Int
+  createdAt     DateTime @default(now())
+
+  @@id([userId, periodKey])
 }
 
 enum ReferralStatus {

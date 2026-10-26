@@ -19,6 +19,7 @@ export const CONDITION_TYPES = [
   "APOCALYPSE_RUINED",
   "CATALOG_DISCOVERED_PERCENT",
   "RARITIES_DISCOVERED",
+  "AMBASSADOR",
 ] as const;
 export type ConditionType = (typeof CONDITION_TYPES)[number];
 
@@ -34,6 +35,8 @@ export const conditionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("APOCALYPSE_RUINED"), n: count }).strict(),
   z.object({ type: z.literal("CATALOG_DISCOVERED_PERCENT"), n: z.number().int().min(1).max(100) }).strict(),
   z.object({ type: z.literal("RARITIES_DISCOVERED"), rarities: z.array(rarityKeySchema).min(1).max(8), n: count }).strict(),
+  // Rôle donné par l'admin : le cosmétique est réservé aux ambassadeurs
+  z.object({ type: z.literal("AMBASSADOR") }).strict(),
 ]);
 export type ProfileCondition = z.infer<typeof conditionSchema>;
 
@@ -61,6 +64,8 @@ export type ProfileStats = {
   discoveredPercent: number;
   /** Cartes publiées découvertes par clé de rareté. */
   discoveredByRarity: Record<string, number>;
+  /** Rôle Ambassadeur donné par l'admin. */
+  ambassador: boolean;
 };
 
 /** % découvert arrondi à l'inférieur : 99,9 % ne vaut pas 100 %, seul le catalogue entier y mène. */
@@ -106,6 +111,8 @@ export function evaluateCondition(condition: ProfileCondition | null, stats: Pro
       const found = [...new Set(condition.rarities)].reduce((sum, r) => sum + (stats.discoveredByRarity[r] ?? 0), 0);
       return capped(found, condition.n);
     }
+    case "AMBASSADOR":
+      return capped(stats.ambassador ? 1 : 0, 1);
   }
 }
 
@@ -136,21 +143,32 @@ export const BIO_MAX = 160;
 
 // --- Badges (dérivés, sans table) ---
 
-export const BADGES = ["PIONEER", "AMBASSADOR", "VERIFIED"] as const;
+// AMBASSADOR vient du rôle donné par l'admin ; SPONSOR (Parrain) des filleuls qualifiés
+export const BADGES = ["PIONEER", "AMBASSADOR", "SPONSOR", "VERIFIED"] as const;
 export type Badge = (typeof BADGES)[number];
 
-export const BADGE_KANJI: Record<Badge, string> = { PIONEER: "先", AMBASSADOR: "使", VERIFIED: "認" };
+export const BADGE_KANJI: Record<Badge, string> = { PIONEER: "先", AMBASSADOR: "使", SPONSOR: "縁", VERIFIED: "認" };
+
+/** Pastille du badge : l'or par défaut, le vert hisui pour le rôle Ambassadeur. */
+export const BADGE_CLASS: Record<Badge, { pill: string; kanji: string }> = {
+  PIONEER: { pill: "border-kin/50 text-kin", kanji: "text-kin" },
+  AMBASSADOR: { pill: "border-hisui/60 text-hisui", kanji: "text-hisui" },
+  SPONSOR: { pill: "border-kin/50 text-kin", kanji: "text-kin" },
+  VERIFIED: { pill: "border-kin/50 text-kin", kanji: "text-kin" },
+};
 
 export function earnedBadges(input: {
   createdAt: Date;
   pioneerUntil: Date | null;
+  ambassador: boolean;
   qualifiedReferrals: number;
-  ambassadorReferrals: number;
+  sponsorReferrals: number;
   discordLinked: boolean;
 }): Badge[] {
   const out: Badge[] = [];
   if (input.pioneerUntil && input.createdAt <= input.pioneerUntil) out.push("PIONEER");
-  if (input.ambassadorReferrals > 0 && input.qualifiedReferrals >= input.ambassadorReferrals) out.push("AMBASSADOR");
+  if (input.ambassador) out.push("AMBASSADOR");
+  if (input.sponsorReferrals > 0 && input.qualifiedReferrals >= input.sponsorReferrals) out.push("SPONSOR");
   if (input.discordLinked) out.push("VERIFIED");
   return out;
 }

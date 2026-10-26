@@ -16,11 +16,13 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
+import { stockRulesFor } from "@/lib/boosters/stock";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { guestCode } from "@/lib/username";
 import { logout } from "@/server/actions/account";
 import { linkDiscord } from "@/server/actions/auth";
 import { discordEnabled, env, isProduction, mailEnabled } from "@/server/env";
+import { getBoosterRules } from "@/server/boosters/rules";
 import { pushAvailable } from "@/server/push/send";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
@@ -50,8 +52,8 @@ export default async function AccountPage() {
     );
   }
 
-  const [maxStock, discordBonus, push, casino] = await Promise.all([
-    getSetting("booster.maxStock"),
+  const [rules, discordBonus, push, casino] = await Promise.all([
+    getBoosterRules(),
     getSetting("discord.linkBonusZeni"),
     pushAvailable(),
     getSetting("features.casino"),
@@ -114,7 +116,7 @@ export default async function AccountPage() {
         </div>
         <div className="lacquer rounded-card p-4">
           <dt className="text-sm text-text-muted">{t("account.boosterStock")}</dt>
-          <dd className="text-lg font-bold">{t("common.boosters", { count: user.boosterStock, max: maxStock })}</dd>
+          <dd className="text-lg font-bold">{t("common.boosters", { count: user.boosterStock, max: stockRulesFor(rules.stock, user.ambassadorSince !== null).max })}</dd>
         </div>
       </dl>
 

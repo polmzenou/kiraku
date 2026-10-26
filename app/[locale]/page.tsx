@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { ArcadeBanner } from "@/components/ArcadeBanner";
+import { AmbassadorPackCard } from "@/components/ambassador/AmbassadorPackCard";
 import { BoosterShowcase } from "@/components/boosters/showcase/BoosterShowcase";
 import type { ShowcaseFamily, ShowcaseItem } from "@/components/boosters/showcase/types";
 import { RecentPulls } from "@/components/home/RecentPulls";
@@ -43,6 +44,7 @@ import { getSealedDisplays } from "@/server/boosters/sealed";
 import { SealedDropsRow } from "@/components/boosters/SealedDropsRow";
 import { getOwnReview, getReviewSample, getReviewSummary } from "@/server/social/reviews";
 import { getCurrentUser } from "@/server/user";
+import { getAmbassadorPack } from "@/server/ambassador/queries";
 import { getSetting } from "@/server/settings";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]">): Promise<Metadata> {
@@ -83,7 +85,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
   // Le catalogue est public. Créer l'invité au moment de jouer évite de remplacer tout l'écran
   // après hydratation (LCP/CLS) et de créer un compte pour chaque simple consultation.
   const state = boosterStateFrom(user ?? {
-    boosterStock: rules.stock.max, boosterAnchor: new Date(), coins: await getSetting("economy.startingZeni"), pityCount: 0, standardCount: 0,
+    boosterStock: rules.stock.max, boosterAnchor: new Date(), coins: await getSetting("economy.startingZeni"), pityCount: 0, standardCount: 0, ambassadorSince: null,
   }, rules);
   const visible = offers.filter((o) => o.availability !== "hidden");
   // Hors rotation : affichés grisés dans la vitrine, jamais sélectionnables
@@ -109,10 +111,12 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
       ? { kind: "guest" }
       : { kind: "none" };
   // Sachets scellés (Divin, Apocalyptique) gardés pour plus tard
-  const [sealedDrops, sealedDisplays, apocalypseKarma] = await Promise.all([
+  const [sealedDrops, sealedDisplays, apocalypseKarma, ambassadorPack] = await Promise.all([
     user ? getSealedDrops(user.id) : [],
     getSealedDisplays(locale),
     getSetting("booster.apocalypseKarma"),
+    // Pack hebdomadaire des ambassadeurs, au-dessus des boosters à ouvrir
+    user && !user.bannedAt ? getAmbassadorPack(user, locale) : null,
   ]);
   const credited = allTypes
     .filter((e) => (credits.get(e.type.id) ?? 0) > 0 && e.type.filter !== null)
@@ -180,6 +184,8 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
       <JsonLd data={structuredData} />
       <ArcadeBanner />
 
+      {ambassadorPack && <AmbassadorPackCard {...ambassadorPack} />}
+
       {credited.length > 0 && (
         <ul className="flex flex-col gap-2">
           {credited.map((c) => (
@@ -231,7 +237,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
                 count: visible.length,
                 families: families.length,
                 minutes: rules.intervalMinutes,
-                max: rules.stock.max,
+                max: state.max,
               })}
             />
           }

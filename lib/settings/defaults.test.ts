@@ -17,6 +17,8 @@ describe("réglages de jeu", () => {
   it("retombe sur la valeur par défaut si elle est absente ou invalide", () => {
     expect(parseSetting("economy.startingZeni", undefined)).toBe(500);
     expect(parseSetting("booster.maxStock", -3)).toBe(10);
+    expect(parseSetting("ambassador.maxStock", undefined)).toBe(15);
+    expect(parseSetting("ambassador.weeklyBoosterSlug", "Tout anime")).toBe("standard");
     expect(parseSetting("booster.intervalMinutes", "10")).toBe(10);
   });
 });

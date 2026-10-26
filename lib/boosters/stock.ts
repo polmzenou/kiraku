@@ -3,6 +3,14 @@
 
 export type StockRules = { max: number; intervalMs: number };
 
+/** Réglages du stock : le max commun et celui des ambassadeurs (rôle donné par l'admin). */
+export type StockSettings = StockRules & { ambassadorMax: number };
+
+/** Règles du stock d'un joueur : seul le max dépend de son rôle. */
+export function stockRulesFor(settings: StockSettings, ambassador: boolean): StockRules {
+  return { max: ambassador ? settings.ambassadorMax : settings.max, intervalMs: settings.intervalMs };
+}
+
 export type StockState = {
   stock: number;
   /** Début du cycle en cours (les minutes déjà entamées sont conservées). */

@@ -919,7 +919,8 @@
         "registered": "Registered",
         "guests": "Guests",
         "admins": "Administrators",
-        "banned": "Banned"
+        "banned": "Banned",
+        "ambassadors": "Ambassadors"
       },
       "searchButton": "Search",
       "searching": "Searching…",
@@ -1048,7 +1049,8 @@
         "USER_BANNERPITY": "Featured pity",
         "USER_CARD": "Card collection",
         "USER_DISCOVERIES": "Catalog discoveries",
-        "USER_SESSIONS": "Session sign-out"
+        "USER_SESSIONS": "Session sign-out",
+        "USER_AMBASSADOR": "Ambassador role"
       },
       "errors": {
         "FORBIDDEN": "Access denied: administrator permissions are required.",
@@ -1111,7 +1113,14 @@
         "discoveries": "Discoveries"
       },
       "giftMessage": "Message to the player (optional)",
-      "giftMessagePlaceholder": "E.g. gift, event reward…"
+      "giftMessagePlaceholder": "E.g. gift, event reward…",
+      "ambassadorRole": "Ambassador",
+      "ambassador": "Ambassador",
+      "ambassadorSince": "Ambassador since {date}.",
+      "notAmbassador": "This player is not an ambassador.",
+      "ambassadorHint": "Green badge, frame and name color, a bigger booster stock and a weekly pack (settings under Boosters). Revoking also removes the worn frame and color.",
+      "grantAmbassador": "Make ambassador",
+      "revokeAmbassador": "Revoke role"
     },
     "moduleNames": {
       "boosters": "Boosters",
@@ -1198,7 +1207,17 @@
       "logEntry": "{key} by {admin}",
       "rotationSection": "Family rotation",
       "sealedSection": "Sealed boosters",
-      "karmaHint": "Ruined Apocalyptic boosters in a row before a forced spare (0 = no karma)."
+      "karmaHint": "Ruined Apocalyptic boosters in a row before a forced spare (0 = no karma).",
+      "ambassador": {
+        "title": "Ambassadors",
+        "intro": "The role is granted from a player's page. These settings apply to every ambassador.",
+        "fields": {
+          "maxStock": "Max free booster stock",
+          "weeklyBoosters": "Boosters in the weekly pack",
+          "weeklyBoosterSlug": "Weekly pack booster type"
+        },
+        "weeklyHint": "Claimable once a week (Monday). 0: no pack."
+      }
     },
     "types": {
       "title": "Booster types",
@@ -2492,7 +2511,8 @@
         "RANK_TIER": "Ranked tier reached",
         "APOCALYPSE_RUINED": "Ruined Apocalyptic boosters",
         "CATALOG_DISCOVERED_PERCENT": "% of catalogue discovered",
-        "RARITIES_DISCOVERED": "Cards discovered of given rarities"
+        "RARITIES_DISCOVERED": "Cards discovered of given rarities",
+        "AMBASSADOR": "Ambassador role"
       },
       "frames": {
         "washi": "Washi",
@@ -2507,13 +2527,14 @@
         "seigaiha": "Seigaiha",
         "momiji": "Momiji",
         "tsuki": "Tsuki",
-        "hoo": "Hōō"
+        "hoo": "Hōō",
+        "hisui": "Hisui (ambassador)"
       },
       "settings": {
         "pioneerUntil": "Pioneer badge: signed up until",
         "pioneerHint": "Empty: nobody gets it anymore.",
-        "ambassadorReferrals": "Ambassador badge: qualified referrals required",
-        "ambassadorHint": "0: badge disabled."
+        "sponsorReferrals": "Sponsor badge: qualified referrals required",
+        "sponsorHint": "0: badge disabled."
       },
       "errors": {
         "FORBIDDEN": "Admins only.",
@@ -2529,7 +2550,8 @@
         "ember": "Glowing orange",
         "scarlet": "Scarlet red",
         "rainbow": "Rainbow",
-        "pastel": "Pastel rainbow"
+        "pastel": "Pastel rainbow",
+        "hisui": "Jade green (ambassador)"
       }
     },
     "openingTest": {
@@ -2860,7 +2882,8 @@
       "badgeNames": {
         "PIONEER": "Pioneer",
         "AMBASSADOR": "Ambassador",
-        "VERIFIED": "Verified account"
+        "VERIFIED": "Verified account",
+        "SPONSOR": "Sponsor"
       },
       "noHint": "Keep collecting to unlock it.",
       "progress": "{current}/{goal}",
@@ -3087,7 +3110,8 @@
     "giftSealedApocalypse": "{name} gifted you an apocalyptic booster… divine or ruined?",
     "sealedDivin": "{name} opened your divine booster: {card} ({rarity}).",
     "sealedSpared": "Your apocalyptic booster spared {name}: {card} ({rarity})!",
-    "sealedRuined": "Your apocalyptic booster blew up in {name}'s face."
+    "sealedRuined": "Your apocalyptic booster blew up in {name}'s face.",
+    "ambassadorGranted": "The Kiraku team made you an Ambassador! The green badge, frame and color are yours, and a booster pack awaits you every week."
   },
   "push": {
     "title": "Notifications on this device",
@@ -4201,5 +4225,22 @@
     "ruined": "Ruined",
     "recapTitle": "{count, plural, one {A sealed booster dropped} other {# sealed boosters dropped}}",
     "recapKept": "Not right now? They're waiting on the home page."
+  },
+  "ambassador": {
+    "pack": {
+      "title": "Ambassador pack",
+      "available": "{count, plural, one {A {name} booster awaits you} other {# {name} boosters await you}} this week.",
+      "claimed": "This week's pack is claimed. The next one arrives {when}.",
+      "claim": "Claim",
+      "claiming": "Claiming…",
+      "errors": {
+        "NO_SESSION": "Sign in to claim your pack.",
+        "INVALID": "Invalid request.",
+        "UNAVAILABLE": "Pack unavailable right now. Try again later.",
+        "RATE_LIMITED": "Too many attempts. Try again in a minute.",
+        "NOT_AMBASSADOR": "This pack is for ambassadors only.",
+        "ALREADY_CLAIMED": "You already claimed this week's pack."
+      }
+    }
   }
 }

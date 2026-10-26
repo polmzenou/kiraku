@@ -22,7 +22,7 @@ export async function requireAdmin() {
 
 /** Derniers changements de réglages des boosters, pour le journal de /admin/boosters. */
 export async function recentBoosterSettingLogs(take = 15) {
-  return recentSettingLogs(["booster."], take);
+  return recentSettingLogs(["booster.", "ambassador."], take);
 }
 
 /** Derniers changements de réglages dont la clé commence par l'un des préfixes. */

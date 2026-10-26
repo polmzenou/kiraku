@@ -95,6 +95,7 @@ export async function openBoosterAction(input: unknown): Promise<OpenBoosterResu
       pityCount: outcome.pityCount,
       standardCount: outcome.standardCount,
       coins: outcome.coins,
+      ambassadorSince: outcome.ambassadorSince,
     },
     rules,
   );

@@ -20,6 +20,7 @@ export const NOTIFICATION_TYPES = [
   "LISTING_DECLINED",
   "TEAM_GIFT",
   "SEALED_OPENED",
+  "AMBASSADOR_GRANTED",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

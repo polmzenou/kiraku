@@ -15,7 +15,7 @@ import {
   type SealedKind,
 } from "@/lib/boosters/draw";
 import type { Rng } from "@/lib/boosters/rng";
-import { computeStock, consumeStock, type StockRules, type StockState } from "@/lib/boosters/stock";
+import { computeStock, consumeStock, stockRulesFor, type StockSettings, type StockState } from "@/lib/boosters/stock";
 import { bonusesFor, priceFor, type BoosterTypeView } from "@/lib/boosters/types";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { consumeBoosters, CreditError } from "../economy/credits";
@@ -58,7 +58,7 @@ export type OpenInput = {
    */
   credit?: boolean;
   /** Planchers déjà effectifs pour ce type. */
-  rules: { draw: DrawRules; stock: StockRules };
+  rules: { draw: DrawRules; stock: StockSettings };
   tables: RarityTables;
   pool: CardPool;
   featured?: FeaturedDraw;
@@ -97,6 +97,8 @@ export type OpenOutcome = {
   zeniSpent: number;
   /** Boosters crédités de ce type restant à ouvrir (mode crédit seulement, sinon 0). */
   credits: number;
+  /** Rôle Ambassadeur lu sous le verrou (stock max de l'état renvoyé). */
+  ambassadorSince: Date | null;
 };
 
 type LockedUser = {
@@ -107,6 +109,7 @@ type LockedUser = {
   coins: number;
   bannerPity: unknown;
   bannedAt: Date | null;
+  ambassadorSince: Date | null;
 };
 
 const TX = { maxWait: 10_000, timeout: 15_000 };
@@ -209,13 +212,15 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
       await tx.$executeRaw`SELECT pg_advisory_xact_lock_shared(740_210_001)`;
       // Verrou sur la ligne du joueur : deux ouvertures simultanées passent l'une après l'autre
       const [user] = await tx.$queryRaw<LockedUser[]>`
-        SELECT "boosterStock", "boosterAnchor", "pityCount", "standardCount", "coins", "bannerPity", "bannedAt"
+        SELECT "boosterStock", "boosterAnchor", "pityCount", "standardCount", "coins", "bannerPity", "bannedAt", "ambassadorSince"
         FROM "User" WHERE id = ${userId} FOR UPDATE`;
       if (!user) throw new OpenError("NO_USER");
       if (user.bannedAt) throw new OpenError("BANNED");
 
       const now = new Date();
-      const current = computeStock(user.boosterStock, user.boosterAnchor, now, rules.stock);
+      // Stock max lu sous le verrou : un rôle Ambassadeur retiré entre-temps ne laisse pas dépasser
+      const stockRules = stockRulesFor(rules.stock, user.ambassadorSince !== null);
+      const current = computeStock(user.boosterStock, user.boosterAnchor, now, stockRules);
       const price = input.credit ? ({ kind: "credit" } as const) : priceFor(type, current.stock, count);
       let stock: StockState = current;
       let total = 0;
@@ -228,7 +233,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
           throw e;
         }
       } else if (price.kind === "free") {
-        stock = consumeStock(current, count, rules.stock);
+        stock = consumeStock(current, count, stockRules);
       } else if (price.kind === "zeni") {
         if (!input.pay) throw new OpenError("NEEDS_PAYMENT");
         if (user.coins < price.amount) throw new OpenError("NOT_ENOUGH_ZENI");
@@ -327,6 +332,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         coins,
         zeniSpent: total,
         credits,
+        ambassadorSince: user.ambassadorSince,
       };
     },
     TX,

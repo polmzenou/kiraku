@@ -7,9 +7,9 @@ import type { Rarity } from "@/lib/catalog/rarity";
 export const ADMIN_USER_PAGE_SIZE = 25;
 export const MAX_ADMIN_VALUE = 2_147_483_647;
 export const MAX_ADMIN_QUANTITY = 1_000;
-export const USER_FILTERS = ["all", "registered", "guests", "admins", "banned"] as const;
+export const USER_FILTERS = ["all", "registered", "guests", "admins", "ambassadors", "banned"] as const;
 export const USER_STATS = ["boosterStock", "rankPoints", "pityCount", "standardCount"] as const;
-export const USER_ADMIN_ACTIONS = ["USER_ACCOUNT", "USER_COINS", "USER_STAT", "USER_BOOSTER", "USER_BANNERPITY", "USER_CARD", "USER_DISCOVERIES", "USER_SESSIONS"] as const;
+export const USER_ADMIN_ACTIONS = ["USER_ACCOUNT", "USER_COINS", "USER_STAT", "USER_BOOSTER", "USER_BANNERPITY", "USER_CARD", "USER_DISCOVERIES", "USER_SESSIONS", "USER_AMBASSADOR"] as const;
 export type UserFilter = (typeof USER_FILTERS)[number];
 /** Colonnes triables de la liste des joueurs, et le sens naturel de chacune. */
 export const USER_SORTS = ["created", "name", "email", "status", "coins", "cards", "discoveries"] as const;
@@ -36,6 +36,8 @@ export const adminUserMutationSchema = z.discriminatedUnion("kind", [
   z.object({ ...base, kind: z.literal("card"), cardId: id, mode: z.enum(["ADD", "REMOVE"]), amount: z.number().int().min(1).max(MAX_ADMIN_QUANTITY), message: noteSchema }).strict(),
   z.object({ ...base, kind: z.literal("discoveries"), value: z.number().int().min(0).max(50_000) }).strict(),
   z.object({ ...base, kind: z.literal("sessions") }).strict(),
+  // Rôle Ambassadeur : donné ou retiré seulement ici
+  z.object({ ...base, kind: z.literal("ambassador"), ambassador: z.boolean() }).strict(),
 ]).refine((v) => !(v.kind === "coins" && v.mode !== "SET" && (v.amount < 1 || v.amount > MAX_MOVEMENT)), { message: "Invalid movement" })
   .refine((v) => !(v.kind === "booster" && v.mode !== "SET" && (v.amount < 1 || v.amount > MAX_ADMIN_QUANTITY)), { message: "Invalid quantity" });
 
