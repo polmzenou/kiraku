@@ -119,7 +119,7 @@ export default async function ShopPage() {
               </div>
               <div className="flex flex-1 flex-col gap-3 p-4">
                 <div className="flex flex-col gap-1">
-                  <h2 className="font-title text-lg font-bold">{localize(parseLocalized(item.name), locale)}</h2>
+                  <h2 className="font-heading text-lg font-bold">{localize(parseLocalized(item.name), locale)}</h2>
                   {description && <p className="text-sm text-text-muted">{description}</p>}
                 </div>
                 <LotRewards lot={lot} />
@@ -167,7 +167,7 @@ export default async function ShopPage() {
       {/* Zone « Packs premium » : les articles en euros s'y ajouteront avec le fournisseur de paiement */}
       {premium && (
         <section className="flex flex-col gap-2 lacquer rounded-card p-4">
-          <h2 className="font-title text-lg font-bold">{t("premium")}</h2>
+          <h2 className="font-heading text-lg font-bold">{t("premium")}</h2>
           <p className="text-sm text-text-muted">{t("premiumSoon")}</p>
         </section>
       )}

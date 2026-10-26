@@ -116,7 +116,7 @@ export function CombatHub({
       <section className="battle-board battle-rim rounded-[18px] p-[3px]" data-tier={rank?.tier}>
         <div className="battle-table flex flex-col gap-4 rounded-[15px] p-4 text-washi-paper md:flex-row md:items-center md:gap-8 md:p-6">
           <div className="flex min-w-0 flex-1 flex-col gap-3">
-            <h2 className="flex items-center gap-2 font-title text-xl font-extrabold">
+            <h2 className="flex items-center gap-2 font-heading text-xl font-extrabold">
               {t("ranked.title")}
               {rank?.season && <span className="text-sm font-medium text-[#a89f92]">· {tRanked("season", { number: rank.season.number })}</span>}
             </h2>
@@ -145,7 +145,7 @@ export function CombatHub({
 
       <div className="grid gap-4 md:grid-cols-2">
         <article className="flex flex-col gap-3 lacquer rounded-card p-4">
-          <h2 className="flex items-center gap-2 font-title text-lg font-bold">
+          <h2 className="flex items-center gap-2 font-heading text-lg font-bold">
             {t("exhibition.title")}
           </h2>
           <p className="flex-1 text-sm text-text-muted">{t("exhibition.text", { seconds: queueSeconds })}</p>
@@ -155,7 +155,7 @@ export function CombatHub({
         </article>
 
         <article className="flex flex-col gap-3 lacquer rounded-card p-4">
-          <h2 className="flex items-center gap-2 font-title text-lg font-bold">
+          <h2 className="flex items-center gap-2 font-heading text-lg font-bold">
             {t("friend.title")}
           </h2>
           <p className="text-sm text-text-muted">{t("friend.text")}</p>

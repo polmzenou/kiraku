@@ -16,6 +16,7 @@ const stats: ProfileStats = {
   seriesProgress: { csm: { owned: 12, total: 12 }, op: { owned: 2, total: 195 } },
   boostersOpened: 340,
   tradesDone: 3,
+  apocalypseRuined: 0,
   tier: "GOLD",
 };
 
@@ -31,6 +32,7 @@ describe("conditions de déblocage", () => {
     [{ type: "SERIES_COMPLETED_COUNT", n: 10 }, false, 1, 10],
     [{ type: "BOOSTERS_OPENED", n: 100 }, true, 100, 100],
     [{ type: "TRADES_DONE", n: 25 }, false, 3, 25],
+    [{ type: "APOCALYPSE_RUINED", n: 1 }, false, 0, 1],
     [{ type: "RANK_TIER", tier: "SILVER" }, true, 2, 2],
     [{ type: "RANK_TIER", tier: "CHAMPION" }, false, 3, 6],
   ])("%o", (raw, unlocked, current, goal) => {

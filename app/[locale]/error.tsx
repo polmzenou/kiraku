@@ -20,7 +20,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
       <span aria-hidden="true" lang="ja" className="font-seal text-5xl text-shu">
         乱
       </span>
-      <h1 className="font-title text-2xl font-extrabold">{t("title")}</h1>
+      <h1 className="font-heading text-2xl font-extrabold">{t("title")}</h1>
       <p className="text-text-muted">{t("body")}</p>
       {error.digest && <p className="text-xs text-text-muted">{t("reference", { digest: error.digest })}</p>}
       <div className="flex flex-wrap gap-2">

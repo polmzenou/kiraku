@@ -21,7 +21,7 @@ import {
   type FriendLimits,
   type SendOutcome,
 } from "../social/friendship-core";
-import { GiftError, giftBoosterWith, giftCardWith, type GiftErrorCode } from "../social/gift-core";
+import { GiftError, giftBoosterWith, giftCardWith, giftSealedWith, type GiftErrorCode } from "../social/gift-core";
 import { getCurrentUser } from "../user";
 
 // Amis, blocage et cadeaux. Ordre des contrôles : session → Zod → compte autorisé (ni invité ni
@@ -47,6 +47,7 @@ const HOUR = 3600;
 const usernameSchema = z.object({ username: z.string().regex(USERNAME_REGEX) });
 const respondSchema = usernameSchema.extend({ accept: z.boolean() });
 const giftCardSchema = usernameSchema.extend({ cardId: z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/) });
+const giftSealedSchema = usernameSchema.extend({ drop: z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/) });
 
 /** Web Push des notifications créées, une fois la réponse envoyée (hors transaction). */
 const pushLater = (ids: string[]) => after(() => pushNotifications(ids));
@@ -250,6 +251,31 @@ export async function giftBoosterAction(input: unknown): Promise<GiftResult> {
       rules: g.rules,
       timeZone: g.timeZone,
       price: await getSetting("gifts.boosterPriceZeni"),
+    }, pushLater);
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    return giftFailure(e);
+  }
+}
+
+/** Offre un sachet scellé tombé d'un tirage (une seule fois) ; propriété et règles relues sous verrou. */
+export async function giftSealedAction(input: unknown): Promise<GiftResult> {
+  const g = await giftGuard(input, giftSealedSchema);
+  if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
+  const [requiresDiscord, minAccountDays, perWeek] = await Promise.all([
+    getSetting("gifts.sealedRequiresDiscord"),
+    getSetting("gifts.sealedMinAccountDays"),
+    getSetting("gifts.sealedPerWeek"),
+  ]);
+  try {
+    await giftSealedWith(prisma, {
+      senderId: g.user.id,
+      recipientId: g.recipientId,
+      rules: g.rules,
+      timeZone: g.timeZone,
+      dropId: (g.data as z.infer<typeof giftSealedSchema>).drop,
+      sealedRules: { requiresDiscord, minAccountDays, perWeek },
     }, pushLater);
     refresh();
     return { ok: true };

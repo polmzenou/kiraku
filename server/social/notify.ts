@@ -7,6 +7,7 @@ import type {
   GiftPayload,
   ListingPayload,
   NotificationType,
+  SealedPayload,
   TeamGiftPayload,
   TradePayload,
 } from "@/lib/social/notifications";
@@ -17,7 +18,7 @@ type NewNotification = {
   type: NotificationType;
   actorId: string;
   refId?: string;
-  payload?: GiftPayload | AuctionPayload | BattlePayload | TradePayload | ListingPayload | TeamGiftPayload;
+  payload?: GiftPayload | AuctionPayload | BattlePayload | TradePayload | ListingPayload | TeamGiftPayload | SealedPayload;
   now: Date;
 };
 

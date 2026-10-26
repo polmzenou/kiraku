@@ -1,7 +1,7 @@
 // Texte et lien d'une notification, sans dépendance au rendu : la page /notifications, les toasts
 // (côté client) et le Web Push (côté serveur, dans la langue du joueur) partagent ce code.
 import { guestCode } from "../username";
-import type { AuctionPayload, BattlePayload, GiftPayload, NotificationType, TeamGiftPayload, TradePayload } from "./notifications";
+import type { AuctionPayload, BattlePayload, GiftPayload, NotificationType, SealedPayload, TeamGiftPayload, TradePayload } from "./notifications";
 
 export type DescribableNotification = {
   type: NotificationType;
@@ -17,8 +17,13 @@ export type DescribableNotification = {
   offeredCard?: { name: string } | null;
   /** Cadeau de l'équipe depuis la fiche du joueur (la carte est dans `card`). */
   team?: (TeamGiftPayload & { boosterSlug: string | null }) | null;
+  /** Sachet scellé offert puis ouvert par l'ami (la meilleure carte est dans `card`). */
+  sealed?: SealedPayload | null;
   card: { anilistId: number; name: string; rarity: string } | null;
 };
+
+/** Sachets scellés : ils s'ouvrent depuis l'accueil, pas depuis la vitrine. */
+const SEALED_SLUGS = new Set(["divin", "apocalypse"]);
 
 type Values = Record<string, string | number>;
 
@@ -32,6 +37,11 @@ export type DescribeTranslators = {
       | "giftCard"
       | "giftCardGone"
       | "giftBooster"
+      | "giftSealedDivin"
+      | "giftSealedApocalypse"
+      | "sealedDivin"
+      | "sealedSpared"
+      | "sealedRuined"
       | "referralQualified"
       | "outbid"
       | "auctionWon"
@@ -77,6 +87,12 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
       return { text: t("referralQualified", { name }), href: "/parrainage" };
     case "GIFT_RECEIVED":
       if (n.gift?.kind === "BOOSTER") return { text: t("giftBooster", { name }), href: "/ouvrir/standard?credit=1" };
+      if (n.gift?.kind === "SEALED") {
+        return {
+          text: t(n.gift.slug === "divin" ? "giftSealedDivin" : "giftSealedApocalypse", { name }),
+          href: `/ouvrir/${n.gift.slug}?sachet=${n.gift.dropId}`,
+        };
+      }
       return n.card
         ? {
             text: t("giftCard", { name, card: n.card.name, rarity: tr.rarity(n.card.rarity) }),
@@ -99,7 +115,8 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
       return { text: t("teamGift"), href: "/compte/historique" };
     case "TEAM_GIFT":
       if (n.team?.kind === "BOOSTER") {
-        return { text: t("teamGiftBoosters", { count: n.team.quantity }), href: n.team.boosterSlug ? `/ouvrir/${n.team.boosterSlug}?credit=1` : "/" };
+        const slug = n.team.boosterSlug;
+        return { text: t("teamGiftBoosters", { count: n.team.quantity }), href: slug && !SEALED_SLUGS.has(slug) ? `/ouvrir/${slug}?credit=1` : "/" };
       }
       return {
         text: t("teamGiftCards", { count: n.team?.quantity ?? 1, card: n.card?.name ?? t("aCard") }),
@@ -117,6 +134,12 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
       const key = n.type === "LISTING_OFFER" ? "listingOffer" : n.type === "LISTING_ACCEPTED" ? "listingAccepted" : "listingDeclined";
       const values = { name, card: n.card?.name ?? t("aCard"), offered: n.offeredCard?.name ?? t("aCard") };
       return { text: t(key, values), href: "/marche?onglet=mes-echanges" };
+    }
+    case "SEALED_OPENED": {
+      // Cadeau empoisonné : celui qui a offert le sachet apprend ce qu'il a donné
+      const key = n.sealed?.outcome === "RUINED" ? "sealedRuined" : n.sealed?.outcome === "SPARED" ? "sealedSpared" : "sealedDivin";
+      const values = { name, card: n.card?.name ?? t("aCard"), rarity: n.card ? tr.rarity(n.card.rarity) : "" };
+      return { text: t(key, values), href: n.actor ? `/u/${n.actor.username}` : "/amis" };
     }
   }
 }

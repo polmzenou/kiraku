@@ -1,6 +1,15 @@
 import localFont from "next/font/local";
 
-// Titres
+// Titres h1 et h2. Une seule graisse : la plage 400–900 évite le faux gras sur font-bold/extrabold.
+export const delaGothic = localFont({
+  src: [{ path: "./fonts/dela-gothic-one-400-latin.woff2", weight: "400 900", style: "normal" }],
+  adjustFontFallback: "Arial",
+  variable: "--font-dela-gothic",
+  display: "swap",
+  preload: true,
+});
+
+// Titres secondaires (h3, logo, chiffres de classement)
 export const shippori = localFont({
   src: [
     { path: "./fonts/shippori-mincho-b1-700-latin.woff2", weight: "700", style: "normal" },
@@ -33,4 +42,4 @@ export const yujiSyuku = localFont({
   preload: false,
 });
 
-export const fontVariables = `${shippori.variable} ${zenKaku.variable} ${yujiSyuku.variable}`;
+export const fontVariables = `${delaGothic.variable} ${shippori.variable} ${zenKaku.variable} ${yujiSyuku.variable}`;

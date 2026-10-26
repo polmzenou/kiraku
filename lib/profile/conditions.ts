@@ -16,6 +16,7 @@ export const CONDITION_TYPES = [
   "BOOSTERS_OPENED",
   "TRADES_DONE",
   "RANK_TIER",
+  "APOCALYPSE_RUINED",
 ] as const;
 export type ConditionType = (typeof CONDITION_TYPES)[number];
 
@@ -28,6 +29,7 @@ export const conditionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("BOOSTERS_OPENED"), n: count }).strict(),
   z.object({ type: z.literal("TRADES_DONE"), n: count }).strict(),
   z.object({ type: z.literal("RANK_TIER"), tier: z.enum(LADDER) }).strict(),
+  z.object({ type: z.literal("APOCALYPSE_RUINED"), n: count }).strict(),
 ]);
 export type ProfileCondition = z.infer<typeof conditionSchema>;
 
@@ -47,6 +49,8 @@ export type ProfileStats = {
   seriesProgress: Record<string, { owned: number; total: number }>;
   boostersOpened: number;
   tradesDone: number;
+  /** Sachets Apocalyptiques ouverts et ruinés. */
+  apocalypseRuined: number;
   /** Meilleur rang atteint (cette saison ou actuel). */
   tier: LadderTier;
 };
@@ -76,6 +80,8 @@ export function evaluateCondition(condition: ProfileCondition | null, stats: Pro
       return capped(stats.boostersOpened, condition.n);
     case "TRADES_DONE":
       return capped(stats.tradesDone, condition.n);
+    case "APOCALYPSE_RUINED":
+      return capped(stats.apocalypseRuined, condition.n);
     case "RANK_TIER": {
       const goal = LADDER.indexOf(condition.tier) + 1;
       return capped(LADDER.indexOf(stats.tier) + 1, goal);

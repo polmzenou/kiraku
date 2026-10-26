@@ -62,7 +62,16 @@ export async function grantLot(
     const item = parseLotItemRow(row);
     if (!item) continue;
     if (item.kind === "BOOSTER") {
-      await grantBoosters(tx, userId, item.boosterTypeId, item.quantity);
+      const type = await tx.boosterType.findUnique({ where: { id: item.boosterTypeId }, select: { kind: true } });
+      if (!type) continue;
+      if (type.kind === "DROP") {
+        // Sachet scellé : une ligne par sachet, qu'on ne peut pas offrir (seul un tirage en donne d'offrables)
+        await tx.sealedDrop.createMany({
+          data: Array.from({ length: item.quantity }, () => ({ ownerId: userId, boosterTypeId: item.boosterTypeId, source: "LOT" as const, giftable: false, createdAt: now })),
+        });
+      } else {
+        await grantBoosters(tx, userId, item.boosterTypeId, item.quantity);
+      }
       grant.boosters.push({ boosterTypeId: item.boosterTypeId, count: item.quantity });
     } else if (item.kind === "CARD") {
       const card = await tx.card.findUnique({ where: { id: item.cardId }, select: { id: true, rarity: true } });

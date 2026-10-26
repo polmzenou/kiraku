@@ -5,8 +5,8 @@ import { safeLegalUrl } from "@/lib/legal/legal";
 // aucun HTML brut (skipHtml), liens limités à https, mailto et chemins internes.
 
 const components: Components = {
-  h1: ({ children }) => <h2 className="mt-6 font-title text-2xl font-extrabold">{children}</h2>,
-  h2: ({ children }) => <h2 className="mt-6 font-title text-xl font-extrabold">{children}</h2>,
+  h1: ({ children }) => <h2 className="mt-6 font-heading text-2xl font-extrabold">{children}</h2>,
+  h2: ({ children }) => <h2 className="mt-6 font-heading text-xl font-extrabold">{children}</h2>,
   h3: ({ children }) => <h3 className="mt-4 text-lg font-bold">{children}</h3>,
   p: ({ children }) => <p className="leading-relaxed">{children}</p>,
   ul: ({ children }) => <ul className="flex list-disc flex-col gap-1 pl-5">{children}</ul>,

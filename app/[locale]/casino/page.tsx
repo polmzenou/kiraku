@@ -23,7 +23,7 @@ export default async function CasinoPage() {
         <span className="rounded-sm border border-kin/60 px-2 py-0.5 text-xs font-bold tracking-wide text-kin uppercase">
           {t("soon")}
         </span>
-        <h1 className="font-title text-3xl font-extrabold">{t("title")}</h1>
+        <h1 className="font-heading text-3xl font-extrabold">{t("title")}</h1>
         <p className="text-text-muted">{t("body")}</p>
         <ButtonLink href="/">{t("back")}</ButtonLink>
       </section>

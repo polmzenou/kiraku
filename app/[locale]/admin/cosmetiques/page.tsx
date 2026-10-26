@@ -68,7 +68,7 @@ export default async function AdminCosmeticsPage({ searchParams }: PageProps<"/[
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h2 className="font-title text-2xl font-bold">{t("title")}</h2>
+          <h2 className="font-heading text-2xl font-bold">{t("title")}</h2>
           <p className="max-w-prose text-sm text-text-muted">{t("intro")}</p>
         </div>
         <Link href="/admin/cosmetiques?nouveau=1" className={buttonClasses("primary")}>

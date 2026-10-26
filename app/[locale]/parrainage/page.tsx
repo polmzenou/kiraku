@@ -84,7 +84,7 @@ export default async function ReferralPage() {
   );
   const howItWorks = (
     <section className="flex flex-col gap-3" aria-labelledby="comment">
-      <h2 id="comment" className="font-title text-lg font-bold">
+      <h2 id="comment" className="font-heading text-lg font-bold">
         {t("howTitle")}
       </h2>
       <ol className="grid gap-3 sm:grid-cols-3">
@@ -180,7 +180,7 @@ export default async function ReferralPage() {
           <span aria-hidden="true" lang="ja" className="pointer-events-none absolute -right-3 -bottom-6 font-seal text-[7rem] leading-none text-kin/10">
             招
           </span>
-          <h2 className="font-title text-xl font-bold">{t("inviteTitle")}</h2>
+          <h2 className="font-heading text-xl font-bold">{t("inviteTitle")}</h2>
           <p className="max-w-prose text-sm text-text-muted">{t("inviteBody")}</p>
           <ReferralShare code={me.referralCode} />
           <dl className="flex gap-6 border-t border-dashed border-border pt-3 text-sm">
@@ -211,7 +211,7 @@ export default async function ReferralPage() {
           >
             招
           </span>
-          <h2 id="parrain" className="font-title text-xl font-extrabold">{t("myReferrerTitle")}</h2>
+          <h2 id="parrain" className="font-heading text-xl font-extrabold">{t("myReferrerTitle")}</h2>
         </div>
         {mine ? (
           <div className="flex flex-col gap-3">
@@ -234,7 +234,7 @@ export default async function ReferralPage() {
       </section>
 
       <section className="flex flex-col gap-3" aria-labelledby="filleuls">
-        <h2 id="filleuls" className="font-title text-lg font-bold">
+        <h2 id="filleuls" className="font-heading text-lg font-bold">
           {t("refereesTitle", { count: referees.length })}
         </h2>
         {referees.length === 0 ? (

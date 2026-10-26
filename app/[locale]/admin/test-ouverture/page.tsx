@@ -7,6 +7,7 @@ import { requireAdmin } from "@/server/admin";
 import { openingTestPool, testBoosterState } from "@/server/admin/opening-test";
 import { getBoosterOffers } from "@/server/boosters/pools";
 import { getBoosterRules } from "@/server/boosters/rules";
+import { getSealedDisplays } from "@/server/boosters/sealed";
 
 // La scène d'ouverture (Motion complet, gestes, sons) n'est chargée que sur cette page
 const OpeningTestBench = dynamic(() => import("@/components/admin/OpeningTestBench").then((m) => m.OpeningTestBench));
@@ -20,8 +21,9 @@ export default async function AdminOpeningTestPage() {
     getBoosterOffers(),
     getBoosterRules(),
   ]);
-  const pool = await openingTestPool(locale);
-  const types: OpeningType[] = offers.map(({ type }) => {
+  const [pool, sealedTypes] = await Promise.all([openingTestPool(locale), getSealedDisplays(locale)]);
+  // Les sachets scellés se testent par les scénarios de chute, pas comme des boosters à choisir
+  const types: OpeningType[] = offers.filter(({ type }) => type.kind !== "DROP").map(({ type }) => {
     const cards = effectiveSlotFloors(type.slotFloors, rules.draw.slotFloors).length;
     return {
       slug: type.slug,
@@ -43,12 +45,12 @@ export default async function AdminOpeningTestPage() {
 
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="font-title text-2xl font-bold">{t("title")}</h2>
+      <h2 className="font-heading text-2xl font-bold">{t("title")}</h2>
       <p className="text-sm text-text-muted">{t("intro")}</p>
       {types.length === 0 ? (
         <p className="text-sm text-text-muted">{t("noBooster")}</p>
       ) : (
-        <OpeningTestBench types={types} pool={pool} initialState={testBoosterState()} />
+        <OpeningTestBench types={types} pool={pool} initialState={testBoosterState()} sealedTypes={sealedTypes} />
       )}
     </section>
   );

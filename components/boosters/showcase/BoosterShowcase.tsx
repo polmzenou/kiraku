@@ -308,7 +308,7 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
             <div className="flex min-w-0 flex-col gap-3 lg:gap-5">
               <div key={`name-${selected.slug}`} className={fade}>
                 <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--ink-2)] uppercase lg:text-xs">{kicker}</p>
-                <h2 id="showcase-name" className="mt-0.5 font-title text-[1.7rem] leading-[1.05] font-extrabold lg:text-5xl">
+                <h2 id="showcase-name" className="mt-0.5 font-heading text-[1.7rem] leading-[1.05] font-extrabold lg:text-5xl">
                   {name}
                 </h2>
                 <p className="mt-1 text-xs text-[var(--ink-2)] lg:text-[15px]">{tagline}</p>

@@ -13,7 +13,7 @@ export default async function NewBannerPage() {
       <Link href="/admin/bannieres" className="text-sm text-link underline underline-offset-4">
         ← {t("banners.title")}
       </Link>
-      <h2 className="font-title text-2xl font-bold">{t("types.newBannerTitle")}</h2>
+      <h2 className="font-heading text-2xl font-bold">{t("types.newBannerTitle")}</h2>
       <BoosterTypeForm initial={newBannerForm()} featured={[]} globalCards={rules.draw.slotFloors.length} />
     </div>
   );

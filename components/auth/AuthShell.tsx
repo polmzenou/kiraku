@@ -40,7 +40,7 @@ export function AuthShell({
             {kanji}
           </span>
           <div className="relative flex flex-col gap-6">
-            <h2 className="max-w-sm font-title text-3xl font-extrabold leading-tight">{asideTitle}</h2>
+            <h2 className="max-w-sm font-heading text-3xl font-extrabold leading-tight">{asideTitle}</h2>
             <ul className="flex flex-col gap-4">
               {perks.map((p) => (
                 <li key={p.kanji} className="flex items-center gap-3">
@@ -58,7 +58,7 @@ export function AuthShell({
             <header className="flex items-start gap-4">
               <SealMark glyphs="気楽" size={48} />
               <div className="flex min-w-0 flex-col gap-1">
-                <h1 className="font-title text-2xl font-extrabold leading-tight sm:text-3xl">{title}</h1>
+                <h1 className="font-heading text-2xl font-extrabold leading-tight sm:text-3xl">{title}</h1>
                 <p className="text-sm text-text-muted">{subtitle}</p>
               </div>
             </header>

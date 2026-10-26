@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkGift, pickGiftCopy, type GiftCheck } from "./gifts";
+import { checkGift, checkSealedGift, pickGiftCopy, type GiftCheck } from "./gifts";
 
 const now = new Date("2026-10-14T12:00:00Z");
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000);
@@ -62,5 +62,33 @@ describe("pickGiftCopy", () => {
   it("prend l'exemplaire exposé s'il n'y a que lui", () => {
     expect(pickGiftCopy([copies[0]], new Set(["old"]))?.id).toBe("old");
     expect(pickGiftCopy([], new Set())).toBeNull();
+  });
+});
+
+describe("checkSealedGift", () => {
+  const sealedOk = {
+    giftable: true,
+    hasDiscord: true,
+    senderCreatedAt: daysAgo(30),
+    sentThisWeek: 0,
+    now,
+    rules: { requiresDiscord: true, minAccountDays: 7, perWeek: 1 },
+  };
+
+  it("permet d'offrir un sachet tombé d'un tirage depuis un compte lié et ancien", () => {
+    expect(checkSealedGift(sealedOk)).toBeNull();
+  });
+
+  it("un sachet reçu ou déjà offert ne se ré-offre pas", () => {
+    expect(checkSealedGift({ ...sealedOk, giftable: false })).toBe("NOT_GIFTABLE");
+  });
+
+  it("garde-fous contre le farm : Discord, ancienneté, limite de la semaine", () => {
+    expect(checkSealedGift({ ...sealedOk, hasDiscord: false })).toBe("NEEDS_DISCORD");
+    expect(checkSealedGift({ ...sealedOk, hasDiscord: false, rules: { ...sealedOk.rules, requiresDiscord: false } })).toBeNull();
+    expect(checkSealedGift({ ...sealedOk, senderCreatedAt: daysAgo(6) })).toBe("SEALED_ACCOUNT_TOO_NEW");
+    expect(checkSealedGift({ ...sealedOk, senderCreatedAt: daysAgo(7) })).toBeNull();
+    expect(checkSealedGift({ ...sealedOk, sentThisWeek: 1 })).toBe("SEALED_WEEK_LIMIT");
+    expect(checkSealedGift({ ...sealedOk, rules: { ...sealedOk.rules, perWeek: 0 } })).toBe("SEALED_WEEK_LIMIT");
   });
 });

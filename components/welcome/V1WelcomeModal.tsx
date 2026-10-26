@@ -46,7 +46,7 @@ export function V1WelcomeModal({ userId, isGuest }: { userId: string; isGuest: b
               <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-shu/35 bg-shu/10 px-3 py-1 text-xs font-bold tracking-wide text-shu">
                 <span aria-hidden="true">✦</span> {t("badge")}
               </p>
-              <h2 id={titleId} tabIndex={-1} className="font-title text-3xl leading-tight font-extrabold outline-none sm:text-4xl">
+              <h2 id={titleId} tabIndex={-1} className="font-heading text-3xl leading-tight font-extrabold outline-none sm:text-4xl">
                 {t("title")}<br />
                 <span className="text-link">{t("titleAccent")}</span>
               </h2>

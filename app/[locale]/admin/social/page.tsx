@@ -19,7 +19,7 @@ export default async function AdminSocialPage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-1">
-        <h2 className="font-title text-2xl font-bold">{t("title")}</h2>
+        <h2 className="font-heading text-2xl font-bold">{t("title")}</h2>
         <p className="max-w-prose text-sm text-text-muted">{t("intro")}</p>
       </div>
 
@@ -27,7 +27,7 @@ export default async function AdminSocialPage() {
 
       {/* Journal des cadeaux : repérer un compte principal alimenté par des comptes secondaires */}
       <section className="flex flex-col gap-3">
-        <h2 className="font-title text-lg font-bold">{t("giftLog")}</h2>
+        <h2 className="font-heading text-lg font-bold">{t("giftLog")}</h2>
         {gifts.length === 0 ? (
           <p className="text-sm text-text-muted">{t("giftLogEmpty")}</p>
         ) : (
@@ -35,7 +35,7 @@ export default async function AdminSocialPage() {
             {gifts.map((g) => (
               <li key={g.id} className="flex flex-wrap items-baseline justify-between gap-2 rounded-control border border-border bg-surface p-3 text-sm">
                 <span>
-                  {t(g.kind === "CARD" ? "giftCard" : "giftBooster", {
+                  {t(g.kind === "CARD" ? "giftCard" : g.kind === "SEALED" ? "giftSealed" : "giftBooster", {
                     from: g.sender.username,
                     to: g.recipient.username,
                     zeni: g.zeniSpent,
@@ -51,7 +51,7 @@ export default async function AdminSocialPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-title text-lg font-bold">{t("log")}</h2>
+        <h2 className="font-heading text-lg font-bold">{t("log")}</h2>
         {logs.length === 0 ? (
           <p className="text-sm text-text-muted">{t("logEmpty")}</p>
         ) : (

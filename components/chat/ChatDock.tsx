@@ -220,7 +220,7 @@ export function ChatDock({ realtime, pollSeconds, initialUnread, maxLength, rete
                 話
               </span>
             )}
-            <h2 className="min-w-0 flex-1 truncate font-title text-lg font-extrabold">{chat.with ?? t("title")}</h2>
+            <h2 className="min-w-0 flex-1 truncate font-heading text-lg font-extrabold">{chat.with ?? t("title")}</h2>
             <IconButton aria-label={t("close")} onClick={closeChat} tone="plain">
               <CloseIcon />
             </IconButton>

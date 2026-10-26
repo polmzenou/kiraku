@@ -37,7 +37,7 @@ export default async function AdminLegalEditPage({ params }: PageProps<"/[locale
       <Link href="/admin/legal" className="inline-flex min-h-11 items-center self-start text-sm text-text-muted hover:underline">
         ← {t("title")}
       </Link>
-      <h2 className="font-title text-2xl font-bold">{tLegal(`titles.${slug}`)}</h2>
+      <h2 className="font-heading text-2xl font-bold">{tLegal(`titles.${slug}`)}</h2>
       <LegalEditor slug={slug} draftVersion={draftVersion} nextVersion={nextLegalVersion(versions)} initial={initial} />
 
       <section className="flex flex-col gap-2">

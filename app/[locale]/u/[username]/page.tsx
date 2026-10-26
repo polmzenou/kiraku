@@ -23,6 +23,7 @@ import { prisma } from "@/server/db";
 import { getCosmeticOptions, getEarnedBadges, getProfileDecor } from "@/server/profile/progress";
 import type { Badge } from "@/lib/profile/conditions";
 import { giftsSentToday } from "@/server/social/queries";
+import { getSealedDrops } from "@/server/economy/queries";
 import type { ProfileAccess } from "@/lib/collection/visibility";
 import type { Relation } from "@/lib/social/relation";
 
@@ -173,7 +174,7 @@ async function socialBar({
 
   let gift = null;
   if (access.relation === "FRIENDS" && (await getSetting("gifts.enabled"))) {
-    const [price, perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours, timeZone, allowedRarities] = await Promise.all([
+    const [price, perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours, timeZone, allowedRarities, sealedMinAccountDays, sealedPerWeek] = await Promise.all([
       getSetting("gifts.boosterPriceZeni"),
       getSetting("gifts.perDaySent"),
       getSetting("gifts.perDayReceived"),
@@ -181,14 +182,17 @@ async function socialBar({
       getSetting("gifts.minFriendshipHours"),
       getSetting("game.timeZone"),
       getSetting("gifts.allowedRarities"),
+      getSetting("gifts.sealedMinAccountDays"),
+      getSetting("gifts.sealedPerWeek"),
     ]);
-    const sent = await giftsSentToday(viewer.id, timeZone);
+    const [sent, sealed] = await Promise.all([giftsSentToday(viewer.id, timeZone), getSealedDrops(viewer.id)]);
     gift = {
       price,
       coins: viewer.coins,
       remaining: Math.max(0, perDaySent - sent),
-      limits: { perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours },
+      limits: { perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours, sealedMinAccountDays, sealedPerWeek },
       allowedRarities,
+      sealed: sealed.filter((s) => s.giftable).map((s) => ({ id: s.id, kind: s.kind })),
     };
   }
   const trade =

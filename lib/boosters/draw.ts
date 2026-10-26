@@ -16,8 +16,19 @@ export type DrawRules = {
   pityThreshold: number;
   goldenEvery: number;
   goldenFloor: Rarity;
+  /** Chute d'un sachet Divin : 1 chance sur N (0 = jamais). */
   divineOdds: number;
+  /** Chute d'un sachet Apocalyptique : 1 chance sur N (0 = jamais). */
+  apocalypseOdds: number;
+  /** Apocalyptique épargné, en points de base. */
+  apocalypseWinRate: number;
+  /** Apocalyptiques ruinés d'affilée avant une épargne forcée (0 = pas de karma). */
+  apocalypseKarma: number;
 };
+
+/** Sachets scellés : tombent d'un booster gratuit, s'ouvrent plus tard. */
+export const SEALED_KINDS = ["divin", "apocalypse"] as const;
+export type SealedKind = (typeof SEALED_KINDS)[number];
 
 /** Ids de cartes du pool, par rareté (rareté globale du catalogue). */
 export type CardPool = Readonly<Record<Rarity, readonly string[]>>;
@@ -25,9 +36,11 @@ export type CardPool = Readonly<Record<Rarity, readonly string[]>>;
 export type DrawnCard = { cardId: string; rarity: Rarity; /** Carte vedette d'une bannière. */ featured?: boolean };
 
 export type DrawnBooster = {
+  /** Vide quand le booster s'est transformé en sachet scellé. */
   cards: DrawnCard[];
   golden: boolean;
-  divine: boolean;
+  /** Sachet scellé tombé à la place des cartes. */
+  drop: SealedKind | null;
   /** La dernière carte a été forcée en Mythique par la pitié. */
   pityTriggered: boolean;
   /** Au moins une carte vedette (bannière). */
@@ -115,10 +128,10 @@ export type DrawState = {
   featuredCount?: number;
 };
 
-/** Bonus applicables au type ouvert (tous actifs pour le booster standard). */
-export type DrawBonuses = { golden: boolean; divine: boolean; pity: boolean };
+/** Bonus applicables au type ouvert (tous actifs pour le booster standard). `drop` : sachets scellés. */
+export type DrawBonuses = { golden: boolean; drop: boolean; pity: boolean };
 
-export const ALL_BONUSES: DrawBonuses = { golden: true, divine: true, pity: true };
+export const ALL_BONUSES: DrawBonuses = { golden: true, drop: true, pity: true };
 
 /** Cartes vedettes d'une bannière. */
 export type FeaturedDraw = {
@@ -136,10 +149,11 @@ function allFeatured(featured: FeaturedDraw): { cardId: string; rarity: Rarity }
 }
 
 /**
- * Tire `count` boosters à la suite pour un joueur. Pour chacun, selon les bonus du type : divin
- * (1 chance sur divineOdds), doré (chaque goldenEvery-ième booster éligible), puis pitié (au
- * pityThreshold-ième booster sans Mythique, la dernière carte devient Mythique ; le compteur repart
- * à 0 à chaque Mythique). Bannière : une vedette remplace le tirage d'une rareté avec la probabilité
+ * Tire `count` boosters à la suite pour un joueur. Pour chacun, selon les bonus du type : doré
+ * (chaque goldenEvery-ième booster éligible), sinon chute d'un sachet scellé (Divin 1 chance sur
+ * divineOdds, sinon Apocalyptique 1 sur apocalypseOdds : le booster n'a pas de cartes et ne fait
+ * avancer aucun compteur), puis pitié (au pityThreshold-ième booster sans Mythique, la dernière carte
+ * devient Mythique ; le compteur repart à 0 à chaque Mythique). Bannière : une vedette remplace le tirage d'une rareté avec la probabilité
  * `featured.rate`, et la pitié vedette force une vedette sur l'avant-dernière carte si la pitié
  * Mythique a déjà pris la dernière.
  */
@@ -181,11 +195,16 @@ export function drawBoosters(
   };
 
   for (let b = 0; b < count; b++) {
-    const divine = bonuses.divine && rules.divineOdds > 0 && rng(rules.divineOdds) === 0;
     const golden = bonuses.golden && rules.goldenEvery > 0 && (standardCount + 1) % rules.goldenEvery === 0;
+    // Un booster doré ne se transforme jamais ; un booster transformé ne compte pour rien
+    const drop = golden || !bonuses.drop ? null : rollDrop(rng, rules);
+    if (drop) {
+      boosters.push({ cards: [], golden: false, drop, pityTriggered: false, featuredHit: false, featuredPityTriggered: false });
+      continue;
+    }
     if (bonuses.golden) standardCount += 1;
 
-    const floors = floorsFor(rules.slotFloors, { golden, divine, goldenFloor: rules.goldenFloor, rarities: order });
+    const floors = floorsFor(rules.slotFloors, { golden, divine: false, goldenFloor: rules.goldenFloor, rarities: order });
     const cards = floors.map(drawSlot);
 
     const pity = pityCount + 1;
@@ -211,7 +230,7 @@ export function drawBoosters(
     boosters.push({
       cards,
       golden,
-      divine,
+      drop: null,
       pityTriggered,
       featuredHit: cards.some((c) => c.featured === true),
       featuredPityTriggered,
@@ -219,6 +238,64 @@ export function drawBoosters(
   }
 
   return { boosters, state: { pityCount, standardCount, featuredCount } };
+}
+
+/** Sachet scellé tombé d'un booster : Divin d'abord, sinon Apocalyptique (jamais les deux). */
+export function rollDrop(rng: Rng, rules: Pick<DrawRules, "divineOdds" | "apocalypseOdds">): SealedKind | null {
+  if (rules.divineOdds > 0 && rng(rules.divineOdds) === 0) return "divin";
+  if (rules.apocalypseOdds > 0 && rng(rules.apocalypseOdds) === 0) return "apocalypse";
+  return null;
+}
+
+/** Parts sans les raretés au-dessus de `ceiling` (Apocalyptique ruiné, plafonné à Peu commune). */
+export function capRates(rates: RarityRates, ceiling: Rarity): RarityRates {
+  const order = Object.keys(rates);
+  const max = order.indexOf(ceiling);
+  if (max < 0) return { ...rates };
+  return Object.fromEntries(order.map((r, i) => [r, i > max ? 0 : rates[r]])) as RarityRates;
+}
+
+export type ApocalypseOutcome = "SPARED" | "RUINED";
+
+/** Apocalyptique ruiné : planchers de chaque emplacement et rareté maximale. */
+export type RuinRules = { floors: readonly Rarity[]; ceiling: Rarity };
+
+/**
+ * Ouvre un sachet scellé. Divin : planchers de l'ancien booster divin (tout Épique ou mieux, dernière
+ * carte Mythique ou mieux). Apocalyptique : épargné avec la probabilité apocalypseWinRate, ou
+ * forcément quand le karma atteint apocalypseKarma (contenu d'un Divin, karma remis à 0) ; sinon
+ * ruiné (planchers et plafond de ruine, karma + 1). Ni pitié, ni doré, ni vedette.
+ */
+export function drawSealed(
+  rng: Rng,
+  input: { kind: SealedKind; pool: CardPool; rules: DrawRules; ruin: RuinRules; karma: number; tables?: RarityTables },
+): { cards: DrawnCard[]; outcome: ApocalypseOutcome | null; karma: number } {
+  const { pool, rules, ruin } = input;
+  const order = rules.rarities ?? Object.keys(rules.rates);
+  const weights = rules.cardWeights ?? {};
+  const draw = (source: CardPool, floors: readonly Rarity[], tables: RarityTables) =>
+    floors.map((floor) => pickCard(rng, source, resolvePoolRarity(source, rollRarity(rng, tables, floor), weights, order), weights, order));
+  const divine = () =>
+    draw(pool, floorsFor(rules.slotFloors, { golden: false, divine: true, goldenFloor: rules.goldenFloor, rarities: order }), input.tables ?? buildRarityTables(rules.rates));
+
+  if (input.kind === "divin") return { cards: divine(), outcome: null, karma: input.karma };
+
+  const forced = rules.apocalypseKarma > 0 && input.karma >= rules.apocalypseKarma;
+  if (forced || rng(10_000) < rules.apocalypseWinRate) return { cards: divine(), outcome: "SPARED", karma: 0 };
+
+  // Pool plafonné aussi : un palier vide ne doit pas faire remonter au-dessus de la ruine
+  const max = order.indexOf(ruin.ceiling);
+  const capped = (max < 0 ? pool : Object.fromEntries(order.map((r, i) => [r, i > max ? [] : (pool[r] ?? [])]))) as CardPool;
+  return { cards: draw(capped, ruin.floors, buildRarityTables(capRates(rules.rates, ruin.ceiling))), outcome: "RUINED", karma: input.karma + 1 };
+}
+
+/** Part d'Apocalyptiques épargnés sur le long terme, karma compris : 1 / Σ_{j=0..K} (1 − p)^j. */
+export function apocalypseSparedShare(winRate: number, karma: number): number {
+  const p = Math.min(Math.max(winRate, 0), 10_000) / 10_000;
+  if (karma <= 0) return p;
+  let cycle = 0;
+  for (let j = 0; j <= karma; j++) cycle += (1 - p) ** j;
+  return 1 / cycle;
 }
 
 /** Boosters restants avant le prochain doré (1 = le prochain), null si désactivé. */

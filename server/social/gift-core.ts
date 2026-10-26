@@ -5,7 +5,16 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { dayKey, filterContext } from "@/lib/boosters/pool-filter";
 import type { Rarity } from "@/lib/catalog/rarity";
-import { checkGift, pickGiftCopy, type GiftRefusal, type GiftRules } from "@/lib/social/gifts";
+import {
+  checkGift,
+  checkSealedGift,
+  pickGiftCopy,
+  type GiftRefusal,
+  type GiftRules,
+  type SealedGiftRefusal,
+  type SealedGiftRules,
+} from "@/lib/social/gifts";
+import { SEALED_KINDS } from "@/lib/boosters/draw";
 import { pairKey } from "@/lib/social/relation";
 import { grantBoosters } from "../economy/credits";
 import { debit, LedgerError } from "../economy/ledger";
@@ -13,7 +22,7 @@ import { blocksBetween, lockPlayers, type LockedPlayer, type Tx } from "./lock";
 import { notify, notifyingTransaction, type OnNotified } from "./notify";
 import { consumeWishlist } from "../collection/wishlist-core";
 
-export type GiftErrorCode = GiftRefusal | "NO_USER" | "NOT_OWNED" | "RARITY" | "NOT_ENOUGH_ZENI";
+export type GiftErrorCode = GiftRefusal | SealedGiftRefusal | "NO_USER" | "NOT_OWNED" | "RARITY" | "NOT_ENOUGH_ZENI";
 
 export class GiftError extends Error {
   constructor(readonly code: GiftErrorCode) {
@@ -181,5 +190,71 @@ export async function giftBoosterWith(
       now,
     });
     return { giftId: gift.id, coins };
+  }, TX, onNotified);
+}
+
+const WEEK = 7 * 24 * 3_600_000;
+
+/**
+ * Offre un sachet scellé (Divin, Apocalyptique) tombé d'un tirage : une seule fois, depuis un compte
+ * lié à Discord et assez ancien, dans la limite de la semaine. Le sachet change de propriétaire par
+ * un UPDATE conditionnel (une ouverture simultanée l'emporte ou échoue, jamais les deux) et ne
+ * pourra plus être offert ; celui qui l'a offert recevra le résultat à l'ouverture.
+ */
+export async function giftSealedWith(
+  db: PrismaClient,
+  ctx: GiftContext & { dropId: string; sealedRules: SealedGiftRules },
+  onNotified?: OnNotified,
+): Promise<{ giftId: string }> {
+  return notifyingTransaction(db, async (tx) => {
+    const now = new Date();
+    const { sender, day } = await checkUnderLock(tx, ctx, now);
+
+    const drop = await tx.sealedDrop.findFirst({
+      where: { id: ctx.dropId, ownerId: ctx.senderId, openedAt: null },
+      select: { giftable: true, boosterType: { select: { slug: true } } },
+    });
+    const kind = SEALED_KINDS.find((k) => k === drop?.boosterType.slug);
+    if (!drop || !kind) throw new GiftError("NOT_OWNED");
+    const [discord, sentThisWeek] = await Promise.all([
+      tx.account.count({ where: { userId: ctx.senderId, provider: "discord" } }),
+      tx.gift.count({ where: { senderId: ctx.senderId, kind: "SEALED", createdAt: { gt: new Date(now.getTime() - WEEK) } } }),
+    ]);
+    const refusal = checkSealedGift({
+      giftable: drop.giftable,
+      hasDiscord: discord > 0,
+      senderCreatedAt: sender.createdAt,
+      sentThisWeek,
+      now,
+      rules: ctx.sealedRules,
+    });
+    if (refusal) throw new GiftError(refusal);
+
+    const moved = await tx.sealedDrop.updateMany({
+      where: { id: ctx.dropId, ownerId: ctx.senderId, openedAt: null, giftable: true },
+      data: { ownerId: ctx.recipientId, giverId: ctx.senderId, source: "GIFT", giftable: false },
+    });
+    if (moved.count !== 1) throw new GiftError("NOT_OWNED");
+
+    const gift = await tx.gift.create({
+      data: {
+        senderId: ctx.senderId,
+        recipientId: ctx.recipientId,
+        kind: "SEALED",
+        sealedDropId: ctx.dropId,
+        dayKey: day,
+        createdAt: now,
+      },
+      select: { id: true },
+    });
+    await notify(tx, {
+      userId: ctx.recipientId,
+      type: "GIFT_RECEIVED",
+      actorId: ctx.senderId,
+      refId: gift.id,
+      payload: { kind: "SEALED", slug: kind, dropId: ctx.dropId },
+      now,
+    });
+    return { giftId: gift.id };
   }, TX, onNotified);
 }

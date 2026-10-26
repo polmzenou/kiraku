@@ -61,7 +61,7 @@ export default async function AdminHome() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h2 className="font-title text-2xl font-bold">{t("title")}</h2>
+        <h2 className="font-heading text-2xl font-bold">{t("title")}</h2>
         <p className="max-w-prose text-sm text-text-muted">{t("intro")}</p>
       </div>
       <div className="grid gap-6 xl:grid-cols-2">

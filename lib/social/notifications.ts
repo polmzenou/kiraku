@@ -19,6 +19,7 @@ export const NOTIFICATION_TYPES = [
   "LISTING_ACCEPTED",
   "LISTING_DECLINED",
   "TEAM_GIFT",
+  "SEALED_OPENED",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -28,13 +29,20 @@ export function formatBadge(count: number): string | null {
   return count > 9 ? "9+" : String(Math.floor(count));
 }
 
+/** Sachets scellés (mêmes valeurs que SEALED_KINDS de lib/boosters/draw.ts). */
+const SEALED_SLUGS = ["divin", "apocalypse"] as const;
+type SealedSlug = (typeof SEALED_SLUGS)[number];
+const isSealedSlug = (v: unknown): v is SealedSlug => SEALED_SLUGS.includes(v as SealedSlug);
+const isId = (v: unknown): v is string => typeof v === "string" && v.length > 0 && v.length <= 40 && /^[A-Za-z0-9_-]+$/.test(v);
+
 /** Contenu d'une notification de cadeau (ids et nombres seulement). */
-export type GiftPayload = { kind: "CARD"; cardId: string } | { kind: "BOOSTER" };
+export type GiftPayload = { kind: "CARD"; cardId: string } | { kind: "BOOSTER" } | { kind: "SEALED"; slug: SealedSlug; dropId: string };
 
 export function parseGiftPayload(raw: unknown): GiftPayload | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   if (r.kind === "BOOSTER") return { kind: "BOOSTER" };
+  if (r.kind === "SEALED" && isSealedSlug(r.slug) && isId(r.dropId)) return { kind: "SEALED", slug: r.slug, dropId: r.dropId };
   if (r.kind === "CARD" && typeof r.cardId === "string" && r.cardId.length <= 40) return { kind: "CARD", cardId: r.cardId };
   return null;
 }
@@ -100,4 +108,18 @@ export function parseTeamGiftPayload(raw: unknown): TeamGiftPayload | null {
   if (r.kind === "CARD" && id(r.cardId)) return { kind: "CARD", cardId: r.cardId, quantity };
   if (r.kind === "BOOSTER" && id(r.boosterTypeId)) return { kind: "BOOSTER", boosterTypeId: r.boosterTypeId, quantity };
   return null;
+}
+
+/**
+ * Sachet scellé offert puis ouvert par l'ami : le sachet, l'issue d'un Apocalyptique et la meilleure
+ * carte obtenue (ids et clés seulement).
+ */
+export type SealedPayload = { slug: SealedSlug; outcome: "SPARED" | "RUINED" | null; cardId: string | null };
+
+export function parseSealedPayload(raw: unknown): SealedPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  if (!isSealedSlug(r.slug)) return null;
+  const outcome = r.outcome === "SPARED" || r.outcome === "RUINED" ? r.outcome : null;
+  return { slug: r.slug, outcome, cardId: isId(r.cardId) ? r.cardId : null };
 }

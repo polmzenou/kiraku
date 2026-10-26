@@ -28,7 +28,7 @@ export function TermsAcceptScreen({ version, firstTime }: { version: number; fir
       <span aria-hidden="true" lang="ja" className="font-seal text-4xl text-shu">
         約
       </span>
-      <h1 className="font-title text-2xl font-extrabold">{firstTime ? t("titleFirst") : t("titleUpdated")}</h1>
+      <h1 className="font-heading text-2xl font-extrabold">{firstTime ? t("titleFirst") : t("titleUpdated")}</h1>
       <p className="text-text-muted">{firstTime ? t("bodyFirst") : t("bodyUpdated", { version })}</p>
       <ul className="flex flex-col gap-1">
         <li>

@@ -1,9 +1,10 @@
-import type { CardView, OpenedBoosterView, OpenedCardView } from "@/lib/boosters/view";
+import type { SealedKind } from "@/lib/boosters/draw";
+import type { CardView, DroppedSealedView, OpenedBoosterView, OpenedCardView } from "@/lib/boosters/view";
 import type { Rarity } from "@/lib/catalog/rarity";
 
 // Banc de test de l'ouverture (admin) : tirages factices, jamais envoyés au serveur ni enregistrés.
 
-export const OPENING_TEST_SCENARIOS = ["all", "mythic", "ar", "gold", "none"] as const;
+export const OPENING_TEST_SCENARIOS = ["all", "mythic", "ar", "gold", "none", "dropDivin", "dropApocalypse"] as const;
 export type OpeningTestScenario = (typeof OPENING_TEST_SCENARIOS)[number];
 
 /** Grosses cartes de chaque scénario ; « none » finit sur une Légendaire, qui n'allume pas l'aurore. */
@@ -13,7 +14,40 @@ const FINALE: Record<OpeningTestScenario, Rarity[]> = {
   ar: ["AR"],
   gold: ["GOLD"],
   none: ["LEGENDARY"],
+  dropDivin: ["LEGENDARY"],
+  dropApocalypse: ["LEGENDARY"],
 };
+
+/** Sachet scellé qui tombe dans le scénario (le dernier booster se transforme), sinon null. */
+export function testDrop(scenario: OpeningTestScenario, run: number): DroppedSealedView | null {
+  if (scenario !== "dropDivin" && scenario !== "dropApocalypse") return null;
+  return { id: `test-drop-${run}`, kind: scenario === "dropDivin" ? "divin" : "apocalypse", position: 0 };
+}
+
+/**
+ * Ouverture factice d'un sachet scellé : Divin (Épiques puis une Mythique ou mieux), ou Apocalyptique
+ * épargné un essai sur deux et ruiné l'autre (Communes et Peu communes).
+ */
+export function testSealedBooster(pool: OpeningTestPool, kind: SealedKind, run: number): OpenedBoosterView {
+  const apocalypse = kind === "apocalypse" ? (run % 2 ? "RUINED" : "SPARED") : null;
+  const rarities: Rarity[] = apocalypse === "RUINED" ? ["COMMON", "COMMON", "COMMON", "UNCOMMON"] : ["EPIC", "EPIC", "LEGENDARY", run % 3 ? "MYTHIC" : "AR"];
+  const cards = rarities.flatMap((rarity, i): OpenedCardView[] => {
+    const card = pick(pool, rarity, run * 4 + i);
+    return card ? [{ ...card, userCardId: `test-sealed-${run}-${i}`, isNew: i % 2 === 0, featured: false }] : [];
+  });
+  return {
+    id: `test-sealed-${run}`,
+    golden: false,
+    divine: apocalypse !== "RUINED",
+    sealed: kind,
+    apocalypse,
+    pityTriggered: false,
+    featuredHit: false,
+    featuredPityTriggered: false,
+    zeniSpent: 0,
+    cards,
+  };
+}
 /** Remplissage d'un booster, dans l'ordre (la révélation retrie de toute façon par rareté). */
 const FILLER: Rarity[] = ["COMMON", "UNCOMMON", "COMMON", "RARE", "UNCOMMON", "EPIC", "COMMON", "RARE", "COMMON", "UNCOMMON"];
 

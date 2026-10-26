@@ -6,7 +6,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useDeferredValue, useId, useMemo, useState, useTransition, type ReactNode } from "react";
 import type { DrawRules } from "@/lib/boosters/draw";
-import { boosterChances, mythicsPerDay } from "@/lib/boosters/odds";
+import { boosterChances, dropRates, mythicsPerDay } from "@/lib/boosters/odds";
 import { type Rarity } from "@/lib/catalog/rarity";
 import {
   boosterSettingsSchema,
@@ -27,6 +27,11 @@ type FieldName =
   | "goldenEvery"
   | "goldenFloor"
   | "divineOdds"
+  | "apocalypseOdds"
+  | "apocalypseWinRate"
+  | "apocalypseKarma"
+  | "apocalypseRuinFloors"
+  | "apocalypseRuinCeiling"
   | "rotationHours"
   | "rotationDemographie"
   | "rotationGenre";
@@ -40,11 +45,17 @@ const toRules = (s: BoosterSettings, order: readonly string[]): DrawRules => ({
   goldenEvery: s["booster.goldenEvery"],
   goldenFloor: s["booster.goldenFloor"],
   divineOdds: s["booster.divineOdds"],
+  apocalypseOdds: s["booster.apocalypseOdds"],
+  apocalypseWinRate: s["booster.apocalypseWinRate"],
+  apocalypseKarma: s["booster.apocalypseKarma"],
 });
 
 function metrics(s: BoosterSettings, order: readonly string[]) {
-  const chances = boosterChances(toRules(s, order));
-  return { ...chances, perDay: mythicsPerDay(chances.mythicRate, s["booster.intervalMinutes"]) };
+  const rules = toRules(s, order);
+  const chances = boosterChances(rules);
+  const drops = dropRates(rules);
+  const dropRate = drops.divin + drops.apocalypse;
+  return { ...chances, perDay: mythicsPerDay(chances.mythicRate, s["booster.intervalMinutes"]), dropGap: dropRate > 0 ? 1 / dropRate : Infinity };
 }
 
 const input =
@@ -114,7 +125,7 @@ function Fieldset({ legend, children }: { legend: string; children: ReactNode })
 }
 
 /**
- * Réglages des boosters : délais, emplacements, taux, pitié, doré, divin. L'aperçu d'impact est
+ * Réglages des boosters : délais, emplacements, taux, pitié, doré, sachets scellés. L'aperçu d'impact est
  * calculé exactement (odds.ts) ; l'enregistrement passe par une confirmation, et le serveur
  * revalide tout avec les mêmes schémas Zod.
  */
@@ -150,6 +161,7 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
   const rates = draft["booster.rates"];
   const ratesTotal = RARITIES.reduce((s, r) => s + (Number.isFinite(rates[r]) ? rates[r] : 0), 0);
   const floors = draft["booster.slotFloors"];
+  const ruinFloors = draft["booster.apocalypseRuinFloors"];
 
   const save = () =>
     startTransition(async () => {
@@ -175,6 +187,7 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
     [t("metrics.mythic"), (m) => percent(m.atLeast.MYTHIC)],
     [t("metrics.meanGap"), (m) => format.number(m.meanGap, { maximumFractionDigits: 0 })],
     [t("metrics.perDay"), (m) => format.number(m.perDay, { maximumFractionDigits: 2 })],
+    [t("metrics.dropGap"), (m) => (Number.isFinite(m.dropGap) ? format.number(m.dropGap, { maximumFractionDigits: 0 }) : "—")],
   ];
 
   return (
@@ -283,6 +296,11 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
                 onChange={(r) => set("booster.goldenFloor", r)}
               />
             </div>
+          </div>
+        </Fieldset>
+
+        <Fieldset legend={t("sealedSection")}>
+          <div className="grid gap-4 sm:grid-cols-2">
             <NumberField
               label={t("fields.divineOdds")}
               value={draft["booster.divineOdds"]}
@@ -290,6 +308,69 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
               min={0}
               max={1_000_000}
             />
+            <NumberField
+              label={t("fields.apocalypseOdds")}
+              value={draft["booster.apocalypseOdds"]}
+              onChange={(v) => set("booster.apocalypseOdds", v)}
+              min={0}
+              max={1_000_000}
+            />
+            <NumberField
+              label={t("fields.apocalypseWinRate")}
+              value={draft["booster.apocalypseWinRate"]}
+              onChange={(v) => set("booster.apocalypseWinRate", v)}
+              min={0}
+              max={10_000}
+              hint={Number.isFinite(draft["booster.apocalypseWinRate"]) ? percent(draft["booster.apocalypseWinRate"] / 10_000) : undefined}
+            />
+            <NumberField
+              label={t("fields.apocalypseKarma")}
+              value={draft["booster.apocalypseKarma"]}
+              onChange={(v) => set("booster.apocalypseKarma", v)}
+              min={0}
+              max={20}
+              hint={t("karmaHint")}
+            />
+            <div className="flex min-w-0 flex-col gap-1">
+              <span className="text-sm">{t("fields.apocalypseRuinCeiling")}</span>
+              <RaritySelect
+                label={t("fields.apocalypseRuinCeiling")}
+                value={draft["booster.apocalypseRuinCeiling"]}
+                onChange={(r) => set("booster.apocalypseRuinCeiling", r)}
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="text-sm">{t("fields.apocalypseRuinFloors")}</span>
+            <ol className="flex flex-col gap-2">
+              {ruinFloors.map((floor, i) => (
+                <li key={i} className="grid grid-cols-[4.5rem_minmax(0,1fr)_2.75rem] items-center gap-2">
+                  <span className="text-sm text-text-muted">{t("slot", { n: i + 1 })}</span>
+                  <RaritySelect
+                    label={t("slot", { n: i + 1 })}
+                    value={floor}
+                    onChange={(r) => set("booster.apocalypseRuinFloors", ruinFloors.map((f, j) => (j === i ? r : f)))}
+                  />
+                  <button
+                    type="button"
+                    aria-label={t("removeSlot", { n: i + 1 })}
+                    disabled={ruinFloors.length <= 1}
+                    onClick={() => set("booster.apocalypseRuinFloors", ruinFloors.filter((_, j) => j !== i))}
+                    className="size-11 rounded-control border border-border text-lg disabled:opacity-40"
+                  >
+                    <span aria-hidden="true">−</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+            <Button
+              type="button"
+              className="self-start"
+              disabled={ruinFloors.length >= 10}
+              onClick={() => set("booster.apocalypseRuinFloors", [...ruinFloors, "COMMON"])}
+            >
+              {t("addSlot")}
+            </Button>
           </div>
         </Fieldset>
 

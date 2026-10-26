@@ -128,8 +128,16 @@ export const SETTING_SCHEMAS = {
   // Booster doré : tous les N boosters gratuits (0 = désactivé), dernier emplacement relevé à goldenFloor
   "booster.goldenEvery": z.number().int().min(0).max(1_000),
   "booster.goldenFloor": rarity,
-  // Booster divin : 1 chance sur N (0 = désactivé)
+  // Sachets scellés : un booster gratuit se transforme en sachet Divin (1 chance sur N) ou
+  // Apocalyptique (1 chance sur M) ; 0 = désactivé
   "booster.divineOdds": z.number().int().min(0).max(1_000_000),
+  "booster.apocalypseOdds": z.number().int().min(0).max(1_000_000),
+  // Apocalyptique : part épargnée en points de base, karma (ruinés d'affilée avant une épargne forcée, 0 = aucun)
+  "booster.apocalypseWinRate": z.number().int().min(0).max(10_000),
+  "booster.apocalypseKarma": z.number().int().min(0).max(20),
+  // Apocalyptique ruiné : planchers de chaque emplacement et rareté maximale
+  "booster.apocalypseRuinFloors": z.array(rarity).min(1).max(10),
+  "booster.apocalypseRuinCeiling": rarity,
   // Taille minimale du pool d'un type de booster pour être proposé (un type peut l'abaisser)
   "booster.minPool": z.number().int().min(1).max(10_000),
   // Rotation des familles « Par démographie » et « Par genre » : durée d'une sélection et nombre de types proposés
@@ -156,6 +164,10 @@ export const SETTING_SCHEMAS = {
   "gifts.minFriendshipHours": z.number().int().min(0).max(24 * 365),
   "gifts.boosterPriceZeni": z.number().int().min(1).max(1_000_000),
   "gifts.allowedRarities": z.array(rarity).max(200),
+  // Sachets scellés offerts : compte lié à Discord, ancienneté, nombre par semaine glissante
+  "gifts.sealedRequiresDiscord": z.boolean(),
+  "gifts.sealedMinAccountDays": z.number().int().min(0).max(365),
+  "gifts.sealedPerWeek": z.number().int().min(0).max(50),
   // Échanges entre amis (étape 12f) : rien n'est bloqué pendant l'attente, tout est revérifié à l'acceptation
   "trades.enabled": z.boolean(),
   "trades.expiryHours": z.number().int().min(1).max(24 * 30),
@@ -309,7 +321,14 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "booster.pityThreshold": 250,
   "booster.goldenEvery": 10,
   "booster.goldenFloor": "EPIC",
-  "booster.divineOdds": 2000,
+  // Divin 1/4 000 + Apocalyptique 1/2 000 épargné à ~57 % (karma 2) : ~1,93 contenus divins pour
+  // 4 000 boosters (un doré ne se transforme jamais), contre 2 avec l'ancien divin instantané à 1/2 000
+  "booster.divineOdds": 4000,
+  "booster.apocalypseOdds": 2000,
+  "booster.apocalypseWinRate": 5000,
+  "booster.apocalypseKarma": 2,
+  "booster.apocalypseRuinFloors": ["COMMON", "COMMON", "COMMON", "UNCOMMON"],
+  "booster.apocalypseRuinCeiling": "UNCOMMON",
   "booster.minPool": 100,
   "booster.rotationHours": 12,
   "booster.rotationDemographie": 2,
@@ -330,6 +349,9 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "gifts.minFriendshipHours": 24,
   "gifts.boosterPriceZeni": 200, // prix du booster standard
   "gifts.allowedRarities": [...RARITIES, ...VARIANT_RARITIES],
+  "gifts.sealedRequiresDiscord": true,
+  "gifts.sealedMinAccountDays": 7,
+  "gifts.sealedPerWeek": 1,
   "trades.enabled": true,
   "trades.expiryHours": 48,
   "trades.maxOffered": 5,

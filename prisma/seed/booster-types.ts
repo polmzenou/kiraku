@@ -202,4 +202,29 @@ export const BOOSTER_SEEDS: BoosterSeed[] = [
   },
   filtered("special", "studio", "匠", ["Studio", "Studio"], ["Un studio à l'honneur", "A studio in the spotlight"], theme("#46413D", "#141210", "shippo"), {}, { active: false }),
   filtered("special", "manga", "紙", ["Manga", "Manga"], ["Persos jamais animés", "Never-animated characters"], theme("#DCD0B4", "#9A8A68", "asanoha", "dark"), { mediaType: "MANGA" }),
+
+  // Sachets scellés : tombent d'un booster gratuit, jamais proposés ni vendus (planchers dans le tirage)
+  {
+    slug: "divin",
+    kind: "DROP",
+    family: "special",
+    emblem: "天",
+    name: { fr: "Booster divin", en: "Divine booster" },
+    tagline: { fr: "Épique ou mieux, une Mythique garantie", en: "Epic or better, one Mythic guaranteed" },
+    // Ivoire et rayons d'or (後光), comme dans l'annonce de la v2 : pas la nacre lilas du Mythique
+    theme: theme("#FBF5E4", "#B58A2C", "goko", "dark"),
+    filter: {},
+    ...paid(null),
+  },
+  {
+    slug: "apocalypse",
+    kind: "DROP",
+    family: "special",
+    emblem: "滅",
+    name: { fr: "Booster apocalyptique", en: "Apocalyptic booster" },
+    tagline: { fr: "Divin… ou ruiné", en: "Divine… or ruined" },
+    theme: theme("#4A0F0B", "#0E0505", "kumo"),
+    filter: {},
+    ...paid(null),
+  },
 ];

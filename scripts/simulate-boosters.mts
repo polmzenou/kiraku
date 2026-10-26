@@ -8,8 +8,8 @@
 import { parseArgs } from "node:util";
 import { config } from "dotenv";
 import { PrismaClient } from "../generated/prisma/client.ts";
-import type { DrawRules } from "../lib/boosters/draw.ts";
-import { DEFAULT_RULES, fakePool } from "../lib/boosters/fixtures.ts";
+import type { DrawRules, RuinRules } from "../lib/boosters/draw.ts";
+import { DEFAULT_RUIN, DEFAULT_RULES, fakePool, NO_BONUS } from "../lib/boosters/fixtures.ts";
 import { effectiveSlotFloors } from "../lib/boosters/types.ts";
 import { BOOSTER_SEEDS } from "../prisma/seed/booster-types.ts";
 import { boosterChances, mythicsPerDay, slotDistribution } from "../lib/boosters/odds.ts";
@@ -36,7 +36,7 @@ if (!Number.isInteger(n) || n < 1000 || n > 100_000_000 || !Number.isInteger(see
   process.exit(1);
 }
 
-async function rulesFromDb(): Promise<{ rules: DrawRules; intervalMinutes: number }> {
+async function rulesFromDb(): Promise<{ rules: DrawRules; ruin: RuinRules; intervalMinutes: number }> {
   const prisma = new PrismaClient({ adapter: createPgAdapter(process.env.DATABASE_URL!) });
   try {
     const rows = await prisma.gameSetting.findMany({ select: { key: true, value: true } });
@@ -50,7 +50,11 @@ async function rulesFromDb(): Promise<{ rules: DrawRules; intervalMinutes: numbe
         goldenEvery: get("booster.goldenEvery"),
         goldenFloor: get("booster.goldenFloor"),
         divineOdds: get("booster.divineOdds"),
+        apocalypseOdds: get("booster.apocalypseOdds"),
+        apocalypseWinRate: get("booster.apocalypseWinRate"),
+        apocalypseKarma: get("booster.apocalypseKarma"),
       },
+      ruin: { floors: get("booster.apocalypseRuinFloors"), ceiling: get("booster.apocalypseRuinCeiling") },
       intervalMinutes: get("booster.intervalMinutes"),
     };
   } finally {
@@ -58,7 +62,7 @@ async function rulesFromDb(): Promise<{ rules: DrawRules; intervalMinutes: numbe
   }
 }
 
-const { rules, intervalMinutes } = args["from-db"] ? await rulesFromDb() : { rules: DEFAULT_RULES, intervalMinutes: 10 };
+const { rules, ruin, intervalMinutes } = args["from-db"] ? await rulesFromDb() : { rules: DEFAULT_RULES, ruin: DEFAULT_RUIN, intervalMinutes: 10 };
 const pool = fakePool();
 const fmt = (x: number, digits = 1) => x.toLocaleString("fr-FR", { maximumFractionDigits: digits, minimumFractionDigits: digits });
 
@@ -87,8 +91,8 @@ if (args.type) {
     const sameAs = seen.has(key);
     seen.add(key);
     if (sameAs && args.type === "all") continue; // même composition qu'un type déjà simulé
-    const typeRules: DrawRules = { ...rules, slotFloors: floors, goldenEvery: 0, divineOdds: 0, pityThreshold: Number.MAX_SAFE_INTEGER };
-    const counts = simulate(seededRng(seed), typeRules, pool, n, { golden: false, divine: false, pity: false });
+    const typeRules: DrawRules = { ...rules, slotFloors: floors, ...NO_BONUS, pityThreshold: Number.MAX_SAFE_INTEGER };
+    const counts = simulate(seededRng(seed), typeRules, pool, n, { golden: false, drop: false, pity: false });
     const checks = compareToOdds(counts, typeRules).filter((c) => !c.label.startsWith("boosters avec"));
     failures += checks.filter((c) => Math.abs(c.sigma) >= 5).length;
     console.log(`\n${def.slug} (${floors.length} cartes : ${floors.map((f) => f[0]).join(" · ")})`);
@@ -102,8 +106,8 @@ if (args.type) {
 
 console.log(`Simulation de ${n.toLocaleString("fr-FR")} boosters, graine ${seed}${args["from-db"] ? " (réglages de la base)" : " (réglages par défaut)"}\n`);
 
-// 1. Composition seule : pas de pitié, de doré ni de divin, chaque emplacement suit les parts
-const plain: DrawRules = { ...rules, goldenEvery: 0, divineOdds: 0, pityThreshold: 10_000 };
+// 1. Composition seule : pas de pitié, de doré ni de sachet scellé, chaque emplacement suit les parts
+const plain: DrawRules = { ...rules, ...NO_BONUS, pityThreshold: 10_000 };
 let t = performance.now();
 const composition = simulate(seededRng(seed), plain, pool, n);
 console.log(`1. Composition seule (${fmt((performance.now() - t) / 1000, 2)} s)`);
@@ -114,11 +118,15 @@ plain.slotFloors.forEach((floor, slot) => {
   console.log(`  χ² emplacement ${slot + 1} (${floor}+) : ${fmt(stat, 2)} pour ${df} ddl, seuil p = 0,001 : ${critical}${stat < critical ? "" : " ✗"}`);
 });
 
-// 2. Séquence complète d'un joueur : pitié, doré, divin
+// 2. Séquence complète d'un joueur : pitié, doré, sachets scellés (ouverts aussitôt, karma compris)
 t = performance.now();
-const full = simulate(seededRng(seed + 1), rules, pool, n);
+const full = simulate(seededRng(seed + 1), rules, pool, n, undefined, ruin);
 console.log(`\n2. Séquence complète (${fmt((performance.now() - t) / 1000, 2)} s)`);
-printChecks(compareToOdds(full, rules).filter((c) => c.label.startsWith("boosters ")));
+printChecks(compareToOdds(full, rules).filter((c) => !c.label.startsWith("emplacement") && !c.label.startsWith("booster normal")));
+console.log(
+  `  sachets : ${full.divin} Divin, ${full.apocalypse} Apocalyptique (${full.spared} épargnés), ` +
+    `soit ${fmt((4000 * (full.divin + full.spared)) / n, 2)} contenus divins pour 4 000 boosters`,
+);
 console.log(`  plus longue série sans Mythique : ${full.longestDrought} (pitié à ${rules.pityThreshold})`);
 console.log(`  boosters dorés : ${full.golden}, mal placés : ${full.goldenMisplaced}, sous le plancher : ${full.goldenBelowFloor}`);
 console.log(`  pitié déclenchée : ${full.pityTriggered} fois`);

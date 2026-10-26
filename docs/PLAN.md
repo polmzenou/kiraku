@@ -65,7 +65,8 @@ Kiraku (気楽, « l'esprit léger ») est un **sanctuaire de papier** : la nuit
 
 **Typographie.** Toutes sur Google Fonts, sans police monospace.
 
-- Titres : **Shippori Mincho B1** (700–800), un mincho japonais avec un latin élégant.
+- Titres h1 et h2 : **Dela Gothic One**, un gothique japonais très gras, façon affiche de jeu.
+- Autres titres (h3, logo, chiffres de classement) : **Shippori Mincho B1** (700–800), un mincho japonais avec un latin élégant.
 - Texte et chiffres : **Zen Kaku Gothic New** (400–700), chiffres tabulaires.
 - Kanji des sceaux et emblèmes : **Yuji Syuku**, tracé au pinceau.
 
@@ -271,7 +272,7 @@ Bonus repris de Kyara :
 
 - **Pitié** : au 250e booster sans Mythique, la dernière carte est forcément Mythique ; le compteur repart à zéro à chaque Mythique.
 - **Booster doré** : chaque 10e booster standard contient une Épique ou mieux.
-- **Booster divin** : 1 chance sur 2 000 d'avoir uniquement des Épiques ou mieux, dont une Mythique garantie.
+- **Booster divin** : 1 chance sur 2 000 d'avoir uniquement des Épiques ou mieux, dont une Mythique garantie. Remplacé à l'étape 13 par les sachets scellés Divin et Apocalyptique (voir « Sachets scellés »).
 
 Avec ces taux, un booster contient une Mythique environ 1 fois sur 320 ; la pitié ramène l'écart moyen à \~175 boosters. Un joueur qui ouvre ses 144 boosters gratuits par jour en verra une environ tous les 1,2 jour, sans compter les boosters dorés et divins.
 
@@ -400,6 +401,58 @@ Pour l'import, la requête AniList récupère en plus, pour l'œuvre principale 
 - **Prix** : un booster gratuit se paie `priceZeni` (200 par défaut) quand le stock ne couvre pas l'ouverture ; le joueur confirme le paiement avant le geste, le serveur débite sous verrou avec une ligne `CoinTransaction` (`BOOSTER`) par booster.
 - **Bannière vedette** : son pool est son filtre plus les vedettes ; quand une rareté tirée a des vedettes, `featuredRate` (5 000 points de base = 50 %) des tirages vont à l'une d'elles ; la pitié vedette (100 par défaut, compteur par bannière dans `User.bannerPity`) force une vedette sur la dernière carte, ou l'avant-dernière si la pitié Mythique a pris la dernière.
 - **Validation des taux** : trois sources qui doivent être d'accord. Le calcul exact (`lib/boosters/odds.ts`, paliers vides du pool repliés comme au tirage) est comparé au tableau ci-dessus par `odds.test.ts` ; une simulation Monte-Carlo de chaque composition (`simulation.test.ts`, `npm run sim:boosters -- --type all`) doit rester sous 5 σ et sous le χ² critique à p = 0,001 ; l'admin affiche les chances exactes de chaque type sur son pool réel.
+
+## Sachets scellés : Divin et Apocalyptique
+
+Deux boosters qu'on ne peut pas acheter. Ils **tombent** d'un booster ordinaire, très rarement, et le joueur l'apprend pendant l'ouverture : le sachet qu'il déchire se transforme, et le titre « BOOSTER DIVIN » ou « BOOSTER APOCALYPTIQUE » apparaît. Le sachet tombé se garde, s'ouvre quand on veut, ou s'offre à un ami. Ils remplacent le booster divin instantané de l'étape 3.
+
+| | Kanji | Matière | Contenu |
+| --- | --- | --- | --- |
+| **Divin** | 天 (le ciel) | Nacre blanche et or, halo | E+ · E+ · E+ · M (comme l'ancien divin) : rien sous Épique, une Mythique, AR ou Gold garantie |
+| **Apocalyptique** | 滅 (la destruction) | Laque noire, fissures shu | À l'ouverture, pile ou face décidé par le serveur : **épargné** → exactement un Divin ; **ruiné** → C · C · C · U, plafonné à Peu commune |
+
+Sur le dernier emplacement d'un Divin, avec les parts actuelles (Mythique 15, AR 8, Gold 2) : environ 60 % Mythique, 32 % AR, 8 % Gold. Les trois autres sortent Épique à environ 90 %.
+
+Pourquoi 天 et pas 神 : 神 est déjà le sceau de la rareté Mythique, et un booster ne doit pas se confondre avec une rareté. Les deux kanji entrent dans le sous-ensemble de Yuji Syuku.
+
+### Obtention
+
+- **Tirage** : à chaque ouverture d'un type `bonusEligible`, hors crédit et hors sachet scellé, le serveur tire d'abord Divin (1 chance sur `booster.divineOdds`, 4 000 par défaut), sinon Apocalyptique (1 sur `booster.apocalypseOdds`, 2 000). Les deux s'excluent.
+- **Le booster est remplacé** : il ne donne pas de cartes et n'avance ni la pitié Mythique, ni le compteur du doré, ni la pitié vedette. Il consomme quand même son stock ou son prix, puisque c'est lui qui s'est transformé. Un 10e booster doré ne peut pas se transformer : le doré passe d'abord.
+- **Ailleurs** : lots de l'admin (`/admin/lots`, objet de type `DROP`) et, plus tard, récompenses (fin de saison classée, palier de parrainage). **Jamais en vente** contre des Zeni : un Divin vaut plus qu'un booster Légendaire à 5 000 Zeni et rendrait les boosters de rareté inutiles, et un Apocalyptique payant serait un pari en Zeni.
+
+Équilibre : avec 1 sur 4 000 et 1 sur 2 000, un booster qui peut se transformer donne en moyenne 2,14 contenus « divins » pour 4 000 (1 Divin + 2 Apocalyptiques épargnés à 57 % avec le karma ci-dessous). Comme un booster doré (1 sur 10) ne se transforme jamais, un joueur en voit en pratique environ 1,93 tous les 4 000 boosters (simulation de 4 millions de boosters), contre 2 avec l'ancien divin. La masse de Mythiques en circulation ne bouge presque pas. Un joueur qui ouvre 144 boosters par jour voit un sachet scellé environ une fois par semaine ; la pitié lui donne déjà une Mythique tous les 1,2 jour.
+
+### Ouverture
+
+- **Pitié intacte** : ouvrir un sachet scellé n'avance pas et ne remet pas à zéro la pitié Mythique (`countsForPity: false`). Un Divin ne doit jamais « manger » une pitié presque pleine.
+- **Apocalyptique** : épargné avec la probabilité `booster.apocalypseWinRate` (5 000 points de base = 50 %), tiré au moment de l'ouverture, jamais à la chute : un sachet offert reste un vrai mystère, même dans les données envoyées au client.
+- **Karma de l'Apocalypse** : chaque Apocalyptique ruiné ajoute une charge à `User.apocalypseKarma` ; à `booster.apocalypseKarma` charges (2 par défaut), le suivant est forcément épargné et le compteur repart à zéro. Le karma appartient à celui qui ouvre. Le sachet affiche les charges (« 滅 2/2 · le prochain est épargné »). Taux d'épargne effectif : 1 / 1,75 ≈ 57 %.
+- **Survivant de l'Apocalypse** : titre débloqué au premier Apocalyptique ruiné (condition `APOCALYPSE_RUINED`, n réglable dans l'admin). Un échec qu'on a envie de montrer.
+- **Pas d'annonce spéciale** dans le carrousel « En direct » : les cartes d'un sachet scellé y entrent selon la règle habituelle (Épique ou mieux), sans bandeau particulier.
+
+### Cadeau empoisonné
+
+- Un sachet tombé d'un tirage peut s'offrir **une fois**. Un sachet reçu (ami, lot, récompense) ne se ré-offre pas.
+- Quand le destinataire ouvre un Apocalyptique offert, l'expéditeur reçoit une notification `DROP_OPENED` avec l'issue : « Ton Apocalyptique a explosé au visage de Léa » ou « … a épargné Léa : Gold ! » (payload : ids et rareté, jamais de texte libre). Même chose pour un Divin offert (« Léa a ouvert ton Divin : AR »).
+- **Garde-fous contre le farm de comptes** (les invités sont créés automatiquement) : expéditeur lié à Discord (`gifts.dropRequiresDiscord`), compte de plus de `gifts.dropMinAccountDays` jours (7), amitié de plus de `gifts.minFriendshipHours`, au plus `gifts.dropPerWeek` sachet offert par semaine (1), et le cadeau compte dans les quotas du jour existants. Le stock gratuit, lui, ne se transfère toujours pas.
+
+### Écran
+
+- **Transformation** (environ 1,2 s, dans `OpeningStage`) : le sachet tremble, puis Divin blanchit sous un halo qui tourne, ou Apocalyptique noircit et se fend. Le titre s'affiche, puis trois actions : **Ouvrir maintenant**, **Garder**, **Offrir** (grisé avec la raison si un garde-fou bloque). Dans une ouverture de 10, la transformation interrompt la série pour avoir son moment, puis la série reprend ; le récap montre le sachet scellé à sa place avec les mêmes actions.
+- **Ouverture d'un Apocalyptique** : le sceau 滅 se fend en deux. Épargné : de l'or (kin) passe par les fissures et le sachet devient nacre, puis révélation normale. Ruiné : le sachet s'effrite et une douzaine de cendres tombent, puis les cartes arrivent, grises.
+- **Accueil** : une rangée « Sachets scellés » à côté des crédits, avec le karma sur les Apocalyptiques.
+- **Fluidité** : uniquement `transform` et `opacity`. Le halo est un dégradé conique pré-dessiné qui tourne ; les fissures sont des calques SVG révélés par opacité, pas par `stroke-dashoffset` ; les cendres reprennent le principe de `GoldenDust`. Mode allégé avec moins de particules, simple fondu sous `prefers-reduced-motion`, et effets chargés par import dynamique.
+
+### Données et code
+
+- **`SealedDrop`** : un sachet = une ligne (`id`, `ownerId`, `boosterTypeId`, `source` DRAW · GIFT · LOT · REWARD, `giverId?`, `giftable`, `openingId?`, `createdAt`, `openedAt?`). Un compteur `BoosterCredit` ne suffit pas : il faut savoir pour chaque sachet s'il peut s'offrir et à qui envoyer le résultat. Ouverture et cadeau passent par un `updateMany` conditionnel (`openedAt IS NULL AND ownerId = …`) dans la transaction : deux clics ne peuvent pas ouvrir ni offrir deux fois le même sachet.
+- **`BoosterType`** : deux lignes `divin` et `apocalypse`, `kind = DROP` (nouvelle valeur), `priceZeni = null`, `usesFreeStock = false`, `countsForPity = false`, `bonusEligible = false`, cachées de la page de choix. Leur thème reste réglable dans l'admin. Planchers de l'Apocalyptique ruiné : `booster.apocalypseRuinFloors` (C · C · C · U) et plafond `booster.apocalypseRuinCeiling` (UNCOMMON).
+- **`lib/boosters/draw.ts`** : `DrawnBooster.divine` devient `drop: "divin" | "apocalypse" | null` ; `rollRarity` accepte un plafond ; une fonction pure `drawSealed(rng, kind, state)` rend les cartes, l'issue et le nouveau karma. `BoosterOpening` garde `divine` pour l'historique et ajoute `sealedDropId?` et `apocalypse` (`SPARED` · `RUINED` · null).
+- **`Gift`** : nouvelle valeur `GiftKind.DROP` et colonne `sealedDropId?`.
+- **Admin** : les nouveaux réglages dans le formulaire des boosters, des transformations forcées dans `/admin/test-ouverture`, et le don de sachets scellés dans la fiche joueur et les lots.
+- **Ancien réglage** : `booster.divineOdds` change de sens (chute d'un sachet au lieu d'un divin instantané) et passe de 2 000 à 4 000. La migration réécrit la valeur en base si elle vaut encore 2 000.
+- **Tests (Vitest)** : exclusion Divin/Apocalyptique et taux de chute ; booster remplacé sans effet sur les compteurs ; plafond de rareté ; issue de l'Apocalyptique et karma ; règles de cadeau. Test base : deux ouvertures simultanées du même sachet, une seule réussit ; cadeau et ouverture simultanés. `npm run sim:boosters` simule les chutes et vérifie l'équilibre annoncé ci-dessus.
 
 ## Profil, amis et vitrine
 
@@ -1260,6 +1313,7 @@ Construis dans cet ordre : chaque étape est jouable seule et sert de base à la
     - collection par albums (une tuile par série) ;
     - suppression définitive de comptes dans l'admin, avec sélection multiple ;
     - échanges entre amis, chat éphémère entre amis, profil personnalisable (titres, cadres, badges).
+13. **Sachets scellés** — Divin et Apocalyptique : chute pendant l'ouverture, `SealedDrop`, karma de l'Apocalypse, cadeau empoisonné avec ses garde-fous, animations de transformation et d'ouverture, réglages et tests. Voir « Sachets scellés : Divin et Apocalyptique ».
 
 Hors de ce plan : Stripe et le casino, après un avis juridique.
 

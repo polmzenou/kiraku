@@ -90,6 +90,7 @@
   --color-sakura: var(--k-sakura);
   --color-link: var(--k-link);
 
+  --font-heading: var(--font-dela-gothic), var(--font-shippori), "Hiragino Sans", sans-serif;
   --font-title: var(--font-shippori), "Hiragino Mincho ProN", serif;
   --font-body: var(--font-zen-kaku), "Hiragino Sans", system-ui, sans-serif;
   --font-seal: var(--font-yuji-syuku), var(--font-shippori), serif;
@@ -152,7 +153,10 @@
   }
 
   h1,
-  h2,
+  h2 {
+    font-family: var(--font-heading);
+  }
+
   h3 {
     font-family: var(--font-title);
   }

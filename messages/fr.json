@@ -854,7 +854,7 @@
     "bestPull": "Meilleure carte",
     "boosterN": "Sachet {n}",
     "golden": "Sachet doré",
-    "divine": "Sachet divin",
+    "divine": "Booster divin",
     "pityTriggered": "Pitié : Mythique garantie",
     "featuredPityTriggered": "Pitié vedette",
     "pityLine": "Mythique garantie dans {count, plural, one {# booster} other {# boosters}}",
@@ -885,7 +885,10 @@
     },
     "creditLeft": "{count, plural, one {Booster crédité · # à ouvrir} other {Boosters crédités · # à ouvrir}}",
     "wishedCard": "Souhait exaucé",
-    "wishedCardLong": "Était dans ta liste de souhaits"
+    "wishedCardLong": "Était dans ta liste de souhaits",
+    "apocalypseSpared": "Apocalypse épargnée",
+    "apocalypseRuined": "Apocalypse ruineuse",
+    "backHome": "Retour à l'accueil"
   },
   "draw": {
     "title": "Tirage de {name}",
@@ -1151,10 +1154,15 @@
         "pityThreshold": "Pitié : Mythique garantie au N-ième booster",
         "goldenEvery": "Sachet doré tous les N boosters (0 = désactivé)",
         "goldenFloor": "Rareté minimale de la dernière carte du doré",
-        "divineOdds": "Sachet divin : 1 chance sur N (0 = désactivé)",
+        "divineOdds": "Booster divin qui tombe : 1 chance sur N (0 = désactivé)",
         "rotationHours": "Durée d'une sélection (heures)",
         "rotationDemographie": "Boosters « Par démographie » proposés",
-        "rotationGenre": "Boosters « Par genre » proposés"
+        "rotationGenre": "Boosters « Par genre » proposés",
+        "apocalypseOdds": "Booster apocalyptique qui tombe : 1 chance sur N (0 = désactivé)",
+        "apocalypseWinRate": "Apocalyptique épargné (points de base)",
+        "apocalypseKarma": "Karma de l'Apocalypse",
+        "apocalypseRuinFloors": "Apocalyptique ruiné : planchers",
+        "apocalypseRuinCeiling": "Apocalyptique ruiné : rareté maximale"
       },
       "slot": "Carte {n}",
       "addSlot": "Ajouter une carte",
@@ -1170,7 +1178,8 @@
         "legendary": "Légendaire+ par booster",
         "mythic": "Mythique par booster",
         "meanGap": "Boosters entre deux Mythiques",
-        "perDay": "Mythiques par jour (stock gratuit)"
+        "perDay": "Mythiques par jour (stock gratuit)",
+        "dropGap": "Un sachet scellé tous les … boosters"
       },
       "review": "Vérifier les changements",
       "noChange": "Aucun changement.",
@@ -1187,7 +1196,9 @@
       "log": "Derniers changements",
       "logEmpty": "Aucun changement pour l'instant.",
       "logEntry": "{key} par {admin}",
-      "rotationSection": "Rotation des familles"
+      "rotationSection": "Rotation des familles",
+      "sealedSection": "Sachets scellés",
+      "karmaHint": "Apocalyptiques ruinés d'affilée avant une épargne forcée (0 = aucun karma)."
     },
     "types": {
       "title": "Types de boosters",
@@ -1411,6 +1422,7 @@
       "giftLogEmpty": "Aucun cadeau pour l'instant.",
       "giftCard": "{from} → {to} : une carte",
       "giftBooster": "{from} → {to} : un booster ({zeni, number} Zeni)",
+      "giftSealed": "{from} → {to} : un sachet scellé",
       "log": "Derniers changements",
       "logEmpty": "Aucun changement pour l'instant.",
       "logEntry": "{key} par {admin}",
@@ -2473,7 +2485,8 @@
         "SERIES_COMPLETED_COUNT": "Séries complétées",
         "BOOSTERS_OPENED": "Boosters ouverts",
         "TRADES_DONE": "Échanges réussis",
-        "RANK_TIER": "Rang classé atteint"
+        "RANK_TIER": "Rang classé atteint",
+        "APOCALYPSE_RUINED": "Apocalyptiques ruinés"
       },
       "frames": {
         "washi": "Washi",
@@ -2511,7 +2524,9 @@
         "mythic": "Mythique",
         "ar": "AR",
         "gold": "Gold",
-        "none": "Sans grosse rareté"
+        "none": "Sans grosse rareté",
+        "dropDivin": "Chute d'un Divin",
+        "dropApocalypse": "Chute d'un Apocalyptique"
       }
     },
     "directSend": {
@@ -2934,7 +2949,9 @@
       "LIMIT_OUTGOING": "Trop de demandes en attente : annule-en quelques-unes d'abord.",
       "UNAVAILABLE": "Action impossible pour le moment. Réessaie."
     },
-    "trade": "Échanger"
+    "trade": "Échanger",
+    "pickForSealedDivin": "Choisis l'ami à qui offrir ton booster divin. Tu sauras ce qu'il en tire.",
+    "pickForSealedApocalypse": "Choisis l'ami à qui offrir ton booster apocalyptique. Divin ou ruiné : tu sauras ce qu'il en tire."
   },
   "gifts": {
     "title": "Offrir à {name}",
@@ -2971,8 +2988,19 @@
       "RECEIVED_LIMIT": "{name} a déjà reçu assez de cadeaux aujourd'hui.",
       "NOT_OWNED": "Tu n'as plus cette carte dans ta collection.",
       "RARITY": "Cette rareté ne peut pas être offerte.",
-      "NOT_ENOUGH_ZENI": "Pas assez de Zeni ({price} nécessaires)."
-    }
+      "NOT_ENOUGH_ZENI": "Pas assez de Zeni ({price} nécessaires).",
+      "NOT_GIFTABLE": "Ce sachet ne peut plus être offert.",
+      "NEEDS_DISCORD": "Lie ton compte à Discord pour offrir un sachet scellé.",
+      "SEALED_ACCOUNT_TOO_NEW": "Ton compte doit avoir au moins {sealedMinAccountDays} jours pour offrir un sachet scellé.",
+      "SEALED_WEEK_LIMIT": "Tu as déjà offert {sealedPerWeek, plural, one {# sachet scellé} other {# sachets scellés}} cette semaine."
+    },
+    "sealedDivin": "Ton booster divin",
+    "sealedApocalypse": "Ton booster apocalyptique",
+    "confirmSealedDivin": "Offrir ton booster divin à {name} ? Tu sauras ce qu'il en tire.",
+    "confirmSealedApocalypse": "Offrir ton booster apocalyptique à {name} ? Divin ou ruiné : tu sauras ce qu'il en tire.",
+    "sentSealedDivin": "Booster divin offert à {name}.",
+    "sentSealedApocalypse": "Booster apocalyptique offert à {name}. Croise les doigts (ou pas).",
+    "offer": "Offrir"
   },
   "notifications": {
     "title": "Notifications",
@@ -3027,7 +3055,12 @@
     "teamGiftCards": "L'équipe Kiraku t'offre {count, plural, one {la carte {card}} other {# × {card}}}.",
     "teamGiftBoosters": "L'équipe Kiraku t'offre {count, plural, one {un booster} other {# boosters}} : ouvre-{count, plural, one {le} other {les}} !",
     "teamNote": "Mot de l'équipe",
-    "declineNote": "Motif du refus"
+    "declineNote": "Motif du refus",
+    "giftSealedDivin": "{name} t'a offert un booster divin !",
+    "giftSealedApocalypse": "{name} t'a offert un booster apocalyptique… divin ou ruiné ?",
+    "sealedDivin": "{name} a ouvert ton booster divin : {card} ({rarity}).",
+    "sealedSpared": "Ton booster apocalyptique a épargné {name} : {card} ({rarity}) !",
+    "sealedRuined": "Ton booster apocalyptique a explosé au visage de {name}."
   },
   "push": {
     "title": "Notifications sur ce téléphone",
@@ -4119,5 +4152,27 @@
   "social": {
     "x": "X",
     "followX": "Suivre Kiraku sur X ({handle})"
+  },
+  "sealed": {
+    "rowTitle": "{count, plural, one {Sachet scellé} other {# sachets scellés}}",
+    "open": "Ouvrir",
+    "gift": "Offrir",
+    "openNow": "Ouvrir maintenant",
+    "keep": "Garder pour plus tard",
+    "kept": "Sachet gardé : il t'attend sur l'accueil.",
+    "continue": "Voir les autres cartes",
+    "transformDivin": "Booster divin",
+    "transformApocalypse": "Booster apocalyptique",
+    "transformMore": "{count, plural, one {+ # autre sachet scellé} other {+ # autres sachets scellés}}",
+    "readyDivin": "Booster divin : Épique ou mieux, une Mythique garantie",
+    "readyApocalypse": "Divin… ou ruiné. Karma {current}/{threshold}",
+    "readyApocalypseNoKarma": "Divin… ou ruiné.",
+    "karma": "Karma {current}/{threshold}",
+    "karmaBlessed": "Karma plein : le prochain Apocalyptique est épargné",
+    "giftedBy": "Offert par {name}",
+    "spared": "Épargné",
+    "ruined": "Ruiné",
+    "recapTitle": "{count, plural, one {Un sachet scellé est tombé} other {# sachets scellés sont tombés}}",
+    "recapKept": "Pas tout de suite ? Ils t'attendent sur l'accueil."
   }
 }

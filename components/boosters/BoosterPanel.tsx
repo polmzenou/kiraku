@@ -68,7 +68,7 @@ export function BoosterPanel({ type, panel, ctx, state, wishlist = null, withOpe
           <BoosterArt shape={type.shape} theme={type.theme} emblem={type.emblem} name={name} contents="" compact />
         </div>
         <div className="min-w-0">
-          <h2 id={headingId} className="font-title text-2xl leading-tight font-extrabold">
+          <h2 id={headingId} className="font-heading text-2xl leading-tight font-extrabold">
             {name}
           </h2>
           <p className="text-sm text-text-muted">{localize(type.tagline, locale)}</p>

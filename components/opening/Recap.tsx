@@ -4,7 +4,7 @@ import { useRarities, useRarityDefinitions, useRaritySeals } from "@/lib/catalog
 
 import { m } from "motion/react";
 import { useTranslations } from "next-intl";
-import { useEffect, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import type { OpenCount } from "@/lib/boosters/catalog";
 import type { OpenedBoosterView, OpenedCardView } from "@/lib/boosters/view";
 import { type Rarity } from "@/lib/catalog/rarity";
@@ -62,7 +62,10 @@ export function Recap({ name, emblem, boosters, state, reduced, play, counters, 
   const fan = !many && cards.length <= FAN_MAX;
   const glow = best ? leakFor(best.rarity, definitions) : undefined;
   const flags = {
-    divine: boosters.some((b) => b.divine),
+    // Sachets scellés : Divin 天, Apocalyptique 滅 épargné ou ruiné
+    divine: boosters.some((b) => b.divine && !b.apocalypse),
+    spared: boosters.some((b) => b.apocalypse === "SPARED"),
+    ruined: boosters.some((b) => b.apocalypse === "RUINED"),
     golden: boosters.some((b) => b.golden),
     pity: boosters.some((b) => b.pityTriggered),
     featuredPity: boosters.some((b) => b.featuredPityTriggered),
@@ -101,16 +104,18 @@ export function Recap({ name, emblem, boosters, state, reduced, play, counters, 
       </div>
 
       <m.header className="flex flex-col items-center gap-2 text-center" {...appear(0)}>
-        <h2 id="recap-title" className="font-title text-3xl font-extrabold text-balance sm:text-5xl">
+        <h2 id="recap-title" className="font-heading text-3xl font-extrabold text-balance sm:text-5xl">
           {name}
         </h2>
         {many && <p className="text-sm text-text-muted tabular-nums">{t("recapCounts", { boosters: boosters.length, cards: cards.length })}</p>}
         <p className="mt-1 rounded-pill border border-border bg-surface px-3 py-1 text-sm">
           {t("newCount", { count: newCount })} · {t("dupCount", { count: cards.length - newCount })}
         </p>
-        {(flags.divine || flags.golden || flags.pity || flags.featuredPity) && (
+        {(flags.divine || flags.spared || flags.ruined || flags.golden || flags.pity || flags.featuredPity) && (
           <p className="flex flex-wrap justify-center gap-1.5">
-            {flags.divine && <Badge glyph="神" label={t("divine")} />}
+            {flags.divine && <Badge glyph="天" label={t("divine")} />}
+            {flags.spared && <Badge glyph="滅" label={t("apocalypseSpared")} />}
+            {flags.ruined && <Badge glyph="滅" label={t("apocalypseRuined")} />}
             {flags.golden && <Badge glyph="金" label={t("golden")} />}
             {flags.pity && <Badge glyph="神" label={t("pityTriggered")} />}
             {flags.featuredPity && <Badge glyph="星" label={t("featuredPityTriggered")} />}
@@ -155,9 +160,7 @@ export function Recap({ name, emblem, boosters, state, reduced, play, counters, 
               transition={{ delay: reduced ? 0 : 0.3 + Math.min(i, 20) * 0.05, type: "spring", stiffness: 300, damping: 24 }}
             >
               {/* Grille figée : jusqu'à 49 cartes, sans inclinaison ni reflet animé chacune */}
-              <BestFrame best={i === 0} glow={glow}>
-                <Fuda card={card} series={card.series} size="sm" still />
-              </BestFrame>
+              <Fuda card={card} series={card.series} size="sm" still glow={i === 0 ? glow : undefined} />
               <CardStamps card={card} animated={false} small />
               {card.featured && <FeaturedSeal animated={false} />}
             </m.li>
@@ -180,7 +183,7 @@ export function Recap({ name, emblem, boosters, state, reduced, play, counters, 
                 <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 py-1">
                   <span className="flex flex-wrap items-center gap-1.5 text-text-muted">
                     {t("boosterN", { n: i + 1 })}
-                    {b.divine && <Badge glyph="神" label={t("divine")} />}
+                    {b.divine && !b.apocalypse && <Badge glyph="天" label={t("divine")} />}
                     {b.golden && <Badge glyph="金" label={t("golden")} />}
                     {b.pityTriggered && <Badge glyph="神" label={t("pityTriggered")} />}
                     {b.featuredPityTriggered && <Badge glyph="星" label={t("featuredPityTriggered")} />}
@@ -271,9 +274,7 @@ function FanRow({ cards, glow, reduced }: { cards: OpenedCardView[]; glow: strin
                   <span className="rounded-pill border border-border bg-surface px-2.5 py-1">{t("bestPull")}</span>
                 </p>
               )}
-              <BestFrame best={isBest} glow={glow}>
-                <Fuda card={card} series={card.series} size="md" still={!isBest} />
-              </BestFrame>
+              <Fuda card={card} series={card.series} size="md" still={!isBest} glow={isBest ? glow : undefined} />
               <CardStamps card={card} animated={!reduced} delay={0.6 + Math.abs(d) * 0.09} />
               {card.featured && <FeaturedSeal animated={!reduced} delay={0.65} />}
             </m.div>
@@ -281,16 +282,6 @@ function FanRow({ cards, glow, reduced }: { cards: OpenedCardView[]; glow: strin
         );
       })}
     </ul>
-  );
-}
-
-/** Anneau lumineux à la couleur de la meilleure rareté (ombre fixe, rien d'animé). */
-function BestFrame({ best, glow, children }: { best: boolean; glow: string | undefined; children: ReactNode }) {
-  if (!best || !glow) return <>{children}</>;
-  return (
-    <div className="rounded-fuda" style={{ boxShadow: `0 0 0 2px ${glow}, 0 0 28px ${glow}` }}>
-      {children}
-    </div>
   );
 }
 

@@ -97,7 +97,7 @@ export default async function MissionsPage() {
         return (
           <section key={period} className="flex flex-col gap-3" aria-labelledby={`missions-${period}`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 id={`missions-${period}`} className="flex items-center gap-3 font-title text-xl font-bold">
+              <h2 id={`missions-${period}`} className="flex items-center gap-3 font-heading text-xl font-bold">
                 <span
                   aria-hidden="true"
                   lang="ja"

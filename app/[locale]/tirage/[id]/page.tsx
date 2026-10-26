@@ -75,12 +75,18 @@ export default async function DrawPage({ params }: PageProps<"/[locale]/tirage/[
           />
         </div>
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="font-title text-2xl font-extrabold">{t("title", { name })}</h1>
+          <h1 className="font-heading text-2xl font-extrabold">{t("title", { name })}</h1>
           <p className="text-sm text-text-muted">
             {boosterName} · {format.relativeTime(opening.createdAt)}
           </p>
           <div className="flex flex-wrap gap-2 text-xs font-bold">
-            {opening.divine && <span className="text-rarity-mythic">{tOpening("divine")}</span>}
+            {opening.apocalypse ? (
+              <span className={opening.apocalypse === "SPARED" ? "text-kin" : "text-text-muted"}>
+                {tOpening(opening.apocalypse === "SPARED" ? "apocalypseSpared" : "apocalypseRuined")}
+              </span>
+            ) : (
+              opening.divine && <span className="text-kin">{tOpening("divine")}</span>
+            )}
             {opening.golden && <span className="text-kin">{tOpening("golden")}</span>}
           </div>
         </div>

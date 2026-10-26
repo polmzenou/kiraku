@@ -1,5 +1,5 @@
 import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
-import { floorsFor, ratesFrom, rarityIndex, type DrawBonuses, type DrawRules, type RarityRates } from "./draw";
+import { apocalypseSparedShare, floorsFor, ratesFrom, rarityIndex, type DrawBonuses, type DrawRules, type RarityRates } from "./draw";
 
 // Probabilités exactes (sans hasard) d'un booster : affichées dans le panneau « Chance par booster »,
 // dans l'aperçu d'impact de l'admin, et comparées à la simulation dans les tests.
@@ -58,14 +58,32 @@ export function atLeastOdds(rates: RarityRates, floors: readonly Rarity[], count
   return result;
 }
 
-/** Règles d'un type : sans doré ni divin si le type n'y a pas droit, sans pitié s'il n'y compte pas. */
+/** Règles d'un type : sans doré ni sachets scellés s'il n'y a pas droit, sans pitié s'il n'y compte pas. */
 export function rulesWithBonuses(rules: DrawRules, bonuses: DrawBonuses): DrawRules {
   return {
     ...rules,
     goldenEvery: bonuses.golden ? rules.goldenEvery : 0,
-    divineOdds: bonuses.divine ? rules.divineOdds : 0,
+    divineOdds: bonuses.drop ? rules.divineOdds : 0,
+    apocalypseOdds: bonuses.drop ? rules.apocalypseOdds : 0,
     pityThreshold: bonuses.pity ? rules.pityThreshold : Number.MAX_SAFE_INTEGER,
   };
+}
+
+/**
+ * Part des boosters ouverts qui se transforment en sachet Divin ou Apocalyptique. Un booster doré ne
+ * se transforme jamais et un booster transformé n'avance pas le doré : sur un cycle de G boosters
+ * comptés, les G − 1 places non dorées donnent chacune q / (1 − q) chutes en moyenne.
+ */
+export function dropRates(rules: Pick<DrawRules, "divineOdds" | "apocalypseOdds" | "goldenEvery">): { divin: number; apocalypse: number } {
+  const pd = rules.divineOdds > 0 ? 1 / rules.divineOdds : 0;
+  const pa = rules.apocalypseOdds > 0 ? 1 / rules.apocalypseOdds : 0;
+  const q = pd + (1 - pd) * pa;
+  if (q <= 0) return { divin: 0, apocalypse: 0 };
+  if (q >= 1) return { divin: pd, apocalypse: 1 - pd };
+  const G = rules.goldenEvery;
+  const perCounted = q / (1 - q);
+  const rate = G > 0 ? ((G - 1) * perCounted) / (G + (G - 1) * perCounted) : q;
+  return { divin: (rate * pd) / q, apocalypse: (rate * (1 - pd) * pa) / q };
 }
 
 /**
@@ -110,21 +128,31 @@ export function featuredMeanGap(perBooster: number, pityThreshold: number): numb
 const MAX_PITY_STATES = 100_000;
 
 /**
- * Taux moyen de boosters avec au moins une Mythique sur le long terme, pitié, doré et divin compris.
- * Chaîne de Markov : état = pitié avant le booster × position dans le cycle doré. La position avance
- * de façon déterministe, donc on itère cycle par cycle jusqu'à stabilisation.
+ * Taux moyen de boosters avec au moins une Mythique sur le long terme, pitié, doré et sachets scellés
+ * compris (un sachet ouvert compte pour le booster d'où il est tombé : un Divin ou un Apocalyptique
+ * épargné a toujours une Mythique ou mieux).
  */
 export function longRunMythicRate(rules: DrawRules): number {
+  const drops = dropRates(rules);
+  const counted = 1 - drops.divin - drops.apocalypse;
+  return counted * countedMythicRate(rules) + drops.divin + drops.apocalypse * apocalypseSparedShare(rules.apocalypseWinRate, rules.apocalypseKarma);
+}
+
+/**
+ * Même taux sur les seuls boosters qui donnent des cartes (les boosters transformés ne font avancer
+ * ni la pitié ni le doré). Chaîne de Markov : état = pitié avant le booster × position dans le cycle
+ * doré. La position avance de façon déterministe, donc on itère cycle par cycle jusqu'à stabilisation.
+ */
+function countedMythicRate(rules: DrawRules): number {
   const T = rules.pityThreshold;
   const G = rules.goldenEvery > 0 ? rules.goldenEvery : 1;
   const golden = (c: number) => rules.goldenEvery > 0 && (c + 1) % G === 0;
-  const d = rules.divineOdds > 0 ? 1 / rules.divineOdds : 0;
   const mythicIn = (g: boolean) =>
     atLeastOdds(rules.rates, floorsFor(rules.slotFloors, { golden: g, divine: false, goldenFloor: rules.goldenFloor, rarities: rules.rarities ?? Object.keys(rules.rates) }))
       .MYTHIC;
   const qNormal = mythicIn(false);
   const qGolden = mythicIn(true);
-  const baseAt = (c: number) => d + (1 - d) * (golden(c) ? qGolden : qNormal);
+  const baseAt = (c: number) => (golden(c) ? qGolden : qNormal);
 
   // Pitié hors d'atteinte (type qui n'y compte pas) : simple moyenne sur le cycle doré
   if (T > MAX_PITY_STATES) {
@@ -165,7 +193,7 @@ export function longRunMythicRate(rules: DrawRules): number {
 }
 
 export type BoosterChances = {
-  /** Booster normal (sans pitié, doré ni divin) : P(au moins une carte ≥ R). */
+  /** Booster normal (sans pitié, doré ni sachet scellé) : P(au moins une carte ≥ R). */
   atLeast: RarityOdds;
   /** Part de boosters avec une Mythique sur le long terme, bonus compris. */
   mythicRate: number;

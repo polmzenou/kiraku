@@ -1,0 +1,196 @@
+/* Sachets scellés : transformation du booster (Divin 天, Apocalyptique 滅) et ouverture d'un
+   Apocalyptique (sceau fendu, épargné ou ruiné). Animations en transform et opacity uniquement ;
+   le coupe-tout de globals.css les fige à leur dernière image si le mouvement est réduit. */
+
+/* --- Fond plein écran, sous la scène ------------------------------------------------------------ */
+.sealed-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+/* Rayons du Divin : dégradé conique pré-dessiné qui tourne (transform), révélé en opacité */
+.sealed-rays {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 180vmax;
+  height: 180vmax;
+  margin: -90vmax 0 0 -90vmax;
+  background: repeating-conic-gradient(from 0deg, rgb(255 246 214 / 0.32) 0deg 5deg, transparent 5deg 18deg);
+  mask: radial-gradient(closest-side, #000 0 22%, transparent 70%);
+  opacity: 0;
+  animation:
+    sealed-fade-in 0.9s ease-out 0.2s forwards,
+    light-rays 22s linear infinite;
+}
+.sealed-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 70vmax;
+  height: 70vmax;
+  margin: -35vmax 0 0 -35vmax;
+  border-radius: 9999px;
+  opacity: 0;
+  animation: sealed-fade-in 1.1s ease-out forwards;
+}
+.sealed-backdrop[data-kind="divin"] .sealed-glow {
+  background: radial-gradient(circle, rgb(255 250 240 / 0.55), rgb(242 216 138 / 0.22) 40%, transparent 70%);
+}
+/* Apocalyptique : nuit rougeoyante qui bat, sans rayons */
+.sealed-backdrop[data-kind="apocalypse"] .sealed-glow {
+  background: radial-gradient(circle, rgb(224 83 63 / 0.38), rgb(90 12 8 / 0.3) 45%, transparent 72%);
+  animation:
+    sealed-fade-in 0.6s ease-out forwards,
+    sealed-throb 1.8s ease-in-out 0.6s infinite;
+}
+
+/* --- Le sachet transformé ------------------------------------------------------------------- */
+.sealed-art {
+  position: relative;
+  animation: sealed-rise 0.9s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+.sealed-art[data-kind="apocalypse"] {
+  animation:
+    sealed-rise 0.7s cubic-bezier(0.2, 0.8, 0.25, 1) both,
+    sealed-quake 0.5s linear 0.7s 2;
+}
+/* Fissures : calques SVG révélés un par un en opacité (jamais stroke-dashoffset) */
+.sealed-crack {
+  opacity: 0;
+  animation: sealed-fade-in 0.18s ease-out forwards;
+  animation-delay: var(--d, 0.8s);
+}
+.sealed-stamp {
+  animation: sealed-stamp 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.65s both;
+}
+.sealed-title {
+  animation: sealed-up 0.45s ease-out 0.95s both;
+}
+.sealed-actions {
+  animation: sealed-up 0.4s ease-out 1.2s both;
+}
+
+/* --- Ouverture d'un Apocalyptique : le sceau se fend --------------------------------------------- */
+.omen {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+}
+.omen-seal {
+  position: relative;
+  width: min(14rem, 52vw);
+  aspect-ratio: 1;
+}
+.omen-half {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 0.75rem;
+  background: #1b0f0d;
+  box-shadow: inset 0 0 0 3px #e0533f;
+  color: #e0533f;
+  animation: omen-stamp 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.omen-half[data-side="left"] {
+  clip-path: polygon(0 0, 54% 0, 44% 38%, 56% 62%, 46% 100%, 0 100%);
+}
+.omen-half[data-side="right"] {
+  clip-path: polygon(54% 0, 100% 0, 100% 100%, 46% 100%, 56% 62%, 44% 38%);
+}
+.omen[data-outcome] .omen-half[data-side="left"] {
+  animation:
+    omen-stamp 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both,
+    omen-split-left 0.7s cubic-bezier(0.5, 0, 0.3, 1) 0.9s forwards;
+}
+.omen[data-outcome] .omen-half[data-side="right"] {
+  animation:
+    omen-stamp 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both,
+    omen-split-right 0.7s cubic-bezier(0.5, 0, 0.3, 1) 0.9s forwards;
+}
+/* Épargné : de l'or passe par la fente */
+.omen-light {
+  position: absolute;
+  inset: -60%;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgb(255 246 214 / 0.95), rgb(217 181 86 / 0.55) 30%, transparent 62%);
+  opacity: 0;
+  transform: scale(0.4);
+  animation: omen-light 1.1s cubic-bezier(0.2, 0.7, 0.3, 1) 0.95s forwards;
+}
+/* Ruiné : des cendres tombent */
+.omen-ash {
+  position: absolute;
+  left: var(--x);
+  top: 50%;
+  width: var(--s, 5px);
+  height: var(--s, 5px);
+  border-radius: 2px;
+  background: #4a403a;
+  opacity: 0;
+  animation: omen-ash var(--t, 1.6s) ease-in var(--d, 1s) forwards;
+}
+.omen-word {
+  position: absolute;
+  top: calc(50% + min(8.5rem, 31vw));
+  left: 0;
+  right: 0;
+  text-align: center;
+  animation: sealed-up 0.4s ease-out 1.3s both;
+}
+
+@keyframes sealed-fade-in {
+  to { opacity: 1; }
+}
+@keyframes sealed-throb {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.06); }
+}
+@keyframes sealed-rise {
+  0% { opacity: 0; transform: translateY(24px) scale(0.72); }
+  60% { opacity: 1; transform: translateY(-6px) scale(1.04); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes sealed-quake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px) rotate(-1deg); }
+  40% { transform: translateX(5px) rotate(1deg); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(3px); }
+}
+@keyframes sealed-stamp {
+  0% { opacity: 0; transform: scale(2.4) rotate(-14deg); }
+  70% { opacity: 1; transform: scale(0.94) rotate(-4deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-4deg); }
+}
+@keyframes sealed-up {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes omen-stamp {
+  0% { opacity: 0; transform: scale(2.2) rotate(-10deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes omen-split-left {
+  to { transform: translateX(-28%) rotate(-9deg); opacity: 0.85; }
+}
+@keyframes omen-split-right {
+  to { transform: translateX(28%) rotate(8deg) translateY(6%); opacity: 0.85; }
+}
+@keyframes omen-light {
+  0% { opacity: 0; transform: scale(0.4); }
+  40% { opacity: 1; }
+  100% { opacity: 0.85; transform: scale(1.15); }
+}
+@keyframes omen-ash {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+  15% { opacity: 0.95; }
+  100% { opacity: 0; transform: translate(var(--dx), 42vh) rotate(var(--r, 120deg)); }
+}

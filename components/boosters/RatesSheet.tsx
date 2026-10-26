@@ -51,7 +51,7 @@ export function RatesSheet({ children, label, triggerClassName }: { children: Re
         <div className="flex flex-col gap-3 px-4 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <span aria-hidden="true" className="h-1.5 w-10 self-center rounded-full bg-text-muted/30" />
           <div className="flex items-center justify-between">
-            <h2 id={titleId} className="font-title text-lg font-extrabold">
+            <h2 id={titleId} className="font-heading text-lg font-extrabold">
               {t("ratesTitle")}
             </h2>
             <IconButton aria-label={t("close")} onClick={close} tone="lacquer">
