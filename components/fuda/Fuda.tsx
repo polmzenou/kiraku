@@ -74,6 +74,7 @@ export function Fuda({
   still = false,
   sizes,
   overlay,
+  glow,
   describeImage = size !== "sm",
 }: {
   card: FudaCard;
@@ -94,6 +95,8 @@ export function Fuda({
   sizes?: string;
   /** Posé sur la carte (pastilles, reflets de révélation) : il s'incline avec elle. */
   overlay?: ReactNode;
+  /** Anneau lumineux (meilleure carte du récap) : porté par la carte, il suit son inclinaison. */
+  glow?: string;
   /**
    * Texte alternatif « nom du personnage ». Vide par défaut en petite taille (le nom est déjà lu par
    * le lien parent) ; à activer quand la carte est dans un lien étiqueté ou masqué (`aria-hidden`),
@@ -113,6 +116,7 @@ export function Fuda({
     ...(visual.frame && { "--fuda-frame": visual.frame, "--fuda-frame-bg": visual.frame }),
     "--fx-color": visual.effectColor, "--fx-intensity": visual.intensity,
     "--fx-duration": `${8 / visual.speed}s`,
+    ...(glow && { boxShadow: `0 0 0 2px ${glow}, 0 0 28px ${glow}` }),
   } as CSSProperties;
   const inBattle = variant === "battle";
   const showNative = !inBattle && size !== "sm" && !locked && card.nameNative;

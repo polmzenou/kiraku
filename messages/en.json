@@ -854,7 +854,7 @@
     "bestPull": "Best pull",
     "boosterN": "Pack {n}",
     "golden": "Golden pack",
-    "divine": "Divine pack",
+    "divine": "Divine booster",
     "pityTriggered": "Pity: Mythic guaranteed",
     "featuredPityTriggered": "Featured pity",
     "pityLine": "Mythic guaranteed in {count, plural, one {# booster} other {# boosters}}",
@@ -885,7 +885,10 @@
     },
     "creditLeft": "{count, plural, one {Credited booster · # to open} other {Credited boosters · # to open}}",
     "wishedCard": "Wish granted",
-    "wishedCardLong": "Was on your wishlist"
+    "wishedCardLong": "Was on your wishlist",
+    "apocalypseSpared": "Apocalypse spared",
+    "apocalypseRuined": "Apocalypse ruined",
+    "backHome": "Back to home"
   },
   "draw": {
     "title": "{name}'s pull",
@@ -1151,10 +1154,15 @@
         "pityThreshold": "Pity: Mythic guaranteed on the Nth booster",
         "goldenEvery": "Golden pack every N boosters (0 = off)",
         "goldenFloor": "Minimum rarity of the golden pack's last card",
-        "divineOdds": "Divine pack: 1 in N chance (0 = off)",
+        "divineOdds": "Divine booster drop: 1 chance in N (0 = off)",
         "rotationHours": "Length of a rotation (hours)",
         "rotationDemographie": "“By demographic” boosters on offer",
-        "rotationGenre": "“By genre” boosters on offer"
+        "rotationGenre": "“By genre” boosters on offer",
+        "apocalypseOdds": "Apocalyptic booster drop: 1 chance in N (0 = off)",
+        "apocalypseWinRate": "Apocalyptic spared (basis points)",
+        "apocalypseKarma": "Apocalypse karma",
+        "apocalypseRuinFloors": "Ruined Apocalyptic: slot floors",
+        "apocalypseRuinCeiling": "Ruined Apocalyptic: highest rarity"
       },
       "slot": "Card {n}",
       "addSlot": "Add a card",
@@ -1170,7 +1178,8 @@
         "legendary": "Legendary+ per booster",
         "mythic": "Mythic per booster",
         "meanGap": "Boosters between two Mythics",
-        "perDay": "Mythics per day (free stock)"
+        "perDay": "Mythics per day (free stock)",
+        "dropGap": "One sealed booster every … boosters"
       },
       "review": "Review changes",
       "noChange": "No changes.",
@@ -1187,7 +1196,9 @@
       "log": "Recent changes",
       "logEmpty": "No changes yet.",
       "logEntry": "{key} by {admin}",
-      "rotationSection": "Family rotation"
+      "rotationSection": "Family rotation",
+      "sealedSection": "Sealed boosters",
+      "karmaHint": "Ruined Apocalyptic boosters in a row before a forced spare (0 = no karma)."
     },
     "types": {
       "title": "Booster types",
@@ -1411,6 +1422,7 @@
       "giftLogEmpty": "No gifts yet.",
       "giftCard": "{from} → {to}: a card",
       "giftBooster": "{from} → {to}: a booster ({zeni, number} Zeni)",
+      "giftSealed": "{from} → {to}: a sealed booster",
       "log": "Latest changes",
       "logEmpty": "No changes yet.",
       "logEntry": "{key} by {admin}",
@@ -2473,7 +2485,8 @@
         "SERIES_COMPLETED_COUNT": "Series completed (count)",
         "BOOSTERS_OPENED": "Boosters opened",
         "TRADES_DONE": "Successful trades",
-        "RANK_TIER": "Ranked tier reached"
+        "RANK_TIER": "Ranked tier reached",
+        "APOCALYPSE_RUINED": "Ruined Apocalyptic boosters"
       },
       "frames": {
         "washi": "Washi",
@@ -2511,7 +2524,9 @@
         "mythic": "Mythic",
         "ar": "AR",
         "gold": "Gold",
-        "none": "No top rarity"
+        "none": "No top rarity",
+        "dropDivin": "Divine drop",
+        "dropApocalypse": "Apocalyptic drop"
       }
     },
     "directSend": {
@@ -2934,7 +2949,9 @@
       "LIMIT_OUTGOING": "Too many pending requests: cancel some first.",
       "UNAVAILABLE": "Can't do that right now. Try again."
     },
-    "trade": "Trade"
+    "trade": "Trade",
+    "pickForSealedDivin": "Pick the friend to gift your divine booster to. You'll find out what they pull.",
+    "pickForSealedApocalypse": "Pick the friend to gift your apocalyptic booster to. Divine or ruined: you'll find out what they pull."
   },
   "gifts": {
     "title": "Give to {name}",
@@ -2971,8 +2988,19 @@
       "RECEIVED_LIMIT": "{name} has already received enough gifts today.",
       "NOT_OWNED": "This card is no longer in your collection.",
       "RARITY": "This rarity can't be given.",
-      "NOT_ENOUGH_ZENI": "Not enough Zeni ({price} needed)."
-    }
+      "NOT_ENOUGH_ZENI": "Not enough Zeni ({price} needed).",
+      "NOT_GIFTABLE": "This booster can no longer be gifted.",
+      "NEEDS_DISCORD": "Link your account to Discord to gift a sealed booster.",
+      "SEALED_ACCOUNT_TOO_NEW": "Your account must be at least {sealedMinAccountDays} days old to gift a sealed booster.",
+      "SEALED_WEEK_LIMIT": "You've already gifted {sealedPerWeek, plural, one {# sealed booster} other {# sealed boosters}} this week."
+    },
+    "sealedDivin": "Your divine booster",
+    "sealedApocalypse": "Your apocalyptic booster",
+    "confirmSealedDivin": "Gift your divine booster to {name}? You'll find out what they pull.",
+    "confirmSealedApocalypse": "Gift your apocalyptic booster to {name}? Divine or ruined: you'll find out what they pull.",
+    "sentSealedDivin": "Divine booster gifted to {name}.",
+    "sentSealedApocalypse": "Apocalyptic booster gifted to {name}. Fingers crossed (or not).",
+    "offer": "Gift"
   },
   "notifications": {
     "title": "Notifications",
@@ -3027,7 +3055,12 @@
     "teamGiftCards": "The Kiraku team gives you {count, plural, one {the card {card}} other {# × {card}}}.",
     "teamGiftBoosters": "The Kiraku team gives you {count, plural, one {a booster} other {# boosters}}: open {count, plural, one {it} other {them}}!",
     "teamNote": "Note from the team",
-    "declineNote": "Reason for declining"
+    "declineNote": "Reason for declining",
+    "giftSealedDivin": "{name} gifted you a divine booster!",
+    "giftSealedApocalypse": "{name} gifted you an apocalyptic booster… divine or ruined?",
+    "sealedDivin": "{name} opened your divine booster: {card} ({rarity}).",
+    "sealedSpared": "Your apocalyptic booster spared {name}: {card} ({rarity})!",
+    "sealedRuined": "Your apocalyptic booster blew up in {name}'s face."
   },
   "push": {
     "title": "Notifications on this device",
@@ -4119,5 +4152,27 @@
   "social": {
     "x": "X",
     "followX": "Follow Kiraku on X ({handle})"
+  },
+  "sealed": {
+    "rowTitle": "{count, plural, one {Sealed booster} other {# sealed boosters}}",
+    "open": "Open",
+    "gift": "Gift",
+    "openNow": "Open now",
+    "keep": "Keep for later",
+    "kept": "Booster kept: it's waiting for you on the home page.",
+    "continue": "See the other cards",
+    "transformDivin": "Divine booster",
+    "transformApocalypse": "Apocalyptic booster",
+    "transformMore": "{count, plural, one {+ # more sealed booster} other {+ # more sealed boosters}}",
+    "readyDivin": "Divine booster: Epic or better, one Mythic guaranteed",
+    "readyApocalypse": "Divine… or ruined. Karma {current}/{threshold}",
+    "readyApocalypseNoKarma": "Divine… or ruined.",
+    "karma": "Karma {current}/{threshold}",
+    "karmaBlessed": "Karma full: the next Apocalyptic booster is spared",
+    "giftedBy": "Gift from {name}",
+    "spared": "Spared",
+    "ruined": "Ruined",
+    "recapTitle": "{count, plural, one {A sealed booster dropped} other {# sealed boosters dropped}}",
+    "recapKept": "Not right now? They're waiting on the home page."
   }
 }

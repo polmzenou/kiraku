@@ -44,6 +44,7 @@ export async function getAdminUser(userId: string, locale: string) {
     profileVisibility: true, showCollection: true, discordLinkedAt: true, referralCode: true,
     deletionRequestedAt: true, anonymizedAt: true, termsVersion: true,
     boosterCredits: { select: { boosterTypeId: true, count: true } },
+    sealedDrops: { where: { openedAt: null }, select: { boosterTypeId: true } },
     _count: { select: { cards: true, openings: true, sessions: true } },
   } });
   if (!user) return null;
@@ -52,13 +53,20 @@ export async function getAdminUser(userId: string, locale: string) {
     prisma.card.count({ where: { status: "PUBLISHED" } }),
     prisma.card.count({ where: { copies: { some: { ownerId: userId } } } }),
     prisma.card.count({ where: { status: "PUBLISHED", copies: { some: { ownerId: userId } } } }),
-    prisma.boosterType.findMany({ orderBy: [{ family: "asc" }, { sortOrder: "asc" }, { id: "asc" }], select: { id: true, name: true, active: true, slug: true } }),
+    prisma.boosterType.findMany({ orderBy: [{ family: "asc" }, { sortOrder: "asc" }, { id: "asc" }], select: { id: true, name: true, active: true, slug: true, kind: true } }),
     prisma.coinTransaction.findMany({ where: { userId }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 20, select: { id: true, amount: true, reason: true, balanceAfter: true, createdAt: true } }),
     prisma.boosterOpening.findMany({ where: { userId }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 15, select: { id: true, boosterSlug: true, createdAt: true, golden: true, divine: true } }),
     prisma.adminLog.findMany({ where: { targetType: "User", targetId: userId }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 30, select: { id: true, action: true, before: true, after: true, createdAt: true, admin: { select: { username: true } } } }),
   ]);
   return { user, discoveries, catalogTotal, uniqueCards, ownedCatalogCards, ledger, openings, logs,
-    boosterTypes: boosterTypes.map((b) => ({ ...b, name: localize(parseLocalized(b.name), locale), count: user.boosterCredits.find((c) => c.boosterTypeId === b.id)?.count ?? 0 })),
+    // Sachets scellés : nombre de sachets non ouverts ; autres types : boosters crédités
+    boosterTypes: boosterTypes.map((b) => ({
+      ...b,
+      name: localize(parseLocalized(b.name), locale),
+      count: b.kind === "DROP"
+        ? user.sealedDrops.filter((d) => d.boosterTypeId === b.id).length
+        : (user.boosterCredits.find((c) => c.boosterTypeId === b.id)?.count ?? 0),
+    })),
   };
 }
 

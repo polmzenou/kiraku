@@ -58,6 +58,7 @@ try {
     { slug: "gardien-archives", kind: "TITLE", label: { fr: "Gardien des archives", frFem: "Gardienne des archives", en: "Keeper of the archives" }, hint: { fr: "Posséder 1 000 cartes uniques.", en: "Own 1,000 unique cards." }, condition: { type: "UNIQUE_CARDS", n: 1000 } },
     { slug: "main-benie", kind: "TITLE", label: { fr: "Main bénie", en: "Blessed hand" }, hint: { fr: "Posséder une carte Mythique.", en: "Own a Mythic card." }, condition: { type: "RARITY_OWNED", rarity: "MYTHIC", n: 1 } },
     { slug: "pelerin", kind: "TITLE", label: { fr: "Pèlerin des sachets", frFem: "Pèlerine des sachets", en: "Booster pilgrim" }, hint: { fr: "Ouvrir 1 000 boosters.", en: "Open 1,000 boosters." }, condition: { type: "BOOSTERS_OPENED", n: 1000 } },
+    { slug: "survivant-apocalypse", kind: "TITLE", label: { fr: "Survivant de l'Apocalypse", frFem: "Survivante de l'Apocalypse", en: "Apocalypse survivor" }, hint: { fr: "Ouvrir un booster apocalyptique ruiné.", en: "Open a ruined apocalyptic booster." }, condition: { type: "APOCALYPSE_RUINED", n: 1 } },
     { slug: "negociant", kind: "TITLE", label: { fr: "Négociant", frFem: "Négociante", en: "Trader" }, hint: { fr: "Réussir 25 échanges.", en: "Complete 25 trades." }, condition: { type: "TRADES_DONE", n: 25 } },
     ...seriesSeeds,
     { slug: "cadre-washi", kind: "FRAME", label: { fr: "Washi", en: "Washi" }, hint: { fr: "Offert à tous.", en: "Free for everyone." }, frameStyle: "washi", condition: { type: "ALWAYS" } },

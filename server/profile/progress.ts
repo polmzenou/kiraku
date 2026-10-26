@@ -32,7 +32,7 @@ type Hint = { fr?: string; en?: string };
 
 /** Statistiques utiles aux conditions, en quelques requêtes. */
 export async function getProfileStats(userId: string, seriesIds: readonly string[]): Promise<ProfileStats> {
-  const [unique, byRarity, completed, series, boostersOpened, tradesDone, user, tiers] = await Promise.all([
+  const [unique, byRarity, completed, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined] = await Promise.all([
     prisma.userCard.findMany({ where: { ownerId: userId }, distinct: ["cardId"], select: { cardId: true } }).then((r) => r.length),
     prisma.$queryRaw<{ rarity: string; n: number }[]>`
       SELECT c."rarityKey" AS rarity, COUNT(DISTINCT uc."cardId")::int AS n
@@ -62,6 +62,7 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
     ]).then(([friends, market]) => friends + market),
     prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { rankPoints: true, seasonPeakPc: true } }),
     getSetting("ranked.tiers"),
+    prisma.boosterOpening.count({ where: { userId, apocalypse: "RUINED" } }),
   ]);
   // Meilleur des deux : un titre de rang ne se reperd pas après une défaite
   const tier = ladderTier(Math.max(user.rankPoints, user.seasonPeakPc), { tiers });
@@ -72,6 +73,7 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
     seriesProgress: Object.fromEntries(series.map((s) => [s.id, { owned: s.owned, total: s.total }])),
     boostersOpened,
     tradesDone,
+    apocalypseRuined,
     tier: LADDER.includes(tier) ? tier : "BRONZE",
   };
 }

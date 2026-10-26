@@ -11,6 +11,8 @@ export type PublicOpening = {
   slug: string;
   golden: boolean;
   divine: boolean;
+  /** Issue d'un Apocalyptique ouvert. */
+  apocalypse: "SPARED" | "RUINED" | null;
   createdAt: Date;
   /** Le pseudo s'affiche selon la visibilité du profil (server/collection/public-names.ts). */
   owner: { name: string; guestCode: string | null };
@@ -27,6 +29,7 @@ export const getPublicOpening = cache(async (id: string, locale: string, viewerI
       catalogCardIds: true,
       golden: true,
       divine: true,
+      apocalypse: true,
       createdAt: true,
       user: { select: namedPlayerSelect },
     },
@@ -46,6 +49,7 @@ export const getPublicOpening = cache(async (id: string, locale: string, viewerI
     slug: opening.boosterSlug,
     golden: opening.golden,
     divine: opening.divine,
+    apocalypse: opening.apocalypse,
     createdAt: opening.createdAt,
     owner: { name, guestCode: name === opening.user.username ? guestCode(opening.user.username) : null },
     cards,

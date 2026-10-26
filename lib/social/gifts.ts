@@ -50,6 +50,29 @@ export function checkGift(c: GiftCheck): GiftRefusal | null {
   return null;
 }
 
+/** Garde-fous propres aux sachets scellés (le stock gratuit d'un compte secondaire ne doit rien rapporter). */
+export type SealedGiftRules = { requiresDiscord: boolean; minAccountDays: number; perWeek: number };
+
+export type SealedGiftRefusal = "NOT_GIFTABLE" | "NEEDS_DISCORD" | "SEALED_ACCOUNT_TOO_NEW" | "SEALED_WEEK_LIMIT";
+
+/** Première règle enfreinte pour offrir un sachet scellé, vérifiée après checkGift. */
+export function checkSealedGift(c: {
+  /** Sachet tombé d'un tirage, jamais offert. */
+  giftable: boolean;
+  hasDiscord: boolean;
+  senderCreatedAt: Date;
+  /** Sachets offerts par l'expéditeur sur les 7 derniers jours. */
+  sentThisWeek: number;
+  now: Date;
+  rules: SealedGiftRules;
+}): SealedGiftRefusal | null {
+  if (!c.giftable) return "NOT_GIFTABLE";
+  if (c.rules.requiresDiscord && !c.hasDiscord) return "NEEDS_DISCORD";
+  if (c.now.getTime() - c.senderCreatedAt.getTime() < c.rules.minAccountDays * 24 * HOUR) return "SEALED_ACCOUNT_TOO_NEW";
+  if (c.sentThisWeek >= c.rules.perWeek) return "SEALED_WEEK_LIMIT";
+  return null;
+}
+
 export type GiftCopy = { id: string; obtainedAt: Date };
 
 /**

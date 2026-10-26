@@ -19,6 +19,10 @@ import { prisma } from "@/server/db";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
 import { inputClass } from "@/components/ui/Field";
+import { GiftSealedButton } from "@/components/social/GiftSealedButton";
+import type { GiftLimits } from "@/components/social/GiftSheet";
+import type { SealedKind } from "@/lib/boosters/draw";
+import { findOwnSealed } from "@/server/boosters/open";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -97,7 +101,7 @@ export default async function FriendsPage({ searchParams }: PageProps<"/[locale]
         </ul>
       </nav>
 
-      {tab === "amis" && <FriendsTab userId={user.id} q={q} page={page} />}
+      {tab === "amis" && <FriendsTab userId={user.id} q={q} page={page} sachet={await giftableSealed(user.id, one(sp.sachet))} />}
       {tab === "demandes" && <RequestsTab userId={user.id} format={format} />}
       {tab === "echanges" && <TradesTab userId={user.id} />}
       {tab === "bloques" && <BlockedTab userId={user.id} />}
@@ -105,19 +109,48 @@ export default async function FriendsPage({ searchParams }: PageProps<"/[locale]
   );
 }
 
-async function FriendsTab({ userId, q, page }: { userId: string; q: string; page: number }) {
+/** Sachet scellé à offrir (?sachet=…) : seulement s'il est au joueur, non ouvert et encore offrable. */
+async function giftableSealed(userId: string, raw: string | undefined) {
+  if (!raw || !/^[A-Za-z0-9_-]{1,40}$/.test(raw)) return null;
+  const found = await findOwnSealed(userId, raw);
+  return found?.giftable ? found : null;
+}
+
+/** Limites citées par les messages de refus d'un cadeau. */
+async function giftLimits(): Promise<GiftLimits> {
+  const [perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours, sealedMinAccountDays, sealedPerWeek] = await Promise.all([
+    getSetting("gifts.perDaySent"),
+    getSetting("gifts.perDayReceived"),
+    getSetting("gifts.minAccountAgeHours"),
+    getSetting("gifts.minFriendshipHours"),
+    getSetting("gifts.sealedMinAccountDays"),
+    getSetting("gifts.sealedPerWeek"),
+  ]);
+  return { perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours, sealedMinAccountDays, sealedPerWeek };
+}
+
+async function FriendsTab({ userId, q, page, sachet }: { userId: string; q: string; page: number; sachet: { id: string; kind: SealedKind } | null }) {
   const t = await getTranslations("friends");
-  const { items, hasMore } = await listFriends(userId, q, page);
+  const [{ items, hasMore }, limits] = await Promise.all([listFriends(userId, q, page), sachet ? giftLimits() : null]);
   const pageHref = (p: number) => {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (p > 0) params.set("page", String(p));
+    if (sachet) params.set("sachet", sachet.id);
     const s = params.toString();
     return s ? `/amis?${s}` : "/amis";
   };
 
   return (
     <>
+      {sachet && (
+        <p role="status" className="flex items-center gap-3 rounded-card border border-kin bg-surface p-4 text-sm">
+          <span aria-hidden="true" lang="ja" className="font-seal text-3xl text-kin">
+            {sachet.kind === "divin" ? "天" : "滅"}
+          </span>
+          {t(sachet.kind === "divin" ? "pickForSealedDivin" : "pickForSealedApocalypse")}
+        </p>
+      )}
       <AddFriendForm />
 
       <section className="flex flex-col gap-3">
@@ -127,6 +160,7 @@ async function FriendsTab({ userId, q, page }: { userId: string; q: string; page
           <label htmlFor="friends-q" className="sr-only">
             {t("searchLabel")}
           </label>
+          {sachet && <input type="hidden" name="sachet" value={sachet.id} />}
           <input
             id="friends-q"
             type="search"
@@ -147,6 +181,7 @@ async function FriendsTab({ userId, q, page }: { userId: string; q: string; page
           <ul className="lacquer rounded-card px-3">
             {items.map((f) => (
               <PlayerRow key={f.id} player={f}>
+                {sachet && limits && <GiftSealedButton username={f.username} name={f.username} drop={sachet.id} kind={sachet.kind} limits={limits} />}
                 <ChatWithButton username={f.username} />
               </PlayerRow>
             ))}

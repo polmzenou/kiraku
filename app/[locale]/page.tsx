@@ -38,7 +38,9 @@ import { boosterStateFrom } from "@/server/boosters/state";
 import { getTopCollectors } from "@/server/collection/leaderboard";
 import { getWishlistCardIds } from "@/server/collection/profile-cards";
 import { getRecentPulls } from "@/server/home/pulls";
-import { getBoosterCredits } from "@/server/economy/queries";
+import { getBoosterCredits, getSealedDrops } from "@/server/economy/queries";
+import { getSealedDisplays } from "@/server/boosters/sealed";
+import { SealedDropsRow } from "@/components/boosters/SealedDropsRow";
 import { getOwnReview, getReviewSample, getReviewSummary } from "@/server/social/reviews";
 import { getCurrentUser } from "@/server/user";
 import { getSetting } from "@/server/settings";
@@ -106,6 +108,12 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
     : !user || (user.isGuest && !user.bannedAt)
       ? { kind: "guest" }
       : { kind: "none" };
+  // Sachets scellés (Divin, Apocalyptique) gardés pour plus tard
+  const [sealedDrops, sealedDisplays, apocalypseKarma] = await Promise.all([
+    user ? getSealedDrops(user.id) : [],
+    getSealedDisplays(locale),
+    getSetting("booster.apocalypseKarma"),
+  ]);
   const credited = allTypes
     .filter((e) => (credits.get(e.type.id) ?? 0) > 0 && e.type.filter !== null)
     .map((e) => ({ slug: e.type.slug, name: localize(e.type.name, locale), count: credits.get(e.type.id)! }));
@@ -191,6 +199,10 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
             </li>
           ))}
         </ul>
+      )}
+
+      {sealedDrops.length > 0 && (
+        <SealedDropsRow drops={sealedDrops} displays={sealedDisplays} karma={{ current: user?.apocalypseKarma ?? 0, threshold: apocalypseKarma }} />
       )}
 
       {initial && (

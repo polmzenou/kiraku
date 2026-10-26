@@ -27,6 +27,11 @@ type FieldName =
   | "goldenEvery"
   | "goldenFloor"
   | "divineOdds"
+  | "apocalypseOdds"
+  | "apocalypseWinRate"
+  | "apocalypseKarma"
+  | "apocalypseRuinFloors"
+  | "apocalypseRuinCeiling"
   | "rotationHours"
   | "rotationDemographie"
   | "rotationGenre";
@@ -40,11 +45,17 @@ const toRules = (s: BoosterSettings, order: readonly string[]): DrawRules => ({
   goldenEvery: s["booster.goldenEvery"],
   goldenFloor: s["booster.goldenFloor"],
   divineOdds: s["booster.divineOdds"],
+  apocalypseOdds: s["booster.apocalypseOdds"],
+  apocalypseWinRate: s["booster.apocalypseWinRate"],
+  apocalypseKarma: s["booster.apocalypseKarma"],
 });
 
 function metrics(s: BoosterSettings, order: readonly string[]) {
-  const chances = boosterChances(toRules(s, order));
-  return { ...chances, perDay: mythicsPerDay(chances.mythicRate, s["booster.intervalMinutes"]) };
+  const rules = toRules(s, order);
+  const chances = boosterChances(rules);
+  const drops = dropRates(rules);
+  const dropRate = drops.divin + drops.apocalypse;
+  return { ...chances, perDay: mythicsPerDay(chances.mythicRate, s["booster.intervalMinutes"]), dropGap: dropRate > 0 ? 1 / dropRate : Infinity };
 }
 
 const input =
@@ -176,6 +187,7 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
     [t("metrics.mythic"), (m) => percent(m.atLeast.MYTHIC)],
     [t("metrics.meanGap"), (m) => format.number(m.meanGap, { maximumFractionDigits: 0 })],
     [t("metrics.perDay"), (m) => format.number(m.perDay, { maximumFractionDigits: 2 })],
+    [t("metrics.dropGap"), (m) => (Number.isFinite(m.dropGap) ? format.number(m.dropGap, { maximumFractionDigits: 0 }) : "—")],
   ];
 
   return (

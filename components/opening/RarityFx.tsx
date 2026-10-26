@@ -66,14 +66,14 @@ export function RarityFx({ rarity, compact = false }: { rarity: Rarity; compact?
 
 /**
  * Reflets posés sur la carte elle-même (passés à Fuda en `overlay`) : ils suivent son inclinaison.
- * Laque : un reflet la traverse ; nacre : irisation tournante ; Gold : reflet doré qui repasse.
+ * Laque : un reflet la traverse ; Gold : reflet doré qui repasse. La nacre des Mythiques reste celle
+ * de la fuda (comme en vitrine et dans le wiki) : un calque en plus la voilait de blanc.
  */
 export function RarityCardFx({ rarity }: { rarity: Rarity }) {
   const tier = fxTier(rarity, useRarityDefinitions());
   if (rarity === "GOLD") return <span aria-hidden="true" className="fx-gold-glint" />;
   if (rarity === "AR") return null;
   if (tier === "EPIC") return <span aria-hidden="true" className="fx-sheen absolute inset-0" style={v({ "--d": "0.05s" })} />;
-  if (tier === "MYTHIC") return <span aria-hidden="true" className="fx-nacre absolute -inset-1/2 opacity-60" />;
   return null;
 }
 

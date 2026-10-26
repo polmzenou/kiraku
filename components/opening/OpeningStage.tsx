@@ -4,19 +4,22 @@ import { AnimatePresence, domMax, LazyMotion, m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { preload } from "react-dom";
+import { Link } from "@/i18n/navigation";
 import { OPEN_COUNTS, type OpenCount } from "@/lib/boosters/catalog";
+import type { ApocalypseOutcome, SealedKind } from "@/lib/boosters/draw";
 import { priceFor, type BoosterShape, type BoosterTheme, type Price } from "@/lib/boosters/types";
-import type { OpenedBoosterView } from "@/lib/boosters/view";
+import type { DroppedSealedView, OpenedBoosterView, SealedDisplay } from "@/lib/boosters/view";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { useRarities } from "@/lib/catalog/use-rarities";
-import { openBoosterAction, type OpenBoosterError } from "@/server/actions/boosters";
+import { openBoosterAction, openSealedAction, type OpenBoosterError } from "@/server/actions/boosters";
 import type { BoosterState } from "@/server/boosters/state";
 import { NextFreeIn } from "../boosters/NextFreeIn";
 import { CARD_BACKS } from "../fuda/CardBack";
 import { Fuda } from "../fuda/Fuda";
 import { ZeniCoin } from "../layout/ZeniCoin";
-import { Button } from "../ui/Button";
+import { Button, buttonClasses } from "../ui/Button";
 import { BoosterScene, type SceneHandle } from "./BoosterScene";
+import { ApocalypseOmen, SealedTransform } from "./SealedFx";
 import { CardDeck, revealOrder, type DeckFrom } from "./CardDeck";
 import { CountPicker } from "./CountPicker";
 import { GoldenDust } from "./GoldenDust";
@@ -31,7 +34,11 @@ import { useRitualFx } from "./useRitualFx";
 import { useFxLevel, useMotionPreference } from "@/components/motion/MotionPreference";
 import { hasMeasuredTier, probeFrames, watchFrames } from "@/components/motion/fx-tier";
 
-type Stage = "ready" | "opening" | "reveal" | "recap";
+/** transform : le booster s'est changé en sachet scellé ; omen : le sceau d'un Apocalyptique se fend. */
+type Stage = "ready" | "opening" | "transform" | "omen" | "reveal" | "recap";
+
+/** Sachet scellé à ouvrir sur cette scène. */
+type SealedTarget = { id: string; kind: SealedKind };
 
 export type OpeningType = {
   slug: string;
@@ -66,6 +73,16 @@ type Props = {
   initialCount?: OpenCount;
   /** Ouverture à appeler : l'action serveur, ou un tirage factice pour le banc de test de l'admin. */
   open?: typeof openBoosterAction;
+  /** Dessin des sachets scellés qui peuvent tomber de ce booster. */
+  sealedTypes?: Partial<Record<SealedKind, SealedDisplay>>;
+  /** Sachet scellé à ouvrir d'abord (lien ?sachet=… de l'accueil ou d'une notification). */
+  sealed?: SealedTarget | null;
+  /** Karma de l'Apocalypse du joueur et seuil d'épargne forcée (0 = pas de karma). */
+  karma?: { current: number; threshold: number };
+  /** Ouverture d'un sachet scellé : l'action serveur, ou un tirage factice (banc de test). */
+  openSealed?: typeof openSealedAction;
+  /** Liens « Offrir » vers /amis (absents sur le banc de test). */
+  giftLinks?: boolean;
 };
 
 /** Meilleure carte du tirage, dans l'ordre du registre (AR et Gold au-dessus de Mythique). */
@@ -89,9 +106,22 @@ function maxOpenable(type: OpeningType, state: BoosterState): number {
  * puis le récap se déroule. Le tirage est déjà enregistré par le serveur
  * quand l'animation commence : fermer l'onglet ne fait rien perdre.
  */
-export function OpeningStage({ type, initialState, isGuest, credits = 0, initialCount = 1, open = openBoosterAction }: Props) {
+export function OpeningStage({
+  type,
+  initialState,
+  isGuest,
+  credits = 0,
+  initialCount = 1,
+  open = openBoosterAction,
+  sealedTypes = {},
+  sealed = null,
+  karma: initialKarma = { current: 0, threshold: 0 },
+  openSealed = openSealedAction,
+  giftLinks = true,
+}: Props) {
   const rarities = useRarities();
   const t = useTranslations("opening");
+  const tSealed = useTranslations("sealed");
   const level = useFxLevel();
   const reduced = level === "reduced";
   const lite = level === "lite";
@@ -115,6 +145,17 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0, initial
   const [openedCredit, setOpenedCredit] = useState(false);
   const [momentCard, setMomentCard] = useState<Pick<Moment, "id" | "rarity"> | null>(null);
   const [deckFrom, setDeckFrom] = useState<DeckFrom | null>(null);
+  // Sachets scellés : celui qu'on ouvre sur cette scène, ceux tombés à l'instant, karma et issue
+  const [sealedOpen, setSealedOpen] = useState<SealedTarget | null>(sealed && sealedTypes[sealed.kind] ? sealed : null);
+  const [openedSealed, setOpenedSealed] = useState<SealedKind | null>(null);
+  const [drops, setDrops] = useState<DroppedSealedView[]>([]);
+  const [karma, setKarma] = useState(initialKarma.current);
+  const [outcome, setOutcome] = useState<ApocalypseOutcome | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const dropsRef = useRef<DroppedSealedView[]>([]);
+  const omenRef = useRef<ApocalypseOutcome | null>(null);
+  const transformSeen = useRef(false);
+  const omenSeen = useRef(false);
   const momentFor = useMomentFor();
   const moment = momentCard ? momentFor(momentCard.id, momentCard.rarity) : null;
   const opened = useRef(false);
@@ -132,16 +173,37 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0, initial
 
   // État le plus récent entre la page (rafraîchie par le serveur) et la réponse de l'ouverture
   const state = latest && latest.serverNow > initialState.serverNow ? latest : initialState;
-  const creditMode = creditLeft > 0;
-  const maxCount = creditMode ? (OPEN_COUNTS.filter((n) => n <= creditLeft).at(-1) ?? 1) : maxOpenable(type, state);
-  const effectiveCount: OpenCount = count <= maxCount ? count : ((OPEN_COUNTS.filter((n) => n <= maxCount).at(-1) ?? 1) as OpenCount);
-  const price: Price = creditMode ? { kind: "free" } : priceFor(type, state.stock, effectiveCount);
+  // Sachet scellé sur la scène : un seul, déjà payé (tombé d'un booster), dessiné à son thème
+  const sealedDisplay = sealedOpen ? sealedTypes[sealedOpen.kind] : undefined;
+  const shown = sealedDisplay ?? type;
+  const creditMode = !sealedOpen && creditLeft > 0;
+  const maxCount = sealedOpen ? 1 : creditMode ? (OPEN_COUNTS.filter((n) => n <= creditLeft).at(-1) ?? 1) : maxOpenable(type, state);
+  const effectiveCount: OpenCount = sealedOpen ? 1 : count <= maxCount ? count : ((OPEN_COUNTS.filter((n) => n <= maxCount).at(-1) ?? 1) as OpenCount);
+  const price: Price = sealedOpen || creditMode ? { kind: "free" } : priceFor(type, state.stock, effectiveCount);
   const unaffordable = price.kind === "zeni" && price.amount > state.coins;
   const needsConfirm = price.kind === "zeni" && !unaffordable && confirmed !== price.amount;
   const armed = stage === "ready" && !unaffordable && price.kind !== "unavailable" && !needsConfirm;
+  // Le booster de la page ne s'ouvre pas (sachet scellé seul) : après le récap, retour à l'accueil
+  const pageOpenable = creditLeft > 0 || priceFor(type, state.stock, 1).kind !== "unavailable";
 
   const goReveal = () => {
     if (!opened.current || !result.current) return;
+    // Un booster s'est transformé : le sachet tombé passe avant les cartes
+    if (dropsRef.current.length > 0 && !transformSeen.current) {
+      setStage("transform");
+      setDepth(0.35);
+      fx.play("taiko", [30, 40, 60]);
+      return;
+    }
+    // Apocalyptique : le sceau se fend avant la pile, l'issue n'est montrée qu'à ce moment
+    if (omenRef.current && !omenSeen.current) {
+      setStage("omen");
+      setDepth(0.7);
+      fx.play("stamp", 40);
+      return;
+    }
+    // Tous les boosters transformés : pas de cartes à révéler, la transformation propose la suite
+    if (result.current.every((b) => b.cards.length === 0)) return;
     // Les cartes sorties du booster rejoignent la pile depuis leur place dans la scène
     const cards = reduced ? null : scene.current?.cards();
     const base = stageTop.current?.getBoundingClientRect();
@@ -153,26 +215,50 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0, initial
     fx.play("whoosh");
   };
 
+  const fail = (code: OpenBoosterError) => {
+    setError(code);
+    opened.current = false;
+    setStage("ready");
+    setDepth(0);
+    setConfirmed(null);
+    setAttempt((a) => a + 1); // nouveau booster intact
+  };
+
   const trigger = async () => {
     setError(null);
+    setNotice(null);
     setStage("opening");
     setDepth(0.15);
     result.current = null;
+    if (sealedOpen) {
+      const res = await openSealed({ drop: sealedOpen.id });
+      if (!res.ok) return fail(res.error);
+      setKarma(res.karma);
+      setOutcome(res.booster.apocalypse ?? null);
+      omenRef.current = res.booster.apocalypse ?? null;
+      setOpenedSealed(sealedOpen.kind);
+      setBoosters([res.booster]);
+      result.current = [res.booster];
+      goReveal();
+      return;
+    }
     const res = await open(
       creditMode
         ? { booster: type.slug, count: effectiveCount, credit: true }
         : { booster: type.slug, count: effectiveCount, pay: price.kind === "zeni" },
     );
-    if (!res.ok) {
-      setError(res.error);
-      opened.current = false;
-      setStage("ready");
-      setDepth(0);
-      setConfirmed(null);
-      setAttempt((a) => a + 1); // nouveau booster intact
+    if (!res.ok) return fail(res.error);
+    // Sachets dessinables seulement : un type supprimé entre-temps reste dans l'inventaire de l'accueil
+    dropsRef.current = res.drops.filter((d) => sealedTypes[d.kind]);
+    setDrops(dropsRef.current);
+    setOpenedSealed(null);
+    setLatest(res.state);
+    // Rien à montrer ici (sachet tombé mais pas dessinable) : nouvelle scène, le sachet attend sur l'accueil
+    if (dropsRef.current.length === 0 && res.boosters.every((b) => b.cards.length === 0)) {
+      again();
+      setNotice(tSealed("kept"));
       return;
     }
-    setLatest(res.state);
     setFeaturedCount(res.featuredCount);
     setZeniSpent(res.zeniSpent);
     setOpenedCredit(creditMode);
@@ -199,15 +285,45 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0, initial
     setDepth(0);
   }, []);
 
-  const again = () => {
+  /** Nouveau booster intact ; `next` : sachet scellé à ouvrir sur la scène (sinon le booster de la page). */
+  const again = (next: SealedTarget | null = null) => {
     wantFocus.current = true;
     opened.current = false;
     result.current = null;
+    dropsRef.current = [];
+    omenRef.current = null;
+    transformSeen.current = false;
+    omenSeen.current = false;
     setBoosters(null);
     setError(null);
     setConfirmed(null);
+    setOutcome(null);
+    setSealedOpen(next);
     setAttempt((a) => a + 1);
     setStage("ready");
+  };
+
+  /** Ouvre tout de suite un sachet tombé : il passe sur la scène, à déchirer comme un booster. */
+  const openDrop = (d: DroppedSealedView) => {
+    setDrops((list) => list.filter((x) => x.id !== d.id));
+    again({ id: d.id, kind: d.kind });
+  };
+
+  /** Garde les sachets tombés pour plus tard : ils attendent sur l'accueil. */
+  const keepDrops = () => {
+    setDrops([]);
+    again();
+    setNotice(tSealed("kept"));
+  };
+
+  const continueAfterTransform = () => {
+    transformSeen.current = true;
+    goReveal();
+  };
+
+  const omenDone = () => {
+    omenSeen.current = true;
+    goReveal();
   };
 
   // Chaque changement d'étape ramène la scène sous l'en-tête : « Ouvrir un autre » depuis le bas du
@@ -243,6 +359,13 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0, initial
   const first = boosters?.[0];
   const variant = first?.divine ? "divine" : first?.golden ? "golden" : undefined;
   const ritual = stage !== "recap";
+  // Apocalyptique : ni lumière ni nacre pendant la déchirure, l'issue attend le sceau fendu
+  const veiled = sealedOpen?.kind === "apocalypse";
+  const blessed = initialKarma.threshold > 0 && karma >= initialKarma.threshold;
+  const firstDrop = drops[0];
+  const dropDisplay = firstDrop ? sealedTypes[firstDrop.kind] : undefined;
+  // Après un sachet, « Ouvrir un autre » revient au booster de la page
+  const nextPrice: Price = sealedOpen ? (creditLeft > 0 ? { kind: "free" } : priceFor(type, state.stock, 1)) : unaffordable ? { kind: "unavailable" } : price;
 
   return (
     <LazyMotion features={domMax} strict>
@@ -296,19 +419,19 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0, initial
               transition={{ duration: 0.35 }}
             >
               <BoosterScene
-                shape={type.shape}
-                theme={type.theme}
-                emblem={type.emblem}
-                name={type.name}
-                openLabel={t("openPack", { name: type.name })}
-                tagline={type.tagline}
-                contents={type.contents}
+                shape={shown.shape}
+                theme={shown.theme}
+                emblem={shown.emblem}
+                name={shown.name}
+                openLabel={t("openPack", { name: shown.name })}
+                tagline={shown.tagline}
+                contents={shown.contents}
                 count={effectiveCount}
                 armed={armed}
                 reduced={reduced}
                 lite={lite}
-                leak={boosters ? bestRarity(boosters, rarities) : null}
-                divine={variant === "divine"}
+                leak={boosters && !veiled ? bestRarity(boosters, rarities) : null}
+                divine={variant === "divine" && !veiled}
                 cards={boosters ? boosters.reduce((n, booster) => n + booster.cards.length, 0) : 0}
                 onTrigger={() => void trigger()}
                 onOpened={onOpened}
@@ -320,8 +443,13 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0, initial
 
               {stage === "ready" && (
                 <div ref={readyActions} className="flex w-full max-w-sm flex-col items-center gap-4">
+                  {notice && (
+                    <p role="status" className="rounded-control border border-kin bg-surface px-3 py-2 text-center text-sm">
+                      {notice}
+                    </p>
+                  )}
                   <p className="text-center text-sm text-text-muted">
-                    {reduced ? t("hintReduced") : type.shape === "SACHET" ? t("hint") : t("hintLift")}
+                    {reduced ? t("hintReduced") : shown.shape === "SACHET" ? t("hint") : t("hintLift")}
                   </p>
 
                   {maxCount > 1 && (
@@ -348,13 +476,26 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0, initial
                       disabled={!armed}
                       className="w-full"
                       // Bouton scindé : l'action, puis le stock gratuit restant
-                      meta={price.kind === "free" && !creditMode ? t("stockLeft", { count: state.stock }) : undefined}
+                      meta={price.kind === "free" && !creditMode && !sealedOpen ? t("stockLeft", { count: state.stock }) : undefined}
                     >
-                      {type.shape === "SACHET" ? t("tear") : t("lift")}
+                      {shown.shape === "SACHET" ? t("tear") : t("lift")}
                     </Button>
                   )}
 
-                  {creditMode ? (
+                  {sealedOpen ? (
+                    <p className={`flex items-center gap-1.5 text-center text-sm font-bold ${sealedOpen.kind === "divin" || blessed ? "text-kin" : "text-shu"}`}>
+                      <span aria-hidden="true" lang="ja" className="font-seal">
+                        {sealedOpen.kind === "divin" ? "天" : "滅"}
+                      </span>
+                      {sealedOpen.kind === "divin"
+                        ? tSealed("readyDivin")
+                        : blessed
+                          ? tSealed("karmaBlessed")
+                          : initialKarma.threshold > 0
+                            ? tSealed("readyApocalypse", { current: karma, threshold: initialKarma.threshold })
+                            : tSealed("readyApocalypseNoKarma")}
+                    </p>
+                  ) : creditMode ? (
                     <p className="flex items-center gap-1.5 text-sm font-bold text-kin">
                       <span aria-hidden="true" lang="ja" className="font-seal">
                         贈
@@ -364,7 +505,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0, initial
                   ) : (
                     price.kind !== "free" && <PriceLine price={price} unaffordable={unaffordable} coins={state.coins} stock={state.stock} />
                   )}
-                  {type.usesFreeStock && !creditMode && <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} />}
+                  {type.usesFreeStock && !creditMode && !sealedOpen && <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} />}
                 </div>
               )}
               {stage === "opening" && !boosters && (
@@ -372,6 +513,35 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0, initial
                   {t("opening")}
                 </p>
               )}
+            </m.div>
+          )}
+
+          {stage === "transform" && firstDrop && dropDisplay && (
+            <m.div key="transform" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+              <SealedTransform display={dropDisplay} more={drops.length - 1} lite={lite} reduced={reduced}>
+                {deckCards.length > 0 ? (
+                  // D'autres boosters ont des cartes : la pile d'abord, le sachet attend au récap
+                  <Button variant="primary" size="lg" onClick={continueAfterTransform} className="w-full">
+                    {tSealed("continue")}
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="primary" size="lg" onClick={() => openDrop(firstDrop)} className="w-full">
+                      {tSealed("openNow")}
+                    </Button>
+                    <div className={`grid gap-2 ${giftLinks ? "grid-cols-2" : ""}`}>
+                      <Button type="button" onClick={keepDrops}>
+                        {tSealed("keep")}
+                      </Button>
+                      {giftLinks && (
+                        <Link href={`/amis?sachet=${firstDrop.id}`} className={buttonClasses("secondary")}>
+                          {tSealed("gift")}
+                        </Link>
+                      )}
+                    </div>
+                  </>
+                )}
+              </SealedTransform>
             </m.div>
           )}
 
@@ -400,20 +570,57 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0, initial
 
           {stage === "recap" && boosters && (
             <m.div key="recap" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              {drops.length > 0 && (
+                <section aria-labelledby="recap-sealed" className="mx-auto mb-6 flex w-full max-w-md flex-col gap-2 rounded-card border border-kin bg-surface p-4">
+                  <h2 id="recap-sealed" className="flex items-center gap-2 font-title text-lg font-bold">
+                    <span aria-hidden="true" lang="ja" className="font-seal text-kin">
+                      封
+                    </span>
+                    {tSealed("recapTitle", { count: drops.length })}
+                  </h2>
+                  <ul className="flex flex-col gap-2">
+                    {drops.map((d) => (
+                      <li key={d.id} className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="flex items-center gap-1.5 font-bold">
+                          <span aria-hidden="true" lang="ja" className="font-seal">
+                            {d.kind === "divin" ? "天" : "滅"}
+                          </span>
+                          {sealedTypes[d.kind]?.name}
+                        </span>
+                        <span className="flex gap-2">
+                          <Button type="button" size="sm" variant="primary" onClick={() => openDrop(d)}>
+                            {tSealed("openNow")}
+                          </Button>
+                          {giftLinks && (
+                            <Link href={`/amis?sachet=${d.id}`} className={buttonClasses("secondary", "", "sm")}>
+                              {tSealed("gift")}
+                            </Link>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-text-muted">{tSealed("recapKept")}</p>
+                </section>
+              )}
               <Recap
-                name={type.name}
-                emblem={type.emblem}
+                name={shown.name}
+                emblem={shown.emblem}
                 boosters={boosters}
                 state={state}
                 reduced={reduced}
                 play={fx.play}
-                counters={{
-                  pity: type.countsForPity,
-                  golden: type.bonusEligible && !openedCredit,
-                  featured: type.featured
-                    ? { left: Math.max(1, type.featured.threshold - featuredCount), threshold: type.featured.threshold }
-                    : null,
-                }}
+                counters={
+                  openedSealed
+                    ? { pity: false, golden: false, featured: null }
+                    : {
+                        pity: type.countsForPity,
+                        golden: type.bonusEligible && !openedCredit,
+                        featured: type.featured
+                          ? { left: Math.max(1, type.featured.threshold - featuredCount), threshold: type.featured.threshold }
+                          : null,
+                      }
+                }
                 zeniSpent={zeniSpent}
                 count={effectiveCount}
                 maxCount={maxCount}
@@ -440,12 +647,13 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0, initial
       {/* Hors du calque qui tremble : un `transform` ancêtre casserait le `fixed` mobile */}
       {stage === "reveal" && moment && !reduced && <RevealOverlay key={moment.id} moment={moment} />}
       {variant === "golden" && ritual && !reduced && <GoldenDust key={`dust-${attempt}`} lite={lite} />}
+      {stage === "omen" && outcome && <ApocalypseOmen key={`omen-${attempt}`} outcome={outcome} lite={lite} reduced={reduced} onDone={omenDone} />}
       {stage === "recap" && boosters && (
         <RecapActionBar
-          count={effectiveCount}
-          nextPrice={unaffordable ? { kind: "unavailable" } : price}
-          stock={creditMode ? null : state.stock}
-          onAgain={again}
+          count={sealedOpen ? 1 : effectiveCount}
+          nextPrice={nextPrice}
+          stock={creditMode || creditLeft > 0 ? null : state.stock}
+          onAgain={pageOpenable ? () => again() : undefined}
           changeHref={`/?b=${type.slug}&f=${type.family}`}
           reduced={reduced}
         />

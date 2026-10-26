@@ -13,7 +13,8 @@ type Props = {
   nextPrice: Price;
   /** Sachets gratuits restants, affichés dans le bouton ; null pour les boosters crédités. */
   stock: number | null;
-  onAgain: () => void;
+  /** Absent : rien d'autre à ouvrir ici (sachet scellé seul), le bouton ramène à l'accueil. */
+  onAgain?: () => void;
   /** Accueil avec le booster et sa famille sélectionnés. */
   changeHref: string;
   reduced: boolean;
@@ -48,16 +49,22 @@ export function RecapActionBar({ count, nextPrice, stock, onAgain, changeHref, r
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: reduced ? 0 : 0.8, duration: 0.3 }}
       >
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={onAgain}
-          disabled={nextPrice.kind === "unavailable"}
-          className="w-full lg:w-auto lg:min-w-80"
-          meta={meta}
-        >
-          <span className="font-title text-lg">{count > 1 ? t("openMore", { n: count }) : t("openAnother")}</span>
-        </Button>
+        {onAgain ? (
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={onAgain}
+            disabled={nextPrice.kind === "unavailable"}
+            className="w-full lg:w-auto lg:min-w-80"
+            meta={meta}
+          >
+            <span className="font-title text-lg">{count > 1 ? t("openMore", { n: count }) : t("openAnother")}</span>
+          </Button>
+        ) : (
+          <Link href="/" className={buttonClasses("primary", "w-full lg:w-auto lg:min-w-80", "lg")}>
+            <span className="font-title text-lg">{t("backHome")}</span>
+          </Link>
+        )}
         <div className="grid grid-cols-3 gap-2 lg:flex lg:gap-3">
           <Link href={changeHref} className={secondary}>
             {t("changeBooster")}

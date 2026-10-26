@@ -35,7 +35,7 @@ export default async function AdminSocialPage() {
             {gifts.map((g) => (
               <li key={g.id} className="flex flex-wrap items-baseline justify-between gap-2 rounded-control border border-border bg-surface p-3 text-sm">
                 <span>
-                  {t(g.kind === "CARD" ? "giftCard" : "giftBooster", {
+                  {t(g.kind === "CARD" ? "giftCard" : g.kind === "SEALED" ? "giftSealed" : "giftBooster", {
                     from: g.sender.username,
                     to: g.recipient.username,
                     zeni: g.zeniSpent,

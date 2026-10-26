@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BOOSTER_SEEDS } from "@/prisma/seed/booster-types";
-import { DEFAULT_RULES, fakePool } from "./fixtures";
+import { DEFAULT_RULES, DEFAULT_RUIN, fakePool, NO_BONUS } from "./fixtures";
 import { groupByRarity, poolCounts } from "./draw";
 import { effectiveSlotFloors } from "./types";
 import { slotDistribution } from "./odds";
@@ -16,7 +16,7 @@ const pool = fakePool();
 
 it("compte les raretés supplémentaires et leurs garanties dans les statistiques", () => {
   const rarities = [...Object.keys(DEFAULT_RULES.rates), "CELESTIAL"];
-  const rules = { ...DEFAULT_RULES, rarities, rates: { ...DEFAULT_RULES.rates, CELESTIAL: 0 }, goldenEvery: 1, goldenFloor: "CELESTIAL", divineOdds: 0 };
+  const rules = { ...DEFAULT_RULES, rarities, rates: { ...DEFAULT_RULES.rates, CELESTIAL: 0 }, goldenEvery: 1, goldenFloor: "CELESTIAL", divineOdds: 0, apocalypseOdds: 0 };
   const counts = simulate(seededRng(42), rules, groupByRarity([{ id: "custom", rarity: "CELESTIAL" }]), 20);
   expect(counts.mythicBoosters).toBe(20);
   expect(counts.longestDrought).toBe(0);
@@ -26,7 +26,7 @@ it("compte les raretés supplémentaires et leurs garanties dans les statistique
 
 describe("simulation d'un million de boosters", () => {
   it("composition seule : chaque emplacement et chaque seuil suivent les parts", { timeout: 60_000 }, () => {
-    const rules = { ...DEFAULT_RULES, goldenEvery: 0, divineOdds: 0, pityThreshold: 10_000 };
+    const rules = { ...DEFAULT_RULES, ...NO_BONUS, pityThreshold: 10_000 };
     const counts = simulate(seededRng(20261013), rules, pool, N);
     expect(counts.normalBoosters).toBe(N);
 
@@ -40,20 +40,26 @@ describe("simulation d'un million de boosters", () => {
     });
   });
 
-  it("séquence complète : pitié, doré et divin tiennent leurs promesses", { timeout: 60_000 }, () => {
-    const rules = DEFAULT_RULES;
-    const counts = simulate(seededRng(42), rules, pool, N);
+  it("séquence complète : pitié, doré et sachets scellés tiennent leurs promesses", { timeout: 60_000 }, () => {
+    // Chutes 10 fois plus fréquentes qu'en jeu : assez de sachets pour mesurer leurs taux
+    const rules = { ...DEFAULT_RULES, divineOdds: 400, apocalypseOdds: 200 };
+    const counts = simulate(seededRng(42), rules, pool, N, undefined, DEFAULT_RUIN);
 
-    // Garanties absolues
+    // Garanties absolues (un booster transformé n'avance pas le doré : un doré tous les 10 boosters à cartes)
     expect(counts.longestDrought).toBeLessThan(rules.pityThreshold);
-    expect(counts.golden).toBe(N / rules.goldenEvery);
+    expect(counts.golden).toBe(Math.floor((N - counts.divin - counts.apocalypse) / rules.goldenEvery));
     expect(counts.goldenMisplaced).toBe(0);
     expect(counts.goldenBelowFloor).toBe(0);
     expect(counts.pityTriggered).toBeGreaterThan(0);
 
-    // Fréquences : divin ≈ 1/2 000, Mythiques ≈ chaîne de Markov d'odds.ts
+    // Fréquences : chutes, Apocalyptiques épargnés (karma compris), Mythiques ≈ chaîne de Markov d'odds.ts
     const byLabel = Object.fromEntries(compareToOdds(counts, rules).map((c) => [c.label, c]));
-    for (const label of ["boosters divins", "boosters avec Mythique (pitié, doré, divin compris)"]) {
+    for (const label of [
+      "sachets Divin tombés",
+      "sachets Apocalyptique tombés",
+      "Apocalyptiques épargnés (karma compris)",
+      "boosters avec Mythique (pitié, doré, sachets compris)",
+    ]) {
       const c = byLabel[label];
       expect(Math.abs(c.sigma), `${label} : attendu ${c.expected.toFixed(1)}, observé ${c.observed}`).toBeLessThan(5);
     }
@@ -63,8 +69,8 @@ describe("simulation d'un million de boosters", () => {
 // Chaque type de départ à composition propre, tiré 200 000 fois avec la vraie fonction de tirage
 // (sans bonus, pour isoler la composition), plus un pool troué comme celui de Josei (sans Mythique).
 const TYPE_N = 200_000;
-const plainRules = { ...DEFAULT_RULES, goldenEvery: 0, divineOdds: 0, pityThreshold: Number.MAX_SAFE_INTEGER };
-const noBonus = { golden: false, divine: false, pity: false };
+const plainRules = { ...DEFAULT_RULES, ...NO_BONUS, pityThreshold: Number.MAX_SAFE_INTEGER };
+const noBonus = { golden: false, drop: false, pity: false };
 const typeCases = [
   ...["standard", "pochibukuro", "jubako", "rare", "epique", "legendaire", "mythique"].map((slug) => {
     const seed = BOOSTER_SEEDS.find((s) => s.slug === slug)!;

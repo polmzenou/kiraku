@@ -11,6 +11,9 @@ import { getBoosterOffers } from "@/server/boosters/pools";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { boosterStateFrom } from "@/server/boosters/state";
 import { getBoosterCredits } from "@/server/economy/queries";
+import { findOwnSealed } from "@/server/boosters/open";
+import { getSealedDisplays } from "@/server/boosters/sealed";
+import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
 
 // La scène d'ouverture (Motion complet, gestes, sons) n'est chargée que sur cette page
@@ -54,7 +57,11 @@ export default async function OpenBoosterPage({ params, searchParams }: PageProp
   // ou ?offert=1 des anciennes notifications) : ouvrables même après la fin d'un événement
   const wantsCredit = sp.credit === "1" || sp.offert === "1";
   const credits = wantsCredit ? ((await getBoosterCredits(user.id)).get(type.id) ?? 0) : 0;
-  if (offer.availability === "hidden" && credits === 0) notFound();
+  // Sachet scellé du joueur (?sachet=…, accueil ou notification) : il s'ouvre sur la page de son type
+  const sachet = typeof sp.sachet === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(sp.sachet) ? await findOwnSealed(user.id, sp.sachet) : null;
+  const sealed = sachet && sachet.kind === type.slug ? { id: sachet.id, kind: sachet.kind } : null;
+  if (offer.availability === "hidden" && credits === 0 && !sealed) notFound();
+  const [sealedTypes, karmaThreshold] = await Promise.all([getSealedDisplays(locale), getSetting("booster.apocalypseKarma")]);
   const name = localize(type.name, locale);
   const cards = effectiveSlotFloors(type.slotFloors, rules.draw.slotFloors).length;
   // Nombre choisi dans la vitrine (?n=5) : seulement une valeur du sélecteur, sinon ×1
@@ -89,6 +96,9 @@ export default async function OpenBoosterPage({ params, searchParams }: PageProp
         isGuest={user.isGuest}
         credits={credits}
         initialCount={askedCount}
+        sealedTypes={sealedTypes}
+        sealed={sealed}
+        karma={{ current: user.apocalypseKarma, threshold: karmaThreshold }}
       />
     </PageShell>
   );

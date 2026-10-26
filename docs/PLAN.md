@@ -421,7 +421,7 @@ Pourquoi 天 et pas 神 : 神 est déjà le sceau de la rareté Mythique, et un 
 - **Le booster est remplacé** : il ne donne pas de cartes et n'avance ni la pitié Mythique, ni le compteur du doré, ni la pitié vedette. Il consomme quand même son stock ou son prix, puisque c'est lui qui s'est transformé. Un 10e booster doré ne peut pas se transformer : le doré passe d'abord.
 - **Ailleurs** : lots de l'admin (`/admin/lots`, objet de type `DROP`) et, plus tard, récompenses (fin de saison classée, palier de parrainage). **Jamais en vente** contre des Zeni : un Divin vaut plus qu'un booster Légendaire à 5 000 Zeni et rendrait les boosters de rareté inutiles, et un Apocalyptique payant serait un pari en Zeni.
 
-Équilibre : avec 1 sur 4 000 et 1 sur 2 000, un joueur voit en moyenne 2,14 tirages « divins » tous les 4 000 boosters (1 Divin + 2 Apocalyptiques épargnés à 57 % avec le karma ci-dessous), contre 2 aujourd'hui. La masse de Mythiques en circulation ne bouge presque pas. Un joueur qui ouvre 144 boosters par jour voit un sachet scellé environ une fois par semaine ; la pitié lui donne déjà une Mythique tous les 1,2 jour.
+Équilibre : avec 1 sur 4 000 et 1 sur 2 000, un booster qui peut se transformer donne en moyenne 2,14 contenus « divins » pour 4 000 (1 Divin + 2 Apocalyptiques épargnés à 57 % avec le karma ci-dessous). Comme un booster doré (1 sur 10) ne se transforme jamais, un joueur en voit en pratique environ 1,93 tous les 4 000 boosters (simulation de 4 millions de boosters), contre 2 avec l'ancien divin. La masse de Mythiques en circulation ne bouge presque pas. Un joueur qui ouvre 144 boosters par jour voit un sachet scellé environ une fois par semaine ; la pitié lui donne déjà une Mythique tous les 1,2 jour.
 
 ### Ouverture
 

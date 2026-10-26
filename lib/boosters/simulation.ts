@@ -88,7 +88,11 @@ export function simulate(
         if (sealed.outcome === "SPARED") counts.spared += 1;
       }
       const hasMythic = cards.some((c) => rarityIndex(c.rarity, order) >= rarityIndex("MYTHIC", order));
-      if (hasMythic) {
+      // Un sachet compte pour le taux de Mythiques, mais pas pour la pitié : la série sans Mythique
+      // (bornée par la pitié) ne suit que les boosters à cartes
+      if (b.drop) {
+        if (hasMythic) counts.mythicBoosters += 1;
+      } else if (hasMythic) {
         counts.mythicBoosters += 1;
         drought = 0;
       } else {

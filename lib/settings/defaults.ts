@@ -321,8 +321,8 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "booster.pityThreshold": 250,
   "booster.goldenEvery": 10,
   "booster.goldenFloor": "EPIC",
-  // Divin 1/4 000 + Apocalyptique 1/2 000 épargné à ~57 % (karma 2) : ~2,14 contenus divins pour
-  // 4 000 boosters, contre 2 avec l'ancien divin instantané à 1/2 000
+  // Divin 1/4 000 + Apocalyptique 1/2 000 épargné à ~57 % (karma 2) : ~1,93 contenus divins pour
+  // 4 000 boosters (un doré ne se transforme jamais), contre 2 avec l'ancien divin instantané à 1/2 000
   "booster.divineOdds": 4000,
   "booster.apocalypseOdds": 2000,
   "booster.apocalypseWinRate": 5000,

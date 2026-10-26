@@ -2,8 +2,17 @@
 
 import { useTranslations } from "next-intl";
 import { useCallback, useId, useRef, useState } from "react";
-import { OPENING_TEST_SCENARIOS, testBoosters, type OpeningTestPool, type OpeningTestScenario } from "@/lib/admin/opening-test";
-import type { OpenBoosterResult } from "@/server/actions/boosters";
+import {
+  OPENING_TEST_SCENARIOS,
+  testBoosters,
+  testDrop,
+  testSealedBooster,
+  type OpeningTestPool,
+  type OpeningTestScenario,
+} from "@/lib/admin/opening-test";
+import type { SealedKind } from "@/lib/boosters/draw";
+import type { SealedDisplay } from "@/lib/boosters/view";
+import type { OpenBoosterResult, OpenSealedResult } from "@/server/actions/boosters";
 import type { BoosterState } from "@/server/boosters/state";
 import { OpeningStage, type OpeningType } from "../opening/OpeningStage";
 
@@ -13,7 +22,17 @@ const input = "min-h-11 w-full min-w-0 rounded-control border border-border bg-s
  * Banc de test de l'ouverture : le vrai rituel (booster, pile, aurore, récap) branché sur un tirage
  * factice construit ici. Rien n'est envoyé au serveur ni enregistré : ni Zeni, ni carte.
  */
-export function OpeningTestBench({ types, pool, initialState }: { types: OpeningType[]; pool: OpeningTestPool; initialState: BoosterState }) {
+export function OpeningTestBench({
+  types,
+  pool,
+  initialState,
+  sealedTypes,
+}: {
+  types: OpeningType[];
+  pool: OpeningTestPool;
+  initialState: BoosterState;
+  sealedTypes: Partial<Record<SealedKind, SealedDisplay>>;
+}) {
   const t = useTranslations("admin.openingTest");
   const id = useId();
   const [slug, setSlug] = useState(types[0]?.slug ?? "");
@@ -27,10 +46,23 @@ export function OpeningTestBench({ types, pool, initialState }: { types: Opening
       // Petit délai : la lumière de la fente a le temps de partir comme avec le serveur
       await new Promise((resolve) => setTimeout(resolve, 250));
       run.current += 1;
-      const boosters = testBoosters({ pool, scenario, count, cardsPerBooster: type?.cards ?? 5, run: run.current });
-      return { ok: true, boosters, state: initialState, featuredCount: 0, zeniSpent: 0, credits: 0 };
+      // Scénario de chute : le dernier booster se transforme en sachet scellé
+      const drop = testDrop(scenario, run.current);
+      const boosters = testBoosters({ pool, scenario, count: drop ? count - 1 : count, cardsPerBooster: type?.cards ?? 5, run: run.current });
+      return { ok: true, boosters, drops: drop ? [{ ...drop, position: count - 1 }] : [], state: initialState, featuredCount: 0, zeniSpent: 0, credits: 0 };
     },
     [pool, scenario, type?.cards, initialState],
+  );
+
+  const openSealed = useCallback(
+    async (request: unknown): Promise<OpenSealedResult> => {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      run.current += 1;
+      const id = typeof request === "object" && request !== null && "drop" in request ? String(request.drop) : "";
+      const kind = id.startsWith("test-drop-") && scenario === "dropApocalypse" ? "apocalypse" : "divin";
+      return { ok: true, booster: testSealedBooster(pool, kind, run.current), karma: 0 };
+    },
+    [pool, scenario],
   );
 
   if (!type) return null;
@@ -70,7 +102,17 @@ export function OpeningTestBench({ types, pool, initialState }: { types: Opening
       <p className="text-xs text-text-muted">{t("hint")}</p>
 
       {/* Nouvelle scène à chaque changement de booster ou de scénario */}
-      <OpeningStage key={`${type.slug}-${scenario}`} type={type} initialState={initialState} isGuest={false} open={open} />
+      <OpeningStage
+        key={`${type.slug}-${scenario}`}
+        type={type}
+        initialState={initialState}
+        isGuest={false}
+        open={open}
+        openSealed={openSealed}
+        sealedTypes={sealedTypes}
+        karma={{ current: 0, threshold: 0 }}
+        giftLinks={false}
+      />
     </div>
   );
 }

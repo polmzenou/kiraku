@@ -1,5 +1,7 @@
 import "server-only";
 import { cache } from "react";
+import { SEALED_KINDS } from "@/lib/boosters/draw";
+import type { SealedDropView } from "@/lib/boosters/view";
 import { LEDGER_PAGE, ledgerWhere, type CoinReason, type LedgerFilter } from "@/lib/economy/ledger-view";
 import { prisma } from "../db";
 
@@ -12,6 +14,20 @@ export const getBoosterCredits = cache(async (userId: string): Promise<Map<strin
     select: { boosterTypeId: true, count: true },
   });
   return new Map(rows.map((r) => [r.boosterTypeId, r.count]));
+});
+
+/** Sachets scellés à ouvrir du joueur, du plus ancien au plus récent. Lu une fois par requête. */
+export const getSealedDrops = cache(async (userId: string): Promise<SealedDropView[]> => {
+  const rows = await prisma.sealedDrop.findMany({
+    where: { ownerId: userId, openedAt: null },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    take: 50,
+    select: { id: true, giftable: true, boosterType: { select: { slug: true } }, giver: { select: { username: true } } },
+  });
+  return rows.flatMap((r) => {
+    const kind = SEALED_KINDS.find((k) => k === r.boosterType.slug);
+    return kind ? [{ id: r.id, kind, giftable: r.giftable, giver: r.giver?.username ?? null }] : [];
+  });
 });
 
 export type LedgerRow = {

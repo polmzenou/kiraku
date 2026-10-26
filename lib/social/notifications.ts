@@ -19,6 +19,7 @@ export const NOTIFICATION_TYPES = [
   "LISTING_ACCEPTED",
   "LISTING_DECLINED",
   "TEAM_GIFT",
+  "SEALED_OPENED",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -28,13 +29,20 @@ export function formatBadge(count: number): string | null {
   return count > 9 ? "9+" : String(Math.floor(count));
 }
 
+/** Sachets scellés (mêmes valeurs que SEALED_KINDS de lib/boosters/draw.ts). */
+const SEALED_SLUGS = ["divin", "apocalypse"] as const;
+type SealedSlug = (typeof SEALED_SLUGS)[number];
+const isSealedSlug = (v: unknown): v is SealedSlug => SEALED_SLUGS.includes(v as SealedSlug);
+const isId = (v: unknown): v is string => typeof v === "string" && v.length > 0 && v.length <= 40 && /^[A-Za-z0-9_-]+$/.test(v);
+
 /** Contenu d'une notification de cadeau (ids et nombres seulement). */
-export type GiftPayload = { kind: "CARD"; cardId: string } | { kind: "BOOSTER" };
+export type GiftPayload = { kind: "CARD"; cardId: string } | { kind: "BOOSTER" } | { kind: "SEALED"; slug: SealedSlug; dropId: string };
 
 export function parseGiftPayload(raw: unknown): GiftPayload | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   if (r.kind === "BOOSTER") return { kind: "BOOSTER" };
+  if (r.kind === "SEALED" && isSealedSlug(r.slug) && isId(r.dropId)) return { kind: "SEALED", slug: r.slug, dropId: r.dropId };
   if (r.kind === "CARD" && typeof r.cardId === "string" && r.cardId.length <= 40) return { kind: "CARD", cardId: r.cardId };
   return null;
 }

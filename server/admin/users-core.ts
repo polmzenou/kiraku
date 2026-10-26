@@ -117,8 +117,29 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
       }
       case "booster":
       case "bannerPity": {
-        if (!await tx.boosterType.findUnique({ where: { id: input.boosterTypeId }, select: { id: true } })) throw new AdminUserMutationError("NOT_FOUND");
-        if (input.kind === "bannerPity") {
+        const type = await tx.boosterType.findUnique({ where: { id: input.boosterTypeId }, select: { kind: true } });
+        if (!type) throw new AdminUserMutationError("NOT_FOUND");
+        if (input.kind === "booster" && type.kind === "DROP") {
+          // Sachets scellés : une ligne par sachet non ouvert ; ceux de l'équipe ne s'offrent pas
+          const unopened = await tx.sealedDrop.findMany({
+            where: { ownerId: userId, boosterTypeId: input.boosterTypeId, openedAt: null },
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            select: { id: true },
+          });
+          const count = adjust(unopened.length, input.mode, input.amount);
+          before = { boosterTypeId: input.boosterTypeId, sealed: unopened.length };
+          after = { boosterTypeId: input.boosterTypeId, sealed: count };
+          if (count > unopened.length) {
+            await tx.sealedDrop.createMany({
+              data: Array.from({ length: count - unopened.length }, () => ({ ownerId: userId, boosterTypeId: input.boosterTypeId, source: "ADMIN" as const, giftable: false, createdAt: now })),
+            });
+          } else if (count < unopened.length) {
+            await tx.sealedDrop.deleteMany({ where: { id: { in: unopened.slice(0, unopened.length - count).map((d) => d.id) }, openedAt: null } });
+          }
+          if (input.mode === "ADD") {
+            await giftFromTeam(tx, { kind: "BOOSTER", userId, adminId, boosterTypeId: input.boosterTypeId, quantity: input.amount, message: input.message, now });
+          }
+        } else if (input.kind === "bannerPity") {
           const pity = readBannerPity(user.bannerPity);
           before = { boosterTypeId: input.boosterTypeId, value: pity[input.boosterTypeId] ?? 0 };
           after = { boosterTypeId: input.boosterTypeId, value: input.value };

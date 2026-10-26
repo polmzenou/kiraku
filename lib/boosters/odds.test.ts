@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { RARITIES, VARIANT_RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import { BOOSTER_SEEDS } from "@/prisma/seed/booster-types";
-import { DEFAULT_RULES } from "./fixtures";
+import { apocalypseSparedShare } from "./draw";
+import { DEFAULT_RULES, NO_BONUS } from "./fixtures";
 import {
   atLeastOdds,
   boosterChances,
+  dropRates,
   featuredBoosterChance,
   featuredMeanGap,
   longRunMythicRate,
@@ -51,30 +53,56 @@ describe("chances par booster (tableau du plan)", () => {
 describe("taux de Mythique sur le long terme", () => {
   it("prend en compte un plancher doré au-dessus de Mythique", () => {
     const rarities = [...RARITIES, "CELESTIAL"];
-    const rules = { ...DEFAULT_RULES, rarities, rates: { ...rates, CELESTIAL: 0 }, goldenEvery: 1, goldenFloor: "CELESTIAL", divineOdds: 0 };
+    const rules = { ...DEFAULT_RULES, rarities, rates: { ...rates, CELESTIAL: 0 }, goldenEvery: 1, goldenFloor: "CELESTIAL", divineOdds: 0, apocalypseOdds: 0 };
     expect(longRunMythicRate(rules)).toBeCloseTo(1, 12);
   });
   it("sans bonus ni pitié atteignable, égal à la chance d'un booster normal", () => {
-    const rules = { ...DEFAULT_RULES, goldenEvery: 0, divineOdds: 0, pityThreshold: 10_000 };
+    const rules = { ...DEFAULT_RULES, ...NO_BONUS, pityThreshold: 10_000 };
     expect(longRunMythicRate(rules)).toBeCloseTo(atLeastOdds(rates, rules.slotFloors).MYTHIC, 6);
   });
 
   it("la pitié seule borne l'écart : pitié à 1 = une Mythique à chaque booster", () => {
-    expect(longRunMythicRate({ ...DEFAULT_RULES, pityThreshold: 1 })).toBeCloseTo(1, 12);
+    expect(longRunMythicRate({ ...DEFAULT_RULES, divineOdds: 0, apocalypseOdds: 0, pityThreshold: 1 })).toBeCloseTo(1, 12);
   });
 
   it("pitié seule : écart moyen ~175 boosters, une Mythique tous les ~1,2 jour (chiffres du plan)", () => {
-    const { meanGap, mythicRate } = boosterChances({ ...DEFAULT_RULES, goldenEvery: 0, divineOdds: 0 });
+    const { meanGap, mythicRate } = boosterChances({ ...DEFAULT_RULES, ...NO_BONUS });
     expect(meanGap).toBeGreaterThan(170);
     expect(meanGap).toBeLessThan(180);
     expect(1 / mythicsPerDay(mythicRate, 10)).toBeCloseTo(1.2, 1);
   });
 
-  it("le doré et le divin rapprochent encore les Mythiques", () => {
+  it("le doré et les sachets scellés rapprochent encore les Mythiques", () => {
     const withBonus = boosterChances(DEFAULT_RULES).meanGap;
-    const pityOnly = boosterChances({ ...DEFAULT_RULES, goldenEvery: 0, divineOdds: 0 }).meanGap;
+    const pityOnly = boosterChances({ ...DEFAULT_RULES, ...NO_BONUS }).meanGap;
     expect(withBonus).toBeLessThan(pityOnly);
     expect(withBonus).toBeGreaterThan(130);
+  });
+});
+
+describe("sachets scellés", () => {
+  it("sans doré : chaque booster se transforme avec la chance réglée (Divin d'abord)", () => {
+    const { divin, apocalypse } = dropRates({ divineOdds: 4000, apocalypseOdds: 2000, goldenEvery: 0 });
+    expect(divin).toBeCloseTo(1 / 4000, 15);
+    expect(apocalypse).toBeCloseTo((1 - 1 / 4000) / 2000, 15);
+  });
+
+  it("un booster doré ne se transforme pas : un peu moins de chutes avec le doré", () => {
+    const withGolden = dropRates({ divineOdds: 4000, apocalypseOdds: 2000, goldenEvery: 10 });
+    expect(withGolden.divin).toBeLessThan(1 / 4000);
+    expect(withGolden.divin).toBeGreaterThan(0.89 / 4000);
+    expect(dropRates({ divineOdds: 4000, apocalypseOdds: 2000, goldenEvery: 1 })).toEqual({ divin: 0, apocalypse: 0 });
+    expect(dropRates({ divineOdds: 0, apocalypseOdds: 0, goldenEvery: 10 })).toEqual({ divin: 0, apocalypse: 0 });
+  });
+
+  it("équilibre annoncé : ~2,14 contenus divins pour 4 000 boosters sans doré, ~1,93 avec (contre 2 avec l'ancien divin)", () => {
+    const share = apocalypseSparedShare(DEFAULT_RULES.apocalypseWinRate, DEFAULT_RULES.apocalypseKarma);
+    const divine = (rules: { divineOdds: number; apocalypseOdds: number; goldenEvery: number }) => {
+      const { divin, apocalypse } = dropRates(rules);
+      return 4000 * (divin + apocalypse * share);
+    };
+    expect(divine({ ...DEFAULT_RULES, goldenEvery: 0 })).toBeCloseTo(2.14, 2);
+    expect(divine(DEFAULT_RULES)).toBeCloseTo(1.93, 2);
   });
 });
 

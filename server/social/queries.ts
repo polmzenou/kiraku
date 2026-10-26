@@ -7,6 +7,8 @@ import {
   parseGiftPayload,
   parseListingPayload,
   parseTeamGiftPayload,
+  parseSealedPayload,
+  type SealedPayload,
   parseTradePayload,
   type AuctionPayload,
   type BattlePayload,
@@ -141,6 +143,8 @@ export type NotificationView = {
   listingNotice: { pending: boolean; own: CardView; offered: CardView } | null;
   /** Cadeau de l'équipe depuis la fiche du joueur. */
   team: (TeamGiftPayload & { boosterSlug: string | null }) | null;
+  /** Sachet scellé offert puis ouvert par l'ami (la meilleure carte est dans `card`). */
+  sealed: SealedPayload | null;
   /** Texte libre joint : mot de l'équipe (cadeaux, lots) ou motif d'un refus d'échange. */
   note: string | null;
   card: { anilistId: number; name: string; rarity: string } | null;
@@ -208,6 +212,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
   const trades = rows.map((r) => (r.type.startsWith("TRADE_") ? parseTradePayload(r.payload) : null));
   const listings = rows.map((r) => (r.type.startsWith("LISTING_") ? parseListingPayload(r.payload) : null));
   const teams = rows.map((r) => (r.type === "TEAM_GIFT" ? parseTeamGiftPayload(r.payload) : null));
+  const sealeds = rows.map((r) => (r.type === "SEALED_OPENED" ? parseSealedPayload(r.payload) : null));
   const cardIds = [
     ...new Set([
       ...gifts.flatMap((g) => (g?.kind === "CARD" ? [g.cardId] : [])),
@@ -215,6 +220,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
       ...trades.flatMap((tr) => (tr ? [tr.cardId] : [])),
       ...listings.flatMap((l) => (l ? [l.cardId, l.offeredCardId] : [])),
       ...teams.flatMap((g) => (g?.kind === "CARD" ? [g.cardId] : [])),
+      ...sealeds.flatMap((s) => (s?.cardId ? [s.cardId] : [])),
     ]),
   ];
   const boosterTypeIds = [...new Set(teams.flatMap((g) => (g?.kind === "BOOSTER" ? [g.boosterTypeId] : [])))];
@@ -234,6 +240,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
     const trade = trades[i];
     const listing = listings[i];
     const team = teams[i];
+    const sealed = sealeds[i];
     const offered = listing ? cardById.get(listing.offeredCardId) : undefined;
     const card =
       gift?.kind === "CARD"
@@ -246,7 +253,9 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
               ? cardById.get(listing.cardId)
               : team?.kind === "CARD"
                 ? cardById.get(team.cardId)
-                : undefined;
+                : sealed?.cardId
+                  ? cardById.get(sealed.cardId)
+                  : undefined;
     return {
       id: r.id,
       type: r.type,
@@ -261,6 +270,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
       offeredCard: offered ? { anilistId: offered.publicId, name: offered.name, rarity: offered.rarity } : null,
       listingNotice: null,
       team: team ? { ...team, boosterSlug: team.kind === "BOOSTER" ? (slugById.get(team.boosterTypeId) ?? null) : null } : null,
+      sealed,
       note: notes.get(r.id) ?? null,
       card: card ? { anilistId: card.publicId, name: card.name, rarity: card.rarity } : null,
     };

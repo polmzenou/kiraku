@@ -6,7 +6,7 @@ export const CLIENT_NAMESPACES = [
   "account", "arcadePromo", "auth", "battle", "boosters", "cardBack", "chat", "collection",
   "common", "consent", "data", "discordJoin", "economy", "error", "footer", "friends",
   "fuda", "gifts", "header", "home", "legal", "locale", "mail", "market", "nav",
-  "notifications", "opening", "privacy", "profile", "push", "pwa", "ranked", "rarity",
+  "notifications", "opening", "privacy", "profile", "push", "pwa", "ranked", "rarity", "sealed",
   "listings", "showcase", "theme", "time", "trades", "v1Welcome", "v2Announcement", "wiki", "wishlist",
 ] as const;
 

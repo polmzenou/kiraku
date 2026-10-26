@@ -14,7 +14,7 @@ import {
   slugSchema,
 } from "./types";
 
-const base = { active: true, startsAt: null, endsAt: null, usesFreeStock: true, priceZeni: 200, filter: {} };
+const base = { kind: "FILTERED" as const, active: true, startsAt: null, endsAt: null, usesFreeStock: true, priceZeni: 200, filter: {} };
 const now = new Date("2026-10-14T12:00:00Z");
 
 describe("priceFor", () => {
@@ -47,6 +47,8 @@ describe("availability", () => {
     expect(availability(base, now, 20, 20)).toBe("open");
     expect(availability({ ...base, startsAt: new Date("2026-10-15") }, now, 500, 100)).toBe("hidden");
     expect(availability({ ...base, endsAt: now }, now, 500, 100)).toBe("hidden");
+    // Sachet scellé : jamais proposé, il s'ouvre depuis l'inventaire
+    expect(availability({ ...base, kind: "DROP", usesFreeStock: false, priceZeni: null }, now, 500, 100)).toBe("hidden");
   });
 });
 
@@ -64,11 +66,18 @@ describe("contenu admin", () => {
   });
 });
 
-describe("les 35 boosters de départ", () => {
-  it("35 boosters en 8 familles, slugs uniques", () => {
-    expect(BOOSTER_SEEDS).toHaveLength(35);
+describe("les 37 boosters de départ", () => {
+  it("35 boosters proposés et 2 sachets scellés, en 8 familles, slugs uniques", () => {
+    expect(BOOSTER_SEEDS).toHaveLength(37);
+    expect(BOOSTER_SEEDS.filter((s) => s.kind === "DROP").map((s) => s.slug)).toEqual(["divin", "apocalypse"]);
     expect(new Set(BOOSTER_SEEDS.map((s) => s.family))).toEqual(new Set(BOOSTER_FAMILIES));
-    expect(new Set(BOOSTER_SEEDS.map((s) => s.slug)).size).toBe(35);
+    expect(new Set(BOOSTER_SEEDS.map((s) => s.slug)).size).toBe(37);
+  });
+
+  it("sachets scellés : jamais en vente, ni stock gratuit, ni pitié, ni bonus", () => {
+    for (const s of BOOSTER_SEEDS.filter((x) => x.kind === "DROP")) {
+      expect(s).toMatchObject({ usesFreeStock: false, priceZeni: null, countsForPity: false, bonusEligible: false });
+    }
   });
 
   it.each(BOOSTER_SEEDS.map((s) => [s.slug, s] as const))("%s : données valides", (_slug, s) => {
@@ -85,17 +94,17 @@ describe("les 35 boosters de départ", () => {
     expect(missing).toEqual([]);
   });
 
-  it("rareté : ni pitié, ni doré, ni divin ; formats : pitié seulement", () => {
+  it("rareté : ni pitié, ni doré, ni sachet scellé ; formats : pitié seulement", () => {
     const bonuses = (slug: string) => {
       const s = BOOSTER_SEEDS.find((x) => x.slug === slug)!;
       return bonusesFor({ bonusEligible: s.bonusEligible ?? true, countsForPity: s.countsForPity ?? true });
     };
     for (const slug of ["rare", "epique", "legendaire", "mythique"]) {
-      expect(bonuses(slug)).toEqual({ golden: false, divine: false, pity: false });
+      expect(bonuses(slug)).toEqual({ golden: false, drop: false, pity: false });
     }
     for (const slug of ["pochibukuro", "jubako"]) {
-      expect(bonuses(slug)).toEqual({ golden: false, divine: false, pity: true });
+      expect(bonuses(slug)).toEqual({ golden: false, drop: false, pity: true });
     }
-    expect(bonuses("standard")).toEqual({ golden: true, divine: true, pity: true });
+    expect(bonuses("standard")).toEqual({ golden: true, drop: true, pity: true });
   });
 });
