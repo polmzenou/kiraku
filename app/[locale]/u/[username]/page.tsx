@@ -20,7 +20,8 @@ import { getCollectionSummary, getShowcase } from "@/server/collection/queries";
 import { getProfileSales, getWishlist } from "@/server/collection/profile-cards";
 import { getSetting } from "@/server/settings";
 import { prisma } from "@/server/db";
-import { getCosmeticOptions, getEarnedBadges, getProfileDecor } from "@/server/profile/progress";
+import { getPlayerDecor } from "@/server/profile/decor";
+import { getCosmeticProgress, getEarnedBadges, getProfileDecor } from "@/server/profile/progress";
 import type { Badge } from "@/lib/profile/conditions";
 import { giftsSentToday } from "@/server/social/queries";
 import { getSealedDrops } from "@/server/economy/queries";
@@ -61,7 +62,12 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
   if (!access.profile) {
     return (
       <PageShell>
-        <ProfileHeader username={owner.username} image={owner.image} isGuest={owner.isGuest} />
+        <ProfileHeader
+          username={owner.username}
+          image={owner.image}
+          isGuest={owner.isGuest}
+          decor={{ ...(await getPlayerDecor(owner.id)), bio: null, title: null, badges: [] }}
+        />
         {social}
         <p className="lacquer rounded-card p-6 text-center text-text-muted">
           <span aria-hidden="true" className="mb-2 block font-seal text-3xl text-shu">秘</span>
@@ -105,6 +111,7 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
               initial={customize.initial}
               options={customize.options}
               badges={customize.badges}
+              discoveredPercent={customize.discoveredPercent}
               privacy={{ visibility: owner.profileVisibility, showCollection: owner.showCollection }}
             />
           )
@@ -202,21 +209,23 @@ async function socialBar({
   return <RelationActions username={owner.username} name={name} initial={access.relation} gift={gift} trade={trade} />;
 }
 
-/** Choix actuels, titres et cadres avec leur progression, badges obtenus. */
+/** Choix actuels, titres, cadres et couleurs avec leur progression, % découvert, badges obtenus. */
 async function customizeData(userId: string, locale: string) {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { id: true, bio: true, titleAgreement: true, titleId: true, frameId: true, badgeOrder: true, createdAt: true, discordLinkedAt: true },
+    select: { id: true, bio: true, titleAgreement: true, titleId: true, frameId: true, nameColorId: true, badgeOrder: true, createdAt: true, discordLinkedAt: true },
   });
-  const [options, badges] = await Promise.all([getCosmeticOptions(userId, locale), getEarnedBadges(user)]);
+  const [{ options, stats }, badges] = await Promise.all([getCosmeticProgress(userId, locale), getEarnedBadges(user)]);
   return {
     options,
     badges,
+    discoveredPercent: stats.discoveredPercent,
     initial: {
       bio: user.bio ?? "",
       titleAgreement: user.titleAgreement,
       titleId: user.titleId,
       frameId: user.frameId,
+      nameColorId: user.nameColorId,
       badgeOrder: user.badgeOrder.filter((b): b is Badge => (badges as string[]).includes(b)),
     },
   };

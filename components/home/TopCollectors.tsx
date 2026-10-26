@@ -4,6 +4,7 @@ import type { Collector } from "@/server/collection/leaderboard";
 import { displayName } from "../profile/ProfileHeader";
 import { SectionTitle } from "../SectionTitle";
 import { PlayerAvatar } from "../social/PlayerAvatar";
+import { PlayerName } from "../social/PlayerName";
 
 // Podium 2-1-3 : or (金), argent (銀), bronze (銅). Hauteurs de socle décroissantes.
 const PLACES = {
@@ -69,7 +70,9 @@ function Place({ collector }: { collector: Collector }) {
             username={collector.username}
             image={collector.image}
             size={place.avatar}
-            className={`ring-[3px] ring-offset-2 ring-offset-bg ${place.ring}`}
+            frame={collector.decor.frame}
+            // Le cadre porté remplace l'anneau de la place
+            className={collector.decor.frame ? "" : `ring-[3px] ring-offset-2 ring-offset-bg ${place.ring}`}
           />
           <span
             aria-hidden="true"
@@ -79,7 +82,7 @@ function Place({ collector }: { collector: Collector }) {
             {place.kanji}
           </span>
         </span>
-        <span className="mt-1 max-w-full truncate text-sm font-bold group-hover:underline sm:text-base">{name}</span>
+        <PlayerName name={name} color={collector.decor.nameColor} className="mt-1 max-w-full truncate text-sm font-bold group-hover:underline sm:text-base" />
       </Link>
       <p className="text-center text-xs text-text-muted tabular-nums">
         {t("cards", { count: collector.uniqueCards })}

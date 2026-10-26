@@ -12,6 +12,7 @@ import { Fuda } from "../fuda/Fuda";
 import { SectionTitle } from "../SectionTitle";
 import { useReducedFx } from "../motion/MotionPreference";
 import { PlayerAvatar } from "../social/PlayerAvatar";
+import { PlayerName } from "../social/PlayerName";
 import { useMarquee } from "./useMarquee";
 
 // En dessous, la liste tient à l'écran : pas de défilement automatique
@@ -97,8 +98,8 @@ function PullList({ pulls, now, copy = false }: { pulls: RecentPull[]; now: numb
           <div className="flex min-w-0 items-center gap-2">
             {p.profile ? (
               <Link href={`/u/${p.profile.username}`} tabIndex={tabIndex} className="flex min-h-11 min-w-0 items-center gap-2">
-                <PlayerAvatar username={p.profile.username} image={p.profile.image} size={28} />
-                <span className="truncate text-sm font-bold">{p.name}</span>
+                <PlayerAvatar username={p.profile.username} image={p.profile.image} size={28} frame={p.profile.decor.frame} />
+                <PlayerName name={p.name} color={p.profile.decor.nameColor} className="truncate text-sm font-bold" />
               </Link>
             ) : (
               <span className="flex min-h-11 min-w-0 items-center gap-2 text-text-muted">

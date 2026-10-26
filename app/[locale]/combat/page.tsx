@@ -6,6 +6,7 @@ import { CombatHub } from "@/components/battle/CombatHub";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
+import { playerTag } from "@/components/social/PlayerName";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
@@ -84,7 +85,10 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
                 >
                   <span className="flex min-w-0 items-center gap-2">
                     <span className="min-w-0 truncate">
-                      <strong className={h.result === "WIN" ? "text-kin" : h.result === "LOSS" ? "text-shu" : "text-text-muted"}>{t(`history.${h.result}`)}</strong> {t("history.vs", { name: name(h.opponent) })}
+                      <strong className={h.result === "WIN" ? "text-kin" : h.result === "LOSS" ? "text-shu" : "text-text-muted"}>{t(`history.${h.result}`)}</strong> {t.rich("history.vs", {
+                        name: name(h.opponent),
+                        player: playerTag(h.opponent && "decor" in h.opponent ? h.opponent.decor.nameColor : null),
+                      })}
                       <span className="text-text-muted"> · {t(`modes.${h.mode}`)}</span>
                     </span>
                   </span>

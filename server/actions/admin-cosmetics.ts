@@ -10,7 +10,7 @@ import { getRarities } from "../catalog/rarities";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
 
-// Titres et cadres de profil (/admin/cosmetiques). Rôle admin → Zod → rate limit → écriture et
+// Titres, cadres et couleurs de pseudo (/admin/cosmetiques). Rôle admin → Zod → rate limit → écriture et
 // journal (COSMETIC_SAVE) dans la même transaction. Champs écrits un par un.
 
 export type CosmeticSaveResult = { ok: true; id: string } | { ok: false; error: "FORBIDDEN" | "INVALID" | "RATE_LIMITED" | "SLUG_TAKEN" | "NOT_FOUND" };
@@ -27,6 +27,10 @@ export async function adminSaveCosmeticAction(input: unknown): Promise<CosmeticS
 
   // Références vérifiées : la rareté existe dans le registre, la série existe
   if (c.condition.type === "RARITY_OWNED" && !(await getRarities()).includes(c.condition.rarity)) return { ok: false, error: "INVALID" };
+  if (c.condition.type === "RARITIES_DISCOVERED") {
+    const known = await getRarities();
+    if (!c.condition.rarities.every((r) => known.includes(r))) return { ok: false, error: "INVALID" };
+  }
   if (c.condition.type === "SERIES_COMPLETE" && !(await prisma.series.findUnique({ where: { id: c.condition.seriesId }, select: { id: true } }))) {
     return { ok: false, error: "INVALID" };
   }
@@ -38,6 +42,7 @@ export async function adminSaveCosmeticAction(input: unknown): Promise<CosmeticS
     label: json(label),
     hint: json({ fr: c.hint.fr, en: c.hint.en }),
     frameStyle: c.frameStyle,
+    nameColor: c.nameColor,
     condition: json(c.condition),
     sortOrder: c.sortOrder,
     active: c.active,

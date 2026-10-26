@@ -1,10 +1,18 @@
 import "server-only";
 import { getTranslations } from "next-intl/server";
 import { displayNameFor, type NamedPlayer } from "@/lib/collection/display-name";
+import { decorFromRelations } from "@/lib/profile/decor";
+import type { NameColorStyle } from "@/lib/profile/name-colors";
 import { prisma } from "../db";
+import { decorSelect } from "../profile/decor";
 
 /** Champs à sélectionner sur un User pour décider de l'affichage de son pseudo. */
-export const namedPlayerSelect = { id: true, username: true, profileVisibility: true, bannedAt: true, anonymizedAt: true } as const;
+export const namedPlayerSelect = { id: true, username: true, profileVisibility: true, bannedAt: true, anonymizedAt: true, ...decorSelect } as const;
+
+/** Couleur du pseudo, seulement quand le pseudo lui-même est affiché (pas « Un joueur »). */
+export function shownNameColor(name: string | null, player: { username: string } & Parameters<typeof decorFromRelations>[0]): NameColorStyle | null {
+  return name === player.username ? decorFromRelations(player).nameColor : null;
+}
 
 /**
  * Prépare l'affichage des pseudos de plusieurs joueurs pour un visiteur : une requête pour les

@@ -97,6 +97,8 @@ model User {
   title               Cosmetic?         @relation("userTitle", fields: [titleId], references: [id], onDelete: SetNull)
   frameId             String?
   frame               Cosmetic?         @relation("userFrame", fields: [frameId], references: [id], onDelete: SetNull)
+  nameColorId         String? // couleur du pseudo (Cosmetic NAME_COLOR)
+  nameColor           Cosmetic?         @relation("userNameColor", fields: [nameColorId], references: [id], onDelete: SetNull)
   badgeOrder          String[]          @default([])
   createdAt           DateTime          @default(now())
 
@@ -1369,23 +1371,26 @@ enum TitleAgreement {
 enum CosmeticKind {
   TITLE
   FRAME
+  NAME_COLOR
 }
 
-// Titre ou cadre d'avatar, débloqué par une condition (lib/profile/conditions.ts), géré dans /admin/cosmetiques.
+// Titre, cadre d'avatar ou couleur de pseudo, débloqué par une condition (lib/profile/conditions.ts), géré dans /admin/cosmetiques.
 model Cosmetic {
-  id          String       @id @default(cuid())
-  kind        CosmeticKind
-  slug        String       @unique
-  label       Json // { fr, frFem?, en }
-  hint        Json         @default("{}") // { fr, en } : comment le débloquer
-  frameStyle  String? // style visuel d'un cadre (lib/profile/frames.ts)
-  condition   Json // ProfileCondition
-  sortOrder   Int          @default(0)
-  active      Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  titledUsers User[]       @relation("userTitle")
-  framedUsers User[]       @relation("userFrame")
+  id           String       @id @default(cuid())
+  kind         CosmeticKind
+  slug         String       @unique
+  label        Json // { fr, frFem?, en }
+  hint         Json         @default("{}") // { fr, en } : comment le débloquer
+  frameStyle   String? // style visuel d'un cadre (lib/profile/frames.ts)
+  nameColor    String? // style d'une couleur de pseudo (lib/profile/name-colors.ts)
+  condition    Json // ProfileCondition
+  sortOrder    Int          @default(0)
+  active       Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  titledUsers  User[]       @relation("userTitle")
+  framedUsers  User[]       @relation("userFrame")
+  coloredUsers User[]       @relation("userNameColor")
 
   @@index([kind, active, sortOrder])
 }

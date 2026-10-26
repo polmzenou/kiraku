@@ -3,8 +3,10 @@
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { MOTION_EVENT, prefersReducedMotion } from "@/lib/motion-pref-dom";
+import type { PlayerDecor } from "@/lib/profile/decor";
 import { paginate, pinnedFirst, REVIEW_MAX_PAGES, REVIEW_PAGE_SIZE } from "@/lib/social/reviews";
 import { PlayerAvatar } from "../social/PlayerAvatar";
+import { PlayerName } from "../social/PlayerName";
 import { Stars } from "./Stars";
 
 export type ReviewCard = {
@@ -15,6 +17,7 @@ export type ReviewCard = {
   name: string;
   username: string;
   image: string | null;
+  decor: PlayerDecor;
   pinned: boolean;
   reply: string | null;
 };
@@ -93,9 +96,9 @@ export function ReviewsCarousel({ reviews }: { reviews: ReviewCard[] }) {
         {current.map((r, i) => (
           <li key={r.id} className={`${VISIBILITY[i]} min-h-36 flex-col gap-3 lacquer rounded-card p-4`}>
             <div className="flex items-start gap-3">
-              <PlayerAvatar username={r.username} image={r.image} size={40} />
+              <PlayerAvatar username={r.username} image={r.image} size={40} frame={r.decor.frame} />
               <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <span className="truncate font-bold">{r.name}</span>
+                <PlayerName name={r.name} color={r.decor.nameColor} className="truncate font-bold" />
                 <Stars rating={r.rating} label={t("ratingLabel", { rating: r.rating })} size={14} />
               </div>
               <span className="flex shrink-0 flex-col items-end gap-1 text-xs text-text-muted">

@@ -14,6 +14,7 @@ import {
 import type { AuctionLive } from "@/server/market/queries";
 import { ButtonLink } from "../ui/ButtonLink";
 import { ZeniCoin } from "../layout/ZeniCoin";
+import { playerTag } from "../social/PlayerName";
 import { Button } from "../ui/Button";
 import { Countdown } from "./Countdown";
 import { inputClass } from "../ui/Field";
@@ -179,7 +180,7 @@ export function AuctionPanel({
       </div>
 
       {open && shown.bidCount > 0 && !shown.leading && (
-        <p className="text-sm">{t("detail.leader", { name: shown.leaderName ?? t("detail.anonymous") })}</p>
+        <p className="text-sm">{t.rich("detail.leader", { name: shown.leaderName ?? t("detail.anonymous"), player: playerTag(shown.leaderColor) })}</p>
       )}
       {open && shown.leading && <p className="rounded-control border border-kin/60 p-3 text-sm">{t("detail.youLead")}</p>}
 
@@ -188,7 +189,7 @@ export function AuctionPanel({
           {shown.status === "SOLD"
             ? shown.leading
               ? t("detail.soldYou", { amount: shown.finalPrice ?? shown.price })
-              : t("detail.soldFor", { amount: shown.finalPrice ?? shown.price, name: shown.leaderName ?? t("detail.anonymous") })
+              : t.rich("detail.soldFor", { amount: shown.finalPrice ?? shown.price, name: shown.leaderName ?? t("detail.anonymous"), player: playerTag(shown.leaderColor) })
             : shown.status === "EXPIRED"
               ? t("detail.expired")
               : t("detail.cancelled")}

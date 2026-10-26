@@ -5,7 +5,7 @@ import { normalizeSearch, SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
 import type { ListingFilter } from "@/lib/market/listings";
 import { cardViews } from "../boosters/display";
 import { prisma } from "../db";
-import type { PlayerRef } from "../social/queries";
+import { playerRefSelect as playerSelect, toPlayerRef, type PlayerRef } from "../profile/decor";
 import { expireListingsFor } from "./listing-core";
 
 // Lectures des échanges ouverts du Marché : onglets « Échanges » et « Mes échanges » de /marche.
@@ -15,7 +15,6 @@ export const LISTINGS_PAGE_SIZE = 20;
 export const WANTABLE_PAGE_SIZE = 24;
 const HISTORY_SIZE = 20;
 
-const playerSelect = { id: true, username: true, image: true, isGuest: true } as const;
 
 export type ListingWantView = CardView & { /** Le lecteur en a un exemplaire libre. */ givable: boolean };
 
@@ -128,7 +127,7 @@ export async function listListings(input: {
         id: r.id,
         createdAt: r.createdAt,
         expiresAt: r.expiresAt,
-        owner: r.owner,
+        owner: toPlayerRef(r.owner),
         card,
         note: r.note,
         wants: r.wants.flatMap((w) => {
@@ -257,13 +256,13 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
       const gave = views.get(l.cardId);
       const accepted = l.offers[0];
       return gave
-        ? [{ id: l.id, kind: "listing", status: l.status, resolvedAt: l.resolvedAt, gave, got: accepted ? (views.get(accepted.cardId) ?? null) : null, other: accepted?.bidder ?? null, declineNote: null }]
+        ? [{ id: l.id, kind: "listing", status: l.status, resolvedAt: l.resolvedAt, gave, got: accepted ? (views.get(accepted.cardId) ?? null) : null, other: accepted ? toPlayerRef(accepted.bidder) : null, declineNote: null }]
         : [];
     }),
     ...pastOffers.flatMap((o): ExchangeHistoryView[] => {
       const gave = views.get(o.cardId);
       return gave
-        ? [{ id: o.id, kind: "offer", status: o.status, resolvedAt: o.resolvedAt, gave, got: views.get(o.listing.cardId) ?? null, other: o.listing.owner, declineNote: o.declineNote }]
+        ? [{ id: o.id, kind: "offer", status: o.status, resolvedAt: o.resolvedAt, gave, got: views.get(o.listing.cardId) ?? null, other: toPlayerRef(o.listing.owner), declineNote: o.declineNote }]
         : [];
     }),
   ]
@@ -284,7 +283,7 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
           wants: l.wants.flatMap((w) => views.get(w.cardId) ?? []),
           offers: l.offers.flatMap((o) => {
             const offered = views.get(o.cardId);
-            return offered ? [{ id: o.id, createdAt: o.createdAt, fromWants: o.fromWants, bidder: o.bidder, card: offered }] : [];
+            return offered ? [{ id: o.id, createdAt: o.createdAt, fromWants: o.fromWants, bidder: toPlayerRef(o.bidder), card: offered }] : [];
           }),
         },
       ];
@@ -293,7 +292,7 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
       const card = views.get(o.cardId);
       const listingCard = views.get(o.listing.cardId);
       return card && listingCard
-        ? [{ id: o.id, createdAt: o.createdAt, card, listing: { id: o.listing.id, expiresAt: o.listing.expiresAt, owner: o.listing.owner, card: listingCard, note: o.listing.note } }]
+        ? [{ id: o.id, createdAt: o.createdAt, card, listing: { id: o.listing.id, expiresAt: o.listing.expiresAt, owner: toPlayerRef(o.listing.owner), card: listingCard, note: o.listing.note } }]
         : [];
     }),
     history,

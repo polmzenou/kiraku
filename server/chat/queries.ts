@@ -1,6 +1,8 @@
 import "server-only";
+import { decorFromColumns, type PlayerDecor } from "@/lib/profile/decor";
 import { pairKey } from "@/lib/social/relation";
 import { prisma } from "../db";
+import { decorColumns } from "../profile/decor";
 import { blocksBetween } from "../social/lock";
 
 // Lectures et écritures du chat entre amis. Seuls des amis acceptés, sans blocage, se parlent.
@@ -13,6 +15,7 @@ export type Conversation = {
   username: string;
   image: string | null;
   isGuest: boolean;
+  decor: PlayerDecor;
   last: { body: string; at: string; mine: boolean } | null;
   unread: number;
 };
@@ -33,7 +36,7 @@ export const visibleSince = (retentionHours: number, now = new Date()) => new Da
 /** Amis acceptés, triés par dernier message, avec les non-lus de chacun. */
 export async function listConversations(me: string, since: Date): Promise<Conversation[]> {
   const rows = await prisma.$queryRaw<
-    { username: string; image: string | null; isGuest: boolean; body: string | null; lastAt: Date | null; lastMine: boolean | null; unread: number }[]
+    { username: string; image: string | null; isGuest: boolean; body: string | null; lastAt: Date | null; lastMine: boolean | null; unread: number; frameStyle: string | null; nameColor: string | null }[]
   >`
     WITH friends AS (
       SELECT CASE WHEN f."requesterId" = ${me} THEN f."addresseeId" ELSE f."requesterId" END AS id, f."pairKey"
@@ -53,7 +56,7 @@ export async function listConversations(me: string, since: Date): Promise<Conver
       WHERE m."recipientId" = ${me} AND m."readAt" IS NULL AND m."createdAt" > ${since}
       GROUP BY m."senderId"
     )
-    SELECT u.username, u.image, u."isGuest", l.body, l."createdAt" AS "lastAt", (l."senderId" = ${me}) AS "lastMine",
+    SELECT u.username, u.image, u."isGuest", ${decorColumns}, l.body, l."createdAt" AS "lastAt", (l."senderId" = ${me}) AS "lastMine",
            COALESCE(un.n, 0)::int AS unread
     FROM friends fr
     JOIN "User" u ON u.id = fr.id
@@ -66,6 +69,7 @@ export async function listConversations(me: string, since: Date): Promise<Conver
     username: r.username,
     image: r.image,
     isGuest: r.isGuest,
+    decor: decorFromColumns(r.frameStyle, r.nameColor),
     last: r.body !== null && r.lastAt ? { body: r.body, at: r.lastAt.toISOString(), mine: r.lastMine === true } : null,
     unread: r.unread,
   }));

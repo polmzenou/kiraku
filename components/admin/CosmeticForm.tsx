@@ -7,9 +7,11 @@ import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import { CONDITION_TYPES, type ConditionType, type ProfileCondition } from "@/lib/profile/conditions";
 import { cosmeticInputSchema, type CosmeticInput } from "@/lib/profile/cosmetic-form";
 import { FRAME_STYLES, type FrameStyle } from "@/lib/profile/frames";
+import { NAME_COLOR_STYLES, NAME_COLOR_SWATCH } from "@/lib/profile/name-colors";
 import { LADDER } from "@/lib/ranked/rules";
 import { adminSaveCosmeticAction, adminSearchSeriesAction } from "@/server/actions/admin-cosmetics";
 import { AvatarFrame } from "../profile/AvatarFrame";
+import { PlayerName } from "../social/PlayerName";
 import { Button } from "../ui/Button";
 import { Field, FormMessage, inputClass, NumberField, SelectField, TextField, Toggle } from "./fields";
 
@@ -24,12 +26,16 @@ function defaultCondition(type: ConditionType, rarity: string): ProfileCondition
       return { type, seriesId: "" };
     case "RANK_TIER":
       return { type, tier: "GOLD" };
+    case "CATALOG_DISCOVERED_PERCENT":
+      return { type, n: 50 };
+    case "RARITIES_DISCOVERED":
+      return { type, rarities: [rarity], n: 1 };
     default:
       return { type, n: 10 };
   }
 }
 
-/** Création ou modification d'un titre ou d'un cadre, avec sa condition de déblocage. */
+/** Création ou modification d'un titre, d'un cadre ou d'une couleur de pseudo, avec sa condition de déblocage. */
 export function CosmeticForm({ initial, seriesTitle }: { initial: CosmeticInput; seriesTitle: string | null }) {
   const t = useTranslations("admin.cosmetics");
   const rarities = useRarityDefinitions();
@@ -68,8 +74,15 @@ export function CosmeticForm({ initial, seriesTitle }: { initial: CosmeticInput;
           options={[
             { value: "TITLE", label: t("kinds.TITLE") },
             { value: "FRAME", label: t("kinds.FRAME") },
+            { value: "NAME_COLOR", label: t("kinds.NAME_COLOR") },
           ]}
-          onChange={(kind) => set({ kind, frameStyle: kind === "FRAME" ? (draft.frameStyle ?? "washi") : null })}
+          onChange={(kind) =>
+            set({
+              kind,
+              frameStyle: kind === "FRAME" ? (draft.frameStyle ?? "washi") : null,
+              nameColor: kind === "NAME_COLOR" ? (draft.nameColor ?? "lime") : null,
+            })
+          }
         />
         <TextField label={t("fields.slug")} hint={t("hints.slug")} value={draft.slug} maxLength={40} onChange={(slug) => set({ slug: slug.toLowerCase() })} />
       </div>
@@ -101,6 +114,24 @@ export function CosmeticForm({ initial, seriesTitle }: { initial: CosmeticInput;
         </fieldset>
       )}
 
+      {draft.kind === "NAME_COLOR" && (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-sm">{t("fields.nameColor")}</legend>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {NAME_COLOR_STYLES.map((style) => (
+              <label key={style} className="flex min-h-11 cursor-pointer flex-col gap-1 rounded-control p-2 text-xs has-[:checked]:bg-surface-2 has-[:checked]:font-bold">
+                <input type="radio" name="nameColor" className="sr-only" checked={draft.nameColor === style} onChange={() => set({ nameColor: style })} />
+                <PlayerName name={draft.label.fr || "Kiraku"} color={style} className="truncate text-base font-bold" />
+                <span className="flex items-center gap-1.5">
+                  <span aria-hidden="true" className="size-2.5 rounded-full" style={{ background: NAME_COLOR_SWATCH[style] }} />
+                  {t(`colors.${style}`)}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
       <fieldset className="flex flex-col gap-3 rounded-control border border-border p-3">
         <legend className="px-1 text-sm font-bold">{t("fields.condition")}</legend>
         <SelectField
@@ -110,7 +141,32 @@ export function CosmeticForm({ initial, seriesTitle }: { initial: CosmeticInput;
           onChange={(type) => setCondition(defaultCondition(type, rarities.at(-1)?.key ?? "MYTHIC"))}
         />
         {"n" in c && (
-          <NumberField label={t("fields.n")} value={c.n} min={1} max={1_000_000} onChange={(n) => setCondition({ ...c, n: n ?? 1 } as ProfileCondition)} />
+          <NumberField
+            label={c.type === "CATALOG_DISCOVERED_PERCENT" ? t("fields.percent") : t("fields.n")}
+            value={c.n}
+            min={1}
+            max={c.type === "CATALOG_DISCOVERED_PERCENT" ? 100 : 1_000_000}
+            onChange={(n) => setCondition({ ...c, n: n ?? 1 } as ProfileCondition)}
+          />
+        )}
+        {c.type === "RARITIES_DISCOVERED" && (
+          <fieldset className="flex flex-col gap-1">
+            <legend className="text-sm">{t("fields.rarities")}</legend>
+            <div className="flex flex-wrap gap-2">
+              {rarities.map((r) => (
+                <label key={r.key} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-control border border-border px-3 text-sm has-[:checked]:bg-surface-2 has-[:checked]:font-bold">
+                  <input
+                    type="checkbox"
+                    checked={c.rarities.includes(r.key)}
+                    onChange={(e) =>
+                      setCondition({ ...c, rarities: e.target.checked ? [...c.rarities, r.key] : c.rarities.filter((k) => k !== r.key) })
+                    }
+                  />
+                  {r.seal} {r.nameFr}
+                </label>
+              ))}
+            </div>
+          </fieldset>
         )}
         {c.type === "RARITY_OWNED" && (
           <SelectField

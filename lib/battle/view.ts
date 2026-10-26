@@ -1,4 +1,5 @@
 import type { Rarity } from "@/lib/catalog/rarity";
+import type { PlayerDecor } from "@/lib/profile/decor";
 import type { RankedRules } from "@/lib/ranked/rules";
 import type { BoardTier } from "./tiers";
 import type { BattleEvent, BattleSetup, BattleState, EndReason, Keyword, Side, Technique } from "./types";
@@ -8,7 +9,7 @@ import type { BattleEvent, BattleSetup, BattleState, EndReason, Keyword, Side, T
 export type BattleModeView = "FRIEND" | "EXHIBITION" | "RANKED";
 export type BattleStatusView = "WAITING" | "ACTIVE" | "FINISHED" | "CANCELLED";
 
-export type PlayerView = { username: string; image: string | null; isGuest: boolean } | { bot: string };
+export type PlayerView = { username: string; image: string | null; isGuest: boolean; decor: PlayerDecor } | { bot: string };
 
 /** Une partie vue par l'un de ses joueurs (`mySide`). */
 export type BattleView = {

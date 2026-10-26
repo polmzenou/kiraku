@@ -3,15 +3,16 @@ import Image from "next/image";
 import { SealMark } from "@/components/SealMark";
 import { guestCode } from "@/lib/username";
 import type { Badge } from "@/lib/profile/conditions";
-import type { FrameStyle } from "@/lib/profile/frames";
+import type { PlayerDecor } from "@/lib/profile/decor";
+import { PlayerName } from "../social/PlayerName";
 import { AvatarFrame } from "./AvatarFrame";
 import { BadgeRow } from "./ProfileCustomizeSheet";
 
 /** Ce que le joueur a choisi d'afficher (étape 12h). */
-export type HeaderDecor = { bio: string | null; title: string | null; frame: FrameStyle | null; badges: Badge[] };
+export type HeaderDecor = PlayerDecor & { bio: string | null; title: string | null; badges: Badge[] };
 
 /**
- * En-tête du profil : avatar ou sceau (dans son cadre), pseudo (« Invité-XXXX » pour un invité),
+ * En-tête du profil : avatar ou sceau (dans son cadre), pseudo dans sa couleur (« Invité-XXXX » pour un invité),
  * titre, badges, date d'arrivée et bio.
  */
 export function ProfileHeader({
@@ -47,7 +48,9 @@ export function ProfileHeader({
           )}
         </AvatarFrame>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <h1 className="truncate font-heading text-2xl font-extrabold md:text-3xl">{name}</h1>
+          <h1 className="truncate font-heading text-2xl font-extrabold md:text-3xl">
+            <PlayerName name={name} color={decor?.nameColor} className="truncate" />
+          </h1>
           {decor?.title && <p className="text-sm font-bold text-kin">{decor.title}</p>}
           <div className="flex flex-wrap items-center gap-2 text-sm text-text-muted">
             {isGuest && <span className="rounded-sm border border-border px-2 text-xs">{tAccount("guestBadge")}</span>}

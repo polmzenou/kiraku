@@ -5,6 +5,8 @@ import type { ReactNode } from "react";
 import type { BattleSetup, BattleState, Side } from "@/lib/battle/types";
 import type { BoardTier } from "@/lib/battle/tiers";
 import type { PlayerView } from "@/lib/battle/view";
+import { PlayerAvatar } from "../social/PlayerAvatar";
+import { PlayerName } from "../social/PlayerName";
 import { BattleFuda, type Fx } from "./BattleFuda";
 
 export function usePlayerName() {
@@ -75,24 +77,31 @@ function Row({
   );
 }
 
-/** Plaque d'un joueur : sceau, nom, cartes encore debout, et ce qu'on lui confie (orbes, minuteur). */
+/** Plaque d'un joueur : avatar dans son cadre (sceau pour un bot), nom dans sa couleur, cartes encore debout, et ce qu'on lui confie (orbes, minuteur). */
 function Plate({ player, standing, active, children }: { player: PlayerView | null; standing: number; active: boolean; children?: ReactNode }) {
   const t = useTranslations("battle.board");
   const name = usePlayerName();
   const initial = !player ? "?" : name(player).slice(0, 1).toUpperCase();
+  const human = player && "username" in player ? player : null;
   return (
     <div className="flex min-h-12 items-center justify-between gap-3 px-1">
       <div className="flex min-w-0 items-center gap-2.5">
-        <span
-          aria-hidden="true"
-          className={`flex size-10 shrink-0 items-center justify-center rounded-full border-2 bg-[radial-gradient(circle_at_35%_30%,#3a3029,#15120f)] font-title text-lg font-extrabold text-washi-paper transition-shadow md:size-12 md:text-xl ${
-            active ? "border-[var(--board-accent)] shadow-[0_0_16px_var(--board-glow)]" : "border-[#4a3f33]"
-          }`}
-        >
-          {initial}
-        </span>
+        {human ? (
+          <span className={`shrink-0 rounded-full transition-shadow ${active ? "shadow-[0_0_16px_var(--board-glow)]" : ""}`}>
+            <PlayerAvatar username={human.username} image={human.image} size={44} frame={human.decor.frame} />
+          </span>
+        ) : (
+          <span
+            aria-hidden="true"
+            className={`flex size-10 shrink-0 items-center justify-center rounded-full border-2 bg-[radial-gradient(circle_at_35%_30%,#3a3029,#15120f)] font-title text-lg font-extrabold text-washi-paper transition-shadow md:size-12 md:text-xl ${
+              active ? "border-[var(--board-accent)] shadow-[0_0_16px_var(--board-glow)]" : "border-[#4a3f33]"
+            }`}
+          >
+            {initial}
+          </span>
+        )}
         <span className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-bold text-washi-paper md:text-base">{name(player)}</span>
+          <PlayerName name={name(player)} color={human?.decor.nameColor} className="truncate text-sm font-bold text-washi-paper md:text-base" />
           <span className="text-xs tabular-nums text-[#a89f92]">{t("standing", { count: standing })}</span>
         </span>
       </div>

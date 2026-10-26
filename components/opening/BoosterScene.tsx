@@ -55,10 +55,11 @@ type Props = {
   lite?: boolean;
   /** Meilleure rareté du tirage, dès que le serveur a répondu : couleur de la lumière qui s'échappe. */
   leak: Rarity | null;
-  /** Le serveur a décidé d'un sachet divin : la nacre se révèle pendant l'ouverture (le doré a ses particules, dans la scène). */
-  divine: boolean;
-  /** Cartes du tirage, dès que le serveur a répondu (0 avant) : leurs dos sortent par l'ouverture. */
-  cards: number;
+  /**
+   * Cartes du tirage, dès que le serveur a répondu (null avant) : leurs dos sortent par l'ouverture.
+   * 0 : le booster s'est changé en sachet scellé, rien ne sort et la scène passe tout de suite la main.
+   */
+  cards: number | null;
   /** Appelé une fois, une fois la coupe engagée (ou au clic). */
   onTrigger: () => void;
   /**
@@ -78,7 +79,7 @@ type Props = {
  * pochibukuro et jūbako : on glisse vers le haut pour soulever le rabat ou le couvercle.
  */
 export function BoosterScene(props: Props) {
-  const { shape, theme, emblem, name, tagline, contents, count, armed, reduced, leak, divine, cards, lite = false } = props;
+  const { shape, theme, emblem, name, tagline, contents, count, armed, reduced, leak, cards, lite = false } = props;
   const definitions = useRarityDefinitions();
   const progress = useMotionValue(0);
   const [opened, setOpened] = useState(false);
@@ -115,7 +116,8 @@ export function BoosterScene(props: Props) {
 
   // Booster ouvert et tirage connu : les cartes montent par l'ouverture, puis le booster tombe et les
   // découvre. Minuteries plutôt que fins d'animation : un onglet en arrière-plan ne bloque rien.
-  const shown = Math.min(cards, PEEK_MAX);
+  const received = cards !== null;
+  const shown = Math.min(cards ?? 0, PEEK_MAX);
   const emerging = flown && !reduced && shown > 0;
   useEffect(() => {
     if (!flown) return;
@@ -128,7 +130,11 @@ export function BoosterScene(props: Props) {
       handOff();
       return;
     }
-    if (shown === 0) return;
+    if (!received) return;
+    if (shown === 0) {
+      handOff();
+      return;
+    }
     const rise = (PEEK_RISE + (shown - 1) * PEEK_STAGGER) * 1000;
     const drop = setTimeout(() => setDropped(true), rise);
     const end = setTimeout(handOff, rise + (PACK_DROP + (shown - 1) * PEEK_STAGGER * 0.6) * 1000);
@@ -136,7 +142,7 @@ export function BoosterScene(props: Props) {
       clearTimeout(drop);
       clearTimeout(end);
     };
-  }, [flown, reduced, shown]);
+  }, [flown, reduced, received, shown]);
 
   const fire = () => {
     if (fired.current || !armed) return;
@@ -228,16 +234,6 @@ export function BoosterScene(props: Props) {
       >
         <Leak progress={progress} color={leakColor} strong={opened && leakColor !== null} shape={shape} reduced={reduced} />
       </m.span>
-      {/* Nacre du sachet divin, révélée pendant l'ouverture */}
-      {divine && (
-        <m.span
-          aria-hidden="true"
-          className="fx-nacre pointer-events-none absolute inset-0 z-20 opacity-80"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6 }}
-        />
-      )}
       {/* Le rabat ou le couvercle s'efface pour laisser passer les cartes */}
       {shape !== "SACHET" && (
         <m.div className="absolute inset-0 z-30" initial={false} animate={{ opacity: emerging ? 0 : 1 }} transition={{ duration: 0.25 }}>

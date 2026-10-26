@@ -14,6 +14,7 @@ import { NoteField } from "../ui/NoteField";
 import { NoteText } from "../ui/NoteText";
 import { ChatWithButton } from "../chat/ChatDock";
 import { PlayerAvatar } from "./PlayerAvatar";
+import { playerTag } from "./PlayerName";
 
 const CardReveal = dynamic(() => import("../economy/CardReveal").then((m) => m.CardReveal), { ssr: false });
 
@@ -83,11 +84,18 @@ function TradeCard({ trade, mode }: { trade: TradeView; mode: Mode }) {
         <p className="flex min-w-0 items-center gap-2 text-sm">
           {other ? (
             <>
-              <PlayerAvatar username={other.username} image={other.image} size={28} />
-              <span className="truncate">{t(mode === "received" ? "from" : "to", { name: name(other) })}</span>
+              <PlayerAvatar username={other.username} image={other.image} size={28} frame={other.decor.frame} />
+              <span className="truncate">{t.rich(mode === "received" ? "from" : "to", { name: name(other), player: playerTag(other.decor.nameColor) })}</span>
             </>
           ) : (
-            <span className="truncate">{t("between", { proposer: name(trade.proposer), recipient: name(trade.recipient) })}</span>
+            <span className="truncate">
+              {t.rich("between", {
+                proposer: name(trade.proposer),
+                recipient: name(trade.recipient),
+                proposerName: playerTag(trade.proposer.decor.nameColor),
+                recipientName: playerTag(trade.recipient.decor.nameColor),
+              })}
+            </span>
           )}
         </p>
         {mode === "history" ? (

@@ -20,7 +20,7 @@ const CRACKS = [
 
 /**
  * Le booster qu'on vient de déchirer s'est transformé : sachet scellé au centre, rayons (Divin) ou
- * nuit rougeoyante et fissures (Apocalyptique), sceau tamponné, titre, puis les actions (`children`).
+ * nuit rougeoyante et fissures (Apocalyptique), titre, puis les actions (`children`).
  * Environ 1,2 s avant les actions ; figé à sa dernière image si le mouvement est réduit.
  */
 export function SealedTransform({
@@ -54,7 +54,6 @@ export function SealedTransform({
           emblem={display.emblem}
           name={display.name}
           contents={display.contents}
-          variant={kind === "divin" ? "divine" : undefined}
           overlay={
             kind === "apocalypse" ? (
               <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full">
@@ -76,9 +75,6 @@ export function SealedTransform({
           }
         />
       </div>
-      <p aria-hidden="true" lang="ja" className={`sealed-stamp relative z-10 -mt-12 font-seal text-6xl ${kind === "divin" ? "text-kin" : "text-shu"}`}>
-        {display.emblem}
-      </p>
       <div className="sealed-title relative z-10 flex flex-col items-center gap-1 text-center">
         <h2 id="sealed-transform-title" className="font-heading text-3xl font-extrabold tracking-wide uppercase sm:text-4xl">
           {t(kind === "divin" ? "transformDivin" : "transformApocalypse")}

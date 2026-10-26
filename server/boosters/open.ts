@@ -52,15 +52,18 @@ export async function openBoosters(userId: string, slug: string, count: number, 
   return { outcome, rules, type };
 }
 
-/** Sachet scellé non ouvert du joueur, avec son type ; null s'il n'existe pas ou n'est pas à lui. */
-export async function findOwnSealed(userId: string, dropId: string) {
+/**
+ * Sachet scellé non ouvert du joueur, avec son type ; null s'il n'existe pas ou n'est pas à lui.
+ * `includeOpened` : aussi un sachet déjà ouvert (la page d'ouverture re-rendue juste après).
+ */
+export async function findOwnSealed(userId: string, dropId: string, { includeOpened = false } = {}) {
   const drop = await prisma.sealedDrop.findFirst({
-    where: { id: dropId, ownerId: userId, openedAt: null },
-    select: { id: true, giftable: true, boosterType: { select: { slug: true } } },
+    where: { id: dropId, ownerId: userId, ...(includeOpened ? {} : { openedAt: null }) },
+    select: { id: true, giftable: true, openedAt: true, boosterType: { select: { slug: true } } },
   });
   if (!drop) return null;
   const kind = SEALED_KINDS.find((k) => k === drop.boosterType.slug);
-  return kind ? { id: drop.id, giftable: drop.giftable, kind } : null;
+  return kind ? { id: drop.id, giftable: drop.giftable, kind, opened: drop.openedAt !== null } : null;
 }
 
 /** Ouvre un sachet scellé du joueur (Divin, Apocalyptique), même si son type a été désactivé depuis. */

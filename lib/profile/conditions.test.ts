@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  discoveredPercent,
   earnedBadges,
   evaluateCondition,
   labelFor,
@@ -18,6 +19,8 @@ const stats: ProfileStats = {
   tradesDone: 3,
   apocalypseRuined: 0,
   tier: "GOLD",
+  discoveredPercent: 42,
+  discoveredByRarity: { MYTHIC: 12, AR: 5, GOLD: 1, COMMON: 300 },
 };
 
 describe("conditions de déblocage", () => {
@@ -35,6 +38,11 @@ describe("conditions de déblocage", () => {
     [{ type: "APOCALYPSE_RUINED", n: 1 }, false, 0, 1],
     [{ type: "RANK_TIER", tier: "SILVER" }, true, 2, 2],
     [{ type: "RANK_TIER", tier: "CHAMPION" }, false, 3, 6],
+    [{ type: "CATALOG_DISCOVERED_PERCENT", n: 35 }, true, 35, 35],
+    [{ type: "CATALOG_DISCOVERED_PERCENT", n: 50 }, false, 42, 50],
+    [{ type: "RARITIES_DISCOVERED", rarities: ["MYTHIC", "AR", "GOLD"], n: 20 }, false, 18, 20],
+    [{ type: "RARITIES_DISCOVERED", rarities: ["MYTHIC", "AR", "GOLD"], n: 15 }, true, 15, 15],
+    [{ type: "RARITIES_DISCOVERED", rarities: ["MYTHIC", "MYTHIC", "LEGENDARY"], n: 20 }, false, 12, 20],
   ])("%o", (raw, unlocked, current, goal) => {
     expect(evaluateCondition(parseCondition(raw), stats)).toEqual({ unlocked, current, goal });
   });
@@ -44,8 +52,24 @@ describe("conditions de déblocage", () => {
     expect(evaluateCondition(parseCondition({ type: "SERIES_COMPLETE", seriesId: "inconnue" }), stats).unlocked).toBe(false);
   });
 
+  it("refuse un pourcentage hors de 1 à 100 et une liste de raretés vide", () => {
+    expect(parseCondition({ type: "CATALOG_DISCOVERED_PERCENT", n: 101 })).toBeNull();
+    expect(parseCondition({ type: "CATALOG_DISCOVERED_PERCENT", n: 0 })).toBeNull();
+    expect(parseCondition({ type: "RARITIES_DISCOVERED", rarities: [], n: 1 })).toBeNull();
+  });
+
   it("liste les séries à charger", () => {
     expect(referencedSeries([parseCondition({ type: "SERIES_COMPLETE", seriesId: "a" }), null, parseCondition({ type: "SERIES_COMPLETE", seriesId: "a" })])).toEqual(["a"]);
+  });
+});
+
+describe("% du catalogue découvert", () => {
+  it("arrondit à l'inférieur et ne dépasse pas 100", () => {
+    expect(discoveredPercent(499, 1000)).toBe(49);
+    expect(discoveredPercent(999, 1000)).toBe(99);
+    expect(discoveredPercent(1000, 1000)).toBe(100);
+    expect(discoveredPercent(1001, 1000)).toBe(100);
+    expect(discoveredPercent(5, 0)).toBe(0);
   });
 });
 

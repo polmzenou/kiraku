@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { TopCollectors } from "@/components/home/TopCollectors";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
+import { PlayerName } from "@/components/social/PlayerName";
 import { PlayerRow } from "@/components/social/PlayerRow";
 import { RankEmblem } from "@/components/ranked/RankEmblem";
 import { segmentedItemClass, segmentedTrackClass } from "@/components/ui/Segmented";
@@ -125,7 +126,7 @@ async function RankedBoard() {
               >
                 <span className="font-title text-xl font-extrabold text-[var(--board-accent)]">{e.position}</span>
                 <RankEmblem tier={e.tier} division={e.division} size={i === 1 ? 72 : 56} label={rankName(e)} />
-                <span className="w-full truncate text-sm font-bold">{e.username}</span>
+                <PlayerName name={e.username} color={e.decor.nameColor} className="w-full truncate text-sm font-bold" />
                 <span className="text-xs tabular-nums text-[#a89f92]">{tRanked("pc", { pc: e.pc })}</span>
               </Link>
             </li>
@@ -136,7 +137,7 @@ async function RankedBoard() {
       </ol>
       <ol className="flex flex-col lacquer rounded-card px-4">
         {entries.map((e) => (
-          <PlayerRow key={e.username} player={{ username: e.username, image: e.image, isGuest: false }} detail={`${rankName(e)} · ${tRanked("pc", { pc: e.pc })}`}>
+          <PlayerRow key={e.username} player={{ username: e.username, image: e.image, isGuest: false, decor: e.decor }} detail={`${rankName(e)} · ${tRanked("pc", { pc: e.pc })}`}>
             <RankEmblem tier={e.tier} division={e.division} size={28} />
             <span className="w-10 text-right font-title text-lg font-extrabold tabular-nums text-text-muted">{e.position}</span>
           </PlayerRow>

@@ -32,6 +32,7 @@ export function ReviewsSection({
     name: displayName(r.username, r.isGuest, (code) => tAccount("guestName", { code })),
     username: r.username,
     image: r.image,
+    decor: r.decor,
     pinned: r.pinned,
     reply: r.reply,
   }));

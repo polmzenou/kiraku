@@ -4,10 +4,12 @@ import { unstable_cache } from "next/cache";
 import type { CardView } from "@/lib/boosters/view";
 import { type Rarity } from "@/lib/catalog/rarity";
 import { displayNameFor } from "@/lib/collection/display-name";
+import { decorFromRelations, type PlayerDecor } from "@/lib/profile/decor";
 import { prisma } from "../db";
 import { cardViews } from "../boosters/display";
 import { namedPlayerSelect } from "../collection/public-names";
 import { getRarities } from "../catalog/rarities";
+import { decorSelect } from "../profile/decor";
 import { getSetting } from "../settings";
 
 export type RecentPull = {
@@ -15,7 +17,7 @@ export type RecentPull = {
   card: CardView;
   /** Pseudo affiché ; `profile` n'est rempli que si le profil est public (lien et avatar). */
   name: string;
-  profile: { username: string; image: string | null } | null;
+  profile: { username: string; image: string | null; decor: PlayerDecor } | null;
   at: string;
 };
 
@@ -38,10 +40,10 @@ const latestPulls = unstable_cache(
         id: true,
         cardId: true,
         createdAt: true,
-        user: { select: { ...namedPlayerSelect, image: true } },
+        user: { select: { ...namedPlayerSelect, image: true, ...decorSelect } },
       },
     }),
-  ["home-pull-feed"],
+  ["home-pull-feed-v2"],
   { revalidate: 10, tags: ["home-pull-feed"] },
 );
 
@@ -75,7 +77,7 @@ export async function getRecentPulls(locale: string): Promise<RecentPull[] | nul
         id: r.id,
         card,
         name,
-        profile: visible ? { username: r.user.username, image: r.user.image } : null,
+        profile: visible ? { username: r.user.username, image: r.user.image, decor: decorFromRelations(r.user) } : null,
         at: new Date(r.createdAt).toISOString(),
       },
     ];
