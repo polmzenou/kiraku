@@ -60,6 +60,8 @@ export function RecentPulls({ initial, refreshSeconds, serverNow }: { initial: R
 
       <div
         {...(marquee ? drag : {})}
+        // Bandeau glissable : le geste ne doit pas changer d'onglet
+        data-swipe-ignore
         className={`-mx-4 px-4 lg:mx-0 lg:px-0 ${
           marquee ? "cursor-grab touch-pan-y overflow-hidden select-none active:cursor-grabbing motion-reduce:overflow-x-auto" : "overflow-x-auto"
         } [mask-image:linear-gradient(90deg,transparent,#000_1rem,#000_calc(100%-1rem),transparent)] [scrollbar-width:thin]`}
