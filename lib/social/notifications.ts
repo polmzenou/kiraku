@@ -101,3 +101,17 @@ export function parseTeamGiftPayload(raw: unknown): TeamGiftPayload | null {
   if (r.kind === "BOOSTER" && id(r.boosterTypeId)) return { kind: "BOOSTER", boosterTypeId: r.boosterTypeId, quantity };
   return null;
 }
+
+/**
+ * Sachet scellé offert puis ouvert par l'ami : le sachet, l'issue d'un Apocalyptique et la meilleure
+ * carte obtenue (ids et clés seulement).
+ */
+export type SealedPayload = { slug: SealedSlug; outcome: "SPARED" | "RUINED" | null; cardId: string | null };
+
+export function parseSealedPayload(raw: unknown): SealedPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  if (!isSealedSlug(r.slug)) return null;
+  const outcome = r.outcome === "SPARED" || r.outcome === "RUINED" ? r.outcome : null;
+  return { slug: r.slug, outcome, cardId: isId(r.cardId) ? r.cardId : null };
+}

@@ -102,7 +102,7 @@ export default async function AuctionPage({ params }: PageProps<"/[locale]/march
           />
 
           <section className="flex flex-col gap-2">
-            <h2 className="font-title text-lg font-bold">{t("detail.history")}</h2>
+            <h2 className="font-heading text-lg font-bold">{t("detail.history")}</h2>
             {detail.bids.length === 0 ? (
               <p className="text-sm text-text-muted">{t("detail.historyEmpty")}</p>
             ) : (

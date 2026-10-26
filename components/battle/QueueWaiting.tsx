@@ -102,7 +102,7 @@ export function QueueWaiting({ joinedAt, botAt, onLeft }: { joinedAt: string; bo
         </span>
       </span>
       <div className="flex flex-col gap-1">
-        <h2 className="font-title text-xl font-bold">{t("title")}</h2>
+        <h2 className="font-heading text-xl font-bold">{t("title")}</h2>
         <p className="text-2xl font-bold tabular-nums">{t("elapsed", { seconds: elapsed })}</p>
         <p className="text-sm text-text-muted">{untilBot > 0 ? t("botSoon", { seconds: untilBot }) : t("botNow")}</p>
       </div>

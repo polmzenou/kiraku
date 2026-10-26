@@ -31,7 +31,7 @@ export function BattleResult({
       <div className="flex w-full max-w-sm flex-col items-center gap-4 rounded-2xl border border-border bg-bg p-6 text-center">
         <h2
           id="battle-result-title"
-          className={`flex min-h-24 rotate-[-6deg] items-center justify-center rounded-md border-4 px-4 py-3 font-title text-3xl font-extrabold ${
+          className={`flex min-h-24 rotate-[-6deg] items-center justify-center rounded-md border-4 px-4 py-3 font-heading text-3xl font-extrabold ${
             outcome === "WIN" ? "border-kin text-kin" : outcome === "LOSS" ? "border-shu text-shu" : "border-border text-text-muted"
           }`}
         >

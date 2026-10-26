@@ -43,7 +43,7 @@ export default async function AdminOpeningTestPage() {
 
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="font-title text-2xl font-bold">{t("title")}</h2>
+      <h2 className="font-heading text-2xl font-bold">{t("title")}</h2>
       <p className="text-sm text-text-muted">{t("intro")}</p>
       {types.length === 0 ? (
         <p className="text-sm text-text-muted">{t("noBooster")}</p>

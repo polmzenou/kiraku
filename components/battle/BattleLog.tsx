@@ -70,7 +70,7 @@ export function BattleLog({
 
   return (
     <section className="flex flex-col gap-2 lacquer rounded-card p-4">
-      <h2 className="font-title text-base font-bold">{t("log.title")}</h2>
+      <h2 className="font-heading text-base font-bold">{t("log.title")}</h2>
       {lines.length === 0 ? (
         <p className="text-sm text-text-muted">{t("log.empty")}</p>
       ) : (
@@ -92,7 +92,7 @@ export function CardDetail({ card, hp, maxHp, rules }: { card: FighterSetup | nu
   if (!card) {
     return (
       <section className="lacquer rounded-card p-4">
-        <h2 className="font-title text-base font-bold">{t("detail.title")}</h2>
+        <h2 className="font-heading text-base font-bold">{t("detail.title")}</h2>
         <p className="mt-1 text-sm text-text-muted">{t("detail.hint")}</p>
       </section>
     );
@@ -104,7 +104,7 @@ export function CardDetail({ card, hp, maxHp, rules }: { card: FighterSetup | nu
   return (
     <section className="flex flex-col gap-3 lacquer rounded-card p-4">
       <div>
-        <h2 className="font-title text-lg font-bold">{card.name}</h2>
+        <h2 className="font-heading text-lg font-bold">{card.name}</h2>
         <p className="text-sm tabular-nums text-text-muted">{t("detail.stats", { atk: card.atk, def: card.def, hp, max: maxHp })}</p>
       </div>
       <div className="flex gap-2">

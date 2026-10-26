@@ -40,7 +40,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/[loca
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-title text-2xl font-bold">{t("title")}</h2>
+        <h2 className="font-heading text-2xl font-bold">{t("title")}</h2>
         <p className="mt-1 max-w-prose text-sm text-text-muted">{t("intro")}</p>
       </div>
       <DirectSendPanel boosterTypes={boosterTypes.map((b) => ({ id: b.id, name: localize(parseLocalized(b.name), locale) }))} registered={registered} />

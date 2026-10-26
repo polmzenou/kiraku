@@ -37,7 +37,7 @@ export default async function AdminBoosterTypePage({ params }: PageProps<"/[loca
       <Link href="/admin/boosters/types" className="text-sm text-link underline underline-offset-4">
         ← {t("back")}
       </Link>
-      <h2 className="font-title text-2xl font-bold">{t("editTitle", { name: localize(type.name, locale) })}</h2>
+      <h2 className="font-heading text-2xl font-bold">{t("editTitle", { name: localize(type.name, locale) })}</h2>
 
       {offer && <OddsTable floors={floors} rates={rules.draw.rates} counts={offer.counts} size={offer.size} />}
 

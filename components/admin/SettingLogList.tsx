@@ -8,7 +8,7 @@ export async function SettingLogList({ logs }: { logs: Log[] }) {
   const [t, format] = await Promise.all([getTranslations("admin.settingsForm"), getFormatter()]);
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="font-title text-lg font-bold">{t("log")}</h2>
+      <h2 className="font-heading text-lg font-bold">{t("log")}</h2>
       {logs.length === 0 ? (
         <p className="text-sm text-text-muted">{t("logEmpty")}</p>
       ) : (

@@ -52,7 +52,7 @@ export function RoomLobby({ view, candidates, lastTeam }: { view: BattleView; ca
         <span aria-hidden="true" className="font-title text-3xl font-bold text-shu">
           {t("title")}
         </span>
-        <h2 className="font-title text-xl font-bold">{t("room.invited", { name: name(view.players[0]) })}</h2>
+        <h2 className="font-heading text-xl font-bold">{t("room.invited", { name: name(view.players[0]) })}</h2>
         {time && <p className="text-sm text-text-muted">{t("room.expires", { time })}</p>}
         {error && (
           <p role="alert" className="text-sm text-shu">
@@ -86,7 +86,7 @@ export function RoomLobby({ view, candidates, lastTeam }: { view: BattleView; ca
   const code = view.code ?? "";
   return (
     <section className="flex flex-col items-center gap-4 lacquer rounded-card px-4 py-8 text-center">
-      <h2 className="font-title text-xl font-bold">{t("room.title")}</h2>
+      <h2 className="font-heading text-xl font-bold">{t("room.title")}</h2>
       {view.players[1] ? (
         <p className="text-sm text-text-muted">{t("room.reserved")}</p>
       ) : (

@@ -47,7 +47,7 @@ export function ProfileHeader({
           )}
         </AvatarFrame>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <h1 className="truncate font-title text-2xl font-extrabold md:text-3xl">{name}</h1>
+          <h1 className="truncate font-heading text-2xl font-extrabold md:text-3xl">{name}</h1>
           {decor?.title && <p className="text-sm font-bold text-kin">{decor.title}</p>}
           <div className="flex flex-wrap items-center gap-2 text-sm text-text-muted">
             {isGuest && <span className="rounded-sm border border-border px-2 text-xs">{tAccount("guestBadge")}</span>}

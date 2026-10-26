@@ -89,7 +89,7 @@ export function ListingBoard({
   return (
     <section className="flex flex-col gap-4" aria-labelledby={`${searchId}-title`}>
       <div className="flex flex-col gap-1">
-        <h2 id={`${searchId}-title`} className="font-title text-xl font-extrabold">
+        <h2 id={`${searchId}-title`} className="font-heading text-xl font-extrabold">
           {t("boardTitle")}
         </h2>
         <p className="text-sm text-text-muted">{t("boardIntro")}</p>

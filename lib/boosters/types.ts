@@ -30,7 +30,7 @@ export const FAMILY_KANJI: Record<BoosterFamily, string> = {
   special: "特別",
 };
 
-export const BOOSTER_KINDS = ["STANDARD", "RARITY", "FILTERED", "BANNER", "FORMAT"] as const;
+export const BOOSTER_KINDS = ["STANDARD", "RARITY", "FILTERED", "BANNER", "FORMAT", "DROP"] as const;
 export type BoosterKind = (typeof BOOSTER_KINDS)[number];
 
 export const BOOSTER_SHAPES = ["SACHET", "POCHIBUKURO", "JUBAKO"] as const;
@@ -149,12 +149,14 @@ export function priceFor(
 export type Availability = "open" | "locked" | "hidden";
 
 export function availability(
-  type: Pick<BoosterTypeView, "active" | "startsAt" | "endsAt" | "usesFreeStock" | "priceZeni" | "filter">,
+  type: Pick<BoosterTypeView, "kind" | "active" | "startsAt" | "endsAt" | "usesFreeStock" | "priceZeni" | "filter">,
   now: Date,
   poolSize: number,
   minPool: number,
 ): Availability {
   if (!type.active || type.filter === null) return "hidden";
+  // Sachet scellé : jamais proposé, il s'ouvre seulement depuis l'inventaire
+  if (type.kind === "DROP") return "hidden";
   if (type.startsAt && type.startsAt > now) return "hidden";
   if (type.endsAt && type.endsAt <= now) return "hidden";
   if (poolSize < minPool) return "hidden";
@@ -162,7 +164,7 @@ export function availability(
   return "open";
 }
 
-/** Bonus applicables à un type : doré et divin pour les sachets gratuits, pitié selon le type. */
+/** Bonus applicables à un type : doré et sachets scellés pour les sachets gratuits, pitié selon le type. */
 export function bonusesFor(type: Pick<BoosterTypeView, "bonusEligible" | "countsForPity">) {
-  return { golden: type.bonusEligible, divine: type.bonusEligible, pity: type.countsForPity };
+  return { golden: type.bonusEligible, drop: type.bonusEligible, pity: type.countsForPity };
 }

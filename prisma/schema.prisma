@@ -71,10 +71,11 @@ model User {
   role                Role              @default(USER)
   bannedAt            DateTime?
   pullFeedHiddenUntil DateTime? // modération : retiré du carrousel des gros tirages jusqu'à cette date
-  isGuest            Boolean           @default(true)
+  isGuest             Boolean           @default(true)
   pityCount           Int               @default(0) // boosters ouverts depuis la dernière Mythique
   standardCount       Int               @default(0) // pour le booster doré
   bannerPity          Json              @default("{}") // { boosterTypeId: boosters sans vedette }
+  apocalypseKarma     Int               @default(0) // Apocalyptiques ruinés d'affilée (CHECK >= 0) : au seuil, le suivant est épargné
   discordJoinedAt     DateTime? // a cliqué sur « Rejoindre le serveur »
   v1WelcomeSeenAt     DateTime? // date de la dernière annonce de l'équipe vue (une fois par annonce, lib/welcome/release.ts)
   locale              String            @default("fr") // fr | en
@@ -122,6 +123,8 @@ model User {
   pushSubs      PushSubscription[]
 
   boosterCredits BoosterCredit[]
+  sealedDrops    SealedDrop[]    @relation("sealedOwner")
+  sealedGiven    SealedDrop[]    @relation("sealedGiver")
   missions       UserMission[]
   purchases      Purchase[]
   referralsMade  Referral[]      @relation("referrer")
@@ -402,18 +405,20 @@ model UserCard {
 
 // Un booster ouvert, partageable par lien (/tirage/[id])
 model BoosterOpening {
-  id             String   @id @default(cuid())
+  id             String             @id @default(cuid())
   userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   boosterSlug    String // BoosterType.slug
   cardIds        String[] // ids de UserCard, dans l'ordre des emplacements
   catalogCardIds String[] // ids de Card dans le même ordre : le tirage reste lisible après recyclage ou vente
-  golden         Boolean  @default(false)
-  divine         Boolean  @default(false)
-  pityTriggered  Boolean  @default(false) // dernière carte forcée en Mythique
-  featuredHit    Boolean  @default(false) // au moins une carte vedette (bannière)
-  zeniSpent      Int      @default(0) // prix payé pour ce booster (0 = stock gratuit)
-  createdAt      DateTime @default(now())
+  golden         Boolean            @default(false)
+  divine         Boolean            @default(false)
+  pityTriggered  Boolean            @default(false) // dernière carte forcée en Mythique
+  featuredHit    Boolean            @default(false) // au moins une carte vedette (bannière)
+  zeniSpent      Int                @default(0) // prix payé pour ce booster (0 = stock gratuit)
+  sealedDropId   String? // sachet scellé ouvert (Divin, Apocalyptique)
+  apocalypse     ApocalypseOutcome? // issue d'un Apocalyptique
+  createdAt      DateTime           @default(now())
 
   @@index([userId, createdAt])
 }
@@ -472,6 +477,7 @@ enum BoosterKind {
   FILTERED
   BANNER
   FORMAT
+  DROP // sachet scellé (Divin, Apocalyptique) : tombe d'un booster, jamais en vente
 }
 
 enum BoosterShape {
@@ -511,6 +517,7 @@ model BoosterType {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   credits         BoosterCredit[]
+  sealedDrops     SealedDrop[]
   lotItems        LotItem[]
 
   @@index([family, sortOrder])
@@ -589,21 +596,23 @@ model FriendRequestCooldown {
 enum GiftKind {
   CARD
   BOOSTER
+  SEALED // sachet scellé tombé d'un tirage (offert une seule fois)
 }
 
 // Journal des cadeaux : quotas du jour et historique des cartes transférées
 model Gift {
-  id          String   @id @default(cuid())
-  senderId    String
-  sender      User     @relation("giftSender", fields: [senderId], references: [id], onDelete: Cascade)
-  recipientId String
-  recipient   User     @relation("giftRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
-  kind        GiftKind
-  cardId      String? // id de Card : reste lisible après recyclage ou revente
-  userCardId  String? // exemplaire transféré
-  zeniSpent   Int      @default(0)
-  dayKey      String // jour du fuseau game.timeZone (AAAA-MM-JJ)
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  senderId     String
+  sender       User     @relation("giftSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientId  String
+  recipient    User     @relation("giftRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  kind         GiftKind
+  cardId       String? // id de Card : reste lisible après recyclage ou revente
+  userCardId   String? // exemplaire transféré
+  sealedDropId String? // sachet scellé transféré
+  zeniSpent    Int      @default(0)
+  dayKey       String // jour du fuseau game.timeZone (AAAA-MM-JJ)
+  createdAt    DateTime @default(now())
 
   @@index([senderId, dayKey])
   @@index([senderId, createdAt]) // missions hebdomadaires
@@ -622,6 +631,7 @@ enum NotificationType {
   AUCTION_EXPIRED // aucune mise, la carte revient au vendeur
   AUCTION_CANCELLED // annulée par l'admin, mise rendue
   BATTLE_INVITE // un ami t'invite en combat avec un code
+  SEALED_OPENED // l'ami a ouvert le sachet scellé que tu lui as offert
   LOT_GRANTED // cadeau de l'équipe (lot envoyé depuis /admin/lots)
   TRADE_PROPOSED // un ami propose un échange
   TRADE_ACCEPTED // l'ami a accepté : la carte voulue est arrivée
@@ -677,6 +687,39 @@ model BoosterCredit {
   updatedAt     DateTime    @updatedAt
 
   @@id([userId, boosterTypeId])
+}
+
+enum SealedSource {
+  DRAW // tombé d'un booster ouvert
+  GIFT // offert par un ami (giverId)
+  LOT // lot, mission, récompense
+  ADMIN // donné depuis la fiche joueur
+}
+
+enum ApocalypseOutcome {
+  SPARED // épargné : contenu d'un Divin
+  RUINED // ruiné : Communes et Peu communes
+}
+
+// Sachet scellé (Divin, Apocalyptique) : un sachet = une ligne, pour savoir s'il peut s'offrir et
+// à qui envoyer le résultat. Ouverture et cadeau passent par un updateMany conditionnel sur openedAt.
+model SealedDrop {
+  id            String       @id @default(cuid())
+  ownerId       String
+  owner         User         @relation("sealedOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  boosterTypeId String
+  boosterType   BoosterType  @relation(fields: [boosterTypeId], references: [id])
+  source        SealedSource
+  giverId       String?
+  giver         User?        @relation("sealedGiver", fields: [giverId], references: [id], onDelete: SetNull)
+  giftable      Boolean      @default(false) // seul un sachet tombé d'un tirage s'offre, une fois
+  openingId     String? // BoosterOpening créé à l'ouverture
+  createdAt     DateTime     @default(now())
+  openedAt      DateTime?
+
+  @@index([ownerId, openedAt])
+  @@index([giverId])
+  @@index([boosterTypeId])
 }
 
 enum LotItemKind {

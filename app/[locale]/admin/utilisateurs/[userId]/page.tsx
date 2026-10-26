@@ -43,7 +43,7 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
       <Link href="/admin/utilisateurs" className="self-start text-sm text-link underline underline-offset-4">← {t("back")}</Link>
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <h2 className="break-all font-title text-2xl font-bold">{user.username}</h2>
+          <h2 className="break-all font-heading text-2xl font-bold">{user.username}</h2>
           <p className="mt-1 break-all text-xs text-text-muted">{user.id}</p>
           <p className="mt-2 text-sm">{user.email ?? t("noEmail")}{user.emailVerified ? ` · ${t("verified")}` : ""}</p>
           <p className="mt-1 text-sm text-text-muted">{t(user.bannedAt ? "banned" : user.role === "ADMIN" ? "adminRole" : user.isGuest ? "guest" : "registered")} · {t("joined", { date: format.dateTime(user.createdAt, { dateStyle: "medium" }) })}</p>

@@ -51,7 +51,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pag
   return (
     <PageShell>
       {back}
-      <h1 className="font-title text-3xl font-extrabold">{t("collectionOf", { name })}</h1>
+      <h1 className="font-heading text-3xl font-extrabold">{t("collectionOf", { name })}</h1>
       <CollectionStats summary={summary} />
       <CollectionFilters params={filters} pathname={`/u/${owner.username}/collection`} series={series} />
       {page.items.length === 0 ? (

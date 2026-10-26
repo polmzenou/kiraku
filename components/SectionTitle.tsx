@@ -24,7 +24,7 @@ export function SectionTitle({
       </span>}
       <div className="flex min-w-0 flex-col gap-1">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <Heading id={id} className={`font-title font-extrabold ${level === 1 ? "text-3xl" : "text-xl"}`}>{title}</Heading>
+          <Heading id={id} className={`font-heading font-extrabold ${level === 1 ? "text-3xl" : "text-xl"}`}>{title}</Heading>
           {subtitle && level === 2 && <p className="text-xs text-text-muted">{subtitle}</p>}
         </div>
         {subtitle && level === 1 && <p className="max-w-prose text-sm text-text-muted">{subtitle}</p>}

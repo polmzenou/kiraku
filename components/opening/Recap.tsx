@@ -101,7 +101,7 @@ export function Recap({ name, emblem, boosters, state, reduced, play, counters, 
       </div>
 
       <m.header className="flex flex-col items-center gap-2 text-center" {...appear(0)}>
-        <h2 id="recap-title" className="font-title text-3xl font-extrabold text-balance sm:text-5xl">
+        <h2 id="recap-title" className="font-heading text-3xl font-extrabold text-balance sm:text-5xl">
           {name}
         </h2>
         {many && <p className="text-sm text-text-muted tabular-nums">{t("recapCounts", { boosters: boosters.length, cards: cards.length })}</p>}

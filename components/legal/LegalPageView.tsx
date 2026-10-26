@@ -69,7 +69,7 @@ export async function LegalPageView({ slug, locale, version }: { slug: LegalSlug
 
       {slug === "mentions-legales" && (
         <section className="flex flex-col gap-3">
-          <h2 className="font-title text-xl font-extrabold">{t("followTitle")}</h2>
+          <h2 className="font-heading text-xl font-extrabold">{t("followTitle")}</h2>
           <p className="text-sm text-text-muted">{t("followText")}</p>
           <XFollowLink variant="button" />
         </section>
@@ -80,7 +80,7 @@ export async function LegalPageView({ slug, locale, version }: { slug: LegalSlug
           {/* La liste détaillée n'est montrée qu'aux admins, pour contrôle */}
           {isAdmin && (
             <>
-              <h2 className="font-title text-xl font-extrabold">{t("cookieTableTitle")}</h2>
+              <h2 className="font-heading text-xl font-extrabold">{t("cookieTableTitle")}</h2>
               <CookieTable />
             </>
           )}

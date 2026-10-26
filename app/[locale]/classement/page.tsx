@@ -110,7 +110,7 @@ async function RankedBoard() {
   const podium = entries.slice(0, 3);
   return (
     <section className="flex flex-col gap-4">
-      {season && <h2 className="font-title text-lg font-bold">{tRanked("board.rankedTitle", { number: season.number })}</h2>}
+      {season && <h2 className="font-heading text-lg font-bold">{tRanked("board.rankedTitle", { number: season.number })}</h2>}
       <ol className="grid grid-cols-3 items-end gap-2 sm:gap-4">
         {[podium[1], podium[0], podium[2]].map((e, i) =>
           e ? (

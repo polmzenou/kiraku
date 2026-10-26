@@ -47,7 +47,7 @@ export function Sheet({
       <div className="flex flex-col gap-4 px-4 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:px-6 md:pt-4 md:pb-6">
         <span aria-hidden="true" className="h-1.5 w-10 self-center rounded-full bg-text-muted/30 md:hidden" />
         <div className="sticky top-0 z-10 -mx-4 flex items-center justify-between gap-2 bg-bg px-4 py-1 md:-mx-6 md:px-6">
-          <h2 id={titleId} className="min-w-0 truncate font-title text-lg font-extrabold">
+          <h2 id={titleId} className="min-w-0 truncate font-heading text-lg font-extrabold">
             {title}
           </h2>
           <IconButton aria-label={t("close")} onClick={() => dialog.current?.close()} tone="lacquer">

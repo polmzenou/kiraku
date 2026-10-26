@@ -42,7 +42,7 @@ export default async function AdminBoosterTypesPage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-3">
-        <h2 className="font-title text-2xl font-bold">{t("title")}</h2>
+        <h2 className="font-heading text-2xl font-bold">{t("title")}</h2>
         <p className="max-w-prose text-sm text-text-muted">{t("intro", { min: minPool })}</p>
         <div className="flex flex-wrap gap-2">
           <RecomputePoolsButton />

@@ -13,7 +13,7 @@ export default async function AdminCatalogPage({ searchParams }: PageProps<"/[lo
   const series = data.filters.series ? await prisma.series.findUnique({ where: { id: data.filters.series }, select: { id: true, titleRomaji: true } }) : null;
   const control = "min-h-11 min-w-0 rounded-control border border-border bg-surface px-3 text-sm";
   return <div className="flex min-w-0 flex-col gap-5">
-    <header className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-title text-3xl font-bold">{t("title")}</h2><p className="mt-2 text-sm text-text-muted">{t("intro")}</p></div><div className="flex gap-2"><Link href="/admin/catalogue/raretes" className={`${control} inline-flex items-center`}>{t("manageRarities")}</Link><Link href="/admin/catalogue/nouvelle" className={`${control} inline-flex items-center bg-shu-btn font-bold text-white`}>{t("create")}</Link></div></header>
+    <header className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-heading text-3xl font-bold">{t("title")}</h2><p className="mt-2 text-sm text-text-muted">{t("intro")}</p></div><div className="flex gap-2"><Link href="/admin/catalogue/raretes" className={`${control} inline-flex items-center`}>{t("manageRarities")}</Link><Link href="/admin/catalogue/nouvelle" className={`${control} inline-flex items-center bg-shu-btn font-bold text-white`}>{t("create")}</Link></div></header>
     <CatalogList data={data} rarities={rarities} boosters={boosters} series={series ? { id: series.id, label: series.titleRomaji } : null} />
   </div>;
 }

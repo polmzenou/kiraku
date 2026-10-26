@@ -79,7 +79,7 @@ export function AllBoostersSheet({
       >
         <span aria-hidden="true" className="mt-2.5 h-1.5 w-10 shrink-0 self-center rounded-full bg-text-muted/30" />
         <div className="flex items-center justify-between py-1.5 pr-2 pl-4">
-          <h2 id={titleId} className="font-title text-lg font-extrabold">
+          <h2 id={titleId} className="font-heading text-lg font-extrabold">
             {t("allTitle")}
           </h2>
           <IconButton aria-label={tb("close")} onClick={close} tone="lacquer">
