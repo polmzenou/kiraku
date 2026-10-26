@@ -1,0 +1,21 @@
+# Node 22 et dépendances, partagés par les jobs de la CI. node_modules et le client Prisma généré
+# sont repris du cache tant que le lockfile et le schéma ne changent pas : npm ci (et son postinstall
+# prisma generate) ne tourne qu'au premier run après un changement.
+name: Préparer Node et les dépendances
+description: Node 22, node_modules et client Prisma, depuis le cache si possible.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - id: modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          node_modules
+          generated
+        key: modules-${{ runner.os }}-node22-${{ hashFiles('package-lock.json', 'prisma/schema.prisma', 'prisma.config.ts') }}
+    - if: steps.modules.outputs.cache-hit != 'true'
+      shell: bash
+      run: npm ci

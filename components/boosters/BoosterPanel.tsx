@@ -4,7 +4,7 @@ import { useFormatter, useLocale, useTranslations } from "next-intl";
 import type { BoosterPanelData, WishlistInPool } from "@/lib/boosters/panel";
 import type { FilterContext } from "@/lib/boosters/pool-filter";
 import { localize, type BoosterTypeView } from "@/lib/boosters/types";
-import { type Rarity } from "@/lib/catalog/rarity";
+import { VARIANT_RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import type { BoosterState } from "@/server/boosters/state";
 import { BoosterArt } from "./BoosterArt";
 import { FilterText } from "./FilterText";
@@ -12,7 +12,12 @@ import { RARITY_BG, usePercent } from "./format";
 import { NextFreeIn } from "./NextFreeIn";
 import { OpenLink } from "./OpenLink";
 
-const CHANCE_ROWS: Rarity[] = ["RARE", "EPIC", "LEGENDARY", "MYTHIC"];
+export const CHANCE_ROWS: Rarity[] = ["RARE", "EPIC", "LEGENDARY", "MYTHIC"];
+
+/** Lignes de chances : les seuils de base, puis AR et Gold quand le pool du booster en contient. */
+export function chanceRows(odds: BoosterPanelData["odds"]): Rarity[] {
+  return [...CHANCE_ROWS, ...VARIANT_RARITIES.filter((r) => (odds[r] ?? 0) > 0)];
+}
 
 /** Couleur du texte des seuils de rareté (planche : bleu, violet, or, vermillon). */
 export const RARITY_TEXT: Record<Rarity, string> = {
@@ -22,6 +27,8 @@ export const RARITY_TEXT: Record<Rarity, string> = {
   EPIC: "text-[#b391db]",
   LEGENDARY: "text-kin",
   MYTHIC: "text-shu",
+  AR: "text-rarity-ar",
+  GOLD: "text-rarity-gold",
 };
 
 type Props = {
@@ -103,7 +110,7 @@ export function BoosterPanel({ type, panel, ctx, state, wishlist = null, withOpe
       <div className="flex flex-col gap-2">
         <h3 className="text-xs font-bold">{t("chances")}</h3>
         <ul className="flex flex-col gap-2">
-          {CHANCE_ROWS.map((r) => (
+          {chanceRows(panel.odds).map((r) => (
             <li key={r} className="grid grid-cols-[minmax(0,7rem)_1fr_auto] items-center gap-3 text-xs">
               <span className={`flex min-w-0 items-center gap-1.5 font-bold ${RARITY_TEXT[r]}`}>
                 <span aria-hidden="true" lang="ja" className="font-seal text-sm">

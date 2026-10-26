@@ -51,3 +51,6 @@ next-env.d.ts
 # rapports de l'import AniList (--dry-run)
 /.import/
 /.migration
+
+# caches des contrôles (ESLint)
+.eslintcache

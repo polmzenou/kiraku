@@ -1,6 +1,9 @@
 # Contrôles de chaque push et pull request (CLAUDE.md, « Façon de travailler »).
 # Les tests sur base réelle (*.db.test.ts) sont sautés ici : ils demandent DATABASE_URL_TEST
 # (base de test isolée, jamais la prod) et se lancent à la main avant une mise en production.
+#
+# Trois jobs en parallèle (lint et types, tests unitaires, simulations *.sim.test.ts), puis « checks »
+# qui ne passe que si les trois passent : c'est le contrôle à exiger avant une fusion.
 name: CI
 
 on:
@@ -16,18 +19,56 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  checks:
+  lint:
+    name: Lint, types et audits
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: ./.github/actions/setup
+      # Caches d'ESLint et de tsc, repris du dernier run de la branche (ou de main) : seuls les fichiers
+      # dont le contenu a changé sont revérifiés. Une mise à jour des dépendances ou de la config repart de zéro.
+      - uses: actions/cache@v4
         with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
+          path: |
+            .eslintcache
+            tsconfig.tsbuildinfo
+          key: checks-${{ runner.os }}-${{ hashFiles('package-lock.json', 'eslint.config.mjs', 'tsconfig.json') }}-${{ github.sha }}
+          restore-keys: checks-${{ runner.os }}-${{ hashFiles('package-lock.json', 'eslint.config.mjs', 'tsconfig.json') }}-
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm test
       - run: npm run audit:actions
       - run: npm run audit:dependencies
+
+  unit:
+    name: Tests unitaires
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npm run test:unit
+
+  simulations:
+    name: Simulations (tirages, combats)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npm run test:sim
+
+  # Garde le nom du contrôle historique : une règle de branche qui exige « checks » couvre les trois jobs.
+  checks:
+    if: always()
+    needs: [lint, unit, simulations]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Tous les contrôles sont passés
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          for r in $RESULTS; do
+            if [ "$r" != "success" ]; then echo "Un contrôle n'est pas passé ($RESULTS)"; exit 1; fi
+          done

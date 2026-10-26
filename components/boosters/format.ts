@@ -9,11 +9,16 @@ export const RARITY_BG: Record<Rarity, string> = {
   EPIC: "bg-rarity-epic",
   LEGENDARY: "bg-rarity-legendary",
   MYTHIC: "bg-rarity-mythic",
+  AR: "bg-rarity-ar",
+  GOLD: "bg-rarity-gold",
 };
 
-/** Pourcentage lisible : 1 décimale au-dessus de 1 %, 2 en dessous (« 18,4 % », « 0,31 % »). */
+/**
+ * Pourcentage lisible : 1 décimale au-dessus de 1 %, 2 en dessous, 3 sous 0,01 % pour que les AR et
+ * Gold ne s'affichent pas à 0 (« 18,4 % », « 0,31 % », « 0,008 % »).
+ */
 export function usePercent() {
   const format = useFormatter();
   return (p: number) =>
-    format.number(p, { style: "percent", maximumFractionDigits: p >= 0.01 ? 1 : 2, minimumFractionDigits: 0 });
+    format.number(p, { style: "percent", maximumFractionDigits: p >= 0.01 ? 1 : p >= 0.0001 ? 2 : 3, minimumFractionDigits: 0 });
 }
