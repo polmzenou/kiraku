@@ -287,7 +287,10 @@ describe.skipIf(!url)("combat atomique (base réelle)", () => {
     expect(row).toMatchObject({ p2Id: null, status: "ACTIVE" });
     expect(row.botName).toBeTruthy();
     expect(row.setup.teams[1]).toHaveLength(3);
-    expect(row.state.active).toBe(0); // le bot a déjà joué s'il commençait
+    // Contre un bot, le joueur commence toujours, sur un plateau intact
+    expect(row.setup.first).toBe(0);
+    expect(row.state.active).toBe(0);
+    expect(row.state.turn).toBe(1);
     const rng = seededRng(5);
     for (let i = 0; i < 200; i++) {
       const b = await battle(u.battleId);
@@ -300,6 +303,14 @@ describe.skipIf(!url)("combat atomique (base réelle)", () => {
     expect((await statuses(a)).every((s) => s === "COLLECTION")).toBe(true);
     if (end.winnerSide === 0 && end.state.turn >= 3) expect(end.rewardZeni).toBe(DEFAULT_BATTLE_RULES.rewards.bot);
   }, 180_000);
+
+  it("bot à la demande : skipWait lance la partie sans attendre queueSeconds", async () => {
+    const a = await player();
+    await joinQueueWith(prisma, { userId: a, cardIds: team(), mode: "EXHIBITION" }, ctx());
+    const u = await startBotBattleWith(prisma, { userId: a, skipWait: true }, ctx());
+    expect(await battle(u.battleId)).toMatchObject({ p2Id: null, status: "ACTIVE" });
+    await expect(startBotBattleWith(prisma, { userId: a, skipWait: true }, ctx())).rejects.toMatchObject({ code: "NOT_QUEUED" });
+  }, 60_000);
 
   it("salle d'amis : code, une seule entrée, propriétaire et intrus refusés, fermeture et expiration", async () => {
     const [host, guest, intruder] = [await player(), await player(), await player()];

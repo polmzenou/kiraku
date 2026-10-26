@@ -21,12 +21,17 @@ export type RecentPull = {
 
 /**
  * Derniers gros tirages, en commun pour tous les visiteurs (10 s de cache). Les invités n'y
- * figurent pas ; leurs tirages apparaissent s'ils lient ensuite un compte.
+ * figurent pas ; leurs tirages apparaissent s'ils lient ensuite un compte. Un joueur masqué par
+ * la modération (`pullFeedHiddenUntil`) en est absent jusqu'à la date posée.
  */
 const latestPulls = unstable_cache(
   async (rarities: Rarity[], size: number, since: number) =>
     prisma.notablePull.findMany({
-      where: { rarity: { in: rarities }, createdAt: { gt: new Date(since) }, user: { isGuest: false } },
+      where: {
+        rarity: { in: rarities },
+        createdAt: { gt: new Date(since) },
+        user: { isGuest: false, OR: [{ pullFeedHiddenUntil: null }, { pullFeedHiddenUntil: { lte: new Date() } }] },
+      },
       orderBy: { createdAt: "desc" },
       take: size,
       select: {

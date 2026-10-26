@@ -48,6 +48,7 @@ export const WAGARA = [
   "sakura",
   "kin",
   "raden",
+  "goko",
   "none",
 ] as const;
 export type Wagara = (typeof WAGARA)[number];

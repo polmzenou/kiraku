@@ -70,12 +70,13 @@ model User {
   seasonGames         Int               @default(0)
   role                Role              @default(USER)
   bannedAt            DateTime?
-  isGuest             Boolean           @default(true)
+  pullFeedHiddenUntil DateTime? // modération : retiré du carrousel des gros tirages jusqu'à cette date
+  isGuest            Boolean           @default(true)
   pityCount           Int               @default(0) // boosters ouverts depuis la dernière Mythique
   standardCount       Int               @default(0) // pour le booster doré
   bannerPity          Json              @default("{}") // { boosterTypeId: boosters sans vedette }
   discordJoinedAt     DateTime? // a cliqué sur « Rejoindre le serveur »
-  v1WelcomeSeenAt     DateTime? // dernier affichage du modal de version (relancé une fois par version, lib/welcome/release.ts)
+  v1WelcomeSeenAt     DateTime? // date de la dernière annonce de l'équipe vue (une fois par annonce, lib/welcome/release.ts)
   locale              String            @default("fr") // fr | en
   birthDate           DateTime? // inutilisé : pas de contrôle d'âge (décision de l'étape 10)
   termsVersion        Int? // version des CGU acceptée

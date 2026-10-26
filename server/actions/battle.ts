@@ -143,11 +143,16 @@ export async function leaveQueueAction(): Promise<QueueResult> {
 
 export type StartResult = { ok: true; battleId: string } | Failure;
 
-export async function startBotBattleAction(): Promise<StartResult> {
+const botSchema = z.object({ skipWait: z.boolean() }).strict().optional();
+
+/** Sans argument : le délai d'attente doit être écoulé. `{ skipWait: true }` : le joueur demande le bot tout de suite. */
+export async function startBotBattleAction(input?: unknown): Promise<StartResult> {
+  const parsed = botSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
   const g = await session("battle-queue", { limit: 12, windowSeconds: MINUTE });
   if ("error" in g) return { ok: false, error: g.error };
   try {
-    const u = await startBotBattleWith(prisma, { userId: g.user.id }, await battleCtx());
+    const u = await startBotBattleWith(prisma, { userId: g.user.id, skipWait: parsed.data?.skipWait ?? false }, await battleCtx());
     await announceStart(u);
     return { ok: true, battleId: u.battleId };
   } catch (e) {

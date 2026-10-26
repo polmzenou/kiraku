@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { ConsentManager } from "@/components/consent/ConsentManager";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { SwipeNav } from "@/components/layout/SwipeNav";
 import { PlayerAnnouncements } from "@/components/welcome/PlayerAnnouncements";
 import { AccountGate } from "@/components/legal/AccountGate";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
@@ -67,7 +68,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
           <MotionPreferenceProvider initial={motion}>
             <AppHeader theme={theme} />
             <AccountGate>
-              {children}
+              <SwipeNav>{children}</SwipeNav>
               <PlayerAnnouncements />
             </AccountGate>
             <ConsentManager />

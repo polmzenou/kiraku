@@ -62,6 +62,8 @@ type Props = {
   initialState: BoosterState;
   isGuest: boolean;
   credits?: number;
+  /** Nombre présélectionné (×5 choisi dans la vitrine) ; ramené à ce qui est ouvrable. */
+  initialCount?: OpenCount;
   /** Ouverture à appeler : l'action serveur, ou un tirage factice pour le banc de test de l'admin. */
   open?: typeof openBoosterAction;
 };
@@ -87,7 +89,7 @@ function maxOpenable(type: OpeningType, state: BoosterState): number {
  * puis le récap se déroule. Le tirage est déjà enregistré par le serveur
  * quand l'animation commence : fermer l'onglet ne fait rien perdre.
  */
-export function OpeningStage({ type, initialState, isGuest, credits = 0, open = openBoosterAction }: Props) {
+export function OpeningStage({ type, initialState, isGuest, credits = 0, initialCount = 1, open = openBoosterAction }: Props) {
   const rarities = useRarities();
   const t = useTranslations("opening");
   const level = useFxLevel();
@@ -99,7 +101,7 @@ export function OpeningStage({ type, initialState, isGuest, credits = 0, open = 
   preload(CARD_BACKS.standard, { as: "image", fetchPriority: "low" });
   preload(CARD_BACKS.premium, { as: "image", fetchPriority: "low" });
   const [stage, setStage] = useState<Stage>("ready");
-  const [count, setCount] = useState<OpenCount>(1);
+  const [count, setCount] = useState<OpenCount>(initialCount);
   const [boosters, setBoosters] = useState<OpenedBoosterView[] | null>(null);
   const [error, setError] = useState<OpenBoosterError | null>(null);
   const [latest, setLatest] = useState<BoosterState | null>(null);

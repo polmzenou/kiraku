@@ -20,12 +20,8 @@ export function pageWindow(page: number, perPage: number, maxDepth = ANILIST_MAX
   };
 }
 
-// Tri secondaire par id : les égalités de favoris gardent un ordre stable d'une page à l'autre.
-// $exclude est omis dans la première fenêtre (argument absent = aucun filtre).
-export const CHARACTERS_QUERY = `query ($page: Int, $perPage: Int, $exclude: [Int]) {
-  Page(page: $page, perPage: $perPage) {
-    pageInfo { hasNextPage }
-    characters(sort: [FAVOURITES_DESC, ID], id_not_in: $exclude) {
+// Champs d'un personnage, communs à l'import complet et à l'import d'une œuvre (normalizeCharacter).
+const CHARACTER_FIELDS = `
       id
       favourites
       gender
@@ -47,6 +43,31 @@ export const CHARACTERS_QUERY = `query ($page: Int, $perPage: Int, $exclude: [In
             seasonYear
             studios(isMain: true) { nodes { name } }
           }
+        }
+      }`;
+
+// Tri secondaire par id : les égalités de favoris gardent un ordre stable d'une page à l'autre.
+// $exclude est omis dans la première fenêtre (argument absent = aucun filtre).
+export const CHARACTERS_QUERY = `query ($page: Int, $perPage: Int, $exclude: [Int]) {
+  Page(page: $page, perPage: $perPage) {
+    pageInfo { hasNextPage }
+    characters(sort: [FAVOURITES_DESC, ID], id_not_in: $exclude) {${CHARACTER_FIELDS}
+    }
+  }
+}`;
+
+// Personnages d'une seule œuvre (scripts/import-media.mts). AniList plafonne les listes imbriquées à 25 par page.
+export const MEDIA_CHARACTERS_PER_PAGE = 25;
+export const MEDIA_CHARACTERS_QUERY = `query ($id: Int, $page: Int, $perPage: Int) {
+  Media(id: $id) {
+    id
+    type
+    title { romaji english }
+    characters(page: $page, perPage: $perPage, sort: [FAVOURITES_DESC, ID]) {
+      pageInfo { hasNextPage }
+      edges {
+        role
+        node {${CHARACTER_FIELDS}
         }
       }
     }
@@ -88,6 +109,20 @@ export const pageResponseSchema = z.object({
       pageInfo: z.object({ hasNextPage: z.boolean().nullish() }).nullish(),
       characters: z.array(z.unknown()),
     }),
+  }),
+});
+
+export const mediaCharactersResponseSchema = z.object({
+  data: z.object({
+    Media: z.object({
+      id: z.number().int().positive(),
+      type: z.string().nullish(),
+      title: z.object({ romaji: z.string().nullish(), english: z.string().nullish() }).nullish(),
+      characters: z.object({
+        pageInfo: z.object({ hasNextPage: z.boolean().nullish() }).nullish(),
+        edges: z.array(z.object({ role: z.string().nullish(), node: z.unknown() }).nullish()),
+      }),
+    }).nullable(),
   }),
 });
 

@@ -10,7 +10,7 @@ import { CloseIcon, IconButton } from "../ui/IconButton";
  * Bouton « Taux » de la barre du bas (mobile) : ouvre le panneau complet du booster dans une
  * feuille qui monte du bas (<dialog> natif : focus piégé, Échap, clic sur le fond).
  */
-export function RatesSheet({ children }: { children: ReactNode }) {
+export function RatesSheet({ children, label, triggerClassName }: { children: ReactNode; label?: string; triggerClassName?: string }) {
   const t = useTranslations("boosters");
   const dialog = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
@@ -35,9 +35,9 @@ export function RatesSheet({ children }: { children: ReactNode }) {
           dialog.current?.showModal();
           setOpen(true);
         }}
-        className={buttonClasses("secondary", "shrink-0")}
+        className={triggerClassName ?? buttonClasses("secondary", "shrink-0")}
       >
-        {t("rates")}
+        {label ?? t("rates")}
       </button>
       <dialog
         ref={dialog}

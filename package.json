@@ -20,6 +20,7 @@
     "db:deploy": "prisma migrate deploy",
     "fonts:subset": "tsx scripts/subset-seal-font.mts",
     "catalog:import": "tsx scripts/import-characters.mts",
+    "catalog:import-media": "tsx scripts/import-media.mts",
     "sim:boosters": "tsx scripts/simulate-boosters.mts",
     "admin:grant": "tsx scripts/grant-admin.mts",
     "seed:boosters": "tsx scripts/seed-boosters.mts",
