@@ -301,6 +301,14 @@ describe.skipIf(!url)("combat atomique (base réelle)", () => {
     if (end.winnerSide === 0 && end.state.turn >= 3) expect(end.rewardZeni).toBe(DEFAULT_BATTLE_RULES.rewards.bot);
   }, 180_000);
 
+  it("bot à la demande : skipWait lance la partie sans attendre queueSeconds", async () => {
+    const a = await player();
+    await joinQueueWith(prisma, { userId: a, cardIds: team(), mode: "EXHIBITION" }, ctx());
+    const u = await startBotBattleWith(prisma, { userId: a, skipWait: true }, ctx());
+    expect(await battle(u.battleId)).toMatchObject({ p2Id: null, status: "ACTIVE" });
+    await expect(startBotBattleWith(prisma, { userId: a, skipWait: true }, ctx())).rejects.toMatchObject({ code: "NOT_QUEUED" });
+  }, 60_000);
+
   it("salle d'amis : code, une seule entrée, propriétaire et intrus refusés, fermeture et expiration", async () => {
     const [host, guest, intruder] = [await player(), await player(), await player()];
     const room = await createRoomWith(prisma, { userId: host, cardIds: team(), inviteeId: null }, ctx());

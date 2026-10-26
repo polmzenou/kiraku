@@ -67,6 +67,28 @@ export function QueueWaiting({ joinedAt, botAt, onLeft }: { joinedAt: string; bo
     onLeft(res.ok ? undefined : res.error);
   };
 
+  // Le joueur ne veut pas attendre : bot tout de suite (un vrai adversaire arrivé entre-temps reste prioritaire côté serveur)
+  const fightBot = async () => {
+    setLeaving(true);
+    botRequested.current = true;
+    try {
+      const res = await startBotBattleAction({ skipWait: true });
+      const battleId = res.ok ? res.battleId : res.error === "IN_BATTLE" ? res.battleId : undefined;
+      if (battleId) {
+        done.current = true;
+        return router.push(`/combat/${battleId}`);
+      }
+      if (!res.ok && res.error === "NOT_QUEUED") {
+        done.current = true;
+        return onLeft();
+      }
+    } catch {
+      // Réseau coupé : on reste en file, le sondage continue
+    }
+    botRequested.current = false;
+    setLeaving(false);
+  };
+
   const elapsed = Math.max(0, Math.floor((now - start) / 1_000));
   const untilBot = Math.max(0, Math.ceil((bot - now) / 1_000));
 
@@ -84,9 +106,16 @@ export function QueueWaiting({ joinedAt, botAt, onLeft }: { joinedAt: string; bo
         <p className="text-2xl font-bold tabular-nums">{t("elapsed", { seconds: elapsed })}</p>
         <p className="text-sm text-text-muted">{untilBot > 0 ? t("botSoon", { seconds: untilBot }) : t("botNow")}</p>
       </div>
-      <Button onClick={leave} disabled={leaving}>
-        {t("cancel")}
-      </Button>
+      <div className="flex flex-wrap justify-center gap-3">
+        {untilBot > 0 && (
+          <Button variant="primary" onClick={fightBot} disabled={leaving}>
+            {t("fightBot")}
+          </Button>
+        )}
+        <Button onClick={leave} disabled={leaving}>
+          {t("cancel")}
+        </Button>
+      </div>
     </section>
   );
 }

@@ -3323,6 +3323,7 @@
       "elapsed": "{seconds} s",
       "botSoon": "Nobody? A bot joins you in {seconds} s.",
       "botNow": "A bot opponent is joining…",
+      "fightBot": "Fight a bot",
       "cancel": "Cancel"
     },
     "room": {

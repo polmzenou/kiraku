@@ -584,12 +584,15 @@ export async function leaveQueueWith(db: PrismaClient, input: { userId: string }
   }, TX);
 }
 
-/** Personne en vue après battle.queueSeconds : un bot prend la place, avec une équipe de même rareté. */
-export async function startBotBattleWith(db: PrismaClient, input: { userId: string }, ctx: Ctx): Promise<BattleUpdate> {
+/**
+ * Personne en vue après battle.queueSeconds : un bot prend la place, avec une équipe de même rareté.
+ * `skipWait` : le joueur a demandé le bot lui-même, sans attendre la fin du délai.
+ */
+export async function startBotBattleWith(db: PrismaClient, input: { userId: string; skipWait?: boolean }, ctx: Ctx): Promise<BattleUpdate> {
   return db.$transaction(async (tx) => {
     const row = await lockOwnQueue(tx, input.userId);
     if (!row) throw new BattleError("NOT_QUEUED");
-    if (row.joinedAt.getTime() + ctx.rules.queueSeconds * 1_000 > ctx.now.getTime()) throw new BattleError("TOO_EARLY");
+    if (!input.skipWait && row.joinedAt.getTime() + ctx.rules.queueSeconds * 1_000 > ctx.now.getTime()) throw new BattleError("TOO_EARLY");
     // Dernière chance : un vrai joueur est peut-être arrivé entre-temps
     const matched = await matchInTx(tx, row, ctx);
     if (matched) return matched;

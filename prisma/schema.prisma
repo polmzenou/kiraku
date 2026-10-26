@@ -70,7 +70,8 @@ model User {
   seasonGames         Int               @default(0)
   role                Role              @default(USER)
   bannedAt            DateTime?
-  isGuest             Boolean           @default(true)
+  pullFeedHiddenUntil DateTime? // modération : retiré du carrousel des gros tirages jusqu'à cette date
+  isGuest            Boolean           @default(true)
   pityCount           Int               @default(0) // boosters ouverts depuis la dernière Mythique
   standardCount       Int               @default(0) // pour le booster doré
   bannerPity          Json              @default("{}") // { boosterTypeId: boosters sans vedette }
