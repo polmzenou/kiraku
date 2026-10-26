@@ -332,7 +332,8 @@ const deadlineAfter = (ctx: Ctx, p: Progress, current: Date | null) => (prev: Ba
     : current;
 
 /**
- * Lance une partie : équipes figées dans le setup, premier tour posé, bot joué s'il commence.
+ * Lance une partie : équipes figées dans le setup, premier tour posé.
+ * Contre un bot, le joueur commence toujours : il arrive sur un plateau intact.
  * La ligne Battle existe déjà (salle d'amis) ou est créée ici (file, bot).
  */
 async function start(
@@ -341,11 +342,11 @@ async function start(
   teams: [FighterSetup[], FighterSetup[]],
   ctx: Ctx,
 ): Promise<BattleUpdate> {
-  const setup = buildSetup(teams, engineRules(ctx.rules), seededRng(mixSeed(base.seed, 0x51de)));
+  const bot = botSide(base);
+  const human = bot === null ? undefined : bot === 0 ? 1 : 0;
+  const setup = buildSetup(teams, engineRules(ctx.rules), seededRng(mixSeed(base.seed, 0x51de)), human);
   const first = createState(setup);
   const p: Progress = { state: first.state, events: first.events, actions: [] };
-  const side = base.p2Id === null && base.botName ? 1 : null;
-  runBot(setup, base.seed, p, side, ctx.rules.botMistakePct);
   const turnEndsAt = p.state.finished ? null : new Date(ctx.now.getTime() + ctx.rules.turnSeconds * 1_000);
   // Classé : rang de chaque camp figé au lancement (couleur du plateau)
   const tiers = base.mode === "RANKED" ? await startTiers(tx, base.p1Id, base.p2Id, ctx.ranked) : null;
@@ -371,11 +372,6 @@ async function start(
   const row = base.id
     ? await tx.battle.update({ where: { id: base.id }, data, select: { id: true } })
     : await tx.battle.create({ data: { ...data, createdAt: ctx.now }, select: { id: true } });
-  if (p.actions.length > 0) {
-    await tx.battleAction.createMany({
-      data: p.actions.map((a) => ({ battleId: row.id, seq: a.seq, side: a.side, payload: json(a.action), createdAt: ctx.now })),
-    });
-  }
   return { battleId: row.id, from: 0, version: p.state.seq, events: p.events, state: p.state, turnEndsAt, finished: false, rewardZeni: 0, ranked: null };
 }
 

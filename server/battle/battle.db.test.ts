@@ -287,7 +287,10 @@ describe.skipIf(!url)("combat atomique (base réelle)", () => {
     expect(row).toMatchObject({ p2Id: null, status: "ACTIVE" });
     expect(row.botName).toBeTruthy();
     expect(row.setup.teams[1]).toHaveLength(3);
-    expect(row.state.active).toBe(0); // le bot a déjà joué s'il commençait
+    // Contre un bot, le joueur commence toujours, sur un plateau intact
+    expect(row.setup.first).toBe(0);
+    expect(row.state.active).toBe(0);
+    expect(row.state.turn).toBe(1);
     const rng = seededRng(5);
     for (let i = 0; i < 200; i++) {
       const b = await battle(u.battleId);

@@ -72,6 +72,7 @@ export function firstSide(teams: [FighterSetup[], FighterSetup[]], rng: Rng): Si
   return rng(2) as Side;
 }
 
-export function buildSetup(teams: [FighterSetup[], FighterSetup[]], rules: BattleSetup["rules"], rng: Rng): BattleSetup {
-  return { teams, first: firstSide(teams, rng), rules };
+/** `first` impose le camp qui commence (contre un bot : toujours le joueur). */
+export function buildSetup(teams: [FighterSetup[], FighterSetup[]], rules: BattleSetup["rules"], rng: Rng, first?: Side): BattleSetup {
+  return { teams, first: first ?? firstSide(teams, rng), rules };
 }

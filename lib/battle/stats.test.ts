@@ -5,7 +5,7 @@ import { BOT_NAMES, botAction, botRarities, scoreAction } from "./bot";
 import { DEFAULT_BATTLE_RULES } from "./config";
 import { createState } from "./engine";
 import { FLAT_RULES, fighter, setupOf } from "./fixtures";
-import { combatStats, firstSide, keywordsFor, techniqueFor } from "./stats";
+import { buildSetup, combatStats, firstSide, keywordsFor, techniqueFor } from "./stats";
 import { KEYWORDS, TECHNIQUES } from "./types";
 
 const rules = DEFAULT_BATTLE_RULES;
@@ -23,6 +23,13 @@ describe("stats de combat", () => {
     expect(firstSide([slow, fast], () => 0)).toBe(1);
     const tie = [fighter()];
     expect(firstSide([tie, [fighter()]], () => 1)).toBe(1);
+  });
+
+  it("un camp imposé commence même s'il est plus lent (joueur contre bot)", () => {
+    const fast = [fighter({ power: 100, ki: 80 })];
+    const slow = [fighter({ power: 40, ki: 30 })];
+    expect(buildSetup([slow, fast], FLAT_RULES, () => 1, 0).first).toBe(0);
+    expect(buildSetup([slow, fast], FLAT_RULES, () => 1).first).toBe(1);
   });
 });
 
