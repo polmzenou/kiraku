@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeStock, consumeStock } from "./stock";
+import { computeStock, consumeStock, stockRulesFor } from "./stock";
 
 const MIN = 60_000;
 const rules = { max: 10, intervalMs: 10 * MIN };
@@ -84,5 +84,28 @@ describe("consumeStock", () => {
     const s = computeStock(3, opened.anchor, at(25 * MIN), rules);
     expect(s.stock).toBe(5);
     expect(s.nextAt).toEqual(at(30 * MIN));
+  });
+});
+
+describe("stock des ambassadeurs", () => {
+  const settings = { max: 10, ambassadorMax: 15, intervalMs: 10 * MIN };
+
+  it("relève seulement le max pour un ambassadeur", () => {
+    expect(stockRulesFor(settings, false)).toEqual({ max: 10, intervalMs: 10 * MIN });
+    expect(stockRulesFor(settings, true)).toEqual({ max: 15, intervalMs: 10 * MIN });
+  });
+
+  it("un stock plein arrêté au changement de rôle repart de maintenant, sans saut à 15", () => {
+    // Plein à 10 depuis longtemps : l'ancre est vieille, mais le stock est arrêté au moment du rôle
+    const granted = computeStock(10, t0, at(10 * 60 * MIN), stockRulesFor(settings, false));
+    expect(granted.anchor).toEqual(at(10 * 60 * MIN));
+    const after = computeStock(granted.stock, granted.anchor, at(10 * 60 * MIN + 25 * MIN), stockRulesFor(settings, true));
+    expect(after.stock).toBe(12);
+  });
+
+  it("un retrait garde les boosters acquis au-dessus de 10 et met la recharge en pause", () => {
+    const kept = computeStock(13, t0, at(5 * MIN), stockRulesFor(settings, true));
+    const after = computeStock(kept.stock, kept.anchor, at(60 * MIN), stockRulesFor(settings, false));
+    expect(after).toMatchObject({ stock: 13, nextAt: null });
   });
 });

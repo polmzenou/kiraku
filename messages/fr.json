@@ -919,7 +919,8 @@
         "registered": "Inscrits",
         "guests": "Invités",
         "admins": "Administrateurs",
-        "banned": "Bannis"
+        "banned": "Bannis",
+        "ambassadors": "Ambassadeurs"
       },
       "searchButton": "Rechercher",
       "searching": "Recherche…",
@@ -1048,7 +1049,8 @@
         "USER_BANNERPITY": "Pitié vedette",
         "USER_CARD": "Collection de cartes",
         "USER_DISCOVERIES": "Catalogue découvert",
-        "USER_SESSIONS": "Déconnexion des sessions"
+        "USER_SESSIONS": "Déconnexion des sessions",
+        "USER_AMBASSADOR": "Rôle Ambassadeur"
       },
       "errors": {
         "FORBIDDEN": "Accès refusé : les droits administrateur sont requis.",
@@ -1111,7 +1113,14 @@
         "discoveries": "Découvertes"
       },
       "giftMessage": "Message au joueur (facultatif)",
-      "giftMessagePlaceholder": "Ex. : cadeau, récompense événement…"
+      "giftMessagePlaceholder": "Ex. : cadeau, récompense événement…",
+      "ambassadorRole": "Ambassadeur",
+      "ambassador": "Ambassadeur",
+      "ambassadorSince": "Ambassadeur depuis le {date}.",
+      "notAmbassador": "Ce joueur n'est pas ambassadeur.",
+      "ambassadorHint": "Badge, cadre et couleur de pseudo verts, stock de boosters relevé et pack hebdomadaire (réglages dans Boosters). Un retrait enlève aussi le cadre et la couleur portés.",
+      "grantAmbassador": "Nommer ambassadeur",
+      "revokeAmbassador": "Retirer le rôle"
     },
     "moduleNames": {
       "boosters": "Boosters",
@@ -1198,7 +1207,17 @@
       "logEntry": "{key} par {admin}",
       "rotationSection": "Rotation des familles",
       "sealedSection": "Sachets scellés",
-      "karmaHint": "Apocalyptiques ruinés d'affilée avant une épargne forcée (0 = aucun karma)."
+      "karmaHint": "Apocalyptiques ruinés d'affilée avant une épargne forcée (0 = aucun karma).",
+      "ambassador": {
+        "title": "Ambassadeurs",
+        "intro": "Le rôle se donne depuis la fiche d'un joueur. Ces réglages valent pour tous les ambassadeurs.",
+        "fields": {
+          "maxStock": "Stock max de boosters gratuits",
+          "weeklyBoosters": "Boosters du pack hebdomadaire",
+          "weeklyBoosterSlug": "Type de booster du pack"
+        },
+        "weeklyHint": "À réclamer une fois par semaine (lundi). 0 : pas de pack."
+      }
     },
     "types": {
       "title": "Types de boosters",
@@ -2492,7 +2511,8 @@
         "RANK_TIER": "Rang classé atteint",
         "APOCALYPSE_RUINED": "Apocalyptiques ruinés",
         "CATALOG_DISCOVERED_PERCENT": "% du catalogue découvert",
-        "RARITIES_DISCOVERED": "Cartes découvertes de certaines raretés"
+        "RARITIES_DISCOVERED": "Cartes découvertes de certaines raretés",
+        "AMBASSADOR": "Rôle Ambassadeur"
       },
       "frames": {
         "washi": "Washi",
@@ -2507,13 +2527,14 @@
         "seigaiha": "Seigaiha",
         "momiji": "Momiji",
         "tsuki": "Tsuki",
-        "hoo": "Hōō"
+        "hoo": "Hōō",
+        "hisui": "Hisui (ambassadeur)"
       },
       "settings": {
         "pioneerUntil": "Badge Pionnier : inscrits jusqu'au",
         "pioneerHint": "Vide : plus personne ne le reçoit.",
-        "ambassadorReferrals": "Badge Ambassadeur : filleuls qualifiés requis",
-        "ambassadorHint": "0 : badge désactivé."
+        "sponsorReferrals": "Badge Parrain : filleuls qualifiés requis",
+        "sponsorHint": "0 : badge désactivé."
       },
       "errors": {
         "FORBIDDEN": "Action réservée aux admins.",
@@ -2529,7 +2550,8 @@
         "ember": "Orange incandescent",
         "scarlet": "Rouge écarlate",
         "rainbow": "Arc-en-ciel",
-        "pastel": "Arc-en-ciel pastel"
+        "pastel": "Arc-en-ciel pastel",
+        "hisui": "Vert jade (ambassadeur)"
       }
     },
     "openingTest": {
@@ -2860,7 +2882,8 @@
       "badgeNames": {
         "PIONEER": "Pionnier",
         "AMBASSADOR": "Ambassadeur",
-        "VERIFIED": "Compte vérifié"
+        "VERIFIED": "Compte vérifié",
+        "SPONSOR": "Parrain"
       },
       "noHint": "Continue ta collection pour le débloquer.",
       "progress": "{current}/{goal}",
@@ -3087,7 +3110,8 @@
     "giftSealedApocalypse": "{name} t'a offert un booster apocalyptique… divin ou ruiné ?",
     "sealedDivin": "{name} a ouvert ton booster divin : {card} ({rarity}).",
     "sealedSpared": "Ton booster apocalyptique a épargné {name} : {card} ({rarity}) !",
-    "sealedRuined": "Ton booster apocalyptique a explosé au visage de {name}."
+    "sealedRuined": "Ton booster apocalyptique a explosé au visage de {name}.",
+    "ambassadorGranted": "L'équipe Kiraku te nomme Ambassadeur ! Badge, cadre et couleur verts sont à toi, et un pack de boosters t'attend chaque semaine."
   },
   "push": {
     "title": "Notifications sur ce téléphone",
@@ -4201,5 +4225,22 @@
     "ruined": "Ruiné",
     "recapTitle": "{count, plural, one {Un sachet scellé est tombé} other {# sachets scellés sont tombés}}",
     "recapKept": "Pas tout de suite ? Ils t'attendent sur l'accueil."
+  },
+  "ambassador": {
+    "pack": {
+      "title": "Pack Ambassadeur",
+      "available": "{count, plural, one {Un booster {name} t'attend} other {# boosters {name} t'attendent}} cette semaine.",
+      "claimed": "Pack de la semaine récupéré. Le prochain arrive {when}.",
+      "claim": "Réclamer",
+      "claiming": "Réclamation…",
+      "errors": {
+        "NO_SESSION": "Connecte-toi pour réclamer ton pack.",
+        "INVALID": "Demande invalide.",
+        "UNAVAILABLE": "Pack indisponible pour le moment. Réessaie plus tard.",
+        "RATE_LIMITED": "Trop d'essais. Réessaie dans une minute.",
+        "NOT_AMBASSADOR": "Ce pack est réservé aux ambassadeurs.",
+        "ALREADY_CLAIMED": "Tu as déjà récupéré le pack de cette semaine."
+      }
+    }
   }
 }

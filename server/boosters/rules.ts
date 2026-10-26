@@ -1,6 +1,6 @@
 import "server-only";
 import type { DrawRules, RuinRules } from "@/lib/boosters/draw";
-import type { StockRules } from "@/lib/boosters/stock";
+import type { StockSettings } from "@/lib/boosters/stock";
 import { getSetting } from "../settings";
 import { getRarities } from "../catalog/rarities";
 import { unstable_cache } from "next/cache";
@@ -12,7 +12,7 @@ const loadWeights = unstable_cache(async (_version: number) => {
   return Object.fromEntries((await prisma.card.findMany({ where: { dropWeight: { not: 1 } }, select: { id: true, dropWeight: true } })).map((c) => [c.id, c.dropWeight]));
 }, ["catalog-card-weights"], { tags: [CATALOG_TAG], revalidate: false }); // clé = version du catalogue
 
-export type BoosterRules = { draw: DrawRules; ruin: RuinRules; stock: StockRules; intervalMinutes: number };
+export type BoosterRules = { draw: DrawRules; ruin: RuinRules; stock: StockSettings; intervalMinutes: number };
 
 /** Règles du tirage et du stock, lues dans GameSetting (une seule lecture en cache pour toutes les clés). */
 export async function getBoosterRules(): Promise<BoosterRules> {
@@ -20,7 +20,7 @@ export async function getBoosterRules(): Promise<BoosterRules> {
   const cardWeights = await loadWeights(await getCatalogVersion());
   const [
     rates, slotFloors, pityThreshold, goldenEvery, goldenFloor, divineOdds, apocalypseOdds, apocalypseWinRate,
-    apocalypseKarma, ruinFloors, ruinCeiling, max, intervalMinutes,
+    apocalypseKarma, ruinFloors, ruinCeiling, max, ambassadorMax, intervalMinutes,
   ] = await Promise.all([
     getSetting("booster.rates"),
     getSetting("booster.slotFloors"),
@@ -34,6 +34,7 @@ export async function getBoosterRules(): Promise<BoosterRules> {
     getSetting("booster.apocalypseRuinFloors"),
     getSetting("booster.apocalypseRuinCeiling"),
     getSetting("booster.maxStock"),
+    getSetting("ambassador.maxStock"),
     getSetting("booster.intervalMinutes"),
   ]);
   return {
@@ -42,7 +43,7 @@ export async function getBoosterRules(): Promise<BoosterRules> {
       goldenFloor, divineOdds, apocalypseOdds, apocalypseWinRate, apocalypseKarma,
     },
     ruin: { floors: ruinFloors, ceiling: ruinCeiling },
-    stock: { max, intervalMs: intervalMinutes * 60_000 },
+    stock: { max, ambassadorMax, intervalMs: intervalMinutes * 60_000 },
     intervalMinutes,
   };
 }

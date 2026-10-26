@@ -43,7 +43,7 @@ export async function saveProfileAction(input: unknown): Promise<{ ok: true } | 
   const bio = data.bio.trim() === "" ? null : cleanChatBody(data.bio, BIO_MAX);
   if (data.bio.trim() !== "" && bio === null) return { ok: false, error: "INVALID" };
 
-  const worn = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { createdAt: true, titleId: true, frameId: true, nameColorId: true } });
+  const worn = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { createdAt: true, ambassadorSince: true, titleId: true, frameId: true, nameColorId: true } });
   // Propriété : un titre, un cadre ou une couleur se porte seulement s'il est débloqué (et du bon type)
   const picks = [
     { id: data.titleId, kind: "TITLE", worn: worn.titleId },
@@ -56,7 +56,7 @@ export async function saveProfileAction(input: unknown): Promise<{ ok: true } | 
     const allowed = (p: (typeof picks)[number]) => options.some((o) => o.id === p.id && o.kind === p.kind && o.progress.unlocked);
     if (!toCheck.every(allowed)) return { ok: false, error: "LOCKED" };
   }
-  const earned = new Set<string>(await getEarnedBadges({ ...user, createdAt: worn.createdAt }));
+  const earned = new Set<string>(await getEarnedBadges({ ...user, createdAt: worn.createdAt, ambassadorSince: worn.ambassadorSince }));
   const badgeOrder = [...new Set(data.badgeOrder)].filter((b) => earned.has(b));
 
   await prisma.user.update({

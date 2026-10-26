@@ -16,7 +16,7 @@ const url = process.env.DATABASE_URL_TEST;
 
 describe.skipIf(!url)("ouverture atomique (base réelle)", () => {
   const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });
-  const rules = { draw: DEFAULT_RULES, stock: { max: 10, intervalMs: 10 * 60_000 } };
+  const rules = { draw: DEFAULT_RULES, stock: { max: 10, ambassadorMax: 15, intervalMs: 10 * 60_000 } };
   const tables = buildRarityTables(DEFAULT_RULES.rates);
   let pool: CardPool;
   let userId: string;

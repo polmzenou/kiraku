@@ -43,6 +43,8 @@ const SERIES_TITLES: { slug: string; title: string; name: string; label: Seed["l
   { slug: "manieur-de-stand", title: "JoJo no Kimyou na Bouken (TV)", name: "JoJo's Bizarre Adventure", label: { fr: "Manieur de Stand", frFem: "Manieuse de Stand", en: "Stand User" } },
 ];
 
+const ambassador = { fr: "Réservé aux ambassadeurs.", en: "Ambassadors only." };
+
 const discovered = (n: number) => ({ fr: `Découvrir ${n} % du catalogue.`, en: `Discover ${n}% of the catalogue.` });
 
 /** Cadres du catalogue découvert. */
@@ -107,6 +109,9 @@ try {
     { slug: "cadre-kintsugi", kind: "FRAME", label: { fr: "Kintsugi", en: "Kintsugi" }, hint: { fr: "Compléter 10 séries.", en: "Complete 10 series." }, frameStyle: "kintsugi", condition: { type: "SERIES_COMPLETED_COUNT", n: 10 } },
     ...discoveryFrames,
     ...nameColors,
+    // Réservés au rôle Ambassadeur, donné depuis la fiche joueur de l'admin
+    { slug: "cadre-ambassadeur", kind: "FRAME", label: { fr: "Hisui", en: "Hisui" }, hint: ambassador, frameStyle: "hisui", condition: { type: "AMBASSADOR" } },
+    { slug: "pseudo-ambassadeur", kind: "NAME_COLOR", label: { fr: "Vert jade", en: "Jade green" }, hint: ambassador, nameColor: "hisui", condition: { type: "AMBASSADOR" } },
   ];
   const current = await prisma.cosmetic.findMany({ select: { slug: true, kind: true, sortOrder: true } });
   const existing = new Set(current.map((c) => c.slug));

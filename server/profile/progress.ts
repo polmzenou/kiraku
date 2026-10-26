@@ -65,7 +65,7 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
       prisma.trade.count({ where: { status: "ACCEPTED", OR: [{ proposerId: userId }, { recipientId: userId }] } }),
       prisma.listingOffer.count({ where: { status: "ACCEPTED", OR: [{ bidderId: userId }, { listing: { ownerId: userId } }] } }),
     ]).then(([friends, market]) => friends + market),
-    prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { rankPoints: true, seasonPeakPc: true } }),
+    prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { rankPoints: true, seasonPeakPc: true, ambassadorSince: true } }),
     getSetting("ranked.tiers"),
     prisma.boosterOpening.count({ where: { userId, apocalypse: "RUINED" } }),
     // Cartes publiées découvertes (une découverte ne se perd pas, même si la carte est vendue)
@@ -92,6 +92,7 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
       catalog.total,
     ),
     discoveredByRarity: Object.fromEntries(discovered.map((r) => [r.rarity, r.n])),
+    ambassador: user.ambassadorSince !== null,
   };
 }
 
@@ -125,18 +126,19 @@ export async function getCosmeticProgress(userId: string, locale: string): Promi
 }
 
 /** Badges obtenus par le joueur (ordre par défaut). */
-export async function getEarnedBadges(user: { id: string; createdAt: Date; discordLinkedAt: Date | null }): Promise<Badge[]> {
-  const [pioneerUntil, ambassadorReferrals, qualifiedReferrals] = await Promise.all([
+export async function getEarnedBadges(user: { id: string; createdAt: Date; discordLinkedAt: Date | null; ambassadorSince: Date | null }): Promise<Badge[]> {
+  const [pioneerUntil, sponsorReferrals, qualifiedReferrals] = await Promise.all([
     getSetting("profile.pioneerUntil"),
-    getSetting("profile.ambassadorReferrals"),
+    getSetting("profile.sponsorReferrals"),
     prisma.referral.count({ where: { referrerId: user.id, qualifiedAt: { not: null } } }),
   ]);
   return earnedBadges({
     createdAt: user.createdAt,
     // Fin de la journée indiquée, heure de Paris approchée par UTC+1 : un inscrit du dernier jour reste pionnier
     pioneerUntil: pioneerUntil ? new Date(`${pioneerUntil}T23:59:59+01:00`) : null,
+    ambassador: user.ambassadorSince !== null,
     qualifiedReferrals,
-    ambassadorReferrals,
+    sponsorReferrals,
     discordLinked: user.discordLinkedAt !== null,
   });
 }
@@ -157,6 +159,7 @@ export async function getProfileDecor(userId: string, locale: string): Promise<P
       titleAgreement: true,
       createdAt: true,
       discordLinkedAt: true,
+      ambassadorSince: true,
       badgeOrder: true,
       title: { select: { label: true, active: true } },
       frame: { select: { frameStyle: true, active: true } },

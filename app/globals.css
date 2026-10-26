@@ -30,6 +30,8 @@
   --k-shu-btn: #c8372d;
   --k-ai: #7fa3d1;
   --k-kin: #d9b556;
+  /* Hisui (翡翠, jade) : rôle Ambassadeur */
+  --k-hisui: #5bbf8b;
   /* Sakura (桜) : liste de souhaits */
   --k-sakura: #e89ab4;
   --k-link: #d9b556;
@@ -63,6 +65,7 @@
   --k-shu-btn: #c8372d;
   --k-ai: #1e3557;
   --k-kin: #b08a2e;
+  --k-hisui: #25673f;
   --k-sakura: #a63d63;
   --k-link: #75541c;
   --k-sheen: rgb(255 255 255 / 0.7);
@@ -87,6 +90,7 @@
   --color-shu-btn: var(--k-shu-btn);
   --color-ai: var(--k-ai);
   --color-kin: var(--k-kin);
+  --color-hisui: var(--k-hisui);
   --color-sakura: var(--k-sakura);
   --color-link: var(--k-link);
 
@@ -1142,6 +1146,12 @@
     --nc-base: #ff2d4a;
     --nc-dark: #b0001c;
   }
+  /* Hisui (jade) : réservée au rôle Ambassadeur, plus froide et plus profonde que lime */
+  .name-color-hisui {
+    --nc-light: #d4f7e3;
+    --nc-base: #5bbf8b;
+    --nc-dark: #1f7a4d;
+  }
   [data-theme="washi"] .name-color-lime {
     --nc-light: #7cc21a;
     --nc-base: #4d9a00;
@@ -1166,6 +1176,11 @@
     --nc-light: #e63b52;
     --nc-base: #c8102e;
     --nc-dark: #85000f;
+  }
+  [data-theme="washi"] .name-color-hisui {
+    --nc-light: #3f9a68;
+    --nc-base: #25673f;
+    --nc-dark: #123d24;
   }
 
   .name-color-rainbow,

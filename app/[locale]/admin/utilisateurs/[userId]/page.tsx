@@ -6,7 +6,7 @@ import { UserEditor } from "@/components/admin/UserEditor";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
 import { parseUserListParams, USER_ADMIN_ACTIONS } from "@/lib/admin/users";
-import { computeStock } from "@/lib/boosters/stock";
+import { computeStock, stockRulesFor } from "@/lib/boosters/stock";
 import { requireAdmin } from "@/server/admin";
 import { adminCardById, getAdminUser, getAdminUserCards } from "@/server/admin/users";
 import { readBannerPity } from "@/server/boosters/open-core";
@@ -25,7 +25,7 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
   ]);
   if (!data) notFound();
   const { user, discoveries, catalogTotal, ownedCatalogCards, uniqueCards, boosterTypes, ledger, openings, logs } = data;
-  const stock = computeStock(user.boosterStock, user.boosterAnchor, new Date(), rules.stock);
+  const stock = computeStock(user.boosterStock, user.boosterAnchor, new Date(), stockRulesFor(rules.stock, user.ambassadorSince !== null));
   const pity = readBannerPity(user.bannerPity);
   const cardHref = (page: number, card?: string) => ({ pathname: `/admin/utilisateurs/${userId}`, query: { cardQuery: cardParams.query, cardPage: page, ...(card ? { card } : {}) }, hash: card ? "admin-card-form" : "user-collection" });
   const metrics = [
@@ -46,7 +46,7 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
           <h2 className="break-all font-heading text-2xl font-bold">{user.username}</h2>
           <p className="mt-1 break-all text-xs text-text-muted">{user.id}</p>
           <p className="mt-2 text-sm">{user.email ?? t("noEmail")}{user.emailVerified ? ` · ${t("verified")}` : ""}</p>
-          <p className="mt-1 text-sm text-text-muted">{t(user.bannedAt ? "banned" : user.role === "ADMIN" ? "adminRole" : user.isGuest ? "guest" : "registered")} · {t("joined", { date: format.dateTime(user.createdAt, { dateStyle: "medium" }) })}</p>
+          <p className="mt-1 text-sm text-text-muted">{t(user.bannedAt ? "banned" : user.role === "ADMIN" ? "adminRole" : user.isGuest ? "guest" : "registered")}{user.ambassadorSince ? ` · ${t("ambassadorRole")}` : ""} · {t("joined", { date: format.dateTime(user.createdAt, { dateStyle: "medium" }) })}</p>
           {user.discordLinkedAt && <p className="mt-1 text-xs text-text-muted">{t("discordLinked")}</p>}
         </div>
         <Link href={`/u/${user.username}`} className={buttonClasses()}>{t("viewProfile")}</Link>
@@ -54,7 +54,7 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
       <dl className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         {metrics.map((m) => <div key={m.label} className="lacquer rounded-card p-4"><dt className="text-xs text-text-muted">{t(m.label)}</dt><dd className="mt-1 text-xl font-bold tabular-nums">{m.value}</dd></div>)}
       </dl>
-      <UserEditor userId={userId} account={{ username: user.username, role: user.role, banned: !!user.bannedAt, profileVisibility: user.profileVisibility, showCollection: user.showCollection }} self={admin.id === userId}
+      <UserEditor userId={userId} account={{ username: user.username, role: user.role, banned: !!user.bannedAt, profileVisibility: user.profileVisibility, showCollection: user.showCollection }} ambassadorSince={user.ambassadorSince} self={admin.id === userId}
         coins={user.coins} stats={{ boosterStock: stock.stock, rankPoints: user.rankPoints, pityCount: user.pityCount, standardCount: user.standardCount }}
         boosters={boosterTypes.map((b) => ({ ...b, pity: pity[b.id] ?? 0 }))} discoveries={discoveries} catalogTotal={catalogTotal} ownedCatalogCards={ownedCatalogCards} selectedCard={selectedCard} sessions={user._count.sessions} />
 

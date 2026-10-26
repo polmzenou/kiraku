@@ -19,6 +19,7 @@ import { Field, FormMessage, inputClass, NumberField, SelectField, TextField, To
 function defaultCondition(type: ConditionType, rarity: string): ProfileCondition {
   switch (type) {
     case "ALWAYS":
+    case "AMBASSADOR":
       return { type };
     case "RARITY_OWNED":
       return { type, rarity, n: 1 };

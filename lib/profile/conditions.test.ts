@@ -21,6 +21,7 @@ const stats: ProfileStats = {
   tier: "GOLD",
   discoveredPercent: 42,
   discoveredByRarity: { MYTHIC: 12, AR: 5, GOLD: 1, COMMON: 300 },
+  ambassador: false,
 };
 
 describe("conditions de déblocage", () => {
@@ -45,6 +46,13 @@ describe("conditions de déblocage", () => {
     [{ type: "RARITIES_DISCOVERED", rarities: ["MYTHIC", "MYTHIC", "LEGENDARY"], n: 20 }, false, 12, 20],
   ])("%o", (raw, unlocked, current, goal) => {
     expect(evaluateCondition(parseCondition(raw), stats)).toEqual({ unlocked, current, goal });
+  });
+
+  it("réserve une condition AMBASSADOR au rôle donné par l'admin", () => {
+    const condition = parseCondition({ type: "AMBASSADOR" });
+    expect(evaluateCondition(condition, stats)).toEqual({ unlocked: false, current: 0, goal: 1 });
+    expect(evaluateCondition(condition, { ...stats, ambassador: true })).toEqual({ unlocked: true, current: 1, goal: 1 });
+    expect(parseCondition({ type: "AMBASSADOR", n: 1 })).toBeNull();
   });
 
   it("une condition illisible ou une série inconnue ne débloque rien", () => {
@@ -84,10 +92,15 @@ describe("libellés accordés", () => {
 });
 
 describe("badges", () => {
-  const base = { createdAt: new Date("2026-10-01"), pioneerUntil: new Date("2026-12-31"), qualifiedReferrals: 3, ambassadorReferrals: 3, discordLinked: true };
+  const base = { createdAt: new Date("2026-10-01"), pioneerUntil: new Date("2026-12-31"), ambassador: true, qualifiedReferrals: 3, sponsorReferrals: 3, discordLinked: true };
   it("dérive les badges du compte", () => {
-    expect(earnedBadges(base)).toEqual(["PIONEER", "AMBASSADOR", "VERIFIED"]);
-    expect(earnedBadges({ ...base, pioneerUntil: null, qualifiedReferrals: 1, discordLinked: false })).toEqual([]);
+    expect(earnedBadges(base)).toEqual(["PIONEER", "AMBASSADOR", "SPONSOR", "VERIFIED"]);
+    expect(earnedBadges({ ...base, pioneerUntil: null, ambassador: false, qualifiedReferrals: 1, discordLinked: false })).toEqual([]);
+  });
+  it("Ambassadeur vient du rôle, Parrain des filleuls", () => {
+    expect(earnedBadges({ ...base, ambassador: false })).not.toContain("AMBASSADOR");
+    expect(earnedBadges({ ...base, qualifiedReferrals: 0 })).toEqual(["PIONEER", "AMBASSADOR", "VERIFIED"]);
+    expect(earnedBadges({ ...base, sponsorReferrals: 0 })).not.toContain("SPONSOR");
   });
   it("respecte l'ordre choisi parmi les badges obtenus", () => {
     expect(orderedBadges(["PIONEER", "VERIFIED"], ["VERIFIED", "AMBASSADOR"])).toEqual(["VERIFIED"]);

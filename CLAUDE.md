@@ -43,6 +43,7 @@ Thème sombre **Yoru** par défaut, thème clair **Washi** en option. Tokens (à
 | shu (accent) | #E0533F, boutons #C8372D | #C8372D |
 | ai | #7FA3D1 | #1E3557 |
 | kin | #D9B556 | #B08A2E |
+| hisui (rôle Ambassadeur) | #5BBF8B | #25673F |
 
 Polices : Dela Gothic One (h1 et h2, `font-heading`), Shippori Mincho B1 (h3, logo et autres titres, `font-title`), Zen Kaku Gothic New (texte, chiffres tabulaires), Yuji Syuku (kanji des sceaux, en sous-ensemble). Pas de police monospace.
 

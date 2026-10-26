@@ -7,9 +7,10 @@ const base = { userId: "player", reason: "Correction" };
 const target = {
   id: "player", username: "Player", role: "USER", bannedAt: null, profileVisibility: "PUBLIC", showCollection: true,
   coins: 500, boosterStock: 2, boosterAnchor: new Date(0), rankPoints: 0, pityCount: 3, standardCount: 4, bannerPity: {}, battleTeam: [],
+  ambassadorSince: null as Date | null, titleId: null as string | null, frameId: "frame-hisui" as string | null, nameColorId: "color-lime" as string | null,
 };
 
-function setup({ role = "ADMIN", banned = false, exists = true } = {}) {
+function setup({ role = "ADMIN", banned = false, exists = true, player = {} as Partial<typeof target> } = {}) {
   const tx = {
     $queryRaw: vi.fn(async (strings: TemplateStringsArray, ...values: unknown[]) => {
       const sql = strings.join("?");
@@ -17,7 +18,7 @@ function setup({ role = "ADMIN", banned = false, exists = true } = {}) {
       return [];
     }),
     user: {
-      findUnique: vi.fn(async ({ where }: { where: { id: string } }) => where.id === "admin" ? { ...target, id: "admin", role, bannedAt: banned ? new Date() : null } : exists ? { ...target } : null),
+      findUnique: vi.fn(async ({ where }: { where: { id: string } }) => where.id === "admin" ? { ...target, id: "admin", role, bannedAt: banned ? new Date() : null } : exists ? { ...target, ...player } : null),
       findFirst: vi.fn().mockResolvedValue(null), update: vi.fn(),
     },
     coinTransaction: { createMany: vi.fn() },
@@ -31,6 +32,9 @@ function setup({ role = "ADMIN", banned = false, exists = true } = {}) {
     wishlistEntry: { findMany: vi.fn().mockResolvedValue([]), deleteMany: vi.fn() },
     teamGift: { create: vi.fn().mockResolvedValue({ id: "gift" }) },
     notification: { create: vi.fn().mockResolvedValue({ id: "notif" }) },
+    gameSetting: { findMany: vi.fn().mockResolvedValue([]) },
+    // Seul le cadre porté est réservé aux ambassadeurs
+    cosmetic: { findMany: vi.fn().mockResolvedValue([{ id: "frame-hisui" }]) },
   };
   const db = { $transaction: vi.fn(async (run: (client: typeof tx) => Promise<unknown>) => run(tx)) } as unknown as PrismaClient;
   return { tx, db };
@@ -123,5 +127,38 @@ describe("mutations admin atomiques", () => {
     const { tx, db } = setup();
     await expect(mutateAdminUserWith(db, "admin", { ...base, kind: "discoveries", value: 0 })).rejects.toMatchObject({ code: "DISCOVERY_MIN" });
     expect(tx.adminLog.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("rôle Ambassadeur", () => {
+  it("donne le rôle, arrête le stock au max commun et notifie le joueur", async () => {
+    const { tx, db } = setup({ player: { boosterStock: 10, boosterAnchor: new Date(0) } });
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "ambassador", ambassador: true });
+    const data = tx.user.update.mock.calls[0][0].data;
+    expect(data.ambassadorSince).toBeInstanceOf(Date);
+    // Plein à 10 avec une vieille ancre : le cycle vers 15 repart de maintenant
+    expect(data.boosterStock).toBe(10);
+    expect(data.boosterAnchor.getTime()).toBeGreaterThan(0);
+    expect(tx.cosmetic.findMany).not.toHaveBeenCalled();
+    expect(tx.notification.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ type: "AMBASSADOR_GRANTED", userId: "player" }) }));
+    expect(tx.adminLog.create.mock.calls[0][0].data.action).toBe("USER_AMBASSADOR");
+  });
+
+  it("retire le rôle et les cosmétiques réservés portés, sans notifier", async () => {
+    const since = new Date("2026-10-01");
+    const { tx, db } = setup({ player: { ambassadorSince: since, boosterStock: 13, boosterAnchor: new Date() } });
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "ambassador", ambassador: false });
+    const data = tx.user.update.mock.calls[0][0].data;
+    expect(data).toMatchObject({ ambassadorSince: null, boosterStock: 13, frameId: null });
+    expect(data).not.toHaveProperty("nameColorId");
+    expect(tx.notification.create).not.toHaveBeenCalled();
+  });
+
+  it("garde la date d'origine si le rôle est redonné", async () => {
+    const since = new Date("2026-10-01");
+    const { tx, db } = setup({ player: { ambassadorSince: since } });
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "ambassador", ambassador: true });
+    expect(tx.user.update.mock.calls[0][0].data.ambassadorSince).toEqual(since);
+    expect(tx.notification.create).not.toHaveBeenCalled();
   });
 });

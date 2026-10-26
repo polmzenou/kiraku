@@ -3,6 +3,7 @@ import { rarityKeySchema } from "@/lib/catalog/definitions";
 import { RARITIES, VARIANT_RARITIES } from "@/lib/catalog/rarity";
 import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
 import { rotationPinSchema } from "@/lib/boosters/rotation";
+import { slugSchema } from "@/lib/boosters/types";
 import { KEYWORDS, TECHNIQUES } from "@/lib/battle/types";
 import { JOIN_MODAL_DEFAULT, joinModalSchema } from "@/lib/discord/join-modal";
 
@@ -182,9 +183,13 @@ export const SETTING_SCHEMAS = {
   // Durée de vie d'un message, comme une discussion éphémère : supprimé passé ce délai
   "chat.retentionHours": z.number().int().min(1).max(24 * 365),
   "chat.pollSeconds": z.number().int().min(3).max(300),
-  // Profil (étape 12h) : badge Pionnier (inscrits jusqu'à cette date, AAAA-MM-JJ, ou aucun) et Ambassadeur
+  // Profil (étape 12h) : badge Pionnier (inscrits jusqu'à cette date, AAAA-MM-JJ, ou aucun) et Parrain
   "profile.pioneerUntil": z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
-  "profile.ambassadorReferrals": z.number().int().min(0).max(1_000),
+  "profile.sponsorReferrals": z.number().int().min(0).max(1_000),
+  // Rôle Ambassadeur (donné par l'admin) : stock de boosters gratuits et pack hebdomadaire (0 = aucun pack)
+  "ambassador.maxStock": z.number().int().min(1).max(100),
+  "ambassador.weeklyBoosters": z.number().int().min(0).max(50),
+  "ambassador.weeklyBoosterSlug": slugSchema,
   "notifications.retentionDays": z.number().int().min(1).max(365),
   // Intervalle de sondage de la cloche et des toasts (onglet visible seulement)
   "notifications.pollSeconds": z.number().int().min(10).max(600),
@@ -364,7 +369,10 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "chat.retentionHours": 24,
   "chat.pollSeconds": 10,
   "profile.pioneerUntil": "2026-12-31",
-  "profile.ambassadorReferrals": 3,
+  "profile.sponsorReferrals": 3,
+  "ambassador.maxStock": 15,
+  "ambassador.weeklyBoosters": 5,
+  "ambassador.weeklyBoosterSlug": "standard", // Tout anime
   "notifications.retentionDays": 30,
   "notifications.pollSeconds": 20,
   "notifications.pushEnabled": true,

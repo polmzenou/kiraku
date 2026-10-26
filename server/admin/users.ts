@@ -24,13 +24,13 @@ const USER_ORDER = {
 export async function listAdminUsers({ query, filter, page: requestedPage, sort, dir }: UserListParams) {
   const where: Prisma.UserWhereInput = {
     ...(query ? { OR: [{ username: { contains: query, mode: "insensitive" } }, { email: { contains: query, mode: "insensitive" } }, { id: query }] } : {}),
-    ...(filter === "registered" ? { isGuest: false } : filter === "guests" ? { isGuest: true } : filter === "admins" ? { role: "ADMIN" } : filter === "banned" ? { bannedAt: { not: null } } : {}),
+    ...(filter === "registered" ? { isGuest: false } : filter === "guests" ? { isGuest: true } : filter === "admins" ? { role: "ADMIN" } : filter === "ambassadors" ? { ambassadorSince: { not: null } } : filter === "banned" ? { bannedAt: { not: null } } : {}),
   };
   const total = await prisma.user.count({ where });
   const pages = Math.max(1, Math.ceil(total / ADMIN_USER_PAGE_SIZE));
   const page = Math.min(requestedPage, pages - 1);
   const users = await prisma.user.findMany({ where, orderBy: [...USER_ORDER[sort](dir), { id: dir }], skip: page * ADMIN_USER_PAGE_SIZE, take: ADMIN_USER_PAGE_SIZE,
-    select: { id: true, username: true, email: true, role: true, bannedAt: true, isGuest: true, coins: true, createdAt: true,
+    select: { id: true, username: true, email: true, role: true, bannedAt: true, isGuest: true, coins: true, createdAt: true, ambassadorSince: true,
       deletionRequestedAt: true, anonymizedAt: true,
       _count: { select: { cards: true, discoveries: { where: { card: { status: "PUBLISHED" } } } } } },
   });
@@ -39,7 +39,7 @@ export async function listAdminUsers({ query, filter, page: requestedPage, sort,
 
 export async function getAdminUser(userId: string, locale: string) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: {
-    id: true, username: true, email: true, emailVerified: true, isGuest: true, role: true, bannedAt: true, createdAt: true,
+    id: true, username: true, email: true, emailVerified: true, isGuest: true, role: true, bannedAt: true, createdAt: true, ambassadorSince: true,
     coins: true, boosterStock: true, boosterAnchor: true, rankPoints: true, pityCount: true, standardCount: true, bannerPity: true,
     profileVisibility: true, showCollection: true, discordLinkedAt: true, referralCode: true,
     deletionRequestedAt: true, anonymizedAt: true, termsVersion: true,

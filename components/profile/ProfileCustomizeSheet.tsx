@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
 import type { ProfileVisibility } from "@/lib/collection/visibility";
-import { BADGE_KANJI, BIO_MAX, type Badge } from "@/lib/profile/conditions";
+import { BADGE_CLASS, BADGE_KANJI, BIO_MAX, type Badge } from "@/lib/profile/conditions";
 import { NAME_COLOR_SWATCH } from "@/lib/profile/name-colors";
 import { saveProfileAction } from "@/server/actions/profile";
 import type { CosmeticOption } from "@/server/profile/progress";
@@ -191,7 +191,7 @@ function ProfileCustomizeSheet({ username, image, initial, options, badges, disc
                   const position = draft.badgeOrder.indexOf(b);
                   return (
                     <Chip key={b} selected={position >= 0} onClick={() => toggleBadge(b)}>
-                      <span aria-hidden="true" lang="ja" className="font-seal text-kin">
+                      <span aria-hidden="true" lang="ja" className={`font-seal ${BADGE_CLASS[b].kanji}`}>
                         {BADGE_KANJI[b]}
                       </span>
                       {t(`badgeNames.${b}`)}
@@ -237,7 +237,7 @@ function ProfileCustomizeSheet({ username, image, initial, options, badges, disc
                     label={o.labels[draft.titleAgreement]}
                     selected={draft.frameId === o.id}
                     locked={!o.progress.unlocked}
-                    detail={o.progress.unlocked ? null : `${o.progress.current}/${o.progress.goal}`}
+                    detail={o.progress.unlocked || o.progress.goal <= 1 ? null : `${o.progress.current}/${o.progress.goal}`}
                     hint={o.hint}
                     onClick={() => (o.progress.unlocked ? set({ frameId: o.id }) : setFocused(o))}
                   >
@@ -444,7 +444,7 @@ export function BadgeRow({ badges }: { badges: readonly Badge[] }) {
   return (
     <ul className="flex flex-wrap gap-1.5" aria-label={t("badges")}>
       {badges.map((b) => (
-        <li key={b} className="inline-flex items-center gap-1 rounded-pill border border-kin/50 px-2 py-0.5 text-xs font-bold text-kin">
+        <li key={b} className={`inline-flex items-center gap-1 rounded-pill border px-2 py-0.5 text-xs font-bold ${BADGE_CLASS[b].pill}`}>
           <span aria-hidden="true" lang="ja" className="font-seal">
             {BADGE_KANJI[b]}
           </span>

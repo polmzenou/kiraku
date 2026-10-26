@@ -19,6 +19,7 @@ import { RANKED_FORM_KEYS, rankedSettingsSchema, type RankedSettingKey } from "@
 import { MARKET_SETTING_KEYS, marketSettingsSchema, type MarketSettingKey } from "@/lib/settings/market-form";
 import { SOCIAL_SETTING_KEYS, socialSettingsSchema, type SocialSettingKey } from "@/lib/settings/social-form";
 import { PROFILE_SETTING_KEYS, profileSettingsSchema, type ProfileSettingKey } from "@/lib/settings/profile-form";
+import { AMBASSADOR_SETTING_KEYS, ambassadorSettingsSchema, type AmbassadorSettingKey } from "@/lib/settings/ambassador-form";
 import { changedSettingKeys, type SettingsOf } from "@/lib/settings/form";
 import { getAdmin } from "../admin";
 import { prisma } from "../db";
@@ -108,6 +109,20 @@ export async function updateSocialSettings(input: unknown): Promise<UpdateSettin
 
 export async function updateProfileSettings(input: unknown): Promise<UpdateSettingsResult<ProfileSettingKey>> {
   return saveSettings(PROFILE_SETTING_KEYS, profileSettingsSchema, input);
+}
+
+export async function updateAmbassadorSettings(input: unknown): Promise<UpdateSettingsResult<AmbassadorSettingKey>> {
+  const admin = await getAdmin();
+  if (!admin) return { ok: false, error: "FORBIDDEN" };
+  const parsed = ambassadorSettingsSchema.safeParse(input);
+  // Limité avant la vérification du type en base (bucket à part de celui de l'écriture)
+  if (!(await rateLimit(`admin-check:${admin.id}`, { limit: 20, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
+  // Le pack donne des boosters à ouvrir : le type doit exister et ne pas être un sachet scellé
+  if (parsed.success) {
+    const type = await prisma.boosterType.findUnique({ where: { slug: parsed.data["ambassador.weeklyBoosterSlug"] }, select: { kind: true } });
+    if (!type || type.kind === "DROP") return { ok: false, error: "INVALID" };
+  }
+  return saveSettings(AMBASSADOR_SETTING_KEYS, ambassadorSettingsSchema, input);
 }
 
 export async function updateEconomySettings(input: unknown): Promise<UpdateSettingsResult<EconomySettingKey>> {
