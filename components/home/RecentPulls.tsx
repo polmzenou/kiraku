@@ -66,10 +66,11 @@ export function RecentPulls({ initial, refreshSeconds, serverNow }: { initial: R
       >
         <div ref={track} className="flex w-max gap-3 py-1 will-change-transform">
           <PullList pulls={pulls} now={now} />
-          {/* Deuxième passage pour la boucle : invisible aux lecteurs d'écran et au clavier */}
+          {/* Deuxième passage pour la boucle : invisible aux lecteurs d'écran et au clavier, mais
+              cliquable (pas d'`inert`, qui ignorerait les appuis quand cette copie est à l'écran) */}
           {marquee && (
-            <div aria-hidden="true" inert className="flex gap-3 motion-reduce:hidden">
-              <PullList pulls={pulls} now={now} />
+            <div aria-hidden="true" className="flex gap-3 motion-reduce:hidden">
+              <PullList pulls={pulls} now={now} copy />
             </div>
           )}
         </div>
@@ -78,21 +79,22 @@ export function RecentPulls({ initial, refreshSeconds, serverNow }: { initial: R
   );
 }
 
-function PullList({ pulls, now }: { pulls: RecentPull[]; now: number }) {
+function PullList({ pulls, now, copy = false }: { pulls: RecentPull[]; now: number; copy?: boolean }) {
   const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("home.pulls");
   const tRarity = useTranslations("rarity");
   const format = useFormatter();
+  const tabIndex = copy ? -1 : undefined;
   return (
     <ul className="flex gap-3" aria-label={t("listLabel")}>
       {pulls.map((p) => (
         <li key={p.id} className="flex w-32 shrink-0 flex-col gap-2 sm:w-36">
-          <Link href={`/wiki/${p.card.anilistId}`} aria-label={t("cardLabel", { name: p.card.name, rarity: tRarity(p.card.rarity) })}>
+          <Link href={`/wiki/${p.card.anilistId}`} tabIndex={tabIndex} aria-label={t("cardLabel", { name: p.card.name, rarity: tRarity(p.card.rarity) })}>
             <Fuda card={p.card} series={p.card.series} size="sm" tilt={false} sizes="144px" describeImage />
           </Link>
           <div className="flex min-w-0 items-center gap-2">
             {p.profile ? (
-              <Link href={`/u/${p.profile.username}`} className="flex min-h-11 min-w-0 items-center gap-2">
+              <Link href={`/u/${p.profile.username}`} tabIndex={tabIndex} className="flex min-h-11 min-w-0 items-center gap-2">
                 <PlayerAvatar username={p.profile.username} image={p.profile.image} size={28} />
                 <span className="truncate text-sm font-bold">{p.name}</span>
               </Link>
