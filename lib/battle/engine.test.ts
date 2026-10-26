@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { seededRng } from "@/lib/rng";
-import { botAction } from "./bot";
-import { applyAction, createState, legalActions, orbsFor, outcome, replay } from "./engine";
+import { botGame, randomTeam } from "./bot-games";
+import { applyAction, createState, legalActions, orbsFor, replay } from "./engine";
 import { FLAT_RULES, RULES, fighter, setupOf } from "./fixtures";
 import type { Action, BattleSetup, BattleState, Side } from "./types";
 
@@ -291,39 +291,6 @@ describe("techniques 技", () => {
   });
 });
 
-/** Partie complète bot contre bot, avec erreurs volontaires pour varier les coups. */
-function botGame(seed: number, setup: BattleSetup) {
-  const rng = seededRng(seed ^ 0x5eed);
-  let { state } = createState(setup);
-  const actions: Action[] = [];
-  for (let guard = 0; !state.finished && guard < 2_000; guard++) {
-    const side = state.active;
-    const legal = legalActions(setup, state, side);
-    const action = botAction(setup, state, side, rng, 30);
-    // Vérifications à la main (expect dans une boucle de 100 000 coups est trop lent)
-    if (!legal.some((a) => JSON.stringify(a) === JSON.stringify(action))) throw new Error(`coup illégal du bot : ${JSON.stringify(action)}`);
-    actions.push(action);
-    state = applyAction(setup, seed, state, action).state;
-    for (const team of state.fighters) for (const f of team) {
-      if (f.hp < 0 || f.hp > f.maxHp) throw new Error(`PV hors bornes : ${f.hp}/${f.maxHp}`);
-    }
-  }
-  return { state, actions };
-}
-
-function randomTeam(rng: (n: number) => number) {
-  const keywords = ["TAUNT", "BARRIER", "FLURRY", "POISON", "RIPOSTE", "LAST_WILL", "REVIVE"] as const;
-  const techniques = ["ISSEN", "KANTSU", "RANBU", "IYASHI", "SHUGO", "KOBU", "FUIN"] as const;
-  return Array.from({ length: 3 }, () =>
-    fighter({
-      power: 40 + rng(61),
-      ki: 30 + rng(57),
-      keywords: [...new Set(Array.from({ length: rng(3) }, () => keywords[rng(keywords.length)]))],
-      technique: techniques[rng(techniques.length)],
-    }),
-  );
-}
-
 describe("déterminisme et robustesse", () => {
   it("même graine + mêmes actions = mêmes événements ; replay identique à la partie jouée", () => {
     const rng = seededRng(42);
@@ -346,16 +313,4 @@ describe("déterminisme et robustesse", () => {
     );
     expect(amounts.size).toBeGreaterThan(1);
   });
-
-  it("2 000 parties bot contre bot : aucune exception, toujours terminées dans la limite de tours", () => {
-    const rng = seededRng(2026);
-    for (let i = 0; i < 2_000; i++) {
-      const setup = setupOf(randomTeam(rng), randomTeam(rng), RULES, rng(2) as Side);
-      const { state } = botGame(i, setup);
-      expect(state.finished).toBe(true);
-      expect(state.turn).toBeLessThanOrEqual(RULES.maxTurns);
-      const o = outcome(setup, state);
-      if (state.endReason === "KO" && state.winner !== null) expect(o[state.winner === 0 ? 1 : 0].hpLeft).toBe(0);
-    }
-  }, 120_000);
 });

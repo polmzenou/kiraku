@@ -6,12 +6,11 @@ import { OPEN_COUNTS, contentsLabel, type OpenCount } from "@/lib/boosters/catal
 import type { FilterContext } from "@/lib/boosters/pool-filter";
 import { familyRows, firstSelectable, positionInFamily } from "@/lib/boosters/showcase";
 import { localize, priceFor, type BoosterFamily } from "@/lib/boosters/types";
-import type { Rarity } from "@/lib/catalog/rarity";
 import { useRaritySeals } from "@/lib/catalog/use-rarities";
 import type { BoosterState } from "@/server/boosters/state";
 import { segmentedItemClass, segmentedTrackClass } from "../../ui/Segmented";
 import { BoosterArt } from "../BoosterArt";
-import { BoosterPanel, RARITY_TEXT } from "../BoosterPanel";
+import { BoosterPanel, CHANCE_ROWS, chanceRows, RARITY_TEXT } from "../BoosterPanel";
 import { RARITY_BG, usePercent } from "../format";
 import { NextFreeIn } from "../NextFreeIn";
 import { OpenLink } from "../OpenLink";
@@ -22,7 +21,6 @@ import { ShowcaseList } from "./ShowcaseList";
 import { BoosterStripTile } from "./ShowcaseRow";
 import type { Entry, ShowcaseFamily, ShowcaseItem } from "./types";
 
-const CHANCE_ROWS: Rarity[] = ["RARE", "EPIC", "LEGENDARY", "MYTHIC"];
 
 /** Nouveau contenu du hero : fondu et léger glissé vers le haut (transform/opacity seulement). */
 const FADE_IN = "transition-[opacity,translate] duration-500 ease-out starting:translate-y-1.5 starting:opacity-0 motion-reduce:transition-none";
@@ -355,7 +353,7 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
                       </RatesSheet>
                     </div>
                     <ul className="flex flex-col gap-2">
-                      {CHANCE_ROWS.map((r) => (
+                      {chanceRows(panel.odds).map((r) => (
                         <li key={r} className="grid grid-cols-[8rem_minmax(0,1fr)_3.75rem] items-center gap-3 text-[13px] font-bold">
                           <span className="flex min-w-0 items-center gap-1.5">
                             <span aria-hidden="true" lang="ja" className="font-seal">

@@ -1,18 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { BOOSTER_SEEDS } from "@/prisma/seed/booster-types";
-import { DEFAULT_RULES, DEFAULT_RUIN, fakePool, NO_BONUS } from "./fixtures";
-import { groupByRarity, poolCounts } from "./draw";
-import { effectiveSlotFloors } from "./types";
-import { slotDistribution } from "./odds";
+import { expect, it } from "vitest";
+import { DEFAULT_RULES } from "./fixtures";
+import { groupByRarity } from "./draw";
 import { seededRng } from "./rng";
-import { CHI2_CRITICAL_001, chiSquare, compareToOdds, simulate } from "./simulation";
+import { simulate } from "./simulation";
 
-// Preuve que les taux réels respectent le tableau : un million de boosters tirés avec la vraie
-// fonction de tirage, comparés aux probabilités exactes. Graine fixe = test reproductible ;
-// la tolérance de 5 écarts-types fait qu'une implémentation correcte passe avec n'importe quelle graine.
-
-const N = 1_000_000;
-const pool = fakePool();
+// Les simulations d'un million de boosters et par type vivent dans simulation-*.sim.test.ts.
 
 it("compte les raretés supplémentaires et leurs garanties dans les statistiques", () => {
   const rarities = [...Object.keys(DEFAULT_RULES.rates), "CELESTIAL"];
@@ -22,76 +14,4 @@ it("compte les raretés supplémentaires et leurs garanties dans les statistique
   expect(counts.longestDrought).toBe(0);
   expect(counts.goldenBelowFloor).toBe(0);
   expect(counts.atLeast.CELESTIAL).toBe(0); // Les boosters dorés ne sont pas comptés parmi les normaux.
-});
-
-describe("simulation d'un million de boosters", () => {
-  it("composition seule : chaque emplacement et chaque seuil suivent les parts", { timeout: 60_000 }, () => {
-    const rules = { ...DEFAULT_RULES, ...NO_BONUS, pityThreshold: 10_000 };
-    const counts = simulate(seededRng(20261013), rules, pool, N);
-    expect(counts.normalBoosters).toBe(N);
-
-    for (const c of compareToOdds(counts, rules)) {
-      expect(Math.abs(c.sigma), `${c.label} : attendu ${c.expected.toFixed(1)}, observé ${c.observed}`).toBeLessThan(5);
-    }
-
-    rules.slotFloors.forEach((floor, slot) => {
-      const { stat, df } = chiSquare(counts.perSlot[slot], slotDistribution(rules.rates, floor), N);
-      expect(stat, `χ² emplacement ${slot + 1} (${df} ddl)`).toBeLessThan(CHI2_CRITICAL_001[df]);
-    });
-  });
-
-  it("séquence complète : pitié, doré et sachets scellés tiennent leurs promesses", { timeout: 60_000 }, () => {
-    // Chutes 10 fois plus fréquentes qu'en jeu : assez de sachets pour mesurer leurs taux
-    const rules = { ...DEFAULT_RULES, divineOdds: 400, apocalypseOdds: 200 };
-    const counts = simulate(seededRng(42), rules, pool, N, undefined, DEFAULT_RUIN);
-
-    // Garanties absolues (un booster transformé n'avance pas le doré : un doré tous les 10 boosters à cartes)
-    expect(counts.longestDrought).toBeLessThan(rules.pityThreshold);
-    expect(counts.golden).toBe(Math.floor((N - counts.divin - counts.apocalypse) / rules.goldenEvery));
-    expect(counts.goldenMisplaced).toBe(0);
-    expect(counts.goldenBelowFloor).toBe(0);
-    expect(counts.pityTriggered).toBeGreaterThan(0);
-
-    // Fréquences : chutes, Apocalyptiques épargnés (karma compris), Mythiques ≈ chaîne de Markov d'odds.ts
-    const byLabel = Object.fromEntries(compareToOdds(counts, rules).map((c) => [c.label, c]));
-    for (const label of [
-      "sachets Divin tombés",
-      "sachets Apocalyptique tombés",
-      "Apocalyptiques épargnés (karma compris)",
-      "boosters avec Mythique (pitié, doré, sachets compris)",
-    ]) {
-      const c = byLabel[label];
-      expect(Math.abs(c.sigma), `${label} : attendu ${c.expected.toFixed(1)}, observé ${c.observed}`).toBeLessThan(5);
-    }
-  });
-});
-
-// Chaque type de départ à composition propre, tiré 200 000 fois avec la vraie fonction de tirage
-// (sans bonus, pour isoler la composition), plus un pool troué comme celui de Josei (sans Mythique).
-const TYPE_N = 200_000;
-const plainRules = { ...DEFAULT_RULES, ...NO_BONUS, pityThreshold: Number.MAX_SAFE_INTEGER };
-const noBonus = { golden: false, drop: false, pity: false };
-const typeCases = [
-  ...["standard", "pochibukuro", "jubako", "rare", "epique", "legendaire", "mythique"].map((slug) => {
-    const seed = BOOSTER_SEEDS.find((s) => s.slug === slug)!;
-    return [slug, effectiveSlotFloors(seed.slotFloors ?? [], DEFAULT_RULES.slotFloors), fakePool()] as const;
-  }),
-  ["pool sans Mythique (Josei)", DEFAULT_RULES.slotFloors, fakePool(10, ["MYTHIC"])] as const,
-  ["pool sans Légendaire ni Mythique", DEFAULT_RULES.slotFloors, fakePool(10, ["LEGENDARY", "MYTHIC"])] as const,
-];
-
-describe("simulation par type de booster", () => {
-  it.each(typeCases)("%s", { timeout: 60_000 }, (_label, floors, typePool) => {
-    const rules = { ...plainRules, slotFloors: [...floors] };
-    // Graine renouvelée quand le pool factice a reçu AR et Gold : le flux aléatoire a changé.
-    const counts = simulate(seededRng(20261020), rules, typePool, TYPE_N, noBonus);
-    for (const c of compareToOdds(counts, rules, typePool)) {
-      expect(Math.abs(c.sigma), `${c.label} : attendu ${c.expected.toFixed(1)}, observé ${c.observed}`).toBeLessThan(5);
-    }
-    const present = poolCounts(typePool);
-    rules.slotFloors.forEach((floor, slot) => {
-      const { stat, df } = chiSquare(counts.perSlot[slot], slotDistribution(rules.rates, floor, present), TYPE_N);
-      if (df > 0) expect(stat, `χ² emplacement ${slot + 1} (${df} ddl)`).toBeLessThan(CHI2_CRITICAL_001[df]);
-    });
-  });
 });
