@@ -32,8 +32,9 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
     appleWebApp: { capable: true, title: t("title"), statusBarStyle: "black-translucent" },
     icons: {
       icon: [
-        { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
-        { url: "/icons/favicon.svg", sizes: "any", type: "image/svg+xml" },
+        { url: "/icons/favicon-48.png", sizes: "48x48", type: "image/png" },
+        { url: "/icons/favicon-96.png", sizes: "96x96", type: "image/png" },
+        { url: "/icons/favicon-192.png", sizes: "192x192", type: "image/png" },
       ],
       apple: "/icons/apple-touch-icon.png",
     },
