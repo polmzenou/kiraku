@@ -2,17 +2,21 @@
 // paramètre (appUrl côté serveur), les chemins viennent de localePath.
 
 import { X_URL } from "../links";
+import { SITE_NAME } from "./open-graph";
 
 export type StructuredData = { "@type": string } & Record<string, unknown>;
 
 type Crumb = { name: string; path: string };
 
-/** Accueil : le site, l'éditeur et le jeu lui-même (gratuit, dans le navigateur). */
+/**
+ * Accueil : le site, l'éditeur et le jeu lui-même (gratuit, dans le navigateur). Le `WebSite` porte
+ * SITE_NAME, que Google lit pour le nom du site dans ses résultats ; `name` reste un nom alternatif.
+ */
 export function homeGraph(origin: string, home: string, { name, description, language }: { name: string; description: string; language: string }): StructuredData[] {
   const url = `${origin}${home}`;
   const organization = { "@id": `${origin}/#organization` };
   return [
-    { "@type": "WebSite", "@id": `${origin}/#website`, name, url, inLanguage: language, publisher: organization },
+    { "@type": "WebSite", "@id": `${origin}/#website`, name: SITE_NAME, alternateName: [name, "気楽"], url, inLanguage: language, publisher: organization },
     { "@type": "Organization", "@id": organization["@id"], name, url: origin, logo: `${origin}/icons/icon-512.png`, sameAs: [X_URL] },
     {
       "@type": "WebApplication",
