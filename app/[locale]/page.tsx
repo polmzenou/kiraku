@@ -1,19 +1,11 @@
 
-import { useRaritySeals } from "@/lib/catalog/use-rarities";
 import { getRarities } from "@/server/catalog/rarities";
 import type { Metadata } from "next";
-import { hasLocale, useTranslations } from "next-intl";
+import { hasLocale } from "next-intl";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { ArcadeBanner } from "@/components/ArcadeBanner";
-import { BannerHero, type BannerSlide } from "@/components/boosters/BannerHero";
-import { BoosterArt } from "@/components/boosters/BoosterArt";
-import { BoosterPanel } from "@/components/boosters/BoosterPanel";
-import { BoosterTile } from "@/components/boosters/BoosterTile";
-import { FamilyNav } from "@/components/boosters/FamilyNav";
-import { usePercent } from "@/components/boosters/format";
-import { NextFreeIn } from "@/components/boosters/NextFreeIn";
-import { OpenLink } from "@/components/boosters/OpenLink";
-import { RatesSheet } from "@/components/boosters/RatesSheet";
+import { BoosterShowcase } from "@/components/boosters/showcase/BoosterShowcase";
+import type { ShowcaseFamily, ShowcaseItem } from "@/components/boosters/showcase/types";
 import { RecentPulls } from "@/components/home/RecentPulls";
 import { ReviewsSection, type ReviewViewer } from "@/components/home/ReviewsSection";
 import { TopCollectors } from "@/components/home/TopCollectors";
@@ -28,11 +20,11 @@ import { appUrl } from "@/server/env";
 import { poolCounts } from "@/lib/boosters/draw";
 import { boosterPanelData, wishlistInPool, type WishlistInPool } from "@/lib/boosters/panel";
 import { isRotatingFamily } from "@/lib/boosters/rotation";
-import { BOOSTER_FAMILIES, FAMILY_KANJI, localize, type BoosterFamily } from "@/lib/boosters/types";
+import { initialSelection } from "@/lib/boosters/showcase";
+import { BOOSTER_FAMILIES, FAMILY_KANJI, localize } from "@/lib/boosters/types";
 import { type Rarity } from "@/lib/catalog/rarity";
 import { canReview, pinnedFirst } from "@/lib/social/reviews";
 import { readBannerPity } from "@/server/boosters/open-core";
-import { cardViews } from "@/server/boosters/display";
 import {
   getBoosterOffers,
   getBoosterPool,
@@ -71,7 +63,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]">): Prom
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
-/** Accueil : choix du booster (planche « Choix du booster »), onglets par famille sur mobile. */
+/** Accueil : vitrine des boosters (planche « B · Intégrée à l’app »), puis gros tirages, avis et podium. */
 export default async function BoostersPage({ searchParams }: PageProps<"/[locale]">) {
   const RARITIES = await getRarities();
   const [t, format, user, rules, offers, rotation, ctx, query, locale] = await Promise.all([
@@ -92,12 +84,9 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
     boosterStock: rules.stock.max, boosterAnchor: new Date(), coins: await getSetting("economy.startingZeni"), pityCount: 0, standardCount: 0,
   }, rules);
   const visible = offers.filter((o) => o.availability !== "hidden");
-  const families = BOOSTER_FAMILIES.filter((f) => visible.some((o) => o.type.family === f));
-  const selected =
-    visible.find((o) => o.type.slug === first(query.b)) ?? visible.find((o) => o.type.slug === "standard") ?? visible[0];
-  const askedFamily = first(query.f);
-  const activeFamily: BoosterFamily | undefined =
-    families.find((f) => f === askedFamily) ?? selected?.type.family ?? families[0];
+  // Hors rotation : affichés grisés dans la vitrine, jamais sélectionnables
+  const shown = offers.filter((o) => o.availability !== "hidden" || o.rotation === "resting");
+  const families = BOOSTER_FAMILIES.filter((f) => shown.some((o) => o.type.family === f));
 
   // Boosters crédités (cadeaux d'amis, boutique, récompenses), par type, à ouvrir en premier ;
   // en bas de page, avis des joueurs et podium des collectionneurs
@@ -123,212 +112,123 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
 
   const bannerPity = readBannerPity(user?.bannerPity ?? {});
   const userCounters = { stock: state.stock, pityCount: user?.pityCount ?? 0, standardCount: user?.standardCount ?? 0 };
+  const cardsOf = (o: (typeof visible)[number]) => (o.type.slotFloors.length > 0 ? o.type.slotFloors.length : rules.draw.slotFloors.length);
 
-  // Bannières ouvertes : vedettes du pool et pitié vedette du joueur
-  const banners = visible.filter((o) => o.type.kind === "BANNER" && o.type.featuredCardIds.length > 0);
-  const bannerViews = await cardViews(banners.flatMap((b) => b.type.featuredCardIds), locale);
-  const slides: BannerSlide[] = banners.map((b) => ({
-    type: b.type,
-    featured: b.type.featuredCardIds
-      .flatMap((id) => bannerViews.get(id) ?? [])
-      .sort((x, y) => RARITIES.indexOf(y.rarity) - RARITIES.indexOf(x.rarity)),
-    pityLeft: b.type.featuredPity > 0 ? Math.max(1, b.type.featuredPity - (bannerPity[b.type.id] ?? 0)) : 0,
-    now: state.serverNow,
+  // Tous les boosters sont envoyés d'un coup : la vitrine change de booster sans rechargement.
+  // Les pools sont en cache (lecture en mémoire) ; on ne les lit que pour les souhaits et les vedettes.
+  const wished = user ? await getWishlistCardIds(user.id) : [];
+  const items: ShowcaseItem[] = await Promise.all(
+    shown.map(async (offer): Promise<ShowcaseItem> => {
+      const selectable = offer.availability !== "hidden";
+      if (!selectable) return { type: offer.type, cards: cardsOf(offer), selectable, panel: null, wishlist: null };
+      let featuredCounts: Record<Rarity, number> | undefined;
+      let wishlist: WishlistInPool | null = null;
+      if (offer.type.featuredCardIds.length > 0 || wished.length > 0) {
+        const entry = await getBoosterTypeEntry(offer.type.slug);
+        const pool = entry ? await getBoosterPool(entry) : null;
+        if (pool && wished.length > 0) wishlist = wishlistInPool(pool, wished);
+        if (pool && offer.type.featuredCardIds.length > 0) {
+          const wanted = new Set(offer.type.featuredCardIds);
+          featuredCounts = poolCounts(
+            Object.fromEntries(RARITIES.map((r) => [r, pool[r].filter((id) => wanted.has(id))])) as Record<Rarity, string[]>,
+          );
+        }
+      }
+      const panel = boosterPanelData({
+        type: offer.type,
+        counts: offer.counts,
+        rules: rules.draw,
+        availability: offer.availability,
+        user: { ...userCounters, bannerPity: bannerPity[offer.type.id] ?? 0 },
+        featuredCounts,
+      });
+      return { type: offer.type, cards: cardsOf(offer), selectable, panel, wishlist };
+    }),
+  );
+
+  const initial = initialSelection(
+    items.map((i) => ({ slug: i.type.slug, family: i.type.family, name: "", tagline: "", selectable: i.selectable })),
+    { slug: first(query.b), family: first(query.f) },
+  );
+  const showcaseFamilies: ShowcaseFamily[] = families.map((family) => ({
+    family,
+    kanji: FAMILY_KANJI[family],
+    title: t(`families.${family}.title`),
+    short: t(`families.${family}.short`),
+    subtitle: t(`families.${family}.subtitle`),
+    rotating: isRotatingFamily(family),
   }));
 
-  let panel = null;
-  let wishlist: WishlistInPool | null = null;
-  if (selected) {
-    let featuredCounts: Record<Rarity, number> | undefined;
-    const wished = user ? await getWishlistCardIds(user.id) : [];
-    if (selected.type.featuredCardIds.length > 0 || wished.length > 0) {
-      const entry = await getBoosterTypeEntry(selected.type.slug);
-      const pool = entry ? await getBoosterPool(entry) : null;
-      if (pool && wished.length > 0) wishlist = wishlistInPool(pool, wished);
-      if (pool && selected.type.featuredCardIds.length > 0) {
-        const wanted = new Set(selected.type.featuredCardIds);
-        featuredCounts = poolCounts(
-          Object.fromEntries(RARITIES.map((r) => [r, pool[r].filter((id) => wanted.has(id))])) as Record<Rarity, string[]>,
-        );
-      }
-    }
-    panel = boosterPanelData({
-      type: selected.type,
-      counts: selected.counts,
-      rules: rules.draw,
-      availability: selected.availability,
-      user: { ...userCounters, bannerPity: bannerPity[selected.type.id] ?? 0 },
-      featuredCounts,
-    });
-  }
-
-  const cardsOf = (o: (typeof visible)[number]) => (o.type.slotFloors.length > 0 ? o.type.slotFloors.length : rules.draw.slotFloors.length);
+  // Pastille de la bannière vedette ouverte (la plus proche de sa fin)
+  const banner = visible
+    .filter((o) => o.type.kind === "BANNER" && o.type.featuredCardIds.length > 0)
+    .sort((a, b) => (a.type.endsAt?.getTime() ?? Infinity) - (b.type.endsAt?.getTime() ?? Infinity))[0];
 
   const tMeta = await getTranslations("metadata");
   const structuredData = homeGraph(appUrl(), localePath("/", hasLocale(routing.locales, locale) ? locale : routing.defaultLocale), { name: tMeta("title"), description: tMeta("description"), language: locale });
 
   return (
-    <PageShell bottomBar="tall">
+    <PageShell>
       <JsonLd data={structuredData} />
       <ArcadeBanner />
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
-        <div className="flex min-w-0 flex-col gap-6">
-          <SectionTitle
-            level={1}
-            kanji="開封"
-            title={t("title")}
-            subtitle={t("intro", {
-              count: visible.length,
-              families: families.length,
-              minutes: rules.intervalMinutes,
-              max: rules.stock.max,
-            })}
-          />
 
-          {credited.length > 0 && (
-            <ul className="flex flex-col gap-2">
-              {credited.map((c) => (
-                <li
-                  key={c.slug}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-kin bg-surface p-4"
-                >
-                  <p className="flex items-center gap-2 font-bold">
-                    <span aria-hidden="true" lang="ja" className="font-seal text-xl text-kin">
-                      贈
-                    </span>
-                    {t("creditBoosters", { count: c.count, name: c.name })}
-                  </p>
-                  <ButtonLink href={`/ouvrir/${c.slug}?credit=1`} variant="primary">
-                    {t("openCredit")}
-                  </ButtonLink>
-                </li>
-              ))}
-            </ul>
-          )}
+      {credited.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {credited.map((c) => (
+            <li
+              key={c.slug}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-kin bg-surface p-4"
+            >
+              <p className="flex items-center gap-2 font-bold">
+                <span aria-hidden="true" lang="ja" className="font-seal text-xl text-kin">
+                  贈
+                </span>
+                {t("creditBoosters", { count: c.count, name: c.name })}
+              </p>
+              <ButtonLink href={`/ouvrir/${c.slug}?credit=1`} variant="primary">
+                {t("openCredit")}
+              </ButtonLink>
+            </li>
+          ))}
+        </ul>
+      )}
 
-          <BannerHero slides={slides} />
-
-          {/* Onglets de famille : filtrent la grille sur mobile, ancres sur desktop */}
-          <FamilyNav
-            active={activeFamily}
-            items={families.map((family) => ({
-              family,
-              kanji: FAMILY_KANJI[family],
-              title: t(`families.${family}.title`),
-              short: t(`families.${family}.short`),
-              href: `/?b=${selected?.type.family === family ? selected.type.slug : visible.find((o) => o.type.family === family)!.type.slug}&f=${family}#famille-${family}`,
-            }))}
-          />
-
-          {families.map((family) => {
-            const items = visible.filter((o) => o.type.family === family);
-            return (
-              <section
-                key={family}
-                id={`famille-${family}`}
-                aria-labelledby={`famille-${family}-titre`}
-                className={`scroll-mt-32 flex-col gap-4 ${family === activeFamily ? "flex" : "hidden lg:flex"}`}
-              >
-                <div className="flex min-w-0 items-start gap-3">
-                  <span aria-hidden="true" lang="ja" className="shrink-0 font-seal text-lg leading-none text-shu [writing-mode:vertical-rl]">
-                    {FAMILY_KANJI[family]}
-                  </span>
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <h2 id={`famille-${family}-titre`} className="font-title text-xl font-extrabold">
-                        {t(`families.${family}.title`)}
-                      </h2>
-                      <p className="text-xs text-text-muted">{t(`families.${family}.subtitle`)}</p>
-                    </div>
-                    {isRotatingFamily(family) && (
-                      <p className="text-xs text-text-muted">
-                        {t("rotationNext", { when: format.relativeTime(rotation.window.endsAt, state.serverNow) })}
-                      </p>
-                    )}
-                    <span aria-hidden="true" className="h-[3px] w-12 rounded-pill bg-shu" />
-                  </div>
-                </div>
-                <ul className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
-                  {items.map((o) => (
-                    <li key={o.type.slug}>
-                      <BoosterTile type={o.type} cards={cardsOf(o)} selected={o.type.slug === selected?.type.slug} stock={state.stock} />
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            );
-          })}
-        </div>
-
-        {selected && panel && (
-          <aside className="hidden lg:sticky lg:top-24 lg:block">
-            <BoosterPanel type={selected.type} panel={panel} ctx={ctx} state={state} wishlist={wishlist} />
-          </aside>
-        )}
-      </div>
+      {initial && (
+        <BoosterShowcase
+          items={items}
+          families={showcaseFamilies}
+          initial={initial}
+          state={state}
+          ctx={ctx}
+          rotationNote={t("rotationNext", { when: format.relativeTime(rotation.window.endsAt, state.serverNow) })}
+          banner={
+            banner
+              ? {
+                  slug: banner.type.slug,
+                  name: localize(banner.type.name, locale),
+                  days: banner.type.endsAt ? Math.max(1, Math.ceil((banner.type.endsAt.getTime() - state.serverNow) / 86_400_000)) : null,
+                }
+              : null
+          }
+          heading={
+            <SectionTitle
+              level={1}
+              kanji="開封"
+              title={t("title")}
+              subtitle={t("intro", {
+                count: visible.length,
+                families: families.length,
+                minutes: rules.intervalMinutes,
+                max: rules.stock.max,
+              })}
+            />
+          }
+        />
+      )}
 
       {pulls && <RecentPulls initial={pulls} refreshSeconds={pullRefresh} serverNow={state.serverNow} />}
       <ReviewsSection reviews={pinnedFirst(reviews)} summary={reviewSummary} viewer={reviewViewer} />
       <TopCollectors collectors={collectors} />
-
-      {/* Mobile : le booster choisi et l'action principale restent à portée du pouce */}
-      {selected && panel && (
-        <div className="fixed inset-x-[max(0.75rem,env(safe-area-inset-left))] bottom-[var(--mobile-nav-height)] z-30 mx-auto max-w-md rounded-hero border border-border bg-surface px-4 py-3 shadow-float lg:hidden">
-          <div className="mx-auto flex max-w-xl flex-col gap-2.5">
-            <div className="flex items-center gap-3">
-              <div className="w-8 shrink-0">
-                <BoosterArt
-                  shape={selected.type.shape}
-                  theme={selected.type.theme}
-                  emblem={selected.type.emblem}
-                  name=""
-                  contents=""
-                  compact
-                />
-              </div>
-              <div className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate font-title text-base font-extrabold">{localize(selected.type.name, locale)}</span>
-                <OddsSummary odds={panel.odds} />
-              </div>
-              <RatesSheet>
-                <BoosterPanel type={selected.type} panel={panel} ctx={ctx} state={state} wishlist={wishlist} withOpen={false} headingId="selected-booster-sheet" />
-              </RatesSheet>
-            </div>
-            <OpenLink
-              slug={selected.type.slug}
-              price={panel.price}
-              availability={panel.availability}
-              stock={state.stock}
-              coins={state.coins}
-            />
-            {selected.type.usesFreeStock && panel.price.kind !== "free" && (
-              <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} className="text-center" />
-            )}
-          </div>
-        </div>
-      )}
     </PageShell>
-  );
-}
-
-/** « 秀+ 18,4 % · 神 0,31 % » : la ligne de chances de la barre du bas. */
-function OddsSummary({ odds }: { odds: Record<Rarity, number> }) {
-  const RARITY_SEAL = useRaritySeals();
-  const percent = usePercent();
-  const tRarity = useTranslations("rarity");
-  const best: Rarity[] = odds.EPIC >= 0.999 ? (odds.LEGENDARY >= 0.999 ? ["MYTHIC"] : ["LEGENDARY", "MYTHIC"]) : ["EPIC", "MYTHIC"];
-  return (
-    <span className="truncate text-xs text-text-muted">
-      {best.map((r, i) => (
-        <span key={r}>
-          {i > 0 && " · "}
-          <span aria-hidden="true" lang="ja" className="font-seal">
-            {RARITY_SEAL[r]}
-          </span>
-          <span className="sr-only">{tRarity(r)}</span>
-          {r !== "MYTHIC" && "+"} {percent(odds[r])}
-        </span>
-      ))}
-    </span>
   );
 }

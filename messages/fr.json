@@ -665,7 +665,6 @@
       "event": "Événement"
     },
     "selected": "Booster sélectionné",
-    "selectTile": "Choisir le booster {name}",
     "cardsPerBooster": "cartes par booster",
     "cardsInBox": "cartes, en 5 sachets",
     "guaranteed": "ou mieux, garantie",
@@ -723,14 +722,6 @@
     "rates": "Taux",
     "ratesTitle": "Taux et contenu",
     "close": "Fermer",
-    "banners": {
-      "label": "Bannières vedettes",
-      "kicker": "Bannière vedette",
-      "endsIn": "Se termine dans {time}",
-      "pity": "Vedette garantie dans {count, plural, one {# booster} other {# boosters}}",
-      "see": "Voir la bannière",
-      "days": "{count, plural, one {# jour} other {# jours}}"
-    },
     "creditBoosters": "{count, plural, one {# booster {name} à ouvrir} other {# boosters {name} à ouvrir}}",
     "openCredit": "Ouvrir",
     "rotationNext": "Sélection tournante · nouvelle sélection {when}",
@@ -739,6 +730,27 @@
       "count": "{inPool, number} / {total, number}",
       "label": "{count, plural, one {de tes souhaits peut sortir de ce booster} other {de tes souhaits peuvent sortir de ce booster}}",
       "none": "Aucun de tes souhaits ne peut sortir de ce booster."
+    },
+    "showcase": {
+      "search": "Chercher un booster",
+      "searchPlaceholder": "Chercher parmi les {count} boosters",
+      "all": "Tous",
+      "allTitle": "Tous les boosters",
+      "results": "Résultats",
+      "resultsHint": "Dans toutes les familles, hors sélection comprise.",
+      "count": "{count, plural, one {# booster} other {# boosters}}",
+      "rotatingCount": "{on} sur {total}",
+      "offSelection": "Hors sélection",
+      "offShort": "hors sélection",
+      "offGroup": "Hors sélection · {count}",
+      "noResults": "Aucun booster ne correspond.",
+      "kicker": "{family} · {index} / {total}",
+      "rotating": "Sélection tournante",
+      "pity": "avant Mythique sûre",
+      "ratesDetailed": "Taux détaillés",
+      "bannerChip": "Bannière vedette · {name}",
+      "bannerEnds": "fin dans {count, plural, one {# jour} other {# jours}}",
+      "moreFamilies": "Voir les autres familles"
     }
   },
   "opening": {

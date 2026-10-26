@@ -15,7 +15,7 @@ import { OpenLink } from "./OpenLink";
 const CHANCE_ROWS: Rarity[] = ["RARE", "EPIC", "LEGENDARY", "MYTHIC"];
 
 /** Couleur du texte des seuils de rareté (planche : bleu, violet, or, vermillon). */
-const RARITY_TEXT: Record<Rarity, string> = {
+export const RARITY_TEXT: Record<Rarity, string> = {
   COMMON: "text-text-muted",
   UNCOMMON: "text-rarity-uncommon",
   RARE: "text-ai",
@@ -46,8 +46,6 @@ export function BoosterPanel({ type, panel, ctx, state, wishlist = null, withOpe
   const percent = usePercent();
   const name = localize(type.name, locale);
   const isBox = type.shape === "JUBAKO";
-  // Jūbako : 20 emplacements, affichés en « 5 × sachet » puis la garantie
-  const slots = isBox ? null : panel.slotFloors;
 
   const stat = (value: string, label: string, tone = "") => (
     <div className="flex min-w-0 flex-col gap-1 rounded-control bg-surface-2 p-3">
@@ -93,52 +91,13 @@ export function BoosterPanel({ type, panel, ctx, state, wishlist = null, withOpe
       {wishlist && (
         <div className="flex flex-col gap-2">
           <h3 className="text-xs font-bold">{t("wishlist.title")}</h3>
-          <p className="flex items-center gap-3 rounded-control border border-sakura/60 bg-surface-2 p-3">
-            <span aria-hidden="true" lang="ja" className={`font-seal text-xl leading-none ${wishlist.inPool > 0 ? "text-sakura" : "text-text-muted"}`}>
-              望
-            </span>
-            {wishlist.inPool > 0 ? (
-              <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="font-title text-lg leading-none font-bold tabular-nums text-sakura">
-                  {t("wishlist.count", { inPool: wishlist.inPool, total: wishlist.total })}
-                </span>
-                <span className="text-xs leading-snug text-text-muted">{t("wishlist.label", { count: wishlist.inPool })}</span>
-              </span>
-            ) : (
-              <span className="text-xs leading-snug text-text-muted">{t("wishlist.none")}</span>
-            )}
-          </p>
+          <WishlistSummary wishlist={wishlist} />
         </div>
       )}
 
       <div className="flex flex-col gap-2">
         <h3 className="text-xs font-bold">{t("composition")}</h3>
-        {slots ? (
-          <ol className="flex flex-wrap gap-1.5">
-            {slots.map((floor, i) => (
-              <li
-                key={i}
-                className={`inline-flex h-8 min-w-9 flex-1 items-center justify-center gap-0.5 rounded-control px-2 font-seal text-base text-washi-paper ${RARITY_BG[floor]}`}
-              >
-                <span aria-hidden="true">{RARITY_SEAL[floor]}</span>
-                {floor !== "COMMON" && floor !== "MYTHIC" && <span aria-hidden="true">+</span>}
-                <span className="sr-only">
-                  {floor === "MYTHIC" ? t("slotExact", { n: i + 1, rarity: tRarity(floor) }) : t("slot", { n: i + 1, rarity: tRarity(floor) })}
-                </span>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="flex gap-1.5">
-            <span className="inline-flex h-8 flex-1 items-center justify-center rounded-control bg-surface-2 text-sm font-bold">
-              5 × <span aria-hidden="true" lang="ja" className="ml-1 font-seal">袋</span>
-            </span>
-            <span className={`inline-flex h-8 flex-1 items-center justify-center gap-0.5 rounded-control font-seal text-base text-washi-paper ${RARITY_BG[panel.best]}`}>
-              <span aria-hidden="true">{RARITY_SEAL[panel.best]}+</span>
-              <span className="sr-only">{t("guaranteedBox")}</span>
-            </span>
-          </p>
-        )}
+        <BoosterComposition panel={panel} isBox={isBox} />
       </div>
 
       <div className="flex flex-col gap-2">
@@ -198,5 +157,64 @@ export function BoosterPanel({ type, panel, ctx, state, wishlist = null, withOpe
         </div>
       )}
     </section>
+  );
+}
+
+/** Emplacements du booster, du plancher le plus bas au plus haut ; jūbako : « 5 × 袋 » puis la garantie. */
+export function BoosterComposition({ panel, isBox }: { panel: Pick<BoosterPanelData, "slotFloors" | "best">; isBox: boolean }) {
+  const RARITY_SEAL = useRaritySeals();
+  const t = useTranslations("boosters");
+  const tRarity = useTranslations("rarity");
+
+  if (isBox) {
+    return (
+      <p className="flex gap-1.5">
+        <span className="inline-flex h-8 flex-1 items-center justify-center rounded-control bg-surface-2 text-sm font-bold">
+          5 × <span aria-hidden="true" lang="ja" className="ml-1 font-seal">袋</span>
+        </span>
+        <span className={`inline-flex h-8 flex-1 items-center justify-center gap-0.5 rounded-control font-seal text-base text-washi-paper ${RARITY_BG[panel.best]}`}>
+          <span aria-hidden="true">{RARITY_SEAL[panel.best]}+</span>
+          <span className="sr-only">{t("guaranteedBox")}</span>
+        </span>
+      </p>
+    );
+  }
+  return (
+    <ol className="flex flex-wrap gap-1.5">
+      {panel.slotFloors.map((floor, i) => (
+        <li
+          key={i}
+          className={`inline-flex h-8 min-w-9 flex-1 items-center justify-center gap-0.5 rounded-control px-2 font-seal text-base text-washi-paper ${RARITY_BG[floor]}`}
+        >
+          <span aria-hidden="true">{RARITY_SEAL[floor]}</span>
+          {floor !== "COMMON" && floor !== "MYTHIC" && <span aria-hidden="true">+</span>}
+          <span className="sr-only">
+            {floor === "MYTHIC" ? t("slotExact", { n: i + 1, rarity: tRarity(floor) }) : t("slot", { n: i + 1, rarity: tRarity(floor) })}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** « 望 3 / 12 de tes souhaits peuvent sortir de ce booster ». */
+export function WishlistSummary({ wishlist }: { wishlist: WishlistInPool }) {
+  const t = useTranslations("boosters");
+  return (
+    <p className="flex items-center gap-3 rounded-control border border-sakura/60 bg-surface-2 p-3">
+      <span aria-hidden="true" lang="ja" className={`font-seal text-xl leading-none ${wishlist.inPool > 0 ? "text-sakura" : "text-text-muted"}`}>
+        望
+      </span>
+      {wishlist.inPool > 0 ? (
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span className="font-title text-lg leading-none font-bold tabular-nums text-sakura">
+            {t("wishlist.count", { inPool: wishlist.inPool, total: wishlist.total })}
+          </span>
+          <span className="text-xs leading-snug text-text-muted">{t("wishlist.label", { count: wishlist.inPool })}</span>
+        </span>
+      ) : (
+        <span className="text-xs leading-snug text-text-muted">{t("wishlist.none")}</span>
+      )}
+    </p>
   );
 }

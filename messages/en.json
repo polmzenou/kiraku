@@ -665,7 +665,6 @@
       "event": "Event"
     },
     "selected": "Selected booster",
-    "selectTile": "Pick the {name} booster",
     "cardsPerBooster": "cards per booster",
     "cardsInBox": "cards, in 5 packs",
     "guaranteed": "or better, guaranteed",
@@ -723,14 +722,6 @@
     "rates": "Odds",
     "ratesTitle": "Odds and contents",
     "close": "Close",
-    "banners": {
-      "label": "Featured banners",
-      "kicker": "Featured banner",
-      "endsIn": "Ends in {time}",
-      "pity": "Featured card guaranteed in {count, plural, one {# booster} other {# boosters}}",
-      "see": "See the banner",
-      "days": "{count, plural, one {# day} other {# days}}"
-    },
     "creditBoosters": "{count, plural, one {# {name} booster to open} other {# {name} boosters to open}}",
     "openCredit": "Open",
     "rotationNext": "Rotating picks · new picks {when}",
@@ -739,6 +730,27 @@
       "count": "{inPool, number} / {total, number}",
       "label": "{count, plural, one {of your wishes can drop from this booster} other {of your wishes can drop from this booster}}",
       "none": "None of your wishes can drop from this booster."
+    },
+    "showcase": {
+      "search": "Search boosters",
+      "searchPlaceholder": "Search the {count} boosters",
+      "all": "All",
+      "allTitle": "All boosters",
+      "results": "Results",
+      "resultsHint": "Across all families, resting boosters included.",
+      "count": "{count, plural, one {# booster} other {# boosters}}",
+      "rotatingCount": "{on} of {total}",
+      "offSelection": "Not in rotation",
+      "offShort": "resting",
+      "offGroup": "Not in rotation · {count}",
+      "noResults": "No booster matches.",
+      "kicker": "{family} · {index} / {total}",
+      "rotating": "Rotating picks",
+      "pity": "until a sure Mythic",
+      "ratesDetailed": "Detailed rates",
+      "bannerChip": "Featured banner · {name}",
+      "bannerEnds": "ends in {count, plural, one {# day} other {# days}}",
+      "moreFamilies": "See more families"
     }
   },
   "opening": {

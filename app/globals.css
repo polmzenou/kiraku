@@ -345,27 +345,6 @@
     --booster-light: color-mix(in oklab, var(--booster-base) 72%, white);
     container-type: inline-size;
   }
-  /* Halo derrière le sachet : dégradés radiaux seulement (pas de filter: blur), opacity au survol. */
-  .booster-hover-aura {
-    position: absolute;
-    z-index: -1;
-    inset: 0;
-    pointer-events: none;
-    background:
-      radial-gradient(ellipse 70% 55% at 50% 42%, color-mix(in oklab, var(--booster-aura) 55%, transparent) 0%, transparent 70%),
-      radial-gradient(ellipse 90% 40% at 50% 100%, color-mix(in oklab, var(--booster-aura) 30%, transparent) 0%, transparent 70%);
-    opacity: 0.45;
-    transition: opacity 300ms ease-out;
-  }
-  .booster-tile:focus-visible .booster-hover-aura,
-  .booster-hover-aura[data-selected] {
-    opacity: 0.9;
-  }
-  @media (hover: hover) {
-    .booster-tile:hover .booster-hover-aura {
-      opacity: 0.9;
-    }
-  }
   .booster-art[data-ink="dark"] {
     --wl: rgb(31 27 23 / 0.16);
     --ink: #1f1b17;
@@ -491,6 +470,34 @@
     background:
       repeating-linear-gradient(97deg, rgb(120 100 70 / 0.05) 0 1px, transparent 1px 5px),
       var(--color-washi-paper);
+  }
+  /* Vitrine de l'accueil : encre du hero (claire ou sombre selon le booster choisi) et calques du fond,
+     un par booster, qui se fondent l'un dans l'autre (opacity seulement). */
+  .showcase {
+    --ink: #f3ecdf;
+    --ink-2: rgb(243 236 223 / 0.78);
+    --ink-bg: #15120f;
+    --chip: rgb(21 18 15 / 0.3);
+    --chip-b: rgb(243 236 223 / 0.16);
+    --track: rgb(243 236 223 / 0.16);
+  }
+  .showcase[data-ink="dark"] {
+    --ink: #1f1b17;
+    --ink-2: rgb(31 27 23 / 0.72);
+    --ink-bg: #f3ecdf;
+    --chip: rgb(255 255 255 / 0.32);
+    --chip-b: rgb(31 27 23 / 0.16);
+    --track: rgb(31 27 23 / 0.14);
+  }
+  .showcase-layer {
+    --wl: rgb(255 255 255 / 0.07);
+    background:
+      radial-gradient(ellipse 45% 55% at 24% 58%, rgb(255 255 255 / 0.13), transparent 70%),
+      var(--wagara),
+      linear-gradient(150deg, var(--booster-base), var(--booster-dark) 78%);
+  }
+  .showcase-layer[data-ink="dark"] {
+    --wl: rgb(31 27 23 / 0.07);
   }
 }
 
