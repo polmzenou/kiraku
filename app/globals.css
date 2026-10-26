@@ -447,6 +447,13 @@
   .wagara-raden {
     --wagara: conic-gradient(from 210deg at 50% 40%, #d9e8f0, #f1d9e6, #e8f0d8, #d8e2f3, #f3e6d6, #e6d8f1, #d9e8f0);
   }
+  /* Gokō (後光) : auréole derrière l'étiquette, anneaux et rayons d'or (booster Divin) */
+  .wagara-goko {
+    --wagara:
+      radial-gradient(circle at 50% 34%, rgb(255 255 255 / 0.95) 0 12%, rgb(255 244 206 / 0.6) 22%, transparent 42%),
+      radial-gradient(circle at 50% 34%, transparent 46%, rgb(181 138 44 / 0.55) 46.5% 47.5%, transparent 48% 53%, rgb(181 138 44 / 0.3) 53.5% 54%, transparent 54.5%),
+      repeating-conic-gradient(from 0deg at 50% 34%, rgb(201 162 58 / 0.32) 0 3deg, transparent 3deg 10deg);
+  }
   .wagara-none {
     --wagara: linear-gradient(transparent, transparent);
   }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
 import { getFormatter, getTranslations } from "next-intl/server";
+import { AbilityGuide } from "@/components/battle/AbilityGuide";
 import { CombatHub } from "@/components/battle/CombatHub";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { PageShell } from "@/components/PageShell";
@@ -46,6 +47,7 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
             </ButtonLink>
           )}
         </aside>
+        {user.isGuest && ctx.rules.enabled && <AbilityGuide rules={ctx.rules} />}
       </PageShell>
     );
   }
@@ -112,6 +114,8 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
           <li>{t("rules.items.end")}</li>
         </ul>
       </section>
+
+      <AbilityGuide rules={ctx.rules} />
     </PageShell>
   );
 }

@@ -4,8 +4,10 @@ const mocks = vi.hoisted(() => ({ user: vi.fn(), updateMany: vi.fn(), rateLimit:
 vi.mock("../user", () => ({ requireActiveUser: mocks.user }));
 vi.mock("../db", () => ({ prisma: { user: { updateMany: mocks.updateMany } } }));
 vi.mock("../ratelimit", () => ({ rateLimit: mocks.rateLimit }));
-import { RELEASE_ANNOUNCED_AT } from "@/lib/welcome/release";
-import { claimV1WelcomeAction } from "./welcome";
+import { ANNOUNCEMENTS } from "@/lib/welcome/release";
+import { claimAnnouncementAction } from "./welcome";
+
+const [apology, v2] = ANNOUNCEMENTS;
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -14,47 +16,61 @@ beforeEach(() => {
   mocks.updateMany.mockResolvedValue({ count: 1 });
 });
 
-describe("présentation v1 unique par compte", () => {
+describe("annonces uniques par compte", () => {
   it("refuse les visiteurs et les comptes inactifs", async () => {
     mocks.user.mockResolvedValue(null);
-    expect(await claimV1WelcomeAction("player")).toBe(false);
+    expect(await claimAnnouncementAction("player", "v2")).toBe(false);
     expect(mocks.updateMany).not.toHaveBeenCalled();
   });
 
   it("ne réserve jamais l'affichage d'un autre compte", async () => {
-    expect(await claimV1WelcomeAction("another-player")).toBe(false);
+    expect(await claimAnnouncementAction("another-player", "v2")).toBe(false);
     expect(mocks.updateMany).not.toHaveBeenCalled();
   });
 
-  it.each([null, 42, {}, "", "x".repeat(129)])("refuse une entrée invalide : %j", async (input) => {
-    expect(await claimV1WelcomeAction(input)).toBe(false);
+  it.each([
+    [null, "v2"],
+    [42, "v2"],
+    [{}, "v2"],
+    ["", "v2"],
+    ["x".repeat(129), "v2"],
+    ["player", "v3"],
+    ["player", null],
+  ])("refuse une entrée invalide : %j, %j", async (userId, key) => {
+    expect(await claimAnnouncementAction(userId, key)).toBe(false);
     expect(mocks.rateLimit).not.toHaveBeenCalled();
     expect(mocks.updateMany).not.toHaveBeenCalled();
   });
 
-  it("ne représente pas le modal après reconnexion ou changement d'appareil", async () => {
-    mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: new Date(RELEASE_ANNOUNCED_AT.getTime() + 1000) });
-    expect(await claimV1WelcomeAction("player")).toBe(false);
+  it("ne représente pas une annonce après reconnexion ou changement d'appareil", async () => {
+    mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: v2.at });
+    expect(await claimAnnouncementAction("player", "v2")).toBe(false);
     expect(mocks.updateMany).not.toHaveBeenCalled();
   });
 
-  it("présente une fois la nouvelle version à qui n'avait vu que l'ancienne", async () => {
-    mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: new Date(RELEASE_ANNOUNCED_AT.getTime() - 1000) });
-    expect(await claimV1WelcomeAction("player")).toBe(true);
-    expect(mocks.updateMany).toHaveBeenCalledOnce();
+  it("présente les excuses avant la v2 à qui ne les avait pas vues", async () => {
+    mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: new Date(apology.at.getTime() - 1000) });
+    expect(await claimAnnouncementAction("player", "v2")).toBe(false);
+    expect(await claimAnnouncementAction("player", "apology")).toBe(true);
+    expect(mocks.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { v1WelcomeSeenAt: apology.at } }));
   });
 
-  it("enregistre l'affichage sur le joueur de la session", async () => {
-    expect(await claimV1WelcomeAction("player")).toBe(true);
+  it("présente la v2 une fois les excuses vues", async () => {
+    mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: apology.at });
+    expect(await claimAnnouncementAction("player", "v2")).toBe(true);
+  });
+
+  it("enregistre la date de l'annonce sur le joueur de la session", async () => {
+    expect(await claimAnnouncementAction("player", "v2")).toBe(true);
     expect(mocks.updateMany).toHaveBeenCalledWith({
       where: {
         id: "player",
-        OR: [{ v1WelcomeSeenAt: null }, { v1WelcomeSeenAt: { lt: RELEASE_ANNOUNCED_AT } }],
+        OR: [{ v1WelcomeSeenAt: null }, { v1WelcomeSeenAt: { lt: v2.at } }],
         bannedAt: null,
         deletionRequestedAt: null,
         anonymizedAt: null,
       },
-      data: { v1WelcomeSeenAt: expect.any(Date) },
+      data: { v1WelcomeSeenAt: v2.at },
     });
   });
 
@@ -65,12 +81,12 @@ describe("présentation v1 unique par compte", () => {
       seen = true;
       return { count: 1 };
     });
-    expect(await Promise.all([claimV1WelcomeAction("player"), claimV1WelcomeAction("player")])).toEqual([true, false]);
+    expect(await Promise.all([claimAnnouncementAction("player", "v2"), claimAnnouncementAction("player", "v2")])).toEqual([true, false]);
   });
 
   it("ne marque rien lorsque la limite est atteinte", async () => {
     mocks.rateLimit.mockResolvedValue({ success: false });
-    expect(await claimV1WelcomeAction("player")).toBe(false);
+    expect(await claimAnnouncementAction("player", "v2")).toBe(false);
     expect(mocks.updateMany).not.toHaveBeenCalled();
   });
 });

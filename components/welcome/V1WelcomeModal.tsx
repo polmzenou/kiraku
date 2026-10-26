@@ -1,10 +1,10 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useRef, type ReactNode } from "react";
-import { Link, usePathname } from "@/i18n/navigation";
+import { useId, type ReactNode } from "react";
+import { Link } from "@/i18n/navigation";
 import { X_HANDLE, X_URL } from "@/lib/links";
-import { claimV1WelcomeAction } from "@/server/actions/welcome";
+import { useAnnouncementDialog } from "./useAnnouncementDialog";
 
 // Excuses après la panne : les cadeaux sont versés aux inscrits depuis l'admin (envoi direct).
 const GIFTS = [
@@ -12,59 +12,12 @@ const GIFTS = [
   { key: "zeni", glyph: "銭" },
 ] as const;
 
-// On attend un écran de découverte : aucune interruption d'ouverture, de combat ou de connexion.
-const DISCOVERY_ROUTES = new Set(["", "wiki", "collection", "boutique", "amis", "marche", "compte", "missions", "classement", "parrainage", "notifications", "combat"]);
-
 export function V1WelcomeModal({ userId, isGuest }: { userId: string; isGuest: boolean }) {
   const t = useTranslations("v1Welcome");
   const common = useTranslations("common");
-  const pathname = usePathname();
-  const dialog = useRef<HTMLDialogElement>(null);
-  const handled = useRef(false);
-  const claim = useRef<Promise<boolean> | null>(null);
+  const dialog = useAnnouncementDialog(userId, "apology");
   const titleId = useId();
   const descriptionId = useId();
-
-  useEffect(() => {
-    const route = pathname.split("/")[1] ?? "";
-    if (handled.current || !DISCOVERY_ROUTES.has(route) || (route === "combat" && pathname !== "/combat")) return;
-
-    let cancelled = false;
-    let timer: number;
-    async function present() {
-      const el = dialog.current;
-      if (cancelled || !el) return;
-      if (document.visibilityState !== "visible" || document.querySelector("dialog[open]")) {
-        timer = window.setTimeout(() => void present(), 800);
-        return;
-      }
-      try {
-        // La promesse survit aux relances d'effet : jamais deux réservations pour ce composant.
-        claim.current ??= claimV1WelcomeAction(userId);
-        const allowed = await claim.current;
-        if (cancelled) return;
-        if (allowed) {
-          // Une autre fenêtre modale peut avoir été ouverte pendant la requête.
-          if (document.visibilityState !== "visible" || document.querySelector("dialog[open]")) {
-            timer = window.setTimeout(() => void present(), 800);
-            return;
-          }
-          el.showModal();
-          el.querySelector("h2")?.focus({ preventScroll: true });
-        }
-        handled.current = true;
-      } catch {
-        // Une indisponibilité réseau ne bloque jamais la page ; nouvel essai à la prochaine visite.
-        claim.current = null;
-      }
-    }
-
-    timer = window.setTimeout(() => void present(), 800);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [pathname, userId]);
 
   const close = () => dialog.current?.close();
   const strong = (chunks: ReactNode) => <strong className="font-medium text-text">{chunks}</strong>;

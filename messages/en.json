@@ -26,6 +26,59 @@
     "thanks": "Thank you for your patience and loyalty.",
     "letsGo": "Let's go again!"
   },
+  "v2Announcement": {
+    "badge": "New version",
+    "title": "Kiraku-kun",
+    "titleAccent": "goes v2!",
+    "intro": "A fully redesigned site, new cards to collect and a week packed with new features. Here's everything coming your way.",
+    "now": {
+      "title": "Available now",
+      "design": {
+        "title": "A brand-new design",
+        "body": "Kiraku gets a makeover, from the home page to your collection."
+      },
+      "cards": {
+        "title": "New AR and Gold cards",
+        "body": "<strong>Alternate forms</strong> and <strong>golden versions</strong> of your favorite characters. A sneak peek:",
+        "preview": "Preview of the new cards",
+        "more": "+ {count, plural, one {# more card} other {# more cards}} to discover"
+      }
+    },
+    "week": {
+      "title": "This week",
+      "boosters": {
+        "title": "Two new boosters",
+        "body": "The most powerful ever released on Kiraku. Save up your Zeni.",
+        "divine": "DIVINE",
+        "apocalypse": "APOCALYPTIC"
+      },
+      "shop": {
+        "title": "A new shop",
+        "body": "Rebuilt from the ground up, with new offers."
+      },
+      "profile": {
+        "title": "More customization",
+        "body": "New ways to customize your profile, like colored usernames."
+      },
+      "ambassadors": {
+        "title": "Ambassadors are coming",
+        "body": "They're landing on Kiraku. More info very soon."
+      }
+    },
+    "soon": {
+      "title": "Coming soon",
+      "casino": "The casino",
+      "rarities": "New card rarities",
+      "battle": "Improved battles"
+    },
+    "x": {
+      "title": "Join us on X",
+      "body": "Follow <strong>{handle}</strong> so you never miss an update. Send us your requests and ideas: <strong>every one of them will be taken into account</strong> for what comes next on Kiraku.",
+      "cta": "Follow {handle}"
+    },
+    "thanks": "Thanks for keeping Kiraku alive. Have fun!",
+    "letsGo": "Discover v2"
+  },
   "cardBack": {
     "showBack": "Show card back",
     "showFront": "Show card front",
@@ -112,7 +165,7 @@
     "back": "Back to home"
   },
   "footer": {
-    "versionNotice": "Kiraku-kun v1.5 is here! Friend chat, Market trades, custom profiles, new Gold and AR cards, and the adventure goes on.",
+    "versionNotice": "Kiraku-kun v2 is here! New design and new AR and Gold cards. This week: a new shop, Divine and Apocalyptic boosters, profile customization, and the ambassadors arrive. Coming soon: casino, new rarities and improved battles.",
     "disclaimer": "Unofficial fan project. Characters belong to their respective rights holders.",
     "nav": "Site links",
     "account": "My account",
@@ -3302,6 +3355,14 @@
         "timer": "{seconds} s per turn. Two expired turns in a row count as a forfeit.",
         "end": "The first team with no card standing loses. Your cards always return to your collection."
       }
+    },
+    "abilities": {
+      "title": "Abilities",
+      "intro": "What each passive and technique does.",
+      "passives": "Passives",
+      "passivesHint": "Always active, free. The rarer the card, the more it has.",
+      "techniques": "Techniques",
+      "techniquesHint": "One per card, played instead of the attack, paid with orbs."
     },
     "team": {
       "title": "Your team",
