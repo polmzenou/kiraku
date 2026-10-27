@@ -820,6 +820,8 @@
     "noStock": "No free packs left for now",
     "count": "Number of boosters",
     "times": "×{n}",
+    "all": "All",
+    "allCount": "All ({n})",
     "opening": "Opening…",
     "soundOn": "Sound on",
     "soundOff": "Sound off",

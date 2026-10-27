@@ -3,7 +3,7 @@
 import { getLocale } from "next-intl/server";
 import { refresh } from "next/cache";
 import { z } from "@/lib/zod";
-import { OPEN_COUNTS } from "@/lib/boosters/catalog";
+import { MAX_OPEN_COUNT } from "@/lib/boosters/catalog";
 import { slugSchema } from "@/lib/boosters/types";
 import type { DroppedSealedView, OpenedBoosterView } from "@/lib/boosters/view";
 import { isFrozen } from "@/lib/account/deletion";
@@ -46,7 +46,8 @@ export type OpenBoosterResult =
 
 const openSchema = z.object({
   booster: slugSchema,
-  count: z.union(OPEN_COUNTS.map((n) => z.literal(n))),
+  // ×1 / ×5 / ×10 ou « Tous » (le reste du stock ou des crédits) : stock et prix revérifiés sous verrou
+  count: z.number().int().min(1).max(MAX_OPEN_COUNT),
   pay: z.boolean().default(false),
   // Booster crédité (cadeau, boutique, récompense) : jamais payé en plus
   credit: z.boolean().default(false),

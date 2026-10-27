@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { preload } from "react-dom";
 import { Link } from "@/i18n/navigation";
-import { OPEN_COUNTS, type OpenCount } from "@/lib/boosters/catalog";
+import { choiceCount, effectiveChoice, OPEN_COUNTS, openAllCount, type OpenChoice } from "@/lib/boosters/catalog";
 import type { ApocalypseOutcome, SealedKind } from "@/lib/boosters/draw";
 import { priceFor, type BoosterShape, type BoosterTheme, type Price } from "@/lib/boosters/types";
 import type { DroppedSealedView, OpenedBoosterView, SealedDisplay } from "@/lib/boosters/view";
@@ -69,8 +69,8 @@ type Props = {
   initialState: BoosterState;
   isGuest: boolean;
   credits?: number;
-  /** Nombre présélectionné (×5 choisi dans la vitrine) ; ramené à ce qui est ouvrable. */
-  initialCount?: OpenCount;
+  /** Nombre présélectionné (×5 ou « Tous » choisi dans la vitrine) ; ramené à ce qui est ouvrable. */
+  initialCount?: OpenChoice;
   /** Ouverture à appeler : l'action serveur, ou un tirage factice pour le banc de test de l'admin. */
   open?: typeof openBoosterAction;
   /** Dessin des sachets scellés qui peuvent tomber de ce booster. */
@@ -131,7 +131,7 @@ export function OpeningStage({
   preload(CARD_BACKS.standard, { as: "image", fetchPriority: "low" });
   preload(CARD_BACKS.premium, { as: "image", fetchPriority: "low" });
   const [stage, setStage] = useState<Stage>("ready");
-  const [count, setCount] = useState<OpenCount>(initialCount);
+  const [count, setCount] = useState<OpenChoice>(initialCount);
   const [boosters, setBoosters] = useState<OpenedBoosterView[] | null>(null);
   const [error, setError] = useState<OpenBoosterError | null>(null);
   const [latest, setLatest] = useState<BoosterState | null>(null);
@@ -178,7 +178,11 @@ export function OpeningStage({
   const shown = sealedDisplay ?? type;
   const creditMode = !sealedOpen && creditLeft > 0;
   const maxCount = sealedOpen ? 1 : creditMode ? (OPEN_COUNTS.filter((n) => n <= creditLeft).at(-1) ?? 1) : maxOpenable(type, state);
-  const effectiveCount: OpenCount = sealedOpen ? 1 : count <= maxCount ? count : ((OPEN_COUNTS.filter((n) => n <= maxCount).at(-1) ?? 1) as OpenCount);
+  // « Tous » : le reste des crédits, ou tout le stock gratuit (jamais payant)
+  const allCount = sealedOpen ? 0 : openAllCount(creditMode ? creditLeft : type.usesFreeStock ? state.stock : 0);
+  const choice: OpenChoice = sealedOpen ? 1 : effectiveChoice(count, maxCount, allCount);
+  const effectiveCount = choiceCount(choice, allCount);
+  const showPicker = maxCount > 1 || allCount > 0;
   const price: Price = sealedOpen || creditMode ? { kind: "free" } : priceFor(type, state.stock, effectiveCount);
   const unaffordable = price.kind === "zeni" && price.amount > state.coins;
   const needsConfirm = price.kind === "zeni" && !unaffordable && confirmed !== price.amount;
@@ -451,10 +455,11 @@ export function OpeningStage({
                     {reduced ? t("hintReduced") : shown.shape === "SACHET" ? t("hint") : t("hintLift")}
                   </p>
 
-                  {maxCount > 1 && (
+                  {showPicker && (
                     <CountPicker
-                      value={effectiveCount}
+                      value={choice}
                       max={maxCount}
+                      all={allCount}
                       onChange={(n) => {
                         setCount(n);
                         setConfirmed(null);
@@ -621,8 +626,9 @@ export function OpeningStage({
                       }
                 }
                 zeniSpent={zeniSpent}
-                count={effectiveCount}
+                choice={choice}
                 maxCount={maxCount}
+                allCount={allCount}
                 onCount={(n) => {
                   setCount(n);
                   setConfirmed(null);
