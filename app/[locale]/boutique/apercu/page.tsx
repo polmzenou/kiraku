@@ -5,6 +5,7 @@ import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import "@/components/shop/shop.css";
 import { PreviewBuy } from "@/components/shop/PreviewBuy";
+import { ShopNoren } from "@/components/shop/ShopNoren";
 import { ShopShelves } from "@/components/shop/ShopShelves";
 import { ShopStage } from "@/components/shop/ShopStage";
 import { contentsLabel } from "@/lib/boosters/catalog";
@@ -61,33 +62,45 @@ export default async function ShopPreviewPage() {
   );
 
   const seedBySlug = new Map(BOOSTER_SEEDS.map((s) => [s.slug, s]));
+  const boosterLine = (slug: string, quantity: number): LotView["lines"] => {
+    const seed = seedBySlug.get(slug);
+    if (!seed) return [];
+    const cards = effectiveSlotFloors(seed.slotFloors ?? [], globalFloors).length;
+    return [
+      {
+        kind: "BOOSTER",
+        quantity,
+        name: localize(seed.name, locale),
+        look: { slug: seed.slug, shape: seed.shape ?? "SACHET", theme: seed.theme, emblem: seed.emblem, contents: contentsLabel(cards) },
+      },
+    ];
+  };
   const packs = shopPackSeeds();
   const lots = new Map<string, LotView>(
     packs.lots.map((lot) => [
       lot.id,
-      {
-        id: lot.id,
-        name: localize(lot.name, locale),
-        zeni: lot.zeni,
-        lines: (lot.boosters ?? []).flatMap((b) => {
-          const seed = seedBySlug.get(b.slug);
-          if (!seed) return [];
-          const cards = effectiveSlotFloors(seed.slotFloors ?? [], globalFloors).length;
-          return [
-            {
-              kind: "BOOSTER" as const,
-              quantity: b.quantity,
-              name: localize(seed.name, locale),
-              look: { slug: seed.slug, shape: seed.shape ?? "SACHET", theme: seed.theme, emblem: seed.emblem, contents: contentsLabel(cards) },
-            },
-          ];
-        }),
-      },
+      { id: lot.id, name: localize(lot.name, locale), zeni: lot.zeni, lines: (lot.boosters ?? []).flatMap((b) => boosterLine(b.slug, b.quantity)) },
     ]),
   );
   lots.set("apercu-fuda", { id: "apercu-fuda", name: "Fuda", zeni: 0, lines: [{ kind: "RARITY_CARD", quantity: 1, rarity: "EPIC" }] });
+  // Packs standard ×5 et ×10 : le ×10 joue le grand final (feu d'artifice)
+  const standardName = localize(seedBySlug.get("standard")?.name ?? { fr: "Standard", en: "" }, locale);
+  const standardPacks = [5, 10].map((quantity) => {
+    lots.set(`apercu-standard-${quantity}`, { id: `apercu-standard-${quantity}`, name: standardName, zeni: 0, lines: boosterLine("standard", quantity) });
+    return {
+      id: `apercu-standard-${quantity}`,
+      name: `${standardName} ${t("quantity", { count: quantity })}`,
+      description: "",
+      lotId: `apercu-standard-${quantity}`,
+      priceZeni: quantity === 10 ? 1_700 : 900,
+      perUserLimit: quantity === 10 ? 3 : null,
+      limitPeriod: quantity === 10 ? ("WEEKLY" as const) : null,
+      endsAt: null,
+    };
+  });
 
   const items = [
+    ...standardPacks,
     ...packs.items.map((s) => ({
       id: s.slug,
       name: localize(s.name, locale),
@@ -136,6 +149,7 @@ export default async function ShopPreviewPage() {
   return (
     <PageShell>
       <ShopStage>
+        <ShopNoren />
         <div className="flex flex-col gap-2">
           <SectionTitle level={1} kanji="商店" title={t("preview.title")} subtitle={t("preview.note")} />
         </div>

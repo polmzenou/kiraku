@@ -19,6 +19,7 @@ export function TiltGrid({ children, className = "" }: { children: ReactNode; cl
     if (!el) return;
     let scene: HTMLElement | null = null;
     let glints: HTMLElement[] = [];
+    let holos: HTMLElement[] = [];
     let frame = 0;
     let px = 0.5;
     let py = 0.5;
@@ -28,6 +29,10 @@ export function TiltGrid({ children, className = "" }: { children: ReactNode; cl
       if (!scene) return;
       scene.style.transform = `perspective(700px) rotateX(${((0.5 - py) * 10).toFixed(2)}deg) rotateY(${((px - 0.5) * 16).toFixed(2)}deg)`;
       for (const g of glints) g.style.setProperty("--tx", px.toFixed(3));
+      for (const h of holos) {
+        h.style.setProperty("--mx", `${(px * 100).toFixed(1)}%`);
+        h.style.setProperty("--my", `${(py * 100).toFixed(1)}%`);
+      }
     };
     const release = () => {
       if (frame) cancelAnimationFrame(frame);
@@ -39,8 +44,13 @@ export function TiltGrid({ children, className = "" }: { children: ReactNode; cl
         scene.style.willChange = "";
       }
       for (const g of glints) g.style.removeProperty("--tx");
+      for (const h of holos) {
+        h.style.removeProperty("--mx");
+        h.style.removeProperty("--my");
+      }
       scene = null;
       glints = [];
+      holos = [];
     };
     const onMove = (e: PointerEvent) => {
       if (e.pointerType !== "mouse") return;
@@ -53,6 +63,7 @@ export function TiltGrid({ children, className = "" }: { children: ReactNode; cl
         scene.style.transition = "transform 90ms linear";
         scene.style.willChange = "transform";
         glints = [...next.querySelectorAll<HTMLElement>(".booster-glint")];
+        holos = [...next.querySelectorAll<HTMLElement>(".shop-holo")];
       }
       // Entre les cartes (titres, gouttières) ou sur une carte sans scène : rien à incliner
       if (!scene || !card) return;

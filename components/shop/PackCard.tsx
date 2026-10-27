@@ -6,7 +6,7 @@ import { LotRewards } from "../economy/LotRewards";
 import { LotStage } from "../economy/LotStage";
 import { badgeClasses } from "../ui/Badge";
 import { ButtonLink } from "../ui/ButtonLink";
-import { PackFan } from "./PackFan";
+import { KiraSparkles, PackFan } from "./PackFan";
 import { PackPrice, ResetHint } from "./PackPrice";
 
 /** Motif seigaiha doré en filigrane derrière l'éventail (comme LotStage). */
@@ -56,6 +56,7 @@ export function PackCard({
               <div className="shop-tilt absolute inset-0 px-2 py-4">
                 <PackFan look={line.look} name={line.name} quantity={line.quantity} className="[--fan-w:56%] sm:[--fan-w:30%]" />
               </div>
+              <KiraSparkles />
             </>
           ) : (
             <LotStage lot={card.lot} className="absolute inset-0" />

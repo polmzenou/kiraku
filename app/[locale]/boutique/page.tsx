@@ -7,6 +7,7 @@ import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { packTitleId } from "@/components/shop/PackCard";
 import "@/components/shop/shop.css";
+import { ShopNoren } from "@/components/shop/ShopNoren";
 import { ShopShelves } from "@/components/shop/ShopShelves";
 import { ShopStage } from "@/components/shop/ShopStage";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -130,6 +131,7 @@ export default async function ShopPage() {
   return (
     <PageShell>
       <ShopStage>
+        {enabled && <ShopNoren />}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <SectionTitle level={1} kanji="商店" title={t("title")} subtitle={t("intro")} />
           <p className="flex items-center gap-2 rounded-full border border-kin/50 bg-surface px-4 py-2">

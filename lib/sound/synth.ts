@@ -1,7 +1,21 @@
 // Sons de l'ouverture, synthétisés en Web Audio : aucun fichier à charger. Le contexte audio n'est
 // créé qu'au premier geste du joueur (règle des navigateurs) et seulement si le son est activé.
 
-export type SoundName = "tear" | "flip" | "clack" | "bell" | "chime" | "taiko" | "stamp" | "whoosh";
+export type SoundName =
+  | "tear"
+  | "flip"
+  | "clack"
+  | "bell"
+  | "chime"
+  | "taiko"
+  | "stamp"
+  | "whoosh"
+  // Boutique : offrande et feu d'artifice
+  | "coin"
+  | "clap"
+  | "launch"
+  | "boom"
+  | "crackle";
 
 let ctx: AudioContext | null = null;
 let noiseBuffer: AudioBuffer | null = null;
@@ -112,6 +126,23 @@ export function playSound(name: SoundName, volume = 0.6) {
     case "stamp": // sceau tamponné : coup sourd
       tone(ac, out, 180, t, { peak: 0.5, decay: 0.18, to: 70 });
       burst(ac, out, t, { duration: 0.05, from: 1200, to: 400, q: 1, peak: 0.2 });
+      break;
+    case "coin": // pièce de Zeni qui tinte en tombant dans la boîte à offrandes
+      tone(ac, out, 2637, t, { peak: 0.12, decay: 0.16 });
+      tone(ac, out, 3951, t + 0.004, { peak: 0.07, decay: 0.11 });
+      break;
+    case "clap": // claquement de mains (kashiwade) : bruit bref et sec
+      burst(ac, out, t, { duration: 0.07, from: 1800, to: 900, q: 0.9, peak: 0.45 });
+      break;
+    case "launch": // fusée de feu d'artifice : sifflement qui grimpe
+      tone(ac, out, 380, t, { peak: 0.06, decay: 0.55, to: 1600 });
+      break;
+    case "boom": // bouquet qui éclate : grave et souffle
+      tone(ac, out, 70, t, { peak: 0.7, decay: 0.7, to: 36 });
+      burst(ac, out, t, { duration: 0.9, from: 900, to: 140, q: 0.5, peak: 0.35 });
+      break;
+    case "crackle": // étincelles qui crépitent
+      for (let i = 0; i < 12; i++) burst(ac, out, t + i * 0.05 + (i % 3) * 0.013, { duration: 0.025, from: 5200, to: 3800, q: 2, peak: 0.12 });
       break;
   }
 }

@@ -4,12 +4,14 @@ import type { ShopCard } from "@/lib/economy/shop-view";
 import type { LotView } from "@/server/economy/lot-view";
 import { BoosterArt } from "../boosters/BoosterArt";
 import { badgeClasses } from "../ui/Badge";
+import { BoosterHolo, KiraSparkles } from "./PackFan";
 import { PackPrice, ResetHint } from "./PackPrice";
 
 /**
  * Vedette du jour : le pack choisi par le serveur, en grand, aux couleurs et au wagara de son type.
- * Le sachet flotte dans son halo, entouré de rayons (en pause en effets allégés). Tout le texte est
- * posé sur un panneau opaque : l'encre sur la couleur du type ne serait pas lisible pour tous les types.
+ * Le sachet flotte dans son halo, entouré de rayons (en pause en effets allégés). Ouverte, la vedette
+ * déploie sa main de cartes, son reflet et son ema (shop.css). Tout le texte est posé sur un panneau
+ * opaque : l'encre sur la couleur du type ne serait pas lisible pour tous les types.
  */
 export function FeaturedPack({
   card,
@@ -41,9 +43,37 @@ export function FeaturedPack({
             <span className="booster-halo booster-halo-breathe" />
             <span className="booster-floor booster-floor-float" />
           </span>
+          <span className="shop-hero-aura" style={{ "--halo": theme.base } as CSSProperties} />
           <div className="booster-idle">
-            <BoosterArt shape={line.look.shape} theme={theme} emblem={line.look.emblem} name={line.name} contents={line.look.contents} flatShadow />
+            {/* Ouverte (survol, focus, confirmation) : la main de cartes s'écarte autour du sachet vedette */}
+            <div className="shop-hero-fan">
+              {line.quantity > 1 &&
+                (["l", "r"] as const).map((side) => (
+                  <div key={side} className={`shop-hero-side shop-hero-side-${side}`}>
+                    <BoosterArt shape={line.look.shape} theme={theme} emblem={line.look.emblem} name={line.name} contents={line.look.contents} compact flatShadow />
+                  </div>
+                ))}
+              <div className="shop-hero-main">
+                <BoosterArt
+                  shape={line.look.shape}
+                  theme={theme}
+                  emblem={line.look.emblem}
+                  name={line.name}
+                  contents={line.look.contents}
+                  flatShadow
+                  overlay={<BoosterHolo shape={line.look.shape} />}
+                />
+              </div>
+            </div>
           </div>
+          <KiraSparkles />
+          {/* Ema : la plaque votive du prix, qui se balance quand la vedette s'ouvre */}
+          <span className="shop-ema">
+            <span className="shop-ema-string" />
+            <span className="shop-ema-plaque">
+              {t.rich("priceRich", { amount: card.price, n: (chunks) => <b className="text-base leading-none tabular-nums">{chunks}</b> })}
+            </span>
+          </span>
         </div>
 
         {/* Au-dessus des rayons et du halo qui débordent de la colonne du sachet */}

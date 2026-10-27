@@ -144,6 +144,8 @@ function Pochibukuro({ emblem, name, tagline, compact, hideCover }: BoosterArtPr
   );
 }
 
+/** Corps laqué du jūbako (les calques posés dessus, comme le reflet de la boutique, s'y alignent). */
+export const JUBAKO_BODY = "absolute inset-x-[6%] top-[10%] bottom-[3%] rounded-[4cqw]";
 /** Couvercle et cordon du jūbako (la scène d'ouverture les anime aux mêmes positions). */
 export const JUBAKO_LID = "absolute inset-x-[2%] top-[3%] h-[11%] rounded-[4cqw]";
 export const JUBAKO_CORD = "absolute top-[3%] bottom-[3%] left-1/2 w-[5cqw] -translate-x-1/2";
@@ -151,7 +153,7 @@ export const JUBAKO_CORD = "absolute top-[3%] bottom-[3%] left-1/2 w-[5cqw] -tra
 function Jubako({ emblem, name, tagline, compact, hideCover }: BoosterArtProps) {
   return (
     <>
-      <div className="booster-foil absolute inset-x-[6%] top-[10%] bottom-[3%] flex flex-col items-center justify-center gap-[6cqw] rounded-[4cqw] shadow-[inset_0_0_0_1px_rgb(217_181_86/0.4)]">
+      <div className={`booster-foil ${JUBAKO_BODY} flex flex-col items-center justify-center gap-[6cqw] shadow-[inset_0_0_0_1px_rgb(217_181_86/0.4)]`}>
         <span className="absolute inset-x-0 top-[36%] h-[1.4cqw] bg-[#b8902f]" />
         <span className="absolute inset-x-0 top-[68%] h-[1.4cqw] bg-[#b8902f]" />
         <span

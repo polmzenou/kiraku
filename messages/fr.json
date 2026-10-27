@@ -3311,7 +3311,8 @@
         "spent": "-{amount, number} Zeni",
         "balance": "Solde : {amount, number} Zeni",
         "open": "Ouvrir maintenant",
-        "continue": "Continuer mes achats"
+        "continue": "Continuer mes achats",
+        "skip": "Passer"
       },
       "preview": {
         "title": "Aperçu de la boutique",
