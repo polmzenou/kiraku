@@ -322,6 +322,7 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
           reason={shown.endReason}
           rewardZeni={final.rewardZeni}
           onReplay={() => router.refresh()}
+          requeueId={view.mode === "FRIEND" ? undefined : view.id}
           ranked={
             final.ranked?.sides[mySide] && view.ladder ? (
               <RankedResult

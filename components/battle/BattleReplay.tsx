@@ -138,6 +138,7 @@ export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup
           reason={view.endReason}
           rewardZeni={view.rewardZeni}
           onReplay={restart}
+          requeueId={view.mode === "FRIEND" ? undefined : view.id}
           ranked={rankedSide && view.ladder ? (
             <RankedResult
               side={rankedSide}

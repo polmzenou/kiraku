@@ -224,6 +224,27 @@ export async function getLastTeam(userId: string, candidates: readonly Candidate
   return (user?.battleTeam ?? []).filter((id) => available.has(id));
 }
 
+/**
+ * « Relancer » en fin de partie : même mode de file et mêmes cartes que cette partie (ids de Card,
+ * revérifiés à l'engagement). null si la partie n'est pas une partie de file terminée de ce joueur.
+ */
+export async function requeueTeamOf(
+  battleId: string,
+  userId: string,
+): Promise<{ mode: "EXHIBITION" | "RANKED"; cardIds: string[] } | null> {
+  const b = await prisma.battle.findUnique({
+    where: { id: battleId },
+    select: { mode: true, status: true, p1Id: true, p2Id: true, p1Team: true, p2Team: true },
+  });
+  if (!b || b.status !== "FINISHED" || b.mode === "FRIEND") return null;
+  const team = b.p1Id === userId ? b.p1Team : b.p2Id === userId ? b.p2Team : null;
+  if (!team) return null;
+  const copies = await prisma.userCard.findMany({ where: { id: { in: team } }, select: { id: true, cardId: true } });
+  const byId = new Map(copies.map((c) => [c.id, c.cardId]));
+  // Un exemplaire disparu depuis (vendu, échangé) : l'équipe revient incomplète
+  return { mode: b.mode, cardIds: team.flatMap((id) => byId.get(id) ?? []) };
+}
+
 export async function getHistory(userId: string, take = 20): Promise<HistoryItem[]> {
   const rows = await prisma.battle.findMany({
     where: { status: "FINISHED", OR: [{ p1Id: userId }, { p2Id: userId }] },

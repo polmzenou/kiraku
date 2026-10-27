@@ -3664,6 +3664,7 @@
       },
       "zeni": "+{amount, number} Zeni",
       "noZeni": "Pas de Zeni pour cette partie.",
+      "requeue": "Relancer",
       "again": "Nouveau combat",
       "replay": "Revoir la partie",
       "back": "Retour aux combats",

@@ -3664,6 +3664,7 @@
       },
       "zeni": "+{amount, number} Zeni",
       "noZeni": "No Zeni for this battle.",
+      "requeue": "Play again",
       "again": "New battle",
       "replay": "Watch the replay",
       "back": "Back to battles",

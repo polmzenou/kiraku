@@ -21,7 +21,7 @@ import {
   type BattleUpdate,
   type QueueStatus,
 } from "../battle/battle-core";
-import { battleCtx, getActivity, getBattleView, getUpdateSince, sweepBattlesFor } from "../battle/queries";
+import { battleCtx, getActivity, getBattleView, getUpdateSince, requeueTeamOf, sweepBattlesFor } from "../battle/queries";
 import { publishBattle, publishMatched, toMessage } from "../battle/realtime";
 import { pushLater } from "../market/queries";
 import { ensureSeason } from "../ranked/queries";
@@ -99,21 +99,41 @@ async function queueResult(s: QueueStatus): Promise<QueueResult> {
 
 const joinQueueSchema = z.object({ cardIds: teamSchema, mode: z.enum(["EXHIBITION", "RANKED"]) }).strict();
 
+async function enterQueue(userId: string, cardIds: string[], mode: "EXHIBITION" | "RANKED"): Promise<QueueResult> {
+  const ctx = await battleCtx();
+  if (mode === "RANKED") {
+    if (!ctx.ranked.enabled) return { ok: false, error: "DISABLED" };
+    // Saison terminée : clôturée avant d'entrer en file (les PC repartent remis à zéro)
+    await ensureSeason(ctx.ranked, ctx.now);
+  }
+  return queueResult(await joinQueueWith(prisma, { userId, cardIds, mode }, ctx));
+}
+
 export async function joinQueueAction(input: unknown): Promise<QueueResult> {
   const parsed = joinQueueSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const g = await session("battle-queue", { limit: 12, windowSeconds: MINUTE });
   if ("error" in g) return { ok: false, error: g.error };
   try {
-    const ctx = await battleCtx();
-    if (parsed.data.mode === "RANKED") {
-      if (!ctx.ranked.enabled) return { ok: false, error: "DISABLED" };
-      // Saison terminée : clôturée avant d'entrer en file (les PC repartent remis à zéro)
-      await ensureSeason(ctx.ranked, ctx.now);
-    }
-    return await queueResult(await joinQueueWith(prisma, { userId: g.user.id, ...parsed.data }, ctx));
+    return await enterQueue(g.user.id, parsed.data.cardIds, parsed.data.mode);
   } catch (e) {
     return failure("file", e);
+  }
+}
+
+/** « Relancer » en fin de partie : retour en file, même mode et mêmes cartes, lus côté serveur depuis la partie. */
+export async function requeueAction(input: unknown): Promise<QueueResult> {
+  const parsed = z.object({ battleId: idSchema }).strict().safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  const g = await session("battle-queue", { limit: 12, windowSeconds: MINUTE });
+  if ("error" in g) return { ok: false, error: g.error };
+  try {
+    const last = await requeueTeamOf(parsed.data.battleId, g.user.id);
+    if (!last) return { ok: false, error: "NOT_FOUND" };
+    if (last.cardIds.length !== TEAM_SIZE) return { ok: false, error: "NOT_OWNED" };
+    return await enterQueue(g.user.id, last.cardIds, last.mode);
+  } catch (e) {
+    return failure("relance", e);
   }
 }
 
