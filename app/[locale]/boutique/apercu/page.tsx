@@ -5,8 +5,8 @@ import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import "@/components/shop/shop.css";
 import { PreviewBuy } from "@/components/shop/PreviewBuy";
-import { ShopNoren } from "@/components/shop/ShopNoren";
 import { ShopShelves } from "@/components/shop/ShopShelves";
+import { ShopShoji } from "@/components/shop/ShopShoji";
 import { ShopStage } from "@/components/shop/ShopStage";
 import { contentsLabel } from "@/lib/boosters/catalog";
 import { isRotatingFamily, ROTATING_FAMILIES, rotationSelection, rotationWindow, type RotatingFamily } from "@/lib/boosters/rotation";
@@ -161,8 +161,8 @@ export default async function ShopPreviewPage() {
   return (
     <PageShell>
       <ShopStage>
-        <ShopNoren />
-        <div className="flex flex-col gap-2">
+        <ShopShoji />
+        <div className="shop-enter flex flex-col gap-2">
           <SectionTitle level={1} kanji="商店" title={t("preview.title")} subtitle={t("preview.note")} />
         </div>
         <ShopShelves view={view} coins={COINS} now={now} selectionEndsAt={rotation.endsAt} renderBuy={renderBuy} />

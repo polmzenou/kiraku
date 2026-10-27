@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { ShopCard, ShopView } from "@/lib/economy/shop-view";
 import type { LotView } from "@/server/economy/lot-view";
 import { SectionTitle } from "../SectionTitle";
@@ -9,8 +9,10 @@ import { ShopCountdown } from "./ShopCountdown";
 import { sectionKanji, ShopFamilyNav } from "./ShopFamilyNav";
 import { TiltGrid } from "./TiltGrid";
 
-/** Cartes qui entrent en cascade au chargement : seules les premières sont visibles de toute façon. */
+/** Cartes qui entrent en cascade à l'arrivée : seules les premières sont visibles de toute façon. */
 const ENTERING = 8;
+/** Place de la première carte dans la cascade, après le titre de la page (0), la vedette et les familles. */
+const FIRST_CARD = 3;
 
 /**
  * Rayons de la boutique : vedette de la sélection, accès aux familles, puis une section par famille de
@@ -37,15 +39,17 @@ export function ShopShelves({
   return (
     <>
       {view.featured && (
-        <FeaturedPack
-          card={view.featured}
-          affordable={coins >= view.featured.price}
-          buy={renderBuy(view.featured, "hero")}
-          countdown={<ShopCountdown endsAt={selectionEndsAt.getTime()} initialNow={now.getTime()} />}
-          now={now}
-        />
+        <div className="shop-enter" style={{ "--i": 1 } as CSSProperties}>
+          <FeaturedPack
+            card={view.featured}
+            affordable={coins >= view.featured.price}
+            buy={renderBuy(view.featured, "hero")}
+            countdown={<ShopCountdown endsAt={selectionEndsAt.getTime()} initialNow={now.getTime()} />}
+            now={now}
+          />
+        </div>
       )}
-      <div className="flex flex-col gap-2">
+      <div className="shop-enter flex flex-col gap-2" style={{ "--i": 2 } as CSSProperties}>
         {view.sections.length > 1 && <ShopFamilyNav sections={view.sections.map((s) => s.key)} />}
         <p className="text-xs text-text-muted">{t("pack.credits", { noBonus: tb("noBonus") })}</p>
       </div>
@@ -75,7 +79,7 @@ export function ShopShelves({
                       affordable={coins >= card.price}
                       buy={renderBuy(card, "grid")}
                       now={now}
-                      enterIndex={index < ENTERING ? index : undefined}
+                      enterIndex={index < ENTERING ? FIRST_CARD + index : undefined}
                     />
                   );
                 })}
