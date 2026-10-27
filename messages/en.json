@@ -3288,11 +3288,12 @@
       "quantity": "×{count, number}",
       "nav": "Shop families",
       "featured": {
-        "label": "Featured today",
+        "label": "Featured now",
         "badge": "Featured",
-        "next": "Next pick in {hours, number} h {minutes, number} min",
-        "nextSoon": "Next pick in {minutes, number} min",
-        "refreshing": "New pick coming…"
+        "next": "New picks in {hours, number} h {minutes, number} min",
+        "nextSoon": "New picks in {minutes, number} min",
+        "nextDays": "New picks in {days, number} d {hours, number} h",
+        "refreshing": "New picks coming…"
       },
       "other": {
         "title": "Fuda and extras",
@@ -3301,7 +3302,6 @@
       "pack": {
         "pool": "From {count, number} cards",
         "owned": "{count, plural, one {# already to open} other {# already to open}}",
-        "resting": "Outside the current rotation",
         "credits": "Boosters bought here: pity included, {noBonus}.",
         "resetsDays": "Available again in {days, plural, one {# day} other {# days}}",
         "resetsHours": "Available again in {hours, plural, =0 {less than an hour} one {# hour} other {# hours}}"

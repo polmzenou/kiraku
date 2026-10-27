@@ -3288,11 +3288,12 @@
       "quantity": "×{count, number}",
       "nav": "Familles de la boutique",
       "featured": {
-        "label": "À l'affiche aujourd'hui",
+        "label": "À l'affiche en ce moment",
         "badge": "À l'affiche",
-        "next": "Nouvelle vedette dans {hours, number} h {minutes, number} min",
-        "nextSoon": "Nouvelle vedette dans {minutes, number} min",
-        "refreshing": "Nouvelle vedette…"
+        "next": "Nouvelle sélection dans {hours, number} h {minutes, number} min",
+        "nextSoon": "Nouvelle sélection dans {minutes, number} min",
+        "nextDays": "Nouvelle sélection dans {days, number} j {hours, number} h",
+        "refreshing": "Nouvelle sélection…"
       },
       "other": {
         "title": "Fuda et extras",
@@ -3301,7 +3302,6 @@
       "pack": {
         "pool": "Parmi {count, number} cartes",
         "owned": "{count, plural, one {# déjà à ouvrir} other {# déjà à ouvrir}}",
-        "resting": "Hors sélection du moment",
         "credits": "Boosters achetés ici : pitié comprise, {noBonus}.",
         "resetsDays": "De nouveau disponible dans {days, plural, one {# jour} other {# jours}}",
         "resetsHours": "De nouveau disponible dans {hours, plural, =0 {moins d'une heure} one {# heure} other {# heures}}"

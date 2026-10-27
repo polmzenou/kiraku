@@ -11,7 +11,6 @@ import {
   packPricing,
   packSellable,
   parseShopText,
-  previousDayKey,
   remainingPurchases,
   shopContentIssue,
   shopItemInputSchema,
@@ -247,45 +246,40 @@ describe("boutique", () => {
     }
   });
 
-  it("veille d'un jour du jeu, mois et années compris", () => {
-    expect(previousDayKey("2026-10-27")).toBe("2026-10-26");
-    expect(previousDayKey("2026-03-01")).toBe("2026-02-28");
-    expect(previousDayKey("2027-01-01")).toBe("2026-12-31");
-  });
-
-  describe("vedette du jour", () => {
+  describe("vedette de la sélection", () => {
     const ids = ["a", "b", "c", "d", "e", "f", "g"];
-    const days = Array.from({ length: 60 }, (_, i) => new Date(Date.UTC(2026, 9, 1 + i)).toISOString().slice(0, 10));
+    // Fenêtres de rotation de 12 h à partir de fin 2026
+    const turns = Array.from({ length: 60 }, (_, i) => 41_500 + i);
 
     it("la même pour tous, et rien sans candidat", () => {
-      expect(featuredPick(ids, "2026-10-27")).toBe(featuredPick([...ids].reverse(), "2026-10-27"));
-      expect(featuredPick([], "2026-10-27")).toBeNull();
-      expect(featuredPick(["seul"], "2026-10-27")).toBe("seul");
+      expect(featuredPick(ids, 41_530)).toBe(featuredPick([...ids].reverse(), 41_530));
+      expect(featuredPick([], 41_530)).toBeNull();
+      expect(featuredPick(["seul"], 41_530)).toBe("seul");
     });
 
-    it("change d'un jour à l'autre et passe par plusieurs packs", () => {
-      const picks = days.map((day) => featuredPick(ids, day));
+    it("change d'une sélection à l'autre et passe par plusieurs packs", () => {
+      const picks = turns.map((turn) => featuredPick(ids, turn));
       for (let i = 1; i < picks.length; i++) expect(picks[i]).not.toBe(picks[i - 1]);
       expect(new Set(picks).size).toBeGreaterThanOrEqual(5);
     });
 
-    it.each([2, 3, 4, 26])("jamais deux jours de suite la même sur un an, avec %i candidats", (count) => {
+    it.each([2, 3, 4, 26])("jamais deux sélections de suite la même sur 730 fenêtres, avec %i candidats", (count) => {
       const pool = Array.from({ length: count }, (_, i) => `pack-${i}`);
-      const year = Array.from({ length: 365 }, (_, i) => new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10));
-      const picks = year.map((day) => featuredPick(pool, day));
-      for (let i = 1; i < picks.length; i++) expect(picks[i], year[i]).not.toBe(picks[i - 1]);
+      const year = Array.from({ length: 730 }, (_, i) => 41_000 + i);
+      const picks = year.map((turn) => featuredPick(pool, turn));
+      for (let i = 1; i < picks.length; i++) expect(picks[i], String(year[i])).not.toBe(picks[i - 1]);
       expect(new Set(picks).size).toBe(count);
     });
 
-    it("retirer un article qui n'a pas été en vedette ces derniers jours ne la change pas", () => {
+    it("retirer un article qui n'a pas été en vedette ces dernières sélections ne la change pas", () => {
       const many = Array.from({ length: 14 }, (_, i) => `pack-${i}`);
       let checked = 0;
-      for (const day of days) {
+      for (const turn of turns) {
         const recent = new Set<string | null>();
-        for (let d = day, i = 0; i <= 8; i++, d = previousDayKey(d)) recent.add(featuredPick(many, d));
+        for (let t = turn; t >= turn - 8; t--) recent.add(featuredPick(many, t));
         const other = many.find((id) => !recent.has(id));
         if (!other) continue;
-        expect(featuredPick(many.filter((id) => id !== other), day)).toBe(featuredPick(many, day));
+        expect(featuredPick(many.filter((id) => id !== other), turn)).toBe(featuredPick(many, turn));
         checked++;
       }
       expect(checked).toBeGreaterThan(30);
@@ -314,13 +308,12 @@ describe("boutique", () => {
       expect(shopContentIssue([{ kind: "RARITY_CARD", rarity: "GOLD" }], definitions)).toBe("MYTHIC");
     });
 
-    it("vend un booster ouvert ou au repos dans la rotation, jamais un type caché ou réservé", () => {
-      const offer = { availability: "open" as const, rotation: null, usesFreeStock: true, priceZeni: 200 };
+    it("vend seulement un booster qui s'ouvre en ce moment : ni au repos dans la rotation, ni caché, ni réservé", () => {
+      const offer = { availability: "open" as const, priceZeni: 200 };
       expect(packSellable(offer)).toBe(true);
-      expect(packSellable({ ...offer, availability: "hidden", rotation: "resting" })).toBe(true);
-      expect(packSellable({ ...offer, availability: "hidden" })).toBe(false); // inactif, hors dates, pool trop petit
-      expect(packSellable({ ...offer, availability: "locked", usesFreeStock: false, priceZeni: null })).toBe(false);
-      expect(packSellable({ availability: "hidden", rotation: "resting", usesFreeStock: false, priceZeni: null })).toBe(false);
+      // Au repos (hors sélection du moment), inactif, hors dates ou pool trop petit : getBoosterOffers le cache
+      expect(packSellable({ ...offer, availability: "hidden" })).toBe(false);
+      expect(packSellable({ availability: "locked", priceZeni: null })).toBe(false);
       expect(packSellable(undefined)).toBe(false);
     });
   });

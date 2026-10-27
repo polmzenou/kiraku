@@ -15,6 +15,7 @@ import { localize, parseLocalized } from "@/lib/boosters/types";
 import { periodWindow } from "@/lib/economy/period";
 import { onSaleForZeni, parseShopText } from "@/lib/economy/shop";
 import { buildShopView, purchaseKey, shopLotFrom, type ShopCard } from "@/lib/economy/shop-view";
+import { getBoosterRotation } from "@/server/boosters/pools";
 import { getRarityDefinitions } from "@/server/catalog/rarities";
 import { prisma } from "@/server/db";
 import { lotViews, type LotView } from "@/server/economy/lot-view";
@@ -27,8 +28,9 @@ import { getCurrentUser } from "@/server/user";
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
- * Boutique en Zeni : articles pilotés par l'admin, rangés par famille de booster, avec la vedette du
- * jour. buildShopView décide ce qui se vend (la même règle que l'achat), la page charge et affiche.
+ * Boutique en Zeni : articles pilotés par l'admin, rangés par famille de booster, avec la vedette de
+ * la sélection. Seuls les packs de la sélection du moment s'affichent. buildShopView décide ce qui se
+ * vend (la même règle que l'achat), la page charge et affiche.
  */
 export default async function ShopPage() {
   const [t, user, locale] = await Promise.all([getTranslations("economy.shop"), getCurrentUser(), getLocale()]);
@@ -50,8 +52,8 @@ export default async function ShopPage() {
   const week = periodWindow("WEEKLY", now, timeZone);
 
   // Une seule vague : articles, achats du joueur sur les trois fenêtres de limite possibles
-  // (à vie, jour, semaine), types de booster, crédits et raretés
-  const [rows, bought, types, credits, definitions] = await Promise.all([
+  // (à vie, jour, semaine), types de booster, crédits, raretés et fenêtre de la sélection (en cache)
+  const [rows, bought, types, credits, definitions, rotation] = await Promise.all([
     enabled
       ? prisma.shopItem.findMany({
           where: { active: true, priceZeni: { not: null } },
@@ -80,6 +82,7 @@ export default async function ShopPage() {
     enabled ? loadShopTypes() : new Map(),
     enabled ? getBoosterCredits(user.id) : new Map<string, number>(),
     enabled ? getRarityDefinitions() : [],
+    enabled ? getBoosterRotation() : null,
   ]);
 
   const items = rows.filter((item) => onSaleForZeni(item, now));
@@ -105,6 +108,7 @@ export default async function ShopPage() {
     definitions,
     now,
     timeZone,
+    turn: rotation?.window.index ?? 0,
   });
   // Paiement par carte : seulement si l'admin l'active ET qu'un fournisseur est branché (jamais pour l'instant)
   const premium = premiumEnabled && getPaymentProvider() !== null;
@@ -114,7 +118,7 @@ export default async function ShopPage() {
     const line = card.lot.lines.find((l) => l.kind === "BOOSTER");
     return (
       <BuyButton
-        // La vedette change à minuit : son bouton repart de zéro
+        // La vedette change avec la sélection : son bouton repart de zéro
         key={place === "hero" ? card.id : undefined}
         shopItemId={card.id}
         price={card.price}
@@ -145,7 +149,9 @@ export default async function ShopPage() {
 
         {!enabled && <p className="lacquer rounded-card p-6 text-center text-text-muted">{t("disabled")}</p>}
         {enabled && empty && <p className="lacquer rounded-card p-6 text-center text-text-muted">{t("empty")}</p>}
-        {!empty && <ShopShelves view={view} coins={user.coins} now={now} dayEndsAt={day.end} renderBuy={renderBuy} />}
+        {!empty && rotation && (
+          <ShopShelves view={view} coins={user.coins} now={now} selectionEndsAt={rotation.window.endsAt} renderBuy={renderBuy} />
+        )}
 
         <aside className="flex flex-col items-start gap-3 lacquer rounded-card p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-1">

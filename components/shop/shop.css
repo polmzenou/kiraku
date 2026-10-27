@@ -1,5 +1,5 @@
 /*
- * Boutique : cartes de packs (éventail de sachets), vedette du jour. Importé une seule fois par la page.
+ * Boutique : cartes de packs (éventail de sachets), vedette de la sélection. Importé une seule fois par la page.
  * Comme les autres CSS de composant, ce fichier est hors @layer : on n'y règle jamais une propriété
  * qu'un utilitaire Tailwind pose sur le même élément. Les variantes motion-* de globals.css n'existent
  * pas ici : mouvement réduit et effets allégés sont gérés à la main (modèle : CardAura.css).
@@ -204,7 +204,7 @@
   }
 }
 
-/* --- Vedette du jour : sachet qui flotte, halo qui respire, rayons autour du sachet --- */
+/* --- Vedette de la sélection : sachet qui flotte, halo qui respire, rayons autour du sachet --- */
 .shop-hero-art {
   position: relative;
   isolation: isolate;

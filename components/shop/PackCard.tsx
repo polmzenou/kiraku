@@ -95,7 +95,6 @@ export function PackCard({
                 {t(`limit.${card.limit.period}`, { count: card.remaining ?? 0, limit: card.limit.perUser })}
               </span>
             )}
-            {card.booster?.resting && <span className="text-ai">{t("pack.resting")}</span>}
             {card.endsAt && <span>{t("until", { date: card.endsAt })}</span>}
           </div>
           {soldOut && <ResetHint resetsAt={card.limit?.resetsAt ?? null} now={now} />}

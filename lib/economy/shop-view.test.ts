@@ -14,8 +14,6 @@ function type(slug: string, over: Partial<ShopBoosterType> = {}): ShopBoosterTyp
     floors: FLOORS,
     poolSize: 300,
     availability: "open",
-    rotation: null,
-    usesFreeStock: true,
     priceZeni: 200,
     ...over,
   };
@@ -23,12 +21,13 @@ function type(slug: string, over: Partial<ShopBoosterType> = {}): ShopBoosterTyp
 
 const TYPES = new Map<string, ShopBoosterType>([
   ["standard", type("standard", { kind: "STANDARD", family: "standard" })],
-  ["shonen", type("shonen", { family: "demographie", rotation: "resting", availability: "hidden" })],
+  ["shonen", type("shonen", { family: "demographie", availability: "hidden" })], // au repos dans la rotation
+  ["seinen", type("seinen", { family: "demographie" })], // dans la sélection du moment
   ["mecha", type("mecha")],
   ["horreur", type("horreur", { availability: "hidden" })], // inactif
-  ["jubako", type("jubako", { kind: "FORMAT", family: "formats", usesFreeStock: false, priceZeni: 550, floors: ["COMMON", "EPIC"] })],
-  ["mythique", type("mythique", { kind: "RARITY", family: "rarete", usesFreeStock: false, priceZeni: null, availability: "locked", floors: ["EPIC", "MYTHIC"] })],
-  ["divin", type("divin", { kind: "DROP", family: "special", usesFreeStock: false, priceZeni: null, availability: "hidden" })],
+  ["jubako", type("jubako", { kind: "FORMAT", family: "formats", priceZeni: 550, floors: ["COMMON", "EPIC"] })],
+  ["mythique", type("mythique", { kind: "RARITY", family: "rarete", priceZeni: null, availability: "locked", floors: ["EPIC", "MYTHIC"] })],
+  ["divin", type("divin", { kind: "DROP", family: "special", priceZeni: null, availability: "hidden" })],
 ]);
 
 const boosterLot = (slug: string, quantity = 5, zeni = 0) =>
@@ -38,6 +37,7 @@ const LOTS = new Map<string, ShopLot<object>>([
   ["l-std5", boosterLot("standard")],
   ["l-std10", boosterLot("standard", 10)],
   ["l-shonen", boosterLot("shonen")],
+  ["l-seinen", boosterLot("seinen")],
   ["l-mecha", boosterLot("mecha")],
   ["l-horreur", boosterLot("horreur")],
   ["l-jubako", boosterLot("jubako")],
@@ -63,6 +63,7 @@ const ITEMS = [
   item("std10", "l-std10", 1700, { perUserLimit: 3, limitPeriod: "WEEKLY" }),
   item("fuda", "l-fuda", 2500, { perUserLimit: 1, limitPeriod: "DAILY" }),
   item("shonen", "l-shonen", 900, { perUserLimit: 2, limitPeriod: "WEEKLY" }),
+  item("seinen", "l-seinen", 900, { perUserLimit: 2, limitPeriod: "WEEKLY" }),
   item("mecha", "l-mecha", 900, { perUserLimit: 2, limitPeriod: "WEEKLY", endsAt: new Date(NOW.getTime() + 86_400_000) }),
   item("horreur", "l-horreur", 900),
   item("jubako", "l-jubako", 2475, { perUserLimit: 2, limitPeriod: "WEEKLY" }),
@@ -71,7 +72,7 @@ const ITEMS = [
   item("orphelin", "l-absent", 100),
 ];
 
-function view(over: { bought?: Map<string, number>; credits?: Map<string, number>; now?: Date } = {}) {
+function view(over: { bought?: Map<string, number>; credits?: Map<string, number>; turn?: number } = {}) {
   return buildShopView({
     items: ITEMS,
     lots: LOTS,
@@ -79,16 +80,17 @@ function view(over: { bought?: Map<string, number>; credits?: Map<string, number
     bought: over.bought ?? new Map(),
     credits: over.credits ?? new Map(),
     definitions: DEFINITIONS,
-    now: over.now ?? NOW,
+    now: NOW,
     timeZone: TZ,
+    turn: over.turn ?? 41_200,
   });
 }
 
 const allCards = (v: ReturnType<typeof view>) => v.sections.flatMap((s) => s.cards);
 
 describe("vue de la boutique", () => {
-  it("ne garde que ce qui se vend : ni Mythique, ni sachet scellé, ni type caché, ni lot absent", () => {
-    expect(allCards(view()).map((c) => c.id)).toEqual(["std5", "std10", "jubako", "shonen", "mecha", "fuda"]);
+  it("ne garde que la sélection du moment et ce qui se vend : ni Mythique, ni sachet scellé, ni type caché, ni lot absent", () => {
+    expect(allCards(view()).map((c) => c.id)).toEqual(["std5", "std10", "jubako", "seinen", "mecha", "fuda"]);
   });
 
   it("range par famille dans l'ordre des boosters, puis les extras", () => {
@@ -105,45 +107,53 @@ describe("vue de la boutique", () => {
 
   it("compte les achats dans la fenêtre de chaque limite", () => {
     const bought = new Map([
-      [purchaseKey("shonen", "2026-W42"), 2],
+      [purchaseKey("seinen", "2026-W42"), 2],
       [purchaseKey("mecha", "2026-W41"), 2], // semaine passée : ne compte plus
       [purchaseKey("fuda", "2026-10-14"), 1],
     ]);
     const cards = new Map(allCards(view({ bought })).map((c) => [c.id, c]));
-    expect(cards.get("shonen")!.remaining).toBe(0);
+    expect(cards.get("seinen")!.remaining).toBe(0);
     expect(cards.get("mecha")!.remaining).toBe(2);
     expect(cards.get("fuda")!.remaining).toBe(0);
     expect(cards.get("std5")!.remaining).toBeNull();
     // Remise à zéro : lundi 19 octobre à minuit, heure de Paris
-    expect(cards.get("shonen")!.limit!.resetsAt).toEqual(new Date("2026-10-18T22:00:00Z"));
+    expect(cards.get("seinen")!.limit!.resetsAt).toEqual(new Date("2026-10-18T22:00:00Z"));
   });
 
-  it("signale le repos dans la rotation, les crédits possédés, la fin proche et le lien d'ouverture", () => {
+  it("signale les crédits possédés, la fin proche et le lien d'ouverture", () => {
     const cards = new Map(allCards(view({ credits: new Map([["t-mecha", 3]]) })).map((c) => [c.id, c]));
-    expect(cards.get("shonen")!.booster).toMatchObject({ resting: true, family: "demographie", owned: 0 });
-    expect(cards.get("mecha")!.booster).toMatchObject({ resting: false, owned: 3, poolSize: 300 });
+    expect(cards.get("seinen")!.booster).toMatchObject({ family: "demographie", owned: 0 });
+    expect(cards.get("mecha")!.booster).toMatchObject({ owned: 3, poolSize: 300 });
     expect(cards.get("mecha")!.endsSoon).toBe(true);
     expect(cards.get("mecha")!.openHref).toBe("/ouvrir/mecha?credit=1&n=5");
     expect(cards.get("std10")!.openHref).toBe("/ouvrir/standard?credit=1&n=10");
     expect(cards.get("fuda")!.openHref).toBeNull();
   });
 
-  it("met en vedette un pack thématique ou un format, jamais un pack standard ni une carte", () => {
-    for (let day = 1; day <= 20; day++) {
-      const v = view({ now: new Date(Date.UTC(2026, 10, day, 12)) });
-      expect(["jubako", "shonen", "mecha"]).toContain(v.featured?.id);
+  it("met en vedette un pack thématique ou un format de la sélection, jamais un pack standard, une carte ni un type au repos", () => {
+    const seen = new Set<string>();
+    for (let turn = 41_200; turn < 41_220; turn++) {
+      const v = view({ turn });
+      expect(["jubako", "seinen", "mecha"]).toContain(v.featured?.id);
       expect(allCards(v).filter((c) => c.featured).map((c) => c.id)).toEqual([v.featured!.id]);
+      seen.add(v.featured!.id);
     }
+    expect(seen.size).toBe(3);
+  });
+
+  it("la vedette ne change pas au sein d'une même sélection", () => {
+    expect(view({ turn: 41_207 }).featured?.id).toBe(view({ turn: 41_207 }).featured?.id);
+    expect(view({ turn: 41_207 }).featured?.id).not.toBe(view({ turn: 41_208 }).featured?.id);
   });
 
   it("la vedette ne dépend pas des achats du joueur", () => {
-    const bought = new Map([[purchaseKey("shonen", "2026-W42"), 2], [purchaseKey("mecha", "2026-W42"), 2]]);
+    const bought = new Map([[purchaseKey("seinen", "2026-W42"), 2], [purchaseKey("mecha", "2026-W42"), 2]]);
     expect(view({ bought }).featured?.id).toBe(view().featured?.id);
   });
 
   it("décision de vente partagée avec l'achat", () => {
     expect(lotSaleIssue(LOTS.get("l-mecha")!, TYPES, DEFINITIONS)).toBeNull();
-    expect(lotSaleIssue(LOTS.get("l-shonen")!, TYPES, DEFINITIONS)).toBeNull();
+    expect(lotSaleIssue(LOTS.get("l-shonen")!, TYPES, DEFINITIONS)).toBe("UNSELLABLE"); // au repos : hors sélection
     expect(lotSaleIssue(LOTS.get("l-horreur")!, TYPES, DEFINITIONS)).toBe("UNSELLABLE");
     expect(lotSaleIssue(LOTS.get("l-divin")!, TYPES, DEFINITIONS)).toBe("UNSELLABLE"); // caché avant d'être scellé
     expect(lotSaleIssue(boosterLot("inconnu"), TYPES, DEFINITIONS)).toBe("UNSELLABLE");

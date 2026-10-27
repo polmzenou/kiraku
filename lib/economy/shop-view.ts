@@ -15,9 +15,9 @@ import {
   type ShopLimitPeriod,
 } from "./shop";
 
-// Vue de la boutique : articles en vente regroupés par famille de booster, vedette du jour, remises,
-// achats restants et crédits déjà possédés. Pur : la page charge les données, l'achat (shop-guard)
-// reprend la même décision de vente.
+// Vue de la boutique : articles en vente regroupés par famille de booster, vedette de la sélection,
+// remises, achats restants et crédits déjà possédés. Pur : la page charge les données, l'achat
+// (shop-guard) reprend la même décision de vente.
 
 /** Type de booster tel que la boutique le lit : offre du moment et planchers effectifs. */
 export type ShopBoosterType = PackOffer & {
@@ -64,8 +64,8 @@ export type ShopCard<L> = {
   remaining: number | null;
   endsAt: Date | null;
   endsSoon: boolean;
-  /** Premier booster du lot : section, pool, rotation et crédits déjà possédés de ce type. */
-  booster: { slug: string; quantity: number; family: BoosterFamily; poolSize: number; resting: boolean; owned: number } | null;
+  /** Premier booster du lot : section, pool et crédits déjà possédés de ce type. */
+  booster: { slug: string; quantity: number; family: BoosterFamily; poolSize: number; owned: number } | null;
   /** Ouverture des boosters achetés (crédits), quantité présélectionnée quand le sélecteur la propose. */
   openHref: string | null;
   featured: boolean;
@@ -102,8 +102,8 @@ export function purchaseKey(shopItemId: string, periodKey: string): string {
 }
 
 /**
- * Décision de vente d'un lot, partagée par la page et l'achat : ses boosters doivent s'ouvrir (ou être
- * seulement au repos dans la rotation) et son contenu respecter la règle de la boutique.
+ * Décision de vente d'un lot, partagée par la page et l'achat : ses boosters doivent s'ouvrir en ce
+ * moment (sélection du moment pour les familles tournantes) et son contenu respecter la règle de la boutique.
  */
 export function lotSaleIssue(
   lot: Pick<ShopLot<unknown>, "boosters" | "cards">,
@@ -135,6 +135,8 @@ export function buildShopView<L>(input: {
   definitions: readonly { key: string; sortOrder: number }[];
   now: Date;
   timeZone: string;
+  /** Fenêtre de rotation en cours (rotationWindow().index) : la vedette change avec la sélection. */
+  turn: number;
 }): ShopView<L> {
   const { now, timeZone } = input;
   const cards: ShopCard<L>[] = [];
@@ -181,7 +183,6 @@ export function buildShopView<L>(input: {
               quantity: first.quantity,
               family: type.family,
               poolSize: type.poolSize,
-              resting: type.rotation === "resting",
               owned: input.credits.get(type.id) ?? 0,
             }
           : null,
@@ -192,7 +193,7 @@ export function buildShopView<L>(input: {
     });
   }
 
-  const featuredId = featuredPick(candidates, periodWindow("DAILY", now, timeZone).key);
+  const featuredId = featuredPick(candidates, input.turn);
   const featured = cards.find((c) => c.id === featuredId) ?? null;
   if (featured) featured.featured = true;
 

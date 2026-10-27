@@ -71,20 +71,16 @@ export function shopContentIssue(
 /** Offre d'un type de booster telle que la boutique la lit (getBoosterOffers). */
 export type PackOffer = {
   availability: Availability;
-  rotation: "featured" | "resting" | null;
-  usesFreeStock: boolean;
   priceZeni: number | null;
 };
 
 /**
- * Un pack se vend tant que son booster s'ouvre, ou s'il est seulement au repos dans la rotation : la
- * boutique donne accès aux boosters hors sélection. Inactif, hors dates, pool trop petit ou réservé
- * aux événements : plus en vente.
+ * Un pack se vend seulement si son booster s'ouvre en ce moment : dans une famille tournante, il doit
+ * faire partie de la sélection du moment (au repos, getBoosterOffers le cache). Inactif, hors dates,
+ * pool trop petit ou réservé aux événements : plus en vente. Les crédits déjà achetés s'ouvrent toujours.
  */
 export function packSellable(offer: PackOffer | null | undefined): boolean {
-  if (!offer) return false;
-  if (offer.availability === "open") return true;
-  return offer.rotation === "resting" && (offer.usesFreeStock || offer.priceZeni !== null);
+  return offer?.availability === "open";
 }
 
 /**
@@ -102,50 +98,39 @@ export function packPricing(input: { price: number; quantity: number; unitPrice:
   return discount < 0.01 ? { reference: null, discount: null } : { reference, discount };
 }
 
-/** Veille d'un jour du jeu (« 2026-10-27 » → « 2026-10-26 »), sans fuseau : simple arithmétique de calendrier. */
-export function previousDayKey(dayKey: string): string {
-  const [y, m, d] = dayKey.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d) - 86_400_000).toISOString().slice(0, 10);
-}
-
-function rendezvous(ids: readonly string[], dayKey: string): string | null {
+function rendezvous(ids: readonly string[], turn: number): string | null {
   let best: string | null = null;
   let bestScore = -1;
   for (const id of ids) {
-    const score = hashSeed(`shop-featured:${dayKey}:${id}`);
+    const score = hashSeed(`shop-featured:${turn}:${id}`);
     if (score > bestScore || (score === bestScore && best !== null && id < best)) [best, bestScore] = [id, score];
   }
   return best;
 }
 
-/** Jours remontés pour retrouver la vedette de la veille (31 × n hachages : rien à l'échelle d'une page). */
+/** Sélections remontées pour retrouver la vedette de la précédente (31 × n hachages : rien à l'échelle d'une page). */
 const FEATURED_MEMORY = 30;
 
-/** Numéro du jour (« 2026-10-27 ») depuis l'époque Unix, sans fuseau. */
-function dayNumber(dayKey: string): number {
-  const [y, m, d] = dayKey.split("-").map(Number);
-  return Math.round(Date.UTC(y, m - 1, d) / 86_400_000);
-}
-
-function pickOn(ids: readonly string[], dayKey: string, depth: number): string | null {
+function pickOn(ids: readonly string[], turn: number, depth: number): string | null {
   if (ids.length < 2) return ids[0] ?? null;
-  const yesterday = depth > 0 ? pickOn(ids, previousDayKey(dayKey), depth - 1) : null;
+  const previous = depth > 0 ? pickOn(ids, turn - 1, depth - 1) : null;
   return rendezvous(
-    ids.filter((id) => id !== yesterday),
-    dayKey,
+    ids.filter((id) => id !== previous),
+    turn,
   );
 }
 
 /**
- * Vedette du jour, la même pour tous : l'article au plus grand hash du jour (hachage de rendez-vous),
- * sans reprendre celle de la veille. Retirer un article qui n'a pas été en vedette ces derniers jours
- * ne la change pas.
+ * Vedette de la sélection du moment, la même pour tous : l'article au plus grand hash de la fenêtre de
+ * rotation `turn` (hachage de rendez-vous), sans reprendre celle de la sélection précédente. Elle change
+ * avec la sélection, dont elle est tirée. Retirer un article qui n'a pas été en vedette ces dernières
+ * sélections ne la change pas.
  */
-export function featuredPick(ids: readonly string[], dayKey: string): string | null {
+export function featuredPick(ids: readonly string[], turn: number): string | null {
   const unique = [...new Set(ids)].sort();
-  // Deux candidats : la chaîne des veilles se contredirait un jour sur deux, une simple alternance suffit
-  if (unique.length === 2) return unique[dayNumber(dayKey) % 2];
-  return pickOn(unique, dayKey, FEATURED_MEMORY);
+  // Deux candidats : la chaîne des précédentes se contredirait une fois sur deux, une simple alternance suffit
+  if (unique.length === 2) return unique[Math.abs(turn) % 2];
+  return pickOn(unique, turn, FEATURED_MEMORY);
 }
 
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);

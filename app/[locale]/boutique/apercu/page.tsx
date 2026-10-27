@@ -9,7 +9,7 @@ import { ShopNoren } from "@/components/shop/ShopNoren";
 import { ShopShelves } from "@/components/shop/ShopShelves";
 import { ShopStage } from "@/components/shop/ShopStage";
 import { contentsLabel } from "@/lib/boosters/catalog";
-import { isRotatingFamily } from "@/lib/boosters/rotation";
+import { isRotatingFamily, ROTATING_FAMILIES, rotationSelection, rotationWindow, type RotatingFamily } from "@/lib/boosters/rotation";
 import { effectiveSlotFloors, localize } from "@/lib/boosters/types";
 import { BASE_RARITIES } from "@/lib/catalog/rarity";
 import { periodWindow } from "@/lib/economy/period";
@@ -33,15 +33,27 @@ export default async function ShopPreviewPage() {
   const [t, tRarity, locale] = await Promise.all([getTranslations("economy.shop"), getTranslations("rarity"), getLocale()]);
   const timeZone = SETTING_DEFAULTS["game.timeZone"];
   const now = new Date();
-  const day = periodWindow("DAILY", now, timeZone);
   const week = periodWindow("WEEKLY", now, timeZone);
   const globalFloors = SETTING_DEFAULTS["booster.slotFloors"];
 
-  // Types : un sur trois des familles tournantes au repos, pools de tailles variées
+  // Sélection du moment calculée comme en prod (réglages par défaut, sans épingle de l'admin)
+  const hours = SETTING_DEFAULTS["booster.rotationHours"];
+  const rotation = rotationWindow(now, hours, timeZone);
+  const offered = (s: (typeof BOOSTER_SEEDS)[number]) => s.active !== false && s.kind !== "DROP";
+  const selection = rotationSelection({
+    candidates: Object.fromEntries(
+      ROTATING_FAMILIES.map((f) => [f, BOOSTER_SEEDS.filter((s) => s.family === f && offered(s)).map((s) => s.slug)]),
+    ) as Record<RotatingFamily, string[]>,
+    counts: { demographie: SETTING_DEFAULTS["booster.rotationDemographie"], genre: SETTING_DEFAULTS["booster.rotationGenre"] },
+    window: rotation.index,
+    hours,
+    pin: null,
+  });
+
+  // Types : ceux au repos sont cachés comme en prod, pools de tailles variées
   const types = new Map<string, ShopBoosterType>(
     BOOSTER_SEEDS.map((s, i) => {
-      const resting = isRotatingFamily(s.family) && i % 3 === 0;
-      const hidden = s.active === false || s.kind === "DROP" || resting;
+      const resting = isRotatingFamily(s.family) && !selection[s.family].slugs.includes(s.slug);
       const usesFreeStock = s.usesFreeStock ?? true;
       const priceZeni = s.priceZeni ?? null;
       return [
@@ -52,9 +64,7 @@ export default async function ShopPreviewPage() {
           family: s.family,
           floors: effectiveSlotFloors(s.slotFloors ?? [], globalFloors),
           poolSize: 26 + ((i * 197) % 1400),
-          availability: hidden ? "hidden" : !usesFreeStock && priceZeni === null ? "locked" : "open",
-          rotation: isRotatingFamily(s.family) ? (resting ? "resting" : "featured") : null,
-          usesFreeStock,
+          availability: !offered(s) || resting ? "hidden" : !usesFreeStock && priceZeni === null ? "locked" : "open",
           priceZeni,
         },
       ];
@@ -127,12 +137,14 @@ export default async function ShopPreviewPage() {
     items,
     lots: new Map([...lots].map(([id, lot]) => [id, shopLotFrom(lot)])),
     types,
-    // Un pack déjà pris deux fois cette semaine, pour voir l'état épuisé ; des crédits Seinen à ouvrir
-    bought: new Map([[purchaseKey("pack-5-shonen", week.key), 2]]),
-    credits: new Map([["seinen", 3]]),
+    // Hors familles tournantes, toujours affichés : un pack déjà pris deux fois cette semaine, pour
+    // voir l'état épuisé, et des crédits Waifus à ouvrir
+    bought: new Map([[purchaseKey("pack-5-protagonistes", week.key), 2]]),
+    credits: new Map([["waifus", 3]]),
     definitions: BASE_RARITIES.map((key, sortOrder) => ({ key, sortOrder })),
     now,
     timeZone,
+    turn: rotation.index,
   });
 
   const renderBuy = (card: ShopCard<LotView>, place: "hero" | "grid") => {
@@ -153,7 +165,7 @@ export default async function ShopPreviewPage() {
         <div className="flex flex-col gap-2">
           <SectionTitle level={1} kanji="商店" title={t("preview.title")} subtitle={t("preview.note")} />
         </div>
-        <ShopShelves view={view} coins={COINS} now={now} dayEndsAt={day.end} renderBuy={renderBuy} />
+        <ShopShelves view={view} coins={COINS} now={now} selectionEndsAt={rotation.endsAt} renderBuy={renderBuy} />
       </ShopStage>
     </PageShell>
   );
