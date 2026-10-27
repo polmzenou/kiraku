@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { deleteCatalogCard, setCatalogCardStatus } from "@/server/actions/admin-catalog";
 
-export function CatalogStatusButton({ id, updatedAt, archived, deletable = false, name = "" }: { id: string; updatedAt: string; archived: boolean; deletable?: boolean; name?: string }) {
+export function CatalogStatusButton({ id, updatedAt, archived, deletable = false, name = "", canArchive = true }: { id: string; updatedAt: string; archived: boolean; deletable?: boolean; name?: string; canArchive?: boolean }) {
   const t = useTranslations("admin.catalog"), router = useRouter();
   const [pending, startTransition] = useTransition(), [error, setError] = useState("");
   const run = (call: () => Promise<{ ok: true } | { ok: false; error: string }>) => startTransition(async () => {
@@ -13,9 +13,9 @@ export function CatalogStatusButton({ id, updatedAt, archived, deletable = false
     catch { setError(t("errors.SAVE_FAILED")); }
   });
   return <div className="flex flex-wrap items-center gap-x-3">
-    <button type="button" disabled={pending} className="min-h-11 text-xs text-shu underline disabled:opacity-50" onClick={() => {
+    {canArchive && <button type="button" disabled={pending} className="min-h-11 text-xs text-shu underline disabled:opacity-50" onClick={() => {
       if (window.confirm(t(archived ? "restoreConfirm" : "archiveConfirm"))) run(() => setCatalogCardStatus({ id, updatedAt, status: archived ? "DRAFT" : "ARCHIVED" }));
-    }}>{t(archived ? "restore" : "archive")}</button>
+    }}>{t(archived ? "restore" : "archive")}</button>}
     {deletable && <button type="button" disabled={pending} className="min-h-11 text-xs text-shu underline disabled:opacity-50" onClick={() => {
       if (window.confirm(t("deleteConfirm", { name }))) run(() => deleteCatalogCard({ id, updatedAt }));
     }}>{t("delete")}</button>}

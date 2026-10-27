@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { deleteCatalogCard, saveCatalogCard, setCatalogCardStatus } from "@/server/actions/admin-catalog";
 import type { CardDraft } from "@/lib/catalog/admin-form";
+import type { CatalogScope } from "@/lib/admin/roles";
 import type { OddsScenario } from "@/lib/catalog/card-odds";
 import { CARD_IMAGE_LIMIT, CARD_IMAGE_TYPES } from "@/lib/catalog/media";
 import { localize, parseLocalized } from "@/lib/boosters/types";
@@ -16,7 +17,7 @@ import { SearchPicker, type PickerValue } from "./SearchPicker";
 import { Fuda } from "@/components/fuda/Fuda";
 import { Sheet } from "@/components/ui/Sheet";
 
-type Context = { series: { id: string; titleRomaji: string } | null; base: LinkedCard | null; variants: LinkedCard[]; deletable: boolean };
+type Context = { series: { id: string; titleRomaji: string } | null; base: LinkedCard | null; variants: LinkedCard[]; editable: boolean; deletable: boolean };
 type Odds = { id: string; name: unknown; slug: string; eligible: boolean; perSlot: number[]; atLeast: number };
 async function optimizeImage(file: File) {
   const bitmap = await createImageBitmap(file);
@@ -38,7 +39,8 @@ function Section({ id, title, children, highlight = false }: { id: string; title
   </details>;
 }
 
-export function CardEditor({ initial, options, context }: { initial: CardDraft; options: CatalogEditorOptions; context: Context }) {
+/** `drafts` (DEV) : brouillon seulement, l'admin publie ; une carte publiée ou distribuée s'ouvre en lecture seule. */
+export function CardEditor({ scope, initial, options, context }: { scope: CatalogScope; initial: CardDraft; options: CatalogEditorOptions; context: Context }) {
   const t = useTranslations("admin.catalog"), tr = useTranslations("rarity"), locale = useLocale();
   const router = useRouter(); const [draft, setDraft] = useState(initial);
   const [baseline, setBaseline] = useState(JSON.stringify(initial));
@@ -144,8 +146,9 @@ export function CardEditor({ initial, options, context }: { initial: CardDraft; 
   const appearanceDefaults = rarity?.appearance;
   const sections = [["info", t("information")], ...(variantRequired || draft.variantOfId ? [["variant", t("variant")]] : []), ["image", t("image")], ["appearance", t("appearance")], ["animations", t("animations")], ["distribution", t("distribution")]] as const;
   return <form ref={form} onSubmit={(e) => { e.preventDefault(); save(draft.status); }} className="flex min-w-0 flex-col gap-5">
-    <fieldset disabled={pending} aria-busy={pending} className="contents">
+    <fieldset disabled={pending || !context.editable} aria-busy={pending} className="contents">
     <header className="flex flex-wrap items-center justify-between gap-3"><div><Link href="/admin/catalogue" className="text-sm text-link underline">{t("back")}</Link><h2 className="mt-2 font-heading text-3xl font-bold">{t(draft.id ? "edit" : draft.variantOfId ? "createVariant" : "create")}</h2></div><span role="status" className="rounded-pill border border-border px-3 py-2 text-xs">{t(`statuses.${draft.status}`)}{dirty ? ` · ${t("unsaved")}` : ""}</span></header>
+    {scope === "drafts" && <p role="status" className="rounded-control border border-border bg-surface-2 p-3 text-sm text-text-muted">{t(context.editable ? "devReviewNote" : "devReadOnly")}</p>}
     <nav aria-label={t("sections")} className="-mx-1 flex gap-1 overflow-x-auto pb-1">{sections.map(([id, label]) => <a key={id} href={`#${id}`} className="inline-flex min-h-11 shrink-0 items-center rounded-pill border border-border px-3 text-xs">{label}</a>)}</nav>
     <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="flex min-w-0 flex-col gap-5">
@@ -153,7 +156,7 @@ export function CardEditor({ initial, options, context }: { initial: CardDraft; 
           <TextField label={t("name")} value={draft.name} maxLength={200} onChange={(name) => update({ name })} />
           <TextField label={t("nameNative")} value={draft.nameNative || ""} maxLength={200} onChange={(nameNative) => update({ nameNative })} />
           <SelectField label={t("rarity")} value={draft.rarity} onChange={(rarity) => update({ rarity })} options={options.rarities.map((r) => ({ value: r.key, label: `${r.seal} ${locale === "en" ? r.nameEn || r.nameFr : r.nameFr}` }))} />
-          <div className="flex items-end"><Link href="/admin/catalogue/raretes" className="flex min-h-11 items-center text-sm text-link underline">{t("manageRarities")}</Link></div>
+          {scope === "full" && <div className="flex items-end"><Link href="/admin/catalogue/raretes" className="flex min-h-11 items-center text-sm text-link underline">{t("manageRarities")}</Link></div>}
           <NumberField label={t("power")} value={draft.power} min={0} max={999} onChange={(power) => update({ power })} />
           <NumberField label={t("ki")} value={draft.ki} min={0} max={999} onChange={(ki) => update({ ki })} />
           {median && <div className="flex flex-wrap items-center gap-3 text-xs text-text-muted sm:col-span-2"><span>{t("statsMedian", { rarity: tr(draft.rarity), power: median.power, ki: median.ki })}</span>
@@ -217,8 +220,8 @@ export function CardEditor({ initial, options, context }: { initial: CardDraft; 
       {error && <p ref={alert} tabIndex={-1} role="alert" className="w-full break-words text-sm text-shu">{error}</p>}{notice && <p role="status" className="w-full text-sm">{notice}</p>}
       <button type="submit" disabled={pending} className="min-h-11 rounded-control border border-border px-4 font-bold disabled:opacity-50" title={t("saveShortcut")}>{pending ? t("saving") : t(draft.id ? "save" : "saveDraft")}</button>
       <button type="button" className="min-h-11 rounded-control border border-border px-3 text-sm lg:hidden" onClick={() => setPreviewOpen(true)}>{t("preview")}</button>
-      {draft.status !== "PUBLISHED" && <button type="button" disabled={pending} onClick={() => save("PUBLISHED")} className="min-h-11 rounded-control bg-shu-btn px-4 font-bold text-white disabled:opacity-50">{t("publish")}</button>}
-      {draft.id && <button type="button" disabled={pending || dirty} onClick={archive} className="min-h-11 px-3 text-sm text-shu underline disabled:opacity-50">{t(draft.status === "ARCHIVED" ? "restore" : "archive")}</button>}
+      {scope === "full" && draft.status !== "PUBLISHED" && <button type="button" disabled={pending} onClick={() => save("PUBLISHED")} className="min-h-11 rounded-control bg-shu-btn px-4 font-bold text-white disabled:opacity-50">{t("publish")}</button>}
+      {scope === "full" && draft.id && <button type="button" disabled={pending || dirty} onClick={archive} className="min-h-11 px-3 text-sm text-shu underline disabled:opacity-50">{t(draft.status === "ARCHIVED" ? "restore" : "archive")}</button>}
       {draft.id && context.deletable && <button type="button" disabled={pending} onClick={remove} className="min-h-11 px-3 text-sm text-shu underline disabled:opacity-50">{t("delete")}</button>}
       <span className="ml-auto text-xs text-text-muted">{tr(draft.rarity)}</span>
     </div>

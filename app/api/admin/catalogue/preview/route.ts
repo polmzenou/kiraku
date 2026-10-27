@@ -7,7 +7,7 @@ import { computePool, loadCandidates } from "@/server/boosters/type-store";
 import { getBoosterTypes, getFilterContext } from "@/server/boosters/pools";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { CATALOG_TAG, getCatalogVersion } from "@/server/catalog/queries";
-import { getAdmin } from "@/server/admin";
+import { getStaff } from "@/server/admin";
 import { prisma } from "@/server/db";
 import { rateLimit } from "@/server/ratelimit";
 import { effectiveSlotFloors } from "@/lib/boosters/types";
@@ -20,7 +20,7 @@ const schema = z.object({ id: z.string().max(64).optional(), rarity: rarityKeySc
 });
 const candidates = unstable_cache(async (_version: number) => { void _version; return loadCandidates(prisma); }, ["admin-preview-candidates"], { tags: [CATALOG_TAG], revalidate: 3600 });
 export async function POST(request: Request) {
-  const admin = await getAdmin(); if (!admin) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
+  const admin = (await getStaff())?.user; if (!admin) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
   if (request.headers.get("origin") !== new URL(request.url).origin) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
   if (!(await rateLimit(`admin-card-preview:${admin.id}`, { limit: 120, windowSeconds: 60 })).success) return Response.json({ error: "RATE_LIMITED" }, { status: 429 });
   const body = await request.text(); if (body.length > 32_000) return Response.json({ error: "INVALID" }, { status: 400 });

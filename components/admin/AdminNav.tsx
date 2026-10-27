@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
+import type { CatalogScope } from "@/lib/admin/roles";
 
 const GROUPS = [
   { key: "overview", modules: [{ key: "dashboard", href: "/admin" }, { key: "journal", href: "/admin/journal" }] },
@@ -59,19 +60,24 @@ function activeHref(pathname: string) {
   return HREFS.filter((href) => pathname === href || pathname.startsWith(`${href}/`)).sort((a, b) => b.length - a.length)[0];
 }
 
+/** Modules ouverts au DEV : le reste lui répond 404 côté serveur, la nav ne fait que le refléter. */
+const DEV_MODULES: readonly string[] = ["catalog"];
+
 /**
  * Navigation de l'admin : barre latérale groupée et collante en desktop (≥ 1024 px),
  * rangée de puces défilante sur mobile.
  */
-export function AdminNav() {
+export function AdminNav({ scope }: { scope: CatalogScope }) {
   const t = useTranslations("admin");
   const active = activeHref(usePathname());
+  const visible = (m: Module) => scope === "full" || DEV_MODULES.includes(m.key);
+  const groups = GROUPS.map((g) => ({ key: g.key, modules: g.modules.filter(visible) })).filter((g) => g.modules.length > 0);
 
   return (
     <nav aria-label={t("modules")} className="min-w-0 lg:sticky lg:top-[calc(4rem+env(safe-area-inset-top))] lg:max-h-[calc(100dvh-4rem-env(safe-area-inset-top))] lg:overflow-y-auto lg:py-6">
       {/* Mobile : une rangée qui défile */}
       <ul className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:hidden">
-        {MODULES.map((m) => (
+        {MODULES.filter(visible).map((m) => (
           <li key={m.key} className="shrink-0 snap-start">
             <Link
               href={m.href}
@@ -86,7 +92,7 @@ export function AdminNav() {
 
       {/* Desktop : groupes empilés */}
       <div className="hidden flex-col gap-5 rounded-card border border-border bg-surface p-3 lg:flex">
-        {GROUPS.map((g) => (
+        {groups.map((g) => (
           <section key={g.key} className="flex flex-col gap-1">
             <h2 className="px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-text-muted">{t(`navGroups.${g.key}`)}</h2>
             <ul className="flex flex-col">

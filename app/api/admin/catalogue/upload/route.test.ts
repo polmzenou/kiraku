@@ -3,7 +3,7 @@ import { CARD_IMAGE_LIMIT } from "@/lib/catalog/media";
 
 const mocks = vi.hoisted(() => ({ admin: vi.fn(), limit: vi.fn(), put: vi.fn(), log: vi.fn() }));
 vi.mock("@vercel/blob", () => ({ put: mocks.put }));
-vi.mock("@/server/admin", () => ({ getAdmin: mocks.admin }));
+vi.mock("@/server/admin", () => ({ getStaff: mocks.admin }));
 vi.mock("@/server/ratelimit", () => ({ rateLimit: mocks.limit }));
 vi.mock("@/server/db", () => ({ prisma: {} }));
 vi.mock("@/server/admin/log", () => ({ writeAdminLog: mocks.log }));
@@ -20,7 +20,7 @@ function request(bytes: Uint8Array = png, type = "image/png", source = origin) {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("BLOB_READ_WRITE_TOKEN", "test-token"); vi.stubEnv("BLOB_PUBLIC_HOST", host);
-  mocks.admin.mockResolvedValue({ id: "admin" }); mocks.limit.mockResolvedValue({ success: true });
+  mocks.admin.mockResolvedValue({ user: { id: "admin" }, scope: "full" }); mocks.limit.mockResolvedValue({ success: true });
   mocks.put.mockResolvedValue({ url: `https://${host}/cards/unique.png`, pathname: "cards/unique.png" });
 });
 afterEach(() => vi.unstubAllEnvs());
@@ -29,9 +29,14 @@ describe("téléversement des images du catalogue", () => {
   it("refuse les visiteurs et les requêtes d’une autre origine", async () => {
     mocks.admin.mockResolvedValue(null);
     expect((await POST(request())).status).toBe(403);
-    mocks.admin.mockResolvedValue({ id: "admin" });
+    mocks.admin.mockResolvedValue({ user: { id: "admin" }, scope: "full" });
     expect((await POST(request(png, "image/png", "https://other.test"))).status).toBe(403);
     expect(mocks.put).not.toHaveBeenCalled();
+  });
+  it("accepte le rôle DEV, qui prépare des brouillons", async () => {
+    mocks.admin.mockResolvedValue({ user: { id: "dev" }, scope: "drafts" });
+    expect((await POST(request())).status).toBe(200);
+    expect(mocks.limit).toHaveBeenCalledWith("admin-upload:dev", expect.anything());
   });
   it("limite les envois avant toute écriture dans Blob", async () => {
     mocks.limit.mockResolvedValue({ success: false });

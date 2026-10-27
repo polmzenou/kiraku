@@ -27,7 +27,7 @@ const base = { userId: id, reason: z.string().trim().min(1).max(300) };
 
 // Une action explicite par section : aucune recopie d'un objet User fourni par le navigateur.
 export const adminUserMutationSchema = z.discriminatedUnion("kind", [
-  z.object({ ...base, kind: z.literal("account"), username: z.string().regex(USERNAME_REGEX), role: z.enum(["USER", "ADMIN"]), banned: z.boolean(), profileVisibility: z.enum(["PUBLIC", "FRIENDS", "PRIVATE"]), showCollection: z.boolean() }).strict(),
+  z.object({ ...base, kind: z.literal("account"), username: z.string().regex(USERNAME_REGEX), role: z.enum(["USER", "DEV", "ADMIN"]), banned: z.boolean(), profileVisibility: z.enum(["PUBLIC", "FRIENDS", "PRIVATE"]), showCollection: z.boolean() }).strict(),
   z.object({ ...base, kind: z.literal("coins"), mode, amount: value }).strict(),
   z.object({ ...base, kind: z.literal("stat"), field: z.enum(USER_STATS), value }).strict(),
   // `message` : mot de l'équipe montré au joueur avec la notification d'un ajout (mode ADD)

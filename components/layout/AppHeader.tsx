@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { isStaff } from "@/lib/admin/roles";
 import { Link } from "@/i18n/navigation";
 import type { Theme } from "@/lib/theme";
 import { logout } from "@/server/actions/account";
@@ -28,7 +29,8 @@ import { ZeniCoin } from "./ZeniCoin";
 export async function AppHeader({ theme }: { theme: Theme }) {
   const [t, user] = await Promise.all([getTranslations(), getCurrentUser()]);
   const accountHref = user ? `/u/${user.username}` : "/connexion";
-  const isAdmin = user?.role === "ADMIN";
+  // Lien « Admin » pour toute l'équipe : le DEV y trouve le catalogue seulement
+  const isAdmin = isStaff(user?.role);
   const signedIn = Boolean(user && !user.isGuest);
   const authLabel = signedIn ? t("account.logout") : t("auth.login.title");
   const [unread, pollSeconds, casino, boosterRules] = await Promise.all([

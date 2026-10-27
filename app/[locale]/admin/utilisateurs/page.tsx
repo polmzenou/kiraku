@@ -94,7 +94,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/[loca
               ),
               status: (
                 <span className="flex flex-col">
-                  {t(u.bannedAt ? "banned" : u.role === "ADMIN" ? "adminRole" : u.isGuest ? "guest" : "registered")}
+                  {t(u.bannedAt ? "banned" : u.role === "ADMIN" ? "adminRole" : u.role === "DEV" ? "devRole" : u.isGuest ? "guest" : "registered")}
                   {u.ambassadorSince && <span className="text-xs font-bold text-hisui">{t("ambassadorRole")}</span>}
                   {u.anonymizedAt ? (
                     <span className="text-xs text-text-muted">{t("anonymized")}</span>

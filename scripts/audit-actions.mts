@@ -17,7 +17,7 @@ function sourceFiles(dir: string): string[] {
 }
 
 const CHECKS = {
-  session: /\b(getCurrentUser|requireActiveUser|getAdmin|requireAdmin)\s*\(/,
+  session: /\b(getCurrentUser|requireActiveUser|getAdmin|requireAdmin|getStaff|requireStaff)\s*\(/,
   zod: /\.(safeParse|parse)\s*\(|Schema\.safeParse/,
   rateLimit: /\brateLimit\s*\(/,
 } as const;

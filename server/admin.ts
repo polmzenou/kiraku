@@ -1,5 +1,6 @@
 import "server-only";
 import { notFound } from "next/navigation";
+import { catalogScope } from "@/lib/admin/roles";
 import { prisma } from "./db";
 import { requireActiveUser } from "./user";
 
@@ -18,6 +19,21 @@ export async function requireAdmin() {
   const admin = await getAdmin();
   if (!admin) notFound();
   return admin;
+}
+
+/** Membre de l'équipe connecté (ADMIN ou DEV) avec son périmètre catalogue, ou null. */
+export async function getStaff() {
+  const user = await requireActiveUser();
+  const scope = catalogScope(user?.role);
+  if (!user || !scope) return null;
+  return { user, scope };
+}
+
+/** Pour les pages ouvertes au DEV (catalogue) : hors équipe, 404 comme requireAdmin. */
+export async function requireStaff() {
+  const staff = await getStaff();
+  if (!staff) notFound();
+  return staff;
 }
 
 /** Derniers changements de réglages des boosters, pour le journal de /admin/boosters. */

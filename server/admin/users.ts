@@ -24,7 +24,7 @@ const USER_ORDER = {
 export async function listAdminUsers({ query, filter, page: requestedPage, sort, dir }: UserListParams) {
   const where: Prisma.UserWhereInput = {
     ...(query ? { OR: [{ username: { contains: query, mode: "insensitive" } }, { email: { contains: query, mode: "insensitive" } }, { id: query }] } : {}),
-    ...(filter === "registered" ? { isGuest: false } : filter === "guests" ? { isGuest: true } : filter === "admins" ? { role: "ADMIN" } : filter === "ambassadors" ? { ambassadorSince: { not: null } } : filter === "banned" ? { bannedAt: { not: null } } : {}),
+    ...(filter === "registered" ? { isGuest: false } : filter === "guests" ? { isGuest: true } : filter === "admins" ? { role: { in: ["ADMIN", "DEV"] } } : filter === "ambassadors" ? { ambassadorSince: { not: null } } : filter === "banned" ? { bannedAt: { not: null } } : {}),
   };
   const total = await prisma.user.count({ where });
   const pages = Math.max(1, Math.ceil(total / ADMIN_USER_PAGE_SIZE));
