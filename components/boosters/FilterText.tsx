@@ -3,7 +3,7 @@ import type { FilterContext } from "@/lib/boosters/pool-filter";
 import type { BoosterTypeView } from "@/lib/boosters/types";
 
 /** Filtre AniList d'un type, en clair : « Tag Shounen », « Œuvres depuis 2018 », « Nés aujourd'hui »… */
-export function FilterText({ type, ctx }: { type: Pick<BoosterTypeView, "filter" | "kind" | "featuredCardIds">; ctx: FilterContext }) {
+export function FilterText({ type, ctx }: { type: Pick<BoosterTypeView, "filter" | "kind" | "featuredCardIds" | "focusSeriesIds">; ctx: FilterContext }) {
   const t = useTranslations("boosters.filterText");
   const tSeason = useTranslations("boosters.seasons");
   const f = type.filter ?? {};
@@ -26,6 +26,7 @@ export function FilterText({ type, ctx }: { type: Pick<BoosterTypeView, "filter"
   if (f.seriesIds) parts.push(t("series", { count: f.seriesIds.length }));
   if (f.cardIds) parts.push(t("cards", { count: f.cardIds.length }));
   if (type.featuredCardIds.length > 0) parts.push(t("featured", { count: type.featuredCardIds.length }));
+  if (type.focusSeriesIds.length > 0) parts.push(t("focus", { count: type.focusSeriesIds.length }));
 
   if (parts.length === 0) return <>{type.kind === "RARITY" ? t("raised") : t("none")}</>;
   return <>{parts.join(" · ")}</>;

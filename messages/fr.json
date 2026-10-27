@@ -662,7 +662,8 @@
   "time": {
     "minSec": "{minutes} min {seconds} s",
     "sec": "{seconds} s",
-    "hourMin": "{hours} h {minutes} min"
+    "hourMin": "{hours} h {minutes} min",
+    "dayHour": "{days} j {hours} h"
   },
   "boosters": {
     "title": "Choisis ton booster",
@@ -756,7 +757,8 @@
       "anime": "Œuvre principale de type anime",
       "series": "{count, plural, one {# œuvre choisie} other {# œuvres choisies}}",
       "cards": "{count, plural, one {# carte choisie} other {# cartes choisies}}",
-      "featured": "{count, plural, one {# vedette} other {# vedettes}}"
+      "featured": "{count, plural, one {# vedette} other {# vedettes}}",
+      "focus": "{count, plural, one {# série à l’honneur} other {# séries à l’honneur}}"
     },
     "seasons": {
       "WINTER": "hiver",
@@ -804,6 +806,15 @@
       "bannerChip": "Bannière vedette · {name}",
       "bannerEnds": "fin dans {count, plural, one {# jour} other {# jours}}",
       "moreFamilies": "Voir les autres familles"
+    },
+    "endsIn": "Se termine dans {time}",
+    "ended": "Terminé",
+    "focusLeft": "avant une carte de la série garantie",
+    "focusChance": "Série à l’honneur",
+    "focusRow": "Au moins une carte de la série : {value}",
+    "focus": {
+      "announce": "En ce moment, il y a un booster spécial série <strong>{series}</strong> !",
+      "open": "Voir le booster"
     }
   },
   "opening": {
@@ -1150,7 +1161,8 @@
       "journal": "Journal",
       "general": "Général",
       "cosmetics": "Titres et cadres",
-      "openingTest": "Test d'ouverture"
+      "openingTest": "Test d'ouverture",
+      "focus": "Focus série"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -1255,7 +1267,8 @@
       "oddsHint": "Calculées avec les parts globales et les paliers vides de ce pool, comme au tirage.",
       "back": "Tous les types",
       "editTitle": "Modifier « {name} »",
-      "newBannerTitle": "Nouvelle bannière vedette"
+      "newBannerTitle": "Nouvelle bannière vedette",
+      "newFocus": "Nouveau Focus série"
     },
     "form": {
       "identity": "Identité",
@@ -1340,8 +1353,17 @@
         "SLUG_TAKEN": "Cet identifiant est déjà pris.",
         "UNKNOWN_CARDS": "Une vedette n'existe pas (ou plus) dans le catalogue.",
         "POOL_TOO_SMALL": "Pool trop petit pour activer ce booster ({count, plural, one {# carte} other {# cartes}}).",
-        "unexpected": "Erreur inattendue. Réessaie."
-      }
+        "unexpected": "Erreur inattendue. Réessaie.",
+        "UNKNOWN_SERIES": "Une des séries est introuvable ou n’a aucune carte publiée."
+      },
+      "focus": "Focus série",
+      "focusHint": "Les cartes de ces œuvres sortent plus souvent ; le reste du pool reste tirable.",
+      "focusEmpty": "Choisis au moins une série.",
+      "focusSearch": "Ajouter une série",
+      "focusCards": "{count, plural, one {# carte} other {# cartes}}",
+      "focusRate": "Part des tirages d’une rareté sur ces séries (%)",
+      "focusPity": "Carte de ces séries garantie au N-ième booster sans (0 = jamais)",
+      "focusEndsHint": "Obligatoire : le booster disparaît à cette date et un compte à rebours s’affiche."
     },
     "banners": {
       "title": "Bannières vedettes",
@@ -2620,6 +2642,16 @@
         "DONE": "Cet envoi est déjà terminé.",
         "UNKNOWN_REF": "Booster ou carte introuvable."
       }
+    },
+    "focus": {
+      "title": "Focus série",
+      "intro": "Un Focus série augmente les chances de tirer les persos d’une ou plusieurs œuvres, pour une durée limitée. Il se range dans « Spéciaux » ; le premier activé est annoncé en haut de l’accueil.",
+      "new": "Nouveau Focus série",
+      "newTitle": "Nouveau Focus série",
+      "empty": "Aucun Focus série pour l’instant.",
+      "noSeries": "Aucune série choisie",
+      "until": "Jusqu’au {end}",
+      "ended": "Terminé"
     }
   },
   "collection": {

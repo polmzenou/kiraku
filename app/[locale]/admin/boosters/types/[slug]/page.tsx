@@ -11,7 +11,7 @@ import { atLeastOdds } from "@/lib/boosters/odds";
 import { effectiveSlotFloors, localize, SLUG_PATTERN } from "@/lib/boosters/types";
 import { type Rarity } from "@/lib/catalog/rarity";
 import { requireAdmin } from "@/server/admin";
-import { adminBoosterType, featuredCandidates } from "@/server/admin-boosters";
+import { adminBoosterType, featuredCandidates, focusSeriesCandidates } from "@/server/admin-boosters";
 import { getBoosterOffers } from "@/server/boosters/pools";
 import { getBoosterRules } from "@/server/boosters/rules";
 
@@ -22,12 +22,13 @@ export default async function AdminBoosterTypePage({ params }: PageProps<"/[loca
   const type = await adminBoosterType(slug);
   if (!type) notFound();
 
-  const [t, locale, rules, offers, featured] = await Promise.all([
+  const [t, locale, rules, offers, featured, focusSeries] = await Promise.all([
     getTranslations("admin.types"),
     getLocale(),
     getBoosterRules(),
     getBoosterOffers(),
     featuredCandidates(type.featuredCardIds),
+    focusSeriesCandidates(type.focusSeriesIds),
   ]);
   const offer = offers.find((o) => o.type.slug === slug);
   const floors = effectiveSlotFloors(type.slotFloors, rules.draw.slotFloors);
@@ -41,7 +42,7 @@ export default async function AdminBoosterTypePage({ params }: PageProps<"/[loca
 
       {offer && <OddsTable floors={floors} rates={rules.draw.rates} counts={offer.counts} size={offer.size} />}
 
-      <BoosterTypeForm initial={formFromType(type)} featured={featured} globalCards={rules.draw.slotFloors.length} />
+      <BoosterTypeForm initial={formFromType(type)} featured={featured} focusSeries={focusSeries} globalCards={rules.draw.slotFloors.length} />
     </div>
   );
 }

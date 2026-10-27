@@ -25,6 +25,7 @@ const GROUPS = [
       { key: "types", href: "/admin/boosters/types" },
       { key: "openingTest", href: "/admin/test-ouverture" },
       { key: "banners", href: "/admin/bannieres" },
+      { key: "focus", href: "/admin/focus" },
       { key: "cosmetics", href: "/admin/cosmetiques" },
       { key: "lots", href: "/admin/lots" },
       { key: "missions", href: "/admin/missions" },

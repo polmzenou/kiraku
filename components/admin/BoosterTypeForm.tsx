@@ -10,7 +10,14 @@ import type { BoosterTypeForm as FormValues } from "@/lib/boosters/admin-form";
 import { contentsLabel } from "@/lib/boosters/catalog";
 import { BOOSTER_FAMILIES, BOOSTER_SHAPES, WAGARA } from "@/lib/boosters/types";
 import { type Rarity } from "@/lib/catalog/rarity";
-import { saveBoosterType, searchFeaturedCards, type FeaturedCandidate } from "@/server/actions/admin-boosters";
+import { MAX_FOCUS_SERIES } from "@/lib/boosters/admin-form";
+import {
+  saveBoosterType,
+  searchFeaturedCards,
+  searchFocusSeries,
+  type FeaturedCandidate,
+  type FocusSeriesCandidate,
+} from "@/server/actions/admin-boosters";
 import { BoosterArt } from "../boosters/BoosterArt";
 import { Button } from "../ui/Button";
 
@@ -68,12 +75,14 @@ type Props = {
   initial: FormValues;
   /** Vedettes déjà choisies (affichage). */
   featured: FeaturedCandidate[];
+  /** Focus série : œuvres déjà choisies (affichage). */
+  focusSeries?: FocusSeriesCandidate[];
   /** Nombre de cartes de la composition globale. */
   globalCards: number;
 };
 
 /** Création ou modification d'un type de booster (ou d'une bannière vedette), avec aperçu du sachet. */
-export function BoosterTypeForm({ initial, featured: initialFeatured, globalCards }: Props) {
+export function BoosterTypeForm({ initial, featured: initialFeatured, focusSeries: initialFocus = [], globalCards }: Props) {
   const RARITIES = useRarities();
   const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("admin.form");
@@ -89,12 +98,16 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, globalCard
   const [featured, setFeatured] = useState(initialFeatured);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<FeaturedCandidate[]>([]);
+  const [focus, setFocus] = useState(initialFocus);
+  const [seriesQuery, setSeriesQuery] = useState("");
+  const [seriesResults, setSeriesResults] = useState<FocusSeriesCandidate[]>([]);
   const [pending, start] = useTransition();
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   const set = <K extends keyof FormValues>(key: K, value: FormValues[K]) => setV((s) => ({ ...s, [key]: value }));
   const setFilter = (patch: Partial<FormValues["filter"]>) => setV((s) => ({ ...s, filter: { ...s.filter, ...patch } }));
-  const isBanner = v.kind === "BANNER" || featured.length > 0;
+  const isFocus = v.kind === "FOCUS";
+  const isBanner = !isFocus && (v.kind === "BANNER" || featured.length > 0);
 
   // Recherche des vedettes (délai pour ne pas appeler le serveur à chaque touche)
   useEffect(() => {
@@ -103,6 +116,13 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, globalCard
     return () => clearTimeout(id);
   }, [query]);
 
+  // Recherche des œuvres d'un Focus série
+  useEffect(() => {
+    if (seriesQuery.trim().length < 2) return;
+    const id = setTimeout(async () => setSeriesResults(await searchFocusSeries(seriesQuery)), 300);
+    return () => clearTimeout(id);
+  }, [seriesQuery]);
+
   const submit = () =>
     start(async () => {
       setMessage(null);
@@ -110,6 +130,7 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, globalCard
         ...v,
         slotFloors: ownFloors ? v.slotFloors : [],
         featuredCardIds: featured.map((c) => c.id),
+        focusSeriesIds: isFocus ? focus.map((s) => s.anilistId) : [],
         filter: {
           ...v.filter,
           tags: list(tags),
@@ -135,6 +156,32 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, globalCard
     });
 
   const floors = ownFloors ? v.slotFloors : [];
+
+  // Taux et pitié des vedettes : bannière ou Focus série (mêmes champs, libellés différents)
+  const rateFields = (rateLabel: string, pityLabel: string) => (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <Field label={rateLabel}>
+        {(id) => (
+          <input
+            id={id}
+            type="number"
+            inputMode="decimal"
+            min={0}
+            max={100}
+            step={1}
+            className={input}
+            value={v.featuredRate / 100}
+            onChange={(e) => set("featuredRate", Math.round(Math.min(100, Math.max(0, Number(e.target.value) || 0)) * 100))}
+          />
+        )}
+      </Field>
+      <Field label={pityLabel}>
+        {(id) => (
+          <input id={id} type="number" inputMode="numeric" min={0} className={input} value={v.featuredPity} onChange={(e) => set("featuredPity", numOrNull(e.target.value) ?? 0)} />
+        )}
+      </Field>
+    </div>
+  );
 
   return (
     <form
@@ -386,28 +433,59 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, globalCard
                   ))}
               </ul>
             )}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label={t("featuredRate")}>
-                {(id) => (
-                  <input
-                    id={id}
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    max={100}
-                    step={1}
-                    className={input}
-                    value={v.featuredRate / 100}
-                    onChange={(e) => set("featuredRate", Math.round(Math.min(100, Math.max(0, Number(e.target.value) || 0)) * 100))}
-                  />
-                )}
+            {rateFields(t("featuredRate"), t("featuredPity"))}
+          </Section>
+        )}
+
+        {isFocus && (
+          <Section title={t("focus")}>
+            <p className="text-sm text-text-muted">{t("focusHint")}</p>
+            {focus.length === 0 ? (
+              <p className="text-sm text-shu">{t("focusEmpty")}</p>
+            ) : (
+              <ul className="flex flex-wrap gap-2">
+                {focus.map((s) => (
+                  <li key={s.anilistId} className="flex items-center gap-1 rounded-pill bg-surface-2 py-1 pr-1 pl-3 text-sm">
+                    <span className="font-bold">{s.title}</span>
+                    <span className="text-text-muted">· {t("focusCards", { count: s.cards })}</span>
+                    <button
+                      type="button"
+                      aria-label={t("remove", { name: s.title })}
+                      onClick={() => setFocus((f) => f.filter((x) => x.anilistId !== s.anilistId))}
+                      className="inline-flex size-11 items-center justify-center rounded-full text-xl"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {focus.length < MAX_FOCUS_SERIES && (
+              <Field label={t("focusSearch")}>
+                {(id) => <input id={id} type="search" className={input} value={seriesQuery} onChange={(e) => setSeriesQuery(e.target.value)} />}
               </Field>
-              <Field label={t("featuredPity")}>
-                {(id) => (
-                  <input id={id} type="number" inputMode="numeric" min={0} className={input} value={v.featuredPity} onChange={(e) => set("featuredPity", numOrNull(e.target.value) ?? 0)} />
-                )}
-              </Field>
-            </div>
+            )}
+            {focus.length < MAX_FOCUS_SERIES && seriesQuery.trim().length >= 2 && seriesResults.length > 0 && (
+              <ul className="flex flex-col gap-1">
+                {seriesResults
+                  .filter((r) => !focus.some((f) => f.anilistId === r.anilistId))
+                  .map((s) => (
+                    <li key={s.anilistId}>
+                      <button
+                        type="button"
+                        onClick={() => setFocus((f) => [...f, s])}
+                        className="flex min-h-11 w-full items-center gap-3 rounded-control px-2 text-left text-sm hover:bg-surface-2"
+                      >
+                        <span className="min-w-0 flex-1 truncate">
+                          {s.title} <span className="text-text-muted">· {s.type === "MANGA" ? t("manga") : t("anime")} · {t("focusCards", { count: s.cards })}</span>
+                        </span>
+                        <span className="text-link">{t("add")}</span>
+                      </button>
+                    </li>
+                  ))}
+              </ul>
+            )}
+            {rateFields(t("focusRate"), t("focusPity"))}
           </Section>
         )}
 
@@ -424,7 +502,7 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, globalCard
                 />
               )}
             </Field>
-            <Field label={t("endsAt")}>
+            <Field label={t("endsAt")} hint={isFocus ? t("focusEndsHint") : undefined}>
               {(id) => (
                 <input
                   id={id}

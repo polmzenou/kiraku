@@ -484,6 +484,7 @@ enum BoosterKind {
   FILTERED
   BANNER
   FORMAT
+  FOCUS // Focus série : taux augmenté sur une ou plusieurs œuvres, à durée limitée
   DROP // sachet scellé (Divin, Apocalyptique) : tombe d'un booster, jamais en vente
 }
 
@@ -514,6 +515,8 @@ model BoosterType {
   featuredCardIds String[] // cartes vedettes (bannière)
   featuredRate    Int             @default(5000) // points de base : part des tirages d'une rareté qui va aux vedettes
   featuredPity    Int             @default(100) // vedette garantie au N-ième booster sans vedette
+  focusSeriesIds  Int[]           @default([]) // Focus série : œuvres mises en avant (ids AniList)
+  focusCardIds    String[]        @default([]) // Focus série : cartes du pool de ces œuvres (recalculé avec le pool)
   minPoolSize     Int? // sinon GameSetting booster.minPool
   poolCardIds     String[] // recalculé après import, seed ou modification admin
   poolCounts      Json? // { COMMON: n, … }
@@ -521,6 +524,7 @@ model BoosterType {
   startsAt        DateTime?
   endsAt          DateTime?
   active          Boolean         @default(true)
+  activatedAt     DateTime? // dernier passage d'inactif à actif (ordre des bannières Focus)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   credits         BoosterCredit[]

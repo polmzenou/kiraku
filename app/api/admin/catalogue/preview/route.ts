@@ -3,7 +3,7 @@ import { z } from "@/lib/zod";
 import { rarityKeySchema } from "@/lib/catalog/definitions";
 import { cardFormSchema } from "@/lib/catalog/admin-form";
 import { cardOdds } from "@/lib/catalog/card-odds";
-import { computePool, loadCandidates } from "@/server/boosters/type-store";
+import { computePool, focusCards, loadCandidates } from "@/server/boosters/type-store";
 import { getBoosterTypes, getFilterContext } from "@/server/boosters/pools";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { CATALOG_TAG, getCatalogVersion } from "@/server/catalog/queries";
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     return { id: type.id, name: type.name, slug: type.slug, eligible: Boolean(pool[v.rarity]?.includes(targetId)),
       ...cardOdds({ targetId, pool, rules: { ...rules.draw, cardWeights: { ...rules.draw.cardWeights, [targetId]: v.dropWeight },
         slotFloors: effectiveSlotFloors(type.slotFloors, rules.draw.slotFloors) },
-        featured: featuredFromPool(type.featuredCardIds, pool, { rate: type.featuredRate, pityThreshold: type.featuredPity }),
+        featured: featuredFromPool([...type.featuredCardIds, ...focusCards(updated, type.focusSeriesIds)], pool, { rate: type.featuredRate, pityThreshold: type.featuredPity }),
         scenario: v.scenario, pityEligible: type.countsForPity, bonusEligible: type.bonusEligible, featuredPity: v.featuredPity && type.featuredPity > 0 }) };
   });
   return Response.json(result, { headers: { "Cache-Control": "no-store" } });

@@ -1,4 +1,4 @@
-import type { BoosterFamily } from "./types";
+import type { Availability, BoosterFamily, BoosterTypeView } from "./types";
 
 // Vitrine des boosters (accueil) : listes par famille, recherche et sélection. Fonctions pures,
 // partagées par la page (sélection initiale) et la vitrine côté client (changement sans rechargement).
@@ -74,4 +74,16 @@ export function initialSelection(
   const byFamily = entries.find((e) => e.family === asked.family && e.selectable);
   const pick = bySlug ?? byFamily ?? entries.find((e) => e.slug === "standard" && e.selectable) ?? entries.find((e) => e.selectable);
   return pick ? { slug: pick.slug, family: pick.family } : null;
+}
+
+/**
+ * Focus série annoncé en haut de l'accueil : parmi ceux qu'on peut ouvrir, le premier activé
+ * (`activatedAt` le plus ancien, puis l'ordre de la famille). Les autres restent dans « Spéciaux ».
+ */
+export function currentFocus<T extends { type: Pick<BoosterTypeView, "kind" | "activatedAt" | "sortOrder">; availability: Availability }>(
+  offers: readonly T[],
+): T | null {
+  const live = offers.filter((o) => o.type.kind === "FOCUS" && o.availability === "open");
+  const at = (o: T) => o.type.activatedAt?.getTime() ?? Infinity;
+  return live.sort((a, b) => at(a) - at(b) || a.type.sortOrder - b.type.sortOrder)[0] ?? null;
 }

@@ -15,6 +15,13 @@ describe("countdownParts", () => {
   it("heures et minutes au-delà d'une heure", () => {
     expect(countdownParts(2 * 3_600_000 + 5 * 60_000)).toEqual({ unit: "hourMin", hours: 2, minutes: 5 });
   });
+
+  it("jours et heures au-delà de 24 h, seulement sur demande", () => {
+    const ms = 2 * 86_400_000 + 4 * 3_600_000 + 30 * 60_000;
+    expect(countdownParts(ms, { days: true })).toEqual({ unit: "dayHour", days: 2, hours: 4 });
+    expect(countdownParts(ms)).toEqual({ unit: "hourMin", hours: 52, minutes: 30 });
+    expect(countdownParts(23 * 3_600_000, { days: true })).toEqual({ unit: "hourMin", hours: 23, minutes: 0 });
+  });
 });
 
 describe("isActive", () => {

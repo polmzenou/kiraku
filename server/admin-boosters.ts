@@ -1,5 +1,5 @@
 import "server-only";
-import type { FeaturedCandidate } from "./actions/admin-boosters";
+import type { FeaturedCandidate, FocusSeriesCandidate } from "./actions/admin-boosters";
 import { toBoosterTypeView } from "./boosters/type-store";
 import { prisma } from "./db";
 
@@ -33,4 +33,31 @@ export async function adminBanners() {
     orderBy: { createdAt: "desc" },
   });
   return rows.map(toBoosterTypeView);
+}
+
+/** Œuvres d'un Focus série, dans l'ordre choisi (puces du formulaire). */
+export async function focusSeriesCandidates(ids: readonly number[]): Promise<FocusSeriesCandidate[]> {
+  if (ids.length === 0) return [];
+  const rows = await prisma.series.findMany({
+    where: { anilistId: { in: [...ids] } },
+    select: { anilistId: true, titleRomaji: true, type: true, _count: { select: { cards: { where: { status: "PUBLISHED" } } } } },
+  });
+  const byId = new Map(rows.map((s) => [s.anilistId, s]));
+  return ids.flatMap((id) => {
+    const s = byId.get(id);
+    return s ? [{ anilistId: id, title: s.titleRomaji, type: s.type, cards: s._count.cards }] : [];
+  });
+}
+
+/** Focus série (type FOCUS), les plus récents d'abord, avec les titres de leurs œuvres. */
+export async function adminFocusBoosters() {
+  const rows = await prisma.boosterType.findMany({
+    where: { kind: "FOCUS" },
+    omit: { poolCardIds: true },
+    orderBy: { createdAt: "desc" },
+  });
+  const types = rows.map(toBoosterTypeView);
+  const titles = await focusSeriesCandidates([...new Set(types.flatMap((t) => t.focusSeriesIds))]);
+  const byId = new Map(titles.map((s) => [s.anilistId, s.title]));
+  return types.map((type) => ({ type, series: type.focusSeriesIds.flatMap((id) => byId.get(id) ?? []) }));
 }

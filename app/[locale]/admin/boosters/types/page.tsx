@@ -49,6 +49,7 @@ export default async function AdminBoosterTypesPage() {
           <ButtonLink href="/admin/bannieres/nouvelle" variant="primary">
             {t("newBanner")}
           </ButtonLink>
+          <ButtonLink href="/admin/focus/nouveau">{t("newFocus")}</ButtonLink>
         </div>
       </div>
 

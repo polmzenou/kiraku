@@ -91,7 +91,7 @@ export function BoosterPanel({ type, panel, ctx, state, wishlist = null, withOpe
         {panel.goldenIn !== null
           ? stat(format.number(panel.goldenIn), t("goldenLeft"), "text-kin")
           : stat("—", t("noBonus"), "text-text-muted")}
-        {panel.featured && panel.featured.left > 0 && stat(format.number(panel.featured.left), t("featuredLeft"), "text-kin")}
+        {panel.featured && panel.featured.left > 0 && stat(format.number(panel.featured.left), t(panel.featured.focus ? "focusLeft" : "featuredLeft"), "text-kin")}
         {stat(format.number(panel.poolSize), t("possible"))}
       </dl>
 
@@ -136,13 +136,13 @@ export function BoosterPanel({ type, panel, ctx, state, wishlist = null, withOpe
                 <span aria-hidden="true" lang="ja" className="font-seal text-sm">
                   星
                 </span>
-                <span className="truncate">{t("featuredChance")}</span>
+                <span className="truncate">{t(panel.featured.focus ? "focusChance" : "featuredChance")}</span>
               </span>
               <span aria-hidden="true" className="h-1.5 overflow-hidden rounded-full bg-surface-2">
                 <span className="block h-full origin-left rounded-full bg-kin" style={{ transform: `scaleX(${Math.max(panel.featured.chance, 0.02)})` }} />
               </span>
               <span className="text-right tabular-nums">
-                <span className="sr-only">{t("featuredRow", { value: percent(panel.featured.chance) })}</span>
+                <span className="sr-only">{t(panel.featured.focus ? "focusRow" : "featuredRow", { value: percent(panel.featured.chance) })}</span>
                 <span aria-hidden="true">{percent(panel.featured.chance)}</span>
               </span>
             </li>

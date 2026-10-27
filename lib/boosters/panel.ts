@@ -17,8 +17,11 @@ export type BoosterPanelData = {
   pityLeft: number | null;
   /** Prochain doré dans N boosters, null si le type n'y a pas droit. */
   goldenIn: number | null;
-  /** Bannière : chance d'une vedette par booster et pitié vedette du joueur. */
-  featured: { chance: number; left: number; count: number } | null;
+  /**
+   * Bannière ou Focus série : chance d'une vedette par booster et pitié vedette du joueur. `focus` :
+   * les vedettes sont les cartes des séries mises en avant (libellé « Série à l'honneur »).
+   */
+  featured: { chance: number; left: number; count: number; focus: boolean } | null;
   price: Price;
   availability: Availability;
 };
@@ -54,6 +57,7 @@ export function boosterPanelData(input: {
             }),
             left: type.featuredPity > 0 ? Math.max(1, type.featuredPity - user.bannerPity) : 0,
             count: featuredTotal,
+            focus: type.kind === "FOCUS",
           }
         : null,
     price: priceFor(type, user.stock, 1),

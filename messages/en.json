@@ -662,7 +662,8 @@
   "time": {
     "minSec": "{minutes} min {seconds} s",
     "sec": "{seconds} s",
-    "hourMin": "{hours} h {minutes} min"
+    "hourMin": "{hours} h {minutes} min",
+    "dayHour": "{days} d {hours} h"
   },
   "boosters": {
     "title": "Pick your booster",
@@ -756,7 +757,8 @@
       "anime": "Main series is an anime",
       "series": "{count, plural, one {# chosen series} other {# chosen series}}",
       "cards": "{count, plural, one {# chosen card} other {# chosen cards}}",
-      "featured": "{count, plural, one {# featured card} other {# featured cards}}"
+      "featured": "{count, plural, one {# featured card} other {# featured cards}}",
+      "focus": "{count, plural, one {# featured series} other {# featured series}}"
     },
     "seasons": {
       "WINTER": "winter",
@@ -804,6 +806,15 @@
       "bannerChip": "Featured banner · {name}",
       "bannerEnds": "ends in {count, plural, one {# day} other {# days}}",
       "moreFamilies": "See more families"
+    },
+    "endsIn": "Ends in {time}",
+    "ended": "Ended",
+    "focusLeft": "until a guaranteed card from the series",
+    "focusChance": "Featured series",
+    "focusRow": "At least one card from the series: {value}",
+    "focus": {
+      "announce": "Right now, there’s a special <strong>{series}</strong> series booster!",
+      "open": "See the booster"
     }
   },
   "opening": {
@@ -1150,7 +1161,8 @@
       "journal": "Log",
       "general": "General",
       "cosmetics": "Titles and frames",
-      "openingTest": "Opening test"
+      "openingTest": "Opening test",
+      "focus": "Series focus"
     },
     "boosters": {
       "title": "Booster settings",
@@ -1255,7 +1267,8 @@
       "oddsHint": "Computed with the global shares and this pool's empty tiers, exactly as drawn.",
       "back": "All types",
       "editTitle": "Edit “{name}”",
-      "newBannerTitle": "New featured banner"
+      "newBannerTitle": "New featured banner",
+      "newFocus": "New series focus"
     },
     "form": {
       "identity": "Identity",
@@ -1340,8 +1353,17 @@
         "SLUG_TAKEN": "This identifier is already taken.",
         "UNKNOWN_CARDS": "A featured card isn't (or is no longer) in the catalogue.",
         "POOL_TOO_SMALL": "Pool too small to enable this booster ({count, plural, one {# card} other {# cards}}).",
-        "unexpected": "Unexpected error. Try again."
-      }
+        "unexpected": "Unexpected error. Try again.",
+        "UNKNOWN_SERIES": "One of the series is missing or has no published card."
+      },
+      "focus": "Series focus",
+      "focusHint": "Cards from these series drop more often; the rest of the pool can still be drawn.",
+      "focusEmpty": "Pick at least one series.",
+      "focusSearch": "Add a series",
+      "focusCards": "{count, plural, one {# card} other {# cards}}",
+      "focusRate": "Share of a rarity’s draws going to these series (%)",
+      "focusPity": "Card from these series guaranteed on the Nth booster without one (0 = never)",
+      "focusEndsHint": "Required: the booster disappears at this date and a countdown is shown."
     },
     "banners": {
       "title": "Featured banners",
@@ -2620,6 +2642,16 @@
         "DONE": "This send is already finished.",
         "UNKNOWN_REF": "Booster or card not found."
       }
+    },
+    "focus": {
+      "title": "Series focus",
+      "intro": "A series focus raises the odds of drawing characters from one or more series, for a limited time. It sits under “Specials”; the first one activated is announced at the top of the home page.",
+      "new": "New series focus",
+      "newTitle": "New series focus",
+      "empty": "No series focus yet.",
+      "noSeries": "No series picked",
+      "until": "Until {end}",
+      "ended": "Ended"
     }
   },
   "collection": {
