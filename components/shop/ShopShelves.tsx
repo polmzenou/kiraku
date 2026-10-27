@@ -13,21 +13,21 @@ import { TiltGrid } from "./TiltGrid";
 const ENTERING = 8;
 
 /**
- * Rayons de la boutique : vedette du jour, accès aux familles, puis une section par famille de
+ * Rayons de la boutique : vedette de la sélection, accès aux familles, puis une section par famille de
  * booster (et « Fuda et extras »). Partagé par /boutique et son aperçu : chacun rend son bouton.
  */
 export function ShopShelves({
   view,
   coins,
   now,
-  dayEndsAt,
+  selectionEndsAt,
   renderBuy,
 }: {
   view: ShopView<LotView>;
   coins: number;
   now: Date;
-  /** Minuit du jeu : la vedette change. */
-  dayEndsAt: Date;
+  /** Fin de la sélection du moment : les packs proposés et la vedette changent. */
+  selectionEndsAt: Date;
   renderBuy: (card: ShopCard<LotView>, place: "hero" | "grid") => ReactNode;
 }) {
   const t = useTranslations("economy.shop");
@@ -41,7 +41,7 @@ export function ShopShelves({
           card={view.featured}
           affordable={coins >= view.featured.price}
           buy={renderBuy(view.featured, "hero")}
-          countdown={<ShopCountdown endsAt={dayEndsAt.getTime()} initialNow={now.getTime()} />}
+          countdown={<ShopCountdown endsAt={selectionEndsAt.getTime()} initialNow={now.getTime()} />}
           now={now}
         />
       )}

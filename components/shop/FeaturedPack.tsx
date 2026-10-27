@@ -8,7 +8,7 @@ import { BoosterHolo, KiraSparkles } from "./PackFan";
 import { PackPrice, ResetHint } from "./PackPrice";
 
 /**
- * Vedette du jour : le pack choisi par le serveur, en grand, aux couleurs et au wagara de son type.
+ * Vedette de la sélection : le pack choisi par le serveur, en grand, aux couleurs et au wagara de son type.
  * Le sachet flotte dans son halo, entouré de rayons (en pause en effets allégés). Ouverte, la vedette
  * déploie sa main de cartes, son reflet et son ema (shop.css). Tout le texte est posé sur un panneau
  * opaque : l'encre sur la couleur du type ne serait pas lisible pour tous les types.

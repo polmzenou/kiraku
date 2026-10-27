@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 
 /**
- * Temps restant avant la vedette suivante (minuit du jeu). À l'échéance, la page se rafraîchit avec
- * un léger décalage tiré au hasard, pour que tous les onglets ouverts ne frappent pas la base à la
- * même seconde, et jamais pendant une célébration d'achat (dialog ouvert).
+ * Temps restant avant la sélection suivante (fenêtre de rotation des boosters) : les packs proposés et
+ * la vedette changent. À l'échéance, la page se rafraîchit avec un léger décalage tiré au hasard, pour
+ * que tous les onglets ouverts ne frappent pas la base à la même seconde, et jamais pendant une
+ * célébration d'achat (dialog ouvert).
  */
 export function ShopCountdown({ endsAt, initialNow }: { endsAt: number; initialNow: number }) {
   const t = useTranslations("economy.shop.featured");
@@ -15,7 +16,7 @@ export function ShopCountdown({ endsAt, initialNow }: { endsAt: number; initialN
   const [now, setNow] = useState(initialNow);
 
   useEffect(() => {
-    // Horloge du serveur : une horloge locale en avance rafraîchirait avant minuit, sans nouvelle vedette
+    // Horloge du serveur : une horloge locale en avance rafraîchirait avant l'échéance, sans nouvelle sélection
     const skew = initialNow - Date.now();
     const serverNow = () => Date.now() + skew;
     const tick = setInterval(() => setNow(serverNow()), 30_000);
@@ -34,13 +35,16 @@ export function ShopCountdown({ endsAt, initialNow }: { endsAt: number; initialN
   }, [endsAt, initialNow, router]);
 
   const minutes = Math.max(0, Math.ceil((endsAt - now) / 60_000));
+  const hours = Math.floor(minutes / 60);
   return (
     <p className="text-xs text-text-muted tabular-nums">
       {minutes === 0
         ? t("refreshing")
         : minutes < 60
           ? t("nextSoon", { minutes })
-          : t("next", { hours: Math.floor(minutes / 60), minutes: minutes % 60 })}
+          : hours < 24
+            ? t("next", { hours, minutes: minutes % 60 })
+            : t("nextDays", { days: Math.floor(hours / 24), hours: hours % 24 })}
     </p>
   );
 }

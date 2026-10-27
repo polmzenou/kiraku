@@ -25,8 +25,6 @@ export async function loadShopTypes(): Promise<Map<string, ShopBoosterType>> {
         floors: effectiveSlotFloors(o.type.slotFloors, globalFloors),
         poolSize: o.size,
         availability: o.availability,
-        rotation: o.rotation,
-        usesFreeStock: o.type.usesFreeStock,
         priceZeni: o.type.priceZeni,
       },
     ]),
