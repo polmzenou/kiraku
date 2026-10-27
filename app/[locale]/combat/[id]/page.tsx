@@ -31,7 +31,7 @@ export default async function BattlePage({ params, searchParams }: PageProps<"/[
   const ctx = await battleCtx();
   // ?rang=GOLD : aperçu de la couleur d'un rang sur le plateau, réservé aux admins (classé en 9b)
   const previewTier = user.role === "ADMIN" ? parseBoardTier(rang) : null;
-  const view = await getBattleView(id, user.id, { pollSeconds: ctx.rules.pollSeconds, turnSeconds: ctx.rules.turnSeconds }, previewTier, ctx.ranked);
+  const view = await getBattleView(id, user.id, ctx.rules, previewTier, ctx.ranked);
   if (!view) notFound();
   const candidates = view.canJoin ? await getCandidates(user.id, ctx.rules) : [];
   const lastTeam = view.canJoin ? await getLastTeam(user.id, candidates) : [];

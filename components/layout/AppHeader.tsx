@@ -6,7 +6,6 @@ import { logout } from "@/server/actions/account";
 import { isFrozen } from "@/lib/account/deletion";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { unreadChatCount, visibleSince } from "@/server/chat/queries";
-import { ablyEnabled } from "@/server/env";
 import { boosterStateFrom } from "@/server/boosters/state";
 import { getSetting } from "@/server/settings";
 import { unreadNotifications } from "@/server/social/queries";
@@ -33,9 +32,10 @@ export async function AppHeader({ theme }: { theme: Theme }) {
   const isAdmin = isStaff(user?.role);
   const signedIn = Boolean(user && !user.isGuest);
   const authLabel = signedIn ? t("account.logout") : t("auth.login.title");
-  const [unread, pollSeconds, casino, boosterRules] = await Promise.all([
+  const [unread, pollSeconds, safetySeconds, casino, boosterRules] = await Promise.all([
     user ? unreadNotifications(user.id) : 0,
     user ? getSetting("notifications.pollSeconds") : 0,
+    user ? getSetting("realtime.safetyPollSeconds") : 0,
     getSetting("features.casino"),
     user ? getBoosterRules() : null,
   ]);
@@ -60,7 +60,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
     <>
       <header className="sticky top-0 z-40 border-b border-border/60 bg-bg/95 pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center gap-2 px-4 md:h-16 md:gap-4">
-          <Link href="/" aria-label={t("nav.home")} className="flex min-h-11 min-w-0 shrink-0 items-center gap-2">
+          <Link prefetch={false} href="/" aria-label={t("nav.home")} className="flex min-h-11 min-w-0 shrink-0 items-center gap-2">
             <SealMark glyphs="気楽" size={32} />
             <span className="hidden font-title text-xl font-extrabold tracking-wide sm:inline">{t("common.appName")}</span>
           </Link>
@@ -85,7 +85,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
                     <span aria-hidden="true" className="h-4 w-px bg-border" />
                   </>
                 )}
-                <Link
+                <Link prefetch={false}
                   href="/compte/historique"
                   className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-r-pill pr-3.5 text-sm font-bold ${state ? "pl-2.5" : "rounded-l-pill pl-3.5"}`}
                   aria-label={t("header.balance", { amount: user.coins })}
@@ -99,9 +99,9 @@ export async function AppHeader({ theme }: { theme: Theme }) {
               </div>
             )}
             {chat && <ChatHeaderButton />}
-            {user && <NotificationBell initial={unread} serverNow={new Date().toISOString()} pollSeconds={pollSeconds} />}
+            {user && <NotificationBell initial={unread} serverNow={new Date().toISOString()} pollSeconds={pollSeconds} safetySeconds={safetySeconds} />}
             {isAdmin && (
-              <Link
+              <Link prefetch={false}
                 href="/admin"
                 className="hidden min-h-11 items-center rounded-pill px-3 text-sm text-text-muted hover:bg-surface-2 hover:text-text lg:inline-flex"
               >
@@ -109,7 +109,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
               </Link>
             )}
             {user && (
-              <Link
+              <Link prefetch={false}
                 href={accountHref}
                 aria-label={t("nav.account")}
                 title={t("nav.account")}
@@ -125,7 +125,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
                 </button>
               </form>
             ) : (
-              <Link href="/connexion" aria-label={authLabel} title={authLabel} className={iconButtonClasses("shu", "max-lg:hidden")}>
+              <Link prefetch={false} href="/connexion" aria-label={authLabel} title={authLabel} className={iconButtonClasses("shu", "max-lg:hidden")}>
                 <AuthIcon />
               </Link>
             )}
@@ -133,7 +133,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
         </div>
       </header>
       <MobileMenu theme={theme} isAdmin={isAdmin} accountHref={accountHref} signedIn={signedIn} features={features} />
-      {chat && <ChatDock realtime={ablyEnabled} {...chat} />}
+      {chat && <ChatDock {...chat} />}
     </>
   );
 }

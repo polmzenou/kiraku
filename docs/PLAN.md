@@ -105,7 +105,7 @@ La tâche planifiée appelle une route du serveur ; elle ne parle jamais directe
 | UI | Tailwind + Framer Motion | Animation d'ouverture et effet holo des cartes |
 | Temps réel | Ably (`ABLY_API_KEY`, facultatif en dev) | Combat en direct : le serveur publie, les navigateurs s'abonnent avec un jeton limité |
 
-Mets la région de la base et la région des fonctions Vercel au même endroit (Supabase eu-west-1 et Vercel lhr1) : c'est le gain de latence le plus simple.
+Mets la région de la base et la région des fonctions Vercel au même endroit (Supabase eu-west-1, c'est-à-dire Dublin, et Vercel `dub1` dans `vercel.json`) : c'est le gain de latence le plus simple.
 
 ## Écrans et navigation (mobile first)
 
@@ -799,6 +799,16 @@ Performance :
 - Catalogue et pages de cartes en cache (`revalidateTag` à l'ajout de cartes).
 - Images de cartes en WebP, deux tailles (vignette \~300 px, détail \~800 px), via CDN.
 - Pagination par curseur partout (marché, historique) ; la collection, bornée par la taille du catalogue, pagine par décalage.
+
+Consommation Vercel (plan Hobby : 1 M d'invocations, 4 h de CPU actif, 1 M de requêtes CDN, 10 Go de transfert d'origine sur 30 jours ; dépassées en octobre 2026, projet mis en pause) :
+
+- Une seule connexion Ably par onglet (`components/realtime/RealtimeProvider.tsx`), ouverte seulement quand le joueur est là. Cloche, chat, file d'attente, salon et combat arrivent en direct ; les sondages ne sont que des secours (`realtime.safetyPollSeconds`, `battle.safetyPollSeconds`).
+- Tous les sondages passent par `usePoll` (`lib/realtime/schedule.ts`) : rien onglet caché ni après `activity.idleSeconds` sans geste, délai doublé sans nouveauté jusqu'à `activity.backoffMax`, reprise immédiate au retour. La cloche et la pastille du chat partagent un seul appel.
+- Pas de prefetch sur la navigation persistante (en-tête, barres, ruban des tirages) : chaque prefetch d'une page dynamique est une invocation. Les comptes à rebours qui rafraîchissent la page attendent que l'onglet soit visible ; le stock de l'en-tête avance seul côté client.
+- Le fil des gros tirages est un seul résultat en cache pour tout le monde (`home.pullFeed.cacheSeconds`).
+- Robots : `app/robots.ts` refuse les robots d'IA (`lib/seo/robots.ts`) et les variantes à paramètres (filtres du wiki, versions légales). Dans le tableau de bord Vercel, Firewall → Rules : règle managée « AI Bots » en Deny, et Bot Protection en Log puis Challenge.
+- `/api/health` interroge la base : un outil de surveillance doit l'appeler au plus toutes les 10 minutes (une par minute = 43 000 invocations par mois). Vérifier dans Vercel → Logs, filtre `/api/health`.
+- L'estimation par joueur actif et par écran est dans `/admin/general` (« Consommation Vercel estimée »), à relire avant de baisser un délai de sondage.
 
 Sécurité et anti-triche :
 

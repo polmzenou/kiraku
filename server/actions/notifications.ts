@@ -2,10 +2,13 @@
 
 import { expireTradesFor } from "../social/trade-core";
 import { refresh } from "next/cache";
+import { after } from "next/server";
+import { isFrozen } from "@/lib/account/deletion";
 import { z } from "@/lib/zod";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
 import { sweepBattlesFor } from "../battle/queries";
+import { purgeOldMessages, unreadChatCount, visibleSince } from "../chat/queries";
 import { settleDueFor } from "../market/queries";
 import { getSetting } from "../settings";
 import { listNotifications, notificationsSince, type NotificationView } from "../social/queries";
@@ -71,13 +74,35 @@ export async function loadNotificationsAction(
 const pollSchema = z.object({ since: z.iso.datetime() });
 
 export type PollResult =
-  | { ok: true; count: number; items: NotificationView[]; more: number; now: string; pollSeconds: number }
+  | {
+      ok: true;
+      count: number;
+      items: NotificationView[];
+      more: number;
+      now: string;
+      pollSeconds: number;
+      /** Délai de secours quand le temps réel est connecté. */
+      safetySeconds: number;
+      /** Messages de chat non lus, ou null si le chat n'est pas ouvert à ce joueur. */
+      chatUnread: number | null;
+    }
   | Failure;
 
+/** Pastille du chat, dans le même sondage que la cloche (un appel au lieu de deux). */
+async function chatUnreadFor(user: { id: string; isGuest: boolean; bannedAt: Date | null } & Parameters<typeof isFrozen>[0]) {
+  if (user.isGuest || user.bannedAt || isFrozen(user)) return null;
+  const [socialOn, chatOn, hours] = await Promise.all([getSetting("social.enabled"), getSetting("chat.enabled"), getSetting("chat.retentionHours")]);
+  if (!socialOn || !chatOn) return null;
+  // Ménage des messages expirés, au plus une fois toutes les 10 min pour tout le site (les lectures
+  // les ignorent déjà : ils disparaissent à l'heure dite, la suppression suit)
+  if ((await rateLimit("chat:purge", { limit: 1, windowSeconds: 600 })).success) after(() => purgeOldMessages(hours));
+  return unreadChatCount(user.id, visibleSince(hours));
+}
+
 /**
- * Sondage de l'en-tête, tant que l'onglet est visible : compteur de la cloche et notifications
- * arrivées depuis `since` (affichées en toasts). `now` est l'heure du serveur, à renvoyer au
- * prochain sondage : l'horloge du téléphone n'entre jamais en jeu.
+ * Sondage unique de l'en-tête (« pulse »), tant que le joueur est là : compteur de la cloche,
+ * notifications arrivées depuis `since` (affichées en toasts) et pastille du chat. `now` est l'heure
+ * du serveur, à renvoyer au prochain sondage : l'horloge du téléphone n'entre jamais en jeu.
  */
 export async function pollNotificationsAction(input: unknown): Promise<PollResult> {
   const user = await requireActiveUser();
@@ -87,9 +112,10 @@ export async function pollNotificationsAction(input: unknown): Promise<PollResul
   if (!(await rateLimit(`notif-poll:${user.id}`, { limit: 12, windowSeconds: 60 })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
-  // Balayages paresseux (écritures en base) au plus une fois toutes les 30 s par joueur, pas à
-  // chaque sondage ; les crons quotidiens et l'affichage des pages restent les filets de sécurité.
-  if ((await rateLimit(`notif-sweep:${user.id}`, { limit: 1, windowSeconds: 30 })).success) {
+  // Balayages paresseux (écritures en base) au plus une fois par notifications.sweepSeconds et par
+  // joueur, pas à chaque sondage ; les crons quotidiens et l'affichage des pages restent les filets de sécurité.
+  const sweepSeconds = await getSetting("notifications.sweepSeconds");
+  if ((await rateLimit(`notif-sweep:${user.id}`, { limit: 1, windowSeconds: sweepSeconds })).success) {
     // Ventes terminées du joueur closes avant de lire : « Tu as remporté… » arrive dans ce sondage
     try {
       await settleDueFor(user.id, new Date());
@@ -104,10 +130,12 @@ export async function pollNotificationsAction(input: unknown): Promise<PollResul
   const now = new Date();
   // Jamais plus d'une heure en arrière : un onglet resté caché longtemps ne déverse pas tout
   const since = new Date(Math.max(new Date(parsed.data.since).getTime(), now.getTime() - 3_600_000));
-  const [count, recent, pollSeconds] = await Promise.all([
+  const [count, recent, pollSeconds, safetySeconds, chatUnread] = await Promise.all([
     prisma.notification.count({ where: { userId: user.id, readAt: null } }),
     notificationsSince(user.id, since),
     getSetting("notifications.pollSeconds"),
+    getSetting("realtime.safetyPollSeconds"),
+    chatUnreadFor(user),
   ]);
-  return { ok: true, count, ...recent, now: now.toISOString(), pollSeconds };
+  return { ok: true, count, ...recent, now: now.toISOString(), pollSeconds, safetySeconds, chatUnread };
 }

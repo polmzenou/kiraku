@@ -29,6 +29,10 @@ export const SOCIAL_SETTING_KEYS = [
   "notifications.retentionDays",
   "notifications.pollSeconds",
   "notifications.pushEnabled",
+  "notifications.sweepSeconds",
+  "realtime.safetyPollSeconds",
+  "activity.idleSeconds",
+  "activity.backoffMax",
 ] as const satisfies readonly SettingKey[];
 
 export type SocialSettingKey = (typeof SOCIAL_SETTING_KEYS)[number];

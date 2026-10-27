@@ -1450,7 +1450,8 @@
         "notifications": {
           "retentionDays": "Conservation des notifications lues (jours)",
           "pollSeconds": "Intervalle de vérification des notifications (s)",
-          "pushEnabled": "Notifications push (onglet fermé)"
+          "pushEnabled": "Notifications push (onglet fermé)",
+          "sweepSeconds": "Tâches de fond par joueur, au plus toutes les (s)"
         },
         "trades": {
           "enabled": "Échanges entre amis ouverts",
@@ -1466,6 +1467,13 @@
           "perMinute": "Messages par joueur et par minute",
           "pollSeconds": "Sondage sans temps réel (secondes)",
           "retentionHours": "Durée de vie d'un message (heures)"
+        },
+        "realtime": {
+          "safetyPollSeconds": "Sondage de secours avec Ably (s)"
+        },
+        "activity": {
+          "idleSeconds": "Pause des sondages après inactivité (s)",
+          "backoffMax": "Ralentissement maximal sans nouveauté (×)"
         }
       },
       "invalid": "Certaines valeurs sont hors limites : corrige-les avant d'enregistrer.",
@@ -1492,7 +1500,9 @@
       "tradesSection": "Échanges entre amis",
       "tradesHint": "Rien n'est bloqué pendant l'attente : propriété, amitié et raretés sont revérifiées au moment d'accepter.",
       "chatSection": "Chat entre amis",
-      "chatHint": "Messages privés entre amis acceptés, en texte brut, supprimés après leur durée de vie (24 h par défaut). Un blocage coupe la conversation."
+      "chatHint": "Messages privés entre amis acceptés, en texte brut, supprimés après leur durée de vie (24 h par défaut). Un blocage coupe la conversation.",
+      "activitySection": "Temps réel et activité",
+      "activityHint": "Avec Ably, la cloche et le chat arrivent en direct ; le sondage de secours rattrape un message perdu. Sans geste du joueur ou onglet caché, plus aucun sondage. Sans nouveauté, le délai double jusqu'au multiple indiqué."
     },
     "market": {
       "title": "Marché",
@@ -1832,7 +1842,10 @@
         "bot": "Contre un bot",
         "friend": "Entre amis",
         "ranked": "Classé (étape 9b)",
-        "dailyCap": "Combats récompensés par jour"
+        "dailyCap": "Combats récompensés par jour",
+        "safetyPollSeconds": "Resynchronisation de secours avec Ably (s)",
+        "queuePollSeconds": "Sondage de la file d'attente (s)",
+        "lobbyPollSeconds": "Sondage du salon d'un code ami (s)"
       },
       "valueHint": "Valeur : multiplicateur en % (Issen, Ranbu, Kantsū), soin ou bonus en % (Iyashi, Kobu), inutilisée (Shugo, Fūin).",
       "save": "Enregistrer",
@@ -2234,7 +2247,8 @@
             "minRarity": "Rareté minimale affichée",
             "size": "Nombre de tirages affichés",
             "maxAgeHours": "Ancienneté maximale (heures)",
-            "refreshSeconds": "Rafraîchissement (secondes)"
+            "refreshSeconds": "Rafraîchissement (secondes)",
+            "cacheSeconds": "Cache partagé du fil (secondes)"
           }
         }
       },
@@ -2258,7 +2272,8 @@
             "minRarity": "Épique, Légendaire ou Mythique : les tirages enregistrés commencent à Épique.",
             "size": "Au-delà de 6, le ruban défile tout seul.",
             "maxAgeHours": "Les tirages plus anciens disparaissent du carrousel, puis de la base un jour après.",
-            "refreshSeconds": "Tant que l'onglet est visible."
+            "refreshSeconds": "Tant que l'onglet est visible.",
+            "cacheSeconds": "Le même fil, mis en cache pour tout le monde : une seule lecture en base par délai, quel que soit le nombre de joueurs."
           }
         }
       },
@@ -2677,6 +2692,40 @@
       "noSeries": "Aucune série choisie",
       "until": "Jusqu’au {end}",
       "ended": "Terminé"
+    },
+    "usage": {
+      "title": "Consommation Vercel estimée",
+      "introPolling": "Ordre de grandeur calculé à partir des réglages de sondage en cours, pour un joueur présent sur la page. Le temps réel (Ably) n'est pas configuré : chaque écran sonde le serveur.",
+      "introRealtime": "Ordre de grandeur calculé à partir des réglages de sondage en cours, pour un joueur présent sur la page. Le temps réel (Ably) est actif : les sondages ne servent que de secours.",
+      "players": "Joueurs actifs par jour",
+      "playersHint": "{count, plural, =0 {Aucun joueur actif ces 7 derniers jours} one {# joueur par jour en moyenne ces 7 derniers jours} other {# joueurs par jour en moyenne ces 7 derniers jours}}",
+      "hoursPerPlayer": "Heures de jeu par joueur et par jour",
+      "otherPerDay": "Autres appels par jour (robots, moniteurs)",
+      "otherHint": "Trafic qui ne dépend pas des joueurs : moteurs de recherche, outil de surveillance de /api/health.",
+      "perScreen": "Appels au serveur par heure et par écran",
+      "screen": "Écran",
+      "perHour": "Appels par heure",
+      "screens": {
+        "home": "Accueil",
+        "browse": "Autres pages",
+        "chat": "Chat ouvert",
+        "battle": "Combat",
+        "queue": "File d'attente",
+        "lobby": "Salon d'un code ami",
+        "auction": "Vente aux enchères"
+      },
+      "metrics": {
+        "invocations": "Invocations sur 30 jours",
+        "cpu": "CPU actif sur 30 jours",
+        "transfer": "Transfert d'origine sur 30 jours"
+      },
+      "invocations": "{value, number}",
+      "hours": "{value} h",
+      "gb": "{value} Go",
+      "percent": "{value} %",
+      "ofLimit": "{share} de la limite Hobby ({limit})",
+      "capacity": "{count, plural, =0 {Aucun joueur tenable à {hours} h par jour} one {Environ # joueur actif par jour tenable à {hours} h de jeu chacun} other {Environ # joueurs actifs par jour tenables à {hours} h de jeu chacun}} sous les trois limites.",
+      "caveat": "Estimation, pas une mesure : CPU et transfert reprennent les moyennes d'octobre 2026 (23 ms et 6,5 Ko par appel). Le relevé exact est dans l'onglet Usage de Vercel."
     }
   },
   "collection": {

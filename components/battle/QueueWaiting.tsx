@@ -4,15 +4,26 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { leaveQueueAction, pollQueueAction, startBotBattleAction, type BattleActionError } from "@/server/actions/battle";
+import { useHoldAwake } from "../realtime/activity";
+import { useRealtime } from "../realtime/RealtimeProvider";
 import { Button } from "../ui/Button";
-
-const POLL_MS = 2_500;
 
 /**
  * Attente en file : un ensō qui tourne, le temps écoulé, Annuler. Le sondage prouve qu'on est
  * toujours là et retente l'appariement ; à l'heure prévue, un bot prend la place de l'adversaire.
+ * Un adversaire trouvé par l'autre joueur arrive en direct (« matched » sur le canal du joueur).
  */
-export function QueueWaiting({ joinedAt, botAt, onLeft }: { joinedAt: string; botAt: string; onLeft: (error?: BattleActionError) => void }) {
+export function QueueWaiting({
+  joinedAt,
+  botAt,
+  pollSeconds,
+  onLeft,
+}: {
+  joinedAt: string;
+  botAt: string;
+  pollSeconds: number;
+  onLeft: (error?: BattleActionError) => void;
+}) {
   const t = useTranslations("battle.queue");
   const router = useRouter();
   const [now, setNow] = useState(() => Date.now());
@@ -21,6 +32,8 @@ export function QueueWaiting({ joinedAt, botAt, onLeft }: { joinedAt: string; bo
   const done = useRef(false);
   const start = new Date(joinedAt).getTime();
   const bot = new Date(botAt).getTime();
+  const { subscribe } = useRealtime();
+  useHoldAwake();
 
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 500);
@@ -53,11 +66,19 @@ export function QueueWaiting({ joinedAt, botAt, onLeft }: { joinedAt: string; bo
       } catch {
         // Réseau coupé : on retente au prochain tour
       }
-      timer = setTimeout(poll, POLL_MS);
+      // Le bot ne doit pas attendre un tour de sondage de plus que prévu
+      timer = setTimeout(poll, Math.max(500, Math.min(pollSeconds * 1000, bot - Date.now() + 250)));
     };
     timer = setTimeout(poll, 600);
-    return () => clearTimeout(timer);
-  }, [bot, onLeft, router]);
+    const unsubscribe = subscribe("user", "matched", (data) => {
+      const battleId = (data as { battleId?: unknown }).battleId;
+      if (typeof battleId === "string" && !done.current) go(battleId);
+    });
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
+  }, [bot, onLeft, pollSeconds, router, subscribe]);
 
   const leave = async () => {
     setLeaving(true);

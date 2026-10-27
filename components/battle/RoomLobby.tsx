@@ -1,17 +1,18 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { BattleView, CandidateCard } from "@/lib/battle/view";
 import { battleViewAction, cancelRoomAction, joinRoomAction } from "@/server/actions/battle";
+import { useHoldAwake } from "../realtime/activity";
+import { useRealtime } from "../realtime/RealtimeProvider";
+import { usePoll } from "../realtime/usePoll";
 import { Button, buttonClasses } from "../ui/Button";
 import { usePlayerName } from "./BoardLayout";
 import type { AbilityRules } from "./AbilityGuide";
 import { TeamPicker } from "./TeamPicker";
 import { useBattleError } from "./useBattleError";
-
-const POLL_MS = 3_000;
 
 function useCountdown(until: string | null) {
   const [now, setNow] = useState(() => Date.now());
@@ -45,15 +46,22 @@ export function RoomLobby({
   const [pending, startTransition] = useTransition();
   const time = useCountdown(view.codeExpiresAt);
 
-  // Le créateur attend : dès que la partie démarre (ou que la salle ferme), la page se recharge
+  // Le créateur attend : dès que la partie démarre (signal « matched » en direct, ou sondage de
+  // secours) ou que la salle ferme, la page se recharge
+  const waiting = !view.canJoin;
+  const { subscribe } = useRealtime();
+  useHoldAwake(waiting);
+  const checkRoom = useCallback(async () => {
+    const res = await battleViewAction({ battleId: view.id });
+    if (res.ok && res.view.status !== "WAITING") router.refresh();
+  }, [router, view.id]);
+  usePoll(checkRoom, { seconds: view.lobbyPollSeconds, enabled: waiting });
   useEffect(() => {
-    if (view.canJoin) return;
-    const id = setInterval(async () => {
-      const res = await battleViewAction({ battleId: view.id });
-      if (res.ok && res.view.status !== "WAITING") router.refresh();
-    }, POLL_MS);
-    return () => clearInterval(id);
-  }, [router, view.canJoin, view.id]);
+    if (!waiting) return;
+    return subscribe("user", "matched", (data) => {
+      if ((data as { battleId?: unknown }).battleId === view.id) router.refresh();
+    });
+  }, [router, subscribe, view.id, waiting]);
 
   const errorText = useBattleError();
 

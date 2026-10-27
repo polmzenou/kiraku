@@ -54,7 +54,7 @@ export function NavLinks({
         }
         return (
           <li key={item.key}>
-            <Link
+            <Link prefetch={false}
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={base}
@@ -83,7 +83,7 @@ function StackLink({ item, active, onNavigate }: { item: NavItem; active: boolea
     );
   }
   return (
-    <Link
+    <Link prefetch={false}
       href={item.href}
       aria-current={active ? "page" : undefined}
       onClick={onNavigate}
@@ -171,7 +171,7 @@ function MoreMenu({ pathname, items }: { pathname: string; items: readonly NavIt
           const active = isActive(item, pathname);
           return (
             <li key={item.key}>
-              <Link
+              <Link prefetch={false}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 onClick={() => setOpen(false)}

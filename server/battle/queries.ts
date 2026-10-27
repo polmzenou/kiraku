@@ -56,7 +56,7 @@ function playerView(p: Prisma.UserGetPayload<{ select: typeof playerSelect }> | 
 export async function getBattleView(
   battleId: string,
   viewerId: string,
-  timing: { pollSeconds: number; turnSeconds: number },
+  timing: { pollSeconds: number; safetyPollSeconds: number; lobbyPollSeconds: number; turnSeconds: number },
   /** Aperçu d'un rang sur le plateau (admins seulement). */
   previewTier: BoardTier | null = null,
   ladder: BattleView["ladder"] = null,
@@ -120,6 +120,8 @@ export async function getBattleView(
     actions,
     realtime: ablyEnabled,
     pollSeconds: timing.pollSeconds,
+    safetyPollSeconds: timing.safetyPollSeconds,
+    lobbyPollSeconds: timing.lobbyPollSeconds,
     turnSeconds: timing.turnSeconds,
     // Le rang d'une partie classée sera figé au lancement (étape 9b)
     tier: previewTier ?? parseBoardTier(mySide === 0 ? b.p1Tier : b.p2Tier),

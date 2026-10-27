@@ -50,6 +50,8 @@ describe("buildCsp", () => {
     const d = directives(buildCsp("n", false));
     expect(d.get("connect-src")).toEqual([
       "'self'",
+      "wss://*.ably.net",
+      "https://*.ably.net",
       "wss://*.ably.io",
       "https://*.ably.io",
       "https://*.ably-realtime.com",

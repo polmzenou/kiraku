@@ -21,6 +21,9 @@ export const BATTLE_SETTING_KEYS = [
   "battle.botUpgradePct",
   "battle.rewards",
   "battle.pollSeconds",
+  "battle.safetyPollSeconds",
+  "battle.queuePollSeconds",
+  "battle.lobbyPollSeconds",
 ] as const;
 
 export type BattleSettingKey = (typeof BATTLE_SETTING_KEYS)[number];
@@ -43,6 +46,9 @@ export type BattleRules = {
   botUpgradePct: number;
   rewards: SettingValue<"battle.rewards">;
   pollSeconds: number;
+  safetyPollSeconds: number;
+  queuePollSeconds: number;
+  lobbyPollSeconds: number;
 };
 
 export function battleRulesFrom(get: <K extends BattleSettingKey>(key: K) => SettingValue<K>): BattleRules {
@@ -64,6 +70,9 @@ export function battleRulesFrom(get: <K extends BattleSettingKey>(key: K) => Set
     botUpgradePct: get("battle.botUpgradePct"),
     rewards: get("battle.rewards"),
     pollSeconds: get("battle.pollSeconds"),
+    safetyPollSeconds: get("battle.safetyPollSeconds"),
+    queuePollSeconds: get("battle.queuePollSeconds"),
+    lobbyPollSeconds: get("battle.lobbyPollSeconds"),
   };
 }
 

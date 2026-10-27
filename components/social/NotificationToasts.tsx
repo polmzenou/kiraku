@@ -3,12 +3,13 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "@/i18n/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { markNotificationsReadAction } from "@/server/actions/notifications";
 import type { NotificationView } from "@/server/social/queries";
 import { notificationSeal, useDescribeNotification } from "./describe";
 
 const VISIBLE_MS = 7000;
+const REFRESHED_PATHS = ["/notifications", "/amis"];
 
 /**
  * Pile de toasts sous l'en-tête (en haut à droite sur desktop). Chaque toast se ferme seul après
@@ -31,12 +32,15 @@ export function NotificationToasts({
   const t = useTranslations("notifications");
   const describe = useDescribeNotification();
   const router = useRouter();
+  const pathname = usePathname();
 
-  // Le contenu de la page dépend peut-être de ce qui vient d'arriver (demandes, boosters offerts)
+  // Les pages qui listent ce qui vient d'arriver (notifications, demandes d'ami) se mettent à jour ;
+  // ailleurs, pas de nouveau rendu serveur complet à chaque toast : le lien du toast y mène
   const latest = toasts[0]?.id;
+  const listsNotifications = REFRESHED_PATHS.some((p) => pathname.startsWith(p));
   useEffect(() => {
-    if (latest) router.refresh();
-  }, [latest, router]);
+    if (latest && listsNotifications) router.refresh();
+  }, [latest, listsNotifications, router]);
 
   if (toasts.length === 0 && more === 0) return null;
 

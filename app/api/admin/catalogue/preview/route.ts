@@ -1,4 +1,3 @@
-import { unstable_cache } from "next/cache";
 import { z } from "@/lib/zod";
 import { rarityKeySchema } from "@/lib/catalog/definitions";
 import { cardFormSchema } from "@/lib/catalog/admin-form";
@@ -6,7 +5,7 @@ import { cardOdds } from "@/lib/catalog/card-odds";
 import { computePool, focusCards, loadCandidates } from "@/server/boosters/type-store";
 import { getBoosterTypes, getFilterContext } from "@/server/boosters/pools";
 import { getBoosterRules } from "@/server/boosters/rules";
-import { CATALOG_TAG, getCatalogVersion } from "@/server/catalog/queries";
+import { getCatalogVersion } from "@/server/catalog/queries";
 import { getStaff } from "@/server/admin";
 import { prisma } from "@/server/db";
 import { rateLimit } from "@/server/ratelimit";
@@ -18,7 +17,20 @@ const schema = z.object({ id: z.string().max(64).optional(), rarity: rarityKeySc
   seriesId: z.string().max(64).nullable(), gender: z.string().max(40).nullable(), role: z.string().max(40).nullable(), birthMonth: z.number().nullable(), birthDay: z.number().nullable(),
   newSeries: cardFormSchema.shape.newSeries.optional(),
 });
-const candidates = unstable_cache(async (_version: number) => { void _version; return loadCandidates(prisma); }, ["admin-preview-candidates"], { tags: [CATALOG_TAG], revalidate: 3600 });
+// Candidats du catalogue (~7 Mo) gardés en mémoire du processus, par version du catalogue :
+// unstable_cache refuse les entrées de plus de 2 Mo et relisait donc toutes les cartes à chaque frappe
+let memo: { version: number; at: number; value: Promise<Awaited<ReturnType<typeof loadCandidates>>> } | null = null;
+const MEMO_MS = 3_600_000;
+function candidates(version: number) {
+  if (!memo || memo.version !== version || Date.now() - memo.at > MEMO_MS) {
+    const value = loadCandidates(prisma);
+    memo = { version, at: Date.now(), value };
+    value.catch(() => {
+      if (memo?.value === value) memo = null;
+    });
+  }
+  return memo.value;
+}
 export async function POST(request: Request) {
   const admin = (await getStaff())?.user; if (!admin) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
   if (request.headers.get("origin") !== new URL(request.url).origin) return Response.json({ error: "FORBIDDEN" }, { status: 403 });

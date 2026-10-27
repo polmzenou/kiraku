@@ -8,6 +8,9 @@ import { TECHNIQUE_TARGET, type Action, type BattleSetup, type BattleState } fro
 import type { BattleUpdateView, BattleView, RankedOutcomeView } from "@/lib/battle/view";
 import { battleSinceAction, claimTimeoutAction, playAction } from "@/server/actions/battle";
 import type { ClientAction } from "@/server/battle/battle-core";
+import { useHoldAwake } from "../realtime/activity";
+import { useRealtime } from "../realtime/RealtimeProvider";
+import { usePoll } from "../realtime/usePoll";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
 import { RankedResult } from "../ranked/RankedResult";
@@ -19,9 +22,6 @@ import { useBattleError } from "./useBattleError";
 import { useEventPlayer } from "./useEventPlayer";
 
 type Mode = "ATTACK" | "TECHNIQUE";
-
-/** Sécurité quand Ably est branché : un sondage lent rattrape un message perdu. */
-const SAFETY_POLL_MS = 15_000;
 
 function toClient(a: Action): ClientAction {
   if (a.type === "ATTACK") return { type: "ATTACK", actor: a.actor, target: a.target };
@@ -91,30 +91,24 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
     [apply, resync],
   );
 
-  // Temps réel (Ably) si configuré, sinon sondage ; dans les deux cas, rattrapage au retour sur l'onglet
+  // Temps réel (connexion Ably partagée) si configuré, sinon sondage ; rien onglet caché, rattrapage
+  // au retour et à chaque reconnexion
+  const live = !final.finished;
+  const { connected, subscribe } = useRealtime();
+  useHoldAwake(live);
+  usePoll(resync, { seconds: view.pollSeconds, realtimeSeconds: view.realtime ? view.safetyPollSeconds : undefined, enabled: live });
   useEffect(() => {
-    if (final.finished) return;
-    let closed = false;
-    let client: { close: () => void } | null = null;
-    const pollMs = view.realtime ? SAFETY_POLL_MS : view.pollSeconds * 1_000;
-    const poll = setInterval(() => void resync(), pollMs);
-    if (view.realtime) {
-      void import("ably").then(({ Realtime }) => {
-        if (closed) return;
-        const ably = new Realtime({ authUrl: `/api/realtime/token?battle=${encodeURIComponent(view.id)}`, closeOnUnload: true });
-        client = ably;
-        void ably.channels.get(`kiraku:battle:${view.id}`).subscribe("update", (msg) => receive(msg.data as BattleUpdateView));
-      });
-    }
-    const onVisible = () => document.visibilityState === "visible" && void resync();
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      closed = true;
-      clearInterval(poll);
-      client?.close();
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [final.finished, receive, resync, view.id, view.pollSeconds, view.realtime]);
+    if (!live || !view.realtime) return;
+    return subscribe({ battle: view.id }, "update", (data) => receive(data as BattleUpdateView));
+  }, [live, receive, subscribe, view.id, view.realtime]);
+  // Abonnement tout juste posé : un coup joué pendant ce temps aurait pu passer entre les mailles
+  const primed = useRef(false);
+  useEffect(() => {
+    if (!live || !connected || primed.current) return;
+    primed.current = true;
+    const id = setTimeout(() => void resync(), 2_000);
+    return () => clearTimeout(id);
+  }, [connected, live, resync]);
 
   const myTurn = !shown.finished && shown.active === mySide;
   const canAct = myTurn && !animating && !pending;

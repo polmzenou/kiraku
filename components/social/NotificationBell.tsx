@@ -1,29 +1,36 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { formatBadge } from "@/lib/social/notifications";
 import { pollNotificationsAction } from "@/server/actions/notifications";
 import type { NotificationView } from "@/server/social/queries";
+import { setUnread } from "../chat/chat-store";
+import { useRealtime } from "../realtime/RealtimeProvider";
+import { usePoll } from "../realtime/usePoll";
 import { badgeClasses } from "../ui/Badge";
 import { iconButtonClasses } from "../ui/IconButton";
 import { NotificationToasts } from "./NotificationToasts";
 
 /**
  * Cloche de l'en-tête et toasts des nouvelles notifications. Compteur rendu par le serveur, puis
- * sondé toutes les `pollSeconds` tant que l'onglet est visible (aucun sondage en arrière-plan).
+ * sondé (pulse unique avec la pastille du chat) toutes les `pollSeconds`, ou `safetySeconds` quand
+ * Ably pousse les nouvelles notifications ; rien tant que l'onglet est caché ou le joueur inactif.
  * Chaque notification arrivée depuis le dernier sondage s'affiche en toast, quel que soit son type.
  */
 export function NotificationBell({
   initial,
   serverNow,
   pollSeconds,
+  safetySeconds,
 }: {
   initial: number;
   /** Heure du serveur au rendu : seules les notifications plus récentes deviennent des toasts. */
   serverNow: string;
   pollSeconds: number;
+  /** Délai de secours quand le temps réel est connecté. */
+  safetySeconds: number;
 }) {
   const t = useTranslations("notifications");
   const [count, setCount] = useState(initial);
@@ -32,7 +39,8 @@ export function NotificationBell({
   const [more, setMore] = useState(0);
   const since = useRef(serverNow);
   const shown = useRef(new Set<string>());
-  const interval = useRef(pollSeconds);
+  const [seconds, setSeconds] = useState({ base: pollSeconds, safety: safetySeconds });
+  const { subscribe } = useRealtime();
 
   // Nouveau rendu serveur (navigation, refresh() après une action) : il fait foi
   if (rendered !== initial) {
@@ -40,61 +48,32 @@ export function NotificationBell({
     setCount(initial);
   }
 
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let stopped = false;
-
-    const poll = async () => {
-      try {
-        const res = await pollNotificationsAction({ since: since.current });
-        if (!res.ok || stopped) return;
-        since.current = res.now;
-        interval.current = res.pollSeconds;
-        setCount(res.count);
-        const fresh = res.items.filter((n) => !shown.current.has(n.id));
-        if (fresh.length > 0) {
-          for (const n of fresh) shown.current.add(n.id);
-          setToasts((list) => [...fresh, ...list].slice(0, 3));
-          setMore((m) => m + res.more);
-        }
-      } catch {
-        // Réseau coupé : on réessaiera au prochain tour
-      }
-    };
-
-    const schedule = () => {
-      clearTimeout(timer);
-      if (stopped || document.visibilityState !== "visible") return;
-      timer = setTimeout(async () => {
-        await poll();
-        schedule();
-      }, interval.current * 1000);
-    };
-
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") {
-        // Retour sur l'onglet : on rattrape tout de suite ce qui est arrivé entre-temps
-        void poll().then(schedule);
-      } else {
-        clearTimeout(timer);
-      }
-    };
-
-    schedule();
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      stopped = true;
-      clearTimeout(timer);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
+  const poll = useCallback(async () => {
+    const res = await pollNotificationsAction({ since: since.current });
+    if (!res.ok) return false;
+    since.current = res.now;
+    setSeconds({ base: res.pollSeconds, safety: res.safetySeconds });
+    setCount(res.count);
+    if (res.chatUnread !== null) setUnread(res.chatUnread);
+    const fresh = res.items.filter((n) => !shown.current.has(n.id));
+    if (fresh.length === 0) return false;
+    for (const n of fresh) shown.current.add(n.id);
+    setToasts((list) => [...fresh, ...list].slice(0, 3));
+    setMore((m) => m + res.more);
+    return true;
   }, []);
+
+  const pollNow = usePoll(poll, { seconds: seconds.base, realtimeSeconds: seconds.safety, backoff: true });
+
+  // Notification créée pour ce joueur (signal Ably) : sondage immédiat
+  useEffect(() => subscribe("user", "notification", () => void pollNow()), [pollNow, subscribe]);
 
   const badge = formatBadge(count);
   const label = count > 0 ? t("bellUnread", { count }) : t("bell");
 
   return (
     <>
-      <Link
+      <Link prefetch={false}
         href="/notifications"
         aria-label={label}
         title={label}

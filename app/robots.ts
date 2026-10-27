@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { productionRobotsRules } from "@/lib/seo/robots";
 import { appUrl } from "@/server/env";
 import { generateSitemaps } from "./sitemap";
 
@@ -7,7 +8,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
   return {
     rules: process.env.VERCEL_ENV === "preview"
       ? { userAgent: "*", disallow: "/" }
-      : { userAgent: "*", allow: "/", disallow: ["/api/", "/admin/", "/en/admin/", "/compte", "/en/compte", "/collection", "/en/collection", "/tirage/", "/en/tirage/"] },
+      : productionRobotsRules(),
     sitemap: sitemaps.map(({ id }) => `${appUrl()}/sitemap/${id}.xml`),
   };
 }

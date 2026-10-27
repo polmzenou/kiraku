@@ -193,6 +193,14 @@ export const SETTING_SCHEMAS = {
   "notifications.retentionDays": z.number().int().min(1).max(365),
   // Intervalle de sondage de la cloche et des toasts (onglet visible seulement)
   "notifications.pollSeconds": z.number().int().min(10).max(600),
+  // Tâches de fond (enchères échues, combats expirés, échanges) lancées au plus une fois par joueur et par délai
+  "notifications.sweepSeconds": z.number().int().min(30).max(3_600),
+  // Temps réel (Ably) : sondage de secours de la cloche et du chat quand la connexion est ouverte
+  "realtime.safetyPollSeconds": z.number().int().min(30).max(1_800),
+  // Inactivité : plus aucun sondage passé ce délai sans geste du joueur ; reprise au premier geste
+  "activity.idleSeconds": z.number().int().min(30).max(3_600),
+  // Sondage sans changement : le délai double à chaque fois, jusqu'à ce multiple du délai de base
+  "activity.backoffMax": z.number().int().min(1).max(16),
   // Web Push (onglet fermé) : interrupteur global, l'abonnement reste un choix du joueur
   "notifications.pushEnabled": z.boolean(),
   // Économie (étape 7) : interrupteurs, parrainage et paiement par carte (inerte sans fournisseur)
@@ -260,6 +268,11 @@ export const SETTING_SCHEMAS = {
   "battle.rewards": battleRewards,
   // Sondage de secours du plateau quand le temps réel (Ably) n'est pas configuré
   "battle.pollSeconds": z.number().int().min(1).max(30),
+  // Resynchronisation de secours du plateau quand le temps réel est actif
+  "battle.safetyPollSeconds": z.number().int().min(5).max(300),
+  // Sondage de la file d'attente et du salon d'un code ami (complété par le temps réel)
+  "battle.queuePollSeconds": z.number().int().min(2).max(60),
+  "battle.lobbyPollSeconds": z.number().int().min(2).max(120),
   // Classé (étape 9b)
   "ranked.enabled": z.boolean(),
   "ranked.tiers": rankedTiers,
@@ -295,6 +308,8 @@ export const SETTING_SCHEMAS = {
   "home.pullFeed.size": z.number().int().min(4).max(50),
   "home.pullFeed.maxAgeHours": z.number().int().min(1).max(24 * 30),
   "home.pullFeed.refreshSeconds": z.number().int().min(5).max(600),
+  // Durée de cache du fil, partagé par tous les joueurs
+  "home.pullFeed.cacheSeconds": z.number().int().min(5).max(600),
   // Conformité (étape 10) : version des CGU que tout compte inscrit doit avoir acceptée
   "legal.termsRequiredVersion": z.number().int().min(1).max(10_000),
   // Suppression du compte : délai (annulable) avant l'anonymisation
@@ -374,7 +389,11 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "ambassador.weeklyBoosters": 5,
   "ambassador.weeklyBoosterSlug": "standard", // Tout anime
   "notifications.retentionDays": 30,
-  "notifications.pollSeconds": 20,
+  "notifications.pollSeconds": 60,
+  "notifications.sweepSeconds": 300,
+  "realtime.safetyPollSeconds": 180,
+  "activity.idleSeconds": 300,
+  "activity.backoffMax": 4,
   "notifications.pushEnabled": true,
   "missions.enabled": true,
   "shop.enabled": true,
@@ -398,7 +417,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "market.minStartPrice": 1,
   "market.maxPrice": 10_000_000,
   "market.maxPriceByRarity": {},
-  "market.pollSeconds": 5, // rafraîchissement du prix d'une vente ouverte
+  "market.pollSeconds": 15, // rafraîchissement du prix d'une vente ouverte
   "listings.enabled": true,
   "listings.expiryHours": 48,
   "listings.maxWants": 5,
@@ -431,7 +450,10 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "battle.botMistakePct": 20,
   "battle.botUpgradePct": 10,
   "battle.rewards": { exhibition: 20, bot: 10, friend: 0, ranked: 25, dailyCap: 10 },
-  "battle.pollSeconds": 2,
+  "battle.pollSeconds": 3,
+  "battle.safetyPollSeconds": 30,
+  "battle.queuePollSeconds": 5,
+  "battle.lobbyPollSeconds": 15,
   "ranked.enabled": true,
   // Barème du plan (section « Mode classé »)
   "ranked.tiers": {
@@ -460,7 +482,8 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "home.pullFeed.minRarity": "LEGENDARY",
   "home.pullFeed.size": 20,
   "home.pullFeed.maxAgeHours": 72,
-  "home.pullFeed.refreshSeconds": 15,
+  "home.pullFeed.refreshSeconds": 60,
+  "home.pullFeed.cacheSeconds": 30,
   "legal.termsRequiredVersion": 1,
   "account.deletionGraceDays": 30, // anonymisation sous 30 jours (plan, « Pages légales, RGPD »)
   "account.usernameChangeDays": 30,

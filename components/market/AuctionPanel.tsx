@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { sellerNet } from "@/lib/market/rules";
 import {
   auctionLiveAction,
@@ -18,6 +18,10 @@ import { playerTag } from "../social/PlayerName";
 import { Button } from "../ui/Button";
 import { Countdown } from "./Countdown";
 import { inputClass } from "../ui/Field";
+import { usePoll } from "../realtime/usePoll";
+
+// Dernières minutes d'une vente : le sondage garde son rythme de base
+const ENDGAME_MS = 3 * 60_000;
 
 type Confirming = { kind: "bid"; amount: number } | { kind: "buy"; amount: number } | { kind: "withdraw" } | null;
 
@@ -82,41 +86,21 @@ export function AuctionPanel({
     status.current = live.status;
   }, [live.status, router]);
 
-  useEffect(() => {
-    if (live.status !== "ACTIVE") return;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let stopped = false;
-    const poll = async () => {
-      try {
-        const res = await auctionLiveAction({ auctionId });
-        if (!res.ok || stopped) return;
-        setLive(res.live);
-        // Dépassé entre-temps : « Mise enregistrée » ne décrit plus la situation
-        if (!res.live.leading) setMessage((m) => (m?.tone === "ok" ? null : m));
-      } catch {
-        // Réseau coupé : prochain tour
-      }
-    };
-    const schedule = () => {
-      clearTimeout(timer);
-      if (stopped || document.visibilityState !== "visible") return;
-      timer = setTimeout(async () => {
-        await poll();
-        schedule();
-      }, pollSeconds * 1000);
-    };
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") void poll().then(schedule);
-      else clearTimeout(timer);
-    };
-    schedule();
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      stopped = true;
-      clearTimeout(timer);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, [auctionId, pollSeconds, live.status]);
+  // Prix en direct : sondé tant que la vente est ouverte et le joueur là ; sans nouvelle mise, le
+  // délai s'allonge (jamais dans les dernières minutes, où l'anti-snipe se joue)
+  const lastLive = useRef(JSON.stringify(initial));
+  const pollLive = useCallback(async () => {
+    const res = await auctionLiveAction({ auctionId });
+    if (!res.ok) return false;
+    setLive(res.live);
+    // Dépassé entre-temps : « Mise enregistrée » ne décrit plus la situation
+    if (!res.live.leading) setMessage((m) => (m?.tone === "ok" ? null : m));
+    const snapshot = JSON.stringify(res.live);
+    const changed = snapshot !== lastLive.current;
+    lastLive.current = snapshot;
+    return changed || new Date(res.live.endsAt).getTime() - Date.now() < ENDGAME_MS;
+  }, [auctionId]);
+  usePoll(pollLive, { seconds: pollSeconds, enabled: live.status === "ACTIVE", backoff: true });
 
   const fail = (error: MarketActionError | "unexpected") => setMessage({ tone: "error", text: t(`errors.${error}`) });
 

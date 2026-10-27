@@ -75,6 +75,7 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
         abilities={{ keywordValues: ctx.rules.keywordValues, techniques: ctx.rules.techniques }}
         lastTeam={lastTeam}
         queueSeconds={ctx.rules.queueSeconds}
+        queuePollSeconds={ctx.rules.queuePollSeconds}
         challenge={challenge}
         rank={rank}
       />

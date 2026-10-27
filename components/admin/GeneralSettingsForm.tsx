@@ -22,6 +22,7 @@ const LIMITS: Record<NumberKey, [number, number]> = {
   "home.pullFeed.size": [4, 50],
   "home.pullFeed.maxAgeHours": [1, 24 * 30],
   "home.pullFeed.refreshSeconds": [5, 600],
+  "home.pullFeed.cacheSeconds": [5, 600],
 };
 
 /** Réglages généraux : Zeni de départ, fuseau du jeu, invités, droits du joueur sur ses données. */
@@ -90,6 +91,7 @@ export function GeneralSettingsForm({ initial }: { initial: GeneralSettings }) {
         {num("home.pullFeed.size")}
         {num("home.pullFeed.maxAgeHours")}
         {num("home.pullFeed.refreshSeconds")}
+        {num("home.pullFeed.cacheSeconds")}
       </fieldset>
       <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} save={() => updateGeneralSettings(draft)} />
     </form>

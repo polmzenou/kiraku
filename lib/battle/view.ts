@@ -36,6 +36,10 @@ export type BattleView = {
   /** Ably configuré : le plateau est prévenu en direct (sinon il sonde). */
   realtime: boolean;
   pollSeconds: number;
+  /** Resynchronisation de secours quand le temps réel est connecté. */
+  safetyPollSeconds: number;
+  /** Sondage du salon par son créateur, en attendant l'invité. */
+  lobbyPollSeconds: number;
   turnSeconds: number;
   /** Rang de mon camp au lancement (couleur du plateau) ; null hors classé. */
   tier: BoardTier | null;

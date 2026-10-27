@@ -12,28 +12,27 @@ import {
 } from "@/server/actions/chat";
 import type { ChatMessageView, Conversation } from "@/server/chat/queries";
 import { displayName } from "../profile/ProfileHeader";
+import { useRealtime } from "../realtime/RealtimeProvider";
+import { usePoll } from "../realtime/usePoll";
 import { PlayerAvatar } from "../social/PlayerAvatar";
 import { PlayerName } from "../social/PlayerName";
 import { badgeClasses } from "../ui/Badge";
 import { CloseIcon, IconButton, iconButtonClasses } from "../ui/IconButton";
 import { closeChat, openChat, setChatAvailable, setUnread, showConversation, useChatState } from "./chat-store";
 
-type Props = { realtime: boolean; pollSeconds: number; initialUnread: number; maxLength: number; retentionHours: number };
+type Props = { pollSeconds: number; initialUnread: number; maxLength: number; retentionHours: number };
 
 type IncomingChat = { from: string; message: ChatMessageView };
 type Thread = { username: string; messages: ChatMessageView[]; hasMore: boolean; error: string | null };
 
 const EMPTY: ChatMessageView[] = [];
 
-// Avec le temps réel, un sondage lent rattrape seulement ce qu'une coupure aurait fait manquer
-const SAFETY_POLL_MS = 60_000;
-
 /**
  * Chat entre amis. Desktop : bulle en bas à droite, au-dessus de tout, qui ouvre un panneau.
  * Mobile : l'icône de l'en-tête (ChatHeaderButton) ouvre le même panneau en plein écran.
- * Messages poussés par Ably sur le canal privé du joueur, sinon sondés tant que l'onglet est visible.
+ * Messages poussés par Ably sur le canal privé du joueur, sinon sondés tant que la conversation est ouverte.
  */
-export function ChatDock({ realtime, pollSeconds, initialUnread, maxLength, retentionHours }: Props) {
+export function ChatDock({ pollSeconds, initialUnread, maxLength, retentionHours }: Props) {
   const t = useTranslations("chat");
   const pathname = usePathname();
   const chat = useChatState();
@@ -98,33 +97,14 @@ export function ChatDock({ realtime, pollSeconds, initialUnread, maxLength, rete
     receiveRef.current = receive;
   }, [receive]);
 
-  // Temps réel (canal privé du joueur) et sondage de secours, seulement onglet visible
-  useEffect(() => {
-    let closed = false;
-    let client: { close: () => void } | null = null;
-    if (realtime) {
-      void import("ably").then(({ Realtime }) => {
-        if (closed) return;
-        const ably = new Realtime({ authUrl: "/api/realtime/token", closeOnUnload: true });
-        client = ably;
-        void ably.connection.once("connected").then(() => {
-          const userId = ably.auth.clientId;
-          if (userId && !closed) void ably.channels.get(`kiraku:user:${userId}`).subscribe("chat", (msg) => receiveRef.current(msg.data as IncomingChat));
-        });
-      });
-    }
-    const tick = () => {
-      if (document.visibilityState !== "visible") return;
-      if (withRef.current) void fetchNew();
-      void chatStatusAction({}).then((res) => res.ok && setUnread(res.unread));
-    };
-    const poll = setInterval(tick, realtime ? SAFETY_POLL_MS : pollSeconds * 1000);
-    return () => {
-      closed = true;
-      clearInterval(poll);
-      client?.close();
-    };
-  }, [fetchNew, pollSeconds, realtime]);
+  // Temps réel (canal privé du joueur, connexion partagée). La pastille suit le sondage unique de la
+  // cloche ; seule une conversation ouverte sans temps réel est sondée ici.
+  const { connected, subscribe } = useRealtime();
+  useEffect(() => subscribe("user", "chat", (data) => receiveRef.current(data as IncomingChat)), [subscribe]);
+  const pollThread = useCallback(async () => {
+    await fetchNew();
+  }, [fetchNew]);
+  usePoll(pollThread, { seconds: pollSeconds, enabled: chat.open && Boolean(chat.with) && !connected });
 
   // Ouverture : liste des amis ; changement d'ami : ses derniers messages
   useEffect(() => {

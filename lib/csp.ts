@@ -12,8 +12,8 @@ export function buildCsp(nonce: string, isDev: boolean): string {
     "style-src-attr": ["'unsafe-inline'"],
     "img-src": ["'self'", "data:", "blob:", ...IMAGE_HOSTS, ...(process.env.BLOB_PUBLIC_HOST && /^[a-z0-9-]+\.public\.blob\.vercel-storage\.com$/.test(process.env.BLOB_PUBLIC_HOST) ? [`https://${process.env.BLOB_PUBLIC_HOST}`] : [])],
     "font-src": ["'self'"],
-    // Ably : temps réel du combat (WebSocket, et repli HTTP vers ses hôtes de secours)
-    "connect-src": ["'self'", "wss://*.ably.io", "https://*.ably.io", "https://*.ably-realtime.com", "wss://*.ably-realtime.com"],
+    // Ably : temps réel (WebSocket, et repli HTTP vers ses hôtes de secours) ; ably-js v2 passe par *.ably.net
+    "connect-src": ["'self'", "wss://*.ably.net", "https://*.ably.net", "wss://*.ably.io", "https://*.ably.io", "https://*.ably-realtime.com", "wss://*.ably-realtime.com"],
     // service worker du Web Push (public/sw.js)
     "worker-src": ["'self'"],
     "manifest-src": ["'self'"],

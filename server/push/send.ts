@@ -7,6 +7,7 @@ import { isExpiredPush, safePushPath, type PushMessage } from "@/lib/push/subscr
 import { describeNotification } from "@/lib/social/describe";
 import { prisma } from "../db";
 import { env, pushConfigured } from "../env";
+import { ablyRest, publishToUser } from "../realtime";
 import { getSetting } from "../settings";
 import { notificationForPush } from "../social/queries";
 
@@ -83,9 +84,18 @@ async function pushOne(notificationId: string) {
   );
 }
 
+/** Signal temps réel à la cloche des joueurs concernés : elle sonde aussitôt, sans attendre son délai. */
+async function signalBells(notificationIds: readonly string[]) {
+  if (!ablyRest) return;
+  const rows = await prisma.notification.findMany({ where: { id: { in: [...notificationIds] } }, select: { userId: true } });
+  await Promise.all([...new Set(rows.map((r) => r.userId))].map((userId) => publishToUser(userId, "notification", {})));
+}
+
 /** Envoie le push de chaque notification créée ; ne lève jamais (le jeu ne dépend pas du push). */
 export async function pushNotifications(notificationIds: readonly string[]): Promise<void> {
-  if (notificationIds.length === 0 || !(await pushAvailable())) return;
+  if (notificationIds.length === 0) return;
+  await signalBells(notificationIds).catch((e: unknown) => console.warn("[temps réel] cloche", e instanceof Error ? e.message : e));
+  if (!(await pushAvailable())) return;
   await Promise.all(
     notificationIds.map((id) =>
       pushOne(id).catch((e: unknown) => console.warn("[push] erreur inattendue", e instanceof Error ? e.message : e)),

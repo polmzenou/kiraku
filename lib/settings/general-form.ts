@@ -16,6 +16,7 @@ export const GENERAL_SETTING_KEYS = [
   "home.pullFeed.size",
   "home.pullFeed.maxAgeHours",
   "home.pullFeed.refreshSeconds",
+  "home.pullFeed.cacheSeconds",
 ] as const satisfies readonly SettingKey[];
 
 export type GeneralSettingKey = (typeof GENERAL_SETTING_KEYS)[number];
