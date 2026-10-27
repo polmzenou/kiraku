@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { OpenedCardView } from "@/lib/boosters/view";
@@ -88,6 +88,7 @@ export function MyExchanges({ data }: { data: MyExchangesData }) {
 function MyListing({ listing }: { listing: MyListingView }) {
   const t = useTranslations("listings");
   const format = useFormatter();
+  const now = useNow();
   const router = useRouter();
   const name = usePlayerName();
   const [error, setError] = useState<string | null>(null);
@@ -120,7 +121,7 @@ function MyListing({ listing }: { listing: MyListingView }) {
               </li>
             ))}
           </ul>
-          <p className="text-xs text-text-muted tabular-nums">{t("expires", { when: format.relativeTime(listing.expiresAt) })}</p>
+          <p className="text-xs text-text-muted tabular-nums">{t("expires", { when: format.relativeTime(listing.expiresAt, now) })}</p>
         </div>
         <Button type="button" onClick={cancel} disabled={pending}>
           {t("cancelListing")}
@@ -165,6 +166,7 @@ function MyListing({ listing }: { listing: MyListingView }) {
 function SentOffer({ offer }: { offer: SentOfferView }) {
   const t = useTranslations("listings");
   const format = useFormatter();
+  const now = useNow();
   const router = useRouter();
   const name = usePlayerName();
   const [error, setError] = useState<string | null>(null);
@@ -188,7 +190,7 @@ function SentOffer({ offer }: { offer: SentOfferView }) {
         <PlayerAvatar username={offer.listing.owner.username} image={offer.listing.owner.image} size={28} frame={offer.listing.owner.decor.frame} />
         <span className="truncate">{t.rich("mine.sentTo", { name: name(offer.listing.owner), player: playerTag(offer.listing.owner.decor.nameColor) })}</span>
         <span className="ml-auto shrink-0 rounded-pill border border-ai/50 px-2 py-0.5 text-xs font-bold text-ai tabular-nums">
-          {t("expires", { when: format.relativeTime(offer.listing.expiresAt) })}
+          {t("expires", { when: format.relativeTime(offer.listing.expiresAt, now) })}
         </span>
       </p>
       <div className="grid grid-cols-[4.5rem_auto_4.5rem] items-center gap-3">
@@ -222,6 +224,7 @@ function SentOffer({ offer }: { offer: SentOfferView }) {
 function HistoryRow({ entry }: { entry: ExchangeHistoryView }) {
   const t = useTranslations("listings");
   const format = useFormatter();
+  const now = useNow();
   const name = usePlayerName();
   return (
     <div className="flex flex-col gap-2 rounded-card border border-border bg-surface p-3">
@@ -239,7 +242,7 @@ function HistoryRow({ entry }: { entry: ExchangeHistoryView }) {
           </p>
           <p className="truncate text-xs text-text-muted">
             {entry.other ? `${t("history.with", { name: name(entry.other) })} · ` : ""}
-            {entry.resolvedAt ? format.relativeTime(entry.resolvedAt) : ""}
+            {entry.resolvedAt ? format.relativeTime(entry.resolvedAt, now) : ""}
           </p>
         </div>
         <span className="shrink-0 rounded-pill border border-border px-2 py-0.5 text-xs font-bold text-text-muted">
