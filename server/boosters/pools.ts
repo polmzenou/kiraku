@@ -31,7 +31,7 @@ export const BOOSTER_TYPES_TAG = "booster-types";
 type TypeRow = Omit<BoosterTypeRow, "poolCardIds">;
 
 /** unstable_cache sérialise en JSON : les dates reviennent en chaînes. */
-const DATE_FIELDS = ["startsAt", "endsAt", "poolComputedAt", "createdAt", "updatedAt"] as const;
+const DATE_FIELDS = ["startsAt", "endsAt", "activatedAt", "poolComputedAt", "createdAt", "updatedAt"] as const;
 function revive(row: TypeRow): TypeRow {
   const out = { ...row };
   for (const k of DATE_FIELDS) {
