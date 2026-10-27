@@ -16,6 +16,7 @@ import { listLedger, type LedgerRow } from "../economy/queries";
 import { attachReferral, qualifyLater } from "../economy/referral";
 import { claimReferralWith, ReferralError } from "../economy/referral-core";
 import { buyWithZeniWith, ShopError } from "../economy/shop-core";
+import { loadShopItemIssue } from "../economy/shop-guard";
 import { rateLimit } from "../ratelimit";
 import { getSetting } from "../settings";
 import { getCurrentUser, requireActiveUser } from "../user";
@@ -131,6 +132,13 @@ export async function buyShopItemAction(input: unknown): Promise<BuyResult> {
   if ("error" in g) return { ok: false, error: g.error };
   if (!(await getSetting("shop.enabled"))) return { ok: false, error: "DISABLED" };
   try {
+    // Article que la page ne montre plus (booster plus vendable, sachet scellé, Mythique) : refusé sans
+    // débit, et la page rafraîchie le retire
+    const issue = await loadShopItemIssue(parsed.data.shopItemId);
+    if (issue) {
+      refresh();
+      return { ok: false, error: "NOT_FOR_SALE" };
+    }
     const { grant, coins } = await buyWithZeniWith(
       prisma,
       {
@@ -147,6 +155,8 @@ export async function buyShopItemAction(input: unknown): Promise<BuyResult> {
   } catch (e) {
     if (e instanceof ShopError) {
       if (e.code === "NO_USER" || e.code === "BANNED") return { ok: false, error: "UNAVAILABLE" };
+      // Prix, limite, solde ou article changés : l'erreur et la page à jour arrivent ensemble
+      refresh();
       return { ok: false, error: e.code };
     }
     return unexpected("achat", e);

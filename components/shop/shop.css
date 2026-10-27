@@ -1,0 +1,626 @@
+/*
+ * Boutique : cartes de packs (éventail de sachets), vedette du jour. Importé une seule fois par la page.
+ * Comme les autres CSS de composant, ce fichier est hors @layer : on n'y règle jamais une propriété
+ * qu'un utilitaire Tailwind pose sur le même élément. Les variantes motion-* de globals.css n'existent
+ * pas ici : mouvement réduit et effets allégés sont gérés à la main (modèle : CardAura.css).
+ * Seuls transform, translate, rotate, scale et opacity bougent.
+ */
+
+/* --- Carte : soulèvement et liseré kin (pseudo-élément en opacité, pas de box-shadow animée) --- */
+.shop-pack {
+  position: relative;
+  transition: translate 260ms cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+.shop-pack::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  /* Or du thème (Yoru ou Washi) : l'or de Yoru disparaîtrait presque sur le papier clair */
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in oklab, var(--color-kin) 80%, transparent),
+    0 14px 28px -16px color-mix(in oklab, var(--color-kin) 55%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease-out;
+}
+
+/* --- Éventail : un vrai sachet devant, deux sachets « fantômes » (un seul élément chacun) derrière --- */
+.shop-fan {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+}
+.shop-lead,
+.shop-ghost {
+  grid-area: 1 / 1;
+  width: var(--fan-w, 34%);
+  transform-origin: 50% 120%;
+  transition:
+    translate 320ms cubic-bezier(0.2, 0.8, 0.25, 1),
+    rotate 320ms cubic-bezier(0.2, 0.8, 0.25, 1),
+    scale 200ms ease-out;
+}
+.shop-lead {
+  position: relative;
+  z-index: 2;
+}
+.shop-ghost {
+  --z: 4px;
+  --wl: rgb(255 255 255 / 0.16);
+  z-index: 1;
+  aspect-ratio: 5 / 7;
+  rotate: var(--fan-r);
+  translate: var(--fan-x) 5%;
+  opacity: 0.85;
+  background:
+    linear-gradient(var(--booster-dark), var(--booster-dark)) top / 100% 13% no-repeat,
+    var(--wagara),
+    linear-gradient(165deg, var(--booster-base) 0%, var(--booster-dark) 120%);
+}
+.shop-ghost[data-ink="dark"] {
+  --wl: rgb(31 27 23 / 0.14);
+}
+.shop-ghost[data-shape="SACHET"] {
+  mask:
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(2 * var(--z)) 51% repeat-x,
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--z)) 51% repeat-x;
+}
+.shop-ghost:not([data-shape="SACHET"]) {
+  border-radius: 10%;
+  background:
+    var(--wagara),
+    linear-gradient(165deg, var(--booster-base) 0%, var(--booster-dark) 120%);
+}
+.shop-ghost-l {
+  --fan-r: -9deg;
+  --fan-x: -40%;
+}
+.shop-ghost-r {
+  --fan-r: 9deg;
+  --fan-x: 40%;
+}
+/* Halo du thème derrière le sachet de tête, allumé à l'ouverture de l'éventail */
+.shop-halo {
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 260ms ease-out;
+}
+/* Pochibukuro : la pièce de l'emblème grossit ; jūbako : le couvercle se soulève */
+.shop-lead .booster-coin,
+.shop-lead .booster-lid {
+  transition:
+    scale 260ms cubic-bezier(0.2, 0.8, 0.25, 1),
+    translate 260ms cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+
+/* État « ouvert » : survol à la souris, focus clavier dans la carte, ou achat en cours de
+   confirmation (l'équivalent tactile du survol). */
+@media (hover: hover) {
+  .shop-pack:hover {
+    translate: 0 -4px;
+  }
+  .shop-pack:hover::after {
+    opacity: 1;
+  }
+  .shop-pack:hover .shop-ghost-l {
+    --fan-r: -17deg;
+    --fan-x: -66%;
+  }
+  .shop-pack:hover .shop-ghost-r {
+    --fan-r: 17deg;
+    --fan-x: 66%;
+  }
+  .shop-pack:hover .shop-lead {
+    translate: 0 -6%;
+  }
+  .shop-pack:hover .shop-halo {
+    opacity: 0.55;
+  }
+  .shop-pack:hover .shop-lead .booster-coin {
+    scale: 1.12;
+  }
+  .shop-pack:hover .shop-lead .booster-lid {
+    translate: 0 -22%;
+  }
+}
+.shop-pack:has(:focus-visible),
+.shop-pack:has([data-armed]) {
+  translate: 0 -4px;
+}
+.shop-pack:has(:focus-visible)::after,
+.shop-pack:has([data-armed])::after {
+  opacity: 1;
+}
+.shop-pack:has(:focus-visible) .shop-ghost-l,
+.shop-pack:has([data-armed]) .shop-ghost-l {
+  --fan-r: -17deg;
+  --fan-x: -66%;
+}
+.shop-pack:has(:focus-visible) .shop-ghost-r,
+.shop-pack:has([data-armed]) .shop-ghost-r {
+  --fan-r: 17deg;
+  --fan-x: 66%;
+}
+.shop-pack:has(:focus-visible) .shop-lead,
+.shop-pack:has([data-armed]) .shop-lead {
+  translate: 0 -6%;
+}
+.shop-pack:has(:focus-visible) .shop-halo,
+.shop-pack:has([data-armed]) .shop-halo {
+  opacity: 0.55;
+}
+/* Appui sur un bouton de la carte : l'éventail s'enfonce un peu */
+.shop-pack:has(:is(button, a):active) .shop-fan .shop-lead {
+  scale: 0.97;
+}
+
+/* Inclinaison à la souris (TiltGrid écrit transform ; retour en douceur quand la souris sort) */
+.shop-tilt {
+  transition: transform 420ms cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+
+/* Reflet qui balaie le sachet une fois, à chaque survol (il réutilise le reflet masqué du sachet) */
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  :root:not([data-motion="reduced"]) .shop-pack:hover .shop-lead .booster-glint {
+    animation: shop-glint 900ms cubic-bezier(0.3, 0.6, 0.3, 1) both;
+  }
+}
+/* Le reflet traverse le sachet puis revient à sa place, visible : l'inclinaison (--tx) reprend la main */
+@keyframes shop-glint {
+  0% {
+    translate: -90% 0;
+    opacity: 0.4;
+  }
+  45% {
+    opacity: 1;
+  }
+  60% {
+    translate: 90% 0;
+    opacity: 0;
+  }
+  61% {
+    translate: 0 0;
+    opacity: 0;
+  }
+  100% {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+
+/* --- Entrée échelonnée des premières cartes (sur le <li>, pour ne pas retarder le survol) --- */
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="reduced"]) .shop-enter {
+    animation: shop-enter 480ms cubic-bezier(0.2, 0.8, 0.25, 1) calc(min(var(--i, 0), 6) * 60ms) both;
+  }
+}
+@keyframes shop-enter {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+
+/* --- Vedette du jour : sachet qui flotte, halo qui respire, rayons autour du sachet --- */
+.shop-hero-art {
+  position: relative;
+  isolation: isolate;
+}
+.shop-hero-rays {
+  position: absolute;
+  inset: -45%;
+  z-index: -2;
+  border-radius: 9999px;
+  opacity: 0.55;
+}
+:root[data-fx="lite"] .shop-hero .booster-idle {
+  animation-play-state: paused;
+}
+
+/* --- Kirakira : reflet nacré et or qui suit la souris, paillettes, étoiles, étiquette qui se balance --- */
+.shop-holo {
+  opacity: 0;
+  mix-blend-mode: color-dodge;
+  transition: opacity 260ms ease-out;
+  background:
+    radial-gradient(circle at var(--mx, 50%) var(--my, 40%), rgb(255 255 255 / 0.55), transparent 40%),
+    repeating-linear-gradient(115deg, transparent 0%, rgb(242 216 138 / 0.38) 7%, rgb(233 214 240 / 0.34) 13%, rgb(127 163 209 / 0.3) 19%, transparent 26%)
+      var(--mx, 50%) var(--my, 50%) / 280% 280%;
+}
+.shop-glitter {
+  opacity: 0;
+  mix-blend-mode: overlay;
+  transition: opacity 260ms ease-out;
+  background:
+    radial-gradient(circle, rgb(255 255 255 / 0.9) 0 0.8px, transparent 1.2px) 0 0 / 7px 7px,
+    radial-gradient(circle, rgb(255 240 200 / 0.8) 0 0.7px, transparent 1.1px) 3px 4px / 9px 9px;
+}
+.shop-kira {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--s, 12px);
+  aspect-ratio: 1;
+  opacity: 0;
+  scale: 0.3;
+  background: radial-gradient(circle, #fff6d8 0 22%, var(--color-kin) 48%, transparent 72%);
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+}
+.shop-lead .tanzaku,
+.shop-hero-main .tanzaku {
+  transform-origin: 50% -8%;
+}
+@media (hover: hover) {
+  .shop-pack:hover :is(.shop-holo, .shop-glitter),
+  .shop-hero:hover :is(.shop-holo, .shop-glitter) {
+    opacity: 1;
+  }
+}
+.shop-pack:has(:focus-visible) :is(.shop-holo, .shop-glitter),
+.shop-pack:has([data-armed]) :is(.shop-holo, .shop-glitter),
+.shop-hero:has(:focus-visible) :is(.shop-holo, .shop-glitter),
+.shop-hero:has([data-armed]) :is(.shop-holo, .shop-glitter) {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  :root:not([data-motion="reduced"]) :is(.shop-pack, .shop-hero):hover .shop-kira {
+    animation: shop-kira 1.5s ease-in-out var(--d, 0s) infinite;
+  }
+  :root:not([data-motion="reduced"]) .shop-pack:hover .shop-lead .tanzaku,
+  :root:not([data-motion="reduced"]) .shop-hero:hover .shop-hero-main .tanzaku {
+    animation: shop-tanzaku 2.6s ease-in-out infinite;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="reduced"]) .shop-pack:has(:focus-visible) .shop-kira,
+  :root:not([data-motion="reduced"]) .shop-pack:has([data-armed]) .shop-kira,
+  :root:not([data-motion="reduced"]) .shop-hero:has(:focus-visible) .shop-kira,
+  :root:not([data-motion="reduced"]) .shop-hero:has([data-armed]) .shop-kira {
+    animation: shop-kira 1.5s ease-in-out var(--d, 0s) infinite;
+  }
+  :root:not([data-motion="reduced"]) .shop-pack:has([data-armed]) .shop-lead .tanzaku,
+  :root:not([data-motion="reduced"]) .shop-hero:has([data-armed]) .shop-hero-main .tanzaku {
+    animation: shop-tanzaku 2.6s ease-in-out infinite;
+  }
+}
+@keyframes shop-kira {
+  0%,
+  100% {
+    opacity: 0;
+    scale: 0.3;
+    rotate: 0deg;
+  }
+  50% {
+    opacity: 1;
+    scale: 1;
+    rotate: 45deg;
+  }
+}
+@keyframes shop-tanzaku {
+  0%,
+  100% {
+    rotate: -2.5deg;
+  }
+  50% {
+    rotate: 2.5deg;
+  }
+}
+:root[data-fx="lite"] .shop-kira,
+:root[data-fx="lite"] .shop-glitter {
+  display: none;
+}
+
+/* --- Vedette ouverte : main de cartes, aura du type, reflets en cascade et ema qui se balance --- */
+.shop-hero-fan {
+  position: relative;
+}
+.shop-hero-main {
+  position: relative;
+  z-index: 2;
+  transition: translate 520ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.shop-hero-side {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0;
+  transform-origin: 50% 120%;
+  transition:
+    translate 520ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    rotate 520ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 240ms ease-out;
+}
+.shop-hero-aura {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  width: 150%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 9999px;
+  opacity: 0;
+  scale: 0.7;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--halo) 70%, transparent), transparent);
+  transition:
+    opacity 400ms ease-out,
+    scale 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.shop-ema {
+  position: absolute;
+  right: -12%;
+  top: -4%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform-origin: 50% 0;
+}
+.shop-ema-string {
+  width: 2px;
+  height: 20px;
+  background: var(--color-shu-btn);
+}
+/* Plaque votive en bois : couleurs d'illustration, identiques dans les deux thèmes */
+.shop-ema-plaque {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 52px;
+  padding: 8px 8px 5px;
+  color: #1f1b17;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.15;
+  background: linear-gradient(180deg, #ead8b2, #cdaf7b);
+  clip-path: polygon(12% 0, 88% 0, 100% 24%, 100% 100%, 0 100%, 0 24%);
+}
+@media (hover: hover) {
+  .shop-hero:hover .shop-hero-side-l {
+    translate: -58% 6%;
+    rotate: -16deg;
+    opacity: 1;
+  }
+  .shop-hero:hover .shop-hero-side-r {
+    translate: 58% 6%;
+    rotate: 16deg;
+    opacity: 1;
+  }
+  .shop-hero:hover .shop-hero-main {
+    translate: 0 -4%;
+  }
+  .shop-hero:hover .shop-hero-aura {
+    opacity: 0.85;
+    scale: 1;
+  }
+}
+.shop-hero:has(:focus-visible) .shop-hero-side-l,
+.shop-hero:has([data-armed]) .shop-hero-side-l {
+  translate: -58% 6%;
+  rotate: -16deg;
+  opacity: 1;
+}
+.shop-hero:has(:focus-visible) .shop-hero-side-r,
+.shop-hero:has([data-armed]) .shop-hero-side-r {
+  translate: 58% 6%;
+  rotate: 16deg;
+  opacity: 1;
+}
+.shop-hero:has(:focus-visible) .shop-hero-main,
+.shop-hero:has([data-armed]) .shop-hero-main {
+  translate: 0 -4%;
+}
+.shop-hero:has(:focus-visible) .shop-hero-aura,
+.shop-hero:has([data-armed]) .shop-hero-aura {
+  opacity: 0.85;
+  scale: 1;
+}
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  :root:not([data-motion="reduced"]) .shop-hero:hover .shop-hero-aura {
+    animation: shop-breathe 2.6s ease-in-out 0.6s infinite;
+  }
+  :root:not([data-motion="reduced"]) .shop-hero:hover .shop-ema {
+    animation: shop-swing 1.8s cubic-bezier(0.3, 0.1, 0.3, 1) both;
+  }
+  :root:not([data-motion="reduced"]) .shop-hero:hover .booster-glint {
+    animation: shop-glint 900ms cubic-bezier(0.3, 0.6, 0.3, 1) both;
+  }
+  :root:not([data-motion="reduced"]) .shop-hero:hover .shop-hero-side-l .booster-glint {
+    animation-delay: 120ms;
+  }
+  :root:not([data-motion="reduced"]) .shop-hero:hover .shop-hero-side-r .booster-glint {
+    animation-delay: 240ms;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="reduced"]) .shop-hero:has([data-armed]) .shop-ema {
+    animation: shop-swing 1.8s cubic-bezier(0.3, 0.1, 0.3, 1) both;
+  }
+  :root:not([data-motion="reduced"]) .shop-hero:has([data-armed]) .shop-hero-aura {
+    animation: shop-breathe 2.6s ease-in-out 0.6s infinite;
+  }
+}
+@keyframes shop-breathe {
+  50% {
+    scale: 1.08;
+    opacity: 1;
+  }
+}
+@keyframes shop-swing {
+  0% {
+    rotate: 0deg;
+  }
+  18% {
+    rotate: 14deg;
+  }
+  38% {
+    rotate: -9deg;
+  }
+  58% {
+    rotate: 5deg;
+  }
+  78% {
+    rotate: -2deg;
+  }
+  100% {
+    rotate: 0deg;
+  }
+}
+:root[data-fx="lite"] .shop-hero-aura {
+  animation-play-state: paused;
+}
+
+/* --- Noren : le rideau de l'échoppe s'écarte à chaque arrivée sur la boutique --- */
+.shop-noren {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow: hidden;
+  animation: shop-noren-lift 560ms cubic-bezier(0.55, 0, 0.75, 0.3) 700ms both;
+}
+.shop-noren::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgb(13 11 16 / 0.6);
+  animation: shop-noren-fade 700ms ease-out 250ms both;
+}
+.shop-noren-glow {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 70vmax;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 9999px;
+  opacity: 0;
+  background: radial-gradient(closest-side, rgb(255 236 190 / 0.55), rgb(242 216 138 / 0.15) 50%, transparent);
+  animation: shop-noren-glow 900ms ease-out 200ms both;
+}
+/* Bois, indigo et papier du rideau : couleurs d'illustration, identiques dans les deux thèmes */
+.shop-noren-rod {
+  position: absolute;
+  left: 3%;
+  right: 3%;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  z-index: 2;
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(180deg, #8a6a46, #4a3420);
+  box-shadow: 0 4px 10px rgb(0 0 0 / 0.5);
+}
+.shop-noren-panel {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 16px);
+  bottom: 12%;
+  width: 46%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: 50% 0;
+  border-radius: 0 0 8px 8px;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 4px),
+    linear-gradient(180deg, #1e3557, #142540 80%, #0f1d33);
+  box-shadow:
+    inset 0 -16px 28px rgb(0 0 0 / 0.35),
+    0 12px 32px rgb(0 0 0 / 0.5);
+}
+.shop-noren-l {
+  left: 4%;
+  animation: shop-noren-l 640ms cubic-bezier(0.3, 0.1, 0.3, 1) 160ms both;
+}
+.shop-noren-r {
+  right: 4%;
+  animation: shop-noren-r 640ms cubic-bezier(0.3, 0.1, 0.3, 1) 160ms both;
+}
+.shop-noren-kanji {
+  font-size: clamp(96px, 24vw, 240px);
+  line-height: 1;
+  color: #f4ede0;
+}
+.shop-noren-mon {
+  position: absolute;
+  right: 12%;
+  bottom: 8%;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: #c8372d;
+  color: #f4ede0;
+  font-size: 16px;
+  writing-mode: vertical-rl;
+}
+@keyframes shop-noren-l {
+  45% {
+    transform: translate(-22%, -2%) rotate(9deg) skewY(-3deg);
+  }
+  to {
+    transform: translate(-58%, -6%) rotate(16deg) skewY(-1deg);
+  }
+}
+@keyframes shop-noren-r {
+  45% {
+    transform: translate(22%, -2%) rotate(-9deg) skewY(3deg);
+  }
+  to {
+    transform: translate(58%, -6%) rotate(-16deg) skewY(1deg);
+  }
+}
+@keyframes shop-noren-lift {
+  to {
+    transform: translateY(-110%);
+  }
+}
+@keyframes shop-noren-fade {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes shop-noren-glow {
+  40% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+/* Un appui passe l'entrée : tout file à sa fin */
+.shop-noren-skip,
+.shop-noren-skip::before,
+.shop-noren-skip * {
+  animation-duration: 160ms !important;
+  animation-delay: 0s !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .shop-noren {
+    display: none;
+  }
+}
+:root[data-motion="reduced"] .shop-noren {
+  display: none;
+}
+
+/* Mouvement réduit : rien ne se déplace, seuls les fondus restent */
+@media (prefers-reduced-motion: reduce) {
+  .shop-pack,
+  .shop-lead,
+  .shop-ghost,
+  .shop-tilt,
+  .shop-hero-main,
+  .shop-hero-side,
+  .shop-hero-aura {
+    transition: none;
+  }
+}
+:root[data-motion="reduced"] .shop-pack,
+:root[data-motion="reduced"] .shop-lead,
+:root[data-motion="reduced"] .shop-ghost,
+:root[data-motion="reduced"] .shop-tilt,
+:root[data-motion="reduced"] .shop-hero-main,
+:root[data-motion="reduced"] .shop-hero-side,
+:root[data-motion="reduced"] .shop-hero-aura {
+  transition: none;
+}

@@ -5,9 +5,10 @@ import { z } from "@/lib/zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { lotInputSchema } from "@/lib/economy/lots";
 import { missionInputSchema } from "@/lib/economy/missions";
-import { shopItemInputSchema } from "@/lib/economy/shop";
+import { shopItemInputSchema, type ShopContentIssue } from "@/lib/economy/shop";
 import { getAdmin } from "../admin";
 import { prisma } from "../db";
+import { itemsContentIssue, lotContentIssue } from "../economy/shop-guard";
 import { rateLimit } from "../ratelimit";
 import { writeAdminLog } from "../admin/log";
 
@@ -15,7 +16,16 @@ import { writeAdminLog } from "../admin/log";
 // rate limit → références vérifiées → transaction avec une ligne AdminLog (avant / après).
 // Chaque champ écrit est choisi un par un, jamais l'objet reçu.
 
-export type AdminEconomyError = "FORBIDDEN" | "INVALID" | "RATE_LIMITED" | "NOT_FOUND" | "KEY_TAKEN" | "UNKNOWN_REF";
+export type AdminEconomyError =
+  | "FORBIDDEN"
+  | "INVALID"
+  | "RATE_LIMITED"
+  | "NOT_FOUND"
+  | "KEY_TAKEN"
+  | "UNKNOWN_REF"
+  // Contenu qu'un article de la boutique ne vend jamais
+  | "SHOP_SEALED"
+  | "SHOP_MYTHIC";
 
 export type AdminEconomyResult = { ok: true; id: string } | { ok: false; error: AdminEconomyError };
 
@@ -27,6 +37,12 @@ async function guard(): Promise<{ adminId: string } | { error: "FORBIDDEN" | "RA
 }
 
 const json = (value: unknown) => JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+
+/** Contenu refusé par la boutique → erreur du formulaire. */
+const SHOP_ISSUE_ERROR = {
+  SEALED: "SHOP_SEALED",
+  MYTHIC: "SHOP_MYTHIC",
+} as const satisfies Record<ShopContentIssue, AdminEconomyError>;
 
 class RefError extends Error {
   constructor(readonly code: AdminEconomyError) {
@@ -51,6 +67,11 @@ export async function saveLotAction(input: unknown): Promise<AdminEconomyResult>
     cardIds.length ? prisma.card.count({ where: { id: { in: cardIds } } }) : 0,
   ]);
   if (types !== typeIds.length || cards !== cardIds.length) return { ok: false, error: "UNKNOWN_REF" };
+  // Lot vendu par un article actif en Zeni : même règle qu'à la mise en vente (saveShopItemAction)
+  if (v.id && (await prisma.shopItem.count({ where: { lotId: v.id, active: true, priceZeni: { not: null } } })) > 0) {
+    const issue = await itemsContentIssue(v.items);
+    if (issue) return { ok: false, error: SHOP_ISSUE_ERROR[issue] };
+  }
 
   const items = v.items.map((i) => ({
     kind: i.kind,
@@ -152,6 +173,12 @@ export async function saveShopItemAction(input: unknown): Promise<AdminEconomyRe
   const v = parsed.data;
   if (!(await prisma.lot.findUnique({ where: { id: v.lotId }, select: { id: true } }))) {
     return { ok: false, error: "UNKNOWN_REF" };
+  }
+  // Mise en vente : ni sachet scellé ni Mythique. Contrôlé seulement en vente (actif, prix en Zeni) :
+  // désactiver un article fautif passe toujours
+  if (v.active && v.priceZeni !== null) {
+    const issue = await lotContentIssue(v.lotId);
+    if (issue) return { ok: false, error: SHOP_ISSUE_ERROR[issue] };
   }
 
   const data = {

@@ -779,6 +779,9 @@
     "close": "Fermer",
     "creditBoosters": "{count, plural, one {# booster {name} à ouvrir} other {# boosters {name} à ouvrir}}",
     "openCredit": "Ouvrir",
+    "creditTitle": "Boosters à ouvrir",
+    "openCreditLabel": "{count, plural, one {Ouvrir # booster {name}} other {Ouvrir # boosters {name}}}",
+    "creditCount": "×{count, number}",
     "rotationNext": "Sélection tournante · nouvelle sélection {when}",
     "wishlist": {
       "title": "Liste de souhaits",
@@ -1596,6 +1599,8 @@
         "NOT_FOUND": "Introuvable.",
         "KEY_TAKEN": "Cet identifiant est déjà pris.",
         "UNKNOWN_REF": "Un lot, un type de booster ou une carte n'existe pas.",
+        "SHOP_SEALED": "Un article de la boutique ne peut pas vendre de sachet scellé (Divin, Apocalyptique).",
+        "SHOP_MYTHIC": "Un article de la boutique ne peut rien vendre de Mythique ou au-dessus (booster ou carte).",
         "unexpected": "Une erreur est survenue."
       },
       "lotSaved": "Lot enregistré.",
@@ -3263,6 +3268,7 @@
       "soldOut": "Plus disponible pour toi",
       "buying": "Achat…",
       "confirm": "Confirmer · {price, number} Zeni",
+      "confirmShort": "Confirmer",
       "cancel": "Annuler",
       "buy": "Acheter",
       "notEnough": "Pas assez de Zeni pour l'instant.",
@@ -3273,7 +3279,46 @@
       "earnBody": "Les missions du jour et le recyclage de tes doublons en rapportent chaque jour.",
       "toMissions": "Missions",
       "toRecycle": "Recycler des doublons",
-      "openNow": "Ouvrir mes boosters"
+      "openNow": "Ouvrir mes boosters",
+      "price": "{amount, number} Zeni",
+      "priceRich": "<n>{amount, number}</n> Zeni",
+      "priceSr": "{price, number} Zeni au lieu de {reference, number} Zeni, soit {discount, number, ::percent} de remise",
+      "discount": "-{discount, number, ::percent}",
+      "quantity": "×{count, number}",
+      "nav": "Familles de la boutique",
+      "featured": {
+        "label": "À l'affiche aujourd'hui",
+        "badge": "À l'affiche",
+        "next": "Nouvelle vedette dans {hours, number} h {minutes, number} min",
+        "nextSoon": "Nouvelle vedette dans {minutes, number} min",
+        "refreshing": "Nouvelle vedette…"
+      },
+      "other": {
+        "title": "Fuda et extras",
+        "subtitle": "Des cartes et des surprises à l'unité."
+      },
+      "pack": {
+        "pool": "Parmi {count, number} cartes",
+        "owned": "{count, plural, one {# déjà à ouvrir} other {# déjà à ouvrir}}",
+        "resting": "Hors sélection du moment",
+        "credits": "Boosters achetés ici : pitié comprise, {noBonus}.",
+        "resetsDays": "De nouveau disponible dans {days, plural, one {# jour} other {# jours}}",
+        "resetsHours": "De nouveau disponible dans {hours, plural, =0 {moins d'une heure} one {# heure} other {# heures}}"
+      },
+      "celebration": {
+        "title": "Achat réussi",
+        "boosters": "{count, plural, one {# booster {name} ajouté} other {# boosters {name} ajoutés}}",
+        "spent": "-{amount, number} Zeni",
+        "balance": "Solde : {amount, number} Zeni",
+        "open": "Ouvrir maintenant",
+        "continue": "Continuer mes achats",
+        "skip": "Passer"
+      },
+      "preview": {
+        "title": "Aperçu de la boutique",
+        "note": "Page de développement : données factices, rien n'est acheté ni écrit en base.",
+        "replay": "Rejouer l'achat"
+      }
     },
     "referral": {
       "title": "Parrainage",

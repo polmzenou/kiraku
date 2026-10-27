@@ -779,6 +779,9 @@
     "close": "Close",
     "creditBoosters": "{count, plural, one {# {name} booster to open} other {# {name} boosters to open}}",
     "openCredit": "Open",
+    "creditTitle": "Boosters to open",
+    "openCreditLabel": "{count, plural, one {Open # {name} booster} other {Open # {name} boosters}}",
+    "creditCount": "×{count, number}",
     "rotationNext": "Rotating picks · new picks {when}",
     "wishlist": {
       "title": "Wishlist",
@@ -1596,6 +1599,8 @@
         "NOT_FOUND": "Not found.",
         "KEY_TAKEN": "This identifier is already taken.",
         "UNKNOWN_REF": "A reward, booster type or card doesn't exist.",
+        "SHOP_SEALED": "A shop item can't sell a sealed sachet (Divine, Apocalyptic).",
+        "SHOP_MYTHIC": "A shop item can't sell anything Mythic or above (booster or card).",
         "unexpected": "Something went wrong."
       },
       "lotSaved": "Reward saved.",
@@ -3263,6 +3268,7 @@
       "soldOut": "No longer available to you",
       "buying": "Buying…",
       "confirm": "Confirm · {price, number} Zeni",
+      "confirmShort": "Confirm",
       "cancel": "Cancel",
       "buy": "Buy",
       "notEnough": "Not enough Zeni yet.",
@@ -3273,7 +3279,46 @@
       "earnBody": "Daily missions and recycling your duplicates bring some in every day.",
       "toMissions": "Missions",
       "toRecycle": "Recycle duplicates",
-      "openNow": "Open my boosters"
+      "openNow": "Open my boosters",
+      "price": "{amount, number} Zeni",
+      "priceRich": "<n>{amount, number}</n> Zeni",
+      "priceSr": "{price, number} Zeni instead of {reference, number} Zeni, {discount, number, ::percent} off",
+      "discount": "-{discount, number, ::percent}",
+      "quantity": "×{count, number}",
+      "nav": "Shop families",
+      "featured": {
+        "label": "Featured today",
+        "badge": "Featured",
+        "next": "Next pick in {hours, number} h {minutes, number} min",
+        "nextSoon": "Next pick in {minutes, number} min",
+        "refreshing": "New pick coming…"
+      },
+      "other": {
+        "title": "Fuda and extras",
+        "subtitle": "Single cards and surprises."
+      },
+      "pack": {
+        "pool": "From {count, number} cards",
+        "owned": "{count, plural, one {# already to open} other {# already to open}}",
+        "resting": "Outside the current rotation",
+        "credits": "Boosters bought here: pity included, {noBonus}.",
+        "resetsDays": "Available again in {days, plural, one {# day} other {# days}}",
+        "resetsHours": "Available again in {hours, plural, =0 {less than an hour} one {# hour} other {# hours}}"
+      },
+      "celebration": {
+        "title": "Purchase complete",
+        "boosters": "{count, plural, one {# {name} booster added} other {# {name} boosters added}}",
+        "spent": "-{amount, number} Zeni",
+        "balance": "Balance: {amount, number} Zeni",
+        "open": "Open now",
+        "continue": "Keep shopping",
+        "skip": "Skip"
+      },
+      "preview": {
+        "title": "Shop preview",
+        "note": "Development page: fake data, nothing is bought or saved.",
+        "replay": "Replay the purchase"
+      }
     },
     "referral": {
       "title": "Referrals",

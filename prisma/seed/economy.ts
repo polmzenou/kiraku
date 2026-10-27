@@ -1,8 +1,10 @@
 import type { PrismaClient } from "../../generated/prisma/client.ts";
-import type { Localized } from "../../lib/boosters/types.ts";
+import { isDynamicFilter } from "../../lib/boosters/pool-filter.ts";
+import { BOOSTER_FAMILIES, type Localized } from "../../lib/boosters/types.ts";
 import type { Rarity } from "../../lib/catalog/rarity.ts";
 import type { MissionMetric, MissionPeriod } from "../../lib/economy/missions.ts";
 import type { ShopLimitPeriod } from "../../lib/economy/shop.ts";
+import { BOOSTER_SEEDS, type BoosterSeed } from "./booster-types.ts";
 
 // Économie de départ (étape 7) : lots, missions, articles de boutique et lots du parrainage.
 // Valeurs de départ seulement : le seed ne crée que ce qui manque, tout se règle ensuite dans
@@ -14,6 +16,8 @@ type LotSeed = {
   zeni: number;
   standardBoosters?: number;
   rarityCard?: Rarity;
+  /** Boosters d'un type précis (packs de la boutique) : s'il en manque un, le lot n'est pas créé. */
+  boosters?: { slug: string; quantity: number }[];
 };
 
 const LOTS: LotSeed[] = [
@@ -92,6 +96,10 @@ type ShopSeed = {
   priceZeni: number;
   perUserLimit?: number;
   limitPeriod?: ShopLimitPeriod;
+  /** Absent = rang dans la liste. */
+  sortOrder?: number;
+  /** Pack d'un type : son prix est recalculé à la création sur le prix unitaire en base. */
+  pack?: { slug: string; quantity: number };
 };
 
 const SHOP: ShopSeed[] = [
@@ -122,15 +130,90 @@ const SHOP: ShopSeed[] = [
   },
 ];
 
+// Packs ×5 à -10 %, 2 par semaine. Valeurs de départ seulement, réglables ensuite dans /admin/boutique
+// (le prix finit dans ShopItem.priceZeni).
+const PACK_QUANTITY = 5;
+const PACK_DISCOUNT = 0.1;
+const PACK_WEEKLY_LIMIT = 2;
+
+/** Prix d'un pack à partir du prix unitaire du type ; null sans prix (le pack serait gratuit). */
+function packPrice(unitPrice: number | null | undefined, quantity: number): number | null {
+  return unitPrice ? Math.round(quantity * unitPrice * (1 - PACK_DISCOUNT)) : null;
+}
+
+/**
+ * Types vendus en pack : les formats et les types gratuits de base actifs, sauf ceux dont le pool change
+ * chaque jour (un crédit s'ouvre avec le pool du jour où on l'ouvre). Ni standard, ni rareté, ni scellé.
+ */
+function sellsAsPack(s: BoosterSeed): boolean {
+  if (s.kind === "FORMAT") return true;
+  return (
+    s.usesFreeStock !== false &&
+    s.kind !== "STANDARD" &&
+    s.kind !== "DROP" &&
+    s.active !== false &&
+    !(s.filter && isDynamicFilter(s.filter))
+  );
+}
+
+/** Lots et articles des packs, un par type vendu, rangés comme la page des boosters (famille × 100 + rang). */
+export function shopPackSeeds(seeds: readonly BoosterSeed[] = BOOSTER_SEEDS): { lots: LotSeed[]; items: ShopSeed[] } {
+  const lots: LotSeed[] = [];
+  const items: ShopSeed[] = [];
+  const order = new Map<string, number>();
+  for (const s of seeds) {
+    // Sans prix unitaire, le pack serait gratuit
+    if (!sellsAsPack(s) || !s.priceZeni) continue;
+    const rank = order.get(s.family) ?? 0;
+    order.set(s.family, rank + 1);
+    const lotId = `seed-lot-pack${PACK_QUANTITY}-${s.slug}`;
+    const name = {
+      fr: `Pack ${s.name.fr}\u00a0×${PACK_QUANTITY}`,
+      en: `${s.name.en.replace(/^The /, "")} pack\u00a0×${PACK_QUANTITY}`,
+    };
+    lots.push({ id: lotId, name, zeni: 0, boosters: [{ slug: s.slug, quantity: PACK_QUANTITY }] });
+    items.push({
+      slug: `pack-${PACK_QUANTITY}-${s.slug}`,
+      name,
+      description: {
+        fr: `${s.tagline.fr} · ${PACK_QUANTITY} boosters à ouvrir quand tu veux.`,
+        en: `${s.tagline.en} · ${PACK_QUANTITY} boosters to open whenever you like.`,
+      },
+      lotId,
+      // Prix de départ ; à la création, recalculé sur le prix unitaire en base (réglé dans l'admin)
+      priceZeni: packPrice(s.priceZeni, PACK_QUANTITY)!,
+      pack: { slug: s.slug, quantity: PACK_QUANTITY },
+      perUserLimit: PACK_WEEKLY_LIMIT,
+      limitPeriod: "WEEKLY",
+      sortOrder: (BOOSTER_FAMILIES.indexOf(s.family) + 1) * 100 + rank,
+    });
+  }
+  return { lots, items };
+}
+
 async function upsertLots(db: PrismaClient, lots: readonly LotSeed[]) {
-  const standard = await db.boosterType.findUnique({ where: { slug: "standard" }, select: { id: true } });
+  // Un seul aller-retour pour tous les types cités, standard compris
+  const slugs = [...new Set(["standard", ...lots.flatMap((lot) => (lot.boosters ?? []).map((b) => b.slug))])];
+  const types = new Map(
+    (
+      await db.boosterType.findMany({ where: { slug: { in: slugs } }, select: { id: true, slug: true, kind: true, priceZeni: true } })
+    ).map((t) => [t.slug, t]),
+  );
+  const standard = types.get("standard");
   let created = 0;
   for (const lot of lots) {
     if (await db.lot.findUnique({ where: { id: lot.id }, select: { id: true } })) continue;
+    const boosters = (lot.boosters ?? []).flatMap((b) => {
+      const type = types.get(b.slug);
+      return type && type.kind !== "DROP" ? [{ kind: "BOOSTER" as const, boosterTypeId: type.id, quantity: b.quantity }] : [];
+    });
+    // Jamais de pack amputé d'un booster (type absent ou sachet scellé) : son article est alors sauté
+    if (boosters.length < (lot.boosters?.length ?? 0)) continue;
     const items = [
       ...(lot.standardBoosters && standard
         ? [{ kind: "BOOSTER" as const, boosterTypeId: standard.id, quantity: lot.standardBoosters }]
         : []),
+      ...boosters,
       ...(lot.rarityCard ? [{ kind: "RARITY_CARD" as const, rarity: lot.rarityCard, quantity: 1 }] : []),
     ];
     // Sans booster standard en base, un lot qui n'aurait plus rien à donner n'est pas créé
@@ -138,7 +221,7 @@ async function upsertLots(db: PrismaClient, lots: readonly LotSeed[]) {
     await db.lot.create({ data: { id: lot.id, name: lot.name, zeni: lot.zeni, items: { create: items } } });
     created++;
   }
-  return created;
+  return { created, types };
 }
 
 async function upsertMissions(db: PrismaClient) {
@@ -157,26 +240,33 @@ async function upsertMissions(db: PrismaClient) {
 /** Ajout du catalogue de missions et de ses lots, sans modifier les réglages existants. */
 export async function upsertMissionSeeds(db: PrismaClient) {
   const wanted = new Set(MISSION_SEEDS.map((m) => m.lotId));
-  const lots = await upsertLots(db, LOTS.filter((lot) => wanted.has(lot.id)));
+  const { created: lots } = await upsertLots(db, LOTS.filter((lot) => wanted.has(lot.id)));
   return { lots, missions: await upsertMissions(db) };
 }
 
 export async function upsertEconomySeeds(db: PrismaClient) {
-  const created = { lots: await upsertLots(db, LOTS), missions: await upsertMissions(db), shopItems: 0, settings: 0 };
+  const packs = shopPackSeeds();
+  const { created: lots, types } = await upsertLots(db, [...LOTS, ...packs.lots]);
+  const created = { lots, missions: await upsertMissions(db), shopItems: 0, settings: 0 };
   const lotIds = new Set((await db.lot.findMany({ select: { id: true } })).map((l) => l.id));
 
-  for (const [i, s] of SHOP.entries()) {
-    if (!lotIds.has(s.lotId) || (await db.shopItem.findUnique({ where: { slug: s.slug }, select: { id: true } }))) continue;
+  for (const [i, s] of [...SHOP, ...packs.items].entries()) {
+    if (!lotIds.has(s.lotId)) continue;
+    // Pack : prix sur le prix unitaire en base, qui peut différer de la valeur de départ des seeds
+    const priceZeni = s.pack ? packPrice(types.get(s.pack.slug)?.priceZeni, s.pack.quantity) : s.priceZeni;
+    if (priceZeni === null) continue;
+    // Déjà en vente, même renommé dans l'admin (le slug se modifie, le lot du seed reste le même)
+    if (await db.shopItem.findFirst({ where: { OR: [{ slug: s.slug }, { lotId: s.lotId }] }, select: { id: true } })) continue;
     await db.shopItem.create({
       data: {
         slug: s.slug,
         name: s.name,
         description: s.description,
         lotId: s.lotId,
-        priceZeni: s.priceZeni,
+        priceZeni,
         perUserLimit: s.perUserLimit ?? null,
         limitPeriod: s.limitPeriod ?? null,
-        sortOrder: i,
+        sortOrder: s.sortOrder ?? i,
       },
     });
     created.shopItems++;

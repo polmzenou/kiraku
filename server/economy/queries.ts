@@ -16,6 +16,15 @@ export const getBoosterCredits = cache(async (userId: string): Promise<Map<strin
   return new Map(rows.map((r) => [r.boosterTypeId, r.count]));
 });
 
+/** Le joueur a déjà eu des boosters crédités de ce type : tout ouvert, sa ligne reste à 0. */
+export async function hadBoosterCredit(userId: string, boosterTypeId: string): Promise<boolean> {
+  const row = await prisma.boosterCredit.findUnique({
+    where: { userId_boosterTypeId: { userId, boosterTypeId } },
+    select: { count: true },
+  });
+  return row !== null;
+}
+
 /** Sachets scellés à ouvrir du joueur, du plus ancien au plus récent. Lu une fois par requête. */
 export const getSealedDrops = cache(async (userId: string): Promise<SealedDropView[]> => {
   const rows = await prisma.sealedDrop.findMany({
