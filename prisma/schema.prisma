@@ -313,6 +313,7 @@ model Card {
   dropWeight       Int                @default(1)
   adminOverrides   String[]           @default([])
   boosterIds       String[]           @default([]) // types explicitement sélectionnés pour les cartes manuelles
+  boosterExclusive Boolean            @default(false) // variante : seulement les types cochés (sinon elle suit aussi sa carte de base)
   name             String
   nameNative       String? // nom japonais, écrit verticalement sur la fuda
   imageUrl         String

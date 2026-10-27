@@ -813,7 +813,7 @@
     "focusChance": "Featured series",
     "focusRow": "At least one card from the series: {value}",
     "focus": {
-      "announce": "Right now, there’s a special <strong>{series}</strong> series booster!",
+      "announce": "Right now, there {count, plural, one {is a <strong>special booster</strong>} other {are <strong>special boosters</strong>}}!",
       "open": "See the booster"
     }
   },
@@ -2468,7 +2468,11 @@
         "copiesOf": "{count, plural, one {# copy} other {# copies}}",
         "truncated": "Only the top {count} owners are shown."
       },
-      "ownedSummary": "{owners, plural, =0 {No owners} one {# player} other {# players}} · {copies, plural, one {# copy} other {# copies}}"
+      "ownedSummary": "{owners, plural, =0 {No owners} one {# player} other {# players}} · {copies, plural, one {# copy} other {# copies}}",
+      "boosterExclusive": "Exclusive variant",
+      "boosterExclusiveOff": "Unchecked: it follows its base card into all of its boosters (series focus, Divine…), plus the ones checked below.",
+      "boosterExclusiveOn": "Checked: it only drops from the boosters checked below (event, banner…).",
+      "boostersExtra": "Boosters on top of the base card's"
     },
     "cosmetics": {
       "title": "Profile titles and frames",

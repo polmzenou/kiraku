@@ -11,7 +11,7 @@ export const cardFormSchema = z.object({
   imageUrl: z.string().max(2048), description: z.object({ fr: z.string().max(20_000), en: z.string().max(20_000) }).strict(),
   rarity: rarityKeySchema, power: z.number().int().min(0).max(999), ki: z.number().int().min(0).max(999),
   appearance: appearanceSchema, dropWeight: z.number().int().min(0).max(1_000_000),
-  boosterIds: z.array(id).max(200), status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]),
+  boosterIds: z.array(id).max(200), boosterExclusive: z.boolean(), status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]),
   seriesId: id.nullable(), newSeries: z.object({
     title: z.string().trim().min(1).max(300), titleEnglish: z.string().trim().max(300),
     type: z.enum(["ANIME", "MANGA", "CUSTOM"]), genres: z.array(z.string().trim().min(1).max(60)).max(20),
@@ -53,6 +53,6 @@ export type BulkCatalogInput = z.infer<typeof bulkCatalogSchema>;
 export type BulkCatalogResult = { ok: true; updated: number; rejected: { id: string; error: CatalogError }[] } | { ok: false; error: CatalogError };
 export function blankCard(seriesId: string | null = null): CardDraft {
   return { name: "", nameNative: null, imageUrl: "", description: { fr: "", en: "" }, rarity: "COMMON", power: 40, ki: 30,
-    appearance: {}, dropWeight: 1, boosterIds: [], status: "DRAFT", seriesId,
+    appearance: {}, dropWeight: 1, boosterIds: [], boosterExclusive: false, status: "DRAFT", seriesId,
     newSeries: null, gender: null, role: null, birthMonth: null, birthDay: null, variantOfId: null, formName: null };
 }

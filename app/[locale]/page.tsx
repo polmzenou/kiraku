@@ -39,7 +39,6 @@ import { boosterStateFrom } from "@/server/boosters/state";
 import { getTopCollectors } from "@/server/collection/leaderboard";
 import { getWishlistCardIds } from "@/server/collection/profile-cards";
 import { getRecentPulls } from "@/server/home/pulls";
-import { focusSeriesTitles } from "@/server/boosters/focus";
 import { ownedCardIds } from "@/server/collection/owned";
 import { getBoosterCredits, getSealedDrops } from "@/server/economy/queries";
 import { getSealedDisplays } from "@/server/boosters/sealed";
@@ -186,7 +185,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
     focusOffer && focusOffer.type.endsAt
       ? {
           slug: focusOffer.type.slug,
-          series: await focusSeriesTitles(focusOffer.type.focusSeriesIds, locale),
+          count: visible.filter((o) => o.type.kind === "FOCUS" && o.availability === "open").length,
           endsAt: focusOffer.type.endsAt.getTime(),
           theme: focusOffer.type.theme,
           emblem: focusOffer.type.emblem,

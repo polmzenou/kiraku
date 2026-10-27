@@ -14,7 +14,7 @@ import { effectiveSlotFloors } from "@/lib/boosters/types";
 import { featuredFromPool } from "@/lib/boosters/draw";
 
 const schema = z.object({ id: z.string().max(64).optional(), rarity: rarityKeySchema, dropWeight: z.number().int().min(0).max(1_000_000),
-  boosterIds: z.array(z.string().max(64)).max(200), scenario: z.enum(["normal", "golden", "divine", "pity"]), featuredPity: z.boolean(),
+  boosterIds: z.array(z.string().max(64)).max(200), variantOfId: z.string().max(64).nullable().optional(), boosterExclusive: z.boolean().optional(), scenario: z.enum(["normal", "golden", "divine", "pity"]), featuredPity: z.boolean(),
   seriesId: z.string().max(64).nullable(), gender: z.string().max(40).nullable(), role: z.string().max(40).nullable(), birthMonth: z.number().nullable(), birthDay: z.number().nullable(),
   newSeries: cardFormSchema.shape.newSeries.optional(),
 });
@@ -35,11 +35,12 @@ export async function POST(request: Request) {
   if (!rules.draw.rarities?.includes(v.rarity)) return Response.json({ error: "UNKNOWN_RARITY" }, { status: 400 });
   const targetId = existing?.id ?? "preview-card";
   const candidate = { id: targetId, anilistId: existing?.anilistId ?? null, origin: existing?.origin ?? "CUSTOM", boosterIds: v.boosterIds,
+    variantOfId: v.variantOfId ?? null, boosterExclusive: v.boosterExclusive ?? false,
     rarity: v.rarity, gender: v.gender, role: v.role, birthMonth: v.birthMonth, birthDay: v.birthDay,
     seriesAnilistId: series?.anilistId ?? null, mediaType: series?.type ?? "CUSTOM", genres: series?.genres ?? [], tags: series?.tags ?? [],
     year: series?.year ?? null, season: series?.season ?? null, seasonYear: series?.seasonYear ?? null, studio: series?.studio ?? null };
   const updated = [...all.filter((c) => c.id !== targetId), ...(v.dropWeight > 0 ? [candidate] : [])];
-  const result = entries.filter((e) => v.boosterIds.includes(e.type.id) || (existing?.origin === "ANILIST" && computePool(e.type, updated, ctx)[v.rarity]?.includes(targetId))).map(({ type }) => {
+  const result = entries.filter((e) => v.boosterIds.includes(e.type.id) || computePool(e.type, updated, ctx)[v.rarity]?.includes(targetId)).map(({ type }) => {
     const pool = computePool(type, updated, ctx);
     return { id: type.id, name: type.name, slug: type.slug, eligible: Boolean(pool[v.rarity]?.includes(targetId)),
       ...cardOdds({ targetId, pool, rules: { ...rules.draw, cardWeights: { ...rules.draw.cardWeights, [targetId]: v.dropWeight },

@@ -88,7 +88,7 @@ export async function catalogEditorDraft(id: string, duplicate = false): Promise
   return { ...blankCard(c.seriesId), ...(!duplicate && { id: c.id, updatedAt: c.updatedAt.toISOString() }),
     name: c.name, nameNative: c.nameNative, imageUrl: c.imageUrl, rarity: c.rarity, power: c.power, ki: c.ki,
     description: { fr: descriptions.fr || "", en: descriptions.en || "" }, appearance: parseAppearance(c.appearance),
-    dropWeight: c.dropWeight, boosterIds: c.boosterIds, status: duplicate ? "DRAFT" : c.status,
+    dropWeight: c.dropWeight, boosterIds: c.boosterIds, boosterExclusive: c.boosterExclusive, status: duplicate ? "DRAFT" : c.status,
     gender: c.gender, role: c.role as CardDraft["role"], birthMonth: c.birthMonth, birthDay: c.birthDay,
     variantOfId: c.variantOfId, formName: c.formName };
 }

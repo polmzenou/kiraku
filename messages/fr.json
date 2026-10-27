@@ -813,7 +813,7 @@
     "focusChance": "Série à l’honneur",
     "focusRow": "Au moins une carte de la série : {value}",
     "focus": {
-      "announce": "En ce moment, il y a un booster spécial série <strong>{series}</strong> !",
+      "announce": "En ce moment, il y a {count, plural, one {un <strong>booster spécial</strong>} other {des <strong>boosters spéciaux</strong>}} !",
       "open": "Voir le booster"
     }
   },
@@ -2468,7 +2468,11 @@
         "copiesOf": "{count, plural, one {# exemplaire} other {# exemplaires}}",
         "truncated": "Seuls les {count} plus gros détenteurs sont affichés."
       },
-      "ownedSummary": "{owners, plural, =0 {Aucun détenteur} one {# joueur} other {# joueurs}} · {copies, plural, one {# ex.} other {# ex.}}"
+      "ownedSummary": "{owners, plural, =0 {Aucun détenteur} one {# joueur} other {# joueurs}} · {copies, plural, one {# ex.} other {# ex.}}",
+      "boosterExclusive": "Variante exclusive",
+      "boosterExclusiveOff": "Décoché : elle suit sa carte de base dans tous ses boosters (Focus série, Divin…), plus ceux cochés ci-dessous.",
+      "boosterExclusiveOn": "Coché : elle ne sort que des boosters cochés ci-dessous (événement, bannière…).",
+      "boostersExtra": "Boosters en plus de ceux de la carte de base"
     },
     "cosmetics": {
       "title": "Titres et cadres de profil",
