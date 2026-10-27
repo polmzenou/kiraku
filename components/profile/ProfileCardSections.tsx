@@ -5,9 +5,10 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
 import type { CardView } from "@/lib/boosters/view";
 import { MAX_WISHLIST_CARDS } from "@/lib/collection/wishlist";
+import { OwnedBadge } from "../collection/OwnedBadge";
 import { WishlistToggle } from "./WishlistToggle";
 
-export function WishlistSection({ cards, editable }: { cards: CardView[]; editable: boolean }) {
+export function WishlistSection({ cards, editable, owned = [] }: { cards: CardView[]; editable: boolean; owned?: string[] }) {
   const t = useTranslations("wishlist");
   return (
     <section className="flex min-w-0 flex-col gap-4" aria-labelledby="profile-wishlist-title">
@@ -28,7 +29,7 @@ export function WishlistSection({ cards, editable }: { cards: CardView[]; editab
           {cards.map((card) => (
             <li key={card.cardId} className="flex min-w-0 flex-col gap-2">
               <Link href={`/wiki/${card.anilistId}`} aria-label={`${card.name} · ${card.series}`} className="block rounded-[5px]">
-                <Fuda card={card} series={card.series} size="sm" sizes="(min-width: 1200px) 274px, 25vw" />
+                <Fuda card={card} series={card.series} size="sm" sizes="(min-width: 1200px) 274px, 25vw" corner={owned.includes(card.cardId) && <OwnedBadge compact />} />
               </Link>
               {editable && <WishlistToggle cardId={card.cardId} name={card.name} initial compact />}
             </li>
@@ -41,7 +42,7 @@ export function WishlistSection({ cards, editable }: { cards: CardView[]; editab
 
 export type ProfileSaleCard = CardView & { copies: number; auctionId: string };
 
-export function ProfileSalesSection({ cards }: { cards: ProfileSaleCard[] }) {
+export function ProfileSalesSection({ cards, owned = [] }: { cards: ProfileSaleCard[]; owned?: string[] }) {
   const t = useTranslations("profile.sales");
   return (
     <section className="flex min-w-0 flex-col gap-4" aria-labelledby="profile-sales-title">
@@ -58,7 +59,13 @@ export function ProfileSalesSection({ cards }: { cards: ProfileSaleCard[] }) {
                   series={card.series}
                   size="sm"
                   sizes="(min-width: 1200px) 181px, 17vw"
-                  overlay={card.copies > 1 && <span aria-hidden="true" className="absolute top-1 right-1 flex min-h-6 min-w-6 items-center justify-center rounded-full border border-bg bg-shu-btn px-1.5 text-xs font-bold text-white">×{card.copies}</span>}
+                  overlay={
+                    <>
+                      {card.copies > 1 && <span aria-hidden="true" className="absolute top-1 right-1 flex min-h-6 min-w-6 items-center justify-center rounded-full border border-bg bg-shu-btn px-1.5 text-xs font-bold text-white">×{card.copies}</span>}
+                      {/* En surcouche et non dans `corner` : sur téléphone, cette grille masque les pastilles du papier */}
+                      {owned.includes(card.cardId) && <span className="absolute right-1 bottom-6"><OwnedBadge compact /></span>}
+                    </>
+                  }
                 />
               </Link>
             </li>

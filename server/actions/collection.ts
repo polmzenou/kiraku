@@ -91,7 +91,7 @@ export async function loadCollectionPage(input: unknown): Promise<({ ok: true } 
     return { ok: false, error: "RATE_LIMITED" };
   }
 
-  const page = await getCollectionPage(ownerId, parseCollectionParams(parsed.data.query, await getRarities()), parsed.data.offset, await getLocale());
+  const page = await getCollectionPage(ownerId, parseCollectionParams(parsed.data.query, await getRarities()), parsed.data.offset, await getLocale(), viewer?.id);
   return { ok: true, ...page };
 }
 

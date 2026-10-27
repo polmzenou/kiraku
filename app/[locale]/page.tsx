@@ -39,6 +39,7 @@ import { boosterStateFrom } from "@/server/boosters/state";
 import { getTopCollectors } from "@/server/collection/leaderboard";
 import { getWishlistCardIds } from "@/server/collection/profile-cards";
 import { getRecentPulls } from "@/server/home/pulls";
+import { ownedCardIds } from "@/server/collection/owned";
 import { getBoosterCredits, getSealedDrops } from "@/server/economy/queries";
 import { getSealedDisplays } from "@/server/boosters/sealed";
 import { SealedDropsRow } from "@/components/boosters/SealedDropsRow";
@@ -105,6 +106,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
     getRecentPulls(locale),
     getSetting("home.pullFeed.refreshSeconds"),
   ]);
+  const pullsOwned = pulls ? await ownedCardIds(user?.id, pulls.map((p) => p.card.cardId)) : [];
   const reviewViewer: ReviewViewer = member
     ? { kind: "member", own: ownReview }
     : !user || (user.isGuest && !user.bannedAt)
@@ -244,7 +246,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
         />
       )}
 
-      {pulls && <RecentPulls initial={pulls} refreshSeconds={pullRefresh} serverNow={state.serverNow} />}
+      {pulls && <RecentPulls initial={pulls} initialOwned={pullsOwned} refreshSeconds={pullRefresh} serverNow={state.serverNow} />}
       <ReviewsSection reviews={pinnedFirst(reviews)} summary={reviewSummary} viewer={reviewViewer} />
       <TopCollectors collectors={collectors} />
     </PageShell>

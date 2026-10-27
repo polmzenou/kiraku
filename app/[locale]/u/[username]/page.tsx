@@ -18,6 +18,7 @@ import { anonymousAccess, findProfileOwner } from "@/server/collection/profile";
 import { loadProfile } from "@/server/collection/profile-page";
 import { getCollectionSummary, getShowcase } from "@/server/collection/queries";
 import { getProfileSales, getWishlist } from "@/server/collection/profile-cards";
+import { ownedCardIds } from "@/server/collection/owned";
 import { getSetting } from "@/server/settings";
 import { prisma } from "@/server/db";
 import { getPlayerDecor } from "@/server/profile/decor";
@@ -88,6 +89,14 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
     getShowcase(owner.id, size, locale), getCollectionSummary(owner.id, values),
     getWishlist(owner.id, locale), getProfileSales(owner.id, locale),
   ]);
+  // Profil d'un autre joueur : ses cartes que le visiteur a déjà (pastille « Acquise »)
+  const owned = access.isOwner
+    ? []
+    : await ownedCardIds(viewer?.id, [
+        ...showcase.flatMap((s) => (s ? [s.cardId] : [])),
+        ...wishlist.map((c) => c.cardId),
+        ...sales.map((c) => c.cardId),
+      ]);
 
   const stats = [
     [t("stats.unique"), format.number(summary.unique)],
@@ -143,10 +152,10 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
 
       <section className="flex flex-col gap-4">
         <SectionTitle kanji="飾" title={t("showcase")} />
-        <Showcase initial={showcase} editable={access.isOwner} linkBase={access.isOwner ? "/collection" : "/wiki"} />
+        <Showcase initial={showcase} editable={access.isOwner} linkBase={access.isOwner ? "/collection" : "/wiki"} owned={owned} />
       </section>
-      <WishlistSection cards={wishlist} editable={access.isOwner} />
-      <ProfileSalesSection cards={sales} />
+      <WishlistSection cards={wishlist} editable={access.isOwner} owned={owned} />
+      <ProfileSalesSection cards={sales} owned={owned} />
     </PageShell>
   );
 }

@@ -32,6 +32,7 @@ type Row = {
   copies: number;
   free: number;
   inShowcase: boolean;
+  viewerOwns: boolean | null;
 };
 
 function orderBy(params: CollectionParams): Prisma.Sql {
@@ -80,23 +81,32 @@ function toItem(row: Row, locale: string): CollectionItem {
     copies: row.copies,
     recyclable: Math.max(0, row.free - 1),
     inShowcase: row.inShowcase,
+    ...(row.viewerOwns !== null && { viewerOwns: row.viewerOwns }),
   };
 }
 
-/** Une page de la collection : cartes distinctes avec leur nombre d'exemplaires. */
+/**
+ * Une page de la collection : cartes distinctes avec leur nombre d'exemplaires. `viewerId` (collection
+ * d'un autre joueur) : chaque carte dit en plus si le visiteur la possède déjà.
+ */
 export async function getCollectionPage(
   ownerId: string,
   params: CollectionParams,
   offset: number,
   locale: string,
+  viewerId?: string,
 ): Promise<CollectionPage> {
   const start = Math.min(Math.max(0, Math.trunc(offset)), MAX_OFFSET);
+  const viewerOwns = viewerId && viewerId !== ownerId
+    ? Prisma.sql`EXISTS (SELECT 1 FROM "UserCard" v WHERE v."ownerId" = ${viewerId} AND v."cardId" = c.id)`
+    : Prisma.sql`NULL::boolean`;
   const rows = await prisma.$queryRaw<Row[]>`
     SELECT c.id AS "cardId", c."publicId" AS "anilistId", c.appearance, c.name, c."nameNative", c."imageUrl", c.rank, c."rarityKey" AS rarity,
            c.power, c.ki, s."titleRomaji", s."titleEnglish",
            COUNT(*)::int AS copies,
            (COUNT(*) FILTER (WHERE uc.status = 'COLLECTION'))::int AS free,
-           BOOL_OR(sh."userCardId" IS NOT NULL) AS "inShowcase"
+           BOOL_OR(sh."userCardId" IS NOT NULL) AS "inShowcase",
+           ${viewerOwns} AS "viewerOwns"
     FROM "UserCard" uc
     JOIN "Card" c ON c.id = uc."cardId"
     JOIN "Series" s ON s.id = c."seriesId"

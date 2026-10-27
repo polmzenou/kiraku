@@ -9,6 +9,8 @@ export type CollectionItem = CardView & {
   /** Doublons recyclables : exemplaires en collection moins celui qu'on garde. */
   recyclable: number;
   inShowcase: boolean;
+  /** Collection d'un autre joueur : le visiteur possède déjà cette carte (absent sinon). */
+  viewerOwns?: boolean;
 };
 
 export type CollectionPage = { items: CollectionItem[]; nextOffset: number | null };

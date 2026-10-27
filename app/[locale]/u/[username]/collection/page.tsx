@@ -18,7 +18,7 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 export default async function PublicCollectionPage({ params, searchParams }: PageProps<"/[locale]/u/[username]/collection">) {
   const { username } = await params;
   const locale = await getLocale();
-  const { owner, access } = await loadProfile(username, locale, "/collection");
+  const { owner, viewer, access } = await loadProfile(username, locale, "/collection");
   // Sa propre collection : la page complète, avec recyclage
   if (access.isOwner) redirect({ href: "/collection", locale });
 
@@ -43,7 +43,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pag
   const values = await getSetting("collection.recycleValues");
   const [summary, page, series] = await Promise.all([
     getCollectionSummary(owner.id, values),
-    getCollectionPage(owner.id, filters, 0, locale),
+    getCollectionPage(owner.id, filters, 0, locale, viewer?.id),
     getOwnedSeries(owner.id, locale),
   ]);
   const query = collectionQuery(filters);

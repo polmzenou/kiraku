@@ -6,6 +6,7 @@ import type { Rarity } from "@/lib/catalog/rarity";
 import type { CollectionItem } from "@/lib/collection/view";
 import { proposeTradeAction } from "@/server/actions/trades";
 import { CardPickGrid } from "../collection/CardPickGrid";
+import { OwnedBadge } from "../collection/OwnedBadge";
 import { Fuda } from "../fuda/Fuda";
 import { Button } from "../ui/Button";
 import { NoteField } from "../ui/NoteField";
@@ -119,7 +120,13 @@ export function TradeComposer({ username, name, maxOffered, allowedRarities, onC
             <div className="flex flex-col gap-2">
               <p className="text-xs font-bold tracking-wide text-text-muted">{t("youGet")}</p>
               <div className="w-32">
-                <Fuda card={wanted} series={wanted.series} size="sm" tilt={false} />
+                <Fuda
+                  card={wanted}
+                  series={wanted.series}
+                  size="sm"
+                  tilt={false}
+                  corner={wanted.viewerOwns && <OwnedBadge />}
+                />
               </div>
             </div>
             <span aria-hidden="true" lang="ja" className="font-seal text-2xl text-shu md:text-center">
