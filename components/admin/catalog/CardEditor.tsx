@@ -89,7 +89,7 @@ export function CardEditor({ scope, initial, options, context }: { scope: Catalo
       try { const response = await fetch("/api/admin/catalogue/preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: previewPayload, signal: controller.signal });
         if (!response.ok) throw new Error(); const value = await response.json() as Odds[]; if (!controller.signal.aborted) { setOdds(value); setOddsError(false); } }
       catch { if (!controller.signal.aborted) setOddsError(true); }
-    }, 350);
+    }, 700); // une saisie, pas chaque frappe : chaque aperçu recalcule les pools de tous les boosters
     return () => { clearTimeout(timer); controller.abort(); };
   }, [previewPayload]);
   function selectFile(value: File | undefined) {

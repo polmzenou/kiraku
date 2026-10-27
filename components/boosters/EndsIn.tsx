@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { useClock, useFormatCountdown } from "./useBoosterClock";
+import { refreshWhenVisible } from "../realtime/refresh-when-visible";
 
 /**
  * « Se termine dans 2 j 4 h » : fin d'un booster limité (Focus série, bannière). À zéro, la page est
@@ -20,7 +21,7 @@ export function EndsIn({ endsAt, serverNow, className = "" }: { endsAt: number; 
   useEffect(() => {
     if (remaining > 0 || refreshed.current) return;
     refreshed.current = true;
-    router.refresh();
+    return refreshWhenVisible(() => router.refresh());
   }, [remaining, router]);
 
   return (

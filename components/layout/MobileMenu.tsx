@@ -69,7 +69,7 @@ export function MobileMenu({
             const active = isActive(item, pathname);
             return (
               <li key={item.key} className={active ? "min-w-0 shrink" : "shrink-0"}>
-                <Link href={item.href} aria-current={active ? "page" : undefined} className={navItemClass(active)}>
+                <Link prefetch={false} href={item.href} aria-current={active ? "page" : undefined} className={navItemClass(active)}>
                   <MobileNavIcon name={item.key} />
                   <NavLabel active={active}>{t(item.key)}</NavLabel>
                 </Link>
@@ -121,7 +121,7 @@ export function MobileMenu({
             <NavLinks layout="stack" features={features} onNavigate={close} />
             <ul className="mt-2 flex flex-col gap-1">
               <li>
-                <Link
+                <Link prefetch={false}
                   href={accountHref}
                   onClick={close}
                   aria-current={pathname === accountHref ? "page" : undefined}
@@ -132,7 +132,7 @@ export function MobileMenu({
               </li>
               {isAdmin && (
                 <li>
-                  <Link
+                  <Link prefetch={false}
                     href="/admin"
                     onClick={close}
                     aria-current={pathname.startsWith("/admin") ? "page" : undefined}
@@ -158,7 +158,7 @@ export function MobileMenu({
               </button>
             </form>
           ) : (
-            <Link href="/connexion" onClick={close} className={buttonClasses("primary", "w-full", "lg")}>
+            <Link prefetch={false} href="/connexion" onClick={close} className={buttonClasses("primary", "w-full", "lg")}>
               {tAuth("title")}
             </Link>
           )}

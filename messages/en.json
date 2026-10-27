@@ -1450,7 +1450,8 @@
         "notifications": {
           "retentionDays": "Keep read notifications for (days)",
           "pollSeconds": "Notification check interval (s)",
-          "pushEnabled": "Push notifications (tab closed)"
+          "pushEnabled": "Push notifications (tab closed)",
+          "sweepSeconds": "Background sweeps per player, at most every (s)"
         },
         "trades": {
           "enabled": "Trades between friends open",
@@ -1466,6 +1467,13 @@
           "perMinute": "Messages per player per minute",
           "pollSeconds": "Polling without realtime (seconds)",
           "retentionHours": "Message lifetime (hours)"
+        },
+        "realtime": {
+          "safetyPollSeconds": "Safety polling with Ably (s)"
+        },
+        "activity": {
+          "idleSeconds": "Pause polling after inactivity (s)",
+          "backoffMax": "Maximum slowdown when nothing changes (×)"
         }
       },
       "invalid": "Some values are out of range: fix them before saving.",
@@ -1492,7 +1500,9 @@
       "tradesSection": "Trades between friends",
       "tradesHint": "Nothing is locked while waiting: ownership, friendship and rarities are checked again on acceptance.",
       "chatSection": "Chat between friends",
-      "chatHint": "Private plain-text messages between accepted friends, deleted after their lifetime (24 h by default). A block ends the conversation."
+      "chatHint": "Private plain-text messages between accepted friends, deleted after their lifetime (24 h by default). A block ends the conversation.",
+      "activitySection": "Realtime and activity",
+      "activityHint": "With Ably, the bell and chat arrive live; the safety poll catches a lost message. With no player input or a hidden tab, polling stops. When nothing changes, the delay doubles up to the given multiple."
     },
     "market": {
       "title": "Market",
@@ -1832,7 +1842,10 @@
         "bot": "Against a bot",
         "friend": "Between friends",
         "ranked": "Ranked (step 9b)",
-        "dailyCap": "Rewarded battles per day"
+        "dailyCap": "Rewarded battles per day",
+        "safetyPollSeconds": "Safety resync with Ably (s)",
+        "queuePollSeconds": "Queue polling (s)",
+        "lobbyPollSeconds": "Friend room polling (s)"
       },
       "valueHint": "Value: multiplier in % (Issen, Ranbu, Kantsū), heal or bonus in % (Iyashi, Kobu), unused (Shugo, Fūin).",
       "save": "Save",
@@ -2234,7 +2247,8 @@
             "minRarity": "Lowest rarity shown",
             "size": "Pulls shown",
             "maxAgeHours": "Maximum age (hours)",
-            "refreshSeconds": "Refresh (seconds)"
+            "refreshSeconds": "Refresh (seconds)",
+            "cacheSeconds": "Shared feed cache (seconds)"
           }
         }
       },
@@ -2258,7 +2272,8 @@
             "minRarity": "Epic, Legendary or Mythic: recorded pulls start at Epic.",
             "size": "Above 6, the strip scrolls on its own.",
             "maxAgeHours": "Older pulls leave the carousel, then the database a day later.",
-            "refreshSeconds": "While the tab is visible."
+            "refreshSeconds": "While the tab is visible.",
+            "cacheSeconds": "The same feed, cached for everyone: one database read per period, however many players."
           }
         }
       },
@@ -2677,6 +2692,40 @@
       "noSeries": "No series picked",
       "until": "Until {end}",
       "ended": "Ended"
+    },
+    "usage": {
+      "title": "Estimated Vercel usage",
+      "introPolling": "A rough figure computed from the current polling settings, for a player present on the page. Realtime (Ably) is not configured: every screen polls the server.",
+      "introRealtime": "A rough figure computed from the current polling settings, for a player present on the page. Realtime (Ably) is on: polling is only a fallback.",
+      "players": "Daily active players",
+      "playersHint": "{count, plural, =0 {No active player in the last 7 days} one {# player per day on average over the last 7 days} other {# players per day on average over the last 7 days}}",
+      "hoursPerPlayer": "Hours played per player per day",
+      "otherPerDay": "Other calls per day (bots, monitors)",
+      "otherHint": "Traffic that does not depend on players: search engines, a /api/health monitor.",
+      "perScreen": "Server calls per hour and per screen",
+      "screen": "Screen",
+      "perHour": "Calls per hour",
+      "screens": {
+        "home": "Home",
+        "browse": "Other pages",
+        "chat": "Chat open",
+        "battle": "Battle",
+        "queue": "Queue",
+        "lobby": "Friend room",
+        "auction": "Auction"
+      },
+      "metrics": {
+        "invocations": "Invocations over 30 days",
+        "cpu": "Active CPU over 30 days",
+        "transfer": "Origin transfer over 30 days"
+      },
+      "invocations": "{value, number}",
+      "hours": "{value} h",
+      "gb": "{value} GB",
+      "percent": "{value}%",
+      "ofLimit": "{share} of the Hobby limit ({limit})",
+      "capacity": "{count, plural, =0 {No player sustainable at {hours} h a day} one {About # daily active player sustainable at {hours} h of play each} other {About # daily active players sustainable at {hours} h of play each}} under all three limits.",
+      "caveat": "An estimate, not a measurement: CPU and transfer use the October 2026 averages (23 ms and 6.5 KB per call). The exact figures are in Vercel's Usage tab."
     }
   },
   "collection": {

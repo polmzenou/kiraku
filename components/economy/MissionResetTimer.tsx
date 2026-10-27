@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
+import { refreshWhenVisible } from "../realtime/refresh-when-visible";
 
 /** Le compte à rebours reste à jour et renouvelle la sélection même si la page reste ouverte. */
 export function MissionResetTimer({ endsAt, initialNow }: { endsAt: number; initialNow: number }) {
@@ -12,8 +13,9 @@ export function MissionResetTimer({ endsAt, initialNow }: { endsAt: number; init
 
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 60_000);
-    const reset = setTimeout(() => router.refresh(), Math.max(0, endsAt - Date.now()) + 1_000);
-    return () => { clearInterval(tick); clearTimeout(reset); };
+    let stopWaiting = () => {};
+    const reset = setTimeout(() => (stopWaiting = refreshWhenVisible(() => router.refresh())), Math.max(0, endsAt - Date.now()) + 1_000);
+    return () => { clearInterval(tick); clearTimeout(reset); stopWaiting(); };
   }, [endsAt, router]);
 
   const minutes = Math.max(0, Math.ceil((endsAt - now) / 60_000));

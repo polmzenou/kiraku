@@ -77,15 +77,6 @@ export function SwipeNav({ children }: { children: ReactNode }) {
     play(motion, el, { x: shift, opacity: 0 }, REST, ENTER_MS, ENTER_EASING);
   }, [pathname, reduced]);
 
-  // Les voisins sont préchargés pour que l'arrivée soit quasi immédiate
-  useEffect(() => {
-    if (!isSwipeRoot(pathname) || !window.matchMedia(MOBILE).matches) return;
-    for (const direction of ["next", "prev"] as const) {
-      const href = swipeNeighbor(pathname, direction);
-      if (href) router.prefetch(href);
-    }
-  }, [pathname, router]);
-
   useEffect(() => {
     const el = surface.current;
     if (!el || !isSwipeRoot(pathname)) return;
@@ -127,6 +118,11 @@ export function SwipeNav({ children }: { children: ReactNode }) {
       if (g.samples.length > 6) g.samples.shift();
       if (!g.axis) {
         g.axis = lockAxis(g.dx, g.dy);
+        // Le voisin n'est préchargé qu'au début d'un vrai balayage, pas à chaque page affichée
+        if (g.axis === "x") {
+          const href = swipeNeighbor(pathname, g.dx < 0 ? "next" : "prev");
+          if (href) router.prefetch(href);
+        }
         if (g.axis === "x" && !reduced) {
           // Le doigt reprend une animation en cours : on part de la position affichée
           if (motion.current) {

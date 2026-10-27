@@ -30,6 +30,7 @@ export function CombatHub({
   abilities,
   lastTeam,
   queueSeconds,
+  queuePollSeconds,
   challenge,
   rank,
 }: {
@@ -38,6 +39,7 @@ export function CombatHub({
   abilities: AbilityRules;
   lastTeam: string[];
   queueSeconds: number;
+  queuePollSeconds: number;
   /** Ami à défier (lien « Défier » de son profil) : le choix d'équipe s'ouvre directement. */
   challenge: { id: string; name: string } | null;
   /** Rang du joueur ; null si le classé est fermé. */
@@ -92,7 +94,7 @@ export function CombatHub({
     [errorText, router],
   );
 
-  if (queue) return <QueueWaiting joinedAt={queue.joinedAt} botAt={queue.botAt} onLeft={onLeft} />;
+  if (queue) return <QueueWaiting joinedAt={queue.joinedAt} botAt={queue.botAt} pollSeconds={queuePollSeconds} onLeft={onLeft} />;
 
   const busy = activity.kind === "ROOM" || activity.kind === "BATTLE";
 

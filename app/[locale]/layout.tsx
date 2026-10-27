@@ -15,6 +15,7 @@ import { pickClientMessages } from "@/i18n/client-messages";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { MOTION_COOKIE, parseMotionPref } from "@/lib/motion-pref";
 import { MotionPreferenceProvider } from "@/components/motion/MotionPreference";
+import { RealtimeRoot } from "@/components/realtime/RealtimeRoot";
 import { fontVariables } from "../fonts";
 import { appUrl } from "@/server/env";
 import { baseOpenGraph, ogImageUrl } from "@/lib/seo/open-graph";
@@ -65,11 +66,13 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
       <body className="min-h-dvh">
         <NextIntlClientProvider messages={clientMessages}>
           <MotionPreferenceProvider initial={motion}>
-            <AppHeader theme={theme} />
-            <AccountGate>
-              <SwipeNav>{children}</SwipeNav>
-              <PlayerAnnouncements />
-            </AccountGate>
+            <RealtimeRoot>
+              <AppHeader theme={theme} />
+              <AccountGate>
+                <SwipeNav>{children}</SwipeNav>
+                <PlayerAnnouncements />
+              </AccountGate>
+            </RealtimeRoot>
             <ConsentManager />
             <ServiceWorkerRegister />
           </MotionPreferenceProvider>

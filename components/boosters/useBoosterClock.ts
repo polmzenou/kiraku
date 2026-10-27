@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { countdownParts } from "@/lib/time";
 
 // Horloge partagée à la seconde : premier rendu à l'heure du serveur (pas d'écart d'hydratation),
@@ -18,20 +18,29 @@ export function useClock(serverNow: number) {
   return useSyncExternalStore(subscribe, secondNow, () => serverNow);
 }
 
+// Échéances déjà rafraîchies, pour toute la page : plusieurs comptes à rebours sur le même `nextAt`
+// (panneau, vitrine, récap) ne demandent qu'un seul nouveau rendu serveur
+const refreshed = new Set<number>();
+
 /**
  * Temps restant avant `nextAt` (null si le stock est plein). À zéro, redemande la page au serveur,
- * qui recalcule le stock.
+ * qui recalcule le stock ; onglet caché, au retour seulement.
  */
 export function useBoosterCountdown(nextAt: number | null, serverNow: number) {
   const now = useClock(serverNow);
   const router = useRouter();
-  const refreshedFor = useRef<number | null>(null);
   const remaining = nextAt === null ? null : Math.max(0, nextAt - now);
 
   useEffect(() => {
-    if (nextAt === null || remaining !== 0 || refreshedFor.current === nextAt) return;
-    refreshedFor.current = nextAt;
-    router.refresh();
+    if (nextAt === null || remaining !== 0 || refreshed.has(nextAt)) return;
+    const go = () => {
+      if (refreshed.has(nextAt) || document.visibilityState !== "visible") return;
+      refreshed.add(nextAt);
+      router.refresh();
+    };
+    go();
+    document.addEventListener("visibilitychange", go);
+    return () => document.removeEventListener("visibilitychange", go);
   }, [nextAt, remaining, router]);
 
   return remaining;

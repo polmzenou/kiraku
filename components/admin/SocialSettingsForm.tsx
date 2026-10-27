@@ -36,6 +36,10 @@ const LIMITS: Record<NumberKey, [number, number]> = {
   "chat.pollSeconds": [3, 300],
   "notifications.retentionDays": [1, 365],
   "notifications.pollSeconds": [10, 600],
+  "notifications.sweepSeconds": [30, 3_600],
+  "realtime.safetyPollSeconds": [30, 1_800],
+  "activity.idleSeconds": [30, 3_600],
+  "activity.backoffMax": [1, 16],
 };
 
 function NumberInput({ label, value, onChange, min, max }: { label: string; value: number; onChange: (v: number) => void; min: number; max: number }) {
@@ -207,7 +211,18 @@ export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
         <div className="grid gap-3 sm:grid-cols-2">
           {num("notifications.retentionDays")}
           {num("notifications.pollSeconds")}
+          {num("notifications.sweepSeconds")}
         </div>
+      </fieldset>
+
+      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
+        <legend className="px-1 font-title text-lg font-bold">{t("activitySection")}</legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {num("realtime.safetyPollSeconds")}
+          {num("activity.idleSeconds")}
+          {num("activity.backoffMax")}
+        </div>
+        <p className="text-xs text-text-muted">{t("activityHint")}</p>
       </fieldset>
 
       {!valid && (

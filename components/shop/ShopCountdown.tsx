@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
+import { refreshWhenVisible } from "../realtime/refresh-when-visible";
 
 /**
  * Temps restant avant la sélection suivante (fenêtre de rotation des boosters) : les packs proposés et
@@ -21,9 +22,10 @@ export function ShopCountdown({ endsAt, initialNow }: { endsAt: number; initialN
     const serverNow = () => Date.now() + skew;
     const tick = setInterval(() => setNow(serverNow()), 30_000);
     let retry: ReturnType<typeof setTimeout> | undefined;
+    let stopWaiting = () => {};
     const refresh = () => {
       if (document.querySelector("dialog[open]")) retry = setTimeout(refresh, 5_000);
-      else router.refresh();
+      else stopWaiting = refreshWhenVisible(() => router.refresh());
     };
     const jitter = Math.floor(Math.random() * 30_000);
     const reset = setTimeout(refresh, Math.max(0, endsAt - serverNow()) + 1_000 + jitter);
@@ -31,6 +33,7 @@ export function ShopCountdown({ endsAt, initialNow }: { endsAt: number; initialN
       clearInterval(tick);
       clearTimeout(reset);
       clearTimeout(retry);
+      stopWaiting();
     };
   }, [endsAt, initialNow, router]);
 
