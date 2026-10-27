@@ -1,6 +1,6 @@
 import { z } from "@/lib/zod";
 import { normalizeSearch } from "@/lib/catalog/search";
-import { getAdmin } from "@/server/admin";
+import { getStaff } from "@/server/admin";
 import { prisma } from "@/server/db";
 import { rateLimit } from "@/server/ratelimit";
 
@@ -9,7 +9,7 @@ const schema = z.object({ kind: z.enum(["series", "card"]), q: z.string().trim()
 import type { SearchOption } from "@/lib/catalog/admin-list";
 
 export async function GET(request: Request) {
-  const admin = await getAdmin(); if (!admin) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
+  const admin = (await getStaff())?.user; if (!admin) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
   // Les GET same-origin n'envoient pas toujours Origin : on s'appuie sur Fetch Metadata.
   const site = request.headers.get("sec-fetch-site");
   if (site && site !== "same-origin") return Response.json({ error: "FORBIDDEN" }, { status: 403 });

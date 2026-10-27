@@ -9,6 +9,7 @@ import { localize, parseLocalized } from "@/lib/boosters/types";
 import { ADMIN_CATALOG_SORTS, ADMIN_CATALOG_STATUSES, adminCatalogHref, type AdminCatalogParams } from "@/lib/catalog/admin-list";
 import type { BULK_ACTIONS } from "@/lib/catalog/admin-form";
 import type { RarityDefinition } from "@/lib/catalog/definitions";
+import type { CatalogScope } from "@/lib/admin/roles";
 import type { adminCatalogList } from "@/server/catalog/admin-queries";
 import { CatalogStatusButton } from "./CatalogStatusButton";
 import { SearchPicker, type PickerValue } from "./SearchPicker";
@@ -17,8 +18,9 @@ type Data = Awaited<ReturnType<typeof adminCatalogList>>;
 type Action = (typeof BULK_ACTIONS)[number];
 const control = "min-h-11 min-w-0 rounded-control border border-border bg-surface px-3 text-sm";
 
-export function CatalogList({ data, rarities, boosters, series }: {
-  data: Data; rarities: RarityDefinition[]; boosters: { id: string; slug: string; name: unknown }[]; series: PickerValue;
+/** `drafts` (DEV) : ni actions groupées ni archivage, suppression d'un brouillon seulement. */
+export function CatalogList({ scope, data, rarities, boosters, series }: {
+  scope: CatalogScope; data: Data; rarities: RarityDefinition[]; boosters: { id: string; slug: string; name: unknown }[]; series: PickerValue;
 }) {
   const t = useTranslations("admin.catalog"), tr = useTranslations("rarity"), locale = useLocale(), router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
@@ -29,6 +31,7 @@ export function CatalogList({ data, rarities, boosters, series }: {
   const go = (patch: Partial<AdminCatalogParams>) => { setSelected([]); router.replace(adminCatalogHref(filters, patch)); };
   const pageIds = data.cards.map((c) => c.id), allSelected = pageIds.length > 0 && pageIds.every((id) => selected.includes(id));
   const total = Object.values(data.counts).reduce((s, n) => s + (n ?? 0), 0);
+  const full = scope === "full";
   function runBulk() {
     if (!selected.length || !window.confirm(t("bulkConfirm", { count: selected.length, action: t(`bulk.${action}`) }))) return;
     setMessage(null);
@@ -60,12 +63,12 @@ export function CatalogList({ data, rarities, boosters, series }: {
     </nav>
     <div className="flex flex-wrap items-center justify-between gap-3">
       <p className="text-sm text-text-muted">{t("results", { count: data.total })}</p>
-      {data.cards.length > 0 && <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={allSelected} onChange={(e) => setSelected(e.target.checked ? [...new Set([...selected, ...pageIds])] : selected.filter((id) => !pageIds.includes(id)))} />{t("selectPage")}</label>}
+      {full && data.cards.length > 0 && <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={allSelected} onChange={(e) => setSelected(e.target.checked ? [...new Set([...selected, ...pageIds])] : selected.filter((id) => !pageIds.includes(id)))} />{t("selectPage")}</label>}
     </div>
     {!data.cards.length ? <p className="rounded-card border border-dashed border-border p-8 text-center text-text-muted">{t("empty")}</p> : <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{data.cards.map((c) => {
       const checked = selected.includes(c.id);
       return <li key={c.id} className={`flex gap-3 rounded-card border bg-surface p-3 ${checked ? "border-shu" : "border-border"}`}>
-        <label className="flex min-h-11 min-w-11 items-start justify-center pt-1"><input type="checkbox" checked={checked} aria-label={t("selectCard", { name: c.name })} onChange={(e) => setSelected(e.target.checked ? [...selected, c.id] : selected.filter((id) => id !== c.id))} /></label>
+        {full && <label className="flex min-h-11 min-w-11 items-start justify-center pt-1"><input type="checkbox" checked={checked} aria-label={t("selectCard", { name: c.name })} onChange={(e) => setSelected(e.target.checked ? [...selected, c.id] : selected.filter((id) => id !== c.id))} /></label>}
         <Link href={`/admin/catalogue/${c.id}`} className="w-20 shrink-0" aria-hidden="true" tabIndex={-1}><Fuda card={{ ...c, imageUrl: c.imageUrl || "/icons/icon-512.png" }} size="sm" tilt={false} /></Link>
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-title font-bold"><Link href={`/admin/catalogue/${c.id}`} className="hover:underline">{c.name}</Link></h3>
@@ -74,7 +77,7 @@ export function CatalogList({ data, rarities, boosters, series }: {
           <p className="mt-1 flex flex-wrap gap-1 text-xs text-text-muted"><span className="rounded-pill border border-border px-2">{t(`statuses.${c.status}`)}</span><span className="rounded-pill border border-border px-2">{c.origin === "CUSTOM" ? t("custom") : "AniList"}</span>
             {c.variantOfId && <span className="rounded-pill border border-kin px-2 text-kin">{t("kinds.variant")}</span>}{c.variants > 0 && <span className="rounded-pill border border-border px-2">{t("variantCount", { count: c.variants })}</span>}
             <span className="rounded-pill border border-border px-2 tabular-nums">{t("ownedSummary", { owners: c.owners, copies: c.copies })}</span></p>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3"><Link href={`/admin/catalogue/${c.id}`} className="inline-flex min-h-11 items-center text-xs text-link underline">{t("edit")}</Link><Link href={`/admin/catalogue/nouvelle?duplicate=${c.id}`} className="inline-flex min-h-11 items-center text-xs text-link underline">{t("duplicate")}</Link><CatalogStatusButton id={c.id} updatedAt={c.updatedAt} archived={c.status === "ARCHIVED"} deletable={c.deletable} name={c.name} /></div>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3"><Link href={`/admin/catalogue/${c.id}`} className="inline-flex min-h-11 items-center text-xs text-link underline">{t("edit")}</Link><Link href={`/admin/catalogue/nouvelle?duplicate=${c.id}`} className="inline-flex min-h-11 items-center text-xs text-link underline">{t("duplicate")}</Link><CatalogStatusButton id={c.id} updatedAt={c.updatedAt} archived={c.status === "ARCHIVED"} deletable={c.deletable && (full || c.status === "DRAFT")} name={c.name} canArchive={full} /></div>
         </div>
       </li>;
     })}</ul>}

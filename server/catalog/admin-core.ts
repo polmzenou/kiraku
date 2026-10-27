@@ -6,6 +6,7 @@ import { parseSetting } from "@/lib/settings/defaults";
 import { filterContext } from "@/lib/boosters/pool-filter";
 import { recomputeBoosterPools } from "../boosters/type-store";
 import { writeAdminLog } from "../admin/log";
+import { canDeleteCatalogCard, canEditCatalogCard, type CatalogScope } from "@/lib/admin/roles";
 
 export class CatalogMutationError extends Error {
   constructor(readonly code: CatalogError) { super(code); }
@@ -25,12 +26,17 @@ async function updatePools(tx: Prisma.TransactionClient) {
   await bumpCatalogRevision(tx);
 }
 
-export async function saveCatalogCardWith(db: PrismaClient, adminId: string, draft: CardDraft) {
+export async function saveCatalogCardWith(db: PrismaClient, adminId: string, draft: CardDraft, scope: CatalogScope = "full") {
   return db.$transaction(async (tx) => {
     await lockCatalog(tx);
     const before = draft.id ? await tx.card.findUnique({ where: { id: draft.id } }) : null;
     if (draft.id && !before) throw new CatalogMutationError("NOT_FOUND");
     if (before && before.updatedAt.toISOString() !== draft.updatedAt) throw new CatalogMutationError("CONFLICT");
+    // DEV : brouillon jamais distribué (ni exemplaire ni découverte, cas d'une carte restaurée), revérifié sous le verrou
+    const copies = before && scope !== "full"
+      ? (await Promise.all([tx.userCard.count({ where: { cardId: before.id } }), tx.discovery.count({ where: { cardId: before.id } })])).reduce((a, b) => a + b, 0)
+      : 0;
+    if (!canEditCatalogCard(scope, before && { status: before.status, copies }, draft.status)) throw new CatalogMutationError("FORBIDDEN");
     const rarity = await tx.rarityDefinition.findUnique({ where: { key: draft.rarity } });
     if (!rarity) throw new CatalogMutationError("UNKNOWN_RARITY");
     const base = draft.variantOfId ? await tx.card.findUnique({ where: { id: draft.variantOfId }, select: { id: true, variantOfId: true, imageUrl: true } }) : null;
@@ -128,7 +134,7 @@ export async function bulkCatalogWith(db: PrismaClient, adminId: string, input: 
  * Suppression définitive d'une création originale jamais publiée ni distribuée.
  * Tout ce qui a touché un joueur (exemplaire, tirage, cadeau, vente, échange…) impose l'archivage.
  */
-export async function deleteCatalogCardWith(db: PrismaClient, adminId: string, id: string, updatedAt: string) {
+export async function deleteCatalogCardWith(db: PrismaClient, adminId: string, id: string, updatedAt: string, scope: CatalogScope = "full") {
   return db.$transaction(async (tx) => {
     await lockCatalog(tx);
     const before = await tx.card.findUnique({ where: { id }, include: { _count: { select: {
@@ -138,6 +144,7 @@ export async function deleteCatalogCardWith(db: PrismaClient, adminId: string, i
     if (!before) throw new CatalogMutationError("NOT_FOUND");
     if (before.updatedAt.toISOString() !== updatedAt) throw new CatalogMutationError("CONFLICT");
     const { _count: counts, ...card } = before;
+    if (!canDeleteCatalogCard(scope, card.status)) throw new CatalogMutationError("FORBIDDEN");
     if (!deletableCard(card, counts)) throw new CatalogMutationError("IN_USE");
     const [openings, gifts, boosters, teams] = await Promise.all([
       tx.boosterOpening.count({ where: { catalogCardIds: { has: id } } }), tx.gift.count({ where: { cardId: id } }),

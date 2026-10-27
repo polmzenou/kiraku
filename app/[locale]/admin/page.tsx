@@ -1,6 +1,6 @@
-import { getFormatter, getTranslations } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
-import { requireAdmin } from "@/server/admin";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
+import { Link, redirect } from "@/i18n/navigation";
+import { requireStaff } from "@/server/admin";
 import { adminDashboard } from "@/server/admin/dashboard";
 import { getSetting } from "@/server/settings";
 
@@ -8,7 +8,9 @@ type Tile = { label: string; value: string; hint?: string; href?: string; alert?
 
 /** Tableau de bord : activité des dernières 24 h, économie, marché, combats, points d'attention. */
 export default async function AdminHome() {
-  await requireAdmin();
+  // Le DEV n'a que le catalogue : on l'y envoie plutôt qu'un 404 sur l'accueil de l'admin
+  const { scope } = await requireStaff();
+  if (scope !== "full") redirect({ href: "/admin/catalogue", locale: await getLocale() });
   const [t, format, d, termsVersion] = await Promise.all([
     getTranslations("admin.dashboard"),
     getFormatter(),

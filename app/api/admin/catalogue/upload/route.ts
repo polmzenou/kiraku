@@ -1,12 +1,12 @@
 import { put } from "@vercel/blob";
 import { CARD_IMAGE_LIMIT, CARD_IMAGE_TYPES, imageSignature } from "@/lib/catalog/media";
-import { getAdmin } from "@/server/admin";
+import { getStaff } from "@/server/admin";
 import { rateLimit } from "@/server/ratelimit";
 import { writeAdminLog } from "@/server/admin/log";
 import { prisma } from "@/server/db";
 
 export async function POST(request: Request) {
-  const admin = await getAdmin();
+  const admin = (await getStaff())?.user;
   if (!admin) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
   if (request.headers.get("origin") !== new URL(request.url).origin) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
   if (!(await rateLimit(`admin-upload:${admin.id}`, { limit: 15, windowSeconds: 60 })).success) return Response.json({ error: "RATE_LIMITED" }, { status: 429 });

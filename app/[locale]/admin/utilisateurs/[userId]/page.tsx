@@ -46,7 +46,7 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
           <h2 className="break-all font-heading text-2xl font-bold">{user.username}</h2>
           <p className="mt-1 break-all text-xs text-text-muted">{user.id}</p>
           <p className="mt-2 text-sm">{user.email ?? t("noEmail")}{user.emailVerified ? ` · ${t("verified")}` : ""}</p>
-          <p className="mt-1 text-sm text-text-muted">{t(user.bannedAt ? "banned" : user.role === "ADMIN" ? "adminRole" : user.isGuest ? "guest" : "registered")}{user.ambassadorSince ? ` · ${t("ambassadorRole")}` : ""} · {t("joined", { date: format.dateTime(user.createdAt, { dateStyle: "medium" }) })}</p>
+          <p className="mt-1 text-sm text-text-muted">{t(user.bannedAt ? "banned" : user.role === "ADMIN" ? "adminRole" : user.role === "DEV" ? "devRole" : user.isGuest ? "guest" : "registered")}{user.ambassadorSince ? ` · ${t("ambassadorRole")}` : ""} · {t("joined", { date: format.dateTime(user.createdAt, { dateStyle: "medium" }) })}</p>
           {user.discordLinkedAt && <p className="mt-1 text-xs text-text-muted">{t("discordLinked")}</p>}
         </div>
         <Link href={`/u/${user.username}`} className={buttonClasses()}>{t("viewProfile")}</Link>

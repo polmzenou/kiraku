@@ -8,6 +8,7 @@ import { prisma } from "../db";
 import { getRarityDefinitions } from "./rarities";
 import { getSetting } from "../settings";
 import { deletableCard } from "./admin-core";
+import { canDeleteCatalogCard, canEditCatalogCard, type CatalogScope } from "@/lib/admin/roles";
 
 const PAGE_SIZE = 24;
 const usage = { copies: true, discoveries: true, wishedBy: true, lotItems: true, auctions: true, notablePulls: true, tradesWanted: true, tradesChosen: true, tradeOffers: true, variants: true } as const;
@@ -66,14 +67,19 @@ export type CatalogEditorOptions = Awaited<ReturnType<typeof catalogEditorOption
 const linkedSelect = { id: true, publicId: true, name: true, formName: true, imageUrl: true, rarity: true, status: true, nameNative: true, rank: true, power: true, ki: true, appearance: true } as const;
 export type LinkedCard = Prisma.CardGetPayload<{ select: typeof linkedSelect }>;
 
-/** Contexte d'une fiche : série choisie, carte de base, variantes et possibilité de suppression. */
-export async function catalogEditorContext(draft: CardDraft) {
+/**
+ * Contexte d'une fiche : série choisie, carte de base, variantes, possibilité de modification
+ * (DEV : brouillon jamais distribué) et de suppression. Les actions revérifient tout sous verrou.
+ */
+export async function catalogEditorContext(draft: CardDraft, scope: CatalogScope = "full") {
   const [series, base, card] = await Promise.all([
     draft.seriesId ? prisma.series.findUnique({ where: { id: draft.seriesId }, select: { id: true, titleRomaji: true } }) : null,
     draft.variantOfId ? prisma.card.findUnique({ where: { id: draft.variantOfId }, select: linkedSelect }) : null,
     draft.id ? prisma.card.findUnique({ where: { id: draft.id }, select: { origin: true, status: true, variants: { select: linkedSelect, orderBy: { createdAt: "asc" } }, _count: { select: usage } } }) : null,
   ]);
-  return { series, base, variants: card?.variants ?? [], deletable: card ? deletableCard(card, card._count) : false };
+  const editable = canEditCatalogCard(scope, card && { status: card.status, copies: card._count.copies + card._count.discoveries }, "DRAFT");
+  return { series, base, variants: card?.variants ?? [], editable,
+    deletable: card ? deletableCard(card, card._count) && canDeleteCatalogCard(scope, card.status) : false };
 }
 
 export async function catalogEditorDraft(id: string, duplicate = false): Promise<CardDraft | null> {

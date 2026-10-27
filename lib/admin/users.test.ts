@@ -32,6 +32,7 @@ describe("gestion des joueurs : validation", () => {
     const input = { ...base, kind: "account", username: "Player_12", role: "USER", banned: false, profileVisibility: "PRIVATE", showCollection: true };
     expect(adminUserMutationSchema.safeParse(input).success).toBe(true);
     expect(adminUserMutationSchema.safeParse({ ...input, username: "a" }).success).toBe(false);
+    expect(adminUserMutationSchema.safeParse({ ...input, role: "DEV" }).success).toBe(true);
     expect(adminUserMutationSchema.safeParse({ ...input, role: "OWNER" }).success).toBe(false);
   });
 });

@@ -15,6 +15,7 @@ datasource db {
 
 enum Role {
   USER
+  DEV // catalogue en brouillon uniquement ; l'admin relit et publie
   ADMIN
 }
 

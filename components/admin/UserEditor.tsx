@@ -13,7 +13,7 @@ import { Field, FormMessage, inputClass, NumberField, SelectField, TextField, To
 type ChangeOf<T> = T extends AdminUserMutation ? Omit<T, "userId" | "reason"> : never;
 type Change = ChangeOf<AdminUserMutation>;
 type Mode = "SET" | "ADD" | "REMOVE";
-type Account = { username: string; role: "USER" | "ADMIN"; banned: boolean; profileVisibility: "PUBLIC" | "FRIENDS" | "PRIVATE"; showCollection: boolean };
+type Account = { username: string; role: "USER" | "DEV" | "ADMIN"; banned: boolean; profileVisibility: "PUBLIC" | "FRIENDS" | "PRIVATE"; showCollection: boolean };
 type Booster = { id: string; name: string; active: boolean; count: number; pity: number };
 const EditorContext = createContext<{ userId: string; reason: string; report: (result: AdminUserResult | "unexpected") => void }>({ userId: "", reason: "", report: () => {} });
 const panel = "flex flex-col gap-4 lacquer rounded-card p-4";
@@ -52,7 +52,7 @@ function AccountForm({ initial, self }: { initial: Account; self: boolean }) {
       <TextField label={t("username")} value={draft.username} maxLength={20} onChange={(username) => setDraft({ ...draft, username })} hint={t("usernameHint")} />
       <Field label={t("role")}>
         {(id) => <select id={id} disabled={self} className={inputClass} value={draft.role} onChange={(e) => setDraft({ ...draft, role: e.target.value as Account["role"] })}>
-          <option value="USER">{t("userRole")}</option><option value="ADMIN">{t("adminRole")}</option>
+          <option value="USER">{t("userRole")}</option><option value="DEV">{t("devRole")}</option><option value="ADMIN">{t("adminRole")}</option>
         </select>}
       </Field>
       {!self && <Toggle label={t("ban")} checked={draft.banned} onChange={(banned) => setDraft({ ...draft, banned })} />}

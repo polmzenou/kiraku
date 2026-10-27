@@ -4,16 +4,17 @@ import { getMessages, getTranslations } from "next-intl/server";
 import { pickClientMessages } from "@/i18n/client-messages";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { SectionTitle } from "@/components/SectionTitle";
-import { requireAdmin } from "@/server/admin";
+import { requireStaff } from "@/server/admin";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
- * Toute la section /admin : rôle vérifié côté serveur (404 sinon), chaque action le revérifie.
+ * Toute la section /admin : équipe vérifiée côté serveur (404 sinon), chaque page et action revérifie son rôle
+ * (le DEV n'ouvre que le catalogue).
  * Pleine largeur, sans le pied de page public : barre latérale en desktop, puces en mobile.
  */
 export default async function AdminLayout({ children }: LayoutProps<"/[locale]/admin">) {
-  await requireAdmin();
+  const { scope } = await requireStaff();
   const t = await getTranslations("admin");
   const messages = await getMessages();
 
@@ -25,7 +26,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/[locale]/a
           <div className="lg:hidden">
             <SectionTitle level={1} kanji="管理" title={t("title")} />
           </div>
-          <AdminNav />
+          <AdminNav scope={scope} />
         </div>
         <main className="flex min-w-0 flex-col gap-6 py-6">
           <div className="hidden lg:block">
