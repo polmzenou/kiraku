@@ -191,17 +191,53 @@
   }
 }
 
-/* --- Entrée échelonnée des premières cartes (sur le <li>, pour ne pas retarder le survol) --- */
-@media (prefers-reduced-motion: no-preference) {
-  :root:not([data-motion="reduced"]) .shop-enter {
-    animation: shop-enter 480ms cubic-bezier(0.2, 0.8, 0.25, 1) calc(min(var(--i, 0), 6) * 60ms) both;
+/* --- Arrivée du contenu : titre, vedette, familles puis premières cartes montent quand les shōji
+   sont à moitié ouverts (sur des enveloppes : la levée des cartes au survol n'attend pas la fin) --- */
+/* Ressorts échantillonnés en linear() : glisse sans rebond (panneaux), pose à peine amortie (contenu) */
+:root {
+  --shop-glide: cubic-bezier(0.3, 0.7, 0.2, 1);
+  --shop-settle: cubic-bezier(0.22, 1, 0.36, 1);
+}
+@supports (animation-timing-function: linear(0, 1)) {
+  :root {
+    --shop-glide: linear(
+      0, 0.016, 0.058, 0.115, 0.18, 0.25, 0.321, 0.39, 0.455, 0.517, 0.573, 0.624, 0.671, 0.713, 0.75, 0.783, 0.812,
+      0.838, 0.86, 0.88, 0.896, 0.911, 0.924, 0.935, 0.944, 0.953, 0.959, 0.965, 0.971, 0.975, 0.979, 0.982, 0.985,
+      0.987, 0.989, 0.991, 0.992, 0.993, 0.994, 0.995, 1
+    );
+    --shop-settle: linear(
+      0, 0.014, 0.049, 0.1, 0.162, 0.229, 0.298, 0.369, 0.437, 0.502, 0.564, 0.62, 0.672, 0.72, 0.762, 0.799, 0.832,
+      0.861, 0.886, 0.907, 0.926, 0.942, 0.954, 0.965, 0.974, 0.982, 0.988, 0.992, 0.996, 0.999, 1.001, 1.002, 1.004,
+      1.004, 1.005, 1.005, 1.005, 1.005, 1.005, 1.004, 1
+    );
   }
 }
-@keyframes shop-enter {
+.shop-enter {
+  --enter-delay: calc(360ms + min(var(--i, 0), 10) * 42ms);
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="reduced"]) .shop-enter {
+    animation:
+      shop-enter-rise 600ms var(--shop-settle) var(--enter-delay) both,
+      shop-enter-fade 300ms cubic-bezier(0.22, 1, 0.36, 1) var(--enter-delay) both;
+  }
+}
+@keyframes shop-enter-rise {
   from {
-    opacity: 0;
     translate: 0 14px;
   }
+}
+@keyframes shop-enter-fade {
+  from {
+    opacity: 0;
+  }
+}
+/* Les boucles de la vedette attendent la fin de l'arrivée : elles ne lui disputent pas ses images */
+.shop-hero .booster-idle,
+.shop-hero .booster-halo-breathe,
+.shop-hero .booster-floor-float,
+.shop-hero .light-rays {
+  animation-delay: 1100ms;
 }
 
 /* --- Vedette de la sélection : sachet qui flotte, halo qui respire, rayons autour du sachet --- */
@@ -473,133 +509,170 @@
   animation-play-state: paused;
 }
 
-/* --- Noren : le rideau de l'échoppe s'écarte à chaque arrivée sur la boutique --- */
-.shop-noren {
+/* --- Arrivée : les shōji de l'échoppe s'éclairent, puis glissent sur leur rail, à chaque visite --- */
+/* Deux panneaux sur un seul axe (translateX) et des fondus, sur des calques préparés dès la première
+   image : le compositeur les anime même pendant l'hydratation. Papier, bois et laque sont des couleurs
+   d'illustration, identiques dans les deux thèmes ; seul le voile suit le thème. */
+.shop-shoji {
+  --shoji-veil: rgb(13 11 16 / 0.8);
+  --shoji-wood: #6e4d2e;
   position: fixed;
   inset: 0;
   z-index: 50;
   overflow: hidden;
-  animation: shop-noren-lift 560ms cubic-bezier(0.55, 0, 0.75, 0.3) 700ms both;
 }
-.shop-noren::before {
-  content: "";
+[data-theme="washi"] .shop-shoji {
+  --shoji-veil: rgb(31 27 23 / 0.68);
+}
+.shop-shoji-veil {
   position: absolute;
   inset: 0;
-  background: rgb(13 11 16 / 0.6);
-  animation: shop-noren-fade 700ms ease-out 250ms both;
+  background: var(--shoji-veil);
+  will-change: opacity;
+  animation: shop-shoji-out 560ms cubic-bezier(0.65, 0, 0.35, 1) 240ms both;
 }
-.shop-noren-glow {
+.shop-shoji-door {
   position: absolute;
-  left: 50%;
-  top: 45%;
-  width: 70vmax;
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  border-radius: 9999px;
-  opacity: 0;
-  background: radial-gradient(closest-side, rgb(255 236 190 / 0.55), rgb(242 216 138 / 0.15) 50%, transparent);
-  animation: shop-noren-glow 900ms ease-out 200ms both;
-}
-/* Bois, indigo et papier du rideau : couleurs d'illustration, identiques dans les deux thèmes */
-.shop-noren-rod {
-  position: absolute;
-  left: 3%;
-  right: 3%;
-  top: calc(env(safe-area-inset-top, 0px) + 10px);
-  z-index: 2;
-  height: 14px;
-  border-radius: 7px;
-  background: linear-gradient(180deg, #8a6a46, #4a3420);
-  box-shadow: 0 4px 10px rgb(0 0 0 / 0.5);
-}
-.shop-noren-panel {
-  position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 16px);
-  bottom: 12%;
-  width: 46%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform-origin: 50% 0;
-  border-radius: 0 0 8px 8px;
+  top: 0;
+  bottom: 0;
+  width: calc(50% + 1px);
+  overflow: hidden;
   background:
-    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 4px),
-    linear-gradient(180deg, #1e3557, #142540 80%, #0f1d33);
-  box-shadow:
-    inset 0 -16px 28px rgb(0 0 0 / 0.35),
-    0 12px 32px rgb(0 0 0 / 0.5);
+    repeating-linear-gradient(97deg, rgb(120 100 70 / 0.06) 0 1px, transparent 1px 6px),
+    linear-gradient(180deg, #f2ead8, #e8ddc6);
+  will-change: transform;
 }
-.shop-noren-l {
-  left: 4%;
-  animation: shop-noren-l 640ms cubic-bezier(0.3, 0.1, 0.3, 1) 160ms both;
+.shop-shoji-l {
+  left: 0;
+  animation: shop-shoji-l 820ms var(--shop-glide) 160ms both;
 }
-.shop-noren-r {
-  right: 4%;
-  animation: shop-noren-r 640ms cubic-bezier(0.3, 0.1, 0.3, 1) 160ms both;
+.shop-shoji-r {
+  right: 0;
+  animation: shop-shoji-r 820ms var(--shop-glide) 190ms both;
 }
-.shop-noren-kanji {
-  font-size: clamp(96px, 24vw, 240px);
-  line-height: 1;
-  color: #f4ede0;
-}
-.shop-noren-mon {
+/* Lumière de l'échoppe derrière le papier, plus vive vers la jointure */
+.shop-shoji-lit {
   position: absolute;
-  right: 12%;
-  bottom: 8%;
-  padding: 4px 6px;
+  inset: 0;
+  will-change: opacity;
+  animation: shop-shoji-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.shop-shoji-l .shop-shoji-lit {
+  background: radial-gradient(ellipse 120% 70% at 100% 42%, rgb(255 204 128 / 0.85), rgb(255 190 110 / 0.35) 45%, transparent 78%);
+}
+.shop-shoji-r .shop-shoji-lit {
+  background: radial-gradient(ellipse 120% 70% at 0% 42%, rgb(255 204 128 / 0.85), rgb(255 190 110 / 0.35) 45%, transparent 78%);
+}
+/* Cadre et treillis : des cases régulières, ajustées à la taille du panneau (round) */
+.shop-shoji-grid {
+  position: absolute;
+  inset: 0;
+  border: solid var(--shoji-wood);
+  border-width: 9px 7px;
+  background:
+    linear-gradient(90deg, transparent calc(100% - 2px), var(--shoji-wood) 0) 0 0 / 62px 60px round,
+    linear-gradient(180deg, transparent calc(100% - 2px), var(--shoji-wood) 0) 0 0 / 62px 60px round;
+}
+.shop-shoji-sign {
+  position: absolute;
+  top: 17%;
+  right: 15%;
+  padding: 10px 7px;
+  border-radius: 3px;
+  background: linear-gradient(#3e2c1b, #2a1d12);
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.25);
+  color: #e6c46e;
+  font-size: 26px;
+  line-height: 1.1;
+  writing-mode: vertical-rl;
+}
+.shop-shoji-hanko {
+  position: absolute;
+  top: 21%;
+  left: 15%;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
   border-radius: 4px;
   background: #c8372d;
   color: #f4ede0;
-  font-size: 16px;
+  font-size: 11px;
+  line-height: 1.05;
   writing-mode: vertical-rl;
 }
-@keyframes shop-noren-l {
-  45% {
-    transform: translate(-22%, -2%) rotate(9deg) skewY(-3deg);
-  }
+.shop-shoji-pull {
+  position: absolute;
+  top: 50%;
+  width: 9px;
+  height: 28px;
+  margin-top: -14px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #2a1d12, #5b3f24);
+}
+.shop-shoji-l .shop-shoji-pull {
+  right: 15px;
+}
+.shop-shoji-r .shop-shoji-pull {
+  left: 15px;
+}
+/* Trait de lumière qui passe entre les panneaux juste avant qu'ils glissent */
+.shop-shoji-seam {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 44px;
+  margin-left: -22px;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, rgb(255 233 180 / 0.9) 50%, transparent);
+  will-change: transform, opacity;
+  animation: shop-shoji-seam 520ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+}
+@keyframes shop-shoji-l {
   to {
-    transform: translate(-58%, -6%) rotate(16deg) skewY(-1deg);
+    transform: translateX(-101%);
   }
 }
-@keyframes shop-noren-r {
-  45% {
-    transform: translate(22%, -2%) rotate(-9deg) skewY(3deg);
-  }
+@keyframes shop-shoji-r {
   to {
-    transform: translate(58%, -6%) rotate(-16deg) skewY(1deg);
+    transform: translateX(101%);
   }
 }
-@keyframes shop-noren-lift {
-  to {
-    transform: translateY(-110%);
+@keyframes shop-shoji-in {
+  from {
+    opacity: 0;
   }
 }
-@keyframes shop-noren-fade {
+@keyframes shop-shoji-out {
   to {
     opacity: 0;
   }
 }
-@keyframes shop-noren-glow {
-  40% {
+@keyframes shop-shoji-seam {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.4);
+  }
+  25% {
     opacity: 1;
   }
-  to {
+  100% {
     opacity: 0;
+    transform: scaleX(2.2);
   }
 }
-/* Un appui passe l'entrée : tout file à sa fin */
-.shop-noren-skip,
-.shop-noren-skip::before,
-.shop-noren-skip * {
-  animation-duration: 160ms !important;
-  animation-delay: 0s !important;
+/* Effets allégés : les panneaux glissent toujours, sans le trait de lumière */
+:root[data-fx="lite"] .shop-shoji-seam {
+  display: none;
 }
+/* Mouvement réduit : pas de panneaux (la règle globale coupe de toute façon les animations) */
 @media (prefers-reduced-motion: reduce) {
-  .shop-noren {
+  .shop-shoji {
     display: none;
   }
 }
-:root[data-motion="reduced"] .shop-noren {
+:root[data-motion="reduced"] .shop-shoji {
   display: none;
 }
 
