@@ -16,6 +16,21 @@ export const NAME_COLOR_SWATCH: Record<NameColorStyle, string> = {
   hisui: "#5bbf8b",
 };
 
+/**
+ * Dégradé du pseudo hors du DOM (images de partage, rendues en thème Yoru) : mêmes valeurs que
+ * les règles .name-color-* de globals.css, vérifiées par name-colors.test.ts.
+ */
+export const NAME_COLOR_GRADIENT: Record<NameColorStyle, string> = {
+  lime: "linear-gradient(180deg, #eaffb8 0%, #a3e635 55%, #4d9a00 100%)",
+  azure: "linear-gradient(180deg, #c8efff 0%, #38bdf8 55%, #1d6fe0 100%)",
+  violet: "linear-gradient(180deg, #ece4ff 0%, #a78bfa 55%, #6d3fe0 100%)",
+  ember: "linear-gradient(180deg, #fff1a8 0%, #ff9a1f 55%, #e0400a 100%)",
+  scarlet: "linear-gradient(180deg, #ffc2c8 0%, #ff2d4a 55%, #b0001c 100%)",
+  rainbow: "linear-gradient(90deg, #ff2d4a, #ff9a1f, #ffe600, #a3ff12, #2de2d0, #38bdf8, #b44dff)",
+  pastel: "linear-gradient(90deg, #ffb3c7, #ffd6a5, #fdffb6, #caffbf, #9bf6ff, #a0c4ff, #bdb2ff)",
+  hisui: "linear-gradient(180deg, #d4f7e3 0%, #5bbf8b 55%, #1f7a4d 100%)",
+};
+
 /** Classes écrites en entier pour que Tailwind garde les règles de globals.css. */
 export const NAME_COLOR_CLASS: Record<NameColorStyle, string> = {
   lime: "name-color name-color-lime",

@@ -17,8 +17,7 @@ import { MOTION_COOKIE, parseMotionPref } from "@/lib/motion-pref";
 import { MotionPreferenceProvider } from "@/components/motion/MotionPreference";
 import { fontVariables } from "../fonts";
 import { appUrl } from "@/server/env";
-import { localePath } from "@/lib/seo/alternates";
-import { baseOpenGraph } from "@/lib/seo/open-graph";
+import { baseOpenGraph, ogImageUrl } from "@/lib/seo/open-graph";
 
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
   const { locale } = await params;
@@ -29,7 +28,7 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
     title: { default: t("title"), template: `%s · ${t("title")}` },
     description: t("description"),
     openGraph: baseOpenGraph(current),
-    twitter: { card: "summary_large_image", images: [localePath("/og-image", current)] },
+    twitter: { card: "summary_large_image", images: [ogImageUrl(current)] },
     appleWebApp: { capable: true, title: t("title"), statusBarStyle: "black-translucent" },
     icons: {
       icon: [

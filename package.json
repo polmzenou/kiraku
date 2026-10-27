@@ -21,6 +21,7 @@
     "db:status": "prisma migrate status",
     "db:deploy": "prisma migrate deploy",
     "fonts:subset": "tsx scripts/subset-seal-font.mts",
+    "fonts:og": "tsx scripts/og-fonts.mts",
     "catalog:import": "tsx scripts/import-characters.mts",
     "catalog:import-media": "tsx scripts/import-media.mts",
     "sim:boosters": "tsx scripts/simulate-boosters.mts",
