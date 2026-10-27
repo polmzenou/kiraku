@@ -12,6 +12,7 @@ import { RankBadge } from "../ranked/RankBadge";
 import { SeasonReward } from "../ranked/SeasonReward";
 import { QueueWaiting } from "./QueueWaiting";
 import { useBattleError } from "./useBattleError";
+import type { AbilityRules } from "./AbilityGuide";
 import { TeamPicker } from "./TeamPicker";
 import { inputClass } from "../ui/Field";
 
@@ -26,6 +27,7 @@ type Intent =
 export function CombatHub({
   activity,
   candidates,
+  abilities,
   lastTeam,
   queueSeconds,
   challenge,
@@ -33,6 +35,7 @@ export function CombatHub({
 }: {
   activity: Activity;
   candidates: CandidateCard[];
+  abilities: AbilityRules;
   lastTeam: string[];
   queueSeconds: number;
   /** Ami à défier (lien « Défier » de son profil) : le choix d'équipe s'ouvre directement. */
@@ -194,6 +197,7 @@ export function CombatHub({
           open
           onClose={() => setIntent(null)}
           candidates={candidates}
+          abilities={abilities}
           initial={lastTeam}
           pending={pending}
           confirmLabel={

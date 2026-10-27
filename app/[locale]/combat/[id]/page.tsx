@@ -38,7 +38,12 @@ export default async function BattlePage({ params, searchParams }: PageProps<"/[
 
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-      <BattleScreen view={view} candidates={candidates} lastTeam={lastTeam} />
+      <BattleScreen
+        view={view}
+        candidates={candidates}
+        abilities={{ keywordValues: ctx.rules.keywordValues, techniques: ctx.rules.techniques }}
+        lastTeam={lastTeam}
+      />
     </div>
   );
 }

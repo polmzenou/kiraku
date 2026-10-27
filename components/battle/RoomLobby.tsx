@@ -7,6 +7,7 @@ import type { BattleView, CandidateCard } from "@/lib/battle/view";
 import { battleViewAction, cancelRoomAction, joinRoomAction } from "@/server/actions/battle";
 import { Button, buttonClasses } from "../ui/Button";
 import { usePlayerName } from "./BoardLayout";
+import type { AbilityRules } from "./AbilityGuide";
 import { TeamPicker } from "./TeamPicker";
 import { useBattleError } from "./useBattleError";
 
@@ -24,7 +25,17 @@ function useCountdown(until: string | null) {
 }
 
 /** Salle d'amis ouverte : le créateur partage son code et attend ; l'invité choisit son équipe et entre. */
-export function RoomLobby({ view, candidates, lastTeam }: { view: BattleView; candidates: CandidateCard[]; lastTeam: string[] }) {
+export function RoomLobby({
+  view,
+  candidates,
+  abilities,
+  lastTeam,
+}: {
+  view: BattleView;
+  candidates: CandidateCard[];
+  abilities: AbilityRules;
+  lastTeam: string[];
+}) {
   const t = useTranslations("battle");
   const router = useRouter();
   const name = usePlayerName();
@@ -66,6 +77,7 @@ export function RoomLobby({ view, candidates, lastTeam }: { view: BattleView; ca
           open={picking}
           onClose={() => setPicking(false)}
           candidates={candidates}
+          abilities={abilities}
           initial={lastTeam}
           pending={pending}
           confirmLabel={t("friend.join")}
@@ -92,7 +104,10 @@ export function RoomLobby({ view, candidates, lastTeam }: { view: BattleView; ca
       ) : (
         <>
           <p className="text-xs text-text-muted">{t("room.code")}</p>
-          <p className="rounded-card border-2 border-dashed border-kin px-5 py-3 font-title text-4xl font-extrabold tracking-[0.25em] tabular-nums text-kin" aria-live="polite">
+          <p
+            className="rounded-card border-2 border-dashed border-kin px-5 py-3 font-title text-4xl font-extrabold tracking-[0.25em] tabular-nums text-kin"
+            aria-live="polite"
+          >
             {code}
           </p>
           <div className="flex flex-wrap justify-center gap-2">
