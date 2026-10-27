@@ -15,6 +15,7 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { routing } from "@/i18n/routing";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { localeAlternates, localePath } from "@/lib/seo/alternates";
+import { baseOpenGraph, ogImageUrl } from "@/lib/seo/open-graph";
 import { homeGraph } from "@/lib/seo/structured-data";
 import { appUrl } from "@/server/env";
 import { contentsLabel } from "@/lib/boosters/catalog";
@@ -57,13 +58,18 @@ export async function generateMetadata({ params }: PageProps<"/[locale]">): Prom
     getBoosterRules(),
     getBoosterOffers(),
   ]);
+  const title = t("metaTitle");
+  const description = t("metaDescription", {
+    minutes: rules.intervalMinutes,
+    count: offers.filter((o) => o.availability !== "hidden").length,
+  });
   return {
-    title: { absolute: t("metaTitle") },
-    description: t("metaDescription", {
-      minutes: rules.intervalMinutes,
-      count: offers.filter((o) => o.availability !== "hidden").length,
-    }),
+    title: { absolute: title },
+    description,
     alternates: localeAlternates("/", locale),
+    // Titre et texte de l'aperçu (Discord, WhatsApp…) avec l'image de partage du site
+    openGraph: { ...baseOpenGraph(locale), title, description },
+    twitter: { card: "summary_large_image", title, description, images: [ogImageUrl(locale)] },
   };
 }
 

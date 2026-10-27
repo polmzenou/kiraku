@@ -8,13 +8,15 @@ import { REFERRAL_COOKIE } from "@/server/economy/referral";
 /**
  * Lien d'invitation /i/[code] : retient le code sur l'appareil (cookie httpOnly, 30 jours) et
  * renvoie vers la page de parrainage. Rien n'est écrit en base : le rattachement se fait quand
- * l'invité crée son compte.
+ * l'invité crée son compte. Le code suit dans `?parrain=` : les robots d'aperçu (Discord, X…)
+ * suivent la redirection et lisent sur la page l'image « Pseudo veut te parrainer ! ».
  */
 export async function GET(request: NextRequest, { params }: RouteContext<"/[locale]/i/[code]">) {
   const { locale: raw, code: rawCode } = await params;
   const locale = hasLocale(routing.locales, raw) ? raw : routing.defaultLocale;
   const code = normalizeReferralCode(decodeURIComponent(rawCode));
   const target = new URL(getPathname({ href: "/parrainage", locale }), request.nextUrl.origin);
+  if (code) target.searchParams.set("parrain", code);
   const response = NextResponse.redirect(target, 303);
   if (code) {
     response.cookies.set(REFERRAL_COOKIE.name, code, { ...REFERRAL_COOKIE.options, maxAge: REFERRAL_COOKIE.maxAge });

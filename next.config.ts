@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Les métadonnées restent dans <head> pour les lecteurs HTML et les outils SEO.
   htmlLimitedBots: /.*/,
+  // Images de partage : polices TrueType et sceau lus sur disque (noms dynamiques, invisibles au traçage)
+  outputFileTracingIncludes: {
+    "/*/og-image": ["./server/og/fonts/*.ttf", "./public/icons/icon-512.png"],
+    "/*/og-image/**": ["./server/og/fonts/*.ttf", "./public/icons/icon-512.png"],
+  },
   images: {
     // Garder les originaux pour les cartes, avatars et logos : l'optimiseur Vercel
     // renvoie 402 OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED quand son quota est atteint.

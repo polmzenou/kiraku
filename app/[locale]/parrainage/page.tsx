@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { hasLocale } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { ClaimReferralButton } from "@/components/economy/ClaimButton";
@@ -11,18 +12,42 @@ import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { ButtonLink } from "@/components/ui/ButtonLink";
-import type { RefereeProgress } from "@/lib/economy/referral";
+import { normalizeReferralCode, type RefereeProgress } from "@/lib/economy/referral";
+import { baseOpenGraph, OG_IMAGE_SIZE, ogImageUrl } from "@/lib/seo/open-graph";
+import { routing } from "@/i18n/routing";
 import { guestCode } from "@/lib/username";
 import { prisma } from "@/server/db";
 import { referralRules } from "@/server/economy/deps";
 import { lotViews, type LotView } from "@/server/economy/lot-view";
 import { pendingReferralCode } from "@/server/economy/referral";
+import { referrerByCode } from "@/server/og/data";
 import { qualifyReferralsWith, refereeProgress } from "@/server/economy/referral-core";
 import { pushNotifications } from "@/server/push/send";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+/**
+ * Arrivée par un lien d'invitation (/i/CODE redirige ici avec `?parrain=CODE`) : aperçu « Pseudo veut
+ * te parrainer ! » pour Discord, WhatsApp, X… avec l'image du parrain. Page jamais indexée.
+ */
+export async function generateMetadata({ params, searchParams }: PageProps<"/[locale]/parrainage">): Promise<Metadata> {
+  const [{ locale: raw }, { parrain }] = await Promise.all([params, searchParams]);
+  const robots = { index: false, follow: false };
+  const code = normalizeReferralCode(parrain);
+  if (!code) return { robots };
+  const locale = hasLocale(routing.locales, raw) ? raw : routing.defaultLocale;
+  const [t, referrer] = await Promise.all([getTranslations({ locale, namespace: "metadata" }), referrerByCode(code).catch(() => null)]);
+  const title = referrer ? t("inviteTitle", { name: referrer.username }) : t("inviteTitleGeneric");
+  const description = t("inviteDescription");
+  const image = { url: ogImageUrl(locale, `/og-image/parrainage/${code}`), ...OG_IMAGE_SIZE, alt: title };
+  return {
+    robots,
+    title: { absolute: title },
+    description,
+    openGraph: { ...baseOpenGraph(locale), title, description, images: [image] },
+    twitter: { card: "summary_large_image", title, description, images: [image.url] },
+  };
+}
 
 const DAY = 86_400_000;
 const STEP_KANJI = ["一", "二", "三"] as const;

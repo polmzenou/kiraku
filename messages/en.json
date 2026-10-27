@@ -87,7 +87,18 @@
   "metadata": {
     "title": "Kiraku",
     "description": "Open packs, collect anime character fuda and challenge your friends.",
-    "ogTagline": "Open free anime card packs"
+    "ogTagline": "Open free anime card packs",
+    "ogFeatureCollect": "Collection",
+    "ogFeatureBattle": "1v1 battles",
+    "ogFree": "100% free",
+    "inviteTitle": "{name} invited you to Kiraku!",
+    "inviteTitleGeneric": "An invitation awaits you!",
+    "inviteDescription": "Join Kiraku: open free anime card packs and collect your favourite characters.",
+    "ogInviteKicker": "Invitation",
+    "ogInviteLine": "invited you to Kiraku!",
+    "ogInviteText": "Open free anime card packs and collect your favourite characters.",
+    "ogInviteCta": "Accept the invite",
+    "ogInviteCode": "Code {code}"
   },
   "common": {
     "appName": "Kiraku",

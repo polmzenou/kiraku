@@ -1,45 +1,36 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { createTranslator, hasLocale } from "next-intl";
+import { hasLocale } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { ImageResponse } from "next/og";
 import { routing } from "@/i18n/routing";
 import { OG_IMAGE_SIZE } from "@/lib/seo/open-graph";
-import fr from "@/messages/fr.json";
-import en from "@/messages/en.json";
+import { ogFonts, ogSeal } from "@/server/og/assets";
+import { showcaseCards } from "@/server/og/data";
+import { Backdrop, Chip, FONT, FudaFan, OG, Wordmark } from "@/server/og/scene";
 
-// Image de partage (Discord, X, WhatsApp…) : sceau 気楽 et accroche localisée, palette Yoru.
-// Route simple plutôt que la convention opengraph-image : son URL interne /fr/… redirigerait.
-// Satori ne lit pas le woff2 des polices du site : texte en police par défaut, latin seulement.
+// Image de partage du site (Discord, X, WhatsApp…) : sceau et nom Kiraku, accroche localisée, et un
+// éventail de fuda vedettes du catalogue. Route simple plutôt que la convention opengraph-image :
+// son URL interne /fr/… redirigerait.
 export async function GET(_request: Request, { params }: RouteContext<"/[locale]/og-image">) {
   const { locale: raw } = await params;
   const locale = hasLocale(routing.locales, raw) ? raw : routing.defaultLocale;
-  const t = createTranslator({ locale, messages: { fr, en }[locale], namespace: "metadata" });
-  const seal = await readFile(join(process.cwd(), "public/icons/icon-512.png"));
-  const sealSrc = `data:image/png;base64,${seal.toString("base64")}`;
+  const t = await getTranslations({ locale, namespace: "metadata" });
+  const [fonts, seal, cards] = await Promise.all([ogFonts(), ogSeal(), showcaseCards()]);
 
   return new ImageResponse(
     (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          gap: 64,
-          padding: "0 96px",
-          background: "#15120F",
-          color: "#F1E9DA",
-          borderBottom: "12px solid #C8372D",
-        }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element -- rendu Satori, pas du DOM */}
-        <img src={sealSrc} width={240} height={240} alt="" style={{ borderRadius: 24 }} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 680 }}>
-          <div style={{ fontSize: 112, fontWeight: 700, letterSpacing: -2 }}>{t("title")}</div>
-          <div style={{ fontSize: 44, color: "#D9B556", lineHeight: 1.2 }}>{t("ogTagline")}</div>
+      <Backdrop>
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 30, padding: "0 0 20px 80px", width: cards.length >= 2 ? 690 : 1100 }}>
+          <Wordmark seal={seal} size={108} />
+          <div style={{ display: "flex", fontFamily: FONT.heading, fontSize: 50, lineHeight: 1.18, color: OG.text, letterSpacing: -0.5 }}>{t("ogTagline")}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            <Chip tone="kin">{t("ogFree")}</Chip>
+            <Chip>{t("ogFeatureCollect")}</Chip>
+            <Chip>{t("ogFeatureBattle")}</Chip>
+          </div>
         </div>
-      </div>
+        {cards.length >= 2 && <FudaFan cards={cards} />}
+      </Backdrop>
     ),
-    { ...OG_IMAGE_SIZE, headers: { "Cache-Control": "public, max-age=86400, s-maxage=604800" } },
+    { ...OG_IMAGE_SIZE, fonts, headers: { "Cache-Control": "public, max-age=86400, s-maxage=604800" } },
   );
 }

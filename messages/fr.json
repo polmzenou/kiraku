@@ -87,7 +87,18 @@
   "metadata": {
     "title": "Kiraku",
     "description": "Ouvre des sachets, collectionne des fuda de personnages d'anime et défie tes amis.",
-    "ogTagline": "Ouvre des boosters de cartes anime gratuits"
+    "ogTagline": "Ouvre des boosters de cartes anime gratuits",
+    "ogFeatureCollect": "Collection",
+    "ogFeatureBattle": "Combats 1v1",
+    "ogFree": "100 % gratuit",
+    "inviteTitle": "{name} veut te parrainer sur Kiraku !",
+    "inviteTitleGeneric": "Une invitation t'attend !",
+    "inviteDescription": "Rejoins Kiraku : ouvre des boosters de cartes anime gratuits et collectionne tes personnages préférés.",
+    "ogInviteKicker": "Invitation",
+    "ogInviteLine": "veut te parrainer !",
+    "ogInviteText": "Ouvre des boosters de cartes anime gratuits et collectionne tes personnages préférés.",
+    "ogInviteCta": "Accepter l'invitation",
+    "ogInviteCode": "Code {code}"
   },
   "common": {
     "appName": "Kiraku",
