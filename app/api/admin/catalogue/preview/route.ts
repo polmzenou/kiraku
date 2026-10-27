@@ -10,7 +10,7 @@ import { CATALOG_TAG, getCatalogVersion } from "@/server/catalog/queries";
 import { getStaff } from "@/server/admin";
 import { prisma } from "@/server/db";
 import { rateLimit } from "@/server/ratelimit";
-import { effectiveSlotFloors } from "@/lib/boosters/types";
+import { typeDrawRules } from "@/lib/boosters/types";
 import { featuredFromPool } from "@/lib/boosters/draw";
 
 const schema = z.object({ id: z.string().max(64).optional(), rarity: rarityKeySchema, dropWeight: z.number().int().min(0).max(1_000_000),
@@ -43,8 +43,7 @@ export async function POST(request: Request) {
   const result = entries.filter((e) => v.boosterIds.includes(e.type.id) || computePool(e.type, updated, ctx)[v.rarity]?.includes(targetId)).map(({ type }) => {
     const pool = computePool(type, updated, ctx);
     return { id: type.id, name: type.name, slug: type.slug, eligible: Boolean(pool[v.rarity]?.includes(targetId)),
-      ...cardOdds({ targetId, pool, rules: { ...rules.draw, cardWeights: { ...rules.draw.cardWeights, [targetId]: v.dropWeight },
-        slotFloors: effectiveSlotFloors(type.slotFloors, rules.draw.slotFloors) },
+      ...cardOdds({ targetId, pool, rules: { ...typeDrawRules(type, rules.draw), cardWeights: { ...rules.draw.cardWeights, [targetId]: v.dropWeight } },
         featured: featuredFromPool([...type.featuredCardIds, ...focusCards(updated, type.focusSeriesIds)], pool, { rate: type.featuredRate, pityThreshold: type.featuredPity }),
         scenario: v.scenario, pityEligible: type.countsForPity, bonusEligible: type.bonusEligible, featuredPity: v.featuredPity && type.featuredPity > 0 }) };
   });

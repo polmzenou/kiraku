@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import {
   apocalypseSparedShare,
+  boostRates,
   boostersUntilGolden,
   boostersUntilPity,
   buildRarityTables,
@@ -356,5 +357,53 @@ describe("compteurs affichés", () => {
   it("boosters avant la Mythique garantie", () => {
     expect(boostersUntilPity(0, 250)).toBe(250);
     expect(boostersUntilPity(249, 250)).toBe(1);
+  });
+});
+
+describe("boostRates", () => {
+  const rates = { COMMON: 62_000, UNCOMMON: 25_000, RARE: 11_400, EPIC: 1_400, LEGENDARY: 150, MYTHIC: 15, AR: 8, GOLD: 2 };
+  const order = Object.keys(rates);
+  const total = (r: Record<string, number>) => Object.values(r).reduce((a, b) => a + b, 0);
+
+  it("multiplie la part des raretés boostées et reprend la masse aux autres, total inchangé", () => {
+    const boosted = boostRates(rates, "LEGENDARY", 27_000, order);
+    expect(Object.keys(boosted)).toEqual(order);
+    expect(Object.values(boosted).every(Number.isInteger)).toBe(true);
+    expect(Math.abs(total(boosted) - total(rates) * 10_000)).toBeLessThanOrEqual(order.length);
+    for (const r of ["LEGENDARY", "MYTHIC", "AR", "GOLD"]) expect(boosted[r]).toBe(rates[r as keyof typeof rates] * 27_000);
+    // Les raretés basses gardent leurs proportions entre elles
+    expect(boosted.COMMON / boosted.UNCOMMON).toBeCloseTo(rates.COMMON / rates.UNCOMMON, 6);
+  });
+
+  it("sur l'emplacement Rare+, la Légendaire+ reste proche de ×2,7", () => {
+    const boosted = boostRates(rates, "LEGENDARY", 27_000, order);
+    const top = (r: Record<string, number>) => (r.LEGENDARY + r.MYTHIC + r.AR + r.GOLD) / (r.RARE + r.EPIC + r.LEGENDARY + r.MYTHIC + r.AR + r.GOLD);
+    expect(top(boosted) / top(rates)).toBeGreaterThan(2.6);
+    expect(top(boosted) / top(rates)).toBeLessThanOrEqual(2.7);
+  });
+
+  it("sans boost, ou depuis une rareté inconnue, rend les taux tels quels", () => {
+    expect(boostRates(rates, null, 27_000, order)).toBe(rates);
+    expect(boostRates(rates, "LEGENDARY", 10_000, order)).toBe(rates);
+    expect(boostRates(rates, "INCONNUE", 27_000, order)).toBe(rates);
+  });
+
+  it("un boost qui dépasse tout le reste ne rend jamais de part négative", () => {
+    const boosted = boostRates({ COMMON: 1, RARE: 99 }, "RARE", 100_000, ["COMMON", "RARE"]);
+    expect(boosted.COMMON).toBe(0);
+    expect(boosted.RARE).toBe(99 * 100_000);
+  });
+
+  it("tirage simulé : la Légendaire+ sort environ 2,7 fois plus souvent", () => {
+    const pool = fakePool();
+    const count = 20_000;
+    const share = (draw: typeof DEFAULT_RULES) => {
+      const { boosters } = drawBoosters(seededRng(7), { pool, rules: { ...draw, ...NO_BONUS, pityThreshold: 1_000_000 }, state: { pityCount: 0, standardCount: 0 }, count });
+      const cards = boosters.flatMap((b) => b.cards);
+      return cards.filter((c) => rarityIndex(c.rarity, order) >= order.indexOf("LEGENDARY")).length / cards.length;
+    };
+    const ratio = share({ ...DEFAULT_RULES, rates: boostRates(DEFAULT_RULES.rates, "LEGENDARY", 27_000, order) }) / share(DEFAULT_RULES);
+    expect(ratio).toBeGreaterThan(2.2);
+    expect(ratio).toBeLessThan(3.2);
   });
 });

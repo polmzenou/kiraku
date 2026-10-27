@@ -22,6 +22,9 @@ export type BoosterSeed = {
   priceZeni?: number | null;
   countsForPity?: boolean;
   bonusEligible?: boolean;
+  /** Boost de rareté en points de base (27 000 = ×2,7), à partir de rateBoostFrom. */
+  rateBoost?: number;
+  rateBoostFrom?: Rarity;
   minPoolSize?: number;
   active?: boolean;
 };
@@ -202,6 +205,25 @@ export const BOOSTER_SEEDS: BoosterSeed[] = [
   },
   filtered("special", "studio", "匠", ["Studio", "Studio"], ["Un studio à l'honneur", "A studio in the spotlight"], theme("#46413D", "#141210", "shippo"), {}, { active: false }),
   filtered("special", "manga", "紙", ["Manga", "Manga"], ["Persos jamais animés", "Never-animated characters"], theme("#DCD0B4", "#9A8A68", "asanoha", "dark"), { mediaType: "MANGA" }),
+
+  // Exclusif boutique (3 500 Zeni, 1 par jour) : 5 cartes comme le standard, Légendaire et mieux ×2,7.
+  // Laque noire et filets d'or kikkō ; compte pour la pitié et le sachet doré, jamais scellé.
+  {
+    slug: "imperial",
+    kind: "PRESTIGE",
+    family: "special",
+    emblem: "皇",
+    name: { fr: "Impérial", en: "Imperial" },
+    tagline: { fr: "Légendaire et mieux ×2,7", en: "Legendary and up ×2.7" },
+    theme: theme("#2A2016", "#0A0806", "kikko"),
+    filter: {},
+    usesFreeStock: false,
+    priceZeni: null,
+    countsForPity: true,
+    bonusEligible: true,
+    rateBoost: 27_000,
+    rateBoostFrom: "LEGENDARY",
+  },
 
   // Sachets scellés : tombent d'un booster gratuit, jamais proposés ni vendus (planchers dans le tirage)
   {

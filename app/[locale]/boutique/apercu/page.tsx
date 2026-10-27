@@ -64,7 +64,8 @@ export default async function ShopPreviewPage() {
           family: s.family,
           floors: effectiveSlotFloors(s.slotFloors ?? [], globalFloors),
           poolSize: 26 + ((i * 197) % 1400),
-          availability: !offered(s) || resting ? "hidden" : !usesFreeStock && priceZeni === null ? "locked" : "open",
+          // Comme availability(…, "shop") : l'Impérial (Prestige) se vend ici même sans prix unitaire
+          availability: !offered(s) || resting ? "hidden" : s.kind === "PRESTIGE" ? "open" : !usesFreeStock && priceZeni === null ? "locked" : "open",
           priceZeni,
         },
       ];
@@ -93,6 +94,7 @@ export default async function ShopPreviewPage() {
     ]),
   );
   lots.set("apercu-fuda", { id: "apercu-fuda", name: "Fuda", zeni: 0, lines: [{ kind: "RARITY_CARD", quantity: 1, rarity: "EPIC" }] });
+  lots.set("apercu-imperial", { id: "apercu-imperial", name: "Impérial", zeni: 0, lines: boosterLine("imperial", 1) });
   // Packs standard ×5 et ×10 : le ×10 joue le grand final (feu d'artifice)
   const standardName = localize(seedBySlug.get("standard")?.name ?? { fr: "Standard", en: "" }, locale);
   const standardPacks = [5, 10].map((quantity) => {
@@ -130,6 +132,16 @@ export default async function ShopPreviewPage() {
       perUserLimit: 1,
       limitPeriod: "DAILY" as const,
       endsAt: new Date(now.getTime() + 2 * 86_400_000),
+    },
+    {
+      id: "apercu-imperial",
+      name: localize(seedBySlug.get("imperial")?.name ?? { fr: "Impérial", en: "" }, locale),
+      description: localize(seedBySlug.get("imperial")?.tagline ?? { fr: "", en: "" }, locale),
+      lotId: "apercu-imperial",
+      priceZeni: 3_500,
+      perUserLimit: 1,
+      limitPeriod: "DAILY" as const,
+      endsAt: null,
     },
   ];
 

@@ -1,7 +1,7 @@
 import { type Rarity } from "@/lib/catalog/rarity";
 import { boostersUntilGolden, boostersUntilPity, rarityIndex, type CardPool, type DrawRules } from "./draw";
 import { atLeastOdds, featuredBoosterChance, type PoolCounts, type RarityOdds } from "./odds";
-import { effectiveSlotFloors, priceFor, type Availability, type BoosterTypeView, type Price } from "./types";
+import { priceFor, typeDrawRules, type Availability, type BoosterTypeView, type Price } from "./types";
 
 // Ce que la page affiche pour un booster : composition, chances calculées sur son vrai pool,
 // compteurs et coût de la prochaine ouverture. Tout est calculé côté serveur.
@@ -35,9 +35,11 @@ export function boosterPanelData(input: {
   /** Vedettes du pool, par rareté. */
   featuredCounts?: PoolCounts;
 }): BoosterPanelData {
-  const { type, counts, rules, user } = input;
+  const { type, counts, user } = input;
+  // Planchers et taux du type (boostés pour un Impérial) : les chances affichées sont celles du tirage
+  const rules = typeDrawRules(type, input.rules);
   const RARITIES = Object.keys(rules.rates);
-  const slotFloors = effectiveSlotFloors(type.slotFloors, rules.slotFloors);
+  const slotFloors = [...rules.slotFloors];
   const best = slotFloors.reduce((a, b) => (rarityIndex(b, RARITIES) > rarityIndex(a, RARITIES) ? b : a), slotFloors[0] ?? "COMMON");
   const featuredTotal = input.featuredCounts ? RARITIES.reduce((s, r) => s + input.featuredCounts![r], 0) : 0;
   return {

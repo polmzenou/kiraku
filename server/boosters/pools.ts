@@ -139,6 +139,8 @@ export type BoosterOffer = {
   counts: Record<Rarity, number>;
   size: number;
   availability: Availability;
+  /** En boutique : comme `availability`, sauf un Prestige (Impérial), vendu là seulement. */
+  shopAvailability: Availability;
   /** Familles tournantes : proposé dans la sélection en cours, ou au repos (caché). */
   rotation: "featured" | "resting" | null;
 };
@@ -160,7 +162,14 @@ const loadBaseOffers = cache(async (): Promise<BaseOffer[]> => {
     entries.map(async (entry) => {
       const counts = entry.dynamic || !entry.storedCounts ? poolCounts(await getBoosterPool(entry)) : entry.storedCounts;
       const size = Object.values(counts).reduce((s, n) => s + n, 0);
-      return { type: entry.type, counts, size, availability: availability(entry.type, now, size, entry.type.minPoolSize ?? minPool) };
+      const min = entry.type.minPoolSize ?? minPool;
+      return {
+        type: entry.type,
+        counts,
+        size,
+        availability: availability(entry.type, now, size, min),
+        shopAvailability: availability(entry.type, now, size, min, "shop"),
+      };
     }),
   );
 });
@@ -192,7 +201,7 @@ export const getBoosterOffers = cache(async (): Promise<BoosterOffer[]> => {
     // Hors de la sélection en cours : caché comme un type inactif (ni affiché, ni ouvrable hors crédit)
     return rotation.selection[family].slugs.includes(offer.type.slug)
       ? { ...offer, rotation: "featured" as const }
-      : { ...offer, availability: "hidden" as const, rotation: "resting" as const };
+      : { ...offer, availability: "hidden" as const, shopAvailability: "hidden" as const, rotation: "resting" as const };
   });
 });
 

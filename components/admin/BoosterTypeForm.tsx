@@ -380,6 +380,44 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, focusSerie
           </Field>
           <Check label={t("countsForPity")} checked={v.countsForPity} onChange={(c) => set("countsForPity", c)} />
           <Check label={t("bonusEligible")} checked={v.bonusEligible} onChange={(c) => set("bonusEligible", c)} />
+          {/* Boost de rareté (Impérial) : les parts des raretés à partir de celle choisie sont multipliées */}
+          <Field label={t("rateBoostFrom")} hint={t("rateBoostHint")}>
+            {(id) => (
+              <select
+                id={id}
+                className={input}
+                value={v.rateBoostFrom ?? ""}
+                onChange={(e) => set("rateBoostFrom", e.target.value === "" ? null : (e.target.value as Rarity))}
+              >
+                <option value="">{t("rateBoostNone")}</option>
+                {RARITIES.map((r) => (
+                  <option key={r} value={r}>
+                    {RARITY_SEAL[r]} {r}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+          {v.rateBoostFrom !== null && (
+            <Field label={t("rateBoost")}>
+              {(id) => (
+                <input
+                  id={id}
+                  type="number"
+                  inputMode="decimal"
+                  min={1}
+                  max={10}
+                  step={0.1}
+                  className={input}
+                  value={v.rateBoost / 10_000}
+                  onChange={(e) => {
+                    const x = Number(e.target.value);
+                    if (Number.isFinite(x)) set("rateBoost", Math.min(100_000, Math.max(10_000, Math.round(x * 10_000))));
+                  }}
+                />
+              )}
+            </Field>
+          )}
         </Section>
 
         {isBanner && (

@@ -1269,7 +1269,8 @@
         "pool": "pool sous {min}",
         "filter": "filtre invalide",
         "rotation": "au repos (rotation)",
-        "featured": "en avant (rotation)"
+        "featured": "en avant (rotation)",
+        "shopOnly": "vendu en boutique seulement"
       },
       "price": {
         "free": "Gratuit",
@@ -1347,6 +1348,10 @@
       "priceHint": "Booster gratuit : prix payé quand le stock est vide.",
       "countsForPity": "Compte pour la pitié Mythique partagée",
       "bonusEligible": "Peut être doré ou divin",
+      "rateBoostFrom": "Boost de rareté à partir de",
+      "rateBoostNone": "Aucun (taux normaux)",
+      "rateBoostHint": "Les parts de cette rareté et des suivantes sont multipliées ; le reste est repris aux raretés plus basses.",
+      "rateBoost": "Multiplicateur (×)",
       "featuredSearch": "Chercher une carte à mettre en vedette",
       "featuredEmpty": "Aucune vedette : choisis au moins une carte.",
       "featuredRate": "Part des tirages de sa rareté qui va aux vedettes (%)",
@@ -3313,7 +3318,8 @@
       "pack": {
         "pool": "Parmi {count, number} cartes",
         "owned": "{count, plural, one {# déjà à ouvrir} other {# déjà à ouvrir}}",
-        "credits": "Boosters achetés ici : pitié comprise, {noBonus}.",
+        "credits": "Boosters achetés ici : pitié comprise, {noBonus} (sauf mention « Doré compris »).",
+        "prestige": "Doré compris",
         "resetsDays": "De nouveau disponible dans {days, plural, one {# jour} other {# jours}}",
         "resetsHours": "De nouveau disponible dans {hours, plural, =0 {moins d'une heure} one {# heure} other {# heures}}"
       },

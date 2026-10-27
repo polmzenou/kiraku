@@ -8,7 +8,7 @@ import { usePercent } from "@/components/boosters/format";
 import { Link } from "@/i18n/navigation";
 import { formFromType } from "@/lib/boosters/admin-form";
 import { atLeastOdds } from "@/lib/boosters/odds";
-import { effectiveSlotFloors, localize, SLUG_PATTERN } from "@/lib/boosters/types";
+import { localize, SLUG_PATTERN, typeDrawRules } from "@/lib/boosters/types";
 import { type Rarity } from "@/lib/catalog/rarity";
 import { requireAdmin } from "@/server/admin";
 import { adminBoosterType, featuredCandidates, focusSeriesCandidates } from "@/server/admin-boosters";
@@ -31,7 +31,8 @@ export default async function AdminBoosterTypePage({ params }: PageProps<"/[loca
     focusSeriesCandidates(type.focusSeriesIds),
   ]);
   const offer = offers.find((o) => o.type.slug === slug);
-  const floors = effectiveSlotFloors(type.slotFloors, rules.draw.slotFloors);
+  // Planchers et taux du type (boostés pour un Impérial), comme dans le panneau des joueurs
+  const draw = typeDrawRules(type, rules.draw);
 
   return (
     <div className="flex flex-col gap-6">
@@ -40,7 +41,7 @@ export default async function AdminBoosterTypePage({ params }: PageProps<"/[loca
       </Link>
       <h2 className="font-heading text-2xl font-bold">{t("editTitle", { name: localize(type.name, locale) })}</h2>
 
-      {offer && <OddsTable floors={floors} rates={rules.draw.rates} counts={offer.counts} size={offer.size} />}
+      {offer && <OddsTable floors={[...draw.slotFloors]} rates={draw.rates} counts={offer.counts} size={offer.size} />}
 
       <BoosterTypeForm initial={formFromType(type)} featured={featured} focusSeries={focusSeries} globalCards={rules.draw.slotFloors.length} />
     </div>
