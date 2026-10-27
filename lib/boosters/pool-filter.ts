@@ -48,6 +48,10 @@ export function parsePoolFilter(raw: unknown): PoolFilter | null {
 export type PoolCandidate = {
   origin?: string;
   boosterIds?: string[];
+  /** Carte de base d'une variante (AR, Gold) : la variante la suit dans les boosters. */
+  variantOfId?: string | null;
+  /** Variante réservée aux boosters cochés (`boosterIds`). */
+  boosterExclusive?: boolean;
   id: string;
   anilistId: number | null;
   rarity: Rarity;

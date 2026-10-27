@@ -57,7 +57,7 @@ export async function saveCatalogCardWith(db: PrismaClient, adminId: string, dra
       name: draft.name, nameNative: draft.nameNative || null, imageUrl: draft.imageUrl,
       description: json(draft.description), appearance: json(draft.appearance), rarity: draft.rarity,
       power: draft.power, ki: draft.ki, dropWeight: draft.dropWeight, status: draft.status,
-      seriesId: series.id, boosterIds, gender: draft.gender || null, role: draft.role,
+      seriesId: series.id, boosterIds, boosterExclusive: draft.variantOfId ? draft.boosterExclusive : false, gender: draft.gender || null, role: draft.role,
       birthMonth: draft.birthMonth, birthDay: draft.birthDay,
       variantOfId: draft.variantOfId, formName: draft.formName || null,
       searchText: buildSearchText([draft.name, draft.nameNative, draft.formName, series.titleRomaji, series.titleEnglish, series.titleNative]),

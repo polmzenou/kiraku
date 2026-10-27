@@ -81,6 +81,7 @@ export function CardEditor({ scope, initial, options, context }: { scope: Catalo
   }, []);
   useEffect(() => { if (error) alert.current?.focus(); }, [error]);
   const previewPayload = JSON.stringify({ id: draft.id, rarity: draft.rarity, dropWeight: draft.dropWeight, boosterIds: draft.boosterIds,
+    variantOfId: draft.variantOfId, boosterExclusive: draft.boosterExclusive,
     scenario, featuredPity, seriesId: draft.seriesId, newSeries: draft.newSeries, gender: draft.gender, role: draft.role, birthMonth: draft.birthMonth, birthDay: draft.birthDay });
   useEffect(() => {
     const controller = new AbortController();
@@ -201,7 +202,8 @@ export function CardEditor({ scope, initial, options, context }: { scope: Catalo
         <Section id="animations" title={t("animations")}><AppearanceFields animation value={draft.appearance} defaults={appearanceDefaults} onChange={(appearance) => update({ appearance })} /></Section>
         <Section id="distribution" title={t("distribution")}>
           <NumberField label={t("dropWeight")} hint={t("weightHint")} value={draft.dropWeight} min={0} max={1_000_000} onChange={(dropWeight) => update({ dropWeight })} />
-          <fieldset className="mt-4"><legend className="mb-2 text-sm font-bold">{t("boosters")}</legend><div className="grid max-h-72 gap-1 overflow-y-auto sm:grid-cols-2">{options.boosters.map((b) => <label key={b.id} className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={draft.boosterIds.includes(b.id)} onChange={(e) => update({ boosterIds: e.target.checked ? [...draft.boosterIds, b.id] : draft.boosterIds.filter((id) => id !== b.id) })} />{localize(parseLocalized(b.name, b.slug), locale)}{!b.active && ` (${t("inactive")})`}</label>)}</div></fieldset>
+          {draft.variantOfId && <label className="mt-4 flex min-h-11 items-start gap-3 text-sm"><input type="checkbox" className="mt-1 size-5" checked={draft.boosterExclusive} onChange={(e) => update({ boosterExclusive: e.target.checked })} /><span><span className="font-bold">{t("boosterExclusive")}</span><span className="block text-xs text-text-muted">{t(draft.boosterExclusive ? "boosterExclusiveOn" : "boosterExclusiveOff")}</span></span></label>}
+          <fieldset className="mt-4"><legend className="mb-2 text-sm font-bold">{t(draft.variantOfId && !draft.boosterExclusive ? "boostersExtra" : "boosters")}</legend><div className="grid max-h-72 gap-1 overflow-y-auto sm:grid-cols-2">{options.boosters.map((b) => <label key={b.id} className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={draft.boosterIds.includes(b.id)} onChange={(e) => update({ boosterIds: e.target.checked ? [...draft.boosterIds, b.id] : draft.boosterIds.filter((id) => id !== b.id) })} />{localize(parseLocalized(b.name, b.slug), locale)}{!b.active && ` (${t("inactive")})`}</label>)}</div></fieldset>
           <div className="mt-5 border-t border-border pt-4"><h4 className="mb-3 font-bold">{t("odds")}</h4><SelectField label={t("scenario")} value={scenario} onChange={setScenario} options={["normal", "golden", "divine", "pity"].map((v) => ({ value: v as OddsScenario, label: t(v as "normal") }))} />
             <label className="mt-3 flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={featuredPity} onChange={(e) => setFeaturedPity(e.target.checked)} />{t("featuredPity")}</label>
             <p className="mt-2 text-xs text-text-muted">{t("oddsHint")}</p>

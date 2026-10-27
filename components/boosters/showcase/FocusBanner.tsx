@@ -1,27 +1,25 @@
 "use client";
 
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import type { BoosterTheme } from "@/lib/boosters/types";
 import { EndsIn } from "../EndsIn";
 
 export type FocusAnnouncement = {
   slug: string;
-  /** Titres des œuvres mises en avant, déjà traduits. */
-  series: string[];
+  /** Focus série ouvrables en ce moment (la bannière mène au premier activé). */
+  count: number;
   endsAt: number;
   theme: BoosterTheme;
   emblem: string;
 };
 
 /**
- * « En ce moment, il y a un booster spécial série JJK ! » : annonce du Focus série en cours, aux
+ * « En ce moment, il y a des boosters spéciaux ! » : annonce des Focus série en cours, aux
  * couleurs de son sachet, avec sa fin et un bouton qui ouvre l'onglet Spéciaux sur ce booster.
  */
 export function FocusBanner({ focus, serverNow, onOpen }: { focus: FocusAnnouncement; serverNow: number; onOpen: () => void }) {
   const t = useTranslations("boosters.focus");
-  const format = useFormatter();
   const dark = focus.theme.ink === "dark";
-  const series = format.list(focus.series, { type: "conjunction" });
 
   return (
     <aside
@@ -41,7 +39,7 @@ export function FocusBanner({ focus, serverNow, onOpen }: { focus: FocusAnnounce
         </span>
         <div className="flex min-w-0 flex-col gap-0.5">
           <p id="focus-banner-title" className="text-sm font-bold sm:text-base">
-            {t.rich("announce", { series, strong: (chunks) => <strong className="font-heading font-extrabold">{chunks}</strong> })}
+            {t.rich("announce", { count: focus.count, strong: (chunks) => <strong className="font-heading font-extrabold">{chunks}</strong> })}
           </p>
           <EndsIn endsAt={focus.endsAt} serverNow={serverNow} className={`text-xs font-bold ${dark ? "text-[#1f1b17]/75" : "text-[#f1e9da]/80"}`} />
         </div>

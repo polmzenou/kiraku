@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { BOOSTER_SEEDS } from "@/prisma/seed/booster-types";
-import { focusCards, upsertBoosterSeeds } from "./type-store";
+import { computePoolCards, focusCards, upsertBoosterSeeds } from "./type-store";
+import { filterContext, type PoolCandidate } from "@/lib/boosters/pool-filter";
 import { featuredFromPool, groupByRarity } from "@/lib/boosters/draw";
 
 describe("seed ciblé de booster", () => {
@@ -44,5 +45,31 @@ describe("Focus série", () => {
     expect(featured.byRarity.COMMON).toEqual(["itadori"]);
     expect(featured.byRarity.EPIC).toEqual([]);
     expect(featured.rate).toBe(4000);
+  });
+});
+
+describe("variantes dans les pools", () => {
+  const ctx = filterContext(new Date("2026-10-27T10:00:00Z"), "Europe/Paris");
+  const card = (id: string, extra: Partial<PoolCandidate> = {}): PoolCandidate => ({
+    id, anilistId: null, rarity: "MYTHIC", gender: "Female", role: "MAIN", birthMonth: null, birthDay: null,
+    seriesAnilistId: 127230, mediaType: "ANIME", genres: [], tags: [], year: 2022, season: null, seasonYear: null, studio: null,
+    origin: "ANILIST", ...extra,
+  });
+  const makima = card("makima");
+  const denji = card("denji", { gender: "Male" });
+  const ar = card("makima-ar", { rarity: "AR", origin: "CUSTOM", variantOfId: "makima", gender: null, role: null });
+  const gold = card("makima-gold", { rarity: "GOLD", origin: "CUSTOM", variantOfId: "makima", boosterExclusive: true, boosterIds: ["event"] });
+  const all = [makima, denji, ar, gold];
+  const ids = (type: Parameters<typeof computePoolCards>[0]) => computePoolCards(type, all, ctx).map((c) => c.id);
+
+  it("une variante suit sa carte de base, même sans être cochée ni remplir le filtre", () => {
+    expect(ids({ id: "focus-csm", filter: { seriesIds: [127230] }, featuredCardIds: [] })).toEqual(["makima", "denji", "makima-ar"]);
+    expect(ids({ id: "waifus", filter: { gender: "Female" }, featuredCardIds: [] })).toEqual(["makima", "makima-ar"]);
+    expect(ids({ id: "husbandos", filter: { gender: "Male" }, featuredCardIds: [] })).toEqual(["denji"]);
+  });
+
+  it("une variante exclusive ne sort que des boosters cochés", () => {
+    expect(ids({ id: "divin", filter: {}, featuredCardIds: [] })).not.toContain("makima-gold");
+    expect(ids({ id: "event", filter: { seriesIds: [1] }, featuredCardIds: [] })).toEqual(["makima-gold"]);
   });
 });

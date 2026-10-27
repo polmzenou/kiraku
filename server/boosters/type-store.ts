@@ -60,6 +60,8 @@ export async function loadCandidates(db: Pick<PrismaClient, "card">): Promise<Po
       anilistId: true,
       origin: true,
       boosterIds: true,
+      variantOfId: true,
+      boosterExclusive: true,
       rarity: true,
       gender: true,
       role: true,
@@ -74,6 +76,8 @@ export async function loadCandidates(db: Pick<PrismaClient, "card">): Promise<Po
     id: c.id,
     origin: c.origin,
     boosterIds: c.boosterIds,
+    variantOfId: c.variantOfId,
+    boosterExclusive: c.boosterExclusive,
     anilistId: c.anilistId,
     rarity: c.rarity as Rarity,
     gender: c.gender,
@@ -92,8 +96,9 @@ export async function loadCandidates(db: Pick<PrismaClient, "card">): Promise<Po
 }
 
 /**
- * Cartes du pool d'un type : celles qui passent le filtre, plus les vedettes d'une bannière
- * (toujours tirables, même hors filtre). Un filtre invalide donne un pool vide.
+ * Cartes du pool d'un type : celles qui passent le filtre, les créations cochées pour ce type, les
+ * variantes (AR, Gold) dont la carte de base est dans le pool (sauf variante exclusive), plus les
+ * vedettes d'une bannière (toujours tirables, même hors filtre). Un filtre invalide donne un pool vide.
  */
 export function computePoolCards(
   type: Pick<BoosterTypeView, "filter" | "featuredCardIds"> & { id?: string },
@@ -101,10 +106,14 @@ export function computePoolCards(
   ctx: FilterContext,
 ): PoolCandidate[] {
   if (!type.filter) return [];
-  const kept = [
-    ...filterPool(candidates.filter((c) => c.origin !== "CUSTOM"), type.filter, ctx),
-    ...candidates.filter((c) => c.origin === "CUSTOM" && type.id && c.boosterIds?.includes(type.id)),
-  ];
+  const chosen = candidates.filter((c) => c.origin === "CUSTOM" && type.id && c.boosterIds?.includes(type.id));
+  const base = [...filterPool(candidates.filter((c) => c.origin !== "CUSTOM"), type.filter, ctx), ...chosen];
+  // Une variante suit sa carte de base : pas besoin de la cocher dans chaque nouveau booster
+  const inBase = new Set(base.map((c) => c.id));
+  const followers = candidates.filter(
+    (c) => c.origin === "CUSTOM" && c.variantOfId && !c.boosterExclusive && inBase.has(c.variantOfId) && !inBase.has(c.id),
+  );
+  const kept = [...base, ...followers];
   if (type.featuredCardIds.length === 0) return kept;
   const ids = new Set(kept.map((c) => c.id));
   const featured = new Set(type.featuredCardIds);
