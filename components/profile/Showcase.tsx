@@ -9,6 +9,7 @@ import { placeInSlot, slotAtPoint, swapSlots } from "@/lib/collection/showcase";
 import type { CollectionItem, ShowcaseCard } from "@/lib/collection/view";
 import { setShowcaseAction } from "@/server/actions/collection";
 import { Button } from "../ui/Button";
+import { OwnedBadge } from "../collection/OwnedBadge";
 import { ShowcasePicker } from "./ShowcasePicker";
 import { loadDomMax } from "../motion/load-features";
 
@@ -24,7 +25,13 @@ const cardSizes = "(min-width: 1200px) 274px, (min-width: 768px) calc((100vw - 1
  * une autre case (échange) ; les boutons ← → × et la case vide (+) font la même chose au clavier.
  * Mise à jour immédiate à l'écran, enregistrement en arrière-plan, retour en arrière si refus.
  */
-export function Showcase({ initial, editable, linkBase }: { initial: Slot[]; editable: boolean; linkBase: "/collection" | "/wiki" }) {
+export function Showcase({ initial, editable, linkBase, owned = [] }: {
+  initial: Slot[];
+  editable: boolean;
+  linkBase: "/collection" | "/wiki";
+  /** Vitrine d'un autre joueur : cartes que le visiteur possède déjà. */
+  owned?: string[];
+}) {
   const t = useTranslations("showcase");
   const [slots, setSlots] = useState<Slot[]>(initial);
   const saved = useRef<Slot[]>(initial);
@@ -112,7 +119,7 @@ export function Showcase({ initial, editable, linkBase }: { initial: Slot[]; edi
                   ) : (
                     <m.div layoutId={`showcase-${card.cardId}`}>
                       <Link href={`${linkBase}/${card.anilistId}`} prefetch={false} scroll={false} className="block rounded-[5px]">
-                        <Fuda card={card} series={card.series} size="md" sizes={cardSizes} preload={i < 2} />
+                        <Fuda card={card} series={card.series} size="md" sizes={cardSizes} preload={i < 2} corner={owned.includes(card.cardId) && <OwnedBadge />} />
                       </Link>
                     </m.div>
                   )

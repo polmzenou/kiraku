@@ -9,6 +9,7 @@ import type { CollectionItem, CollectionPage } from "@/lib/collection/view";
 import { loadCollectionPage } from "@/server/actions/collection";
 import { Button } from "../ui/Button";
 import { useCollectionStore } from "./CollectionStore";
+import { OwnedBadge } from "./OwnedBadge";
 
 // Colonnes alignées sur la grille du wiki : 3 · 4 (≥ 768) · 6 (≥ 1024) · 8 (≥ 1280)
 function columnsFor(width: number) {
@@ -33,23 +34,23 @@ function CollectionCard({ item, href, preload }: { item: CollectionItem; href: s
         series={item.series}
         size="sm"
         preload={preload}
-        overlay={
-          (item.copies > 1 || item.inShowcase) && (
+        corner={
+          (item.copies > 1 || item.viewerOwns) && (
             <>
               {item.copies > 1 && (
-                <span
-                  aria-hidden="true"
-                  className="absolute right-1 bottom-6 rounded-sm bg-sumi/85 px-1 text-[11px] font-bold tabular-nums text-washi-paper"
-                >
+                <span aria-hidden="true" className="rounded-sm bg-sumi/85 px-1 text-[11px] font-bold tabular-nums text-washi-paper">
                   ×{item.copies}
                 </span>
               )}
-              {item.inShowcase && (
-                <span className="absolute bottom-6 left-1 rounded-sm bg-kin px-1 text-[10px] font-bold text-sumi">
-                  {t("inShowcaseBadge")}
-                </span>
-              )}
+              {item.viewerOwns && <OwnedBadge />}
             </>
+          )
+        }
+        overlay={
+          item.inShowcase && (
+            <span className="absolute bottom-6 left-1 rounded-sm bg-kin px-1 text-[10px] font-bold text-sumi">
+              {t("inShowcaseBadge")}
+            </span>
           )
         }
       />

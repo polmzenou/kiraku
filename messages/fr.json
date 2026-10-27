@@ -2633,6 +2633,8 @@
     "back": "← Collection",
     "copiesLabel": "{count, plural, one {# exemplaire} other {# exemplaires}}",
     "inShowcaseBadge": "Vitrine",
+    "ownedBadge": "Acquise",
+    "ownedLabel": "Tu l’as déjà",
     "listLabel": "Cartes de la collection",
     "retry": "Réessayer",
     "searchLabel": "Chercher dans la collection",

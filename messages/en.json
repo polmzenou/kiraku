@@ -2633,6 +2633,8 @@
     "back": "← Collection",
     "copiesLabel": "{count, plural, one {# copy} other {# copies}}",
     "inShowcaseBadge": "Showcase",
+    "ownedBadge": "Owned",
+    "ownedLabel": "You already have it",
     "listLabel": "Collection cards",
     "retry": "Try again",
     "searchLabel": "Search the collection",

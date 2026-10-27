@@ -10,6 +10,7 @@ import type { CollectionItem } from "@/lib/collection/view";
 import { loadCollectionPage } from "@/server/actions/collection";
 import { Button } from "../ui/Button";
 import { inputClass } from "../ui/Field";
+import { OwnedBadge } from "./OwnedBadge";
 import { RarityChips } from "./RarityChips";
 
 const DEBOUNCE_MS = 300;
@@ -132,7 +133,13 @@ export function CardPickGrid({
                   onClick={() => onPick(item)}
                   className="relative block w-full rounded-fuda text-left outline-offset-2 transition-transform active:scale-[0.97] disabled:opacity-40 aria-pressed:outline-3 aria-pressed:outline-shu motion-reduce:transition-none"
                 >
-                  <Fuda card={item} series={item.series} size="sm" tilt={false} />
+                  <Fuda
+                    card={item}
+                    series={item.series}
+                    size="sm"
+                    tilt={false}
+                    corner={item.viewerOwns && <OwnedBadge />}
+                  />
                   <span className="sr-only">{pickLabel(item.name)}</span>
                   {checked && (
                     <span aria-hidden="true" className="absolute top-1 right-1 flex size-6 items-center justify-center rounded-full bg-shu text-sm font-bold text-washi-paper shadow-raised">

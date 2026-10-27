@@ -8,6 +8,7 @@ import { Link } from "@/i18n/navigation";
 
 import { recentPullsAction } from "@/server/actions/home";
 import type { RecentPull } from "@/server/home/pulls";
+import { OwnedBadge } from "../collection/OwnedBadge";
 import { Fuda } from "../fuda/Fuda";
 import { SectionTitle } from "../SectionTitle";
 import { useReducedFx } from "../motion/MotionPreference";
@@ -24,9 +25,16 @@ const SECONDS_PER_CARD = 4;
  * ruban qui défile sans fin et qu'on peut faire glisser (pause au survol ou au focus). Sans
  * animation, c'est une rangée à faire défiler du doigt. Rafraîchi tant que l'onglet est visible.
  */
-export function RecentPulls({ initial, refreshSeconds, serverNow }: { initial: RecentPull[]; refreshSeconds: number; serverNow: number }) {
+export function RecentPulls({ initial, initialOwned, refreshSeconds, serverNow }: {
+  initial: RecentPull[];
+  /** Cartes du ruban que le visiteur a déjà (pastille « Acquise »). */
+  initialOwned: string[];
+  refreshSeconds: number;
+  serverNow: number;
+}) {
   const t = useTranslations("home.pulls");
   const [pulls, setPulls] = useState(initial);
+  const [owned, setOwned] = useState(() => new Set(initialOwned));
   const [now, setNow] = useState(serverNow);
   const reduced = useReducedFx();
   const marquee = pulls.length >= MARQUEE_MIN && !reduced;
@@ -38,7 +46,9 @@ export function RecentPulls({ initial, refreshSeconds, serverNow }: { initial: R
       if (document.visibilityState !== "visible") return;
       setNow(Date.now());
       const res = await recentPullsAction({});
-      if (!stopped && res.ok) setPulls(res.pulls);
+      if (stopped || !res.ok) return;
+      setPulls(res.pulls);
+      setOwned(new Set(res.owned));
     };
     const id = setInterval(() => void tick(), refreshSeconds * 1000);
     return () => {
@@ -68,12 +78,12 @@ export function RecentPulls({ initial, refreshSeconds, serverNow }: { initial: R
         } [mask-image:linear-gradient(90deg,transparent,#000_1rem,#000_calc(100%-1rem),transparent)] [scrollbar-width:thin]`}
       >
         <div ref={track} className="flex w-max gap-3 py-1 will-change-transform">
-          <PullList pulls={pulls} now={now} />
+          <PullList pulls={pulls} owned={owned} now={now} />
           {/* Deuxième passage pour la boucle : invisible aux lecteurs d'écran et au clavier, mais
               cliquable (pas d'`inert`, qui ignorerait les appuis quand cette copie est à l'écran) */}
           {marquee && (
             <div aria-hidden="true" className="flex gap-3 motion-reduce:hidden">
-              <PullList pulls={pulls} now={now} copy />
+              <PullList pulls={pulls} owned={owned} now={now} copy />
             </div>
           )}
         </div>
@@ -82,7 +92,7 @@ export function RecentPulls({ initial, refreshSeconds, serverNow }: { initial: R
   );
 }
 
-function PullList({ pulls, now, copy = false }: { pulls: RecentPull[]; now: number; copy?: boolean }) {
+function PullList({ pulls, owned, now, copy = false }: { pulls: RecentPull[]; owned: ReadonlySet<string>; now: number; copy?: boolean }) {
   const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("home.pulls");
   const tRarity = useTranslations("rarity");
@@ -93,7 +103,7 @@ function PullList({ pulls, now, copy = false }: { pulls: RecentPull[]; now: numb
       {pulls.map((p) => (
         <li key={p.id} className="flex w-32 shrink-0 flex-col gap-2 sm:w-36">
           <Link href={`/wiki/${p.card.anilistId}`} tabIndex={tabIndex} aria-label={t("cardLabel", { name: p.card.name, rarity: tRarity(p.card.rarity) })}>
-            <Fuda card={p.card} series={p.card.series} size="sm" tilt={false} sizes="144px" describeImage />
+            <Fuda card={p.card} series={p.card.series} size="sm" tilt={false} sizes="144px" describeImage corner={owned.has(p.card.cardId) && <OwnedBadge />} />
           </Link>
           <div className="flex min-w-0 items-center gap-2">
             {p.profile ? (

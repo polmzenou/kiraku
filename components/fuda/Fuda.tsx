@@ -74,6 +74,7 @@ export function Fuda({
   still = false,
   sizes,
   overlay,
+  corner,
   glow,
   describeImage = size !== "sm",
 }: {
@@ -95,6 +96,8 @@ export function Fuda({
   sizes?: string;
   /** Posé sur la carte (pastilles, reflets de révélation) : il s'incline avec elle. */
   overlay?: ReactNode;
+  /** Pastilles en bas à droite de l'illustration (×2, « Acquise »), à gauche du nom japonais vertical. */
+  corner?: ReactNode;
   /** Anneau lumineux (meilleure carte du récap) : porté par la carte, il suit son inclinaison. */
   glow?: string;
   /**
@@ -163,6 +166,11 @@ export function Fuda({
               className="absolute bottom-1 right-1 max-h-[70%] overflow-hidden rounded-pill bg-washi-paper/85 px-0.5 py-1 font-title font-bold [writing-mode:vertical-rl]"
             >
               {card.nameNative}
+            </span>
+          )}
+          {corner && (
+            <span className={`absolute bottom-1 flex items-center gap-1 ${showNative ? (size === "lg" ? "right-10" : "right-7") : "right-1"}`}>
+              {corner}
             </span>
           )}
         </div>

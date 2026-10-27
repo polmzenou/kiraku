@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getCurrentUser } from "../user";
 import { clientIp, rateLimit } from "../ratelimit";
 import { getRecentPulls, purgeOldPulls, type RecentPull } from "../home/pulls";
+import { ownedCardIds } from "../collection/owned";
 
 const pullsInput = z.object({}).strict();
 
@@ -13,7 +14,7 @@ const pullsInput = z.object({}).strict();
  * Rafraîchissement du carrousel « Gros tirages » (lecture publique). La session est lue pour
  * limiter par joueur quand il y en a un, sinon par IP.
  */
-export async function recentPullsAction(input: unknown): Promise<{ ok: true; pulls: RecentPull[] } | { ok: false; error: "INVALID" | "RATE_LIMITED" | "DISABLED" }> {
+export async function recentPullsAction(input: unknown): Promise<{ ok: true; pulls: RecentPull[]; owned: string[] } | { ok: false; error: "INVALID" | "RATE_LIMITED" | "DISABLED" }> {
   const user = await getCurrentUser();
   if (!pullsInput.safeParse(input).success) return { ok: false, error: "INVALID" };
   const who = user?.id ?? (await clientIp());
@@ -22,5 +23,5 @@ export async function recentPullsAction(input: unknown): Promise<{ ok: true; pul
   if (!pulls) return { ok: false, error: "DISABLED" };
   // Une fois par heure au plus, quel que soit le visiteur
   if ((await rateLimit("pull-feed:purge", { limit: 1, windowSeconds: 3600 })).success) after(() => purgeOldPulls());
-  return { ok: true, pulls };
+  return { ok: true, pulls, owned: await ownedCardIds(user?.id, pulls.map((p) => p.card.cardId)) };
 }
