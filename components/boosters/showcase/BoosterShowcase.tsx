@@ -15,7 +15,9 @@ import { RARITY_BG, usePercent } from "../format";
 import { NextFreeIn } from "../NextFreeIn";
 import { OpenLink } from "../OpenLink";
 import { RatesSheet } from "../RatesSheet";
+import { EndsIn } from "../EndsIn";
 import { AllBoostersSheet } from "./AllBoostersSheet";
+import { FocusBanner, type FocusAnnouncement } from "./FocusBanner";
 import { ShowcaseBackdrop } from "./ShowcaseBackdrop";
 import { ShowcaseList } from "./ShowcaseList";
 import { BoosterStripTile } from "./ShowcaseRow";
@@ -34,6 +36,8 @@ type Props = {
   /** « Sélection tournante · nouvelle sélection dans 5 h » (familles tournantes). */
   rotationNote: string;
   banner: { slug: string; name: string; days: number | null } | null;
+  /** Focus série annoncé entre le titre et la vitrine (le premier activé), ou null. */
+  focus: FocusAnnouncement | null;
   /** Titre de la page (rendu par le serveur), à côté de la pastille de la bannière. */
   heading: ReactNode;
 };
@@ -44,7 +48,7 @@ type Props = {
  * bandeau de la famille et feuille « Tous » en mobile. Le choix se fait sans rechargement, l'URL
  * (?b=&f=) suit pour le partage. Le serveur recalcule tout à l'ouverture.
  */
-export function BoosterShowcase({ items, families, initial, state, ctx, rotationNote, banner, heading }: Props) {
+export function BoosterShowcase({ items, families, initial, state, ctx, rotationNote, banner, focus, heading }: Props) {
   const t = useTranslations("boosters.showcase");
   const tb = useTranslations("boosters");
   const tOpening = useTranslations("opening");
@@ -103,6 +107,13 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
   const select = (nextSlug: string) => {
     const entry = entries.find((e) => e.slug === nextSlug && e.selectable);
     if (entry && entry.slug !== slug) commit(entry.slug, entry.family);
+  };
+  // Bouton de la bannière Focus : onglet et booster choisis, puis la vitrine vient à l'écran
+  const heroRef = useRef<HTMLElement>(null);
+  const openFocus = (focusSlug: string) => {
+    select(focusSlug);
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    heroRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   };
   const pickFamily = (next: BoosterFamily) => {
     setQuery("");
@@ -232,11 +243,14 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
         )}
       </div>
 
+      {focus && <FocusBanner focus={focus} serverNow={state.serverNow} onOpen={() => openFocus(focus.slug)} />}
+
       <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-stretch lg:gap-6">
         <section
+          ref={heroRef}
           aria-labelledby="showcase-name"
           data-ink={type.theme.ink}
-          className="showcase relative isolate -mx-4 flex min-h-[25rem] flex-col overflow-hidden text-[var(--ink)] lg:mx-0 lg:min-h-[36rem] lg:rounded-hero lg:border lg:border-white/10"
+          className="showcase relative isolate -mx-4 flex min-h-[25rem] scroll-mt-20 flex-col overflow-hidden text-[var(--ink)] lg:mx-0 lg:min-h-[36rem] lg:rounded-hero lg:border lg:border-white/10"
         >
           <ShowcaseBackdrop slug={selected.slug} theme={type.theme} />
 
@@ -322,6 +336,14 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
                   {name}
                 </h2>
                 <p className="mt-1 text-xs text-[var(--ink-2)] lg:text-[15px]">{tagline}</p>
+                {type.endsAt && (
+                  <EndsIn
+                    key={selected.slug}
+                    endsAt={new Date(type.endsAt).getTime()}
+                    serverNow={state.serverNow}
+                    className="mt-2 rounded-pill border border-[var(--chip-b)] bg-[var(--chip)] px-2.5 py-1 text-[11px] font-bold lg:text-xs"
+                  />
+                )}
               </div>
 
               {panel && (
@@ -388,13 +410,13 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
                             <span aria-hidden="true" lang="ja" className="font-seal text-kin">
                               星
                             </span>
-                            <span className="truncate">{tb("featuredChance")}</span>
+                            <span className="truncate">{tb(panel.featured.focus ? "focusChance" : "featuredChance")}</span>
                           </span>
                           <span aria-hidden="true" className="h-1.5 overflow-hidden rounded-full bg-[var(--track)]">
                             <span className="block h-full origin-left rounded-full bg-kin" style={{ transform: `scaleX(${Math.max(panel.featured.chance, 0.02)})` }} />
                           </span>
                           <span className="text-right tabular-nums">
-                            <span className="sr-only">{tb("featuredRow", { value: percent(panel.featured.chance) })}</span>
+                            <span className="sr-only">{tb(panel.featured.focus ? "focusRow" : "featuredRow", { value: percent(panel.featured.chance) })}</span>
                             <span aria-hidden="true">{percent(panel.featured.chance)}</span>
                           </span>
                         </li>

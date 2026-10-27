@@ -28,6 +28,7 @@ export type AdminBoosterError =
   | "NOT_FOUND"
   | "SLUG_TAKEN"
   | "UNKNOWN_CARDS"
+  | "UNKNOWN_SERIES"
   | "POOL_TOO_SMALL";
 
 export type AdminBoosterResult = { ok: true; poolSize: number } | { ok: false; error: AdminBoosterError; poolSize?: number };
@@ -69,6 +70,13 @@ export async function saveBoosterType(input: unknown): Promise<AdminBoosterResul
     if (found !== featured.length) return { ok: false, error: "UNKNOWN_CARDS" };
   }
 
+  // Focus série : des œuvres connues du catalogue, avec au moins une carte publiée
+  const focusSeries = v.kind === "FOCUS" ? [...new Set(v.focusSeriesIds)] : [];
+  if (focusSeries.length > 0) {
+    const found = await prisma.series.count({ where: { anilistId: { in: focusSeries }, cards: { some: { status: "PUBLISHED" } } } });
+    if (found !== focusSeries.length) return { ok: false, error: "UNKNOWN_SERIES" };
+  }
+
   const minPool = v.minPoolSize ?? (await getSetting("booster.minPool"));
   const poolSize = await poolSizeFor({ filter, featuredCardIds: featured });
   if (v.active && poolSize < minPool) return { ok: false, error: "POOL_TOO_SMALL", poolSize };
@@ -91,6 +99,7 @@ export async function saveBoosterType(input: unknown): Promise<AdminBoosterResul
     featuredCardIds: featured,
     featuredRate: v.featuredRate,
     featuredPity: v.featuredPity,
+    focusSeriesIds: focusSeries,
     minPoolSize: v.minPoolSize,
     startsAt: v.startsAt ? new Date(v.startsAt) : null,
     endsAt: v.endsAt ? new Date(v.endsAt) : null,
@@ -103,13 +112,15 @@ export async function saveBoosterType(input: unknown): Promise<AdminBoosterResul
     if (v.mode === "create" && before) return "SLUG_TAKEN" as const;
     const sortOrder =
       v.mode === "create" ? await tx.boosterType.count({ where: { family: v.family } }) : (before?.sortOrder ?? 0);
+    // Passage d'inactif à actif : date d'activation (ordre des bannières Focus)
+    const activatedAt = v.active && !before?.active ? { activatedAt: new Date() } : {};
     const after =
       v.mode === "create"
-        ? await tx.boosterType.create({ data: { slug: v.slug, sortOrder, ...data } })
-        : await tx.boosterType.update({ where: { slug: v.slug }, data });
+        ? await tx.boosterType.create({ data: { slug: v.slug, sortOrder, ...data, ...activatedAt } })
+        : await tx.boosterType.update({ where: { slug: v.slug }, data: { ...data, ...activatedAt } });
     await writeAdminLog(tx, {
       adminId: g.admin.id,
-      action: v.mode === "create" ? (v.kind === "BANNER" ? "BANNER_CREATE" : "BOOSTER_TYPE_CREATE") : "BOOSTER_TYPE_UPDATE",
+      action: v.mode === "create" ? (v.kind === "BANNER" ? "BANNER_CREATE" : v.kind === "FOCUS" ? "FOCUS_CREATE" : "BOOSTER_TYPE_CREATE") : "BOOSTER_TYPE_UPDATE",
       targetType: "BoosterType",
       targetId: v.slug,
       before: before ? snapshot(before) : undefined,
@@ -142,7 +153,7 @@ export async function toggleBoosterType(input: unknown): Promise<AdminBoosterRes
   if (active && poolSize < minPool) return { ok: false, error: "POOL_TOO_SMALL", poolSize };
 
   await prisma.$transaction(async (tx) => {
-    await tx.boosterType.update({ where: { slug }, data: { active } });
+    await tx.boosterType.update({ where: { slug }, data: { active, ...(active && !row.active ? { activatedAt: new Date() } : {}) } });
     await writeAdminLog(tx, {
       adminId: g.admin.id,
       action: "BOOSTER_TYPE_UPDATE",
@@ -187,6 +198,33 @@ export async function searchFeaturedCards(input: unknown): Promise<FeaturedCandi
     select: { id: true, name: true, rarity: true, rank: true, imageUrl: true, series: { select: { titleRomaji: true } } },
   });
   return rows.map((c) => ({ id: c.id, name: c.name, rarity: c.rarity, rank: c.rank, imageUrl: c.imageUrl, series: c.series.titleRomaji }));
+}
+
+export type FocusSeriesCandidate = { anilistId: number; title: string; type: string; cards: number };
+
+/** Recherche d'œuvres pour un Focus série (10 résultats au plus, celles qui ont des cartes publiées). */
+export async function searchFocusSeries(input: unknown): Promise<FocusSeriesCandidate[]> {
+  const admin = await getAdmin();
+  if (!admin) return [];
+  const parsed = searchSchema.safeParse(input);
+  if (!parsed.success) return [];
+  if (!(await rateLimit(`admin-search:${admin.id}`, { limit: 60, windowSeconds: 60 })).success) return [];
+  const q = parsed.data;
+  const rows = await prisma.series.findMany({
+    where: {
+      anilistId: { not: null },
+      cards: { some: { status: "PUBLISHED" } },
+      OR: [
+        { titleRomaji: { contains: q, mode: "insensitive" } },
+        { titleEnglish: { contains: q, mode: "insensitive" } },
+        { titleNative: { contains: q } },
+      ],
+    },
+    take: 10,
+    select: { anilistId: true, titleRomaji: true, type: true, _count: { select: { cards: { where: { status: "PUBLISHED" } } } } },
+    orderBy: { cards: { _count: "desc" } },
+  });
+  return rows.map((s) => ({ anilistId: s.anilistId!, title: s.titleRomaji, type: s.type, cards: s._count.cards }));
 }
 
 const PIN_KEY = "booster.rotationPin";

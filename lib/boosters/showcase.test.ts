@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  currentFocus,
   familyRows,
   firstSelectable,
   groupByFamily,
@@ -121,5 +122,33 @@ describe("initialSelection", () => {
     expect(initialSelection(ENTRIES, {})).toEqual({ slug: "standard", family: "standard" });
     expect(initialSelection([e("x", "genre", "X", false), e("y", "epoque", "Y")], {})).toEqual({ slug: "y", family: "epoque" });
     expect(initialSelection([], {})).toBeNull();
+  });
+});
+
+describe("currentFocus", () => {
+  const offer = (slug: string, kind: string, activatedAt: string | null, availability: "open" | "locked" | "hidden" = "open", sortOrder = 0) => ({
+    slug,
+    type: { kind: kind as never, activatedAt: activatedAt ? new Date(activatedAt) : null, sortOrder },
+    availability,
+  });
+
+  it("annonce le Focus ouvrable activé en premier", () => {
+    const offers = [
+      offer("csm", "FOCUS", "2026-10-20T10:00:00Z"),
+      offer("jjk", "FOCUS", "2026-10-18T10:00:00Z"),
+      offer("banniere", "BANNER", "2026-10-01T10:00:00Z"),
+    ];
+    expect(currentFocus(offers)?.slug).toBe("jjk");
+  });
+
+  it("ignore les Focus terminés, inactifs ou fermés, et ceux jamais datés passent après", () => {
+    const offers = [
+      offer("jjk", "FOCUS", "2026-10-18T10:00:00Z", "hidden"),
+      offer("sans-date", "FOCUS", null),
+      offer("csm", "FOCUS", "2026-10-20T10:00:00Z"),
+    ];
+    expect(currentFocus(offers)?.slug).toBe("csm");
+    expect(currentFocus([offer("jjk", "FOCUS", null, "locked")])).toBeNull();
+    expect(currentFocus([])).toBeNull();
   });
 });

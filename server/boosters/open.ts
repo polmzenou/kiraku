@@ -1,7 +1,7 @@
 import "server-only";
 import { randomInt } from "node:crypto";
 import { buildRarityTables, featuredFromPool, SEALED_KINDS, type SealedKind } from "@/lib/boosters/draw";
-import { effectiveSlotFloors } from "@/lib/boosters/types";
+import { effectiveSlotFloors, featuredIdsOf } from "@/lib/boosters/types";
 import { prisma } from "../db";
 import type { OnNotified } from "../social/notify";
 import { OpenError, openBoostersWith, openSealedWith } from "./open-core";
@@ -44,7 +44,7 @@ export async function openBoosters(userId: string, slug: string, count: number, 
     rules: { draw, stock: rules.stock },
     tables: buildRarityTables(draw.rates),
     pool,
-    featured: featuredFromPool(type.featuredCardIds, pool, { rate: type.featuredRate, pityThreshold: type.featuredPity }),
+    featured: featuredFromPool(featuredIdsOf(type), pool, { rate: type.featuredRate, pityThreshold: type.featuredPity }),
     // Un sachet dont le type est absent ou désactivé ne peut pas tomber
     sealedTypes: Object.fromEntries(Object.entries(sealed).map(([kind, e]) => [kind, e.type.id])),
     rng: (max) => randomInt(0, max),

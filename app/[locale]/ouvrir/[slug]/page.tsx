@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { PageShell } from "@/components/PageShell";
 import { contentsLabel, parseOpenChoice } from "@/lib/boosters/catalog";
-import { effectiveSlotFloors, localize, SLUG_PATTERN } from "@/lib/boosters/types";
+import { effectiveSlotFloors, featuredIdsOf, localize, SLUG_PATTERN } from "@/lib/boosters/types";
 import { readBannerPity } from "@/server/boosters/open-core";
 import { getBoosterOffers } from "@/server/boosters/pools";
 import { getBoosterRules } from "@/server/boosters/rules";
@@ -93,7 +93,7 @@ export default async function OpenBoosterPage({ params, searchParams }: PageProp
           countsForPity: type.countsForPity,
           bonusEligible: type.bonusEligible,
           featured:
-            type.featuredCardIds.length > 0 && type.featuredPity > 0
+            featuredIdsOf(type).length > 0 && type.featuredPity > 0
               ? { threshold: type.featuredPity, count: bannerPity[type.id] ?? 0 }
               : null,
         }}

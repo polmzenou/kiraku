@@ -37,11 +37,13 @@ export function useBoosterCountdown(nextAt: number | null, serverNow: number) {
   return remaining;
 }
 
-/** « 8 min 15 s » dans la langue courante. */
-export function useFormatCountdown() {
+/** « 8 min 15 s » dans la langue courante ; `days` : « 2 j 4 h » au-delà de 24 h. */
+export function useFormatCountdown(opts: { days?: boolean } = {}) {
   const t = useTranslations("time");
+  const days = opts.days ?? false;
   return (ms: number) => {
-    const p = countdownParts(ms);
+    const p = countdownParts(ms, { days });
+    if (p.unit === "dayHour") return t("dayHour", { days: p.days, hours: p.hours });
     if (p.unit === "hourMin") return t("hourMin", { hours: p.hours, minutes: p.minutes });
     if (p.unit === "minSec") return t("minSec", { minutes: p.minutes, seconds: p.seconds });
     return t("sec", { seconds: p.seconds });

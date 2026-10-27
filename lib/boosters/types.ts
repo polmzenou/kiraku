@@ -30,7 +30,7 @@ export const FAMILY_KANJI: Record<BoosterFamily, string> = {
   special: "特別",
 };
 
-export const BOOSTER_KINDS = ["STANDARD", "RARITY", "FILTERED", "BANNER", "FORMAT", "DROP"] as const;
+export const BOOSTER_KINDS = ["STANDARD", "RARITY", "FILTERED", "BANNER", "FORMAT", "FOCUS", "DROP"] as const;
 export type BoosterKind = (typeof BOOSTER_KINDS)[number];
 
 export const BOOSTER_SHAPES = ["SACHET", "POCHIBUKURO", "JUBAKO"] as const;
@@ -114,11 +114,26 @@ export type BoosterTypeView = {
   featuredCardIds: string[];
   featuredRate: number;
   featuredPity: number;
+  /** Focus série : œuvres mises en avant (ids AniList). */
+  focusSeriesIds: number[];
+  /** Focus série : cartes du pool de ces œuvres, recalculées avec le pool. */
+  focusCardIds: string[];
   minPoolSize: number | null;
   startsAt: Date | null;
   endsAt: Date | null;
   active: boolean;
+  /** Dernier passage d'inactif à actif (ordre des bannières Focus). */
+  activatedAt: Date | null;
 };
+
+/**
+ * Cartes « vedettes » d'un tirage : celles d'une bannière plus celles des séries d'un Focus. Les
+ * deux passent par le même taux (`featuredRate`) et la même pitié (`featuredPity`).
+ */
+export function featuredIdsOf(type: Pick<BoosterTypeView, "featuredCardIds" | "focusCardIds">): string[] {
+  if (type.focusCardIds.length === 0) return type.featuredCardIds;
+  return [...new Set([...type.featuredCardIds, ...type.focusCardIds])];
+}
 
 export function isRarity(value: string): value is Rarity {
   return rarityKeySchema.safeParse(value).success;

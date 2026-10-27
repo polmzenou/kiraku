@@ -21,8 +21,8 @@ import { appUrl } from "@/server/env";
 import { poolCounts } from "@/lib/boosters/draw";
 import { boosterPanelData, wishlistInPool, type WishlistInPool } from "@/lib/boosters/panel";
 import { isRotatingFamily } from "@/lib/boosters/rotation";
-import { initialSelection } from "@/lib/boosters/showcase";
-import { BOOSTER_FAMILIES, FAMILY_KANJI, localize } from "@/lib/boosters/types";
+import { currentFocus, initialSelection } from "@/lib/boosters/showcase";
+import { BOOSTER_FAMILIES, FAMILY_KANJI, featuredIdsOf, localize } from "@/lib/boosters/types";
 import { type Rarity } from "@/lib/catalog/rarity";
 import { canReview, pinnedFirst } from "@/lib/social/reviews";
 import { readBannerPity } from "@/server/boosters/open-core";
@@ -39,6 +39,7 @@ import { boosterStateFrom } from "@/server/boosters/state";
 import { getTopCollectors } from "@/server/collection/leaderboard";
 import { getWishlistCardIds } from "@/server/collection/profile-cards";
 import { getRecentPulls } from "@/server/home/pulls";
+import { focusSeriesTitles } from "@/server/boosters/focus";
 import { ownedCardIds } from "@/server/collection/owned";
 import { getBoosterCredits, getSealedDrops } from "@/server/economy/queries";
 import { getSealedDisplays } from "@/server/boosters/sealed";
@@ -137,12 +138,13 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
       if (!selectable) return { type: offer.type, cards: cardsOf(offer), selectable, panel: null, wishlist: null };
       let featuredCounts: Record<Rarity, number> | undefined;
       let wishlist: WishlistInPool | null = null;
-      if (offer.type.featuredCardIds.length > 0 || wished.length > 0) {
+      const featuredIds = featuredIdsOf(offer.type);
+      if (featuredIds.length > 0 || wished.length > 0) {
         const entry = await getBoosterTypeEntry(offer.type.slug);
         const pool = entry ? await getBoosterPool(entry) : null;
         if (pool && wished.length > 0) wishlist = wishlistInPool(pool, wished);
-        if (pool && offer.type.featuredCardIds.length > 0) {
-          const wanted = new Set(offer.type.featuredCardIds);
+        if (pool && featuredIds.length > 0) {
+          const wanted = new Set(featuredIds);
           featuredCounts = poolCounts(
             Object.fromEntries(RARITIES.map((r) => [r, pool[r].filter((id) => wanted.has(id))])) as Record<Rarity, string[]>,
           );
@@ -177,6 +179,19 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
   const banner = visible
     .filter((o) => o.type.kind === "BANNER" && o.type.featuredCardIds.length > 0)
     .sort((a, b) => (a.type.endsAt?.getTime() ?? Infinity) - (b.type.endsAt?.getTime() ?? Infinity))[0];
+
+  // Focus série annoncé au-dessus de la vitrine : le premier activé parmi ceux qu'on peut ouvrir
+  const focusOffer = currentFocus(visible);
+  const focus =
+    focusOffer && focusOffer.type.endsAt
+      ? {
+          slug: focusOffer.type.slug,
+          series: await focusSeriesTitles(focusOffer.type.focusSeriesIds, locale),
+          endsAt: focusOffer.type.endsAt.getTime(),
+          theme: focusOffer.type.theme,
+          emblem: focusOffer.type.emblem,
+        }
+      : null;
 
   const tMeta = await getTranslations("metadata");
   const structuredData = homeGraph(appUrl(), localePath("/", hasLocale(routing.locales, locale) ? locale : routing.defaultLocale), { name: tMeta("title"), description: tMeta("description"), language: locale });
@@ -221,6 +236,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
           state={state}
           ctx={ctx}
           rotationNote={t("rotationNext", { when: format.relativeTime(rotation.window.endsAt, state.serverNow) })}
+          focus={focus}
           banner={
             banner
               ? {

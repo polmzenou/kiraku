@@ -40,10 +40,13 @@ export function toBoosterTypeView(row: Omit<BoosterTypeRow, "poolCardIds">): Boo
     featuredCardIds: row.featuredCardIds,
     featuredRate: row.featuredRate,
     featuredPity: row.featuredPity,
+    focusSeriesIds: row.focusSeriesIds,
+    focusCardIds: row.focusCardIds,
     minPoolSize: row.minPoolSize,
     startsAt: row.startsAt,
     endsAt: row.endsAt,
     active: row.active,
+    activatedAt: row.activatedAt,
   };
 }
 
@@ -96,7 +99,7 @@ export function computePoolCards(
   type: Pick<BoosterTypeView, "filter" | "featuredCardIds"> & { id?: string },
   candidates: readonly PoolCandidate[],
   ctx: FilterContext,
-): { id: string; rarity: Rarity }[] {
+): PoolCandidate[] {
   if (!type.filter) return [];
   const kept = [
     ...filterPool(candidates.filter((c) => c.origin !== "CUSTOM"), type.filter, ctx),
@@ -106,6 +109,13 @@ export function computePoolCards(
   const ids = new Set(kept.map((c) => c.id));
   const featured = new Set(type.featuredCardIds);
   return [...kept, ...candidates.filter((c) => featured.has(c.id) && !ids.has(c.id) && (c.origin !== "CUSTOM" || (type.id && c.boosterIds?.includes(type.id))))];
+}
+
+/** Focus série : cartes du pool qui appartiennent aux œuvres mises en avant (ordre du pool). */
+export function focusCards(cards: readonly Pick<PoolCandidate, "id" | "seriesAnilistId">[], focusSeriesIds: readonly number[]): string[] {
+  if (focusSeriesIds.length === 0) return [];
+  const wanted = new Set(focusSeriesIds);
+  return cards.filter((c) => c.seriesAnilistId !== null && wanted.has(c.seriesAnilistId)).map((c) => c.id);
 }
 
 export function computePool(
@@ -142,13 +152,20 @@ export async function recomputeBoosterPools(
   const candidates = await loadCandidates(db);
   const reports: PoolReport[] = [];
   for (const row of rows) {
-    const cards = computePoolCards(toBoosterTypeView(row), candidates, ctx);
+    const view = toBoosterTypeView(row);
+    const cards = computePoolCards(view, candidates, ctx);
     const counts = poolCounts(groupByRarity(cards));
     await db.boosterType.update({
       where: { id: row.id },
       // updatedAt explicite : sinon Prisma le pose un instant après poolComputedAt, et le pool
       // paraîtrait toujours plus ancien que son type.
-      data: { poolCardIds: cards.map((c) => c.id), poolCounts: counts, poolComputedAt: now, updatedAt: now },
+      data: {
+        poolCardIds: cards.map((c) => c.id),
+        poolCounts: counts,
+        focusCardIds: focusCards(cards, view.focusSeriesIds),
+        poolComputedAt: now,
+        updatedAt: now,
+      },
     });
     reports.push({ slug: row.slug, size: cards.length, counts });
   }

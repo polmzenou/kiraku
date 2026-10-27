@@ -20,6 +20,9 @@ const emblemSchema = z
   .trim()
   .regex(/^[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]{1,2}$/u, "Un ou deux kanji");
 
+/** Œuvres au plus dans un Focus série. */
+export const MAX_FOCUS_SERIES = 10;
+
 const dateSchema = z
   .string()
   .trim()
@@ -47,6 +50,8 @@ export const boosterTypeFormSchema = z
     featuredCardIds: z.array(z.string().min(1).max(40)).max(50),
     featuredRate: z.number().int().min(0).max(10_000),
     featuredPity: z.number().int().min(0).max(10_000),
+    /** Focus série : œuvres mises en avant (ids AniList). */
+    focusSeriesIds: z.array(z.number().int().positive()).max(MAX_FOCUS_SERIES),
     minPoolSize: z.number().int().min(1).max(10_000).nullable(),
     startsAt: dateSchema,
     endsAt: dateSchema,
@@ -56,7 +61,10 @@ export const boosterTypeFormSchema = z
   .refine((v) => !v.startsAt || !v.endsAt || Date.parse(v.startsAt) < Date.parse(v.endsAt), {
     message: "La fin doit suivre le début",
     path: ["endsAt"],
-  });
+  })
+  // Un Focus série met au moins une œuvre en avant, et finit toujours (compte à rebours affiché)
+  .refine((v) => v.kind !== "FOCUS" || v.focusSeriesIds.length > 0, { message: "Au moins une série", path: ["focusSeriesIds"] })
+  .refine((v) => v.kind !== "FOCUS" || v.endsAt !== null, { message: "Date de fin obligatoire", path: ["endsAt"] });
 
 export type BoosterTypeForm = z.infer<typeof boosterTypeFormSchema>;
 
@@ -81,6 +89,7 @@ export function formFromType(type: BoosterTypeView): BoosterTypeForm {
     featuredCardIds: type.featuredCardIds,
     featuredRate: type.featuredRate,
     featuredPity: type.featuredPity,
+    focusSeriesIds: type.focusSeriesIds,
     minPoolSize: type.minPoolSize,
     startsAt: type.startsAt?.toISOString() ?? null,
     endsAt: type.endsAt?.toISOString() ?? null,
@@ -109,9 +118,45 @@ export function newBannerForm(): BoosterTypeForm {
     featuredCardIds: [],
     featuredRate: 5000,
     featuredPity: 100,
+    focusSeriesIds: [],
     minPoolSize: null,
     startsAt: null,
     endsAt: null,
+    active: false,
+  };
+}
+
+/** Durée par défaut d'un nouveau Focus série. */
+export const FOCUS_DEFAULT_DAYS = 7;
+
+/**
+ * Nouveau Focus série : tout le catalogue, 40 % des tirages d'une rareté sur les séries choisies,
+ * une carte de ces séries garantie au 30e booster sans, fin dans 7 jours, inactif.
+ */
+export function newFocusForm(now = new Date()): BoosterTypeForm {
+  return {
+    mode: "create",
+    slug: "focus-",
+    kind: "FOCUS",
+    family: "special",
+    name: { fr: "", en: "" },
+    tagline: { fr: "", en: "" },
+    emblem: "推",
+    shape: "SACHET",
+    theme: { base: "#7A1F3D", dark: "#1E0712", pattern: "uroko", ink: "light" },
+    filter: {},
+    slotFloors: [],
+    usesFreeStock: true,
+    priceZeni: 200,
+    countsForPity: true,
+    bonusEligible: true,
+    featuredCardIds: [],
+    featuredRate: 4000,
+    featuredPity: 30,
+    focusSeriesIds: [],
+    minPoolSize: null,
+    startsAt: null,
+    endsAt: new Date(now.getTime() + FOCUS_DEFAULT_DAYS * 86_400_000).toISOString(),
     active: false,
   };
 }
