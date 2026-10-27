@@ -269,6 +269,14 @@ describe("boutique", () => {
       expect(new Set(picks).size).toBeGreaterThanOrEqual(5);
     });
 
+    it.each([2, 3, 4, 26])("jamais deux jours de suite la même sur un an, avec %i candidats", (count) => {
+      const pool = Array.from({ length: count }, (_, i) => `pack-${i}`);
+      const year = Array.from({ length: 365 }, (_, i) => new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10));
+      const picks = year.map((day) => featuredPick(pool, day));
+      for (let i = 1; i < picks.length; i++) expect(picks[i], year[i]).not.toBe(picks[i - 1]);
+      expect(new Set(picks).size).toBe(count);
+    });
+
     it("retirer un article qui n'a pas été en vedette ces derniers jours ne la change pas", () => {
       const many = Array.from({ length: 14 }, (_, i) => `pack-${i}`);
       let checked = 0;

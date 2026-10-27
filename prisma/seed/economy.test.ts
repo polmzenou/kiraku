@@ -25,10 +25,11 @@ type LotData = { id: string; name: unknown; zeni: number; items: { create: unkno
 type ItemData = { slug: string; lotId: string; sortOrder: number };
 
 /** Base simulée : ce que le seed crée est relu au passage suivant ; toute écriture hors create est espionnée. */
-function fakeDb(types: readonly { slug: string; kind: string }[]) {
-  const lots = new Set<string>();
+function fakeDb(types: readonly { slug: string; kind: string; priceZeni: number | null }[], existingItems: readonly { slug: string; lotId: string }[] = []) {
+  const lots = new Set<string>(existingItems.map((i) => i.lotId));
   const missions = new Set<string>();
-  const items = new Set<string>();
+  const items = new Set<string>(existingItems.map((i) => i.slug));
+  const itemLots = new Set<string>(existingItems.map((i) => i.lotId));
   const settings = new Set<string>();
   const rows = types.map((t) => ({ id: `id-${t.slug}`, ...t }));
   const writes = () => ({ update: vi.fn(), updateMany: vi.fn(), upsert: vi.fn(), delete: vi.fn(), deleteMany: vi.fn() });
@@ -52,7 +53,14 @@ function fakeDb(types: readonly { slug: string; kind: string }[]) {
     shopItem: {
       ...writes(),
       findUnique: vi.fn(async (args: { where: { slug: string } }) => (items.has(args.where.slug) ? { id: args.where.slug } : null)),
-      create: vi.fn(async (args: { data: ItemData }) => void items.add(args.data.slug)),
+      findFirst: vi.fn(async (args: { where: { OR: [{ slug: string }, { lotId: string }] } }) => {
+        const [{ slug }, { lotId }] = args.where.OR;
+        return items.has(slug) || itemLots.has(lotId) ? { id: slug } : null;
+      }),
+      create: vi.fn(async (args: { data: ItemData }) => {
+        items.add(args.data.slug);
+        itemLots.add(args.data.lotId);
+      }),
     },
     gameSetting: {
       ...writes(),
@@ -63,7 +71,7 @@ function fakeDb(types: readonly { slug: string; kind: string }[]) {
 }
 
 type FakeDb = ReturnType<typeof fakeDb>;
-const ALL_TYPES = BOOSTER_SEEDS.map((s) => ({ slug: s.slug, kind: s.kind }));
+const ALL_TYPES = BOOSTER_SEEDS.map((s) => ({ slug: s.slug, kind: s.kind, priceZeni: s.priceZeni ?? null }));
 const createdLots = (db: FakeDb) => new Map(db.lot.create.mock.calls.map(([args]) => [args.data.id, args.data]));
 const createdItems = (db: FakeDb) => db.shopItem.create.mock.calls.map(([args]) => args.data);
 
@@ -201,7 +209,7 @@ describe("seed de l'économie", () => {
     // Un seul aller-retour pour tous les types, standard compris
     expect(db.boosterType.findMany).toHaveBeenCalledExactlyOnceWith({
       where: { slug: { in: expect.arrayContaining(["standard", ...EXPECTED]) } },
-      select: { id: true, slug: true, kind: true },
+      select: { id: true, slug: true, kind: true, priceZeni: true },
     });
     expect(db.boosterType.findUnique).not.toHaveBeenCalled();
     const lots = createdLots(db);
@@ -274,6 +282,26 @@ describe("seed de l'économie", () => {
     expect(slugs).toContain("fuda-epique");
     expect(db.mission.create).not.toHaveBeenCalledWith({ data: expect.objectContaining({ key: "jour-rare" }) });
     expectNoUpdate(db);
+  });
+
+  it("ne recrée pas un pack renommé dans l'admin : son lot est déjà en vente", async () => {
+    const db = fakeDb(ALL_TYPES, [{ slug: "shonen-x5-promo", lotId: "seed-lot-pack5-shonen" }]);
+    await upsertEconomySeeds(db as unknown as PrismaClient);
+    const slugs = createdItems(db).map((i) => i.slug);
+    expect(slugs).not.toContain("pack-5-shonen");
+    expect(slugs).toContain("pack-5-seinen");
+    expectNoUpdate(db);
+  });
+
+  it("calcule le prix d'un pack sur le prix unitaire en base, et saute un type sans prix", async () => {
+    const types = ALL_TYPES.map((t) => (t.slug === "shonen" ? { ...t, priceZeni: 150 } : t.slug === "seinen" ? { ...t, priceZeni: null } : t));
+    const db = fakeDb(types);
+    await upsertEconomySeeds(db as unknown as PrismaClient);
+    const items = new Map(createdItems(db).map((i) => [i.slug, i as ItemData & { priceZeni: number }]));
+    expect(items.get("pack-5-shonen")?.priceZeni).toBe(675);
+    expect(items.has("pack-5-seinen")).toBe(false);
+    expect(items.get("pack-5-mecha")?.priceZeni).toBe(900);
+    expect(items.get("pack-5-jubako")?.priceZeni).toBe(2475);
   });
 
   it("le seed des missions ne crée que leurs lots, sans pack ni article", async () => {

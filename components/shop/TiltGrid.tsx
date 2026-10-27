@@ -44,7 +44,7 @@ export function TiltGrid({ children, className = "" }: { children: ReactNode; cl
     };
     const onMove = (e: PointerEvent) => {
       if (e.pointerType !== "mouse") return;
-      const card = (e.target as Element | null)?.closest<HTMLElement>(".shop-pack");
+      const card = (e.target as Element | null)?.closest<HTMLElement>(".shop-pack") ?? null;
       const next = card?.querySelector<HTMLElement>(".shop-tilt") ?? null;
       if (next !== scene) {
         release();
@@ -54,7 +54,9 @@ export function TiltGrid({ children, className = "" }: { children: ReactNode; cl
         scene.style.willChange = "transform";
         glints = [...next.querySelectorAll<HTMLElement>(".booster-glint")];
       }
-      const rect = card!.getBoundingClientRect();
+      // Entre les cartes (titres, gouttières) ou sur une carte sans scène : rien à incliner
+      if (!scene || !card) return;
+      const rect = card.getBoundingClientRect();
       px = clamp((e.clientX - rect.left) / rect.width);
       py = clamp((e.clientY - rect.top) / rect.height);
       if (!frame) frame = requestAnimationFrame(apply);

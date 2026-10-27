@@ -118,8 +118,14 @@ function rendezvous(ids: readonly string[], dayKey: string): string | null {
   return best;
 }
 
-/** Jours remontés pour retrouver la vedette de la veille (au-delà, le hasard ne peut plus la changer). */
-const FEATURED_MEMORY = 7;
+/** Jours remontés pour retrouver la vedette de la veille (31 × n hachages : rien à l'échelle d'une page). */
+const FEATURED_MEMORY = 30;
+
+/** Numéro du jour (« 2026-10-27 ») depuis l'époque Unix, sans fuseau. */
+function dayNumber(dayKey: string): number {
+  const [y, m, d] = dayKey.split("-").map(Number);
+  return Math.round(Date.UTC(y, m - 1, d) / 86_400_000);
+}
 
 function pickOn(ids: readonly string[], dayKey: string, depth: number): string | null {
   if (ids.length < 2) return ids[0] ?? null;
@@ -136,7 +142,10 @@ function pickOn(ids: readonly string[], dayKey: string, depth: number): string |
  * ne la change pas.
  */
 export function featuredPick(ids: readonly string[], dayKey: string): string | null {
-  return pickOn([...new Set(ids)], dayKey, FEATURED_MEMORY);
+  const unique = [...new Set(ids)].sort();
+  // Deux candidats : la chaîne des veilles se contredirait un jour sur deux, une simple alternance suffit
+  if (unique.length === 2) return unique[dayNumber(dayKey) % 2];
+  return pickOn(unique, dayKey, FEATURED_MEMORY);
 }
 
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);

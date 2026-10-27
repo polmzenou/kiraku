@@ -53,8 +53,15 @@ export function BuyButton({
   const soldOut = remaining === 0;
   const blocked = soldOut || !affordable;
 
-  // Après la célébration : le focus revient ici (le bouton de confirmation n'existe plus)
-  const refocus = () => root.current?.querySelector<HTMLElement>("a, button:not(:disabled)")?.focus({ preventScroll: true }) ?? root.current?.focus();
+  // Le bouton qui avait le focus disparaît (confirmation, annulation, erreur, célébration) : il revient ici
+  const refocus = () => {
+    const target = root.current?.querySelector<HTMLElement>("a, button:not(:disabled)");
+    (target ?? root.current)?.focus({ preventScroll: true });
+  };
+  const cancel = () => {
+    setConfirming(false);
+    requestAnimationFrame(refocus);
+  };
 
   const buy = () => {
     // Le contexte audio doit naître pendant le geste (Safari) ; le son est joué au sceau
@@ -79,10 +86,12 @@ export function BuyButton({
           });
         } else {
           setError(res.error);
+          requestAnimationFrame(refocus);
         }
       } catch {
         setConfirming(false);
         setError("unexpected");
+        requestAnimationFrame(refocus);
       }
     });
   };
@@ -92,20 +101,30 @@ export function BuyButton({
       {soldOut ? (
         <p className="text-sm font-bold text-text-muted">{t("shop.soldOut")}</p>
       ) : confirming ? (
-        <div className="flex flex-wrap gap-2">
+        // Empilés sur une carte étroite : le prix passe sous le libellé au lieu de déborder
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Button
             type="button"
             variant="primary"
             size={size}
             onClick={buy}
             disabled={pending || blocked}
+            aria-label={pending ? undefined : t("shop.confirm", { price })}
             aria-describedby={describedBy}
-            className="flex-1"
+            autoFocus
+            className="sm:flex-1"
           >
             <ZeniCoin size={14} />
-            {pending ? t("shop.buying") : t("shop.confirm", { price })}
+            {pending ? (
+              t("shop.buying")
+            ) : (
+              <span className="flex flex-col items-start leading-tight">
+                <span>{t("shop.confirmShort")}</span>
+                <span className="text-xs font-medium opacity-90">{t("shop.price", { amount: price })}</span>
+              </span>
+            )}
           </Button>
-          <Button type="button" size={size} onClick={() => setConfirming(false)} disabled={pending}>
+          <Button type="button" size={size} onClick={cancel} disabled={pending}>
             {t("shop.cancel")}
           </Button>
         </div>

@@ -98,6 +98,8 @@ type ShopSeed = {
   limitPeriod?: ShopLimitPeriod;
   /** Absent = rang dans la liste. */
   sortOrder?: number;
+  /** Pack d'un type : son prix est recalculé à la création sur le prix unitaire en base. */
+  pack?: { slug: string; quantity: number };
 };
 
 const SHOP: ShopSeed[] = [
@@ -133,6 +135,11 @@ const SHOP: ShopSeed[] = [
 const PACK_QUANTITY = 5;
 const PACK_DISCOUNT = 0.1;
 const PACK_WEEKLY_LIMIT = 2;
+
+/** Prix d'un pack à partir du prix unitaire du type ; null sans prix (le pack serait gratuit). */
+function packPrice(unitPrice: number | null | undefined, quantity: number): number | null {
+  return unitPrice ? Math.round(quantity * unitPrice * (1 - PACK_DISCOUNT)) : null;
+}
 
 /**
  * Types vendus en pack : les formats et les types gratuits de base actifs, sauf ceux dont le pool change
@@ -173,7 +180,9 @@ export function shopPackSeeds(seeds: readonly BoosterSeed[] = BOOSTER_SEEDS): { 
         en: `${s.tagline.en} · ${PACK_QUANTITY} boosters to open whenever you like.`,
       },
       lotId,
-      priceZeni: Math.round(PACK_QUANTITY * s.priceZeni * (1 - PACK_DISCOUNT)),
+      // Prix de départ ; à la création, recalculé sur le prix unitaire en base (réglé dans l'admin)
+      priceZeni: packPrice(s.priceZeni, PACK_QUANTITY)!,
+      pack: { slug: s.slug, quantity: PACK_QUANTITY },
       perUserLimit: PACK_WEEKLY_LIMIT,
       limitPeriod: "WEEKLY",
       sortOrder: (BOOSTER_FAMILIES.indexOf(s.family) + 1) * 100 + rank,
@@ -186,9 +195,9 @@ async function upsertLots(db: PrismaClient, lots: readonly LotSeed[]) {
   // Un seul aller-retour pour tous les types cités, standard compris
   const slugs = [...new Set(["standard", ...lots.flatMap((lot) => (lot.boosters ?? []).map((b) => b.slug))])];
   const types = new Map(
-    (await db.boosterType.findMany({ where: { slug: { in: slugs } }, select: { id: true, slug: true, kind: true } })).map(
-      (t) => [t.slug, t],
-    ),
+    (
+      await db.boosterType.findMany({ where: { slug: { in: slugs } }, select: { id: true, slug: true, kind: true, priceZeni: true } })
+    ).map((t) => [t.slug, t]),
   );
   const standard = types.get("standard");
   let created = 0;
@@ -212,7 +221,7 @@ async function upsertLots(db: PrismaClient, lots: readonly LotSeed[]) {
     await db.lot.create({ data: { id: lot.id, name: lot.name, zeni: lot.zeni, items: { create: items } } });
     created++;
   }
-  return created;
+  return { created, types };
 }
 
 async function upsertMissions(db: PrismaClient) {
@@ -231,29 +240,30 @@ async function upsertMissions(db: PrismaClient) {
 /** Ajout du catalogue de missions et de ses lots, sans modifier les réglages existants. */
 export async function upsertMissionSeeds(db: PrismaClient) {
   const wanted = new Set(MISSION_SEEDS.map((m) => m.lotId));
-  const lots = await upsertLots(db, LOTS.filter((lot) => wanted.has(lot.id)));
+  const { created: lots } = await upsertLots(db, LOTS.filter((lot) => wanted.has(lot.id)));
   return { lots, missions: await upsertMissions(db) };
 }
 
 export async function upsertEconomySeeds(db: PrismaClient) {
   const packs = shopPackSeeds();
-  const created = {
-    lots: await upsertLots(db, [...LOTS, ...packs.lots]),
-    missions: await upsertMissions(db),
-    shopItems: 0,
-    settings: 0,
-  };
+  const { created: lots, types } = await upsertLots(db, [...LOTS, ...packs.lots]);
+  const created = { lots, missions: await upsertMissions(db), shopItems: 0, settings: 0 };
   const lotIds = new Set((await db.lot.findMany({ select: { id: true } })).map((l) => l.id));
 
   for (const [i, s] of [...SHOP, ...packs.items].entries()) {
-    if (!lotIds.has(s.lotId) || (await db.shopItem.findUnique({ where: { slug: s.slug }, select: { id: true } }))) continue;
+    if (!lotIds.has(s.lotId)) continue;
+    // Pack : prix sur le prix unitaire en base, qui peut différer de la valeur de départ des seeds
+    const priceZeni = s.pack ? packPrice(types.get(s.pack.slug)?.priceZeni, s.pack.quantity) : s.priceZeni;
+    if (priceZeni === null) continue;
+    // Déjà en vente, même renommé dans l'admin (le slug se modifie, le lot du seed reste le même)
+    if (await db.shopItem.findFirst({ where: { OR: [{ slug: s.slug }, { lotId: s.lotId }] }, select: { id: true } })) continue;
     await db.shopItem.create({
       data: {
         slug: s.slug,
         name: s.name,
         description: s.description,
         lotId: s.lotId,
-        priceZeni: s.priceZeni,
+        priceZeni,
         perUserLimit: s.perUserLimit ?? null,
         limitPeriod: s.limitPeriod ?? null,
         sortOrder: s.sortOrder ?? i,

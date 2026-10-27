@@ -48,7 +48,7 @@ export function PackCard({
       style={enterIndex !== undefined ? ({ "--i": enterIndex } as CSSProperties) : undefined}
     >
       <article aria-labelledby={titleId} className="shop-pack lacquer flex h-full rounded-card sm:flex-col">
-        <div className="relative isolate w-[38%] shrink-0 overflow-hidden rounded-l-card bg-[radial-gradient(ellipse_at_50%_60%,var(--color-surface-2)_0%,var(--color-bg)_80%)] sm:h-44 sm:w-auto sm:rounded-l-none sm:rounded-t-card">
+        <div className="relative isolate w-[38%] shrink-0 overflow-hidden rounded-l-card bg-[radial-gradient(ellipse_at_50%_60%,var(--color-surface-2)_0%,var(--color-bg)_80%)] sm:h-44 sm:w-auto sm:rounded-none sm:rounded-t-card">
           {line?.kind === "BOOSTER" ? (
             <>
               <span aria-hidden="true" className="wagara-seigaiha absolute inset-0 opacity-25" style={PATTERN} />

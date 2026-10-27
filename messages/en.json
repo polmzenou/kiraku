@@ -3268,6 +3268,7 @@
       "soldOut": "No longer available to you",
       "buying": "Buying…",
       "confirm": "Confirm · {price, number} Zeni",
+      "confirmShort": "Confirm",
       "cancel": "Cancel",
       "buy": "Buy",
       "notEnough": "Not enough Zeni yet.",

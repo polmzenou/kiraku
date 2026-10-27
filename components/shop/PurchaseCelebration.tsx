@@ -129,8 +129,9 @@ export function PurchaseCelebration({ reward, coins, spent, look, name, openHref
           transition={{ duration: reduced ? 0 : 0.5 }}
         />
 
-        <div className="relative flex h-full flex-col items-center justify-center gap-6 px-6 pt-[env(safe-area-inset-top)] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-          <div aria-hidden="true" className="relative h-[min(58vw,260px)] w-[min(90vw,460px)]">
+        {/* Téléphone en paysage : la scène rétrécit avec la hauteur et la colonne défile au lieu de couper les boutons */}
+        <div className="relative flex h-full flex-col items-center justify-center-safe gap-4 overflow-y-auto px-6 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:gap-6">
+          <div aria-hidden="true" className="relative h-[min(58vw,260px,34dvh)] w-[min(90vw,460px)] shrink-0">
             {/* Éclat d'or au moment du sceau */}
             {step >= 2 && !reduced && (
               <div className="pointer-events-none absolute inset-0">

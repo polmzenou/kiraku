@@ -15,20 +15,23 @@ export function ShopCountdown({ endsAt, initialNow }: { endsAt: number; initialN
   const [now, setNow] = useState(initialNow);
 
   useEffect(() => {
-    const tick = setInterval(() => setNow(Date.now()), 30_000);
+    // Horloge du serveur : une horloge locale en avance rafraîchirait avant minuit, sans nouvelle vedette
+    const skew = initialNow - Date.now();
+    const serverNow = () => Date.now() + skew;
+    const tick = setInterval(() => setNow(serverNow()), 30_000);
     let retry: ReturnType<typeof setTimeout> | undefined;
     const refresh = () => {
       if (document.querySelector("dialog[open]")) retry = setTimeout(refresh, 5_000);
       else router.refresh();
     };
     const jitter = Math.floor(Math.random() * 30_000);
-    const reset = setTimeout(refresh, Math.max(0, endsAt - Date.now()) + 1_000 + jitter);
+    const reset = setTimeout(refresh, Math.max(0, endsAt - serverNow()) + 1_000 + jitter);
     return () => {
       clearInterval(tick);
       clearTimeout(reset);
       clearTimeout(retry);
     };
-  }, [endsAt, router]);
+  }, [endsAt, initialNow, router]);
 
   const minutes = Math.max(0, Math.ceil((endsAt - now) / 60_000));
   return (

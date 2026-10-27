@@ -168,17 +168,26 @@
     animation: shop-glint 900ms cubic-bezier(0.3, 0.6, 0.3, 1) both;
   }
 }
+/* Le reflet traverse le sachet puis revient à sa place, visible : l'inclinaison (--tx) reprend la main */
 @keyframes shop-glint {
-  from {
+  0% {
     translate: -90% 0;
     opacity: 0.4;
   }
   45% {
     opacity: 1;
   }
-  to {
+  60% {
     translate: 90% 0;
-    opacity: 0.4;
+    opacity: 0;
+  }
+  61% {
+    translate: 0 0;
+    opacity: 0;
+  }
+  100% {
+    translate: 0 0;
+    opacity: 1;
   }
 }
 
