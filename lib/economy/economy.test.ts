@@ -4,7 +4,18 @@ import { ledgerHref, ledgerWhere, parseLedgerFilter } from "./ledger-view";
 import { lotInputSchema, parseLotItemRow } from "./lots";
 import { measureKey, missionInputSchema, missionState, raritiesFrom, shownProgress } from "./missions";
 import { checkAttach, isQualified, missingSteps, normalizeReferralCode, type AttachCheck, type ReferralRules } from "./referral";
-import { limitPeriodKey, onSaleForZeni, remainingPurchases, shopItemInputSchema } from "./shop";
+import {
+  featuredPick,
+  limitPeriodKey,
+  onSaleForZeni,
+  packPricing,
+  packSellable,
+  parseShopText,
+  previousDayKey,
+  remainingPurchases,
+  shopContentIssue,
+  shopItemInputSchema,
+} from "./shop";
 
 const NOW = new Date("2026-10-14T12:00:00Z");
 const HOUR = 3_600_000;
@@ -218,6 +229,100 @@ describe("boutique", () => {
     expect(shopItemInputSchema.safeParse({ ...input, priceZeni: null }).success).toBe(false); // aucun prix
     expect(shopItemInputSchema.safeParse({ ...input, priceZeni: -1 }).success).toBe(false);
     expect(shopItemInputSchema.safeParse({ ...input, stripePriceId: "javascript:alert(1)" }).success).toBe(false);
+  });
+
+  it("prix barré et remise d'un pack, déduits des prix en base", () => {
+    expect(packPricing({ price: 900, quantity: 5, unitPrice: 200 })).toEqual({ reference: 1000, discount: 0.1 });
+    expect(packPricing({ price: 450, quantity: 5, unitPrice: 100 })).toEqual({ reference: 500, discount: 0.1 });
+    expect(packPricing({ price: 2475, quantity: 5, unitPrice: 550 })).toEqual({ reference: 2750, discount: 0.1 });
+    expect(packPricing({ price: 1700, quantity: 10, unitPrice: 200 })).toEqual({ reference: 2000, discount: 0.15 });
+    // Pas d'économie, une économie sous 1 %, ou un type sans prix : ni prix barré ni remise
+    for (const none of [
+      { price: 1000, quantity: 5, unitPrice: 200 },
+      { price: 1200, quantity: 5, unitPrice: 200 },
+      { price: 996, quantity: 5, unitPrice: 200 },
+      { price: 900, quantity: 5, unitPrice: null },
+    ]) {
+      expect(packPricing(none)).toEqual({ reference: null, discount: null });
+    }
+  });
+
+  it("veille d'un jour du jeu, mois et années compris", () => {
+    expect(previousDayKey("2026-10-27")).toBe("2026-10-26");
+    expect(previousDayKey("2026-03-01")).toBe("2026-02-28");
+    expect(previousDayKey("2027-01-01")).toBe("2026-12-31");
+  });
+
+  describe("vedette du jour", () => {
+    const ids = ["a", "b", "c", "d", "e", "f", "g"];
+    const days = Array.from({ length: 60 }, (_, i) => new Date(Date.UTC(2026, 9, 1 + i)).toISOString().slice(0, 10));
+
+    it("la même pour tous, et rien sans candidat", () => {
+      expect(featuredPick(ids, "2026-10-27")).toBe(featuredPick([...ids].reverse(), "2026-10-27"));
+      expect(featuredPick([], "2026-10-27")).toBeNull();
+      expect(featuredPick(["seul"], "2026-10-27")).toBe("seul");
+    });
+
+    it("change d'un jour à l'autre et passe par plusieurs packs", () => {
+      const picks = days.map((day) => featuredPick(ids, day));
+      for (let i = 1; i < picks.length; i++) expect(picks[i]).not.toBe(picks[i - 1]);
+      expect(new Set(picks).size).toBeGreaterThanOrEqual(5);
+    });
+
+    it("retirer un article qui n'a pas été en vedette ces derniers jours ne la change pas", () => {
+      const many = Array.from({ length: 14 }, (_, i) => `pack-${i}`);
+      let checked = 0;
+      for (const day of days) {
+        const recent = new Set<string | null>();
+        for (let d = day, i = 0; i <= 8; i++, d = previousDayKey(d)) recent.add(featuredPick(many, d));
+        const other = many.find((id) => !recent.has(id));
+        if (!other) continue;
+        expect(featuredPick(many.filter((id) => id !== other), day)).toBe(featuredPick(many, day));
+        checked++;
+      }
+      expect(checked).toBeGreaterThan(30);
+    });
+  });
+
+  describe("règle de la boutique", () => {
+    const definitions = [...["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "AR", "GOLD"].entries()].map(([sortOrder, key]) => ({
+      key,
+      sortOrder,
+    }));
+    const booster = (boosterKind: "FILTERED" | "FORMAT" | "RARITY" | "DROP", floors: string[]) => ({ kind: "BOOSTER" as const, boosterKind, floors });
+
+    it("accepte les boosters gratuits, les formats et une Légendaire", () => {
+      expect(shopContentIssue([booster("FILTERED", ["COMMON", "COMMON", "UNCOMMON", "RARE"])], definitions)).toBeNull();
+      expect(shopContentIssue([booster("FORMAT", ["COMMON", "EPIC"])], definitions)).toBeNull();
+      expect(shopContentIssue([booster("RARITY", ["EPIC", "EPIC", "EPIC", "LEGENDARY"])], definitions)).toBeNull();
+      expect(shopContentIssue([{ kind: "RARITY_CARD", rarity: "EPIC" }], definitions)).toBeNull();
+    });
+
+    it("refuse les sachets scellés et tout ce qui est Mythique ou au-dessus", () => {
+      expect(shopContentIssue([booster("DROP", [])], definitions)).toBe("SEALED");
+      expect(shopContentIssue([booster("RARITY", ["EPIC", "EPIC", "EPIC", "MYTHIC"])], definitions)).toBe("MYTHIC");
+      expect(shopContentIssue([{ kind: "RARITY_CARD", rarity: "MYTHIC" }], definitions)).toBe("MYTHIC");
+      expect(shopContentIssue([{ kind: "CARD", rarity: "AR" }], definitions)).toBe("MYTHIC");
+      expect(shopContentIssue([{ kind: "RARITY_CARD", rarity: "GOLD" }], definitions)).toBe("MYTHIC");
+    });
+
+    it("vend un booster ouvert ou au repos dans la rotation, jamais un type caché ou réservé", () => {
+      const offer = { availability: "open" as const, rotation: null, usesFreeStock: true, priceZeni: 200 };
+      expect(packSellable(offer)).toBe(true);
+      expect(packSellable({ ...offer, availability: "hidden", rotation: "resting" })).toBe(true);
+      expect(packSellable({ ...offer, availability: "hidden" })).toBe(false); // inactif, hors dates, pool trop petit
+      expect(packSellable({ ...offer, availability: "locked", usesFreeStock: false, priceZeni: null })).toBe(false);
+      expect(packSellable({ availability: "hidden", rotation: "resting", usesFreeStock: false, priceZeni: null })).toBe(false);
+      expect(packSellable(undefined)).toBe(false);
+    });
+  });
+
+  it("description d'un article : 240 caractères, français vide permis", () => {
+    const long = "x".repeat(200);
+    expect(parseShopText({ fr: long, en: "" })).toEqual({ fr: long, en: "" });
+    expect(parseShopText({ fr: "", en: "Hi" })).toEqual({ fr: "", en: "Hi" });
+    expect(parseShopText({ fr: "x".repeat(241), en: "" })).toEqual({ fr: "", en: "" });
+    expect(parseShopText("pas un objet")).toEqual({ fr: "", en: "" });
   });
 });
 

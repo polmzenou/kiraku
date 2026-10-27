@@ -12,17 +12,17 @@ import { ReviewsSection, type ReviewViewer } from "@/components/home/ReviewsSect
 import { TopCollectors } from "@/components/home/TopCollectors";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
-import { ButtonLink } from "@/components/ui/ButtonLink";
 import { routing } from "@/i18n/routing";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { localeAlternates, localePath } from "@/lib/seo/alternates";
 import { homeGraph } from "@/lib/seo/structured-data";
 import { appUrl } from "@/server/env";
+import { contentsLabel } from "@/lib/boosters/catalog";
 import { poolCounts } from "@/lib/boosters/draw";
 import { boosterPanelData, wishlistInPool, type WishlistInPool } from "@/lib/boosters/panel";
 import { isRotatingFamily } from "@/lib/boosters/rotation";
 import { currentFocus, initialSelection } from "@/lib/boosters/showcase";
-import { BOOSTER_FAMILIES, FAMILY_KANJI, featuredIdsOf, localize } from "@/lib/boosters/types";
+import { BOOSTER_FAMILIES, FAMILY_KANJI, featuredIdsOf, localize, type BoosterTypeView } from "@/lib/boosters/types";
 import { type Rarity } from "@/lib/catalog/rarity";
 import { canReview, pinnedFirst } from "@/lib/social/reviews";
 import { readBannerPity } from "@/server/boosters/open-core";
@@ -43,6 +43,7 @@ import { ownedCardIds } from "@/server/collection/owned";
 import { getBoosterCredits, getSealedDrops } from "@/server/economy/queries";
 import { getSealedDisplays } from "@/server/boosters/sealed";
 import { SealedDropsRow } from "@/components/boosters/SealedDropsRow";
+import { CreditStrip, type CreditedBooster } from "@/components/boosters/CreditStrip";
 import { getOwnReview, getReviewSample, getReviewSummary } from "@/server/social/reviews";
 import { getCurrentUser } from "@/server/user";
 import { getAmbassadorPack } from "@/server/ambassador/queries";
@@ -120,13 +121,21 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
     // Pack hebdomadaire des ambassadeurs, au-dessus des boosters à ouvrir
     user && !user.bannedAt ? getAmbassadorPack(user, locale) : null,
   ]);
-  const credited = allTypes
+  const cardsOf = (o: { type: BoosterTypeView }) => (o.type.slotFloors.length > 0 ? o.type.slotFloors.length : rules.draw.slotFloors.length);
+  const credited: CreditedBooster[] = allTypes
     .filter((e) => (credits.get(e.type.id) ?? 0) > 0 && e.type.filter !== null)
-    .map((e) => ({ slug: e.type.slug, name: localize(e.type.name, locale), count: credits.get(e.type.id)! }));
+    .map((e) => ({
+      slug: e.type.slug,
+      name: localize(e.type.name, locale),
+      count: credits.get(e.type.id)!,
+      shape: e.type.shape,
+      theme: e.type.theme,
+      emblem: e.type.emblem,
+      contents: contentsLabel(cardsOf(e)),
+    }));
 
   const bannerPity = readBannerPity(user?.bannerPity ?? {});
   const userCounters = { stock: state.stock, pityCount: user?.pityCount ?? 0, standardCount: user?.standardCount ?? 0 };
-  const cardsOf = (o: (typeof visible)[number]) => (o.type.slotFloors.length > 0 ? o.type.slotFloors.length : rules.draw.slotFloors.length);
 
   // Tous les boosters sont envoyés d'un coup : la vitrine change de booster sans rechargement.
   // Les pools sont en cache (lecture en mémoire) ; on ne les lit que pour les souhaits et les vedettes.
@@ -202,26 +211,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
 
       {ambassadorPack && <AmbassadorPackCard {...ambassadorPack} />}
 
-      {credited.length > 0 && (
-        <ul className="flex flex-col gap-2">
-          {credited.map((c) => (
-            <li
-              key={c.slug}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-kin bg-surface p-4"
-            >
-              <p className="flex items-center gap-2 font-bold">
-                <span aria-hidden="true" lang="ja" className="font-seal text-xl text-kin">
-                  贈
-                </span>
-                {t("creditBoosters", { count: c.count, name: c.name })}
-              </p>
-              <ButtonLink href={`/ouvrir/${c.slug}?credit=1`} variant="primary">
-                {t("openCredit")}
-              </ButtonLink>
-            </li>
-          ))}
-        </ul>
-      )}
+      <CreditStrip credits={credited} />
 
       {sealedDrops.length > 0 && (
         <SealedDropsRow drops={sealedDrops} displays={sealedDisplays} karma={{ current: user?.apocalypseKarma ?? 0, threshold: apocalypseKarma }} />

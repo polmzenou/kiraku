@@ -5,12 +5,13 @@ import { notFound } from "next/navigation";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { PageShell } from "@/components/PageShell";
 import { contentsLabel, parseOpenChoice } from "@/lib/boosters/catalog";
+import { creditPageMode } from "@/lib/boosters/credit-page";
 import { effectiveSlotFloors, featuredIdsOf, localize, SLUG_PATTERN } from "@/lib/boosters/types";
 import { readBannerPity } from "@/server/boosters/open-core";
 import { getBoosterOffers } from "@/server/boosters/pools";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { boosterStateFrom } from "@/server/boosters/state";
-import { getBoosterCredits } from "@/server/economy/queries";
+import { getBoosterCredits, hadBoosterCredit } from "@/server/economy/queries";
 import { findOwnSealed } from "@/server/boosters/open";
 import { getSealedDisplays } from "@/server/boosters/sealed";
 import { getSetting } from "@/server/settings";
@@ -65,7 +66,14 @@ export default async function OpenBoosterPage({ params, searchParams }: PageProp
       : null;
   const ownSachet = sachet && sachet.kind === type.slug ? sachet : null;
   const sealed = ownSachet && !ownSachet.opened ? { id: ownSachet.id, kind: ownSachet.kind } : null;
-  if (offer.availability === "hidden" && credits === 0 && !ownSachet) notFound();
+  // Type caché dont le dernier crédit vient de s'ouvrir : le refresh() re-rend la page pendant le récap.
+  // Lu seulement dans ce cas, la ligne du crédit reste à 0.
+  const hadCredit =
+    wantsCredit && credits === 0 && offer.availability === "hidden" && !ownSachet
+      ? await hadBoosterCredit(user.id, type.id)
+      : false;
+  const mode = creditPageMode({ availability: offer.availability, credits, hadCredit, ownSachet: ownSachet !== null });
+  if (!mode.show) notFound();
   const [sealedTypes, karmaThreshold] = await Promise.all([getSealedDisplays(locale), getSetting("booster.apocalypseKarma")]);
   const name = localize(type.name, locale);
   const cards = effectiveSlotFloors(type.slotFloors, rules.draw.slotFloors).length;
@@ -87,9 +95,9 @@ export default async function OpenBoosterPage({ params, searchParams }: PageProp
           tagline: localize(type.tagline, locale),
           cards,
           contents: contentsLabel(cards),
-          // Réservé aux événements : rien à ouvrir ici
-          usesFreeStock: type.usesFreeStock,
-          priceZeni: offer.availability === "locked" ? null : type.priceZeni,
+          // Caché ou réservé aux événements : rien à ouvrir ici hors crédit ou sachet, ni gratuit ni en Zeni
+          usesFreeStock: mode.sellable && type.usesFreeStock,
+          priceZeni: mode.sellable ? type.priceZeni : null,
           countsForPity: type.countsForPity,
           bonusEligible: type.bonusEligible,
           featured:

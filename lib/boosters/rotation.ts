@@ -63,8 +63,8 @@ export function rotationWindow(now: Date, hours: number, timeZone: string): Rota
   return { index, startsAt, endsAt: new Date(startsAt.getTime() + period) };
 }
 
-/** FNV-1a 32 bits : graine stable à partir d'un texte. */
-function hashSeed(text: string): number {
+/** FNV-1a 32 bits : graine stable à partir d'un texte (rotation, vedette de la boutique). */
+export function hashSeed(text: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) {
     h ^= text.charCodeAt(i);

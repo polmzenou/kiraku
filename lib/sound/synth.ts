@@ -17,6 +17,14 @@ function audio(): AudioContext | null {
   return ctx;
 }
 
+/**
+ * Crée ou réveille le contexte audio pendant le geste du joueur : un son joué après une réponse
+ * réseau (achat en boutique) arrive hors du geste, et Safari laisserait alors le contexte suspendu.
+ */
+export function primeAudio(): void {
+  audio();
+}
+
 function noise(ac: AudioContext): AudioBuffer {
   if (noiseBuffer && noiseBuffer.sampleRate === ac.sampleRate) return noiseBuffer;
   const length = Math.floor(ac.sampleRate * 1.2);
