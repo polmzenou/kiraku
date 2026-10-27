@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { usePathname } from "@/i18n/navigation";
 import { unreadBadge } from "@/lib/chat/message";
@@ -265,6 +265,7 @@ function ConversationList({ conversations }: { conversations: Conversation[] | n
   const t = useTranslations("chat");
   const tAccount = useTranslations("account");
   const format = useFormatter();
+  const now = useNow();
   if (!conversations) return <p className="p-4 text-sm text-text-muted">{t("loading")}</p>;
   if (conversations.length === 0) return <p className="p-4 text-sm text-text-muted">{t("noFriends")}</p>;
   return (
@@ -284,7 +285,7 @@ function ConversationList({ conversations }: { conversations: Conversation[] | n
                   color={c.decor.nameColor}
                   className="truncate font-bold"
                 />
-                {c.last && <span className="shrink-0 text-xs text-text-muted">{format.relativeTime(new Date(c.last.at))}</span>}
+                {c.last && <span className="shrink-0 text-xs text-text-muted">{format.relativeTime(new Date(c.last.at), now)}</span>}
               </span>
               <span className={`truncate text-sm ${c.unread > 0 ? "font-bold text-text" : "text-text-muted"}`}>
                 {c.last ? (c.last.mine ? t("you", { body: c.last.body }) : c.last.body) : t("startTalking")}

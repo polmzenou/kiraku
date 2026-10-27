@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { deleteReadNotificationsAction, loadNotificationsAction, markNotificationsReadAction } from "@/server/actions/notifications";
@@ -13,6 +13,7 @@ import { notificationSeal, useDescribeNotification } from "./describe";
 export function NotificationList({ initial, initialCursor }: { initial: NotificationView[]; initialCursor: string | null }) {
   const t = useTranslations("notifications");
   const format = useFormatter();
+  const now = useNow();
   const describe = useDescribeNotification();
   const router = useRouter();
   const [items, setItems] = useState(initial);
@@ -127,7 +128,7 @@ export function NotificationList({ initial, initialCursor }: { initial: Notifica
                   </span>
                 )}
                 <time dateTime={new Date(n.createdAt).toISOString()} className="text-xs text-text-muted">
-                  {format.relativeTime(new Date(n.createdAt))}
+                  {format.relativeTime(new Date(n.createdAt), now)}
                 </time>
               </span>
               {!n.read && <span className="sr-only">{t("unread")}</span>}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import type { CardView } from "@/lib/boosters/view";
 import type { CollectionItem } from "@/lib/collection/view";
@@ -41,6 +41,7 @@ export function ListingCard({
   const tAccount = useTranslations("account");
   const tRarity = useTranslations("rarity");
   const format = useFormatter();
+  const now = useNow();
   const [confirm, setConfirm] = useState<Pending | null>(null);
   const [picking, setPicking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +89,7 @@ export function ListingCard({
               {t("cardMeta", { rarity: tRarity(listing.card.rarity as "COMMON"), series: listing.card.series })}
             </p>
             <p className="truncate text-xs text-text-muted">
-              {listing.mine ? t("byYou") : t.rich("by", { name: owner, player: playerTag(listing.owner.decor.nameColor) })} · {t("expires", { when: format.relativeTime(listing.expiresAt) })}
+              {listing.mine ? t("byYou") : t.rich("by", { name: owner, player: playerTag(listing.owner.decor.nameColor) })} · {t("expires", { when: format.relativeTime(listing.expiresAt, now) })}
             </p>
           </div>
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
 import type { OpenedCardView } from "@/lib/boosters/view";
@@ -39,6 +39,7 @@ function TradeCard({ trade, mode }: { trade: TradeView; mode: Mode }) {
   const t = useTranslations("trades");
   const tAccount = useTranslations("account");
   const format = useFormatter();
+  const now = useNow();
   const router = useRouter();
   const [chosen, setChosen] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -102,7 +103,7 @@ function TradeCard({ trade, mode }: { trade: TradeView; mode: Mode }) {
           <span className="rounded-pill border border-border px-2 py-0.5 text-xs font-bold text-text-muted">{t(`status.${trade.status}`)}</span>
         ) : (
           <span className="rounded-pill border border-ai/50 px-2 py-0.5 text-xs font-bold text-ai tabular-nums">
-            {t("expires", { when: format.relativeTime(trade.expiresAt) })}
+            {t("expires", { when: format.relativeTime(trade.expiresAt, now) })}
           </span>
         )}
       </header>
