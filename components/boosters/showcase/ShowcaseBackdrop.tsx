@@ -31,8 +31,9 @@ export function ShowcaseBackdrop({ slug, theme }: { slug: string; theme: Booster
           onTransitionEnd={i === layers.length - 1 && layers.length > 1 ? () => setLayers((ls) => ls.slice(-1)) : undefined}
         />
       ))}
-      {/* Mobile : le hero se fond dans le fond de page vers le bandeau */}
-      <span className="absolute inset-0 bg-[linear-gradient(180deg,transparent_62%,var(--color-bg)_100%)] lg:hidden" />
+      {/* Mobile : le hero se fond dans le fond de page vers le bandeau, sur une bande fixe sous le
+          contenu (un dégradé en % assombrissait les stats quand le nom ou le compte à rebours allongeaient le hero) */}
+      <span className="absolute inset-x-0 bottom-0 h-12 bg-[linear-gradient(180deg,transparent,var(--color-bg))] lg:hidden" />
     </div>
   );
 }
