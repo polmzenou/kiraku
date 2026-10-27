@@ -1,7 +1,7 @@
 import "server-only";
 import { randomInt } from "node:crypto";
 import { buildRarityTables, featuredFromPool, SEALED_KINDS, type SealedKind } from "@/lib/boosters/draw";
-import { effectiveSlotFloors, featuredIdsOf } from "@/lib/boosters/types";
+import { featuredIdsOf, typeDrawRules } from "@/lib/boosters/types";
 import { prisma } from "../db";
 import type { OnNotified } from "../social/notify";
 import { OpenError, openBoostersWith, openSealedWith } from "./open-core";
@@ -34,7 +34,7 @@ export async function openBoosters(userId: string, slug: string, count: number, 
 
   const { type } = entry;
   const pool = await getBoosterPool(entry);
-  const draw = { ...rules.draw, slotFloors: effectiveSlotFloors(type.slotFloors, rules.draw.slotFloors) };
+  const draw = typeDrawRules(type, rules.draw);
   const outcome = await openBoostersWith(prisma, {
     userId,
     type,
@@ -74,7 +74,7 @@ export async function openSealed(userId: string, dropId: string, onNotified?: On
   if (!entry || entry.type.filter === null) throw new OpenError("NOT_FOR_SALE");
 
   const pool = await getBoosterPool(entry);
-  const draw = { ...rules.draw, slotFloors: effectiveSlotFloors(entry.type.slotFloors, rules.draw.slotFloors) };
+  const draw = typeDrawRules(entry.type, rules.draw);
   const outcome = await openSealedWith(prisma, {
     userId,
     dropId: found.id,

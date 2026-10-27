@@ -89,9 +89,12 @@ export default async function AdminBoosterTypesPage() {
           <section key={family} className="flex flex-col gap-3">
             <h3 className="font-title text-lg font-bold">{tBoosters(`families.${family}.title`)}</h3>
             <ul className="grid gap-3 md:grid-cols-2">
-              {items.map(({ type, counts, size, availability, rotation: turn }) => {
+              {items.map(({ type, counts, size, availability, shopAvailability, rotation: turn }) => {
                 const min = type.minPoolSize ?? minPool;
-                const reason = turn === "resting" ? "rotation" : availability === "hidden" ? hiddenReason(type, size, min, now) : null;
+                // Un Impérial (Prestige) prêt est caché des pages parce qu'il se vend en boutique seulement
+                const shopOnly = type.kind === "PRESTIGE" && shopAvailability === "open";
+                const reason =
+                  turn === "resting" ? "rotation" : shopOnly ? "shopOnly" : availability === "hidden" ? hiddenReason(type, size, min, now) : null;
                 const name = localize(type.name, locale);
                 return (
                   <li key={type.slug} className="flex gap-3 lacquer rounded-card p-3">

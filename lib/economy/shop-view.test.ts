@@ -89,6 +89,25 @@ function view(over: { bought?: Map<string, number>; credits?: Map<string, number
 const allCards = (v: ReturnType<typeof view>) => v.sections.flatMap((s) => s.cards);
 
 describe("vue de la boutique", () => {
+  it("range l'Impérial (Prestige) dans les extras, avec la limite d'un par jour", () => {
+    const types = new Map([...TYPES, ["imperial", type("imperial", { kind: "PRESTIGE", family: "special", priceZeni: null })]]);
+    const lots = new Map([...LOTS, ["l-imperial", boosterLot("imperial", 1)]]);
+    const v = buildShopView({
+      items: [item("imperial", "l-imperial", 3500, { perUserLimit: 1, limitPeriod: "DAILY" }), item("fuda", "l-fuda", 2500)],
+      lots,
+      types,
+      bought: new Map(),
+      credits: new Map(),
+      definitions: DEFINITIONS,
+      now: NOW,
+      timeZone: TZ,
+      turn: 41_200,
+    });
+    expect(v.sections.map((s) => s.key)).toEqual(["other"]);
+    expect(v.sections[0].cards.map((c) => c.id)).toEqual(["imperial", "fuda"]);
+    expect(v.sections[0].cards[0]).toMatchObject({ price: 3500, remaining: 1, booster: { kind: "PRESTIGE", family: "other" } });
+  });
+
   it("ne garde que la sélection du moment et ce qui se vend : ni Mythique, ni sachet scellé, ni type caché, ni lot absent", () => {
     expect(allCards(view()).map((c) => c.id)).toEqual(["std5", "std10", "jubako", "seinen", "mecha", "fuda"]);
   });

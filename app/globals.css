@@ -462,6 +462,13 @@
       radial-gradient(circle at 50% 34%, transparent 46%, rgb(181 138 44 / 0.55) 46.5% 47.5%, transparent 48% 53%, rgb(181 138 44 / 0.3) 53.5% 54%, transparent 54.5%),
       repeating-conic-gradient(from 0deg at 50% 34%, rgb(201 162 58 / 0.32) 0 3deg, transparent 3deg 10deg);
   }
+  /* Kikkō (亀甲, écaille de tortue : longévité) : double réseau d'hexagones en filets d'or sur laque
+     noire, et reflet de feuille d'or (booster Impérial) */
+  .wagara-kikko {
+    --wagara:
+      radial-gradient(ellipse at 50% 30%, rgb(243 220 140 / 0.16), transparent 60%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 20.78'%3E%3Cpath d='M0 10.39L6 0H18L24 10.39L18 20.78H6ZM24 10.39H36' fill='none' stroke='%23e2c26a' stroke-width='1.1' stroke-opacity='0.75'/%3E%3Cpath d='M4.56 10.39 L8.28 3.95 L15.72 3.95 L19.44 10.39 L15.72 16.84 L8.28 16.84Z M22.56 0.00 L26.28 -6.44 L33.72 -6.44 L37.44 0.00 L33.72 6.44 L26.28 6.44Z M22.56 20.78 L26.28 14.34 L33.72 14.34 L37.44 20.78 L33.72 27.23 L26.28 27.23Z M-13.44 0.00 L-9.72 -6.44 L-2.28 -6.44 L1.44 0.00 L-2.28 6.44 L-9.72 6.44Z M-13.44 20.78 L-9.72 14.34 L-2.28 14.34 L1.44 20.78 L-2.28 27.23 L-9.72 27.23Z' fill='none' stroke='%23e2c26a' stroke-width='0.6' stroke-opacity='0.4'/%3E%3C/svg%3E") 0 0 / 30px 17.32px;
+  }
   .wagara-none {
     --wagara: linear-gradient(transparent, transparent);
   }
@@ -472,6 +479,51 @@
     --wagara:
       radial-gradient(circle, rgb(255 246 214 / 0.95) 0 1px, transparent 1.6px) 0 0 / 11px 15px,
       radial-gradient(circle, rgb(255 240 190 / 0.8) 0 1px, transparent 1.6px) 5px 8px / 17px 9px;
+  }
+  /* Impérial : étiquette en feuille d'or, serti liseré d'or, halo qui respire et paillettes d'or
+     (opacity et transform seulement ; au repos ou en mouvement réduit, le halo reste allumé) */
+  .booster-art.wagara-kikko {
+    isolation: isolate;
+  }
+  .wagara-kikko .tanzaku {
+    background:
+      radial-gradient(circle, rgb(255 248 220 / 0.9) 0 0.6px, transparent 1.2px) 0 0 / 9px 13px,
+      linear-gradient(150deg, #f7e6a6 0%, #d9b556 30%, #9c7826 55%, #f0d98c 78%, #b8902f 100%);
+  }
+  .wagara-kikko .booster-crimp {
+    background:
+      repeating-linear-gradient(90deg, rgb(243 220 140 / 0.5) 0 2px, rgb(0 0 0 / 0.4) 2px 4px),
+      #2a2016;
+  }
+  .booster-art.wagara-kikko::before {
+    content: "";
+    position: absolute;
+    inset: -14% -18%;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(closest-side, rgb(243 220 140 / 0.55), rgb(217 181 86 / 0.22) 55%, transparent 100%);
+    opacity: 0.8;
+    animation: kikko-aura 3.6s ease-in-out infinite;
+  }
+  .booster-art.wagara-kikko::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    pointer-events: none;
+    background:
+      radial-gradient(circle, rgb(255 244 200) 0 1.2px, transparent 2px) 18% 70% / 100% 100% no-repeat,
+      radial-gradient(circle, rgb(255 236 170) 0 1px, transparent 1.8px) 74% 82% / 100% 100% no-repeat,
+      radial-gradient(circle, rgb(255 250 225) 0 1.5px, transparent 2.4px) 52% 92% / 100% 100% no-repeat,
+      radial-gradient(circle, rgb(255 236 170) 0 0.9px, transparent 1.6px) 86% 58% / 100% 100% no-repeat,
+      radial-gradient(circle, rgb(255 244 200) 0 1px, transparent 1.8px) 30% 88% / 100% 100% no-repeat;
+    mix-blend-mode: screen;
+    opacity: 0;
+    animation: kikko-sparkles 3.2s ease-out infinite;
+  }
+  .kikko-burst {
+    background: radial-gradient(closest-side, rgb(255 250 225 / 0.95), rgb(243 220 140 / 0.7) 35%, rgb(217 181 86 / 0.25) 65%, transparent 100%);
+    mix-blend-mode: screen;
   }
   .tanzaku {
     background:
@@ -508,6 +560,30 @@
   }
 }
 
+@keyframes kikko-aura {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+@keyframes kikko-sparkles {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-38%);
+  }
+}
 @keyframes raden-breathe {
   0%,
   100% {

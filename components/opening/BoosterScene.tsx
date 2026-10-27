@@ -234,6 +234,16 @@ export function BoosterScene(props: Props) {
       >
         <Leak progress={progress} color={leakColor} strong={opened && leakColor !== null} shape={shape} reduced={reduced} />
       </m.span>
+      {/* Impérial (laque et kikkō d'or) : éclat de feuille d'or qui jaillit à la déchirure */}
+      {theme.pattern === "kikko" && opened && !reduced && (
+        <m.span
+          aria-hidden="true"
+          className="kikko-burst pointer-events-none absolute inset-x-[-25%] top-[-18%] z-40 h-[46%]"
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: [0, 1, 0], scale: [0.5, 1.15, 1.35] }}
+          transition={{ duration: 1.1, ease: "easeOut" }}
+        />
+      )}
       {/* Le rabat ou le couvercle s'efface pour laisser passer les cartes */}
       {shape !== "SACHET" && (
         <m.div className="absolute inset-0 z-30" initial={false} animate={{ opacity: emerging ? 0 : 1 }} transition={{ duration: 0.25 }}>

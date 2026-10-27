@@ -235,13 +235,15 @@ describe("seed de l'économie", () => {
         },
       });
     }
-    // Les 3 articles d'origine gardent leur rang
-    expect(createdItems(db).slice(0, 3).map((i) => [i.slug, i.sortOrder])).toEqual([
+    // Les 4 articles d'origine gardent leur rang (l'Impérial à l'unité, 1 par jour, sans pack)
+    expect(createdItems(db).slice(0, 4).map((i) => [i.slug, i.sortOrder])).toEqual([
       ["pack-5-standard", 0],
       ["pack-10-standard", 1],
       ["fuda-epique", 2],
+      ["booster-imperial", 3],
     ]);
-    expect(first).toEqual({ lots: lots.size, missions: MISSION_SEEDS.length, shopItems: 3 + 26, settings: 2 });
+    expect(createdItems(db).find((i) => i.slug === "booster-imperial")).toMatchObject({ priceZeni: 3_500, perUserLimit: 1, limitPeriod: "DAILY" });
+    expect(first).toEqual({ lots: lots.size, missions: MISSION_SEEDS.length, shopItems: 4 + 26, settings: 2 });
     expect(db.lot.create).toHaveBeenCalledTimes(lots.size);
 
     vi.clearAllMocks();

@@ -1269,7 +1269,8 @@
         "pool": "pool under {min}",
         "filter": "invalid filter",
         "rotation": "resting (rotation)",
-        "featured": "featured (rotation)"
+        "featured": "featured (rotation)",
+        "shopOnly": "sold in the shop only"
       },
       "price": {
         "free": "Free",
@@ -1347,6 +1348,10 @@
       "priceHint": "Free booster: price paid when the stock is empty.",
       "countsForPity": "Counts toward the shared Mythic pity",
       "bonusEligible": "Can be golden or divine",
+      "rateBoostFrom": "Rarity boost from",
+      "rateBoostNone": "None (normal rates)",
+      "rateBoostHint": "The shares of this rarity and above are multiplied; the rest comes out of lower rarities.",
+      "rateBoost": "Multiplier (×)",
       "featuredSearch": "Search a card to feature",
       "featuredEmpty": "No featured card: pick at least one.",
       "featuredRate": "Share of draws of its rarity going to featured cards (%)",
@@ -3313,7 +3318,8 @@
       "pack": {
         "pool": "From {count, number} cards",
         "owned": "{count, plural, one {# already to open} other {# already to open}}",
-        "credits": "Boosters bought here: pity included, {noBonus}.",
+        "credits": "Boosters bought here: pity included, {noBonus} (unless marked “Golden included”).",
+        "prestige": "Golden included",
         "resetsDays": "Available again in {days, plural, one {# day} other {# days}}",
         "resetsHours": "Available again in {hours, plural, =0 {less than an hour} one {# hour} other {# hours}}"
       },

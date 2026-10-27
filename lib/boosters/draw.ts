@@ -57,6 +57,29 @@ export function ratesFrom(rates: RarityRates, floor: Rarity): [Rarity, number][]
   return order.slice(Math.max(0, order.indexOf(floor))).map((r) => [r, rates[r] ?? 0]);
 }
 
+const BP = 10_000;
+
+/**
+ * Taux d'un type boosté (Impérial) : la part de chaque rareté à partir de `from` est multipliée par
+ * factorBp / 10 000, et la masse ajoutée est reprise aux autres raretés au prorata (total inchangé).
+ * Poids mis à l'échelle × 10 000 pour rester entiers (rng(total)). Sans boost (`from` null ou absent
+ * de l'ordre, facteur de 10 000), les taux reviennent tels quels.
+ */
+export function boostRates(rates: RarityRates, from: Rarity | null, factorBp: number, order: readonly Rarity[] = Object.keys(rates)): RarityRates {
+  const start = from ? order.indexOf(from) : -1;
+  if (start < 0 || factorBp === BP) return rates;
+  const keys = Object.keys(rates);
+  const boosted = (r: Rarity) => order.indexOf(r) >= start;
+  const total = keys.reduce((sum, r) => sum + (rates[r] ?? 0), 0);
+  const raised = keys.reduce((sum, r) => sum + (boosted(r) ? (rates[r] ?? 0) : 0), 0);
+  const rest = total - raised;
+  // Ce qui reste aux raretés non boostées ; jamais négatif si le boost dépasse tout le reste
+  const scale = rest > 0 ? Math.max(0, total - (raised * factorBp) / BP) / rest : 0;
+  return Object.fromEntries(
+    keys.map((r) => [r, boosted(r) ? (rates[r] ?? 0) * factorBp : Math.round((rates[r] ?? 0) * BP * scale)]),
+  ) as RarityRates;
+}
+
 /** Tables cumulées par plancher, calculées une fois par tirage plutôt qu'à chaque carte. */
 export type RarityTables = Record<Rarity, { total: number; bounds: [Rarity, number][] }>;
 

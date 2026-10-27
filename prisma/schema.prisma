@@ -487,6 +487,7 @@ enum BoosterKind {
   FORMAT
   FOCUS // Focus série : taux augmenté sur une ou plusieurs œuvres, à durée limitée
   DROP // sachet scellé (Divin, Apocalyptique) : tombe d'un booster, jamais en vente
+  PRESTIGE // exclusif boutique : absent des pages de boosters, garde le doré quand on l'ouvre depuis un crédit
 }
 
 enum BoosterShape {
@@ -513,6 +514,8 @@ model BoosterType {
   priceZeni       Int? // prix en Zeni (payant, ou quand le stock gratuit est vide) ; null = pas d'achat
   countsForPity   Boolean         @default(true) // pitié Mythique partagée
   bonusEligible   Boolean         @default(true) // sachets doré et divin
+  rateBoost       Int             @default(10000) // points de base : parts des raretés ≥ rateBoostFrom multipliées (27000 = ×2,7)
+  rateBoostFrom   String? // rareté de départ du boost ; null = taux normaux
   featuredCardIds String[] // cartes vedettes (bannière)
   featuredRate    Int             @default(5000) // points de base : part des tirages d'une rareté qui va aux vedettes
   featuredPity    Int             @default(100) // vedette garantie au N-ième booster sans vedette

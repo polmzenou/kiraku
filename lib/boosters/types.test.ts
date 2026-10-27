@@ -8,11 +8,14 @@ import {
   FAMILY_KANJI,
   boosterThemeSchema,
   bonusesFor,
+  creditBonuses,
   localize,
   localizedSchema,
   priceFor,
   slugSchema,
+  typeDrawRules,
 } from "./types";
+import { DEFAULT_RULES } from "./fixtures";
 
 const base = { kind: "FILTERED" as const, active: true, startsAt: null, endsAt: null, usesFreeStock: true, priceZeni: 200, filter: {} };
 const now = new Date("2026-10-14T12:00:00Z");
@@ -66,12 +69,13 @@ describe("contenu admin", () => {
   });
 });
 
-describe("les 37 boosters de départ", () => {
-  it("35 boosters proposés et 2 sachets scellés, en 8 familles, slugs uniques", () => {
-    expect(BOOSTER_SEEDS).toHaveLength(37);
+describe("les 38 boosters de départ", () => {
+  it("35 boosters proposés, l'Impérial exclusif boutique et 2 sachets scellés, en 8 familles, slugs uniques", () => {
+    expect(BOOSTER_SEEDS).toHaveLength(38);
+    expect(BOOSTER_SEEDS.filter((s) => s.kind === "PRESTIGE").map((s) => s.slug)).toEqual(["imperial"]);
     expect(BOOSTER_SEEDS.filter((s) => s.kind === "DROP").map((s) => s.slug)).toEqual(["divin", "apocalypse"]);
     expect(new Set(BOOSTER_SEEDS.map((s) => s.family))).toEqual(new Set(BOOSTER_FAMILIES));
-    expect(new Set(BOOSTER_SEEDS.map((s) => s.slug)).size).toBe(37);
+    expect(new Set(BOOSTER_SEEDS.map((s) => s.slug)).size).toBe(38);
   });
 
   it("sachets scellés : jamais en vente, ni stock gratuit, ni pitié, ni bonus", () => {
@@ -106,5 +110,45 @@ describe("les 37 boosters de départ", () => {
       expect(bonuses(slug)).toEqual({ golden: false, drop: false, pity: true });
     }
     expect(bonuses("standard")).toEqual({ golden: true, drop: true, pity: true });
+  });
+});
+
+describe("Impérial (Prestige)", () => {
+  const prestige = { ...base, kind: "PRESTIGE" as const, usesFreeStock: false, priceZeni: null };
+
+  it("caché des pages de boosters, en vente en boutique seulement, après les contrôles habituels", () => {
+    expect(availability(prestige, now, 500, 100)).toBe("hidden");
+    expect(availability(prestige, now, 500, 100, "shop")).toBe("open");
+    expect(availability({ ...prestige, active: false }, now, 500, 100, "shop")).toBe("hidden");
+    expect(availability(prestige, now, 50, 100, "shop")).toBe("hidden");
+    // Les autres types ont la même disponibilité sur les deux canaux
+    expect(availability(base, now, 500, 100, "shop")).toBe("open");
+    expect(availability({ ...base, kind: "DROP" as const }, now, 500, 100, "shop")).toBe("hidden");
+  });
+
+  it("depuis un crédit, garde la pitié et le doré, jamais de sachet scellé", () => {
+    const flags = { countsForPity: true, bonusEligible: true };
+    expect(creditBonuses({ ...flags, kind: "PRESTIGE" })).toEqual({ golden: true, drop: false, pity: true });
+    expect(creditBonuses({ ...flags, kind: "FILTERED" })).toEqual({ golden: false, drop: false, pity: true });
+    expect(creditBonuses({ countsForPity: true, bonusEligible: false, kind: "PRESTIGE" })).toEqual({ golden: false, drop: false, pity: true });
+  });
+
+  it("règles de tirage du type : planchers globaux et taux boostés à partir de Légendaire", () => {
+    const rules = typeDrawRules({ slotFloors: [], rateBoost: 27_000, rateBoostFrom: "LEGENDARY" }, DEFAULT_RULES);
+    expect(rules.slotFloors).toEqual(DEFAULT_RULES.slotFloors);
+    const total = (r: Record<string, number>) => Object.values(r).reduce((a, b) => a + b, 0);
+    const share = (r: Record<string, number>, k: string) => r[k] / total(r);
+    for (const r of ["LEGENDARY", "MYTHIC", "AR", "GOLD"]) {
+      expect(share(rules.rates, r) / share(DEFAULT_RULES.rates, r)).toBeCloseTo(2.7, 6);
+    }
+    expect(share(rules.rates, "COMMON")).toBeLessThan(share(DEFAULT_RULES.rates, "COMMON"));
+    // Sans boost : mêmes taux
+    expect(typeDrawRules({ slotFloors: [], rateBoost: 10_000, rateBoostFrom: null }, DEFAULT_RULES).rates).toBe(DEFAULT_RULES.rates);
+  });
+
+  it("le seed de l'Impérial : exclusif boutique, 5 cartes comme le standard, ×2,7 dès Légendaire", () => {
+    const seed = BOOSTER_SEEDS.find((s) => s.slug === "imperial")!;
+    expect(seed).toMatchObject({ kind: "PRESTIGE", usesFreeStock: false, priceZeni: null, countsForPity: true, bonusEligible: true, rateBoost: 27_000, rateBoostFrom: "LEGENDARY" });
+    expect(seed.slotFloors).toBeUndefined();
   });
 });

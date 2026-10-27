@@ -37,6 +37,8 @@ export function toBoosterTypeView(row: Omit<BoosterTypeRow, "poolCardIds">): Boo
     priceZeni: row.priceZeni,
     countsForPity: row.countsForPity,
     bonusEligible: row.bonusEligible,
+    rateBoost: row.rateBoost,
+    rateBoostFrom: row.rateBoostFrom !== null && isRarity(row.rateBoostFrom) ? row.rateBoostFrom : null,
     featuredCardIds: row.featuredCardIds,
     featuredRate: row.featuredRate,
     featuredPity: row.featuredPity,
@@ -213,6 +215,8 @@ export async function upsertBoosterSeeds(
       priceZeni: seed.priceZeni ?? null,
       countsForPity: seed.countsForPity ?? true,
       bonusEligible: seed.bonusEligible ?? true,
+      rateBoost: seed.rateBoost ?? 10_000,
+      rateBoostFrom: seed.rateBoostFrom ?? null,
       minPoolSize: seed.minPoolSize ?? null,
       active: seed.active ?? true,
     };

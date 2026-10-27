@@ -23,6 +23,7 @@ describe.skipIf(!url)("ouverture atomique (base réelle)", () => {
   const standard: OpenType = {
     id: "test-standard",
     slug: "standard",
+    kind: "STANDARD",
     usesFreeStock: true,
     priceZeni: null,
     countsForPity: true,

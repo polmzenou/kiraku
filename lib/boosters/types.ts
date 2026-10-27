@@ -1,6 +1,7 @@
 import { rarityKeySchema } from "@/lib/catalog/definitions";
 import { z } from "@/lib/zod";
 import { type Rarity } from "@/lib/catalog/rarity";
+import { boostRates, type DrawRules } from "./draw";
 import type { PoolFilter } from "./pool-filter";
 
 // Types de boosters (modèle BoosterType) : familles, thème du sachet, prix et disponibilité.
@@ -30,7 +31,7 @@ export const FAMILY_KANJI: Record<BoosterFamily, string> = {
   special: "特別",
 };
 
-export const BOOSTER_KINDS = ["STANDARD", "RARITY", "FILTERED", "BANNER", "FORMAT", "FOCUS", "DROP"] as const;
+export const BOOSTER_KINDS = ["STANDARD", "RARITY", "FILTERED", "BANNER", "FORMAT", "FOCUS", "DROP", "PRESTIGE"] as const;
 export type BoosterKind = (typeof BOOSTER_KINDS)[number];
 
 export const BOOSTER_SHAPES = ["SACHET", "POCHIBUKURO", "JUBAKO"] as const;
@@ -49,6 +50,7 @@ export const WAGARA = [
   "kin",
   "raden",
   "goko",
+  "kikko",
   "none",
 ] as const;
 export type Wagara = (typeof WAGARA)[number];
@@ -111,6 +113,10 @@ export type BoosterTypeView = {
   priceZeni: number | null;
   countsForPity: boolean;
   bonusEligible: boolean;
+  /** Points de base : parts des raretés à partir de rateBoostFrom multipliées (27 000 = ×2,7). */
+  rateBoost: number;
+  /** Rareté de départ du boost ; null = taux normaux. */
+  rateBoostFrom: Rarity | null;
   featuredCardIds: string[];
   featuredRate: number;
   featuredPity: number;
@@ -144,6 +150,18 @@ export function effectiveSlotFloors(own: readonly Rarity[], global: readonly Rar
   return own.length > 0 ? [...own] : [...global];
 }
 
+/** Règles de tirage d'un type : ses planchers effectifs et ses taux, boostés s'il en a un. */
+export function typeDrawRules(
+  type: Pick<BoosterTypeView, "slotFloors" | "rateBoost" | "rateBoostFrom">,
+  global: DrawRules,
+): DrawRules {
+  return {
+    ...global,
+    slotFloors: effectiveSlotFloors(type.slotFloors, global.slotFloors),
+    rates: boostRates(global.rates, type.rateBoostFrom, type.rateBoost, global.rarities),
+  };
+}
+
 export type Price = { kind: "free" } | { kind: "zeni"; amount: number } | { kind: "unavailable" };
 
 /**
@@ -163,11 +181,16 @@ export function priceFor(
 /** open : ouvrable · locked : visible mais réservé aux événements · hidden : absent de la page. */
 export type Availability = "open" | "locked" | "hidden";
 
+/**
+ * Disponibilité d'un type sur les pages de boosters (`pages`) ou en boutique (`shop`). Un Prestige
+ * (Impérial) ne s'achète qu'en boutique : caché des pages, en vente s'il passe les mêmes contrôles.
+ */
 export function availability(
   type: Pick<BoosterTypeView, "kind" | "active" | "startsAt" | "endsAt" | "usesFreeStock" | "priceZeni" | "filter">,
   now: Date,
   poolSize: number,
   minPool: number,
+  channel: "pages" | "shop" = "pages",
 ): Availability {
   if (!type.active || type.filter === null) return "hidden";
   // Sachet scellé : jamais proposé, il s'ouvre seulement depuis l'inventaire
@@ -175,6 +198,7 @@ export function availability(
   if (type.startsAt && type.startsAt > now) return "hidden";
   if (type.endsAt && type.endsAt <= now) return "hidden";
   if (poolSize < minPool) return "hidden";
+  if (type.kind === "PRESTIGE") return channel === "shop" ? "open" : "hidden";
   if (!type.usesFreeStock && type.priceZeni === null) return "locked";
   return "open";
 }
@@ -182,4 +206,12 @@ export function availability(
 /** Bonus applicables à un type : doré et sachets scellés pour les sachets gratuits, pitié selon le type. */
 export function bonusesFor(type: Pick<BoosterTypeView, "bonusEligible" | "countsForPity">) {
   return { golden: type.bonusEligible, drop: type.bonusEligible, pity: type.countsForPity };
+}
+
+/**
+ * Bonus d'un booster crédité (boutique, cadeau, récompense) : jamais de sachet scellé, ni de doré, sauf
+ * pour un Prestige qui fait avancer le compteur du sachet doré et peut l'être lui-même.
+ */
+export function creditBonuses(type: Pick<BoosterTypeView, "kind" | "bonusEligible" | "countsForPity">) {
+  return { ...bonusesFor(type), golden: type.kind === "PRESTIGE" && type.bonusEligible, drop: false };
 }

@@ -37,6 +37,7 @@ const LOTS: LotSeed[] = [
   { id: "seed-lot-pack-5", name: { fr: "5 boosters standard", en: "5 standard boosters" }, zeni: 0, standardBoosters: 5 },
   { id: "seed-lot-pack-10", name: { fr: "10 boosters standard", en: "10 standard boosters" }, zeni: 0, standardBoosters: 10 },
   { id: "seed-lot-epique", name: { fr: "Une fuda épique", en: "One epic fuda" }, zeni: 0, rarityCard: "EPIC" },
+  { id: "seed-lot-imperial", name: { fr: "Un booster Impérial", en: "One Imperial booster" }, zeni: 0, boosters: [{ slug: "imperial", quantity: 1 }] },
 ];
 
 type MissionSeed = { key: string; period: MissionPeriod; metric: MissionMetric; goal: number; rarity?: Rarity; lotId: string };
@@ -128,6 +129,19 @@ const SHOP: ShopSeed[] = [
     perUserLimit: 1,
     limitPeriod: "DAILY",
   },
+  {
+    // Exclusif boutique (type PRESTIGE) : rangé dans « Fuda et extras »
+    slug: "booster-imperial",
+    name: { fr: "Booster Impérial", en: "Imperial booster" },
+    description: {
+      fr: "Cinq cartes, Légendaire et mieux ×2,7. Compte pour la pitié et le sachet doré.",
+      en: "Five cards, Legendary and up ×2.7. Counts towards pity and the golden booster.",
+    },
+    lotId: "seed-lot-imperial",
+    priceZeni: 3_500,
+    perUserLimit: 1,
+    limitPeriod: "DAILY",
+  },
 ];
 
 // Packs ×5 à -10 %, 2 par semaine. Valeurs de départ seulement, réglables ensuite dans /admin/boutique
@@ -147,10 +161,12 @@ function packPrice(unitPrice: number | null | undefined, quantity: number): numb
  */
 function sellsAsPack(s: BoosterSeed): boolean {
   if (s.kind === "FORMAT") return true;
+  // L'Impérial se vend à l'unité, une fois par jour : pas de pack
   return (
     s.usesFreeStock !== false &&
     s.kind !== "STANDARD" &&
     s.kind !== "DROP" &&
+    s.kind !== "PRESTIGE" &&
     s.active !== false &&
     !(s.filter && isDynamicFilter(s.filter))
   );

@@ -41,13 +41,15 @@ export function PackCard({
   const line = card.lot.lines.find((l) => l.kind === "BOOSTER");
   const titleId = packTitleId(card.id);
   const soldOut = card.remaining === 0;
+  // Exclusif boutique (Impérial) : liseré d'or, et il garde la pitié et le doré
+  const prestige = card.booster?.kind === "PRESTIGE";
 
   return (
     <li
       className={enterIndex !== undefined ? "shop-enter" : undefined}
       style={enterIndex !== undefined ? ({ "--i": enterIndex } as CSSProperties) : undefined}
     >
-      <article aria-labelledby={titleId} className="shop-pack lacquer flex h-full rounded-card sm:flex-col">
+      <article aria-labelledby={titleId} className={`shop-pack lacquer flex h-full rounded-card sm:flex-col ${prestige ? "ring-1 ring-kin/60" : ""}`}>
         <div className="relative isolate w-[38%] shrink-0 overflow-hidden rounded-l-card bg-[radial-gradient(ellipse_at_50%_60%,var(--color-surface-2)_0%,var(--color-bg)_80%)] sm:h-44 sm:w-auto sm:rounded-none sm:rounded-t-card">
           {line?.kind === "BOOSTER" ? (
             <>
@@ -81,6 +83,7 @@ export function PackCard({
               </span>
             )}
             {card.endsSoon && <span className={badgeClasses("shu")}>{t("endsSoon")}</span>}
+            {prestige && <span className={badgeClasses("kin")}>{t("pack.prestige")}</span>}
           </div>
           <h3 id={titleId} className="font-title text-base leading-tight font-extrabold sm:text-lg">
             {card.name}

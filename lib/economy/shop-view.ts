@@ -65,7 +65,7 @@ export type ShopCard<L> = {
   endsAt: Date | null;
   endsSoon: boolean;
   /** Premier booster du lot : section, pool et crédits déjà possédés de ce type. */
-  booster: { slug: string; quantity: number; family: BoosterFamily; poolSize: number; owned: number } | null;
+  booster: { slug: string; quantity: number; family: ShopSectionKey; kind: BoosterKind; poolSize: number; owned: number } | null;
   /** Ouverture des boosters achetés (crédits), quantité présélectionnée quand le sélecteur la propose. */
   openHref: string | null;
   featured: boolean;
@@ -181,7 +181,9 @@ export function buildShopView<L>(input: {
           ? {
               slug: first.slug,
               quantity: first.quantity,
-              family: type.family,
+              // Impérial (Prestige) : rangé dans « Fuda et extras », pas dans sa famille de boosters
+              family: type.kind === "PRESTIGE" ? "other" : type.family,
+              kind: type.kind,
               poolSize: type.poolSize,
               owned: input.credits.get(type.id) ?? 0,
             }

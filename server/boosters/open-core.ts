@@ -16,7 +16,7 @@ import {
 } from "@/lib/boosters/draw";
 import type { Rng } from "@/lib/boosters/rng";
 import { computeStock, consumeStock, stockRulesFor, type StockSettings, type StockState } from "@/lib/boosters/stock";
-import { bonusesFor, priceFor, type BoosterTypeView } from "@/lib/boosters/types";
+import { bonusesFor, creditBonuses, priceFor, type BoosterTypeView } from "@/lib/boosters/types";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { consumeBoosters, CreditError } from "../economy/credits";
 import { applyEntries, LedgerError } from "../economy/ledger";
@@ -42,7 +42,7 @@ export class OpenError extends Error {
 /** Ce que l'ouverture doit savoir du type (validé en amont). */
 export type OpenType = Pick<
   BoosterTypeView,
-  "id" | "slug" | "usesFreeStock" | "priceZeni" | "countsForPity" | "bonusEligible"
+  "id" | "slug" | "kind" | "usesFreeStock" | "priceZeni" | "countsForPity" | "bonusEligible"
 >;
 
 export type OpenInput = {
@@ -253,7 +253,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
           apocalypseOdds: sealedTypes.apocalypse ? rules.draw.apocalypseOdds : 0,
         },
         tables: input.tables,
-        bonuses: input.credit ? { ...bonusesFor(type), golden: false, drop: false } : bonusesFor(type),
+        bonuses: input.credit ? creditBonuses(type) : bonusesFor(type),
         featured: input.featured,
         state: {
           pityCount: user.pityCount,

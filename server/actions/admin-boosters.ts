@@ -96,6 +96,8 @@ export async function saveBoosterType(input: unknown): Promise<AdminBoosterResul
     priceZeni: v.priceZeni,
     countsForPity: v.countsForPity,
     bonusEligible: v.bonusEligible,
+    rateBoost: v.rateBoost,
+    rateBoostFrom: v.rateBoostFrom,
     featuredCardIds: featured,
     featuredRate: v.featuredRate,
     featuredPity: v.featuredPity,
