@@ -3250,7 +3250,8 @@
       "resetsDays": "Resets in {days} d {hours} h",
       "resetsHours": "Resets in {hours} h {minutes} min",
       "claimedCount": "{done} / {total}",
-      "ready": "To claim"
+      "ready": "To claim",
+      "claimAll": "Claim all ({count})"
     },
     "shop": {
       "title": "Shop",

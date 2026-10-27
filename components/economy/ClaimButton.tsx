@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { useState, useTransition } from "react";
 import type { OpenedCardView } from "@/lib/boosters/view";
-import { claimMissionAction, claimReferralAction, type EconomyActionError, type RewardSummary } from "@/server/actions/economy";
+import { claimAllMissionsAction, claimMissionAction, claimReferralAction, type EconomyActionError, type RewardSummary } from "@/server/actions/economy";
 import { Button } from "../ui/Button";
 import { RewardText } from "./RewardText";
 
@@ -18,7 +18,18 @@ type ClaimOutcome = { ok: true; reward: RewardSummary } | { ok: false; error: Ec
  * monté une fois la récompense reçue (`claimed`) : le rafraîchissement de la page ne coupe ni le
  * message ni la révélation des cartes gagnées.
  */
-function ClaimButton({ claim, claimed, claimedLabel }: { claim: () => Promise<ClaimOutcome>; claimed: boolean; claimedLabel: string }) {
+function ClaimButton({
+  claim,
+  claimed,
+  claimedLabel,
+  label,
+}: {
+  claim: () => Promise<ClaimOutcome>;
+  claimed: boolean;
+  /** Sans libellé, rien n'est affiché une fois réclamé (hors récompense tout juste reçue). */
+  claimedLabel?: string;
+  label?: string;
+}) {
   const t = useTranslations("economy");
   const [pending, startTransition] = useTransition();
   const [reward, setReward] = useState<RewardSummary | null>(null);
@@ -51,7 +62,7 @@ function ClaimButton({ claim, claimed, claimedLabel }: { claim: () => Promise<Cl
           <RewardText reward={reward} />
         </p>
       ) : claimed ? (
-        <p className="flex items-center gap-1.5 text-sm font-bold text-text-muted">
+        claimedLabel && <p className="flex items-center gap-1.5 text-sm font-bold text-text-muted">
           <span aria-hidden="true" lang="ja" className="font-seal text-shu">
             済
           </span>
@@ -60,7 +71,7 @@ function ClaimButton({ claim, claimed, claimedLabel }: { claim: () => Promise<Cl
       ) : (
         <div className="flex flex-col items-stretch gap-1 sm:items-end">
           <Button type="button" variant="primary" onClick={run} disabled={pending} className="min-w-32">
-            {pending ? t("claiming") : t("claim")}
+            {pending ? t("claiming") : (label ?? t("claim"))}
           </Button>
           {error && (
             <p className="text-sm text-shu" role="alert">
@@ -77,6 +88,12 @@ function ClaimButton({ claim, claimed, claimedLabel }: { claim: () => Promise<Cl
 export function ClaimMissionButton({ missionId, claimed }: { missionId: string; claimed: boolean }) {
   const t = useTranslations("economy.missions");
   return <ClaimButton claim={() => claimMissionAction({ missionId })} claimed={claimed} claimedLabel={t("claimed")} />;
+}
+
+/** « Tout réclamer (3) » : reste monté après le versement pour garder le message et la révélation. */
+export function ClaimAllMissionsButton({ count }: { count: number }) {
+  const t = useTranslations("economy.missions");
+  return <ClaimButton claim={() => claimAllMissionsAction()} claimed={count < 2} label={t("claimAll", { count })} />;
 }
 
 export function ClaimReferralButton({ referralId, claimed }: { referralId: string; claimed: boolean }) {

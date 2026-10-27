@@ -3250,7 +3250,8 @@
       "resetsDays": "Se renouvelle dans {days} j {hours} h",
       "resetsHours": "Se renouvelle dans {hours} h {minutes} min",
       "claimedCount": "{done} / {total}",
-      "ready": "À réclamer"
+      "ready": "À réclamer",
+      "claimAll": "Tout réclamer ({count})"
     },
     "shop": {
       "title": "Boutique",
