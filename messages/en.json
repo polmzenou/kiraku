@@ -3549,7 +3549,19 @@
       "remove": "Remove {name}",
       "add": "Add {name}",
       "stats": "ATK {atk} · {hp} HP",
-      "count": "{count}/3"
+      "count": "{count}/3",
+      "abilities": "Abilities",
+      "inTeam": "In team",
+      "sortLabel": "Sort by",
+      "sort": {
+        "rarity": "Rarity",
+        "atk": "ATK",
+        "hp": "HP",
+        "def": "DEF"
+      },
+      "passives": "Passives",
+      "techniques": "Techniques",
+      "resetFilters": "Clear filters"
     },
     "queue": {
       "title": "Looking for an opponent",

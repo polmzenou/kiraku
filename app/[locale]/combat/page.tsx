@@ -69,14 +69,40 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
   return (
     <PageShell>
       {header}
-      <CombatHub activity={activity} candidates={candidates} lastTeam={lastTeam} queueSeconds={ctx.rules.queueSeconds} challenge={challenge} rank={rank} />
+      <CombatHub
+        activity={activity}
+        candidates={candidates}
+        abilities={{ keywordValues: ctx.rules.keywordValues, techniques: ctx.rules.techniques }}
+        lastTeam={lastTeam}
+        queueSeconds={ctx.rules.queueSeconds}
+        challenge={challenge}
+        rank={rank}
+      />
+
+      <section className="flex flex-col gap-3">
+        <SectionTitle title={t("rules.title")} />
+        <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-text-muted">
+          <li>{t("rules.items.turn")}</li>
+          <li>{t("rules.items.orbs", { max: ctx.rules.orbs.max })}</li>
+          <li>{t("rules.items.damage")}</li>
+          <li>{t("rules.items.timer", { seconds: ctx.rules.turnSeconds })}</li>
+          <li>{t("rules.items.end")}</li>
+        </ul>
+      </section>
+
+      <AbilityGuide rules={ctx.rules} />
 
       <section className="flex flex-col gap-3">
         <SectionTitle title={t("history.title")} />
+        {/* Liste défilante : quelques parties visibles, le reste au défilement */}
         {history.length === 0 ? (
           <p className="text-sm text-text-muted">{t("history.empty")}</p>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul
+            tabIndex={0}
+            aria-label={t("history.title")}
+            className="flex max-h-[26rem] flex-col gap-2 overflow-y-auto overscroll-contain rounded-card pr-1 [scrollbar-gutter:stable]"
+          >
             {history.map((h) => (
               <li key={h.id}>
                 <Link
@@ -107,19 +133,6 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
           </ul>
         )}
       </section>
-
-      <section className="flex flex-col gap-3">
-        <SectionTitle title={t("rules.title")} />
-        <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-text-muted">
-          <li>{t("rules.items.turn")}</li>
-          <li>{t("rules.items.orbs", { max: ctx.rules.orbs.max })}</li>
-          <li>{t("rules.items.damage")}</li>
-          <li>{t("rules.items.timer", { seconds: ctx.rules.turnSeconds })}</li>
-          <li>{t("rules.items.end")}</li>
-        </ul>
-      </section>
-
-      <AbilityGuide rules={ctx.rules} />
     </PageShell>
   );
 }

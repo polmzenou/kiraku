@@ -3549,7 +3549,19 @@
       "remove": "Retirer {name}",
       "add": "Ajouter {name}",
       "stats": "ATQ {atk} · {hp} PV",
-      "count": "{count}/3"
+      "count": "{count}/3",
+      "abilities": "Capacités",
+      "inTeam": "Dans l’équipe",
+      "sortLabel": "Trier par",
+      "sort": {
+        "rarity": "Rareté",
+        "atk": "ATQ",
+        "hp": "PV",
+        "def": "DEF"
+      },
+      "passives": "Passifs",
+      "techniques": "Techniques",
+      "resetFilters": "Effacer les filtres"
     },
     "queue": {
       "title": "Recherche d'un adversaire",

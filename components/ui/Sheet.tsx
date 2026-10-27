@@ -19,7 +19,8 @@ export function Sheet({
   onClose: () => void;
   title: ReactNode;
   children: ReactNode;
-  wide?: boolean;
+  /** `xl` : panneau large (choix d'équipe avec barre latérale). */
+  wide?: boolean | "xl";
 }) {
   const t = useTranslations("common");
   const dialog = useRef<HTMLDialogElement>(null);
@@ -40,8 +41,12 @@ export function Sheet({
       onClick={(e) => {
         if (e.target === dialog.current) dialog.current?.close();
       }}
-      className={`fixed inset-x-0 top-auto bottom-0 m-0 max-h-[88dvh] w-full max-w-none translate-y-full overflow-y-auto overscroll-contain rounded-t-[24px] border-t border-border bg-bg p-0 shadow-float text-text opacity-0 transition-[translate,opacity,display,overlay] transition-discrete duration-300 ease-out backdrop:bg-black/60 open:translate-y-0 open:opacity-100 starting:open:translate-y-full starting:open:opacity-0 motion-reduce:transition-none md:inset-0 md:m-auto md:h-fit md:max-h-[85dvh] md:translate-y-4 md:rounded-hero md:border md:open:translate-y-0 md:starting:open:translate-y-4 ${
-        wide ? "md:w-[min(56rem,calc(100vw-4rem))]" : "md:w-[min(32rem,calc(100vw-4rem))]"
+      className={`fixed inset-x-0 top-auto bottom-0 m-0 max-h-[88dvh] w-full max-w-none translate-y-full overflow-y-auto overscroll-contain rounded-t-[24px] border-t border-border bg-bg p-0 shadow-float text-text opacity-0 transition-[translate,opacity,display,overlay] transition-discrete duration-300 ease-out backdrop:bg-black/60 open:translate-y-0 open:opacity-100 starting:open:translate-y-full starting:open:opacity-0 motion-reduce:transition-none md:inset-0 md:m-auto md:h-fit md:translate-y-4 md:rounded-hero md:border md:open:translate-y-0 md:starting:open:translate-y-4 ${
+        wide === "xl"
+          ? "md:max-h-[92dvh] md:w-[min(84rem,calc(100vw-3rem))]"
+          : wide
+            ? "md:max-h-[85dvh] md:w-[min(56rem,calc(100vw-4rem))]"
+            : "md:max-h-[85dvh] md:w-[min(32rem,calc(100vw-4rem))]"
       }`}
     >
       <div className="flex flex-col gap-4 px-4 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:px-6 md:pt-4 md:pb-6">
