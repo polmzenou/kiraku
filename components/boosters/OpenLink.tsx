@@ -1,20 +1,18 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import type { OpenCount } from "@/lib/boosters/catalog";
+import type { OpenChoice } from "@/lib/boosters/catalog";
 import type { Availability, Price } from "@/lib/boosters/types";
 import { ZeniCoin } from "../layout/ZeniCoin";
 import { buttonClasses } from "../ui/Button";
 
 type Props = {
   slug: string;
-  /** Nombre présélectionné sur la page d'ouverture (×1 / ×5 / ×10). */
-  count?: OpenCount;
+  /** Nombre présélectionné sur la page d'ouverture (×1 / ×5 / ×10 / Tous). */
+  count?: OpenChoice;
   price: Price;
   availability: Availability;
   stock: number;
   coins: number;
-  /** À côté du sélecteur ×N sur mobile : marges serrées, l'information peut passer sur deux lignes. */
-  compact?: boolean;
   className?: string;
 };
 
@@ -22,7 +20,7 @@ type Props = {
  * Gros bouton vermillon « Ouvrir | Gratuit · 7 restants » ou « Ouvrir | 300 Zeni ». Le paiement
  * n'est jamais déclenché ici : la page d'ouverture le fait confirmer avant la déchirure.
  */
-export function OpenLink({ slug, count = 1, price, availability, stock, coins, compact = false, className = "" }: Props) {
+export function OpenLink({ slug, count = 1, price, availability, stock, coins, className = "" }: Props) {
   const t = useTranslations("boosters");
 
   if (availability === "locked") {
@@ -53,10 +51,10 @@ export function OpenLink({ slug, count = 1, price, availability, stock, coins, c
     <>
       <span className="font-title text-lg font-bold">{t("open")}</span>
       <span aria-hidden="true" className="h-6 w-px bg-washi-paper/40" />
-      <span className={`text-xs leading-tight ${compact ? "text-left whitespace-normal" : ""}`}>{detail}</span>
+      <span className="text-xs leading-tight">{detail}</span>
     </>
   );
-  const classes = buttonClasses("primary", `min-h-12 w-full justify-center ${compact ? "gap-2.5 px-3!" : "gap-4"} ${className}`);
+  const classes = buttonClasses("primary", `min-h-12 w-full justify-center gap-4 ${className}`);
 
   if (disabled) {
     return (
@@ -66,7 +64,7 @@ export function OpenLink({ slug, count = 1, price, availability, stock, coins, c
     );
   }
   return (
-    <Link href={count > 1 ? `/ouvrir/${slug}?n=${count}` : `/ouvrir/${slug}`} className={classes}>
+    <Link href={count !== 1 ? `/ouvrir/${slug}?n=${count}` : `/ouvrir/${slug}`} className={classes}>
       {content}
     </Link>
   );

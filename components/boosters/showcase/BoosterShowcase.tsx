@@ -2,13 +2,13 @@
 
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { OPEN_COUNTS, contentsLabel, type OpenCount } from "@/lib/boosters/catalog";
+import { OPEN_COUNTS, choiceCount, contentsLabel, openAllCount, type OpenChoice } from "@/lib/boosters/catalog";
 import type { FilterContext } from "@/lib/boosters/pool-filter";
 import { familyRows, firstSelectable, positionInFamily } from "@/lib/boosters/showcase";
 import { localize, priceFor, type BoosterFamily } from "@/lib/boosters/types";
 import { useRaritySeals } from "@/lib/catalog/use-rarities";
 import type { BoosterState } from "@/server/boosters/state";
-import { segmentedItemClass, segmentedTrackClass } from "../../ui/Segmented";
+import { segmentedFillClass, segmentedItemClass, segmentedTrackClass } from "../../ui/Segmented";
 import { BoosterArt } from "../BoosterArt";
 import { BoosterPanel, CHANCE_ROWS, chanceRows, RARITY_TEXT } from "../BoosterPanel";
 import { RARITY_BG, usePercent } from "../format";
@@ -70,7 +70,7 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
   const [slug, setSlug] = useState(initial.slug);
   const [family, setFamily] = useState(initial.family);
   const [query, setQuery] = useState("");
-  const [count, setCount] = useState<OpenCount>(1);
+  const [count, setCount] = useState<OpenChoice>(1);
   // Pas de fondu au premier affichage : seulement quand le joueur change de booster
   const [changed, setChanged] = useState(false);
   // Onglets des familles (mobile) : reste-t-il des onglets cachés à droite ?
@@ -118,50 +118,62 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
   const tagline = selected.tagline;
   const fade = changed ? FADE_IN : "";
 
-  const price = priceFor(type, state.stock, count);
+  // « Tous » : tout le stock gratuit ; retombe sur ×1 pour un booster sans stock gratuit
+  const allCount = openAllCount(type.usesFreeStock ? state.stock : 0);
+  const choice: OpenChoice = count === "all" && allCount === 0 ? 1 : count;
+  const price = priceFor(type, state.stock, choiceCount(choice, allCount));
+  const chipClass = (tone: "hero" | "page") =>
+    tone === "hero"
+      ? "min-w-11 px-2 text-sm font-bold text-[var(--ink-2)] tabular-nums transition-colors aria-pressed:bg-[var(--ink)] aria-pressed:text-[var(--ink-bg)] disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
+      : `${segmentedItemClass} min-w-11 px-2! tabular-nums disabled:cursor-not-allowed disabled:opacity-40`;
   const locked = panel?.availability === "locked";
   const strip = familyRows(entries, family);
 
   const countPicker = (tone: "hero" | "page") => (
-    <fieldset className="shrink-0">
+    <fieldset className={tone === "hero" ? "shrink-0" : "w-full"}>
       <legend className="sr-only">{tOpening("count")}</legend>
       <div
         className={
           tone === "hero"
             ? "inline-grid h-14 grid-flow-col overflow-hidden rounded-control border border-[var(--chip-b)] bg-[var(--chip)]"
-            : `${segmentedTrackClass} h-12`
+            : `${segmentedTrackClass} ${segmentedFillClass} h-12`
         }
       >
         {OPEN_COUNTS.map((n) => (
           <button
             key={n}
             type="button"
-            aria-pressed={count === n}
+            aria-pressed={choice === n}
             disabled={priceFor(type, state.stock, n).kind === "unavailable"}
             onClick={() => setCount(n)}
-            className={
-              tone === "hero"
-                ? "min-w-13 px-2 text-sm font-bold text-[var(--ink-2)] tabular-nums transition-colors aria-pressed:bg-[var(--ink)] aria-pressed:text-[var(--ink-bg)] disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
-                : `${segmentedItemClass} min-w-11 px-2! tabular-nums disabled:cursor-not-allowed disabled:opacity-40`
-            }
+            className={chipClass(tone)}
           >
             {tOpening("times", { n })}
           </button>
         ))}
+        <button
+          type="button"
+          aria-pressed={choice === "all"}
+          aria-label={allCount > 0 ? tOpening("allCount", { n: allCount }) : undefined}
+          disabled={allCount === 0}
+          onClick={() => setCount("all")}
+          className={chipClass(tone)}
+        >
+          {tOpening("all")}
+        </button>
       </div>
     </fieldset>
   );
 
-  const openLink = (compact: boolean) => (
+  const openLink = (className: string) => (
     <OpenLink
       slug={type.slug}
-      count={count}
+      count={choice}
       price={price}
       availability={panel?.availability ?? "open"}
       stock={state.stock}
       coins={state.coins}
-      compact={compact}
-      className="min-w-0 flex-1"
+      className={className}
     />
   );
 
@@ -390,9 +402,10 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
                     </ul>
                   </section>
                   <div className="flex flex-col gap-2">
-                    <div className="flex gap-2.5">
+                    {/* Colonne étroite (tablette, petit desktop) : le bouton passe sous le sélecteur plutôt que d'être écrasé */}
+                    <div className="flex flex-wrap gap-2.5">
                       {!locked && countPicker("hero")}
-                      {openLink(false)}
+                      {openLink("min-w-56 flex-1")}
                     </div>
                     {type.usesFreeStock && <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} className="text-[var(--ink-2)]!" />}
                   </div>
@@ -457,9 +470,10 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
             </div>
           )}
 
-          <div className="flex gap-2">
+          {/* Sélecteur au-dessus du bouton : quatre choix et « Gratuit · 6 restants » ne tiennent pas côte à côte en 375 px */}
+          <div className="flex flex-col gap-2">
             {!locked && countPicker("page")}
-            {openLink(true)}
+            {openLink("")}
           </div>
           {type.usesFreeStock && <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} className="text-center" />}
         </div>

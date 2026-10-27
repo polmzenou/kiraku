@@ -5,7 +5,7 @@ import { useRarities, useRarityDefinitions, useRaritySeals } from "@/lib/catalog
 import { m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useSyncExternalStore } from "react";
-import type { OpenCount } from "@/lib/boosters/catalog";
+import type { OpenChoice } from "@/lib/boosters/catalog";
 import type { OpenedBoosterView, OpenedCardView } from "@/lib/boosters/view";
 import { type Rarity } from "@/lib/catalog/rarity";
 import type { SoundName } from "@/lib/sound/synth";
@@ -29,9 +29,11 @@ type Props = {
   play: (name: SoundName, haptic?: number | number[]) => void;
   counters: { pity: boolean; golden: boolean; featured: { left: number; threshold: number } | null };
   zeniSpent: number;
-  count: OpenCount;
+  choice: OpenChoice;
   maxCount: number;
-  onCount: (n: OpenCount) => void;
+  /** Boosters qu'ouvrirait « Tous » (0 : choix désactivé). */
+  allCount: number;
+  onCount: (n: OpenChoice) => void;
 };
 
 /** Au-delà, un seul booster passe lui aussi en grille plutôt qu'en éventail. */
@@ -43,7 +45,7 @@ const FAN_MAX = 6;
  * téléphone) ; plusieurs boosters, en grille serrée. Puis les compteurs (ensō de pitié qui se
  * referme). Les actions pour enchaîner vivent dans `RecapActionBar`, toujours à portée du pouce.
  */
-export function Recap({ name, emblem, boosters, state, reduced, play, counters, zeniSpent, count, maxCount, onCount }: Props) {
+export function Recap({ name, emblem, boosters, state, reduced, play, counters, zeniSpent, choice, maxCount, allCount, onCount }: Props) {
   const RARITIES = useRarities();
   const RARITY_SEAL = useRaritySeals();
   const definitions = useRarityDefinitions();
@@ -234,7 +236,7 @@ export function Recap({ name, emblem, boosters, state, reduced, play, counters, 
           </div>
         )}
 
-        {maxCount > 1 && <CountPicker value={count} max={maxCount} onChange={onCount} />}
+        {(maxCount > 1 || allCount > 0) && <CountPicker value={choice} max={maxCount} all={allCount} onChange={onCount} />}
         <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} />
       </m.div>
     </section>

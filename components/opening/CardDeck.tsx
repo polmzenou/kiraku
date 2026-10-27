@@ -4,6 +4,7 @@ import { fxTier, isTopTier } from "@/lib/catalog/tiers";
 import { AnimatePresence, m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { fitSlotGrid, type SlotGrid } from "@/lib/boosters/slot-grid";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import { Fuda } from "../fuda/Fuda";
@@ -59,6 +60,49 @@ const ARRIVE_MAX_DELAY = 0.4;
 const VISIBLE_BACKS = 4;
 const STEP_PX = 3;
 
+/** Emplacements sous la pile : écart (px, `gap-2`) et largeur max sur desktop. */
+const SLOT_GAP = 8;
+const SLOT_MAX_DESKTOP = 88;
+/** Sous la grille : écart (`gap-5`) avant « Tout révéler » et marge en bas de l'écran (px). */
+const SLOTS_BOTTOM = 20 + 16;
+
+/** Haut de l'élément dans la page, sans les `transform` des animations d'entrée. */
+function pageTop(el: HTMLElement): number {
+  let top = 0;
+  for (let node: HTMLElement | null = el; node; node = node.offsetParent as HTMLElement | null) top += node.offsetTop;
+  return top;
+}
+
+/**
+ * Desktop : la grille s'étale sur toute la largeur et tient entre son haut et le bas de l'écran,
+ * « Tout révéler » compris, sans barre de défilement. Mobile : null (5 colonnes qui défilent).
+ */
+function useDesktopSlotGrid(slots: RefObject<HTMLUListElement | null>, below: RefObject<HTMLDivElement | null>, count: number) {
+  const [grid, setGrid] = useState<SlotGrid | null>(null);
+  useLayoutEffect(() => {
+    const ul = slots.current;
+    const box = ul?.parentElement;
+    if (!ul || !box || count === 0) return;
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const measure = () => {
+      if (!desktop.matches) return setGrid(null);
+      const height = window.innerHeight - pageTop(ul) - (below.current?.offsetHeight ?? 0) - SLOTS_BOTTOM;
+      setGrid(fitSlotGrid({ count, width: box.clientWidth, height, gap: SLOT_GAP, maxWidth: SLOT_MAX_DESKTOP, ratio: 7 / 5 }));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(box);
+    window.addEventListener("resize", measure);
+    desktop.addEventListener("change", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+      desktop.removeEventListener("change", measure);
+    };
+  }, [slots, below, count]);
+  return grid;
+}
+
 type Props = {
   cards: OpenedCardView[];
   /** Les cartes sortent du booster : la pile part de cette boîte (mesurée dans `origin`) pour rejoindre sa place. */
@@ -102,6 +146,9 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
   const momentId = moment?.id ?? null;
   const momentRarity = moment?.rarity ?? null;
   const stack = useRef<HTMLDivElement>(null);
+  const slotsRef = useRef<HTMLUListElement>(null);
+  const belowRef = useRef<HTMLDivElement>(null);
+  const slotGrid = useDesktopSlotGrid(slotsRef, belowRef, order.length);
   // Arrivée depuis le booster : décalage de départ de la pile, mesuré avant le premier affichage
   const [arrival] = useState(() => Boolean(from) && !reduced);
   const [intro, setIntro] = useState<{ x: number; y: number; scale: number } | "measure" | null>(arrival ? "measure" : null);
@@ -206,7 +253,7 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
   const last = index === order.length - 1;
   const interactive = topVisible && phase !== "charging";
   const discovered = index + (phase === "front" ? 1 : 0);
-  const slotColumns = Math.min(5, order.length);
+  const slotColumns = slotGrid?.columns ?? Math.min(5, order.length);
   const backs = order.slice(index + 1, index + 1 + VISIBLE_BACKS);
   // Aurore tant qu'une Mythique, AR ou Gold reste dans la pile (retournée comprise)
   const topTier = order.slice(index).filter((card) => isTopTier(card.rarity, definitions));
@@ -231,7 +278,7 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
         )}
       </m.div>
 
-      <div ref={stack} className="card-deck-stack relative isolate mb-6 aspect-[5/7] w-[min(15rem,62vw)]">
+      <div ref={stack} className="card-deck-stack relative isolate mb-6 aspect-[5/7] w-[min(15rem,62vw)] lg:mb-4 lg:w-[min(15rem,25svh)]">
         <AnimatePresence>
           {intro !== "measure" && best && (
             <Aurora
@@ -340,8 +387,13 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
 
       {/* Tous les emplacements existent dès le début, y compris pour plusieurs boosters. */}
       {order.length > 0 && <m.ul
-        className="card-deck-slots grid max-h-80 w-full gap-2 overflow-y-auto"
-        style={{ gridTemplateColumns: `repeat(${slotColumns}, minmax(0, 1fr))`, maxWidth: slotColumns * 72 + (slotColumns - 1) * 8 }}
+        ref={slotsRef}
+        // Lignes centrées : la dernière, incomplète, se cale au milieu sous les autres
+        className={`card-deck-slots flex w-full flex-wrap justify-center gap-2 ${slotGrid ? "" : "max-h-80 overflow-y-auto"}`}
+        style={{
+          "--slot-w": `calc((100% - ${(slotColumns - 1) * SLOT_GAP}px) / ${slotColumns})`,
+          maxWidth: slotColumns * (slotGrid?.slotWidth ?? 72) + (slotColumns - 1) * SLOT_GAP,
+        } as CSSProperties}
         aria-label={t("revealSlots")}
         {...appear(0.5)}
       >
@@ -351,7 +403,7 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
       </m.ul>}
 
       {!done && (
-        <m.div {...appear(0.55)}>
+        <m.div ref={belowRef} {...appear(0.55)}>
           <Button onClick={finish} className="min-w-40">
             {t("revealAll")}
           </Button>
@@ -367,14 +419,14 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
  */
 const DeckSlot = memo(function DeckSlot({ card, discovered, reduced, label }: { card: OpenedCardView; discovered: boolean; reduced: boolean; label: string }) {
   return (
-    <li className="card-deck-slot relative aspect-[5/7] min-w-0" data-discovered={discovered}>
+    <li className="card-deck-slot @container relative aspect-[5/7] w-(--slot-w) min-w-0" data-discovered={discovered}>
       {discovered ? (
         <m.div className="absolute inset-0" initial={reduced ? false : { opacity: 0, y: 6, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.2 }}>
           <Fuda card={card} series={card.series} size="sm" still />
         </m.div>
       ) : (
         <div className="card-deck-empty flex h-full items-center justify-center rounded-[5px] border border-dashed border-kin/25 bg-[radial-gradient(ellipse_at_center,rgb(217_181_86/0.04),transparent_75%)]">
-          <span aria-hidden="true" className="font-title text-3xl text-kin/50 [text-shadow:0_0_10px_rgb(217_181_86/0.15)]">?</span>
+          <span aria-hidden="true" className="font-title text-[clamp(0.625rem,50cqw,1.875rem)] text-kin/50 [text-shadow:0_0_10px_rgb(217_181_86/0.15)]">?</span>
           <span className="sr-only">{label}</span>
         </div>
       )}

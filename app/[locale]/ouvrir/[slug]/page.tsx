@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { PageShell } from "@/components/PageShell";
-import { contentsLabel, OPEN_COUNTS } from "@/lib/boosters/catalog";
+import { contentsLabel, parseOpenChoice } from "@/lib/boosters/catalog";
 import { effectiveSlotFloors, localize, SLUG_PATTERN } from "@/lib/boosters/types";
 import { readBannerPity } from "@/server/boosters/open-core";
 import { getBoosterOffers } from "@/server/boosters/pools";
@@ -69,8 +69,8 @@ export default async function OpenBoosterPage({ params, searchParams }: PageProp
   const [sealedTypes, karmaThreshold] = await Promise.all([getSealedDisplays(locale), getSetting("booster.apocalypseKarma")]);
   const name = localize(type.name, locale);
   const cards = effectiveSlotFloors(type.slotFloors, rules.draw.slotFloors).length;
-  // Nombre choisi dans la vitrine (?n=5) : seulement une valeur du sélecteur, sinon ×1
-  const askedCount = OPEN_COUNTS.find((n) => String(n) === (Array.isArray(sp.n) ? sp.n[0] : sp.n)) ?? 1;
+  // Nombre choisi dans la vitrine (?n=5, ?n=all) : seulement une valeur du sélecteur, sinon ×1
+  const askedCount = parseOpenChoice(Array.isArray(sp.n) ? sp.n[0] : sp.n);
   const bannerPity = readBannerPity(user.bannerPity);
 
   return (

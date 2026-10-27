@@ -3,13 +3,12 @@
 import { m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import type { OpenCount } from "@/lib/boosters/catalog";
 import type { Price } from "@/lib/boosters/types";
 import { ZeniCoin } from "../layout/ZeniCoin";
 import { Button, buttonClasses } from "../ui/Button";
 
 type Props = {
-  count: OpenCount;
+  count: number;
   nextPrice: Price;
   /** Sachets gratuits restants, affichés dans le bouton ; null pour les boosters crédités. */
   stock: number | null;

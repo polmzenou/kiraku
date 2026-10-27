@@ -820,6 +820,8 @@
     "noStock": "Plus de sachet gratuit pour l'instant",
     "count": "Nombre de boosters",
     "times": "×{n}",
+    "all": "Tous",
+    "allCount": "Tous ({n})",
     "opening": "Ouverture…",
     "soundOn": "Son activé",
     "soundOff": "Son coupé",
