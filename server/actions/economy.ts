@@ -11,7 +11,7 @@ import { normalizeReferralCode } from "@/lib/economy/referral";
 import { prisma } from "../db";
 import { lotDeps } from "../economy/deps";
 import { LotError, type LotGrant } from "../economy/lots";
-import { claimMissionWith, MissionError } from "../economy/missions-core";
+import { claimMissionWith, MissionError, playerMissionsWith } from "../economy/missions-core";
 import { listLedger, type LedgerRow } from "../economy/queries";
 import { attachReferral, qualifyLater } from "../economy/referral";
 import { claimReferralWith, ReferralError } from "../economy/referral-core";
@@ -116,6 +116,45 @@ export async function claimMissionAction(input: unknown): Promise<ClaimResult> {
     }
     return unexpected("mission", e);
   }
+}
+
+/**
+ * « Tout réclamer » : chaque mission prête est réclamée par `claimMissionWith`, une transaction
+ * chacune (mêmes contrôles sous verrou qu'au clic). Une mission déjà prise entre-temps est ignorée.
+ */
+export async function claimAllMissionsAction(): Promise<ClaimResult> {
+  const g = await session("mission", { limit: 20, windowSeconds: MINUTE });
+  if ("error" in g) return { ok: false, error: g.error };
+  if (!(await getSetting("missions.enabled"))) return { ok: false, error: "DISABLED" };
+  const now = new Date();
+  const timeZone = await getSetting("game.timeZone");
+  const total: LotGrant = { zeni: 0, boosters: [], cards: [], coins: null };
+  let claimed = 0;
+  try {
+    const ready = (await playerMissionsWith(prisma, g.user.id, now, timeZone)).filter((m) => m.state === "CLAIMABLE");
+    for (const m of ready) {
+      try {
+        const { grant } = await claimMissionWith(prisma, { userId: g.user.id, missionId: m.id, now, timeZone }, lotDeps());
+        total.zeni += grant.zeni;
+        total.boosters.push(...grant.boosters);
+        total.cards.push(...grant.cards);
+        claimed++;
+      } catch (e) {
+        if (e instanceof MissionError && (e.code === "NOT_DONE" || e.code === "ALREADY_CLAIMED" || e.code === "NOT_FOUND")) continue;
+        throw e;
+      }
+    }
+  } catch (e) {
+    // Les missions déjà versées restent acquises : on montre ce qui a été reçu
+    if (claimed === 0) {
+      if (e instanceof MissionError) return { ok: false, error: "UNAVAILABLE" };
+      return unexpected("missions", e);
+    }
+    console.error("[economie] missions (tout réclamer)", e);
+  }
+  if (claimed === 0) return { ok: false, error: "NOT_DONE" };
+  refresh();
+  return { ok: true, reward: await summarize(total) };
 }
 
 // --- Boutique ---

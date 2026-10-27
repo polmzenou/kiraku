@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
-import { ClaimMissionButton } from "@/components/economy/ClaimButton";
+import { ClaimAllMissionsButton, ClaimMissionButton } from "@/components/economy/ClaimButton";
 import { LotRewards } from "@/components/economy/LotRewards";
 import { MissionResetTimer } from "@/components/economy/MissionResetTimer";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
@@ -89,6 +89,12 @@ export default async function MissionsPage() {
             <dd className={`text-lg font-bold tabular-nums ${claimable > 0 ? "text-kin" : ""}`}>{claimable}</dd>
           </div>
         </dl>
+      )}
+
+      {missions.length > 0 && (
+        <div className="flex justify-end empty:hidden">
+          <ClaimAllMissionsButton count={claimable} />
+        </div>
       )}
 
       {MISSION_PERIODS.map((period) => {
