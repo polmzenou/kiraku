@@ -5,7 +5,7 @@ import { prisma } from "../db";
 import { decorColumns, type DecorColumns } from "../profile/decor";
 
 // Classement des collectionneurs : cartes uniques possédées (exemplaires en vente compris), puis
-// Mythiques uniques. Seuls les profils publics de joueurs non bannis y figurent. Le calcul
+// Mythiques uniques. Seuls les profils publics de joueurs non bannis et non retirés par l'admin y figurent. Le calcul
 // parcourt toute la table UserCard : on le garde en cache quelques minutes.
 
 export const LEADERBOARD_TAG = "leaderboard";
@@ -30,7 +30,7 @@ const loadTopCollectors = unstable_cache(
       FROM "UserCard" uc
       JOIN "User" u ON u."id" = uc."ownerId"
       JOIN "Card" c ON c."id" = uc."cardId"
-      WHERE u."bannedAt" IS NULL AND u."profileVisibility" = 'PUBLIC'
+      WHERE u."bannedAt" IS NULL AND u."leaderboardHiddenAt" IS NULL AND u."profileVisibility" = 'PUBLIC'
       GROUP BY u."id"
       ORDER BY "uniqueCards" DESC, "mythics" DESC, u."createdAt" ASC
       LIMIT ${LEADERBOARD_SIZE}`;

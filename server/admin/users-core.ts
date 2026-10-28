@@ -74,7 +74,7 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
     const user = await tx.user.findUnique({ where: { id: input.userId }, select: {
       id: true, username: true, role: true, bannedAt: true, profileVisibility: true, showCollection: true,
       coins: true, boosterStock: true, boosterAnchor: true, rankPoints: true, pityCount: true, standardCount: true, bannerPity: true, battleTeam: true,
-      ambassadorSince: true, titleId: true, frameId: true, nameColorId: true,
+      ambassadorSince: true, titleId: true, frameId: true, nameColorId: true, leaderboardHiddenAt: true,
     } });
     if (!user) throw new AdminUserMutationError("NOT_FOUND");
     const userId = user.id;
@@ -241,6 +241,13 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
           ...(user.nameColorId && reserved.includes(user.nameColorId) ? { nameColorId: null } : {}),
         } });
         if (input.ambassador && !was) await notify(tx, { userId, type: "AMBASSADOR_GRANTED", actorId: adminId, now });
+        break;
+      }
+      case "leaderboard": {
+        // Seul le classement des collectionneurs l'ignore : profil, collection et vitrine restent visibles
+        before = { hidden: user.leaderboardHiddenAt !== null };
+        after = { hidden: input.hidden };
+        await tx.user.update({ where: { id: userId }, data: { leaderboardHiddenAt: input.hidden ? (user.leaderboardHiddenAt ?? now) : null } });
         break;
       }
       case "sessions": {

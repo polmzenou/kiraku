@@ -8,6 +8,7 @@ const target = {
   id: "player", username: "Player", role: "USER", bannedAt: null, profileVisibility: "PUBLIC", showCollection: true,
   coins: 500, boosterStock: 2, boosterAnchor: new Date(0), rankPoints: 0, pityCount: 3, standardCount: 4, bannerPity: {}, battleTeam: [],
   ambassadorSince: null as Date | null, titleId: null as string | null, frameId: "frame-hisui" as string | null, nameColorId: "color-lime" as string | null,
+  leaderboardHiddenAt: null as Date | null,
 };
 
 function setup({ role = "ADMIN", banned = false, exists = true, player = {} as Partial<typeof target> } = {}) {
@@ -160,5 +161,31 @@ describe("rôle Ambassadeur", () => {
     await mutateAdminUserWith(db, "admin", { ...base, kind: "ambassador", ambassador: true });
     expect(tx.user.update.mock.calls[0][0].data.ambassadorSince).toEqual(since);
     expect(tx.notification.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("classement des collectionneurs", () => {
+  it("retire le joueur du classement sans toucher à son profil, et le journalise", async () => {
+    const { tx, db } = setup();
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "leaderboard", hidden: true });
+    const { data } = tx.user.update.mock.calls[0][0];
+    expect(Object.keys(data)).toEqual(["leaderboardHiddenAt"]);
+    expect(data.leaderboardHiddenAt).toBeInstanceOf(Date);
+    const log = tx.adminLog.create.mock.calls[0][0].data;
+    expect(log.action).toBe("USER_LEADERBOARD");
+    expect(log.before).toEqual({ hidden: false });
+  });
+
+  it("garde la date d'origine d'un retrait déjà posé", async () => {
+    const since = new Date("2026-10-01");
+    const { tx, db } = setup({ player: { leaderboardHiddenAt: since } });
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "leaderboard", hidden: true });
+    expect(tx.user.update.mock.calls[0][0].data.leaderboardHiddenAt).toEqual(since);
+  });
+
+  it("remet le joueur dans le classement", async () => {
+    const { tx, db } = setup({ player: { leaderboardHiddenAt: new Date("2026-10-01") } });
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "leaderboard", hidden: false });
+    expect(tx.user.update.mock.calls[0][0].data).toEqual({ leaderboardHiddenAt: null });
   });
 });

@@ -1109,7 +1109,8 @@
         "USER_CARD": "Collection de cartes",
         "USER_DISCOVERIES": "Catalogue découvert",
         "USER_SESSIONS": "Déconnexion des sessions",
-        "USER_AMBASSADOR": "Rôle Ambassadeur"
+        "USER_AMBASSADOR": "Rôle Ambassadeur",
+        "USER_LEADERBOARD": "Classement des collectionneurs"
       },
       "errors": {
         "FORBIDDEN": "Accès refusé : les droits administrateur sont requis.",
@@ -1179,7 +1180,13 @@
       "notAmbassador": "Ce joueur n'est pas ambassadeur.",
       "ambassadorHint": "Badge, cadre et couleur de pseudo verts, stock de boosters relevé et pack hebdomadaire (réglages dans Boosters). Un retrait enlève aussi le cadre et la couleur portés.",
       "grantAmbassador": "Nommer ambassadeur",
-      "revokeAmbassador": "Retirer le rôle"
+      "revokeAmbassador": "Retirer le rôle",
+      "leaderboard": "Classement des collectionneurs",
+      "leaderboardHiddenSince": "Retiré du classement depuis le {date}.",
+      "leaderboardShown": "Ce joueur apparaît dans le classement s'il a un profil public.",
+      "leaderboardHint": "Le joueur n'apparaît plus dans le classement ni dans le top de l'accueil. Son profil, sa collection et sa vitrine restent visibles, et il ne peut pas annuler ce retrait.",
+      "hideFromLeaderboard": "Enlever du classement",
+      "showInLeaderboard": "Remettre dans le classement"
     },
     "moduleNames": {
       "boosters": "Boosters",
