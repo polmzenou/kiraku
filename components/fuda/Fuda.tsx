@@ -8,6 +8,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { resolveAppearance } from "@/lib/catalog/appearance";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import "./FudaEffects.css";
+import "./FudaFace.css";
 
 export type FudaCard = {
   name: string;
@@ -24,43 +25,47 @@ export type FudaCard = {
 
 type FudaSize = "sm" | "md" | "lg";
 
-const layout: Record<FudaSize, { frame: string; inset: string; inner: string; seal: string; number: string; name: string; meta: string; sizes: string }> = {
+// Cadre et papier par taille ; le contenu de la face suit la largeur réelle (container queries de FudaFace.css)
+const layout: Record<FudaSize, { frame: string; inset: string; inner: string; sizes: string }> = {
   sm: {
     frame: "rounded-[7px]",
     inset: "inset-[3px]",
     inner: "rounded-[4px]",
-    seal: "size-5 text-[13px]",
-    number: "text-[9px] px-1",
-    name: "text-[11px] leading-tight",
-    meta: "hidden",
     sizes: "(min-width: 1280px) 140px, (min-width: 1024px) 180px, (min-width: 768px) 25vw, 33vw",
   },
   md: {
     frame: "rounded-fuda",
     inset: "inset-1",
     inner: "rounded-[7px]",
-    seal: "size-7 text-lg",
-    number: "text-[10px] px-1.5",
-    name: "text-sm leading-tight",
-    meta: "text-[11px]",
     sizes: "(min-width: 768px) 240px, 50vw",
   },
   lg: {
     frame: "rounded-[14px]",
     inset: "inset-1.5",
     inner: "rounded-[9px]",
-    seal: "size-10 text-[26px]",
-    number: "text-xs px-2 py-0.5",
-    name: "text-xl leading-snug",
-    meta: "text-sm",
     sizes: "(min-width: 768px) 320px, 80vw",
   },
 };
 
+/** Sens du banc de nuées, stable pour un personnage (FNV-1a de son nom) : une grille ne se répète pas. */
+function flipBank(name: string) {
+  let h = 2166136261;
+  for (const c of name) h = Math.imul(h ^ (c.codePointAt(0) ?? 0), 16777619);
+  return (h >>> 0) % 2 === 1;
+}
+
+/** Colonnes du tanzaku : à partir de cinq signes, le nom japonais se coupe à son dernier séparateur. */
+function tanzakuColumns(name: string) {
+  if (name.length < 5) return [name];
+  const at = Math.max(name.lastIndexOf("・"), name.lastIndexOf(" "), name.lastIndexOf("　"));
+  return at > 0 && at < name.length - 1 ? [name.slice(0, at), name.slice(at + 1)] : [name];
+}
+
 /**
- * Carte (fuda) : papier 5:7, cadre dans la matière de la rareté, sceau kanji, numéro, nom japonais
- * vertical, nom latin, série et stats 力 / 気. `locked` affiche une silhouette sans jamais
- * envoyer l'URL de l'image au navigateur (fiches non découvertes, étape 3).
+ * Carte (fuda) « Les Nuées d'or » : l'illustration couvre le papier 5:7 ; un banc de nuées dans la matière
+ * de la rareté porte le shikishi (numéro, nom latin, série et stats 力 / 気), une nuée porte le sceau kanji et
+ * un tanzaku le nom japonais vertical. `locked` affiche une silhouette sans jamais envoyer l'URL de l'image
+ * au navigateur (fiches non découvertes, étape 3).
  */
 export function Fuda({
   card,
@@ -81,7 +86,7 @@ export function Fuda({
   card: FudaCard;
   series?: string;
   size?: FudaSize;
-  /** En combat, les sceaux et stats utilisent des libellés traduits. */
+  /** En combat, les stats utilisent des libellés traduits et la rareté s'écrit sous le nom. */
   variant?: "default" | "battle";
   locked?: boolean;
   monochrome?: boolean;
@@ -96,7 +101,7 @@ export function Fuda({
   sizes?: string;
   /** Posé sur la carte (pastilles, reflets de révélation) : il s'incline avec elle. */
   overlay?: ReactNode;
-  /** Pastilles en bas à droite de l'illustration (×2, « Acquise »), à gauche du nom japonais vertical. */
+  /** Pastilles à droite, juste au-dessus du numéro (×2, « Acquise »). */
   corner?: ReactNode;
   /** Anneau lumineux (meilleure carte du récap) : porté par la carte, il suit son inclinaison. */
   glow?: string;
@@ -117,22 +122,27 @@ export function Fuda({
   const visual = resolveAppearance(definition?.appearance, card.appearance);
   const customStyle = {
     ...(visual.frame && { "--fuda-frame": visual.frame, "--fuda-frame-bg": visual.frame }),
+    // Papier et encre réglés dans l'admin : le shikishi devient uni, dans ce papier
+    ...(visual.paper && { "--kn-paper": visual.paper, "--kn-washi": visual.paper }),
+    ...(visual.ink && { "--kn-ink": visual.ink, "--kn-muted": visual.ink, "--kn-kanji": visual.ink }),
     "--fx-color": visual.effectColor, "--fx-intensity": visual.intensity,
     "--fx-duration": `${8 / visual.speed}s`,
     ...(glow && { boxShadow: `0 0 0 2px ${glow}, 0 0 28px ${glow}` }),
   } as CSSProperties;
   const inBattle = variant === "battle";
-  const showNative = !inBattle && size !== "sm" && !locked && card.nameNative;
+  const native = !inBattle && !locked && card.nameNative ? tanzakuColumns(card.nameNative) : null;
+  const longest = native ? Math.max(...native.map((part) => part.length)) : 0;
   const gilded = !locked && !monochrome && visual.artTone === "gold";
-  const subtitle = (!locked && card.formName) || series;
+  const subtitle = (!locked && card.formName) || series || (inBattle ? rarity(card.rarity) : undefined);
+  const flip = flipBank(card.name) ? " kn-flip" : "";
 
   const content = (
     <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} style={customStyle}>
       {/* Papier posé en absolu dans le cadre : sa hauteur ne dépend pas d'un pourcentage (WebKit la résolvait mal sous aspect-ratio) */}
-      <div className={`fuda-paper absolute ${l.inset} flex flex-col overflow-hidden bg-washi-paper text-sumi ${l.inner}`} style={{ backgroundColor: visual.paper, color: visual.ink }}>
-        <div className="relative flex-1 overflow-hidden bg-[#e4d9c4]">
+      <div className={`fuda-paper absolute ${l.inset} overflow-hidden ${l.inner}`}>
+        <div className="kn-art">
           {locked ? (
-            <div className="flex h-full items-center justify-center font-title text-5xl text-sumi-muted/50">
+            <div className="kn-lock font-title text-sumi-muted/50">
               <span aria-hidden="true">?</span>
               <span className="sr-only">{t("locked")}</span>
             </div>
@@ -149,54 +159,59 @@ export function Fuda({
             />
           )}
           {gilded && <span aria-hidden="true" className="fuda-gilt" />}
-
-          <span
-            aria-hidden="true"
-            className={`absolute left-1 flex items-center justify-center rounded-[5px] text-washi-paper shadow-sheen ${inBattle ? "bottom-1 max-w-[calc(100%-0.5rem)] px-1 py-0.5 text-[9px] font-bold leading-tight" : `top-1 font-seal leading-none ${l.seal}`}`}
-            style={{ background: "var(--fuda-frame)" }}
-          >
-            {inBattle ? rarity(card.rarity) : visual.seal || definition?.seal || RARITY_SEAL[card.rarity]}
-          </span>
-          <span className={`absolute right-1 top-1 rounded-pill bg-washi-paper/85 font-medium ${l.number}`}>
-            {t("number", { number: cardNumber(card.rank) })}
-          </span>
-          {showNative && (
-            <span
-              lang="ja"
-              className="absolute bottom-1 right-1 max-h-[70%] overflow-hidden rounded-pill bg-washi-paper/85 px-0.5 py-1 font-title font-bold [writing-mode:vertical-rl]"
-            >
-              {card.nameNative}
-            </span>
-          )}
-          {corner && (
-            <span className={`absolute bottom-1 flex items-center gap-1 ${showNative ? (size === "lg" ? "right-10" : "right-7") : "right-1"}`}>
-              {corner}
-            </span>
-          )}
+          <span aria-hidden="true" className="kn-grain" />
         </div>
 
-        <div className="flex flex-col gap-0.5 px-1.5 py-1">
-          <p className={`truncate font-title font-bold ${l.name}`}>{locked ? t("unknown") : card.name}</p>
-          <div className={`${l.meta} flex items-center justify-between gap-2 text-sumi-muted`} style={{ color: visual.ink }}>
-            {subtitle && <span className="truncate">{subtitle}</span>}
+        {/* Banc de nuées dans la matière de la rareté : trait du contour et poudre d'or */}
+        <span aria-hidden="true" className={`kn-bank${flip}`}>
+          <i className="kn-ln" />
+          <i className="kn-sn" />
+        </span>
+        {card.rarity === "AR" && <span aria-hidden="true" className={`kn-ar${flip}`} />}
+        <span aria-hidden="true" className="kn-sc">
+          <i className="kn-ln" />
+          <span className="kn-seal font-seal">{visual.seal || definition?.seal || RARITY_SEAL[card.rarity]}</span>
+        </span>
+        {native && (
+          <span lang="ja" className="kn-tz" style={longest > 7 ? ({ "--kn-tzl": longest } as CSSProperties) : undefined}>
+            {native.map((part, i) => (
+              <b key={i}>{part}</b>
+            ))}
+          </span>
+        )}
+
+        <div className="kn-shk">
+          {card.rank === null ? (
+            <span lang="ja" className="kn-no">
+              {t("unnumbered")}
+            </span>
+          ) : (
+            <span className="kn-no">{t("number", { number: cardNumber(card.rank) })}</span>
+          )}
+          <p className="kn-name font-title">{locked ? t("unknown") : card.name}</p>
+          <p className="kn-l2">
+            {subtitle && <span className="kn-sub">{subtitle}</span>}
             {!locked && (
-              <span className="flex shrink-0 gap-2 font-medium text-sumi" style={{ color: visual.ink }}>
+              <span className="kn-st">
                 <span>
                   <span className="sr-only">{t("power", { value: card.power })}</span>
                   <span aria-hidden="true">
-                    <span className={inBattle ? undefined : "font-seal"}>{inBattle ? battle("attackShort") : "力"}</span> {card.power}
+                    <i className={inBattle ? undefined : "font-seal"}>{inBattle ? battle("attackShort") : "力"}</i>
+                    {card.power}
                   </span>
                 </span>
                 <span>
                   <span className="sr-only">{t("ki", { value: card.ki })}</span>
                   <span aria-hidden="true">
-                    <span className={inBattle ? undefined : "font-seal"}>{inBattle ? battle("defenseShort") : "気"}</span> {card.ki}
+                    <i className={inBattle ? undefined : "font-seal"}>{inBattle ? battle("defenseShort") : "気"}</i>
+                    {card.ki}
                   </span>
                 </span>
               </span>
             )}
-          </div>
+          </p>
         </div>
+        {corner && <span className="kn-corner">{corner}</span>}
       </div>
       {/* Effet de matière (laque, or, nacre) au-dessus de la carte, à partir d'Épique */}
       {!locked && !monochrome && visual.effects === undefined && tier >= BASE_RARITIES.indexOf("EPIC") && (

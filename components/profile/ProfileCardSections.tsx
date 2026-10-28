@@ -50,7 +50,7 @@ export function ProfileSalesSection({ cards, owned = [] }: { cards: ProfileSaleC
       {cards.length === 0 ? (
         <p className="lacquer rounded-card p-4 text-sm text-text-muted">{t("empty")}</p>
       ) : (
-        <ul aria-label={t("title")} className="grid grid-cols-6 gap-1 sm:gap-2 md:gap-4 max-sm:[&_.fuda>span]:hidden max-sm:[&_.fuda-paper_span]:hidden">
+        <ul aria-label={t("title")} className="grid grid-cols-6 gap-1 sm:gap-2 md:gap-4">
           {cards.map((card) => (
             <li key={card.cardId} className="relative min-w-0">
               <Link href={`/marche/${card.auctionId}`} aria-label={t("open", { name: card.name, count: card.copies })} className="relative block rounded-[5px]">
@@ -62,7 +62,7 @@ export function ProfileSalesSection({ cards, owned = [] }: { cards: ProfileSaleC
                   overlay={
                     <>
                       {card.copies > 1 && <span aria-hidden="true" className="absolute top-1 right-1 flex min-h-6 min-w-6 items-center justify-center rounded-full border border-bg bg-shu-btn px-1.5 text-xs font-bold text-white">×{card.copies}</span>}
-                      {/* En surcouche et non dans `corner` : sur téléphone, cette grille masque les pastilles du papier */}
+                      {/* En surcouche et non dans `corner` : sous 80 px (six colonnes sur téléphone), la carte masque ses pastilles */}
                       {owned.includes(card.cardId) && <span className="absolute right-1 bottom-6"><OwnedBadge compact /></span>}
                     </>
                   }

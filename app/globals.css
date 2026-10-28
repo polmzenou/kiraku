@@ -604,22 +604,18 @@
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), inset 0 0 0 1px rgb(0 0 0 / 0.18), 0 6px 14px rgb(0 0 0 / 0.28);
   }
   .fuda[data-rarity="COMMON"] {
-    /* Washi : fibres du papier */
+    /* Washi : fibres du papier, lavis d'encre (aussi la matière des nuées de la face) */
     --fuda-frame-bg:
-      repeating-linear-gradient(97deg, rgb(255 255 255 / 0.07) 0 1px, transparent 1px 5px),
+      repeating-linear-gradient(97deg, rgb(255 255 255 / 0.09) 0 1px, transparent 1px 5px),
       repeating-linear-gradient(7deg, rgb(0 0 0 / 0.05) 0 1px, transparent 1px 6px),
-      var(--color-rarity-common);
-  }
-  .fuda-paper {
-    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.35);
+      linear-gradient(172deg, #aca497, #988f82 55%, #8b8275);
   }
   .fuda[data-rarity="UNCOMMON"] {
     --fuda-frame: var(--color-rarity-uncommon);
-    /* Bambou : fibres verticales et nœuds */
+    /* Bambou : vert malachite semé de blanc de coquille (les nœuds rayaient les nuées de la face) */
     --fuda-frame-bg:
-      repeating-linear-gradient(0deg, transparent 0 46px, rgb(0 0 0 / 0.18) 46px 48px, rgb(255 255 255 / 0.12) 48px 49px),
-      repeating-linear-gradient(90deg, rgb(255 255 255 / 0.08) 0 1px, transparent 1px 4px, rgb(0 0 0 / 0.06) 4px 5px),
-      linear-gradient(90deg, #4f7039, #6d9152 50%, #4f7039);
+      radial-gradient(circle, rgb(235 248 220 / 0.16) 0 0.6px, transparent 1px) 0 0 / 4px 4px,
+      linear-gradient(172deg, #79a260, #5c7f45 55%, #4a6a37);
   }
   .fuda[data-rarity="RARE"] {
     --fuda-frame: var(--color-rarity-rare);
@@ -640,8 +636,8 @@
   }
   .fuda[data-rarity="MYTHIC"] {
     --fuda-frame: var(--color-rarity-mythic);
-    /* Nacre (raden) : irisation statique pour l'instant */
-    --fuda-frame-bg: linear-gradient(135deg, #efe3f6 0%, #c3e4e1 28%, #f5e5c4 52%, #d4c6f0 76%, #bfdcef 100%);
+    /* Nacre (raden) : irisation statique, assez soutenue pour que les nuées se détachent de l'illustration */
+    --fuda-frame-bg: linear-gradient(135deg, #cfb9ea 0%, #a2d0cb 26%, #e2c99c 50%, #ac95e0 74%, #98bfe2 100%);
   }
   .fuda[data-rarity="AR"] {
     --fuda-frame: var(--color-rarity-ar);

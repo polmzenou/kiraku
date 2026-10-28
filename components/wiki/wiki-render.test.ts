@@ -50,8 +50,23 @@ describe("rendu accessible du wiki", () => {
       card: { ...card, appearance: { frame: "#123456", ink: "#abcdef", effects: [] } }, tilt: false,
     }));
     expect(html).toContain("--fuda-frame-bg:#123456");
-    expect(html).toContain("color:#abcdef");
+    expect(html).toContain("--kn-ink:#abcdef");
     expect(html).not.toContain('class="fuda-sheen"');
+  });
+  it("pose la face des Nuées d'or : banc, sceau, tanzaku du nom japonais et numéro hors série", () => {
+    const html = renderToStaticMarkup(createElement(Fuda, { card, series: "Attack on Titan", tilt: false }));
+    expect(html).toMatch(/class="kn-bank( kn-flip)?"/);
+    expect(html).toContain('class="kn-seal font-seal">神<');
+    expect(html).toContain('<span lang="ja" class="kn-tz"><b>リヴァイ</b></span>');
+    expect(html).toContain("No. 0002");
+    // Le contenu reste dans le papier ; reflet puis surcouche, dans cet ordre, au-dessus
+    expect(html.indexOf('class="kn-shk"')).toBeLessThan(html.indexOf('class="fuda-sheen"'));
+    const adminCard = renderToStaticMarkup(createElement(Fuda, { card: { ...card, rank: null, nameNative: "モンキー・D・ルフィ" }, tilt: false }));
+    expect(adminCard).toContain('<span lang="ja" class="kn-no">番外</span>');
+    expect(adminCard).toContain("<b>モンキー・D</b><b>ルフィ</b>");
+    const locked = renderToStaticMarkup(createElement(Fuda, { card, locked: true, tilt: false }));
+    expect(locked).not.toContain(card.imageUrl);
+    expect(locked).not.toContain("kn-tz");
   });
   it("dore l'artwork d'une carte Gold et affiche le nom de forme d'une variante AR", () => {
     const gold = renderToStaticMarkup(createElement(Fuda, { card: { ...card, rarity: "GOLD", formName: "Gold" }, series: "Jujutsu Kaisen", tilt: false }));
