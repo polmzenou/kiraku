@@ -1,6 +1,6 @@
 // Règles de robots.txt (production). Les moteurs de recherche gardent le wiki et les pages publiques ;
 // les robots d'entraînement et d'assistants d'IA n'apportent pas de joueurs et coûtent des rendus
-// serveur : ils sont refusés partout (le pare-feu Vercel « AI Bots » les bloque aussi).
+// serveur : ils sont refusés partout.
 
 export const AI_CRAWLERS = [
   "GPTBot",

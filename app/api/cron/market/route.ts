@@ -5,7 +5,7 @@ import { pushLater } from "@/server/market/queries";
 
 // Clôture planifiée des ventes terminées, appelée une fois par jour par Vercel Cron (vercel.json, plan
 // Hobby) : filet de sécurité derrière la clôture paresseuse (pages affichées, sondage de la cloche).
-// Vercel envoie « Authorization: Bearer $CRON_SECRET » ; sans secret configuré, la route refuse tout.
+// Le planificateur envoie « Authorization: Bearer $CRON_SECRET » ; sans secret configuré, la route refuse tout.
 // settleAuctionWith est idempotent : un appel en double (cron + page affichée) ne clôt rien deux fois.
 
 export const dynamic = "force-dynamic";

@@ -1,4 +1,5 @@
 import "server-only";
+import { deploymentEnv, resolveAppUrl } from "@/lib/deployment";
 import { z } from "@/lib/zod";
 
 const schema = z.object({
@@ -14,7 +15,9 @@ const schema = z.object({
   // E-mails (Resend) en attente : sans clé, les liens sont écrits dans les logs en dev
   RESEND_API_KEY: z.string().min(1).optional(),
   MAIL_FROM: z.string().min(3).optional(), // ex. « Kiraku <noreply@kiraku.app> »
-  APP_URL: z.url().optional(), // origine publique, pour les liens des e-mails
+  APP_URL: z.url().optional(), // origine publique (liens, images de partage, sitemap) : obligatoire en production
+  // Hors Vercel : « preview » pour une préproduction (robots refusés), sinon déduit de NODE_ENV
+  APP_ENV: z.enum(["production", "preview", "development"]).optional(),
   // Web Push : paire VAPID (`npx web-push generate-vapid-keys`). La clé publique est transmise
   // au navigateur par la page /compte ; la clé privée ne quitte jamais le serveur.
   VAPID_PUBLIC_KEY: z.string().regex(/^[A-Za-z0-9_-]{80,100}$/).optional(),
@@ -40,10 +43,19 @@ if (!parsed.success) {
   throw new Error(`Variables d'environnement invalides : ${missing}`);
 }
 
-if (process.env.VERCEL_ENV === "production" && !parsed.data.CRON_SECRET) {
+export const deployment = deploymentEnv(raw);
+
+if (deployment === "production" && !parsed.data.CRON_SECRET) {
   // Sans lui, la clôture planifiée des ventes refuserait chaque appel du cron
   throw new Error("CRON_SECRET est obligatoire en production (clôture des ventes).");
 }
+
+// Calculée une fois au démarrage : en production, pas de repli silencieux sur localhost
+const resolvedUrl = resolveAppUrl(raw, deployment);
+if (!resolvedUrl) {
+  throw new Error("APP_URL est obligatoire en production (ex. https://kiraku-kun.com) : liens, aperçus et sitemap en dépendent.");
+}
+const publicUrl: string = resolvedUrl;
 
 export const env = parsed.data;
 export const isProduction = process.env.NODE_ENV === "production";
@@ -56,11 +68,5 @@ export const ablyEnabled = Boolean(env.ABLY_API_KEY);
 
 /** Origine publique du site : jamais déduite de l'en-tête Host (empoisonnement des liens). */
 export function appUrl(): string {
-  if (env.APP_URL) return env.APP_URL.replace(/\/$/, "");
-  // Preview : URL stable de la branche, pour que les liens visent la même base que la preview
-  if (process.env.VERCEL_ENV === "preview" && process.env.VERCEL_BRANCH_URL) {
-    return `https://${process.env.VERCEL_BRANCH_URL}`;
-  }
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
-  return "http://localhost:3000";
+  return publicUrl;
 }

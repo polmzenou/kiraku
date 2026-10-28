@@ -9,6 +9,7 @@ import { getCatalogVersion } from "@/server/catalog/queries";
 import { getStaff } from "@/server/admin";
 import { prisma } from "@/server/db";
 import { rateLimit } from "@/server/ratelimit";
+import { isSameOrigin } from "@/server/same-origin";
 import { typeDrawRules } from "@/lib/boosters/types";
 import { featuredFromPool } from "@/lib/boosters/draw";
 
@@ -33,7 +34,7 @@ function candidates(version: number) {
 }
 export async function POST(request: Request) {
   const admin = (await getStaff())?.user; if (!admin) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
-  if (request.headers.get("origin") !== new URL(request.url).origin) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
+  if (!isSameOrigin(request)) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
   if (!(await rateLimit(`admin-card-preview:${admin.id}`, { limit: 120, windowSeconds: 60 })).success) return Response.json({ error: "RATE_LIMITED" }, { status: 429 });
   const body = await request.text(); if (body.length > 32_000) return Response.json({ error: "INVALID" }, { status: 400 });
   const parsed = schema.safeParse(await Promise.resolve().then(() => JSON.parse(body)).catch(() => null));
