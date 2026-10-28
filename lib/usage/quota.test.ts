@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alertThresholdsSchema, DEFAULT_ALERT_THRESHOLDS, estimateEgressGb, quotaAlerts, quotaLevel, usageShare } from "./quota";
+import { alertThresholdsSchema, DEFAULT_ALERT_THRESHOLDS, quotaAlerts, quotaLevel, usageShare } from "./quota";
 
 const t = DEFAULT_ALERT_THRESHOLDS;
 
@@ -45,10 +45,5 @@ describe("niveaux d'alerte de consommation", () => {
     expect(res.alerts.map((a) => a.key)).toEqual(["egress", "db"]);
     expect(quotaAlerts([{ key: "db", share: 0.2 }], t).worst).toBeNull();
     expect(quotaAlerts([{ key: "db", share: 0.71 }], t).worst).toBe("warn");
-  });
-
-  it("estime l'egress à partir des invocations", () => {
-    expect(estimateEgressGb(1_000_000, 5)).toBe(5);
-    expect(estimateEgressGb(-1, 5)).toBe(0);
   });
 });

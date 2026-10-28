@@ -1,7 +1,7 @@
 import { z } from "@/lib/zod";
 
 // Niveau d'alerte d'une mesure de consommation face à sa limite (bandeau de /admin, barres de
-// /admin/general). Logique pure : les mesures arrivent de server/admin/supabase-usage.ts.
+// /admin/general). Logique pure : les mesures arrivent de server/admin/host-usage.ts.
 
 export type QuotaLevel = "ok" | "warn" | "critical" | "unknown";
 
@@ -42,20 +42,3 @@ export function quotaAlerts<K extends string>(measures: readonly QuotaMeasure<K>
   const worst = alerts.some((a) => a.level === "critical") ? "critical" : alerts.length > 0 ? "warn" : null;
   return { worst, alerts } as const;
 }
-
-/** Egress estimé (Go sur 30 jours) : invocations projetées × octets lus en base par invocation. */
-export function estimateEgressGb(monthlyInvocations: number, kbPerInvocation: number): number {
-  return (Math.max(0, monthlyInvocations) * Math.max(0, kbPerInvocation)) / 1_000_000;
-}
-
-/** Limites du plan Supabase (gratuit par défaut, vérifiées dans la doc officielle le 28/10/2026). */
-export const supabaseLimitsSchema = z.object({
-  dbSizeMb: z.number().int().min(1).max(10_000_000),
-  egressGb: z.number().int().min(1).max(1_000_000),
-  storageGb: z.number().int().min(1).max(1_000_000),
-  poolerClients: z.number().int().min(1).max(1_000_000),
-});
-export type SupabaseLimits = z.infer<typeof supabaseLimitsSchema>;
-
-// supabase.com/pricing (Free) et docs « Compute and disk » (Nano : 60 connexions directes, 200 clients du pooler)
-export const SUPABASE_FREE_LIMITS: SupabaseLimits = { dbSizeMb: 500, egressGb: 5, storageGb: 1, poolerClients: 200 };

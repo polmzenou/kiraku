@@ -2696,61 +2696,37 @@
       "ended": "Ended"
     },
     "usage": {
-      "title": "Estimated Vercel usage",
-      "introPolling": "A rough figure computed from the current polling settings, for a player present on the page. Realtime (Ably) is not configured: every screen polls the server.",
-      "introRealtime": "A rough figure computed from the current polling settings, for a player present on the page. Realtime (Ably) is on: polling is only a fallback.",
-      "players": "Daily active players",
-      "playersHint": "{count, plural, =0 {No active player in the last 7 days} one {# player per day on average over the last 7 days} other {# players per day on average over the last 7 days}}",
-      "hoursPerPlayer": "Hours played per player per day",
-      "otherPerDay": "Other calls per day (bots, monitors)",
-      "otherHint": "Traffic that does not depend on players: search engines, a /api/health monitor.",
-      "perScreen": "Server calls per hour and per screen",
-      "screen": "Screen",
-      "perHour": "Calls per hour",
-      "screens": {
-        "home": "Home",
-        "browse": "Other pages",
-        "chat": "Chat open",
-        "battle": "Battle",
-        "queue": "Queue",
-        "lobby": "Friend room",
-        "auction": "Auction"
-      },
-      "metrics": {
-        "invocations": "Invocations over 30 days",
-        "cpu": "Active CPU over 30 days",
-        "transfer": "Origin transfer over 30 days"
-      },
-      "invocations": "{value, number}",
-      "hours": "{value} h",
-      "gb": "{value} GB",
-      "percent": "{value}%",
-      "ofLimit": "{share} of the monthly budget ({limit})",
-      "capacity": "{count, plural, =0 {No player sustainable at {hours} h per day} one {About # daily active player sustainable at {hours} h of play each} other {About # daily active players sustainable at {hours} h of play each}} within all three budget lines.",
-      "caveat": "Estimate, not a measurement: CPU and transfer use October 2026 averages (23 ms and 6.5 KB per call). Pro plan: no fixed quota, $20 of credit per month then pay as you go; set the budget below. Exact figures are in Vercel's Usage tab.",
-      "supabase": {
-        "title": "Supabase usage",
-        "intro": "Measured directly in the database (refreshed every 5 minutes), against the plan limits set below. A measurement that fails shows as “unavailable” without blocking the page.",
+      "host": {
+        "title": "Server usage",
+        "intro": "Measured live on the VPS running the app and its Postgres database, against its capacity. A failed measure shows as “unavailable” without blocking the page.",
         "metrics": {
-          "database": "Database size",
-          "connections": "Database connections",
-          "storage": "File storage",
-          "egress": "Egress (30 days)"
+          "cpu": "CPU load (1, 5, 15 min)",
+          "memory": "Memory",
+          "disk": "Disk",
+          "connections": "Database connections"
         },
-        "estimate": "estimate",
-        "unavailable": "Unavailable",
-        "noLimit": "Unknown limit",
-        "ofLimit": "{share} of the limit ({limit})",
-        "percent": "{value}%",
-        "mb": "{value} MB",
+        "load": "{one} · {five} · {fifteen}",
+        "cores": "{count, plural, one {# core} other {# cores}}",
+        "used": "{used} / {total}",
+        "available": "{value} available",
+        "free": "{value} free",
+        "connectionsNote": "against max_connections",
         "gb": "{value} GB",
-        "count": "{value, number}",
-        "connectionsNote": "Server-side open connections against max_connections. Pooler clients (limit {pooler}) can't be read in SQL.",
+        "mb": "{value} MB",
+        "percent": "{value}%",
+        "duration": "{days}d {hours}h",
+        "unavailable": "Unavailable",
+        "noLimit": "Unknown capacity",
+        "facts": {
+          "database": "Database size",
+          "app": "App memory",
+          "hostUptime": "Server up for",
+          "appUptime": "App running for"
+        },
         "tables": "Heaviest tables",
         "table": "Table",
-        "size": "Size (indexes included)",
-        "egressCaveat": "Egress can't be read in SQL or through the Supabase API: it is estimated from projected invocations and the bytes-read-per-call assumption. Exact figures (egress and storage) are in the Supabase usage dashboard.",
-        "dashboardLink": "Open the Supabase usage dashboard",
+        "size": "Size (with indexes)",
+        "caveat": "The CPU percentage follows the 5-minute load divided by the number of cores: a build (npm run build) raises it for a few minutes, which is normal. Available memory includes the disk cache Linux gives back on demand.",
         "measuredAt": "Measured on {at, date, short} at {at, time, short}"
       },
       "banner": {
@@ -2759,48 +2735,25 @@
         "item": "{metric}: {percent}%",
         "details": "See details",
         "metrics": {
-          "database": "Database size",
-          "connections": "Database connections",
-          "storage": "File storage",
-          "egress": "Egress (30 days)",
-          "invocations": "Vercel invocations (30 days, estimated)",
-          "cpu": "Vercel active CPU (30 days, estimated)",
-          "transfer": "Vercel origin transfer (30 days, estimated)"
+          "cpu": "CPU load (5 min)",
+          "memory": "Memory",
+          "disk": "Disk",
+          "connections": "Database connections"
         }
       },
       "settings": {
         "alertSection": "Alert thresholds",
-        "alertHint": "The banner at the top of the admin turns orange at the first threshold and red at the second (as a % of the limit).",
-        "supabaseSection": "Supabase plan limits",
-        "supabaseHint": "Free plan by default (Supabase docs, October 2026): 500 MB database, 5 GB egress, 1 GB storage, 200 pooler clients. Change these if the plan changes.",
-        "egressKbHint": "Assumption behind the egress estimate: data read from the database per server call.",
-        "vercelSection": "Vercel monthly budget",
-        "vercelHint": "Pro plan: $20 of credit per month. By default, the budget fits within that credit at Dublin (dub1) prices.",
+        "alertHint": "The banner at the top of the admin turns orange at the first threshold and red at the second (as a % of server capacity).",
         "fields": {
           "usage": {
             "alertThresholds": {
               "warnPercent": "Orange threshold (%)",
               "criticalPercent": "Red threshold (%)"
-            },
-            "supabaseLimits": {
-              "dbSizeMb": "Database size (MB)",
-              "egressGb": "Egress over 30 days (GB)",
-              "storageGb": "File storage (GB)",
-              "poolerClients": "Pooler clients"
-            },
-            "egressKbPerInvocation": "KB read from the database per call",
-            "vercelBudget": {
-              "invocations": "Invocations over 30 days",
-              "cpuHours": "Active CPU hours over 30 days",
-              "transferGb": "Origin transfer over 30 days (GB)"
             }
           }
         },
         "keys": {
           "usage": {
-            "vercelBudget": "Vercel monthly budget",
-            "supabaseLimits": "Supabase plan limits",
-            "egressKbPerInvocation": "KB read from the database per call",
             "alertThresholds": "Alert thresholds"
           }
         }

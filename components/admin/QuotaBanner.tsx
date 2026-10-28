@@ -1,11 +1,11 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { usageAlerts } from "@/server/admin/supabase-usage";
+import { usageAlerts } from "@/server/admin/host-usage";
 
 /**
  * Bandeau en tête de toutes les pages /admin : orange dès qu'une consommation dépasse le premier
  * seuil, rouge au second (réglage usage.alertThresholds). Rien si tout va bien ou si la mesure a
- * échoué : il ne gêne jamais l'admin. Mesures en cache 5 min (server/admin/supabase-usage.ts).
+ * échoué : il ne gêne jamais l'admin. Mesures du serveur (server/admin/host-usage.ts).
  */
 export async function QuotaBanner() {
   const res = await usageAlerts();

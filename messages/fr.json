@@ -2696,61 +2696,37 @@
       "ended": "Terminé"
     },
     "usage": {
-      "title": "Consommation Vercel estimée",
-      "introPolling": "Ordre de grandeur calculé à partir des réglages de sondage en cours, pour un joueur présent sur la page. Le temps réel (Ably) n'est pas configuré : chaque écran sonde le serveur.",
-      "introRealtime": "Ordre de grandeur calculé à partir des réglages de sondage en cours, pour un joueur présent sur la page. Le temps réel (Ably) est actif : les sondages ne servent que de secours.",
-      "players": "Joueurs actifs par jour",
-      "playersHint": "{count, plural, =0 {Aucun joueur actif ces 7 derniers jours} one {# joueur par jour en moyenne ces 7 derniers jours} other {# joueurs par jour en moyenne ces 7 derniers jours}}",
-      "hoursPerPlayer": "Heures de jeu par joueur et par jour",
-      "otherPerDay": "Autres appels par jour (robots, moniteurs)",
-      "otherHint": "Trafic qui ne dépend pas des joueurs : moteurs de recherche, outil de surveillance de /api/health.",
-      "perScreen": "Appels au serveur par heure et par écran",
-      "screen": "Écran",
-      "perHour": "Appels par heure",
-      "screens": {
-        "home": "Accueil",
-        "browse": "Autres pages",
-        "chat": "Chat ouvert",
-        "battle": "Combat",
-        "queue": "File d'attente",
-        "lobby": "Salon d'un code ami",
-        "auction": "Vente aux enchères"
-      },
-      "metrics": {
-        "invocations": "Invocations sur 30 jours",
-        "cpu": "CPU actif sur 30 jours",
-        "transfer": "Transfert d'origine sur 30 jours"
-      },
-      "invocations": "{value, number}",
-      "hours": "{value} h",
-      "gb": "{value} Go",
-      "percent": "{value} %",
-      "ofLimit": "{share} du budget mensuel ({limit})",
-      "capacity": "{count, plural, =0 {Aucun joueur tenable à {hours} h par jour} one {Environ # joueur actif par jour tenable à {hours} h de jeu chacun} other {Environ # joueurs actifs par jour tenables à {hours} h de jeu chacun}} dans les trois lignes du budget.",
-      "caveat": "Estimation, pas une mesure : CPU et transfert reprennent les moyennes d'octobre 2026 (23 ms et 6,5 Ko par appel). Plan Pro : pas de quota fixe, 20 $ de crédit par mois puis paiement à l'usage ; le budget se règle plus bas. Le relevé exact est dans l'onglet Usage de Vercel.",
-      "supabase": {
-        "title": "Consommation Supabase",
-        "intro": "Mesurée directement dans la base (actualisée toutes les 5 minutes), face aux limites du plan réglées plus bas. Une mesure qui échoue s'affiche « indisponible » sans bloquer la page.",
+      "host": {
+        "title": "Consommation du serveur",
+        "intro": "Mesurée en direct sur le VPS qui fait tourner l'app et sa base Postgres, face à sa capacité. Une mesure qui échoue s'affiche « indisponible » sans bloquer la page.",
         "metrics": {
-          "database": "Taille de la base",
-          "connections": "Connexions à la base",
-          "storage": "Stockage de fichiers",
-          "egress": "Bande passante sortante (30 jours)"
+          "cpu": "Charge CPU (1, 5, 15 min)",
+          "memory": "Mémoire vive",
+          "disk": "Disque",
+          "connections": "Connexions à la base"
         },
-        "estimate": "estimation",
-        "unavailable": "Indisponible",
-        "noLimit": "Limite inconnue",
-        "ofLimit": "{share} de la limite ({limit})",
-        "percent": "{value} %",
-        "mb": "{value} Mo",
+        "load": "{one} · {five} · {fifteen}",
+        "cores": "{count, plural, one {# cœur} other {# cœurs}}",
+        "used": "{used} / {total}",
+        "available": "{value} disponibles",
+        "free": "{value} libres",
+        "connectionsNote": "face à max_connections",
         "gb": "{value} Go",
-        "count": "{value, number}",
-        "connectionsNote": "Connexions ouvertes côté serveur face à max_connections. Les clients du pooler (limite {pooler}) ne se lisent pas en SQL.",
+        "mb": "{value} Mo",
+        "percent": "{value} %",
+        "duration": "{days} j {hours} h",
+        "unavailable": "Indisponible",
+        "noLimit": "Capacité inconnue",
+        "facts": {
+          "database": "Taille de la base",
+          "app": "Mémoire de l'app",
+          "hostUptime": "Serveur allumé depuis",
+          "appUptime": "App lancée depuis"
+        },
         "tables": "Tables les plus lourdes",
         "table": "Table",
         "size": "Taille (index compris)",
-        "egressCaveat": "L'egress ne se lit ni en SQL ni dans l'API de Supabase : il est estimé à partir des invocations projetées et de l'hypothèse d'octets lus par appel. Le relevé exact (egress et stockage) est dans le tableau d'usage de Supabase.",
-        "dashboardLink": "Ouvrir le tableau d'usage Supabase",
+        "caveat": "Le pourcentage CPU suit la charge sur 5 minutes rapportée au nombre de cœurs : un build (npm run build) la fait monter quelques minutes, c'est normal. La mémoire disponible compte le cache disque que Linux rend à la demande.",
         "measuredAt": "Mesuré le {at, date, short} à {at, time, short}"
       },
       "banner": {
@@ -2759,48 +2735,25 @@
         "item": "{metric} : {percent} %",
         "details": "Voir le détail",
         "metrics": {
-          "database": "Taille de la base",
-          "connections": "Connexions à la base",
-          "storage": "Stockage de fichiers",
-          "egress": "Bande passante sortante (30 jours)",
-          "invocations": "Invocations Vercel (30 jours, estimé)",
-          "cpu": "CPU actif Vercel (30 jours, estimé)",
-          "transfer": "Transfert d'origine Vercel (30 jours, estimé)"
+          "cpu": "Charge CPU (5 min)",
+          "memory": "Mémoire vive",
+          "disk": "Disque",
+          "connections": "Connexions à la base"
         }
       },
       "settings": {
         "alertSection": "Seuils d'alerte",
-        "alertHint": "Le bandeau en haut de l'admin passe à l'orange au premier seuil, au rouge au second (en % de la limite).",
-        "supabaseSection": "Limites du plan Supabase",
-        "supabaseHint": "Plan gratuit par défaut (doc Supabase, octobre 2026) : base de 500 Mo, 5 Go d'egress, 1 Go de stockage, 200 clients du pooler. À changer si le plan change.",
-        "egressKbHint": "Hypothèse de l'estimation d'egress : données lues en base par appel au serveur.",
-        "vercelSection": "Budget mensuel Vercel",
-        "vercelHint": "Plan Pro : 20 $ de crédit par mois. Par défaut, budget tenu dans ce crédit aux tarifs de Dublin (dub1).",
+        "alertHint": "Le bandeau en haut de l'admin passe à l'orange au premier seuil, au rouge au second (en % de la capacité du serveur).",
         "fields": {
           "usage": {
             "alertThresholds": {
               "warnPercent": "Seuil orange (%)",
               "criticalPercent": "Seuil rouge (%)"
-            },
-            "supabaseLimits": {
-              "dbSizeMb": "Taille de base (Mo)",
-              "egressGb": "Egress sur 30 jours (Go)",
-              "storageGb": "Stockage de fichiers (Go)",
-              "poolerClients": "Clients du pooler"
-            },
-            "egressKbPerInvocation": "Ko lus en base par appel",
-            "vercelBudget": {
-              "invocations": "Invocations sur 30 jours",
-              "cpuHours": "Heures de CPU actif sur 30 jours",
-              "transferGb": "Transfert d'origine sur 30 jours (Go)"
             }
           }
         },
         "keys": {
           "usage": {
-            "vercelBudget": "Budget mensuel Vercel",
-            "supabaseLimits": "Limites du plan Supabase",
-            "egressKbPerInvocation": "Ko lus en base par appel",
             "alertThresholds": "Seuils d'alerte"
           }
         }

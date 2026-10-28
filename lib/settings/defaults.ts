@@ -6,8 +6,7 @@ import { rotationPinSchema } from "@/lib/boosters/rotation";
 import { slugSchema } from "@/lib/boosters/types";
 import { KEYWORDS, TECHNIQUES } from "@/lib/battle/types";
 import { JOIN_MODAL_DEFAULT, joinModalSchema } from "@/lib/discord/join-modal";
-import { DEFAULT_VERCEL_BUDGET, vercelBudgetSchema } from "@/lib/usage/estimate";
-import { alertThresholdsSchema, DEFAULT_ALERT_THRESHOLDS, SUPABASE_FREE_LIMITS, supabaseLimitsSchema } from "@/lib/usage/quota";
+import { alertThresholdsSchema, DEFAULT_ALERT_THRESHOLDS } from "@/lib/usage/quota";
 
 // Seuils de rareté en points de base (300 = top 3 %), du plus rare au plus courant
 const rarityThresholds = z
@@ -328,11 +327,7 @@ export const SETTING_SCHEMAS = {
   "catalog.minTagRank": z.number().int().min(0).max(100),
   "anilist.perPage": z.number().int().min(1).max(50),
   "anilist.requestDelayMs": z.number().int().min(500).max(60_000),
-  // Suivi des quotas (/admin/general) : budget Vercel, limites du plan Supabase, seuils du bandeau
-  "usage.vercelBudget": vercelBudgetSchema,
-  "usage.supabaseLimits": supabaseLimitsSchema,
-  // Octets lus en base par invocation, pour estimer l'egress Supabase (non lisible en SQL)
-  "usage.egressKbPerInvocation": z.number().min(0).max(10_000),
+  // Seuils du bandeau de consommation du serveur (/admin/general), en % de la capacité
   "usage.alertThresholds": alertThresholdsSchema,
 } as const;
 
@@ -506,9 +501,6 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "catalog.minTagRank": 60,
   "anilist.perPage": 50,
   "anilist.requestDelayMs": 2100, // 30 requêtes par minute (limite actuelle d'AniList)
-  "usage.vercelBudget": DEFAULT_VERCEL_BUDGET,
-  "usage.supabaseLimits": SUPABASE_FREE_LIMITS,
-  "usage.egressKbPerInvocation": 5,
   "usage.alertThresholds": DEFAULT_ALERT_THRESHOLDS,
 };
 
