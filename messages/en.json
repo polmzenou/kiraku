@@ -2234,7 +2234,8 @@
           "timeZone": "Game time zone"
         },
         "guest": {
-          "createPerHourPerIp": "Guest accounts per hour and per IP"
+          "createPerHourPerIp": "Guest accounts per hour and per IP",
+          "retentionDays": "Guest retention (days)"
         },
         "account": {
           "deletionGraceDays": "Delay before anonymization (days)",
@@ -2260,7 +2261,8 @@
           "timeZone": "IANA name, for example Europe/Paris: mission days and birthdays."
         },
         "guest": {
-          "createPerHourPerIp": "Limits mass account creation."
+          "createPerHourPerIp": "Limits mass account creation.",
+          "retentionDays": "A guest account created more than this many days ago, with no visit, pull or Zeni movement since, is deleted every night along with its cards. 0 = never."
         },
         "account": {
           "deletionGraceDays": "During this period the account is frozen and the deletion can be cancelled. 30 days recommended.",
@@ -4487,5 +4489,10 @@
         "ALREADY_CLAIMED": "You already claimed this week's pack."
       }
     }
+  },
+  "guestNotice": {
+    "text": "You're playing as a guest. Create an account to keep your cards: {days, plural, one {after # day without a visit} other {after # days without a visit}}, your progress is deleted.",
+    "cta": "Create an account",
+    "later": "Later"
   }
 }
