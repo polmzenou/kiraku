@@ -299,6 +299,7 @@
   },
   "fuda": {
     "number": "No. {number}",
+    "unnumbered": "番外",
     "imageAlt": "Illustration de {name}",
     "power": "Puissance {value}",
     "ki": "Ki {value}",
