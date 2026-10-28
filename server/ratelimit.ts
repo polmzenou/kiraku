@@ -45,8 +45,15 @@ function memoryLimit(key: string, rule: Rule): Result {
 /** key = « action:identifiant », ex. « guest:1.2.3.4 » ou « auth:userId ». */
 export async function rateLimit(key: string, rule: Rule): Promise<Result> {
   if (!redis) return memoryLimit(key, rule);
-  const { success } = await upstashLimiter(rule).limit(key);
-  return { success };
+  try {
+    const { success } = await upstashLimiter(rule).limit(key);
+    return { success };
+  } catch (error) {
+    // Upstash indisponible (quota mensuel épuisé, panne) : repli en mémoire plutôt que de faire
+    // échouer toutes les actions du site
+    console.error("[ratelimit] Upstash indisponible, repli en mémoire", error instanceof Error ? error.message : error);
+    return memoryLimit(key, rule);
+  }
 }
 
 /** IP du client telle que fournie par Vercel (ou « local » en dev). */
