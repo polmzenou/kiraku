@@ -68,7 +68,7 @@ describe("téléversement des images du catalogue", () => {
   it("journalise un envoi réussi avec une URL unique dans le stockage configuré", async () => {
     const response = await POST(request());
     expect(response.status).toBe(200); expect(await response.json()).toEqual({ url: `https://${host}/cards/unique.png` });
-    expect(mocks.put).toHaveBeenCalledWith(expect.stringMatching(/^cards\/[\w-]+\.png$/), expect.any(Buffer), expect.objectContaining({ access: "public", addRandomSuffix: true, contentType: "image/png" }));
+    expect(mocks.put).toHaveBeenCalledWith(expect.stringMatching(/^cards\/[\w-]+\.png$/), expect.any(Buffer), expect.objectContaining({ access: "public", addRandomSuffix: true, contentType: "image/png", token: "test-token" }));
     expect(mocks.log).toHaveBeenCalledWith({}, expect.objectContaining({ adminId: "admin", action: "CARD_IMAGE_UPLOAD" }));
   });
   it("renvoie une erreur exploitable quand Blob échoue", async () => {
