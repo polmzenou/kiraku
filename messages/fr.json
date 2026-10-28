@@ -79,6 +79,36 @@
     "thanks": "Merci de faire vivre Kiraku. Bon jeu !",
     "letsGo": "Découvrir la v2"
   },
+  "v3Teaser": {
+    "badge": "En attendant la v3",
+    "title": "Du nouveau",
+    "titleAccent": "sur Kiraku !",
+    "intro": "La v3 se prépare en coulisses. En attendant, voici ce qui change dès maintenant.",
+    "login": {
+      "title": "Déconnecté ?",
+      "body": "Il se peut que tu aies été déconnecté. <strong>Ta progression n'a pas été touchée</strong> : il suffit de te reconnecter !"
+    },
+    "cards": {
+      "title": "De nouvelles AR et Gold arrivent !",
+      "body": "Pour se préparer à la v3, Kiraku t'offre un <strong>aperçu des nouvelles cartes</strong> avec leurs effets 3D.",
+      "preview": "Aperçu des nouvelles cartes",
+      "hint": "Touche ou survole une carte pour l'incliner."
+    },
+    "shop": {
+      "title": "Une nouvelle boutique et des boosters uniques",
+      "body": "En ouvrant tes boosters, tu peux tomber sur un sachet scellé :",
+      "divine": "DIVIN",
+      "apocalypse": "APOCALYPTIQUE",
+      "odds": "1 chance sur {odds, number}"
+    },
+    "x": {
+      "title": "N'oublie pas de nous suivre sur X",
+      "body": "Suis <strong>{handle}</strong> pour ne rien rater de la v3 et être prévenu en cas de souci.",
+      "cta": "Suivre {handle}"
+    },
+    "thanks": "Merci de ta patience, la suite arrive vite !",
+    "letsGo": "C'est parti"
+  },
   "cardBack": {
     "showBack": "Voir le dos",
     "showFront": "Voir le recto",

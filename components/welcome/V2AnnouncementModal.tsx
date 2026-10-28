@@ -4,20 +4,13 @@ import { useTranslations } from "next-intl";
 import { useId, type CSSProperties, type ReactNode } from "react";
 import { BoosterArt } from "@/components/boosters/BoosterArt";
 import { Fuda } from "@/components/fuda/Fuda";
-import type { BoosterTheme } from "@/lib/boosters/types";
 import { X_HANDLE, X_URL } from "@/lib/links";
 import type { ShowcaseCard } from "@/server/welcome";
+import { SEALED_TEASER } from "./sealed-teaser";
 import { useAnnouncementDialog } from "./useAnnouncementDialog";
 
 // Cartes en éventail (les premières de la vitrine) ; les autres sont seulement comptées.
 const FAN_SIZE = 5;
-
-// Avant-goût des boosters de la semaine : seuls le sachet et le nom sont dévoilés. Divin : ivoire et
-// rayons d'or (後光), à ne pas confondre avec la nacre lilas du booster Mythique.
-const TEASED_BOOSTERS: { key: "divine" | "apocalypse"; emblem: string; theme: BoosterTheme }[] = [
-  { key: "divine", emblem: "天", theme: { base: "#FBF5E4", dark: "#B58A2C", pattern: "goko", ink: "dark" } },
-  { key: "apocalypse", emblem: "滅", theme: { base: "#4A0F0B", dark: "#0E0505", pattern: "kumo", ink: "light" } },
-];
 
 const THIS_WEEK = [
   { key: "shop", glyph: "店" },
@@ -123,7 +116,7 @@ export function V2AnnouncementModal({ userId, cards }: { userId: string; cards: 
                 <p className="text-sm font-bold">{t("week.boosters.title")}</p>
                 <p className="mt-0.5 text-xs leading-relaxed text-text-muted">{t("week.boosters.body")}</p>
                 <div className="mt-3 grid grid-cols-2 gap-3">
-                  {TEASED_BOOSTERS.map(({ key, emblem, theme }) => (
+                  {SEALED_TEASER.map(({ key, emblem, theme }) => (
                     <div key={key} className="flex flex-col items-center gap-2">
                       <div className="w-20 sm:w-24">
                         <BoosterArt shape="SACHET" theme={theme} emblem={emblem} name={t(`week.boosters.${key}`)} contents="" compact />
