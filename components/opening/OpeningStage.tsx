@@ -235,7 +235,8 @@ export function OpeningStage({
     setDepth(0.15);
     result.current = null;
     if (sealedOpen) {
-      const res = await openSealed({ drop: sealedOpen.id });
+      // Action qui lève (serveur injoignable, panne) : la scène revient au booster intact
+      const res = await openSealed({ drop: sealedOpen.id }).catch(() => ({ ok: false as const, error: "UNAVAILABLE" as const }));
       if (!res.ok) return fail(res.error);
       setKarma(res.karma);
       setOutcome(res.booster.apocalypse ?? null);
@@ -250,7 +251,7 @@ export function OpeningStage({
       creditMode
         ? { booster: type.slug, count: effectiveCount, credit: true }
         : { booster: type.slug, count: effectiveCount, pay: price.kind === "zeni" },
-    );
+    ).catch(() => ({ ok: false as const, error: "UNAVAILABLE" as const }));
     if (!res.ok) return fail(res.error);
     // Sachets dessinables seulement : un type supprimé entre-temps reste dans l'inventaire de l'accueil
     dropsRef.current = res.drops.filter((d) => sealedTypes[d.kind]);
