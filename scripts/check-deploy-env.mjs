@@ -44,11 +44,6 @@ group(["DISCORD_BOT_TOKEN", "DISCORD_LINK_CHANNEL_ID"]);
 if (present("DISCORD_LINK_CHANNEL_ID") && !/^[0-9]{17,20}$/.test(env.DISCORD_LINK_CHANNEL_ID)) errors.push("DISCORD_LINK_CHANNEL_ID invalide");
 group(["RESEND_API_KEY", "MAIL_FROM"]);
 group(["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"]);
-// process.env convertit `undefined` en chaîne « undefined » : on ne copie l'alias que s'il existe.
-if (!present("UPSTASH_REDIS_REST_URL") && present("KV_REST_API_URL")) env.UPSTASH_REDIS_REST_URL = env.KV_REST_API_URL;
-if (!present("UPSTASH_REDIS_REST_TOKEN") && present("KV_REST_API_TOKEN")) env.UPSTASH_REDIS_REST_TOKEN = env.KV_REST_API_TOKEN;
-group(["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]);
-url("UPSTASH_REDIS_REST_URL", ["https:"]);
 const app = url("APP_URL", production ? ["https:"] : ["http:", "https:"]);
 if (app && (app.pathname !== "/" || app.search || app.hash || app.username || app.password)) errors.push("APP_URL doit être une origine, sans chemin ni identifiants");
 if (present("CRON_SECRET") && env.CRON_SECRET.length < 16) errors.push("CRON_SECRET : 16 caractères minimum");
@@ -57,7 +52,7 @@ if (present("VAPID_PUBLIC_KEY") && !/^[A-Za-z0-9_-]{80,100}$/.test(env.VAPID_PUB
 if (present("VAPID_PRIVATE_KEY") && !/^[A-Za-z0-9_-]{40,50}$/.test(env.VAPID_PRIVATE_KEY)) errors.push("VAPID_PRIVATE_KEY invalide");
 if (present("VAPID_SUBJECT") && !/^(mailto:|https:\/\/)/.test(env.VAPID_SUBJECT)) errors.push("VAPID_SUBJECT invalide");
 if (production) {
-  requireKeys(["APP_URL", "CRON_SECRET", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]);
+  requireKeys(["APP_URL", "CRON_SECRET"]);
   for (const key of ["AUTH_DISCORD_ID", "ADMIN_DISCORD_ID", "RESEND_API_KEY", "ABLY_API_KEY", "VAPID_PUBLIC_KEY"]) {
     if (!present(key)) warnings.push(`${key} absente : vérifier le service correspondant dans la checklist`);
   }

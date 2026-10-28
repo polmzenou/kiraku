@@ -1,5 +1,6 @@
 import { prisma } from "@/server/db";
 import { tokenRequest } from "@/server/battle/realtime";
+import { ablyEnabled } from "@/server/env";
 import { rateLimit } from "@/server/ratelimit";
 import { getCurrentUser } from "@/server/user";
 
@@ -24,7 +25,9 @@ export async function GET(request: Request) {
     if (!b || (b.p1Id !== user.id && b.p2Id !== user.id)) return Response.json({ error: "not_found" }, { status: 404 });
     battleId = raw;
   }
+  if (!ablyEnabled) return Response.json({ error: "disabled" }, { status: 404 });
   const token = await tokenRequest(user.id, battleId);
-  if (!token) return Response.json({ error: "disabled" }, { status: 404 });
+  // Signature impossible : le client reste sur le sondage et réessaiera plus tard
+  if (!token) return Response.json({ error: "unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
   return Response.json(token, { headers: { "Cache-Control": "no-store" } });
 }

@@ -69,7 +69,7 @@ async function enabled() {
 }
 
 /** Session, schéma, compte inscrit non banni, interrupteurs, rate limit. */
-async function guard<S extends z.ZodType>(input: unknown, schema: S, bucket: string, rule: { limit: number; windowSeconds: number }) {
+async function guard<S extends z.ZodType>(input: unknown, schema: S, bucket: string, rule: { limit: number; windowSeconds: number; store?: "memory" }) {
   const user = await getCurrentUser();
   if (!user) return { error: "NO_SESSION" as const };
   const parsed = schema.safeParse(input);
@@ -77,7 +77,7 @@ async function guard<S extends z.ZodType>(input: unknown, schema: S, bucket: str
   if (user.isGuest) return { error: "GUEST" as const };
   if (user.bannedAt || isFrozen(user)) return { error: "UNAVAILABLE" as const };
   if (!(await enabled())) return { error: "DISABLED" as const };
-  if (!(await rateLimit(`${bucket}:${user.id}`, rule)).success) return { error: "RATE_LIMITED" as const };
+  if (!(await rateLimit(`${bucket}:${user.id}`, rule, { store: rule.store })).success) return { error: "RATE_LIMITED" as const };
   return { user, data: parsed.data as z.infer<S> };
 }
 
@@ -193,7 +193,7 @@ export async function loadListingsPageAction(input: unknown): Promise<({ ok: tru
   const parsed = pageSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
   if (!(await enabled())) return { ok: false, error: "DISABLED" };
-  if (!(await rateLimit(`listing-page:${user.id}`, { limit: 60, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
+  if (!(await rateLimit(`listing-page:${user.id}`, { limit: 60, windowSeconds: 60 }, { store: "memory" })).success) return { ok: false, error: "RATE_LIMITED" };
   try {
     const page = await listListings({ viewerId: user.id, ...parsed.data, locale: await getLocale() });
     return { ok: true, ...page };
@@ -204,7 +204,7 @@ export async function loadListingsPageAction(input: unknown): Promise<({ ok: tru
 
 /** Cartes du catalogue que le joueur n'a pas (choix des cartes demandées). */
 export async function searchWantableCardsAction(input: unknown) {
-  const g = await guard(input, wantableSchema, "listing-wantable", { limit: 60, windowSeconds: 60 });
+  const g = await guard(input, wantableSchema, "listing-wantable", { limit: 60, windowSeconds: 60, store: "memory" });
   if ("error" in g) return { ok: false as const, error: g.error ?? "INVALID" };
   try {
     return { ok: true as const, ...(await searchWantableCards({ userId: g.user.id, q: g.data.q, offset: g.data.offset, locale: await getLocale() })) };

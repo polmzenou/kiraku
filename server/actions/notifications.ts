@@ -60,7 +60,7 @@ export async function loadNotificationsAction(
   if (!user) return { ok: false, error: "NO_SESSION" };
   const parsed = pageSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
-  if (!(await rateLimit(`notif-page:${user.id}`, { limit: 30, windowSeconds: 60 })).success) {
+  if (!(await rateLimit(`notif-page:${user.id}`, { limit: 30, windowSeconds: 60 }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
   try {
@@ -93,9 +93,9 @@ async function chatUnreadFor(user: { id: string; isGuest: boolean; bannedAt: Dat
   if (user.isGuest || user.bannedAt || isFrozen(user)) return null;
   const [socialOn, chatOn, hours] = await Promise.all([getSetting("social.enabled"), getSetting("chat.enabled"), getSetting("chat.retentionHours")]);
   if (!socialOn || !chatOn) return null;
-  // Ménage des messages expirés, au plus une fois toutes les 10 min pour tout le site (les lectures
-  // les ignorent déjà : ils disparaissent à l'heure dite, la suppression suit)
-  if ((await rateLimit("chat:purge", { limit: 1, windowSeconds: 600 })).success) after(() => purgeOldMessages(hours));
+  // Ménage des messages expirés, au plus une fois toutes les 10 min par instance (compteur en mémoire,
+  // sans écriture en base ; les lectures les ignorent déjà : ils disparaissent à l'heure dite, la suppression suit)
+  if ((await rateLimit("chat:purge", { limit: 1, windowSeconds: 600 }, { store: "memory" })).success) after(() => purgeOldMessages(hours));
   return unreadChatCount(user.id, visibleSince(hours));
 }
 
@@ -109,7 +109,7 @@ export async function pollNotificationsAction(input: unknown): Promise<PollResul
   if (!user) return { ok: false, error: "NO_SESSION" };
   const parsed = pollSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
-  if (!(await rateLimit(`notif-poll:${user.id}`, { limit: 12, windowSeconds: 60 })).success) {
+  if (!(await rateLimit(`notif-poll:${user.id}`, { limit: 12, windowSeconds: 60 }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
   // Balayages paresseux (écritures en base) au plus une fois par notifications.sweepSeconds et par

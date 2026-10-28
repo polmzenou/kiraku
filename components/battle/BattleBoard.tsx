@@ -77,6 +77,8 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
     try {
       const res = await battleSinceAction({ battleId: view.id, version: version.current });
       if (res.ok && res.update && res.update.version > version.current) apply(res.update);
+    } catch {
+      // Serveur injoignable : le prochain sondage réessaiera
     } finally {
       syncing.current = false;
     }
@@ -94,9 +96,16 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
   // Temps réel (connexion Ably partagée) si configuré, sinon sondage ; rien onglet caché, rattrapage
   // au retour et à chaque reconnexion
   const live = !final.finished;
-  const { connected, subscribe } = useRealtime();
+  const { isLive, subscribe } = useRealtime();
+  // En direct seulement si le canal de la partie est attaché (jeton refusé ou quota Ably : sondage normal)
+  const connected = isLive({ battle: view.id });
   useHoldAwake(live);
-  usePoll(resync, { seconds: view.pollSeconds, realtimeSeconds: view.realtime ? view.safetyPollSeconds : undefined, enabled: live });
+  usePoll(resync, {
+    seconds: view.pollSeconds,
+    realtimeSeconds: view.realtime ? view.safetyPollSeconds : undefined,
+    channel: { battle: view.id },
+    enabled: live,
+  });
   useEffect(() => {
     if (!live || !view.realtime) return;
     return subscribe({ battle: view.id }, "update", (data) => receive(data as BattleUpdateView));
@@ -120,8 +129,10 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
     if (secondsLeft === null || secondsLeft > 0 || !turnEndsAt || claimed.current === turnEndsAt || animating) return;
     claimed.current = turnEndsAt;
     const id = setTimeout(async () => {
-      const res = await claimTimeoutAction({ battleId: view.id });
-      if (res.ok && res.update) receive(res.update);
+      const res = await claimTimeoutAction({ battleId: view.id }).catch(() => null);
+      // Action qui lève (serveur injoignable) : réclamation rouverte pour le prochain passage
+      if (!res) claimed.current = null;
+      if (res?.ok && res.update) receive(res.update);
       else void resync();
     }, 1_000);
     return () => clearTimeout(id);

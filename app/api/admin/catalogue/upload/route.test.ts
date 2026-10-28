@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CARD_IMAGE_LIMIT } from "@/lib/catalog/media";
 
 const mocks = vi.hoisted(() => ({ admin: vi.fn(), limit: vi.fn(), put: vi.fn(), log: vi.fn() }));
-vi.mock("@vercel/blob", () => ({ put: mocks.put }));
+vi.mock("@vercel/blob", () => ({ put: mocks.put, del: async () => {} }));
 vi.mock("@/server/admin", () => ({ getStaff: mocks.admin }));
 vi.mock("@/server/ratelimit", () => ({ rateLimit: mocks.limit }));
 vi.mock("@/server/db", () => ({ prisma: {} }));

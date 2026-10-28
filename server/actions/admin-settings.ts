@@ -14,6 +14,7 @@ import { COMBAT_SETTING_KEYS, combatSettingsSchema, type CombatSettingKey } from
 import { DISCORD_SETTING_KEYS, discordSettingsSchema, type DiscordSettingKey } from "@/lib/settings/discord-form";
 import { FEATURE_SETTING_KEYS, featureSettingsSchema, type FeatureSettingKey } from "@/lib/settings/features-form";
 import { GENERAL_SETTING_KEYS, generalSettingsSchema, type GeneralSettingKey } from "@/lib/settings/general-form";
+import { USAGE_SETTING_KEYS, usageSettingsSchema, type UsageSettingKey } from "@/lib/settings/usage-form";
 import { ECONOMY_SETTING_KEYS, economySettingsSchema, type EconomySettingKey } from "@/lib/settings/economy-form";
 import { RANKED_FORM_KEYS, rankedSettingsSchema, type RankedSettingKey } from "@/lib/settings/ranked-form";
 import { MARKET_SETTING_KEYS, marketSettingsSchema, type MarketSettingKey } from "@/lib/settings/market-form";
@@ -178,4 +179,8 @@ export async function updateFeatureSettings(input: unknown): Promise<UpdateSetti
 
 export async function updateGeneralSettings(input: unknown): Promise<UpdateSettingsResult<GeneralSettingKey>> {
   return saveSettings(GENERAL_SETTING_KEYS, generalSettingsSchema, input);
+}
+
+export async function updateUsageSettings(input: unknown): Promise<UpdateSettingsResult<UsageSettingKey>> {
+  return saveSettings(USAGE_SETTING_KEYS, usageSettingsSchema, input);
 }

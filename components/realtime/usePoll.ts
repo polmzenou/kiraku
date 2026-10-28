@@ -13,6 +13,11 @@ type Options = {
   enabled?: boolean;
   /** Ralentit le sondage quand `poll` renvoie false (rien de neuf). */
   backoff?: boolean;
+  /**
+   * Canal temps réel dont dépend ce sondage : le délai de secours ne s'applique que s'il est vraiment
+   * attaché (un canal refusé garde le délai de base). Absent = la connexion seule suffit.
+   */
+  channel?: "user" | { battle: string };
 };
 
 /**
@@ -21,8 +26,9 @@ type Options = {
  * connecté. `poll` renvoie true quand quelque chose a changé (remet le délai à la base).
  * Renvoie `pollNow` pour un sondage immédiat (événement temps réel, action du joueur).
  */
-export function usePoll(poll: () => Promise<boolean | void>, { seconds, realtimeSeconds, enabled = true, backoff = false }: Options) {
-  const { connected, backoffMax } = useRealtime();
+export function usePoll(poll: () => Promise<boolean | void>, { seconds, realtimeSeconds, enabled = true, backoff = false, channel }: Options) {
+  const { connected: open, isLive, backoffMax } = useRealtime();
+  const connected = channel ? isLive(channel) : open;
   const pollRef = useRef(poll);
   // Heure du dernier sondage ; au montage, celle du rendu serveur (rien à rattraper tout de suite)
   const lastAt = useRef(0);

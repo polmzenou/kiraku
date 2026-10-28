@@ -35,7 +35,7 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
   `DISCORD_LINK_CHANNEL_ID` configurés, permissions du salon vérifiées.
 - [ ] Resend : `RESEND_API_KEY`, `MAIL_FROM`, domaine vérifié, SPF et DKIM valides.
 - [ ] `APP_URL` correspond à l'origine HTTPS définitive, sans chemin.
-- [ ] Upstash : URL et jeton de production (`UPSTASH_REDIS_REST_*` ou `KV_REST_API_*`).
+- [ ] Limitation anti-abus : en base (table `RateLimit`), rien à configurer. Supprimer les anciennes variables `UPSTASH_REDIS_REST_*` / `KV_REST_API_*` si elles traînent encore.
   Aucun repli mémoire en production ; vérifier les quotas et les erreurs Redis.
 - [ ] Ably : `ABLY_API_KEY`, publication et abonnement autorisés, connexion de combat vérifiée.
 - [ ] Push : clés `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` configurées pour cet environnement.

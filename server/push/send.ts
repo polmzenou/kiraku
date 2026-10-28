@@ -95,7 +95,7 @@ async function signalBells(notificationIds: readonly string[]) {
 export async function pushNotifications(notificationIds: readonly string[]): Promise<void> {
   if (notificationIds.length === 0) return;
   await signalBells(notificationIds).catch((e: unknown) => console.warn("[temps réel] cloche", e instanceof Error ? e.message : e));
-  if (!(await pushAvailable())) return;
+  if (!(await pushAvailable().catch(() => false))) return;
   await Promise.all(
     notificationIds.map((id) =>
       pushOne(id).catch((e: unknown) => console.warn("[push] erreur inattendue", e instanceof Error ? e.message : e)),

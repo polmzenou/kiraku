@@ -20,7 +20,7 @@ import { badgeClasses } from "../ui/Badge";
 import { CloseIcon, IconButton, iconButtonClasses } from "../ui/IconButton";
 import { closeChat, openChat, setChatAvailable, setUnread, showConversation, useChatState } from "./chat-store";
 
-type Props = { pollSeconds: number; initialUnread: number; maxLength: number; retentionHours: number };
+type Props = { pollSeconds: number; safetySeconds: number; initialUnread: number; maxLength: number; retentionHours: number };
 
 type IncomingChat = { from: string; message: ChatMessageView };
 type Thread = { username: string; messages: ChatMessageView[]; hasMore: boolean; error: string | null };
@@ -32,7 +32,7 @@ const EMPTY: ChatMessageView[] = [];
  * Mobile : l'icône de l'en-tête (ChatHeaderButton) ouvre le même panneau en plein écran.
  * Messages poussés par Ably sur le canal privé du joueur, sinon sondés tant que la conversation est ouverte.
  */
-export function ChatDock({ pollSeconds, initialUnread, maxLength, retentionHours }: Props) {
+export function ChatDock({ pollSeconds, safetySeconds, initialUnread, maxLength, retentionHours }: Props) {
   const t = useTranslations("chat");
   const pathname = usePathname();
   const chat = useChatState();
@@ -58,11 +58,14 @@ export function ChatDock({ pollSeconds, initialUnread, maxLength, retentionHours
 
   const refreshList = useCallback(
     () =>
-      listConversationsAction({}).then((res) => {
-        if (!res.ok) return;
-        setConversations(res.conversations);
-        setUnread(res.conversations.reduce((sum, c) => sum + c.unread, 0));
-      }),
+      listConversationsAction({}).then(
+        (res) => {
+          if (!res.ok) return;
+          setConversations(res.conversations);
+          setUnread(res.conversations.reduce((sum, c) => sum + c.unread, 0));
+        },
+        () => {}, // serveur injoignable : la liste reste telle quelle
+      ),
     [],
   );
 
@@ -74,8 +77,8 @@ export function ChatDock({ pollSeconds, initialUnread, maxLength, retentionHours
   const fetchNew = useCallback(async () => {
     const username = withRef.current;
     if (!username) return;
-    const res = await loadConversationAction({ username, ...(lastAt.current ? { after: lastAt.current } : {}) });
-    if (!res.ok || withRef.current !== username) return;
+    const res = await loadConversationAction({ username, ...(lastAt.current ? { after: lastAt.current } : {}) }).catch(() => null);
+    if (!res?.ok || withRef.current !== username) return;
     if (res.messages.length > 0) append(username, res.messages);
   }, [append]);
 
@@ -86,7 +89,7 @@ export function ChatDock({ pollSeconds, initialUnread, maxLength, retentionHours
         append(data.from, [data.message]);
         void fetchNew(); // marque comme lu
       } else {
-        void chatStatusAction({}).then((res) => res.ok && setUnread(res.unread));
+        void chatStatusAction({}).then((res) => res.ok && setUnread(res.unread), () => {});
         if (conversations) void refreshList();
       }
     },
@@ -98,13 +101,14 @@ export function ChatDock({ pollSeconds, initialUnread, maxLength, retentionHours
   }, [receive]);
 
   // Temps réel (canal privé du joueur, connexion partagée). La pastille suit le sondage unique de la
-  // cloche ; seule une conversation ouverte sans temps réel est sondée ici.
-  const { connected, subscribe } = useRealtime();
+  // cloche ; une conversation ouverte est sondée ici : au délai de base sans temps réel (ou canal
+  // refusé), au délai de secours sinon, au cas où un message en direct se perdrait.
+  const { subscribe } = useRealtime();
   useEffect(() => subscribe("user", "chat", (data) => receiveRef.current(data as IncomingChat)), [subscribe]);
   const pollThread = useCallback(async () => {
     await fetchNew();
   }, [fetchNew]);
-  usePoll(pollThread, { seconds: pollSeconds, enabled: chat.open && Boolean(chat.with) && !connected });
+  usePoll(pollThread, { seconds: pollSeconds, realtimeSeconds: safetySeconds, channel: "user", enabled: chat.open && Boolean(chat.with) });
 
   // Ouverture : liste des amis ; changement d'ami : ses derniers messages
   useEffect(() => {
@@ -112,23 +116,26 @@ export function ChatDock({ pollSeconds, initialUnread, maxLength, retentionHours
     let stale = false;
     const username = chat.with;
     if (!username) {
-      void listConversationsAction({}).then((res) => {
-        if (stale || !res.ok) return;
-        setConversations(res.conversations);
-        setUnread(res.conversations.reduce((sum, c) => sum + c.unread, 0));
-      });
+      void listConversationsAction({}).then(
+        (res) => {
+          if (stale || !res.ok) return;
+          setConversations(res.conversations);
+          setUnread(res.conversations.reduce((sum, c) => sum + c.unread, 0));
+        },
+        () => {},
+      );
       return () => {
         stale = true;
       };
     }
-    void loadConversationAction({ username }).then((res) => {
+    void loadConversationAction({ username }).catch(() => ({ ok: false as const, error: "UNAVAILABLE" as const })).then((res) => {
       if (stale) return;
       setThread(
         res.ok
           ? { username, messages: res.messages, hasMore: res.hasMore, error: null }
           : { username, messages: [], hasMore: false, error: t(`errors.${res.error}`) },
       );
-      if (res.ok) void chatStatusAction({}).then((st) => st.ok && setUnread(st.unread));
+      if (res.ok) void chatStatusAction({}).then((st) => st.ok && setUnread(st.unread), () => {});
     });
     return () => {
       stale = true;

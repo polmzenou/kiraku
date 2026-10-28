@@ -608,6 +608,16 @@ model FriendRequestCooldown {
   until   DateTime
 }
 
+// Limitation anti-abus (server/ratelimit.ts) : un compteur par clé et par fenêtre fixe. Table UNLOGGED
+// (voir la migration), nettoyée par le cron quotidien des comptes.
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+
+  @@index([resetAt])
+}
+
 enum GiftKind {
   CARD
   BOOSTER

@@ -212,7 +212,7 @@ export async function loadMarketPageAction(input: unknown): Promise<MarketPageRe
   if (!cursor) return { ok: false, error: "INVALID" };
   const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
-  if (!(await rateLimit(`market-page:${user.id}`, { limit: 60, windowSeconds: MINUTE })).success) {
+  if (!(await rateLimit(`market-page:${user.id}`, { limit: 60, windowSeconds: MINUTE }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
   const page = await listAuctions({
@@ -233,7 +233,7 @@ export async function auctionLiveAction(input: unknown): Promise<LiveResult> {
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
-  if (!(await rateLimit(`market-live:${user.id}`, { limit: 60, windowSeconds: MINUTE })).success) {
+  if (!(await rateLimit(`market-live:${user.id}`, { limit: 60, windowSeconds: MINUTE }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
   const live = await auctionLive(parsed.data.auctionId, user.id, new Date());

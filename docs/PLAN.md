@@ -101,7 +101,7 @@ La tâche planifiée appelle une route du serveur ; elle ne parle jamais directe
 | Auth | Auth.js (NextAuth) + adaptateur Prisma | Discord/Google en un clic, sessions en base |
 | Validation | Zod | Chaque Server Action valide ses entrées |
 | Images | Vercel Blob ou Cloudinary + `next/image` | WebP redimensionné, servi par CDN |
-| Anti-abus | Upstash Ratelimit | Limite ouvertures, enchères, défis |
+| Anti-abus | Rate limit en base (table `RateLimit`, `server/ratelimit.ts`) | Limite ouvertures, enchères, défis ; lectures et sondages limités en mémoire, sans requête |
 | UI | Tailwind + Framer Motion | Animation d'ouverture et effet holo des cartes |
 | Temps réel | Ably (`ABLY_API_KEY`, facultatif en dev) | Combat en direct : le serveur publie, les navigateurs s'abonnent avec un jeton limité |
 
@@ -555,7 +555,7 @@ export async function placeBid(auctionId: string, amount: number) {
 
 Clôture : une fonction `settleAuction(id)` fait passer la vente de `ACTIVE` à `SOLD` ou `EXPIRED` avec un `updateMany({ where: { id, status: "ACTIVE" } })` ; si `count` vaut 0, quelqu'un l'a déjà clôturée et on s'arrête. Ensuite : la carte change de propriétaire (ou revient au vendeur), le vendeur reçoit le prix moins 5 %, l'emplacement de vitrine éventuel est supprimé.
 
-Elle est appelée à deux endroits : quand quelqu'un affiche une vente terminée, et par une tâche planifiée qui balaie `status = ACTIVE AND endsAt < now()` (Vercel Cron, ou Upstash QStash si ton offre Vercel limite la fréquence). L'index `[status, endsAt]` rend ce balayage instantané.
+Elle est appelée à deux endroits : quand quelqu'un affiche une vente terminée, et par une tâche planifiée qui balaie `status = ACTIVE AND endsAt < now()` (Vercel Cron). L'index `[status, endsAt]` rend ce balayage instantané.
 
 Pour la page du marché : liste paginée par curseur, filtres rareté/série/prix, tri « finit bientôt » par défaut. Rafraîchis le prix d'une vente ouverte toutes les 5 s (SWR) ; pas besoin de WebSocket au départ.
 
@@ -737,7 +737,7 @@ Cinq pages publiques, liées depuis le pied de page et depuis l'inscription, cou
 | Page | Route | Contenu minimum |
 | --- | --- | --- |
 | Mentions légales | `/mentions-legales` | Éditeur (un particulier peut rester anonyme s'il a donné son identité à l'hébergeur), contact, directeur de publication, hébergeur (Vercel) et adresse |
-| Politique de confidentialité | `/confidentialite` | Responsable du traitement, données collectées (pseudo, e-mail, avatar et id Discord, adresse IP, journaux), finalités et base légale de chacune, durées de conservation, sous-traitants (Vercel, Neon, Upstash, Discord, Stripe plus tard), transferts hors UE, droits et comment les exercer, réclamation à la CNIL |
+| Politique de confidentialité | `/confidentialite` | Responsable du traitement, données collectées (pseudo, e-mail, avatar et id Discord, adresse IP, journaux), finalités et base légale de chacune, durées de conservation, sous-traitants (Vercel, Supabase, Resend, Ably, Discord, Stripe plus tard), transferts hors UE, droits et comment les exercer, réclamation à la CNIL |
 | Politique cookies | `/cookies` | Liste des cookies et stockages locaux, rôle, durée, et lien pour modifier son choix |
 | Conditions d'utilisation | `/cgu` | Compte (un par personne), règles de jeu, Zeni et cartes sans valeur monétaire, sanctions et contestation, propriété des personnages, responsabilité |
 | Conditions de vente | `/cgv` | Seulement quand Stripe sera branché : prix, paiement, renonciation au droit de rétractation pour un contenu numérique livré immédiatement, remboursements |
@@ -809,6 +809,10 @@ Consommation Vercel (plan Hobby : 1 M d'invocations, 4 h de CPU actif, 1 M de re
 - Robots : `app/robots.ts` refuse les robots d'IA (`lib/seo/robots.ts`) et les variantes à paramètres (filtres du wiki, versions légales). Dans le tableau de bord Vercel, Firewall → Rules : règle managée « AI Bots » en Deny, et Bot Protection en Log puis Challenge.
 - `/api/health` interroge la base : un outil de surveillance doit l'appeler au plus toutes les 10 minutes (une par minute = 43 000 invocations par mois). Vérifier dans Vercel → Logs, filtre `/api/health`.
 - L'estimation par joueur actif et par écran est dans `/admin/general` (« Consommation Vercel estimée »), à relire avant de baisser un délai de sondage.
+- Depuis le passage en Vercel Pro (20 $ de crédit par mois, plus de quota fixe), les anciennes limites Hobby sont un budget mensuel réglable (`usage.vercelBudget`).
+- `/admin/general` mesure aussi Supabase en SQL (taille de la base, tables les plus lourdes, connexions, stockage) ; l'egress, illisible en SQL, est estimé. Limites du plan dans `usage.supabaseLimits`.
+- Bandeau en haut de tout `/admin` dès qu'une mesure dépasse `usage.alertThresholds` (70 % orange, 90 % rouge par défaut). Mesures en cache 5 min, tolérantes : une requête qui échoue s'affiche « indisponible ».
+- Aucun service tiers ne bloque le jeu : rate limit en base avec repli en mémoire, e-mails et temps réel jamais bloquants (journalisés), sondages de secours quand Ably est coupé ou refuse un canal.
 
 Sécurité et anti-triche :
 
@@ -838,7 +842,7 @@ Aucune donnée envoyée par un joueur n'est jamais exécutée, ni comme SQL, ni 
 | En-têtes HTTP | Content-Security-Policy stricte avec nonce (scripts du site seulement, images AniList et Discord autorisées), HSTS, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` minimale, `frame-ancestors 'none'`. |
 | Redirections | Les `callbackUrl` d'Auth.js et tout paramètre de redirection sont limités à des chemins internes. |
 | Contenu de l'admin | Le lien Discord n'accepte que `https://discord.gg/…` ou `https://discord.com/invite/…` ; les URL d'images que les domaines listés dans `next.config` (`remotePatterns`). |
-| Abus et robots | Upstash Ratelimit sur l'ouverture, les enchères, les défis, l'inscription et les formulaires ; protection anti-robots et pare-feu Vercel. |
+| Abus et robots | Rate limit en base (repli en mémoire si la base ne répond pas) sur l'ouverture, les enchères, les défis, l'inscription et les formulaires ; protection anti-robots et pare-feu Vercel. |
 | Secrets | Variables d'environnement côté serveur uniquement (jamais `NEXT_PUBLIC_`), modules marqués `server-only`, messages d'erreur génériques côté client, détails dans les logs. |
 | Dépendances | `npm audit` en CI, Dependabot ou Renovate, versions verrouillées. |
 
