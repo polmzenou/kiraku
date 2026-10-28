@@ -9,6 +9,9 @@ import { ZeniCoin } from "../layout/ZeniCoin";
 import { Button, buttonClasses } from "../ui/Button";
 import { useBattleError } from "./useBattleError";
 
+// Action qui lève (serveur injoignable, panne) : erreur traduite au lieu d'un écran d'erreur
+const UNAVAILABLE = { ok: false, error: "UNAVAILABLE", battleId: undefined } as const;
+
 /** Écran de fin : sceau de victoire ou de défaite, raison, Zeni gagnés, puis relancer, nouveau combat ou revoir. */
 export function BattleResult({
   winner,
@@ -40,7 +43,7 @@ export function BattleResult({
     startTransition(async () => {
       if (!requeueId) return;
       setError(null);
-      const res = await requeueAction({ battleId: requeueId });
+      const res = await requeueAction({ battleId: requeueId }).catch(() => UNAVAILABLE);
       if (!res.ok) {
         if (res.error === "IN_BATTLE" && res.battleId) return router.push(`/combat/${res.battleId}`);
         return setError(errorText(res.error));

@@ -27,7 +27,6 @@ Kiraku sells no data, shows no advertising and does no profiling.
 
 - **Vercel** (website hosting) — United States, running in the London region.
 - **Supabase** (database) — region [[RÉGION_SUPABASE]].
-- **Upstash** (abuse rate limiting) — region [[RÉGION_UPSTASH]].
 - **Resend** (verification and password e-mails).
 - **Ably** (real-time battles).
 - **Discord** (sign-in, if you choose it).

@@ -1,4 +1,4 @@
-import { put } from "@vercel/blob";
+import { del, put } from "@vercel/blob";
 import { CARD_IMAGE_LIMIT, CARD_IMAGE_TYPES, imageSignature } from "@/lib/catalog/media";
 import { getStaff } from "@/server/admin";
 import { rateLimit } from "@/server/ratelimit";
@@ -27,7 +27,13 @@ export async function POST(request: Request) {
     const extension = file.type === "image/jpeg" ? "jpg" : file.type === "image/png" ? "png" : "webp";
     const blob = await put(`cards/${crypto.randomUUID()}.${extension}`, Buffer.from(bytes), { access: "public", contentType: file.type, addRandomSuffix: true });
     if (new URL(blob.url).hostname !== process.env.BLOB_PUBLIC_HOST) return Response.json({ error: "STORAGE_UNAVAILABLE" }, { status: 503 });
-    await writeAdminLog(prisma, { adminId: admin.id, action: "CARD_IMAGE_UPLOAD", targetType: "CardImage", targetId: blob.pathname, after: { url: blob.url, size: file.size } });
+    try {
+      await writeAdminLog(prisma, { adminId: admin.id, action: "CARD_IMAGE_UPLOAD", targetType: "CardImage", targetId: blob.pathname, after: { url: blob.url, size: file.size } });
+    } catch (error) {
+      // Pas de trace = pas d'image : on retire le fichier pour ne pas laisser d'orphelin dans le stockage
+      await del(blob.url).catch(() => {});
+      throw error;
+    }
     return Response.json({ url: blob.url });
   } catch (error) { console.error("[catalog-upload] upload failed", error); return Response.json({ error: "UPLOAD_FAILED" }, { status: 500 }); }
 }

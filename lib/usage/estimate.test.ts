@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
-import { blendedPerHour, invocationsPerHour, maxDailyPlayers, monthlyProjection, type PollSettings } from "./estimate";
+import { blendedPerHour, DEFAULT_VERCEL_BUDGET, invocationsPerHour, maxDailyPlayers, monthlyProjection, type PollSettings } from "./estimate";
 
 const defaults = (ablyEnabled: boolean): PollSettings => ({
   ablyEnabled,
@@ -41,18 +41,20 @@ describe("estimation de consommation", () => {
     expect(invocationsPerHour("battle", defaults(true))).toBeLessThan(invocationsPerHour("battle", before) / 5);
   });
 
-  it("le chat ouvert ne sonde plus quand Ably est là", () => {
-    expect(invocationsPerHour("chat", defaults(true))).toBe(invocationsPerHour("browse", defaults(true)));
+  it("le chat ouvert ne garde qu'un sondage de secours quand Ably est là", () => {
+    const safety = 3600 / SETTING_DEFAULTS["realtime.safetyPollSeconds"];
+    expect(invocationsPerHour("chat", defaults(true))).toBe(invocationsPerHour("browse", defaults(true)) + safety);
+    expect(invocationsPerHour("chat", defaults(true))).toBeLessThan(invocationsPerHour("chat", defaults(false)));
   });
 
   it("les nouveaux réglages divisent la consommation horaire", () => {
     expect(blendedPerHour(defaults(true))).toBeLessThan(blendedPerHour(before) / 3);
   });
 
-  it("projette 30 jours et la part des limites Hobby", () => {
+  it("projette 30 jours et la part du budget mensuel", () => {
     const p = monthlyProjection({ settings: defaults(true), dailyPlayers: 40, hoursPerPlayer: 1, otherPerDay: 0 });
     expect(p.invocations).toBe(Math.round(40 * blendedPerHour(defaults(true)) * 30));
-    expect(p.share.invocations).toBeCloseTo(p.invocations / 1_000_000);
+    expect(p.share.invocations).toBeCloseTo(p.invocations / DEFAULT_VERCEL_BUDGET.invocations);
     expect(p.cpuHours).toBeCloseTo((p.invocations * 23) / 3_600_000);
   });
 
@@ -62,5 +64,13 @@ describe("estimation de consommation", () => {
     expect(free).toBeGreaterThan(withBots);
     const at = monthlyProjection({ settings: defaults(true), dailyPlayers: free, hoursPerPlayer: 1 });
     expect(Math.max(at.share.invocations, at.share.cpuHours, at.share.transferGb)).toBeLessThanOrEqual(1);
+  });
+
+  it("suit le budget réglé dans /admin", () => {
+    const budget = { invocations: 1_000_000, cpuHours: 4, transferGb: 10 };
+    const p = monthlyProjection({ settings: defaults(true), dailyPlayers: 40, hoursPerPlayer: 1, budget });
+    expect(p.share.invocations).toBeCloseTo(p.invocations / 1_000_000);
+    // Budget plus serré : moins de joueurs tenables
+    expect(maxDailyPlayers(defaults(true), 1, 0, budget)).toBeLessThan(maxDailyPlayers(defaults(true), 1));
   });
 });

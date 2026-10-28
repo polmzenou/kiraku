@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 import { pickClientMessages } from "@/i18n/client-messages";
+import { Suspense } from "react";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { QuotaBanner } from "@/components/admin/QuotaBanner";
 import { SectionTitle } from "@/components/SectionTitle";
 import { requireStaff } from "@/server/admin";
 
@@ -32,6 +34,12 @@ export default async function AdminLayout({ children }: LayoutProps<"/[locale]/a
           <div className="hidden lg:block">
             <SectionTitle level={1} kanji="管理" title={t("title")} />
           </div>
+          {/* Quotas des services : ne retarde jamais la page (rendu en différé, rien en cas d'échec) */}
+          {scope === "full" && (
+            <Suspense fallback={null}>
+              <QuotaBanner />
+            </Suspense>
+          )}
           {children}
         </main>
       </div>

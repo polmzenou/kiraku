@@ -292,7 +292,7 @@ export async function loadLedgerPageAction(input: unknown): Promise<LedgerPageRe
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
-  if (!(await rateLimit(`ledger:${user.id}`, { limit: 60, windowSeconds: MINUTE })).success) {
+  if (!(await rateLimit(`ledger:${user.id}`, { limit: 60, windowSeconds: MINUTE }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
   const page = await listLedger(user.id, parseLedgerFilter(parsed.data.filter), parsed.data.cursor);

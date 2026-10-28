@@ -28,6 +28,8 @@ export function QueueWaiting({
   const router = useRouter();
   const [now, setNow] = useState(() => Date.now());
   const [leaving, setLeaving] = useState(false);
+  // Relance la boucle de sondage après une sortie de file ratée (elle s'arrête dès qu'on part)
+  const [restart, setRestart] = useState(0);
   const botRequested = useRef(false);
   const done = useRef(false);
   const start = new Date(joinedAt).getTime();
@@ -78,12 +80,20 @@ export function QueueWaiting({
       clearTimeout(timer);
       unsubscribe();
     };
-  }, [bot, onLeft, pollSeconds, router, subscribe]);
+  }, [bot, onLeft, pollSeconds, restart, router, subscribe]);
 
   const leave = async () => {
     setLeaving(true);
     done.current = true;
-    const res = await leaveQueueAction();
+    const res = await leaveQueueAction().catch(() => null);
+    if (!res) {
+      // Action qui lève (serveur injoignable) : on reste en file, bouton et sondage rendus ; le
+      // sondage dira si la sortie a quand même eu lieu
+      done.current = false;
+      setLeaving(false);
+      setRestart((n) => n + 1);
+      return;
+    }
     if (res.ok && res.state === "MATCHED") return router.push(`/combat/${res.battleId}`);
     onLeft(res.ok ? undefined : res.error);
   };

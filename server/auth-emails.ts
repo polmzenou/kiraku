@@ -10,34 +10,42 @@ import { sendMail } from "./mail";
 
 const PATHS = { VERIFY_EMAIL: "/verifier-email", RESET_PASSWORD: "/connexion/reinitialiser" } as const;
 
-/** Crée un jeton à usage unique (les précédents du même type sont annulés) et renvoie son lien. */
-async function issueLink(userId: string, type: AuthTokenType, locale: Locale) {
-  const { token, tokenHash } = createToken();
-  await prisma.$transaction([
-    prisma.authToken.updateMany({
-      where: { userId, type, usedAt: null },
-      data: { usedAt: new Date() },
-    }),
-    prisma.authToken.create({
-      data: { userId, type, tokenHash, expires: new Date(Date.now() + TOKEN_TTL_MS[type]) },
-    }),
-  ]);
-  const path = getPathname({ href: { pathname: PATHS[type], query: { token } }, locale });
-  return `${appUrl()}${path}`;
+const NAMESPACES = { VERIFY_EMAIL: "email.verify", RESET_PASSWORD: "email.reset" } as const;
+
+/**
+ * Crée un jeton à usage unique, envoie son lien, puis annule les précédents du même type, seulement
+ * si l'e-mail est parti : un envoi raté laisse valide le dernier lien reçu par le joueur.
+ * Ne lève jamais (renvoie false) : l'inscription ou l'action sur le compte continue sans e-mail.
+ */
+async function sendLink(userId: string, email: string, type: AuthTokenType, locale: Locale): Promise<boolean> {
+  try {
+    const { token, tokenHash } = createToken();
+    const [t, created] = await Promise.all([
+      getTranslations({ locale, namespace: NAMESPACES[type] }),
+      prisma.authToken.create({
+        data: { userId, type, tokenHash, expires: new Date(Date.now() + TOKEN_TTL_MS[type]) },
+        select: { id: true },
+      }),
+    ]);
+    const path = getPathname({ href: { pathname: PATHS[type], query: { token } }, locale });
+    const sent = await sendMail({ to: email, subject: t("subject"), text: t("body", { link: `${appUrl()}${path}` }) });
+    if (sent) {
+      await prisma.authToken.updateMany({
+        where: { userId, type, usedAt: null, id: { not: created.id } },
+        data: { usedAt: new Date() },
+      });
+    }
+    return sent;
+  } catch (e) {
+    console.error(`[mail] lien ${type} non envoyé`, e instanceof Error ? e.message : e);
+    return false;
+  }
 }
 
-export async function sendVerificationEmail(userId: string, email: string, locale: Locale) {
-  const [t, link] = await Promise.all([
-    getTranslations({ locale, namespace: "email.verify" }),
-    issueLink(userId, "VERIFY_EMAIL", locale),
-  ]);
-  return sendMail({ to: email, subject: t("subject"), text: t("body", { link }) });
+export function sendVerificationEmail(userId: string, email: string, locale: Locale) {
+  return sendLink(userId, email, "VERIFY_EMAIL", locale);
 }
 
-export async function sendPasswordResetEmail(userId: string, email: string, locale: Locale) {
-  const [t, link] = await Promise.all([
-    getTranslations({ locale, namespace: "email.reset" }),
-    issueLink(userId, "RESET_PASSWORD", locale),
-  ]);
-  return sendMail({ to: email, subject: t("subject"), text: t("body", { link }) });
+export function sendPasswordResetEmail(userId: string, email: string, locale: Locale) {
+  return sendLink(userId, email, "RESET_PASSWORD", locale);
 }

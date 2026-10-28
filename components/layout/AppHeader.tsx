@@ -50,6 +50,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
           async ([retentionHours, chatPoll, maxLength]) => ({
             initialUnread: await unreadChatCount(chatUser.id, visibleSince(retentionHours)),
             pollSeconds: chatPoll,
+            safetySeconds,
             maxLength,
             retentionHours,
           }),

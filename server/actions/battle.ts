@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { z } from "@/lib/zod";
 import { TEAM_SIZE } from "@/lib/battle/types";
 import type { Activity, BattleUpdateView, BattleView } from "@/lib/battle/view";
@@ -74,10 +75,20 @@ function failure(scope: string, e: unknown): Failure {
   return { ok: false, error: "UNAVAILABLE" };
 }
 
-/** Prévient les deux joueurs (Ably) d'une partie qui vient de démarrer. */
-async function announceStart(u: BattleUpdate) {
-  const b = await prisma.battle.findUnique({ where: { id: u.battleId }, select: { p1Id: true, p2Id: true } });
-  await Promise.all([publishMatched(b!.p1Id, u.battleId), b?.p2Id ? publishMatched(b.p2Id, u.battleId) : null, publishBattle(u)]);
+/**
+ * Prévient les deux joueurs (Ably) d'une partie qui vient de démarrer, après la réponse : la partie
+ * est déjà créée, une panne ici ne doit ni retarder ni faire échouer l'action (les clients sondent).
+ */
+function announceStart(u: BattleUpdate) {
+  after(async () => {
+    try {
+      const b = await prisma.battle.findUnique({ where: { id: u.battleId }, select: { p1Id: true, p2Id: true } });
+      if (!b) return;
+      await Promise.all([publishMatched(b.p1Id, u.battleId), b.p2Id ? publishMatched(b.p2Id, u.battleId) : null, publishBattle(u)]);
+    } catch (e) {
+      console.error("[combat] annonce du début", e instanceof Error ? e.message : e);
+    }
+  });
 }
 
 // --- File d'attente ---
@@ -90,7 +101,7 @@ export type QueueResult =
 
 async function queueResult(s: QueueStatus): Promise<QueueResult> {
   if (s.state === "MATCHED") {
-    if (s.update) await announceStart(s.update);
+    if (s.update) announceStart(s.update);
     return { ok: true, state: "MATCHED", battleId: s.battleId };
   }
   if (s.state === "WAITING") return { ok: true, state: "WAITING", joinedAt: s.joinedAt.toISOString(), botAt: s.botAt.toISOString() };
@@ -141,7 +152,7 @@ export async function requeueAction(input: unknown): Promise<QueueResult> {
 export async function pollQueueAction(): Promise<QueueResult> {
   const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
-  if (!(await rateLimit(`battle-queue-poll:${user.id}`, { limit: 40, windowSeconds: MINUTE })).success) {
+  if (!(await rateLimit(`battle-queue-poll:${user.id}`, { limit: 40, windowSeconds: MINUTE }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
   try {
@@ -173,7 +184,7 @@ export async function startBotBattleAction(input?: unknown): Promise<StartResult
   if ("error" in g) return { ok: false, error: g.error };
   try {
     const u = await startBotBattleWith(prisma, { userId: g.user.id, skipWait: parsed.data?.skipWait ?? false }, await battleCtx());
-    await announceStart(u);
+    announceStart(u);
     return { ok: true, battleId: u.battleId };
   } catch (e) {
     return failure("bot", e);
@@ -217,7 +228,7 @@ export async function joinRoomAction(input: unknown): Promise<RoomResult> {
       { userId: g.user.id, cardIds: parsed.data.cardIds, code, battleId: parsed.data.battleId },
       await battleCtx(),
     );
-    await announceStart(u);
+    announceStart(u);
     return { ok: true, battleId: u.battleId };
   } catch (e) {
     return failure("rejoindre", e);
@@ -259,7 +270,8 @@ export async function playAction(input: unknown): Promise<PlayResult> {
   if ("error" in g) return { ok: false, error: g.error };
   try {
     const u = await playActionWith(prisma, { userId: g.user.id, ...parsed.data }, await battleCtx());
-    await publishBattle(u);
+    // Après la réponse : le joueur n'attend pas Ably ; l'adversaire reçoit le coup juste après
+    after(() => publishBattle(u));
     return { ok: true, update: toMessage(u) };
   } catch (e) {
     return failure("action", e);
@@ -275,7 +287,7 @@ export async function claimTimeoutAction(input: unknown): Promise<PlayResult | {
   try {
     const u = await claimTimeoutWith(prisma, { userId: g.user.id, battleId: parsed.data.battleId }, await battleCtx());
     if (!u) return { ok: true, update: null };
-    await publishBattle(u);
+    after(() => publishBattle(u));
     return { ok: true, update: toMessage(u) };
   } catch (e) {
     return failure("minuteur", e);
@@ -290,7 +302,7 @@ export async function battleViewAction(input: unknown): Promise<ViewResult> {
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
-  if (!(await rateLimit(`battle-view:${user.id}`, { limit: 90, windowSeconds: MINUTE })).success) {
+  if (!(await rateLimit(`battle-view:${user.id}`, { limit: 90, windowSeconds: MINUTE }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
   await sweepBattlesFor(user.id);
@@ -309,7 +321,7 @@ export async function battleSinceAction(input: unknown): Promise<SinceResult> {
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
-  if (!(await rateLimit(`battle-view:${user.id}`, { limit: 90, windowSeconds: MINUTE })).success) {
+  if (!(await rateLimit(`battle-view:${user.id}`, { limit: 90, windowSeconds: MINUTE }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
   await sweepBattlesFor(user.id);
@@ -321,7 +333,7 @@ export type ActivityResult = { ok: true; activity: Activity } | Failure;
 export async function activityAction(): Promise<ActivityResult> {
   const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
-  if (!(await rateLimit(`battle-activity:${user.id}`, { limit: 30, windowSeconds: MINUTE })).success) {
+  if (!(await rateLimit(`battle-activity:${user.id}`, { limit: 30, windowSeconds: MINUTE }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
   const ctx = await battleCtx();

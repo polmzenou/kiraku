@@ -34,7 +34,7 @@ const conversationSchema = z
   .strict();
 const sendSchema = z.object({ username: z.string().regex(USERNAME_REGEX), body: z.string().max(2_000) }).strict();
 
-async function guard<S extends z.ZodType>(input: unknown, schema: S, bucket: string, rule: { limit: number; windowSeconds: number }) {
+async function guard<S extends z.ZodType>(input: unknown, schema: S, bucket: string, rule: { limit: number; windowSeconds: number; store?: "memory" }) {
   const user = await getCurrentUser();
   if (!user) return { error: "NO_SESSION" as const };
   const parsed = schema.safeParse(input);
@@ -42,7 +42,7 @@ async function guard<S extends z.ZodType>(input: unknown, schema: S, bucket: str
   if (user.isGuest) return { error: "GUEST" as const };
   if (user.bannedAt || isFrozen(user)) return { error: "UNAVAILABLE" as const };
   if (!(await getSetting("social.enabled")) || !(await getSetting("chat.enabled"))) return { error: "DISABLED" as const };
-  if (!(await rateLimit(`${bucket}:${user.id}`, rule)).success) return { error: "RATE_LIMITED" as const };
+  if (!(await rateLimit(`${bucket}:${user.id}`, rule, { store: rule.store })).success) return { error: "RATE_LIMITED" as const };
   return { user, data: parsed.data as z.infer<S> };
 }
 
@@ -55,24 +55,24 @@ async function friend(me: string, username: string) {
 
 /** Pastille : nombre de messages non lus (sondé quand le temps réel est coupé). */
 export async function chatStatusAction(input: unknown): Promise<{ ok: true; unread: number } | Failure> {
-  const g = await guard(input, empty, "chat-status", { limit: 30, windowSeconds: 60 });
+  const g = await guard(input, empty, "chat-status", { limit: 30, windowSeconds: 60, store: "memory" });
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
   const hours = await getSetting("chat.retentionHours");
-  // Ménage des messages expirés, au plus une fois toutes les 10 min pour tout le site (les lectures
-  // les ignorent déjà : ils disparaissent à l'heure dite, la suppression suit)
-  if ((await rateLimit("chat:purge", { limit: 1, windowSeconds: 600 })).success) after(() => purgeOldMessages(hours));
+  // Ménage des messages expirés, au plus une fois toutes les 10 min par instance (compteur en mémoire,
+  // sans écriture en base ; les lectures les ignorent déjà : ils disparaissent à l'heure dite, la suppression suit)
+  if ((await rateLimit("chat:purge", { limit: 1, windowSeconds: 600 }, { store: "memory" })).success) after(() => purgeOldMessages(hours));
   return { ok: true, unread: await unreadChatCount(g.user.id, visibleSince(hours)) };
 }
 
 export async function listConversationsAction(input: unknown): Promise<{ ok: true; conversations: Conversation[] } | Failure> {
-  const g = await guard(input, empty, "chat-list", { limit: 30, windowSeconds: 60 });
+  const g = await guard(input, empty, "chat-list", { limit: 30, windowSeconds: 60, store: "memory" });
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
   return { ok: true, conversations: await listConversations(g.user.id, visibleSince(await getSetting("chat.retentionHours"))) };
 }
 
 /** Messages avec un ami (les reçus passent en lus). */
 export async function loadConversationAction(input: unknown): Promise<{ ok: true; messages: ChatMessageView[]; hasMore: boolean } | Failure> {
-  const g = await guard(input, conversationSchema, "chat-load", { limit: 60, windowSeconds: 60 });
+  const g = await guard(input, conversationSchema, "chat-load", { limit: 60, windowSeconds: 60, store: "memory" });
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
   const other = await friend(g.user.id, g.data.username);
   if (!other) return { ok: false, error: "NOT_FRIENDS" };

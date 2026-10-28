@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -151,7 +152,7 @@ export default async function ReferralPage() {
   }
 
   // Qualification paresseuse : la visite suffit à faire avancer les parrainages prêts
-  await qualifyReferralsWith(prisma, user.id, rules, now, (ids) => void pushNotifications(ids));
+  await qualifyReferralsWith(prisma, user.id, rules, now, (ids) => after(() => pushNotifications(ids)));
 
   const [me, referees, mine] = await Promise.all([
     prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { referralCode: true, createdAt: true } }),

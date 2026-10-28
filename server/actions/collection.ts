@@ -55,7 +55,7 @@ export async function loadAlbumPageAction(input: unknown): Promise<({ ok: true }
   if (!viewer) return { ok: false, error: "NO_SESSION" };
   const parsed = albumPageSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
-  if (!(await rateLimit(`collection:${viewer.id}`, { limit: 60, windowSeconds: 60 })).success) {
+  if (!(await rateLimit(`collection:${viewer.id}`, { limit: 60, windowSeconds: 60 }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
   const page = await getAlbumPage(viewer.id, parseAlbumParams(parsed.data.query), parsed.data.offset, await getLocale());
@@ -87,7 +87,7 @@ export async function loadCollectionPage(input: unknown): Promise<({ ok: true } 
   }
 
   const key = viewer ? viewer.id : `ip:${await clientIp()}`;
-  if (!(await rateLimit(`collection:${key}`, { limit: 60, windowSeconds: 60 })).success) {
+  if (!(await rateLimit(`collection:${key}`, { limit: 60, windowSeconds: 60 }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
 

@@ -16,6 +16,9 @@ import type { AbilityRules } from "./AbilityGuide";
 import { TeamPicker } from "./TeamPicker";
 import { inputClass } from "../ui/Field";
 
+// Action qui lève (serveur injoignable, panne) : erreur traduite au lieu d'un écran d'erreur
+const UNAVAILABLE = { ok: false, error: "UNAVAILABLE", battleId: undefined } as const;
+
 type Intent =
   | { kind: "EXHIBITION" }
   | { kind: "RANKED" }
@@ -67,19 +70,20 @@ export function CombatHub({
       if (!intent) return;
       setError(null);
       if (intent.kind === "EXHIBITION" || intent.kind === "RANKED") {
-        const res = await joinQueueAction({ cardIds, mode: intent.kind });
+        const res = await joinQueueAction({ cardIds, mode: intent.kind }).catch(() => UNAVAILABLE);
         if (!res.ok) return fail(res.error, res.battleId);
         setIntent(null);
         if (res.state === "MATCHED") return router.push(`/combat/${res.battleId}`);
         if (res.state === "WAITING") setQueue({ joinedAt: res.joinedAt, botAt: res.botAt });
         return;
       }
-      const res =
+      const res = await (
         intent.kind === "CREATE_ROOM"
-          ? await createRoomAction({ cardIds, inviteeId: null })
+          ? createRoomAction({ cardIds, inviteeId: null })
           : intent.kind === "CHALLENGE"
-            ? await createRoomAction({ cardIds, inviteeId: intent.inviteeId })
-            : await joinRoomAction({ cardIds, code: intent.code });
+            ? createRoomAction({ cardIds, inviteeId: intent.inviteeId })
+            : joinRoomAction({ cardIds, code: intent.code })
+      ).catch(() => UNAVAILABLE);
       if (!res.ok) return fail(res.error, res.battleId);
       setIntent(null);
       router.push(`/combat/${res.battleId}`);

@@ -46,13 +46,13 @@ describe("précontrôle de déploiement", () => {
     expect(result.status, result.stderr).toBe(0);
     expect(result.stderr).toContain("IPv6");
   });
-  it("refuse une production sans Redis, cron ni origine HTTPS", () => {
+  it("refuse une production sans cron ni origine HTTPS", () => {
     const result = check({ VERCEL_ENV: "production", APP_URL: "http://localhost:3000" });
     expect(result.status).toBe(1);
-    for (const key of ["APP_URL", "CRON_SECRET", "UPSTASH_REDIS_REST_URL"]) expect(result.stderr).toContain(key);
+    for (const key of ["APP_URL", "CRON_SECRET"]) expect(result.stderr).toContain(key);
   });
-  it("accepte une production cohérente et les alias Upstash de Vercel", () => {
-    const result = check({ VERCEL_ENV: "production", APP_URL: "https://kiraku.example", CRON_SECRET: "c".repeat(32), KV_REST_API_URL: "https://redis.example", KV_REST_API_TOKEN: "token", DIRECT_URL: session });
+  it("accepte une production cohérente sans Redis (limitation en base)", () => {
+    const result = check({ VERCEL_ENV: "production", APP_URL: "https://kiraku.example", CRON_SECRET: "c".repeat(32), DIRECT_URL: session });
     expect(result.status, result.stderr).toBe(0);
   });
 });

@@ -1,6 +1,7 @@
 "use server";
 
 import { getLocale } from "next-intl/server";
+import { after } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { redirect } from "@/i18n/navigation";
 import { echo, type FormState } from "@/lib/auth/form-state";
@@ -103,6 +104,7 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
   await startSession(userId);
   // Lien d'invitation suivi avant l'inscription : rattaché maintenant, sans jamais bloquer
   await attachFromCookie(userId);
+  // Jamais bloquant : un e-mail raté est journalisé, le joueur peut le redemander depuis son compte
   await sendVerificationEmail(userId, email, locale);
   redirect({ href: "/", locale });
   return {};
@@ -162,7 +164,10 @@ export async function requestPasswordReset(_prev: FormState, formData: FormData)
     select: { id: true, passwordHash: true, bannedAt: true },
   });
   if (user?.passwordHash && !user.bannedAt) {
-    await sendPasswordResetEmail(user.id, email, await getLocale());
+    // Après la réponse : même temps de réponse qu'une adresse inconnue (ne révèle pas les comptes),
+    // et une panne de Resend ne touche jamais le formulaire
+    const locale = await getLocale();
+    after(() => sendPasswordResetEmail(user.id, email, locale));
   }
   // mailNotSent dépend de la configuration du site, pas du compte : ne révèle rien
   return { done: true, mailNotSent: !mailEnabled };

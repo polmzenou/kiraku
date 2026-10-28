@@ -11,7 +11,7 @@ Le plan complet est dans `docs/PLAN.md`. Lis la section concernée avant chaque 
 - Auth.js : compte invité automatique, puis connexion Discord
 - next-intl : français par défaut (sans préfixe), anglais sous `/en`
 - Tailwind avec les tokens de la DA Kiraku, Motion (`LazyMotion`) pour les animations
-- Zod pour toute entrée, Upstash Ratelimit, déploiement Vercel
+- Zod pour toute entrée, rate limit en base (`server/ratelimit.ts`, repli en mémoire), déploiement Vercel
 
 ## Règles non négociables
 

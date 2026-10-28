@@ -10,8 +10,6 @@ const schema = z.object({
   // Annonce de première liaison dans un salon Discord (facultatif, côté serveur seulement).
   DISCORD_BOT_TOKEN: z.string().trim().min(1).optional(),
   DISCORD_LINK_CHANNEL_ID: z.string().regex(/^[0-9]{17,20}$/).optional(),
-  UPSTASH_REDIS_REST_URL: z.url().optional(),
-  UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
   ADMIN_DISCORD_ID: z.string().optional(),
   // E-mails (Resend) en attente : sans clé, les liens sont écrits dans les logs en dev
   RESEND_API_KEY: z.string().min(1).optional(),
@@ -35,21 +33,11 @@ const schema = z.object({
 const raw: Record<string, string | undefined> = Object.fromEntries(
   Object.entries(process.env).filter(([, v]) => v !== ""),
 );
-// L'intégration Upstash de Vercel pose KV_REST_API_URL / KV_REST_API_TOKEN : même chose.
-raw.UPSTASH_REDIS_REST_URL ??= raw.KV_REST_API_URL;
-raw.UPSTASH_REDIS_REST_TOKEN ??= raw.KV_REST_API_TOKEN;
 const parsed = schema.safeParse(raw);
 if (!parsed.success) {
   // Noms des variables seulement, jamais leurs valeurs
   const missing = parsed.error.issues.map((i) => i.path.join(".")).join(", ");
   throw new Error(`Variables d'environnement invalides : ${missing}`);
-}
-
-if (
-  process.env.VERCEL_ENV === "production" &&
-  !(parsed.data.UPSTASH_REDIS_REST_URL && parsed.data.UPSTASH_REDIS_REST_TOKEN)
-) {
-  throw new Error("Upstash est obligatoire en production (UPSTASH_REDIS_REST_* ou KV_REST_API_*).");
 }
 
 if (process.env.VERCEL_ENV === "production" && !parsed.data.CRON_SECRET) {

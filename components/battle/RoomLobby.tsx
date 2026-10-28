@@ -25,6 +25,9 @@ function useCountdown(until: string | null) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
+// Action qui lève (serveur injoignable, panne) : erreur traduite au lieu d'un écran d'erreur
+const UNAVAILABLE = { ok: false, error: "UNAVAILABLE", battleId: undefined } as const;
+
 /** Salle d'amis ouverte : le créateur partage son code et attend ; l'invité choisit son équipe et entre. */
 export function RoomLobby({
   view,
@@ -91,7 +94,7 @@ export function RoomLobby({
           confirmLabel={t("friend.join")}
           onConfirm={(cardIds) =>
             startTransition(async () => {
-              const res = await joinRoomAction({ cardIds, battleId: view.id });
+              const res = await joinRoomAction({ cardIds, battleId: view.id }).catch(() => UNAVAILABLE);
               if (res.ok) return router.refresh();
               if (res.error === "IN_BATTLE" && res.battleId) return router.push(`/combat/${res.battleId}`);
               setPicking(false);
@@ -153,7 +156,7 @@ export function RoomLobby({
           disabled={pending}
           onClick={() =>
             startTransition(async () => {
-              const res = await cancelRoomAction({ battleId: view.id });
+              const res = await cancelRoomAction({ battleId: view.id }).catch(() => UNAVAILABLE);
               if (res.ok || res.error === "CLOSED") return router.push("/combat");
               setError(errorText(res.error));
             })

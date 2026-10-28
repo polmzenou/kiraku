@@ -18,10 +18,10 @@ export async function recentPullsAction(input: unknown): Promise<{ ok: true; pul
   const user = await getCurrentUser();
   if (!pullsInput.safeParse(input).success) return { ok: false, error: "INVALID" };
   const who = user?.id ?? (await clientIp());
-  if (!(await rateLimit(`pull-feed:${who}`, { limit: 12, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
+  if (!(await rateLimit(`pull-feed:${who}`, { limit: 12, windowSeconds: 60 }, { store: "memory" })).success) return { ok: false, error: "RATE_LIMITED" };
   const pulls = await getRecentPulls(await getLocale());
   if (!pulls) return { ok: false, error: "DISABLED" };
-  // Une fois par heure au plus, quel que soit le visiteur
-  if ((await rateLimit("pull-feed:purge", { limit: 1, windowSeconds: 3600 })).success) after(() => purgeOldPulls());
+  // Une fois par heure au plus et par instance, quel que soit le visiteur (compteur en mémoire)
+  if ((await rateLimit("pull-feed:purge", { limit: 1, windowSeconds: 3600 }, { store: "memory" })).success) after(() => purgeOldPulls());
   return { ok: true, pulls, owned: await ownedCardIds(user?.id, pulls.map((p) => p.card.cardId)) };
 }

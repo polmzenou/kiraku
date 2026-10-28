@@ -63,7 +63,7 @@ export function NotificationBell({
     return true;
   }, []);
 
-  const pollNow = usePoll(poll, { seconds: seconds.base, realtimeSeconds: seconds.safety, backoff: true });
+  const pollNow = usePoll(poll, { seconds: seconds.base, realtimeSeconds: seconds.safety, channel: "user", backoff: true });
 
   // Notification créée pour ce joueur (signal Ably) : sondage immédiat
   useEffect(() => subscribe("user", "notification", () => void pollNow()), [pollNow, subscribe]);

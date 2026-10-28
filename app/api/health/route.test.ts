@@ -38,7 +38,7 @@ describe("sonde de santé", () => {
   it("limite les appels par IP avant de toucher la base", async () => {
     mocks.limit.mockResolvedValue({ success: false });
     expect((await GET()).status).toBe(429);
-    expect(mocks.limit).toHaveBeenCalledWith("health:1.2.3.4", expect.anything());
+    expect(mocks.limit).toHaveBeenCalledWith("health:1.2.3.4", expect.anything(), { store: "memory" });
     expect(mocks.query).not.toHaveBeenCalled();
   });
 });
