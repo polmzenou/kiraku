@@ -1,9 +1,10 @@
-// Précontrôle sans affichage de secrets, avant toute migration ou construction Vercel.
+// Précontrôle sans affichage de secrets, avant toute migration ou construction (VPS ou Vercel).
 import { config } from "dotenv";
 config({ path: [".env.local", ".env"], quiet: true });
 
 const env = process.env;
-const target = env.VERCEL_ENV ?? "local";
+// Même ordre que lib/deployment.ts : APP_ENV (VPS), puis VERCEL_ENV, puis NODE_ENV
+const target = env.APP_ENV || env.VERCEL_ENV || (env.NODE_ENV === "production" ? "production" : "local");
 const production = target === "production" || process.argv.includes("--production");
 const errors = [];
 const warnings = [];
@@ -52,6 +53,7 @@ if (present("VAPID_PUBLIC_KEY") && !/^[A-Za-z0-9_-]{80,100}$/.test(env.VAPID_PUB
 if (present("VAPID_PRIVATE_KEY") && !/^[A-Za-z0-9_-]{40,50}$/.test(env.VAPID_PRIVATE_KEY)) errors.push("VAPID_PRIVATE_KEY invalide");
 if (present("VAPID_SUBJECT") && !/^(mailto:|https:\/\/)/.test(env.VAPID_SUBJECT)) errors.push("VAPID_SUBJECT invalide");
 if (production) {
+  // Sans APP_URL, l'application refuse de démarrer (server/env.ts)
   requireKeys(["APP_URL", "CRON_SECRET"]);
   for (const key of ["AUTH_DISCORD_ID", "ADMIN_DISCORD_ID", "RESEND_API_KEY", "ABLY_API_KEY", "VAPID_PUBLIC_KEY"]) {
     if (!present(key)) warnings.push(`${key} absente : vérifier le service correspondant dans la checklist`);

@@ -4,11 +4,12 @@ import { getStaff } from "@/server/admin";
 import { rateLimit } from "@/server/ratelimit";
 import { writeAdminLog } from "@/server/admin/log";
 import { prisma } from "@/server/db";
+import { isSameOrigin } from "@/server/same-origin";
 
 export async function POST(request: Request) {
   const admin = (await getStaff())?.user;
   if (!admin) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
-  if (request.headers.get("origin") !== new URL(request.url).origin) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
+  if (!isSameOrigin(request)) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
   if (!(await rateLimit(`admin-upload:${admin.id}`, { limit: 15, windowSeconds: 60 })).success) return Response.json({ error: "RATE_LIMITED" }, { status: 429 });
   if (!process.env.BLOB_READ_WRITE_TOKEN || !process.env.BLOB_PUBLIC_HOST) return Response.json({ error: "STORAGE_UNAVAILABLE" }, { status: 503 });
   const length = Number(request.headers.get("content-length"));

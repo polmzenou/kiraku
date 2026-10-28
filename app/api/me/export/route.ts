@@ -1,8 +1,8 @@
 import { exportFileName } from "@/lib/account/export";
 import { collectExportWith } from "@/server/account/export-core";
 import { prisma } from "@/server/db";
-import { appUrl } from "@/server/env";
 import { rateLimit } from "@/server/ratelimit";
+import { isSameOrigin } from "@/server/same-origin";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
 
@@ -13,14 +13,8 @@ export const dynamic = "force-dynamic";
 
 const DAY = 86_400;
 
-function sameOrigin(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (!origin) return false;
-  return origin === new URL(appUrl()).origin || origin === new URL(request.url).origin;
-}
-
 export async function POST(request: Request) {
-  if (!sameOrigin(request)) return Response.json({ error: "forbidden" }, { status: 403 });
+  if (!isSameOrigin(request)) return Response.json({ error: "forbidden" }, { status: 403 });
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "unauthorized" }, { status: 401 });
   const perDay = await getSetting("account.exportsPerDay");

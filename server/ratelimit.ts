@@ -96,8 +96,12 @@ export async function purgeExpiredRateLimits(budgetMs = 10_000): Promise<number>
   }
 }
 
-/** IP du client telle que fournie par Vercel (ou « local » en dev). */
+/**
+ * IP du client (ou « local » en dev). Derrière Nginx (`$proxy_add_x_forwarded_for`), la dernière
+ * adresse de X-Forwarded-For est celle que Nginx a vue ; les précédentes viennent du client et se
+ * falsifient. Next ne réécrit pas l'en-tête quand il existe déjà.
+ */
 export async function clientIp(): Promise<string> {
   const h = await headers();
-  return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "local";
+  return h.get("x-forwarded-for")?.split(",").at(-1)?.trim() || h.get("x-real-ip") || "local";
 }

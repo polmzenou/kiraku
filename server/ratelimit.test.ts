@@ -5,11 +5,12 @@ import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const db = vi.hoisted(() => ({ queryRaw: vi.fn(), executeRaw: vi.fn() }));
+const request = vi.hoisted(() => ({ headers: new Headers() }));
 vi.mock("server-only", () => ({}));
-vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
+vi.mock("next/headers", () => ({ headers: async () => request.headers }));
 vi.mock("./db", () => ({ prisma: { $queryRaw: db.queryRaw, $executeRaw: db.executeRaw } }));
 
-import { purgeExpiredRateLimits, rateLimit } from "./ratelimit";
+import { clientIp, purgeExpiredRateLimits, rateLimit } from "./ratelimit";
 
 const rule = { limit: 2, windowSeconds: 60 };
 let n = 0;
@@ -114,4 +115,24 @@ describe("requête du compteur sur PostgreSQL isolé", () => {
       await pg.close();
     }
   }, 60_000);
+});
+
+describe("clientIp derrière Nginx", () => {
+  afterEach(() => {
+    request.headers = new Headers();
+  });
+
+  it("garde l'adresse ajoutée par le proxy, pas celle envoyée par le client", async () => {
+    request.headers = new Headers({ "x-forwarded-for": "1.1.1.1, 9.9.9.9" });
+    expect(await clientIp()).toBe("9.9.9.9");
+  });
+
+  it("lit une adresse seule, puis X-Real-IP, puis « local »", async () => {
+    request.headers = new Headers({ "x-forwarded-for": "203.0.113.7" });
+    expect(await clientIp()).toBe("203.0.113.7");
+    request.headers = new Headers({ "x-real-ip": "198.51.100.2" });
+    expect(await clientIp()).toBe("198.51.100.2");
+    request.headers = new Headers();
+    expect(await clientIp()).toBe("local");
+  });
 });

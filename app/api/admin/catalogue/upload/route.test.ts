@@ -7,15 +7,17 @@ vi.mock("@/server/admin", () => ({ getStaff: mocks.admin }));
 vi.mock("@/server/ratelimit", () => ({ rateLimit: mocks.limit }));
 vi.mock("@/server/db", () => ({ prisma: {} }));
 vi.mock("@/server/admin/log", () => ({ writeAdminLog: mocks.log }));
+vi.mock("server-only", () => ({}));
+vi.mock("@/server/env", () => ({ appUrl: () => "https://kiraku-kun.com" }));
 import { POST } from "./route";
 
 const origin = "https://kiraku.test";
 const host = "test.public.blob.vercel-storage.com";
 const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0]);
-function request(bytes: Uint8Array = png, type = "image/png", source = origin) {
+function request(bytes: Uint8Array = png, type = "image/png", source = origin, base = origin) {
   const body = new FormData();
   body.set("file", new File([new Uint8Array(bytes)], "image.png", { type }));
-  return new Request(`${origin}/api/admin/catalogue/upload`, { method: "POST", headers: { origin: source }, body });
+  return new Request(`${base}/api/admin/catalogue/upload`, { method: "POST", headers: { origin: source }, body });
 }
 beforeEach(() => {
   vi.clearAllMocks();
@@ -32,6 +34,11 @@ describe("téléversement des images du catalogue", () => {
     mocks.admin.mockResolvedValue({ user: { id: "admin" }, scope: "full" });
     expect((await POST(request(png, "image/png", "https://other.test"))).status).toBe(403);
     expect(mocks.put).not.toHaveBeenCalled();
+  });
+  it("accepte l’origine publique derrière Nginx, où la requête arrive sur localhost", async () => {
+    const local = "http://localhost:3000";
+    expect((await POST(request(png, "image/png", "https://kiraku-kun.com", local))).status).toBe(200);
+    expect((await POST(request(png, "image/png", "https://other.test", local))).status).toBe(403);
   });
   it("accepte le rôle DEV, qui prépare des brouillons", async () => {
     mocks.admin.mockResolvedValue({ user: { id: "dev" }, scope: "drafts" });

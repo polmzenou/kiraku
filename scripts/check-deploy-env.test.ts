@@ -51,6 +51,20 @@ describe("précontrôle de déploiement", () => {
     expect(result.status).toBe(1);
     for (const key of ["APP_URL", "CRON_SECRET"]) expect(result.stderr).toContain(key);
   });
+  it("détecte la production hors Vercel, par APP_ENV ou NODE_ENV", () => {
+    for (const values of [{ APP_ENV: "production" }, { NODE_ENV: "production" }] as Record<string, string>[]) {
+      const result = check(values);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain("APP_URL manquante");
+    }
+    const preview = check({ APP_ENV: "preview", NODE_ENV: "production" });
+    expect(preview.status, preview.stderr).toBe(0);
+  });
+  it("accepte une production VPS complète", () => {
+    const result = check({ NODE_ENV: "production", APP_URL: "https://kiraku-kun.com", CRON_SECRET: "c".repeat(32), DIRECT_URL: session });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain("production");
+  });
   it("accepte une production cohérente sans Redis (limitation en base)", () => {
     const result = check({ VERCEL_ENV: "production", APP_URL: "https://kiraku.example", CRON_SECRET: "c".repeat(32), DIRECT_URL: session });
     expect(result.status, result.stderr).toBe(0);
