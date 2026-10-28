@@ -18,6 +18,7 @@ Kiraku ne vend aucune donnée, n'affiche aucune publicité et ne fait aucun prof
 
 ## Durées de conservation
 
+- Compte invité (sans e-mail ni Discord) : supprimé avec ses cartes après 7 jours sans visite.
 - Compte et données de jeu : tant que le compte existe. Après une demande de suppression, le compte est anonymisé au bout de 30 jours.
 - Notifications : 30 jours.
 - Adresse IP utilisée contre les abus : quelques heures au plus dans le service de limitation ; journaux d'hébergement selon la durée de Vercel.

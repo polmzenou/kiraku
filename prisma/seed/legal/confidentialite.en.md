@@ -18,6 +18,7 @@ Kiraku sells no data, shows no advertising and does no profiling.
 
 ## Retention periods
 
+- Guest account (no e-mail or Discord): deleted with its cards after 7 days without a visit.
 - Account and game data: as long as the account exists. After a deletion request, the account is anonymized after 30 days.
 - Notifications: 30 days.
 - IP address used against abuse: a few hours at most in the rate-limiting service; hosting logs according to Vercel's retention.

@@ -2234,7 +2234,8 @@
           "timeZone": "Fuseau horaire du jeu"
         },
         "guest": {
-          "createPerHourPerIp": "Comptes invités par heure et par IP"
+          "createPerHourPerIp": "Comptes invités par heure et par IP",
+          "retentionDays": "Conservation des invités (jours)"
         },
         "account": {
           "deletionGraceDays": "Délai avant anonymisation (jours)",
@@ -2260,7 +2261,8 @@
           "timeZone": "Nom IANA, par exemple Europe/Paris : jours des missions et anniversaires."
         },
         "guest": {
-          "createPerHourPerIp": "Limite la création de comptes en série."
+          "createPerHourPerIp": "Limite la création de comptes en série.",
+          "retentionDays": "Un compte invité créé il y a plus de ce nombre de jours, et sans visite, tirage ni mouvement de Zeni depuis, est supprimé chaque nuit avec ses cartes. 0 = jamais."
         },
         "account": {
           "deletionGraceDays": "Pendant ce délai, le compte est gelé et la suppression annulable. 30 jours conseillés.",
@@ -4487,5 +4489,10 @@
         "ALREADY_CLAIMED": "Tu as déjà récupéré le pack de cette semaine."
       }
     }
+  },
+  "guestNotice": {
+    "text": "Tu joues en invité. Crée un compte pour garder tes cartes : {days, plural, one {sans visite pendant # jour} other {sans visite pendant # jours}}, ta progression est supprimée.",
+    "cta": "Créer un compte",
+    "later": "Plus tard"
   }
 }

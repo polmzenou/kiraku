@@ -812,6 +812,7 @@ Consommation Vercel (plan Hobby : 1 M d'invocations, 4 h de CPU actif, 1 M de re
 - Depuis le passage en Vercel Pro (20 $ de crédit par mois, plus de quota fixe), les anciennes limites Hobby sont un budget mensuel réglable (`usage.vercelBudget`).
 - `/admin/general` mesure aussi Supabase en SQL (taille de la base, tables les plus lourdes, connexions, stockage) ; l'egress, illisible en SQL, est estimé. Limites du plan dans `usage.supabaseLimits`.
 - Bandeau en haut de tout `/admin` dès qu'une mesure dépasse `usage.alertThresholds` (70 % orange, 90 % rouge par défaut). Mesures en cache 5 min, tolérantes : une requête qui échoue s'affiche « indisponible ».
+- Comptes invités abandonnés supprimés chaque nuit par le cron des comptes (`server/account/guest-purge.ts`) : créés il y a plus de `guest.retentionDays` jours (7 par défaut, 0 = jamais) et sans session prolongée, tirage ni mouvement de Zeni depuis. Un bandeau prévient l'invité.
 - Aucun service tiers ne bloque le jeu : rate limit en base avec repli en mémoire, e-mails et temps réel jamais bloquants (journalisés), sondages de secours quand Ably est coupé ou refuse un canal.
 
 Sécurité et anti-triche :

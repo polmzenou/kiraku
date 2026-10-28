@@ -10,6 +10,7 @@ import { boosterStateFrom } from "@/server/boosters/state";
 import { getSetting } from "@/server/settings";
 import { unreadNotifications } from "@/server/social/queries";
 import { getCurrentUser } from "@/server/user";
+import { GuestRetentionNotice } from "../account/GuestRetentionNotice";
 import { ChatDock, ChatHeaderButton } from "../chat/ChatDock";
 import { SealMark } from "../SealMark";
 import { NotificationBell } from "../social/NotificationBell";
@@ -32,12 +33,13 @@ export async function AppHeader({ theme }: { theme: Theme }) {
   const isAdmin = isStaff(user?.role);
   const signedIn = Boolean(user && !user.isGuest);
   const authLabel = signedIn ? t("account.logout") : t("auth.login.title");
-  const [unread, pollSeconds, safetySeconds, casino, boosterRules] = await Promise.all([
+  const [unread, pollSeconds, safetySeconds, casino, boosterRules, guestDays] = await Promise.all([
     user ? unreadNotifications(user.id) : 0,
     user ? getSetting("notifications.pollSeconds") : 0,
     user ? getSetting("realtime.safetyPollSeconds") : 0,
     getSetting("features.casino"),
     user ? getBoosterRules() : null,
+    user?.isGuest ? getSetting("guest.retentionDays") : 0,
   ]);
   const state = user && boosterRules ? boosterStateFrom(user, boosterRules) : null;
   const features = { casino };
@@ -133,6 +135,14 @@ export async function AppHeader({ theme }: { theme: Theme }) {
           </div>
         </div>
       </header>
+      {/* Invité : sans compte, sa progression est supprimée après guest.retentionDays jours sans visite */}
+      {user?.isGuest && guestDays > 0 && (
+        <GuestRetentionNotice
+          text={t("guestNotice.text", { days: guestDays })}
+          cta={t("guestNotice.cta")}
+          later={t("guestNotice.later")}
+        />
+      )}
       <MobileMenu theme={theme} isAdmin={isAdmin} accountHref={accountHref} signedIn={signedIn} features={features} />
       {chat && <ChatDock {...chat} />}
     </>

@@ -16,6 +16,7 @@ type NumberKey = Exclude<keyof GeneralSettings, "game.timeZone" | "home.pullFeed
 const LIMITS: Record<NumberKey, [number, number]> = {
   "economy.startingZeni": [0, 1_000_000],
   "guest.createPerHourPerIp": [1, 1_000],
+  "guest.retentionDays": [0, 365],
   "account.deletionGraceDays": [0, 365],
   "account.usernameChangeDays": [0, 365],
   "account.exportsPerDay": [1, 50],
@@ -67,6 +68,7 @@ export function GeneralSettingsForm({ initial }: { initial: GeneralSettings }) {
           )}
         </Field>
         {num("guest.createPerHourPerIp")}
+        {num("guest.retentionDays")}
       </fieldset>
       <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
         <legend className="px-1 font-title text-lg font-bold">{t("accountSection")}</legend>

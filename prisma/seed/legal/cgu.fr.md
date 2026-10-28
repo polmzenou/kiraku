@@ -12,7 +12,7 @@ Kiraku s'adresse aux personnes de **15 ans et plus**. Si tu as moins de 15 ans, 
 
 ## 3. Compte
 
-- Tu peux jouer en invité, puis créer un compte (e-mail ou Discord) pour garder ta progression.
+- Tu peux jouer en invité, puis créer un compte (e-mail ou Discord) pour garder ta progression. Un compte invité sans visite pendant 7 jours est supprimé avec sa progression.
 - **Un seul compte par personne.** Les comptes multiples créés pour cumuler des boosters, des Zeni ou des cartes sont interdits.
 - Tu es responsable de la confidentialité de ton mot de passe et de ce qui se passe sur ton compte.
 - Ton pseudo ne doit pas être injurieux, discriminatoire, trompeur ni usurper l'identité de quelqu'un.

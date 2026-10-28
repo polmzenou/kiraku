@@ -163,6 +163,7 @@ model User {
 
   @@index([rankPoints])
   @@index([ambassadorSince])
+  @@index([isGuest, createdAt]) // purge des invités inactifs (cron des comptes)
 }
 
 // --- Auth.js ---

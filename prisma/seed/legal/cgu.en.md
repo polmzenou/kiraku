@@ -12,7 +12,7 @@ Kiraku is meant for people aged **15 and over**. If you are under 15, you need t
 
 ## 3. Account
 
-- You can play as a guest, then create an account (e-mail or Discord) to keep your progress.
+- You can play as a guest, then create an account (e-mail or Discord) to keep your progress. A guest account with no visit for 7 days is deleted along with its progress.
 - **One account per person.** Multiple accounts created to stack boosters, Zeni or cards are forbidden.
 - You are responsible for keeping your password confidential and for what happens on your account.
 - Your username must not be insulting, discriminatory, misleading or impersonate anyone.

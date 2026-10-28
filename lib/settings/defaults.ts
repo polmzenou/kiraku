@@ -299,6 +299,8 @@ export const SETTING_SCHEMAS = {
   "ranked.reset": z.object({ pivot: z.number().int().min(0).max(100_000), keepPct: z.number().int().min(0).max(100) }),
   "ranked.rewardLots": rankedRewardLots,
   "guest.createPerHourPerIp": z.number().int().min(1).max(1_000),
+  // Invités sans activité supprimés après ce nombre de jours (0 = jamais), par le cron des comptes
+  "guest.retentionDays": z.number().int().min(0).max(365),
   "discord.linkBonusZeni": z.number().int().min(0).max(100_000),
   // Modal « Rejoins notre Discord » : lien, textes fr/en, déclencheur et fréquence
   "discord.joinModal": joinModalSchema,
@@ -483,6 +485,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "ranked.reset": { pivot: 600, keepPct: 50 },
   "ranked.rewardLots": { BRONZE: null, SILVER: null, GOLD: null, EMERALD: null, ELITE: null, CHAMPION: null, GRAND_CHAMPION: null },
   "guest.createPerHourPerIp": 5,
+  "guest.retentionDays": 7,
   "discord.linkBonusZeni": 500, // versé une seule fois, à la première liaison
   "discord.joinModal": JOIN_MODAL_DEFAULT, // désactivé par défaut
   "features.casino": true,
