@@ -103,6 +103,8 @@ model User {
   badgeOrder          String[]          @default([])
   // Rôle Ambassadeur donné par l'admin (null = pas ambassadeur) : badge, cadre et couleur verts, stock et pack hebdo
   ambassadorSince     DateTime?
+  // Retiré du classement des collectionneurs par l'admin (null = classé), sans toucher à son profil
+  leaderboardHiddenAt DateTime?
   createdAt           DateTime          @default(now())
 
   accounts     Account[]

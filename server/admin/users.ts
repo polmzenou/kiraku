@@ -40,7 +40,7 @@ export async function listAdminUsers({ query, filter, page: requestedPage, sort,
 export async function getAdminUser(userId: string, locale: string) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: {
     id: true, username: true, email: true, emailVerified: true, isGuest: true, role: true, bannedAt: true, createdAt: true, ambassadorSince: true,
-    coins: true, boosterStock: true, boosterAnchor: true, rankPoints: true, pityCount: true, standardCount: true, bannerPity: true,
+    leaderboardHiddenAt: true, coins: true, boosterStock: true, boosterAnchor: true, rankPoints: true, pityCount: true, standardCount: true, bannerPity: true,
     profileVisibility: true, showCollection: true, discordLinkedAt: true, referralCode: true,
     deletionRequestedAt: true, anonymizedAt: true, termsVersion: true,
     boosterCredits: { select: { boosterTypeId: true, count: true } },

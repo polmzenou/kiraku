@@ -1109,7 +1109,8 @@
         "USER_CARD": "Card collection",
         "USER_DISCOVERIES": "Catalog discoveries",
         "USER_SESSIONS": "Session sign-out",
-        "USER_AMBASSADOR": "Ambassador role"
+        "USER_AMBASSADOR": "Ambassador role",
+        "USER_LEADERBOARD": "Collector leaderboard"
       },
       "errors": {
         "FORBIDDEN": "Access denied: administrator permissions are required.",
@@ -1179,7 +1180,13 @@
       "notAmbassador": "This player is not an ambassador.",
       "ambassadorHint": "Green badge, frame and name color, a bigger booster stock and a weekly pack (settings under Boosters). Revoking also removes the worn frame and color.",
       "grantAmbassador": "Make ambassador",
-      "revokeAmbassador": "Revoke role"
+      "revokeAmbassador": "Revoke role",
+      "leaderboard": "Collector leaderboard",
+      "leaderboardHiddenSince": "Removed from the leaderboard since {date}.",
+      "leaderboardShown": "This player appears in the leaderboard if their profile is public.",
+      "leaderboardHint": "The player no longer appears in the leaderboard or the home page top. Their profile, collection and showcase stay visible, and they can't undo the removal.",
+      "hideFromLeaderboard": "Remove from leaderboard",
+      "showInLeaderboard": "Put back in leaderboard"
     },
     "moduleNames": {
       "boosters": "Boosters",
