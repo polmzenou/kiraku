@@ -7,7 +7,7 @@ vi.mock("../ratelimit", () => ({ rateLimit: mocks.rateLimit }));
 import { ANNOUNCEMENTS } from "@/lib/welcome/release";
 import { claimAnnouncementAction } from "./welcome";
 
-const [apology, v2] = ANNOUNCEMENTS;
+const [apology, v2, v3Teaser] = ANNOUNCEMENTS;
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -43,7 +43,8 @@ describe("annonces uniques par compte", () => {
   });
 
   it("ne représente pas une annonce après reconnexion ou changement d'appareil", async () => {
-    mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: v2.at });
+    mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: v3Teaser.at });
+    expect(await claimAnnouncementAction("player", "v3Teaser")).toBe(false);
     expect(await claimAnnouncementAction("player", "v2")).toBe(false);
     expect(mocks.updateMany).not.toHaveBeenCalled();
   });
@@ -60,17 +61,24 @@ describe("annonces uniques par compte", () => {
     expect(await claimAnnouncementAction("player", "v2")).toBe(true);
   });
 
+  it("présente l'attente de la v3 une fois la v2 vue", async () => {
+    mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: v2.at });
+    expect(await claimAnnouncementAction("player", "v2")).toBe(false);
+    expect(await claimAnnouncementAction("player", "v3Teaser")).toBe(true);
+    expect(mocks.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { v1WelcomeSeenAt: v3Teaser.at } }));
+  });
+
   it("enregistre la date de l'annonce sur le joueur de la session", async () => {
-    expect(await claimAnnouncementAction("player", "v2")).toBe(true);
+    expect(await claimAnnouncementAction("player", "v3Teaser")).toBe(true);
     expect(mocks.updateMany).toHaveBeenCalledWith({
       where: {
         id: "player",
-        OR: [{ v1WelcomeSeenAt: null }, { v1WelcomeSeenAt: { lt: v2.at } }],
+        OR: [{ v1WelcomeSeenAt: null }, { v1WelcomeSeenAt: { lt: v3Teaser.at } }],
         bannedAt: null,
         deletionRequestedAt: null,
         anonymizedAt: null,
       },
-      data: { v1WelcomeSeenAt: v2.at },
+      data: { v1WelcomeSeenAt: v3Teaser.at },
     });
   });
 
@@ -81,7 +89,7 @@ describe("annonces uniques par compte", () => {
       seen = true;
       return { count: 1 };
     });
-    expect(await Promise.all([claimAnnouncementAction("player", "v2"), claimAnnouncementAction("player", "v2")])).toEqual([true, false]);
+    expect(await Promise.all([claimAnnouncementAction("player", "v3Teaser"), claimAnnouncementAction("player", "v3Teaser")])).toEqual([true, false]);
   });
 
   it("ne marque rien lorsque la limite est atteinte", async () => {

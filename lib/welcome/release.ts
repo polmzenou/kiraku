@@ -9,6 +9,8 @@ export const ANNOUNCEMENTS = [
   { key: "apology", at: new Date("2026-10-25T23:00:00Z") },
   // Kiraku-kun v2 : nouveau design, cartes AR et Gold.
   { key: "v2", at: new Date("2026-10-27T18:00:00Z") },
+  // En attendant la v3 : reconnexion après le déménagement, aperçu AR et Gold, sachets scellés.
+  { key: "v3Teaser", at: new Date("2026-10-28T12:00:00Z") },
 ] as const;
 
 export type AnnouncementKey = (typeof ANNOUNCEMENTS)[number]["key"];

@@ -79,6 +79,36 @@
     "thanks": "Thanks for keeping Kiraku alive. Have fun!",
     "letsGo": "Discover v2"
   },
+  "v3Teaser": {
+    "badge": "While we wait for v3",
+    "title": "What's new",
+    "titleAccent": "on Kiraku!",
+    "intro": "v3 is being prepared behind the scenes. In the meantime, here's what changes right now.",
+    "login": {
+      "title": "Logged out?",
+      "body": "You may have been logged out. <strong>Your progress hasn't been affected</strong>: just log back in!"
+    },
+    "cards": {
+      "title": "New AR and Gold cards are coming!",
+      "body": "To get ready for v3, Kiraku gives you a <strong>preview of the new cards</strong> with their 3D effects.",
+      "preview": "Preview of the new cards",
+      "hint": "Touch or hover a card to tilt it."
+    },
+    "shop": {
+      "title": "A new shop and unique boosters",
+      "body": "When you open your boosters, you might find a sealed pack:",
+      "divine": "DIVINE",
+      "apocalypse": "APOCALYPTIC",
+      "odds": "1 chance in {odds, number}"
+    },
+    "x": {
+      "title": "Don't forget to follow us on X",
+      "body": "Follow <strong>{handle}</strong> so you don't miss anything about v3 and get notified if something goes wrong.",
+      "cta": "Follow {handle}"
+    },
+    "thanks": "Thanks for your patience, more is coming soon!",
+    "letsGo": "Let's go"
+  },
   "cardBack": {
     "showBack": "Show card back",
     "showFront": "Show card front",

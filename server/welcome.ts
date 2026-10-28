@@ -19,12 +19,22 @@ const V2_SHOWCASE_CARD_IDS = [
   "cmvp2w24x000008jhagjj4awu", // Shigeo Kageyama · AR
 ];
 
+/** Aperçu de l'annonce « en attendant la v3 », de gauche à droite ; mêmes règles que pour la v2. */
+const V3_TEASER_CARD_IDS = [
+  "cmvqpv1fc000308jvvys7co43", // Juuzou Suzuya · AR
+  "cmvqqzkda000m08k0gapjj8pp", // Imu Nerona · Mythique
+  "cmvqu79pw000p07lemzs39x4a", // Guts · Gold
+];
+
 export type ShowcaseCard = FudaCard & { id: string };
 
-export async function getV2ShowcaseCards(): Promise<ShowcaseCard[]> {
+async function showcaseCards(ids: readonly string[]): Promise<ShowcaseCard[]> {
   const cards = await prisma.card.findMany({
-    where: { id: { in: V2_SHOWCASE_CARD_IDS }, status: { not: "ARCHIVED" } },
+    where: { id: { in: [...ids] }, status: { not: "ARCHIVED" } },
     select: { id: true, name: true, nameNative: true, imageUrl: true, rank: true, rarity: true, power: true, ki: true, appearance: true, formName: true },
   });
-  return cards.sort((a, b) => V2_SHOWCASE_CARD_IDS.indexOf(a.id) - V2_SHOWCASE_CARD_IDS.indexOf(b.id));
+  return cards.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
 }
+
+export const getV2ShowcaseCards = () => showcaseCards(V2_SHOWCASE_CARD_IDS);
+export const getV3TeaserCards = () => showcaseCards(V3_TEASER_CARD_IDS);
