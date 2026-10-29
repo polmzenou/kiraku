@@ -20,5 +20,8 @@ export const SEAL_GLYPHS = [
   "挑発結界疾風毒反撃遺言復活", // passifs du combat
   "一閃貫通乱舞癒守護鼓封印", // techniques du combat
   "会心滅", // coup critique, carte hors combat
+  "攻終破再闘", // tablettes d'action, sceau 撃破, rejouer, kakejiku du dōjō
+  "灯の道場月下竹林本鳥居雨庭嵐守閣火祭り高原", // noms des arènes (lib/battle/arenas.ts)
+  "ドンゴォ", // onomatopées des impact frames
   "銅銀翠精覇極番付季", // emblèmes des rangs du classé, classement, saison
 ].join("");

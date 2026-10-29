@@ -20,7 +20,8 @@ export type SoundName =
 let ctx: AudioContext | null = null;
 let noiseBuffer: AudioBuffer | null = null;
 
-function audio(): AudioContext | null {
+/** Contexte audio partagé (ouverture, boutique, combat), créé au premier son. */
+export function audio(): AudioContext | null {
   if (typeof window === "undefined") return null;
   if (!ctx) {
     const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -39,7 +40,7 @@ export function primeAudio(): void {
   audio();
 }
 
-function noise(ac: AudioContext): AudioBuffer {
+export function noise(ac: AudioContext): AudioBuffer {
   if (noiseBuffer && noiseBuffer.sampleRate === ac.sampleRate) return noiseBuffer;
   const length = Math.floor(ac.sampleRate * 1.2);
   noiseBuffer = ac.createBuffer(1, length, ac.sampleRate);
@@ -49,7 +50,7 @@ function noise(ac: AudioContext): AudioBuffer {
 }
 
 /** Enveloppe percussive : attaque courte puis décroissance exponentielle. */
-function envelope(ac: AudioContext, peak: number, attack: number, decay: number, at: number): GainNode {
+export function envelope(ac: AudioContext, peak: number, attack: number, decay: number, at: number): GainNode {
   const g = ac.createGain();
   g.gain.setValueAtTime(0.0001, at);
   g.gain.exponentialRampToValueAtTime(peak, at + attack);
@@ -57,7 +58,7 @@ function envelope(ac: AudioContext, peak: number, attack: number, decay: number,
   return g;
 }
 
-function tone(ac: AudioContext, out: AudioNode, freq: number, at: number, opts: { type?: OscillatorType; peak?: number; decay?: number; to?: number }) {
+export function tone(ac: AudioContext, out: AudioNode, freq: number, at: number, opts: { type?: OscillatorType; peak?: number; decay?: number; to?: number }) {
   const osc = ac.createOscillator();
   osc.type = opts.type ?? "sine";
   osc.frequency.setValueAtTime(freq, at);
@@ -68,7 +69,7 @@ function tone(ac: AudioContext, out: AudioNode, freq: number, at: number, opts: 
   osc.stop(at + (opts.decay ?? 0.3) + 0.05);
 }
 
-function burst(ac: AudioContext, out: AudioNode, at: number, opts: { duration: number; from: number; to: number; q?: number; peak?: number }) {
+export function burst(ac: AudioContext, out: AudioNode, at: number, opts: { duration: number; from: number; to: number; q?: number; peak?: number }) {
   const src = ac.createBufferSource();
   src.buffer = noise(ac);
   const filter = ac.createBiquadFilter();

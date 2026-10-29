@@ -1,0 +1,119 @@
+/* Socle commun des arènes. Chaque décor est peint sur une toile de 1200 × 900 cadrée au centre de la
+   scène (SVG en xMidYMid slice) : --s vaut la taille d'une unité de toile, si bien que les éléments
+   animés, posés en HTML par-dessus (.arena-prop : --px/--py/--pw/--ph en unités de toile), tombent
+   exactement sur le décor. Le cadrage montre le centre de la toile sur téléphone, les côtés en plus
+   sur grand écran. Animations : transform et opacity seulement ; rien ne bouge en mouvement réduit. */
+
+.arena {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  contain: strict;
+  --s: max(100cqw / 1200, 100cqh / 900);
+  background: #0b0908;
+}
+.arena-plane {
+  position: absolute;
+  inset: 0;
+  /* Une couche à part, peinte une seule fois : le tremblé des contours (filtre SVG) ne se recalcule pas
+     quand la caméra bouge */
+  will-change: transform;
+}
+.arena-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+/* Profondeur de champ : le premier plan et le lointain un peu flous (filtres fixes, jamais animés) */
+.arena-soft {
+  filter: blur(0.6px);
+}
+.arena-near {
+  filter: blur(1.4px);
+}
+.arena-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: 0 0 / 180px 180px
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .08 0 0 0 0 .06 0 0 0 0 .04 1.3 0 0 0 -.52'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+.arena-haze {
+  position: absolute;
+  left: -30%;
+  width: 160%;
+  pointer-events: none;
+  background:
+    radial-gradient(28% 46% at 14% 52%, var(--tone), transparent 70%),
+    radial-gradient(22% 38% at 36% 40%, var(--tone), transparent 72%),
+    radial-gradient(30% 50% at 58% 58%, var(--tone), transparent 70%),
+    radial-gradient(20% 34% at 78% 44%, var(--tone), transparent 72%),
+    radial-gradient(26% 44% at 94% 56%, var(--tone), transparent 70%);
+  animation: arena-drift 46s ease-in-out infinite alternate;
+}
+@keyframes arena-drift {
+  from {
+    transform: translateX(-4%);
+  }
+  to {
+    transform: translateX(4%);
+  }
+}
+.arena-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* Deuxième toile dans un même plan, posée par-dessus une couche animée (lueur, nuages) */
+.arena-layer {
+  position: absolute;
+  inset: 0;
+}
+.arena-prop {
+  position: absolute;
+  left: calc(50% + (var(--px) - 600) * var(--s));
+  top: calc(50% + (var(--py) - 450) * var(--s));
+  width: calc(var(--pw) * var(--s));
+  height: calc(var(--ph) * var(--s));
+}
+.arena-prop > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.arena-edges,
+.arena-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.arena-edges {
+  will-change: transform;
+}
+.arena-fx {
+  overflow: hidden;
+}
+.arena-fx > span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform, opacity;
+}
+.arena-dim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse at 50% 58%, rgb(18 24 36 / 0.25), rgb(6 8 14 / 0.86));
+}
+
+.arena[data-level="reduced"],
+.arena[data-level="reduced"] * {
+  animation: none !important;
+}
+/* Onglet caché ou scène hors champ : les boucles d'ambiance s'arrêtent */
+.stage[data-paused] .arena *,
+.stage[data-paused] .arena {
+  animation-play-state: paused !important;
+}
