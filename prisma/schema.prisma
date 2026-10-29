@@ -45,6 +45,15 @@ enum ProfileVisibility {
   PRIVATE
 }
 
+// Disposition de la vitrine du profil (lib/collection/showcase-layouts.ts) ; hors GRID, 8 emplacements exigés
+enum ShowcaseLayout {
+  GRID
+  FEATURED_LEFT
+  FEATURED_L
+  TRIPTYCH
+  CHECKER
+}
+
 enum AuthTokenType {
   VERIFY_EMAIL
   RESET_PASSWORD
@@ -93,6 +102,7 @@ model User {
   referredById        String? // parrain, posé au rattachement (Referral fait foi)
   profileVisibility   ProfileVisibility @default(PUBLIC) // invités créés en PRIVATE
   showCollection      Boolean           @default(true) // collection complète visible sur le profil
+  showcaseLayout      ShowcaseLayout    @default(GRID) // disposition de la vitrine choisie par le joueur
   privacyChosenAt     DateTime? // réglé par le joueur : l'inscription ne le change plus
   // Personnalisation du profil (étape 12h) : bio, accord des titres, titre et cadre débloqués, ordre des badges
   bio                 String?           @db.VarChar(160)

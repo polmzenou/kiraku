@@ -1467,7 +1467,7 @@
       "fields": {
         "showcaseSlots": "Number of slots"
       },
-      "showcaseHint": "Lowering this hides the cards in the last slots (they stay saved).",
+      "showcaseHint": "Lowering this hides the cards in the last slots (they stay saved). Set 8 slots to offer players the showcase layouts (featured, triptych, checkerboard); with any other number, the showcase stays a grid.",
       "keys": {
         "recycleValues": "Recycling values",
         "showcaseSlots": "Showcase slots"
@@ -3045,7 +3045,33 @@
     "loading": "Loading…",
     "retry": "Try again",
     "more": "Show more",
-    "privateCollection": "Their collection is hidden: you can't pick a card from it."
+    "privateCollection": "Their collection is hidden: you can't pick a card from it.",
+    "slotHero": "Slot {n}, featured card",
+    "layoutButton": "Layout",
+    "layoutTitle": "Showcase layout",
+    "layoutHint": "Cards keep their slot number: slot 1 (and 2 for the Triptych) becomes the featured card.",
+    "layouts": {
+      "GRID": {
+        "name": "Grid",
+        "description": "8 cards of the same size, in 2 rows."
+      },
+      "FEATURED_LEFT": {
+        "name": "Featured left",
+        "description": "One large card, the other 7 beside it."
+      },
+      "FEATURED_L": {
+        "name": "L-shaped feature",
+        "description": "One large card framed by 7 small ones in an L."
+      },
+      "TRIPTYCH": {
+        "name": "Triptych",
+        "description": "Two large cards frame the other 6."
+      },
+      "CHECKER": {
+        "name": "Checkerboard 3-2-3",
+        "description": "Three staggered rows: 3, 2, then 3 cards."
+      }
+    }
   },
   "wishlist": {
     "title": "Wishlist",
@@ -4038,7 +4064,8 @@
       "empty": "Nobody has played ranked this season yet.",
       "hidden": "Private profiles count in the ladder but aren't shown.",
       "grandChampions": "Grand Champions"
-    }
+    },
+    "grandPosition": "You're {position, number} of {top, number}"
   },
   "legal": {
     "titles": {

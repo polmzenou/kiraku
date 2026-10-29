@@ -1467,7 +1467,7 @@
       "fields": {
         "showcaseSlots": "Nombre de cases"
       },
-      "showcaseHint": "En réduisant ce nombre, les cartes des dernières cases ne s'affichent plus (elles restent enregistrées).",
+      "showcaseHint": "En réduisant ce nombre, les cartes des dernières cases ne s'affichent plus (elles restent enregistrées). Mets 8 cases pour proposer aux joueurs les dispositions de vitrine (vedette, triptyque, damier) ; avec un autre nombre, la vitrine reste en grille.",
       "keys": {
         "recycleValues": "Valeurs de recyclage",
         "showcaseSlots": "Nombre de cases de la vitrine"
@@ -3045,7 +3045,33 @@
     "loading": "Chargement…",
     "retry": "Réessayer",
     "more": "Voir plus",
-    "privateCollection": "Sa collection n'est pas visible : impossible d'y choisir une carte."
+    "privateCollection": "Sa collection n'est pas visible : impossible d'y choisir une carte.",
+    "slotHero": "Case {n}, carte vedette",
+    "layoutButton": "Disposition",
+    "layoutTitle": "Disposition de la vitrine",
+    "layoutHint": "Les cartes gardent leur numéro de case : la case 1 (et la 2 pour le Triptyque) devient la carte vedette.",
+    "layouts": {
+      "GRID": {
+        "name": "Grille",
+        "description": "8 cartes de même taille, sur 2 rangées."
+      },
+      "FEATURED_LEFT": {
+        "name": "Vedette à gauche",
+        "description": "Une grande carte, les 7 autres à côté."
+      },
+      "FEATURED_L": {
+        "name": "Vedette en L",
+        "description": "Une grande carte entourée de 7 petites en équerre."
+      },
+      "TRIPTYCH": {
+        "name": "Triptyque",
+        "description": "Deux grandes cartes encadrent les 6 autres."
+      },
+      "CHECKER": {
+        "name": "Damier 3-2-3",
+        "description": "Trois rangées en quinconce : 3, 2 puis 3 cartes."
+      }
+    }
   },
   "wishlist": {
     "title": "Liste de souhaits",
@@ -4038,7 +4064,8 @@
       "empty": "Personne n'a encore joué en classé cette saison.",
       "hidden": "Les profils privés comptent dans le classement mais n'y sont pas affichés.",
       "grandChampions": "Grands Champions"
-    }
+    },
+    "grandPosition": "Vous êtes {position, number} sur {top, number}"
   },
   "legal": {
     "titles": {

@@ -1,0 +1,38 @@
+/*
+ * Dispositions de la vitrine (lib/collection/showcase-layouts.ts). Le modèle arrive en variables CSS
+ * posées par le composant : --cols-m / --areas-m (mobile), --cols-d / --areas-d / --max-d (≥ 48rem).
+ * Écart vertical = 1,4 × l'écart horizontal : une vedette au format 5:7 fait alors pile la hauteur
+ * des rangées qu'elle couvre.
+ */
+.showcase-layout {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(var(--cols-m), minmax(0, 1fr));
+  grid-template-areas: var(--areas-m);
+  column-gap: var(--gap-x, 0.5rem);
+  row-gap: var(--gap-y, 0.7rem);
+  align-items: start;
+}
+
+@media (min-width: 48rem) {
+  .showcase-layout {
+    grid-template-columns: repeat(var(--cols-d), minmax(0, 1fr));
+    grid-template-areas: var(--areas-d);
+    max-width: var(--max-d, none);
+    margin-inline: auto;
+    column-gap: var(--gap-x-d, 1rem);
+    row-gap: var(--gap-y-d, 1.4rem);
+  }
+}
+
+.showcase-layout > [data-slot="1"] { grid-area: s1; }
+.showcase-layout > [data-slot="2"] { grid-area: s2; }
+.showcase-layout > [data-slot="3"] { grid-area: s3; }
+.showcase-layout > [data-slot="4"] { grid-area: s4; }
+.showcase-layout > [data-slot="5"] { grid-area: s5; }
+.showcase-layout > [data-slot="6"] { grid-area: s6; }
+.showcase-layout > [data-slot="7"] { grid-area: s7; }
+.showcase-layout > [data-slot="8"] { grid-area: s8; }
+
+/* Vedette : centrée sur les rangées qu'elle couvre */
+.showcase-layout > [data-hero] { align-self: center; }

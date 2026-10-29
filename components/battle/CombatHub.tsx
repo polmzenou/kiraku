@@ -130,7 +130,7 @@ export function CombatHub({
               {rank?.season && <span className="text-sm font-medium text-[#a89f92]">· {tRanked("season", { number: rank.season.number })}</span>}
             </h2>
             {rank ? (
-              <RankBadge tier={rank.tier} division={rank.division} pc={rank.pc} progress={rank.progress} next={rank.next} nextRank={rank.nextRank} size={84} />
+              <RankBadge tier={rank.tier} division={rank.division} pc={rank.pc} progress={rank.progress} next={rank.next} nextRank={rank.nextRank} grand={rank.grand} size={84} />
             ) : (
               <p className="text-sm text-[#a89f92]">{tRanked("disabled")}</p>
             )}

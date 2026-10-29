@@ -23,7 +23,7 @@ export function DivisionBar({ progress, tier }: { progress: number; tier: BoardT
   );
 }
 
-/** Rang d'un joueur : emblème, nom, PC et barre de division. */
+/** Rang d'un joueur : emblème, nom, PC et barre de division (Grand Champion : sa place dans le top). */
 export function RankBadge({
   tier,
   division,
@@ -31,6 +31,7 @@ export function RankBadge({
   progress,
   next,
   nextRank = null,
+  grand = null,
   size = 72,
 }: {
   tier: BoardTier;
@@ -39,6 +40,8 @@ export function RankBadge({
   progress: number;
   next: number | null;
   nextRank?: { tier: BoardTier; division: 1 | 2 | 3 | null } | null;
+  /** Grand Champion : place dans le top, à la place de la barre (dernier rang, rien au-dessus). */
+  grand?: { position: number; top: number } | null;
   size?: number;
 }) {
   const t = useTranslations("ranked");
@@ -54,6 +57,9 @@ export function RankBadge({
           <span className="text-xs tabular-nums text-text-muted">
             {t("toNext", { count: Math.max(0, next - pc), target: nextRank ? name(nextRank.tier, nextRank.division) : String(next) })}
           </span>
+        )}
+        {tier === "GRAND_CHAMPION" && grand && (
+          <span className="text-xs tabular-nums text-text-muted">{t("grandPosition", { position: grand.position, top: grand.top })}</span>
         )}
       </div>
     </div>

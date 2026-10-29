@@ -46,11 +46,14 @@ export type RankView = {
   season: { number: number; endsAt: string } | null;
   /** Récompense de fin de saison à réclamer. */
   reward: { seasonId: string; seasonNumber: number; peakTier: BoardTier } | null;
+  /** Grand Champion : sa place dans le top (« 12 sur 100 »), d'après les points de classement. */
+  grand: { position: number; top: number } | null;
 };
 
-async function isTop(pc: number, r: RankedRules): Promise<boolean> {
-  if (pc < r.grandChampion.min) return false;
-  return (await prisma.user.count({ where: { rankPoints: { gt: pc }, bannedAt: null, isGuest: false } })) < r.grandChampion.top;
+/** Joueurs inscrits non bannis qui ont strictement plus de PC ; null sous le seuil du Grand Champion. */
+async function playersAhead(pc: number, r: RankedRules): Promise<number | null> {
+  if (pc < r.grandChampion.min) return null;
+  return prisma.user.count({ where: { rankPoints: { gt: pc }, bannedAt: null, isGuest: false } });
 }
 
 export async function getRankView(userId: string, r: RankedRules): Promise<RankView> {
@@ -63,7 +66,10 @@ export async function getRankView(userId: string, r: RankedRules): Promise<RankV
       select: { seasonId: true, peakTier: true, season: { select: { number: true } } },
     }),
   ]);
-  const rank = rankOf(user.rankPoints, await isTop(user.rankPoints, r), r);
+  const ahead = await playersAhead(user.rankPoints, r);
+  // Top du Grand Champion : place partagée à égalité de PC (même règle que le passage au rang)
+  const top = ahead !== null && ahead < r.grandChampion.top;
+  const rank = rankOf(user.rankPoints, top, r);
   const next = rank.next === null ? null : rank.next >= r.grandChampion.min ? rankOf(rank.next, true, r) : rankOf(rank.next, false, r);
   return {
     pc: user.rankPoints,
@@ -73,6 +79,7 @@ export async function getRankView(userId: string, r: RankedRules): Promise<RankV
     seasonGames: user.seasonGames,
     season: season ? { number: season.number, endsAt: season.endsAt.toISOString() } : null,
     reward: reward ? { seasonId: reward.seasonId, seasonNumber: reward.season.number, peakTier: reward.peakTier as BoardTier } : null,
+    grand: rank.tier === "GRAND_CHAMPION" && ahead !== null ? { position: ahead + 1, top: r.grandChampion.top } : null,
   };
 }
 

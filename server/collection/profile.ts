@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import type { ShowcaseLayout } from "@/lib/collection/showcase-layouts";
 import { profileAccess, type ProfileAccess, type ProfileVisibility } from "@/lib/collection/visibility";
 import type { Relation } from "@/lib/social/relation";
 import { prisma } from "../db";
@@ -16,6 +17,7 @@ export type ProfileOwnerRow = {
   profileVisibility: ProfileVisibility;
   showCollection: boolean;
   bannedAt: Date | null;
+  showcaseLayout: ShowcaseLayout;
 };
 
 /** Joueur par pseudo, sans tenir compte de la casse (la page redirige vers l'orthographe exacte). */
@@ -29,6 +31,7 @@ export const findProfileOwner = cache(async (username: string): Promise<ProfileO
     profileVisibility: true,
     showCollection: true,
     bannedAt: true,
+    showcaseLayout: true,
   } as const;
   const exact = await prisma.user.findUnique({ where: { username }, select });
   if (exact) return exact;

@@ -9,6 +9,7 @@ import { z } from "@/lib/zod";
 import { ALBUM_MAX_OFFSET, parseAlbumParams, type AlbumPage } from "@/lib/collection/albums";
 import { parseCollectionParams } from "@/lib/collection/params";
 import { MAX_SHOWCASE_SLOTS, placeInSlot } from "@/lib/collection/showcase";
+import { layoutsAvailable, SHOWCASE_LAYOUTS, type ShowcaseLayout } from "@/lib/collection/showcase-layouts";
 import type { CollectionPage } from "@/lib/collection/view";
 import { PROFILE_VISIBILITIES } from "@/lib/collection/visibility";
 import { USERNAME_REGEX } from "@/lib/username";
@@ -210,6 +211,21 @@ export async function removeFromShowcaseAction(input: unknown): Promise<Showcase
   const { cardId } = guard.data as z.infer<typeof showcaseCardSchema>;
   const slots = await currentShowcase(guard.user.id, guard.size);
   return saveShowcase(guard.user.id, slots.map((s) => (s === cardId ? null : s)), guard.size);
+}
+
+export type ShowcaseLayoutResult = { ok: true; layout: ShowcaseLayout } | Failure;
+
+const showcaseLayoutSchema = z.object({ layout: z.enum(SHOWCASE_LAYOUTS) }).strict();
+
+/** Disposition de la vitrine ; hors grille, seulement pour une vitrine de 8 cases. */
+export async function setShowcaseLayoutAction(input: unknown): Promise<ShowcaseLayoutResult> {
+  const guard = await showcaseGuard(input, showcaseLayoutSchema);
+  if ("error" in guard) return { ok: false, error: guard.error ?? "INVALID" };
+  const { layout } = guard.data as z.infer<typeof showcaseLayoutSchema>;
+  if (layout !== "GRID" && !layoutsAvailable(guard.size)) return { ok: false, error: "INVALID" };
+  await prisma.user.update({ where: { id: guard.user.id }, data: { showcaseLayout: layout }, select: { id: true } });
+  refresh();
+  return { ok: true, layout };
 }
 
 // --- Confidentialité ---

@@ -14,6 +14,7 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { getPathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { completion } from "@/lib/collection/view";
+import { effectiveLayout, layoutsAvailable } from "@/lib/collection/showcase-layouts";
 import { USERNAME_REGEX } from "@/lib/username";
 import { anonymousAccess, findProfileOwner } from "@/server/collection/profile";
 import { loadProfile } from "@/server/collection/profile-page";
@@ -158,7 +159,14 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
 
       <section className="flex flex-col gap-4">
         <SectionTitle kanji="飾" title={t("showcase")} />
-        <Showcase initial={showcase} editable={access.isOwner} linkBase={access.isOwner ? "/collection" : "/wiki"} owned={owned} />
+        <Showcase
+          initial={showcase}
+          editable={access.isOwner}
+          linkBase={access.isOwner ? "/collection" : "/wiki"}
+          owned={owned}
+          layout={effectiveLayout(owner.showcaseLayout, size)}
+          layoutsEnabled={layoutsAvailable(size)}
+        />
       </section>
       <WishlistSection cards={wishlist} editable={access.isOwner} owned={owned} />
       <ProfileSalesSection cards={sales} owned={owned} />
