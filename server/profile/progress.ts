@@ -127,9 +127,10 @@ export async function getCosmeticProgress(userId: string, locale: string): Promi
 
 /** Badges obtenus par le joueur (ordre par défaut). */
 export async function getEarnedBadges(user: { id: string; createdAt: Date; discordLinkedAt: Date | null; ambassadorSince: Date | null }): Promise<Badge[]> {
-  const [pioneerUntil, sponsorReferrals, qualifiedReferrals] = await Promise.all([
+  const [pioneerUntil, sponsorReferrals, recruiterReferrals, qualifiedReferrals] = await Promise.all([
     getSetting("profile.pioneerUntil"),
     getSetting("profile.sponsorReferrals"),
+    getSetting("profile.recruiterReferrals"),
     prisma.referral.count({ where: { referrerId: user.id, qualifiedAt: { not: null } } }),
   ]);
   return earnedBadges({
@@ -139,6 +140,7 @@ export async function getEarnedBadges(user: { id: string; createdAt: Date; disco
     ambassador: user.ambassadorSince !== null,
     qualifiedReferrals,
     sponsorReferrals,
+    recruiterReferrals,
     discordLinked: user.discordLinkedAt !== null,
   });
 }

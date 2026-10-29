@@ -3,7 +3,11 @@ import { settingsSchemaFor, type SettingsOf } from "./form";
 
 // Réglages des badges de profil, sur la page /admin/cosmetiques.
 
-export const PROFILE_SETTING_KEYS = ["profile.pioneerUntil", "profile.sponsorReferrals"] as const satisfies readonly SettingKey[];
+export const PROFILE_SETTING_KEYS = [
+  "profile.pioneerUntil",
+  "profile.sponsorReferrals",
+  "profile.recruiterReferrals",
+] as const satisfies readonly SettingKey[];
 
 export type ProfileSettingKey = (typeof PROFILE_SETTING_KEYS)[number];
 export type ProfileSettings = SettingsOf<ProfileSettingKey>;

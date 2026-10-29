@@ -1679,8 +1679,14 @@
         "minAccountAgeHours": "Âge minimal du compte filleul (heures)",
         "minBoostersOpened": "Boosters à ouvrir par le filleul",
         "referrerLot": "Lot du parrain",
-        "refereeLot": "Lot du filleul"
+        "refereeLot": "Lot du filleul",
+        "milestones": "Paliers du parrain",
+        "milestoneReferrals": "Amis qualifiés",
+        "milestoneLot": "Lot du palier"
       },
+      "milestonesHint": "Un lot réclamable une fois par palier, sans limite de temps. Seuils croissants, {max} paliers au plus.",
+      "addMilestone": "Ajouter un palier",
+      "removeMilestone": "Retirer le palier {count}",
       "premiumHint": "Sans effet tant qu'aucun fournisseur de paiement n'est branché. Lis les points légaux du plan avant.",
       "referral": "Parrainage",
       "noLot": "Aucun lot",
@@ -2652,7 +2658,9 @@
         "pioneerUntil": "Badge Pionnier : inscrits jusqu'au",
         "pioneerHint": "Vide : plus personne ne le reçoit.",
         "sponsorReferrals": "Badge Parrain : filleuls qualifiés requis",
-        "sponsorHint": "0 : badge désactivé."
+        "sponsorHint": "0 : badge désactivé.",
+        "recruiterReferrals": "Badge Recruteur : filleuls qualifiés requis",
+        "recruiterHint": "0 : badge désactivé. Affiché sur la page Parrainage, au palier du même nombre."
       },
       "errors": {
         "FORBIDDEN": "Action réservée aux admins.",
@@ -3153,7 +3161,8 @@
         "PIONEER": "Pionnier",
         "AMBASSADOR": "Ambassadeur",
         "VERIFIED": "Compte vérifié",
-        "SPONSOR": "Parrain"
+        "SPONSOR": "Parrain",
+        "RECRUITER": "Recruteur"
       },
       "noHint": "Continue ta collection pour le débloquer.",
       "progress": "{current}/{goal}",
@@ -3573,7 +3582,7 @@
       "howTitle": "Comment ça marche",
       "how1": "Partage ton lien ou ton code à un ami qui ne joue pas encore.",
       "how2": "Il crée son compte, le vérifie, et ouvre {boosters} boosters sur au moins {hours} h.",
-      "how3": "Chacun réclame sa récompense ici, une seule fois.",
+      "how3": "Chacun réclame sa récompense ici, une seule fois. Chaque ami qualifié te rapproche aussi d'un palier.",
       "inviteBody": "Ton ami arrive avec ce lien : son code est retenu jusqu'à son inscription.",
       "statInvited": "Invités",
       "statQualified": "Qualifiés",
@@ -3589,6 +3598,24 @@
         "boosters": "{count} / {total} boosters",
         "done": "fait :",
         "todo": "à faire :"
+      },
+      "milestones": {
+        "title": "Tes paliers",
+        "body": "Chaque ami qualifié compte, sans limite de temps. Chaque palier se réclame une fois.",
+        "friends": "{count, plural, one {# ami} other {# amis}}",
+        "state": {
+          "CLAIMED": "Réclamé",
+          "READY": "Prêt",
+          "NEXT": "Encore {remaining}",
+          "LOCKED": "Verrouillé"
+        },
+        "progress": "{qualified, plural, =0 {Aucun ami qualifié} one {# ami qualifié} other {# amis qualifiés}} · encore {remaining} pour « {name} »",
+        "ready": "Palier de {count, plural, one {# ami} other {# amis}} atteint : {name}",
+        "claim": "Réclamer",
+        "allDone": "Tous tes paliers sont réclamés. Merci d'agrandir la famille Kiraku !",
+        "badge": "+ badge {name}",
+        "perReferral": "À chaque ami qualifié",
+        "empty": "Aucun palier pour l'instant."
       }
     },
     "ledger": {

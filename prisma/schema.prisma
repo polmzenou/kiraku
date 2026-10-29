@@ -144,14 +144,15 @@ model User {
   notified      Notification[]     @relation("notifActor")
   pushSubs      PushSubscription[]
 
-  boosterCredits  BoosterCredit[]
-  sealedDrops     SealedDrop[]          @relation("sealedOwner")
-  sealedGiven     SealedDrop[]          @relation("sealedGiver")
-  missions        UserMission[]
-  ambassadorPacks AmbassadorPackClaim[]
-  purchases       Purchase[]
-  referralsMade   Referral[]            @relation("referrer")
-  referral        Referral?             @relation("referee")
+  boosterCredits     BoosterCredit[]
+  sealedDrops        SealedDrop[]             @relation("sealedOwner")
+  sealedGiven        SealedDrop[]             @relation("sealedGiver")
+  missions           UserMission[]
+  ambassadorPacks    AmbassadorPackClaim[]
+  purchases          Purchase[]
+  referralsMade      Referral[]               @relation("referrer")
+  referral           Referral?                @relation("referee")
+  referralMilestones ReferralMilestoneClaim[]
 
   auctions    Auction[] @relation("seller")
   leadingBids Auction[] @relation("leader")
@@ -887,6 +888,18 @@ model Referral {
 
   @@index([referrerId, createdAt])
   @@index([createdAt])
+}
+
+// Palier de parrainage réclamé : un seul par seuil et par parrain (referral.milestones)
+model ReferralMilestoneClaim {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referrals Int // seuil atteint (nombre d'amis qualifiés)
+  lotId     String // lot versé, gardé pour l'historique même si l'admin le supprime
+  claimedAt DateTime @default(now())
+
+  @@unique([userId, referrals])
 }
 
 enum ShopLimitPeriod {

@@ -1679,8 +1679,14 @@
         "minAccountAgeHours": "Minimum referral account age (hours)",
         "minBoostersOpened": "Boosters the referral must open",
         "referrerLot": "Referrer reward",
-        "refereeLot": "Referral reward"
+        "refereeLot": "Referral reward",
+        "milestones": "Referrer milestones",
+        "milestoneReferrals": "Qualified friends",
+        "milestoneLot": "Milestone reward"
       },
+      "milestonesHint": "A reward claimable once per milestone, with no time limit. Increasing thresholds, {max} milestones at most.",
+      "addMilestone": "Add a milestone",
+      "removeMilestone": "Remove the {count} milestone",
       "premiumHint": "No effect until a payment provider is connected. Read the legal notes in the plan first.",
       "referral": "Referrals",
       "noLot": "No reward",
@@ -2652,7 +2658,9 @@
         "pioneerUntil": "Pioneer badge: signed up until",
         "pioneerHint": "Empty: nobody gets it anymore.",
         "sponsorReferrals": "Sponsor badge: qualified referrals required",
-        "sponsorHint": "0: badge disabled."
+        "sponsorHint": "0: badge disabled.",
+        "recruiterReferrals": "Recruiter badge: qualified referrals required",
+        "recruiterHint": "0: badge disabled. Shown on the referral page, on the milestone with the same count."
       },
       "errors": {
         "FORBIDDEN": "Admins only.",
@@ -3153,7 +3161,8 @@
         "PIONEER": "Pioneer",
         "AMBASSADOR": "Ambassador",
         "VERIFIED": "Verified account",
-        "SPONSOR": "Sponsor"
+        "SPONSOR": "Sponsor",
+        "RECRUITER": "Recruiter"
       },
       "noHint": "Keep collecting to unlock it.",
       "progress": "{current}/{goal}",
@@ -3573,7 +3582,7 @@
       "howTitle": "How it works",
       "how1": "Share your link or code with a friend who doesn't play yet.",
       "how2": "They create and verify their account, then open {boosters} boosters over at least {hours} h.",
-      "how3": "You each claim your reward here, once.",
+      "how3": "You each claim your reward here, once. Every qualified friend also brings you closer to a milestone.",
       "inviteBody": "Your friend arrives through this link: their code is kept until they sign up.",
       "statInvited": "Invited",
       "statQualified": "Qualified",
@@ -3589,6 +3598,24 @@
         "boosters": "{count} / {total} boosters",
         "done": "done:",
         "todo": "to do:"
+      },
+      "milestones": {
+        "title": "Your milestones",
+        "body": "Every qualified friend counts, with no time limit. Each milestone can be claimed once.",
+        "friends": "{count, plural, one {# friend} other {# friends}}",
+        "state": {
+          "CLAIMED": "Claimed",
+          "READY": "Ready",
+          "NEXT": "{remaining} to go",
+          "LOCKED": "Locked"
+        },
+        "progress": "{qualified, plural, =0 {No qualified friends} one {# qualified friend} other {# qualified friends}} · {remaining} more for “{name}”",
+        "ready": "{count, plural, one {# friend} other {# friends}} milestone reached: {name}",
+        "claim": "Claim",
+        "allDone": "Every milestone claimed. Thanks for growing the Kiraku family!",
+        "badge": "+ {name} badge",
+        "perReferral": "For every qualified friend",
+        "empty": "No milestones yet."
       }
     },
     "ledger": {

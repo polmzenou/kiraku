@@ -15,6 +15,7 @@ export const ECONOMY_SETTING_KEYS = [
   "referral.requireVerified",
   "referral.referrerLotId",
   "referral.refereeLotId",
+  "referral.milestones",
 ] as const satisfies readonly SettingKey[];
 
 export type EconomySettingKey = (typeof ECONOMY_SETTING_KEYS)[number];

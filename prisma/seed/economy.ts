@@ -38,6 +38,19 @@ const LOTS: LotSeed[] = [
   { id: "seed-lot-pack-10", name: { fr: "10 boosters standard", en: "10 standard boosters" }, zeni: 0, standardBoosters: 10 },
   { id: "seed-lot-epique", name: { fr: "Une fuda épique", en: "One epic fuda" }, zeni: 0, rarityCard: "EPIC" },
   { id: "seed-lot-imperial", name: { fr: "Un booster Impérial", en: "One Imperial booster" }, zeni: 0, boosters: [{ slug: "imperial", quantity: 1 }] },
+  // Paliers du parrainage (amis qualifiés depuis toujours) : de plus en plus rares
+  { id: "seed-lot-palier-3", name: { fr: "Un Jūbako", en: "One Jūbako" }, zeni: 0, boosters: [{ slug: "jubako", quantity: 1 }] },
+  { id: "seed-lot-palier-6", name: { fr: "Un booster Impérial", en: "One Imperial booster" }, zeni: 0, boosters: [{ slug: "imperial", quantity: 1 }] },
+  { id: "seed-lot-palier-10", name: { fr: "Un booster Mythique", en: "One Mythic booster" }, zeni: 0, boosters: [{ slug: "mythique", quantity: 1 }] },
+  { id: "seed-lot-palier-20", name: { fr: "Deux boosters Mythiques", en: "Two Mythic boosters" }, zeni: 0, boosters: [{ slug: "mythique", quantity: 2 }] },
+];
+
+/** Paliers du parrainage : nombre d'amis qualifiés → lot (réglage referral.milestones). */
+export const REFERRAL_MILESTONE_SEEDS = [
+  { referrals: 3, lotId: "seed-lot-palier-3" },
+  { referrals: 6, lotId: "seed-lot-palier-6" },
+  { referrals: 10, lotId: "seed-lot-palier-10" },
+  { referrals: 20, lotId: "seed-lot-palier-20" },
 ];
 
 type MissionSeed = { key: string; period: MissionPeriod; metric: MissionMetric; goal: number; rarity?: Rarity; lotId: string };
@@ -295,6 +308,14 @@ export async function upsertEconomySeeds(db: PrismaClient) {
   ] as const) {
     if (!lotIds.has(lotId) || (await db.gameSetting.findUnique({ where: { key }, select: { key: true } }))) continue;
     await db.gameSetting.create({ data: { key, value: lotId, updatedBy: null } });
+    created.settings++;
+  }
+
+  // Paliers : posés une fois, avec les seuls lots créés (un type de booster absent saute son palier)
+  const milestones = REFERRAL_MILESTONE_SEEDS.filter((m) => lotIds.has(m.lotId));
+  const milestonesKey = "referral.milestones";
+  if (milestones.length > 0 && !(await db.gameSetting.findUnique({ where: { key: milestonesKey }, select: { key: true } }))) {
+    await db.gameSetting.create({ data: { key: milestonesKey, value: milestones, updatedBy: null } });
     created.settings++;
   }
   return created;

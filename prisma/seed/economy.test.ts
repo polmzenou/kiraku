@@ -5,9 +5,9 @@ import { effectiveSlotFloors, SLUG_PATTERN } from "@/lib/boosters/types";
 import { BASE_RARITIES } from "@/lib/catalog/rarity";
 import { lotInputSchema } from "@/lib/economy/lots";
 import { shopContentIssue, shopItemInputSchema } from "@/lib/economy/shop";
-import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
+import { SETTING_DEFAULTS, SETTING_SCHEMAS } from "@/lib/settings/defaults";
 import { BOOSTER_SEEDS } from "./booster-types";
-import { MISSION_SEEDS, shopPackSeeds, upsertEconomySeeds, upsertMissionSeeds } from "./economy";
+import { MISSION_SEEDS, REFERRAL_MILESTONE_SEEDS, shopPackSeeds, upsertEconomySeeds, upsertMissionSeeds } from "./economy";
 
 const EXPECTED = [
   "shonen", "seinen", "shojo", "josei",
@@ -243,7 +243,7 @@ describe("seed de l'économie", () => {
       ["booster-imperial", 3],
     ]);
     expect(createdItems(db).find((i) => i.slug === "booster-imperial")).toMatchObject({ priceZeni: 3_500, perUserLimit: 1, limitPeriod: "DAILY" });
-    expect(first).toEqual({ lots: lots.size, missions: MISSION_SEEDS.length, shopItems: 4 + 26, settings: 2 });
+    expect(first).toEqual({ lots: lots.size, missions: MISSION_SEEDS.length, shopItems: 4 + 26, settings: 3 });
     expect(db.lot.create).toHaveBeenCalledTimes(lots.size);
 
     vi.clearAllMocks();
@@ -251,6 +251,21 @@ describe("seed de l'économie", () => {
     expect(second).toEqual({ lots: 0, missions: 0, shopItems: 0, settings: 0 });
     for (const model of [db.lot, db.mission, db.shopItem, db.gameSetting]) expect(model.create).not.toHaveBeenCalled();
     expectNoUpdate(db);
+  });
+
+  it("pose les paliers du parrainage une fois, valides pour le réglage, avec les seuls lots créés", async () => {
+    const db = fakeDb(ALL_TYPES.filter((t) => t.slug !== "imperial"));
+    await upsertEconomySeeds(db as unknown as PrismaClient);
+
+    const calls = db.gameSetting.create.mock.calls.map(([args]) => args.data as { key: string; value: unknown });
+    const milestones = calls.find((c) => c.key === "referral.milestones")?.value;
+    expect(milestones).toEqual(REFERRAL_MILESTONE_SEEDS.filter((m) => m.referrals !== 6));
+    expect(SETTING_SCHEMAS["referral.milestones"].safeParse(REFERRAL_MILESTONE_SEEDS).success).toBe(true);
+    expect(createdLots(db).get("seed-lot-palier-20")).toMatchObject({ items: { create: [{ kind: "BOOSTER", boosterTypeId: "id-mythique", quantity: 2 }] } });
+
+    vi.clearAllMocks();
+    await upsertEconomySeeds(db as unknown as PrismaClient);
+    expect(db.gameSetting.create).not.toHaveBeenCalled();
   });
 
   it("ne crée ni le lot ni l'article d'un pack dont le type manque ou est scellé", async () => {

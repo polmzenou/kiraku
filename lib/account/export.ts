@@ -48,6 +48,7 @@ export const EXPORT_FIELDS = {
   missions: ["missionId", "periodKey", "claimedAt"],
   purchases: ["shopItemId", "currency", "amount", "status", "createdAt", "paidAt"],
   referrals: ["role", "status", "createdAt", "qualifiedAt"],
+  referralMilestones: ["referrals", "lotId", "claimedAt"],
   seasons: ["seasonId", "finalPc", "peakPc", "peakTier", "games", "claimedAt"],
   review: ["rating", "body", "reply", "hidden", "createdAt", "updatedAt"],
   notifications: ["type", "refId", "readAt", "createdAt"],

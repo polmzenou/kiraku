@@ -8,6 +8,7 @@ import {
   REFERRAL_WINDOW_MS,
   type AttachRefusal,
   type RefereeProgress,
+  type ReferralMilestone,
   type ReferralRules,
 } from "@/lib/economy/referral";
 import { blocksBetween, lockPlayers, type Tx } from "../social/lock";
@@ -168,5 +169,37 @@ export async function claimReferralWith(
 
     const grant = await grantLot(tx, input.userId, input.lotId, { reason: "REFERRAL", refId: input.referralId }, deps, input.now);
     return { grant, side };
+  }, TX);
+}
+
+/**
+ * Réclame un palier de parrainage, une seule fois par seuil. Les filleuls qualifiés (révoqués
+ * exclus) sont comptés sous le verrou du parrain : deux réclamations simultanées n'en versent qu'une.
+ */
+export async function claimReferralMilestoneWith(
+  db: PrismaClient,
+  input: { userId: string; milestone: ReferralMilestone; now: Date },
+  deps: LotDeps,
+): Promise<LotGrant> {
+  return db.$transaction(async (tx) => {
+    const player = (await lockPlayers(tx, [input.userId])).get(input.userId);
+    if (!player) throw new ReferralError("NO_USER");
+    if (player.bannedAt) throw new ReferralError("BANNED");
+
+    const { referrals, lotId } = input.milestone;
+    const qualified = await tx.referral.count({ where: { referrerId: input.userId, status: "QUALIFIED" } });
+    if (qualified < referrals) throw new ReferralError("NOT_QUALIFIED");
+
+    const already = await tx.referralMilestoneClaim.findUnique({
+      where: { userId_referrals: { userId: input.userId, referrals } },
+      select: { id: true },
+    });
+    if (already) throw new ReferralError("ALREADY_CLAIMED");
+
+    const claim = await tx.referralMilestoneClaim.create({
+      data: { userId: input.userId, referrals, lotId, claimedAt: input.now },
+      select: { id: true },
+    });
+    return grantLot(tx, input.userId, lotId, { reason: "REFERRAL", refId: claim.id }, deps, input.now);
   }, TX);
 }

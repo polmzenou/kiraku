@@ -10,7 +10,7 @@ import { createPgAdapter } from "@/server/pg-adapter";
 import { debit, LedgerError } from "./ledger";
 import type { LotDeps } from "./lots";
 import { claimMissionWith, MissionError } from "./missions-core";
-import { attachReferralWith, claimReferralWith, ReferralError } from "./referral-core";
+import { attachReferralWith, claimReferralMilestoneWith, claimReferralWith, ReferralError } from "./referral-core";
 import { buyWithZeniWith, ShopError } from "./shop-core";
 
 // Concurrence de l'économie sur une vraie base (base de test isolée) : sauté sans DATABASE_URL_TEST.
@@ -222,6 +222,33 @@ describe.skipIf(!url)("économie atomique (base réelle)", () => {
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
 
     for (const id of [referrer.id, other.id, referee.id]) expect(await balanceMatchesLedger(id)).toBe(true);
+  }, 120_000);
+
+  it("palier de parrainage : refusé sous le seuil, révoqués exclus, cinq réclamations n'en paient qu'une", async () => {
+    const referrer = await player();
+    const referees = [await player(), await player(), await player()];
+    const milestone = { referrals: 2, lotId };
+    for (const [i, r] of referees.entries()) {
+      await prisma.referral.create({
+        data: { referrerId: referrer.id, refereeId: r.id, status: i === 0 ? "QUALIFIED" : i === 1 ? "REVOKED" : "PENDING" },
+      });
+    }
+    // Un qualifié, un révoqué, un en attente : le palier de 2 n'est pas atteint
+    await expect(claimReferralMilestoneWith(prisma, { userId: referrer.id, milestone, now: new Date() }, deps)).rejects.toMatchObject({
+      code: "NOT_QUALIFIED",
+    });
+
+    await prisma.referral.update({ where: { refereeId: referees[2].id }, data: { status: "QUALIFIED", qualifiedAt: new Date() } });
+    const claims = await Promise.allSettled(
+      Array.from({ length: 5 }, () => claimReferralMilestoneWith(prisma, { userId: referrer.id, milestone, now: new Date() }, deps)),
+    );
+    expect(claims.filter((c) => c.status === "fulfilled")).toHaveLength(1);
+    expect(claims.filter((c) => c.status === "rejected").map((c) => (c as PromiseRejectedResult).reason.code)).toEqual(
+      Array(4).fill("ALREADY_CLAIMED"),
+    );
+    expect(await prisma.referralMilestoneClaim.count({ where: { userId: referrer.id } })).toBe(1);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: referrer.id }, select: { coins: true } })).coins).toBe(START + 100);
+    expect(await balanceMatchesLedger(referrer.id)).toBe(true);
   }, 120_000);
 
   it("la somme des soldes des joueurs de test égale la somme de leur journal", async () => {

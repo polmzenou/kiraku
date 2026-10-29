@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { changedSettingKeys } from "@/lib/settings/form";
+import { MAX_REFERRAL_MILESTONES } from "@/lib/settings/defaults";
 import { ECONOMY_SETTING_KEYS, economySettingsSchema, type EconomySettings } from "@/lib/settings/economy-form";
 import { updateEconomySettings } from "@/server/actions/admin-settings";
 import { Button } from "../ui/Button";
@@ -24,6 +25,16 @@ export function EconomySettingsForm({ initial, lots }: { initial: EconomySetting
     setMessage(null);
   };
   const lotOptions = [{ value: "", label: t("noLot") }, ...lots.map((l) => ({ value: l.id, label: l.name }))];
+
+  // Paliers : seuils croissants (vérifiés par le schéma), un lot obligatoire par palier
+  type Milestones = EconomySettings["referral.milestones"];
+  const milestones = draft["referral.milestones"];
+  const milestoneLotOptions = lots.map((l) => ({ value: l.id, label: l.name }));
+  const setMilestones = (next: Milestones) => update("referral.milestones", next);
+  const setMilestone = (i: number, m: Milestones[number]) => setMilestones(milestones.map((x, j) => (j === i ? m : x)));
+  const removeMilestone = (i: number) => setMilestones(milestones.filter((_, j) => j !== i));
+  const addMilestone = () =>
+    setMilestones([...milestones, { referrals: (milestones.at(-1)?.referrals ?? 0) + 5, lotId: lots[0].id }]);
 
   const save = () =>
     startTransition(async () => {
@@ -106,6 +117,36 @@ export function EconomySettingsForm({ initial, lots }: { initial: EconomySetting
           onChange={(v) => update("referral.refereeLotId", v || null)}
           options={lotOptions}
         />
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-3 lacquer rounded-card p-4">
+        <legend className="px-1 font-bold">{t("keys.milestones")}</legend>
+        <p className="text-xs text-text-muted">{t("milestonesHint", { max: MAX_REFERRAL_MILESTONES })}</p>
+        {milestones.map((m, i) => (
+          <div key={i} className="grid items-end gap-3 sm:grid-cols-[8rem_minmax(0,1fr)_auto]">
+            <NumberField
+              label={t("keys.milestoneReferrals")}
+              value={m.referrals}
+              onChange={(v) => setMilestone(i, { ...m, referrals: v })}
+              min={1}
+              max={1_000}
+            />
+            <SelectField
+              label={t("keys.milestoneLot")}
+              value={m.lotId}
+              onChange={(v) => setMilestone(i, { ...m, lotId: v })}
+              options={milestoneLotOptions}
+            />
+            <Button type="button" variant="danger" size="sm" onClick={() => removeMilestone(i)}>
+              {t("removeMilestone", { count: m.referrals })}
+            </Button>
+          </div>
+        ))}
+        {milestones.length < MAX_REFERRAL_MILESTONES && lots.length > 0 && (
+          <Button type="button" variant="secondary" size="sm" className="self-start" onClick={addMilestone}>
+            {t("addMilestone")}
+          </Button>
+        )}
       </fieldset>
 
       <div className="flex flex-col gap-2">

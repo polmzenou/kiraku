@@ -4,22 +4,21 @@ import { hasLocale } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { ClaimReferralButton } from "@/components/economy/ClaimButton";
-import { LotRewards } from "@/components/economy/LotRewards";
-import { LotStage } from "@/components/economy/LotStage";
 import { RefereeChecklist } from "@/components/economy/RefereeChecklist";
 import { ReferralCodeForm } from "@/components/economy/ReferralCodeForm";
+import { ReferralMilestones } from "@/components/economy/ReferralMilestones";
 import { ReferralShare } from "@/components/economy/ReferralShare";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { ButtonLink } from "@/components/ui/ButtonLink";
-import { normalizeReferralCode, type RefereeProgress } from "@/lib/economy/referral";
+import { milestoneStates, normalizeReferralCode, type RefereeProgress } from "@/lib/economy/referral";
 import { baseOpenGraph, OG_IMAGE_SIZE, ogImageUrl } from "@/lib/seo/open-graph";
 import { routing } from "@/i18n/routing";
 import { guestCode } from "@/lib/username";
 import { prisma } from "@/server/db";
 import { referralRules } from "@/server/economy/deps";
-import { lotViews, type LotView } from "@/server/economy/lot-view";
+import { lotViews } from "@/server/economy/lot-view";
 import { pendingReferralCode } from "@/server/economy/referral";
 import { referrerByCode } from "@/server/og/data";
 import { qualifyReferralsWith, refereeProgress } from "@/server/economy/referral-core";
@@ -53,20 +52,7 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/[lo
 const DAY = 86_400_000;
 const STEP_KANJI = ["一", "二", "三"] as const;
 
-/** Une récompense de parrainage sur sa scène (pour le parrain ou pour le filleul). */
-function RewardCard({ title, lot, empty }: { title: string; lot: LotView | undefined; empty: string }) {
-  return (
-    <div className="flex flex-col overflow-hidden lacquer rounded-card">
-      <LotStage lot={lot} className="h-32" />
-      <div className="flex flex-col gap-2 p-3">
-        <p className="text-sm font-bold">{title}</p>
-        {lot ? <LotRewards lot={lot} /> : <p className="text-sm text-text-muted">{empty}</p>}
-      </div>
-    </div>
-  );
-}
-
-/** Parrainage : son code, ses filleuls et leur progression, son propre parrain. */
+/** Parrainage : son code, ses paliers, ses filleuls et leur progression, son propre parrain. */
 export default async function ReferralPage() {
   const [t, tAccount, user, locale] = await Promise.all([
     getTranslations("economy.referral"),
@@ -95,18 +81,29 @@ export default async function ReferralPage() {
     );
   }
 
-  const [referrerLotId, refereeLotId, cookieCode] = await Promise.all([
+  const [referrerLotId, refereeLotId, milestones, recruiterReferrals, cookieCode] = await Promise.all([
     getSetting("referral.referrerLotId"),
     getSetting("referral.refereeLotId"),
+    getSetting("referral.milestones"),
+    getSetting("profile.recruiterReferrals"),
     pendingReferralCode(),
   ]);
-  const lots = await lotViews([referrerLotId, refereeLotId].filter((id): id is string => id !== null), locale);
+  const lots = await lotViews(
+    [referrerLotId, refereeLotId, ...milestones.map((m) => m.lotId)].filter((id): id is string => id !== null),
+    locale,
+  );
 
-  const rewards = (
-    <div className="grid grid-cols-2 gap-3">
-      <RewardCard title={t("rewardReferrer")} lot={referrerLotId ? lots.get(referrerLotId) : undefined} empty={t("noReward")} />
-      <RewardCard title={t("rewardReferee")} lot={refereeLotId ? lots.get(refereeLotId) : undefined} empty={t("noReward")} />
-    </div>
+  // Paliers à droite du code ; un invité les voit tous verrouillés, sans bouton
+  const rewards = (qualified: number, claimed: ReadonlySet<number>, canClaim: boolean) => (
+    <ReferralMilestones
+      milestones={milestoneStates(milestones, qualified, claimed)}
+      lots={lots}
+      qualified={qualified}
+      recruiterReferrals={recruiterReferrals}
+      referrerLot={referrerLotId ? lots.get(referrerLotId) : undefined}
+      refereeLot={refereeLotId ? lots.get(refereeLotId) : undefined}
+      canClaim={canClaim}
+    />
   );
   const howItWorks = (
     <section className="flex flex-col gap-3" aria-labelledby="comment">
@@ -145,7 +142,7 @@ export default async function ReferralPage() {
             {tAccount("createAccount")}
           </ButtonLink>
         </section>
-        {rewards}
+        {rewards(0, new Set(), false)}
         {howItWorks}
       </PageShell>
     );
@@ -154,7 +151,7 @@ export default async function ReferralPage() {
   // Qualification paresseuse : la visite suffit à faire avancer les parrainages prêts
   await qualifyReferralsWith(prisma, user.id, rules, now, (ids) => after(() => pushNotifications(ids)));
 
-  const [me, referees, mine] = await Promise.all([
+  const [me, referees, mine, qualifiedCount, claims] = await Promise.all([
     prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { referralCode: true, createdAt: true } }),
     prisma.referral.findMany({
       where: { referrerId: user.id },
@@ -172,6 +169,9 @@ export default async function ReferralPage() {
       where: { refereeId: user.id },
       select: { id: true, status: true, refereeClaimedAt: true, createdAt: true, referrer: { select: { username: true } } },
     }),
+    // Tous les qualifiés, pas seulement les 50 derniers affichés : c'est ce qui fait avancer les paliers
+    prisma.referral.count({ where: { referrerId: user.id, status: "QUALIFIED" } }),
+    prisma.referralMilestoneClaim.findMany({ where: { userId: user.id }, select: { referrals: true } }),
   ]);
 
   const pending = await Promise.all(
@@ -180,7 +180,6 @@ export default async function ReferralPage() {
   const progressById = new Map<string, RefereeProgress | null>(pending);
   const canAttach = !mine && now.getTime() - me.createdAt.getTime() <= rules.attachWindowDays * DAY;
   const myProgress = mine?.status === "PENDING" ? await refereeProgress(prisma, user.id, mine.createdAt) : null;
-  const qualifiedCount = referees.filter((r) => r.status === "QUALIFIED").length;
 
   const nameOf = (u: { username: string; isGuest: boolean }) => {
     const code = guestCode(u.username);
@@ -220,7 +219,7 @@ export default async function ReferralPage() {
             </div>
           </dl>
         </section>
-        {rewards}
+        {rewards(qualifiedCount, new Set(claims.map((c) => c.referrals)), true)}
       </div>
 
       {howItWorks}
