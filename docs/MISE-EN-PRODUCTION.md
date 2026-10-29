@@ -39,9 +39,10 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
   Aucun repli mémoire en production ; vérifier les quotas et les erreurs Redis.
 - [ ] Ably : `ABLY_API_KEY`, publication et abonnement autorisés, connexion de combat vérifiée.
 - [ ] Push : clés `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` configurées pour cet environnement.
-- [ ] `CRON_SECRET` aléatoire (au moins 16 caractères) ; crons visibles et authentifiés dans Vercel :
-  `/api/cron/market` à 04:00 UTC, `/api/cron/battle` à 04:15 UTC,
-  `/api/cron/accounts` à 04:30 UTC (`vercel.json`).
+- [ ] `CRON_SECRET` aléatoire (au moins 16 caractères) ; crons installés dans la crontab du VPS
+  (`deploy/crontab.example`, `vercel.json` n'est lu que par Vercel) : `/api/cron/market` à 04:00,
+  `/api/cron/battle` à 04:15, `/api/cron/accounts` à 04:30. Sans eux : ni effacements RGPD à
+  échéance, ni purge des invités, de RateLimit, du chat et des tirages.
 - [ ] Domaine définitif et HTTPS valides. Soumettre au préchargement HSTS **uniquement une fois
   le domaine définitif**, après vérification de ses sous-domaines.
 

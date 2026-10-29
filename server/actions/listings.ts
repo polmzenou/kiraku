@@ -7,7 +7,7 @@ import { isFrozen } from "@/lib/account/deletion";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
 import { LISTING_FILTERS, type ListingRules } from "@/lib/market/listings";
-import { noteSchema } from "@/lib/text/plain";
+import { noteSchema } from "@/lib/text/note-schema";
 import { z } from "@/lib/zod";
 import { cardViews } from "../boosters/display";
 import { prisma } from "../db";

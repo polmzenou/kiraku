@@ -68,7 +68,7 @@ export function BattleStage({
   mine?: RowProps;
   theirs?: RowProps;
   ticker: { text: string | null; tone: "mine" | "theirs" | "error" | "hint" };
-  timer?: { secondsLeft: number | null; total: number } | null;
+  timer?: { endsAt: string | null; total: number } | null;
   tablets?: ReactNode;
   menu?: ReactNode;
   side?: ReactNode;
@@ -155,7 +155,7 @@ export function BattleStage({
                 {row(opp, theirs, "far")}
                 <div className="stage-front">
                   <span className="stage-front-line" aria-hidden="true" />
-                  {timer && <Incense secondsLeft={timer.secondsLeft} total={timer.total} />}
+                  {timer && <Incense endsAt={timer.endsAt} total={timer.total} />}
                   {director.banner && live && <TurnBanner banner={director.banner} mySide={mySide} theirName={name(players[opp])} />}
                 </div>
                 {row(mySide, mine, "near")}

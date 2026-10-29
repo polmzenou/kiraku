@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { directRewardsSchema } from "@/lib/economy/direct-send";
-import { noteSchema } from "@/lib/text/plain";
+import { noteSchema } from "@/lib/text/note-schema";
 import { z } from "@/lib/zod";
 import { USERNAME_REGEX } from "@/lib/username";
 import { getAdmin } from "../admin";

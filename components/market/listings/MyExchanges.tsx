@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { cancelListingAction, markListingRevealsSeenAction, withdrawOfferAction } from "@/server/actions/listings";
 import type { ExchangeHistoryView, MyExchanges as MyExchangesData, MyListingView, SentOfferView } from "@/server/market/listings";
@@ -89,7 +89,6 @@ function MyListing({ listing }: { listing: MyListingView }) {
   const t = useTranslations("listings");
   const format = useFormatter();
   const now = useNow();
-  const router = useRouter();
   const name = usePlayerName();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -100,7 +99,6 @@ function MyListing({ listing }: { listing: MyListingView }) {
       try {
         const res = await cancelListingAction({ listingId: listing.id });
         if (!res.ok) setError(t(`errors.${res.error}` as "errors.UNAVAILABLE"));
-        else router.refresh();
       } catch {
         setError(t("errors.UNAVAILABLE"));
       }
@@ -154,7 +152,7 @@ function MyListing({ listing }: { listing: MyListingView }) {
                 </span>
                 <Fuda card={o.card} series={o.card.series} size="sm" tilt={false} />
               </div>
-              <OfferDecision offerId={o.id} offeredName={o.card.name} onDone={() => router.refresh()} />
+              <OfferDecision offerId={o.id} offeredName={o.card.name} />
             </li>
           ))}
         </ul>
@@ -167,7 +165,6 @@ function SentOffer({ offer }: { offer: SentOfferView }) {
   const t = useTranslations("listings");
   const format = useFormatter();
   const now = useNow();
-  const router = useRouter();
   const name = usePlayerName();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -178,7 +175,6 @@ function SentOffer({ offer }: { offer: SentOfferView }) {
       try {
         const res = await withdrawOfferAction({ offerId: offer.id });
         if (!res.ok) setError(t(`errors.${res.error}` as "errors.UNAVAILABLE"));
-        else router.refresh();
       } catch {
         setError(t("errors.UNAVAILABLE"));
       }

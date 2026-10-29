@@ -27,6 +27,9 @@ export async function getRankedRules(): Promise<RankedRules> {
 export async function ensureSeason(r: RankedRules, now = new Date()): Promise<SeasonRow | null> {
   try {
     const timeZone = await getSetting("game.timeZone");
+    // Appelé à chaque vue de /combat et /classement : une seule lecture tant que la saison court
+    const open = await currentSeasonWith(prisma, now, r, timeZone);
+    if (open.endsAt > now) return open;
     await rollSeasonWith(prisma, now, r, timeZone);
     return await currentSeasonWith(prisma, now, r, timeZone);
   } catch (e) {

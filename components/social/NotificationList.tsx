@@ -172,7 +172,6 @@ export function NotificationList({ initial, initialCursor }: { initial: Notifica
                           list.map((x) => (x.id === n.id && x.listingNotice ? { ...x, read: true, listingNotice: { ...x.listingNotice, pending: false } } : x)),
                         );
                         if (!n.read) void markNotificationsReadAction({ ids: [n.id] }).catch(() => undefined);
-                        router.refresh();
                       }}
                     />
                   ) : (

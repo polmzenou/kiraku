@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { ensureGuest } from "@/server/actions/auth";
 import { Button } from "./ui/Button";
@@ -12,18 +11,17 @@ import { Button } from "./ui/Button";
  */
 export function GuestBootstrap() {
   const t = useTranslations("account");
-  const router = useRouter();
   const started = useRef(false);
   const [limited, setLimited] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const run = useCallback(() => {
     startTransition(async () => {
+      // Le cookie de session posé par l'action fait re-rendre la page dans la même réponse
       const result = await ensureGuest();
-      if (result.ok) router.refresh();
-      else setLimited(true);
+      if (!result.ok) setLimited(true);
     });
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     if (started.current) return;

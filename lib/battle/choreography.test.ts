@@ -39,7 +39,8 @@ const cues = (beats: readonly Beat[]) => beats.flatMap((b) => b.steps.flatMap((s
 // Comme display.test : PV et barrières (le serveur lève aussi le sceau en début de tour, l'affichage le suit en fin de lot)
 const hp = (s: BattleState) => s.fighters.map((t) => t.map((f) => [f.hp, f.barrier]));
 
-describe("mise en scène des combats", () => {
+// Parties bot contre bot rejouées à chaque test : quelques secondes quand toute la suite tourne en parallèle
+describe("mise en scène des combats", { timeout: 30_000 }, () => {
   it("rend chaque événement une fois, dans l'ordre, et aboutit à l'état d'applyEvent", () => {
     for (const { setup, seed } of games) {
       for (const level of ["full", "lite", "reduced"] as const) {

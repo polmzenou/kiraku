@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useId, type ReactNode } from "react";
 import { RankEmblem } from "@/components/ranked/RankEmblem";
 import { PlayerAvatar } from "@/components/social/PlayerAvatar";
+import { useSecondsLeft } from "../TurnTimer";
 import { PlayerName } from "@/components/social/PlayerName";
 import { ACTION_KANJI, TECHNIQUE_KANJI } from "@/lib/battle/glyphs";
 import type { BoardTier } from "@/lib/battle/tiers";
@@ -42,8 +43,10 @@ export function KiOrbs({ count, max, side, label }: { count: number; max: number
 }
 
 /** Minuteur du tour : un bâton d'encens qui se consume ; la braise rougit dans les 10 dernières secondes. */
-export function Incense({ secondsLeft, total }: { secondsLeft: number | null; total: number }) {
+export function Incense({ endsAt, total }: { endsAt: string | null; total: number }) {
   const t = useTranslations("battle.board");
+  // Seul l'encens se re-rend quatre fois par seconde, pas toute la scène
+  const secondsLeft = useSecondsLeft(endsAt, 0);
   if (secondsLeft === null) return <span className="incense" aria-hidden="true" data-idle />;
   const left = Math.max(0, Math.min(1, secondsLeft / Math.max(1, total)));
   const seconds = Math.ceil(secondsLeft);

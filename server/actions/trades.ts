@@ -4,7 +4,7 @@ import { getLocale } from "next-intl/server";
 import { refresh } from "next/cache";
 import { after } from "next/server";
 import type { OpenedCardView } from "@/lib/boosters/view";
-import { noteSchema } from "@/lib/text/plain";
+import { noteSchema } from "@/lib/text/note-schema";
 import { z } from "@/lib/zod";
 import { USERNAME_REGEX } from "@/lib/username";
 import { isFrozen } from "@/lib/account/deletion";

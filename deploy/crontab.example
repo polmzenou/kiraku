@@ -1,0 +1,13 @@
+# Tâches planifiées de Kiraku sur le VPS (remplacent les crons de vercel.json, que seul Vercel exécute).
+#
+# Installation, sur le VPS, avec l'utilisateur qui fait tourner pm2 :
+#   1. mkdir -p ~/.config/kiraku && install -m 600 /dev/null ~/.config/kiraku/cron-secret
+#      puis y écrire la valeur de CRON_SECRET de l'app (même valeur que dans son fichier d'env) ;
+#   2. crontab -l > /tmp/crontab.old 2>/dev/null; cat /tmp/crontab.old deploy/crontab.example | crontab -
+#      (ou copier les trois lignes ci-dessous dans `crontab -e`) ;
+#   3. vérifier le lendemain : grep CRON /var/log/syslog et `pm2 logs` (lignes [cron]).
+# Adapter le port s'il n'est pas 3000. Les heures sont celles du VPS (UTC par défaut sur Ubuntu).
+
+0 4 * * *  curl -fsS -m 120 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/market   >/dev/null
+15 4 * * * curl -fsS -m 120 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/battle   >/dev/null
+30 4 * * * curl -fsS -m 120 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/accounts >/dev/null

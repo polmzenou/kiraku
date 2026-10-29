@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { cleanPlainText, NOTE_MAX_LENGTH, noteSchema } from "./plain";
+import { noteSchema } from "./note-schema";
+import { cleanPlainText, NOTE_MAX_LENGTH } from "./plain";
 
 describe("texte brut", () => {
   it("retire contrôles et marques d'orientation, garde deux sauts de ligne au plus", () => {

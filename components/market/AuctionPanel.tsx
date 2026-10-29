@@ -113,7 +113,6 @@ export function AuctionPanel({
           const res = await cancelAuctionAction({ auctionId });
           if (!res.ok) return fail(res.error);
           setMessage({ tone: "ok", text: t("detail.withdrawn") });
-          router.refresh();
           return;
         }
         setShown(c.amount);

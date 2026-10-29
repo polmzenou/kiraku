@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { useId, useState, useTransition } from "react";
-import { useRouter } from "@/i18n/navigation";
 import type { ProfileVisibility } from "@/lib/collection/visibility";
 import { BADGE_CLASS, BADGE_KANJI, BIO_MAX, type Badge } from "@/lib/profile/conditions";
 import { NAME_COLOR_SWATCH } from "@/lib/profile/name-colors";
@@ -59,7 +58,6 @@ export function ProfileCustomizeButton(props: Props) {
 
 function ProfileCustomizeSheet({ username, image, initial, options, badges, discoveredPercent, privacy, onClose }: Props & { onClose: () => void }) {
   const t = useTranslations("profile.customize");
-  const router = useRouter();
   const [tab, setTab] = useState<"look" | "privacy">("look");
   const [draft, setDraft] = useState(initial);
   const [focused, setFocused] = useState<CosmeticOption | null>(null);
@@ -92,7 +90,6 @@ function ProfileCustomizeSheet({ username, image, initial, options, badges, disc
           setError(t(`errors.${res.error}`));
           return;
         }
-        router.refresh();
         onClose();
       } catch {
         setError(t("errors.UNAVAILABLE"));

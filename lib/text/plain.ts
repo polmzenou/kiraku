@@ -1,7 +1,5 @@
 // Texte brut saisi par un joueur ou un admin (chat, commentaires, motifs) : affiché tel quel par React,
 // jamais interprété en HTML.
-import { z } from "@/lib/zod";
-
 // Plages retirées : contrôles C0 (sauf saut de ligne) et C1, espaces de largeur nulle et marques
 // d'orientation (qui retourneraient l'affichage). Construites par code pour rester lisibles.
 const STRIPPED: [number, number][] = [
@@ -29,12 +27,3 @@ export function cleanPlainText(raw: string): string {
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
-
-/** Commentaire facultatif : nettoyé côté serveur, null s'il est vide, refusé au-delà de 200 caractères. */
-export const noteSchema = z
-  .string()
-  .max(2_000)
-  .optional()
-  .transform((v) => cleanPlainText(v ?? ""))
-  .refine((v) => v.length <= NOTE_MAX_LENGTH)
-  .transform((v) => (v === "" ? null : v));

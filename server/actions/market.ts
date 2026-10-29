@@ -4,7 +4,7 @@ import { getRarities } from "@/server/catalog/rarities";
 
 import { getLocale } from "next-intl/server";
 import { refresh } from "next/cache";
-import { noteSchema } from "@/lib/text/plain";
+import { noteSchema } from "@/lib/text/note-schema";
 import { z } from "@/lib/zod";
 import { decodeMarketCursor, parseMarketParams } from "@/lib/market/filters";
 import { isFrozen } from "@/lib/account/deletion";

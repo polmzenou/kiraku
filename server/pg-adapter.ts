@@ -51,14 +51,19 @@ export function pgConfig(connectionString: string): { connectionString: string; 
   return { connectionString: url.toString(), ssl: pgSsl(url.hostname) };
 }
 
-// Supabase (plan nano) n'accepte que 60 connexions en tout, partagées par toutes les instances
-// Vercel : 5 par instance suffisent, le pooler fait le reste. Sans délai de connexion, une requête
-// attendrait indéfiniment quand le pooler sature.
-const POOL_OPTIONS = { max: 5, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 10_000 } satisfies pg.PoolConfig;
+// La base tourne sur la même machine que l'app (VPS) et ne sert qu'elle : 15 connexions par processus
+// (garder instances pm2 × 15 sous max_connections, 100 par défaut), gardées 5 min pour ne pas relancer
+// un processus Postgres à chaque creux. Sans délai de connexion, une requête attendrait indéfiniment
+// quand le pool sature.
+const POOL_OPTIONS = { max: 15, idleTimeoutMillis: 300_000, connectionTimeoutMillis: 10_000 } satisfies pg.PoolConfig;
+// Garde-fous de l'app seulement (les scripts d'import peuvent durer) : une requête folle ou une
+// transaction oubliée ne tient plus une connexion indéfiniment. Au-dessus de la plus longue transaction
+// interactive (60 s : catalogue, clôture de saison).
+const APP_TIMEOUTS = { statement_timeout: 30_000, idle_in_transaction_session_timeout: 65_000 } satisfies pg.PoolConfig;
 
-/** Pool `pg` explicite, pour pouvoir l'attacher au cycle de vie des fonctions Vercel (server/db.ts). */
+/** Pool `pg` de l'app (server/db.ts). */
 export function createPgPool(connectionString: string): pg.Pool {
-  return new pg.Pool({ ...pgConfig(connectionString), ...POOL_OPTIONS });
+  return new pg.Pool({ ...pgConfig(connectionString), ...POOL_OPTIONS, ...APP_TIMEOUTS });
 }
 
 /** Adaptateur avec son propre pool, libéré par `$disconnect` (scripts et tests). */

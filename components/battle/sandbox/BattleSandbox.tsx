@@ -138,7 +138,6 @@ function Battle({
   const rng = useRef(seededRng(seed ^ 0xb07));
   const [phase, setPhase] = useState<"intro" | "fight" | "outro">("intro");
   const [turnStart, setTurnStart] = useState(() => Date.now());
-  const [now, setNow] = useState(() => Date.now());
   const line = useLogLine(setup, players);
 
   const apply = useCallback(
@@ -174,11 +173,6 @@ function Battle({
     return () => clearTimeout(id);
   }, [botMove, director.animating, human, humanTurn, manual, phase]);
 
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 250);
-    return () => clearInterval(id);
-  }, []);
-
   const canAct = phase === "fight" && humanTurn && !director.animating;
   const controls = useBoardControls({ setup, shown: director.shown, mySide: 0, canAct, send: apply });
 
@@ -205,7 +199,7 @@ function Battle({
       mine={human ? { selected: controls.selected, ready: controls.selected === null && canAct ? controls.ready : undefined, targets: controls.allyTargets, onPress: controls.pressMine } : undefined}
       theirs={human ? { targets: controls.enemyTargets, onPress: controls.pressTheirs } : undefined}
       ticker={ticker}
-      timer={phase === "fight" && !shown.finished ? { secondsLeft: Math.max(0, 30 - (now - turnStart) / 1_000), total: 30 } : null}
+      timer={phase === "fight" && !shown.finished ? { endsAt: new Date(turnStart + 30_000).toISOString(), total: 30 } : null}
       tablets={
         human ? (
           <Tablets
