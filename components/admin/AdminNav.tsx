@@ -13,6 +13,7 @@ const GROUPS = [
       { key: "features", href: "/admin/fonctionnalites" },
       { key: "economy", href: "/admin/economie" },
       { key: "combat", href: "/admin/combat" },
+      { key: "battleSandbox", href: "/admin/combat/bac-a-sable" },
       { key: "ranked", href: "/admin/classe" },
     ],
   },

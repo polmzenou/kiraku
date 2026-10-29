@@ -3,20 +3,21 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
-import { applyAction, createState } from "@/lib/battle/engine";
+import { applyAction, createState, other } from "@/lib/battle/engine";
 import type { Action, BattleSetup, BattleState } from "@/lib/battle/types";
 import type { BattleView } from "@/lib/battle/view";
-import { Button, buttonClasses } from "../ui/Button";
 import { LADDER, rankOf } from "@/lib/ranked/rules";
 import { RankedResult } from "../ranked/RankedResult";
 import { BattleResult } from "./BattleResult";
-import { BattleLog } from "./BattleLog";
-import { BoardLayout, Medallion, Orbs } from "./BoardLayout";
-import { useEventPlayer } from "./useEventPlayer";
+import { useLogLine } from "./BattleLog";
+import { StageMenu } from "./hud/StageMenu";
+import { Intro } from "./sequences/Intro";
+import { BattleStage } from "./stage/BattleStage";
+import { useStageKit } from "./stage/useStageKit";
 
 /**
- * Replay d'une partie terminée : le moteur rejoue setup + graine + journal dans le navigateur
- * (même graine = mêmes chiffres), puis anime les événements action par action.
+ * Replay d'une partie terminée, sur la scène plein écran : le moteur rejoue setup + graine + journal
+ * dans le navigateur (même graine = mêmes chiffres), puis anime les événements action par action.
  */
 export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup; state: BattleState } }) {
   const t = useTranslations("battle");
@@ -33,26 +34,29 @@ export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup
     return { steps, finals };
   }, [view.actions, view.seed, view.setup]);
 
-  const player = useEventPlayer(finals[0]);
-  const { play, snap, animating } = player;
+  const { setup, mySide } = view;
+  const { arena, level, speed, sound, arenaRef, director } = useStageKit(finals[0], { setup, mySide, tier: view.tier });
+  const { play, snap, animating } = director;
+  const [intro, setIntro] = useState(true);
   const [index, setIndex] = useState(0); // dernière étape jouée
   const [playing, setPlaying] = useState(true);
   const [resultHidden, setResultHidden] = useState(false);
   const total = steps.length - 1;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const line = useLogLine(setup, view.players);
 
   // Lecture automatique : étape suivante dès que l'animation de la précédente est finie
   useEffect(() => {
-    if (!playing || animating || index >= total) return;
+    if (intro || !playing || animating || index >= total) return;
     timer.current = setTimeout(() => {
       const next = index + 1;
       play(steps[next], finals[next]);
       setIndex(next);
-    }, 250);
+    }, 350);
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [animating, finals, index, play, playing, steps, total]);
+  }, [animating, finals, index, intro, play, playing, steps, total]);
 
   const step = () => {
     if (index >= total || animating) return;
@@ -74,10 +78,9 @@ export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup
   // Résultat affiché une fois la dernière action animée
   const showResult = index >= total && !animating && !resultHidden;
 
-  const shown = player.shown;
   // Bilan classé relu de la partie (montée ou descente déduite des PC ; le top 100 n'est pas rejoué)
-  const before = view.ranked?.before[view.mySide] ?? null;
-  const delta = view.ranked?.delta[view.mySide] ?? null;
+  const before = view.ranked?.before[mySide] ?? null;
+  const delta = view.ranked?.delta[mySide] ?? null;
   const rankedSide =
     before !== null && delta !== null && view.ladder
       ? (() => {
@@ -86,70 +89,81 @@ export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup
           return { before, after: before + delta, delta, promoted: idx(before + delta) > idx(before), demoted: idx(before + delta) < idx(before), saved: false, protection: 0, grandBefore: false, grandAfter: false };
         })()
       : null;
-  const orbs = <Orbs count={shown.orbs} max={view.setup.rules.orbs.max} label={t("board.orbs", { count: shown.orbs })} />;
+
+  const last = [...director.feed].reverse().find((f) => line(f.event));
+  const progress = t("replay.progress", { n: index, total });
+
   return (
-    <>
-      <BoardLayout
-        setup={view.setup}
-        shown={shown}
-        fx={player.fx}
-        mySide={view.mySide}
+    <div className="fixed inset-0 z-[45]">
+      <BattleStage
+        setup={setup}
+        director={director}
+        mySide={mySide}
         players={view.players}
         tier={view.tier}
-        boardRef={player.boardRef}
-        cardRef={player.cardRef}
-        myPlate={shown.active === view.mySide ? orbs : null}
-        theirPlate={shown.active !== view.mySide ? orbs : null}
-        front={
-          <Medallion highlight>
-            <span className="text-[9px] text-[#a89f92] md:text-[10px]">{t("replay.title")}</span>
-            <span className="font-title text-sm font-extrabold tabular-nums md:text-base">
-              {index}/{total}
-            </span>
-          </Medallion>
-        }
-        side={<BattleLog feed={player.feed} setup={view.setup} players={view.players} />}
-        controls={
-          <div className="flex flex-col gap-2">
-            <p className="text-center text-xs tabular-nums text-text-muted" aria-live="polite">
-              {t("replay.progress", { n: index, total })}
+        tiers={[view.tier, view.tier]}
+        arena={arena}
+        level={level}
+        arenaRef={arenaRef}
+        sound={sound.port}
+        ticker={{ text: last ? line(last.event) : progress, tone: "hint" }}
+        menu={
+          <StageMenu sound={{ enabled: sound.enabled, set: sound.setEnabled }} music={{ enabled: sound.music, set: sound.setMusic }} speed={speed}>
+            <p className="menu-row" aria-live="polite">
+              <span>{progress}</span>
             </p>
-            <div className="grid grid-cols-3 gap-2">
-              <Button onClick={() => (index >= total ? restart() : setPlaying(!playing))}>
-                {index >= total ? t("replay.restart") : playing ? t("replay.pause") : t("replay.play")}
-              </Button>
-              <Button onClick={step} disabled={index >= total || animating}>
-                {t("replay.step")}
-              </Button>
-              <Button onClick={toEnd} disabled={index >= total}>
-                {t("replay.end")}
-              </Button>
-            </div>
-            <Link href="/combat" className={buttonClasses("secondary")}>
-              {t("result.back")}
+            <button type="button" className="menu-row" onClick={() => (index >= total ? restart() : setPlaying(!playing))}>
+              <span>{index >= total ? t("replay.restart") : playing ? t("replay.pause") : t("replay.play")}</span>
+            </button>
+            <button type="button" className="menu-row" disabled={index >= total || animating} onClick={step}>
+              <span>{t("replay.step")}</span>
+            </button>
+            <button type="button" className="menu-row" disabled={index >= total} onClick={toEnd}>
+              <span>{t("replay.end")}</span>
+            </button>
+            <Link href="/combat" className="menu-row">
+              <span>{t("result.back")}</span>
             </Link>
-          </div>
+          </StageMenu>
+        }
+        overlay={
+          intro ? (
+            <Intro
+              arena={arena}
+              players={view.players}
+              mySide={mySide}
+              tiers={[view.tier, view.tier]}
+              first={setup.first}
+              level={level}
+              deal={() => director.deal([other(mySide), mySide].flatMap((side) => [0, 1, 2].map((index) => ({ side, index }))))}
+              finishDeal={director.finishDeal}
+              onDone={() => setIntro(false)}
+              sound={sound.port}
+            />
+          ) : null
         }
       />
       {showResult && (
         <BattleResult
           winner={view.winnerSide}
-          mySide={view.mySide}
+          mySide={mySide}
           reason={view.endReason}
           rewardZeni={view.rewardZeni}
           onReplay={restart}
           requeueId={view.mode === "FRIEND" ? undefined : view.id}
-          ranked={rankedSide && view.ladder ? (
-            <RankedResult
-              side={rankedSide}
-              won={view.winnerSide === null ? null : view.winnerSide === view.mySide}
-              crushing={view.ranked!.crushing}
-              ladder={view.ladder}
-              bot={view.players[1] !== null && "bot" in view.players[1]}
-            />
-          ) : null}
+          ranked={
+            rankedSide && view.ladder ? (
+              <RankedResult
+                side={rankedSide}
+                won={view.winnerSide === null ? null : view.winnerSide === mySide}
+                crushing={view.ranked!.crushing}
+                ladder={view.ladder}
+                bot={view.players[1] !== null && "bot" in view.players[1]}
+              />
+            ) : null
+          }
         />
       )}
-    </>
+    </div>
   );
 }
