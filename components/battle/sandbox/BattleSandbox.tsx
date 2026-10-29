@@ -32,7 +32,7 @@ import "./sandbox.css";
 // contre bot, et une partie contre le bot. Les combattants sont des personnages originaux.
 
 type Scenario = "demo" | "real" | "play";
-const PAINTED: ArenaId[] = ["dojo", "torii"];
+const PAINTED: ArenaId[] = ["dojo", "chikurin", "torii", "suiu", "tenshu", "himatsuri", "takamagahara"];
 const TIER_OF: Partial<Record<ArenaId, BoardTier>> = Object.fromEntries(Object.entries(ARENA_BY_TIER).map(([tier, arena]) => [arena, tier as BoardTier]));
 
 type Card = { id: keyof typeof SANDBOX_ART; name: string; nameNative: string; rarity: Rarity };
@@ -201,6 +201,7 @@ function Battle({
       arena={arena}
       level={level}
       arenaRef={setArena}
+      sound={sound.port}
       mine={human ? { selected: controls.selected, ready: controls.selected === null && canAct ? controls.ready : undefined, targets: controls.allyTargets, onPress: controls.pressMine } : undefined}
       theirs={human ? { targets: controls.enemyTargets, onPress: controls.pressTheirs } : undefined}
       ticker={ticker}
@@ -258,7 +259,7 @@ export function BattleSandbox({ initial = {} }: { initial?: SandboxInitial }) {
   const motion = useFxLevel();
   const [scenario, setScenario] = useState<Scenario>(initial.scenario ?? "demo");
   const [arena, setArena] = useState<ArenaId>(initial.arena && PAINTED.includes(initial.arena) ? initial.arena : "torii");
-  const [style, setStyle] = useState<ImpactStyle>(initial.style ?? "sumi");
+  const [style, setStyle] = useState<ImpactStyle>(initial.style ?? "mie");
   const [level, setLevel] = useState<FxLevel | "auto">(initial.level ?? "auto");
   const [frame, setFrame] = useState<"phone" | "wide">(initial.frame ?? "phone");
   const [manual, setManual] = useState(false);
@@ -301,7 +302,7 @@ export function BattleSandbox({ initial = {} }: { initial?: SandboxInitial }) {
         <h1>{t("title")}</h1>
         <p className="sandbox-note">{t("note")}</p>
         {choice(t("scenario"), scenario, ["demo", "real", "play"] as const, setScenario, (v) => t(`scenarios.${v}`))}
-        {choice(t("arena"), arena, ["dojo", "torii", "chikurin", "suiu", "tenshu", "himatsuri", "takamagahara"] as const, setArena, (v) => t(`arenas.${v}`), (v) => !PAINTED.includes(v))}
+        {choice(t("arena"), arena, PAINTED, setArena, (v) => t(`arenas.${v}`))}
         {choice(t("style"), style, IMPACT_STYLES, setStyle, (v) => t(`styles.${v}`))}
         {choice(t("speed"), speed, SPEEDS, setBattleSpeed, (v) => `×${v}`)}
         {choice(t("level"), level, ["auto", "full", "lite", "reduced"] as const, setLevel, (v) => t(`levels.${v}`))}

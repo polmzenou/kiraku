@@ -1,15 +1,31 @@
 "use client";
 
 import { useId, useRef } from "react";
-import { moteStyle, particles, pulse, shower, useArenaHandle, type ArenaProps } from "../shared";
+import { noise } from "../../fx/vfx";
+import { Grain, Haze, moteStyle, OrganicDefs, particles, pulse, shower, useArenaHandle, type ArenaProps } from "../shared";
 import "../arena.css";
 import "./dojo.css";
 
 // Le Dōjō de la lanterne (灯の道場), arène du palier Bronze : un dōjō de bois la nuit. Fond peint en SVG
-// statique (toile 1200 × 900, cadrée au centre) ; les éléments animés sont des calques HTML posés sur la
-// même toile (variables --px/--py, voir arena.css), animés en transform et opacity.
+// statique (toile 1200 × 900, cadrée au centre), aux contours tremblés comme un trait d'encre ; les
+// éléments animés sont des calques HTML posés sur la même toile (variables --px/--py, voir arena.css),
+// animés en transform et opacity.
 
-const PLANKS = Array.from({ length: 25 }, (_, i) => i - 12);
+// Lames du plancher, de largeurs inégales, avec leur veinage et leurs marques d'usure
+const PLANKS = Array.from({ length: 25 }, (_, i) => {
+  const k = i - 12;
+  return { k, far: 600 + k * 23.5 + (noise(i, 3) - 0.5) * 3, near: 600 + k * 112 + (noise(i, 5) - 0.5) * 26, w: 1.4 + noise(i, 7) * 1.4 };
+});
+const GRAIN_LINES = Array.from({ length: 34 }, (_, i) => {
+  const k = Math.floor(noise(i, 9) * 22) - 11 + 0.5;
+  const t0 = 0.18 + noise(i, 11) * 0.5;
+  const t1 = Math.min(1, t0 + 0.12 + noise(i, 13) * 0.3);
+  const at = (t: number) => ({ x: 600 + k * (23.5 + (112 - 23.5) * t), y: 318 + 582 * t });
+  const a = at(t0);
+  const b = at(t1);
+  const bend = (noise(i, 17) - 0.5) * 18 * t1;
+  return `M${a.x.toFixed(1)} ${a.y.toFixed(1)}Q${((a.x + b.x) / 2 + bend).toFixed(1)} ${((a.y + b.y) / 2).toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
+});
 const SEAMS = [338, 366, 402, 448, 508, 586, 690, 830];
 const RAFTERS = [-300, -60, 180, 420, 600, 780, 1020, 1260, 1500];
 const SHIDE = [8, 22, 36, 50, 64, 78, 92];
@@ -74,6 +90,7 @@ export function DojoArena({ level, handleRef }: ArenaProps) {
 
   return (
     <div className="arena arena-dojo" data-level={level}>
+      <OrganicDefs id={u} />
       {/* Fond : plafond, imposte ajourée, shoji, tokonoma et kakejiku, murs en perspective */}
       <div ref={far} className="arena-plane">
         <svg className="arena-svg" viewBox="0 0 1200 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -109,6 +126,7 @@ export function DojoArena({ level, handleRef }: ArenaProps) {
             </pattern>
           </defs>
           <rect width="1200" height="900" fill="#100a06" />
+          <g filter={`url(#${u}-rough)`}>
           {/* Plafond et chevrons */}
           <path d="M0 0H1200V62L1020 96H180L0 62Z" fill="#170e07" />
           {RAFTERS.map((x) => (
@@ -127,6 +145,17 @@ export function DojoArena({ level, handleRef }: ArenaProps) {
           ))}
           {/* Shoji */}
           <rect x="180" y="144" width="840" height="170" fill={`url(#${u}-paper)`} />
+          {/* Papier vieilli : auréoles, une pièce recollée */}
+          {[
+            [260, 230, 34, 22, 0.1],
+            [470, 190, 22, 16, 0.08],
+            [720, 262, 40, 18, 0.09],
+            [930, 206, 26, 20, 0.07],
+            [330, 288, 50, 12, 0.08],
+          ].map(([cx, cy, rx, ry, o], i) => (
+            <ellipse key={i} cx={cx} cy={cy} rx={rx} ry={ry} fill="#8a5a2a" opacity={o} />
+          ))}
+          <path d="M858 176l26-4 4 22-28 6z" fill="#fbecc8" opacity=".55" />
           <rect x="180" y="144" width="840" height="170" fill={`url(#${u}-kumiko)`} />
           {[180, 383, 538, 652, 807, 1010].map((x) => (
             <rect key={x} x={x} y="140" width="10" height="178" fill={`url(#${u}-post)`} />
@@ -163,6 +192,7 @@ export function DojoArena({ level, handleRef }: ArenaProps) {
           <path d="M700 104c-6-10-2-18 6-16 2-8 12-6 12 2" fill="#3d6b3a" />
           <path d="M780 104c6-10 2-18-6-16-2-8-12-6-12 2" fill="#3d6b3a" />
           <path d="M732 112l-4 10 6 4-4 10M748 112l4 10-6 4 4 10" stroke="#f3ecdf" strokeWidth="2.4" fill="none" />
+          </g>
         </svg>
       </div>
 
@@ -198,12 +228,27 @@ export function DojoArena({ level, handleRef }: ArenaProps) {
             </radialGradient>
           </defs>
           <path d="M0 432L180 318H1020L1200 432V900H0Z" fill={`url(#${u}-floor)`} />
-          {PLANKS.map((k) => (
-            <path key={k} d={`M${600 + k * 23.5} 318L${600 + k * 112} 900`} stroke="#3a2513" strokeWidth={k % 2 ? 1.6 : 2.4} opacity=".55" />
-          ))}
-          {SEAMS.map((y, i) => (
-            <path key={y} d={`M0 ${y}H1200`} stroke="#3a2513" strokeWidth={1 + i * 0.25} opacity=".22" />
-          ))}
+          {/* Chemin d'usure au centre, là où l'on combat */}
+          <path d="M520 318C540 520 470 700 380 900H820C730 700 660 520 680 318Z" fill="#a37a4e" opacity=".16" />
+          <g filter={`url(#${u}-fine)`}>
+            {PLANKS.map((p) => (
+              <path key={p.k} d={`M${p.far.toFixed(1)} 318L${p.near.toFixed(1)} 900`} stroke="#3a2513" strokeWidth={p.w} opacity=".55" />
+            ))}
+            {GRAIN_LINES.map((d, i) => (
+              <path key={i} d={d} stroke="#4a3018" strokeWidth={0.8 + noise(i, 19)} fill="none" opacity=".32" />
+            ))}
+            {SEAMS.map((y, i) => (
+              <path key={y} d={`M${-20 + noise(i, 23) * 40} ${y}Q600 ${y + (noise(i, 29) - 0.5) * 6} ${1220 - noise(i, 31) * 40} ${y}`} stroke="#3a2513" strokeWidth={1 + i * 0.25} fill="none" opacity=".2" />
+            ))}
+            {[
+              [430, 640, 30],
+              [760, 720, 46],
+              [560, 820, 38],
+              [690, 470, 22],
+            ].map(([x, y, w], i) => (
+              <path key={i} d={`M${x} ${y}c${w * 0.4} -6 ${w * 0.8} -4 ${w} 2`} stroke="#2a190c" strokeWidth="2" fill="none" opacity=".35" />
+            ))}
+          </g>
           <ellipse cx="600" cy="600" rx="360" ry="96" fill={`url(#${u}-moonpool)`} />
           <ellipse cx="300" cy="760" rx="260" ry="80" fill={`url(#${u}-pool)`} />
           <ellipse cx="900" cy="760" rx="260" ry="80" fill={`url(#${u}-pool)`} />
@@ -236,8 +281,24 @@ export function DojoArena({ level, handleRef }: ArenaProps) {
 
       {/* Abords : piliers, shimenawa et shide, andon aux coins */}
       <div ref={edges} className="arena-edges">
-        <span className="dj-pillar dj-pillar-l" />
-        <span className="dj-pillar dj-pillar-r" />
+        {["l", "r"].map((side) => (
+          <svg key={side} className={`dj-pillar dj-pillar-${side} arena-near`} viewBox="0 0 60 400" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id={`${u}-pillar-${side}`} x1="0" x2="1">
+                <stop offset="0" stopColor="#080503" />
+                <stop offset=".38" stopColor="#3d2716" />
+                <stop offset=".62" stopColor="#2a1a0d" />
+                <stop offset="1" stopColor="#080503" />
+              </linearGradient>
+            </defs>
+            <rect width="60" height="400" fill={`url(#${u}-pillar-${side})`} />
+            {[14, 22, 31, 40, 47].map((x, i) => (
+              <path key={x} d={`M${x} 0C${x + 3} 80 ${x - 4} 160 ${x + 2} 240S${x - 3} 340 ${x + 1} 400`} stroke="#120a05" strokeWidth={0.8 + (i % 2) * 0.6} fill="none" opacity=".55" />
+            ))}
+            <ellipse cx="30" cy="132" rx="5" ry="11" fill="#140b05" opacity=".7" />
+            <ellipse cx="24" cy="296" rx="4" ry="8" fill="#140b05" opacity=".6" />
+          </svg>
+        ))}
         <div ref={rope} className="dj-rope">
           <svg viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden="true">
             <defs>
@@ -271,6 +332,16 @@ export function DojoArena({ level, handleRef }: ArenaProps) {
         </div>
       </div>
 
+      {/* Fumée d'encens qui monte du tokonoma, nappes dans la lumière des shoji */}
+      {level !== "reduced" && (
+        <div className="arena-prop dj-incense" style={{ ["--px" as string]: 584, ["--py" as string]: 196, ["--pw" as string]: 32, ["--ph" as string]: 96 }} aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </div>
+      )}
+      <Haze tone="rgb(232 208 170 / .16)" top="8%" height="34%" opacity={0.9} />
+      <Grain />
       <div ref={flare} className="dj-flare" aria-hidden="true" />
       <div ref={dim} className="arena-dim" aria-hidden="true" />
       <div ref={fx} className="arena-fx" aria-hidden="true" />

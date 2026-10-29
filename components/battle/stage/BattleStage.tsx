@@ -12,7 +12,7 @@ import { CutIn, TurnBanner } from "../fx/CutIn";
 import { Incense, KiOrbs, PlayerBanner, Ticker } from "../hud/Hud";
 import { usePlayerName } from "../BoardLayout";
 import { StageCard } from "./StageCard";
-import type { ArenaHandle, Director, StageNumber } from "./useDirector";
+import type { ArenaHandle, Director, SoundPort, StageNumber } from "./useDirector";
 import "../fx/fx.css";
 import "./stage.css";
 
@@ -52,6 +52,7 @@ export function BattleStage({
   side,
   overlay,
   paused,
+  sound,
 }: {
   setup: BattleSetup;
   director: Director;
@@ -73,6 +74,8 @@ export function BattleStage({
   side?: ReactNode;
   overlay?: ReactNode;
   paused?: boolean;
+  /** Sons du décor de l'arène. */
+  sound?: { current: SoundPort | null };
 }) {
   const t = useTranslations("battle.board");
   const name = usePlayerName();
@@ -130,7 +133,7 @@ export function BattleStage({
       onPointerDown={() => director.accelerate()}
     >
       <div className="stage-arena">
-        <ArenaHost id={arena} level={level} handleRef={arenaRef} />
+        <ArenaHost id={arena} level={level} handleRef={arenaRef} sound={sound} />
       </div>
       <div className="stage-light" aria-hidden="true">
         <span className="stage-light-near" />

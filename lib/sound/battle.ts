@@ -183,6 +183,34 @@ export function playBattleSound(name: BattleSound) {
       koto(ac, out, 293.66, t, 0.12);
       koto(ac, out, 440, t + 0.3, 0.12);
       break;
+    case "knock": // shishi-odoshi : le bambou creux frappe la pierre
+      tone(ac, out, 430, t, { type: "triangle", peak: 0.32, decay: 0.26, to: 380 });
+      tone(ac, out, 860, t, { peak: 0.08, decay: 0.12 });
+      burst(ac, out, t, { duration: 0.03, from: 1600, to: 900, q: 2, peak: 0.2 });
+      break;
+    case "thunder":
+      burst(ac, out, t, { duration: 0.14, from: 3200, to: 700, q: 0.6, peak: 0.42 });
+      burst(ac, out, t + 0.05, { duration: 1.9, from: 220, to: 50, q: 0.4, peak: 0.55 });
+      tone(ac, out, 52, t + 0.04, { peak: 0.45, decay: 1.6, to: 30 });
+      break;
+    case "cheer": // la foule exulte : souffle qui enfle et applaudissements
+      burst(ac, out, t, { duration: 1.3, from: 600, to: 1200, q: 0.6, peak: 0.26 });
+      burst(ac, out, t + 0.1, { duration: 1.1, from: 900, to: 1500, q: 0.8, peak: 0.16 });
+      for (let i = 0; i < 14; i++) burst(ac, out, t + 0.15 + i * 0.07 + (i % 3) * 0.02, { duration: 0.05, from: 1900, to: 900, q: 0.9, peak: 0.14 });
+      break;
+    case "firework":
+      tone(ac, out, 380, t, { peak: 0.05, decay: 0.5, to: 1600 });
+      tone(ac, out, 70, t + 0.55, { peak: 0.6, decay: 0.7, to: 36 });
+      burst(ac, out, t + 0.55, { duration: 0.9, from: 900, to: 140, q: 0.5, peak: 0.3 });
+      for (let i = 0; i < 10; i++) burst(ac, out, t + 0.75 + i * 0.05, { duration: 0.025, from: 5200, to: 3800, q: 2, peak: 0.1 });
+      break;
+    case "splash":
+      burst(ac, out, t, { duration: 0.32, from: 2200, to: 400, q: 0.8, peak: 0.34 });
+      [700, 900, 820].forEach((f, i) => tone(ac, out, f, t + 0.12 + i * 0.06, { peak: 0.05, decay: 0.08, to: f * 1.6 }));
+      break;
+    case "chime":
+      [1319, 1760, 2349, 2637].forEach((f, i) => tone(ac, out, f, t + i * 0.12, { peak: 0.07, decay: 1.8 }));
+      break;
   }
 }
 

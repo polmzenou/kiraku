@@ -1,7 +1,8 @@
 "use client";
 
 import { useId, useRef } from "react";
-import { moteStyle, particles, pulse, shower, useArenaHandle, type ArenaProps } from "../shared";
+import { noise } from "../../fx/vfx";
+import { Grain, Haze, moteStyle, OrganicDefs, particles, pulse, shower, useArenaHandle, type ArenaProps } from "../shared";
 import "../arena.css";
 import "./torii.css";
 
@@ -20,30 +21,53 @@ function mix(a: string, b: string, t: number) {
   return `#${pa.map((v, i) => Math.round(v + (pb[i] - v) * t).toString(16).padStart(2, "0")).join("")}`;
 }
 
-/** Un torii (kasagi recourbé, shimaki, nuki, piliers et socles noirs) à la profondeur donnée. */
+/**
+ * Un torii (kasagi recourbé, shimaki, nuki, piliers et socles noirs) à la profondeur donnée. Chaque
+ * portique a ses défauts : légère gîte, peinture usée par plaques, pied assombri, mousse au socle.
+ */
 function Gate({ depth }: { depth: number }) {
   const s = scaleAt(depth);
+  const j = (salt: number) => noise(depth + 1, salt) - 0.5;
   const haze = Math.min(1, depth / 10) * 0.78;
   const shu = mix("#c23126", "#d9a273", haze);
   const shade = mix("#7d1a14", "#c98d62", haze);
+  const worn = mix("#e07a5a", "#e8c0a0", haze);
   const ink = mix("#1b1210", "#9b6a5a", haze);
+  const moss = mix("#2f3a22", "#7a7a5a", haze);
   const yG = groundAt(s);
-  const half = 330 * s;
-  const top = yG - 640 * s;
+  const half = 330 * s * (1 + j(7) * 0.02);
+  const top = yG - 640 * s * (1 + j(9) * 0.025);
   const pw = 36 * s;
   const kw = half * 2.62;
   const kt = 30 * s;
-  const pillar = (cx: number) => (
-    <>
-      <rect x={cx - pw / 2} y={top + 36 * s} width={pw} height={yG - top - 36 * s} fill={shu} />
-      <rect x={cx + (cx < 600 ? pw * 0.12 : -pw * 0.47)} y={top + 36 * s} width={pw * 0.35} height={yG - top - 36 * s} fill={shade} opacity=".55" />
-      <rect x={cx - pw * 0.66} y={yG - 54 * s} width={pw * 1.32} height={54 * s} fill={ink} />
-    </>
-  );
+  const pillar = (cx: number, side: number) => {
+    const y0 = top + 36 * s;
+    return (
+      <>
+        <path d={`M${cx - pw / 2} ${y0}H${cx + pw / 2}L${cx + pw * 0.56} ${yG}H${cx - pw * 0.56}Z`} fill={shu} />
+        <path d={`M${cx + (cx < 600 ? pw * 0.1 : -pw * 0.46)} ${y0}h${pw * 0.36}l${pw * 0.03} ${yG - y0}h${-pw * 0.4}Z`} fill={shade} opacity=".55" />
+        {[0, 1, 2].map((k) => (
+          <rect
+            key={k}
+            x={cx - pw * (0.3 - noise(depth * 3 + side + k, 13) * 0.4)}
+            y={y0 + (yG - y0) * (0.12 + noise(depth * 3 + side + k, 17) * 0.7)}
+            width={pw * (0.18 + noise(depth + k, 19) * 0.22)}
+            height={(yG - y0) * (0.03 + noise(depth + k, 23) * 0.05)}
+            rx={pw * 0.08}
+            fill={worn}
+            opacity=".32"
+          />
+        ))}
+        <rect x={cx - pw * 0.56} y={yG - 150 * s} width={pw * 1.12} height={96 * s} fill={ink} opacity=".22" />
+        <rect x={cx - pw * 0.66} y={yG - 54 * s} width={pw * 1.32} height={54 * s} fill={ink} />
+        <path d={`M${cx - pw * 0.7} ${yG - 50 * s}c${pw * 0.2} ${-8 * s} ${pw * 0.5} ${-6 * s} ${pw * 0.7} ${-2 * s}c${pw * 0.2} ${-5 * s} ${pw * 0.5} ${-4 * s} ${pw * 0.7} ${2 * s}v${8 * s}h${-pw * 1.4}z`} fill={moss} opacity=".8" />
+      </>
+    );
+  };
   return (
-    <g>
-      {pillar(600 - half)}
-      {pillar(600 + half)}
+    <g transform={`rotate(${(j(3) * 0.9).toFixed(2)} 600 ${yG.toFixed(1)}) translate(${(j(5) * 8 * s).toFixed(1)} 0)`}>
+      {pillar(600 - half, 0)}
+      {pillar(600 + half, 1)}
       <rect x={600 - half - pw * 1.5} y={top + 150 * s} width={half * 2 + pw * 3} height={20 * s} fill={shu} />
       <rect x={600 - half - pw * 1.5} y={top + 166 * s} width={half * 2 + pw * 3} height={4 * s} fill={shade} opacity=".7" />
       <rect x={600 - 9 * s} y={top + 52 * s} width={18 * s} height={100 * s} fill={shu} />
@@ -75,6 +99,50 @@ function Toro({ x, y, s }: { x: number; y: number; s: number }) {
 const TOROS = [1.6, 3.7, 6.4].map((d) => {
   const s = scaleAt(d);
   return { s, y: groundAt(s), dx: 330 * s + 86 * s };
+});
+
+/** Traînées de nuages du couchant : fuseaux effilés, plus chauds près de l'horizon. */
+const CLOUDS = [
+  { y: 66, x0: -60, x1: 540, h: 15, fill: "#4a2442", o: 0.6 },
+  { y: 104, x0: 620, x1: 1280, h: 19, fill: "#5e2638", o: 0.55 },
+  { y: 146, x0: 90, x1: 780, h: 12, fill: "#9c3a32", o: 0.5 },
+  { y: 182, x0: 690, x1: 1200, h: 10, fill: "#c9894a", o: 0.38 },
+  { y: 208, x0: -30, x1: 430, h: 7, fill: "#f2d88a", o: 0.34 },
+].map((c) => {
+  const w = c.x1 - c.x0;
+  return {
+    d: `M${c.x0} ${c.y}C${c.x0 + w * 0.22} ${c.y - c.h} ${c.x0 + w * 0.62} ${c.y - c.h * 1.3} ${c.x1} ${c.y - c.h * 0.2}C${c.x1 - w * 0.28} ${c.y + c.h * 0.7} ${c.x0 + w * 0.34} ${c.y + c.h * 0.55} ${c.x0} ${c.y}Z`,
+    fill: c.fill,
+    o: c.o,
+  };
+});
+
+/** Dalles du chemin : rangées entre les pieds des torii, joints décalés, pierres de teintes inégales. */
+const halfPath = (y: number) => 14 + 416 * ((y - VP.y) / (900 - VP.y));
+const ROW_Y = [...GATES.map((d) => groundAt(scaleAt(d))), 900];
+const STONE_TONES = ["#a08868", "#8f785c", "#7a6650", "#b09a78", "#94806a"];
+const STONES = ROW_Y.slice(0, -1).flatMap((y0, r) => {
+  const y1 = ROW_Y[r + 1];
+  const n = 3 + (r % 2);
+  const joints = [0, ...Array.from({ length: n - 1 }, (_, k) => (k + 1) / n + (noise(r * 7 + k, 3) - 0.5) * 0.14), 1];
+  const x = (y: number, t: number) => VP.x - halfPath(y) + 2 * halfPath(y) * t;
+  const gy = Math.max(0.6, (y1 - y0) * 0.06);
+  return joints.slice(0, -1).map((t0, k) => {
+    const t1 = joints[k + 1];
+    const g = 0.008;
+    const jit = (salt: number) => (noise(r * 11 + k, salt) - 0.5) * (y1 - y0) * 0.18;
+    const pts = [
+      [x(y0 + gy, t0 + g), y0 + gy + jit(5)],
+      [x(y0 + gy, t1 - g), y0 + gy + jit(7)],
+      [x(y1 - gy, t1 - g), y1 - gy + jit(9)],
+      [x(y1 - gy, t0 + g), y1 - gy + jit(13)],
+    ];
+    return {
+      d: `M${pts.map(([px, py]) => `${px.toFixed(1)} ${py.toFixed(1)}`).join("L")}Z`,
+      fill: STONE_TONES[Math.floor(noise(r * 5 + k, 17) * STONE_TONES.length)],
+      w: Math.max(0.6, (y1 - y0) * 0.035),
+    };
+  });
 });
 
 export function ToriiArena({ level, handleRef }: ArenaProps) {
@@ -127,6 +195,7 @@ export function ToriiArena({ level, handleRef }: ArenaProps) {
 
   return (
     <div className="arena arena-torii" data-level={level}>
+      <OrganicDefs id={u} />
       <div ref={far} className="arena-plane">
         <svg className="arena-svg" viewBox="0 0 1200 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
           <defs>
@@ -156,31 +225,38 @@ export function ToriiArena({ level, handleRef }: ArenaProps) {
           </defs>
           <rect width="1200" height="900" fill={`url(#${u}-sky)`} />
           <circle cx={VP.x} cy={VP.y - 6} r="120" fill={`url(#${u}-sun)`} />
-          <path d="M0 262L120 214L220 236L330 196L430 232L520 220L560 252H0Z" fill="#2a1830" opacity=".8" />
-          <path d="M1200 262L1080 210L980 236L880 200L780 236L690 222L640 252H1200Z" fill="#2a1830" opacity=".8" />
-          {/* Sol de gravier et chemin dallé vers le fond */}
-          <path d={`M0 ${VP.y}H1200V900H0Z`} fill={`url(#${u}-ground)`} />
-          <path d={`M${VP.x - 14} ${VP.y}H${VP.x + 14}L${VP.x + 430} 900H${VP.x - 430}Z`} fill={`url(#${u}-path)`} />
-          {GATES.map((d) => {
-            const s = scaleAt(d);
-            const y = groundAt(s);
-            const half = 400 * s;
-            return <path key={`seam-${d}`} d={`M${VP.x - half * 0.98} ${y}H${VP.x + half * 0.98}`} stroke="#3a2e24" strokeWidth={Math.max(1, 4 * s)} opacity=".55" />;
-          })}
-          <path d={`M${VP.x} ${VP.y}L${VP.x} 900`} stroke="#3a2e24" strokeWidth="3" opacity=".35" />
-          {/* Lanternes de pierre de part et d'autre */}
-          {TOROS.slice()
-            .reverse()
-            .map((t, i) => (
-              <g key={i}>
-                <Toro x={VP.x - t.dx} y={t.y} s={t.s} />
-                <Toro x={VP.x + t.dx} y={t.y} s={t.s} />
-              </g>
+          {/* Nuages du couchant en longues traînées peintes */}
+          <g filter={`url(#${u}-rough)`}>
+            {CLOUDS.map((c, i) => (
+              <path key={i} d={c.d} fill={c.fill} opacity={c.o} />
             ))}
-          {/* Le tunnel de torii */}
-          {GATES.map((d) => (
-            <Gate key={d} depth={d} />
-          ))}
+            <path d="M0 262C40 236 90 222 120 214C160 222 190 232 220 236C260 214 300 200 330 196C370 210 400 226 430 232C460 224 490 220 520 220C540 232 552 244 560 252H0Z" fill="#2a1830" opacity=".8" />
+            <path d="M1200 262C1160 236 1110 218 1080 210C1040 222 1010 232 980 236C940 216 910 204 880 200C840 214 810 230 780 236C750 228 720 222 690 222C670 234 652 244 640 252H1200Z" fill="#2a1830" opacity=".8" />
+          </g>
+          {/* Sol de gravier et chemin de dalles irrégulières vers le fond, bordé de mousse */}
+          <path d={`M0 ${VP.y}H1200V900H0Z`} fill={`url(#${u}-ground)`} />
+          <g filter={`url(#${u}-fine)`}>
+            <path d={`M${VP.x - 14} ${VP.y}H${VP.x + 14}L${VP.x + 430} 900H${VP.x - 430}Z`} fill={`url(#${u}-path)`} />
+            {STONES.map((st, i) => (
+              <path key={i} d={st.d} fill={st.fill} stroke="#3a2e24" strokeWidth={st.w} opacity=".9" />
+            ))}
+            <path d={`M${VP.x - 16} ${VP.y}L${VP.x - 440} 900`} stroke="#3c4a2a" strokeWidth="14" opacity=".55" />
+            <path d={`M${VP.x + 16} ${VP.y}L${VP.x + 440} 900`} stroke="#3c4a2a" strokeWidth="14" opacity=".55" />
+          </g>
+          {/* Lanternes de pierre de part et d'autre, puis le tunnel de torii */}
+          <g filter={`url(#${u}-rough)`}>
+            {TOROS.slice()
+              .reverse()
+              .map((t, i) => (
+                <g key={i}>
+                  <Toro x={VP.x - t.dx} y={t.y} s={t.s} />
+                  <Toro x={VP.x + t.dx} y={t.y} s={t.s} />
+                </g>
+              ))}
+            {GATES.map((d) => (
+              <Gate key={d} depth={d} />
+            ))}
+          </g>
         </svg>
       </div>
 
@@ -216,7 +292,7 @@ export function ToriiArena({ level, handleRef }: ArenaProps) {
       {/* Abords : branches d'érable, grelot du sanctuaire, renards de pierre */}
       <div ref={edges} className="arena-edges">
         {["l", "r"].map((side) => (
-          <svg key={side} className={`tr-branch tr-branch-${side}`} viewBox="0 0 300 200" aria-hidden="true">
+          <svg key={side} className={`tr-branch tr-branch-${side} arena-near`} viewBox="0 0 300 200" aria-hidden="true">
             <path d="M0 30C60 40 110 70 150 110C180 140 220 150 270 146" stroke="#2a1a14" strokeWidth="9" fill="none" strokeLinecap="round" />
             <path d="M90 62C110 40 140 34 170 38M150 110C170 90 200 84 230 92" stroke="#2a1a14" strokeWidth="5" fill="none" strokeLinecap="round" />
             {[
@@ -254,7 +330,7 @@ export function ToriiArena({ level, handleRef }: ArenaProps) {
         </div>
         {["l", "r"].map((side) => (
           <div key={side} className={`tr-kitsune tr-kitsune-${side}`}>
-            <svg viewBox="0 0 160 240" aria-hidden="true">
+            <svg viewBox="0 0 160 240" aria-hidden="true" className="arena-soft">
               <rect x="8" y="196" width="144" height="44" fill="#4f4a45" />
               <rect x="20" y="186" width="120" height="14" fill="#67615b" />
               <path d="M112 186c30-20 34-66 10-92-6 22-14 40-26 52z" fill="#8b8378" />
@@ -271,6 +347,8 @@ export function ToriiArena({ level, handleRef }: ArenaProps) {
         ))}
       </div>
 
+      <Haze tone="rgb(242 216 138 / .14)" top="20%" height="26%" opacity={0.85} slow={1.3} />
+      <Grain />
       <div ref={flare} className="tr-flare" aria-hidden="true" />
       <div ref={dim} className="arena-dim" aria-hidden="true" />
       <div ref={fx} className="arena-fx" aria-hidden="true" />

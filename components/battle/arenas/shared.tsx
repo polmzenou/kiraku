@@ -1,18 +1,61 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, type CSSProperties, type RefObject } from "react";
-import type { ArenaReaction, FxLevel } from "@/lib/battle/choreography";
+import type { ArenaReaction, BattleSound, FxLevel } from "@/lib/battle/choreography";
 import type { Side } from "@/lib/battle/types";
 import { noise } from "../fx/vfx";
-import type { ArenaHandle } from "../stage/useDirector";
+import type { ArenaHandle, SoundPort } from "../stage/useDirector";
 
 // Outils communs des arènes : poignée de réactions pour le metteur en scène, parallaxe des plans à la
-// caméra, particules d'ambiance déterministes et éphémères (transform et opacity seulement).
+// caméra, particules d'ambiance déterministes et éphémères (transform et opacity seulement), et la
+// facture « peinte » : contours tremblés (déplacement SVG statique), grain de papier, brume.
 
 export type ArenaProps = {
   level: FxLevel;
   handleRef: (h: ArenaHandle | null) => void;
+  /** Sons du décor (shishi-odoshi, tonnerre, foule) ; absent quand le son est coupé. */
+  sound?: { current: SoundPort | null };
 };
+
+export const play = (sound: ArenaProps["sound"], name: BattleSound) => sound?.current?.play(name);
+
+/**
+ * Filtres de la facture peinte, calculés une fois (le décor est statique) : `rough` fait trembler les
+ * contours comme un trait d'encre, `fine` pour les détails. Les plans qui les portent restent sur leur
+ * propre couche (arena.css), pour n'être peints qu'une fois.
+ */
+export function OrganicDefs({ id }: { id: string }) {
+  return (
+    <svg aria-hidden="true" width="0" height="0" className="arena-defs">
+      <defs>
+        <filter id={`${id}-rough`} x="-4%" y="-4%" width="108%" height="108%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.016" numOctaves="2" seed="11" result="n" />
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+        <filter id={`${id}-fine`} x="-4%" y="-4%" width="108%" height="108%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.07" numOctaves="1" seed="5" result="n" />
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </defs>
+    </svg>
+  );
+}
+
+/** Grain de papier sur toute l'arène (texture fixe, sans mélange). */
+export function Grain({ strength = 1 }: { strength?: number }) {
+  return <div aria-hidden="true" className="arena-grain" style={{ opacity: 0.32 * strength }} />;
+}
+
+/** Brume en nappes irrégulières qui dérivent lentement. */
+export function Haze({ tone, top, height, opacity = 0.5, slow = 1 }: { tone: string; top: string; height: string; opacity?: number; slow?: number }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="arena-haze"
+      style={{ top, height, opacity, ["--tone" as string]: tone, animationDuration: `${46 * slow}s` }}
+    />
+  );
+}
 
 /** Profondeur des plans : le fond bouge peu, les abords au premier plan bougent plus que la scène. */
 export type Plane = { ref: RefObject<HTMLElement | null>; depth: number };

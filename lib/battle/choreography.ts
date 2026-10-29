@@ -42,7 +42,14 @@ export type BattleSound =
   | "timeout"
   | "victory"
   | "defeat"
-  | "draw";
+  | "draw"
+  // Sons du décor, joués par les arènes
+  | "knock"
+  | "thunder"
+  | "cheer"
+  | "firework"
+  | "splash"
+  | "chime";
 
 export type ArenaReaction = "turn" | "hit" | "crit" | "ko" | "technique" | "victory" | "defeat" | "draw";
 
@@ -362,13 +369,14 @@ function resolve(b: Scene, beat: Draft, from: Slot, results: readonly BattleEven
         if (power >= 2) beat.cue(beat.t, { k: "camera", mode: "punch", slot: target, ms: 300 });
         if (e.crit) beat.cue(beat.t, { k: "shake", slot: null, power: 5 });
         beat.sound(beat.t, e.crit ? "crit" : heavy ? "heavy" : "hit");
-        beat.cue(beat.t, { k: "arena", reaction: e.crit ? "crit" : "hit", side: e.side });
         let extra = 0;
         if (b.full && !beat.frameUsed && (e.crit || finisher)) {
           beat.frameUsed = true;
           extra = TIMING.frame[b.ctx.style];
           beat.cue(beat.t, { k: "frame", style: b.ctx.style, from: attacker, to: target, finisher, ms: extra });
         }
+        // L'arène réagit quand la scène revient : sous une impact frame, sa réaction serait masquée
+        beat.cue(extra ? beat.t + stop + extra : beat.t, { k: "arena", reaction: e.crit ? "crit" : "hit", side: e.side });
         beat.t += stop + extra;
         releaseReturns();
         beat.t += TIMING.settle;

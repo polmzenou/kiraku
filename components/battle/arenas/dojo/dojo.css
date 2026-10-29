@@ -125,7 +125,7 @@
 .dj-pillar {
   position: absolute;
   top: -2%;
-  bottom: -2%;
+  height: 104%;
   width: clamp(22px, 6.5cqw, 110px);
   background: linear-gradient(90deg, #080503, #3d2716 38%, #2a1a0d 62%, #080503);
   box-shadow: 0 0 34px rgb(0 0 0 / 0.75);
@@ -219,6 +219,42 @@
 }
 .dj-confetti:nth-child(3n + 1) {
   background: #d9b556;
+}
+
+/* Fumée d'encens : trois volutes qui montent et se défont */
+.dj-incense i {
+  position: absolute;
+  left: 30%;
+  bottom: 0;
+  width: 40%;
+  height: 46%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 60%, rgb(236 226 210 / 0.42), transparent 70%);
+  opacity: 0;
+  animation: dj-smoke 7s ease-out infinite;
+}
+.dj-incense i:nth-child(2) {
+  animation-delay: -2.3s;
+}
+.dj-incense i:nth-child(3) {
+  animation-delay: -4.6s;
+}
+@keyframes dj-smoke {
+  0% {
+    transform: translate(0, 0) scale(0.5, 0.7);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  60% {
+    transform: translate(18%, -90%) scale(1.3, 1.5) rotate(10deg);
+    opacity: 0.45;
+  }
+  100% {
+    transform: translate(-10%, -170%) scale(2, 2.2) rotate(-6deg);
+    opacity: 0;
+  }
 }
 
 .arena-dojo[data-level="lite"] .dj-glow,
