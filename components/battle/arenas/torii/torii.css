@@ -1,0 +1,190 @@
+/* Le Sanctuaire aux mille torii : vermillon, or du couchant, pierre et érables. */
+
+.arena-torii {
+  background: #1a1220;
+}
+
+.tr-rays {
+  pointer-events: none;
+  opacity: 0.55;
+  background: repeating-conic-gradient(from 0deg, rgb(255 241 196 / 0.22) 0deg 4deg, transparent 4deg 13deg);
+  -webkit-mask: radial-gradient(circle, #000 6%, rgb(0 0 0 / 0.5) 22%, transparent 48%);
+  mask: radial-gradient(circle, #000 6%, rgb(0 0 0 / 0.5) 22%, transparent 48%);
+  animation: tr-spin 120s linear infinite;
+}
+@keyframes tr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tr-lamps {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.tr-lamp {
+  display: block;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 217 160 / 0.55), rgb(255 217 160 / 0) 62%);
+  opacity: 0.8;
+  animation: tr-flicker 3.8s ease-in-out infinite;
+}
+@keyframes tr-flicker {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+  30% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 0.8;
+  }
+  72% {
+    opacity: 0.95;
+  }
+}
+
+/* Feuilles d'érable (dessin original, trois teintes) */
+.tr-leaves {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.tr-leaf,
+.tr-gust {
+  width: var(--m, 16px);
+  height: var(--m, 16px);
+  background: center / contain no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-16 -16 32 32'%3E%3Cpath d='M0-16l4 9 9-5-3 10 10 2-9 6 5 8-9-2-1 10-6-8-6 8-1-10-9 2 5-8-9-6 10-2-3-10 9 5z' fill='%23C8372D'/%3E%3C/svg%3E");
+}
+.tr-leaf {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  opacity: 0;
+  animation: tr-fall var(--d) linear var(--delay) infinite;
+}
+.tr-leaf[data-tone="1"],
+.tr-gust:nth-child(3n + 1) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-16 -16 32 32'%3E%3Cpath d='M0-16l4 9 9-5-3 10 10 2-9 6 5 8-9-2-1 10-6-8-6 8-1-10-9 2 5-8-9-6 10-2-3-10 9 5z' fill='%23E0533F'/%3E%3C/svg%3E");
+}
+.tr-leaf[data-tone="2"],
+.tr-gust:nth-child(3n + 2) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-16 -16 32 32'%3E%3Cpath d='M0-16l4 9 9-5-3 10 10 2-9 6 5 8-9-2-1 10-6-8-6 8-1-10-9 2 5-8-9-6 10-2-3-10 9 5z' fill='%23D9B556'/%3E%3C/svg%3E");
+}
+.tr-gust {
+  --m: 16px;
+}
+@keyframes tr-fall {
+  0% {
+    transform: translate(0, 0) rotate(var(--r));
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(var(--dx), 55cqh) rotate(calc(var(--r) + 220deg));
+  }
+  92% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(var(--dx) * -0.5), 112cqh) rotate(calc(var(--r) + 460deg));
+    opacity: 0;
+  }
+}
+
+/* Abords */
+.tr-branch {
+  position: absolute;
+  top: -3%;
+  width: clamp(150px, 46cqw, 520px);
+  height: auto;
+  transform-origin: 0 10%;
+  animation: tr-bough 7s ease-in-out infinite;
+}
+.tr-branch-l {
+  left: -8%;
+}
+.tr-branch-r {
+  right: -8%;
+  scale: -1 1;
+  animation-delay: -3.5s;
+}
+@keyframes tr-bough {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(1.6deg);
+  }
+}
+.tr-suzu {
+  position: absolute;
+  top: -1%;
+  right: 13%;
+  width: clamp(26px, 6cqw, 64px);
+  aspect-ratio: 60 / 260;
+  transform-origin: 40% 0;
+  animation: tr-swing 6s ease-in-out infinite;
+}
+.tr-suzu > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+@keyframes tr-swing {
+  0%,
+  100% {
+    rotate: -1.5deg;
+  }
+  50% {
+    rotate: 1.5deg;
+  }
+}
+.tr-kitsune {
+  position: absolute;
+  bottom: 15%;
+  width: clamp(70px, 22cqw, 200px);
+  aspect-ratio: 160 / 240;
+}
+.tr-kitsune > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.tr-kitsune-l {
+  left: calc(clamp(70px, 22cqw, 200px) * -0.48);
+}
+.tr-kitsune-r {
+  right: calc(clamp(70px, 22cqw, 200px) * -0.48);
+  scale: -1 1;
+}
+.tr-eyes i {
+  position: absolute;
+  width: 9%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  translate: -50% -50%;
+  background: radial-gradient(circle, #fff1c4 0 30%, rgb(242 216 138 / 0.6) 50%, transparent 72%);
+  box-shadow: 0 0 14px #f2d88a;
+  opacity: 0;
+}
+.tr-flare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 26%, rgb(255 241 196 / 0.6), transparent 70%);
+}
+
+.arena-torii[data-level="lite"] .tr-rays,
+.arena-torii[data-level="lite"] .tr-lamp,
+.arena-torii[data-level="lite"] .tr-branch {
+  animation: none;
+}

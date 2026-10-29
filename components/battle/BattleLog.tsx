@@ -6,22 +6,14 @@ import type { BattleEvent, BattleSetup, FighterSetup, Side } from "@/lib/battle/
 import type { PlayerView } from "@/lib/battle/view";
 import { usePlayerName } from "./BoardLayout";
 
-/** Journal lisible des derniers événements (colonne de droite sur desktop). */
-export function BattleLog({
-  feed,
-  setup,
-  players,
-}: {
-  feed: readonly { id: number; event: BattleEvent }[];
-  setup: BattleSetup;
-  players: [PlayerView, PlayerView | null];
-}) {
+/** Phrase du journal pour un événement (null : rien à dire), partagée par le journal et le fil des actions. */
+export function useLogLine(setup: BattleSetup, players: readonly [PlayerView, PlayerView | null]) {
   const t = useTranslations("battle");
   const name = usePlayerName();
   const card = (side: Side, i: number) => setup.teams[side][i]?.name ?? "?";
   const player = (side: Side) => name(players[side]);
 
-  const line = (e: BattleEvent): string | null => {
+  return (e: BattleEvent): string | null => {
     switch (e.t) {
       case "turn":
         return t("log.turn", { player: player(e.side) });
@@ -62,6 +54,20 @@ export function BattleLog({
         return null;
     }
   };
+}
+
+/** Journal lisible des derniers événements (colonne de droite sur desktop). */
+export function BattleLog({
+  feed,
+  setup,
+  players,
+}: {
+  feed: readonly { id: number; event: BattleEvent }[];
+  setup: BattleSetup;
+  players: [PlayerView, PlayerView | null];
+}) {
+  const t = useTranslations("battle");
+  const line = useLogLine(setup, players);
 
   const lines = feed.flatMap(({ id, event }) => {
     const text = line(event);

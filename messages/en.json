@@ -3933,6 +3933,79 @@
       "title": "Card",
       "hint": "Tap one of your cards to see its technique and passives.",
       "stats": "ATK {atk} · DEF {def} · {hp}/{max} HP"
+    },
+    "arena": {
+      "dojo": "The Lantern Dōjō",
+      "chikurin": "The Moonlit Bamboo Grove",
+      "torii": "The Shrine of a Thousand Torii",
+      "suiu": "The Jade Garden in the Rain",
+      "tenshu": "The Keep in the Storm",
+      "himatsuri": "The Fire Festival",
+      "takamagahara": "The Celestial Palace"
+    },
+    "entrance": {
+      "youFirst": "You go first",
+      "theyFirst": "{name} goes first",
+      "skip": "Tap to skip"
+    },
+    "menu": {
+      "open": "Open the battle menu",
+      "close": "Close the menu",
+      "sound": "Sound",
+      "music": "Music",
+      "speed": "Animation speed",
+      "speedValue": "×{value}",
+      "on": "On",
+      "off": "Off"
+    },
+    "sandbox": {
+      "title": "Battle sandbox",
+      "note": "The real stage and the real engine, without a database. The fighters are original characters.",
+      "settings": "Settings",
+      "you": "You",
+      "scenario": "Scenario",
+      "scenarios": {
+        "demo": "Demo",
+        "real": "Real battle",
+        "play": "Play against the bot"
+      },
+      "arena": "Arena",
+      "arenas": {
+        "dojo": "Dōjō",
+        "torii": "Thousand torii",
+        "chikurin": "Bamboo grove",
+        "suiu": "Jade garden",
+        "tenshu": "Keep",
+        "himatsuri": "Fire festival",
+        "takamagahara": "Celestial palace"
+      },
+      "style": "Impact frames",
+      "styles": {
+        "sumi": "Sumi",
+        "koma": "Koma",
+        "mie": "Mie"
+      },
+      "speed": "Speed",
+      "level": "Effects",
+      "levels": {
+        "auto": "Auto",
+        "full": "Full",
+        "lite": "Lite",
+        "reduced": "Reduced"
+      },
+      "frame": "Frame",
+      "frames": {
+        "phone": "Phone",
+        "wide": "Wide screen"
+      },
+      "pace": "Pace",
+      "paces": {
+        "auto": "Automatic",
+        "step": "Step by step"
+      },
+      "next": "Next action",
+      "restart": "New battle",
+      "again": "Play again"
     }
   },
   "ranked": {

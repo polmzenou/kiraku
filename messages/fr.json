@@ -3933,6 +3933,79 @@
       "title": "Carte",
       "hint": "Touche une de tes cartes pour voir sa technique et ses passifs.",
       "stats": "ATQ {atk} · DEF {def} · {hp}/{max} PV"
+    },
+    "arena": {
+      "dojo": "Le Dōjō de la lanterne",
+      "chikurin": "La Bambouseraie au clair de lune",
+      "torii": "Le Sanctuaire aux mille torii",
+      "suiu": "Le Jardin de jade sous la pluie",
+      "tenshu": "Le Donjon dans la tempête",
+      "himatsuri": "La Fête du feu",
+      "takamagahara": "Le Palais céleste"
+    },
+    "entrance": {
+      "youFirst": "Tu commences",
+      "theyFirst": "{name} commence",
+      "skip": "Touche pour passer"
+    },
+    "menu": {
+      "open": "Ouvrir le menu du combat",
+      "close": "Fermer le menu",
+      "sound": "Son",
+      "music": "Musique",
+      "speed": "Vitesse des animations",
+      "speedValue": "×{value}",
+      "on": "Activé",
+      "off": "Coupé"
+    },
+    "sandbox": {
+      "title": "Bac à sable du combat",
+      "note": "La vraie scène et le vrai moteur, sans base de données. Les combattants sont des personnages originaux.",
+      "settings": "Réglages",
+      "you": "Toi",
+      "scenario": "Scénario",
+      "scenarios": {
+        "demo": "Démo",
+        "real": "Combat réel",
+        "play": "Jouer contre le bot"
+      },
+      "arena": "Arène",
+      "arenas": {
+        "dojo": "Dōjō",
+        "torii": "Mille torii",
+        "chikurin": "Bambouseraie",
+        "suiu": "Jardin de jade",
+        "tenshu": "Donjon",
+        "himatsuri": "Fête du feu",
+        "takamagahara": "Palais céleste"
+      },
+      "style": "Impact frames",
+      "styles": {
+        "sumi": "Sumi",
+        "koma": "Koma",
+        "mie": "Mie"
+      },
+      "speed": "Vitesse",
+      "level": "Effets",
+      "levels": {
+        "auto": "Auto",
+        "full": "Complets",
+        "lite": "Allégés",
+        "reduced": "Réduits"
+      },
+      "frame": "Cadre",
+      "frames": {
+        "phone": "Téléphone",
+        "wide": "Grand écran"
+      },
+      "pace": "Déroulé",
+      "paces": {
+        "auto": "Automatique",
+        "step": "Pas à pas"
+      },
+      "next": "Action suivante",
+      "restart": "Nouveau combat",
+      "again": "Rejouer"
     }
   },
   "ranked": {

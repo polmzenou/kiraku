@@ -1,0 +1,227 @@
+/* Le Dōjō de la lanterne : bois sombre, shoji éclairés, lune froide par la fenêtre. */
+
+.arena-dojo {
+  background: #100a06;
+}
+
+/* Bougies derrière les shoji */
+.dj-glow {
+  background: radial-gradient(ellipse 60% 70% at 50% 72%, rgb(255 226 168 / 0.5), rgb(255 226 168 / 0) 72%);
+  animation: dj-flicker 5.2s ease-in-out infinite;
+}
+@keyframes dj-flicker {
+  0%,
+  100% {
+    opacity: 0.86;
+  }
+  14% {
+    opacity: 1;
+  }
+  22% {
+    opacity: 0.9;
+  }
+  37% {
+    opacity: 0.98;
+  }
+  46% {
+    opacity: 0.8;
+  }
+  61% {
+    opacity: 1;
+  }
+  78% {
+    opacity: 0.9;
+  }
+}
+
+/* Une silhouette passe derrière le papier, une lanterne à la main */
+.dj-shadows {
+  overflow: hidden;
+}
+.dj-walker {
+  position: absolute;
+  left: 0;
+  bottom: -4%;
+  height: 96%;
+  width: auto;
+  opacity: 0.42;
+  filter: blur(3px);
+  animation: dj-walk 28s linear infinite;
+}
+@keyframes dj-walk {
+  0% {
+    transform: translateX(calc(-90 * var(--s)));
+  }
+  60%,
+  100% {
+    transform: translateX(calc(860 * var(--s)));
+  }
+}
+
+/* Taiko du mur */
+.dj-taiko {
+  transform-origin: 50% 3%;
+}
+.dj-taiko-ring {
+  position: absolute;
+  left: 4%;
+  top: 22%;
+  width: 92%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid rgb(242 216 138 / 0.85);
+  box-shadow: 0 0 18px rgb(242 216 138 / 0.5);
+  opacity: 0;
+}
+
+/* Rayon de lune */
+.dj-beam {
+  position: absolute;
+  left: -22%;
+  top: -18%;
+  width: 52%;
+  height: 150%;
+  transform: rotate(-31deg);
+  transform-origin: 0 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgb(207 224 245 / 0.13) 28%, rgb(220 232 250 / 0.2) 50%, rgb(207 224 245 / 0.11) 72%, transparent);
+  -webkit-mask: linear-gradient(transparent, #000 14%, #000 62%, transparent 92%);
+  mask: linear-gradient(transparent, #000 14%, #000 62%, transparent 92%);
+}
+.dj-mote {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--m);
+  height: var(--m);
+  border-radius: 50%;
+  background: rgb(240 246 255 / 0.9);
+  box-shadow: 0 0 6px rgb(220 232 250 / 0.85);
+  opacity: 0;
+  animation: dj-mote var(--d) ease-in-out var(--delay) infinite;
+}
+@keyframes dj-mote {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  22% {
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(var(--dx), -18px);
+    opacity: 0.45;
+  }
+  78% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(calc(var(--dx) * 1.6), -36px);
+    opacity: 0;
+  }
+}
+
+/* Abords : piliers, shimenawa et shide, andon */
+.dj-pillar {
+  position: absolute;
+  top: -2%;
+  bottom: -2%;
+  width: clamp(22px, 6.5cqw, 110px);
+  background: linear-gradient(90deg, #080503, #3d2716 38%, #2a1a0d 62%, #080503);
+  box-shadow: 0 0 34px rgb(0 0 0 / 0.75);
+}
+.dj-pillar-l {
+  left: calc(clamp(22px, 6.5cqw, 110px) * -0.42);
+}
+.dj-pillar-r {
+  right: calc(clamp(22px, 6.5cqw, 110px) * -0.42);
+}
+.dj-rope {
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  top: -1%;
+  height: clamp(38px, 8.5cqh, 96px);
+}
+.dj-rope > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.dj-shide {
+  position: absolute;
+  width: clamp(10px, 2.3cqw, 24px);
+  height: clamp(28px, 6cqh, 64px);
+  transform-origin: 50% 0;
+  background: center / 100% 100% no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 60' preserveAspectRatio='none'%3E%3Cpath d='M2 0H13V14H20V30H8V44H18V60H6V46H0V30H11V16H2Z' fill='%23F8F2E4' stroke='%23C9B99E' stroke-width='.8'/%3E%3C/svg%3E");
+  animation: dj-sway 3.6s ease-in-out infinite;
+}
+@keyframes dj-sway {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+.dj-andon {
+  position: absolute;
+  bottom: 23%;
+  width: clamp(34px, 8.5cqw, 92px);
+  aspect-ratio: 60 / 110;
+}
+.dj-andon > svg {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.dj-andon-l {
+  left: calc(clamp(34px, 8.5cqw, 92px) * -0.38);
+}
+.dj-andon-r {
+  right: calc(clamp(34px, 8.5cqw, 92px) * -0.38);
+}
+.dj-andon-glow {
+  position: absolute;
+  inset: -110% -170%;
+  background: radial-gradient(circle at 50% 52%, rgb(255 218 156 / 0.5), rgb(255 218 156 / 0) 58%);
+  animation: dj-flicker 3.4s ease-in-out infinite;
+}
+.dj-andon-r .dj-andon-glow {
+  animation-delay: -1.7s;
+}
+.dj-flare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse 70% 55% at 50% 30%, rgb(255 226 168 / 0.5), transparent 70%);
+}
+
+/* Réactions : poussière des poutres, confettis de papier */
+.dj-dustfall {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgb(214 194 162 / 0.9);
+}
+.dj-confetti {
+  width: 7px;
+  height: 11px;
+  border-radius: 1px;
+  background: #c8372d;
+}
+.dj-confetti:nth-child(3n) {
+  background: #f3ecdf;
+}
+.dj-confetti:nth-child(3n + 1) {
+  background: #d9b556;
+}
+
+.arena-dojo[data-level="lite"] .dj-glow,
+.arena-dojo[data-level="lite"] .dj-andon-glow {
+  animation: none;
+}
