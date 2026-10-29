@@ -3,7 +3,16 @@ import { balancesAfter, isValidAmount, isValidSignedAmount, MAX_MOVEMENT } from 
 import { ledgerHref, ledgerWhere, parseLedgerFilter } from "./ledger-view";
 import { lotInputSchema, parseLotItemRow } from "./lots";
 import { measureKey, missionInputSchema, missionState, raritiesFrom, shownProgress } from "./missions";
-import { checkAttach, isQualified, missingSteps, normalizeReferralCode, type AttachCheck, type ReferralRules } from "./referral";
+import { SETTING_SCHEMAS } from "@/lib/settings/defaults";
+import {
+  checkAttach,
+  isQualified,
+  milestoneStates,
+  missingSteps,
+  normalizeReferralCode,
+  type AttachCheck,
+  type ReferralRules,
+} from "./referral";
 import {
   featuredPick,
   limitPeriodKey,
@@ -179,6 +188,53 @@ describe("parrainage", () => {
     expect(missingSteps({ ...ok, createdAt: new Date(NOW.getTime() - HOUR) }, rules, NOW)).toEqual(["AGE"]);
     expect(isQualified({ ...ok, bannedAt: NOW }, rules, NOW)).toBe(false);
     expect(isQualified({ ...ok, verified: false }, { ...rules, requireVerified: false }, NOW)).toBe(true);
+  });
+});
+
+describe("paliers de parrainage", () => {
+  const milestones = [3, 6, 10, 20].map((referrals) => ({ referrals, lotId: `lot-${referrals}` }));
+  const states = (qualified: number, claimed: number[] = []) =>
+    milestoneStates(milestones, qualified, new Set(claimed)).map((m) => [m.referrals, m.state, m.remaining]);
+
+  it("sans ami qualifié : le premier palier est le prochain, les autres verrouillés", () => {
+    expect(states(0)).toEqual([
+      [3, "NEXT", 3],
+      [6, "LOCKED", 6],
+      [10, "LOCKED", 10],
+      [20, "LOCKED", 20],
+    ]);
+  });
+
+  it("un palier tout juste atteint se réclame, le suivant devient le prochain", () => {
+    expect(states(3)).toEqual([
+      [3, "READY", 0],
+      [6, "NEXT", 3],
+      [10, "LOCKED", 7],
+      [20, "LOCKED", 17],
+    ]);
+  });
+
+  it("plusieurs paliers atteints d'un coup restent tous à réclamer, sauf ceux déjà réclamés", () => {
+    expect(states(11, [3])).toEqual([
+      [3, "CLAIMED", 0],
+      [6, "READY", 0],
+      [10, "READY", 0],
+      [20, "NEXT", 9],
+    ]);
+  });
+
+  it("tout atteint et réclamé : plus de prochain palier", () => {
+    expect(states(25, [3, 6, 10, 20]).map(([, state]) => state)).toEqual(["CLAIMED", "CLAIMED", "CLAIMED", "CLAIMED"]);
+    expect(milestoneStates([], 5, new Set())).toEqual([]);
+  });
+
+  it("le réglage refuse des seuils qui ne montent pas strictement, ou un palier sans lot", () => {
+    const schema = SETTING_SCHEMAS["referral.milestones"];
+    expect(schema.safeParse(milestones).success).toBe(true);
+    expect(schema.safeParse([milestones[1], milestones[0]]).success).toBe(false);
+    expect(schema.safeParse([milestones[0], milestones[0]]).success).toBe(false);
+    expect(schema.safeParse([{ referrals: 3, lotId: null }]).success).toBe(false);
+    expect(schema.safeParse([{ referrals: 0, lotId: "lot-0" }]).success).toBe(false);
   });
 });
 

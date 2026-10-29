@@ -4,7 +4,14 @@ import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { useState, useTransition } from "react";
 import type { OpenedCardView } from "@/lib/boosters/view";
-import { claimAllMissionsAction, claimMissionAction, claimReferralAction, type EconomyActionError, type RewardSummary } from "@/server/actions/economy";
+import {
+  claimAllMissionsAction,
+  claimMissionAction,
+  claimReferralAction,
+  claimReferralMilestoneAction,
+  type EconomyActionError,
+  type RewardSummary,
+} from "@/server/actions/economy";
 import { Button } from "../ui/Button";
 import { RewardText } from "./RewardText";
 
@@ -99,4 +106,9 @@ export function ClaimAllMissionsButton({ count }: { count: number }) {
 export function ClaimReferralButton({ referralId, claimed }: { referralId: string; claimed: boolean }) {
   const t = useTranslations("economy.referral");
   return <ClaimButton claim={() => claimReferralAction({ referralId })} claimed={claimed} claimedLabel={t("claimed")} />;
+}
+
+/** Palier de parrainage atteint. Une fois réclamé, n'affiche plus que la récompense tout juste reçue. */
+export function ClaimMilestoneButton({ referrals, claimed, label }: { referrals: number; claimed: boolean; label: string }) {
+  return <ClaimButton claim={() => claimReferralMilestoneAction({ referrals })} claimed={claimed} label={label} />;
 }

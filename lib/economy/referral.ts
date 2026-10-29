@@ -92,3 +92,30 @@ export function isQualified(p: RefereeProgress, rules: ReferralRules, now: Date)
 }
 
 export const REFERRAL_WINDOW_MS = 30 * DAY;
+
+/** Palier : un lot réclamable une fois ce nombre d'amis qualifiés atteint (referral.milestones). */
+export type ReferralMilestone = { referrals: number; lotId: string };
+
+/** CLAIMED : réclamé · READY : atteint, à réclamer · NEXT : le prochain à atteindre · LOCKED : plus loin. */
+export type MilestoneState = "CLAIMED" | "READY" | "NEXT" | "LOCKED";
+
+export type MilestoneView = ReferralMilestone & { state: MilestoneState; remaining: number };
+
+/** État de chaque palier (seuils croissants) pour `qualified` amis qualifiés depuis toujours. */
+export function milestoneStates(
+  milestones: readonly ReferralMilestone[],
+  qualified: number,
+  claimed: ReadonlySet<number>,
+): MilestoneView[] {
+  let nextFound = false;
+  return milestones.map((m) => {
+    const remaining = Math.max(0, m.referrals - qualified);
+    let state: MilestoneState;
+    if (remaining === 0) state = claimed.has(m.referrals) ? "CLAIMED" : "READY";
+    else if (!nextFound) {
+      state = "NEXT";
+      nextFound = true;
+    } else state = "LOCKED";
+    return { ...m, state, remaining };
+  });
+}

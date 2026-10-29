@@ -108,7 +108,17 @@ const rankedTiers = z
   });
 
 // Id d'un Lot (cuid), ou null
-const lotRef = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/).nullable();
+const lotId = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
+const lotRef = lotId.nullable();
+
+// Paliers de parrainage : un lot par nombre d'amis qualifiés, seuils strictement croissants
+export const MAX_REFERRAL_MILESTONES = 8;
+const referralMilestones = z
+  .array(z.object({ referrals: z.number().int().min(1).max(1_000), lotId }))
+  .max(MAX_REFERRAL_MILESTONES)
+  .refine((ms) => ms.every((m, i) => i === 0 || m.referrals > ms[i - 1].referrals), {
+    message: "Les paliers doivent monter strictement",
+  });
 
 // Lot de fin de saison par meilleur rang atteint
 const rankedRewardLots = z.object(
@@ -194,6 +204,8 @@ export const SETTING_SCHEMAS = {
   // Profil (étape 12h) : badge Pionnier (inscrits jusqu'à cette date, AAAA-MM-JJ, ou aucun) et Parrain
   "profile.pioneerUntil": z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
   "profile.sponsorReferrals": z.number().int().min(0).max(1_000),
+  // Badge Recruteur : à partir de ce nombre de filleuls qualifiés (0 = jamais)
+  "profile.recruiterReferrals": z.number().int().min(0).max(1_000),
   // Rôle Ambassadeur (donné par l'admin) : stock de boosters gratuits et pack hebdomadaire (0 = aucun pack)
   "ambassador.maxStock": z.number().int().min(1).max(100),
   "ambassador.weeklyBoosters": z.number().int().min(0).max(50),
@@ -224,6 +236,8 @@ export const SETTING_SCHEMAS = {
   // Lots versés à la qualification ; null = pas de récompense de ce côté
   "referral.referrerLotId": lotRef,
   "referral.refereeLotId": lotRef,
+  // Paliers : lot réclamable une fois atteint ce nombre d'amis qualifiés, sans limite de temps
+  "referral.milestones": referralMilestones,
   // Hôtel des ventes (étape 8) ; taux en points de base (500 = 5 %)
   "market.enabled": z.boolean(),
   "market.feeBp": z.number().int().min(0).max(5_000),
@@ -404,6 +418,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "chat.pollSeconds": 10,
   "profile.pioneerUntil": "2026-12-31",
   "profile.sponsorReferrals": 3,
+  "profile.recruiterReferrals": 10,
   "ambassador.maxStock": 15,
   "ambassador.weeklyBoosters": 5,
   "ambassador.weeklyBoosterSlug": "standard", // Tout anime
@@ -425,6 +440,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "referral.requireVerified": true,
   "referral.referrerLotId": null,
   "referral.refereeLotId": null,
+  "referral.milestones": [], // posés par le seed (prisma/seed/economy.ts), modifiables dans /admin/economie
   "market.enabled": true,
   "market.feeBp": 500, // taxe de 5 % : retire des Zeni du jeu
   "market.minIncrementBp": 500, // surenchère minimale de 5 % (au moins 1 Zeni)
