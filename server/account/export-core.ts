@@ -52,6 +52,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     missions,
     purchases,
     referrals,
+    referralMilestones,
     seasons,
     review,
     notifications,
@@ -168,6 +169,11 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       where: { OR: [{ referrerId: userId }, { refereeId: userId }] },
       select: { referrerId: true, status: true, createdAt: true, qualifiedAt: true },
     }),
+    db.referralMilestoneClaim.findMany({
+      where: { userId },
+      orderBy: { referrals: "asc" },
+      select: { referrals: true, lotId: true, claimedAt: true },
+    }),
     db.seasonResult.findMany({
       where: { userId },
       select: { seasonId: true, finalPc: true, peakPc: true, peakTier: true, games: true, claimedAt: true },
@@ -250,6 +256,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       createdAt: r.createdAt,
       qualifiedAt: r.qualifiedAt,
     })),
+    referralMilestones,
     seasons,
     review,
     notifications,

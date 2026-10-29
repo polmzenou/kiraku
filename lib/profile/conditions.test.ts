@@ -92,7 +92,15 @@ describe("libellés accordés", () => {
 });
 
 describe("badges", () => {
-  const base = { createdAt: new Date("2026-10-01"), pioneerUntil: new Date("2026-12-31"), ambassador: true, qualifiedReferrals: 3, sponsorReferrals: 3, discordLinked: true };
+  const base = {
+    createdAt: new Date("2026-10-01"),
+    pioneerUntil: new Date("2026-12-31"),
+    ambassador: true,
+    qualifiedReferrals: 3,
+    sponsorReferrals: 3,
+    recruiterReferrals: 10,
+    discordLinked: true,
+  };
   it("dérive les badges du compte", () => {
     expect(earnedBadges(base)).toEqual(["PIONEER", "AMBASSADOR", "SPONSOR", "VERIFIED"]);
     expect(earnedBadges({ ...base, pioneerUntil: null, ambassador: false, qualifiedReferrals: 1, discordLinked: false })).toEqual([]);
@@ -101,6 +109,11 @@ describe("badges", () => {
     expect(earnedBadges({ ...base, ambassador: false })).not.toContain("AMBASSADOR");
     expect(earnedBadges({ ...base, qualifiedReferrals: 0 })).toEqual(["PIONEER", "AMBASSADOR", "VERIFIED"]);
     expect(earnedBadges({ ...base, sponsorReferrals: 0 })).not.toContain("SPONSOR");
+  });
+  it("Recruteur vient du palier de filleuls qualifiés, en plus de Parrain", () => {
+    expect(earnedBadges({ ...base, qualifiedReferrals: 9 })).not.toContain("RECRUITER");
+    expect(earnedBadges({ ...base, qualifiedReferrals: 10 })).toEqual(["PIONEER", "AMBASSADOR", "SPONSOR", "RECRUITER", "VERIFIED"]);
+    expect(earnedBadges({ ...base, qualifiedReferrals: 50, recruiterReferrals: 0 })).not.toContain("RECRUITER");
   });
   it("respecte l'ordre choisi parmi les badges obtenus", () => {
     expect(orderedBadges(["PIONEER", "VERIFIED"], ["VERIFIED", "AMBASSADOR"])).toEqual(["VERIFIED"]);

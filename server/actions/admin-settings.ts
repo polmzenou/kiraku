@@ -138,9 +138,11 @@ export async function updateEconomySettings(input: unknown): Promise<UpdateSetti
   if (!(await rateLimit(`admin-check:${admin.id}`, { limit: 20, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
   // Un lot de parrainage doit exister : sinon la réclamation échouerait chez les joueurs
   if (parsed.success) {
-    const lotIds = [parsed.data["referral.referrerLotId"], parsed.data["referral.refereeLotId"]].filter(
-      (id): id is string => id !== null,
-    );
+    const lotIds = [
+      parsed.data["referral.referrerLotId"],
+      parsed.data["referral.refereeLotId"],
+      ...parsed.data["referral.milestones"].map((m) => m.lotId),
+    ].filter((id): id is string => id !== null);
     if (lotIds.length > 0) {
       const found = await prisma.lot.count({ where: { id: { in: [...new Set(lotIds)] } } });
       if (found !== new Set(lotIds).size) return { ok: false, error: "INVALID" };

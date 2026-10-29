@@ -14,7 +14,7 @@ import { LotError, type LotGrant } from "../economy/lots";
 import { claimMissionWith, MissionError, playerMissionsWith } from "../economy/missions-core";
 import { listLedger, type LedgerRow } from "../economy/queries";
 import { attachReferral, qualifyLater } from "../economy/referral";
-import { claimReferralWith, ReferralError } from "../economy/referral-core";
+import { claimReferralMilestoneWith, claimReferralWith, ReferralError } from "../economy/referral-core";
 import { buyWithZeniWith, ShopError } from "../economy/shop-core";
 import { loadShopItemIssue } from "../economy/shop-guard";
 import { rateLimit } from "../ratelimit";
@@ -277,6 +277,32 @@ export async function claimReferralAction(input: unknown): Promise<ClaimReferral
       }
     }
     return unexpected("parrainage", e);
+  }
+}
+
+const claimMilestoneSchema = z.object({ referrals: z.number().int().min(1).max(1_000) }).strict();
+
+/** Réclame le lot d'un palier atteint : le seuil vient du client, le lot des réglages. */
+export async function claimReferralMilestoneAction(input: unknown): Promise<ClaimReferralResult> {
+  const parsed = claimMilestoneSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  const g = await session("referral-claim", { limit: 20, windowSeconds: MINUTE });
+  if ("error" in g) return { ok: false, error: g.error };
+  if (g.user.isGuest) return { ok: false, error: "GUEST" };
+  const [enabled, milestones] = await Promise.all([getSetting("referral.enabled"), getSetting("referral.milestones")]);
+  if (!enabled) return { ok: false, error: "DISABLED" };
+  const milestone = milestones.find((m) => m.referrals === parsed.data.referrals);
+  if (!milestone) return { ok: false, error: "NO_REWARD" };
+
+  try {
+    const grant = await claimReferralMilestoneWith(prisma, { userId: g.user.id, milestone, now: new Date() }, lotDeps());
+    refresh();
+    return { ok: true, reward: await summarize(grant) };
+  } catch (e) {
+    if (e instanceof ReferralError) {
+      return e.code === "NOT_QUALIFIED" || e.code === "ALREADY_CLAIMED" ? { ok: false, error: e.code } : { ok: false, error: "UNAVAILABLE" };
+    }
+    return unexpected("palier de parrainage", e);
   }
 }
 
