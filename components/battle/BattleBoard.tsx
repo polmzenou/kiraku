@@ -1,10 +1,10 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "@/i18n/navigation";
-import { legalActions, other } from "@/lib/battle/engine";
-import { TECHNIQUE_TARGET, type Action, type BattleSetup, type BattleState } from "@/lib/battle/types";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useRouter } from "@/i18n/navigation";
+import { other } from "@/lib/battle/engine";
+import type { Action, BattleSetup, BattleState } from "@/lib/battle/types";
 import type { BattleUpdateView, BattleView, RankedOutcomeView } from "@/lib/battle/view";
 import { battleSinceAction, claimTimeoutAction, playAction } from "@/server/actions/battle";
 import type { ClientAction } from "@/server/battle/battle-core";
@@ -15,13 +15,16 @@ import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
 import { RankedResult } from "../ranked/RankedResult";
 import { BattleResult } from "./BattleResult";
-import { BattleLog, CardDetail } from "./BattleLog";
-import { BoardLayout, Medallion, Orbs, usePlayerName } from "./BoardLayout";
-import { TurnTimer, useSecondsLeft } from "./TurnTimer";
+import { useLogLine } from "./BattleLog";
+import { Tablets } from "./hud/Hud";
+import { StageMenu } from "./hud/StageMenu";
+import { Intro } from "./sequences/Intro";
+import { Outro } from "./sequences/Outro";
+import { BattleStage } from "./stage/BattleStage";
+import { useBoardControls } from "./stage/useBoardControls";
+import { useStageKit } from "./stage/useStageKit";
+import { useSecondsLeft } from "./TurnTimer";
 import { useBattleError } from "./useBattleError";
-import { useEventPlayer } from "./useEventPlayer";
-
-type Mode = "ATTACK" | "TECHNIQUE";
 
 function toClient(a: Action): ClientAction {
   if (a.type === "ATTACK") return { type: "ATTACK", actor: a.actor, target: a.target };
@@ -30,18 +33,17 @@ function toClient(a: Action): ClientAction {
 }
 
 /**
- * Partie en direct. Le client n'envoie que des intentions (version vue + action) ; chaque réponse ou
- * message temps réel apporte les événements à animer et l'état qui fait foi. Une mise à jour qui
- * ne part pas de notre version déclenche une resynchronisation depuis le journal.
+ * Partie en direct, sur la scène plein écran. Le client n'envoie que des intentions (version vue +
+ * action) ; chaque réponse ou message temps réel apporte les événements à animer et l'état qui fait
+ * foi. Une mise à jour qui ne part pas de notre version déclenche une resynchronisation depuis le journal.
  */
 export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup; state: BattleState } }) {
   const t = useTranslations("battle");
   const router = useRouter();
-  const name = usePlayerName();
   const { setup, mySide } = view;
   const opp = other(mySide);
-  const player = useEventPlayer(view.state);
-  const { shown, animating, play } = player;
+  const { arena, level, speed, sound, arenaRef, director } = useStageKit(view.state, { setup, mySide, tier: view.tier });
+  const { shown, animating, play } = director;
 
   const version = useRef(view.version);
   const [turnEndsAt, setTurnEndsAt] = useState(view.turnEndsAt);
@@ -52,19 +54,19 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
   });
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [mode, setMode] = useState<Mode>("ATTACK");
   const [confirmForfeit, setConfirmForfeit] = useState(false);
+  // Entrée seulement en début de partie : une partie reprise s'ouvre directement sur le plateau
+  const [intro, setIntro] = useState(view.state.turn <= 1 && !view.state.finished);
   const claimed = useRef<string | null>(null);
   const errorText = useBattleError();
   const syncing = useRef(false);
+  const line = useLogLine(setup, view.players);
 
   const apply = useCallback(
     (u: BattleUpdateView) => {
       version.current = u.version;
       setTurnEndsAt(u.turnEndsAt);
       if (u.finished) setFinal({ finished: true, rewardZeni: u.rewardZeni, ranked: u.ranked });
-      setSelected(null);
       play(u.events, u.state);
     },
     [play],
@@ -119,9 +121,7 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
     return () => clearTimeout(id);
   }, [connected, live, resync]);
 
-  const myTurn = !shown.finished && shown.active === mySide;
-  const canAct = myTurn && !animating && !pending;
-  const legal = useMemo(() => (canAct ? legalActions(setup, shown, mySide) : []), [canAct, setup, shown, mySide]);
+  const canAct = !intro && !shown.finished && shown.active === mySide && !animating && !pending;
 
   // Minuteur : à zéro, n'importe quel joueur réclame la fin du tour (le serveur vérifie l'échéance)
   const secondsLeft = useSecondsLeft(shown.finished ? null : turnEndsAt, 0);
@@ -155,152 +155,81 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
     }
   };
 
-  // Ce que la sélection permet
-  const actorActions = selected === null ? [] : legal.filter((a) => (a.type === "ATTACK" || a.type === "TECHNIQUE") && a.actor === selected);
-  const technique = selected === null ? null : setup.teams[mySide][selected].technique;
-  const techniqueKind = technique ? TECHNIQUE_TARGET[technique] : null;
-  const techniqueActions = actorActions.filter((a) => a.type === "TECHNIQUE");
-  const ready = new Set(legal.flatMap((a) => (a.type === "ATTACK" || a.type === "TECHNIQUE" ? [a.actor] : [])));
-  const enemyTargets = new Set(
-    actorActions.flatMap((a) =>
-      mode === "ATTACK" && a.type === "ATTACK" ? [a.target] : mode === "TECHNIQUE" && a.type === "TECHNIQUE" && techniqueKind === "ENEMY" ? [a.target!] : [],
-    ),
-  );
-  const allyTargets = new Set(
-    mode === "TECHNIQUE" && techniqueKind === "ALLY" ? techniqueActions.flatMap((a) => (a.type === "TECHNIQUE" ? [a.target!] : [])) : [],
-  );
+  const controls = useBoardControls({ setup, shown, mySide, canAct, send: (a) => void send(toClient(a)) });
 
-  const pressMine = (i: number) => {
-    if (!canAct) return;
-    if (allyTargets.has(i) && selected !== null) return void send({ type: "TECHNIQUE", actor: selected, target: i });
-    if (!ready.has(i)) return;
-    setSelected(selected === i ? null : i);
-    setMode("ATTACK");
-  };
-  const pressTheirs = (i: number) => {
-    if (!canAct || selected === null || !enemyTargets.has(i)) return;
-    const action = actorActions.find((a) => a.type === mode && "target" in a && a.target === i);
-    if (action) void send(toClient(action));
-  };
-  const pressTechnique = () => {
-    if (selected === null || techniqueActions.length === 0) return;
-    if (techniqueKind === "NONE") return void send({ type: "TECHNIQUE", actor: selected });
-    setMode(mode === "TECHNIQUE" ? "ATTACK" : "TECHNIQUE");
-  };
+  // Fin : le verdict au pinceau, puis le résultat (tout de suite en mouvement réduit)
+  const over = final.finished && shown.finished && !animating;
+  const [resultReady, setResultReady] = useState(false);
+  useEffect(() => {
+    if (!over) return;
+    const id = setTimeout(() => setResultReady(true), level === "reduced" ? 0 : 2_200);
+    return () => clearTimeout(id);
+  }, [level, over]);
 
-  const hint = shown.finished
-    ? null
-    : !myTurn
-      ? t("board.waitOpponent")
-      : ready.size === 0
-        ? t("board.noActions")
-        : selected === null
-          ? t("board.pickActor")
-          : mode === "TECHNIQUE" && techniqueKind === "ALLY"
-            ? t("board.pickAlly")
-            : t("board.pickTarget");
-
-  const cost = technique ? setup.rules.techniques[technique].cost : 0;
-  const timer = <TurnTimer secondsLeft={secondsLeft} total={view.turnSeconds} />;
-  const orbs = (n: number) => <Orbs count={n} max={setup.rules.orbs.max} label={t("board.orbs", { count: n })} />;
-  const endTurn = (
-    <button
-      type="button"
-      disabled={!canAct}
-      onClick={() => void send({ type: "END_TURN" })}
-      className={`battle-rim flex size-24 items-center justify-center rounded-full p-[3px] transition-transform active:scale-95 disabled:opacity-40 ${
-        canAct && ready.size === 0 ? "animate-pulse" : ""
-      }`}
-    >
-      <span className="flex size-full items-center justify-center rounded-full bg-[radial-gradient(circle_at_35%_30%,#ff7a5f,#C8372D_55%,#7d1a14)] px-2 text-center text-sm leading-tight font-bold text-washi-paper">
-        {t("board.endTurn")}
-      </span>
-    </button>
-  );
-  const detailCard = selected !== null ? setup.teams[mySide][selected] : null;
+  const last = [...director.feed].reverse().find((f) => line(f.event));
+  const hint = controls.hint ? t(`board.${controls.hint}`) : null;
+  const ticker = error
+    ? { text: error, tone: "error" as const }
+    : canAct && hint
+      ? { text: hint, tone: "mine" as const }
+      : { text: last ? line(last.event) : (hint ?? t("log.empty")), tone: "hint" as const };
+  const outcome = shown.winner === null ? "draw" : shown.winner === mySide ? "victory" : "defeat";
+  const reason = shown.endReason ? t(`result.reason.${shown.endReason === "KO" && shown.winner !== mySide ? "KO_LOSS" : shown.endReason}`) : null;
 
   return (
-    <>
-      <BoardLayout
+    <div className="fixed inset-0 z-[45]">
+      <BattleStage
         setup={setup}
-        shown={shown}
-        fx={player.fx}
+        director={director}
         mySide={mySide}
         players={view.players}
         tier={view.tier}
-        boardRef={player.boardRef}
-        cardRef={player.cardRef}
-        theirs={{ targets: enemyTargets, onPress: pressTheirs }}
-        mine={{ selected, ready: canAct && selected === null ? ready : undefined, targets: allyTargets, onPress: pressMine }}
-        theirPlate={!shown.finished && shown.active === opp ? <>{orbs(shown.orbs)}{timer}</> : null}
-        myPlate={!shown.finished && shown.active === mySide ? <>{orbs(shown.orbs)}{timer}</> : null}
-        front={
-          <>
-            <Medallion highlight={myTurn}>
-              <span className="text-[9px] text-[#a89f92] md:text-[10px]">{t("board.turnShort")}</span>
-              <span className="font-title text-lg font-extrabold tabular-nums md:text-2xl">{Math.ceil(shown.turn / 2)}</span>
-            </Medallion>
-            {/* Bannière qui traverse le plateau à chaque changement de tour */}
-            {!shown.finished && (
-              <span
-                key={`${shown.turn}-${shown.active}`}
-                aria-live="polite"
-                className={`battle-banner pointer-events-none absolute top-1/2 left-1/2 w-max -translate-x-1/2 -translate-y-1/2 rounded-md border px-5 py-1.5 font-title text-lg font-extrabold md:text-2xl ${
-                  myTurn ? "border-[var(--board-accent)] bg-[#2b1a10] text-kin" : "border-[#4a3f33] bg-[#15120f] text-washi-paper"
-                }`}
-              >
-                {myTurn ? t("board.yourTurn") : t("board.theirTurn", { name: name(view.players[opp]) })}
-              </span>
-            )}
-          </>
+        tiers={[view.tier, view.tier]}
+        arena={arena}
+        level={level}
+        arenaRef={arenaRef}
+        sound={sound.port}
+        mine={{ selected: controls.selected, ready: controls.selected === null && canAct ? controls.ready : undefined, targets: controls.allyTargets, onPress: controls.pressMine }}
+        theirs={{ targets: controls.enemyTargets, onPress: controls.pressTheirs }}
+        ticker={ticker}
+        timer={!intro && !shown.finished ? { secondsLeft, total: view.turnSeconds } : null}
+        tablets={
+          <Tablets
+            mode={controls.mode}
+            attack={{ enabled: canAct && controls.selected !== null, onPress: () => controls.setMode("ATTACK") }}
+            technique={{ technique: controls.technique, cost: controls.cost, enabled: controls.techniqueEnabled, onPress: controls.pressTechnique }}
+            end={{ enabled: canAct, pulse: controls.ready.size === 0, onPress: controls.endTurn }}
+          />
         }
-        frontAction={endTurn}
-        side={
-          <>
-            <CardDetail card={detailCard} hp={detailCard ? shown.fighters[mySide][selected!].hp : 0} maxHp={detailCard ? shown.fighters[mySide][selected!].maxHp : 0} rules={setup.rules} />
-            <BattleLog feed={player.feed} setup={setup} players={view.players} />
-          </>
+        menu={
+          <StageMenu sound={{ enabled: sound.enabled, set: sound.setEnabled }} music={{ enabled: sound.music, set: sound.setMusic }} speed={speed}>
+            <button type="button" className="menu-row" disabled={shown.finished || pending} onClick={() => setConfirmForfeit(true)}>
+              <span>{t("board.forfeit")}</span>
+            </button>
+            <Link href="/combat" className="menu-row">
+              <span>{t("result.back")}</span>
+            </Link>
+          </StageMenu>
         }
-        controls={
-          <div className="flex flex-col gap-2 pb-[env(safe-area-inset-bottom)] lg:rounded-card lg:border lg:border-border lg:bg-surface lg:p-4">
-            <p className={`min-h-6 text-center text-sm font-medium ${error ? "text-shu" : myTurn ? "text-kin" : "text-text-muted"}`} aria-live="polite">
-              {error ?? hint}
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={mode === "ATTACK" && selected !== null ? "primary" : "secondary"}
-                disabled={!canAct || selected === null}
-                onClick={() => setMode("ATTACK")}
-              >
-                {t("board.attack")}
-              </Button>
-              <Button
-                variant={mode === "TECHNIQUE" ? "primary" : "secondary"}
-                disabled={!canAct || techniqueActions.length === 0}
-                onClick={pressTechnique}
-                className="min-w-0 px-2 py-2 text-sm"
-                title={technique ? t(`techniques.${technique}.name`) : undefined}
-              >
-                {technique ? t("board.technique", { name: t(`techniques.${technique}.name`), cost }) : t("board.techniqueLabel")}
-              </Button>
-            </div>
-            {technique && (
-              <p className="text-center text-xs text-text-muted lg:hidden">
-                {t(`techniques.${technique}.desc`, {
-                  mult: (setup.rules.techniques[technique].value / 100).toLocaleString(),
-                  pct: setup.rules.techniques[technique].value,
-                })}
-              </p>
-            )}
-            <div className="grid grid-cols-[1fr_auto] gap-2 md:grid-cols-[auto] md:justify-end">
-              <Button variant="primary" className="md:hidden" disabled={!canAct} onClick={() => void send({ type: "END_TURN" })}>
-                {t("board.endTurn")}
-              </Button>
-              <Button disabled={shown.finished || pending} onClick={() => setConfirmForfeit(true)}>
-                {t("board.forfeit")}
-              </Button>
-            </div>
-          </div>
+        overlay={
+          intro ? (
+            <Intro
+              arena={arena}
+              players={view.players}
+              mySide={mySide}
+              tiers={[view.tier, view.tier]}
+              first={setup.first}
+              level={level}
+              deal={() => director.deal([opp, mySide].flatMap((side) => [0, 1, 2].map((index) => ({ side, index }))))}
+              finishDeal={director.finishDeal}
+              onDone={() => setIntro(false)}
+              sound={sound.port}
+            />
+          ) : over ? (
+            <Outro outcome={outcome} reason={reason} level={level}>
+              {null}
+            </Outro>
+          ) : null
         }
       />
 
@@ -320,7 +249,7 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
         </div>
       </Sheet>
 
-      {final.finished && shown.finished && !animating && (
+      {over && resultReady && (
         <BattleResult
           winner={shown.winner}
           mySide={mySide}
@@ -341,6 +270,6 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
           }
         />
       )}
-    </>
+    </div>
   );
 }
