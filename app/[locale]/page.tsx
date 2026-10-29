@@ -45,6 +45,8 @@ import { getBoosterCredits, getSealedDrops } from "@/server/economy/queries";
 import { getSealedDisplays } from "@/server/boosters/sealed";
 import { SealedDropsRow } from "@/components/boosters/SealedDropsRow";
 import { CreditStrip, type CreditedBooster } from "@/components/boosters/CreditStrip";
+import { IncensePanel } from "@/components/boosters/IncensePanel";
+import { getIncenseState } from "@/server/boosters/incense";
 import { getOwnReview, getReviewSample, getReviewSummary } from "@/server/social/reviews";
 import { getCurrentUser } from "@/server/user";
 import { getAmbassadorPack } from "@/server/ambassador/queries";
@@ -120,12 +122,13 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
       ? { kind: "guest" }
       : { kind: "none" };
   // Sachets scellés (Divin, Apocalyptique) gardés pour plus tard
-  const [sealedDrops, sealedDisplays, apocalypseKarma, ambassadorPack] = await Promise.all([
+  const [sealedDrops, sealedDisplays, apocalypseKarma, ambassadorPack, incense] = await Promise.all([
     user ? getSealedDrops(user.id) : [],
     getSealedDisplays(locale),
     getSetting("booster.apocalypseKarma"),
     // Pack hebdomadaire des ambassadeurs, au-dessus des boosters à ouvrir
     user && !user.bannedAt ? getAmbassadorPack(user, locale) : null,
+    user && !user.bannedAt ? getIncenseState(user.id) : null,
   ]);
   const cardsOf = (o: { type: BoosterTypeView }) => (o.type.slotFloors.length > 0 ? o.type.slotFloors.length : rules.draw.slotFloors.length);
   const credited: CreditedBooster[] = allTypes
@@ -218,6 +221,9 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
       {ambassadorPack && <AmbassadorPackCard {...ambassadorPack} />}
 
       <CreditStrip credits={credited} />
+
+      {/* Encens : seulement quand il y a quelque chose à activer ou un boost en cours (toujours visible sur le profil) */}
+      {incense && (incense.available > 0 || incense.activeUntil !== null) && <IncensePanel state={incense} />}
 
       {sealedDrops.length > 0 && (
         <SealedDropsRow drops={sealedDrops} displays={sealedDisplays} karma={{ current: user?.apocalypseKarma ?? 0, threshold: apocalypseKarma }} />

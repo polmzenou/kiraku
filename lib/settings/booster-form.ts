@@ -20,6 +20,10 @@ export const BOOSTER_SETTING_KEYS = [
   "booster.rotationHours",
   "booster.rotationDemographie",
   "booster.rotationGenre",
+  "incense.cardStep",
+  "incense.durationHours",
+  "incense.rateBoost",
+  "incense.boostFrom",
 ] as const satisfies readonly SettingKey[];
 
 export type BoosterSettingKey = (typeof BOOSTER_SETTING_KEYS)[number];

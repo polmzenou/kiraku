@@ -14,6 +14,7 @@ import {
   type RuinRules,
   type SealedKind,
 } from "@/lib/boosters/draw";
+import { isIncenseActive } from "@/lib/boosters/incense";
 import type { Rng } from "@/lib/boosters/rng";
 import { computeStock, consumeStock, stockRulesFor, type StockSettings, type StockState } from "@/lib/boosters/stock";
 import { bonusesFor, creditBonuses, priceFor, type BoosterTypeView } from "@/lib/boosters/types";
@@ -64,8 +65,13 @@ export type OpenInput = {
   featured?: FeaturedDraw;
   /** Types des sachets scellés en service : un sachet sans type ne peut pas tomber. */
   sealedTypes?: Partial<Record<SealedKind, string>>;
+  /** Règles et tables sous Encens, utilisées si le boost du joueur est actif (lu sous verrou). */
+  incense?: IncenseDraw;
   rng: Rng;
 };
+
+/** Tirage sous Encens : mêmes règles que le type, taux boostés. */
+export type IncenseDraw = { draw: DrawRules; tables: RarityTables };
 
 export type OpenedBoosterRow = {
   id: string;
@@ -99,6 +105,8 @@ export type OpenOutcome = {
   credits: number;
   /** Rôle Ambassadeur lu sous le verrou (stock max de l'état renvoyé). */
   ambassadorSince: Date | null;
+  /** Les boosters ont été tirés sous Encens. */
+  incenseActive: boolean;
 };
 
 type LockedUser = {
@@ -110,6 +118,7 @@ type LockedUser = {
   bannerPity: unknown;
   bannedAt: Date | null;
   ambassadorSince: Date | null;
+  incenseUntil: Date | null;
 };
 
 const TX = { maxWait: 10_000, timeout: 15_000 };
@@ -212,7 +221,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
       await tx.$executeRaw`SELECT pg_advisory_xact_lock_shared(740_210_001)`;
       // Verrou sur la ligne du joueur : deux ouvertures simultanées passent l'une après l'autre
       const [user] = await tx.$queryRaw<LockedUser[]>`
-        SELECT "boosterStock", "boosterAnchor", "pityCount", "standardCount", "coins", "bannerPity", "bannedAt", "ambassadorSince"
+        SELECT "boosterStock", "boosterAnchor", "pityCount", "standardCount", "coins", "bannerPity", "bannedAt", "ambassadorSince", "incenseUntil"
         FROM "User" WHERE id = ${userId} FOR UPDATE`;
       if (!user) throw new OpenError("NO_USER");
       if (user.bannedAt) throw new OpenError("BANNED");
@@ -245,14 +254,17 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
 
       const bannerPity = readBannerPity(user.bannerPity);
       const sealedTypes = input.sealedTypes ?? {};
+      // Encens actif : seuls les taux changent (pitié, doré, sachets et vedettes inchangés)
+      const incense = input.incense && isIncenseActive(user.incenseUntil, now) ? input.incense : null;
+      const drawRules = incense?.draw ?? rules.draw;
       const drawn = drawBoosters(input.rng, {
         pool: input.pool,
         rules: {
-          ...rules.draw,
-          divineOdds: sealedTypes.divin ? rules.draw.divineOdds : 0,
-          apocalypseOdds: sealedTypes.apocalypse ? rules.draw.apocalypseOdds : 0,
+          ...drawRules,
+          divineOdds: sealedTypes.divin ? drawRules.divineOdds : 0,
+          apocalypseOdds: sealedTypes.apocalypse ? drawRules.apocalypseOdds : 0,
         },
-        tables: input.tables,
+        tables: incense?.tables ?? input.tables,
         bonuses: input.credit ? creditBonuses(type) : bonusesFor(type),
         featured: input.featured,
         state: {
@@ -333,6 +345,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         zeniSpent: total,
         credits,
         ambassadorSince: user.ambassadorSince,
+        incenseActive: incense !== null,
       };
     },
     TX,
@@ -348,10 +361,11 @@ export type OpenSealedInput = {
   rules: { draw: DrawRules; ruin: RuinRules };
   tables: RarityTables;
   pool: CardPool;
+  incense?: IncenseDraw;
   rng: Rng;
 };
 
-export type OpenSealedOutcome = { booster: OpenedBoosterRow; karma: number };
+export type OpenSealedOutcome = { booster: OpenedBoosterRow; karma: number; incenseActive: boolean };
 
 /**
  * Ouvre un sachet scellé du joueur : le sachet est réclamé par un UPDATE conditionnel (deux clics ou
@@ -365,8 +379,8 @@ export async function openSealedWith(db: PrismaClient, input: OpenSealedInput, o
 
   return notifyingTransaction(db, async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock_shared(740_210_001)`;
-    const [user] = await tx.$queryRaw<{ apocalypseKarma: number; bannedAt: Date | null }[]>`
-      SELECT "apocalypseKarma", "bannedAt" FROM "User" WHERE id = ${userId} FOR UPDATE`;
+    const [user] = await tx.$queryRaw<{ apocalypseKarma: number; bannedAt: Date | null; incenseUntil: Date | null }[]>`
+      SELECT "apocalypseKarma", "bannedAt", "incenseUntil" FROM "User" WHERE id = ${userId} FOR UPDATE`;
     if (!user) throw new OpenError("NO_USER");
     if (user.bannedAt) throw new OpenError("BANNED");
 
@@ -378,7 +392,15 @@ export async function openSealedWith(db: PrismaClient, input: OpenSealedInput, o
     if (claimed.count !== 1) throw new OpenError("NO_BOOSTER");
     const drop = await tx.sealedDrop.findUniqueOrThrow({ where: { id: input.dropId }, select: { giverId: true } });
 
-    const sealed = drawSealed(input.rng, { kind, pool: input.pool, rules: rules.draw, ruin: rules.ruin, karma: user.apocalypseKarma, tables: input.tables });
+    const incense = input.incense && isIncenseActive(user.incenseUntil, now) ? input.incense : null;
+    const sealed = drawSealed(input.rng, {
+      kind,
+      pool: input.pool,
+      rules: incense?.draw ?? rules.draw,
+      ruin: rules.ruin,
+      karma: user.apocalypseKarma,
+      tables: incense?.tables ?? input.tables,
+    });
     const [booster] = await persistDraw(tx, {
       userId,
       type,
@@ -417,6 +439,6 @@ export async function openSealedWith(db: PrismaClient, input: OpenSealedInput, o
         now,
       });
     }
-    return { booster, karma: sealed.karma };
+    return { booster, karma: sealed.karma, incenseActive: incense !== null };
   }, TX, onNotified);
 }

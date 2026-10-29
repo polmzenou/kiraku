@@ -1259,7 +1259,11 @@
         "apocalypseWinRate": "Apocalyptique épargné (points de base)",
         "apocalypseKarma": "Karma de l'Apocalypse",
         "apocalypseRuinFloors": "Apocalyptique ruiné : planchers",
-        "apocalypseRuinCeiling": "Apocalyptique ruiné : rareté maximale"
+        "apocalypseRuinCeiling": "Apocalyptique ruiné : rareté maximale",
+        "incenseCardStep": "Encens : un tous les N cartes tirées",
+        "incenseDurationHours": "Encens : durée du boost (heures)",
+        "incenseRateBoost": "Encens : multiplicateur (points de base, 30 000 = ×3)",
+        "incenseBoostFrom": "Encens : boost à partir de la rareté"
       },
       "slot": "Carte {n}",
       "addSlot": "Ajouter une carte",
@@ -1305,7 +1309,9 @@
           "weeklyBoosterSlug": "Type de booster du pack"
         },
         "weeklyHint": "À réclamer une fois par semaine (lundi). 0 : pas de pack."
-      }
+      },
+      "incenseSection": "Encens",
+      "incenseFactor": "×{factor, number}"
     },
     "types": {
       "title": "Types de boosters",
@@ -4508,5 +4514,24 @@
     "text": "Tu joues en invité. Crée un compte pour garder tes cartes : {days, plural, one {sans visite pendant # jour} other {sans visite pendant # jours}}, ta progression est supprimée.",
     "cta": "Créer un compte",
     "later": "Plus tard"
+  },
+  "incense": {
+    "title": "Encens",
+    "count": "×{count, number}",
+    "activate": "Activer l'Encens",
+    "extend": "Prolonger de {hours, number} h",
+    "boost": "{rarity} et plus ×{factor}",
+    "active": "Encens actif · {boost}",
+    "hint": "Un Encens tous les {step, number} cartes tirées en boosters. Activé, il donne {boost} pendant {hours, number} h sur tous les boosters.",
+    "timerLabel": "Temps restant de l'Encens",
+    "progressLabel": "Progression vers le prochain Encens",
+    "next": "{count, plural, one {# carte} other {# cartes}} avant le prochain Encens (un tous les {step, number})",
+    "errors": {
+      "NO_SESSION": "Connecte-toi pour activer un Encens.",
+      "INVALID": "Demande invalide.",
+      "UNAVAILABLE": "Impossible d'activer l'Encens pour le moment.",
+      "RATE_LIMITED": "Doucement : réessaie dans quelques secondes.",
+      "NO_INCENSE": "Tu n'as plus d'Encens à activer."
+    }
   }
 }

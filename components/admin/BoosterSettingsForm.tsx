@@ -34,8 +34,14 @@ type FieldName =
   | "apocalypseRuinCeiling"
   | "rotationHours"
   | "rotationDemographie"
-  | "rotationGenre";
-const field = (key: BoosterSettingKey) => key.slice("booster.".length) as FieldName;
+  | "rotationGenre"
+  | "incenseCardStep"
+  | "incenseDurationHours"
+  | "incenseRateBoost"
+  | "incenseBoostFrom";
+// booster.goldenEvery → goldenEvery, incense.cardStep → incenseCardStep
+const field = (key: BoosterSettingKey) =>
+  key.replace(/^booster\./, "").replace(/^incense\.(.)/, (_, c: string) => `incense${c.toUpperCase()}`) as FieldName;
 
 const toRules = (s: BoosterSettings, order: readonly string[]): DrawRules => ({
   rates: Object.fromEntries(order.map((r) => [r, s["booster.rates"][r] ?? 0])),
@@ -371,6 +377,41 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
             >
               {t("addSlot")}
             </Button>
+          </div>
+        </Fieldset>
+
+        <Fieldset legend={t("incenseSection")}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <NumberField
+              label={t("fields.incenseCardStep")}
+              value={draft["incense.cardStep"]}
+              onChange={(v) => set("incense.cardStep", v)}
+              min={1}
+              max={1_000_000}
+            />
+            <NumberField
+              label={t("fields.incenseDurationHours")}
+              value={draft["incense.durationHours"]}
+              onChange={(v) => set("incense.durationHours", v)}
+              min={1}
+              max={24 * 7}
+            />
+            <NumberField
+              label={t("fields.incenseRateBoost")}
+              value={draft["incense.rateBoost"]}
+              onChange={(v) => set("incense.rateBoost", v)}
+              min={10_000}
+              max={100_000}
+              hint={Number.isFinite(draft["incense.rateBoost"]) ? t("incenseFactor", { factor: draft["incense.rateBoost"] / 10_000 }) : undefined}
+            />
+            <div className="flex min-w-0 flex-col gap-1">
+              <span className="text-sm">{t("fields.incenseBoostFrom")}</span>
+              <RaritySelect
+                label={t("fields.incenseBoostFrom")}
+                value={draft["incense.boostFrom"]}
+                onChange={(r) => set("incense.boostFrom", r)}
+              />
+            </div>
           </div>
         </Fieldset>
 

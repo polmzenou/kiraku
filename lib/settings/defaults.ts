@@ -148,6 +148,12 @@ export const SETTING_SCHEMAS = {
   "booster.rotationGenre": z.number().int().min(0).max(50),
   // Sélection épinglée par l'admin pour la fenêtre en cours (null = hasard)
   "booster.rotationPin": rotationPinSchema.nullable(),
+  // Encens : un par palier de cartes tirées en boosters, boost des taux à partir de boostFrom
+  // (points de base, 10 000 = ×1) pendant durationHours, sur tous les boosters
+  "incense.cardStep": z.number().int().min(1).max(1_000_000),
+  "incense.durationHours": z.number().int().min(1).max(24 * 7),
+  "incense.rateBoost": z.number().int().min(10_000).max(100_000),
+  "incense.boostFrom": rarity,
   // Fuseau du jeu : « aujourd'hui » (anniversaires) et saison AniList en cours
   "game.timeZone": z.string().min(1).max(64).refine(isTimeZone, { message: "Fuseau horaire inconnu" }),
   "collection.recycleValues": recycleValues,
@@ -360,6 +366,10 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "booster.rotationDemographie": 2,
   "booster.rotationGenre": 4,
   "booster.rotationPin": null,
+  "incense.cardStep": 1000,
+  "incense.durationHours": 12,
+  "incense.rateBoost": 30_000,
+  "incense.boostFrom": "LEGENDARY",
   "game.timeZone": "Europe/Paris",
   // Valeurs de Kyara : 1 · 1 · 3 · 10 · 40 · 150 Zeni
   "collection.recycleValues": { COMMON: 1, UNCOMMON: 1, RARE: 3, EPIC: 10, LEGENDARY: 40, MYTHIC: 150, AR: 450, GOLD: 1050 },

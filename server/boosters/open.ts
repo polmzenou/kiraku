@@ -1,10 +1,12 @@
 import "server-only";
 import { randomInt } from "node:crypto";
-import { buildRarityTables, featuredFromPool, SEALED_KINDS, type SealedKind } from "@/lib/boosters/draw";
+import { buildRarityTables, featuredFromPool, SEALED_KINDS, type DrawRules, type SealedKind } from "@/lib/boosters/draw";
+import { incenseDrawRules } from "@/lib/boosters/incense";
 import { featuredIdsOf, typeDrawRules } from "@/lib/boosters/types";
 import { prisma } from "../db";
 import type { OnNotified } from "../social/notify";
-import { OpenError, openBoostersWith, openSealedWith } from "./open-core";
+import { getIncenseSettings } from "./incense";
+import { OpenError, openBoostersWith, openSealedWith, type IncenseDraw } from "./open-core";
 import { getBoosterOffers, getBoosterPool, getBoosterTypeEntry, type BoosterTypeEntry } from "./pools";
 import { getBoosterRules } from "./rules";
 
@@ -17,6 +19,12 @@ async function sealedEntries(): Promise<Partial<Record<SealedKind, BoosterTypeEn
       return entry && entry.type.kind === "DROP" && entry.type.active && entry.type.filter !== null ? [[kind, entry]] : [];
     }),
   );
+}
+
+/** Règles sous Encens d'un type (le boost s'ajoute à celui du type), appliquées si le joueur en a un actif. */
+async function incenseFor(draw: DrawRules): Promise<IncenseDraw> {
+  const boosted = incenseDrawRules(draw, await getIncenseSettings());
+  return { draw: boosted, tables: buildRarityTables(boosted.rates) };
 }
 
 /**
@@ -35,6 +43,7 @@ export async function openBoosters(userId: string, slug: string, count: number, 
   const { type } = entry;
   const pool = await getBoosterPool(entry);
   const draw = typeDrawRules(type, rules.draw);
+  const incense = await incenseFor(draw);
   const outcome = await openBoostersWith(prisma, {
     userId,
     type,
@@ -47,6 +56,7 @@ export async function openBoosters(userId: string, slug: string, count: number, 
     featured: featuredFromPool(featuredIdsOf(type), pool, { rate: type.featuredRate, pityThreshold: type.featuredPity }),
     // Un sachet dont le type est absent ou désactivé ne peut pas tomber
     sealedTypes: Object.fromEntries(Object.entries(sealed).map(([kind, e]) => [kind, e.type.id])),
+    incense,
     rng: (max) => randomInt(0, max),
   });
   return { outcome, rules, type };
@@ -75,6 +85,7 @@ export async function openSealed(userId: string, dropId: string, onNotified?: On
 
   const pool = await getBoosterPool(entry);
   const draw = typeDrawRules(entry.type, rules.draw);
+  const incense = await incenseFor(draw);
   const outcome = await openSealedWith(prisma, {
     userId,
     dropId: found.id,
@@ -83,6 +94,7 @@ export async function openSealed(userId: string, dropId: string, onNotified?: On
     rules: { draw, ruin: rules.ruin },
     tables: buildRarityTables(draw.rates),
     pool,
+    incense,
     rng: (max) => randomInt(0, max),
   }, onNotified);
   return { outcome, rules, type: entry.type };

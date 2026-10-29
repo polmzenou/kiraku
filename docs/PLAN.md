@@ -316,6 +316,10 @@ export function statsFor(rank: number, total: number) {
 
 Le catalogue (`Card` groupé par rareté) change rarement : charge-le une fois avec `unstable_cache` ou un cache module, invalidé quand tu ajoutes des cartes. Le recyclage des doublons en Zeni est ce qui alimente l'économie des enchères.
 
+### Encens
+
+Un Encens est gagné à chaque palier de `incense.cardStep` cartes tirées en boosters (1 000 par défaut, doublons compris, compté depuis `BoosterOpening.catalogCardIds` : rétroactif, ne baisse ni à la vente ni au recyclage). Disponibles = paliers atteints − `User.incenseUsed`. Activé depuis l'accueil ou son profil, il multiplie les parts à partir de `incense.boostFrom` (Légendaire : donc Légendaire, Mythique, AR, Gold) par `incense.rateBoost` (30 000 points de base = ×3, même calcul que l'Impérial, appliqué par-dessus les taux du type) pendant `incense.durationHours` (12 h) sur tous les boosters, crédités et sachets scellés compris. Un nouvel Encens prolonge le boost en cours sans cumuler la force. L'activation et le choix des taux se font sous le verrou du joueur (`User.incenseUntil`). Logique pure dans `lib/boosters/incense.ts`.
+
 ### Importer le catalogue
 
 L'API GraphQL publique d'AniList (`https://graphql.anilist.co`, sans clé) trie les personnages par favoris et renvoie 50 personnages par page, avec leur œuvre la plus populaire dans la même requête. La limite normale est de 90 requêtes par minute, réduite pour l'instant à 30 : les \~136 pages des 6 736 personnages passent en 5 minutes environ. Une mise à jour par semaine suffit.

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
+import { IncensePanel } from "@/components/boosters/IncensePanel";
 import { PageShell } from "@/components/PageShell";
 import { displayName, ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileCustomizeButton } from "@/components/profile/ProfileCustomizeSheet";
@@ -26,6 +27,7 @@ import { getCosmeticProgress, getEarnedBadges, getProfileDecor } from "@/server/
 import type { Badge } from "@/lib/profile/conditions";
 import { giftsSentToday } from "@/server/social/queries";
 import { getSealedDrops } from "@/server/economy/queries";
+import { getIncenseState } from "@/server/boosters/incense";
 import type { ProfileAccess } from "@/lib/collection/visibility";
 import type { Relation } from "@/lib/social/relation";
 
@@ -85,9 +87,11 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
   ]);
   // Son propre profil (compte inscrit) : de quoi le personnaliser
   const customize = access.isOwner && viewer && !viewer.isGuest ? await customizeData(owner.id, locale) : null;
-  const [showcase, summary, wishlist, sales] = await Promise.all([
+  const [showcase, summary, wishlist, sales, incense] = await Promise.all([
     getShowcase(owner.id, size, locale), getCollectionSummary(owner.id, values),
     getWishlist(owner.id, locale), getProfileSales(owner.id, locale),
+    // Encens : seulement sur son propre profil
+    access.isOwner && viewer && !viewer.bannedAt ? getIncenseState(owner.id) : null,
   ]);
   // Profil d'un autre joueur : ses cartes que le visiteur a déjà (pastille « Acquise »)
   const owned = access.isOwner
@@ -149,6 +153,8 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
           </div>
         ))}
       </dl>
+
+      {incense && <IncensePanel state={incense} />}
 
       <section className="flex flex-col gap-4">
         <SectionTitle kanji="飾" title={t("showcase")} />

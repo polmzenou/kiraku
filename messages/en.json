@@ -1259,7 +1259,11 @@
         "apocalypseWinRate": "Apocalyptic spared (basis points)",
         "apocalypseKarma": "Apocalypse karma",
         "apocalypseRuinFloors": "Ruined Apocalyptic: slot floors",
-        "apocalypseRuinCeiling": "Ruined Apocalyptic: highest rarity"
+        "apocalypseRuinCeiling": "Ruined Apocalyptic: highest rarity",
+        "incenseCardStep": "Incense: one every N cards pulled",
+        "incenseDurationHours": "Incense: boost duration (hours)",
+        "incenseRateBoost": "Incense: multiplier (basis points, 30,000 = ×3)",
+        "incenseBoostFrom": "Incense: boost from rarity"
       },
       "slot": "Card {n}",
       "addSlot": "Add a card",
@@ -1305,7 +1309,9 @@
           "weeklyBoosterSlug": "Weekly pack booster type"
         },
         "weeklyHint": "Claimable once a week (Monday). 0: no pack."
-      }
+      },
+      "incenseSection": "Incense",
+      "incenseFactor": "×{factor, number}"
     },
     "types": {
       "title": "Booster types",
@@ -4508,5 +4514,24 @@
     "text": "You're playing as a guest. Create an account to keep your cards: {days, plural, one {after # day without a visit} other {after # days without a visit}}, your progress is deleted.",
     "cta": "Create an account",
     "later": "Later"
+  },
+  "incense": {
+    "title": "Incense",
+    "count": "×{count, number}",
+    "activate": "Light the Incense",
+    "extend": "Extend by {hours, number} h",
+    "boost": "{rarity} and up ×{factor}",
+    "active": "Incense active · {boost}",
+    "hint": "One Incense every {step, number} cards pulled from boosters. Once lit, it gives {boost} for {hours, number} h on every booster.",
+    "timerLabel": "Incense time left",
+    "progressLabel": "Progress to the next Incense",
+    "next": "{count, plural, one {# card} other {# cards}} to the next Incense (one every {step, number})",
+    "errors": {
+      "NO_SESSION": "Sign in to light an Incense.",
+      "INVALID": "Invalid request.",
+      "UNAVAILABLE": "Can't light the Incense right now.",
+      "RATE_LIMITED": "Easy there: try again in a few seconds.",
+      "NO_INCENSE": "You have no Incense left to light."
+    }
   }
 }
