@@ -12,7 +12,8 @@ import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import type { PlayerView } from "@/lib/battle/view";
 import { battleCtx, challengeTarget, getActivity, getCandidates, getHistory, getLastTeam, sweepBattlesFor } from "@/server/battle/queries";
-import { getRankView } from "@/server/ranked/queries";
+import { RankedBoardPanel } from "@/components/ranked/RankedBoardPanel";
+import { getDivisionBoard, getRankedLeaderboard, getRankView } from "@/server/ranked/queries";
 import { getCurrentUser } from "@/server/user";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/combat">): Promise<Metadata> {
@@ -60,7 +61,11 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
     getHistory(user.id),
     ctx.ranked.enabled ? getRankView(user.id, ctx.ranked, await getLocale()) : null,
   ]);
-  const lastTeam = await getLastTeam(user.id, candidates);
+  const [lastTeam, board] = await Promise.all([
+    getLastTeam(user.id, candidates),
+    // Classement à droite des règles : top de la saison et division du joueur
+    rank ? Promise.all([getRankedLeaderboard(ctx.ranked), getDivisionBoard(user.id, rank, ctx.ranked)]) : null,
+  ]);
   // ?defier=pseudo (bouton du profil) : seulement un ami accepté, la salle le revérifie à la création
   const { defier } = await searchParams;
   const challenge = typeof defier === "string" ? await challengeTarget(user.id, defier) : null;
@@ -80,16 +85,25 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
         rank={rank}
       />
 
-      <section className="flex flex-col gap-3">
-        <SectionTitle title={t("rules.title")} />
-        <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-text-muted">
-          <li>{t("rules.items.turn")}</li>
-          <li>{t("rules.items.orbs", { max: ctx.rules.orbs.max })}</li>
-          <li>{t("rules.items.damage")}</li>
-          <li>{t("rules.items.timer", { seconds: ctx.rules.turnSeconds })}</li>
-          <li>{t("rules.items.end")}</li>
-        </ul>
-      </section>
+      <div className={`grid gap-6 ${board ? "md:grid-cols-2 md:items-start" : ""}`}>
+        <section className="flex min-w-0 flex-col gap-3">
+          <SectionTitle title={t("rules.title")} />
+          <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-text-muted">
+            <li>{t("rules.items.turn")}</li>
+            <li>{t("rules.items.orbs", { max: ctx.rules.orbs.max })}</li>
+            <li>{t("rules.items.damage")}</li>
+            <li>{t("rules.items.timer", { seconds: ctx.rules.turnSeconds })}</li>
+            <li>{t("rules.items.end")}</li>
+          </ul>
+        </section>
+
+        {board && (
+          <section className="flex min-w-0 flex-col gap-3">
+            <SectionTitle title={tRanked("panel.title")} />
+            <RankedBoardPanel top={board[0]} division={board[1]} viewer={user.username} />
+          </section>
+        )}
+      </div>
 
       <AbilityGuide rules={ctx.rules} />
 

@@ -1,8 +1,9 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
+import { Prisma } from "@/generated/prisma/client";
 import type { BoardTier } from "@/lib/battle/tiers";
 import { decorFromColumns, type PlayerDecor } from "@/lib/profile/decor";
-import { rankedRulesFrom, rankOf, RANKED_SETTING_KEYS, type RankedRules } from "@/lib/ranked/rules";
+import { divisionRange, ladderRanges, rankedRulesFrom, rankOf, RANKED_SETTING_KEYS, type RankedRules, type TierRanges } from "@/lib/ranked/rules";
 import { rewardTier } from "@/lib/ranked/season";
 import type { SettingValue } from "@/lib/settings/defaults";
 import { prisma } from "../db";
@@ -55,7 +56,15 @@ export type RankView = {
    * que la clôture). `played` : sans partie classée cette saison, rien n'est versé. Null sans lot réglé.
    */
   seasonReward: { tier: BoardTier; lot: LotView; played: boolean } | null;
+  /** Paliers de PC de chaque rang et division (fenêtre « i » à côté de l'emblème). */
+  ladder: LadderInfo;
 };
+
+export type LadderInfo = { tiers: TierRanges[]; grand: { min: number; top: number } };
+
+export function ladderInfo(r: RankedRules): LadderInfo {
+  return { tiers: ladderRanges(r), grand: { min: r.grandChampion.min, top: r.grandChampion.top } };
+}
 
 /** Joueurs inscrits non bannis qui ont strictement plus de PC ; null sous le seuil du Grand Champion. */
 async function playersAhead(pc: number, r: RankedRules): Promise<number | null> {
@@ -95,6 +104,7 @@ export async function getRankView(userId: string, r: RankedRules, locale: string
     reward: reward ? { seasonId: reward.seasonId, seasonNumber: reward.season.number, peakTier: reward.peakTier as BoardTier } : null,
     grand: rank.tier === "GRAND_CHAMPION" && ahead !== null ? { position: ahead + 1, top: r.grandChampion.top } : null,
     seasonReward: lot ? { tier: peak, lot, played: user.seasonGames > 0 } : null,
+    ladder: ladderInfo(r),
   };
 }
 
@@ -145,6 +155,75 @@ export async function getRankedLeaderboard(r: RankedRules): Promise<RankedEntry[
         decor: decorFromColumns(row.frameStyle, row.nameColor),
       };
     });
+}
+
+export type DivisionEntry = RankedEntry & { self: boolean };
+
+export type DivisionBoard = {
+  tier: BoardTier;
+  division: 1 | 2 | 3 | null;
+  /** Joueurs de la division, profils privés compris (seuls les publics et le joueur sont listés). */
+  total: number;
+  entries: DivisionEntry[];
+};
+
+type DivisionRow = Row & { id: string; total: number };
+
+const DIVISION_SIZE = 50;
+
+/**
+ * Joueurs d'une même division : PC dans ses paliers, joueurs du classé seulement (PC ou partie cette
+ * saison). Grand Champion à part : le rang se décide au top (`ahead` = joueurs strictement devant,
+ * même règle que getRankView), d'où `grand` = true pour n'en garder que les Grands Champions, false
+ * pour les exclure de Champion I. Position = celle du classement général. En cache 60 s par division.
+ */
+function divisionQuery(min: number, max: number | null, grand: boolean, gc: { min: number; top: number }) {
+  return Prisma.sql`
+    SELECT * FROM (
+      SELECT ranked.*, (COUNT(*) OVER ())::int AS total FROM (
+        SELECT (ROW_NUMBER() OVER (ORDER BY u."rankPoints" DESC, u."createdAt" ASC))::int AS position,
+               (RANK() OVER (ORDER BY u."rankPoints" DESC))::int - 1 AS ahead,
+               u.id, u.username, u.image, u."rankPoints" AS pc, u."seasonGames" AS games,
+               (u."profileVisibility" = 'PUBLIC') AS public, ${decorColumns}
+        FROM "User" u
+        WHERE u."bannedAt" IS NULL AND u."isGuest" = false
+      ) ranked
+      WHERE ranked.pc >= ${min} AND (${max}::int IS NULL OR ranked.pc <= ${max}::int)
+        AND (ranked.pc > 0 OR ranked.games > 0)
+        AND ((ranked.pc >= ${gc.min} AND ranked.ahead < ${gc.top}) = ${grand})
+    ) division`;
+}
+
+const loadDivision = unstable_cache(
+  async (min: number, max: number | null, grand: boolean, gcMin: number, gcTop: number) =>
+    prisma.$queryRaw<DivisionRow[]>`${divisionQuery(min, max, grand, { min: gcMin, top: gcTop })} WHERE division.public ORDER BY position LIMIT ${DIVISION_SIZE}`,
+  ["ranked-division-v1"],
+  { tags: [RANKED_TAG], revalidate: 60 },
+);
+
+export async function getDivisionBoard(userId: string, rank: Pick<RankView, "tier" | "division">, r: RankedRules): Promise<DivisionBoard> {
+  const grand = rank.tier === "GRAND_CHAMPION";
+  const { min, max } = divisionRange(rank, r);
+  const [rows, [self]] = await Promise.all([
+    loadDivision(min, max, grand, r.grandChampion.min, r.grandChampion.top),
+    // Le joueur toujours listé, même privé ou hors des premiers (lecture non mise en cache)
+    prisma.$queryRaw<DivisionRow[]>`${divisionQuery(min, max, grand, r.grandChampion)} WHERE division.id = ${userId}`,
+  ]);
+  const all = self && !rows.some((row) => row.id === userId) ? [...rows, self] : rows;
+  const toEntry = (row: DivisionRow): DivisionEntry => {
+    const at = rankOf(row.pc, grand, r);
+    return {
+      position: row.position,
+      username: row.username,
+      image: row.image,
+      pc: row.pc,
+      tier: at.tier,
+      division: at.division,
+      decor: decorFromColumns(row.frameStyle, row.nameColor),
+      self: row.id === userId,
+    };
+  };
+  return { tier: rank.tier, division: rank.division, total: self?.total ?? rows[0]?.total ?? 0, entries: all.map(toEntry) };
 }
 
 /** Santé du classé pour /admin/classe. */

@@ -53,6 +53,35 @@ function divisionSpan(tier: LadderTier, r: Pick<RankedRules, "tiers">): number {
   return i > 0 ? divisionSpan(LADDER[i - 1], r) : 100;
 }
 
+/** PC d'une division : de `min` à `max` compris (`max` null : sans plafond). */
+export type DivisionRange = { division: 1 | 2 | 3; min: number; max: number | null };
+export type TierRanges = { tier: LadderTier; divisions: DivisionRange[] };
+
+/**
+ * Paliers de chaque rang, divisions III → I (même découpage que rankOf) : la division I va jusqu'au
+ * rang suivant, celle de Champion n'a pas de plafond. Une division vide (rang trop étroit) est omise.
+ */
+export function ladderRanges(r: Pick<RankedRules, "tiers">): TierRanges[] {
+  return LADDER.map((tier, i) => {
+    const min = r.tiers[tier].min;
+    const span = divisionSpan(tier, r);
+    const nextMin = i < LADDER.length - 1 ? r.tiers[LADDER[i + 1]].min : null;
+    const divisions: DivisionRange[] = [
+      { division: 3, min, max: min + span - 1 },
+      { division: 2, min: min + span, max: min + 2 * span - 1 },
+      { division: 1, min: min + 2 * span, max: nextMin === null ? null : nextMin - 1 },
+    ];
+    return { tier, divisions: divisions.filter((d) => d.max === null || d.max >= d.min) };
+  });
+}
+
+/** PC de la division d'un rang (Grand Champion : à partir de son seuil, sans plafond). */
+export function divisionRange(rank: Pick<Rank, "tier" | "division">, r: Pick<RankedRules, "tiers" | "grandChampion">): { min: number; max: number | null } {
+  if (rank.tier === "GRAND_CHAMPION" || rank.division === null) return { min: r.grandChampion.min, max: null };
+  const found = ladderRanges(r).find((t) => t.tier === rank.tier)?.divisions.find((d) => d.division === rank.division);
+  return found ? { min: found.min, max: found.max } : { min: r.tiers[rank.tier as LadderTier].min, max: null };
+}
+
 export function rankOf(pc: number, inTop: boolean, r: Pick<RankedRules, "tiers" | "grandChampion">): Rank {
   if (inTop && pc >= r.grandChampion.min) return { tier: "GRAND_CHAMPION", division: null, floor: r.grandChampion.min, next: null, progress: 1 };
   const tier = ladderTier(pc, r);

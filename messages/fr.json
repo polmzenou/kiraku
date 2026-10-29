@@ -4070,6 +4070,23 @@
       "label": "Votre récompense à la fin de la saison : {reward}",
       "peak": "D'après votre meilleur rang de la saison : {tier}.",
       "playToEarn": "Jouez au moins une partie classée cette saison pour la recevoir."
+    },
+    "ladder": {
+      "open": "Voir les rangs et leurs paliers de PC",
+      "title": "Rangs du classé",
+      "intro": "Chaque rang compte 3 divisions, de III à I. Au-dessus de Champion, Grand Champion réunit les {top, number} meilleurs joueurs à partir de {min, number} PC.",
+      "range": "{division} : {min, number} – {max, number} PC",
+      "rangeFrom": "{division} : {min, number} PC et plus",
+      "grand": "{min, number} PC et plus, dans le top {top, number}",
+      "current": "rang actuel"
+    },
+    "panel": {
+      "title": "Classement",
+      "top": "Top {count, number}",
+      "division": "Ma division",
+      "divisionCount": "{rank} · {count, plural, =0 {aucun joueur} one {# joueur} other {# joueurs}}",
+      "you": "Vous",
+      "seeAll": "Voir tout le classement"
     }
   },
   "legal": {

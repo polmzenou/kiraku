@@ -4070,6 +4070,23 @@
       "label": "Your end-of-season reward: {reward}",
       "peak": "Based on your best rank this season: {tier}.",
       "playToEarn": "Play at least one ranked game this season to receive it."
+    },
+    "ladder": {
+      "open": "See the ranks and their RP thresholds",
+      "title": "Ranked tiers",
+      "intro": "Each rank has 3 divisions, from III to I. Above Champion, Grand Champion gathers the top {top, number} players from {min, number} RP.",
+      "range": "{division}: {min, number} – {max, number} RP",
+      "rangeFrom": "{division}: {min, number} RP and up",
+      "grand": "{min, number} RP and up, in the top {top, number}",
+      "current": "current rank"
+    },
+    "panel": {
+      "title": "Leaderboard",
+      "top": "Top {count, number}",
+      "division": "My division",
+      "divisionCount": "{rank} · {count, plural, =0 {no players} one {# player} other {# players}}",
+      "you": "You",
+      "seeAll": "See the full leaderboard"
     }
   },
   "legal": {

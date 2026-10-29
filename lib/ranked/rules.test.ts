@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_RANKED_RULES as R } from "./defaults";
-import { applyResult, botDelta, isCrushing, ladderTier, matchRange, pcDelta, rankOf, rowOf } from "./rules";
+import { applyResult, botDelta, divisionRange, isCrushing, ladderRanges, ladderTier, LADDER, matchRange, pcDelta, rankOf, rowOf } from "./rules";
 import { nextSeasonBoundary, resetPc, rewardTier } from "./season";
 
 describe("rangs et divisions", () => {
@@ -119,5 +119,38 @@ describe("saisons", () => {
   it("le lot suit le meilleur rang atteint", () => {
     expect(rewardTier(950, false, R)).toBe("EMERALD");
     expect(rewardTier(1900, true, R)).toBe("GRAND_CHAMPION");
+  });
+});
+
+describe("paliers des divisions", () => {
+  const ranges = ladderRanges(R);
+
+  it("trois divisions par rang, de III à I, qui se suivent sans trou", () => {
+    expect(ranges.map((t) => t.tier)).toEqual([...LADDER]);
+    expect(ranges[0].divisions).toEqual([
+      { division: 3, min: 0, max: 99 },
+      { division: 2, min: 100, max: 199 },
+      { division: 1, min: 200, max: 299 },
+    ]);
+    const flat = ranges.flatMap((t) => t.divisions);
+    for (let i = 1; i < flat.length; i++) expect(flat[i].min).toBe((flat[i - 1].max ?? Infinity) + 1);
+  });
+
+  it("Champion I n'a pas de plafond", () => {
+    expect(ranges.at(-1)!.divisions.at(-1)).toEqual({ division: 1, min: 1700, max: null });
+  });
+
+  it("chaque palier donne bien sa division à rankOf", () => {
+    for (const t of ranges) {
+      for (const d of t.divisions) {
+        expect(rankOf(d.min, false, R)).toMatchObject({ tier: t.tier, division: d.division });
+        if (d.max !== null) expect(rankOf(d.max, false, R)).toMatchObject({ tier: t.tier, division: d.division });
+      }
+    }
+  });
+
+  it("division d'un rang, Grand Champion compris", () => {
+    expect(divisionRange({ tier: "GOLD", division: 2 }, R)).toEqual({ min: 700, max: 799 });
+    expect(divisionRange({ tier: "GRAND_CHAMPION", division: null }, R)).toEqual({ min: 1800, max: null });
   });
 });

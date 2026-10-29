@@ -11,15 +11,18 @@ export function PlayerRow({
   player,
   detail,
   children,
+  className = "",
 }: {
   player: { username: string; image: string | null; isGuest: boolean; decor?: PlayerDecor };
   detail?: ReactNode;
   children?: ReactNode;
+  /** Classes de la ligne (mise en avant du joueur qui regarde). */
+  className?: string;
 }) {
   const tAccount = useTranslations("account");
   const name = displayName(player.username, player.isGuest, (code) => tAccount("guestName", { code }));
   return (
-    <li className="flex min-h-16 items-center gap-3 rounded-control px-2 py-2 transition-colors hover:bg-surface-2/60">
+    <li className={`flex min-h-16 items-center gap-3 rounded-control px-2 py-2 transition-colors hover:bg-surface-2/60 ${className}`}>
       <Link href={`/u/${player.username}`} className="flex min-h-11 min-w-0 flex-1 items-center gap-3">
         <PlayerAvatar username={player.username} image={player.image} size={40} frame={player.decor?.frame} />
         <span className="flex min-w-0 flex-col">

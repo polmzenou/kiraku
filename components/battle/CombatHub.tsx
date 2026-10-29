@@ -132,7 +132,7 @@ export function CombatHub({
             </h2>
             {rank ? (
               <>
-                <RankBadge tier={rank.tier} division={rank.division} pc={rank.pc} progress={rank.progress} next={rank.next} nextRank={rank.nextRank} grand={rank.grand} size={84} />
+                <RankBadge tier={rank.tier} division={rank.division} pc={rank.pc} progress={rank.progress} next={rank.next} nextRank={rank.nextRank} grand={rank.grand} ladder={rank.ladder} size={84} />
                 {rank.seasonReward && <SeasonRewardPreview reward={rank.seasonReward} currentTier={rank.tier} />}
               </>
             ) : (
