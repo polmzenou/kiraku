@@ -6,7 +6,7 @@ import { RankEmblem } from "@/components/ranked/RankEmblem";
 import { PlayerAvatar } from "@/components/social/PlayerAvatar";
 import { useSecondsLeft } from "../TurnTimer";
 import { PlayerName } from "@/components/social/PlayerName";
-import { ACTION_KANJI, TECHNIQUE_KANJI } from "@/lib/battle/glyphs";
+import { ACTION_KANJI } from "@/lib/battle/glyphs";
 import type { BoardTier } from "@/lib/battle/tiers";
 import type { Side, Technique } from "@/lib/battle/types";
 import type { PlayerView } from "@/lib/battle/view";
@@ -135,7 +135,7 @@ export function Tablets({
       </button>
       <button type="button" className="tablet tablet-tech" data-active={(mode === "TECHNIQUE" && technique.enabled) || undefined} disabled={!technique.enabled} onClick={technique.onPress}>
         <span aria-hidden="true" className="tablet-kanji">
-          {tech ? TECHNIQUE_KANJI[tech] : "技"}
+          {ACTION_KANJI.technique}
         </span>
         <span className="tablet-label">
           {tech ? t(`techniques.${tech}.name`) : t("board.techniqueLabel")}

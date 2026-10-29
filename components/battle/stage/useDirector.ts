@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   choreograph,
@@ -65,8 +66,12 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
   const seq = useRef(0);
   const memory = useRef<StageMemory>(EMPTY_MEMORY);
   const optsRef = useRef(opts);
+  // Les sceaux du calque d'effets (posé hors de React) portent des mots traduits, jamais de kanji
+  const t = useTranslations("battle");
+  const tRef = useRef(t);
   useLayoutEffect(() => {
     optsRef.current = opts;
+    tRef.current = t;
   });
 
   const cards = useRef(new Map<string, CardEls>());
@@ -324,7 +329,7 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
     if (c.style === "koma") vfx.frameKoma(run, to, art(c.from), art(c.to), c.finisher, c.ms);
     if (c.style === "mie") {
       optsRef.current.sound?.current?.play("clack");
-      vfx.frameMie(run, from, to, c.finisher, c.ms);
+      vfx.frameMie(run, from, to, c.finisher, c.ms, tRef.current(c.finisher ? "board.finisher" : "board.crit"));
       const a = cards.current.get(key(c.from));
       if (a) {
         animate(a.hit, [{ transform: "scale(1) rotate(0deg)" }, { transform: "scale(1.14) rotate(-6deg)", offset: 0.2, easing: SPRING }, { transform: "scale(1.14) rotate(-6deg)", offset: 0.8 }, { transform: "scale(1) rotate(0deg)" }], {
@@ -366,7 +371,7 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
           vfx.ofudaThrow(run, from, first, TIMING.seal);
           later(TIMING.seal, () => {
             const again = fxRun();
-            if (again) vfx.stamp(again, first, "封", "shu", 700);
+            if (again) vfx.stamp(again, first, tRef.current("board.sealed"), "shu", 700);
           });
         }
         break;
@@ -395,7 +400,7 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
         if (from) vfx.wisp(run, from, at, TIMING.wisp);
         break;
       case "revive":
-        vfx.revive(run, at);
+        vfx.revive(run, at, tRef.current("keywords.REVIVE.name"));
         break;
       case "flurry":
         vfx.flurry(run, at);
@@ -470,7 +475,7 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
         const at = boxOf(cue.slot);
         if (run && at) {
           vfx.ash(run, at);
-          vfx.stamp(run, at, "撃破", "shu", 1_100);
+          vfx.stamp(run, at, tRef.current("board.ko"), "shu", 1_100);
           if (cue.finisher) vfx.shock(run, at, Math.max(at.w, at.h) * 3, "shu");
         }
         break;

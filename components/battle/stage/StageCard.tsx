@@ -5,7 +5,6 @@ import { memo, useLayoutEffect, useRef } from "react";
 import { CardBack } from "@/components/fuda/CardBack";
 import { Fuda } from "@/components/fuda/Fuda";
 import type { Slot } from "@/lib/battle/choreography";
-import { KEYWORD_GLYPH } from "@/lib/battle/glyphs";
 import type { FighterSetup, FighterState } from "@/lib/battle/types";
 import type { CardEls, StageNumber } from "./useDirector";
 
@@ -107,7 +106,7 @@ export const StageCard = memo(function StageCard({ slot, card, state, face, sele
             {state.sealed && !dead && (
               <span aria-hidden="true" className="st-seal">
                 <span className="st-seal-rope" />
-                <span className="st-seal-fuda">封</span>
+                <span className="st-seal-fuda">{t("sealed")}</span>
               </span>
             )}
             <span ref={flash} aria-hidden="true" className="stage-flash" />
@@ -116,14 +115,14 @@ export const StageCard = memo(function StageCard({ slot, card, state, face, sele
               <span aria-hidden="true" className="stage-keywords">
                 {card.keywords.map((k) => (
                   <span key={k} className="stage-kw">
-                    {KEYWORD_GLYPH[k]}
+                    {tk(`${k}.name`)}
                   </span>
                 ))}
               </span>
             )}
             {dead && (
               <span aria-hidden="true" className="stage-ko">
-                撃破
+                {t("ko")}
               </span>
             )}
           </button>

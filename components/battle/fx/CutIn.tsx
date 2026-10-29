@@ -1,21 +1,23 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { TECHNIQUE_KANJI } from "@/lib/battle/glyphs";
 import type { BattleSetup, Side } from "@/lib/battle/types";
 import { resolveAppearance } from "@/lib/catalog/appearance";
 import type { Banner, CutIn as CutInState } from "../stage/useDirector";
 
 /**
- * Cut-in de technique : un bandeau oblique traverse l'écran avec l'image de la carte, le kanji de la
- * technique en grand et son nom traduit. Complet au premier lancer d'une carte, bref ensuite. Venu de
- * la gauche pour son propre camp, de la droite pour l'adversaire.
+ * Cut-in de technique : un bandeau oblique traverse l'écran avec l'image de la carte et le nom traduit
+ * de la technique en grand. Complet au premier lancer d'une carte, bref ensuite. Venu de la gauche pour
+ * son propre camp, de la droite pour l'adversaire.
  */
 export function CutIn({ cutin, setup, mySide }: { cutin: CutInState; setup: BattleSetup; mySide: Side }) {
   const t = useTranslations("battle.techniques");
   const card = setup.teams[cutin.actor.side][cutin.actor.index];
   const look = resolveAppearance(undefined, card.appearance);
   const mine = cutin.actor.side === mySide;
+  const name = t(`${cutin.technique}.name`);
+  // Le titre se règle sur son mot le plus long (« Encouragement ») : les mots passent à la ligne, jamais hors du bandeau
+  const fit = Math.max(...name.split(/\s+/).map((w) => w.length));
   return (
     <div
       key={cutin.id}
@@ -31,9 +33,10 @@ export function CutIn({ cutin, setup, mySide }: { cutin: CutInState; setup: Batt
           {/* eslint-disable-next-line @next/next/no-img-element -- image déjà chargée par la carte, recadrée au point focal */}
           <img src={card.imageUrl} alt="" draggable={false} style={{ objectPosition: `${look.focalX}% ${look.focalY}%` }} />
         </span>
-        <span className="cutin-kanji">{TECHNIQUE_KANJI[cutin.technique]}</span>
         <span className="cutin-text">
-          <b>{t(`${cutin.technique}.name`)}</b>
+          <b className="cutin-name" style={{ ["--fit" as string]: fit }}>
+            {name}
+          </b>
           <small>{card.name}</small>
         </span>
       </div>

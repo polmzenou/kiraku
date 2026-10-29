@@ -3869,6 +3869,7 @@
       "buffed": "+{pct}% attack",
       "barrier": "Barrier",
       "crit": "Critical",
+      "finisher": "Finishing blow",
       "block": "Blocked",
       "acted": "Already acted",
       "resync": "Resyncing…",

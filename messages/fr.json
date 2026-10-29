@@ -3869,6 +3869,7 @@
       "buffed": "+{pct} % d'attaque",
       "barrier": "Barrière",
       "crit": "Critique",
+      "finisher": "Coup de grâce",
       "block": "Bloqué",
       "acted": "A déjà agi",
       "resync": "Resynchronisation…",
