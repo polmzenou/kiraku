@@ -105,6 +105,8 @@ model User {
   ambassadorSince     DateTime?
   // Retiré du classement des collectionneurs par l'admin (null = classé), sans toucher à son profil
   leaderboardHiddenAt DateTime?
+  // Cartes uniques retirées de son total dans ce classement par l'admin (0 = aucun malus)
+  leaderboardMalus    Int               @default(0)
   createdAt           DateTime          @default(now())
 
   accounts     Account[]

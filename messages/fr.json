@@ -1110,7 +1110,8 @@
         "USER_DISCOVERIES": "Catalogue découvert",
         "USER_SESSIONS": "Déconnexion des sessions",
         "USER_AMBASSADOR": "Rôle Ambassadeur",
-        "USER_LEADERBOARD": "Classement des collectionneurs"
+        "USER_LEADERBOARD": "Classement des collectionneurs",
+        "USER_LEADERBOARDMALUS": "Malus au classement"
       },
       "errors": {
         "FORBIDDEN": "Accès refusé : les droits administrateur sont requis.",
@@ -1186,7 +1187,9 @@
       "leaderboardShown": "Ce joueur apparaît dans le classement s'il a un profil public.",
       "leaderboardHint": "Le joueur n'apparaît plus dans le classement ni dans le top de l'accueil. Son profil, sa collection et sa vitrine restent visibles, et il ne peut pas annuler ce retrait.",
       "hideFromLeaderboard": "Enlever du classement",
-      "showInLeaderboard": "Remettre dans le classement"
+      "showInLeaderboard": "Remettre dans le classement",
+      "leaderboardMalus": "Malus au classement",
+      "leaderboardMalusHint": "Cartes uniques retirées de son total dans le classement des collectionneurs. Sa collection n'est pas touchée. 0 = aucun malus."
     },
     "moduleNames": {
       "boosters": "Boosters",

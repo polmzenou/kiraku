@@ -1110,7 +1110,8 @@
         "USER_DISCOVERIES": "Catalog discoveries",
         "USER_SESSIONS": "Session sign-out",
         "USER_AMBASSADOR": "Ambassador role",
-        "USER_LEADERBOARD": "Collector leaderboard"
+        "USER_LEADERBOARD": "Collector leaderboard",
+        "USER_LEADERBOARDMALUS": "Leaderboard penalty"
       },
       "errors": {
         "FORBIDDEN": "Access denied: administrator permissions are required.",
@@ -1186,7 +1187,9 @@
       "leaderboardShown": "This player appears in the leaderboard if their profile is public.",
       "leaderboardHint": "The player no longer appears in the leaderboard or the home page top. Their profile, collection and showcase stay visible, and they can't undo the removal.",
       "hideFromLeaderboard": "Remove from leaderboard",
-      "showInLeaderboard": "Put back in leaderboard"
+      "showInLeaderboard": "Put back in leaderboard",
+      "leaderboardMalus": "Leaderboard penalty",
+      "leaderboardMalusHint": "Unique cards taken off their total in the collector leaderboard. Their collection isn't touched. 0 = no penalty."
     },
     "moduleNames": {
       "boosters": "Boosters",

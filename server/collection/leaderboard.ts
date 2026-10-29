@@ -5,7 +5,8 @@ import { prisma } from "../db";
 import { decorColumns, type DecorColumns } from "../profile/decor";
 
 // Classement des collectionneurs : cartes uniques possédées (exemplaires en vente compris), puis
-// Mythiques uniques. Seuls les profils publics de joueurs non bannis et non retirés par l'admin y figurent. Le calcul
+// Mythiques uniques. Seuls les profils publics de joueurs non bannis et non retirés par l'admin y figurent,
+// moins le malus de cartes posé par l'admin (`leaderboardMalus`). Le calcul
 // parcourt toute la table UserCard : on le garde en cache quelques minutes.
 
 export const LEADERBOARD_TAG = "leaderboard";
@@ -25,7 +26,7 @@ const loadTopCollectors = unstable_cache(
   async (): Promise<Collector[]> => {
     const rows = await prisma.$queryRaw<(Omit<Collector, "rank" | "decor"> & DecorColumns)[]>`
       SELECT u."username", u."image", u."isGuest", ${decorColumns},
-        COUNT(DISTINCT uc."cardId")::int AS "uniqueCards",
+        GREATEST(COUNT(DISTINCT uc."cardId") - u."leaderboardMalus", 0)::int AS "uniqueCards",
         (COUNT(DISTINCT uc."cardId") FILTER (WHERE c."rarityKey" = 'MYTHIC'))::int AS "mythics"
       FROM "UserCard" uc
       JOIN "User" u ON u."id" = uc."ownerId"
@@ -36,7 +37,7 @@ const loadTopCollectors = unstable_cache(
       LIMIT ${LEADERBOARD_SIZE}`;
     return rows.map(({ frameStyle, nameColor, ...r }, i) => ({ ...r, rank: i + 1, decor: decorFromColumns(frameStyle, nameColor) }));
   },
-  ["top-collectors-v2"],
+  ["top-collectors-v3"],
   { tags: [LEADERBOARD_TAG], revalidate: 300 },
 );
 

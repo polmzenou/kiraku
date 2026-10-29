@@ -8,7 +8,7 @@ const target = {
   id: "player", username: "Player", role: "USER", bannedAt: null, profileVisibility: "PUBLIC", showCollection: true,
   coins: 500, boosterStock: 2, boosterAnchor: new Date(0), rankPoints: 0, pityCount: 3, standardCount: 4, bannerPity: {}, battleTeam: [],
   ambassadorSince: null as Date | null, titleId: null as string | null, frameId: "frame-hisui" as string | null, nameColorId: "color-lime" as string | null,
-  leaderboardHiddenAt: null as Date | null,
+  leaderboardHiddenAt: null as Date | null, leaderboardMalus: 0,
 };
 
 function setup({ role = "ADMIN", banned = false, exists = true, player = {} as Partial<typeof target> } = {}) {
@@ -187,5 +187,14 @@ describe("classement des collectionneurs", () => {
     const { tx, db } = setup({ player: { leaderboardHiddenAt: new Date("2026-10-01") } });
     await mutateAdminUserWith(db, "admin", { ...base, kind: "leaderboard", hidden: false });
     expect(tx.user.update.mock.calls[0][0].data).toEqual({ leaderboardHiddenAt: null });
+  });
+
+  it("pose un malus de cartes sans toucher à la collection, et le journalise", async () => {
+    const { tx, db } = setup();
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "leaderboardMalus", value: 750 });
+    expect(tx.user.update.mock.calls[0][0].data).toEqual({ leaderboardMalus: 750 });
+    const log = tx.adminLog.create.mock.calls[0][0].data;
+    expect(log.action).toBe("USER_LEADERBOARDMALUS");
+    expect(log.before).toEqual({ malus: 0 });
   });
 });
