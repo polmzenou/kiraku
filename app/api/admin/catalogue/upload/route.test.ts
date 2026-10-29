@@ -9,6 +9,13 @@ vi.mock("@/server/db", () => ({ prisma: {} }));
 vi.mock("@/server/admin/log", () => ({ writeAdminLog: mocks.log }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/server/env", () => ({ appUrl: () => "https://kiraku-kun.com" }));
+// Le vrai binaire met plusieurs secondes à se charger quand toute la suite tourne (délai dépassé) : un
+// sharp qui refuse ces faux octets, comme le vrai, et la route garde l'original
+vi.mock("sharp", () => ({
+  default: () => {
+    throw new Error("Input buffer contains unsupported image format");
+  },
+}));
 import { POST } from "./route";
 
 const origin = "https://kiraku.test";
