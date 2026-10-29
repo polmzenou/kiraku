@@ -11,6 +11,46 @@ ne jamais toucher la prod. Les constats graves ont été revérifiés dans le co
 de l'outil. Les volumes ci-dessous sont des ordres de grandeur tirés du code. Les commandes pour les
 confirmer sont à la fin.
 
+## Suivi des corrections (branche `perf-audit`)
+
+Quatre commits, un par lot. Chaque lot est passé par le lint, le typecheck et les tests. Les tests
+PGlite appliquent toutes les migrations, y compris la nouvelle.
+
+| # | État | Ce qui a été fait, ou ce qui reste |
+| --- | --- | --- |
+| C1 | Corrigé | `Link` sans préchargement par défaut (`i18n/navigation.tsx`), `prefetch` explicite au cas par cas. |
+| C2 | **Sur le VPS** | Crontab prête (`deploy/crontab.example`), checklist de mise en production mise à jour. À installer après `crontab -l`. |
+| E1 | Corrigé | Pool à 15, inactivité 5 min, `statement_timeout` 30 s, `idle_in_transaction_session_timeout` 65 s. |
+| E2 | Corrigé | Une seule lecture par vue tant que la saison court, verrou à l'échéance seulement (test unitaire ajouté). |
+| E3 | Corrigé, **Ably à vérifier** | Sondage ralenti pendant son propre tour, balayage au plus une fois toutes les 30 s par joueur. Reste à vérifier `ABLY_API_KEY` sur le VPS. |
+| E4 | Corrigé, **migration à appliquer** | Migration `20261029200000_index_cles_etrangeres` : 5 clés étrangères et 3 index BRIN. SQL identique à celui que Prisma déduit du schéma. |
+| E5 | Corrigé en partie | Les doubles rendus sont retirés. Le `refresh()` après une ouverture de booster est gardé : l'en-tête (stock, solde) est rendu côté serveur, et le remplacer demande un état client partagé. |
+| M1 | Corrigé | Compteur `notif-sweep` en mémoire. |
+| M2 | Corrigé | Joueurs bloqués lus d'abord, amis lus par les index de Friendship. À confirmer par `EXPLAIN ANALYZE` en prod. |
+| M3 | Corrigé en partie | En-tête en deux vagues, accueil en trois au lieu de cinq, défi du hub combat dans la même vague. Pas de Suspense sur l'en-tête. `relationJoins` n'est pas activé : c'est un changement global de Prisma, à essayer sur une base de test. |
+| M4 | Corrigé | Table des réglages gardée 2 s par processus et oubliée à chaque sauvegarde de l'admin, règles dédupliquées par rendu. |
+| M5 | Corrigé | Pools d'affichage en mémoire (lecture seule), `focusCardIds` n'est plus envoyé au client. |
+| M6 | Corrigé | Logo en WebP (714 → 26 Ko), uploads en WebP 720 px, avatars Discord à la taille affichée, cache d'une semaine sur `public/`. |
+| M7 | **Non résolu** (mesuré) | Les découpages faits (`lib/text/note-schema.ts`, `lib/profile/badges.ts`) ne suffisent pas : le build local montre encore les 31 Ko gzip de Zod sur chaque page. `Fuda` valide le JSON d'apparence des cartes avec Zod côté navigateur (`resolveAppearance` → `parseAppearance`, `lib/catalog/appearance.ts`), et une dizaine de modules partagés mêlent schémas et constantes (`lib/boosters/types.ts`, `lib/catalog/definitions.ts`, `lib/discord/join-modal.ts`…). Il faut une tâche à part : apparence validée côté serveur et transmise déjà résolue, puis schémas séparés des constantes. |
+| M8 | Corrigé | L'encens tient sa propre horloge, l'échéance est réclamée par un seul délai. |
+| M9 | Allégé | Plus d'écriture inutile ni d'écoute du gyroscope sans effet. L'inclinaison des grilles est gardée (choix visuel). |
+| M10 | Non fait | Après E3 et M1, passer les sondages en `GET` ne gagnerait plus grand-chose pour une refonte risquée. |
+| M11 | Corrigé | Tableau de bord gardé 60 s, BRIN sur les dates. |
+| F1, F2, F4–F8 | Corrigés | Clé de cache des tirages, image de partage, préchargement du service worker, animations hors écran, lectures ciblées (profil, wiki), horloges recalées, sondage unique au retour, registre des raretés. |
+| F3, F9 | Laissés | `htmlLimitedBots` reste un arbitrage SEO. Les restes de Vercel sont sans effet sur le VPS. |
+
+**Autre source de requêtes :** si `ADS_ENABLED=1` sur le VPS, AdSense (`app/[locale]/layout.tsx`, `lib/ads/config.ts`)
+charge son script et ses annonces sur chaque page. Ces requêtes partent vers Google, pas vers le VPS, mais
+elles s'ajoutent à l'onglet Réseau et au poids des pages.
+
+**Pour mettre en production, dans cet ordre :**
+1. Fusionner `perf-audit`.
+2. Sur le VPS : `git pull`, `npm ci`, `npx prisma migrate deploy`, `npm run build`, **puis** `pm2 restart`.
+   La migration passe avant le redémarrage.
+3. Installer la crontab (`deploy/crontab.example`).
+4. Vérifier `ABLY_API_KEY`.
+5. Relancer les mesures de la fin du rapport.
+
 ## En bref
 
 1. **Le préchargement des liens génère la plupart des requêtes.**
@@ -48,7 +88,7 @@ confirmer sont à la fin.
 | M4 | Modéré | Réglages relus et revalidés sans mémo, environ 80 fois par vue d'accueil | 2 h |
 | M5 | Modéré | Accueil : pools désérialisés à chaque vue, props trop lourdes | ½ jour |
 | M6 | Modéré | Images : uploads bruts, logo de 714 Ko, cache `max-age=0` | ½ jour |
-| M7 | Modéré | Zod (31 Ko gzip) envoyé sur toutes les pages | 15 min |
+| M7 | Modéré | Zod (31 Ko gzip) envoyé sur toutes les pages | 1 à 2 jours (voir le suivi) |
 | M8 | Modéré | Plateau de combat re-rendu 4 fois par seconde | 1 h (jalon 3) |
 | M9 | Modéré | Inclinaison gyroscope sur toutes les cartes des grilles | 1 h |
 | M10 | Modéré | Sondages en Server Actions, en file avec les actions du joueur | 1 jour |
@@ -394,8 +434,15 @@ Zod arrive par cette chaîne d'imports : `AppHeader` → `components/chat/ChatDo
 → `lib/text/plain.ts` → `lib/zod.ts`. Le fichier `plain.ts` mélange `cleanPlainText`, une fonction simple,
 et `noteSchema`, un schéma Zod.
 
-**Correction.** Déplacer `noteSchema` dans son propre fichier (par exemple `lib/text/note-schema.ts`) et
-l'importer depuis le serveur. Gain : 31 Ko gzip sur toutes les pages, sans rien changer au fonctionnement.
+**Correction.**
+- Déplacer `noteSchema` dans son propre fichier (`lib/text/note-schema.ts`) et l'importer depuis le serveur.
+  C'est fait, mais cela ne suffit pas.
+- Après le correctif, le build local montre encore Zod sur toutes les pages :
+  - le composant de carte `Fuda` valide l'apparence avec Zod dans le navigateur (`lib/catalog/appearance.ts`) ;
+  - d'autres modules partagés (`lib/boosters/types.ts`, `lib/catalog/definitions.ts`,
+    `lib/discord/join-modal.ts`, `lib/social/reviews.ts`…) mêlent schémas et constantes.
+- Pour retirer les 31 Ko : résoudre l'apparence côté serveur et la transmettre déjà validée, puis séparer
+  les schémas des constantes dans ces modules.
 
 ### M8. Plateau de combat re-rendu 4 fois par seconde
 
@@ -557,7 +604,7 @@ Pour voir les requêtes lentes au fil de l'eau, régler `log_min_duration_statem
 4. E2 : saison verrouillée seulement à l'échéance.
 5. M1 : `notif-sweep` en mémoire.
 6. E5 : retrait des `router.refresh()` en double.
-7. M7 : Zod hors du layout commun.
+7. M7 : Zod hors du layout commun (non résolu, voir le suivi).
 8. M6 : logo en WebP, cache longue durée sur `public/`.
 9. E3 : `battle.pollSeconds` à 5 dans `/admin`.
 

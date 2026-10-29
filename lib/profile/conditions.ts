@@ -138,43 +138,5 @@ export function labelFor(label: CosmeticLabel, locale: string, agreement: "MASC"
   return agreement === "FEM" && label.frFem ? label.frFem : label.fr;
 }
 
-/** Longueur maximale de la bio (colonne User.bio). */
-export const BIO_MAX = 160;
-
-// --- Badges (dérivés, sans table) ---
-
-// AMBASSADOR vient du rôle donné par l'admin ; SPONSOR (Parrain) des filleuls qualifiés
-export const BADGES = ["PIONEER", "AMBASSADOR", "SPONSOR", "VERIFIED"] as const;
-export type Badge = (typeof BADGES)[number];
-
-export const BADGE_KANJI: Record<Badge, string> = { PIONEER: "先", AMBASSADOR: "使", SPONSOR: "縁", VERIFIED: "認" };
-
-/** Pastille du badge : l'or par défaut, le vert hisui pour le rôle Ambassadeur. */
-export const BADGE_CLASS: Record<Badge, { pill: string; kanji: string }> = {
-  PIONEER: { pill: "border-kin/50 text-kin", kanji: "text-kin" },
-  AMBASSADOR: { pill: "border-hisui/60 text-hisui", kanji: "text-hisui" },
-  SPONSOR: { pill: "border-kin/50 text-kin", kanji: "text-kin" },
-  VERIFIED: { pill: "border-kin/50 text-kin", kanji: "text-kin" },
-};
-
-export function earnedBadges(input: {
-  createdAt: Date;
-  pioneerUntil: Date | null;
-  ambassador: boolean;
-  qualifiedReferrals: number;
-  sponsorReferrals: number;
-  discordLinked: boolean;
-}): Badge[] {
-  const out: Badge[] = [];
-  if (input.pioneerUntil && input.createdAt <= input.pioneerUntil) out.push("PIONEER");
-  if (input.ambassador) out.push("AMBASSADOR");
-  if (input.sponsorReferrals > 0 && input.qualifiedReferrals >= input.sponsorReferrals) out.push("SPONSOR");
-  if (input.discordLinked) out.push("VERIFIED");
-  return out;
-}
-
-/** Badges affichés, dans l'ordre choisi par le joueur ; aucun choix = tous, dans l'ordre par défaut. */
-export function orderedBadges(earned: readonly Badge[], order: readonly string[]): Badge[] {
-  const chosen = order.filter((b): b is Badge => (earned as readonly string[]).includes(b));
-  return chosen.length > 0 ? [...new Set(chosen)] : [...earned];
-}
+// Bio et badges : dans lib/profile/badges.ts (sans Zod, importé côté client), réexportés ici
+export { BADGE_CLASS, BADGE_KANJI, BADGES, BIO_MAX, earnedBadges, orderedBadges, type Badge } from "./badges";

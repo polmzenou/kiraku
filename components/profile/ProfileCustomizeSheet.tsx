@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useId, useState, useTransition } from "react";
 import type { ProfileVisibility } from "@/lib/collection/visibility";
-import { BADGE_CLASS, BADGE_KANJI, BIO_MAX, type Badge } from "@/lib/profile/conditions";
+import { BADGE_CLASS, BADGE_KANJI, BIO_MAX, type Badge } from "@/lib/profile/badges";
 import { NAME_COLOR_SWATCH } from "@/lib/profile/name-colors";
 import { saveProfileAction } from "@/server/actions/profile";
 import type { CosmeticOption } from "@/server/profile/progress";
