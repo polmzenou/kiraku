@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { buildCsp, generateNonce } from "./csp";
 
 function directives(csp: string) {
@@ -57,6 +57,19 @@ describe("buildCsp", () => {
       "https://*.ably-realtime.com",
       "wss://*.ably-realtime.com",
     ]);
+  });
+
+  it("n'ouvre la CSP aux domaines AdSense que si ADS_ENABLED=1", () => {
+    vi.stubEnv("ADS_ENABLED", "");
+    expect(buildCsp("n", false)).not.toContain("googlesyndication");
+    vi.stubEnv("ADS_ENABLED", "1");
+    const d = directives(buildCsp("n", false));
+    expect(d.get("frame-src")).toContain("https://googleads.g.doubleclick.net");
+    expect(d.get("img-src")).toContain("https://*.googlesyndication.com");
+    expect(d.get("connect-src")).toContain("https://fundingchoicesmessages.google.com");
+    // Le script passe par le nonce et strict-dynamic, pas par une liste d'hôtes
+    expect(d.get("script-src")).toEqual(["'self'", "'nonce-n'", "'strict-dynamic'"]);
+    vi.unstubAllEnvs();
   });
 
   it("force HTTPS en prod uniquement", () => {

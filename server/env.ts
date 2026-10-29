@@ -30,6 +30,8 @@ const schema = z.object({
   ABLY_API_KEY: z.string().regex(/^[^.:\s]+\.[^.:\s]+:\S+$/).optional(),
   // Vercel Cron (clôture des ventes) : envoyé par Vercel en « Authorization: Bearer … »
   CRON_SECRET: z.string().min(16).optional(),
+  // Publicité AdSense : « 1 » charge le script et ouvre la CSP aux domaines Google (lib/ads/config.ts)
+  ADS_ENABLED: z.enum(["0", "1"]).optional(),
 });
 
 // Une variable vide (ex. copiée telle quelle de .env.example) compte comme absente

@@ -1,5 +1,7 @@
 // Content-Security-Policy stricte avec nonce (section « Sécurité applicative » du plan).
 
+import { ADS_CSP, adsEnabled } from "./ads/config";
+
 export const IMAGE_HOSTS = ["https://s4.anilist.co", "https://cdn.discordapp.com"] as const;
 
 export function buildCsp(nonce: string, isDev: boolean): string {
@@ -22,6 +24,12 @@ export function buildCsp(nonce: string, isDev: boolean): string {
     "base-uri": ["'self'"],
     "object-src": ["'none'"],
   };
+  if (adsEnabled()) {
+    // Annonces AdSense : uniquement les domaines Google listés dans lib/ads/config.ts
+    directives["frame-src"] = ["'self'", ...ADS_CSP["frame-src"]];
+    directives["img-src"].push(...ADS_CSP["img-src"]);
+    directives["connect-src"].push(...ADS_CSP["connect-src"]);
+  }
   const parts = Object.entries(directives).map(([name, values]) => `${name} ${values.join(" ")}`);
   if (!isDev) parts.push("upgrade-insecure-requests");
   return parts.join("; ");

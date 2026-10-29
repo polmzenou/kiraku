@@ -2,7 +2,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ConsentManager } from "@/components/consent/ConsentManager";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -19,6 +19,7 @@ import { RealtimeRoot } from "@/components/realtime/RealtimeRoot";
 import { fontVariables } from "../fonts";
 import { appUrl } from "@/server/env";
 import { baseOpenGraph, ogImageUrl } from "@/lib/seo/open-graph";
+import { ADSENSE_CLIENT, ADSENSE_SCRIPT_URL, adsEnabled } from "@/lib/ads/config";
 
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
   const { locale } = await params;
@@ -39,6 +40,8 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
       ],
       apple: "/icons/apple-touch-icon.png",
     },
+    // Validation du site par AdSense
+    other: { "google-adsense-account": ADSENSE_CLIENT },
   };
 }
 
@@ -60,6 +63,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   const theme = parseTheme(jar.get(THEME_COOKIE)?.value);
   const motion = parseMotionPref(jar.get(MOTION_COOKIE)?.value);
   const clientMessages = pickClientMessages(await getMessages());
+  const nonce = adsEnabled() ? ((await headers()).get("x-nonce") ?? undefined) : undefined;
 
   return (
     <html lang={locale} data-theme={theme} data-motion={motion === "reduced" ? "reduced" : undefined} data-fx={motion === "lite" ? "lite" : undefined} className={fontVariables}>
@@ -79,6 +83,8 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
         </NextIntlClientProvider>
         {/* Mesure des performances (LCP, INP, CLS) sans cookie ni identifiant : exemptée de consentement */}
         {process.env.VERCEL === "1" && <SpeedInsights />}
+        {/* AdSense (ADS_ENABLED=1) : charge aussi le message de consentement configuré dans AdSense */}
+        {nonce && <script async src={ADSENSE_SCRIPT_URL} crossOrigin="anonymous" nonce={nonce} />}
       </body>
     </html>
   );
