@@ -62,12 +62,16 @@ export const getRelation = cache(async (viewerId: string, otherId: string) => {
 
 /** Amis acceptés, triés par pseudo ; `q` filtre seulement parmi ses propres amis. */
 export async function listFriends(userId: string, q: string, page: number): Promise<{ items: PlayerRef[]; hasMore: boolean }> {
+  // Les amitiés d'abord, par leurs index (dans les deux sens) : un OR de deux filtres de relation sur
+  // User obligeait Postgres à parcourir toute la table des joueurs
+  const links = await prisma.friendship.findMany({
+    where: { status: "ACCEPTED", OR: [{ requesterId: userId }, { addresseeId: userId }] },
+    select: { requesterId: true, addresseeId: true },
+  });
+  if (links.length === 0) return { items: [], hasMore: false };
   const rows = await prisma.user.findMany({
     where: {
-      OR: [
-        { sentFriends: { some: { addresseeId: userId, status: "ACCEPTED" } } },
-        { recvFriends: { some: { requesterId: userId, status: "ACCEPTED" } } },
-      ],
+      id: { in: links.map((l) => (l.requesterId === userId ? l.addresseeId : l.requesterId)) },
       ...(q ? { username: { contains: q, mode: "insensitive" as const } } : {}),
     },
     orderBy: { username: "asc" },
@@ -163,11 +167,16 @@ const notificationSelect = {
   actor: { select: playerSelect },
 } as const;
 
-/** Rien d'un joueur que le lecteur a bloqué depuis. */
-const visibleTo = (userId: string) => ({
-  userId,
-  OR: [{ actorId: null }, { actor: { blockedBy: { none: { blockerId: userId } } } }],
-});
+/**
+ * Rien d'un joueur que le lecteur a bloqué depuis. Les joueurs bloqués sont lus d'abord (presque
+ * toujours aucun) : un filtre de relation sous un OR faisait évaluer une sous-requête sur toute la
+ * table User à chaque lecture. `notIn` écarte aussi les NULL, d'où le cas sans acteur à part.
+ */
+async function visibleTo(userId: string) {
+  const blocked = await prisma.userBlock.findMany({ where: { blockerId: userId }, select: { blockedId: true } });
+  if (blocked.length === 0) return { userId };
+  return { userId, OR: [{ actorId: null }, { actorId: { notIn: blocked.map((b) => b.blockedId) } }] };
+}
 
 type NotificationRow = {
   id: string;
@@ -286,7 +295,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
  */
 export async function listNotifications(userId: string, cursor: string | null) {
   const rows = await prisma.notification.findMany({
-    where: visibleTo(userId),
+    where: await visibleTo(userId),
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: NOTIFICATIONS_PAGE + 1,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
@@ -310,7 +319,7 @@ export const TOASTS_MAX = 3;
  * et combien d'autres sont arrivées en plus.
  */
 export async function notificationsSince(userId: string, since: Date) {
-  const where = { ...visibleTo(userId), readAt: null, createdAt: { gt: since } };
+  const where = { ...(await visibleTo(userId)), readAt: null, createdAt: { gt: since } };
   const [rows, total] = await Promise.all([
     prisma.notification.findMany({
       where,
@@ -359,7 +368,7 @@ export async function notificationForPush(id: string): Promise<(NotificationView
   const head = await prisma.notification.findUnique({ where: { id }, select: { userId: true } });
   if (!head) return null;
   const row = await prisma.notification.findFirst({
-    where: { ...visibleTo(head.userId), id, readAt: null },
+    where: { ...(await visibleTo(head.userId)), id, readAt: null },
     select: notificationSelect,
   });
   if (!row) return null;

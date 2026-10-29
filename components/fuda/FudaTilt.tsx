@@ -56,8 +56,11 @@ export function FudaTilt({ children, className = "", rotate = true, angle = 16, 
     let target = { x: 0.5, y: 0.5 };
     const apply = () => {
       frame = 0;
-      fuda.style.setProperty("--mx", (reactive ? target.x : 0.5).toFixed(3));
-      fuda.style.setProperty("--my", (reactive ? target.y : 0.5).toFixed(3));
+      // Matière non réactive : --mx et --my gardent leur valeur par défaut (0,5), rien à réécrire à chaque image
+      if (reactive) {
+        fuda.style.setProperty("--mx", target.x.toFixed(3));
+        fuda.style.setProperty("--my", target.y.toFixed(3));
+      }
       if (rotate) {
         fuda.style.setProperty("--fuda-rotate-x", `${((0.5 - target.y) * angle * 1.5).toFixed(2)}deg`);
         fuda.style.setProperty("--fuda-rotate-y", `${((target.x - 0.5) * angle * 2).toFixed(2)}deg`);
@@ -87,6 +90,8 @@ export function FudaTilt({ children, className = "", rotate = true, angle = 16, 
 
     let listening = false;
     let unlistenTilt: (() => void) | null = null;
+    // Ni matière réactive ni rotation : le gyroscope ne changerait rien à l'écran
+    const follows = reactive || rotate;
     const stop = () => {
       listening = false;
       fuda.classList.remove("fuda-live");
@@ -109,7 +114,7 @@ export function FudaTilt({ children, className = "", rotate = true, angle = 16, 
     const sync = () => {
       if (!visible || prefersReducedMotion() || document.hidden) return stop();
       // Effets allégés : plus de gyroscope, la souris et le toucher restent
-      if (liteFx()) {
+      if (liteFx() || !follows) {
         unlistenTilt?.();
         unlistenTilt = null;
       } else if (listening && !unlistenTilt) {
@@ -127,7 +132,7 @@ export function FudaTilt({ children, className = "", rotate = true, angle = 16, 
         focusTarget.addEventListener("focusin", onFocus);
         focusTarget.addEventListener("focusout", onLeave);
       }
-      if (!liteFx()) unlistenTilt = listenTilt(onTilt);
+      if (!liteFx() && follows) unlistenTilt = listenTilt(onTilt);
     };
 
     const observer = new IntersectionObserver(([entry]) => {

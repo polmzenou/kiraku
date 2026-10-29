@@ -55,20 +55,20 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
   }
 
   await sweepBattlesFor(user.id);
-  const [activity, candidates, history, rank] = await Promise.all([
+  // ?defier=pseudo (bouton du profil) : seulement un ami accepté, la salle le revérifie à la création
+  const { defier } = await searchParams;
+  const [activity, candidates, history, rank, challenge] = await Promise.all([
     getActivity(user.id, ctx.rules.queueSeconds),
     getCandidates(user.id, ctx.rules),
     getHistory(user.id),
     ctx.ranked.enabled ? getRankView(user.id, ctx.ranked, await getLocale()) : null,
+    typeof defier === "string" ? challengeTarget(user.id, defier) : null,
   ]);
   const [lastTeam, board] = await Promise.all([
     getLastTeam(user.id, candidates),
     // Classement à droite des règles : top de la saison et division du joueur
     rank ? Promise.all([getRankedLeaderboard(ctx.ranked), getDivisionBoard(user.id, rank, ctx.ranked)]) : null,
   ]);
-  // ?defier=pseudo (bouton du profil) : seulement un ami accepté, la salle le revérifie à la création
-  const { defier } = await searchParams;
-  const challenge = typeof defier === "string" ? await challengeTarget(user.id, defier) : null;
   const name = (p: PlayerView | null) => (!p ? "—" : "bot" in p ? t("board.bot", { name: t(`bots.${p.bot}` as "bots.TENGU") }) : p.username);
 
   return (

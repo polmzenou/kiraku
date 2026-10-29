@@ -14,7 +14,7 @@ import { BOOSTER_TYPES_TAG, getBoosterRotation } from "../boosters/pools";
 import { computePoolCards, loadCandidates, recomputeBoosterPools, toBoosterTypeView } from "../boosters/type-store";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
-import { getSetting, SETTINGS_TAG } from "../settings";
+import { forgetSettings, getSetting, SETTINGS_TAG } from "../settings";
 import { writeAdminLog } from "../admin/log";
 import { getRarities } from "../catalog/rarities";
 
@@ -286,5 +286,6 @@ export async function setRotationPin(input: unknown): Promise<{ ok: true } | { o
   });
 
   updateTag(SETTINGS_TAG);
+  forgetSettings();
   return { ok: true };
 }

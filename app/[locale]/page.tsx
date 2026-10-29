@@ -29,7 +29,7 @@ import { canReview, pinnedFirst } from "@/lib/social/reviews";
 import { readBannerPity } from "@/server/boosters/open-core";
 import {
   getBoosterOffers,
-  getBoosterPool,
+  getDisplayPool,
   getBoosterRotation,
   getBoosterTypeEntry,
   getBoosterTypes,
@@ -105,31 +105,34 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
   // Boosters crédités (cadeaux d'amis, boutique, récompenses), par type, à ouvrir en premier ;
   // en bas de page, avis des joueurs et podium des collectionneurs
   const member = user !== null && canReview(user);
-  const [credits, allTypes, reviews, reviewSummary, ownReview, collectors, pulls, pullRefresh] = await Promise.all([
+  // Tout ce qui ne dépend que du joueur part en une seule vague (avant : trois allers-retours de suite)
+  const [
+    credits, allTypes, reviews, reviewSummary, ownReview, collectors, [pulls, pullsOwned], pullRefresh,
+    sealedDrops, sealedDisplays, apocalypseKarma, ambassadorPack, incense, wished,
+  ] = await Promise.all([
     user ? getBoosterCredits(user.id) : new Map<string, number>(),
     getBoosterTypes(),
     getReviewSample(),
     getReviewSummary(),
     member && user ? getOwnReview(user.id) : null,
     getTopCollectors(3),
-    getRecentPulls(locale),
+    // Tirages récents, puis ceux que le joueur possède déjà
+    getRecentPulls(locale).then(async (rows) => [rows, rows ? await ownedCardIds(user?.id, rows.map((p) => p.card.cardId)) : []] as const),
     getSetting("home.pullFeed.refreshSeconds"),
-  ]);
-  const pullsOwned = pulls ? await ownedCardIds(user?.id, pulls.map((p) => p.card.cardId)) : [];
-  const reviewViewer: ReviewViewer = member
-    ? { kind: "member", own: ownReview }
-    : !user || (user.isGuest && !user.bannedAt)
-      ? { kind: "guest" }
-      : { kind: "none" };
-  // Sachets scellés (Divin, Apocalyptique) gardés pour plus tard
-  const [sealedDrops, sealedDisplays, apocalypseKarma, ambassadorPack, incense] = await Promise.all([
+    // Sachets scellés (Divin, Apocalyptique) gardés pour plus tard
     user ? getSealedDrops(user.id) : [],
     getSealedDisplays(locale),
     getSetting("booster.apocalypseKarma"),
     // Pack hebdomadaire des ambassadeurs, au-dessus des boosters à ouvrir
     user && !user.bannedAt ? getAmbassadorPack(user, locale) : null,
     user && !user.bannedAt ? getIncenseState(user.id) : null,
+    user ? getWishlistCardIds(user.id) : [],
   ]);
+  const reviewViewer: ReviewViewer = member
+    ? { kind: "member", own: ownReview }
+    : !user || (user.isGuest && !user.bannedAt)
+      ? { kind: "guest" }
+      : { kind: "none" };
   const cardsOf = (o: { type: BoosterTypeView }) => (o.type.slotFloors.length > 0 ? o.type.slotFloors.length : rules.draw.slotFloors.length);
   const credited: CreditedBooster[] = allTypes
     .filter((e) => (credits.get(e.type.id) ?? 0) > 0 && e.type.filter !== null)
@@ -148,17 +151,18 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
 
   // Tous les boosters sont envoyés d'un coup : la vitrine change de booster sans rechargement.
   // Les pools sont en cache (lecture en mémoire) ; on ne les lit que pour les souhaits et les vedettes.
-  const wished = user ? await getWishlistCardIds(user.id) : [];
+  // Le client ne lit jamais focusCardIds (toutes les cartes d'une série, par booster) : il ne part pas
+  const forClient = (type: BoosterTypeView): BoosterTypeView => (type.focusCardIds.length > 0 ? { ...type, focusCardIds: [] } : type);
   const items: ShowcaseItem[] = await Promise.all(
     shown.map(async (offer): Promise<ShowcaseItem> => {
       const selectable = offer.availability !== "hidden";
-      if (!selectable) return { type: offer.type, cards: cardsOf(offer), selectable, panel: null, wishlist: null };
+      if (!selectable) return { type: forClient(offer.type), cards: cardsOf(offer), selectable, panel: null, wishlist: null };
       let featuredCounts: Record<Rarity, number> | undefined;
       let wishlist: WishlistInPool | null = null;
       const featuredIds = featuredIdsOf(offer.type);
       if (featuredIds.length > 0 || wished.length > 0) {
         const entry = await getBoosterTypeEntry(offer.type.slug);
-        const pool = entry ? await getBoosterPool(entry) : null;
+        const pool = entry ? await getDisplayPool(entry) : null;
         if (pool && wished.length > 0) wishlist = wishlistInPool(pool, wished);
         if (pool && featuredIds.length > 0) {
           const wanted = new Set(featuredIds);
@@ -175,7 +179,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
         user: { ...userCounters, bannerPity: bannerPity[offer.type.id] ?? 0 },
         featuredCounts,
       });
-      return { type: offer.type, cards: cardsOf(offer), selectable, panel, wishlist };
+      return { type: forClient(offer.type), cards: cardsOf(offer), selectable, panel, wishlist };
     }),
   );
 

@@ -26,7 +26,7 @@ import { changedSettingKeys, type SettingsOf } from "@/lib/settings/form";
 import { getAdmin } from "../admin";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
-import { SETTINGS_TAG } from "../settings";
+import { forgetSettings, SETTINGS_TAG } from "../settings";
 import { writeAdminLog } from "../admin/log";
 import { getRarities } from "../catalog/rarities";
 
@@ -93,7 +93,10 @@ async function saveSettings<K extends SettingKey>(
   });
 
   // Effet immédiat dans tout le jeu, sans redéployer
-  if (changed.length > 0) updateTag(SETTINGS_TAG);
+  if (changed.length > 0) {
+    updateTag(SETTINGS_TAG);
+    forgetSettings();
+  }
   return { ok: true, changed };
 }
 

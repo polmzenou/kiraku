@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import type { DrawRules, RuinRules } from "@/lib/boosters/draw";
 import type { StockSettings } from "@/lib/boosters/stock";
 import { getSetting } from "../settings";
@@ -14,8 +15,11 @@ const loadWeights = unstable_cache(async (_version: number) => {
 
 export type BoosterRules = { draw: DrawRules; ruin: RuinRules; stock: StockSettings; intervalMinutes: number };
 
-/** Règles du tirage et du stock, lues dans GameSetting (une seule lecture en cache pour toutes les clés). */
-export async function getBoosterRules(): Promise<BoosterRules> {
+/**
+ * Règles du tirage et du stock, lues dans GameSetting (une seule lecture en cache pour toutes les clés).
+ * Une fois par rendu : l'en-tête, la page et les sachets scellés les demandent chacun.
+ */
+export const getBoosterRules = cache(async (): Promise<BoosterRules> => {
   const rarities = await getRarities();
   const cardWeights = await loadWeights(await getCatalogVersion());
   const [
@@ -46,4 +50,4 @@ export async function getBoosterRules(): Promise<BoosterRules> {
     stock: { max, ambassadorMax, intervalMs: intervalMinutes * 60_000 },
     intervalMinutes,
   };
-}
+});
