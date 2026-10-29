@@ -497,7 +497,25 @@
     "relatedTitle": "Autres personnages de {series}",
     "formsKicker": "Formes",
     "formsTitle": "Autres formes de {name}",
-    "baseFormTitle": "Forme de base"
+    "baseFormTitle": "Forme de base",
+    "owners": {
+      "kicker": "Échanges",
+      "title": "Ils possèdent {name}",
+      "friends": "Tes amis",
+      "others": "Autres joueurs",
+      "count": "{count, plural, =0 {aucun} one {# joueur} other {# joueurs}}",
+      "friendsEmpty": "Aucun de tes amis n'a {name} pour l'instant.",
+      "othersEmpty": "Aucun autre joueur ne montre {name} dans sa collection.",
+      "othersMore": "Et {count, plural, one {# autre joueur} other {# autres joueurs}}.",
+      "othersClosed": "Les échanges hors amis sont fermés pour le moment.",
+      "request": "Demander l'échange",
+      "requestLabel": "Demander l'échange de {card} à {name}",
+      "block": {
+        "guest": "Crée ton compte pour demander un échange aux joueurs qui ont cette carte.",
+        "closed": "Les échanges sont fermés pour le moment.",
+        "rarity": "Cette rareté ne s'échange pas."
+      }
+    }
   },
   "nav": {
     "label": "Navigation principale",
@@ -1495,12 +1513,13 @@
           "sweepSeconds": "Tâches de fond par joueur, au plus toutes les (s)"
         },
         "trades": {
-          "enabled": "Échanges entre amis ouverts",
+          "enabled": "Échanges ouverts",
           "expiryHours": "Durée d'une proposition (heures)",
           "maxOffered": "Cartes offertes au plus par proposition",
           "maxPendingSent": "Propositions en attente par joueur",
           "perDay": "Propositions par joueur sur 24 h",
-          "allowedRarities": "Raretés échangeables"
+          "allowedRarities": "Raretés échangeables",
+          "nonFriends": "Échanges ouverts aux joueurs non amis"
         },
         "chat": {
           "enabled": "Chat entre amis ouvert",
@@ -1538,8 +1557,8 @@
       "log": "Derniers changements",
       "logEmpty": "Aucun changement pour l'instant.",
       "logEntry": "{key} par {admin}",
-      "tradesSection": "Échanges entre amis",
-      "tradesHint": "Rien n'est bloqué pendant l'attente : propriété, amitié et raretés sont revérifiées au moment d'accepter.",
+      "tradesSection": "Échanges",
+      "tradesHint": "Rien n'est bloqué pendant l'attente : propriété, raretés et blocages sont revérifiés au moment d'accepter. Hors amis, la collection du joueur doit être visible par le proposant ; refermer l'interrupteur empêche aussi d'accepter les propositions déjà envoyées entre non-amis.",
       "chatSection": "Chat entre amis",
       "chatHint": "Messages privés entre amis acceptés, en texte brut, supprimés après leur durée de vie (24 h par défaut). Un blocage coupe la conversation.",
       "activitySection": "Temps réel et activité",
@@ -4166,7 +4185,7 @@
     "deleted": "Compte supprimé"
   },
   "trades": {
-    "intro": "Tes propositions et celles de tes amis. Pour en faire une, va sur le profil d'un ami et touche « Échanger ».",
+    "intro": "Tes propositions envoyées et reçues. Pour en faire une, touche « Échanger » sur le profil d'un joueur, ou « Demander l'échange » sur la fiche wiki d'une carte.",
     "received": "Reçues",
     "sent": "Envoyées",
     "history": "Historique",
@@ -4183,7 +4202,7 @@
     "youGet": "Tu reçois",
     "wanted": "Carte demandée",
     "youGetOne": "Tu reçois l'une de celles-ci (choisis-la)",
-    "theyChooseOne": "Contre l'une de celles-ci (au choix de ton ami)",
+    "theyChooseOne": "Contre l'une de celles-ci (au choix de l'autre joueur)",
     "chosen": "Carte choisie",
     "offered": "Cartes proposées",
     "choose": "Choisir {card}",
@@ -4215,7 +4234,7 @@
       "offerTitle": "Ce que tu proposes",
       "reviewTitle": "Récapitulatif",
       "wantHint": "Choisis la carte de {name} que tu veux.",
-      "offerHint": "Choisis jusqu'à {max, plural, one {# carte} other {# cartes}} à proposer : ton ami en gardera une.",
+      "offerHint": "Choisis jusqu'à {max, plural, one {# carte} other {# cartes}} à proposer : {name} en gardera une.",
       "pickWanted": "Demander {card}",
       "pickOffered": "Proposer {card}",
       "offeredCount": "{count}/{max}",
@@ -4234,11 +4253,12 @@
     "errors": {
       "NO_SESSION": "Ta session a expiré. Recharge la page.",
       "INVALID": "Proposition invalide.",
-      "GUEST": "Crée ton compte pour échanger avec tes amis.",
+      "GUEST": "Crée ton compte pour échanger avec les autres joueurs.",
       "DISABLED": "Les échanges sont fermés pour le moment.",
       "RATE_LIMITED": "Trop d'essais. Réessaie dans une minute.",
       "UNAVAILABLE": "Impossible pour le moment. Réessaie plus tard.",
-      "NOT_FRIENDS": "Vous n'êtes plus amis.",
+      "NOT_FRIENDS": "Échange impossible avec ce joueur pour le moment.",
+      "PRIVATE": "Ce joueur ne montre pas sa collection : l'échange n'est possible qu'entre amis.",
       "BLOCKED": "Échange impossible avec ce joueur.",
       "NO_OFFER": "Propose au moins une carte.",
       "TOO_MANY_OFFERED": "Trop de cartes proposées (au plus {max}).",
@@ -4248,7 +4268,7 @@
       "DAILY_LIMIT": "Tu as atteint le nombre de propositions sur 24 h.",
       "DUPLICATE": "Tu as déjà une proposition en attente pour cette carte.",
       "NO_USER": "Joueur introuvable.",
-      "WANTED_GONE": "Ton ami n'a plus d'exemplaire libre de cette carte.",
+      "WANTED_GONE": "Ce joueur n'a plus d'exemplaire libre de cette carte.",
       "OFFER_GONE": "Une des cartes proposées n'est plus libre dans ta collection.",
       "NOT_FOUND": "Échange introuvable.",
       "CLOSED": "Cet échange n'est plus ouvert.",
@@ -4258,7 +4278,7 @@
     "noteFrom": "Mot de {name}",
     "declineNoteFrom": "Motif du refus de {name}",
     "declineNote": "Motif du refus (facultatif)",
-    "declineNotePlaceholder": "Pour que ton ami sache pourquoi.",
+    "declineNotePlaceholder": "Pour que l'autre joueur sache pourquoi.",
     "confirmDecline": "Confirmer le refus"
   },
   "chat": {

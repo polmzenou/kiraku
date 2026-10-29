@@ -179,6 +179,7 @@ export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
       <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
         <legend className="px-1 font-title text-lg font-bold">{t("tradesSection")}</legend>
         <Toggle label={t("keys.trades.enabled")} checked={draft["trades.enabled"]} onChange={(v) => update("trades.enabled", v)} />
+        <Toggle label={t("keys.trades.nonFriends")} checked={draft["trades.nonFriends"]} onChange={(v) => update("trades.nonFriends", v)} />
         <div className="grid gap-3 sm:grid-cols-2">
           {num("trades.expiryHours")}
           {num("trades.maxOffered")}

@@ -21,6 +21,8 @@ type DetailProps = {
   locale: string;
   total: number;
   wishlistAction?: ReactNode;
+  /** Joueurs qui possèdent la carte (personnel au lecteur, rendu sous Suspense). */
+  ownersSection?: ReactNode;
 };
 
 export async function WikiPersonalizedCardDetail(props: DetailProps) {
@@ -37,7 +39,7 @@ function LockIcon() {
   );
 }
 
-export function WikiCardDetail({ card, related, locale, total, collection, wishlistAction }: DetailProps & { collection: WikiCollection | null }) {
+export function WikiCardDetail({ card, related, locale, total, collection, wishlistAction, ownersSection }: DetailProps & { collection: WikiCollection | null }) {
   const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("wiki");
   const tRarity = useTranslations("rarity");
@@ -155,6 +157,8 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
           )}
 
           <WikiCardValuation />
+
+          {ownersSection}
 
           {forms.length > 0 && (
             <section aria-labelledby="wiki-forms-title" className="min-w-0">

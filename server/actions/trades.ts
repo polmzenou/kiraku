@@ -26,7 +26,7 @@ import {
 } from "../social/trade-core";
 import { getCurrentUser } from "../user";
 
-// Échanges entre amis. Ordre des contrôles : session → Zod → compte inscrit non banni →
+// Échanges entre joueurs. Ordre des contrôles : session → Zod → compte inscrit non banni →
 // interrupteurs → rate limit → propriété et règles relues sous verrou (server/social/trade-core.ts).
 // Le client n'envoie que des ids de cartes et un pseudo ; les exemplaires sont choisis par le serveur.
 
@@ -45,14 +45,15 @@ const seenSchema = z.object({ tradeIds: z.array(id).min(1).max(50) }).strict();
 const pushLater = (ids: string[]) => after(() => pushNotifications(ids));
 
 async function tradeRules(): Promise<TradeRules> {
-  const [expiryHours, maxOffered, maxPendingSent, perDay, allowedRarities] = await Promise.all([
+  const [expiryHours, maxOffered, maxPendingSent, perDay, allowedRarities, nonFriends] = await Promise.all([
     getSetting("trades.expiryHours"),
     getSetting("trades.maxOffered"),
     getSetting("trades.maxPendingSent"),
     getSetting("trades.perDay"),
     getSetting("trades.allowedRarities"),
+    getSetting("trades.nonFriends"),
   ]);
-  return { expiryHours, maxOffered, maxPendingSent, perDay, allowedRarities };
+  return { expiryHours, maxOffered, maxPendingSent, perDay, allowedRarities, nonFriends };
 }
 
 /** Session, schéma, compte inscrit non banni, interrupteurs, rate limit. */
@@ -74,7 +75,7 @@ function failure(e: unknown): Failure {
   return { ok: false, error: "UNAVAILABLE" };
 }
 
-/** Propose à un ami : sa carte `wantedCardId` contre l'une des `offeredCardIds`. */
+/** Propose à un joueur (ami, ou non-ami si le réglage l'ouvre) : sa carte `wantedCardId` contre l'une des `offeredCardIds`. */
 export async function proposeTradeAction(input: unknown): Promise<{ ok: true } | Failure> {
   const g = await guard(input, proposeSchema, "trade-propose", { limit: 10, windowSeconds: 60 });
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
@@ -100,7 +101,13 @@ export async function acceptTradeAction(input: unknown): Promise<{ ok: true; car
   try {
     const res = await acceptTradeWith(
       prisma,
-      { userId: g.user.id, tradeId: g.data.tradeId, chosenCardId: g.data.chosenCardId, allowedRarities: await getSetting("trades.allowedRarities") },
+      {
+        userId: g.user.id,
+        tradeId: g.data.tradeId,
+        chosenCardId: g.data.chosenCardId,
+        allowedRarities: await getSetting("trades.allowedRarities"),
+        nonFriendsAllowed: await getSetting("trades.nonFriends"),
+      },
       pushLater,
     );
     refresh();

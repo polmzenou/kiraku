@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
+import type { CardView } from "@/lib/boosters/view";
 import type { Rarity } from "@/lib/catalog/rarity";
 import type { CollectionItem } from "@/lib/collection/view";
 import { proposeTradeAction } from "@/server/actions/trades";
@@ -13,22 +14,25 @@ import { NoteField } from "../ui/NoteField";
 import { Sheet } from "../ui/Sheet";
 
 type Step = "want" | "offer" | "review" | "sent";
+type WantedCard = CardView & { viewerOwns?: boolean };
 
 /**
- * Proposer un échange à un ami, en trois temps : la carte voulue dans sa collection, puis une ou
- * plusieurs des siennes en contrepartie, puis le récap. L'ami choisira l'une d'elles en acceptant.
+ * Proposer un échange à un joueur, en trois temps : la carte voulue dans sa collection, puis une ou
+ * plusieurs des siennes en contrepartie, puis le récap. L'autre choisira l'une d'elles en acceptant.
+ * Avec `initialWanted` (fiche wiki), la carte voulue est déjà choisie : on commence par ses cartes.
  */
-export function TradeComposer({ username, name, maxOffered, allowedRarities, onClose }: {
+export function TradeComposer({ username, name, maxOffered, allowedRarities, initialWanted, onClose }: {
   username: string;
   name: string;
   maxOffered: number;
   allowedRarities: Rarity[];
+  initialWanted?: WantedCard;
   onClose: () => void;
 }) {
   const t = useTranslations("trades.compose");
   const tErrors = useTranslations("trades.errors");
-  const [step, setStep] = useState<Step>("want");
-  const [wanted, setWanted] = useState<CollectionItem | null>(null);
+  const [step, setStep] = useState<Step>(initialWanted ? "offer" : "want");
+  const [wanted, setWanted] = useState<WantedCard | null>(initialWanted ?? null);
   const [offered, setOffered] = useState<CollectionItem[]>([]);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +98,7 @@ export function TradeComposer({ username, name, maxOffered, allowedRarities, onC
 
       {step === "offer" && wanted && (
         <>
-          <p className="text-sm text-text-muted">{t("offerHint", { max: maxOffered })}</p>
+          <p className="text-sm text-text-muted">{t("offerHint", { max: maxOffered, name })}</p>
           <CardPickGrid
             selected={offeredIds}
             allowed={allowedRarities}

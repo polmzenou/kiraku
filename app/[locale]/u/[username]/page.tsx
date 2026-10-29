@@ -211,8 +211,12 @@ async function socialBar({
       sealed: sealed.filter((s) => s.giftable).map((s) => ({ id: s.id, kind: s.kind })),
     };
   }
+  // Entre amis toujours ; hors amis si le réglage l'ouvre et que la collection est visible (même règle qu'à l'envoi)
+  const canTrade =
+    access.relation === "FRIENDS" ||
+    (access.relation !== "BLOCKED_BY_ME" && access.collection && (await getSetting("trades.nonFriends")));
   const trade =
-    access.relation === "FRIENDS" && (await getSetting("trades.enabled"))
+    canTrade && (await getSetting("trades.enabled"))
       ? { maxOffered: await getSetting("trades.maxOffered"), allowedRarities: await getSetting("trades.allowedRarities") }
       : null;
   return <RelationActions username={owner.username} name={name} initial={access.relation} gift={gift} trade={trade} />;

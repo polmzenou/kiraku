@@ -14,16 +14,16 @@ import { acceptTradeWith, proposeTradeWith } from "./trade-core";
 
 const url = process.env.DATABASE_URL_TEST;
 const OLD = new Date(Date.now() - 30 * 86_400_000);
-const rules: TradeRules = { expiryHours: 48, maxOffered: 5, maxPendingSent: 10, perDay: 20, allowedRarities: [...RARITIES] };
+const rules: TradeRules = { expiryHours: 48, maxOffered: 5, maxPendingSent: 10, perDay: 20, allowedRarities: [...RARITIES], nonFriends: true };
 
 describe.skipIf(!url)("échanges atomiques (base réelle)", () => {
   const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });
   const ids: string[] = [];
   let cards: string[] = [];
 
-  async function player() {
+  async function player(privacy: { profileVisibility?: "PUBLIC" | "FRIENDS" | "PRIVATE"; showCollection?: boolean } = {}) {
     const user = await prisma.user.create({
-      data: { username: `test-${randomBytes(4).toString("hex")}`, isGuest: false, coins: 0, createdAt: OLD },
+      data: { username: `test-${randomBytes(4).toString("hex")}`, isGuest: false, coins: 0, createdAt: OLD, profileVisibility: "PUBLIC", ...privacy },
     });
     ids.push(user.id);
     return user.id;
@@ -58,7 +58,7 @@ describe.skipIf(!url)("échanges atomiques (base réelle)", () => {
     await give(a, offer2);
 
     const { tradeId } = await proposeTradeWith(prisma, { proposerId: a, recipientId: b, wantedCardId: wanted, offeredCardIds: [offer1, offer2], rules });
-    const res = await acceptTradeWith(prisma, { userId: b, tradeId, chosenCardId: offer2, allowedRarities: rules.allowedRarities });
+    const res = await acceptTradeWith(prisma, { userId: b, tradeId, chosenCardId: offer2, allowedRarities: rules.allowedRarities, nonFriendsAllowed: true });
 
     expect(res).toMatchObject({ ok: true, received: { cardId: offer2 } });
     expect(await owned(a, wanted)).toBe(1);
@@ -78,8 +78,8 @@ describe.skipIf(!url)("échanges atomiques (base réelle)", () => {
     const { tradeId } = await proposeTradeWith(prisma, { proposerId: a, recipientId: b, wantedCardId: wanted, offeredCardIds: [offer], rules });
 
     const results = await Promise.allSettled([
-      acceptTradeWith(prisma, { userId: b, tradeId, chosenCardId: offer, allowedRarities: rules.allowedRarities }),
-      acceptTradeWith(prisma, { userId: b, tradeId, chosenCardId: offer, allowedRarities: rules.allowedRarities }),
+      acceptTradeWith(prisma, { userId: b, tradeId, chosenCardId: offer, allowedRarities: rules.allowedRarities, nonFriendsAllowed: true }),
+      acceptTradeWith(prisma, { userId: b, tradeId, chosenCardId: offer, allowedRarities: rules.allowedRarities, nonFriendsAllowed: true }),
     ]);
     const succeeded = results.filter((r) => r.status === "fulfilled" && r.value.ok);
     expect(succeeded).toHaveLength(1);
@@ -99,7 +99,7 @@ describe.skipIf(!url)("échanges atomiques (base réelle)", () => {
     const giftRules = { enabled: true, perDaySent: 3, perDayReceived: 5, minAccountAgeHours: 0, minFriendshipHours: 0 };
     const [gift, accept] = await Promise.allSettled([
       giftCardWith(prisma, { senderId: a, recipientId: c, cardId: offer, rules: giftRules, timeZone: "Europe/Paris", allowedRarities: [...RARITIES] }),
-      acceptTradeWith(prisma, { userId: b, tradeId, chosenCardId: offer, allowedRarities: rules.allowedRarities }),
+      acceptTradeWith(prisma, { userId: b, tradeId, chosenCardId: offer, allowedRarities: rules.allowedRarities, nonFriendsAllowed: true }),
     ]);
     const traded = accept.status === "fulfilled" && accept.value.ok;
     const gifted = gift.status === "fulfilled";
@@ -111,5 +111,31 @@ describe.skipIf(!url)("échanges atomiques (base réelle)", () => {
       expect(trade.status).toBe("FAILED");
       expect(await owned(b, wanted)).toBe(1);
     }
+  }, 60_000);
+
+  it("entre non-amis : échange possible quand la collection est publique", async () => {
+    const [a, b] = [await player(), await player({ showCollection: true })];
+    const [wanted, offer] = cards;
+    await give(b, wanted);
+    await give(a, offer);
+    const { tradeId } = await proposeTradeWith(prisma, { proposerId: a, recipientId: b, wantedCardId: wanted, offeredCardIds: [offer], rules });
+    const res = await acceptTradeWith(prisma, { userId: b, tradeId, chosenCardId: offer, allowedRarities: rules.allowedRarities, nonFriendsAllowed: true });
+    expect(res).toMatchObject({ ok: true, received: { cardId: offer } });
+    expect(await owned(a, wanted)).toBe(1);
+  }, 60_000);
+
+  it("entre non-amis : refusé si la collection est cachée, ou si le réglage est refermé", async () => {
+    const [a, hidden, open] = [await player(), await player({ showCollection: false }), await player({ showCollection: true })];
+    const [wanted, offer] = cards;
+    await give(hidden, wanted);
+    await give(open, wanted);
+    await give(a, offer);
+    await expect(
+      proposeTradeWith(prisma, { proposerId: a, recipientId: hidden, wantedCardId: wanted, offeredCardIds: [offer], rules }),
+    ).rejects.toMatchObject({ code: "PRIVATE" });
+    const { tradeId } = await proposeTradeWith(prisma, { proposerId: a, recipientId: open, wantedCardId: wanted, offeredCardIds: [offer], rules });
+    await expect(
+      acceptTradeWith(prisma, { userId: open, tradeId, chosenCardId: offer, allowedRarities: rules.allowedRarities, nonFriendsAllowed: false }),
+    ).rejects.toMatchObject({ code: "NOT_FRIENDS" });
   }, 60_000);
 });

@@ -1,12 +1,13 @@
-// Échanges entre amis, atomiques. Le client Prisma est injecté (serveur ou test de concurrence).
+// Échanges entre joueurs (amis, ou non-amis si le réglage l'ouvre), atomiques. Le client Prisma est injecté (serveur ou test de concurrence).
 //
 // Proposer ne bloque rien : l'ami reçoit « ta carte X contre l'une de celles-ci ». À l'acceptation,
 // la proposition puis les deux joueurs sont verrouillés (même ordre que l'hôtel des ventes : la
-// ligne d'objet, puis les joueurs triés par id), l'amitié, les blocages et la présence d'un
+// ligne d'objet, puis les joueurs triés par id), l'amitié si elle est exigée, les blocages et la présence d'un
 // exemplaire libre de chaque côté sont relus, puis les deux exemplaires changent de propriétaire par
 // des updateMany conditionnels. Si une carte n'est plus là, la proposition passe en FAILED.
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { Rarity } from "@/lib/catalog/rarity";
+import { profileAccess, type ProfileVisibility } from "@/lib/collection/visibility";
 import { pairKey } from "@/lib/social/relation";
 import { checkProposal, isTradeOpen, tradeExpiresAt, uniqueOffered, type TradeRefusal, type TradeRules } from "@/lib/social/trades";
 import { freeCopy } from "./free-copy";
@@ -38,7 +39,7 @@ async function friendsAndBlocks(tx: Tx, a: string, b: string) {
     tx.friendship.findUnique({ where: { pairKey: pairKey(a, b) }, select: { status: true } }),
     blocksBetween(tx, a, b),
   ]);
-  return { friends: friendship?.status === "ACCEPTED", blocked: blocks.byMe || blocks.byThem };
+  return { friends: friendship?.status === "ACCEPTED", blocked: blocks.byMe || blocks.byThem, blockedByThem: blocks.byThem };
 }
 
 export type ProposeInput = {
@@ -52,7 +53,7 @@ export type ProposeInput = {
   now?: Date;
 };
 
-/** « Je veux ta carte X contre l'une de celles-ci » : vérifie tout sous verrou, puis notifie l'ami. */
+/** « Je veux ta carte X contre l'une de celles-ci » : vérifie tout sous verrou, puis notifie le destinataire. */
 export async function proposeTradeWith(db: PrismaClient, input: ProposeInput, onNotified?: OnNotified): Promise<{ tradeId: string }> {
   const now = input.now ?? new Date();
   if (input.proposerId === input.recipientId) throw new TradeError("NOT_FRIENDS");
@@ -67,8 +68,9 @@ export async function proposeTradeWith(db: PrismaClient, input: ProposeInput, on
       if (!proposer || proposer.bannedAt) throw new TradeError("NO_USER");
       if (!recipient || recipient.isGuest || recipient.bannedAt) throw new TradeError("NOT_FRIENDS");
 
-      const [relation, cards, wantedCopies, offeredOwned, pendingSent, sentLastDay, duplicate] = await Promise.all([
+      const [relation, privacy, cards, wantedCopies, offeredOwned, pendingSent, sentLastDay, duplicate] = await Promise.all([
         friendsAndBlocks(tx, input.proposerId, input.recipientId),
+        tx.user.findUnique({ where: { id: input.recipientId }, select: { profileVisibility: true, showCollection: true } }),
         tx.card.findMany({ where: { id: { in: [input.wantedCardId, ...offeredIds] } }, select: { id: true, rarity: true } }),
         tx.userCard.count({ where: { ownerId: input.recipientId, cardId: input.wantedCardId, status: "COLLECTION" } }),
         tx.userCard.groupBy({
@@ -92,11 +94,20 @@ export async function proposeTradeWith(db: PrismaClient, input: ProposeInput, on
       if (!wantedRarity) throw new TradeError("WANTED_GONE");
       if (offeredIds.some((id) => !rarity.has(id))) throw new TradeError("OFFER_GONE");
 
+      // Même règle que le profil : un non-ami ne vise que ce que la collection lui montre
+      const collectionVisible =
+        privacy !== null &&
+        profileAccess(
+          input.proposerId,
+          { id: input.recipientId, profileVisibility: privacy.profileVisibility as ProfileVisibility, showCollection: privacy.showCollection, bannedAt: recipient.bannedAt },
+          { friends: relation.friends, blocked: relation.blockedByThem },
+        ).collection;
       const refusal = checkProposal({
         wanted: { cardId: input.wantedCardId, rarity: wantedRarity },
         offered: offeredIds.map((id) => ({ cardId: id, rarity: rarity.get(id)! })),
         friends: relation.friends,
         blocked: relation.blocked,
+        collectionVisible,
         pendingSent,
         sentLastDay,
         duplicate: duplicate > 0,
@@ -154,13 +165,13 @@ export type AcceptOutcome =
   | { ok: false; code: "CARD_GONE" | "CLOSED" };
 
 /**
- * L'ami accepte en choisissant une des cartes offertes. Une proposition expirée passe en EXPIRED,
+ * Le destinataire accepte en choisissant une des cartes offertes. Une proposition expirée passe en EXPIRED,
  * une carte manquante d'un côté la passe en FAILED : ces changements d'état sont validés, l'échange
  * n'a simplement pas lieu (résultat ok: false).
  */
 export async function acceptTradeWith(
   db: PrismaClient,
-  input: { userId: string; tradeId: string; chosenCardId: string; allowedRarities: readonly Rarity[]; now?: Date },
+  input: { userId: string; tradeId: string; chosenCardId: string; allowedRarities: readonly Rarity[]; nonFriendsAllowed: boolean; now?: Date },
   onNotified?: OnNotified,
 ): Promise<AcceptOutcome> {
   const now = input.now ?? new Date();
@@ -185,7 +196,8 @@ export async function acceptTradeWith(
       const recipient = players.get(trade.recipientId);
       if (!proposer || !recipient || proposer.bannedAt || recipient.bannedAt) throw new TradeError("NO_USER");
       const relation = await friendsAndBlocks(tx, trade.proposerId, trade.recipientId);
-      if (!relation.friends) throw new TradeError("NOT_FRIENDS");
+      // Réglage refermé entre-temps : une proposition entre non-amis ne passe plus
+      if (!relation.friends && !input.nonFriendsAllowed) throw new TradeError("NOT_FRIENDS");
       if (relation.blocked) throw new TradeError("BLOCKED");
       const wantedRarity = await tx.card.findUnique({ where: { id: trade.wantedCardId }, select: { rarity: true } });
       const allowed = new Set(input.allowedRarities);
@@ -252,7 +264,7 @@ export async function acceptTradeWith(
   );
 }
 
-/** L'ami refuse (motif facultatif, déjà nettoyé) : le proposant est prévenu. */
+/** Le destinataire refuse (motif facultatif, déjà nettoyé) : le proposant est prévenu. */
 export async function declineTradeWith(
   db: PrismaClient,
   input: { userId: string; tradeId: string; note?: string | null; now?: Date },
@@ -283,7 +295,7 @@ export async function declineTradeWith(
   );
 }
 
-/** Le proposant retire sa proposition ; la notification de l'ami disparaît avec. */
+/** Le proposant retire sa proposition ; la notification du destinataire disparaît avec. */
 export async function cancelTradeWith(db: PrismaClient, input: { userId: string; tradeId: string; now?: Date }) {
   const now = input.now ?? new Date();
   await db.$transaction(async (tx) => {

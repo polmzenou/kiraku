@@ -16,6 +16,7 @@ export const SOCIAL_SETTING_KEYS = [
   "gifts.boosterPriceZeni",
   "gifts.allowedRarities",
   "trades.enabled",
+  "trades.nonFriends",
   "trades.expiryHours",
   "trades.maxOffered",
   "trades.maxPendingSent",

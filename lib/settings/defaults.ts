@@ -172,6 +172,7 @@ export const SETTING_SCHEMAS = {
   "gifts.sealedPerWeek": z.number().int().min(0).max(50),
   // Échanges entre amis (étape 12f) : rien n'est bloqué pendant l'attente, tout est revérifié à l'acceptation
   "trades.enabled": z.boolean(),
+  "trades.nonFriends": z.boolean(),
   "trades.expiryHours": z.number().int().min(1).max(24 * 30),
   "trades.maxOffered": z.number().int().min(1).max(10),
   "trades.maxPendingSent": z.number().int().min(1).max(100),
@@ -378,6 +379,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "gifts.sealedMinAccountDays": 7,
   "gifts.sealedPerWeek": 1,
   "trades.enabled": true,
+  "trades.nonFriends": true,
   "trades.expiryHours": 48,
   "trades.maxOffered": 5,
   "trades.maxPendingSent": 10,

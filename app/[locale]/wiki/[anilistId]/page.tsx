@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { PageShell } from "@/components/PageShell";
 import { WikiCardDetail, WikiPersonalizedCardDetail } from "@/components/wiki/WikiCardDetail";
+import { WikiCardOwners, WikiCardOwnersSkeleton } from "@/components/wiki/WikiCardOwners";
 import { WikiWishlistAction } from "@/components/wiki/WikiWishlistAction";
 import { routing } from "@/i18n/routing";
 import { seriesTitle } from "@/lib/catalog/display";
@@ -58,7 +59,12 @@ export default async function WikiCardPage({ params }: PageProps<"/[locale]/wiki
     { name: card.name, path: localePath(`/wiki/${card.anilistId}`, current) },
   ]);
   const wishlistAction = <Suspense fallback={null}><WikiWishlistAction cardId={card.id} name={card.name} /></Suspense>;
-  const detail = { card, locale, total: stats.total, related, wishlistAction };
+  const ownersSection = (
+    <Suspense fallback={<WikiCardOwnersSkeleton />}>
+      <WikiCardOwners cardId={card.id} rarity={card.rarity} name={card.name} locale={locale} />
+    </Suspense>
+  );
+  const detail = { card, locale, total: stats.total, related, wishlistAction, ownersSection };
   return (
     <PageShell>
       <JsonLd data={trail} />

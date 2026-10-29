@@ -1,5 +1,7 @@
-// Règles des échanges entre amis, sans base : le serveur les applique sous verrou (server/social/trade-core.ts).
-// « Je veux ta carte X, contre l'une de celles-ci » : l'ami choisit une des cartes offertes en acceptant.
+// Règles des échanges entre joueurs, sans base : le serveur les applique sous verrou (server/social/trade-core.ts).
+// « Je veux ta carte X, contre l'une de celles-ci » : l'autre joueur choisit une des cartes offertes en acceptant.
+// Entre amis c'est toujours possible ; avec un non-ami, seulement si le réglage l'ouvre et que sa collection
+// est visible par le proposant (on ne sonde pas une collection cachée).
 import type { Rarity } from "../catalog/rarity";
 
 export type TradeRules = {
@@ -8,10 +10,13 @@ export type TradeRules = {
   maxPendingSent: number;
   perDay: number;
   allowedRarities: readonly Rarity[];
+  /** Échanges ouverts aux joueurs qui ne sont pas amis. */
+  nonFriends: boolean;
 };
 
 export type TradeRefusal =
   | "NOT_FRIENDS"
+  | "PRIVATE"
   | "BLOCKED"
   | "NO_OFFER"
   | "TOO_MANY_OFFERED"
@@ -26,19 +31,22 @@ export type ProposalCheck = {
   offered: readonly { cardId: string; rarity: Rarity }[];
   friends: boolean;
   blocked: boolean;
+  /** La collection du destinataire est visible par le proposant (réglages de confidentialité). */
+  collectionVisible: boolean;
   /** Propositions en attente déjà envoyées par le proposant. */
   pendingSent: number;
   /** Propositions envoyées sur les dernières 24 h. */
   sentLastDay: number;
-  /** Une proposition en attente vise déjà cette carte chez cet ami. */
+  /** Une proposition en attente vise déjà cette carte chez ce joueur. */
   duplicate: boolean;
   rules: TradeRules;
 };
 
 /** Première raison de refuser une proposition, ou null si elle peut partir. */
 export function checkProposal(p: ProposalCheck): TradeRefusal | null {
-  if (!p.friends) return "NOT_FRIENDS";
   if (p.blocked) return "BLOCKED";
+  if (!p.friends && !p.rules.nonFriends) return "NOT_FRIENDS";
+  if (!p.friends && !p.collectionVisible) return "PRIVATE";
   if (p.offered.length === 0) return "NO_OFFER";
   if (p.offered.length > p.rules.maxOffered) return "TOO_MANY_OFFERED";
   if (p.offered.some((c) => c.cardId === p.wanted.cardId)) return "SAME_CARD";

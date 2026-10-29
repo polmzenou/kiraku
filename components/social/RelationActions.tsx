@@ -38,7 +38,7 @@ export function RelationActions({
   name: string;
   initial: Relation;
   gift: GiftInfo | null;
-  /** Échanges ouverts entre amis : nombre maximal de cartes offertes et raretés échangeables. */
+  /** Échanges ouverts avec ce joueur (ami, ou non-ami si le réglage l'ouvre) : cartes offertes au plus et raretés échangeables. */
   trade?: { maxOffered: number; allowedRarities: Rarity[] } | null;
 }) {
   const t = useTranslations("friends");
@@ -159,14 +159,6 @@ export function RelationActions({
               </Button>
             )}
             <ChatWithButton username={username} />
-            {trade && (
-              <Button type="button" onClick={() => setTradeOpen(true)}>
-                <span aria-hidden="true" lang="ja" className="font-seal text-shu">
-                  換
-                </span>
-                {t("trade")}
-              </Button>
-            )}
             <Link href={`/combat?defier=${encodeURIComponent(username)}`} className={buttonClasses("secondary")}>
               <span aria-hidden="true" lang="ja" className="font-seal text-shu">
                 戦
@@ -174,6 +166,14 @@ export function RelationActions({
               {tBattle("friend.challenge")}
             </Link>
           </>
+        )}
+        {trade && relation !== "BLOCKED_BY_ME" && (
+          <Button type="button" onClick={() => setTradeOpen(true)}>
+            <span aria-hidden="true" lang="ja" className="font-seal text-shu">
+              換
+            </span>
+            {t("trade")}
+          </Button>
         )}
         {relation === "BLOCKED_BY_ME" && (
           <Button type="button" disabled={pending} onClick={() => run("unblock", "NONE", () => unblockUserAction({ username }))}>
@@ -239,7 +239,7 @@ export function RelationActions({
         )}
       </Sheet>
 
-      {trade && relation === "FRIENDS" && tradeOpen && (
+      {trade && relation !== "BLOCKED_BY_ME" && tradeOpen && (
         <TradeComposer username={username} name={name} maxOffered={trade.maxOffered} allowedRarities={trade.allowedRarities} onClose={() => setTradeOpen(false)} />
       )}
       {gift && relation === "FRIENDS" && giftOpen && (

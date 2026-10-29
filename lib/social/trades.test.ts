@@ -7,6 +7,7 @@ const rules = {
   maxPendingSent: 2,
   perDay: 5,
   allowedRarities: ["COMMON", "RARE", "MYTHIC"] as const,
+  nonFriends: true,
 };
 
 const base: ProposalCheck = {
@@ -17,6 +18,7 @@ const base: ProposalCheck = {
   ],
   friends: true,
   blocked: false,
+  collectionVisible: true,
   pendingSent: 0,
   sentLastDay: 0,
   duplicate: false,
@@ -28,8 +30,27 @@ describe("proposition d'échange", () => {
     expect(checkProposal(base)).toBeNull();
   });
 
+  it("accepte un non-ami dont la collection est visible", () => {
+    expect(checkProposal({ ...base, friends: false })).toBeNull();
+  });
+
+  it("garde l'échange entre amis même si leur collection est cachée", () => {
+    expect(checkProposal({ ...base, collectionVisible: false })).toBeNull();
+  });
+
+  it("refuse un non-ami quand le réglage ferme les échanges hors amis", () => {
+    expect(checkProposal({ ...base, friends: false, rules: { ...base.rules, nonFriends: false } })).toBe("NOT_FRIENDS");
+  });
+
+  it("refuse un non-ami dont la collection est cachée", () => {
+    expect(checkProposal({ ...base, friends: false, collectionVisible: false })).toBe("PRIVATE");
+  });
+
+  it("fait passer le blocage avant tout le reste", () => {
+    expect(checkProposal({ ...base, friends: false, collectionVisible: false, blocked: true })).toBe("BLOCKED");
+  });
+
   it.each([
-    [{ friends: false }, "NOT_FRIENDS"],
     [{ blocked: true }, "BLOCKED"],
     [{ offered: [] }, "NO_OFFER"],
     [{ offered: ["a", "b", "c", "d"].map((cardId) => ({ cardId, rarity: "COMMON" as const })) }, "TOO_MANY_OFFERED"],

@@ -497,7 +497,25 @@
     "relatedTitle": "Other characters from {series}",
     "formsKicker": "Forms",
     "formsTitle": "Other forms of {name}",
-    "baseFormTitle": "Base form"
+    "baseFormTitle": "Base form",
+    "owners": {
+      "kicker": "Trades",
+      "title": "Who owns {name}",
+      "friends": "Your friends",
+      "others": "Other players",
+      "count": "{count, plural, =0 {none} one {# player} other {# players}}",
+      "friendsEmpty": "None of your friends has {name} yet.",
+      "othersEmpty": "No other player shows {name} in their collection.",
+      "othersMore": "And {count, plural, one {# more player} other {# more players}}.",
+      "othersClosed": "Trades outside friends are closed for now.",
+      "request": "Request a trade",
+      "requestLabel": "Request {card} from {name}",
+      "block": {
+        "guest": "Create your account to request a trade from players who own this card.",
+        "closed": "Trades are closed for now.",
+        "rarity": "This rarity can't be traded."
+      }
+    }
   },
   "nav": {
     "label": "Main navigation",
@@ -1495,12 +1513,13 @@
           "sweepSeconds": "Background sweeps per player, at most every (s)"
         },
         "trades": {
-          "enabled": "Trades between friends open",
+          "enabled": "Trades open",
           "expiryHours": "Offer lifetime (hours)",
           "maxOffered": "Most cards offered per proposal",
           "maxPendingSent": "Pending proposals per player",
           "perDay": "Proposals per player over 24 h",
-          "allowedRarities": "Tradable rarities"
+          "allowedRarities": "Tradable rarities",
+          "nonFriends": "Trades open to players who aren't friends"
         },
         "chat": {
           "enabled": "Chat between friends open",
@@ -1538,8 +1557,8 @@
       "log": "Latest changes",
       "logEmpty": "No changes yet.",
       "logEntry": "{key} by {admin}",
-      "tradesSection": "Trades between friends",
-      "tradesHint": "Nothing is locked while waiting: ownership, friendship and rarities are checked again on acceptance.",
+      "tradesSection": "Trades",
+      "tradesHint": "Nothing is locked while waiting: ownership, rarities and blocks are checked again on acceptance. Outside friends, the player's collection must be visible to the proposer; turning the switch off also stops already-sent proposals between non-friends from being accepted.",
       "chatSection": "Chat between friends",
       "chatHint": "Private plain-text messages between accepted friends, deleted after their lifetime (24 h by default). A block ends the conversation.",
       "activitySection": "Realtime and activity",
@@ -4166,7 +4185,7 @@
     "deleted": "Deleted account"
   },
   "trades": {
-    "intro": "Your proposals and your friends'. To make one, open a friend's profile and tap “Trade”.",
+    "intro": "Your sent and received proposals. To make one, tap “Trade” on a player's profile, or “Request a trade” on a card's wiki page.",
     "received": "Received",
     "sent": "Sent",
     "history": "History",
@@ -4183,7 +4202,7 @@
     "youGet": "You get",
     "wanted": "Requested card",
     "youGetOne": "You get one of these (pick it)",
-    "theyChooseOne": "For one of these (your friend picks)",
+    "theyChooseOne": "For one of these (the other player picks)",
     "chosen": "Card picked",
     "offered": "Cards offered",
     "choose": "Pick {card}",
@@ -4215,7 +4234,7 @@
       "offerTitle": "What you offer",
       "reviewTitle": "Summary",
       "wantHint": "Pick the card you want from {name}.",
-      "offerHint": "Pick up to {max, plural, one {# card} other {# cards}} to offer: your friend keeps one.",
+      "offerHint": "Pick up to {max, plural, one {# card} other {# cards}} to offer: {name} keeps one.",
       "pickWanted": "Ask for {card}",
       "pickOffered": "Offer {card}",
       "offeredCount": "{count}/{max}",
@@ -4234,11 +4253,12 @@
     "errors": {
       "NO_SESSION": "Your session expired. Reload the page.",
       "INVALID": "Invalid proposal.",
-      "GUEST": "Create your account to trade with friends.",
+      "GUEST": "Create your account to trade with other players.",
       "DISABLED": "Trades are closed for now.",
       "RATE_LIMITED": "Too many attempts. Try again in a minute.",
       "UNAVAILABLE": "Not possible right now. Try again later.",
-      "NOT_FRIENDS": "You are no longer friends.",
+      "NOT_FRIENDS": "You can't trade with this player right now.",
+      "PRIVATE": "This player keeps their collection hidden: trading is only possible between friends.",
       "BLOCKED": "You can't trade with this player.",
       "NO_OFFER": "Offer at least one card.",
       "TOO_MANY_OFFERED": "Too many cards offered (at most {max}).",
@@ -4248,7 +4268,7 @@
       "DAILY_LIMIT": "You've reached the proposal limit for 24 h.",
       "DUPLICATE": "You already have a pending proposal for this card.",
       "NO_USER": "Player not found.",
-      "WANTED_GONE": "Your friend no longer has a free copy of this card.",
+      "WANTED_GONE": "This player no longer has a free copy of this card.",
       "OFFER_GONE": "One of your offered cards is no longer free in your collection.",
       "NOT_FOUND": "Trade not found.",
       "CLOSED": "This trade is no longer open.",
@@ -4258,7 +4278,7 @@
     "noteFrom": "Note from {name}",
     "declineNoteFrom": "{name}'s reason for declining",
     "declineNote": "Reason for declining (optional)",
-    "declineNotePlaceholder": "So your friend knows why.",
+    "declineNotePlaceholder": "So the other player knows why.",
     "confirmDecline": "Confirm decline"
   },
   "chat": {
