@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
-import { getFormatter, getTranslations } from "next-intl/server";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { AbilityGuide } from "@/components/battle/AbilityGuide";
 import { CombatHub } from "@/components/battle/CombatHub";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
@@ -58,7 +58,7 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
     getActivity(user.id, ctx.rules.queueSeconds),
     getCandidates(user.id, ctx.rules),
     getHistory(user.id),
-    ctx.ranked.enabled ? getRankView(user.id, ctx.ranked) : null,
+    ctx.ranked.enabled ? getRankView(user.id, ctx.ranked, await getLocale()) : null,
   ]);
   const lastTeam = await getLastTeam(user.id, candidates);
   // ?defier=pseudo (bouton du profil) : seulement un ami accepté, la salle le revérifie à la création

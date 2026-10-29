@@ -9,6 +9,7 @@ import { Button } from "../ui/Button";
 import { buttonClasses } from "../ui/Button";
 import type { RankView } from "@/server/ranked/queries";
 import { RankBadge } from "../ranked/RankBadge";
+import { SeasonRewardPreview } from "../ranked/SeasonRewardPreview";
 import { SeasonReward } from "../ranked/SeasonReward";
 import { QueueWaiting } from "./QueueWaiting";
 import { useBattleError } from "./useBattleError";
@@ -130,7 +131,10 @@ export function CombatHub({
               {rank?.season && <span className="text-sm font-medium text-[#a89f92]">· {tRanked("season", { number: rank.season.number })}</span>}
             </h2>
             {rank ? (
-              <RankBadge tier={rank.tier} division={rank.division} pc={rank.pc} progress={rank.progress} next={rank.next} nextRank={rank.nextRank} grand={rank.grand} size={84} />
+              <>
+                <RankBadge tier={rank.tier} division={rank.division} pc={rank.pc} progress={rank.progress} next={rank.next} nextRank={rank.nextRank} grand={rank.grand} size={84} />
+                {rank.seasonReward && <SeasonRewardPreview reward={rank.seasonReward} currentTier={rank.tier} />}
+              </>
             ) : (
               <p className="text-sm text-[#a89f92]">{tRanked("disabled")}</p>
             )}

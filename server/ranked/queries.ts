@@ -3,8 +3,10 @@ import { unstable_cache } from "next/cache";
 import type { BoardTier } from "@/lib/battle/tiers";
 import { decorFromColumns, type PlayerDecor } from "@/lib/profile/decor";
 import { rankedRulesFrom, rankOf, RANKED_SETTING_KEYS, type RankedRules } from "@/lib/ranked/rules";
+import { rewardTier } from "@/lib/ranked/season";
 import type { SettingValue } from "@/lib/settings/defaults";
 import { prisma } from "../db";
+import { lotViews, type LotView } from "../economy/lot-view";
 import { decorColumns, type DecorColumns } from "../profile/decor";
 import { getSetting } from "../settings";
 import { currentSeasonWith, rollSeasonWith, type SeasonRow } from "./ranked-core";
@@ -48,6 +50,11 @@ export type RankView = {
   reward: { seasonId: string; seasonNumber: number; peakTier: BoardTier } | null;
   /** Grand Champion : sa place dans le top (« 12 sur 100 »), d'après les points de classement. */
   grand: { position: number; top: number } | null;
+  /**
+   * Lot de fin de saison si elle se terminait maintenant : celui du meilleur rang atteint (même règle
+   * que la clôture). `played` : sans partie classée cette saison, rien n'est versé. Null sans lot réglé.
+   */
+  seasonReward: { tier: BoardTier; lot: LotView; played: boolean } | null;
 };
 
 /** Joueurs inscrits non bannis qui ont strictement plus de PC ; null sous le seuil du Grand Champion. */
@@ -56,9 +63,12 @@ async function playersAhead(pc: number, r: RankedRules): Promise<number | null> 
   return prisma.user.count({ where: { rankPoints: { gt: pc }, bannedAt: null, isGuest: false } });
 }
 
-export async function getRankView(userId: string, r: RankedRules): Promise<RankView> {
+export async function getRankView(userId: string, r: RankedRules, locale: string): Promise<RankView> {
   const [user, season, reward] = await Promise.all([
-    prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { rankPoints: true, rankProtection: true, seasonGames: true } }),
+    prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { rankPoints: true, rankProtection: true, seasonGames: true, seasonPeakPc: true, seasonPeakGrand: true },
+    }),
     ensureSeason(r),
     prisma.seasonResult.findFirst({
       where: { userId, claimedAt: null, lotId: { not: null } },
@@ -71,6 +81,10 @@ export async function getRankView(userId: string, r: RankedRules): Promise<RankV
   const top = ahead !== null && ahead < r.grandChampion.top;
   const rank = rankOf(user.rankPoints, top, r);
   const next = rank.next === null ? null : rank.next >= r.grandChampion.min ? rankOf(rank.next, true, r) : rankOf(rank.next, false, r);
+  // Meilleur rang de la saison : le rang actuel s'il est plus haut (PC à jour avant le prochain pic)
+  const peak = rewardTier(Math.max(user.seasonPeakPc, user.rankPoints), user.seasonPeakGrand || rank.tier === "GRAND_CHAMPION", r);
+  const lotId = r.rewardLots[peak];
+  const lot = lotId ? (await lotViews([lotId], locale)).get(lotId) : undefined;
   return {
     pc: user.rankPoints,
     ...rank,
@@ -80,6 +94,7 @@ export async function getRankView(userId: string, r: RankedRules): Promise<RankV
     season: season ? { number: season.number, endsAt: season.endsAt.toISOString() } : null,
     reward: reward ? { seasonId: reward.seasonId, seasonNumber: reward.season.number, peakTier: reward.peakTier as BoardTier } : null,
     grand: rank.tier === "GRAND_CHAMPION" && ahead !== null ? { position: ahead + 1, top: r.grandChampion.top } : null,
+    seasonReward: lot ? { tier: peak, lot, played: user.seasonGames > 0 } : null,
   };
 }
 

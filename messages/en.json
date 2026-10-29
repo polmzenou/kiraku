@@ -4065,7 +4065,12 @@
       "hidden": "Private profiles count in the ladder but aren't shown.",
       "grandChampions": "Grand Champions"
     },
-    "grandPosition": "You're {position, number} of {top, number}"
+    "grandPosition": "You're {position, number} of {top, number}",
+    "seasonReward": {
+      "label": "Your end-of-season reward: {reward}",
+      "peak": "Based on your best rank this season: {tier}.",
+      "playToEarn": "Play at least one ranked game this season to receive it."
+    }
   },
   "legal": {
     "titles": {

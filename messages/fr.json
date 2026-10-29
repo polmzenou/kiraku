@@ -4065,7 +4065,12 @@
       "hidden": "Les profils privés comptent dans le classement mais n'y sont pas affichés.",
       "grandChampions": "Grands Champions"
     },
-    "grandPosition": "Vous êtes {position, number} sur {top, number}"
+    "grandPosition": "Vous êtes {position, number} sur {top, number}",
+    "seasonReward": {
+      "label": "Votre récompense à la fin de la saison : {reward}",
+      "peak": "D'après votre meilleur rang de la saison : {tier}.",
+      "playToEarn": "Jouez au moins une partie classée cette saison pour la recevoir."
+    }
   },
   "legal": {
     "titles": {
