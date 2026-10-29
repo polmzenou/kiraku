@@ -150,25 +150,16 @@
 .vfx-ofuda-ai::after {
   background: #2c5a86;
 }
-.vfx-ofuda-big {
-  font-family: var(--font-seal);
-  font-size: 1.6em;
-  line-height: 1;
-  color: #c8372d;
-}
-.vfx-ofuda-big::after {
-  display: none;
-}
 
-/* Passifs et états */
+/* Passifs et états : un sceau rectangulaire au mot traduit, taille de police posée par vfx.ts */
 .vfx-stamp {
-  display: grid;
-  place-items: center;
-  border-radius: 7px;
-  font-family: var(--font-seal);
-  font-size: 1.5em;
+  padding: 0.5em 0.7em 0.45em;
+  border-radius: 6px;
+  font-family: var(--font-heading);
   line-height: 1;
-  writing-mode: vertical-rl;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
   color: #fff4ef;
   background: #c8372d;
   box-shadow: inset 0 0 0 3px rgb(255 244 239 / 0.9), inset 0 0 0 5px #c8372d, 0 6px 18px rgb(0 0 0 / 0.45);

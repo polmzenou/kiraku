@@ -281,7 +281,7 @@ export function flames(run: FxRun, at: Box, delay = 0) {
 export function ofudaThrow(run: FxRun, from: Box, to: Box, ms: number) {
   const w = to.w * 0.32;
   const h = to.w * 0.78;
-  const o = size(node(run.layer, "vfx-ofuda vfx-ofuda-big", "封"), w, h);
+  const o = size(node(run.layer, "vfx-ofuda"), w, h);
   const mid = { x: (from.x + to.x) / 2 + (to.x > from.x ? -40 : 40), y: Math.min(from.y, to.y) - from.h * 0.6 };
   play(run, o, [
     { transform: `${on(from, w, h)} rotate(-30deg) scale(.6)`, opacity: 0 },
@@ -299,16 +299,21 @@ export function ofudaThrow(run: FxRun, from: Box, to: Box, ms: number) {
 
 // ---------- Passifs et états ----------
 
-/** Sceau tamponné sur une carte (撃破, 会心, 復活, 封). */
-export function stamp(run: FxRun, at: Box, glyph: string, tone: "shu" | "kin" | "ai" = "shu", hold = 900) {
-  const s = at.w * 0.62;
-  const p = size(node(run.layer, `vfx-stamp vfx-stamp-${tone}`, glyph), s);
+/** Sceau tamponné sur une carte, avec le mot traduit (K.-O., critique, renaissance, scellée). */
+export function stamp(run: FxRun, at: Box, text: string, tone: "shu" | "kin" | "ai" = "shu", hold = 900) {
+  const p = node(run.layer, `vfx-stamp vfx-stamp-${tone}`, text);
+  p.style.fontSize = `${Math.max(12, at.w * 0.14)}px`;
+  // Le mot déborde souvent de la carte : centré sur elle par son propre translate(-50 %, -50 %), mais
+  // gardé dans le cadre pour les cartes des bords
+  const half = p.offsetWidth / 2 + 8;
+  const x = Math.max(half, Math.min(at.x, run.world.clientWidth - half));
+  const c = `translate(${x}px, ${at.y}px) translate(-50%, -50%)`;
   play(run, p, [
-    { transform: `${on(at, s)} scale(2.3) rotate(-30deg)`, opacity: 0, easing: IN },
-    { transform: `${on(at, s)} scale(.9) rotate(-10deg)`, opacity: 1, offset: 0.2, easing: SNAP },
-    { transform: `${on(at, s)} scale(1) rotate(-12deg)`, opacity: 1, offset: 0.3 },
-    { transform: `${on(at, s)} scale(1) rotate(-12deg)`, opacity: 1, offset: 0.85 },
-    { transform: `${on(at, s)} scale(1.05) rotate(-12deg)`, opacity: 0 },
+    { transform: `${c} scale(2.3) rotate(-30deg)`, opacity: 0, easing: IN },
+    { transform: `${c} scale(.9) rotate(-10deg)`, opacity: 1, offset: 0.2, easing: SNAP },
+    { transform: `${c} scale(1) rotate(-12deg)`, opacity: 1, offset: 0.3 },
+    { transform: `${c} scale(1) rotate(-12deg)`, opacity: 1, offset: 0.85 },
+    { transform: `${c} scale(1.05) rotate(-12deg)`, opacity: 0 },
   ], { duration: 380 + hold });
 }
 
@@ -391,8 +396,8 @@ export function ash(run: FxRun, at: Box) {
   }
 }
 
-/** 復活 : les cendres se rassemblent dans une colonne de lumière. */
-export function revive(run: FxRun, at: Box) {
+/** 復活 : les cendres se rassemblent dans une colonne de lumière, puis le sceau du passif (`label`, traduit). */
+export function revive(run: FxRun, at: Box, label: string) {
   for (let i = 0; i < n(run, 16); i++) {
     const s = size(node(run.layer, "vfx-ash vfx-ember"), 3 + noise(i, 3) * 4);
     const a = noise(i, 5) * Math.PI * 2;
@@ -410,7 +415,7 @@ export function revive(run: FxRun, at: Box) {
     { transform: `${pos} scaleY(1)`, opacity: 1, offset: 0.4, transformOrigin: "50% 100%" },
     { transform: `${pos} scaleY(1) scaleX(.5)`, opacity: 0, transformOrigin: "50% 100%" },
   ], { duration: 900, delay: 480 });
-  stamp(run, at, "復活", "kin", 700);
+  stamp(run, at, label, "kin", 700);
 }
 
 /** 挑発 : ondes rouges autour de la carte qui attire les coups. */
@@ -522,8 +527,8 @@ export function frameKoma(run: FxRun, to: Box, artFrom: Art, artTo: Art, finishe
   shock(run, to, run.world.clientWidth * 0.6, "kin");
 }
 
-/** Mie (kabuki) : projecteur sur l'attaquant, traits kumadori vermillon, sceau 会心. */
-export function frameMie(run: FxRun, from: Box, to: Box, finisher: boolean, ms: number) {
+/** Mie (kabuki) : projecteur sur l'attaquant, traits kumadori vermillon, sceau du coup (`label`, traduit). */
+export function frameMie(run: FxRun, from: Box, to: Box, finisher: boolean, ms: number, label: string) {
   const W = run.world.clientWidth;
   const H = run.world.clientHeight;
   const dark = node(run.screen, "vfx-full vfx-mie-dark");
@@ -548,6 +553,6 @@ export function frameMie(run: FxRun, from: Box, to: Box, finisher: boolean, ms: 
       { transform: `${base} scaleX(1)`, opacity: 0, transformOrigin: "0 50%" },
     ], { duration: ms - s.d, delay: s.d, easing: SNAP });
   });
-  stamp(run, { ...from, y: from.y - from.h * 0.55 }, finisher ? "撃破" : "会心", "shu", ms - 420);
+  stamp(run, { ...from, y: from.y - from.h * 0.55 }, label, "shu", ms - 420);
   shock(run, to, W * 0.55, "shu");
 }
