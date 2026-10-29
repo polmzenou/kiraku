@@ -1,11 +1,11 @@
+import { getLocale } from "next-intl/server";
 import { pendingAnnouncement } from "@/lib/welcome/release";
-import { getSetting } from "@/server/settings";
 import { requireActiveUser } from "@/server/user";
-import { getV2ShowcaseCards, getV3TeaserCards } from "@/server/welcome";
+import { getV25Data, getV2ShowcaseCards } from "@/server/welcome";
 import { DiscordJoinGate } from "../discord/DiscordJoinGate";
 import { V1WelcomeModal } from "./V1WelcomeModal";
+import { V25AnnouncementModal } from "./V25AnnouncementModal";
 import { V2AnnouncementModal } from "./V2AnnouncementModal";
-import { V3TeaserModal } from "./V3TeaserModal";
 
 /** Le dernier message de l'équipe a priorité : pas de deuxième modal Discord par-dessus. */
 export async function PlayerAnnouncements() {
@@ -15,6 +15,5 @@ export async function PlayerAnnouncements() {
   if (!pending) return <DiscordJoinGate />;
   if (pending.key === "apology") return <V1WelcomeModal key={user.id} userId={user.id} isGuest={user.isGuest} />;
   if (pending.key === "v2") return <V2AnnouncementModal key={user.id} userId={user.id} cards={await getV2ShowcaseCards()} />;
-  const [cards, divine, apocalypse] = await Promise.all([getV3TeaserCards(), getSetting("booster.divineOdds"), getSetting("booster.apocalypseOdds")]);
-  return <V3TeaserModal key={user.id} userId={user.id} cards={cards} odds={{ divine, apocalypse }} />;
+  return <V25AnnouncementModal key={user.id} userId={user.id} data={await getV25Data(user.id, await getLocale())} />;
 }

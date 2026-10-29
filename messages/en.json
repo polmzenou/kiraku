@@ -79,34 +79,53 @@
     "thanks": "Thanks for keeping Kiraku alive. Have fun!",
     "letsGo": "Discover v2"
   },
-  "v3Teaser": {
-    "badge": "While we wait for v3",
-    "title": "What's new",
-    "titleAccent": "on Kiraku!",
-    "intro": "v3 is being prepared behind the scenes. In the meantime, here's what changes right now.",
-    "login": {
-      "title": "Logged out?",
-      "body": "You may have been logged out. <strong>Your progress hasn't been affected</strong>: just log back in!"
+  "v25Announcement": {
+    "badge": "New version",
+    "title": "Kiraku-kun v2.5",
+    "titleAccent": "is here!",
+    "intro": "Thank you for your enthusiasm: <strong>we've passed 1,000 players!</strong> Here's what this update brings.",
+    "referral": {
+      "title": "Referrals level up",
+      "body": "Referrals now come with tiers and <strong>BIG rewards</strong>. The more friends you invite, the bigger they get: go ahead and invite your friends!",
+      "friends": "{count, plural, one {# friend} other {# friends}}",
+      "cta": "Invite my friends"
     },
-    "cards": {
-      "title": "New AR and Gold cards are coming!",
-      "body": "To get ready for v3, Kiraku gives you a <strong>preview of the new cards</strong> with their 3D effects.",
-      "preview": "Preview of the new cards",
-      "hint": "Touch or hover a card to tilt it."
+    "discord": {
+      "title": "Would you join a Kiraku Discord?",
+      "body": "We're thinking about opening a Discord: a real community around Kiraku. It could host:",
+      "ideas": {
+        "news": "news",
+        "tournaments": "tournaments",
+        "contests": "contests",
+        "lotteries": "lotteries",
+        "feedback": "your feedback",
+        "cards": "your card suggestions"
+      },
+      "yes": "Yes",
+      "no": "No",
+      "thanks": "Thanks for your answer! You can still change your mind.",
+      "error": "Your answer couldn't be saved, please try again in a moment."
+    },
+    "incense": {
+      "title": "Incense",
+      "body": "One <strong>Incense</strong> every {cards, number} cards drawn: it raises rarity odds for <strong>{hours, plural, one {# hour} other {# hours}}</strong>."
+    },
+    "battle": {
+      "title": "New battle interface",
+      "body": "Battles got a makeover. <strong>Tournaments</strong> could be on the way: get your cards ready!"
     },
     "shop": {
-      "title": "A new shop and unique boosters",
-      "body": "When you open your boosters, you might find a sealed pack:",
-      "divine": "DIVINE",
-      "apocalypse": "APOCALYPTIC",
-      "odds": "1 chance in {odds, number}"
+      "title": "A new shop",
+      "body": "The shop has a fresh look, with the <strong>{booster} booster</strong> and plenty more.",
+      "imperial": "Imperial",
+      "cta": "Visit the shop"
     },
     "x": {
-      "title": "Don't forget to follow us on X",
-      "body": "Follow <strong>{handle}</strong> so you don't miss anything about v3 and get notified if something goes wrong.",
+      "title": "Stay up to date on X",
+      "body": "Follow <strong>{handle}</strong> so you never miss what's new.",
       "cta": "Follow {handle}"
     },
-    "thanks": "Thanks for your patience, more is coming soon!",
+    "thanks": "Thanks for being here, there's more to come!",
     "letsGo": "Let's go"
   },
   "cardBack": {
@@ -206,7 +225,7 @@
     "back": "Back to home"
   },
   "footer": {
-    "versionNotice": "Kiraku-kun v2 is here! New design and new AR and Gold cards. This week: a new shop, Divine and Apocalyptic boosters, profile customization, and the ambassadors arrive. Coming soon: casino, new rarities and improved battles.",
+    "versionNotice": "Kiraku-kun v2.5 is here! Tiered referrals with big rewards, Incense, a new battle interface and a new shop with the Imperial booster. Coming soon: tournaments and more.",
     "disclaimer": "Unofficial fan project. Characters belong to their respective rights holders.",
     "nav": "Site links",
     "account": "My account",
@@ -2233,7 +2252,12 @@
       "attention": "To watch",
       "pendingDeletions": "Pending deletions",
       "banned": "Banned accounts",
-      "termsVersion": "Required terms"
+      "termsVersion": "Required terms",
+      "discordPoll": "Discord poll (v2.5 announcement)",
+      "pollYes": "Yes",
+      "pollNo": "No",
+      "pollTotal": "Answers",
+      "pollShare": "{percent}% of answers"
     },
     "journal": {
       "title": "Admin action log",
@@ -3158,6 +3182,7 @@
       "badges": "Badges shown",
       "badgesHint": "tap them in the order you want; none picked = all",
       "badgeNames": {
+        "DEV": "DEV",
         "PIONEER": "Pioneer",
         "AMBASSADOR": "Ambassador",
         "VERIFIED": "Verified account",

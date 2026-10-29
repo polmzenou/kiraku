@@ -1,6 +1,10 @@
 import "server-only";
 import type { FudaCard } from "@/components/fuda/Fuda";
+import { localize, parseLocalized, parseTheme, type BoosterShape, type BoosterTheme } from "@/lib/boosters/types";
+import { DISCORD_POLL } from "@/lib/welcome/poll";
 import { prisma } from "./db";
+import { lotViews } from "./economy/lot-view";
+import { getSetting } from "./settings";
 
 /**
  * Cartes Gold et AR mises en avant par l'annonce de la v2, dans cet ordre (les cinq premières forment
@@ -19,13 +23,6 @@ const V2_SHOWCASE_CARD_IDS = [
   "cmvp2w24x000008jhagjj4awu", // Shigeo Kageyama · AR
 ];
 
-/** Aperçu de l'annonce « en attendant la v3 », de gauche à droite ; mêmes règles que pour la v2. */
-const V3_TEASER_CARD_IDS = [
-  "cmvqpv1fc000308jvvys7co43", // Juuzou Suzuya · AR
-  "cmvqqzkda000m08k0gapjj8pp", // Imu Nerona · Mythique
-  "cmvqu79pw000p07lemzs39x4a", // Guts · Gold
-];
-
 export type ShowcaseCard = FudaCard & { id: string };
 
 async function showcaseCards(ids: readonly string[]): Promise<ShowcaseCard[]> {
@@ -37,4 +34,37 @@ async function showcaseCards(ids: readonly string[]): Promise<ShowcaseCard[]> {
 }
 
 export const getV2ShowcaseCards = () => showcaseCards(V2_SHOWCASE_CARD_IDS);
-export const getV3TeaserCards = () => showcaseCards(V3_TEASER_CARD_IDS);
+
+export type V25Data = {
+  /** Paliers du parrainage (amis qualifiés → nom du lot), lus dans les réglages. */
+  milestones: { referrals: number; reward: string }[];
+  incense: { cardStep: number; hours: number };
+  imperial: { name: string; emblem: string; shape: BoosterShape; theme: BoosterTheme } | null;
+  /** Réponse déjà donnée au sondage Discord (null = pas encore). */
+  vote: boolean | null;
+};
+
+/** Ce que l'annonce de la v2.5 affiche : tout vient des réglages et de la base, rien en dur. */
+export async function getV25Data(userId: string, locale: string): Promise<V25Data> {
+  const [milestones, cardStep, hours, imperial, vote] = await Promise.all([
+    getSetting("referral.milestones"),
+    getSetting("incense.cardStep"),
+    getSetting("incense.durationHours"),
+    prisma.boosterType.findUnique({ where: { slug: "imperial" }, select: { name: true, emblem: true, shape: true, theme: true, active: true } }),
+    prisma.pollVote.findUnique({ where: { userId_poll: { userId, poll: DISCORD_POLL } }, select: { answer: true } }),
+  ]);
+  const lots = await lotViews(milestones.map((m) => m.lotId), locale);
+  return {
+    milestones: milestones
+      .flatMap((m) => {
+        const lot = lots.get(m.lotId);
+        return lot ? [{ referrals: m.referrals, reward: lot.name }] : [];
+      })
+      .sort((a, b) => a.referrals - b.referrals),
+    incense: { cardStep, hours },
+    imperial: imperial?.active
+      ? { name: localize(parseLocalized(imperial.name, "Impérial"), locale), emblem: imperial.emblem, shape: imperial.shape, theme: parseTheme(imperial.theme) }
+      : null,
+    vote: vote?.answer ?? null,
+  };
+}

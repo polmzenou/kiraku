@@ -1,4 +1,5 @@
 import "server-only";
+import { DISCORD_POLL, pollTally } from "@/lib/welcome/poll";
 import { combatTotals } from "../battle/queries";
 import { prisma } from "../db";
 import { economyTotals, ledgerMismatches } from "../economy/admin-queries";
@@ -27,7 +28,7 @@ async function playerTotals(now: Date) {
 
 /** Tableau de bord de /admin, lu en base. */
 async function readDashboard(now: Date) {
-  const [players, economy, mismatches, market, combat, pendingDeletions, banned] = await Promise.all([
+  const [players, economy, mismatches, market, combat, pendingDeletions, banned, poll] = await Promise.all([
     playerTotals(now),
     economyTotals(),
     ledgerMismatches(1),
@@ -35,8 +36,10 @@ async function readDashboard(now: Date) {
     combatTotals(now),
     prisma.dataRequest.count({ where: { kind: "DELETION", status: "PENDING" } }),
     prisma.user.count({ where: { bannedAt: { not: null } } }),
+    prisma.pollVote.groupBy({ by: ["answer"], where: { poll: DISCORD_POLL }, _count: { _all: true } }),
   ]);
-  return { players, economy, ledgerOk: mismatches.length === 0, market, combat, pendingDeletions, banned };
+  const discordPoll = pollTally(poll.map((r) => ({ answer: r.answer, count: r._count._all })));
+  return { players, economy, ledgerOk: mismatches.length === 0, market, combat, pendingDeletions, banned, discordPoll };
 }
 
 // Gardé 60 s en mémoire du processus : une vingtaine de requêtes, dont le contrôle complet du journal

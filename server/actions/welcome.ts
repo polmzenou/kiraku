@@ -1,5 +1,6 @@
 "use server";
 
+import { DISCORD_POLL, pollAnswerSchema } from "@/lib/welcome/poll";
 import { ANNOUNCEMENTS, pendingAnnouncement } from "@/lib/welcome/release";
 import { z } from "@/lib/zod";
 import { prisma } from "../db";
@@ -35,4 +36,23 @@ export async function claimAnnouncementAction(displayedUserId: unknown, key: unk
     data: { v1WelcomeSeenAt: pending.at },
   });
   return claimed.count === 1;
+}
+
+/**
+ * Réponse au sondage Discord de l'annonce v2.5 (invités compris). Une ligne par joueur : changer d'avis
+ * remplace l'ancien vote, jamais compté deux fois.
+ */
+export async function voteDiscordPollAction(answer: unknown): Promise<boolean> {
+  const user = await requireActiveUser();
+  if (!user) return false;
+  const parsed = pollAnswerSchema.safeParse(answer);
+  if (!parsed.success) return false;
+  if (!(await rateLimit(`poll:${user.id}`, { limit: 10, windowSeconds: 3600 })).success) return false;
+
+  await prisma.pollVote.upsert({
+    where: { userId_poll: { userId: user.id, poll: DISCORD_POLL } },
+    create: { userId: user.id, poll: DISCORD_POLL, answer: parsed.data },
+    update: { answer: parsed.data },
+  });
+  return true;
 }

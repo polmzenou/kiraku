@@ -95,6 +95,7 @@ describe("badges", () => {
   const base = {
     createdAt: new Date("2026-10-01"),
     pioneerUntil: new Date("2026-12-31"),
+    staff: false,
     ambassador: true,
     qualifiedReferrals: 3,
     sponsorReferrals: 3,
@@ -114,6 +115,10 @@ describe("badges", () => {
     expect(earnedBadges({ ...base, qualifiedReferrals: 9 })).not.toContain("RECRUITER");
     expect(earnedBadges({ ...base, qualifiedReferrals: 10 })).toEqual(["PIONEER", "AMBASSADOR", "SPONSOR", "RECRUITER", "VERIFIED"]);
     expect(earnedBadges({ ...base, qualifiedReferrals: 50, recruiterReferrals: 0 })).not.toContain("RECRUITER");
+  });
+  it("DEV vient du rôle d'équipe, en tête des badges", () => {
+    expect(earnedBadges({ ...base, staff: true })).toEqual(["DEV", "PIONEER", "AMBASSADOR", "SPONSOR", "VERIFIED"]);
+    expect(earnedBadges(base)).not.toContain("DEV");
   });
   it("respecte l'ordre choisi parmi les badges obtenus", () => {
     expect(orderedBadges(["PIONEER", "VERIFIED"], ["VERIFIED", "AMBASSADOR"])).toEqual(["VERIFIED"]);

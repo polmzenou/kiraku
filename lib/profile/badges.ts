@@ -6,14 +6,15 @@ export const BIO_MAX = 160;
 
 // --- Badges (dérivés, sans table) ---
 
-// AMBASSADOR vient du rôle donné par l'admin ; SPONSOR (Parrain) et RECRUITER (Recruteur) des filleuls qualifiés
-export const BADGES = ["PIONEER", "AMBASSADOR", "SPONSOR", "RECRUITER", "VERIFIED"] as const;
+// DEV vient du rôle d'équipe (DEV ou ADMIN), AMBASSADOR du rôle donné par l'admin ; SPONSOR (Parrain) et RECRUITER (Recruteur) des filleuls qualifiés
+export const BADGES = ["DEV", "PIONEER", "AMBASSADOR", "SPONSOR", "RECRUITER", "VERIFIED"] as const;
 export type Badge = (typeof BADGES)[number];
 
-export const BADGE_KANJI: Record<Badge, string> = { PIONEER: "先", AMBASSADOR: "使", SPONSOR: "縁", RECRUITER: "募", VERIFIED: "認" };
+export const BADGE_KANJI: Record<Badge, string> = { DEV: "匠", PIONEER: "先", AMBASSADOR: "使", SPONSOR: "縁", RECRUITER: "募", VERIFIED: "認" };
 
-/** Pastille du badge : l'or par défaut, le vert hisui pour le rôle Ambassadeur. */
+/** Pastille du badge : l'or par défaut, l'indigo ai pour l'équipe, le vert hisui pour le rôle Ambassadeur. */
 export const BADGE_CLASS: Record<Badge, { pill: string; kanji: string }> = {
+  DEV: { pill: "border-ai/60 text-ai", kanji: "text-ai" },
   PIONEER: { pill: "border-kin/50 text-kin", kanji: "text-kin" },
   AMBASSADOR: { pill: "border-hisui/60 text-hisui", kanji: "text-hisui" },
   SPONSOR: { pill: "border-kin/50 text-kin", kanji: "text-kin" },
@@ -24,6 +25,8 @@ export const BADGE_CLASS: Record<Badge, { pill: string; kanji: string }> = {
 export function earnedBadges(input: {
   createdAt: Date;
   pioneerUntil: Date | null;
+  /** Membre de l'équipe (rôle DEV ou ADMIN). */
+  staff: boolean;
   ambassador: boolean;
   qualifiedReferrals: number;
   sponsorReferrals: number;
@@ -31,6 +34,7 @@ export function earnedBadges(input: {
   discordLinked: boolean;
 }): Badge[] {
   const out: Badge[] = [];
+  if (input.staff) out.push("DEV");
   if (input.pioneerUntil && input.createdAt <= input.pioneerUntil) out.push("PIONEER");
   if (input.ambassador) out.push("AMBASSADOR");
   if (input.sponsorReferrals > 0 && input.qualifiedReferrals >= input.sponsorReferrals) out.push("SPONSOR");

@@ -1,4 +1,5 @@
 import "server-only";
+import type { Role } from "@/generated/prisma/client";
 import { ladderTier, LADDER } from "@/lib/ranked/rules";
 import {
   earnedBadges,
@@ -128,7 +129,7 @@ export async function getCosmeticProgress(userId: string, locale: string): Promi
 }
 
 /** Badges obtenus par le joueur (ordre par défaut). */
-export async function getEarnedBadges(user: { id: string; createdAt: Date; discordLinkedAt: Date | null; ambassadorSince: Date | null }): Promise<Badge[]> {
+export async function getEarnedBadges(user: { id: string; createdAt: Date; discordLinkedAt: Date | null; ambassadorSince: Date | null; role: Role }): Promise<Badge[]> {
   const [pioneerUntil, sponsorReferrals, recruiterReferrals, qualifiedReferrals] = await Promise.all([
     getSetting("profile.pioneerUntil"),
     getSetting("profile.sponsorReferrals"),
@@ -139,6 +140,7 @@ export async function getEarnedBadges(user: { id: string; createdAt: Date; disco
     createdAt: user.createdAt,
     // Fin de la journée indiquée, heure de Paris approchée par UTC+1 : un inscrit du dernier jour reste pionnier
     pioneerUntil: pioneerUntil ? new Date(`${pioneerUntil}T23:59:59+01:00`) : null,
+    staff: user.role !== "USER",
     ambassador: user.ambassadorSince !== null,
     qualifiedReferrals,
     sponsorReferrals,
@@ -164,6 +166,7 @@ export async function getProfileDecor(userId: string, locale: string): Promise<P
       createdAt: true,
       discordLinkedAt: true,
       ambassadorSince: true,
+      role: true,
       badgeOrder: true,
       title: { select: { label: true, active: true } },
       frame: { select: { frameStyle: true, active: true } },
