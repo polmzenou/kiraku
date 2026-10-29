@@ -25,7 +25,7 @@ vi.mock("next/image", () => ({
 vi.mock("@/components/fuda/FudaTurnover", () => ({
   FudaTurnover: ({ children }: { children: ReactNode }) => createElement("div", null, children),
 }));
-vi.mock("@/server/catalog/ownership", () => ({ getWikiCollection: vi.fn() }));
+vi.mock("@/server/catalog/ownership", () => ({ getWikiCollection: vi.fn(), getWikiCards: vi.fn() }));
 vi.mock("./WikiBiography", () => ({
   WikiBiography: ({ anilistId }: { anilistId: number }) => {
     biographyCalls(anilistId);

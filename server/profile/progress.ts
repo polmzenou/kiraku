@@ -37,8 +37,7 @@ type Hint = { fr?: string; en?: string };
 
 /** Statistiques utiles aux conditions, en quelques requêtes. */
 export async function getProfileStats(userId: string, seriesIds: readonly string[]): Promise<ProfileStats> {
-  const [unique, byRarity, completed, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog] = await Promise.all([
-    prisma.userCard.findMany({ where: { ownerId: userId }, distinct: ["cardId"], select: { cardId: true } }).then((r) => r.length),
+  const [byRarity, completed, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog] = await Promise.all([
     prisma.$queryRaw<{ rarity: string; n: number }[]>`
       SELECT c."rarityKey" AS rarity, COUNT(DISTINCT uc."cardId")::int AS n
       FROM "UserCard" uc JOIN "Card" c ON c.id = uc."cardId"
@@ -76,6 +75,9 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
       GROUP BY c."rarityKey"`,
     getCatalogStats(),
   ]);
+  // Cartes distinctes : chaque carte a une seule rareté, la somme du décompte par rareté suffit (le
+  // `distinct` de Prisma 7 s'applique en mémoire et chargeait tous les exemplaires du joueur)
+  const unique = byRarity.reduce((sum, r) => sum + r.n, 0);
   // Meilleur des deux : un titre de rang ne se reperd pas après une défaite
   const tier = ladderTier(Math.max(user.rankPoints, user.seasonPeakPc), { tiers });
   return {

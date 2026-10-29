@@ -22,6 +22,8 @@ self.addEventListener("activate", (event) => {
       // Anciennes versions du cache hors ligne
       const keys = await caches.keys();
       await Promise.all(keys.filter((k) => k.startsWith("kiraku-offline-") && k !== OFFLINE_CACHE).map((k) => caches.delete(k)));
+      // Préchargement de navigation : la requête part pendant que le worker démarre, au lieu d'attendre
+      if (self.registration.navigationPreload) await self.registration.navigationPreload.enable();
       await self.clients.claim();
     })(),
   );
@@ -35,6 +37,8 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     (async () => {
       try {
+        const preloaded = await event.preloadResponse;
+        if (preloaded) return preloaded;
         return await fetch(request);
       } catch {
         const cached = await caches.match(OFFLINE_URL);

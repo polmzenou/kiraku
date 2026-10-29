@@ -20,8 +20,13 @@ function place(el: HTMLElement | null, x: number | null) {
   if (el) el.style.transform = x === null ? "" : `translate3d(${x}px, 0, 0)`;
 }
 
-export function useMarquee<T extends HTMLElement>({ enabled, periodSeconds }: { enabled: boolean; periodSeconds: number }) {
+export function useMarquee<T extends HTMLElement>({ enabled, periodSeconds, paused = false }: { enabled: boolean; periodSeconds: number; paused?: boolean }) {
   const track = useRef<T>(null);
+  // Hors écran : la piste ne bouge plus, mais garde sa position (pas de saut quand on y revient)
+  const pausedRef = useRef(paused);
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
   const state = useRef({
     x: 0,
     velocity: 0,
@@ -59,7 +64,7 @@ export function useMarquee<T extends HTMLElement>({ enabled, periodSeconds }: { 
       const dt = Math.min(now - last, 64) / 1000;
       last = now;
       const s = state.current;
-      if (document.hidden || s.pointer?.dragging || !s.period) return;
+      if (document.hidden || pausedRef.current || s.pointer?.dragging || !s.period) return;
       const cruise = s.hovered || s.focused ? 0 : -s.period / periodSeconds;
       s.velocity = relaxVelocity(s.velocity, cruise, dt, RELAX_TAU);
       s.x = wrap(s.x + s.velocity * dt, s.period);

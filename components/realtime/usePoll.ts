@@ -20,6 +20,9 @@ type Options = {
   channel?: "user" | { battle: string };
 };
 
+/** Écart sous lequel la reconnexion du temps réel ne relance pas un sondage qui vient de partir. */
+const RESYNC_GAP_MS = 2_000;
+
 /**
  * Sondage partagé par tous les écrans : rien quand l'onglet est caché ou le joueur inactif, reprise
  * immédiate à son retour si le dernier sondage est ancien, délai de secours quand le temps réel est
@@ -103,7 +106,8 @@ export function usePoll(poll: () => Promise<boolean | void>, { seconds, realtime
     const reconnected = connected && !wasConnected.current && everConnected.current;
     wasConnected.current = connected;
     if (connected) everConnected.current = true;
-    if (enabled && reconnected && realtimeSeconds !== undefined) void run();
+    // Au retour sur l'onglet, le geste du joueur a souvent déjà relancé un sondage : pas de second à la suite
+    if (enabled && reconnected && realtimeSeconds !== undefined && Date.now() - lastAt.current > RESYNC_GAP_MS) void run();
   }, [connected, enabled, realtimeSeconds, run]);
 
   return run;

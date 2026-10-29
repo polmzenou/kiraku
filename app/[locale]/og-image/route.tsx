@@ -10,6 +10,10 @@ import { Backdrop, Chip, FONT, FudaFan, OG, Wordmark } from "@/server/og/scene";
 // Image de partage du site (Discord, X, WhatsApp…) : sceau et nom Kiraku, accroche localisée, et un
 // éventail de fuda vedettes du catalogue. Route simple plutôt que la convention opengraph-image :
 // son URL interne /fr/… redirigerait.
+// Même image pour tous dans une langue : rendue (Satori, trois lectures en base) une fois par jour
+// et gardée dans le cache de Next, au lieu d'être recalculée à chaque aperçu de lien
+export const revalidate = 86400;
+
 export async function GET(_request: Request, { params }: RouteContext<"/[locale]/og-image">) {
   const { locale: raw } = await params;
   const locale = hasLocale(routing.locales, raw) ? raw : routing.defaultLocale;

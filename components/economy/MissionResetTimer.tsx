@@ -12,11 +12,15 @@ export function MissionResetTimer({ endsAt, initialNow }: { endsAt: number; init
   const [now, setNow] = useState(initialNow);
 
   useEffect(() => {
-    const tick = setInterval(() => setNow(Date.now()), 60_000);
+    // Heure du serveur reportée sur l'horloge de l'appareil : un téléphone en avance rafraîchissait
+    // avant le renouvellement et restait sur « renouvellement en cours »
+    const skew = initialNow - Date.now();
+    const serverTime = () => Date.now() + skew;
+    const tick = setInterval(() => setNow(serverTime()), 60_000);
     let stopWaiting = () => {};
-    const reset = setTimeout(() => (stopWaiting = refreshWhenVisible(() => router.refresh())), Math.max(0, endsAt - Date.now()) + 1_000);
+    const reset = setTimeout(() => (stopWaiting = refreshWhenVisible(() => router.refresh())), Math.max(0, endsAt - serverTime()) + 1_000);
     return () => { clearInterval(tick); clearTimeout(reset); stopWaiting(); };
-  }, [endsAt, router]);
+  }, [endsAt, initialNow, router]);
 
   const minutes = Math.max(0, Math.ceil((endsAt - now) / 60_000));
   const hours = Math.floor(minutes / 60);
