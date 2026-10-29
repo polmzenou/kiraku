@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { randomInt } from "node:crypto";
 import { battleRulesFrom, BATTLE_SETTING_KEYS, type BattleRules } from "@/lib/battle/config";
 import { replay } from "@/lib/battle/engine";
@@ -23,11 +24,11 @@ import { publishBattle } from "./realtime";
 // Lectures du combat. Les parties dont le tour a expiré sont réglées au passage (paresseux), comme
 // les ventes du marché ; le cron quotidien balaie le reste.
 
-export async function getBattleRules(): Promise<BattleRules> {
+export const getBattleRules = cache(async (): Promise<BattleRules> => {
   const values = await Promise.all(BATTLE_SETTING_KEYS.map((k) => getSetting(k)));
   const byKey = new Map<string, unknown>(BATTLE_SETTING_KEYS.map((k, i) => [k, values[i]]));
   return battleRulesFrom((key) => byKey.get(key) as SettingValue<typeof key>);
-}
+});
 
 /** Contexte du cœur : réglages, horloge, hasard cryptographique et début du jour de jeu. */
 export async function battleCtx(now = new Date()): Promise<Ctx> {

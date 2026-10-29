@@ -25,8 +25,8 @@ async function playerTotals(now: Date) {
   return { active24h: active?.count ?? 0, signups24h: signups, guests24h: guests, boosters24h: boosters };
 }
 
-/** Tableau de bord de /admin : toujours lu en base, jamais en cache. */
-export async function adminDashboard(now = new Date()) {
+/** Tableau de bord de /admin, lu en base. */
+async function readDashboard(now: Date) {
   const [players, economy, mismatches, market, combat, pendingDeletions, banned] = await Promise.all([
     playerTotals(now),
     economyTotals(),
@@ -37,4 +37,20 @@ export async function adminDashboard(now = new Date()) {
     prisma.user.count({ where: { bannedAt: { not: null } } }),
   ]);
   return { players, economy, ledgerOk: mismatches.length === 0, market, combat, pendingDeletions, banned };
+}
+
+// Gardé 60 s en mémoire du processus : une vingtaine de requêtes, dont le contrôle complet du journal
+// des Zeni, partaient à chaque ouverture de /admin et prenaient le pool pendant que les joueurs
+// attendaient. Le contrôle détaillé reste en direct sur /admin/economie.
+const DASHBOARD_MS = 60_000;
+let memo: { at: number; data: ReturnType<typeof readDashboard> } | null = null;
+
+export function adminDashboard(now = new Date()): ReturnType<typeof readDashboard> {
+  if (memo && now.getTime() - memo.at < DASHBOARD_MS) return memo.data;
+  const entry = { at: now.getTime(), data: readDashboard(now) };
+  memo = entry;
+  entry.data.catch(() => {
+    if (memo === entry) memo = null;
+  });
+  return entry.data;
 }

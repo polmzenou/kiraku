@@ -1,6 +1,6 @@
 import { z } from "@/lib/zod";
 import { MAX_MOVEMENT } from "@/lib/economy/amount";
-import { noteSchema } from "@/lib/text/plain";
+import { noteSchema } from "@/lib/text/note-schema";
 import { USERNAME_REGEX } from "@/lib/username";
 import type { Rarity } from "@/lib/catalog/rarity";
 

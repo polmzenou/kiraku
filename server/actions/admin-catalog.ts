@@ -9,7 +9,7 @@ import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
 import { CATALOG_TAG } from "../catalog/queries";
 import { RARITIES_TAG } from "../catalog/rarities";
-import { SETTINGS_TAG } from "../settings";
+import { forgetSettings, SETTINGS_TAG } from "../settings";
 import { BOOSTER_TYPES_TAG } from "../boosters/pools";
 import { bulkCatalogWith, CatalogMutationError, deleteCatalogCardWith, saveCatalogCardWith, setCatalogCardStatusWith, saveRarityWith } from "../catalog/admin-core";
 
@@ -20,7 +20,7 @@ async function guard(adminOnly = false) {
   if (!(await rateLimit(`admin-catalog:${staff.user.id}`, { limit: 30, windowSeconds: 60 })).success) return { error: "RATE_LIMITED" as const };
   return { admin: staff.user, scope: staff.scope };
 }
-function invalidate() { for (const tag of [CATALOG_TAG, BOOSTER_TYPES_TAG, RARITIES_TAG, SETTINGS_TAG]) updateTag(tag); }
+function invalidate() { for (const tag of [CATALOG_TAG, BOOSTER_TYPES_TAG, RARITIES_TAG, SETTINGS_TAG]) updateTag(tag); forgetSettings(); }
 function failure(error: unknown): CatalogResult {
   if (error instanceof CatalogMutationError) return { ok: false, error: error.code };
   console.error("[admin-catalog] save failed", error);

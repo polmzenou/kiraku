@@ -192,7 +192,9 @@ export async function rollSeasonWith(
   timeZone: string,
   opts: { force?: boolean } = {},
 ): Promise<{ closed: SeasonRow | null; results: number }> {
-  await currentSeasonWith(db, now, r, timeZone);
+  const open = await currentSeasonWith(db, now, r, timeZone);
+  // Saison en cours : rien à clore, donc ni transaction ni verrou (la clôture revérifie sous verrou)
+  if (!opts.force && open.endsAt > now) return { closed: null, results: 0 };
   return db.$transaction(
     async (tx) => {
       const [s] = await tx.$queryRaw<SeasonRow[]>`

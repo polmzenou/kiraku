@@ -2,6 +2,14 @@ import Image from "next/image";
 import type { FrameStyle } from "@/lib/profile/frames";
 import { AvatarFrame } from "../profile/AvatarFrame";
 
+/** Avatar Discord à la taille affichée (×2 pour les écrans denses) plutôt que l'original, parfois un GIF animé. */
+function sized(image: string, size: number): string {
+  if (!image.startsWith("https://cdn.discordapp.com/")) return image;
+  const url = new URL(image);
+  url.searchParams.set("size", String([64, 128, 256].find((s) => s >= size * 2) ?? 256));
+  return url.toString();
+}
+
 /** Avatar rond d'un joueur : image Discord, sinon l'initiale du pseudo sur papier, dans son cadre s'il en porte un. */
 export function PlayerAvatar({
   username,
@@ -18,7 +26,7 @@ export function PlayerAvatar({
 }) {
   const avatar = image ? (
     <Image
-      src={image}
+      src={sized(image, size)}
       alt=""
       crossOrigin="anonymous"
       referrerPolicy="no-referrer"

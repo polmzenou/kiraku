@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { Prisma } from "@/generated/prisma/client";
 import type { BoardTier } from "@/lib/battle/tiers";
@@ -17,16 +18,19 @@ import { currentSeasonWith, rollSeasonWith, type SeasonRow } from "./ranked-core
 
 export const RANKED_TAG = "ranked-leaderboard";
 
-export async function getRankedRules(): Promise<RankedRules> {
+export const getRankedRules = cache(async (): Promise<RankedRules> => {
   const values = await Promise.all(RANKED_SETTING_KEYS.map((k) => getSetting(k)));
   const byKey = new Map<string, unknown>(RANKED_SETTING_KEYS.map((k, i) => [k, values[i]]));
   return rankedRulesFrom((key) => byKey.get(key) as SettingValue<typeof key>);
-}
+});
 
 /** Saison ouverte, après avoir clos celle qui serait terminée. Ne fait jamais échouer l'affichage. */
 export async function ensureSeason(r: RankedRules, now = new Date()): Promise<SeasonRow | null> {
   try {
     const timeZone = await getSetting("game.timeZone");
+    // Appelé à chaque vue de /combat et /classement : une seule lecture tant que la saison court
+    const open = await currentSeasonWith(prisma, now, r, timeZone);
+    if (open.endsAt > now) return open;
     await rollSeasonWith(prisma, now, r, timeZone);
     return await currentSeasonWith(prisma, now, r, timeZone);
   } catch (e) {

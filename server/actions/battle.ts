@@ -324,7 +324,11 @@ export async function battleSinceAction(input: unknown): Promise<SinceResult> {
   if (!(await rateLimit(`battle-view:${user.id}`, { limit: 90, windowSeconds: MINUTE }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
-  await sweepBattlesFor(user.id);
+  // Balayage des parties échues (trois lectures et tous les réglages du combat) au plus toutes les 30 s
+  // par joueur : l'échéance d'un tour est de toute façon réclamée par les joueurs (claimTimeoutAction)
+  if ((await rateLimit(`battle-sweep:${user.id}`, { limit: 1, windowSeconds: 30 }, { store: "memory" })).success) {
+    await sweepBattlesFor(user.id);
+  }
   return { ok: true, update: await getUpdateSince(parsed.data.battleId, user.id, parsed.data.version) };
 }
 

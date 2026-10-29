@@ -6,6 +6,20 @@ import { writeAdminLog } from "@/server/admin/log";
 import { prisma } from "@/server/db";
 import { isSameOrigin } from "@/server/same-origin";
 
+// Une carte ne s'affiche jamais au-delà de ~720 px de large (fiche ouverte, écran dense) : on la stocke
+// ainsi, en WebP, orientée et sans métadonnées. Une image d'admin pouvait peser 4 Mo, servie telle quelle
+// à chaque vignette. Sans sharp (binaire absent sur la machine), l'original est gardé.
+async function optimizeCardImage(bytes: Uint8Array, type: string): Promise<{ data: Buffer; type: string; extension: string }> {
+  try {
+    const { default: sharp } = await import("sharp");
+    const data = await sharp(bytes, { limitInputPixels: 40_000_000 }).rotate().resize({ width: 720, withoutEnlargement: true }).webp({ quality: 82 }).toBuffer();
+    return { data, type: "image/webp", extension: "webp" };
+  } catch (error) {
+    console.error("[catalog-upload] optimisation impossible, original gardé", error);
+    return { data: Buffer.from(bytes), type, extension: type === "image/jpeg" ? "jpg" : type === "image/png" ? "png" : "webp" };
+  }
+}
+
 export async function POST(request: Request) {
   const admin = (await getStaff())?.user;
   if (!admin) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
@@ -26,12 +40,12 @@ export async function POST(request: Request) {
     if (!(file instanceof File) || file.size === 0 || file.size > CARD_IMAGE_LIMIT || !CARD_IMAGE_TYPES.includes(file.type)) return Response.json({ error: "IMAGE_INVALID" }, { status: 400 });
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (imageSignature(bytes) !== file.type) return Response.json({ error: "IMAGE_INVALID" }, { status: 400 });
-    const extension = file.type === "image/jpeg" ? "jpg" : file.type === "image/png" ? "png" : "webp";
+    const image = await optimizeCardImage(bytes, file.type);
     // Jeton passé explicitement : sinon le SDK préfère VERCEL_OIDC_TOKEN, refusé hors de Vercel
-    const blob = await put(`cards/${crypto.randomUUID()}.${extension}`, Buffer.from(bytes), { access: "public", contentType: file.type, addRandomSuffix: true, token });
+    const blob = await put(`cards/${crypto.randomUUID()}.${image.extension}`, image.data, { access: "public", contentType: image.type, addRandomSuffix: true, token });
     if (new URL(blob.url).hostname !== process.env.BLOB_PUBLIC_HOST) return Response.json({ error: "STORAGE_UNAVAILABLE" }, { status: 503 });
     try {
-      await writeAdminLog(prisma, { adminId: admin.id, action: "CARD_IMAGE_UPLOAD", targetType: "CardImage", targetId: blob.pathname, after: { url: blob.url, size: file.size } });
+      await writeAdminLog(prisma, { adminId: admin.id, action: "CARD_IMAGE_UPLOAD", targetType: "CardImage", targetId: blob.pathname, after: { url: blob.url, size: image.data.length, originalSize: file.size } });
     } catch (error) {
       // Pas de trace = pas d'image : on retire le fichier pour ne pas laisser d'orphelin dans le stockage
       await del(blob.url, { token }).catch(() => {});

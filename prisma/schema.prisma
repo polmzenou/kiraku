@@ -258,6 +258,7 @@ model CoinTransaction {
   createdAt    DateTime   @default(now())
 
   @@index([userId, createdAt, id]) // historique par curseur
+  @@index([createdAt], type: Brin) // fenêtres de dates du tableau de bord admin
 }
 
 // --- Catalogue (étape 2) ---
@@ -448,6 +449,7 @@ model BoosterOpening {
   createdAt      DateTime           @default(now())
 
   @@index([userId, createdAt])
+  @@index([createdAt], type: Brin) // fenêtres de dates du tableau de bord admin
 }
 
 // Gros tirage (Épique ou mieux) sorti d'un booster : carrousel « En direct » de l'accueil.
@@ -494,6 +496,7 @@ model AdminLog {
   createdAt  DateTime @default(now())
 
   @@index([createdAt])
+  @@index([adminId]) // clé étrangère : vérifiée à chaque compte supprimé
 }
 
 // --- Types de boosters (étape 4) ---
@@ -702,6 +705,7 @@ model Notification {
 
   @@index([userId, readAt])
   @@index([userId, createdAt])
+  @@index([actorId]) // clé étrangère : supprimer un compte ne parcourt plus toutes les notifications
 }
 
 // Abonnements Web Push (un par navigateur). L'endpoint est l'adresse du service push du
@@ -1010,6 +1014,7 @@ model Auction {
   @@index([sellerId, status])
   @@index([currentBidderId, status])
   @@index([cardId, status])
+  @@index([userCardId]) // clé étrangère : recycler un exemplaire ne parcourt plus toutes les ventes
 }
 
 // Journal immuable des mises acceptées
@@ -1109,6 +1114,7 @@ model Battle {
   @@index([p1Id, createdAt])
   @@index([p2Id, createdAt])
   @@index([status, turnEndsAt])
+  @@index([createdAt], type: Brin) // fenêtres de dates du tableau de bord admin
 }
 
 // Journal des actions d'une partie, dans l'ordre (seq = BattleState.seq avant l'action)
@@ -1243,6 +1249,7 @@ model LotGrant {
   @@unique([broadcastId, userId])
   @@index([userId, createdAt])
   @@index([lotId])
+  @@index([adminId]) // clé étrangère (suppression de compte)
 }
 
 enum LotBroadcastStatus {
@@ -1426,6 +1433,7 @@ model ChatMessage {
   @@index([pairKey, createdAt])
   @@index([recipientId, readAt])
   @@index([createdAt])
+  @@index([senderId]) // clé étrangère (suppression de compte)
 }
 
 // --- Personnalisation du profil (étape 12h) ---

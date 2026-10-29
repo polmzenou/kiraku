@@ -134,6 +134,28 @@ export async function getBoosterPool(entry: BoosterTypeEntry): Promise<CardPool>
   return Object.fromEntries(order.map((r) => [r, pool[r] ?? []]));
 }
 
+// Pools lus pour l'affichage (souhaits et vedettes de l'accueil, tailles des offres dynamiques), gardés
+// en mémoire du processus : pour une même clé, un pool ne change jamais (le tampon suit chaque
+// modification du type, la version du catalogue, les raretés et le jour du filtre suivent le reste).
+// L'accueil en relisait une vingtaine par vue. Partagés entre requêtes : lecture seule. Les tirages
+// passent par getBoosterPool, qui rend une copie.
+const DISPLAY_POOLS_MAX = 64;
+const displayPools = new Map<string, Promise<CardPool>>();
+
+export async function getDisplayPool(entry: BoosterTypeEntry): Promise<CardPool> {
+  const [order, version, ctx] = await Promise.all([getRarities(), getCatalogVersion(), getFilterContext()]);
+  const key = [entry.type.slug, entry.stamp, version, order.join(","), entry.dynamic ? dayKey(ctx) : ""].join(":");
+  let pool = displayPools.get(key);
+  if (!pool) {
+    pool = getBoosterPool(entry);
+    displayPools.set(key, pool);
+    pool.catch(() => displayPools.delete(key));
+    // Les plus anciennes clés partent d'abord (une Map garde l'ordre d'insertion)
+    if (displayPools.size > DISPLAY_POOLS_MAX) displayPools.delete(displayPools.keys().next().value as string);
+  }
+  return pool;
+}
+
 export type BoosterOffer = {
   type: BoosterTypeView;
   counts: Record<Rarity, number>;
@@ -160,7 +182,7 @@ const loadBaseOffers = cache(async (): Promise<BaseOffer[]> => {
   const now = new Date();
   return Promise.all(
     entries.map(async (entry) => {
-      const counts = entry.dynamic || !entry.storedCounts ? poolCounts(await getBoosterPool(entry)) : entry.storedCounts;
+      const counts = entry.dynamic || !entry.storedCounts ? poolCounts(await getDisplayPool(entry)) : entry.storedCounts;
       const size = Object.values(counts).reduce((s, n) => s + n, 0);
       const min = entry.type.minPoolSize ?? minPool;
       return {

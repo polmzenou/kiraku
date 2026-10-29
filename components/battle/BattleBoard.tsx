@@ -23,7 +23,6 @@ import { Outro } from "./sequences/Outro";
 import { BattleStage } from "./stage/BattleStage";
 import { useBoardControls } from "./stage/useBoardControls";
 import { useStageKit } from "./stage/useStageKit";
-import { useSecondsLeft } from "./TurnTimer";
 import { useBattleError } from "./useBattleError";
 
 function toClient(a: Action): ClientAction {
@@ -74,13 +73,18 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
 
   /** Rattrape tout ce qui s'est passé depuis notre version (rejoué côté serveur depuis le journal). */
   const resync = useCallback(async () => {
-    if (syncing.current) return;
+    if (syncing.current) return false;
     syncing.current = true;
     try {
       const res = await battleSinceAction({ battleId: view.id, version: version.current });
-      if (res.ok && res.update && res.update.version > version.current) apply(res.update);
+      if (res.ok && res.update && res.update.version > version.current) {
+        apply(res.update);
+        return true;
+      }
+      return false;
     } catch {
       // Serveur injoignable : le prochain sondage réessaiera
+      return false;
     } finally {
       syncing.current = false;
     }
@@ -102,11 +106,15 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
   // En direct seulement si le canal de la partie est attaché (jeton refusé ou quota Ably : sondage normal)
   const connected = isLive({ battle: view.id });
   useHoldAwake(live);
+  // Pendant mon tour, rien ne change côté serveur sans moi (l'échéance est réclamée à part) : le délai
+  // s'allonge tant que rien de neuf n'arrive. En attendant l'adversaire, il reste au rythme de base.
+  const myTurn = !shown.finished && shown.active === mySide;
   usePoll(resync, {
     seconds: view.pollSeconds,
     realtimeSeconds: view.realtime ? view.safetyPollSeconds : undefined,
     channel: { battle: view.id },
     enabled: live,
+    backoff: myTurn,
   });
   useEffect(() => {
     if (!live || !view.realtime) return;
@@ -123,20 +131,30 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
 
   const canAct = !intro && !shown.finished && shown.active === mySide && !animating && !pending;
 
-  // Minuteur : à zéro, n'importe quel joueur réclame la fin du tour (le serveur vérifie l'échéance)
-  const secondsLeft = useSecondsLeft(shown.finished ? null : turnEndsAt, 0);
+  // Minuteur : à l'échéance, n'importe quel joueur réclame la fin du tour (le serveur vérifie l'échéance).
+  // Un seul délai par échéance, l'encens tenant sa propre horloge : le plateau ne se re-rend plus quatre
+  // fois par seconde. `attempt` relance la réclamation après un échec réseau.
+  const [due, setDue] = useState<{ endsAt: string; attempt: number } | null>(null);
   useEffect(() => {
-    if (secondsLeft === null || secondsLeft > 0 || !turnEndsAt || claimed.current === turnEndsAt || animating) return;
+    if (shown.finished || !turnEndsAt) return;
+    const id = setTimeout(() => setDue({ endsAt: turnEndsAt, attempt: 0 }), Math.max(0, new Date(turnEndsAt).getTime() - Date.now()));
+    return () => clearTimeout(id);
+  }, [shown.finished, turnEndsAt]);
+  useEffect(() => {
+    if (shown.finished || !due || due.endsAt !== turnEndsAt || claimed.current === turnEndsAt || animating) return;
     claimed.current = turnEndsAt;
     const id = setTimeout(async () => {
       const res = await claimTimeoutAction({ battleId: view.id }).catch(() => null);
-      // Action qui lève (serveur injoignable) : réclamation rouverte pour le prochain passage
-      if (!res) claimed.current = null;
+      // Action qui lève (serveur injoignable) : réclamation rouverte, nouvel essai au passage suivant
+      if (!res) {
+        claimed.current = null;
+        setDue((d) => (d && d.endsAt === due.endsAt ? { ...d, attempt: d.attempt + 1 } : d));
+      }
       if (res?.ok && res.update) receive(res.update);
       else void resync();
     }, 1_000);
     return () => clearTimeout(id);
-  }, [animating, receive, resync, secondsLeft, turnEndsAt, view.id]);
+  }, [animating, due, receive, resync, shown.finished, turnEndsAt, view.id]);
 
   const send = async (action: ClientAction) => {
     setPending(true);
@@ -192,7 +210,7 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
         mine={{ selected: controls.selected, ready: controls.selected === null && canAct ? controls.ready : undefined, targets: controls.allyTargets, onPress: controls.pressMine }}
         theirs={{ targets: controls.enemyTargets, onPress: controls.pressTheirs }}
         ticker={ticker}
-        timer={!intro && !shown.finished ? { secondsLeft, total: view.turnSeconds } : null}
+        timer={!intro && !shown.finished ? { endsAt: turnEndsAt, total: view.turnSeconds } : null}
         tablets={
           <Tablets
             mode={controls.mode}

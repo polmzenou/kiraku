@@ -23,10 +23,10 @@ export function ArcadeBanner() {
 
         <span className="flex min-w-0 items-center">
           <Image
-            src="/brand/jjk-arcade-logo.png"
+            src="/brand/jjk-arcade-logo.webp"
             alt="JJK Arcade"
-            width={836}
-            height={511}
+            width={288}
+            height={176}
             sizes="(min-width: 640px) 112px, 96px"
             className="h-auto w-24 shrink-0 rounded-md sm:w-28"
           />

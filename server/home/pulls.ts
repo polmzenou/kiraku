@@ -48,8 +48,14 @@ export async function feedPullIds({ rarities, size, since, maxPerPlayer }: FeedQ
   return rows.map((r) => r.id);
 }
 
-async function loadFeed(query: FeedQuery, locale: string): Promise<FeedRow[]> {
-  const ids = await feedPullIds(query);
+/**
+ * Clé du cache du fil : les réglages, sans la fenêtre de dates, recalculée à chaque relecture. Avec la
+ * fenêtre dans la clé, chaque minute créait une entrée (et un fichier dans .next/cache) jamais purgée.
+ */
+type FeedKey = Omit<FeedQuery, "since"> & { maxAgeHours: number };
+
+async function loadFeed({ maxAgeHours, ...query }: FeedKey, locale: string): Promise<FeedRow[]> {
+  const ids = await feedPullIds({ ...query, since: Date.now() - maxAgeHours * 3_600_000 });
   if (ids.length === 0) return [];
   const order = new Map(ids.map((id, i) => [id, i]));
   const found = await prisma.notablePull.findMany({
@@ -74,7 +80,7 @@ const feeds = new Map<number, typeof loadFeed>();
 function cachedFeed(seconds: number) {
   let feed = feeds.get(seconds);
   if (!feed) {
-    feed = unstable_cache(loadFeed, ["home-pull-feed-v4", String(seconds)], { revalidate: seconds, tags: [PULL_FEED_TAG] });
+    feed = unstable_cache(loadFeed, ["home-pull-feed-v5", String(seconds)], { revalidate: seconds, tags: [PULL_FEED_TAG] });
     feeds.set(seconds, feed);
   }
   return feed;
@@ -91,7 +97,7 @@ function cachedFeed(seconds: number) {
 export async function getRecentPulls(locale: string): Promise<RecentPull[] | null> {
   const [enabled, cacheSeconds] = await Promise.all([getSetting("home.pullFeed.enabled"), getSetting("home.pullFeed.cacheSeconds")]);
   if (!enabled) return null;
-  const [rows, t] = await Promise.all([cachedFeed(cacheSeconds)(await feedQuery(), locale), getTranslations("playerName")]);
+  const [rows, t] = await Promise.all([cachedFeed(cacheSeconds)(await feedSettings(), locale), getTranslations("playerName")]);
   const labels = { hidden: t("hidden"), deleted: t("deleted") };
 
   return rows.map((r) => {
@@ -107,8 +113,8 @@ export async function getRecentPulls(locale: string): Promise<RecentPull[] | nul
   });
 }
 
-/** Paramètres du fil d'après les réglages ; fenêtre arrondie à la minute pour une clé de cache stable. */
-export async function feedQuery(now = Date.now()): Promise<FeedQuery> {
+/** Réglages du fil (clé du cache public). */
+async function feedSettings(): Promise<FeedKey> {
   const [minRarity, size, maxAgeHours, maxPerPlayer, RARITIES] = await Promise.all([
     getSetting("home.pullFeed.minRarity"),
     getSetting("home.pullFeed.size"),
@@ -116,12 +122,13 @@ export async function feedQuery(now = Date.now()): Promise<FeedQuery> {
     getSetting("home.pullFeed.maxPerPlayer"),
     getRarities(),
   ]);
-  return {
-    rarities: RARITIES.slice(Math.max(0, RARITIES.indexOf(minRarity))),
-    size,
-    since: Math.floor((now - maxAgeHours * 3_600_000) / 60_000) * 60_000,
-    maxPerPlayer,
-  };
+  return { rarities: RARITIES.slice(Math.max(0, RARITIES.indexOf(minRarity))), size, maxAgeHours, maxPerPlayer };
+}
+
+/** Paramètres du fil d'après les réglages, fenêtre arrondie à la minute (modération de /admin). */
+export async function feedQuery(now = Date.now()): Promise<FeedQuery> {
+  const { maxAgeHours, ...query } = await feedSettings();
+  return { ...query, since: Math.floor((now - maxAgeHours * 3_600_000) / 60_000) * 60_000 };
 }
 
 /** Ménage paresseux : les gros tirages trop vieux pour le carrousel ne servent plus à rien. */

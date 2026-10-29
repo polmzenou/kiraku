@@ -2,7 +2,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import Image from "next/image";
 import { SealMark } from "@/components/SealMark";
 import { guestCode } from "@/lib/username";
-import type { Badge } from "@/lib/profile/conditions";
+import type { Badge } from "@/lib/profile/badges";
 import type { PlayerDecor } from "@/lib/profile/decor";
 import { PlayerName } from "../social/PlayerName";
 import { AvatarFrame } from "./AvatarFrame";

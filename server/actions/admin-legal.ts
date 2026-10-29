@@ -7,7 +7,7 @@ import { getAdmin } from "../admin";
 import { prisma } from "../db";
 import { LEGAL_TAG } from "../legal";
 import { rateLimit } from "../ratelimit";
-import { SETTINGS_TAG } from "../settings";
+import { forgetSettings, SETTINGS_TAG } from "../settings";
 import { writeAdminLog } from "../admin/log";
 
 // Pages légales depuis /admin/legal. Ordre : rôle admin → Zod → rate limit → écriture + AdminLog.
@@ -104,6 +104,9 @@ export async function publishLegalAction(input: unknown): Promise<AdminLegalResu
   if (result !== "OK") return { ok: false, error: result };
 
   updateTag(LEGAL_TAG);
-  if (force) updateTag(SETTINGS_TAG);
+  if (force) {
+    updateTag(SETTINGS_TAG);
+    forgetSettings();
+  }
   return { ok: true, version };
 }

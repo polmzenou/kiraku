@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { z } from "@/lib/zod";
 import { auth, signIn, signOut } from "../auth";
 import { discordEnabled } from "../env";
@@ -19,7 +20,11 @@ const internalPath = z
 /** Première visite sans session : crée un compte invité et sa session. */
 export async function ensureGuest(): Promise<ActionResult> {
   const session = await auth();
-  if (session?.user?.id) return { ok: true };
+  // Déjà connecté (cookie posé depuis un autre onglet) : re-rendre la page, comme le ferait un cookie neuf
+  if (session?.user?.id) {
+    refresh();
+    return { ok: true };
+  }
 
   const ip = await clientIp();
   const testIps = (process.env.GUEST_TEST_IPS ?? "")

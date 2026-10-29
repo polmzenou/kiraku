@@ -64,13 +64,23 @@ export function ReviewsCarousel({ reviews }: { reviews: ReviewCard[] }) {
     setPage(0);
   }, [page, count]);
 
+  // Défilement automatique seulement quand le carrousel est à l'écran
+  const [visible, setVisible] = useState(false);
   useEffect(() => {
-    if (paused || reduced || count < 2) return;
+    const el = root.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => setVisible(entry?.isIntersecting ?? false));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (paused || reduced || count < 2 || !visible) return;
     const id = window.setInterval(() => {
       if (document.visibilityState === "visible") next();
     }, INTERVAL_MS);
     return () => window.clearInterval(id);
-  }, [paused, reduced, count, next]);
+  }, [paused, reduced, count, next, visible]);
 
   const current = pages[Math.min(page, count - 1)] ?? [];
 

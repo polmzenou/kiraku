@@ -39,11 +39,10 @@ export function RecentPulls({ initial, initialOwned, refreshSeconds, serverNow }
   const [now, setNow] = useState(serverNow);
   const reduced = useReducedFx();
   const marquee = pulls.length >= MARQUEE_MIN && !reduced;
-  const { track, handlers: drag } = useMarquee<HTMLDivElement>({ enabled: marquee, periodSeconds: pulls.length * SECONDS_PER_CARD });
-
-  // Sondé seulement quand le ruban est à l'écran (et le joueur là) ; sans nouveau tirage, plus lentement
+  // Sondé et animé seulement quand le ruban est à l'écran (et le joueur là) ; sans nouveau tirage, plus lentement
   const section = useRef<HTMLElement>(null);
   const [inView, setInView] = useState(false);
+  const { track, handlers: drag } = useMarquee<HTMLDivElement>({ enabled: marquee, periodSeconds: pulls.length * SECONDS_PER_CARD, paused: !inView });
   useEffect(() => {
     const el = section.current;
     if (!el) return;

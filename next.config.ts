@@ -49,6 +49,12 @@ const nextConfig: NextConfig = {
     return [
       { source: "/(.*)", headers: securityHeaders },
       {
+        // Images fixes de public/ servies par Node (pas de CDN devant le VPS) : une semaine de cache évite
+        // un aller-retour (304) par fichier à chaque chargement. Renommer un fichier quand il change.
+        source: "/:dir(brand|card-backs|icons)/:file*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }],
+      },
+      {
         // Le navigateur doit toujours revalider le service worker : une correction arrive aussitôt
         source: "/sw.js",
         headers: [

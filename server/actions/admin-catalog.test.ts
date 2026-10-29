@@ -7,7 +7,7 @@ vi.mock("../db", () => ({ prisma: {} }));
 vi.mock("../ratelimit", () => ({ rateLimit: mocks.limit }));
 vi.mock("../catalog/queries", () => ({ CATALOG_TAG: "catalog" }));
 vi.mock("../catalog/rarities", () => ({ RARITIES_TAG: "catalog-rarities" }));
-vi.mock("../settings", () => ({ SETTINGS_TAG: "settings" }));
+vi.mock("../settings", () => ({ SETTINGS_TAG: "settings", forgetSettings: () => {} }));
 vi.mock("../boosters/pools", () => ({ BOOSTER_TYPES_TAG: "booster-types" }));
 vi.mock("../catalog/admin-core", () => ({
   saveCatalogCardWith: mocks.save, setCatalogCardStatusWith: mocks.status, saveRarityWith: mocks.rarity, bulkCatalogWith: mocks.bulk, deleteCatalogCardWith: mocks.remove,

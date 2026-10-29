@@ -10,7 +10,7 @@ import { Link } from "@/i18n/navigation";
 import { cardNumber, seriesTitle } from "@/lib/catalog/display";
 
 import { wikiCardState, type WikiCollection } from "@/lib/catalog/wiki-state";
-import { getWikiCollection } from "@/server/catalog/ownership";
+import { getWikiCards } from "@/server/catalog/ownership";
 import type { CatalogCardDetail, CatalogCardSummary } from "@/server/catalog/queries";
 import { WikiBiography, WikiBiographySkeleton } from "./WikiBiography";
 import { WikiCardValuation } from "./WikiCardValuation";
@@ -26,7 +26,7 @@ type DetailProps = {
 };
 
 export async function WikiPersonalizedCardDetail(props: DetailProps) {
-  const collection = await getWikiCollection();
+  const collection = await getWikiCards([props.card.anilistId, ...props.related.map((r) => r.anilistId)]);
   return <WikiCardDetail {...props} collection={collection} />;
 }
 

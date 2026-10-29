@@ -115,7 +115,7 @@ export async function pollNotificationsAction(input: unknown): Promise<PollResul
   // Balayages paresseux (écritures en base) au plus une fois par notifications.sweepSeconds et par
   // joueur, pas à chaque sondage ; les crons quotidiens et l'affichage des pages restent les filets de sécurité.
   const sweepSeconds = await getSetting("notifications.sweepSeconds");
-  if ((await rateLimit(`notif-sweep:${user.id}`, { limit: 1, windowSeconds: sweepSeconds })).success) {
+  if ((await rateLimit(`notif-sweep:${user.id}`, { limit: 1, windowSeconds: sweepSeconds }, { store: "memory" })).success) {
     // Ventes terminées du joueur closes avant de lire : « Tu as remporté… » arrive dans ce sondage
     try {
       await settleDueFor(user.id, new Date());

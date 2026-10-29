@@ -34,7 +34,21 @@ export async function AppHeader({ theme }: { theme: Theme }) {
   const isAdmin = isStaff(user?.role);
   const signedIn = Boolean(user && !user.isGuest);
   const authLabel = signedIn ? t("account.logout") : t("auth.login.title");
-  const [unread, pollSeconds, safetySeconds, casino, boosterRules, guestDays, missionReady] = await Promise.all([
+  // Chat entre amis : comptes inscrits, actifs, avec le social et le chat ouverts. Lu avec le reste de
+  // l'en-tête, en une seule vague après l'utilisateur, plutôt qu'en deux allers-retours de plus.
+  const chatUser = user && !user.isGuest && !user.bannedAt && !isFrozen(user) ? user : null;
+  const loadChat = async (id: string) => {
+    const [socialOn, chatOn, retentionHours, chatPoll, maxLength] = await Promise.all([
+      getSetting("social.enabled"),
+      getSetting("chat.enabled"),
+      getSetting("chat.retentionHours"),
+      getSetting("chat.pollSeconds"),
+      getSetting("chat.maxLength"),
+    ]);
+    if (!socialOn || !chatOn) return null;
+    return { initialUnread: await unreadChatCount(id, visibleSince(retentionHours)), pollSeconds: chatPoll, maxLength, retentionHours };
+  };
+  const [unread, pollSeconds, safetySeconds, casino, boosterRules, guestDays, missionReady, chatBase] = await Promise.all([
     user ? unreadNotifications(user.id) : 0,
     user ? getSetting("notifications.pollSeconds") : 0,
     user ? getSetting("realtime.safetyPollSeconds") : 0,
@@ -43,25 +57,12 @@ export async function AppHeader({ theme }: { theme: Theme }) {
     user?.isGuest ? getSetting("guest.retentionDays") : 0,
     // Pastille rouge sur Missions : une mission terminée attend d'être réclamée
     user && !user.bannedAt ? hasClaimableMission(user.id) : false,
+    chatUser ? loadChat(chatUser.id) : null,
   ]);
   const state = user && boosterRules ? boosterStateFrom(user, boosterRules) : null;
   const features = { casino };
   const alerts = { missions: missionReady };
-  // Chat entre amis : comptes inscrits, actifs, avec le social et le chat ouverts
-  const chatUser = user && !user.isGuest && !user.bannedAt && !isFrozen(user) ? user : null;
-  const [socialOn, chatOn] = chatUser ? await Promise.all([getSetting("social.enabled"), getSetting("chat.enabled")]) : [false, false];
-  const chat =
-    chatUser && socialOn && chatOn
-      ? await Promise.all([getSetting("chat.retentionHours"), getSetting("chat.pollSeconds"), getSetting("chat.maxLength")]).then(
-          async ([retentionHours, chatPoll, maxLength]) => ({
-            initialUnread: await unreadChatCount(chatUser.id, visibleSince(retentionHours)),
-            pollSeconds: chatPoll,
-            safetySeconds,
-            maxLength,
-            retentionHours,
-          }),
-        )
-      : null;
+  const chat = chatBase ? { ...chatBase, safetySeconds } : null;
 
   return (
     <>

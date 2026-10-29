@@ -6,21 +6,42 @@ import { useEffect, useSyncExternalStore } from "react";
 import { countdownParts } from "@/lib/time";
 
 // Horloge partagée à la seconde : premier rendu à l'heure du serveur (pas d'écart d'hydratation),
-// puis l'heure du navigateur. Le client affiche un compte à rebours, il ne décide jamais du stock.
+// puis l'heure du navigateur recalée sur celle du serveur. Le client affiche un compte à rebours, il ne
+// décide jamais du stock.
 
+// Une seule minuterie pour toute la page, quel que soit le nombre de comptes à rebours abonnés
+const listeners = new Set<() => void>();
+let ticker: ReturnType<typeof setInterval> | null = null;
 const subscribe = (tick: () => void) => {
-  const id = setInterval(tick, 1000);
-  return () => clearInterval(id);
+  listeners.add(tick);
+  ticker ??= setInterval(() => {
+    for (const listener of listeners) listener();
+  }, 1000);
+  return () => {
+    listeners.delete(tick);
+    if (listeners.size > 0 || !ticker) return;
+    clearInterval(ticker);
+    ticker = null;
+  };
 };
-const secondNow = () => Math.floor(Date.now() / 1000) * 1000;
+// Écart entre l'heure du serveur et celle de l'appareil, mesuré une fois au montage. Un téléphone en
+// avance atteignait zéro trop tôt : le serveur renvoyait la même échéance et l'écran restait figé.
+let skew: number | null = null;
+const secondNow = () => Math.floor((Date.now() + (skew ?? 0)) / 1000) * 1000;
 
 export function useClock(serverNow: number) {
+  useEffect(() => {
+    skew ??= serverNow - Date.now();
+  }, [serverNow]);
   return useSyncExternalStore(subscribe, secondNow, () => serverNow);
 }
 
 // Échéances déjà rafraîchies, pour toute la page : plusieurs comptes à rebours sur le même `nextAt`
-// (panneau, vitrine, récap) ne demandent qu'un seul nouveau rendu serveur
-const refreshed = new Set<number>();
+// (panneau, vitrine, récap) ne demandent qu'un seul nouveau rendu serveur. Si le serveur renvoie encore
+// la même échéance, nouvel essai un peu plus tard, trois fois au plus.
+const refreshed = new Map<number, { at: number; count: number }>();
+const RETRY_MS = 15_000;
+const MAX_REFRESHES = 3;
 
 /**
  * Temps restant avant `nextAt` (null si le stock est plein). À zéro, redemande la page au serveur,
@@ -32,15 +53,22 @@ export function useBoosterCountdown(nextAt: number | null, serverNow: number) {
   const remaining = nextAt === null ? null : Math.max(0, nextAt - now);
 
   useEffect(() => {
-    if (nextAt === null || remaining !== 0 || refreshed.has(nextAt)) return;
+    if (nextAt === null || remaining !== 0) return;
+    let retry: ReturnType<typeof setTimeout> | undefined;
     const go = () => {
-      if (refreshed.has(nextAt) || document.visibilityState !== "visible") return;
-      refreshed.add(nextAt);
+      const seen = refreshed.get(nextAt);
+      if (seen && (seen.count >= MAX_REFRESHES || Date.now() - seen.at < RETRY_MS)) return;
+      if (document.visibilityState !== "visible") return;
+      refreshed.set(nextAt, { at: Date.now(), count: (seen?.count ?? 0) + 1 });
       router.refresh();
+      retry = setTimeout(go, RETRY_MS);
     };
     go();
     document.addEventListener("visibilitychange", go);
-    return () => document.removeEventListener("visibilitychange", go);
+    return () => {
+      clearTimeout(retry);
+      document.removeEventListener("visibilitychange", go);
+    };
   }, [nextAt, remaining, router]);
 
   return remaining;
