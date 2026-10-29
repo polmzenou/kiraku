@@ -7,6 +7,7 @@ import { isFrozen } from "@/lib/account/deletion";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { unreadChatCount, visibleSince } from "@/server/chat/queries";
 import { boosterStateFrom } from "@/server/boosters/state";
+import { hasClaimableMission } from "@/server/economy/queries";
 import { getSetting } from "@/server/settings";
 import { unreadNotifications } from "@/server/social/queries";
 import { getCurrentUser } from "@/server/user";
@@ -33,16 +34,19 @@ export async function AppHeader({ theme }: { theme: Theme }) {
   const isAdmin = isStaff(user?.role);
   const signedIn = Boolean(user && !user.isGuest);
   const authLabel = signedIn ? t("account.logout") : t("auth.login.title");
-  const [unread, pollSeconds, safetySeconds, casino, boosterRules, guestDays] = await Promise.all([
+  const [unread, pollSeconds, safetySeconds, casino, boosterRules, guestDays, missionReady] = await Promise.all([
     user ? unreadNotifications(user.id) : 0,
     user ? getSetting("notifications.pollSeconds") : 0,
     user ? getSetting("realtime.safetyPollSeconds") : 0,
     getSetting("features.casino"),
     user ? getBoosterRules() : null,
     user?.isGuest ? getSetting("guest.retentionDays") : 0,
+    // Pastille rouge sur Missions : une mission terminée attend d'être réclamée
+    user && !user.bannedAt ? hasClaimableMission(user.id) : false,
   ]);
   const state = user && boosterRules ? boosterStateFrom(user, boosterRules) : null;
   const features = { casino };
+  const alerts = { missions: missionReady };
   // Chat entre amis : comptes inscrits, actifs, avec le social et le chat ouverts
   const chatUser = user && !user.isGuest && !user.bannedAt && !isFrozen(user) ? user : null;
   const [socialOn, chatOn] = chatUser ? await Promise.all([getSetting("social.enabled"), getSetting("chat.enabled")]) : [false, false];
@@ -69,7 +73,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
           </Link>
 
           <nav aria-label={t("nav.label")} className="ml-2 hidden lg:block">
-            <NavLinks layout="bar" features={features} />
+            <NavLinks layout="bar" features={features} alerts={alerts} />
           </nav>
 
           <div className="ml-auto flex min-w-0 items-center gap-1.5 md:gap-2">
@@ -143,7 +147,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
           later={t("guestNotice.later")}
         />
       )}
-      <MobileMenu theme={theme} isAdmin={isAdmin} accountHref={accountHref} signedIn={signedIn} features={features} />
+      <MobileMenu theme={theme} isAdmin={isAdmin} accountHref={accountHref} signedIn={signedIn} features={features} alerts={alerts} />
       {chat && <ChatDock {...chat} />}
     </>
   );

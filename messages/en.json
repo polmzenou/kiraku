@@ -537,7 +537,8 @@
     "shop": "Shop",
     "referral": "Referrals",
     "more": "More",
-    "casino": "Casino"
+    "casino": "Casino",
+    "alert": "Reward to claim"
   },
   "header": {
     "stock": "Boosters: {count} of {max}",

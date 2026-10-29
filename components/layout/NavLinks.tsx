@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
-import { isActive, MOBILE_NAV_MORE, NAV_ITEMS, NAV_MORE, visibleItems, type NavFeatures, type NavItem } from "@/lib/nav";
+import { isActive, MOBILE_NAV_MORE, NAV_ITEMS, NAV_MORE, visibleItems, type NavAlerts, type NavFeatures, type NavItem } from "@/lib/nav";
 import { Badge } from "../ui/Badge";
 import { segmentedItemClass, segmentedTrackClass } from "../ui/Segmented";
 
@@ -15,10 +15,13 @@ import { segmentedItemClass, segmentedTrackClass } from "../ui/Segmented";
 export function NavLinks({
   layout,
   features,
+  alerts = {},
   onNavigate,
 }: {
   layout: "bar" | "stack";
   features: NavFeatures;
+  /** Pastille rouge sur les entrées qui attendent le joueur (mission à réclamer…). */
+  alerts?: NavAlerts;
   onNavigate?: () => void;
 }) {
   const t = useTranslations("nav");
@@ -30,7 +33,7 @@ export function NavLinks({
       <ul className="flex flex-col gap-1">
         {visibleItems(MOBILE_NAV_MORE, features).map((item) => (
           <li key={item.key}>
-            <StackLink item={item} active={isActive(item, pathname)} onNavigate={onNavigate} />
+            <StackLink item={item} active={isActive(item, pathname)} alert={alerts[item.key] === true} onNavigate={onNavigate} />
           </li>
         ))}
       </ul>
@@ -59,19 +62,19 @@ export function NavLinks({
               aria-current={active ? "page" : undefined}
               className={base}
             >
-              {t(item.key)}
+              <AlertLabel alert={alerts[item.key] === true}>{t(item.key)}</AlertLabel>
             </Link>
           </li>
         );
       })}
       <li>
-        <MoreMenu pathname={pathname} items={visibleItems(NAV_MORE, features)} />
+        <MoreMenu pathname={pathname} items={visibleItems(NAV_MORE, features)} alerts={alerts} />
       </li>
     </ul>
   );
 }
 
-function StackLink({ item, active, onNavigate }: { item: NavItem; active: boolean; onNavigate?: () => void }) {
+function StackLink({ item, active, alert, onNavigate }: { item: NavItem; active: boolean; alert: boolean; onNavigate?: () => void }) {
   const t = useTranslations("nav");
   const base = stackRowClass;
   if (!item.ready) {
@@ -90,11 +93,32 @@ function StackLink({ item, active, onNavigate }: { item: NavItem; active: boolea
       className={base}
     >
       <span className="inline-flex items-center gap-2">
-        {t(item.key)}
+        <AlertLabel alert={alert}>{t(item.key)}</AlertLabel>
         {item.soon && <SoonBadge />}
       </span>
       {active && <span aria-hidden="true" className="size-2 rounded-full bg-shu" />}
     </Link>
+  );
+}
+
+/** Point rouge collé en haut à droite d'un libellé ou d'une icône ; annoncé aux lecteurs d'écran. */
+export function AlertDot({ className = "-top-1 -right-2.5" }: { className?: string }) {
+  const t = useTranslations("nav");
+  return (
+    <>
+      <span aria-hidden="true" className={`pointer-events-none absolute size-2.5 rounded-full bg-shu ring-2 ring-surface ${className}`} />
+      <span className="sr-only">{t("alert")}</span>
+    </>
+  );
+}
+
+function AlertLabel({ alert, children }: { alert: boolean; children: string }) {
+  if (!alert) return <>{children}</>;
+  return (
+    <span className="relative">
+      {children}
+      <AlertDot />
+    </span>
   );
 }
 
@@ -109,7 +133,7 @@ export const stackRowClass =
   "aria-[current=page]:bg-surface-2 aria-[current=page]:font-bold aria-[current=page]:text-text";
 
 /** Menu déroulant « Plus » de la barre du haut : se ferme au clic dehors, à Échap et en changeant de page. */
-function MoreMenu({ pathname, items }: { pathname: string; items: readonly NavItem[] }) {
+function MoreMenu({ pathname, items, alerts }: { pathname: string; items: readonly NavItem[]; alerts: NavAlerts }) {
   const t = useTranslations("nav");
   const [open, setOpen] = useState(false);
   const [openedAt, setOpenedAt] = useState(pathname);
@@ -157,7 +181,7 @@ function MoreMenu({ pathname, items }: { pathname: string; items: readonly NavIt
         aria-current={activeChild ? "true" : undefined}
         className={segmentedItemClass}
       >
-        {t("more")}
+        <AlertLabel alert={items.some((item) => alerts[item.key] === true)}>{t("more")}</AlertLabel>
         <span aria-hidden="true" className={`flex transition-transform duration-200 ${open ? "rotate-180" : ""}`}>
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
         </span>
@@ -178,7 +202,7 @@ function MoreMenu({ pathname, items }: { pathname: string; items: readonly NavIt
                 className="flex min-h-11 items-center justify-between gap-3 rounded-control px-3.5 text-sm text-text-muted hover:bg-surface-2 hover:text-text aria-[current=page]:font-bold aria-[current=page]:text-text"
               >
                 <span className="inline-flex items-center gap-2">
-                  {t(item.key)}
+                  <AlertLabel alert={alerts[item.key] === true}>{t(item.key)}</AlertLabel>
                   {item.soon && <SoonBadge />}
                 </span>
                 {active && <span aria-hidden="true" className="size-2 rounded-full bg-shu" />}

@@ -16,6 +16,8 @@ export type NavKey =
   | "casino";
 
 export type NavFeature = "casino";
+/** Entrées qui attendent une action du joueur (pastille rouge), ex. une mission à réclamer. */
+export type NavAlerts = Partial<Record<NavKey, boolean>>;
 export type NavFeatures = Record<NavFeature, boolean>;
 
 export type NavItem = {

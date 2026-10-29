@@ -537,7 +537,8 @@
     "shop": "Boutique",
     "referral": "Parrainage",
     "more": "Plus",
-    "casino": "Casino"
+    "casino": "Casino",
+    "alert": "Récompense à réclamer"
   },
   "header": {
     "stock": "Boosters : {count} sur {max}",

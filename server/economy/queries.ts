@@ -4,6 +4,8 @@ import { SEALED_KINDS } from "@/lib/boosters/draw";
 import type { SealedDropView } from "@/lib/boosters/view";
 import { LEDGER_PAGE, ledgerWhere, type CoinReason, type LedgerFilter } from "@/lib/economy/ledger-view";
 import { prisma } from "../db";
+import { getSetting } from "../settings";
+import { playerMissionsWith } from "./missions-core";
 
 // Lectures de l'économie pour les pages (hors transaction).
 
@@ -74,3 +76,18 @@ export async function ledgerTotals(userId: string, now = new Date()) {
   ]);
   return { earned: earned._sum.amount ?? 0, spent: Math.abs(spent._sum.amount ?? 0) };
 }
+
+/**
+ * Au moins une mission terminée mais pas encore réclamée (pastille de la navigation). Missions coupées,
+ * joueur banni ou erreur de calcul : pas de pastille, la navigation ne doit jamais casser pour ça.
+ */
+export const hasClaimableMission = cache(async (userId: string): Promise<boolean> => {
+  try {
+    const [enabled, timeZone] = await Promise.all([getSetting("missions.enabled"), getSetting("game.timeZone")]);
+    if (!enabled) return false;
+    return (await playerMissionsWith(prisma, userId, new Date(), timeZone)).some((m) => m.state === "CLAIMABLE");
+  } catch (e) {
+    console.error("[missions] pastille impossible", e);
+    return false;
+  }
+});

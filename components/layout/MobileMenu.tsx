@@ -3,14 +3,14 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
-import { isActive, MOBILE_NAV_ITEMS, type NavFeatures } from "@/lib/nav";
+import { isActive, MOBILE_NAV_ITEMS, MOBILE_NAV_MORE, type NavAlerts, type NavFeatures } from "@/lib/nav";
 import type { Theme } from "@/lib/theme";
 import { logout } from "@/server/actions/account";
 import { LocaleSwitcher } from "../LocaleSwitcher";
 import { ThemeToggle } from "../ThemeToggle";
 import { buttonClasses } from "../ui/Button";
 import { CloseIcon, IconButton } from "../ui/IconButton";
-import { NavLinks, stackRowClass } from "./NavLinks";
+import { AlertDot, NavLinks, stackRowClass } from "./NavLinks";
 
 /**
  * Navigation mobile fixe et panneau « Plus » qui monte du bas.
@@ -22,12 +22,14 @@ export function MobileMenu({
   accountHref,
   signedIn,
   features,
+  alerts = {},
 }: {
   theme: Theme;
   isAdmin: boolean;
   accountHref: string;
   signedIn: boolean;
   features: NavFeatures;
+  alerts?: NavAlerts;
 }) {
   const t = useTranslations("nav");
   const tAccount = useTranslations("account");
@@ -39,6 +41,8 @@ export function MobileMenu({
   const titleId = useId();
   const panelId = useId();
   const moreActive = !MOBILE_NAV_ITEMS.some((item) => isActive(item, pathname));
+  // Une entrée rangée dans « Plus » attend le joueur : la pastille remonte sur le bouton
+  const moreAlert = MOBILE_NAV_MORE.some((item) => alerts[item.key] === true);
 
   const close = () => dialog.current?.close();
 
@@ -70,7 +74,10 @@ export function MobileMenu({
             return (
               <li key={item.key} className={active ? "min-w-0 shrink" : "shrink-0"}>
                 <Link prefetch={false} href={item.href} aria-current={active ? "page" : undefined} className={navItemClass(active)}>
-                  <MobileNavIcon name={item.key} />
+                  <span className="relative flex">
+                    <MobileNavIcon name={item.key} />
+                    {alerts[item.key] && <AlertDot className="-top-0.5 -right-0.5" />}
+                  </span>
                   <NavLabel active={active}>{t(item.key)}</NavLabel>
                 </Link>
               </li>
@@ -88,7 +95,10 @@ export function MobileMenu({
               }}
               className={navItemClass(open || moreActive)}
             >
-              <MobileNavIcon name="more" />
+              <span className="relative flex">
+                <MobileNavIcon name="more" />
+                {moreAlert && <AlertDot className="-top-0.5 -right-0.5" />}
+              </span>
               <NavLabel active={open || moreActive}>{t("more")}</NavLabel>
             </button>
           </li>
@@ -118,7 +128,7 @@ export function MobileMenu({
           </div>
 
           <nav aria-label={t("label")}>
-            <NavLinks layout="stack" features={features} onNavigate={close} />
+            <NavLinks layout="stack" features={features} alerts={alerts} onNavigate={close} />
             <ul className="mt-2 flex flex-col gap-1">
               <li>
                 <Link prefetch={false}
