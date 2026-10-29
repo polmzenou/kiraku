@@ -23,15 +23,37 @@ export type RecentPull = {
 
 type FeedRow = { id: string; card: CardView; user: Parameters<typeof displayNameFor>[0] & { username: string; image: string | null } & Parameters<typeof decorFromRelations>[0]; at: string };
 
-async function loadFeed(rarities: Rarity[], size: number, since: number, locale: string): Promise<FeedRow[]> {
-  const rows = await prisma.notablePull.findMany({
-    where: {
-      rarity: { in: rarities },
-      createdAt: { gt: new Date(since) },
-      user: { isGuest: false, OR: [{ pullFeedHiddenUntil: null }, { pullFeedHiddenUntil: { lte: new Date() } }] },
-    },
-    orderBy: { createdAt: "desc" },
-    take: size,
+/** Tag du fil en cache : invalidé quand l'admin retire ou rend un joueur au carrousel. */
+export const PULL_FEED_TAG = "home-pull-feed";
+
+export type FeedQuery = { rarities: Rarity[]; size: number; since: number; maxPerPlayer: number };
+
+/**
+ * Ids des gros tirages du carrousel, du plus récent au plus ancien : rareté suffisante, assez récents,
+ * ni invité ni joueur retiré (`pullFeedHiddenUntil`), et au plus `maxPerPlayer` par joueur — ses plus
+ * récents, si bien qu'un nouveau tirage fait sortir son plus ancien.
+ */
+export async function feedPullIds({ rarities, size, since, maxPerPlayer }: FeedQuery): Promise<string[]> {
+  const rows = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT id FROM (
+      SELECT np.id, np."createdAt",
+        ROW_NUMBER() OVER (PARTITION BY np."userId" ORDER BY np."createdAt" DESC, np.id DESC) AS rn
+      FROM "NotablePull" np JOIN "User" u ON u.id = np."userId"
+      WHERE np."rarityKey" = ANY(${rarities}) AND np."createdAt" > ${new Date(since)}
+        AND u."isGuest" = false AND (u."pullFeedHiddenUntil" IS NULL OR u."pullFeedHiddenUntil" <= now())
+    ) ranked
+    WHERE rn <= ${maxPerPlayer}
+    ORDER BY "createdAt" DESC, id DESC
+    LIMIT ${size}`;
+  return rows.map((r) => r.id);
+}
+
+async function loadFeed(query: FeedQuery, locale: string): Promise<FeedRow[]> {
+  const ids = await feedPullIds(query);
+  if (ids.length === 0) return [];
+  const order = new Map(ids.map((id, i) => [id, i]));
+  const found = await prisma.notablePull.findMany({
+    where: { id: { in: ids } },
     select: {
       id: true,
       cardId: true,
@@ -39,6 +61,7 @@ async function loadFeed(rarities: Rarity[], size: number, since: number, locale:
       user: { select: { ...namedPlayerSelect, image: true, ...decorSelect } },
     },
   });
+  const rows = found.sort((a, b) => order.get(a.id)! - order.get(b.id)!);
   const views = await cardViews(rows.map((r) => r.cardId), locale);
   return rows.flatMap((r) => {
     const card = views.get(r.cardId);
@@ -51,7 +74,7 @@ const feeds = new Map<number, typeof loadFeed>();
 function cachedFeed(seconds: number) {
   let feed = feeds.get(seconds);
   if (!feed) {
-    feed = unstable_cache(loadFeed, ["home-pull-feed-v3", String(seconds)], { revalidate: seconds, tags: ["home-pull-feed"] });
+    feed = unstable_cache(loadFeed, ["home-pull-feed-v4", String(seconds)], { revalidate: seconds, tags: [PULL_FEED_TAG] });
     feeds.set(seconds, feed);
   }
   return feed;
@@ -61,23 +84,14 @@ function cachedFeed(seconds: number) {
  * Carrousel « En direct · Gros tirages », en commun pour tous les visiteurs : tirages et cartes
  * lus une fois par `home.pullFeed.cacheSeconds`, quel que soit le nombre de joueurs. Les invités n'y
  * figurent pas ; leurs tirages apparaissent s'ils lient ensuite un compte. Un joueur masqué par la
- * modération (`pullFeedHiddenUntil`) en est absent jusqu'à la date posée. Les pseudos suivent la vue
+ * modération (`pullFeedHiddenUntil`, blacklist de /admin/gros-tirages) en est absent jusqu'à la date posée, et
+ * un même joueur n'y apparaît pas plus de `home.pullFeed.maxPerPlayer` fois. Les pseudos suivent la vue
  * publique : un profil privé, réservé aux amis, banni ou anonymisé s'affiche « Un joueur », sans lien ni avatar.
  */
 export async function getRecentPulls(locale: string): Promise<RecentPull[] | null> {
-  const [enabled, minRarity, size, maxAgeHours, cacheSeconds] = await Promise.all([
-    getSetting("home.pullFeed.enabled"),
-    getSetting("home.pullFeed.minRarity"),
-    getSetting("home.pullFeed.size"),
-    getSetting("home.pullFeed.maxAgeHours"),
-    getSetting("home.pullFeed.cacheSeconds"),
-  ]);
+  const [enabled, cacheSeconds] = await Promise.all([getSetting("home.pullFeed.enabled"), getSetting("home.pullFeed.cacheSeconds")]);
   if (!enabled) return null;
-  const RARITIES = await getRarities();
-  const rarities = RARITIES.slice(RARITIES.indexOf(minRarity));
-  // Fenêtre arrondie à la minute : la clé de cache reste stable entre deux requêtes
-  const since = Math.floor((Date.now() - maxAgeHours * 3_600_000) / 60_000) * 60_000;
-  const [rows, t] = await Promise.all([cachedFeed(cacheSeconds)(rarities, size, since, locale), getTranslations("playerName")]);
+  const [rows, t] = await Promise.all([cachedFeed(cacheSeconds)(await feedQuery(), locale), getTranslations("playerName")]);
   const labels = { hidden: t("hidden"), deleted: t("deleted") };
 
   return rows.map((r) => {
@@ -91,6 +105,23 @@ export async function getRecentPulls(locale: string): Promise<RecentPull[] | nul
       at: r.at,
     };
   });
+}
+
+/** Paramètres du fil d'après les réglages ; fenêtre arrondie à la minute pour une clé de cache stable. */
+export async function feedQuery(now = Date.now()): Promise<FeedQuery> {
+  const [minRarity, size, maxAgeHours, maxPerPlayer, RARITIES] = await Promise.all([
+    getSetting("home.pullFeed.minRarity"),
+    getSetting("home.pullFeed.size"),
+    getSetting("home.pullFeed.maxAgeHours"),
+    getSetting("home.pullFeed.maxPerPlayer"),
+    getRarities(),
+  ]);
+  return {
+    rarities: RARITIES.slice(Math.max(0, RARITIES.indexOf(minRarity))),
+    size,
+    since: Math.floor((now - maxAgeHours * 3_600_000) / 60_000) * 60_000,
+    maxPerPlayer,
+  };
 }
 
 /** Ménage paresseux : les gros tirages trop vieux pour le carrousel ne servent plus à rien. */

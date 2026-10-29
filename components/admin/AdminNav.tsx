@@ -39,6 +39,7 @@ const GROUPS = [
       { key: "social", href: "/admin/social" },
       { key: "referral", href: "/admin/parrainage" },
       { key: "reviews", href: "/admin/avis" },
+      { key: "pullFeed", href: "/admin/gros-tirages" },
       { key: "market", href: "/admin/marche" },
     ],
   },

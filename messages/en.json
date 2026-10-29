@@ -1235,7 +1235,8 @@
       "general": "General",
       "cosmetics": "Titles and frames",
       "openingTest": "Opening test",
-      "focus": "Series focus"
+      "focus": "Series focus",
+      "pullFeed": "Big pulls"
     },
     "boosters": {
       "title": "Booster settings",
@@ -2307,16 +2308,6 @@
           "deletionGraceDays": "Delay before anonymization (days)",
           "usernameChangeDays": "Delay between two username changes (days)",
           "exportsPerDay": "Data exports per day and per player"
-        },
-        "home": {
-          "pullFeed": {
-            "enabled": "Show the big pulls carousel",
-            "minRarity": "Lowest rarity shown",
-            "size": "Pulls shown",
-            "maxAgeHours": "Maximum age (hours)",
-            "refreshSeconds": "Refresh (seconds)",
-            "cacheSeconds": "Shared feed cache (seconds)"
-          }
         }
       },
       "hints": {
@@ -2334,18 +2325,8 @@
           "deletionGraceDays": "During this period the account is frozen and the deletion can be cancelled. 30 days recommended.",
           "usernameChangeDays": "0 = no delay.",
           "exportsPerDay": "\"Download my data\" JSON file."
-        },
-        "home": {
-          "pullFeed": {
-            "minRarity": "Epic, Legendary or Mythic: recorded pulls start at Epic.",
-            "size": "Above 6, the strip scrolls on its own.",
-            "maxAgeHours": "Older pulls leave the carousel, then the database a day later.",
-            "refreshSeconds": "While the tab is visible.",
-            "cacheSeconds": "The same feed, cached for everyone: one database read per period, however many players."
-          }
         }
-      },
-      "homeSection": "Home · Big pulls"
+      }
     },
     "catalog": {
       "title": "Card catalogue",
@@ -2823,6 +2804,56 @@
             "alertThresholds": "Alert thresholds"
           }
         }
+      }
+    },
+    "pullFeed": {
+      "title": "Big pulls",
+      "intro": "The home page “Live · Big pulls” carousel: what it shows, how many times one player can appear, and who is removed from it.",
+      "settingsSection": "Carousel settings",
+      "keys": {
+        "enabled": "Show the big pulls carousel",
+        "minRarity": "Minimum rarity shown",
+        "size": "Number of pulls shown",
+        "maxPerPlayer": "Max appearances per player",
+        "maxAgeHours": "Maximum age (hours)",
+        "refreshSeconds": "Refresh (seconds)",
+        "cacheSeconds": "Shared feed cache (seconds)"
+      },
+      "hints": {
+        "minRarity": "Epic, Legendary or higher: recorded pulls start at Epic.",
+        "size": "Above 6, the ribbon scrolls on its own.",
+        "maxPerPlayer": "A player keeps their N most recent pulls: on the N+1th, their oldest leaves the carousel.",
+        "maxAgeHours": "Older pulls leave the carousel, then the database a day later.",
+        "refreshSeconds": "While the tab is visible.",
+        "cacheSeconds": "The same feed, cached for everyone: one database read per delay, whatever the number of players."
+      },
+      "blocklistTitle": "Blacklist",
+      "blocklistIntro": "Removed players no longer appear in the carousel (their pulls stay in their collection). Takes effect immediately.",
+      "blocklistEmpty": "No player removed.",
+      "username": "Username",
+      "duration": "Duration",
+      "durations": {
+        "1d": "1 day",
+        "7d": "7 days",
+        "30d": "30 days",
+        "permanent": "Permanent"
+      },
+      "block": "Remove from carousel",
+      "blockPlayer": "Remove this player",
+      "unblock": "Restore to carousel",
+      "permanent": "Removed permanently",
+      "until": "Removed until {date}",
+      "blockedOk": "{username} is removed from the carousel.",
+      "unblockedOk": "{username} is back in the carousel.",
+      "previewTitle": "Current feed",
+      "previewIntro": "What players see right now, uncached: rarity, age, blacklist and per-player max applied. The duration chosen in the blacklist also applies to the buttons below.",
+      "previewEmpty": "No big pull in the carousel.",
+      "errors": {
+        "FORBIDDEN": "Access denied.",
+        "INVALID": "Invalid username or duration.",
+        "RATE_LIMITED": "Too many actions: wait a minute.",
+        "NOT_FOUND": "No player with that username.",
+        "unexpected": "Unexpected error. Try again."
       }
     }
   },

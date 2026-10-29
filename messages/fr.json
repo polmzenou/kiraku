@@ -1235,7 +1235,8 @@
       "general": "Général",
       "cosmetics": "Titres et cadres",
       "openingTest": "Test d'ouverture",
-      "focus": "Focus série"
+      "focus": "Focus série",
+      "pullFeed": "Gros tirages"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -2307,16 +2308,6 @@
           "deletionGraceDays": "Délai avant anonymisation (jours)",
           "usernameChangeDays": "Délai entre deux changements de pseudo (jours)",
           "exportsPerDay": "Exports de données par jour et par joueur"
-        },
-        "home": {
-          "pullFeed": {
-            "enabled": "Afficher le carrousel des gros tirages",
-            "minRarity": "Rareté minimale affichée",
-            "size": "Nombre de tirages affichés",
-            "maxAgeHours": "Ancienneté maximale (heures)",
-            "refreshSeconds": "Rafraîchissement (secondes)",
-            "cacheSeconds": "Cache partagé du fil (secondes)"
-          }
         }
       },
       "hints": {
@@ -2334,18 +2325,8 @@
           "deletionGraceDays": "Pendant ce délai, le compte est gelé et la suppression annulable. 30 jours conseillés.",
           "usernameChangeDays": "0 = sans délai.",
           "exportsPerDay": "Fichier JSON « Télécharger mes données »."
-        },
-        "home": {
-          "pullFeed": {
-            "minRarity": "Épique, Légendaire ou Mythique : les tirages enregistrés commencent à Épique.",
-            "size": "Au-delà de 6, le ruban défile tout seul.",
-            "maxAgeHours": "Les tirages plus anciens disparaissent du carrousel, puis de la base un jour après.",
-            "refreshSeconds": "Tant que l'onglet est visible.",
-            "cacheSeconds": "Le même fil, mis en cache pour tout le monde : une seule lecture en base par délai, quel que soit le nombre de joueurs."
-          }
         }
-      },
-      "homeSection": "Accueil · Gros tirages"
+      }
     },
     "catalog": {
       "title": "Catalogue de cartes",
@@ -2823,6 +2804,56 @@
             "alertThresholds": "Seuils d'alerte"
           }
         }
+      }
+    },
+    "pullFeed": {
+      "title": "Gros tirages",
+      "intro": "Carrousel « En direct · Gros tirages » de l'accueil : ce qu'il montre, combien de fois un même joueur peut y apparaître, et qui en est retiré.",
+      "settingsSection": "Réglages du carrousel",
+      "keys": {
+        "enabled": "Afficher le carrousel des gros tirages",
+        "minRarity": "Rareté minimale affichée",
+        "size": "Nombre de tirages affichés",
+        "maxPerPlayer": "Apparitions max par joueur",
+        "maxAgeHours": "Ancienneté maximale (heures)",
+        "refreshSeconds": "Rafraîchissement (secondes)",
+        "cacheSeconds": "Cache partagé du fil (secondes)"
+      },
+      "hints": {
+        "minRarity": "Épique, Légendaire ou au-dessus : les tirages enregistrés commencent à Épique.",
+        "size": "Au-delà de 6, le ruban défile tout seul.",
+        "maxPerPlayer": "Un joueur garde ses N tirages les plus récents : au N+1-ième, son plus ancien disparaît du carrousel.",
+        "maxAgeHours": "Les tirages plus anciens disparaissent du carrousel, puis de la base un jour après.",
+        "refreshSeconds": "Tant que l'onglet est visible.",
+        "cacheSeconds": "Le même fil, mis en cache pour tout le monde : une seule lecture en base par délai, quel que soit le nombre de joueurs."
+      },
+      "blocklistTitle": "Blacklist",
+      "blocklistIntro": "Les joueurs retirés n'apparaissent plus dans le carrousel (leurs tirages restent dans leur collection). Effet immédiat.",
+      "blocklistEmpty": "Aucun joueur retiré.",
+      "username": "Pseudo",
+      "duration": "Durée",
+      "durations": {
+        "1d": "1 jour",
+        "7d": "7 jours",
+        "30d": "30 jours",
+        "permanent": "Définitif"
+      },
+      "block": "Retirer du carrousel",
+      "blockPlayer": "Retirer ce joueur",
+      "unblock": "Rendre au carrousel",
+      "permanent": "Retiré définitivement",
+      "until": "Retiré jusqu'au {date}",
+      "blockedOk": "{username} est retiré du carrousel.",
+      "unblockedOk": "{username} revient dans le carrousel.",
+      "previewTitle": "Fil actuel",
+      "previewIntro": "Ce que les joueurs voient en ce moment, sans cache : rareté, ancienneté, blacklist et max par joueur appliqués. La durée choisie dans la blacklist sert aussi aux boutons ci-dessous.",
+      "previewEmpty": "Aucun gros tirage dans le carrousel.",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Pseudo ou durée invalide.",
+        "RATE_LIMITED": "Trop d'actions : attends une minute.",
+        "NOT_FOUND": "Aucun joueur avec ce pseudo.",
+        "unexpected": "Erreur inattendue. Réessaie."
       }
     }
   },
