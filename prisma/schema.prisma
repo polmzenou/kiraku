@@ -153,6 +153,7 @@ model User {
   referralsMade      Referral[]               @relation("referrer")
   referral           Referral?                @relation("referee")
   referralMilestones ReferralMilestoneClaim[]
+  pollVotes          PollVote[]
 
   auctions    Auction[] @relation("seller")
   leadingBids Auction[] @relation("leader")
@@ -1468,4 +1469,20 @@ model Cosmetic {
   coloredUsers User[]       @relation("userNameColor")
 
   @@index([kind, active, sortOrder])
+}
+
+// --- Sondages des annonces ---
+
+// Réponse oui/non d'un joueur à un sondage (ex. « discord-community » dans l'annonce de la v2.5).
+// Une ligne par joueur et par sondage : un nouveau vote remplace l'ancien.
+model PollVote {
+  userId    String
+  poll      String
+  answer    Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, poll])
+  @@index([poll, answer]) // décompte du tableau de bord admin
 }

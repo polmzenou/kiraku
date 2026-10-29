@@ -240,7 +240,7 @@ async function socialBar({
 async function customizeData(userId: string, locale: string) {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { id: true, bio: true, titleAgreement: true, titleId: true, frameId: true, nameColorId: true, badgeOrder: true, createdAt: true, discordLinkedAt: true, ambassadorSince: true },
+    select: { id: true, bio: true, titleAgreement: true, titleId: true, frameId: true, nameColorId: true, badgeOrder: true, createdAt: true, discordLinkedAt: true, ambassadorSince: true, role: true },
   });
   const [{ options, stats }, badges] = await Promise.all([getCosmeticProgress(userId, locale), getEarnedBadges(user)]);
   return {
