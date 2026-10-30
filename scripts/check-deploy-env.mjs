@@ -41,8 +41,14 @@ if (db && test && databaseIdentity(db) === databaseIdentity(test)) errors.push("
 if (!test) warnings.push("DATABASE_URL_TEST absente : tests d'intégration à exécuter sur une base isolée avant lancement");
 
 group(["AUTH_DISCORD_ID", "AUTH_DISCORD_SECRET"]);
-group(["DISCORD_BOT_TOKEN", "DISCORD_LINK_CHANNEL_ID"]);
-if (present("DISCORD_LINK_CHANNEL_ID") && !/^[0-9]{17,20}$/.test(env.DISCORD_LINK_CHANNEL_ID)) errors.push("DISCORD_LINK_CHANNEL_ID invalide");
+if (present("DISCORD_LINK_CHANNEL_ID")) requireKeys(["DISCORD_BOT_TOKEN"]);
+const rulesKeys = ["DISCORD_PUBLIC_KEY", "DISCORD_RULES_CHANNEL_ID", "DISCORD_MEMBER_ROLE_ID"];
+if (rulesKeys.some(present)) requireKeys(["DISCORD_BOT_TOKEN", "AUTH_DISCORD_ID", "DISCORD_GUILD_ID", ...rulesKeys]);
+if (present("DISCORD_MARKET_CHANNEL_ID")) requireKeys(["DISCORD_BOT_TOKEN", "DISCORD_GUILD_ID"]);
+for (const key of ["DISCORD_LINK_CHANNEL_ID", "DISCORD_GUILD_ID", "DISCORD_RULES_CHANNEL_ID", "DISCORD_MEMBER_ROLE_ID", "DISCORD_MARKET_CHANNEL_ID"]) {
+  if (present(key) && !/^[0-9]{17,20}$/.test(env[key])) errors.push(`${key} invalide`);
+}
+if (present("DISCORD_PUBLIC_KEY") && !/^[a-fA-F0-9]{64}$/.test(env.DISCORD_PUBLIC_KEY)) errors.push("DISCORD_PUBLIC_KEY invalide");
 group(["RESEND_API_KEY", "MAIL_FROM"]);
 group(["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"]);
 const app = url("APP_URL", production ? ["https:"] : ["http:", "https:"]);

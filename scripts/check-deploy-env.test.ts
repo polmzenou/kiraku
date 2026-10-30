@@ -21,6 +21,17 @@ function check(values: Record<string, string>) {
 }
 
 describe("précontrôle de déploiement", () => {
+  it("accepte le bot sans salon de liaison, mais refuse un accueil Discord incomplet", () => {
+    expect(check({ DISCORD_BOT_TOKEN: "bot-secret" }).status).toBe(0);
+    const result = check({ DISCORD_RULES_CHANNEL_ID: "1565778336947634266" });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("DISCORD_PUBLIC_KEY manquante");
+    expect(result.stderr).toContain("DISCORD_MEMBER_ROLE_ID manquante");
+  });
+  it("vérifie le format des identifiants du marché et de la clé publique", () => {
+    expect(check({ DISCORD_MARKET_CHANNEL_ID: "wrong", DISCORD_GUILD_ID: "123456789012345678", DISCORD_BOT_TOKEN: "bot" }).stderr).toContain("DISCORD_MARKET_CHANNEL_ID invalide");
+    expect(check({ DISCORD_PUBLIC_KEY: "wrong" }).stderr).toContain("DISCORD_PUBLIC_KEY invalide");
+  });
   it("refuse de lancer les tests contre l'application même via l'hôte direct", () => {
     const result = check({ DATABASE_URL_TEST: "postgresql://postgres:secret@db.abcref.supabase.co:5432/postgres" });
     expect(result.status).toBe(1);

@@ -1012,6 +1012,7 @@ model Auction {
   note            String?       @db.VarChar(200) // commentaire du vendeur (texte brut, effaçable par l'admin)
   createdAt       DateTime      @default(now())
   bids            Bid[]
+  discordPost     DiscordPost?
 
   @@index([status, endsAt, id]) // balayage de clôture et tri « finit bientôt »
   @@index([status, price, id])
@@ -1034,6 +1035,24 @@ model Bid {
 
   @@index([auctionId, createdAt])
   @@index([bidderId, createdAt])
+}
+
+// Message Discord et file persistante : un seul envoi à la fois, reprises après échec réseau.
+// Les publications du règlement n'ont pas d'auctionId et sont déclenchées depuis l'admin.
+model DiscordPost {
+  key           String   @id
+  channelId     String
+  messageId     String?
+  payloadHash   String?
+  auctionId     String?  @unique
+  auction       Auction? @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  attempts      Int      @default(0)
+  nextAttemptAt DateTime? @default(now())
+  leaseId       String?
+  leaseUntil    DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([nextAttemptAt])
 }
 
 // Avis public d'un joueur (note + texte brut) : un par joueur, modifiable ; masqué par la modération

@@ -11,3 +11,6 @@
 0 4 * * *  curl -fsS -m 120 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/market   >/dev/null
 15 4 * * * curl -fsS -m 120 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/battle   >/dev/null
 30 4 * * * curl -fsS -m 120 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/accounts >/dev/null
+
+# Relais Discord : reprises des envois et actualisation des prix/statuts toutes les minutes.
+* * * * * curl -fsS -m 55 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/discord >/dev/null

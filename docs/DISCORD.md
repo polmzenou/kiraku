@@ -1,4 +1,75 @@
-# Annonces des liaisons Discord
+# Communauté Discord Kiraku
+
+## Bouton du règlement et annonces du marché
+
+Ces fonctions réutilisent l'application Discord de la connexion Kiraku et son bot. Le serveur
+Next.js reçoit les clics par HTTP : pas de processus Discord connecté en permanence. Le bot peut
+apparaître hors ligne tout en répondant aux boutons et en publiant les annonces.
+
+Configuration de ce serveur, à ajouter à `.env.local` et à l'environnement du conteneur Docker
+de production sur le VPS (`environment` ou `env_file` dans Compose, selon le déploiement) :
+
+```dotenv
+DISCORD_PUBLIC_KEY="d5582666c89fe2e64cff7b6d7b7a874c70f1e8cce7ed8f513353aeb5daff7fe2"
+DISCORD_GUILD_ID="1565773684243697905"
+DISCORD_RULES_CHANNEL_ID="1565778336947634266"
+DISCORD_MEMBER_ROLE_ID="1565774539886039142"
+DISCORD_MARKET_CHANNEL_ID="1565793902324219925"
+```
+
+Les cinq valeurs ci-dessus sont publiques. `DISCORD_BOT_TOKEN` reste secret et doit déjà être
+renseigné, ainsi que `AUTH_DISCORD_ID` (la même application que celle de la clé publique).
+La clé publique ne remplace ni le jeton du bot ni `AUTH_DISCORD_SECRET`.
+
+### Activer le règlement
+
+1. Construire la nouvelle image, puis appliquer `npm run db:deploy` depuis un conteneur de cette
+   version disposant de Prisma CLI et configuré avec la base du VPS, avant de servir la nouvelle
+   application. Ne pas utiliser la base locale obsolète pour cette migration. Recréer le conteneur
+   si ses variables d'environnement changent.
+2. Donner **Gérer les rôles** au bot et placer son rôle au-dessus de **Membre**, sous l'équipe.
+3. Dans le salon du règlement, autoriser au bot **Voir le salon**, **Voir l'historique**,
+   **Envoyer des messages** et **Intégrer des liens**.
+4. Developer Portal → application Kiraku → General Information → **Interactions Endpoint URL** :
+   `https://kiraku-kun.com/api/discord/interactions`, puis enregistrer. Discord doit accepter l'URL.
+5. Dans Kiraku, ouvrir `/admin/discord`, puis **Publier le bouton du règlement**. Le texte du
+   règlement doit déjà être dans Discord : ce bouton publie seulement le message d'acceptation.
+6. Tester avec un membre sans rôle d'équipe : accepter le règlement doit ajouter **Membre** et
+   rendre les salons accessibles. Le résultat du clic est privé. Un second clic ne retire rien.
+
+Le serveur vérifie la signature Ed25519 du corps brut et son horodatage, l'application,
+le serveur, le salon, l'auteur du message et l'identifiant du bouton. Il ne peut attribuer que
+le rôle Membre fixé dans l'environnement, et conserve les autres rôles. Les membres encore en
+attente de la validation native de Discord doivent la terminer avant l'attribution.
+
+Le message publié est enregistré en base : une nouvelle publication l'actualise. S'il a été
+supprimé sur Discord, la prochaine publication le recrée.
+
+### Activer le marché
+
+1. Dans le salon du marché, donner au bot **Voir le salon**, **Voir l'historique**,
+   **Envoyer des messages** et **Intégrer des liens**. Les membres restent en lecture seule.
+2. Dans `/admin/discord`, activer **Relayer les nouvelles ventes sur Discord**, puis enregistrer.
+3. Installer la ligne `/api/cron/discord` de `deploy/crontab.example` sur le VPS : elle est appelée
+   chaque minute, avec le même `CRON_SECRET` que les autres tâches.
+4. Créer une nouvelle vente de test depuis Kiraku : l'annonce contient l'illustration, la rareté,
+   le vendeur public (sinon « Un joueur »), le prix d'enchère, l'achat immédiat disponible, la date
+   de fin et un lien vers la fiche exacte de la vente.
+
+La file `DiscordPost` est créée dans la transaction de vente. L'envoi part après la réponse ;
+les échecs sont réessayés avec un délai progressif et le délai imposé par Discord en cas de 429.
+Les mises, achats et annulations actualisent le message ; le cron reprend les échecs et les
+clôtures différées. Les annonces inchangées ne sont pas renvoyées. Une lease en base évite les
+publications concurrentes, et un nonce stable déduplique les créations rapprochées. Après un
+envoi incertain, les 100 messages récents sont examinés avant une nouvelle création ; cette
+récupération reste limitée à cette fenêtre si le salon reçoit beaucoup de messages.
+
+Le relais est désactivé par défaut. Il concerne les **nouvelles ventes aux enchères avec ou sans
+achat immédiat**, pas les annonces d'échange de cartes, et ne reprend pas les ventes antérieures.
+Le cron s'installe sur l'hôte VPS ; adapter le port de l'exemple au port publié par Docker,
+ou utiliser un planificateur qui peut joindre le conteneur. Ne pas publier l'URL avec son secret.
+
+## Annonces des liaisons Discord
 
 Après la première liaison Discord d'un joueur, le bot Kiraku publie dans le salon configuré :
 

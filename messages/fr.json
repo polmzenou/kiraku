@@ -2273,6 +2273,28 @@
     },
     "discord": {
       "title": "Discord",
+      "marketSection": "Annonces du marché",
+      "marketEnabled": "Relayer les nouvelles ventes sur Discord",
+      "marketHint": "Publie les nouvelles enchères et leurs achats immédiats, puis actualise leur prix et leur statut. Les ventes antérieures à l’activation ne sont pas reprises. Le jeton du bot, le serveur et le salon du marché doivent être configurés.",
+      "community": {
+        "title": "Accueil de la communauté",
+        "intro": "Publie un bouton sous le règlement déjà présent sur Discord. Il attribue le rôle Membre après acceptation. Une nouvelle publication met à jour le même message.",
+        "endpoint": "URL des interactions Discord",
+        "endpointHint": "Après déploiement, copie cette URL dans Developer Portal → General Information → Interactions Endpoint URL, puis enregistre avant de publier le bouton.",
+        "missing": "Configuration incomplète : renseigne le jeton du bot, l’identifiant d’application, la clé publique, le serveur, le salon du règlement et le rôle Membre sur le serveur Kiraku.",
+        "publish": "Publier le bouton du règlement",
+        "update": "Actualiser le bouton du règlement",
+        "publishing": "Publication…",
+        "success": "Le bouton du règlement est publié sur Discord.",
+        "open": "Voir le message sur Discord",
+        "errors": {
+          "FORBIDDEN": "Cette action est réservée aux administrateurs.",
+          "CONFIG": "Vérifie la configuration et que le salon du règlement appartient au bon serveur.",
+          "RATE_LIMITED": "Patiente une minute avant de réessayer.",
+          "BUSY": "Une publication est déjà en cours. Réessaie dans une minute.",
+          "DISCORD": "Publication impossible. Vérifie le jeton, les permissions du bot et sa connexion à Discord, puis réessaie."
+        }
+      },
       "intro": "Le modal « Rejoins notre Discord » est désactivé par défaut. Il est distinct de la connexion Discord du compte. Un clic sur « Rejoindre » le fait disparaître pour ce joueur.",
       "joinedCount": "{count, plural, =0 {Personne n'a encore cliqué sur « Rejoindre »} one {# joueur a cliqué sur « Rejoindre »} other {# joueurs ont cliqué sur « Rejoindre »}}",
       "modalSection": "Modal « Rejoins notre Discord »",
@@ -2296,6 +2318,7 @@
       "linkBonusHint": "Versé une seule fois, quand un joueur lie Discord à son compte.",
       "keys": {
         "discord": {
+          "marketEnabled": "Annonces du marché sur Discord",
           "joinModal": "Modal « Rejoins notre Discord »",
           "linkBonusZeni": "Bonus de liaison Discord"
         }

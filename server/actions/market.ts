@@ -4,6 +4,7 @@ import { getRarities } from "@/server/catalog/rarities";
 
 import { getLocale } from "next-intl/server";
 import { refresh } from "next/cache";
+import { after } from "next/server";
 import { noteSchema } from "@/lib/text/note-schema";
 import { z } from "@/lib/zod";
 import { decodeMarketCursor, parseMarketParams } from "@/lib/market/filters";
@@ -14,6 +15,11 @@ import { auctionLive, getMarketRules, listAuctions, pushLater, type AuctionListI
 import { getAdmin } from "../admin";
 import { rateLimit } from "../ratelimit";
 import { getCurrentUser, requireActiveUser } from "../user";
+import { discordMarketChannel, syncDiscordAuction } from "../discord/market";
+
+const discordLater = (id: string) => after(() => syncDiscordAuction(id).catch(() => {
+  console.warn("[discord] synchronisation du marché reportée au prochain passage.");
+}));
 
 // Hôtel des ventes. Ordre des contrôles : session → Zod → compte autorisé → rate limit, puis tout
 // est relu sous verrou dans la transaction (server/market/auction-core.ts). Le client n'envoie que
@@ -103,9 +109,11 @@ export async function createAuctionAction(input: unknown): Promise<CreateAuction
       buyoutPrice: parsed.data.buyoutPrice,
       durationHours: parsed.data.durationHours,
       note: parsed.data.note,
+      discordChannelId: await discordMarketChannel(),
       now: new Date(),
       rules: await getMarketRules(),
     });
+    discordLater(auctionId);
     refresh();
     return { ok: true, auctionId };
   } catch (e) {
@@ -131,6 +139,7 @@ export async function placeBidAction(input: unknown): Promise<BidResult> {
       { bidderId: g.user.id, auctionId: parsed.data.auctionId, amount: parsed.data.amount, now, rules: await getMarketRules() },
       pushLater,
     );
+    discordLater(parsed.data.auctionId);
     refresh();
     return { ok: true, coins: res.coins, sold: res.sold, live: await auctionLive(parsed.data.auctionId, g.user.id, now) };
   } catch (e) {
@@ -152,6 +161,7 @@ export async function buyNowAction(input: unknown): Promise<BidResult> {
       { buyerId: g.user.id, auctionId: parsed.data.auctionId, expectedPrice: parsed.data.expectedPrice, now, rules: await getMarketRules() },
       pushLater,
     );
+    discordLater(parsed.data.auctionId);
     refresh();
     return { ok: true, coins: res.coins, sold: res.sold, live: await auctionLive(parsed.data.auctionId, g.user.id, now) };
   } catch (e) {
@@ -173,6 +183,7 @@ export async function cancelAuctionAction(input: unknown): Promise<SimpleMarketR
   try {
     // Propriété vérifiée dans la même requête que l'écriture (sellerId dans la condition)
     await cancelAuctionWith(prisma, { sellerId: g.user.id, auctionId: parsed.data.auctionId, now: new Date() });
+    discordLater(parsed.data.auctionId);
     refresh();
     return { ok: true };
   } catch (e) {
@@ -189,6 +200,7 @@ export async function adminCancelAuctionAction(input: unknown): Promise<SimpleMa
   if (!(await rateLimit(`admin:${admin.id}`, { limit: 20, windowSeconds: MINUTE })).success) return { ok: false, error: "RATE_LIMITED" };
   try {
     await adminCancelAuctionWith(prisma, { adminId: admin.id, auctionId: parsed.data.auctionId, now: new Date() }, pushLater);
+    discordLater(parsed.data.auctionId);
     refresh();
     return { ok: true };
   } catch (e) {
