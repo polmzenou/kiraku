@@ -163,22 +163,28 @@ async function ExchangeBoard({
 }) {
   const filter = guest ? "all" : parseListingFilter(raw.filtre);
   const q = (one(raw.q) ?? "").slice(0, 100);
+  const rawListingId = one(raw.annonce);
+  const listingId = rawListingId && /^[A-Za-z0-9_-]{1,40}$/.test(rawListingId) ? rawListingId : undefined;
+  const t = await getTranslations("listings");
   const [page, maxWants, allowOther] = await Promise.all([
-    listListings({ viewerId: userId, q, filter, cursor: null, locale }),
+    listListings({ viewerId: userId, q, filter, cursor: null, locale, listingId }),
     getSetting("listings.maxWants"),
     getSetting("listings.allowOther"),
   ]);
   return (
-    <ListingBoard
-      initial={page.items}
-      nextCursor={page.nextCursor}
-      filter={filter}
-      q={q}
-      guest={guest}
-      isAdmin={isAdmin}
-      maxWants={maxWants}
-      allowOther={allowOther}
-    />
+    <>
+      {listingId && <Link href="/marche?onglet=echanges" className="self-start text-sm text-link underline">{t("showAllListings")}</Link>}
+      <ListingBoard
+        initial={page.items}
+        nextCursor={page.nextCursor}
+        filter={filter}
+        q={q}
+        guest={guest}
+        isAdmin={isAdmin}
+        maxWants={maxWants}
+        allowOther={allowOther}
+      />
+    </>
   );
 }
 

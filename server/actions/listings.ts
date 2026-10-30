@@ -27,6 +27,11 @@ import { pushNotifications } from "../push/send";
 import { rateLimit } from "../ratelimit";
 import { getSetting } from "../settings";
 import { getCurrentUser } from "../user";
+import { discordMarketChannel, syncDiscordListing } from "../discord/market";
+
+const discordListingLater = (listingId: string) => after(() => syncDiscordListing(listingId).catch(() => {
+  console.warn("[discord] synchronisation d’un échange reportée au prochain passage.");
+}));
 
 // Échanges ouverts du Marché. Ordre des contrôles : session → Zod → compte inscrit non banni ni gelé
 // → interrupteurs → rate limit → propriété et règles relues sous verrou (server/market/listing-core.ts).
@@ -92,13 +97,15 @@ export async function createListingAction(input: unknown): Promise<{ ok: true } 
   const g = await guard(input, createSchema, "listing-create", { limit: 10, windowSeconds: 60 });
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
   try {
-    await createListingWith(prisma, {
+    const { listingId } = await createListingWith(prisma, {
       ownerId: g.user.id,
       cardId: g.data.cardId,
       wantedCardIds: g.data.wantedCardIds,
       note: g.data.note,
+      discordChannelId: await discordMarketChannel(),
       rules: await listingRules(),
     });
+    discordListingLater(listingId);
     refresh();
     return { ok: true };
   } catch (e) {
@@ -111,6 +118,7 @@ export async function cancelListingAction(input: unknown): Promise<{ ok: true } 
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
   try {
     await cancelListingWith(prisma, { userId: g.user.id, listingId: g.data.listingId }, pushLater);
+    discordListingLater(g.data.listingId);
     refresh();
     return { ok: true };
   } catch (e) {
@@ -153,6 +161,12 @@ export async function acceptOfferAction(input: unknown): Promise<{ ok: true; car
       { userId: g.user.id, offerId: g.data.offerId, allowedRarities: await getSetting("listings.allowedRarities") },
       pushLater,
     );
+    after(async () => {
+      try {
+        const offer = await prisma.listingOffer.findUnique({ where: { id: g.data.offerId }, select: { listingId: true } });
+        if (offer) await syncDiscordListing(offer.listingId);
+      } catch { console.warn("[discord] synchronisation d’un échange reportée au prochain passage."); }
+    });
     refresh();
     if (!res.ok) return { ok: false, error: res.code };
     const view = (await cardViews([res.received.cardId], await getLocale())).get(res.received.cardId);

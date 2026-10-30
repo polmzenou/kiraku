@@ -2274,8 +2274,8 @@
     "discord": {
       "title": "Discord",
       "marketSection": "Marketplace announcements",
-      "marketEnabled": "Share new auctions on Discord",
-      "marketHint": "Posts new auctions and their buyout options, then updates prices and status. Auctions created before activation are not included. Configure the bot token, server and marketplace channel first.",
+      "marketEnabled": "Share sales and card exchanges on Discord",
+      "marketHint": "Posts new sales and card-for-card exchanges, then updates their status. Listings created before activation are not included. Configure the bot token, server and marketplace channel first.",
       "community": {
         "title": "Community welcome",
         "intro": "Posts a button below the rules already on Discord. It grants the Member role after acceptance. Publishing again updates the same message.",
@@ -4694,6 +4694,7 @@
     "ephemeral": "Messages disappear {hours, plural, one {# hour} other {# hours}} after they are sent."
   },
   "listings": {
+    "showAllListings": "View all exchange listings",
     "boardTitle": "Cards up for trade",
     "boardIntro": "“I give this one for one of those.” Offer one of your cards: the poster accepts or declines.",
     "create": "Offer a card",

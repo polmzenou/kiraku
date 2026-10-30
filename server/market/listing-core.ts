@@ -44,6 +44,9 @@ export class ListingError extends Error {
 const TX = { maxWait: 10_000, timeout: 15_000 };
 const DAY_MS = 24 * 3_600_000;
 
+const touchDiscordListing = (tx: Tx, listingId: string, now: Date) =>
+  tx.discordPost.updateMany({ where: { listingId, attempts: 0 }, data: { nextAttemptAt: now } });
+
 type LockedListing = { id: string; ownerId: string; cardId: string; status: string; expiresAt: Date };
 type LockedOffer = { id: string; listingId: string; bidderId: string; cardId: string; status: string };
 
@@ -95,6 +98,8 @@ export type CreateListingInput = {
   wantedCardIds: readonly string[];
   /** Commentaire public de l'auteur, déjà nettoyé (texte brut). */
   note?: string | null;
+  /** Destination décidée par le serveur, jamais par le client. */
+  discordChannelId?: string;
   rules: ListingRules;
   now?: Date;
 };
@@ -144,6 +149,9 @@ export async function createListingWith(db: PrismaClient, input: CreateListingIn
       },
       select: { id: true },
     });
+    if (input.discordChannelId) {
+      await tx.discordPost.create({ data: { key: `listing:${listing.id}`, listingId: listing.id, channelId: input.discordChannelId, nextAttemptAt: now } });
+    }
     return { listingId: listing.id };
   }, TX);
 }
@@ -158,6 +166,7 @@ export async function cancelListingWith(db: PrismaClient, input: { userId: strin
       if (!listing || listing.ownerId !== input.userId) throw new ListingError("NOT_FOUND");
       if (listing.status !== "OPEN") throw new ListingError("CLOSED");
       await tx.tradeListing.update({ where: { id: listing.id }, data: { status: "CANCELLED", resolvedAt: now } });
+      await touchDiscordListing(tx, listing.id, now);
       await closePendingOffers(tx, listing, now);
     },
     TX,
@@ -267,6 +276,7 @@ export async function acceptOfferWith(
       const payload = { listingId: listing.id, offerId: offer.id, cardId: listing.cardId, offeredCardId: offer.cardId };
       if (!isListingOpen(listing, now)) {
         await tx.tradeListing.update({ where: { id: listing.id }, data: { status: "EXPIRED", resolvedAt: now } });
+        await touchDiscordListing(tx, listing.id, now);
         await closePendingOffers(tx, listing, now);
         return { ok: false, code: "CLOSED" };
       }
@@ -287,6 +297,7 @@ export async function acceptOfferWith(
       ]);
       if (!ownerCopy) {
         await tx.tradeListing.update({ where: { id: listing.id }, data: { status: "FAILED", resolvedAt: now } });
+        await touchDiscordListing(tx, listing.id, now);
         await closePendingOffers(tx, listing, now);
         return { ok: false, code: "CARD_GONE" };
       }
@@ -329,6 +340,7 @@ export async function acceptOfferWith(
       ]);
 
       await tx.tradeListing.update({ where: { id: listing.id }, data: { status: "TRADED", resolvedAt: now } });
+      await touchDiscordListing(tx, listing.id, now);
       await tx.listingOffer.update({ where: { id: offer.id }, data: { status: "ACCEPTED", resolvedAt: now, bidderNew: !bidderKnew } });
       await tx.notification.updateMany({ where: { type: "LISTING_OFFER", refId: offer.id, readAt: null }, data: { readAt: now } });
       await closePendingOffers(tx, listing, now, offer.id);
@@ -394,6 +406,7 @@ export async function expireListingsFor(db: PrismaClient, userId: string, now = 
   await db.$transaction([
     db.tradeListing.updateMany({ where: { id: { in: ids }, status: "OPEN" }, data: { status: "EXPIRED", resolvedAt: now } }),
     db.listingOffer.updateMany({ where: { listingId: { in: ids }, status: "PENDING" }, data: { status: "CLOSED", resolvedAt: now } }),
+    db.discordPost.updateMany({ where: { listingId: { in: ids }, attempts: 0 }, data: { nextAttemptAt: now } }),
   ]);
 }
 
