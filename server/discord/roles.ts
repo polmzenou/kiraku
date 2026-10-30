@@ -5,6 +5,7 @@ import { env } from "../env";
 import { DiscordApiError, discordBotRequest } from "./api";
 import { linkedRoleConfigured } from "./roles-config";
 import { assertCommunityRole } from "./role-permissions";
+import { recordDiscordAlert, resolveDiscordAlert } from "./alert-store";
 
 async function linkedAccount(discordId: string): Promise<boolean> {
   const account = await prisma.account.findUnique({
@@ -58,12 +59,14 @@ export async function syncLinkedDiscordRole(discordId: string): Promise<"linked"
       await discordBotRequest(`/guilds/${guildId}/members/${discordId}/roles/${roleId}`, linked ? "PUT" : "DELETE");
     }
     await release(86_400_000);
+    await resolveDiscordAlert("linked-role", discordId);
     return linked ? "linked" : "unlinked";
   } catch (e) {
     const job = await prisma.discordRoleSync.findUniqueOrThrow({ where });
     const delay = Math.max(e instanceof DiscordApiError ? e.retryAfterMs : 0, Math.min(3_600_000, 30_000 * 2 ** Math.min(job.attempts, 7)));
     await prisma.discordRoleSync.updateMany({ where: { guildId, discordId, leaseId }, data: { leaseId: null, leaseUntil: null, nextAttemptAt: new Date(Date.now() + delay) } });
     console.warn(`[discord] rôle de compte lié non synchronisé (${e instanceof DiscordApiError ? e.status : "base"}).`);
+    await recordDiscordAlert("linked-role", discordId, e instanceof DiscordApiError ? e.status : undefined);
     return "error";
   }
 }

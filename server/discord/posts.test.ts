@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rulesMessage } from "@/lib/discord/community";
 
 const db = vi.hoisted(() => ({ updateMany: vi.fn(), findUniqueOrThrow: vi.fn() }));
+const alerts = vi.hoisted(() => ({ record: vi.fn(), resolve: vi.fn() }));
+vi.mock("./alert-store", () => ({ recordDiscordAlert: alerts.record, resolveDiscordAlert: alerts.resolve }));
 vi.mock("server-only", () => ({}));
 vi.mock("../db", () => ({ prisma: { discordPost: db } }));
 vi.mock("../env", () => ({ env: { DISCORD_BOT_TOKEN: "private-bot-token", AUTH_DISCORD_ID: "123456789012345678" } }));
@@ -14,6 +16,8 @@ const request = vi.fn<typeof fetch>();
 const messageId = "345678901234567890";
 
 beforeEach(() => {
+  alerts.record.mockClear();
+  alerts.resolve.mockClear();
   row = { key: "rules:test", channelId: "1565778336947634266", messageId: null, payloadHash: null, attempts: 0, nextAttemptAt: new Date(), leaseId: null, leaseUntil: null };
   db.updateMany.mockReset().mockImplementation(async ({ where, data }: { where: { leaseId?: string; OR?: unknown }; data: Mutation }) => {
     if (where.OR && row.leaseUntil && row.leaseUntil > new Date()) return { count: 0 };
@@ -96,6 +100,20 @@ describe("publication persistante Discord", () => {
     request.mockRejectedValueOnce(new Error("private-bot-token"));
     expect((await publishDiscordPost(row.key, rulesMessage(), null)).ok).toBe(false);
     expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toContain("private-bot-token");
+  });
+  it("signale l'échec et la reprise d'une publication sans inclure de jeton", async () => {
+    request.mockResolvedValueOnce(new Response("{}", { status: 403 }));
+    expect((await publishDiscordPost(row.key, rulesMessage(), null)).ok).toBe(false);
+    expect(alerts.record).toHaveBeenCalledWith("publication", row.key, 403);
+    request.mockReset().mockImplementation(async (_url, init) => new Response(JSON.stringify(init?.method === "GET" ? [] : { id: messageId })));
+    expect((await publishDiscordPost(row.key, rulesMessage(), null)).ok).toBe(true);
+    expect(alerts.resolve).toHaveBeenCalledWith("publication", row.key);
+  });
+  it("ne crée jamais d'incident pour l'échec d'une alerte elle-même", async () => {
+    row.key = "alert:channel:incident";
+    request.mockResolvedValueOnce(new Response("{}", { status: 403 }));
+    expect((await publishDiscordPost(row.key, rulesMessage(), null)).ok).toBe(false);
+    expect(alerts.record).not.toHaveBeenCalled();
   });
   it("notifie uniquement le rôle choisi à la création, puis actualise sans notification", async () => {
     const options = { mentionRoleId: "1565817691132928121" };

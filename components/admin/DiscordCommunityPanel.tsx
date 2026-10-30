@@ -2,22 +2,24 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { publishDiscordRolesAction, publishDiscordRulesAction, type PublishRulesResult } from "@/server/actions/discord-community";
+import { publishDiscordRolesAction, publishDiscordRulesAction, testDiscordAlertsAction, type PublishRulesResult } from "@/server/actions/discord-community";
 import { inputClass } from "./fields";
 import { Button } from "../ui/Button";
 
-export function DiscordCommunityPanel({ configured, endpoint, rulesUrl, rolesConfigured, rolesUrl, linkedConfigured }: {
+export function DiscordCommunityPanel({ configured, endpoint, rulesUrl, rolesConfigured, rolesUrl, linkedConfigured, alertsConfigured }: {
   configured: boolean;
   endpoint: string;
   rulesUrl: string | null;
   rolesConfigured: boolean;
   rolesUrl: string | null;
   linkedConfigured: boolean;
+  alertsConfigured: boolean;
 }) {
   const t = useTranslations("admin.discord.community");
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<PublishRulesResult | null>(null);
   const [rolesResult, setRolesResult] = useState<PublishRulesResult | null>(null);
+  const [alertsResult, setAlertsResult] = useState<PublishRulesResult | null>(null);
   const url = result?.ok ? result.url : rulesUrl;
   const roleUrl = rolesResult?.ok ? rolesResult.url : rolesUrl;
   return (
@@ -57,6 +59,16 @@ export function DiscordCommunityPanel({ configured, endpoint, rulesUrl, rolesCon
         <div aria-live="polite" className="text-sm">{rolesResult && (rolesResult.ok ? t("rolesSuccess") : t(`errors.${rolesResult.error}`))}</div>
         {roleUrl && <a href={roleUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-link underline">{t("openRoles")}</a>}
         <p className="text-sm text-text-muted">{linkedConfigured ? t("linkedReady") : t("linkedMissing")}</p>
+      </div>
+      <div className="flex flex-col gap-3 border-t border-border pt-4">
+        <h4 className="font-bold">{t("alertsTitle")}</h4>
+        <p className="text-sm text-text-muted">{alertsConfigured ? t("alertsIntro") : t("alertsMissing")}</p>
+        <Button type="button" disabled={!alertsConfigured || pending} className="self-start" onClick={() => startTransition(async () => {
+          try { setAlertsResult(await testDiscordAlertsAction()); }
+          catch { setAlertsResult({ ok: false, error: "DISCORD" }); }
+        })}>{t("alertsTest")}</Button>
+        <div aria-live="polite" className="text-sm">{alertsResult && (alertsResult.ok ? t("alertsSuccess") : t(`errors.${alertsResult.error}`))}</div>
+        {alertsResult?.ok && <a href={alertsResult.url} target="_blank" rel="noopener noreferrer" className="text-sm text-link underline">{t("alertsOpen")}</a>}
       </div>
       <div className="flex flex-col gap-3 border-t border-border pt-4">
         <h4 className="font-bold">{t("rankedTitle")}</h4>

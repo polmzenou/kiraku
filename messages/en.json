@@ -2282,6 +2282,12 @@
       "marketHint": "Posts new sales and card-for-card exchanges, then updates their status. Listings created before activation are not included. Configure the bot token, server and marketplace channel first.",
       "community": {
         "rolesTitle": "Roles and linked accounts",
+        "alertsTitle": "Private technical alerts",
+        "alertsIntro": "Publication, role assignment and season summary failures are grouped by incident. The cron updates each alert at most once every 15 minutes, without mass mentions.",
+        "alertsMissing": "Set DISCORD_ALERTS_CHANNEL_ID to a private staff channel and allow the bot to post there.",
+        "alertsTest": "Test the alerts channel",
+        "alertsSuccess": "The test message was posted to the private channel.",
+        "alertsOpen": "View the test message on Discord",
         "rolesIntro": "Posts Merchant, Collector and Fighter buttons. Members can add or remove their own preferences. Merchant enables notifications without restricting marketplace access.",
         "rolesMissing": "Configure the roles channel and role IDs in the Kiraku environment.",
         "publishRoles": "Publish or update role choices",
@@ -2438,12 +2444,7 @@
       "attention": "To watch",
       "pendingDeletions": "Pending deletions",
       "banned": "Banned accounts",
-      "termsVersion": "Required terms",
-      "discordPoll": "Discord poll (v2.5 announcement)",
-      "pollYes": "Yes",
-      "pollNo": "No",
-      "pollTotal": "Answers",
-      "pollShare": "{percent}% of answers"
+      "termsVersion": "Required terms"
     },
     "journal": {
       "title": "Admin action log",

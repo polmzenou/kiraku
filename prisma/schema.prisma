@@ -1061,6 +1061,23 @@ model DiscordPost {
   @@index([nextAttemptAt])
 }
 
+// Incidents techniques coalescés ; aucun corps d'erreur, jeton ou nom de joueur n'est enregistré.
+model DiscordAlert {
+  id            String @id
+  kind          String
+  sourceId      String
+  httpStatus    Int?
+  occurrences   Int @default(1)
+  firstSeenAt   DateTime @default(now())
+  lastSeenAt    DateTime @default(now())
+  resolvedAt    DateTime?
+  dirty         Boolean @default(true)
+  lastNotifiedAt DateTime?
+  nextAttemptAt DateTime @default(now())
+
+  @@index([dirty, nextAttemptAt])
+}
+
 // Attribution du rôle Discord de compte lié ; aucun jeton OAuth n'est copié dans la file.
 model DiscordRoleSync {
   guildId       String

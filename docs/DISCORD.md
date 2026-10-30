@@ -22,6 +22,8 @@ DISCORD_COLLECTOR_ROLE_ID="1565818296002154506"
 DISCORD_FIGHTER_ROLE_ID="1565818436355887214"
 DISCORD_LINKED_ROLE_ID="1565817846720757880"
 DISCORD_RANKED_CHANNEL_ID="1565818050631176202"
+DISCORD_ALERTS_CHANNEL_ID="1565779152106291380"
+DISCORD_GUIDE_CHANNEL_ID="1565843323854258276"
 ```
 
 Les identifiants et la clé publique ci-dessus sont publics. `DISCORD_BOT_TOKEN` reste secret et doit déjà être
@@ -144,6 +146,85 @@ reprises rétroactivement. Pour les échanges, appliquer aussi la migration
 Le cron s'installe sur l'hôte VPS. Le déploiement PM2 n'installe pas automatiquement le fichier
 `deploy/crontab.example`. La procédure ci-dessous appelle l'URL HTTPS publique et ne dépend
 ni du port interne de l'application ni du conteneur PostgreSQL.
+
+### Guide #bien-débuter
+
+Le salon `1565843323854258276`, dans **👋 ACCUEIL**, contient le guide public : règlement,
+liaison du compte, rôles de préférences, marché, échanges, propositions AR/Gold, ranked et aide.
+Les boutons ouvrent Kiraku, Mon compte et le marché. Le salon est en lecture seule pour les
+membres. Donner au compte du bot **Voir le salon**, **Voir l'historique**, **Envoyer des messages**
+et **Intégrer des liens** dans ce salon.
+
+Pour afficher le contenu préparé, puis le publier ou actualiser le message du bot sans doublon :
+
+```bash
+node --import tsx scripts/setup-discord-community.mts guide
+node --import tsx scripts/setup-discord-community.mts guide --apply
+```
+
+Le script utilise `DISCORD_GUIDE_CHANNEL_ID` (sinon l'identifiant Kiraku ci-dessus) et pointe par
+défaut vers `https://kiraku-kun.com`, y compris lorsqu'il est exécuté depuis un environnement local.
+`--origin=https://…` permet de choisir explicitement une autre origine HTTPS.
+
+### Alertes techniques privées dans #logs-bot
+
+Le salon d'équipe **#logs-bot** (`1565779152106291380`) est réutilisé ; aucun salon de gros tirages
+n'est ajouté. Les administrateurs, développeurs et modérateurs le lisent ; @everyone et Membre
+ne doivent pas pouvoir le voir. Le compte du bot a un accès explicite pour voir, lire l'historique,
+envoyer et intégrer des liens. Les rôles de préférences n'ont aucun accès supplémentaire.
+
+1. Ajouter `DISCORD_ALERTS_CHANNEL_ID="1565779152106291380"` à l'environnement de l'application du VPS.
+2. Appliquer `npm run db:deploy` (migration `20261030150000_discord_technical_alerts`), construire
+   avec `npm run build`, puis redémarrer `pm2 restart kiraku --update-env`.
+3. Dans **Administration → Discord → Alertes techniques privées**, cliquer sur
+   **Tester le salon des alertes**. Le test vérifie que le salon appartient au serveur et que seuls
+   les rôles de l'équipe et le bot ont un accès explicite en lecture.
+4. Garder le cron Discord existant. Les alertes sont traitées après sa réponse HTTP, avec un budget
+   séparé du marché. Aucun cron supplémentaire n'est nécessaire.
+
+Incidents couverts : publication Discord (ventes, échanges, règlement, rôles ou saison), synchronisation
+du rôle de compte lié, attribution d'un rôle par bouton, génération/publication d'un bilan et erreur
+d'un traitement du cron. L'alerte présente une référence interne, le statut HTTP, la dernière occurrence,
+un compteur et une piste de correction. Elle n'inclut aucun jeton, corps brut d'erreur ou nom de joueur.
+
+Une ligne `DiscordAlert` regroupe chaque type/source d'incident. Le premier incident est envoyé au
+prochain passage ; les répétitions et résolutions actualisent le même message au maximum toutes les
+15 minutes, sans mention générale. Un incident résolu avant sa première publication n'est pas envoyé.
+La lease et le nonce de `DiscordPost` restent utilisés pour les envois concurrents et les reprises.
+Si le salon des alertes échoue, le bot ne produit pas d'alerte sur cette alerte : il réessaie plus tard
+et conserve un avertissement PM2.
+
+Ces alertes complètent les logs PM2 : elles ne constituent pas une surveillance externe de l'arrêt de
+l'application ou du cron. Si la base est indisponible, l'incident ne peut pas y être mis en file ; PM2
+reste alors la source de diagnostic. Si le jeton Discord lui-même ne fonctionne plus, le même bot ne
+peut plus publier les alertes.
+
+### AutoMod natif, après le guide et les alertes
+
+Le script prépare quatre règles natives, avec blocage du message et alerte dans **#logs-bot** :
+
+- **Kiraku · Spam** : filtre de spam de Discord.
+- **Kiraku · Mentions massives** : cinq mentions uniques maximum, protection contre les raids de mentions.
+- **Kiraku · Insultes et propos haineux** : liste française courte et modifiable dans Discord ou `lib/discord/automod.ts`.
+- **Kiraku · Invitations publicitaires** : invitations `discord.gg`, `discord.com/invite` et `discordapp.com/invite`.
+
+Les rôles de l'équipe sont exemptés ; Membre, Marchand, Collectionneur, Fighter et Joueur Kiraku vérifié
+ne le sont pas. Il n'y a pas de bannissement ou d'exclusion temporaire automatique. Les listes de mots
+ne remplacent pas une décision de modération contextualisée.
+
+Le bot doit disposer de **Gérer le serveur** pour lire et créer ces règles. Ce droit peut être retiré
+après l'installation : Discord continue d'appliquer AutoMod nativement. Le bot n'en a pas besoin pour
+les rôles, le marché, les bilans et les alertes techniques. Prévisualiser puis appliquer :
+
+```bash
+node --import tsx scripts/setup-discord-community.mts automod
+node --import tsx scripts/setup-discord-community.mts automod --apply
+```
+
+Les règles créées par ce bot sont actualisées lors d'une réexécution. Les filtres de spam ou de
+mentions déjà créés par une autre personne sont conservés et signalés ; s'ils sont désactivés, le
+script le précise et il faut les activer dans Discord. Aucun filtre existant n'est supprimé.
+Les règles se consultent et s'ajustent dans **Paramètres du serveur → AutoMod / Configuration de sécurité**.
 
 ### Installer le cron Discord sur le VPS (PM2)
 

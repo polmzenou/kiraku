@@ -12,10 +12,16 @@ beforeAll(async () => {
   await pg.exec(readFileSync(resolve("prisma/migrations/20261030130000_discord_trade_listings/migration.sql"), "utf8"));
   await pg.exec('CREATE TABLE "Season" (id TEXT PRIMARY KEY);');
   await pg.exec(readFileSync(resolve("prisma/migrations/20261030140000_discord_roles_ranked/migration.sql"), "utf8"));
+  await pg.exec(readFileSync(resolve("prisma/migrations/20261030150000_discord_technical_alerts/migration.sql"), "utf8"));
 }, 30_000);
 afterAll(async () => pg.close());
 
 describe("migration Discord (Postgres isolé en mémoire)", () => {
+  it("conserve les incidents et empêche les identifiants dupliqués", async () => {
+    await pg.exec(`INSERT INTO "DiscordAlert" (id,kind,"sourceId") VALUES ('error1','publication','auction:a1')`);
+    await expect(pg.exec(`INSERT INTO "DiscordAlert" (id,kind,"sourceId") VALUES ('error1','publication','auction:a1')`)).rejects.toThrow();
+    expect((await pg.query(`SELECT dirty,occurrences,"resolvedAt","lastNotifiedAt" FROM "DiscordAlert" WHERE id='error1'`)).rows).toEqual([{ dirty: true, occurrences: 1, resolvedAt: null, lastNotifiedAt: null }]);
+  });
   it("garantit une publication par vente et supprime la file avec la vente", async () => {
     await pg.exec(`INSERT INTO "Auction" VALUES ('a1');
       INSERT INTO "DiscordPost" (key, "channelId", "auctionId") VALUES ('auction:a1', 'channel', 'a1');`);

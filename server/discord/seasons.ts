@@ -9,6 +9,7 @@ import { getRankedRules } from "../ranked/queries";
 import { rollSeasonWith } from "../ranked/ranked-core";
 import { publishDiscordPost } from "./posts";
 import { seasonImage } from "./season-image";
+import { recordDiscordAlert, resolveDiscordAlert } from "./alert-store";
 
 export async function rankedDiscordEnabled(): Promise<boolean> {
   return Boolean(env.DISCORD_BOT_TOKEN && env.DISCORD_GUILD_ID && env.DISCORD_RANKED_CHANNEL_ID && await getSetting("discord.rankedEnabled"));
@@ -46,6 +47,7 @@ export async function syncDiscordSeasons(deadline = Date.now() + 25_000): Promis
     try {
       const snapshot = seasonSnapshotSchema.parse(post.season?.leaderboardSnapshot);
       const png = new Uint8Array(await (await seasonImage(snapshot)).arrayBuffer());
+      await resolveDiscordAlert("ranked-render", post.key);
       const published = await publishDiscordPost(post.key, seasonMessage(snapshot), null, false, {
         mentionRoleId: env.DISCORD_FIGHTER_ROLE_ID,
         attachment: { filename: `kiraku-saison-${snapshot.number}.png`, data: png, contentType: "image/png" },
@@ -59,6 +61,7 @@ export async function syncDiscordSeasons(deadline = Date.now() + 25_000): Promis
         data: { nextAttemptAt: new Date(Date.now() + 300_000) },
       });
       console.warn("[discord] annonce de saison reportée au prochain passage.");
+      await recordDiscordAlert("ranked-render", post.key);
     }
   }
   return result;
