@@ -6,6 +6,7 @@ import { useReducedFx } from "@/components/motion/MotionPreference";
 import type { NewsView } from "@/lib/home/news";
 import { rememberNewsCollapsed } from "@/lib/home/news-dom";
 import { NewsBanner } from "./NewsBanner";
+import { NewsPollBanner } from "./NewsPollBanner";
 
 /** Avance automatique du carrousel (arrêtée au survol, au focus, au toucher et en mouvement réduit). */
 const ADVANCE_MS = 7_000;
@@ -26,10 +27,22 @@ function Chevron({ dir, className = "size-4" }: { dir: "left" | "right" | "down"
  * sceau), réglé dans /admin/nouveautes. On le fait glisser, on passe d'une bannière à l'autre par les
  * points ou les flèches, et il avance seul quand on ne le touche pas. Réduit, il tient sur une ligne ;
  * le choix est gardé pour cette publication (cookie lu par le serveur), une nouvelle publication le
- * rouvre. `preview` : aperçu de l'admin, qui ne touche pas à la préférence du joueur.
+ * rouvre. `preview` : aperçu de l'admin, qui ne touche pas à la préférence du joueur. `poll` : le
+ * sondage Discord passe en première bannière, avec la réponse déjà donnée par le joueur.
  */
-export function NewsPanelView({ news, initialCollapsed, preview = false }: { news: NewsView; initialCollapsed: boolean; preview?: boolean }) {
+export function NewsPanelView({
+  news,
+  initialCollapsed,
+  preview = false,
+  poll = null,
+}: {
+  news: NewsView;
+  initialCollapsed: boolean;
+  preview?: boolean;
+  poll?: { vote: boolean | null } | null;
+}) {
   const t = useTranslations("news");
+  const tPoll = useTranslations("v25Announcement.discord");
   const format = useFormatter();
   const id = useId();
   const reduced = useReducedFx();
@@ -42,7 +55,10 @@ export function NewsPanelView({ news, initialCollapsed, preview = false }: { new
   const [held, setHeld] = useState(false);
   const [inView, setInView] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
-  const count = news.items.length;
+  // « _ » n'existe pas dans les identifiants de nouveautés de l'admin : aucune clé en double
+  const slides = [...(poll ? [{ id: "_poll", title: tPoll("title") }] : []), ...news.items];
+  const count = slides.length;
+  const offset = poll ? 1 : 0;
   const date = news.publishedAt ? format.dateTime(new Date(news.publishedAt), { day: "numeric", month: "long", timeZone: "Europe/Paris" }) : null;
 
   const toggle = () => {
@@ -150,8 +166,9 @@ export function NewsPanelView({ news, initialCollapsed, preview = false }: { new
             onTouchStart={() => setPlaying(false)}
             className="flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scrollbar-none"
           >
+            {poll && <NewsPollBanner vote={poll.vote} index={0} count={count} active={active === 0} />}
             {news.items.map((item, i) => (
-              <NewsBanner key={item.id} item={item} index={i} count={count} active={i === active} first={i === 0} />
+              <NewsBanner key={item.id} item={item} index={i + offset} count={count} active={i + offset === active} first={i + offset === 0} />
             ))}
           </div>
           {count > 1 && (
@@ -160,11 +177,11 @@ export function NewsPanelView({ news, initialCollapsed, preview = false }: { new
                 <Chevron dir="left" />
               </button>
               <ol className="flex items-center">
-                {news.items.map((item, i) => (
-                  <li key={item.id}>
+                {slides.map((slide, i) => (
+                  <li key={slide.id}>
                     <button
                       type="button"
-                      aria-label={t("goTo", { n: i + 1, title: item.title })}
+                      aria-label={t("goTo", { n: i + 1, title: slide.title })}
                       aria-current={i === active || undefined}
                       onClick={() => {
                         setPlaying(false);

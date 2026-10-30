@@ -123,6 +123,8 @@ const SHOP: ShopSeed[] = [
     description: { fr: "Cinq boosters standard à ouvrir quand tu veux.", en: "Five standard boosters to open whenever you like." },
     lotId: "seed-lot-pack-5",
     priceZeni: 900,
+    perUserLimit: 100,
+    limitPeriod: "DAILY",
   },
   {
     slug: "pack-10-standard",

@@ -1,15 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useId, useState, useTransition, type ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { BoosterArt } from "@/components/boosters/BoosterArt";
 import { Link } from "@/i18n/navigation";
 import { X_HANDLE, X_URL } from "@/lib/links";
-import { voteDiscordPollAction } from "@/server/actions/welcome";
 import type { V25Data } from "@/server/welcome";
 import { useAnnouncementDialog } from "./useAnnouncementDialog";
-
-const DISCORD_IDEAS = ["news", "tournaments", "contests", "lotteries", "feedback", "cards"] as const;
+import { DISCORD_IDEAS, useDiscordPoll } from "./useDiscordPoll";
 
 /**
  * Annonce de la v2.5 : merci pour les 1 000 joueurs, parrainage à paliers, sondage « un Discord ? »,
@@ -21,18 +19,10 @@ export function V25AnnouncementModal({ userId, data }: { userId: string; data: V
   const dialog = useAnnouncementDialog(userId, "v25");
   const titleId = useId();
   const descriptionId = useId();
-  const [vote, setVote] = useState(data.vote);
-  const [voteError, setVoteError] = useState(false);
-  const [pending, startTransition] = useTransition();
+  const poll = useDiscordPoll(data.vote);
 
   const close = () => dialog.current?.close();
   const strong = (chunks: ReactNode) => <strong className="font-medium text-text">{chunks}</strong>;
-  const answer = (value: boolean) =>
-    startTransition(async () => {
-      const ok = await voteDiscordPollAction(value).catch(() => false);
-      setVoteError(!ok);
-      if (ok) setVote(value);
-    });
 
   return (
     <dialog
@@ -111,17 +101,20 @@ export function V25AnnouncementModal({ userId, data }: { userId: string; data: V
                 <button
                   key={String(value)}
                   type="button"
-                  aria-pressed={vote === value}
-                  disabled={pending}
-                  onClick={() => answer(value)}
-                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-bg/60 px-4 text-sm font-bold transition-colors hover:bg-surface-2 disabled:opacity-60 aria-pressed:border-ai aria-pressed:bg-ai/20 aria-pressed:text-ai"
+                  aria-pressed={poll.vote === value}
+                  disabled={poll.locked}
+                  onClick={() => poll.answer(value)}
+                  // Réponse définitive : le choix reste affiché, l'autre bouton s'efface
+                  className={`inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-bg/60 px-4 text-sm font-bold transition-colors enabled:hover:bg-surface-2 aria-pressed:border-ai aria-pressed:bg-ai/20 aria-pressed:text-ai ${
+                    poll.pending || (poll.vote !== null && poll.vote !== value) ? "opacity-50" : ""
+                  }`}
                 >
                   {t(value ? "discord.yes" : "discord.no")}
                 </button>
               ))}
             </div>
             <p role="status" className="mt-2 min-h-4 text-xs text-text-muted">
-              {voteError ? t("discord.error") : vote !== null ? t("discord.thanks") : ""}
+              {poll.status === "idle" ? "" : t(`discord.${poll.status}`)}
             </p>
           </section>
 

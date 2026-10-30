@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ user: vi.fn(), updateMany: vi.fn(), upsert: vi.fn(), rateLimit: vi.fn() }));
+const mocks = vi.hoisted(() => ({ user: vi.fn(), updateMany: vi.fn(), createMany: vi.fn(), findVote: vi.fn(), rateLimit: vi.fn() }));
 vi.mock("../user", () => ({ requireActiveUser: mocks.user }));
-vi.mock("../db", () => ({ prisma: { user: { updateMany: mocks.updateMany }, pollVote: { upsert: mocks.upsert } } }));
+vi.mock("../db", () => ({ prisma: { user: { updateMany: mocks.updateMany }, pollVote: { createMany: mocks.createMany, findUnique: mocks.findVote } } }));
 vi.mock("../ratelimit", () => ({ rateLimit: mocks.rateLimit }));
 import { ANNOUNCEMENTS } from "@/lib/welcome/release";
 import { claimAnnouncementAction, voteDiscordPollAction } from "./welcome";
@@ -14,6 +14,7 @@ beforeEach(() => {
   mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: null });
   mocks.rateLimit.mockResolvedValue({ success: true });
   mocks.updateMany.mockResolvedValue({ count: 1 });
+  mocks.createMany.mockResolvedValue({ count: 1 });
 });
 
 describe("annonces uniques par compte", () => {
@@ -108,24 +109,34 @@ describe("annonces uniques par compte", () => {
 describe("sondage Discord de la v2.5", () => {
   it("refuse les visiteurs et les réponses invalides", async () => {
     mocks.user.mockResolvedValue(null);
-    expect(await voteDiscordPollAction(true)).toBe(false);
+    expect(await voteDiscordPollAction(true)).toBeNull();
     mocks.user.mockResolvedValue({ id: "player" });
-    expect(await voteDiscordPollAction("oui")).toBe(false);
-    expect(mocks.upsert).not.toHaveBeenCalled();
+    expect(await voteDiscordPollAction("oui")).toBeNull();
+    expect(mocks.createMany).not.toHaveBeenCalled();
   });
 
-  it("un vote par joueur : une nouvelle réponse remplace l'ancienne", async () => {
-    expect(await voteDiscordPollAction(false)).toBe(true);
-    expect(mocks.upsert).toHaveBeenCalledWith({
+  it("enregistre la première réponse du joueur, sans jamais écraser une ligne existante", async () => {
+    expect(await voteDiscordPollAction(false)).toEqual({ vote: false, already: false });
+    expect(mocks.createMany).toHaveBeenCalledWith({
+      data: [{ userId: "player", poll: "discord-community", answer: false }],
+      skipDuplicates: true,
+    });
+    expect(mocks.findVote).not.toHaveBeenCalled();
+  });
+
+  it("ne laisse pas revoter : renvoie la réponse déjà donnée", async () => {
+    mocks.createMany.mockResolvedValue({ count: 0 });
+    mocks.findVote.mockResolvedValue({ answer: true });
+    expect(await voteDiscordPollAction(false)).toEqual({ vote: true, already: true });
+    expect(mocks.findVote).toHaveBeenCalledWith({
       where: { userId_poll: { userId: "player", poll: "discord-community" } },
-      create: { userId: "player", poll: "discord-community", answer: false },
-      update: { answer: false },
+      select: { answer: true },
     });
   });
 
   it("n'écrit rien lorsque la limite est atteinte", async () => {
     mocks.rateLimit.mockResolvedValue({ success: false });
-    expect(await voteDiscordPollAction(true)).toBe(false);
-    expect(mocks.upsert).not.toHaveBeenCalled();
+    expect(await voteDiscordPollAction(true)).toBeNull();
+    expect(mocks.createMany).not.toHaveBeenCalled();
   });
 });

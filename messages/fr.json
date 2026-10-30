@@ -103,7 +103,8 @@
       },
       "yes": "Oui",
       "no": "Non",
-      "thanks": "Merci pour ta réponse ! Tu peux encore changer d'avis.",
+      "thanks": "Merci pour ta réponse, elle est bien enregistrée !",
+      "already": "Tu as déjà répondu à ce sondage, merci !",
       "error": "Ta réponse n'a pas pu être enregistrée, réessaie dans un instant."
     },
     "incense": {
@@ -180,6 +181,7 @@
     "play": "Reprendre le défilement",
     "until": "Jusqu'au {date}",
     "openBooster": "Ouvrir le booster",
+    "pollTag": "Sondage",
     "tags": {
       "NEW": "Nouveau",
       "NEW_CARDS": "Nouvelles cartes",

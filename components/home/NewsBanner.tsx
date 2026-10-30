@@ -15,6 +15,15 @@ const PATTERN: Record<NewsTone, string> = { kin: "asanoha", shu: "seigaiha", ai:
 const CTA =
   "inline-flex min-h-11 items-center gap-2 rounded-xl bg-shu-btn px-5 text-sm font-bold text-washi-paper shadow-[0_6px_18px_rgb(0_0_0/0.35)] transition-colors hover:bg-shu";
 
+/** Cadre d'une bannière (nouveautés et sondage) : toute la largeur de la piste, visuel au-dessus ou à droite. */
+export const BANNER_FRAME =
+  "news-banner relative isolate flex min-h-[23rem] w-full shrink-0 snap-center flex-col justify-end overflow-hidden rounded-xl md:grid md:min-h-[17.5rem] md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-6";
+export const BANNER_ART = "flex justify-center px-5 pt-5 md:order-last md:pt-0 md:pr-10 md:pl-0";
+export const BANNER_TEXT = "flex min-w-0 flex-col items-start gap-2.5 px-5 pt-4 pb-6 md:py-8 md:pl-10";
+export const BANNER_TAG =
+  "inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/30 px-3 py-1 text-[11px] font-bold tracking-[0.12em] text-white/90 uppercase";
+export const BANNER_TITLE = "font-heading text-2xl leading-tight text-balance [text-shadow:0_2px_12px_rgb(0_0_0/0.45)] sm:text-3xl lg:text-4xl";
+
 /** Éventail de cartes tenu en main, qui s'ouvre quand la bannière devient active. */
 function CardFan({ cards, active, behind = false }: { cards: NewsCardView[]; active: boolean; behind?: boolean }) {
   return (
@@ -56,7 +65,7 @@ function BoosterVisual({ visual, active }: { visual: Extract<NewsVisualView, { k
 }
 
 /** Le sceau de la nouveauté en grand, tamponné sur le motif. */
-function SealVisual({ icon }: { icon: NewsIcon }) {
+export function SealVisual({ icon }: { icon: NewsIcon }) {
   return (
     <span
       aria-hidden="true"
@@ -96,7 +105,7 @@ export function NewsBanner({ item, index, count, active, first }: { item: NewsIt
       data-kind={visual.kind}
       data-active={active || undefined}
       style={style}
-      className={`news-banner wagara-${booster?.theme.pattern ?? PATTERN[item.tone]} relative isolate flex min-h-[23rem] w-full shrink-0 snap-center flex-col justify-end overflow-hidden rounded-xl md:grid md:min-h-[17.5rem] md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-6`}
+      className={`${BANNER_FRAME} wagara-${booster?.theme.pattern ?? PATTERN[item.tone]}`}
     >
       {visual.kind === "image" && (
         <>
@@ -113,10 +122,10 @@ export function NewsBanner({ item, index, count, active, first }: { item: NewsIt
         </>
       )}
       <span aria-hidden="true" className="news-sheen pointer-events-none absolute inset-0 -z-10" />
-      {art && <div className="flex justify-center px-5 pt-5 md:order-last md:pt-0 md:pr-10 md:pl-0">{art}</div>}
-      <div className="flex min-w-0 flex-col items-start gap-2.5 px-5 pt-4 pb-6 md:py-8 md:pl-10">
+      {art && <div className={BANNER_ART}>{art}</div>}
+      <div className={BANNER_TEXT}>
         {item.tag && (
-          <p className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/30 px-3 py-1 text-[11px] font-bold tracking-[0.12em] text-white/90 uppercase">
+          <p className={BANNER_TAG}>
             {item.icon && visual.kind !== "none" && (
               <span aria-hidden="true" lang="ja" className="font-seal text-sm leading-none tracking-normal text-[var(--nb-seal)]">
                 {NEWS_ICONS[item.icon]}
@@ -125,7 +134,7 @@ export function NewsBanner({ item, index, count, active, first }: { item: NewsIt
             {t(`tags.${item.tag}`)}
           </p>
         )}
-        <h3 className="font-heading text-2xl leading-tight text-balance [text-shadow:0_2px_12px_rgb(0_0_0/0.45)] sm:text-3xl lg:text-4xl">{item.title}</h3>
+        <h3 className={BANNER_TITLE}>{item.title}</h3>
         <p className="max-w-prose text-sm leading-relaxed whitespace-pre-line text-white/80">{item.body}</p>
         {until && <p className="rounded-full bg-black/35 px-3 py-1 text-xs font-bold text-[var(--nb-seal)]">{t("until", { date: until })}</p>}
         {link.kind === "internal" && (
