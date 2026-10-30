@@ -48,15 +48,6 @@
 .news-banner[data-kind="booster"] {
   --nb-glow: rgb(255 244 214 / 0.22);
 }
-/* Sondage : indigo de nuit, halo derrière le sceau seulement, le texte sur un fond calme et sombre */
-.news-banner[data-kind="poll"] {
-  --nb-base: #213b63;
-  --nb-dark: #0a0f18;
-  --nb-glow: rgb(127 163 209 / 0.3);
-  --nb-seal: #b7cdea;
-  --wl: rgb(183 205 234 / 0.05);
-}
-
 /* Image : elle couvre la bannière, sous un voile qui garde le texte lisible */
 .news-banner[data-kind="image"] {
   background: #0b0908;

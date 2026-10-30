@@ -181,7 +181,6 @@
     "play": "Resume scrolling",
     "until": "Until {date}",
     "openBooster": "Open the booster",
-    "pollTag": "Poll",
     "tags": {
       "NEW": "New",
       "NEW_CARDS": "New cards",
