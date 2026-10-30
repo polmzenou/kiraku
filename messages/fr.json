@@ -963,6 +963,7 @@
     "revealSlots": "Emplacements du tirage",
     "unrevealedSlot": "Carte {position} sur {total} à découvrir",
     "revealAll": "Tout révéler",
+    "skipToBig": "Passer à la carte {rarity}",
     "toRecap": "Voir le récap",
     "gridHint": "{count} cartes : touche-les une à une, ou révèle tout",
     "recapCounts": "{boosters, plural, one {# booster} other {# boosters}} · {cards, plural, one {# carte} other {# cartes}}",

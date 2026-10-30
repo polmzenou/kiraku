@@ -963,6 +963,7 @@
     "revealSlots": "Card slots",
     "unrevealedSlot": "Card {position} of {total} to discover",
     "revealAll": "Reveal all",
+    "skipToBig": "Skip to the {rarity} card",
     "toRecap": "See the recap",
     "gridHint": "{count} cards: tap them one by one, or reveal them all",
     "recapCounts": "{boosters, plural, one {# booster} other {# boosters}} · {cards, plural, one {# card} other {# cards}}",
