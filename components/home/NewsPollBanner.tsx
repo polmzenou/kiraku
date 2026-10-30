@@ -23,7 +23,7 @@ export function NewsPollBanner({ vote, index, count, active }: { vote: boolean |
       data-tone="ai"
       data-kind="poll"
       data-active={active || undefined}
-      className={`${BANNER_FRAME} wagara-kikko`}
+      className={`${BANNER_FRAME} wagara-shippo`}
     >
       <span aria-hidden="true" className="news-sheen pointer-events-none absolute inset-0 -z-10" />
       <div className={BANNER_ART}>
@@ -34,15 +34,15 @@ export function NewsPollBanner({ vote, index, count, active }: { vote: boolean |
         <h3 id={`${id}-question`} className={BANNER_TITLE}>
           {tPoll("title")}
         </h3>
-        <p className="max-w-prose text-sm leading-relaxed text-white/80">{tPoll("body")}</p>
+        <p className="max-w-prose text-sm leading-relaxed text-white/90">{tPoll("body")}</p>
         <ul className="flex flex-wrap gap-1.5">
           {DISCORD_IDEAS.map((idea) => (
-            <li key={idea} className="rounded-full border border-white/20 bg-black/25 px-2.5 py-0.5 text-[11px] font-medium text-white/85">
+            <li key={idea} className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium text-white">
               {tPoll(`ideas.${idea}`)}
             </li>
           ))}
         </ul>
-        <div role="group" aria-labelledby={`${id}-question`} className="mt-1 grid w-full max-w-sm grid-cols-2 gap-3">
+        <div role="group" aria-labelledby={`${id}-question`} className="mt-2 grid w-full max-w-sm grid-cols-2 gap-3">
           {([true, false] as const).map((value) => (
             <button
               key={String(value)}
@@ -50,16 +50,17 @@ export function NewsPollBanner({ vote, index, count, active }: { vote: boolean |
               aria-pressed={poll.vote === value}
               disabled={poll.locked}
               onClick={() => poll.answer(value)}
-              // Réponse définitive : le choix reste affiché, l'autre bouton s'efface
-              className={`inline-flex min-h-11 items-center justify-center rounded-xl border border-white/25 bg-black/30 px-4 text-sm font-bold text-white shadow-[0_6px_18px_rgb(0_0_0/0.25)] transition-colors enabled:hover:bg-black/45 aria-pressed:border-(--nb-seal) aria-pressed:bg-white/15 aria-pressed:text-(--nb-seal) ${
-                poll.pending || (poll.vote !== null && poll.vote !== value) ? "opacity-50" : ""
+              // Réponse définitive : le choix reste plein, l'autre bouton s'efface
+              className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-white/35 bg-white/10 px-4 text-base font-bold text-white transition-colors enabled:hover:border-white/60 enabled:hover:bg-white/20 aria-pressed:border-(--nb-seal) aria-pressed:bg-(--nb-seal) aria-pressed:text-[#0a0f18] ${
+                poll.pending || (poll.vote !== null && poll.vote !== value) ? "opacity-40" : ""
               }`}
             >
+              {poll.vote === value && <span aria-hidden="true">✓</span>}
               {tPoll(value ? "yes" : "no")}
             </button>
           ))}
         </div>
-        <p role="status" className="min-h-4 text-xs text-white/75">
+        <p role="status" className="min-h-4 text-sm font-medium text-(--nb-seal)">
           {poll.status === "idle" ? "" : tPoll(poll.status)}
         </p>
       </div>

@@ -9,8 +9,9 @@ import { Link } from "@/i18n/navigation";
 import { NEWS_ICONS, type NewsCardView, type NewsIcon, type NewsItemView, type NewsTone, type NewsVisualView } from "@/lib/home/news";
 import "./news.css";
 
-// Motif wagara de chaque couleur ; un booster garde le sien
-const PATTERN: Record<NewsTone, string> = { kin: "asanoha", shu: "seigaiha", ai: "kikko", hisui: "sakura", neutral: "ichimatsu" };
+// Motif wagara de chaque couleur, au trait discret (--wl) ; un booster garde le sien (le kikkō doré de
+// l'Impérial, trop chargé derrière du texte, lui reste réservé)
+const PATTERN: Record<NewsTone, string> = { kin: "asanoha", shu: "seigaiha", ai: "shippo", hisui: "sakura", neutral: "ichimatsu" };
 
 const CTA =
   "inline-flex min-h-11 items-center gap-2 rounded-xl bg-shu-btn px-5 text-sm font-bold text-washi-paper shadow-[0_6px_18px_rgb(0_0_0/0.35)] transition-colors hover:bg-shu";

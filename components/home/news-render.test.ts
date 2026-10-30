@@ -178,13 +178,15 @@ describe("carrousel Nouveautés de l'accueil", () => {
     expect(html).toContain('aria-label="Bannière 1 : Un Discord Kiraku, ça vous intéresse ?" aria-current="true"');
     expect(html).toContain('aria-label="Bannière 2 : Le parrainage évolue"');
     expect(html).toContain(">Sondage</p>");
+    expect(html).toContain("wagara-shippo");
+    expect(html).not.toContain("wagara-kikko");
     expect(html).toMatch(/aria-pressed="false"[^>]*>Oui</);
     expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>(Oui|Non)</);
   });
 
   it("fige le sondage sur la réponse de qui a déjà voté", () => {
     const html = view(NEWS_DEFAULT, "en", false, {}, { vote: false });
-    expect(html).toMatch(/aria-pressed="true" disabled=""[^>]*>No</);
+    expect(html).toMatch(/aria-pressed="true" disabled=""[^>]*><span aria-hidden="true">✓<\/span>No</);
     expect(html).toMatch(/aria-pressed="false" disabled=""[^>]*>Yes</);
     expect(html).toContain("You&#x27;ve already answered this poll, thanks!");
   });
