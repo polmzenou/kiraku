@@ -18,6 +18,7 @@ export type StoragePurpose =
   | "locale"
   | "sound"
   | "discordLater"
+  | "news"
   | "speedInsights";
 
 export type StorageDuration = { unit: "session" | "none" } | { unit: "minutes" | "days"; value: number } | { unit: "persistent" };
@@ -121,6 +122,16 @@ export const STORAGE_REGISTRY: readonly StorageEntry[] = [
     category: "preferences",
     purpose: "discordLater",
     duration: { unit: "persistent" },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
+    // Révision de l'encart Nouveautés que le joueur a réduite (lib/home/news-dom.ts)
+    name: "kiraku-news",
+    kind: "cookie",
+    category: "preferences",
+    purpose: "news",
+    duration: { unit: "days", value: 365 },
     provider: "kiraku",
     exempt: true,
   },

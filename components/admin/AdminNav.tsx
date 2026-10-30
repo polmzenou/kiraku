@@ -20,6 +20,7 @@ const GROUPS = [
   {
     key: "content",
     modules: [
+      { key: "news", href: "/admin/nouveautes" },
       { key: "catalog", href: "/admin/catalogue" },
       { key: "collection", href: "/admin/collection" },
       { key: "boosters", href: "/admin/boosters" },

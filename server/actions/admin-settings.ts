@@ -12,6 +12,8 @@ import {
 import { parseSetting, type SettingKey } from "@/lib/settings/defaults";
 import { COMBAT_SETTING_KEYS, combatSettingsSchema, type CombatSettingKey } from "@/lib/settings/combat-form";
 import { DISCORD_SETTING_KEYS, discordSettingsSchema, type DiscordSettingKey } from "@/lib/settings/discord-form";
+import { nextPublication } from "@/lib/home/news";
+import { NEWS_SETTING_KEYS, newsSettingsSchema, type NewsSettingKey } from "@/lib/settings/news-form";
 import { FEATURE_SETTING_KEYS, featureSettingsSchema, type FeatureSettingKey } from "@/lib/settings/features-form";
 import { GENERAL_SETTING_KEYS, generalSettingsSchema, type GeneralSettingKey } from "@/lib/settings/general-form";
 import { PULL_FEED_SETTING_KEYS, pullFeedSettingsSchema, type PullFeedSettingKey } from "@/lib/settings/pull-feed-form";
@@ -41,6 +43,8 @@ async function saveSettings<K extends SettingKey>(
   keys: readonly K[],
   schema: z.ZodType,
   input: unknown,
+  // Champs que le serveur décide d'après les valeurs en vigueur, lues dans la transaction
+  finalize?: (next: SettingsOf<K>, before: SettingsOf<K>) => SettingsOf<K>,
 ): Promise<UpdateSettingsResult<K>> {
   const admin = await getAdmin();
   if (!admin) return { ok: false, error: "FORBIDDEN" };
@@ -71,10 +75,11 @@ async function saveSettings<K extends SettingKey>(
     });
     const stored = new Map(rows.map((r) => [r.key, r.value]));
     const before = Object.fromEntries(keys.map((k) => [k, parseSetting(k, stored.get(k))])) as SettingsOf<K>;
+    const after = finalize ? (schema.parse(finalize(next, before)) as SettingsOf<K>) : next;
 
-    const changedKeys = changedSettingKeys(keys, before, next);
+    const changedKeys = changedSettingKeys(keys, before, after);
     for (const key of changedKeys) {
-      const value = next[key] as Prisma.InputJsonValue;
+      const value = after[key] as Prisma.InputJsonValue;
       await tx.gameSetting.upsert({
         where: { key },
         create: { key, value, updatedBy: admin.id },
@@ -177,6 +182,16 @@ export async function updateRankedSettings(input: unknown): Promise<UpdateSettin
 
 export async function updateDiscordSettings(input: unknown): Promise<UpdateSettingsResult<DiscordSettingKey>> {
   return saveSettings(DISCORD_SETTING_KEYS, discordSettingsSchema, input);
+}
+
+/**
+ * Encart « Nouveautés » : le contenu vient de l'admin, la révision et la date de publication du serveur.
+ * `reopen` (seulement `true` explicite) passe à la révision suivante et rouvre l'encart chez tous les joueurs.
+ */
+export async function updateNewsSettings(input: unknown, reopen: unknown): Promise<UpdateSettingsResult<NewsSettingKey>> {
+  return saveSettings(NEWS_SETTING_KEYS, newsSettingsSchema, input, (next, before) => ({
+    "home.news": nextPublication(before["home.news"], next["home.news"], reopen === true, new Date()),
+  }));
 }
 
 export async function updateFeatureSettings(input: unknown): Promise<UpdateSettingsResult<FeatureSettingKey>> {

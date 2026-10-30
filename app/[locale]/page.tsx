@@ -3,10 +3,10 @@ import { getRarities } from "@/server/catalog/rarities";
 import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
-import { ArcadeBanner } from "@/components/ArcadeBanner";
 import { AmbassadorPackCard } from "@/components/ambassador/AmbassadorPackCard";
 import { BoosterShowcase } from "@/components/boosters/showcase/BoosterShowcase";
 import type { ShowcaseFamily, ShowcaseItem } from "@/components/boosters/showcase/types";
+import { NewsPanel } from "@/components/home/NewsPanel";
 import { RecentPulls } from "@/components/home/RecentPulls";
 import { ReviewsSection, type ReviewViewer } from "@/components/home/ReviewsSection";
 import { TopCollectors } from "@/components/home/TopCollectors";
@@ -220,7 +220,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
   return (
     <PageShell>
       <JsonLd data={structuredData} />
-      <ArcadeBanner />
+      <NewsPanel />
 
       {ambassadorPack && <AmbassadorPackCard {...ambassadorPack} />}
 
