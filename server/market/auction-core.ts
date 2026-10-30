@@ -56,6 +56,9 @@ export class AuctionError extends Error {
 
 const TX = { maxWait: 10_000, timeout: 20_000 };
 
+const touchDiscordPost = (tx: Tx, auctionId: string, now: Date) =>
+  tx.discordPost.updateMany({ where: { auctionId, attempts: 0 }, data: { nextAttemptAt: now } });
+
 /** Ligne de vente lue sous verrou. */
 type LockedAuction = {
   id: string;
@@ -94,6 +97,8 @@ export type CreateAuctionInput = {
   durationHours: number;
   /** Commentaire du vendeur, déjà nettoyé (texte brut). */
   note?: string | null;
+  /** Destination décidée par le serveur ; absente quand le relais Discord est désactivé. */
+  discordChannelId?: string;
   now: Date;
   rules: MarketRules;
 };
@@ -158,6 +163,9 @@ export async function createAuctionWith(
       },
       select: { id: true },
     });
+    if (input.discordChannelId) {
+      await tx.discordPost.create({ data: { key: `auction:${auction.id}`, auctionId: auction.id, channelId: input.discordChannelId, nextAttemptAt: input.now } });
+    }
     return { auctionId: auction.id, userCardId: copy.id, endsAt };
   }, TX);
 }
@@ -248,6 +256,7 @@ async function bidInTx(tx: Tx, req: BidRequest): Promise<BidOutcome> {
     await tx.auction.update({ where: { id: a.id }, data: { status: "SOLD", settledAt: now, finalPrice: amount, fee: saleFee(amount, a.feeBp) } });
     await deliverSale(tx, { ...a, currentBid: amount, currentBidderId: req.bidderId }, now);
   }
+  await touchDiscordPost(tx, a.id, now);
   return { auctionId: a.id, currentBid: amount, endsAt, coins, sold };
 }
 
@@ -355,6 +364,7 @@ export async function settleAuctionWith(
           : { status: "EXPIRED", settledAt: now },
       });
       if (closed.count !== 1) return { settled: false };
+      await touchDiscordPost(tx, a.id, now);
 
       if (sold) {
         await deliverSale(tx, { ...a, currentBid: a.currentBid!, currentBidderId: a.currentBidderId! }, now);
@@ -426,6 +436,7 @@ export async function cancelAuctionWith(
     }
     const a = await tx.auction.findUniqueOrThrow({ where: { id: input.auctionId }, select: { id: true, sellerId: true, userCardId: true } });
     await returnCard(tx, a);
+    await touchDiscordPost(tx, a.id, input.now);
   }, TX);
 }
 
@@ -446,6 +457,7 @@ export async function adminCancelAuctionWith(
         where: { id: a.id },
         data: { status: "CANCELLED", cancelledAt: input.now, cancelledById: input.adminId },
       });
+      await touchDiscordPost(tx, a.id, input.now);
       const payload = { auctionId: a.id, cardId: a.cardId, amount: a.currentBid };
       if (a.currentBidderId && a.currentBid !== null) {
         await lockPlayers(tx, [a.currentBidderId]);

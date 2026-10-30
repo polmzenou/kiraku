@@ -1,10 +1,12 @@
 import { getTranslations } from "next-intl/server";
 import { DiscordSettingsForm } from "@/components/admin/DiscordSettingsForm";
+import { DiscordCommunityPanel } from "@/components/admin/DiscordCommunityPanel";
 import { SettingLogList } from "@/components/admin/SettingLogList";
 import { DISCORD_SETTING_KEYS, type DiscordSettings } from "@/lib/settings/discord-form";
 import { recentSettingLogs, requireAdmin } from "@/server/admin";
 import { prisma } from "@/server/db";
 import { getSetting } from "@/server/settings";
+import { appUrl, discordRulesConfigured, env } from "@/server/env";
 
 /** Discord : modal « Rejoins notre Discord » (lien, textes, déclencheur, fréquence) et bonus de liaison. */
 export default async function AdminDiscordPage() {
@@ -16,6 +18,10 @@ export default async function AdminDiscordPage() {
     prisma.user.count({ where: { discordJoinedAt: { not: null } } }),
   ]);
   const settings = Object.fromEntries(DISCORD_SETTING_KEYS.map((k, i) => [k, values[i]])) as DiscordSettings;
+  const rulesPost = env.DISCORD_GUILD_ID && env.DISCORD_RULES_CHANNEL_ID
+    ? await prisma.discordPost.findUnique({ where: { key: `rules:${env.DISCORD_GUILD_ID}:${env.DISCORD_RULES_CHANNEL_ID}` }, select: { messageId: true } })
+    : null;
+  const rulesUrl = rulesPost?.messageId ? `https://discord.com/channels/${env.DISCORD_GUILD_ID}/${env.DISCORD_RULES_CHANNEL_ID}/${rulesPost.messageId}` : null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -24,6 +30,7 @@ export default async function AdminDiscordPage() {
         <p className="max-w-prose text-sm text-text-muted">{t("intro")}</p>
         <p className="text-sm font-bold tabular-nums">{t("joinedCount", { count: joined })}</p>
       </div>
+      <DiscordCommunityPanel configured={discordRulesConfigured} endpoint={`${appUrl()}/api/discord/interactions`} rulesUrl={rulesUrl} />
       <DiscordSettingsForm initial={settings} />
       <SettingLogList logs={logs} />
     </div>
