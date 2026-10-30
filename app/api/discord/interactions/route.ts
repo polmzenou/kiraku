@@ -2,10 +2,11 @@ import { after } from "next/server";
 import { z } from "@/lib/zod";
 import { RULES_BUTTON_ID, VERIFY_BUTTON_ID, SELF_ROLE_PREFIX } from "@/lib/discord/community";
 import { env, appUrl, discordRulesConfigured } from "@/server/env";
-import { discordBotRequest, editInteractionReply } from "@/server/discord/api";
+import { DiscordApiError, discordBotRequest, editInteractionReply } from "@/server/discord/api";
 import { discordRequestBody, validDiscordSignature } from "@/server/discord/signature";
 import { linkedRoleConfigured, rolesPanelConfigured, selfRoles } from "@/server/discord/roles-config";
 import { assertCommunityRole } from "@/server/discord/role-permissions";
+import { recordDiscordAlert, resolveDiscordAlert } from "@/server/discord/alert-store";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -91,8 +92,10 @@ export async function POST(request: Request) {
         await discordBotRequest(`/guilds/${env.DISCORD_GUILD_ID}/members/${userId}/roles/${role!.id}`, remove ? "DELETE" : "PUT");
         content = `${remove ? "➖" : "✅"} Rôle ${role!.label} ${remove ? "retiré" : "ajouté"}.`;
       }
-    } catch {
+      await resolveDiscordAlert("interaction-role", `${acceptingRules ? "member" : role?.key ?? "verify"}:${userId}`);
+    } catch (error) {
       console.warn("[discord] attribution du rôle impossible.");
+      await recordDiscordAlert("interaction-role", `${acceptingRules ? "member" : role?.key ?? "verify"}:${userId}`, error instanceof DiscordApiError ? error.status : undefined);
       content = "Je n’ai pas pu modifier ton rôle. Réessaie ; si le problème persiste, contacte l’équipe.";
     }
     await editInteractionReply(input.application_id, token, content).catch(() => console.warn("[discord] confirmation privée non envoyée."));

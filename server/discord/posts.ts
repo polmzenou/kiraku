@@ -4,6 +4,7 @@ import type { DiscordMessageBody } from "@/lib/discord/community";
 import { prisma } from "../db";
 import { env } from "../env";
 import { DiscordApiError, discordBotRequest } from "./api";
+import { recordDiscordAlert, resolveDiscordAlert } from "./alert-store";
 
 export type PublishResult = { ok: true; messageId: string } | { ok: false; error: "BUSY" | "DISCORD" };
 
@@ -74,6 +75,7 @@ export async function publishDiscordPost(key: string, payload: DiscordMessageBod
       where: { key, leaseId },
       data: { messageId, payloadHash, attempts: 0, nextAttemptAt, leaseId: null, leaseUntil: null },
     });
+    if (!key.startsWith("alert:")) await resolveDiscordAlert("publication", key);
     return { ok: true, messageId };
   } catch (e) {
     const delay = Math.max(e instanceof DiscordApiError ? e.retryAfterMs : 0, Math.min(3_600_000, 30_000 * 2 ** Math.min(post.attempts - 1, 7)));
@@ -83,6 +85,7 @@ export async function publishDiscordPost(key: string, payload: DiscordMessageBod
       data: { ...(messageId && { messageId }), nextAttemptAt: new Date(Date.now() + delay), leaseId: null, leaseUntil: null },
     });
     console.warn(`[discord] publication non synchronisée (${e instanceof DiscordApiError ? e.status : "base"}).`);
+    if (!key.startsWith("alert:")) await recordDiscordAlert("publication", key, e instanceof DiscordApiError ? e.status : undefined);
     return { ok: false, error: "DISCORD" };
   }
 }

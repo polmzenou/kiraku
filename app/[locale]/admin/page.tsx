@@ -58,14 +58,6 @@ export default async function AdminHome() {
         { label: t("termsVersion"), value: `v${termsVersion}`, href: "/admin/legal" },
       ],
     },
-    {
-      title: t("discordPoll"),
-      tiles: [
-        { label: t("pollYes"), value: n(d.discordPoll.yes), hint: t("pollShare", { percent: d.discordPoll.yesPercent }) },
-        { label: t("pollNo"), value: n(d.discordPoll.no), hint: t("pollShare", { percent: d.discordPoll.total === 0 ? 0 : 100 - d.discordPoll.yesPercent }) },
-        { label: t("pollTotal"), value: n(d.discordPoll.total) },
-      ],
-    },
   ];
 
   return (

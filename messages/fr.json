@@ -2282,6 +2282,12 @@
       "marketHint": "Publie les nouvelles ventes et les échanges carte contre carte, puis actualise leur statut. Les annonces antérieures à l’activation ne sont pas reprises. Le jeton du bot, le serveur et le salon du marché doivent être configurés.",
       "community": {
         "rolesTitle": "Rôles et compte lié",
+        "alertsTitle": "Alertes techniques privées",
+        "alertsIntro": "Les échecs de publication, d’attribution de rôles et de bilan de saison sont regroupés par incident. Le cron actualise chaque alerte au maximum toutes les 15 minutes, sans mention générale.",
+        "alertsMissing": "Renseigne DISCORD_ALERTS_CHANNEL_ID avec l’identifiant d’un salon privé de l’équipe et donne au bot le droit d’y publier.",
+        "alertsTest": "Tester le salon des alertes",
+        "alertsSuccess": "Le message de test a été publié dans le salon privé.",
+        "alertsOpen": "Voir le message de test sur Discord",
         "rolesIntro": "Publie les boutons Marchand, Collectionneur et Fighter. Les rôles sont ajoutés ou retirés à la demande des membres. Marchand active les notifications, sans fermer l’accès au marché.",
         "rolesMissing": "Renseigne le salon des rôles et les identifiants des rôles dans l’environnement de Kiraku.",
         "publishRoles": "Publier ou actualiser le choix des rôles",
@@ -2438,12 +2444,7 @@
       "attention": "À surveiller",
       "pendingDeletions": "Suppressions en attente",
       "banned": "Comptes bannis",
-      "termsVersion": "CGU exigées",
-      "discordPoll": "Sondage Discord (annonce v2.5)",
-      "pollYes": "Oui",
-      "pollNo": "Non",
-      "pollTotal": "Réponses",
-      "pollShare": "{percent} % des réponses"
+      "termsVersion": "CGU exigées"
     },
     "journal": {
       "title": "Journal des actions admin",

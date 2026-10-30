@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ admin: vi.fn(), rateLimit: vi.fn(), request: vi.fn(), upsert: vi.fn(), publish: vi.fn(), log: vi.fn(), configured: true }));
+const mocks = vi.hoisted(() => ({ admin: vi.fn(), rateLimit: vi.fn(), request: vi.fn(), upsert: vi.fn(), publish: vi.fn(), log: vi.fn(), privateChannel: vi.fn(), configured: true }));
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ refresh: vi.fn() }));
 vi.mock("../admin", () => ({ getAdmin: mocks.admin }));
@@ -9,13 +9,14 @@ vi.mock("../db", () => ({ prisma: { discordPost: { upsert: mocks.upsert } } }));
 vi.mock("../ratelimit", () => ({ rateLimit: mocks.rateLimit }));
 vi.mock("../discord/api", () => ({ discordBotRequest: mocks.request }));
 vi.mock("../discord/posts", () => ({ publishDiscordPost: mocks.publish }));
+vi.mock("../discord/private-channel", () => ({ assertPrivateDiscordChannel: mocks.privateChannel }));
 vi.mock("../env", () => ({
   get discordRulesConfigured() { return mocks.configured; },
   env: { DISCORD_GUILD_ID: "1565773684243697905", DISCORD_RULES_CHANNEL_ID: "1565778336947634266", DISCORD_ROLES_CHANNEL_ID: "1565778506120433664",
     DISCORD_BOT_TOKEN: "private-token", AUTH_DISCORD_ID: "123456789012345678", DISCORD_PUBLIC_KEY: "a".repeat(64), DISCORD_MEMBER_ROLE_ID: "1565774539886039142",
-    DISCORD_MERCHANT_ROLE_ID: "1565817691132928121", DISCORD_COLLECTOR_ROLE_ID: "1565818296002154506", DISCORD_FIGHTER_ROLE_ID: "1565818436355887214" },
+    DISCORD_MERCHANT_ROLE_ID: "1565817691132928121", DISCORD_COLLECTOR_ROLE_ID: "1565818296002154506", DISCORD_FIGHTER_ROLE_ID: "1565818436355887214", DISCORD_ALERTS_CHANNEL_ID: "1565779152106291380" },
 }));
-import { publishDiscordRolesAction, publishDiscordRulesAction } from "./discord-community";
+import { publishDiscordRolesAction, publishDiscordRulesAction, testDiscordAlertsAction } from "./discord-community";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -24,6 +25,28 @@ beforeEach(() => {
   mocks.rateLimit.mockResolvedValue({ success: true });
   mocks.request.mockResolvedValue({ guild_id: "1565773684243697905", type: 0 });
   mocks.publish.mockResolvedValue({ ok: true, messageId: "123456789012345678" });
+  mocks.privateChannel.mockResolvedValue(undefined);
+});
+
+describe("test des alertes privées depuis l'administration", () => {
+  it("refuse les non-administrateurs avant tout accès au salon", async () => {
+    mocks.admin.mockResolvedValue(null);
+    expect(await testDiscordAlertsAction()).toEqual({ ok: false, error: "FORBIDDEN" });
+    expect(mocks.privateChannel).not.toHaveBeenCalled();
+    expect(mocks.upsert).not.toHaveBeenCalled();
+  });
+  it("refuse de publier si le salon n'est pas privé", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    mocks.privateChannel.mockRejectedValueOnce(new Error("Salon public"));
+    expect(await testDiscordAlertsAction()).toEqual({ ok: false, error: "DISCORD" });
+    expect(mocks.publish).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+  it("publie un test explicite sans mention générale, sous une clé non récursive", async () => {
+    expect((await testDiscordAlertsAction()).ok).toBe(true);
+    expect(mocks.publish).toHaveBeenCalledWith(expect.stringMatching(/^alert:test:/), expect.objectContaining({ allowed_mentions: { parse: [] } }), null, true);
+    expect(mocks.log.mock.calls[0][1].action).toBe("DISCORD_ALERT_TEST");
+  });
 });
 
 describe("publication du panneau de rôles", () => {

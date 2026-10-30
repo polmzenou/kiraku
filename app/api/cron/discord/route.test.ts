@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ auth: vi.fn(), market: vi.fn(), seasons: vi.fn(), roles: vi.fn() }));
+const mocks = vi.hoisted(() => ({ auth: vi.fn(), market: vi.fn(), seasons: vi.fn(), roles: vi.fn(), alerts: vi.fn(), record: vi.fn(), resolve: vi.fn(), jobs: [] as Array<() => Promise<void>> }));
+vi.mock("@/server/discord/alert-store", () => ({ recordDiscordAlert: mocks.record, resolveDiscordAlert: mocks.resolve }));
+vi.mock("@/server/discord/alerts", () => ({ syncDiscordAlerts: mocks.alerts }));
+vi.mock("next/server", () => ({ after: (job: () => Promise<void>) => mocks.jobs.push(job) }));
 vi.mock("@/server/cron-auth", () => ({ cronAuthorized: mocks.auth }));
 vi.mock("@/server/discord/market", () => ({ syncDiscordMarket: mocks.market }));
 vi.mock("@/server/discord/seasons", () => ({ syncDiscordSeasons: mocks.seasons }));
@@ -9,6 +12,7 @@ import { GET } from "./route";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.jobs.length = 0;
   mocks.auth.mockReturnValue(true);
   mocks.market.mockResolvedValue({ synced: 2, failed: 0 });
   mocks.seasons.mockResolvedValue({ published: 1, failed: 0 });
@@ -27,6 +31,10 @@ describe("cron Discord commun", () => {
   it("traite les trois fonctions avec la ligne cron existante", async () => {
     expect(await (await GET(request())).json()).toEqual({ synced: 2, failed: 0, linkedRoles: { synced: 3, deferred: 0 }, ranked: { published: 1, failed: 0 } });
     expect(mocks.market.mock.calls[0][0]).toBe(mocks.seasons.mock.calls[0][0]);
+    expect(mocks.alerts).not.toHaveBeenCalled();
+    expect(mocks.jobs).toHaveLength(1);
+    await mocks.jobs[0]();
+    expect(mocks.alerts).toHaveBeenCalledOnce();
   });
   it("continue le marché si les nouvelles fonctions échouent", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -35,6 +43,8 @@ describe("cron Discord commun", () => {
     const response = await GET(request());
     expect(await response.json()).toMatchObject({ synced: 2, failed: 0, linkedRoles: { deferred: 1 }, ranked: { failed: 1 } });
     expect(mocks.market).toHaveBeenCalledOnce();
+    expect(mocks.record).toHaveBeenCalledWith("cron", "ranked");
+    expect(mocks.record).toHaveBeenCalledWith("cron", "linked-roles");
     expect(JSON.stringify(warn.mock.calls)).not.toContain("private");
     warn.mockRestore();
   });

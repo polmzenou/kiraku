@@ -414,8 +414,9 @@ function lookupsOf(items: readonly NewsItem[]) {
 
 /**
  * Encart « Nouveautés » de l'accueil : interrupteur, titre et intro, jusqu'à six nouveautés avec leur
- * visuel (cartes, booster, image), aperçu en direct du carrousel. La révision et la date de
- * publication sont posées par le serveur (« rouvrir chez tous »).
+ * visuel (cartes, booster, image), aperçu en direct du carrousel (à droite de la configuration sur
+ * grand écran, collé en haut pendant le défilement). La révision et la date de publication sont posées
+ * par le serveur (« rouvrir chez tous »).
  */
 export function NewsSettingsForm({ initial, boosters, initialVisuals }: { initial: NewsSettings; boosters: NewsBoosterOption[]; initialVisuals: NewsVisuals }) {
   const t = useTranslations("admin.news");
@@ -471,36 +472,39 @@ export function NewsSettingsForm({ initial, boosters, initialVisuals }: { initia
   };
 
   return (
-    <form className="flex max-w-3xl flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
-      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
-        <legend className="px-1 font-title text-lg font-bold">{t("panelSection")}</legend>
-        <Toggle label={t("enabled")} checked={news.enabled} onChange={(enabled) => set({ enabled })} />
-        <Bilingual label={(l) => t(`title_${l}`)} value={news.title} max={80} invalid={!news.title.fr.trim()} onChange={(title) => set({ title })} />
-        <Bilingual label={(l) => t(`intro_${l}`)} value={news.intro} max={240} rows={2} onChange={(intro) => set({ intro })} />
-      </fieldset>
+    <form className="flex max-w-3xl flex-col gap-6 xl:grid xl:max-w-none xl:grid-cols-2 xl:items-start" onSubmit={(e) => e.preventDefault()}>
+      <div className="flex min-w-0 flex-col gap-6 xl:col-start-1 xl:row-start-1">
+        <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
+          <legend className="px-1 font-title text-lg font-bold">{t("panelSection")}</legend>
+          <Toggle label={t("enabled")} checked={news.enabled} onChange={(enabled) => set({ enabled })} />
+          <Bilingual label={(l) => t(`title_${l}`)} value={news.title} max={80} invalid={!news.title.fr.trim()} onChange={(title) => set({ title })} />
+          <Bilingual label={(l) => t(`intro_${l}`)} value={news.intro} max={240} rows={2} onChange={(intro) => set({ intro })} />
+        </fieldset>
 
-      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
-        <legend className="px-1 font-title text-lg font-bold">{t("itemsSection", { count: news.items.length, max: NEWS_MAX_ITEMS })}</legend>
-        {news.items.map((item, i) => (
-          <ItemEditor
-            key={item.id}
-            item={item}
-            index={i}
-            count={news.items.length}
-            boosters={boosters}
-            known={known}
-            remember={remember}
-            onChange={(next) => setItems(news.items.map((it, j) => (j === i ? next : it)))}
-            onMove={(delta) => move(i, delta)}
-            onRemove={() => setItems(news.items.filter((_, j) => j !== i))}
-          />
-        ))}
-        <Button type="button" className="self-start" disabled={news.items.length >= NEWS_MAX_ITEMS} onClick={() => setItems([...news.items, newItem()])}>
-          {t("add")}
-        </Button>
-      </fieldset>
+        <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
+          <legend className="px-1 font-title text-lg font-bold">{t("itemsSection", { count: news.items.length, max: NEWS_MAX_ITEMS })}</legend>
+          {news.items.map((item, i) => (
+            <ItemEditor
+              key={item.id}
+              item={item}
+              index={i}
+              count={news.items.length}
+              boosters={boosters}
+              known={known}
+              remember={remember}
+              onChange={(next) => setItems(news.items.map((it, j) => (j === i ? next : it)))}
+              onMove={(delta) => move(i, delta)}
+              onRemove={() => setItems(news.items.filter((_, j) => j !== i))}
+            />
+          ))}
+          <Button type="button" className="self-start" disabled={news.items.length >= NEWS_MAX_ITEMS} onClick={() => setItems([...news.items, newItem()])}>
+            {t("add")}
+          </Button>
+        </fieldset>
+      </div>
 
-      <fieldset className="flex min-w-0 flex-col gap-3 lacquer rounded-card p-4">
+      {/* Grand écran : à droite de la configuration, collé sous l'en-tête, sans avoir à descendre */}
+      <fieldset className="flex min-w-0 flex-col gap-3 lacquer rounded-card p-4 xl:sticky xl:top-24 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:max-h-[calc(100dvh-7rem)] xl:overflow-y-auto xl:overscroll-contain">
         <legend className="px-1 font-title text-lg font-bold">{t("previewSection")}</legend>
         <div role="group" aria-label={t("previewLang")} className="flex gap-2">
           {(["fr", "en"] as const).map((lang) => (
@@ -522,15 +526,17 @@ export function NewsSettingsForm({ initial, boosters, initialVisuals }: { initia
         )}
       </fieldset>
 
-      <div className="flex flex-col gap-1">
-        <Toggle label={t("reopen")} checked={reopen} onChange={setReopen} />
-        <p className="text-xs text-text-muted">{t("reopenHint")}</p>
+      <div className="flex min-w-0 flex-col gap-6 xl:col-start-1 xl:row-start-2">
+        <div className="flex flex-col gap-1">
+          <Toggle label={t("reopen")} checked={reopen} onChange={setReopen} />
+          <p className="text-xs text-text-muted">{t("reopenHint")}</p>
+        </div>
+        <SettingsSaveBar
+          valid={valid}
+          changedLabels={changed.map(() => t(reopen ? "changeReopen" : "changeQuiet"))}
+          save={() => updateNewsSettings(draft, reopen)}
+        />
       </div>
-      <SettingsSaveBar
-        valid={valid}
-        changedLabels={changed.map(() => t(reopen ? "changeReopen" : "changeQuiet"))}
-        save={() => updateNewsSettings(draft, reopen)}
-      />
     </form>
   );
 }
