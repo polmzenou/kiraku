@@ -132,6 +132,17 @@ describe.skipIf(!url)("sachets scellés atomiques (base réelle)", () => {
     expect(user.apocalypseKarma).toBeGreaterThanOrEqual(0);
   }, 60_000);
 
+  it("un sachet Divin ou Apocalyptique ne touche jamais la pitié Mythique partagée", async () => {
+    const a = await player();
+    await prisma.user.update({ where: { id: a }, data: { pityCount: 123 } });
+    for (const [kind, seed] of [["divin", 11], ["apocalypse", 12]] as const) {
+      const id = await drop(a);
+      await openSealedWith(prisma, { userId: a, dropId: id, kind, type, rules, tables, pool, rng: seededRng(seed) });
+    }
+    // Le Divin garantit une Mythique : elle ne remet pas le compteur à zéro
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: a }, select: { pityCount: true } })).pityCount).toBe(123);
+  }, 60_000);
+
   it("cadeau et ouverture simultanés : une seule des deux opérations aboutit", async () => {
     const [a, b] = [await player(), await player()];
     await befriend(a, b);

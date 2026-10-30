@@ -151,10 +151,14 @@ export type DrawState = {
   featuredCount?: number;
 };
 
-/** Bonus applicables au type ouvert (tous actifs pour le booster standard). `drop` : sachets scellés. */
-export type DrawBonuses = { golden: boolean; drop: boolean; pity: boolean };
+/**
+ * Bonus applicables au type ouvert (tous actifs pour le booster standard). `drop` : sachets scellés.
+ * `pityReset` : une Mythique tirée remet la pitié à zéro ; à false (Impérial), le type fait avancer la
+ * pitié mais seule la Mythique garantie la remet à zéro.
+ */
+export type DrawBonuses = { golden: boolean; drop: boolean; pity: boolean; pityReset?: boolean };
 
-export const ALL_BONUSES: DrawBonuses = { golden: true, drop: true, pity: true };
+export const ALL_BONUSES: DrawBonuses = { golden: true, drop: true, pity: true, pityReset: true };
 
 /** Cartes vedettes d'une bannière. */
 export type FeaturedDraw = {
@@ -249,7 +253,10 @@ export function drawBoosters(
       featuredCount = cards.some((c) => c.featured) ? 0 : sinceFeatured;
     }
 
-    if (bonuses.pity) pityCount = cards.some((c) => qualifies(c.rarity)) ? 0 : pity;
+    // Une Mythique remet la pitié à zéro ; dans un type qui ne la remet pas (Impérial), seulement la
+    // Mythique garantie : celles qui tombent d'elles-mêmes laissent le compteur avancer
+    const resets = bonuses.pityReset === false ? pityTriggered : true;
+    if (bonuses.pity) pityCount = resets && cards.some((c) => qualifies(c.rarity)) ? 0 : pity;
     boosters.push({
       cards,
       golden,

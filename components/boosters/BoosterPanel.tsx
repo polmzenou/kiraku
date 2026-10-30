@@ -94,6 +94,7 @@ export function BoosterPanel({ type, panel, ctx, state, wishlist = null, withOpe
         {panel.featured && panel.featured.left > 0 && stat(format.number(panel.featured.left), t(panel.featured.focus ? "focusLeft" : "featuredLeft"), "text-kin")}
         {stat(format.number(panel.poolSize), t("possible"))}
       </dl>
+      {panel.pityKept && <p className="text-xs text-text-muted">{t("pityKept")}</p>}
 
       {wishlist && (
         <div className="flex flex-col gap-2">

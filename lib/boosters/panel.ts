@@ -15,6 +15,8 @@ export type BoosterPanelData = {
   poolSize: number;
   /** Mythique garantie dans N boosters, null si le type ne compte pas pour la pitié. */
   pityLeft: number | null;
+  /** Le type fait avancer la pitié sans que ses Mythiques la remettent à zéro (Impérial). */
+  pityKept: boolean;
   /** Prochain doré dans N boosters, null si le type n'y a pas droit. */
   goldenIn: number | null;
   /**
@@ -48,6 +50,7 @@ export function boosterPanelData(input: {
     odds: atLeastOdds(rules.rates, slotFloors, counts),
     poolSize: RARITIES.reduce((s, r) => s + counts[r], 0),
     pityLeft: type.countsForPity ? boostersUntilPity(user.pityCount, rules.pityThreshold) : null,
+    pityKept: type.countsForPity && !type.resetsPity,
     goldenIn: type.bonusEligible ? boostersUntilGolden(user.standardCount, rules.goldenEvery) : null,
     featured:
       featuredTotal > 0 && input.featuredCounts

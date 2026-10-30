@@ -43,7 +43,7 @@ export class OpenError extends Error {
 /** Ce que l'ouverture doit savoir du type (validé en amont). */
 export type OpenType = Pick<
   BoosterTypeView,
-  "id" | "slug" | "kind" | "usesFreeStock" | "priceZeni" | "countsForPity" | "bonusEligible"
+  "id" | "slug" | "kind" | "usesFreeStock" | "priceZeni" | "countsForPity" | "resetsPity" | "bonusEligible"
 >;
 
 export type OpenInput = {
