@@ -7,11 +7,24 @@ import type { Rng } from "./rng";
 
 export type RarityRates = SettingValue<"booster.rates">;
 
+/** Poids des cartes : la table du catalogue (1 par défaut, 0 = exclue), ou une fonction (doublons). */
+export type CardWeights = Readonly<Record<string, number>> | ((cardId: string) => number);
+const weightOf = (weights: CardWeights, id: string) => (typeof weights === "function" ? weights(id) : (weights[id] ?? 1));
+
+/**
+ * Doublons des grandes raretés : une carte d'une rareté protégée déjà possédée n'a plus qu'une chance
+ * sur `divisor` de ses chances normales, et plus aucune à partir de `blockAt` exemplaires (0 = jamais).
+ */
+export type DuplicateGuard = { rarities: readonly Rarity[]; divisor: number; blockAt: number };
+/** Exemplaires déjà possédés par le joueur, par carte (seules les raretés protégées comptent). */
+export type OwnedCopies = ReadonlyMap<string, number>;
+
 export type DrawRules = {
   rates: RarityRates;
   /** Explicit order, captured with the rules; never a mutable global registry. */
   rarities?: readonly Rarity[];
   cardWeights?: Readonly<Record<string, number>>;
+  duplicateGuard?: DuplicateGuard;
   slotFloors: readonly Rarity[];
   pityThreshold: number;
   goldenEvery: number;
@@ -121,24 +134,67 @@ export function floorsFor(
 }
 
 /** Une carte de la rareté voulue ; un palier vide descend au palier inférieur, puis remonte s'il le faut. */
-export function weightedPick(rng: Rng, ids: readonly string[], weights: Readonly<Record<string, number>> = {}): string | null {
-  const total = ids.reduce((sum, id) => sum + (weights[id] ?? 1), 0);
+export function weightedPick(rng: Rng, ids: readonly string[], weights: CardWeights = {}): string | null {
+  const total = ids.reduce((sum, id) => sum + weightOf(weights, id), 0);
   if (total <= 0) return null;
   let n = rng(total);
-  for (const id of ids) { n -= weights[id] ?? 1; if (n < 0) return id; }
+  for (const id of ids) { n -= weightOf(weights, id); if (n < 0) return id; }
   return null;
 }
 /** Rareté réellement servie quand on tire `rarity` : même repli que pickCard (descend, puis remonte). */
-export function resolvePoolRarity(pool: CardPool, rarity: Rarity, weights: Readonly<Record<string, number>> = {}, rarities: readonly Rarity[] = Object.keys(pool)): Rarity {
+export function resolvePoolRarity(pool: CardPool, rarity: Rarity, weights: CardWeights = {}, rarities: readonly Rarity[] = Object.keys(pool)): Rarity {
   const i = Math.max(0, rarities.indexOf(rarity));
   const order = [...rarities.slice(0, i + 1).reverse(), ...rarities.slice(i + 1)];
-  return order.find((r) => (pool[r] ?? []).some((id) => (weights[id] ?? 1) > 0)) ?? rarity;
+  return order.find((r) => (pool[r] ?? []).some((id) => weightOf(weights, id) > 0)) ?? rarity;
 }
-export function pickCard(rng: Rng, pool: CardPool, rarity: Rarity, weights: Readonly<Record<string, number>> = {}, rarities: readonly Rarity[] = Object.keys(pool)): DrawnCard {
+
+/** Exemplaires suivis pendant un tirage : chaque carte tirée compte tout de suite (plusieurs boosters, lots). */
+export type GuardState = {
+  /** Poids de la carte, 0 quand elle est bloquée. */
+  weight: (cardId: string) => number;
+  /** Carte protégée déjà possédée (et pas encore bloquée). */
+  owned: (cardId: string) => boolean;
+  /** Une carte déjà possédée est gardée : une chance sur `divisor`. */
+  accept: (rng: Rng) => boolean;
+  take: (cardId: string) => void;
+  /** Carte remplacée avant d'être donnée (pitié, pitié vedette). */
+  release: (cardId: string) => void;
+};
+
+/** Suivi des doublons d'un tirage ; null quand aucune rareté protégée n'a de carte dans le pool. */
+export function guardState(guard: DuplicateGuard | undefined, owned: OwnedCopies | undefined, pool: CardPool, weights: CardWeights = {}): GuardState | null {
+  if (!guard || guard.rarities.length === 0) return null;
+  const guarded = new Set(guard.rarities.flatMap((r) => pool[r] ?? []));
+  if (guarded.size === 0) return null;
+  const copies = new Map(owned ?? []);
+  const count = (id: string) => (guarded.has(id) ? (copies.get(id) ?? 0) : 0);
+  const blocked = (id: string) => guard.blockAt > 0 && count(id) >= guard.blockAt;
+  return {
+    weight: (id) => (blocked(id) ? 0 : weightOf(weights, id)),
+    owned: (id) => count(id) > 0 && !blocked(id),
+    accept: (rng) => guard.divisor <= 1 || rng(guard.divisor) === 0,
+    take: (id) => void (guarded.has(id) && copies.set(id, count(id) + 1)),
+    release: (id) => void (guarded.has(id) && copies.set(id, Math.max(0, count(id) - 1))),
+  };
+}
+
+/**
+ * Une carte parmi `ids` en deux temps : une carte déjà possédée n'est gardée qu'avec une chance sur N,
+ * sinon une carte jamais possédée du même lot. Ses chances valent donc toujours ses chances normales
+ * divisées par N, même quand tout le lot est déjà possédé (null : rien à donner dans ce lot).
+ */
+function pickFresh(rng: Rng, ids: readonly string[], weights: CardWeights, guard: GuardState | null): string | null {
+  const id = weightedPick(rng, ids, weights);
+  if (!id || !guard?.owned(id) || guard.accept(rng)) return id;
+  return weightedPick(rng, ids, (x) => (guard.owned(x) ? 0 : weightOf(weights, x)));
+}
+
+/** Carte de la rareté voulue (doublons compris avec `guard`) : sinon la rareté du dessous, puis celle du dessus. */
+export function pickCard(rng: Rng, pool: CardPool, rarity: Rarity, weights: CardWeights = {}, rarities: readonly Rarity[] = Object.keys(pool), guard: GuardState | null = null): DrawnCard {
   const i = Math.max(0, rarities.indexOf(rarity));
   const order = [...rarities.slice(0, i + 1).reverse(), ...rarities.slice(i + 1)];
   for (const r of order) {
-    const cardId = weightedPick(rng, pool[r] ?? [], weights);
+    const cardId = pickFresh(rng, pool[r] ?? [], guard?.weight ?? weights, guard);
     if (cardId) return { cardId, rarity: r };
   }
   throw new Error("EMPTY_POOL");
@@ -178,7 +234,9 @@ function allFeatured(featured: FeaturedDraw): { cardId: string; rarity: Rarity }
  * avancer aucun compteur), puis pitié (au pityThreshold-ième booster sans Mythique, la dernière carte
  * devient Mythique ; le compteur repart à 0 à chaque Mythique). Bannière : une vedette remplace le tirage d'une rareté avec la probabilité
  * `featured.rate`, et la pitié vedette force une vedette sur l'avant-dernière carte si la pitié
- * Mythique a déjà pris la dernière.
+ * Mythique a déjà pris la dernière. Doublons (`rules.duplicateGuard`, `owned`) : chaque carte tirée
+ * compte tout de suite, vedettes et pitiés comprises ; une carte bloquée ne sort plus, et une rareté
+ * entièrement bloquée retombe sur la rareté du dessous.
  */
 export function drawBoosters(
   rng: Rng,
@@ -190,12 +248,16 @@ export function drawBoosters(
     tables?: RarityTables;
     bonuses?: DrawBonuses;
     featured?: FeaturedDraw;
+    owned?: OwnedCopies;
   },
 ): { boosters: DrawnBooster[]; state: Required<DrawState> } {
   const { pool, rules, count } = input;
   const bonuses = input.bonuses ?? ALL_BONUSES;
   const order = rules.rarities ?? Object.keys(rules.rates);
   const weights = rules.cardWeights ?? {};
+  const guard = guardState(rules.duplicateGuard, input.owned, pool, weights);
+  // Poids en vigueur : ceux du catalogue, à 0 pour une carte bloquée
+  const w: CardWeights = guard?.weight ?? weights;
   const qualifies = (r: Rarity) => rarityIndex(r, order) >= rarityIndex("MYTHIC", order);
   const featured = input.featured ? { ...input.featured, byRarity: Object.fromEntries(Object.entries(input.featured.byRarity).map(([r, ids]) => [r, ids.filter((id) => (weights[id] ?? 1) > 0)])) } : undefined;
   const featuredAll = featured ? allFeatured(featured) : [];
@@ -208,13 +270,26 @@ export function drawBoosters(
   const drawSlot = (floor: Rarity): DrawnCard => {
     // La part vedette s'applique à la rareté servie : un tirage Gold sans carte Gold retombe sur
     // Mythique et garde la chance de tomber sur la Mythique vedette.
-    const rarity = resolvePoolRarity(pool, rollRarity(rng, tables, floor), weights, order);
+    const rarity = resolvePoolRarity(pool, rollRarity(rng, tables, floor), w, order);
     const candidates = featured?.byRarity[rarity] ?? [];
     if (candidates.length > 0 && rng(10_000) < featured!.rate) {
-      return { cardId: weightedPick(rng, candidates, weights)!, rarity, featured: true };
+      // Vedette déjà possédée et refusée, ou toutes bloquées : le tirage ordinaire de la rareté reprend
+      const cardId = pickFresh(rng, candidates, w, guard);
+      if (cardId) return { cardId, rarity, featured: true };
     }
-    const card = pickCard(rng, pool, rarity, weights, order);
+    const card = pickCard(rng, pool, rarity, w, order, guard);
     return featuredIds.has(card.cardId) ? { ...card, featured: true } : card;
+  };
+  // Chaque carte tirée compte tout de suite pour les emplacements et les boosters suivants
+  const drawCounted = (floor: Rarity): DrawnCard => {
+    const card = drawSlot(floor);
+    guard?.take(card.cardId);
+    return card;
+  };
+  const replace = (cards: DrawnCard[], slot: number, card: DrawnCard) => {
+    guard?.release(cards[slot].cardId);
+    guard?.take(card.cardId);
+    cards[slot] = card;
   };
 
   for (let b = 0; b < count; b++) {
@@ -228,12 +303,13 @@ export function drawBoosters(
     if (bonuses.golden) standardCount += 1;
 
     const floors = floorsFor(rules.slotFloors, { golden, divine: false, goldenFloor: rules.goldenFloor, rarities: order });
-    const cards = floors.map(drawSlot);
+    const cards = floors.map(drawCounted);
 
     const pity = pityCount + 1;
     let pityTriggered = false;
     if (bonuses.pity && pity >= rules.pityThreshold && !cards.some((c) => qualifies(c.rarity))) {
-      cards[cards.length - 1] = pickCard(rng, pool, "MYTHIC", weights, order);
+      // Toutes les Mythiques bloquées : la pitié retombe en Légendaire, et son compteur continue
+      replace(cards, cards.length - 1, pickCard(rng, pool, "MYTHIC", w, order, guard));
       pityTriggered = true;
     }
 
@@ -241,10 +317,13 @@ export function drawBoosters(
     if (featured && featuredAll.length > 0) {
       const sinceFeatured = featuredCount + 1;
       if (featured.pityThreshold > 0 && sinceFeatured >= featured.pityThreshold && !cards.some((c) => c.featured)) {
-        const slot = pityTriggered ? Math.max(0, cards.length - 2) : cards.length - 1;
-        const chosen = weightedPick(rng, featuredAll.map((c) => c.cardId), weights)!;
-        cards[slot] = { ...featuredAll.find((c) => c.cardId === chosen)!, featured: true };
-        featuredPityTriggered = true;
+        // Jamais une vedette déjà possédée, sauf la même chance sur N : la pitié vedette attend alors
+        const chosen = pickFresh(rng, featuredAll.map((c) => c.cardId), w, guard);
+        if (chosen) {
+          const slot = pityTriggered ? Math.max(0, cards.length - 2) : cards.length - 1;
+          replace(cards, slot, { ...featuredAll.find((c) => c.cardId === chosen)!, featured: true });
+          featuredPityTriggered = true;
+        }
       }
       featuredCount = cards.some((c) => c.featured) ? 0 : sinceFeatured;
     }
@@ -287,17 +366,24 @@ export type RuinRules = { floors: readonly Rarity[]; ceiling: Rarity };
  * Ouvre un sachet scellé. Divin : planchers de l'ancien booster divin (tout Épique ou mieux, dernière
  * carte Mythique ou mieux). Apocalyptique : épargné avec la probabilité apocalypseWinRate, ou
  * forcément quand le karma atteint apocalypseKarma (contenu d'un Divin, karma remis à 0) ; sinon
- * ruiné (planchers et plafond de ruine, karma + 1). Ni pitié, ni doré, ni vedette.
+ * ruiné (planchers et plafond de ruine, karma + 1). Ni pitié, ni doré, ni vedette. Doublons des
+ * grandes raretés comme pour un booster (`owned`).
  */
 export function drawSealed(
   rng: Rng,
-  input: { kind: SealedKind; pool: CardPool; rules: DrawRules; ruin: RuinRules; karma: number; tables?: RarityTables },
+  input: { kind: SealedKind; pool: CardPool; rules: DrawRules; ruin: RuinRules; karma: number; tables?: RarityTables; owned?: OwnedCopies },
 ): { cards: DrawnCard[]; outcome: ApocalypseOutcome | null; karma: number } {
   const { pool, rules, ruin } = input;
   const order = rules.rarities ?? Object.keys(rules.rates);
   const weights = rules.cardWeights ?? {};
+  const guard = guardState(rules.duplicateGuard, input.owned, pool, weights);
+  const w: CardWeights = guard?.weight ?? weights;
   const draw = (source: CardPool, floors: readonly Rarity[], tables: RarityTables) =>
-    floors.map((floor) => pickCard(rng, source, resolvePoolRarity(source, rollRarity(rng, tables, floor), weights, order), weights, order));
+    floors.map((floor) => {
+      const card = pickCard(rng, source, resolvePoolRarity(source, rollRarity(rng, tables, floor), w, order), w, order, guard);
+      guard?.take(card.cardId);
+      return card;
+    });
   const divine = () =>
     draw(pool, floorsFor(rules.slotFloors, { golden: false, divine: true, goldenFloor: rules.goldenFloor, rarities: order }), input.tables ?? buildRarityTables(rules.rates));
 

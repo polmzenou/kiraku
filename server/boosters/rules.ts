@@ -24,7 +24,7 @@ export const getBoosterRules = cache(async (): Promise<BoosterRules> => {
   const cardWeights = await loadWeights(await getCatalogVersion());
   const [
     rates, slotFloors, pityThreshold, goldenEvery, goldenFloor, divineOdds, apocalypseOdds, apocalypseWinRate,
-    apocalypseKarma, ruinFloors, ruinCeiling, max, ambassadorMax, intervalMinutes,
+    apocalypseKarma, ruinFloors, ruinCeiling, max, ambassadorMax, intervalMinutes, guardRarities, guardDivisor, guardBlockAt,
   ] = await Promise.all([
     getSetting("booster.rates"),
     getSetting("booster.slotFloors"),
@@ -40,11 +40,17 @@ export const getBoosterRules = cache(async (): Promise<BoosterRules> => {
     getSetting("booster.maxStock"),
     getSetting("ambassador.maxStock"),
     getSetting("booster.intervalMinutes"),
+    getSetting("booster.duplicateGuardRarities"),
+    getSetting("booster.duplicateGuardDivisor"),
+    getSetting("booster.duplicateGuardBlockAt"),
   ]);
+  // Doublons des grandes raretés : seulement les raretés encore au registre ; liste vide = règle coupée
+  const guarded = guardRarities.filter((r) => rarities.includes(r));
   return {
     draw: {
       rates: Object.fromEntries(rarities.map((r) => [r, rates[r] ?? 0])), rarities, cardWeights, slotFloors, pityThreshold, goldenEvery,
       goldenFloor, divineOdds, apocalypseOdds, apocalypseWinRate, apocalypseKarma,
+      ...(guarded.length > 0 && { duplicateGuard: { rarities: guarded, divisor: guardDivisor, blockAt: guardBlockAt } }),
     },
     ruin: { floors: ruinFloors, ceiling: ruinCeiling },
     stock: { max, ambassadorMax, intervalMs: intervalMinutes * 60_000 },

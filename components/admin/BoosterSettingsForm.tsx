@@ -32,6 +32,9 @@ type FieldName =
   | "apocalypseKarma"
   | "apocalypseRuinFloors"
   | "apocalypseRuinCeiling"
+  | "duplicateGuardRarities"
+  | "duplicateGuardDivisor"
+  | "duplicateGuardBlockAt"
   | "rotationHours"
   | "rotationDemographie"
   | "rotationGenre"
@@ -302,6 +305,49 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
                 onChange={(r) => set("booster.goldenFloor", r)}
               />
             </div>
+          </div>
+        </Fieldset>
+
+        <Fieldset legend={t("duplicateSection")}>
+          <p className="max-w-prose text-sm text-text-muted">{t("duplicateHint")}</p>
+          <fieldset className="flex min-w-0 flex-col gap-1">
+            <legend className="text-sm">{t("fields.duplicateGuardRarities")}</legend>
+            <div className="flex flex-wrap gap-x-5">
+              {RARITIES.map((r) => {
+                const list = draft["booster.duplicateGuardRarities"];
+                return (
+                  <label key={r} className="flex min-h-11 items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="choice"
+                      checked={list.includes(r)}
+                      // Ordre du registre gardé, quelle que soit la case cochée
+                      onChange={(e) => set("booster.duplicateGuardRarities", e.target.checked ? RARITIES.filter((x) => x === r || list.includes(x)) : list.filter((x) => x !== r))}
+                    />
+                    <span aria-hidden="true" lang="ja" className="font-seal">
+                      {RARITY_SEAL[r]}
+                    </span>
+                    {tRarity(r)}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <NumberField
+              label={t("fields.duplicateGuardDivisor")}
+              value={draft["booster.duplicateGuardDivisor"]}
+              onChange={(v) => set("booster.duplicateGuardDivisor", v)}
+              min={1}
+              max={1_000_000}
+            />
+            <NumberField
+              label={t("fields.duplicateGuardBlockAt")}
+              value={draft["booster.duplicateGuardBlockAt"]}
+              onChange={(v) => set("booster.duplicateGuardBlockAt", v)}
+              min={0}
+              max={10}
+            />
           </div>
         </Fieldset>
 

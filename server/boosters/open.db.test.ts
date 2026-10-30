@@ -125,4 +125,37 @@ describe.skipIf(!url)("ouverture atomique (base réelle)", () => {
       openBoostersWith(prisma, { userId, type: rare, count: 1, rules, tables, pool, rng: seededRng(1) }),
     ).rejects.toMatchObject({ code: "NEEDS_PAYMENT" });
   }, 60_000);
+
+  it("doublons des grandes raretés : une Mythique déjà en double ne retombe jamais", async () => {
+    const mythic = await prisma.card.findFirst({ where: { rarity: "MYTHIC", status: "PUBLISHED" }, select: { id: true } });
+    if (!mythic) return; // base de test sans Mythique : rien à vérifier
+    const owner = await prisma.user.create({ data: { username: `test-${randomBytes(4).toString("hex")}`, isGuest: true, boosterStock: 5 } });
+    try {
+      await prisma.userCard.createMany({ data: [{ ownerId: owner.id, cardId: mythic.id }, { ownerId: owner.id, cardId: mythic.id }] });
+      // Toutes les parts sur Mythique, une seule Mythique au pool : chaque emplacement retombe en Légendaire
+      const onlyMythic = Object.fromEntries(Object.keys(DEFAULT_RULES.rates).map((r) => [r, r === "MYTHIC" ? 1 : 0]));
+      const draw = { ...DEFAULT_RULES, rates: onlyMythic, goldenEvery: 0, divineOdds: 0, apocalypseOdds: 0, duplicateGuard: { rarities: ["MYTHIC"], divisor: 10_000, blockAt: 2 } };
+      const guarded = { ...rules, draw };
+      const res = await openBoostersWith(prisma, {
+        userId: owner.id,
+        type: standard,
+        count: 5,
+        rules: guarded,
+        tables: buildRarityTables(onlyMythic),
+        pool: { ...pool, MYTHIC: [mythic.id] },
+        rng: seededRng(77),
+      });
+      const drawn = res.boosters.flatMap((b) => b.cards);
+      expect(drawn).toHaveLength(20);
+      expect(drawn.some((c) => c.cardId === mythic.id)).toBe(false);
+      expect(await prisma.userCard.count({ where: { ownerId: owner.id, cardId: mythic.id } })).toBe(2);
+    } finally {
+      await prisma.$transaction([
+        prisma.userCard.deleteMany({ where: { ownerId: owner.id } }),
+        prisma.discovery.deleteMany({ where: { userId: owner.id } }),
+        prisma.boosterOpening.deleteMany({ where: { userId: owner.id } }),
+        prisma.user.delete({ where: { id: owner.id } }),
+      ]);
+    }
+  }, 120_000);
 });
