@@ -31,6 +31,7 @@ import { getSealedDrops } from "@/server/economy/queries";
 import { getIncenseState } from "@/server/boosters/incense";
 import type { ProfileAccess } from "@/lib/collection/visibility";
 import type { Relation } from "@/lib/social/relation";
+import { isStaff, presenceOf } from "@/lib/social/presence";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/u/[username]">): Promise<Metadata> {
   const { locale: raw, username: rawUsername } = await params;
@@ -62,6 +63,8 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
   const [t, tAccount, format] = await Promise.all([getTranslations("profile"), getTranslations("account"), getFormatter()]);
   const name = displayName(owner.username, owner.isGuest, (code) => tAccount("guestName", { code }));
   const social = await socialBar({ owner, viewer, access, name });
+  // Présence : visible comme le profil lui-même (public, ou amis), jamais pour un invité
+  const presence = access.profile && !owner.isGuest ? presenceOf(owner, new Date(), await getSetting("presence.onlineSeconds")) : undefined;
 
   if (!access.profile) {
     return (
@@ -117,6 +120,7 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
         isGuest={owner.isGuest}
         createdAt={owner.createdAt}
         decor={decor}
+        presence={presence}
         action={
           customize && (
             <ProfileCustomizeButton
@@ -127,6 +131,7 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
               badges={customize.badges}
               discoveredPercent={customize.discoveredPercent}
               privacy={{ visibility: owner.profileVisibility, showCollection: owner.showCollection }}
+              appearOffline={viewer && isStaff(viewer.role) ? viewer.appearOffline : null}
             />
           )
         }

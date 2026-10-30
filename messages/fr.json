@@ -1601,6 +1601,10 @@
         "activity": {
           "idleSeconds": "Pause des sondages après inactivité (s)",
           "backoffMax": "Ralentissement maximal sans nouveauté (×)"
+        },
+        "presence": {
+          "heartbeatSeconds": "Battement de présence (s)",
+          "onlineSeconds": "En ligne si vu depuis moins de (s)"
         }
       },
       "invalid": "Certaines valeurs sont hors limites : corrige-les avant d'enregistrer.",
@@ -1629,7 +1633,7 @@
       "chatSection": "Chat entre amis",
       "chatHint": "Messages privés entre amis acceptés, en texte brut, supprimés après leur durée de vie (24 h par défaut). Un blocage coupe la conversation.",
       "activitySection": "Temps réel et activité",
-      "activityHint": "Avec Ably, la cloche et le chat arrivent en direct ; le sondage de secours rattrape un message perdu. Sans geste du joueur ou onglet caché, plus aucun sondage. Sans nouveauté, le délai double jusqu'au multiple indiqué."
+      "activityHint": "Avec Ably, la cloche et le chat arrivent en direct ; le sondage de secours rattrape un message perdu. Sans geste du joueur ou onglet caché, plus aucun sondage. Sans nouveauté, le délai double jusqu'au multiple indiqué. La pastille « en ligne » suit le battement de présence : garde le délai « en ligne » au-dessus de deux battements."
     },
     "market": {
       "title": "Marché",
@@ -4885,5 +4889,15 @@
       "RATE_LIMITED": "Doucement : réessaie dans quelques secondes.",
       "NO_INCENSE": "Tu n'as plus d'Encens à activer."
     }
+  },
+  "presence": {
+    "online": "En ligne",
+    "offlineMinutes": "Déconnecté depuis {count, plural, one {# minute} other {# minutes}}",
+    "offlineHours": "Déconnecté depuis {count, plural, one {# heure} other {# heures}}",
+    "offlineDays": "Déconnecté depuis {count, plural, one {# jour} other {# jours}}",
+    "appearOffline": "Apparaître hors ligne",
+    "appearOfflineHint": "Tu restes connecté : les autres te voient déconnecté depuis ce moment.",
+    "saved": "Enregistré.",
+    "error": "Impossible d'enregistrer, réessaie."
   }
 }

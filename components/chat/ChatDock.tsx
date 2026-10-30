@@ -264,7 +264,7 @@ function ConversationList({ conversations }: { conversations: Conversation[] | n
             onClick={() => showConversation(c.username)}
             className="flex min-h-16 w-full items-center gap-3 rounded-control px-2 py-2 text-left hover:bg-surface-2"
           >
-            <PlayerAvatar username={c.username} image={c.image} size={40} frame={c.decor.frame} />
+            <PlayerAvatar username={c.username} image={c.image} size={40} frame={c.decor.frame} online={c.online} />
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="flex items-baseline justify-between gap-2">
                 <PlayerName

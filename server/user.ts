@@ -42,6 +42,8 @@ export const getCurrentUser = cache(async () => {
       discordJoinedAt: true,
       v1WelcomeSeenAt: true,
       ambassadorSince: true,
+      lastSeenAt: true,
+      appearOffline: true,
       ...decorSelect,
     },
   });

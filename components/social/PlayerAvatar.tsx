@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { FrameStyle } from "@/lib/profile/frames";
 import { AvatarFrame } from "../profile/AvatarFrame";
+import { WithPresence } from "./PresenceDot";
 
 /** Avatar Discord à la taille affichée (×2 pour les écrans denses) plutôt que l'original, parfois un GIF animé. */
 function sized(image: string, size: number): string {
@@ -10,18 +11,23 @@ function sized(image: string, size: number): string {
   return url.toString();
 }
 
-/** Avatar rond d'un joueur : image Discord, sinon l'initiale du pseudo sur papier, dans son cadre s'il en porte un. */
+/**
+ * Avatar rond d'un joueur : image Discord, sinon l'initiale du pseudo sur papier, dans son cadre s'il en porte un,
+ * avec la pastille verte quand `online` (listes d'amis et du chat).
+ */
 export function PlayerAvatar({
   username,
   image,
   size,
   frame = null,
+  online,
   className = "",
 }: {
   username: string;
   image: string | null;
   size: number;
   frame?: FrameStyle | null;
+  online?: boolean;
   className?: string;
 }) {
   const avatar = image ? (
@@ -45,8 +51,10 @@ export function PlayerAvatar({
     </span>
   );
   return (
-    <AvatarFrame frame={frame} size={size}>
-      {avatar}
-    </AvatarFrame>
+    <WithPresence online={online} size={size}>
+      <AvatarFrame frame={frame} size={size}>
+        {avatar}
+      </AvatarFrame>
+    </WithPresence>
   );
 }

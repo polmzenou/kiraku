@@ -18,6 +18,10 @@ export type ProfileOwnerRow = {
   showCollection: boolean;
   bannedAt: Date | null;
   showcaseLayout: ShowcaseLayout;
+  // Présence (lib/social/presence.ts), montrée seulement si le visiteur voit le profil
+  lastSeenAt: Date | null;
+  appearOffline: boolean;
+  role: string;
 };
 
 /** Joueur par pseudo, sans tenir compte de la casse (la page redirige vers l'orthographe exacte). */
@@ -32,6 +36,9 @@ export const findProfileOwner = cache(async (username: string): Promise<ProfileO
     showCollection: true,
     bannedAt: true,
     showcaseLayout: true,
+    lastSeenAt: true,
+    appearOffline: true,
+    role: true,
   } as const;
   const exact = await prisma.user.findUnique({ where: { username }, select });
   if (exact) return exact;

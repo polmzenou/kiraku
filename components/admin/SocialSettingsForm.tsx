@@ -40,6 +40,8 @@ const LIMITS: Record<NumberKey, [number, number]> = {
   "realtime.safetyPollSeconds": [30, 1_800],
   "activity.idleSeconds": [30, 3_600],
   "activity.backoffMax": [1, 16],
+  "presence.heartbeatSeconds": [30, 600],
+  "presence.onlineSeconds": [60, 3_600],
 };
 
 function NumberInput({ label, value, onChange, min, max }: { label: string; value: number; onChange: (v: number) => void; min: number; max: number }) {
@@ -222,6 +224,8 @@ export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
           {num("realtime.safetyPollSeconds")}
           {num("activity.idleSeconds")}
           {num("activity.backoffMax")}
+          {num("presence.heartbeatSeconds")}
+          {num("presence.onlineSeconds")}
         </div>
         <p className="text-xs text-text-muted">{t("activityHint")}</p>
       </fieldset>

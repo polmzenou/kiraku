@@ -139,6 +139,8 @@ export async function anonymizeUserWith(
         profileVisibility: "PRIVATE",
         showCollection: false,
         battleTeam: [],
+        lastSeenAt: null,
+        appearOffline: false,
         anonymizedAt: input.now,
         deletionRequestedAt: user.deletionRequestedAt ?? input.now,
       },

@@ -1,5 +1,6 @@
 import "server-only";
 import { decorFromColumns, type PlayerDecor } from "@/lib/profile/decor";
+import { isOnline } from "@/lib/social/presence";
 import { pairKey } from "@/lib/social/relation";
 import { prisma } from "../db";
 import { decorColumns } from "../profile/decor";
@@ -16,6 +17,8 @@ export type Conversation = {
   image: string | null;
   isGuest: boolean;
   decor: PlayerDecor;
+  /** Pastille verte : le lecteur est son ami, la présence lui est toujours visible. */
+  online: boolean;
   last: { body: string; at: string; mine: boolean } | null;
   unread: number;
 };
@@ -33,10 +36,10 @@ const view = (me: string) => (m: { id: string; senderId: string; body: string; c
  */
 export const visibleSince = (retentionHours: number, now = new Date()) => new Date(now.getTime() - retentionHours * 3_600_000);
 
-/** Amis acceptés, triés par dernier message, avec les non-lus de chacun. */
-export async function listConversations(me: string, since: Date): Promise<Conversation[]> {
+/** Amis acceptés, triés par dernier message, avec les non-lus de chacun et leur présence. */
+export async function listConversations(me: string, since: Date, onlineSeconds: number): Promise<Conversation[]> {
   const rows = await prisma.$queryRaw<
-    { username: string; image: string | null; isGuest: boolean; body: string | null; lastAt: Date | null; lastMine: boolean | null; unread: number; frameStyle: string | null; nameColor: string | null }[]
+    { username: string; image: string | null; isGuest: boolean; body: string | null; lastAt: Date | null; lastMine: boolean | null; unread: number; frameStyle: string | null; nameColor: string | null; lastSeenAt: Date | null; appearOffline: boolean; role: string }[]
   >`
     WITH friends AS (
       SELECT CASE WHEN f."requesterId" = ${me} THEN f."addresseeId" ELSE f."requesterId" END AS id, f."pairKey"
@@ -56,7 +59,7 @@ export async function listConversations(me: string, since: Date): Promise<Conver
       WHERE m."recipientId" = ${me} AND m."readAt" IS NULL AND m."createdAt" > ${since}
       GROUP BY m."senderId"
     )
-    SELECT u.username, u.image, u."isGuest", ${decorColumns}, l.body, l."createdAt" AS "lastAt", (l."senderId" = ${me}) AS "lastMine",
+    SELECT u.username, u.image, u."isGuest", u."lastSeenAt", u."appearOffline", u.role::text AS role, ${decorColumns}, l.body, l."createdAt" AS "lastAt", (l."senderId" = ${me}) AS "lastMine",
            COALESCE(un.n, 0)::int AS unread
     FROM friends fr
     JOIN "User" u ON u.id = fr.id
@@ -65,11 +68,13 @@ export async function listConversations(me: string, since: Date): Promise<Conver
     WHERE u."bannedAt" IS NULL AND u."anonymizedAt" IS NULL
     ORDER BY l."createdAt" DESC NULLS LAST, u.username ASC
     LIMIT 200`;
+  const now = new Date();
   return rows.map((r) => ({
     username: r.username,
     image: r.image,
     isGuest: r.isGuest,
     decor: decorFromColumns(r.frameStyle, r.nameColor),
+    online: isOnline(r, now, onlineSeconds),
     last: r.body !== null && r.lastAt ? { body: r.body, at: r.lastAt.toISOString(), mine: r.lastMine === true } : null,
     unread: r.unread,
   }));

@@ -230,6 +230,9 @@ export const SETTING_SCHEMAS = {
   "activity.idleSeconds": z.number().int().min(30).max(3_600),
   // Sondage sans changement : le délai double à chaque fois, jusqu'à ce multiple du délai de base
   "activity.backoffMax": z.number().int().min(1).max(16),
+  // Présence : battement tant que le joueur est là, et délai sous lequel il compte comme en ligne
+  "presence.heartbeatSeconds": z.number().int().min(30).max(600),
+  "presence.onlineSeconds": z.number().int().min(60).max(3_600),
   // Web Push (onglet fermé) : interrupteur global, l'abonnement reste un choix du joueur
   "notifications.pushEnabled": z.boolean(),
   // Économie (étape 7) : interrupteurs, parrainage et paiement par carte (inerte sans fournisseur)
@@ -442,6 +445,8 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "realtime.safetyPollSeconds": 180,
   "activity.idleSeconds": 300,
   "activity.backoffMax": 4,
+  "presence.heartbeatSeconds": 120,
+  "presence.onlineSeconds": 300, // plus de deux battements : un battement manqué ne fait pas clignoter la pastille
   "notifications.pushEnabled": true,
   "missions.enabled": true,
   "shop.enabled": true,
