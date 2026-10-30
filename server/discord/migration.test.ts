@@ -8,6 +8,8 @@ beforeAll(async () => {
   pg = new PGlite();
   await pg.exec('CREATE TABLE "Auction" (id TEXT PRIMARY KEY);');
   await pg.exec(readFileSync(resolve("prisma/migrations/20261030120000_discord_community/migration.sql"), "utf8"));
+  await pg.exec('CREATE TABLE "TradeListing" (id TEXT PRIMARY KEY);');
+  await pg.exec(readFileSync(resolve("prisma/migrations/20261030130000_discord_trade_listings/migration.sql"), "utf8"));
 }, 30_000);
 afterAll(async () => pg.close());
 
@@ -28,5 +30,14 @@ describe("migration Discord (Postgres isolé en mémoire)", () => {
   it("permet un message de règlement sans vente associée", async () => {
     await pg.exec(`INSERT INTO "DiscordPost" (key, "channelId", "nextAttemptAt") VALUES ('rules:guild', 'rules-channel', NULL)`);
     expect((await pg.query('SELECT "auctionId", "attempts", "nextAttemptAt" FROM "DiscordPost"')).rows).toEqual([{ auctionId: null, attempts: 0, nextAttemptAt: null }]);
+  });
+  it("garantit une publication par échange et interdit de mélanger vente et échange", async () => {
+    await pg.exec(`INSERT INTO "TradeListing" VALUES ('l1');
+      INSERT INTO "Auction" VALUES ('a3');
+      INSERT INTO "DiscordPost" (key, "channelId", "listingId") VALUES ('listing:l1', 'channel', 'l1');`);
+    await expect(pg.exec(`INSERT INTO "DiscordPost" (key, "channelId", "listingId") VALUES ('duplicate-listing', 'channel', 'l1')`)).rejects.toThrow();
+    await expect(pg.exec(`UPDATE "DiscordPost" SET "auctionId"='a3' WHERE key='listing:l1'`)).rejects.toThrow();
+    await pg.exec(`DELETE FROM "TradeListing" WHERE id='l1'; DELETE FROM "Auction" WHERE id='a3';`);
+    expect((await pg.query(`SELECT key FROM "DiscordPost" WHERE key='listing:l1'`)).rows).toEqual([]);
   });
 });

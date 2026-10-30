@@ -1038,7 +1038,7 @@ model Bid {
 }
 
 // Message Discord et file persistante : un seul envoi à la fois, reprises après échec réseau.
-// Les publications du règlement n'ont pas d'auctionId et sont déclenchées depuis l'admin.
+// Le règlement n'a ni auctionId ni listingId et se publie depuis l'admin.
 model DiscordPost {
   key           String   @id
   channelId     String
@@ -1046,6 +1046,8 @@ model DiscordPost {
   payloadHash   String?
   auctionId     String?  @unique
   auction       Auction? @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  listingId     String?  @unique
+  listing       TradeListing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
   attempts      Int      @default(0)
   nextAttemptAt DateTime? @default(now())
   leaseId       String?
@@ -1392,6 +1394,7 @@ model TradeListing {
   note       String?            @db.VarChar(200) // commentaire public de l'auteur (texte brut, effaçable par l'admin)
   wants      TradeListingWant[]
   offers     ListingOffer[]
+  discordPost DiscordPost?
 
   @@index([status, createdAt, id])
   @@index([status, expiresAt])

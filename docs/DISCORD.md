@@ -6,8 +6,9 @@ Ces fonctions réutilisent l'application Discord de la connexion Kiraku et son b
 Next.js reçoit les clics par HTTP : pas de processus Discord connecté en permanence. Le bot peut
 apparaître hors ligne tout en répondant aux boutons et en publiant les annonces.
 
-Configuration de ce serveur, à ajouter à `.env.local` et à l'environnement du conteneur Docker
-de production sur le VPS (`environment` ou `env_file` dans Compose, selon le déploiement) :
+Configuration de ce serveur, à ajouter à `.env.local` et à l'environnement de l'application
+de production sur le VPS. Kiraku tourne avec PM2 ; `kiraku-db` est le conteneur PostgreSQL.
+Ces variables doivent être accessibles à l'application web, pas seulement à PostgreSQL :
 
 ```dotenv
 DISCORD_PUBLIC_KEY="d5582666c89fe2e64cff7b6d7b7a874c70f1e8cce7ed8f513353aeb5daff7fe2"
@@ -23,10 +24,9 @@ La clé publique ne remplace ni le jeton du bot ni `AUTH_DISCORD_SECRET`.
 
 ### Activer le règlement
 
-1. Construire la nouvelle image, puis appliquer `npm run db:deploy` depuis un conteneur de cette
-   version disposant de Prisma CLI et configuré avec la base du VPS, avant de servir la nouvelle
-   application. Ne pas utiliser la base locale obsolète pour cette migration. Recréer le conteneur
-   si ses variables d'environnement changent.
+1. Appliquer `npm run db:deploy` avec la base du VPS, construire l'application avec `npm run build`,
+   puis redémarrer `pm2 restart kiraku --update-env`. Ne pas utiliser la base locale obsolète pour
+   cette migration. Le redémarrage est nécessaire après modification de l'environnement.
 2. Donner **Gérer les rôles** au bot et placer son rôle au-dessus de **Membre**, sous l'équipe.
 3. Dans le salon du règlement, autoriser au bot **Voir le salon**, **Voir l'historique**,
    **Envoyer des messages** et **Intégrer des liens**.
@@ -49,14 +49,18 @@ supprimé sur Discord, la prochaine publication le recrée.
 
 1. Dans le salon du marché, donner au bot **Voir le salon**, **Voir l'historique**,
    **Envoyer des messages** et **Intégrer des liens**. Les membres restent en lecture seule.
-2. Dans `/admin/discord`, activer **Relayer les nouvelles ventes sur Discord**, puis enregistrer.
+2. Dans `/admin/discord`, activer **Relayer les ventes et les échanges sur Discord**, puis enregistrer.
 3. Installer la ligne `/api/cron/discord` de `deploy/crontab.example` sur le VPS : elle est appelée
    chaque minute, avec le même `CRON_SECRET` que les autres tâches.
 4. Créer une nouvelle vente de test depuis Kiraku : l'annonce contient l'illustration, la rareté,
    le vendeur public (sinon « Un joueur »), le prix d'enchère, l'achat immédiat disponible, la date
    de fin et un lien vers la fiche exacte de la vente.
+5. Créer une nouvelle annonce d'échange : le bot publie l'auteur public, l'illustration et le nom de
+   la carte proposée, toutes les cartes recherchées avec leurs raretés (une au choix), l'expiration
+   et un lien qui cible cette annonce dans l'onglet Échanges. Le message indique ensuite si l'annonce
+   est retirée, échangée, expirée ou si la carte n'est plus disponible.
 
-La file `DiscordPost` est créée dans la transaction de vente. L'envoi part après la réponse ;
+La file `DiscordPost` est créée dans la transaction de vente ou d'annonce d'échange. L'envoi part après la réponse ;
 les échecs sont réessayés avec un délai progressif et le délai imposé par Discord en cas de 429.
 Les mises, achats et annulations actualisent le message ; le cron reprend les échecs et les
 clôtures différées. Les annonces inchangées ne sont pas renvoyées. Une lease en base évite les
@@ -65,9 +69,57 @@ envoi incertain, les 100 messages récents sont examinés avant une nouvelle cr�
 récupération reste limitée à cette fenêtre si le salon reçoit beaucoup de messages.
 
 Le relais est désactivé par défaut. Il concerne les **nouvelles ventes aux enchères avec ou sans
-achat immédiat**, pas les annonces d'échange de cartes, et ne reprend pas les ventes antérieures.
-Le cron s'installe sur l'hôte VPS ; adapter le port de l'exemple au port publié par Docker,
-ou utiliser un planificateur qui peut joindre le conteneur. Ne pas publier l'URL avec son secret.
+achat immédiat et les nouveaux échanges carte contre carte**. Les anciennes annonces ne sont pas
+reprises rétroactivement. Pour les échanges, appliquer aussi la migration
+`20261030130000_discord_trade_listings` avant de redémarrer la version qui les relaie.
+Le cron s'installe sur l'hôte VPS. Le déploiement PM2 n'installe pas automatiquement le fichier
+`deploy/crontab.example`. La procédure ci-dessous appelle l'URL HTTPS publique et ne dépend
+ni du port interne de l'application ni du conteneur PostgreSQL.
+
+### Installer le cron Discord sur le VPS (PM2)
+
+Utiliser le même compte SSH pour les commandes suivantes et pour `crontab -e` :
+
+```bash
+mkdir -p "$HOME/.config/kiraku"
+chmod 700 "$HOME/.config/kiraku"
+nano "$HOME/.config/kiraku/cron-secret"
+```
+
+Dans le fichier, mettre seulement la valeur de `CRON_SECRET` de l'application (sans nom de variable
+ni guillemets). Enregistrer puis fermer ; ne pas partager cette valeur :
+
+```bash
+chmod 600 "$HOME/.config/kiraku/cron-secret"
+curl -sS --max-time 55 -H "Authorization: Bearer $(cat "$HOME/.config/kiraku/cron-secret")" -w '\nHTTP %{http_code}\n' https://kiraku-kun.com/api/cron/discord
+```
+
+Le statut attendu est HTTP 200. `synced` compte les synchronisations réussies ; `failed` indique
+les publications non synchronisées. Un résultat 0/0 peut aussi signifier que le relais est désactivé,
+que sa configuration est incomplète ou qu'aucune annonce n'est à traiter : il ne prouve pas un envoi.
+HTTP 401 indique que le secret fourni ne correspond pas à `CRON_SECRET` de l'application.
+
+Ouvrir ensuite `crontab -e` et ajouter la ligne suivante en conservant les tâches déjà présentes :
+
+```cron
+* * * * * curl -fsS --max-time 55 -H "Authorization: Bearer $(cat "$HOME/.config/kiraku/cron-secret")" https://kiraku-kun.com/api/cron/discord >> "$HOME/.config/kiraku/discord-cron.log" 2>&1
+```
+
+Après enregistrement, vérifier `crontab -l`, puis après une minute :
+
+```bash
+tail -c 2000 "$HOME/.config/kiraku/discord-cron.log"
+```
+
+### Annonce absente et erreur Discord 403
+
+Les ventes tentent un envoi immédiatement après la réponse ; attendre le cron ne règle pas un refus
+d'accès de Discord. Si PM2 affiche `[discord] publication non synchronisée (403)`, vérifier le salon
+`1565793902324219925`. Dans les permissions de ce salon, ajouter directement le compte du bot qui
+a publié le bouton du règlement et autoriser explicitement **Voir le salon**, **Voir l'historique**,
+**Envoyer des messages** et **Intégrer des liens**. Les droits du bot dans le salon du règlement
+ne lui donnent pas automatiquement ceux du marché. Relancer le passage manuel ci-dessus après
+correction et après le délai de reprise ; les annonces échouées restent en file.
 
 ## Annonces des liaisons Discord
 

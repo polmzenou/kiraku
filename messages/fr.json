@@ -2274,8 +2274,8 @@
     "discord": {
       "title": "Discord",
       "marketSection": "Annonces du marché",
-      "marketEnabled": "Relayer les nouvelles ventes sur Discord",
-      "marketHint": "Publie les nouvelles enchères et leurs achats immédiats, puis actualise leur prix et leur statut. Les ventes antérieures à l’activation ne sont pas reprises. Le jeton du bot, le serveur et le salon du marché doivent être configurés.",
+      "marketEnabled": "Relayer les ventes et les échanges sur Discord",
+      "marketHint": "Publie les nouvelles ventes et les échanges carte contre carte, puis actualise leur statut. Les annonces antérieures à l’activation ne sont pas reprises. Le jeton du bot, le serveur et le salon du marché doivent être configurés.",
       "community": {
         "title": "Accueil de la communauté",
         "intro": "Publie un bouton sous le règlement déjà présent sur Discord. Il attribue le rôle Membre après acceptation. Une nouvelle publication met à jour le même message.",
@@ -4694,6 +4694,7 @@
     "ephemeral": "Les messages s'effacent {hours, plural, one {# heure} other {# heures}} après leur envoi."
   },
   "listings": {
+    "showAllListings": "Voir toutes les annonces d’échange",
     "boardTitle": "Cartes proposées à l'échange",
     "boardIntro": "« Je donne celle-ci contre l'une de celles-là. » Propose une de tes cartes : l'auteur de l'annonce accepte ou refuse.",
     "create": "Proposer une carte",

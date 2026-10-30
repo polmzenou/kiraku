@@ -63,6 +63,8 @@ export async function listListings(input: {
   filter: ListingFilter;
   cursor: string | null;
   locale: string;
+  /** Lien direct depuis Discord : cible une annonce sans contourner les filtres d'accès. */
+  listingId?: string;
   now?: Date;
 }): Promise<ListingPage> {
   const now = input.now ?? new Date();
@@ -76,6 +78,7 @@ export async function listListings(input: {
   if (input.filter === "canAccept") and.push({ wants: { some: { card: { copies: { some: { ownerId: input.viewerId, status: "COLLECTION" } } } } } });
   if (input.filter === "mine") and.push({ offers: { some: { bidderId: input.viewerId, status: "PENDING" } } });
   const where: Prisma.TradeListingWhereInput = {
+    ...(input.listingId && { id: input.listingId }),
     status: "OPEN",
     expiresAt: { gt: now },
     owner: { bannedAt: null },
