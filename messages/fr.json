@@ -162,6 +162,33 @@
     "description": "Encore plus de mini jeux pour jouer ensemble ou entre amis sur votre anime préféré !",
     "discover": "Découvrir"
   },
+  "news": {
+    "label": "Nouveautés",
+    "updated": "Mis à jour le {date}",
+    "hide": "Réduire",
+    "show": "Afficher",
+    "hideLabel": "Réduire les nouveautés",
+    "showLabel": "Afficher les nouveautés",
+    "newTab": "(s'ouvre dans un nouvel onglet)",
+    "carouselRole": "carrousel",
+    "slideRole": "bannière",
+    "slide": "{n} sur {count}",
+    "goTo": "Bannière {n} : {title}",
+    "previous": "Bannière précédente",
+    "next": "Bannière suivante",
+    "pause": "Mettre en pause le défilement",
+    "play": "Reprendre le défilement",
+    "until": "Jusqu'au {date}",
+    "openBooster": "Ouvrir le booster",
+    "tags": {
+      "NEW": "Nouveau",
+      "NEW_CARDS": "Nouvelles cartes",
+      "NEW_BOOSTER": "Nouveau booster",
+      "EVENT": "Événement",
+      "UPDATE": "Mise à jour",
+      "SOON": "Bientôt"
+    }
+  },
   "account": {
     "title": "Compte",
     "guestName": "Invité-{code}",
@@ -1257,7 +1284,8 @@
       "openingTest": "Test d'ouverture",
       "focus": "Focus série",
       "pullFeed": "Gros tirages",
-      "battleSandbox": "Bac à sable combat"
+      "battleSandbox": "Bac à sable combat",
+      "news": "Nouveautés"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -2123,6 +2151,110 @@
         "RATE_LIMITED": "Trop d'enregistrements. Réessaie dans une minute.",
         "unexpected": "Erreur inattendue. Réessaie."
       }
+    },
+    "news": {
+      "title": "Nouveautés",
+      "intro": "L'encart en haut de l'accueil, à la place de l'ancien bandeau : les dernières infos importantes. Chaque joueur peut le réduire ; une publication qui le rouvre le remontre à tout le monde.",
+      "revision": "Publication n° {revision}, du {date}",
+      "revisionNever": "Publication n° {revision}, jamais datée",
+      "panelSection": "Encart",
+      "enabled": "Afficher l'encart sur l'accueil",
+      "title_fr": "Titre (français)",
+      "title_en": "Titre (anglais, facultatif)",
+      "intro_fr": "Introduction (français, facultative)",
+      "intro_en": "Introduction (anglais, facultative)",
+      "itemsSection": "Nouveautés ({count}/{max})",
+      "item": "Nouveauté {n}",
+      "add": "Ajouter une nouveauté",
+      "remove": "Supprimer",
+      "up": "Monter",
+      "down": "Descendre",
+      "tone": "Couleur",
+      "tones": {
+        "kin": "Or",
+        "shu": "Vermillon",
+        "ai": "Indigo",
+        "hisui": "Jade",
+        "neutral": "Neutre"
+      },
+      "icon": "Sceau",
+      "noIcon": "Aucun",
+      "icons": {
+        "NEW": "新 Nouveau",
+        "PARTY": "祝 Fête",
+        "BATTLE": "闘 Combat",
+        "SHOP": "店 Boutique",
+        "CARDS": "札 Cartes",
+        "GIFT": "贈 Cadeau",
+        "NEWS": "報 Annonce",
+        "ZENI": "銭 Zeni",
+        "EVENT": "催 Événement",
+        "SEASON": "星 Saison",
+        "REFERRAL": "招 Parrainage",
+        "FRIENDS": "友 Amis"
+      },
+      "itemTitle_fr": "Titre (français)",
+      "itemTitle_en": "Titre (anglais, facultatif)",
+      "body_fr": "Texte (français)",
+      "body_en": "Texte (anglais, facultatif)",
+      "link": "Bouton",
+      "links": {
+        "none": "Aucun",
+        "internal": "Page du site",
+        "external": "Lien externe (https)"
+      },
+      "href": "Adresse",
+      "hrefInternalHint": "Un chemin du site, par exemple /parrainage ou /boutique. La version anglaise ajoute /en d'elle-même.",
+      "hrefExternalHint": "Une adresse complète en https://, ouverte dans un nouvel onglet.",
+      "label_fr": "Libellé du bouton (français)",
+      "label_en": "Libellé du bouton (anglais, facultatif)",
+      "previewSection": "Aperçu",
+      "previewLang": "Langue de l'aperçu",
+      "langs": {
+        "fr": "Français",
+        "en": "Anglais"
+      },
+      "previewOff": "L'encart est éteint : rien ne s'affiche sur l'accueil.",
+      "previewEmpty": "Ajoute au moins une nouveauté pour voir l'aperçu.",
+      "reopen": "Rouvrir l'encart chez tous les joueurs (nouvelle publication datée d'aujourd'hui)",
+      "reopenHint": "Décoche pour corriger une faute sans remontrer l'encart à ceux qui l'ont réduit.",
+      "changeReopen": "Encart Nouveautés, rouvert chez tous les joueurs",
+      "changeQuiet": "Encart Nouveautés, sans le rouvrir",
+      "tag": "Étiquette",
+      "noTag": "Aucune",
+      "visual": "Visuel de la bannière",
+      "visuals": {
+        "none": "Sceau seulement",
+        "cards": "Cartes du catalogue",
+        "booster": "Un booster",
+        "image": "Image téléversée"
+      },
+      "cardsSearch": "Ajouter une carte",
+      "cardsSearchHint": "Tape au moins deux lettres du nom. Cartes publiées seulement, cinq au plus.",
+      "cardsNone": "Aucune carte choisie.",
+      "cardsNoResult": "Aucune carte trouvée.",
+      "cardLeft": "Avancer {name}",
+      "cardRight": "Reculer {name}",
+      "cardRemove": "Retirer {name}",
+      "booster": "Booster montré",
+      "boosterPick": "Choisir un booster",
+      "boosterHint": "Sans bouton choisi, la bannière mène au booster sur l'accueil. Un booster éteint ou terminé laisse le sceau à sa place.",
+      "boosterOff": "(éteint)",
+      "image": "Image",
+      "imageUpload": "Téléverser une image",
+      "imageReplace": "Remplacer l'image",
+      "imageUploading": "Téléversement…",
+      "imageHint": "JPEG, PNG ou WebP, 4 Mo au plus. Stockée en WebP sur 1 600 px de large.",
+      "imageErrors": {
+        "IMAGE_INVALID": "Ce fichier n'est pas une image JPEG, PNG ou WebP valide.",
+        "IMAGE_TOO_LARGE": "Image trop lourde : 4 Mo au plus.",
+        "RATE_LIMITED": "Trop d'envois d'affilée, réessaie dans une minute.",
+        "STORAGE_UNAVAILABLE": "Le stockage des images n'est pas configuré sur ce serveur.",
+        "UPLOAD_FAILED": "L'envoi a échoué, réessaie."
+      },
+      "focalX": "Cadrage horizontal ({value} %)",
+      "focalY": "Cadrage vertical ({value} %)",
+      "previewRefreshing": "Mise à jour des visuels de l'aperçu…"
     },
     "discord": {
       "title": "Discord",
@@ -4280,6 +4412,7 @@
       "locale": "Retient la langue choisie.",
       "sound": "Retient si le son est activé.",
       "discordLater": "Retient quand tu as repoussé l'invitation Discord (« Plus tard »).",
+      "news": "Retient si tu as réduit l'encart des nouveautés de l'accueil.",
       "speedInsights": "Mesure des performances Vercel (sans cookie ni identifiant persistant)"
     },
     "kinds": {

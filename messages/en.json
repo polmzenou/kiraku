@@ -162,6 +162,33 @@
     "description": "Even more mini games to play together or with friends in your favorite anime universe!",
     "discover": "Discover"
   },
+  "news": {
+    "label": "What's new",
+    "updated": "Updated {date}",
+    "hide": "Collapse",
+    "show": "Show",
+    "hideLabel": "Collapse what's new",
+    "showLabel": "Show what's new",
+    "newTab": "(opens in a new tab)",
+    "carouselRole": "carousel",
+    "slideRole": "banner",
+    "slide": "{n} of {count}",
+    "goTo": "Banner {n}: {title}",
+    "previous": "Previous banner",
+    "next": "Next banner",
+    "pause": "Pause scrolling",
+    "play": "Resume scrolling",
+    "until": "Until {date}",
+    "openBooster": "Open the booster",
+    "tags": {
+      "NEW": "New",
+      "NEW_CARDS": "New cards",
+      "NEW_BOOSTER": "New booster",
+      "EVENT": "Event",
+      "UPDATE": "Update",
+      "SOON": "Coming soon"
+    }
+  },
   "account": {
     "title": "Account",
     "guestName": "Guest-{code}",
@@ -1257,7 +1284,8 @@
       "openingTest": "Opening test",
       "focus": "Series focus",
       "pullFeed": "Big pulls",
-      "battleSandbox": "Battle sandbox"
+      "battleSandbox": "Battle sandbox",
+      "news": "What's new"
     },
     "boosters": {
       "title": "Booster settings",
@@ -2123,6 +2151,110 @@
         "RATE_LIMITED": "Too many saves. Try again in a minute.",
         "unexpected": "Unexpected error. Try again."
       }
+    },
+    "news": {
+      "title": "What's new",
+      "intro": "The panel at the top of the home page, in place of the former banner: the latest important news. Each player can collapse it; a publication that reopens it shows it to everyone again.",
+      "revision": "Publication #{revision}, {date}",
+      "revisionNever": "Publication #{revision}, never dated",
+      "panelSection": "Panel",
+      "enabled": "Show the panel on the home page",
+      "title_fr": "Title (French)",
+      "title_en": "Title (English, optional)",
+      "intro_fr": "Introduction (French, optional)",
+      "intro_en": "Introduction (English, optional)",
+      "itemsSection": "News items ({count}/{max})",
+      "item": "Item {n}",
+      "add": "Add an item",
+      "remove": "Remove",
+      "up": "Move up",
+      "down": "Move down",
+      "tone": "Color",
+      "tones": {
+        "kin": "Gold",
+        "shu": "Vermilion",
+        "ai": "Indigo",
+        "hisui": "Jade",
+        "neutral": "Neutral"
+      },
+      "icon": "Seal",
+      "noIcon": "None",
+      "icons": {
+        "NEW": "新 New",
+        "PARTY": "祝 Celebration",
+        "BATTLE": "闘 Battle",
+        "SHOP": "店 Shop",
+        "CARDS": "札 Cards",
+        "GIFT": "贈 Gift",
+        "NEWS": "報 Announcement",
+        "ZENI": "銭 Zeni",
+        "EVENT": "催 Event",
+        "SEASON": "星 Season",
+        "REFERRAL": "招 Referral",
+        "FRIENDS": "友 Friends"
+      },
+      "itemTitle_fr": "Title (French)",
+      "itemTitle_en": "Title (English, optional)",
+      "body_fr": "Text (French)",
+      "body_en": "Text (English, optional)",
+      "link": "Button",
+      "links": {
+        "none": "None",
+        "internal": "Site page",
+        "external": "External link (https)"
+      },
+      "href": "Address",
+      "hrefInternalHint": "A site path, for example /parrainage or /boutique. The English version adds /en by itself.",
+      "hrefExternalHint": "A full https:// address, opened in a new tab.",
+      "label_fr": "Button label (French)",
+      "label_en": "Button label (English, optional)",
+      "previewSection": "Preview",
+      "previewLang": "Preview language",
+      "langs": {
+        "fr": "French",
+        "en": "English"
+      },
+      "previewOff": "The panel is off: nothing shows on the home page.",
+      "previewEmpty": "Add at least one item to see the preview.",
+      "reopen": "Reopen the panel for every player (new publication dated today)",
+      "reopenHint": "Untick to fix a typo without showing the panel again to those who collapsed it.",
+      "changeReopen": "What's new panel, reopened for every player",
+      "changeQuiet": "What's new panel, without reopening it",
+      "tag": "Label",
+      "noTag": "None",
+      "visual": "Banner visual",
+      "visuals": {
+        "none": "Seal only",
+        "cards": "Catalogue cards",
+        "booster": "A booster",
+        "image": "Uploaded image"
+      },
+      "cardsSearch": "Add a card",
+      "cardsSearchHint": "Type at least two letters of the name. Published cards only, five at most.",
+      "cardsNone": "No card chosen.",
+      "cardsNoResult": "No card found.",
+      "cardLeft": "Move {name} earlier",
+      "cardRight": "Move {name} later",
+      "cardRemove": "Remove {name}",
+      "booster": "Booster shown",
+      "boosterPick": "Choose a booster",
+      "boosterHint": "Without a chosen button, the banner leads to the booster on the home page. A booster that is off or over leaves the seal in its place.",
+      "boosterOff": "(off)",
+      "image": "Image",
+      "imageUpload": "Upload an image",
+      "imageReplace": "Replace the image",
+      "imageUploading": "Uploading…",
+      "imageHint": "JPEG, PNG or WebP, 4 MB at most. Stored as WebP, 1,600 px wide.",
+      "imageErrors": {
+        "IMAGE_INVALID": "This file is not a valid JPEG, PNG or WebP image.",
+        "IMAGE_TOO_LARGE": "Image too heavy: 4 MB at most.",
+        "RATE_LIMITED": "Too many uploads in a row, try again in a minute.",
+        "STORAGE_UNAVAILABLE": "Image storage is not configured on this server.",
+        "UPLOAD_FAILED": "The upload failed, try again."
+      },
+      "focalX": "Horizontal framing ({value}%)",
+      "focalY": "Vertical framing ({value}%)",
+      "previewRefreshing": "Updating the preview visuals…"
     },
     "discord": {
       "title": "Discord",
@@ -4280,6 +4412,7 @@
       "locale": "Remembers the chosen language.",
       "sound": "Remembers whether sound is on.",
       "discordLater": "Remembers when you postponed the Discord invitation (\"Later\").",
+      "news": "Remembers whether you collapsed the home page news panel.",
       "speedInsights": "Vercel performance measurement (no cookies or persistent identifiers)"
     },
     "kinds": {

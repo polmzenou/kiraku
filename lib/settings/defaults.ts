@@ -6,6 +6,7 @@ import { rotationPinSchema } from "@/lib/boosters/rotation";
 import { slugSchema } from "@/lib/boosters/types";
 import { KEYWORDS, TECHNIQUES } from "@/lib/battle/types";
 import { JOIN_MODAL_DEFAULT, joinModalSchema } from "@/lib/discord/join-modal";
+import { NEWS_DEFAULT, newsSchema } from "@/lib/home/news-schema";
 import { alertThresholdsSchema, DEFAULT_ALERT_THRESHOLDS } from "@/lib/usage/quota";
 
 // Seuils de rareté en points de base (300 = top 3 %), du plus rare au plus courant
@@ -336,6 +337,8 @@ export const SETTING_SCHEMAS = {
   "home.pullFeed.cacheSeconds": z.number().int().min(5).max(600),
   // Apparitions max d'un même joueur dans le carrousel : au-delà, ses plus anciens tirages en sortent
   "home.pullFeed.maxPerPlayer": z.number().int().min(1).max(50),
+  // Encart « Nouveautés » en haut de l'accueil : textes fr/en, nouveautés et liens (/admin/nouveautes)
+  "home.news": newsSchema,
   // Conformité (étape 10) : version des CGU que tout compte inscrit doit avoir acceptée
   "legal.termsRequiredVersion": z.number().int().min(1).max(10_000),
   // Suppression du compte : délai (annulable) avant l'anonymisation
@@ -521,6 +524,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "home.pullFeed.refreshSeconds": 60,
   "home.pullFeed.cacheSeconds": 30,
   "home.pullFeed.maxPerPlayer": 5,
+  "home.news": NEWS_DEFAULT, // récapitulatif de la v2.5, allumé
   "legal.termsRequiredVersion": 1,
   "account.deletionGraceDays": 30, // anonymisation sous 30 jours (plan, « Pages légales, RGPD »)
   "account.usernameChangeDays": 30,
