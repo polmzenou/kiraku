@@ -189,7 +189,7 @@ async function socialBar({
   access,
   name,
 }: {
-  owner: { username: string; isGuest: boolean };
+  owner: { id: string; username: string; isGuest: boolean };
   viewer: Awaited<ReturnType<typeof loadProfile>>["viewer"];
   access: ProfileAccess & { relation: Relation | null };
   name: string;
@@ -220,7 +220,7 @@ async function socialBar({
       getSetting("gifts.sealedMinAccountDays"),
       getSetting("gifts.sealedPerWeek"),
     ]);
-    const [sent, sealed] = await Promise.all([giftsSentToday(viewer.id, timeZone), getSealedDrops(viewer.id)]);
+    const [sent, sealed] = await Promise.all([giftsSentToday(viewer.id, owner.id, timeZone), getSealedDrops(viewer.id)]);
     gift = {
       price,
       coins: viewer.coins,

@@ -1,6 +1,6 @@
 "use client";
 import { useRarities, useRarityDefinitions } from "@/lib/catalog/use-rarities";
-import { fxTier, isTopTier } from "@/lib/catalog/tiers";
+import { fxTier, isBigMoment, isTopTier } from "@/lib/catalog/tiers";
 import { AnimatePresence, m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
@@ -28,6 +28,16 @@ export function revealOrder<T extends { rarity: Rarity; featured?: boolean }>(ca
         a.i - b.i,
     )
     .map((x) => x.card);
+}
+
+/**
+ * Passage rapide : index de la première carte « grand moment » (Légendaire ou mieux) à partir de `from`,
+ * s'il reste au moins `min` cartes à sauter avant elle ; -1 sinon. L'ordre de révélation allant de la moins
+ * rare à la plus rare, c'est la Légendaire, ou la Mythique d'un pack qui n'a pas de Légendaire.
+ */
+export function skipTarget<T extends { rarity: Rarity }>(order: readonly T[], from: number, isBig: (rarity: Rarity) => boolean, min = SKIP_MIN): number {
+  const at = order.findIndex((card, i) => i >= from && isBig(card.rarity));
+  return at >= 0 && at - from >= min ? at : -1;
 }
 
 /** Son et vibration du retournement d'une carte de cette rareté. */
@@ -59,6 +69,9 @@ const ARRIVE_MAX_DELAY = 0.4;
  */
 const VISIBLE_BACKS = 4;
 const STEP_PX = 3;
+
+/** Passage rapide vers la première Légendaire ou mieux : proposé s'il reste au moins autant de cartes avant elle. */
+const SKIP_MIN = 3;
 
 /** Emplacements sous la pile : écart (px, `gap-2`) et largeur max sur desktop. */
 const SLOT_GAP = 8;
@@ -125,6 +138,7 @@ type Props = {
  */
 export function CardDeck({ cards, from, origin, reduced, lite = false, play, onMythic, onMoment, onDone }: Props) {
   const t = useTranslations("opening");
+  const tRarity = useTranslations("rarity");
   const rarities = useRarities();
   const definitions = useRarityDefinitions();
   const [order] = useState(() => revealOrder(cards, rarities));
@@ -246,6 +260,26 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
     advancing.current = true;
     play("whoosh");
     setTopVisible(false);
+  };
+
+  // Passage rapide : droit à la première carte Légendaire ou mieux (la Mythique d'un pack sans
+  // Légendaire), les cartes d'avant comptent comme découvertes ; seulement s'il y a de quoi sauter
+  const bigAt = skipTarget(order, index, (rarity) => isBigMoment(rarity, definitions));
+  const canSkip = bigAt >= 0;
+  const skipToBig = () => {
+    if (!canSkip || finished.current) return;
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+    phaseRef.current = "back";
+    advancing.current = false;
+    focusNext.current = true;
+    dragged.current = false;
+    play("whoosh");
+    setPhase("back");
+    setIndex(bigAt);
+    setTopVisible(true);
   };
 
   // Balayage (glisser la carte) ou simple appui : même action
@@ -403,7 +437,12 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
       </m.ul>}
 
       {!done && (
-        <m.div ref={belowRef} {...appear(0.55)}>
+        <m.div ref={belowRef} className="flex flex-wrap justify-center gap-2" {...appear(0.55)}>
+          {canSkip && (
+            <Button variant="primary" onClick={skipToBig} className="min-w-40">
+              {t("skipToBig", { rarity: tRarity(order[bigAt].rarity) })}
+            </Button>
+          )}
           <Button onClick={finish} className="min-w-40">
             {t("revealAll")}
           </Button>

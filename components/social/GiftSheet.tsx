@@ -101,7 +101,7 @@ export function GiftSheet({ username, name, info, onClose }: { username: string;
 
   return (
     <Sheet open onClose={onClose} title={t("title", { name })}>
-      <p className="text-sm text-text-muted">{t("remaining", { count: remaining, max: info.limits.perDaySent })}</p>
+      <p className="text-sm text-text-muted">{t("remaining", { count: remaining, max: info.limits.perDaySent, name })}</p>
 
       {choice ? (
         <div className="flex flex-col gap-3 rounded-card border border-shu bg-surface p-4" aria-live="polite">
