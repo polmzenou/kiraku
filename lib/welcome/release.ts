@@ -9,7 +9,8 @@ export const ANNOUNCEMENTS = [
   { key: "apology", at: new Date("2026-10-25T23:00:00Z") },
   // Kiraku-kun v2 : nouveau design, cartes AR et Gold.
   { key: "v2", at: new Date("2026-10-27T18:00:00Z") },
-  // Kiraku-kun v2.5 (remplace l'attente de la v3 du 28 octobre, qui ne s'affiche plus) : 1 000 joueurs, parrainage à paliers, sondage Discord, Encens, combats, boutique.
+  // Kiraku-kun v2.5 : son modal est retiré, la date reste comme borne. Un nouveau compte ne reçoit
+  // donc aucune annonce (pas le vieux modal v2), et les annonces plus anciennes manquées passent toujours.
   { key: "v25", at: new Date("2026-10-30T12:00:00Z") },
 ] as const;
 

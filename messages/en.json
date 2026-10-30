@@ -79,56 +79,6 @@
     "thanks": "Thanks for keeping Kiraku alive. Have fun!",
     "letsGo": "Discover v2"
   },
-  "v25Announcement": {
-    "badge": "New version",
-    "title": "Kiraku-kun v2.5",
-    "titleAccent": "is here!",
-    "intro": "Thank you for your enthusiasm: <strong>we've passed 1,000 players!</strong> Here's what this update brings.",
-    "referral": {
-      "title": "Referrals level up",
-      "body": "Referrals now come with tiers and <strong>BIG rewards</strong>. The more friends you invite, the bigger they get: go ahead and invite your friends!",
-      "friends": "{count, plural, one {# friend} other {# friends}}",
-      "cta": "Invite my friends"
-    },
-    "discord": {
-      "title": "Would you join a Kiraku Discord?",
-      "body": "We're thinking about opening a Discord: a real community around Kiraku. It could host:",
-      "ideas": {
-        "news": "news",
-        "tournaments": "tournaments",
-        "contests": "contests",
-        "lotteries": "lotteries",
-        "feedback": "your feedback",
-        "cards": "your card suggestions"
-      },
-      "yes": "Yes",
-      "no": "No",
-      "thanks": "Thanks for your answer, it has been recorded!",
-      "already": "You've already answered this poll, thanks!",
-      "error": "Your answer couldn't be saved, please try again in a moment."
-    },
-    "incense": {
-      "title": "Incense",
-      "body": "One <strong>Incense</strong> every {cards, number} cards drawn: it raises rarity odds for <strong>{hours, plural, one {# hour} other {# hours}}</strong>."
-    },
-    "battle": {
-      "title": "New battle interface",
-      "body": "Battles got a makeover. <strong>Tournaments</strong> could be on the way: get your cards ready!"
-    },
-    "shop": {
-      "title": "A new shop",
-      "body": "The shop has a fresh look, with the <strong>{booster} booster</strong> and plenty more.",
-      "imperial": "Imperial",
-      "cta": "Visit the shop"
-    },
-    "x": {
-      "title": "Stay up to date on X",
-      "body": "Follow <strong>{handle}</strong> so you never miss what's new.",
-      "cta": "Follow {handle}"
-    },
-    "thanks": "Thanks for being here, there's more to come!",
-    "letsGo": "Let's go"
-  },
   "cardBack": {
     "showBack": "Show card back",
     "showFront": "Show card front",
@@ -181,7 +131,6 @@
     "play": "Resume scrolling",
     "until": "Until {date}",
     "openBooster": "Open the booster",
-    "pollTag": "Poll",
     "tags": {
       "NEW": "New",
       "NEW_CARDS": "New cards",

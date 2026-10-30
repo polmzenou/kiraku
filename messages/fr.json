@@ -79,56 +79,6 @@
     "thanks": "Merci de faire vivre Kiraku. Bon jeu !",
     "letsGo": "Découvrir la v2"
   },
-  "v25Announcement": {
-    "badge": "Nouvelle version",
-    "title": "Kiraku-kun v2.5",
-    "titleAccent": "est là !",
-    "intro": "Merci pour votre engouement : <strong>on a passé les 1 000 joueurs !</strong> Voici ce qui change avec cette mise à jour.",
-    "referral": {
-      "title": "Le parrainage évolue",
-      "body": "Le parrainage passe à des paliers avec de <strong>GROSSES récompenses</strong>. Plus tu invites d'amis, plus c'est gros : n'hésite pas à parrainer tes amis !",
-      "friends": "{count, plural, one {# ami} other {# amis}}",
-      "cta": "Parrainer mes amis"
-    },
-    "discord": {
-      "title": "Un Discord Kiraku, ça vous intéresse ?",
-      "body": "On réfléchit à ouvrir un Discord : une vraie communauté autour de Kiraku. On y mettrait par exemple :",
-      "ideas": {
-        "news": "les news",
-        "tournaments": "des tournois",
-        "contests": "des concours",
-        "lotteries": "des loteries",
-        "feedback": "vos retours",
-        "cards": "vos propositions de cartes"
-      },
-      "yes": "Oui",
-      "no": "Non",
-      "thanks": "Merci pour ta réponse, elle est bien enregistrée !",
-      "already": "Tu as déjà répondu à ce sondage, merci !",
-      "error": "Ta réponse n'a pas pu être enregistrée, réessaie dans un instant."
-    },
-    "incense": {
-      "title": "L'Encens",
-      "body": "Un <strong>Encens</strong> toutes les {cards, number} cartes tirées : il augmente le taux des raretés pendant <strong>{hours, plural, one {# heure} other {# heures}}</strong>."
-    },
-    "battle": {
-      "title": "Nouvelle interface de combat",
-      "body": "Les combats font peau neuve. Des <strong>tournois</strong> pourraient bientôt s'organiser : préparez vos cartes !"
-    },
-    "shop": {
-      "title": "Une nouvelle boutique",
-      "body": "La boutique se refait une beauté, avec le <strong>booster {booster}</strong> et plein d'autres choses.",
-      "imperial": "Impérial",
-      "cta": "Voir la boutique"
-    },
-    "x": {
-      "title": "Reste à jour sur X",
-      "body": "Suis <strong>{handle}</strong> pour ne rien rater des nouveautés.",
-      "cta": "Suivre {handle}"
-    },
-    "thanks": "Merci d'être là, on continue !",
-    "letsGo": "C'est parti"
-  },
   "cardBack": {
     "showBack": "Voir le dos",
     "showFront": "Voir le recto",
@@ -181,7 +131,6 @@
     "play": "Reprendre le défilement",
     "until": "Jusqu'au {date}",
     "openBooster": "Ouvrir le booster",
-    "pollTag": "Sondage",
     "tags": {
       "NEW": "Nouveau",
       "NEW_CARDS": "Nouvelles cartes",

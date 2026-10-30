@@ -1,10 +1,6 @@
 import "server-only";
 import type { FudaCard } from "@/components/fuda/Fuda";
-import { localize, parseLocalized, parseTheme, type BoosterShape, type BoosterTheme } from "@/lib/boosters/types";
-import { DISCORD_POLL } from "@/lib/welcome/poll";
 import { prisma } from "./db";
-import { lotViews } from "./economy/lot-view";
-import { getSetting } from "./settings";
 
 /**
  * Cartes Gold et AR mises en avant par l'annonce de la v2, dans cet ordre (les cinq premières forment
@@ -34,43 +30,3 @@ async function showcaseCards(ids: readonly string[]): Promise<ShowcaseCard[]> {
 }
 
 export const getV2ShowcaseCards = () => showcaseCards(V2_SHOWCASE_CARD_IDS);
-
-/** Réponse déjà donnée au sondage Discord (null = pas encore). */
-export async function getDiscordVote(userId: string): Promise<boolean | null> {
-  const vote = await prisma.pollVote.findUnique({ where: { userId_poll: { userId, poll: DISCORD_POLL } }, select: { answer: true } });
-  return vote?.answer ?? null;
-}
-
-export type V25Data = {
-  /** Paliers du parrainage (amis qualifiés → nom du lot), lus dans les réglages. */
-  milestones: { referrals: number; reward: string }[];
-  incense: { cardStep: number; hours: number };
-  imperial: { name: string; emblem: string; shape: BoosterShape; theme: BoosterTheme } | null;
-  /** Réponse déjà donnée au sondage Discord (null = pas encore). */
-  vote: boolean | null;
-};
-
-/** Ce que l'annonce de la v2.5 affiche : tout vient des réglages et de la base, rien en dur. */
-export async function getV25Data(userId: string, locale: string): Promise<V25Data> {
-  const [milestones, cardStep, hours, imperial, vote] = await Promise.all([
-    getSetting("referral.milestones"),
-    getSetting("incense.cardStep"),
-    getSetting("incense.durationHours"),
-    prisma.boosterType.findUnique({ where: { slug: "imperial" }, select: { name: true, emblem: true, shape: true, theme: true, active: true } }),
-    getDiscordVote(userId),
-  ]);
-  const lots = await lotViews(milestones.map((m) => m.lotId), locale);
-  return {
-    milestones: milestones
-      .flatMap((m) => {
-        const lot = lots.get(m.lotId);
-        return lot ? [{ referrals: m.referrals, reward: lot.name }] : [];
-      })
-      .sort((a, b) => a.referrals - b.referrals),
-    incense: { cardStep, hours },
-    imperial: imperial?.active
-      ? { name: localize(parseLocalized(imperial.name, "Impérial"), locale), emblem: imperial.emblem, shape: imperial.shape, theme: parseTheme(imperial.theme) }
-      : null,
-    vote,
-  };
-}

@@ -1,6 +1,5 @@
 "use server";
 
-import { DISCORD_POLL, pollAnswerSchema, type PollResult } from "@/lib/welcome/poll";
 import { ANNOUNCEMENTS, pendingAnnouncement } from "@/lib/welcome/release";
 import { z } from "@/lib/zod";
 import { prisma } from "../db";
@@ -36,28 +35,4 @@ export async function claimAnnouncementAction(displayedUserId: unknown, key: unk
     data: { v1WelcomeSeenAt: pending.at },
   });
   return claimed.count === 1;
-}
-
-/**
- * Réponse au sondage Discord (annonce v2.5 et carrousel Nouveautés, invités compris). Une seule par
- * joueur et définitive : un second vote ne change rien et renvoie la réponse déjà donnée. null = refusé.
- */
-export async function voteDiscordPollAction(answer: unknown): Promise<PollResult | null> {
-  const user = await requireActiveUser();
-  if (!user) return null;
-  const parsed = pollAnswerSchema.safeParse(answer);
-  if (!parsed.success) return null;
-  if (!(await rateLimit(`poll:${user.id}`, { limit: 10, windowSeconds: 3600 })).success) return null;
-
-  // ON CONFLICT DO NOTHING : deux onglets qui votent en même temps n'enregistrent que la première réponse
-  const { count } = await prisma.pollVote.createMany({
-    data: [{ userId: user.id, poll: DISCORD_POLL, answer: parsed.data }],
-    skipDuplicates: true,
-  });
-  if (count === 1) return { vote: parsed.data, already: false };
-  const previous = await prisma.pollVote.findUnique({
-    where: { userId_poll: { userId: user.id, poll: DISCORD_POLL } },
-    select: { answer: true },
-  });
-  return previous ? { vote: previous.answer, already: true } : null;
 }

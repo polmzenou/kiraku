@@ -8,11 +8,8 @@ import { localizeNews, NEWS_COOKIE, type NewsCardView, type NewsVisuals } from "
 import { NEWS_DEFAULT, type NewsConfig, type NewsItem } from "@/lib/home/news-schema";
 import { NewsPanelView } from "./NewsPanelView";
 
-const mocks = vi.hoisted(() => ({ setting: vi.fn(), cookie: vi.fn(), locale: vi.fn(), visuals: vi.fn(), user: vi.fn(), vote: vi.fn(), action: vi.fn() }));
+const mocks = vi.hoisted(() => ({ setting: vi.fn(), cookie: vi.fn(), locale: vi.fn(), visuals: vi.fn() }));
 vi.mock("@/server/settings", () => ({ getSetting: mocks.setting }));
-vi.mock("@/server/user", () => ({ requireActiveUser: mocks.user }));
-vi.mock("@/server/welcome", () => ({ getDiscordVote: mocks.vote }));
-vi.mock("@/server/actions/welcome", () => ({ voteDiscordPollAction: mocks.action }));
 vi.mock("@/server/home/news", () => ({ resolveNewsVisuals: mocks.visuals }));
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: (name: string) => mocks.cookie(name) }) }));
 vi.mock("next-intl/server", () => ({ getLocale: mocks.locale }));
@@ -49,8 +46,8 @@ const providerProps = (locale: "fr" | "en") => ({
   children: null,
 });
 const render = (locale: "fr" | "en", node: ReactElement) => renderToStaticMarkup(createElement(NextIntlClientProvider, providerProps(locale), node));
-const view = (config: NewsConfig, locale: "fr" | "en", collapsed = false, visuals: NewsVisuals = {}, poll: { vote: boolean | null } | null = null) =>
-  render(locale, createElement(NewsPanelView, { news: localizeNews(config, locale, visuals)!, initialCollapsed: collapsed, poll }));
+const view = (config: NewsConfig, locale: "fr" | "en", collapsed = false, visuals: NewsVisuals = {}) =>
+  render(locale, createElement(NewsPanelView, { news: localizeNews(config, locale, visuals)!, initialCollapsed: collapsed }));
 
 const card = (id: string): NewsCardView => ({ id, name: `Carte ${id}`, nameNative: null, imageUrl: `https://s4.anilist.co/${id}.png`, rank: 1, rarity: "MYTHIC", power: 90, ki: 80, appearance: {}, formName: null });
 const imperial = { slug: "imperial", name: "Impérial", emblem: "皇", shape: "JUBAKO" as const, theme: { base: "#1E3557", dark: "#0B1424", pattern: "kikko" as const, ink: "light" as const }, endsAt: "2026-11-06T22:00:00.000Z" };
@@ -62,8 +59,6 @@ beforeEach(() => {
   mocks.cookie.mockReturnValue(undefined);
   mocks.locale.mockResolvedValue("fr");
   mocks.visuals.mockResolvedValue({});
-  mocks.user.mockResolvedValue(null);
-  mocks.vote.mockResolvedValue(null);
 });
 
 describe("carrousel Nouveautés de l'accueil", () => {
@@ -160,34 +155,5 @@ describe("carrousel Nouveautés de l'accueil", () => {
 
     mocks.cookie.mockImplementation((name: string) => (name === NEWS_COOKIE ? { value: String(NEWS_DEFAULT.revision - 1) } : undefined));
     expect((await NewsPanel())?.props).toMatchObject({ initialCollapsed: false });
-  });
-
-  it("pose le sondage Discord en première bannière pour un joueur connecté, jamais pour un visiteur", async () => {
-    expect((await NewsPanel())?.props).toMatchObject({ poll: null });
-    expect(mocks.vote).not.toHaveBeenCalled();
-
-    mocks.user.mockResolvedValue({ id: "player" });
-    mocks.vote.mockResolvedValue(true);
-    expect((await NewsPanel())?.props).toMatchObject({ poll: { vote: true } });
-    expect(mocks.vote).toHaveBeenCalledWith("player");
-
-    const html = view(NEWS_DEFAULT, "fr", false, {}, { vote: null });
-    const count = NEWS_DEFAULT.items.length + 1;
-    expect(html.match(/aria-roledescription="bannière"/g)).toHaveLength(count);
-    expect(html).toMatch(/aria-label="1 sur \d+" data-tone="ai" data-kind="poll"/);
-    expect(html).toContain('aria-label="Bannière 1 : Un Discord Kiraku, ça vous intéresse ?" aria-current="true"');
-    expect(html).toContain('aria-label="Bannière 2 : Le parrainage évolue"');
-    expect(html).toContain(">Sondage</p>");
-    expect(html).toContain("wagara-shippo");
-    expect(html).not.toContain("wagara-kikko");
-    expect(html).toMatch(/aria-pressed="false"[^>]*>Oui</);
-    expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>(Oui|Non)</);
-  });
-
-  it("fige le sondage sur la réponse de qui a déjà voté", () => {
-    const html = view(NEWS_DEFAULT, "en", false, {}, { vote: false });
-    expect(html).toMatch(/aria-pressed="true" disabled=""[^>]*><span aria-hidden="true">✓<\/span>No</);
-    expect(html).toMatch(/aria-pressed="false" disabled=""[^>]*>Yes</);
-    expect(html).toContain("You&#x27;ve already answered this poll, thanks!");
   });
 });
