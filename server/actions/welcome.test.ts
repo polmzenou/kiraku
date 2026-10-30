@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ user: vi.fn(), updateMany: vi.fn(), createMany: vi.fn(), findVote: vi.fn(), rateLimit: vi.fn() }));
+const mocks = vi.hoisted(() => ({ user: vi.fn(), updateMany: vi.fn(), rateLimit: vi.fn() }));
 vi.mock("../user", () => ({ requireActiveUser: mocks.user }));
-vi.mock("../db", () => ({ prisma: { user: { updateMany: mocks.updateMany }, pollVote: { createMany: mocks.createMany, findUnique: mocks.findVote } } }));
+vi.mock("../db", () => ({ prisma: { user: { updateMany: mocks.updateMany } } }));
 vi.mock("../ratelimit", () => ({ rateLimit: mocks.rateLimit }));
 import { ANNOUNCEMENTS } from "@/lib/welcome/release";
-import { claimAnnouncementAction, voteDiscordPollAction } from "./welcome";
+import { claimAnnouncementAction } from "./welcome";
 
 const [apology, v2, v25] = ANNOUNCEMENTS;
 
@@ -14,7 +14,6 @@ beforeEach(() => {
   mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: null });
   mocks.rateLimit.mockResolvedValue({ success: true });
   mocks.updateMany.mockResolvedValue({ count: 1 });
-  mocks.createMany.mockResolvedValue({ count: 1 });
 });
 
 describe("annonces uniques par compte", () => {
@@ -103,40 +102,5 @@ describe("annonces uniques par compte", () => {
     mocks.rateLimit.mockResolvedValue({ success: false });
     expect(await claimAnnouncementAction("player", "v2")).toBe(false);
     expect(mocks.updateMany).not.toHaveBeenCalled();
-  });
-});
-
-describe("sondage Discord de la v2.5", () => {
-  it("refuse les visiteurs et les réponses invalides", async () => {
-    mocks.user.mockResolvedValue(null);
-    expect(await voteDiscordPollAction(true)).toBeNull();
-    mocks.user.mockResolvedValue({ id: "player" });
-    expect(await voteDiscordPollAction("oui")).toBeNull();
-    expect(mocks.createMany).not.toHaveBeenCalled();
-  });
-
-  it("enregistre la première réponse du joueur, sans jamais écraser une ligne existante", async () => {
-    expect(await voteDiscordPollAction(false)).toEqual({ vote: false, already: false });
-    expect(mocks.createMany).toHaveBeenCalledWith({
-      data: [{ userId: "player", poll: "discord-community", answer: false }],
-      skipDuplicates: true,
-    });
-    expect(mocks.findVote).not.toHaveBeenCalled();
-  });
-
-  it("ne laisse pas revoter : renvoie la réponse déjà donnée", async () => {
-    mocks.createMany.mockResolvedValue({ count: 0 });
-    mocks.findVote.mockResolvedValue({ answer: true });
-    expect(await voteDiscordPollAction(false)).toEqual({ vote: true, already: true });
-    expect(mocks.findVote).toHaveBeenCalledWith({
-      where: { userId_poll: { userId: "player", poll: "discord-community" } },
-      select: { answer: true },
-    });
-  });
-
-  it("n'écrit rien lorsque la limite est atteinte", async () => {
-    mocks.rateLimit.mockResolvedValue({ success: false });
-    expect(await voteDiscordPollAction(true)).toBeNull();
-    expect(mocks.createMany).not.toHaveBeenCalled();
   });
 });

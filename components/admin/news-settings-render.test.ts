@@ -8,7 +8,6 @@ import { NEWS_DEFAULT, type NewsConfig } from "@/lib/home/news-schema";
 
 vi.mock("@/server/actions/admin-settings", () => ({ updateNewsSettings: vi.fn(), previewNewsVisuals: vi.fn() }));
 vi.mock("@/server/actions/admin-boosters", () => ({ searchFeaturedCards: vi.fn() }));
-vi.mock("@/server/actions/welcome", () => ({ voteDiscordPollAction: vi.fn() }));
 vi.mock("@/components/fuda/Fuda", async () => {
   const { createElement: h } = await import("react");
   return { Fuda: ({ card }: { card: { name: string } }) => h("span", { "data-card": card.name }) };
