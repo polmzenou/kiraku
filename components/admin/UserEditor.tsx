@@ -87,13 +87,17 @@ function LeaderboardForm({ hiddenSince }: { hiddenSince: Date | null }) {
   );
 }
 
-/** Cartes uniques retirées du total du joueur dans le classement, sans toucher à sa collection. */
-function LeaderboardMalusForm({ initial }: { initial: number }) {
+type LeaderboardMalus = { cards: number; mythics: number };
+
+/** Cartes uniques et Mythiques retirées des totaux du joueur dans le classement, sans toucher à sa collection. */
+function LeaderboardMalusForm({ initial }: { initial: LeaderboardMalus }) {
   const t = useTranslations("admin.users");
-  const [value, setValue] = useState(initial);
+  const [value, setValue] = useState(initial.cards);
+  const [mythics, setMythics] = useState(initial.mythics);
   return (
-    <MutationForm title={t("leaderboardMalus")} change={{ kind: "leaderboardMalus", value }}>
-      <NumberField label={t("value")} min={0} max={MAX_ADMIN_VALUE} value={value} onChange={setValue} hint={t("leaderboardMalusHint")} />
+    <MutationForm title={t("leaderboardMalus")} change={{ kind: "leaderboardMalus", value, mythics }}>
+      <NumberField label={t("leaderboardMalusCards")} min={0} max={MAX_ADMIN_VALUE} value={value} onChange={setValue} />
+      <NumberField label={t("leaderboardMalusMythics")} min={0} max={MAX_ADMIN_VALUE} value={mythics} onChange={setMythics} hint={t("leaderboardMalusHint")} />
     </MutationForm>
   );
 }
@@ -233,7 +237,7 @@ function DiscoveryForm({ count, total, minimum }: { count: number; total: number
 }
 
 export function UserEditor({ userId, account, ambassadorSince, leaderboardHiddenAt, leaderboardMalus, self, stats, coins, boosters, discoveries, catalogTotal, ownedCatalogCards, selectedCard, sessions }: {
-  userId: string; account: Account; ambassadorSince: Date | null; leaderboardHiddenAt: Date | null; leaderboardMalus: number; self: boolean; stats: Record<UserStat, number>; coins: number;
+  userId: string; account: Account; ambassadorSince: Date | null; leaderboardHiddenAt: Date | null; leaderboardMalus: LeaderboardMalus; self: boolean; stats: Record<UserStat, number>; coins: number;
   boosters: Booster[]; discoveries: number; catalogTotal: number; ownedCatalogCards: number; selectedCard: AdminCardCandidate | null; sessions: number;
 }) {
   const t = useTranslations("admin.users");
@@ -248,7 +252,7 @@ export function UserEditor({ userId, account, ambassadorSince, leaderboardHidden
       <AccountForm key={JSON.stringify(account)} initial={account} self={self} />
       <AmbassadorForm key={ambassadorSince?.toISOString() ?? "none"} since={ambassadorSince} />
       <LeaderboardForm key={leaderboardHiddenAt?.toISOString() ?? "shown"} hiddenSince={leaderboardHiddenAt} />
-      <LeaderboardMalusForm key={leaderboardMalus} initial={leaderboardMalus} />
+      <LeaderboardMalusForm key={`${leaderboardMalus.cards}:${leaderboardMalus.mythics}`} initial={leaderboardMalus} />
       <BalanceForm key={coins} coins={coins} />
       {USER_STATS.map((field) => <StatForm key={`${field}:${stats[field]}`} field={field} initial={stats[field]} />)}
       <DiscoveryForm key={discoveries} count={discoveries} total={catalogTotal} minimum={ownedCatalogCards} />

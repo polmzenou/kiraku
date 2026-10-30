@@ -115,7 +115,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
     getReviewSample(),
     getReviewSummary(),
     member && user ? getOwnReview(user.id) : null,
-    getTopCollectors(3),
+    getTopCollectors(3, { raw: user?.role === "DEV" }),
     // Tirages récents, puis ceux que le joueur possède déjà
     getRecentPulls(locale).then(async (rows) => [rows, rows ? await ownedCardIds(user?.id, rows.map((p) => p.card.cardId)) : []] as const),
     getSetting("home.pullFeed.refreshSeconds"),

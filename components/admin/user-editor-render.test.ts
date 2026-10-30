@@ -12,7 +12,7 @@ vi.mock("next/image", () => ({ default: "img" }));
 function render(locale: "fr" | "en", self = false, empty = false) {
   const providerProps = { locale, messages: locale === "fr" ? fr : en, timeZone: "UTC", onError: (e: Error) => { throw e; }, children: null };
   return renderToStaticMarkup(createElement(NextIntlClientProvider, providerProps, createElement(UserEditor, {
-    userId: "player", self, ambassadorSince: null, leaderboardHiddenAt: null, leaderboardMalus: 0, account: { username: "Player", role: self ? "ADMIN" : "USER", banned: false, profileVisibility: "PUBLIC", showCollection: true },
+    userId: "player", self, ambassadorSince: null, leaderboardHiddenAt: null, leaderboardMalus: { cards: 0, mythics: 0 }, account: { username: "Player", role: self ? "ADMIN" : "USER", banned: false, profileVisibility: "PUBLIC", showCollection: true },
     stats: { boosterStock: 5, rankPoints: 100, pityCount: 7, standardCount: 8 }, coins: 1000,
     boosters: empty ? [] : [{ id: "type", name: "Ancien événement", active: false, count: 3, pity: 4 }],
     discoveries: 20, catalogTotal: 100, ownedCatalogCards: 5, sessions: 2,

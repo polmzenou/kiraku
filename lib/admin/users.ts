@@ -39,8 +39,8 @@ export const adminUserMutationSchema = z.discriminatedUnion("kind", [
   // Rôle Ambassadeur : donné ou retiré seulement ici
   z.object({ ...base, kind: z.literal("ambassador"), ambassador: z.boolean() }).strict(),
   z.object({ ...base, kind: z.literal("leaderboard"), hidden: z.boolean() }).strict(),
-  // Cartes uniques retirées du total affiché dans le classement des collectionneurs
-  z.object({ ...base, kind: z.literal("leaderboardMalus"), value: z.number().int().min(0).max(MAX_ADMIN_VALUE) }).strict(),
+  // Cartes uniques (`value`) et Mythiques uniques (`mythics`) retirées des totaux affichés dans le classement des collectionneurs
+  z.object({ ...base, kind: z.literal("leaderboardMalus"), value: z.number().int().min(0).max(MAX_ADMIN_VALUE), mythics: z.number().int().min(0).max(MAX_ADMIN_VALUE) }).strict(),
 ]).refine((v) => !(v.kind === "coins" && v.mode !== "SET" && (v.amount < 1 || v.amount > MAX_MOVEMENT)), { message: "Invalid movement" })
   .refine((v) => !(v.kind === "booster" && v.mode !== "SET" && (v.amount < 1 || v.amount > MAX_ADMIN_QUANTITY)), { message: "Invalid quantity" });
 

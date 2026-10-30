@@ -8,7 +8,7 @@ const target = {
   id: "player", username: "Player", role: "USER", bannedAt: null, profileVisibility: "PUBLIC", showCollection: true,
   coins: 500, boosterStock: 2, boosterAnchor: new Date(0), rankPoints: 0, pityCount: 3, standardCount: 4, bannerPity: {}, battleTeam: [],
   ambassadorSince: null as Date | null, titleId: null as string | null, frameId: "frame-hisui" as string | null, nameColorId: "color-lime" as string | null,
-  leaderboardHiddenAt: null as Date | null, leaderboardMalus: 0,
+  leaderboardHiddenAt: null as Date | null, leaderboardMalus: 0, leaderboardMythicMalus: 0,
 };
 
 function setup({ role = "ADMIN", banned = false, exists = true, player = {} as Partial<typeof target> } = {}) {
@@ -189,12 +189,13 @@ describe("classement des collectionneurs", () => {
     expect(tx.user.update.mock.calls[0][0].data).toEqual({ leaderboardHiddenAt: null });
   });
 
-  it("pose un malus de cartes sans toucher à la collection, et le journalise", async () => {
+  it("pose un malus de cartes et de Mythiques sans toucher à la collection, et le journalise", async () => {
     const { tx, db } = setup();
-    await mutateAdminUserWith(db, "admin", { ...base, kind: "leaderboardMalus", value: 750 });
-    expect(tx.user.update.mock.calls[0][0].data).toEqual({ leaderboardMalus: 750 });
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "leaderboardMalus", value: 750, mythics: 12 });
+    expect(tx.user.update.mock.calls[0][0].data).toEqual({ leaderboardMalus: 750, leaderboardMythicMalus: 12 });
     const log = tx.adminLog.create.mock.calls[0][0].data;
     expect(log.action).toBe("USER_LEADERBOARDMALUS");
-    expect(log.before).toEqual({ malus: 0 });
+    expect(log.before).toEqual({ malus: 0, mythicMalus: 0 });
+    expect(log.after.values).toEqual({ malus: 750, mythicMalus: 12 });
   });
 });

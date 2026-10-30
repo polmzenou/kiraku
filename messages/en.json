@@ -1258,7 +1258,9 @@
       "hideFromLeaderboard": "Remove from leaderboard",
       "showInLeaderboard": "Put back in leaderboard",
       "leaderboardMalus": "Leaderboard penalty",
-      "leaderboardMalusHint": "Unique cards taken off their total in the collector leaderboard. Their collection isn't touched. 0 = no penalty."
+      "leaderboardMalusCards": "Unique cards removed",
+      "leaderboardMalusMythics": "Mythics removed",
+      "leaderboardMalusHint": "Taken off their totals in the collector leaderboard (unique cards, then Mythics). Their collection isn't touched, and the DEV role sees totals without penalties. 0 = no penalty."
     },
     "moduleNames": {
       "boosters": "Boosters",

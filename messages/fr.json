@@ -1258,7 +1258,9 @@
       "hideFromLeaderboard": "Enlever du classement",
       "showInLeaderboard": "Remettre dans le classement",
       "leaderboardMalus": "Malus au classement",
-      "leaderboardMalusHint": "Cartes uniques retirées de son total dans le classement des collectionneurs. Sa collection n'est pas touchée. 0 = aucun malus."
+      "leaderboardMalusCards": "Cartes uniques retirées",
+      "leaderboardMalusMythics": "Mythiques retirées",
+      "leaderboardMalusHint": "Retirées de ses totaux dans le classement des collectionneurs (cartes uniques, puis Mythiques). Sa collection n'est pas touchée, et le rôle DEV voit les totaux sans malus. 0 = aucun malus."
     },
     "moduleNames": {
       "boosters": "Boosters",

@@ -74,7 +74,7 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
     const user = await tx.user.findUnique({ where: { id: input.userId }, select: {
       id: true, username: true, role: true, bannedAt: true, profileVisibility: true, showCollection: true,
       coins: true, boosterStock: true, boosterAnchor: true, rankPoints: true, pityCount: true, standardCount: true, bannerPity: true, battleTeam: true,
-      ambassadorSince: true, titleId: true, frameId: true, nameColorId: true, leaderboardHiddenAt: true, leaderboardMalus: true,
+      ambassadorSince: true, titleId: true, frameId: true, nameColorId: true, leaderboardHiddenAt: true, leaderboardMalus: true, leaderboardMythicMalus: true,
     } });
     if (!user) throw new AdminUserMutationError("NOT_FOUND");
     const userId = user.id;
@@ -252,9 +252,9 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
       }
       case "leaderboardMalus": {
         // Ne change que le total affiché dans le classement : la collection reste entière
-        before = { malus: user.leaderboardMalus };
-        after = { malus: input.value };
-        await tx.user.update({ where: { id: userId }, data: { leaderboardMalus: input.value } });
+        before = { malus: user.leaderboardMalus, mythicMalus: user.leaderboardMythicMalus };
+        after = { malus: input.value, mythicMalus: input.mythics };
+        await tx.user.update({ where: { id: userId }, data: { leaderboardMalus: input.value, leaderboardMythicMalus: input.mythics } });
         break;
       }
       case "sessions": {
