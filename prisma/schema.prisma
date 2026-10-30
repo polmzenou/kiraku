@@ -536,6 +536,7 @@ model BoosterType {
   usesFreeStock   Boolean         @default(true)
   priceZeni       Int? // prix en Zeni (payant, ou quand le stock gratuit est vide) ; null = pas d'achat
   countsForPity   Boolean         @default(true) // pitié Mythique partagée
+  resetsPity      Boolean         @default(true) // ses Mythiques remettent la pitié à zéro (pas l'Impérial)
   bonusEligible   Boolean         @default(true) // sachets doré et divin
   rateBoost       Int             @default(10000) // points de base : parts des raretés ≥ rateBoostFrom multipliées (27000 = ×2,7)
   rateBoostFrom   String? // rareté de départ du boost ; null = taux normaux

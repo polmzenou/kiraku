@@ -101,15 +101,17 @@ describe("les 38 boosters de départ", () => {
   it("rareté : ni pitié, ni doré, ni sachet scellé ; formats : pitié seulement", () => {
     const bonuses = (slug: string) => {
       const s = BOOSTER_SEEDS.find((x) => x.slug === slug)!;
-      return bonusesFor({ bonusEligible: s.bonusEligible ?? true, countsForPity: s.countsForPity ?? true });
+      return bonusesFor({ bonusEligible: s.bonusEligible ?? true, countsForPity: s.countsForPity ?? true, resetsPity: s.resetsPity ?? true });
     };
     for (const slug of ["rare", "epique", "legendaire", "mythique"]) {
-      expect(bonuses(slug)).toEqual({ golden: false, drop: false, pity: false });
+      expect(bonuses(slug)).toEqual({ golden: false, drop: false, pity: false, pityReset: true });
     }
     for (const slug of ["pochibukuro", "jubako"]) {
-      expect(bonuses(slug)).toEqual({ golden: false, drop: false, pity: true });
+      expect(bonuses(slug)).toEqual({ golden: false, drop: false, pity: true, pityReset: true });
     }
-    expect(bonuses("standard")).toEqual({ golden: true, drop: true, pity: true });
+    expect(bonuses("standard")).toEqual({ golden: true, drop: true, pity: true, pityReset: true });
+    // L'Impérial fait avancer la pitié, sans que ses Mythiques la remettent à zéro
+    expect(bonuses("imperial")).toEqual({ golden: true, drop: true, pity: true, pityReset: false });
   });
 });
 
@@ -127,10 +129,10 @@ describe("Impérial (Prestige)", () => {
   });
 
   it("depuis un crédit, garde la pitié et le doré, jamais de sachet scellé", () => {
-    const flags = { countsForPity: true, bonusEligible: true };
-    expect(creditBonuses({ ...flags, kind: "PRESTIGE" })).toEqual({ golden: true, drop: false, pity: true });
-    expect(creditBonuses({ ...flags, kind: "FILTERED" })).toEqual({ golden: false, drop: false, pity: true });
-    expect(creditBonuses({ countsForPity: true, bonusEligible: false, kind: "PRESTIGE" })).toEqual({ golden: false, drop: false, pity: true });
+    const flags = { countsForPity: true, resetsPity: false, bonusEligible: true };
+    expect(creditBonuses({ ...flags, kind: "PRESTIGE" })).toEqual({ golden: true, drop: false, pity: true, pityReset: false });
+    expect(creditBonuses({ ...flags, resetsPity: true, kind: "FILTERED" })).toEqual({ golden: false, drop: false, pity: true, pityReset: true });
+    expect(creditBonuses({ countsForPity: true, resetsPity: false, bonusEligible: false, kind: "PRESTIGE" })).toEqual({ golden: false, drop: false, pity: true, pityReset: false });
   });
 
   it("règles de tirage du type : planchers globaux et taux boostés à partir de Légendaire", () => {
@@ -148,7 +150,7 @@ describe("Impérial (Prestige)", () => {
 
   it("le seed de l'Impérial : exclusif boutique, 5 cartes comme le standard, ×2,7 dès Légendaire", () => {
     const seed = BOOSTER_SEEDS.find((s) => s.slug === "imperial")!;
-    expect(seed).toMatchObject({ kind: "PRESTIGE", usesFreeStock: false, priceZeni: null, countsForPity: true, bonusEligible: true, rateBoost: 27_000, rateBoostFrom: "LEGENDARY" });
+    expect(seed).toMatchObject({ kind: "PRESTIGE", usesFreeStock: false, priceZeni: null, countsForPity: true, resetsPity: false, bonusEligible: true, rateBoost: 27_000, rateBoostFrom: "LEGENDARY" });
     expect(seed.slotFloors).toBeUndefined();
   });
 });

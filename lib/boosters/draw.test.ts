@@ -188,6 +188,41 @@ describe("drawBoosters", () => {
   });
 });
 
+describe("pitié qui avance sans remise à zéro (Impérial)", () => {
+  const pool = fakePool();
+  const noBonus = { ...DEFAULT_RULES, ...NO_BONUS };
+  /** Toutes les parts sur Mythique : chaque booster en contient une. */
+  const mythicRates = Object.fromEntries(Object.keys(DEFAULT_RULES.rates).map((r) => [r, r === "MYTHIC" ? 1 : 0]));
+  const imperial = { golden: false, drop: false, pity: true, pityReset: false };
+
+  it("une Mythique tombée d'elle-même laisse le compteur avancer", () => {
+    const { boosters, state } = drawBoosters(seededRng(2), { pool, rules: { ...noBonus, rates: mythicRates }, state: { pityCount: 40, standardCount: 0 }, count: 3, bonuses: imperial });
+    expect(boosters.every((b) => b.cards.some((c) => c.rarity === "MYTHIC") && !b.pityTriggered)).toBe(true);
+    expect(state.pityCount).toBe(43);
+  });
+
+  it("la Mythique garantie, elle, remet le compteur à zéro", () => {
+    const { boosters, state } = drawBoosters(lowest, { pool, rules: noBonus, state: { pityCount: 249, standardCount: 0 }, count: 1, bonuses: imperial });
+    expect(boosters[0].pityTriggered).toBe(true);
+    expect(state.pityCount).toBe(0);
+  });
+
+  it("le compteur gardé par l'Impérial déclenche la garantie au booster suivant", () => {
+    const first = drawBoosters(seededRng(2), { pool, rules: { ...noBonus, rates: mythicRates }, state: { pityCount: 249, standardCount: 0 }, count: 1, bonuses: imperial });
+    // Une Mythique est déjà là : pas de garantie forcée, et le compteur ne repart pas de zéro
+    expect(first.boosters[0].pityTriggered).toBe(false);
+    expect(first.state.pityCount).toBe(250);
+    const next = drawBoosters(lowest, { pool, rules: noBonus, state: first.state, count: 1 });
+    expect(next.boosters[0].pityTriggered).toBe(true);
+    expect(next.state.pityCount).toBe(0);
+  });
+
+  it("par défaut, une Mythique remet toujours le compteur à zéro", () => {
+    const { state } = drawBoosters(seededRng(2), { pool, rules: { ...noBonus, rates: mythicRates }, state: { pityCount: 40, standardCount: 0 }, count: 1 });
+    expect(state.pityCount).toBe(0);
+  });
+});
+
 describe("sachets scellés", () => {
   const pool = fakePool();
   const order = Object.keys(rates);

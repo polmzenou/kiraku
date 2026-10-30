@@ -112,6 +112,8 @@ export type BoosterTypeView = {
   usesFreeStock: boolean;
   priceZeni: number | null;
   countsForPity: boolean;
+  /** Une Mythique tombée dans ce type remet la pitié à zéro ; sinon (Impérial) seule la Mythique garantie. */
+  resetsPity: boolean;
   bonusEligible: boolean;
   /** Points de base : parts des raretés à partir de rateBoostFrom multipliées (27 000 = ×2,7). */
   rateBoost: number;
@@ -204,14 +206,14 @@ export function availability(
 }
 
 /** Bonus applicables à un type : doré et sachets scellés pour les sachets gratuits, pitié selon le type. */
-export function bonusesFor(type: Pick<BoosterTypeView, "bonusEligible" | "countsForPity">) {
-  return { golden: type.bonusEligible, drop: type.bonusEligible, pity: type.countsForPity };
+export function bonusesFor(type: Pick<BoosterTypeView, "bonusEligible" | "countsForPity" | "resetsPity">) {
+  return { golden: type.bonusEligible, drop: type.bonusEligible, pity: type.countsForPity, pityReset: type.resetsPity };
 }
 
 /**
  * Bonus d'un booster crédité (boutique, cadeau, récompense) : jamais de sachet scellé, ni de doré, sauf
  * pour un Prestige qui fait avancer le compteur du sachet doré et peut l'être lui-même.
  */
-export function creditBonuses(type: Pick<BoosterTypeView, "kind" | "bonusEligible" | "countsForPity">) {
+export function creditBonuses(type: Pick<BoosterTypeView, "kind" | "bonusEligible" | "countsForPity" | "resetsPity">) {
   return { ...bonusesFor(type), golden: type.kind === "PRESTIGE" && type.bonusEligible, drop: false };
 }

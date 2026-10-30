@@ -379,6 +379,13 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, focusSerie
             )}
           </Field>
           <Check label={t("countsForPity")} checked={v.countsForPity} onChange={(c) => set("countsForPity", c)} />
+          {/* Impérial : fait avancer la pitié, mais seule la Mythique garantie la remet à zéro */}
+          {v.countsForPity && (
+            <div className="flex flex-col gap-1 pl-8">
+              <Check label={t("resetsPity")} checked={v.resetsPity} onChange={(c) => set("resetsPity", c)} />
+              <p className="text-xs text-text-muted">{t("resetsPityHint")}</p>
+            </div>
+          )}
           <Check label={t("bonusEligible")} checked={v.bonusEligible} onChange={(c) => set("bonusEligible", c)} />
           {/* Boost de rareté (Impérial) : les parts des raretés à partir de celle choisie sont multipliées */}
           <Field label={t("rateBoostFrom")} hint={t("rateBoostHint")}>

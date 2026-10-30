@@ -21,6 +21,8 @@ export type BoosterSeed = {
   usesFreeStock?: boolean;
   priceZeni?: number | null;
   countsForPity?: boolean;
+  /** Ses Mythiques remettent la pitié à zéro (par défaut oui ; non pour l'Impérial). */
+  resetsPity?: boolean;
   bonusEligible?: boolean;
   /** Boost de rareté en points de base (27 000 = ×2,7), à partir de rateBoostFrom. */
   rateBoost?: number;
@@ -207,7 +209,8 @@ export const BOOSTER_SEEDS: BoosterSeed[] = [
   filtered("special", "manga", "紙", ["Manga", "Manga"], ["Persos jamais animés", "Never-animated characters"], theme("#DCD0B4", "#9A8A68", "asanoha", "dark"), { mediaType: "MANGA" }),
 
   // Exclusif boutique (3 500 Zeni, 1 par jour) : 5 cartes comme le standard, Légendaire et mieux ×2,7.
-  // Laque noire et filets d'or kikkō ; compte pour la pitié et le sachet doré, jamais scellé.
+  // Laque noire et filets d'or kikkō ; compte pour la pitié et le sachet doré, jamais scellé. Ses Mythiques
+  // ne remettent pas la pitié à zéro : seule la Mythique garantie le fait.
   {
     slug: "imperial",
     kind: "PRESTIGE",
@@ -220,6 +223,7 @@ export const BOOSTER_SEEDS: BoosterSeed[] = [
     usesFreeStock: false,
     priceZeni: null,
     countsForPity: true,
+    resetsPity: false,
     bonusEligible: true,
     rateBoost: 27_000,
     rateBoostFrom: "LEGENDARY",
