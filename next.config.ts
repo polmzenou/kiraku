@@ -27,6 +27,8 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/*/og-image": ["./server/og/fonts/*.ttf", "./public/icons/icon-512.png"],
     "/*/og-image/**": ["./server/og/fonts/*.ttf", "./public/icons/icon-512.png"],
+    "/api/cron/discord": ["./server/og/fonts/*.ttf", "./public/icons/icon-512.png", "./public/ranks/*.png"],
+    "/api/admin/discord/ranked-preview": ["./server/og/fonts/*.ttf", "./public/icons/icon-512.png", "./public/ranks/*.png"],
   },
   images: {
     // Garder les originaux pour les cartes, avatars et logos : l'optimiseur Vercel

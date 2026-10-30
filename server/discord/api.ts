@@ -13,8 +13,8 @@ async function request<T>(path: string, method: string, body: unknown, bot: bool
   try {
     response = await fetch(`https://discord.com/api/v10${path}`, {
       method,
-      headers: { "Content-Type": "application/json", ...(bot && { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}` }) },
-      ...(body !== undefined && { body: JSON.stringify(body) }),
+      headers: { ...(!(body instanceof FormData) && { "Content-Type": "application/json" }), ...(bot && { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}` }) },
+      ...(body !== undefined && { body: body instanceof FormData ? body : JSON.stringify(body) }),
       signal: AbortSignal.timeout(5000),
       cache: "no-store",
       redirect: "error",

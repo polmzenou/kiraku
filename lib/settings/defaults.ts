@@ -337,6 +337,7 @@ export const SETTING_SCHEMAS = {
   // Modal « Rejoins notre Discord » : lien, textes fr/en, déclencheur et fréquence
   "discord.joinModal": joinModalSchema,
   "discord.marketEnabled": z.boolean(),
+  "discord.rankedEnabled": z.boolean(),
   // Interrupteurs de fonctionnalités sans module propre (casino : tuile « Bientôt » seulement)
   "features.casino": z.boolean(),
   // Carrousel « En direct · Gros tirages » de l'accueil (étape 12c)
@@ -534,6 +535,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "discord.linkBonusZeni": 500, // versé une seule fois, à la première liaison
   "discord.joinModal": JOIN_MODAL_DEFAULT, // désactivé par défaut
   "discord.marketEnabled": false,
+  "discord.rankedEnabled": false,
   "features.casino": true,
   "home.pullFeed.enabled": true,
   "home.pullFeed.minRarity": "LEGENDARY",

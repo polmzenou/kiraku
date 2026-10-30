@@ -1,6 +1,6 @@
 # Communauté Discord Kiraku
 
-## Bouton du règlement et annonces du marché
+## Accueil, rôles, marché et saisons classées
 
 Ces fonctions réutilisent l'application Discord de la connexion Kiraku et son bot. Le serveur
 Next.js reçoit les clics par HTTP : pas de processus Discord connecté en permanence. Le bot peut
@@ -16,9 +16,15 @@ DISCORD_GUILD_ID="1565773684243697905"
 DISCORD_RULES_CHANNEL_ID="1565778336947634266"
 DISCORD_MEMBER_ROLE_ID="1565774539886039142"
 DISCORD_MARKET_CHANNEL_ID="1565793902324219925"
+DISCORD_ROLES_CHANNEL_ID="1565778506120433664"
+DISCORD_MERCHANT_ROLE_ID="1565817691132928121"
+DISCORD_COLLECTOR_ROLE_ID="1565818296002154506"
+DISCORD_FIGHTER_ROLE_ID="1565818436355887214"
+DISCORD_LINKED_ROLE_ID="1565817846720757880"
+DISCORD_RANKED_CHANNEL_ID="1565818050631176202"
 ```
 
-Les cinq valeurs ci-dessus sont publiques. `DISCORD_BOT_TOKEN` reste secret et doit déjà être
+Les identifiants et la clé publique ci-dessus sont publics. `DISCORD_BOT_TOKEN` reste secret et doit déjà être
 renseigné, ainsi que `AUTH_DISCORD_ID` (la même application que celle de la clé publique).
 La clé publique ne remplace ni le jeton du bot ni `AUTH_DISCORD_SECRET`.
 
@@ -39,11 +45,74 @@ La clé publique ne remplace ni le jeton du bot ni `AUTH_DISCORD_SECRET`.
 
 Le serveur vérifie la signature Ed25519 du corps brut et son horodatage, l'application,
 le serveur, le salon, l'auteur du message et l'identifiant du bouton. Il ne peut attribuer que
-le rôle Membre fixé dans l'environnement, et conserve les autres rôles. Les membres encore en
+le rôle Membre fixé dans l'environnement depuis ce bouton, et conserve les autres rôles. Les membres encore en
 attente de la validation native de Discord doivent la terminer avant l'attribution.
 
 Le message publié est enregistré en base : une nouvelle publication l'actualise. S'il a été
 supprimé sur Discord, la prochaine publication le recrée.
+
+### Activer les rôles de préférences et de compte lié
+
+1. Ajouter les six nouvelles variables `DISCORD_ROLES_CHANNEL_ID`, `DISCORD_MERCHANT_ROLE_ID`,
+   `DISCORD_COLLECTOR_ROLE_ID`, `DISCORD_FIGHTER_ROLE_ID`, `DISCORD_LINKED_ROLE_ID` et
+   `DISCORD_RANKED_CHANNEL_ID` dans l'environnement de l'application du VPS.
+2. Appliquer `npm run db:deploy`, puis `npm run build` et `pm2 restart kiraku --update-env`.
+   La migration `20261030140000_discord_roles_ranked` ajoute la file des comptes liés et le
+   classement figé des saisons. Ne pas la lancer sur la base locale obsolète.
+3. Placer **Marchand**, **Collectionneur**, **Fighter** et **Joueur Kiraku vérifié** sous le rôle du
+   bot. Ces quatre rôles n'ont besoin d'aucune permission de gestion. Le bot conserve **Gérer les rôles**.
+4. Dans `#rôles`, donner au bot **Voir le salon**, **Voir l'historique**, **Envoyer des messages**
+   et **Intégrer des liens**. Les membres peuvent lire et cliquer sans pouvoir écrire.
+5. Dans Kiraku → **Administration → Discord**, cliquer sur **Publier ou actualiser le choix des rôles**.
+   Le message propose trois boutons d'ajout/retrait et un bouton **Vérifier mon compte**.
+
+| Rôle | Effet |
+| --- | --- |
+| Marchand | Notifications des nouvelles ventes et annonces d'échange. Aucun verrou d'accès au marché. |
+| Collectionneur | Badge d'intérêt pour la collection, sans notification automatique pour le moment. |
+| Fighter | Notification du bilan de saison et du début de la suivante. |
+| Joueur Kiraku vérifié | Attribué automatiquement après liaison Discord à un compte Kiraku actif. |
+
+Le rôle **Marchand** n'est pas requis pour voir le marché : les permissions de **Membre** continuent
+de déterminer cet accès. Pour notifier les rôles sans les rendre mentionnables par tous, autoriser
+**Mentionner @everyone, @here et tous les rôles** au **compte du bot seulement** dans `#marché`
+et `#ranked`. Le code limite les mentions au rôle Marchand ou Fighter concerné ; les mises à jour
+de prix, enchères ou statut ne renvoient pas de notification.
+
+Le choix de préférences exige le rôle Membre et ne peut ajouter que les trois rôles configurés.
+Un rôle ayant reçu des permissions de gestion est refusé. Aucun bouton ne permet de demander
+arbitrairement un autre rôle. **Joueur Kiraku vérifié** ne se choisit pas : le serveur relit la liaison
+OAuth actuelle dans Kiraku. Les comptes invités, bannis ou en cours de suppression sont exclus.
+
+Le cron existant rattrape progressivement les comptes déjà liés, puis les revérifie chaque jour.
+Il retire ce seul rôle si le compte n'est plus lié ou éligible. Un utilisateur absent du serveur
+n'est jamais ajouté au serveur. Après son arrivée et l'acceptation du règlement, le bot refait
+la vérification ; le bouton **Vérifier mon compte** permet également de la demander immédiatement.
+La validation native de Discord doit être terminée avant toute attribution.
+
+### Activer les bilans de saisons dans #ranked
+
+1. Donner au bot **Voir le salon**, **Voir l'historique**, **Envoyer des messages**,
+   **Intégrer des liens** et **Joindre des fichiers** dans `#ranked`. Les membres restent en lecture seule.
+2. Dans **Administration → Discord**, ouvrir **Voir l'aperçu du classement en image**. Cet aperçu privé
+   utilise le classement actuel ; il n'envoie rien sur Discord et ne clôt aucune saison.
+3. Activer **Annoncer les fins et débuts de saison sur Discord**, puis **Enregistrer**.
+4. Conserver le cron `/api/cron/discord` exécuté chaque minute : aucune deuxième tâche n'est nécessaire.
+
+Lors de la clôture, le classement est enregistré **dans la transaction, avant le reset des PC**.
+L'image reprend le podium et les dix premiers joueurs publics, leur pseudo, avatar disponible,
+rang et points finaux, avec les emblèmes Kiraku. Les profils privés conservent leur position mais
+leur identité n'apparaît pas. Les ex æquo suivent la règle Grand Champion du jeu.
+
+Pour une clôture de saison 4, le message annonce **Fin de la saison 4 !**, affiche le classement final,
+puis **Début de la saison 5 ! Bon courage à tous !**. Il mentionne Fighter lors de la première
+publication. Une seule annonce persistante est associée à chaque saison ; un échec Discord est
+réessayé par le cron, sans refaire le classement avec les scores de la saison suivante.
+
+Le cron clôt une saison arrivée à échéance même si personne n'ouvre le jeu. Une clôture anticipée
+depuis l'administration produit aussi un bilan. Les saisons closes avant cette migration n'ont
+pas de classement figé : elles ne sont pas publiées rétroactivement. L'activation prend effet
+pour les prochaines clôtures, sans annoncer immédiatement un faux début de saison.
 
 ### Activer le marché
 
@@ -94,8 +163,9 @@ chmod 600 "$HOME/.config/kiraku/cron-secret"
 curl -sS --max-time 55 -H "Authorization: Bearer $(cat "$HOME/.config/kiraku/cron-secret")" -w '\nHTTP %{http_code}\n' https://kiraku-kun.com/api/cron/discord
 ```
 
-Le statut attendu est HTTP 200. `synced` compte les synchronisations réussies ; `failed` indique
-les publications non synchronisées. Un résultat 0/0 peut aussi signifier que le relais est désactivé,
+Le statut attendu est HTTP 200. `synced` et `failed` concernent le marché ; `linkedRoles.synced`
+et `linkedRoles.deferred` concernent les rôles de compte lié ; `ranked.published` et `ranked.failed`
+concernent les bilans de saisons. Un résultat 0/0 peut aussi signifier que le relais est désactivé,
 que sa configuration est incomplète ou qu'aucune annonce n'est à traiter : il ne prouve pas un envoi.
 HTTP 401 indique que le secret fourni ne correspond pas à `CRON_SECRET` de l'application.
 

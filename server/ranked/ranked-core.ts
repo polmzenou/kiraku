@@ -12,6 +12,7 @@ import { applyResult, botDelta, isCrushing, LADDER, pcDelta, rankOf, rowOf, type
 import { nextSeasonBoundary } from "@/lib/ranked/season";
 import { grantLot, type LotDeps, type LotGrant } from "../economy/lots";
 import { lockPlayers, type Tx } from "../social/lock";
+import { captureSeasonSnapshot } from "./snapshot";
 
 type Db = PrismaClient | Tx;
 
@@ -200,6 +201,9 @@ export async function rollSeasonWith(
       const [s] = await tx.$queryRaw<SeasonRow[]>`
         SELECT id, number, "startsAt", "endsAt" FROM "Season" WHERE "closedAt" IS NULL ORDER BY number DESC LIMIT 1 FOR UPDATE`;
       if (!s || (!opts.force && s.endsAt > now)) return { closed: null, results: 0 };
+      // Même ordre que lockPlayers : fige les scores pendant le bilan puis la remise à zéro.
+      await tx.$queryRaw`SELECT id FROM "User" WHERE "isGuest" = false ORDER BY id FOR UPDATE`;
+      const snapshot = await captureSeasonSnapshot(tx, s.number, now, r);
       const results = await tx.$executeRaw`
         INSERT INTO "SeasonResult" ("seasonId", "userId", "finalPc", "peakPc", "peakTier", "games", "lotId", "createdAt")
         SELECT ${s.id}, u.id, u."rankPoints", u."seasonPeakPc", ${peakTierSql(r)}, u."seasonGames", ${lotSql(r)}, ${now}
@@ -211,7 +215,7 @@ export async function rollSeasonWith(
         UPDATE "User" SET "rankPoints" = ${reset}, "seasonPeakPc" = ${reset}, "seasonPeakGrand" = false, "seasonGames" = 0, "rankProtection" = 0
         WHERE "rankPoints" > 0 OR "seasonGames" > 0 OR "seasonPeakPc" > 0 OR "rankProtection" > 0`;
       const end = opts.force ? now : s.endsAt;
-      await tx.season.update({ where: { id: s.id }, data: { closedAt: now, endsAt: end } });
+      await tx.season.update({ where: { id: s.id }, data: { closedAt: now, endsAt: end, leaderboardSnapshot: snapshot } });
       await tx.season.create({
         data: { number: s.number + 1, startsAt: end, endsAt: nextSeasonBoundary(end > now ? end : now, r.seasonMonths, timeZone) },
       });

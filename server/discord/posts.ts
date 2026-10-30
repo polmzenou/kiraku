@@ -8,6 +8,23 @@ import { DiscordApiError, discordBotRequest } from "./api";
 export type PublishResult = { ok: true; messageId: string } | { ok: false; error: "BUSY" | "DISCORD" };
 
 type Message = { id: string; author?: { id: string }; embeds?: Array<{ url?: string }>; components?: Array<{ components?: Array<{ custom_id?: string }> }> };
+export type DiscordPostOptions = { mentionRoleId?: string; attachment?: { filename: string; data: Uint8Array; contentType: string } };
+
+function messageBody(payload: DiscordMessageBody, options: DiscordPostOptions, creating: boolean): unknown {
+  const value = {
+    ...payload,
+    ...(creating && options.mentionRoleId && {
+      content: `<@&${options.mentionRoleId}>${payload.content ? `\n${payload.content}` : ""}`,
+      allowed_mentions: { parse: [], roles: [options.mentionRoleId] },
+    }),
+    ...(options.attachment && { attachments: [{ id: 0, filename: options.attachment.filename }] }),
+  };
+  if (!options.attachment) return value;
+  const form = new FormData();
+  form.set("payload_json", JSON.stringify(value));
+  form.set("files[0]", new Blob([new Uint8Array(options.attachment.data)], { type: options.attachment.contentType }), options.attachment.filename);
+  return form;
+}
 
 // Après un envoi dont la réponse s'est perdue, retrouve le message récent avant d'en créer un autre.
 async function recoverMessage(channelId: string, payload: DiscordMessageBody): Promise<string | undefined> {
@@ -20,7 +37,7 @@ async function recoverMessage(channelId: string, payload: DiscordMessageBody): P
 }
 
 /** Lease partagée en base : deux instances ne publient pas la même annonce simultanément. */
-export async function publishDiscordPost(key: string, payload: DiscordMessageBody, nextAttemptAt: Date | null, force = false): Promise<PublishResult> {
+export async function publishDiscordPost(key: string, payload: DiscordMessageBody, nextAttemptAt: Date | null, force = false, options: DiscordPostOptions = {}): Promise<PublishResult> {
   const now = new Date();
   const leaseId = randomUUID();
   const claim = await prisma.discordPost.updateMany({
@@ -29,26 +46,26 @@ export async function publishDiscordPost(key: string, payload: DiscordMessageBod
   });
   if (!claim.count) return { ok: false, error: "BUSY" };
   const post = await prisma.discordPost.findUniqueOrThrow({ where: { key } });
-  const payloadHash = createHash("sha256").update(JSON.stringify(payload)).digest("hex");
+  const payloadHash = createHash("sha256").update(JSON.stringify(payload)).update(options.attachment?.data ?? "").digest("hex");
   let messageId = post.messageId;
   try {
     if (!messageId && post.attempts > 1) messageId = await recoverMessage(post.channelId, payload) ?? null;
     if (force || !messageId || payloadHash !== post.payloadHash) {
       if (messageId) {
         try {
-          await discordBotRequest(`/channels/${post.channelId}/messages/${messageId}`, "PATCH", payload);
+          await discordBotRequest(`/channels/${post.channelId}/messages/${messageId}`, "PATCH", messageBody(payload, options, false));
         } catch (e) {
           if (!(e instanceof DiscordApiError) || e.status !== 404) throw e;
           messageId = null;
         }
       }
       if (!messageId) {
-        const message = await discordBotRequest<Message>(`/channels/${post.channelId}/messages`, "POST", {
+        const message = await discordBotRequest<Message>(`/channels/${post.channelId}/messages`, "POST", messageBody({
           ...payload,
           // Discord limite le nonce à 25 caractères et déduplique les envois proches.
           nonce: createHash("sha256").update(key).digest("hex").slice(0, 24),
           enforce_nonce: true,
-        });
+        } as DiscordMessageBody, options, true));
         if (!/^\d{17,20}$/.test(message.id)) throw new DiscordApiError(0);
         messageId = message.id;
       }

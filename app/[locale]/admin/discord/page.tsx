@@ -7,6 +7,7 @@ import { recentSettingLogs, requireAdmin } from "@/server/admin";
 import { prisma } from "@/server/db";
 import { getSetting } from "@/server/settings";
 import { appUrl, discordRulesConfigured, env } from "@/server/env";
+import { linkedRoleConfigured, rolesPanelConfigured } from "@/server/discord/roles-config";
 
 /** Discord : modal « Rejoins notre Discord » (lien, textes, déclencheur, fréquence) et bonus de liaison. */
 export default async function AdminDiscordPage() {
@@ -22,6 +23,9 @@ export default async function AdminDiscordPage() {
     ? await prisma.discordPost.findUnique({ where: { key: `rules:${env.DISCORD_GUILD_ID}:${env.DISCORD_RULES_CHANNEL_ID}` }, select: { messageId: true } })
     : null;
   const rulesUrl = rulesPost?.messageId ? `https://discord.com/channels/${env.DISCORD_GUILD_ID}/${env.DISCORD_RULES_CHANNEL_ID}/${rulesPost.messageId}` : null;
+  const rolesPost = env.DISCORD_GUILD_ID && env.DISCORD_ROLES_CHANNEL_ID
+    ? await prisma.discordPost.findUnique({ where: { key: `roles:${env.DISCORD_GUILD_ID}:${env.DISCORD_ROLES_CHANNEL_ID}` }, select: { messageId: true } }) : null;
+  const rolesUrl = rolesPost?.messageId ? `https://discord.com/channels/${env.DISCORD_GUILD_ID}/${env.DISCORD_ROLES_CHANNEL_ID}/${rolesPost.messageId}` : null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -30,7 +34,7 @@ export default async function AdminDiscordPage() {
         <p className="max-w-prose text-sm text-text-muted">{t("intro")}</p>
         <p className="text-sm font-bold tabular-nums">{t("joinedCount", { count: joined })}</p>
       </div>
-      <DiscordCommunityPanel configured={discordRulesConfigured} endpoint={`${appUrl()}/api/discord/interactions`} rulesUrl={rulesUrl} />
+      <DiscordCommunityPanel configured={discordRulesConfigured} endpoint={`${appUrl()}/api/discord/interactions`} rulesUrl={rulesUrl} rolesConfigured={rolesPanelConfigured()} rolesUrl={rolesUrl} linkedConfigured={linkedRoleConfigured()} />
       <DiscordSettingsForm initial={settings} />
       <SettingLogList logs={logs} />
     </div>
