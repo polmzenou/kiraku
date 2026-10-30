@@ -24,6 +24,7 @@ import { applyEntries, LedgerError } from "../economy/ledger";
 import { consumeWishlist } from "../collection/wishlist-core";
 import type { Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
+import { loadOwnedCopies } from "./duplicate-guard";
 
 export type OpenErrorCode =
   | "NO_USER"
@@ -257,6 +258,8 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
       // Encens actif : seuls les taux changent (pitié, doré, sachets et vedettes inchangés)
       const incense = input.incense && isIncenseActive(user.incenseUntil, now) ? input.incense : null;
       const drawRules = incense?.draw ?? rules.draw;
+      // Doublons des grandes raretés : exemplaires lus sous le verrou du joueur
+      const owned = await loadOwnedCopies(tx, userId, drawRules.duplicateGuard);
       const drawn = drawBoosters(input.rng, {
         pool: input.pool,
         rules: {
@@ -273,6 +276,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
           featuredCount: input.featured ? (bannerPity[type.id] ?? 0) : 0,
         },
         count,
+        owned,
       });
 
       // Un booster transformé devient un sachet scellé à garder, ouvrir ou offrir (une fois)
@@ -393,13 +397,15 @@ export async function openSealedWith(db: PrismaClient, input: OpenSealedInput, o
     const drop = await tx.sealedDrop.findUniqueOrThrow({ where: { id: input.dropId }, select: { giverId: true } });
 
     const incense = input.incense && isIncenseActive(user.incenseUntil, now) ? input.incense : null;
+    const sealedRules = incense?.draw ?? rules.draw;
     const sealed = drawSealed(input.rng, {
       kind,
       pool: input.pool,
-      rules: incense?.draw ?? rules.draw,
+      rules: sealedRules,
       ruin: rules.ruin,
       karma: user.apocalypseKarma,
       tables: incense?.tables ?? input.tables,
+      owned: await loadOwnedCopies(tx, userId, sealedRules.duplicateGuard),
     });
     const [booster] = await persistDraw(tx, {
       userId,

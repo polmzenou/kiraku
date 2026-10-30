@@ -3,7 +3,7 @@
 // sont injectés (serveur : pool du booster standard et crypto.randomInt ; tests : à graine).
 import { randomUUID } from "node:crypto";
 import type { CoinReason, Prisma } from "@/generated/prisma/client";
-import { pickCard, type CardPool } from "@/lib/boosters/draw";
+import { guardState, pickCard, type CardPool, type DuplicateGuard, type GuardState } from "@/lib/boosters/draw";
 import type { Rng } from "@/lib/boosters/rng";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { parseLotItemRow } from "@/lib/economy/lots";
@@ -11,6 +11,7 @@ import { grantBoosters } from "./credits";
 import { credit } from "./ledger";
 import { consumeWishlist } from "../collection/wishlist-core";
 import { markWished } from "@/lib/collection/wishlist";
+import { loadOwnedCopies } from "../boosters/duplicate-guard";
 
 type Tx = Prisma.TransactionClient;
 
@@ -18,6 +19,8 @@ export type LotDeps = {
   rng: Rng;
   /** Pool des cartes tirées « par rareté » (booster standard), chargé seulement si besoin. */
   loadPool: () => Promise<CardPool>;
+  /** Doublons des grandes raretés (règles des boosters) ; sans elle, tirage sans protection. */
+  duplicateGuard?: () => Promise<DuplicateGuard | undefined>;
 };
 
 export type LotGrant = {
@@ -56,6 +59,8 @@ export async function grantLot(
   }
 
   let pool: CardPool | null = null;
+  // Préparé au premier tirage « par rareté » : exemplaires du joueur et cartes déjà versées par ce lot
+  let guard: GuardState | null | undefined;
   const drawn: { cardId: string; rarity: Rarity }[] = [];
   for (const row of lot.items) {
     // Une ligne incohérente (type ou carte supprimés) est ignorée plutôt que de bloquer le versement
@@ -79,8 +84,15 @@ export async function grantLot(
       for (let i = 0; i < item.quantity; i++) drawn.push({ cardId: card.id, rarity: card.rarity as Rarity });
     } else {
       pool ??= await deps.loadPool();
+      if (guard === undefined) {
+        const rules = await deps.duplicateGuard?.();
+        guard = guardState(rules, await loadOwnedCopies(tx, userId, rules), pool);
+        for (const c of drawn) guard?.take(c.cardId);
+      }
       for (let i = 0; i < item.quantity; i++) {
-        const c = pickCard(deps.rng, pool, item.rarity);
+        // Une carte protégée en double ne sort plus ; déjà possédée, une chance sur N
+        const c = pickCard(deps.rng, pool, item.rarity, {}, undefined, guard);
+        guard?.take(c.cardId);
         drawn.push({ cardId: c.cardId, rarity: c.rarity });
       }
     }

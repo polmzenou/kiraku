@@ -1,5 +1,5 @@
 import { type Rarity } from "@/lib/catalog/rarity";
-import { boostersUntilGolden, boostersUntilPity, rarityIndex, type CardPool, type DrawRules } from "./draw";
+import { boostersUntilGolden, boostersUntilPity, rarityIndex, type CardPool, type DrawRules, type DuplicateGuard } from "./draw";
 import { atLeastOdds, featuredBoosterChance, type PoolCounts, type RarityOdds } from "./odds";
 import { priceFor, typeDrawRules, type Availability, type BoosterTypeView, type Price } from "./types";
 
@@ -22,6 +22,8 @@ export type BoosterPanelData = {
    * les vedettes sont les cartes des séries mises en avant (libellé « Série à l'honneur »).
    */
   featured: { chance: number; left: number; count: number; focus: boolean } | null;
+  /** Doublons des grandes raretés, expliqués dans la fiche des taux (null : règle coupée). */
+  duplicateGuard: DuplicateGuard | null;
   price: Price;
   availability: Availability;
 };
@@ -62,6 +64,7 @@ export function boosterPanelData(input: {
             focus: type.kind === "FOCUS",
           }
         : null,
+    duplicateGuard: rules.duplicateGuard ?? null,
     price: priceFor(type, user.stock, 1),
     availability: input.availability,
   };

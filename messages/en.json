@@ -927,7 +927,8 @@
     "focus": {
       "announce": "Right now, there {count, plural, one {is a <strong>special booster</strong>} other {are <strong>special boosters</strong>}}!",
       "open": "See the booster"
-    }
+    },
+    "duplicateNote": "{rarities}: a card already in your collection has only a 1 in {divisor, number} chance of dropping again{blockAt, plural, =0 {.} one {, and none at all from # copy.} other {, and none at all from # copies.}}"
   },
   "opening": {
     "title": "Open · {name}",
@@ -1315,7 +1316,10 @@
         "incenseCardStep": "Incense: one every N cards pulled",
         "incenseDurationHours": "Incense: boost duration (hours)",
         "incenseRateBoost": "Incense: multiplier (basis points, 30,000 = ×3)",
-        "incenseBoostFrom": "Incense: boost from rarity"
+        "incenseBoostFrom": "Incense: boost from rarity",
+        "duplicateGuardRarities": "Protected rarities (none: rule off)",
+        "duplicateGuardDivisor": "Card already owned: 1 in N chance of dropping again",
+        "duplicateGuardBlockAt": "No chance at all from N copies (0 = never)"
       },
       "slot": "Card {n}",
       "addSlot": "Add a card",
@@ -1363,7 +1367,9 @@
         "weeklyHint": "Claimable once a week (Monday). 0: no pack."
       },
       "incenseSection": "Incense",
-      "incenseFactor": "×{factor, number}"
+      "incenseFactor": "×{factor, number}",
+      "duplicateSection": "Duplicates of top rarities",
+      "duplicateHint": "A card of these rarities already in the player's collection has only a 1 in N chance of dropping again; from the chosen number of copies, none at all. When every card of the drawn rarity is blocked, the slot gives the rarity below. Applies to boosters (featured cards and pity included), Divine and Apocalypse packs, and random cards from lots."
     },
     "types": {
       "title": "Booster types",

@@ -148,6 +148,15 @@ export function BoosterPanel({ type, panel, ctx, state, wishlist = null, withOpe
             </li>
           )}
         </ul>
+        {panel.duplicateGuard && (
+          <p className="text-xs leading-relaxed text-text-muted">
+            {t("duplicateNote", {
+              rarities: format.list(panel.duplicateGuard.rarities.map((r) => tRarity(r)), { type: "conjunction" }),
+              divisor: panel.duplicateGuard.divisor,
+              blockAt: panel.duplicateGuard.blockAt,
+            })}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-0.5 border-t border-dashed border-border pt-3 text-xs">

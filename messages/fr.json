@@ -927,7 +927,8 @@
     "focus": {
       "announce": "En ce moment, il y a {count, plural, one {un <strong>booster spécial</strong>} other {des <strong>boosters spéciaux</strong>}} !",
       "open": "Voir le booster"
-    }
+    },
+    "duplicateNote": "{rarities} : une carte déjà dans ta collection n'a plus qu'une chance sur {divisor, number} de retomber{blockAt, plural, =0 {.} one {, et plus aucune dès # exemplaire.} other {, et plus aucune à partir de # exemplaires.}}"
   },
   "opening": {
     "title": "Ouvrir · {name}",
@@ -1315,7 +1316,10 @@
         "incenseCardStep": "Encens : un tous les N cartes tirées",
         "incenseDurationHours": "Encens : durée du boost (heures)",
         "incenseRateBoost": "Encens : multiplicateur (points de base, 30 000 = ×3)",
-        "incenseBoostFrom": "Encens : boost à partir de la rareté"
+        "incenseBoostFrom": "Encens : boost à partir de la rareté",
+        "duplicateGuardRarities": "Raretés protégées (aucune : règle coupée)",
+        "duplicateGuardDivisor": "Carte déjà possédée : 1 chance sur N de retomber",
+        "duplicateGuardBlockAt": "Plus aucune chance à partir de N exemplaires (0 = jamais)"
       },
       "slot": "Carte {n}",
       "addSlot": "Ajouter une carte",
@@ -1363,7 +1367,9 @@
         "weeklyHint": "À réclamer une fois par semaine (lundi). 0 : pas de pack."
       },
       "incenseSection": "Encens",
-      "incenseFactor": "×{factor, number}"
+      "incenseFactor": "×{factor, number}",
+      "duplicateSection": "Doublons des grandes raretés",
+      "duplicateHint": "Une carte de ces raretés déjà dans la collection du joueur n'a plus qu'une chance sur N de retomber ; à partir du nombre d'exemplaires choisi, plus aucune. Quand toutes les cartes de la rareté tirée sont bloquées, l'emplacement donne une rareté en dessous. S'applique aux boosters (vedettes et pitiés comprises), aux sachets Divin et Apocalyptique et aux cartes au hasard des lots."
     },
     "types": {
       "title": "Types de boosters",

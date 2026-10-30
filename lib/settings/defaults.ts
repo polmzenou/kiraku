@@ -151,6 +151,14 @@ export const SETTING_SCHEMAS = {
   // Apocalyptique ruiné : planchers de chaque emplacement et rareté maximale
   "booster.apocalypseRuinFloors": z.array(rarity).min(1).max(10),
   "booster.apocalypseRuinCeiling": rarity,
+  // Doublons des grandes raretés : une carte de ces raretés déjà possédée n'a plus qu'une chance sur
+  // Divisor de ses chances normales, et plus aucune à partir de BlockAt exemplaires (0 = jamais bloquée)
+  "booster.duplicateGuardRarities": z
+    .array(rarity)
+    .max(20)
+    .refine((list) => new Set(list).size === list.length, { message: "Rareté en double" }),
+  "booster.duplicateGuardDivisor": z.number().int().min(1).max(1_000_000),
+  "booster.duplicateGuardBlockAt": z.number().int().min(0).max(10),
   // Taille minimale du pool d'un type de booster pour être proposé (un type peut l'abaisser)
   "booster.minPool": z.number().int().min(1).max(10_000),
   // Rotation des familles « Par démographie » et « Par genre » : durée d'une sélection et nombre de types proposés
@@ -380,6 +388,9 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "booster.apocalypseKarma": 2,
   "booster.apocalypseRuinFloors": ["COMMON", "COMMON", "COMMON", "UNCOMMON"],
   "booster.apocalypseRuinCeiling": "UNCOMMON",
+  "booster.duplicateGuardRarities": ["MYTHIC", "AR", "GOLD"], // liste vide = règle coupée
+  "booster.duplicateGuardDivisor": 10_000, // déjà possédée : 1 chance sur 10 000
+  "booster.duplicateGuardBlockAt": 2, // en double : plus aucune chance
   "booster.minPool": 100,
   "booster.rotationHours": 12,
   "booster.rotationDemographie": 2,

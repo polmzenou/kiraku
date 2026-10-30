@@ -3,10 +3,11 @@ import { randomInt } from "node:crypto";
 import { groupByRarity } from "@/lib/boosters/draw";
 import type { ReferralRules } from "@/lib/economy/referral";
 import { getBoosterPool, getBoosterTypeEntry } from "../boosters/pools";
+import { getBoosterRules } from "../boosters/rules";
 import { getSetting } from "../settings";
 import type { LotDeps } from "./lots";
 
-/** Hasard cryptographique et pool du booster standard pour les cartes « par rareté » des lots. */
+/** Hasard cryptographique, pool du booster standard et doublons des grandes raretés pour les cartes « par rareté » des lots. */
 export function lotDeps(): LotDeps {
   return {
     rng: (max) => randomInt(0, max),
@@ -14,6 +15,7 @@ export function lotDeps(): LotDeps {
       const entry = await getBoosterTypeEntry("standard");
       return entry ? getBoosterPool(entry) : groupByRarity([]);
     },
+    duplicateGuard: async () => (await getBoosterRules()).draw.duplicateGuard,
   };
 }
 
