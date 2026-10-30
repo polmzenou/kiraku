@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isCollapsed, localizeNews, NEWS_ICON_KEYS, NEWS_ICONS, NEWS_MAX_ITEMS, nextPublication } from "./news";
+import { isCollapsed, localizeNews, NEWS_ICON_KEYS, NEWS_ICONS, NEWS_MAX_CARDS, NEWS_MAX_ITEMS, nextPublication, validNewsImageUrl, type NewsVisualView } from "./news";
 import { NEWS_DEFAULT, newsSchema, type NewsConfig, type NewsItem } from "./news-schema";
 import { SEAL_GLYPHS } from "@/lib/seal-glyphs";
 
@@ -7,9 +7,11 @@ const item = (over: Partial<NewsItem> = {}): NewsItem => ({
   id: "a",
   tone: "kin",
   icon: null,
+  tag: null,
   title: { fr: "Titre", en: "" },
   body: { fr: "Texte", en: "" },
   link: { kind: "none" },
+  visual: { kind: "none" },
   ...over,
 });
 const config = (over: Partial<NewsConfig> = {}): NewsConfig => ({ ...NEWS_DEFAULT, items: [item()], ...over });
@@ -58,6 +60,36 @@ describe("schéma de l'encart Nouveautés", () => {
     expect(valid(config({ items: [item({ icon: "SKULL" as NewsItem["icon"] })] }))).toBe(false);
   });
 
+  it(`accepte des cartes (1 à ${NEWS_MAX_CARDS}, sans doublon), un booster ou une image recadrée`, () => {
+    const withVisual = (visual: unknown) => valid(config({ items: [item({ visual: visual as NewsItem["visual"] })] }));
+    const ids = Array.from({ length: NEWS_MAX_CARDS + 1 }, (_, i) => `cmvp2nn9s00000${i}kzmfofvtxj`);
+    expect(withVisual({ kind: "cards", cardIds: ids.slice(0, NEWS_MAX_CARDS) })).toBe(true);
+    expect(withVisual({ kind: "cards", cardIds: ids })).toBe(false);
+    expect(withVisual({ kind: "cards", cardIds: [] })).toBe(false);
+    expect(withVisual({ kind: "cards", cardIds: [ids[0], ids[0]] })).toBe(false);
+    expect(withVisual({ kind: "cards", cardIds: ["Robert'); DROP"] })).toBe(false);
+    expect(withVisual({ kind: "booster", slug: "imperial" })).toBe(true);
+    expect(withVisual({ kind: "booster", slug: "../x" })).toBe(false);
+    const image = { kind: "image", url: "https://store.public.blob.vercel-storage.com/news/a.webp", focalX: 50, focalY: 30 };
+    expect(withVisual(image)).toBe(true);
+    expect(withVisual({ ...image, url: "http://store.public.blob.vercel-storage.com/news/a.webp" })).toBe(false);
+    expect(withVisual({ ...image, focalX: 101 })).toBe(false);
+    expect(withVisual({ ...image, focalY: 12.5 })).toBe(false);
+    expect(valid(config({ items: [item({ tag: "NEW_CARDS" })] }))).toBe(true);
+    expect(valid(config({ items: [item({ tag: "HOT" as NewsItem["tag"] })] }))).toBe(false);
+  });
+
+  it("n'accepte que les images de bannière du stockage, sous /news/", () => {
+    const host = "store.public.blob.vercel-storage.com";
+    expect(validNewsImageUrl(`https://${host}/news/a-1.webp`, host)).toBe(true);
+    expect(validNewsImageUrl(`https://${host}/cards/a-1.webp`, host)).toBe(false);
+    expect(validNewsImageUrl("https://evil.test/news/a.webp", host)).toBe(false);
+    expect(validNewsImageUrl(`https://user:pw@${host}/news/a.webp`, host)).toBe(false);
+    expect(validNewsImageUrl(`https://${host}:8443/news/a.webp`, host)).toBe(false);
+    expect(validNewsImageUrl(`https://${host}/news/a.webp`, undefined)).toBe(false);
+    expect(validNewsImageUrl("pas une url", host)).toBe(false);
+  });
+
   it("ne propose que des sceaux tracés par la police réduite", () => {
     for (const key of NEWS_ICON_KEYS) expect(SEAL_GLYPHS).toContain(NEWS_ICONS[key]);
   });
@@ -76,6 +108,19 @@ describe("affichage de l'encart", () => {
     expect(en.items[0].title).toBe("Shop");
     expect(en.items[0].link).toEqual({ kind: "internal", href: "/boutique", label: "Voir" });
     expect(localizeNews(news, "fr")!.title).toBe("Nouveautés");
+  });
+
+  it("montre le visuel résolu, l'image telle quelle, et retombe sur le sceau sinon", () => {
+    const cards: NewsVisualView = { kind: "cards", cards: [] };
+    const news = config({
+      items: [
+        item({ id: "a", visual: { kind: "cards", cardIds: ["cmvp2nn9s000008kzmfofvtxj"] } }),
+        item({ id: "b", visual: { kind: "booster", slug: "imperial" } }),
+        item({ id: "c", visual: { kind: "image", url: "https://h.test/news/x.webp", focalX: 20, focalY: 80 } }),
+      ],
+    });
+    const view = localizeNews(news, "fr", { a: cards })!;
+    expect(view.items.map((i) => i.visual)).toEqual([cards, { kind: "none" }, { kind: "image", url: "https://h.test/news/x.webp", focalX: 20, focalY: 80 }]);
   });
 
   it("n'affiche rien quand l'encart est éteint, et pas d'intro vide", () => {

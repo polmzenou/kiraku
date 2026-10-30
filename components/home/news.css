@@ -1,0 +1,97 @@
+/* Bannières de l'encart Nouveautés : fond dans la couleur de la nouveauté (ou du booster montré), motif
+   wagara en filigrane et halo derrière le visuel. Toujours sombres, dans les deux thèmes : le texte y est
+   clair. Animations en transform et opacity seulement, coupées en mouvement réduit. */
+
+.news-banner {
+  --nb-base: #5a4413;
+  --nb-dark: #15120f;
+  --nb-glow: rgb(217 181 86 / 0.45);
+  --nb-seal: #f2d88a;
+  --wl: rgb(255 255 255 / 0.06);
+  color: #fff4ef;
+  background:
+    radial-gradient(ellipse at 50% 24%, var(--nb-glow), transparent 62%),
+    var(--wagara),
+    linear-gradient(160deg, var(--nb-base) 0%, var(--nb-dark) 82%);
+}
+@media (min-width: 768px) {
+  .news-banner {
+    background:
+      radial-gradient(ellipse at 76% 50%, var(--nb-glow), transparent 56%),
+      var(--wagara),
+      linear-gradient(120deg, var(--nb-dark) 18%, var(--nb-base) 100%);
+  }
+}
+.news-banner[data-tone="shu"] {
+  --nb-base: #6b1d16;
+  --nb-glow: rgb(224 83 63 / 0.42);
+  --nb-seal: #ff9c86;
+}
+.news-banner[data-tone="ai"] {
+  --nb-base: #1e3557;
+  --nb-dark: #0d131d;
+  --nb-glow: rgb(127 163 209 / 0.4);
+  --nb-seal: #a9c4e6;
+}
+.news-banner[data-tone="hisui"] {
+  --nb-base: #1f4a33;
+  --nb-dark: #0c1611;
+  --nb-glow: rgb(91 191 139 / 0.38);
+  --nb-seal: #8fdcb3;
+}
+.news-banner[data-tone="neutral"] {
+  --nb-base: #3a322a;
+  --nb-glow: rgb(241 233 218 / 0.16);
+  --nb-seal: #f1e9da;
+}
+/* Booster : ses propres couleurs, posées en ligne depuis son thème (--nb-base, --nb-dark) */
+.news-banner[data-kind="booster"] {
+  --nb-glow: rgb(255 244 214 / 0.22);
+}
+/* Image : elle couvre la bannière, sous un voile qui garde le texte lisible */
+.news-banner[data-kind="image"] {
+  background: #0b0908;
+}
+.news-veil {
+  background: linear-gradient(180deg, rgb(11 9 8 / 0) 22%, rgb(11 9 8 / 0.72) 55%, rgb(11 9 8 / 0.94) 100%);
+}
+@media (min-width: 768px) {
+  .news-veil {
+    background: linear-gradient(90deg, rgb(11 9 8 / 0.94) 0%, rgb(11 9 8 / 0.78) 38%, rgb(11 9 8 / 0) 72%);
+  }
+}
+
+/* Reflet de feuille d'or qui traverse la bannière quand elle devient active */
+.news-sheen {
+  background: linear-gradient(110deg, transparent 36%, rgb(255 244 214 / 0.14) 48%, transparent 60%);
+  transform: translateX(-110%);
+}
+.news-banner[data-active] .news-sheen {
+  animation: news-sheen 1.8s cubic-bezier(0.3, 0.6, 0.3, 1) 0.2s both;
+}
+@keyframes news-sheen {
+  to {
+    transform: translateX(110%);
+  }
+}
+
+/* Le sachet flotte doucement */
+.news-float {
+  animation: news-float 6s ease-in-out infinite;
+}
+@keyframes news-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .news-banner[data-active] .news-sheen,
+  .news-float {
+    animation: none;
+  }
+}

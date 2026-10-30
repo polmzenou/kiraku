@@ -169,7 +169,25 @@
     "show": "Afficher",
     "hideLabel": "Réduire les nouveautés",
     "showLabel": "Afficher les nouveautés",
-    "newTab": "(s'ouvre dans un nouvel onglet)"
+    "newTab": "(s'ouvre dans un nouvel onglet)",
+    "carouselRole": "carrousel",
+    "slideRole": "bannière",
+    "slide": "{n} sur {count}",
+    "goTo": "Bannière {n} : {title}",
+    "previous": "Bannière précédente",
+    "next": "Bannière suivante",
+    "pause": "Mettre en pause le défilement",
+    "play": "Reprendre le défilement",
+    "until": "Jusqu'au {date}",
+    "openBooster": "Ouvrir le booster",
+    "tags": {
+      "NEW": "Nouveau",
+      "NEW_CARDS": "Nouvelles cartes",
+      "NEW_BOOSTER": "Nouveau booster",
+      "EVENT": "Événement",
+      "UPDATE": "Mise à jour",
+      "SOON": "Bientôt"
+    }
   },
   "account": {
     "title": "Compte",
@@ -2201,7 +2219,42 @@
       "reopen": "Rouvrir l'encart chez tous les joueurs (nouvelle publication datée d'aujourd'hui)",
       "reopenHint": "Décoche pour corriger une faute sans remontrer l'encart à ceux qui l'ont réduit.",
       "changeReopen": "Encart Nouveautés, rouvert chez tous les joueurs",
-      "changeQuiet": "Encart Nouveautés, sans le rouvrir"
+      "changeQuiet": "Encart Nouveautés, sans le rouvrir",
+      "tag": "Étiquette",
+      "noTag": "Aucune",
+      "visual": "Visuel de la bannière",
+      "visuals": {
+        "none": "Sceau seulement",
+        "cards": "Cartes du catalogue",
+        "booster": "Un booster",
+        "image": "Image téléversée"
+      },
+      "cardsSearch": "Ajouter une carte",
+      "cardsSearchHint": "Tape au moins deux lettres du nom. Cartes publiées seulement, cinq au plus.",
+      "cardsNone": "Aucune carte choisie.",
+      "cardsNoResult": "Aucune carte trouvée.",
+      "cardLeft": "Avancer {name}",
+      "cardRight": "Reculer {name}",
+      "cardRemove": "Retirer {name}",
+      "booster": "Booster montré",
+      "boosterPick": "Choisir un booster",
+      "boosterHint": "Sans bouton choisi, la bannière mène au booster sur l'accueil. Un booster éteint ou terminé laisse le sceau à sa place.",
+      "boosterOff": "(éteint)",
+      "image": "Image",
+      "imageUpload": "Téléverser une image",
+      "imageReplace": "Remplacer l'image",
+      "imageUploading": "Téléversement…",
+      "imageHint": "JPEG, PNG ou WebP, 4 Mo au plus. Stockée en WebP sur 1 600 px de large.",
+      "imageErrors": {
+        "IMAGE_INVALID": "Ce fichier n'est pas une image JPEG, PNG ou WebP valide.",
+        "IMAGE_TOO_LARGE": "Image trop lourde : 4 Mo au plus.",
+        "RATE_LIMITED": "Trop d'envois d'affilée, réessaie dans une minute.",
+        "STORAGE_UNAVAILABLE": "Le stockage des images n'est pas configuré sur ce serveur.",
+        "UPLOAD_FAILED": "L'envoi a échoué, réessaie."
+      },
+      "focalX": "Cadrage horizontal ({value} %)",
+      "focalY": "Cadrage vertical ({value} %)",
+      "previewRefreshing": "Mise à jour des visuels de l'aperçu…"
     },
     "discord": {
       "title": "Discord",

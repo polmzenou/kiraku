@@ -169,7 +169,25 @@
     "show": "Show",
     "hideLabel": "Collapse what's new",
     "showLabel": "Show what's new",
-    "newTab": "(opens in a new tab)"
+    "newTab": "(opens in a new tab)",
+    "carouselRole": "carousel",
+    "slideRole": "banner",
+    "slide": "{n} of {count}",
+    "goTo": "Banner {n}: {title}",
+    "previous": "Previous banner",
+    "next": "Next banner",
+    "pause": "Pause scrolling",
+    "play": "Resume scrolling",
+    "until": "Until {date}",
+    "openBooster": "Open the booster",
+    "tags": {
+      "NEW": "New",
+      "NEW_CARDS": "New cards",
+      "NEW_BOOSTER": "New booster",
+      "EVENT": "Event",
+      "UPDATE": "Update",
+      "SOON": "Coming soon"
+    }
   },
   "account": {
     "title": "Account",
@@ -2201,7 +2219,42 @@
       "reopen": "Reopen the panel for every player (new publication dated today)",
       "reopenHint": "Untick to fix a typo without showing the panel again to those who collapsed it.",
       "changeReopen": "What's new panel, reopened for every player",
-      "changeQuiet": "What's new panel, without reopening it"
+      "changeQuiet": "What's new panel, without reopening it",
+      "tag": "Label",
+      "noTag": "None",
+      "visual": "Banner visual",
+      "visuals": {
+        "none": "Seal only",
+        "cards": "Catalogue cards",
+        "booster": "A booster",
+        "image": "Uploaded image"
+      },
+      "cardsSearch": "Add a card",
+      "cardsSearchHint": "Type at least two letters of the name. Published cards only, five at most.",
+      "cardsNone": "No card chosen.",
+      "cardsNoResult": "No card found.",
+      "cardLeft": "Move {name} earlier",
+      "cardRight": "Move {name} later",
+      "cardRemove": "Remove {name}",
+      "booster": "Booster shown",
+      "boosterPick": "Choose a booster",
+      "boosterHint": "Without a chosen button, the banner leads to the booster on the home page. A booster that is off or over leaves the seal in its place.",
+      "boosterOff": "(off)",
+      "image": "Image",
+      "imageUpload": "Upload an image",
+      "imageReplace": "Replace the image",
+      "imageUploading": "Uploading…",
+      "imageHint": "JPEG, PNG or WebP, 4 MB at most. Stored as WebP, 1,600 px wide.",
+      "imageErrors": {
+        "IMAGE_INVALID": "This file is not a valid JPEG, PNG or WebP image.",
+        "IMAGE_TOO_LARGE": "Image too heavy: 4 MB at most.",
+        "RATE_LIMITED": "Too many uploads in a row, try again in a minute.",
+        "STORAGE_UNAVAILABLE": "Image storage is not configured on this server.",
+        "UPLOAD_FAILED": "The upload failed, try again."
+      },
+      "focalX": "Horizontal framing ({value}%)",
+      "focalY": "Vertical framing ({value}%)",
+      "previewRefreshing": "Updating the preview visuals…"
     },
     "discord": {
       "title": "Discord",

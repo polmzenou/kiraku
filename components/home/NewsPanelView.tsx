@@ -1,63 +1,48 @@
 "use client";
 
 import { useFormatter, useTranslations } from "next-intl";
-import { useId, useState } from "react";
-import { Link } from "@/i18n/navigation";
-import { NEWS_ICONS, type NewsItemView, type NewsTone, type NewsView } from "@/lib/home/news";
+import { useEffect, useId, useRef, useState } from "react";
+import { useReducedFx } from "@/components/motion/MotionPreference";
+import type { NewsView } from "@/lib/home/news";
 import { rememberNewsCollapsed } from "@/lib/home/news-dom";
+import { NewsBanner } from "./NewsBanner";
 
-// Teinte de chaque nouveauté : bordure et fond légers, sceau dans la couleur
-const TONES: Record<NewsTone, { card: string; seal: string }> = {
-  kin: { card: "border-kin/45 bg-kin/8", seal: "text-link" },
-  shu: { card: "border-shu/35 bg-shu/6", seal: "text-shu" },
-  ai: { card: "border-ai/35 bg-ai/8", seal: "text-ai" },
-  hisui: { card: "border-hisui/40 bg-hisui/8", seal: "text-hisui" },
-  neutral: { card: "border-border bg-surface/60", seal: "text-text-muted" },
-};
+/** Avance automatique du carrousel (arrêtée au survol, au focus, au toucher et en mouvement réduit). */
+const ADVANCE_MS = 7_000;
 
-const CTA =
-  "mt-auto inline-flex min-h-11 items-center gap-2 self-start rounded-xl border border-border bg-bg/60 px-4 text-sm font-bold transition-colors hover:bg-surface-2";
+const ROUND = "inline-flex size-11 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-2 hover:text-text";
 
-function NewsCard({ item }: { item: NewsItemView }) {
-  const t = useTranslations("news");
-  const tone = TONES[item.tone];
+function Chevron({ dir, className = "size-4" }: { dir: "left" | "right" | "down"; className?: string }) {
+  const d = dir === "left" ? "m15 6-6 6 6 6" : dir === "right" ? "m9 6 6 6-6 6" : "m6 9 6 6 6-6";
   return (
-    <li className={`flex w-[82%] max-w-80 shrink-0 snap-start flex-col gap-2 rounded-2xl border p-4 md:w-auto md:max-w-none ${tone.card}`}>
-      <h3 className="flex items-center gap-2 text-sm font-bold">
-        {item.icon && (
-          <span aria-hidden="true" lang="ja" className={`font-seal text-lg leading-none ${tone.seal}`}>
-            {NEWS_ICONS[item.icon]}
-          </span>
-        )}
-        {item.title}
-      </h3>
-      <p className="text-xs leading-relaxed whitespace-pre-line text-text-muted">{item.body}</p>
-      {item.link.kind === "internal" && (
-        <Link href={item.link.href} className={CTA}>
-          {item.link.label} <span aria-hidden="true">→</span>
-        </Link>
-      )}
-      {item.link.kind === "external" && (
-        <a href={item.link.href} target="_blank" rel="noopener noreferrer" className={CTA}>
-          {item.link.label} <span aria-hidden="true">↗</span>
-          <span className="sr-only">{t("newTab")}</span>
-        </a>
-      )}
-    </li>
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d={d} />
+    </svg>
   );
 }
 
 /**
- * Encart « Nouveautés » de l'accueil : les dernières infos importantes, réglées dans /admin/nouveautes.
- * Réduit, il tient sur une ligne ; le choix est gardé pour cette publication (cookie lu par le serveur,
- * sans saut au chargement), et une nouvelle publication le rouvre. `preview` : aperçu de l'admin, qui
- * ne touche pas à la préférence du joueur.
+ * Encart « Nouveautés » de l'accueil : un carrousel de grandes bannières (cartes, booster, image ou
+ * sceau), réglé dans /admin/nouveautes. On le fait glisser, on passe d'une bannière à l'autre par les
+ * points ou les flèches, et il avance seul quand on ne le touche pas. Réduit, il tient sur une ligne ;
+ * le choix est gardé pour cette publication (cookie lu par le serveur), une nouvelle publication le
+ * rouvre. `preview` : aperçu de l'admin, qui ne touche pas à la préférence du joueur.
  */
 export function NewsPanelView({ news, initialCollapsed, preview = false }: { news: NewsView; initialCollapsed: boolean; preview?: boolean }) {
   const t = useTranslations("news");
   const format = useFormatter();
   const id = useId();
+  const reduced = useReducedFx();
+  const section = useRef<HTMLElement>(null);
+  const track = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState(initialCollapsed);
+  const [active, setActive] = useState(0);
+  // Lecture voulue par le joueur (bouton pause), et pauses passagères (survol, focus, encart hors écran)
+  const [playing, setPlaying] = useState(true);
+  const [held, setHeld] = useState(false);
+  const [inView, setInView] = useState(false);
+  const [pageVisible, setPageVisible] = useState(true);
+  const count = news.items.length;
   const date = news.publishedAt ? format.dateTime(new Date(news.publishedAt), { day: "numeric", month: "long", timeZone: "Europe/Paris" }) : null;
 
   const toggle = () => {
@@ -66,8 +51,47 @@ export function NewsPanelView({ news, initialCollapsed, preview = false }: { new
     if (!preview) rememberNewsCollapsed(next ? news.revision : null);
   };
 
+  const goTo = (index: number) => {
+    const el = track.current;
+    if (!el) return;
+    el.scrollTo({ left: index * el.clientWidth, behavior: reduced ? "auto" : "smooth" });
+  };
+
+  // Bannière active d'après la position de la piste (glisser, points, avance automatique)
+  const onScroll = () => {
+    const el = track.current;
+    if (!el || el.clientWidth === 0) return;
+    setActive(Math.min(count - 1, Math.max(0, Math.round(el.scrollLeft / el.clientWidth))));
+  };
+
+  // N'avance que si l'encart est à l'écran et l'onglet au premier plan
+  useEffect(() => {
+    const el = section.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), { threshold: 0.35 });
+    observer.observe(el);
+    const onVisibility = () => setPageVisible(document.visibilityState === "visible");
+    onVisibility();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!playing || held || !inView || !pageVisible || reduced || collapsed || count < 2) return;
+    const timer = setTimeout(() => {
+      const el = track.current;
+      if (el) el.scrollTo({ left: ((active + 1) % count) * el.clientWidth, behavior: "smooth" });
+    }, ADVANCE_MS);
+    return () => clearTimeout(timer);
+  }, [active, collapsed, count, held, inView, pageVisible, playing, reduced]);
+
+  const autoplay = count > 1 && !reduced;
+
   return (
-    <section aria-labelledby={`${id}-title`} className="relative isolate overflow-hidden rounded-2xl border border-kin/30 bg-surface/50">
+    <section ref={section} aria-labelledby={`${id}-title`} className="relative isolate overflow-hidden rounded-2xl border border-kin/30 bg-surface/50">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,var(--k-kin),transparent_60%)] opacity-10"
@@ -93,33 +117,84 @@ export function NewsPanelView({ news, initialCollapsed, preview = false }: { new
           className="inline-flex min-h-11 shrink-0 items-center gap-1.5 self-start rounded-full px-3 text-xs font-bold text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
         >
           {collapsed ? t("show") : t("hide")}
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={`size-4 transition-transform motion-reduce:transition-none ${collapsed ? "" : "rotate-180"}`}
-          >
-            <path d="m6 9 6 6 6-6" />
-          </svg>
+          <Chevron dir="down" className={`size-4 transition-transform motion-reduce:transition-none ${collapsed ? "" : "rotate-180"}`} />
         </button>
       </div>
       <div id={`${id}-body`} hidden={collapsed} className="transition-[opacity,translate] duration-300 starting:translate-y-1 starting:opacity-0 motion-reduce:transition-none">
+        {/* Sur téléphone, la date seule : les bannières portent déjà le contenu, l'encart reste compact */}
         {(date || news.intro) && (
-          <p className="px-4 pt-1 text-sm leading-relaxed text-text-muted">
+          <p className={`px-4 pt-1 text-sm leading-relaxed text-text-muted ${date ? "" : "max-sm:hidden"}`}>
             {date && <span className="font-bold text-text">{t("updated", { date })}</span>}
-            {date && news.intro && " · "}
-            {news.intro}
+            {news.intro && (
+              <span className="max-sm:hidden">
+                {date && " · "}
+                {news.intro}
+              </span>
+            )}
           </p>
         )}
-        <ul className="flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto overscroll-x-contain px-4 pt-3 pb-4 scrollbar-none md:grid md:grid-cols-2 md:overflow-visible lg:grid-cols-3">
-          {news.items.map((item) => (
-            <NewsCard key={item.id} item={item} />
-          ))}
-        </ul>
+        <div
+          role="region"
+          aria-roledescription={t("carouselRole")}
+          aria-label={news.title}
+          className="px-3 pt-3 pb-1 sm:px-4"
+          onPointerEnter={(e) => e.pointerType === "mouse" && setHeld(true)}
+          onPointerLeave={(e) => e.pointerType === "mouse" && setHeld(false)}
+          onFocusCapture={() => setHeld(true)}
+          onBlurCapture={(e) => !e.currentTarget.contains(e.relatedTarget as Node | null) && setHeld(false)}
+        >
+          <div
+            ref={track}
+            onScroll={onScroll}
+            // Glisser au doigt vaut un choix : l'avance automatique s'arrête
+            onTouchStart={() => setPlaying(false)}
+            className="flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scrollbar-none"
+          >
+            {news.items.map((item, i) => (
+              <NewsBanner key={item.id} item={item} index={i} count={count} active={i === active} first={i === 0} />
+            ))}
+          </div>
+          {count > 1 && (
+            <div className="flex items-center justify-center gap-1 py-1">
+              <button type="button" aria-label={t("previous")} onClick={() => goTo((active - 1 + count) % count)} className={`${ROUND} max-md:hidden`}>
+                <Chevron dir="left" />
+              </button>
+              <ol className="flex items-center">
+                {news.items.map((item, i) => (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      aria-label={t("goTo", { n: i + 1, title: item.title })}
+                      aria-current={i === active || undefined}
+                      onClick={() => {
+                        setPlaying(false);
+                        goTo(i);
+                      }}
+                      className="group inline-flex size-11 items-center justify-center"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`block h-2 w-2 rounded-full transition-[transform,background-color] duration-300 motion-reduce:transition-none ${
+                          i === active ? "scale-x-[2.6] bg-kin" : "bg-text-muted/45 group-hover:bg-text-muted"
+                        }`}
+                      />
+                    </button>
+                  </li>
+                ))}
+              </ol>
+              <button type="button" aria-label={t("next")} onClick={() => goTo((active + 1) % count)} className={`${ROUND} max-md:hidden`}>
+                <Chevron dir="right" />
+              </button>
+              {autoplay && (
+                <button type="button" aria-label={playing ? t("pause") : t("play")} onClick={() => setPlaying((p) => !p)} className={ROUND}>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="size-4">
+                    {playing ? <path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" /> : <path d="M8 5.5v13l10.5-6.5z" />}
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );

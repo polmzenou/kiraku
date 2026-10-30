@@ -1,7 +1,7 @@
 "use server";
 
 import { updateTag } from "next/cache";
-import type { z } from "@/lib/zod";
+import { z } from "@/lib/zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { BOOSTER_SETTING_KEYS, boosterSettingsSchema, type BoosterSettingKey } from "@/lib/settings/booster-form";
 import {
@@ -12,7 +12,8 @@ import {
 import { parseSetting, type SettingKey } from "@/lib/settings/defaults";
 import { COMBAT_SETTING_KEYS, combatSettingsSchema, type CombatSettingKey } from "@/lib/settings/combat-form";
 import { DISCORD_SETTING_KEYS, discordSettingsSchema, type DiscordSettingKey } from "@/lib/settings/discord-form";
-import { nextPublication } from "@/lib/home/news";
+import { NEWS_MAX_ITEMS, nextPublication, validNewsImageUrl, type NewsVisuals } from "@/lib/home/news";
+import { newsVisualSchema } from "@/lib/home/news-schema";
 import { NEWS_SETTING_KEYS, newsSettingsSchema, type NewsSettingKey } from "@/lib/settings/news-form";
 import { FEATURE_SETTING_KEYS, featureSettingsSchema, type FeatureSettingKey } from "@/lib/settings/features-form";
 import { GENERAL_SETTING_KEYS, generalSettingsSchema, type GeneralSettingKey } from "@/lib/settings/general-form";
@@ -31,6 +32,7 @@ import { rateLimit } from "../ratelimit";
 import { forgetSettings, SETTINGS_TAG } from "../settings";
 import { writeAdminLog } from "../admin/log";
 import { getRarities } from "../catalog/rarities";
+import { resolveNewsVisuals } from "../home/news";
 
 // Réglages de jeu depuis /admin. Ordre : rôle admin vérifié → Zod par clé → rate limit.
 // Chaque clé modifiée écrit sa ligne GameSetting et une ligne AdminLog (avant / après).
@@ -189,9 +191,29 @@ export async function updateDiscordSettings(input: unknown): Promise<UpdateSetti
  * `reopen` (seulement `true` explicite) passe à la révision suivante et rouvre l'encart chez tous les joueurs.
  */
 export async function updateNewsSettings(input: unknown, reopen: unknown): Promise<UpdateSettingsResult<NewsSettingKey>> {
+  if (!(await getAdmin())) return { ok: false, error: "FORBIDDEN" };
+  // Images de bannière : seulement celles téléversées dans le stockage du site (/api/admin/nouveautes/upload)
+  const parsed = newsSettingsSchema.safeParse(input);
+  const foreign = parsed.success && parsed.data["home.news"].items.some((i) => i.visual.kind === "image" && !validNewsImageUrl(i.visual.url, process.env.BLOB_PUBLIC_HOST));
+  if (foreign) return { ok: false, error: "INVALID" };
   return saveSettings(NEWS_SETTING_KEYS, newsSettingsSchema, input, (next, before) => ({
     "home.news": nextPublication(before["home.news"], next["home.news"], reopen === true, new Date()),
   }));
+}
+
+const previewSchema = z
+  .array(z.object({ id: z.string().regex(/^[a-z0-9-]{1,24}$/), visual: newsVisualSchema }).strict())
+  .max(NEWS_MAX_ITEMS);
+
+/** Aperçu de l'admin : les visuels (cartes, boosters) des nouveautés du brouillon, comme sur l'accueil. */
+export async function previewNewsVisuals(input: unknown, locale: unknown): Promise<NewsVisuals> {
+  const admin = await getAdmin();
+  if (!admin) return {};
+  const parsed = previewSchema.safeParse(input);
+  if (!parsed.success) return {};
+  // Rappelé à chaque changement de visuel : même bucket que les recherches à la frappe
+  if (!(await rateLimit(`admin-search:${admin.id}`, { limit: 60, windowSeconds: 60 })).success) return {};
+  return resolveNewsVisuals(parsed.data, locale === "en" ? "en" : "fr");
 }
 
 export async function updateFeatureSettings(input: unknown): Promise<UpdateSettingsResult<FeatureSettingKey>> {
