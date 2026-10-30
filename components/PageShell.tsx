@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { LEGAL_SLUGS } from "@/lib/legal/legal";
 import { ManageCookiesButton } from "./consent/ManageCookiesButton";
 import { DiscordFooterLink } from "./discord/DiscordFooterLink";
+import { ArcadeFooterLink } from "./layout/ArcadeFooterLink";
 import { XFollowLink } from "./layout/XFollowLink";
 import { SealMark } from "./SealMark";
 
@@ -59,6 +60,7 @@ export function PageShell({ children, bottomBar = false }: { children: ReactNode
             </ul>
           </nav>
         </div>
+        <ArcadeFooterLink />
         <nav aria-label={t("footer.legalNav")}>
           <ul className="flex flex-wrap gap-x-5">
             {LEGAL_SLUGS.map((slug) => (
