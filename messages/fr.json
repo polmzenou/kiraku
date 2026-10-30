@@ -1567,7 +1567,7 @@
         },
         "gifts": {
           "enabled": "Cadeaux activés",
-          "perDaySent": "Cadeaux envoyés par jour",
+          "perDaySent": "Cadeaux envoyés par jour à un même ami",
           "perDayReceived": "Cadeaux reçus par jour",
           "minAccountAgeHours": "Ancienneté minimale du compte (h)",
           "minFriendshipHours": "Ancienneté minimale de l'amitié (h)",
@@ -3457,7 +3457,7 @@
   },
   "gifts": {
     "title": "Offrir à {name}",
-    "remaining": "{count, plural, =0 {Plus de cadeau possible aujourd'hui} one {Encore # cadeau possible aujourd'hui} other {Encore # cadeaux possibles aujourd'hui}} (sur {max}).",
+    "remaining": "{count, plural, =0 {Plus de cadeau possible pour {name} aujourd'hui} one {Encore # cadeau possible pour {name} aujourd'hui} other {Encore # cadeaux possibles pour {name} aujourd'hui}} (sur {max}).",
     "card": "Une carte",
     "booster": "Un booster ({price, number} Zeni)",
     "pickTitle": "Quelle carte offrir à {name} ?",
@@ -3470,7 +3470,7 @@
     "sending": "Envoi…",
     "sentCard": "{card} est parti chez {name} !",
     "sentBooster": "Booster offert à {name} !",
-    "rules": "Entre amis depuis {minFriendshipHours} h au moins. {perDaySent} cadeaux envoyés et {perDayReceived} reçus par jour au plus. Le booster offert s'ouvre sans doré ni divin.",
+    "rules": "Entre amis depuis {minFriendshipHours} h au moins. {perDaySent} cadeaux par jour à un même ami, {perDayReceived} reçus par jour au plus. Le booster offert s'ouvre sans doré ni divin.",
     "errors": {
       "NO_SESSION": "Ta session a expiré : recharge la page.",
       "INVALID": "Pseudo invalide.",
@@ -3486,7 +3486,7 @@
       "NOT_FRIENDS": "Tu ne peux offrir qu'à un ami.",
       "ACCOUNT_TOO_NEW": "Ton compte doit avoir au moins {minAccountAgeHours} h pour offrir.",
       "FRIENDSHIP_TOO_NEW": "Vous devez être amis depuis au moins {minFriendshipHours} h pour vous offrir des cadeaux.",
-      "SENT_LIMIT": "Tu as déjà offert {perDaySent} cadeaux aujourd'hui. Reviens demain !",
+      "SENT_LIMIT": "Tu as déjà offert {perDaySent} cadeaux à {name} aujourd'hui. Reviens demain !",
       "RECEIVED_LIMIT": "{name} a déjà reçu assez de cadeaux aujourd'hui.",
       "NOT_OWNED": "Tu n'as plus cette carte dans ta collection.",
       "RARITY": "Cette rareté ne peut pas être offerte.",

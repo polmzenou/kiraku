@@ -1567,7 +1567,7 @@
         },
         "gifts": {
           "enabled": "Gifts enabled",
-          "perDaySent": "Gifts sent per day",
+          "perDaySent": "Gifts sent per day to the same friend",
           "perDayReceived": "Gifts received per day",
           "minAccountAgeHours": "Minimum account age (h)",
           "minFriendshipHours": "Minimum friendship age (h)",
@@ -3457,7 +3457,7 @@
   },
   "gifts": {
     "title": "Give to {name}",
-    "remaining": "{count, plural, =0 {No more gifts today} one {# more gift today} other {# more gifts today}} (out of {max}).",
+    "remaining": "{count, plural, =0 {No more gifts possible for {name} today} one {# more gift possible for {name} today} other {# more gifts possible for {name} today}} (out of {max}).",
     "card": "A card",
     "booster": "A booster ({price, number} Zeni)",
     "pickTitle": "Which card for {name}?",
@@ -3470,7 +3470,7 @@
     "sending": "Sending…",
     "sentCard": "{card} is on its way to {name}!",
     "sentBooster": "Booster given to {name}!",
-    "rules": "Friends for at least {minFriendshipHours} h. At most {perDaySent} gifts sent and {perDayReceived} received per day. A gifted booster opens without golden or divine.",
+    "rules": "Friends for at least {minFriendshipHours} h. {perDaySent} gifts per day to the same friend, {perDayReceived} received per day at most. The gifted booster opens without golden or divine.",
     "errors": {
       "NO_SESSION": "Your session expired: reload the page.",
       "INVALID": "Invalid username.",
@@ -3486,7 +3486,7 @@
       "NOT_FRIENDS": "You can only give to a friend.",
       "ACCOUNT_TOO_NEW": "Your account must be at least {minAccountAgeHours} h old to give gifts.",
       "FRIENDSHIP_TOO_NEW": "You must have been friends for at least {minFriendshipHours} h to exchange gifts.",
-      "SENT_LIMIT": "You already gave {perDaySent} gifts today. Come back tomorrow!",
+      "SENT_LIMIT": "You've already given {perDaySent} gifts to {name} today. Come back tomorrow!",
       "RECEIVED_LIMIT": "{name} has already received enough gifts today.",
       "NOT_OWNED": "This card is no longer in your collection.",
       "RARITY": "This rarity can't be given.",
