@@ -67,7 +67,8 @@ export async function chatStatusAction(input: unknown): Promise<{ ok: true; unre
 export async function listConversationsAction(input: unknown): Promise<{ ok: true; conversations: Conversation[] } | Failure> {
   const g = await guard(input, empty, "chat-list", { limit: 30, windowSeconds: 60, store: "memory" });
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
-  return { ok: true, conversations: await listConversations(g.user.id, visibleSince(await getSetting("chat.retentionHours"))) };
+  const [hours, onlineSeconds] = await Promise.all([getSetting("chat.retentionHours"), getSetting("presence.onlineSeconds")]);
+  return { ok: true, conversations: await listConversations(g.user.id, visibleSince(hours), onlineSeconds) };
 }
 
 /** Messages avec un ami (les reçus passent en lus). */

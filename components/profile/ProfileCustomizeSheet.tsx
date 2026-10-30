@@ -12,6 +12,7 @@ import { PlayerName } from "../social/PlayerName";
 import { Button } from "../ui/Button";
 import { segmentedFillClass, segmentedItemClass, segmentedTrackClass } from "../ui/Segmented";
 import { Sheet } from "../ui/Sheet";
+import { AppearOfflineToggle } from "./AppearOfflineToggle";
 import { PrivacyForm } from "./PrivacyForm";
 
 export type ProfileChoices = {
@@ -32,11 +33,13 @@ type Props = {
   /** Part du catalogue découverte (%), qui débloque cadres et couleurs de pseudo. */
   discoveredPercent: number;
   privacy: { visibility: ProfileVisibility; showCollection: boolean };
+  /** « Apparaître hors ligne » pour l'équipe (ADMIN, DEV) ; null pour un joueur. */
+  appearOffline: boolean | null;
 };
 
 /**
  * « Personnaliser mon profil » : bio, accord des titres, titre, badges affichés, cadre d'avatar et
- * couleur du pseudo.
+ * couleur du pseudo ; confidentialité, et pour l'équipe « Apparaître hors ligne ».
  * Les titres et cadres verrouillés montrent comment les obtenir et où en est le joueur ; le serveur
  * revérifie chaque choix à l'enregistrement.
  */
@@ -56,7 +59,7 @@ export function ProfileCustomizeButton(props: Props) {
   );
 }
 
-function ProfileCustomizeSheet({ username, image, initial, options, badges, discoveredPercent, privacy, onClose }: Props & { onClose: () => void }) {
+function ProfileCustomizeSheet({ username, image, initial, options, badges, discoveredPercent, privacy, appearOffline, onClose }: Props & { onClose: () => void }) {
   const t = useTranslations("profile.customize");
   const [tab, setTab] = useState<"look" | "privacy">("look");
   const [draft, setDraft] = useState(initial);
@@ -120,7 +123,10 @@ function ProfileCustomizeSheet({ username, image, initial, options, badges, disc
       </div>
 
       {tab === "privacy" ? (
-        <PrivacyForm visibility={privacy.visibility} showCollection={privacy.showCollection} />
+        <div className="flex flex-col gap-4">
+          <PrivacyForm visibility={privacy.visibility} showCollection={privacy.showCollection} />
+          {appearOffline !== null && <AppearOfflineToggle initial={appearOffline} />}
+        </div>
       ) : (
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-1">

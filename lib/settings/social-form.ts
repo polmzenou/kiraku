@@ -34,6 +34,8 @@ export const SOCIAL_SETTING_KEYS = [
   "realtime.safetyPollSeconds",
   "activity.idleSeconds",
   "activity.backoffMax",
+  "presence.heartbeatSeconds",
+  "presence.onlineSeconds",
 ] as const satisfies readonly SettingKey[];
 
 export type SocialSettingKey = (typeof SOCIAL_SETTING_KEYS)[number];

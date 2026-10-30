@@ -1601,6 +1601,10 @@
         "activity": {
           "idleSeconds": "Pause polling after inactivity (s)",
           "backoffMax": "Maximum slowdown when nothing changes (×)"
+        },
+        "presence": {
+          "heartbeatSeconds": "Presence heartbeat (s)",
+          "onlineSeconds": "Online if seen within (s)"
         }
       },
       "invalid": "Some values are out of range: fix them before saving.",
@@ -1629,7 +1633,7 @@
       "chatSection": "Chat between friends",
       "chatHint": "Private plain-text messages between accepted friends, deleted after their lifetime (24 h by default). A block ends the conversation.",
       "activitySection": "Realtime and activity",
-      "activityHint": "With Ably, the bell and chat arrive live; the safety poll catches a lost message. With no player input or a hidden tab, polling stops. When nothing changes, the delay doubles up to the given multiple."
+      "activityHint": "With Ably, the bell and chat arrive live; the safety poll catches a lost message. With no player input or a hidden tab, polling stops. When nothing changes, the delay doubles up to the given multiple. The online dot follows the presence heartbeat: keep the online delay above two heartbeats."
     },
     "market": {
       "title": "Market",
@@ -4885,5 +4889,15 @@
       "RATE_LIMITED": "Easy there: try again in a few seconds.",
       "NO_INCENSE": "You have no Incense left to light."
     }
+  },
+  "presence": {
+    "online": "Online",
+    "offlineMinutes": "Offline for {count, plural, one {# minute} other {# minutes}}",
+    "offlineHours": "Offline for {count, plural, one {# hour} other {# hours}}",
+    "offlineDays": "Offline for {count, plural, one {# day} other {# days}}",
+    "appearOffline": "Appear offline",
+    "appearOfflineHint": "You stay signed in: others see you offline since this moment.",
+    "saved": "Saved.",
+    "error": "Couldn't save, try again."
   }
 }

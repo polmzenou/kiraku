@@ -131,7 +131,8 @@ async function giftLimits(): Promise<GiftLimits> {
 
 async function FriendsTab({ userId, q, page, sachet }: { userId: string; q: string; page: number; sachet: { id: string; kind: SealedKind } | null }) {
   const t = await getTranslations("friends");
-  const [{ items, hasMore }, limits] = await Promise.all([listFriends(userId, q, page), sachet ? giftLimits() : null]);
+  const onlineSeconds = await getSetting("presence.onlineSeconds");
+  const [{ items, hasMore }, limits] = await Promise.all([listFriends(userId, q, page, onlineSeconds), sachet ? giftLimits() : null]);
   const pageHref = (p: number) => {
     const params = new URLSearchParams();
     if (q) params.set("q", q);

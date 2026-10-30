@@ -18,6 +18,7 @@ import {
   type TeamGiftPayload,
   type TradePayload,
 } from "@/lib/social/notifications";
+import { isOnline } from "@/lib/social/presence";
 import { pairKey, relationBetween, type Relation } from "@/lib/social/relation";
 import { getLocale } from "next-intl/server";
 import type { CardView } from "@/lib/boosters/view";
@@ -61,7 +62,10 @@ export const getRelation = cache(async (viewerId: string, otherId: string) => {
 });
 
 /** Amis acceptés, triés par pseudo ; `q` filtre seulement parmi ses propres amis. */
-export async function listFriends(userId: string, q: string, page: number): Promise<{ items: PlayerRef[]; hasMore: boolean }> {
+/** Ami de la liste /amis, avec sa pastille de présence (toujours visible entre amis). */
+export type FriendRef = PlayerRef & { online: boolean };
+
+export async function listFriends(userId: string, q: string, page: number, onlineSeconds: number): Promise<{ items: FriendRef[]; hasMore: boolean }> {
   // Les amitiés d'abord, par leurs index (dans les deux sens) : un OR de deux filtres de relation sur
   // User obligeait Postgres à parcourir toute la table des joueurs
   const links = await prisma.friendship.findMany({
@@ -77,9 +81,17 @@ export async function listFriends(userId: string, q: string, page: number): Prom
     orderBy: { username: "asc" },
     skip: page * FRIENDS_PAGE,
     take: FRIENDS_PAGE + 1,
-    select: playerRefSelect,
+    select: { ...playerRefSelect, lastSeenAt: true, appearOffline: true, role: true },
   });
-  return { items: rows.slice(0, FRIENDS_PAGE).map(toPlayerRef), hasMore: rows.length > FRIENDS_PAGE };
+  const now = new Date();
+  return {
+    // Les champs bruts de présence ne sortent pas : seulement en ligne ou non
+    items: rows.slice(0, FRIENDS_PAGE).map(({ lastSeenAt, appearOffline, role, ...ref }) => ({
+      ...toPlayerRef(ref),
+      online: isOnline({ lastSeenAt, appearOffline, role, isGuest: ref.isGuest }, now, onlineSeconds),
+    })),
+    hasMore: rows.length > FRIENDS_PAGE,
+  };
 }
 
 /** Demandes reçues encore visibles (un refus les cache) et demandes envoyées. */
