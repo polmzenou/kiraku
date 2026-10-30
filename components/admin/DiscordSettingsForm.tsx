@@ -9,7 +9,7 @@ import { updateDiscordSettings } from "@/server/actions/admin-settings";
 import { Field, inputClass, NumberField, Toggle } from "./fields";
 import { SettingsSaveBar } from "./SettingsSaveBar";
 
-/** Modal « Rejoins notre Discord » (désactivé par défaut) et bonus de liaison du compte Discord. */
+/** Annonces automatiques, modal d'invitation et bonus de liaison du compte Discord. */
 export function DiscordSettingsForm({ initial }: { initial: DiscordSettings }) {
   const t = useTranslations("admin.discord");
   const [draft, setDraft] = useState(initial);
@@ -25,6 +25,8 @@ export function DiscordSettingsForm({ initial }: { initial: DiscordSettings }) {
         <legend className="px-1 font-title text-lg font-bold">{t("marketSection")}</legend>
         <Toggle label={t("marketEnabled")} checked={draft["discord.marketEnabled"]} onChange={(v) => setDraft((d) => ({ ...d, "discord.marketEnabled": v }))} />
         <p className="text-sm text-text-muted">{t("marketHint")}</p>
+        <Toggle label={t("rankedEnabled")} checked={draft["discord.rankedEnabled"]} onChange={(v) => setDraft((d) => ({ ...d, "discord.rankedEnabled": v }))} />
+        <p className="text-sm text-text-muted">{t("rankedHint")}</p>
       </fieldset>
       <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
         <legend className="px-1 font-title text-lg font-bold">{t("modalSection")}</legend>

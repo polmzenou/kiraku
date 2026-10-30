@@ -35,7 +35,7 @@ export async function syncDiscordAuction(auctionId: string): Promise<boolean> {
     card: { ...auction.card, rarityName: auction.card.rarityDefinition.nameFr, series: auction.card.series.titleRomaji },
   }, appUrl());
   const next = auction.status === "ACTIVE" ? new Date(Date.now() + 60_000) : null;
-  return (await publishDiscordPost(post.key, payload, next)).ok;
+  return (await publishDiscordPost(post.key, payload, next, false, { mentionRoleId: env.DISCORD_MERCHANT_ROLE_ID })).ok;
 }
 
 /** Même file et même salon pour les annonces d'échange, sans prix ni achat immédiat. */
@@ -67,14 +67,13 @@ export async function syncDiscordListing(listingId: string): Promise<boolean> {
     card: { ...listing.card, rarityName: listing.card.rarityDefinition.nameFr },
     wants: listing.wants.map(({ card }) => ({ name: card.name, rarityName: card.rarityDefinition.nameFr })),
   }, appUrl(), now);
-  return (await publishDiscordPost(post.key, payload, open ? new Date(Date.now() + 60_000) : null)).ok;
+  return (await publishDiscordPost(post.key, payload, open ? new Date(Date.now() + 60_000) : null, false, { mentionRoleId: env.DISCORD_MERCHANT_ROLE_ID })).ok;
 }
 
 /** Lot borné pour le cron ; les instances concurrentes se partagent les leases de publication. */
-export async function syncDiscordMarket(): Promise<{ synced: number; failed: number }> {
+export async function syncDiscordMarket(deadline = Date.now() + 35_000): Promise<{ synced: number; failed: number }> {
   const result = { synced: 0, failed: 0 };
   if (!(await discordMarketChannel())) return result;
-  const started = Date.now();
   const posts = await prisma.discordPost.findMany({
     where: { nextAttemptAt: { lte: new Date() }, AND: [
       { OR: [{ auctionId: { not: null } }, { listingId: { not: null } }] },
@@ -83,7 +82,7 @@ export async function syncDiscordMarket(): Promise<{ synced: number; failed: num
     orderBy: { nextAttemptAt: "asc" }, take: 20, select: { auctionId: true, listingId: true },
   });
   for (const post of posts) {
-    if (Date.now() - started > 35_000) break;
+    if (Date.now() + 15_000 > deadline) break;
     try {
       if (await (post.auctionId ? syncDiscordAuction(post.auctionId) : syncDiscordListing(post.listingId!))) result.synced++;
       else result.failed++;

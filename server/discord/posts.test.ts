@@ -97,4 +97,34 @@ describe("publication persistante Discord", () => {
     expect((await publishDiscordPost(row.key, rulesMessage(), null)).ok).toBe(false);
     expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toContain("private-bot-token");
   });
+  it("notifie uniquement le rôle choisi à la création, puis actualise sans notification", async () => {
+    const options = { mentionRoleId: "1565817691132928121" };
+    await publishDiscordPost(row.key, rulesMessage(), null, false, options);
+    const body = JSON.parse(request.mock.calls[0][1]!.body as string);
+    expect(body.content).toMatch(/^<@&1565817691132928121>/);
+    expect(body.allowed_mentions).toEqual({ parse: [], roles: [options.mentionRoleId] });
+    request.mockResolvedValue(new Response("{}"));
+    await publishDiscordPost(row.key, { ...rulesMessage(), content: "Prix modifié" }, null, false, options);
+    const edit = JSON.parse(request.mock.calls[1][1]!.body as string);
+    expect(edit.content).toBe("Prix modifié");
+    expect(edit.allowed_mentions).toEqual({ parse: [] });
+  });
+  it("envoie le PNG en multipart avec un nonce et sans imposer de boundary", async () => {
+    const options = { mentionRoleId: "1565818436355887214", attachment: { filename: "saison-4.png", data: new Uint8Array([137, 80, 78, 71]), contentType: "image/png" } };
+    await publishDiscordPost(row.key, rulesMessage(), null, false, options);
+    const init = request.mock.calls[0][1]!;
+    expect(init.headers).not.toHaveProperty("Content-Type");
+    expect(init.body).toBeInstanceOf(FormData);
+    const form = init.body as FormData;
+    const json = JSON.parse(form.get("payload_json") as string);
+    expect(json.attachments).toEqual([{ id: 0, filename: "saison-4.png" }]);
+    expect(json.enforce_nonce).toBe(true);
+    expect(json.nonce).toHaveLength(24);
+    expect(json.allowed_mentions.roles).toEqual([options.mentionRoleId]);
+    const file = form.get("files[0]") as File;
+    expect(file.name).toBe("saison-4.png");
+    expect(new Uint8Array(await file.arrayBuffer())).toEqual(options.attachment.data);
+    await publishDiscordPost(row.key, rulesMessage(), null, false, options);
+    expect(request).toHaveBeenCalledOnce();
+  });
 });

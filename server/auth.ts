@@ -10,6 +10,8 @@ import { credit } from "./economy/ledger";
 import { attachFromCookie } from "./economy/referral";
 import { discordEnabled, discordLinkConfigured, env } from "./env";
 import { notifyDiscordLink } from "./discord/link-notification";
+import { queueLinkedDiscordRole, syncLinkedDiscordRole } from "./discord/roles";
+import { linkedRoleConfigured } from "./discord/roles-config";
 import { availableUsername, publishProfileOnSignup } from "./players";
 import { SESSION_COOKIE, SESSION_MAX_AGE } from "./session";
 import { getSetting } from "./settings";
@@ -119,6 +121,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             username: profile.discordUsername,
             displayName: profile.name,
           });
+        });
+      }
+      if (linkedRoleConfigured()) {
+        after(async () => {
+          try {
+            await queueLinkedDiscordRole(account.providerAccountId);
+            await syncLinkedDiscordRole(account.providerAccountId);
+          } catch { console.warn("[discord] synchronisation du compte lié reportée au cron."); }
         });
       }
 

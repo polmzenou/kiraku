@@ -2273,10 +2273,23 @@
     },
     "discord": {
       "title": "Discord",
-      "marketSection": "Annonces du marché",
+      "marketSection": "Annonces automatiques",
+      "rankedEnabled": "Annoncer les fins et débuts de saison sur Discord",
+      "rankedHint": "Envoie le classement public final en image dans le salon classé, puis annonce la nouvelle saison. Les membres Fighter sont notifiés. Le cron Discord doit être installé.",
       "marketEnabled": "Relayer les ventes et les échanges sur Discord",
       "marketHint": "Publie les nouvelles ventes et les échanges carte contre carte, puis actualise leur statut. Les annonces antérieures à l’activation ne sont pas reprises. Le jeton du bot, le serveur et le salon du marché doivent être configurés.",
       "community": {
+        "rolesTitle": "Rôles et compte lié",
+        "rolesIntro": "Publie les boutons Marchand, Collectionneur et Fighter. Les rôles sont ajoutés ou retirés à la demande des membres. Marchand active les notifications, sans fermer l’accès au marché.",
+        "rolesMissing": "Renseigne le salon des rôles et les identifiants des rôles dans l’environnement de Kiraku.",
+        "publishRoles": "Publier ou actualiser le choix des rôles",
+        "rolesSuccess": "Le choix des rôles est publié sur Discord.",
+        "openRoles": "Voir le choix des rôles sur Discord",
+        "linkedReady": "Le rôle de compte lié est configuré. Les nouvelles liaisons et les comptes existants sont synchronisés automatiquement ; le bouton de vérification permet aussi de relancer la synchronisation.",
+        "linkedMissing": "Renseigne le rôle de compte lié pour activer sa synchronisation automatique.",
+        "rankedTitle": "Image de fin de saison",
+        "rankedIntro": "Le classement final est enregistré avant la remise à zéro des PC. L’aperçu utilise les scores actuels et ne clôture pas la saison.",
+        "rankedPreview": "Voir l’aperçu du classement en image",
         "title": "Accueil de la communauté",
         "intro": "Publie un bouton sous le règlement déjà présent sur Discord. Il attribue le rôle Membre après acceptation. Une nouvelle publication met à jour le même message.",
         "endpoint": "URL des interactions Discord",
@@ -2289,7 +2302,7 @@
         "open": "Voir le message sur Discord",
         "errors": {
           "FORBIDDEN": "Cette action est réservée aux administrateurs.",
-          "CONFIG": "Vérifie la configuration et que le salon du règlement appartient au bon serveur.",
+          "CONFIG": "Vérifie les identifiants, le serveur du salon et les permissions des rôles proposés.",
           "RATE_LIMITED": "Patiente une minute avant de réessayer.",
           "BUSY": "Une publication est déjà en cours. Réessaie dans une minute.",
           "DISCORD": "Publication impossible. Vérifie le jeton, les permissions du bot et sa connexion à Discord, puis réessaie."
@@ -2319,6 +2332,7 @@
       "keys": {
         "discord": {
           "marketEnabled": "Annonces du marché sur Discord",
+          "rankedEnabled": "Annonces des saisons classées sur Discord",
           "joinModal": "Modal « Rejoins notre Discord »",
           "linkBonusZeni": "Bonus de liaison Discord"
         }

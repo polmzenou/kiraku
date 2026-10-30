@@ -1,29 +1,8 @@
 import Image from "next/image";
 import type { BoardTier } from "@/lib/battle/tiers";
+import { rankArtworkPath } from "@/lib/ranked/artwork";
 
-type Division = 1 | 2 | 3;
-type RankArtwork = { base: string; divisions: Record<Division, string> | null };
-
-function tierArtwork(name: string): RankArtwork {
-  return {
-    base: `/ranks/${name}.png`,
-    divisions: {
-      1: `/ranks/${name}-1.png`,
-      2: `/ranks/${name}-2.png`,
-      3: `/ranks/${name}-3.png`,
-    },
-  };
-}
-
-const RANK_ARTWORK: Record<BoardTier, RankArtwork> = {
-  BRONZE: tierArtwork("bronze"),
-  SILVER: tierArtwork("silver"),
-  GOLD: tierArtwork("gold"),
-  EMERALD: tierArtwork("emerald"),
-  ELITE: tierArtwork("elite"),
-  CHAMPION: tierArtwork("champion"),
-  GRAND_CHAMPION: { base: "/ranks/grand-champion.png", divisions: null },
-};
+type Division = 1 | 2 | 3 | null;
 
 /**
  * Emblème du rang et de sa division : 3 = III, 2 = II, 1 = I.
@@ -43,8 +22,7 @@ export function RankEmblem({
   label?: string;
   className?: string;
 }) {
-  const artwork = RANK_ARTWORK[tier];
-  const src = division === null || artwork.divisions === null ? artwork.base : artwork.divisions[division];
+  const src = rankArtworkPath(tier, division);
 
   return (
     <Image

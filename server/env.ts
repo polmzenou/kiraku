@@ -16,6 +16,12 @@ const schema = z.object({
   DISCORD_RULES_CHANNEL_ID: z.string().regex(/^[0-9]{17,20}$/).optional(),
   DISCORD_MEMBER_ROLE_ID: z.string().regex(/^[0-9]{17,20}$/).optional(),
   DISCORD_MARKET_CHANNEL_ID: z.string().regex(/^[0-9]{17,20}$/).optional(),
+  DISCORD_ROLES_CHANNEL_ID: z.string().regex(/^[0-9]{17,20}$/).optional(),
+  DISCORD_MERCHANT_ROLE_ID: z.string().regex(/^[0-9]{17,20}$/).optional(),
+  DISCORD_COLLECTOR_ROLE_ID: z.string().regex(/^[0-9]{17,20}$/).optional(),
+  DISCORD_FIGHTER_ROLE_ID: z.string().regex(/^[0-9]{17,20}$/).optional(),
+  DISCORD_LINKED_ROLE_ID: z.string().regex(/^[0-9]{17,20}$/).optional(),
+  DISCORD_RANKED_CHANNEL_ID: z.string().regex(/^[0-9]{17,20}$/).optional(),
   ADMIN_DISCORD_ID: z.string().optional(),
   // E-mails (Resend) en attente : sans clé, les liens sont écrits dans les logs en dev
   RESEND_API_KEY: z.string().min(1).optional(),

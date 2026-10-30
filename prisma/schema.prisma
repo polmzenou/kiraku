@@ -1048,12 +1048,27 @@ model DiscordPost {
   auction       Auction? @relation(fields: [auctionId], references: [id], onDelete: Cascade)
   listingId     String?  @unique
   listing       TradeListing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  seasonId      String? @unique
+  season        Season? @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   attempts      Int      @default(0)
   nextAttemptAt DateTime? @default(now())
   leaseId       String?
   leaseUntil    DateTime?
   createdAt     DateTime @default(now())
 
+  @@index([nextAttemptAt])
+}
+
+// Attribution du rôle Discord de compte lié ; aucun jeton OAuth n'est copié dans la file.
+model DiscordRoleSync {
+  guildId       String
+  discordId     String
+  attempts      Int @default(0)
+  nextAttemptAt DateTime @default(now())
+  leaseId       String?
+  leaseUntil    DateTime?
+
+  @@id([guildId, discordId])
   @@index([nextAttemptAt])
 }
 
@@ -1179,6 +1194,8 @@ model Season {
   closedAt DateTime?
   results  SeasonResult[]
   battles  Battle[]
+  leaderboardSnapshot Json?
+  discordPost DiscordPost?
 
   @@index([closedAt, endsAt])
 }

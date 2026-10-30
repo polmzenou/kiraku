@@ -1,9 +1,11 @@
 import { after } from "next/server";
 import { z } from "@/lib/zod";
-import { RULES_BUTTON_ID } from "@/lib/discord/community";
-import { env, discordRulesConfigured } from "@/server/env";
+import { RULES_BUTTON_ID, VERIFY_BUTTON_ID, SELF_ROLE_PREFIX } from "@/lib/discord/community";
+import { env, appUrl, discordRulesConfigured } from "@/server/env";
 import { discordBotRequest, editInteractionReply } from "@/server/discord/api";
 import { discordRequestBody, validDiscordSignature } from "@/server/discord/signature";
+import { linkedRoleConfigured, rolesPanelConfigured, selfRoles } from "@/server/discord/roles-config";
+import { assertCommunityRole } from "@/server/discord/role-permissions";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -40,14 +42,24 @@ export async function POST(request: Request) {
   const input = parsed.data;
   if (!env.AUTH_DISCORD_ID || input.application_id !== env.AUTH_DISCORD_ID) return new Response("Application invalide", { status: 401 });
   if (input.type === 1) return Response.json({ type: 1 });
-  if (!discordRulesConfigured) return reply("L’accueil est en cours de configuration. Réessaie plus tard.");
-  if (input.type !== 3 || input.data?.component_type !== 2 || input.data.custom_id !== RULES_BUTTON_ID ||
-      input.guild_id !== env.DISCORD_GUILD_ID || input.channel_id !== env.DISCORD_RULES_CHANNEL_ID ||
+  if (input.type !== 3 || input.data?.component_type !== 2 ||
+      input.guild_id !== env.DISCORD_GUILD_ID ||
       !input.member || input.member.user.bot || input.message?.author.id !== env.AUTH_DISCORD_ID || !input.token) {
     return reply("Ce bouton n’est pas disponible ici.");
   }
   if (input.member.pending) return reply("Termine d’abord la validation native du règlement demandée par Discord.");
-  if (input.member.roles.includes(env.DISCORD_MEMBER_ROLE_ID!)) return reply("Tu as déjà accès à la communauté Kiraku. 🌸");
+  const acceptingRules = input.data.custom_id === RULES_BUTTON_ID;
+  if (acceptingRules) {
+    if (!discordRulesConfigured) return reply("L’accueil est en cours de configuration. Réessaie plus tard.");
+    if (input.channel_id !== env.DISCORD_RULES_CHANNEL_ID) return reply("Ce bouton n’est pas disponible ici.");
+    if (input.member.roles.includes(env.DISCORD_MEMBER_ROLE_ID!)) return reply("Tu as déjà accès à la communauté Kiraku. 🌸");
+  } else {
+    if (!rolesPanelConfigured() || input.channel_id !== env.DISCORD_ROLES_CHANNEL_ID) return reply("Ce bouton n’est pas disponible ici.");
+    if (!input.member.roles.includes(env.DISCORD_MEMBER_ROLE_ID!)) return reply("Accepte d’abord le règlement pour choisir tes rôles.");
+  }
+  const role = selfRoles().find((item) => `${SELF_ROLE_PREFIX}${item.key}` === input.data!.custom_id);
+  const verifying = input.data.custom_id === VERIFY_BUTTON_ID;
+  if (!acceptingRules && !verifying && !role) return reply("Ce bouton n’est pas disponible ici.");
 
   // Accusé de réception immédiat (< 3 s). L'API des rôles et la confirmation tournent après.
   const userId = input.member.user.id;
@@ -55,12 +67,33 @@ export async function POST(request: Request) {
   after(async () => {
     let content: string;
     try {
-      // PUT idempotent : ajoute seulement Membre, sans remplacer les autres rôles.
-      await discordBotRequest(`/guilds/${env.DISCORD_GUILD_ID}/members/${userId}/roles/${env.DISCORD_MEMBER_ROLE_ID}`, "PUT");
-      content = "✅ Règlement accepté ! Tu as maintenant accès à la communauté Kiraku. 🌸";
+      if (acceptingRules) {
+        // PUT idempotent : ajoute seulement Membre, sans remplacer les autres rôles.
+        await discordBotRequest(`/guilds/${env.DISCORD_GUILD_ID}/members/${userId}/roles/${env.DISCORD_MEMBER_ROLE_ID}`, "PUT");
+        content = "✅ Règlement accepté ! Tu as maintenant accès à la communauté Kiraku. 🌸";
+        if (linkedRoleConfigured()) {
+          try {
+            const linked = await import("@/server/discord/roles");
+            await linked.queueLinkedDiscordRole(userId);
+            await linked.syncLinkedDiscordRole(userId);
+          } catch { console.warn("[discord] vérification du compte reportée au cron."); }
+        }
+      } else if (verifying) {
+        const linked = await import("@/server/discord/roles");
+        await linked.queueLinkedDiscordRole(userId);
+        const result = await linked.syncLinkedDiscordRole(userId);
+        content = result === "linked" ? "✅ Ton compte Kiraku est lié : le rôle vérifié est attribué." :
+          result === "unlinked" ? `Aucun compte Kiraku actif lié à ce Discord. [Lie ton compte ici](${appUrl()}/compte), puis réessaie.` :
+          result === "disabled" ? "Le rôle vérifié est en cours de configuration." : "La vérification sera réessayée automatiquement. Tu peux aussi réessayer plus tard.";
+      } else {
+        await assertCommunityRole(role!.id);
+        const remove = input.member!.roles.includes(role!.id);
+        await discordBotRequest(`/guilds/${env.DISCORD_GUILD_ID}/members/${userId}/roles/${role!.id}`, remove ? "DELETE" : "PUT");
+        content = `${remove ? "➖" : "✅"} Rôle ${role!.label} ${remove ? "retiré" : "ajouté"}.`;
+      }
     } catch {
-      console.warn("[discord] attribution du rôle Membre impossible.");
-      content = "Je n’ai pas pu t’attribuer le rôle Membre. Réessaie ; si le problème persiste, contacte l’équipe.";
+      console.warn("[discord] attribution du rôle impossible.");
+      content = "Je n’ai pas pu modifier ton rôle. Réessaie ; si le problème persiste, contacte l’équipe.";
     }
     await editInteractionReply(input.application_id, token, content).catch(() => console.warn("[discord] confirmation privée non envoyée."));
   });

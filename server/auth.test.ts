@@ -14,6 +14,9 @@ const mocks = vi.hoisted(() => ({
   setting: vi.fn(),
   after: vi.fn(),
   notify: vi.fn(),
+  linkedRole: false,
+  queueRole: vi.fn(),
+  syncRole: vi.fn(),
   config: {
     discordEnabled: true,
     discordLinkConfigured: true,
@@ -33,6 +36,8 @@ vi.mock("./session", () => ({ SESSION_COOKIE: { name: "session", options: {} }, 
 vi.mock("./settings", () => ({ getSetting: mocks.setting }));
 vi.mock("./admin/log", () => ({ writeAdminLog: vi.fn() }));
 vi.mock("./discord/link-notification", () => ({ notifyDiscordLink: mocks.notify }));
+vi.mock("./discord/roles-config", () => ({ linkedRoleConfigured: () => mocks.linkedRole }));
+vi.mock("./discord/roles", () => ({ queueLinkedDiscordRole: mocks.queueRole, syncLinkedDiscordRole: mocks.syncRole }));
 
 import "./auth";
 
@@ -46,6 +51,7 @@ const event = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.linkedRole = false;
   mocks.config.discordLinkConfigured = true;
   mocks.findUnique.mockResolvedValue({ username: "PseudoKiraku", email: null });
   mocks.updateMany.mockResolvedValue({ count: 1 });
@@ -108,5 +114,16 @@ describe("annonce à la première liaison Auth.js", () => {
     await onLink({ ...event, account: { ...event.account, provider: "other" } });
     expect(mocks.transaction).not.toHaveBeenCalled();
     expect(mocks.after).not.toHaveBeenCalled();
+  });
+  it("synchronise le rôle après une liaison validée même si le bonus était déjà acquis", async () => {
+    mocks.linkedRole = true;
+    mocks.updateMany.mockResolvedValue({ count: 0 });
+    await onLink(event);
+    expect(mocks.after).toHaveBeenCalledOnce();
+    expect(mocks.queueRole).not.toHaveBeenCalled();
+    await mocks.after.mock.calls[0][0]();
+    expect(mocks.queueRole).toHaveBeenCalledWith(event.account.providerAccountId);
+    expect(mocks.syncRole).toHaveBeenCalledWith(event.account.providerAccountId);
+    expect(mocks.notify).not.toHaveBeenCalled();
   });
 });

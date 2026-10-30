@@ -2273,10 +2273,23 @@
     },
     "discord": {
       "title": "Discord",
-      "marketSection": "Marketplace announcements",
+      "marketSection": "Automatic announcements",
+      "rankedEnabled": "Announce season endings and starts on Discord",
+      "rankedHint": "Posts the final public leaderboard image to the ranked channel, then announces the new season. Fighter members are notified. The Discord cron must be installed.",
       "marketEnabled": "Share sales and card exchanges on Discord",
       "marketHint": "Posts new sales and card-for-card exchanges, then updates their status. Listings created before activation are not included. Configure the bot token, server and marketplace channel first.",
       "community": {
+        "rolesTitle": "Roles and linked accounts",
+        "rolesIntro": "Posts Merchant, Collector and Fighter buttons. Members can add or remove their own preferences. Merchant enables notifications without restricting marketplace access.",
+        "rolesMissing": "Configure the roles channel and role IDs in the Kiraku environment.",
+        "publishRoles": "Publish or update role choices",
+        "rolesSuccess": "Role choices are published on Discord.",
+        "openRoles": "View role choices on Discord",
+        "linkedReady": "The linked-account role is configured. New links and existing accounts are synchronized automatically; the verification button also retries synchronization.",
+        "linkedMissing": "Configure the linked-account role to enable automatic synchronization.",
+        "rankedTitle": "End-of-season image",
+        "rankedIntro": "The final leaderboard is saved before points are reset. The preview uses current scores without closing the season.",
+        "rankedPreview": "Preview the leaderboard image",
         "title": "Community welcome",
         "intro": "Posts a button below the rules already on Discord. It grants the Member role after acceptance. Publishing again updates the same message.",
         "endpoint": "Discord interactions URL",
@@ -2289,7 +2302,7 @@
         "open": "View the message on Discord",
         "errors": {
           "FORBIDDEN": "Only administrators can perform this action.",
-          "CONFIG": "Check the configuration and that the rules channel belongs to the correct server.",
+          "CONFIG": "Check the IDs, the channel’s server and the permissions of the offered roles.",
           "RATE_LIMITED": "Wait a minute before trying again.",
           "BUSY": "A publication is already in progress. Try again in a minute.",
           "DISCORD": "Could not publish. Check the token, bot permissions and Discord connection, then try again."
@@ -2319,6 +2332,7 @@
       "keys": {
         "discord": {
           "marketEnabled": "Discord marketplace announcements",
+          "rankedEnabled": "Discord ranked season announcements",
           "joinModal": "\"Join our Discord\" modal",
           "linkBonusZeni": "Discord link bonus"
         }
