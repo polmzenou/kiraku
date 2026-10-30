@@ -1,13 +1,15 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
+import { Prisma } from "@/generated/prisma/client";
 import { decorFromColumns, type PlayerDecor } from "@/lib/profile/decor";
 import { prisma } from "../db";
 import { decorColumns, type DecorColumns } from "../profile/decor";
 
 // Classement des collectionneurs : cartes uniques possédées (exemplaires en vente compris), puis
 // Mythiques uniques. Seuls les profils publics de joueurs non bannis et non retirés par l'admin y figurent,
-// moins le malus de cartes posé par l'admin (`leaderboardMalus`). Le calcul
-// parcourt toute la table UserCard : on le garde en cache quelques minutes.
+// moins les malus posés par l'admin (`leaderboardMalus` en cartes uniques, `leaderboardMythicMalus` en
+// Mythiques). Le rôle DEV voit les totaux bruts, sans malus. Le calcul parcourt toute la table UserCard :
+// on le garde en cache quelques minutes (une entrée par vue).
 
 export const LEADERBOARD_TAG = "leaderboard";
 export const LEADERBOARD_SIZE = 50;
@@ -23,11 +25,13 @@ export type Collector = {
 };
 
 const loadTopCollectors = unstable_cache(
-  async (): Promise<Collector[]> => {
+  async (raw: boolean): Promise<Collector[]> => {
+    const malus = raw ? Prisma.sql`0` : Prisma.sql`u."leaderboardMalus"`;
+    const mythicMalus = raw ? Prisma.sql`0` : Prisma.sql`u."leaderboardMythicMalus"`;
     const rows = await prisma.$queryRaw<(Omit<Collector, "rank" | "decor"> & DecorColumns)[]>`
       SELECT u."username", u."image", u."isGuest", ${decorColumns},
-        GREATEST(COUNT(DISTINCT uc."cardId") - u."leaderboardMalus", 0)::int AS "uniqueCards",
-        (COUNT(DISTINCT uc."cardId") FILTER (WHERE c."rarityKey" = 'MYTHIC'))::int AS "mythics"
+        GREATEST(COUNT(DISTINCT uc."cardId") - ${malus}, 0)::int AS "uniqueCards",
+        GREATEST(COUNT(DISTINCT uc."cardId") FILTER (WHERE c."rarityKey" = 'MYTHIC') - ${mythicMalus}, 0)::int AS "mythics"
       FROM "UserCard" uc
       JOIN "User" u ON u."id" = uc."ownerId"
       JOIN "Card" c ON c."id" = uc."cardId"
@@ -37,11 +41,11 @@ const loadTopCollectors = unstable_cache(
       LIMIT ${LEADERBOARD_SIZE}`;
     return rows.map(({ frameStyle, nameColor, ...r }, i) => ({ ...r, rank: i + 1, decor: decorFromColumns(frameStyle, nameColor) }));
   },
-  ["top-collectors-v3"],
+  ["top-collectors-v4"],
   { tags: [LEADERBOARD_TAG], revalidate: 300 },
 );
 
-/** Les `limit` premiers collectionneurs (50 au plus). */
-export async function getTopCollectors(limit = LEADERBOARD_SIZE): Promise<Collector[]> {
-  return (await loadTopCollectors()).slice(0, limit);
+/** Les `limit` premiers collectionneurs (50 au plus) ; `raw` : sans les malus de l'admin (rôle DEV). */
+export async function getTopCollectors(limit = LEADERBOARD_SIZE, { raw = false }: { raw?: boolean } = {}): Promise<Collector[]> {
+  return (await loadTopCollectors(raw)).slice(0, limit);
 }

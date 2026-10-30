@@ -12,6 +12,7 @@ import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { localeAlternates } from "@/lib/seo/alternates";
 import { getTopCollectors, LEADERBOARD_SIZE, type Collector } from "@/server/collection/leaderboard";
+import { getCurrentUser } from "@/server/user";
 import { ensureSeason, getRankedLeaderboard, getRankedRules, type RankedEntry } from "@/server/ranked/queries";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/classement">): Promise<Metadata> {
@@ -27,12 +28,13 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/classeme
 
 /**
  * Classements : collectionneurs (podium puis les 50 premiers) et classé (?vue=classe : top 100 de la
- * saison, emblème et PC). Profils publics seulement.
+ * saison, emblème et PC). Profils publics seulement ; le rôle DEV voit les collectionneurs sans malus.
  */
 export default async function LeaderboardPage({ searchParams }: PageProps<"/[locale]/classement">) {
   const { vue } = await searchParams;
   const ranked = vue === "classe";
-  const [t, tRanked, collectors] = await Promise.all([getTranslations("leaderboard"), getTranslations("ranked"), ranked ? [] : getTopCollectors()]);
+  const [t, tRanked, user] = await Promise.all([getTranslations("leaderboard"), getTranslations("ranked"), getCurrentUser()]);
+  const collectors = ranked ? [] : await getTopCollectors(LEADERBOARD_SIZE, { raw: user?.role === "DEV" });
 
   const tabs = (
     <nav aria-label={tRanked("board.tabs")} className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:px-0">
