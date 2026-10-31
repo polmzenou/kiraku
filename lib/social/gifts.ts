@@ -3,7 +3,9 @@
 
 export type GiftRules = {
   enabled: boolean;
+  /** Cadeaux envoyés par jour à un même ami. */
   perDaySent: number;
+  /** Cadeaux reçus par jour, tous amis confondus. */
   perDayReceived: number;
   minAccountAgeHours: number;
   minFriendshipHours: number;
@@ -18,7 +20,9 @@ export type GiftCheck = {
   friendsSince: Date | null;
   /** Un blocage dans un sens ou dans l'autre. */
   blocked: boolean;
+  /** Cadeaux déjà envoyés aujourd'hui à ce destinataire. */
   sentToday: number;
+  /** Cadeaux déjà reçus aujourd'hui par le destinataire, de tous ses amis. */
   receivedToday: number;
   now: Date;
   rules: GiftRules;

@@ -59,7 +59,8 @@ async function checkUnderLock(tx: Tx, ctx: GiftContext, now: Date): Promise<{ se
       select: { status: true, acceptedAt: true, createdAt: true },
     }),
     blocksBetween(tx, ctx.senderId, ctx.recipientId),
-    tx.gift.count({ where: { senderId: ctx.senderId, dayKey: day } }),
+    // Envois du jour à cet ami (la limite compte par ami, plus en tout) ; réceptions du jour, tous amis confondus
+    tx.gift.count({ where: { senderId: ctx.senderId, recipientId: ctx.recipientId, dayKey: day } }),
     tx.gift.count({ where: { recipientId: ctx.recipientId, dayKey: day } }),
   ]);
   const friendsSince = friendship?.status === "ACCEPTED" ? (friendship.acceptedAt ?? friendship.createdAt) : null;

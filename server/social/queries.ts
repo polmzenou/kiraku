@@ -136,8 +136,9 @@ export const unreadNotifications = cache((userId: string) =>
 );
 
 /** Cadeaux déjà envoyés aujourd'hui (jour du jeu). */
-export async function giftsSentToday(userId: string, timeZone: string) {
-  return prisma.gift.count({ where: { senderId: userId, dayKey: giftDay(new Date(), timeZone) } });
+/** Cadeaux envoyés aujourd'hui par `userId` à `recipientId` : la limite quotidienne compte par ami. */
+export async function giftsSentToday(userId: string, recipientId: string, timeZone: string) {
+  return prisma.gift.count({ where: { senderId: userId, recipientId, dayKey: giftDay(new Date(), timeZone) } });
 }
 
 // --- Notifications ---
