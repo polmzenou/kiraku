@@ -13,6 +13,7 @@ export type NavKey =
   | "collection"
   | "friends"
   | "wiki"
+  | "social"
   | "casino";
 
 export type NavFeature = "casino";
@@ -39,13 +40,14 @@ const ENTRIES: Record<NavKey, NavItem> = {
   friends: { key: "friends", href: "/amis", ready: true, also: ["/u"] },
   referral: { key: "referral", href: "/parrainage", ready: true, also: ["/i"] },
   wiki: { key: "wiki", href: "/wiki", ready: true },
+  social: { key: "social", href: "/social", ready: true },
   casino: { key: "casino", href: "/casino", ready: true, soon: true, feature: "casino" },
 };
 
 export const NAV_ITEMS: readonly NavItem[] = [ENTRIES.boosters, ENTRIES.missions, ENTRIES.shop, ENTRIES.combat, ENTRIES.market];
 
 export const NAV_MORE: readonly NavItem[] = [
-  ENTRIES.collection, ENTRIES.friends, ENTRIES.referral, ENTRIES.wiki, ENTRIES.casino,
+  ENTRIES.collection, ENTRIES.friends, ENTRIES.referral, ENTRIES.wiki, ENTRIES.social, ENTRIES.casino,
 ];
 
 export const MOBILE_NAV_ITEMS: readonly NavItem[] = [
@@ -53,7 +55,7 @@ export const MOBILE_NAV_ITEMS: readonly NavItem[] = [
 ];
 
 export const MOBILE_NAV_MORE: readonly NavItem[] = [
-  ENTRIES.missions, ENTRIES.shop, ENTRIES.friends, ENTRIES.referral, ENTRIES.wiki, ENTRIES.casino,
+  ENTRIES.missions, ENTRIES.shop, ENTRIES.friends, ENTRIES.referral, ENTRIES.wiki, ENTRIES.social, ENTRIES.casino,
 ];
 
 /** Entrées dont l'interrupteur est allumé (ou qui n'en ont pas). */

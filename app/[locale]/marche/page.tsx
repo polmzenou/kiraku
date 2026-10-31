@@ -8,6 +8,7 @@ import { ListingBoard } from "@/components/market/listings/ListingBoard";
 import { MyExchanges } from "@/components/market/listings/MyExchanges";
 import { MarketFilters } from "@/components/market/MarketFilters";
 import { MarketList } from "@/components/market/MarketList";
+import { SellFromMarket } from "@/components/market/SellFromMarket";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -17,7 +18,7 @@ import { routing } from "@/i18n/routing";
 import { MARKET_TABS, marketSearchParams, parseMarketParams } from "@/lib/market/filters";
 import { parseListingFilter } from "@/lib/market/listings";
 import { countIncomingOffers, listListings, listMyExchanges } from "@/server/market/listings";
-import { listAuctions } from "@/server/market/queries";
+import { listAuctions, sellBaseFor } from "@/server/market/queries";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
 
@@ -70,6 +71,8 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
       : [MARKET_TABS];
   const now = new Date();
   const page = enabled && !exchangeTab ? await listAuctions({ params, cursor: null, viewerId: user.id, locale, now }) : null;
+  // Vendre depuis le Marché : onglets des ventes, membres seulement (les échanges ont leur propre bouton)
+  const sellBase = page && !user.isGuest ? await sellBaseFor(user.id, now) : null;
   const incoming = exchangesOn && !user.isGuest ? await countIncomingOffers(user.id, now) : 0;
   const tabHref = (tab: string) => (tab === "all" ? "/marche" : `/marche?onglet=${tab}`);
   const current = exchangeTab ?? params.tab;
@@ -133,6 +136,7 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
 
       {page && (
         <>
+          {sellBase && <SellFromMarket base={sellBase} />}
           <MarketFilters params={params} />
 
           <MarketList

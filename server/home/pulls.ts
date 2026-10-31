@@ -11,6 +11,7 @@ import { namedPlayerSelect } from "../collection/public-names";
 import { getRarities } from "../catalog/rarities";
 import { decorSelect } from "../profile/decor";
 import { getSetting } from "../settings";
+import { pullLikes } from "./pull-likes";
 
 export type RecentPull = {
   id: string;
@@ -19,6 +20,7 @@ export type RecentPull = {
   name: string;
   profile: { username: string; image: string | null; decor: PlayerDecor } | null;
   at: string;
+  likes: { count: number; liked: boolean; canLike: boolean };
 };
 
 type FeedRow = { id: string; card: CardView; user: Parameters<typeof displayNameFor>[0] & { username: string; image: string | null } & Parameters<typeof decorFromRelations>[0]; at: string };
@@ -94,7 +96,7 @@ function cachedFeed(seconds: number) {
  * un même joueur n'y apparaît pas plus de `home.pullFeed.maxPerPlayer` fois. Les pseudos suivent la vue
  * publique : un profil privé, réservé aux amis, banni ou anonymisé s'affiche « Un joueur », sans lien ni avatar.
  */
-export async function getRecentPulls(locale: string): Promise<RecentPull[] | null> {
+export async function getRecentPulls(locale: string, viewerId: string | null = null): Promise<RecentPull[] | null> {
   const [enabled, cacheSeconds] = await Promise.all([getSetting("home.pullFeed.enabled"), getSetting("home.pullFeed.cacheSeconds")]);
   if (!enabled) return null;
   const [rows, t] = await Promise.all([cachedFeed(cacheSeconds)(await feedSettings(), locale), getTranslations("playerName")]);
@@ -109,6 +111,7 @@ export async function getRecentPulls(locale: string): Promise<RecentPull[] | nul
       name,
       profile: visible ? { username: r.user.username, image: r.user.image, decor: decorFromRelations(r.user) } : null,
       at: r.at,
+      likes: { ...pullLikes.read(r.id, viewerId), canLike: viewerId !== null && viewerId !== r.user.id },
     };
   });
 }

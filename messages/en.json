@@ -174,6 +174,7 @@
       "referral": "Referrals",
       "ledger": "Zeni history",
       "data": "My data",
+      "social": "Social",
       "casino": "Casino"
     }
   },
@@ -534,6 +535,7 @@
     "shop": "Shop",
     "referral": "Referrals",
     "more": "More",
+    "social": "Social",
     "casino": "Casino",
     "alert": "Reward to claim"
   },
@@ -590,7 +592,7 @@
     },
     "empty": {
       "all": "No sale matches your search.",
-      "selling": "You haven't put anything up for sale yet: open a card in your collection and choose “Sell”.",
+      "selling": "You haven't put anything up for sale yet: tap “Sell a card” or open a card in your collection.",
       "bidding": "You haven't bid on any sale yet."
     },
     "more": "Show more",
@@ -653,7 +655,12 @@
     },
     "sell": {
       "button": "Sell",
+      "fromMarket": "Sell a card",
       "title": "Sell {card}",
+      "pickTitle": "Which card do you want to sell?",
+      "pickHint": "Pick a card from your collection. Greyed-out cards are all already on sale or in battle.",
+      "pickCard": "Sell {card}",
+      "changeCard": "Change card",
       "startPrice": "Starting price (Zeni)",
       "buyout": "Buyout price (Zeni)",
       "buyoutOn": "Offer a buyout price",
@@ -1506,9 +1513,13 @@
       "giftsSection": "Gifts",
       "notificationsSection": "Notifications",
       "giftsHint": "Daily received quotas stop alt accounts from feeding a main account. A gifted booster is paid in Zeni by the sender.",
+      "searchHint": "Player search on the Social page: partial on visible profiles (from 3 characters), exact on the others (username only). Never guests, banned or frozen accounts.",
       "keys": {
         "social": {
-          "enabled": "Friends and gifts enabled"
+          "enabled": "Friends and gifts enabled",
+          "searchLimit": "Search results at most",
+          "searchPerMinute": "Searches per minute (player)",
+          "searchPerMinuteIp": "Searches per minute (IP)"
         },
         "friends": {
           "max": "Maximum friends",
@@ -2283,6 +2294,20 @@
       "afterBoosters": "Boosters opened before showing it",
       "cooldownDays": "Days before showing it again after \"Later\"",
       "showInFooter": "\"Our Discord\" link in the footer",
+      "promoSection": "Discord section of the Social page",
+      "promoIntro": "“Join our Discord” panel on the Social page, separate from the modal. Hidden while the switch is off; with dates, it only shows between the start and the end.",
+      "promoEnabled": "Show the section",
+      "promoUseModalUrl": "Use the modal's link",
+      "promoStartsAt": "Show from",
+      "promoEndsAt": "Show until",
+      "promoDateHint": "Optional, in your browser's time.",
+      "promoStates": {
+        "OFF": "Status: hidden",
+        "SCHEDULED": "Status: scheduled, visible from {date}",
+        "LIVE": "Status: shown",
+        "LIVE_UNTIL": "Status: shown until {date}",
+        "ENDED": "Status: ended (end date passed)"
+      },
       "linkSection": "Discord account sign-in",
       "linkBonusZeni": "First link bonus (Zeni)",
       "linkBonusHint": "Paid once, when a player links Discord to their account.",
@@ -2291,6 +2316,7 @@
           "marketEnabled": "Discord marketplace announcements",
           "rankedEnabled": "Discord ranked season announcements",
           "joinModal": "\"Join our Discord\" modal",
+          "socialPromo": "Discord section of the Social page",
           "linkBonusZeni": "Discord link bonus"
         }
       }
@@ -3440,6 +3466,7 @@
       "UNAVAILABLE": "Can't do that right now. Try again."
     },
     "trade": "Trade",
+    "tradeWith": "Offer {name} a trade",
     "pickForSealedDivin": "Pick the friend to gift your divine booster to. You'll find out what they pull.",
     "pickForSealedApocalypse": "Pick the friend to gift your apocalyptic booster to. Divine or ruined: you'll find out what they pull."
   },
@@ -3873,7 +3900,12 @@
       "live": "LIVE · LEGENDARY AND MYTHIC",
       "title": "Big pulls",
       "listLabel": "Latest big pulls",
-      "cardLabel": "{name}, {rarity}"
+      "cardLabel": "{name}, {rarity}",
+      "like": "Like this find: {name}",
+      "unlike": "Remove your like: {name}",
+      "likes": "{count, plural, one {# like} other {# likes}}",
+      "likeUnavailable": "Sign in to like other players’ finds. You cannot like your own.",
+      "likeError": "Your like could not be updated right now. Try again."
     }
   },
   "leaderboard": {
@@ -4816,6 +4848,28 @@
   "social": {
     "x": "X",
     "followX": "Follow Kiraku on X ({handle})"
+  },
+  "socialPage": {
+    "title": "Social",
+    "subtitle": "Find players, add them as friends or offer them a trade, and see who leads the collection race.",
+    "collectorsEmpty": "Nobody on the leaderboard yet.",
+    "search": {
+      "title": "Find a player",
+      "subtitle": "By username, without opening their profile.",
+      "label": "Player username",
+      "placeholder": "Username…",
+      "submit": "Search",
+      "hint": "Type at least {min} characters of a username.",
+      "short": "Almost there: at least {min} characters.",
+      "invalid": "A username only has letters, numbers, “_” and “-”.",
+      "rateLimited": "Too many searches at once: try again in a minute.",
+      "noResult": "No player found for “{q}”.",
+      "count": "{count, plural, one {# player found} other {# players found}}",
+      "hiddenProfile": "Private profile",
+      "guestOnly": "Create your account to find players, add them as friends and offer them trades.",
+      "signUp": "Create my account",
+      "disabled": "Player search is closed for now."
+    }
   },
   "sealed": {
     "rowTitle": "{count, plural, one {Sealed booster} other {# sealed boosters}}",

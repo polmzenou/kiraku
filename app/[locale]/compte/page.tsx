@@ -34,6 +34,7 @@ const ACCOUNT_TILES = [
   { key: "referral", href: "/parrainage", kanji: "招" },
   { key: "ledger", href: "/compte/historique", kanji: "銭" },
   { key: "data", href: "/compte/donnees", kanji: "私" },
+  { key: "social", href: "/social", kanji: "縁" },
   { key: "casino", href: "/casino", kanji: "賭", soon: true },
 ] as const;
 

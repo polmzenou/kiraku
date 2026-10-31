@@ -6,6 +6,8 @@ import type { Rarity } from "../catalog/rarity";
 export type CollectionItem = CardView & {
   /** Exemplaires possédés, tous statuts confondus. */
   copies: number;
+  /** Exemplaires libres (en collection : ni en vente ni en combat). */
+  free: number;
   /** Doublons recyclables : exemplaires en collection moins celui qu'on garde. */
   recyclable: number;
   inShowcase: boolean;

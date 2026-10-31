@@ -9,7 +9,17 @@ import {
   type MarketParams,
   type MarketSort,
 } from "@/lib/market/filters";
-import { bidBounds, buyoutAvailable, checkTrader, minNextBid, priceCap, type MarketRules } from "@/lib/market/rules";
+import {
+  bidBounds,
+  buyoutAvailable,
+  checkTrader,
+  minNextBid,
+  priceCap,
+  sellInfoForRarity,
+  type MarketRules,
+  type SellBase,
+  type SellInfo,
+} from "@/lib/market/rules";
 import { cardViews } from "../boosters/display";
 import type { NameColorStyle } from "@/lib/profile/name-colors";
 import { namedPlayerSelect, publicNamesFor, shownNameColor } from "../collection/public-names";
@@ -353,26 +363,32 @@ export async function activeAuctionCount(sellerId: string): Promise<number> {
   return prisma.auction.count({ where: { sellerId, status: "ACTIVE" } });
 }
 
-/** Ce que la feuille « Mettre en vente » doit savoir ; createAuctionWith revérifie tout sous verrou. */
-export async function sellInfoFor(userId: string, now: Date, rarity: string) {
+/**
+ * Ce que la feuille « Mettre en vente » doit savoir, avant le choix de la carte (Marché) ;
+ * createAuctionWith revérifie tout sous verrou.
+ */
+export async function sellBaseFor(userId: string, now: Date): Promise<SellBase> {
   const [rules, player, active] = await Promise.all([
     getMarketRules(),
     prisma.user.findUnique({ where: { id: userId }, select: { isGuest: true, bannedAt: true, createdAt: true } }),
     activeAuctionCount(userId),
   ]);
-  const maxPrice = priceCap(rules, rarity);
   return {
     durationsHours: [...rules.durationsHours],
     feeBp: rules.feeBp,
     minStartPrice: rules.minStartPrice,
-    maxPrice,
-    /** Le plafond vient de la rareté (et non du plafond global). */
-    rarityCapped: maxPrice < rules.maxPrice,
+    maxPrice: rules.maxPrice,
+    maxPriceByRarity: rules.maxPriceByRarity,
     active,
     maxActive: rules.maxActivePerSeller,
     minAccountAgeHours: rules.minAccountAgeHours,
-    block: player ? checkTrader(player, now, rules) : ("BANNED" as const),
+    block: player ? checkTrader(player, now, rules) : "BANNED",
   };
+}
+
+/** La même chose pour une carte de rareté `rarity` (fiche de la collection). */
+export async function sellInfoFor(userId: string, now: Date, rarity: string): Promise<SellInfo> {
+  return sellInfoForRarity(await sellBaseFor(userId, now), rarity);
 }
 
 /** Vente ouverte d'un exemplaire de cette carte, pour la fiche de la collection. */

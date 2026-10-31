@@ -25,6 +25,7 @@ export function CardPickGrid({
   onPick,
   pickLabel,
   disabled,
+  unavailable,
   allowed,
 }: {
   /** Collection d'un autre joueur ; absent = la sienne. */
@@ -34,6 +35,8 @@ export function CardPickGrid({
   pickLabel: (name: string) => string;
   /** Cartes impossibles à choisir (ex. la carte demandée, quand on choisit les siennes). */
   disabled?: ReadonlySet<string>;
+  /** Cartes grisées selon leurs données (ex. aucun exemplaire libre pour une vente). */
+  unavailable?: (card: CollectionItem) => boolean;
   /** Raretés acceptées par le serveur pour cet usage : les autres ne sont ni proposées ni listées. */
   allowed?: readonly Rarity[];
 }) {
@@ -123,7 +126,7 @@ export function CardPickGrid({
         <ul className="grid grid-cols-3 gap-2 md:grid-cols-5 md:gap-3">
           {items.map((item) => {
             const checked = selected.has(item.cardId);
-            const off = disabled?.has(item.cardId) ?? false;
+            const off = (disabled?.has(item.cardId) ?? false) || (unavailable?.(item) ?? false);
             return (
               <li key={item.cardId}>
                 <button

@@ -1,5 +1,6 @@
 
 import { getRarities } from "@/server/catalog/rarities";
+import { isFrozen } from "@/lib/account/deletion";
 import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
@@ -117,7 +118,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
     member && user ? getOwnReview(user.id) : null,
     getTopCollectors(3, { raw: user?.role === "DEV" }),
     // Tirages récents, puis ceux que le joueur possède déjà
-    getRecentPulls(locale).then(async (rows) => [rows, rows ? await ownedCardIds(user?.id, rows.map((p) => p.card.cardId)) : []] as const),
+    getRecentPulls(locale, user && !user.bannedAt && !isFrozen(user) ? user.id : null).then(async (rows) => [rows, rows ? await ownedCardIds(user?.id, rows.map((p) => p.card.cardId)) : []] as const),
     getSetting("home.pullFeed.refreshSeconds"),
     // Sachets scellés (Divin, Apocalyptique) gardés pour plus tard
     user ? getSealedDrops(user.id) : [],

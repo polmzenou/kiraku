@@ -3,6 +3,7 @@
 // Entre amis c'est toujours possible ; avec un non-ami, seulement si le réglage l'ouvre et que sa collection
 // est visible par le proposant (on ne sonde pas une collection cachée).
 import type { Rarity } from "../catalog/rarity";
+import type { Relation } from "./relation";
 
 export type TradeRules = {
   expiryHours: number;
@@ -56,6 +57,15 @@ export function checkProposal(p: ProposalCheck): TradeRefusal | null {
   if (p.pendingSent >= p.rules.maxPendingSent) return "PENDING_LIMIT";
   if (p.sentLastDay >= p.rules.perDay) return "DAILY_LIMIT";
   return null;
+}
+
+/**
+ * Montrer « Échanger » à un joueur (profil, recherche) : toujours entre amis ; hors amis si le réglage
+ * l'ouvre et que sa collection est visible. Même règle que checkProposal à l'envoi.
+ */
+export function tradeOfferable(relation: Relation | null, collectionVisible: boolean, nonFriends: boolean): boolean {
+  if (relation === "FRIENDS") return true;
+  return relation !== null && relation !== "BLOCKED_BY_ME" && collectionVisible && nonFriends;
 }
 
 /** Ids de cartes offertes, sans doublon, dans l'ordre donné. */

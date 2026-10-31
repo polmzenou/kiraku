@@ -31,6 +31,7 @@ import { getSealedDrops } from "@/server/economy/queries";
 import { getIncenseState } from "@/server/boosters/incense";
 import type { ProfileAccess } from "@/lib/collection/visibility";
 import type { Relation } from "@/lib/social/relation";
+import { tradeOfferable } from "@/lib/social/trades";
 import { isStaff, presenceOf } from "@/lib/social/presence";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/u/[username]">): Promise<Metadata> {
@@ -231,9 +232,7 @@ async function socialBar({
     };
   }
   // Entre amis toujours ; hors amis si le réglage l'ouvre et que la collection est visible (même règle qu'à l'envoi)
-  const canTrade =
-    access.relation === "FRIENDS" ||
-    (access.relation !== "BLOCKED_BY_ME" && access.collection && (await getSetting("trades.nonFriends")));
+  const canTrade = tradeOfferable(access.relation, access.collection, await getSetting("trades.nonFriends"));
   const trade =
     canTrade && (await getSetting("trades.enabled"))
       ? { maxOffered: await getSetting("trades.maxOffered"), allowedRarities: await getSetting("trades.allowedRarities") }

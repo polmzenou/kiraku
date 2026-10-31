@@ -174,6 +174,7 @@
       "referral": "Parrainage",
       "ledger": "Historique des Zeni",
       "data": "Mes données",
+      "social": "Social",
       "casino": "Casino"
     }
   },
@@ -534,6 +535,7 @@
     "shop": "Boutique",
     "referral": "Parrainage",
     "more": "Plus",
+    "social": "Social",
     "casino": "Casino",
     "alert": "Récompense à réclamer"
   },
@@ -590,7 +592,7 @@
     },
     "empty": {
       "all": "Aucune vente ne correspond à ta recherche.",
-      "selling": "Tu n'as encore rien mis en vente : ouvre une carte de ta collection et choisis « Mettre en vente ».",
+      "selling": "Tu n'as encore rien mis en vente : touche « Mettre une carte en vente » ou ouvre une carte de ta collection.",
       "bidding": "Tu n'as encore misé sur aucune vente."
     },
     "more": "Voir plus",
@@ -653,7 +655,12 @@
     },
     "sell": {
       "button": "Mettre en vente",
+      "fromMarket": "Mettre une carte en vente",
       "title": "Mettre {card} en vente",
+      "pickTitle": "Quelle carte mettre en vente ?",
+      "pickHint": "Choisis une carte de ta collection. Les cartes grisées sont déjà toutes en vente ou en combat.",
+      "pickCard": "Vendre {card}",
+      "changeCard": "Changer de carte",
       "startPrice": "Prix de départ (Zeni)",
       "buyout": "Achat immédiat (Zeni)",
       "buyoutOn": "Proposer un achat immédiat",
@@ -1506,9 +1513,13 @@
       "giftsSection": "Cadeaux",
       "notificationsSection": "Notifications",
       "giftsHint": "Les quotas reçus par jour empêchent d'alimenter un compte principal avec des comptes secondaires. Le booster offert est payé en Zeni par l'expéditeur.",
+      "searchHint": "Recherche de joueurs de la page Social : partielle sur les profils visibles (dès 3 caractères), exacte sur les autres (pseudo seul). Jamais d'invité, de banni ni de compte gelé.",
       "keys": {
         "social": {
-          "enabled": "Amis et cadeaux activés"
+          "enabled": "Amis et cadeaux activés",
+          "searchLimit": "Résultats de recherche au plus",
+          "searchPerMinute": "Recherches par minute (joueur)",
+          "searchPerMinuteIp": "Recherches par minute (IP)"
         },
         "friends": {
           "max": "Amis au maximum",
@@ -2283,6 +2294,20 @@
       "afterBoosters": "Boosters ouverts avant d'afficher",
       "cooldownDays": "Jours avant de le remontrer après « Plus tard »",
       "showInFooter": "Lien « Notre Discord » dans le pied de page",
+      "promoSection": "Section Discord de la page Social",
+      "promoIntro": "Encart « Rejoins notre Discord » de la page Social, distinct du modal. Masqué tant que l'interrupteur est coupé ; avec des dates, il ne s'affiche qu'entre le début et la fin.",
+      "promoEnabled": "Afficher la section",
+      "promoUseModalUrl": "Reprendre le lien du modal",
+      "promoStartsAt": "Début d'affichage",
+      "promoEndsAt": "Fin d'affichage",
+      "promoDateHint": "Facultatif, à l'heure de ton navigateur.",
+      "promoStates": {
+        "OFF": "État : masquée",
+        "SCHEDULED": "État : programmée, visible à partir du {date}",
+        "LIVE": "État : affichée",
+        "LIVE_UNTIL": "État : affichée jusqu'au {date}",
+        "ENDED": "État : terminée (date de fin passée)"
+      },
       "linkSection": "Connexion Discord du compte",
       "linkBonusZeni": "Bonus de première liaison (Zeni)",
       "linkBonusHint": "Versé une seule fois, quand un joueur lie Discord à son compte.",
@@ -2291,6 +2316,7 @@
           "marketEnabled": "Annonces du marché sur Discord",
           "rankedEnabled": "Annonces des saisons classées sur Discord",
           "joinModal": "Modal « Rejoins notre Discord »",
+          "socialPromo": "Section Discord de la page Social",
           "linkBonusZeni": "Bonus de liaison Discord"
         }
       }
@@ -3440,6 +3466,7 @@
       "UNAVAILABLE": "Action impossible pour le moment. Réessaie."
     },
     "trade": "Échanger",
+    "tradeWith": "Proposer un échange à {name}",
     "pickForSealedDivin": "Choisis l'ami à qui offrir ton booster divin. Tu sauras ce qu'il en tire.",
     "pickForSealedApocalypse": "Choisis l'ami à qui offrir ton booster apocalyptique. Divin ou ruiné : tu sauras ce qu'il en tire."
   },
@@ -3873,7 +3900,12 @@
       "live": "EN DIRECT · LÉGENDAIRES ET MYTHIQUES",
       "title": "Gros tirages",
       "listLabel": "Derniers gros tirages",
-      "cardLabel": "{name}, {rarity}"
+      "cardLabel": "{name}, {rarity}",
+      "like": "Liker la trouvaille : {name}",
+      "unlike": "Retirer ton like : {name}",
+      "likes": "{count, plural, one {# like} other {# likes}}",
+      "likeUnavailable": "Connecte-toi pour liker les trouvailles des autres joueurs. Tu ne peux pas liker les tiennes.",
+      "likeError": "Impossible de modifier ton like pour le moment. Réessaie."
     }
   },
   "leaderboard": {
@@ -4816,6 +4848,28 @@
   "social": {
     "x": "X",
     "followX": "Suivre Kiraku sur X ({handle})"
+  },
+  "socialPage": {
+    "title": "Social",
+    "subtitle": "Trouve des joueurs, ajoute-les en ami ou propose-leur un échange, et vois qui mène la collection.",
+    "collectorsEmpty": "Personne au classement pour l'instant.",
+    "search": {
+      "title": "Chercher un joueur",
+      "subtitle": "Par pseudo, sans passer par son profil.",
+      "label": "Pseudo du joueur",
+      "placeholder": "Pseudo…",
+      "submit": "Chercher",
+      "hint": "Tape au moins {min} caractères d'un pseudo.",
+      "short": "Encore un effort : au moins {min} caractères.",
+      "invalid": "Un pseudo ne contient que des lettres, des chiffres, « _ » et « - ».",
+      "rateLimited": "Trop de recherches d'un coup : réessaie dans une minute.",
+      "noResult": "Aucun joueur trouvé pour « {q} ».",
+      "count": "{count, plural, one {# joueur trouvé} other {# joueurs trouvés}}",
+      "hiddenProfile": "Profil privé",
+      "guestOnly": "Crée ton compte pour chercher des joueurs, les ajouter en ami et leur proposer des échanges.",
+      "signUp": "Créer mon compte",
+      "disabled": "La recherche de joueurs est fermée pour le moment."
+    }
   },
   "sealed": {
     "rowTitle": "{count, plural, one {Sachet scellé} other {# sachets scellés}}",

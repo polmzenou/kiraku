@@ -7,8 +7,8 @@ import { sendFriendRequestAction } from "@/server/actions/social";
 import { Button } from "../ui/Button";
 
 /**
- * Ajout par pseudo exact : aucune suggestion ni recherche approximative sur tous les joueurs
- * (pas d'énumération). La réponse est la même qu'une demande normale quand la cible ne peut rien
+ * Ajout par pseudo exact, sans suggestion (la recherche partielle, limitée aux profils visibles, est
+ * sur la page Social). La réponse est la même qu'une demande normale quand la cible ne peut rien
  * recevoir : seuls « introuvable » et « déjà en cours » diffèrent.
  */
 export function AddFriendForm() {

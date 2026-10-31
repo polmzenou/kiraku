@@ -6,6 +6,7 @@ import { rotationPinSchema } from "@/lib/boosters/rotation";
 import { slugSchema } from "@/lib/boosters/types";
 import { KEYWORDS, TECHNIQUES } from "@/lib/battle/types";
 import { JOIN_MODAL_DEFAULT, joinModalSchema } from "@/lib/discord/join-modal";
+import { SOCIAL_PROMO_DEFAULT, socialPromoSchema } from "@/lib/discord/social-promo";
 import { NEWS_DEFAULT, newsSchema } from "@/lib/home/news-schema";
 import { alertThresholdsSchema, DEFAULT_ALERT_THRESHOLDS } from "@/lib/usage/quota";
 
@@ -184,6 +185,10 @@ export const SETTING_SCHEMAS = {
   "friends.maxOutgoingPending": z.number().int().min(1).max(500),
   // Délai avant de pouvoir redemander après un refus ou une annulation
   "friends.requestCooldownHours": z.number().int().min(0).max(24 * 90),
+  // Recherche de joueurs de la page Social : résultats au plus, recherches par minute (joueur, IP)
+  "social.searchLimit": z.number().int().min(1).max(50),
+  "social.searchPerMinute": z.number().int().min(1).max(600),
+  "social.searchPerMinuteIp": z.number().int().min(1).max(2_000),
   "gifts.enabled": z.boolean(),
   "gifts.perDaySent": z.number().int().min(0).max(100),
   "gifts.perDayReceived": z.number().int().min(0).max(100),
@@ -338,6 +343,8 @@ export const SETTING_SCHEMAS = {
   "discord.joinModal": joinModalSchema,
   "discord.marketEnabled": z.boolean(),
   "discord.rankedEnabled": z.boolean(),
+  // Section « Rejoins notre Discord » de la page Social : lien, textes fr/en, fenêtre d'affichage
+  "discord.socialPromo": socialPromoSchema,
   // Interrupteurs de fonctionnalités sans module propre (casino : tuile « Bientôt » seulement)
   "features.casino": z.boolean(),
   // Carrousel « En direct · Gros tirages » de l'accueil (étape 12c)
@@ -413,6 +420,9 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "friends.max": 200,
   "friends.maxOutgoingPending": 20,
   "friends.requestCooldownHours": 72,
+  "social.searchLimit": 10,
+  "social.searchPerMinute": 20,
+  "social.searchPerMinuteIp": 60,
   "gifts.enabled": true,
   "gifts.perDaySent": 3,
   "gifts.perDayReceived": 5,
@@ -536,6 +546,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "discord.joinModal": JOIN_MODAL_DEFAULT, // désactivé par défaut
   "discord.marketEnabled": false,
   "discord.rankedEnabled": false,
+  "discord.socialPromo": SOCIAL_PROMO_DEFAULT, // masquée par défaut
   "features.casino": true,
   "home.pullFeed.enabled": true,
   "home.pullFeed.minRarity": "LEGENDARY",
