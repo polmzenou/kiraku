@@ -64,6 +64,16 @@ export type RankView = {
   ladder: LadderInfo;
 };
 
+/** Lot d'une saison terminée à réclamer, même lorsque les combats sont fermés. */
+export async function getPendingSeasonReward(userId: string): Promise<RankView["reward"]> {
+  const reward = await prisma.seasonResult.findFirst({
+    where: { userId, claimedAt: null, lotId: { not: null } },
+    orderBy: { createdAt: "desc" },
+    select: { seasonId: true, peakTier: true, season: { select: { number: true } } },
+  });
+  return reward ? { seasonId: reward.seasonId, seasonNumber: reward.season.number, peakTier: reward.peakTier as BoardTier } : null;
+}
+
 export type LadderInfo = { tiers: TierRanges[]; grand: { min: number; top: number } };
 
 export function ladderInfo(r: RankedRules): LadderInfo {
@@ -83,11 +93,7 @@ export async function getRankView(userId: string, r: RankedRules, locale: string
       select: { rankPoints: true, rankProtection: true, seasonGames: true, seasonPeakPc: true, seasonPeakGrand: true },
     }),
     ensureSeason(r),
-    prisma.seasonResult.findFirst({
-      where: { userId, claimedAt: null, lotId: { not: null } },
-      orderBy: { createdAt: "desc" },
-      select: { seasonId: true, peakTier: true, season: { select: { number: true } } },
-    }),
+    getPendingSeasonReward(userId),
   ]);
   const ahead = await playersAhead(user.rankPoints, r);
   // Top du Grand Champion : place partagée à égalité de PC (même règle que le passage au rang)
@@ -105,7 +111,7 @@ export async function getRankView(userId: string, r: RankedRules, locale: string
     protection: user.rankProtection,
     seasonGames: user.seasonGames,
     season: season ? { number: season.number, endsAt: season.endsAt.toISOString() } : null,
-    reward: reward ? { seasonId: reward.seasonId, seasonNumber: reward.season.number, peakTier: reward.peakTier as BoardTier } : null,
+    reward,
     grand: rank.tier === "GRAND_CHAMPION" && ahead !== null ? { position: ahead + 1, top: r.grandChampion.top } : null,
     seasonReward: lot ? { tier: peak, lot, played: user.seasonGames > 0 } : null,
     ladder: ladderInfo(r),
