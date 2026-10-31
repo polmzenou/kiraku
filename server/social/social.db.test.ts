@@ -119,6 +119,19 @@ describe.skipIf(!url)("amis et cadeaux atomiques (base réelle)", () => {
     expect(await prisma.userCard.count({ where: { ownerId: a, cardId } })).toBe(7);
   }, 60_000);
 
+  it("le quota d'envoi compte par ami : 3 cadeaux à chacun de deux amis le même jour", async () => {
+    const [a, b, c] = [await player(), await player(), await player()];
+    await befriend(a, b);
+    await befriend(a, c);
+    await prisma.userCard.createMany({ data: Array.from({ length: 7 }, () => ({ ownerId: a, cardId })) });
+    for (const to of [b, c]) {
+      for (let i = 0; i < 3; i++) await giftCardWith(prisma, { ...ctx(a, to), cardId, allowedRarities: ["COMMON"] });
+    }
+    await expect(giftCardWith(prisma, { ...ctx(a, b), cardId, allowedRarities: ["COMMON"] })).rejects.toMatchObject({ code: "SENT_LIMIT" });
+    expect(await prisma.userCard.count({ where: { ownerId: b, cardId } })).toBe(3);
+    expect(await prisma.userCard.count({ where: { ownerId: c, cardId } })).toBe(3);
+  }, 60_000);
+
   it("un même exemplaire offert deux fois en parallèle n'est transféré qu'une fois, et quitte la vitrine", async () => {
     const [a, b, c] = [await player(), await player(), await player()];
     await befriend(a, b);
