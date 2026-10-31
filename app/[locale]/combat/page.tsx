@@ -13,7 +13,8 @@ import { routing } from "@/i18n/routing";
 import type { PlayerView } from "@/lib/battle/view";
 import { battleCtx, challengeTarget, getActivity, getCandidates, getHistory, getLastTeam, sweepBattlesFor } from "@/server/battle/queries";
 import { RankedBoardPanel } from "@/components/ranked/RankedBoardPanel";
-import { getDivisionBoard, getRankedLeaderboard, getRankView } from "@/server/ranked/queries";
+import { SeasonReward } from "@/components/ranked/SeasonReward";
+import { ensureSeason, getDivisionBoard, getPendingSeasonReward, getRankedLeaderboard, getRankView } from "@/server/ranked/queries";
 import { getCurrentUser } from "@/server/user";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/combat">): Promise<Metadata> {
@@ -38,9 +39,16 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
   const header = <SectionTitle level={1} title={t("title")} subtitle={t("intro")} />;
 
   if (user.isGuest || !ctx.rules.enabled) {
+    let reward = null;
+    if (!user.isGuest) {
+      // Clôture éventuelle avant la lecture pour rendre le lot disponible dès la première visite.
+      await ensureSeason(ctx.ranked);
+      reward = await getPendingSeasonReward(user.id);
+    }
     return (
       <PageShell>
         {header}
+        {reward && <SeasonReward {...reward} />}
         <aside className="flex flex-col items-start gap-3 lacquer rounded-card p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm">{user.isGuest ? t("guest") : t("disabled")}</p>
           {user.isGuest && (
