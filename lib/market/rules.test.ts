@@ -10,7 +10,9 @@ import {
   priceCap,
   saleFee,
   sellerNet,
+  sellInfoForRarity,
   type MarketRules,
+  type SellBase,
 } from "./rules";
 
 const rules: MarketRules = {
@@ -164,5 +166,31 @@ describe("plafond par rareté", () => {
   it("garde le prix de départ d'une vente ouverte avant une baisse du plafond", () => {
     expect(bidBounds(null, 800, 500, 500)).toEqual({ min: 800, max: 800 });
     expect(bidBounds(800, 800, 500, 500)).toBeNull();
+  });
+});
+
+describe("feuille « Mettre en vente » depuis le Marché", () => {
+  const base: SellBase = {
+    durationsHours: [1, 24],
+    feeBp: 500,
+    minStartPrice: 1,
+    maxPrice: 10_000_000,
+    maxPriceByRarity: { COMMON: 500, MYTHIC: 50_000_000 },
+    active: 2,
+    maxActive: 10,
+    minAccountAgeHours: 48,
+    block: null,
+  };
+
+  it("applique le plafond de la rareté de la carte choisie", () => {
+    expect(sellInfoForRarity(base, "COMMON")).toMatchObject({ maxPrice: 500, rarityCapped: true });
+    expect(sellInfoForRarity(base, "MYTHIC")).toMatchObject({ maxPrice: 10_000_000, rarityCapped: false });
+    expect(sellInfoForRarity(base, "RARE")).toMatchObject({ maxPrice: 10_000_000, rarityCapped: false });
+  });
+
+  it("garde le reste et n'envoie pas la table des plafonds", () => {
+    const info = sellInfoForRarity(base, "COMMON");
+    expect(info).toMatchObject({ durationsHours: [1, 24], feeBp: 500, active: 2, maxActive: 10, block: null });
+    expect(info).not.toHaveProperty("maxPriceByRarity");
   });
 });

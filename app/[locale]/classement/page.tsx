@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { hasLocale, useTranslations } from "next-intl";
+import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
-import { TopCollectors } from "@/components/home/TopCollectors";
+import { CollectorRow, TopCollectors } from "@/components/home/TopCollectors";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { PlayerName } from "@/components/social/PlayerName";
@@ -11,7 +11,7 @@ import { segmentedItemClass, segmentedTrackClass } from "@/components/ui/Segment
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { localeAlternates } from "@/lib/seo/alternates";
-import { getTopCollectors, LEADERBOARD_SIZE, type Collector } from "@/server/collection/leaderboard";
+import { getTopCollectors, LEADERBOARD_SIZE } from "@/server/collection/leaderboard";
 import { getCurrentUser } from "@/server/user";
 import { ensureSeason, getRankedLeaderboard, getRankedRules, type RankedEntry } from "@/server/ranked/queries";
 
@@ -78,27 +78,12 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/[loc
           <TopCollectors collectors={collectors.slice(0, 3)} withHeader={false} />
           <ol className="flex flex-col lacquer rounded-card px-4">
             {collectors.map((c) => (
-              <Row key={c.username} collector={c} />
+              <CollectorRow key={c.username} collector={c} />
             ))}
           </ol>
         </>
       )}
     </PageShell>
-  );
-}
-
-function Row({ collector }: { collector: Collector }) {
-  const t = useTranslations("home.collectors");
-  return (
-    <PlayerRow
-      player={collector}
-      detail={`${t("cards", { count: collector.uniqueCards })} · ${t("mythics", { count: collector.mythics })}`}
-    >
-      <span className="w-10 text-right font-title text-lg font-extrabold text-text-muted tabular-nums">
-        <span className="sr-only">{t("rank", { rank: collector.rank })}</span>
-        <span aria-hidden="true">{collector.rank}</span>
-      </span>
-    </PlayerRow>
   );
 }
 

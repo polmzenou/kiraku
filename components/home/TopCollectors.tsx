@@ -5,6 +5,7 @@ import { displayName } from "../profile/ProfileHeader";
 import { SectionTitle } from "../SectionTitle";
 import { PlayerAvatar } from "../social/PlayerAvatar";
 import { PlayerName } from "../social/PlayerName";
+import { PlayerRow } from "../social/PlayerRow";
 
 // Podium 2-1-3 : or (金), argent (銀), bronze (銅). Hauteurs de socle décroissantes.
 const PLACES = {
@@ -49,6 +50,22 @@ export function TopCollectors({ collectors, withHeader = true }: { collectors: C
         ))}
       </ol>
     </section>
+  );
+}
+
+/** Ligne d'un collectionneur sous le podium (/classement, page Social) : joueur, cartes, Mythiques et place. */
+export function CollectorRow({ collector }: { collector: Collector }) {
+  const t = useTranslations("home.collectors");
+  return (
+    <PlayerRow
+      player={collector}
+      detail={`${t("cards", { count: collector.uniqueCards })} · ${t("mythics", { count: collector.mythics })}`}
+    >
+      <span className="w-10 text-right font-title text-lg font-extrabold text-text-muted tabular-nums">
+        <span className="sr-only">{t("rank", { rank: collector.rank })}</span>
+        <span aria-hidden="true">{collector.rank}</span>
+      </span>
+    </PlayerRow>
   );
 }
 

@@ -79,6 +79,7 @@ function toItem(row: Row, locale: string): CollectionItem {
     ki: row.ki,
     series: seriesTitle(row, locale),
     copies: row.copies,
+    free: row.free,
     recyclable: Math.max(0, row.free - 1),
     inShowcase: row.inShowcase,
     ...(row.viewerOwns !== null && { viewerOwns: row.viewerOwns }),

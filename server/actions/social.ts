@@ -75,7 +75,7 @@ async function guard<S extends z.ZodType>(input: unknown, schema: S, bucket: str
   return { user, data: parsed.data as z.infer<S> };
 }
 
-/** Joueur cible par pseudo exact (casse ignorée). Jamais de recherche approximative sur tous les joueurs. */
+/** Joueur cible par pseudo exact (casse ignorée) ; la recherche partielle est dans server/social/search.ts. */
 async function target(username: string) {
   const owner = await findProfileOwner(username);
   return owner ? owner.id : null;

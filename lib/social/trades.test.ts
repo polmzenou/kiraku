@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkProposal, isTradeOpen, tradeExpiresAt, uniqueOffered, type ProposalCheck } from "./trades";
+import { checkProposal, isTradeOpen, tradeExpiresAt, tradeOfferable, uniqueOffered, type ProposalCheck } from "./trades";
 
 const rules = {
   expiryHours: 48,
@@ -80,5 +80,24 @@ describe("échéance", () => {
     expect(isTradeOpen({ status: "PENDING", expiresAt: new Date(now.getTime() + 1) }, now)).toBe(true);
     expect(isTradeOpen({ status: "PENDING", expiresAt: now }, now)).toBe(false);
     expect(isTradeOpen({ status: "ACCEPTED", expiresAt: new Date(now.getTime() + 1) }, now)).toBe(false);
+  });
+});
+
+describe("bouton « Échanger » (profil, recherche)", () => {
+  it("toujours entre amis, même si le réglage ferme les non-amis", () => {
+    expect(tradeOfferable("FRIENDS", false, false)).toBe(true);
+  });
+
+  it("hors amis : réglage ouvert et collection visible", () => {
+    for (const rel of ["NONE", "OUTGOING", "INCOMING"] as const) {
+      expect(tradeOfferable(rel, true, true), rel).toBe(true);
+      expect(tradeOfferable(rel, false, true), rel).toBe(false);
+      expect(tradeOfferable(rel, true, false), rel).toBe(false);
+    }
+  });
+
+  it("jamais avec un joueur qu'on a bloqué ni avec soi-même", () => {
+    expect(tradeOfferable("BLOCKED_BY_ME", true, true)).toBe(false);
+    expect(tradeOfferable(null, true, true)).toBe(false);
   });
 });

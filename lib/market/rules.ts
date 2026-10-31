@@ -39,6 +39,40 @@ export function priceCap(rules: Pick<MarketRules, "maxPrice" | "maxPriceByRarity
   return own === undefined ? rules.maxPrice : Math.min(rules.maxPrice, own);
 }
 
+/** Ce que la feuille « Mettre en vente » doit savoir, hors carte ; le serveur revérifie tout à la mise en vente. */
+export type SellBase = {
+  durationsHours: number[];
+  feeBp: number;
+  minStartPrice: number;
+  maxPrice: number;
+  maxPriceByRarity: Readonly<Record<string, number>>;
+  active: number;
+  maxActive: number;
+  minAccountAgeHours: number;
+  block: TraderRefusal | null;
+};
+
+/** La même chose pour une carte précise : son plafond dépend de sa rareté. */
+export type SellInfo = Omit<SellBase, "maxPriceByRarity"> & {
+  /** Le plafond vient de la rareté de la carte (et non du plafond global). */
+  rarityCapped: boolean;
+};
+
+export function sellInfoForRarity(base: SellBase, rarity: string | null): SellInfo {
+  const maxPrice = priceCap(base, rarity);
+  return {
+    durationsHours: base.durationsHours,
+    feeBp: base.feeBp,
+    minStartPrice: base.minStartPrice,
+    maxPrice,
+    rarityCapped: maxPrice < base.maxPrice,
+    active: base.active,
+    maxActive: base.maxActive,
+    minAccountAgeHours: base.minAccountAgeHours,
+    block: base.block,
+  };
+}
+
 /**
  * Mises acceptées sur une vente plafonnée à `cap`, ou null si le plafond est atteint (plus aucune
  * surenchère possible). Sous le plafond, la mise minimale y est ramenée. Une vente ouverte avant une

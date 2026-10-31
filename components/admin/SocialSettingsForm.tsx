@@ -21,6 +21,9 @@ const LIMITS: Record<NumberKey, [number, number]> = {
   "friends.max": [1, 5_000],
   "friends.maxOutgoingPending": [1, 500],
   "friends.requestCooldownHours": [0, 24 * 90],
+  "social.searchLimit": [1, 50],
+  "social.searchPerMinute": [1, 600],
+  "social.searchPerMinuteIp": [1, 2_000],
   "gifts.perDaySent": [0, 100],
   "gifts.perDayReceived": [0, 100],
   "gifts.minAccountAgeHours": [0, 24 * 365],
@@ -162,6 +165,12 @@ export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
           {num("friends.maxOutgoingPending")}
           {num("friends.requestCooldownHours")}
         </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {num("social.searchLimit")}
+          {num("social.searchPerMinute")}
+          {num("social.searchPerMinuteIp")}
+        </div>
+        <p className="text-xs text-text-muted">{t("searchHint")}</p>
       </fieldset>
 
       <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
