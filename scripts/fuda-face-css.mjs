@@ -86,8 +86,17 @@ const SEAMS = (() => {
   return svg(BANK_VB, `<path d='${d}' fill='none' stroke='#5a3f0a' stroke-opacity='.55' stroke-width='7' stroke-linejoin='round'/><path d='${d}' fill='none' stroke='#f3d98a' stroke-width='3.6' stroke-linejoin='round'/><path d='${d}' fill='none' stroke='#fffbe8' stroke-width='1.2' stroke-linejoin='round' transform='translate(-.8 -.8)'/>`);
 })();
 
+// Raretés visuelles (MR, VR, BR) : croissant dans la nuée du sceau et coins ornés des plaques
+const crescent = (color) => svg(SEAL_VB, `<path d='M250 0${lobes([[250, 0], [284, 72], [258, 146], [196, 206]], 1)}' fill='none' stroke='${color}' stroke-width='9' stroke-linecap='round' transform='translate(-24 -18)'/>`);
+const corner = (angle) => svg("0 0 20 20", `<path d='M1 19V10C6 10 10 6 10 1H19' fill='none' stroke='#b3261e' stroke-width='1.5' stroke-linecap='round' transform='rotate(${angle} 10 10)'/>`);
+const corners = (size, gap) => [[0, "left", "top"], [90, "right", "top"], [180, "right", "bottom"], [270, "left", "bottom"]]
+  .map(([angle, x, y]) => `${corner(angle)} ${x} ${gap} ${y} ${gap} / ${size} ${size} no-repeat`).join(", ");
+
 const NONE = "linear-gradient(transparent, transparent)";
 const MAT = "var(--fuda-frame-bg, var(--fuda-frame))";
+// Le banc et la nuée du sceau prennent la matière du cadre, sauf si la rareté leur en donne une autre
+const BANK_MAT = `var(--kn-bank-bg, ${MAT})`;
+const SEAL_MAT = `var(--kn-sc-bg, ${MAT})`;
 const VOL = "linear-gradient(180deg, rgb(255 255 255 / .17), transparent 34%, transparent 62%, rgb(0 0 0 / .16))";
 const JP = '"Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif';
 // Papier du shikishi : un papier choisi dans l'admin remplace le dégradé par sa couleur (--kn-washi)
@@ -120,6 +129,20 @@ const RARITIES = {
     detail: "radial-gradient(130% 70% at 50% 0%, rgb(255 255 255 / .2), transparent 60%)" },
   GOLD: { line: "#6e5012", lo: 0.9, hi: "#fffbe6", ho: 1, sh: "#5e430c", so: 0.42, dot: "#fff6d6", dotO: 1, extra: `--kn-seal: #a47a22; --kn-edge: #e2c46e; --kn-kanji: #8a6a1f; --kn-bx-lg: ${SEAMS};`,
     detail: "linear-gradient(90deg, rgb(110 80 18 / .24) 0 1px, transparent 1px) 0 0 / 6.6cqw 6.6cqw, linear-gradient(rgb(110 80 18 / .18) 0 1px, transparent 1px) 3.3cqw 0 / 6.6cqw 6.6cqw, conic-gradient(rgb(255 250 225 / .14) 25%, transparent 0 50%, rgb(255 250 225 / .1) 0 75%, transparent 0) 0 0 / 13.2cqw 13.2cqw, radial-gradient(circle, rgb(255 250 225 / .7) 0 .7px, transparent 1.1px) 0 0 / 6px 5px" },
+  // Manga : papier blanc, trame grise, encre noire, liseré rouge
+  MR: { line: "#131313", lo: 1, hi: "#fff", ho: 0.9, sh: "#000", so: 0.28, dot: "#6b6b6b", dotO: 0.35,
+    extra: `--kn-paper: #f6f1e7; --kn-washi: #f6f1e7; --kn-ink: #1a1714; --kn-muted: #5b544a; --kn-kanji: #131313; --kn-seal: #131313; --kn-rule: #2a2622; --kn-edge: #b3a9a1; --kn-rim: rgb(255 255 255 / .75); --kn-sc-fill: #131313; --kn-sc-line: #f9f4ec; --kn-sc-bg: linear-gradient(150deg, #2b2b2b, #131313 60%, #0a0a0a); --kn-sc-bx: ${crescent("#b3261e")}; --kn-bank-bg: linear-gradient(180deg, #fffdfa, #ece7de 50%, #bdb8b1);`,
+    detail: "radial-gradient(circle, rgb(19 19 19 / .3) 0 30%, transparent 34%) 0 0 / 1.25cqw 1.25cqw" },
+  // Vitrail : nacre lilas, contours d'or, nuée du sceau violette
+  VR: { line: "#b9851f", lo: 1, hi: "#fff6cf", ho: 1, sh: "#6a3fa0", so: 0.3, dot: "#fff1c4", dotO: 0.95,
+    extra: `--kn-paper: #faf5f4; --kn-washi: linear-gradient(115deg, transparent 20%, rgb(255 255 255 / .75) 30%, transparent 40%, transparent 60%, rgb(255 255 255 / .6) 68%, transparent 76%), radial-gradient(130% 150% at 50% 0%, #fff8f6, #faf1f2 55%, #f1e3f2); --kn-ink: #241a24; --kn-muted: #6a5a70; --kn-kanji: #6a3fa0; --kn-seal: #4a1f9a; --kn-seal-ring: #f2cf7a; --kn-rule: #8f5fb0; --kn-edge: #d9a93b; --kn-rim: #f2cf7a; --kn-sc-fill: #4a1f9a; --kn-sc-line: #f2cf7a; --kn-sc-bg: radial-gradient(120% 120% at 30% 20%, #8a54e0, #4a1f9a 55%, #2a1670); --kn-sc-bx: ${crescent("#f2cf7a")}; --kn-bank-bg: radial-gradient(55% 110% at 18% 85%, #a97ff0, transparent 72%), radial-gradient(45% 100% at 78% 75%, #7fa4f5, transparent 72%), radial-gradient(38% 85% at 50% 100%, #f29ad6, transparent 72%), radial-gradient(30% 60% at 34% 30%, #fff, transparent 70%), linear-gradient(180deg, #fbf0ff, #e6cdf6);`,
+    detail: "linear-gradient(115deg, transparent 38%, rgb(255 255 255 / .55) 46%, transparent 54%), linear-gradient(115deg, transparent 68%, rgb(255 255 255 / .4) 74%, transparent 80%)" },
+  XR: { line: "#fff", lo: 0.9, hi: "#fff", ho: 0.5, sh: "#000", so: 0.4, dot: "#fff", dotO: 0.9, extra: "--kn-seal: #141210;",
+    detail: "none" },
+  // Black : laque noire, contours d'argent, liseré rouge
+  BR: { line: "#b9b6b4", lo: 1, hi: "#f0efee", ho: 0.6, sh: "#000", so: 0.7, dot: "#d1cdcc", dotO: 0.2,
+    extra: `--kn-paper: #141414; --kn-washi: radial-gradient(130% 150% at 50% 0%, #1f1f1f, #141414 55%, #0c0c0c); --kn-ink: #e8e6e4; --kn-muted: #a9a6a3; --kn-kanji: #d1cdcc; --kn-seal: #0a0a0a; --kn-seal-ring: #b9b6b4; --kn-rule: #8c8988; --kn-edge: #6a6766; --kn-rim: #b9b6b4; --kn-sc-fill: #0e0e0e; --kn-sc-bg: linear-gradient(150deg, #2a2a2a, #0e0e0e 60%, #050505); --kn-sc-bx: ${crescent("#b3261e")}; --kn-bank-bg: linear-gradient(180deg, #3a3a3a, #262626 45%, #111);`,
+    detail: "radial-gradient(circle, rgb(255 255 255 / .08) 0 30%, transparent 34%) 0 0 / 1.25cqw 1.25cqw" },
 };
 const ink = (r) => `--kn-lc: ${r.line}; --kn-lo: ${r.lo}; --kn-hc: ${r.hi}; --kn-ho: ${r.ho}; --kn-shc: ${r.sh}; --kn-sho: ${r.so}; --kn-dc: ${r.dot}; --kn-do: ${r.dotO};`;
 const perRarity = Object.entries(RARITIES)
@@ -160,7 +183,7 @@ ${perRarity}
    et rehaut (::after) en masques colorés par la rareté */
 .kn-bank, .kn-ar { position: absolute; left: 0; bottom: 0; width: 100%; height: 44cqw; pointer-events: none; transform: scaleX(var(--kn-sx, 1)); }
 .kn-flip { --kn-sx: -1; }
-.kn-bank { ${mask(shape(BANK_VB, `${BANK_TOP}L956 520L0 520Z`))} background: ${layer("--kn-bx")}, ${VOL}, ${MAT}; }
+.kn-bank { ${mask(shape(BANK_VB, `${BANK_TOP}L956 520L0 520Z`))} background: ${layer("--kn-bx")}, ${VOL}, ${BANK_MAT}; }
 .kn-bank::before, .kn-bank::after, .kn-sc::before, .kn-sc::after { content: ""; }
 .kn-bank::before, .kn-bank::after, .kn-ln, .kn-sn, .kn-sc::before, .kn-sc::after { position: absolute; inset: 0; pointer-events: none; }
 .kn-bank::before { display: none; background: var(--kn-shc); opacity: var(--kn-sho); ${mask(shadow(BANK_VB, BANK_TOP))} }
@@ -173,9 +196,9 @@ ${perRarity}
 .kn-sc {
   position: absolute; left: -4cqw; top: -4cqw; width: 32cqw; height: 30cqw; pointer-events: none; scale: .86; transform-origin: 0 0;
   background:
-    radial-gradient(circle at 24cqw 9cqw, var(--fuda-frame) calc(5.5cqw - 1px), var(--kn-rim, rgb(31 27 23 / .35)) calc(5.5cqw - 1px) 5.5cqw, transparent calc(5.5cqw + .6px)),
-    radial-gradient(circle at 9cqw 23.5cqw, var(--fuda-frame) calc(5.8cqw - 1px), var(--kn-rim, rgb(31 27 23 / .35)) calc(5.8cqw - 1px) 5.8cqw, transparent calc(5.8cqw + .6px)),
-    radial-gradient(circle at 11cqw 11cqw, var(--fuda-frame) calc(14.5cqw - 1px), var(--kn-rim, rgb(31 27 23 / .35)) calc(14.5cqw - 1px) 14.5cqw, transparent calc(14.5cqw + .6px));
+    radial-gradient(circle at 24cqw 9cqw, var(--kn-sc-fill, var(--fuda-frame)) calc(5.5cqw - 1px), var(--kn-rim, rgb(31 27 23 / .35)) calc(5.5cqw - 1px) 5.5cqw, transparent calc(5.5cqw + .6px)),
+    radial-gradient(circle at 9cqw 23.5cqw, var(--kn-sc-fill, var(--fuda-frame)) calc(5.8cqw - 1px), var(--kn-rim, rgb(31 27 23 / .35)) calc(5.8cqw - 1px) 5.8cqw, transparent calc(5.8cqw + .6px)),
+    radial-gradient(circle at 11cqw 11cqw, var(--kn-sc-fill, var(--fuda-frame)) calc(14.5cqw - 1px), var(--kn-rim, rgb(31 27 23 / .35)) calc(14.5cqw - 1px) 14.5cqw, transparent calc(14.5cqw + .6px));
 }
 .kn-sc::before, .kn-sc::after, .kn-sc > .kn-ln { display: none; }
 .kn-seal {
@@ -183,7 +206,7 @@ ${perRarity}
   width: max(16px, 10.5cqw); aspect-ratio: 1; border-radius: max(2px, .7cqw);
   background: linear-gradient(150deg, rgb(255 255 255 / .2), transparent 55%, rgb(0 0 0 / .12)), var(--kn-seal);
   color: #f8f2e4; font-size: max(11px, 7cqw); line-height: 1; text-shadow: 0 1px 0 rgb(0 0 0 / .25);
-  box-shadow: 0 0 0 max(1.5px, .7cqw) var(--kn-paper), 0 1px 2px max(1.5px, .7cqw) rgb(0 0 0 / .32);
+  box-shadow: 0 0 0 max(1.5px, .7cqw) var(--kn-seal-ring, var(--kn-paper)), 0 1px 2px max(1.5px, .7cqw) rgb(0 0 0 / .32);
 }
 
 /* Tanzaku uchigumori (nom japonais), 140 px et plus */
@@ -212,7 +235,7 @@ ${perRarity}
 
 /* 54 px : silhouette, banc à deux lobes et carré de rareté */
 @container fuda (max-width: 79px) {
-  .kn-bank { ${mask(svg(BANK_VB, `<path d='${BANK_XS}' fill='#fff'/>`))} background: ${MAT}; }
+  .kn-bank { ${mask(svg(BANK_VB, `<path d='${BANK_XS}' fill='#fff'/>`))} background: ${BANK_MAT}; }
   .kn-bank::after, .kn-bank > .kn-ln { display: none; }
   .kn-sc { background: none; }
   .kn-seal { left: 6cqw; top: 6cqw; width: 24cqw; font-size: 0; border-radius: 1px; box-shadow: 0 0 0 1px rgb(255 255 255 / .55); }
@@ -221,11 +244,11 @@ ${perRarity}
 
 /* 140 px et plus : nuée du sceau masquée, ombre des contours, tanzaku, deuxième ligne, matières détaillées, parallaxe */
 @container fuda (min-width: 140px) {
-  .kn-bank { background: ${layer("--kn-bx")}, var(--kn-detail, ${NONE}), ${VOL}, ${MAT}; }
+  .kn-bank { background: ${layer("--kn-bx")}, var(--kn-detail, ${NONE}), ${VOL}, ${BANK_MAT}; }
   .kn-bank::before, .kn-ar, .kn-sc::before, .kn-sc::after, .kn-sc > .kn-ln { display: block; }
-  .kn-sc { ${mask(shape(SEAL_VB, `M0 0L${SEAL_EDGE.slice(1)}Z`))} background: var(--kn-detail, ${NONE}), ${VOL}, ${MAT}; }
+  .kn-sc { ${mask(shape(SEAL_VB, `M0 0L${SEAL_EDGE.slice(1)}Z`))} background: ${layer("--kn-sc-bx")}, var(--kn-detail, ${NONE}), ${VOL}, ${SEAL_MAT}; }
   .kn-sc::before { background: var(--kn-shc); opacity: var(--kn-sho); ${mask(shadow(SEAL_VB, SEAL_EDGE))} }
-  .kn-sc > .kn-ln { background: var(--kn-lc); opacity: var(--kn-lo); ${mask(line(SEAL_VB, SEAL_EDGE, SEAL_INNER))} }
+  .kn-sc > .kn-ln { background: var(--kn-sc-line, var(--kn-lc)); opacity: var(--kn-lo); ${mask(line(SEAL_VB, SEAL_EDGE, SEAL_INNER))} }
   .kn-sc::after { background: var(--kn-hc); opacity: var(--kn-ho); ${mask(shine(SEAL_VB, SEAL_EDGE))} }
   .kn-tz {
     position: absolute; right: 2cqw; top: 22cqw; width: max(20px, 11.5cqw); height: 46cqw; overflow: hidden;
@@ -249,7 +272,7 @@ ${perRarity}
   .kn-corner { bottom: calc(23.1cqw + 11px); }
   /* Parallaxe : l'illustration recule derrière le papier (agrandie de 8 % pour ne jamais découvrir ses bords),
      les nuées et les papiers collés avancent */
-  .fuda-live .kn-art { translate: calc((var(--mx, .5) - .5) * -5%) calc((var(--my, .5) - .5) * -4%); scale: 1.08; transition: translate 180ms ease-out, scale 180ms ease-out; }
+  .fuda-live :is(.kn-art, .kn-cutout) { translate: calc((var(--mx, .5) - .5) * -5%) calc((var(--my, .5) - .5) * -4%); scale: 1.08; transition: translate 180ms ease-out, scale 180ms ease-out; }
   .fuda-live .kn-bank { ${drift(3, 1.4)} scale: 1.05; }
   .fuda-live .kn-shk { ${drift(3, 1.4)} }
   .fuda-live .kn-tz { ${drift(4.5, 3)} }
@@ -261,7 +284,7 @@ ${perRarity}
 /* 220 px et plus (fiche, révélation, admin) : double moriage, poudre d'or, coutures de la Gold, grain */
 @container fuda (min-width: 220px) {
   .kn-grain, .kn-sn { display: block; }
-  .kn-bank { background: ${layer("--kn-bx-lg")}, ${layer("--kn-bx")}, var(--kn-detail, ${NONE}), ${VOL}, ${MAT}; }
+  .kn-bank { background: ${layer("--kn-bx-lg")}, ${layer("--kn-bx")}, var(--kn-detail, ${NONE}), ${VOL}, ${BANK_MAT}; }
   .kn-bank > .kn-ln { ${mask(line(BANK_VB, BANK_TOP, BANK_INNER, true))} }
   .kn-bank::after { ${mask(shine(BANK_VB, BANK_TOP, true))} }
   .kn-shk { left: 9cqw; right: 9cqw; height: 18.6cqw; bottom: 3.4cqw; padding: 0 3.4cqw; }
@@ -277,11 +300,40 @@ ${perRarity}
   box-shadow: inset 0 0 0 1px rgb(255 248 220 / .6), 1px 2px 3px rgb(0 0 0 / .32);
 }
 
+/* Raretés visuelles : filet autour de l'illustration, plaque et numéro bordés, coins ornés, tanzaku assorti */
+.fuda[data-rarity="MR"] .fuda-paper { box-shadow: 0 0 0 1px #131313, 0 0 0 calc(1px + .45cqw) rgb(255 255 255 / .55); }
+.fuda[data-rarity="VR"] .fuda-paper { box-shadow: 0 0 0 1px #8f5fb0, 0 0 0 calc(1px + .45cqw) #f2cf7a; }
+.fuda[data-rarity="BR"] .fuda-paper { box-shadow: 0 0 0 1px #000, 0 0 0 calc(1px + .45cqw) #8c8988; }
+.fuda:is([data-rarity="MR"], [data-rarity="VR"], [data-rarity="BR"]) .kn-no { box-shadow: inset 0 0 0 max(1px, .25cqw) var(--kn-rule), 0 1px 2px rgb(0 0 0 / .38); }
+.fuda[data-rarity="BR"] .kn-name { text-shadow: 0 1px 0 rgb(0 0 0 / .8); }
+.fuda[data-rarity="MR"] .kn-tz { background: #f9f4ec; color: #1a1714; box-shadow: inset 0 0 0 1px #2a2622, 1px 2px 3px rgb(0 0 0 / .32); }
+.fuda[data-rarity="VR"] .kn-tz { background: linear-gradient(160deg, #fff8f6, #f3e6f2 55%, #e6ddf8); color: #241a24; box-shadow: inset 0 0 0 1px #d9a93b, 1px 2px 3px rgb(0 0 0 / .32); }
+.fuda[data-rarity="BR"] .kn-tz { background: #141414; color: #e8e6e4; box-shadow: inset 0 0 0 1px #8c8988, 1px 2px 3px rgb(0 0 0 / .5); }
+@container fuda (min-width: 140px) {
+  .fuda:is([data-rarity="MR"], [data-rarity="VR"], [data-rarity="BR"]) .kn-shk { background: ${corners("3.6cqw", "1.1cqw")}, var(--kn-washi); }
+  .fuda:is([data-rarity="MR"], [data-rarity="VR"], [data-rarity="BR"]) .kn-no { background: ${corners("2cqw", ".5cqw")}, var(--kn-paper); }
+}
+
+/* Full Art (XR) : l'illustration couvre la carte, un filet de cadre et le nom posé sur un voile d'ombre */
+.fuda[data-full-art] { --kn-ink: #fff; --kn-muted: rgb(255 255 255 / .82); --kn-kanji: #fff; }
+.fuda[data-full-art] .fuda-paper { inset: 0; border-radius: inherit; box-shadow: none; }
+.fuda[data-full-art] .fuda-paper::after { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: max(1.5px, 1.2cqw); background: ${MAT}; pointer-events: none;
+  mask: linear-gradient(#000, #000) content-box exclude, linear-gradient(#000, #000); }
+.fuda[data-full-art] .kn-bank { mask: none; scale: none; translate: none; background: linear-gradient(transparent 30%, rgb(0 0 0 / .72) 78%, rgb(0 0 0 / .88)); }
+.fuda[data-full-art] .kn-bank::before, .fuda[data-full-art] .kn-bank::after, .fuda[data-full-art] .kn-bank > .kn-ln, .fuda[data-full-art] .kn-bank > .kn-sn { display: none; }
+.fuda[data-full-art] .kn-shk { background: none; box-shadow: none; text-shadow: 0 1px 3px rgb(0 0 0 / .85); }
+.fuda[data-full-art] .kn-no { background: none; box-shadow: none; color: #fff; text-shadow: 0 1px 3px rgb(0 0 0 / .85); }
+.fuda[data-full-art] .kn-tz { display: none; }
+.fuda[data-full-art] .kn-sc { background: none; mask: none; }
+.fuda[data-full-art] .kn-sc::before, .fuda[data-full-art] .kn-sc::after, .fuda[data-full-art] .kn-sc > .kn-ln { display: none; }
+/* Personnage détouré : même boîte que l'illustration, il s'efface sous la ligne de stats pour la laisser lisible */
+.kn-cutout { position: absolute; inset: 0; z-index: 4; pointer-events: none; mask: linear-gradient(#000 88%, transparent 94%); }
+
 /* Mouvement réduit : FudaTilt ne pose pas .fuda-live ; rien ne se déplace par sécurité */
 @media (prefers-reduced-motion: reduce) {
-  .fuda-live :is(.kn-art, .kn-bank, .kn-shk, .kn-tz, .kn-sc, .kn-ar) { translate: none; }
+  .fuda-live :is(.kn-art, .kn-cutout, .kn-bank, .kn-shk, .kn-tz, .kn-sc, .kn-ar) { translate: none; }
 }
-:root[data-motion="reduced"] .fuda-live :is(.kn-art, .kn-bank, .kn-shk, .kn-tz, .kn-sc, .kn-ar) { translate: none; }
+:root[data-motion="reduced"] .fuda-live :is(.kn-art, .kn-cutout, .kn-bank, .kn-shk, .kn-tz, .kn-sc, .kn-ar) { translate: none; }
 `;
 
 writeFileSync(new URL("../components/fuda/FudaFace.css", import.meta.url), css);

@@ -3,7 +3,7 @@
 import { updateTag } from "next/cache";
 import { z } from "@/lib/zod";
 import { bulkCatalogSchema, cardFormSchema, rarityFormSchema, type BulkCatalogResult, type CatalogResult } from "@/lib/catalog/admin-form";
-import { validCardImageUrl } from "@/lib/catalog/media";
+import { validAppearanceImages, validCardImageUrl } from "@/lib/catalog/media";
 import { getStaff } from "../admin";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
@@ -31,6 +31,7 @@ export async function saveCatalogCard(input: unknown): Promise<CatalogResult> {
   const parsed = cardFormSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID", fields: parsed.error.issues.map((i) => i.path.join(".")) };
   if (parsed.data.imageUrl && !validCardImageUrl(parsed.data.imageUrl, process.env.BLOB_PUBLIC_HOST)) return { ok: false, error: "IMAGE_INVALID" };
+  if (!validAppearanceImages(parsed.data.appearance, process.env.BLOB_PUBLIC_HOST)) return { ok: false, error: "IMAGE_INVALID" };
   try { const result = await saveCatalogCardWith(prisma, g.admin.id, parsed.data, g.scope); invalidate(); return { ok: true, ...result }; }
   catch (error) { return failure(error); }
 }
@@ -57,6 +58,7 @@ export async function bulkCatalogAction(input: unknown): Promise<BulkCatalogResu
 export async function saveCatalogRarity(input: unknown): Promise<CatalogResult> {
   const g = await guard(true); if ("error" in g) return { ok: false, error: g.error! };
   const parsed = rarityFormSchema.safeParse(input); if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (!validAppearanceImages(parsed.data.appearance, process.env.BLOB_PUBLIC_HOST)) return { ok: false, error: "IMAGE_INVALID" };
   try { const result = await saveRarityWith(prisma, g.admin.id, parsed.data); invalidate(); return { ok: true, ...result }; }
   catch (error) { return failure(error); }
 }

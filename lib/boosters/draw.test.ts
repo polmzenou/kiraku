@@ -35,7 +35,7 @@ describe("rollRarity : correspondance exacte avec le tableau des parts", () => {
     const { counts, total } = enumerate("COMMON");
     expect(total).toBe(99_975);
     // AR et Gold prennent 10 des 25 parts Mythique : « Mythique ou mieux » reste à 25.
-    expect(counts).toEqual({ COMMON: 62_000, UNCOMMON: 25_000, RARE: 11_400, EPIC: 1_400, LEGENDARY: 150, MYTHIC: 15, AR: 8, GOLD: 2 });
+    expect(counts).toEqual({ COMMON: 62_000, UNCOMMON: 25_000, RARE: 11_400, EPIC: 1_400, LEGENDARY: 150, MYTHIC: 15, AR: 8, GOLD: 2, MR: 0, VR: 0, XR: 0, BR: 0 });
   });
 
   it.each(RARITIES)("plancher %s : jamais en dessous, parts du dessus inchangées", (floor) => {
@@ -327,8 +327,8 @@ describe("bonus selon le type", () => {
 });
 
 describe("bannière vedette", () => {
-  // Sans carte AR ni Gold publiée : ces tirages retombent sur Mythique et gardent la part vedette.
-  const pool = fakePool(10, ["AR", "GOLD"]);
+  // Sans variante publiée : ces tirages retombent sur Mythique et gardent la part vedette.
+  const pool = fakePool(10, ["BR", "AR", "VR", "GOLD", "MR", "XR"]);
   const featured = featuredFromPool(["MYTHIC-0", "LEGENDARY-1"], pool, { rate: 10_000, pityThreshold: 100 })!;
   const noBonus = { ...DEFAULT_RULES, ...NO_BONUS };
 

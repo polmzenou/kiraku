@@ -14,7 +14,7 @@ import { OpenLink } from "./OpenLink";
 
 export const CHANCE_ROWS: Rarity[] = ["RARE", "EPIC", "LEGENDARY", "MYTHIC"];
 
-/** Lignes de chances : les seuils de base, puis AR et Gold quand le pool du booster en contient. */
+/** Lignes de chances : les seuils de base, puis les variantes quand le pool du booster en contient. */
 export function chanceRows(odds: BoosterPanelData["odds"]): Rarity[] {
   return [...CHANCE_ROWS, ...VARIANT_RARITIES.filter((r) => (odds[r] ?? 0) > 0)];
 }
@@ -29,6 +29,10 @@ export const RARITY_TEXT: Record<Rarity, string> = {
   MYTHIC: "text-shu",
   AR: "text-rarity-ar",
   GOLD: "text-rarity-gold",
+  MR: "text-rarity-mr",
+  VR: "text-rarity-vr",
+  XR: "text-rarity-xr",
+  BR: "text-rarity-br",
 };
 
 type Props = {

@@ -16,3 +16,6 @@
 .fuda-art-gold { filter:sepia(1) saturate(2.4) hue-rotate(-14deg) brightness(1.04) contrast(1.08); }
 .fuda-gilt { position:absolute; inset:0; pointer-events:none; mix-blend-mode:soft-light; opacity:.75;
   background:linear-gradient(150deg,#fff3c4 0%,#d9b556 30%,#8a6a1f 55%,#f0d98c 80%,#b8902f 100%); }
+/* Le color-dodge ne montre rien sur le blanc ni sur le noir : voile de prisme sur toute la planche (MR), prisme lumineux sur le noir (BR). */
+.fuda[data-rarity="MR"] .fuda-effect-holographic { mix-blend-mode:normal; opacity:calc(var(--fx-intensity,.45) * .6); }
+.fuda[data-rarity="BR"] .fuda-effect-holographic { mix-blend-mode:screen; opacity:calc(var(--fx-intensity,.45) * .6); }

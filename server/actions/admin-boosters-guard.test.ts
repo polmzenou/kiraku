@@ -17,7 +17,7 @@ vi.mock("../db", () => ({
 }));
 import { updateBoosterSettings } from "./admin-settings";
 
-const REGISTRY = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "AR", "GOLD"];
+const REGISTRY = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "AR", "GOLD", "MR", "VR", "XR", "BR"];
 const draft = (over: Partial<BoosterSettings> = {}): BoosterSettings =>
   ({ ...Object.fromEntries(BOOSTER_SETTING_KEYS.map((k) => [k, SETTING_DEFAULTS[k]])), ...over }) as BoosterSettings;
 

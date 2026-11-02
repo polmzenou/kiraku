@@ -26,6 +26,7 @@ describe("frontière du catalogue administrateur", () => {
   it("valide les données et les URL avant l’écriture", async () => {
     expect(await saveCatalogCard({ ...draft, power: -1 })).toMatchObject({ ok: false, error: "INVALID" });
     expect(await saveCatalogCard({ ...draft, imageUrl: "https://evil.com/a.svg" })).toEqual({ ok: false, error: "IMAGE_INVALID" });
+    expect(await saveCatalogCard({ ...draft, appearance: { cutoutUrl: "https://evil.com/a.png" } })).toEqual({ ok: false, error: "IMAGE_INVALID" });
     expect(mocks.save).not.toHaveBeenCalled();
   });
   it("respecte la limitation de débit", async () => {

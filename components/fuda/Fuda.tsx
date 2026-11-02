@@ -133,11 +133,13 @@ export function Fuda({
   const native = !inBattle && !locked && card.nameNative ? tanzakuColumns(card.nameNative) : null;
   const longest = native ? Math.max(...native.map((part) => part.length)) : 0;
   const gilded = !locked && !monochrome && visual.artTone === "gold";
+  const fullArt = !locked && visual.fullArt === true;
+  const artStyle = { objectPosition: `${visual.focalX}% ${visual.focalY}%`, transform: `scale(${visual.zoom})`, transformOrigin: `${visual.focalX}% ${visual.focalY}%` };
   const subtitle = (!locked && card.formName) || series || (inBattle ? rarity(card.rarity) : undefined);
   const flip = flipBank(card.name) ? " kn-flip" : "";
 
   const content = (
-    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} style={customStyle}>
+    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} style={customStyle}>
       {/* Papier posé en absolu dans le cadre : sa hauteur ne dépend pas d'un pourcentage (WebKit la résolvait mal sous aspect-ratio) */}
       <div className={`fuda-paper absolute ${l.inset} overflow-hidden ${l.inner}`}>
         <div className="kn-art">
@@ -155,7 +157,7 @@ export function Fuda({
               preload={preload}
               draggable={false}
               className={`object-cover object-top${monochrome ? " grayscale" : ""}${gilded ? " fuda-art-gold" : ""}`}
-              style={{ objectPosition: `${visual.focalX}% ${visual.focalY}%`, transform: `scale(${visual.zoom})`, transformOrigin: `${visual.focalX}% ${visual.focalY}%` }}
+              style={artStyle}
             />
           )}
           {gilded && <span aria-hidden="true" className="fuda-gilt" />}
@@ -213,6 +215,8 @@ export function Fuda({
         </div>
         {corner && <span className="kn-corner">{corner}</span>}
       </div>
+      {/* Full Art : le personnage détouré passe devant le nom et le cadre, sous les reflets */}
+      {fullArt && visual.cutoutUrl && <span aria-hidden="true" className="kn-cutout"><Image src={visual.cutoutUrl} alt="" fill sizes={sizes ?? l.sizes} draggable={false} className="object-cover object-top" style={artStyle} /></span>}
       {/* Effet de matière (laque, or, nacre) au-dessus de la carte, à partir d'Épique */}
       {!locked && !monochrome && visual.effects === undefined && tier >= BASE_RARITIES.indexOf("EPIC") && (
         <span aria-hidden="true" className="fuda-sheen" />

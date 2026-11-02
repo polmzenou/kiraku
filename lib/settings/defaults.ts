@@ -387,7 +387,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   // Parts de Kyara (total 99 975) : 0,025 % · 0,15 % · 1,4 % · 11,4 % · 25 % · 62 %
   // AR et Gold (variantes au-dessus de Mythique) prennent 10 des 25 parts Mythique : « Mythique ou mieux »
   // reste à 0,025 %, et sans carte AR/Gold publiée le tirage retombe sur Mythique.
-  "booster.rates": { COMMON: 62_000, UNCOMMON: 25_000, RARE: 11_400, EPIC: 1_400, LEGENDARY: 150, MYTHIC: 15, AR: 8, GOLD: 2 },
+  "booster.rates": { COMMON: 62_000, UNCOMMON: 25_000, RARE: 11_400, EPIC: 1_400, LEGENDARY: 150, MYTHIC: 15, BR: 0, AR: 8, VR: 0, GOLD: 2, MR: 0, XR: 0 },
   "booster.slotFloors": ["COMMON", "COMMON", "UNCOMMON", "RARE"],
   "booster.pityThreshold": 250,
   "booster.goldenEvery": 10,
@@ -400,7 +400,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "booster.apocalypseKarma": 2,
   "booster.apocalypseRuinFloors": ["COMMON", "COMMON", "COMMON", "UNCOMMON"],
   "booster.apocalypseRuinCeiling": "UNCOMMON",
-  "booster.duplicateGuardRarities": ["MYTHIC", "AR", "GOLD"], // liste vide = règle coupée
+  "booster.duplicateGuardRarities": ["MYTHIC", "BR", "AR", "VR", "GOLD", "MR", "XR"], // liste vide = règle coupée
   "booster.duplicateGuardDivisor": 10_000, // déjà possédée : 1 chance sur 10 000
   "booster.duplicateGuardBlockAt": 2, // en double : plus aucune chance
   "booster.minPool": 100,
@@ -414,7 +414,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "incense.boostFrom": "LEGENDARY",
   "game.timeZone": "Europe/Paris",
   // Valeurs de Kyara : 1 · 1 · 3 · 10 · 40 · 150 Zeni
-  "collection.recycleValues": { COMMON: 1, UNCOMMON: 1, RARE: 3, EPIC: 10, LEGENDARY: 40, MYTHIC: 150, AR: 450, GOLD: 1050 },
+  "collection.recycleValues": { COMMON: 1, UNCOMMON: 1, RARE: 3, EPIC: 10, LEGENDARY: 40, MYTHIC: 150, BR: 150, AR: 450, VR: 450, GOLD: 1050, MR: 1050, XR: 2250 },
   "showcase.slots": 4,
   "social.enabled": true,
   "friends.max": 200,
@@ -497,7 +497,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "battle.damage": { critPermille: 100, critPct: 150, varianceMinPct: 90, varianceMaxPct: 110 },
   "battle.orbs": { start: 1, perTurn: 1, max: 5, secondBonus: 1 },
   "battle.firstTurnActions": 2, // ~53 % de victoires pour le premier joueur en simulation (65 % sans limite)
-  "battle.keywordsByRarity": { COMMON: 0, UNCOMMON: 0, RARE: 1, EPIC: 1, LEGENDARY: 2, MYTHIC: 2, AR: 2, GOLD: 3 },
+  "battle.keywordsByRarity": { COMMON: 0, UNCOMMON: 0, RARE: 1, EPIC: 1, LEGENDARY: 2, MYTHIC: 2, BR: 2, AR: 2, VR: 2, GOLD: 3, MR: 3, XR: 4 },
   "battle.keywordValues": { poisonPct: 8, poisonTurns: 2, ripostePct: 50, lastWillHealPct: 20, revivePct: 25 },
   "battle.techniques": {
     ISSEN: { cost: 2, value: 160 }, // coup à ×1,6

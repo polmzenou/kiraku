@@ -18,9 +18,15 @@ export const CHARGE_MS: Record<Rarity, number> = {
   EPIC: 480,
   LEGENDARY: 950,
   MYTHIC: 1500,
+  BR: 1500,
   AR: 1700,
+  VR: 1700,
   GOLD: 1900,
+  MR: 1900,
+  XR: 2100,
 };
+
+const MYTHIC_LEAK = "rgb(255 236 246 / 0.95)";
 
 /** Couleur de la lumière qui s'échappe du sachet, selon la meilleure carte. */
 export const LEAK_COLOR: Record<Rarity, string> = {
@@ -29,9 +35,14 @@ export const LEAK_COLOR: Record<Rarity, string> = {
   RARE: "rgb(127 163 209 / 0.85)",
   EPIC: "rgb(179 145 219 / 0.9)",
   LEGENDARY: "rgb(242 216 138 / 0.95)",
-  MYTHIC: "rgb(255 236 246 / 0.95)",
+  MYTHIC: MYTHIC_LEAK,
   AR: "rgb(160 190 240 / 0.95)",
   GOLD: "rgb(255 226 140 / 0.98)",
+  // Raretés visuelles : le même rayon blanc que les Mythiques
+  BR: MYTHIC_LEAK,
+  VR: MYTHIC_LEAK,
+  MR: MYTHIC_LEAK,
+  XR: MYTHIC_LEAK,
 };
 
 type Ordered = readonly { key: string; sortOrder: number }[];

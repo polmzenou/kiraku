@@ -4,7 +4,7 @@ import type { Rarity } from "@/lib/catalog/rarity";
 
 // Banc de test de l'ouverture (admin) : tirages factices, jamais envoyés au serveur ni enregistrés.
 
-export const OPENING_TEST_SCENARIOS = ["all", "mythic", "ar", "gold", "none", "dropDivin", "dropSpared", "dropRuined"] as const;
+export const OPENING_TEST_SCENARIOS = ["all", "mythic", "ar", "gold", "visual", "br", "vr", "mr", "xr", "none", "dropDivin", "dropSpared", "dropRuined"] as const;
 export type OpeningTestScenario = (typeof OPENING_TEST_SCENARIOS)[number];
 
 /** Grosses cartes de chaque scénario ; « none » finit sur une Légendaire, qui n'allume pas l'aurore. */
@@ -13,6 +13,11 @@ const FINALE: Record<OpeningTestScenario, Rarity[]> = {
   mythic: ["MYTHIC"],
   ar: ["AR"],
   gold: ["GOLD"],
+  visual: ["BR", "VR", "MR", "XR"],
+  br: ["BR"],
+  vr: ["VR"],
+  mr: ["MR"],
+  xr: ["XR"],
   none: ["LEGENDARY"],
   dropDivin: ["LEGENDARY"],
   dropSpared: ["LEGENDARY"],
