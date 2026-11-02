@@ -19,6 +19,10 @@
 .card-aura-fx[data-rarity="MYTHIC"] { --card-aura-color: var(--color-rarity-mythic); }
 .card-aura-fx[data-rarity="AR"] { --card-aura-color: var(--color-rarity-ar); }
 .card-aura-fx[data-rarity="GOLD"] { --card-aura-color: var(--color-rarity-gold); }
+.card-aura-fx[data-rarity="MR"] { --card-aura-color: var(--color-rarity-mr); }
+.card-aura-fx[data-rarity="VR"] { --card-aura-color: var(--color-rarity-vr); }
+.card-aura-fx[data-rarity="XR"] { --card-aura-color: var(--color-rarity-xr); }
+.card-aura-fx[data-rarity="BR"] { --card-aura-color: var(--color-rarity-br); }
 
 .card-aura-glow {
   position: absolute;

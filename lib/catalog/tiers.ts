@@ -37,3 +37,24 @@ export function isBigMoment(rarity: Rarity, definitions: readonly Ordered[]) {
 export function isTopTier(rarity: Rarity, definitions: readonly Ordered[]) {
   return fxTier(rarity, definitions) === "MYTHIC";
 }
+
+type Stats = { power: number; ki: number };
+
+/**
+ * Stats proposées dans le CRUD : la médiane de la rareté ; sans carte publiée, celle d'une rareté de même rang
+ * (BR → Mythique, VR → AR, MR → Gold). Sans égale (XR), le rang publié juste en dessous, plus l'écart qui le
+ * sépare du rang précédent : le palier suivant de la même échelle.
+ */
+export function suggestedStats(rarity: Rarity, definitions: readonly Ordered[], medians: Readonly<Record<string, Stats>>): (Stats & { from: Rarity; above: boolean }) | null {
+  if (medians[rarity]) return { ...medians[rarity], from: rarity, above: false };
+  const order = definitions.find((d) => d.key === rarity)?.sortOrder;
+  if (order === undefined) return null;
+  const published = definitions.filter((d) => medians[d.key]).sort((a, b) => b.sortOrder - a.sortOrder);
+  const peer = published.find((d) => d.sortOrder === order);
+  if (peer) return { ...medians[peer.key], from: peer.key, above: false };
+  const top = published.find((d) => d.sortOrder < order);
+  if (!top) return null;
+  const next = published.find((d) => d.sortOrder < top.sortOrder);
+  const raise = (stat: keyof Stats) => Math.min(999, medians[top.key][stat] + Math.max(1, next ? medians[top.key][stat] - medians[next.key][stat] : 1));
+  return { power: raise("power"), ki: raise("ki"), from: top.key, above: true };
+}

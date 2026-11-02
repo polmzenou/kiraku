@@ -11,6 +11,10 @@ export const RARITY_BG: Record<Rarity, string> = {
   MYTHIC: "bg-rarity-mythic",
   AR: "bg-rarity-ar",
   GOLD: "bg-rarity-gold",
+  MR: "bg-rarity-mr",
+  VR: "bg-rarity-vr",
+  XR: "bg-rarity-xr",
+  BR: "bg-rarity-br",
 };
 
 /**

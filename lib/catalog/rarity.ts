@@ -6,7 +6,7 @@ export const BASE_RARITIES = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY",
 export const RARITIES: readonly string[] = BASE_RARITIES;
 export type BaseRarity = (typeof BASE_RARITIES)[number];
 /** Raretés de variantes au-dessus de Mythique, jamais attribuées par l'import AniList. */
-export const VARIANT_RARITIES = ["AR", "GOLD"] as const;
+export const VARIANT_RARITIES = ["BR", "AR", "VR", "GOLD", "MR", "XR"] as const;
 export type Rarity = string;
 
 export type RarityThresholds = SettingValue<"catalog.rarityThresholds">;
@@ -95,4 +95,8 @@ export const RARITY_SEAL: Record<Rarity, string> = {
   MYTHIC: "神",
   AR: "異",
   GOLD: "煌",
+  MR: "漫",
+  VR: "彩",
+  XR: "極",
+  BR: "闇",
 };

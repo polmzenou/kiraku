@@ -110,6 +110,10 @@
   --color-rarity-mythic: #8f7bb8;
   --color-rarity-ar: #6f8fd8;
   --color-rarity-gold: #d9b556;
+  --color-rarity-mr: #d8d3c8;
+  --color-rarity-vr: #a98be0;
+  --color-rarity-xr: #e0609f;
+  --color-rarity-br: #a8a5a3;
   --color-washi-paper: #f3ecdf;
   /* Encre des fuda : le papier reste clair dans les deux thèmes */
   --color-sumi: #1f1b17;
@@ -650,6 +654,29 @@
     --fuda-frame-bg:
       radial-gradient(circle, rgb(255 248 220 / 0.8) 0 0.7px, transparent 1.2px) 0 0 / 9px 9px,
       linear-gradient(135deg, #7a5a16 0%, #f6e3a1 22%, #c99a33 45%, #fff2c2 62%, #a87d22 82%, #e8cb75 100%);
+  }
+  .fuda[data-rarity="MR"] {
+    --fuda-frame: var(--color-rarity-mr);
+    /* Manga : papier blanc de planche, arête d'argent */
+    --fuda-frame-bg: linear-gradient(145deg, #fffdf8, #f3eee4 45%, #cfc8bd 78%, #f9f4ec);
+    box-shadow: inset 0 0 0 1px #b3a9a1, 0 6px 14px rgb(0 0 0 / 0.28);
+  }
+  .fuda[data-rarity="VR"] {
+    --fuda-frame: var(--color-rarity-vr);
+    /* Vitrail : nacre irisée, bordée de rose */
+    --fuda-frame-bg: conic-gradient(from 210deg, #fbeaff, #cfe0ff, #fff1d8, #f3d6ff, #d9ecff, #ffe3f2, #fbeaff);
+    box-shadow: inset 0 0 0 1px #ca9ba4, 0 6px 14px rgb(0 0 0 / 0.28);
+  }
+  .fuda[data-rarity="XR"] {
+    --fuda-frame: var(--color-rarity-xr);
+    /* Xtreme : filet de chrome irisé autour de l'illustration */
+    --fuda-frame-bg: conic-gradient(from 200deg, #ff67ba, #78bfff, #63ffba, #ffe881, #ff67ba);
+  }
+  .fuda[data-rarity="BR"] {
+    --fuda-frame: var(--color-rarity-br);
+    /* Black : laque noire et arête d'argent */
+    --fuda-frame-bg: linear-gradient(145deg, #4a4746, #0c0c0c 28%, #050505 70%, #3a3736);
+    box-shadow: inset 0 0 0 1px #979495, 0 6px 14px rgb(0 0 0 / 0.28);
   }
 }
 

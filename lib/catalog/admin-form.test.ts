@@ -26,6 +26,7 @@ describe("validation du catalogue admin", () => {
     expect(cardFormSchema.safeParse({ ...valid, variantOfId: "../x" }).success).toBe(false);
     expect(appearanceSchema.safeParse({ artTone: "gold" }).success).toBe(true);
     expect(appearanceSchema.safeParse({ artTone: "rainbow" }).success).toBe(false);
+    expect(appearanceSchema.safeParse({ fullArt: true, cutoutUrl: "https://s4.anilist.co/a.png" }).success).toBe(true);
     expect(bulkCatalogSchema.safeParse({ ids: ["a"], action: "archive" }).success).toBe(true);
     expect(bulkCatalogSchema.safeParse({ ids: ["a"], action: "setRarity" }).success).toBe(false);
     expect(bulkCatalogSchema.safeParse({ ids: ["a"], action: "addBooster", boosterId: "b" }).success).toBe(true);

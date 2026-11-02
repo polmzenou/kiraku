@@ -7,6 +7,10 @@ export function imageSignature(bytes: Uint8Array): string | null {
   if (bytes.length >= 16 && ascii(0,4) === "RIFF" && ascii(8,12) === "WEBP") return "image/webp";
   return null;
 }
+/** L'image détourée d'une apparence vient des mêmes hôtes que l'image d'une carte (next/image plante sur les autres). */
+export function validAppearanceImages(appearance: { cutoutUrl?: string }, blobHost?: string): boolean {
+  return !appearance.cutoutUrl || validCardImageUrl(appearance.cutoutUrl, blobHost);
+}
 export function validCardImageUrl(raw: string, blobHost?: string): boolean {
   try { const u = new URL(raw); return u.protocol === "https:" && !u.username && !u.password && !u.port &&
     (u.hostname === "s4.anilist.co" || Boolean(blobHost && u.hostname === blobHost && u.pathname.startsWith("/cards/"))); }

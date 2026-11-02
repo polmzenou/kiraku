@@ -13,6 +13,10 @@ export const appearanceSchema = z.object({
   easing: z.enum(["easeOut", "easeInOut", "linear"]).optional(),
   /** Artwork doré (rareté Gold) : filtre et calque or posés sur l'image. */
   artTone: z.enum(["natural", "gold"]).optional(),
+  /** Full Art (XR) : l'illustration couvre le cadre, le nom est posé dessus. */
+  fullArt: z.boolean().optional(),
+  /** Full Art : personnage détouré (fond transparent, même cadrage que l'image), posé devant le nom et le cadre. */
+  cutoutUrl: z.string().max(2048).optional(),
 }).strict();
 export type CardAppearance = z.infer<typeof appearanceSchema>;
 export function parseAppearance(raw: unknown): CardAppearance {
@@ -43,7 +47,15 @@ export function resolveAppearance(base: unknown, card: unknown): ResolvedAppeara
   return value;
 }
 
-const MATERIAL_COLORS: Record<string, string> = { COMMON: "#897e6d", UNCOMMON: "#618d68", RARE: "#557ca5", EPIC: "#9872bc", LEGENDARY: "#c8a140", MYTHIC: "#d4a9c8", AR: "#6f8fd8", GOLD: "#d9b556" };
+const MATERIAL_COLORS: Record<string, string> = { COMMON: "#897e6d", UNCOMMON: "#618d68", RARE: "#557ca5", EPIC: "#9872bc", LEGENDARY: "#c8a140", MYTHIC: "#d4a9c8", AR: "#6f8fd8", GOLD: "#d9b556", MR: "#d8d3c8", VR: "#a98be0", XR: "#e0609f", BR: "#a8a5a3" };
+
+/** Préréglages des raretés visuelles : mêmes valeurs que la migration raretes_visuelles. */
+export const VISUAL_PRESETS = {
+  MR: { effects: ["holographic"], intensity: 0.25 },
+  VR: { effects: ["holographic"], intensity: 0.25 },
+  XR: { fullArt: true, effects: ["holographic"], intensity: 0.25 },
+  BR: { effects: ["holographic"], intensity: 0.25 },
+} satisfies Record<string, CardAppearance>;
 
 /** Couleur d'une rareté (teinte du grand moment) : cadre réglé dans l'admin, sinon celui de sa matière. */
 export function rarityColor(key: string, appearance: unknown): string {
@@ -54,5 +66,6 @@ export function rarityColor(key: string, appearance: unknown): string {
 export function materialAppearance(key: string): CardAppearance {
   const colors = MATERIAL_COLORS;
   const effects: Record<string, CardAppearance["effects"]> = { MYTHIC: ["pearl", "holographic"], LEGENDARY: ["gold"], EPIC: ["pearl"], AR: ["holographic", "sparkles"], GOLD: ["gold", "sparkles"] };
-  return { frame: colors[key] || "#897e6d", effects: effects[key] ?? [], ...(key === "GOLD" && { artTone: "gold" as const }) };
+  const preset: CardAppearance | undefined = VISUAL_PRESETS[key as keyof typeof VISUAL_PRESETS];
+  return { frame: colors[key] || "#897e6d", effects: effects[key] ?? [], ...(key === "GOLD" && { artTone: "gold" as const }), ...preset };
 }

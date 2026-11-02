@@ -105,6 +105,34 @@ AR ou Gold n'est publiée dans un pool, ces tirages retombent sur Mythique, et l
 sans écraser une valeur existante : recyclage ×3 et ×7 la valeur Mythique, passifs, cadeaux et échanges.
 L'ouverture leur donne la cérémonie Mythique (`fxTier`), plus un effet propre à chacune.
 
+## Raretés visuelles : MR, VR, XR et BR
+
+Quatre variantes (migration `20261102120000_raretes_visuelles`) qui suivent les règles ci-dessus : carte de base,
+image propre, cérémonie Mythique. Le préréglage est dans `appearance` de la rareté (`VISUAL_PRESETS`) : l'holographie
+à 0,25, et chaque carte peut le surcharger. L'inclinaison 3D reste celle de toutes les fuda.
+
+**Rangs : BR = Mythique < AR = VR < Gold = MR < XR**, portés par `sortOrder` (500, 600, 700, 800). À rang égal, la
+rareté de base passe d'abord dans le registre (`compareRarities`), car tirages, pitié et missions comparent des
+positions : une BR compte donc comme « Mythique ou mieux ». Une rareté reprend les réglages de son rang (recyclage,
+passifs, plafond de prix, anticipation de la révélation) ; XR est au-dessus : 15 fois le recyclage Mythique et un
+passif de plus que Gold. Les stats 力 et 気 restent propres à chaque carte : le CRUD propose la médiane de la rareté,
+sinon celle de son rang, sinon un palier au-dessus du rang publié juste en dessous (`suggestedStats`).
+
+Elles sont livrées au **poids 0** : aucune n'est tirée tant qu'un poids n'est pas réglé dans l'admin. Un tirage sans
+carte publiée redescend à la rareté précédente du registre : BR → Mythique, VR → AR, MR → Gold, XR → MR.
+
+| Rareté | Sceau | Image | Matière de la carte |
+| --- | --- | --- | --- |
+| MR Manga Rare | 漫 | Fournie en noir et blanc | Papier blanc, nuages en trame grise, encre noire, liseré rouge |
+| VR Vitrail Rare | 彩 | Fournie en vitrail | Nacre lilas, contours d'or, nuée du sceau violette |
+| XR Xtreme Rare | 極 | Image pleine carte | Full Art : nom posé sur l'image, fin filet irisé |
+| BR Black Rare | 闇 | Fournie sur fond noir | Laque noire, contours d'argent, liseré rouge |
+
+MR, VR et BR n'appliquent aucun filtre : l'image reste telle qu'elle a été envoyée. Leur matière se règle dans
+`scripts/fuda-face-css.mjs` (encres, banc, nuée du sceau) et `app/globals.css` (cadre). Le XR accepte une image
+détourée facultative (`appearance.cutoutUrl`, même cadrage que l'image), posée devant le nom et le cadre, sous
+les reflets.
+
 ## Liste, actions groupées et suppression
 
 La liste se trie (modification, nom, rareté, puissance, numéro), se filtre par type (bases ou

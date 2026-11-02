@@ -8,6 +8,7 @@ import type { CardDraft } from "@/lib/catalog/admin-form";
 import type { CatalogScope } from "@/lib/admin/roles";
 import type { OddsScenario } from "@/lib/catalog/card-odds";
 import { CARD_IMAGE_LIMIT, CARD_IMAGE_TYPES } from "@/lib/catalog/media";
+import { suggestedStats } from "@/lib/catalog/tiers";
 import { localize, parseLocalized } from "@/lib/boosters/types";
 import type { CatalogEditorOptions, LinkedCard } from "@/server/catalog/admin-queries";
 import { Field, TextField, SelectField, NumberField, OptionalNumberField, inputClass } from "../fields";
@@ -45,20 +46,21 @@ export function CardEditor({ scope, initial, options, context }: { scope: Catalo
   const router = useRouter(); const [draft, setDraft] = useState(initial);
   const [baseline, setBaseline] = useState(JSON.stringify(initial));
   const [file, setFile] = useState<File | null>(null), [localImage, setLocalImage] = useState("");
+  const [cutoutFile, setCutoutFile] = useState<File | null>(null), [localCutout, setLocalCutout] = useState("");
   const [error, setError] = useState(""), [notice, setNotice] = useState("");
   const [pending, startTransition] = useTransition(); const [scenario, setScenario] = useState<OddsScenario>("normal");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [featuredPity, setFeaturedPity] = useState(false), [odds, setOdds] = useState<Odds[]>([]), [oddsError, setOddsError] = useState(false);
   const [series, setSeries] = useState<PickerValue>(context.series ? { id: context.series.id, label: context.series.titleRomaji } : null);
   const [base, setBase] = useState<PickerValue>(context.base ? { id: context.base.id, label: context.base.name } : null);
-  const dirty = JSON.stringify(draft) !== baseline || Boolean(file);
+  const dirty = JSON.stringify(draft) !== baseline || Boolean(file) || Boolean(cutoutFile);
   const update = (value: Partial<CardDraft>) => { setDraft((d) => ({ ...d, ...value })); setNotice(""); };
   const fileInput = useRef<HTMLInputElement>(null), form = useRef<HTMLFormElement>(null), alert = useRef<HTMLParagraphElement>(null);
-  const uploaded = useRef<{ file: File; url: string } | null>(null);
+  const uploaded = useRef<{ file: File; url: string } | null>(null), uploadedCutout = useRef<{ file: File; url: string } | null>(null);
   const rarity = options.rarities.find((r) => r.key === draft.rarity);
   const variantRequired = Boolean(rarity?.variantRequired);
   const variantRarities = options.rarities.filter((r) => r.variantRequired);
-  const median = options.medians[draft.rarity];
+  const median = suggestedStats(draft.rarity, options.rarities, options.medians);
   useEffect(() => {
     if (!file) return;
     const url = URL.createObjectURL(file);
@@ -66,6 +68,12 @@ export function CardEditor({ scope, initial, options, context }: { scope: Catalo
     const timer = setTimeout(() => setLocalImage(url), 0);
     return () => { clearTimeout(timer); URL.revokeObjectURL(url); };
   }, [file]);
+  useEffect(() => {
+    if (!cutoutFile) return;
+    const url = URL.createObjectURL(cutoutFile);
+    const timer = setTimeout(() => setLocalCutout(url), 0);
+    return () => { clearTimeout(timer); URL.revokeObjectURL(url); };
+  }, [cutoutFile]);
   useEffect(() => {
     if (!dirty) return;
     const unload = (e: BeforeUnloadEvent) => { e.preventDefault(); };
@@ -92,32 +100,42 @@ export function CardEditor({ scope, initial, options, context }: { scope: Catalo
     }, 700); // une saisie, pas chaque frappe : chaque aperçu recalcule les pools de tous les boosters
     return () => { clearTimeout(timer); controller.abort(); };
   }, [previewPayload]);
-  function selectFile(value: File | undefined) {
+  function selectFile(value: File | undefined, select = setFile) {
     if (!value || pending) return;
     if (!CARD_IMAGE_TYPES.includes(value.type) || value.size > CARD_IMAGE_LIMIT || !value.size) { setError(t("errors.IMAGE_INVALID")); return; }
-    setFile(value); setError(""); setNotice("");
+    select(value); setError(""); setNotice("");
+  }
+  /** Téléverse une image choisie, une seule fois même si l'enregistrement est relancé ; null si l'envoi échoue. */
+  async function uploadImage(value: File, memo: typeof uploaded) {
+    if (memo.current?.file === value) return memo.current.url;
+    const optimized = await optimizeImage(value); const data = new FormData(); data.set("file", optimized);
+    const response = await fetch("/api/admin/catalogue/upload", { method: "POST", body: data });
+    const result = await response.json() as { url?: string; error?: string };
+    if (!response.ok || !result.url) { setError(t.has(`errors.${result.error}` as "errors.UPLOAD_FAILED") ? t(`errors.${result.error}` as "errors.UPLOAD_FAILED") : t("errors.UPLOAD_FAILED")); return null; }
+    memo.current = { file: value, url: result.url };
+    return result.url;
   }
   function save(status: CardDraft["status"]) {
     setError(""); setNotice("");
     startTransition(async () => {
       try {
-        let imageUrl = draft.imageUrl;
+        let imageUrl = draft.imageUrl, appearance = draft.appearance;
         if (file) {
-          if (uploaded.current?.file === file) imageUrl = uploaded.current.url;
-          else {
-            const optimized = await optimizeImage(file); const data = new FormData(); data.set("file", optimized);
-            const response = await fetch("/api/admin/catalogue/upload", { method: "POST", body: data });
-            const result = await response.json() as { url?: string; error?: string };
-            if (!response.ok || !result.url) { setError(t.has(`errors.${result.error}` as "errors.UPLOAD_FAILED") ? t(`errors.${result.error}` as "errors.UPLOAD_FAILED") : t("errors.UPLOAD_FAILED")); return; }
-            imageUrl = result.url; uploaded.current = { file, url: imageUrl };
-          }
+          const url = await uploadImage(file, uploaded);
+          if (!url) return;
+          imageUrl = url;
         }
-        const payload = { ...draft, imageUrl, status, newSeries: draft.newSeries ? { ...draft.newSeries, genres: draft.newSeries.genres.filter(Boolean), tags: draft.newSeries.tags.filter(Boolean) } : null };
+        if (cutoutFile) {
+          const url = await uploadImage(cutoutFile, uploadedCutout);
+          if (!url) return;
+          appearance = { ...appearance, cutoutUrl: url };
+        }
+        const payload = { ...draft, imageUrl, appearance, status, newSeries: draft.newSeries ? { ...draft.newSeries, genres: draft.newSeries.genres.filter(Boolean), tags: draft.newSeries.tags.filter(Boolean) } : null };
         const result = await saveCatalogCard(payload);
         if (!result.ok) { setError(`${t(`errors.${result.error}`)}${result.fields?.length ? ` (${result.fields.join(", ")})` : ""}`); return; }
         const saved = { ...payload, id: result.id, updatedAt: result.updatedAt, seriesId: result.seriesId ?? payload.seriesId, newSeries: result.seriesId ? null : payload.newSeries };
         if (draft.newSeries && result.seriesId) setSeries({ id: result.seriesId, label: draft.newSeries.title });
-        setDraft(saved); setBaseline(JSON.stringify(saved)); setFile(null); setLocalImage(""); setNotice(t("saved"));
+        setDraft(saved); setBaseline(JSON.stringify(saved)); setFile(null); setLocalImage(""); setCutoutFile(null); setLocalCutout(""); setNotice(t("saved"));
         if (!draft.id) router.replace(`/admin/catalogue/${result.id}`); else router.refresh();
       } catch { setError(t("errors.SAVE_FAILED")); }
     });
@@ -145,6 +163,9 @@ export function CardEditor({ scope, initial, options, context }: { scope: Catalo
   }
   const seriesName = draft.newSeries?.title || series?.label || "";
   const appearanceDefaults = rarity?.appearance;
+  const fullArt = (draft.appearance.fullArt ?? appearanceDefaults?.fullArt) === true;
+  const cutout = localCutout || draft.appearance.cutoutUrl;
+  const previewDraft = localCutout ? { ...draft, appearance: { ...draft.appearance, cutoutUrl: localCutout } } : draft;
   const sections = [["info", t("information")], ...(variantRequired || draft.variantOfId ? [["variant", t("variant")]] : []), ["image", t("image")], ["appearance", t("appearance")], ["animations", t("animations")], ["distribution", t("distribution")]] as const;
   return <form ref={form} onSubmit={(e) => { e.preventDefault(); save(draft.status); }} className="flex min-w-0 flex-col gap-5">
     <fieldset disabled={pending || !context.editable} aria-busy={pending} className="contents">
@@ -160,7 +181,7 @@ export function CardEditor({ scope, initial, options, context }: { scope: Catalo
           {scope === "full" && <div className="flex items-end"><Link href="/admin/catalogue/raretes" className="flex min-h-11 items-center text-sm text-link underline">{t("manageRarities")}</Link></div>}
           <NumberField label={t("power")} value={draft.power} min={0} max={999} onChange={(power) => update({ power })} />
           <NumberField label={t("ki")} value={draft.ki} min={0} max={999} onChange={(ki) => update({ ki })} />
-          {median && <div className="flex flex-wrap items-center gap-3 text-xs text-text-muted sm:col-span-2"><span>{t("statsMedian", { rarity: tr(draft.rarity), power: median.power, ki: median.ki })}</span>
+          {median && <div className="flex flex-wrap items-center gap-3 text-xs text-text-muted sm:col-span-2"><span>{t(median.above ? "statsAbove" : "statsMedian", { rarity: tr(median.from), power: median.power, ki: median.ki })}</span>
             <button type="button" className="min-h-11 rounded-control border border-border px-3 font-bold text-text" onClick={() => update({ power: median.power, ki: median.ki })}>{t("suggestStats")}</button></div>}
           {(["fr", "en"] as const).map((language) => <Field key={language} label={t(language === "fr" ? "descriptionFr" : "descriptionEn")}>{(id) => <textarea id={id} className={`${inputClass} min-h-28`} maxLength={20_000} value={draft.description[language]} onChange={(e) => update({ description: { ...draft.description, [language]: e.target.value } })} />}</Field>)}
           {draft.newSeries ? <div className="grid gap-3 rounded-control border border-border p-3 sm:col-span-2">
@@ -197,6 +218,10 @@ export function CardEditor({ scope, initial, options, context }: { scope: Catalo
           <div className="flex min-h-32 items-center justify-center rounded-control border-2 border-dashed border-border bg-surface-2 p-4 text-center" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); selectFile(e.dataTransfer.files[0]); }}>
             <label className="cursor-pointer"><span className="block font-bold">{file?.name || t("dropImage")}</span><span className="mt-1 block text-xs text-text-muted">{t("imageHint")}</span><input ref={fileInput} type="file" accept={CARD_IMAGE_TYPES.join(",")} className="mt-3 block w-full text-sm" onChange={(e) => selectFile(e.target.files?.[0])} /></label>
           </div><div className="mt-4"><ImageFramingFields value={draft.appearance} onChange={(appearance) => update({ appearance })} /></div>
+          {fullArt && <div className="mt-5 border-t border-border pt-4"><h4 className="font-bold">{t("cutout")}</h4><p className="mb-3 mt-1 text-sm text-text-muted">{t("cutoutHint")}</p>
+            <label className="block cursor-pointer rounded-control border-2 border-dashed border-border bg-surface-2 p-4 text-center" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); selectFile(e.dataTransfer.files[0], setCutoutFile); }}><span className="block font-bold">{cutoutFile?.name || t("dropImage")}</span><input type="file" accept={CARD_IMAGE_TYPES.join(",")} className="mt-3 block w-full text-sm" onChange={(e) => selectFile(e.target.files?.[0], setCutoutFile)} /></label>
+            {cutout && <button type="button" className="mt-2 min-h-11 text-sm underline" onClick={() => { setCutoutFile(null); setLocalCutout(""); const next = { ...draft.appearance }; delete next.cutoutUrl; update({ appearance: next }); }}>{t("cutoutRemove")}</button>}
+          </div>}
         </Section>
         <Section id="appearance" title={t("appearance")}><AppearanceFields value={draft.appearance} defaults={appearanceDefaults} onChange={(appearance) => update({ appearance })} /></Section>
         <Section id="animations" title={t("animations")}><AppearanceFields animation value={draft.appearance} defaults={appearanceDefaults} onChange={(appearance) => update({ appearance })} /></Section>
@@ -216,7 +241,7 @@ export function CardEditor({ scope, initial, options, context }: { scope: Catalo
           <div className="flex flex-wrap gap-2">{variantRarities.map((r) => <Link key={r.key} href={`/admin/catalogue/nouvelle?variantOf=${draft.id}&rarity=${r.key}`} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-border px-3 text-sm font-bold"><span className="font-seal">{r.seal}</span>{t("createVariantOf", { rarity: tr(r.key) })}</Link>)}</div>
         </section>}
       </div>
-      <div className="hidden self-start lg:sticky lg:top-4 lg:block"><CardPreview draft={draft} series={seriesName} imageUrl={localImage} /></div>
+      <div className="hidden self-start lg:sticky lg:top-4 lg:block"><CardPreview draft={previewDraft} series={seriesName} imageUrl={localImage} /></div>
     </div>
     <div className="sticky bottom-0 z-20 flex flex-wrap items-center gap-3 rounded-card border border-border bg-surface p-4 shadow-lg">
       {error && <p ref={alert} tabIndex={-1} role="alert" className="w-full break-words text-sm text-shu">{error}</p>}{notice && <p role="status" className="w-full text-sm">{notice}</p>}
@@ -227,7 +252,7 @@ export function CardEditor({ scope, initial, options, context }: { scope: Catalo
       {draft.id && context.deletable && <button type="button" disabled={pending} onClick={remove} className="min-h-11 px-3 text-sm text-shu underline disabled:opacity-50">{t("delete")}</button>}
       <span className="ml-auto text-xs text-text-muted">{tr(draft.rarity)}</span>
     </div>
-    {previewOpen && <Sheet open onClose={() => setPreviewOpen(false)} title={t("preview")}><CardPreview draft={draft} series={seriesName} imageUrl={localImage} /></Sheet>}
+    {previewOpen && <Sheet open onClose={() => setPreviewOpen(false)} title={t("preview")}><CardPreview draft={previewDraft} series={seriesName} imageUrl={localImage} /></Sheet>}
     </fieldset>
   </form>;
 }
