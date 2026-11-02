@@ -164,3 +164,6 @@
 .rv-xr-foil { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
 .rv-xr-foil i { position: absolute; top: -20%; bottom: -20%; left: 0; width: 90%; background: linear-gradient(112deg, transparent 18%, #ff67ba 34%, #78bfff 46%, #63ffba 58%, #ffe881 70%, transparent 84%); mix-blend-mode: color-dodge; opacity: 0; animation: rv-xr-foil 1.5s ease-in-out 510ms forwards; }
 @keyframes rv-xr-foil { 0% { opacity: 0; transform: translateX(-110%); } 15% { opacity: .5; } 85% { opacity: .5; } 100% { opacity: 0; transform: translateX(130%); } }
+
+/* L'aurore de la pile ne revient qu'avec la carte suivante : elle jurerait avec la fin de la scène */
+:root[data-reveal-scene] .card-deck-stack > .aurora { display: none; }
