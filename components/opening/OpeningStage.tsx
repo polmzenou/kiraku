@@ -27,6 +27,7 @@ import { GuestSignupPrompt } from "./GuestSignupPrompt";
 import { Recap } from "./Recap";
 import { RecapActionBar } from "./RecapActionBar";
 import { RevealOverlay, momentTint, TINT_DELAY, useMomentFor, type Moment } from "./RevealMoment";
+import { RevealLayerContext } from "./RevealScene";
 import { RitualBackdrop } from "./RitualBackdrop";
 import { SettingsMenu } from "./SettingsMenu";
 import { SoundToggle } from "./SoundToggle";
@@ -144,6 +145,7 @@ export function OpeningStage({
   const [creditLeft, setCreditLeft] = useState(credits);
   const [openedCredit, setOpenedCredit] = useState(false);
   const [momentCard, setMomentCard] = useState<Pick<Moment, "id" | "rarity"> | null>(null);
+  const [revealLayer, setRevealLayer] = useState<HTMLDivElement | null>(null);
   const [deckFrom, setDeckFrom] = useState<DeckFrom | null>(null);
   // Sachets scellés : celui qu'on ouvre sur cette scène, ceux tombés à l'instant, karma et issue
   const [sealedOpen, setSealedOpen] = useState<SealedTarget | null>(sealed && sealedTypes[sealed.kind] ? sealed : null);
@@ -374,6 +376,7 @@ export function OpeningStage({
 
   return (
     <LazyMotion features={domMax} strict>
+      <RevealLayerContext.Provider value={revealLayer}>
       <AnimatePresence>
         {ritual && (
           <RitualBackdrop
@@ -386,6 +389,9 @@ export function OpeningStage({
         )}
       </AnimatePresence>
 
+      {/* Fond des révélations plein écran : au-dessus du fond du rituel, sous la pile et la carte */}
+      <div ref={setRevealLayer} aria-hidden="true" className="pointer-events-none fixed inset-0 z-[46]" />
+
       {/* Une Mythique fait trembler la scène (le compteur change les images clés et relance l'animation).
           Au repos, une cible fixe plutôt que `undefined` : sinon Motion ne monte son animation qu'au premier
           tremblement, le prend pour un premier rendu et `initial={false}` l'annule. */}
@@ -397,7 +403,7 @@ export function OpeningStage({
         animate={reduced || shake === 0 ? { x: 0 } : { x: shake % 2 ? [0, -7, 7, -5, 5, -2, 0] : [0, 7, -7, 5, -5, 2, 0] }}
         transition={{ duration: 0.45 }}
       >
-        <div className="flex w-full items-center justify-end gap-2">
+        <div className="reveal-chrome flex w-full items-center justify-end gap-2">
           <SettingsMenu />
           <SoundToggle enabled={fx.enabled} onChange={fx.setEnabled} />
         </div>
@@ -664,6 +670,7 @@ export function OpeningStage({
           reduced={reduced}
         />
       )}
+      </RevealLayerContext.Provider>
     </LazyMotion>
   );
 }

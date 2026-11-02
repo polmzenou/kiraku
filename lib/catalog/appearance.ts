@@ -15,7 +15,7 @@ export const appearanceSchema = z.object({
   artTone: z.enum(["natural", "gold"]).optional(),
   /** Full Art (XR) : l'illustration couvre le cadre, le nom est posé dessus. */
   fullArt: z.boolean().optional(),
-  /** Full Art : personnage détouré (fond transparent, même cadrage que l'image), posé devant le nom et le cadre. */
+  /** Full Art : personnage détouré (fond transparent, même cadrage que l'image), posé devant le cadre et sous le nom. */
   cutoutUrl: z.string().max(2048).optional(),
 }).strict();
 export type CardAppearance = z.infer<typeof appearanceSchema>;

@@ -2742,7 +2742,7 @@
       },
       "fullArt": "Full Art (image sur toute la carte, nom posé dessus)",
       "cutout": "Personnage détouré (facultatif)",
-      "cutoutHint": "PNG ou WebP à fond transparent, avec le même cadrage que l’image. Il passe devant le nom et le cadre.",
+      "cutoutHint": "PNG ou WebP à fond transparent, avec le même cadrage que l’image. Il passe devant le cadre, et le nom reste au-dessus.",
       "cutoutRemove": "Retirer le détourage",
       "owners": {
         "title": "Détenteurs",

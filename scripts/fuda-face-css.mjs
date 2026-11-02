@@ -321,13 +321,13 @@ ${perRarity}
   mask: linear-gradient(#000, #000) content-box exclude, linear-gradient(#000, #000); }
 .fuda[data-full-art] .kn-bank { mask: none; scale: none; translate: none; background: linear-gradient(transparent 30%, rgb(0 0 0 / .72) 78%, rgb(0 0 0 / .88)); }
 .fuda[data-full-art] .kn-bank::before, .fuda[data-full-art] .kn-bank::after, .fuda[data-full-art] .kn-bank > .kn-ln, .fuda[data-full-art] .kn-bank > .kn-sn { display: none; }
-.fuda[data-full-art] .kn-shk { background: none; box-shadow: none; text-shadow: 0 1px 3px rgb(0 0 0 / .85); }
+.fuda[data-full-art] .kn-shk { z-index: 5; background: none; box-shadow: none; text-shadow: 0 1px 3px rgb(0 0 0 / .85); }
 .fuda[data-full-art] .kn-no { background: none; box-shadow: none; color: #fff; text-shadow: 0 1px 3px rgb(0 0 0 / .85); }
 .fuda[data-full-art] .kn-tz { display: none; }
 .fuda[data-full-art] .kn-sc { background: none; mask: none; }
 .fuda[data-full-art] .kn-sc::before, .fuda[data-full-art] .kn-sc::after, .fuda[data-full-art] .kn-sc > .kn-ln { display: none; }
-/* Personnage détouré : même boîte que l'illustration, il s'efface sous la ligne de stats pour la laisser lisible */
-.kn-cutout { position: absolute; inset: 0; z-index: 4; pointer-events: none; mask: linear-gradient(#000 88%, transparent 94%); }
+/* Personnage détouré : même boîte que l'illustration, devant le cadre. Il passe sous le nom et s'efface avant le voile d'ombre, pour que le nom reste entier et lisible */
+.kn-cutout { position: absolute; inset: 0; z-index: 4; pointer-events: none; mask: linear-gradient(#000 72%, transparent 84%); }
 
 /* Mouvement réduit : FudaTilt ne pose pas .fuda-live ; rien ne se déplace par sécurité */
 @media (prefers-reduced-motion: reduce) {

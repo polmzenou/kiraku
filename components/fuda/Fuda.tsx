@@ -215,7 +215,7 @@ export function Fuda({
         </div>
         {corner && <span className="kn-corner">{corner}</span>}
       </div>
-      {/* Full Art : le personnage détouré passe devant le nom et le cadre, sous les reflets */}
+      {/* Full Art : le personnage détouré passe devant le cadre, sous le nom et les reflets */}
       {fullArt && visual.cutoutUrl && <span aria-hidden="true" className="kn-cutout"><Image src={visual.cutoutUrl} alt="" fill sizes={sizes ?? l.sizes} draggable={false} className="object-cover object-top" style={artStyle} /></span>}
       {/* Effet de matière (laque, or, nacre) au-dessus de la carte, à partir d'Épique */}
       {!locked && !monochrome && visual.effects === undefined && tier >= BASE_RARITIES.indexOf("EPIC") && (

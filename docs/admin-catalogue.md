@@ -108,7 +108,7 @@ L'ouverture leur donne la cérémonie Mythique (`fxTier`), plus un effet propre 
 ## Raretés visuelles : MR, VR, XR et BR
 
 Quatre variantes (migration `20261102120000_raretes_visuelles`) qui suivent les règles ci-dessus : carte de base,
-image propre, cérémonie Mythique. Le préréglage est dans `appearance` de la rareté (`VISUAL_PRESETS`) : l'holographie
+image propre, révélation propre (ci-dessous). Le préréglage est dans `appearance` de la rareté (`VISUAL_PRESETS`) : l'holographie
 à 0,25, et chaque carte peut le surcharger. L'inclinaison 3D reste celle de toutes les fuda.
 
 **Rangs : BR = Mythique < AR = VR < Gold = MR < XR**, portés par `sortOrder` (500, 600, 700, 800). À rang égal, la
@@ -130,8 +130,18 @@ carte publiée redescend à la rareté précédente du registre : BR → Mythiqu
 
 MR, VR et BR n'appliquent aucun filtre : l'image reste telle qu'elle a été envoyée. Leur matière se règle dans
 `scripts/fuda-face-css.mjs` (encres, banc, nuée du sceau) et `app/globals.css` (cadre). Le XR accepte une image
-détourée facultative (`appearance.cutoutUrl`, même cadrage que l'image), posée devant le nom et le cadre, sous
-les reflets.
+détourée facultative (`appearance.cutoutUrl`, même cadrage que l'image), posée devant le cadre, sous
+le nom et les reflets : le nom reste toujours entier.
+
+### Révélations plein écran
+
+Dans la pile du rituel, ces quatre raretés jouent leur propre mise en scène (`components/opening/RevealScene.tsx`,
+déroulé dans `lib/opening/reveal-scenes.ts`) : **BR** brouillard noir, **MR** le mot MANGA écrit au pinceau puis
+retournement, **VR** lumière divine depuis le haut de l'écran, **XR** écran coupé en X puis tunnel holographique.
+Tout part du début de la charge, avec un calque sous la pile et un au-dessus ; le compteur, les boutons et le reste
+de la pile s'effacent le temps de la scène. En effets allégés, moins de calques et rien qui tourne en continu ; en
+mouvement réduit, aucune scène. L'aperçu de la fiche et la boutique gardent la cérémonie Mythique. Le rayon qui sort
+du booster reste celui des Mythiques. La fumée du BR vient de `npm run fx:assets` (`public/fx/`).
 
 ## Liste, actions groupées et suppression
 

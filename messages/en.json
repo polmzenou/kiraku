@@ -2742,7 +2742,7 @@
       },
       "fullArt": "Full Art (image across the whole card, name on top)",
       "cutout": "Cut-out character (optional)",
-      "cutoutHint": "PNG or WebP with a transparent background, framed like the image. It passes in front of the name and frame.",
+      "cutoutHint": "PNG or WebP with a transparent background, framed like the image. It passes in front of the frame, and the name stays on top.",
       "cutoutRemove": "Remove the cut-out",
       "owners": {
         "title": "Owners",
