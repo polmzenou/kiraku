@@ -186,7 +186,13 @@
   text-shadow: 0 0 24px var(--moment);
   box-shadow: 0 0 40px color-mix(in srgb, var(--moment) 60%, transparent), inset 0 0 30px color-mix(in srgb, var(--moment) 35%, transparent);
   opacity: 0;
-  animation: moment-hanko 1.35s cubic-bezier(0.2, 0.9, 0.3, 1.15) forwards;
+  animation: moment-hanko 1.35s cubic-bezier(0.2, 0.9, 0.3, 1.15) var(--hanko-d, 0s) forwards;
+}
+/* Sur la page blanche du MR : un tampon net, sans lueur */
+.moment-overlay[data-paper] .moment-hanko-stamp {
+  background: rgb(247 243 234 / 0.8);
+  text-shadow: none;
+  box-shadow: none;
 }
 .moment-overlay[data-contained] .moment-hanko-stamp {
   width: 62%;
@@ -201,6 +207,10 @@
 .moment-title-seal {
   color: var(--moment);
   text-shadow: 0 0 14px var(--moment);
+}
+.moment-title[data-chroma] .moment-letter {
+  color: #fff;
+  text-shadow: 2px 0 #ff2fa0, -2px 0 #23e0ff, 0 0 18px rgb(255 103 186 / 0.7);
 }
 /* Lettres et sceau : entrée, 2 s de pause, puis envol (deux animations, la seconde prend le relais) */
 .moment-letter {

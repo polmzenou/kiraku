@@ -7,6 +7,8 @@ import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type C
 import { fitSlotGrid, type SlotGrid } from "@/lib/boosters/slot-grid";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
+import { resolveAppearance } from "@/lib/catalog/appearance";
+import { REVEAL_SCENES, revealSceneKey } from "@/lib/opening/reveal-scenes";
 import { Fuda } from "../fuda/Fuda";
 import { CardBack } from "../fuda/CardBack";
 import { Button } from "../ui/Button";
@@ -14,6 +16,7 @@ import { Aurora } from "./Aurora";
 import { chargeFor, leakFor } from "./RarityFx";
 import { FlipCard, type FlipPhase } from "./RevealCard";
 import { RevealTitle, titleGone, useMomentFor, type Moment } from "./RevealMoment";
+import { SCENE_ASSETS } from "./RevealScene";
 import type { SoundName } from "@/lib/sound/synth";
 
 /** Ordre de révélation : de la moins rare à la plus rare (une vedette après les autres de sa rareté). */
@@ -150,6 +153,7 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
   const finished = useRef(false);
   const focusNext = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cueTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const dragReset = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Un glissement se termine par un clic : on ne compte pas l'action deux fois
   const dragged = useRef(false);
@@ -195,18 +199,31 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
   }, [momentId, momentRarity, onMoment]);
   useEffect(() => () => onMoment(null), [onMoment]);
 
+  const clearCues = useCallback(() => {
+    for (const cue of cueTimers.current) clearTimeout(cue);
+    cueTimers.current = [];
+  }, []);
+
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
     if (dragReset.current) clearTimeout(dragReset.current);
-  }, []);
+    clearCues();
+  }, [clearCues]);
+
+  // La fumée du brouillard noir est prête avant que la carte soit touchée
+  useEffect(() => {
+    if (reduced) return;
+    for (const src of new Set(order.flatMap((card) => SCENE_ASSETS[card.rarity as keyof typeof SCENE_ASSETS] ?? []))) new Image().src = src;
+  }, [order, reduced]);
 
   const finish = useCallback(() => {
     if (finished.current) return;
     finished.current = true;
     if (timer.current) clearTimeout(timer.current);
     if (dragReset.current) clearTimeout(dragReset.current);
+    clearCues();
     onDone();
-  }, [onDone]);
+  }, [onDone, clearCues]);
 
   useEffect(() => {
     if (done) finish();
@@ -232,16 +249,22 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
 
   const flip = () => {
     if (!current || phaseRef.current !== "back" || advancing.current || finished.current) return;
-    const charge = reduced ? 0 : (chargeFor(current.rarity, definitions) ?? 480);
+    const sceneKey = reduced ? null : revealSceneKey(current.rarity, resolveAppearance(definitions.find((d) => d.key === current.rarity)?.appearance, current.appearance).reveal);
+    const scene = sceneKey ? REVEAL_SCENES[sceneKey] : null;
+    const charge = reduced ? 0 : (scene?.charge ?? chargeFor(current.rarity, definitions) ?? 480);
     const tier = fxTier(current.rarity, definitions);
-    if (tier === "MYTHIC" && !reduced) {
+    const sounds = scene ? scene.frontCues : revealFx(tier);
+    if (scene) {
+      // La scène a son propre fond : ni tremblement ni assombrissement, seulement ses sons
+      cueTimers.current = scene.cues.map(([at, sound, haptic]) => setTimeout(() => play(sound, haptic), at));
+    } else if (tier === "MYTHIC" && !reduced) {
       onMythic();
       play("taiko", [80]);
     }
     if (charge === 0) {
       phaseRef.current = "front";
       setPhase("front");
-      for (const [s, h] of revealFx(tier)) play(s, h);
+      for (const [s, h] of sounds) play(s, h);
       return;
     }
     phaseRef.current = "charging";
@@ -251,7 +274,7 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
       if (finished.current) return;
       phaseRef.current = "front";
       setPhase("front");
-      for (const [s, h] of revealFx(tier)) play(s, h);
+      for (const [s, h] of sounds) play(s, h);
     }, charge);
   };
 
@@ -272,6 +295,7 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
       clearTimeout(timer.current);
       timer.current = null;
     }
+    clearCues();
     phaseRef.current = "back";
     advancing.current = false;
     focusNext.current = true;
@@ -299,7 +323,7 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
       <m.div className="relative z-10 flex min-h-14 w-full flex-col items-center justify-end" {...appear(0.3)}>
         <p
           key={moment?.id ?? "progress"}
-          className={`text-sm text-text-muted ${moment ? "moment-return" : ""}`}
+          className={`reveal-chrome text-sm text-text-muted ${moment ? "moment-return" : ""}`}
           style={moment ? ({ "--d": `${titleGone(moment.name)}s` } as CSSProperties) : undefined}
           aria-live="polite"
         >
@@ -307,7 +331,7 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
         </p>
         {moment && (
           <div className="pointer-events-none absolute inset-x-0 bottom-0">
-            <RevealTitle key={moment.id} moment={moment} />
+            <RevealTitle key={moment.id} moment={moment} scene={!reduced} />
           </div>
         )}
       </m.div>
@@ -408,14 +432,14 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
                   : { opacity: 0, x: 170, y: 50, rotate: 16, scale: 0.8, transition: { duration: 0.32 } }}
                 transition={{ duration: reduced ? 0.12 : 0.2 }}
               >
-                <FlipCard card={current} phase={phase} size="lg" reduced={reduced} compactFx={lite} />
+                <FlipCard card={current} phase={phase} size="lg" reduced={reduced} compactFx={lite} scene />
               </m.button>
             )}
           </AnimatePresence>
         </m.div>}
       </div>
 
-      <m.p className="h-5 text-center text-xs text-text-muted" {...appear(0.45)}>
+      <m.p className="reveal-chrome h-5 text-center text-xs text-text-muted" {...appear(0.45)}>
         {!done && topVisible && (phase === "back" ? t("deckHint") : phase === "front" ? t(last ? "deckLastHint" : "deckNextHint") : "")}
       </m.p>
 
@@ -423,7 +447,7 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
       {order.length > 0 && <m.ul
         ref={slotsRef}
         // Lignes centrées : la dernière, incomplète, se cale au milieu sous les autres
-        className={`card-deck-slots flex w-full flex-wrap justify-center gap-2 ${slotGrid ? "" : "max-h-80 overflow-y-auto"}`}
+        className={`reveal-chrome card-deck-slots flex w-full flex-wrap justify-center gap-2 ${slotGrid ? "" : "max-h-80 overflow-y-auto"}`}
         style={{
           "--slot-w": `calc((100% - ${(slotColumns - 1) * SLOT_GAP}px) / ${slotColumns})`,
           maxWidth: slotColumns * (slotGrid?.slotWidth ?? 72) + (slotColumns - 1) * SLOT_GAP,
@@ -437,7 +461,7 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
       </m.ul>}
 
       {!done && (
-        <m.div ref={belowRef} className="flex flex-wrap justify-center gap-2" {...appear(0.55)}>
+        <m.div ref={belowRef} className="reveal-chrome flex flex-wrap justify-center gap-2" {...appear(0.55)}>
           {canSkip && (
             <Button variant="primary" onClick={skipToBig} className="min-w-40">
               {t("skipToBig", { rarity: tRarity(order[bigAt].rarity) })}

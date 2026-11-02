@@ -1,0 +1,169 @@
+/* Révélations des raretés visuelles (BR, MR, VR, XR) : tout part du début de la charge, chaque calque a son
+   délai dans ce fichier. Animations en transform et opacity, sauf le tracé du pinceau (stroke-dashoffset, moins
+   de 2 s sur une zone limitée). Montées uniquement hors mouvement réduit ; `data-lite` retire ce qui tourne en continu. */
+
+.rv-layer { position: fixed; inset: 0; overflow: hidden; pointer-events: none; transition: opacity .3s ease-out; }
+.rv-layer[data-leaving] { opacity: 0; }
+.rv-over { z-index: 60; }
+.rv-world { position: absolute; inset: 0; }
+.rv-at-card { position: absolute; left: var(--cx); top: var(--cy); width: var(--cw); height: var(--ch); margin: calc(var(--ch) / -2) 0 0 calc(var(--cw) / -2); }
+.rv-at-center { position: absolute; left: var(--cx); top: var(--cy); width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2); }
+
+/* Le temps de la scène, la pile, le compteur et les boutons s'effacent : seule la carte reste */
+:root[data-reveal-scene] .reveal-chrome,
+:root[data-reveal-scene] .card-deck-stack > :not(:last-child) { animation: rv-chrome var(--rv-total) linear forwards; }
+@keyframes rv-chrome { 0% { opacity: 1; visibility: visible; } 4%, 96% { opacity: 0; visibility: hidden; } 100% { opacity: 1; visibility: visible; } }
+
+@keyframes rv-on { to { opacity: 1; } }
+@keyframes rv-off { to { opacity: 0; } }
+
+/* La carte elle-même */
+.rv-card-BR { animation: fx-tremble .16s linear 320ms 9; }
+.rv-card-MR { animation: rv-mr-ghost .2s ease-out 150ms forwards, rv-mr-unghost .01s linear 2400ms forwards, rv-mr-pop .5s cubic-bezier(.2, .9, .3, 1.15) 2420ms; }
+@keyframes rv-mr-ghost { to { opacity: .22; } }
+@keyframes rv-mr-unghost { to { opacity: 1; } }
+@keyframes rv-mr-pop { 0% { transform: scale(1.4); } 100% { transform: scale(1); } }
+.rv-card-VR { animation: rv-vr-lift .9s ease-in-out 900ms forwards; }
+@keyframes rv-vr-lift { to { transform: translateY(-14px); } }
+.rv-card-XR { transform-style: preserve-3d; animation: rv-xr-grow 1450ms linear, rv-xr-fly 1340ms linear 1450ms forwards, rv-xr-settle .36s ease-out 2790ms forwards; }
+.rv-card-XR[data-front] .kn-cutout { animation: rv-xr-pop .55s cubic-bezier(.2, .9, .3, 1.25); }
+@keyframes rv-xr-pop { 0% { transform: scale(1.3); } 100% { transform: scale(1); } }
+.rv-flip-XR { animation: rv-xr-sweep 1.5s ease-in-out 510ms; }
+
+/* ---------- BR : brouillard noir ---------- */
+.rv-br-dim { position: absolute; inset: 0; background: #000; opacity: 0; animation: rv-on .5s ease-out forwards; }
+/* Sans cette lumière derrière la carte, du noir sur du noir ne se verrait pas */
+.rv-br-light { --s: calc(var(--ch) * 2.5); border-radius: 50%; background: radial-gradient(closest-side, rgb(205 208 222 / .62), rgb(150 152 170 / .26) 45%, transparent); opacity: 0; animation: rv-br-light 4.9s linear forwards; }
+@keyframes rv-br-light { 0% { opacity: 0; } 12% { opacity: .9; } 40% { opacity: .9; } 46% { opacity: .75; } 56% { opacity: .22; } 100% { opacity: .14; } }
+.rv-br-ember { --s: calc(var(--ch) * 1.7); border-radius: 50%; background: radial-gradient(closest-side, rgb(179 38 30 / .7), rgb(120 20 18 / .25) 55%, transparent); opacity: 0; animation: rv-br-ember 2.7s ease-out 2200ms forwards; }
+@keyframes rv-br-ember { 0% { opacity: 0; transform: scale(.7); } 22% { opacity: 1; transform: scale(1.04); } 100% { opacity: .42; transform: scale(1); } }
+.rv-fog-ring { --s: 190vmax; background: var(--rv-ring) center / 100% 100% no-repeat; opacity: 0;
+  animation: rv-fog-close 1.75s cubic-bezier(.3, 0, .55, 1) var(--d) forwards, rv-fog-open 1.15s cubic-bezier(.2, .7, .3, 1) 2050ms forwards; }
+@keyframes rv-fog-close { 0% { opacity: 0; transform: rotate(var(--r0)) scale(1.7); } 30% { opacity: 1; } 100% { opacity: 1; transform: rotate(var(--r1)) scale(.5); } }
+@keyframes rv-fog-open { 0% { opacity: 1; transform: rotate(var(--r1)) scale(.5); } 100% { opacity: 0; transform: rotate(var(--r2)) scale(1.9); } }
+.rv-puff { --s: calc(var(--ch) * 1.5); background: var(--rv-puff) center / 100% 100% no-repeat; opacity: 0;
+  animation: rv-puff-in var(--t) cubic-bezier(.35, .1, .5, 1) var(--d) forwards, rv-puff-out 1s cubic-bezier(.15, .7, .3, 1) 2050ms forwards; }
+@keyframes rv-puff-in { 0% { opacity: 0; transform: translate(var(--x0), var(--y0)) rotate(0deg) scale(1.3); } 35% { opacity: 1; } 100% { opacity: 1; transform: translate(var(--x1), var(--y1)) rotate(var(--r)) scale(1); } }
+@keyframes rv-puff-out { 0% { opacity: 1; transform: translate(var(--x1), var(--y1)) rotate(var(--r)) scale(1); } 100% { opacity: 0; transform: translate(var(--x0), var(--y0)) rotate(calc(var(--r) * 1.6)) scale(1.5); } }
+.rv-fog-core { --s: calc(var(--ch) * 1.9); border-radius: 50%; background: radial-gradient(closest-side, #000 0 46%, rgb(0 0 0 / .8) 64%, transparent 100%), var(--rv-puff) center / 100% 100% no-repeat; opacity: 0;
+  animation: rv-on .5s ease-in 1250ms forwards, rv-core-beat .3s ease-in-out 1750ms, rv-core-out .6s ease-out 2060ms forwards; }
+@keyframes rv-core-beat { 50% { transform: scale(1.05); } }
+@keyframes rv-core-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.5); } }
+.rv-wisp { position: absolute; left: var(--x); top: calc(var(--cy) + var(--ch) * .15); width: var(--w); height: 70vh; background: var(--rv-puff) center / 100% 100% no-repeat; opacity: 0;
+  animation: rv-wisp var(--t) ease-out var(--d) forwards; }
+@keyframes rv-wisp { 0% { opacity: 0; transform: translateY(8vh) scaleX(.55); } 25% { opacity: .95; } 100% { opacity: 0; transform: translateY(-46vh) scaleX(1.5) rotate(var(--r)); } }
+.rv-fog-floor { position: absolute; left: -60%; width: 220%; top: calc(var(--cy) + var(--ch) * .36); bottom: 0; background: var(--rv-smoke) 0 0 / 58vmax 58vmax; opacity: 0;
+  -webkit-mask: linear-gradient(transparent, #000 34%); mask: linear-gradient(transparent, #000 34%);
+  animation: rv-floor-on .8s ease-out 2350ms forwards, rv-floor-drift 9s linear 2000ms forwards; }
+@keyframes rv-floor-on { to { opacity: .95; } }
+@keyframes rv-floor-drift { from { transform: translateX(0); } to { transform: translateX(-16%); } }
+
+/* ---------- MR : le mot au pinceau ---------- */
+.rv-mr-page { position: absolute; inset: 0; background: #f7f3ea; transform: translateX(-102%); animation: rv-mr-in .2s cubic-bezier(.7, 0, .2, 1) forwards, rv-mr-out .34s cubic-bezier(.7, 0, .7, .3) 3300ms forwards; }
+@keyframes rv-mr-in { to { transform: translateX(0); } }
+@keyframes rv-mr-out { from { transform: translateX(0); } to { transform: translateX(102%); } }
+.rv-mr-tone { position: absolute; inset: 0; background: radial-gradient(circle, #141210 0 30%, transparent 34%) 0 0 / 5px 5px;
+  -webkit-mask: radial-gradient(95% 72% at var(--cx) var(--cy), transparent 74%, rgb(0 0 0 / .75) 100%); mask: radial-gradient(95% 72% at var(--cx) var(--cy), transparent 74%, rgb(0 0 0 / .75) 100%); }
+.rv-mr-lines { --s: 210vmax; background: repeating-conic-gradient(#141210 0 .45deg, transparent .45deg 3.1deg), repeating-conic-gradient(#141210 0 1.15deg, transparent 1.15deg 8.3deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 0 16%, #000 30%); mask: radial-gradient(closest-side, transparent 0 16%, #000 30%); opacity: 0;
+  animation: rv-on .3s ease-out 180ms forwards, rv-mr-jit .24s steps(1) 200ms infinite, rv-off .3s ease-in 3300ms forwards; }
+.rv-layer[data-lite] .rv-mr-lines { animation: rv-on .3s ease-out 180ms forwards, rv-off .3s ease-in 3300ms forwards; }
+@keyframes rv-mr-jit { 0% { transform: rotate(0deg) scale(1); } 33% { transform: rotate(.5deg) scale(1.01); } 66% { transform: rotate(-.4deg) scale(.995); } }
+.rv-mr-word { position: absolute; left: var(--cx); top: var(--cy); width: min(92vw, 860px); height: calc(min(92vw, 860px) * .52); overflow: visible; transform: translate(-50%, -50%) rotate(-6deg); animation: rv-mr-hold .28s ease-in 2120ms forwards, rv-mr-burst .24s cubic-bezier(.3, 0, .6, 1) 2400ms forwards; }
+@keyframes rv-mr-hold { to { transform: translate(-50%, -50%) rotate(-6deg) scale(1.03); } }
+@keyframes rv-mr-burst { from { opacity: 1; transform: translate(-50%, -50%) rotate(-6deg) scale(1.03); } to { opacity: 0; transform: translate(-50%, -50%) rotate(-6deg) scale(1.7); } }
+.rv-write { fill: none; stroke: #fff; stroke-dasharray: 1.002 1.002; stroke-dashoffset: 1.002; animation: rv-write var(--t) cubic-bezier(.3, .05, .35, 1) var(--d) forwards; }
+@keyframes rv-write { to { stroke-dashoffset: 0; } }
+.rv-drop { transform-box: fill-box; transform-origin: center; transform: scale(0); animation: rv-drop .22s cubic-bezier(.2, .9, .3, 1.3) var(--d) forwards; }
+@keyframes rv-drop { to { transform: scale(1); } }
+.rv-mr-don { position: absolute; left: var(--cx); top: var(--cy); writing-mode: vertical-rl; font-size: clamp(66px, 23vw, 128px); line-height: .94; color: #0f0d0b; -webkit-text-stroke: 2px #0f0d0b;
+  text-shadow: 4px 0 #f7f3ea, -4px 0 #f7f3ea, 0 4px #f7f3ea, 0 -4px #f7f3ea, 3px 3px #f7f3ea, -3px -3px #f7f3ea, 3px -3px #f7f3ea, -3px 3px #f7f3ea; opacity: 0;
+  margin: calc(var(--ch) * -.66) 0 0 calc(var(--cw) * .26); animation: rv-mr-don .3s cubic-bezier(.2, .9, .3, 1.3) 2600ms forwards, rv-off .25s ease-in 3280ms forwards; }
+@keyframes rv-mr-don { from { opacity: 0; transform: scale(2) rotate(14deg); } to { opacity: 1; transform: scale(1) rotate(8deg); } }
+/* Négatif de case d'impact : hors du calque, sinon le mélange ne verrait que son propre groupe */
+.rv-mr-neg { position: fixed; inset: 0; z-index: 61; background: #fff; mix-blend-mode: difference; opacity: 0; pointer-events: none; animation: rv-mr-neg .16s steps(1) 2400ms forwards; }
+@keyframes rv-mr-neg { 0% { opacity: 1; } 45% { opacity: 0; } 70% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ---------- VR : lumière divine ---------- */
+.rv-vr-sky { position: absolute; inset: 0; background: linear-gradient(#150c2b, #0b0812 55%, #08060d); opacity: 0; animation: rv-on .6s ease-out forwards; }
+/* Ancré en haut de la fenêtre : le faisceau grandit vers le bas et sa source est au-dessus de l'écran, rien ne peut le couper */
+.rv-vr-fall { position: absolute; left: 0; right: 0; top: 0; height: 100%; transform-origin: 50% 0; transform: scaleY(0); -webkit-mask: linear-gradient(#000 0 34%, rgb(0 0 0 / .62) 62%, transparent 97%); mask: linear-gradient(#000 0 34%, rgb(0 0 0 / .62) 62%, transparent 97%);
+  animation: rv-vr-fall 1.3s cubic-bezier(.25, .55, .2, 1) 200ms forwards, rv-vr-soft 1s ease-out 3400ms forwards; }
+@keyframes rv-vr-fall { to { transform: scaleY(1); } }
+@keyframes rv-vr-soft { to { opacity: .62; } }
+.rv-vr-ray { position: absolute; left: -40%; right: -40%; top: -30%; bottom: 0; transform-origin: 50% -30%;
+  background: conic-gradient(from calc(180deg - var(--a)) at 50% -30%, transparent 0deg, var(--c) calc(var(--a) * .6), var(--core) var(--a), var(--c) calc(var(--a) * 1.4), transparent calc(var(--a) * 2), transparent 360deg);
+  rotate: var(--tilt); animation: rv-vr-sway var(--t) ease-in-out infinite alternate; }
+.rv-layer[data-lite] .rv-vr-ray { animation: none; }
+@keyframes rv-vr-sway { from { transform: rotate(-1.1deg); } to { transform: rotate(1.1deg); } }
+.rv-vr-crown { position: absolute; left: 0; right: 0; top: 0; height: 38vh; background: radial-gradient(85% 100% at 50% 0, rgb(255 251 238 / .96), rgb(255 240 205 / .4) 48%, transparent 100%); opacity: 0; animation: rv-on .7s ease-out 120ms forwards; }
+.rv-vr-mote { position: absolute; left: var(--x); top: 0; width: var(--s); height: var(--s); border-radius: 50%; background: radial-gradient(circle, #fff, rgb(255 240 200 / .7) 40%, transparent 72%); opacity: 0; animation: rv-fall-down var(--t) linear var(--d) forwards; }
+.rv-vr-glass { border-radius: 0; clip-path: polygon(50% 0, 100% 62%, 62% 100%, 0 70%); background: var(--c); }
+@keyframes rv-fall-down { 0% { opacity: 0; transform: translate3d(0, -5vh, 0) rotate(0deg); } 12% { opacity: 1; } 78% { opacity: .9; } 100% { opacity: 0; transform: translate3d(var(--dx), 92vh, 0) rotate(var(--r)); } }
+.rv-vr-glow { --s: calc(var(--ch) * 2); border-radius: 50%; background: radial-gradient(closest-side, rgb(255 248 225 / .95), rgb(214 188 255 / .42) 42%, transparent); opacity: 0; animation: rv-vr-glow 1s ease-out 950ms forwards; }
+@keyframes rv-vr-glow { from { opacity: 0; transform: scale(.5); } to { opacity: 1; transform: scale(1); } }
+.rv-vr-rose { --s: min(100vw, calc(var(--ch) * 1.26)); -webkit-mask: radial-gradient(closest-side, #000 74%, transparent 100%); mask: radial-gradient(closest-side, #000 74%, transparent 100%); opacity: 0; animation: rv-vr-rose 1s cubic-bezier(.2, .8, .3, 1) 1050ms forwards; }
+.rv-vr-rose svg { display: block; width: 100%; height: 100%; overflow: visible; animation: rv-turn 60s linear infinite; }
+.rv-layer[data-lite] .rv-vr-rose svg { animation: none; }
+@keyframes rv-vr-rose { from { opacity: 0; transform: scale(.45); } to { opacity: 1; transform: scale(1); } }
+@keyframes rv-turn { to { transform: rotate(360deg); } }
+.rv-vr-veil { position: absolute; left: 0; right: 0; top: 0; height: 100%; opacity: 0; background: conic-gradient(from 170deg at 50% -40%, transparent 0deg, rgb(255 246 222 / .3) 10deg, transparent 20deg, transparent 360deg);
+  animation: rv-on .9s ease-out 1100ms forwards, rv-off .9s ease-out 3400ms forwards; }
+.rv-vr-flash { position: absolute; inset: 0; background: linear-gradient(rgb(255 252 240 / .95), rgb(255 244 214 / .55) 45%, rgb(255 244 214 / .12) 80%, transparent); opacity: 0; animation: fx-flash .9s ease-out 2420ms forwards; }
+
+/* ---------- XR : l'écran coupé en X ---------- */
+.rv-xr-shake { animation: rv-xr-shake 150ms linear 1000ms, rv-xr-shake 220ms linear 1250ms, rv-xr-shake 340ms linear 2790ms; }
+@keyframes rv-xr-shake { 0% { transform: translate(0, 0); } 20% { transform: translate(-9px, 5px); } 40% { transform: translate(8px, -6px); } 60% { transform: translate(-6px, -4px); } 80% { transform: translate(5px, 4px); } 100% { transform: translate(0, 0); } }
+.rv-xr-void { position: absolute; inset: -14px; background: #040308; opacity: 0; animation: rv-on .32s ease-out forwards; }
+.rv-xr-leak { --s: calc(var(--ch) * 1.9); border-radius: 50%; background: radial-gradient(closest-side, #fff 0 10%, rgb(120 191 255 / .7) 34%, rgb(255 103 186 / .4) 60%, transparent); opacity: 0; animation: rv-xr-leak 1450ms linear forwards; }
+@keyframes rv-xr-leak { 0% { opacity: 0; transform: scale(.7); } 22% { opacity: .55; transform: scale(.92); } 30% { opacity: .15; transform: scale(.8); } 46% { opacity: .95; transform: scale(1.1); } 56% { opacity: .35; transform: scale(.9); } 100% { opacity: 1; transform: scale(1.3); } }
+@keyframes rv-xr-grow { 0% { transform: none; } 20% { transform: scale(1.03); } 26% { transform: scale(1); } 44% { transform: scale(1.06) rotate(-.6deg) translate(-1px, 1px); } 50% { transform: scale(1.01) rotate(.6deg); } 60% { transform: translate(2px, -1px) rotate(-1deg); } 66% { transform: translate(-3px, 1px) rotate(1.2deg); } 72% { transform: translate(4px, 2px) rotate(-1.6deg); } 78% { transform: translate(-4px, -2px) rotate(1.6deg); } 86% { transform: translate(3px, 2px) rotate(-1deg); } 100% { transform: scale(1.04); } }
+.rv-xr-cracks { animation: rv-off .01s linear 1449ms forwards; }
+.rv-xr-cracks svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.rv-xr-crack { fill: none; stroke: url(#rv-xr-holo); stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; opacity: 0; animation: rv-on .14s ease-out var(--d) forwards; }
+.rv-xr-slash { position: absolute; left: var(--cx); top: var(--cy); width: 320vmax; height: clamp(3px, .55vmin, 6px); margin: calc(clamp(3px, .55vmin, 6px) / -2) 0 0 -160vmax; transform: rotate(var(--a)); animation: rv-off .22s ease-in 1560ms forwards; }
+.rv-xr-slash i { position: absolute; inset: 0; background: #fff; box-shadow: 0 0 14px 3px #fff, 0 0 46px 12px rgb(120 191 255 / .85), 0 0 90px 26px rgb(255 103 186 / .45); transform-origin: var(--o) 50%; transform: scaleX(0); animation: rv-xr-cut .13s cubic-bezier(.5, 0, .2, 1) var(--d) forwards; }
+@keyframes rv-xr-cut { to { transform: scaleX(1); } }
+.rv-xr-pane { position: absolute; inset: 0; background: #040308; clip-path: var(--cp); opacity: 0; animation: rv-xr-pane 640ms cubic-bezier(.5, 0, .85, .35) 1450ms forwards; }
+@keyframes rv-xr-pane { 0% { opacity: 1; transform: none; } 99% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--tx), var(--ty)) rotate(var(--ro)) scale(1.1); } }
+.rv-xr-tunnel { position: absolute; inset: 0; opacity: 0; animation: rv-on .01s linear 1440ms forwards, rv-off .22s ease-out 2790ms forwards; }
+.rv-xr-tun { --s: 220vmax; border-radius: 50%; background: repeating-conic-gradient(from var(--r), #ff67ba 0 1.3deg, transparent 1.3deg 7deg, #78bfff 7deg 8.3deg, transparent 8.3deg 14deg, #63ffba 14deg 15.3deg, transparent 15.3deg 21deg, #ffe881 21deg 22.3deg, transparent 22.3deg 28deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 0 5%, #000 30%, rgb(0 0 0 / .85) 60%, transparent 100%); mask: radial-gradient(closest-side, transparent 0 5%, #000 30%, rgb(0 0 0 / .85) 60%, transparent 100%);
+  opacity: 0; animation: rv-xr-rush 900ms linear var(--d) 2; }
+@keyframes rv-xr-rush { 0% { opacity: 0; transform: scale(.16) rotate(0deg); } 20% { opacity: 1; } 100% { opacity: 0; transform: scale(1.1) rotate(16deg); } }
+.rv-xr-streak { position: absolute; left: var(--cx); top: var(--cy); width: 36vmax; height: 2px; background: linear-gradient(90deg, transparent, var(--c)); transform-origin: 0 50%; opacity: 0; animation: rv-xr-streak var(--t) linear var(--d) 4; }
+@keyframes rv-xr-streak { 0% { opacity: 0; transform: rotate(var(--a)) translateX(5vmax) scaleX(.1); } 25% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--a)) translateX(72vmax) scaleX(1.5); } }
+.rv-xr-core { --s: 62vmin; border-radius: 50%; background: radial-gradient(closest-side, #fff, rgb(190 220 255 / .7) 30%, rgb(255 120 200 / .25) 60%, transparent); animation: rv-xr-core .36s ease-in-out infinite alternate; }
+.rv-layer[data-lite] .rv-xr-core { animation: none; }
+@keyframes rv-xr-core { from { transform: scale(.85); opacity: .85; } to { transform: scale(1.15); opacity: 1; } }
+@keyframes rv-xr-fly {
+  0% { transform: translateZ(-7000px) rotateY(2340deg) rotateZ(16deg); animation-timing-function: cubic-bezier(.14, .75, .3, 1); }
+  72% { transform: translateZ(-430px) rotateY(0deg) rotateZ(-2deg); animation-timing-function: ease-out; }
+  88% { transform: translateZ(-560px) rotateY(0deg) rotateZ(0deg); animation-timing-function: cubic-bezier(.7, 0, 1, .6); }
+  100% { transform: translateZ(120px) rotateY(0deg) rotateZ(0deg); }
+}
+@keyframes rv-xr-settle { 0% { transform: translateZ(120px); } 40% { transform: translateZ(-34px); } 72% { transform: translateZ(10px); } 100% { transform: translateZ(0); } }
+@keyframes rv-xr-sweep { 0% { transform: rotateX(0) rotateY(0); } 30% { transform: rotateX(5deg) rotateY(-23deg); } 70% { transform: rotateX(-4deg) rotateY(21deg); } 100% { transform: rotateX(0) rotateY(0); } }
+.rv-xr-echo { position: absolute; inset: 0; opacity: 0; isolation: isolate; mix-blend-mode: screen; animation: rv-xr-fly 1340ms linear var(--d) forwards, rv-xr-echo 1340ms linear var(--d) forwards; }
+.rv-xr-echo::after { content: ""; position: absolute; inset: 0; border-radius: 14px; background: var(--tint); mix-blend-mode: multiply; }
+@keyframes rv-xr-echo { 0% { opacity: .6; } 84% { opacity: .55; } 100% { opacity: 0; } }
+.rv-xr-after { position: absolute; inset: -14px; background: radial-gradient(90% 62% at var(--cx) var(--cy), #3a1c63, #120a24 58%, #05040a); opacity: 0; animation: rv-on .25s ease-out 2790ms forwards; }
+.rv-xr-rays { --s: 200vmax; border-radius: 50%; background: repeating-conic-gradient(rgb(255 103 186 / .34) 0 5deg, transparent 5deg 15deg, rgb(120 191 255 / .34) 15deg 20deg, transparent 20deg 30deg, rgb(99 255 186 / .28) 30deg 35deg, transparent 35deg 45deg, rgb(255 232 129 / .34) 45deg 50deg, transparent 50deg 60deg);
+  -webkit-mask: radial-gradient(closest-side, #000 0 18%, transparent 72%); mask: radial-gradient(closest-side, #000 0 18%, transparent 72%); opacity: 0; animation: rv-on .2s ease-out 2790ms forwards, rv-turn 26s linear 2790ms infinite; }
+.rv-layer[data-lite] .rv-xr-rays { animation: rv-on .2s ease-out 2790ms forwards; }
+.rv-xr-kanji { position: absolute; left: var(--cx); top: var(--cy); font-size: min(128vw, 74vh); line-height: 1; white-space: nowrap; color: transparent; background: conic-gradient(from 210deg, #ff67ba, #78bfff, #63ffba, #ffe881, #ff67ba); -webkit-background-clip: text; background-clip: text; opacity: 0; transform: translate(-50%, -50%) scale(2.6); animation: rv-xr-kanji .5s cubic-bezier(.2, .9, .3, 1.12) 2810ms forwards; }
+@keyframes rv-xr-kanji { to { opacity: .4; transform: translate(-50%, -50%) scale(1); } }
+.rv-xr-wave { --s: var(--ch); border-radius: 50%; box-shadow: inset 0 0 0 3px #fff, inset 0 0 24px 8px rgb(120 191 255 / .75), 0 0 30px 6px rgb(255 103 186 / .65); opacity: 0; animation: rv-xr-wave .95s cubic-bezier(.08, .7, .2, 1) var(--d) forwards; }
+@keyframes rv-xr-wave { 0% { opacity: 1; transform: scale(.25); } 100% { opacity: 0; transform: scale(4.2); } }
+.rv-xr-shard { position: absolute; left: var(--cx); top: var(--cy); width: var(--s); height: calc(var(--s) * 1.5); clip-path: polygon(50% 0, 100% 100%, 0 100%); background: var(--c); opacity: 0; animation: rv-xr-shard var(--t) cubic-bezier(.1, .7, .25, 1) var(--d) forwards; }
+@keyframes rv-xr-shard { 0% { opacity: 1; transform: translate(-50%, -50%) rotate(0deg); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--r)); } }
+.rv-xr-flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: rv-xr-flash .46s ease-out 2790ms forwards; }
+@keyframes rv-xr-flash { 0% { opacity: 1; } 100% { opacity: 0; } }
+.rv-xr-rain { position: absolute; left: var(--x); top: 0; width: var(--s); height: calc(var(--s) * 1.4); clip-path: polygon(50% 0, 100% 100%, 0 100%); background: var(--c); opacity: 0; animation: rv-fall-down var(--t) linear var(--d) forwards; }
+/* Reflet qui traverse la carte : porté par elle, il suit son inclinaison */
+.rv-xr-foil { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.rv-xr-foil i { position: absolute; top: -20%; bottom: -20%; left: 0; width: 90%; background: linear-gradient(112deg, transparent 18%, #ff67ba 34%, #78bfff 46%, #63ffba 58%, #ffe881 70%, transparent 84%); mix-blend-mode: color-dodge; opacity: 0; animation: rv-xr-foil 1.5s ease-in-out 510ms forwards; }
+@keyframes rv-xr-foil { 0% { opacity: 0; transform: translateX(-110%); } 15% { opacity: .5; } 85% { opacity: .5; } 100% { opacity: 0; transform: translateX(130%); } }
+
+/* L'aurore de la pile ne revient qu'avec la carte suivante : elle jurerait avec la fin de la scène */
+:root[data-reveal-scene] .card-deck-stack > .aurora { display: none; }

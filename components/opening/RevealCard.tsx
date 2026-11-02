@@ -3,14 +3,18 @@
 import { m } from "motion/react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
+import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { Fuda } from "../fuda/Fuda";
 import { CardBack as FudaBack } from "../fuda/CardBack";
 import { ArGhosts, chargeFor, GoldCracks, GoldShatter, RarityCardFx, RarityFx } from "./RarityFx";
 import { CardAura } from "./CardAura";
+import { RevealScene, XR_ECHOES, type SceneBox } from "./RevealScene";
 import { resolveAppearance } from "@/lib/catalog/appearance";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import { isTopTier } from "@/lib/catalog/tiers";
+import { RARITY_SEAL } from "@/lib/catalog/rarity";
+import { REVEAL_SCENES, revealSceneKey } from "@/lib/opening/reveal-scenes";
 
 /**
  * Pastilles du coin haut-droit, empilées : « Nouveau » (jamais obtenue), puis « Souhait exaucé »
@@ -91,15 +95,22 @@ type Props = {
   reduced: boolean;
   /** Effets réduits (grille de plusieurs boosters). */
   compactFx?: boolean;
+  /** Dans la pile du rituel : les raretés visuelles jouent leur révélation plein écran. */
+  scene?: boolean;
 };
+
+/** Liseré d'argent de la Black, porté par la carte : il suit son inclinaison. */
+const BR_RIM = "rgb(209 205 204 / 0.5)";
 
 /**
  * Une fuda face cachée qui se retourne. Avant le retournement (« charging »), une Épique+ frémit et
  * une Légendaire+ s'illumine d'or ; à l'endroit, l'effet de sa rareté se joue autour d'elle.
  */
-export function FlipCard({ card, phase, size, reduced, compactFx = false }: Props) {
+export function FlipCard({ card, phase, size, reduced, compactFx = false, scene = false }: Props) {
   const definitions = useRarityDefinitions();
-  const visual = resolveAppearance(definitions.find((r) => r.key === card.rarity)?.appearance, card.appearance);
+  const root = useRef<HTMLDivElement>(null);
+  const definition = definitions.find((r) => r.key === card.rarity);
+  const visual = resolveAppearance(definition?.appearance, card.appearance);
   const front = phase === "front";
   const charging = phase === "charging";
   const rank = definitions.findIndex((r) => r.key === card.rarity);
@@ -107,6 +118,15 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
   const variant = card.rarity === "AR" || card.rarity === "GOLD" ? card.rarity : null;
   // Dos premium : la grosse carte se trahit en arrivant en haut de la pile
   const premium = isTopTier(card.rarity, definitions);
+  const sceneKey = scene && !reduced ? revealSceneKey(card.rarity, visual.reveal) : null;
+  const sceneOn = sceneKey !== null && phase !== "back";
+  // Les calques plein écran se calent sur la carte : mesurée avant de peindre le début de la charge
+  const [sceneBox, setSceneBox] = useState<SceneBox | null>(null);
+  useLayoutEffect(() => {
+    if (!sceneOn) return;
+    const rect = root.current?.getBoundingClientRect();
+    if (rect) setSceneBox({ cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2, cw: rect.width, ch: rect.height });
+  }, [sceneOn]);
 
   if (reduced) {
     return (
@@ -140,32 +160,52 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false }: Prop
   }
 
   return (
-    <div className="relative isolate [perspective:1100px]">
-      <CardAura rarity={front ? card.rarity : undefined} compact={compactFx} />
-      {front && <RarityFx rarity={card.rarity} compact={compactFx} />}
-      <div className={`relative ${charging && rank >= 3 ? "fx-tremble" : ""}`}>
+    <div ref={root} className={`relative isolate [perspective:1100px] ${sceneOn && sceneKey === "XR" ? "rv-xr-shake" : ""}`}>
+      {!sceneOn && <CardAura rarity={front ? card.rarity : undefined} compact={compactFx} />}
+      {front && sceneKey === null && <RarityFx rarity={card.rarity} compact={compactFx} />}
+      {sceneOn && sceneBox && <RevealScene scene={sceneKey} box={sceneBox} lite={compactFx} seal={definition?.seal ?? RARITY_SEAL[card.rarity] ?? ""} />}
+      {/* Échos colorés de la carte qui fonce dans le tunnel de la XR */}
+      {sceneOn && sceneKey === "XR" && !compactFx && XR_ECHOES.map((tint, i) => (
+        <span key={tint} aria-hidden="true" className="rv-xr-echo" style={{ "--tint": tint, "--d": `${1450 + (i + 1) * 75}ms` } as CSSProperties}>
+          <GhostArt card={card} />
+        </span>
+      ))}
+      <div className={`relative ${sceneOn ? `rv-card-${sceneKey}` : charging && rank >= 3 ? "fx-tremble" : ""}`} data-front={front || undefined}>
         <m.div
-          className="relative z-10 [transform-style:preserve-3d]"
+          className={`relative z-10 [transform-style:preserve-3d] ${sceneKey === "XR" && front ? "rv-flip-XR" : ""}`}
           initial={false}
           animate={
-            !front
-              ? { rotateY: 180, scale: charging ? 1.04 : 1 }
-              : variant === "AR"
-                ? { rotateY: 0, scaleX: [0.04, 1], scale: 1 }
-                : { rotateY: 0, scale: [1.08, 1] }
+            sceneOn
+              ? { rotateY: front ? 0 : sceneKey === "XR" ? [180, 180, 0] : 180, scale: 1 }
+              : !front
+                ? { rotateY: 180, scale: charging ? 1.04 : 1 }
+                : variant === "AR"
+                  ? { rotateY: 0, scaleX: [0.04, 1], scale: 1 }
+                  : { rotateY: 0, scale: [1.08, 1] }
           }
           transition={
-            !front
-              ? { duration: 0.3 }
-              : variant
-                ? { rotateY: { duration: 0 }, scaleX: { duration: 0.55, delay: 0.12, ease: [0.2, 0.9, 0.3, 1.15] }, scale: { duration: 0.5, ease: visual.easing } }
-                : { duration: visual.duration, delay: visual.delay, ease: visual.easing }
+            sceneOn
+              ? front
+                ? REVEAL_SCENES[sceneKey].flip
+                // La XR se retourne au fond du tunnel, avant de foncer vers l'écran
+                : sceneKey === "XR" ? { rotateY: { duration: 1.45, times: [0, 0.995, 1], ease: "linear" }, scale: { duration: 0 } } : { duration: 0.3 }
+              : !front
+                ? { duration: 0.3 }
+                : variant
+                  ? { rotateY: { duration: 0 }, scaleX: { duration: 0.55, delay: 0.12, ease: [0.2, 0.9, 0.3, 1.15] }, scale: { duration: 0.5, ease: visual.easing } }
+                  : { duration: visual.duration, delay: visual.delay, ease: visual.easing }
           }
         >
           <div aria-hidden={!front} inert={!front} className="[backface-visibility:hidden]">
-            <Fuda card={card} series={card.series} size={size} overlay={front && <RarityCardFx rarity={card.rarity} />} />
+            <Fuda
+              card={card}
+              series={card.series}
+              size={size}
+              glow={front && sceneKey === "BR" ? BR_RIM : undefined}
+              overlay={front && (sceneKey === "XR" ? <span aria-hidden="true" className="rv-xr-foil"><i /></span> : <RarityCardFx rarity={card.rarity} />)}
+            />
           </div>
-          <CardBack glow={charging && rank >= 4} static={front} premium={premium} />
+          <CardBack glow={charging && rank >= 4 && !sceneOn} static={front} premium={premium} />
         </m.div>
         {charging && card.rarity === "GOLD" && <GoldCracks duration={chargeFor(card.rarity, definitions)} />}
         {front && variant === "GOLD" && <GoldShatter><FudaBack flat premium={premium} /></GoldShatter>}
