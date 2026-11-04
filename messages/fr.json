@@ -1247,6 +1247,7 @@
       "openingTest": "Test d'ouverture",
       "focus": "Focus série",
       "pullFeed": "Gros tirages",
+      "eventGauge": "Événement",
       "battleSandbox": "Bac à sable combat",
       "news": "Nouveautés"
     },
@@ -3013,6 +3014,32 @@
         }
       }
     },
+    "eventGauge": {
+      "title": "Événement",
+      "intro": "Jauge communautaire au-dessus des boosters de l'accueil : seuls les boosters ouverts par des comptes inscrits et non bannis pendant la fenêtre comptent.",
+      "settingsSection": "Réglages de la jauge",
+      "current": "{phase} : {count} boosters comptés sur {goal} ({percent} %)",
+      "phases": {
+        "upcoming": "À venir",
+        "live": "En cours",
+        "ended": "Terminé"
+      },
+      "invalid": "Vérifie les réglages : la fin doit suivre le début et les valeurs doivent rester dans leurs limites.",
+      "keys": {
+        "enabled": "Afficher la jauge sur l'accueil",
+        "startsAt": "Début de l'événement",
+        "endsAt": "Fin de l'événement",
+        "goal": "Objectif (boosters)",
+        "refreshSeconds": "Rafraîchissement (secondes)",
+        "cacheSeconds": "Cache du compte (secondes)"
+      },
+      "hints": {
+        "date": "Dans l'heure locale de ton navigateur.",
+        "goal": "Modifiable pendant l'événement : la jauge s'ajuste tout de suite.",
+        "refreshSeconds": "Fréquence à laquelle la page d'un joueur redemande le compte.",
+        "cacheSeconds": "Le compte est recalculé au plus une fois par durée, quel que soit le nombre de joueurs."
+      }
+    },
     "pullFeed": {
       "title": "Gros tirages",
       "intro": "Carrousel « En direct · Gros tirages » de l'accueil : ce qu'il montre, combien de fois un même joueur peut y apparaître, et qui en est retiré.",
@@ -3867,6 +3894,21 @@
     }
   },
   "home": {
+    "eventGauge": {
+      "title": "Premier Matsuri",
+      "rules": "Tous ensemble : chaque booster ouvert par un joueur inscrit fait monter la jauge. Objectif commun : {goal} boosters.",
+      "reached": "Objectif atteint, bravo ! La jauge continue de compter jusqu'à la fin.",
+      "endedReached": "Objectif atteint, bravo à tous : {count} boosters ouverts !",
+      "endedMissed": "Fin de l'événement : {count} boosters ouverts sur {goal}. Merci à tous !",
+      "startsIn": "Commence dans {time}",
+      "endsIn": "Se termine dans {time}",
+      "ended": "Terminé",
+      "progress": "{count} / {goal} boosters",
+      "percent": "{percent} %",
+      "progressLabel": "Progression de la jauge de l'événement",
+      "ctaSignup": "Inscris-toi pour faire monter la jauge",
+      "ctaInvite": "Invite des amis pour remplir la jauge"
+    },
     "collectors": {
       "title": "Top collectionneurs",
       "subtitle": "Cartes uniques possédées",

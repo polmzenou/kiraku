@@ -357,6 +357,14 @@ export const SETTING_SCHEMAS = {
   "home.pullFeed.cacheSeconds": z.number().int().min(5).max(600),
   // Apparitions max d'un même joueur dans le carrousel : au-delà, ses plus anciens tirages en sortent
   "home.pullFeed.maxPerPlayer": z.number().int().min(1).max(50),
+  // Jauge communautaire au-dessus de la vitrine : boosters ouverts par les inscrits, dans la fenêtre
+  "home.eventGauge.enabled": z.boolean(),
+  "home.eventGauge.startsAt": z.string().datetime(),
+  "home.eventGauge.endsAt": z.string().datetime(),
+  "home.eventGauge.goal": z.number().int().min(1).max(100_000_000),
+  "home.eventGauge.refreshSeconds": z.number().int().min(5).max(600),
+  // Durée de cache du compte, partagé par tous les joueurs
+  "home.eventGauge.cacheSeconds": z.number().int().min(5).max(600),
   // Encart « Nouveautés » en haut de l'accueil : textes fr/en, nouveautés et liens (/admin/nouveautes)
   "home.news": newsSchema,
   // Conformité (étape 10) : version des CGU que tout compte inscrit doit avoir acceptée
@@ -555,6 +563,12 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "home.pullFeed.refreshSeconds": 60,
   "home.pullFeed.cacheSeconds": 30,
   "home.pullFeed.maxPerPlayer": 5,
+  "home.eventGauge.enabled": true,
+  "home.eventGauge.startsAt": "2026-11-04T18:00:00.000Z", // 19h à Paris
+  "home.eventGauge.endsAt": "2026-11-10T18:00:00.000Z", // 19h à Paris
+  "home.eventGauge.goal": 20_000,
+  "home.eventGauge.refreshSeconds": 60,
+  "home.eventGauge.cacheSeconds": 30,
   "home.news": NEWS_DEFAULT, // récapitulatif de la v2.5, allumé
   "legal.termsRequiredVersion": 1,
   "account.deletionGraceDays": 30, // anonymisation sous 30 jours (plan, « Pages légales, RGPD »)

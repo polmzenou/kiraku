@@ -1247,6 +1247,7 @@
       "openingTest": "Opening test",
       "focus": "Series focus",
       "pullFeed": "Big pulls",
+      "eventGauge": "Event",
       "battleSandbox": "Battle sandbox",
       "news": "What's new"
     },
@@ -3013,6 +3014,32 @@
         }
       }
     },
+    "eventGauge": {
+      "title": "Event",
+      "intro": "Community gauge above the boosters on the home page: only boosters opened by registered, non-banned accounts during the window count.",
+      "settingsSection": "Gauge settings",
+      "current": "{phase}: {count} boosters counted out of {goal} ({percent}%)",
+      "phases": {
+        "upcoming": "Upcoming",
+        "live": "Live",
+        "ended": "Ended"
+      },
+      "invalid": "Check the settings: the end must follow the start and values must stay within their limits.",
+      "keys": {
+        "enabled": "Show the gauge on the home page",
+        "startsAt": "Event start",
+        "endsAt": "Event end",
+        "goal": "Goal (boosters)",
+        "refreshSeconds": "Refresh (seconds)",
+        "cacheSeconds": "Count cache (seconds)"
+      },
+      "hints": {
+        "date": "In your browser's local time.",
+        "goal": "Can be changed during the event: the gauge adjusts right away.",
+        "refreshSeconds": "How often a player's page asks for the count again.",
+        "cacheSeconds": "The count is recalculated at most once per period, however many players there are."
+      }
+    },
     "pullFeed": {
       "title": "Big pulls",
       "intro": "The home page “Live · Big pulls” carousel: what it shows, how many times one player can appear, and who is removed from it.",
@@ -3867,6 +3894,21 @@
     }
   },
   "home": {
+    "eventGauge": {
+      "title": "First Matsuri",
+      "rules": "All together: every booster opened by a registered player fills the gauge. Shared goal: {goal} boosters.",
+      "reached": "Goal reached, well done! The gauge keeps counting until the end.",
+      "endedReached": "Goal reached, well done everyone: {count} boosters opened!",
+      "endedMissed": "The event is over: {count} boosters opened out of {goal}. Thanks everyone!",
+      "startsIn": "Starts in {time}",
+      "endsIn": "Ends in {time}",
+      "ended": "Ended",
+      "progress": "{count} / {goal} boosters",
+      "percent": "{percent}%",
+      "progressLabel": "Event gauge progress",
+      "ctaSignup": "Sign up to fill the gauge",
+      "ctaInvite": "Invite friends to fill the gauge"
+    },
     "collectors": {
       "title": "Top collectors",
       "subtitle": "Unique cards owned",

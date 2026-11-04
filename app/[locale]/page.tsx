@@ -7,6 +7,7 @@ import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { AmbassadorPackCard } from "@/components/ambassador/AmbassadorPackCard";
 import { BoosterShowcase } from "@/components/boosters/showcase/BoosterShowcase";
 import type { ShowcaseFamily, ShowcaseItem } from "@/components/boosters/showcase/types";
+import { EventGauge, type EventGaugeCta } from "@/components/home/EventGauge";
 import { NewsPanel } from "@/components/home/NewsPanel";
 import { RecentPulls } from "@/components/home/RecentPulls";
 import { ReviewsSection, type ReviewViewer } from "@/components/home/ReviewsSection";
@@ -40,6 +41,7 @@ import { getBoosterRules } from "@/server/boosters/rules";
 import { boosterStateFrom } from "@/server/boosters/state";
 import { getTopCollectors } from "@/server/collection/leaderboard";
 import { getWishlistCardIds } from "@/server/collection/profile-cards";
+import { getEventGauge } from "@/server/home/event-gauge";
 import { getRecentPulls } from "@/server/home/pulls";
 import { ownedCardIds } from "@/server/collection/owned";
 import { getBoosterCredits, getSealedDrops } from "@/server/economy/queries";
@@ -109,7 +111,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
   // Tout ce qui ne dépend que du joueur part en une seule vague (avant : trois allers-retours de suite)
   const [
     credits, allTypes, reviews, reviewSummary, ownReview, collectors, [pulls, pullsOwned], pullRefresh,
-    sealedDrops, sealedDisplays, apocalypseKarma, ambassadorPack, incense, wished,
+    sealedDrops, sealedDisplays, apocalypseKarma, ambassadorPack, incense, wished, gauge, gaugeRefresh, referralEnabled,
   ] = await Promise.all([
     user ? getBoosterCredits(user.id) : new Map<string, number>(),
     getBoosterTypes(),
@@ -128,7 +130,12 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
     user && !user.bannedAt ? getAmbassadorPack(user, locale) : null,
     user && !user.bannedAt ? getIncenseState(user.id) : null,
     user ? getWishlistCardIds(user.id) : [],
+    getEventGauge(),
+    getSetting("home.eventGauge.refreshSeconds"),
+    getSetting("referral.enabled"),
   ]);
+  // Seuls les inscrits comptent : les autres sont invités à créer un compte, les inscrits à amener du monde
+  const gaugeCta: EventGaugeCta = !user || user.isGuest ? "signup" : !user.bannedAt && referralEnabled ? "invite" : null;
   const reviewViewer: ReviewViewer = member
     ? { kind: "member", own: ownReview }
     : !user || (user.isGuest && !user.bannedAt)
@@ -233,6 +240,8 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
       {sealedDrops.length > 0 && (
         <SealedDropsRow drops={sealedDrops} displays={sealedDisplays} karma={{ current: user?.apocalypseKarma ?? 0, threshold: apocalypseKarma }} />
       )}
+
+      {gauge && <EventGauge key={gauge.phase} initial={gauge} refreshSeconds={gaugeRefresh} serverNow={state.serverNow} cta={gaugeCta} />}
 
       {initial && (
         <BoosterShowcase

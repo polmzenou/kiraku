@@ -4,11 +4,13 @@ import { after } from "next/server";
 import { getLocale } from "next-intl/server";
 import { z } from "zod";
 import { isFrozen } from "@/lib/account/deletion";
+import type { EventGaugeView } from "@/lib/home/event-gauge";
 import { getCurrentUser, requireActiveUser } from "../user";
 import { clientIp, rateLimit } from "../ratelimit";
 import { getRecentPulls, purgeOldPulls, type RecentPull } from "../home/pulls";
 import { ownedCardIds } from "../collection/owned";
 import { pullLikes } from "../home/pull-likes";
+import { getEventGauge } from "../home/event-gauge";
 
 const pullsInput = z.object({}).strict();
 
@@ -27,6 +29,18 @@ export async function recentPullsAction(input: unknown): Promise<{ ok: true; pul
   // Une fois par heure au plus et par instance, quel que soit le visiteur (compteur en mémoire)
   if ((await rateLimit("pull-feed:purge", { limit: 1, windowSeconds: 3600 }, { store: "memory" })).success) after(() => purgeOldPulls());
   return { ok: true, pulls, owned: await ownedCardIds(user?.id, pulls.map((p) => p.card.cardId)) };
+}
+
+const gaugeInput = z.object({}).strict();
+
+/** Rafraîchissement de la jauge communautaire (lecture publique, la même pour tous les visiteurs). */
+export async function eventGaugeAction(input: unknown): Promise<{ ok: true; gauge: EventGaugeView } | { ok: false; error: "INVALID" | "RATE_LIMITED" | "DISABLED" }> {
+  const user = await getCurrentUser();
+  if (!gaugeInput.safeParse(input).success) return { ok: false, error: "INVALID" };
+  const who = user?.id ?? (await clientIp());
+  if (!(await rateLimit(`event-gauge:${who}`, { limit: 12, windowSeconds: 60 }, { store: "memory" })).success) return { ok: false, error: "RATE_LIMITED" };
+  const gauge = await getEventGauge();
+  return gauge ? { ok: true, gauge } : { ok: false, error: "DISABLED" };
 }
 
 const likeInput = z.object({ pullId: z.string().min(1).max(128), liked: z.boolean() }).strict();
