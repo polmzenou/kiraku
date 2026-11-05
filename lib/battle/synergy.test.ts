@@ -6,7 +6,8 @@ import { applyEvent } from "./display";
 import { applyAction, createState, replay } from "./engine";
 import { FLAT_RULES, fighter, setupOf } from "./fixtures";
 import { buildSetup } from "./stats";
-import { activeSynergy, atkBonusPct, teamSynergy, universeOf } from "./synergy";
+import { atkBonusPct } from "./modifiers";
+import { activeSynergy, teamSynergy, universeOf } from "./synergy";
 import type { Action, BattleEvent, BattleSetup, BattleState, FighterSetup, Side, UniverseRef } from "./types";
 
 const JJK: UniverseRef = { key: "u-jjk", name: "Jujutsu Kaisen" };

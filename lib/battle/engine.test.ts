@@ -2,14 +2,277 @@ import { describe, expect, it } from "vitest";
 import { seededRng } from "@/lib/rng";
 import { botGame, randomTeam } from "./bot-games";
 import { applyAction, createState, legalActions, orbsFor, replay } from "./engine";
+import { atkBonusPct, rageBonusPct } from "./modifiers";
 import { FLAT_RULES, RULES, fighter, setupOf } from "./fixtures";
-import type { Action, BattleSetup, BattleState, Side } from "./types";
+import { LEGACY_KEYWORDS, LEGACY_TECHNIQUES, NEW_TECHNIQUES, type Action, type BattleEvent, type BattleSetup, type BattleState, type EngineRules, type Side } from "./types";
 
 const play = (setup: BattleSetup, state: BattleState, action: Action, seed = 1) => applyAction(setup, seed, state, action);
 
 function team3(over: Parameters<typeof fighter>[0] = {}) {
   return [fighter(over), fighter(over), fighter(over)];
 }
+
+describe("nouveaux passifs", () => {
+  const k = FLAT_RULES.keywords;
+  const hitOn = (events: readonly BattleEvent[]) => events.flatMap((e) => (e.t === "damage" ? [e] : []));
+  const attack = (setup: BattleSetup, state: BattleState, target = 0) => play(setup, state, { type: "ATTACK", side: 0, actor: 0, target });
+
+  it("Vampirisme : soigne d'une part des dégâts réellement infligés", () => {
+    const setup = setupOf([fighter({ power: 100, keywords: ["LIFESTEAL"] })], [fighter({ ki: 100, hp: 500 })]);
+    const { state } = createState(setup);
+    state.fighters[0][0].hp = 50;
+    const { events, state: after } = attack(setup, state);
+    const dealt = hitOn(events)[0].amount;
+    expect(events.map((e) => e.t)).toEqual(["attack", "damage", "lifesteal", "heal"]);
+    expect(after.fighters[0][0].hp).toBe(50 + Math.floor((dealt * k.lifestealPct) / 100));
+  });
+
+  it("Vampirisme : rien à pleine santé ni contre une Barrière", () => {
+    const setup = setupOf([fighter({ keywords: ["LIFESTEAL"] })], [fighter({ hp: 500 })]);
+    expect(attack(setup, createState(setup).state).events.map((e) => e.t)).toEqual(["attack", "damage"]);
+    const blocked = setupOf([fighter({ keywords: ["LIFESTEAL"] })], [fighter({ keywords: ["BARRIER"] })]);
+    const { state } = createState(blocked);
+    state.fighters[0][0].hp = 10;
+    expect(attack(blocked, state).events.map((e) => e.t)).toEqual(["attack", "block"]);
+  });
+
+  it("Vampirisme sur un coup fatal : le soin vient après le K.-O., sur les seuls PV retirés", () => {
+    const setup = setupOf([fighter({ power: 200, keywords: ["LIFESTEAL"] })], [fighter({ ki: 1, hp: 10 }), fighter()]);
+    const { state } = createState(setup);
+    state.fighters[0][0].hp = 20;
+    const { events, state: after } = attack(setup, state);
+    expect(events.map((e) => e.t)).toEqual(["attack", "damage", "ko", "lifesteal", "heal"]);
+    expect(after.fighters[0][0].hp).toBe(20 + Math.max(1, Math.floor((10 * k.lifestealPct) / 100)));
+  });
+
+  it("Vampirisme puis riposte mortelle : le soin passe d'abord, la carte peut quand même tomber", () => {
+    const setup = setupOf([fighter({ power: 100, keywords: ["LIFESTEAL"], hp: 300 })], [fighter({ ki: 0, hp: 500, keywords: ["RIPOSTE"] })]);
+    const { state } = createState(setup);
+    state.fighters[0][0].hp = 1;
+    const { events } = attack(setup, state);
+    expect(events.map((e) => e.t)).toEqual(["attack", "damage", "lifesteal", "heal", "riposte", "damage", "ko", "end"]);
+  });
+
+  it("Rage : se déclenche au seuil exact, pas au-dessus, et s'additionne aux autres bonus", () => {
+    const setup = setupOf([fighter({ power: 100, keywords: ["RAGE"], hp: 200 })], [fighter({ ki: 100, hp: 900 })]);
+    const { state } = createState(setup);
+    const at = (hp: number) => {
+      state.fighters[0][0].hp = hp;
+      return attack(setup, state);
+    };
+    const threshold = Math.floor((200 * k.rageThresholdPct) / 100);
+    expect(hitOn(at(threshold + 1).events)[0].amount).toBe(50);
+    expect(hitOn(at(threshold).events)[0].amount).toBe(Math.floor((100 * (100 + k.ragePct)) / 200));
+    expect(rageBonusPct(setup, state, 0, 0)).toBe(k.ragePct);
+    state.fighters[0][0].buffPct = 20;
+    state.fighters[0][0].buffTurns = 1;
+    expect(atkBonusPct(setup, state, 0, 0)).toBe(k.ragePct + 20);
+  });
+
+  it("Rage : aucune trace sur une carte qui n'a pas le passif", () => {
+    const setup = setupOf([fighter({ power: 100, hp: 200 })], [fighter({ ki: 100 })]);
+    const { state } = createState(setup);
+    state.fighters[0][0].hp = 1;
+    expect(rageBonusPct(setup, state, 0, 0)).toBe(0);
+  });
+
+  it("Cuirasse : retire sa part des dégâts, sauf contre une Percée", () => {
+    const setup = setupOf([fighter({ power: 100, technique: "KANTSU" })], [fighter({ ki: 0, hp: 900, keywords: ["ARMOR"] })]);
+    const { state } = createState(setup);
+    state.orbs = 5;
+    expect(hitOn(attack(setup, state).events)[0].amount).toBe(Math.floor((100 * (100 - k.armorPct)) / 100));
+    const pierced = play(setup, state, { type: "TECHNIQUE", side: 0, actor: 0, target: 0 });
+    expect(hitOn(pierced.events)[0].amount).toBe(100);
+  });
+
+  it("Exécution : se déclenche au seuil de la cible, pas au-dessus", () => {
+    const setup = setupOf([fighter({ power: 100, keywords: ["EXECUTE"] })], [fighter({ ki: 100, hp: 1_000 })]);
+    const { state } = createState(setup);
+    const at = (hp: number) => {
+      state.fighters[1][0].hp = hp;
+      return hitOn(attack(setup, state).events)[0].amount;
+    };
+    const threshold = Math.floor((1_000 * k.executeThresholdPct) / 100);
+    expect(at(threshold + 1)).toBe(50);
+    expect(at(threshold)).toBe(Math.floor((50 * (100 + k.executePct)) / 100));
+  });
+
+  it("Exécution et Cuirasse se cumulent sans perdre de précision, jamais sous 1 dégât", () => {
+    const setup = setupOf([fighter({ power: 100, keywords: ["EXECUTE"] })], [fighter({ ki: 100, hp: 1_000, keywords: ["ARMOR"] })]);
+    const { state } = createState(setup);
+    state.fighters[1][0].hp = 10;
+    expect(hitOn(attack(setup, state).events)[0].amount).toBe(Math.floor((50 * (100 + k.executePct) * (100 - k.armorPct)) / 10_000));
+    const tiny = setupOf([fighter({ power: 1 })], [fighter({ ki: 999, keywords: ["ARMOR"] })]);
+    expect(hitOn(attack(tiny, createState(tiny).state).events)[0].amount).toBe(1);
+  });
+
+  it("Concentration : orbes en plus au début du tour, cumulables, après le tour annoncé", () => {
+    const setup = setupOf([fighter(), fighter()], [fighter({ keywords: ["CHANNEL"] }), fighter({ keywords: ["CHANNEL"] })], RULES, 0);
+    const { state: first } = createState(setup);
+    const res = play(setup, first, { type: "END_TURN", side: 0 });
+    const turn = res.events.find((e) => e.t === "turn");
+    expect(turn).toMatchObject({ orbs: orbsFor(2, 1, setup) });
+    expect(res.events.at(-1)).toEqual({ t: "orbs", side: 1, orbs: orbsFor(2, 1, setup) + 2 * RULES.keywords.channelOrbs });
+    expect(res.state.orbs).toBe(orbsFor(2, 1, setup) + 2 * RULES.keywords.channelOrbs);
+  });
+
+  it("Concentration : dès le premier tour de la partie", () => {
+    const setup = setupOf([fighter({ keywords: ["CHANNEL"] })], [fighter()], RULES, 0);
+    const { state, events } = createState(setup);
+    expect(state.orbs).toBe(orbsFor(1, 0, setup) + RULES.keywords.channelOrbs);
+    expect(events.map((e) => e.t)).toEqual(["turn", "orbs"]);
+  });
+
+  it("Concentration : une carte morte au poison en début de tour ne rapporte rien", () => {
+    const setup = setupOf([fighter(), fighter()], [fighter({ keywords: ["CHANNEL"] }), fighter()], RULES, 0);
+    const { state } = createState(setup);
+    Object.assign(state.fighters[1][0], { hp: 1, poisonTurns: 1, poisonDmg: 50 });
+    const res = play(setup, state, { type: "END_TURN", side: 0 });
+    expect(res.events.map((e) => e.t)).toEqual(["turn", "poison", "ko"]);
+    expect(res.state.orbs).toBe(orbsFor(2, 1, setup));
+  });
+});
+
+describe("nouvelles techniques", () => {
+  const cast = (setup: BattleSetup, state: BattleState, actor = 0, target?: number) =>
+    play(setup, { ...state, orbs: 5 }, { type: "TECHNIQUE", side: 0, actor, ...(target === undefined ? {} : { target }) });
+  const value = (t: keyof typeof FLAT_RULES.techniques) => FLAT_RULES.techniques[t].value;
+
+  it("Coup absolu : frappe fort, puis la carte passe son prochain tour et un seul", () => {
+    const setup = setupOf([fighter({ power: 100, technique: "KONSHIN" }), fighter()], [fighter({ ki: 100, hp: 900 })]);
+    const { state, events } = cast(setup, createState(setup).state, 0, 0);
+    expect(events.find((e) => e.t === "damage")).toMatchObject({ amount: Math.floor((50 * value("KONSHIN")) / 100) });
+    expect(events.at(-1)).toEqual({ t: "seal", side: 0, index: 0 });
+    let s = play(setup, state, { type: "END_TURN", side: 0 }).state;
+    s = play(setup, s, { type: "END_TURN", side: 1 }).state;
+    expect(s.fighters[0][0].actionsLeft).toBe(0);
+    expect(s.fighters[0][1].actionsLeft).toBe(1);
+    s = play(setup, s, { type: "END_TURN", side: 0 }).state;
+    s = play(setup, s, { type: "END_TURN", side: 1 }).state;
+    expect(s.fighters[0][0].actionsLeft).toBe(1);
+  });
+
+  it("Coup absolu avec Rafale : la seconde action du tour reste, le tour suivant est perdu", () => {
+    const setup = setupOf([fighter({ technique: "KONSHIN", keywords: ["FLURRY"] })], [fighter({ ki: 999, hp: 900 })]);
+    const { state } = cast(setup, createState(setup).state, 0, 0);
+    expect(state.fighters[0][0].actionsLeft).toBe(1);
+    const again = play(setup, state, { type: "ATTACK", side: 0, actor: 0, target: 0 }).state;
+    let s = play(setup, again, { type: "END_TURN", side: 0 }).state;
+    s = play(setup, s, { type: "END_TURN", side: 1 }).state;
+    expect(s.fighters[0][0].actionsLeft).toBe(0);
+    s = play(setup, s, { type: "END_TURN", side: 0 }).state;
+    s = play(setup, s, { type: "END_TURN", side: 1 }).state;
+    expect(s.fighters[0][0].actionsLeft).toBe(2);
+  });
+
+  it("Coup absolu qui finit la partie : pas de contrecoup à afficher sur le gagnant", () => {
+    const setup = setupOf([fighter({ power: 300, technique: "KONSHIN" })], [fighter({ ki: 1, hp: 5 })]);
+    const { events, state } = cast(setup, createState(setup).state, 0, 0);
+    expect(events.map((e) => e.t)).toEqual(["attack", "damage", "ko", "end"]);
+    expect(state.fighters[0][0].sealed).toBe(false);
+  });
+
+  it("Coup absolu sur une Barrière : le coup est perdu, le contrecoup reste", () => {
+    const setup = setupOf([fighter({ technique: "KONSHIN" })], [fighter({ keywords: ["BARRIER"] })]);
+    expect(cast(setup, createState(setup).state, 0, 0).events.map((e) => e.t)).toEqual(["attack", "block", "seal"]);
+  });
+
+  it("Double frappe : deux coups, à chaque fois un tirage de hasard", () => {
+    const setup = setupOf([fighter({ power: 100, technique: "RENGEKI" })], [fighter({ ki: 100, hp: 900 })]);
+    const { events } = cast(setup, createState(setup).state, 0, 0);
+    const hits = events.filter((e) => e.t === "damage");
+    expect(hits).toHaveLength(2);
+    expect(hits[0]).toMatchObject({ amount: Math.floor((50 * value("RENGEKI")) / 100) });
+  });
+
+  it("Double frappe sur une Barrière : le premier coup la brise, le second passe", () => {
+    const setup = setupOf([fighter({ power: 100, technique: "RENGEKI" })], [fighter({ ki: 100, hp: 900, keywords: ["BARRIER"] })]);
+    const { events, state } = cast(setup, createState(setup).state, 0, 0);
+    expect(events.map((e) => e.t)).toEqual(["attack", "block", "damage"]);
+    expect(state.fighters[1][0].barrier).toBe(false);
+  });
+
+  it("Double frappe sur une Barrière puis Renaissance : le second coup déclenche la renaissance", () => {
+    const setup = setupOf([fighter({ power: 300, technique: "RENGEKI" })], [fighter({ ki: 1, hp: 5, keywords: ["BARRIER", "REVIVE"] })]);
+    const { events, state } = cast(setup, createState(setup).state, 0, 0);
+    expect(events.map((e) => e.t)).toEqual(["attack", "block", "damage", "revive"]);
+    expect(state.fighters[1][0].hp).toBeGreaterThan(0);
+  });
+
+  it("Double frappe : la Renaissance subit le second coup, une cible morte n'en subit pas", () => {
+    const reborn = setupOf([fighter({ power: 300, technique: "RENGEKI" })], [fighter({ ki: 1, hp: 5, keywords: ["REVIVE"] }), fighter()]);
+    expect(cast(reborn, createState(reborn).state, 0, 0).events.map((e) => e.t)).toEqual(["attack", "damage", "revive", "damage", "ko"]);
+    const dead = setupOf([fighter({ power: 300, technique: "RENGEKI" })], [fighter({ ki: 1, hp: 5 }), fighter()]);
+    expect(cast(dead, createState(dead).state, 0, 0).events.map((e) => e.t)).toEqual(["attack", "damage", "ko"]);
+  });
+
+  it("Pluie de soin : soigne tous les alliés debout, plafonné aux PV max", () => {
+    const setup = setupOf([fighter({ technique: "JIU", hp: 200 }), fighter({ hp: 200 }), fighter({ hp: 200 })], [fighter()]);
+    const { state } = createState(setup);
+    state.fighters[0][0].hp = 100;
+    state.fighters[0][1].hp = 199;
+    state.fighters[0][2].hp = 0;
+    const res = cast(setup, state);
+    expect(res.state.fighters[0].map((f) => f.hp)).toEqual([100 + Math.ceil((200 * value("JIU")) / 100), 200, 0]);
+    expect(res.events.filter((e) => e.t === "heal")).toHaveLength(2);
+  });
+
+  it("Brume toxique : empoisonne tous les ennemis, une Barrière l'arrête, puis le poison agit", () => {
+    const setup = setupOf([fighter({ technique: "DOKUGIRI" })], [fighter({ hp: 200 }), fighter({ hp: 200, keywords: ["BARRIER"] }), fighter({ hp: 200 })]);
+    const { state } = createState(setup);
+    state.fighters[1][2].hp = 0;
+    const res = cast(setup, state);
+    expect(res.events.map((e) => e.t)).toEqual(["attack", "poisoned", "block"]);
+    expect(res.state.fighters[1][0]).toMatchObject({ poisonTurns: FLAT_RULES.keywords.poisonTurns, poisonDmg: Math.ceil((200 * value("DOKUGIRI")) / 100) });
+    expect(res.state.fighters[1][1]).toMatchObject({ poisonTurns: 0, barrier: false });
+    const tick = play(setup, res.state, { type: "END_TURN", side: 0 });
+    expect(tick.events).toContainEqual(expect.objectContaining({ t: "poison", side: 1, index: 0 }));
+  });
+
+  it("Méditation : dépense l'action de la carte et donne ses orbes tout de suite, sans en coûter", () => {
+    const setup = setupOf([fighter({ technique: "MEISO" }), fighter({ technique: "RANBU" })], [fighter({ ki: 999 })], FLAT_RULES);
+    const { state: start } = createState(setup);
+    const res = play(setup, { ...start, orbs: 0 }, { type: "TECHNIQUE", side: 0, actor: 0 });
+    expect(res.events).toEqual([
+      { t: "attack", side: 0, actor: 0, target: null, technique: "MEISO" },
+      { t: "orbs", side: 0, orbs: value("MEISO") },
+    ]);
+    expect(res.state.fighters[0][0].actionsLeft).toBe(0);
+    expect(() => play(setup, res.state, { type: "ATTACK", side: 0, actor: 0, target: 0 })).toThrow("ACTOR_UNAVAILABLE");
+  });
+
+  it("une technique sans cible refuse une cible, comme les anciennes", () => {
+    const setup = setupOf([fighter({ technique: "JIU" })], [fighter()]);
+    expect(() => play(setup, { ...createState(setup).state, orbs: 5 }, { type: "TECHNIQUE", side: 0, actor: 0, target: 0 })).toThrow("BAD_TARGET");
+  });
+});
+
+describe("cumul des bonus", () => {
+  it("reste exact et loin de 2^53, tous bonus au maximum", () => {
+    const rules: EngineRules = {
+      ...RULES,
+      damage: { critPermille: 1_000, critPct: 150, varianceMinPct: 110, varianceMaxPct: 110 },
+      keywords: { ...RULES.keywords, ragePct: 200, rageThresholdPct: 100, executePct: 200, executeThresholdPct: 100, armorPct: 90 },
+      techniques: { ...RULES.techniques, KONSHIN: { cost: 0, value: 1_000 } },
+    };
+    const attacker = fighter({ power: 100, technique: "KONSHIN", keywords: ["RAGE", "EXECUTE"], universe: { key: "u", name: "U" } });
+    const setup: BattleSetup = {
+      ...setupOf([attacker, fighter(), fighter()], [fighter({ ki: 0, hp: 1_000_000, keywords: ["ARMOR"] })], rules),
+      synergy: [{ key: "u", name: "U", atkPct: 100 }, null],
+    };
+    const { state } = createState(setup);
+    Object.assign(state.fighters[0][0], { buffPct: 1_000, buffTurns: 1 });
+    state.fighters[0][0].hp = 1;
+    const { events } = play(setup, { ...state, budget: null }, { type: "TECHNIQUE", side: 0, actor: 0, target: 0 });
+    // Le même calcul en entiers exacts : aucun arrondi flottant ne doit s'y glisser
+    const bonus = 1_000n + 100n + 200n;
+    const num = 100n * (100n + bonus) * 100n * 150n * 110n * 1_000n;
+    expect(num).toBeLessThan(2n ** 53n);
+    const base = num / (100n * 100_000_000n);
+    const exact = (base * 300n * 10n) / 10_000n;
+    expect(events.find((e) => e.t === "damage")).toMatchObject({ amount: Number(exact) });
+  });
+});
 
 describe("parties sans synergie", () => {
   function fnv(s: string) {
@@ -24,10 +287,16 @@ describe("parties sans synergie", () => {
   it("mêmes chiffres qu'avant : 200 parties bot contre bot, au caractère près", { timeout: 60_000 }, () => {
     // Empreinte calculée avec le moteur d'avant la synergie (commit 5fc2726). Si elle change, les anciennes
     // parties et leurs replays changent aussi : ne la mets pas à jour sans comprendre pourquoi.
+    // Une vraie partie ancienne : capacités d'origine, et un setup qui ignore tout des nouvelles valeurs
+    const { lifestealPct, ragePct, rageThresholdPct, armorPct, executePct, executeThresholdPct, channelOrbs, ...oldKeywords } = RULES.keywords;
+    void [lifestealPct, ragePct, rageThresholdPct, armorPct, executePct, executeThresholdPct, channelOrbs];
+    const oldTechniques = Object.fromEntries(Object.entries(RULES.techniques).filter(([t]) => !(NEW_TECHNIQUES as readonly string[]).includes(t)));
+    const oldRules = { ...RULES, keywords: oldKeywords, techniques: oldTechniques } as unknown as EngineRules;
+    const team = (rng: (n: number) => number) => randomTeam(rng, LEGACY_KEYWORDS, LEGACY_TECHNIQUES);
     const rng = seededRng(777);
     let digest = 0;
     for (let i = 0; i < 200; i++) {
-      const setup = setupOf(randomTeam(rng), randomTeam(rng), RULES, rng(2) as Side);
+      const setup = setupOf(team(rng), team(rng), oldRules, rng(2) as Side);
       const { state, steps } = replay(setup, i, botGame(i, setup).actions);
       digest = fnv(`${digest}:${JSON.stringify(steps.map((s) => s.events))}:${JSON.stringify(state)}`);
     }

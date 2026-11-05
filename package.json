@@ -27,6 +27,7 @@
     "catalog:import-media": "tsx scripts/import-media.mts",
     "catalog:universes": "tsx scripts/universes-group.mts",
     "sim:boosters": "tsx scripts/simulate-boosters.mts",
+    "battle:balance": "tsx scripts/battle-balance.mts",
     "admin:grant": "tsx scripts/grant-admin.mts",
     "seed:boosters": "tsx scripts/seed-boosters.mts",
     "seed:missions": "tsx scripts/seed-missions.mts",

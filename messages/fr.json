@@ -1949,9 +1949,17 @@
         "queuePollSeconds": "Sondage de la file d'attente (s)",
         "lobbyPollSeconds": "Sondage du salon d'un code ami (s)",
         "maxDecks": "Decks par joueur",
-        "synergyAtkPct": "Bonus d'attaque (%)"
+        "synergyAtkPct": "Bonus d'attaque (%)",
+        "newAbilityPct": "Part de nouveautés (%)",
+        "lifestealPct": "Vampirisme : % des dégâts",
+        "ragePct": "Rage : bonus d'attaque (%)",
+        "rageThresholdPct": "Rage : seuil de PV (%)",
+        "armorPct": "Cuirasse : dégâts en moins (%)",
+        "executePct": "Exécution : dégâts en plus (%)",
+        "executeThresholdPct": "Exécution : seuil de PV de la cible (%)",
+        "channelOrbs": "Concentration : orbes par tour"
       },
-      "valueHint": "Valeur : multiplicateur en % (Issen, Ranbu, Kantsū), soin ou bonus en % (Iyashi, Kobu), inutilisée (Shugo, Fūin).",
+      "valueHint": "Valeur : multiplicateur en % (Éclair, Danse des lames, Percée, Coup absolu, Double frappe), soin, bonus ou poison en % (Soin, Encouragement, Pluie de soin, Brume toxique), orbes gagnés (Méditation), inutilisée (Protection, Sceau).",
       "save": "Enregistrer",
       "saving": "Enregistrement…",
       "saved": "{count, plural, one {# réglage enregistré} other {# réglages enregistrés}}.",
@@ -1969,7 +1977,9 @@
       "logEmpty": "Aucun changement pour l'instant.",
       "logEntry": "{key} par {admin}",
       "synergy": "Synergie d'univers",
-      "synergyHint": "Trois cartes du même univers gagnent ce bonus jusqu'à la première mort de leur équipe. 0 coupe la synergie. Les parties en cours gardent le bonus de leur lancement."
+      "synergyHint": "Trois cartes du même univers gagnent ce bonus jusqu'à la première mort de leur équipe. 0 coupe la synergie. Les parties en cours gardent le bonus de leur lancement.",
+      "newAbilities": "Nouvelles capacités",
+      "newAbilitiesHint": "Chances qu'un emplacement de passif ou de technique reçoive une nouveauté, tirées une fois pour toutes par carte. À 0, aucune carte ne change. Monter la valeur ajoute des nouveautés sans changer celles déjà attribuées. Les parties en cours gardent leurs capacités."
     },
     "ranked": {
       "title": "Classé",
@@ -4180,7 +4190,8 @@
       "techniqueLabel": "Technique",
       "standing": "{count}/3 debout",
       "turnShort": "Tour",
-      "synergyBonus": "+{pct} % d'attaque (synergie)"
+      "synergyBonus": "+{pct} % d'attaque (synergie)",
+      "rageBonus": "+{pct} % d'attaque (rage)"
     },
     "errors": {
       "STALE": "La partie a avancé : resynchronisation.",
@@ -4263,6 +4274,26 @@
       "REVIVE": {
         "name": "Renaissance",
         "desc": "Revient une fois avec {pct} % de ses PV."
+      },
+      "LIFESTEAL": {
+        "name": "Vampirisme",
+        "desc": "Récupère {pct} % des dégâts qu'elle inflige."
+      },
+      "RAGE": {
+        "name": "Rage",
+        "desc": "+{pct} % d'attaque à {threshold} % de ses PV ou moins."
+      },
+      "ARMOR": {
+        "name": "Cuirasse",
+        "desc": "Subit {pct} % de dégâts en moins, sauf contre une Percée."
+      },
+      "EXECUTE": {
+        "name": "Exécution",
+        "desc": "+{pct} % de dégâts sur une cible à {threshold} % de ses PV ou moins."
+      },
+      "CHANNEL": {
+        "name": "Concentration",
+        "desc": "+{orbs, plural, one {# orbe} other {# orbes}} au début de ton tour tant qu'elle est debout. Cumulable."
       }
     },
     "techniques": {
@@ -4293,6 +4324,26 @@
       "FUIN": {
         "name": "Sceau",
         "desc": "La cible ne peut pas agir à son prochain tour."
+      },
+      "KONSHIN": {
+        "name": "Coup absolu",
+        "desc": "Un coup à ×{mult}, puis la carte passe son prochain tour."
+      },
+      "RENGEKI": {
+        "name": "Double frappe",
+        "desc": "Deux coups à ×{mult}. Une barrière n'arrête que le premier."
+      },
+      "JIU": {
+        "name": "Pluie de soin",
+        "desc": "Soigne tous ses alliés de {pct} % de leurs PV max."
+      },
+      "DOKUGIRI": {
+        "name": "Brume toxique",
+        "desc": "Empoisonne tous les ennemis : {pct} % de leurs PV max au début de leurs {turns} prochains tours. Une barrière l'arrête."
+      },
+      "MEISO": {
+        "name": "Méditation",
+        "desc": "Dépense l'action de la carte pour gagner {orbs, plural, one {# orbe} other {# orbes}} tout de suite."
       }
     },
     "bots": {
@@ -4326,7 +4377,9 @@
       "turn": "Tour de {player}.",
       "timeout": "{player} laisse filer son tour.",
       "forfeit": "{player} abandonne.",
-      "synergyBreak": "La synergie {universe} de {player} est rompue."
+      "synergyBreak": "La synergie {universe} de {player} est rompue.",
+      "lifesteal": "{target} se nourrit du coup.",
+      "orbs": "{player} a maintenant {orbs, plural, one {# orbe} other {# orbes}}."
     },
     "detail": {
       "title": "Carte",

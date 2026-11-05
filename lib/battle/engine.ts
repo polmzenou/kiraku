@@ -1,5 +1,5 @@
 import { mixSeed, seededRng, type Rng } from "@/lib/rng";
-import { atkBonusPct } from "./synergy";
+import { armorReductionPct, atkBonusPct, executeBonusPct } from "./modifiers";
 import {
   IllegalAction,
   TECHNIQUE_TARGET,
@@ -88,9 +88,25 @@ function checkKo(c: Ctx): boolean {
 
 function heal(c: Ctx, side: Side, index: number, pct: number) {
   const f = c.state.fighters[side][index];
-  const amount = Math.min(f.maxHp - f.hp, Math.ceil((f.maxHp * pct) / 100));
+  healAmount(c, side, index, Math.ceil((f.maxHp * pct) / 100));
+}
+
+/** Soin d'un montant fixe, plafonné aux PV max. */
+function healAmount(c: Ctx, side: Side, index: number, wanted: number) {
+  const f = c.state.fighters[side][index];
+  const amount = Math.min(f.maxHp - f.hp, wanted);
   f.hp += amount;
   c.events.push({ t: "heal", side, index, amount, hp: f.hp });
+}
+
+/** Vampirisme, sur les dégâts réellement retirés à la cible. */
+function lifesteal(c: Ctx, side: Side, actor: number, dealt: number) {
+  const a = c.state.fighters[side][actor];
+  if (!has(c.setup.teams[side][actor], "LIFESTEAL") || !alive(a) || a.hp >= a.maxHp) return;
+  const { lifestealPct } = c.setup.rules.keywords;
+  if (lifestealPct <= 0 || dealt <= 0) return;
+  c.events.push({ t: "lifesteal", side, index: actor });
+  healAmount(c, side, actor, Math.max(1, Math.floor((dealt * lifestealPct) / 100)));
 }
 
 function onKo(c: Ctx, side: Side, index: number) {
@@ -118,7 +134,7 @@ function onKo(c: Ctx, side: Side, index: number) {
   }
 }
 
-/** Un coup : ATK × 100 / (100 + DEF) × critique × aléa × mult, au moins 1. */
+/** Un coup : ATK × 100 / (100 + DEF) × critique × aléa × mult, puis Exécution et Cuirasse, au moins 1. */
 function hit(c: Ctx, side: Side, actor: number, target: number, multPct: number, ignoreDef: boolean, basic: boolean) {
   const foe = other(side);
   const a = c.state.fighters[side][actor];
@@ -138,7 +154,11 @@ function hit(c: Ctx, side: Side, actor: number, target: number, multPct: number,
   const def = ignoreDef ? 0 : targetCard.def;
   const num = card.atk * (100 + bonus) * 100 * (crit ? damage.critPct : 100) * variance * multPct;
   const den = (100 + def) * 100_000_000;
-  const amount = Math.max(1, Math.floor(num / den));
+  // Exécution et Cuirasse s'appliquent après l'arrondi : `num` reste loin de 2^53, et un coup sans ces passifs ne change pas d'un point
+  const execute = executeBonusPct(c.setup, c.state, side, actor, target);
+  const armor = armorReductionPct(c.setup, foe, target, ignoreDef);
+  const amount = Math.max(1, Math.floor((Math.floor(num / den) * (100 + execute) * (100 - armor)) / 10_000));
+  const before = t.hp;
   t.hp = Math.max(0, t.hp - amount);
   c.events.push({ t: "damage", side: foe, index: target, amount, crit, hp: t.hp });
   if (t.hp > 0 && has(card, "POISON") && keywords.poisonTurns > 0 && keywords.poisonPct > 0) {
@@ -146,10 +166,13 @@ function hit(c: Ctx, side: Side, actor: number, target: number, multPct: number,
     t.poisonDmg = Math.max(1, Math.ceil((t.maxHp * keywords.poisonPct) / 100));
     c.events.push({ t: "poisoned", side: foe, index: target });
   }
+  // Après le K.-O. : la mise en scène reconnaît un coup fatal à l'événement `ko` juste après `damage`
   if (t.hp === 0) {
     onKo(c, foe, target);
+    lifesteal(c, side, actor, before);
     return;
   }
+  lifesteal(c, side, actor, before - t.hp);
   // 反撃 : seulement contre une attaque simple, sans critique ni aléa
   if (basic && has(targetCard, "RIPOSTE") && keywords.ripostePct > 0 && alive(a)) {
     c.events.push({ t: "riposte", side: foe, index: target });
@@ -179,6 +202,12 @@ function startTurn(c: Ctx) {
     if (f.hp === 0) onKo(c, side, i);
   });
   if (checkKo(c)) return;
+  // Concentration : après le poison, une carte qui vient d'y rester ne rapporte rien
+  const channel = state.fighters[side].reduce((n, f, i) => n + (alive(f) && has(setup.teams[side][i], "CHANNEL") ? setup.rules.keywords.channelOrbs : 0), 0);
+  if (channel > 0) {
+    state.orbs += channel;
+    c.events.push({ t: "orbs", side, orbs: state.orbs });
+  }
   state.fighters[side].forEach((f, i) => {
     f.actionsLeft = alive(f) && !f.sealed ? (has(setup.teams[side][i], "FLURRY") ? 2 : 1) : 0;
     f.sealed = false;
@@ -275,6 +304,48 @@ function castTechnique(c: Ctx, side: Side, actor: number, target: number | undef
       c.state.fighters[foe][target!].sealed = true;
       c.events.push({ t: "seal", side: foe, index: target! });
       break;
+    case "KONSHIN":
+      hit(c, side, actor, target!, value, false, false);
+      // Le contrecoup : la carte passe son prochain tour, sauf si la partie s'arrête là
+      if (c.state.fighters[foe].some(alive)) {
+        c.state.fighters[side][actor].sealed = true;
+        c.events.push({ t: "seal", side, index: actor });
+      }
+      break;
+    case "RENGEKI":
+      hit(c, side, actor, target!, value, false, false);
+      // Une Barrière n'arrête que le premier coup, une Renaissance subit le second
+      if (alive(c.state.fighters[foe][target!])) hit(c, side, actor, target!, value, false, false);
+      break;
+    case "JIU":
+      c.state.fighters[side].forEach((f, i) => {
+        if (alive(f)) heal(c, side, i, value);
+      });
+      break;
+    case "DOKUGIRI": {
+      const { poisonTurns } = c.setup.rules.keywords;
+      c.state.fighters[foe].forEach((f, i) => {
+        if (!alive(f)) return;
+        if (f.barrier) {
+          f.barrier = false;
+          c.events.push({ t: "block", side: foe, index: i });
+          return;
+        }
+        if (poisonTurns <= 0 || value <= 0) return;
+        f.poisonTurns = poisonTurns;
+        f.poisonDmg = Math.max(1, Math.ceil((f.maxHp * value) / 100));
+        c.events.push({ t: "poisoned", side: foe, index: i });
+      });
+      break;
+    }
+    case "MEISO":
+      c.state.orbs += value;
+      c.events.push({ t: "orbs", side, orbs: c.state.orbs });
+      break;
+    default: {
+      const unhandled: never = technique;
+      throw new Error(`technique inconnue : ${String(unhandled)}`);
+    }
   }
 }
 

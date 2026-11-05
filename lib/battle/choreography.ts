@@ -53,7 +53,7 @@ export type BattleSound =
 
 export type ArenaReaction = "turn" | "hit" | "crit" | "ko" | "technique" | "victory" | "defeat" | "draw";
 
-export type PassiveFx = "block" | "poisoned" | "poison" | "riposte" | "lastWill" | "revive" | "flurry" | "taunt";
+export type PassiveFx = "block" | "poisoned" | "poison" | "riposte" | "lastWill" | "revive" | "flurry" | "taunt" | "lifesteal" | "channel";
 
 export type Cue =
   /** Bannière du tour, lumière de l'arène et orbes de ce tour. */
@@ -118,6 +118,7 @@ export const TIMING = {
   slowmo: 300,
   revive: 1_000,
   synergyBreak: 420,
+  orbGain: 320,
   wisp: 460,
   riposte: 200,
   cutinFull: 1_050,
@@ -207,7 +208,9 @@ export function choreograph(events: readonly BattleEvent[], ctx: ChoreoContext):
 function still(beat: Beat): Beat {
   const keep = (c: Cue) =>
     c.k === "number" || c.k === "orbs" || c.k === "banner" || c.k === "light" || c.k === "ko" || (c.k === "sound" && beat.kind === "end");
-  return { kind: beat.kind, duration: 0, steps: beat.steps.filter((s) => s.event || (s.cue && keep(s.cue))).map((s) => ({ ...s, at: 0 })) };
+  // Les orbes changent de nombre, mais aucune ne vole jusqu'à la carte qui les dépense
+  const settle = (s: Step): Step => (s.cue?.k === "orbs" && s.cue.spentBy ? { ...s, at: 0, cue: { k: "orbs", side: s.cue.side, count: s.cue.count } } : { ...s, at: 0 });
+  return { kind: beat.kind, duration: 0, steps: beat.steps.filter((s) => s.event || (s.cue && keep(s.cue))).map(settle) };
 }
 
 function turnBeat(b: Scene, events: readonly BattleEvent[], i: number): number {
@@ -290,12 +293,24 @@ function technique(b: Scene, beat: Draft, e: Extract<BattleEvent, { t: "attack" 
 
   switch (tech) {
     case "ISSEN":
-    case "KANTSU": {
+    case "KANTSU":
+    case "KONSHIN": {
       beat.cue(beat.t, { k: "approach", actor, target: enemy, mode: "dash", ms: TIMING.dash });
       beat.t += TIMING.dash;
       beat.cue(beat.t, { k: "technique", technique: tech, actor, targets: enemy ? [enemy] : [] });
-      beat.sound(beat.t, tech === "ISSEN" ? "slash" : "pierce");
+      beat.sound(beat.t, tech === "KANTSU" ? "pierce" : "slash");
       resolve(b, beat, actor, results, { base: 2, returns: [actor], gap: 0 });
+      return;
+    }
+    case "RENGEKI": {
+      // La carte reste au contact pendant les deux coups, puis regagne sa place
+      beat.cue(beat.t, { k: "approach", actor, target: enemy, mode: "dash", ms: TIMING.dash });
+      beat.t += TIMING.dash;
+      beat.cue(beat.t, { k: "technique", technique: tech, actor, targets: enemy ? [enemy] : [] });
+      beat.sound(beat.t, "slash");
+      resolve(b, beat, actor, results, { base: 1, returns: [], gap: TIMING.ranbuGap });
+      beat.cue(beat.t, { k: "return", actor, ms: TIMING.ret });
+      beat.t += TIMING.ret * 0.6;
       return;
     }
     case "RANBU": {
@@ -312,19 +327,25 @@ function technique(b: Scene, beat: Draft, e: Extract<BattleEvent, { t: "attack" 
     case "IYASHI":
     case "SHUGO":
     case "KOBU":
-    case "FUIN": {
+    case "FUIN":
+    case "JIU":
+    case "DOKUGIRI":
+    case "MEISO": {
       beat.cue(beat.t, { k: "approach", actor, target: null, mode: "cast", ms: TIMING.cast });
       beat.t += TIMING.cast;
-      const targets = tech === "KOBU" ? livingAllies : tech === "FUIN" ? (enemy ? [enemy] : []) : ally ? [ally] : [];
+      const targets =
+        tech === "KOBU" || tech === "JIU" ? livingAllies : tech === "DOKUGIRI" ? livingFoes : tech === "MEISO" ? [actor] : tech === "FUIN" ? (enemy ? [enemy] : []) : ally ? [ally] : [];
       beat.cue(beat.t, { k: "technique", technique: tech, actor, targets });
-      if (tech === "IYASHI") beat.sound(beat.t, "heal");
+      if (tech === "IYASHI" || tech === "JIU") beat.sound(beat.t, "heal");
+      if (tech === "DOKUGIRI") beat.sound(beat.t, "poison");
+      if (tech === "MEISO") beat.sound(beat.t, "chime");
       if (tech === "SHUGO") beat.sound(beat.t, "barrier");
       if (tech === "KOBU") {
         beat.sound(beat.t, "drum");
         beat.sound(beat.t + 260, "drum");
       }
       if (tech === "FUIN") beat.sound(beat.t, "swing");
-      const delay = tech === "IYASHI" ? TIMING.heal : tech === "SHUGO" ? TIMING.barrier : tech === "KOBU" ? TIMING.buff : TIMING.seal;
+      const delay = tech === "IYASHI" || tech === "JIU" ? TIMING.heal : tech === "SHUGO" ? TIMING.barrier : tech === "KOBU" || tech === "MEISO" ? TIMING.buff : tech === "DOKUGIRI" ? TIMING.poisoned : TIMING.seal;
       beat.t += delay;
       if (tech === "FUIN") beat.sound(beat.t, "seal");
       resolve(b, beat, actor, results, { base: 1, returns: [], gap: 0 });
@@ -344,6 +365,7 @@ function resolve(b: Scene, beat: Draft, from: Slot, results: readonly BattleEven
   let pendingReturns = [...opts.returns];
   let attacker = from;
   let lastKo: Slot | null = null;
+  let lastHit: Slot | null = null;
   let hits = 0;
   const releaseReturns = () => {
     for (const r of pendingReturns) beat.cue(beat.t, { k: "return", actor: r, ms: TIMING.ret });
@@ -357,6 +379,7 @@ function resolve(b: Scene, beat: Draft, from: Slot, results: readonly BattleEven
         if (hits > 0 && opts.gap) beat.t += opts.gap;
         hits++;
         const target = slot(e.side, e.index);
+        lastHit = target;
         const maxHp = b.state.fighters[e.side][e.index].maxHp;
         const heavy = e.amount >= maxHp * HEAVY_SHARE;
         const power = (e.crit ? 3 : heavy || opts.base === 2 ? 2 : 1) as 1 | 2 | 3;
@@ -420,6 +443,27 @@ function resolve(b: Scene, beat: Draft, from: Slot, results: readonly BattleEven
         beat.cue(beat.t, { k: "arena", reaction: "ko", side: e.side });
         lastKo = target;
         beat.t += finisher ? TIMING.finisher : TIMING.ko;
+        break;
+      }
+      case "lifesteal": {
+        // Un feu follet remonte de la carte touchée ; le chiffre du soin suit avec l'événement `heal`
+        beat.event(beat.t, e);
+        beat.cue(beat.t, { k: "passive", fx: "lifesteal", slot: slot(e.side, e.index), ...(lastHit ? { from: lastHit } : {}) });
+        beat.sound(beat.t, "wisp");
+        beat.t += TIMING.wisp;
+        break;
+      }
+      case "orbs": {
+        beat.event(beat.t, e);
+        beat.cue(beat.t, { k: "orbs", side: e.side, count: e.orbs });
+        beat.sound(beat.t, "orb");
+        // Concentration : les cartes qui rapportent se signalent. Méditation a déjà son propre effet.
+        if (beat.kind !== "technique") {
+          b.ctx.setup.teams[e.side].forEach((f, index) => {
+            if (f.keywords.includes("CHANNEL") && b.state.fighters[e.side][index].hp > 0) beat.cue(beat.t, { k: "passive", fx: "channel", slot: slot(e.side, index) });
+          });
+        }
+        beat.t += TIMING.orbGain;
         break;
       }
       case "synergy_break": {

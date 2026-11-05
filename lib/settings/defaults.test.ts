@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseSetting, SETTING_DEFAULTS, SETTING_SCHEMAS, type SettingKey } from "./defaults";
 import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
+import { LEGACY_TECHNIQUES, NEW_TECHNIQUES } from "@/lib/battle/types";
 import { collectionSettingsSchema } from "./collection-form";
 
 const keys = Object.keys(SETTING_SCHEMAS) as SettingKey[];
@@ -20,6 +21,38 @@ describe("réglages de jeu", () => {
     expect(parseSetting("ambassador.maxStock", undefined)).toBe(15);
     expect(parseSetting("ambassador.weeklyBoosterSlug", "Tout anime")).toBe("standard");
     expect(parseSetting("booster.intervalMinutes", "10")).toBe(10);
+  });
+});
+
+describe("réglages du combat qui gagnent des champs avec le jeu", () => {
+  const OLD_KEYWORDS = { poisonPct: 12, poisonTurns: 3, ripostePct: 40, lastWillHealPct: 25, revivePct: 30 };
+  const OLD_TECHNIQUES = Object.fromEntries(LEGACY_TECHNIQUES.map((t) => [t, { cost: 4, value: 77 }]));
+
+  it("une valeur enregistrée avant les nouveaux passifs garde les réglages de l'admin", () => {
+    const parsed = parseSetting("battle.keywordValues", OLD_KEYWORDS);
+    expect(parsed).toMatchObject(OLD_KEYWORDS);
+    expect(parsed.lifestealPct).toBe(SETTING_DEFAULTS["battle.keywordValues"].lifestealPct);
+    expect(parsed.channelOrbs).toBe(SETTING_DEFAULTS["battle.keywordValues"].channelOrbs);
+  });
+
+  it("une valeur enregistrée avant les nouvelles techniques garde les réglages de l'admin", () => {
+    const parsed = parseSetting("battle.techniques", OLD_TECHNIQUES);
+    for (const t of LEGACY_TECHNIQUES) expect(parsed[t]).toEqual({ cost: 4, value: 77 });
+    for (const t of NEW_TECHNIQUES) expect(parsed[t]).toEqual(SETTING_DEFAULTS["battle.techniques"][t]);
+  });
+
+  it("une valeur complète n'est pas touchée", () => {
+    const stored = { ...SETTING_DEFAULTS["battle.keywordValues"], armorPct: 33 };
+    expect(parseSetting("battle.keywordValues", stored)).toEqual(stored);
+  });
+
+  it("un champ invalide fait toujours retomber sur les défauts, comme une valeur qui n'est pas un objet", () => {
+    expect(parseSetting("battle.keywordValues", { ...OLD_KEYWORDS, poisonPct: 999 })).toEqual(SETTING_DEFAULTS["battle.keywordValues"]);
+    for (const raw of [null, "x", 3, []]) expect(parseSetting("battle.techniques", raw)).toEqual(SETTING_DEFAULTS["battle.techniques"]);
+  });
+
+  it("les autres réglages ne sont pas complétés : un objet partiel reste invalide", () => {
+    expect(parseSetting("battle.orbs", { start: 9 })).toEqual(SETTING_DEFAULTS["battle.orbs"]);
   });
 });
 

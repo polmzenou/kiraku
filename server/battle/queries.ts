@@ -211,8 +211,8 @@ function candidateFrom(row: CandidateRow, rules: BattleRules): CandidateCard {
   return {
     ...row,
     hp: combatStats(row.power, row.ki, rules.stats).hp,
-    keywords: keywordsFor(row.anilistId, row.rarity, rules.keywordsByRarity),
-    technique: techniqueFor(row.anilistId),
+    keywords: keywordsFor(row.anilistId, row.rarity, rules.keywordsByRarity, rules.newAbilityPct),
+    technique: techniqueFor(row.anilistId, rules.newAbilityPct),
   };
 }
 

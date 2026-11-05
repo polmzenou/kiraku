@@ -4,7 +4,7 @@ import { RARITIES, VARIANT_RARITIES } from "@/lib/catalog/rarity";
 import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
 import { rotationPinSchema } from "@/lib/boosters/rotation";
 import { slugSchema } from "@/lib/boosters/types";
-import { KEYWORDS, TECHNIQUES } from "@/lib/battle/types";
+import { LEGACY_KEYWORDS, TECHNIQUES } from "@/lib/battle/types";
 import { JOIN_MODAL_DEFAULT, joinModalSchema } from "@/lib/discord/join-modal";
 import { SOCIAL_PROMO_DEFAULT, socialPromoSchema } from "@/lib/discord/social-promo";
 import { NEWS_DEFAULT, newsSchema } from "@/lib/home/news-schema";
@@ -75,6 +75,13 @@ const battleKeywordValues = z.object({
   ripostePct: z.number().int().min(0).max(200),
   lastWillHealPct: z.number().int().min(0).max(100),
   revivePct: z.number().int().min(1).max(100),
+  lifestealPct: z.number().int().min(0).max(100),
+  ragePct: z.number().int().min(0).max(200),
+  rageThresholdPct: z.number().int().min(1).max(100),
+  armorPct: z.number().int().min(0).max(90),
+  executePct: z.number().int().min(0).max(200),
+  executeThresholdPct: z.number().int().min(1).max(100),
+  channelOrbs: z.number().int().min(0).max(5),
 });
 
 const battleTechniques = z.object(
@@ -83,7 +90,8 @@ const battleTechniques = z.object(
   ) as { [T in (typeof TECHNIQUES)[number]]: z.ZodObject<{ cost: z.ZodNumber; value: z.ZodNumber }> },
 );
 
-const keywordsByRarity = z.record(rarityKeySchema, z.number().int().min(0).max(KEYWORDS.length));
+// Le nombre de passifs d'une carte vient du tirage historique, sur les passifs d'origine
+const keywordsByRarity = z.record(rarityKeySchema, z.number().int().min(0).max(LEGACY_KEYWORDS.length));
 
 // Zeni versés au gagnant selon le mode, et nombre de combats récompensés par jour
 const battleRewards = z.object({
@@ -316,6 +324,8 @@ export const SETTING_SCHEMAS = {
   "battle.maxDecks": z.number().int().min(1).max(50),
   // Bonus d'ATQ (%) d'une équipe de 3 cartes du même univers, jusqu'à la première mort du camp. 0 coupe la synergie.
   "battle.synergyAtkPct": z.number().int().min(0).max(100),
+  // Chances qu'un emplacement de capacité reçoive une nouveauté. 0 : aucune carte ne change, les nouveautés ne s'obtiendront qu'au shop
+  "battle.newAbilityPct": z.number().int().min(0).max(100),
   // Classé (étape 9b)
   "ranked.enabled": z.boolean(),
   "ranked.tiers": rankedTiers,
@@ -510,7 +520,20 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "battle.orbs": { start: 1, perTurn: 1, max: 5, secondBonus: 1 },
   "battle.firstTurnActions": 2, // ~53 % de victoires pour le premier joueur en simulation (65 % sans limite)
   "battle.keywordsByRarity": { COMMON: 0, UNCOMMON: 0, RARE: 1, EPIC: 1, LEGENDARY: 2, MYTHIC: 2, BR: 2, AR: 2, VR: 2, GOLD: 3, MR: 3, XR: 4 },
-  "battle.keywordValues": { poisonPct: 8, poisonTurns: 2, ripostePct: 50, lastWillHealPct: 20, revivePct: 25 },
+  "battle.keywordValues": {
+    poisonPct: 8,
+    poisonTurns: 2,
+    ripostePct: 50,
+    lastWillHealPct: 20,
+    revivePct: 25,
+    lifestealPct: 30,
+    ragePct: 50,
+    rageThresholdPct: 50,
+    armorPct: 20,
+    executePct: 40,
+    executeThresholdPct: 60,
+    channelOrbs: 2,
+  },
   "battle.techniques": {
     ISSEN: { cost: 2, value: 160 }, // coup à ×1,6
     KANTSU: { cost: 2, value: 100 }, // ignore la DEF
@@ -518,6 +541,11 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
     IYASHI: { cost: 2, value: 30 }, // soigne 30 % des PV max
     SHUGO: { cost: 2, value: 0 }, // donne 結界
     KOBU: { cost: 2, value: 20 }, // +20 % d'ATK pendant 2 tours
+    KONSHIN: { cost: 2, value: 240 }, // coup à ×2,4, puis la carte passe son prochain tour
+    RENGEKI: { cost: 2, value: 70 }, // 2 coups à ×0,7
+    JIU: { cost: 3, value: 15 }, // soigne tous les alliés de 15 %
+    DOKUGIRI: { cost: 3, value: 8 }, // empoisonne tous les ennemis, 8 % des PV max par tour
+    MEISO: { cost: 0, value: 2 }, // 2 orbes tout de suite
     FUIN: { cost: 3, value: 0 }, // la cible passe son prochain tour
   },
   "battle.turnSeconds": 30,
@@ -533,6 +561,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "battle.queuePollSeconds": 5,
   "battle.lobbyPollSeconds": 15,
   "battle.maxDecks": 10,
+  "battle.newAbilityPct": 30,
   "battle.synergyAtkPct": 10, // 58,6 % de victoires en miroir sur 6 000 parties bot contre bot (53,7 % à +5, 62,8 % à +15)
   "ranked.enabled": true,
   // Barème du plan (section « Mode classé »)
@@ -590,8 +619,20 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "usage.alertThresholds": DEFAULT_ALERT_THRESHOLDS,
 };
 
+/**
+ * Réglages validés champ par champ qui gagnent des champs avec le jeu : la valeur enregistrée est complétée
+ * par les défauts avant validation. Sans cela, ajouter une capacité effacerait en silence tous les réglages
+ * de l'admin sur les autres.
+ */
+const COMPLETED_KEYS: ReadonlySet<SettingKey> = new Set(["battle.keywordValues", "battle.techniques"]);
+
+function completed<K extends SettingKey>(key: K, raw: unknown): unknown {
+  if (!COMPLETED_KEYS.has(key) || typeof raw !== "object" || raw === null || Array.isArray(raw)) return raw;
+  return { ...(SETTING_DEFAULTS[key] as object), ...raw };
+}
+
 /** Valeur stockée validée, ou valeur par défaut si absente ou invalide. */
 export function parseSetting<K extends SettingKey>(key: K, raw: unknown): SettingValue<K> {
-  const parsed = SETTING_SCHEMAS[key].safeParse(raw);
+  const parsed = SETTING_SCHEMAS[key].safeParse(completed(key, raw));
   return parsed.success ? (parsed.data as SettingValue<K>) : SETTING_DEFAULTS[key];
 }

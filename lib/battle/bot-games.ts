@@ -2,7 +2,7 @@ import { seededRng } from "@/lib/rng";
 import { botAction } from "./bot";
 import { applyAction, createState, legalActions, outcome } from "./engine";
 import { fighter, RULES, setupOf } from "./fixtures";
-import type { Action, BattleSetup, Side } from "./types";
+import { KEYWORDS, TECHNIQUES, type Action, type BattleSetup, type Keyword, type Side, type Technique } from "./types";
 
 // Parties bot contre bot des tests de robustesse (aucune base requise). Les 2 000 parties sont
 // réparties sur plusieurs fichiers *.sim.test.ts pour tourner en parallèle.
@@ -28,9 +28,7 @@ export function botGame(seed: number, setup: BattleSetup) {
   return { state, actions };
 }
 
-export function randomTeam(rng: (n: number) => number) {
-  const keywords = ["TAUNT", "BARRIER", "FLURRY", "POISON", "RIPOSTE", "LAST_WILL", "REVIVE"] as const;
-  const techniques = ["ISSEN", "KANTSU", "RANBU", "IYASHI", "SHUGO", "KOBU", "FUIN"] as const;
+export function randomTeam(rng: (n: number) => number, keywords: readonly Keyword[] = KEYWORDS, techniques: readonly Technique[] = TECHNIQUES) {
   return Array.from({ length: 3 }, () =>
     fighter({
       power: 40 + rng(61),

@@ -1,4 +1,5 @@
 import { useFormatter, useTranslations } from "next-intl";
+import { keywordParams, techniqueParams } from "@/lib/battle/ability-params";
 import type { BattleRules } from "@/lib/battle/config";
 import { KEYWORDS, TECHNIQUES, type Keyword, type Technique } from "@/lib/battle/types";
 import { SectionTitle } from "../SectionTitle";
@@ -24,15 +25,6 @@ export function AbilityLists({
   const t = useTranslations("battle");
   const format = useFormatter();
   const k = rules.keywordValues;
-  const kwPct: Record<Keyword, number> = {
-    TAUNT: 0,
-    BARRIER: 0,
-    FLURRY: 0,
-    POISON: k.poisonPct,
-    RIPOSTE: k.ripostePct,
-    LAST_WILL: k.lastWillHealPct,
-    REVIVE: k.revivePct,
-  };
   const mark = (on: boolean | undefined) =>
     on && (
       <span className="inline-flex items-center gap-1 rounded-full bg-kin/15 px-1.5 text-[11px] font-bold text-kin">
@@ -54,10 +46,7 @@ export function AbilityLists({
                 {mark(inTeam?.keywords.has(kw))}
               </dt>
               <dd className="text-text-muted">
-                {t(`keywords.${kw}.desc`, {
-                  pct: kwPct[kw],
-                  turns: k.poisonTurns,
-                })}
+                {t(`keywords.${kw}.desc`, keywordParams(kw, k))}
               </dd>
             </div>
           ))}
@@ -80,10 +69,7 @@ export function AbilityLists({
                   <span className="shrink-0 text-xs tabular-nums text-text-muted">{t("board.orbs", { count: cost })}</span>
                 </dt>
                 <dd className="text-text-muted">
-                  {t(`techniques.${tech}.desc`, {
-                    mult: format.number(value / 100),
-                    pct: value,
-                  })}
+                  {t(`techniques.${tech}.desc`, techniqueParams(value, k, (n) => format.number(n)))}
                 </dd>
               </div>
             );

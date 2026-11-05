@@ -4,10 +4,13 @@ import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import fr from "@/messages/fr.json";
 import en from "@/messages/en.json";
+import { DEFAULT_BATTLE_RULES } from "@/lib/battle/config";
 import { createState } from "@/lib/battle/engine";
 import { fighter, setupOf } from "@/lib/battle/fixtures";
 import { ACTION_KANJI } from "@/lib/battle/glyphs";
-import { TECHNIQUES, type Keyword } from "@/lib/battle/types";
+import { KEYWORDS, TECHNIQUES, type Keyword } from "@/lib/battle/types";
+import { AbilityLists } from "./AbilityGuide";
+import { CardDetail } from "./BattleLog";
 import { CutIn } from "./fx/CutIn";
 import { PlayerBanner, Tablets } from "./hud/Hud";
 import { StageCard } from "./stage/StageCard";
@@ -125,6 +128,40 @@ describe.each(["fr", "en"] as const)("libellés du combat (%s)", (locale) => {
     const both = render(locale, createElement(StageCard, { ...props, state: { ...base, buffPct: 20, buffTurns: 1 }, atkBonus: 30 }));
     expect(both).toContain(">130</span>");
     expect(both).toContain(bonus);
+  });
+
+  it("la Rage compte dans la gemme et se nomme à part dans la mention accessible", () => {
+    const setup = setupOf([fighter({ power: 100, keywords: ["RAGE"] }), fighter(), fighter()], [fighter(), fighter(), fighter()]);
+    const base = createState(setup).state.fighters[0][0];
+    const props = { slot: { side: 0, index: 0 }, card: setup.teams[0][0], face: "front", numbers: [], register: noop, sizes: "100px" } as const;
+    const out = render(locale, createElement(StageCard, { ...props, state: base, atkBonus: 50, ragePct: 50 }));
+    expect(out).toContain(">150</span>");
+    expect(out).toContain(battle.board.rageBonus.replace("{pct}", "50").replace(/'/g, "&#x27;"));
+    // La Rage ne doit pas passer pour de la synergie
+    expect(out).not.toContain(battle.board.synergyBonus.replace("{pct}", "50").replace(/'/g, "&#x27;"));
+  });
+
+  it("le lexique écrit toutes les capacités, chiffres compris, sans paramètre manquant", () => {
+    const rules = { keywordValues: DEFAULT_BATTLE_RULES.keywordValues, techniques: DEFAULT_BATTLE_RULES.techniques, synergyAtkPct: 10 };
+    const out = render(locale, createElement(AbilityLists, { rules }));
+    for (const k of KEYWORDS) expect(out).toContain(battle.keywords[k].name);
+    for (const t of TECHNIQUES) expect(out).toContain(battle.techniques[t].name);
+    expect(out).not.toMatch(/\{[a-z]+[,}]/);
+    expect(out).not.toMatch(JAPANESE);
+    expect(out).toContain(String(DEFAULT_BATTLE_RULES.keywordValues.executeThresholdPct));
+  });
+
+  it("le détail d'une carte écrit chaque capacité avec ses chiffres", () => {
+    const rules = setupOf([fighter()], [fighter()]).rules;
+    for (const keyword of KEYWORDS) {
+      for (const technique of TECHNIQUES) {
+        const card = fighter({ keywords: [keyword], technique });
+        const out = render(locale, createElement(CardDetail, { card, hp: 100, maxHp: 200, rules }));
+        expect(out).toContain(battle.keywords[keyword].name);
+        expect(out).toContain(battle.techniques[technique].name);
+        expect(out).not.toMatch(/\{[a-z]+[,}]/);
+      }
+    }
   });
 
   it("la bannière porte la puce de synergie et nomme l'univers aux lecteurs d'écran", () => {

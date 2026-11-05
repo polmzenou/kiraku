@@ -22,6 +22,25 @@ describe("état affiché pendant l'animation", () => {
     expect(state.finished).toBe(true);
   });
 
+  it("un gain d'orbes suit le serveur, une parade et un soin de vampirisme aussi", () => {
+    const setup = setupOf(
+      [fighter({ technique: "MEISO", keywords: ["CHANNEL"] }), fighter({ technique: "DOKUGIRI", keywords: ["LIFESTEAL"] }), fighter({ technique: "KONSHIN" })],
+      [fighter({ keywords: ["BARRIER"], technique: "RENGEKI" }), fighter({ keywords: ["CHANNEL"], technique: "JIU" }), fighter()],
+      RULES,
+    );
+    const rng = seededRng(5);
+    let { state } = createState(setup);
+    for (let i = 0; i < 300 && !state.finished; i++) {
+      const res = applyAction(setup, 3, state, botAction(setup, state, state.active, rng, 30));
+      const shown = res.events.reduce(applyEvent, state);
+      expect(shown.fighters.map((t) => t.map((f) => f.hp))).toEqual(res.state.fighters.map((t) => t.map((f) => f.hp)));
+      const gained = res.events.filter((e) => e.t === "orbs").at(-1);
+      if (gained?.t === "orbs") expect(shown.orbs).toBe(gained.orbs);
+      state = res.state;
+    }
+    expect(state.finished).toBe(true);
+  });
+
   it("la rupture de la synergie éteint le camp concerné, sans toucher à l'autre", () => {
     const setup = setupOf([fighter(), fighter(), fighter()], [fighter(), fighter(), fighter()]);
     const state = { ...createState(setup).state, synergy: [true, true] as [boolean, boolean] };

@@ -7,12 +7,22 @@ export const TEAM_SIZE = 3;
 
 export type Side = 0 | 1;
 
+/**
+ * Capacités d'origine : le tirage historique de chaque carte en dépend (lib/battle/stats.ts). Ne jamais les
+ * réordonner ni y ajouter quoi que ce soit, sinon toutes les cartes changent. Les ajouts vont dans NEW_*.
+ */
+export const LEGACY_KEYWORDS = ["TAUNT", "BARRIER", "FLURRY", "POISON", "RIPOSTE", "LAST_WILL", "REVIVE"] as const;
+export const LEGACY_TECHNIQUES = ["ISSEN", "KANTSU", "RANBU", "IYASHI", "SHUGO", "KOBU", "FUIN"] as const;
+/** Nouveautés : chaque emplacement a battle.newAbilityPct % de chances d'en recevoir une. */
+export const NEW_KEYWORDS = ["LIFESTEAL", "RAGE", "ARMOR", "EXECUTE", "CHANNEL"] as const;
+export const NEW_TECHNIQUES = ["KONSHIN", "RENGEKI", "JIU", "DOKUGIRI", "MEISO"] as const;
+
 /** Passifs, attribués selon la rareté (battle.keywordsByRarity). */
-export const KEYWORDS = ["TAUNT", "BARRIER", "FLURRY", "POISON", "RIPOSTE", "LAST_WILL", "REVIVE"] as const;
+export const KEYWORDS = [...LEGACY_KEYWORDS, ...NEW_KEYWORDS] as const;
 export type Keyword = (typeof KEYWORDS)[number];
 
 /** Une technique par carte, payée en orbes. */
-export const TECHNIQUES = ["ISSEN", "KANTSU", "RANBU", "IYASHI", "SHUGO", "KOBU", "FUIN"] as const;
+export const TECHNIQUES = [...LEGACY_TECHNIQUES, ...NEW_TECHNIQUES] as const;
 export type Technique = (typeof TECHNIQUES)[number];
 
 /** Ce que vise une technique : un ennemi, un allié (soi compris) ou personne (effet de zone). */
@@ -24,6 +34,11 @@ export const TECHNIQUE_TARGET: Record<Technique, "ENEMY" | "ALLY" | "NONE"> = {
   SHUGO: "ALLY",
   KOBU: "NONE",
   FUIN: "ENEMY",
+  KONSHIN: "ENEMY",
+  RENGEKI: "ENEMY",
+  JIU: "NONE",
+  DOKUGIRI: "NONE",
+  MEISO: "NONE",
 };
 
 export const END_REASONS = ["KO", "FORFEIT", "TIMEOUT", "TURN_LIMIT"] as const;
@@ -37,7 +52,21 @@ export type EngineRules = {
   firstTurnActions: number;
   maxTurns: number;
   maxMissedTurns: number;
-  keywords: { poisonPct: number; poisonTurns: number; ripostePct: number; lastWillHealPct: number; revivePct: number };
+  keywords: {
+    poisonPct: number;
+    poisonTurns: number;
+    ripostePct: number;
+    lastWillHealPct: number;
+    revivePct: number;
+    // Passifs récents : absents du setup des parties plus anciennes, dont aucune carte ne les porte
+    lifestealPct: number;
+    ragePct: number;
+    rageThresholdPct: number;
+    armorPct: number;
+    executePct: number;
+    executeThresholdPct: number;
+    channelOrbs: number;
+  };
   techniques: Record<Technique, { cost: number; value: number }>;
   /** Bonus d'ATQ (%) d'une équipe du même univers ; absent des parties lancées avant la synergie. */
   synergyAtkPct?: number;
@@ -130,6 +159,10 @@ export type BattleEvent =
   | { t: "damage"; side: Side; index: number; amount: number; crit: boolean; hp: number }
   | { t: "block"; side: Side; index: number }
   | { t: "heal"; side: Side; index: number; amount: number; hp: number }
+  /** Vampirisme de la carte `index` : suivi du `heal` correspondant. */
+  | { t: "lifesteal"; side: Side; index: number }
+  /** Orbes du tour en cours après un gain (Concentration, Méditation). */
+  | { t: "orbs"; side: Side; orbs: number }
   | { t: "poisoned"; side: Side; index: number }
   | { t: "poison"; side: Side; index: number; amount: number; hp: number }
   | { t: "riposte"; side: Side; index: number }

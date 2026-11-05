@@ -11,7 +11,7 @@ import { applyAction, createState } from "@/lib/battle/engine";
 import { combatStats } from "@/lib/battle/stats";
 import { teamSynergy } from "@/lib/battle/synergy";
 import type { BoardTier } from "@/lib/battle/tiers";
-import type { Action, BattleSetup, EngineRules, FighterSetup, Keyword, Technique, UniverseRef } from "@/lib/battle/types";
+import { KEYWORDS, TECHNIQUES, type Action, type BattleSetup, type EngineRules, type FighterSetup, type Keyword, type Technique, type UniverseRef } from "@/lib/battle/types";
 import type { PlayerView } from "@/lib/battle/view";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { seededRng } from "@/lib/rng";
@@ -65,26 +65,25 @@ function fighter(c: Card, n: number, o: { power: number; ki: number; technique: 
 }
 
 const BASE_RULES: EngineRules = engineRules(DEFAULT_BATTLE_RULES);
-const TECHS: Technique[] = ["ISSEN", "KANTSU", "RANBU", "IYASHI", "SHUGO", "KOBU", "FUIN"];
-const KEYWORDS: Keyword[] = ["TAUNT", "BARRIER", "FLURRY", "POISON", "RIPOSTE", "LAST_WILL", "REVIVE"];
 
 function setupFor(scenario: Scenario, seed: number): BattleSetup {
   if (scenario === "demo") {
-    // Une équipe qui montre tout : 一閃, 癒し, 乱舞 contre 貫通, 鼓舞, 封印, et les sept passifs
-    const rules: EngineRules = { ...BASE_RULES, firstTurnActions: 3, orbs: { start: 3, perTurn: 1, max: 5, secondBonus: 0 }, damage: { ...BASE_RULES.damage, critPermille: 300 } };
+    // Une partie sur deux montre les nouveautés (dont la première), l'autre les capacités d'origine
+    const novelties = seed % 2 === 1;
+    const rules: EngineRules = { ...BASE_RULES, firstTurnActions: 3, orbs: { start: novelties ? 1 : 3, perTurn: 1, max: 5, secondBonus: 0 }, damage: { ...BASE_RULES.damage, critPermille: 300 } };
     // Deux trios en synergie, pour régler le filament et sa rupture : quel que soit le gagnant, un camp la verra se rompre
     const universe: UniverseRef = { key: "sandbox-yozakura", name: "Yozakura" };
     const rival: UniverseRef = { key: "sandbox-kagerou", name: "Kagerou" };
     const pct = BASE_RULES.synergyAtkPct ?? 0;
     const mine = [
-      fighter(CAST[0], 1, { power: 88, ki: 52, technique: "ISSEN", keywords: ["FLURRY"], universe }),
-      fighter(CAST[1], 2, { power: 58, ki: 70, technique: "IYASHI", keywords: ["BARRIER"], universe }),
-      fighter(CAST[2], 3, { power: 80, ki: 78, technique: "RANBU", keywords: ["TAUNT", "RIPOSTE"], universe }),
+      fighter(CAST[0], 1, { power: 88, ki: 52, technique: novelties ? "KONSHIN" : "ISSEN", keywords: novelties ? ["LIFESTEAL"] : ["FLURRY"], universe }),
+      fighter(CAST[1], 2, { power: 58, ki: 70, technique: novelties ? "JIU" : "IYASHI", keywords: novelties ? ["ARMOR"] : ["BARRIER"], universe }),
+      fighter(CAST[2], 3, { power: 80, ki: 78, technique: novelties ? "MEISO" : "RANBU", keywords: novelties ? ["CHANNEL", "BARRIER"] : ["TAUNT", "RIPOSTE"], universe }),
     ];
     const theirs = [
-      fighter(CAST[3], 4, { power: 74, ki: 48, technique: "KANTSU", keywords: ["POISON"], universe: rival }),
-      fighter(CAST[4], 5, { power: 64, ki: 72, technique: "KOBU", keywords: ["LAST_WILL"], universe: rival }),
-      fighter(CAST[5], 6, { power: 82, ki: 60, technique: "FUIN", keywords: ["REVIVE"], universe: rival }),
+      fighter(CAST[3], 4, { power: 74, ki: 48, technique: novelties ? "RENGEKI" : "KANTSU", keywords: novelties ? ["RAGE"] : ["POISON"], universe: rival }),
+      fighter(CAST[4], 5, { power: 64, ki: 72, technique: novelties ? "DOKUGIRI" : "KOBU", keywords: novelties ? ["BARRIER"] : ["LAST_WILL"], universe: rival }),
+      fighter(CAST[5], 6, { power: 82, ki: 60, technique: novelties ? "KANTSU" : "FUIN", keywords: novelties ? ["EXECUTE"] : ["REVIVE"], universe: rival }),
     ];
     return { first: 0, rules, synergy: [teamSynergy(mine, pct), teamSynergy(theirs, pct)], teams: [mine, theirs] };
   }
@@ -95,7 +94,7 @@ function setupFor(scenario: Scenario, seed: number): BattleSetup {
       fighter(c, from + i + seed * 10, {
         power: 45 + rng(56),
         ki: 32 + rng(54),
-        technique: TECHS[rng(TECHS.length)],
+        technique: TECHNIQUES[rng(TECHNIQUES.length)],
         keywords: [...new Set(Array.from({ length: rng(3) }, () => KEYWORDS[rng(KEYWORDS.length)]))],
       }),
     );

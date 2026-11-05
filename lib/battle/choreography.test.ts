@@ -6,7 +6,7 @@ import { choreograph, EMPTY_MEMORY, TIMING, totalDuration, type Beat, type Chore
 import { applyEvent } from "./display";
 import { applyAction, createState } from "./engine";
 import { FLAT_RULES, RULES, fighter, setupOf } from "./fixtures";
-import type { Action, BattleEvent, BattleSetup, BattleState, Side } from "./types";
+import { NEW_TECHNIQUES, TECHNIQUE_TARGET, type Action, type BattleEvent, type BattleSetup, type BattleState, type Side, type Technique } from "./types";
 
 /** Une partie bot contre bot, lot par lot (une action = un lot, comme en direct). */
 function batches(setup: BattleSetup, seed: number) {
@@ -74,10 +74,83 @@ describe("mise en scène des combats", { timeout: 30_000 }, () => {
             expect(s.at).toBe(0);
             if (s.cue) expect(moving.has(s.cue.k)).toBe(false);
             if (s.cue?.k === "sound") expect(beat.kind).toBe("end");
+            // Les orbes payées ne volent pas jusqu'à la carte
+            if (s.cue?.k === "orbs") expect(s.cue.spentBy).toBeUndefined();
           }
         }
       }
     }
+  });
+
+  describe("nouvelles capacités", () => {
+    const scene = (setup: BattleSetup, before: BattleState, events: BattleEvent[], level: FxLevel = "full") => choreograph(events, { setup, state: before, mySide: 0, level, style: "sumi", memory: EMPTY_MEMORY });
+    const cast = (technique: Technique, foes: Parameters<typeof fighter>[0][] = [{ hp: 900 }, { hp: 900 }, { hp: 900 }]) => {
+      const setup = setupOf([fighter({ technique }), fighter(), fighter()], foes.map((o) => fighter(o)), FLAT_RULES);
+      const before = { ...createState(setup).state, orbs: 5 };
+      const target = TECHNIQUE_TARGET[technique] === "NONE" ? {} : { target: 0 };
+      const { events } = applyAction(setup, 1, before, { type: "TECHNIQUE", side: 0, actor: 0, ...target });
+      return { setup, before, events };
+    };
+
+    it.each(NEW_TECHNIQUES)("%s pose son effet et son cut-in", (technique) => {
+      const { setup, before, events } = cast(technique);
+      const all = cues(scene(setup, before, events).beats);
+      expect(all).toContainEqual(expect.objectContaining({ k: "technique", technique }));
+      expect(all).toContainEqual(expect.objectContaining({ k: "cutin", technique }));
+      // La carte finit toujours par regagner sa place
+      expect(all.some((c) => c.k === "return")).toBe(true);
+    });
+
+    it.each(NEW_TECHNIQUES)("%s, en mouvement réduit : l'état bascule sans mouvement", (technique) => {
+      const { setup, before, events } = cast(technique);
+      const { beats, state } = scene(setup, before, events, "reduced");
+      expect(totalDuration(beats)).toBe(0);
+      expect(cues(beats).some((c) => c.k === "technique" || c.k === "cutin" || c.k === "passive")).toBe(false);
+      expect(hp(state)).toEqual(hp(events.reduce(applyEvent, before)));
+    });
+
+    it("Double frappe : la carte reste au contact, puis revient après le second coup", () => {
+      const { setup, before, events } = cast("RENGEKI");
+      const steps = scene(setup, before, events).beats.flatMap((b) => b.steps);
+      const hits = steps.filter((s) => s.event?.t === "damage");
+      const back = steps.findIndex((s) => s.cue?.k === "return");
+      expect(hits).toHaveLength(2);
+      expect(hits[1].at).toBeGreaterThan(hits[0].at);
+      expect(back).toBeGreaterThan(steps.indexOf(hits[1]));
+    });
+
+    it("Vampirisme sur un coup fatal : le coup de grâce garde son effet, le feu follet part de la cible", () => {
+      const setup = setupOf([fighter({ power: 300, keywords: ["LIFESTEAL"] })], [fighter({ ki: 1, hp: 5 })], FLAT_RULES);
+      const before = createState(setup).state;
+      before.fighters[0][0].hp = 10;
+      const { events } = applyAction(setup, 1, before, { type: "ATTACK", side: 0, actor: 0, target: 0 });
+      expect(events.map((e) => e.t).slice(0, 4)).toEqual(["attack", "damage", "ko", "lifesteal"]);
+      const all = cues(scene(setup, before, events).beats);
+      expect(all).toContainEqual(expect.objectContaining({ k: "frame", finisher: true }));
+      expect(all).toContainEqual({ k: "passive", fx: "lifesteal", slot: { side: 0, index: 0 }, from: { side: 1, index: 0 } });
+    });
+
+    it("Concentration : les orbes et les cartes qui les rapportent, après le tour annoncé", () => {
+      const setup = setupOf([fighter()], [fighter({ keywords: ["CHANNEL"] }), fighter({ keywords: ["CHANNEL"] }), fighter()], RULES, 0);
+      const before = createState(setup).state;
+      const { events } = applyAction(setup, 1, before, { type: "END_TURN", side: 0 });
+      const { beats, state } = scene(setup, before, events);
+      const gained = events.find((e) => e.t === "orbs");
+      const all = cues(beats);
+      expect(gained).toBeDefined();
+      expect(all.filter((c) => c.k === "passive" && c.fx === "channel")).toHaveLength(2);
+      expect(all.filter((c) => c.k === "orbs").at(-1)).toMatchObject({ count: (gained as { orbs: number }).orbs });
+      expect(state.orbs).toBe((gained as { orbs: number }).orbs);
+    });
+
+    it("Méditation : les orbes montent, sans le signal de Concentration", () => {
+      const setup = setupOf([fighter({ technique: "MEISO", keywords: ["CHANNEL"] })], [fighter({ hp: 900 })], FLAT_RULES);
+      const before = createState(setup).state;
+      const { events } = applyAction(setup, 1, before, { type: "TECHNIQUE", side: 0, actor: 0 });
+      const all = cues(scene(setup, before, events).beats);
+      expect(all.some((c) => c.k === "passive" && c.fx === "channel")).toBe(false);
+      expect(all.some((c) => c.k === "sound" && c.name === "orb")).toBe(true);
+    });
   });
 
   describe("rupture de la synergie", () => {

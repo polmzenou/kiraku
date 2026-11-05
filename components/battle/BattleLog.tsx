@@ -1,8 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { keywordParams, techniqueParams } from "@/lib/battle/ability-params";
 import { other } from "@/lib/battle/engine";
-import type { BattleEvent, BattleSetup, FighterSetup, Side } from "@/lib/battle/types";
+import { TECHNIQUE_TARGET, type BattleEvent, type BattleSetup, type FighterSetup, type Side } from "@/lib/battle/types";
 import type { PlayerView } from "@/lib/battle/view";
 import { usePlayerName } from "./BoardLayout";
 
@@ -21,7 +22,7 @@ export function useLogLine(setup: BattleSetup, players: readonly [PlayerView, Pl
         if (!e.technique) return t("log.attack", { actor: card(e.side, e.actor), target: card(other(e.side), e.target ?? 0) });
         const technique = t(`techniques.${e.technique}.name`);
         if (e.target === null) return t("log.technique", { actor: card(e.side, e.actor), technique });
-        const targetSide = e.technique === "IYASHI" || e.technique === "SHUGO" ? e.side : other(e.side);
+        const targetSide = TECHNIQUE_TARGET[e.technique] === "ALLY" ? e.side : other(e.side);
         return t("log.techniqueOn", { actor: card(e.side, e.actor), technique, target: card(targetSide, e.target) });
       }
       case "damage":
@@ -30,6 +31,10 @@ export function useLogLine(setup: BattleSetup, players: readonly [PlayerView, Pl
         return t("log.block", { target: card(e.side, e.index) });
       case "heal":
         return e.amount > 0 ? t("log.heal", { target: card(e.side, e.index), amount: e.amount }) : null;
+      case "lifesteal":
+        return t("log.lifesteal", { target: card(e.side, e.index) });
+      case "orbs":
+        return t("log.orbs", { player: player(e.side), orbs: e.orbs });
       case "poisoned":
         return t("log.poisoned", { target: card(e.side, e.index) });
       case "poison":
@@ -107,8 +112,6 @@ export function CardDetail({ card, hp, maxHp, rules }: { card: FighterSetup | nu
   }
   const tech = rules.techniques[card.technique];
   const k = rules.keywords;
-  const kwValues = { pct: 0, turns: k.poisonTurns };
-  const kwPct = { TAUNT: 0, BARRIER: 0, FLURRY: 0, POISON: k.poisonPct, RIPOSTE: k.ripostePct, LAST_WILL: k.lastWillHealPct, REVIVE: k.revivePct };
   return (
     <section className="flex flex-col gap-3 lacquer rounded-card p-4">
       <div>
@@ -119,7 +122,7 @@ export function CardDetail({ card, hp, maxHp, rules }: { card: FighterSetup | nu
         <p className="text-sm">
           <strong className="text-shu">{t("board.technique", { name: t(`techniques.${card.technique}.name`), cost: tech.cost })}</strong>
           <br />
-          <span className="text-text-muted">{t(`techniques.${card.technique}.desc`, { mult: (tech.value / 100).toLocaleString(), pct: tech.value })}</span>
+          <span className="text-text-muted">{t(`techniques.${card.technique}.desc`, techniqueParams(tech.value, k, (n) => n.toLocaleString()))}</span>
         </p>
       </div>
       {card.keywords.map((kw) => (
@@ -127,7 +130,7 @@ export function CardDetail({ card, hp, maxHp, rules }: { card: FighterSetup | nu
           <p className="text-sm">
             <strong className="text-kin">{t(`keywords.${kw}.name`)}</strong>
             <br />
-            <span className="text-text-muted">{t(`keywords.${kw}.desc`, { ...kwValues, pct: kwPct[kw] })}</span>
+            <span className="text-text-muted">{t(`keywords.${kw}.desc`, keywordParams(kw, k))}</span>
           </p>
         </div>
       ))}

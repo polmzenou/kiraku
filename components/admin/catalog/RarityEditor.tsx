@@ -6,7 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import type { RarityDraft } from "@/lib/catalog/admin-form";
 import { blankCard } from "@/lib/catalog/admin-form";
 import { materialAppearance } from "@/lib/catalog/appearance";
-import { KEYWORDS } from "@/lib/battle/types";
+import { LEGACY_KEYWORDS } from "@/lib/battle/types";
 import { saveCatalogRarity } from "@/server/actions/admin-catalog";
 import { NumberField, SelectField, TextField } from "../fields";
 import { AppearanceFields } from "./AppearanceFields";
@@ -35,7 +35,7 @@ export function RarityEditor({ initial, templates }: { initial: RarityDraft; tem
         <TextField label={t("seal")} maxLength={8} value={draft.seal} onChange={(seal) => update({ seal })} />
         <NumberField label={t("rarityWeight")} min={0} max={1_000_000} value={draft.rate} onChange={(rate) => update({ rate })} />
         <NumberField label={t("recycleValue")} min={0} max={100_000} value={draft.recycleValue} onChange={(recycleValue) => update({ recycleValue })} />
-        <NumberField label={t("keywords")} min={0} max={KEYWORDS.length} value={draft.keywords} onChange={(keywords) => update({ keywords })} />
+        <NumberField label={t("keywords")} min={0} max={LEGACY_KEYWORDS.length} value={draft.keywords} onChange={(keywords) => update({ keywords })} />
         {(["gifts", "trades"] as const).map((key) => <label key={key} className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={draft[key]} onChange={(e) => update({ [key]: e.target.checked })} />{t(key)}</label>)}
         <label className="flex min-h-11 items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" checked={Boolean(draft.variantRequired)} onChange={(e) => update({ variantRequired: e.target.checked })} />{t("variantRequired")}</label>
       </div>

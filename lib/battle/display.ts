@@ -26,6 +26,9 @@ export function applyEvent(state: BattleState, e: BattleEvent): BattleState {
     case "synergy_break":
       if (next.synergy) next.synergy[e.side] = false;
       break;
+    case "orbs":
+      next.orbs = e.orbs;
+      break;
     case "block":
       next.fighters[e.side][e.index].barrier = false;
       break;

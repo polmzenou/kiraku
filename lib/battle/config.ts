@@ -26,6 +26,7 @@ export const BATTLE_SETTING_KEYS = [
   "battle.lobbyPollSeconds",
   "battle.maxDecks",
   "battle.synergyAtkPct",
+  "battle.newAbilityPct",
 ] as const;
 
 export type BattleSettingKey = (typeof BATTLE_SETTING_KEYS)[number];
@@ -53,6 +54,7 @@ export type BattleRules = {
   lobbyPollSeconds: number;
   maxDecks: number;
   synergyAtkPct: number;
+  newAbilityPct: number;
 };
 
 export function battleRulesFrom(get: <K extends BattleSettingKey>(key: K) => SettingValue<K>): BattleRules {
@@ -79,6 +81,7 @@ export function battleRulesFrom(get: <K extends BattleSettingKey>(key: K) => Set
     lobbyPollSeconds: get("battle.lobbyPollSeconds"),
     maxDecks: get("battle.maxDecks"),
     synergyAtkPct: get("battle.synergyAtkPct"),
+    newAbilityPct: get("battle.newAbilityPct"),
   };
 }
 

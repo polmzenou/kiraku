@@ -1949,9 +1949,17 @@
         "queuePollSeconds": "Queue polling (s)",
         "lobbyPollSeconds": "Friend room polling (s)",
         "maxDecks": "Decks per player",
-        "synergyAtkPct": "Attack bonus (%)"
+        "synergyAtkPct": "Attack bonus (%)",
+        "newAbilityPct": "Share of new abilities (%)",
+        "lifestealPct": "Lifesteal: % of damage",
+        "ragePct": "Rage: attack bonus (%)",
+        "rageThresholdPct": "Rage: HP threshold (%)",
+        "armorPct": "Armor: damage reduction (%)",
+        "executePct": "Execute: extra damage (%)",
+        "executeThresholdPct": "Execute: target HP threshold (%)",
+        "channelOrbs": "Focus: orbs per turn"
       },
-      "valueHint": "Value: multiplier in % (Issen, Ranbu, Kantsū), heal or bonus in % (Iyashi, Kobu), unused (Shugo, Fūin).",
+      "valueHint": "Value: multiplier in % (Flash, Blade dance, Piercing strike, All-out strike, Double strike), heal, bonus or poison in % (Healing, Encouragement, Healing rain, Toxic mist), orbs gained (Meditation), unused (Protection, Seal).",
       "save": "Save",
       "saving": "Saving…",
       "saved": "{count, plural, one {# setting saved} other {# settings saved}}.",
@@ -1969,7 +1977,9 @@
       "logEmpty": "No change yet.",
       "logEntry": "{key} by {admin}",
       "synergy": "Universe synergy",
-      "synergyHint": "Three cards from the same universe gain this bonus until their team's first death. 0 turns synergy off. Games in progress keep the bonus they started with."
+      "synergyHint": "Three cards from the same universe gain this bonus until their team's first death. 0 turns synergy off. Games in progress keep the bonus they started with.",
+      "newAbilities": "New abilities",
+      "newAbilitiesHint": "Chance that a passive or technique slot receives a new ability, rolled once and for all per card. At 0, no card changes. Raising the value adds new abilities without changing those already assigned. Games in progress keep their abilities."
     },
     "ranked": {
       "title": "Ranked",
@@ -4180,7 +4190,8 @@
       "techniqueLabel": "Technique",
       "standing": "{count}/3 standing",
       "turnShort": "Turn",
-      "synergyBonus": "+{pct}% attack (synergy)"
+      "synergyBonus": "+{pct}% attack (synergy)",
+      "rageBonus": "+{pct}% attack (rage)"
     },
     "errors": {
       "STALE": "The battle moved on: resyncing.",
@@ -4263,6 +4274,26 @@
       "REVIVE": {
         "name": "Rebirth",
         "desc": "Comes back once with {pct}% of its HP."
+      },
+      "LIFESTEAL": {
+        "name": "Lifesteal",
+        "desc": "Recovers {pct}% of the damage it deals."
+      },
+      "RAGE": {
+        "name": "Rage",
+        "desc": "+{pct}% attack at {threshold}% HP or less."
+      },
+      "ARMOR": {
+        "name": "Armor",
+        "desc": "Takes {pct}% less damage, except from a Piercing strike."
+      },
+      "EXECUTE": {
+        "name": "Execute",
+        "desc": "+{pct}% damage against a target at {threshold}% HP or less."
+      },
+      "CHANNEL": {
+        "name": "Focus",
+        "desc": "+{orbs, plural, one {# orb} other {# orbs}} at the start of your turn while it stands. Stacks."
       }
     },
     "techniques": {
@@ -4293,6 +4324,26 @@
       "FUIN": {
         "name": "Seal",
         "desc": "The target cannot act on its next turn."
+      },
+      "KONSHIN": {
+        "name": "All-out strike",
+        "desc": "A strike at ×{mult}, then the card skips its next turn."
+      },
+      "RENGEKI": {
+        "name": "Double strike",
+        "desc": "Two strikes at ×{mult}. A barrier only stops the first."
+      },
+      "JIU": {
+        "name": "Healing rain",
+        "desc": "Heals all allies for {pct}% of their max HP."
+      },
+      "DOKUGIRI": {
+        "name": "Toxic mist",
+        "desc": "Poisons all enemies: {pct}% of their max HP at the start of their next {turns} turns. A barrier stops it."
+      },
+      "MEISO": {
+        "name": "Meditation",
+        "desc": "Spends the card's action to gain {orbs, plural, one {# orb} other {# orbs}} right away."
       }
     },
     "bots": {
@@ -4326,7 +4377,9 @@
       "turn": "{player}'s turn.",
       "timeout": "{player} lets their turn slip.",
       "forfeit": "{player} forfeits.",
-      "synergyBreak": "{player}'s {universe} synergy is broken."
+      "synergyBreak": "{player}'s {universe} synergy is broken.",
+      "lifesteal": "{target} feeds on the blow.",
+      "orbs": "{player} now has {orbs, plural, one {# orb} other {# orbs}}."
     },
     "detail": {
       "title": "Card",

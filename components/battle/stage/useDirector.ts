@@ -375,6 +375,32 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
           });
         }
         break;
+      case "KONSHIN":
+        if (first) {
+          vfx.slash(run, first, -38);
+          vfx.shock(run, first, first.w * 1.6, "shu");
+        }
+        break;
+      case "RENGEKI":
+        if (first) {
+          vfx.slash(run, first, -24);
+          vfx.slash(run, first, 28, TIMING.ranbuGap);
+        }
+        break;
+      case "JIU":
+        targets.forEach((t) => vfx.healColumn(run, t));
+        break;
+      case "DOKUGIRI":
+        targets.forEach((t) => vfx.poisonSeep(run, t));
+        break;
+      case "MEISO":
+        vfx.glint(run, from);
+        vfx.shock(run, from, from.w * 1.4, "kin");
+        break;
+      default: {
+        const unhandled: never = c.technique;
+        return unhandled;
+      }
     }
   };
 
@@ -408,6 +434,17 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
       case "taunt":
         vfx.taunt(run, at);
         break;
+      case "lifesteal":
+        if (from) vfx.wisp(run, from, at, TIMING.wisp);
+        break;
+      case "channel":
+        vfx.glint(run, at);
+        vfx.shock(run, at, at.w, "kin");
+        break;
+      default: {
+        const unhandled: never = c.fx;
+        return unhandled;
+      }
     }
   };
 

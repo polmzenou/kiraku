@@ -27,9 +27,3 @@ export function teamSynergy(team: readonly { universe?: UniverseRef | null }[], 
 export function activeSynergy(setup: BattleSetup, state: BattleState, side: Side): SideSynergy | null {
   return state.synergy?.[side] ? (setup.synergy?.[side] ?? null) : null;
 }
-
-/** Bonus d'ATQ d'une carte en % : 鼓舞 en cours plus synergie active, additionnés. */
-export function atkBonusPct(setup: BattleSetup, state: BattleState, side: Side, index: number): number {
-  const f = state.fighters[side][index];
-  return (f.buffTurns > 0 ? f.buffPct : 0) + (activeSynergy(setup, state, side)?.atkPct ?? 0);
-}

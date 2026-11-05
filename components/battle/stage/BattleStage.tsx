@@ -5,7 +5,8 @@ import { useLayoutEffect, useRef, type ReactNode } from "react";
 import type { ArenaId } from "@/lib/battle/arenas";
 import type { FxLevel, Slot } from "@/lib/battle/choreography";
 import type { BoardTier } from "@/lib/battle/tiers";
-import { activeSynergy, atkBonusPct } from "@/lib/battle/synergy";
+import { atkBonusPct, rageBonusPct } from "@/lib/battle/modifiers";
+import { activeSynergy } from "@/lib/battle/synergy";
 import type { BattleSetup, Side } from "@/lib/battle/types";
 import type { PlayerView } from "@/lib/battle/view";
 import { ArenaHost } from "../arenas/ArenaHost";
@@ -116,6 +117,7 @@ export function BattleStage({
             card={card}
             state={shown.fighters[s][i]}
             atkBonus={atkBonusPct(setup, shown, s, i)}
+            ragePct={rageBonusPct(setup, shown, s, i)}
             face={director.faces[k] ?? "front"}
             selected={props?.selected === i}
             targetable={props?.targets?.has(i)}

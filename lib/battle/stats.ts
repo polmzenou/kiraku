@@ -2,7 +2,7 @@ import type { Rarity } from "@/lib/catalog/rarity";
 import { mixSeed, seededRng, type Rng } from "@/lib/rng";
 import type { BattleRules } from "./config";
 import { teamSynergy } from "./synergy";
-import { KEYWORDS, TECHNIQUES, type BattleSetup, type FighterSetup, type Keyword, type Side, type Technique, type UniverseRef } from "./types";
+import { KEYWORDS, LEGACY_KEYWORDS, LEGACY_TECHNIQUES, NEW_KEYWORDS, NEW_TECHNIQUES, type BattleSetup, type FighterSetup, type Keyword, type Side, type Technique, type UniverseRef } from "./types";
 
 // Ce qu'une carte devient en combat : stats dérivées de 力/気, passifs et technique stables.
 
@@ -18,20 +18,39 @@ export function combatStats(power: number, ki: number, s: BattleRules["stats"]) 
 
 const KEYWORD_SALT = 0x6b77; // « kw »
 const TECHNIQUE_SALT = 0x7463; // « tc »
+const NEW_KEYWORD_SALT = 0x6e6b; // « nk »
+const NEW_TECHNIQUE_SALT = 0x6e74; // « nt »
 
-/** Passifs d'une carte : toujours les mêmes pour un personnage donné, leur nombre dépend de la rareté. */
-export function keywordsFor(anilistId: number, rarity: Rarity, perRarity: BattleRules["keywordsByRarity"]): Keyword[] {
-  const count = Math.min(perRarity[rarity] ?? 0, KEYWORDS.length);
+/**
+ * Passifs d'une carte : toujours les mêmes pour un personnage donné, leur nombre dépend de la rareté.
+ * Le tirage historique porte sur les seuls passifs d'origine, à l'identique. Chaque emplacement a ensuite
+ * `newAbilityPct` % de chances de recevoir une nouveauté. Les tirages ne dépendent pas de ce réglage :
+ * le monter ne fait qu'ajouter des remplacements, sans changer ceux qui existent déjà.
+ */
+export function keywordsFor(anilistId: number, rarity: Rarity, perRarity: BattleRules["keywordsByRarity"], newAbilityPct = 0): Keyword[] {
+  const count = Math.min(perRarity[rarity] ?? 0, LEGACY_KEYWORDS.length);
   const rng = seededRng(mixSeed(anilistId, KEYWORD_SALT));
-  const pool: Keyword[] = [...KEYWORDS];
+  const pool: Keyword[] = [...LEGACY_KEYWORDS];
   const picked: Keyword[] = [];
   for (let i = 0; i < count; i++) picked.push(pool.splice(rng(pool.length), 1)[0]);
+
+  const swap = seededRng(mixSeed(anilistId, NEW_KEYWORD_SALT));
+  const fresh: Keyword[] = [...NEW_KEYWORDS];
+  const novelties = NEW_KEYWORDS.map(() => fresh.splice(swap(fresh.length), 1)[0]);
+  const final = picked.map((keyword, slot) => {
+    const roll = swap(100);
+    return roll < newAbilityPct && slot < novelties.length ? novelties[slot] : keyword;
+  });
   // Ordre canonique : l'affichage ne dépend pas du tirage
-  return picked.sort((a, b) => KEYWORDS.indexOf(a) - KEYWORDS.indexOf(b));
+  return final.sort((a, b) => KEYWORDS.indexOf(a) - KEYWORDS.indexOf(b));
 }
 
-export function techniqueFor(anilistId: number): Technique {
-  return TECHNIQUES[mixSeed(anilistId, TECHNIQUE_SALT) % TECHNIQUES.length];
+/** Technique d'une carte : le tirage historique, ou une nouveauté dans `newAbilityPct` % des cas. */
+export function techniqueFor(anilistId: number, newAbilityPct = 0): Technique {
+  const swap = seededRng(mixSeed(anilistId, NEW_TECHNIQUE_SALT));
+  const roll = swap(100);
+  const novelty = NEW_TECHNIQUES[swap(NEW_TECHNIQUES.length)];
+  return roll < newAbilityPct ? novelty : LEGACY_TECHNIQUES[mixSeed(anilistId, TECHNIQUE_SALT) % LEGACY_TECHNIQUES.length];
 }
 
 export type FighterCard = {
@@ -61,8 +80,8 @@ export function fighterFrom(card: FighterCard, rules: BattleRules): FighterSetup
     power: card.power,
     ki: card.ki,
     ...combatStats(card.power, card.ki, rules.stats),
-    keywords: keywordsFor(card.anilistId, card.rarity, rules.keywordsByRarity),
-    technique: techniqueFor(card.anilistId),
+    keywords: keywordsFor(card.anilistId, card.rarity, rules.keywordsByRarity, rules.newAbilityPct),
+    technique: techniqueFor(card.anilistId, rules.newAbilityPct),
     ...(card.universe ? { universe: card.universe } : {}),
   };
 }
