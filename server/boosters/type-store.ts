@@ -2,7 +2,7 @@
 // "server-only" ni server/db.ts : le client Prisma est injecté (serveur, scripts, tests).
 import type { BoosterType as BoosterTypeRow, PrismaClient, Prisma } from "@/generated/prisma/client";
 import { groupByRarity, poolCounts, type CardPool } from "@/lib/boosters/draw";
-import { filterPool, isDynamicFilter, parsePoolFilter, type FilterContext, type PoolCandidate } from "@/lib/boosters/pool-filter";
+import { filterPool, followsBase, isDynamicFilter, parsePoolFilter, type FilterContext, type PoolCandidate } from "@/lib/boosters/pool-filter";
 import { isPoolStale } from "@/lib/boosters/pool-freshness";
 import {
   BOOSTER_FAMILIES,
@@ -113,9 +113,7 @@ export function computePoolCards(
   const base = [...filterPool(candidates.filter((c) => c.origin !== "CUSTOM"), type.filter, ctx), ...chosen];
   // Une variante suit sa carte de base : pas besoin de la cocher dans chaque nouveau booster
   const inBase = new Set(base.map((c) => c.id));
-  const followers = candidates.filter(
-    (c) => c.origin === "CUSTOM" && c.variantOfId && !c.boosterExclusive && inBase.has(c.variantOfId) && !inBase.has(c.id),
-  );
+  const followers = candidates.filter((c) => followsBase(c, (id) => inBase.has(id)) && !inBase.has(c.id));
   const kept = [...base, ...followers];
   if (type.featuredCardIds.length === 0) return kept;
   const ids = new Set(kept.map((c) => c.id));

@@ -130,3 +130,14 @@ export function matchesFilter(card: PoolCandidate, filter: PoolFilter, ctx: Filt
 export function filterPool(cards: readonly PoolCandidate[], filter: PoolFilter, ctx: FilterContext): PoolCandidate[] {
   return cards.filter((c) => matchesFilter(c, filter, ctx));
 }
+
+/**
+ * Variante (AR, Gold) qui suit sa carte de base : création originale non exclusive dont la base est
+ * dans le pool. Elle y entre sans être cochée pour le type (computePoolCards, vérification au tirage).
+ */
+export function followsBase(
+  card: Pick<PoolCandidate, "origin" | "variantOfId" | "boosterExclusive">,
+  inPool: (cardId: string) => boolean,
+): boolean {
+  return card.origin === "CUSTOM" && Boolean(card.variantOfId) && !card.boosterExclusive && inPool(card.variantOfId!);
+}
