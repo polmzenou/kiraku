@@ -39,6 +39,7 @@ export type BattleErrorCode =
   | "DISABLED"
   | "BAD_TEAM"
   | "NOT_OWNED"
+  | "DECK_LIMIT"
   | "IN_BATTLE"
   | "IN_QUEUE"
   | "NOT_QUEUED"

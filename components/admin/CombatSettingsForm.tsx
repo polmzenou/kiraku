@@ -15,7 +15,7 @@ import { FormMessage, NumberField, Toggle } from "./fields";
 // Bornes larges côté champ : le schéma Zod de chaque clé (lib/settings/defaults.ts) tranche à l'enregistrement
 const MAX = 100_000;
 
-type Flat = "battle.turnSeconds" | "battle.maxMissedTurns" | "battle.maxTurns" | "battle.firstTurnActions" | "battle.queueSeconds" | "battle.roomMinutes" | "battle.pollSeconds" | "battle.safetyPollSeconds" | "battle.queuePollSeconds" | "battle.lobbyPollSeconds" | "battle.botMistakePct" | "battle.botUpgradePct";
+type Flat = "battle.turnSeconds" | "battle.maxMissedTurns" | "battle.maxTurns" | "battle.firstTurnActions" | "battle.queueSeconds" | "battle.roomMinutes" | "battle.pollSeconds" | "battle.safetyPollSeconds" | "battle.queuePollSeconds" | "battle.lobbyPollSeconds" | "battle.botMistakePct" | "battle.botUpgradePct" | "battle.maxDecks";
 type Group = "battle.stats" | "battle.damage" | "battle.orbs" | "battle.keywordValues" | "battle.rewards" | "battle.keywordsByRarity";
 
 /** Interrupteur, déroulé, stats, dégâts, orbes, passifs, techniques, bot et récompenses du combat. */
@@ -92,6 +92,7 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
         {flat("battle.safetyPollSeconds")}
         {flat("battle.queuePollSeconds")}
         {flat("battle.lobbyPollSeconds")}
+        {flat("battle.maxDecks")}
       </fieldset>
 
       <fieldset className={box}>

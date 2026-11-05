@@ -24,6 +24,7 @@ export const BATTLE_SETTING_KEYS = [
   "battle.safetyPollSeconds",
   "battle.queuePollSeconds",
   "battle.lobbyPollSeconds",
+  "battle.maxDecks",
 ] as const;
 
 export type BattleSettingKey = (typeof BATTLE_SETTING_KEYS)[number];
@@ -49,6 +50,7 @@ export type BattleRules = {
   safetyPollSeconds: number;
   queuePollSeconds: number;
   lobbyPollSeconds: number;
+  maxDecks: number;
 };
 
 export function battleRulesFrom(get: <K extends BattleSettingKey>(key: K) => SettingValue<K>): BattleRules {
@@ -73,6 +75,7 @@ export function battleRulesFrom(get: <K extends BattleSettingKey>(key: K) => Set
     safetyPollSeconds: get("battle.safetyPollSeconds"),
     queuePollSeconds: get("battle.queuePollSeconds"),
     lobbyPollSeconds: get("battle.lobbyPollSeconds"),
+    maxDecks: get("battle.maxDecks"),
   };
 }
 

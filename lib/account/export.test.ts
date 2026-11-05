@@ -38,6 +38,11 @@ describe("export des données", () => {
     expect(out).toMatchObject({ format: "kiraku-data-export", version: 1, generatedAt: now.toISOString(), review: null });
   });
 
+  it("exporte les decks du joueur", () => {
+    const out = buildDataExport(input({ decks: [{ id: "d1", name: "Deck CSM", cardIds: ["a", "b", "c"], userId: "u1", createdAt: now, updatedAt: now }] }), now);
+    expect(out.decks).toEqual([{ id: "d1", name: "Deck CSM", cardIds: ["a", "b", "c"], createdAt: now.toISOString(), updatedAt: now.toISOString() }]);
+  });
+
   it("nomme le fichier par la date", () => {
     expect(exportFileName(now)).toBe("kiraku-donnees-2026-10-16.json");
   });

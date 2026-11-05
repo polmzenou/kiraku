@@ -119,6 +119,7 @@ Tout se conçoit d'abord pour un écran de 375 px, puis s'élargit : sur desktop
 | Collection | `/collection` | Kyara | Filtres rareté/série, doublons, recyclage |
 | Marché | `/marche` | Kyara + toi | Enchères, achat immédiat, mes ventes ; « Mettre une carte en vente » directement depuis les onglets de ventes |
 | Combat | `/combat`, `/combat/[id]` | Toi | Défis reçus, choix d'équipe, replay, historique, rang classé |
+| Mes decks | `/combat/decks` | Toi | Créer, modifier, renommer et supprimer ses équipes nommées (privé) |
 | Profil public | `/u/[username]` | Kyara + toi | Vitrine 4 cartes, stats, bouton défier / ajouter |
 | Amis | `/amis` | Kyara + toi | Demandes, cadeaux, défier un ami |
 | Social | `/social` | Toi | Chercher un joueur, l'ajouter ou lui proposer un échange depuis le résultat, top 10 collectionneurs, section Discord (`discord.socialPromo`, masquée par défaut) ; menu « Plus » au-dessus de Casino |
@@ -594,6 +595,7 @@ Mise en œuvre (étape 9a) :
 - **Temps réel** : Ably, le serveur publie après le commit (`ABLY_API_KEY`, jeton d'abonnement limité aux canaux du joueur, `/api/realtime/token`). Chaque mise à jour porte sa version de départ ; un trou se rattrape en rejouant le journal côté serveur (`battleSinceAction`). Sans clé, le plateau sonde toutes les `battle.pollSeconds`.
 - **Clôture paresseuse** : tours expirés, salles périmées et places de file abandonnées réglés à l'affichage, au sondage de la cloche, et par `/api/cron/battle` une fois par jour.
 - **Écrans** : `/combat` (exhibition, classé, code ami, historique, règles ; choix d'équipe dans une feuille, dernière équipe pré-remplie), `/combat/[id]` (salle d'attente, plateau en direct chargé en import dynamique, replay). « Défier » sur le profil d'un ami ouvre une salle qui lui est réservée (notification `BATTLE_INVITE`). Réglages dans `/admin/combat`.
+- **Decks** (`server/battle/deck-core.ts`, `/combat/decks`) : équipes nommées de 3 personnages (`Deck.cardIds`, ids de `Card`, comme `battleTeam`), au plus `battle.maxDecks` (10) par joueur ; baisser la limite bloque les créations sans rien supprimer. Enregistrer exige 3 cartes différentes possédées, tous statuts confondus. Une carte vendue depuis laisse le deck en place, affiché « indisponible » : il ne remplit plus les emplacements tant qu'il n'est pas corrigé, le renommage reste possible. Le nom (1 à 24 caractères) n'est visible que de son propriétaire, donc sans modération ; il est supprimé à l'anonymisation et figure dans l'export RGPD. Le choix d'équipe reste libre : `TeamPicker` propose les decks en raccourcis et le moteur ne voit toujours que 3 ids de `Card`, revérifiés par `lockTeam`. Une carte présente dans un deck ne peut pas être supprimée du catalogue (`IN_USE`).
 - **Plateau** : table laquée, un tapis par camp, ligne de front avec médaillon du tour ; gemmes 力/PV aux coins des fuda ; l'attaquant fonce sur sa cible et revient (Web Animations, transform seulement), éclaboussure d'encre, gros chiffres détourés, 会心 sur un critique ; journal et détail de la carte en colonne sur desktop. En classé, le liseré, la ligne de front et le médaillon prennent la couleur du rang (`data-tier` : bronze, argent, or, émeraude, élite indigo, champion écarlate, grand champion nacre violet et blanc) ; aperçu admin avec `?rang=GOLD`.
 - **Tests** : `lib/battle/*.test.ts` (formule, chaque passif et technique, orbes, minuteur, limite de tours, replay identique, 2 000 parties bot contre bot) ; `server/battle/battle.db.test.ts` (actions simultanées, appariement simultané de 4 joueurs, file contre mise en vente, plafond quotidien, balayage, salles, bot), sauté sans `DATABASE_URL_TEST`.
 
@@ -711,7 +713,7 @@ Un clic sur « Rejoindre » enregistre `discordJoinedAt` et le modal ne réappar
 | Boosters | Délai (10 min), stock max (10), cartes par booster (4), taux par rareté, seuil de pitié (250), Zeni de départ (500) |
 | Lots | Créer des lots (Zeni + boosters + cartes précises ou tirées dans une rareté), les lier aux missions, au parrainage ou aux fins de saison, les envoyer à un joueur ou à tous |
 | Quêtes | Créer, modifier, activer ou désactiver les missions quotidiennes et hebdomadaires : objectif, période, lot |
-| Combat | Taille d'équipe (3), multiplicateurs de type (×1,25), critique (10 %, ×1,5), tours max (50), combats récompensés par jour (10) |
+| Combat | Taille d'équipe (3), multiplicateurs de type (×1,25), critique (10 %, ×1,5), tours max (50), combats récompensés par jour (10), decks par joueur (10) |
 | Classé | Seuils et barème de chaque rang, critère d'écrasante (60 %), protection après montée, durée et reset de saison, ouvrir/clôturer une saison, lots de fin de saison |
 | Marché | Annuler une vente, taxe (5 %), durées autorisées, ventes simultanées max, délai pour les nouveaux comptes |
 | Modération | Avis et bugs, joueurs signalés, journal des actions admin |
@@ -901,6 +903,7 @@ model User {
   boosterAnchor DateTime @default(now()) // début du cycle de 10 min en cours
   rankPoints    Int      @default(0)   // points de classement (mode classé)
   battleTeam    String[]               // ids de Card de la dernière équipe de combat
+  decks         Deck[]                 // équipes nommées (id, name, cardIds : ids de Card)
   role          Role     @default(USER)
   bannedAt      DateTime?
   isGuest       Boolean  @default(true)

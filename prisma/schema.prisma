@@ -168,6 +168,7 @@ model User {
   battlesAsP1   Battle[]       @relation("battleP1")
   battlesAsP2   Battle[]       @relation("battleP2")
   battleQueue   BattleQueue?
+  decks         Deck[]
   seasonResults SeasonResult[]
 
   dataRequests       DataRequest[]  @relation("dataRequester")
@@ -1200,6 +1201,19 @@ model BattleQueue {
   seenAt     DateTime   @default(now())
 
   @@index([mode, joinedAt])
+}
+
+// Équipe nommée, visible de son seul propriétaire. Des personnages et non des exemplaires, comme battleTeam
+model Deck {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   @db.VarChar(24)
+  cardIds   String[] // ids de Card, comme battleTeam : l'exemplaire est choisi au lancement
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
 }
 
 // --- Classé (étape 9b) ---

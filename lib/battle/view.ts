@@ -93,6 +93,15 @@ export type CandidateCard = {
   technique: Technique;
 };
 
+/** Deck du joueur : `unavailable` liste les cartes sans exemplaire en collection, `playable` dit s'il peut remplir les emplacements. */
+export type DeckView = {
+  id: string;
+  name: string;
+  cards: CandidateCard[];
+  unavailable: string[];
+  playable: boolean;
+};
+
 export type HistoryItem = {
   id: string;
   mode: BattleModeView;

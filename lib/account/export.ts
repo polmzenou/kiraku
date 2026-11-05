@@ -32,6 +32,7 @@ export const EXPORT_FIELDS = {
   cards: ["id", "cardId", "cardName", "rarity", "status", "obtainedAt"],
   discoveries: ["cardId", "cardName", "createdAt"],
   wishlist: ["cardId", "position", "createdAt"],
+  decks: ["id", "name", "cardIds", "createdAt", "updatedAt"],
   showcase: ["position", "userCardId"],
   boosterCredits: ["boosterTypeId", "count"],
   openings: ["id", "boosterSlug", "catalogCardIds", "golden", "divine", "pityTriggered", "zeniSpent", "createdAt"],

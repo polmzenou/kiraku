@@ -11,7 +11,7 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import type { PlayerView } from "@/lib/battle/view";
-import { battleCtx, challengeTarget, getActivity, getCandidates, getHistory, getLastTeam, sweepBattlesFor } from "@/server/battle/queries";
+import { battleCtx, challengeTarget, getActivity, getCandidates, getDecks, getHistory, getLastTeam, sweepBattlesFor } from "@/server/battle/queries";
 import { RankedBoardPanel } from "@/components/ranked/RankedBoardPanel";
 import { SeasonReward } from "@/components/ranked/SeasonReward";
 import { ensureSeason, getDivisionBoard, getPendingSeasonReward, getRankedLeaderboard, getRankView } from "@/server/ranked/queries";
@@ -65,9 +65,10 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
   await sweepBattlesFor(user.id);
   // ?defier=pseudo (bouton du profil) : seulement un ami accepté, la salle le revérifie à la création
   const { defier } = await searchParams;
-  const [activity, candidates, history, rank, challenge] = await Promise.all([
+  const [activity, candidates, decks, history, rank, challenge] = await Promise.all([
     getActivity(user.id, ctx.rules.queueSeconds),
     getCandidates(user.id, ctx.rules),
+    getDecks(user.id, ctx.rules),
     getHistory(user.id),
     ctx.ranked.enabled ? getRankView(user.id, ctx.ranked, await getLocale()) : null,
     typeof defier === "string" ? challengeTarget(user.id, defier) : null,
@@ -85,6 +86,7 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
       <CombatHub
         activity={activity}
         candidates={candidates}
+        decks={decks}
         abilities={{ keywordValues: ctx.rules.keywordValues, techniques: ctx.rules.techniques }}
         lastTeam={lastTeam}
         queueSeconds={ctx.rules.queueSeconds}

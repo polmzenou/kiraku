@@ -312,6 +312,8 @@ export const SETTING_SCHEMAS = {
   // Sondage de la file d'attente et du salon d'un code ami (complété par le temps réel)
   "battle.queuePollSeconds": z.number().int().min(2).max(60),
   "battle.lobbyPollSeconds": z.number().int().min(2).max(120),
+  // Decks enregistrés par joueur : baisser la limite bloque les créations sans supprimer les decks existants
+  "battle.maxDecks": z.number().int().min(1).max(50),
   // Classé (étape 9b)
   "ranked.enabled": z.boolean(),
   "ranked.tiers": rankedTiers,
@@ -528,6 +530,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "battle.safetyPollSeconds": 30,
   "battle.queuePollSeconds": 5,
   "battle.lobbyPollSeconds": 15,
+  "battle.maxDecks": 10,
   "ranked.enabled": true,
   // Barème du plan (section « Mode classé »)
   "ranked.tiers": {

@@ -2,6 +2,7 @@
 
 import { after } from "next/server";
 import { z } from "@/lib/zod";
+import { cleanDeckName } from "@/lib/battle/decks";
 import { TEAM_SIZE } from "@/lib/battle/types";
 import type { Activity, BattleUpdateView, BattleView } from "@/lib/battle/view";
 import { isFrozen } from "@/lib/account/deletion";
@@ -22,7 +23,8 @@ import {
   type BattleUpdate,
   type QueueStatus,
 } from "../battle/battle-core";
-import { battleCtx, getActivity, getBattleView, getUpdateSince, requeueTeamOf, sweepBattlesFor } from "../battle/queries";
+import { deleteDeckWith, renameDeckWith, saveDeckWith } from "../battle/deck-core";
+import { battleCtx, getActivity, getBattleRules, getBattleView, getUpdateSince, requeueTeamOf, sweepBattlesFor } from "../battle/queries";
 import { publishBattle, publishMatched, toMessage } from "../battle/realtime";
 import { pushLater } from "../market/queries";
 import { ensureSeason } from "../ranked/queries";
@@ -247,6 +249,62 @@ export async function cancelRoomAction(input: unknown): Promise<{ ok: true } | F
     return { ok: true };
   } catch (e) {
     return failure("fermeture de salle", e);
+  }
+}
+
+// --- Decks ---
+
+const DECK_RATE = { limit: 20, windowSeconds: MINUTE };
+// Bornée avant nettoyage ; cleanDeckName tranche la longueur et renvoie null pour un nom vide
+const deckName = z.string().max(200).transform(cleanDeckName).pipe(z.string());
+
+export type DeckResult = { ok: true } | Failure;
+
+const saveDeckSchema = z.object({ deckId: idSchema.nullable(), name: deckName, cardIds: teamSchema }).strict();
+
+/** `deckId` null : création. Le joueur, la limite et la possession sont lus côté serveur. */
+export async function saveDeckAction(input: unknown): Promise<DeckResult> {
+  const parsed = saveDeckSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  const g = await session("battle-deck", DECK_RATE);
+  if ("error" in g) return { ok: false, error: g.error };
+  try {
+    const rules = await getBattleRules();
+    if (!rules.enabled) return { ok: false, error: "DISABLED" };
+    await saveDeckWith(prisma, { userId: g.user.id, ...parsed.data, maxDecks: rules.maxDecks });
+    return { ok: true };
+  } catch (e) {
+    return failure("enregistrement du deck", e);
+  }
+}
+
+const renameDeckSchema = z.object({ deckId: idSchema, name: deckName }).strict();
+
+export async function renameDeckAction(input: unknown): Promise<DeckResult> {
+  const parsed = renameDeckSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  const g = await session("battle-deck", DECK_RATE);
+  if ("error" in g) return { ok: false, error: g.error };
+  try {
+    await renameDeckWith(prisma, { userId: g.user.id, ...parsed.data });
+    return { ok: true };
+  } catch (e) {
+    return failure("renommage du deck", e);
+  }
+}
+
+const deleteDeckSchema = z.object({ deckId: idSchema }).strict();
+
+export async function deleteDeckAction(input: unknown): Promise<DeckResult> {
+  const parsed = deleteDeckSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  const g = await session("battle-deck", DECK_RATE);
+  if ("error" in g) return { ok: false, error: g.error };
+  try {
+    await deleteDeckWith(prisma, { userId: g.user.id, deckId: parsed.data.deckId });
+    return { ok: true };
+  } catch (e) {
+    return failure("suppression du deck", e);
   }
 }
 

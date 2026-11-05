@@ -36,6 +36,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     cards,
     discoveries,
     wishlist,
+    decks,
     showcase,
     credits,
     openings,
@@ -71,6 +72,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       select: { cardId: true, createdAt: true, card: { select: { name: true } } },
     }),
     db.wishlistEntry.findMany({ where: { userId }, orderBy: { position: "asc" }, select: { cardId: true, position: true, createdAt: true } }),
+    db.deck.findMany({ where: { userId }, orderBy: { createdAt: "asc" }, select: { id: true, name: true, cardIds: true, createdAt: true, updatedAt: true } }),
     db.showcaseSlot.findMany({ where: { userId }, orderBy: { position: "asc" }, select: { position: true, userCardId: true } }),
     db.boosterCredit.findMany({ where: { userId }, select: { boosterTypeId: true, count: true } }),
     db.boosterOpening.findMany({
@@ -201,6 +203,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     cards: cards.map((c) => ({ id: c.id, cardId: c.cardId, cardName: c.card.name, rarity: c.card.rarity, status: c.status, obtainedAt: c.obtainedAt })),
     discoveries: discoveries.map((d) => ({ cardId: d.cardId, cardName: d.card.name, createdAt: d.createdAt })),
     wishlist,
+    decks,
     showcase,
     boosterCredits: credits,
     openings,

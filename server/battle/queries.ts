@@ -4,8 +4,8 @@ import { randomInt } from "node:crypto";
 import { battleRulesFrom, BATTLE_SETTING_KEYS, type BattleRules } from "@/lib/battle/config";
 import { replay } from "@/lib/battle/engine";
 import { combatStats, keywordsFor, techniqueFor } from "@/lib/battle/stats";
-import type { Action, BattleSetup, BattleState, Side } from "@/lib/battle/types";
-import type { Activity, BattleUpdateView, BattleView, CandidateCard, HistoryItem, PlayerView } from "@/lib/battle/view";
+import { TEAM_SIZE, type Action, type BattleSetup, type BattleState, type Side } from "@/lib/battle/types";
+import type { Activity, BattleUpdateView, BattleView, CandidateCard, DeckView, HistoryItem, PlayerView } from "@/lib/battle/view";
 import { parseBoardTier, type BoardTier } from "@/lib/battle/tiers";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { periodWindow } from "@/lib/economy/period";
@@ -199,9 +199,20 @@ type CandidateRow = {
   rarity: Rarity;
   power: number;
   ki: number;
+  appearance: unknown;
 };
 
 const MAX_CANDIDATES = 500;
+
+/** Une carte telle qu'elle combattra. `anilistId` est l'alias de `publicId` : passifs et technique en dépendent. */
+function candidateFrom(row: CandidateRow, rules: BattleRules): CandidateCard {
+  return {
+    ...row,
+    hp: combatStats(row.power, row.ki, rules.stats).hp,
+    keywords: keywordsFor(row.anilistId, row.rarity, rules.keywordsByRarity),
+    technique: techniqueFor(row.anilistId),
+  };
+}
 
 /** Cartes du joueur disponibles pour combattre (au moins un exemplaire en collection), les plus fortes d'abord. */
 export async function getCandidates(userId: string, rules: BattleRules): Promise<CandidateCard[]> {
@@ -212,12 +223,42 @@ export async function getCandidates(userId: string, rules: BattleRules): Promise
     WHERE EXISTS (SELECT 1 FROM "UserCard" uc WHERE uc."cardId" = c.id AND uc."ownerId" = ${userId} AND uc.status = 'COLLECTION')
     ORDER BY rd."sortOrder" DESC, (c.power + c.ki) DESC, c.id ASC
     LIMIT ${MAX_CANDIDATES}`;
-  return rows.map((r) => ({
-    ...r,
-    hp: combatStats(r.power, r.ki, rules.stats).hp,
-    keywords: keywordsFor(r.anilistId, r.rarity, rules.keywordsByRarity),
-    technique: techniqueFor(r.anilistId),
-  }));
+  return rows.map((r) => candidateFrom(r, rules));
+}
+
+/**
+ * Decks du joueur, les plus anciens d'abord. Lecture directe plutôt que par getCandidates, plafonné à
+ * MAX_CANDIDATES : un deck hors de ce top ne doit pas paraître indisponible.
+ */
+export async function getDecks(userId: string, rules: BattleRules): Promise<DeckView[]> {
+  const decks = await prisma.deck.findMany({
+    where: { userId },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    select: { id: true, name: true, cardIds: true },
+  });
+  if (decks.length === 0) return [];
+  const ids = [...new Set(decks.flatMap((d) => d.cardIds))];
+  const [cards, copies] = await Promise.all([
+    prisma.card.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, publicId: true, appearance: true, name: true, nameNative: true, imageUrl: true, rank: true, rarity: true, power: true, ki: true },
+    }),
+    prisma.userCard.findMany({ where: { ownerId: userId, status: "COLLECTION", cardId: { in: ids } }, distinct: ["cardId"], select: { cardId: true } }),
+  ]);
+  const byId = new Map(
+    cards.map(({ id, publicId, rarity, ...card }) => [id, candidateFrom({ ...card, cardId: id, anilistId: publicId, rarity: rarity as Rarity }, rules)]),
+  );
+  const inCollection = new Set(copies.map((c) => c.cardId));
+  return decks.map((d) => {
+    const unavailable = d.cardIds.filter((id) => !inCollection.has(id));
+    return {
+      id: d.id,
+      name: d.name,
+      cards: d.cardIds.flatMap((id) => byId.get(id) ?? []),
+      unavailable,
+      playable: d.cardIds.length === TEAM_SIZE && unavailable.length === 0,
+    };
+  });
 }
 
 /** Dernière équipe du joueur, si ses cartes sont toujours disponibles. */

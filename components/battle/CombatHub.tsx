@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useCallback, useState, useTransition } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
-import type { Activity, CandidateCard } from "@/lib/battle/view";
+import type { Activity, CandidateCard, DeckView } from "@/lib/battle/view";
 import { createRoomAction, joinQueueAction, joinRoomAction, type BattleActionError } from "@/server/actions/battle";
 import { Button } from "../ui/Button";
 import { buttonClasses } from "../ui/Button";
@@ -31,6 +31,7 @@ type Intent =
 export function CombatHub({
   activity,
   candidates,
+  decks,
   abilities,
   lastTeam,
   queueSeconds,
@@ -40,6 +41,7 @@ export function CombatHub({
 }: {
   activity: Activity;
   candidates: CandidateCard[];
+  decks: DeckView[];
   abilities: AbilityRules;
   lastTeam: string[];
   queueSeconds: number;
@@ -202,11 +204,16 @@ export function CombatHub({
         </article>
       </div>
 
+      <Link href="/combat/decks" className={buttonClasses("secondary", "self-start")}>
+        {t("decks.link", { count: decks.length })}
+      </Link>
+
       {intent && (
         <TeamPicker
           open
           onClose={() => setIntent(null)}
           candidates={candidates}
+          decks={decks}
           abilities={abilities}
           initial={lastTeam}
           pending={pending}
