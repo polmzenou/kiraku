@@ -87,7 +87,7 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
         activity={activity}
         candidates={candidates}
         decks={decks}
-        abilities={{ keywordValues: ctx.rules.keywordValues, techniques: ctx.rules.techniques }}
+        abilities={{ keywordValues: ctx.rules.keywordValues, techniques: ctx.rules.techniques, synergyAtkPct: ctx.rules.synergyAtkPct }}
         lastTeam={lastTeam}
         queueSeconds={ctx.rules.queueSeconds}
         queuePollSeconds={ctx.rules.queuePollSeconds}
@@ -103,6 +103,7 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
             <li>{t("rules.items.orbs", { max: ctx.rules.orbs.max })}</li>
             <li>{t("rules.items.damage")}</li>
             <li>{t("rules.items.timer", { seconds: ctx.rules.turnSeconds })}</li>
+            {ctx.rules.synergyAtkPct > 0 && <li>{t("rules.items.synergy", { pct: ctx.rules.synergyAtkPct })}</li>}
             <li>{t("rules.items.end")}</li>
           </ul>
         </section>

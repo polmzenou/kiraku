@@ -8,7 +8,7 @@ import { useSecondsLeft } from "../TurnTimer";
 import { PlayerName } from "@/components/social/PlayerName";
 import { ACTION_KANJI } from "@/lib/battle/glyphs";
 import type { BoardTier } from "@/lib/battle/tiers";
-import type { Side, Technique } from "@/lib/battle/types";
+import type { Side, SideSynergy, Technique } from "@/lib/battle/types";
 import type { PlayerView } from "@/lib/battle/view";
 import { usePlayerName } from "../BoardLayout";
 import { BotMask } from "./BotMask";
@@ -72,7 +72,8 @@ export function Incense({ endsAt, total }: { endsAt: string | null; total: numbe
 
 /**
  * Bannière d'un joueur : avatar dans son cadre (masque pour un bot), pseudo dans sa couleur, emblème du
- * rang, un témoin par carte encore debout, et les orbes du tour quand c'est à lui de jouer.
+ * rang, un témoin par carte encore debout, sa synergie tant qu'elle tient, et les orbes du tour quand
+ * c'est à lui de jouer.
  */
 export function PlayerBanner({
   player,
@@ -80,6 +81,7 @@ export function PlayerBanner({
   active,
   standing,
   tier,
+  synergy = null,
   children,
 }: {
   player: PlayerView | null;
@@ -87,9 +89,11 @@ export function PlayerBanner({
   active: boolean;
   standing: number;
   tier: BoardTier | null;
+  synergy?: SideSynergy | null;
   children?: ReactNode;
 }) {
   const t = useTranslations("battle.board");
+  const ts = useTranslations("battle.synergy");
   const name = usePlayerName();
   const human = player && "username" in player ? player : null;
   return (
@@ -99,10 +103,17 @@ export function PlayerBanner({
       </span>
       <span className="player-id">
         <PlayerName name={name(player)} color={human?.decor.nameColor} className="player-name" />
-        <span className="player-standing" role="img" aria-label={t("standing", { count: standing })}>
-          {[0, 1, 2].map((i) => (
-            <i key={i} data-on={i < standing || undefined} />
-          ))}
+        <span className="player-status">
+          <span className="player-standing" role="img" aria-label={t("standing", { count: standing })}>
+            {[0, 1, 2].map((i) => (
+              <i key={i} data-on={i < standing || undefined} />
+            ))}
+          </span>
+          {synergy && (
+            <span className="player-synergy" role="img" aria-label={ts("active", { universe: synergy.name, pct: synergy.atkPct })}>
+              {ts("chip", { pct: synergy.atkPct })}
+            </span>
+          )}
         </span>
       </span>
       {tier && <RankEmblem tier={tier} size={30} className="player-emblem" />}

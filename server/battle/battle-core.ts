@@ -12,6 +12,7 @@ import { BOT_NAMES, botAction, botRarities } from "@/lib/battle/bot";
 import { engineRules, type BattleRules } from "@/lib/battle/config";
 import { applyAction, createState } from "@/lib/battle/engine";
 import { buildSetup, fighterFrom, type FighterCard } from "@/lib/battle/stats";
+import { universeOf } from "@/lib/battle/synergy";
 import {
   IllegalAction,
   TEAM_SIZE,
@@ -207,7 +208,13 @@ const cardSelect = {
   rarity: true,
   power: true,
   ki: true,
+  series: { select: { id: true, titleRomaji: true, universeId: true, universe: { select: { name: true } } } },
 } as const;
+
+/** Carte de la base → carte de combat : `anilistId` est l'alias de `publicId`, l'univers vient de la série. */
+function fighterCard({ series, publicId, ...card }: Prisma.CardGetPayload<{ select: typeof cardSelect }>): FighterCard {
+  return { ...card, rarity: card.rarity as FighterCard["rarity"], anilistId: publicId, universe: universeOf(series) };
+}
 
 async function fightersOf(tx: Tx, userCardIds: readonly string[], rules: BattleRules): Promise<FighterSetup[]> {
   const rows = await tx.userCard.findMany({ where: { id: { in: [...userCardIds] } }, select: { id: true, card: { select: cardSelect } } });
@@ -215,7 +222,7 @@ async function fightersOf(tx: Tx, userCardIds: readonly string[], rules: BattleR
   return userCardIds.map((id) => {
     const card = byId.get(id);
     if (!card) throw new BattleError("NOT_OWNED");
-    return fighterFrom({ ...card, anilistId: card.publicId } as FighterCard, rules);
+    return fighterFrom(fighterCard(card), rules);
   });
 }
 
@@ -232,7 +239,7 @@ async function botFighters(tx: Tx, rarities: readonly Rarity[], ctx: Ctx): Promi
       const count = await tx.card.count({ where });
       if (count === 0) continue;
       const row = await tx.card.findFirst({ where, select: cardSelect, orderBy: { id: "asc" }, skip: ctx.random(count) });
-      card = row ? { ...row, anilistId: row.publicId } : null;
+      card = row ? fighterCard(row) : null;
     }
     if (!card) throw new BattleError("NO_BOT_CARDS");
     picked.push(fighterFrom(card, ctx.rules));

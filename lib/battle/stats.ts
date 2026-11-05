@@ -1,7 +1,8 @@
 import type { Rarity } from "@/lib/catalog/rarity";
 import { mixSeed, seededRng, type Rng } from "@/lib/rng";
 import type { BattleRules } from "./config";
-import { KEYWORDS, TECHNIQUES, type BattleSetup, type FighterSetup, type Keyword, type Side, type Technique } from "./types";
+import { teamSynergy } from "./synergy";
+import { KEYWORDS, TECHNIQUES, type BattleSetup, type FighterSetup, type Keyword, type Side, type Technique, type UniverseRef } from "./types";
 
 // Ce qu'une carte devient en combat : stats dérivées de 力/気, passifs et technique stables.
 
@@ -44,6 +45,7 @@ export type FighterCard = {
   rarity: Rarity;
   power: number;
   ki: number;
+  universe?: UniverseRef;
 };
 
 export function fighterFrom(card: FighterCard, rules: BattleRules): FighterSetup {
@@ -61,6 +63,7 @@ export function fighterFrom(card: FighterCard, rules: BattleRules): FighterSetup
     ...combatStats(card.power, card.ki, rules.stats),
     keywords: keywordsFor(card.anilistId, card.rarity, rules.keywordsByRarity),
     technique: techniqueFor(card.anilistId),
+    ...(card.universe ? { universe: card.universe } : {}),
   };
 }
 
@@ -74,5 +77,7 @@ export function firstSide(teams: [FighterSetup[], FighterSetup[]], rng: Rng): Si
 
 /** `first` impose le camp qui commence (contre un bot : toujours le joueur). */
 export function buildSetup(teams: [FighterSetup[], FighterSetup[]], rules: BattleSetup["rules"], rng: Rng, first?: Side): BattleSetup {
-  return { teams, first: first ?? firstSide(teams, rng), rules };
+  const pct = rules.synergyAtkPct ?? 0;
+  const synergy = [teamSynergy(teams[0], pct), teamSynergy(teams[1], pct)] as NonNullable<BattleSetup["synergy"]>;
+  return { teams, first: first ?? firstSide(teams, rng), rules, ...(synergy[0] || synergy[1] ? { synergy } : {}) };
 }

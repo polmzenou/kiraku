@@ -77,6 +77,8 @@ export type Cue =
   | { k: "technique"; technique: Technique; actor: Slot; targets: Slot[] }
   | { k: "passive"; fx: PassiveFx; slot: Slot; from?: Slot }
   | { k: "ko"; slot: Slot; finisher: boolean }
+  /** Le filament de synergie d'un camp se rompt. */
+  | { k: "synergyBreak"; side: Side }
   | { k: "arena"; reaction: ArenaReaction; side?: Side }
   | { k: "sound"; name: BattleSound };
 
@@ -115,6 +117,7 @@ export const TIMING = {
   finisher: 1_150,
   slowmo: 300,
   revive: 1_000,
+  synergyBreak: 420,
   wisp: 460,
   riposte: 200,
   cutinFull: 1_050,
@@ -334,7 +337,7 @@ function technique(b: Scene, beat: Draft, e: Extract<BattleEvent, { t: "attack" 
 
 /**
  * Déroule les résultats d'une action au curseur du temps fort : coups (dégâts, parades), empoisonnement,
- * K.-O., renaissance, soins de 遺言, riposte et contre-coup, barrière, encouragement, sceau.
+ * K.-O., rupture de la synergie, renaissance, soins de 遺言, riposte et contre-coup, barrière, encouragement, sceau.
  * `returns` : cartes qui regagnent leur place après le premier contact.
  */
 function resolve(b: Scene, beat: Draft, from: Slot, results: readonly BattleEvent[], opts: { base: 1 | 2; returns: Slot[]; gap: number }) {
@@ -417,6 +420,13 @@ function resolve(b: Scene, beat: Draft, from: Slot, results: readonly BattleEven
         beat.cue(beat.t, { k: "arena", reaction: "ko", side: e.side });
         lastKo = target;
         beat.t += finisher ? TIMING.finisher : TIMING.ko;
+        break;
+      }
+      case "synergy_break": {
+        beat.event(beat.t, e);
+        beat.cue(beat.t, { k: "synergyBreak", side: e.side });
+        beat.sound(beat.t, "thunder");
+        beat.t += TIMING.synergyBreak;
         break;
       }
       case "revive": {

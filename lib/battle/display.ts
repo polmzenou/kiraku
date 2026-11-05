@@ -23,6 +23,9 @@ export function applyEvent(state: BattleState, e: BattleEvent): BattleState {
     case "ko":
       Object.assign(next.fighters[e.side][e.index], { hp: 0, barrier: false, sealed: false, poisonTurns: 0, buffTurns: 0, actionsLeft: 0 });
       break;
+    case "synergy_break":
+      if (next.synergy) next.synergy[e.side] = false;
+      break;
     case "block":
       next.fighters[e.side][e.index].barrier = false;
       break;

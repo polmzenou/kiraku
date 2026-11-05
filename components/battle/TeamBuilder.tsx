@@ -3,12 +3,14 @@
 import { useTranslations } from "next-intl";
 import { useMemo, useState, type ReactNode } from "react";
 import { Fuda } from "@/components/fuda/Fuda";
+import { teamSynergy } from "@/lib/battle/synergy";
 import { KEYWORDS, TECHNIQUES, TEAM_SIZE, type Keyword, type Technique } from "@/lib/battle/types";
 import type { CandidateCard } from "@/lib/battle/view";
 import { Button } from "../ui/Button";
 import { chipClasses } from "../ui/Chip";
 import { inputClass } from "../ui/Field";
 import { AbilityLists, type AbilityRules } from "./AbilityGuide";
+import { StaticFilament } from "./stage/SynergyFilament";
 
 const fold = (s: string) =>
   s
@@ -51,26 +53,34 @@ export function TeamBuilder({
 }) {
   const t = useTranslations("battle.team");
   const tk = useTranslations("battle");
+  const ts = useTranslations("battle.synergy");
   const [query, setQuery] = useState("");
   const byId = useMemo(() => new Map([...extra, ...candidates].map((c) => [c.cardId, c])), [candidates, extra]);
   const [sort, setSort] = useState<Sort>("rarity");
   // Passifs : la carte doit tous les avoir ; techniques : l'une d'elles
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [techniques, setTechniques] = useState<Technique[]>([]);
-  const filtered = keywords.length > 0 || techniques.length > 0;
+  const [sameUniverse, setSameUniverse] = useState(false);
+  // Sans carte dans l'équipe, « même univers » n'a pas de référence : le filtre attend la première
+  const anchor = team[0] ? byId.get(team[0])?.universe : undefined;
+  const universeKey = sameUniverse ? anchor?.key : undefined;
+  const filtered = keywords.length > 0 || techniques.length > 0 || sameUniverse;
 
   const shown = useMemo(() => {
     const q = fold(query.trim());
     const list = candidates.filter(
       (c) =>
-        (!q || fold(`${c.name} ${c.nameNative ?? ""}`).includes(q)) &&
+        (!q || fold(`${c.name} ${c.nameNative ?? ""} ${c.universe.name}`).includes(q)) &&
         keywords.every((k) => c.keywords.includes(k)) &&
-        (techniques.length === 0 || techniques.includes(c.technique)),
+        (techniques.length === 0 || techniques.includes(c.technique)) &&
+        (!universeKey || c.universe.key === universeKey),
     );
     if (sort === "rarity") return list;
     const key = SORT_KEY[sort];
     return list.sort((a, b) => key(b) - key(a));
-  }, [candidates, query, keywords, techniques, sort]);
+  }, [candidates, query, keywords, techniques, sort, universeKey]);
+
+  const synergy = useMemo(() => teamSynergy(team.flatMap((id) => byId.get(id) ?? []), abilities.synergyAtkPct), [team, byId, abilities.synergyAtkPct]);
 
   const inTeam = useMemo(() => {
     const cards = team.flatMap((id) => byId.get(id) ?? []);
@@ -87,7 +97,8 @@ export function TeamBuilder({
 
         {/* Emplacements, collés en haut pendant le défilement */}
         <div className="sticky top-12 z-10 -mx-4 bg-bg px-4 py-2 md:-mx-6 md:px-6 lg:mx-0 lg:px-0">
-          <div className="grid max-w-md grid-cols-3 gap-2">
+          <div className="relative grid max-w-md grid-cols-3 gap-2">
+            {synergy && <StaticFilament />}
             {Array.from({ length: TEAM_SIZE }, (_, i) => {
               const card = team[i] ? byId.get(team[i]) : undefined;
               return card ? (
@@ -116,6 +127,11 @@ export function TeamBuilder({
               );
             })}
           </div>
+          {abilities.synergyAtkPct > 0 && (
+            <p className={`mt-2 max-w-md text-xs ${synergy ? "font-bold text-shu" : "text-text-muted"}`}>
+              {synergy ? ts("preview", { universe: synergy.name, pct: synergy.atkPct }) : ts("hint", { pct: abilities.synergyAtkPct })}
+            </p>
+          )}
         </div>
 
         {/* Mobile et tablette : le lexique se déplie ici ; grand écran : barre latérale */}
@@ -168,12 +184,18 @@ export function TeamBuilder({
               </button>
             ))}
           </FilterRow>
+          <FilterRow label={ts("filterLabel")}>
+            <button type="button" aria-pressed={sameUniverse} onClick={() => setSameUniverse((on) => !on)} className={chipClasses(sameUniverse)}>
+              {anchor && sameUniverse ? anchor.name : ts("sameUniverse")}
+            </button>
+          </FilterRow>
           {filtered && (
             <button
               type="button"
               onClick={() => {
                 setKeywords([]);
                 setTechniques([]);
+                setSameUniverse(false);
               }}
               className="min-h-11 self-start text-sm font-bold text-shu underline-offset-4 hover:underline"
             >

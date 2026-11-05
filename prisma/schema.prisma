@@ -326,6 +326,20 @@ model Series {
   seasonYear   Int?
   studio       String? // studio principal
   cards        Card[]
+  // Univers de l'œuvre (JJK, JJK Manga et JJK Modulo = un seul). Sans groupe, la série forme son propre univers.
+  universeId   String?
+  universe     Universe? @relation(fields: [universeId], references: [id], onDelete: SetNull)
+
+  @@index([universeId])
+}
+
+// Regroupement de séries pour la synergie de combat (/admin/univers, npm run catalog:universes)
+model Universe {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(80)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  series    Series[]
 }
 
 // Le personnage (le modèle de carte) ; l'exemplaire possédé sera UserCard

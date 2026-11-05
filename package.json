@@ -25,6 +25,7 @@
     "fonts:og": "tsx scripts/og-fonts.mts",
     "catalog:import": "tsx scripts/import-characters.mts",
     "catalog:import-media": "tsx scripts/import-media.mts",
+    "catalog:universes": "tsx scripts/universes-group.mts",
     "sim:boosters": "tsx scripts/simulate-boosters.mts",
     "admin:grant": "tsx scripts/grant-admin.mts",
     "seed:boosters": "tsx scripts/seed-boosters.mts",

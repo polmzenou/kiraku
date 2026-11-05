@@ -15,7 +15,7 @@ import { FormMessage, NumberField, Toggle } from "./fields";
 // Bornes larges côté champ : le schéma Zod de chaque clé (lib/settings/defaults.ts) tranche à l'enregistrement
 const MAX = 100_000;
 
-type Flat = "battle.turnSeconds" | "battle.maxMissedTurns" | "battle.maxTurns" | "battle.firstTurnActions" | "battle.queueSeconds" | "battle.roomMinutes" | "battle.pollSeconds" | "battle.safetyPollSeconds" | "battle.queuePollSeconds" | "battle.lobbyPollSeconds" | "battle.botMistakePct" | "battle.botUpgradePct" | "battle.maxDecks";
+type Flat = "battle.turnSeconds" | "battle.maxMissedTurns" | "battle.maxTurns" | "battle.firstTurnActions" | "battle.queueSeconds" | "battle.roomMinutes" | "battle.pollSeconds" | "battle.safetyPollSeconds" | "battle.queuePollSeconds" | "battle.lobbyPollSeconds" | "battle.botMistakePct" | "battle.botUpgradePct" | "battle.maxDecks" | "battle.synergyAtkPct";
 type Group = "battle.stats" | "battle.damage" | "battle.orbs" | "battle.keywordValues" | "battle.rewards" | "battle.keywordsByRarity";
 
 /** Interrupteur, déroulé, stats, dégâts, orbes, passifs, techniques, bot et récompenses du combat. */
@@ -118,6 +118,12 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
       <fieldset className={box}>
         <legend className="px-1 font-bold">{t("keywordValues")}</legend>
         {group("battle.keywordValues")}
+      </fieldset>
+
+      <fieldset className={box}>
+        <legend className="px-1 font-bold">{t("synergy")}</legend>
+        <p className="text-xs text-text-muted sm:col-span-2">{t("synergyHint")}</p>
+        {flat("battle.synergyAtkPct")}
       </fieldset>
 
       <fieldset className={box}>

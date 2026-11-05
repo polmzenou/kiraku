@@ -1,4 +1,5 @@
 import { mixSeed, seededRng, type Rng } from "@/lib/rng";
+import { atkBonusPct } from "./synergy";
 import {
   IllegalAction,
   TECHNIQUE_TARGET,
@@ -62,6 +63,7 @@ export function createState(setup: BattleSetup): { state: BattleState; events: B
     winner: null,
     endReason: null,
   };
+  if (setup.synergy) state.synergy = [setup.synergy[0] !== null, setup.synergy[1] !== null];
   const c: Ctx = { setup, state, events: [], rng: () => 0 };
   startTurn(c);
   return { state, events: c.events };
@@ -104,6 +106,11 @@ function onKo(c: Ctx, side: Side, index: number) {
   }
   Object.assign(f, { hp: 0, actionsLeft: 0, poisonTurns: 0, buffTurns: 0, buffPct: 0, sealed: false, barrier: false });
   c.events.push({ t: "ko", side, index });
+  // Première vraie mort du camp : la rupture est définitive pour la partie
+  if (c.state.synergy?.[side]) {
+    c.state.synergy[side] = false;
+    c.events.push({ t: "synergy_break", side });
+  }
   if (has(card, "LAST_WILL") && k.lastWillHealPct > 0) {
     c.state.fighters[side].forEach((ally, j) => {
       if (alive(ally)) heal(c, side, j, k.lastWillHealPct);
@@ -127,9 +134,9 @@ function hit(c: Ctx, side: Side, actor: number, target: number, multPct: number,
   // Toujours deux tirages, dans le même ordre : critique puis aléa
   const crit = c.rng(1_000) < damage.critPermille;
   const variance = damage.varianceMinPct + c.rng(damage.varianceMaxPct - damage.varianceMinPct + 1);
-  const buff = a.buffTurns > 0 ? a.buffPct : 0;
+  const bonus = atkBonusPct(c.setup, c.state, side, actor);
   const def = ignoreDef ? 0 : targetCard.def;
-  const num = card.atk * (100 + buff) * 100 * (crit ? damage.critPct : 100) * variance * multPct;
+  const num = card.atk * (100 + bonus) * 100 * (crit ? damage.critPct : 100) * variance * multPct;
   const den = (100 + def) * 100_000_000;
   const amount = Math.max(1, Math.floor(num / den));
   t.hp = Math.max(0, t.hp - amount);

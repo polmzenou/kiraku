@@ -11,6 +11,30 @@ function team3(over: Parameters<typeof fighter>[0] = {}) {
   return [fighter(over), fighter(over), fighter(over)];
 }
 
+describe("parties sans synergie", () => {
+  function fnv(s: string) {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 0x01000193);
+    }
+    return h >>> 0;
+  }
+
+  it("mêmes chiffres qu'avant : 200 parties bot contre bot, au caractère près", { timeout: 60_000 }, () => {
+    // Empreinte calculée avec le moteur d'avant la synergie (commit 5fc2726). Si elle change, les anciennes
+    // parties et leurs replays changent aussi : ne la mets pas à jour sans comprendre pourquoi.
+    const rng = seededRng(777);
+    let digest = 0;
+    for (let i = 0; i < 200; i++) {
+      const setup = setupOf(randomTeam(rng), randomTeam(rng), RULES, rng(2) as Side);
+      const { state, steps } = replay(setup, i, botGame(i, setup).actions);
+      digest = fnv(`${digest}:${JSON.stringify(steps.map((s) => s.events))}:${JSON.stringify(state)}`);
+    }
+    expect(digest).toBe(2642083999);
+  });
+});
+
 describe("dégâts (formule du plan)", () => {
   it("ATK × 100 / (100 + DEF), sans hasard", () => {
     const setup = setupOf([fighter({ power: 80 })], [fighter({ ki: 60 })]);

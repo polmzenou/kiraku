@@ -21,4 +21,17 @@ describe("état affiché pendant l'animation", () => {
     }
     expect(state.finished).toBe(true);
   });
+
+  it("la rupture de la synergie éteint le camp concerné, sans toucher à l'autre", () => {
+    const setup = setupOf([fighter(), fighter(), fighter()], [fighter(), fighter(), fighter()]);
+    const state = { ...createState(setup).state, synergy: [true, true] as [boolean, boolean] };
+    const next = applyEvent(state, { t: "synergy_break", side: 1 });
+    expect(next.synergy).toEqual([true, false]);
+    expect(state.synergy).toEqual([true, true]);
+  });
+
+  it("un événement de rupture ne crée rien sur une partie sans synergie", () => {
+    const setup = setupOf([fighter()], [fighter()]);
+    expect("synergy" in applyEvent(createState(setup).state, { t: "synergy_break", side: 0 })).toBe(false);
+  });
 });

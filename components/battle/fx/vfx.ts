@@ -141,6 +141,39 @@ export function dust(run: FxRun, at: Box) {
   }
 }
 
+/** Rupture du filament de synergie : des étincelles rouges jaillissent de tout le cadre, puis une onde. */
+export function synergyBreak(run: FxRun, at: Box) {
+  const perimeter = 2 * (at.w + at.h);
+  for (let i = 0; i < n(run, 24); i++) {
+    // Un point du cadre, et sa normale vers l'extérieur
+    let d = noise(i, 11) * perimeter;
+    let x = at.x - at.w / 2 + d;
+    let y = at.y - at.h / 2;
+    let out = -Math.PI / 2;
+    if (d > at.w) {
+      d -= at.w;
+      [x, y, out] = [at.x + at.w / 2, at.y - at.h / 2 + d, 0];
+      if (d > at.h) {
+        d -= at.h;
+        [x, y, out] = [at.x + at.w / 2 - d, at.y + at.h / 2, Math.PI / 2];
+        if (d > at.w) {
+          d -= at.w;
+          [x, y, out] = [at.x - at.w / 2, at.y + at.h / 2 - d, Math.PI];
+        }
+      }
+    }
+    const a = out + (noise(i, 13) - 0.5) * 1.4;
+    const dist = at.h * (0.18 + noise(i, 17) * 0.34);
+    const r = deg(a) + 90;
+    const p = node(run.layer, "vfx-spark vfx-spark-shu");
+    play(run, p, [
+      { transform: `translate(${x}px, ${y}px) rotate(${r}deg) scaleY(.4)`, opacity: 1 },
+      { transform: `translate(${x + Math.cos(a) * dist}px, ${y + Math.sin(a) * dist}px) rotate(${r}deg) scaleY(1)`, opacity: 0 },
+    ], { duration: 320 + noise(i, 19) * 240, delay: noise(i, 23) * 90 });
+  }
+  shock(run, at, at.w * 0.62, "shu");
+}
+
 /** Onde de choc plein écran (critiques, coups de grâce, sceau 対). */
 export function shock(run: FxRun, at: Pt, radius: number, tone: "washi" | "kin" | "shu" = "washi") {
   if (run.lite) return;

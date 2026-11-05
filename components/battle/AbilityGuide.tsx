@@ -3,7 +3,7 @@ import type { BattleRules } from "@/lib/battle/config";
 import { KEYWORDS, TECHNIQUES, type Keyword, type Technique } from "@/lib/battle/types";
 import { SectionTitle } from "../SectionTitle";
 
-export type AbilityRules = Pick<BattleRules, "keywordValues" | "techniques">;
+export type AbilityRules = Pick<BattleRules, "keywordValues" | "techniques" | "synergyAtkPct">;
 
 /**
  * Passifs puis techniques, avec les valeurs en vigueur (GameSetting). `inTeam` marque ce que

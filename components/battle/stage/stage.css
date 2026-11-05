@@ -140,6 +140,7 @@
   justify-content: space-evenly;
 }
 .stage-row {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, var(--card-w));
   gap: var(--gap);
@@ -196,6 +197,101 @@
     width: 300px;
     overflow: auto;
   }
+}
+
+/* ---------- Filament de synergie ----------
+   Tracés empilés qui scintillent en décalé : seule l'opacité est animée, aucun filtre. */
+.stage-filament {
+  position: absolute;
+  inset: calc(var(--gap) * -1 - 2px);
+  color: #e0533f;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 500ms ease-out;
+}
+.stage-filament[data-lit] {
+  opacity: 1;
+}
+.filament-halo,
+.filament-bolt {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.filament-halo {
+  opacity: 0.2;
+}
+.filament-bolt {
+  will-change: opacity;
+}
+.stage-filament[data-lit] .filament-halo {
+  animation: filament-glow 2.4s ease-in-out infinite;
+}
+.stage-filament[data-lit] .filament-bolt {
+  animation: filament-flicker 0.74s steps(1) infinite;
+}
+.stage-filament[data-lit] .filament-bolt:nth-child(3) {
+  animation-delay: -0.25s;
+}
+.stage-filament[data-lit] .filament-bolt:nth-child(4) {
+  animation-delay: -0.5s;
+}
+@keyframes filament-glow {
+  0%,
+  100% {
+    opacity: 0.16;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+@keyframes filament-flicker {
+  0% {
+    opacity: 1;
+  }
+  23% {
+    opacity: 0.25;
+  }
+  41% {
+    opacity: 0.85;
+  }
+  58% {
+    opacity: 0.1;
+  }
+  72% {
+    opacity: 0.7;
+  }
+  88% {
+    opacity: 0.35;
+  }
+}
+/* Hors effets complets : un seul tracé. Allégé, il ne doit jamais s'éteindre tout à fait ; réduit, il reste fixe */
+.stage:not([data-level="full"]) .filament-bolt:nth-child(n + 3) {
+  display: none;
+}
+.stage[data-level="lite"] .stage-filament[data-lit] .filament-bolt {
+  animation-name: filament-flicker-lite;
+  animation-duration: 1.4s;
+}
+@keyframes filament-flicker-lite {
+  0% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.55;
+  }
+  70% {
+    opacity: 0.85;
+  }
+}
+.stage[data-level="reduced"] .stage-filament {
+  transition: none;
+}
+.stage[data-level="reduced"] .stage-filament .filament-halo,
+.stage[data-level="reduced"] .stage-filament .filament-bolt {
+  animation: none;
 }
 
 /* ---------- Cartes ---------- */
@@ -746,6 +842,30 @@
 .player-standing i[data-on] {
   background: var(--accent);
   box-shadow: 0 0 6px var(--glow);
+}
+.player-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+}
+.player-status .player-standing {
+  margin-top: 0;
+}
+.player-synergy {
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 5px;
+  border: 1px solid rgb(224 83 63 / 0.7);
+  border-radius: 3px;
+  background: rgb(200 55 45 / 0.28);
+  color: #ffd9d0;
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 14px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .player-emblem {
   flex: none;

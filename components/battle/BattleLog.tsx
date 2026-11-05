@@ -38,6 +38,8 @@ export function useLogLine(setup: BattleSetup, players: readonly [PlayerView, Pl
         return t("log.riposte", { target: card(e.side, e.index) });
       case "ko":
         return t("log.ko", { target: card(e.side, e.index) });
+      case "synergy_break":
+        return t("log.synergyBreak", { player: player(e.side), universe: setup.synergy?.[e.side]?.name ?? "" });
       case "revive":
         return t("log.revive", { target: card(e.side, e.index), hp: e.hp });
       case "barrier":
@@ -71,7 +73,7 @@ export function BattleLog({
 
   const lines = feed.flatMap(({ id, event }) => {
     const text = line(event);
-    return text ? [{ id, text, strong: event.t === "turn" || event.t === "ko" || (event.t === "damage" && event.crit) }] : [];
+    return text ? [{ id, text, strong: event.t === "turn" || event.t === "ko" || event.t === "synergy_break" || (event.t === "damage" && event.crit) }] : [];
   });
 
   return (

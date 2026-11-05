@@ -80,6 +80,37 @@ describe("mise en scène des combats", { timeout: 30_000 }, () => {
     }
   });
 
+  describe("rupture de la synergie", () => {
+    const universe = { key: "u1", name: "JJK" };
+    const setup: BattleSetup = {
+      ...setupOf([fighter({ universe, hp: 1, ki: 1 }), fighter({ universe }), fighter({ universe })], [fighter({ power: 200 }), fighter(), fighter()], FLAT_RULES),
+      synergy: [{ ...universe, atkPct: 10 }, null],
+    };
+    const before = applyAction(setup, 1, createState(setup).state, { type: "END_TURN", side: 0 }).state;
+    const { events } = applyAction(setup, 1, before, { type: "ATTACK", side: 1, actor: 0, target: 0 });
+    const scene = (level: FxLevel) => choreograph(events, { setup, state: before, mySide: 0, level, style: "sumi", memory: EMPTY_MEMORY });
+
+    it("le repère suit le K.-O. dans le même temps fort, avec le tonnerre", () => {
+      const { beats, state } = scene("full");
+      expect(beats).toHaveLength(1);
+      const steps = beats[0].steps;
+      const ko = steps.findIndex((s) => s.event?.t === "ko");
+      const broke = steps.findIndex((s) => s.event?.t === "synergy_break");
+      expect(ko).toBeGreaterThanOrEqual(0);
+      expect(broke).toBeGreaterThan(ko);
+      expect(cues(beats)).toContainEqual({ k: "synergyBreak", side: 0 });
+      expect(cues(beats)).toContainEqual({ k: "sound", name: "thunder" });
+      expect(state.synergy).toEqual([false, false]);
+    });
+
+    it("en mouvement réduit : l'état bascule, sans effet ni son", () => {
+      const { beats, state } = scene("reduced");
+      expect(cues(beats).some((c) => c.k === "synergyBreak" || (c.k === "sound" && c.name === "thunder"))).toBe(false);
+      expect(beats.flatMap((b) => b.steps).some((s) => s.event?.t === "synergy_break")).toBe(true);
+      expect(state.synergy).toEqual([false, false]);
+    });
+  });
+
   it("en effets allégés : aucune impact frame plein écran, des cut-in brefs", () => {
     for (const { setup, seed } of games.slice(0, 15)) {
       const all = play(setup, seed, "lite").flatMap((b) => cues(b.beats));

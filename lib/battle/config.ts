@@ -25,6 +25,7 @@ export const BATTLE_SETTING_KEYS = [
   "battle.queuePollSeconds",
   "battle.lobbyPollSeconds",
   "battle.maxDecks",
+  "battle.synergyAtkPct",
 ] as const;
 
 export type BattleSettingKey = (typeof BATTLE_SETTING_KEYS)[number];
@@ -51,6 +52,7 @@ export type BattleRules = {
   queuePollSeconds: number;
   lobbyPollSeconds: number;
   maxDecks: number;
+  synergyAtkPct: number;
 };
 
 export function battleRulesFrom(get: <K extends BattleSettingKey>(key: K) => SettingValue<K>): BattleRules {
@@ -76,6 +78,7 @@ export function battleRulesFrom(get: <K extends BattleSettingKey>(key: K) => Set
     queuePollSeconds: get("battle.queuePollSeconds"),
     lobbyPollSeconds: get("battle.lobbyPollSeconds"),
     maxDecks: get("battle.maxDecks"),
+    synergyAtkPct: get("battle.synergyAtkPct"),
   };
 }
 
@@ -91,5 +94,6 @@ export function engineRules(r: BattleRules): EngineRules {
     maxMissedTurns: r.maxMissedTurns,
     keywords: { ...r.keywordValues },
     techniques: structuredClone(r.techniques),
+    synergyAtkPct: r.synergyAtkPct,
   };
 }

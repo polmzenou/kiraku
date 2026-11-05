@@ -1,6 +1,7 @@
 import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import type { Rng } from "@/lib/rng";
 import { legalActions, other } from "./engine";
+import { atkBonusPct } from "./synergy";
 import type { Action, BattleSetup, BattleState, Keyword, Side } from "./types";
 
 // Adversaire de secours quand la file d'attente reste vide : affiché comme bot, équipe différente à chaque fois.
@@ -21,10 +22,8 @@ const has = (keywords: readonly Keyword[], k: Keyword) => keywords.includes(k);
 /** Dégâts moyens (sans critique ni aléa) d'un coup de `actor` sur `target`. */
 function expectedDamage(setup: BattleSetup, state: BattleState, side: Side, actor: number, target: number, multPct: number, ignoreDef: boolean) {
   const card = setup.teams[side][actor];
-  const f = state.fighters[side][actor];
   const def = ignoreDef ? 0 : setup.teams[other(side)][target].def;
-  const buff = f.buffTurns > 0 ? f.buffPct : 0;
-  return (((card.atk * (100 + buff)) / (100 + def)) * multPct) / 100;
+  return (((card.atk * (100 + atkBonusPct(setup, state, side, actor))) / (100 + def)) * multPct) / 100;
 }
 
 function hitValue(setup: BattleSetup, state: BattleState, side: Side, actor: number, target: number, multPct: number, ignoreDef: boolean, basic: boolean) {

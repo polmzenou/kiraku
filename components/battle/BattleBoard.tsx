@@ -197,6 +197,7 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
   return (
     <div className="fixed inset-0 z-[45]">
       <BattleStage
+        intro={intro}
         setup={setup}
         director={director}
         mySide={mySide}

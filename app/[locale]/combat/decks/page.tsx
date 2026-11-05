@@ -44,7 +44,7 @@ export default async function DecksPage() {
       <DeckManager
         decks={decks}
         candidates={candidates}
-        abilities={{ keywordValues: rules.keywordValues, techniques: rules.techniques }}
+        abilities={{ keywordValues: rules.keywordValues, techniques: rules.techniques, synergyAtkPct: rules.synergyAtkPct }}
         maxDecks={rules.maxDecks}
       />
     </PageShell>

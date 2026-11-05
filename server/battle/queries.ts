@@ -4,6 +4,7 @@ import { randomInt } from "node:crypto";
 import { battleRulesFrom, BATTLE_SETTING_KEYS, type BattleRules } from "@/lib/battle/config";
 import { replay } from "@/lib/battle/engine";
 import { combatStats, keywordsFor, techniqueFor } from "@/lib/battle/stats";
+import { universeOf } from "@/lib/battle/synergy";
 import { TEAM_SIZE, type Action, type BattleSetup, type BattleState, type Side } from "@/lib/battle/types";
 import type { Activity, BattleUpdateView, BattleView, CandidateCard, DeckView, HistoryItem, PlayerView } from "@/lib/battle/view";
 import { parseBoardTier, type BoardTier } from "@/lib/battle/tiers";
@@ -200,6 +201,7 @@ type CandidateRow = {
   power: number;
   ki: number;
   appearance: unknown;
+  universe: CandidateCard["universe"];
 };
 
 const MAX_CANDIDATES = 500;
@@ -216,14 +218,17 @@ function candidateFrom(row: CandidateRow, rules: BattleRules): CandidateCard {
 
 /** Cartes du joueur disponibles pour combattre (au moins un exemplaire en collection), les plus fortes d'abord. */
 export async function getCandidates(userId: string, rules: BattleRules): Promise<CandidateCard[]> {
-  const rows = await prisma.$queryRaw<CandidateRow[]>`
-    SELECT c.id AS "cardId", c."publicId" AS "anilistId", c.appearance, c.name, c."nameNative", c."imageUrl", c.rank, c."rarityKey" AS rarity, c.power, c.ki
+  const rows = await prisma.$queryRaw<(Omit<CandidateRow, "universe"> & { universeKey: string; universeName: string })[]>`
+    SELECT c.id AS "cardId", c."publicId" AS "anilistId", c.appearance, c.name, c."nameNative", c."imageUrl", c.rank, c."rarityKey" AS rarity, c.power, c.ki,
+      COALESCE(s."universeId", s.id) AS "universeKey", COALESCE(u.name, s."titleRomaji") AS "universeName"
     FROM "Card" c
     JOIN "RarityDefinition" rd ON rd.key = c."rarityKey"
+    JOIN "Series" s ON s.id = c."seriesId"
+    LEFT JOIN "Universe" u ON u.id = s."universeId"
     WHERE EXISTS (SELECT 1 FROM "UserCard" uc WHERE uc."cardId" = c.id AND uc."ownerId" = ${userId} AND uc.status = 'COLLECTION')
     ORDER BY rd."sortOrder" DESC, (c.power + c.ki) DESC, c.id ASC
     LIMIT ${MAX_CANDIDATES}`;
-  return rows.map((r) => candidateFrom(r, rules));
+  return rows.map(({ universeKey, universeName, ...r }) => candidateFrom({ ...r, universe: { key: universeKey, name: universeName } }, rules));
 }
 
 /**
@@ -241,12 +246,27 @@ export async function getDecks(userId: string, rules: BattleRules): Promise<Deck
   const [cards, copies] = await Promise.all([
     prisma.card.findMany({
       where: { id: { in: ids } },
-      select: { id: true, publicId: true, appearance: true, name: true, nameNative: true, imageUrl: true, rank: true, rarity: true, power: true, ki: true },
+      select: {
+        id: true,
+        publicId: true,
+        appearance: true,
+        name: true,
+        nameNative: true,
+        imageUrl: true,
+        rank: true,
+        rarity: true,
+        power: true,
+        ki: true,
+        series: { select: { id: true, titleRomaji: true, universeId: true, universe: { select: { name: true } } } },
+      },
     }),
     prisma.userCard.findMany({ where: { ownerId: userId, status: "COLLECTION", cardId: { in: ids } }, distinct: ["cardId"], select: { cardId: true } }),
   ]);
   const byId = new Map(
-    cards.map(({ id, publicId, rarity, ...card }) => [id, candidateFrom({ ...card, cardId: id, anilistId: publicId, rarity: rarity as Rarity }, rules)]),
+    cards.map(({ id, publicId, rarity, series, ...card }) => [
+      id,
+      candidateFrom({ ...card, cardId: id, anilistId: publicId, rarity: rarity as Rarity, universe: universeOf(series) }, rules),
+    ]),
   );
   const inCollection = new Set(copies.map((c) => c.cardId));
   return decks.map((d) => {

@@ -480,6 +480,12 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
         }
         break;
       }
+      case "synergyBreak": {
+        const run = fxRun();
+        const frame = world.current?.querySelector(`[data-synergy="${cue.side}"]`);
+        if (run && frame && world.current) vfx.synergyBreak(run, vfx.boxOf(frame, world.current));
+        break;
+      }
       case "arena":
         o.arena?.current?.react(cue.reaction, cue.side);
         break;

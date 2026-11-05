@@ -2,7 +2,7 @@ import type { Rarity } from "@/lib/catalog/rarity";
 import type { PlayerDecor } from "@/lib/profile/decor";
 import type { RankedRules } from "@/lib/ranked/rules";
 import type { BoardTier } from "./tiers";
-import type { BattleEvent, BattleSetup, BattleState, EndReason, Keyword, Side, Technique } from "./types";
+import type { BattleEvent, BattleSetup, BattleState, EndReason, Keyword, Side, Technique, UniverseRef } from "./types";
 
 // Ce que les écrans de combat reçoivent du serveur (sérialisable, dates en ISO).
 
@@ -91,6 +91,7 @@ export type CandidateCard = {
   hp: number;
   keywords: Keyword[];
   technique: Technique;
+  universe: UniverseRef;
 };
 
 /** Deck du joueur : `unavailable` liste les cartes sans exemplaire en collection, `playable` dit s'il peut remplir les emplacements. */

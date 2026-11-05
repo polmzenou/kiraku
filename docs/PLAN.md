@@ -596,6 +596,7 @@ Mise en œuvre (étape 9a) :
 - **Clôture paresseuse** : tours expirés, salles périmées et places de file abandonnées réglés à l'affichage, au sondage de la cloche, et par `/api/cron/battle` une fois par jour.
 - **Écrans** : `/combat` (exhibition, classé, code ami, historique, règles ; choix d'équipe dans une feuille, dernière équipe pré-remplie), `/combat/[id]` (salle d'attente, plateau en direct chargé en import dynamique, replay). « Défier » sur le profil d'un ami ouvre une salle qui lui est réservée (notification `BATTLE_INVITE`). Réglages dans `/admin/combat`.
 - **Decks** (`server/battle/deck-core.ts`, `/combat/decks`) : équipes nommées de 3 personnages (`Deck.cardIds`, ids de `Card`, comme `battleTeam`), au plus `battle.maxDecks` (10) par joueur ; baisser la limite bloque les créations sans rien supprimer. Enregistrer exige 3 cartes différentes possédées, tous statuts confondus. Une carte vendue depuis laisse le deck en place, affiché « indisponible » : il ne remplit plus les emplacements tant qu'il n'est pas corrigé, le renommage reste possible. Le nom (1 à 24 caractères) n'est visible que de son propriétaire, donc sans modération ; il est supprimé à l'anonymisation et figure dans l'export RGPD. Le choix d'équipe reste libre : `TeamPicker` propose les decks en raccourcis et le moteur ne voit toujours que 3 ids de `Card`, revérifiés par `lockTeam`. Une carte présente dans un deck ne peut pas être supprimée du catalogue (`IN_USE`).
+- **Univers et synergie** (`Universe`, `lib/battle/synergy.ts`, `lib/catalog/universes.ts`) : trois cartes du même univers (`series.universeId ?? series.id` : une série sans groupe forme le sien) gagnent `battle.synergyAtkPct` (+10 %, 0 coupe la règle) d'ATQ, additionnés à 鼓舞, et un filament électrique rouge les encadre, pour les deux camps. Rupture définitive à la première vraie mort du camp : une carte sauvée par Renaissance ne rompt rien ; poison et riposte comptent. Tout est figé dans le setup au lancement (`setup.synergy`, `state.synergy`, événement `synergy_break`) : changer un regroupement ne touche ni les parties en cours ni les replays, et une partie sans synergie donne les mêmes chiffres qu'avant au caractère près. En miroir bot contre bot, +10 % donne 58,6 % de victoires ; la première mort survient en moyenne au tour 3,8 sur 15, donc le bonus accélère le début de partie sans durer. Les bots tirent toujours leurs cartes au hasard. Regroupement semi-automatique : `npm run catalog:universes` lit les relations AniList (SEQUEL, PREQUEL, PARENT, SIDE_STORY, ADAPTATION, SOURCE, SUMMARY, COMPILATION, CONTAINS ; SPIN_OFF et ALTERNATIVE fusionneraient tous les Precure), écrit un rapport dans `.import/` et n'écrit en base qu'avec `--apply`. Il ne traite que les séries sans univers et ne déplace jamais une série déjà rangée. `/admin/univers` corrige : créer, renommer, ranger, retirer (la série reçoit un univers à elle seule, pour que le script ne la replace pas), fusionner, supprimer.
 - **Plateau** : table laquée, un tapis par camp, ligne de front avec médaillon du tour ; gemmes 力/PV aux coins des fuda ; l'attaquant fonce sur sa cible et revient (Web Animations, transform seulement), éclaboussure d'encre, gros chiffres détourés, 会心 sur un critique ; journal et détail de la carte en colonne sur desktop. En classé, le liseré, la ligne de front et le médaillon prennent la couleur du rang (`data-tier` : bronze, argent, or, émeraude, élite indigo, champion écarlate, grand champion nacre violet et blanc) ; aperçu admin avec `?rang=GOLD`.
 - **Tests** : `lib/battle/*.test.ts` (formule, chaque passif et technique, orbes, minuteur, limite de tours, replay identique, 2 000 parties bot contre bot) ; `server/battle/battle.db.test.ts` (actions simultanées, appariement simultané de 4 joueurs, file contre mise en vente, plafond quotidien, balayage, salles, bot), sauté sans `DATABASE_URL_TEST`.
 
@@ -713,7 +714,8 @@ Un clic sur « Rejoindre » enregistre `discordJoinedAt` et le modal ne réappar
 | Boosters | Délai (10 min), stock max (10), cartes par booster (4), taux par rareté, seuil de pitié (250), Zeni de départ (500) |
 | Lots | Créer des lots (Zeni + boosters + cartes précises ou tirées dans une rareté), les lier aux missions, au parrainage ou aux fins de saison, les envoyer à un joueur ou à tous |
 | Quêtes | Créer, modifier, activer ou désactiver les missions quotidiennes et hebdomadaires : objectif, période, lot |
-| Combat | Taille d'équipe (3), multiplicateurs de type (×1,25), critique (10 %, ×1,5), tours max (50), combats récompensés par jour (10), decks par joueur (10) |
+| Combat | Taille d'équipe (3), multiplicateurs de type (×1,25), critique (10 %, ×1,5), tours max (50), combats récompensés par jour (10), decks par joueur (10), bonus de synergie d'univers (+10 %) |
+| Univers | `/admin/univers` : regrouper les séries d'une même œuvre (JJK, JJK Manga, JJK Modulo), fusionner, retirer ; pré-rempli par `npm run catalog:universes` |
 | Classé | Seuils et barème de chaque rang, critère d'écrasante (60 %), protection après montée, durée et reset de saison, ouvrir/clôturer une saison, lots de fin de saison |
 | Marché | Annuler une vente, taxe (5 %), durées autorisées, ventes simultanées max, délai pour les nouveaux comptes |
 | Modération | Avis et bugs, joueurs signalés, journal des actions admin |
@@ -933,10 +935,18 @@ model User {
 }
 
 model Series {
-  id    String @id @default(cuid())
-  name  String
-  slug  String @unique
-  cards Card[]
+  id         String @id @default(cuid())
+  name       String
+  slug       String @unique
+  cards      Card[]
+  universeId String?   // sans groupe, la série forme son propre univers
+  universe   Universe? @relation(fields: [universeId], references: [id], onDelete: SetNull)
+}
+
+model Universe {
+  id     String   @id @default(cuid())
+  name   String   @db.VarChar(80)
+  series Series[]
 }
 
 model Card {

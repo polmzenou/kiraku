@@ -43,7 +43,7 @@ export default async function BattlePage({ params, searchParams }: PageProps<"/[
         view={view}
         candidates={candidates}
         decks={decks}
-        abilities={{ keywordValues: ctx.rules.keywordValues, techniques: ctx.rules.techniques }}
+        abilities={{ keywordValues: ctx.rules.keywordValues, techniques: ctx.rules.techniques, synergyAtkPct: ctx.rules.synergyAtkPct }}
         lastTeam={lastTeam}
       />
     </div>

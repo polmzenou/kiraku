@@ -39,7 +39,15 @@ export type EngineRules = {
   maxMissedTurns: number;
   keywords: { poisonPct: number; poisonTurns: number; ripostePct: number; lastWillHealPct: number; revivePct: number };
   techniques: Record<Technique, { cost: number; value: number }>;
+  /** Bonus d'ATQ (%) d'une équipe du même univers ; absent des parties lancées avant la synergie. */
+  synergyAtkPct?: number;
 };
+
+/** Univers d'une carte : `key` = id de l'univers, ou de la série quand elle n'est rangée nulle part. */
+export type UniverseRef = { key: string; name: string };
+
+/** Synergie d'un camp, figée au lancement : changer un regroupement ne touche ni les parties en cours ni les replays. */
+export type SideSynergy = { key: string; name: string; atkPct: number };
 
 /** Une carte telle qu'elle entre en combat : stats, passifs et technique figés. */
 export type FighterSetup = {
@@ -59,6 +67,7 @@ export type FighterSetup = {
   spd: number;
   keywords: Keyword[];
   technique: Technique;
+  universe?: UniverseRef;
 };
 
 export type BattleSetup = {
@@ -66,6 +75,8 @@ export type BattleSetup = {
   /** Camp qui joue le premier tour. */
   first: Side;
   rules: EngineRules;
+  /** Absent quand aucun camp n'a de synergie (et sur les parties lancées avant). */
+  synergy?: [SideSynergy | null, SideSynergy | null];
 };
 
 export type FighterState = {
@@ -101,6 +112,8 @@ export type BattleState = {
   /** null : match nul (ou partie en cours). */
   winner: Side | null;
   endReason: EndReason | null;
+  /** Synergie encore active, par camp. Absent quand le setup n'en a pas. */
+  synergy?: [boolean, boolean];
 };
 
 export type Action =
@@ -121,6 +134,7 @@ export type BattleEvent =
   | { t: "poison"; side: Side; index: number; amount: number; hp: number }
   | { t: "riposte"; side: Side; index: number }
   | { t: "ko"; side: Side; index: number }
+  | { t: "synergy_break"; side: Side }
   | { t: "revive"; side: Side; index: number; hp: number }
   | { t: "barrier"; side: Side; index: number }
   | { t: "buff"; side: Side; pct: number }

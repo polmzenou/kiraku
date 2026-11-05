@@ -12,6 +12,8 @@ type Props = {
   slot: Slot;
   card: FighterSetup;
   state: FighterState;
+  /** Bonus d'ATQ en cours, en % : 鼓舞 et synergie additionnés. */
+  atkBonus: number;
   face: "back" | "front";
   selected?: boolean;
   targetable?: boolean;
@@ -28,7 +30,7 @@ type Props = {
  * Les états durables se lisent sur la carte : kekkai de la barrière, ofuda du sceau, encre du poison,
  * flammes d'or de l'encouragement.
  */
-export const StageCard = memo(function StageCard({ slot, card, state, face, selected, targetable, ready, numbers, onPress, register, sizes }: Props) {
+export const StageCard = memo(function StageCard({ slot, card, state, atkBonus, face, selected, targetable, ready, numbers, onPress, register, sizes }: Props) {
   const t = useTranslations("battle.board");
   const tk = useTranslations("battle.keywords");
   const root = useRef<HTMLLIElement>(null);
@@ -46,13 +48,15 @@ export const StageCard = memo(function StageCard({ slot, card, state, face, sele
   const dead = state.hp <= 0;
   const hp = Math.max(0, Math.min(1, state.hp / Math.max(1, state.maxHp)));
   const buffed = state.buffTurns > 0 && state.buffPct > 0;
-  const atk = buffed ? Math.floor((card.atk * (100 + state.buffPct)) / 100) : card.atk;
+  const atk = atkBonus > 0 ? Math.floor((card.atk * (100 + atkBonus)) / 100) : card.atk;
+  const synergyPct = atkBonus - (buffed ? state.buffPct : 0);
   const interactive = Boolean(onPress) && !dead;
   const statuses = [
     state.barrier && !dead ? t("barrier") : null,
     state.sealed && !dead ? t("sealed") : null,
     state.poisonTurns > 0 && !dead ? t("poisoned") : null,
     buffed && !dead ? t("buffed", { pct: state.buffPct }) : null,
+    synergyPct > 0 && !dead ? t("synergyBonus", { pct: synergyPct }) : null,
     ...card.keywords.map((k) => tk(`${k}.name`)),
   ].filter(Boolean);
   const label = [dead ? t("dead", { name: card.name }) : t("fighter", { name: card.name, hp: state.hp, max: state.maxHp, atk }), ...statuses].join(" · ");
@@ -126,7 +130,7 @@ export const StageCard = memo(function StageCard({ slot, card, state, face, sele
               </span>
             )}
           </button>
-          <span aria-hidden="true" className="stage-gem stage-gem-atk" data-buffed={buffed || undefined}>
+          <span aria-hidden="true" className="stage-gem stage-gem-atk" data-buffed={atkBonus > 0 || undefined}>
             {atk}
           </span>
           <span aria-hidden="true" className="stage-gem stage-gem-hp" data-hurt={state.hp < state.maxHp || undefined}>

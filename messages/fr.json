@@ -1249,7 +1249,8 @@
       "pullFeed": "Gros tirages",
       "eventGauge": "Événement",
       "battleSandbox": "Bac à sable combat",
-      "news": "Nouveautés"
+      "news": "Nouveautés",
+      "universes": "Univers"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -1947,7 +1948,8 @@
         "safetyPollSeconds": "Resynchronisation de secours avec Ably (s)",
         "queuePollSeconds": "Sondage de la file d'attente (s)",
         "lobbyPollSeconds": "Sondage du salon d'un code ami (s)",
-        "maxDecks": "Decks par joueur"
+        "maxDecks": "Decks par joueur",
+        "synergyAtkPct": "Bonus d'attaque (%)"
       },
       "valueHint": "Valeur : multiplicateur en % (Issen, Ranbu, Kantsū), soin ou bonus en % (Iyashi, Kobu), inutilisée (Shugo, Fūin).",
       "save": "Enregistrer",
@@ -1965,7 +1967,9 @@
       },
       "log": "Derniers changements",
       "logEmpty": "Aucun changement pour l'instant.",
-      "logEntry": "{key} par {admin}"
+      "logEntry": "{key} par {admin}",
+      "synergy": "Synergie d'univers",
+      "synergyHint": "Trois cartes du même univers gagnent ce bonus jusqu'à la première mort de leur équipe. 0 coupe la synergie. Les parties en cours gardent le bonus de leur lancement."
     },
     "ranked": {
       "title": "Classé",
@@ -3090,6 +3094,57 @@
         "NOT_FOUND": "Aucun joueur avec ce pseudo.",
         "unexpected": "Erreur inattendue. Réessaie."
       }
+    },
+    "universes": {
+      "title": "Univers",
+      "intro": "Trois cartes du même univers déclenchent la synergie en combat. Une série sans univers forme le sien. npm run catalog:universes propose les regroupements d'après AniList ; corrige-les ici : le script ne déplace jamais une série déjà rangée. Les parties en cours et les replays ne changent pas.",
+      "search": "Univers ou série",
+      "searchSubmit": "Chercher",
+      "total": "{count, plural, =0 {Aucun univers} one {# univers} other {# univers}}",
+      "empty": "Aucun univers ne correspond.",
+      "create": "Créer un univers",
+      "created": "Univers « {name} » créé.",
+      "seriesCount": "{count, plural, =0 {Aucune série} one {# série} other {# séries}}",
+      "cards": "{count, plural, =0 {Aucune carte} one {# carte} other {# cartes}}",
+      "nameLabel": "Nom de l'univers",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "rename": "Renommer",
+      "renameTitle": "Renommer {name}",
+      "renamed": "Univers renommé en « {name} ».",
+      "add": "Ajouter une série",
+      "addTitle": "Ajouter une série à {name}",
+      "addShort": "Ajouter",
+      "addLabel": "Ajouter {series}",
+      "added": "{series} ajoutée.",
+      "alreadyIn": "déjà dans {name}, elle changera d'univers",
+      "searchSeries": "Titre de la série (2 caractères minimum)",
+      "remove": "Retirer",
+      "removeLabel": "Retirer {series}",
+      "removed": "{series} forme maintenant son propre univers.",
+      "merge": "Fusionner",
+      "mergeTitle": "Fusionner {name}",
+      "mergeText": "Les séries de {name} rejoignent l'univers choisi, puis {name} disparaît.",
+      "mergeInto": "Fusionner dans",
+      "mergePick": "Choisir un univers",
+      "merged": "{from} fusionné dans {into}.",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer {name} ?",
+      "deleteText": "Ses séries redeviennent sans univers : chacune forme le sien, et le script du catalogue pourra les regrouper à nouveau.",
+      "deleted": "Univers « {name} » supprimé.",
+      "pagination": "Pages des univers",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "pageOf": "Page {page} sur {pages}",
+      "errors": {
+        "FORBIDDEN": "Action réservée aux administrateurs.",
+        "INVALID": "Saisie invalide : le nom compte de 1 à 80 caractères.",
+        "RATE_LIMITED": "Trop d'actions d'affilée : réessaie dans une minute.",
+        "UNEXPECTED": "L'enregistrement a échoué : réessaie.",
+        "NOT_FOUND": "Cet univers ou cette série n'existe plus : recharge la page.",
+        "SAME": "Choisis un autre univers que celui-ci.",
+        "ALONE": "Cette série est seule dans cet univers : supprime plutôt l'univers."
+      }
     }
   },
   "collection": {
@@ -4023,7 +4078,8 @@
         "orbs": "Les orbes paient les techniques : 1 au premier tour, un de plus à chaque tour, jusqu'à {max}.",
         "damage": "Dégâts : attaque de l'attaquant × 100 / (100 + défense de la cible), avec 10 % de coups critiques.",
         "timer": "{seconds} s par tour. Deux tours expirés d'affilée valent un abandon.",
-        "end": "La première équipe sans carte debout perd. Tes cartes reviennent toujours dans ta collection."
+        "end": "La première équipe sans carte debout perd. Tes cartes reviennent toujours dans ta collection.",
+        "synergy": "Trois cartes du même univers gagnent +{pct} % d'attaque, jusqu'à la première mort de leur équipe. Une carte sauvée par Renaissance ne rompt rien."
       }
     },
     "abilities": {
@@ -4123,7 +4179,8 @@
       "keywordsLabel": "Passifs",
       "techniqueLabel": "Technique",
       "standing": "{count}/3 debout",
-      "turnShort": "Tour"
+      "turnShort": "Tour",
+      "synergyBonus": "+{pct} % d'attaque (synergie)"
     },
     "errors": {
       "STALE": "La partie a avancé : resynchronisation.",
@@ -4268,7 +4325,8 @@
       "seal": "{target} est scellée.",
       "turn": "Tour de {player}.",
       "timeout": "{player} laisse filer son tour.",
-      "forfeit": "{player} abandonne."
+      "forfeit": "{player} abandonne.",
+      "synergyBreak": "La synergie {universe} de {player} est rompue."
     },
     "detail": {
       "title": "Carte",
@@ -4376,6 +4434,15 @@
       "next": "Action suivante",
       "restart": "Nouveau combat",
       "again": "Rejouer"
+    },
+    "synergy": {
+      "preview": "Synergie {universe} · +{pct} % d'ATQ",
+      "hint": "3 cartes du même univers : +{pct} % d'ATQ jusqu'à la première mort de l'équipe.",
+      "chip": "Synergie +{pct} %",
+      "active": "Synergie {universe} active : +{pct} % d'attaque",
+      "deckMark": "Synergie {universe}",
+      "filterLabel": "Univers",
+      "sameUniverse": "Même univers"
     }
   },
   "ranked": {

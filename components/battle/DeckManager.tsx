@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition, type FormEvent } from "react";
 import { Fuda } from "@/components/fuda/Fuda";
 import { useRouter } from "@/i18n/navigation";
 import { cleanDeckName, DECK_NAME_MAX } from "@/lib/battle/decks";
+import { teamSynergy } from "@/lib/battle/synergy";
 import { TEAM_SIZE } from "@/lib/battle/types";
 import type { CandidateCard, DeckView } from "@/lib/battle/view";
 import { deleteDeckAction, renameDeckAction, saveDeckAction, type BattleActionError, type DeckResult } from "@/server/actions/battle";
@@ -13,6 +14,7 @@ import { inputClass } from "../ui/Field";
 import { IconButton } from "../ui/IconButton";
 import { Sheet } from "../ui/Sheet";
 import type { AbilityRules } from "./AbilityGuide";
+import { StaticFilament } from "./stage/SynergyFilament";
 import { TeamBuilder, TeamConfirmBar, toggleTeam } from "./TeamBuilder";
 import { useBattleError } from "./useBattleError";
 
@@ -50,6 +52,7 @@ export function DeckManager({
   maxDecks: number;
 }) {
   const t = useTranslations("battle.decks");
+  const ts = useTranslations("battle.synergy");
   const router = useRouter();
   const battleError = useBattleError();
   const [sheet, setSheet] = useState<Sheets>(null);
@@ -92,7 +95,9 @@ export function DeckManager({
         <p className="lacquer rounded-card p-4 text-center text-sm text-text-muted">{t("empty")}</p>
       ) : (
         <ul className="grid gap-4 md:grid-cols-2">
-          {decks.map((deck) => (
+          {decks.map((deck) => {
+            const synergy = teamSynergy(deck.cards, abilities.synergyAtkPct);
+            return (
             <li key={deck.id} className="flex min-w-0 flex-col gap-3 lacquer rounded-card p-4">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="min-w-0 truncate font-heading text-lg font-bold">{deck.name}</h2>
@@ -109,8 +114,9 @@ export function DeckManager({
                 type="button"
                 aria-label={t("edit", { name: deck.name })}
                 onClick={() => open({ kind: "EDIT", deck })}
-                className="grid max-w-md grid-cols-3 gap-2 rounded-[6px] text-left active:scale-[.99] motion-reduce:transition-none"
+                className="relative grid max-w-md grid-cols-3 gap-2 rounded-[6px] text-left active:scale-[.99] motion-reduce:transition-none"
               >
+                {synergy && <StaticFilament />}
                 {deck.cards.map((card) => {
                   const unavailable = deck.unavailable.includes(card.cardId);
                   return (
@@ -127,9 +133,11 @@ export function DeckManager({
                   );
                 })}
               </button>
+              {synergy && <p className="text-xs font-bold text-shu">{ts("preview", { universe: synergy.name, pct: synergy.atkPct })}</p>}
               {!deck.playable && <p className="text-xs text-text-muted">{t("unavailableHint")}</p>}
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
 
