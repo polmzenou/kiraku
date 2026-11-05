@@ -94,6 +94,16 @@ export type CandidateCard = {
   universe: UniverseRef;
 };
 
+/**
+ * Une carte à l'atelier : `keywords` et `technique` sont le kit qui combat, `base` le kit tiré au sort,
+ * `owned` tout ce que le joueur peut équiper gratuitement (d'origine ou acheté), `slots` les emplacements de passif.
+ */
+export type WorkshopCard = CandidateCard & {
+  slots: number;
+  base: { keywords: Keyword[]; technique: Technique };
+  owned: { keywords: Keyword[]; techniques: Technique[] };
+};
+
 /** Deck du joueur : `unavailable` liste les cartes sans exemplaire en collection, `playable` dit s'il peut remplir les emplacements. */
 export type DeckView = {
   id: string;

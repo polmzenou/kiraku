@@ -3,7 +3,8 @@
 import { after } from "next/server";
 import { z } from "@/lib/zod";
 import { cleanDeckName } from "@/lib/battle/decks";
-import { TEAM_SIZE } from "@/lib/battle/types";
+import type { Kit } from "@/lib/battle/loadout";
+import { KEYWORDS, LEGACY_KEYWORDS, TEAM_SIZE, TECHNIQUES } from "@/lib/battle/types";
 import type { Activity, BattleUpdateView, BattleView } from "@/lib/battle/view";
 import { isFrozen } from "@/lib/account/deletion";
 import { prisma } from "../db";
@@ -23,6 +24,7 @@ import {
   type BattleUpdate,
   type QueueStatus,
 } from "../battle/battle-core";
+import { buyAbilityWith, equipWith } from "../battle/ability-shop-core";
 import { deleteDeckWith, renameDeckWith, saveDeckWith } from "../battle/deck-core";
 import { battleCtx, getActivity, getBattleRules, getBattleView, getUpdateSince, requeueTeamOf, sweepBattlesFor } from "../battle/queries";
 import { publishBattle, publishMatched, toMessage } from "../battle/realtime";
@@ -305,6 +307,72 @@ export async function deleteDeckAction(input: unknown): Promise<DeckResult> {
     return { ok: true };
   } catch (e) {
     return failure("suppression du deck", e);
+  }
+}
+
+// --- Atelier (passifs et technique par personnage) ---
+
+const ATELIER_RATE = { limit: 30, windowSeconds: MINUTE };
+
+const buyAbilitySchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      cardId: idSchema,
+      kind: z.literal("KEYWORD"),
+      ability: z.enum(KEYWORDS),
+      expectedPrice: z.number().int().min(1).max(1_000_000),
+      slot: z.number().int().min(0).max(LEGACY_KEYWORDS.length - 1).nullable(),
+    })
+    .strict(),
+  z
+    .object({
+      cardId: idSchema,
+      kind: z.literal("TECHNIQUE"),
+      ability: z.enum(TECHNIQUES),
+      expectedPrice: z.number().int().min(1).max(1_000_000),
+      slot: z.literal(0).nullable(),
+    })
+    .strict(),
+]);
+
+export type AtelierResult = { ok: true; kit: Kit; coins?: number } | Failure;
+
+/** Achat d'une capacité pour un personnage ; `slot` l'équipe aussitôt. Prix et possession relus côté serveur. */
+export async function buyAbilityAction(input: unknown): Promise<AtelierResult> {
+  const parsed = buyAbilitySchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  const g = await session("battle-atelier", ATELIER_RATE);
+  if ("error" in g) return { ok: false, error: g.error };
+  try {
+    const res = await buyAbilityWith(prisma, { userId: g.user.id, ...parsed.data, now: new Date() }, await getBattleRules());
+    return { ok: true, kit: res.kit, coins: res.coins };
+  } catch (e) {
+    return failure("atelier : achat", e);
+  }
+}
+
+const equipSchema = z
+  .object({
+    cardId: idSchema,
+    // null : retour au kit tiré au sort
+    kit: z
+      .object({ keywords: z.array(z.enum(KEYWORDS)).max(LEGACY_KEYWORDS.length), technique: z.enum(TECHNIQUES) })
+      .strict()
+      .nullable(),
+  })
+  .strict();
+
+/** Rééquipe un personnage parmi ses capacités acquises : gratuit. */
+export async function equipAbilitiesAction(input: unknown): Promise<AtelierResult> {
+  const parsed = equipSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  const g = await session("battle-atelier", ATELIER_RATE);
+  if ("error" in g) return { ok: false, error: g.error };
+  try {
+    const res = await equipWith(prisma, { userId: g.user.id, ...parsed.data }, await getBattleRules());
+    return { ok: true, kit: res.kit };
+  } catch (e) {
+    return failure("atelier : équipement", e);
   }
 }
 

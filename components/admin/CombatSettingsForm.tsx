@@ -4,7 +4,7 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { TECHNIQUES } from "@/lib/battle/types";
+import { KEYWORDS, TECHNIQUES } from "@/lib/battle/types";
 
 import { COMBAT_SETTING_KEYS, combatSettingsSchema, type CombatSettings } from "@/lib/settings/combat-form";
 import { changedSettingKeys } from "@/lib/settings/form";
@@ -35,6 +35,7 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
     setMessage(null);
   };
   const key = (k: string) => t(`keys.${k}` as "keys.enabled");
+  const prices = draft["battle.abilityPrices"];
 
   const flat = (k: Flat) => (
     <NumberField label={key(k.slice("battle.".length))} value={draft[k]} onChange={(v) => set({ ...draft, [k]: v })} min={0} max={MAX} />
@@ -78,6 +79,11 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
       <fieldset className="flex flex-col gap-2 lacquer rounded-card p-4">
         <legend className="px-1 font-bold">{t("switches")}</legend>
         <Toggle label={key("enabled")} checked={draft["battle.enabled"]} onChange={(v) => set({ ...draft, "battle.enabled": v })} />
+        <Toggle
+          label={key("abilityShopEnabled")}
+          checked={draft["battle.abilityShopEnabled"]}
+          onChange={(v) => set({ ...draft, "battle.abilityShopEnabled": v })}
+        />
       </fieldset>
 
       <fieldset className={box}>
@@ -149,6 +155,33 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
             />
           )),
         )}
+      </fieldset>
+
+      <fieldset className={box}>
+        <legend className="px-1 font-bold">{t("abilityPrices")}</legend>
+        <p className="text-xs text-text-muted sm:col-span-2">{t("abilityPricesHint")}</p>
+        <h4 className="text-sm font-bold text-kin sm:col-span-2">{tBattle("abilities.passives")}</h4>
+        {KEYWORDS.map((kw) => (
+          <NumberField
+            key={`price.${kw}`}
+            label={tBattle(`keywords.${kw}.name`)}
+            value={prices.keywords[kw]}
+            onChange={(v) => set({ ...draft, "battle.abilityPrices": { ...prices, keywords: { ...prices.keywords, [kw]: v } } })}
+            min={1}
+            max={MAX * 10}
+          />
+        ))}
+        <h4 className="text-sm font-bold text-shu sm:col-span-2">{tBattle("abilities.techniques")}</h4>
+        {TECHNIQUES.map((tech) => (
+          <NumberField
+            key={`price.${tech}`}
+            label={tBattle(`techniques.${tech}.name`)}
+            value={prices.techniques[tech]}
+            onChange={(v) => set({ ...draft, "battle.abilityPrices": { ...prices, techniques: { ...prices.techniques, [tech]: v } } })}
+            min={1}
+            max={MAX * 10}
+          />
+        ))}
       </fieldset>
 
       <fieldset className={box}>

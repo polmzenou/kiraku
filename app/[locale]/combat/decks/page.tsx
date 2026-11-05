@@ -46,6 +46,7 @@ export default async function DecksPage() {
         candidates={candidates}
         abilities={{ keywordValues: rules.keywordValues, techniques: rules.techniques, synergyAtkPct: rules.synergyAtkPct }}
         maxDecks={rules.maxDecks}
+        atelier={rules.abilityShopEnabled}
       />
     </PageShell>
   );

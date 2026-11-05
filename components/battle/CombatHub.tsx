@@ -38,6 +38,7 @@ export function CombatHub({
   queuePollSeconds,
   challenge,
   rank,
+  atelier = false,
 }: {
   activity: Activity;
   candidates: CandidateCard[];
@@ -50,6 +51,8 @@ export function CombatHub({
   challenge: { id: string; name: string } | null;
   /** Rang du joueur ; null si le classé est fermé. */
   rank: RankView | null;
+  /** Lien vers l'atelier (battle.abilityShopEnabled). */
+  atelier?: boolean;
 }) {
   const t = useTranslations("battle");
   const tRanked = useTranslations("ranked");
@@ -204,9 +207,16 @@ export function CombatHub({
         </article>
       </div>
 
-      <Link href="/combat/decks" className={buttonClasses("secondary", "self-start")}>
-        {t("decks.link", { count: decks.length })}
-      </Link>
+      <div className="flex flex-wrap gap-2">
+        <Link href="/combat/decks" className={buttonClasses("secondary")}>
+          {t("decks.link", { count: decks.length })}
+        </Link>
+        {atelier && (
+          <Link href="/combat/atelier" className={buttonClasses("secondary")}>
+            {t("atelier.link")}
+          </Link>
+        )}
+      </div>
 
       {intent && (
         <TeamPicker

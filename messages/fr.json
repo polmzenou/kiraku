@@ -1957,7 +1957,8 @@
         "armorPct": "Cuirasse : dégâts en moins (%)",
         "executePct": "Exécution : dégâts en plus (%)",
         "executeThresholdPct": "Exécution : seuil de PV de la cible (%)",
-        "channelOrbs": "Concentration : orbes par tour"
+        "channelOrbs": "Concentration : orbes par tour",
+        "abilityShopEnabled": "Atelier ouvert (achat et choix des capacités)"
       },
       "valueHint": "Valeur : multiplicateur en % (Éclair, Danse des lames, Percée, Coup absolu, Double frappe), soin, bonus ou poison en % (Soin, Encouragement, Pluie de soin, Brume toxique), orbes gagnés (Méditation), inutilisée (Protection, Sceau).",
       "save": "Enregistrer",
@@ -1979,7 +1980,14 @@
       "synergy": "Synergie d'univers",
       "synergyHint": "Trois cartes du même univers gagnent ce bonus jusqu'à la première mort de leur équipe. 0 coupe la synergie. Les parties en cours gardent le bonus de leur lancement.",
       "newAbilities": "Nouvelles capacités",
-      "newAbilitiesHint": "Chances qu'un emplacement de passif ou de technique reçoive une nouveauté, tirées une fois pour toutes par carte. À 0, aucune carte ne change. Monter la valeur ajoute des nouveautés sans changer celles déjà attribuées. Les parties en cours gardent leurs capacités."
+      "newAbilitiesHint": "Chances qu'un emplacement de passif ou de technique reçoive une nouveauté, tirées une fois pour toutes par carte. À 0, aucune carte ne change. Monter la valeur ajoute des nouveautés sans changer celles déjà attribuées. Les parties en cours gardent leurs capacités.",
+      "abilityPrices": "Prix de l'atelier (Zeni par carte)",
+      "abilityPricesHint": "Prix d'une capacité pour une seule carte. Un changement vaut pour les achats suivants, rien n'est remboursé. Fermer l'atelier n'enlève pas les kits déjà choisis.",
+      "sales": "Achats à l'atelier (7 jours)",
+      "salesEmpty": "Aucun achat ces 7 derniers jours.",
+      "salesRow": "{count, plural, one {# achat} other {# achats}} · {zeni, number} Zeni",
+      "salesKeyword": "passif",
+      "salesTechnique": "technique"
     },
     "ranked": {
       "title": "Classé",
@@ -3946,7 +3954,8 @@
         "DISCORD_LINK": "Bonus de liaison Discord",
         "BOOSTER": "Achat de booster",
         "GIFT": "Booster offert à un ami",
-        "SEASON": "Récompense de saison (classé)"
+        "SEASON": "Récompense de saison (classé)",
+        "ABILITY": "Capacité achetée (atelier)"
       }
     },
     "reveal": {
@@ -4216,7 +4225,11 @@
       "BAD_TEAM": "Choisis 3 cartes différentes.",
       "NO_BOT_CARDS": "Aucun bot disponible pour le moment.",
       "TOO_EARLY": "Encore un instant…",
-      "NOT_PARTICIPANT": "Cette partie n'est pas la tienne."
+      "NOT_PARTICIPANT": "Cette partie n'est pas la tienne.",
+      "NO_SLOT": "Cette carte n'a aucun emplacement de passif.",
+      "ALREADY_OWNED": "Tu possèdes déjà cette capacité pour cette carte.",
+      "NOT_ENOUGH_ZENI": "Pas assez de Zeni.",
+      "BAD_KIT": "Ce kit n'est plus valide : recharge la page."
     },
     "result": {
       "WIN": "Victoire",
@@ -4437,7 +4450,8 @@
       "confirmDelete": "Supprimer",
       "notFound": "Ce deck n'existe plus.",
       "manage": "Gérer mes decks",
-      "create": "Créer un deck"
+      "create": "Créer un deck",
+      "atelierHint": "Les passifs et la technique de tes cartes se changent à l’<link>atelier</link>."
     },
     "sandbox": {
       "title": "Bac à sable du combat",
@@ -4496,6 +4510,59 @@
       "deckMark": "Synergie {universe}",
       "filterLabel": "Univers",
       "sameUniverse": "Même univers"
+    },
+    "atelier": {
+      "title": "Atelier",
+      "intro": "Change les passifs et la technique de tes cartes. Un achat vaut pour une seule carte et reste acquis : tu le rééquipes gratuitement quand tu veux.",
+      "back": "Retour au combat",
+      "link": "Atelier des capacités",
+      "closed": "L'atelier est fermé pour le moment. Les capacités déjà équipées restent en jeu.",
+      "empty": "Aucune carte pour l'instant : ouvre des boosters pour en obtenir.",
+      "balance": "Solde : {amount, number} Zeni",
+      "amount": "{amount, number}",
+      "zeni": "{amount, number} Zeni",
+      "open": "Ouvrir l'atelier de {name}",
+      "modified": "Modifiée",
+      "slotsCount": "{count, plural, =0 {Aucun emplacement de passif} one {# emplacement de passif} other {# emplacements de passif}}",
+      "nextBattle": "Un changement vaut à partir de ta prochaine partie, même si la carte attend déjà en file.",
+      "slotsTitle": "Emplacements",
+      "passiveSlot": "Passif {n}",
+      "techniqueSlot": "Technique",
+      "noSlot": "Cette rareté n'a aucun emplacement de passif : seule la technique se change.",
+      "pickSlot": "Touche un emplacement pour voir par quoi le remplacer.",
+      "replacing": "Remplacer {name}",
+      "owned": "Acquis : gratuit",
+      "ownedEmpty": "Rien d'autre d'acquis pour cet emplacement.",
+      "toBuy": "À acheter",
+      "toBuyEmpty": "Tout est déjà acquis pour cet emplacement.",
+      "origin": "D'origine",
+      "purchased": "Achetée",
+      "equip": "Équiper",
+      "equipNamed": "Équiper {name}",
+      "buyNamed": "Acheter {name} pour {amount, number} Zeni",
+      "confirmTitle": "Acheter {ability} pour {card} ?",
+      "confirmPrice": "Prix",
+      "confirmAfter": "Solde après achat",
+      "confirmMissing": "Il manque {amount, number} Zeni",
+      "confirmNote": "L'achat vaut pour cette carte seulement et n'est jamais remboursé. {ability} remplace {replaced} tout de suite ; tu pourras rééquiper {replaced} gratuitement.",
+      "confirm": "Acheter",
+      "cancel": "Annuler",
+      "bought": "{ability} achetée et équipée.",
+      "saved": "Kit enregistré.",
+      "reset": "Revenir au kit d'origine",
+      "resetHint": "Remet les capacités tirées au sort. Tes achats restent acquis, rien n'est remboursé.",
+      "resetDone": "Kit d'origine rétabli.",
+      "errors": {
+        "STALE": "Le prix a changé : vérifie-le avant de payer.",
+        "NOT_OWNED": "Tu ne possèdes plus cette carte."
+      },
+      "kitTitle": "Capacités de combat",
+      "kitEdit": "Modifier",
+      "kitPassives": "Passifs",
+      "kitNone": "Aucun",
+      "shelfTitle": "Atelier de combat",
+      "shelfBody": "Achète des passifs et des techniques pour tes cartes, une carte à la fois.",
+      "shelfCta": "Ouvrir l'atelier"
     }
   },
   "ranked": {

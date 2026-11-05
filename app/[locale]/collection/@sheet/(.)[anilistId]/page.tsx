@@ -15,7 +15,7 @@ export default async function CollectionCardSheet({ params }: PageProps<"/[local
 
   return (
     <CardSheet title={card.name}>
-      <CardDetail card={card} ownerId={user.id} username={user.username} headingLevel={2} />
+      <CardDetail card={card} ownerId={user.id} username={user.username} isGuest={user.isGuest} headingLevel={2} />
     </CardSheet>
   );
 }

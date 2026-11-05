@@ -93,6 +93,7 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
         queuePollSeconds={ctx.rules.queuePollSeconds}
         challenge={challenge}
         rank={rank}
+        atelier={ctx.rules.abilityShopEnabled}
       />
 
       <div className={`grid gap-6 ${board ? "md:grid-cols-2 md:items-start" : ""}`}>

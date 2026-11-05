@@ -139,7 +139,7 @@ export async function deleteCatalogCardWith(db: PrismaClient, adminId: string, i
     await lockCatalog(tx);
     const before = await tx.card.findUnique({ where: { id }, include: { _count: { select: {
       copies: true, discoveries: true, wishedBy: true, lotItems: true, auctions: true, notablePulls: true,
-      tradesWanted: true, tradesChosen: true, tradeOffers: true, variants: true,
+      tradesWanted: true, tradesChosen: true, tradeOffers: true, variants: true, abilityPurchases: true,
     } } } });
     if (!before) throw new CatalogMutationError("NOT_FOUND");
     if (before.updatedAt.toISOString() !== updatedAt) throw new CatalogMutationError("CONFLICT");

@@ -36,7 +36,7 @@ export default async function CollectionCardPage({ params }: PageProps<"/[locale
       <Link href="/collection" className="inline-flex min-h-11 w-fit items-center text-link underline underline-offset-4">
         {t("back")}
       </Link>
-      <CardDetail card={card} ownerId={user.id} username={user.username} />
+      <CardDetail card={card} ownerId={user.id} username={user.username} isGuest={user.isGuest} />
     </PageShell>
   );
 }

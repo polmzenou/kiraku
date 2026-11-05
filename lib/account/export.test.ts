@@ -38,6 +38,18 @@ describe("export des données", () => {
     expect(out).toMatchObject({ format: "kiraku-data-export", version: 1, generatedAt: now.toISOString(), review: null });
   });
 
+  it("exporte les achats de l'atelier et les kits choisis", () => {
+    const out = buildDataExport(
+      input({
+        abilityPurchases: [{ id: "p1", userId: "u1", cardId: "c1", kind: "KEYWORD", ability: "FLURRY", price: 3650, createdAt: now }],
+        cardLoadouts: [{ userId: "u1", cardId: "c1", keywords: ["FLURRY", "POISON"], technique: "ISSEN", updatedAt: now }],
+      }),
+      now,
+    );
+    expect(out.abilityPurchases).toEqual([{ cardId: "c1", kind: "KEYWORD", ability: "FLURRY", price: 3650, createdAt: now.toISOString() }]);
+    expect(out.cardLoadouts).toEqual([{ cardId: "c1", keywords: ["FLURRY", "POISON"], technique: "ISSEN", updatedAt: now.toISOString() }]);
+  });
+
   it("exporte les decks du joueur", () => {
     const out = buildDataExport(input({ decks: [{ id: "d1", name: "Deck CSM", cardIds: ["a", "b", "c"], userId: "u1", createdAt: now, updatedAt: now }] }), now);
     expect(out.decks).toEqual([{ id: "d1", name: "Deck CSM", cardIds: ["a", "b", "c"], createdAt: now.toISOString(), updatedAt: now.toISOString() }]);

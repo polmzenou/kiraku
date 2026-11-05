@@ -2,16 +2,20 @@ import { getTranslations } from "next-intl/server";
 import { CombatSettingsForm } from "@/components/admin/CombatSettingsForm";
 import { COMBAT_SETTING_KEYS, type CombatSettings } from "@/lib/settings/combat-form";
 import { recentSettingLogs, requireAdmin } from "@/server/admin";
-import { combatTotals } from "@/server/battle/queries";
+import type { Keyword, Technique } from "@/lib/battle/types";
+import { abilitySales, combatTotals } from "@/server/battle/queries";
 import { getSetting } from "@/server/settings";
 
 /** Combat : santé (parties, salles, file, gains du jour) et réglages battle.*. */
 export default async function AdminCombatPage() {
   await requireAdmin();
-  const [t, values, totals, logs] = await Promise.all([
+  const now = new Date();
+  const [t, tBattle, values, totals, sales, logs] = await Promise.all([
     getTranslations("admin.combat"),
+    getTranslations("battle"),
     Promise.all(COMBAT_SETTING_KEYS.map((k) => getSetting(k))),
-    combatTotals(new Date()),
+    combatTotals(now),
+    abilitySales(now),
     recentSettingLogs(["battle."]),
   ]);
   const settings = Object.fromEntries(COMBAT_SETTING_KEYS.map((k, i) => [k, values[i]])) as CombatSettings;
@@ -40,6 +44,26 @@ export default async function AdminCombatPage() {
           </div>
         ))}
       </dl>
+
+      {/* Atelier : à surveiller (Rafale reste la meilleure malgré son prix) */}
+      <section className="flex flex-col gap-3">
+        <h3 className="font-title text-lg font-bold">{t("sales")}</h3>
+        {sales.length === 0 ? (
+          <p className="text-sm text-text-muted">{t("salesEmpty")}</p>
+        ) : (
+          <ul className="grid gap-1 text-sm sm:grid-cols-2">
+            {sales.map((s) => (
+              <li key={`${s.kind}.${s.ability}`} className="flex justify-between gap-2 rounded-control border border-border bg-surface p-2">
+                <span>
+                  {s.kind === "KEYWORD" ? tBattle(`keywords.${s.ability as Keyword}.name`) : tBattle(`techniques.${s.ability as Technique}.name`)}
+                  <span className="text-text-muted"> · {t(s.kind === "KEYWORD" ? "salesKeyword" : "salesTechnique")}</span>
+                </span>
+                <span className="tabular-nums">{t("salesRow", { count: s.count, zeni: s.zeni })}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <CombatSettingsForm initial={settings} />
 

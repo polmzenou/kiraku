@@ -54,6 +54,28 @@ describe("réglages du combat qui gagnent des champs avec le jeu", () => {
   it("les autres réglages ne sont pas complétés : un objet partiel reste invalide", () => {
     expect(parseSetting("battle.orbs", { start: 9 })).toEqual(SETTING_DEFAULTS["battle.orbs"]);
   });
+
+  it("prix de l'atelier : une capacité ajoutée plus tard prend son prix par défaut sans effacer ceux de l'admin", () => {
+    const defaults = SETTING_DEFAULTS["battle.abilityPrices"];
+    const parsed = parseSetting("battle.abilityPrices", { keywords: { FLURRY: 9_999 }, techniques: { KONSHIN: 1_234 } });
+    expect(parsed.keywords).toEqual({ ...defaults.keywords, FLURRY: 9_999 });
+    expect(parsed.techniques).toEqual({ ...defaults.techniques, KONSHIN: 1_234 });
+    // Un groupe absent reprend tous ses défauts
+    expect(parseSetting("battle.abilityPrices", { keywords: { TAUNT: 50 } }).techniques).toEqual(defaults.techniques);
+  });
+
+  it("les défauts du combat suivent l'ordre de leur schéma : une sauvegarde de l'admin ne réécrit pas un réglage inchangé", () => {
+    for (const key of Object.keys(SETTING_DEFAULTS).filter((k) => k.startsWith("battle.")) as SettingKey[]) {
+      expect(JSON.stringify(SETTING_SCHEMAS[key].parse(SETTING_DEFAULTS[key])), key).toBe(JSON.stringify(SETTING_DEFAULTS[key]));
+    }
+  });
+
+  it("prix de l'atelier : un prix nul ou invalide fait retomber sur les défauts", () => {
+    const defaults = SETTING_DEFAULTS["battle.abilityPrices"];
+    expect(parseSetting("battle.abilityPrices", { keywords: { FLURRY: 0 } })).toEqual(defaults);
+    expect(parseSetting("battle.abilityPrices", { keywords: "x" })).toEqual(defaults);
+    for (const raw of [null, 3, []]) expect(parseSetting("battle.abilityPrices", raw)).toEqual(defaults);
+  });
 });
 
 describe("réglages de la vitrine", () => {

@@ -11,6 +11,7 @@ import { Prisma, type BattleMode, type PrismaClient } from "@/generated/prisma/c
 import { BOT_NAMES, botAction, botRarities } from "@/lib/battle/bot";
 import { engineRules, type BattleRules } from "@/lib/battle/config";
 import { applyAction, createState } from "@/lib/battle/engine";
+import type { Kit } from "@/lib/battle/loadout";
 import { buildSetup, fighterFrom, type FighterCard } from "@/lib/battle/stats";
 import { universeOf } from "@/lib/battle/synergy";
 import {
@@ -30,6 +31,7 @@ import { pairKey } from "@/lib/social/relation";
 import type { RankedRules } from "@/lib/ranked/rules";
 import { credit } from "../economy/ledger";
 import { applyRankedWith, startTiers, type RankedOutcome } from "../ranked/ranked-core";
+import { loadKits } from "./kits";
 import { blocksBetween, lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 
@@ -54,7 +56,12 @@ export type BattleErrorCode =
   | "NOT_PARTICIPANT"
   | "STALE"
   | "ILLEGAL"
-  | "NO_BOT_CARDS";
+  | "NO_BOT_CARDS"
+  // Atelier (server/battle/ability-shop-core.ts)
+  | "NO_SLOT"
+  | "ALREADY_OWNED"
+  | "NOT_ENOUGH_ZENI"
+  | "BAD_KIT";
 
 export class BattleError extends Error {
   constructor(
@@ -216,18 +223,30 @@ function fighterCard({ series, publicId, ...card }: Prisma.CardGetPayload<{ sele
   return { ...card, rarity: card.rarity as FighterCard["rarity"], anilistId: publicId, universe: universeOf(series) };
 }
 
-async function fightersOf(tx: Tx, userCardIds: readonly string[], rules: BattleRules): Promise<FighterSetup[]> {
-  const rows = await tx.userCard.findMany({ where: { id: { in: [...userCardIds] } }, select: { id: true, card: { select: cardSelect } } });
-  const byId = new Map(rows.map((r) => [r.id, r.card]));
+/**
+ * Les cartes engagées, avec le kit que leur propriétaire a choisi à l'atelier (lu ici, au lancement : une
+ * carte qui attend en file part avec son kit du moment). Le setup fige ensuite ce kit pour toute la partie.
+ */
+export async function fightersOf(tx: Tx, userCardIds: readonly string[], rules: BattleRules): Promise<FighterSetup[]> {
+  const rows = await tx.userCard.findMany({
+    where: { id: { in: [...userCardIds] } },
+    select: { id: true, ownerId: true, card: { select: cardSelect } },
+  });
+  const byId = new Map(rows.map((r) => [r.id, { ownerId: r.ownerId, card: fighterCard(r.card) }]));
+  const kits = new Map<string, Map<string, Kit>>();
+  for (const ownerId of new Set(rows.map((r) => r.ownerId))) {
+    const cards = rows.filter((r) => r.ownerId === ownerId).map((r) => byId.get(r.id)!.card);
+    kits.set(ownerId, await loadKits(tx, ownerId, cards.map((c) => ({ cardId: c.id, anilistId: c.anilistId, rarity: c.rarity })), rules));
+  }
   return userCardIds.map((id) => {
-    const card = byId.get(id);
-    if (!card) throw new BattleError("NOT_OWNED");
-    return fighterFrom(fighterCard(card), rules);
+    const row = byId.get(id);
+    if (!row) throw new BattleError("NOT_OWNED");
+    return fighterFrom(row.card, rules, kits.get(row.ownerId)?.get(row.card.id));
   });
 }
 
-/** Une carte au hasard de chaque rareté demandée, toutes différentes. */
-async function botFighters(tx: Tx, rarities: readonly Rarity[], ctx: Ctx): Promise<FighterSetup[]> {
+/** Une carte au hasard de chaque rareté demandée, toutes différentes. Les bots gardent le tirage de leurs cartes. */
+export async function botFighters(tx: Tx, rarities: readonly Rarity[], ctx: Ctx): Promise<FighterSetup[]> {
   const RARITIES = (await tx.rarityDefinition.findMany({ orderBy: [{ sortOrder: "asc" }, { key: "asc" }], select: { key: true } })).map((r) => r.key);
   const picked: FighterSetup[] = [];
   for (const wanted of botRarities(rarities, ctx.random, ctx.rules.botUpgradePct, RARITIES)) {

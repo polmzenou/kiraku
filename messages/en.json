@@ -1957,7 +1957,8 @@
         "armorPct": "Armor: damage reduction (%)",
         "executePct": "Execute: extra damage (%)",
         "executeThresholdPct": "Execute: target HP threshold (%)",
-        "channelOrbs": "Focus: orbs per turn"
+        "channelOrbs": "Focus: orbs per turn",
+        "abilityShopEnabled": "Workshop open (buying and choosing abilities)"
       },
       "valueHint": "Value: multiplier in % (Flash, Blade dance, Piercing strike, All-out strike, Double strike), heal, bonus or poison in % (Healing, Encouragement, Healing rain, Toxic mist), orbs gained (Meditation), unused (Protection, Seal).",
       "save": "Save",
@@ -1979,7 +1980,14 @@
       "synergy": "Universe synergy",
       "synergyHint": "Three cards from the same universe gain this bonus until their team's first death. 0 turns synergy off. Games in progress keep the bonus they started with.",
       "newAbilities": "New abilities",
-      "newAbilitiesHint": "Chance that a passive or technique slot receives a new ability, rolled once and for all per card. At 0, no card changes. Raising the value adds new abilities without changing those already assigned. Games in progress keep their abilities."
+      "newAbilitiesHint": "Chance that a passive or technique slot receives a new ability, rolled once and for all per card. At 0, no card changes. Raising the value adds new abilities without changing those already assigned. Games in progress keep their abilities.",
+      "abilityPrices": "Workshop prices (Zeni per card)",
+      "abilityPricesHint": "Price of one ability for a single card. Changes apply to later purchases, nothing is refunded. Closing the workshop keeps the kits already chosen.",
+      "sales": "Workshop purchases (7 days)",
+      "salesEmpty": "No purchases in the last 7 days.",
+      "salesRow": "{count, plural, one {# purchase} other {# purchases}} · {zeni, number} Zeni",
+      "salesKeyword": "passive",
+      "salesTechnique": "technique"
     },
     "ranked": {
       "title": "Ranked",
@@ -3946,7 +3954,8 @@
         "DISCORD_LINK": "Discord link bonus",
         "BOOSTER": "Booster purchase",
         "GIFT": "Booster gifted to a friend",
-        "SEASON": "Season reward (ranked)"
+        "SEASON": "Season reward (ranked)",
+        "ABILITY": "Ability bought (workshop)"
       }
     },
     "reveal": {
@@ -4216,7 +4225,11 @@
       "BAD_TEAM": "Pick 3 different cards.",
       "NO_BOT_CARDS": "No bot available right now.",
       "TOO_EARLY": "Just a moment…",
-      "NOT_PARTICIPANT": "This battle isn't yours."
+      "NOT_PARTICIPANT": "This battle isn't yours.",
+      "NO_SLOT": "This card has no passive slot.",
+      "ALREADY_OWNED": "You already own this ability for this card.",
+      "NOT_ENOUGH_ZENI": "Not enough Zeni.",
+      "BAD_KIT": "This kit is no longer valid: reload the page."
     },
     "result": {
       "WIN": "Victory",
@@ -4437,7 +4450,8 @@
       "confirmDelete": "Delete",
       "notFound": "This deck no longer exists.",
       "manage": "Manage my decks",
-      "create": "Create a deck"
+      "create": "Create a deck",
+      "atelierHint": "Your cards' passives and technique can be changed in the <link>workshop</link>."
     },
     "sandbox": {
       "title": "Battle sandbox",
@@ -4496,6 +4510,59 @@
       "deckMark": "{universe} synergy",
       "filterLabel": "Universe",
       "sameUniverse": "Same universe"
+    },
+    "atelier": {
+      "title": "Workshop",
+      "intro": "Change your cards' passives and technique. A purchase is for one card only and stays yours: re-equip it for free whenever you like.",
+      "back": "Back to battles",
+      "link": "Ability workshop",
+      "closed": "The workshop is closed for now. Abilities already equipped stay in play.",
+      "empty": "No cards yet: open boosters to get some.",
+      "balance": "Balance: {amount, number} Zeni",
+      "amount": "{amount, number}",
+      "zeni": "{amount, number} Zeni",
+      "open": "Open {name}'s workshop",
+      "modified": "Modified",
+      "slotsCount": "{count, plural, =0 {No passive slot} one {# passive slot} other {# passive slots}}",
+      "nextBattle": "Changes apply from your next battle, even if the card is already waiting in the queue.",
+      "slotsTitle": "Slots",
+      "passiveSlot": "Passive {n}",
+      "techniqueSlot": "Technique",
+      "noSlot": "This rarity has no passive slot: only the technique can change.",
+      "pickSlot": "Tap a slot to see what can replace it.",
+      "replacing": "Replace {name}",
+      "owned": "Owned: free",
+      "ownedEmpty": "Nothing else owned for this slot.",
+      "toBuy": "To buy",
+      "toBuyEmpty": "You already own everything for this slot.",
+      "origin": "Original",
+      "purchased": "Bought",
+      "equip": "Equip",
+      "equipNamed": "Equip {name}",
+      "buyNamed": "Buy {name} for {amount, number} Zeni",
+      "confirmTitle": "Buy {ability} for {card}?",
+      "confirmPrice": "Price",
+      "confirmAfter": "Balance after purchase",
+      "confirmMissing": "{amount, number} Zeni short",
+      "confirmNote": "This purchase is for this card only and is never refunded. {ability} replaces {replaced} right away; you can re-equip {replaced} for free.",
+      "confirm": "Buy",
+      "cancel": "Cancel",
+      "bought": "{ability} bought and equipped.",
+      "saved": "Kit saved.",
+      "reset": "Back to the original kit",
+      "resetHint": "Restores the randomly drawn abilities. Your purchases stay yours, nothing is refunded.",
+      "resetDone": "Original kit restored.",
+      "errors": {
+        "STALE": "The price has changed: check it before paying.",
+        "NOT_OWNED": "You no longer own this card."
+      },
+      "kitTitle": "Battle abilities",
+      "kitEdit": "Edit",
+      "kitPassives": "Passives",
+      "kitNone": "None",
+      "shelfTitle": "Battle workshop",
+      "shelfBody": "Buy passives and techniques for your cards, one card at a time.",
+      "shelfCta": "Open the workshop"
     }
   },
   "ranked": {

@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition, type FormEvent } from "react";
 import { Fuda } from "@/components/fuda/Fuda";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { cleanDeckName, DECK_NAME_MAX } from "@/lib/battle/decks";
 import { teamSynergy } from "@/lib/battle/synergy";
 import { TEAM_SIZE } from "@/lib/battle/types";
@@ -45,11 +45,14 @@ export function DeckManager({
   candidates,
   abilities,
   maxDecks,
+  atelier = false,
 }: {
   decks: DeckView[];
   candidates: CandidateCard[];
   abilities: AbilityRules;
   maxDecks: number;
+  /** Lien vers l'atelier, où se changent les capacités des cartes. */
+  atelier?: boolean;
 }) {
   const t = useTranslations("battle.decks");
   const ts = useTranslations("battle.synergy");
@@ -90,6 +93,17 @@ export function DeckManager({
         </Button>
       </div>
       {full && <p className="text-sm text-text-muted">{t("limit", { max: maxDecks })}</p>}
+      {atelier && (
+        <p className="text-sm text-text-muted">
+          {t.rich("atelierHint", {
+            link: (chunks) => (
+              <Link href="/combat/atelier" className="font-bold text-shu underline-offset-4 hover:underline">
+                {chunks}
+              </Link>
+            ),
+          })}
+        </p>
+      )}
 
       {decks.length === 0 ? (
         <p className="lacquer rounded-card p-4 text-center text-sm text-text-muted">{t("empty")}</p>

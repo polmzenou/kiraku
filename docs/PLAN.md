@@ -120,6 +120,7 @@ Tout se conçoit d'abord pour un écran de 375 px, puis s'élargit : sur desktop
 | Marché | `/marche` | Kyara + toi | Enchères, achat immédiat, mes ventes ; « Mettre une carte en vente » directement depuis les onglets de ventes |
 | Combat | `/combat`, `/combat/[id]` | Toi | Défis reçus, choix d'équipe, replay, historique, rang classé |
 | Mes decks | `/combat/decks` | Toi | Créer, modifier, renommer et supprimer ses équipes nommées (privé) |
+| Atelier | `/combat/atelier` | Toi | Changer les passifs et la technique d'une carte : achat en Zeni pour cette carte, rééquipement gratuit |
 | Profil public | `/u/[username]` | Kyara + toi | Vitrine 4 cartes, stats, bouton défier / ajouter |
 | Amis | `/amis` | Kyara + toi | Demandes, cadeaux, défier un ami |
 | Social | `/social` | Toi | Chercher un joueur, l'ajouter ou lui proposer un échange depuis le résultat, top 10 collectionneurs, section Discord (`discord.socialPromo`, masquée par défaut) ; menu « Plus » au-dessus de Casino |
@@ -587,6 +588,7 @@ Règles (moteur pur `lib/battle/engine.ts`, tous les chiffres dans `GameSetting`
 - Dégâts : `max(1, ATK × 100 / (100 + DEF) × critique × aléa × multiplicateur)`, critique 10 % ×1,5, aléa 0,9–1,1, en arithmétique entière.
 - Passifs selon la rareté (0 Commune et Peu commune, 1 Rare et Épique, 2 Légendaire et Mythique), stables par personnage : 挑発 Provocation, 結界 Barrière, 疾風 Rafale, 毒 Poison, 反撃 Riposte, 遺言 Dernière volonté, 復活 Renaissance. Une technique par carte : 一閃 Issen, 貫通 Kantsū, 乱舞 Ranbu, 癒し Iyashi, 守護 Shugo, 鼓舞 Kobu, 封印 Fūin.
 - **Nouvelles capacités** (`NEW_KEYWORDS`, `NEW_TECHNIQUES`, `lib/battle/modifiers.ts`). Passifs : Vampirisme, Rage, Cuirasse, Exécution, Concentration. Techniques : Coup absolu, Double frappe, Pluie de soin, Brume toxique, Méditation. Le tirage historique d'une carte porte toujours sur les 7 + 7 capacités d'origine, à l'identique ; chaque emplacement a ensuite `battle.newAbilityPct` % (30) de chances d'être remplacé par une nouveauté, avec un tirage séparé et stable. À 0, aucune carte ne change et les nouveautés ne s'obtiendront qu'au shop ; monter la valeur ajoute des nouveautés sans changer celles déjà attribuées. Aucune migration ni nouveau champ d'état : les capacités restent figées dans le setup, donc parties en cours et replays gardent les leurs. `parseSetting` complète `battle.keywordValues` et `battle.techniques` avec les défauts, pour qu'ajouter une capacité n'efface pas les réglages de l'admin. Équilibrage : `npm run battle:balance`, cibles 58 à 72 % de victoires pour un passif et 42 à 55 % pour une technique sur une seule carte, en miroir (`lib/battle/abilities.sim.test.ts`).
+- **Les capacités se changent à l'atelier** (`/combat/atelier`) : un passif ou une technique s'achète en Zeni pour un seul personnage (pour Rafale sur 3 cartes, 3 achats), reste acquis et se rééquipe gratuitement. Le nombre d'emplacements reste celui de la rareté (une Commune ne change que sa technique) ; le kit tiré au sort est acquis d'office. Les bots gardent le leur.
 - Minuteur `battle.turnSeconds` (30 s) ; deux tours expirés d'affilée = forfait ; abandon à tout moment ; limite de 30 tours globaux, puis le plus fort % de PV gagne (égalité = nul).
 
 Mise en œuvre (étape 9a) :
@@ -598,6 +600,7 @@ Mise en œuvre (étape 9a) :
 - **Écrans** : `/combat` (exhibition, classé, code ami, historique, règles ; choix d'équipe dans une feuille, dernière équipe pré-remplie), `/combat/[id]` (salle d'attente, plateau en direct chargé en import dynamique, replay). « Défier » sur le profil d'un ami ouvre une salle qui lui est réservée (notification `BATTLE_INVITE`). Réglages dans `/admin/combat`.
 - **Decks** (`server/battle/deck-core.ts`, `/combat/decks`) : équipes nommées de 3 personnages (`Deck.cardIds`, ids de `Card`, comme `battleTeam`), au plus `battle.maxDecks` (10) par joueur ; baisser la limite bloque les créations sans rien supprimer. Enregistrer exige 3 cartes différentes possédées, tous statuts confondus. Une carte vendue depuis laisse le deck en place, affiché « indisponible » : il ne remplit plus les emplacements tant qu'il n'est pas corrigé, le renommage reste possible. Le nom (1 à 24 caractères) n'est visible que de son propriétaire, donc sans modération ; il est supprimé à l'anonymisation et figure dans l'export RGPD. Le choix d'équipe reste libre : `TeamPicker` propose les decks en raccourcis et le moteur ne voit toujours que 3 ids de `Card`, revérifiés par `lockTeam`. Une carte présente dans un deck ne peut pas être supprimée du catalogue (`IN_USE`).
 - **Univers et synergie** (`Universe`, `lib/battle/synergy.ts`, `lib/catalog/universes.ts`) : trois cartes du même univers (`series.universeId ?? series.id` : une série sans groupe forme le sien) gagnent `battle.synergyAtkPct` (+10 %, 0 coupe la règle) d'ATQ, additionnés à 鼓舞, et un filament électrique rouge les encadre, pour les deux camps. Rupture définitive à la première vraie mort du camp : une carte sauvée par Renaissance ne rompt rien ; poison et riposte comptent. Tout est figé dans le setup au lancement (`setup.synergy`, `state.synergy`, événement `synergy_break`) : changer un regroupement ne touche ni les parties en cours ni les replays, et une partie sans synergie donne les mêmes chiffres qu'avant au caractère près. En miroir bot contre bot, +10 % donne 58,6 % de victoires ; la première mort survient en moyenne au tour 3,8 sur 15, donc le bonus accélère le début de partie sans durer. Les bots tirent toujours leurs cartes au hasard. Regroupement semi-automatique : `npm run catalog:universes` lit les relations AniList (SEQUEL, PREQUEL, PARENT, SIDE_STORY, ADAPTATION, SOURCE, SUMMARY, COMPILATION, CONTAINS ; SPIN_OFF et ALTERNATIVE fusionneraient tous les Precure), écrit un rapport dans `.import/` et n'écrit en base qu'avec `--apply`. Il ne traite que les séries sans univers et ne déplace jamais une série déjà rangée. `/admin/univers` corrige : créer, renommer, ranger, retirer (la série reçoit un univers à elle seule, pour que le script ne la replace pas), fusionner, supprimer.
+- **Atelier** (`lib/battle/loadout.ts`, `server/battle/kits.ts`, `server/battle/ability-shop-core.ts`, `AbilityPurchase`, `CardLoadout`) : l'achat est lié au joueur et au personnage (`Card`), pas à l'exemplaire. Il exige au moins un exemplaire, quel que soit son état ; les doublons partagent le kit ; vendre, échanger ou recycler n'emporte et ne rembourse rien, et racheter la carte redonne ses achats. Achat, débit (`CoinReason.ABILITY`, la carte en `refId`) et ligne `AbilityPurchase` dans une transaction, sous le verrou du joueur ; prix revérifié (`STALE`), contrainte unique contre le double paiement, équipement immédiat si un emplacement est choisi. Kit lu à chaque lecture par `effectiveKit` : ce qui n'est plus valide ou plus acquis, les doublons et le surplus d'emplacements tombent, le kit d'origine complète, donc un emplacement n'est jamais vide. `fightersOf` lit le kit au lancement, une partie le garde figé dans son setup : un changement vaut au prochain appariement, même pour une carte déjà en file. Réglages : `battle.abilityShopEnabled` (fermé, les kits déjà choisis restent en jeu) et `battle.abilityPrices` (`{ keywords, techniques }`, complété par les défauts comme `battle.techniques`). Prix par défaut proportionnels à la valeur mesurée (`npm run battle:balance`, 1 200 parties par ligne, référence 51 %) : passifs 100 Zeni par point au-dessus de la référence (100 au moins, Rafale 3 650), techniques 400 + 50 par point au-dessus de 44 %. `/admin/combat` montre les achats par capacité sur 7 jours, pour surveiller Rafale. Achats et kits figurent dans l'export RGPD et sont gardés à l'anonymisation, comme le journal de Zeni ; une carte achetée ne peut pas être supprimée du catalogue (`IN_USE`). Les dépenses de l'atelier comptent pour les missions « dépenser des Zeni ». Pas de paiement en argent réel tant que les packs Stripe restent coupés : sinon l'atelier deviendrait du pay-to-win en classé.
 - **Plateau** : table laquée, un tapis par camp, ligne de front avec médaillon du tour ; gemmes 力/PV aux coins des fuda ; l'attaquant fonce sur sa cible et revient (Web Animations, transform seulement), éclaboussure d'encre, gros chiffres détourés, 会心 sur un critique ; journal et détail de la carte en colonne sur desktop. En classé, le liseré, la ligne de front et le médaillon prennent la couleur du rang (`data-tier` : bronze, argent, or, émeraude, élite indigo, champion écarlate, grand champion nacre violet et blanc) ; aperçu admin avec `?rang=GOLD`.
 - **Tests** : `lib/battle/*.test.ts` (formule, chaque passif et technique, orbes, minuteur, limite de tours, replay identique, 2 000 parties bot contre bot) ; `server/battle/battle.db.test.ts` (actions simultanées, appariement simultané de 4 joueurs, file contre mise en vente, plafond quotidien, balayage, salles, bot), sauté sans `DATABASE_URL_TEST`.
 
@@ -894,7 +897,7 @@ enum Role { USER ADMIN }
 enum CardStatus { COLLECTION AUCTION BATTLE }
 enum FriendStatus { PENDING ACCEPTED }
 enum AuctionStatus { ACTIVE SOLD EXPIRED CANCELLED }
-enum CoinReason { SIGNUP BID_HOLD BID_REFUND SALE FEE DISSOLVE BATTLE_WIN DAILY MISSION REFERRAL ADMIN SHOP }
+enum CoinReason { SIGNUP BID_HOLD BID_REFUND SALE FEE DISSOLVE BATTLE_WIN DAILY MISSION REFERRAL ADMIN SHOP DISCORD_LINK BOOSTER GIFT SEASON ABILITY }
 
 model User {
   id            String   @id @default(cuid())
@@ -1313,6 +1316,30 @@ model BattleQueue {
   seenAt     DateTime   @default(now())
 
   @@index([mode, joinedAt])
+}
+
+// Atelier : capacité achetée pour un personnage (pas l'exemplaire), jamais remboursée, rééquipable à volonté
+model AbilityPurchase {
+  id        String   @id @default(cuid())
+  userId    String   // → User, onDelete: Cascade
+  cardId    String   // → Card, onDelete: Restrict
+  kind      String   // KEYWORD | TECHNIQUE
+  ability   String
+  price     Int      // CHECK > 0
+  createdAt DateTime @default(now())
+  @@unique([userId, cardId, kind, ability]) // une capacité ne se paie qu'une fois, même avec deux clics simultanés
+  @@index([cardId])
+  @@index([createdAt])
+}
+
+// Kit choisi par le joueur pour un personnage ; absent = kit tiré au sort
+model CardLoadout {
+  userId    String   // → User, onDelete: Cascade
+  cardId    String   // → Card, onDelete: Cascade
+  keywords  String[]
+  technique String
+  updatedAt DateTime @updatedAt
+  @@id([userId, cardId])
 }
 ```
 

@@ -3,15 +3,16 @@ import { cache } from "react";
 import { randomInt } from "node:crypto";
 import { battleRulesFrom, BATTLE_SETTING_KEYS, type BattleRules } from "@/lib/battle/config";
 import { replay } from "@/lib/battle/engine";
+import { isKeyword, isTechnique, type AbilityKind, type Kit } from "@/lib/battle/loadout";
 import { combatStats, keywordsFor, techniqueFor } from "@/lib/battle/stats";
 import { universeOf } from "@/lib/battle/synergy";
-import { TEAM_SIZE, type Action, type BattleSetup, type BattleState, type Side } from "@/lib/battle/types";
-import type { Activity, BattleUpdateView, BattleView, CandidateCard, DeckView, HistoryItem, PlayerView } from "@/lib/battle/view";
+import { KEYWORDS, TEAM_SIZE, TECHNIQUES, type Action, type BattleSetup, type BattleState, type Keyword, type Side, type Technique } from "@/lib/battle/types";
+import type { Activity, BattleUpdateView, BattleView, CandidateCard, DeckView, HistoryItem, PlayerView, WorkshopCard } from "@/lib/battle/view";
 import { parseBoardTier, type BoardTier } from "@/lib/battle/tiers";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { periodWindow } from "@/lib/economy/period";
 import type { SettingValue } from "@/lib/settings/defaults";
-import type { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { decorFromRelations } from "@/lib/profile/decor";
 import { prisma } from "../db";
 import { decorSelect } from "../profile/decor";
@@ -20,6 +21,7 @@ import { getRankedRules } from "../ranked/queries";
 import { getSetting } from "../settings";
 import { getRelation } from "../social/queries";
 import { sweepStaleWith, type Ctx } from "./battle-core";
+import { loadKitDetails, loadKits } from "./kits";
 import { publishBattle } from "./realtime";
 
 // Lectures du combat. Les parties dont le tour a expiré sont réglées au passage (paresseux), comme
@@ -206,19 +208,27 @@ type CandidateRow = {
 
 const MAX_CANDIDATES = 500;
 
-/** Une carte telle qu'elle combattra. `anilistId` est l'alias de `publicId` : passifs et technique en dépendent. */
-function candidateFrom(row: CandidateRow, rules: BattleRules): CandidateCard {
+/**
+ * Une carte telle qu'elle combattra : le kit choisi à l'atelier, ou le tirage de la carte. `anilistId` est
+ * l'alias de `publicId` : passifs et technique en dépendent.
+ */
+function candidateFrom(row: CandidateRow, rules: BattleRules, kit?: Kit): CandidateCard {
   return {
     ...row,
     hp: combatStats(row.power, row.ki, rules.stats).hp,
-    keywords: keywordsFor(row.anilistId, row.rarity, rules.keywordsByRarity, rules.newAbilityPct),
-    technique: techniqueFor(row.anilistId, rules.newAbilityPct),
+    keywords: kit ? [...kit.keywords] : keywordsFor(row.anilistId, row.rarity, rules.keywordsByRarity, rules.newAbilityPct),
+    technique: kit ? kit.technique : techniqueFor(row.anilistId, rules.newAbilityPct),
   };
 }
 
+type CandidateSqlRow = Omit<CandidateRow, "universe"> & { universeKey: string; universeName: string };
+
+const candidateRow = ({ universeKey, universeName, ...r }: CandidateSqlRow): CandidateRow => ({ ...r, universe: { key: universeKey, name: universeName } });
+
 /** Cartes du joueur disponibles pour combattre (au moins un exemplaire en collection), les plus fortes d'abord. */
 export async function getCandidates(userId: string, rules: BattleRules): Promise<CandidateCard[]> {
-  const rows = await prisma.$queryRaw<(Omit<CandidateRow, "universe"> & { universeKey: string; universeName: string })[]>`
+  const rows = (
+    await prisma.$queryRaw<CandidateSqlRow[]>`
     SELECT c.id AS "cardId", c."publicId" AS "anilistId", c.appearance, c.name, c."nameNative", c."imageUrl", c.rank, c."rarityKey" AS rarity, c.power, c.ki,
       COALESCE(s."universeId", s.id) AS "universeKey", COALESCE(u.name, s."titleRomaji") AS "universeName"
     FROM "Card" c
@@ -227,8 +237,55 @@ export async function getCandidates(userId: string, rules: BattleRules): Promise
     LEFT JOIN "Universe" u ON u.id = s."universeId"
     WHERE EXISTS (SELECT 1 FROM "UserCard" uc WHERE uc."cardId" = c.id AND uc."ownerId" = ${userId} AND uc.status = 'COLLECTION')
     ORDER BY rd."sortOrder" DESC, (c.power + c.ki) DESC, c.id ASC
-    LIMIT ${MAX_CANDIDATES}`;
-  return rows.map(({ universeKey, universeName, ...r }) => candidateFrom({ ...r, universe: { key: universeKey, name: universeName } }, rules));
+    LIMIT ${MAX_CANDIDATES}`
+  ).map(candidateRow);
+  const kits = await loadKits(prisma, userId, rows, rules);
+  return rows.map((r) => candidateFrom(r, rules, kits.get(r.cardId)));
+}
+
+/**
+ * Cartes de l'atelier : tous les personnages dont le joueur possède au moins un exemplaire, quel que soit
+ * son état (en vente ou engagé en combat, il reste à lui), les plus forts d'abord. `focus` (lien
+ * « Modifier » de la collection) est ajouté s'il dépasse la limite.
+ */
+export async function getWorkshopCards(userId: string, rules: BattleRules, focus: string | null = null): Promise<WorkshopCard[]> {
+  const select = Prisma.sql`
+    SELECT c.id AS "cardId", c."publicId" AS "anilistId", c.appearance, c.name, c."nameNative", c."imageUrl", c.rank, c."rarityKey" AS rarity, c.power, c.ki,
+      COALESCE(s."universeId", s.id) AS "universeKey", COALESCE(u.name, s."titleRomaji") AS "universeName"
+    FROM "Card" c
+    JOIN "RarityDefinition" rd ON rd.key = c."rarityKey"
+    JOIN "Series" s ON s.id = c."seriesId"
+    LEFT JOIN "Universe" u ON u.id = s."universeId"
+    WHERE EXISTS (SELECT 1 FROM "UserCard" uc WHERE uc."cardId" = c.id AND uc."ownerId" = ${userId})`;
+  const [top, extra] = await Promise.all([
+    prisma.$queryRaw<CandidateSqlRow[]>`${select} ORDER BY rd."sortOrder" DESC, (c.power + c.ki) DESC, c.id ASC LIMIT ${MAX_CANDIDATES}`,
+    focus ? prisma.$queryRaw<CandidateSqlRow[]>`${select} AND c.id = ${focus}` : [],
+  ]);
+  const rows = [...top, ...extra.filter((e) => !top.some((t) => t.cardId === e.cardId))].map(candidateRow);
+  const details = await loadKitDetails(prisma, userId, rows, rules);
+  return rows.flatMap((r) => {
+    const d = details.get(r.cardId);
+    if (!d) return [];
+    return [
+      {
+        ...candidateFrom(r, rules, d.kit),
+        slots: d.slots,
+        base: { keywords: [...d.base.keywords], technique: d.base.technique },
+        owned: { keywords: KEYWORDS.filter((k) => d.owned.keywords.has(k)), techniques: TECHNIQUES.filter((t) => d.owned.techniques.has(t)) },
+      },
+    ];
+  });
+}
+
+/** Kit d'une carte pour la fiche de collection ; null si le joueur n'en possède aucun exemplaire. */
+export async function getCardKit(userId: string, cardId: string, rules: BattleRules) {
+  const card = await prisma.card.findFirst({
+    where: { id: cardId, copies: { some: { ownerId: userId } } },
+    select: { id: true, publicId: true, rarity: true },
+  });
+  if (!card) return null;
+  const details = await loadKitDetails(prisma, userId, [{ cardId: card.id, anilistId: card.publicId, rarity: card.rarity as Rarity }], rules);
+  return details.get(card.id) ?? null;
 }
 
 /**
@@ -268,6 +325,12 @@ export async function getDecks(userId: string, rules: BattleRules): Promise<Deck
       candidateFrom({ ...card, cardId: id, anilistId: publicId, rarity: rarity as Rarity, universe: universeOf(series) }, rules),
     ]),
   );
+  // Kits de l'atelier : un deck affiche les capacités avec lesquelles ses cartes combattront
+  const kits = await loadKits(prisma, userId, cards.map((c) => ({ cardId: c.id, anilistId: c.publicId, rarity: c.rarity as Rarity })), rules);
+  for (const [id, card] of byId) {
+    const kit = kits.get(id);
+    if (kit) byId.set(id, { ...card, keywords: [...kit.keywords], technique: kit.technique });
+  }
   const inCollection = new Set(copies.map((c) => c.cardId));
   return decks.map((d) => {
     const unavailable = d.cardIds.filter((id) => !inCollection.has(id));
@@ -357,6 +420,26 @@ export async function combatTotals(now: Date) {
     prisma.coinTransaction.aggregate({ where: { reason: "BATTLE_WIN", createdAt: { gte: since } }, _sum: { amount: true } }),
   ]);
   return { active, waiting, queued, finished24h, bots24h, rewards24h: rewards._sum.amount ?? 0 };
+}
+
+export type AbilitySales = { kind: AbilityKind; ability: Keyword | Technique; count: number; zeni: number }[];
+
+/** Achats de l'atelier par capacité sur 7 jours, les plus achetées d'abord (/admin/combat, surveillance de Rafale). */
+export async function abilitySales(now: Date): Promise<AbilitySales> {
+  const since = new Date(now.getTime() - 7 * 24 * 3_600_000);
+  const rows = await prisma.abilityPurchase.groupBy({
+    by: ["kind", "ability"],
+    where: { createdAt: { gte: since } },
+    _count: { _all: true },
+    _sum: { price: true },
+  });
+  return rows
+    .flatMap((r) =>
+      (r.kind === "KEYWORD" && isKeyword(r.ability)) || (r.kind === "TECHNIQUE" && isTechnique(r.ability))
+        ? [{ kind: r.kind as AbilityKind, ability: r.ability as Keyword | Technique, count: r._count._all, zeni: r._sum.price ?? 0 }]
+        : [],
+    )
+    .sort((a, b) => b.count - a.count || b.zeni - a.zeni);
 }
 
 /** Ami à défier depuis son profil : null si le pseudo n'est pas un ami accepté. */

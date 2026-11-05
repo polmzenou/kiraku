@@ -1,6 +1,7 @@
 import type { Rarity } from "@/lib/catalog/rarity";
 import { mixSeed, seededRng, type Rng } from "@/lib/rng";
 import type { BattleRules } from "./config";
+import type { Kit } from "./loadout";
 import { teamSynergy } from "./synergy";
 import { KEYWORDS, LEGACY_KEYWORDS, LEGACY_TECHNIQUES, NEW_KEYWORDS, NEW_TECHNIQUES, type BattleSetup, type FighterSetup, type Keyword, type Side, type Technique, type UniverseRef } from "./types";
 
@@ -21,6 +22,11 @@ const TECHNIQUE_SALT = 0x7463; // « tc »
 const NEW_KEYWORD_SALT = 0x6e6b; // « nk »
 const NEW_TECHNIQUE_SALT = 0x6e74; // « nt »
 
+/** Emplacements de passif d'une rareté : fixés par battle.keywordsByRarity, l'atelier n'en ajoute jamais. */
+export function keywordSlots(rarity: Rarity, perRarity: BattleRules["keywordsByRarity"]): number {
+  return Math.min(perRarity[rarity] ?? 0, LEGACY_KEYWORDS.length);
+}
+
 /**
  * Passifs d'une carte : toujours les mêmes pour un personnage donné, leur nombre dépend de la rareté.
  * Le tirage historique porte sur les seuls passifs d'origine, à l'identique. Chaque emplacement a ensuite
@@ -28,7 +34,7 @@ const NEW_TECHNIQUE_SALT = 0x6e74; // « nt »
  * le monter ne fait qu'ajouter des remplacements, sans changer ceux qui existent déjà.
  */
 export function keywordsFor(anilistId: number, rarity: Rarity, perRarity: BattleRules["keywordsByRarity"], newAbilityPct = 0): Keyword[] {
-  const count = Math.min(perRarity[rarity] ?? 0, LEGACY_KEYWORDS.length);
+  const count = keywordSlots(rarity, perRarity);
   const rng = seededRng(mixSeed(anilistId, KEYWORD_SALT));
   const pool: Keyword[] = [...LEGACY_KEYWORDS];
   const picked: Keyword[] = [];
@@ -67,7 +73,8 @@ export type FighterCard = {
   universe?: UniverseRef;
 };
 
-export function fighterFrom(card: FighterCard, rules: BattleRules): FighterSetup {
+/** `kit` : passifs et technique choisis à l'atelier (lib/battle/loadout.ts) ; sans lui, le tirage de la carte. */
+export function fighterFrom(card: FighterCard, rules: BattleRules, kit?: Kit): FighterSetup {
   return {
     cardId: card.id,
     anilistId: card.anilistId,
@@ -80,8 +87,8 @@ export function fighterFrom(card: FighterCard, rules: BattleRules): FighterSetup
     power: card.power,
     ki: card.ki,
     ...combatStats(card.power, card.ki, rules.stats),
-    keywords: keywordsFor(card.anilistId, card.rarity, rules.keywordsByRarity, rules.newAbilityPct),
-    technique: techniqueFor(card.anilistId, rules.newAbilityPct),
+    keywords: kit ? [...kit.keywords] : keywordsFor(card.anilistId, card.rarity, rules.keywordsByRarity, rules.newAbilityPct),
+    technique: kit ? kit.technique : techniqueFor(card.anilistId, rules.newAbilityPct),
     ...(card.universe ? { universe: card.universe } : {}),
   };
 }

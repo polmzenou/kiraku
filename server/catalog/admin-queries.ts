@@ -11,7 +11,7 @@ import { deletableCard } from "./admin-core";
 import { canDeleteCatalogCard, canEditCatalogCard, type CatalogScope } from "@/lib/admin/roles";
 
 const PAGE_SIZE = 24;
-const usage = { copies: true, discoveries: true, wishedBy: true, lotItems: true, auctions: true, notablePulls: true, tradesWanted: true, tradesChosen: true, tradeOffers: true, variants: true } as const;
+const usage = { copies: true, discoveries: true, wishedBy: true, lotItems: true, auctions: true, notablePulls: true, tradesWanted: true, tradesChosen: true, tradeOffers: true, variants: true, abilityPurchases: true } as const;
 
 export async function adminCatalogList(raw: Record<string, string | string[] | undefined>) {
   const filters = parseAdminCatalogParams(raw);

@@ -4,7 +4,7 @@ import { RARITIES, VARIANT_RARITIES } from "@/lib/catalog/rarity";
 import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
 import { rotationPinSchema } from "@/lib/boosters/rotation";
 import { slugSchema } from "@/lib/boosters/types";
-import { LEGACY_KEYWORDS, TECHNIQUES } from "@/lib/battle/types";
+import { KEYWORDS, LEGACY_KEYWORDS, TECHNIQUES } from "@/lib/battle/types";
 import { JOIN_MODAL_DEFAULT, joinModalSchema } from "@/lib/discord/join-modal";
 import { SOCIAL_PROMO_DEFAULT, socialPromoSchema } from "@/lib/discord/social-promo";
 import { NEWS_DEFAULT, newsSchema } from "@/lib/home/news-schema";
@@ -89,6 +89,13 @@ const battleTechniques = z.object(
     TECHNIQUES.map((t) => [t, z.object({ cost: z.number().int().min(0).max(20), value: z.number().int().min(0).max(1_000) })]),
   ) as { [T in (typeof TECHNIQUES)[number]]: z.ZodObject<{ cost: z.ZodNumber; value: z.ZodNumber }> },
 );
+
+// Prix de l'atelier en Zeni, par capacité ; complétés avec les défauts à la lecture (completed)
+const abilityPrice = z.number().int().min(1).max(1_000_000);
+const battleAbilityPrices = z.object({
+  keywords: z.object(Object.fromEntries(KEYWORDS.map((k) => [k, abilityPrice])) as { [K in (typeof KEYWORDS)[number]]: typeof abilityPrice }),
+  techniques: z.object(Object.fromEntries(TECHNIQUES.map((t) => [t, abilityPrice])) as { [T in (typeof TECHNIQUES)[number]]: typeof abilityPrice }),
+});
 
 // Le nombre de passifs d'une carte vient du tirage historique, sur les passifs d'origine
 const keywordsByRarity = z.record(rarityKeySchema, z.number().int().min(0).max(LEGACY_KEYWORDS.length));
@@ -326,6 +333,9 @@ export const SETTING_SCHEMAS = {
   "battle.synergyAtkPct": z.number().int().min(0).max(100),
   // Chances qu'un emplacement de capacité reçoive une nouveauté. 0 : aucune carte ne change, les nouveautés ne s'obtiendront qu'au shop
   "battle.newAbilityPct": z.number().int().min(0).max(100),
+  // Atelier (/combat/atelier) : achat de passifs et de techniques par personnage. Fermé, les kits déjà choisis restent en jeu
+  "battle.abilityShopEnabled": z.boolean(),
+  "battle.abilityPrices": battleAbilityPrices,
   // Classé (étape 9b)
   "ranked.enabled": z.boolean(),
   "ranked.tiers": rankedTiers,
@@ -541,12 +551,13 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
     IYASHI: { cost: 2, value: 30 }, // soigne 30 % des PV max
     SHUGO: { cost: 2, value: 0 }, // donne 結界
     KOBU: { cost: 2, value: 20 }, // +20 % d'ATK pendant 2 tours
+    // Même ordre que TECHNIQUES : l'admin compare les réglages par JSON.stringify, un autre ordre réécrirait la valeur à chaque sauvegarde
+    FUIN: { cost: 3, value: 0 }, // la cible passe son prochain tour
     KONSHIN: { cost: 2, value: 240 }, // coup à ×2,4, puis la carte passe son prochain tour
     RENGEKI: { cost: 2, value: 70 }, // 2 coups à ×0,7
     JIU: { cost: 3, value: 15 }, // soigne tous les alliés de 15 %
     DOKUGIRI: { cost: 3, value: 8 }, // empoisonne tous les ennemis, 8 % des PV max par tour
     MEISO: { cost: 0, value: 2 }, // 2 orbes tout de suite
-    FUIN: { cost: 3, value: 0 }, // la cible passe son prochain tour
   },
   "battle.turnSeconds": 30,
   "battle.maxMissedTurns": 2,
@@ -563,6 +574,39 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "battle.maxDecks": 10,
   "battle.newAbilityPct": 30,
   "battle.synergyAtkPct": 10, // 58,6 % de victoires en miroir sur 6 000 parties bot contre bot (53,7 % à +5, 62,8 % à +15)
+  "battle.abilityShopEnabled": true,
+  // Proportionnels à la valeur mesurée (npm run battle:balance, 1 200 parties par ligne, référence sans capacité 51 %) :
+  // passifs 100 Zeni par point au-dessus de la référence (100 au minimum), techniques 400 + 50 par point au-dessus de 44 %
+  "battle.abilityPrices": {
+    keywords: {
+      TAUNT: 100, // 38,7 %
+      BARRIER: 1950, // 70,6 %
+      FLURRY: 3650, // 87,7 %
+      POISON: 1200, // 63,2 %
+      RIPOSTE: 1050, // 61,3 %
+      LAST_WILL: 300, // 53,9 %
+      REVIVE: 2600, // 76,8 %
+      LIFESTEAL: 1100, // 61,8 %
+      RAGE: 800, // 58,8 %
+      ARMOR: 1200, // 63,0 %
+      EXECUTE: 950, // 60,3 %
+      CHANNEL: 1250, // 63,5 %
+    },
+    techniques: {
+      ISSEN: 750, // 51,0 %
+      KANTSU: 700, // 49,9 %
+      RANBU: 450, // 44,7 %
+      IYASHI: 400, // 44,2 %
+      SHUGO: 450, // 45,4 %
+      KOBU: 350, // 43,3 %
+      FUIN: 450, // 44,9 %
+      KONSHIN: 800, // 52,4 %
+      RENGEKI: 700, // 49,6 %
+      JIU: 400, // 44,3 %
+      DOKUGIRI: 400, // 44,3 %
+      MEISO: 450, // 44,9 %
+    },
+  },
   "ranked.enabled": true,
   // Barème du plan (section « Mode classé »)
   "ranked.tiers": {
@@ -624,11 +668,22 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
  * par les défauts avant validation. Sans cela, ajouter une capacité effacerait en silence tous les réglages
  * de l'admin sur les autres.
  */
-const COMPLETED_KEYS: ReadonlySet<SettingKey> = new Set(["battle.keywordValues", "battle.techniques"]);
+const COMPLETED_KEYS: ReadonlySet<SettingKey> = new Set(["battle.keywordValues", "battle.techniques", "battle.abilityPrices"]);
+/** Complétés un niveau plus bas : chaque groupe ({ keywords, techniques }) reçoit les capacités qui lui manquent. */
+const NESTED_KEYS: ReadonlySet<SettingKey> = new Set(["battle.abilityPrices"]);
+
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
 function completed<K extends SettingKey>(key: K, raw: unknown): unknown {
-  if (!COMPLETED_KEYS.has(key) || typeof raw !== "object" || raw === null || Array.isArray(raw)) return raw;
-  return { ...(SETTING_DEFAULTS[key] as object), ...raw };
+  if (!COMPLETED_KEYS.has(key) || !isRecord(raw)) return raw;
+  const defaults = SETTING_DEFAULTS[key] as Record<string, unknown>;
+  if (!NESTED_KEYS.has(key)) return { ...defaults, ...raw };
+  return Object.fromEntries(
+    Object.entries({ ...defaults, ...raw }).map(([group, value]) => [
+      group,
+      isRecord(value) && isRecord(defaults[group]) ? { ...defaults[group], ...value } : value,
+    ]),
+  );
 }
 
 /** Valeur stockée validée, ou valeur par défaut si absente ou invalide. */

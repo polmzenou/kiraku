@@ -85,6 +85,12 @@ describe.each(["fr", "en"] as const)("decks (%s)", (locale) => {
     expect(out).toContain(">2/10<");
   });
 
+  it("renvoie vers l'atelier quand il est ouvert", () => {
+    expect(render(locale, manager([]))).not.toContain('href="/combat/atelier"');
+    const out = render(locale, createElement(DeckManager, { decks: [], candidates: [], abilities, maxDecks: 10, atelier: true }));
+    expect(out).toContain('href="/combat/atelier"');
+  });
+
   it("bloque la création à la limite, même dépassée après une baisse du réglage", () => {
     const out = render(locale, manager([ready, sold], 1));
     expect(out).toMatch(new RegExp(`<button[^>]*disabled=""[^>]*>${t.new}</button>`));
