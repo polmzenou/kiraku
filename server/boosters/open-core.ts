@@ -14,6 +14,7 @@ import {
   type RuinRules,
   type SealedKind,
 } from "@/lib/boosters/draw";
+import { stillDrawable } from "@/lib/boosters/drawable";
 import { isIncenseActive } from "@/lib/boosters/incense";
 import type { Rng } from "@/lib/boosters/rng";
 import { computeStock, consumeStock, stockRulesFor, type StockSettings, type StockState } from "@/lib/boosters/stock";
@@ -142,19 +143,23 @@ type DrawnRow = Omit<OpenedBoosterRow, "cards"> & { cards: DrawnCard[] };
  */
 async function persistDraw(
   tx: Tx,
-  input: { userId: string; type: Pick<OpenType, "id" | "slug">; rules: DrawRules; now: Date; drawn: DrawnRow[]; sealedDropId?: string },
+  input: { userId: string; type: Pick<OpenType, "id" | "slug">; rules: DrawRules; pool: CardPool; now: Date; drawn: DrawnRow[]; sealedDropId?: string },
 ): Promise<OpenedBoosterRow[]> {
   const { userId, type, rules, now } = input;
   // « Nouveau » : jamais obtenue avant, et seulement le premier exemplaire de ce tirage
   const drawnIds = [...new Set(input.drawn.flatMap((b) => b.cards.map((c) => c.cardId)))];
   if (drawnIds.length === 0) return [];
-  const eligible = await tx.card.findMany({ where: { id: { in: drawnIds } }, select: { id: true, status: true, rarity: true, dropWeight: true, origin: true, boosterIds: true } });
+  const eligible = await tx.card.findMany({
+    where: { id: { in: drawnIds } },
+    select: { id: true, status: true, rarity: true, dropWeight: true, origin: true, boosterIds: true, variantOfId: true, boosterExclusive: true },
+  });
   const liveCards = new Map(eligible.map((c) => [c.id, c]));
-  if (input.drawn.some((b) => b.cards.some((c) => {
-    const row = liveCards.get(c.cardId);
-    return !row || row.status !== "PUBLISHED" || row.rarity !== c.rarity || row.dropWeight <= 0 ||
-      row.dropWeight !== (rules.cardWeights?.[row.id] ?? 1) || (row.origin === "CUSTOM" && !row.boosterIds.includes(type.id));
-  }))) throw new OpenError("NOT_FOR_SALE");
+  // Une variante qui suit sa carte de base n'est pas cochée pour le type : elle passe si sa base est au pool
+  const poolIds = new Set(Object.values(input.pool).flat());
+  const ctx = { typeId: type.id, inPool: (id: string) => poolIds.has(id) };
+  if (input.drawn.some((b) => b.cards.some((c) =>
+    !stillDrawable(liveCards.get(c.cardId), { rarity: c.rarity, weight: rules.cardWeights?.[c.cardId] ?? 1 }, ctx),
+  ))) throw new OpenError("NOT_FOR_SALE");
   const known = await tx.discovery.findMany({
     where: { userId, cardId: { in: drawnIds } },
     select: { cardId: true },
@@ -291,6 +296,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         userId,
         type,
         rules: rules.draw,
+        pool: input.pool,
         now,
         drawn: drawn.boosters.flatMap((b) =>
           b.drop
@@ -411,6 +417,7 @@ export async function openSealedWith(db: PrismaClient, input: OpenSealedInput, o
       userId,
       type,
       rules: rules.draw,
+      pool: input.pool,
       now,
       drawn: [{
         id: randomUUID(),
