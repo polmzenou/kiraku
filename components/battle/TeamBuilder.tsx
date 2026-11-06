@@ -11,6 +11,7 @@ import { chipClasses } from "../ui/Chip";
 import { AbilityLists, type AbilityRules } from "./AbilityGuide";
 import { CardFilters, useCardFilters } from "./CardFilters";
 import { StaticFilament } from "./stage/SynergyFilament";
+import { VirtualCardGrid } from "./VirtualCardGrid";
 
 /** Ajoute ou retire une carte de l'équipe, sans dépasser sa taille. */
 export const toggleTeam = (team: string[], id: string) =>
@@ -120,44 +121,45 @@ export function TeamBuilder({
         ) : shown.length === 0 ? (
           <p className="text-center text-sm text-text-muted">{t("noMatch")}</p>
         ) : (
-          <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6">
-            {shown.map((c) => {
+          // Virtualisée et figée : des centaines de cartes à effets montées d'un coup faisaient planter iOS
+          <VirtualCardGrid
+            items={shown}
+            itemKey={(c) => c.cardId}
+            renderItem={(c) => {
               const picked = team.includes(c.cardId);
               const full = !picked && team.length >= TEAM_SIZE;
               return (
-                <li key={c.cardId}>
-                  <button
-                    type="button"
-                    onClick={() => onToggle(c.cardId)}
-                    disabled={full}
-                    aria-pressed={picked}
-                    aria-label={picked ? t("remove", { name: c.name }) : t("add", { name: c.name })}
-                    className={`relative flex w-full flex-col gap-1 rounded-[6px] text-left transition-opacity disabled:opacity-40 ${picked ? "opacity-50" : ""}`}
-                  >
-                    <Fuda card={c} size="sm" variant="battle" tilt={false} sizes="(min-width: 768px) 160px, 30vw" />
-                    <span className="flex flex-wrap items-center gap-1 text-[11px] leading-tight">
-                      <span className="tabular-nums">{t("stats", { atk: c.power, hp: c.hp })}</span>
-                      <span className="text-shu">{tk(`techniques.${c.technique}.name`)}</span>
-                      {c.ultimate && <span className="font-bold text-kin">{tk("team.ultimateChip", { name: tk(`ultimates.${c.ultimate}.name`) })}</span>}
-                      {c.keywords.map((k) => (
-                        <span key={k} className="rounded-sm bg-surface-2 px-0.5">
-                          {tk(`keywords.${k}.name`)}
-                        </span>
-                      ))}
-                    </span>
-                    {picked && (
-                      <span
-                        aria-hidden="true"
-                        className="absolute top-1 left-1 flex size-6 items-center justify-center rounded-full bg-kin text-xs font-bold text-sumi"
-                      >
-                        {team.indexOf(c.cardId) + 1}
+                <button
+                  type="button"
+                  onClick={() => onToggle(c.cardId)}
+                  disabled={full}
+                  aria-pressed={picked}
+                  aria-label={picked ? t("remove", { name: c.name }) : t("add", { name: c.name })}
+                  className={`relative flex w-full flex-col gap-1 rounded-[6px] text-left transition-opacity disabled:opacity-40 ${picked ? "opacity-50" : ""}`}
+                >
+                  <Fuda card={c} size="sm" variant="battle" tilt={false} still sizes="(min-width: 768px) 160px, 30vw" />
+                  <span className="flex flex-wrap items-center gap-1 text-[11px] leading-tight">
+                    <span className="tabular-nums">{t("stats", { atk: c.power, hp: c.hp })}</span>
+                    <span className="text-shu">{tk(`techniques.${c.technique}.name`)}</span>
+                    {c.ultimate && <span className="font-bold text-kin">{tk("team.ultimateChip", { name: tk(`ultimates.${c.ultimate}.name`) })}</span>}
+                    {c.keywords.map((k) => (
+                      <span key={k} className="rounded-sm bg-surface-2 px-0.5">
+                        {tk(`keywords.${k}.name`)}
                       </span>
-                    )}
-                  </button>
-                </li>
+                    ))}
+                  </span>
+                  {picked && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute top-1 left-1 flex size-6 items-center justify-center rounded-full bg-kin text-xs font-bold text-sumi"
+                    >
+                      {team.indexOf(c.cardId) + 1}
+                    </span>
+                  )}
+                </button>
               );
-            })}
-          </ul>
+            }}
+          />
         )}
       </div>
 
