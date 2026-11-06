@@ -5,8 +5,8 @@ import { BOT_NAMES, botAction, botRarities, scoreAction } from "./bot";
 import { DEFAULT_BATTLE_RULES } from "./config";
 import { createState } from "./engine";
 import { FLAT_RULES, fighter, RULES, setupOf } from "./fixtures";
-import { buildSetup, combatStats, fighterFrom, firstSide, keywordsFor, techniqueFor } from "./stats";
-import { KEYWORDS, LEGACY_KEYWORDS, LEGACY_TECHNIQUES, NEW_KEYWORDS, NEW_TECHNIQUES, TECHNIQUES, type Action, type Keyword, type Technique } from "./types";
+import { buildSetup, combatStats, fighterFrom, firstSide, keywordsFor, techniqueFor, ultimateFor } from "./stats";
+import { KEYWORDS, LEGACY_KEYWORDS, LEGACY_TECHNIQUES, NEW_KEYWORDS, NEW_TECHNIQUES, TECHNIQUES, ULTIMATES, type Action, type BattleSetup, type BattleState, type Keyword, type Technique } from "./types";
 import { mixSeed } from "@/lib/rng";
 
 const rules = DEFAULT_BATTLE_RULES;
@@ -252,5 +252,76 @@ describe("bot", () => {
 
   it("a des noms affichables", () => {
     expect(BOT_NAMES.length).toBeGreaterThan(3);
+  });
+});
+
+describe("ultis", () => {
+  const card = (anilistId: number, rarity: string) => ({ id: `c${anilistId}`, anilistId, name: "x", nameNative: null, imageUrl: "/x", rank: 1, rarity, power: 60, ki: 60 });
+
+  it("Gold, MR et XR par défaut, et seulement les raretés cochées", () => {
+    expect(rules.ultimateRarities).toEqual(["GOLD", "MR", "XR"]);
+    for (const rarity of [...RARITIES, "BR", "AR", "VR"]) expect(ultimateFor(7, rarity, rules)).toBeNull();
+    for (const rarity of ["GOLD", "MR", "XR"]) expect(ultimateFor(7, rarity, rules)).not.toBeNull();
+    expect(ultimateFor(7, "XR", { ultimateRarities: [] })).toBeNull();
+    expect(ultimateFor(7, "EPIC", { ultimateRarities: ["EPIC"] })).not.toBeNull();
+  });
+
+  it("toujours le même pour un personnage, quelle que soit sa rareté cochée, et les 5 sortent", () => {
+    const seen = new Set<string>();
+    for (let id = 1; id <= 300; id++) {
+      const u = ultimateFor(id, "GOLD", rules);
+      expect(ultimateFor(id, "XR", rules)).toBe(u);
+      expect(ultimateFor(id, "GOLD", rules)).toBe(u);
+      seen.add(u!);
+    }
+    expect([...seen].sort()).toEqual([...ULTIMATES].sort());
+  });
+
+  it("identique avec ou sans kit d'atelier, absent hors des raretés cochées", () => {
+    const gold = card(42, "GOLD");
+    const kit = { keywords: ["FLURRY", "REVIVE", "LIFESTEAL"] as Keyword[], technique: "MEISO" as Technique };
+    expect(fighterFrom(gold, rules, kit).ultimate).toBe(fighterFrom(gold, rules).ultimate);
+    expect(fighterFrom(gold, rules).ultimate).toBe(ultimateFor(42, "GOLD", rules));
+    const plain = fighterFrom(card(42, "MYTHIC"), rules, kit);
+    expect(plain).not.toHaveProperty("ultimate");
+  });
+});
+
+describe("bot et ultis", () => {
+  /** Jauge pleine sur la carte 0, aucune orbe : seules l'attaque et l'ulti sont jouables. */
+  const ready = (mine: Parameters<typeof fighter>[0][], theirs: Parameters<typeof fighter>[0][]) => {
+    const setup = setupOf(mine.map((o) => fighter(o)), theirs.map((o) => fighter(o)), RULES);
+    const { state } = createState(setup);
+    state.orbs = 0;
+    state.budget = null;
+    state.fighters[0][0].charge = 100;
+    return { setup, state };
+  };
+  const pick = (setup: BattleSetup, state: BattleState) => botAction(setup, state, 0, seededRng(1), 0);
+
+  it.each(ULTIMATES)("lance %s quand il vaut nettement mieux qu'un coup", (ultimate) => {
+    const { setup, state } = ready([{ ultimate }, {}, {}], [{}, {}, {}]);
+    // Résurrection : il lui faut un allié à terre
+    if (ultimate === "KISHI") state.fighters[0][2].hp = 0;
+    expect(pick(setup, state)).toMatchObject({ type: "ULTIMATE", actor: 0 });
+  });
+
+  it("garde Rempart absolu quand chaque allié a déjà sa Barrière", () => {
+    const { setup, state } = ready([{ ultimate: "FUDO" }, {}, {}], [{}, {}, {}]);
+    for (const f of state.fighters[0]) f.barrier = true;
+    expect(pick(setup, state).type).toBe("ATTACK");
+  });
+
+  it("garde Arrêt du temps face à un dernier ennemi qu'un coup achève", () => {
+    const { setup, state } = ready([{ ultimate: "TOKIDOME" }], [{}, {}, {}]);
+    state.fighters[1][0].hp = 0;
+    state.fighters[1][1].hp = 0;
+    state.fighters[1][2].hp = 10;
+    expect(pick(setup, state)).toEqual({ type: "ATTACK", side: 0, actor: 0, target: 2 });
+  });
+
+  it("ne gâche jamais son ulti sur un coup au hasard", () => {
+    const { setup, state } = ready([{ ultimate: "HYAKKA" }], [{}, {}, {}]);
+    for (let seed = 0; seed < 200; seed++) expect(botAction(setup, state, 0, seededRng(seed), 100).type).not.toBe("ULTIMATE");
   });
 });

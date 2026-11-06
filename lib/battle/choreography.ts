@@ -1,9 +1,9 @@
 import { applyEvent } from "./display";
 import { other } from "./engine";
-import type { BattleEvent, BattleSetup, BattleState, Side, Technique } from "./types";
+import type { BattleEvent, BattleSetup, BattleState, Side, Technique, Ultimate } from "./types";
 
 // Mise en scène d'un lot d'événements du moteur. Chaque action devient un temps fort minuté (tour,
-// échange de coups, technique, tic de poison, fin de partie) qui porte ses repères : effets visuels,
+// échange de coups, technique, ulti, tic de poison, fin de partie) qui porte ses repères : effets visuels,
 // sons, caméra et réactions de l'arène. Pur et déterministe : le metteur en scène
 // (components/battle/stage/useDirector) joue chaque repère à son heure ; l'état affiché suit
 // applyEvent, et l'état du serveur fait foi à la fin du lot. Aucun réglage de jeu ici : seulement le
@@ -35,6 +35,7 @@ export type BattleSound =
   | "revive"
   | "clack"
   | "cutin"
+  | "ultimate"
   | "wisp"
   | "flurry"
   | "taunt"
@@ -67,14 +68,18 @@ export type Cue =
   | { k: "hitstop"; ms: number; slots: Slot[] }
   /** Impact local : éclair, éclats d'encre, recul de la cible après le hit-stop. */
   | { k: "impact"; slot: Slot; from: Slot | null; power: 1 | 2 | 3; crit: boolean; stop: number }
-  /** Impact frame plein écran, au plus une par temps fort, jamais en effets allégés ni réduits. */
-  | { k: "frame"; style: ImpactStyle; from: Slot; to: Slot; finisher: boolean; ms: number }
+  /** Impact frame plein écran, au plus une par temps fort, jamais en effets allégés ni réduits. `ultimate` : son nom en légende. */
+  | { k: "frame"; style: ImpactStyle; from: Slot; to: Slot; finisher: boolean; ms: number; ultimate?: Ultimate }
   | { k: "number"; slot: Slot; kind: "damage" | "crit" | "heal" | "poison" | "block"; amount: number }
   /** Secousse d'une carte, ou de la caméra quand `slot` est nul. */
   | { k: "shake"; slot: Slot | null; power: number }
   | { k: "camera"; mode: "punch" | "slowmo"; slot: Slot | null; ms: number }
   | { k: "cutin"; actor: Slot; technique: Technique; full: boolean; ms: number }
   | { k: "technique"; technique: Technique; actor: Slot; targets: Slot[] }
+  /** Cut-in d'ulti : toujours complet, bandeau doré. */
+  | { k: "ultimateCutin"; actor: Slot; ultimate: Ultimate; ms: number }
+  /** Effet propre à chaque ulti, sur ses cibles. */
+  | { k: "ultimate"; ultimate: Ultimate; actor: Slot; targets: Slot[] }
   | { k: "passive"; fx: PassiveFx; slot: Slot; from?: Slot }
   | { k: "ko"; slot: Slot; finisher: boolean }
   /** Le filament de synergie d'un camp se rompt. */
@@ -83,7 +88,7 @@ export type Cue =
   | { k: "sound"; name: BattleSound };
 
 export type Step = { at: number; event?: BattleEvent; cue?: Cue };
-export type BeatKind = "turn" | "strike" | "technique" | "poison" | "status" | "end" | "loose";
+export type BeatKind = "turn" | "strike" | "technique" | "ultimate" | "poison" | "status" | "end" | "loose";
 export type Beat = { kind: BeatKind; steps: Step[]; duration: number };
 
 /** Ce que la mise en scène retient d'un lot à l'autre : actions du tour (疾風) et premières techniques (cut-in complet). */
@@ -123,6 +128,8 @@ export const TIMING = {
   riposte: 200,
   cutinFull: 1_050,
   cutinBrief: 440,
+  ultimateCutin: 1_400,
+  ultimateSlowmo: 520,
   ranbuGap: 170,
   heal: 380,
   barrier: 560,
@@ -142,7 +149,7 @@ const slot = (side: Side, index: number): Slot => ({ side, index });
 const alive = (state: BattleState, side: Side) => state.fighters[side].filter((f) => f.hp > 0).length;
 
 /** Fin d'un temps fort d'action : le prochain événement ouvre un nouveau temps fort. */
-const OPENS_BEAT = new Set<BattleEvent["t"]>(["turn", "attack", "poison", "timeout", "forfeit", "end"]);
+const OPENS_BEAT = new Set<BattleEvent["t"]>(["turn", "attack", "ultimate", "poison", "timeout", "forfeit", "end"]);
 
 class Scene {
   readonly beats: Beat[] = [];
@@ -195,6 +202,7 @@ export function choreograph(events: readonly BattleEvent[], ctx: ChoreoContext):
     const e = events[i];
     if (e.t === "turn") i = turnBeat(b, events, i);
     else if (e.t === "attack") i = actionBeat(b, events, i);
+    else if (e.t === "ultimate") i = ultimateBeat(b, events, i);
     else if (e.t === "poison") i = tickBeat(b, events, i);
     else if (e.t === "timeout" || e.t === "forfeit") i = statusBeat(b, events, i);
     else if (e.t === "end") i = endBeat(b, events, i);
@@ -233,26 +241,32 @@ function turnBeat(b: Scene, events: readonly BattleEvent[], i: number): number {
   return i + 1;
 }
 
+/** 疾風 : deuxième action de la même carte dans le tour. */
+function countAction(b: Scene, beat: Draft, actor: Slot) {
+  const k = slotKey(actor);
+  const count = (b.memory.turnActions[k] ?? 0) + 1;
+  b.memory.turnActions = { ...b.memory.turnActions, [k]: count };
+  if (count === 2 && b.ctx.setup.teams[actor.side][actor.index].keywords.includes("FLURRY")) {
+    beat.cue(0, { k: "passive", fx: "flurry", slot: actor });
+    beat.sound(0, "flurry");
+  }
+}
+
+/** Résultats d'une action : tout ce qui suit jusqu'au prochain temps fort. */
+function resultsAfter(events: readonly BattleEvent[], i: number): { results: BattleEvent[]; next: number } {
+  let j = i + 1;
+  while (j < events.length && !OPENS_BEAT.has(events[j].t)) j++;
+  return { results: events.slice(i + 1, j), next: j };
+}
+
 function actionBeat(b: Scene, events: readonly BattleEvent[], i: number): number {
   const e = events[i] as Extract<BattleEvent, { t: "attack" }>;
   const actor = slot(e.side, e.actor);
   const tech = e.technique;
   const beat = new Draft(tech ? "technique" : "strike", b);
   beat.event(0, e);
-
-  // 疾風 : deuxième action de la même carte dans le tour
-  const k = slotKey(actor);
-  const count = (b.memory.turnActions[k] ?? 0) + 1;
-  b.memory.turnActions = { ...b.memory.turnActions, [k]: count };
-  if (count === 2 && b.ctx.setup.teams[e.side][e.actor].keywords.includes("FLURRY")) {
-    beat.cue(0, { k: "passive", fx: "flurry", slot: actor });
-    beat.sound(0, "flurry");
-  }
-
-  // Résultats : tout ce qui suit jusqu'au prochain temps fort
-  let j = i + 1;
-  while (j < events.length && !OPENS_BEAT.has(events[j].t)) j++;
-  const results = events.slice(i + 1, j);
+  countAction(b, beat, actor);
+  const { results, next: j } = resultsAfter(events, i);
 
   if (!tech) {
     const target = e.target === null ? null : slot(other(e.side), e.target);
@@ -357,11 +371,120 @@ function technique(b: Scene, beat: Draft, e: Extract<BattleEvent, { t: "attack" 
 }
 
 /**
+ * Un ulti : cut-in complet à chaque fois (bandeau doré), puis l'effet propre à l'ulti. Au moment fort, un
+ * ralenti, la réaction de l'arène et, en effets complets, une impact frame qui porte son nom.
+ */
+function ultimateBeat(b: Scene, events: readonly BattleEvent[], i: number): number {
+  const e = events[i] as Extract<BattleEvent, { t: "ultimate" }>;
+  const actor = slot(e.side, e.actor);
+  const beat = new Draft("ultimate", b);
+  beat.event(0, e);
+  countAction(b, beat, actor);
+  const { results, next } = resultsAfter(events, i);
+
+  beat.cue(0, { k: "ultimateCutin", actor, ultimate: e.ultimate, ms: TIMING.ultimateCutin });
+  beat.sound(0, "ultimate");
+  beat.cue(0, { k: "arena", reaction: "technique", side: e.side });
+  beat.t = TIMING.ultimateCutin;
+
+  const foe = other(e.side);
+  const enemy = e.target === null ? null : slot(foe, e.target);
+  const ally = e.target === null ? null : slot(e.side, e.target);
+  const livingFoes = b.state.fighters[foe].flatMap((f, index) => (f.hp > 0 ? [slot(foe, index)] : []));
+  const livingAllies = b.state.fighters[e.side].flatMap((f, index) => (f.hp > 0 ? [slot(e.side, index)] : []));
+  const climax = (to: Slot) => {
+    beat.cue(beat.t, { k: "camera", mode: "slowmo", slot: to, ms: TIMING.ultimateSlowmo });
+    beat.cue(beat.t, { k: "shake", slot: null, power: 6 });
+    beat.cue(beat.t, { k: "arena", reaction: "crit", side: to.side });
+  };
+  // Ulti sans coup : l'impact frame se pose ici, les ultis qui frappent l'ont sur leur premier coup
+  const frame = (to: Slot) => {
+    if (!b.full || beat.frameUsed) return;
+    beat.frameUsed = true;
+    const ms = TIMING.frame[b.ctx.style];
+    beat.cue(beat.t, { k: "frame", style: b.ctx.style, from: actor, to, finisher: false, ms, ultimate: e.ultimate });
+    beat.t += ms;
+  };
+  const cast = () => {
+    beat.cue(beat.t, { k: "approach", actor, target: null, mode: "cast", ms: TIMING.cast });
+    beat.t += TIMING.cast;
+  };
+  const finish = () => {
+    beat.cue(beat.t, { k: "return", actor, ms: TIMING.ret });
+    beat.t += TIMING.ret * 0.6;
+  };
+
+  switch (e.ultimate) {
+    case "TENCHU": {
+      beat.cue(beat.t, { k: "approach", actor, target: enemy, mode: "dash", ms: TIMING.dash });
+      beat.t += TIMING.dash;
+      beat.cue(beat.t, { k: "ultimate", ultimate: e.ultimate, actor, targets: enemy ? [enemy] : [] });
+      beat.sound(beat.t, "pierce");
+      climax(enemy ?? actor);
+      resolve(b, beat, actor, results, { base: 2, returns: [actor], gap: 0, frame: e.ultimate });
+      break;
+    }
+    case "HYAKKA": {
+      cast();
+      beat.cue(beat.t, { k: "ultimate", ultimate: e.ultimate, actor, targets: livingFoes });
+      beat.sound(beat.t, "slash");
+      climax(livingFoes[0] ?? actor);
+      beat.t += 120;
+      resolve(b, beat, actor, results, { base: 2, returns: [], gap: TIMING.ranbuGap, frame: e.ultimate });
+      finish();
+      break;
+    }
+    case "KISHI": {
+      cast();
+      const to = ally ?? actor;
+      beat.cue(beat.t, { k: "ultimate", ultimate: e.ultimate, actor, targets: ally ? [ally] : [] });
+      beat.sound(beat.t, "revive");
+      climax(to);
+      frame(to);
+      resolve(b, beat, actor, results, { base: 1, returns: [], gap: 0 });
+      finish();
+      break;
+    }
+    case "FUDO": {
+      cast();
+      beat.cue(beat.t, { k: "ultimate", ultimate: e.ultimate, actor, targets: livingAllies });
+      beat.sound(beat.t, "barrier");
+      climax(actor);
+      frame(actor);
+      beat.t += TIMING.barrier;
+      resolve(b, beat, actor, results, { base: 1, returns: [], gap: 0 });
+      finish();
+      break;
+    }
+    case "TOKIDOME": {
+      cast();
+      const to = livingFoes[0] ?? actor;
+      beat.cue(beat.t, { k: "ultimate", ultimate: e.ultimate, actor, targets: livingFoes });
+      beat.sound(beat.t, "gong");
+      climax(to);
+      frame(to);
+      beat.t += TIMING.seal;
+      beat.sound(beat.t, "seal");
+      resolve(b, beat, actor, results, { base: 1, returns: [], gap: 0 });
+      finish();
+      break;
+    }
+    default: {
+      const unhandled: never = e.ultimate;
+      throw new Error(`ulti inconnu : ${String(unhandled)}`);
+    }
+  }
+  b.beats.push(beat.done());
+  return next;
+}
+
+/**
  * Déroule les résultats d'une action au curseur du temps fort : coups (dégâts, parades), empoisonnement,
  * K.-O., rupture de la synergie, renaissance, soins de 遺言, riposte et contre-coup, barrière, encouragement, sceau.
- * `returns` : cartes qui regagnent leur place après le premier contact.
+ * `returns` : cartes qui regagnent leur place après le premier contact. `frame` : un ulti, dont le premier
+ * coup porte l'impact frame même sans critique ni coup de grâce.
  */
-function resolve(b: Scene, beat: Draft, from: Slot, results: readonly BattleEvent[], opts: { base: 1 | 2; returns: Slot[]; gap: number }) {
+function resolve(b: Scene, beat: Draft, from: Slot, results: readonly BattleEvent[], opts: { base: 1 | 2; returns: Slot[]; gap: number; frame?: Ultimate }) {
   let pendingReturns = [...opts.returns];
   let attacker = from;
   let lastKo: Slot | null = null;
@@ -396,10 +519,10 @@ function resolve(b: Scene, beat: Draft, from: Slot, results: readonly BattleEven
         if (e.crit) beat.cue(beat.t, { k: "shake", slot: null, power: 5 });
         beat.sound(beat.t, e.crit ? "crit" : heavy ? "heavy" : "hit");
         let extra = 0;
-        if (b.full && !beat.frameUsed && (e.crit || finisher)) {
+        if (b.full && !beat.frameUsed && (e.crit || finisher || opts.frame)) {
           beat.frameUsed = true;
           extra = TIMING.frame[b.ctx.style];
-          beat.cue(beat.t, { k: "frame", style: b.ctx.style, from: attacker, to: target, finisher, ms: extra });
+          beat.cue(beat.t, { k: "frame", style: b.ctx.style, from: attacker, to: target, finisher, ms: extra, ...(opts.frame ? { ultimate: opts.frame } : {}) });
         }
         // L'arène réagit quand la scène revient : sous une impact frame, sa réaction serait masquée
         beat.cue(extra ? beat.t + stop + extra : beat.t, { k: "arena", reaction: e.crit ? "crit" : "hit", side: e.side });
@@ -409,9 +532,17 @@ function resolve(b: Scene, beat: Draft, from: Slot, results: readonly BattleEven
         break;
       }
       case "block": {
+        const target = slot(e.side, e.index);
+        if (e.pierced) {
+          // La Barrière vole en éclats, le coup passe aussitôt : ni « Bloqué », ni temps d'arrêt
+          beat.event(beat.t, e);
+          beat.cue(beat.t, { k: "passive", fx: "block", slot: target, from: attacker });
+          beat.sound(beat.t, "block");
+          beat.t += 120;
+          break;
+        }
         if (hits > 0 && opts.gap) beat.t += opts.gap;
         hits++;
-        const target = slot(e.side, e.index);
         beat.event(beat.t, e);
         beat.cue(beat.t, { k: "hitstop", ms: 60, slots: [attacker, target] });
         beat.cue(beat.t, { k: "passive", fx: "block", slot: target, from: attacker });
@@ -478,6 +609,15 @@ function resolve(b: Scene, beat: Draft, from: Slot, results: readonly BattleEven
         beat.cue(beat.t, { k: "passive", fx: "revive", slot: target });
         beat.sound(beat.t, "revive");
         beat.event(beat.t + TIMING.revive * 0.55, e);
+        beat.t += TIMING.revive;
+        break;
+      }
+      case "raise": {
+        // Résurrection : la colonne de lumière vient de l'effet de l'ulti, la carte se relève à mi-course
+        const target = slot(e.side, e.index);
+        const at = beat.t + TIMING.revive * 0.55;
+        beat.event(at, e);
+        beat.cue(at, { k: "number", slot: target, kind: "heal", amount: e.hp });
         beat.t += TIMING.revive;
         break;
       }

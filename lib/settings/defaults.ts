@@ -4,7 +4,7 @@ import { RARITIES, VARIANT_RARITIES } from "@/lib/catalog/rarity";
 import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
 import { rotationPinSchema } from "@/lib/boosters/rotation";
 import { slugSchema } from "@/lib/boosters/types";
-import { KEYWORDS, LEGACY_KEYWORDS, TECHNIQUES } from "@/lib/battle/types";
+import { KEYWORDS, LEGACY_KEYWORDS, TECHNIQUES, ULTIMATES } from "@/lib/battle/types";
 import { JOIN_MODAL_DEFAULT, joinModalSchema } from "@/lib/discord/join-modal";
 import { SOCIAL_PROMO_DEFAULT, socialPromoSchema } from "@/lib/discord/social-promo";
 import { NEWS_DEFAULT, newsSchema } from "@/lib/home/news-schema";
@@ -96,6 +96,16 @@ const battleAbilityPrices = z.object({
   keywords: z.object(Object.fromEntries(KEYWORDS.map((k) => [k, abilityPrice])) as { [K in (typeof KEYWORDS)[number]]: typeof abilityPrice }),
   techniques: z.object(Object.fromEntries(TECHNIQUES.map((t) => [t, abilityPrice])) as { [T in (typeof TECHNIQUES)[number]]: typeof abilityPrice }),
 });
+
+// Ultis : points de jauge par action et pour la perte de tous ses PV (au prorata), sur 100
+const battleUltimateCharge = z.object({
+  perAction: z.number().int().min(0).max(100),
+  damagePct: z.number().int().min(0).max(400),
+});
+// Valeur de chaque ulti : multiplicateur en % (Châtiment céleste, Tempête de pétales), PV rendus en % (Résurrection)
+const battleUltimates = z.object(
+  Object.fromEntries(ULTIMATES.map((u) => [u, z.number().int().min(0).max(1_000)])) as { [U in (typeof ULTIMATES)[number]]: z.ZodNumber },
+);
 
 // Le nombre de passifs d'une carte vient du tirage historique, sur les passifs d'origine
 const keywordsByRarity = z.record(rarityKeySchema, z.number().int().min(0).max(LEGACY_KEYWORDS.length));
@@ -336,6 +346,10 @@ export const SETTING_SCHEMAS = {
   // Atelier (/combat/atelier) : achat de passifs et de techniques par personnage. Fermé, les kits déjà choisis restent en jeu
   "battle.abilityShopEnabled": z.boolean(),
   "battle.abilityPrices": battleAbilityPrices,
+  // Raretés dont les cartes ont un ulti (case « Ultime » de l'éditeur de rareté)
+  "battle.ultimateRarities": z.array(rarity).max(200),
+  "battle.ultimateCharge": battleUltimateCharge,
+  "battle.ultimates": battleUltimates,
   // Classé (étape 9b)
   "ranked.enabled": z.boolean(),
   "ranked.tiers": rankedTiers,
@@ -607,6 +621,19 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
       MEISO: 450, // 44,9 %
     },
   },
+  "battle.ultimateRarities": ["GOLD", "MR", "XR"],
+  // +50 par action, et la jauge entière pour la moitié des PV perdue : prête au 3e tour de la carte au plus
+  // tard, plus tôt si elle encaisse. À +25 et +25, une partie (4 tours par camp) finissait avant : 0 à 14 % d'ultis lancés.
+  "battle.ultimateCharge": { perAction: 50, damagePct: 200 },
+  // Même ordre que ULTIMATES (comparaison par JSON.stringify dans l'admin). Mesuré par npm run battle:balance,
+  // 1 000 parties par ligne, référence sans ulti 51,1 %, cible 58-68 %
+  "battle.ultimates": {
+    TENCHU: 160, // un coup à ×1,6 qui ignore DEF, Cuirasse et Barrière : 65,7 % (70,2 % à ×2, 73,0 % à ×3)
+    HYAKKA: 100, // tous les ennemis à ×1 : 64,5 % (69,3 % à ×1,3)
+    KISHI: 80, // relève un allié à 80 % de ses PV : 64,2 %
+    FUDO: 0, // Barrière sur tous les alliés, poison retiré : 59,6 %
+    TOKIDOME: 0, // tous les ennemis passent leur prochain tour : 66,1 %
+  },
   "ranked.enabled": true,
   // Barème du plan (section « Mode classé »)
   "ranked.tiers": {
@@ -668,7 +695,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
  * par les défauts avant validation. Sans cela, ajouter une capacité effacerait en silence tous les réglages
  * de l'admin sur les autres.
  */
-const COMPLETED_KEYS: ReadonlySet<SettingKey> = new Set(["battle.keywordValues", "battle.techniques", "battle.abilityPrices"]);
+const COMPLETED_KEYS: ReadonlySet<SettingKey> = new Set(["battle.keywordValues", "battle.techniques", "battle.abilityPrices", "battle.ultimates"]);
 /** Complétés un niveau plus bas : chaque groupe ({ keywords, techniques }) reçoit les capacités qui lui manquent. */
 const NESTED_KEYS: ReadonlySet<SettingKey> = new Set(["battle.abilityPrices"]);
 

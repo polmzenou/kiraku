@@ -35,6 +35,7 @@ type Props = {
 export const StageCard = memo(function StageCard({ slot, card, state, atkBonus, ragePct = 0, face, selected, targetable, ready, numbers, onPress, register, sizes }: Props) {
   const t = useTranslations("battle.board");
   const tk = useTranslations("battle.keywords");
+  const tu = useTranslations("battle.ultimates");
   const root = useRef<HTMLLIElement>(null);
   const move = useRef<HTMLDivElement>(null);
   const hit = useRef<HTMLDivElement>(null);
@@ -52,7 +53,12 @@ export const StageCard = memo(function StageCard({ slot, card, state, atkBonus, 
   const buffed = state.buffTurns > 0 && state.buffPct > 0;
   const atk = atkBonus > 0 ? Math.floor((card.atk * (100 + atkBonus)) / 100) : card.atk;
   const synergyPct = atkBonus - (buffed ? state.buffPct : 0) - ragePct;
-  const interactive = Boolean(onPress) && !dead;
+  // Une carte à terre ne se touche que comme cible d'une Résurrection
+  const interactive = Boolean(onPress) && (!dead || Boolean(targetable));
+  const ult = card.ultimate;
+  const charge = Math.max(0, Math.min(100, state.charge ?? 0));
+  const ultReady = Boolean(ult) && !state.ultUsed && charge >= 100 && !dead;
+  const ultName = ult ? tu(`${ult}.name`) : "";
   const statuses = [
     state.barrier && !dead ? t("barrier") : null,
     state.sealed && !dead ? t("sealed") : null,
@@ -60,6 +66,8 @@ export const StageCard = memo(function StageCard({ slot, card, state, atkBonus, 
     buffed && !dead ? t("buffed", { pct: state.buffPct }) : null,
     synergyPct > 0 && !dead ? t("synergyBonus", { pct: synergyPct }) : null,
     ragePct > 0 && !dead ? t("rageBonus", { pct: ragePct }) : null,
+    ult && !dead ? (state.ultUsed ? t("ultimateSpent", { name: ultName }) : ultReady ? t("ultimateFull", { name: ultName }) : t("ultimateGauge", { name: ultName, pct: charge })) : null,
+    dead && targetable ? t("raiseTarget") : null,
     ...card.keywords.map((k) => tk(`${k}.name`)),
   ].filter(Boolean);
   const label = [dead ? t("dead", { name: card.name }) : t("fighter", { name: card.name, hp: state.hp, max: state.maxHp, atk }), ...statuses].join(" · ");
@@ -72,6 +80,7 @@ export const StageCard = memo(function StageCard({ slot, card, state, atkBonus, 
       data-selected={selected || undefined}
       data-ready={ready || undefined}
       data-target={targetable || undefined}
+      data-ult-ready={ultReady || undefined}
     >
       <span aria-hidden="true" className="stage-shadow" />
       <span aria-hidden="true" className="stage-sigil" />
@@ -110,6 +119,7 @@ export const StageCard = memo(function StageCard({ slot, card, state, atkBonus, 
                 <i />
               </span>
             )}
+            {ultReady && <span aria-hidden="true" className="st-ult-halo" />}
             {state.sealed && !dead && (
               <span aria-hidden="true" className="st-seal">
                 <span className="st-seal-rope" />
@@ -143,6 +153,11 @@ export const StageCard = memo(function StageCard({ slot, card, state, atkBonus, 
             <span className="stage-hp-trail" style={{ transform: `scaleX(${hp})` }} />
             <span className="stage-hp-fill" style={{ transform: `scaleX(${hp})` }} />
           </span>
+          {ult && !state.ultUsed && (
+            <span aria-hidden="true" className="stage-ult" data-ready={ultReady || undefined}>
+              <span className="stage-ult-fill" style={{ transform: `scaleX(${charge / 100})` }} />
+            </span>
+          )}
         </div>
         <span aria-hidden="true" className="stage-numbers">
           {numbers.map((n) => (

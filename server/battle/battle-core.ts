@@ -9,6 +9,7 @@
 // fin, quelle qu'elle soit (K.O., abandon, minuteur, salle expirée, file quittée).
 import { Prisma, type BattleMode, type PrismaClient } from "@/generated/prisma/client";
 import { BOT_NAMES, botAction, botRarities } from "@/lib/battle/bot";
+import type { ClientAction } from "@/lib/battle/client-action";
 import { engineRules, type BattleRules } from "@/lib/battle/config";
 import { applyAction, createState } from "@/lib/battle/engine";
 import type { Kit } from "@/lib/battle/loadout";
@@ -404,12 +405,8 @@ async function start(
 
 // --- Actions en partie ---
 
-/** Ce que le client peut demander (le camp est toujours celui du joueur de la session). */
-export type ClientAction =
-  | { type: "ATTACK"; actor: number; target: number }
-  | { type: "TECHNIQUE"; actor: number; target?: number }
-  | { type: "END_TURN" }
-  | { type: "FORFEIT" };
+/** Ce que le client peut demander (le camp est toujours celui du joueur de la session ; l'ulti est revérifié par le moteur). */
+export type { ClientAction };
 
 export async function playActionWith(
   db: PrismaClient,

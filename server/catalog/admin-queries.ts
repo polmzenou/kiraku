@@ -108,12 +108,14 @@ export async function catalogVariantDraft(baseId: string, rarity: string): Promi
 export async function rarityEditorDraft(key: string | null) {
   const definitions = await getRarityDefinitions();
   const r = definitions.find((r) => r.key === key) ?? definitions[0];
-  const [rates, values, keywords, gifts, trades] = await Promise.all([
+  const [rates, values, keywords, gifts, trades, ultimates] = await Promise.all([
     getSetting("booster.rates"), getSetting("collection.recycleValues"), getSetting("battle.keywordsByRarity"), getSetting("gifts.allowedRarities"), getSetting("trades.allowedRarities"),
+    getSetting("battle.ultimateRarities"),
   ]);
   return { ...r, variantRequired: Boolean(r.variantRequired), key: key ? r.key : "", create: !key, template: r.key,
     ...(key ? {} : { updatedAt: undefined, nameFr: "", nameEn: "", sortOrder: Math.max(...definitions.map((d) => d.sortOrder)) + 100 }),
-    rate: key ? rates[r.key] ?? 0 : 0, recycleValue: values[r.key] ?? 0, keywords: keywords[r.key] ?? 0, gifts: gifts.includes(r.key), trades: trades.includes(r.key) };
+    rate: key ? rates[r.key] ?? 0 : 0, recycleValue: values[r.key] ?? 0, keywords: keywords[r.key] ?? 0, gifts: gifts.includes(r.key), trades: trades.includes(r.key),
+    ultimate: ultimates.includes(r.key) };
 }
 
 export const CARD_OWNERS_SHOWN = 200;

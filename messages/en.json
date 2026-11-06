@@ -1958,7 +1958,9 @@
         "executePct": "Execute: extra damage (%)",
         "executeThresholdPct": "Execute: target HP threshold (%)",
         "channelOrbs": "Focus: orbs per turn",
-        "abilityShopEnabled": "Workshop open (buying and choosing abilities)"
+        "abilityShopEnabled": "Workshop open (buying and choosing abilities)",
+        "perAction": "Gauge: points per action",
+        "damagePct": "Gauge: points for 100% HP lost"
       },
       "valueHint": "Value: multiplier in % (Flash, Blade dance, Piercing strike, All-out strike, Double strike), heal, bonus or poison in % (Healing, Encouragement, Healing rain, Toxic mist), orbs gained (Meditation), unused (Protection, Seal).",
       "save": "Save",
@@ -1987,7 +1989,9 @@
       "salesEmpty": "No purchases in the last 7 days.",
       "salesRow": "{count, plural, one {# purchase} other {# purchases}} · {zeni, number} Zeni",
       "salesKeyword": "passive",
-      "salesTechnique": "technique"
+      "salesTechnique": "technique",
+      "ultimates": "Ultimates",
+      "ultimatesHint": "Gauge out of 100: points per card action, and for losing all its HP, pro rata (200: full gauge for half its HP). Value: multiplier in % (Heavenly Judgment, Petal Tempest), HP restored in % (Resurrection), unused (Absolute Rampart, Time Stop). Rarities that have one are ticked in the rarity editor. Games in progress keep the settings they started with."
     },
     "ranked": {
       "title": "Ranked",
@@ -2781,7 +2785,8 @@
       "boosterExclusive": "Exclusive variant",
       "boosterExclusiveOff": "Unchecked: it follows its base card into all of its boosters (series focus, Divine…), plus the ones checked below.",
       "boosterExclusiveOn": "Checked: it only drops from the boosters checked below (event, banner…).",
-      "boostersExtra": "Boosters on top of the base card's"
+      "boostersExtra": "Boosters on top of the base card's",
+      "ultimate": "Ultimate in battle"
     },
     "cosmetics": {
       "title": "Profile titles and frames",
@@ -4107,7 +4112,10 @@
       "passives": "Passives",
       "passivesHint": "Always active, free. The rarer the card, the more it has.",
       "techniques": "Techniques",
-      "techniquesHint": "One per card, played instead of the attack, paid with orbs."
+      "techniquesHint": "One per card, played instead of the attack, paid with orbs.",
+      "ultimates": "Ultimates",
+      "ultimatesHint": "One per {rarities} card, always the same for a given character. It can't be bought and costs no orbs.",
+      "ultimatesOff": "No rarity has an ultimate right now."
     },
     "team": {
       "title": "Your team",
@@ -4133,7 +4141,10 @@
       },
       "passives": "Passives",
       "techniques": "Techniques",
-      "resetFilters": "Clear filters"
+      "resetFilters": "Clear filters",
+      "ultimateChip": "Ultimate: {name}",
+      "ultimateLabel": "Ultimate",
+      "ultimateFilter": "Has an ultimate"
     },
     "queue": {
       "title": "Looking for an opponent",
@@ -4200,7 +4211,20 @@
       "standing": "{count}/3 standing",
       "turnShort": "Turn",
       "synergyBonus": "+{pct}% attack (synergy)",
-      "rageBonus": "+{pct}% attack (rage)"
+      "rageBonus": "+{pct}% attack (rage)",
+      "ultimateCharging": "{name}: gauge at {pct}%",
+      "ultimateReady": "Unleash {name}",
+      "ultimateUsed": "{name}: already used",
+      "ultimateConfirm": "Tap again to unleash {name}",
+      "confirmUltimate": "Tap the tablet again to unleash the ultimate.",
+      "pickFallen": "Pick a fallen ally",
+      "ultimateGauge": "Ultimate {name}: {pct}%",
+      "ultimateFull": "Ultimate {name}: ready",
+      "ultimateSpent": "Ultimate {name}: already used",
+      "raiseTarget": "Can be revived",
+      "ultimateKicker": "Ultimate",
+      "ultimateTitle": "Ultimate · {name}",
+      "frozen": "Frozen"
     },
     "errors": {
       "STALE": "The battle moved on: resyncing.",
@@ -4392,7 +4416,11 @@
       "forfeit": "{player} forfeits.",
       "synergyBreak": "{player}'s {universe} synergy is broken.",
       "lifesteal": "{target} feeds on the blow.",
-      "orbs": "{player} now has {orbs, plural, one {# orb} other {# orbs}}."
+      "orbs": "{player} now has {orbs, plural, one {# orb} other {# orbs}}.",
+      "ultimate": "{actor} unleashes {ultimate}!",
+      "ultimateOn": "{actor} unleashes {ultimate} on {target}!",
+      "raise": "{target} rises again with {hp} HP.",
+      "shatter": "{target}'s barrier shatters."
     },
     "detail": {
       "title": "Card",
@@ -4562,7 +4590,32 @@
       "kitNone": "None",
       "shelfTitle": "Battle workshop",
       "shelfBody": "Buy passives and techniques for your cards, one card at a time.",
-      "shelfCta": "Open the workshop"
+      "shelfCta": "Open the workshop",
+      "ultimateTitle": "Ultimate",
+      "ultimateLocked": "Tied to the character and its rarity: it can't be bought or changed."
+    },
+    "ultimates": {
+      "TENCHU": {
+        "name": "Heavenly Judgment",
+        "desc": "A ×{mult} strike that ignores defense and Armor, and shatters a Barrier without being stopped."
+      },
+      "HYAKKA": {
+        "name": "Petal Tempest",
+        "desc": "Hits every enemy at ×{mult}."
+      },
+      "KISHI": {
+        "name": "Resurrection",
+        "desc": "Brings a fallen ally back with {pct}% of its HP. It can't act this turn, and a broken synergy stays broken."
+      },
+      "FUDO": {
+        "name": "Absolute Rampart",
+        "desc": "A Barrier on every standing ally, and poison is cleared."
+      },
+      "TOKIDOME": {
+        "name": "Time Stop",
+        "desc": "Every standing enemy skips its next turn."
+      },
+      "charge": "The gauge rises {perAction}% each time the card acts, and {half}% when it loses half its HP. Once full, the ultimate can be used once per game, at no orb cost."
     }
   },
   "ranked": {

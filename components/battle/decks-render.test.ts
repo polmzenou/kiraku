@@ -4,7 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import fr from "@/messages/fr.json";
 import en from "@/messages/en.json";
-import { DEFAULT_BATTLE_RULES } from "@/lib/battle/config";
+import { abilityRules, DEFAULT_BATTLE_RULES } from "@/lib/battle/config";
 import type { CandidateCard, DeckView } from "@/lib/battle/view";
 import { DeckManager } from "./DeckManager";
 import { TeamPicker } from "./TeamPicker";
@@ -21,7 +21,7 @@ vi.mock("@/server/actions/battle", () => ({ saveDeckAction: vi.fn(), renameDeckA
 vi.mock("@/components/fuda/Fuda", () => ({ Fuda: () => null }));
 
 const MESSAGES = { fr, en };
-const abilities = { keywordValues: DEFAULT_BATTLE_RULES.keywordValues, techniques: DEFAULT_BATTLE_RULES.techniques, synergyAtkPct: 10 };
+const abilities = { ...abilityRules(DEFAULT_BATTLE_RULES), synergyAtkPct: 10 };
 
 const providerProps = (locale: "fr" | "en") => ({
   locale,
@@ -56,6 +56,7 @@ const card = (cardId: string, universe = { key: `s-${cardId}`, name: `Série ${c
   hp: 150,
   keywords: [],
   technique: "ISSEN",
+  ultimate: null,
 });
 
 const ready: DeckView = { id: "d1", name: "Deck CSM", cards: [card("a"), card("b"), card("c")], unavailable: [], playable: true };
@@ -146,5 +147,18 @@ describe.each(["fr", "en"] as const)("decks (%s)", (locale) => {
     expect(out).toContain(t.create);
     expect(out).toContain('href="/combat/decks"');
     expect(out).not.toContain(t.manage);
+  });
+
+  it("le choix d'équipe nomme l'ulti d'une carte et propose le filtre « Ultime »", () => {
+    const team = MESSAGES[locale].battle.team;
+    const ult = MESSAGES[locale].battle.ultimates.HYAKKA.name;
+    const gold = { ...card("g"), rarity: "GOLD", ultimate: "HYAKKA" as const };
+    const out = render(
+      locale,
+      createElement(TeamPicker, { open: true, onClose: () => {}, candidates: [gold, card("a")], decks: [], abilities, initial: [], confirmLabel: "OK", pending: false, onConfirm: () => {} }),
+    );
+    expect(out).toContain(html(team.ultimateChip.replace("{name}", ult)));
+    expect(out.split(html(team.ultimateChip.replace("{name}", ult)))).toHaveLength(2);
+    expect(out).toMatch(new RegExp(`<button[^>]*aria-pressed="false"[^>]*>${html(team.ultimateFilter)}</button>`));
   });
 });

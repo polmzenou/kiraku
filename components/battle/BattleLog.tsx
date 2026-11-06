@@ -1,9 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { keywordParams, techniqueParams } from "@/lib/battle/ability-params";
+import { chargeParams, keywordParams, techniqueParams, ultimateParams } from "@/lib/battle/ability-params";
 import { other } from "@/lib/battle/engine";
-import { TECHNIQUE_TARGET, type BattleEvent, type BattleSetup, type FighterSetup, type Side } from "@/lib/battle/types";
+import { TECHNIQUE_TARGET, ULTIMATE_TARGET, type BattleEvent, type BattleSetup, type FighterSetup, type Side } from "@/lib/battle/types";
 import type { PlayerView } from "@/lib/battle/view";
 import { usePlayerName } from "./BoardLayout";
 
@@ -25,10 +25,18 @@ export function useLogLine(setup: BattleSetup, players: readonly [PlayerView, Pl
         const targetSide = TECHNIQUE_TARGET[e.technique] === "ALLY" ? e.side : other(e.side);
         return t("log.techniqueOn", { actor: card(e.side, e.actor), technique, target: card(targetSide, e.target) });
       }
+      case "ultimate": {
+        const ultimate = t(`ultimates.${e.ultimate}.name`);
+        if (e.target === null) return t("log.ultimate", { actor: card(e.side, e.actor), ultimate });
+        const targetSide = ULTIMATE_TARGET[e.ultimate] === "DEAD_ALLY" ? e.side : other(e.side);
+        return t("log.ultimateOn", { actor: card(e.side, e.actor), ultimate, target: card(targetSide, e.target) });
+      }
+      case "raise":
+        return t("log.raise", { target: card(e.side, e.index), hp: e.hp });
       case "damage":
         return t(e.crit ? "log.crit" : "log.damage", { target: card(e.side, e.index), amount: e.amount });
       case "block":
-        return t("log.block", { target: card(e.side, e.index) });
+        return t(e.pierced ? "log.shatter" : "log.block", { target: card(e.side, e.index) });
       case "heal":
         return e.amount > 0 ? t("log.heal", { target: card(e.side, e.index), amount: e.amount }) : null;
       case "lifesteal":
@@ -78,7 +86,9 @@ export function BattleLog({
 
   const lines = feed.flatMap(({ id, event }) => {
     const text = line(event);
-    return text ? [{ id, text, strong: event.t === "turn" || event.t === "ko" || event.t === "synergy_break" || (event.t === "damage" && event.crit) }] : [];
+    return text
+      ? [{ id, text, strong: event.t === "turn" || event.t === "ko" || event.t === "ultimate" || event.t === "synergy_break" || (event.t === "damage" && event.crit) }]
+      : [];
   });
 
   return (
@@ -99,7 +109,7 @@ export function BattleLog({
   );
 }
 
-/** Détail d'une carte : stats, technique et passifs avec leurs effets chiffrés. */
+/** Détail d'une carte : stats, technique, ulti et passifs avec leurs effets chiffrés. */
 export function CardDetail({ card, hp, maxHp, rules }: { card: FighterSetup | null; hp: number; maxHp: number; rules: BattleSetup["rules"] }) {
   const t = useTranslations("battle");
   if (!card) {
@@ -125,6 +135,15 @@ export function CardDetail({ card, hp, maxHp, rules }: { card: FighterSetup | nu
           <span className="text-text-muted">{t(`techniques.${card.technique}.desc`, techniqueParams(tech.value, k, (n) => n.toLocaleString()))}</span>
         </p>
       </div>
+      {card.ultimate && rules.ultimate && (
+        <p className="text-sm">
+          <strong className="text-kin">{t("board.ultimateTitle", { name: t(`ultimates.${card.ultimate}.name`) })}</strong>
+          <br />
+          <span className="text-text-muted">{t(`ultimates.${card.ultimate}.desc`, ultimateParams(rules.ultimate.values[card.ultimate], (n) => n.toLocaleString()))}</span>
+          <br />
+          <span className="text-xs text-text-muted">{t("ultimates.charge", chargeParams(rules.ultimate.charge))}</span>
+        </p>
+      )}
       {card.keywords.map((kw) => (
         <div key={kw} className="flex gap-2">
           <p className="text-sm">

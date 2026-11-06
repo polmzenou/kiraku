@@ -7,6 +7,7 @@ import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { Link, redirect } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import { abilityRules } from "@/lib/battle/config";
 import { getBattleRules, getCandidates, getDecks, sweepBattlesFor } from "@/server/battle/queries";
 import { getCurrentUser } from "@/server/user";
 
@@ -44,7 +45,7 @@ export default async function DecksPage() {
       <DeckManager
         decks={decks}
         candidates={candidates}
-        abilities={{ keywordValues: rules.keywordValues, techniques: rules.techniques, synergyAtkPct: rules.synergyAtkPct }}
+        abilities={abilityRules(rules)}
         maxDecks={rules.maxDecks}
         atelier={rules.abilityShopEnabled}
       />

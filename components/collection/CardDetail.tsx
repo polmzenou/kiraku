@@ -125,6 +125,12 @@ export async function CardDetail({
                     <dt className="text-text-muted">{tAtelier("techniqueSlot")}</dt>
                     <dd>{tBattle(`techniques.${kit.kit.technique}.name`)}</dd>
                   </div>
+                  {kit.ultimate && (
+                    <div className="flex flex-wrap gap-x-2">
+                      <dt className="text-text-muted">{tAtelier("ultimateTitle")}</dt>
+                      <dd className="font-bold text-kin">{tBattle(`ultimates.${kit.ultimate}.name`)}</dd>
+                    </div>
+                  )}
                 </dl>
               </section>
             )}

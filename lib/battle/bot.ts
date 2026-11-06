@@ -65,9 +65,64 @@ function meditationValue(setup: BattleSetup, state: BattleState, actor: number, 
   return best;
 }
 
+/**
+ * Ce que l'ulti doit rapporter de plus qu'un coup ordinaire pour que le bot le lance : il ne sert qu'une fois
+ * par partie, autant le garder pour un moment qui en vaut la peine.
+ */
+const ULTIMATE_RESERVE = 15;
+
+/** Valeur d'un ulti pour le bot, réserve déduite. Chaque ulti a son cas : un oubli vaudrait 0 et ne serait jamais joué. */
+function ultimateValue(setup: BattleSetup, state: BattleState, a: Extract<Action, { type: "ULTIMATE" }>): number {
+  const side = a.side;
+  const foe = other(side);
+  const ultimate = setup.teams[side][a.actor].ultimate;
+  if (!ultimate) return 0;
+  const value = setup.rules.ultimate?.values[ultimate] ?? 0;
+  let v = 0;
+  switch (ultimate) {
+    case "TENCHU":
+      // La Barrière ne l'arrête pas : elle est comptée tombée
+      v = hitValue(setup, state, side, a.actor, a.target!, value, true, false, true);
+      break;
+    case "HYAKKA":
+      state.fighters[foe].forEach((f, i) => {
+        if (f.hp > 0) v += hitValue(setup, state, side, a.actor, i, value, false, false);
+      });
+      break;
+    case "KISHI": {
+      // Une carte de plus sur le plateau : ses PV rendus et ce qu'elle frappera encore
+      const f = state.fighters[side][a.target!];
+      v = Math.ceil((f.maxHp * value) / 100) * 1.1 + setup.teams[side][a.target!].atk;
+      break;
+    }
+    case "FUDO":
+      // Chaque Barrière posée vaut le coup qu'elle arrêtera : l'attaque simple la plus forte d'en face
+      state.fighters[side].forEach((f, i) => {
+        if (f.hp <= 0) return;
+        if (!f.barrier) {
+          const worst = Math.max(0, ...state.fighters[foe].flatMap((e, j) => (e.hp > 0 ? [Math.min(f.hp, expectedDamage(setup, state, foe, j, i, 100, false))] : [])));
+          v += worst;
+        }
+        if (f.poisonTurns > 0) v += f.poisonDmg * f.poisonTurns;
+      });
+      break;
+    case "TOKIDOME":
+      state.fighters[foe].forEach((f, i) => {
+        if (f.hp > 0 && !f.sealed) v += setup.teams[foe][i].atk * 0.8;
+      });
+      break;
+    default: {
+      const unhandled: never = ultimate;
+      throw new Error(`ulti inconnu : ${String(unhandled)}`);
+    }
+  }
+  return v - ULTIMATE_RESERVE;
+}
+
 /** Valeur estimée d'une action pour le bot (plus c'est haut, mieux c'est). */
 export function scoreAction(setup: BattleSetup, state: BattleState, a: Action): number {
   if (a.type === "ATTACK") return hitValue(setup, state, a.side, a.actor, a.target, 100, false, true);
+  if (a.type === "ULTIMATE") return ultimateValue(setup, state, a);
   if (a.type !== "TECHNIQUE") return 0;
   const side = a.side;
   const foe = other(side);
@@ -143,8 +198,11 @@ export function botAction(setup: BattleSetup, state: BattleState, side: Side, rn
   const options = legalActions(setup, state, side).filter((a) => a.type !== "END_TURN");
   if (options.length === 0) return { type: "END_TURN", side };
   if (rng(100) < mistakePct) {
-    // Une erreur reste un coup plausible : méditer sans qu'aucun allié en profite ne serait qu'une action jetée
-    const plausible = options.filter((a) => a.type !== "TECHNIQUE" || setup.teams[a.side][a.actor].technique !== "MEISO" || scoreAction(setup, state, a) > 0);
+    // Une erreur reste un coup plausible : méditer sans qu'aucun allié en profite ne serait qu'une action jetée,
+    // et l'ulti, unique, ne se gâche pas sur un coup de tête
+    const plausible = options.filter(
+      (a) => a.type !== "ULTIMATE" && (a.type !== "TECHNIQUE" || setup.teams[a.side][a.actor].technique !== "MEISO" || scoreAction(setup, state, a) > 0),
+    );
     return plausible[rng(plausible.length)] ?? { type: "END_TURN", side };
   }
   let best = options[0];

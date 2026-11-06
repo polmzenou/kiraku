@@ -4,7 +4,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { Fuda } from "@/components/fuda/Fuda";
 import { useRouter } from "@/i18n/navigation";
-import { keywordParams, techniqueParams } from "@/lib/battle/ability-params";
+import { keywordParams, techniqueParams, ultimateParams } from "@/lib/battle/ability-params";
 import { abilityPrice, sameKit, type AbilityKind, type AbilityPrices, type Kit } from "@/lib/battle/loadout";
 import { KEYWORDS, TECHNIQUES, type Keyword, type Technique } from "@/lib/battle/types";
 import type { WorkshopCard } from "@/lib/battle/view";
@@ -199,6 +199,21 @@ export function AbilityWorkshop({ card, coins, rules, onClose }: { card: Worksho
             </ul>
             {!slot && <p className="text-sm text-text-muted">{t("pickSlot")}</p>}
           </section>
+
+          {card.ultimate && (
+            <section aria-labelledby="atelier-ultimate" className="flex flex-col gap-2">
+              <h3 id="atelier-ultimate" className="font-title text-lg font-bold">
+                {t("ultimateTitle")}
+              </h3>
+              <div className="flex flex-col gap-0.5 rounded-control border border-kin/40 bg-surface px-3 py-2">
+                <span className="text-xs text-text-muted">{t("ultimateLocked")}</span>
+                <span className="font-bold text-kin">{tb(`ultimates.${card.ultimate}.name`)}</span>
+                <span className="text-xs text-text-muted">
+                  {tb(`ultimates.${card.ultimate}.desc`, ultimateParams(rules.ultimates[card.ultimate], (n) => format.number(n)))}
+                </span>
+              </div>
+            </section>
+          )}
 
           {message && (
             <p role={message.tone === "error" ? "alert" : "status"} className={`text-sm font-bold ${message.tone === "error" ? "text-shu" : "text-kin"}`}>

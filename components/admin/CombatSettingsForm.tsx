@@ -4,7 +4,7 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { KEYWORDS, TECHNIQUES } from "@/lib/battle/types";
+import { KEYWORDS, TECHNIQUES, ULTIMATES } from "@/lib/battle/types";
 
 import { COMBAT_SETTING_KEYS, combatSettingsSchema, type CombatSettings } from "@/lib/settings/combat-form";
 import { changedSettingKeys } from "@/lib/settings/form";
@@ -16,7 +16,7 @@ import { FormMessage, NumberField, Toggle } from "./fields";
 const MAX = 100_000;
 
 type Flat = "battle.turnSeconds" | "battle.maxMissedTurns" | "battle.maxTurns" | "battle.firstTurnActions" | "battle.queueSeconds" | "battle.roomMinutes" | "battle.pollSeconds" | "battle.safetyPollSeconds" | "battle.queuePollSeconds" | "battle.lobbyPollSeconds" | "battle.botMistakePct" | "battle.botUpgradePct" | "battle.maxDecks" | "battle.synergyAtkPct" | "battle.newAbilityPct";
-type Group = "battle.stats" | "battle.damage" | "battle.orbs" | "battle.keywordValues" | "battle.rewards" | "battle.keywordsByRarity";
+type Group = "battle.stats" | "battle.damage" | "battle.orbs" | "battle.keywordValues" | "battle.rewards" | "battle.keywordsByRarity" | "battle.ultimateCharge";
 
 /** Interrupteur, déroulé, stats, dégâts, orbes, passifs, techniques, bot et récompenses du combat. */
 export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
@@ -155,6 +155,22 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
             />
           )),
         )}
+      </fieldset>
+
+      <fieldset className={box}>
+        <legend className="px-1 font-bold">{t("ultimates")}</legend>
+        <p className="text-xs text-text-muted sm:col-span-2">{t("ultimatesHint")}</p>
+        {group("battle.ultimateCharge")}
+        {ULTIMATES.map((u) => (
+          <NumberField
+            key={`ultimate.${u}`}
+            label={`${tBattle(`ultimates.${u}.name`)} : ${key("value")}`}
+            value={draft["battle.ultimates"][u]}
+            onChange={(v) => set({ ...draft, "battle.ultimates": { ...draft["battle.ultimates"], [u]: v } })}
+            min={0}
+            max={MAX}
+          />
+        ))}
       </fieldset>
 
       <fieldset className={box}>

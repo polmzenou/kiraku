@@ -6,7 +6,21 @@ import { choreograph, EMPTY_MEMORY, TIMING, totalDuration, type Beat, type Chore
 import { applyEvent } from "./display";
 import { applyAction, createState } from "./engine";
 import { FLAT_RULES, RULES, fighter, setupOf } from "./fixtures";
-import { NEW_TECHNIQUES, TECHNIQUE_TARGET, type Action, type BattleEvent, type BattleSetup, type BattleState, type Side, type Technique } from "./types";
+import {
+  KEYWORDS,
+  NEW_TECHNIQUES,
+  TECHNIQUE_TARGET,
+  TECHNIQUES,
+  ULTIMATE_TARGET,
+  ULTIMATES,
+  type Action,
+  type BattleEvent,
+  type BattleSetup,
+  type BattleState,
+  type Side,
+  type Technique,
+  type Ultimate,
+} from "./types";
 
 /** Une partie bot contre bot, lot par lot (une action = un lot, comme en direct). */
 function batches(setup: BattleSetup, seed: number) {
@@ -65,7 +79,7 @@ describe("mise en scène des combats", { timeout: 30_000 }, () => {
   });
 
   it("en mouvement réduit : tout tombe à 0 ms, sans mouvement, flash ni cut-in", () => {
-    const moving = new Set<Cue["k"]>(["approach", "return", "hitstop", "impact", "frame", "shake", "camera", "cutin", "technique", "passive", "arena"]);
+    const moving = new Set<Cue["k"]>(["approach", "return", "hitstop", "impact", "frame", "shake", "camera", "cutin", "ultimateCutin", "ultimate", "technique", "passive", "arena"]);
     for (const { setup, seed } of games.slice(0, 15)) {
       for (const batch of play(setup, seed, "reduced")) {
         expect(totalDuration(batch.beats)).toBe(0);
@@ -292,5 +306,115 @@ describe("mise en scène des combats", { timeout: 30_000 }, () => {
     expect(all).toContainEqual(expect.objectContaining({ k: "camera", mode: "slowmo" }));
     expect(all).toContainEqual({ k: "ko", slot: { side: 1, index: 0 }, finisher: true });
     expect(all).toContainEqual({ k: "arena", reaction: "victory" });
+  });
+});
+
+describe("mise en scène des ultis", { timeout: 30_000 }, () => {
+  const MOVING = new Set<Cue["k"]>(["approach", "return", "hitstop", "impact", "frame", "shake", "camera", "cutin", "ultimateCutin", "ultimate", "technique", "passive", "arena"]);
+  const withUltimates = Array.from({ length: 30 }, (_, i) => {
+    const rng = seededRng(7_000 + i);
+    const team = () => randomTeam(rng, KEYWORDS, TECHNIQUES, ULTIMATES);
+    return { setup: setupOf(team(), team(), RULES, (i % 2) as Side), seed: 300 + i };
+  });
+
+  /** Ulti lancé tout de suite par la carte 0, jauge pleine. */
+  const cast = (ultimate: Ultimate, level: FxLevel = "full") => {
+    const setup = setupOf([fighter({ ultimate }), fighter(), fighter()], [fighter({ hp: 900, keywords: ["BARRIER"] }), fighter({ hp: 900 }), fighter({ hp: 900 })], FLAT_RULES);
+    const before = createState(setup).state;
+    before.fighters[0][0].charge = 100;
+    if (ultimate === "KISHI") before.fighters[0][2].hp = 0;
+    const target = ULTIMATE_TARGET[ultimate] === "ENEMY" ? { target: 0 } : ULTIMATE_TARGET[ultimate] === "DEAD_ALLY" ? { target: 2 } : {};
+    const { events, state: after } = applyAction(setup, 1, before, { type: "ULTIMATE", side: 0, actor: 0, ...target });
+    const res = choreograph(events, { setup, state: before, mySide: 0, level, style: "mie", memory: EMPTY_MEMORY });
+    return { ...res, events, before, after };
+  };
+
+  it("des parties avec ultis rendent chaque événement une fois, dans l'ordre, jusqu'à l'état du serveur", () => {
+    let launched = 0;
+    for (const { setup, seed } of withUltimates) {
+      for (const level of ["full", "lite", "reduced"] as const) {
+        for (const batch of play(setup, seed, level)) {
+          if (level === "full") launched += batch.events.filter((e) => e.t === "ultimate").length;
+          expect(batch.beats.flatMap((b) => b.steps.flatMap((s) => (s.event ? [s.event] : [])))).toEqual(batch.events);
+          expect(hp(batch.state)).toEqual(hp(batch.after));
+          if (level === "reduced") expect(totalDuration(batch.beats)).toBe(0);
+        }
+      }
+    }
+    expect(launched).toBeGreaterThan(5);
+  });
+
+  it("tient le budget de flashs avec les ultis : une impact frame par temps fort, 3 par seconde au plus", () => {
+    for (const { setup, seed } of withUltimates) {
+      let clock = 0;
+      let last = -Infinity;
+      for (const batch of play(setup, seed, "full", "mie")) {
+        for (const beat of batch.beats) {
+          const here = beat.steps.filter((s) => s.cue?.k === "frame");
+          expect(here.length).toBeLessThanOrEqual(1);
+          for (const s of here) {
+            expect(clock + s.at - last).toBeGreaterThanOrEqual(334);
+            last = clock + s.at;
+          }
+          clock += beat.duration;
+        }
+      }
+    }
+  });
+
+  it.each(ULTIMATES)("%s : son temps fort, un cut-in complet, un ralenti, l'arène, et l'impact frame à son nom", (ultimate) => {
+    const { beats } = cast(ultimate);
+    expect(beats[0].kind).toBe("ultimate");
+    const all = cues(beats);
+    expect(all).toContainEqual(expect.objectContaining({ k: "ultimateCutin", ultimate, actor: { side: 0, index: 0 } }));
+    expect(all).toContainEqual(expect.objectContaining({ k: "ultimate", ultimate }));
+    expect(all).toContainEqual(expect.objectContaining({ k: "camera", mode: "slowmo" }));
+    expect(all).toContainEqual(expect.objectContaining({ k: "arena", reaction: "crit" }));
+    expect(all).toContainEqual({ k: "sound", name: "ultimate" });
+    expect(all.filter((c) => c.k === "frame")).toEqual([expect.objectContaining({ ultimate })]);
+    expect(all.some((c) => c.k === "cutin")).toBe(false);
+  });
+
+  it.each(ULTIMATES)("%s en effets allégés : cut-in et ralenti, sans impact frame", (ultimate) => {
+    const all = cues(cast(ultimate, "lite").beats);
+    expect(all.some((c) => c.k === "ultimateCutin")).toBe(true);
+    expect(all.some((c) => c.k === "frame")).toBe(false);
+  });
+
+  it.each(ULTIMATES)("%s en mouvement réduit : l'état bascule à 0 ms, sans mouvement", (ultimate) => {
+    const { beats, state, after } = cast(ultimate, "reduced");
+    expect(totalDuration(beats)).toBe(0);
+    expect(cues(beats).some((c) => MOVING.has(c.k))).toBe(false);
+    expect(hp(state)).toEqual(hp(after));
+    expect(state.fighters[0][0]).toMatchObject({ charge: 0, ultUsed: true });
+  });
+
+  it("Châtiment céleste : la Barrière vole en éclats sans chiffre de parade, le coup passe", () => {
+    const { beats, events } = cast("TENCHU");
+    expect(events.map((e) => e.t)).toEqual(["ultimate", "block", "damage"]);
+    const all = cues(beats);
+    expect(all).toContainEqual(expect.objectContaining({ k: "passive", fx: "block" }));
+    expect(all.some((c) => c.k === "number" && c.kind === "block")).toBe(false);
+    expect(all).toContainEqual(expect.objectContaining({ k: "number", kind: "damage" }));
+  });
+
+  it("Résurrection : la carte se relève avec le chiffre de ses PV rendus", () => {
+    const { beats, state, events } = cast("KISHI");
+    const raise = events.find((e) => e.t === "raise");
+    expect(cues(beats)).toContainEqual({ k: "number", slot: { side: 0, index: 2 }, kind: "heal", amount: raise?.t === "raise" ? raise.hp : -1 });
+    expect(state.fighters[0][2].hp).toBeGreaterThan(0);
+  });
+
+  it("Rempart absolu : le poison disparaît de l'affichage avec l'ulti", () => {
+    const setup = setupOf([fighter({ ultimate: "FUDO" }), fighter()], [fighter()], FLAT_RULES);
+    const before = createState(setup).state;
+    before.fighters[0][0].charge = 100;
+    Object.assign(before.fighters[0][1], { poisonTurns: 2, poisonDmg: 9 });
+    const { events } = applyAction(setup, 1, before, { type: "ULTIMATE", side: 0, actor: 0 });
+    const { state } = choreograph(events, { setup, state: before, mySide: 0, level: "full", style: "sumi", memory: EMPTY_MEMORY });
+    expect(state.fighters[0].map((f) => [f.barrier, f.poisonTurns])).toEqual([
+      [true, 0],
+      [true, 0],
+    ]);
   });
 });

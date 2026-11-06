@@ -54,6 +54,7 @@ export function TeamBuilder({
     return {
       keywords: new Set(cards.flatMap((c) => c.keywords)),
       techniques: new Set(cards.map((c) => c.technique)),
+      ultimates: new Set(cards.flatMap((c) => (c.ultimate ? [c.ultimate] : []))),
     };
   }, [team, byId]);
 
@@ -137,6 +138,7 @@ export function TeamBuilder({
                     <span className="flex flex-wrap items-center gap-1 text-[11px] leading-tight">
                       <span className="tabular-nums">{t("stats", { atk: c.power, hp: c.hp })}</span>
                       <span className="text-shu">{tk(`techniques.${c.technique}.name`)}</span>
+                      {c.ultimate && <span className="font-bold text-kin">{tk("team.ultimateChip", { name: tk(`ultimates.${c.ultimate}.name`) })}</span>}
                       {c.keywords.map((k) => (
                         <span key={k} className="rounded-sm bg-surface-2 px-0.5">
                           {tk(`keywords.${k}.name`)}

@@ -4,7 +4,7 @@ import { randomInt } from "node:crypto";
 import { battleRulesFrom, BATTLE_SETTING_KEYS, type BattleRules } from "@/lib/battle/config";
 import { replay } from "@/lib/battle/engine";
 import { isKeyword, isTechnique, type AbilityKind, type Kit } from "@/lib/battle/loadout";
-import { combatStats, keywordsFor, techniqueFor } from "@/lib/battle/stats";
+import { combatStats, keywordsFor, techniqueFor, ultimateFor } from "@/lib/battle/stats";
 import { universeOf } from "@/lib/battle/synergy";
 import { KEYWORDS, TEAM_SIZE, TECHNIQUES, type Action, type BattleSetup, type BattleState, type Keyword, type Side, type Technique } from "@/lib/battle/types";
 import type { Activity, BattleUpdateView, BattleView, CandidateCard, DeckView, HistoryItem, PlayerView, WorkshopCard } from "@/lib/battle/view";
@@ -210,7 +210,7 @@ const MAX_CANDIDATES = 500;
 
 /**
  * Une carte telle qu'elle combattra : le kit choisi à l'atelier, ou le tirage de la carte. `anilistId` est
- * l'alias de `publicId` : passifs et technique en dépendent.
+ * l'alias de `publicId` : passifs, technique et ulti en dépendent (l'ulti, jamais du kit).
  */
 function candidateFrom(row: CandidateRow, rules: BattleRules, kit?: Kit): CandidateCard {
   return {
@@ -218,6 +218,7 @@ function candidateFrom(row: CandidateRow, rules: BattleRules, kit?: Kit): Candid
     hp: combatStats(row.power, row.ki, rules.stats).hp,
     keywords: kit ? [...kit.keywords] : keywordsFor(row.anilistId, row.rarity, rules.keywordsByRarity, rules.newAbilityPct),
     technique: kit ? kit.technique : techniqueFor(row.anilistId, rules.newAbilityPct),
+    ultimate: ultimateFor(row.anilistId, row.rarity, rules),
   };
 }
 
@@ -285,7 +286,9 @@ export async function getCardKit(userId: string, cardId: string, rules: BattleRu
   });
   if (!card) return null;
   const details = await loadKitDetails(prisma, userId, [{ cardId: card.id, anilistId: card.publicId, rarity: card.rarity as Rarity }], rules);
-  return details.get(card.id) ?? null;
+  const detail = details.get(card.id);
+  // L'ulti ne s'achète pas : il suit le personnage et sa rareté, affiché à côté du kit
+  return detail ? { ...detail, ultimate: ultimateFor(card.publicId, card.rarity as Rarity, rules) } : null;
 }
 
 /**

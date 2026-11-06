@@ -1958,7 +1958,9 @@
         "executePct": "Exécution : dégâts en plus (%)",
         "executeThresholdPct": "Exécution : seuil de PV de la cible (%)",
         "channelOrbs": "Concentration : orbes par tour",
-        "abilityShopEnabled": "Atelier ouvert (achat et choix des capacités)"
+        "abilityShopEnabled": "Atelier ouvert (achat et choix des capacités)",
+        "perAction": "Jauge : points par action",
+        "damagePct": "Jauge : points pour 100 % des PV perdus"
       },
       "valueHint": "Valeur : multiplicateur en % (Éclair, Danse des lames, Percée, Coup absolu, Double frappe), soin, bonus ou poison en % (Soin, Encouragement, Pluie de soin, Brume toxique), orbes gagnés (Méditation), inutilisée (Protection, Sceau).",
       "save": "Enregistrer",
@@ -1987,7 +1989,9 @@
       "salesEmpty": "Aucun achat ces 7 derniers jours.",
       "salesRow": "{count, plural, one {# achat} other {# achats}} · {zeni, number} Zeni",
       "salesKeyword": "passif",
-      "salesTechnique": "technique"
+      "salesTechnique": "technique",
+      "ultimates": "Ultis",
+      "ultimatesHint": "Jauge sur 100 : points par action de la carte, et pour la perte de tous ses PV, au prorata (200 : jauge pleine pour la moitié des PV). Valeur : multiplicateur en % (Châtiment céleste, Tempête de pétales), PV rendus en % (Résurrection), inutilisée (Rempart absolu, Arrêt du temps). Les raretés qui en ont un se cochent dans l'éditeur de rareté. Les parties en cours gardent les réglages de leur lancement."
     },
     "ranked": {
       "title": "Classé",
@@ -2781,7 +2785,8 @@
       "boosterExclusive": "Variante exclusive",
       "boosterExclusiveOff": "Décoché : elle suit sa carte de base dans tous ses boosters (Focus série, Divin…), plus ceux cochés ci-dessous.",
       "boosterExclusiveOn": "Coché : elle ne sort que des boosters cochés ci-dessous (événement, bannière…).",
-      "boostersExtra": "Boosters en plus de ceux de la carte de base"
+      "boostersExtra": "Boosters en plus de ceux de la carte de base",
+      "ultimate": "Ultime en combat"
     },
     "cosmetics": {
       "title": "Titres et cadres de profil",
@@ -4107,7 +4112,10 @@
       "passives": "Passifs",
       "passivesHint": "Toujours actifs, sans coût. Plus la carte est rare, plus elle en a.",
       "techniques": "Techniques",
-      "techniquesHint": "Une par carte, à jouer à la place de l'attaque, payée en orbes."
+      "techniquesHint": "Une par carte, à jouer à la place de l'attaque, payée en orbes.",
+      "ultimates": "Ultimes",
+      "ultimatesHint": "Un par carte {rarities}, toujours le même pour un personnage. Il ne s'achète pas et ne coûte aucune orbe.",
+      "ultimatesOff": "Aucune rareté n'a d'ulti pour le moment."
     },
     "team": {
       "title": "Ton équipe",
@@ -4133,7 +4141,10 @@
       },
       "passives": "Passifs",
       "techniques": "Techniques",
-      "resetFilters": "Effacer les filtres"
+      "resetFilters": "Effacer les filtres",
+      "ultimateChip": "Ultime : {name}",
+      "ultimateLabel": "Ultime",
+      "ultimateFilter": "Avec un ulti"
     },
     "queue": {
       "title": "Recherche d'un adversaire",
@@ -4200,7 +4211,20 @@
       "standing": "{count}/3 debout",
       "turnShort": "Tour",
       "synergyBonus": "+{pct} % d'attaque (synergie)",
-      "rageBonus": "+{pct} % d'attaque (rage)"
+      "rageBonus": "+{pct} % d'attaque (rage)",
+      "ultimateCharging": "{name} : jauge à {pct} %",
+      "ultimateReady": "Lancer {name}",
+      "ultimateUsed": "{name} : déjà lancé",
+      "ultimateConfirm": "Toucher encore pour lancer {name}",
+      "confirmUltimate": "Touche encore la tablette pour lancer l'ulti.",
+      "pickFallen": "Choisis un allié à terre",
+      "ultimateGauge": "Ultime {name} : {pct} %",
+      "ultimateFull": "Ultime {name} : prêt",
+      "ultimateSpent": "Ultime {name} : déjà lancé",
+      "raiseTarget": "Peut être relevée",
+      "ultimateKicker": "Ultime",
+      "ultimateTitle": "Ultime · {name}",
+      "frozen": "Figée"
     },
     "errors": {
       "STALE": "La partie a avancé : resynchronisation.",
@@ -4392,7 +4416,11 @@
       "forfeit": "{player} abandonne.",
       "synergyBreak": "La synergie {universe} de {player} est rompue.",
       "lifesteal": "{target} se nourrit du coup.",
-      "orbs": "{player} a maintenant {orbs, plural, one {# orbe} other {# orbes}}."
+      "orbs": "{player} a maintenant {orbs, plural, one {# orbe} other {# orbes}}.",
+      "ultimate": "{actor} déchaîne {ultimate} !",
+      "ultimateOn": "{actor} déchaîne {ultimate} sur {target} !",
+      "raise": "{target} se relève avec {hp} PV.",
+      "shatter": "La barrière de {target} vole en éclats."
     },
     "detail": {
       "title": "Carte",
@@ -4562,7 +4590,32 @@
       "kitNone": "Aucun",
       "shelfTitle": "Atelier de combat",
       "shelfBody": "Achète des passifs et des techniques pour tes cartes, une carte à la fois.",
-      "shelfCta": "Ouvrir l'atelier"
+      "shelfCta": "Ouvrir l'atelier",
+      "ultimateTitle": "Ultime",
+      "ultimateLocked": "Lié au personnage et à sa rareté : il ne s'achète pas et ne se change pas."
+    },
+    "ultimates": {
+      "TENCHU": {
+        "name": "Châtiment céleste",
+        "desc": "Un coup à ×{mult} qui ignore la défense et la Cuirasse, et brise la Barrière sans être arrêté."
+      },
+      "HYAKKA": {
+        "name": "Tempête de pétales",
+        "desc": "Frappe tous les ennemis à ×{mult}."
+      },
+      "KISHI": {
+        "name": "Résurrection",
+        "desc": "Relève un allié à terre avec {pct} % de ses PV. Il n'agit pas ce tour-ci, et une synergie rompue ne revient pas."
+      },
+      "FUDO": {
+        "name": "Rempart absolu",
+        "desc": "Une Barrière sur chaque allié debout, et le poison disparaît."
+      },
+      "TOKIDOME": {
+        "name": "Arrêt du temps",
+        "desc": "Tous les ennemis debout passent leur prochain tour."
+      },
+      "charge": "La jauge monte de {perAction} % à chaque action de la carte, et de {half} % quand elle perd la moitié de ses PV. Pleine, l'ulti se lance une fois par partie, sans orbe."
     }
   },
   "ranked": {

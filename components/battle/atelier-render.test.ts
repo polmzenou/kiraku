@@ -4,7 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import fr from "@/messages/fr.json";
 import en from "@/messages/en.json";
-import { DEFAULT_BATTLE_RULES } from "@/lib/battle/config";
+import { abilityRules, DEFAULT_BATTLE_RULES } from "@/lib/battle/config";
 import type { WorkshopCard } from "@/lib/battle/view";
 import { AbilityWorkshop } from "./AbilityWorkshop";
 import { WorkshopBrowser } from "./WorkshopBrowser";
@@ -21,12 +21,7 @@ vi.mock("@/server/actions/battle", () => ({ buyAbilityAction: vi.fn(), equipAbil
 vi.mock("@/components/fuda/Fuda", () => ({ Fuda: () => null }));
 
 const MESSAGES = { fr, en };
-const rules = {
-  keywordValues: DEFAULT_BATTLE_RULES.keywordValues,
-  techniques: DEFAULT_BATTLE_RULES.techniques,
-  synergyAtkPct: 10,
-  abilityPrices: DEFAULT_BATTLE_RULES.abilityPrices,
-};
+const rules = { ...abilityRules(DEFAULT_BATTLE_RULES), synergyAtkPct: 10, abilityPrices: DEFAULT_BATTLE_RULES.abilityPrices };
 
 const providerProps = (locale: "fr" | "en") => ({
   locale,
@@ -61,6 +56,7 @@ const card = (over: Partial<WorkshopCard> = {}): WorkshopCard => ({
   universe: { key: "u-jjk", name: "Jujutsu Kaisen" },
   keywords: ["FLURRY", "POISON"],
   technique: "ISSEN",
+  ultimate: null,
   slots: 2,
   base: { keywords: ["BARRIER", "POISON"], technique: "ISSEN" },
   owned: { keywords: ["BARRIER", "FLURRY", "POISON"], techniques: ["ISSEN"] },
@@ -112,6 +108,20 @@ describe("atelier d'une carte", () => {
     // Aucune ligne pour la technique déjà équipée
     expect(out).not.toContain("Acheter Sceau");
     expect(out).not.toContain("Passif 1");
+  });
+
+  it("l'ulti s'affiche en lecture seule : ni bouton, ni prix", () => {
+    for (const locale of ["fr", "en"] as const) {
+      const gold = card({ rarity: "GOLD", ultimate: "TOKIDOME" });
+      const out = plain(render(locale, createElement(AbilityWorkshop, { card: gold, coins: 99_999, rules, onClose: () => {} })));
+      const ult = MESSAGES[locale].battle.ultimates.TOKIDOME;
+      expect(out).toContain(ult.name);
+      expect(out).toContain(html(ult.desc));
+      expect(out).toContain(html(MESSAGES[locale].battle.atelier.ultimateLocked));
+      // Aucun moyen de l'acheter ou de l'équiper
+      expect(out).not.toMatch(new RegExp(`(Acheter|Équiper|Buy|Equip) ${ult.name}`));
+      expect(plain(render(locale, createElement(AbilityWorkshop, { card: card(), coins: 0, rules, onClose: () => {} })))).not.toContain(ult.name);
+    }
   });
 
   it("en anglais", () => {

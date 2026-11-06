@@ -185,7 +185,9 @@ export async function saveRarityWith(db: PrismaClient, adminId: string, input: R
       await tx.gameSetting.upsert({ where: { key }, create: { key, value: next, updatedBy: adminId }, update: { value: next, updatedBy: adminId } });
       await writeAdminLog(tx, { adminId, action: "SETTING_UPDATE", targetType: "GameSetting", targetId: key, before: json(row?.value ?? {}), after: json(next) });
     }
-    for (const [key, enabled] of [["gifts.allowedRarities", input.gifts], ["trades.allowedRarities", input.trades]] as const) {
+    for (const [key, enabled] of [
+      ["gifts.allowedRarities", input.gifts], ["trades.allowedRarities", input.trades], ["battle.ultimateRarities", input.ultimate],
+    ] as const) {
       const row = await tx.gameSetting.findUnique({ where: { key } });
       const next = [...parseSetting(key, row?.value).filter((r) => r !== input.key), ...(enabled ? [input.key] : [])];
       await tx.gameSetting.upsert({ where: { key }, create: { key, value: next, updatedBy: adminId }, update: { value: next, updatedBy: adminId } });

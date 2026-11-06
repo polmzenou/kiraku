@@ -16,7 +16,7 @@ import { Sheet } from "../ui/Sheet";
 import { RankedResult } from "../ranked/RankedResult";
 import { BattleResult } from "./BattleResult";
 import { useLogLine } from "./BattleLog";
-import { Tablets } from "./hud/Hud";
+import { Tablets, ultimateTablet } from "./hud/Hud";
 import { StageMenu } from "./hud/StageMenu";
 import { Intro } from "./sequences/Intro";
 import { Outro } from "./sequences/Outro";
@@ -28,6 +28,7 @@ import { useBattleError } from "./useBattleError";
 function toClient(a: Action): ClientAction {
   if (a.type === "ATTACK") return { type: "ATTACK", actor: a.actor, target: a.target };
   if (a.type === "TECHNIQUE") return a.target === undefined ? { type: "TECHNIQUE", actor: a.actor } : { type: "TECHNIQUE", actor: a.actor, target: a.target };
+  if (a.type === "ULTIMATE") return a.target === undefined ? { type: "ULTIMATE", actor: a.actor } : { type: "ULTIMATE", actor: a.actor, target: a.target };
   return { type: a.type === "FORFEIT" ? "FORFEIT" : "END_TURN" };
 }
 
@@ -217,6 +218,7 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
             mode={controls.mode}
             attack={{ enabled: canAct && controls.selected !== null, onPress: () => controls.setMode("ATTACK") }}
             technique={{ technique: controls.technique, cost: controls.cost, enabled: controls.techniqueEnabled, onPress: controls.pressTechnique }}
+            ultimate={ultimateTablet(controls)}
             end={{ enabled: canAct, pulse: controls.ready.size === 0, onPress: controls.endTurn }}
           />
         }

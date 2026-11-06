@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { BattleScreen } from "@/components/battle/BattleScreen";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { routing } from "@/i18n/routing";
+import { abilityRules } from "@/lib/battle/config";
 import { parseBoardTier } from "@/lib/battle/tiers";
 import { battleCtx, getBattleView, getCandidates, getDecks, getLastTeam, sweepBattlesFor } from "@/server/battle/queries";
 import { getCurrentUser } from "@/server/user";
@@ -43,7 +44,7 @@ export default async function BattlePage({ params, searchParams }: PageProps<"/[
         view={view}
         candidates={candidates}
         decks={decks}
-        abilities={{ keywordValues: ctx.rules.keywordValues, techniques: ctx.rules.techniques, synergyAtkPct: ctx.rules.synergyAtkPct }}
+        abilities={abilityRules(ctx.rules)}
         lastTeam={lastTeam}
       />
     </div>

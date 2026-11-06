@@ -8,6 +8,7 @@ import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
 import { Link, redirect } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import { abilityRules } from "@/lib/battle/config";
 import { getBattleRules, getWorkshopCards } from "@/server/battle/queries";
 import { getCurrentUser } from "@/server/user";
 
@@ -57,7 +58,7 @@ export default async function AtelierPage({ searchParams }: PageProps<"/[locale]
         <WorkshopBrowser
           cards={cards}
           coins={user.coins}
-          rules={{ keywordValues: rules.keywordValues, techniques: rules.techniques, synergyAtkPct: rules.synergyAtkPct, abilityPrices: rules.abilityPrices }}
+          rules={{ ...abilityRules(rules), abilityPrices: rules.abilityPrices }}
           initialCardId={focus}
         />
       ) : (

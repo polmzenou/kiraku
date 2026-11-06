@@ -45,3 +45,13 @@ export function keywordParams(kw: Keyword, k: KeywordValues) {
 export function techniqueParams(value: number, k: KeywordValues, format: (n: number) => string) {
   return { mult: format(value / 100), pct: value, orbs: value, turns: k.poisonTurns };
 }
+
+/** `value` : multiplicateur (Châtiment céleste, Tempête de pétales) ou PV rendus en % (Résurrection), selon l'ulti. */
+export function ultimateParams(value: number, format: (n: number) => string) {
+  return { mult: format(value / 100), pct: value };
+}
+
+/** Règle de charge : points par action, et pour la moitié de ses PV perdue (damagePct vaut pour tous les PV). */
+export function chargeParams(charge: { perAction: number; damagePct: number }) {
+  return { perAction: charge.perAction, half: Math.floor(charge.damagePct / 2) };
+}

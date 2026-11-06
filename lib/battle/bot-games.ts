@@ -2,7 +2,7 @@ import { seededRng } from "@/lib/rng";
 import { botAction } from "./bot";
 import { applyAction, createState, legalActions, outcome } from "./engine";
 import { fighter, RULES, setupOf } from "./fixtures";
-import { KEYWORDS, TECHNIQUES, type Action, type BattleSetup, type Keyword, type Side, type Technique } from "./types";
+import { KEYWORDS, TECHNIQUES, ULTIMATES, type Action, type BattleSetup, type Keyword, type Side, type Technique, type Ultimate } from "./types";
 
 // Parties bot contre bot des tests de robustesse (aucune base requise). Les 2 000 parties sont
 // réparties sur plusieurs fichiers *.sim.test.ts pour tourner en parallèle.
@@ -23,20 +23,29 @@ export function botGame(seed: number, setup: BattleSetup) {
     state = applyAction(setup, seed, state, action).state;
     for (const team of state.fighters) for (const f of team) {
       if (f.hp < 0 || f.hp > f.maxHp) throw new Error(`PV hors bornes : ${f.hp}/${f.maxHp}`);
+      if (f.charge !== undefined && (f.charge < 0 || f.charge > 100 || (f.ultUsed && f.charge !== 0))) throw new Error(`jauge hors bornes : ${f.charge}`);
     }
   }
   return { state, actions };
 }
 
-export function randomTeam(rng: (n: number) => number, keywords: readonly Keyword[] = KEYWORDS, techniques: readonly Technique[] = TECHNIQUES) {
-  return Array.from({ length: 3 }, () =>
-    fighter({
+/** `ultimates` : une carte sur trois en reçoit un. Sans eux, aucun tirage de plus : les équipes d'avant ne changent pas. */
+export function randomTeam(
+  rng: (n: number) => number,
+  keywords: readonly Keyword[] = KEYWORDS,
+  techniques: readonly Technique[] = TECHNIQUES,
+  ultimates: readonly Ultimate[] = [],
+) {
+  return Array.from({ length: 3 }, () => {
+    const f = fighter({
       power: 40 + rng(61),
       ki: 30 + rng(57),
       keywords: [...new Set(Array.from({ length: rng(3) }, () => keywords[rng(keywords.length)]))],
       technique: techniques[rng(techniques.length)],
-    }),
-  );
+    });
+    if (ultimates.length > 0 && rng(3) === 0) f.ultimate = ultimates[rng(ultimates.length)];
+    return f;
+  });
 }
 
 /**
@@ -48,7 +57,7 @@ export function playBotGames(from: number, to: number): number {
   const rng = seededRng(2026);
   let played = 0;
   for (let i = 0; i < to; i++) {
-    const setup = setupOf(randomTeam(rng), randomTeam(rng), RULES, rng(2) as Side);
+    const setup = setupOf(randomTeam(rng, KEYWORDS, TECHNIQUES, ULTIMATES), randomTeam(rng, KEYWORDS, TECHNIQUES, ULTIMATES), RULES, rng(2) as Side);
     if (i < from) continue;
     const { state } = botGame(i, setup);
     if (!state.finished) throw new Error(`partie ${i} non terminée`);

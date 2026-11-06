@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { abilityWinRate, BALANCE_TARGETS } from "./balance";
-import { NEW_KEYWORDS, NEW_TECHNIQUES } from "./types";
+import { NEW_KEYWORDS, NEW_TECHNIQUES, ULTIMATES } from "./types";
 
 // Verrouille l'équilibrage des nouvelles capacités (pas des 14 d'origine, dont le comportement ne bouge pas).
 // Déterministe : un échec veut dire qu'une valeur ou le moteur a changé, pas qu'on a joué de malchance.
@@ -17,5 +17,11 @@ describe("équilibrage des nouvelles capacités, une seule carte en miroir", { t
     const rate = abilityWinRate({ technique }, GAMES);
     expect(rate).toBeGreaterThanOrEqual(BALANCE_TARGETS.technique.min);
     expect(rate).toBeLessThanOrEqual(BALANCE_TARGETS.technique.max);
+  });
+
+  it.each(ULTIMATES)("l'ulti %s reste dans sa cible", (ultimate) => {
+    const rate = abilityWinRate({ ultimate }, GAMES);
+    expect(rate).toBeGreaterThanOrEqual(BALANCE_TARGETS.ultimate.min);
+    expect(rate).toBeLessThanOrEqual(BALANCE_TARGETS.ultimate.max);
   });
 });

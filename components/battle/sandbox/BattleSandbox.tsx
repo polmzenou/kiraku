@@ -8,15 +8,15 @@ import { botAction } from "@/lib/battle/bot";
 import { IMPACT_STYLES, type FxLevel, type ImpactStyle } from "@/lib/battle/choreography";
 import { DEFAULT_BATTLE_RULES, engineRules } from "@/lib/battle/config";
 import { applyAction, createState } from "@/lib/battle/engine";
-import { combatStats } from "@/lib/battle/stats";
+import { combatStats, ultimateFor } from "@/lib/battle/stats";
 import { teamSynergy } from "@/lib/battle/synergy";
 import type { BoardTier } from "@/lib/battle/tiers";
-import { KEYWORDS, TECHNIQUES, type Action, type BattleSetup, type EngineRules, type FighterSetup, type Keyword, type Technique, type UniverseRef } from "@/lib/battle/types";
+import { KEYWORDS, TECHNIQUES, type Action, type BattleSetup, type EngineRules, type FighterSetup, type Keyword, type Technique, type Ultimate, type UniverseRef } from "@/lib/battle/types";
 import type { PlayerView } from "@/lib/battle/view";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { seededRng } from "@/lib/rng";
 import { useLogLine } from "../BattleLog";
-import { Tablets } from "../hud/Hud";
+import { Tablets, ultimateTablet } from "../hud/Hud";
 import { StageMenu } from "../hud/StageMenu";
 import { Intro } from "../sequences/Intro";
 import { Outro } from "../sequences/Outro";
@@ -46,7 +46,9 @@ const CAST: Card[] = [
   { id: "KOHAKU", name: "Kohaku", nameNative: "琥珀", rarity: "AR" },
 ];
 
-function fighter(c: Card, n: number, o: { power: number; ki: number; technique: Technique; keywords: Keyword[]; universe?: UniverseRef }): FighterSetup {
+function fighter(c: Card, n: number, o: { power: number; ki: number; technique: Technique; keywords: Keyword[]; ultimate?: Ultimate | null; universe?: UniverseRef }): FighterSetup {
+  // Sans ulti imposé, celui de la rareté, comme en vrai
+  const ultimate = o.ultimate === undefined ? ultimateFor(900_000 + n, c.rarity, DEFAULT_BATTLE_RULES) : o.ultimate;
   return {
     cardId: `sandbox-${c.id}-${n}`,
     anilistId: 900_000 + n,
@@ -60,11 +62,14 @@ function fighter(c: Card, n: number, o: { power: number; ki: number; technique: 
     ...combatStats(o.power, o.ki, DEFAULT_BATTLE_RULES.stats),
     keywords: o.keywords,
     technique: o.technique,
+    ...(ultimate ? { ultimate } : {}),
     ...(o.universe ? { universe: o.universe } : {}),
   };
 }
 
 const BASE_RULES: EngineRules = engineRules(DEFAULT_BATTLE_RULES);
+/** Ultis du scénario contre le bot : les trois premiers sont au joueur (une cible ennemie, un allié à terre, aucune cible). */
+const PLAY_ULTIMATES: Ultimate[] = ["TENCHU", "KISHI", "FUDO", "HYAKKA", "TOKIDOME", "KISHI"];
 
 function setupFor(scenario: Scenario, seed: number): BattleSetup {
   if (scenario === "demo") {
@@ -75,15 +80,16 @@ function setupFor(scenario: Scenario, seed: number): BattleSetup {
     const universe: UniverseRef = { key: "sandbox-yozakura", name: "Yozakura" };
     const rival: UniverseRef = { key: "sandbox-kagerou", name: "Kagerou" };
     const pct = BASE_RULES.synergyAtkPct ?? 0;
+    // Les cinq ultis sont sur le plateau, jauges pleines au départ (voir `initial`)
     const mine = [
-      fighter(CAST[0], 1, { power: 88, ki: 52, technique: novelties ? "KONSHIN" : "ISSEN", keywords: novelties ? ["LIFESTEAL"] : ["FLURRY"], universe }),
-      fighter(CAST[1], 2, { power: 58, ki: 70, technique: novelties ? "JIU" : "IYASHI", keywords: novelties ? ["ARMOR"] : ["BARRIER"], universe }),
-      fighter(CAST[2], 3, { power: 80, ki: 78, technique: novelties ? "MEISO" : "RANBU", keywords: novelties ? ["CHANNEL", "BARRIER"] : ["TAUNT", "RIPOSTE"], universe }),
+      fighter(CAST[0], 1, { power: 88, ki: 52, technique: novelties ? "KONSHIN" : "ISSEN", keywords: novelties ? ["LIFESTEAL"] : ["FLURRY"], ultimate: "TENCHU", universe }),
+      fighter(CAST[1], 2, { power: 58, ki: 70, technique: novelties ? "JIU" : "IYASHI", keywords: novelties ? ["ARMOR"] : ["BARRIER"], ultimate: "KISHI", universe }),
+      fighter(CAST[2], 3, { power: 80, ki: 78, technique: novelties ? "MEISO" : "RANBU", keywords: novelties ? ["CHANNEL", "BARRIER"] : ["TAUNT", "RIPOSTE"], ultimate: "FUDO", universe }),
     ];
     const theirs = [
-      fighter(CAST[3], 4, { power: 74, ki: 48, technique: novelties ? "RENGEKI" : "KANTSU", keywords: novelties ? ["RAGE"] : ["POISON"], universe: rival }),
-      fighter(CAST[4], 5, { power: 64, ki: 72, technique: novelties ? "DOKUGIRI" : "KOBU", keywords: novelties ? ["BARRIER"] : ["LAST_WILL"], universe: rival }),
-      fighter(CAST[5], 6, { power: 82, ki: 60, technique: novelties ? "KANTSU" : "FUIN", keywords: novelties ? ["EXECUTE"] : ["REVIVE"], universe: rival }),
+      fighter(CAST[3], 4, { power: 74, ki: 48, technique: novelties ? "RENGEKI" : "KANTSU", keywords: novelties ? ["RAGE"] : ["POISON"], ultimate: "HYAKKA", universe: rival }),
+      fighter(CAST[4], 5, { power: 64, ki: 72, technique: novelties ? "DOKUGIRI" : "KOBU", keywords: novelties ? ["BARRIER"] : ["LAST_WILL"], ultimate: "TOKIDOME", universe: rival }),
+      fighter(CAST[5], 6, { power: 82, ki: 60, technique: novelties ? "KANTSU" : "FUIN", keywords: novelties ? ["EXECUTE"] : ["REVIVE"], ultimate: "KISHI", universe: rival }),
     ];
     return { first: 0, rules, synergy: [teamSynergy(mine, pct), teamSynergy(theirs, pct)], teams: [mine, theirs] };
   }
@@ -96,6 +102,8 @@ function setupFor(scenario: Scenario, seed: number): BattleSetup {
         ki: 32 + rng(54),
         technique: TECHNIQUES[rng(TECHNIQUES.length)],
         keywords: [...new Set(Array.from({ length: rng(3) }, () => KEYWORDS[rng(KEYWORDS.length)]))],
+        // Contre le bot, chaque carte a un ulti (jauge vide) : de quoi essayer chaque commande, Résurrection comprise
+        ...(scenario === "play" ? { ultimate: PLAY_ULTIMATES[from + i] } : {}),
       }),
     );
   return { first: 0, rules: BASE_RULES, teams: [team(0), team(3)] };
@@ -123,7 +131,12 @@ function Battle({
   const t = useTranslations("battle");
   const ts = useTranslations("battle.sandbox");
   const setup = useMemo(() => setupFor(scenario, seed), [scenario, seed]);
-  const initial = useMemo(() => createState(setup).state, [setup]);
+  const initial = useMemo(() => {
+    const { state } = createState(setup);
+    // Démo : les ultis partent chargés, pour voir chaque effet sans attendre
+    if (scenario === "demo") for (const f of state.fighters.flat()) if (f.charge !== undefined) f.charge = 100;
+    return state;
+  }, [scenario, setup]);
   const players = useMemo<[PlayerView, PlayerView]>(
     () => [{ username: ts("you"), image: PLAYER_AVATAR, isGuest: false, decor: { frame: "kinpaku", nameColor: null } }, { bot: scenario === "demo" ? "KITSUNE" : "ONI" }],
     [scenario, ts],
@@ -138,6 +151,9 @@ function Battle({
   const rng = useRef(seededRng(seed ^ 0xb07));
   const [phase, setPhase] = useState<"intro" | "fight" | "outro">("intro");
   const [turnStart, setTurnStart] = useState(() => Date.now());
+  // Compte des coups joués : en mouvement réduit, l'animation passe de vrai à faux dans la même tâche et
+  // React ne voit aucun changement ; sans ce compteur, le bot ne rejouait plus après son premier coup
+  const [moves, setMoves] = useState(0);
   const line = useLogLine(setup, players);
 
   const apply = useCallback(
@@ -146,6 +162,7 @@ function Battle({
       const res = applyAction(setup, seed, truth.current, action);
       if (res.state.active !== truth.current.active || res.state.turn !== truth.current.turn) setTurnStart(Date.now());
       truth.current = res.state;
+      setMoves((n) => n + 1);
       play(res.events, res.state);
     },
     [play, seed, setup],
@@ -171,7 +188,7 @@ function Battle({
     if (humanTurn || (manual && !human)) return;
     const id = setTimeout(botMove, human ? 650 : 380);
     return () => clearTimeout(id);
-  }, [botMove, director.animating, human, humanTurn, manual, phase]);
+  }, [botMove, director.animating, human, humanTurn, manual, moves, phase]);
 
   const canAct = phase === "fight" && humanTurn && !director.animating;
   const controls = useBoardControls({ setup, shown: director.shown, mySide: 0, canAct, send: apply });
@@ -207,6 +224,7 @@ function Battle({
             mode={controls.mode}
             attack={{ enabled: canAct && controls.selected !== null, onPress: () => controls.setMode("ATTACK") }}
             technique={{ technique: controls.technique, cost: controls.cost, enabled: controls.techniqueEnabled, onPress: controls.pressTechnique }}
+            ultimate={ultimateTablet(controls)}
             end={{ enabled: canAct, pulse: controls.ready.size === 0, onPress: controls.endTurn }}
           />
         ) : null

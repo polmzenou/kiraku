@@ -29,6 +29,7 @@ export function useCardFilters<C extends CandidateCard>(cards: readonly C[], anc
   // Passifs : la carte doit tous les avoir ; techniques : l'une d'elles
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [techniques, setTechniques] = useState<Technique[]>([]);
+  const [withUltimate, setWithUltimate] = useState(false);
   const [sameUniverse, setSameUniverse] = useState(false);
   // Sans carte de référence, « même univers » attend la première
   const universeKey = sameUniverse ? anchor?.key : undefined;
@@ -40,12 +41,13 @@ export function useCardFilters<C extends CandidateCard>(cards: readonly C[], anc
         (!q || fold(`${c.name} ${c.nameNative ?? ""} ${c.universe.name}`).includes(q)) &&
         keywords.every((k) => c.keywords.includes(k)) &&
         (techniques.length === 0 || techniques.includes(c.technique)) &&
+        (!withUltimate || c.ultimate !== null) &&
         (!universeKey || c.universe.key === universeKey),
     );
     if (sort === "rarity") return list;
     const key = SORT_KEY[sort];
     return list.sort((a, b) => key(b) - key(a));
-  }, [cards, query, keywords, techniques, sort, universeKey]);
+  }, [cards, query, keywords, techniques, withUltimate, sort, universeKey]);
 
   return {
     shown,
@@ -57,13 +59,16 @@ export function useCardFilters<C extends CandidateCard>(cards: readonly C[], anc
     toggleKeyword: (k: Keyword) => setKeywords((cur) => toggleIn(cur, k)),
     techniques,
     toggleTechnique: (t: Technique) => setTechniques((cur) => toggleIn(cur, t)),
+    withUltimate,
+    toggleUltimate: () => setWithUltimate((on) => !on),
     sameUniverse,
     toggleSameUniverse: () => setSameUniverse((on) => !on),
     anchor,
-    filtered: keywords.length > 0 || techniques.length > 0 || sameUniverse,
+    filtered: keywords.length > 0 || techniques.length > 0 || withUltimate || sameUniverse,
     reset: () => {
       setKeywords([]);
       setTechniques([]);
+      setWithUltimate(false);
       setSameUniverse(false);
     },
   };
@@ -110,6 +115,11 @@ export function CardFilters({ filters: f, universe = true }: { filters: CardFilt
               {tk(`techniques.${tech}.name`)}
             </button>
           ))}
+        </FilterRow>
+        <FilterRow label={t("ultimateLabel")}>
+          <button type="button" aria-pressed={f.withUltimate} onClick={f.toggleUltimate} className={chipClasses(f.withUltimate)}>
+            {t("ultimateFilter")}
+          </button>
         </FilterRow>
         {universe && (
           <FilterRow label={ts("filterLabel")}>

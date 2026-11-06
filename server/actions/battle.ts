@@ -2,6 +2,7 @@
 
 import { after } from "next/server";
 import { z } from "@/lib/zod";
+import { clientActionSchema } from "@/lib/battle/client-action";
 import { cleanDeckName } from "@/lib/battle/decks";
 import type { Kit } from "@/lib/battle/loadout";
 import { KEYWORDS, LEGACY_KEYWORDS, TEAM_SIZE, TECHNIQUES } from "@/lib/battle/types";
@@ -51,7 +52,6 @@ type Failure = { ok: false; error: BattleActionError; battleId?: string };
 const MINUTE = 60;
 const idSchema = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
 const teamSchema = z.array(idSchema).length(TEAM_SIZE);
-const slot = z.number().int().min(0).max(TEAM_SIZE - 1);
 
 type Player = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
 
@@ -380,14 +380,7 @@ export async function equipAbilitiesAction(input: unknown): Promise<AtelierResul
 
 export type PlayResult = { ok: true; update: BattleUpdateView } | Failure;
 
-const actionSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("ATTACK"), actor: slot, target: slot }).strict(),
-  z.object({ type: z.literal("TECHNIQUE"), actor: slot, target: slot.optional() }).strict(),
-  z.object({ type: z.literal("END_TURN") }).strict(),
-  z.object({ type: z.literal("FORFEIT") }).strict(),
-]);
-
-const playSchema = z.object({ battleId: idSchema, version: z.number().int().min(0).max(100_000), action: actionSchema }).strict();
+const playSchema = z.object({ battleId: idSchema, version: z.number().int().min(0).max(100_000), action: clientActionSchema }).strict();
 
 export async function playAction(input: unknown): Promise<PlayResult> {
   const parsed = playSchema.safeParse(input);

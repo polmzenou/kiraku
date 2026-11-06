@@ -3,7 +3,21 @@ import { mixSeed, seededRng, type Rng } from "@/lib/rng";
 import type { BattleRules } from "./config";
 import type { Kit } from "./loadout";
 import { teamSynergy } from "./synergy";
-import { KEYWORDS, LEGACY_KEYWORDS, LEGACY_TECHNIQUES, NEW_KEYWORDS, NEW_TECHNIQUES, type BattleSetup, type FighterSetup, type Keyword, type Side, type Technique, type UniverseRef } from "./types";
+import {
+  KEYWORDS,
+  LEGACY_KEYWORDS,
+  LEGACY_TECHNIQUES,
+  LEGACY_ULTIMATES,
+  NEW_KEYWORDS,
+  NEW_TECHNIQUES,
+  type BattleSetup,
+  type FighterSetup,
+  type Keyword,
+  type Side,
+  type Technique,
+  type Ultimate,
+  type UniverseRef,
+} from "./types";
 
 // Ce qu'une carte devient en combat : stats dérivées de 力/気, passifs et technique stables.
 
@@ -21,6 +35,7 @@ const KEYWORD_SALT = 0x6b77; // « kw »
 const TECHNIQUE_SALT = 0x7463; // « tc »
 const NEW_KEYWORD_SALT = 0x6e6b; // « nk »
 const NEW_TECHNIQUE_SALT = 0x6e74; // « nt »
+const ULTIMATE_SALT = 0x756c; // « ul »
 
 /** Emplacements de passif d'une rareté : fixés par battle.keywordsByRarity, l'atelier n'en ajoute jamais. */
 export function keywordSlots(rarity: Rarity, perRarity: BattleRules["keywordsByRarity"]): number {
@@ -59,6 +74,16 @@ export function techniqueFor(anilistId: number, newAbilityPct = 0): Technique {
   return roll < newAbilityPct ? novelty : LEGACY_TECHNIQUES[mixSeed(anilistId, TECHNIQUE_SALT) % LEGACY_TECHNIQUES.length];
 }
 
+/**
+ * Ulti d'une carte : toujours le même pour un personnage, indépendant de son kit d'atelier ; null hors des
+ * raretés cochées (battle.ultimateRarities). Le tirage porte sur les seuls ultis d'origine : des ajouts
+ * futurs seront tirés à part, sans changer celui-ci.
+ */
+export function ultimateFor(anilistId: number, rarity: Rarity, rules: Pick<BattleRules, "ultimateRarities">): Ultimate | null {
+  if (!rules.ultimateRarities.includes(rarity)) return null;
+  return LEGACY_ULTIMATES[mixSeed(anilistId, ULTIMATE_SALT) % LEGACY_ULTIMATES.length];
+}
+
 export type FighterCard = {
   id: string;
   appearance?: unknown;
@@ -73,8 +98,12 @@ export type FighterCard = {
   universe?: UniverseRef;
 };
 
-/** `kit` : passifs et technique choisis à l'atelier (lib/battle/loadout.ts) ; sans lui, le tirage de la carte. */
+/**
+ * `kit` : passifs et technique choisis à l'atelier (lib/battle/loadout.ts) ; sans lui, le tirage de la carte.
+ * L'ulti ne dépend que du personnage et de sa rareté, avec ou sans kit.
+ */
 export function fighterFrom(card: FighterCard, rules: BattleRules, kit?: Kit): FighterSetup {
+  const ultimate = ultimateFor(card.anilistId, card.rarity, rules);
   return {
     cardId: card.id,
     anilistId: card.anilistId,
@@ -89,6 +118,7 @@ export function fighterFrom(card: FighterCard, rules: BattleRules, kit?: Kit): F
     ...combatStats(card.power, card.ki, rules.stats),
     keywords: kit ? [...kit.keywords] : keywordsFor(card.anilistId, card.rarity, rules.keywordsByRarity, rules.newAbilityPct),
     technique: kit ? kit.technique : techniqueFor(card.anilistId, rules.newAbilityPct),
+    ...(ultimate ? { ultimate } : {}),
     ...(card.universe ? { universe: card.universe } : {}),
   };
 }

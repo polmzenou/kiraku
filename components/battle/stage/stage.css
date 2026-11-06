@@ -701,10 +701,53 @@
 .stage-hp[data-level="low"] .stage-hp-fill {
   background: #e0533f;
 }
+/* Jauge d'ulti, dorée, sous la barre de PV */
+.stage-ult {
+  position: absolute;
+  left: 30%;
+  right: 30%;
+  bottom: -10%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #15120f;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.65);
+}
+.stage-ult-fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, #9c7826, #d9b556 60%, #f2d88a);
+  transition: transform 420ms cubic-bezier(.3, .6, .3, 1);
+}
+.stage-ult[data-ready] .stage-ult-fill {
+  background: #fff2c2;
+}
+/* Jauge pleine : halo d'or autour de la carte, en opacité seulement */
+.st-ult-halo {
+  position: absolute;
+  inset: -6% -7%;
+  border-radius: 14px;
+  pointer-events: none;
+  box-shadow: 0 0 0 2px rgb(242 216 138 / 0.85), 0 0 26px rgb(217 181 86 / 0.75);
+  animation: st-breathe 1.8s ease-in-out infinite;
+}
+.stage[data-level="reduced"] .st-ult-halo {
+  animation: none;
+}
+.stage[data-level="reduced"] .stage-ult-fill {
+  transition: none;
+}
 .stage-slot[data-dead] .stage-gem,
 .stage-slot[data-dead] .stage-hp,
+.stage-slot[data-dead] .stage-ult,
 .stage-slot[data-dead] .stage-keywords {
   opacity: 0;
+}
+/* Allié à terre que Résurrection peut relever : la carte se laisse toucher et remonte un peu */
+.stage-slot[data-dead][data-target] .stage-pose {
+  opacity: 0.85;
+  cursor: pointer;
 }
 
 /* Chiffres au pinceau */
@@ -1126,6 +1169,69 @@
 .tablet-end[data-pulse]::after {
   animation: st-breathe 1.4s ease-in-out infinite;
 }
+/* Quatre tablettes quand la carte choisie a un ulti : environ 80 px chacune à 375 px */
+.tablets[data-count="4"] {
+  grid-template-columns: 0.9fr 1.2fr 1.2fr 0.9fr;
+  gap: 6px;
+}
+.tablets[data-count="4"] .tablet-label {
+  font-size: 11.5px;
+}
+.tablet-ult {
+  background: linear-gradient(170deg, #3a2a12, #17100a);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), inset 0 0 0 1px rgb(242 216 138 / 0.55), 0 4px 0 #080604, 0 6px 14px rgb(0 0 0 / 0.45);
+}
+.tablet-ult .tablet-label {
+  color: #f2d88a;
+}
+.tablet-ult[data-active] .tablet-label {
+  color: #fff4ef;
+}
+/* Prête : halo doré qui respire (opacité seulement) ; armée : le halo bat plus vite, en rouge */
+.tablet-ult::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 12px;
+  box-shadow: 0 0 0 2px #f2d88a, 0 0 20px #d9b556;
+  opacity: 0;
+  pointer-events: none;
+}
+.tablet-ult[data-ready]::after {
+  animation: st-breathe 1.6s ease-in-out infinite;
+}
+.tablet-ult[data-armed]::after {
+  box-shadow: 0 0 0 2px #ff9c86, 0 0 22px #e0533f;
+  animation: st-breathe 0.7s ease-in-out infinite;
+}
+/* En charge : la jauge prend le bas de la tablette, sous un libellé qui peut tenir sur deux lignes */
+.tablet-ult[data-charging] {
+  padding-bottom: 11px;
+}
+.tablet-gauge {
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  bottom: 4px;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #2b2119;
+}
+.tablet-gauge i {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 50%;
+  background: #d9b556;
+  transition: transform 400ms ease-out;
+}
+.stage[data-level="reduced"] .tablet-ult::after {
+  animation: none;
+  opacity: 1;
+}
+.stage[data-level="reduced"] .tablet-gauge i {
+  transition: none;
+}
 .ticker {
   min-height: 18px;
   margin: 0;
@@ -1357,4 +1463,24 @@
 }
 .cutin:not([data-full]) .cutin-name {
   font-size: clamp(16px, min(6.2cqw, 100cqw / var(--fit, 8)), 52px);
+}
+/* Cut-in d'ulti : bandeau doré, des deux côtés */
+.cutin[data-ult] .cutin-band,
+.cutin[data-ult][data-side="theirs"] .cutin-band {
+  background: linear-gradient(90deg, #120c05, #4a3510 42%, #120c05);
+  box-shadow: 0 0 0 3px #f2d88a, 0 0 0 6px #0b0908, 0 0 0 8px #d9b556, 0 0 60px rgb(242 216 138 / 0.65);
+}
+.cutin[data-ult] .cutin-lines {
+  background: repeating-linear-gradient(0deg, transparent 0 7px, rgb(255 242 194 / 0.22) 7px 8px, transparent 8px 19px, rgb(255 255 255 / 0.1) 19px 20px);
+}
+.cutin[data-ult] .cutin-name {
+  -webkit-text-stroke-color: #7a5418;
+  text-shadow: 0 0 34px rgb(242 216 138 / 0.75);
+}
+.cutin-text .cutin-kicker {
+  font-size: clamp(11px, 2.8cqw, 15px);
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #f2d88a;
 }

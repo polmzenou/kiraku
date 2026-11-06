@@ -1,10 +1,16 @@
 import { useFormatter, useTranslations } from "next-intl";
-import { keywordParams, techniqueParams } from "@/lib/battle/ability-params";
+import { chargeParams, keywordParams, techniqueParams, ultimateParams } from "@/lib/battle/ability-params";
 import type { BattleRules } from "@/lib/battle/config";
-import { KEYWORDS, TECHNIQUES, type Keyword, type Technique } from "@/lib/battle/types";
+import { KEYWORDS, TECHNIQUES, ULTIMATES, type Keyword, type Technique, type Ultimate } from "@/lib/battle/types";
 import { SectionTitle } from "../SectionTitle";
 
-export type AbilityRules = Pick<BattleRules, "keywordValues" | "techniques" | "synergyAtkPct">;
+export type AbilityRules = Pick<BattleRules, "keywordValues" | "techniques" | "synergyAtkPct" | "ultimateRarities" | "ultimateCharge" | "ultimates">;
+
+/** Nom d'une rareté (registre injecté dans les messages), ou sa clé si elle n'a pas de traduction. */
+export function useRarityName() {
+  const t = useTranslations("rarity");
+  return (r: string) => (t.has(r) ? t(r) : r);
+}
 
 /**
  * Passifs puis techniques, avec les valeurs en vigueur (GameSetting). `inTeam` marque ce que
@@ -19,11 +25,13 @@ export function AbilityLists({
   inTeam?: {
     keywords: ReadonlySet<Keyword>;
     techniques: ReadonlySet<Technique>;
+    ultimates?: ReadonlySet<Ultimate>;
   };
   className?: string;
 }) {
   const t = useTranslations("battle");
   const format = useFormatter();
+  const rarityName = useRarityName();
   const k = rules.keywordValues;
   const mark = (on: boolean | undefined) =>
     on && (
@@ -76,11 +84,32 @@ export function AbilityLists({
           })}
         </dl>
       </article>
+
+      <article className="flex flex-col gap-2 lacquer rounded-card p-4">
+        <h3 className="font-heading text-lg font-extrabold text-kin">{t("abilities.ultimates")}</h3>
+        <p className="text-xs text-text-muted">
+          {rules.ultimateRarities.length > 0
+            ? t("abilities.ultimatesHint", { rarities: format.list(rules.ultimateRarities.map(rarityName), { type: "conjunction" }) })
+            : t("abilities.ultimatesOff")}{" "}
+          {t("ultimates.charge", chargeParams(rules.ultimateCharge))}
+        </p>
+        <dl className="flex flex-col gap-2 text-sm">
+          {ULTIMATES.map((u) => (
+            <div key={u}>
+              <dt className="flex flex-wrap items-center gap-2 font-bold">
+                {t(`ultimates.${u}.name`)}
+                {mark(inTeam?.ultimates?.has(u))}
+              </dt>
+              <dd className="text-text-muted">{t(`ultimates.${u}.desc`, ultimateParams(rules.ultimates[u], (n) => format.number(n)))}</dd>
+            </div>
+          ))}
+        </dl>
+      </article>
     </div>
   );
 }
 
-/** Lexique des passifs et techniques de la page Combat. */
+/** Lexique des passifs, techniques et ultis de la page Combat. */
 export function AbilityGuide({ rules }: { rules: AbilityRules }) {
   const t = useTranslations("battle");
   return (

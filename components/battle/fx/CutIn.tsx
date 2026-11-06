@@ -8,14 +8,15 @@ import type { Banner, CutIn as CutInState } from "../stage/useDirector";
 /**
  * Cut-in de technique : un bandeau oblique traverse l'écran avec l'image de la carte et le nom traduit
  * de la technique en grand. Complet au premier lancer d'une carte, bref ensuite. Venu de la gauche pour
- * son propre camp, de la droite pour l'adversaire.
+ * son propre camp, de la droite pour l'adversaire. Un ulti a toujours le sien en complet, sur un bandeau doré.
  */
 export function CutIn({ cutin, setup, mySide }: { cutin: CutInState; setup: BattleSetup; mySide: Side }) {
-  const t = useTranslations("battle.techniques");
+  const t = useTranslations("battle");
   const card = setup.teams[cutin.actor.side][cutin.actor.index];
   const look = resolveAppearance(undefined, card.appearance);
   const mine = cutin.actor.side === mySide;
-  const name = t(`${cutin.technique}.name`);
+  const ultimate = "ultimate" in cutin ? cutin.ultimate : null;
+  const name = "ultimate" in cutin ? t(`ultimates.${cutin.ultimate}.name`) : t(`techniques.${cutin.technique}.name`);
   // Le titre se règle sur son mot le plus long (« Encouragement ») : les mots passent à la ligne, jamais hors du bandeau
   const fit = Math.max(...name.split(/\s+/).map((w) => w.length));
   return (
@@ -25,6 +26,7 @@ export function CutIn({ cutin, setup, mySide }: { cutin: CutInState; setup: Batt
       className="cutin"
       data-side={mine ? "mine" : "theirs"}
       data-full={cutin.full || undefined}
+      data-ult={ultimate ? true : undefined}
       style={{ ["--ms" as string]: `${Math.round(cutin.ms)}ms` }}
     >
       <div className="cutin-band">
@@ -34,6 +36,7 @@ export function CutIn({ cutin, setup, mySide }: { cutin: CutInState; setup: Batt
           <img src={card.imageUrl} alt="" draggable={false} style={{ objectPosition: `${look.focalX}% ${look.focalY}%` }} />
         </span>
         <span className="cutin-text">
+          {ultimate && <small className="cutin-kicker">{t("board.ultimateKicker")}</small>}
           <b className="cutin-name" style={{ ["--fit" as string]: fit }}>
             {name}
           </b>

@@ -10,6 +10,7 @@ import { playerTag } from "@/components/social/PlayerName";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import { abilityRules } from "@/lib/battle/config";
 import type { PlayerView } from "@/lib/battle/view";
 import { battleCtx, challengeTarget, getActivity, getCandidates, getDecks, getHistory, getLastTeam, sweepBattlesFor } from "@/server/battle/queries";
 import { RankedBoardPanel } from "@/components/ranked/RankedBoardPanel";
@@ -87,7 +88,7 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
         activity={activity}
         candidates={candidates}
         decks={decks}
-        abilities={{ keywordValues: ctx.rules.keywordValues, techniques: ctx.rules.techniques, synergyAtkPct: ctx.rules.synergyAtkPct }}
+        abilities={abilityRules(ctx.rules)}
         lastTeam={lastTeam}
         queueSeconds={ctx.rules.queueSeconds}
         queuePollSeconds={ctx.rules.queuePollSeconds}

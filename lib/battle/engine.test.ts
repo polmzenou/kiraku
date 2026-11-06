@@ -247,6 +247,201 @@ describe("nouvelles techniques", () => {
   });
 });
 
+describe("ultis", () => {
+  // Valeurs fixées ici : les tests ne bougent pas quand l'équilibrage change les défauts
+  const U: EngineRules = {
+    ...FLAT_RULES,
+    ultimate: { charge: { perAction: 25, damagePct: 50 }, values: { TENCHU: 300, HYAKKA: 130, KISHI: 50, FUDO: 0, TOKIDOME: 0 } },
+  };
+  const setupU = (a: Parameters<typeof setupOf>[0], b: Parameters<typeof setupOf>[1]) => setupOf(a, b, U);
+  const ult = (setup: BattleSetup, state: BattleState, actor: number, target?: number, side: Side = 0) =>
+    play(setup, state, { type: "ULTIMATE", side, actor, ...(target === undefined ? {} : { target }) });
+  /** État de départ, jauges pleines sur les cartes qui ont un ulti. */
+  const ready = (setup: BattleSetup) => {
+    const { state } = createState(setup);
+    for (const team of state.fighters) for (const f of team) if (f.charge !== undefined) f.charge = 100;
+    return state;
+  };
+
+  it("une carte sans ulti n'a ni jauge ni ulti : l'état d'une partie d'avant reste identique", () => {
+    const setup = setupU(team3(), team3());
+    const { state } = createState(setup);
+    for (const f of state.fighters.flat()) expect(Object.keys(f)).not.toContain("charge");
+    const after = play(setup, state, { type: "ATTACK", side: 0, actor: 0, target: 0 }).state;
+    expect(after.fighters.flat().some((f) => "charge" in f || "ultUsed" in f)).toBe(false);
+  });
+
+  it("charge : +25 par action, attaque ou technique, plafonnée à 100", () => {
+    const setup = setupU([fighter({ ultimate: "TENCHU", keywords: ["FLURRY"] })], [fighter({ ki: 999, hp: 900 })]);
+    let { state } = createState(setup);
+    state = play(setup, state, { type: "ATTACK", side: 0, actor: 0, target: 0 }).state;
+    expect(state.fighters[0][0].charge).toBe(25);
+    state = play(setup, { ...state, orbs: 5 }, { type: "TECHNIQUE", side: 0, actor: 0, target: 0 }).state;
+    expect(state.fighters[0][0].charge).toBe(50);
+    state.fighters[0][0].charge = 90;
+    state = play(setup, state, { type: "END_TURN", side: 0 }).state;
+    state = play(setup, state, { type: "END_TURN", side: 1 }).state;
+    state = play(setup, state, { type: "ATTACK", side: 0, actor: 0, target: 0 }).state;
+    expect(state.fighters[0][0].charge).toBe(100);
+  });
+
+  it("charge : une part des PV perdus sous les coups, la riposte et le poison", () => {
+    const hp = 200;
+    // Coup reçu : 50 points pour 100 % des PV, au prorata, arrondi en dessous
+    const hitSetup = setupU([fighter({ power: 100 })], [fighter({ ki: 0, hp, ultimate: "FUDO" })]);
+    const hitState = play(hitSetup, createState(hitSetup).state, { type: "ATTACK", side: 0, actor: 0, target: 0 }).state;
+    expect(hitState.fighters[1][0].charge).toBe(Math.floor((100 * 50) / hp));
+    // Riposte encaissée par l'attaquant : son action, plus les PV que la riposte lui retire
+    const back = setupU([fighter({ power: 100, ki: 0, hp, ultimate: "TENCHU" })], [fighter({ ki: 0, hp: 900, keywords: ["RIPOSTE"] })]);
+    const { state: riposted, events } = play(back, createState(back).state, { type: "ATTACK", side: 0, actor: 0, target: 0 });
+    const returned = events.filter((e) => e.t === "damage" && e.side === 0).map((e) => (e.t === "damage" ? e.amount : 0))[0];
+    expect(riposted.fighters[0][0].charge).toBe(25 + Math.floor((returned * 50) / hp));
+    // Tic de poison au début du tour de la carte
+    const poison = setupU(team3(), [fighter({ hp, ultimate: "KISHI" }), fighter(), fighter()]);
+    const { state: s0 } = createState(poison);
+    Object.assign(s0.fighters[1][0], { poisonTurns: 2, poisonDmg: 40 });
+    const ticked = play(poison, s0, { type: "END_TURN", side: 0 }).state;
+    expect(ticked.fighters[1][0].charge).toBe(Math.floor((40 * 50) / hp));
+  });
+
+  it("refusé tant que la jauge n'est pas pleine, sans ulti, ou une seconde fois", () => {
+    const setup = setupU([fighter({ ultimate: "HYAKKA" }), fighter()], team3());
+    const { state } = createState(setup);
+    state.fighters[0][0].charge = 99;
+    expect(() => ult(setup, state, 0)).toThrow("ULTIMATE_NOT_READY");
+    expect(() => ult(setup, ready(setup), 1)).toThrow("ULTIMATE_NOT_READY");
+    const once = ult(setup, ready(setup), 0).state;
+    expect(once.fighters[0][0]).toMatchObject({ charge: 0, ultUsed: true });
+    // Même rechargée à la main, la jauge ne rouvre pas l'ulti
+    once.fighters[0][0].charge = 100;
+    once.fighters[0][0].actionsLeft = 1;
+    expect(() => ult(setup, once, 0)).toThrow("ULTIMATE_NOT_READY");
+  });
+
+  it("l'ulti prend l'action de la carte et une du budget du tour, sans rien recharger", () => {
+    const setup = { ...setupU([fighter({ ultimate: "FUDO" }), fighter()], team3()), rules: { ...U, firstTurnActions: 2 } };
+    const { state } = ult(setup, ready(setup), 0);
+    expect(state.fighters[0][0]).toMatchObject({ actionsLeft: 0, charge: 0 });
+    expect(state.budget).toBe(1);
+    expect(state.orbs).toBe(createState(setup).state.orbs);
+  });
+
+  it("legalActions propose l'ulti avec ses seules cibles permises", () => {
+    const setup = setupU([fighter({ ultimate: "TENCHU" }), fighter({ ultimate: "KISHI" }), fighter({ ultimate: "FUDO" })], [fighter(), fighter({ keywords: ["TAUNT"] }), fighter()]);
+    const state = ready(setup);
+    state.fighters[0][2].hp = 0;
+    const ults = legalActions(setup, state, 0).filter((a) => a.type === "ULTIMATE");
+    expect(ults).toEqual([
+      { type: "ULTIMATE", side: 0, actor: 0, target: 1 },
+      { type: "ULTIMATE", side: 0, actor: 1, target: 2 },
+    ]);
+  });
+
+  it("Châtiment céleste : respecte la Provocation", () => {
+    const setup = setupU([fighter({ ultimate: "TENCHU" })], [fighter(), fighter({ keywords: ["TAUNT"] })]);
+    expect(() => ult(setup, ready(setup), 0, 0)).toThrow("TAUNT");
+    expect(() => ult(setup, ready(setup), 0)).toThrow("BAD_TARGET");
+    expect(() => ult(setup, ready(setup), 0, 1)).not.toThrow();
+  });
+
+  it("Châtiment céleste : ×3 sans DEF ni Cuirasse, et la Barrière vole en éclats sans arrêter le coup", () => {
+    const setup = setupU([fighter({ power: 100, ultimate: "TENCHU" })], [fighter({ ki: 80, hp: 900, keywords: ["ARMOR", "BARRIER"] })]);
+    const { state, events } = ult(setup, ready(setup), 0, 0);
+    expect(events.map((e) => e.t)).toEqual(["ultimate", "block", "damage"]);
+    expect(events[0]).toEqual({ t: "ultimate", side: 0, actor: 0, target: 0, ultimate: "TENCHU" });
+    expect(events[1]).toEqual({ t: "block", side: 1, index: 0, pierced: true });
+    expect(events[2]).toMatchObject({ amount: 300 });
+    expect(state.fighters[1][0].barrier).toBe(false);
+  });
+
+  it("Tempête de pétales : frappe tous les ennemis debout à ×1,3, une Barrière l'arrête", () => {
+    const setup = setupU([fighter({ power: 100, ultimate: "HYAKKA" })], [fighter({ ki: 0, hp: 900 }), fighter({ ki: 0, hp: 900, keywords: ["BARRIER"] }), fighter({ ki: 0 })]);
+    const state = ready(setup);
+    state.fighters[1][2].hp = 0;
+    const { events } = ult(setup, state, 0);
+    expect(events.filter((e) => e.t === "damage")).toEqual([{ t: "damage", side: 1, index: 0, amount: 130, crit: false, hp: 770 }]);
+    expect(events).toContainEqual({ t: "block", side: 1, index: 1 });
+  });
+
+  it("Résurrection : refusée sans allié à terre, ni sur elle-même", () => {
+    const setup = setupU([fighter({ ultimate: "KISHI" }), fighter()], team3());
+    const state = ready(setup);
+    expect(() => ult(setup, state, 0, 1)).toThrow("BAD_TARGET");
+    expect(() => ult(setup, state, 0, 0)).toThrow("BAD_TARGET");
+    expect(() => ult(setup, state, 0)).toThrow("BAD_TARGET");
+    expect(() => ult(setup, state, 0, 5)).toThrow("BAD_TARGET");
+  });
+
+  it("Résurrection : relève à 50 % sans agir ce tour-ci, Renaissance intacte, synergie toujours rompue", () => {
+    const universe = { key: "u", name: "Univers" };
+    const mine = [fighter({ ultimate: "KISHI", universe }), fighter({ keywords: ["REVIVE"], universe }), fighter({ universe })];
+    const setup: BattleSetup = { ...setupU(mine, [fighter({ power: 300 }), fighter(), fighter()]), synergy: [{ key: "u", name: "Univers", atkPct: 10 }, null] };
+    const state = ready(setup);
+    // Tombée sans que sa Renaissance ait servi (cas forcé) : la rupture de synergie a eu lieu
+    Object.assign(state.fighters[0][1], { hp: 0, actionsLeft: 0 });
+    state.synergy = [false, false];
+    const { state: after, events } = ult(setup, state, 0, 1);
+    const hp = Math.ceil((after.fighters[0][1].maxHp * 50) / 100);
+    expect(events).toEqual([
+      { t: "ultimate", side: 0, actor: 0, target: 1, ultimate: "KISHI" },
+      { t: "raise", side: 0, index: 1, hp },
+    ]);
+    expect(after.fighters[0][1]).toMatchObject({ hp, revived: false, actionsLeft: 0 });
+    expect(after.synergy).toEqual([false, false]);
+    expect(() => play(setup, after, { type: "ATTACK", side: 0, actor: 1, target: 0 })).toThrow("ACTOR_UNAVAILABLE");
+    // Au prochain coup fatal, la Renaissance joue encore
+    let s = play(setup, after, { type: "END_TURN", side: 0 }).state;
+    s.fighters[0][1].hp = 1;
+    s = play(setup, s, { type: "ATTACK", side: 1, actor: 0, target: 1 }).state;
+    expect(s.fighters[0][1]).toMatchObject({ revived: true });
+    expect(s.fighters[0][1].hp).toBeGreaterThan(0);
+  });
+
+  it("Rempart absolu : Barrière sur chaque allié debout et poison retiré", () => {
+    const setup = setupU([fighter({ ultimate: "FUDO" }), fighter(), fighter()], team3());
+    const state = ready(setup);
+    Object.assign(state.fighters[0][1], { poisonTurns: 2, poisonDmg: 10 });
+    state.fighters[0][2].hp = 0;
+    const { state: after, events } = ult(setup, state, 0);
+    expect(events.slice(1)).toEqual([
+      { t: "barrier", side: 0, index: 0 },
+      { t: "barrier", side: 0, index: 1 },
+    ]);
+    expect(after.fighters[0].map((f) => [f.barrier, f.poisonTurns])).toEqual([
+      [true, 0],
+      [true, 0],
+      [false, 0],
+    ]);
+  });
+
+  it("Arrêt du temps : chaque ennemi debout passe son prochain tour, Rafale comprise, puis rejoue", () => {
+    const setup = setupU([fighter({ ultimate: "TOKIDOME" })], [fighter({ keywords: ["FLURRY"] }), fighter(), fighter()]);
+    const state = ready(setup);
+    state.fighters[1][2].hp = 0;
+    const { state: after, events } = ult(setup, state, 0);
+    expect(events.slice(1)).toEqual([
+      { t: "seal", side: 1, index: 0 },
+      { t: "seal", side: 1, index: 1 },
+    ]);
+    let s = play(setup, after, { type: "END_TURN", side: 0 }).state;
+    expect(s.fighters[1].map((f) => f.actionsLeft)).toEqual([0, 0, 0]);
+    s = play(setup, s, { type: "END_TURN", side: 1 }).state;
+    s = play(setup, s, { type: "END_TURN", side: 0 }).state;
+    expect(s.fighters[1].map((f) => f.actionsLeft)).toEqual([2, 1, 0]);
+  });
+
+  it("une partie avec des ultis se rejoue à l'identique depuis son journal", () => {
+    const rng = seededRng(99);
+    const ults = ["TENCHU", "HYAKKA", "KISHI", "FUDO", "TOKIDOME"] as const;
+    const team = () => randomTeam(rng, LEGACY_KEYWORDS, LEGACY_TECHNIQUES, ults);
+    for (let i = 0; i < 20; i++) {
+      const setup = setupOf(team(), team(), RULES, (i % 2) as Side);
+      const { state, actions } = botGame(i, setup);
+      expect(replay(setup, i, actions).state).toEqual(state);
+    }
+  });
+});
+
 describe("cumul des bonus", () => {
   it("reste exact et loin de 2^53, tous bonus au maximum", () => {
     const rules: EngineRules = {

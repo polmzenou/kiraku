@@ -41,6 +41,27 @@ export const TECHNIQUE_TARGET: Record<Technique, "ENEMY" | "ALLY" | "NONE"> = {
   MEISO: "NONE",
 };
 
+/**
+ * Ultis (奥義) d'origine, une par personnage des raretés cochées (battle.ultimateRarities). Le tirage de
+ * chaque carte en dépend (lib/battle/stats.ts) : ne jamais les réordonner ni y ajouter quoi que ce soit.
+ * Des ultis ajoutés plus tard iront dans une liste à part, tirée à part, comme NEW_TECHNIQUES.
+ */
+export const LEGACY_ULTIMATES = ["TENCHU", "HYAKKA", "KISHI", "FUDO", "TOKIDOME"] as const;
+export const ULTIMATES = [...LEGACY_ULTIMATES] as const;
+export type Ultimate = (typeof ULTIMATES)[number];
+
+/** Ce que vise un ulti : un ennemi (Provocation respectée), un allié à terre, ou personne (effet de zone). */
+export const ULTIMATE_TARGET: Record<Ultimate, "ENEMY" | "DEAD_ALLY" | "NONE"> = {
+  TENCHU: "ENEMY",
+  HYAKKA: "NONE",
+  KISHI: "DEAD_ALLY",
+  FUDO: "NONE",
+  TOKIDOME: "NONE",
+};
+
+/** Jauge pleine : l'ulti se lance à 100 %. */
+export const ULTIMATE_FULL = 100;
+
 export const END_REASONS = ["KO", "FORFEIT", "TIMEOUT", "TURN_LIMIT"] as const;
 export type EndReason = (typeof END_REASONS)[number];
 
@@ -70,6 +91,15 @@ export type EngineRules = {
   techniques: Record<Technique, { cost: number; value: number }>;
   /** Bonus d'ATQ (%) d'une équipe du même univers ; absent des parties lancées avant la synergie. */
   synergyAtkPct?: number;
+  /**
+   * Ultis : charge de la jauge (en points sur 100) et valeur de chacun. Absent des parties lancées avant,
+   * dont aucune carte n'a d'ulti.
+   */
+  ultimate?: {
+    /** Points gagnés à chaque action de la carte, et pour la perte de 100 % de ses PV max (au prorata). */
+    charge: { perAction: number; damagePct: number };
+    values: Record<Ultimate, number>;
+  };
 };
 
 /** Univers d'une carte : `key` = id de l'univers, ou de la série quand elle n'est rangée nulle part. */
@@ -96,6 +126,8 @@ export type FighterSetup = {
   spd: number;
   keywords: Keyword[];
   technique: Technique;
+  /** Ulti du personnage, selon sa rareté ; absent sinon (et sur les parties lancées avant les ultis). */
+  ultimate?: Ultimate;
   universe?: UniverseRef;
 };
 
@@ -123,6 +155,10 @@ export type FighterState = {
   /** 封印 : ne pourra pas agir à son prochain tour. */
   sealed: boolean;
   actionsLeft: number;
+  /** Jauge d'ulti, de 0 à ULTIMATE_FULL. Présente seulement sur une carte qui a un ulti. */
+  charge?: number;
+  /** Ulti déjà lancé (une fois par partie). Présent seulement sur une carte qui a un ulti. */
+  ultUsed?: boolean;
 };
 
 export type BattleState = {
@@ -148,6 +184,7 @@ export type BattleState = {
 export type Action =
   | { type: "ATTACK"; side: Side; actor: number; target: number }
   | { type: "TECHNIQUE"; side: Side; actor: number; target?: number }
+  | { type: "ULTIMATE"; side: Side; actor: number; target?: number }
   | { type: "END_TURN"; side: Side }
   | { type: "TIMEOUT"; side: Side }
   | { type: "FORFEIT"; side: Side };
@@ -156,8 +193,11 @@ export type Action =
 export type BattleEvent =
   | { t: "turn"; side: Side; turn: number; orbs: number }
   | { t: "attack"; side: Side; actor: number; target: number | null; technique: Technique | null }
+  /** Lancement d'un ulti par la carte `actor` ; ses effets suivent. */
+  | { t: "ultimate"; side: Side; actor: number; target: number | null; ultimate: Ultimate }
   | { t: "damage"; side: Side; index: number; amount: number; crit: boolean; hp: number }
-  | { t: "block"; side: Side; index: number }
+  /** `pierced` : la Barrière vole en éclats sans arrêter le coup (Châtiment céleste), qui suit aussitôt. */
+  | { t: "block"; side: Side; index: number; pierced?: true }
   | { t: "heal"; side: Side; index: number; amount: number; hp: number }
   /** Vampirisme de la carte `index` : suivi du `heal` correspondant. */
   | { t: "lifesteal"; side: Side; index: number }
@@ -169,6 +209,8 @@ export type BattleEvent =
   | { t: "ko"; side: Side; index: number }
   | { t: "synergy_break"; side: Side }
   | { t: "revive"; side: Side; index: number; hp: number }
+  /** Relevée par un ulti (Résurrection) : ne consomme pas sa Renaissance, contrairement à `revive`. */
+  | { t: "raise"; side: Side; index: number; hp: number }
   | { t: "barrier"; side: Side; index: number }
   | { t: "buff"; side: Side; pct: number }
   | { t: "seal"; side: Side; index: number }
