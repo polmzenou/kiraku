@@ -2,7 +2,7 @@ import type { Rarity } from "@/lib/catalog/rarity";
 import type { PlayerDecor } from "@/lib/profile/decor";
 import type { RankedRules } from "@/lib/ranked/rules";
 import type { BoardTier } from "./tiers";
-import type { BattleEvent, BattleSetup, BattleState, EndReason, Keyword, Side, Technique } from "./types";
+import type { BattleEvent, BattleSetup, BattleState, EndReason, Keyword, Side, Technique, Ultimate, UniverseRef } from "./types";
 
 // Ce que les écrans de combat reçoivent du serveur (sérialisable, dates en ISO).
 
@@ -91,6 +91,28 @@ export type CandidateCard = {
   hp: number;
   keywords: Keyword[];
   technique: Technique;
+  /** Ulti du personnage selon sa rareté, indépendant du kit ; null sinon. */
+  ultimate: Ultimate | null;
+  universe: UniverseRef;
+};
+
+/**
+ * Une carte à l'atelier : `keywords` et `technique` sont le kit qui combat, `base` le kit tiré au sort,
+ * `owned` tout ce que le joueur peut équiper gratuitement (d'origine ou acheté), `slots` les emplacements de passif.
+ */
+export type WorkshopCard = CandidateCard & {
+  slots: number;
+  base: { keywords: Keyword[]; technique: Technique };
+  owned: { keywords: Keyword[]; techniques: Technique[] };
+};
+
+/** Deck du joueur : `unavailable` liste les cartes sans exemplaire en collection, `playable` dit s'il peut remplir les emplacements. */
+export type DeckView = {
+  id: string;
+  name: string;
+  cards: CandidateCard[];
+  unavailable: string[];
+  playable: boolean;
 };
 
 export type HistoryItem = {

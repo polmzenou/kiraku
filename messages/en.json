@@ -1249,7 +1249,8 @@
       "pullFeed": "Big pulls",
       "eventGauge": "Event",
       "battleSandbox": "Battle sandbox",
-      "news": "What's new"
+      "news": "What's new",
+      "universes": "Universes"
     },
     "boosters": {
       "title": "Booster settings",
@@ -1946,9 +1947,22 @@
         "dailyCap": "Rewarded battles per day",
         "safetyPollSeconds": "Safety resync with Ably (s)",
         "queuePollSeconds": "Queue polling (s)",
-        "lobbyPollSeconds": "Friend room polling (s)"
+        "lobbyPollSeconds": "Friend room polling (s)",
+        "maxDecks": "Decks per player",
+        "synergyAtkPct": "Attack bonus (%)",
+        "newAbilityPct": "Share of new abilities (%)",
+        "lifestealPct": "Lifesteal: % of damage",
+        "ragePct": "Rage: attack bonus (%)",
+        "rageThresholdPct": "Rage: HP threshold (%)",
+        "armorPct": "Armor: damage reduction (%)",
+        "executePct": "Execute: extra damage (%)",
+        "executeThresholdPct": "Execute: target HP threshold (%)",
+        "channelOrbs": "Focus: orbs per turn",
+        "abilityShopEnabled": "Workshop open (buying and choosing abilities)",
+        "perAction": "Gauge: points per action",
+        "damagePct": "Gauge: points for 100% HP lost"
       },
-      "valueHint": "Value: multiplier in % (Issen, Ranbu, Kantsū), heal or bonus in % (Iyashi, Kobu), unused (Shugo, Fūin).",
+      "valueHint": "Value: multiplier in % (Flash, Blade dance, Piercing strike, All-out strike, Double strike), heal, bonus or poison in % (Healing, Encouragement, Healing rain, Toxic mist), orbs gained (Meditation), unused (Protection, Seal).",
       "save": "Save",
       "saving": "Saving…",
       "saved": "{count, plural, one {# setting saved} other {# settings saved}}.",
@@ -1964,7 +1978,20 @@
       },
       "log": "Latest changes",
       "logEmpty": "No change yet.",
-      "logEntry": "{key} by {admin}"
+      "logEntry": "{key} by {admin}",
+      "synergy": "Universe synergy",
+      "synergyHint": "Three cards from the same universe gain this bonus until their team's first death. 0 turns synergy off. Games in progress keep the bonus they started with.",
+      "newAbilities": "New abilities",
+      "newAbilitiesHint": "Chance that a passive or technique slot receives a new ability, rolled once and for all per card. At 0, no card changes. Raising the value adds new abilities without changing those already assigned. Games in progress keep their abilities.",
+      "abilityPrices": "Workshop prices (Zeni per card)",
+      "abilityPricesHint": "Price of one ability for a single card. Changes apply to later purchases, nothing is refunded. Closing the workshop keeps the kits already chosen.",
+      "sales": "Workshop purchases (7 days)",
+      "salesEmpty": "No purchases in the last 7 days.",
+      "salesRow": "{count, plural, one {# purchase} other {# purchases}} · {zeni, number} Zeni",
+      "salesKeyword": "passive",
+      "salesTechnique": "technique",
+      "ultimates": "Ultimates",
+      "ultimatesHint": "Gauge out of 100: points per card action, and for losing all its HP, pro rata (200: full gauge for half its HP). Value: multiplier in % (Heavenly Judgment, Petal Tempest), HP restored in % (Resurrection), unused (Absolute Rampart, Time Stop). Rarities that have one are ticked in the rarity editor. Games in progress keep the settings they started with."
     },
     "ranked": {
       "title": "Ranked",
@@ -2758,7 +2785,8 @@
       "boosterExclusive": "Exclusive variant",
       "boosterExclusiveOff": "Unchecked: it follows its base card into all of its boosters (series focus, Divine…), plus the ones checked below.",
       "boosterExclusiveOn": "Checked: it only drops from the boosters checked below (event, banner…).",
-      "boostersExtra": "Boosters on top of the base card's"
+      "boostersExtra": "Boosters on top of the base card's",
+      "ultimate": "Ultimate in battle"
     },
     "cosmetics": {
       "title": "Profile titles and frames",
@@ -3088,6 +3116,57 @@
         "RATE_LIMITED": "Too many actions: wait a minute.",
         "NOT_FOUND": "No player with that username.",
         "unexpected": "Unexpected error. Try again."
+      }
+    },
+    "universes": {
+      "title": "Universes",
+      "intro": "Three cards from the same universe trigger the battle synergy. A series without a universe forms its own. npm run catalog:universes suggests groups from AniList; correct them here: the script never moves a series that is already placed. Games in progress and replays don't change.",
+      "search": "Universe or series",
+      "searchSubmit": "Search",
+      "total": "{count, plural, =0 {No universes} one {# universe} other {# universes}}",
+      "empty": "No universe matches.",
+      "create": "Create a universe",
+      "created": "Universe “{name}” created.",
+      "seriesCount": "{count, plural, =0 {No series} one {# series} other {# series}}",
+      "cards": "{count, plural, =0 {No cards} one {# card} other {# cards}}",
+      "nameLabel": "Universe name",
+      "save": "Save",
+      "cancel": "Cancel",
+      "rename": "Rename",
+      "renameTitle": "Rename {name}",
+      "renamed": "Universe renamed to “{name}”.",
+      "add": "Add a series",
+      "addTitle": "Add a series to {name}",
+      "addShort": "Add",
+      "addLabel": "Add {series}",
+      "added": "{series} added.",
+      "alreadyIn": "already in {name}, it will change universe",
+      "searchSeries": "Series title (at least 2 characters)",
+      "remove": "Remove",
+      "removeLabel": "Remove {series}",
+      "removed": "{series} now forms its own universe.",
+      "merge": "Merge",
+      "mergeTitle": "Merge {name}",
+      "mergeText": "The series of {name} join the chosen universe, then {name} disappears.",
+      "mergeInto": "Merge into",
+      "mergePick": "Choose a universe",
+      "merged": "{from} merged into {into}.",
+      "delete": "Delete",
+      "deleteTitle": "Delete {name}?",
+      "deleteText": "Its series go back to having no universe: each forms its own, and the catalog script may group them again.",
+      "deleted": "Universe “{name}” deleted.",
+      "pagination": "Universe pages",
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} of {pages}",
+      "errors": {
+        "FORBIDDEN": "Admins only.",
+        "INVALID": "Invalid input: the name must be 1 to 80 characters.",
+        "RATE_LIMITED": "Too many actions in a row: try again in a minute.",
+        "UNEXPECTED": "Saving failed: try again.",
+        "NOT_FOUND": "This universe or series no longer exists: reload the page.",
+        "SAME": "Choose a universe other than this one.",
+        "ALONE": "This series is alone in this universe: delete the universe instead."
       }
     }
   },
@@ -3880,7 +3959,8 @@
         "DISCORD_LINK": "Discord link bonus",
         "BOOSTER": "Booster purchase",
         "GIFT": "Booster gifted to a friend",
-        "SEASON": "Season reward (ranked)"
+        "SEASON": "Season reward (ranked)",
+        "ABILITY": "Ability bought (workshop)"
       }
     },
     "reveal": {
@@ -4022,7 +4102,8 @@
         "orbs": "Orbs pay for techniques: 1 on the first turn, one more each turn, up to {max}.",
         "damage": "Damage: attacker's attack × 100 / (100 + target's defense), with 10% critical hits.",
         "timer": "{seconds} s per turn. Two expired turns in a row count as a forfeit.",
-        "end": "The first team with no card standing loses. Your cards always return to your collection."
+        "end": "The first team with no card standing loses. Your cards always return to your collection.",
+        "synergy": "Three cards from the same universe gain +{pct}% attack until their team's first death. A card saved by Rebirth breaks nothing."
       }
     },
     "abilities": {
@@ -4031,7 +4112,10 @@
       "passives": "Passives",
       "passivesHint": "Always active, free. The rarer the card, the more it has.",
       "techniques": "Techniques",
-      "techniquesHint": "One per card, played instead of the attack, paid with orbs."
+      "techniquesHint": "One per card, played instead of the attack, paid with orbs.",
+      "ultimates": "Ultimates",
+      "ultimatesHint": "One per {rarities} card, always the same for a given character. It can't be bought and costs no orbs.",
+      "ultimatesOff": "No rarity has an ultimate right now."
     },
     "team": {
       "title": "Your team",
@@ -4057,7 +4141,10 @@
       },
       "passives": "Passives",
       "techniques": "Techniques",
-      "resetFilters": "Clear filters"
+      "resetFilters": "Clear filters",
+      "ultimateChip": "Ultimate: {name}",
+      "ultimateLabel": "Ultimate",
+      "ultimateFilter": "Has an ultimate"
     },
     "queue": {
       "title": "Looking for an opponent",
@@ -4122,7 +4209,22 @@
       "keywordsLabel": "Passives",
       "techniqueLabel": "Technique",
       "standing": "{count}/3 standing",
-      "turnShort": "Turn"
+      "turnShort": "Turn",
+      "synergyBonus": "+{pct}% attack (synergy)",
+      "rageBonus": "+{pct}% attack (rage)",
+      "ultimateCharging": "{name}: gauge at {pct}%",
+      "ultimateReady": "Unleash {name}",
+      "ultimateUsed": "{name}: already used",
+      "ultimateConfirm": "Tap again to unleash {name}",
+      "confirmUltimate": "Tap the tablet again to unleash the ultimate.",
+      "pickFallen": "Pick a fallen ally",
+      "ultimateGauge": "Ultimate {name}: {pct}%",
+      "ultimateFull": "Ultimate {name}: ready",
+      "ultimateSpent": "Ultimate {name}: already used",
+      "raiseTarget": "Can be revived",
+      "ultimateKicker": "Ultimate",
+      "ultimateTitle": "Ultimate · {name}",
+      "frozen": "Frozen"
     },
     "errors": {
       "STALE": "The battle moved on: resyncing.",
@@ -4135,6 +4237,7 @@
       "IN_QUEUE": "You are already in the queue.",
       "NOT_QUEUED": "You are no longer in the queue.",
       "NOT_OWNED": "One of these cards is no longer available.",
+      "DECK_LIMIT": "You've reached the deck limit: delete one to create another.",
       "NOT_FOUND": "Room not found: check the code.",
       "CLOSED": "This battle is closed.",
       "OWN_ROOM": "That's your own room.",
@@ -4146,7 +4249,11 @@
       "BAD_TEAM": "Pick 3 different cards.",
       "NO_BOT_CARDS": "No bot available right now.",
       "TOO_EARLY": "Just a moment…",
-      "NOT_PARTICIPANT": "This battle isn't yours."
+      "NOT_PARTICIPANT": "This battle isn't yours.",
+      "NO_SLOT": "This card has no passive slot.",
+      "ALREADY_OWNED": "You already own this ability for this card.",
+      "NOT_ENOUGH_ZENI": "Not enough Zeni.",
+      "BAD_KIT": "This kit is no longer valid: reload the page."
     },
     "result": {
       "WIN": "Victory",
@@ -4204,6 +4311,26 @@
       "REVIVE": {
         "name": "Rebirth",
         "desc": "Comes back once with {pct}% of its HP."
+      },
+      "LIFESTEAL": {
+        "name": "Lifesteal",
+        "desc": "Recovers {pct}% of the damage it deals."
+      },
+      "RAGE": {
+        "name": "Rage",
+        "desc": "+{pct}% attack at {threshold}% HP or less."
+      },
+      "ARMOR": {
+        "name": "Armor",
+        "desc": "Takes {pct}% less damage, except from a Piercing strike."
+      },
+      "EXECUTE": {
+        "name": "Execute",
+        "desc": "+{pct}% damage against a target at {threshold}% HP or less."
+      },
+      "CHANNEL": {
+        "name": "Focus",
+        "desc": "+{orbs, plural, one {# orb} other {# orbs}} at the start of your turn while it stands. Stacks."
       }
     },
     "techniques": {
@@ -4234,6 +4361,26 @@
       "FUIN": {
         "name": "Seal",
         "desc": "The target cannot act on its next turn."
+      },
+      "KONSHIN": {
+        "name": "All-out strike",
+        "desc": "A strike at ×{mult}, then the card skips its next turn."
+      },
+      "RENGEKI": {
+        "name": "Double strike",
+        "desc": "Two strikes at ×{mult}. A barrier only stops the first."
+      },
+      "JIU": {
+        "name": "Healing rain",
+        "desc": "Heals all allies for {pct}% of their max HP."
+      },
+      "DOKUGIRI": {
+        "name": "Toxic mist",
+        "desc": "Poisons all enemies: {pct}% of their max HP at the start of their next {turns} turns. A barrier stops it."
+      },
+      "MEISO": {
+        "name": "Meditation",
+        "desc": "Spends the card's action to gain {orbs, plural, one {# orb} other {# orbs}} right away."
       }
     },
     "bots": {
@@ -4266,7 +4413,14 @@
       "seal": "{target} is sealed.",
       "turn": "{player}'s turn.",
       "timeout": "{player} lets their turn slip.",
-      "forfeit": "{player} forfeits."
+      "forfeit": "{player} forfeits.",
+      "synergyBreak": "{player}'s {universe} synergy is broken.",
+      "lifesteal": "{target} feeds on the blow.",
+      "orbs": "{player} now has {orbs, plural, one {# orb} other {# orbs}}.",
+      "ultimate": "{actor} unleashes {ultimate}!",
+      "ultimateOn": "{actor} unleashes {ultimate} on {target}!",
+      "raise": "{target} rises again with {hp} HP.",
+      "shatter": "{target}'s barrier shatters."
     },
     "detail": {
       "title": "Card",
@@ -4296,6 +4450,36 @@
       "speedValue": "×{value}",
       "on": "On",
       "off": "Off"
+    },
+    "decks": {
+      "title": "My decks",
+      "intro": "Prepare your teams ahead of time and give them a name. They're one tap away when you choose your team.",
+      "back": "Back to battles",
+      "link": "My decks ({count})",
+      "counter": "{count}/{max}",
+      "new": "New deck",
+      "empty": "No decks yet. Create your first one to find it before every battle.",
+      "limit": "You've reached the limit of {max, plural, one {# deck} other {# decks}}: delete one to create another.",
+      "defaultName": "Deck {n}",
+      "edit": "Edit {name}",
+      "rename": "Rename {name}",
+      "delete": "Delete {name}",
+      "unavailable": "Unavailable",
+      "unavailableHint": "A card in this deck is no longer in your collection: sold, on sale or in a battle. Replace it to play this deck again.",
+      "newTitle": "New deck",
+      "editTitle": "Edit deck",
+      "editHint": "Pick 3 different cards. Nothing is locked before the battle.",
+      "renameTitle": "Rename deck",
+      "nameLabel": "Deck name",
+      "save": "Save",
+      "cancel": "Cancel",
+      "deleteTitle": "Delete this deck?",
+      "deleteText": "\"{name}\" will be deleted. Your cards stay in your collection.",
+      "confirmDelete": "Delete",
+      "notFound": "This deck no longer exists.",
+      "manage": "Manage my decks",
+      "create": "Create a deck",
+      "atelierHint": "Your cards' passives and technique can be changed in the <link>workshop</link>."
     },
     "sandbox": {
       "title": "Battle sandbox",
@@ -4345,6 +4529,93 @@
       "next": "Next action",
       "restart": "New battle",
       "again": "Play again"
+    },
+    "synergy": {
+      "preview": "{universe} synergy · +{pct}% ATK",
+      "hint": "3 cards from the same universe: +{pct}% ATK until the team's first death.",
+      "chip": "Synergy +{pct}%",
+      "active": "{universe} synergy active: +{pct}% attack",
+      "deckMark": "{universe} synergy",
+      "filterLabel": "Universe",
+      "sameUniverse": "Same universe"
+    },
+    "atelier": {
+      "title": "Workshop",
+      "intro": "Change your cards' passives and technique. A purchase is for one card only and stays yours: re-equip it for free whenever you like.",
+      "back": "Back to battles",
+      "link": "Ability workshop",
+      "closed": "The workshop is closed for now. Abilities already equipped stay in play.",
+      "empty": "No cards yet: open boosters to get some.",
+      "balance": "Balance: {amount, number} Zeni",
+      "amount": "{amount, number}",
+      "zeni": "{amount, number} Zeni",
+      "open": "Open {name}'s workshop",
+      "modified": "Modified",
+      "slotsCount": "{count, plural, =0 {No passive slot} one {# passive slot} other {# passive slots}}",
+      "nextBattle": "Changes apply from your next battle, even if the card is already waiting in the queue.",
+      "slotsTitle": "Slots",
+      "passiveSlot": "Passive {n}",
+      "techniqueSlot": "Technique",
+      "noSlot": "This rarity has no passive slot: only the technique can change.",
+      "pickSlot": "Tap a slot to see what can replace it.",
+      "replacing": "Replace {name}",
+      "owned": "Owned: free",
+      "ownedEmpty": "Nothing else owned for this slot.",
+      "toBuy": "To buy",
+      "toBuyEmpty": "You already own everything for this slot.",
+      "origin": "Original",
+      "purchased": "Bought",
+      "equip": "Equip",
+      "equipNamed": "Equip {name}",
+      "buyNamed": "Buy {name} for {amount, number} Zeni",
+      "confirmTitle": "Buy {ability} for {card}?",
+      "confirmPrice": "Price",
+      "confirmAfter": "Balance after purchase",
+      "confirmMissing": "{amount, number} Zeni short",
+      "confirmNote": "This purchase is for this card only and is never refunded. {ability} replaces {replaced} right away; you can re-equip {replaced} for free.",
+      "confirm": "Buy",
+      "cancel": "Cancel",
+      "bought": "{ability} bought and equipped.",
+      "saved": "Kit saved.",
+      "reset": "Back to the original kit",
+      "resetHint": "Restores the randomly drawn abilities. Your purchases stay yours, nothing is refunded.",
+      "resetDone": "Original kit restored.",
+      "errors": {
+        "STALE": "The price has changed: check it before paying.",
+        "NOT_OWNED": "You no longer own this card."
+      },
+      "kitTitle": "Battle abilities",
+      "kitEdit": "Edit",
+      "kitPassives": "Passives",
+      "kitNone": "None",
+      "shelfTitle": "Battle workshop",
+      "shelfBody": "Buy passives and techniques for your cards, one card at a time.",
+      "shelfCta": "Open the workshop",
+      "ultimateTitle": "Ultimate",
+      "ultimateLocked": "Tied to the character and its rarity: it can't be bought or changed."
+    },
+    "ultimates": {
+      "TENCHU": {
+        "name": "Heavenly Judgment",
+        "desc": "A ×{mult} strike that ignores defense and Armor, and shatters a Barrier without being stopped."
+      },
+      "HYAKKA": {
+        "name": "Petal Tempest",
+        "desc": "Hits every enemy at ×{mult}."
+      },
+      "KISHI": {
+        "name": "Resurrection",
+        "desc": "Brings a fallen ally back with {pct}% of its HP. It can't act this turn, and a broken synergy stays broken."
+      },
+      "FUDO": {
+        "name": "Absolute Rampart",
+        "desc": "A Barrier on every standing ally, and poison is cleared."
+      },
+      "TOKIDOME": {
+        "name": "Time Stop",
+        "desc": "Every standing enemy skips its next turn."
+      },
+      "charge": "The gauge rises {perAction}% each time the card acts, and {half}% when it loses half its HP. Once full, the ultimate can be used once per game, at no orb cost."
     }
   },
   "ranked": {

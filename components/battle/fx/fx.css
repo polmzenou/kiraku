@@ -65,6 +65,9 @@
   width: 4px;
   background: linear-gradient(#fff6dc, rgb(217 181 86 / 0));
 }
+.vfx-spark-shu {
+  background: linear-gradient(#ffe3dc, rgb(224 83 63 / 0));
+}
 .vfx-streak {
   height: 2px;
   border-radius: 2px;

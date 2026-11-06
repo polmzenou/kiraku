@@ -24,6 +24,14 @@ export const BATTLE_SETTING_KEYS = [
   "battle.safetyPollSeconds",
   "battle.queuePollSeconds",
   "battle.lobbyPollSeconds",
+  "battle.maxDecks",
+  "battle.synergyAtkPct",
+  "battle.newAbilityPct",
+  "battle.abilityShopEnabled",
+  "battle.abilityPrices",
+  "battle.ultimateRarities",
+  "battle.ultimateCharge",
+  "battle.ultimates",
 ] as const;
 
 export type BattleSettingKey = (typeof BATTLE_SETTING_KEYS)[number];
@@ -49,6 +57,14 @@ export type BattleRules = {
   safetyPollSeconds: number;
   queuePollSeconds: number;
   lobbyPollSeconds: number;
+  maxDecks: number;
+  synergyAtkPct: number;
+  newAbilityPct: number;
+  abilityShopEnabled: boolean;
+  abilityPrices: SettingValue<"battle.abilityPrices">;
+  ultimateRarities: SettingValue<"battle.ultimateRarities">;
+  ultimateCharge: SettingValue<"battle.ultimateCharge">;
+  ultimates: SettingValue<"battle.ultimates">;
 };
 
 export function battleRulesFrom(get: <K extends BattleSettingKey>(key: K) => SettingValue<K>): BattleRules {
@@ -73,10 +89,30 @@ export function battleRulesFrom(get: <K extends BattleSettingKey>(key: K) => Set
     safetyPollSeconds: get("battle.safetyPollSeconds"),
     queuePollSeconds: get("battle.queuePollSeconds"),
     lobbyPollSeconds: get("battle.lobbyPollSeconds"),
+    maxDecks: get("battle.maxDecks"),
+    synergyAtkPct: get("battle.synergyAtkPct"),
+    newAbilityPct: get("battle.newAbilityPct"),
+    abilityShopEnabled: get("battle.abilityShopEnabled"),
+    abilityPrices: get("battle.abilityPrices"),
+    ultimateRarities: get("battle.ultimateRarities"),
+    ultimateCharge: get("battle.ultimateCharge"),
+    ultimates: get("battle.ultimates"),
   };
 }
 
 export const DEFAULT_BATTLE_RULES: BattleRules = battleRulesFrom((key) => SETTING_DEFAULTS[key]);
+
+/** Ce que le lexique et le choix d'équipe affichent des capacités : les valeurs en vigueur, ultis compris. */
+export function abilityRules(r: BattleRules) {
+  return {
+    keywordValues: r.keywordValues,
+    techniques: r.techniques,
+    synergyAtkPct: r.synergyAtkPct,
+    ultimateRarities: r.ultimateRarities,
+    ultimateCharge: r.ultimateCharge,
+    ultimates: r.ultimates,
+  };
+}
 
 /** Partie des réglages qui gouverne le moteur, figée dans le setup au lancement. */
 export function engineRules(r: BattleRules): EngineRules {
@@ -88,5 +124,7 @@ export function engineRules(r: BattleRules): EngineRules {
     maxMissedTurns: r.maxMissedTurns,
     keywords: { ...r.keywordValues },
     techniques: structuredClone(r.techniques),
+    synergyAtkPct: r.synergyAtkPct,
+    ultimate: { charge: { ...r.ultimateCharge }, values: { ...r.ultimates } },
   };
 }

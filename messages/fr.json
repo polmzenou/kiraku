@@ -1249,7 +1249,8 @@
       "pullFeed": "Gros tirages",
       "eventGauge": "Événement",
       "battleSandbox": "Bac à sable combat",
-      "news": "Nouveautés"
+      "news": "Nouveautés",
+      "universes": "Univers"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -1946,9 +1947,22 @@
         "dailyCap": "Combats récompensés par jour",
         "safetyPollSeconds": "Resynchronisation de secours avec Ably (s)",
         "queuePollSeconds": "Sondage de la file d'attente (s)",
-        "lobbyPollSeconds": "Sondage du salon d'un code ami (s)"
+        "lobbyPollSeconds": "Sondage du salon d'un code ami (s)",
+        "maxDecks": "Decks par joueur",
+        "synergyAtkPct": "Bonus d'attaque (%)",
+        "newAbilityPct": "Part de nouveautés (%)",
+        "lifestealPct": "Vampirisme : % des dégâts",
+        "ragePct": "Rage : bonus d'attaque (%)",
+        "rageThresholdPct": "Rage : seuil de PV (%)",
+        "armorPct": "Cuirasse : dégâts en moins (%)",
+        "executePct": "Exécution : dégâts en plus (%)",
+        "executeThresholdPct": "Exécution : seuil de PV de la cible (%)",
+        "channelOrbs": "Concentration : orbes par tour",
+        "abilityShopEnabled": "Atelier ouvert (achat et choix des capacités)",
+        "perAction": "Jauge : points par action",
+        "damagePct": "Jauge : points pour 100 % des PV perdus"
       },
-      "valueHint": "Valeur : multiplicateur en % (Issen, Ranbu, Kantsū), soin ou bonus en % (Iyashi, Kobu), inutilisée (Shugo, Fūin).",
+      "valueHint": "Valeur : multiplicateur en % (Éclair, Danse des lames, Percée, Coup absolu, Double frappe), soin, bonus ou poison en % (Soin, Encouragement, Pluie de soin, Brume toxique), orbes gagnés (Méditation), inutilisée (Protection, Sceau).",
       "save": "Enregistrer",
       "saving": "Enregistrement…",
       "saved": "{count, plural, one {# réglage enregistré} other {# réglages enregistrés}}.",
@@ -1964,7 +1978,20 @@
       },
       "log": "Derniers changements",
       "logEmpty": "Aucun changement pour l'instant.",
-      "logEntry": "{key} par {admin}"
+      "logEntry": "{key} par {admin}",
+      "synergy": "Synergie d'univers",
+      "synergyHint": "Trois cartes du même univers gagnent ce bonus jusqu'à la première mort de leur équipe. 0 coupe la synergie. Les parties en cours gardent le bonus de leur lancement.",
+      "newAbilities": "Nouvelles capacités",
+      "newAbilitiesHint": "Chances qu'un emplacement de passif ou de technique reçoive une nouveauté, tirées une fois pour toutes par carte. À 0, aucune carte ne change. Monter la valeur ajoute des nouveautés sans changer celles déjà attribuées. Les parties en cours gardent leurs capacités.",
+      "abilityPrices": "Prix de l'atelier (Zeni par carte)",
+      "abilityPricesHint": "Prix d'une capacité pour une seule carte. Un changement vaut pour les achats suivants, rien n'est remboursé. Fermer l'atelier n'enlève pas les kits déjà choisis.",
+      "sales": "Achats à l'atelier (7 jours)",
+      "salesEmpty": "Aucun achat ces 7 derniers jours.",
+      "salesRow": "{count, plural, one {# achat} other {# achats}} · {zeni, number} Zeni",
+      "salesKeyword": "passif",
+      "salesTechnique": "technique",
+      "ultimates": "Ultis",
+      "ultimatesHint": "Jauge sur 100 : points par action de la carte, et pour la perte de tous ses PV, au prorata (200 : jauge pleine pour la moitié des PV). Valeur : multiplicateur en % (Châtiment céleste, Tempête de pétales), PV rendus en % (Résurrection), inutilisée (Rempart absolu, Arrêt du temps). Les raretés qui en ont un se cochent dans l'éditeur de rareté. Les parties en cours gardent les réglages de leur lancement."
     },
     "ranked": {
       "title": "Classé",
@@ -2758,7 +2785,8 @@
       "boosterExclusive": "Variante exclusive",
       "boosterExclusiveOff": "Décoché : elle suit sa carte de base dans tous ses boosters (Focus série, Divin…), plus ceux cochés ci-dessous.",
       "boosterExclusiveOn": "Coché : elle ne sort que des boosters cochés ci-dessous (événement, bannière…).",
-      "boostersExtra": "Boosters en plus de ceux de la carte de base"
+      "boostersExtra": "Boosters en plus de ceux de la carte de base",
+      "ultimate": "Ultime en combat"
     },
     "cosmetics": {
       "title": "Titres et cadres de profil",
@@ -3088,6 +3116,57 @@
         "RATE_LIMITED": "Trop d'actions : attends une minute.",
         "NOT_FOUND": "Aucun joueur avec ce pseudo.",
         "unexpected": "Erreur inattendue. Réessaie."
+      }
+    },
+    "universes": {
+      "title": "Univers",
+      "intro": "Trois cartes du même univers déclenchent la synergie en combat. Une série sans univers forme le sien. npm run catalog:universes propose les regroupements d'après AniList ; corrige-les ici : le script ne déplace jamais une série déjà rangée. Les parties en cours et les replays ne changent pas.",
+      "search": "Univers ou série",
+      "searchSubmit": "Chercher",
+      "total": "{count, plural, =0 {Aucun univers} one {# univers} other {# univers}}",
+      "empty": "Aucun univers ne correspond.",
+      "create": "Créer un univers",
+      "created": "Univers « {name} » créé.",
+      "seriesCount": "{count, plural, =0 {Aucune série} one {# série} other {# séries}}",
+      "cards": "{count, plural, =0 {Aucune carte} one {# carte} other {# cartes}}",
+      "nameLabel": "Nom de l'univers",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "rename": "Renommer",
+      "renameTitle": "Renommer {name}",
+      "renamed": "Univers renommé en « {name} ».",
+      "add": "Ajouter une série",
+      "addTitle": "Ajouter une série à {name}",
+      "addShort": "Ajouter",
+      "addLabel": "Ajouter {series}",
+      "added": "{series} ajoutée.",
+      "alreadyIn": "déjà dans {name}, elle changera d'univers",
+      "searchSeries": "Titre de la série (2 caractères minimum)",
+      "remove": "Retirer",
+      "removeLabel": "Retirer {series}",
+      "removed": "{series} forme maintenant son propre univers.",
+      "merge": "Fusionner",
+      "mergeTitle": "Fusionner {name}",
+      "mergeText": "Les séries de {name} rejoignent l'univers choisi, puis {name} disparaît.",
+      "mergeInto": "Fusionner dans",
+      "mergePick": "Choisir un univers",
+      "merged": "{from} fusionné dans {into}.",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer {name} ?",
+      "deleteText": "Ses séries redeviennent sans univers : chacune forme le sien, et le script du catalogue pourra les regrouper à nouveau.",
+      "deleted": "Univers « {name} » supprimé.",
+      "pagination": "Pages des univers",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "pageOf": "Page {page} sur {pages}",
+      "errors": {
+        "FORBIDDEN": "Action réservée aux administrateurs.",
+        "INVALID": "Saisie invalide : le nom compte de 1 à 80 caractères.",
+        "RATE_LIMITED": "Trop d'actions d'affilée : réessaie dans une minute.",
+        "UNEXPECTED": "L'enregistrement a échoué : réessaie.",
+        "NOT_FOUND": "Cet univers ou cette série n'existe plus : recharge la page.",
+        "SAME": "Choisis un autre univers que celui-ci.",
+        "ALONE": "Cette série est seule dans cet univers : supprime plutôt l'univers."
       }
     }
   },
@@ -3880,7 +3959,8 @@
         "DISCORD_LINK": "Bonus de liaison Discord",
         "BOOSTER": "Achat de booster",
         "GIFT": "Booster offert à un ami",
-        "SEASON": "Récompense de saison (classé)"
+        "SEASON": "Récompense de saison (classé)",
+        "ABILITY": "Capacité achetée (atelier)"
       }
     },
     "reveal": {
@@ -4022,7 +4102,8 @@
         "orbs": "Les orbes paient les techniques : 1 au premier tour, un de plus à chaque tour, jusqu'à {max}.",
         "damage": "Dégâts : attaque de l'attaquant × 100 / (100 + défense de la cible), avec 10 % de coups critiques.",
         "timer": "{seconds} s par tour. Deux tours expirés d'affilée valent un abandon.",
-        "end": "La première équipe sans carte debout perd. Tes cartes reviennent toujours dans ta collection."
+        "end": "La première équipe sans carte debout perd. Tes cartes reviennent toujours dans ta collection.",
+        "synergy": "Trois cartes du même univers gagnent +{pct} % d'attaque, jusqu'à la première mort de leur équipe. Une carte sauvée par Renaissance ne rompt rien."
       }
     },
     "abilities": {
@@ -4031,7 +4112,10 @@
       "passives": "Passifs",
       "passivesHint": "Toujours actifs, sans coût. Plus la carte est rare, plus elle en a.",
       "techniques": "Techniques",
-      "techniquesHint": "Une par carte, à jouer à la place de l'attaque, payée en orbes."
+      "techniquesHint": "Une par carte, à jouer à la place de l'attaque, payée en orbes.",
+      "ultimates": "Ultimes",
+      "ultimatesHint": "Un par carte {rarities}, toujours le même pour un personnage. Il ne s'achète pas et ne coûte aucune orbe.",
+      "ultimatesOff": "Aucune rareté n'a d'ulti pour le moment."
     },
     "team": {
       "title": "Ton équipe",
@@ -4057,7 +4141,10 @@
       },
       "passives": "Passifs",
       "techniques": "Techniques",
-      "resetFilters": "Effacer les filtres"
+      "resetFilters": "Effacer les filtres",
+      "ultimateChip": "Ultime : {name}",
+      "ultimateLabel": "Ultime",
+      "ultimateFilter": "Avec un ulti"
     },
     "queue": {
       "title": "Recherche d'un adversaire",
@@ -4122,7 +4209,22 @@
       "keywordsLabel": "Passifs",
       "techniqueLabel": "Technique",
       "standing": "{count}/3 debout",
-      "turnShort": "Tour"
+      "turnShort": "Tour",
+      "synergyBonus": "+{pct} % d'attaque (synergie)",
+      "rageBonus": "+{pct} % d'attaque (rage)",
+      "ultimateCharging": "{name} : jauge à {pct} %",
+      "ultimateReady": "Lancer {name}",
+      "ultimateUsed": "{name} : déjà lancé",
+      "ultimateConfirm": "Toucher encore pour lancer {name}",
+      "confirmUltimate": "Touche encore la tablette pour lancer l'ulti.",
+      "pickFallen": "Choisis un allié à terre",
+      "ultimateGauge": "Ultime {name} : {pct} %",
+      "ultimateFull": "Ultime {name} : prêt",
+      "ultimateSpent": "Ultime {name} : déjà lancé",
+      "raiseTarget": "Peut être relevée",
+      "ultimateKicker": "Ultime",
+      "ultimateTitle": "Ultime · {name}",
+      "frozen": "Figée"
     },
     "errors": {
       "STALE": "La partie a avancé : resynchronisation.",
@@ -4135,6 +4237,7 @@
       "IN_QUEUE": "Tu es déjà en file d'attente.",
       "NOT_QUEUED": "Tu n'es plus en file d'attente.",
       "NOT_OWNED": "Une de ces cartes n'est plus disponible.",
+      "DECK_LIMIT": "Tu as atteint la limite de decks : supprime-en un pour en créer un autre.",
       "NOT_FOUND": "Salle introuvable : vérifie le code.",
       "CLOSED": "Cette partie est fermée.",
       "OWN_ROOM": "C'est ta propre salle.",
@@ -4146,7 +4249,11 @@
       "BAD_TEAM": "Choisis 3 cartes différentes.",
       "NO_BOT_CARDS": "Aucun bot disponible pour le moment.",
       "TOO_EARLY": "Encore un instant…",
-      "NOT_PARTICIPANT": "Cette partie n'est pas la tienne."
+      "NOT_PARTICIPANT": "Cette partie n'est pas la tienne.",
+      "NO_SLOT": "Cette carte n'a aucun emplacement de passif.",
+      "ALREADY_OWNED": "Tu possèdes déjà cette capacité pour cette carte.",
+      "NOT_ENOUGH_ZENI": "Pas assez de Zeni.",
+      "BAD_KIT": "Ce kit n'est plus valide : recharge la page."
     },
     "result": {
       "WIN": "Victoire",
@@ -4204,6 +4311,26 @@
       "REVIVE": {
         "name": "Renaissance",
         "desc": "Revient une fois avec {pct} % de ses PV."
+      },
+      "LIFESTEAL": {
+        "name": "Vampirisme",
+        "desc": "Récupère {pct} % des dégâts qu'elle inflige."
+      },
+      "RAGE": {
+        "name": "Rage",
+        "desc": "+{pct} % d'attaque à {threshold} % de ses PV ou moins."
+      },
+      "ARMOR": {
+        "name": "Cuirasse",
+        "desc": "Subit {pct} % de dégâts en moins, sauf contre une Percée."
+      },
+      "EXECUTE": {
+        "name": "Exécution",
+        "desc": "+{pct} % de dégâts sur une cible à {threshold} % de ses PV ou moins."
+      },
+      "CHANNEL": {
+        "name": "Concentration",
+        "desc": "+{orbs, plural, one {# orbe} other {# orbes}} au début de ton tour tant qu'elle est debout. Cumulable."
       }
     },
     "techniques": {
@@ -4234,6 +4361,26 @@
       "FUIN": {
         "name": "Sceau",
         "desc": "La cible ne peut pas agir à son prochain tour."
+      },
+      "KONSHIN": {
+        "name": "Coup absolu",
+        "desc": "Un coup à ×{mult}, puis la carte passe son prochain tour."
+      },
+      "RENGEKI": {
+        "name": "Double frappe",
+        "desc": "Deux coups à ×{mult}. Une barrière n'arrête que le premier."
+      },
+      "JIU": {
+        "name": "Pluie de soin",
+        "desc": "Soigne tous ses alliés de {pct} % de leurs PV max."
+      },
+      "DOKUGIRI": {
+        "name": "Brume toxique",
+        "desc": "Empoisonne tous les ennemis : {pct} % de leurs PV max au début de leurs {turns} prochains tours. Une barrière l'arrête."
+      },
+      "MEISO": {
+        "name": "Méditation",
+        "desc": "Dépense l'action de la carte pour gagner {orbs, plural, one {# orbe} other {# orbes}} tout de suite."
       }
     },
     "bots": {
@@ -4266,7 +4413,14 @@
       "seal": "{target} est scellée.",
       "turn": "Tour de {player}.",
       "timeout": "{player} laisse filer son tour.",
-      "forfeit": "{player} abandonne."
+      "forfeit": "{player} abandonne.",
+      "synergyBreak": "La synergie {universe} de {player} est rompue.",
+      "lifesteal": "{target} se nourrit du coup.",
+      "orbs": "{player} a maintenant {orbs, plural, one {# orbe} other {# orbes}}.",
+      "ultimate": "{actor} déchaîne {ultimate} !",
+      "ultimateOn": "{actor} déchaîne {ultimate} sur {target} !",
+      "raise": "{target} se relève avec {hp} PV.",
+      "shatter": "La barrière de {target} vole en éclats."
     },
     "detail": {
       "title": "Carte",
@@ -4296,6 +4450,36 @@
       "speedValue": "×{value}",
       "on": "Activé",
       "off": "Coupé"
+    },
+    "decks": {
+      "title": "Mes decks",
+      "intro": "Prépare tes équipes à l'avance et donne-leur un nom. Tu les retrouves en un appui au moment de choisir ton équipe.",
+      "back": "Retour au combat",
+      "link": "Mes decks ({count})",
+      "counter": "{count}/{max}",
+      "new": "Nouveau deck",
+      "empty": "Aucun deck pour l'instant. Crée le premier pour le retrouver avant chaque combat.",
+      "limit": "Limite de {max, plural, one {# deck} other {# decks}} atteinte : supprime un deck pour en créer un autre.",
+      "defaultName": "Deck {n}",
+      "edit": "Modifier {name}",
+      "rename": "Renommer {name}",
+      "delete": "Supprimer {name}",
+      "unavailable": "Indisponible",
+      "unavailableHint": "Une carte de ce deck n'est plus dans ta collection : vendue, en vente ou en combat. Remplace-la pour rejouer ce deck.",
+      "newTitle": "Nouveau deck",
+      "editTitle": "Modifier le deck",
+      "editHint": "Choisis 3 cartes différentes. Rien n'est bloqué avant le combat.",
+      "renameTitle": "Renommer le deck",
+      "nameLabel": "Nom du deck",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "deleteTitle": "Supprimer ce deck ?",
+      "deleteText": "« {name} » sera supprimé. Tes cartes restent dans ta collection.",
+      "confirmDelete": "Supprimer",
+      "notFound": "Ce deck n'existe plus.",
+      "manage": "Gérer mes decks",
+      "create": "Créer un deck",
+      "atelierHint": "Les passifs et la technique de tes cartes se changent à l’<link>atelier</link>."
     },
     "sandbox": {
       "title": "Bac à sable du combat",
@@ -4345,6 +4529,93 @@
       "next": "Action suivante",
       "restart": "Nouveau combat",
       "again": "Rejouer"
+    },
+    "synergy": {
+      "preview": "Synergie {universe} · +{pct} % d'ATQ",
+      "hint": "3 cartes du même univers : +{pct} % d'ATQ jusqu'à la première mort de l'équipe.",
+      "chip": "Synergie +{pct} %",
+      "active": "Synergie {universe} active : +{pct} % d'attaque",
+      "deckMark": "Synergie {universe}",
+      "filterLabel": "Univers",
+      "sameUniverse": "Même univers"
+    },
+    "atelier": {
+      "title": "Atelier",
+      "intro": "Change les passifs et la technique de tes cartes. Un achat vaut pour une seule carte et reste acquis : tu le rééquipes gratuitement quand tu veux.",
+      "back": "Retour au combat",
+      "link": "Atelier des capacités",
+      "closed": "L'atelier est fermé pour le moment. Les capacités déjà équipées restent en jeu.",
+      "empty": "Aucune carte pour l'instant : ouvre des boosters pour en obtenir.",
+      "balance": "Solde : {amount, number} Zeni",
+      "amount": "{amount, number}",
+      "zeni": "{amount, number} Zeni",
+      "open": "Ouvrir l'atelier de {name}",
+      "modified": "Modifiée",
+      "slotsCount": "{count, plural, =0 {Aucun emplacement de passif} one {# emplacement de passif} other {# emplacements de passif}}",
+      "nextBattle": "Un changement vaut à partir de ta prochaine partie, même si la carte attend déjà en file.",
+      "slotsTitle": "Emplacements",
+      "passiveSlot": "Passif {n}",
+      "techniqueSlot": "Technique",
+      "noSlot": "Cette rareté n'a aucun emplacement de passif : seule la technique se change.",
+      "pickSlot": "Touche un emplacement pour voir par quoi le remplacer.",
+      "replacing": "Remplacer {name}",
+      "owned": "Acquis : gratuit",
+      "ownedEmpty": "Rien d'autre d'acquis pour cet emplacement.",
+      "toBuy": "À acheter",
+      "toBuyEmpty": "Tout est déjà acquis pour cet emplacement.",
+      "origin": "D'origine",
+      "purchased": "Achetée",
+      "equip": "Équiper",
+      "equipNamed": "Équiper {name}",
+      "buyNamed": "Acheter {name} pour {amount, number} Zeni",
+      "confirmTitle": "Acheter {ability} pour {card} ?",
+      "confirmPrice": "Prix",
+      "confirmAfter": "Solde après achat",
+      "confirmMissing": "Il manque {amount, number} Zeni",
+      "confirmNote": "L'achat vaut pour cette carte seulement et n'est jamais remboursé. {ability} remplace {replaced} tout de suite ; tu pourras rééquiper {replaced} gratuitement.",
+      "confirm": "Acheter",
+      "cancel": "Annuler",
+      "bought": "{ability} achetée et équipée.",
+      "saved": "Kit enregistré.",
+      "reset": "Revenir au kit d'origine",
+      "resetHint": "Remet les capacités tirées au sort. Tes achats restent acquis, rien n'est remboursé.",
+      "resetDone": "Kit d'origine rétabli.",
+      "errors": {
+        "STALE": "Le prix a changé : vérifie-le avant de payer.",
+        "NOT_OWNED": "Tu ne possèdes plus cette carte."
+      },
+      "kitTitle": "Capacités de combat",
+      "kitEdit": "Modifier",
+      "kitPassives": "Passifs",
+      "kitNone": "Aucun",
+      "shelfTitle": "Atelier de combat",
+      "shelfBody": "Achète des passifs et des techniques pour tes cartes, une carte à la fois.",
+      "shelfCta": "Ouvrir l'atelier",
+      "ultimateTitle": "Ultime",
+      "ultimateLocked": "Lié au personnage et à sa rareté : il ne s'achète pas et ne se change pas."
+    },
+    "ultimates": {
+      "TENCHU": {
+        "name": "Châtiment céleste",
+        "desc": "Un coup à ×{mult} qui ignore la défense et la Cuirasse, et brise la Barrière sans être arrêté."
+      },
+      "HYAKKA": {
+        "name": "Tempête de pétales",
+        "desc": "Frappe tous les ennemis à ×{mult}."
+      },
+      "KISHI": {
+        "name": "Résurrection",
+        "desc": "Relève un allié à terre avec {pct} % de ses PV. Il n'agit pas ce tour-ci, et une synergie rompue ne revient pas."
+      },
+      "FUDO": {
+        "name": "Rempart absolu",
+        "desc": "Une Barrière sur chaque allié debout, et le poison disparaît."
+      },
+      "TOKIDOME": {
+        "name": "Arrêt du temps",
+        "desc": "Tous les ennemis debout passent leur prochain tour."
+      },
+      "charge": "La jauge monte de {perAction} % à chaque action de la carte, et de {half} % quand elle perd la moitié de ses PV. Pleine, l'ulti se lance une fois par partie, sans orbe."
     }
   },
   "ranked": {

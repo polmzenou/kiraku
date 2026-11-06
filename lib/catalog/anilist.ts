@@ -74,6 +74,23 @@ export const MEDIA_CHARACTERS_QUERY = `query ($id: Int, $page: Int, $perPage: In
   }
 }`;
 
+// Relations de plusieurs œuvres d'un coup (scripts/universes-group.mts). relationType(version: 2) :
+// sans lui, AniList ne distingue pas SOURCE, COMPILATION et CONTAINS.
+export const MEDIA_RELATIONS_PER_PAGE = 50;
+export const MEDIA_RELATIONS_QUERY = `query ($ids: [Int], $perPage: Int) {
+  Page(page: 1, perPage: $perPage) {
+    media(id_in: $ids) {
+      id
+      relations {
+        edges {
+          relationType(version: 2)
+          node { id }
+        }
+      }
+    }
+  }
+}`;
+
 // --- Réponse brute : tout est facultatif, la normalisation décide ---
 
 const rawMediaSchema = z.object({
@@ -123,6 +140,23 @@ export const mediaCharactersResponseSchema = z.object({
         edges: z.array(z.object({ role: z.string().nullish(), node: z.unknown() }).nullish()),
       }),
     }).nullable(),
+  }),
+});
+
+export const mediaRelationsResponseSchema = z.object({
+  data: z.object({
+    Page: z.object({
+      media: z.array(
+        z.object({
+          id: z.number().int().positive(),
+          relations: z
+            .object({
+              edges: z.array(z.object({ relationType: z.string().nullish(), node: z.object({ id: z.number().int().positive() }).nullish() }).nullish()),
+            })
+            .nullish(),
+        }),
+      ),
+    }),
   }),
 });
 

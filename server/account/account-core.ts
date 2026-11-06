@@ -156,6 +156,7 @@ export async function anonymizeUserWith(
     await tx.friendship.deleteMany({ where: { OR: [{ requesterId: userId }, { addresseeId: userId }] } });
     await tx.userBlock.deleteMany({ where: { OR: [{ blockerId: userId }, { blockedId: userId }] } });
     await tx.wishlistEntry.deleteMany({ where: { userId } });
+    await tx.deck.deleteMany({ where: { userId } }); // noms saisis par le joueur
     await tx.showcaseSlot.deleteMany({ where: { userId } });
     await tx.review.deleteMany({ where: { userId } });
     await tx.tradeListing.updateMany({ where: { ownerId: userId, note: { not: null } }, data: { note: null } });

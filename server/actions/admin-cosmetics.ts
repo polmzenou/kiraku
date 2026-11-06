@@ -73,8 +73,10 @@ export async function adminSaveCosmeticAction(input: unknown): Promise<CosmeticS
   }
 }
 
-/** Séries par titre, pour la condition « série complète ». */
-export async function adminSearchSeriesAction(input: unknown): Promise<{ id: string; title: string; cards: number }[]> {
+export type SeriesSearchHit = { id: string; title: string; cards: number; universe: string | null };
+
+/** Séries par titre, pour la condition « série complète » et le rangement dans un univers. */
+export async function adminSearchSeriesAction(input: unknown): Promise<SeriesSearchHit[]> {
   const admin = await getAdmin();
   if (!admin) return [];
   const parsed = z.string().trim().min(2).max(100).safeParse(input);
@@ -83,7 +85,12 @@ export async function adminSearchSeriesAction(input: unknown): Promise<{ id: str
     where: { OR: [{ titleRomaji: { contains: parsed.data, mode: "insensitive" } }, { titleEnglish: { contains: parsed.data, mode: "insensitive" } }] },
     orderBy: { titleRomaji: "asc" },
     take: 20,
-    select: { id: true, titleRomaji: true, titleEnglish: true, _count: { select: { cards: true } } },
+    select: { id: true, titleRomaji: true, titleEnglish: true, universe: { select: { name: true } }, _count: { select: { cards: true } } },
   });
-  return rows.map((s) => ({ id: s.id, title: s.titleEnglish ? `${s.titleRomaji} · ${s.titleEnglish}` : s.titleRomaji, cards: s._count.cards }));
+  return rows.map((s) => ({
+    id: s.id,
+    title: s.titleEnglish ? `${s.titleRomaji} · ${s.titleEnglish}` : s.titleRomaji,
+    cards: s._count.cards,
+    universe: s.universe?.name ?? null,
+  }));
 }

@@ -139,18 +139,19 @@ export async function deleteCatalogCardWith(db: PrismaClient, adminId: string, i
     await lockCatalog(tx);
     const before = await tx.card.findUnique({ where: { id }, include: { _count: { select: {
       copies: true, discoveries: true, wishedBy: true, lotItems: true, auctions: true, notablePulls: true,
-      tradesWanted: true, tradesChosen: true, tradeOffers: true, variants: true,
+      tradesWanted: true, tradesChosen: true, tradeOffers: true, variants: true, abilityPurchases: true,
     } } } });
     if (!before) throw new CatalogMutationError("NOT_FOUND");
     if (before.updatedAt.toISOString() !== updatedAt) throw new CatalogMutationError("CONFLICT");
     const { _count: counts, ...card } = before;
     if (!canDeleteCatalogCard(scope, card.status)) throw new CatalogMutationError("FORBIDDEN");
     if (!deletableCard(card, counts)) throw new CatalogMutationError("IN_USE");
-    const [openings, gifts, boosters, teams] = await Promise.all([
+    const [openings, gifts, boosters, teams, decks] = await Promise.all([
       tx.boosterOpening.count({ where: { catalogCardIds: { has: id } } }), tx.gift.count({ where: { cardId: id } }),
       tx.boosterType.count({ where: { featuredCardIds: { has: id } } }), tx.user.count({ where: { battleTeam: { has: id } } }),
+      tx.deck.count({ where: { cardIds: { has: id } } }),
     ]);
-    if (openings + gifts + boosters + teams) throw new CatalogMutationError("IN_USE");
+    if (openings + gifts + boosters + teams + decks) throw new CatalogMutationError("IN_USE");
     await tx.card.delete({ where: { id } });
     await writeAdminLog(tx, { adminId, action: "CARD_DELETE", targetType: "Card", targetId: id, before: json(card) });
     await updatePools(tx);
@@ -184,7 +185,9 @@ export async function saveRarityWith(db: PrismaClient, adminId: string, input: R
       await tx.gameSetting.upsert({ where: { key }, create: { key, value: next, updatedBy: adminId }, update: { value: next, updatedBy: adminId } });
       await writeAdminLog(tx, { adminId, action: "SETTING_UPDATE", targetType: "GameSetting", targetId: key, before: json(row?.value ?? {}), after: json(next) });
     }
-    for (const [key, enabled] of [["gifts.allowedRarities", input.gifts], ["trades.allowedRarities", input.trades]] as const) {
+    for (const [key, enabled] of [
+      ["gifts.allowedRarities", input.gifts], ["trades.allowedRarities", input.trades], ["battle.ultimateRarities", input.ultimate],
+    ] as const) {
       const row = await tx.gameSetting.findUnique({ where: { key } });
       const next = [...parseSetting(key, row?.value).filter((r) => r !== input.key), ...(enabled ? [input.key] : [])];
       await tx.gameSetting.upsert({ where: { key }, create: { key, value: next, updatedBy: adminId }, update: { value: next, updatedBy: adminId } });

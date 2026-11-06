@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
-import type { BattleView, CandidateCard } from "@/lib/battle/view";
+import type { BattleView, CandidateCard, DeckView } from "@/lib/battle/view";
 import { battleViewAction, cancelRoomAction, joinRoomAction } from "@/server/actions/battle";
 import { useHoldAwake } from "../realtime/activity";
 import { useRealtime } from "../realtime/RealtimeProvider";
@@ -34,11 +34,13 @@ export function RoomLobby({
   candidates,
   abilities,
   lastTeam,
+  decks,
 }: {
   view: BattleView;
   candidates: CandidateCard[];
   abilities: AbilityRules;
   lastTeam: string[];
+  decks: DeckView[];
 }) {
   const t = useTranslations("battle");
   const router = useRouter();
@@ -88,6 +90,7 @@ export function RoomLobby({
           open={picking}
           onClose={() => setPicking(false)}
           candidates={candidates}
+          decks={decks}
           abilities={abilities}
           initial={lastTeam}
           pending={pending}

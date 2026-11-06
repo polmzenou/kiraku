@@ -397,5 +397,9 @@ describe("historique des Zeni", () => {
     expect(ledgerHref("BOOSTER", null)).toBeNull();
     expect(ledgerHref("SIGNUP", null)).toBeNull();
     expect(ledgerHref("MISSION", "m:2026-10-14")).toBe("/missions");
+    // Atelier : la carte achetée se rouvre directement
+    expect(ledgerHref("ABILITY", "card_1")).toBe("/combat/atelier?carte=card_1");
+    expect(ledgerHref("ABILITY", null)).toBe("/combat/atelier");
+    expect(parseLedgerFilter("ABILITY")).toBe("ABILITY");
   });
 });

@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useCallback, useState, useTransition } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
-import type { Activity, CandidateCard } from "@/lib/battle/view";
+import type { Activity, CandidateCard, DeckView } from "@/lib/battle/view";
 import { createRoomAction, joinQueueAction, joinRoomAction, type BattleActionError } from "@/server/actions/battle";
 import { Button } from "../ui/Button";
 import { buttonClasses } from "../ui/Button";
@@ -31,15 +31,18 @@ type Intent =
 export function CombatHub({
   activity,
   candidates,
+  decks,
   abilities,
   lastTeam,
   queueSeconds,
   queuePollSeconds,
   challenge,
   rank,
+  atelier = false,
 }: {
   activity: Activity;
   candidates: CandidateCard[];
+  decks: DeckView[];
   abilities: AbilityRules;
   lastTeam: string[];
   queueSeconds: number;
@@ -48,6 +51,8 @@ export function CombatHub({
   challenge: { id: string; name: string } | null;
   /** Rang du joueur ; null si le classé est fermé. */
   rank: RankView | null;
+  /** Lien vers l'atelier (battle.abilityShopEnabled). */
+  atelier?: boolean;
 }) {
   const t = useTranslations("battle");
   const tRanked = useTranslations("ranked");
@@ -202,11 +207,23 @@ export function CombatHub({
         </article>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <Link href="/combat/decks" className={buttonClasses("secondary")}>
+          {t("decks.link", { count: decks.length })}
+        </Link>
+        {atelier && (
+          <Link href="/combat/atelier" className={buttonClasses("secondary")}>
+            {t("atelier.link")}
+          </Link>
+        )}
+      </div>
+
       {intent && (
         <TeamPicker
           open
           onClose={() => setIntent(null)}
           candidates={candidates}
+          decks={decks}
           abilities={abilities}
           initial={lastTeam}
           pending={pending}

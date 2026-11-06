@@ -15,6 +15,7 @@ import { localize, parseLocalized } from "@/lib/boosters/types";
 import { periodWindow } from "@/lib/economy/period";
 import { onSaleForZeni, parseShopText } from "@/lib/economy/shop";
 import { buildShopView, purchaseKey, shopLotFrom, type ShopCard } from "@/lib/economy/shop-view";
+import { getBattleRules } from "@/server/battle/queries";
 import { getBoosterRotation } from "@/server/boosters/pools";
 import { getRarityDefinitions } from "@/server/catalog/rarities";
 import { prisma } from "@/server/db";
@@ -33,7 +34,7 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
  * vend (la même règle que l'achat), la page charge et affiche.
  */
 export default async function ShopPage() {
-  const [t, user, locale] = await Promise.all([getTranslations("economy.shop"), getCurrentUser(), getLocale()]);
+  const [t, tAtelier, user, locale] = await Promise.all([getTranslations("economy.shop"), getTranslations("battle.atelier"), getCurrentUser(), getLocale()]);
   if (!user) {
     return (
       <PageShell>
@@ -42,11 +43,14 @@ export default async function ShopPage() {
     );
   }
 
-  const [enabled, premiumEnabled, timeZone] = await Promise.all([
+  const [enabled, premiumEnabled, timeZone, battleRules] = await Promise.all([
     getSetting("shop.enabled"),
     getSetting("shop.premiumEnabled"),
     getSetting("game.timeZone"),
+    getBattleRules(),
   ]);
+  // L'atelier se visite depuis la boutique ; les invités ne combattent pas
+  const atelier = !user.isGuest && battleRules.enabled && battleRules.abilityShopEnabled;
   const now = new Date();
   const day = periodWindow("DAILY", now, timeZone);
   const week = periodWindow("WEEKLY", now, timeZone);
@@ -164,6 +168,19 @@ export default async function ShopPage() {
             <ButtonLink href="/collection">{t("toRecycle")}</ButtonLink>
           </div>
         </aside>
+
+        {/* Étagère de l'atelier : les capacités de combat s'achètent par carte, sur leur propre page */}
+        {atelier && (
+          <aside className="flex flex-col items-start gap-3 lacquer rounded-card p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-1">
+              <p className="font-bold">{tAtelier("shelfTitle")}</p>
+              <p className="text-sm text-text-muted">{tAtelier("shelfBody")}</p>
+            </div>
+            <ButtonLink href="/combat/atelier" variant="primary">
+              {tAtelier("shelfCta")}
+            </ButtonLink>
+          </aside>
+        )}
 
         {/* Zone « Packs premium » : les articles en euros s'y ajouteront avec le fournisseur de paiement */}
         {premium && (

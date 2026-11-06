@@ -10,8 +10,9 @@ import { playerTag } from "@/components/social/PlayerName";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import { abilityRules } from "@/lib/battle/config";
 import type { PlayerView } from "@/lib/battle/view";
-import { battleCtx, challengeTarget, getActivity, getCandidates, getHistory, getLastTeam, sweepBattlesFor } from "@/server/battle/queries";
+import { battleCtx, challengeTarget, getActivity, getCandidates, getDecks, getHistory, getLastTeam, sweepBattlesFor } from "@/server/battle/queries";
 import { RankedBoardPanel } from "@/components/ranked/RankedBoardPanel";
 import { SeasonReward } from "@/components/ranked/SeasonReward";
 import { ensureSeason, getDivisionBoard, getPendingSeasonReward, getRankedLeaderboard, getRankView } from "@/server/ranked/queries";
@@ -65,9 +66,10 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
   await sweepBattlesFor(user.id);
   // ?defier=pseudo (bouton du profil) : seulement un ami accepté, la salle le revérifie à la création
   const { defier } = await searchParams;
-  const [activity, candidates, history, rank, challenge] = await Promise.all([
+  const [activity, candidates, decks, history, rank, challenge] = await Promise.all([
     getActivity(user.id, ctx.rules.queueSeconds),
     getCandidates(user.id, ctx.rules),
+    getDecks(user.id, ctx.rules),
     getHistory(user.id),
     ctx.ranked.enabled ? getRankView(user.id, ctx.ranked, await getLocale()) : null,
     typeof defier === "string" ? challengeTarget(user.id, defier) : null,
@@ -85,12 +87,14 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
       <CombatHub
         activity={activity}
         candidates={candidates}
-        abilities={{ keywordValues: ctx.rules.keywordValues, techniques: ctx.rules.techniques }}
+        decks={decks}
+        abilities={abilityRules(ctx.rules)}
         lastTeam={lastTeam}
         queueSeconds={ctx.rules.queueSeconds}
         queuePollSeconds={ctx.rules.queuePollSeconds}
         challenge={challenge}
         rank={rank}
+        atelier={ctx.rules.abilityShopEnabled}
       />
 
       <div className={`grid gap-6 ${board ? "md:grid-cols-2 md:items-start" : ""}`}>
@@ -101,6 +105,7 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
             <li>{t("rules.items.orbs", { max: ctx.rules.orbs.max })}</li>
             <li>{t("rules.items.damage")}</li>
             <li>{t("rules.items.timer", { seconds: ctx.rules.turnSeconds })}</li>
+            {ctx.rules.synergyAtkPct > 0 && <li>{t("rules.items.synergy", { pct: ctx.rules.synergyAtkPct })}</li>}
             <li>{t("rules.items.end")}</li>
           </ul>
         </section>

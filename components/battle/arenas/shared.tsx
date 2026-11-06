@@ -1,14 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, type CSSProperties, type RefObject } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { backdropMode, canvasToBox } from "@/lib/battle/arena-backdrop";
 import type { ArenaReaction, BattleSound, FxLevel } from "@/lib/battle/choreography";
 import type { Side } from "@/lib/battle/types";
 import { noise } from "../fx/vfx";
 import type { ArenaHandle, SoundPort } from "../stage/useDirector";
 
 // Outils communs des arènes : poignée de réactions pour le metteur en scène, parallaxe des plans à la
-// caméra, particules d'ambiance déterministes et éphémères (transform et opacity seulement), et la
-// facture « peinte » : contours tremblés (déplacement SVG statique), grain de papier, brume.
+// caméra, particules d'ambiance déterministes et éphémères (transform et opacity seulement), fond peint
+// en image ou en vidéo en boucle, et la facture « peinte » des décors en SVG : contours tremblés
+// (déplacement SVG statique), grain de papier, brume.
 
 export type ArenaProps = {
   level: FxLevel;
@@ -18,6 +21,100 @@ export type ArenaProps = {
 };
 
 export const play = (sound: ArenaProps["sound"], name: BattleSound) => sound?.current?.play(name);
+
+/** Le navigateur demande d'économiser les données (Chrome, Android) ; l'information manque ailleurs. */
+function saveDataWanted() {
+  if (typeof navigator === "undefined") return false;
+  return (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
+}
+
+/**
+ * Fond peint d'une arène : l'image fixe, et par-dessus sa vidéo en boucle quand le niveau d'effets le
+ * permet (même cadrage que la toile : cover centré). La vidéo n'apparaît qu'une fois lancée, en fondu ;
+ * si le navigateur refuse la lecture (iPhone en économie d'énergie, lecture automatique bloquée), elle est
+ * retirée et l'image reste. Elle se met en pause quand l'onglet est caché.
+ */
+export function ArenaBackdrop({ still, video, level, videoRef }: { still: string; video?: string; level: FxLevel; videoRef?: RefObject<HTMLVideoElement | null> }) {
+  const own = useRef<HTMLVideoElement>(null);
+  const ref = videoRef ?? own;
+  const [saveData] = useState(saveDataWanted);
+  const [failed, setFailed] = useState(false);
+  const [ready, setReady] = useState(false);
+  const mode = video && !failed ? backdropMode(level, saveData) : "still";
+
+  useEffect(() => {
+    const v = ref.current;
+    if (mode !== "video" || !v) return;
+    v.muted = true;
+    const start = () => {
+      v.play().catch((e: unknown) => {
+        // Une pause demandée pendant le lancement n'est pas un refus
+        if (!(e instanceof DOMException && e.name === "AbortError")) setFailed(true);
+      });
+    };
+    const onVisibility = () => (document.hidden ? v.pause() : start());
+    if (!document.hidden) start();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [mode, ref]);
+
+  return (
+    <div className="arena-backdrop" aria-hidden="true">
+      <Image src={still} alt="" fill sizes="100vw" unoptimized draggable={false} className="arena-backdrop-still" />
+      {mode === "video" && (
+        <video
+          ref={ref}
+          className="arena-backdrop-video"
+          src={video}
+          poster={still}
+          muted
+          loop
+          playsInline
+          preload="auto"
+          disablePictureInPicture
+          disableRemotePlayback
+          tabIndex={-1}
+          data-ready={ready || undefined}
+          onPlaying={() => setReady(true)}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Pixels, dans un calque de l'arène, du point (px, py) de la toile 1200 × 900 : même cadrage que `.arena-prop`. */
+export const canvasPoint = (layer: HTMLElement, px: number, py: number) => canvasToBox(layer.clientWidth, layer.clientHeight, px, py);
+
+/**
+ * Un éclair illumine la scène autour d'un point de la toile (calque `.arena-flash`) : deux pulsations,
+ * sous le seuil de la photosensibilité. `layer` donne le cadrage (un calque de la taille de l'arène).
+ */
+export function flashAt(el: HTMLElement | null, layer: HTMLElement | null, at: { x: number; y: number }, strength: number) {
+  if (!el || !layer) return;
+  const { x, y } = canvasPoint(layer, at.x, at.y);
+  el.style.setProperty("--fx", `${(x / layer.clientWidth) * 100}%`);
+  el.style.setProperty("--fy", `${(y / layer.clientHeight) * 100}%`);
+  pulse(el, [{ opacity: 0 }, { opacity: strength, offset: 0.06 }, { opacity: strength * 0.12, offset: 0.18 }, { opacity: strength * 0.65, offset: 0.28 }, { opacity: 0 }], { duration: 700, easing: "linear" });
+}
+
+/**
+ * Le rideau de pluie de premier plan (calque `.arena-rain`) : une rafale qui passe, ou, avec `keep`, un
+ * déluge qui reste. Le défilement de la pluie ne tourne que tant que le rideau se voit.
+ */
+export function rainBurst(el: HTMLElement | null, frames: Keyframe[], duration: number, keep = false) {
+  if (!el) return;
+  if (el.dataset.keep !== undefined) return;
+  if (keep) el.dataset.keep = "";
+  el.dataset.on = "";
+  const a = el.animate(frames, { duration, easing: "ease-out", fill: keep ? "forwards" : "none" });
+  if (!keep)
+    a.finished.then(
+      () => {
+        if (el.dataset.keep === undefined) delete el.dataset.on;
+      },
+      () => {},
+    );
+}
 
 /**
  * Filtres de la facture peinte, calculés une fois (le décor est statique) : `rough` fait trembler les

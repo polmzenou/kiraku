@@ -4,7 +4,7 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { TECHNIQUES } from "@/lib/battle/types";
+import { KEYWORDS, TECHNIQUES, ULTIMATES } from "@/lib/battle/types";
 
 import { COMBAT_SETTING_KEYS, combatSettingsSchema, type CombatSettings } from "@/lib/settings/combat-form";
 import { changedSettingKeys } from "@/lib/settings/form";
@@ -15,8 +15,8 @@ import { FormMessage, NumberField, Toggle } from "./fields";
 // Bornes larges côté champ : le schéma Zod de chaque clé (lib/settings/defaults.ts) tranche à l'enregistrement
 const MAX = 100_000;
 
-type Flat = "battle.turnSeconds" | "battle.maxMissedTurns" | "battle.maxTurns" | "battle.firstTurnActions" | "battle.queueSeconds" | "battle.roomMinutes" | "battle.pollSeconds" | "battle.safetyPollSeconds" | "battle.queuePollSeconds" | "battle.lobbyPollSeconds" | "battle.botMistakePct" | "battle.botUpgradePct";
-type Group = "battle.stats" | "battle.damage" | "battle.orbs" | "battle.keywordValues" | "battle.rewards" | "battle.keywordsByRarity";
+type Flat = "battle.turnSeconds" | "battle.maxMissedTurns" | "battle.maxTurns" | "battle.firstTurnActions" | "battle.queueSeconds" | "battle.roomMinutes" | "battle.pollSeconds" | "battle.safetyPollSeconds" | "battle.queuePollSeconds" | "battle.lobbyPollSeconds" | "battle.botMistakePct" | "battle.botUpgradePct" | "battle.maxDecks" | "battle.synergyAtkPct" | "battle.newAbilityPct";
+type Group = "battle.stats" | "battle.damage" | "battle.orbs" | "battle.keywordValues" | "battle.rewards" | "battle.keywordsByRarity" | "battle.ultimateCharge";
 
 /** Interrupteur, déroulé, stats, dégâts, orbes, passifs, techniques, bot et récompenses du combat. */
 export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
@@ -35,6 +35,7 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
     setMessage(null);
   };
   const key = (k: string) => t(`keys.${k}` as "keys.enabled");
+  const prices = draft["battle.abilityPrices"];
 
   const flat = (k: Flat) => (
     <NumberField label={key(k.slice("battle.".length))} value={draft[k]} onChange={(v) => set({ ...draft, [k]: v })} min={0} max={MAX} />
@@ -78,6 +79,11 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
       <fieldset className="flex flex-col gap-2 lacquer rounded-card p-4">
         <legend className="px-1 font-bold">{t("switches")}</legend>
         <Toggle label={key("enabled")} checked={draft["battle.enabled"]} onChange={(v) => set({ ...draft, "battle.enabled": v })} />
+        <Toggle
+          label={key("abilityShopEnabled")}
+          checked={draft["battle.abilityShopEnabled"]}
+          onChange={(v) => set({ ...draft, "battle.abilityShopEnabled": v })}
+        />
       </fieldset>
 
       <fieldset className={box}>
@@ -92,6 +98,7 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
         {flat("battle.safetyPollSeconds")}
         {flat("battle.queuePollSeconds")}
         {flat("battle.lobbyPollSeconds")}
+        {flat("battle.maxDecks")}
       </fieldset>
 
       <fieldset className={box}>
@@ -120,6 +127,18 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
       </fieldset>
 
       <fieldset className={box}>
+        <legend className="px-1 font-bold">{t("synergy")}</legend>
+        <p className="text-xs text-text-muted sm:col-span-2">{t("synergyHint")}</p>
+        {flat("battle.synergyAtkPct")}
+      </fieldset>
+
+      <fieldset className={box}>
+        <legend className="px-1 font-bold">{t("newAbilities")}</legend>
+        <p className="text-xs text-text-muted sm:col-span-2">{t("newAbilitiesHint")}</p>
+        {flat("battle.newAbilityPct")}
+      </fieldset>
+
+      <fieldset className={box}>
         <legend className="px-1 font-bold">{t("techniques")}</legend>
         <p className="text-xs text-text-muted sm:col-span-2">{t("valueHint")}</p>
         {TECHNIQUES.map((tech) =>
@@ -136,6 +155,49 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
             />
           )),
         )}
+      </fieldset>
+
+      <fieldset className={box}>
+        <legend className="px-1 font-bold">{t("ultimates")}</legend>
+        <p className="text-xs text-text-muted sm:col-span-2">{t("ultimatesHint")}</p>
+        {group("battle.ultimateCharge")}
+        {ULTIMATES.map((u) => (
+          <NumberField
+            key={`ultimate.${u}`}
+            label={`${tBattle(`ultimates.${u}.name`)} : ${key("value")}`}
+            value={draft["battle.ultimates"][u]}
+            onChange={(v) => set({ ...draft, "battle.ultimates": { ...draft["battle.ultimates"], [u]: v } })}
+            min={0}
+            max={MAX}
+          />
+        ))}
+      </fieldset>
+
+      <fieldset className={box}>
+        <legend className="px-1 font-bold">{t("abilityPrices")}</legend>
+        <p className="text-xs text-text-muted sm:col-span-2">{t("abilityPricesHint")}</p>
+        <h4 className="text-sm font-bold text-kin sm:col-span-2">{tBattle("abilities.passives")}</h4>
+        {KEYWORDS.map((kw) => (
+          <NumberField
+            key={`price.${kw}`}
+            label={tBattle(`keywords.${kw}.name`)}
+            value={prices.keywords[kw]}
+            onChange={(v) => set({ ...draft, "battle.abilityPrices": { ...prices, keywords: { ...prices.keywords, [kw]: v } } })}
+            min={1}
+            max={MAX * 10}
+          />
+        ))}
+        <h4 className="text-sm font-bold text-shu sm:col-span-2">{tBattle("abilities.techniques")}</h4>
+        {TECHNIQUES.map((tech) => (
+          <NumberField
+            key={`price.${tech}`}
+            label={tBattle(`techniques.${tech}.name`)}
+            value={prices.techniques[tech]}
+            onChange={(v) => set({ ...draft, "battle.abilityPrices": { ...prices, techniques: { ...prices.techniques, [tech]: v } } })}
+            min={1}
+            max={MAX * 10}
+          />
+        ))}
       </fieldset>
 
       <fieldset className={box}>

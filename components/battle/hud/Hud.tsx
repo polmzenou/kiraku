@@ -8,7 +8,7 @@ import { useSecondsLeft } from "../TurnTimer";
 import { PlayerName } from "@/components/social/PlayerName";
 import { ACTION_KANJI } from "@/lib/battle/glyphs";
 import type { BoardTier } from "@/lib/battle/tiers";
-import type { Side, Technique } from "@/lib/battle/types";
+import type { Side, SideSynergy, Technique, Ultimate } from "@/lib/battle/types";
 import type { PlayerView } from "@/lib/battle/view";
 import { usePlayerName } from "../BoardLayout";
 import { BotMask } from "./BotMask";
@@ -72,7 +72,8 @@ export function Incense({ endsAt, total }: { endsAt: string | null; total: numbe
 
 /**
  * Bannière d'un joueur : avatar dans son cadre (masque pour un bot), pseudo dans sa couleur, emblème du
- * rang, un témoin par carte encore debout, et les orbes du tour quand c'est à lui de jouer.
+ * rang, un témoin par carte encore debout, sa synergie tant qu'elle tient, et les orbes du tour quand
+ * c'est à lui de jouer.
  */
 export function PlayerBanner({
   player,
@@ -80,6 +81,7 @@ export function PlayerBanner({
   active,
   standing,
   tier,
+  synergy = null,
   children,
 }: {
   player: PlayerView | null;
@@ -87,9 +89,11 @@ export function PlayerBanner({
   active: boolean;
   standing: number;
   tier: BoardTier | null;
+  synergy?: SideSynergy | null;
   children?: ReactNode;
 }) {
   const t = useTranslations("battle.board");
+  const ts = useTranslations("battle.synergy");
   const name = usePlayerName();
   const human = player && "username" in player ? player : null;
   return (
@@ -99,10 +103,17 @@ export function PlayerBanner({
       </span>
       <span className="player-id">
         <PlayerName name={name(player)} color={human?.decor.nameColor} className="player-name" />
-        <span className="player-standing" role="img" aria-label={t("standing", { count: standing })}>
-          {[0, 1, 2].map((i) => (
-            <i key={i} data-on={i < standing || undefined} />
-          ))}
+        <span className="player-status">
+          <span className="player-standing" role="img" aria-label={t("standing", { count: standing })}>
+            {[0, 1, 2].map((i) => (
+              <i key={i} data-on={i < standing || undefined} />
+            ))}
+          </span>
+          {synergy && (
+            <span className="player-synergy" role="img" aria-label={ts("active", { universe: synergy.name, pct: synergy.atkPct })}>
+              {ts("chip", { pct: synergy.atkPct })}
+            </span>
+          )}
         </span>
       </span>
       {tier && <RankEmblem tier={tier} size={30} className="player-emblem" />}
@@ -111,22 +122,40 @@ export function PlayerBanner({
   );
 }
 
-/** Tablettes d'action laquées : attaquer, la technique de la carte choisie et son coût, finir le tour. */
+/** Tablette d'ulti tirée des commandes du plateau (direct et bac à sable). */
+export function ultimateTablet(c: {
+  ultimate: Ultimate | null;
+  ultimateCharge: number;
+  ultimateUsed: boolean;
+  ultimateEnabled: boolean;
+  ultimateArmed: boolean;
+  pressUltimate: () => void;
+}) {
+  return { ultimate: c.ultimate, charge: c.ultimateCharge, used: c.ultimateUsed, enabled: c.ultimateEnabled, armed: c.ultimateArmed, onPress: c.pressUltimate };
+}
+
+/**
+ * Tablettes d'action laquées : attaquer, la technique de la carte choisie et son coût, son ulti (seulement
+ * si elle en a un, avec sa jauge), finir le tour. Un ulti sans cible s'arme au premier toucher.
+ */
 export function Tablets({
   mode,
   attack,
   technique,
+  ultimate,
   end,
 }: {
-  mode: "ATTACK" | "TECHNIQUE";
+  mode: "ATTACK" | "TECHNIQUE" | "ULTIMATE";
   attack: { enabled: boolean; onPress: () => void };
   technique: { technique: Technique | null; cost: number; enabled: boolean; onPress: () => void };
+  ultimate?: { ultimate: Ultimate | null; charge: number; used: boolean; enabled: boolean; armed: boolean; onPress: () => void };
   end: { enabled: boolean; pulse: boolean; onPress: () => void };
 }) {
   const t = useTranslations("battle");
   const tech = technique.technique;
+  const ult = ultimate?.ultimate ?? null;
   return (
-    <div className="tablets">
+    <div className="tablets" data-count={ult ? 4 : 3}>
       <button type="button" className="tablet" data-active={(mode === "ATTACK" && attack.enabled) || undefined} disabled={!attack.enabled} onClick={attack.onPress}>
         <span aria-hidden="true" className="tablet-kanji">
           {ACTION_KANJI.attack}
@@ -148,6 +177,35 @@ export function Tablets({
           )}
         </span>
       </button>
+      {ultimate && ult && (
+        <button
+          type="button"
+          className="tablet tablet-ult"
+          data-active={(mode === "ULTIMATE" && ultimate.enabled) || undefined}
+          data-armed={ultimate.armed || undefined}
+          data-ready={(ultimate.enabled && !ultimate.armed) || undefined}
+          data-charging={(!ultimate.used && !ultimate.enabled) || undefined}
+          disabled={!ultimate.enabled}
+          onClick={ultimate.onPress}
+          aria-label={
+            ultimate.armed
+              ? t("board.ultimateConfirm", { name: t(`ultimates.${ult}.name`) })
+              : t(ultimate.used ? "board.ultimateUsed" : ultimate.enabled ? "board.ultimateReady" : "board.ultimateCharging", { name: t(`ultimates.${ult}.name`), pct: ultimate.charge })
+          }
+        >
+          <span aria-hidden="true" className="tablet-kanji">
+            {ACTION_KANJI.ultimate}
+          </span>
+          <span aria-hidden="true" className="tablet-label">
+            {t(`ultimates.${ult}.name`)}
+          </span>
+          {!ultimate.used && !ultimate.enabled && (
+            <span aria-hidden="true" className="tablet-gauge">
+              <i style={{ transform: `scaleX(${Math.min(100, ultimate.charge) / 100})` }} />
+            </span>
+          )}
+        </button>
+      )}
       <button type="button" className="tablet tablet-end" data-pulse={(end.enabled && end.pulse) || undefined} disabled={!end.enabled} onClick={end.onPress}>
         <span aria-hidden="true" className="tablet-kanji">
           {ACTION_KANJI.end}

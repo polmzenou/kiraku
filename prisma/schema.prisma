@@ -36,6 +36,7 @@ enum CoinReason {
   BOOSTER // achat d'un booster en Zeni
   GIFT // booster offert à un ami
   SEASON // récompense de fin de saison du classé
+  ABILITY // capacité achetée à l'atelier (refId = id de la Card)
 }
 
 // Qui voit le profil public (/u/[username]) ; FRIENDS = amis acceptés seulement
@@ -168,7 +169,10 @@ model User {
   battlesAsP1   Battle[]       @relation("battleP1")
   battlesAsP2   Battle[]       @relation("battleP2")
   battleQueue   BattleQueue?
+  decks         Deck[]
   seasonResults SeasonResult[]
+  abilityPurchases AbilityPurchase[]
+  cardLoadouts     CardLoadout[]
 
   dataRequests       DataRequest[]  @relation("dataRequester")
   processedRequests  DataRequest[]  @relation("dataProcessor")
@@ -325,6 +329,20 @@ model Series {
   seasonYear   Int?
   studio       String? // studio principal
   cards        Card[]
+  // Univers de l'œuvre (JJK, JJK Manga et JJK Modulo = un seul). Sans groupe, la série forme son propre univers.
+  universeId   String?
+  universe     Universe? @relation(fields: [universeId], references: [id], onDelete: SetNull)
+
+  @@index([universeId])
+}
+
+// Regroupement de séries pour la synergie de combat (/admin/univers, npm run catalog:universes)
+model Universe {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(80)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  series    Series[]
 }
 
 // Le personnage (le modèle de carte) ; l'exemplaire possédé sera UserCard
@@ -376,6 +394,8 @@ model Card {
   tradeListings    TradeListing[]
   listingWants     TradeListingWant[]
   listingOffers    ListingOffer[]
+  abilityPurchases AbilityPurchase[]
+  loadouts         CardLoadout[]
 
   @@index([rarity, rank], map: "Card_rarityKey_rank_idx")
   @@index([legacyRarity, rank], map: "Card_rarity_rank_idx")
@@ -1200,6 +1220,55 @@ model BattleQueue {
   seenAt     DateTime   @default(now())
 
   @@index([mode, joinedAt])
+}
+
+// Équipe nommée, visible de son seul propriétaire. Des personnages et non des exemplaires, comme battleTeam
+model Deck {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   @db.VarChar(24)
+  cardIds   String[] // ids de Card, comme battleTeam : l'exemplaire est choisi au lancement
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
+}
+
+// --- Atelier : passifs et technique choisis par personnage ---
+
+// Capacité achetée pour un personnage (Card, pas l'exemplaire) : jamais remboursée, rééquipable à volonté.
+// Vendre ou échanger ses exemplaires n'emporte rien ; racheter la carte redonne ses achats.
+model AbilityPurchase {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Restrict)
+  kind      String // KEYWORD | TECHNIQUE
+  ability   String // Keyword ou Technique (lib/battle/types.ts)
+  price     Int // Zeni payés (battle.abilityPrices au moment de l'achat)
+  createdAt DateTime @default(now())
+
+  // Une capacité ne se paie qu'une fois, même avec deux clics simultanés
+  @@unique([userId, cardId, kind, ability])
+  @@index([cardId])
+  @@index([createdAt]) // achats par capacité sur 7 jours (/admin/combat)
+}
+
+// Kit choisi par le joueur pour un personnage ; absent = kit tiré au sort. Relu et complété à chaque lecture
+// (lib/battle/loadout.ts) : une capacité qui n'est plus valide ou plus acquise retombe sur le kit d'origine.
+model CardLoadout {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  keywords  String[]
+  technique String
+  updatedAt DateTime @updatedAt
+
+  @@id([userId, cardId])
+  @@index([cardId])
 }
 
 // --- Classé (étape 9b) ---

@@ -15,7 +15,7 @@ import {
   type StageMemory,
 } from "@/lib/battle/choreography";
 import { applyEvent } from "@/lib/battle/display";
-import type { BattleEvent, BattleSetup, BattleState, Side, Technique } from "@/lib/battle/types";
+import type { BattleEvent, BattleSetup, BattleState, Side, Technique, Ultimate } from "@/lib/battle/types";
 import { resolveAppearance } from "@/lib/catalog/appearance";
 import * as vfx from "../fx/vfx";
 
@@ -30,7 +30,8 @@ export type StageNumber = { id: number; kind: "damage" | "crit" | "heal" | "pois
 export type CardEls = { root: HTMLElement; move: HTMLElement; hit: HTMLElement; flash: HTMLElement | null; crack: HTMLElement | null };
 export type ArenaHandle = { react(reaction: ArenaReaction, side?: Side): void; camera?(dx: number, dy: number, zoom: number, ms: number): void };
 export type SoundPort = { play(name: BattleSound): void };
-export type CutIn = { id: number; actor: Slot; technique: Technique; full: boolean; ms: number };
+/** Cut-in d'une technique, ou d'un ulti (toujours complet). */
+export type CutIn = { id: number; actor: Slot; full: boolean; ms: number } & ({ technique: Technique } | { ultimate: Ultimate });
 export type Banner = { id: number; side: Side; turn: number; ms: number };
 
 type Batch = { events: BattleEvent[]; final: BattleState };
@@ -329,7 +330,9 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
     if (c.style === "koma") vfx.frameKoma(run, to, art(c.from), art(c.to), c.finisher, c.ms);
     if (c.style === "mie") {
       optsRef.current.sound?.current?.play("clack");
-      vfx.frameMie(run, from, to, c.finisher, c.ms, tRef.current(c.finisher ? "board.finisher" : "board.crit"));
+      // Un ulti signe sa pose de son nom traduit
+      const label = c.ultimate ? tRef.current(`ultimates.${c.ultimate}.name`) : tRef.current(c.finisher ? "board.finisher" : "board.crit");
+      vfx.frameMie(run, from, to, c.finisher, c.ms, label);
       const a = cards.current.get(key(c.from));
       if (a) {
         animate(a.hit, [{ transform: "scale(1) rotate(0deg)" }, { transform: "scale(1.14) rotate(-6deg)", offset: 0.2, easing: SPRING }, { transform: "scale(1.14) rotate(-6deg)", offset: 0.8 }, { transform: "scale(1) rotate(0deg)" }], {
@@ -375,6 +378,73 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
           });
         }
         break;
+      case "KONSHIN":
+        if (first) {
+          vfx.slash(run, first, -38);
+          vfx.shock(run, first, first.w * 1.6, "shu");
+        }
+        break;
+      case "RENGEKI":
+        if (first) {
+          vfx.slash(run, first, -24);
+          vfx.slash(run, first, 28, TIMING.ranbuGap);
+        }
+        break;
+      case "JIU":
+        targets.forEach((t) => vfx.healColumn(run, t));
+        break;
+      case "DOKUGIRI":
+        targets.forEach((t) => vfx.poisonSeep(run, t));
+        break;
+      case "MEISO":
+        vfx.glint(run, from);
+        vfx.shock(run, from, from.w * 1.4, "kin");
+        break;
+      default: {
+        const unhandled: never = c.technique;
+        return unhandled;
+      }
+    }
+  };
+
+  /** Effet propre à chaque ulti, sur ses cibles. */
+  const ultimate = (c: Extract<Cue, { k: "ultimate" }>) => {
+    const run = fxRun();
+    const from = boxOf(c.actor);
+    if (!run || !from) return;
+    const targets = c.targets.map(boxOf).filter((b): b is vfx.Box => b !== null);
+    const first = targets[0];
+    switch (c.ultimate) {
+      case "TENCHU":
+        if (first) {
+          vfx.pierce(run, from, first);
+          vfx.shock(run, first, first.w * 2.6, "kin");
+        }
+        break;
+      case "HYAKKA":
+        vfx.bladeStorm(run, targets);
+        if (first) vfx.shock(run, first, Math.max(...targets.map((t) => t.w)) * 3, "shu");
+        break;
+      case "KISHI":
+        if (first) vfx.revive(run, first, tRef.current("ultimates.KISHI.name"));
+        break;
+      case "FUDO":
+        targets.forEach((t, i) => later(i * 90, () => {
+          const again = fxRun();
+          if (again) vfx.kekkai(again, t);
+        }));
+        break;
+      case "TOKIDOME":
+        vfx.shock(run, from, Math.max(from.w, from.h) * 4, "washi");
+        targets.forEach((t, i) => later(TIMING.seal * 0.5 + i * 110, () => {
+          const again = fxRun();
+          if (again) vfx.stamp(again, t, tRef.current("board.frozen"), "ai", 900);
+        }));
+        break;
+      default: {
+        const unhandled: never = c.ultimate;
+        return unhandled;
+      }
     }
   };
 
@@ -408,6 +478,17 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
       case "taunt":
         vfx.taunt(run, at);
         break;
+      case "lifesteal":
+        if (from) vfx.wisp(run, from, at, TIMING.wisp);
+        break;
+      case "channel":
+        vfx.glint(run, at);
+        vfx.shock(run, at, at.w, "kin");
+        break;
+      default: {
+        const unhandled: never = c.fx;
+        return unhandled;
+      }
     }
   };
 
@@ -464,8 +545,17 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
         later(cue.ms, () => setCutin((cur) => (cur?.id === id ? null : cur)));
         break;
       }
+      case "ultimateCutin": {
+        const id = ++seq.current;
+        setCutin({ id, actor: cue.actor, ultimate: cue.ultimate, full: true, ms: cue.ms / clock.current.rate });
+        later(cue.ms, () => setCutin((cur) => (cur?.id === id ? null : cur)));
+        break;
+      }
       case "technique":
         technique(cue);
+        break;
+      case "ultimate":
+        ultimate(cue);
         break;
       case "passive":
         passive(cue);
@@ -480,12 +570,23 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
         }
         break;
       }
+      case "synergyBreak": {
+        const run = fxRun();
+        const frame = world.current?.querySelector(`[data-synergy="${cue.side}"]`);
+        if (run && frame && world.current) vfx.synergyBreak(run, vfx.boxOf(frame, world.current));
+        break;
+      }
       case "arena":
         o.arena?.current?.react(cue.reaction, cue.side);
         break;
       case "sound":
         o.sound?.current?.play(cue.name);
         break;
+      default: {
+        // Un repère oublié ici ne serait jamais joué
+        const unhandled: never = cue;
+        return unhandled;
+      }
     }
   };
 

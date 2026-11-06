@@ -5,6 +5,8 @@ import { useLayoutEffect, useRef, type ReactNode } from "react";
 import type { ArenaId } from "@/lib/battle/arenas";
 import type { FxLevel, Slot } from "@/lib/battle/choreography";
 import type { BoardTier } from "@/lib/battle/tiers";
+import { atkBonusPct, rageBonusPct } from "@/lib/battle/modifiers";
+import { activeSynergy } from "@/lib/battle/synergy";
 import type { BattleSetup, Side } from "@/lib/battle/types";
 import type { PlayerView } from "@/lib/battle/view";
 import { ArenaHost } from "../arenas/ArenaHost";
@@ -12,6 +14,7 @@ import { CutIn, TurnBanner } from "../fx/CutIn";
 import { Incense, KiOrbs, PlayerBanner, Ticker } from "../hud/Hud";
 import { usePlayerName } from "../BoardLayout";
 import { StageCard } from "./StageCard";
+import { SynergyFilament } from "./SynergyFilament";
 import type { ArenaHandle, Director, SoundPort, StageNumber } from "./useDirector";
 import "../fx/fx.css";
 import "./stage.css";
@@ -53,6 +56,7 @@ export function BattleStage({
   overlay,
   paused,
   sound,
+  intro = false,
 }: {
   setup: BattleSetup;
   director: Director;
@@ -76,6 +80,8 @@ export function BattleStage({
   paused?: boolean;
   /** Sons du décor de l'arène. */
   sound?: { current: SoundPort | null };
+  /** Entrée en arène en cours : le filament de synergie s'allume à sa fin. */
+  intro?: boolean;
 }) {
   const t = useTranslations("battle.board");
   const name = usePlayerName();
@@ -97,9 +103,11 @@ export function BattleStage({
   const live = !shown.finished;
   const orbs = (s: Side) =>
     live && shown.active === s ? <KiOrbs count={shown.orbs} max={setup.rules.orbs.max} side={s} label={t("orbs", { count: shown.orbs })} /> : null;
+  const synergy = (s: Side) => (intro ? null : activeSynergy(setup, shown, s));
 
   const row = (s: Side, props: RowProps | undefined, place: "far" | "near") => (
     <ul className="stage-row" data-row={place}>
+      {setup.synergy?.[s] && <SynergyFilament side={s} lit={synergy(s) !== null} />}
       {setup.teams[s].map((card, i) => {
         const k = `${s}-${i}`;
         return (
@@ -108,6 +116,8 @@ export function BattleStage({
             slot={SLOTS[s][i]}
             card={card}
             state={shown.fighters[s][i]}
+            atkBonus={atkBonusPct(setup, shown, s, i)}
+            ragePct={rageBonusPct(setup, shown, s, i)}
             face={director.faces[k] ?? "front"}
             selected={props?.selected === i}
             targetable={props?.targets?.has(i)}
@@ -142,7 +152,7 @@ export function BattleStage({
 
       <div className="stage-grid">
         <header className="stage-hud stage-hud-top">
-          <PlayerBanner player={players[opp]} place="top" active={live && shown.active === opp} standing={standing(opp)} tier={tiers[opp]}>
+          <PlayerBanner player={players[opp]} place="top" active={live && shown.active === opp} standing={standing(opp)} tier={tiers[opp]} synergy={synergy(opp)}>
             {orbs(opp)}
           </PlayerBanner>
           {menu}
@@ -168,7 +178,7 @@ export function BattleStage({
 
         <footer className="stage-hud stage-hud-bottom">
           <Ticker text={ticker.text} tone={ticker.tone} />
-          <PlayerBanner player={players[mySide]} place="bottom" active={live && shown.active === mySide} standing={standing(mySide)} tier={tiers[mySide]}>
+          <PlayerBanner player={players[mySide]} place="bottom" active={live && shown.active === mySide} standing={standing(mySide)} tier={tiers[mySide]} synergy={synergy(mySide)}>
             {orbs(mySide)}
           </PlayerBanner>
           {tablets}

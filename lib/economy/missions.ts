@@ -22,7 +22,7 @@ export const MISSION_METRICS = [
 export type MissionMetric = (typeof MISSION_METRICS)[number];
 
 /** Dépenses qui comptent pour SPEND_ZENI (les mises bloquées puis rendues n'en sont pas). */
-export const SPEND_REASONS = ["BOOSTER", "GIFT", "SHOP"] as const;
+export const SPEND_REASONS = ["BOOSTER", "GIFT", "SHOP", "ABILITY"] as const;
 
 /** Raretés « au moins `min` » : un objectif « tirer une Épique » accepte aussi Légendaire et Mythique. */
 export function raritiesFrom(min: Rarity, rarities: readonly string[] = RARITIES): Rarity[] {

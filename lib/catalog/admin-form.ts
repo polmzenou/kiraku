@@ -1,7 +1,7 @@
 import { z } from "@/lib/zod";
 import { appearanceSchema } from "./appearance";
 import { rarityDefinitionSchema, rarityKeySchema } from "./definitions";
-import { KEYWORDS } from "@/lib/battle/types";
+import { LEGACY_KEYWORDS } from "@/lib/battle/types";
 
 const nullableText = (max: number) => z.string().trim().max(max).nullable();
 const id = z.string().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/);
@@ -34,7 +34,9 @@ export type CardDraft = z.infer<typeof cardFormSchema>;
 export const rarityFormSchema = rarityDefinitionSchema.extend({
   create: z.boolean(), template: rarityKeySchema,
   rate: z.number().int().min(0).max(1_000_000), recycleValue: z.number().int().min(0).max(100_000),
-  keywords: z.number().int().min(0).max(KEYWORDS.length), gifts: z.boolean(), trades: z.boolean(),
+  keywords: z.number().int().min(0).max(LEGACY_KEYWORDS.length), gifts: z.boolean(), trades: z.boolean(),
+  // Les cartes de cette rareté ont un ulti en combat (battle.ultimateRarities)
+  ultimate: z.boolean(),
 }).strict();
 export type RarityDraft = z.infer<typeof rarityFormSchema>;
 export type CatalogError = "FORBIDDEN" | "INVALID" | "RATE_LIMITED" | "NOT_FOUND" | "CONFLICT" | "UNKNOWN_RARITY" | "UNKNOWN_BOOSTER" | "IMAGE_INVALID" | "IMAGE_REQUIRED" | "KEY_TAKEN" | "SAVE_FAILED"

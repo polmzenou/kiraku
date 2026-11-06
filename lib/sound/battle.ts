@@ -149,6 +149,13 @@ export function playBattleSound(name: BattleSound) {
       burst(ac, out, t, { duration: 0.32, from: 380, to: 3200, q: 0.8, peak: 0.22 });
       taiko(ac, out, t + 0.24, 0.7);
       break;
+    case "ultimate": // souffle qui monte, deux coups de taiko, puis un gong clair qui s'étire
+      burst(ac, out, t, { duration: 0.6, from: 220, to: 4200, q: 0.7, peak: 0.24 });
+      taiko(ac, out, t + 0.42, 0.9);
+      taiko(ac, out, t + 0.62, 1);
+      [131, 262, 393, 524, 786].forEach((f, i) => tone(ac, out, f, t + 0.62, { peak: 0.2 / (i + 1), decay: 2.4 - i * 0.25 }));
+      [1568, 2093, 2637].forEach((f, i) => tone(ac, out, f, t + 0.7 + i * 0.06, { peak: 0.06, decay: 1.4 }));
+      break;
     case "wisp":
       tone(ac, out, 880, t, { peak: 0.05, decay: 0.45, to: 1320 });
       tone(ac, out, 1760, t + 0.05, { peak: 0.03, decay: 0.4 });

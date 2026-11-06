@@ -22,6 +22,7 @@ const GROUPS = [
     modules: [
       { key: "news", href: "/admin/nouveautes" },
       { key: "catalog", href: "/admin/catalogue" },
+      { key: "universes", href: "/admin/univers" },
       { key: "collection", href: "/admin/collection" },
       { key: "boosters", href: "/admin/boosters" },
       { key: "types", href: "/admin/boosters/types" },

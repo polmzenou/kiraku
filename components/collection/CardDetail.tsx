@@ -4,11 +4,13 @@ import { FudaTurnover } from "@/components/fuda/FudaTurnover";
 import { Link } from "@/i18n/navigation";
 import { cardNumber, seriesTitle } from "@/lib/catalog/display";
 import { RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { getBattleRules, getCardKit } from "@/server/battle/queries";
 import type { CatalogCardDetail } from "@/server/catalog/queries";
 import { getOwnedCopies } from "@/server/collection/queries";
 import { openAuctionsForCard, sellInfoFor } from "@/server/market/queries";
 import { getSetting } from "@/server/settings";
 import { SellButton } from "../market/SellButton";
+import { ButtonLink } from "../ui/ButtonLink";
 import { RecycleControl } from "./RecycleControl";
 import { ShowcaseToggle } from "./ShowcaseToggle";
 
@@ -20,24 +22,32 @@ export async function CardDetail({
   card,
   ownerId,
   username,
+  isGuest = false,
   headingLevel = 1,
 }: {
   card: CatalogCardDetail;
   ownerId: string;
   username: string;
+  /** Les invités ne combattent pas : pas de lien vers l'atelier. */
+  isGuest?: boolean;
   headingLevel?: 1 | 2;
 }) {
-  const [t, tMarket, tRarity, format, locale, copies, values, sellInfo, onSale] = await Promise.all([
+  const [t, tMarket, tRarity, tAtelier, tBattle, format, locale, copies, values, sellInfo, onSale, rules] = await Promise.all([
     getTranslations("collection.card"),
     getTranslations("market.sell"),
     getTranslations("rarity"),
+    getTranslations("battle.atelier"),
+    getTranslations("battle"),
     getFormatter(),
     getLocale(),
     getOwnedCopies(ownerId, card.id),
     getSetting("collection.recycleValues"),
     sellInfoFor(ownerId, new Date(), card.rarity),
     openAuctionsForCard(ownerId, card.id),
+    getBattleRules(),
   ]);
+  // Kit qui combat : celui choisi à l'atelier, sinon le tirage de la carte
+  const kit = copies.length > 0 && rules.enabled ? await getCardKit(ownerId, card.id, rules) : null;
   const rarity = card.rarity as Rarity;
   const series = seriesTitle(card.series, locale);
   const Heading = headingLevel === 1 ? "h1" : "h2";
@@ -95,6 +105,35 @@ export async function CardDetail({
                 <li>{t("firstObtained", { date: format.dateTime(copies[0].obtainedAt, { dateStyle: "medium" }) })}</li>
               </ul>
             </section>
+
+            {kit && (
+              <section className="flex flex-col gap-3 lacquer rounded-card p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-bold">{tAtelier("kitTitle")}</h3>
+                  {rules.abilityShopEnabled && !isGuest && (
+                    <ButtonLink href={`/combat/atelier?carte=${encodeURIComponent(card.id)}`} size="sm">
+                      {tAtelier("kitEdit")}
+                    </ButtonLink>
+                  )}
+                </div>
+                <dl className="flex flex-col gap-1 text-sm">
+                  <div className="flex flex-wrap gap-x-2">
+                    <dt className="text-text-muted">{tAtelier("kitPassives")}</dt>
+                    <dd>{kit.kit.keywords.length === 0 ? tAtelier("kitNone") : kit.kit.keywords.map((k) => tBattle(`keywords.${k}.name`)).join(" · ")}</dd>
+                  </div>
+                  <div className="flex flex-wrap gap-x-2">
+                    <dt className="text-text-muted">{tAtelier("techniqueSlot")}</dt>
+                    <dd>{tBattle(`techniques.${kit.kit.technique}.name`)}</dd>
+                  </div>
+                  {kit.ultimate && (
+                    <div className="flex flex-wrap gap-x-2">
+                      <dt className="text-text-muted">{tAtelier("ultimateTitle")}</dt>
+                      <dd className="font-bold text-kin">{tBattle(`ultimates.${kit.ultimate}.name`)}</dd>
+                    </div>
+                  )}
+                </dl>
+              </section>
+            )}
 
             <section className="flex flex-col gap-3 lacquer rounded-card p-4">
               <h3 className="font-bold">{t("recycleTitle")}</h3>
