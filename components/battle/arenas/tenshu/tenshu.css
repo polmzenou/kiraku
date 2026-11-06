@@ -1,229 +1,100 @@
-/* Le Donjon dans la tempête : indigo d'orage, ardoise mouillée, or des shachihoko. */
+/* Le Donjon dans la tempête : le décor est une vidéo (voir ArenaBackdrop) ; ici, ce que le combat
+   provoque. Bleu d'orage, or des shachihoko, fenêtres en or pâle, jamais d'orange. Animations en
+   transform et opacity seulement. */
 
 .arena-tenshu {
-  background: #05081a;
+  background: #070b18;
 }
-.ts-clouds {
+
+/* Halos des fenêtres allumées : ils vacillent au coup de tambour (opacité du calque) */
+.ts-glows {
   position: absolute;
-  inset: 0 0 50%;
-  overflow: hidden;
+  inset: 0;
   pointer-events: none;
+  opacity: 0;
 }
-.ts-cloud {
-  position: absolute;
-  top: 0;
-  left: -50%;
-  width: 200%;
-  height: 100%;
-  background:
-    radial-gradient(18% 34% at 8% 30%, rgb(20 30 66 / 0.95), transparent 72%),
-    radial-gradient(22% 40% at 26% 18%, rgb(16 24 56 / 0.95), transparent 72%),
-    radial-gradient(16% 30% at 44% 36%, rgb(28 40 84 / 0.9), transparent 72%),
-    radial-gradient(24% 36% at 62% 14%, rgb(16 24 56 / 0.95), transparent 72%),
-    radial-gradient(18% 34% at 80% 32%, rgb(24 34 74 / 0.92), transparent 72%),
-    radial-gradient(22% 38% at 96% 20%, rgb(16 24 56 / 0.95), transparent 72%);
-  animation: ts-drift 60s linear infinite;
+.ts-glow {
+  display: block;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 234 196 / 0.9), rgb(242 216 138 / 0.35) 45%, transparent);
 }
-.ts-cloud-near {
-  top: 12%;
-  opacity: 0.85;
-  background:
-    radial-gradient(14% 26% at 12% 40%, rgb(44 58 106 / 0.75), transparent 72%),
-    radial-gradient(16% 30% at 38% 30%, rgb(36 50 96 / 0.75), transparent 72%),
-    radial-gradient(12% 24% at 64% 44%, rgb(44 58 106 / 0.7), transparent 72%),
-    radial-gradient(18% 28% at 88% 34%, rgb(36 50 96 / 0.75), transparent 72%);
-  animation-duration: 34s;
-}
-@keyframes ts-drift {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-25%);
-  }
-}
-.ts-bolts {
+
+/* Éclairs de chaleur dans les nuages (technique) */
+.ts-sheet {
+  display: block;
+  border-radius: 50%;
+  opacity: 0;
   pointer-events: none;
+  background: radial-gradient(closest-side, rgb(214 228 255 / 0.72), rgb(127 163 209 / 0.3) 45%, transparent);
 }
+
+/* La foudre : trois traits superposés (lueur, halo, cœur), puis l'éclat du point frappé */
 .ts-bolt {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  opacity: 0;
-}
-/* Éclair lointain : deux brèves lueurs toutes les onze secondes */
-.ts-bolt-idle {
-  animation: ts-idle-bolt 11s linear infinite;
-}
-@keyframes ts-idle-bolt {
-  0%,
-  89%,
-  100% {
-    opacity: 0;
-  }
-  90% {
-    opacity: 0.8;
-  }
-  91% {
-    opacity: 0.1;
-  }
-  92.5% {
-    opacity: 0.6;
-  }
-  94% {
-    opacity: 0;
-  }
-}
-/* Lueur d'éclair dans les nuages, derrière le donjon : mêmes temps que l'éclair lointain */
-.ts-sheet {
+  overflow: visible;
   pointer-events: none;
   opacity: 0;
-  background: radial-gradient(ellipse 50% 46% at 50% 42%, rgb(214 228 255 / 0.6), rgb(160 185 240 / 0.22) 50%, transparent 72%);
-  animation: ts-idle-bolt 11s linear infinite;
 }
-.ts-flash {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0;
-  background: radial-gradient(ellipse 90% 60% at 60% 0%, #e8f0fb, rgb(201 220 243 / 0.5) 50%, rgb(150 170 220 / 0.15));
+.ts-bolt path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
-.ts-beam {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0;
-  background: linear-gradient(100deg, transparent 38%, rgb(220 232 250 / 0.28) 46%, rgb(240 246 255 / 0.42) 50%, rgb(220 232 250 / 0.28) 54%, transparent 62%);
-  -webkit-mask: linear-gradient(#000 20%, transparent 80%);
-  mask: linear-gradient(#000 20%, transparent 80%);
+.ts-bolt .ts-bolt-glow {
+  stroke: #9cc0ff;
+  stroke-width: 22;
+  stroke-opacity: 0.26;
 }
-
-/* Pluie en biais, poussée par le vent */
-.ts-rain {
-  position: absolute;
-  inset: -20% -30%;
-  overflow: hidden;
-  pointer-events: none;
-  opacity: 0.8;
-  transform: rotate(20deg);
+.ts-bolt .ts-bolt-halo {
+  stroke: #cfe0ff;
+  stroke-width: 8;
+  stroke-opacity: 0.6;
 }
-.ts-rain > span {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -100%;
-  height: 200%;
-  animation: sy-fall 0.8s linear infinite;
+.ts-bolt .ts-bolt-core {
+  stroke: #fff;
+  stroke-width: 3;
 }
-.ts-rain-far {
-  background: repeating-linear-gradient(90deg, transparent 0 11px, rgb(190 210 240 / 0.16) 11px 12px, transparent 12px 27px);
-  -webkit-mask: repeating-linear-gradient(180deg, #000 0 30px, transparent 30px 52px);
-  mask: repeating-linear-gradient(180deg, #000 0 30px, transparent 30px 52px);
-  animation-duration: 1.1s !important;
-}
-.ts-rain-near {
-  background: repeating-linear-gradient(90deg, transparent 0 31px, rgb(210 225 250 / 0.3) 31px 33px, transparent 33px 71px);
-  -webkit-mask: repeating-linear-gradient(180deg, #000 0 52px, transparent 52px 120px);
-  mask: repeating-linear-gradient(180deg, #000 0 52px, transparent 52px 120px);
-  animation-duration: 0.55s !important;
-}
-@keyframes sy-fall {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(50%);
-  }
-}
-
-/* Gouttes qui rebondissent sur les planches mouillées */
-.ts-splash {
-  display: block;
+.ts-impact {
   border-radius: 50%;
-  border: 1.5px solid rgb(201 220 243 / 0.55);
-  opacity: 0;
-  animation: ts-splash 1.6s ease-out infinite;
+  background: radial-gradient(closest-side, rgb(255 255 255 / 0.95), rgb(201 220 243 / 0.55) 30%, rgb(127 163 209 / 0.2) 60%, transparent);
 }
-@keyframes ts-splash {
-  0% {
-    transform: scale(0.15);
-    opacity: 0.9;
-  }
-  100% {
-    transform: scale(1.3);
-    opacity: 0;
-  }
-}
-
-/* Abords */
-.ts-pole {
-  position: absolute;
-  top: 4%;
-  width: clamp(30px, 9cqw, 58px);
-  height: min(56%, 420px);
-}
-.ts-pole::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: -4%;
-  bottom: -40%;
-  width: 12%;
-  background: linear-gradient(90deg, #0c0a08, #3a2a1e, #0c0a08);
-}
-.ts-pole-l {
-  left: calc(clamp(30px, 9cqw, 58px) * -0.2);
-}
-.ts-pole-r {
-  right: calc(clamp(30px, 9cqw, 58px) * -0.2);
-  scale: -1 1;
-}
-.ts-banner {
-  position: absolute;
-  left: 12%;
-  top: 0;
-  width: 88%;
-  height: 100%;
-  transform-origin: 0 50%;
-  animation: ts-flap 1.6s ease-in-out infinite;
-}
-.ts-banner > svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-@keyframes ts-flap {
-  0%,
-  100% {
-    transform: skewY(0deg) scaleX(1);
-  }
-  35% {
-    transform: skewY(-3deg) scaleX(0.94);
-  }
-  70% {
-    transform: skewY(2deg) scaleX(1.03);
-  }
-}
-.ts-rail {
-  position: absolute;
-  left: -2%;
-  right: -2%;
-  bottom: 14%;
-  width: 104%;
-  height: clamp(40px, 9cqh, 110px);
-}
-
-/* Réactions */
+/* Tuiles arrachées au toit (KO) */
+/* Tuile de terre cuite sombre, l'arête du dessus mouillée qui accroche la lumière de l'orage */
 .ts-tile {
-  width: 16px;
-  height: 9px;
-  border-radius: 3px 3px 6px 6px;
-  background: linear-gradient(#3a4a6a, #141b2c);
-  box-shadow: inset 0 1px 0 rgb(159 180 216 / 0.5);
+  width: 20px;
+  height: 10px;
+  margin: -5px 0 0 -10px;
+  border-radius: 3px 3px 4px 4px;
+  background: linear-gradient(#4a5d84, #151c2c);
+  box-shadow:
+    inset 0 1px 0 rgb(201 220 243 / 0.6),
+    0 0 0 0.5px rgb(201 220 243 / 0.3);
 }
 
-.arena-tenshu[data-level="lite"] .ts-cloud-near,
-.arena-tenshu[data-level="lite"] .ts-banner {
-  animation: none;
+/* Percée de lumière sur le donjon (victoire) */
+.ts-beam {
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgb(220 232 255 / 0.5), rgb(201 220 243 / 0.18) 55%, transparent);
+  clip-path: polygon(42% 0, 58% 0, 76% 100%, 24% 100%);
+}
+.ts-clear {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse 60% 45% at 50% 0%, rgb(201 220 243 / 0.35), transparent 70%);
+}
+
+/* Bords assombris : le regard reste au centre, les cartes se lisent mieux */
+.ts-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 75% at 50% 42%, transparent 55%, rgb(3 6 14 / 0.55)),
+    linear-gradient(to top, rgb(3 6 14 / 0.35), transparent 24%);
 }

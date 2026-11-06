@@ -1,219 +1,140 @@
-/* La Fête du feu : nuit pourpre, flammes shu et cramoisies à cœur d'or blanc, lanternes rouges et
-   blanches. Jamais d'orange ni de jaune en aplat. */
+/* La Fête du feu : le décor est une vidéo (voir ArenaBackdrop) ; ici, la lumière des réactions posée
+   dessus et la foule du premier plan. Nuit pourpre, feu shu et cramoisi à cœur d'or blanc, jamais
+   d'orange ni de jaune en aplat. Animations en transform et opacity seulement. */
 
 .arena-himatsuri {
-  background: #0a0307;
-}
-.hm-garland {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.hm-lantern {
-  display: block;
-  transform-origin: 50% 0;
-  border-radius: 40% / 30%;
-  background:
-    linear-gradient(transparent 12%, #15120f 12% 18%, transparent 18% 82%, #15120f 82% 88%, transparent 88%),
-    radial-gradient(ellipse at 50% 45%, #fff6dc 0 18%, #f3ecdf 45%, #c9b99e);
-  box-shadow: 0 0 22px rgb(255 230 190 / 0.45);
-  animation: hm-swing 4.2s ease-in-out infinite;
-}
-.hm-lantern[data-red] {
-  background:
-    linear-gradient(transparent 12%, #15120f 12% 18%, transparent 18% 82%, #15120f 82% 88%, transparent 88%),
-    radial-gradient(ellipse at 50% 45%, #ffd9cf 0 16%, #e0533f 50%, #8e2018);
-  box-shadow: 0 0 22px rgb(224 83 63 / 0.55);
-}
-@keyframes hm-swing {
-  0%,
-  100% {
-    rotate: -4deg;
-  }
-  50% {
-    rotate: 4deg;
-  }
-}
-.hm-drummer > svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.hm-arm {
-  position: absolute;
-  top: 34%;
-  width: 6%;
-  height: 32%;
-  border-radius: 3px;
-  background: #120608;
-  transform-origin: 50% 0;
-  animation: hm-beat 0.9s ease-in infinite;
-}
-.hm-arm-l {
-  left: 36%;
-}
-.hm-arm-r {
-  left: 58%;
-  animation-delay: -0.45s;
-}
-@keyframes hm-beat {
-  0%,
-  100% {
-    rotate: 20deg;
-  }
-  40% {
-    rotate: -50deg;
-  }
-  55% {
-    rotate: 30deg;
-  }
+  background: #120607;
 }
 
-/* Brasiers : flammes en couches qui vacillent (échelle et opacité), braises qui montent */
-.hm-fires {
+/* Halos des lanternes, éteints au repos : le tambour les fait pulser ensemble (opacité du calque), le KO
+   et la victoire les allument en vague (opacité de chaque halo) */
+.hm-halos {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  opacity: 0;
 }
-.hm-fire {
-  transform-origin: 50% 100%;
+.hm-halo {
+  display: block;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 200 182 / 0.75), rgb(224 83 63 / 0.32) 42%, transparent);
 }
-.hm-fire > .hm-pyre {
+.hm-halo[data-white] {
+  background: radial-gradient(closest-side, rgb(255 248 230 / 0.8), rgb(242 216 138 / 0.3) 42%, transparent);
+}
+
+/* Embrasement d'un brasier (technique) */
+.hm-surge {
+  display: block;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgb(255 214 196 / 0.5), rgb(238 84 62 / 0.48) 26%, rgb(200 40 45 / 0.24) 56%, transparent);
+}
+
+/* Coup de tambour : un éclat, puis une onde qui s'élargit */
+.hm-beat {
+  pointer-events: none;
+}
+.hm-beat > i {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
+  border-radius: 50%;
+  opacity: 0;
 }
-.hm-fire i {
+.hm-flare {
+  background: radial-gradient(closest-side, rgb(255 244 228 / 0.85), rgb(224 83 63 / 0.35) 45%, transparent);
+}
+.hm-beat > .hm-ring {
+  inset: 22%;
+  border: 2px solid rgb(255 228 206 / 0.75);
+  box-shadow:
+    0 0 14px rgb(224 83 63 / 0.7),
+    inset 0 0 10px rgb(224 83 63 / 0.5);
+}
+
+/* Feux d'artifice : étincelles à traînée claire et cœur blanc */
+/* Feux d'artifice : chaque étincelle est une tête lumineuse suivie d'une traînée de sa couleur (la
+   traînée pointe vers le cœur du bouquet), et le cœur une lueur brève plutôt qu'un disque */
+.hm-spark {
+  width: 2.5px;
+  height: 22px;
+  margin: -11px 0 0 -1.25px;
+  border-radius: 2px;
+  background: linear-gradient(to top, transparent, currentColor 65%, rgb(255 252 245 / 0.95));
+  box-shadow:
+    0 -9px 8px -1px currentColor,
+    0 -10px 18px 1px color-mix(in srgb, currentColor 45%, transparent);
+}
+.hm-bloom {
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 250 240 / 0.9), rgb(255 236 214 / 0.38) 12%, rgb(224 83 63 / 0.16) 40%, transparent 65%);
+}
+/* Lueur d'un bouquet sur la scène, depuis le ciel (--fx : côté du bouquet, --flash : sa teinte) */
+.hm-glow {
   position: absolute;
-  left: 22%;
-  bottom: 30%;
-  width: 56%;
-  height: 72%;
-  border-radius: 50% 50% 46% 46% / 72% 72% 28% 28%;
-  transform-origin: 50% 100%;
-  background: radial-gradient(ellipse at 50% 88%, #fff6dc 0 10%, #ff9c86 22%, #e0533f 44%, rgb(142 32 24 / 0.75) 64%, transparent 78%);
-  animation: hm-flame 1.1s ease-in-out infinite;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse 70% 55% at var(--fx, 50%) 6%, var(--flash, rgb(255 236 214 / 0.5)), transparent 72%);
 }
-.hm-fire i:nth-child(3) {
-  left: 10%;
-  width: 40%;
-  height: 52%;
-  animation-delay: -0.4s;
+
+/* Braises d'une gerbe (technique) */
+.hm-cinder {
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  background: #ffe6d8;
+  box-shadow: 0 0 8px 2px rgb(224 83 63 / 0.9);
 }
-.hm-fire i:nth-child(4) {
-  left: 50%;
-  width: 40%;
-  height: 58%;
-  animation-delay: -0.7s;
+
+/* Bords assombris : le regard reste au centre, les cartes se lisent mieux */
+.hm-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 75% at 50% 42%, transparent 55%, rgb(10 3 4 / 0.55)),
+    linear-gradient(to top, rgb(10 3 4 / 0.35), transparent 24%);
 }
-.hm-fire i:nth-child(5) {
-  left: 32%;
-  width: 36%;
-  height: 90%;
-  background: radial-gradient(ellipse at 50% 90%, #fffaf0 0 8%, #f2d88a 20%, #e0533f 46%, transparent 72%);
-  opacity: 0.85;
-  animation-duration: 0.8s;
-  animation-delay: -0.2s;
+
+/* Braises en suspension au premier plan : des lueurs floues qui montent lentement */
+.hm-motes {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
-/* Kagaribi : la corbeille de fer est plus bas dans la boîte, les flammes plus ramassées */
-.hm-fire[data-kind="kagari"] i {
-  left: 18%;
-  bottom: 42%;
-  width: 64%;
-  height: 52%;
-}
-.hm-fire[data-kind="kagari"] i:nth-child(3) {
-  left: 6%;
-  width: 46%;
-  height: 38%;
-}
-.hm-fire[data-kind="kagari"] i:nth-child(4) {
-  left: 48%;
-  width: 46%;
-  height: 42%;
-}
-.hm-fire[data-kind="kagari"] i:nth-child(5) {
-  left: 30%;
-  width: 40%;
-  height: 64%;
-}
-@keyframes hm-flame {
-  0%,
-  100% {
-    transform: scale(1, 1) skewX(0deg);
-    opacity: 0.9;
-  }
-  33% {
-    transform: scale(0.92, 1.12) skewX(-4deg);
-    opacity: 1;
-  }
-  66% {
-    transform: scale(1.06, 0.94) skewX(3deg);
-    opacity: 0.8;
-  }
-}
-.hm-ember {
+.hm-mote {
   position: absolute;
   left: var(--x);
   top: var(--y);
   width: var(--m);
   height: var(--m);
   border-radius: 50%;
-  background: #ff9c86;
-  box-shadow: 0 0 8px #e0533f;
+  background: radial-gradient(circle, rgb(255 226 206 / 0.95), rgb(224 83 63 / 0.5) 42%, transparent 70%);
   opacity: 0;
-  animation: hm-rise var(--d) ease-out var(--delay) infinite;
+  animation: hm-drift var(--d) linear var(--delay) infinite;
 }
-@keyframes hm-rise {
+@keyframes hm-drift {
   0% {
     transform: translate(0, 0);
     opacity: 0;
   }
   15% {
-    opacity: 1;
+    opacity: 0.85;
+  }
+  70% {
+    opacity: 0.6;
   }
   100% {
-    transform: translate(var(--dx), -38cqh);
+    transform: translate(var(--dx), -42cqh);
     opacity: 0;
   }
 }
-/* Lumière des brasiers au sol : une nappe qui vacille (opacité seulement) */
-.hm-pool {
-  display: block;
-  pointer-events: none;
-  background: radial-gradient(closest-side, rgb(224 83 63 / 0.4), rgb(200 55 45 / 0.16) 58%, transparent);
-  animation: hm-flicker 2.2s ease-in-out infinite alternate;
-}
-@keyframes hm-flicker {
-  0% {
-    opacity: 0.7;
-  }
-  40% {
-    opacity: 1;
-  }
-  70% {
-    opacity: 0.82;
-  }
-  100% {
-    opacity: 0.95;
-  }
-}
-/* Étincelle : une traînée claire à la pointe, qui s'efface vers le cœur du bouquet */
-.hm-spark {
-  width: 3px;
-  height: 22px;
-  margin: -11px 0 0 -1.5px;
-  border-radius: 2px;
-  background: linear-gradient(to top, transparent, currentColor 70%);
-  box-shadow: 0 -6px 10px -2px currentColor;
-}
-.hm-bloom {
-  border-radius: 50%;
-  background: radial-gradient(circle, #fff6dc, rgb(242 216 138 / 0.55) 30%, rgb(224 83 63 / 0.18) 55%, transparent 70%);
-}
 
-/* La foule en ombres chinoises, qui ondule et lève les bras */
+/* La foule en ombres chinoises au premier plan (floutée dans son SVG), qui ondule et lève les bras */
 .hm-crowd {
   position: absolute;
   left: -4%;
@@ -223,17 +144,35 @@
   animation: hm-bob 2.6s ease-in-out infinite;
 }
 .hm-crowd > svg {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
 }
+/* Sous la bande, la foule continue jusqu'au bord de l'écran (et au-delà, pour que le saut ne découvre rien) */
+.hm-crowd::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% - 1px);
+  height: 30cqh;
+  background: #070304;
+}
 .hm-arms {
   opacity: 0;
 }
-/* Sur téléphone, la foule remonte au-dessus de ma bannière pour rester visible */
+/* Sur téléphone, la foule remonte au-dessus de ma bannière pour rester visible (elle continue dessous,
+   voir ::after) ; sur grand écran, elle grandit pour rester un premier plan */
 @container stage (max-width: 719px) {
   .hm-crowd {
     bottom: 12%;
+  }
+}
+@container stage (min-width: 720px) {
+  .hm-crowd {
+    height: clamp(90px, 20cqh, 220px);
   }
 }
 @keyframes hm-bob {
@@ -246,8 +185,6 @@
   }
 }
 
-.arena-himatsuri[data-level="lite"] .hm-lantern,
-.arena-himatsuri[data-level="lite"] .hm-crowd,
-.arena-himatsuri[data-level="lite"] .hm-pool {
+.arena-himatsuri[data-level="lite"] .hm-crowd {
   animation: none;
 }
