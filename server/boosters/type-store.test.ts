@@ -4,6 +4,7 @@ import { BOOSTER_SEEDS } from "@/prisma/seed/booster-types";
 import { computePoolCards, focusCards, upsertBoosterSeeds } from "./type-store";
 import { filterContext, type PoolCandidate } from "@/lib/boosters/pool-filter";
 import { featuredFromPool, groupByRarity } from "@/lib/boosters/draw";
+import { stillDrawable } from "@/lib/boosters/drawable";
 
 describe("seed ciblé de booster", () => {
   it("ajoute Antagonistes dans Par personnage sans réécrire les autres types", async () => {
@@ -71,5 +72,22 @@ describe("variantes dans les pools", () => {
   it("une variante exclusive ne sort que des boosters cochés", () => {
     expect(ids({ id: "divin", filter: {}, featuredCardIds: [] })).not.toContain("makima-gold");
     expect(ids({ id: "event", filter: { seriesIds: [1] }, featuredCardIds: [] })).toEqual(["makima-gold"]);
+  });
+
+  // Régression : une AR qui suivait sa base entrait au pool, mais l'ouverture la refusait (NOT_FOR_SALE)
+  it("toute carte d'un pool calculé passe la revérification de l'ouverture", () => {
+    const types = [
+      { id: "focus-csm", filter: { seriesIds: [127230] }, featuredCardIds: [] },
+      { id: "waifus", filter: { gender: "Female" as const }, featuredCardIds: [] },
+      { id: "event", filter: { seriesIds: [1] }, featuredCardIds: [] },
+    ];
+    for (const type of types) {
+      const cards = computePoolCards(type, all, ctx);
+      const inPool = new Set(cards.map((c) => c.id));
+      for (const c of cards) {
+        const row = { status: "PUBLISHED", rarity: c.rarity, dropWeight: 1, origin: c.origin ?? "ANILIST", boosterIds: c.boosterIds ?? [], variantOfId: c.variantOfId ?? null, boosterExclusive: c.boosterExclusive ?? false };
+        expect(stillDrawable(row, { rarity: c.rarity, weight: 1 }, { typeId: type.id, inPool: (id) => inPool.has(id) }), `${c.id} dans ${type.id}`).toBe(true);
+      }
+    }
   });
 });
