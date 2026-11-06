@@ -7,6 +7,7 @@ import type { Rarity } from "@/lib/catalog/rarity";
 import { isBigMoment } from "@/lib/catalog/tiers";
 import { REVEAL_SCENES, revealSceneKey } from "@/lib/opening/reveal-scenes";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
+import { titleLines, titleSizeCqi, titleText } from "@/lib/opening/reveal-title";
 import "./RevealFx.css";
 
 // Grand moment des Légendaires et au-delà : le sceau de la rareté s'écrase en plein écran, son nom
@@ -29,7 +30,7 @@ const OUT_DURATION = 0.5;
 
 /** Le nom est parti (s) : le compteur de cartes peut revenir à sa place. */
 export const titleGone = (name: string) => {
-  const n = Array.from(name).length;
+  const n = Array.from(titleText(name)).length;
   return titleOut(n) + (n - 1) * OUT_STEP + OUT_DURATION;
 };
 const titleOut = (letters: number) => LETTERS_IN + (letters - 1) * LETTER_STEP + LETTER_DURATION + TITLE_HOLD;
@@ -80,36 +81,57 @@ export function RevealOverlay({ moment, contained = false }: { moment: Moment; c
   );
 }
 
-/** Nom de la rareté en capitales au-dessus de la carte : il s'inscrit lettre à lettre, reste 2 s, puis s'envole. */
+/**
+ * Nom de la rareté en capitales au-dessus de la carte : il s'inscrit lettre à lettre, reste 2 s, puis s'envole.
+ * Un nom long passe sur 2 ou 3 lignes, coupées entre les mots (lib/opening/reveal-title.ts).
+ */
 export function RevealTitle({ moment, scene = false }: { moment: Moment; scene?: boolean }) {
-  const letters = Array.from(moment.name.toLocaleUpperCase());
+  const text = titleText(moment.name);
+  const count = Array.from(text).length;
+  const lines = titleLines(moment.name);
   const key = scene ? revealSceneKey(moment.rarity) : null;
   // Le nom suit le déroulé de la scène : il attend que le brouillard ou la page se retire
   const shift = key ? REVEAL_SCENES[key].title / 1000 - SEAL_IN : 0;
-  const out = titleOut(letters.length) + shift;
+  const out = titleOut(count) + shift;
+  // Une lettre garde son rang dans le nom entier : l'espace d'une coupure de ligne compte, le rythme ne change pas
+  let index = 0;
+  const letter = (ch: string) => {
+    const i = index++;
+    return (
+      <span
+        key={i}
+        aria-hidden="true"
+        className="moment-letter inline-block whitespace-pre"
+        style={v({ "--d": secs(LETTERS_IN + shift + i * LETTER_STEP), "--o": secs(out + i * OUT_STEP) })}
+      >
+        {ch}
+      </span>
+    );
+  };
   return (
-    // Toujours sur une ligne : la taille suit la largeur disponible (unités cqi), pas celle de l'écran
-    <p className="@container flex w-full items-center justify-center gap-2 whitespace-nowrap" style={v({ "--moment": moment.color })}>
+    // La taille suit la largeur disponible (unités cqi) et la ligne la plus longue, jamais le seul écran
+    <p className="@container flex w-full items-center justify-center gap-2" style={v({ "--moment": moment.color })}>
       <span
         aria-hidden="true"
         lang="ja"
-        className="moment-title-seal moment-seal font-seal text-[clamp(1.125rem,8.5cqi,2.5rem)] leading-none"
-        style={v({ "--d": secs(SEAL_IN + shift), "--o": secs(out + letters.length * OUT_STEP) })}
+        className="moment-title-seal moment-seal shrink-0 font-seal text-[clamp(1.125rem,8.5cqi,2.5rem)] leading-none"
+        style={v({ "--d": secs(SEAL_IN + shift), "--o": secs(out + count * OUT_STEP) })}
       >
         {moment.seal}
       </span>
-      <span data-chroma={key === "XR" || undefined} className="moment-title font-title text-[clamp(1.125rem,10cqi,3rem)] leading-none font-extrabold tracking-[0.06em]">
+      <span
+        data-chroma={key === "XR" || undefined}
+        data-lines={lines.length > 1 ? lines.length : undefined}
+        className="moment-title flex min-w-0 flex-col items-center gap-[0.14em] text-center font-title leading-none font-extrabold tracking-[0.06em]"
+        style={{ fontSize: `clamp(0.875rem, ${titleSizeCqi(lines)}cqi, 3rem)` }}
+      >
         <span className="sr-only">{moment.name}</span>
-        {letters.map((ch, i) => (
-          <span
-            key={i}
-            aria-hidden="true"
-            className="moment-letter inline-block whitespace-pre"
-            style={v({ "--d": secs(LETTERS_IN + shift + i * LETTER_STEP), "--o": secs(out + i * OUT_STEP) })}
-          >
-            {ch}
-          </span>
-        ))}
+        {lines.map((line, l) => {
+          const row = <span key={`line-${l}`} aria-hidden="true" className="block whitespace-nowrap">{Array.from(line).map(letter)}</span>;
+          // L'espace avalé par la coupure garde son rang
+          if (l < lines.length - 1) index++;
+          return row;
+        })}
       </span>
     </p>
   );
