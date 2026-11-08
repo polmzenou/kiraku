@@ -183,7 +183,7 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
         } else {
           // On conserve les exemplaires en vitrine, en combat (status BATTLE), en vente ou liés à l'historique d'une vente.
           const free = await tx.userCard.findMany({ where: {
-            ownerId: userId, cardId: input.cardId, status: "COLLECTION", showcase: null, auctions: { none: {} },
+            ownerId: userId, cardId: input.cardId, status: "COLLECTION", showcaseItems: { none: {} }, auctions: { none: {} },
           }, orderBy: [{ obtainedAt: "desc" }, { id: "desc" }], take: input.amount, select: { id: true } });
           if (free.length !== input.amount) throw new AdminUserMutationError("CARDS_LOCKED");
           await tx.userCard.deleteMany({ where: { id: { in: free.map((c) => c.id) }, ownerId: userId } });

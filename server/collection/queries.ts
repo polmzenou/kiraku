@@ -4,7 +4,7 @@ import { seriesTitle } from "@/lib/catalog/display";
 import { type Rarity } from "@/lib/catalog/rarity";
 import { COLLECTION_PAGE_SIZE, type CollectionParams } from "@/lib/collection/params";
 import { recycleValue, type RecycleValues } from "@/lib/collection/recycle";
-import type { CollectionItem, CollectionPage, CollectionSummary, RarityTotals, ShowcaseCard } from "@/lib/collection/view";
+import type { CollectionItem, CollectionPage, CollectionSummary, RarityTotals } from "@/lib/collection/view";
 import { getCatalogStats } from "../catalog/queries";
 import { getRarities } from "../catalog/rarities";
 import { prisma } from "../db";
@@ -106,13 +106,12 @@ export async function getCollectionPage(
            c.power, c.ki, s."titleRomaji", s."titleEnglish",
            COUNT(*)::int AS copies,
            (COUNT(*) FILTER (WHERE uc.status = 'COLLECTION'))::int AS free,
-           BOOL_OR(sh."userCardId" IS NOT NULL) AS "inShowcase",
+           BOOL_OR(EXISTS (SELECT 1 FROM "ShowcaseItem" sh WHERE sh."userCardId" = uc.id)) AS "inShowcase",
            ${viewerOwns} AS "viewerOwns"
     FROM "UserCard" uc
     JOIN "Card" c ON c.id = uc."cardId"
     JOIN "Series" s ON s.id = c."seriesId"
     JOIN "RarityDefinition" rd ON rd.key = c."rarityKey"
-    LEFT JOIN "ShowcaseSlot" sh ON sh."userCardId" = uc.id
     WHERE ${filters(ownerId, params)}
     GROUP BY c.id, s.id, rd."sortOrder"
     HAVING ${params.dupes ? Prisma.sql`COUNT(*) FILTER (WHERE uc.status = 'COLLECTION') >= 2` : Prisma.sql`TRUE`}
@@ -191,59 +190,13 @@ export async function getOwnedCopies(ownerId: string, cardId: string) {
   const copies = await prisma.userCard.findMany({
     where: { ownerId, cardId },
     orderBy: [{ obtainedAt: "asc" }, { id: "asc" }],
-    select: { id: true, status: true, obtainedAt: true, showcase: { select: { position: true } } },
+    select: { id: true, status: true, obtainedAt: true, _count: { select: { showcaseItems: true } } },
   });
   return copies.map((c) => ({
     id: c.id,
     status: c.status,
     obtainedAt: c.obtainedAt,
-    showcasePosition: c.showcase?.position ?? null,
+    /** Exposé dans au moins une vitrine du joueur. */
+    inShowcase: c._count.showcaseItems > 0,
   }));
-}
-
-/** Vitrine d'un joueur, case par case (null = vide), limitée aux `size` premières positions. */
-export async function getShowcase(ownerId: string, size: number, locale: string): Promise<(ShowcaseCard | null)[]> {
-  const slots = await prisma.showcaseSlot.findMany({
-    where: { userId: ownerId, position: { gte: 1, lte: size } },
-    select: {
-      position: true,
-      userCard: {
-        select: {
-          card: {
-            select: {
-              id: true,
-              anilistId: true, publicId: true, appearance: true,
-              name: true,
-              nameNative: true,
-              imageUrl: true,
-              rank: true,
-              rarity: true,
-              power: true,
-              ki: true,
-              series: { select: { titleRomaji: true, titleEnglish: true } },
-            },
-          },
-        },
-      },
-    },
-  });
-  const result: (ShowcaseCard | null)[] = Array.from({ length: size }, () => null);
-  for (const slot of slots) {
-    const c = slot.userCard.card;
-    result[slot.position - 1] = {
-      position: slot.position,
-      cardId: c.id,
-      anilistId: c.publicId,
-      name: c.name,
-      nameNative: c.nameNative,
-      imageUrl: c.imageUrl,
-      appearance: c.appearance,
-      rank: c.rank,
-      rarity: c.rarity as Rarity,
-      power: c.power,
-      ki: c.ki,
-      series: seriesTitle(c.series, locale),
-    };
-  }
-  return result;
 }

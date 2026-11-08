@@ -1,0 +1,217 @@
+/* Habillage des cartes de quatre thèmes, posé sur leur fond vidéo : Paravent d'or (byobu), Alcôve
+   (tokonoma), Coffret laqué (urushi), Mur des vœux (ema). Chaque case s'habille selon son rôle :
+   vedette ([data-hero]) ou carte ordinaire. Les habillages se dessinent sur .vt-mount (fond, ::before,
+   ::after sous la carte, z-index -1 dans son contexte isolé) : ils ne couvrent jamais la face d'une
+   carte. Rien ne bouge. L'Éventail tourne ses cartes, ses cases ne sont donc pas habillées ; la Frise
+   garde les habillages des cartes ordinaires. */
+
+/* --- Commun aux quatre thèmes --- */
+
+/* Hauteur que l'habillage ajoute, pour que la grille tienne dans le format du fond (showcase.css) :
+   barre et cordon au-dessus de chaque ema ; rouleau plus haut que la vedette, cordon et clou au-dessus
+   (d'où plus de marge en haut de l'Alcôve). Mur des vœux : les ema pendent sous la corde sacrée, qui
+   occupe le haut du fond (environ 13 % de sa hauteur). */
+.vt-stage[data-theme="ema"] {
+  --vt-row-extra: 22px;
+  --pad-t: clamp(44px, 12vw, 60px);
+}
+@media (min-width: 48rem) {
+  .vt-stage[data-theme="ema"] {
+    --pad-t: clamp(56px, 6.8vw, 88px);
+  }
+}
+.vt-stage[data-theme="tokonoma"] {
+  --vt-hero-extra: 26px;
+  --pad-t: 26px;
+}
+
+.vt-stage:is([data-theme="byobu"], [data-theme="tokonoma"], [data-theme="urushi"], [data-theme="ema"]) .vt-mount {
+  isolation: isolate;
+}
+/* Éventail : cartes tournées, sans habillage de case */
+.vt-stage:is([data-theme="byobu"], [data-theme="tokonoma"], [data-theme="urushi"], [data-theme="ema"]) .vt-cards[data-kind="fan"] .vt-slot .vt-mount {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+.vt-stage:is([data-theme="byobu"], [data-theme="tokonoma"], [data-theme="urushi"], [data-theme="ema"]) .vt-cards[data-kind="fan"] .vt-slot .vt-mount::before,
+.vt-stage:is([data-theme="byobu"], [data-theme="tokonoma"], [data-theme="urushi"], [data-theme="ema"]) .vt-cards[data-kind="fan"] .vt-slot .vt-mount::after {
+  content: none;
+}
+.vt-stage:is([data-theme="byobu"], [data-theme="tokonoma"], [data-theme="urushi"], [data-theme="ema"]) .vt-cards[data-kind="fan"] .vt-slot .vt-card {
+  padding: 0;
+  background: none;
+  rotate: none;
+}
+/* Case vide : habillage estompé pour le propriétaire (pointillés), rien pour un visiteur */
+.vt-stage:is([data-theme="byobu"], [data-theme="tokonoma"], [data-theme="urushi"], [data-theme="ema"]) .vt-slot[data-empty] .vt-mount {
+  opacity: 0.5;
+}
+.vt-stage:is([data-theme="byobu"], [data-theme="tokonoma"], [data-theme="urushi"], [data-theme="ema"]) .vt-slot[data-empty]:has(.vt-empty[data-hidden]) .vt-mount {
+  visibility: hidden;
+}
+
+/* --- Paravent d'or : la vedette sur un passe-partout de laque cerclé d'or, les autres avec une ombre --- */
+
+.vt-stage[data-theme="byobu"] .vt-mount {
+  border-radius: 9px;
+  box-shadow: 0 8px 18px rgba(60, 38, 8, 0.38), 0 1px 3px rgba(60, 38, 8, 0.3);
+}
+.vt-stage[data-theme="byobu"] .vt-slot[data-hero] .vt-mount {
+  padding: 5px;
+  border-radius: 13px;
+  background: linear-gradient(160deg, rgba(36, 25, 19, 0.94), rgba(16, 10, 7, 0.94));
+  box-shadow:
+    0 0 0 1px rgba(217, 181, 86, 0.5),
+    inset 0 1px 0 rgba(255, 236, 190, 0.12),
+    0 16px 32px rgba(60, 38, 8, 0.48);
+}
+
+/* --- Alcôve : la vedette en rouleau suspendu (cordon, baguette, brocart bleu et or, bandes dorées,
+   papier, rouleau lesté aux embouts d'ivoire), les autres cartes sur une tablette de bois --- */
+
+.vt-stage[data-theme="tokonoma"] .vt-slot[data-hero] .vt-mount {
+  padding: 20% 6.5% 14%;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.14)),
+    repeating-linear-gradient(45deg, rgba(217, 181, 86, 0.32) 0 1.5px, transparent 1.5px 7px),
+    repeating-linear-gradient(-45deg, rgba(217, 181, 86, 0.24) 0 1.5px, transparent 1.5px 7px),
+    linear-gradient(180deg, #2a3f66, #1e3557);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(10, 18, 34, 0.5);
+}
+.vt-stage[data-theme="tokonoma"] .vt-slot[data-hero] .vt-card {
+  padding: 11px 7px;
+  background:
+    repeating-linear-gradient(90deg, rgba(120, 84, 20, 0.35) 0 1px, transparent 1px 4px) top / 100% 5px no-repeat,
+    linear-gradient(180deg, #e9cf7f, #b8902f) top / 100% 5px no-repeat,
+    repeating-linear-gradient(90deg, rgba(120, 84, 20, 0.35) 0 1px, transparent 1px 4px) bottom / 100% 5px no-repeat,
+    linear-gradient(180deg, #e9cf7f, #b8902f) bottom / 100% 5px no-repeat,
+    #efe6d3;
+}
+/* Cordon et clou au-dessus, baguette du haut */
+.vt-stage[data-theme="tokonoma"] .vt-slot[data-hero] .vt-mount::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -2%;
+  right: -2%;
+  top: -22px;
+  height: 29px;
+  background:
+    radial-gradient(circle, #f0d98c 0 1px, #d9b556 1.1px 2.6px, transparent 3.1px) 50% 0 / 8px 8px no-repeat,
+    linear-gradient(to top left, transparent calc(50% - 0.6px), #c9a25a calc(50% - 0.6px) calc(50% + 0.6px), transparent calc(50% + 0.6px)) 18% 3px / 32% 19px no-repeat,
+    linear-gradient(to top right, transparent calc(50% - 0.6px), #c9a25a calc(50% - 0.6px) calc(50% + 0.6px), transparent calc(50% + 0.6px)) 82% 3px / 32% 19px no-repeat,
+    linear-gradient(180deg, #4a3624, #160f0a) 0 100% / 100% 7px no-repeat;
+}
+/* Rouleau lesté du bas, embouts d'ivoire */
+.vt-stage[data-theme="tokonoma"] .vt-slot[data-hero] .vt-mount::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -6%;
+  right: -6%;
+  bottom: -5px;
+  height: 10px;
+  border-radius: 5px;
+  background:
+    linear-gradient(180deg, #f6eedc, #cfc2a6) left / 7px 100% no-repeat,
+    linear-gradient(180deg, #f6eedc, #cfc2a6) right / 7px 100% no-repeat,
+    linear-gradient(180deg, #3a281b, #0e0906);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
+}
+/* Tablette de bois sous les autres cartes : déborde sur les côtés pour courir d'une carte à l'autre */
+.vt-stage[data-theme="tokonoma"] .vt-slot:not([data-hero]) .vt-mount::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -11px;
+  right: -11px;
+  bottom: -10px;
+  height: 9px;
+  border-radius: 1px;
+  background:
+    linear-gradient(180deg, rgba(255, 228, 186, 0.25), rgba(255, 228, 186, 0) 2px),
+    repeating-linear-gradient(90deg, rgba(60, 35, 15, 0.16) 0 1px, transparent 1px 12px),
+    linear-gradient(180deg, #b0855b, #7a5235);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.45);
+}
+
+/* --- Coffret laqué : chaque carte dans un compartiment de laque rouge, la vedette cerclée d'or --- */
+
+.vt-stage[data-theme="urushi"] .vt-mount {
+  padding: 7px;
+  border-radius: 7px;
+  background:
+    radial-gradient(ellipse 90% 60% at 50% 0%, rgba(255, 150, 120, 0.16), transparent 70%),
+    linear-gradient(180deg, #8f2119, #68130d);
+  box-shadow:
+    inset 0 3px 9px rgba(0, 0, 0, 0.62),
+    inset 0 0 0 1px rgba(217, 181, 86, 0.34),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.vt-stage[data-theme="urushi"] .vt-slot[data-hero] .vt-mount {
+  padding: 9px;
+  border-radius: 9px;
+  background:
+    radial-gradient(ellipse 90% 55% at 50% 0%, rgba(255, 170, 130, 0.2), transparent 70%),
+    linear-gradient(180deg, #9a261d, #6a140e);
+  box-shadow:
+    inset 0 3px 10px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 2px rgba(217, 181, 86, 0.62),
+    inset 0 0 0 3px rgba(18, 8, 7, 0.55),
+    0 0 0 1px rgba(217, 181, 86, 0.35),
+    0 10px 22px rgba(0, 0, 0, 0.45);
+}
+
+/* --- Mur des vœux : chaque carte pend comme un ema (barre de bois, clou d'or, cordon rouge, doré pour
+   la vedette), avec une légère inclinaison propre à sa place --- */
+
+/* Barre de bois au-dessus de chaque carte : déborde pour former une barre continue sur la rangée */
+.vt-stage[data-theme="ema"] .vt-mount {
+  padding-top: 22px;
+}
+.vt-stage[data-theme="ema"] .vt-mount::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -12px;
+  right: -12px;
+  top: 0;
+  height: 9px;
+  border-radius: 2px;
+  background:
+    linear-gradient(180deg, rgba(255, 220, 180, 0.22), rgba(255, 220, 180, 0) 2px),
+    repeating-linear-gradient(90deg, rgba(40, 22, 10, 0.2) 0 1px, transparent 1px 13px),
+    linear-gradient(180deg, #8f6644, #5a3a22);
+  box-shadow: 0 4px 7px rgba(0, 0, 0, 0.45);
+}
+/* Clou d'or et cordon rouge en V jusqu'aux coins de la carte */
+.vt-stage[data-theme="ema"] .vt-mount::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 15%;
+  right: 15%;
+  top: 2px;
+  height: 24px;
+  --vt-cord: #c8372d;
+  background:
+    radial-gradient(circle, #f6e3a1 0 1.1px, #d9b556 1.2px 3px, #8a6a1f 3.1px 3.4px, transparent 3.9px) 50% 0 / 10px 10px no-repeat,
+    linear-gradient(to top left, transparent calc(50% - 0.8px), var(--vt-cord) calc(50% - 0.8px) calc(50% + 0.8px), transparent calc(50% + 0.8px)) 0 4px / 50% calc(100% - 4px) no-repeat,
+    linear-gradient(to top right, transparent calc(50% - 0.8px), var(--vt-cord) calc(50% - 0.8px) calc(50% + 0.8px), transparent calc(50% + 0.8px)) 100% 4px / 50% calc(100% - 4px) no-repeat;
+}
+.vt-stage[data-theme="ema"] .vt-slot[data-hero] .vt-mount::after {
+  --vt-cord: #d9b556;
+  left: 20%;
+  right: 20%;
+}
+/* Chaque ema penche un peu, toujours de la même façon à la même place */
+.vt-stage[data-theme="ema"] .vt-card {
+  rotate: var(--vt-ema-tilt, 0deg);
+  transform-origin: 50% 0;
+}
+.vt-stage[data-theme="ema"] .vt-slot:nth-child(4n + 1) { --vt-ema-tilt: -2.2deg; }
+.vt-stage[data-theme="ema"] .vt-slot:nth-child(4n + 2) { --vt-ema-tilt: 1.6deg; }
+.vt-stage[data-theme="ema"] .vt-slot:nth-child(4n + 3) { --vt-ema-tilt: -1deg; }
+.vt-stage[data-theme="ema"] .vt-slot:nth-child(4n + 4) { --vt-ema-tilt: 2.4deg; }
+.vt-stage[data-theme="ema"] .vt-slot[data-hero] { --vt-ema-tilt: -0.8deg; }

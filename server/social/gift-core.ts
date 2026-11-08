@@ -99,8 +99,8 @@ export async function giftCardWith(
     if (copies.length === 0) throw new GiftError("NOT_OWNED");
     if (!ctx.allowedRarities.includes(copies[0].card.rarity as Rarity)) throw new GiftError("RARITY");
 
-    const shown = await tx.showcaseSlot.findMany({
-      where: { userId: ctx.senderId, userCardId: { in: copies.map((c) => c.id) } },
+    const shown = await tx.showcaseItem.findMany({
+      where: { userCardId: { in: copies.map((c) => c.id) } },
       select: { userCardId: true },
     });
     const copy = pickGiftCopy(copies, new Set(shown.map((s) => s.userCardId)))!;
@@ -111,7 +111,7 @@ export async function giftCardWith(
       data: { ownerId: ctx.recipientId, obtainedAt: now },
     });
     if (moved.count !== 1) throw new GiftError("NOT_OWNED");
-    await tx.showcaseSlot.deleteMany({ where: { userCardId: copy.id } });
+    await tx.showcaseItem.deleteMany({ where: { userCardId: copy.id } }); // quitte toutes les vitrines
     await tx.discovery.createMany({
       data: [{ userId: ctx.recipientId, cardId: ctx.cardId, createdAt: now }],
       skipDuplicates: true,

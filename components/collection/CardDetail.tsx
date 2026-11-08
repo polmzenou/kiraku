@@ -53,7 +53,7 @@ export async function CardDetail({
   const Heading = headingLevel === 1 ? "h1" : "h2";
 
   const inCollection = copies.filter((c) => c.status === "COLLECTION").length;
-  const inShowcase = copies.some((c) => c.showcasePosition !== null);
+  const inShowcase = copies.some((c) => c.inShowcase);
   const byStatus = (s: "AUCTION" | "BATTLE") => copies.filter((c) => c.status === s).length;
 
   return (

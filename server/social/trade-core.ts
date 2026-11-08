@@ -232,7 +232,7 @@ export async function acceptTradeWith(
         }),
       ]);
       if (toProposer.count !== 1 || toRecipient.count !== 1) throw new TradeError("CARD_GONE");
-      await tx.showcaseSlot.deleteMany({ where: { userCardId: { in: [wantedCopy.id, chosenCopy.id] } } });
+      await tx.showcaseItem.deleteMany({ where: { userCardId: { in: [wantedCopy.id, chosenCopy.id] } } });
       await tx.discovery.createMany({
         data: [
           { userId: trade.proposerId, cardId: trade.wantedCardId, createdAt: now },

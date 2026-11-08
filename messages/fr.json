@@ -1250,7 +1250,8 @@
       "eventGauge": "Événement",
       "battleSandbox": "Bac à sable combat",
       "news": "Nouveautés",
-      "universes": "Univers"
+      "universes": "Univers",
+      "showcases": "Vitrines"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -1481,16 +1482,10 @@
     },
     "collection": {
       "title": "Réglages de la collection",
-      "intro": "Zeni rendus par doublon recyclé et taille de la vitrine. Chaque changement s'applique tout de suite et s'inscrit au journal.",
+      "intro": "Zeni rendus par doublon recyclé. Chaque changement s'applique tout de suite et s'inscrit au journal.",
       "recycleSection": "Recyclage d'un doublon (Zeni)",
-      "showcaseSection": "Vitrine du profil",
-      "fields": {
-        "showcaseSlots": "Nombre de cases"
-      },
-      "showcaseHint": "En réduisant ce nombre, les cartes des dernières cases ne s'affichent plus (elles restent enregistrées). Mets 8 cases pour proposer aux joueurs les dispositions de vitrine (vedette, triptyque, damier) ; avec un autre nombre, la vitrine reste en grille.",
       "keys": {
-        "recycleValues": "Valeurs de recyclage",
-        "showcaseSlots": "Nombre de cases de la vitrine"
+        "recycleValues": "Valeurs de recyclage"
       },
       "invalid": "Certaines valeurs sont hors limites : corrige-les avant d'enregistrer.",
       "review": "Vérifier les changements",
@@ -3168,6 +3163,42 @@
         "SAME": "Choisis un autre univers que celui-ci.",
         "ALONE": "Cette série est seule dans cet univers : supprime plutôt l'univers."
       }
+    },
+    "showcases": {
+      "title": "Vitrines des joueurs",
+      "intro": "Nombre de vitrines par joueur et thèmes proposés : statut et condition de déblocage de chacun. Chaque changement s'applique tout de suite et s'inscrit au journal.",
+      "limitsSection": "Vitrines par joueur",
+      "maxPerPlayer": "Nombre maximal de vitrines par joueur",
+      "maxPerPlayerHint": "Un joueur qui en a déjà plus garde les siennes, mais ne peut plus en créer.",
+      "themesSection": "Thèmes de vitrine",
+      "themesHint": "La condition n'est vérifiée qu'au moment où le joueur choisit le thème : un thème déjà posé reste acquis, même si le joueur ne la remplit plus.",
+      "status": "Statut",
+      "statuses": {
+        "AVAILABLE": "Disponible",
+        "SOON": "Arrive prochainement",
+        "HIDDEN": "Masqué"
+      },
+      "statusHints": {
+        "AVAILABLE": "Proposé aux joueurs : ceux qui remplissent la condition peuvent le choisir.",
+        "SOON": "Montré flouté avec un cadenas et « Arrive prochainement » : les joueurs le voient sans pouvoir le choisir.",
+        "HIDDEN": "Retiré de la liste. Les vitrines qui l'utilisent déjà s'affichent sans décor jusqu'à ce qu'il redevienne disponible."
+      },
+      "noneLocked": "Toujours disponible et sans condition : c'est l'affichage par défaut des vitrines.",
+      "usage": "{count, plural, =0 {Aucune vitrine ne l'utilise} one {# vitrine l'utilise} other {# vitrines l'utilisent}}",
+      "themes": {
+        "none": "Sans décor",
+        "byobu": "Paravent d'or",
+        "tokonoma": "Alcôve",
+        "urushi": "Coffret laqué",
+        "ema": "Mur des vœux",
+        "black-edition": "Black edition",
+        "eclat": "Éclat",
+        "gold": "Gold"
+      },
+      "keys": {
+        "maxPerPlayer": "Vitrines par joueur",
+        "themes": "Thèmes de vitrine"
+      }
     }
   },
   "collection": {
@@ -3287,11 +3318,9 @@
       "recycle": "Recycler {count} (+{zeni, number} Zeni)",
       "confirm": "Confirmer (+{zeni, number} Zeni)",
       "cancel": "Annuler",
-      "keepOne": "Tu gardes toujours un exemplaire, et celui de ta vitrine.",
+      "keepOne": "Tu gardes toujours un exemplaire, et ceux exposés dans tes vitrines.",
       "recycled": "{count, plural, one {# doublon recyclé} other {# doublons recyclés}} : +{zeni, number} Zeni.",
-      "addToShowcase": "Mettre en vitrine",
-      "removeFromShowcase": "Retirer de la vitrine",
-      "showcaseFull": "Ta vitrine est pleine : <link>retire une carte depuis ton profil</link>.",
+      "addToShowcase": "Ajouter à une vitrine",
       "sell": "Mettre en vente",
       "soon": "Bientôt",
       "wiki": "Fiche du wiki",
@@ -3305,7 +3334,11 @@
         "NOT_OWNED": "Tu ne possèdes plus cette carte.",
         "FULL": "Ta vitrine est pleine.",
         "UNAVAILABLE": "Action impossible pour le moment. Réessaie."
-      }
+      },
+      "inShowcases": "Dans mes vitrines",
+      "noShowcase": "Tu n'as pas encore de vitrine : <link>crée-en une depuis ton profil</link>.",
+      "showcaseFullShort": "Pleine",
+      "showcaseSlots": "{count} / {capacity} cartes"
     },
     "views": {
       "label": "Affichage de la collection",
@@ -3333,21 +3366,114 @@
     }
   },
   "showcase": {
-    "label": "Vitrine",
-    "slot": "Case {n}",
-    "edit": "Modifier la vitrine",
-    "done": "Terminé",
-    "dragHint": "Glisse une carte sur une autre case pour les échanger.",
-    "emptyOwner": "Ta vitrine est vide : choisis jusqu'à {count} cartes à montrer.",
-    "emptyPublic": "Aucune carte en vitrine pour l'instant.",
+    "title": "Vitrines",
+    "count": "{count, plural, one {# vitrine} other {# vitrines}}",
+    "featured": "Vitrine principale",
+    "others": "Mes autres vitrines",
+    "open": "Voir la vitrine",
+    "openOwner": "Ouvrir",
+    "untitled": "Vitrine {n}",
+    "meta": "{count, plural, =0 {Vide} one {# carte} other {# cartes}} · {layout}",
+    "emptyOwnerAll": "Tu n'as pas encore de vitrine. Crée-en une pour montrer tes plus belles cartes.",
+    "emptyPublicAll": "Aucune vitrine pour l'instant.",
+    "emptyPublic": "Aucune carte dans cette vitrine pour l'instant.",
+    "emptyOwner": "Cette vitrine est vide : choisis jusqu'à {count, plural, one {# carte} other {# cartes}} à montrer.",
+    "of": "Vitrines de {name}",
+    "backToProfile": "Retour au profil de {name}",
+    "tabsLabel": "Vitrines de {name}",
+    "newShowcase": "Nouvelle vitrine",
+    "share": "Partager",
+    "stageLabel": "Vitrine {name}, {count, plural, =0 {vide} one {# carte} other {# cartes}}",
+    "metaTitle": "{name} · vitrine de {owner}",
+    "metaDescription": "La vitrine « {name} » de {owner} sur Kiraku : {count, plural, =0 {aucune carte pour l'instant} one {# carte} other {# cartes}}.",
+    "capacity": "{count, plural, one {# carte} other {# cartes}}",
+    "layoutDrops": "{count, plural, one {# carte sortira} other {# cartes sortiront}}",
+    "layoutButton": "Disposition",
+    "layoutTitle": "Disposition",
+    "layoutHint": "Les cartes gardent leur case : la case 1 (et la 2 quand il y a deux vedettes) est la vedette. Avec moins de cases, les cartes se resserrent et les dernières sortent de la vitrine.",
+    "themeTitle": "Thème",
+    "themeSoon": "Arrive prochainement",
+    "themeProgress": "{current}/{goal}",
+    "selectCard": "{name}, case {n} : toucher pour la changer, la déplacer ou la retirer",
     "addTo": "Choisir une carte pour la case {n}",
-    "moveLeft": "Décaler {name} vers la gauche",
-    "moveRight": "Décaler {name} vers la droite",
-    "remove": "Retirer {name} de la vitrine",
-    "change": "Remplacer {name}",
-    "changeShort": "Changer",
-    "removeShort": "Retirer",
-    "error": "La vitrine n'a pas pu être enregistrée : elle est revenue à son état précédent.",
+    "dragHint": "Glisse une carte sur une autre case pour les échanger, ou touche-la pour la changer.",
+    "done": "Terminé",
+    "picker": {
+      "multiTitle": "Ajouter des cartes",
+      "free": "{count, plural, one {# case libre} other {# cases libres}}",
+      "counter": "{count} / {max}",
+      "chooseHint": "Choisis des cartes",
+      "confirm": "Ajouter {count, plural, one {# carte} other {# cartes}}"
+    },
+    "create": {
+      "title": "Nouvelle vitrine",
+      "name": "Nom",
+      "namePlaceholder": "Mes héroïnes, Équipe de rêve…",
+      "nameHint": "Facultatif. Visible par tous les visiteurs de ton profil.",
+      "nameCount": "{count} / {max}",
+      "autofill": "Remplir avec mes meilleures cartes",
+      "autofillHint": "Les cartes les plus rares d'abord. Tu pourras tout changer ensuite.",
+      "fill": {
+        "all": "Toutes raretés",
+        "mythic": "Mythique et mieux",
+        "none": "Vide"
+      },
+      "submit": "Créer la vitrine",
+      "creating": "Création…",
+      "limit": "Tu as {count, plural, one {# vitrine} other {# vitrines}} sur {max}",
+      "limitReached": "Tu as atteint le maximum de {max} vitrines."
+    },
+    "editor": {
+      "edit": "Modifier",
+      "toolbar": "Outils de la vitrine",
+      "theme": "Thème",
+      "addCards": "Ajouter des cartes",
+      "fill": "Remplir",
+      "fillNone": "Aucune carte à ajouter.",
+      "more": "Plus",
+      "rename": "Renommer",
+      "renameSave": "Enregistrer",
+      "delete": "Supprimer la vitrine",
+      "deleteConfirm": "Supprimer « {name} » ? Les cartes restent dans ta collection.",
+      "deleteYes": "Supprimer",
+      "cancel": "Annuler",
+      "hero": "Vedette",
+      "selected": "{name} · case {n}",
+      "saving": "Enregistrement…",
+      "saved": "Enregistré"
+    },
+    "errors": {
+      "NO_SESSION": "Connecte-toi pour modifier tes vitrines.",
+      "INVALID": "Cette demande n'est pas valide.",
+      "RATE_LIMITED": "Trop de changements d'un coup : réessaie dans un instant.",
+      "UNAVAILABLE": "Impossible pour le moment : réessaie un peu plus tard.",
+      "NOT_OWNED": "Tu n'as plus cette carte en collection.",
+      "NOT_FOUND": "Cette vitrine n'existe plus.",
+      "LIMIT": "Tu as déjà le nombre maximum de vitrines.",
+      "FULL": "La vitrine est pleine.",
+      "THEME_LOCKED": "Ce thème n'est pas encore débloqué."
+    },
+    "visitor": {
+      "inCollection": "{owned} des {total} cartes sont dans ta collection",
+      "wishAll": "Souhaiter {count, plural, one {la carte manquante} other {les # cartes manquantes}}",
+      "wished": "Ajoutées à ta liste de souhaits.",
+      "wishFull": "Ta liste de souhaits est pleine.",
+      "wishError": "Impossible d'ajouter ces cartes pour le moment."
+    },
+    "conditions": {
+      "ALWAYS": "Libre",
+      "UNIQUE_CARDS": "Avoir {n, plural, one {# carte différente} other {# cartes différentes}}",
+      "RARITY_OWNED": "Avoir {n, plural, one {# carte} other {# cartes}} {rarity}",
+      "SERIES_COMPLETE": "Compléter une série",
+      "SERIES_COMPLETED_COUNT": "Compléter {n, plural, one {# série} other {# séries}}",
+      "BOOSTERS_OPENED": "Ouvrir {n, plural, one {# booster} other {# boosters}}",
+      "TRADES_DONE": "Faire {n, plural, one {# échange} other {# échanges}}",
+      "RANK_TIER": "Atteindre le rang {tier}",
+      "APOCALYPSE_RUINED": "Ruiner {n, plural, one {# sachet Apocalyptique} other {# sachets Apocalyptiques}}",
+      "CATALOG_DISCOVERED_PERCENT": "Découvrir {n} % du catalogue",
+      "RARITIES_DISCOVERED": "Découvrir {n, plural, one {# carte} other {# cartes}} {rarities}",
+      "AMBASSADOR": "Réservé aux ambassadeurs"
+    },
     "pickTitle": "Choisir une carte",
     "searchLabel": "Chercher une carte",
     "searchPlaceholder": "Nom ou série…",
@@ -3358,18 +3484,46 @@
     "retry": "Réessayer",
     "more": "Voir plus",
     "privateCollection": "Sa collection n'est pas visible : impossible d'y choisir une carte.",
-    "slotHero": "Case {n}, carte vedette",
-    "layoutButton": "Disposition",
-    "layoutTitle": "Disposition de la vitrine",
-    "layoutHint": "Les cartes gardent leur numéro de case : la case 1 (et la 2 pour le Triptyque) devient la carte vedette.",
+    "changeShort": "Changer",
+    "removeShort": "Retirer",
+    "moveLeft": "Décaler {name} vers la gauche",
+    "moveRight": "Décaler {name} vers la droite",
     "layouts": {
-      "GRID": {
-        "name": "Grille",
-        "description": "8 cartes de même taille, sur 2 rangées."
+      "SOLO": {
+        "name": "Solo",
+        "description": "Ta carte préférée, en grand."
+      },
+      "DUO": {
+        "name": "Duo",
+        "description": "Un duo, un rival, un couple."
+      },
+      "TRIO": {
+        "name": "Trio",
+        "description": "Le héros et ses deux acolytes."
+      },
+      "GRID_2X2": {
+        "name": "Grille 2 × 2",
+        "description": "Quatre cartes, sobre et lisible."
+      },
+      "FAN": {
+        "name": "Éventail",
+        "description": "Une main de cartes, comme au jeu."
+      },
+      "FEATURED_4": {
+        "name": "Vedette + 4",
+        "description": "Une vedette et sa garde rapprochée."
+      },
+      "GRID_3X2": {
+        "name": "Grille 3 × 2",
+        "description": "Six cartes de même taille."
+      },
+      "PYRAMID": {
+        "name": "Pyramide",
+        "description": "Une au sommet, les autres en dessous."
       },
       "FEATURED_LEFT": {
-        "name": "Vedette à gauche",
-        "description": "Une grande carte, les 7 autres à côté."
+        "name": "Vedette au centre",
+        "description": "Une vedette en haut, quatre cartes puis trois en dessous."
       },
       "FEATURED_L": {
         "name": "Vedette en L",
@@ -3382,8 +3536,57 @@
       "CHECKER": {
         "name": "Damier 3-2-3",
         "description": "Trois rangées en quinconce : 3, 2 puis 3 cartes."
+      },
+      "GRID_4X2": {
+        "name": "Grille 4 × 2",
+        "description": "Huit cartes sur deux rangées."
+      },
+      "GRID_3X3": {
+        "name": "Grille 3 × 3",
+        "description": "Neuf cases, idéale pour le coffret."
+      },
+      "GRID_4X3": {
+        "name": "Grille 4 × 3",
+        "description": "Douze cartes pour les grandes séries."
+      },
+      "FRIEZE": {
+        "name": "Frise",
+        "description": "Jusqu'à 20 cartes qui défilent au doigt."
       }
-    }
+    },
+    "themes": {
+      "none": {
+        "name": "Sans décor"
+      },
+      "byobu": {
+        "name": "Paravent d'or"
+      },
+      "tokonoma": {
+        "name": "Alcôve"
+      },
+      "urushi": {
+        "name": "Coffret laqué"
+      },
+      "ema": {
+        "name": "Mur des vœux"
+      },
+      "black-edition": {
+        "name": "Black edition"
+      },
+      "eclat": {
+        "name": "Éclat"
+      },
+      "gold": {
+        "name": "Gold"
+      }
+    },
+    "titlePublic": "Vitrine",
+    "privateHint": "Visibles par toi seul. Choisis celle que tout le monde voit sur ton profil.",
+    "makeMain": "Afficher sur mon profil",
+    "makeMainShort": "Afficher",
+    "mainBadge": "Affichée sur ton profil : tout le monde la voit",
+    "privateBadge": "Privée : visible par toi seul",
+    "capacityUpTo": "jusqu'à {count}"
   },
   "wishlist": {
     "title": "Liste de souhaits",
@@ -3426,7 +3629,6 @@
       "FRIENDS": "Ton profil est réservé à tes amis.",
       "PRIVATE": "Ton profil est privé : personne d'autre que toi ne le voit."
     },
-    "showcase": "Vitrine",
     "sales": {
       "title": "Cartes en vente",
       "empty": "Aucune carte en vente pour le moment.",

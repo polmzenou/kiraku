@@ -63,6 +63,8 @@ describe("migration du catalogue sur PostgreSQL isolé", () => {
       await expect(db.exec(`DELETE FROM "RarityDefinition" WHERE key='CELESTIAL'`)).rejects.toThrow();
       await db.exec(`UPDATE "Card" SET status='PUBLISHED' WHERE id='custom';
         INSERT INTO "UserCard" (id,"ownerId","cardId") VALUES ('custom-copy','owner','custom');`);
+      // Table d'une migration plus récente (vitrines multiples) que lit la requête de collection actuelle
+      await db.exec(`CREATE TABLE "ShowcaseItem" ("showcaseId" TEXT NOT NULL, "position" INTEGER NOT NULL, "userCardId" TEXT NOT NULL);`);
       reader.query.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) => {
         const query = Prisma.sql(strings, ...values);
         return (await db.query(query.text, [...query.values])).rows;

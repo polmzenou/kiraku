@@ -114,7 +114,7 @@ describe("mutations admin atomiques", () => {
   it("refuse de retirer une carte protégée", async () => {
     const { tx, db } = setup();
     await expect(mutateAdminUserWith(db, "admin", { ...base, kind: "card", cardId: "card", mode: "REMOVE", amount: 1, message: null })).rejects.toMatchObject({ code: "CARDS_LOCKED" });
-    expect(tx.userCard.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ ownerId: "player", status: "COLLECTION", showcase: null, auctions: { none: {} } }) }));
+    expect(tx.userCard.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ ownerId: "player", status: "COLLECTION", showcaseItems: { none: {} }, auctions: { none: {} } }) }));
     expect(tx.userCard.deleteMany).not.toHaveBeenCalled();
   });
   it("définit les crédits d'un type existant, même inactif", async () => {

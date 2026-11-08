@@ -54,7 +54,7 @@ export async function recycleWith(
           },
           select: { id: true, cardId: true, status: true, obtainedAt: true, card: { select: { rarity: true } } },
         }),
-        tx.showcaseSlot.findMany({ where: { userId }, select: { userCardId: true } }),
+        tx.showcaseItem.findMany({ where: { showcase: { userId } }, select: { userCardId: true } }),
       ]);
 
       const plan = planRecycle(

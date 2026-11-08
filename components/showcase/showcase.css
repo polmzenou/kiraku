@@ -1,0 +1,547 @@
+/* Vitrines : scène, dispositions et cases (préfixe vt-, « showcase » désigne déjà la bannière de
+   l'accueil). Habillage des cartes de certains thèmes : theme-mounts.css ; effets autour des cartes :
+   rarity-halo.css.
+   Animations : transform et opacity seulement, jamais en mouvement réduit. */
+
+/* Scène ouverte : aucune boîte. Le fond du thème se fond dans la page sur ses bords, les cartes restent
+   nettes au premier plan. overflow visible (et non hidden) : la scène n'est pas un conteneur défilant,
+   si bien que son format (fond vidéo) reste une hauteur minimale et qu'elle grandit si les cartes
+   demandent plus de place, au lieu de les rogner. Conteneur de requêtes : ses cartes connaissent sa
+   largeur (cqw) pour tenir dans le format du fond. */
+.vt-stage {
+  --pad-x: 14px;
+  --pad-t: 18px;
+  --pad-b: 18px;
+  position: relative;
+  isolation: isolate;
+  container-type: inline-size;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+}
+@media (min-width: 48rem) {
+  .vt-stage {
+    --pad-x: 28px;
+    --pad-t: 28px;
+    --pad-b: 28px;
+  }
+}
+/* Sans décor : les cartes posées sur la page, comme l'ancienne vitrine */
+.vt-stage[data-theme="none"] {
+  padding: 0;
+}
+/* Fond vidéo : la scène garde au moins le format de son image (3:4 puis 16:9), sur le profil comme sur
+   la page de la vitrine, et centre les cartes */
+.vt-stage[data-media] {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  aspect-ratio: 3 / 4;
+}
+@media (min-width: 48rem) {
+  .vt-stage[data-media] {
+    aspect-ratio: 16 / 9;
+  }
+}
+/* Teinte du centre de chaque fond, visible le temps que l'image arrive */
+.vt-stage[data-theme="eclat"] {
+  --vt-tint: #120e2c;
+}
+.vt-stage[data-theme="gold"] {
+  --vt-tint: #110f0b;
+}
+.vt-stage[data-theme="byobu"] {
+  --vt-tint: #9c620b;
+}
+.vt-stage[data-theme="tokonoma"] {
+  --vt-tint: #492c15;
+}
+.vt-stage[data-theme="urushi"] {
+  --vt-tint: #150102;
+}
+.vt-stage[data-theme="ema"] {
+  --vt-tint: #0d1a39;
+}
+/* Fond : fondu vers la page en haut et en bas ; sur téléphone, il passe sous la marge de la page
+   (PageShell : px-4) pour aller d'un bord de l'écran à l'autre ; au-delà de 48rem, il reste dans la
+   colonne et se fond aussi sur les côtés. Les décors dessinés gardent leur cadre (corde du Mur des vœux,
+   poutre de l'Alcôve, bordure du Coffret) : fondu plus court. */
+.vt-backdrop {
+  --vt-fade-t: 8%;
+  --vt-fade-b: 18%;
+  --vt-fade-x: 14%;
+  --vt-fade-y: linear-gradient(180deg, transparent, #000 var(--vt-fade-t), #000 calc(100% - var(--vt-fade-b)), transparent);
+  position: absolute;
+  inset: 0 -1rem;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--vt-tint, #050404);
+  -webkit-mask-image: var(--vt-fade-y);
+  mask-image: var(--vt-fade-y);
+}
+.vt-stage:is([data-theme="byobu"], [data-theme="tokonoma"], [data-theme="urushi"], [data-theme="ema"]) > .vt-backdrop {
+  --vt-fade-t: 4%;
+  --vt-fade-b: 12%;
+  --vt-fade-x: 8%;
+}
+@media (min-width: 48rem) {
+  .vt-backdrop {
+    inset: 0;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--vt-fade-x), #000 calc(100% - var(--vt-fade-x)), transparent), var(--vt-fade-y);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(90deg, transparent, #000 var(--vt-fade-x), #000 calc(100% - var(--vt-fade-x)), transparent), var(--vt-fade-y);
+    mask-composite: intersect;
+  }
+}
+.vt-media-holder {
+  position: absolute;
+  inset: 0;
+}
+.vt-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+}
+.vt-media-video {
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+.vt-media-video[data-ready] {
+  opacity: 1;
+}
+.vt-media-video::-webkit-media-controls,
+.vt-media-video::-webkit-media-controls-start-playback-button {
+  display: none !important;
+}
+/* Cartel de la vitrine principale du profil, sous ses cartes : remonté dans le fondu du fond */
+.vt-stage[data-media] + .vt-plate {
+  margin-top: -0.75rem;
+}
+/* Sceau d'un décor (cartel, étagère) aux couleurs du thème */
+.vt-seal {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--vt-tone-bg);
+  color: var(--vt-tone-kanji);
+  box-shadow: inset 0 0 0 1px var(--vt-tone-line);
+  font-family: var(--font-seal);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* Bannière du profil : le décor de la vitrine principale derrière l'en-tête, sur toute la largeur de
+   l'écran (html et body coupent le débordement horizontal), voilé de la couleur de la page (lisible en
+   Yoru comme en Washi) et fondu vers le bas. Le profil la place dans un bloc isolé, sous son contenu ;
+   elle remonte dans la marge haute de la page (py-6). */
+.vt-banner {
+  --vt-veil-top: 30%;
+  --vt-veil-bottom: 62%;
+  position: absolute;
+  z-index: -1;
+  top: -1.5rem;
+  left: 50%;
+  width: 100vw;
+  height: 21rem;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateX(-50%);
+  -webkit-mask-image: linear-gradient(180deg, #000 40%, transparent);
+  mask-image: linear-gradient(180deg, #000 40%, transparent);
+}
+@media (min-width: 48rem) {
+  .vt-banner {
+    height: 24rem;
+  }
+}
+.vt-banner img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--vt-banner-pos, 50% 30%);
+}
+.vt-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--color-bg) var(--vt-veil-top), transparent),
+    color-mix(in oklab, var(--color-bg) var(--vt-veil-bottom), transparent)
+  );
+}
+/* Voile selon le décor : un décor sombre disparaît sous un voile fort, un décor clair ou vif gêne la
+   lecture du pseudo et des badges sous un voile léger */
+.vt-banner:is([data-theme="gold"], [data-theme="black-edition"]) {
+  --vt-veil-top: 8%;
+  --vt-veil-bottom: 50%;
+}
+.vt-banner:is([data-theme="byobu"], [data-theme="eclat"]) {
+  --vt-veil-top: 58%;
+  --vt-veil-bottom: 82%;
+}
+/* Washi : page claire et texte sombre, le décor n'y est plus qu'une teinte */
+[data-theme="washi"] .vt-banner {
+  --vt-veil-top: 74%;
+  --vt-veil-bottom: 90%;
+}
+
+/* Étagère du profil : chaque vitrine montre son décor, assombri vers le bas sous son nom */
+.vt-shelf-item {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.vt-shelf-item[data-media] {
+  border-color: var(--vt-tone-line);
+  background: var(--vt-tone-bg);
+  color: #f5efe2;
+}
+.vt-shelf-media {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 30%;
+}
+.vt-shelf-item[data-media]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgb(12 10 8 / 0.15), rgb(12 10 8 / 0.55) 45%, rgb(12 10 8 / 0.9));
+}
+.vt-shelf-item .vt-seal {
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.875rem;
+}
+.vt-shelf-meta {
+  color: var(--color-text-muted);
+}
+.vt-shelf-item[data-media] .vt-shelf-meta {
+  color: rgb(245 239 226 / 0.75);
+}
+
+.vt-cards {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+.vt-slot {
+  position: relative;
+  min-width: 0;
+}
+.vt-mount,
+.vt-card {
+  position: relative;
+  width: 100%;
+}
+
+/* Grilles : colonnes de même largeur ; l'écart vertical vaut 1,4 fois l'horizontal, si bien qu'une
+   vedette sur k colonnes et k rangées garde exactement le format 5:7 d'une carte */
+.vt-cards[data-kind="grid"] {
+  --gap-x: 0.6rem;
+  display: grid;
+  grid-template-columns: repeat(var(--cols-m), minmax(0, 1fr));
+  grid-template-areas: var(--areas-m);
+  gap: calc(var(--gap-x) * 1.4) var(--gap-x);
+  align-items: center;
+}
+@media (min-width: 48rem) {
+  .vt-cards[data-kind="grid"] {
+    --gap-x: 1rem;
+    max-width: var(--max-d);
+    grid-template-columns: repeat(var(--cols-d), minmax(0, 1fr));
+    grid-template-areas: var(--areas-d);
+  }
+}
+/* Fond vidéo : la grille rétrécit pour tenir dans le format de l'image (sans descendre sous 55 % de sa
+   largeur) plutôt que d'agrandir la scène et de rogner le fond sur les côtés. Hauteur de la grille :
+   a·w + k·écart (gridFit, lib/showcase/layouts.ts), plus ce que l'habillage du thème ajoute à chaque
+   rangée (--vt-row-extra) et à chaque rangée de vedette (--vt-hero-extra). 100cqw : largeur intérieure
+   de la scène. */
+.vt-stage[data-media] .vt-cards[data-kind="grid"] {
+  --fit-h: calc((100cqw + 2 * var(--pad-x)) * 4 / 3 - var(--pad-t) - var(--pad-b));
+  max-width: max(
+    55cqw,
+    min(
+      100cqw,
+      calc((var(--fit-h) - var(--fit-k-m) * var(--gap-x) - var(--fit-r-m) * var(--vt-row-extra, 0px) - var(--fit-hr-m) * var(--vt-hero-extra, 0px)) / var(--fit-a-m))
+    )
+  );
+}
+@media (min-width: 48rem) {
+  .vt-stage[data-media] .vt-cards[data-kind="grid"] {
+    --fit-h: calc((100cqw + 2 * var(--pad-x)) * 9 / 16 - var(--pad-t) - var(--pad-b));
+    max-width: max(
+      calc(var(--max-d) * 0.55),
+      min(
+        var(--max-d),
+        100cqw,
+        calc((var(--fit-h) - var(--fit-k-d) * var(--gap-x) - var(--fit-r-d) * var(--vt-row-extra, 0px) - var(--fit-hr-d) * var(--vt-hero-extra, 0px)) / var(--fit-a-d))
+      )
+    );
+  }
+}
+
+/* Éventail : cinq cartes en arc, tournées autour de leur pied */
+.vt-cards[data-kind="fan"] {
+  max-width: var(--max-d);
+  aspect-ratio: 100 / var(--box-h);
+}
+.vt-cards[data-kind="fan"] > .vt-slot {
+  position: absolute;
+  left: var(--left);
+  top: var(--top);
+  z-index: var(--z);
+  width: var(--w);
+  transform: rotate(var(--rot));
+  transform-origin: 50% 100%;
+}
+
+/* Frise : défile au doigt, s'efface sur les bords */
+.vt-cards[data-kind="frieze"] {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding: 0.25rem 1rem 0.75rem;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 1rem;
+  scrollbar-width: thin;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 1rem, #000 calc(100% - 1rem), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 1rem, #000 calc(100% - 1rem), transparent);
+}
+.vt-cards[data-kind="frieze"] > .vt-slot {
+  flex: 0 0 clamp(6.75rem, 30vw, 9.5rem);
+  scroll-snap-align: start;
+}
+
+/* Case vide : pointillés pour le propriétaire, invisible pour un visiteur (la disposition reste) */
+.vt-empty {
+  display: block;
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  border-radius: 8px;
+  border: 2px dashed color-mix(in oklab, var(--color-text) 22%, transparent);
+  background: color-mix(in oklab, var(--color-surface) 70%, transparent);
+}
+.vt-empty[data-hidden] {
+  visibility: hidden;
+}
+button.vt-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  font-size: 1.75rem;
+  cursor: pointer;
+}
+button.vt-empty:focus-visible {
+  outline: 2px solid var(--color-ai);
+  outline-offset: 2px;
+}
+.vt-card[data-selected] {
+  outline: 2px solid var(--color-ai);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* Ton de chaque thème (onglets, pastilles, filet) */
+[data-vt-tone] {
+  --vt-tone-bg: var(--color-surface-2);
+  --vt-tone-ink: var(--color-text);
+  --vt-tone-kanji: var(--color-kin);
+  --vt-tone-line: var(--color-border);
+  --vt-tone-accent: var(--color-kin);
+}
+[data-vt-tone="byobu"] {
+  --vt-tone-bg: linear-gradient(180deg, #e9cf7f, #b8902f);
+  --vt-tone-ink: #2a1d0c;
+  --vt-tone-kanji: #6b4e14;
+  --vt-tone-line: rgba(217, 181, 86, 0.7);
+  --vt-tone-accent: #d9b556;
+}
+[data-vt-tone="tokonoma"] {
+  --vt-tone-bg: linear-gradient(180deg, #4d3d2f, #33281f);
+  --vt-tone-ink: #f1e9da;
+  --vt-tone-kanji: #d9b556;
+  --vt-tone-line: rgba(176, 133, 91, 0.7);
+  --vt-tone-accent: #c9a25a;
+}
+[data-vt-tone="urushi"] {
+  --vt-tone-bg: linear-gradient(180deg, #8f2119, #68130d);
+  --vt-tone-ink: #fff3e6;
+  --vt-tone-kanji: #f0d98c;
+  --vt-tone-line: rgba(217, 181, 86, 0.6);
+  --vt-tone-accent: #e0533f;
+}
+[data-vt-tone="ema"] {
+  --vt-tone-bg: linear-gradient(180deg, #6e5033, #4a3220);
+  --vt-tone-ink: #f5efe2;
+  --vt-tone-kanji: #e0533f;
+  --vt-tone-line: rgba(224, 83, 63, 0.6);
+  --vt-tone-accent: #e0533f;
+}
+[data-vt-tone="black-edition"] {
+  --vt-tone-bg: linear-gradient(180deg, #1a1414, #0a0808);
+  --vt-tone-ink: #f5dcd6;
+  --vt-tone-kanji: #e0533f;
+  --vt-tone-line: #c8372d;
+  --vt-tone-accent: #ef6a55;
+}
+[data-vt-tone="eclat"] {
+  --vt-tone-bg: linear-gradient(180deg, #5b2e9e, #3b1d78);
+  --vt-tone-ink: #fff6ea;
+  --vt-tone-kanji: #f2cf7a;
+  --vt-tone-line: rgba(242, 207, 122, 0.7);
+  --vt-tone-accent: #f2cf7a;
+}
+/* Gold : obsidienne et veines d'or */
+[data-vt-tone="gold"] {
+  --vt-tone-bg: linear-gradient(180deg, #221d15, #0d0b08);
+  --vt-tone-ink: #f3e3b8;
+  --vt-tone-kanji: #e2c071;
+  --vt-tone-line: rgba(217, 181, 86, 0.7);
+  --vt-tone-accent: #e2c071;
+}
+/* Onglets des vitrines : étiquettes suspendues à une baguette de bois */
+.vt-tabs {
+  position: relative;
+  padding-top: 6px;
+}
+.vt-tabs::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: linear-gradient(180deg, #8a6040, #4a2f1b);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
+}
+.vt-tab {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 46px;
+  padding: 0 0.9rem 8px;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 51.5% 100%, 50% 80%, 48.5% 100%, 0 100%);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+.vt-tab[aria-current="page"] {
+  background: var(--vt-tone-bg);
+  color: var(--vt-tone-ink);
+  box-shadow: inset 0 0 0 1px var(--vt-tone-line), inset 0 2px 0 rgba(255, 255, 255, 0.14);
+}
+.vt-tab-kanji {
+  font-family: var(--font-seal);
+  font-size: 0.95rem;
+  line-height: 1;
+  color: var(--vt-tone-kanji);
+}
+.vt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.75rem;
+  padding: 0 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--vt-tone-line);
+  background: color-mix(in oklab, var(--vt-tone-accent) 14%, transparent);
+  color: var(--vt-tone-accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Miniatures des dispositions, comme sur la planche du design (cadre 240 × 120) */
+.vt-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--color-bg);
+}
+.vt-thumb > span {
+  position: absolute;
+  border-radius: 2px;
+  background: var(--color-surface-2);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-text) 30%, transparent);
+  transform-origin: 50% 100%;
+}
+.vt-thumb > span[data-hero] {
+  background: color-mix(in oklab, var(--color-kin) 30%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--color-kin);
+}
+.vt-thumb[data-fade] {
+  -webkit-mask-image: linear-gradient(90deg, #000 70%, transparent);
+  mask-image: linear-gradient(90deg, #000 70%, transparent);
+}
+
+/* Aperçus des thèmes : « Arrive prochainement » se voit flouté, derrière un cadenas */
+.vt-theme-thumb {
+  position: relative;
+  display: block;
+  height: 4.25rem;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--vt-tone-bg);
+}
+.vt-theme-thumb[data-vt-tone="none"] {
+  background: var(--color-surface-2);
+}
+.vt-theme-thumb-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 8%;
+}
+.vt-theme-thumb-kanji {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  width: 1.75rem;
+  height: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(21, 18, 15, 0.78);
+  color: #f5efe2;
+  font-family: var(--font-seal);
+  font-size: 0.95rem;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+}
+.vt-theme-option[data-state="soon"] .vt-theme-thumb > :not(.vt-theme-thumb-kanji) {
+  filter: blur(5px) saturate(0.85);
+  transform: scale(1.12);
+}
+.vt-theme-option[data-state="soon"] .vt-theme-thumb-kanji {
+  display: none;
+}
+.vt-theme-option[data-state="locked"] .vt-theme-thumb {
+  opacity: 0.6;
+}

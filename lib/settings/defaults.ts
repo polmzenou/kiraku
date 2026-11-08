@@ -1,7 +1,7 @@
 import { z } from "@/lib/zod";
 import { rarityKeySchema } from "@/lib/catalog/definitions";
 import { RARITIES, VARIANT_RARITIES } from "@/lib/catalog/rarity";
-import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
+import { THEMES_DEFAULT, themesSettingSchema } from "@/lib/showcase/themes";
 import { rotationPinSchema } from "@/lib/boosters/rotation";
 import { slugSchema } from "@/lib/boosters/types";
 import { KEYWORDS, LEGACY_KEYWORDS, TECHNIQUES, ULTIMATES } from "@/lib/battle/types";
@@ -202,8 +202,9 @@ export const SETTING_SCHEMAS = {
   // Fuseau du jeu : « aujourd'hui » (anniversaires) et saison AniList en cours
   "game.timeZone": z.string().min(1).max(64).refine(isTimeZone, { message: "Fuseau horaire inconnu" }),
   "collection.recycleValues": recycleValues,
-  // Nombre d'emplacements de la vitrine du profil
-  "showcase.slots": z.number().int().min(1).max(MAX_SHOWCASE_SLOTS),
+  // Vitrines du profil : nombre par joueur, statut et condition de déblocage de chaque thème
+  "showcase.maxPerPlayer": z.number().int().min(1).max(20),
+  "showcase.themes": themesSettingSchema,
   // Social (étape 6) : interrupteurs, limites anti-spam et anti-farm des cadeaux
   "social.enabled": z.boolean(),
   "friends.max": z.number().int().min(1).max(5_000),
@@ -461,7 +462,8 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "game.timeZone": "Europe/Paris",
   // Valeurs de Kyara : 1 · 1 · 3 · 10 · 40 · 150 Zeni
   "collection.recycleValues": { COMMON: 1, UNCOMMON: 1, RARE: 3, EPIC: 10, LEGENDARY: 40, MYTHIC: 150, BR: 150, AR: 450, VR: 450, GOLD: 1050, MR: 1050, XR: 2250 },
-  "showcase.slots": 4,
+  "showcase.maxPerPlayer": 6,
+  "showcase.themes": THEMES_DEFAULT,
   "social.enabled": true,
   "friends.max": 200,
   "friends.maxOutgoingPending": 20,

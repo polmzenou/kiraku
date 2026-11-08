@@ -183,7 +183,7 @@ async function lockTeam(tx: Tx, userId: string, cardIds: readonly string[]): Pro
   });
   const shown = new Set(
     (
-      await tx.showcaseSlot.findMany({ where: { userId, userCardId: { in: copies.map((c) => c.id) } }, select: { userCardId: true } })
+      await tx.showcaseItem.findMany({ where: { userCardId: { in: copies.map((c) => c.id) } }, select: { userCardId: true } })
     ).map((s) => s.userCardId),
   );
   const chosen = cardIds.map((cardId) => pickGiftCopy(copies.filter((c) => c.cardId === cardId), shown)?.id ?? null);

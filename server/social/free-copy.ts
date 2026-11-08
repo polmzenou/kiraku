@@ -10,8 +10,8 @@ export async function freeCopy(tx: Tx, ownerId: string, cardId: string) {
     select: { id: true, obtainedAt: true },
   });
   if (copies.length === 0) return null;
-  const shown = await tx.showcaseSlot.findMany({
-    where: { userId: ownerId, userCardId: { in: copies.map((c) => c.id) } },
+  const shown = await tx.showcaseItem.findMany({
+    where: { userCardId: { in: copies.map((c) => c.id) } },
     select: { userCardId: true },
   });
   return pickGiftCopy(copies, new Set(shown.map((s) => s.userCardId)));

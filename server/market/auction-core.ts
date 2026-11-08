@@ -132,8 +132,8 @@ export async function createAuctionWith(
       where: { ownerId: input.sellerId, cardId: input.cardId, status: "COLLECTION" },
       select: { id: true, obtainedAt: true },
     });
-    const shown = await tx.showcaseSlot.findMany({
-      where: { userId: input.sellerId, userCardId: { in: copies.map((c) => c.id) } },
+    const shown = await tx.showcaseItem.findMany({
+      where: { userCardId: { in: copies.map((c) => c.id) } },
       select: { userCardId: true },
     });
     const copy = pickGiftCopy(copies, new Set(shown.map((s) => s.userCardId)));
@@ -145,7 +145,7 @@ export async function createAuctionWith(
       data: { status: "AUCTION" },
     });
     if (reserved.count !== 1) throw new AuctionError("NOT_OWNED");
-    await tx.showcaseSlot.deleteMany({ where: { userCardId: copy.id } });
+    await tx.showcaseItem.deleteMany({ where: { userCardId: copy.id } }); // quitte toutes les vitrines
 
     const endsAt = listingEndsAt(input.now, input.durationHours);
     const auction = await tx.auction.create({
@@ -304,7 +304,7 @@ async function deliverSale(tx: Tx, a: SoldAuction, now: Date) {
     : { count: 0 };
   // Une carte réservée ne peut ni être recyclée, ni offerte, ni changer de main : bug, on annule tout
   if (moved.count !== 1) throw new Error(`Vente ${a.id} : exemplaire réservé introuvable`);
-  await tx.showcaseSlot.deleteMany({ where: { userCardId: a.userCardId! } });
+  await tx.showcaseItem.deleteMany({ where: { userCardId: a.userCardId! } });
   await tx.discovery.createMany({ data: [{ userId: buyerId, cardId: a.cardId, createdAt: now }], skipDuplicates: true });
   await consumeWishlist(tx, buyerId, [a.cardId]);
 

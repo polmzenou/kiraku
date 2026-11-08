@@ -1,5 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { normalizeShowcase, placeInSlot, slotAtPoint, swapSlots } from "./showcase";
+import { addToSlots, fitToCapacity, normalizeShowcase, placeInSlot, slotAtPoint, swapSlots } from "./slots";
+
+describe("changement de disposition", () => {
+  it("garde les positions quand tout tient", () => {
+    expect(fitToCapacity(["a", null, "b"], 6)).toEqual(["a", null, "b", null, null, null]);
+    expect(fitToCapacity(["a", "b", null, null], 2)).toEqual(["a", "b"]);
+  });
+
+  it("resserre les cartes dans leur ordre quand une case serait perdue", () => {
+    expect(fitToCapacity(["a", null, null, "b"], 2)).toEqual(["a", "b"]);
+    expect(fitToCapacity(["a", "b", "c", "d"], 3)).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("ajout de cartes", () => {
+  it("remplit les premières cases libres et ignore les cartes déjà là", () => {
+    expect(addToSlots(["a", null, "b", null], ["c", "a", "d"])).toEqual(["a", "c", "b", "d"]);
+  });
+
+  it("refuse quand la place manque", () => {
+    expect(addToSlots(["a", null], ["b", "c"])).toBeNull();
+  });
+});
 
 describe("vitrine", () => {
   it("complète les cases vides", () => {

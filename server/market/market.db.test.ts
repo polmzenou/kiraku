@@ -140,7 +140,7 @@ describe.skipIf(!url)("hôtel des ventes atomique (base réelle)", () => {
       prisma.bid.deleteMany({ where: { OR: [{ bidderId: { in: users } }, { auction: { sellerId: { in: users } } }] } }),
       prisma.auction.deleteMany({ where: { sellerId: { in: users } } }),
       prisma.discovery.deleteMany({ where: mine }),
-      prisma.showcaseSlot.deleteMany({ where: mine }),
+      prisma.showcase.deleteMany({ where: mine }),
       prisma.userCard.deleteMany({ where: { ownerId: { in: users } } }),
       prisma.coinTransaction.deleteMany({ where: mine }),
       prisma.user.deleteMany({ where: { id: { in: users } } }),

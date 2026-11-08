@@ -31,3 +31,38 @@ export async function setWishlistAction(input: unknown): Promise<{ ok: true; wis
     return { ok: false, error: "UNAVAILABLE" };
   }
 }
+
+const manySchema = z.object({ cardIds: z.array(z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/)).min(1).max(20) }).strict();
+
+/**
+ * « Souhaiter » toutes les cartes manquantes d'une vitrine : chaque carte suit les règles de l'ajout
+ * simple (déjà possédée ou introuvable : ignorée) ; arrêt quand la liste est pleine.
+ */
+export async function wishCardsAction(input: unknown): Promise<{ ok: true; added: number; full: boolean } | { ok: false; error: WishlistActionError }> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "NO_SESSION" };
+  const parsed = manySchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (user.bannedAt || isFrozen(user)) return { ok: false, error: "UNAVAILABLE" };
+  if (!(await rateLimit(`wishlist:${user.id}`, { limit: 60, windowSeconds: 60 })).success) {
+    return { ok: false, error: "RATE_LIMITED" };
+  }
+  let added = 0;
+  for (const cardId of new Set(parsed.data.cardIds)) {
+    try {
+      await setWishlistWith(prisma, user.id, cardId, true);
+      added++;
+    } catch (e) {
+      if (e instanceof WishlistError && e.code === "FULL") {
+        if (added > 0) refresh();
+        return { ok: true, added, full: true };
+      }
+      if (!(e instanceof WishlistError)) {
+        console.error("[wishlist] ajout groupé impossible", e);
+        return { ok: false, error: "UNAVAILABLE" };
+      }
+    }
+  }
+  if (added > 0) refresh();
+  return { ok: true, added, full: false };
+}

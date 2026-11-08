@@ -6,7 +6,6 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 
-import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
 import {
   changedCollectionKeys,
   collectionSettingsSchema,
@@ -105,18 +104,6 @@ export function CollectionSettingsForm({ initial }: { initial: CollectionSetting
         </div>
       </fieldset>
 
-      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
-        <legend className="px-1 font-title text-lg font-bold">{t("showcaseSection")}</legend>
-        <NumberInput
-          label={t("fields.showcaseSlots")}
-          value={draft["showcase.slots"]}
-          onChange={(v) => update({ ...draft, "showcase.slots": v })}
-          min={1}
-          max={MAX_SHOWCASE_SLOTS}
-        />
-        <p className="text-xs text-text-muted">{t("showcaseHint")}</p>
-      </fieldset>
-
       {!valid && (
         <p role="alert" className="text-sm text-shu">
           {t("invalid")}
@@ -128,7 +115,7 @@ export function CollectionSettingsForm({ initial }: { initial: CollectionSetting
           <h3 className="font-bold">{t("confirmTitle")}</h3>
           <ul className="list-inside list-disc text-sm">
             {changed.map((k) => (
-              <li key={k}>{t(`keys.${k === "showcase.slots" ? "showcaseSlots" : "recycleValues"}`)}</li>
+              <li key={k}>{t("keys.recycleValues")}</li>
             ))}
           </ul>
           <div className="grid grid-cols-2 gap-2">

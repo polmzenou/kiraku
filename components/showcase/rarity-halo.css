@@ -1,0 +1,376 @@
+/* Effets autour des cartes en vitrine, un par rareté (clé du registre, nom réglé dans l'admin) :
+   BR « Fil rouge », AR « Miroir », MYTHIC « Poussière de lumière », GOLD « Feuille d'or », MR « Trame »,
+   VR « Vitrail », XR « Prisme ».
+   La carte porte déjà le cadre de sa rareté : chaque effet est un geste fin collé à elle (liseré d'un
+   pixel et demi au plus, petites lumières à quelques pixels du bord), jamais une seconde bordure ni une
+   lueur qui déborde sur les cartes voisines. Animations en transform et opacity seulement, lancées
+   seulement sans mouvement réduit, en pause en effets allégés et hors de l'écran. */
+
+.vt-halo {
+  position: relative;
+  --vt-r: 10px;
+}
+.vt-halo-card {
+  position: relative;
+  z-index: 1;
+}
+.vt-halo-back,
+.vt-halo-front {
+  position: absolute;
+  pointer-events: none;
+}
+.vt-halo-back {
+  z-index: 0;
+}
+.vt-halo-front {
+  z-index: 2;
+}
+
+/* Anneau : un rectangle arrondi derrière la carte, qui n'en dépasse que d'un liseré (--vt-w). Un dégradé
+   conique tourne dedans ; le carré tournant couvre toute la carte, du haut jusqu'en bas. */
+.vt-halo-ring {
+  --vt-w: 1.5px;
+  inset: calc(var(--vt-w) * -1);
+  overflow: hidden;
+  border-radius: calc(var(--vt-r) + var(--vt-w));
+}
+.vt-halo-spin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 200%;
+  aspect-ratio: 1;
+  margin: -100% 0 0 -100%;
+}
+
+/* Petits éléments autour de la carte : leur boîte est celle de la carte */
+.vt-halo-shards,
+.vt-halo-motes,
+.vt-halo-flakes,
+.vt-halo-sparkles {
+  inset: 0;
+}
+.vt-halo-shards > span,
+.vt-halo-motes > span,
+.vt-halo-flakes > span,
+.vt-halo-sparkles > svg {
+  position: absolute;
+}
+
+/* --- BR · Fil rouge : un fil de lumière rouge fait lentement le tour d'un liseré noir --- */
+.vt-halo[data-halo="thread"] .vt-halo-glow {
+  left: 16%;
+  right: 16%;
+  bottom: -6%;
+  height: 11%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(200, 30, 24, 0.36), transparent);
+}
+.vt-halo[data-halo="thread"] .vt-halo-ring {
+  background: #140909;
+  box-shadow: 0 0 0 0.5px rgba(185, 182, 180, 0.2);
+}
+.vt-halo[data-halo="thread"] .vt-halo-spin {
+  background: conic-gradient(from 0deg, transparent 0 86%, rgba(255, 74, 58, 0) 86%, rgba(255, 74, 58, 0.9) 94%, #ffe6dc 95.5%, transparent 96.5%);
+}
+
+/* --- AR · Miroir : liseré irisé fin, éclats de miroir qui s'allument tour à tour sur toute la hauteur --- */
+.vt-halo[data-halo="mirror"] .vt-halo-ring {
+  opacity: 0.8;
+}
+.vt-halo[data-halo="mirror"] .vt-halo-spin {
+  background: conic-gradient(#e0533f, #d9b556, #7fa3d1, #b58ad8, #7fa3d1, #d9b556, #e0533f);
+}
+.vt-halo-shards > span {
+  width: 2px;
+  height: clamp(6px, 3.4%, 11px);
+  background: linear-gradient(180deg, #fff, var(--vt-shard));
+  opacity: 0.5;
+}
+/* Trois à droite, trois à gauche, du haut jusqu'en bas */
+.vt-halo-shards > span:nth-child(-n + 3) {
+  left: calc(100% + 3px);
+  transform: skewY(-35deg);
+}
+.vt-halo-shards > span:nth-child(n + 4) {
+  right: calc(100% + 3px);
+  transform: skewY(35deg);
+}
+.vt-halo-shards > span:nth-child(1) { top: 9%; --vt-shard: rgba(127, 163, 209, 0.8); }
+.vt-halo-shards > span:nth-child(2) { top: 45%; --vt-shard: rgba(224, 83, 63, 0.8); }
+.vt-halo-shards > span:nth-child(3) { top: 80%; --vt-shard: rgba(217, 181, 86, 0.8); }
+.vt-halo-shards > span:nth-child(4) { top: 25%; --vt-shard: rgba(217, 181, 86, 0.8); }
+.vt-halo-shards > span:nth-child(5) { top: 62%; --vt-shard: rgba(127, 163, 209, 0.8); }
+.vt-halo-shards > span:nth-child(6) { top: 90%; --vt-shard: rgba(224, 83, 63, 0.8); }
+
+/* --- MYTHIC · Poussière de lumière : de petites lumières blanches qui s'allument contre la carte --- */
+.vt-halo-motes > span {
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 3px rgba(255, 255, 255, 0.8);
+  opacity: 0.5;
+}
+.vt-halo-motes > span:nth-child(odd) {
+  width: 2.5px;
+  height: 2.5px;
+}
+.vt-halo-motes > span:nth-child(1) { left: -6px; top: 14%; }
+.vt-halo-motes > span:nth-child(2) { left: calc(100% + 4px); top: 24%; }
+.vt-halo-motes > span:nth-child(3) { left: -5px; top: 58%; }
+.vt-halo-motes > span:nth-child(4) { left: calc(100% + 3px); top: 68%; }
+.vt-halo-motes > span:nth-child(5) { left: 24%; top: -6px; }
+.vt-halo-motes > span:nth-child(6) { left: 78%; top: -5px; }
+.vt-halo-motes > span:nth-child(7) { left: 30%; top: calc(100% + 4px); }
+.vt-halo-motes > span:nth-child(8) { left: 72%; top: calc(100% + 3px); }
+
+/* --- GOLD · Feuille d'or : un reflet fait le tour du cadre doré, quelques paillettes montent --- */
+.vt-halo[data-halo="gilt"] .vt-halo-spin {
+  background: conic-gradient(from 0deg, transparent 0 84%, rgba(255, 236, 190, 0) 84%, rgba(255, 236, 190, 0.9) 92%, #fffdf3 93.5%, transparent 96%);
+}
+.vt-halo-flakes > span {
+  width: 3px;
+  height: 3px;
+  border-radius: 0.5px;
+  background: linear-gradient(135deg, #fff3c4, #d9b556);
+  box-shadow: 0 0 3px rgba(242, 207, 122, 0.7);
+  opacity: 0.55;
+  transform: rotate(45deg);
+}
+.vt-halo-flakes > span:nth-child(1) { left: -6px; top: 84%; }
+.vt-halo-flakes > span:nth-child(2) { left: calc(100% + 4px); top: 72%; width: 2px; height: 2px; }
+.vt-halo-flakes > span:nth-child(3) { left: -5px; top: 46%; width: 2px; height: 2px; }
+.vt-halo-flakes > span:nth-child(4) { left: calc(100% + 3px); top: 34%; }
+
+/* --- MR · Trame : un filet blanc et une trame de manga qui glisse dans l'interstice --- */
+.vt-halo-tone {
+  inset: -3px;
+  overflow: hidden;
+  border-radius: calc(var(--vt-r) + 3px);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+}
+.vt-halo-tone > span {
+  position: absolute;
+  inset: -12px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0 0.8px, transparent 1.2px) 0 0 / 4px 4px;
+  opacity: 0.45;
+}
+
+/* --- VR · Vitrail : filet d'or, lumière colorée sous la carte, étoile qui s'allume au coin --- */
+.vt-halo[data-halo="vitrail"] .vt-halo-glow {
+  left: 6%;
+  right: 6%;
+  bottom: -6%;
+  height: 11%;
+  border-radius: 50%;
+  background: linear-gradient(90deg, rgba(155, 93, 229, 0.7), rgba(54, 83, 201, 0.65) 50%, rgba(242, 207, 122, 0.65));
+  -webkit-mask-image: radial-gradient(closest-side, #000 20%, transparent);
+  mask-image: radial-gradient(closest-side, #000 20%, transparent);
+  opacity: 0.7;
+}
+.vt-halo-frame {
+  inset: -3px;
+  border-radius: calc(var(--vt-r) + 3px);
+  border: 1px solid rgba(242, 207, 122, 0.6);
+}
+.vt-halo-star {
+  right: -7px;
+  top: -7px;
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+  fill: #ffe7a8;
+}
+
+/* --- XR · Prisme : un filet argent d'un pixel, détaché de la carte, où passe une lueur prismatique ;
+   deux petites étoiles s'allument aux coins --- */
+.vt-halo[data-halo="prism"] .vt-halo-ring {
+  --vt-w: 4px;
+  padding: 1px;
+  background: rgba(236, 240, 255, 0.3);
+  /* Seul le pourtour d'un pixel reste visible */
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.vt-halo[data-halo="prism"] .vt-halo-spin {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 76%,
+    rgba(224, 96, 159, 0) 76%,
+    rgba(224, 96, 159, 0.9) 83%,
+    rgba(247, 199, 93, 0.95) 86.5%,
+    #fff 89%,
+    rgba(96, 205, 230, 0.95) 91.5%,
+    rgba(143, 139, 232, 0.85) 94%,
+    transparent 97%
+  );
+}
+.vt-halo-sparkles > svg {
+  width: 9px;
+  height: 9px;
+  fill: #fff;
+  filter: drop-shadow(0 0 2px rgba(190, 225, 255, 0.85));
+  opacity: 0.5;
+}
+.vt-halo-sparkles > svg:nth-child(1) { right: -6px; top: -6px; }
+.vt-halo-sparkles > svg:nth-child(2) { left: -5px; bottom: -5px; width: 7px; height: 7px; }
+
+/* Sans animation (mouvement réduit) : l'état de repos reste lisible */
+@media (prefers-reduced-motion: reduce) {
+  .vt-halo-star {
+    opacity: 0.8;
+  }
+}
+:root[data-motion="reduced"] .vt-halo-star {
+  opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="reduced"]) .vt-halo[data-halo="thread"] .vt-halo-spin {
+    animation: vt-orbit 9s linear infinite;
+    animation-delay: var(--vt-delay, 0s);
+  }
+  :root:not([data-motion="reduced"]) .vt-halo[data-halo="mirror"] .vt-halo-spin {
+    animation: vt-orbit 14s linear infinite reverse;
+    animation-delay: var(--vt-delay, 0s);
+  }
+  :root:not([data-motion="reduced"]) .vt-halo-shards > span {
+    animation: vt-shard 4.8s ease-in-out infinite;
+  }
+  :root:not([data-motion="reduced"]) .vt-halo-shards > span:nth-child(1) { animation-delay: var(--vt-delay, 0s); }
+  :root:not([data-motion="reduced"]) .vt-halo-shards > span:nth-child(2) { animation-delay: calc(var(--vt-delay, 0s) - 0.8s); }
+  :root:not([data-motion="reduced"]) .vt-halo-shards > span:nth-child(3) { animation-delay: calc(var(--vt-delay, 0s) - 1.6s); }
+  :root:not([data-motion="reduced"]) .vt-halo-shards > span:nth-child(4) { animation-delay: calc(var(--vt-delay, 0s) - 2.4s); }
+  :root:not([data-motion="reduced"]) .vt-halo-shards > span:nth-child(5) { animation-delay: calc(var(--vt-delay, 0s) - 3.2s); }
+  :root:not([data-motion="reduced"]) .vt-halo-shards > span:nth-child(6) { animation-delay: calc(var(--vt-delay, 0s) - 4s); }
+  :root:not([data-motion="reduced"]) .vt-halo-motes > span {
+    animation: vt-mote 4.4s ease-in-out infinite;
+  }
+  :root:not([data-motion="reduced"]) .vt-halo-motes > span:nth-child(2n) {
+    animation-duration: 5.2s;
+  }
+  :root:not([data-motion="reduced"]) .vt-halo-motes > span:nth-child(1) { animation-delay: -0.4s; }
+  :root:not([data-motion="reduced"]) .vt-halo-motes > span:nth-child(2) { animation-delay: -1.7s; }
+  :root:not([data-motion="reduced"]) .vt-halo-motes > span:nth-child(3) { animation-delay: -3.1s; }
+  :root:not([data-motion="reduced"]) .vt-halo-motes > span:nth-child(4) { animation-delay: -2.3s; }
+  :root:not([data-motion="reduced"]) .vt-halo-motes > span:nth-child(5) { animation-delay: -0.9s; }
+  :root:not([data-motion="reduced"]) .vt-halo-motes > span:nth-child(6) { animation-delay: -3.8s; }
+  :root:not([data-motion="reduced"]) .vt-halo-motes > span:nth-child(7) { animation-delay: -1.2s; }
+  :root:not([data-motion="reduced"]) .vt-halo-motes > span:nth-child(8) { animation-delay: -2.8s; }
+  :root:not([data-motion="reduced"]) .vt-halo[data-halo="gilt"] .vt-halo-spin {
+    animation: vt-orbit 8s linear infinite;
+    animation-delay: var(--vt-delay, 0s);
+  }
+  :root:not([data-motion="reduced"]) .vt-halo-flakes > span {
+    animation: vt-flake 6s ease-in infinite;
+  }
+  :root:not([data-motion="reduced"]) .vt-halo-flakes > span:nth-child(2) { animation-delay: -1.5s; }
+  :root:not([data-motion="reduced"]) .vt-halo-flakes > span:nth-child(3) { animation-delay: -3s; }
+  :root:not([data-motion="reduced"]) .vt-halo-flakes > span:nth-child(4) { animation-delay: -4.5s; }
+  :root:not([data-motion="reduced"]) .vt-halo-tone > span {
+    animation: vt-tone 8s linear infinite;
+  }
+  :root:not([data-motion="reduced"]) .vt-halo[data-halo="vitrail"] .vt-halo-glow {
+    animation: vt-breathe 5s ease-in-out infinite;
+    animation-delay: var(--vt-delay, 0s);
+  }
+  :root:not([data-motion="reduced"]) .vt-halo-star {
+    animation: vt-twinkle 4s ease-in-out infinite;
+    animation-delay: var(--vt-delay, 0s);
+  }
+  :root:not([data-motion="reduced"]) .vt-halo[data-halo="prism"] .vt-halo-spin {
+    animation: vt-orbit 7s linear infinite;
+    animation-delay: var(--vt-delay, 0s);
+  }
+  :root:not([data-motion="reduced"]) .vt-halo-sparkles > svg {
+    animation: vt-twinkle 5.2s ease-in-out infinite;
+    animation-delay: var(--vt-delay, 0s);
+  }
+  :root:not([data-motion="reduced"]) .vt-halo-sparkles > svg:nth-child(2) {
+    animation-delay: calc(var(--vt-delay, 0s) - 2.6s);
+  }
+}
+/* Effets allégés, ou scène hors de l'écran : tout se fige */
+:root[data-fx="lite"] .vt-halo *,
+.vt-stage[data-offscreen] .vt-halo * {
+  animation-play-state: paused !important;
+}
+
+@keyframes vt-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes vt-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+/* Un éclat s'allume puis s'éteint ; le reste du temps il est invisible */
+@keyframes vt-shard {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.85;
+  }
+  45% {
+    opacity: 0;
+  }
+}
+@keyframes vt-twinkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.3) rotate(0deg);
+  }
+  45% {
+    opacity: 0.95;
+    transform: scale(1) rotate(45deg);
+  }
+  70% {
+    opacity: 0;
+    transform: scale(0.5) rotate(70deg);
+  }
+}
+@keyframes vt-mote {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(3px) scale(0.5);
+  }
+  40% {
+    opacity: 0.9;
+    transform: translateY(-2px) scale(1);
+  }
+  75% {
+    opacity: 0;
+    transform: translateY(-7px) scale(0.6);
+  }
+}
+@keyframes vt-flake {
+  0% {
+    opacity: 0;
+    transform: translateY(0) rotate(45deg);
+  }
+  25% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) rotate(225deg);
+  }
+}
+/* Deux pas de la trame (4 px) : la boucle ne se voit pas */
+@keyframes vt-tone {
+  to {
+    transform: translate(8px, 8px);
+  }
+}

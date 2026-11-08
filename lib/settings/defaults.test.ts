@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { parseSetting, SETTING_DEFAULTS, SETTING_SCHEMAS, type SettingKey } from "./defaults";
-import { MAX_SHOWCASE_SLOTS } from "@/lib/collection/showcase";
 import { LEGACY_TECHNIQUES, NEW_TECHNIQUES } from "@/lib/battle/types";
 import { collectionSettingsSchema } from "./collection-form";
 
@@ -78,19 +77,20 @@ describe("réglages du combat qui gagnent des champs avec le jeu", () => {
   });
 });
 
-describe("réglages de la vitrine", () => {
-  it("accepte plus de huit emplacements dans les réglages et le formulaire admin", () => {
-    expect(parseSetting("showcase.slots", 10)).toBe(10);
-    expect(collectionSettingsSchema.safeParse({
-      "collection.recycleValues": SETTING_DEFAULTS["collection.recycleValues"],
-      "showcase.slots": 10,
-    }).success).toBe(true);
+describe("réglages des vitrines", () => {
+  it("borne le nombre de vitrines par joueur", () => {
+    expect(parseSetting("showcase.maxPerPlayer", 10)).toBe(10);
+    for (const n of [0, 1.5, 21]) expect(SETTING_SCHEMAS["showcase.maxPerPlayer"].safeParse(n).success).toBe(false);
   });
 
-  it("refuse un nombre d'emplacements nul, fractionnaire ou excessif", () => {
-    for (const size of [0, 1.5, MAX_SHOWCASE_SLOTS + 1]) {
-      expect(SETTING_SCHEMAS["showcase.slots"].safeParse(size).success).toBe(false);
-    }
+  it("garde les thèmes réglés et refuse un statut inconnu", () => {
+    const themes = { ...SETTING_DEFAULTS["showcase.themes"], eclat: { status: "AVAILABLE", condition: { type: "RARITY_OWNED", rarity: "VR", n: 1 } } };
+    expect(parseSetting("showcase.themes", themes)).toEqual(themes);
+    expect(parseSetting("showcase.themes", { eclat: { status: "OPEN", condition: { type: "ALWAYS" } } })).toEqual(SETTING_DEFAULTS["showcase.themes"]);
+  });
+
+  it("le formulaire Collection ne contient plus que le recyclage", () => {
+    expect(collectionSettingsSchema.safeParse({ "collection.recycleValues": SETTING_DEFAULTS["collection.recycleValues"] }).success).toBe(true);
   });
 });
 
