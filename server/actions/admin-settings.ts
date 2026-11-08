@@ -26,6 +26,13 @@ import { MARKET_SETTING_KEYS, marketSettingsSchema, type MarketSettingKey } from
 import { SOCIAL_SETTING_KEYS, socialSettingsSchema, type SocialSettingKey } from "@/lib/settings/social-form";
 import { PROFILE_SETTING_KEYS, profileSettingsSchema, type ProfileSettingKey } from "@/lib/settings/profile-form";
 import { AMBASSADOR_SETTING_KEYS, ambassadorSettingsSchema, type AmbassadorSettingKey } from "@/lib/settings/ambassador-form";
+import {
+  normalizeThemes,
+  SHOWCASE_SETTING_KEYS,
+  showcaseSettingsSchema,
+  themeConditionRarities,
+  type ShowcaseSettingKey,
+} from "@/lib/settings/showcase-form";
 import { changedSettingKeys, type SettingsOf } from "@/lib/settings/form";
 import { getAdmin } from "../admin";
 import { prisma } from "../db";
@@ -114,6 +121,26 @@ export async function updateBoosterSettings(input: unknown): Promise<UpdateSetti
 
 export async function updateCollectionSettings(input: unknown): Promise<UpdateSettingsResult<CollectionSettingKey>> {
   return saveSettings(COLLECTION_SETTING_KEYS, collectionSettingsSchema, input);
+}
+
+/**
+ * Vitrines : nombre par joueur, statut et condition de chaque thème. Une condition ne cite qu'une rareté
+ * du registre (sinon le thème ne se débloquerait jamais) ; Sans décor reste toujours disponible et libre.
+ */
+export async function updateShowcaseSettings(input: unknown): Promise<UpdateSettingsResult<ShowcaseSettingKey>> {
+  const admin = await getAdmin();
+  if (!admin) return { ok: false, error: "FORBIDDEN" };
+  const parsed = showcaseSettingsSchema.safeParse(input);
+  // Limité avant la lecture du registre des raretés (bucket à part de celui de l'écriture)
+  if (!(await rateLimit(`admin-check:${admin.id}`, { limit: 20, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
+  if (parsed.success) {
+    const registry = await getRarities();
+    if (themeConditionRarities(parsed.data["showcase.themes"]).some((r) => !registry.includes(r))) return { ok: false, error: "INVALID" };
+  }
+  return saveSettings(SHOWCASE_SETTING_KEYS, showcaseSettingsSchema, input, (next) => ({
+    ...next,
+    "showcase.themes": normalizeThemes(next["showcase.themes"]),
+  }));
 }
 
 export async function updateSocialSettings(input: unknown): Promise<UpdateSettingsResult<SocialSettingKey>> {
