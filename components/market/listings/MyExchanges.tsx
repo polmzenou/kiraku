@@ -5,14 +5,15 @@ import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Link } from "@/i18n/navigation";
 import type { OpenedCardView } from "@/lib/boosters/view";
+import { shownPlayerRef } from "@/lib/social/shown-player";
 import { cancelListingAction, markListingRevealsSeenAction, withdrawOfferAction } from "@/server/actions/listings";
 import type { ExchangeHistoryView, MyExchanges as MyExchangesData, MyListingView, SentOfferView } from "@/server/market/listings";
 import type { PlayerRef } from "@/server/social/queries";
+import { OwnedOverlay } from "../../collection/OwnedBadge";
 import { Fuda } from "../../fuda/Fuda";
 import { displayName } from "../../profile/ProfileHeader";
 import { SectionTitle } from "../../SectionTitle";
-import { PlayerAvatar } from "../../social/PlayerAvatar";
-import { playerTag } from "../../social/PlayerName";
+import { playerLinkTag } from "../../social/PlayerLink";
 import { Button } from "../../ui/Button";
 import { NoteText } from "../../ui/NoteText";
 import { CardThumb } from "./CardThumb";
@@ -138,19 +139,16 @@ function MyListing({ listing }: { listing: MyListingView }) {
         <ul className="flex flex-col gap-3 border-t border-border pt-3" aria-label={t("mine.offersLabel")}>
           {listing.offers.map((o) => (
             <li key={o.id} className="flex flex-col gap-2 rounded-card bg-surface-2 p-3">
-              <p className="flex min-w-0 items-center gap-2 text-sm">
-                <PlayerAvatar username={o.bidder.username} image={o.bidder.image} size={28} frame={o.bidder.decor.frame} />
-                <span className="truncate">
-                  {t.rich("mine.offerFrom", { name: name(o.bidder), card: o.card.name, player: playerTag(o.bidder.decor.nameColor) })}
-                  {!o.fromWants && <span className="ml-1 text-text-muted">{t("mine.outsideList")}</span>}
-                </span>
+              <p className="min-w-0 text-sm">
+                {t.rich("mine.offerFrom", { name: name(o.bidder), card: o.card.name, player: playerLinkTag(shownPlayerRef(name(o.bidder), o.bidder)) })}
+                {!o.fromWants && <span className="ml-1 text-text-muted">{t("mine.outsideList")}</span>}
               </p>
               <div className="grid grid-cols-[4.5rem_auto_4.5rem] items-center gap-3">
                 <Fuda card={listing.card} series={listing.card.series} size="sm" tilt={false} />
                 <span aria-hidden="true" lang="ja" className="font-seal text-xl text-shu">
                   換
                 </span>
-                <Fuda card={o.card} series={o.card.series} size="sm" tilt={false} />
+                <Fuda card={o.card} series={o.card.series} size="sm" tilt={false} overlay={o.viewerOwns && <OwnedOverlay />} />
               </div>
               <OfferDecision offerId={o.id} offeredName={o.card.name} />
             </li>
@@ -183,8 +181,7 @@ function SentOffer({ offer }: { offer: SentOfferView }) {
   return (
     <article className="flex flex-col gap-3 lacquer rounded-card p-3 md:p-4">
       <p className="flex min-w-0 items-center gap-2 text-sm">
-        <PlayerAvatar username={offer.listing.owner.username} image={offer.listing.owner.image} size={28} frame={offer.listing.owner.decor.frame} />
-        <span className="truncate">{t.rich("mine.sentTo", { name: name(offer.listing.owner), player: playerTag(offer.listing.owner.decor.nameColor) })}</span>
+        <span className="min-w-0">{t.rich("mine.sentTo", { name: name(offer.listing.owner), player: playerLinkTag(shownPlayerRef(name(offer.listing.owner), offer.listing.owner)) })}</span>
         <span className="ml-auto shrink-0 rounded-pill border border-ai/50 px-2 py-0.5 text-xs font-bold text-ai tabular-nums">
           {t("expires", { when: format.relativeTime(offer.listing.expiresAt, now) })}
         </span>
@@ -199,7 +196,7 @@ function SentOffer({ offer }: { offer: SentOfferView }) {
         </span>
         <div className="flex flex-col gap-1">
           <p className="text-xs text-text-muted">{t("youGet")}</p>
-          <Fuda card={offer.listing.card} series={offer.listing.card.series} size="sm" tilt={false} />
+          <Fuda card={offer.listing.card} series={offer.listing.card.series} size="sm" tilt={false} overlay={offer.listing.viewerOwns && <OwnedOverlay />} />
         </div>
       </div>
       {offer.listing.note && <NoteText text={offer.listing.note} label={t("ownerNote", { name: name(offer.listing.owner) })} />}

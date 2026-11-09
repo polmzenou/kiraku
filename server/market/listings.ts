@@ -4,6 +4,7 @@ import type { CardView, OpenedCardView } from "@/lib/boosters/view";
 import { normalizeSearch, SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
 import type { ListingFilter } from "@/lib/market/listings";
 import { cardViews } from "../boosters/display";
+import { ownedCardIds } from "../collection/owned";
 import { prisma } from "../db";
 import { playerRefSelect as playerSelect, toPlayerRef, type PlayerRef } from "../profile/decor";
 import { expireListingsFor } from "./listing-core";
@@ -24,6 +25,8 @@ export type ListingView = {
   expiresAt: Date;
   owner: PlayerRef;
   card: CardView;
+  /** Le lecteur possède déjà la carte proposée (jamais sur ses propres annonces). */
+  viewerOwns: boolean;
   /** Commentaire public de l'auteur (texte brut). */
   note: string | null;
   wants: ListingWantView[];
@@ -106,7 +109,7 @@ export async function listListings(input: {
   const nextCursor = rows.length > LISTINGS_PAGE_SIZE ? (page[page.length - 1]?.id ?? null) : null;
 
   const wantIds = [...new Set(page.flatMap((r) => r.wants.map((w) => w.cardId)))];
-  const [ownerFree, viewerFree, views] = await Promise.all([
+  const [ownerFree, viewerFree, views, viewerOwned] = await Promise.all([
     freePairs(page.map((r) => ({ ownerId: r.owner.id, cardId: r.cardId }))),
     wantIds.length
       ? prisma.userCard.groupBy({ by: ["cardId"], where: { ownerId: input.viewerId, status: "COLLECTION", cardId: { in: wantIds } } })
@@ -115,8 +118,10 @@ export async function listListings(input: {
       page.flatMap((r) => [r.cardId, ...r.wants.map((w) => w.cardId), ...r.offers.map((o) => o.cardId)]),
       input.locale,
     ),
+    ownedCardIds(input.viewerId, page.map((r) => r.cardId)),
   ]);
   const givable = new Set(viewerFree.map((r) => r.cardId));
+  const owned = new Set(viewerOwned);
 
   const items = page.flatMap((r): ListingView[] => {
     const card = views.get(r.cardId);
@@ -132,6 +137,7 @@ export async function listListings(input: {
         expiresAt: r.expiresAt,
         owner: toPlayerRef(r.owner),
         card,
+        viewerOwns: !mine && owned.has(r.cardId),
         note: r.note,
         wants: r.wants.flatMap((w) => {
           const view = views.get(w.cardId);
@@ -146,7 +152,7 @@ export async function listListings(input: {
   return { items, nextCursor };
 }
 
-export type ReceivedOfferView = { id: string; createdAt: Date; fromWants: boolean; bidder: PlayerRef; card: CardView };
+export type ReceivedOfferView = { id: string; createdAt: Date; fromWants: boolean; bidder: PlayerRef; card: CardView; /** Le lecteur possède déjà la carte offerte. */ viewerOwns: boolean };
 
 export type MyListingView = {
   id: string;
@@ -162,7 +168,7 @@ export type SentOfferView = {
   id: string;
   createdAt: Date;
   card: CardView;
-  listing: { id: string; expiresAt: Date; owner: PlayerRef; card: CardView; note: string | null };
+  listing: { id: string; expiresAt: Date; owner: PlayerRef; card: CardView; /** Le lecteur possède déjà la carte qu'il recevrait. */ viewerOwns: boolean; note: string | null };
 };
 
 export type ExchangeHistoryView = {
@@ -243,16 +249,20 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
     }),
   ]);
 
-  const views = await cardViews(
-    [
-      ...open.flatMap((l) => [l.cardId, ...l.wants.map((w) => w.cardId), ...l.offers.map((o) => o.cardId)]),
-      ...sent.flatMap((o) => [o.cardId, o.listing.cardId]),
-      ...pastListings.flatMap((l) => [l.cardId, ...l.offers.map((o) => o.cardId)]),
-      ...pastOffers.flatMap((o) => [o.cardId, o.listing.cardId]),
-      ...unseen.map((o) => o.listing.cardId),
-    ],
-    locale,
-  );
+  const [views, ownedIds] = await Promise.all([
+    cardViews(
+      [
+        ...open.flatMap((l) => [l.cardId, ...l.wants.map((w) => w.cardId), ...l.offers.map((o) => o.cardId)]),
+        ...sent.flatMap((o) => [o.cardId, o.listing.cardId]),
+        ...pastListings.flatMap((l) => [l.cardId, ...l.offers.map((o) => o.cardId)]),
+        ...pastOffers.flatMap((o) => [o.cardId, o.listing.cardId]),
+        ...unseen.map((o) => o.listing.cardId),
+      ],
+      locale,
+    ),
+    ownedCardIds(userId, [...open.flatMap((l) => l.offers.map((o) => o.cardId)), ...sent.map((o) => o.listing.cardId)]),
+  ]);
+  const owned = new Set(ownedIds);
 
   const history: ExchangeHistoryView[] = [
     ...pastListings.flatMap((l): ExchangeHistoryView[] => {
@@ -286,7 +296,7 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
           wants: l.wants.flatMap((w) => views.get(w.cardId) ?? []),
           offers: l.offers.flatMap((o) => {
             const offered = views.get(o.cardId);
-            return offered ? [{ id: o.id, createdAt: o.createdAt, fromWants: o.fromWants, bidder: toPlayerRef(o.bidder), card: offered }] : [];
+            return offered ? [{ id: o.id, createdAt: o.createdAt, fromWants: o.fromWants, bidder: toPlayerRef(o.bidder), card: offered, viewerOwns: owned.has(o.cardId) }] : [];
           }),
         },
       ];
@@ -295,7 +305,7 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
       const card = views.get(o.cardId);
       const listingCard = views.get(o.listing.cardId);
       return card && listingCard
-        ? [{ id: o.id, createdAt: o.createdAt, card, listing: { id: o.listing.id, expiresAt: o.listing.expiresAt, owner: toPlayerRef(o.listing.owner), card: listingCard, note: o.listing.note } }]
+        ? [{ id: o.id, createdAt: o.createdAt, card, listing: { id: o.listing.id, expiresAt: o.listing.expiresAt, owner: toPlayerRef(o.listing.owner), card: listingCard, viewerOwns: owned.has(o.listing.cardId), note: o.listing.note } }]
         : [];
     }),
     history,

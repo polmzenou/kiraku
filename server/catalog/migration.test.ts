@@ -65,6 +65,8 @@ describe("migration du catalogue sur PostgreSQL isolé", () => {
         INSERT INTO "UserCard" (id,"ownerId","cardId") VALUES ('custom-copy','owner','custom');`);
       // Table d'une migration plus récente (vitrines multiples) que lit la requête de collection actuelle
       await db.exec(`CREATE TABLE "ShowcaseItem" ("showcaseId" TEXT NOT NULL, "position" INTEGER NOT NULL, "userCardId" TEXT NOT NULL);`);
+      // Colonne d'une migration plus récente (variantes) qui départage le tri par rareté
+      await db.exec(`ALTER TABLE "RarityDefinition" ADD COLUMN "variantRequired" BOOLEAN NOT NULL DEFAULT false;`);
       reader.query.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) => {
         const query = Prisma.sql(strings, ...values);
         return (await db.query(query.text, [...query.values])).rows;

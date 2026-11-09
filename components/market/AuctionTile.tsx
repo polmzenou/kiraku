@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { Fuda } from "@/components/fuda/Fuda";
 import { Link } from "@/i18n/navigation";
 import type { AuctionListItem } from "@/server/market/queries";
+import { OwnedBadge } from "../collection/OwnedBadge";
 import { ZeniCoin } from "../layout/ZeniCoin";
 import { Countdown } from "./Countdown";
 
@@ -16,7 +17,14 @@ export function AuctionTile({ item, serverNow, preload }: { item: AuctionListIte
       href={`/marche/${item.id}`}
       className="flex flex-col gap-2 lacquer rounded-card p-2 transition-transform active:scale-[0.98] motion-reduce:transition-none"
     >
-      <Fuda card={item.card} series={item.card.series} size="sm" preload={preload} monochrome={!open && item.status !== "SOLD"} />
+      <Fuda
+        card={item.card}
+        series={item.card.series}
+        size="sm"
+        preload={preload}
+        monochrome={!open && item.status !== "SOLD"}
+        corner={item.viewerOwns && <OwnedBadge />}
+      />
       <div className="flex min-w-0 flex-col gap-0.5 px-0.5">
         {(item.mine || (item.leading && open) || item.buyoutPrice !== null) && (
           <div className="flex flex-wrap gap-1">

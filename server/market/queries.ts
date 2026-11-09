@@ -20,9 +20,10 @@ import {
   type SellBase,
   type SellInfo,
 } from "@/lib/market/rules";
+import { shownPlayer, type ShownPlayer } from "@/lib/social/shown-player";
 import { cardViews } from "../boosters/display";
-import type { NameColorStyle } from "@/lib/profile/name-colors";
-import { namedPlayerSelect, publicNamesFor, shownNameColor } from "../collection/public-names";
+import { ownedCardIds } from "../collection/owned";
+import { namedPlayerSelect, publicNamesFor } from "../collection/public-names";
 import { prisma } from "../db";
 import { pushNotifications } from "../push/send";
 import { getSetting } from "../settings";
@@ -106,7 +107,12 @@ export type AuctionListItem = {
   sellerName: string | null;
   mine: boolean;
   leading: boolean;
+  /** Le lecteur possède déjà cette carte (jamais sur ses propres ventes). */
+  viewerOwns: boolean;
 };
+
+/** Joueur montré sur une fiche de vente : son pseudo décide aussi de l'affichage de son avatar. */
+const shownPlayerSelect = { ...namedPlayerSelect, image: true } as const;
 
 const listSelect = {
   id: true,
@@ -189,13 +195,15 @@ export async function listAuctions(input: {
     select: listSelect,
   });
   const page = rows.slice(0, MARKET_PAGE_SIZE);
-  const [views, nameOf] = await Promise.all([
+  const [views, nameOf, ownedIds] = await Promise.all([
     cardViews(
       page.map((r) => r.cardId),
       input.locale,
     ),
     publicNamesFor(viewerId, page.map((r) => r.seller)),
+    ownedCardIds(viewerId, page.map((r) => r.cardId)),
   ]);
+  const owned = new Set(ownedIds);
   const last = page.at(-1);
   return {
     items: page.flatMap((r) => {
@@ -214,6 +222,7 @@ export async function listAuctions(input: {
           sellerName: nameOf(r.seller),
           mine: r.sellerId === viewerId,
           leading: viewerId !== null && r.currentBidderId === viewerId,
+          viewerOwns: r.sellerId !== viewerId && owned.has(r.cardId),
         },
       ];
     }),
@@ -232,8 +241,7 @@ export type AuctionLive = {
   bidCount: number;
   endsAt: Date;
   buyoutPrice: number | null;
-  leaderName: string | null;
-  leaderColor: NameColorStyle | null;
+  leader: ShownPlayer | null;
   leading: boolean;
   finalPrice: number | null;
 };
@@ -249,7 +257,7 @@ const liveSelect = {
   endsAt: true,
   buyoutPrice: true,
   finalPrice: true,
-  currentBidder: { select: namedPlayerSelect },
+  currentBidder: { select: shownPlayerSelect },
   card: { select: { rarity: true } },
 } as const;
 
@@ -269,8 +277,7 @@ function toLive(
     bidCount: a.bidCount,
     endsAt: a.endsAt,
     buyoutPrice: a.status === "ACTIVE" && buyoutAvailable(a.buyoutPrice, a.currentBid) ? a.buyoutPrice : null,
-    leaderName,
-    leaderColor: a.currentBidder ? shownNameColor(leaderName, a.currentBidder) : null,
+    leader: a.currentBidder && leaderName !== null ? shownPlayer(leaderName, a.currentBidder) : null,
     leading: viewerId !== null && a.currentBidderId === viewerId,
     finalPrice: a.finalPrice,
   };
@@ -297,8 +304,9 @@ export async function auctionLive(id: string, viewerId: string | null, now: Date
 export type AuctionDetail = {
   id: string;
   card: CardView;
-  sellerName: string | null;
-  sellerColor: NameColorStyle | null;
+  /** Le lecteur possède déjà cette carte (jamais sur ses propres ventes). */
+  viewerOwns: boolean;
+  seller: ShownPlayer;
   /** Commentaire du vendeur (texte brut). */
   note: string | null;
   startPrice: number;
@@ -307,7 +315,7 @@ export type AuctionDetail = {
   createdAt: Date;
   mine: boolean;
   live: AuctionLive;
-  bids: { id: string; amount: number; createdAt: Date; bidderName: string | null; bidderColor: NameColorStyle | null; me: boolean }[];
+  bids: { id: string; amount: number; createdAt: Date; bidder: ShownPlayer; me: boolean }[];
 };
 
 export const BID_HISTORY = 20;
@@ -327,26 +335,27 @@ export async function getAuctionDetail(id: string, viewerId: string | null, loca
       fee: true,
       createdAt: true,
       note: true,
-      seller: { select: namedPlayerSelect },
+      seller: { select: shownPlayerSelect },
       bids: {
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: BID_HISTORY,
-        select: { id: true, amount: true, createdAt: true, bidderId: true, bidder: { select: namedPlayerSelect } },
+        select: { id: true, amount: true, createdAt: true, bidderId: true, bidder: { select: shownPlayerSelect } },
       },
     },
   });
   if (!a) return null;
-  const [views, nameOf] = await Promise.all([
+  const [views, nameOf, owned] = await Promise.all([
     cardViews([a.cardId], locale),
     publicNamesFor(viewerId, [a.seller, ...a.bids.map((b) => b.bidder)]),
+    ownedCardIds(viewerId, [a.cardId]),
   ]);
   const card = views.get(a.cardId);
   if (!card) return null;
   return {
     id: a.id,
     card,
-    sellerName: nameOf(a.seller),
-    sellerColor: shownNameColor(nameOf(a.seller), a.seller),
+    viewerOwns: a.sellerId !== viewerId && owned.length > 0,
+    seller: shownPlayer(nameOf(a.seller), a.seller),
     note: a.note,
     startPrice: a.startPrice,
     feeBp: a.feeBp,
@@ -354,7 +363,7 @@ export async function getAuctionDetail(id: string, viewerId: string | null, loca
     createdAt: a.createdAt,
     mine: a.sellerId === viewerId,
     live,
-    bids: a.bids.map((b) => ({ id: b.id, amount: b.amount, createdAt: b.createdAt, bidderName: nameOf(b.bidder), bidderColor: shownNameColor(nameOf(b.bidder), b.bidder), me: b.bidderId === viewerId })),
+    bids: a.bids.map((b) => ({ id: b.id, amount: b.amount, createdAt: b.createdAt, bidder: shownPlayer(nameOf(b.bidder), b.bidder), me: b.bidderId === viewerId })),
   };
 }
 

@@ -2,6 +2,7 @@ import "server-only";
 import type { CardView, OpenedCardView } from "@/lib/boosters/view";
 import { prisma } from "../db";
 import { cardViews } from "../boosters/display";
+import { ownedCardIds } from "../collection/owned";
 import { playerRefSelect as playerSelect, toPlayerRef, type PlayerRef } from "../profile/decor";
 
 // Lectures des échanges d'un joueur (onglet « Échanges » de /amis).
@@ -19,6 +20,8 @@ export type TradeView = {
   wanted: CardView;
   offers: CardView[];
   chosen: CardView | null;
+  /** Échange en cours : parmi les cartes que le lecteur recevrait, celles qu'il possède déjà. */
+  viewerOwned: string[];
   /** Mot du proposant (texte brut). */
   note: string | null;
   /** Motif écrit par l'ami au refus. */
@@ -66,10 +69,14 @@ export async function listTrades(userId: string, locale: string, now = new Date(
     }),
   ]);
   const rows = [...open, ...history];
-  const views = await cardViews(
-    rows.flatMap((r) => [r.wantedCardId, ...r.offers.map((o) => o.cardId), ...(r.chosenCardId ? [r.chosenCardId] : [])]),
-    locale,
-  );
+  const [views, ownedIds] = await Promise.all([
+    cardViews(
+      rows.flatMap((r) => [r.wantedCardId, ...r.offers.map((o) => o.cardId), ...(r.chosenCardId ? [r.chosenCardId] : [])]),
+      locale,
+    ),
+    ownedCardIds(userId, open.flatMap((r) => (r.recipient.id === userId ? r.offers.map((o) => o.cardId) : [r.wantedCardId]))),
+  ]);
+  const owned = new Set(ownedIds);
   const toView = (r: (typeof rows)[number]): TradeView | null => {
     const wanted = views.get(r.wantedCardId);
     if (!wanted) return null;
@@ -84,6 +91,7 @@ export async function listTrades(userId: string, locale: string, now = new Date(
       wanted,
       offers: r.offers.flatMap((o) => views.get(o.cardId) ?? []),
       chosen: r.chosenCardId ? (views.get(r.chosenCardId) ?? null) : null,
+      viewerOwned: [r.wantedCardId, ...r.offers.map((o) => o.cardId)].filter((id) => owned.has(id)),
       note: r.note,
       declineNote: r.declineNote,
     };
