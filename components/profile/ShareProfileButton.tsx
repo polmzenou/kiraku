@@ -5,14 +5,14 @@ import { useState } from "react";
 import { getPathname } from "@/i18n/navigation";
 import { Button } from "../ui/Button";
 
-/** Partage du profil public : feuille de partage du téléphone, sinon copie du lien. */
-export function ShareProfileButton({ username, title }: { username: string; title: string }) {
+/** Partage du profil public (ou d'une de ses pages, `path`) : feuille de partage du téléphone, sinon copie du lien. */
+export function ShareProfileButton({ username, title, path, label }: { username: string; title: string; path?: string; label?: string }) {
   const t = useTranslations("profile");
   const locale = useLocale();
   const [copied, setCopied] = useState(false);
 
   async function share() {
-    const url = new URL(getPathname({ href: `/u/${username}`, locale }), window.location.origin).href;
+    const url = new URL(getPathname({ href: path ?? `/u/${username}`, locale }), window.location.origin).href;
     if (typeof navigator.share === "function") {
       try {
         await navigator.share({ title, url });
@@ -33,7 +33,7 @@ export function ShareProfileButton({ username, title }: { username: string; titl
 
   return (
     <Button type="button" onClick={share}>
-      <span aria-live="polite">{copied ? t("copied") : t("share")}</span>
+      <span aria-live="polite">{copied ? t("copied") : (label ?? t("share"))}</span>
     </Button>
   );
 }

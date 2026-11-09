@@ -8,8 +8,6 @@ import { refresh } from "next/cache";
 import { z } from "@/lib/zod";
 import { ALBUM_MAX_OFFSET, parseAlbumParams, type AlbumPage } from "@/lib/collection/albums";
 import { parseCollectionParams } from "@/lib/collection/params";
-import { MAX_SHOWCASE_SLOTS, placeInSlot } from "@/lib/collection/showcase";
-import { layoutsAvailable, SHOWCASE_LAYOUTS, type ShowcaseLayout } from "@/lib/collection/showcase-layouts";
 import type { CollectionPage } from "@/lib/collection/view";
 import { PROFILE_VISIBILITIES } from "@/lib/collection/visibility";
 import { USERNAME_REGEX } from "@/lib/username";
@@ -18,13 +16,12 @@ import { getAlbumPage } from "../collection/albums";
 import { accessFor, findProfileOwner } from "../collection/profile";
 import { getCollectionPage, MAX_OFFSET } from "../collection/queries";
 import { RecycleError, recycleWith, type RecycleRequest } from "../collection/recycle-core";
-import { setShowcaseWith, ShowcaseError } from "../collection/showcase-core";
 import { prisma } from "../db";
 import { clientIp, rateLimit } from "../ratelimit";
 import { getSetting } from "../settings";
 import { getCurrentUser, requireActiveUser } from "../user";
 
-// Collection, recyclage, vitrine et confidentialité. Ordre des contrôles : session → Zod →
+// Collection, recyclage et confidentialité (les vitrines : server/actions/showcases.ts). Ordre des contrôles : session → Zod →
 // propriété → rate limit. Le client n'envoie que des ids et des intentions ; les exemplaires,
 // les gains et les droits de lecture sont décidés ici.
 
@@ -141,91 +138,6 @@ export async function recycleAllAction(input: unknown): Promise<RecycleResult> {
   if (!parsed.success) return { ok: false, error: "INVALID" };
   if (user.bannedAt || isFrozen(user)) return { ok: false, error: "UNAVAILABLE" };
   return runRecycle({ kind: "all", maxRarity: parsed.data.maxRarity, expected: parsed.data.expected }, user.id);
-}
-
-// --- Vitrine ---
-
-export type ShowcaseResult = { ok: true; slots: (string | null)[] } | Failure;
-
-const showcaseSchema = z.object({ slots: z.array(cardIdSchema.nullable()).max(MAX_SHOWCASE_SLOTS) });
-const showcaseCardSchema = z.object({ cardId: cardIdSchema });
-
-async function saveShowcase(userId: string, slots: (string | null)[], size: number): Promise<ShowcaseResult> {
-  try {
-    const saved = await setShowcaseWith(prisma, userId, slots, size);
-    refresh();
-    return { ok: true, slots: saved };
-  } catch (e) {
-    if (e instanceof ShowcaseError) return { ok: false, error: e.code === "NOT_OWNED" ? "NOT_OWNED" : e.code === "INVALID" ? "INVALID" : "UNAVAILABLE" };
-    console.error("[collection] vitrine impossible", e);
-    return { ok: false, error: "UNAVAILABLE" };
-  }
-}
-
-async function showcaseGuard(input: unknown, schema: z.ZodType) {
-  const user = await getCurrentUser();
-  if (!user) return { error: "NO_SESSION" as const };
-  const parsed = schema.safeParse(input);
-  if (!parsed.success) return { error: "INVALID" as const };
-  if (user.bannedAt || isFrozen(user)) return { error: "UNAVAILABLE" as const };
-  if (!(await rateLimit(`showcase:${user.id}`, { limit: 20, windowSeconds: 60 })).success) {
-    return { error: "RATE_LIMITED" as const };
-  }
-  return { user, data: parsed.data, size: await getSetting("showcase.slots") };
-}
-
-async function currentShowcase(userId: string, size: number): Promise<(string | null)[]> {
-  const rows = await prisma.showcaseSlot.findMany({
-    where: { userId, position: { gte: 1, lte: size } },
-    select: { position: true, userCard: { select: { cardId: true } } },
-  });
-  const slots: (string | null)[] = Array.from({ length: size }, () => null);
-  for (const r of rows) slots[r.position - 1] = r.userCard.cardId;
-  return slots;
-}
-
-/** Remplace toute la vitrine (ordre après un glisser-déposer, carte choisie pour une case). */
-export async function setShowcaseAction(input: unknown): Promise<ShowcaseResult> {
-  const guard = await showcaseGuard(input, showcaseSchema);
-  if ("error" in guard) return { ok: false, error: guard.error ?? "INVALID" };
-  const { slots } = guard.data as z.infer<typeof showcaseSchema>;
-  return saveShowcase(guard.user.id, slots, guard.size);
-}
-
-/** Met une carte dans la première case libre (fiche carte). */
-export async function addToShowcaseAction(input: unknown): Promise<ShowcaseResult> {
-  const guard = await showcaseGuard(input, showcaseCardSchema);
-  if ("error" in guard) return { ok: false, error: guard.error ?? "INVALID" };
-  const { cardId } = guard.data as z.infer<typeof showcaseCardSchema>;
-  const slots = await currentShowcase(guard.user.id, guard.size);
-  if (slots.includes(cardId)) return { ok: true, slots };
-  const free = slots.indexOf(null);
-  if (free < 0) return { ok: false, error: "FULL" };
-  return saveShowcase(guard.user.id, placeInSlot(slots, free, cardId), guard.size);
-}
-
-/** Retire une carte de la vitrine (fiche carte). */
-export async function removeFromShowcaseAction(input: unknown): Promise<ShowcaseResult> {
-  const guard = await showcaseGuard(input, showcaseCardSchema);
-  if ("error" in guard) return { ok: false, error: guard.error ?? "INVALID" };
-  const { cardId } = guard.data as z.infer<typeof showcaseCardSchema>;
-  const slots = await currentShowcase(guard.user.id, guard.size);
-  return saveShowcase(guard.user.id, slots.map((s) => (s === cardId ? null : s)), guard.size);
-}
-
-export type ShowcaseLayoutResult = { ok: true; layout: ShowcaseLayout } | Failure;
-
-const showcaseLayoutSchema = z.object({ layout: z.enum(SHOWCASE_LAYOUTS) }).strict();
-
-/** Disposition de la vitrine ; hors grille, seulement pour une vitrine de 8 cases. */
-export async function setShowcaseLayoutAction(input: unknown): Promise<ShowcaseLayoutResult> {
-  const guard = await showcaseGuard(input, showcaseLayoutSchema);
-  if ("error" in guard) return { ok: false, error: guard.error ?? "INVALID" };
-  const { layout } = guard.data as z.infer<typeof showcaseLayoutSchema>;
-  if (layout !== "GRID" && !layoutsAvailable(guard.size)) return { ok: false, error: "INVALID" };
-  await prisma.user.update({ where: { id: guard.user.id }, data: { showcaseLayout: layout }, select: { id: true } });
-  refresh();
-  return { ok: true, layout };
 }
 
 // --- Confidentialité ---

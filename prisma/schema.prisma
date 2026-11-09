@@ -46,7 +46,7 @@ enum ProfileVisibility {
   PRIVATE
 }
 
-// Disposition de la vitrine du profil (lib/collection/showcase-layouts.ts) ; hors GRID, 8 emplacements exigés
+// Ancienne vitrine unique (remplacée par Showcase). Supprimée par la migration de nettoyage, après la bascule.
 enum ShowcaseLayout {
   GRID
   FEATURED_LEFT
@@ -103,7 +103,7 @@ model User {
   referredById        String? // parrain, posé au rattachement (Referral fait foi)
   profileVisibility   ProfileVisibility @default(PUBLIC) // invités créés en PRIVATE
   showCollection      Boolean           @default(true) // collection complète visible sur le profil
-  showcaseLayout      ShowcaseLayout    @default(GRID) // disposition de la vitrine choisie par le joueur
+  showcaseLayout      ShowcaseLayout    @default(GRID) // ancienne vitrine unique, plus lue (voir Showcase)
   privacyChosenAt     DateTime? // réglé par le joueur : l'inscription ne le change plus
   // Personnalisation du profil (étape 12h) : bio, accord des titres, titre et cadre débloqués, ordre des badges
   bio                 String?           @db.VarChar(160)
@@ -137,7 +137,8 @@ model User {
   notablePulls NotablePull[]
   discoveries  Discovery[]
   adminLogs    AdminLog[]
-  showcase     ShowcaseSlot[]
+  showcase     ShowcaseSlot[] // ancienne vitrine unique, plus lue
+  showcases    Showcase[]
   wishlist     WishlistEntry[]
 
   sentFriends   Friendship[]       @relation("requester")
@@ -449,7 +450,8 @@ model UserCard {
   card       Card          @relation(fields: [cardId], references: [id])
   status     CardStatus    @default(COLLECTION)
   obtainedAt DateTime      @default(now())
-  showcase   ShowcaseSlot?
+  showcase   ShowcaseSlot? // ancienne vitrine unique, plus lue
+  showcaseItems ShowcaseItem[]
   auctions   Auction[]
 
   @@index([ownerId, cardId])
@@ -589,7 +591,8 @@ model BoosterType {
 
 // --- Collection et profil (étape 5) ---
 
-// Vitrine du profil : positions 1 à showcase.slots ; un exemplaire n'occupe qu'un emplacement
+// Ancienne vitrine unique : reprise dans Showcase par la migration 20261107120000_vitrines_multiples,
+// plus lue ni écrite. Supprimée par la migration de nettoyage une fois la bascule en production.
 model ShowcaseSlot {
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -598,6 +601,38 @@ model ShowcaseSlot {
   userCard   UserCard @relation(fields: [userCardId], references: [id], onDelete: Cascade)
 
   @@id([userId, position])
+}
+
+// Vitrines d'un joueur (6 par défaut, réglage showcase.maxPerPlayer). La première (sortOrder 0) est à
+// l'honneur sur le profil. layout et theme sont des identifiants des registres du code
+// (lib/showcase/layouts.ts, lib/showcase/theme-registry.ts), validés par Zod.
+model Showcase {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sortOrder Int
+  name      String?        @db.VarChar(32)
+  layout    String
+  theme     String         @default("none")
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  items     ShowcaseItem[]
+
+  @@index([userId, sortOrder])
+}
+
+// Carte d'une vitrine, position 1 à la capacité de sa disposition. Un même exemplaire peut figurer
+// dans plusieurs vitrines, une fois par vitrine ; il quitte toutes les vitrines quand il change de main.
+model ShowcaseItem {
+  showcaseId String
+  showcase   Showcase @relation(fields: [showcaseId], references: [id], onDelete: Cascade)
+  position   Int
+  userCardId String
+  userCard   UserCard @relation(fields: [userCardId], references: [id], onDelete: Cascade)
+
+  @@id([showcaseId, position])
+  @@unique([showcaseId, userCardId])
+  @@index([userCardId])
 }
 
 // Une carte souhaitée n'a pas besoin d'être possédée. Vingt positions au maximum par profil.

@@ -1250,7 +1250,8 @@
       "eventGauge": "Event",
       "battleSandbox": "Battle sandbox",
       "news": "What's new",
-      "universes": "Universes"
+      "universes": "Universes",
+      "showcases": "Showcases"
     },
     "boosters": {
       "title": "Booster settings",
@@ -1481,16 +1482,10 @@
     },
     "collection": {
       "title": "Collection settings",
-      "intro": "Zeni given per recycled duplicate and showcase size. Every change applies immediately and is logged.",
+      "intro": "Zeni given per recycled duplicate. Every change applies immediately and is logged.",
       "recycleSection": "Recycling a duplicate (Zeni)",
-      "showcaseSection": "Profile showcase",
-      "fields": {
-        "showcaseSlots": "Number of slots"
-      },
-      "showcaseHint": "Lowering this hides the cards in the last slots (they stay saved). Set 8 slots to offer players the showcase layouts (featured, triptych, checkerboard); with any other number, the showcase stays a grid.",
       "keys": {
-        "recycleValues": "Recycling values",
-        "showcaseSlots": "Showcase slots"
+        "recycleValues": "Recycling values"
       },
       "invalid": "Some values are out of range: fix them before saving.",
       "review": "Review changes",
@@ -3168,6 +3163,42 @@
         "SAME": "Choose a universe other than this one.",
         "ALONE": "This series is alone in this universe: delete the universe instead."
       }
+    },
+    "showcases": {
+      "title": "Player showcases",
+      "intro": "How many showcases each player can have, and the themes on offer: status and unlock condition of each. Every change applies immediately and is logged.",
+      "limitsSection": "Showcases per player",
+      "maxPerPlayer": "Maximum showcases per player",
+      "maxPerPlayerHint": "A player who already has more keeps them, but cannot create new ones.",
+      "themesSection": "Showcase themes",
+      "themesHint": "The condition is only checked when the player picks the theme: a theme already applied stays, even if the player no longer meets it.",
+      "status": "Status",
+      "statuses": {
+        "AVAILABLE": "Available",
+        "SOON": "Coming soon",
+        "HIDDEN": "Hidden"
+      },
+      "statusHints": {
+        "AVAILABLE": "Offered to players: those who meet the condition can pick it.",
+        "SOON": "Shown blurred with a padlock and “Coming soon”: players see it but cannot pick it.",
+        "HIDDEN": "Removed from the list. Showcases already using it show without decor until it is available again."
+      },
+      "noneLocked": "Always available, no condition: this is the default look of showcases.",
+      "usage": "{count, plural, =0 {No showcase uses it} one {# showcase uses it} other {# showcases use it}}",
+      "themes": {
+        "none": "No decor",
+        "byobu": "Golden screen",
+        "tokonoma": "Alcove",
+        "urushi": "Lacquered box",
+        "ema": "Wishing wall",
+        "black-edition": "Black edition",
+        "eclat": "Éclat",
+        "gold": "Gold"
+      },
+      "keys": {
+        "maxPerPlayer": "Showcases per player",
+        "themes": "Showcase themes"
+      }
     }
   },
   "collection": {
@@ -3287,11 +3318,9 @@
       "recycle": "Recycle {count} (+{zeni, number} Zeni)",
       "confirm": "Confirm (+{zeni, number} Zeni)",
       "cancel": "Cancel",
-      "keepOne": "You always keep one copy, and the one in your showcase.",
+      "keepOne": "You always keep one copy, plus those shown in your showcases.",
       "recycled": "{count, plural, one {# duplicate recycled} other {# duplicates recycled}}: +{zeni, number} Zeni.",
-      "addToShowcase": "Add to showcase",
-      "removeFromShowcase": "Remove from showcase",
-      "showcaseFull": "Your showcase is full: <link>remove a card from your profile</link>.",
+      "addToShowcase": "Add to a showcase",
       "sell": "Put up for sale",
       "soon": "Soon",
       "wiki": "Wiki page",
@@ -3305,7 +3334,11 @@
         "NOT_OWNED": "You no longer own this card.",
         "FULL": "Your showcase is full.",
         "UNAVAILABLE": "Not possible right now. Try again."
-      }
+      },
+      "inShowcases": "In my showcases",
+      "noShowcase": "You don't have a showcase yet: <link>create one from your profile</link>.",
+      "showcaseFullShort": "Full",
+      "showcaseSlots": "{count} / {capacity} cards"
     },
     "views": {
       "label": "Collection view",
@@ -3333,21 +3366,114 @@
     }
   },
   "showcase": {
-    "label": "Showcase",
-    "slot": "Slot {n}",
-    "edit": "Edit showcase",
-    "done": "Done",
-    "dragHint": "Drag a card onto another slot to swap them.",
-    "emptyOwner": "Your showcase is empty: pick up to {count} cards to show off.",
-    "emptyPublic": "No cards in the showcase yet.",
+    "title": "Showcases",
+    "count": "{count, plural, one {# showcase} other {# showcases}}",
+    "featured": "Main showcase",
+    "others": "My other showcases",
+    "open": "View showcase",
+    "openOwner": "Open",
+    "untitled": "Showcase {n}",
+    "meta": "{count, plural, =0 {Empty} one {# card} other {# cards}} · {layout}",
+    "emptyOwnerAll": "You don't have a showcase yet. Create one to show off your best cards.",
+    "emptyPublicAll": "No showcase yet.",
+    "emptyPublic": "No card in this showcase yet.",
+    "emptyOwner": "This showcase is empty: pick up to {count, plural, one {# card} other {# cards}} to show.",
+    "of": "{name}'s showcases",
+    "backToProfile": "Back to {name}'s profile",
+    "tabsLabel": "{name}'s showcases",
+    "newShowcase": "New showcase",
+    "share": "Share",
+    "stageLabel": "Showcase {name}, {count, plural, =0 {empty} one {# card} other {# cards}}",
+    "metaTitle": "{name} · {owner}'s showcase",
+    "metaDescription": "{owner}'s “{name}” showcase on Kiraku: {count, plural, =0 {no card yet} one {# card} other {# cards}}.",
+    "capacity": "{count, plural, one {# card} other {# cards}}",
+    "layoutDrops": "{count, plural, one {# card will leave} other {# cards will leave}}",
+    "layoutButton": "Layout",
+    "layoutTitle": "Layout",
+    "layoutHint": "Cards keep their slot: slot 1 (and 2 when there are two stars) is the featured card. With fewer slots, cards close ranks and the last ones leave the showcase.",
+    "themeTitle": "Theme",
+    "themeSoon": "Coming soon",
+    "themeProgress": "{current}/{goal}",
+    "selectCard": "{name}, slot {n}: tap to change, move or remove it",
     "addTo": "Pick a card for slot {n}",
-    "moveLeft": "Move {name} left",
-    "moveRight": "Move {name} right",
-    "remove": "Remove {name} from the showcase",
-    "change": "Replace {name}",
-    "changeShort": "Change",
-    "removeShort": "Remove",
-    "error": "The showcase couldn't be saved: it went back to how it was.",
+    "dragHint": "Drag a card onto another slot to swap them, or tap it to change it.",
+    "done": "Done",
+    "picker": {
+      "multiTitle": "Add cards",
+      "free": "{count, plural, one {# free slot} other {# free slots}}",
+      "counter": "{count} / {max}",
+      "chooseHint": "Pick some cards",
+      "confirm": "Add {count, plural, one {# card} other {# cards}}"
+    },
+    "create": {
+      "title": "New showcase",
+      "name": "Name",
+      "namePlaceholder": "My heroines, Dream team…",
+      "nameHint": "Optional. Visible to everyone who visits your profile.",
+      "nameCount": "{count} / {max}",
+      "autofill": "Fill with my best cards",
+      "autofillHint": "Rarest cards first. You can change everything afterwards.",
+      "fill": {
+        "all": "All rarities",
+        "mythic": "Mythic and up",
+        "none": "Empty"
+      },
+      "submit": "Create showcase",
+      "creating": "Creating…",
+      "limit": "You have {count, plural, one {# showcase} other {# showcases}} out of {max}",
+      "limitReached": "You've reached the maximum of {max} showcases."
+    },
+    "editor": {
+      "edit": "Edit",
+      "toolbar": "Showcase tools",
+      "theme": "Theme",
+      "addCards": "Add cards",
+      "fill": "Fill",
+      "fillNone": "No card to add.",
+      "more": "More",
+      "rename": "Rename",
+      "renameSave": "Save",
+      "delete": "Delete showcase",
+      "deleteConfirm": "Delete “{name}”? The cards stay in your collection.",
+      "deleteYes": "Delete",
+      "cancel": "Cancel",
+      "hero": "Make featured",
+      "selected": "{name} · slot {n}",
+      "saving": "Saving…",
+      "saved": "Saved"
+    },
+    "errors": {
+      "NO_SESSION": "Sign in to edit your showcases.",
+      "INVALID": "This request isn't valid.",
+      "RATE_LIMITED": "Too many changes at once: try again in a moment.",
+      "UNAVAILABLE": "Not possible right now: try again a bit later.",
+      "NOT_OWNED": "You no longer have this card in your collection.",
+      "NOT_FOUND": "This showcase no longer exists.",
+      "LIMIT": "You already have the maximum number of showcases.",
+      "FULL": "The showcase is full.",
+      "THEME_LOCKED": "This theme isn't unlocked yet."
+    },
+    "visitor": {
+      "inCollection": "{owned} of the {total} cards are in your collection",
+      "wishAll": "Wish for {count, plural, one {the missing card} other {the # missing cards}}",
+      "wished": "Added to your wishlist.",
+      "wishFull": "Your wishlist is full.",
+      "wishError": "Couldn't add these cards right now."
+    },
+    "conditions": {
+      "ALWAYS": "Free",
+      "UNIQUE_CARDS": "Own {n, plural, one {# different card} other {# different cards}}",
+      "RARITY_OWNED": "Own {n, plural, one {# card} other {# cards}} {rarity}",
+      "SERIES_COMPLETE": "Complete a series",
+      "SERIES_COMPLETED_COUNT": "Complete {n, plural, one {# series} other {# series}}",
+      "BOOSTERS_OPENED": "Open {n, plural, one {# booster} other {# boosters}}",
+      "TRADES_DONE": "Make {n, plural, one {# trade} other {# trades}}",
+      "RANK_TIER": "Reach the {tier} rank",
+      "APOCALYPSE_RUINED": "Ruin {n, plural, one {# Apocalypse pack} other {# Apocalypse packs}}",
+      "CATALOG_DISCOVERED_PERCENT": "Discover {n}% of the catalogue",
+      "RARITIES_DISCOVERED": "Discover {n, plural, one {# card} other {# cards}} {rarities}",
+      "AMBASSADOR": "Ambassadors only"
+    },
     "pickTitle": "Pick a card",
     "searchLabel": "Search for a card",
     "searchPlaceholder": "Name or series…",
@@ -3358,32 +3484,109 @@
     "retry": "Try again",
     "more": "Show more",
     "privateCollection": "Their collection is hidden: you can't pick a card from it.",
-    "slotHero": "Slot {n}, featured card",
-    "layoutButton": "Layout",
-    "layoutTitle": "Showcase layout",
-    "layoutHint": "Cards keep their slot number: slot 1 (and 2 for the Triptych) becomes the featured card.",
+    "changeShort": "Change",
+    "removeShort": "Remove",
+    "moveLeft": "Move {name} left",
+    "moveRight": "Move {name} right",
     "layouts": {
-      "GRID": {
-        "name": "Grid",
-        "description": "8 cards of the same size, in 2 rows."
+      "SOLO": {
+        "name": "Solo",
+        "description": "Your favourite card, big."
+      },
+      "DUO": {
+        "name": "Duo",
+        "description": "A pair, a rival, a couple."
+      },
+      "TRIO": {
+        "name": "Trio",
+        "description": "The hero and two sidekicks."
+      },
+      "GRID_2X2": {
+        "name": "2 × 2 grid",
+        "description": "Four cards, clean and clear."
+      },
+      "FAN": {
+        "name": "Fan",
+        "description": "A hand of cards, like at the table."
+      },
+      "FEATURED_4": {
+        "name": "Featured + 4",
+        "description": "A star and its close guard."
+      },
+      "GRID_3X2": {
+        "name": "3 × 2 grid",
+        "description": "Six cards of the same size."
+      },
+      "PYRAMID": {
+        "name": "Pyramid",
+        "description": "One at the top, the others below."
       },
       "FEATURED_LEFT": {
-        "name": "Featured left",
-        "description": "One large card, the other 7 beside it."
+        "name": "Centre stage",
+        "description": "One star on top, four cards then three below."
       },
       "FEATURED_L": {
-        "name": "L-shaped feature",
-        "description": "One large card framed by 7 small ones in an L."
+        "name": "Featured L",
+        "description": "One big card framed by 7 small ones in an L."
       },
       "TRIPTYCH": {
         "name": "Triptych",
-        "description": "Two large cards frame the other 6."
+        "description": "Two big cards frame the other 6."
       },
       "CHECKER": {
         "name": "Checkerboard 3-2-3",
         "description": "Three staggered rows: 3, 2, then 3 cards."
+      },
+      "GRID_4X2": {
+        "name": "4 × 2 grid",
+        "description": "Eight cards on two rows."
+      },
+      "GRID_3X3": {
+        "name": "3 × 3 grid",
+        "description": "Nine slots, perfect for the lacquered box."
+      },
+      "GRID_4X3": {
+        "name": "4 × 3 grid",
+        "description": "Twelve cards for big series."
+      },
+      "FRIEZE": {
+        "name": "Frieze",
+        "description": "Up to 20 cards that scroll by."
       }
-    }
+    },
+    "themes": {
+      "none": {
+        "name": "No decor"
+      },
+      "byobu": {
+        "name": "Golden screen"
+      },
+      "tokonoma": {
+        "name": "Alcove"
+      },
+      "urushi": {
+        "name": "Lacquered box"
+      },
+      "ema": {
+        "name": "Wishing wall"
+      },
+      "black-edition": {
+        "name": "Black edition"
+      },
+      "eclat": {
+        "name": "Éclat"
+      },
+      "gold": {
+        "name": "Gold"
+      }
+    },
+    "titlePublic": "Showcase",
+    "privateHint": "Only you can see them. Pick the one everyone sees on your profile.",
+    "makeMain": "Show on my profile",
+    "makeMainShort": "Show",
+    "mainBadge": "Shown on your profile: everyone can see it",
+    "privateBadge": "Private: only you can see it",
+    "capacityUpTo": "up to {count}"
   },
   "wishlist": {
     "title": "Wishlist",
@@ -3426,7 +3629,6 @@
       "FRIENDS": "Your profile is for your friends only.",
       "PRIVATE": "Your profile is private: nobody but you can see it."
     },
-    "showcase": "Showcase",
     "sales": {
       "title": "Cards for sale",
       "empty": "No cards for sale right now.",

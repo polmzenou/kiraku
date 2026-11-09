@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { pairKey } from "@/lib/social/relation";
 import { createPgAdapter } from "@/server/pg-adapter";
-import { setShowcaseWith } from "../collection/showcase-core";
+import { createShowcaseWith, setShowcaseCardsWith } from "../showcase/core";
 import { blockWith, sendRequestWith, type FriendLimits } from "./friendship-core";
 import { GiftError, giftBoosterWith, giftCardWith, type GiftContext } from "./gift-core";
 
@@ -63,7 +63,7 @@ describe.skipIf(!url)("amis et cadeaux atomiques (base réelle)", () => {
         prisma.gift.deleteMany({ where: { OR: [{ senderId: { in: ids } }, { recipientId: { in: ids } }] } }),
         prisma.friendship.deleteMany({ where: { OR: [{ requesterId: { in: ids } }, { addresseeId: { in: ids } }] } }),
         prisma.userBlock.deleteMany({ where: { OR: [{ blockerId: { in: ids } }, { blockedId: { in: ids } }] } }),
-        prisma.showcaseSlot.deleteMany({ where }),
+        prisma.showcase.deleteMany({ where }),
         prisma.discovery.deleteMany({ where }),
         prisma.userCard.deleteMany({ where: { ownerId: { in: ids } } }),
         prisma.coinTransaction.deleteMany({ where }),
@@ -132,19 +132,24 @@ describe.skipIf(!url)("amis et cadeaux atomiques (base réelle)", () => {
     expect(await prisma.userCard.count({ where: { ownerId: c, cardId } })).toBe(3);
   }, 60_000);
 
-  it("un même exemplaire offert deux fois en parallèle n'est transféré qu'une fois, et quitte la vitrine", async () => {
+  it("un même exemplaire offert deux fois en parallèle n'est transféré qu'une fois, et quitte toutes les vitrines", async () => {
     const [a, b, c] = [await player(), await player(), await player()];
     await befriend(a, b);
     await befriend(a, c);
     await prisma.userCard.create({ data: { ownerId: a, cardId } });
-    await setShowcaseWith(prisma, a, [cardId], 4);
+    // Le même exemplaire exposé dans deux vitrines
+    for (const layout of ["GRID_2X2", "SOLO"] as const) {
+      const id = await createShowcaseWith(prisma, a, { name: null, layout, theme: "none" }, 6);
+      await setShowcaseCardsWith(prisma, a, id, [cardId]);
+    }
+    expect(await prisma.showcaseItem.count({ where: { showcase: { userId: a } } })).toBe(2);
     const attempts = await Promise.allSettled([
       giftCardWith(prisma, { ...ctx(a, b), cardId, allowedRarities: ["COMMON"] }),
       giftCardWith(prisma, { ...ctx(a, c), cardId, allowedRarities: ["COMMON"] }),
     ]);
     expect(attempts.filter((x) => x.status === "fulfilled")).toHaveLength(1);
     expect(await prisma.userCard.count({ where: { ownerId: { in: [b, c] }, cardId } })).toBe(1);
-    expect(await prisma.showcaseSlot.count({ where: { userId: a } })).toBe(0);
+    expect(await prisma.showcaseItem.count({ where: { showcase: { userId: a } } })).toBe(0);
   }, 60_000);
 
   it("les boosters offerts gardent soldes et journal d'accord, sans dépasser le solde", async () => {

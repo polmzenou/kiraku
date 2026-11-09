@@ -1,8 +1,6 @@
-// Vitrine du profil : une case par position, null = vide. Une carte n'y apparaît qu'une fois.
+// Cases d'une vitrine : une par position, null = vide. Une carte n'y apparaît qu'une fois.
 
 export type ShowcaseSlots = (string | null)[];
-
-export const MAX_SHOWCASE_SLOTS = 100;
 
 /** Vitrine complétée à `size` cases, ou null si elle est trop longue ou contient une carte deux fois. */
 export function normalizeShowcase(slots: readonly (string | null)[], size: number): ShowcaseSlots | null {
@@ -10,6 +8,28 @@ export function normalizeShowcase(slots: readonly (string | null)[], size: numbe
   const filled = slots.filter((s): s is string => s !== null);
   if (new Set(filled).size !== filled.length) return null;
   return [...slots, ...Array<null>(size - slots.length).fill(null)];
+}
+
+/**
+ * Cases ramenées à `capacity` (changement de disposition). Si tout tient, les positions ne bougent
+ * pas ; sinon les cartes sont resserrées dans leur ordre et les dernières sortent de la vitrine.
+ */
+export function fitToCapacity(slots: readonly (string | null)[], capacity: number): ShowcaseSlots {
+  const fits = slots.every((s, i) => i < capacity || s === null);
+  const kept = fits ? slots.slice(0, capacity) : slots.filter((s): s is string => s !== null).slice(0, capacity);
+  return [...kept, ...Array<null>(capacity - kept.length).fill(null)];
+}
+
+/** Ajoute des cartes dans les premières cases libres ; null si la place manque. Les doublons sont ignorés. */
+export function addToSlots(slots: readonly (string | null)[], cardIds: readonly string[]): ShowcaseSlots | null {
+  const next = [...slots];
+  for (const cardId of new Set(cardIds)) {
+    if (next.includes(cardId)) continue;
+    const free = next.indexOf(null);
+    if (free < 0) return null;
+    next[free] = cardId;
+  }
+  return next;
 }
 
 /** Échange deux cases (glisser-déposer ou boutons ← →). */

@@ -10,7 +10,7 @@ export default async function AdminCollectionPage() {
     getTranslations("admin.collection"),
     getFormatter(),
     Promise.all(COLLECTION_SETTING_KEYS.map((k) => getSetting(k))),
-    recentSettingLogs(["collection.", "showcase."]),
+    recentSettingLogs(["collection."]),
   ]);
   const settings = Object.fromEntries(COLLECTION_SETTING_KEYS.map((k, i) => [k, values[i]])) as CollectionSettings;
 

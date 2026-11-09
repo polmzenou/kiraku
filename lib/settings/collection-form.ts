@@ -1,11 +1,10 @@
 import type { SettingKey } from "./defaults";
 import { changedSettingKeys, settingsSchemaFor, type SettingsOf } from "./form";
 
-// Réglages du panneau /admin/collection : recyclage des doublons et vitrine du profil.
+// Réglages du panneau /admin/collection : recyclage des doublons.
 
 export const COLLECTION_SETTING_KEYS = [
   "collection.recycleValues",
-  "showcase.slots",
 ] as const satisfies readonly SettingKey[];
 
 export type CollectionSettingKey = (typeof COLLECTION_SETTING_KEYS)[number];

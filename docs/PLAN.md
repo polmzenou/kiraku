@@ -11,7 +11,7 @@ L'appli tient en six briques qui partagent une seule base Postgres : boosters, c
 | Boosters | Ouvre un booster de 6 cartes | 10 au départ, +1 toutes les 10 min, max 10 |
 | Collection | Parcourt ses cartes, filtre, voit ses doublons | Chaque carte obtenue = une instance unique |
 | Profil | Ajoute des amis, consulte leurs profils | Demande puis acceptation |
-| Vitrine | Met 6 cartes en avant | 4 emplacements (réglable : `showcase.slots`), cartes possédées uniquement |
+| Vitrines | Plusieurs vitrines par joueur, chacune avec son nom, sa disposition et son thème ; une seule, la principale, est publique | 6 par joueur (réglable : `showcase.maxPerPlayer`), 16 dispositions de 1 à 20 cartes, 7 thèmes réglés dans `/admin/vitrines`, cartes possédées uniquement |
 | Enchères | Met une carte en vente, enchérit | Prix fixés par les joueurs, carte et Zeni bloquées pendant la vente |
 | Combat | Défie un joueur en 1v1 | Résolu par le serveur, rejoué en animation |
 
@@ -121,7 +121,7 @@ Tout se conçoit d'abord pour un écran de 375 px, puis s'élargit : sur desktop
 | Combat | `/combat`, `/combat/[id]` | Toi | Défis reçus, choix d'équipe, replay, historique, rang classé |
 | Mes decks | `/combat/decks` | Toi | Créer, modifier, renommer et supprimer ses équipes nommées (privé) |
 | Atelier | `/combat/atelier` | Toi | Changer les passifs et la technique d'une carte : achat en Zeni pour cette carte, rééquipement gratuit |
-| Profil public | `/u/[username]` | Kyara + toi | Vitrine 4 cartes, stats, bouton défier / ajouter |
+| Profil public | `/u/[username]` | Kyara + toi | Vitrine principale (et, pour soi, accès rapide aux vitrines privées `/u/[username]/vitrines/[id]`), stats, bouton défier / ajouter |
 | Amis | `/amis` | Kyara + toi | Demandes, cadeaux, défier un ami |
 | Social | `/social` | Toi | Chercher un joueur, l'ajouter ou lui proposer un échange depuis le résultat, top 10 collectionneurs, section Discord (`discord.socialPromo`, masquée par défaut) ; menu « Plus » au-dessus de Casino |
 | Missions | `/missions` | Kyara | Objectifs du jour et de la semaine, récompenses |
@@ -164,7 +164,7 @@ Tes tuiles s'ajoutent à la grille du Compte : Combat, Boutique, et Casino avec 
 - « Changer de booster », « Voir la collection », « Copier le lien » (page publique `/tirage/[id]`, d'où le modèle `BoosterOpening`) et « Image » (image partageable générée avec `next/og`) ;
 - un bouton son, mémorisé.
 
-**Carte (fuda).** Un seul composant `<Fuda size="sm | md | lg" />`, réutilisé partout (récap, collection, marché, vitrine, combat), dessiné selon la direction artistique : cadre dans la matière de la rareté, sceau kanji, numéro, nom japonais vertical, nom latin, série, stats 力 et 気. L'effet de matière (laque, or, nacre) se fait en CSS (dégradés et `mix-blend-mode`) et suit l'inclinaison du téléphone (`deviceorientation`) ou la souris sur desktop ; il est coupé si `prefers-reduced-motion`. Un appui ouvre la fiche : grande carte, stats (les stats de combat dérivées arrivent avec le combat, étape 9), exemplaires possédés, recycler les doublons, mettre en vente, mettre en vitrine, fiche wiki.
+**Carte (fuda).** Un seul composant `<Fuda size="sm | md | lg" />`, réutilisé partout (récap, collection, marché, vitrines, combat), dessiné selon la direction artistique : cadre dans la matière de la rareté, sceau kanji, numéro, nom japonais vertical, nom latin, série, stats 力 et 気. L'effet de matière (laque, or, nacre) se fait en CSS (dégradés et `mix-blend-mode`) et suit l'inclinaison du téléphone (`deviceorientation`) ou la souris sur desktop ; il est coupé si `prefers-reduced-motion`. Un appui ouvre la fiche : grande carte, stats (les stats de combat dérivées arrivent avec le combat, étape 9), exemplaires possédés, recycler les doublons, mettre en vente, ajouter à une vitrine, fiche wiki.
 
 **Pied de page.** Raretés, Règles, Nouveautés, Classement, Avis et bugs, choix de la langue, et la mention « Projet fan non officiel ».
 
@@ -463,11 +463,11 @@ Pourquoi 天 et pas 神 : 神 est déjà le sceau de la rareté Mythique, et un 
 
 ## Profil, amis et vitrine
 
-Une seule page publique `/u/[username]` sert à la fois de « Mon compte » et de profil d'ami : en-tête (avatar, pseudo, rang classé, % du catalogue complété), vitrine de 4 cartes, puis collection. Les boutons d'édition n'apparaissent que si c'est ton propre profil.
+Une seule page publique `/u/[username]` sert à la fois de « Mon compte » et de profil d'ami : en-tête (avatar, pseudo, rang classé, % du catalogue complété), vitrine principale (la seule que voient les autres joueurs) puis, pour son propriétaire seulement, l'accès rapide à ses autres vitrines, privées, avec « Afficher » pour changer de principale ; puis collection. Chaque vitrine a sa page `/u/[username]/vitrines/[id]` (onglets et mode édition pour son propriétaire ; seule la principale est accessible aux autres, avec son bouton de partage). Les boutons d'édition n'apparaissent que si c'est ton propre profil.
 
 | Écran | Route | Données |
 | --- | --- | --- |
-| Profil | `/u/[username]` | user + 4 `ShowcaseSlot` + stats |
+| Profil | `/u/[username]` | user + `Showcase` (la première avec ses `ShowcaseItem`) + stats |
 | Collection | `/u/[username]/collection` | `UserCard` groupées par `cardId` avec compteur de doublons |
 | Amis | `/friends` | demandes reçues, envoyées, amis acceptés |
 | Album | `/collection/album` | tout le catalogue, cartes non possédées en silhouette |
@@ -476,7 +476,7 @@ Trois écrans repris de Kyara complètent le tableau : le wiki `/wiki/[anilistId
 
 Amis : une demande crée une `Friendship` en `PENDING` ; l'accepter la passe en `ACCEPTED`. Avant de créer, vérifie qu'aucune ligne n'existe dans l'autre sens (A→B ou B→A). La liste d'amis = les lignes `ACCEPTED` où tu es d'un côté ou de l'autre.
 
-Vitrine : `setShowcaseWith(userId, cardIds)` remplace toute la vitrine d'un bloc (un échange de deux cases ne heurte pas l'unicité de `userCardId`). Le client envoie des ids de `Card` ; le serveur choisit l'exemplaire (celui déjà exposé, sinon le plus ancien en `COLLECTION`) sous le verrou de la ligne `User`, le même que le recyclage. Quand une carte est vendue, supprime son emplacement dans la même transaction.
+Vitrines (`Showcase`, `ShowcaseItem`) : un joueur en a jusqu'à `showcase.maxPerPlayer` (6) ; la première est la vitrine principale, la seule affichée sur le profil et visible par les autres joueurs, les autres sont privées. Chacune a un nom facultatif (32 caractères, texte brut), une disposition (`lib/showcase/layouts.ts` : 16 gabarits, grilles à zones nommées, Éventail, Frise de 20 cartes) et un thème (`lib/showcase/theme-registry.ts` : Sans décor, puis sept fonds vidéo en boucle avec leur image fixe, dans `public/vitrines/<thème>/` et refaits par `npm run vitrines:assets` : Paravent d'or, Alcôve, Coffret laqué et Mur des vœux, dont les cartes sont habillées par `theme-mounts.css` (passe-partout de la vedette, rouleaux et tablettes, compartiments laqués, ema suspendus) ; Black edition, Éclat et Gold, chacun lié à sa rareté : 1 BR, 1 VR, 1 Gold par défaut). Le client envoie des ids de `Card` ; le serveur choisit l'exemplaire (celui déjà exposé dans une vitrine, sinon le plus ancien en `COLLECTION`) sous le verrou de la ligne `User`, le même que le recyclage. Un même exemplaire peut être dans plusieurs vitrines, une fois par vitrine ; quand il change de main (cadeau, vente, échange), il quitte toutes les vitrines dans la même transaction. Thèmes : statut (disponible, « Arrive prochainement » flouté avec un cadenas, masqué) et condition de déblocage (celles des cosmétiques, ex. 1 carte BR pour Black edition) dans le réglage `showcase.themes` ; la condition est vérifiée au choix du thème, puis acquise ; un thème qui n'est plus disponible s'affiche en Sans décor. Avec un fond vidéo, la scène garde le format de l'image (3:4, puis 16:9), sur le profil comme sur la page de la vitrine : une grille trop haute rétrécit pour y tenir, jusqu'à 55 % de sa largeur (`gridFit` dans `lib/showcase/layouts.ts`, plus la hauteur des habillages), si bien que le fond n'est jamais rogné ; au-delà, la scène grandit. La scène est ouverte, sans cadre : le fond se fond dans la page sur ses bords (fondu plus court pour les décors dessinés, qui gardent corde, poutre et bordure) et va d'un bord de l'écran à l'autre sur téléphone. Sur le profil, le nom de la vitrine principale passe sous ses cartes, comme le cartel d'une œuvre, avec le sceau du décor ; ce décor habille aussi le haut du profil en bannière (image fixe, voilée de la couleur de la page selon la clarté du décor, plus fort en Washi, et fondue vers le bas) ; sur l'étagère du propriétaire, chaque vitrine montre son décor. Effets autour des cartes en vitrine selon la rareté : BR fil rouge, AR miroir (liseré irisé fin, éclats qui s'allument sur toute la hauteur), Mythique poussière de lumière, Gold reflet qui fait le tour du cadre et paillettes, MR trame, VR vitrail, XR prisme (filet argent détaché de la carte, lueur irisée qui en fait le tour, deux petites étoiles). La carte porte déjà le cadre de sa rareté : un effet reste fin et collé à elle (liseré d'un pixel et demi au plus, rien qui déborde sur les cartes voisines).
 
 Collection performante : un `GROUP BY cardId` en SQL (`$queryRaw` balisé, jointure `Card` et `Series`, tri tiré d'une liste fermée de fragments), paginé par 48 cartes. Ne charge jamais toutes les instances d'un coup : un joueur actif en accumule plusieurs milliers en quelques semaines.
 
@@ -485,7 +485,7 @@ Collection performante : un `GROUP BY cardId` en SQL (`$queryRaw` balisé, joint
 - **Collection** (`/collection`) : filtres dans l'URL (recherche, raretés, série, doublons, 7 tris), liste virtualisée par lignes (TanStack Virtual), pages suivantes chargées par `loadCollectionPage` à l'approche du bas. Pagination par décalage : un joueur a au plus autant de lignes que de cartes au catalogue (~6 700), un `OFFSET` reste bon marché.
 - **Fiche carte** : `/collection/[anilistId]`, ouverte en feuille au-dessus de la liste par une route interceptée (`@sheet/(.)[anilistId]`) pour garder la liste montée et sa position.
 - **Recyclage** : par carte (fiche) ou « tout recycler jusqu'à la rareté X » avec récap ; le serveur refuse (`STALE`) si le gain n'est plus celui affiché. Transaction : verrou `User`, suppression conditionnelle sur `status = COLLECTION`, crédit et ligne `CoinTransaction` `DISSOLVE`. Valeurs par rareté dans `collection.recycleValues` (`/admin/collection`). Les exemplaires recyclés sont supprimés ; `BoosterOpening.catalogCardIds` garde les ids de `Card` pour que `/tirage/[id]` reste lisible.
-- **Vitrine** : mode édition, glisser-déposer au doigt (Motion `drag` + `layoutId`), boutons ← → × et sélecteur pour le clavier.
+- **Vitrines** : création (nom, disposition, thème, remplissage avec les meilleures cartes), mode édition, glisser-déposer au doigt (Motion `drag` + `layoutId`), carte sélectionnée (Changer, Vedette, ← →, Retirer) pour le clavier, ajout de plusieurs cartes d'un coup, depuis la fiche carte « Ajouter à une vitrine ».
 - **Confidentialité** : `User.profileVisibility` (`PUBLIC`, `FRIENDS`, `PRIVATE` ; `FRIENDS` = amis acceptés depuis l'étape 6) et `showCollection`. Un invité naît `PRIVATE` et passe `PUBLIC` à l'inscription, sauf s'il a déjà choisi (`privacyChosenAt`). Un profil privé répond comme un public (200), avec le pseudo seul ; un invité ou un profil non public n'est pas indexé.
 
 ### Mise en œuvre (étape 6)
@@ -494,7 +494,7 @@ Collection performante : un `GROUP BY cardId` en SQL (`$queryRaw` balisé, joint
 - **Refus silencieux** : refuser pose `declinedAt` ; l'expéditeur voit toujours « Demande envoyée », ne peut pas relancer et n'est pas prévenu. Annuler une demande ou retirer un ami pose un délai (`FriendRequestCooldown`, `friends.requestCooldownHours`).
 - **Blocage** (`UserBlock`) : supprime l'amitié, les demandes et les notifications du bloqué ; son profil voit le bloqueur comme un profil privé ; ses demandes suivantes sont enregistrées déjà refusées.
 - **Anti-énumération** : la recherche de joueurs de `/social` (`server/social/search.ts`, règles dans `lib/social/search.ts`) n'est partielle (dès 3 caractères) que sur les profils visibles par le lecteur — publics, ou « amis » pour un ami — et exacte (casse ignorée) sur les autres, montrés avec le pseudo seul ; jamais d'invité, de banni ni de compte gelé, un joueur qui t'a bloqué répond comme un profil privé, `social.searchLimit` résultats au plus, rate limit `social.searchPerMinute` par joueur et `social.searchPerMinuteIp` par IP. L'ajout depuis `/amis` reste par pseudo exact. Une demande vers un joueur qui t'a bloqué, invité, banni, plein ou en délai répond « envoyée » comme une vraie ; seuls « introuvable » et « déjà en cours » diffèrent. Rate limit par joueur (10/h, 30/jour) et par IP (30/h). Invités exclus du social.
-- **Cadeaux** (`Gift`, envoi direct) : comptes inscrits, compte ≥ `gifts.minAccountAgeHours` (48 h), amitié ≥ `gifts.minFriendshipHours` (24 h), `gifts.perDaySent` (3) et `gifts.perDayReceived` (5) par jour du fuseau du jeu, comptés sous verrou. Carte : le serveur choisit l'exemplaire (le plus récent hors vitrine), transfert par `updateMany` conditionnel sur `status = COLLECTION`, case de vitrine retirée, `Discovery` du destinataire. Booster : payé `gifts.boosterPriceZeni` Zeni par l'expéditeur (ligne `CoinTransaction` `GIFT`), crédité dans `User.giftBoosters` ; il s'ouvre depuis l'accueil (`/ouvrir/standard?offert=1`), un à la fois, sans doré ni divin, pitié Mythique comprise. Le stock gratuit ne se transfère jamais.
+- **Cadeaux** (`Gift`, envoi direct) : comptes inscrits, compte ≥ `gifts.minAccountAgeHours` (48 h), amitié ≥ `gifts.minFriendshipHours` (24 h), `gifts.perDaySent` (3) et `gifts.perDayReceived` (5) par jour du fuseau du jeu, comptés sous verrou. Carte : le serveur choisit l'exemplaire (le plus récent hors vitrine), transfert par `updateMany` conditionnel sur `status = COLLECTION`, exemplaire retiré de toutes les vitrines, `Discovery` du destinataire. Booster : payé `gifts.boosterPriceZeni` Zeni par l'expéditeur (ligne `CoinTransaction` `GIFT`), crédité dans `User.giftBoosters` ; il s'ouvre depuis l'accueil (`/ouvrir/standard?offert=1`), un à la fois, sans doré ni divin, pitié Mythique comprise. Le stock gratuit ne se transfère jamais.
 - **Notifications** (`Notification`, types `FRIEND_REQUEST`, `FRIEND_ACCEPTED`, `GIFT_RECEIVED`) : créées dans la transaction de l'événement, payload d'ids seulement, texte rendu à la lecture. Cloche dans l'en-tête (compteur serveur, sondage 60 s onglet visible), page `/notifications` par curseur, purge paresseuse des lues après `notifications.retentionDays`.
 - **Web Push** (onglet fermé) : opt-in depuis `/compte` (permission demandée au clic seulement, invités exclus), un `PushSubscription` par navigateur (endpoint unique, limité aux services push des navigateurs). Envoi après la validation de la transaction qui crée la notification, via `after()`, texte rendu dans `User.locale` ; abonnements en 404/410 supprimés. Clés `VAPID_*` côté serveur (la publique est passée par la page), interrupteur `notifications.pushEnabled`. Service worker `public/sw.js` et manifest (`app/manifest.ts`) posés en avance sur l'étape 10 ; sur iPhone, le push exige Kiraku installé sur l'écran d'accueil.
 - **Admin** : `/admin/social` (interrupteurs, limites, raretés offrables, journal des derniers cadeaux).
@@ -560,7 +560,7 @@ export async function placeBid(auctionId: string, amount: number) {
 }
 ```
 
-Clôture : une fonction `settleAuction(id)` fait passer la vente de `ACTIVE` à `SOLD` ou `EXPIRED` avec un `updateMany({ where: { id, status: "ACTIVE" } })` ; si `count` vaut 0, quelqu'un l'a déjà clôturée et on s'arrête. Ensuite : la carte change de propriétaire (ou revient au vendeur), le vendeur reçoit le prix moins 5 %, l'emplacement de vitrine éventuel est supprimé.
+Clôture : une fonction `settleAuction(id)` fait passer la vente de `ACTIVE` à `SOLD` ou `EXPIRED` avec un `updateMany({ where: { id, status: "ACTIVE" } })` ; si `count` vaut 0, quelqu'un l'a déjà clôturée et on s'arrête. Ensuite : la carte change de propriétaire (ou revient au vendeur), le vendeur reçoit le prix moins 5 %, l'exemplaire quitte les vitrines où il était exposé.
 
 Elle est appelée à deux endroits : quand quelqu'un affiche une vente terminée, et par une tâche planifiée qui balaie `status = ACTIVE AND endsAt < now()` (Vercel Cron). L'index `[status, endsAt]` rend ce balayage instantané.
 
@@ -730,6 +730,7 @@ Un clic sur « Rejoindre » enregistre `discordJoinedAt` et le modal ne réappar
 | --- | --- |
 | Discord | Activer ou désactiver le modal « Rejoins le serveur », changer le lien d'invitation, le titre, le texte, le déclencheur et la fréquence ; section Discord de la page Social (`discord.socialPromo` : interrupteur, lien, textes fr/en, début et fin d'affichage facultatifs) |
 | Fonctionnalités | Interrupteurs : casino (« Bientôt »), boutique, paiement Stripe, classé, marché, cadeaux |
+| Vitrines | `/admin/vitrines` : vitrines par joueur, et pour chaque thème son statut (Disponible, Arrive prochainement : visible flouté avec un cadenas, Masqué), sa condition de déblocage et le nombre de vitrines qui l'utilisent |
 | Boutique | Articles (boosters, packs, bannières), prix en Zeni, prix en euros et id de prix Stripe, dates de disponibilité |
 | Boosters spéciaux | Bannières vedettes (cartes mises en avant, pitié vedette à 100, prix, dates), fréquence du doré (tous les 10), chance du divin (1/2 000) |
 | Avis | Masquer, épingler sur l'accueil, répondre |
@@ -870,7 +871,7 @@ Objectif : un téléphone milieu de gamme en 4G charge une page en moins de 2,5 
 
 - **Rendu** : pages en Server Components avec streaming (`loading.tsx` et `Suspense`), squelettes de chargement aux couleurs Yoru, pages publiques (wiki, raretés, classement) mises en cache et régénérées périodiquement.
 - **Navigation** : préchargement des liens (`next/link`) et transitions entre pages avec l'API View Transitions ; la carte touchée s'agrandit en fiche au lieu de recharger la page.
-- **Réponse immédiate** : mises à jour optimistes (`useOptimistic`) pour les enchères, la vitrine et les amis ; à l'ouverture d'un booster, le cordon commence à se dénouer pendant l'appel serveur et les cartes se révèlent dès la réponse.
+- **Réponse immédiate** : mises à jour optimistes (`useOptimistic`) pour les enchères, les vitrines et les amis ; à l'ouverture d'un booster, le cordon commence à se dénouer pendant l'appel serveur et les cartes se révèlent dès la réponse.
 - **Animations** : uniquement `transform` et `opacity`, ressorts courts (200–400 ms), Motion chargé en version légère (`LazyMotion`) ; l'effet holo met à jour des variables CSS dans `requestAnimationFrame` et s'arrête hors de l'écran. Tout est adouci si `prefers-reduced-motion`.
 - **Images** : `next/image` en AVIF/WebP aux bonnes tailles, couleur dominante en fond pendant le chargement, priorité seulement aux images visibles.
 - **Polices** : `next/font`, avec des sous-ensembles pour les polices japonaises (Yuji Syuku ne sert qu'aux quelques kanji des sceaux et emblèmes), sinon elles pèsent plusieurs mégaoctets.
@@ -880,7 +881,7 @@ Objectif : un téléphone milieu de gamme en 4G charge une page en moins de 2,5 
 
 ## Schéma Prisma
 
-Le point central : `Card` est le modèle (le personnage, ses stats, sa rareté) et `UserCard` est l'exemplaire possédé. C'est l'exemplaire qui se vend, se met en vitrine et combat. Les modèles Auth.js (`Account`, `Session`, `VerificationToken`) s'ajoutent tels que fournis par l'adaptateur.
+Le point central : `Card` est le modèle (le personnage, ses stats, sa rareté) et `UserCard` est l'exemplaire possédé. C'est l'exemplaire qui se vend, s'expose en vitrine et combat. Les modèles Auth.js (`Account`, `Session`, `VerificationToken`) s'ajoutent tels que fournis par l'adaptateur.
 
 ```prisma
 generator client {
@@ -931,7 +932,7 @@ model User {
   createdAt     DateTime @default(now())
 
   cards        UserCard[]
-  showcase     ShowcaseSlot[]
+  showcases    Showcase[]
   sentFriends  Friendship[] @relation("requester")
   recvFriends  Friendship[] @relation("addressee")
   auctions     Auction[]    @relation("seller")
@@ -993,21 +994,35 @@ model UserCard {
   card       Card       @relation(fields: [cardId], references: [id])
   status     CardStatus @default(COLLECTION)
   obtainedAt DateTime   @default(now())
-  showcase   ShowcaseSlot?
+  showcaseItems ShowcaseItem[]
   auctions   Auction[]
 
   @@index([ownerId, cardId])
   @@index([ownerId, status])
 }
 
-model ShowcaseSlot {
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  position   Int      // 1 à 4
-  userCardId String   @unique
+model Showcase {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sortOrder Int      // 0 = à l'honneur
+  name      String?  @db.VarChar(32)
+  layout    String   // lib/showcase/layouts.ts
+  theme     String   @default("none") // lib/showcase/theme-registry.ts
+  items     ShowcaseItem[]
+
+  @@index([userId, sortOrder])
+}
+
+model ShowcaseItem {
+  showcaseId String
+  showcase   Showcase @relation(fields: [showcaseId], references: [id], onDelete: Cascade)
+  position   Int      // 1 à la capacité de la disposition
+  userCardId String
   userCard   UserCard @relation(fields: [userCardId], references: [id], onDelete: Cascade)
 
-  @@id([userId, position])
+  @@id([showcaseId, position])
+  @@unique([showcaseId, userCardId])
 }
 
 model Friendship {
@@ -1365,7 +1380,7 @@ Construis dans cet ordre : chaque étape est jouable seule et sert de base à la
 2. **Catalogue** — import AniList (rangs, raretés, stats, champs de filtre) et wiki.
 3. **Boosters** — stock de 10 min, ouverture atomique, pitié, doré, divin, animation d'ouverture du sachet (déchirure de la bande), récap d'ouverture ; premier panneau admin pour régler taux et délais sans redéployer.
 4. **Types de boosters** — `BoosterType`, pools filtrés, page de choix, bannières vedettes.
-5. **Collection et profil** — collection, fiche carte, recyclage, vitrine, profil public.
+5. **Collection et profil** — collection, fiche carte, recyclage, vitrines (plusieurs par joueur, dispositions, thèmes), profil public.
 6. **Social** — amis, cadeaux, notifications.
 7. **Économie** — Zeni, journal `CoinTransaction`, missions, parrainage, boutique en Zeni.
 8. **Hôtel des ventes** — ventes, enchères, clôture planifiée. Avant la mise en ligne, un test lance 50 enchères simultanées et vérifie que la somme des soldes ne bouge pas.

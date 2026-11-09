@@ -1,6 +1,5 @@
 import "server-only";
 import { cache } from "react";
-import type { ShowcaseLayout } from "@/lib/collection/showcase-layouts";
 import { profileAccess, type ProfileAccess, type ProfileVisibility } from "@/lib/collection/visibility";
 import type { Relation } from "@/lib/social/relation";
 import { prisma } from "../db";
@@ -17,7 +16,6 @@ export type ProfileOwnerRow = {
   profileVisibility: ProfileVisibility;
   showCollection: boolean;
   bannedAt: Date | null;
-  showcaseLayout: ShowcaseLayout;
   // Présence (lib/social/presence.ts), montrée seulement si le visiteur voit le profil
   lastSeenAt: Date | null;
   appearOffline: boolean;
@@ -35,7 +33,6 @@ export const findProfileOwner = cache(async (username: string): Promise<ProfileO
     profileVisibility: true,
     showCollection: true,
     bannedAt: true,
-    showcaseLayout: true,
     lastSeenAt: true,
     appearOffline: true,
     role: true,

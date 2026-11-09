@@ -4,7 +4,7 @@ import { PrismaClient } from "@/generated/prisma/client";
 import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
 import { createPgAdapter } from "@/server/pg-adapter";
 import { RecycleError, recycleWith } from "./recycle-core";
-import { setShowcaseWith } from "./showcase-core";
+import { createShowcaseWith, setShowcaseCardsWith } from "../showcase/core";
 
 // Concurrence du recyclage et de la vitrine sur une vraie base (base de test isolée) : sauté sans
 // DATABASE_URL_TEST.
@@ -51,7 +51,7 @@ describe.skipIf(!url)("recyclage atomique (base réelle)", () => {
   afterAll(async () => {
     if (userId) {
       await prisma.$transaction([
-        prisma.showcaseSlot.deleteMany({ where: { userId } }),
+        prisma.showcase.deleteMany({ where: { userId } }),
         prisma.userCard.deleteMany({ where: { ownerId: userId } }),
         prisma.coinTransaction.deleteMany({ where: { userId } }),
         prisma.user.delete({ where: { id: userId } }),
@@ -85,11 +85,12 @@ describe.skipIf(!url)("recyclage atomique (base réelle)", () => {
 
   it("un recyclage lancé en même temps qu'une mise en vitrine ne supprime jamais la carte exposée", async () => {
     await giveCopies(other.id, 3);
+    const showcaseId = await createShowcaseWith(prisma, userId, { name: null, layout: "GRID_2X2", theme: "none" }, 6);
     const [, shown] = await Promise.allSettled([
       recycleWith(prisma, userId, { kind: "all", maxRarity: "MYTHIC", expected: 2 * values.RARE }, values),
-      setShowcaseWith(prisma, userId, [other.id], 4),
+      setShowcaseCardsWith(prisma, userId, showcaseId, [other.id]),
     ]);
-    const slots = await prisma.showcaseSlot.findMany({ where: { userId }, select: { userCard: { select: { cardId: true } } } });
+    const slots = await prisma.showcaseItem.findMany({ where: { showcaseId }, select: { userCard: { select: { cardId: true } } } });
     const copies = await prisma.userCard.count({ where: { ownerId: userId, cardId: other.id } });
     // Quel que soit l'ordre, au moins un exemplaire reste, et la vitrine pointe vers un exemplaire existant
     expect(copies).toBeGreaterThanOrEqual(1);

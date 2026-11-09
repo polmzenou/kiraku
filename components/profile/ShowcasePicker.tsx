@@ -17,6 +17,8 @@ const DEBOUNCE_MS = 300;
 /**
  * Choix d'une carte pour une case de la vitrine : sa propre collection (rareté décroissante),
  * avec recherche, raretés et « Voir plus ». Les cartes déjà exposées sont marquées (les choisir les déplace).
+ * `multiple` : plusieurs cartes d'un coup (jusqu'à `max`), validées ensemble ; celles déjà exposées
+ * ne se choisissent pas.
  */
 export function ShowcasePicker({
   onClose,
@@ -25,17 +27,28 @@ export function ShowcasePicker({
   title,
   pickLabel,
   allowed,
+  multiple,
 }: {
   onClose: () => void;
-  onPick: (card: CollectionItem) => void;
+  onPick?: (card: CollectionItem) => void;
   shownIds: ReadonlySet<string>;
   /** Titre et libellé d'une carte, quand le sélecteur sert à autre chose que la vitrine (cadeau). */
   title?: string;
   pickLabel?: (name: string) => string;
   /** Raretés acceptées par le serveur (cadeau) : les autres ne sont ni proposées ni listées. */
   allowed?: readonly Rarity[];
+  multiple?: { max: number; onConfirm: (cards: CollectionItem[]) => void };
 }) {
   const t = useTranslations("showcase");
+  const [chosen, setChosen] = useState<CollectionItem[]>([]);
+  const toggle = (item: CollectionItem) =>
+    setChosen((list) =>
+      list.some((c) => c.cardId === item.cardId)
+        ? list.filter((c) => c.cardId !== item.cardId)
+        : multiple && list.length < multiple.max
+          ? [...list, item]
+          : list,
+    );
   const [q, setQ] = useState("");
   const [rarities, setRarities] = useState<Rarity[]>([]);
   const [items, setItems] = useState<CollectionItem[]>([]);
@@ -85,7 +98,8 @@ export function ShowcasePicker({
   useEffect(() => () => clearTimeout(timer.current), []);
 
   return (
-    <Sheet open onClose={onClose} title={title ?? t("pickTitle")} wide>
+    <Sheet open onClose={onClose} title={title ?? (multiple ? t("picker.multiTitle") : t("pickTitle"))} wide>
+      {multiple && <p className="text-sm text-text-muted">{t("picker.free", { count: multiple.max })}</p>}
       <div className="flex gap-2">
         <label htmlFor={searchId} className="sr-only">
           {t("searchLabel")}
@@ -120,19 +134,24 @@ export function ShowcasePicker({
         <p className="py-6 text-center text-sm text-text-muted">{t("pickEmpty")}</p>
       ) : (
         <ul className="grid grid-cols-3 gap-2 md:grid-cols-5 md:gap-3">
-          {items.map((item) => (
+          {items.map((item) => {
+            const shown = shownIds.has(item.cardId);
+            const selected = chosen.some((c) => c.cardId === item.cardId);
+            return (
             <li key={item.cardId}>
               <button
                 type="button"
-                onClick={() => onPick(item)}
-                className="relative block w-full rounded-[5px] text-left transition-transform active:scale-[0.97] motion-reduce:transition-none"
+                onClick={() => (multiple ? toggle(item) : onPick?.(item))}
+                disabled={Boolean(multiple) && shown}
+                aria-pressed={multiple ? selected : undefined}
+                className={`relative block w-full rounded-[5px] text-left transition-transform active:scale-[0.97] disabled:opacity-50 motion-reduce:transition-none ${selected ? "ring-2 ring-shu ring-offset-2 ring-offset-bg" : ""}`}
               >
                 <Fuda
                   card={item}
                   series={item.series}
                   size="sm"
                   overlay={
-                    shownIds.has(item.cardId) && (
+                    shown && (
                       <span className="absolute bottom-6 left-1 rounded-sm bg-kin px-1 text-[10px] font-bold text-sumi">{t("alreadyShown")}</span>
                     )
                   }
@@ -140,7 +159,8 @@ export function ShowcasePicker({
                 <span className="sr-only">{pickLabel ? pickLabel(item.name) : t("pick", { name: item.name })}</span>
               </button>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
 
@@ -157,6 +177,17 @@ export function ShowcasePicker({
           </Button>
         )}
       </div>
+
+      {multiple && (
+        <div className="sticky bottom-0 -mx-1 flex items-center justify-between gap-3 border-t border-border bg-surface px-1 pt-3">
+          <span className="text-sm tabular-nums text-text-muted" aria-live="polite">
+            {t("picker.counter", { count: chosen.length, max: multiple.max })}
+          </span>
+          <Button type="button" variant="primary" disabled={chosen.length === 0} onClick={() => multiple.onConfirm(chosen)}>
+            {chosen.length === 0 ? t("picker.chooseHint") : t("picker.confirm", { count: chosen.length })}
+          </Button>
+        </div>
+      )}
     </Sheet>
   );
 }

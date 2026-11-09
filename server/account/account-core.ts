@@ -157,7 +157,8 @@ export async function anonymizeUserWith(
     await tx.userBlock.deleteMany({ where: { OR: [{ blockerId: userId }, { blockedId: userId }] } });
     await tx.wishlistEntry.deleteMany({ where: { userId } });
     await tx.deck.deleteMany({ where: { userId } }); // noms saisis par le joueur
-    await tx.showcaseSlot.deleteMany({ where: { userId } });
+    await tx.showcaseSlot.deleteMany({ where: { userId } }); // ancienne vitrine unique
+    await tx.showcase.deleteMany({ where: { userId } }); // noms saisis par le joueur, cartes en cascade
     await tx.review.deleteMany({ where: { userId } });
     await tx.tradeListing.updateMany({ where: { ownerId: userId, note: { not: null } }, data: { note: null } });
     await tx.auction.updateMany({ where: { sellerId: userId, note: { not: null } }, data: { note: null } });

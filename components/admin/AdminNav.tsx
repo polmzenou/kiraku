@@ -24,6 +24,7 @@ const GROUPS = [
       { key: "catalog", href: "/admin/catalogue" },
       { key: "universes", href: "/admin/univers" },
       { key: "collection", href: "/admin/collection" },
+      { key: "showcases", href: "/admin/vitrines" },
       { key: "boosters", href: "/admin/boosters" },
       { key: "types", href: "/admin/boosters/types" },
       { key: "openingTest", href: "/admin/test-ouverture" },

@@ -326,7 +326,7 @@ export async function acceptOfferWith(
         }),
       ]);
       if (toBidder.count !== 1 || toOwner.count !== 1) throw new ListingError("CARD_GONE");
-      await tx.showcaseSlot.deleteMany({ where: { userCardId: { in: [ownerCopy.id, bidderCopy.id] } } });
+      await tx.showcaseItem.deleteMany({ where: { userCardId: { in: [ownerCopy.id, bidderCopy.id] } } });
       await tx.discovery.createMany({
         data: [
           { userId: offer.bidderId, cardId: listing.cardId, createdAt: now },
