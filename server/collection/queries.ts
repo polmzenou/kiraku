@@ -40,7 +40,8 @@ function orderBy(params: CollectionParams): Prisma.Sql {
   const byRank = Prisma.sql`c.rank ASC NULLS LAST`;
   switch (params.sort) {
     case "rarity":
-      return asc ? Prisma.sql`rd."sortOrder" ASC, ${byRank}` : Prisma.sql`rd."sortOrder" DESC, ${byRank}`;
+      // À rang égal, une variante (Black Edition) passe au-dessus de sa rareté de base, comme dans compareRarities
+      return asc ? Prisma.sql`rd."sortOrder" ASC, rd."variantRequired" ASC, ${byRank}` : Prisma.sql`rd."sortOrder" DESC, rd."variantRequired" DESC, ${byRank}`;
     case "recent":
       return asc ? Prisma.sql`MAX(uc."obtainedAt") ASC` : Prisma.sql`MAX(uc."obtainedAt") DESC`;
     case "number":
@@ -48,7 +49,7 @@ function orderBy(params: CollectionParams): Prisma.Sql {
     case "name":
       return asc ? Prisma.sql`lower(c.name) ASC` : Prisma.sql`lower(c.name) DESC`;
     case "copies":
-      return asc ? Prisma.sql`COUNT(*) ASC, rd."sortOrder" DESC` : Prisma.sql`COUNT(*) DESC, rd."sortOrder" DESC`;
+      return asc ? Prisma.sql`COUNT(*) ASC, rd."sortOrder" DESC, rd."variantRequired" DESC` : Prisma.sql`COUNT(*) DESC, rd."sortOrder" DESC, rd."variantRequired" DESC`;
     case "power":
       return asc ? Prisma.sql`c.power ASC, ${byRank}` : Prisma.sql`c.power DESC, ${byRank}`;
     case "ki":
@@ -113,7 +114,7 @@ export async function getCollectionPage(
     JOIN "Series" s ON s.id = c."seriesId"
     JOIN "RarityDefinition" rd ON rd.key = c."rarityKey"
     WHERE ${filters(ownerId, params)}
-    GROUP BY c.id, s.id, rd."sortOrder"
+    GROUP BY c.id, s.id, rd."sortOrder", rd."variantRequired"
     HAVING ${params.dupes ? Prisma.sql`COUNT(*) FILTER (WHERE uc.status = 'COLLECTION') >= 2` : Prisma.sql`TRUE`}
     ORDER BY ${orderBy(params)}, c.id ASC
     LIMIT ${COLLECTION_PAGE_SIZE + 1} OFFSET ${start}`;

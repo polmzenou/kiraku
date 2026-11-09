@@ -4,13 +4,15 @@ import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import type { CardView } from "@/lib/boosters/view";
 import type { CollectionItem } from "@/lib/collection/view";
+import { shownPlayerRef } from "@/lib/social/shown-player";
 import { cancelListingAction, makeOfferAction, withdrawOfferAction } from "@/server/actions/listings";
 import type { ListingView } from "@/server/market/listings";
 import { CardPickGrid } from "../../collection/CardPickGrid";
+import { OwnedBadge } from "../../collection/OwnedBadge";
 import { Fuda } from "../../fuda/Fuda";
 import { displayName } from "../../profile/ProfileHeader";
 import { Button } from "../../ui/Button";
-import { playerTag } from "../../social/PlayerName";
+import { playerLinkTag } from "../../social/PlayerLink";
 import { NoteText } from "../../ui/NoteText";
 import { Sheet } from "../../ui/Sheet";
 import { AdminNoteDelete } from "../AdminNoteDelete";
@@ -84,12 +86,15 @@ export function ListingCard({
             <Fuda card={listing.card} series={listing.card.series} size="sm" tilt={false} />
           </div>
           <div className="flex min-w-0 flex-col gap-0.5">
-            <p className="truncate font-bold">{listing.card.name}</p>
+            <p className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate font-bold">{listing.card.name}</span>
+              {listing.viewerOwns && <OwnedBadge />}
+            </p>
             <p className="truncate text-sm text-text-muted">
               {t("cardMeta", { rarity: tRarity(listing.card.rarity as "COMMON"), series: listing.card.series })}
             </p>
-            <p className="truncate text-xs text-text-muted">
-              {listing.mine ? t("byYou") : t.rich("by", { name: owner, player: playerTag(listing.owner.decor.nameColor) })} · {t("expires", { when: format.relativeTime(listing.expiresAt, now) })}
+            <p className="min-w-0 text-xs text-text-muted">
+              {listing.mine ? t("byYou") : t.rich("by", { name: owner, player: playerLinkTag(shownPlayerRef(owner, listing.owner)) })} · {t("expires", { when: format.relativeTime(listing.expiresAt, now) })}
             </p>
           </div>
         </div>

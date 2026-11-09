@@ -42,7 +42,9 @@ describe("filtres et tri publics du wiki", () => {
       for (const dir of ["asc", "desc"] as const) {
         await getCatalogSearchIndex(parseWikiParams({ sort, dir }));
         expect(mocks.cards).toHaveBeenLastCalledWith(expect.objectContaining({
-          orderBy: sort === "number" ? [{ rank: dir }, { publicId: "asc" }] : [sort === "rarity" ? { rarityDefinition: { sortOrder: dir } } : { [sort]: dir }, { rank: "asc" }, { publicId: "asc" }],
+          orderBy: sort === "number"
+            ? [{ rank: dir }, { publicId: "asc" }]
+            : [...(sort === "rarity" ? [{ rarityDefinition: { sortOrder: dir } }, { rarityDefinition: { variantRequired: dir } }] : [{ [sort]: dir }]), { rank: "asc" }, { publicId: "asc" }],
         }));
       }
     }

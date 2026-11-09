@@ -10,7 +10,7 @@ import type { CollectionItem } from "@/lib/collection/view";
 import { loadCollectionPage } from "@/server/actions/collection";
 import { Button } from "../ui/Button";
 import { inputClass } from "../ui/Field";
-import { OwnedBadge } from "./OwnedBadge";
+import { CopiesBadge, OwnedBadge } from "./OwnedBadge";
 import { RarityChips } from "./RarityChips";
 
 const DEBOUNCE_MS = 300;
@@ -18,6 +18,7 @@ const DEBOUNCE_MS = 300;
 /**
  * Grille de cartes à choisir dans une collection (la sienne, ou celle d'un joueur dont le profil
  * l'autorise) : recherche, raretés, « Voir plus », cartes cochées. Le serveur revérifie tout ensuite.
+ * Chez un autre joueur, chaque carte dit si on l'a déjà ; dans la sienne, combien d'exemplaires on en a.
  */
 export function CardPickGrid({
   username,
@@ -41,6 +42,7 @@ export function CardPickGrid({
   allowed?: readonly Rarity[];
 }) {
   const t = useTranslations("showcase");
+  const tCollection = useTranslations("collection");
   const [q, setQ] = useState("");
   const [rarities, setRarities] = useState<Rarity[]>([]);
   const [items, setItems] = useState<CollectionItem[]>([]);
@@ -141,9 +143,10 @@ export function CardPickGrid({
                     series={item.series}
                     size="sm"
                     tilt={false}
-                    corner={item.viewerOwns && <OwnedBadge />}
+                    corner={username ? item.viewerOwns && <OwnedBadge /> : item.copies > 1 && <CopiesBadge count={item.copies} />}
                   />
                   <span className="sr-only">{pickLabel(item.name)}</span>
+                  {!username && item.copies > 1 && <span className="sr-only">{tCollection("copiesLabel", { count: item.copies })}</span>}
                   {checked && (
                     <span aria-hidden="true" className="absolute top-1 right-1 flex size-6 items-center justify-center rounded-full bg-shu text-sm font-bold text-washi-paper shadow-raised">
                       ✓

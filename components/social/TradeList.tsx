@@ -5,15 +5,17 @@ import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
 import type { OpenedCardView } from "@/lib/boosters/view";
+import { shownPlayerRef } from "@/lib/social/shown-player";
 import { acceptTradeAction, cancelTradeAction, declineTradeAction, markTradesSeenAction } from "@/server/actions/trades";
 import type { TradeView } from "@/server/social/trades";
+import { OwnedOverlay } from "../collection/OwnedBadge";
 import { Fuda } from "../fuda/Fuda";
 import { displayName } from "../profile/ProfileHeader";
 import { Button } from "../ui/Button";
 import { NoteField } from "../ui/NoteField";
 import { NoteText } from "../ui/NoteText";
 import { ChatWithButton } from "../chat/ChatDock";
-import { PlayerAvatar } from "./PlayerAvatar";
+import { playerLinkTag } from "./PlayerLink";
 import { playerTag } from "./PlayerName";
 
 const CardReveal = dynamic(() => import("../economy/CardReveal").then((m) => m.CardReveal), { ssr: false });
@@ -50,6 +52,7 @@ function TradeCard({ trade, mode }: { trade: TradeView; mode: Mode }) {
   const [pending, startTransition] = useTransition();
   const other = mode === "received" ? trade.proposer : mode === "sent" ? trade.recipient : null;
   const name = (p: TradeView["proposer"]) => displayName(p.username, p.isGuest, (code) => tAccount("guestName", { code }));
+  const owned = new Set(trade.viewerOwned);
 
   const run = (call: () => Promise<{ ok: true } | { ok: false; error: string }>) =>
     startTransition(async () => {
@@ -84,10 +87,7 @@ function TradeCard({ trade, mode }: { trade: TradeView; mode: Mode }) {
       <header className="flex flex-wrap items-center justify-between gap-2">
         <p className="flex min-w-0 items-center gap-2 text-sm">
           {other ? (
-            <>
-              <PlayerAvatar username={other.username} image={other.image} size={28} frame={other.decor.frame} />
-              <span className="truncate">{t.rich(mode === "received" ? "from" : "to", { name: name(other), player: playerTag(other.decor.nameColor) })}</span>
-            </>
+            <span className="min-w-0">{t.rich(mode === "received" ? "from" : "to", { name: name(other), player: playerLinkTag(shownPlayerRef(name(other), other)) })}</span>
           ) : (
             <span className="truncate">
               {t.rich("between", {
@@ -111,7 +111,7 @@ function TradeCard({ trade, mode }: { trade: TradeView; mode: Mode }) {
       <div className="grid grid-cols-[5.5rem_auto_1fr] items-start gap-3 sm:grid-cols-[7rem_auto_1fr]">
         <div className="flex flex-col gap-1">
           <p className="text-xs text-text-muted">{t(mode === "received" ? "youGive" : mode === "sent" ? "youGet" : "wanted")}</p>
-          <Fuda card={trade.wanted} series={trade.wanted.series} size="sm" tilt={false} />
+          <Fuda card={trade.wanted} series={trade.wanted.series} size="sm" tilt={false} overlay={mode === "sent" && owned.has(trade.wanted.cardId) && <OwnedOverlay />} />
         </div>
         <span aria-hidden="true" lang="ja" className="mt-8 font-seal text-xl text-shu">
           換
@@ -124,6 +124,7 @@ function TradeCard({ trade, mode }: { trade: TradeView; mode: Mode }) {
             {(mode === "history" && trade.chosen ? [trade.chosen] : trade.offers).map((card) => {
               const selectable = mode === "received" && !confirming;
               const picked = chosen === card.cardId;
+              const badge = mode === "received" && owned.has(card.cardId) && <OwnedOverlay />;
               return (
                 <li key={card.cardId}>
                   {selectable ? (
@@ -133,12 +134,12 @@ function TradeCard({ trade, mode }: { trade: TradeView; mode: Mode }) {
                       onClick={() => setChosen(picked ? null : card.cardId)}
                       className="relative block w-full rounded-fuda outline-offset-2 transition-transform active:scale-[0.97] aria-pressed:outline-3 aria-pressed:outline-shu motion-reduce:transition-none"
                     >
-                      <Fuda card={card} series={card.series} size="sm" tilt={false} />
+                      <Fuda card={card} series={card.series} size="sm" tilt={false} overlay={badge} />
                       <span className="sr-only">{t("choose", { card: card.name })}</span>
                     </button>
                   ) : (
                     <div className={mode === "received" && chosen !== card.cardId ? "opacity-40" : ""}>
-                      <Fuda card={card} series={card.series} size="sm" tilt={false} />
+                      <Fuda card={card} series={card.series} size="sm" tilt={false} overlay={badge} />
                     </div>
                   )}
                 </li>

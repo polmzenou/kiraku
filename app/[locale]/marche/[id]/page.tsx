@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { z } from "zod";
+import { OwnedBadge } from "@/components/collection/OwnedBadge";
 import { Fuda } from "@/components/fuda/Fuda";
 import { FudaTurnover } from "@/components/fuda/FudaTurnover";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { AdminNoteDelete } from "@/components/market/AdminNoteDelete";
 import { AuctionPanel, type TradeBlock } from "@/components/market/AuctionPanel";
-import { PlayerName, playerTag } from "@/components/social/PlayerName";
+import { PlayerLink, playerLinkTag } from "@/components/social/PlayerLink";
 import { NoteText } from "@/components/ui/NoteText";
 import { PageShell } from "@/components/PageShell";
 import { Link } from "@/i18n/navigation";
@@ -61,7 +62,7 @@ export default async function AuctionPage({ params }: PageProps<"/[locale]/march
       </Link>
       <article className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
         <FudaTurnover rarity={detail.card.rarity} className="mx-auto w-full max-w-[200px] md:mx-0 md:w-[300px] md:max-w-none md:shrink-0">
-          <Fuda card={detail.card} series={detail.card.series} size="lg" preload />
+          <Fuda card={detail.card} series={detail.card.series} size="lg" preload corner={detail.viewerOwns && <OwnedBadge />} />
         </FudaTurnover>
 
         <div className="flex min-w-0 flex-1 flex-col gap-5">
@@ -74,7 +75,7 @@ export default async function AuctionPage({ params }: PageProps<"/[locale]/march
             </p>
             <h1 className="text-2xl font-extrabold md:text-3xl">{detail.card.name}</h1>
             <p className="text-sm text-text-muted">{detail.card.series}</p>
-            <p className="text-sm">{t.rich("detail.seller", { name: detail.sellerName ?? t("detail.anonymous"), player: playerTag(detail.sellerColor) })}</p>
+            <p className="text-sm">{t.rich("detail.seller", { name: detail.seller.name, player: playerLinkTag(detail.seller) })}</p>
           </header>
 
           {detail.note && (
@@ -109,10 +110,8 @@ export default async function AuctionPage({ params }: PageProps<"/[locale]/march
             ) : (
               <ol className="flex flex-col gap-1 text-sm">
                 {detail.bids.map((b) => (
-                  <li key={b.id} className="flex items-center justify-between gap-2 rounded-control border border-border bg-surface px-3 py-2">
-                    <span className="min-w-0 truncate">
-                      {b.me ? <strong>{t("detail.you")}</strong> : <PlayerName name={b.bidderName ?? t("detail.anonymous")} color={b.bidderColor} />}
-                    </span>
+                  <li key={b.id} className="flex items-center justify-between gap-2 rounded-control border border-border bg-surface px-3">
+                    <PlayerLink player={b.me ? { ...b.bidder, name: t("detail.you") } : b.bidder} />
                     <span className="flex shrink-0 items-center gap-3">
                       <span className="font-bold tabular-nums text-kin">{t("zeni", { amount: b.amount })}</span>
                       <time dateTime={b.createdAt.toISOString()} className="text-xs text-text-muted">

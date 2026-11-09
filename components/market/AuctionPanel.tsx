@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { sellerNet } from "@/lib/market/rules";
+import { anonymousPlayer } from "@/lib/social/shown-player";
 import {
   auctionLiveAction,
   buyNowAction,
@@ -14,7 +15,7 @@ import {
 import type { AuctionLive } from "@/server/market/queries";
 import { ButtonLink } from "../ui/ButtonLink";
 import { ZeniCoin } from "../layout/ZeniCoin";
-import { playerTag } from "../social/PlayerName";
+import { playerLinkTag } from "../social/PlayerLink";
 import { Button } from "../ui/Button";
 import { Countdown } from "./Countdown";
 import { inputClass } from "../ui/Field";
@@ -145,6 +146,7 @@ export function AuctionPanel({
     bid >= shown.minNext &&
     (bid <= (shown.maxBid ?? 0) || (shown.buyoutPrice !== null && bid >= shown.buyoutPrice));
   const endsAt = new Date(shown.endsAt).getTime();
+  const leader = shown.leader ?? anonymousPlayer(t("detail.anonymous"));
 
   return (
     <section className="flex flex-col gap-4 lacquer rounded-card p-4" aria-live="polite">
@@ -163,7 +165,7 @@ export function AuctionPanel({
       </div>
 
       {open && shown.bidCount > 0 && !shown.leading && (
-        <p className="text-sm">{t.rich("detail.leader", { name: shown.leaderName ?? t("detail.anonymous"), player: playerTag(shown.leaderColor) })}</p>
+        <p className="text-sm">{t.rich("detail.leader", { name: leader.name, player: playerLinkTag(leader) })}</p>
       )}
       {open && shown.leading && <p className="rounded-control border border-kin/60 p-3 text-sm">{t("detail.youLead")}</p>}
 
@@ -172,7 +174,7 @@ export function AuctionPanel({
           {shown.status === "SOLD"
             ? shown.leading
               ? t("detail.soldYou", { amount: shown.finalPrice ?? shown.price })
-              : t.rich("detail.soldFor", { amount: shown.finalPrice ?? shown.price, name: shown.leaderName ?? t("detail.anonymous"), player: playerTag(shown.leaderColor) })
+              : t.rich("detail.soldFor", { amount: shown.finalPrice ?? shown.price, name: leader.name, player: playerLinkTag(leader) })
             : shown.status === "EXPIRED"
               ? t("detail.expired")
               : t("detail.cancelled")}
