@@ -5,7 +5,7 @@ const now = new Date("2026-10-30T12:00:00Z");
 const auction: DiscordAuction = {
   id: "auction-123", status: "ACTIVE", startPrice: 1000, buyoutPrice: 2500,
   currentBid: null, finalPrice: null, endsAt: new Date("2026-10-30T18:00:00Z"), sellerName: "Sakura",
-  card: { name: "Luffy", rarityName: "Gold", imageUrl: "https://images.example/luffy.png", series: "One Piece" },
+  card: { name: "Luffy", rarityName: "Gold", imageUrl: "https://images.example/luffy.png", series: "One Piece", spoiler: false },
 };
 
 describe("annonce du marché sur Discord", () => {
@@ -42,11 +42,17 @@ describe("annonce du marché sur Discord", () => {
     expect(result.embeds![0].image).toBeUndefined();
     expect(result.allowed_mentions).toEqual({ parse: [] });
   });
+  it("annonce une carte spoil sans son illustration, mais avec son nom et sa rareté", () => {
+    const embed = auctionMessage({ ...auction, card: { ...auction.card, spoiler: true } }, "https://kiraku.example", now).embeds![0];
+    expect(embed.image).toBeUndefined();
+    expect(JSON.stringify(embed)).not.toContain(auction.card.imageUrl);
+    expect(embed.title).toBe("Luffy · Gold");
+  });
 });
 
 const listing: DiscordTradeListing = {
   id: "listing-123", status: "OPEN", expiresAt: new Date("2026-11-01T12:00:00Z"), ownerName: "Sakura", available: true,
-  card: { name: "Luffy", rarityName: "Gold", imageUrl: "https://images.example/luffy.png" },
+  card: { name: "Luffy", rarityName: "Gold", imageUrl: "https://images.example/luffy.png", spoiler: false },
   wants: [{ name: "Naruto", rarityName: "AR" }, { name: "Ichigo", rarityName: "Gold" }],
 };
 
@@ -71,6 +77,11 @@ describe("annonce d'échange carte contre carte", () => {
   it("n'annonce pas une carte indisponible comme échange ouvert", () => {
     const result = tradeListingMessage({ ...listing, available: false }, "https://kiraku.example", now);
     expect(result.embeds![0].fields).toContainEqual({ name: "Statut", value: "Carte indisponible", inline: true });
+  });
+  it("propose une carte spoil sans son illustration", () => {
+    const embed = tradeListingMessage({ ...listing, card: { ...listing.card, spoiler: true } }, "https://kiraku.example", now).embeds![0];
+    expect(embed.image).toBeUndefined();
+    expect(embed.fields!.find((f) => f.name === "Carte proposée")?.value).toBe("Luffy · Gold");
   });
   it("expire aussi les annonces pas encore clôturées en base", () => {
     const result = tradeListingMessage(listing, "https://kiraku.example", new Date("2026-11-02"));

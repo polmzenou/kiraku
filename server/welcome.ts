@@ -24,7 +24,7 @@ export type ShowcaseCard = FudaCard & { id: string };
 async function showcaseCards(ids: readonly string[]): Promise<ShowcaseCard[]> {
   const cards = await prisma.card.findMany({
     where: { id: { in: [...ids] }, status: { not: "ARCHIVED" } },
-    select: { id: true, name: true, nameNative: true, imageUrl: true, rank: true, rarity: true, power: true, ki: true, appearance: true, formName: true },
+    select: { id: true, name: true, nameNative: true, imageUrl: true, rank: true, rarity: true, power: true, ki: true, appearance: true, formName: true, spoiler: true },
   });
   return cards.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
 }

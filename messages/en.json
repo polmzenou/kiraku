@@ -183,6 +183,12 @@
     "yoru": "Yoru (dark)",
     "washi": "Washi (light)"
   },
+  "spoiler": {
+    "label": "Spoiler mode",
+    "show": "Show everything",
+    "hide": "Blur spoilers",
+    "hint": "Blurs the art of characters and transformations that give away the story. The name, rarity and stats stay visible."
+  },
   "locale": {
     "label": "Language",
     "fr": "Français",
@@ -332,7 +338,8 @@
     "power": "Power {value}",
     "ki": "Ki {value}",
     "locked": "Card never obtained",
-    "unknown": "???"
+    "unknown": "???",
+    "spoiler": "Spoiler"
   },
   "rarity": {
     "COMMON": "Common",
@@ -536,6 +543,7 @@
     "referral": "Referrals",
     "more": "More",
     "social": "Social",
+    "event": "Event",
     "casino": "Casino",
     "alert": "Reward to claim"
   },
@@ -1248,6 +1256,7 @@
       "focus": "Series focus",
       "pullFeed": "Big pulls",
       "eventGauge": "Event",
+      "showcaseEvent": "Showcase event",
       "battleSandbox": "Battle sandbox",
       "news": "What's new",
       "universes": "Universes",
@@ -2780,6 +2789,8 @@
       "boosterExclusive": "Exclusive variant",
       "boosterExclusiveOff": "Unchecked: it follows its base card into all of its boosters (series focus, Divine…), plus the ones checked below.",
       "boosterExclusiveOn": "Checked: it only drops from the boosters checked below (event, banner…).",
+      "spoiler": "Spoiler",
+      "spoilerHint": "Character or transformation that gives away the story: its art is blurred for players who turned on spoiler mode. The name and details stay visible.",
       "boostersExtra": "Boosters on top of the base card's",
       "ultimate": "Ultimate in battle"
     },
@@ -3061,6 +3072,52 @@
         "goal": "Can be changed during the event: the gauge adjusts right away.",
         "refreshSeconds": "How often a player's page asks for the count again.",
         "cacheSeconds": "The count is recalculated at most once per period, however many players there are."
+      }
+    },
+    "showcaseEvent": {
+      "title": "Showcase event",
+      "intro": "Contest for the most beautiful showcase. The event stays hidden until it is turned on. Between the two dates, registered players enter a showcase (frozen snapshot) and vote; votes stay secret from players until the end, then the podium appears on the home page.",
+      "current": "Status: {phase} · edition {edition} · {entries} entries · {votes} votes",
+      "phases": {
+        "hidden": "hidden",
+        "invalid": "invalid dates",
+        "upcoming": "upcoming",
+        "live": "live",
+        "ended": "ended"
+      },
+      "open": "Open /event",
+      "preview": "Preview /event (admins only)",
+      "settingsSection": "Settings",
+      "invalid": "The end must come after the start, and the edition may only contain lowercase letters, digits and hyphens.",
+      "keys": {
+        "enabled": "Event visible",
+        "edition": "Edition",
+        "startsAt": "Start",
+        "endsAt": "End",
+        "minCards": "Minimum cards",
+        "pageSize": "Showcases per page"
+      },
+      "hints": {
+        "enabled": "Off: /event returns 404, and the event appears neither in the navigation nor on the home page.",
+        "edition": "Event identifier (lowercase letters, digits, hyphens). Changing it starts a new event: entries and votes start from zero.",
+        "date": "In your browser's local time.",
+        "minCards": "Number of cards a showcase must hold to be entered.",
+        "pageSize": "Number of showcases per page on /event."
+      },
+      "entriesTitle": "Entries · {edition}",
+      "entriesHint": "Live votes, visible to admins only. Removing an entry also deletes its votes.",
+      "noEntries": "No entries for this edition.",
+      "cards": "{count, plural, =0 {empty} one {# card} other {# cards}}",
+      "votes": "{count, plural, =0 {0 votes} one {# vote} other {# votes}}",
+      "hiddenEntry": "Hidden: account banned or deleted",
+      "remove": "Remove",
+      "removeConfirm": "Remove {name}'s entry and its votes? This cannot be undone.",
+      "errors": {
+        "FORBIDDEN": "Access denied.",
+        "INVALID": "Invalid request.",
+        "RATE_LIMITED": "Too many attempts: try again in a moment.",
+        "NOT_FOUND": "This entry no longer exists.",
+        "UNAVAILABLE": "This isn't possible right now."
       }
     },
     "pullFeed": {
@@ -3587,6 +3644,81 @@
     "mainBadge": "Shown on your profile: everyone can see it",
     "privateBadge": "Private: only you can see it",
     "capacityUpTo": "up to {count}"
+  },
+  "event": {
+    "title": "Showcase event",
+    "subtitle": "The contest for the most beautiful showcase: enter yours and vote for your favourite.",
+    "previewBanner": "Admin preview: the event is hidden from players.",
+    "noDates": "The event dates are not set yet.",
+    "status": {
+      "upcoming": "Opens on {start}.",
+      "live": "Entries and votes open until {end}.",
+      "ended": "Event ended on {end}."
+    },
+    "rules": {
+      "title": "Rules",
+      "entry": "Each registered player enters one of their showcases. It is captured when you enter: editing it afterwards does not change your entry. You can withdraw it and enter another one while the event is open.",
+      "vote": "One vote per registered player, which you can change at any time. You cannot vote for your own showcase.",
+      "results": "Votes stay secret until the end. The showcase with the most votes wins, and the top three make the podium."
+    },
+    "participation": {
+      "title": "My entry",
+      "guest": "Create your account to enter a showcase and vote.",
+      "signUp": "Create my account",
+      "unavailable": "Your account cannot take part in the event.",
+      "entered": "You are taking part with this showcase, as it was when you entered.",
+      "pick": "Choose the showcase to enter",
+      "noShowcase": "You don't have a showcase yet. Create one from your profile to take part.",
+      "createShowcase": "Go to my profile",
+      "cards": "{count, plural, =0 {empty} one {# card} other {# cards}}",
+      "tooFew": "needs at least {min, plural, one {# card} other {# cards}}",
+      "enter": "Enter this showcase",
+      "confirmEnter": "Your showcase will be captured exactly as it is now. Your username and this showcase will be visible to every player.",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "withdraw": "Withdraw my entry",
+      "confirmWithdraw": "Your showcase leaves the event and loses all its votes. You can enter another one while the event is open."
+    },
+    "gallery": {
+      "title": "Showcases in the running",
+      "count": "{count, plural, =0 {No showcases} one {# showcase} other {# showcases}}",
+      "empty": "No showcase has entered yet.",
+      "emptyEnded": "No showcase took part in this event."
+    },
+    "entry": {
+      "of": "<player>{name}</player>'s showcase",
+      "label": "{name}'s showcase",
+      "own": "Your showcase",
+      "rank": "{rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+      "votes": "{count, plural, =0 {0 votes} one {# vote} other {# votes}}"
+    },
+    "vote": {
+      "for": "Vote for {name}",
+      "voted": "Your vote",
+      "clear": "Remove my vote"
+    },
+    "results": {
+      "title": "Results",
+      "podium": "Showcase event podium"
+    },
+    "pagination": {
+      "label": "Showcase pages",
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {page} of {pages}"
+    },
+    "errors": {
+      "NO_SESSION": "Sign in again to continue.",
+      "INVALID": "Invalid request.",
+      "GUEST": "Create your account to take part and vote.",
+      "UNAVAILABLE": "This isn't possible right now.",
+      "CLOSED": "The event is not open.",
+      "RATE_LIMITED": "Too many attempts: try again in a moment.",
+      "NOT_FOUND": "This showcase is no longer in the event.",
+      "TOO_FEW_CARDS": "This showcase doesn't have enough cards.",
+      "ALREADY_ENTERED": "You have already entered a showcase.",
+      "OWN_ENTRY": "You can't vote for your own showcase."
+    }
   },
   "wishlist": {
     "title": "Wishlist",
@@ -4190,6 +4322,20 @@
       "progressLabel": "Event gauge progress",
       "ctaSignup": "Sign up to fill the gauge",
       "ctaInvite": "Invite friends to fill the gauge"
+    },
+    "showcaseEvent": {
+      "title": "Showcase event",
+      "subtitle": {
+        "upcoming": "Coming soon",
+        "live": "Live now",
+        "ended": "Ended on {end}"
+      },
+      "live": "Enter your most beautiful showcase and vote for your favourite, until {end}.",
+      "upcoming": "The contest for the most beautiful showcase opens on {start}.",
+      "join": "See the showcases",
+      "discover": "Discover the event",
+      "podiumTitle": "Showcase podium",
+      "all": "See every showcase"
     },
     "collectors": {
       "title": "Top collectors",
@@ -4971,6 +5117,7 @@
       "consent": "Remembers your cookie choices.",
       "theme": "Remembers the Yoru or Washi theme.",
       "motion": "Remembers whether animations are turned off.",
+      "spoiler": "Remembers whether spoiler art is blurred (spoiler mode).",
       "locale": "Remembers the chosen language.",
       "sound": "Remembers whether sound is on.",
       "discordLater": "Remembers when you postponed the Discord invitation (\"Later\").",

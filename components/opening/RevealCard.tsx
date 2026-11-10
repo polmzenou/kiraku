@@ -223,7 +223,7 @@ function GhostArt({ card }: { card: OpenedCardView }) {
   return (
     <span className="absolute inset-0 overflow-hidden rounded-[14px] bg-[var(--fuda-frame,#6f8fd8)]">
       <span className="absolute inset-1.5 overflow-hidden rounded-[9px]">
-        <Image src={card.imageUrl} alt="" fill sizes="(min-width: 768px) 320px, 80vw" draggable={false} className="object-cover object-top" />
+        <Image src={card.imageUrl} alt="" fill sizes="(min-width: 768px) 320px, 80vw" draggable={false} className="object-cover object-top" data-spoiler={card.spoiler || undefined} />
       </span>
     </span>
   );

@@ -183,6 +183,12 @@
     "yoru": "Yoru (sombre)",
     "washi": "Washi (clair)"
   },
+  "spoiler": {
+    "label": "Mode spoiler",
+    "show": "Tout afficher",
+    "hide": "Flouter les spoils",
+    "hint": "Floute l'illustration des personnages et des transformations qui dévoilent l'histoire. Le nom, la rareté et les stats restent visibles."
+  },
   "locale": {
     "label": "Langue",
     "fr": "Français",
@@ -332,7 +338,8 @@
     "power": "Puissance {value}",
     "ki": "Ki {value}",
     "locked": "Carte jamais obtenue",
-    "unknown": "???"
+    "unknown": "???",
+    "spoiler": "Spoil"
   },
   "rarity": {
     "COMMON": "Commune",
@@ -536,6 +543,7 @@
     "referral": "Parrainage",
     "more": "Plus",
     "social": "Social",
+    "event": "Event",
     "casino": "Casino",
     "alert": "Récompense à réclamer"
   },
@@ -1248,6 +1256,7 @@
       "focus": "Focus série",
       "pullFeed": "Gros tirages",
       "eventGauge": "Événement",
+      "showcaseEvent": "Event vitrines",
       "battleSandbox": "Bac à sable combat",
       "news": "Nouveautés",
       "universes": "Univers",
@@ -2780,6 +2789,8 @@
       "boosterExclusive": "Variante exclusive",
       "boosterExclusiveOff": "Décoché : elle suit sa carte de base dans tous ses boosters (Focus série, Divin…), plus ceux cochés ci-dessous.",
       "boosterExclusiveOn": "Coché : elle ne sort que des boosters cochés ci-dessous (événement, bannière…).",
+      "spoiler": "Spoil",
+      "spoilerHint": "Personnage ou transformation qui dévoile l'histoire : son illustration est floutée pour les joueurs qui ont activé le mode spoiler. Le nom et les infos restent visibles.",
       "boostersExtra": "Boosters en plus de ceux de la carte de base",
       "ultimate": "Ultime en combat"
     },
@@ -3061,6 +3072,52 @@
         "goal": "Modifiable pendant l'événement : la jauge s'ajuste tout de suite.",
         "refreshSeconds": "Fréquence à laquelle la page d'un joueur redemande le compte.",
         "cacheSeconds": "Le compte est recalculé au plus une fois par durée, quel que soit le nombre de joueurs."
+      }
+    },
+    "showcaseEvent": {
+      "title": "Event vitrines",
+      "intro": "Concours de la plus belle vitrine. L'event reste caché tant qu'il n'est pas activé. Entre les deux dates, les joueurs inscrits engagent une vitrine (photo figée) et votent ; les votes restent secrets pour les joueurs jusqu'à la fin, puis le podium apparaît sur l'accueil.",
+      "current": "État : {phase} · édition {edition} · {entries} inscriptions · {votes} votes",
+      "phases": {
+        "hidden": "masqué",
+        "invalid": "dates invalides",
+        "upcoming": "à venir",
+        "live": "en cours",
+        "ended": "terminé"
+      },
+      "open": "Ouvrir /event",
+      "preview": "Aperçu de /event (admins seulement)",
+      "settingsSection": "Réglages",
+      "invalid": "La fin doit suivre le début, et l'édition ne contient que des minuscules, des chiffres et des tirets.",
+      "keys": {
+        "enabled": "Event visible",
+        "edition": "Édition",
+        "startsAt": "Début",
+        "endsAt": "Fin",
+        "minCards": "Cartes minimum",
+        "pageSize": "Vitrines par page"
+      },
+      "hints": {
+        "enabled": "Désactivé : /event répond 404, et l'event n'apparaît ni dans la navigation ni sur l'accueil.",
+        "edition": "Identifiant de l'event (minuscules, chiffres, tirets). Le changer démarre un nouvel event : inscriptions et votes repartent de zéro.",
+        "date": "Dans l'heure locale de ton navigateur.",
+        "minCards": "Nombre de cartes qu'une vitrine doit contenir pour être inscrite.",
+        "pageSize": "Nombre de vitrines par page sur /event."
+      },
+      "entriesTitle": "Inscriptions · {edition}",
+      "entriesHint": "Votes en direct, visibles par les admins seulement. Retirer une inscription efface aussi ses votes.",
+      "noEntries": "Aucune inscription pour cette édition.",
+      "cards": "{count, plural, =0 {vide} one {# carte} other {# cartes}}",
+      "votes": "{count, plural, =0 {0 vote} one {# vote} other {# votes}}",
+      "hiddenEntry": "Masquée : compte banni ou supprimé",
+      "remove": "Retirer",
+      "removeConfirm": "Retirer l'inscription de {name} et ses votes ? C'est définitif.",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Demande invalide.",
+        "RATE_LIMITED": "Trop de tentatives : réessaie dans un instant.",
+        "NOT_FOUND": "Cette inscription n'existe plus.",
+        "UNAVAILABLE": "Action impossible pour le moment."
       }
     },
     "pullFeed": {
@@ -3587,6 +3644,81 @@
     "mainBadge": "Affichée sur ton profil : tout le monde la voit",
     "privateBadge": "Privée : visible par toi seul",
     "capacityUpTo": "jusqu'à {count}"
+  },
+  "event": {
+    "title": "Event vitrines",
+    "subtitle": "Le concours de la plus belle vitrine : inscris la tienne et vote pour ta préférée.",
+    "previewBanner": "Aperçu admin : l'event est masqué pour les joueurs.",
+    "noDates": "Les dates de l'event ne sont pas encore fixées.",
+    "status": {
+      "upcoming": "Ouverture le {start}.",
+      "live": "Inscriptions et votes ouverts jusqu'au {end}.",
+      "ended": "Event terminé le {end}."
+    },
+    "rules": {
+      "title": "Règles",
+      "entry": "Chaque joueur inscrit engage une seule de ses vitrines. Elle est photographiée au moment de l'inscription : la modifier ensuite ne change pas ta participation. Tu peux la retirer et en inscrire une autre tant que l'event est ouvert.",
+      "vote": "Un vote par joueur inscrit, que tu peux changer à tout moment. Impossible de voter pour ta propre vitrine.",
+      "results": "Les votes restent secrets jusqu'à la fin. La vitrine qui en reçoit le plus gagne, et les trois premières montent sur le podium."
+    },
+    "participation": {
+      "title": "Ma participation",
+      "guest": "Crée ton compte pour inscrire une vitrine et voter.",
+      "signUp": "Créer mon compte",
+      "unavailable": "Ton compte ne peut pas participer à l'event.",
+      "entered": "Tu participes avec cette vitrine, telle qu'elle était à ton inscription.",
+      "pick": "Choisis la vitrine à inscrire",
+      "noShowcase": "Tu n'as pas encore de vitrine. Crées-en une depuis ton profil pour participer.",
+      "createShowcase": "Aller à mon profil",
+      "cards": "{count, plural, =0 {vide} one {# carte} other {# cartes}}",
+      "tooFew": "il faut au moins {min, plural, one {# carte} other {# cartes}}",
+      "enter": "Participer avec cette vitrine",
+      "confirmEnter": "Ta vitrine va être photographiée telle qu'elle est maintenant. Ton pseudo et cette vitrine seront visibles par tous les joueurs.",
+      "confirm": "Confirmer",
+      "cancel": "Annuler",
+      "withdraw": "Retirer ma participation",
+      "confirmWithdraw": "Ta vitrine quitte l'event et perd tous ses votes. Tu pourras en inscrire une autre tant que l'event est ouvert."
+    },
+    "gallery": {
+      "title": "Les vitrines en lice",
+      "count": "{count, plural, =0 {Aucune vitrine} one {# vitrine} other {# vitrines}}",
+      "empty": "Aucune vitrine inscrite pour l'instant.",
+      "emptyEnded": "Aucune vitrine n'a participé à cet event."
+    },
+    "entry": {
+      "of": "Vitrine de <player>{name}</player>",
+      "label": "Vitrine de {name}",
+      "own": "Ta vitrine",
+      "rank": "{rank, selectordinal, one {#re} other {#e}}",
+      "votes": "{count, plural, =0 {0 vote} one {# vote} other {# votes}}"
+    },
+    "vote": {
+      "for": "Voter pour {name}",
+      "voted": "Ton vote",
+      "clear": "Retirer mon vote"
+    },
+    "results": {
+      "title": "Résultats",
+      "podium": "Podium de l'event vitrines"
+    },
+    "pagination": {
+      "label": "Pages des vitrines",
+      "previous": "Précédentes",
+      "next": "Suivantes",
+      "page": "Page {page} sur {pages}"
+    },
+    "errors": {
+      "NO_SESSION": "Reconnecte-toi pour continuer.",
+      "INVALID": "Demande invalide.",
+      "GUEST": "Crée ton compte pour participer et voter.",
+      "UNAVAILABLE": "Action impossible pour le moment.",
+      "CLOSED": "L'event n'est pas ouvert.",
+      "RATE_LIMITED": "Trop de tentatives : réessaie dans un instant.",
+      "NOT_FOUND": "Cette vitrine n'est plus dans l'event.",
+      "TOO_FEW_CARDS": "Cette vitrine n'a pas assez de cartes.",
+      "ALREADY_ENTERED": "Tu participes déjà avec une vitrine.",
+      "OWN_ENTRY": "Tu ne peux pas voter pour ta propre vitrine."
+    }
   },
   "wishlist": {
     "title": "Liste de souhaits",
@@ -4190,6 +4322,20 @@
       "progressLabel": "Progression de la jauge de l'événement",
       "ctaSignup": "Inscris-toi pour faire monter la jauge",
       "ctaInvite": "Invite des amis pour remplir la jauge"
+    },
+    "showcaseEvent": {
+      "title": "Event vitrines",
+      "subtitle": {
+        "upcoming": "Bientôt",
+        "live": "En cours",
+        "ended": "Terminé le {end}"
+      },
+      "live": "Inscris ta plus belle vitrine et vote pour ta préférée, jusqu'au {end}.",
+      "upcoming": "Le concours de la plus belle vitrine ouvre le {start}.",
+      "join": "Voir les vitrines",
+      "discover": "Découvrir l'event",
+      "podiumTitle": "Podium des vitrines",
+      "all": "Voir toutes les vitrines"
     },
     "collectors": {
       "title": "Top collectionneurs",
@@ -4971,6 +5117,7 @@
       "consent": "Retient tes choix de cookies.",
       "theme": "Retient le thème Yoru ou Washi.",
       "motion": "Retient si les animations sont coupées.",
+      "spoiler": "Retient si les illustrations spoil sont floutées (mode spoiler).",
       "locale": "Retient la langue choisie.",
       "sound": "Retient si le son est activé.",
       "discordLater": "Retient quand tu as repoussé l'invitation Discord (« Plus tard »).",

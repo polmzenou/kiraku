@@ -36,6 +36,8 @@ export const EXPORT_FIELDS = {
   abilityPurchases: ["cardId", "kind", "ability", "price", "createdAt"],
   cardLoadouts: ["cardId", "keywords", "technique", "updatedAt"],
   showcases: ["id", "name", "layout", "theme", "sortOrder", "cards", "createdAt", "updatedAt"],
+  showcaseEventEntries: ["id", "edition", "showcaseId", "name", "layout", "theme", "cards", "createdAt"],
+  showcaseEventVotes: ["edition", "entryId", "createdAt", "updatedAt"],
   boosterCredits: ["boosterTypeId", "count"],
   openings: ["id", "boosterSlug", "catalogCardIds", "golden", "divine", "pityTriggered", "zeniSpent", "createdAt"],
   ledger: ["amount", "reason", "refId", "balanceAfter", "createdAt"],

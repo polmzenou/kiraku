@@ -43,6 +43,14 @@ describe("frontière du catalogue administrateur", () => {
     expect(mocks.save).toHaveBeenCalledWith({}, "admin", draft, "full");
     expect(mocks.tag.mock.calls.map(([tag]) => tag)).toEqual(["catalog", "booster-types", "catalog-rarities", "settings"]);
   });
+  it("transmet la case spoil au cœur, et refuse une valeur qui n'est pas un booléen", async () => {
+    mocks.save.mockResolvedValue({ id: "created", updatedAt: "2026-10-20T00:00:00.000Z", seriesId: "series" });
+    expect(await saveCatalogCard({ ...draft, spoiler: true })).toMatchObject({ ok: true });
+    expect(mocks.save).toHaveBeenCalledWith({}, "admin", { ...draft, spoiler: true }, "full");
+    mocks.save.mockClear();
+    expect(await saveCatalogCard({ ...draft, spoiler: 1 })).toMatchObject({ ok: false, error: "INVALID" });
+    expect(mocks.save).not.toHaveBeenCalled();
+  });
 });
 describe("rôle DEV : brouillons seulement", () => {
   const card = { id: "card", updatedAt: "2026-10-20T00:00:00.000Z" };

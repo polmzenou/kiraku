@@ -75,7 +75,7 @@ export function BattleFuda({ card, state, selected, targetable, ready, fx, onPre
         />
 
         <div className={`transition-opacity duration-500 motion-reduce:transition-none ${dead ? "opacity-35" : "opacity-100"}`}>
-          <Fuda card={card} size="sm" variant="battle" tilt={false} sizes="(min-width: 1024px) 190px, (min-width: 768px) 150px, 30vw" />
+          <Fuda card={{ ...card, spoiler: card.spoiler === true }} size="sm" variant="battle" tilt={false} sizes="(min-width: 1024px) 190px, (min-width: 768px) 150px, 30vw" />
         </div>
 
         {/* Barrière : halo indigo */}

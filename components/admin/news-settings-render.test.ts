@@ -53,7 +53,7 @@ describe("formulaire admin des Nouveautés", () => {
         { ...NEWS_DEFAULT.items[1], id: "image", visual: { kind: "image", url: "", focalX: 50, focalY: 50 } },
       ],
     };
-    const card = { id: "cmvp2nn9s000008kzmfofvtxj", name: "Giorno Giovanna", nameNative: null, imageUrl: "https://s4.anilist.co/g.png", rank: 1, rarity: "AR" as const, power: 90, ki: 80, appearance: {}, formName: null };
+    const card = { id: "cmvp2nn9s000008kzmfofvtxj", name: "Giorno Giovanna", nameNative: null, imageUrl: "https://s4.anilist.co/g.png", rank: 1, rarity: "AR" as const, power: 90, ki: 80, appearance: {}, formName: null, spoiler: false };
     const html = render(config, { cartes: { kind: "cards", cards: [card] } });
     expect(html).toContain("Retirer Giorno Giovanna");
     expect(html).toContain('data-card="Giorno Giovanna"');

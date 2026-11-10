@@ -1360,3 +1360,10 @@
     }
   }
 }
+
+/* Mode spoiler (data-spoiler="hide" sur <html>, réglage du joueur) : illustration d'une carte spoil floutée hors des fuda
+   (vignettes, fantômes AR, cut-in de combat, couvertures d'album, formes liées du wiki). Les fuda ont leur règle dans
+   FudaFace.css. Hors couche, la règle passe devant les utilitaires : les filtres déjà posés sont repris. */
+:root[data-spoiler="hide"] img[data-spoiler] { filter: blur(6px); scale: 1.15; }
+:root[data-spoiler="hide"] img[data-spoiler].grayscale { filter: grayscale(1) blur(6px); }
+:root[data-spoiler="hide"] img[data-spoiler].fuda-art-gold { filter: sepia(1) saturate(2.4) hue-rotate(-14deg) brightness(1.04) contrast(1.08) blur(6px); }

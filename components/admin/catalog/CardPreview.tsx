@@ -30,7 +30,8 @@ function Reveal({ card }: { card: OpenedCardView }) {
 export function CardPreview({ draft, series, imageUrl }: { draft: CardDraft; series: string; imageUrl?: string }) {
   const t = useTranslations("admin.catalog");
   const [replay, setReplay] = useState(0);
-  const card: OpenedCardView = { ...draft, name: draft.name || t("previewName"), rank: null,
+  // L'admin voit toujours l'illustration, même en mode spoiler
+  const card: OpenedCardView = { ...draft, spoiler: false, name: draft.name || t("previewName"), rank: null,
     imageUrl: imageUrl || draft.imageUrl || "/icons/icon-512.png", series, anilistId: 0, cardId: "preview", userCardId: "preview", isNew: false, featured: false };
   return <aside className="top-4 flex min-w-0 flex-col gap-4 self-start rounded-card border border-border bg-surface p-5 lg:sticky" aria-label={t("preview")}>
     <div><h3 className="font-title text-xl font-bold">{t("preview")}</h3><p className="mt-1 text-xs text-text-muted">{t("previewHint")}</p></div>

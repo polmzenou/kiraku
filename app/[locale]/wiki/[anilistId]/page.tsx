@@ -12,7 +12,7 @@ import { routing } from "@/i18n/routing";
 import { seriesTitle } from "@/lib/catalog/display";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { localeAlternates, localePath } from "@/lib/seo/alternates";
-import { baseOpenGraph } from "@/lib/seo/open-graph";
+import { baseOpenGraph, ogImageUrl } from "@/lib/seo/open-graph";
 import { breadcrumbs } from "@/lib/seo/structured-data";
 import { appUrl } from "@/server/env";
 import { getCatalogCard, getCatalogStats, getRelatedCatalogCards } from "@/server/catalog/queries";
@@ -32,12 +32,16 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/wiki/[an
   const t = await getTranslations({ locale, namespace: "wiki" });
   const href = `/wiki/${card.anilistId}`;
   const description = t("cardDescription", { name: card.name, series: seriesTitle(card.series, locale) });
+  // Carte spoil : l'aperçu d'un lien (Discord, réseaux) ignore le mode spoiler du lecteur, il garde donc l'image du site
+  const share = card.spoiler
+    ? { openGraph: baseOpenGraph(locale), twitter: { card: "summary_large_image" as const, images: [ogImageUrl(locale)] } }
+    : { openGraph: { ...baseOpenGraph(locale), images: [{ url: card.imageUrl, alt: card.name }] }, twitter: { card: "summary" as const, images: [card.imageUrl] } };
   return {
     title: card.name,
     description,
     alternates: localeAlternates(href, locale),
-    openGraph: { ...baseOpenGraph(locale), title: card.name, description, images: [{ url: card.imageUrl, alt: card.name }] },
-    twitter: { card: "summary", title: card.name, description, images: [card.imageUrl] },
+    openGraph: { ...share.openGraph, title: card.name, description },
+    twitter: { ...share.twitter, title: card.name, description },
   };
 }
 

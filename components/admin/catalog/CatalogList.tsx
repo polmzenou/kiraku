@@ -69,13 +69,13 @@ export function CatalogList({ scope, data, rarities, boosters, series }: {
       const checked = selected.includes(c.id);
       return <li key={c.id} className={`flex gap-3 rounded-card border bg-surface p-3 ${checked ? "border-shu" : "border-border"}`}>
         {full && <label className="flex min-h-11 min-w-11 items-start justify-center pt-1"><input type="checkbox" checked={checked} aria-label={t("selectCard", { name: c.name })} onChange={(e) => setSelected(e.target.checked ? [...selected, c.id] : selected.filter((id) => id !== c.id))} /></label>}
-        <Link href={`/admin/catalogue/${c.id}`} className="w-20 shrink-0" aria-hidden="true" tabIndex={-1}><Fuda card={{ ...c, imageUrl: c.imageUrl || "/icons/icon-512.png" }} size="sm" tilt={false} /></Link>
+        <Link href={`/admin/catalogue/${c.id}`} className="w-20 shrink-0" aria-hidden="true" tabIndex={-1}><Fuda card={{ ...c, imageUrl: c.imageUrl || "/icons/icon-512.png", spoiler: false }} size="sm" tilt={false} /></Link>
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-title font-bold"><Link href={`/admin/catalogue/${c.id}`} className="hover:underline">{c.name}</Link></h3>
           <p className="truncate text-xs text-text-muted">{c.formName ? `${c.formName} · ` : ""}{c.series.titleRomaji}</p>
           <p className="mt-1 text-xs"><span className="font-seal">{rarities.find((r) => r.key === c.rarity)?.seal}</span> {tr(c.rarity)} · <span className="tabular-nums">{c.power} / {c.ki}</span> · #{c.publicId}</p>
           <p className="mt-1 flex flex-wrap gap-1 text-xs text-text-muted"><span className="rounded-pill border border-border px-2">{t(`statuses.${c.status}`)}</span><span className="rounded-pill border border-border px-2">{c.origin === "CUSTOM" ? t("custom") : "AniList"}</span>
-            {c.variantOfId && <span className="rounded-pill border border-kin px-2 text-kin">{t("kinds.variant")}</span>}{c.variants > 0 && <span className="rounded-pill border border-border px-2">{t("variantCount", { count: c.variants })}</span>}
+            {c.variantOfId && <span className="rounded-pill border border-kin px-2 text-kin">{t("kinds.variant")}</span>}{c.spoiler && <span className="rounded-pill border border-shu px-2 text-shu">{t("spoiler")}</span>}{c.variants > 0 && <span className="rounded-pill border border-border px-2">{t("variantCount", { count: c.variants })}</span>}
             <span className="rounded-pill border border-border px-2 tabular-nums">{t("ownedSummary", { owners: c.owners, copies: c.copies })}</span></p>
           <div className="mt-1 flex flex-wrap items-center gap-x-3"><Link href={`/admin/catalogue/${c.id}`} className="inline-flex min-h-11 items-center text-xs text-link underline">{t("edit")}</Link><Link href={`/admin/catalogue/nouvelle?duplicate=${c.id}`} className="inline-flex min-h-11 items-center text-xs text-link underline">{t("duplicate")}</Link><CatalogStatusButton id={c.id} updatedAt={c.updatedAt} archived={c.status === "ARCHIVED"} deletable={c.deletable && (full || c.status === "DRAFT")} name={c.name} canArchive={full} /></div>
         </div>

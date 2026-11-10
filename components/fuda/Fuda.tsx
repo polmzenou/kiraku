@@ -21,6 +21,11 @@ export type FudaCard = {
   appearance?: unknown;
   /** Nom de la forme d'une variante (« Gear 5 ») : remplace la série sur la ligne du bas. */
   formName?: string | null;
+  /**
+   * Personnage ou forme qui dévoile l'histoire : illustration floutée pour les joueurs en mode spoiler
+   * (`data-spoiler="hide"` sur <html>, FudaFace.css). Le nom et les stats restent lisibles.
+   */
+  spoiler: boolean;
 };
 
 type FudaSize = "sm" | "md" | "lg";
@@ -137,6 +142,9 @@ export function Fuda({
   const artStyle = { objectPosition: `${visual.focalX}% ${visual.focalY}%`, transform: `scale(${visual.zoom})`, transformOrigin: `${visual.focalX}% ${visual.focalY}%` };
   const subtitle = (!locked && card.formName) || series || (inBattle ? rarity(card.rarity) : undefined);
   const flip = flipBank(card.name) ? " kn-flip" : "";
+  // Anciennes données (copie d'un combat d'avant le mode spoiler) : champ absent = pas spoil
+  const spoiler = !locked && card.spoiler === true;
+  const spoilerAttr = spoiler ? { "data-spoiler": "" } : undefined;
 
   const content = (
     <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} style={customStyle}>
@@ -158,10 +166,13 @@ export function Fuda({
               draggable={false}
               className={`object-cover object-top${monochrome ? " grayscale" : ""}${gilded ? " fuda-art-gold" : ""}`}
               style={artStyle}
+              {...spoilerAttr}
             />
           )}
           {gilded && <span aria-hidden="true" className="fuda-gilt" />}
           <span aria-hidden="true" className="kn-grain" />
+          {/* Étiquette visible seulement en mode spoiler (display: none sinon, donc muette aussi pour les lecteurs d'écran) */}
+          {spoiler && <span className="kn-spoiler"><span className="font-title">{t("spoiler")}</span></span>}
         </div>
 
         {/* Banc de nuées dans la matière de la rareté : trait du contour et poudre d'or */}
@@ -216,7 +227,7 @@ export function Fuda({
         {corner && <span className="kn-corner">{corner}</span>}
       </div>
       {/* Full Art : le personnage détouré passe devant le cadre, sous le nom et les reflets */}
-      {fullArt && visual.cutoutUrl && <span aria-hidden="true" className="kn-cutout"><Image src={visual.cutoutUrl} alt="" fill sizes={sizes ?? l.sizes} draggable={false} className="object-cover object-top" style={artStyle} /></span>}
+      {fullArt && visual.cutoutUrl && <span aria-hidden="true" className="kn-cutout" {...spoilerAttr}><Image src={visual.cutoutUrl} alt="" fill sizes={sizes ?? l.sizes} draggable={false} className="object-cover object-top" style={artStyle} /></span>}
       {/* Effet de matière (laque, or, nacre) au-dessus de la carte, à partir d'Épique */}
       {!locked && !monochrome && visual.effects === undefined && tier >= BASE_RARITIES.indexOf("EPIC") && (
         <span aria-hidden="true" className="fuda-sheen" />

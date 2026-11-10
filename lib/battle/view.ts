@@ -94,6 +94,8 @@ export type CandidateCard = {
   /** Ulti du personnage selon sa rareté, indépendant du kit ; null sinon. */
   ultimate: Ultimate | null;
   universe: UniverseRef;
+  /** Illustration floutée en mode spoiler. */
+  spoiler: boolean;
 };
 
 /**

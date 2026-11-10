@@ -10,7 +10,8 @@ export type DiscordAuction = {
   finalPrice: number | null;
   endsAt: Date;
   sellerName: string;
-  card: { name: string; imageUrl: string; rarityName: string; series: string };
+  /** `spoiler` : carte qui dévoile l'histoire, annoncée sans son illustration (le salon ne connaît pas le mode spoiler des joueurs). */
+  card: { name: string; imageUrl: string; rarityName: string; series: string; spoiler: boolean };
 };
 
 function discordImage(value: string, origin: string): { url: string } | undefined {
@@ -32,7 +33,7 @@ export function auctionMessage(auction: DiscordAuction, origin: string, now = ne
   ];
   if (active && buyoutAvailable(auction.buyoutPrice, auction.currentBid)) fields.push({ name: "Achat immédiat", value: zeni(auction.buyoutPrice), inline: true });
   fields.push({ name: "Fin de la vente", value: `<t:${Math.floor(auction.endsAt.getTime() / 1000)}:F>`, inline: false });
-  const image = discordImage(auction.card.imageUrl, origin);
+  const image = auction.card.spoiler ? undefined : discordImage(auction.card.imageUrl, origin);
   return {
     embeds: [{
       title: `${discordText(auction.card.name, 80)} · ${discordText(auction.card.rarityName, 35)}`.slice(0, 256),
@@ -54,7 +55,7 @@ export type DiscordTradeListing = {
   expiresAt: Date;
   ownerName: string;
   available: boolean;
-  card: { name: string; imageUrl: string; rarityName: string };
+  card: { name: string; imageUrl: string; rarityName: string; spoiler: boolean };
   wants: Array<{ name: string; rarityName: string }>;
 };
 
@@ -68,7 +69,7 @@ export function tradeListingMessage(listing: DiscordTradeListing, origin: string
     listing.status === "EXPIRED" || (listing.status === "OPEN" && !open) ? "Expirée" :
     listing.status === "FAILED" || !listing.available ? "Carte indisponible" : "En cours";
   const label = (card: { name: string; rarityName: string }) => `${discordText(card.name, 65)} · ${discordText(card.rarityName, 25)}`;
-  const image = discordImage(listing.card.imageUrl, origin);
+  const image = listing.card.spoiler ? undefined : discordImage(listing.card.imageUrl, origin);
   const wantedFields: Array<{ name: string; value: string; inline: boolean }> = [];
   for (const card of listing.wants) {
     const line = `• ${label(card)}`;

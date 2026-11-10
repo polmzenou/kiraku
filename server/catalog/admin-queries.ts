@@ -34,7 +34,7 @@ export async function adminCatalogList(raw: Record<string, string | string[] | u
   const page = Math.min(pages, filters.page);
   const rows = await prisma.card.findMany({ where, orderBy: [...orderBy, { id: "asc" }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE,
     select: { id: true, publicId: true, name: true, nameNative: true, formName: true, imageUrl: true, appearance: true, rarity: true, rank: true, power: true, ki: true,
-      status: true, origin: true, updatedAt: true, variantOfId: true, series: { select: { titleRomaji: true } }, _count: { select: usage } } });
+      status: true, origin: true, updatedAt: true, variantOfId: true, spoiler: true, series: { select: { titleRomaji: true } }, _count: { select: usage } } });
   // Détenteurs distincts des cartes de la page (le nombre d'exemplaires vient déjà de _count.copies)
   const owned = rows.length ? await prisma.$queryRaw<{ cardId: string; owners: number }[]>`
     SELECT "cardId", COUNT(DISTINCT "ownerId")::int AS owners FROM "UserCard" WHERE "cardId" IN (${Prisma.join(rows.map((r) => r.id))}) GROUP BY "cardId"` : [];
@@ -90,12 +90,13 @@ export async function catalogEditorDraft(id: string, duplicate = false): Promise
     description: { fr: descriptions.fr || "", en: descriptions.en || "" }, appearance: parseAppearance(c.appearance),
     dropWeight: c.dropWeight, boosterIds: c.boosterIds, boosterExclusive: c.boosterExclusive, status: duplicate ? "DRAFT" : c.status,
     gender: c.gender, role: c.role as CardDraft["role"], birthMonth: c.birthMonth, birthDay: c.birthDay,
-    variantOfId: c.variantOfId, formName: c.formName };
+    variantOfId: c.variantOfId, formName: c.formName, spoiler: c.spoiler };
 }
 
 /**
  * Nouvelle variante (AR, Gold…) d'une carte de base : identité reprise, mais jamais l'image,
- * l'apparence ni les stats — l'admin choisit le visuel de la nouvelle forme.
+ * l'apparence ni les stats — l'admin choisit le visuel de la nouvelle forme. La case spoil suit
+ * la carte de base : la forme d'un personnage spoil l'est presque toujours.
  */
 export async function catalogVariantDraft(baseId: string, rarity: string): Promise<CardDraft | null> {
   const [base, definitions] = await Promise.all([catalogEditorDraft(baseId, true), getRarityDefinitions()]);

@@ -141,6 +141,9 @@ model User {
   showcases    Showcase[]
   wishlist     WishlistEntry[]
 
+  showcaseEventEntries ShowcaseEventEntry[]
+  showcaseEventVotes   ShowcaseEventVote[]
+
   sentFriends   Friendship[]       @relation("requester")
   recvFriends   Friendship[]       @relation("addressee")
   blocking      UserBlock[]        @relation("blocker")
@@ -359,6 +362,7 @@ model Card {
   adminOverrides   String[]           @default([])
   boosterIds       String[]           @default([]) // types explicitement sélectionnés pour les cartes manuelles
   boosterExclusive Boolean            @default(false) // variante : seulement les types cochés (sinon elle suit aussi sa carte de base)
+  spoiler          Boolean            @default(false) // personnage ou forme qui dévoile l'histoire : illustration floutée en mode spoiler
   name             String
   nameNative       String? // nom japonais, écrit verticalement sur la fuda
   imageUrl         String
@@ -633,6 +637,41 @@ model ShowcaseItem {
   @@id([showcaseId, position])
   @@unique([showcaseId, userCardId])
   @@index([userCardId])
+}
+
+// Event vitrines (/event) : une vitrine engagée, photographiée à l'inscription. La photo garde des ids de
+// Card (pas d'exemplaires : un exemplaire quitte les vitrines quand il change de main) et ne suit plus
+// la vitrine d'origine. Une inscription par joueur et par édition (event.showcase.edition) ; la retirer
+// efface ses votes, et le joueur peut se réinscrire tant que l'event est ouvert.
+model ShowcaseEventEntry {
+  id         String              @id @default(cuid())
+  edition    String              @db.VarChar(40)
+  userId     String
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  showcaseId String? // vitrine d'origine, indicatif (la photo ne la suit pas)
+  name       String?             @db.VarChar(32)
+  layout     String
+  theme      String
+  cards      Json // [{ position, cardId }]
+  createdAt  DateTime            @default(now())
+  votes      ShowcaseEventVote[]
+
+  @@unique([edition, userId])
+  @@index([edition, createdAt])
+}
+
+// Vote de l'event vitrines : un par joueur et par édition, remplacé quand il change d'avis.
+model ShowcaseEventVote {
+  edition   String             @db.VarChar(40)
+  voterId   String
+  voter     User               @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  entryId   String
+  entry     ShowcaseEventEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@id([edition, voterId])
+  @@index([entryId])
 }
 
 // Une carte souhaitée n'a pas besoin d'être possédée. Vingt positions au maximum par profil.

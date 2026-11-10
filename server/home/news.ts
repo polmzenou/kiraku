@@ -11,7 +11,7 @@ import { CATALOG_TAG } from "../catalog/queries";
 // Visuels des bannières Nouveautés : cartes publiées (éventail) et boosters actifs (sachet, vedettes).
 // Une carte retirée ou un booster éteint est ignoré : la bannière retombe sur son sceau.
 
-const CARD_FIELDS = { id: true, name: true, nameNative: true, imageUrl: true, rank: true, rarity: true, power: true, ki: true, appearance: true, formName: true } as const;
+const CARD_FIELDS = { id: true, name: true, nameNative: true, imageUrl: true, rank: true, rarity: true, power: true, ki: true, appearance: true, formName: true, spoiler: true } as const;
 
 type Loaded = { cards: NewsCardView[]; boosters: (NewsBoosterView & { featured: string[] })[] };
 

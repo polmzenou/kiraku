@@ -55,6 +55,7 @@ const candidate = (i: number): CandidateCard => ({
   power: 60,
   ki: 60,
   hp: 176,
+  spoiler: false,
   keywords: ["FLURRY", "POISON"],
   technique: "ISSEN",
   ultimate: i % 2 ? "FUDO" : null,

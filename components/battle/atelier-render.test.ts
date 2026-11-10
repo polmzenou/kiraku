@@ -53,6 +53,7 @@ const card = (over: Partial<WorkshopCard> = {}): WorkshopCard => ({
   power: 80,
   ki: 70,
   hp: 192,
+  spoiler: false,
   universe: { key: "u-jjk", name: "Jujutsu Kaisen" },
   keywords: ["FLURRY", "POISON"],
   technique: "ISSEN",

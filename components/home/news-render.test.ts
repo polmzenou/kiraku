@@ -49,7 +49,7 @@ const render = (locale: "fr" | "en", node: ReactElement) => renderToStaticMarkup
 const view = (config: NewsConfig, locale: "fr" | "en", collapsed = false, visuals: NewsVisuals = {}) =>
   render(locale, createElement(NewsPanelView, { news: localizeNews(config, locale, visuals)!, initialCollapsed: collapsed }));
 
-const card = (id: string): NewsCardView => ({ id, name: `Carte ${id}`, nameNative: null, imageUrl: `https://s4.anilist.co/${id}.png`, rank: 1, rarity: "MYTHIC", power: 90, ki: 80, appearance: {}, formName: null });
+const card = (id: string): NewsCardView => ({ id, name: `Carte ${id}`, nameNative: null, imageUrl: `https://s4.anilist.co/${id}.png`, rank: 1, rarity: "MYTHIC", power: 90, ki: 80, appearance: {}, formName: null, spoiler: false });
 const imperial = { slug: "imperial", name: "Impérial", emblem: "皇", shape: "JUBAKO" as const, theme: { base: "#1E3557", dark: "#0B1424", pattern: "kikko" as const, ink: "light" as const }, endsAt: "2026-11-06T22:00:00.000Z" };
 const only = (item: Partial<NewsItem>): NewsConfig => ({ ...NEWS_DEFAULT, items: [{ ...NEWS_DEFAULT.items[0], ...item }] });
 

@@ -13,6 +13,7 @@ import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { routing } from "@/i18n/routing";
 import { pickClientMessages } from "@/i18n/client-messages";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
+import { parseSpoilerMode, SPOILER_COOKIE } from "@/lib/spoiler";
 import { MOTION_COOKIE, parseMotionPref } from "@/lib/motion-pref";
 import { MotionPreferenceProvider } from "@/components/motion/MotionPreference";
 import { RealtimeRoot } from "@/components/realtime/RealtimeRoot";
@@ -62,16 +63,17 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   const jar = await cookies();
   const theme = parseTheme(jar.get(THEME_COOKIE)?.value);
   const motion = parseMotionPref(jar.get(MOTION_COOKIE)?.value);
+  const spoiler = parseSpoilerMode(jar.get(SPOILER_COOKIE)?.value);
   const clientMessages = pickClientMessages(await getMessages());
   const nonce = adsEnabled() ? ((await headers()).get("x-nonce") ?? undefined) : undefined;
 
   return (
-    <html lang={locale} data-theme={theme} data-motion={motion === "reduced" ? "reduced" : undefined} data-fx={motion === "lite" ? "lite" : undefined} className={fontVariables}>
+    <html lang={locale} data-theme={theme} data-motion={motion === "reduced" ? "reduced" : undefined} data-fx={motion === "lite" ? "lite" : undefined} data-spoiler={spoiler === "hide" ? "hide" : undefined} className={fontVariables}>
       <body className="min-h-dvh">
         <NextIntlClientProvider messages={clientMessages}>
           <MotionPreferenceProvider initial={motion}>
             <RealtimeRoot>
-              <AppHeader theme={theme} />
+              <AppHeader theme={theme} spoiler={spoiler} />
               <AccountGate>
                 <SwipeNav>{children}</SwipeNav>
                 <PlayerAnnouncements />

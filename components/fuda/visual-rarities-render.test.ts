@@ -12,7 +12,7 @@ vi.mock("next/image", () => ({
   default: ({ src, alt, className }: { src: string; alt: string; className: string }) => createElement("img", { src, alt, className }),
 }));
 
-const card = { name: "Luffy", nameNative: null, imageUrl: "https://s4.anilist.co/luffy.png", rank: 3, power: 90, ki: 70 };
+const card = { name: "Luffy", nameNative: null, imageUrl: "https://s4.anilist.co/luffy.png", rank: 3, power: 90, ki: 70, spoiler: false };
 const render = (rarity: string, appearance: object = {}, props: object = {}) =>
   renderToStaticMarkup(createElement(Fuda, { card: { ...card, rarity, appearance }, tilt: false, ...props }));
 

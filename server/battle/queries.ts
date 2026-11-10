@@ -203,6 +203,7 @@ type CandidateRow = {
   power: number;
   ki: number;
   appearance: unknown;
+  spoiler: boolean;
   universe: CandidateCard["universe"];
 };
 
@@ -230,7 +231,7 @@ const candidateRow = ({ universeKey, universeName, ...r }: CandidateSqlRow): Can
 export async function getCandidates(userId: string, rules: BattleRules): Promise<CandidateCard[]> {
   const rows = (
     await prisma.$queryRaw<CandidateSqlRow[]>`
-    SELECT c.id AS "cardId", c."publicId" AS "anilistId", c.appearance, c.name, c."nameNative", c."imageUrl", c.rank, c."rarityKey" AS rarity, c.power, c.ki,
+    SELECT c.id AS "cardId", c."publicId" AS "anilistId", c.appearance, c.name, c."nameNative", c."imageUrl", c.rank, c."rarityKey" AS rarity, c.power, c.ki, c.spoiler,
       COALESCE(s."universeId", s.id) AS "universeKey", COALESCE(u.name, s."titleRomaji") AS "universeName"
     FROM "Card" c
     JOIN "RarityDefinition" rd ON rd.key = c."rarityKey"
@@ -251,7 +252,7 @@ export async function getCandidates(userId: string, rules: BattleRules): Promise
  */
 export async function getWorkshopCards(userId: string, rules: BattleRules, focus: string | null = null): Promise<WorkshopCard[]> {
   const select = Prisma.sql`
-    SELECT c.id AS "cardId", c."publicId" AS "anilistId", c.appearance, c.name, c."nameNative", c."imageUrl", c.rank, c."rarityKey" AS rarity, c.power, c.ki,
+    SELECT c.id AS "cardId", c."publicId" AS "anilistId", c.appearance, c.name, c."nameNative", c."imageUrl", c.rank, c."rarityKey" AS rarity, c.power, c.ki, c.spoiler,
       COALESCE(s."universeId", s.id) AS "universeKey", COALESCE(u.name, s."titleRomaji") AS "universeName"
     FROM "Card" c
     JOIN "RarityDefinition" rd ON rd.key = c."rarityKey"
@@ -317,6 +318,7 @@ export async function getDecks(userId: string, rules: BattleRules): Promise<Deck
         rarity: true,
         power: true,
         ki: true,
+        spoiler: true,
         series: { select: { id: true, titleRomaji: true, universeId: true, universe: { select: { name: true } } } },
       },
     }),

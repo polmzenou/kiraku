@@ -19,7 +19,7 @@ vi.mock("./WishlistToggle", () => ({ WishlistToggle: () => createElement("button
 
 const card: CardView = {
   cardId: "card-1", anilistId: 4004, name: "Dio Brando", nameNative: null, series: "JoJo",
-  imageUrl: "https://s4.anilist.co/dio.png", rarity: "RARE", rank: 100, power: 50, ki: 40,
+  imageUrl: "https://s4.anilist.co/dio.png", rarity: "RARE", rank: 100, power: 50, ki: 40, spoiler: false,
 };
 
 describe("cartes publiques du profil", () => {

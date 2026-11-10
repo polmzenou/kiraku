@@ -9,6 +9,7 @@ type AlbumRow = {
   titleRomaji: string;
   titleEnglish: string | null;
   cover: string | null;
+  coverSpoiler: boolean | null;
   owned: number;
   total: number;
   fullCount: number;
@@ -37,9 +38,14 @@ export async function getAlbumPage(ownerId: string, params: AlbumParams, offset:
     WITH owned AS (SELECT DISTINCT "cardId" FROM "UserCard" WHERE "ownerId" = ${ownerId})
     SELECT s.id, s."titleRomaji", s."titleEnglish",
       COALESCE(
-        (array_agg(c."imageUrl" ORDER BY rd."sortOrder" DESC, c.rank ASC) FILTER (WHERE o."cardId" IS NOT NULL))[1],
-        (array_agg(c."imageUrl" ORDER BY c.rank ASC))[1]
+        (array_agg(c."imageUrl" ORDER BY rd."sortOrder" DESC, c.rank ASC, c.id) FILTER (WHERE o."cardId" IS NOT NULL))[1],
+        (array_agg(c."imageUrl" ORDER BY c.rank ASC, c.id))[1]
       ) AS cover,
+      -- Même carte que la couverture (même tri, départagé par l'id) : illustration floutée en mode spoiler
+      COALESCE(
+        (array_agg(c.spoiler ORDER BY rd."sortOrder" DESC, c.rank ASC, c.id) FILTER (WHERE o."cardId" IS NOT NULL))[1],
+        (array_agg(c.spoiler ORDER BY c.rank ASC, c.id))[1]
+      ) AS "coverSpoiler",
       COUNT(o."cardId")::int AS owned,
       COUNT(*)::int AS total,
       (COUNT(*) OVER ())::int AS "fullCount",
@@ -64,6 +70,7 @@ export async function getAlbumPage(ownerId: string, params: AlbumParams, offset:
     seriesId: r.id,
     title: seriesTitle(r, locale),
     cover: r.cover,
+    coverSpoiler: r.coverSpoiler === true,
     owned: r.owned,
     total: r.total,
     byRarity: r.byRarity,
