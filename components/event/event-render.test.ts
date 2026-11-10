@@ -1,4 +1,4 @@
-import { createElement, type ReactNode } from "react";
+import { createElement, type FunctionComponent, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import fr from "@/messages/fr.json";
@@ -28,7 +28,9 @@ const entry: ShowcaseEntryView = {
   cards: [card("a"), null, card("spoil", true), null, null, null],
 };
 
-const withVote = (vote: string | null, node: ReactNode) => renderToStaticMarkup(createElement(VoteProvider, { initial: vote, children: node }));
+// Enfants passés en argument de createElement (règle react/no-children-prop) : le type les rend facultatifs
+const Provider = VoteProvider as FunctionComponent<{ initial: string | null; children?: ReactNode }>;
+const withVote = (vote: string | null, node: ReactNode) => renderToStaticMarkup(createElement(Provider, { initial: vote }, node));
 
 describe("vitrine de l'event", () => {
   it("« Vitrine de [pseudo] » au-dessus, la vitrine en galerie, puis « Voter pour [pseudo] », sans compteur", () => {
