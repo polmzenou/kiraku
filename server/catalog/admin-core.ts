@@ -59,7 +59,7 @@ export async function saveCatalogCardWith(db: PrismaClient, adminId: string, dra
       power: draft.power, ki: draft.ki, dropWeight: draft.dropWeight, status: draft.status,
       seriesId: series.id, boosterIds, boosterExclusive: draft.variantOfId ? draft.boosterExclusive : false, gender: draft.gender || null, role: draft.role,
       birthMonth: draft.birthMonth, birthDay: draft.birthDay,
-      variantOfId: draft.variantOfId, formName: draft.formName || null,
+      variantOfId: draft.variantOfId, formName: draft.formName || null, spoiler: draft.spoiler,
       searchText: buildSearchText([draft.name, draft.nameNative, draft.formName, series.titleRomaji, series.titleEnglish, series.titleNative]),
     };
     const overrides = before ? [...new Set([...before.adminOverrides, ...Object.keys(data).filter((key) => JSON.stringify(before[key as keyof typeof before]) !== JSON.stringify(data[key as keyof typeof data]))])] : [];

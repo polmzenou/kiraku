@@ -20,7 +20,7 @@ export async function syncDiscordAuction(auctionId: string): Promise<boolean> {
     select: {
       id: true, status: true, startPrice: true, buyoutPrice: true, currentBid: true, finalPrice: true, endsAt: true,
       seller: { select: { id: true, username: true, profileVisibility: true, bannedAt: true, anonymizedAt: true } },
-      card: { select: { name: true, imageUrl: true, rarityDefinition: { select: { nameFr: true } }, series: { select: { titleRomaji: true } } } },
+      card: { select: { name: true, imageUrl: true, spoiler: true, rarityDefinition: { select: { nameFr: true } }, series: { select: { titleRomaji: true } } } },
     },
   });
   if (!auction) return false;
@@ -48,7 +48,7 @@ export async function syncDiscordListing(listingId: string): Promise<boolean> {
     select: {
       id: true, ownerId: true, cardId: true, status: true, expiresAt: true,
       owner: { select: { id: true, username: true, profileVisibility: true, bannedAt: true, anonymizedAt: true } },
-      card: { select: { name: true, imageUrl: true, rarityDefinition: { select: { nameFr: true } } } },
+      card: { select: { name: true, imageUrl: true, spoiler: true, rarityDefinition: { select: { nameFr: true } } } },
       wants: { orderBy: { cardId: "asc" }, select: { card: { select: { name: true, rarityDefinition: { select: { nameFr: true } } } } } },
     },
   });

@@ -31,7 +31,8 @@ async function optimizeImage(file: File) {
   } finally { bitmap.close(); }
 }
 
-const withImage = (card: LinkedCard) => ({ ...card, imageUrl: card.imageUrl || "/icons/icon-512.png" });
+// L'admin voit toujours l'illustration, même en mode spoiler
+const withImage = (card: LinkedCard) => ({ ...card, imageUrl: card.imageUrl || "/icons/icon-512.png", spoiler: false });
 
 function Section({ id, title, children, highlight = false }: { id: string; title: string; children: ReactNode; highlight?: boolean }) {
   return <details id={id} open className={`group scroll-mt-4 rounded-card border bg-surface p-5 ${highlight ? "border-kin" : "border-border"}`}>
@@ -183,6 +184,7 @@ export function CardEditor({ scope, initial, options, context }: { scope: Catalo
           <NumberField label={t("ki")} value={draft.ki} min={0} max={999} onChange={(ki) => update({ ki })} />
           {median && <div className="flex flex-wrap items-center gap-3 text-xs text-text-muted sm:col-span-2"><span>{t(median.above ? "statsAbove" : "statsMedian", { rarity: tr(median.from), power: median.power, ki: median.ki })}</span>
             <button type="button" className="min-h-11 rounded-control border border-border px-3 font-bold text-text" onClick={() => update({ power: median.power, ki: median.ki })}>{t("suggestStats")}</button></div>}
+          <label className="flex min-h-11 items-start gap-3 text-sm sm:col-span-2"><input type="checkbox" className="mt-1 size-5" checked={draft.spoiler} onChange={(e) => update({ spoiler: e.target.checked })} /><span><span className="font-bold">{t("spoiler")}</span><span className="block text-xs text-text-muted">{t("spoilerHint")}</span></span></label>
           {(["fr", "en"] as const).map((language) => <Field key={language} label={t(language === "fr" ? "descriptionFr" : "descriptionEn")}>{(id) => <textarea id={id} className={`${inputClass} min-h-28`} maxLength={20_000} value={draft.description[language]} onChange={(e) => update({ description: { ...draft.description, [language]: e.target.value } })} />}</Field>)}
           {draft.newSeries ? <div className="grid gap-3 rounded-control border border-border p-3 sm:col-span-2">
             <div className="flex items-center justify-between gap-2"><strong className="text-sm">{t("newSeries")}</strong><button type="button" className="min-h-11 text-xs text-link underline" onClick={() => update({ newSeries: null, seriesId: series?.id ?? null })}>{t("existingSeries")}</button></div>

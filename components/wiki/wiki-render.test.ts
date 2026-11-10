@@ -37,7 +37,7 @@ vi.mock("./WikiBiography", () => ({
 const card: CatalogCardDetail = {
   id: "card-a", anilistId: 1, publicId: 1, sourceAnilistId: 1, status: "PUBLISHED", appearance: {}, description: {}, name: "Levi", nameNative: "リヴァイ", imageUrl: "https://s4.anilist.co/levi.png",
   rank: 2, rarity: "MYTHIC", power: 100, ki: 84, favorites: 38199, role: "MAIN", seriesId: "series-a",
-  series: { titleRomaji: "Attack on Titan", titleEnglish: null, titleNative: null, type: "ANIME" }, formName: null, variantOf: null, variants: [],
+  series: { titleRomaji: "Attack on Titan", titleEnglish: null, titleNative: null, type: "ANIME" }, formName: null, spoiler: false, variantOf: null, variants: [],
 };
 const related: CatalogCardSummary = { ...card, anilistId: 2, name: "SECRET RELATED NAME", nameNative: "秘密" };
 const collection: WikiCollection = { available: true, hasCards: true, cards: new Map([[1, { copies: 2, discovered: true }]]) };

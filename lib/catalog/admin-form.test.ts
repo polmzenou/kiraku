@@ -10,6 +10,14 @@ describe("validation du catalogue admin", () => {
     expect(cardFormSchema.safeParse({ ...valid, status: "PUBLISHED" }).success).toBe(false);
     expect(cardFormSchema.safeParse({ ...valid, status: "PUBLISHED", imageUrl: "https://s4.anilist.co/image.png" }).success).toBe(true);
   });
+  it("case spoil : décochée par défaut, booléen obligatoire", () => {
+    expect(blankCard().spoiler).toBe(false);
+    expect(cardFormSchema.safeParse({ ...valid, spoiler: true }).success).toBe(true);
+    expect(cardFormSchema.safeParse({ ...valid, spoiler: "on" }).success).toBe(false);
+    const { spoiler: _omitted, ...missing } = valid;
+    void _omitted;
+    expect(cardFormSchema.safeParse(missing).success).toBe(false);
+  });
   it("exige une version pour modifier une carte et borne stats et poids", () => {
     expect(cardFormSchema.safeParse({ ...valid, id: "card" }).success).toBe(false);
     expect(cardFormSchema.safeParse({ ...valid, dropWeight: -1 }).success).toBe(false);

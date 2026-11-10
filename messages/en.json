@@ -183,6 +183,12 @@
     "yoru": "Yoru (dark)",
     "washi": "Washi (light)"
   },
+  "spoiler": {
+    "label": "Spoiler mode",
+    "show": "Show everything",
+    "hide": "Blur spoilers",
+    "hint": "Blurs the art of characters and transformations that give away the story. The name, rarity and stats stay visible."
+  },
   "locale": {
     "label": "Language",
     "fr": "Français",
@@ -332,7 +338,8 @@
     "power": "Power {value}",
     "ki": "Ki {value}",
     "locked": "Card never obtained",
-    "unknown": "???"
+    "unknown": "???",
+    "spoiler": "Spoiler"
   },
   "rarity": {
     "COMMON": "Common",
@@ -2780,6 +2787,8 @@
       "boosterExclusive": "Exclusive variant",
       "boosterExclusiveOff": "Unchecked: it follows its base card into all of its boosters (series focus, Divine…), plus the ones checked below.",
       "boosterExclusiveOn": "Checked: it only drops from the boosters checked below (event, banner…).",
+      "spoiler": "Spoiler",
+      "spoilerHint": "Character or transformation that gives away the story: its art is blurred for players who turned on spoiler mode. The name and details stay visible.",
       "boostersExtra": "Boosters on top of the base card's",
       "ultimate": "Ultimate in battle"
     },
@@ -4971,6 +4980,7 @@
       "consent": "Remembers your cookie choices.",
       "theme": "Remembers the Yoru or Washi theme.",
       "motion": "Remembers whether animations are turned off.",
+      "spoiler": "Remembers whether spoiler art is blurred (spoiler mode).",
       "locale": "Remembers the chosen language.",
       "sound": "Remembers whether sound is on.",
       "discordLater": "Remembers when you postponed the Discord invitation (\"Later\").",

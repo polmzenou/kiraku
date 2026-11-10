@@ -15,7 +15,7 @@ vi.mock("next/image", () => ({
 
 const card: CardView = {
   cardId: "card-a", anilistId: 1, name: "Levi", nameNative: null, imageUrl: "https://s4.anilist.co/levi.png",
-  rank: 2, rarity: "MYTHIC", power: 100, ki: 84, appearance: {}, series: "Attack on Titan",
+  rank: 2, rarity: "MYTHIC", power: 100, ki: 84, appearance: {}, series: "Attack on Titan", spoiler: false,
 };
 
 describe("vignette de carte du marché", () => {

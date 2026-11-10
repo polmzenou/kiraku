@@ -359,6 +359,7 @@ model Card {
   adminOverrides   String[]           @default([])
   boosterIds       String[]           @default([]) // types explicitement sélectionnés pour les cartes manuelles
   boosterExclusive Boolean            @default(false) // variante : seulement les types cochés (sinon elle suit aussi sa carte de base)
+  spoiler          Boolean            @default(false) // personnage ou forme qui dévoile l'histoire : illustration floutée en mode spoiler
   name             String
   nameNative       String? // nom japonais, écrit verticalement sur la fuda
   imageUrl         String

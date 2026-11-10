@@ -67,6 +67,9 @@ describe("migration du catalogue sur PostgreSQL isolé", () => {
       await db.exec(`CREATE TABLE "ShowcaseItem" ("showcaseId" TEXT NOT NULL, "position" INTEGER NOT NULL, "userCardId" TEXT NOT NULL);`);
       // Colonne d'une migration plus récente (variantes) qui départage le tri par rareté
       await db.exec(`ALTER TABLE "RarityDefinition" ADD COLUMN "variantRequired" BOOLEAN NOT NULL DEFAULT false;`);
+      // Vraie migration du mode spoiler : colonne lue par la collection et la couverture des albums
+      await db.exec(readFileSync(resolve(root, "20261110120000_cartes_spoiler", "migration.sql"), "utf8"));
+      await db.exec(`UPDATE "Card" SET spoiler = true WHERE id='custom'`);
       reader.query.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) => {
         const query = Prisma.sql(strings, ...values);
         return (await db.query(query.text, [...query.values])).rows;
@@ -74,8 +77,11 @@ describe("migration du catalogue sur PostgreSQL isolé", () => {
       const collection = await getCollectionPage("owner", parseCollectionParams({ tri: "rarity" }), 0, "fr");
       expect(collection.items.map((c) => c.rarity)).toEqual(["CELESTIAL", "MYTHIC"]);
       expect(collection.items[0].anilistId).toBe(custom.publicId);
+      expect(collection.items.map((c) => c.spoiler)).toEqual([true, false]);
       const albums = await getAlbumPage("owner", { q: "", sort: "az", all: true }, 0, "fr");
       expect(albums.items.find((a) => a.seriesId === "custom-universe")?.byRarity.CELESTIAL).toEqual({ owned: 1, total: 1 });
+      expect(albums.items.find((a) => a.seriesId === "custom-universe")?.coverSpoiler).toBe(true);
+      expect(albums.items.find((a) => a.seriesId === "series")?.coverSpoiler).toBe(false);
 
       // Exécution des vraies requêtes de l'importeur actuel, après une édition admin.
       await db.exec(`UPDATE "Card" SET name='Admin name', power=123, "rarityKey"='CELESTIAL', status='ARCHIVED', "adminOverrides"='{name,power,rarity,status}' WHERE id='active'`);

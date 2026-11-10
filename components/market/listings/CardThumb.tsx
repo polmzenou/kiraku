@@ -27,6 +27,7 @@ export function CardThumb({ card, highlight = false, dim = false, size = "md" }:
         className={`object-cover object-top${gilded ? " fuda-art-gold" : ""}`}
         style={{ objectPosition: `${visual.focalX}% ${visual.focalY}%`, transform: `scale(${visual.zoom})`, transformOrigin: `${visual.focalX}% ${visual.focalY}%` }}
         draggable={false}
+        data-spoiler={card.spoiler || undefined}
       />
       {gilded && <span aria-hidden="true" className="fuda-gilt" />}
       <span className="sr-only">{card.name}</span>

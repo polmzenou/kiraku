@@ -26,6 +26,8 @@ export type Album = {
   seriesId: string;
   title: string;
   cover: string | null;
+  /** La carte de couverture est spoil : illustration floutée en mode spoiler. */
+  coverSpoiler: boolean;
   owned: number;
   total: number;
   byRarity: AlbumProgress;

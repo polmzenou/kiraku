@@ -94,6 +94,7 @@ function AlbumTile({ album }: { album: Album }) {
             fill
             sizes="64px"
             className={`object-cover ${album.owned === 0 ? "opacity-40 grayscale" : ""}`}
+            data-spoiler={album.coverSpoiler || undefined}
           />
         )}
       </span>

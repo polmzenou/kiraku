@@ -199,6 +199,22 @@
 /* Personnage détouré : même boîte que l'illustration, devant le cadre. Il passe sous le nom et s'efface avant le voile d'ombre, pour que le nom reste entier et lisible */
 .kn-cutout { position: absolute; inset: 0; z-index: 4; pointer-events: none; mask: linear-gradient(#000 72%, transparent 84%); }
 
+/* Mode spoiler (data-spoiler="hide" sur <html>) : seule l'illustration d'une carte spoil est floutée ; cadre, rareté,
+   nom et stats restent. Le rayon suit la largeur de la carte ; `scale` (indépendant du cadrage en `transform`)
+   repousse les bords flous hors du papier. Les filtres déjà posés (ton or, gris des fiches non découvertes) sont repris. */
+.kn-art img[data-spoiler] { --kn-spoiler-blur: blur(max(4px, 6cqw)); }
+:root[data-spoiler="hide"] .kn-art img[data-spoiler] { filter: var(--kn-spoiler-blur); scale: 1.18; }
+:root[data-spoiler="hide"] .kn-art img[data-spoiler].grayscale { filter: grayscale(1) var(--kn-spoiler-blur); }
+:root[data-spoiler="hide"] .kn-art img[data-spoiler].fuda-art-gold { filter: sepia(1) saturate(2.4) hue-rotate(-14deg) brightness(1.04) contrast(1.08) var(--kn-spoiler-blur); }
+:root[data-spoiler="hide"] .kn-cutout[data-spoiler] { display: none; }
+.kn-spoiler { display: none; }
+:root[data-spoiler="hide"] .kn-spoiler { position: absolute; inset: 0 0 34cqw; display: grid; place-items: center; pointer-events: none; }
+.kn-spoiler > span {
+  padding: .5cqw 3.5cqw; border-radius: 999px; background: rgb(21 18 15 / .72); color: #f1e9da;
+  font-size: max(9px, 7cqw); font-weight: 700; line-height: 1.3; letter-spacing: .06em;
+  box-shadow: 0 0 0 max(1px, .4cqw) rgb(224 83 63 / .9);
+}
+
 /* Mouvement réduit : FudaTilt ne pose pas .fuda-live ; rien ne se déplace par sécurité */
 @media (prefers-reduced-motion: reduce) {
   .fuda-live :is(.kn-art, .kn-cutout, .kn-bank, .kn-shk, .kn-tz, .kn-sc, .kn-ar) { translate: none; }

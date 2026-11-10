@@ -61,6 +61,7 @@ export type NewsCardView = {
   ki: number;
   appearance: unknown;
   formName: string | null;
+  spoiler: boolean;
 };
 export type NewsBoosterView = { slug: string; name: string; emblem: string; shape: BoosterShape; theme: BoosterTheme; endsAt: string | null };
 export type NewsVisualView =

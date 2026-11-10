@@ -33,7 +33,7 @@ export function CutIn({ cutin, setup, mySide }: { cutin: CutInState; setup: Batt
         <span className="cutin-lines" />
         <span className="cutin-art">
           {/* eslint-disable-next-line @next/next/no-img-element -- image déjà chargée par la carte, recadrée au point focal */}
-          <img src={card.imageUrl} alt="" draggable={false} style={{ objectPosition: `${look.focalX}% ${look.focalY}%` }} />
+          <img src={card.imageUrl} alt="" draggable={false} style={{ objectPosition: `${look.focalX}% ${look.focalY}%` }} data-spoiler={card.spoiler || undefined} />
         </span>
         <span className="cutin-text">
           {ultimate && <small className="cutin-kicker">{t("board.ultimateKicker")}</small>}

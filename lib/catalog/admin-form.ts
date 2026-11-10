@@ -24,6 +24,8 @@ export const cardFormSchema = z.object({
   gender: nullableText(40), role: z.enum(["MAIN", "SUPPORTING", "BACKGROUND"]).nullable(),
   birthMonth: z.number().int().min(1).max(12).nullable(), birthDay: z.number().int().min(1).max(31).nullable(),
   variantOfId: id.nullable(), formName: nullableText(120),
+  // Personnage ou forme qui dévoile l'histoire : illustration floutée pour les joueurs en mode spoiler
+  spoiler: z.boolean(),
 }).strict().superRefine((c, ctx) => {
   if (!c.seriesId && !c.newSeries) ctx.addIssue({ code: "custom", path: ["seriesId"], message: "SERIES_REQUIRED" });
   if (c.seriesId && c.newSeries) ctx.addIssue({ code: "custom", path: ["seriesId"], message: "INVALID" });
@@ -56,5 +58,5 @@ export type BulkCatalogResult = { ok: true; updated: number; rejected: { id: str
 export function blankCard(seriesId: string | null = null): CardDraft {
   return { name: "", nameNative: null, imageUrl: "", description: { fr: "", en: "" }, rarity: "COMMON", power: 40, ki: 30,
     appearance: {}, dropWeight: 1, boosterIds: [], boosterExclusive: false, status: "DRAFT", seriesId,
-    newSeries: null, gender: null, role: null, birthMonth: null, birthDay: null, variantOfId: null, formName: null };
+    newSeries: null, gender: null, role: null, birthMonth: null, birthDay: null, variantOfId: null, formName: null, spoiler: false };
 }

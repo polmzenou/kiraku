@@ -183,6 +183,12 @@
     "yoru": "Yoru (sombre)",
     "washi": "Washi (clair)"
   },
+  "spoiler": {
+    "label": "Mode spoiler",
+    "show": "Tout afficher",
+    "hide": "Flouter les spoils",
+    "hint": "Floute l'illustration des personnages et des transformations qui dévoilent l'histoire. Le nom, la rareté et les stats restent visibles."
+  },
   "locale": {
     "label": "Langue",
     "fr": "Français",
@@ -332,7 +338,8 @@
     "power": "Puissance {value}",
     "ki": "Ki {value}",
     "locked": "Carte jamais obtenue",
-    "unknown": "???"
+    "unknown": "???",
+    "spoiler": "Spoil"
   },
   "rarity": {
     "COMMON": "Commune",
@@ -2780,6 +2787,8 @@
       "boosterExclusive": "Variante exclusive",
       "boosterExclusiveOff": "Décoché : elle suit sa carte de base dans tous ses boosters (Focus série, Divin…), plus ceux cochés ci-dessous.",
       "boosterExclusiveOn": "Coché : elle ne sort que des boosters cochés ci-dessous (événement, bannière…).",
+      "spoiler": "Spoil",
+      "spoilerHint": "Personnage ou transformation qui dévoile l'histoire : son illustration est floutée pour les joueurs qui ont activé le mode spoiler. Le nom et les infos restent visibles.",
       "boostersExtra": "Boosters en plus de ceux de la carte de base",
       "ultimate": "Ultime en combat"
     },
@@ -4971,6 +4980,7 @@
       "consent": "Retient tes choix de cookies.",
       "theme": "Retient le thème Yoru ou Washi.",
       "motion": "Retient si les animations sont coupées.",
+      "spoiler": "Retient si les illustrations spoil sont floutées (mode spoiler).",
       "locale": "Retient la langue choisie.",
       "sound": "Retient si le son est activé.",
       "discordLater": "Retient quand tu as repoussé l'invitation Discord (« Plus tard »).",

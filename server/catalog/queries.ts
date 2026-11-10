@@ -36,6 +36,7 @@ const summarySelect = {
   power: true,
   ki: true,
   formName: true,
+  spoiler: true,
   series: { select: { titleRomaji: true, titleEnglish: true } },
 } satisfies Prisma.CardSelect;
 

@@ -18,6 +18,7 @@ export async function cardViews(cardIds: readonly string[], locale: string): Pro
       rarity: true,
       power: true,
       ki: true,
+      spoiler: true,
       series: { select: { titleRomaji: true, titleEnglish: true } },
     },
   });
@@ -35,6 +36,7 @@ export async function cardViews(cardIds: readonly string[], locale: string): Pro
         rarity: c.rarity as Rarity,
         power: c.power,
         ki: c.ki,
+        spoiler: c.spoiler,
         series: seriesTitle(c.series, locale),
       },
     ]),

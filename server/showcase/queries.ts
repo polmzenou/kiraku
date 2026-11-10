@@ -59,6 +59,7 @@ export async function getShowcaseCards(showcaseId: string, ownerId: string, layo
               rarity: true,
               power: true,
               ki: true,
+              spoiler: true,
               series: { select: { titleRomaji: true, titleEnglish: true } },
             },
           },
@@ -82,6 +83,7 @@ export async function getShowcaseCards(showcaseId: string, ownerId: string, layo
       rarity: c.rarity as Rarity,
       power: c.power,
       ki: c.ki,
+      spoiler: c.spoiler,
       series: seriesTitle(c.series, locale),
     };
   }

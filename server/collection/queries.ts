@@ -27,6 +27,7 @@ type Row = {
   rarity: Rarity;
   power: number;
   ki: number;
+  spoiler: boolean;
   titleRomaji: string;
   titleEnglish: string | null;
   copies: number;
@@ -78,6 +79,7 @@ function toItem(row: Row, locale: string): CollectionItem {
     rarity: row.rarity,
     power: row.power,
     ki: row.ki,
+    spoiler: row.spoiler,
     series: seriesTitle(row, locale),
     copies: row.copies,
     free: row.free,
@@ -104,7 +106,7 @@ export async function getCollectionPage(
     : Prisma.sql`NULL::boolean`;
   const rows = await prisma.$queryRaw<Row[]>`
     SELECT c.id AS "cardId", c."publicId" AS "anilistId", c.appearance, c.name, c."nameNative", c."imageUrl", c.rank, c."rarityKey" AS rarity,
-           c.power, c.ki, s."titleRomaji", s."titleEnglish",
+           c.power, c.ki, c.spoiler, s."titleRomaji", s."titleEnglish",
            COUNT(*)::int AS copies,
            (COUNT(*) FILTER (WHERE uc.status = 'COLLECTION'))::int AS free,
            BOOL_OR(EXISTS (SELECT 1 FROM "ShowcaseItem" sh WHERE sh."userCardId" = uc.id)) AS "inShowcase",

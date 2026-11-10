@@ -54,6 +54,7 @@ const card = (cardId: string, universe = { key: `s-${cardId}`, name: `Série ${c
   power: 50,
   ki: 50,
   hp: 150,
+  spoiler: false,
   keywords: [],
   technique: "ISSEN",
   ultimate: null,

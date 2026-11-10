@@ -216,6 +216,7 @@ const cardSelect = {
   rarity: true,
   power: true,
   ki: true,
+  spoiler: true,
   series: { select: { id: true, titleRomaji: true, universeId: true, universe: { select: { name: true } } } },
 } as const;
 

@@ -9,7 +9,7 @@ import { OPENING_TEST_SCENARIOS, testBoosters, type OpeningTestPool } from "./op
 
 const card = (rarity: string, i: number): CardView => ({
   cardId: `${rarity}-${i}`, anilistId: i, series: "Série", name: `Carte ${i}`, nameNative: null,
-  imageUrl: "https://s4.anilist.co/x.png", rank: i, rarity, power: 10, ki: 10,
+  imageUrl: "https://s4.anilist.co/x.png", rank: i, rarity, power: 10, ki: 10, spoiler: false,
 });
 const pool: OpeningTestPool = Object.fromEntries(
   ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC"].map((r) => [r, [card(r, 1), card(r, 2)]]),

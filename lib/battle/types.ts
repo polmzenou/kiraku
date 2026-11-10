@@ -129,6 +129,8 @@ export type FighterSetup = {
   /** Ulti du personnage, selon sa rareté ; absent sinon (et sur les parties lancées avant les ultis). */
   ultimate?: Ultimate;
   universe?: UniverseRef;
+  /** Carte spoil (illustration floutée en mode spoiler) ; absent sinon, et sur les parties lancées avant ce mode. */
+  spoiler?: boolean;
 };
 
 export type BattleSetup = {

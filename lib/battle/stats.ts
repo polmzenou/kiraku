@@ -96,6 +96,8 @@ export type FighterCard = {
   power: number;
   ki: number;
   universe?: UniverseRef;
+  /** Carte spoil : illustration floutée en mode spoiler (copiée dans la mise en place du combat). */
+  spoiler?: boolean;
 };
 
 /**
@@ -120,6 +122,7 @@ export function fighterFrom(card: FighterCard, rules: BattleRules, kit?: Kit): F
     technique: kit ? kit.technique : techniqueFor(card.anilistId, rules.newAbilityPct),
     ...(ultimate ? { ultimate } : {}),
     ...(card.universe ? { universe: card.universe } : {}),
+    ...(card.spoiler ? { spoiler: true } : {}),
   };
 }
 

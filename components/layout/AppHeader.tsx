@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { isStaff } from "@/lib/admin/roles";
 import { Link } from "@/i18n/navigation";
 import type { Theme } from "@/lib/theme";
+import type { SpoilerMode } from "@/lib/spoiler";
 import { logout } from "@/server/actions/account";
 import { isFrozen } from "@/lib/account/deletion";
 import { getBoosterRules } from "@/server/boosters/rules";
@@ -27,7 +28,7 @@ import { ZeniCoin } from "./ZeniCoin";
  * La navigation mobile est rendue à côté pour ne pas piéger son `fixed` dans le backdrop-filter.
  * Le stock est calculé ici, côté serveur ; le client n'affiche que le compte à rebours.
  */
-export async function AppHeader({ theme }: { theme: Theme }) {
+export async function AppHeader({ theme, spoiler }: { theme: Theme; spoiler: SpoilerMode }) {
   const [t, user] = await Promise.all([getTranslations(), getCurrentUser()]);
   const accountHref = user ? `/u/${user.username}` : "/connexion";
   // Lien « Admin » pour toute l'équipe : le DEV y trouve le catalogue seulement
@@ -148,7 +149,7 @@ export async function AppHeader({ theme }: { theme: Theme }) {
           later={t("guestNotice.later")}
         />
       )}
-      <MobileMenu theme={theme} isAdmin={isAdmin} accountHref={accountHref} signedIn={signedIn} features={features} alerts={alerts} />
+      <MobileMenu theme={theme} spoiler={spoiler} isAdmin={isAdmin} accountHref={accountHref} signedIn={signedIn} features={features} alerts={alerts} />
       {chat && <ChatDock {...chat} />}
     </>
   );

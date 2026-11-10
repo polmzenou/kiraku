@@ -12,13 +12,16 @@ export type OgCard = { name: string; rarity: string; image: string };
 
 const SHOWCASE_RARITIES = ["LEGENDARY", "MYTHIC", "EPIC"] as const;
 
-/** Une fuda par rareté (Légendaire, Mythique, Épique), les plus aimées du catalogue publié, illustration chargée. */
+/**
+ * Une fuda par rareté (Légendaire, Mythique, Épique), les plus aimées du catalogue publié, illustration chargée.
+ * Jamais de carte spoil : l'image de partage s'affiche partout, sans le mode spoiler de qui la voit.
+ */
 export async function showcaseCards(): Promise<OgCard[]> {
   try {
     const picks = await Promise.all(
       SHOWCASE_RARITIES.map(async (rarity): Promise<OgCard | null> => {
         const rows = await prisma.card.findMany({
-          where: { status: "PUBLISHED", variantOfId: null, rarity },
+          where: { status: "PUBLISHED", variantOfId: null, spoiler: false, rarity },
           orderBy: { favorites: "desc" },
           take: 3,
           select: { name: true, imageUrl: true },
