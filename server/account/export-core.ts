@@ -40,6 +40,8 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     abilityPurchases,
     cardLoadouts,
     showcases,
+    showcaseEventEntries,
+    showcaseEventVotes,
     credits,
     openings,
     ledger,
@@ -86,6 +88,13 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       select: { id: true, name: true, layout: true, theme: true, sortOrder: true, createdAt: true, updatedAt: true, items: { orderBy: { position: "asc" }, select: { position: true, userCardId: true } } },
     }),
+    // Event vitrines : vitrines engagées (photo figée) et votes donnés
+    db.showcaseEventEntry.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, edition: true, showcaseId: true, name: true, layout: true, theme: true, cards: true, createdAt: true },
+    }),
+    db.showcaseEventVote.findMany({ where: { voterId: userId }, orderBy: { createdAt: "asc" }, select: { edition: true, entryId: true, createdAt: true, updatedAt: true } }),
     db.boosterCredit.findMany({ where: { userId }, select: { boosterTypeId: true, count: true } }),
     db.boosterOpening.findMany({
       where: { userId },
@@ -228,6 +237,8 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
     })),
+    showcaseEventEntries,
+    showcaseEventVotes,
     boosterCredits: credits,
     openings,
     ledger,

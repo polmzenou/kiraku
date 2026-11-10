@@ -4,7 +4,7 @@ import type { AbstractIntlMessages } from "next-intl";
 // Les textes réservés au serveur et l'admin ne traversent pas le fournisseur public.
 export const CLIENT_NAMESPACES = [
   "account", "ambassador", "arcadePromo", "auth", "battle", "boosters", "cardBack", "chat", "collection",
-  "common", "consent", "data", "discordJoin", "economy", "error", "footer", "friends",
+  "common", "consent", "data", "discordJoin", "economy", "error", "event", "footer", "friends",
   "fuda", "gifts", "header", "home", "incense", "legal", "locale", "mail", "market", "nav",
   "news", "notifications", "opening", "presence", "privacy", "profile", "push", "pwa", "ranked", "rarity", "sealed",
   "listings", "showcase", "spoiler", "theme", "time", "trades", "v1Welcome", "v2Announcement", "wiki", "wishlist",

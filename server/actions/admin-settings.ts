@@ -19,6 +19,7 @@ import { FEATURE_SETTING_KEYS, featureSettingsSchema, type FeatureSettingKey } f
 import { GENERAL_SETTING_KEYS, generalSettingsSchema, type GeneralSettingKey } from "@/lib/settings/general-form";
 import { PULL_FEED_SETTING_KEYS, pullFeedSettingsSchema, type PullFeedSettingKey } from "@/lib/settings/pull-feed-form";
 import { EVENT_GAUGE_SETTING_KEYS, eventGaugeSettingsSchema, type EventGaugeSettingKey } from "@/lib/settings/event-gauge-form";
+import { SHOWCASE_EVENT_SETTING_KEYS, showcaseEventSettingsSchema, type ShowcaseEventSettingKey } from "@/lib/settings/showcase-event-form";
 import { USAGE_SETTING_KEYS, usageSettingsSchema, type UsageSettingKey } from "@/lib/settings/usage-form";
 import { ECONOMY_SETTING_KEYS, economySettingsSchema, type EconomySettingKey } from "@/lib/settings/economy-form";
 import { RANKED_FORM_KEYS, rankedSettingsSchema, type RankedSettingKey } from "@/lib/settings/ranked-form";
@@ -258,6 +259,10 @@ export async function updatePullFeedSettings(input: unknown): Promise<UpdateSett
 
 export async function updateEventGaugeSettings(input: unknown): Promise<UpdateSettingsResult<EventGaugeSettingKey>> {
   return saveSettings(EVENT_GAUGE_SETTING_KEYS, eventGaugeSettingsSchema, input);
+}
+
+export async function updateShowcaseEventSettings(input: unknown): Promise<UpdateSettingsResult<ShowcaseEventSettingKey>> {
+  return saveSettings(SHOWCASE_EVENT_SETTING_KEYS, showcaseEventSettingsSchema, input);
 }
 
 export async function updateUsageSettings(input: unknown): Promise<UpdateSettingsResult<UsageSettingKey>> {

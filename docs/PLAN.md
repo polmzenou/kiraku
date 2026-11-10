@@ -718,6 +718,18 @@ Certains personnages ou transformations (variantes) dévoilent l'histoire. Dans 
 - **Admin** : l'éditeur, son aperçu et la liste du catalogue montrent toujours l'image en clair.
 - Les combats copient le drapeau dans `Battle.setup` au lancement ; une partie lancée avant le mode n'a pas le champ et ne floute rien.
 
+## Event vitrines
+
+Concours de la plus belle vitrine, sur `/event` : la page de l'event en cours, qui changera d'un event à l'autre. Caché tant que l'admin ne l'allume pas.
+
+- **Participer** : chaque joueur inscrit (pas invité, ni banni ni gelé) engage une seule de ses vitrines (`ShowcaseEventEntry`, une par joueur et par édition). Elle est photographiée à l'inscription : disposition, thème affiché, nom et cases, en ids de `Card` (un exemplaire quitte les vitrines quand il change de main, la photo ne bouge pas). Modifier la vitrine ensuite ne change rien. Le joueur peut retirer sa participation (ses votes reçus partent avec elle) et en inscrire une autre tant que l'event est ouvert. Minimum de cartes : `event.showcase.minCards`.
+- **Voter** : un vote par joueur inscrit et par édition (`ShowcaseEventVote`), changeable ou retirable à tout moment, jamais pour sa propre vitrine. Les invités voient les vitrines et une invitation à créer un compte.
+- **Calendrier** : une seule période `[startsAt, endsAt[` où l'on s'inscrit et vote. `event.showcase.edition` range inscriptions et votes : la changer démarre un nouvel event (l'ancien reste en base).
+- **Galerie** : une vitrine par ligne, « Vitrine de [pseudo] » au-dessus, « Voter pour [pseudo] » en dessous, en version légère (fond fixe chargé à l'approche, sans vidéo ni halo, cartes figées), paginée par `event.showcase.pageSize`. Pendant l'event, ordre mélangé propre à chaque joueur (`seededOrder`) et aucun compteur. Les cartes viennent de `cardViews` : le mode spoiler s'applique.
+- **Résultats** : à la clôture seulement. Classement par votes (votants non bannis), à égalité la vitrine qui a atteint son score la première, puis la plus ancienne inscription (`rankEntries`). Podium du top 3 (金 銀 銅) sur `/event` et dans la section des classements de l'accueil ; pendant l'event, l'accueil montre une invitation. Entrée « Event » dans les menus « Plus » quand l'event est allumé.
+- **Admin** (`/admin/evenement/vitrines`) : interrupteur, édition, dates, minimum de cartes, taille des pages, aperçu de `/event` même caché, inscriptions avec leurs votes en direct et retrait de modération (`SHOWCASE_EVENT_ENTRY_REMOVE` dans `AdminLog`).
+- **Code** : règles pures dans `lib/event/showcase.ts`, écritures sous verrou du joueur dans `server/event/showcase-core.ts`, lectures dans `server/event/showcase-queries.ts`, actions dans `server/actions/showcase-event.ts`. Anonymisation et export « Mes données » couvrent inscriptions et votes. Pas de lot automatique pour les gagnants : l'admin les envoie depuis les lots.
+
 ## Panneau d'administration
 
 `/admin` permet à un compte `role = ADMIN` de tout gérer sans redéployer. Pour ça, aucune règle du jeu ne vit dans des constantes : délais, taux, stats de combat et barème du classé se lisent dans la table `GameSetting`, et les constantes du code ne servent que de valeurs par défaut.
@@ -741,6 +753,7 @@ Certains personnages ou transformations (variantes) dévoilent l'histoire. Dans 
 | Discord | Activer ou désactiver le modal « Rejoins le serveur », changer le lien d'invitation, le titre, le texte, le déclencheur et la fréquence ; section Discord de la page Social (`discord.socialPromo` : interrupteur, lien, textes fr/en, début et fin d'affichage facultatifs) |
 | Fonctionnalités | Interrupteurs : casino (« Bientôt »), boutique, paiement Stripe, classé, marché, cadeaux |
 | Vitrines | `/admin/vitrines` : vitrines par joueur, et pour chaque thème son statut (Disponible, Arrive prochainement : visible flouté avec un cadenas, Masqué), sa condition de déblocage et le nombre de vitrines qui l'utilisent |
+| Event vitrines | `/admin/evenement/vitrines` : allumer ou cacher l'event, édition, dates, minimum de cartes, vitrines par page, inscriptions et votes en direct, retrait d'une inscription (voir « Event vitrines ») |
 | Boutique | Articles (boosters, packs, bannières), prix en Zeni, prix en euros et id de prix Stripe, dates de disponibilité |
 | Boosters spéciaux | Bannières vedettes (cartes mises en avant, pitié vedette à 100, prix, dates), fréquence du doré (tous les 10), chance du divin (1/2 000) |
 | Avis | Masquer, épingler sur l'accueil, répondre |

@@ -205,6 +205,14 @@ export const SETTING_SCHEMAS = {
   // Vitrines du profil : nombre par joueur, statut et condition de déblocage de chaque thème
   "showcase.maxPerPlayer": z.number().int().min(1).max(20),
   "showcase.themes": themesSettingSchema,
+  // Event vitrines (/event) : visible ou caché, édition (inscriptions et votes rangés par édition), fenêtre
+  // où l'on s'inscrit et vote, minimum de cartes de la vitrine engagée, vitrines par page de la galerie
+  "event.showcase.enabled": z.boolean(),
+  "event.showcase.edition": z.string().regex(/^[a-z0-9-]{1,40}$/),
+  "event.showcase.startsAt": z.string().datetime(),
+  "event.showcase.endsAt": z.string().datetime(),
+  "event.showcase.minCards": z.number().int().min(1).max(20),
+  "event.showcase.pageSize": z.number().int().min(4).max(30),
   // Social (étape 6) : interrupteurs, limites anti-spam et anti-farm des cadeaux
   "social.enabled": z.boolean(),
   "friends.max": z.number().int().min(1).max(5_000),
@@ -464,6 +472,12 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "collection.recycleValues": { COMMON: 1, UNCOMMON: 1, RARE: 3, EPIC: 10, LEGENDARY: 40, MYTHIC: 150, BR: 150, AR: 450, VR: 450, GOLD: 1050, MR: 1050, XR: 2250 },
   "showcase.maxPerPlayer": 6,
   "showcase.themes": THEMES_DEFAULT,
+  "event.showcase.enabled": false, // caché tant que l'admin ne l'allume pas
+  "event.showcase.edition": "vitrines-1",
+  "event.showcase.startsAt": "2026-12-01T18:00:00.000Z", // 19h à Paris
+  "event.showcase.endsAt": "2026-12-08T18:00:00.000Z", // 19h à Paris
+  "event.showcase.minCards": 1,
+  "event.showcase.pageSize": 10,
   "social.enabled": true,
   "friends.max": 200,
   "friends.maxOutgoingPending": 20,

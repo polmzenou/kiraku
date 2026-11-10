@@ -61,6 +61,7 @@ export function ShowcaseStage({
   label,
   listRef,
   slotRef,
+  gallery = false,
   children,
 }: {
   layout: ShowcaseLayoutId;
@@ -70,6 +71,11 @@ export function ShowcaseStage({
   label: string;
   listRef?: Ref<HTMLOListElement>;
   slotRef?: (index: number, el: HTMLLIElement | null) => void;
+  /**
+   * Galerie de nombreuses vitrines (/event) : fond en image fixe chargée à l'approche, sans vidéo ni effet
+   * de rareté autour des cartes. Mêmes dispositions et thèmes.
+   */
+  gallery?: boolean;
   /** Au-dessus des cartes (barre d'édition…). */
   children?: ReactNode;
 }) {
@@ -77,10 +83,10 @@ export function ShowcaseStage({
   const themeDef = SHOWCASE_THEMES[theme];
   return (
     <div className="vt-stage" data-theme={theme} data-kind={def.kind} data-media={themeDef.media ? "" : undefined}>
-      <StageObserver />
+      {!gallery && <StageObserver />}
       {themeDef.media && (
         <div className="vt-backdrop" aria-hidden="true">
-          <ThemeBackdrop media={themeDef.media} />
+          <ThemeBackdrop media={themeDef.media} stillOnly={gallery} />
         </div>
       )}
       <ol ref={listRef} aria-label={label} className="vt-cards" data-kind={def.kind} style={layoutVars(def)}>
@@ -96,7 +102,7 @@ export function ShowcaseStage({
           >
             <div className="vt-mount">
               <div className="vt-card" data-selected={slot.selected || undefined}>
-                {slot.empty ? (
+                {slot.empty || gallery ? (
                   slot.node
                 ) : (
                   <RarityHalo rarity={slot.rarity} delay={i * 0.83} radius={CARD_RADIUS_PX[cardSizing(layout, i).size]}>

@@ -25,7 +25,8 @@ function saveDataWanted() {
   return (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
 }
 
-export function ThemeBackdrop({ media }: { media: ThemeMedia }) {
+/** `stillOnly` : image fixe seulement, chargée à l'approche (galeries de nombreuses vitrines, /event). */
+export function ThemeBackdrop({ media, stillOnly = false }: { media: ThemeMedia; stillOnly?: boolean }) {
   const level = useFxLevel();
   const wide = useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE).matches, () => false);
   // Faux au rendu serveur et pendant l'hydratation, vrai ensuite
@@ -36,7 +37,7 @@ export function ThemeBackdrop({ media }: { media: ThemeMedia }) {
   const holder = useRef<HTMLSpanElement>(null);
   const video = useRef<HTMLVideoElement>(null);
 
-  const mode = mounted && !failed ? backdropMode(level, saveData) : "still";
+  const mode = mounted && !failed && !stillOnly ? backdropMode(level, saveData) : "still";
   const src = wide ? media.desktop.loop : media.mobile.loop;
 
   useEffect(() => {
@@ -71,7 +72,7 @@ export function ThemeBackdrop({ media }: { media: ThemeMedia }) {
     <span ref={holder} className="vt-media-holder">
       <picture>
         <source media={WIDE} srcSet={media.desktop.still} />
-        <img src={media.mobile.still} alt="" decoding="async" draggable={false} className="vt-media" />
+        <img src={media.mobile.still} alt="" decoding="async" loading={stillOnly ? "lazy" : undefined} draggable={false} className="vt-media" />
       </picture>
       {mode === "video" && (
         <video

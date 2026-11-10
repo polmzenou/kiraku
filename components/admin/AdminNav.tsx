@@ -45,6 +45,7 @@ const GROUPS = [
       { key: "reviews", href: "/admin/avis" },
       { key: "pullFeed", href: "/admin/gros-tirages" },
       { key: "eventGauge", href: "/admin/evenement" },
+      { key: "showcaseEvent", href: "/admin/evenement/vitrines" },
       { key: "market", href: "/admin/marche" },
     ],
   },

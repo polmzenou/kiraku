@@ -49,7 +49,7 @@ export async function AppHeader({ theme, spoiler }: { theme: Theme; spoiler: Spo
     if (!socialOn || !chatOn) return null;
     return { initialUnread: await unreadChatCount(id, visibleSince(retentionHours)), pollSeconds: chatPoll, maxLength, retentionHours };
   };
-  const [unread, pollSeconds, safetySeconds, casino, boosterRules, guestDays, missionReady, chatBase] = await Promise.all([
+  const [unread, pollSeconds, safetySeconds, casino, boosterRules, guestDays, missionReady, chatBase, event] = await Promise.all([
     user ? unreadNotifications(user.id) : 0,
     user ? getSetting("notifications.pollSeconds") : 0,
     user ? getSetting("realtime.safetyPollSeconds") : 0,
@@ -59,9 +59,10 @@ export async function AppHeader({ theme, spoiler }: { theme: Theme; spoiler: Spo
     // Pastille rouge sur Missions : une mission terminée attend d'être réclamée
     user && !user.bannedAt ? hasClaimableMission(user.id) : false,
     chatUser ? loadChat(chatUser.id) : null,
+    getSetting("event.showcase.enabled"),
   ]);
   const state = user && boosterRules ? boosterStateFrom(user, boosterRules) : null;
-  const features = { casino };
+  const features = { casino, event };
   const alerts = { missions: missionReady };
   const chat = chatBase ? { ...chatBase, safetySeconds } : null;
 
