@@ -4,14 +4,15 @@ import { getWikiCollection } from "@/server/catalog/ownership";
 import { getCatalogSummaries } from "@/server/catalog/queries";
 import { WikiGrid } from "./WikiGrid";
 
-export async function WikiResults({ index, params, locale, emptyCatalog }: {
+export async function WikiResults({ index, params, locale, emptyCatalog, newIds }: {
   index: CatalogSearchIndex;
   params: WikiParams;
   locale: string;
   emptyCatalog: boolean;
+  newIds?: ReadonlySet<number>;
 }) {
   const collection = await getWikiCollection();
   const page = selectWikiPage(index, params, collection);
   const cards = await getCatalogSummaries(page.ids);
-  return <WikiGrid cards={cards} nextAfter={page.nextAfter} params={params} locale={locale} collection={collection} emptyCatalog={emptyCatalog} />;
+  return <WikiGrid cards={cards} nextAfter={page.nextAfter} params={params} locale={locale} collection={collection} emptyCatalog={emptyCatalog} newIds={newIds} />;
 }

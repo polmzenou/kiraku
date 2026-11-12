@@ -131,6 +131,7 @@
     "play": "Resume scrolling",
     "until": "Until {date}",
     "openBooster": "Open the booster",
+    "seeNewCards": "See the new cards",
     "tags": {
       "NEW": "New",
       "NEW_CARDS": "New cards",
@@ -354,6 +355,31 @@
     "metaDescription": "Every Kiraku character: rarity, series, Power and Ki.",
     "cardDescription": "{name} ({series}): rarity, rank, Power and Ki on Kiraku.",
     "count": "{count, plural, =0 {No characters} one {# character} other {# characters}}",
+    "newBadge": "New",
+    "newLabel": "New card",
+    "newCardsLink": "{count, plural, one {# new card} other {# new cards}}",
+    "latestReleasesLink": "Latest releases",
+    "newCards": {
+      "title": "New cards",
+      "metaDescription": "The latest cards added to Kiraku: where to pull them and which ones you already have.",
+      "release": "Released {date}",
+      "count": "{count, plural, one {# card} other {# cards}}",
+      "newUntil": "New until {date}",
+      "gridLabel": "Cards released {date}",
+      "owned": "Owned",
+      "missing": "Not owned yet",
+      "boosterMore": "{name} +{count}",
+      "noBooster": "Not in current boosters",
+      "whereKicker": "Where to pull them",
+      "whereTitle": "Boosters that contain them",
+      "boosterCount": "{count, plural, one {# new card} other {# new cards}} of {total}",
+      "open": "Open",
+      "openLabel": "Open the {name} booster",
+      "moreBoosters": "Also in {count, plural, one {# more booster} other {# more boosters}}",
+      "previous": "Previous releases",
+      "empty": "No new cards yet: check back at the next release!",
+      "browseWiki": "Browse the wiki"
+    },
     "searchLabel": "Search a character or a series",
     "searchPlaceholder": "Gojo, One Piece…",
     "searchSubmit": "Search",
@@ -2216,6 +2242,7 @@
       "href": "Address",
       "hrefInternalHint": "A site path, for example /parrainage or /boutique. The English version adds /en by itself.",
       "hrefExternalHint": "A full https:// address, opened in a new tab.",
+      "linkNewCardsHint": "Without a link, a “New cards” banner leads to the new cards page (/wiki/nouveautes).",
       "label_fr": "Button label (French)",
       "label_en": "Button label (English, optional)",
       "previewSection": "Preview",
@@ -2527,6 +2554,9 @@
         "game": {
           "timeZone": "Game time zone"
         },
+        "catalog": {
+          "newCardHours": "Card “New” badge (hours)"
+        },
         "guest": {
           "createPerHourPerIp": "Guest accounts per hour and per IP",
           "retentionDays": "Guest retention (days)"
@@ -2543,6 +2573,9 @@
         },
         "game": {
           "timeZone": "IANA name, for example Europe/Paris: mission days and birthdays."
+        },
+        "catalog": {
+          "newCardHours": "How long the latest card release keeps its badge, from its last publication. 0: never shown."
         },
         "guest": {
           "createPerHourPerIp": "Limits mass account creation.",

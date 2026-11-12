@@ -8,7 +8,7 @@ import { appUrl } from "@/server/env";
 
 // Pages publiques stables et fiches du wiki ; aucun identifiant de joueur, tirage ou compte.
 // /sitemap/0.xml : pages fixes ; /sitemap/1.xml et suivants : fiches du wiki par blocs.
-const STATIC_PATHS = ["", "/wiki", "/classement", "/mentions-legales", "/confidentialite", "/cookies", "/cgu"];
+const STATIC_PATHS = ["", "/wiki", "/wiki/nouveautes", "/classement", "/mentions-legales", "/confidentialite", "/cookies", "/cgu"];
 
 export async function generateSitemaps() {
   const cards = await getSitemapCards();

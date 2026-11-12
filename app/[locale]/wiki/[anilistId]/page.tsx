@@ -16,6 +16,7 @@ import { baseOpenGraph, ogImageUrl } from "@/lib/seo/open-graph";
 import { breadcrumbs } from "@/lib/seo/structured-data";
 import { appUrl } from "@/server/env";
 import { getCatalogCard, getCatalogStats, getRelatedCatalogCards } from "@/server/catalog/queries";
+import { getNewCardIds } from "@/server/catalog/releases";
 
 const idSchema = z.coerce.number().int().positive().max(2_147_483_647);
 
@@ -49,12 +50,13 @@ export default async function WikiCardPage({ params }: PageProps<"/[locale]/wiki
   const { anilistId } = await params;
   const card = await loadCard(anilistId);
   if (!card) notFound();
-  const [locale, stats, related, tMeta, tWiki] = await Promise.all([
+  const [locale, stats, related, tMeta, tWiki, newIds] = await Promise.all([
     getLocale(),
     getCatalogStats(),
     getRelatedCatalogCards(card.seriesId, card.anilistId),
     getTranslations("metadata"),
     getTranslations("wiki"),
+    getNewCardIds(),
   ]);
   const current = hasLocale(routing.locales, locale) ? locale : routing.defaultLocale;
   const trail = breadcrumbs(appUrl(), [
@@ -68,7 +70,7 @@ export default async function WikiCardPage({ params }: PageProps<"/[locale]/wiki
       <WikiCardOwners cardId={card.id} rarity={card.rarity} name={card.name} locale={locale} />
     </Suspense>
   );
-  const detail = { card, locale, total: stats.total, related, wishlistAction, ownersSection };
+  const detail = { card, locale, total: stats.total, related, wishlistAction, ownersSection, isNew: newIds.has(card.anilistId) };
   return (
     <PageShell>
       <JsonLd data={trail} />

@@ -1,0 +1,24 @@
+/* Révélation de la dernière sortie (/wiki/nouveautes) : chaque carte arrive face cachée et se retourne
+   à son tour, une seule fois au chargement. Transform seulement ; aucun écouteur ni script. */
+.nc-scene { perspective: 1100px; }
+.nc-turn {
+  position: relative;
+  transform-style: preserve-3d;
+  animation: nc-flip .7s cubic-bezier(.2, .8, .2, 1) both;
+  animation-delay: calc(var(--nc-i, 0) * 110ms + 200ms);
+}
+.nc-front, .nc-back { backface-visibility: hidden; }
+.nc-front { min-width: 0; }
+.nc-back { position: absolute; inset: 0; transform: rotateY(180deg); }
+@keyframes nc-flip {
+  from { transform: rotateY(-180deg); }
+  to { transform: rotateY(0deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nc-scene { perspective: none; }
+  .nc-turn { animation: none; }
+  .nc-back { display: none; }
+}
+:root[data-motion="reduced"] .nc-scene { perspective: none; }
+:root[data-motion="reduced"] .nc-turn { animation: none; }
+:root[data-motion="reduced"] .nc-back { display: none; }

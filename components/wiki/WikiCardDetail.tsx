@@ -23,6 +23,8 @@ type DetailProps = {
   wishlistAction?: ReactNode;
   /** Joueurs qui possèdent la carte (personnel au lecteur, rendu sous Suspense). */
   ownersSection?: ReactNode;
+  /** Carte de la dernière sortie qui porte encore le badge « Nouveau ». */
+  isNew?: boolean;
 };
 
 export async function WikiPersonalizedCardDetail(props: DetailProps) {
@@ -39,7 +41,7 @@ function LockIcon() {
   );
 }
 
-export function WikiCardDetail({ card, related, locale, total, collection, wishlistAction, ownersSection }: DetailProps & { collection: WikiCollection | null }) {
+export function WikiCardDetail({ card, related, locale, total, collection, wishlistAction, ownersSection, isNew = false }: DetailProps & { collection: WikiCollection | null }) {
   const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("wiki");
   const tRarity = useTranslations("rarity");
@@ -104,6 +106,11 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
             <span aria-hidden="true" className="font-seal">{RARITY_SEAL[card.rarity]}</span>{tRarity(card.rarity)}
           </span>
           {card.formName && <span className="rounded-control border border-kin px-3 py-1.5 text-kin">{card.formName}</span>}
+          {isNew && (
+            <span className="inline-flex items-center gap-1.5 rounded-control bg-shu-btn px-3 py-1.5 text-washi-paper">
+              <span aria-hidden="true" lang="ja" className="font-seal">新</span>{t("newLabel")}
+            </span>
+          )}
           <span role="status" className="rounded-control border border-border bg-bg px-3 py-1.5 text-text-muted">{status}</span>
         </div>
         <h1 className="break-words text-4xl font-extrabold leading-tight md:text-6xl">{card.name}</h1>

@@ -385,6 +385,7 @@ model Card {
   variants         Card[]             @relation("cardVariants")
   formName         String? // nom de la forme : « Gear 5 », « Bankai »
   addedImportId    String? // import qui a fait entrer la carte (nouveautés)
+  publishedAt      DateTime? // première publication depuis l'admin (sorties de /wiki/nouveautes) ; vide pour les imports AniList
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   copies           UserCard[]
@@ -406,6 +407,7 @@ model Card {
   @@index([legacyRarity, rank], map: "Card_rarity_rank_idx")
   @@index([seriesId])
   @@index([status, origin])
+  @@index([origin, publishedAt])
   @@index([variantOfId])
   @@index([searchText(ops: raw("gin_trgm_ops"))], type: Gin)
 }

@@ -113,6 +113,25 @@ describe("carrousel Nouveautés de l'accueil", () => {
     expect(html).toContain("Ouvrir le booster");
   });
 
+  it("mène une bannière « Nouvelles cartes » sans bouton choisi à la page de la dernière sortie", () => {
+    const config = only({ tag: "NEW_CARDS", link: { kind: "none" }, visual: { kind: "cards", cardIds: ["a"] } });
+    const visuals = { [config.items[0].id]: { kind: "cards" as const, cards: [card("a")] } };
+    const fr = view(config, "fr", false, visuals);
+    expect(fr).toContain('href="/wiki/nouveautes"');
+    expect(fr).toContain("Voir les nouvelles cartes");
+    expect(view(config, "en", false, visuals)).toContain('href="/en/wiki/nouveautes"');
+    // Le bouton choisi par l'admin passe toujours devant
+    const chosen = only({ tag: "NEW_CARDS", link: { kind: "internal", href: "/wiki?rarity=AR", label: { fr: "Voir les AR", en: "" } } });
+    expect(view(chosen, "fr")).not.toContain("/wiki/nouveautes");
+    // Un booster garde sa vitrine
+    const booster = only({ tag: "NEW_CARDS", link: { kind: "none" }, visual: { kind: "booster", slug: "imperial" } });
+    const html = view(booster, "fr", false, { [booster.items[0].id]: { kind: "booster", booster: imperial, cards: [] } });
+    expect(html).toContain('href="/?b=imperial"');
+    expect(html).not.toContain("/wiki/nouveautes");
+    // Une autre étiquette sans bouton reste sans bouton
+    expect(view(only({ tag: "UPDATE", link: { kind: "none" }, visual: { kind: "none" } }), "fr")).not.toContain("/wiki/nouveautes");
+  });
+
   it("pose une image téléversée en fond, recadrée, sous son voile", () => {
     const html = view(only({ visual: { kind: "image", url: "https://store.public.blob.vercel-storage.com/news/a.webp", focalX: 20, focalY: 70 } }), "fr");
     expect(html).toMatch(/<img src="https:\/\/store\.public\.blob\.vercel-storage\.com\/news\/a\.webp" alt="" class="-z-20 object-cover" style="object-position:20% 70%"/);

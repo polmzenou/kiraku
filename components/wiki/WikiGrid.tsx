@@ -1,4 +1,5 @@
 import { useTranslations } from "next-intl";
+import { NewBadge } from "@/components/catalog/NewBadge";
 import { Fuda } from "@/components/fuda/Fuda";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
@@ -9,13 +10,15 @@ import type { CatalogCardSummary } from "@/server/catalog/queries";
 
 const gridClasses = "grid grid-cols-3 gap-x-2 gap-y-5 md:grid-cols-4 md:gap-x-3 lg:grid-cols-6 xl:grid-cols-8";
 
-export function WikiGrid({ cards, nextAfter, params, locale, collection, emptyCatalog }: {
+export function WikiGrid({ cards, nextAfter, params, locale, collection, emptyCatalog, newIds }: {
   cards: CatalogCardSummary[];
   nextAfter: number | null;
   params: WikiParams;
   locale: string;
   collection: WikiCollection | null;
   emptyCatalog: boolean;
+  /** Cartes de la dernière sortie qui portent encore le badge « Nouveau » (ids publics). */
+  newIds?: ReadonlySet<number>;
 }) {
   const t = useTranslations("wiki");
   const tRarity = useTranslations("rarity");
@@ -38,15 +41,16 @@ export function WikiGrid({ cards, nextAfter, params, locale, collection, emptyCa
             const dimmed = collection?.hasCards && missing;
             const status = state ? state.copies > 0 ? t("copies", { count: state.copies }) : t("missingCard") : "";
             const series = seriesTitle(card.series, locale);
+            const isNew = newIds?.has(card.anilistId) === true;
             return (
               <li key={card.anilistId} className="min-w-0">
                 <Link
                   href={`/wiki/${card.anilistId}`}
-                  aria-label={[card.name, series, tRarity(card.rarity), status].filter(Boolean).join(" · ")}
+                  aria-label={[card.name, series, tRarity(card.rarity), isNew ? t("newLabel") : "", status].filter(Boolean).join(" · ")}
                   className="group relative flex h-full flex-col gap-2 rounded-[5px] transition-transform active:scale-[0.97]"
                 >
                   <div aria-hidden="true" className={dimmed ? "opacity-35 transition-opacity group-hover:opacity-55 group-focus-visible:opacity-55" : ""}>
-                    <Fuda card={card} series={series} size="sm" preload={i < 3 && !params.after} describeImage />
+                    <Fuda card={card} series={series} size="sm" preload={i < 3 && !params.after} describeImage corner={isNew && <NewBadge compact />} />
                   </div>
                   {missing && collection?.hasCards && (
                     <span aria-hidden="true" className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full border border-text-muted bg-bg text-xs text-text">

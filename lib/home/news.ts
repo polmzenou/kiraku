@@ -30,6 +30,9 @@ export const NEWS_ICON_KEYS = Object.keys(NEWS_ICONS) as [NewsIcon, ...NewsIcon[
 export const NEWS_TAGS = ["NEW", "NEW_CARDS", "NEW_BOOSTER", "EVENT", "UPDATE", "SOON"] as const;
 export type NewsTag = (typeof NEWS_TAGS)[number];
 
+/** Page de la dernière sortie : une bannière « Nouvelles cartes » sans bouton choisi y mène. */
+export const NEW_CARDS_PATH = "/wiki/nouveautes";
+
 export const NEWS_MAX_ITEMS = 6;
 /** Cartes en éventail sur une bannière. */
 export const NEWS_MAX_CARDS = 5;

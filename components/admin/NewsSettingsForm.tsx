@@ -373,6 +373,7 @@ function ItemEditor({
       <Bilingual label={(l) => t(`body_${l}`)} value={item.body} max={400} rows={3} invalid={invalid("body")} onChange={(body) => onChange({ ...item, body })} />
       <SelectField<NewsLink["kind"]>
         label={t("link")}
+        hint={item.link.kind === "none" && item.tag === "NEW_CARDS" && visual.kind !== "booster" ? t("linkNewCardsHint") : undefined}
         value={item.link.kind}
         onChange={setLink}
         options={(["none", "internal", "external"] as const).map((kind) => ({ value: kind, label: t(`links.${kind}`) }))}

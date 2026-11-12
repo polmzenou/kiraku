@@ -10,7 +10,8 @@ import { WikiResults } from "@/components/wiki/WikiResults";
 import { routing } from "@/i18n/routing";
 import { parseWikiParams, wikiIndexing } from "@/lib/catalog/wiki-params";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { getPathname } from "@/i18n/navigation";
+import { getPathname, Link } from "@/i18n/navigation";
+import { getCardReleases, getNewCardBadge } from "@/server/catalog/releases";
 import { localeAlternates, localePath } from "@/lib/seo/alternates";
 import { breadcrumbs } from "@/lib/seo/structured-data";
 import { appUrl } from "@/server/env";
@@ -33,12 +34,15 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/[lo
 export default async function WikiPage({ searchParams }: PageProps<"/[locale]/wiki">) {
   const params = parseWikiParams(await searchParams, await getRarities());
   const locale = await getLocale();
-  const [t, stats, index, options] = await Promise.all([
+  const [t, stats, index, options, releases, badge] = await Promise.all([
     getTranslations("wiki"),
     getCatalogStats(),
     getCatalogSearchIndex(params),
     getCatalogFilterOptions(locale),
+    getCardReleases(),
+    getNewCardBadge(),
   ]);
+  const newIds = new Set(badge?.publicIds ?? []);
   const publicPage = selectWikiPage(index, { after: params.after, ownership: "all" }, emptyWikiCollection());
   const publicCards = params.ownership === "all" ? await getCatalogSummaries(publicPage.ids) : [];
 
@@ -55,6 +59,20 @@ export default async function WikiPage({ searchParams }: PageProps<"/[locale]/wi
         <header className="flex flex-col gap-1">
           <h1 className="text-3xl font-extrabold">{t("title")}</h1>
           <p className="text-sm text-text-muted">{t("count", { count: stats.total })}</p>
+          {badge ? (
+            <Link
+              href="/wiki/nouveautes"
+              className="mt-2 inline-flex min-h-11 items-center gap-2 self-start rounded-full border border-shu/50 bg-shu/10 px-4 text-sm font-bold text-text transition-colors hover:border-shu hover:bg-shu/20"
+            >
+              <span aria-hidden="true" lang="ja" className="font-seal text-base leading-none text-shu">新</span>
+              {t("newCardsLink", { count: badge.publicIds.length })}
+              <span aria-hidden="true">→</span>
+            </Link>
+          ) : releases.length > 0 && (
+            <Link href="/wiki/nouveautes" className="inline-flex min-h-11 items-center self-start text-sm text-text-muted underline-offset-4 hover:text-text hover:underline">
+              {t("latestReleasesLink")}
+            </Link>
+          )}
         </header>
 
         <WikiFilters
@@ -65,10 +83,10 @@ export default async function WikiPage({ searchParams }: PageProps<"/[locale]/wi
         />
 
         <Suspense key={JSON.stringify(params)} fallback={params.ownership === "all"
-          ? <WikiGrid cards={publicCards} nextAfter={publicPage.nextAfter} params={params} locale={locale} collection={null} emptyCatalog={stats.total === 0} />
+          ? <WikiGrid cards={publicCards} nextAfter={publicPage.nextAfter} params={params} locale={locale} collection={null} emptyCatalog={stats.total === 0} newIds={newIds} />
           : <WikiGridSkeleton />}
         >
-          <WikiResults index={index} params={params} locale={locale} emptyCatalog={stats.total === 0} />
+          <WikiResults index={index} params={params} locale={locale} emptyCatalog={stats.total === 0} newIds={newIds} />
         </Suspense>
 
         <p className="text-xs text-text-muted">

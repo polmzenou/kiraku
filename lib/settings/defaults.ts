@@ -426,6 +426,8 @@ export const SETTING_SCHEMAS = {
   "catalog.rarityPolicy": z.enum(["FROZEN", "LIVE"]),
   "catalog.stats": cardStats,
   "catalog.minTagRank": z.number().int().min(0).max(100),
+  // Badge « Nouveau » de la dernière sortie (/wiki/nouveautes), en heures après sa dernière publication ; 0 = jamais
+  "catalog.newCardHours": z.number().int().min(0).max(720),
   "anilist.perPage": z.number().int().min(1).max(50),
   "anilist.requestDelayMs": z.number().int().min(500).max(60_000),
   // Seuils du bandeau de consommation du serveur (/admin/general), en % de la capacité
@@ -701,6 +703,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "catalog.rarityPolicy": "FROZEN",
   "catalog.stats": { powerMax: 100, powerSpan: 60, kiMin: 30, kiSpan: 56 },
   "catalog.minTagRank": 60,
+  "catalog.newCardHours": 48,
   "anilist.perPage": 50,
   "anilist.requestDelayMs": 2100, // 30 requêtes par minute (limite actuelle d'AniList)
   "usage.alertThresholds": DEFAULT_ALERT_THRESHOLDS,

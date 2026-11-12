@@ -6,7 +6,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { BoosterArt } from "@/components/boosters/BoosterArt";
 import { Fuda } from "@/components/fuda/Fuda";
 import { Link } from "@/i18n/navigation";
-import { NEWS_ICONS, type NewsCardView, type NewsIcon, type NewsItemView, type NewsTone, type NewsVisualView } from "@/lib/home/news";
+import { NEW_CARDS_PATH, NEWS_ICONS, type NewsCardView, type NewsIcon, type NewsItemView, type NewsTone, type NewsVisualView } from "@/lib/home/news";
 import "./news.css";
 
 // Motif wagara de chaque couleur, au trait discret (--wl) ; un booster garde le sien (le kikkō doré de
@@ -80,8 +80,8 @@ export function SealVisual({ icon }: { icon: NewsIcon }) {
 
 /**
  * Une bannière du carrousel : fond dans la couleur de la nouveauté (ou celle du booster), visuel (cartes
- * en éventail, sachet, image ou grand sceau), étiquette, titre, texte et bouton. Un booster sans bouton
- * choisi mène à sa vitrine sur l'accueil (?b=).
+ * en éventail, sachet, image ou grand sceau), étiquette, titre, texte et bouton. Sans bouton choisi, un
+ * booster mène à sa vitrine sur l'accueil (?b=) et l'étiquette « Nouvelles cartes » à /wiki/nouveautes.
  */
 export function NewsBanner({ item, index, count, active, first }: { item: NewsItemView; index: number; count: number; active: boolean; first: boolean }) {
   const t = useTranslations("news");
@@ -90,7 +90,13 @@ export function NewsBanner({ item, index, count, active, first }: { item: NewsIt
   const booster = visual.kind === "booster" ? visual.booster : null;
   const style = booster ? ({ "--nb-base": booster.theme.base, "--nb-dark": booster.theme.dark } as CSSProperties) : undefined;
   const until = booster?.endsAt ? format.dateTime(new Date(booster.endsAt), { day: "numeric", month: "long", timeZone: "Europe/Paris" }) : null;
-  const link = item.link.kind === "none" && booster ? { kind: "internal" as const, href: `/?b=${booster.slug}`, label: t("openBooster") } : item.link;
+  const link = item.link.kind !== "none"
+    ? item.link
+    : booster
+      ? { kind: "internal" as const, href: `/?b=${booster.slug}`, label: t("openBooster") }
+      : item.tag === "NEW_CARDS"
+        ? { kind: "internal" as const, href: NEW_CARDS_PATH, label: t("seeNewCards") }
+        : item.link;
 
   let art: ReactNode = null;
   if (visual.kind === "cards") art = <CardFan cards={visual.cards} active={active} />;
