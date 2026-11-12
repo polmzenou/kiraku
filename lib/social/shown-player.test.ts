@@ -17,6 +17,12 @@ describe("shownPlayer", () => {
     expect(shownPlayer("Joueur", player)).toEqual({ name: "Joueur", profile: null, image: null, color: null, frame: null });
   });
 
+  it("accepte un nom calculé : visible comme une chaîne, révélé à l'admin avec un cadenas et rien d'autre", () => {
+    expect(shownPlayer({ name: "Sakura", revealed: false }, player)).toMatchObject({ name: "Sakura", profile: "Sakura", image: player.image });
+    expect(shownPlayer({ name: "Joueur", revealed: false }, player)).toEqual({ name: "Joueur", profile: null, image: null, color: null, frame: null });
+    expect(shownPlayer({ name: "Sakura", revealed: true }, player)).toEqual({ name: "Sakura", profile: null, image: null, color: null, frame: null, locked: true });
+  });
+
   it("ignore un cosmétique désactivé", () => {
     const shown = shownPlayer("Sakura", { ...player, frame: { frameStyle: "shu", active: false }, nameColor: null });
     expect(shown.frame).toBeNull();

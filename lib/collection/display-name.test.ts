@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { displayNameFor, type NamedPlayer } from "./display-name";
+import { displayNameFor, shownNameFor, type NamedPlayer } from "./display-name";
 
 const player = (o: Partial<NamedPlayer> = {}): NamedPlayer => ({
   id: "p1",
@@ -37,5 +37,27 @@ describe("pseudo affiché hors du profil", () => {
     expect(displayNameFor(deleted, null, none)).toBe("Compte supprimé");
     expect(displayNameFor(deleted, "p1", none)).toBe("Compte supprimé");
     expect(displayNameFor(deleted, "v1", none, { hidden: "Player", deleted: "Deleted account" })).toBe("Deleted account");
+  });
+});
+
+describe("pseudo révélé à l'admin", () => {
+  const labels = { hidden: "Joueur", deleted: "Compte supprimé" };
+
+  it("montre le vrai pseudo d'un joueur caché, marqué révélé", () => {
+    expect(shownNameFor(player({ profileVisibility: "PRIVATE" }), "admin", none, labels, true)).toEqual({ name: "Kaito", revealed: true });
+    expect(shownNameFor(player({ profileVisibility: "FRIENDS" }), "admin", none, labels, true)).toEqual({ name: "Kaito", revealed: true });
+    expect(shownNameFor(player({ bannedAt: new Date() }), "admin", none, labels, true)).toEqual({ name: "Kaito", revealed: true });
+    expect(shownNameFor(player(), "admin", { friends: false, blocked: true }, labels, true)).toEqual({ name: "Kaito", revealed: true });
+  });
+
+  it("ne marque pas un pseudo déjà visible de tous, ni le sien", () => {
+    expect(shownNameFor(player(), "admin", none, labels, true)).toEqual({ name: "Kaito", revealed: false });
+    expect(shownNameFor(player({ profileVisibility: "PRIVATE" }), "p1", none, labels, true)).toEqual({ name: "Kaito", revealed: false });
+  });
+
+  it("garde le libellé pour un compte supprimé, et pour tout autre lecteur", () => {
+    expect(shownNameFor(player({ anonymizedAt: new Date() }), "admin", none, labels, true)).toEqual({ name: "Compte supprimé", revealed: false });
+    expect(shownNameFor(player({ profileVisibility: "PRIVATE" }), "v1", none, labels)).toEqual({ name: "Joueur", revealed: false });
+    expect(shownNameFor(player({ profileVisibility: "PRIVATE" }), "v1", none, labels, false)).toEqual({ name: "Joueur", revealed: false });
   });
 });

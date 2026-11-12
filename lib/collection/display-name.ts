@@ -25,3 +25,22 @@ export function displayNameFor(
   const access = profileAccess(viewerId, { ...player, showCollection: false }, rel);
   return access.profile ? player.username : labels.hidden;
 }
+
+/** Nom affiché ; `revealed` : vrai pseudo montré à un admin alors qu'il reste caché aux joueurs (cadenas). */
+export type ShownName = { name: string; revealed: boolean };
+
+/**
+ * Comme displayNameFor, mais un admin (`revealHidden`) lit le vrai pseudo d'un joueur caché (profil privé
+ * ou réservé aux amis, banni, blocage), marqué `revealed`. Un compte supprimé n'a plus de pseudo à montrer.
+ */
+export function shownNameFor(
+  player: NamedPlayer,
+  viewerId: string | null,
+  rel: { friends: boolean; blocked: boolean },
+  labels = { hidden: "Joueur", deleted: "Compte supprimé" },
+  revealHidden = false,
+): ShownName {
+  const name = displayNameFor(player, viewerId, rel, labels);
+  if (!revealHidden || player.anonymizedAt || name === player.username) return { name, revealed: false };
+  return { name: player.username, revealed: true };
+}

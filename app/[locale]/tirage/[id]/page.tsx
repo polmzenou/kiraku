@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { BoosterArt } from "@/components/boosters/BoosterArt";
 import { Fuda } from "@/components/fuda/Fuda";
 import { PageShell } from "@/components/PageShell";
+import { PrivateNameLock } from "@/components/social/PrivateNameLock";
 import { buttonClasses } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
 import { contentsLabel } from "@/lib/boosters/catalog";
@@ -75,7 +76,10 @@ export default async function DrawPage({ params }: PageProps<"/[locale]/tirage/[
           />
         </div>
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="font-heading text-2xl font-extrabold">{t("title", { name })}</h1>
+          <h1 className="font-heading text-2xl font-extrabold">
+            {t("title", { name })}
+            {opening.owner.locked && <PrivateNameLock className="ml-2 align-middle" />}
+          </h1>
           <p className="text-sm text-text-muted">
             {boosterName} · {format.relativeTime(opening.createdAt)}
           </p>
