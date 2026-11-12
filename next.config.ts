@@ -21,6 +21,12 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Le nonce CSP impose un rendu dynamique : pas de Cache Components ni de PPR.
   poweredByHeader: false,
+  // Serveur autonome (.next/standalone) : deploy/deploy.sh le copie dans une release à part, si bien que
+  // le build suivant ne touche jamais aux fichiers que sert le site en ligne.
+  output: "standalone",
+  // Le déploiement saute la vérification des types seulement quand la CI (lint + typecheck) est verte
+  // pour ce commit (deploy/deploy.sh) : le même contrôle n'est pas refait sur le VPS.
+  typescript: { ignoreBuildErrors: process.env.SKIP_BUILD_TYPECHECK === "1" },
   // Les métadonnées restent dans <head> pour les lecteurs HTML et les outils SEO.
   htmlLimitedBots: /.*/,
   // Images de partage : polices TrueType et sceau lus sur disque (noms dynamiques, invisibles au traçage)
