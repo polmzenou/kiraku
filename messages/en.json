@@ -2371,13 +2371,25 @@
       "linkSection": "Discord account sign-in",
       "linkBonusZeni": "First link bonus (Zeni)",
       "linkBonusHint": "Paid once, when a player links Discord to their account.",
+      "avatarSection": "Discord avatars",
+      "avatarIntro": "The bot re-reads the Discord avatar of linked, active players, a few on each cron run (once a minute): a new picture shows up in the app without the player signing in again. A Discord sign-in also updates it right away.",
+      "avatarHints": {
+        "discord": {
+          "avatarSyncHours": "Delay between two refreshes of the same player. 0: sync off.",
+          "avatarSyncActiveDays": "Players away for longer are not refreshed.",
+          "avatarSyncBatch": "One Discord request per player; 10 covers 14,000 players a day."
+        }
+      },
       "keys": {
         "discord": {
           "marketEnabled": "Discord marketplace announcements",
           "rankedEnabled": "Discord ranked season announcements",
           "joinModal": "\"Join our Discord\" modal",
           "socialPromo": "Discord section of the Social page",
-          "linkBonusZeni": "Discord link bonus"
+          "linkBonusZeni": "Discord link bonus",
+          "avatarSyncHours": "Avatar refresh (hours)",
+          "avatarSyncActiveDays": "Players active within (days)",
+          "avatarSyncBatch": "Players refreshed per minute"
         }
       }
     },

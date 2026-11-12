@@ -126,6 +126,8 @@ model User {
   // Présence : dernière activité (battement tant que le joueur est là), figée quand l'équipe se met hors ligne
   lastSeenAt          DateTime?
   appearOffline       Boolean           @default(false) // hors ligne choisi, pris en compte pour ADMIN et DEV seulement
+  // Dernière relecture de l'avatar Discord (server/discord/avatars.ts) : null = jamais relu depuis la liaison
+  avatarCheckedAt     DateTime?
   createdAt           DateTime          @default(now())
 
   accounts     Account[]

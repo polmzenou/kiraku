@@ -390,6 +390,11 @@ export const SETTING_SCHEMAS = {
   "discord.joinModal": joinModalSchema,
   "discord.marketEnabled": z.boolean(),
   "discord.rankedEnabled": z.boolean(),
+  // Avatars Discord relus par le bot : intervalle par joueur (heures, 0 = jamais), joueurs actifs depuis
+  // N jours seulement, et nombre de joueurs relus par passage du cron (une fois par minute)
+  "discord.avatarSyncHours": z.number().int().min(0).max(720),
+  "discord.avatarSyncActiveDays": z.number().int().min(1).max(365),
+  "discord.avatarSyncBatch": z.number().int().min(1).max(50),
   // Section « Rejoins notre Discord » de la page Social : lien, textes fr/en, fenêtre d'affichage
   "discord.socialPromo": socialPromoSchema,
   // Interrupteurs de fonctionnalités sans module propre (casino : tuile « Bientôt » seulement)
@@ -678,6 +683,9 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "discord.joinModal": JOIN_MODAL_DEFAULT, // désactivé par défaut
   "discord.marketEnabled": false,
   "discord.rankedEnabled": false,
+  "discord.avatarSyncHours": 24, // chaque joueur actif relu au plus une fois par jour
+  "discord.avatarSyncActiveDays": 14,
+  "discord.avatarSyncBatch": 10, // 10 requêtes par minute au plus : bien sous les limites de Discord
   "discord.socialPromo": SOCIAL_PROMO_DEFAULT, // masquée par défaut
   "features.casino": true,
   "home.pullFeed.enabled": true,

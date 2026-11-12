@@ -3,6 +3,7 @@ import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 import { after } from "next/server";
 import { GUEST_PREFIX } from "@/lib/username";
+import { discordAvatarUrl } from "@/lib/discord/avatar";
 import { safeRedirect } from "@/lib/safe-redirect";
 import { kirakuAdapter } from "./auth-adapter";
 import { prisma } from "./db";
@@ -55,6 +56,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   events: {
+    // Chaque connexion Discord reprend l'avatar du moment (profil brut de Discord), et compte comme une
+    // relecture : la synchro du cron (server/discord/avatars.ts) n'a pas à repasser avant longtemps.
+    async signIn({ user, account, profile }) {
+      if (account?.provider !== "discord" || !user.id || !profile) return;
+      const image = discordAvatarUrl({ id: String(profile.id ?? ""), avatar: typeof profile.avatar === "string" ? profile.avatar : null, discriminator: typeof profile.discriminator === "string" ? profile.discriminator : null });
+      if (!image) return;
+      await prisma.user.updateMany({ where: { id: user.id, anonymizedAt: null }, data: { image, avatarCheckedAt: new Date() } });
+    },
     // Liaison Discord (depuis un invité ou un compte e-mail) : même User.
     async linkAccount({ user, account, profile }) {
       if (!user.id || account.provider !== "discord") return;

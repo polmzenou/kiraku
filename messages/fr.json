@@ -2371,13 +2371,25 @@
       "linkSection": "Connexion Discord du compte",
       "linkBonusZeni": "Bonus de première liaison (Zeni)",
       "linkBonusHint": "Versé une seule fois, quand un joueur lie Discord à son compte.",
+      "avatarSection": "Avatars Discord",
+      "avatarIntro": "Le bot relit l’avatar Discord des joueurs liés et actifs, quelques-uns à chaque passage du cron (une fois par minute) : une nouvelle photo apparaît dans l’app sans que le joueur se reconnecte. Une connexion Discord la met aussi à jour tout de suite.",
+      "avatarHints": {
+        "discord": {
+          "avatarSyncHours": "Délai entre deux relectures d’un même joueur. 0 : synchro coupée.",
+          "avatarSyncActiveDays": "Les joueurs absents depuis plus longtemps ne sont pas relus.",
+          "avatarSyncBatch": "Une requête Discord par joueur ; 10 suffit pour 14 000 joueurs par jour."
+        }
+      },
       "keys": {
         "discord": {
           "marketEnabled": "Annonces du marché sur Discord",
           "rankedEnabled": "Annonces des saisons classées sur Discord",
           "joinModal": "Modal « Rejoins notre Discord »",
           "socialPromo": "Section Discord de la page Social",
-          "linkBonusZeni": "Bonus de liaison Discord"
+          "linkBonusZeni": "Bonus de liaison Discord",
+          "avatarSyncHours": "Relecture des avatars (heures)",
+          "avatarSyncActiveDays": "Joueurs actifs depuis (jours)",
+          "avatarSyncBatch": "Joueurs relus par minute"
         }
       }
     },
