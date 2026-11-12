@@ -200,6 +200,28 @@ export function DiscordSettingsForm({ initial }: { initial: DiscordSettings }) {
         />
       </fieldset>
 
+      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
+        <legend className="px-1 font-title text-lg font-bold">{t("avatarSection")}</legend>
+        <p className="text-sm text-text-muted">{t("avatarIntro")}</p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {([
+            ["discord.avatarSyncHours", 0, 720],
+            ["discord.avatarSyncActiveDays", 1, 365],
+            ["discord.avatarSyncBatch", 1, 50],
+          ] as const).map(([key, min, max]) => (
+            <NumberField
+              key={key}
+              label={t(`keys.${key}`)}
+              hint={t(`avatarHints.${key}`)}
+              value={draft[key]}
+              min={min}
+              max={max}
+              onChange={(v) => setDraft((d) => ({ ...d, [key]: v }))}
+            />
+          ))}
+        </div>
+      </fieldset>
+
       <SettingsSaveBar valid={valid} changedLabels={changed.map((k) => t(`keys.${k}`))} save={() => updateDiscordSettings(draft)} />
     </form>
   );

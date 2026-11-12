@@ -10,6 +10,9 @@ export const DISCORD_SETTING_KEYS = [
   "discord.linkBonusZeni",
   "discord.marketEnabled",
   "discord.rankedEnabled",
+  "discord.avatarSyncHours",
+  "discord.avatarSyncActiveDays",
+  "discord.avatarSyncBatch",
 ] as const satisfies readonly SettingKey[];
 
 export type DiscordSettingKey = (typeof DISCORD_SETTING_KEYS)[number];

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ auth: vi.fn(), market: vi.fn(), seasons: vi.fn(), roles: vi.fn(), alerts: vi.fn(), record: vi.fn(), resolve: vi.fn(), jobs: [] as Array<() => Promise<void>> }));
+const mocks = vi.hoisted(() => ({ auth: vi.fn(), market: vi.fn(), seasons: vi.fn(), roles: vi.fn(), avatars: vi.fn(), alerts: vi.fn(), record: vi.fn(), resolve: vi.fn(), jobs: [] as Array<() => Promise<void>> }));
+vi.mock("@/server/discord/avatars", () => ({ syncDiscordAvatars: mocks.avatars }));
 vi.mock("@/server/discord/alert-store", () => ({ recordDiscordAlert: mocks.record, resolveDiscordAlert: mocks.resolve }));
 vi.mock("@/server/discord/alerts", () => ({ syncDiscordAlerts: mocks.alerts }));
 vi.mock("next/server", () => ({ after: (job: () => Promise<void>) => mocks.jobs.push(job) }));
@@ -17,6 +18,7 @@ beforeEach(() => {
   mocks.market.mockResolvedValue({ synced: 2, failed: 0 });
   mocks.seasons.mockResolvedValue({ published: 1, failed: 0 });
   mocks.roles.mockResolvedValue({ synced: 3, deferred: 0 });
+  mocks.avatars.mockResolvedValue({ checked: 4, updated: 1 });
 });
 const request = () => new Request("https://kiraku.example/api/cron/discord");
 
@@ -29,7 +31,7 @@ describe("cron Discord commun", () => {
     expect(mocks.market).not.toHaveBeenCalled();
   });
   it("traite les trois fonctions avec la ligne cron existante", async () => {
-    expect(await (await GET(request())).json()).toEqual({ synced: 2, failed: 0, linkedRoles: { synced: 3, deferred: 0 }, ranked: { published: 1, failed: 0 } });
+    expect(await (await GET(request())).json()).toEqual({ synced: 2, failed: 0, linkedRoles: { synced: 3, deferred: 0 }, ranked: { published: 1, failed: 0 }, avatars: { checked: 4, updated: 1 } });
     expect(mocks.market.mock.calls[0][0]).toBe(mocks.seasons.mock.calls[0][0]);
     expect(mocks.alerts).not.toHaveBeenCalled();
     expect(mocks.jobs).toHaveLength(1);
@@ -40,11 +42,13 @@ describe("cron Discord commun", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     mocks.seasons.mockRejectedValueOnce(new Error("private"));
     mocks.roles.mockRejectedValueOnce(new Error("private"));
+    mocks.avatars.mockRejectedValueOnce(new Error("private"));
     const response = await GET(request());
-    expect(await response.json()).toMatchObject({ synced: 2, failed: 0, linkedRoles: { deferred: 1 }, ranked: { failed: 1 } });
+    expect(await response.json()).toMatchObject({ synced: 2, failed: 0, linkedRoles: { deferred: 1 }, ranked: { failed: 1 }, avatars: { checked: 0, updated: 0 } });
     expect(mocks.market).toHaveBeenCalledOnce();
     expect(mocks.record).toHaveBeenCalledWith("cron", "ranked");
     expect(mocks.record).toHaveBeenCalledWith("cron", "linked-roles");
+    expect(mocks.record).toHaveBeenCalledWith("cron", "avatars");
     expect(JSON.stringify(warn.mock.calls)).not.toContain("private");
     warn.mockRestore();
   });

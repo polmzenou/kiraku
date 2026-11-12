@@ -1,5 +1,5 @@
-import Image from "next/image";
 import type { FrameStyle } from "@/lib/profile/frames";
+import { AvatarImage } from "./AvatarImage";
 import { AvatarFrame } from "../profile/AvatarFrame";
 import { WithPresence } from "./PresenceDot";
 
@@ -30,18 +30,7 @@ export function PlayerAvatar({
   online?: boolean;
   className?: string;
 }) {
-  const avatar = image ? (
-    <Image
-      src={sized(image, size)}
-      alt=""
-      crossOrigin="anonymous"
-      referrerPolicy="no-referrer"
-      width={size}
-      height={size}
-      className={`shrink-0 rounded-full object-cover ${className}`}
-      style={{ width: size, height: size }}
-    />
-  ) : (
+  const initial = (
     <span
       aria-hidden="true"
       className={`flex shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 font-title font-bold ${className}`}
@@ -49,6 +38,11 @@ export function PlayerAvatar({
     >
       {username.charAt(0).toUpperCase()}
     </span>
+  );
+  const avatar = image ? (
+    <AvatarImage src={sized(image, size)} size={size} className={`shrink-0 rounded-full object-cover ${className}`} fallback={initial} />
+  ) : (
+    initial
   );
   return (
     <WithPresence online={online} size={size}>
