@@ -1,3 +1,4 @@
+import type { ShownName } from "@/lib/collection/display-name";
 import { decorFromRelations, type PlayerDecor } from "@/lib/profile/decor";
 import type { FrameStyle } from "@/lib/profile/frames";
 import type { NameColorStyle } from "@/lib/profile/name-colors";
@@ -9,6 +10,8 @@ export type ShownPlayer = {
   image: string | null;
   color: NameColorStyle | null;
   frame: FrameStyle | null;
+  /** Pseudo caché aux joueurs, montré à un admin : affiché avec un cadenas. */
+  locked?: true;
 };
 
 /** Un joueur sans identité à montrer : le libellé seul, ni lien ni avatar. */
@@ -19,8 +22,11 @@ export function anonymousPlayer(name: string): ShownPlayer {
 /**
  * `name` vient de publicNamesFor. Quand c'est un libellé générique (profil privé, blocage, compte banni
  * ou supprimé), rien d'autre ne sort : ni lien, ni avatar, ni décor qui permettraient de reconnaître le joueur.
+ * Révélé à un admin, le pseudo sort seul, avec son cadenas : toujours ni lien, ni avatar, ni décor.
  */
-export function shownPlayer(name: string, player: { username: string; image: string | null } & Parameters<typeof decorFromRelations>[0]): ShownPlayer {
+export function shownPlayer(shown: string | ShownName, player: { username: string; image: string | null } & Parameters<typeof decorFromRelations>[0]): ShownPlayer {
+  const { name, revealed } = typeof shown === "string" ? { name: shown, revealed: false } : shown;
+  if (revealed) return { ...anonymousPlayer(name), locked: true };
   if (name !== player.username) return anonymousPlayer(name);
   const { frame, nameColor } = decorFromRelations(player);
   return { name, profile: player.username, image: player.image, color: nameColor, frame };

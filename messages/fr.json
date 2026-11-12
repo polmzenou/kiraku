@@ -5271,7 +5271,8 @@
   },
   "playerName": {
     "hidden": "Joueur",
-    "deleted": "Compte supprimé"
+    "deleted": "Compte supprimé",
+    "revealed": "Caché aux joueurs : pseudo visible par l’admin seulement"
   },
   "trades": {
     "intro": "Tes propositions envoyées et reçues. Pour en faire une, touche « Échanger » sur le profil d'un joueur, ou « Demander l'échange » sur la fiche wiki d'une carte.",

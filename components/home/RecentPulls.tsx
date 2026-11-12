@@ -15,6 +15,7 @@ import { useReducedFx } from "../motion/MotionPreference";
 import { usePoll } from "../realtime/usePoll";
 import { PlayerAvatar } from "../social/PlayerAvatar";
 import { PlayerName } from "../social/PlayerName";
+import { PrivateNameLock } from "../social/PrivateNameLock";
 import { useMarquee } from "./useMarquee";
 
 // En dessous, la liste tient à l'écran : pas de défilement automatique
@@ -181,11 +182,12 @@ function PullList({ pulls, owned, now, pendingLikeIds, onLike, copy = false }: {
                 <PlayerName name={p.name} color={p.profile.decor.nameColor} className="truncate text-sm font-bold" />
               </Link>
             ) : (
-              <span className="flex min-h-11 min-w-0 items-center gap-2 text-text-muted">
-                <span aria-hidden="true" lang="ja" className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border font-seal text-sm">
+              <span className={`flex min-h-11 min-w-0 items-center gap-2 ${p.locked ? "text-text" : "text-text-muted"}`}>
+                <span aria-hidden="true" lang="ja" className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border font-seal text-sm text-text-muted">
                   {RARITY_SEAL[p.card.rarity]}
                 </span>
-                <span className="truncate text-sm">{p.name}</span>
+                <span className={`truncate text-sm ${p.locked ? "font-bold" : ""}`}>{p.name}</span>
+                {p.locked && <PrivateNameLock className="-ml-1" />}
               </span>
             )}
           </div>

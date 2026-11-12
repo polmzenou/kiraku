@@ -5271,7 +5271,8 @@
   },
   "playerName": {
     "hidden": "Player",
-    "deleted": "Deleted account"
+    "deleted": "Deleted account",
+    "revealed": "Hidden from players: name visible to admins only"
   },
   "trades": {
     "intro": "Your sent and received proposals. To make one, tap “Trade” on a player's profile, or “Request a trade” on a card's wiki page.",

@@ -20,6 +20,7 @@ import {
   type SellBase,
   type SellInfo,
 } from "@/lib/market/rules";
+import type { ShownName } from "@/lib/collection/display-name";
 import { shownPlayer, type ShownPlayer } from "@/lib/social/shown-player";
 import { cardViews } from "../boosters/display";
 import { ownedCardIds } from "../collection/owned";
@@ -219,7 +220,7 @@ export async function listAuctions(input: {
           bidCount: r.bidCount,
           buyoutPrice: r.status === "ACTIVE" && buyoutAvailable(r.buyoutPrice, r.currentBid) ? r.buyoutPrice : null,
           endsAt: r.endsAt,
-          sellerName: nameOf(r.seller),
+          sellerName: nameOf(r.seller).name,
           mine: r.sellerId === viewerId,
           leading: viewerId !== null && r.currentBidderId === viewerId,
           viewerOwns: r.sellerId !== viewerId && owned.has(r.cardId),
@@ -265,7 +266,7 @@ function toLive(
   a: Prisma.AuctionGetPayload<{ select: typeof liveSelect }>,
   viewerId: string | null,
   rules: Pick<MarketRules, "minIncrementBp" | "maxPrice" | "maxPriceByRarity">,
-  leaderName: string | null,
+  leaderName: ShownName | null,
 ): AuctionLive {
   const bounds = bidBounds(a.currentBid, a.startPrice, rules.minIncrementBp, priceCap(rules, a.card.rarity));
   return {
