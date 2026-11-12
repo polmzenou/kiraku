@@ -92,6 +92,18 @@ describe("rendu accessible du wiki", () => {
     expect(html).toContain("2 exemplaires possédés");
   });
 
+  it("marque « Nouveau » les cartes de la dernière sortie, dans la grille et sur la fiche", () => {
+    const grid = renderToStaticMarkup(createElement(WikiGrid, {
+      cards: [card, related], nextAfter: null, params: parseWikiParams({}), locale: "fr", collection, emptyCatalog: false, newIds: new Set([2]),
+    }));
+    expect(grid).toContain('aria-label="SECRET RELATED NAME · Attack on Titan · Mythique · Nouvelle carte · Manquante"');
+    expect(grid).toContain('aria-label="Levi · Attack on Titan · Mythique · 2 exemplaires possédés"');
+    expect(grid.match(/>Nouveau<\/span>/g)).toHaveLength(1);
+    const detail = (isNew: boolean) => renderToStaticMarkup(createElement(WikiCardDetail, { card, related: [], locale: "fr", total: 6736, collection, isNew }));
+    expect(detail(true)).toMatch(/新<\/span>Nouvelle carte<\/span>/);
+    expect(detail(false)).not.toContain("Nouvelle carte");
+  });
+
   it("ne réduit aucune opacité pour un visiteur, une collection vide ou indisponible", () => {
     for (const viewer of [null, emptyWikiCollection(), emptyWikiCollection(false)]) {
       const html = renderToStaticMarkup(createElement(WikiGrid, {

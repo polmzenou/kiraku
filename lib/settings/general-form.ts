@@ -8,6 +8,7 @@ import { settingsSchemaFor, type SettingsOf } from "./form";
 export const GENERAL_SETTING_KEYS = [
   "economy.startingZeni",
   "game.timeZone",
+  "catalog.newCardHours",
   "guest.createPerHourPerIp",
   "guest.retentionDays",
   "account.deletionGraceDays",

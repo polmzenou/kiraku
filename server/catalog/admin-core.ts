@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import type { BulkCatalogInput, CardDraft, CatalogError, RarityDraft } from "@/lib/catalog/admin-form";
 import { validateVariant } from "@/lib/catalog/variants";
+import { firstPublishedAt } from "@/lib/catalog/releases";
 import { buildSearchText } from "@/lib/catalog/search";
 import { parseSetting } from "@/lib/settings/defaults";
 import { filterContext } from "@/lib/boosters/pool-filter";
@@ -63,8 +64,10 @@ export async function saveCatalogCardWith(db: PrismaClient, adminId: string, dra
       searchText: buildSearchText([draft.name, draft.nameNative, draft.formName, series.titleRomaji, series.titleEnglish, series.titleNative]),
     };
     const overrides = before ? [...new Set([...before.adminOverrides, ...Object.keys(data).filter((key) => JSON.stringify(before[key as keyof typeof before]) !== JSON.stringify(data[key as keyof typeof data]))])] : [];
-    const after = before ? await tx.card.update({ where: { id: before.id }, data: { ...data, adminOverrides: overrides } }) :
-      await tx.card.create({ data: { ...data, origin: "CUSTOM", favorites: 0 } });
+    // Hors de `data` : la date de sortie n'est pas une valeur réglée par l'admin (adminOverrides)
+    const publishedAt = firstPublishedAt(before?.publishedAt, draft.status, new Date());
+    const after = before ? await tx.card.update({ where: { id: before.id }, data: { ...data, publishedAt, adminOverrides: overrides } }) :
+      await tx.card.create({ data: { ...data, publishedAt, origin: "CUSTOM", favorites: 0 } });
     await writeAdminLog(tx, { adminId, action: before ? "CARD_UPDATE" : "CARD_CREATE", targetType: "Card", targetId: after.id,
       before: before ? json(before) : undefined, after: json(after) });
     await updatePools(tx);
@@ -121,7 +124,8 @@ export async function bulkCatalogWith(db: PrismaClient, adminId: string, input: 
       }
       const changed = (Object.keys(data) as (keyof BulkUpdate)[]).filter((key) => JSON.stringify(card[key]) !== JSON.stringify(data[key]));
       if (!changed.length) continue;
-      const after = await tx.card.update({ where: { id }, data: { ...data, adminOverrides: [...new Set([...card.adminOverrides, ...changed])] } });
+      const publishedAt = firstPublishedAt(card.publishedAt, data.status ?? card.status, new Date());
+      const after = await tx.card.update({ where: { id }, data: { ...data, publishedAt, adminOverrides: [...new Set([...card.adminOverrides, ...changed])] } });
       await writeAdminLog(tx, { adminId, action: `CARD_BULK_${input.action.toUpperCase()}`, targetType: "Card", targetId: id, before: json(card), after: json(after) });
       updated++;
     }
