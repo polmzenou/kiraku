@@ -1,0 +1,24 @@
+# Nginx devant Kiraku : à reporter une fois dans la config du site (souvent /etc/nginx/sites-available/kiraku),
+# puis `sudo nginx -t && sudo systemctl reload nginx`. Seules ces lignes changent : garder le reste (TLS,
+# server_name, en-têtes, websocket…) tel quel.
+
+# 1. Au niveau http (hors du bloc server) : l'app sur 3000, et le secours que deploy/deploy.sh démarre sur 3001
+#    le temps d'une bascule. `backup` : il ne reçoit des joueurs que si 3000 ne répond pas.
+upstream kiraku {
+    server 127.0.0.1:3000 max_fails=1 fail_timeout=3s;
+    server 127.0.0.1:3001 backup;
+}
+
+server {
+    # … configuration existante …
+
+    location / {
+        # 2. Remplacer `proxy_pass http://127.0.0.1:3000;` par l'upstream :
+        proxy_pass http://kiraku;
+        # 3. Pendant le redémarrage de 3000 (connexion refusée, 502), la requête repart vers le secours
+        proxy_next_upstream error timeout http_502;
+        proxy_next_upstream_tries 2;
+
+        # … proxy_set_header et autres directives existantes, inchangés …
+    }
+}
