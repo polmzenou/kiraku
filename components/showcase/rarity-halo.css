@@ -79,7 +79,7 @@
   opacity: 0.8;
 }
 .vt-halo[data-halo="mirror"] .vt-halo-spin {
-  background: conic-gradient(#e0533f, #d9b556, #7fa3d1, #b58ad8, #7fa3d1, #d9b556, #e0533f);
+  background: conic-gradient(#f08ab0, #fde4ec, #8f83e0, #3a2f6e, #8f83e0, #fde4ec, #f08ab0);
 }
 .vt-halo-shards > span {
   width: 2px;
@@ -96,12 +96,12 @@
   right: calc(100% + 3px);
   transform: skewY(35deg);
 }
-.vt-halo-shards > span:nth-child(1) { top: 9%; --vt-shard: rgba(127, 163, 209, 0.8); }
-.vt-halo-shards > span:nth-child(2) { top: 45%; --vt-shard: rgba(224, 83, 63, 0.8); }
-.vt-halo-shards > span:nth-child(3) { top: 80%; --vt-shard: rgba(217, 181, 86, 0.8); }
-.vt-halo-shards > span:nth-child(4) { top: 25%; --vt-shard: rgba(217, 181, 86, 0.8); }
-.vt-halo-shards > span:nth-child(5) { top: 62%; --vt-shard: rgba(127, 163, 209, 0.8); }
-.vt-halo-shards > span:nth-child(6) { top: 90%; --vt-shard: rgba(224, 83, 63, 0.8); }
+.vt-halo-shards > span:nth-child(1) { top: 9%; --vt-shard: rgba(143, 131, 224, 0.8); }
+.vt-halo-shards > span:nth-child(2) { top: 45%; --vt-shard: rgba(240, 138, 176, 0.8); }
+.vt-halo-shards > span:nth-child(3) { top: 80%; --vt-shard: rgba(253, 228, 236, 0.8); }
+.vt-halo-shards > span:nth-child(4) { top: 25%; --vt-shard: rgba(253, 228, 236, 0.8); }
+.vt-halo-shards > span:nth-child(5) { top: 62%; --vt-shard: rgba(143, 131, 224, 0.8); }
+.vt-halo-shards > span:nth-child(6) { top: 90%; --vt-shard: rgba(240, 138, 176, 0.8); }
 
 /* --- MYTHIC · Poussière de lumière : de petites lumières blanches qui s'allument contre la carte --- */
 .vt-halo-motes > span {

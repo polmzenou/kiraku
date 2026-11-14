@@ -19,7 +19,7 @@
   bottom: -30%;
   left: 27%;
   width: 46%;
-  background: linear-gradient(90deg, transparent, rgb(127 163 209 / 0.7) 38%, #f4f9ff 50%, rgb(127 163 209 / 0.7) 62%, transparent);
+  background: linear-gradient(90deg, transparent, rgb(240 138 176 / 0.7) 38%, #fff4f8 50%, rgb(240 138 176 / 0.7) 62%, transparent);
   opacity: 0;
   transform: scaleX(0.02) scaleY(0.3);
   animation: fx-ar-slit 1s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
@@ -30,9 +30,9 @@
   border-radius: 9999px;
   background: repeating-conic-gradient(
     from 0deg,
-    rgb(127 163 209 / 0.55) 0deg 9deg,
-    rgb(217 181 86 / 0.45) 9deg 18deg,
-    rgb(224 83 63 / 0.35) 18deg 27deg,
+    rgb(143 131 224 / 0.55) 0deg 9deg,
+    rgb(253 228 236 / 0.45) 9deg 18deg,
+    rgb(240 138 176 / 0.35) 18deg 27deg,
     transparent 27deg 40deg
   );
   mask: radial-gradient(closest-side, #000 0 30%, transparent 100%);
@@ -64,7 +64,7 @@
   width: var(--s, 10px);
   height: calc(var(--s, 10px) * 1.4);
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  background: linear-gradient(160deg, #f4f9ff, var(--c, #7fa3d1) 60%);
+  background: linear-gradient(160deg, #fff4f8, var(--c, #f08ab0) 60%);
   opacity: 0;
   animation: fx-flake 1.4s cubic-bezier(0.15, 0.6, 0.35, 1) var(--d, 0s) forwards;
 }
