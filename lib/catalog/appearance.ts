@@ -47,7 +47,7 @@ export function resolveAppearance(base: unknown, card: unknown): ResolvedAppeara
   return value;
 }
 
-const MATERIAL_COLORS: Record<string, string> = { COMMON: "#897e6d", UNCOMMON: "#618d68", RARE: "#557ca5", EPIC: "#9872bc", LEGENDARY: "#c8a140", MYTHIC: "#d4a9c8", AR: "#6f8fd8", GOLD: "#d9b556", MR: "#d8d3c8", VR: "#a98be0", XR: "#e0609f", BR: "#a8a5a3" };
+const MATERIAL_COLORS: Record<string, string> = { COMMON: "#897e6d", UNCOMMON: "#618d68", RARE: "#557ca5", EPIC: "#9872bc", LEGENDARY: "#c8a140", MYTHIC: "#d4a9c8", AR: "#f08ab0", GOLD: "#d9b556", MR: "#d8d3c8", VR: "#a98be0", XR: "#e0609f", BR: "#a8a5a3" };
 
 /** Préréglages des raretés visuelles : mêmes valeurs que la migration raretes_visuelles. */
 export const VISUAL_PRESETS = {

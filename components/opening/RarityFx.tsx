@@ -36,7 +36,7 @@ export const LEAK_COLOR: Record<Rarity, string> = {
   EPIC: "rgb(179 145 219 / 0.9)",
   LEGENDARY: "rgb(242 216 138 / 0.95)",
   MYTHIC: MYTHIC_LEAK,
-  AR: "rgb(160 190 240 / 0.95)",
+  AR: "rgb(244 160 192 / 0.95)",
   GOLD: "rgb(255 226 140 / 0.98)",
   // Raretés visuelles : le même rayon blanc que les Mythiques
   BR: MYTHIC_LEAK,
@@ -88,11 +88,11 @@ export function RarityCardFx({ rarity }: { rarity: Rarity }) {
   return null;
 }
 
-const AR_TINTS = ["#7fa3d1", "#d9b556", "#e0533f"] as const;
+const AR_TINTS = ["#8f83e0", "#fde4ec", "#f08ab0"] as const;
 
 /**
  * AR 異 « Kagami » : une faille de lumière s'ouvre, des éclats prismatiques en jaillissent et un
- * kaléidoscope shu, ai et kin tourne derrière la forme alternative (les copies fantômes sont dans FlipCard).
+ * kaléidoscope sakura, pétale et indigo tourne derrière la forme alternative (les copies fantômes sont dans FlipCard).
  */
 function ArFx({ compact }: { compact: boolean }) {
   const n = compact ? 8 : 18, scale = compact ? 0.55 : 1;

@@ -221,7 +221,7 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false, scene 
 /** Copie fantôme d'une AR : cadre et image de la carte, sans texte, effets ni inclinaison. */
 function GhostArt({ card }: { card: OpenedCardView }) {
   return (
-    <span className="absolute inset-0 overflow-hidden rounded-[14px] bg-[var(--fuda-frame,#6f8fd8)]">
+    <span className="absolute inset-0 overflow-hidden rounded-[14px] bg-[var(--fuda-frame,#f08ab0)]">
       <span className="absolute inset-1.5 overflow-hidden rounded-[9px]">
         <Image src={card.imageUrl} alt="" fill sizes="(min-width: 768px) 320px, 80vw" draggable={false} className="object-cover object-top" data-spoiler={card.spoiler || undefined} />
       </span>

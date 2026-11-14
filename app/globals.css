@@ -108,7 +108,7 @@
   --color-rarity-epic: #6e4796;
   --color-rarity-legendary: #b8902f;
   --color-rarity-mythic: #8f7bb8;
-  --color-rarity-ar: #6f8fd8;
+  --color-rarity-ar: #f08ab0;
   --color-rarity-gold: #d9b556;
   --color-rarity-mr: #d8d3c8;
   --color-rarity-vr: #a98be0;
@@ -330,8 +330,8 @@
     animation: raden-breathe 4s ease-in-out infinite;
   }
   .fuda[data-rarity="AR"] .fuda-sheen {
-    /* AR : prisme shu, ai et kin, qui suit l'inclinaison */
-    background: linear-gradient(115deg, transparent 30%, rgb(224 83 63 / 0.55) 40%, rgb(127 163 209 / 0.6) 50%, rgb(217 181 86 / 0.55) 60%, transparent 70%);
+    /* AR « Yozakura » : prisme sakura, blanc de pétale et indigo de nuit, qui suit l'inclinaison */
+    background: linear-gradient(115deg, transparent 30%, rgb(240 138 176 / 0.55) 40%, rgb(253 228 236 / 0.6) 50%, rgb(143 131 224 / 0.55) 60%, transparent 70%);
     mix-blend-mode: color-dodge;
     opacity: 0.6;
   }
@@ -645,8 +645,8 @@
   }
   .fuda[data-rarity="AR"] {
     --fuda-frame: var(--color-rarity-ar);
-    /* AR (forme alternative) : cadre irisé shu, ai et kin */
-    --fuda-frame-bg: conic-gradient(from 210deg, #c8372d, #e0533f, #d9b556, #7fa3d1, #1e3557, #7fa3d1, #c8372d);
+    /* AR (forme alternative) « Yozakura » : cerisier de nuit, indigo sombre, rose sakura et blanc de pétale */
+    --fuda-frame-bg: conic-gradient(from 210deg, #1a1638, #3a2f6e, #f08ab0, #fde4ec, #f08ab0, #241d50, #1a1638);
   }
   .fuda[data-rarity="GOLD"] {
     --fuda-frame: var(--color-rarity-gold);
