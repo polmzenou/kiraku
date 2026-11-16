@@ -24,4 +24,5 @@ export const SEAL_GLYPHS = [
   "灯の道場月下竹林本鳥居雨庭嵐守閣火祭り高原", // noms des arènes (lib/battle/arenas.ts)
   "ドンゴォ", // onomatopées des impact frames
   "銅銀翠精覇極番付季", // emblèmes des rangs du classé, classement, saison
+  "遠征出発成功大失敗済封可宿中止", // expéditions : titre, départ, issues, faite, rapport scellé, condition, relais, abandon
 ].join("");

@@ -54,7 +54,7 @@ export async function CardDetail({
 
   const inCollection = copies.filter((c) => c.status === "COLLECTION").length;
   const inShowcase = copies.some((c) => c.inShowcase);
-  const byStatus = (s: "AUCTION" | "BATTLE") => copies.filter((c) => c.status === s).length;
+  const byStatus = (s: "AUCTION" | "BATTLE" | "EXPEDITION") => copies.filter((c) => c.status === s).length;
 
   return (
     <article className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
@@ -102,6 +102,7 @@ export async function CardDetail({
                 <li>{t("inCollection", { count: inCollection })}</li>
                 {byStatus("AUCTION") > 0 && <li>{t("inAuction", { count: byStatus("AUCTION") })}</li>}
                 {byStatus("BATTLE") > 0 && <li>{t("inBattle", { count: byStatus("BATTLE") })}</li>}
+                {byStatus("EXPEDITION") > 0 && <li>{t("inExpedition", { count: byStatus("EXPEDITION") })}</li>}
                 <li>{t("firstObtained", { date: format.dateTime(copies[0].obtainedAt, { dateStyle: "medium" }) })}</li>
               </ul>
             </section>

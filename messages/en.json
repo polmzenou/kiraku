@@ -171,6 +171,7 @@
     "tilesLabel": "Account shortcuts",
     "tiles": {
       "missions": "Missions",
+      "expedition": "Expeditions",
       "shop": "Shop",
       "referral": "Referrals",
       "ledger": "Zeni history",
@@ -570,6 +571,7 @@
     "more": "More",
     "social": "Social",
     "event": "Event",
+    "expedition": "Expeditions",
     "casino": "Casino",
     "alert": "Reward to claim"
   },
@@ -1266,6 +1268,7 @@
       "economy": "Economy",
       "lots": "Rewards",
       "missions": "Missions",
+      "expeditions": "Expeditions",
       "shop": "Shop",
       "referral": "Referrals",
       "reviews": "Reviews",
@@ -2426,6 +2429,9 @@
         "referral": {
           "enabled": "Referral"
         },
+        "expedition": {
+          "enabled": "Expeditions"
+        },
         "notifications": {
           "pushEnabled": "Push notifications"
         }
@@ -2458,6 +2464,9 @@
         },
         "referral": {
           "enabled": "Invite links and rewards."
+        },
+        "expedition": {
+          "enabled": "The /expedition page, menu entry and Account tile. Off: only admins see the page (preview)."
         },
         "notifications": {
           "pushEnabled": "Sending notifications when the tab is closed."
@@ -3301,6 +3310,122 @@
         "maxPerPlayer": "Showcases per player",
         "themes": "Showcase themes"
       }
+    },
+    "expeditions": {
+      "title": "Expeditions",
+      "intro": "Mini-game: every day, each player gets their roads (one safe, some balanced, one perilous) and sends 3 cards. Cards on the road are locked until they return.",
+      "statusOn": "On: players can access it.",
+      "statusOff": "Off: only admins see the page (preview), no menu entry.",
+      "openPage": "Open the page",
+      "previewPage": "See the preview",
+      "preview": {
+        "title": "Balance preview",
+        "minimal": "Minimal team: {success}% (triumph {triumph}%) · ~{zeni} Zeni and {boosters} boosters · {perHour} Zeni/h",
+        "ideal": "Ideal team: {success}% (triumph {triumph}%) · ~{zeni} Zeni and {boosters} boosters · {perHour} Zeni/h",
+        "rewards": "Triumph: {triumph} Zeni + {triumphBoosters} B · Success: {success} Zeni + {successBoosters} B · Failure: {failure} Zeni"
+      },
+      "settingsSection": "Settings",
+      "keys": {
+        "enabled": "Expeditions open to players",
+        "offersPerDay": "Roads per day",
+        "abandonCooldownHours": "Rest after giving up (hours)",
+        "cardBonus": "Card chance bonus",
+        "triumphRewardPct": "Triumph rewards (%)",
+        "failRewardPct": "Failure consolation (% of Zeni)"
+      },
+      "hints": {
+        "enabled": "Off: 404 for players (unless an expedition is still on the road or unrevealed), preview for admins, no menu entry.",
+        "offersPerDay": "The first is safe, the last perilous. Boards already drawn today don't change.",
+        "abandonCooldownHours": "0: no wait.",
+        "triumphRewardPct": "Success Zeni and boosters multiplied (boosters rounded up).",
+        "failRewardPct": "Share of the success Zeni paid on failure; never boosters.",
+        "cardBonus": "Chance points each card adds depending on its tier relative to the required rarity; three tiers or more below: nothing. Rarities of the same rank (Mythic and BR, AR and VR, Gold and MR) share a tier. Applies to future departures."
+      },
+      "bonus": {
+        "below2": "2 tiers below",
+        "below1": "1 tier below",
+        "same": "Same tier",
+        "above1": "1 tier above",
+        "above2": "2 tiers above",
+        "above3": "3 tiers or more above"
+      },
+      "statsTitle": "Last 7 days",
+      "stats": "{active} on the road · {completed} returned ({triumph} triumphs, {success} successes, {failure} failures, {rate}% success) · {abandoned} given up · {zeni} Zeni paid",
+      "typesTitle": "Templates ({count})",
+      "typesHint": "Expeditions already launched keep the values of their departure. A template that has been played gets deactivated, not deleted.",
+      "needBooster": "No booster type available.",
+      "typeMeta": "{hours} h · base {base}% → {max}% · {zeni} Zeni + {boosters} × {booster} · discovery {discovery}% · weight {weight} · played {played} times",
+      "typeLot": "bonus lot: {lot}",
+      "typeBalance": "Success {min} to {max}% (triumph up to {triumph}%) · minimal team: ~{zeni} Zeni, {perHour} Zeni/h",
+      "inactive": "inactive",
+      "edit": "Edit",
+      "newType": "New expedition",
+      "editType": "Edit expedition",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Expedition saved.",
+      "cancelEdit": "Cancel",
+      "fields": {
+        "nameFr": "Name (fr)",
+        "nameEn": "Name (en)",
+        "loreFr": "Flavor (fr)",
+        "loreEn": "Flavor (en)",
+        "slug": "Identifier",
+        "slugHint": "Lowercase and dashes, unique.",
+        "minRarity": "Required rarity",
+        "risk": "Risk",
+        "durationMinutes": "Duration (minutes)",
+        "durationHint": "From 1 min to 72 h.",
+        "baseSuccessPct": "Base chance (%)",
+        "baseHint": "Before card bonuses. Safe: 100.",
+        "maxSuccessPct": "Success cap (%)",
+        "maxTriumphPct": "Triumph cap (%)",
+        "triumphHint": "Anything above the success cap becomes triumph chance, up to this cap. 0: never.",
+        "minDiscoveryPct": "Catalog discovered required (%)",
+        "discoveryHint": "0: no requirement.",
+        "zeni": "Zeni",
+        "boosters": "Boosters",
+        "boosterType": "Booster type",
+        "extraLot": "Bonus lot",
+        "extraLotHint": "Paid on success or triumph (for example a card drawn from a rarity).",
+        "noLot": "None",
+        "weight": "Draw weight",
+        "weightHint": "0: never offered.",
+        "sortOrder": "Order",
+        "active": "Active"
+      },
+      "seed": {
+        "label": "Install the default catalog",
+        "title": "Install the default catalog?",
+        "description": "Creates the missing default expeditions (18 in all, Epic to XR, safe, balanced and perilous) with their bonus lots. An existing template is never modified.",
+        "confirm": "Install"
+      },
+      "delete": {
+        "label": "Delete",
+        "title": "Delete “{name}”?",
+        "description": "This template has never been played: it will be removed for good.",
+        "confirm": "Delete"
+      },
+      "recall": {
+        "label": "Recall",
+        "title": "Recall {username}'s expedition?",
+        "description": "Their cards come back right away, with no reward and no wait.",
+        "confirm": "Recall"
+      },
+      "activeTitle": "On the road ({count})",
+      "activeEmpty": "No expedition on the road.",
+      "activeMeta": "Left {started} · back {ends} · {chance}% success",
+      "errors": {
+        "FORBIDDEN": "Access denied.",
+        "INVALID": "Invalid fields.",
+        "RATE_LIMITED": "Too many requests, wait a moment.",
+        "NOT_FOUND": "Not found.",
+        "SLUG_TAKEN": "Identifier already taken.",
+        "UNKNOWN_REF": "Rarity, booster or lot not found (a sealed pack goes through a bonus lot).",
+        "IN_USE": "Already played: deactivate it instead.",
+        "NO_BOOSTER": "“All anime” (standard) booster not found.",
+        "unexpected": "Unexpected error."
+      }
     }
   },
   "collection": {
@@ -3410,6 +3535,7 @@
       "inCollection": "{count, plural, =0 {None in collection} one {# in collection} other {# in collection}}",
       "inAuction": "{count, plural, one {# on sale} other {# on sale}}",
       "inBattle": "{count, plural, one {# in battle} other {# in battle}}",
+      "inExpedition": "{count, plural, one {# on an expedition} other {# on an expedition}}",
       "firstObtained": "First obtained: {date}",
       "recycleTitle": "Recycle duplicates",
       "unitValue": "{zeni, number} Zeni per duplicate.",
@@ -3765,6 +3891,175 @@
       "OWN_ENTRY": "You can't vote for your own showcase."
     }
   },
+  "expedition": {
+    "title": "Expeditions",
+    "metaTitle": "Expeditions",
+    "subtitle": "Send three cards out on the roads: the rarer they are, the more they bring back.",
+    "previewBanner": "Admin preview: expeditions are switched off for players.",
+    "closedBanner": "Expeditions are closed for now. Your current expedition will finish normally.",
+    "risk": {
+      "SAFE": "Safe",
+      "BALANCED": "Balanced",
+      "RISKY": "Perilous"
+    },
+    "outcome": {
+      "TRIUMPH": "Triumph",
+      "SUCCESS": "Success",
+      "FAILURE": "Failure"
+    },
+    "duration": {
+      "h": "{hours} h",
+      "hm": "{hours} h {minutes}",
+      "m": "{minutes} min"
+    },
+    "reward": {
+      "zeni": "{amount} Zeni",
+      "boosters": "{count, plural, one {# booster} other {# boosters}}",
+      "bonusBoosters": "{count, plural, one {+# booster} other {+# boosters}}",
+      "cards": "{count, plural, one {# {rarity} card} other {# {rarity} cards}}",
+      "namedCards": "{count, plural, one {# card} other {# cards}}",
+      "nothing": "No reward"
+    },
+    "offer": {
+      "requirement": "At least one {rarity} card or better",
+      "chance": "{min} to {max}% success",
+      "chanceOne": "{value}% success",
+      "chanceSafe": "Guaranteed success",
+      "discovery": "{need}% of the catalog required",
+      "done": "Done today",
+      "unavailable": "No longer offered today",
+      "locked": "Unlocks at {need}% of the catalog discovered (you're at {have}%)",
+      "needCard": "You need a free {rarity} card",
+      "choose": "Build the team",
+      "chooseLabel": "Build the team for {name}"
+    },
+    "board": {
+      "title": "Today's roads",
+      "resetIn": "New roads in {time}",
+      "empty": "No roads today. Come back later!",
+      "oneAtATime": "One expedition at a time: wait for your party to come back.",
+      "rules": "Each road can be taken once a day. Giving up brings your cards back right away, but your party then rests for {hours} h. Catalog discovered: {discovery}%."
+    },
+    "team": {
+      "title": "Team · {name}",
+      "slots": "Your team",
+      "empty": "Pick a card",
+      "remove": "Remove {name} from the team",
+      "pick": "Send {name}",
+      "bonus": "+{value}%",
+      "chance": "success",
+      "triumphShort": "incl. {value}% triumph",
+      "gaugeLabel": "{success}% success, including {triumph}% triumph",
+      "requirementMet": "Requirement met",
+      "probability": "{value}%",
+      "meta": "Duration {duration} · base {base}% · cap {max}%",
+      "best": "Best team",
+      "thrifty": "Thrifty team",
+      "lockNotice": "During the expedition your 3 cards are locked: no selling, trading, gifting, battling or recycling. They stay in your showcases.",
+      "pickMore": "{count, plural, one {# more card to pick} other {# more cards to pick}}",
+      "needRequirement": "You still need a {rarity} card or better",
+      "hold": "Hold to set off · {duration}",
+      "holdHint": "Keep the button pressed until it fills up.",
+      "confirmLaunch": "Tap again to set off",
+      "launching": "Setting off…",
+      "later": "Later"
+    },
+    "launch": {
+      "label": "{name} expedition departure",
+      "sealed": "The party is ready: {name}",
+      "departed": "The party is on its way!",
+      "skip": "Tap to skip"
+    },
+    "active": {
+      "endsIn": "Back in",
+      "arriving": "The party is arriving…",
+      "progress": "Journey progress",
+      "elapsed": "On the road for {time} · {total} journey",
+      "team": "The party",
+      "locked": "These cards are locked until they return.",
+      "requirement": "Requirement: at least one {rarity} card",
+      "gains": "Possible rewards",
+      "probability": "{value}%",
+      "journal": "Travel log",
+      "log": {
+        "SAFE": {
+          "0": "The party sets off at an easy pace.",
+          "1": "A stop at a roadside tea house.",
+          "2": "The landscape rolls by, nothing to report.",
+          "3": "The lanterns of the last relay station appear in the distance."
+        },
+        "BALANCED": {
+          "0": "The party sets off, full of resolve.",
+          "1": "The trail fades into the mist: a choice must be made.",
+          "2": "An unexpected encounter around a mountain pass…",
+          "3": "The last relay station is in sight. One last push!"
+        },
+        "RISKY": {
+          "0": "The party heads into the unknown without looking back.",
+          "1": "Strange tracks block the path…",
+          "2": "Danger lurks: everyone keeps a hand on their fuda.",
+          "3": "Exhausted but standing, the party finally sees its goal."
+        }
+      },
+      "abandon": "Give up the expedition",
+      "abandonTitle": "Give up the expedition?",
+      "abandonBody": "Your cards come back right away with no reward, and you'll have to wait {hours} h before your next expedition.",
+      "abandonBodyFree": "Your cards come back right away with no reward.",
+      "abandonConfirm": "Give up",
+      "abandoning": "Returning…",
+      "keepGoing": "Keep going"
+    },
+    "result": {
+      "banner": "Your expedition is back!",
+      "open": "Open the report",
+      "title": "Report: {name}",
+      "breakSeal": "Tap the seal to open it",
+      "body": {
+        "TRIUMPH": "A triumphant return! The party brings back far more than expected.",
+        "SUCCESS": "Mission accomplished: the party comes home with full arms.",
+        "FAILURE": "The road was too rough this time. The party is home safe, with a small consolation."
+      },
+      "zeni": "Zeni",
+      "bonusCard": "Find",
+      "cardsBack": "Your cards are back",
+      "openBoosters": "Open my boosters",
+      "again": "Back to the roads"
+    },
+    "rest": {
+      "title": "Your party is resting",
+      "body": "Next expedition possible in {time}"
+    },
+    "history": {
+      "title": "Expedition log",
+      "outcome": {
+        "TRIUMPH": "Triumph",
+        "SUCCESS": "Success",
+        "FAILURE": "Failure",
+        "ABANDONED": "Given up"
+      },
+      "gains": "+{zeni} Zeni · {boosters, plural, one {# booster} other {# boosters}}"
+    },
+    "errors": {
+      "NO_SESSION": "Your session expired: reload the page.",
+      "INVALID": "Invalid request.",
+      "RATE_LIMITED": "Easy! Try again in a moment.",
+      "DISABLED": "Expeditions are closed.",
+      "NO_USER": "Account not found.",
+      "BANNED": "Account suspended.",
+      "TEAM": "Pick 3 different characters.",
+      "ACTIVE": "An expedition is already on the road.",
+      "COOLDOWN": "Your party is still resting.",
+      "STALE": "The roads changed: the page is updating.",
+      "DONE": "You already took this road today.",
+      "UNAVAILABLE": "This road is no longer offered.",
+      "DISCOVERY": "You haven't discovered enough of the catalog yet.",
+      "NOT_QUALIFIED": "You need at least one card of the required rarity.",
+      "NOT_OWNED": "One of these cards is no longer free.",
+      "NOT_FOUND": "Expedition not found.",
+      "NO_BOOSTER": "Booster not found.",
+      "unexpected": "Unexpected error. Please try again."
+    }
+  },
   "wishlist": {
     "title": "Wishlist",
     "count": "{count} / {max}",
@@ -4074,7 +4369,11 @@
     "sealedDivin": "{name} opened your divine booster: {card} ({rarity}).",
     "sealedSpared": "Your apocalyptic booster spared {name}: {card} ({rarity})!",
     "sealedRuined": "Your apocalyptic booster blew up in {name}'s face.",
-    "ambassadorGranted": "The Kiraku team made you an Ambassador! The green badge, frame and color are yours, and a booster pack awaits you every week."
+    "ambassadorGranted": "The Kiraku team made you an Ambassador! The green badge, frame and color are yours, and a booster pack awaits you every week.",
+    "expeditionTriumph": "Your expedition returns triumphant! Come open its report.",
+    "expeditionSuccess": "Your expedition is back, mission accomplished. Come open its report.",
+    "expeditionFailure": "Your expedition came back empty-handed… Your cards are home.",
+    "expeditionReturned": "Your expedition is back. Come open its report."
   },
   "push": {
     "title": "Notifications on this device",
@@ -4339,7 +4638,8 @@
         "BOOSTER": "Booster purchase",
         "GIFT": "Booster gifted to a friend",
         "SEASON": "Season reward (ranked)",
-        "ABILITY": "Ability bought (workshop)"
+        "ABILITY": "Ability bought (workshop)",
+        "EXPEDITION": "Expedition"
       }
     },
     "reveal": {

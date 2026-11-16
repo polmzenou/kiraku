@@ -15,10 +15,11 @@ export type NavKey =
   | "wiki"
   | "social"
   | "event"
+  | "expedition"
   | "casino";
 
-// `event` : event en cours (/event), affiché seulement quand l'admin l'allume
-export type NavFeature = "casino" | "event";
+// `event` : event en cours (/event), affiché seulement quand l'admin l'allume ; `expedition` : idem pour /expedition
+export type NavFeature = "casino" | "event" | "expedition";
 /** Entrées qui attendent une action du joueur (pastille rouge), ex. une mission à réclamer. */
 export type NavAlerts = Partial<Record<NavKey, boolean>>;
 export type NavFeatures = Record<NavFeature, boolean>;
@@ -44,13 +45,14 @@ const ENTRIES: Record<NavKey, NavItem> = {
   wiki: { key: "wiki", href: "/wiki", ready: true },
   social: { key: "social", href: "/social", ready: true },
   event: { key: "event", href: "/event", ready: true, feature: "event" },
+  expedition: { key: "expedition", href: "/expedition", ready: true, feature: "expedition" },
   casino: { key: "casino", href: "/casino", ready: true, soon: true, feature: "casino" },
 };
 
 export const NAV_ITEMS: readonly NavItem[] = [ENTRIES.boosters, ENTRIES.missions, ENTRIES.shop, ENTRIES.combat, ENTRIES.market];
 
 export const NAV_MORE: readonly NavItem[] = [
-  ENTRIES.event, ENTRIES.collection, ENTRIES.friends, ENTRIES.referral, ENTRIES.wiki, ENTRIES.social, ENTRIES.casino,
+  ENTRIES.event, ENTRIES.expedition, ENTRIES.collection, ENTRIES.friends, ENTRIES.referral, ENTRIES.wiki, ENTRIES.social, ENTRIES.casino,
 ];
 
 export const MOBILE_NAV_ITEMS: readonly NavItem[] = [
@@ -58,7 +60,7 @@ export const MOBILE_NAV_ITEMS: readonly NavItem[] = [
 ];
 
 export const MOBILE_NAV_MORE: readonly NavItem[] = [
-  ENTRIES.event, ENTRIES.missions, ENTRIES.shop, ENTRIES.friends, ENTRIES.referral, ENTRIES.wiki, ENTRIES.social, ENTRIES.casino,
+  ENTRIES.event, ENTRIES.expedition, ENTRIES.missions, ENTRIES.shop, ENTRIES.friends, ENTRIES.referral, ENTRIES.wiki, ENTRIES.social, ENTRIES.casino,
 ];
 
 /** Entrées dont l'interrupteur est allumé (ou qui n'en ont pas). */
