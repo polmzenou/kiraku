@@ -28,6 +28,13 @@ describe("describeNotification", () => {
     expect(d.text).toContain('"rarity":"epic"');
   });
 
+  it("expédition rentrée → page des expéditions, issue à demi dévoilée", () => {
+    const base = { type: "EXPEDITION_RETURNED" as const, actor: { username: "akira", isGuest: false }, gift: null, card: null };
+    expect(describeNotification({ ...base, expedition: { outcome: "TRIUMPH" } }, tr)).toEqual({ text: "expeditionTriumph:{}", href: "/expedition" });
+    expect(describeNotification({ ...base, expedition: { outcome: "FAILURE" } }, tr).text).toBe("expeditionFailure:{}");
+    expect(describeNotification({ ...base, expedition: null }, tr).text).toBe("expeditionReturned:{}");
+  });
+
   it("sans auteur : « un joueur »", () => {
     const d = describeNotification({ type: "FRIEND_ACCEPTED", actor: null, gift: null, card: null }, tr);
     expect(d.href).toBe("/amis");

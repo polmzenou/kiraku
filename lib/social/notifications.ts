@@ -21,6 +21,7 @@ export const NOTIFICATION_TYPES = [
   "TEAM_GIFT",
   "SEALED_OPENED",
   "AMBASSADOR_GRANTED",
+  "EXPEDITION_RETURNED",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -123,4 +124,13 @@ export function parseSealedPayload(raw: unknown): SealedPayload | null {
   if (!isSealedSlug(r.slug)) return null;
   const outcome = r.outcome === "SPARED" || r.outcome === "RUINED" ? r.outcome : null;
   return { slug: r.slug, outcome, cardId: isId(r.cardId) ? r.cardId : null };
+}
+
+/** Expédition rentrée : son issue (le détail se lit sur /expedition). */
+export type ExpeditionPayload = { outcome: "FAILURE" | "SUCCESS" | "TRIUMPH" };
+
+export function parseExpeditionPayload(raw: unknown): ExpeditionPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const outcome = (raw as Record<string, unknown>).outcome;
+  return outcome === "FAILURE" || outcome === "SUCCESS" || outcome === "TRIUMPH" ? { outcome } : null;
 }

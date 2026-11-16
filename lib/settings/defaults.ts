@@ -25,6 +25,11 @@ const rarityThresholds = z
 
 const rarity = rarityKeySchema;
 
+// Expéditions : points de chance qu'apporte une carte selon son écart de palier avec la rareté exigée
+// (« same » = même palier). Trois paliers ou plus en dessous : rien.
+const pct = z.number().int().min(0).max(100);
+const expeditionCardBonus = z.object({ below2: pct, below1: pct, same: pct, above1: pct, above2: pct, above3: pct });
+
 function isTimeZone(tz: string): boolean {
   try {
     new Intl.DateTimeFormat("en", { timeZone: tz });
@@ -213,6 +218,15 @@ export const SETTING_SCHEMAS = {
   "event.showcase.endsAt": z.string().datetime(),
   "event.showcase.minCards": z.number().int().min(1).max(20),
   "event.showcase.pageSize": z.number().int().min(4).max(30),
+  // Expéditions (/expedition, étape 14) : cachées tant que l'admin ne les allume pas (aperçu pour l'admin).
+  // Offres par jour et par joueur, attente après un abandon, bonus de chance de chaque carte selon son écart
+  // de palier avec la rareté exigée, gains du triomphe et consolation d'un échec (en % des gains de réussite)
+  "expedition.enabled": z.boolean(),
+  "expedition.offersPerDay": z.number().int().min(1).max(5),
+  "expedition.abandonCooldownHours": z.number().int().min(0).max(72),
+  "expedition.cardBonus": expeditionCardBonus,
+  "expedition.triumphRewardPct": z.number().int().min(100).max(500),
+  "expedition.failRewardPct": z.number().int().min(0).max(100),
   // Social (étape 6) : interrupteurs, limites anti-spam et anti-farm des cadeaux
   "social.enabled": z.boolean(),
   "friends.max": z.number().int().min(1).max(5_000),
@@ -485,6 +499,12 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "event.showcase.endsAt": "2026-12-08T18:00:00.000Z", // 19h à Paris
   "event.showcase.minCards": 1,
   "event.showcase.pageSize": 10,
+  "expedition.enabled": false, // caché tant que l'admin ne l'allume pas
+  "expedition.offersPerDay": 3,
+  "expedition.abandonCooldownHours": 3,
+  "expedition.cardBonus": { below2: 2, below1: 4, same: 10, above1: 14, above2: 17, above3: 20 },
+  "expedition.triumphRewardPct": 150,
+  "expedition.failRewardPct": 25,
   "social.enabled": true,
   "friends.max": 200,
   "friends.maxOutgoingPending": 20,

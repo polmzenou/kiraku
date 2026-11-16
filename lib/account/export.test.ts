@@ -50,6 +50,12 @@ describe("export des données", () => {
     expect(out.cardLoadouts).toEqual([{ cardId: "c1", keywords: ["FLURRY", "POISON"], technique: "ISSEN", updatedAt: now.toISOString() }]);
   });
 
+  it("exporte les expéditions sans la photo interne", () => {
+    const row = { id: "e1", typeSlug: "col-des-brumes", dayKey: "2026-11-16", cardIds: ["a", "b", "c"], status: "COMPLETED", outcome: "SUCCESS", startedAt: now, endsAt: now, settledAt: now, abandonedAt: null };
+    const out = buildDataExport(input({ expeditions: [{ ...row, roll: 4242, snapshot: { secret: true } }] }), now);
+    expect(out.expeditions).toEqual([{ ...row, startedAt: now.toISOString(), endsAt: now.toISOString(), settledAt: now.toISOString() }]);
+  });
+
   it("exporte les decks du joueur", () => {
     const out = buildDataExport(input({ decks: [{ id: "d1", name: "Deck CSM", cardIds: ["a", "b", "c"], userId: "u1", createdAt: now, updatedAt: now }] }), now);
     expect(out.decks).toEqual([{ id: "d1", name: "Deck CSM", cardIds: ["a", "b", "c"], createdAt: now.toISOString(), updatedAt: now.toISOString() }]);
