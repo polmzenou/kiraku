@@ -118,15 +118,17 @@ export function TeamSheet({
             {Array.from({ length: EXPEDITION_TEAM_SIZE }, (_, i) => {
               const card = team[i];
               return (
-                <li key={i} className="relative">
-                  <AnimatePresence mode="popLayout" initial={false}>
+                // Carte et emplacement vide partagent la même cellule : la sortie de l'un ne pousse pas l'autre.
+                // (Pas de mode popLayout : Motion y injecte une balise <style> que la CSP bloque.)
+                <li key={i} className="grid">
+                  <AnimatePresence initial={false}>
                     {card ? (
                       <m.button
                         key={card.cardId}
                         type="button"
                         onClick={() => toggle(card)}
                         aria-label={t("remove", { name: card.name })}
-                        className="relative block w-full rounded-fuda"
+                        className="relative block w-full rounded-fuda [grid-area:1/1]"
                         initial={reduced ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.85, rotate: -4 }}
                         animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
                         exit={reduced ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.85 }}
@@ -144,7 +146,7 @@ export function TeamSheet({
                     ) : (
                       <m.span
                         key={`empty-${i}`}
-                        className="flex aspect-[5/7] w-full flex-col items-center justify-center gap-1 rounded-fuda border-2 border-dashed border-border text-text-muted"
+                        className="flex aspect-[5/7] w-full flex-col items-center justify-center gap-1 rounded-fuda border-2 border-dashed border-border text-text-muted [grid-area:1/1]"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
