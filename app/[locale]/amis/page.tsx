@@ -118,15 +118,16 @@ async function giftableSealed(userId: string, raw: string | undefined) {
 
 /** Limites citées par les messages de refus d'un cadeau. */
 async function giftLimits(): Promise<GiftLimits> {
-  const [perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours, sealedMinAccountDays, sealedPerWeek] = await Promise.all([
+  const [perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours, sealedMinAccountDays, sealedPerWindow, sealedWindowDays] = await Promise.all([
     getSetting("gifts.perDaySent"),
     getSetting("gifts.perDayReceived"),
     getSetting("gifts.minAccountAgeHours"),
     getSetting("gifts.minFriendshipHours"),
     getSetting("gifts.sealedMinAccountDays"),
-    getSetting("gifts.sealedPerWeek"),
+    getSetting("gifts.sealedPerWindow"),
+    getSetting("gifts.sealedWindowDays"),
   ]);
-  return { perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours, sealedMinAccountDays, sealedPerWeek };
+  return { perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours, sealedMinAccountDays, sealedPerWindow, sealedWindowDays };
 }
 
 async function FriendsTab({ userId, q, page, sachet }: { userId: string; q: string; page: number; sachet: { id: string; kind: SealedKind } | null }) {

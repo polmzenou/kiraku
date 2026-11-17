@@ -1568,7 +1568,11 @@
           "minAccountAgeHours": "Ancienneté minimale du compte (h)",
           "minFriendshipHours": "Ancienneté minimale de l'amitié (h)",
           "boosterPriceZeni": "Prix d'un booster offert (Zeni)",
-          "allowedRarities": "Raretés qu'on peut offrir"
+          "allowedRarities": "Raretés qu'on peut offrir",
+          "sealedRequiresDiscord": "Sachets scellés : compte lié à Discord exigé",
+          "sealedMinAccountDays": "Sachets scellés : ancienneté minimale du compte (jours)",
+          "sealedPerWindow": "Sachets scellés offerts au plus",
+          "sealedWindowDays": "… sur une fenêtre glissante de (jours)"
         },
         "notifications": {
           "retentionDays": "Conservation des notifications lues (jours)",
@@ -1630,7 +1634,9 @@
       "chatSection": "Chat entre amis",
       "chatHint": "Messages privés entre amis acceptés, en texte brut, supprimés après leur durée de vie (24 h par défaut). Un blocage coupe la conversation.",
       "activitySection": "Temps réel et activité",
-      "activityHint": "Avec Ably, la cloche et le chat arrivent en direct ; le sondage de secours rattrape un message perdu. Sans geste du joueur ou onglet caché, plus aucun sondage. Sans nouveauté, le délai double jusqu'au multiple indiqué. La pastille « en ligne » suit le battement de présence : garde le délai « en ligne » au-dessus de deux battements."
+      "activityHint": "Avec Ably, la cloche et le chat arrivent en direct ; le sondage de secours rattrape un message perdu. Sans geste du joueur ou onglet caché, plus aucun sondage. Sans nouveauté, le délai double jusqu'au multiple indiqué. La pastille « en ligne » suit le battement de présence : garde le délai « en ligne » au-dessus de deux battements.",
+      "sealedTitle": "Sachets scellés offerts",
+      "sealedHint": "Divins et Apocalyptiques tombés d'un tirage. Par défaut : 2 sachets tous les 3 jours par joueur, en fenêtre glissante ; ils comptent aussi dans les cadeaux du jour."
     },
     "market": {
       "title": "Marché",
@@ -4112,7 +4118,7 @@
       "NOT_GIFTABLE": "Ce sachet ne peut plus être offert.",
       "NEEDS_DISCORD": "Lie ton compte à Discord pour offrir un sachet scellé.",
       "SEALED_ACCOUNT_TOO_NEW": "Ton compte doit avoir au moins {sealedMinAccountDays} jours pour offrir un sachet scellé.",
-      "SEALED_WEEK_LIMIT": "Tu as déjà offert {sealedPerWeek, plural, one {# sachet scellé} other {# sachets scellés}} cette semaine."
+      "SEALED_LIMIT": "Tu as déjà offert {sealedPerWindow, plural, one {# sachet scellé} other {# sachets scellés}} ces {sealedWindowDays} derniers jours. Reviens un peu plus tard !"
     },
     "sealedDivin": "Ton booster divin",
     "sealedApocalypse": "Ton booster apocalyptique",

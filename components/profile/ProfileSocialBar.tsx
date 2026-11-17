@@ -41,7 +41,7 @@ export async function profileSocialBar({
 
   let gift = null;
   if (access.relation === "FRIENDS" && (await getSetting("gifts.enabled"))) {
-    const [price, perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours, timeZone, allowedRarities, sealedMinAccountDays, sealedPerWeek] = await Promise.all([
+    const [price, perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours, timeZone, allowedRarities, sealedMinAccountDays, sealedPerWindow, sealedWindowDays] = await Promise.all([
       getSetting("gifts.boosterPriceZeni"),
       getSetting("gifts.perDaySent"),
       getSetting("gifts.perDayReceived"),
@@ -50,14 +50,15 @@ export async function profileSocialBar({
       getSetting("game.timeZone"),
       getSetting("gifts.allowedRarities"),
       getSetting("gifts.sealedMinAccountDays"),
-      getSetting("gifts.sealedPerWeek"),
+      getSetting("gifts.sealedPerWindow"),
+      getSetting("gifts.sealedWindowDays"),
     ]);
     const [sent, sealed] = await Promise.all([giftsSentToday(viewer.id, owner.id, timeZone), getSealedDrops(viewer.id)]);
     gift = {
       price,
       coins: viewer.coins,
       remaining: Math.max(0, perDaySent - sent),
-      limits: { perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours, sealedMinAccountDays, sealedPerWeek },
+      limits: { perDaySent, perDayReceived, minAccountAgeHours, minFriendshipHours, sealedMinAccountDays, sealedPerWindow, sealedWindowDays },
       allowedRarities,
       sealed: sealed.filter((s) => s.giftable).map((s) => ({ id: s.id, kind: s.kind })),
     };

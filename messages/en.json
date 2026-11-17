@@ -1568,7 +1568,11 @@
           "minAccountAgeHours": "Minimum account age (h)",
           "minFriendshipHours": "Minimum friendship age (h)",
           "boosterPriceZeni": "Gifted booster price (Zeni)",
-          "allowedRarities": "Rarities that can be given"
+          "allowedRarities": "Rarities that can be given",
+          "sealedRequiresDiscord": "Sealed boosters: Discord-linked account required",
+          "sealedMinAccountDays": "Sealed boosters: minimum account age (days)",
+          "sealedPerWindow": "Sealed boosters gifted at most",
+          "sealedWindowDays": "… over a rolling window of (days)"
         },
         "notifications": {
           "retentionDays": "Keep read notifications for (days)",
@@ -1630,7 +1634,9 @@
       "chatSection": "Chat between friends",
       "chatHint": "Private plain-text messages between accepted friends, deleted after their lifetime (24 h by default). A block ends the conversation.",
       "activitySection": "Realtime and activity",
-      "activityHint": "With Ably, the bell and chat arrive live; the safety poll catches a lost message. With no player input or a hidden tab, polling stops. When nothing changes, the delay doubles up to the given multiple. The online dot follows the presence heartbeat: keep the online delay above two heartbeats."
+      "activityHint": "With Ably, the bell and chat arrive live; the safety poll catches a lost message. With no player input or a hidden tab, polling stops. When nothing changes, the delay doubles up to the given multiple. The online dot follows the presence heartbeat: keep the online delay above two heartbeats.",
+      "sealedTitle": "Gifted sealed boosters",
+      "sealedHint": "Divine and Apocalyptic boosters dropped from a pull. Default: 2 boosters every 3 days per player, over a rolling window; they also count toward daily gifts."
     },
     "market": {
       "title": "Market",
@@ -4112,7 +4118,7 @@
       "NOT_GIFTABLE": "This booster can no longer be gifted.",
       "NEEDS_DISCORD": "Link your account to Discord to gift a sealed booster.",
       "SEALED_ACCOUNT_TOO_NEW": "Your account must be at least {sealedMinAccountDays} days old to gift a sealed booster.",
-      "SEALED_WEEK_LIMIT": "You've already gifted {sealedPerWeek, plural, one {# sealed booster} other {# sealed boosters}} this week."
+      "SEALED_LIMIT": "You've already gifted {sealedPerWindow, plural, one {# sealed booster} other {# sealed boosters}} in the last {sealedWindowDays} days. Come back a bit later!"
     },
     "sealedDivin": "Your divine booster",
     "sealedApocalypse": "Your apocalyptic booster",

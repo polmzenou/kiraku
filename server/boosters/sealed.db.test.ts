@@ -17,7 +17,7 @@ import { OpenError, openSealedWith } from "./open-core";
 const url = process.env.DATABASE_URL_TEST;
 const OLD = new Date(Date.now() - 30 * 86_400_000);
 const giftRules = { enabled: true, perDaySent: 10, perDayReceived: 10, minAccountAgeHours: 48, minFriendshipHours: 24 };
-const sealedRules = { requiresDiscord: true, minAccountDays: 7, perWeek: 5 };
+const sealedRules = { requiresDiscord: true, minAccountDays: 7, perWindow: 5, windowDays: 3 };
 
 describe.skipIf(!url)("sachets scellés atomiques (base réelle)", () => {
   const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });

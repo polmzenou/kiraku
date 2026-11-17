@@ -230,10 +230,12 @@ export const SETTING_SCHEMAS = {
   "gifts.minFriendshipHours": z.number().int().min(0).max(24 * 365),
   "gifts.boosterPriceZeni": z.number().int().min(1).max(1_000_000),
   "gifts.allowedRarities": z.array(rarity).max(200),
-  // Sachets scellés offerts : compte lié à Discord, ancienneté, nombre par semaine glissante
+  // Sachets scellés offerts : compte lié à Discord, ancienneté, au plus sealedPerWindow sachets sur les
+  // sealedWindowDays derniers jours (fenêtre glissante)
   "gifts.sealedRequiresDiscord": z.boolean(),
   "gifts.sealedMinAccountDays": z.number().int().min(0).max(365),
-  "gifts.sealedPerWeek": z.number().int().min(0).max(50),
+  "gifts.sealedPerWindow": z.number().int().min(0).max(50),
+  "gifts.sealedWindowDays": z.number().int().min(1).max(30),
   // Échanges entre amis (étape 12f) : rien n'est bloqué pendant l'attente, tout est revérifié à l'acceptation
   "trades.enabled": z.boolean(),
   "trades.nonFriends": z.boolean(),
@@ -527,7 +529,8 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "gifts.allowedRarities": [...RARITIES, ...VARIANT_RARITIES],
   "gifts.sealedRequiresDiscord": true,
   "gifts.sealedMinAccountDays": 7,
-  "gifts.sealedPerWeek": 1,
+  "gifts.sealedPerWindow": 2, // 2 sachets scellés offerts…
+  "gifts.sealedWindowDays": 3, // …tous les 3 jours par joueur
   "trades.enabled": true,
   "trades.nonFriends": true,
   "trades.expiryHours": 48,

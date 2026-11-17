@@ -263,10 +263,11 @@ export async function giftBoosterAction(input: unknown): Promise<GiftResult> {
 export async function giftSealedAction(input: unknown): Promise<GiftResult> {
   const g = await giftGuard(input, giftSealedSchema);
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
-  const [requiresDiscord, minAccountDays, perWeek] = await Promise.all([
+  const [requiresDiscord, minAccountDays, perWindow, windowDays] = await Promise.all([
     getSetting("gifts.sealedRequiresDiscord"),
     getSetting("gifts.sealedMinAccountDays"),
-    getSetting("gifts.sealedPerWeek"),
+    getSetting("gifts.sealedPerWindow"),
+    getSetting("gifts.sealedWindowDays"),
   ]);
   try {
     await giftSealedWith(prisma, {
@@ -275,7 +276,7 @@ export async function giftSealedAction(input: unknown): Promise<GiftResult> {
       rules: g.rules,
       timeZone: g.timeZone,
       dropId: (g.data as z.infer<typeof giftSealedSchema>).drop,
-      sealedRules: { requiresDiscord, minAccountDays, perWeek },
+      sealedRules: { requiresDiscord, minAccountDays, perWindow, windowDays },
     }, pushLater);
     refresh();
     return { ok: true };

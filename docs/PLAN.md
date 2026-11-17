@@ -442,7 +442,7 @@ Pourquoi 天 et pas 神 : 神 est déjà le sceau de la rareté Mythique, et un 
 
 - Un sachet tombé d'un tirage peut s'offrir **une fois**. Un sachet reçu (ami, lot, récompense) ne se ré-offre pas.
 - Quand le destinataire ouvre un Apocalyptique offert, l'expéditeur reçoit une notification `DROP_OPENED` avec l'issue : « Ton Apocalyptique a explosé au visage de Léa » ou « … a épargné Léa : Gold ! » (payload : ids et rareté, jamais de texte libre). Même chose pour un Divin offert (« Léa a ouvert ton Divin : AR »).
-- **Garde-fous contre le farm de comptes** (les invités sont créés automatiquement) : expéditeur lié à Discord (`gifts.dropRequiresDiscord`), compte de plus de `gifts.dropMinAccountDays` jours (7), amitié de plus de `gifts.minFriendshipHours`, au plus `gifts.dropPerWeek` sachet offert par semaine (1), et le cadeau compte dans les quotas du jour existants. Le stock gratuit, lui, ne se transfère toujours pas.
+- **Garde-fous contre le farm de comptes** (les invités sont créés automatiquement) : expéditeur lié à Discord (`gifts.sealedRequiresDiscord`), compte de plus de `gifts.sealedMinAccountDays` jours (7), amitié de plus de `gifts.minFriendshipHours`, au plus `gifts.sealedPerWindow` sachets offerts sur les `gifts.sealedWindowDays` derniers jours (2 tous les 3 jours, fenêtre glissante, réglable dans `/admin/social`), et le cadeau compte dans les quotas du jour existants. Le stock gratuit, lui, ne se transfère toujours pas.
 
 ### Écran
 
