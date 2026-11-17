@@ -9,6 +9,7 @@ vi.mock("../db", () => ({ prisma: { discordPost: { upsert: mocks.upsert } } }));
 vi.mock("../ratelimit", () => ({ rateLimit: mocks.rateLimit }));
 vi.mock("../discord/api", () => ({ discordBotRequest: mocks.request }));
 vi.mock("../discord/posts", () => ({ publishDiscordPost: mocks.publish }));
+vi.mock("../discord/casino", () => ({ publishCasinoTeaser: vi.fn() }));
 vi.mock("../discord/private-channel", () => ({ assertPrivateDiscordChannel: mocks.privateChannel }));
 vi.mock("../env", () => ({
   get discordRulesConfigured() { return mocks.configured; },
