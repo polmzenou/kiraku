@@ -41,8 +41,11 @@ function orderBy(params: CollectionParams): Prisma.Sql {
   const byRank = Prisma.sql`c.rank ASC NULLS LAST`;
   switch (params.sort) {
     case "rarity":
-      // À rang égal, une variante (Black Edition) passe au-dessus de sa rareté de base, comme dans compareRarities
-      return asc ? Prisma.sql`rd."sortOrder" ASC, rd."variantRequired" ASC, ${byRank}` : Prisma.sql`rd."sortOrder" DESC, rd."variantRequired" DESC, ${byRank}`;
+      // À rang égal, une variante (Black Edition) passe au-dessus de sa rareté de base, et deux raretés de même
+      // rang (AR et VR) restent chacune en bloc au lieu de s'entremêler par numéro, comme dans compareRarities
+      return asc
+        ? Prisma.sql`rd."sortOrder" ASC, rd."variantRequired" ASC, c."rarityKey" ASC, ${byRank}`
+        : Prisma.sql`rd."sortOrder" DESC, rd."variantRequired" DESC, c."rarityKey" DESC, ${byRank}`;
     case "recent":
       return asc ? Prisma.sql`MAX(uc."obtainedAt") ASC` : Prisma.sql`MAX(uc."obtainedAt") DESC`;
     case "number":
@@ -50,7 +53,9 @@ function orderBy(params: CollectionParams): Prisma.Sql {
     case "name":
       return asc ? Prisma.sql`lower(c.name) ASC` : Prisma.sql`lower(c.name) DESC`;
     case "copies":
-      return asc ? Prisma.sql`COUNT(*) ASC, rd."sortOrder" DESC, rd."variantRequired" DESC` : Prisma.sql`COUNT(*) DESC, rd."sortOrder" DESC, rd."variantRequired" DESC`;
+      return asc
+        ? Prisma.sql`COUNT(*) ASC, rd."sortOrder" DESC, rd."variantRequired" DESC, c."rarityKey" DESC`
+        : Prisma.sql`COUNT(*) DESC, rd."sortOrder" DESC, rd."variantRequired" DESC, c."rarityKey" DESC`;
     case "power":
       return asc ? Prisma.sql`c.power ASC, ${byRank}` : Prisma.sql`c.power DESC, ${byRank}`;
     case "ki":
