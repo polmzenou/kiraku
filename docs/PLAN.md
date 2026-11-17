@@ -744,6 +744,180 @@ Mini-jeu PvE sur `/expedition` (étape 14) : chaque jour, chaque joueur reçoit 
 - **Admin** (`/admin/expeditions`) : interrupteur (aussi sur `/admin/fonctionnalites`), réglages, modèles par palier avec l'aperçu d'équilibrage (chances et gains attendus, Zeni par heure), installation du catalogue par défaut, suppression d'un modèle jamais joué (sinon désactivation), expéditions en route et rappel (cartes rendues sans gain, `AdminLog`), chiffres des 7 derniers jours.
 - **Code** : règles pures dans `lib/expedition/` (testées), écritures dans `server/expedition/expedition-core.ts` (client injecté), lectures dans `server/expedition/queries.ts`, actions dans `server/actions/expedition.ts` et `admin-expedition.ts`, écran dans `components/expedition/`. Export RGPD : section `expeditions`. Tests de base : `server/expedition/expedition.db.test.ts`.
 
+## Prestige : renaissance, héritières et éditions gravées
+
+Fin de partie pour les joueurs qui ont tout collectionné (étape 15), sur `/prestige`. Caché tant que l'admin ne l'allume pas (`prestige.enabled`, aussi sur `/admin/fonctionnalites`) : 404 pour les joueurs, aperçu pour l'admin. Le principe : le joueur recycle sa collection pour repartir de zéro, mais garde 20 cartes de son choix ; les cartes gardées prestige après prestige deviennent des pièces rares, et chaque nouveau cycle peut faire sortir des **éditions gravées numérotées** qui n'existent pas au premier. La renaissance existe ailleurs : ce qui fait Kiraku, c'est l'héritage porté par l'exemplaire, la consécration au sanctuaire et les tirages d'estampe numérotés avec leur provenance. Rien ne reprend le nom, l'écran ni les visuels d'un autre jeu.
+
+### Vocabulaire
+
+| Notion | Porté par | Évolution |
+| --- | --- | --- |
+| **Prestige** du joueur | `User.prestige` | 0, 1, 2… monte à chaque renaissance, ne redescend jamais |
+| **Héritage** d'un exemplaire (継承) | `UserCard.heritage` | 0 à `prestige.heritageMax` (5) : prestiges traversés d'affilée ; l'exemplaire le garde quand il change de main |
+| **Édition gravée** (estampe, hanga) | `UserCard.printing` + `UserCard.serial` | numéro de tirage fixé à la sortie du booster, jamais réattribué |
+| **Consécration** (奉納) | `CardStatus.SANCTUARY` | une héritière au plafond quitte le jeu pour le sanctuaire du profil, pour toujours |
+
+Aucune de ces propriétés ne change les stats en combat ni en expédition : leur valeur tient à la rareté, à l'histoire et à l'affichage.
+
+### Renaissance
+
+- **Condition** : compte inscrit (ni invité, ni banni, ni gelé) qui possède `prestige.requiredPercent` (100) % des cartes publiées, variantes comprises, en cartes distinctes. Les exemplaires consacrés ne comptent pas.
+- **Préparation** : refusée tant qu'un exemplaire n'est pas en `COLLECTION` (enchère, combat, expédition) ou qu'une annonce, une offre ou un échange du joueur est ouvert (`BUSY`). L'écran liste ce qui bloque, avec un lien vers chaque élément.
+- **Choix des héritières** : au plus `prestige.keepSlots` (20) exemplaires, désignés par leur id, n'importe quelle rareté. Le choix est libre à chaque cycle : une ancienne héritière reprise passe au niveau suivant (plafonné à `heritageMax`), une ancienne héritière laissée part avec le reste et perd sa marque, une carte choisie pour la première fois passe au niveau 1. Garder les 20 mêmes est possible, mais au plafond elles ne gagnent plus rien (voir Consécration).
+- **Ce qui part** : tous les autres exemplaires en `COLLECTION`, supprimés comme au recyclage ; ils quittent les vitrines. Les gravées qui partent doivent être confirmées une à une : le client renvoie la liste des gravées sacrifiées et le serveur la compare à la sienne (`STALE` sinon). Leur numéro disparaît avec elles.
+- **Zeni** : valeur de recyclage (`collection.recycleValues`) de chaque exemplaire parti (× `prestige.printing.recycleMultiplier` pour une gravée), puis barème dégressif `prestige.zeniTiers` (par défaut 100 % jusqu'à 200 000, 50 % jusqu'à 500 000, 0 au-delà) et plafond `prestige.zeniCap`. Versés par le grand livre (`CoinReason.PRESTIGE`, `refId` = id du `PrestigeCycle`). Le montant affiché dans le récap est revérifié (`STALE`).
+- **Ce qui reste** : solde de Zeni, stock et crédits de boosters, pitiés, Encens, capacités achetées à l'atelier (liées au personnage, elles reviennent avec la carte), decks (des ids de `Card` : un deck dont les cartes manquent ne se lance plus, comme aujourd'hui), points de classé, amis, vitrines (vidées de ce qui est parti), liste de souhaits, `Discovery` (le wiki reste dévoilé).
+- **Une seule transaction** sous le verrou du joueur (`SELECT … FOR UPDATE`), idempotente : le client envoie le prestige qu'il voit (`expectedPrestige`), un deuxième envoi trouve un autre nombre et échoue en `STALE`. La transaction supprime, monte l'héritage des gardées, remet `keptByOwner` à jour, crédite, crée le `PrestigeCycle` (numéro, date, rang global, cartes distinctes possédées, Zeni versés, photo des héritières : exemplaire, carte, héritage, tirage et numéro) et passe `User.prestige` à +1 avec `User.prestigedAt`.
+- **Après la renaissance** :
+  - « Nouveau » à l'ouverture devient « Retrouvée » pour une carte déjà découverte dont le joueur n'a plus d'exemplaire ;
+  - la mission `DISCOVER_CARDS` compte, pour un joueur au prestige ≥ 1, les retrouvailles depuis `prestigedAt` (dérivées de `BoosterOpening.catalogCardIds`, comme les autres missions) ;
+  - un joueur au prestige ≥ 1 a tout possédé : les conditions de collection des cosmétiques (`UNIQUE_CARDS`, `RARITY_OWNED`, `SERIES_COMPLETE`, `SERIES_COMPLETED_COUNT`, `CATALOG_DISCOVERED_PERCENT`, `RARITIES_DISCOVERED`) restent remplies, il ne perd aucun titre ;
+  - classement des collectionneurs : trié par prestige, puis par cartes distinctes ; le prestige s'affiche à côté du pseudo.
+
+### Héritage
+
+- **Niveaux** : 1 trait d'encre, 2 deux traits, 3 vermillon (shu), 4 feuille d'or (kin), 5 nacre. La marque se pose dans le coin du cadre de la fuda, sans masquer l'illustration ni le shikishi.
+- **Changement de main** : enchère, annonce, échange et cadeau déplacent déjà la même ligne `UserCard` (`ownerId` modifié) ; héritage, tirage et numéro suivent donc l'exemplaire. Chaque transfert remet `UserCard.keptByOwner` à 0 et écrit une ligne de provenance.
+- **Consécration** : possible quand `heritage = heritageMax` et `keptByOwner ≥ prestige.consecrateMinOwnCycles` (1). L'héritage s'achète, mais la consécration se mérite : il faut avoir gardé la carte soi-même au moins un prestige. Irréversible, confirmée en maintenant le bouton. L'exemplaire passe en `SANCTUARY` (`consecratedAt`) : marché, échanges, cadeaux, recyclage, combat et expédition le refusent d'eux-mêmes (ils exigent `COLLECTION`). Il quitte les vitrines et sa place parmi les 20, et ne compte ni pour la complétion ni pour le classement : il est sorti du jeu. Il reste affiché pour toujours dans le sanctuaire du profil avec son parcours (« gardée du cycle 1 au cycle 5 »).
+
+### Éditions gravées numérotées
+
+- **Quand** : seulement pour un joueur au prestige ≥ `prestige.printing.minPrestige` (1), à l'ouverture d'un booster (stock, Zeni, crédit ou sachet scellé). Les lots, missions et envois de l'équipe n'en donnent jamais.
+- **Tirage au sort** : côté serveur, pour chaque carte tirée, `crypto.randomInt(0, 10 000)` contre `prestige.printing.chanceBp`, par clé de rareté avec une valeur par défaut (par exemple 50 pour une Commune, soit 0,5 %, jusqu'à 200 pour une Mythique).
+- **Numéro** : global à la carte et au tirage. `CardPrinting (cardId, printing)` porte la taille figée à sa création (`prestige.printing.sizes` par rareté : 500 pour une Commune… 25 pour une Mythique, valeur par défaut 25) et le compteur `issued`. Dans la transaction d'ouverture : `INSERT … ON CONFLICT DO NOTHING`, puis `UPDATE … SET issued = issued + 1 WHERE issued < size RETURNING issued`. Aucune ligne rendue = tirage épuisé : la carte sort normale. Le compteur ne redescend jamais, donc un numéro recyclé ne ressort pas. `@@unique([cardId, printing, serial])` sur `UserCard` sert de filet.
+- **Tirages successifs** : `prestige.printing.current` (1) est le tirage en cours. L'admin en ouvre un nouveau (saison, événement) : les nouveaux joueurs ont à leur tour des petits numéros à chasser. Chaque tirage a son sceau (初摺 pour le premier, réglable pour les suivants) ; changer de tirage ne touche pas aux exemplaires déjà sortis.
+- **Affichage** : `Édition 17 / 100`, où 100 est la taille figée du tirage, et le sceau du tirage à côté.
+- **Provenance** : `UserCardOwner` (exemplaire, propriétaire, date, moyen : `DRAW`, `PRESTIGE`, `AUCTION`, `LISTING`, `TRADE`, `GIFT`), écrit pour les seuls exemplaires spéciaux (gravés ou héritiers) : à la sortie d'une gravée, au premier prestige qui garde un exemplaire et à chaque transfert. Visible sur la fiche de l'exemplaire. Un compte supprimé y devient « joueur supprimé » (`ownerId` mis à null).
+- **Carrousel « En direct »** : toute gravée y entre (`NotablePull.printing` et `serial`), quelle que soit sa rareté.
+- **Recyclage** : jamais dans « Recycler tous les doublons » ni dans le recyclage rapide de la fiche. Une gravée se recycle seule, depuis sa fiche d'exemplaire, avec une confirmation qui rappelle que le numéro disparaît, pour `recycleValues × recycleMultiplier` (5).
+
+### Choisir l'exemplaire qui part
+
+Aujourd'hui le serveur choisit l'exemplaire d'une carte qui part (`pickGiftCopy` : le plus récent hors vitrine). Avec des exemplaires différents, ce choix ne doit jamais emporter une pièce spéciale par accident.
+
+- **Choix automatique** (`pickGiftCopy`, `freeCopy`, enchère, cadeau, échanges) : uniquement parmi les exemplaires ordinaires (sans tirage, héritage 0). Si le joueur n'a que des exemplaires spéciaux de cette carte : erreur `CHOOSE_COPY`, l'écran lui demande lequel.
+- **Choix explicite** : le client envoie l'id d'un exemplaire, et le serveur vérifie le propriétaire et le statut sous verrou. Colonne `userCardId` optionnelle sur `TradeListing` (annonce d'un exemplaire précis), `ListingOffer`, `TradeOffer` et à l'acceptation d'un `Trade` (l'ami choisit l'exemplaire qu'il donne). L'enchère (`Auction.userCardId`) et le cadeau (`Gift.userCardId`) l'ont déjà : il suffit de le laisser choisir.
+- **Cartes demandées** (`TradeListingWant`, carte voulue d'un `Trade`, liste de souhaits) : satisfaites par un exemplaire ordinaire, sauf si celui qui donne désigne une pièce spéciale.
+- **Combat et expédition** : l'exemplaire est choisi au lancement parmi ceux en `COLLECTION`, ordinaires d'abord ; un spécial peut partir, il revient intact.
+- **Ce que voit l'acheteur** : tuile et page d'enchère, annonce et offre du Marché, feuilles d'échange et de cadeau, message du bot Discord (`lib/discord/market-message.ts`) affichent tirage, numéro et héritage de l'exemplaire, pas seulement la carte.
+
+### Affichage
+
+- **`FudaCard`** gagne un champ optionnel `copy?: { heritage, printing, serial, size }`. Sans lui, la fuda est inchangée : toutes les sources actuelles continuent de marcher.
+- **Sur la fuda** :
+  - sous le nom, une ligne discrète `Édition 17 / 100` avec le sceau du tirage, dans l'encre du shikishi ;
+  - la gravée prend l'habillage estampe (`fuda-hanga` : grain de planche, papier washi, léger décalage de repérage de l'encre), en CSS sur la même illustration, sans nouvelle image ;
+  - la marque d'héritage se pose dans un coin du cadre.
+- **Sur la fiche** (`CardDetail`) : sous la ligne `N° · sceau · rareté`, la même mention `Édition 17 / 100 · 初摺` quand la fiche montre un exemplaire gravé. La fiche liste aussi les **exemplaires** : les ordinaires regroupés comme aujourd'hui, chaque spécial sur sa propre ligne (héritage, édition, provenance) avec ses actions (vendre, offrir, exposer, consacrer, recycler).
+- **Collection** : pastille sur la vignette d'une carte dont on a au moins une gravée ou une héritière ; filtres « Gravées » et « Héritières ».
+- **Textes** : clés `prestige.*`, `fuda.printing` (« Édition {serial} / {size} », « Edition {serial} / {size} »), `fuda.heritage` dans `messages/fr.json` et `messages/en.json`.
+
+### Animations
+
+Toutes en `transform` et `opacity`, chargées en import dynamique, passables d'un geste ; avec `prefers-reduced-motion`, un simple fondu.
+
+- **Révélation d'une gravée** (ouverture) : après la révélation normale, une baren (tampon de l'estampeur) frotte la carte de gauche à droite, l'habillage estampe apparaît sous son passage, le numéro s'écrit au pinceau, puis le sceau du tirage se pose. Environ 1,6 s. Le récap marque la carte « Gravée ».
+- **Rite de renaissance** (転生) :
+  1. Récap : ce qui part, les Zeni estimés, les gravées sacrifiées à confirmer.
+  2. Départ en maintenant le bouton, comme pour une expédition.
+  3. Les cartes qui partent se replient et s'envolent en papier vers le brasero, sans afficher des milliers de cartes : des piles par rareté.
+  4. Les 20 héritières restent, et leur marque se trace ou monte d'un niveau.
+  5. L'emaki du cycle se déroule avec le sceau 転生 et le numéro du prestige.
+- **Consécration** : la carte s'élève, sa marque nacre s'illumine, elle se pose dans le sanctuaire et reçoit le sceau 奉納.
+- **Sanctuaire et emakis du profil** : cartes figées (`still`), rouleaux qui se déroulent seulement à l'ouverture.
+
+### Profil
+
+- **Insigne de prestige** près du pseudo : chiffres en kanji d'apparat (壱, 弐, 参…), dont la matière change avec le niveau.
+- **Cosmétiques** : nouvelle condition `PRESTIGE` (`n`) dans `lib/profile/conditions.ts`, pour débloquer titres, cadres et couleurs de pseudo depuis `/admin/cosmetiques`. Un jeu par défaut pour les prestiges 1 à 5.
+- **Emakis** : un rouleau par cycle, avec la date, le rang global (« 7ᵉ renaissance de Kiraku ») et les 20 héritières de ce cycle. Les cartes qu'on n'a pas gardées restent dans l'histoire du profil.
+- **Sanctuaire** : les cartes consacrées, avec leur parcours.
+- Le tout suit `profileVisibility`.
+
+### Admin (`/admin/prestige`)
+
+- Interrupteur et réglages : `requiredPercent`, `keepSlots`, `heritageMax`, `consecrateMinOwnCycles`, barème et plafond de Zeni, chances, tailles, multiplicateur de recyclage, tirage en cours et sceaux.
+- Ouvrir un nouveau tirage (`AdminLog`) ; compteurs par carte (sortis, épuisés) ; liste des renaissances et des consécrations.
+- Sur la fiche joueur : prestige, héritières, gravées.
+- Pas d'attribution manuelle de gravée ni de numéro : la rareté ne se fabrique pas depuis l'admin.
+
+### Données
+
+```prisma
+model User {
+  // …
+  prestige    Int       @default(0) // CHECK >= 0
+  prestigedAt DateTime? // dernière renaissance
+  cycles      PrestigeCycle[]
+}
+
+model UserCard {
+  // …
+  heritage      Int       @default(0) // 0 à prestige.heritageMax (CHECK)
+  keptByOwner   Int       @default(0) // prestiges traversés chez le propriétaire actuel (remis à 0 au transfert)
+  printing      Int? // tirage de l'édition gravée (null = exemplaire ordinaire)
+  serial        Int? // numéro dans ce tirage
+  consecratedAt DateTime?
+  owners        UserCardOwner[]
+
+  @@unique([cardId, printing, serial])
+  @@index([ownerId, heritage]) // héritières d'un joueur
+}
+
+enum CardStatus {
+  // … COLLECTION, AUCTION, BATTLE, EXPEDITION
+  SANCTUARY // consacrée : hors jeu pour toujours
+}
+
+// Compteur de numéros d'une carte dans un tirage ; la taille est figée à la création
+model CardPrinting {
+  cardId   String
+  printing Int
+  size     Int
+  issued   Int @default(0) // CHECK (issued <= size)
+  @@id([cardId, printing])
+}
+
+enum OwnershipVia { DRAW PRESTIGE AUCTION LISTING TRADE GIFT }
+
+model UserCardOwner {
+  id         String       @id @default(cuid())
+  userCardId String       // onDelete: Cascade (exemplaire recyclé = provenance effacée)
+  ownerId    String?      // null = compte supprimé
+  via        OwnershipVia
+  at         DateTime     @default(now())
+  @@index([userCardId, at])
+}
+
+model PrestigeCycle {
+  id          String   @id @default(cuid())
+  userId      String
+  number      Int // prestige atteint (1, 2…)
+  globalRank  Int // n-ième renaissance de Kiraku
+  uniqueCards Int // cartes distinctes possédées au départ
+  zeni        Int
+  heirs       Json // [{ userCardId, cardId, heritage, printing, serial }] : photo, comme Expedition.snapshot
+  createdAt   DateTime @default(now())
+  @@unique([userId, number])
+}
+```
+
+S'y ajoutent `CoinReason.PRESTIGE`, `userCardId` optionnel sur `TradeListing`, `ListingOffer`, `TradeOffer` et `Trade` (exemplaire choisi), et `printing` / `serial` sur `NotablePull`. Migrations nommées : `prestige_copies`, `prestige_cycles`, `prestige_printings`.
+
+### Sécurité et tests
+
+- Le serveur décide de tout : tirage d'une gravée et de son numéro, exemplaires qui partent, Zeni versés. Le client n'envoie que des ids d'exemplaires et des confirmations.
+- Chaque action (`prestige`, `consecrate`, choix d'exemplaire, recyclage d'une gravée) : session → Zod (`keep` : au plus `keepSlots` ids distincts) → propriété et statut sous verrou → rate limit.
+- Tests Vitest (logique pure dans `lib/prestige/`) : condition, barème dégressif, montée d'héritage, règle de consécration, tirage d'une gravée, choix automatique de l'exemplaire.
+- Tests base (`server/prestige/prestige.db.test.ts`) :
+  - double renaissance simultanée : une seule passe ;
+  - 50 ouvertures simultanées sur une carte au tirage presque épuisé : aucun numéro en double, jamais plus que la taille ;
+  - soldes = journal après une renaissance ;
+  - une gravée ne part jamais par le choix automatique ;
+  - un exemplaire vendu garde héritage et numéro, avec `keptByOwner` à 0.
+- RGPD : l'export ajoute `prestige` (cycles, héritières, provenance des exemplaires possédés) ; l'anonymisation met à null le propriétaire dans `UserCardOwner`.
+- Code : règles pures dans `lib/prestige/`, écritures dans `server/prestige/prestige-core.ts` (client injecté), lectures dans `server/prestige/queries.ts`, actions dans `server/actions/prestige.ts` et `admin-prestige.ts`, écran dans `components/prestige/`.
+
 ## Panneau d'administration
 
 `/admin` permet à un compte `role = ADMIN` de tout gérer sans redéployer. Pour ça, aucune règle du jeu ne vit dans des constantes : délais, taux, stats de combat et barème du classé se lisent dans la table `GameSetting`, et les constantes du code ne servent que de valeurs par défaut.
@@ -1433,6 +1607,12 @@ Construis dans cet ordre : chaque étape est jouable seule et sert de base à la
     - échanges entre amis, chat éphémère entre amis, profil personnalisable (titres, cadres, badges).
 13. **Sachets scellés** — Divin et Apocalyptique : chute pendant l'ouverture, `SealedDrop`, karma de l'Apocalypse, cadeau empoisonné avec ses garde-fous, animations de transformation et d'ouverture, réglages et tests. Voir « Sachets scellés : Divin et Apocalyptique ».
 14. **Expéditions** — 14a socle (modèles, offres du jour, lancement, clôture, verrou des cartes, admin), 14b écran et animations (laissez-passer, jauge ensō, départ, rouleau peint, rapport), 14c notifications, cron et documentation. Voir « Expéditions ».
+15. **Prestige** — voir « Prestige : renaissance, héritières et éditions gravées ». Une branche par sous-étape, chacune jouable seule derrière `prestige.enabled` :
+    - **15a Exemplaires distincts.** Migration `prestige_copies` : héritage, `keptByOwner`, tirage et numéro sur `UserCard`, `SANCTUARY`, `UserCardOwner`, `userCardId` optionnel sur les échanges. Réglages `prestige.*` par défaut. Choix automatique limité aux exemplaires ordinaires (`CHOOSE_COPY`), choix explicite dans la vente, le cadeau, les annonces, les offres et les échanges. Recyclage qui épargne les spéciaux. Remise à 0 de `keptByOwner` et provenance à chaque transfert. Fiche carte avec la liste des exemplaires. Tests. Rien de visible tant qu'aucun exemplaire spécial n'existe.
+    - **15b Renaissance.** Migration `prestige_cycles`. Condition, préparation (`BUSY`), choix des 20, récap et Zeni dégressifs, transaction unique et idempotente, `PrestigeCycle`. Marques d'héritage sur la fuda. Écran `/prestige` et rite 転生. « Retrouvée », missions, conditions de cosmétiques et classement des collectionneurs adaptés. Admin : interrupteur et réglages. Tests de concurrence.
+    - **15c Éditions gravées.** Migration `prestige_printings`. Tirage au sort et numéro dans la transaction d'ouverture, `CardPrinting`, carrousel « En direct ». Ligne `Édition 17 / 100` et sceau du tirage sous le nom de la fuda et sous la ligne de rareté de la fiche, habillage estampe, animation de la baren à la révélation, affichage sur le Marché et dans le bot Discord, recyclage unitaire. Admin : chances, tailles, tirages. Test des 50 ouvertures simultanées.
+    - **15d Consécration et profil.** Consécration et sanctuaire, insigne de prestige, condition `PRESTIGE` et cosmétiques par défaut, emakis des cycles, filtres de la collection.
+    - **15e Finitions.** Export et anonymisation RGPD, page admin des renaissances et compteurs, fiche joueur, `docs/MISE-EN-PRODUCTION.md`, essai sur un vrai téléphone en 375 px, lint, typecheck et tests.
 
 Hors de ce plan : Stripe et le casino, après un avis juridique.
 
