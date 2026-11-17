@@ -35,6 +35,14 @@ describe("describeNotification", () => {
     expect(describeNotification({ ...base, expedition: null }, tr).text).toBe("expeditionReturned:{}");
   });
 
+  it("Encens offerts par l'équipe → accueil, avec la quantité", () => {
+    const d = describeNotification(
+      { type: "TEAM_GIFT", actor: null, gift: null, card: null, team: { kind: "INCENSE", quantity: 3, boosterSlug: null } },
+      tr,
+    );
+    expect(d).toEqual({ text: 'teamGiftIncense:{"count":3}', href: "/" });
+  });
+
   it("sans auteur : « un joueur »", () => {
     const d = describeNotification({ type: "FRIEND_ACCEPTED", actor: null, gift: null, card: null }, tr);
     expect(d.href).toBe("/amis");

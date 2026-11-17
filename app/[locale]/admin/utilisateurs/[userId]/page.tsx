@@ -2,13 +2,14 @@ import { DeleteUserButton } from "@/components/admin/UserDeletion";
 import { notFound } from "next/navigation";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { DataRequestActions } from "@/components/admin/DataRequestActions";
+import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
 import { UserEditor } from "@/components/admin/UserEditor";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
 import { parseUserListParams, USER_ADMIN_ACTIONS } from "@/lib/admin/users";
 import { computeStock, stockRulesFor } from "@/lib/boosters/stock";
 import { requireAdmin } from "@/server/admin";
-import { adminCardById, getAdminUser, getAdminUserCards } from "@/server/admin/users";
+import { adminCardById, getAdminUser, getAdminUserCards, getAdminUserFriends } from "@/server/admin/users";
 import { readBannerPity } from "@/server/boosters/open-core";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { inputClass } from "@/components/ui/Field";
@@ -18,13 +19,14 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
   const [{ userId }, raw, locale, t, reason, format, rarity] = await Promise.all([params, searchParams, getLocale(), getTranslations("admin.users"), getTranslations("economy.ledger.reasons"), getFormatter(), getTranslations("rarity")]);
   if (!/^[A-Za-z0-9_-]{1,40}$/.test(userId)) notFound();
   const cardParams = parseUserListParams({ q: raw.cardQuery, page: raw.cardPage });
-  const [data, collection, selectedCard, rules] = await Promise.all([
+  const [data, collection, selectedCard, rules, friendList] = await Promise.all([
     getAdminUser(userId, locale), getAdminUserCards(userId, cardParams.query, cardParams.page),
     typeof raw.card === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(raw.card) ? adminCardById(raw.card) : null,
     getBoosterRules(),
+    getAdminUserFriends(userId),
   ]);
   if (!data) notFound();
-  const { user, discoveries, catalogTotal, ownedCatalogCards, uniqueCards, boosterTypes, ledger, openings, logs } = data;
+  const { user, discoveries, catalogTotal, ownedCatalogCards, uniqueCards, boosterTypes, ledger, openings, logs, incense } = data;
   const stock = computeStock(user.boosterStock, user.boosterAnchor, new Date(), stockRulesFor(rules.stock, user.ambassadorSince !== null));
   const pity = readBannerPity(user.bannerPity);
   const cardHref = (page: number, card?: string) => ({ pathname: `/admin/utilisateurs/${userId}`, query: { cardQuery: cardParams.query, cardPage: page, ...(card ? { card } : {}) }, hash: card ? "admin-card-form" : "user-collection" });
@@ -35,6 +37,8 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
     { label: "discoveries", value: `${format.number(discoveries)} / ${format.number(catalogTotal)}` },
     { label: "boosters", value: format.number(boosterTypes.reduce((sum, b) => sum + b.count, 0)) },
     { label: "openings", value: format.number(user._count.openings) },
+    { label: "incenseMetric", value: format.number(incense.available) },
+    { label: "friends", value: format.number(friendList.total) },
   ] as const;
   const actionNames = new Map<string, string>(USER_ADMIN_ACTIONS.map((action) => [action, t(`actions.${action}`)]));
 
@@ -51,11 +55,11 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
         </div>
         <Link href={`/u/${user.username}`} className={buttonClasses()}>{t("viewProfile")}</Link>
       </header>
-      <dl className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+      <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {metrics.map((m) => <div key={m.label} className="lacquer rounded-card p-4"><dt className="text-xs text-text-muted">{t(m.label)}</dt><dd className="mt-1 text-xl font-bold tabular-nums">{m.value}</dd></div>)}
       </dl>
       <UserEditor userId={userId} account={{ username: user.username, role: user.role, banned: !!user.bannedAt, profileVisibility: user.profileVisibility, showCollection: user.showCollection }} ambassadorSince={user.ambassadorSince} leaderboardHiddenAt={user.leaderboardHiddenAt} leaderboardMalus={{ cards: user.leaderboardMalus, mythics: user.leaderboardMythicMalus }} self={admin.id === userId}
-        coins={user.coins} stats={{ boosterStock: stock.stock, rankPoints: user.rankPoints, pityCount: user.pityCount, standardCount: user.standardCount }}
+        coins={user.coins} incense={incense} stats={{ boosterStock: stock.stock, rankPoints: user.rankPoints, pityCount: user.pityCount, standardCount: user.standardCount }}
         boosters={boosterTypes.map((b) => ({ ...b, pity: pity[b.id] ?? 0 }))} discoveries={discoveries} catalogTotal={catalogTotal} ownedCatalogCards={ownedCatalogCards} selectedCard={selectedCard} sessions={user._count.sessions} />
 
       <section className="flex flex-col gap-3 lacquer rounded-card p-4">
@@ -79,6 +83,51 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
               <DeleteUserButton id={userId} username={user.username} />
             </div>
           </div>
+        )}
+      </section>
+
+      <section id="user-friends" className="flex scroll-mt-8 flex-col gap-3">
+        <div>
+          <h3 className="font-title text-xl font-bold">{t("friendsTitle")}</h3>
+          <p className="text-sm text-text-muted">{t("friendsSummary", { count: friendList.total })}</p>
+        </div>
+        {friendList.friends.length === 0 ? <p className="text-sm text-text-muted">{t("friendsEmpty")}</p> : (
+          <ResponsiveTable
+            caption={t("friendsOf", { username: user.username })}
+            columns={[
+              { key: "player", label: t("player"), primary: true },
+              { key: "status", label: t("status"), className: "whitespace-nowrap" },
+              { key: "since", label: t("friendSince"), className: "whitespace-nowrap" },
+              { key: "manage", label: t("manage"), actions: true },
+            ]}
+            rows={friendList.friends.map((f) => ({
+              id: f.friendshipId,
+              cells: {
+                player: (
+                  <span className="min-w-0">
+                    <Link href={`/admin/utilisateurs/${f.id}`} className="font-bold text-link underline underline-offset-4">{f.username}</Link>
+                    <p className="text-xs break-all text-text-muted">{f.email ?? t("noEmail")}</p>
+                  </span>
+                ),
+                status: (
+                  <span className="flex flex-col">
+                    {t(f.bannedAt ? "banned" : f.role === "ADMIN" ? "adminRole" : f.role === "DEV" ? "devRole" : f.isGuest ? "guest" : "registered")}
+                    {f.ambassadorSince && <span className="text-xs font-bold text-hisui">{t("ambassadorRole")}</span>}
+                    {f.anonymizedAt && <span className="text-xs text-text-muted">{t("anonymized")}</span>}
+                  </span>
+                ),
+                since: format.dateTime(f.since, { dateStyle: "short" }),
+                manage: (
+                  <Link href={`/admin/utilisateurs/${f.id}`} className={buttonClasses()}>
+                    {t("manage")}<span className="sr-only"> {f.username}</span>
+                  </Link>
+                ),
+              },
+            }))}
+          />
+        )}
+        {friendList.total > friendList.friends.length && (
+          <p className="text-sm text-text-muted">{t("friendsMore", { count: friendList.total - friendList.friends.length })}</p>
         )}
       </section>
 

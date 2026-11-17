@@ -19,9 +19,17 @@ export function incenseEarned(pulled: number, step: number): number {
   return step > 0 ? Math.floor(Math.max(0, pulled) / step) : 0;
 }
 
-/** Encens encore à activer (jamais négatif si le palier a été relevé par l'admin). */
-export function incenseAvailable(pulled: number, step: number, used: number): number {
-  return Math.max(0, incenseEarned(pulled, step) - used);
+/**
+ * Encens encore à activer : gagnés, plus ceux donnés par l'admin (`bonus`, négatif s'il en a retiré),
+ * moins ceux déjà activés. Jamais négatif si le palier a été relevé par l'admin.
+ */
+export function incenseAvailable(pulled: number, step: number, used: number, bonus = 0): number {
+  return Math.max(0, incenseEarned(pulled, step) + bonus - used);
+}
+
+/** Bonus admin qui amène les Encens disponibles exactement à `target` (≥ 0). */
+export function incenseBonusFor(pulled: number, step: number, used: number, target: number): number {
+  return target - incenseEarned(pulled, step) + used;
 }
 
 /** Cartes à tirer avant le prochain Encens. */

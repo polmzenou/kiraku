@@ -125,6 +125,31 @@ function BalanceForm({ coins }: { coins: number }) {
   );
 }
 
+type Incense = { available: number; earned: number; bonus: number; used: number; activeUntil: Date | null };
+
+/** Encens disponibles : un ajout est un cadeau de l'équipe, notifié au joueur. */
+function IncenseForm({ incense }: { incense: Incense }) {
+  const t = useTranslations("admin.users");
+  const format = useFormatter();
+  const [mode, setMode] = useState<Mode>("ADD");
+  const [amount, setAmount] = useState(1);
+  const [message, setMessage] = useState("");
+  let next: number | null = null;
+  try { next = adjustedValue(incense.available, mode, amount); } catch { /* Quantité refusée. */ }
+  return (
+    <MutationForm title={t("incense")} change={{ kind: "incense", mode, amount, message: mode === "ADD" ? message : "" }} disabled={next === null}>
+      <p className="text-sm">{t("incenseAvailable", { count: incense.available })}</p>
+      <p className="text-xs text-text-muted">{t("incenseDetail", { earned: incense.earned, bonus: format.number(incense.bonus, { signDisplay: "exceptZero" }), used: incense.used })}</p>
+      {incense.activeUntil && <p className="text-xs text-kin">{t("incenseActiveUntil", { date: format.dateTime(incense.activeUntil, { dateStyle: "short", timeStyle: "short" }) })}</p>}
+      <ModeField value={mode} onChange={(v) => { setMode(v); setAmount(v === "SET" ? Math.min(incense.available, MAX_ADMIN_QUANTITY) : 1); }} />
+      <NumberField label={t("quantity")} min={mode === "SET" ? 0 : 1} max={MAX_ADMIN_QUANTITY} value={amount} onChange={setAmount} />
+      <p className="text-sm font-bold">{t("after")} {next === null ? "—" : format.number(next)}</p>
+      {mode === "ADD" && <NoteField label={t("giftMessage")} placeholder={t("giftMessagePlaceholder")} value={message} onChange={setMessage} />}
+      <p className="text-xs text-text-muted">{t("incenseHint")}</p>
+    </MutationForm>
+  );
+}
+
 function StatForm({ field, initial }: { field: UserStat; initial: number }) {
   const t = useTranslations("admin.users");
   const [value, setValue] = useState(initial);
@@ -236,8 +261,8 @@ function DiscoveryForm({ count, total, minimum }: { count: number; total: number
   </MutationForm>;
 }
 
-export function UserEditor({ userId, account, ambassadorSince, leaderboardHiddenAt, leaderboardMalus, self, stats, coins, boosters, discoveries, catalogTotal, ownedCatalogCards, selectedCard, sessions }: {
-  userId: string; account: Account; ambassadorSince: Date | null; leaderboardHiddenAt: Date | null; leaderboardMalus: LeaderboardMalus; self: boolean; stats: Record<UserStat, number>; coins: number;
+export function UserEditor({ userId, account, ambassadorSince, leaderboardHiddenAt, leaderboardMalus, self, stats, coins, incense, boosters, discoveries, catalogTotal, ownedCatalogCards, selectedCard, sessions }: {
+  userId: string; account: Account; ambassadorSince: Date | null; leaderboardHiddenAt: Date | null; leaderboardMalus: LeaderboardMalus; self: boolean; stats: Record<UserStat, number>; coins: number; incense: Incense;
   boosters: Booster[]; discoveries: number; catalogTotal: number; ownedCatalogCards: number; selectedCard: AdminCardCandidate | null; sessions: number;
 }) {
   const t = useTranslations("admin.users");
@@ -254,6 +279,7 @@ export function UserEditor({ userId, account, ambassadorSince, leaderboardHidden
       <LeaderboardForm key={leaderboardHiddenAt?.toISOString() ?? "shown"} hiddenSince={leaderboardHiddenAt} />
       <LeaderboardMalusForm key={`${leaderboardMalus.cards}:${leaderboardMalus.mythics}`} initial={leaderboardMalus} />
       <BalanceForm key={coins} coins={coins} />
+      <IncenseForm key={`incense:${incense.available}:${incense.bonus}`} incense={incense} />
       {USER_STATS.map((field) => <StatForm key={`${field}:${stats[field]}`} field={field} initial={stats[field]} />)}
       <DiscoveryForm key={discoveries} count={discoveries} total={catalogTotal} minimum={ownedCatalogCards} />
       <MutationForm title={t("sessions")} change={{ kind: "sessions" }} disabled={self || sessions === 0} button={t("revokeSessions")}>

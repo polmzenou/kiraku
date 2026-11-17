@@ -63,6 +63,7 @@ export type DescribeTranslators = {
       | "teamGift"
       | "teamGiftCards"
       | "teamGiftBoosters"
+      | "teamGiftIncense"
       | "tradeProposed"
       | "tradeAccepted"
       | "tradeDeclined"
@@ -137,6 +138,8 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
         const slug = n.team.boosterSlug;
         return { text: t("teamGiftBoosters", { count: n.team.quantity }), href: slug && !SEALED_SLUGS.has(slug) ? `/ouvrir/${slug}?credit=1` : "/" };
       }
+      // Le panneau de l'Encens est sur l'accueil
+      if (n.team?.kind === "INCENSE") return { text: t("teamGiftIncense", { count: n.team.quantity }), href: "/" };
       return {
         text: t("teamGiftCards", { count: n.team?.quantity ?? 1, card: n.card?.name ?? t("aCard") }),
         href: n.card ? `/collection/${n.card.anilistId}` : "/collection",

@@ -30,12 +30,12 @@ export async function activateIncenseWith(
   now = new Date(),
 ): Promise<IncenseActivation> {
   return db.$transaction(async (tx) => {
-    const [user] = await tx.$queryRaw<{ incenseUsed: number; incenseUntil: Date | null; bannedAt: Date | null }[]>`
-      SELECT "incenseUsed", "incenseUntil", "bannedAt" FROM "User" WHERE id = ${userId} FOR UPDATE`;
+    const [user] = await tx.$queryRaw<{ incenseUsed: number; incenseBonus: number; incenseUntil: Date | null; bannedAt: Date | null }[]>`
+      SELECT "incenseUsed", "incenseBonus", "incenseUntil", "bannedAt" FROM "User" WHERE id = ${userId} FOR UPDATE`;
     if (!user) throw new IncenseError("NO_USER");
     if (user.bannedAt) throw new IncenseError("BANNED");
 
-    const available = incenseAvailable(await cardsPulled(tx, userId), settings.cardStep, user.incenseUsed);
+    const available = incenseAvailable(await cardsPulled(tx, userId), settings.cardStep, user.incenseUsed, user.incenseBonus);
     if (available < 1) throw new IncenseError("NO_INCENSE");
 
     const until = extendIncense(user.incenseUntil, now, settings.durationHours);

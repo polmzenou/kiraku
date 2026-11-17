@@ -21,6 +21,14 @@ describe("gestion des joueurs : validation", () => {
     }
     expect(adminUserMutationSchema.safeParse({ ...base, kind: "card", cardId: "card-a", mode: "ADD", amount: 1001 }).success).toBe(false);
   });
+  it("borne les Encens donnés, retirés ou définis", () => {
+    const incense = (mode: string, amount: unknown) => adminUserMutationSchema.safeParse({ ...base, kind: "incense", mode, amount, message: "" }).success;
+    expect(incense("SET", 0)).toBe(true);
+    expect(incense("ADD", 1)).toBe(true);
+    expect(incense("REMOVE", 1000)).toBe(true);
+    for (const mode of ["ADD", "REMOVE"]) expect(incense(mode, 0)).toBe(false);
+    for (const amount of [-1, 1.5, 1001, "3"]) expect(incense("SET", amount)).toBe(false);
+  });
   it("n'accepte aucun champ de compte ou de sécurité injecté", () => {
     const input = { ...base, kind: "stat", field: "rankPoints", value: 100 };
     expect(adminUserMutationSchema.safeParse({ ...input, role: "ADMIN" }).success).toBe(false);
