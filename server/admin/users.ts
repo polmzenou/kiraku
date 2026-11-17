@@ -2,8 +2,11 @@ import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { ADMIN_USER_PAGE_SIZE, type SortDir, type UserListParams, type UserSort } from "@/lib/admin/users";
 import { localize, parseLocalized } from "@/lib/boosters/types";
+import { incenseAvailable, incenseEarned, isIncenseActive } from "@/lib/boosters/incense";
 import { normalizeSearch } from "@/lib/catalog/search";
+import { cardsPulled } from "../boosters/incense-core";
 import { prisma } from "../db";
+import { getSetting } from "../settings";
 
 /** Tri de la liste : une colonne et un sens, toujours départagés par l'identifiant (pages stables). */
 const USER_ORDER = {
@@ -29,12 +32,71 @@ export async function listAdminUsers({ query, filter, page: requestedPage, sort,
   const total = await prisma.user.count({ where });
   const pages = Math.max(1, Math.ceil(total / ADMIN_USER_PAGE_SIZE));
   const page = Math.min(requestedPage, pages - 1);
-  const users = await prisma.user.findMany({ where, orderBy: [...USER_ORDER[sort](dir), { id: dir }], skip: page * ADMIN_USER_PAGE_SIZE, take: ADMIN_USER_PAGE_SIZE,
+  const rows = await prisma.user.findMany({ where, orderBy: [...USER_ORDER[sort](dir), { id: dir }], skip: page * ADMIN_USER_PAGE_SIZE, take: ADMIN_USER_PAGE_SIZE,
     select: { id: true, username: true, email: true, role: true, bannedAt: true, isGuest: true, coins: true, createdAt: true, ambassadorSince: true,
       deletionRequestedAt: true, anonymizedAt: true,
-      _count: { select: { cards: true, discoveries: { where: { card: { status: "PUBLISHED" } } } } } },
+      _count: { select: {
+        cards: true, discoveries: { where: { card: { status: "PUBLISHED" } } },
+        // Une amitié est une seule ligne, dans un sens ou dans l'autre
+        sentFriends: { where: { status: "ACCEPTED" } }, recvFriends: { where: { status: "ACCEPTED" } },
+      } } },
   });
+  const previews = await friendPreviews(rows.map((u) => u.id));
+  const users = rows.map(({ _count: { sentFriends, recvFriends, ...count }, ...u }) => ({
+    ...u, _count: count, friends: { count: sentFriends + recvFriends, preview: previews.get(u.id) ?? [] },
+  }));
   return { users, total, page, pages };
+}
+
+/** Amis montrés dans la liste des joueurs, les plus récents d'abord ; la fiche les montre tous. */
+export const FRIEND_PREVIEW = 3;
+
+export type AdminFriendPreview = { id: string; username: string };
+
+/** Premiers amis de chaque joueur de la page, en une requête (bornée à FRIEND_PREVIEW par joueur). */
+async function friendPreviews(userIds: string[]): Promise<Map<string, AdminFriendPreview[]>> {
+  if (userIds.length === 0) return new Map();
+  const rows = await prisma.$queryRaw<{ userId: string; id: string; username: string }[]>`
+    SELECT "userId", id, username FROM (
+      SELECT f."userId", u.id, u.username,
+        ROW_NUMBER() OVER (PARTITION BY f."userId" ORDER BY f.since DESC, u.id) AS n
+      FROM (
+        SELECT "requesterId" AS "userId", "addresseeId" AS "friendId", COALESCE("acceptedAt", "createdAt") AS since
+        FROM "Friendship" WHERE status = 'ACCEPTED' AND "requesterId" = ANY(${userIds})
+        UNION ALL
+        SELECT "addresseeId", "requesterId", COALESCE("acceptedAt", "createdAt")
+        FROM "Friendship" WHERE status = 'ACCEPTED' AND "addresseeId" = ANY(${userIds})
+      ) f JOIN "User" u ON u.id = f."friendId"
+    ) ranked WHERE n <= ${FRIEND_PREVIEW} ORDER BY "userId", n`;
+  const byUser = new Map<string, AdminFriendPreview[]>();
+  for (const row of rows) byUser.set(row.userId, [...(byUser.get(row.userId) ?? []), { id: row.id, username: row.username }]);
+  return byUser;
+}
+
+/** Plafond d'affichage sur la fiche : au-delà, le total reste exact et le reste est résumé. */
+const FRIEND_LIST_LIMIT = 500;
+
+/** Tous les amis d'un joueur (identité et date), les plus récents d'abord. */
+export async function getAdminUserFriends(userId: string) {
+  const where = { status: "ACCEPTED" as const, OR: [{ requesterId: userId }, { addresseeId: userId }] };
+  const identity = { select: { id: true, username: true, email: true, role: true, isGuest: true, bannedAt: true, ambassadorSince: true, anonymizedAt: true } } as const;
+  const [total, rows] = await Promise.all([
+    prisma.friendship.count({ where }),
+    prisma.friendship.findMany({
+      where,
+      orderBy: [{ acceptedAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }, { id: "asc" }],
+      take: FRIEND_LIST_LIMIT,
+      select: { id: true, requesterId: true, acceptedAt: true, createdAt: true, requester: identity, addressee: identity },
+    }),
+  ]);
+  return {
+    total,
+    friends: rows.map((f) => ({
+      friendshipId: f.id,
+      since: f.acceptedAt ?? f.createdAt,
+      ...(f.requesterId === userId ? f.addressee : f.requester),
+    })),
+  };
 }
 
 export async function getAdminUser(userId: string, locale: string) {
@@ -42,13 +104,13 @@ export async function getAdminUser(userId: string, locale: string) {
     id: true, username: true, email: true, emailVerified: true, isGuest: true, role: true, bannedAt: true, createdAt: true, ambassadorSince: true,
     leaderboardHiddenAt: true, leaderboardMalus: true, leaderboardMythicMalus: true, coins: true, boosterStock: true, boosterAnchor: true, rankPoints: true, pityCount: true, standardCount: true, bannerPity: true,
     profileVisibility: true, showCollection: true, discordLinkedAt: true, referralCode: true,
-    deletionRequestedAt: true, anonymizedAt: true, termsVersion: true,
+    deletionRequestedAt: true, anonymizedAt: true, termsVersion: true, incenseUsed: true, incenseBonus: true, incenseUntil: true,
     boosterCredits: { select: { boosterTypeId: true, count: true } },
     sealedDrops: { where: { openedAt: null }, select: { boosterTypeId: true } },
     _count: { select: { cards: true, openings: true, sessions: true } },
   } });
   if (!user) return null;
-  const [discoveries, catalogTotal, uniqueCards, ownedCatalogCards, boosterTypes, ledger, openings, logs] = await Promise.all([
+  const [discoveries, catalogTotal, uniqueCards, ownedCatalogCards, boosterTypes, ledger, openings, logs, pulled, incenseStep] = await Promise.all([
     prisma.discovery.count({ where: { userId, card: { status: "PUBLISHED" } } }),
     prisma.card.count({ where: { status: "PUBLISHED" } }),
     prisma.card.count({ where: { copies: { some: { ownerId: userId } } } }),
@@ -57,8 +119,18 @@ export async function getAdminUser(userId: string, locale: string) {
     prisma.coinTransaction.findMany({ where: { userId }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 20, select: { id: true, amount: true, reason: true, balanceAfter: true, createdAt: true } }),
     prisma.boosterOpening.findMany({ where: { userId }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 15, select: { id: true, boosterSlug: true, createdAt: true, golden: true, divine: true } }),
     prisma.adminLog.findMany({ where: { targetType: "User", targetId: userId }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 30, select: { id: true, action: true, before: true, after: true, createdAt: true, admin: { select: { username: true } } } }),
+    cardsPulled(prisma, userId),
+    getSetting("incense.cardStep"),
   ]);
+  const now = new Date();
   return { user, discoveries, catalogTotal, uniqueCards, ownedCatalogCards, ledger, openings, logs,
+    incense: {
+      available: incenseAvailable(pulled, incenseStep, user.incenseUsed, user.incenseBonus),
+      earned: incenseEarned(pulled, incenseStep),
+      bonus: user.incenseBonus,
+      used: user.incenseUsed,
+      activeUntil: isIncenseActive(user.incenseUntil, now) ? user.incenseUntil : null,
+    },
     // Sachets scellés : nombre de sachets non ouverts ; autres types : boosters crédités
     boosterTypes: boosterTypes.map((b) => ({
       ...b,

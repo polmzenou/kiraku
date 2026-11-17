@@ -6,6 +6,7 @@ import {
   extendIncense,
   fitRates,
   incenseAvailable,
+  incenseBonusFor,
   incenseDrawRules,
   incenseEarned,
   isIncenseActive,
@@ -31,6 +32,23 @@ describe("Encens gagnés", () => {
     expect(incenseAvailable(5000, 1000, 5)).toBe(0);
     // Palier relevé par l'admin après coup
     expect(incenseAvailable(5000, 2000, 4)).toBe(0);
+  });
+
+  it("ajoute les Encens donnés par l'admin et retire ceux qu'il a enlevés", () => {
+    expect(incenseAvailable(0, 1000, 0, 3)).toBe(3);
+    expect(incenseAvailable(5000, 1000, 2, 2)).toBe(5);
+    expect(incenseAvailable(5000, 1000, 2, -1)).toBe(2);
+    expect(incenseAvailable(5000, 1000, 2, -10)).toBe(0);
+  });
+
+  it("calcule le bonus qui amène les disponibles à la valeur voulue", () => {
+    for (const [pulled, step, used, target] of [[0, 1000, 0, 4], [5000, 1000, 2, 0], [5000, 1000, 2, 10], [5000, 2000, 4, 1], [1234, 0, 0, 7]]) {
+      const bonus = incenseBonusFor(pulled, step, used, target);
+      expect(incenseAvailable(pulled, step, used, bonus)).toBe(target);
+    }
+    // Les Encens gagnés ensuite s'ajoutent normalement
+    const bonus = incenseBonusFor(5000, 1000, 2, 1);
+    expect(incenseAvailable(6000, 1000, 2, bonus)).toBe(2);
   });
 
   it("cartes restantes avant le prochain", () => {
