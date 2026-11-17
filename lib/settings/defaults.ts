@@ -397,8 +397,27 @@ export const SETTING_SCHEMAS = {
   "discord.avatarSyncBatch": z.number().int().min(1).max(50),
   // Section « Rejoins notre Discord » de la page Social : lien, textes fr/en, fenêtre d'affichage
   "discord.socialPromo": socialPromoSchema,
-  // Interrupteurs de fonctionnalités sans module propre (casino : tuile « Bientôt » seulement)
+  // Casino visible (menu, tuile du Compte, /casino) ; éteint, il disparaît pour les joueurs
   "features.casino": z.boolean(),
+  // Casino : ouverture (vide = teaser sans date ; future = compte à rebours ; passée = ouvert), badge « Nouveau »
+  // et cérémonie pendant newBadgeDays jours après l'ouverture (0 = ni l'un ni l'autre)
+  "casino.opensAt": z.string().datetime().nullable(),
+  "casino.newBadgeDays": z.number().int().min(0).max(90),
+  "casino.minAccountAgeHours": z.number().int().min(0).max(24 * 365),
+  // Pile ou face : coupé, le jeu disparaît sans cacher le casino ; les tables ouvertes restent retirables
+  "casino.coinflip.enabled": z.boolean(),
+  "casino.coinflip.expiryHours": z.number().int().min(1).max(24 * 7),
+  "casino.coinflip.maxOpenTables": z.number().int().min(1).max(20),
+  // Lancers par jour (fuseau game.timeZone) : tables posées et tables relevées
+  "casino.coinflip.dailyLimit": z.number().int().min(1).max(500),
+  "casino.coinflip.allowedRarities": z.array(rarity).max(200),
+  // Miser le dernier exemplaire d'une carte (toujours après un avertissement)
+  "casino.coinflip.lastCopyAllowed": z.boolean(),
+  "casino.coinflip.lobbyPollSeconds": z.number().int().min(5).max(120),
+  "casino.coinflip.tablePollSeconds": z.number().int().min(2).max(60),
+  // Fil « Derniers lancers » du hall
+  "casino.coinflip.feedSize": z.number().int().min(4).max(50),
+  "casino.coinflip.feedMaxAgeHours": z.number().int().min(1).max(24 * 30),
   // Carrousel « En direct · Gros tirages » de l'accueil (étape 12c)
   "home.pullFeed.enabled": z.boolean(),
   "home.pullFeed.minRarity": rarityKeySchema,
@@ -688,6 +707,19 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "discord.avatarSyncBatch": 10, // 10 requêtes par minute au plus : bien sous les limites de Discord
   "discord.socialPromo": SOCIAL_PROMO_DEFAULT, // masquée par défaut
   "features.casino": true,
+  "casino.opensAt": null, // teaser « Bientôt » sans compte à rebours, comme avant le casino
+  "casino.newBadgeDays": 7,
+  "casino.minAccountAgeHours": 48, // comme les enchères et les cadeaux
+  "casino.coinflip.enabled": true,
+  "casino.coinflip.expiryHours": 24,
+  "casino.coinflip.maxOpenTables": 3,
+  "casino.coinflip.dailyLimit": 20,
+  "casino.coinflip.allowedRarities": [...RARITIES, ...VARIANT_RARITIES],
+  "casino.coinflip.lastCopyAllowed": true,
+  "casino.coinflip.lobbyPollSeconds": 20,
+  "casino.coinflip.tablePollSeconds": 5,
+  "casino.coinflip.feedSize": 20,
+  "casino.coinflip.feedMaxAgeHours": 72,
   "home.pullFeed.enabled": true,
   "home.pullFeed.minRarity": "LEGENDARY",
   "home.pullFeed.size": 20,
