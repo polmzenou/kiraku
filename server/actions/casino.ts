@@ -9,8 +9,10 @@ import type { OpenedCardView } from "@/lib/boosters/view";
 import { casinoAccess } from "@/lib/casino/phase";
 import { USERNAME_REGEX } from "@/lib/username";
 import { z } from "@/lib/zod";
+import { getAdmin } from "../admin";
 import { cardViews } from "../boosters/display";
 import {
+  adminCancelTableWith,
   cancelTableWith,
   CoinFlipError,
   createTableWith,
@@ -32,7 +34,7 @@ import { getCurrentUser } from "../user";
 // Le client n'envoie que des ids de cartes et de tables, une face et un pseudo : le serveur choisit
 // l'exemplaire, tire la graine et lance la pièce.
 
-export type CasinoActionError = CoinFlipErrorCode | "NO_SESSION" | "INVALID" | "RATE_LIMITED" | "UNAVAILABLE";
+export type CasinoActionError = CoinFlipErrorCode | "NO_SESSION" | "INVALID" | "RATE_LIMITED" | "UNAVAILABLE" | "FORBIDDEN";
 type Failure = { ok: false; error: CasinoActionError };
 
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
@@ -43,6 +45,7 @@ const createSchema = z
 const joinSchema = z.object({ flipId: id, cardId: id, confirmLastCopy: z.boolean() }).strict();
 const flipIdSchema = z.object({ flipId: id }).strict();
 const seenSchema = z.object({ flipIds: z.array(id).min(1).max(20) }).strict();
+const adminCancelSchema = z.object({ flipId: id, reason: z.string().trim().min(3).max(200) }).strict();
 const lobbySchema = z.object({ tier: z.number().int().min(-100_000).max(100_000).nullable(), cursor: id.nullable() }).strict();
 
 const MINUTE = 60;
@@ -200,4 +203,20 @@ export async function coinFlipTableAction(input: unknown): Promise<{ ok: true; t
   const table = await getTable(parsed.data.flipId, user.id, await getLocale());
   if (!table) return { ok: false, error: "NOT_FOUND" };
   return { ok: true, table };
+}
+
+/** Modération : retire une table ouverte avec un motif (journal) ; la carte revient, le créateur est prévenu. */
+export async function adminCancelCoinFlipAction(input: unknown): Promise<{ ok: true } | Failure> {
+  const admin = await getAdmin();
+  if (!admin) return { ok: false, error: "FORBIDDEN" };
+  const parsed = adminCancelSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (!(await rateLimit(`admin:${admin.id}`, { limit: 20, windowSeconds: MINUTE })).success) return { ok: false, error: "RATE_LIMITED" };
+  try {
+    await adminCancelTableWith(prisma, { adminId: admin.id, flipId: parsed.data.flipId, reason: parsed.data.reason }, { now: new Date() }, pushLater);
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    return failure(e);
+  }
 }

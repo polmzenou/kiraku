@@ -1286,7 +1286,8 @@
       "battleSandbox": "Battle sandbox",
       "news": "What's new",
       "universes": "Universes",
-      "showcases": "Showcases"
+      "showcases": "Showcases",
+      "casino": "Casino"
     },
     "boosters": {
       "title": "Booster settings",
@@ -3300,6 +3301,85 @@
       "keys": {
         "maxPerPlayer": "Showcases per player",
         "themes": "Showcase themes"
+      }
+    },
+    "casino": {
+      "title": "Casino",
+      "intro": "Casino opening and player-versus-player coin flip. Staked cards stay in escrow (CASINO status) while their table is open: as many cards at stake as open tables.",
+      "phases": {
+        "hidden": "Casino hidden from players (switch in /admin/fonctionnalites): the team sees a preview.",
+        "teaser": "Teaser shown to players, without an opening date.",
+        "open": "Casino open since {date}.",
+        "teaserDated": "Teaser shown to players: opens on {date}."
+      },
+      "preview": "View the casino (team preview before opening)",
+      "escrow": {
+        "title": "Escrow health",
+        "openTables": "Open tables",
+        "stakedCards": "Cards at stake",
+        "expiredOpen": "Expired, awaiting sweep",
+        "status": "Status",
+        "healthy": "Healthy",
+        "mismatch": "Mismatch",
+        "mismatchHint": "The number of cards at stake doesn't match the number of open tables. Run the sweep (/api/cron/casino), then check the server log."
+      },
+      "stats": {
+        "title": "Last 30 days",
+        "played": "Flips played",
+        "split": "表 heads · 裏 tails",
+        "creatorWins": "Creator wins",
+        "closed": "Withdrawn · expired",
+        "closedValue": "{cancelled} · {expired}",
+        "perDay": "Flips per day (last 14 days)",
+        "byRarity": "By pot rarity:"
+      },
+      "tables": {
+        "title": "Open tables",
+        "empty": "No open tables.",
+        "row": "{card} ({rarity}) · {name}",
+        "reservedFor": "reserved for {name}",
+        "expiresAt": "expires {date}"
+      },
+      "cancel": "Remove table",
+      "confirmCancel": "Remove and return the card",
+      "keep": "Keep",
+      "reason": "Reason for removal (log)",
+      "errors": {
+        "NOT_FOUND": "Table not found.",
+        "NOT_OPEN": "This table is no longer open.",
+        "RATE_LIMITED": "Too many actions. Try again in a minute.",
+        "INVALID": "Reason too short (at least 3 characters).",
+        "FORBIDDEN": "Access denied.",
+        "UNAVAILABLE": "Not possible right now.",
+        "unexpected": "Unexpected error. Try again."
+      },
+      "openingSection": "Opening",
+      "coinflipSection": "Coin flip",
+      "openNow": "Open now",
+      "clearDate": "Clear the date (teaser without countdown)",
+      "invalid": "Check the settings: at least one playable rarity, and values within their limits.",
+      "keys": {
+        "opensAt": "Opening date",
+        "newBadgeDays": "“New” badge and ceremony (days)",
+        "minAccountAgeHours": "Minimum account age (hours)",
+        "enabled": "Coin flip open",
+        "expiryHours": "Open table lifetime (hours)",
+        "maxOpenTables": "Open tables per player",
+        "dailyLimit": "Flips per day per player",
+        "allowedRarities": "Playable rarities",
+        "lastCopyAllowed": "Allow the last copy (after a warning)",
+        "lobbyPollSeconds": "Lobby refresh (seconds)",
+        "tablePollSeconds": "Table refresh (seconds)",
+        "feedSize": "Flips in the hall feed",
+        "feedMaxAgeHours": "Feed maximum age (hours)"
+      },
+      "hints": {
+        "opensAt": "In your browser's local time. Empty: teaser without a date; future: countdown; past: casino open.",
+        "newBadgeDays": "After opening: menu badge, ceremony and announcement. 0 turns all three off.",
+        "expiryHours": "Without a taker, the card goes back to its creator.",
+        "dailyLimit": "Tables set and tables taken, per game day.",
+        "feedMaxAgeHours": "Older flips leave the feed.",
+        "allowedRarities": "A table is taken with a card of the same tier (Mythic = BR, AR = VR, Gold = MR). A removed rarity can no longer be staked; its open tables stay until they expire."
       }
     }
   },

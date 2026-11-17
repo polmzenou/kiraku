@@ -1286,7 +1286,8 @@
       "battleSandbox": "Bac à sable combat",
       "news": "Nouveautés",
       "universes": "Univers",
-      "showcases": "Vitrines"
+      "showcases": "Vitrines",
+      "casino": "Casino"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -3300,6 +3301,85 @@
       "keys": {
         "maxPerPlayer": "Vitrines par joueur",
         "themes": "Thèmes de vitrine"
+      }
+    },
+    "casino": {
+      "title": "Casino",
+      "intro": "Ouverture du casino et pile ou face entre joueurs. Les cartes misées restent en séquestre (statut CASINO) tant que leur table est ouverte : autant de cartes en jeu que de tables ouvertes.",
+      "phases": {
+        "hidden": "Casino caché aux joueurs (interrupteur de /admin/fonctionnalites) : l'équipe le voit en aperçu.",
+        "teaser": "Teaser affiché aux joueurs, sans date d'ouverture.",
+        "open": "Casino ouvert depuis le {date}.",
+        "teaserDated": "Teaser affiché aux joueurs : ouverture le {date}."
+      },
+      "preview": "Voir le casino (aperçu de l'équipe avant l'ouverture)",
+      "escrow": {
+        "title": "Santé du séquestre",
+        "openTables": "Tables ouvertes",
+        "stakedCards": "Cartes en jeu",
+        "expiredOpen": "Échues, à balayer",
+        "status": "État",
+        "healthy": "Sain",
+        "mismatch": "Écart",
+        "mismatchHint": "Le nombre de cartes en jeu ne correspond pas au nombre de tables ouvertes. Lance le balayage (/api/cron/casino) puis vérifie le journal du serveur."
+      },
+      "stats": {
+        "title": "Statistiques sur 30 jours",
+        "played": "Lancers joués",
+        "split": "表 face · 裏 pile",
+        "creatorWins": "Victoires du créateur",
+        "closed": "Retirées · expirées",
+        "closedValue": "{cancelled} · {expired}",
+        "perDay": "Lancers par jour (14 derniers jours)",
+        "byRarity": "Par rareté du pot :"
+      },
+      "tables": {
+        "title": "Tables ouvertes",
+        "empty": "Aucune table ouverte.",
+        "row": "{card} ({rarity}) · {name}",
+        "reservedFor": "réservée à {name}",
+        "expiresAt": "expire le {date}"
+      },
+      "cancel": "Retirer la table",
+      "confirmCancel": "Retirer et rendre la carte",
+      "keep": "Garder",
+      "reason": "Motif du retrait (journal)",
+      "errors": {
+        "NOT_FOUND": "Table introuvable.",
+        "NOT_OPEN": "Cette table n'est plus ouverte.",
+        "RATE_LIMITED": "Trop d'actions. Réessaie dans une minute.",
+        "INVALID": "Motif trop court (3 caractères au moins).",
+        "FORBIDDEN": "Accès refusé.",
+        "UNAVAILABLE": "Action impossible pour le moment.",
+        "unexpected": "Erreur inattendue. Réessaie."
+      },
+      "openingSection": "Ouverture",
+      "coinflipSection": "Pile ou face",
+      "openNow": "Ouvrir maintenant",
+      "clearDate": "Retirer la date (teaser sans compte à rebours)",
+      "invalid": "Vérifie les réglages : au moins une rareté jouable, et des valeurs dans leurs limites.",
+      "keys": {
+        "opensAt": "Date d'ouverture",
+        "newBadgeDays": "Badge « Nouveau » et cérémonie (jours)",
+        "minAccountAgeHours": "Âge minimal du compte (heures)",
+        "enabled": "Pile ou face ouvert",
+        "expiryHours": "Durée d'une table ouverte (heures)",
+        "maxOpenTables": "Tables ouvertes par joueur",
+        "dailyLimit": "Lancers par jour et par joueur",
+        "allowedRarities": "Raretés jouables",
+        "lastCopyAllowed": "Autoriser le dernier exemplaire (après avertissement)",
+        "lobbyPollSeconds": "Rafraîchissement du salon (secondes)",
+        "tablePollSeconds": "Rafraîchissement d'une table (secondes)",
+        "feedSize": "Lancers dans le fil du hall",
+        "feedMaxAgeHours": "Âge maximal du fil (heures)"
+      },
+      "hints": {
+        "opensAt": "Dans l'heure locale de ton navigateur. Vide : teaser sans date ; future : compte à rebours ; passée : casino ouvert.",
+        "newBadgeDays": "Après l'ouverture : badge du menu, cérémonie et annonce. 0 coupe les trois.",
+        "expiryHours": "Sans preneur, la carte revient à son créateur.",
+        "dailyLimit": "Tables posées et tables relevées, par jour de jeu.",
+        "feedMaxAgeHours": "Les lancers plus anciens quittent le fil.",
+        "allowedRarities": "Une table se relève avec une carte du même palier (Mythique = BR, AR = VR, Gold = MR). Une rareté retirée ne se mise plus ; ses tables ouvertes restent jusqu'à leur échéance."
       }
     }
   },

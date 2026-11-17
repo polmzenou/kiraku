@@ -34,6 +34,7 @@ import {
   themeConditionRarities,
   type ShowcaseSettingKey,
 } from "@/lib/settings/showcase-form";
+import { CASINO_FORM_KEYS, casinoSettingsSchema, type CasinoFormKey } from "@/lib/settings/casino-form";
 import { changedSettingKeys, type SettingsOf } from "@/lib/settings/form";
 import { getAdmin } from "../admin";
 import { prisma } from "../db";
@@ -63,7 +64,7 @@ async function saveSettings<K extends SettingKey>(
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const next = parsed.data as SettingsOf<K>;
-  const rarityKeys = ["booster.rates", "collection.recycleValues", "battle.keywordsByRarity", "booster.slotFloors", "booster.goldenFloor", "gifts.allowedRarities", "trades.allowedRarities", "home.pullFeed.minRarity", "market.maxPriceByRarity", "booster.duplicateGuardRarities"];
+  const rarityKeys = ["booster.rates", "collection.recycleValues", "battle.keywordsByRarity", "booster.slotFloors", "booster.goldenFloor", "gifts.allowedRarities", "trades.allowedRarities", "home.pullFeed.minRarity", "market.maxPriceByRarity", "booster.duplicateGuardRarities", "casino.coinflip.allowedRarities"];
   if (keys.some((k) => rarityKeys.includes(k))) {
     const registry = await getRarities();
     for (const key of keys.filter((k) => rarityKeys.includes(k))) {
@@ -255,6 +256,11 @@ export async function updateGeneralSettings(input: unknown): Promise<UpdateSetti
 
 export async function updatePullFeedSettings(input: unknown): Promise<UpdateSettingsResult<PullFeedSettingKey>> {
   return saveSettings(PULL_FEED_SETTING_KEYS, pullFeedSettingsSchema, input);
+}
+
+/** Casino : ouverture, garde-fous et règles du pile ou face (raretés jouables vérifiées contre le registre). */
+export async function updateCasinoSettings(input: unknown): Promise<UpdateSettingsResult<CasinoFormKey>> {
+  return saveSettings(CASINO_FORM_KEYS, casinoSettingsSchema, input);
 }
 
 export async function updateEventGaugeSettings(input: unknown): Promise<UpdateSettingsResult<EventGaugeSettingKey>> {
