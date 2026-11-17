@@ -2229,7 +2229,8 @@
         "EVENT": "催 Event",
         "SEASON": "星 Season",
         "REFERRAL": "招 Referral",
-        "FRIENDS": "友 Friends"
+        "FRIENDS": "友 Friends",
+        "CASINO": "賭 Casino"
       },
       "itemTitle_fr": "Title (French)",
       "itemTitle_en": "Title (English, optional)",
@@ -5254,7 +5255,8 @@
       "sound": "Remembers whether sound is on.",
       "discordLater": "Remembers when you postponed the Discord invitation (\"Later\").",
       "news": "Remembers whether you collapsed the home page news panel.",
-      "speedInsights": "Vercel performance measurement (no cookies or persistent identifiers)"
+      "speedInsights": "Vercel performance measurement (no cookies or persistent identifiers)",
+      "casinoCeremony": "Remembers that you've already seen the casino opening ceremony on this device."
     },
     "kinds": {
       "cookie": "Cookie",
@@ -5564,6 +5566,21 @@
       "title": "A flip is waiting for you",
       "row": "<player>{name}</player> took your table ({card})",
       "watch": "Watch the flip"
+    },
+    "announcement": {
+      "tag": "New · Event",
+      "title": "The casino opens its doors",
+      "body": "First game: coin flip between players. One fuda against a fuda of the same tier.",
+      "enter": "Enter the casino",
+      "later": "Later"
+    },
+    "ceremony": {
+      "kicker": "Today",
+      "title": "The casino is open",
+      "body": "Set down a fuda or take another player's table.",
+      "enter": "Enter the casino",
+      "skip": "Skip",
+      "label": "Casino opening ceremony"
     }
   },
   "pwa": {

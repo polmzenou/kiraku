@@ -1,13 +1,14 @@
 "use server";
 
-import { ANNOUNCEMENTS, pendingAnnouncement } from "@/lib/welcome/release";
+import { ANNOUNCEMENT_KEYS, type AnnouncementKey } from "@/lib/welcome/release";
 import { z } from "@/lib/zod";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
 import { requireActiveUser } from "../user";
+import { pendingAnnouncementFor } from "../welcome";
 
 const userIdSchema = z.string().min(1).max(128);
-const keySchema = z.enum(ANNOUNCEMENTS.map((announcement) => announcement.key));
+const keySchema = z.enum(ANNOUNCEMENT_KEYS as [AnnouncementKey, ...AnnouncementKey[]]);
 
 /**
  * Réserve l'affichage d'une annonce avant ouverture : un seul onglet/appareil peut l'obtenir, une fois
@@ -19,7 +20,7 @@ export async function claimAnnouncementAction(displayedUserId: unknown, key: unk
   const parsedUser = userIdSchema.safeParse(displayedUserId);
   const parsedKey = keySchema.safeParse(key);
   if (!parsedUser.success || !parsedKey.success || user.id !== parsedUser.data) return false;
-  const pending = pendingAnnouncement(user.v1WelcomeSeenAt);
+  const pending = await pendingAnnouncementFor(user);
   if (pending?.key !== parsedKey.data) return false;
   if (!(await rateLimit(`v1-welcome:${user.id}`, { limit: 5, windowSeconds: 3600 })).success) return false;
 

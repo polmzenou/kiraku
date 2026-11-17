@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ user: vi.fn(), updateMany: vi.fn(), rateLimit: vi.fn() }));
+const mocks = vi.hoisted(() => ({ user: vi.fn(), updateMany: vi.fn(), rateLimit: vi.fn(), casinoRules: vi.fn() }));
+vi.mock("server-only", () => ({}));
 vi.mock("../user", () => ({ requireActiveUser: mocks.user }));
 vi.mock("../db", () => ({ prisma: { user: { updateMany: mocks.updateMany } } }));
 vi.mock("../ratelimit", () => ({ rateLimit: mocks.rateLimit }));
+vi.mock("../casino/queries", () => ({ getCasinoRules: mocks.casinoRules }));
+import { DEFAULT_CASINO_RULES } from "@/lib/casino/rules";
 import { ANNOUNCEMENTS } from "@/lib/welcome/release";
 import { claimAnnouncementAction } from "./welcome";
 
@@ -14,6 +17,7 @@ beforeEach(() => {
   mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: null });
   mocks.rateLimit.mockResolvedValue({ success: true });
   mocks.updateMany.mockResolvedValue({ count: 1 });
+  mocks.casinoRules.mockResolvedValue(DEFAULT_CASINO_RULES);
 });
 
 describe("annonces uniques par compte", () => {
@@ -102,5 +106,36 @@ describe("annonces uniques par compte", () => {
     mocks.rateLimit.mockResolvedValue({ success: false });
     expect(await claimAnnouncementAction("player", "v2")).toBe(false);
     expect(mocks.updateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("annonce de l'ouverture du casino", () => {
+  const DAY = 86_400_000;
+  const opened = (daysAgo: number) => ({ ...DEFAULT_CASINO_RULES, opensAt: Date.now() - daysAgo * DAY });
+  const veteran = { id: "player", isGuest: false, createdAt: new Date(Date.now() - 60 * DAY), v1WelcomeSeenAt: v25.at };
+
+  it("présentée une fois aux comptes inscrits avant l'ouverture, pendant la fenêtre de lancement", async () => {
+    mocks.casinoRules.mockResolvedValue(opened(1));
+    mocks.user.mockResolvedValue(veteran);
+    expect(await claimAnnouncementAction("player", "casino")).toBe(true);
+    expect(mocks.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { v1WelcomeSeenAt: new Date(opened(1).opensAt!) } }));
+  });
+
+  it("jamais aux invités, ni aux comptes créés après l'ouverture, ni après la fenêtre", async () => {
+    mocks.casinoRules.mockResolvedValue(opened(1));
+    mocks.user.mockResolvedValue({ ...veteran, isGuest: true });
+    expect(await claimAnnouncementAction("player", "casino")).toBe(false);
+    mocks.user.mockResolvedValue({ ...veteran, createdAt: new Date() });
+    expect(await claimAnnouncementAction("player", "casino")).toBe(false);
+    mocks.casinoRules.mockResolvedValue(opened(30));
+    mocks.user.mockResolvedValue(veteran);
+    expect(await claimAnnouncementAction("player", "casino")).toBe(false);
+    expect(mocks.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("pas avant l'ouverture", async () => {
+    mocks.casinoRules.mockResolvedValue({ ...DEFAULT_CASINO_RULES, opensAt: Date.now() + DAY });
+    mocks.user.mockResolvedValue(veteran);
+    expect(await claimAnnouncementAction("player", "casino")).toBe(false);
   });
 });

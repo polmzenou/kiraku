@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { CasinoHall } from "@/components/casino/CasinoHall";
+import { CeremonyGate } from "@/components/casino/CeremonyGate";
 import { CasinoTeaser } from "@/components/casino/CasinoTeaser";
 import { PreviewBanner } from "@/components/casino/PreviewBanner";
 import { PageShell } from "@/components/PageShell";
@@ -37,6 +38,8 @@ export default async function CasinoPage() {
     <PageShell>
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
         {view.access.preview && <PreviewBanner phase={view.access.phase} />}
+        {/* Cérémonie d'ouverture : une fois par appareil, pendant les jours qui suivent l'ouverture */}
+        <CeremonyGate due={view.access.phase === "open" && view.launching} />
         <CasinoHall pulse={pulse} feed={feed} feedRefreshSeconds={coinflip.lobbyPollSeconds} serverNow={view.serverNow} isNew={view.launching} />
       </div>
     </PageShell>

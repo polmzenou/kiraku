@@ -506,3 +506,57 @@
   box-shadow: inset 0 0 0 1px #4a4036, 0 20px 50px rgb(0 0 0 / 0.55);
   opacity: 0;
 }
+
+/* ---------- Pièce qui tourne en boucle (annonce de l'ouverture) ---------- */
+
+.cf-mspin {
+  width: 96px;
+  height: 96px;
+  perspective: 520px;
+}
+
+.cf-mspin-coin {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation: cf-spin-y 2.6s linear infinite;
+}
+
+.cf-mspin-coin > span {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: center / 100% 100% no-repeat;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.cf-mspin-coin > .cf-mspin-front {
+  background-image: url(/casino/coin/omote-sm-v1.webp);
+  transform: translateZ(3px);
+}
+
+.cf-mspin-coin > .cf-mspin-back {
+  background-image: url(/casino/coin/ura-sm-v1.webp);
+  transform: rotateY(180deg) translateZ(3px);
+}
+
+@keyframes cf-spin-y {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-mspin-coin {
+    animation: none;
+  }
+}
+
+:root[data-motion="reduced"] .cf-mspin-coin {
+  animation: none;
+}

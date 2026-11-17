@@ -14,14 +14,25 @@ export const ANNOUNCEMENTS = [
   { key: "v25", at: new Date("2026-10-30T12:00:00Z") },
 ] as const;
 
-export type AnnouncementKey = (typeof ANNOUNCEMENTS)[number]["key"];
+/**
+ * Annonces datées par un réglage plutôt que par le code : l'ouverture du casino (casino.opensAt). Le serveur
+ * l'ajoute à la liste pour les comptes concernés (lib/casino/phase.ts, announcementDue).
+ */
+export const DYNAMIC_ANNOUNCEMENT_KEYS = ["casino"] as const;
+
+export type AnnouncementKey = (typeof ANNOUNCEMENTS)[number]["key"] | (typeof DYNAMIC_ANNOUNCEMENT_KEYS)[number];
 export type Announcement = { key: AnnouncementKey; at: Date };
+
+/** Toutes les clés d'annonce (validation de la réservation d'affichage). */
+export const ANNOUNCEMENT_KEYS: readonly AnnouncementKey[] = [...ANNOUNCEMENTS.map((a) => a.key), ...DYNAMIC_ANNOUNCEMENT_KEYS];
 
 /**
  * Prochaine annonce à présenter, la plus ancienne non vue d'abord. Un compte qui n'en a jamais vu
- * aucune ne reçoit que la dernière : les précédentes ne le concernent plus.
+ * aucune ne reçoit que la dernière : les précédentes ne le concernent plus. Une annonce datée après
+ * `now` attend son heure : elle ne s'affiche pas en avance et ne fait pas sauter celles d'avant.
  */
-export function pendingAnnouncement(seenAt: Date | null, list: readonly Announcement[] = ANNOUNCEMENTS): Announcement | null {
-  if (seenAt === null) return list.at(-1) ?? null;
-  return list.find((announcement) => seenAt < announcement.at) ?? null;
+export function pendingAnnouncement(seenAt: Date | null, now: Date, list: readonly Announcement[] = ANNOUNCEMENTS): Announcement | null {
+  const available = [...list].filter((a) => a.at <= now).sort((a, b) => a.at.getTime() - b.at.getTime());
+  if (seenAt === null) return available.at(-1) ?? null;
+  return available.find((announcement) => seenAt < announcement.at) ?? null;
 }

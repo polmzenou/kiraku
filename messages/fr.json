@@ -2229,7 +2229,8 @@
         "EVENT": "催 Événement",
         "SEASON": "星 Saison",
         "REFERRAL": "招 Parrainage",
-        "FRIENDS": "友 Amis"
+        "FRIENDS": "友 Amis",
+        "CASINO": "賭 Casino"
       },
       "itemTitle_fr": "Titre (français)",
       "itemTitle_en": "Titre (anglais, facultatif)",
@@ -5254,7 +5255,8 @@
       "sound": "Retient si le son est activé.",
       "discordLater": "Retient quand tu as repoussé l'invitation Discord (« Plus tard »).",
       "news": "Retient si tu as réduit l'encart des nouveautés de l'accueil.",
-      "speedInsights": "Mesure des performances Vercel (sans cookie ni identifiant persistant)"
+      "speedInsights": "Mesure des performances Vercel (sans cookie ni identifiant persistant)",
+      "casinoCeremony": "Retient que tu as déjà vu la cérémonie d'ouverture du casino sur cet appareil."
     },
     "kinds": {
       "cookie": "Cookie",
@@ -5564,6 +5566,21 @@
       "title": "Un lancer t'attend",
       "row": "<player>{name}</player> a relevé ta table ({card})",
       "watch": "Voir le lancer"
+    },
+    "announcement": {
+      "tag": "Nouveau · Événement",
+      "title": "Le casino ouvre ses portes",
+      "body": "Premier jeu : pile ou face entre joueurs. Une fuda contre une fuda du même palier.",
+      "enter": "Entrer au casino",
+      "later": "Plus tard"
+    },
+    "ceremony": {
+      "kicker": "Aujourd'hui",
+      "title": "Le casino est ouvert",
+      "body": "Pose une fuda ou relève la table d'un autre joueur.",
+      "enter": "Entrer au casino",
+      "skip": "Passer",
+      "label": "Cérémonie d'ouverture du casino"
     }
   },
   "pwa": {
