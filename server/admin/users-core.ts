@@ -181,7 +181,7 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
           await consumeWishlist(tx, userId, [input.cardId]);
           await giftFromTeam(tx, { kind: "CARD", userId, adminId, cardId: input.cardId, quantity: input.amount, message: input.message, now });
         } else {
-          // On conserve les exemplaires en vitrine, en combat (status BATTLE), en vente ou liés à l'historique d'une vente.
+          // On conserve les exemplaires en vitrine, en combat (BATTLE), misés au casino (CASINO), en vente ou liés à l'historique d'une vente.
           const free = await tx.userCard.findMany({ where: {
             ownerId: userId, cardId: input.cardId, status: "COLLECTION", showcaseItems: { none: {} }, auctions: { none: {} },
           }, orderBy: [{ obtainedAt: "desc" }, { id: "desc" }], take: input.amount, select: { id: true } });

@@ -68,10 +68,12 @@ describe("engagement et issue", () => {
     expect(sides.size).toBe(2);
   });
 
-  it("les deux faces sortent à parts égales sur 10 000 graines (entre 48,5 et 51,5 %)", async () => {
+  // HMAC de node:crypto (équivalent prouvé par les vecteurs ci-dessus) : 10 000 appels Web Crypto dépassent
+  // le délai d'un test sur une machine chargée. Ce qui est testé ici, c'est la lecture du premier octet.
+  it("les deux faces sortent à parts égales sur 10 000 graines (entre 48,5 et 51,5 %)", () => {
     let omote = 0;
     const n = 10_000;
-    for (let i = 0; i < n; i++) if ((await flipOutcome(seedAt(i), TABLE)) === "OMOTE") omote += 1;
+    for (let i = 0; i < n; i++) if (sideFromDigest(reference(seedAt(i), TABLE).digest) === "OMOTE") omote += 1;
     expect(omote / n).toBeGreaterThan(0.485);
     expect(omote / n).toBeLessThan(0.515);
   });

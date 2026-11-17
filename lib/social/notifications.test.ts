@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatBadge, parseGiftPayload } from "./notifications";
+import { formatBadge, parseCoinFlipPayload, parseGiftPayload } from "./notifications";
 
 describe("formatBadge", () => {
   it("cache la pastille à zéro et plafonne à 9+", () => {
@@ -17,5 +17,19 @@ describe("parseGiftPayload", () => {
     expect(parseGiftPayload({ kind: "CARD", cardId: "c1", extra: "<b>" })).toEqual({ kind: "CARD", cardId: "c1" });
     expect(parseGiftPayload({ kind: "CARD" })).toBeNull();
     expect(parseGiftPayload("x")).toBeNull();
+  });
+});
+
+describe("parseCoinFlipPayload", () => {
+  it("garde la table, la carte et une raison connue", () => {
+    expect(parseCoinFlipPayload({ flipId: "t1", cardId: "c1", reason: "EXPIRED" })).toEqual({ flipId: "t1", cardId: "c1", reason: "EXPIRED" });
+    expect(parseCoinFlipPayload({ flipId: "t1", cardId: "c1" })).toEqual({ flipId: "t1", cardId: "c1", reason: null });
+    expect(parseCoinFlipPayload({ flipId: "t1", cardId: "c1", reason: "WON" })).toEqual({ flipId: "t1", cardId: "c1", reason: null });
+  });
+
+  it("refuse une forme inconnue", () => {
+    expect(parseCoinFlipPayload(null)).toBeNull();
+    expect(parseCoinFlipPayload({ flipId: "t 1", cardId: "c1" })).toBeNull();
+    expect(parseCoinFlipPayload({ flipId: "t1" })).toBeNull();
   });
 });

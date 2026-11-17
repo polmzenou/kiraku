@@ -195,6 +195,10 @@ model User {
   chatSent       ChatMessage[]  @relation("chatSender")
   chatReceived   ChatMessage[]  @relation("chatRecipient")
 
+  coinFlipsCreated  CoinFlip[] @relation("coinFlipCreator")
+  coinFlipsJoined   CoinFlip[] @relation("coinFlipOpponent")
+  coinFlipsReserved CoinFlip[] @relation("coinFlipReserved")
+
   @@index([rankPoints])
   @@index([ambassadorSince])
   @@index([isGuest, createdAt]) // purge des invités inactifs (cron des comptes)
@@ -404,6 +408,8 @@ model Card {
   listingOffers    ListingOffer[]
   abilityPurchases AbilityPurchase[]
   loadouts         CardLoadout[]
+  coinFlipsStaked  CoinFlip[]         @relation("coinFlipCreatorCard")
+  coinFlipsMatched CoinFlip[]         @relation("coinFlipOpponentCard")
 
   @@index([rarity, rank], map: "Card_rarityKey_rank_idx")
   @@index([legacyRarity, rank], map: "Card_rarity_rank_idx")
@@ -447,6 +453,7 @@ enum CardStatus {
   COLLECTION
   AUCTION
   BATTLE
+  CASINO // misée sur une table de pile ou face ouverte (séquestre) : ni vendue, ni échangée, ni recyclée
 }
 
 // Exemplaire possédé d'une carte : c'est lui qui se vend, se met en vitrine et combat
@@ -793,6 +800,9 @@ enum NotificationType {
   LISTING_DECLINED // ton offre a été refusée (ou l'annonce s'est fermée sans elle)
   TEAM_GIFT // cartes ou boosters ajoutés par l'équipe depuis la fiche du joueur (TeamGift)
   AMBASSADOR_GRANTED // l'équipe a donné le rôle Ambassadeur
+  COINFLIP_INVITE // une table de pile ou face t'est réservée (ami ou revanche)
+  COINFLIP_RESOLVED // quelqu'un a relevé ta table : le lancer t'attend (l'issue n'est pas dévoilée)
+  COINFLIP_RETURNED // table retirée, déclinée ou expirée : la carte misée est revenue
 }
 
 // Notifications en base ; le texte est rendu à la lecture (pseudo à jour, langue du lecteur)
@@ -1150,6 +1160,8 @@ model DiscordPost {
   listing       TradeListing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
   seasonId      String? @unique
   season        Season? @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  coinFlipId    String? @unique
+  coinFlip      CoinFlip? @relation(fields: [coinFlipId], references: [id], onDelete: Cascade)
   attempts      Int      @default(0)
   nextAttemptAt DateTime? @default(now())
   leaseId       String?
@@ -1694,4 +1706,62 @@ model PollVote {
 
   @@id([userId, poll])
   @@index([poll, answer]) // décompte du tableau de bord admin
+}
+
+// --- Casino : pile ou face (表 / 裏) ---
+
+enum CoinSide {
+  OMOTE // 表, face
+  URA // 裏, pile
+}
+
+enum CoinFlipStatus {
+  OPEN // au salon, en attente d'un adversaire
+  DONE // relevée et lancée : le gagnant a les deux cartes
+  CANCELLED // retirée par son créateur ou l'admin, ou déclinée par l'invité : carte rendue
+  EXPIRED // personne ne l'a relevée à temps : carte rendue
+}
+
+// Table de pile ou face : une fuda misée contre une fuda du même palier (sortOrder du registre).
+// L'exemplaire misé passe en CASINO (séquestre) tant que la table est ouverte. La graine est tirée à
+// l'ouverture et seule son empreinte est publique jusqu'au lancer (lib/casino/fairness.ts).
+// Les ids d'exemplaires n'ont pas de clé étrangère (comme Gift.userCardId) : l'historique survit au recyclage.
+model CoinFlip {
+  id                 String         @id @default(cuid())
+  status             CoinFlipStatus @default(OPEN)
+  creatorId          String
+  creator            User           @relation("coinFlipCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorUserCardId  String
+  creatorCardId      String
+  creatorCard        Card           @relation("coinFlipCreatorCard", fields: [creatorCardId], references: [id], onDelete: Cascade)
+  creatorRarity      String // rareté figée à la pose
+  creatorSide        CoinSide
+  tierOrder          Int // palier figé à la pose : une fuda du même rang relève la table
+  reservedForId      String? // table réservée (ami ou revanche) ; null = ouverte à tous
+  reservedFor        User?          @relation("coinFlipReserved", fields: [reservedForId], references: [id], onDelete: SetNull)
+  opponentId         String?
+  opponent           User?          @relation("coinFlipOpponent", fields: [opponentId], references: [id], onDelete: Cascade)
+  opponentUserCardId String?
+  opponentCardId     String?
+  opponentCard       Card?          @relation("coinFlipOpponentCard", fields: [opponentCardId], references: [id], onDelete: Cascade)
+  opponentRarity     String?
+  seed               String         @db.Char(64) // secrète jusqu'au lancer (hexadécimal)
+  seedHash           String         @db.Char(64) // SHA-256 de la graine, public dès l'ouverture
+  result             CoinSide?
+  winnerId           String? // créateur ou adversaire (CHECK), sans clé étrangère
+  winnerNew          Boolean        @default(false) // la carte gagnée était nouvelle pour le gagnant (badge du résultat)
+  expiresAt          DateTime
+  createdAt          DateTime       @default(now())
+  resolvedAt         DateTime? // lancée, retirée ou expirée
+  creatorSeenAt      DateTime? // le créateur a vu le lancer rejoué à son retour
+  discordPost        DiscordPost?
+
+  @@index([status, tierOrder, createdAt]) // salon, filtre par palier
+  @@index([status, expiresAt]) // balayage des tables expirées
+  @@index([status, resolvedAt]) // fil des derniers lancers, jauge
+  @@index([creatorId, createdAt]) // mes tables, quota du jour
+  @@index([opponentId, resolvedAt]) // historique, quota du jour
+  @@index([reservedForId, status]) // tables qui me sont réservées
+  @@index([creatorCardId])
+  @@index([opponentCardId])
 }

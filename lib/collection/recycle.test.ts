@@ -45,6 +45,15 @@ describe("recyclage des doublons", () => {
     expect(owned.filter((c) => c.status !== "COLLECTION").some((c) => plan.ids.includes(c.id))).toBe(false);
   });
 
+  it("ne recycle jamais un exemplaire misé au casino, ni ne le compte comme gardé", () => {
+    const owned = [...copies("a", "EPIC", 1, "CASINO"), ...copies("a", "EPIC", 1)];
+    expect(planRecycle(owned, { values }).ids).toEqual([]);
+    const two = [...copies("b", "EPIC", 1, "CASINO"), ...copies("b", "EPIC", 2)];
+    const plan = planRecycle(two, { values });
+    expect(plan.ids).toHaveLength(1);
+    expect(plan.ids).not.toContain(two[0].id);
+  });
+
   it("respecte la rareté maximale", () => {
     const owned = [...copies("a", "COMMON", 3), ...copies("b", "EPIC", 3), ...copies("c", "LEGENDARY", 3)];
     const plan = planRecycle(owned, { values, maxRarity: "EPIC" });

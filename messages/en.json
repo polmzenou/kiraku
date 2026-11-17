@@ -3410,6 +3410,7 @@
       "inCollection": "{count, plural, =0 {None in collection} one {# in collection} other {# in collection}}",
       "inAuction": "{count, plural, one {# on sale} other {# on sale}}",
       "inBattle": "{count, plural, one {# in battle} other {# in battle}}",
+      "inCasino": "{count, plural, one {# at stake in the casino} other {# at stake in the casino}}",
       "firstObtained": "First obtained: {date}",
       "recycleTitle": "Recycle duplicates",
       "unitValue": "{zeni, number} Zeni per duplicate.",
@@ -4074,7 +4075,12 @@
     "sealedDivin": "{name} opened your divine booster: {card} ({rarity}).",
     "sealedSpared": "Your apocalyptic booster spared {name}: {card} ({rarity})!",
     "sealedRuined": "Your apocalyptic booster blew up in {name}'s face.",
-    "ambassadorGranted": "The Kiraku team made you an Ambassador! The green badge, frame and color are yours, and a booster pack awaits you every week."
+    "ambassadorGranted": "The Kiraku team made you an Ambassador! The green badge, frame and color are yours, and a booster pack awaits you every week.",
+    "coinFlipInvite": "{name} set a coin flip table aside for you: their card {card} is waiting.",
+    "coinFlipResolved": "{name} took your table ({card}): the coin has been flipped, come and see how it landed.",
+    "coinFlipExpired": "Nobody took your coin flip table: {card} is back in your collection.",
+    "coinFlipDeclined": "{name} declined your coin flip table: {card} is back in your collection.",
+    "coinFlipAdmin": "The Kiraku team removed your coin flip table: {card} is back in your collection."
   },
   "push": {
     "title": "Notifications on this device",

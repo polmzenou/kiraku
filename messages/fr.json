@@ -3410,6 +3410,7 @@
       "inCollection": "{count, plural, =0 {Aucun en collection} one {# en collection} other {# en collection}}",
       "inAuction": "{count, plural, one {# en vente} other {# en vente}}",
       "inBattle": "{count, plural, one {# en combat} other {# en combat}}",
+      "inCasino": "{count, plural, one {# en jeu au casino} other {# en jeu au casino}}",
       "firstObtained": "Première obtention : {date}",
       "recycleTitle": "Recycler les doublons",
       "unitValue": "{zeni, number} Zeni par doublon.",
@@ -4074,7 +4075,12 @@
     "sealedDivin": "{name} a ouvert ton booster divin : {card} ({rarity}).",
     "sealedSpared": "Ton booster apocalyptique a épargné {name} : {card} ({rarity}) !",
     "sealedRuined": "Ton booster apocalyptique a explosé au visage de {name}.",
-    "ambassadorGranted": "L'équipe Kiraku te nomme Ambassadeur ! Badge, cadre et couleur verts sont à toi, et un pack de boosters t'attend chaque semaine."
+    "ambassadorGranted": "L'équipe Kiraku te nomme Ambassadeur ! Badge, cadre et couleur verts sont à toi, et un pack de boosters t'attend chaque semaine.",
+    "coinFlipInvite": "{name} t'a réservé une table de pile ou face : sa carte {card} t'attend.",
+    "coinFlipResolved": "{name} a relevé ta table ({card}) : la pièce a été lancée, viens voir comment elle est tombée.",
+    "coinFlipExpired": "Personne n'a relevé ta table de pile ou face : {card} est revenue dans ta collection.",
+    "coinFlipDeclined": "{name} a décliné ta table de pile ou face : {card} est revenue dans ta collection.",
+    "coinFlipAdmin": "L'équipe Kiraku a retiré ta table de pile ou face : {card} est revenue dans ta collection."
   },
   "push": {
     "title": "Notifications sur ce téléphone",
