@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
+import type { ReactNode } from "react";
 import { Link } from "@/i18n/navigation";
 import { CASINO_MEDIA } from "@/lib/casino/media";
 import type { FeedEntry } from "@/server/casino/queries";
@@ -16,6 +17,7 @@ export async function CasinoHall({
   feedRefreshSeconds,
   serverNow,
   isNew,
+  gauge,
 }: {
   pulse: { openTables: number; flipsToday: number };
   feed: FeedEntry[];
@@ -23,6 +25,8 @@ export async function CasinoHall({
   serverNow: number;
   /** Pendant les jours qui suivent l'ouverture : étiquette « Nouveau » sur le jeu. */
   isNew: boolean;
+  /** Jauge communautaire des lancers (inauguration), si elle est allumée. */
+  gauge?: ReactNode;
 }) {
   const t = await getTranslations("casino");
   return (
@@ -71,6 +75,8 @@ export async function CasinoHall({
           </ul>
         </div>
       </section>
+
+      {gauge}
 
       <section className="flex flex-col gap-3">
         <SectionTitle title={t("hall.feedTitle")} />

@@ -3113,14 +3113,24 @@
         "endsAt": "Event end",
         "goal": "Goal (boosters)",
         "refreshSeconds": "Refresh (seconds)",
-        "cacheSeconds": "Count cache (seconds)"
+        "cacheSeconds": "Count cache (seconds)",
+        "metric": "What the gauge counts",
+        "rewardLotId": "Reward for everyone"
       },
       "hints": {
         "date": "In your browser's local time.",
         "goal": "Can be changed during the event: the gauge adjusts right away.",
         "refreshSeconds": "How often a player's page asks for the count again.",
-        "cacheSeconds": "The count is recalculated at most once per period, however many players there are."
-      }
+        "cacheSeconds": "The count is recalculated at most once per period, however many players there are.",
+        "metric": "Flips: coin flip tables played during the window (casino opening).",
+        "rewardLotId": "Shown under the gauge. Goal reached: send this lot to everyone from the lots page (never paid twice to the same player)."
+      },
+      "metrics": {
+        "BOOSTERS": "Boosters opened",
+        "COINFLIPS": "Coin flips"
+      },
+      "noReward": "No reward shown",
+      "sendReward": "Send the reward"
     },
     "showcaseEvent": {
       "title": "Showcase event",
@@ -4454,7 +4464,16 @@
       "percent": "{percent}%",
       "progressLabel": "Event gauge progress",
       "ctaSignup": "Sign up to fill the gauge",
-      "ctaInvite": "Invite friends to fill the gauge"
+      "ctaInvite": "Invite friends to fill the gauge",
+      "reward": "Reward for everyone: {reward}",
+      "coinflips": {
+        "title": "Casino opening",
+        "rules": "All together: every coin flip played raises the gauge. Shared goal: {goal} flips.",
+        "endedReached": "Goal reached, well done everyone: {count} flips played!",
+        "endedMissed": "The opening is over: {count} flips played out of {goal}. Thanks, everyone!",
+        "progress": "{count} / {goal} flips",
+        "cta": "Play coin flip"
+      }
     },
     "showcaseEvent": {
       "title": "Showcase event",

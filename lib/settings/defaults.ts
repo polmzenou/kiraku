@@ -436,6 +436,10 @@ export const SETTING_SCHEMAS = {
   "home.eventGauge.refreshSeconds": z.number().int().min(5).max(600),
   // Durée de cache du compte, partagé par tous les joueurs
   "home.eventGauge.cacheSeconds": z.number().int().min(5).max(600),
+  // Ce que la jauge compte : boosters ouverts, ou lancers de pile ou face joués (inauguration du casino)
+  "home.eventGauge.metric": z.enum(["BOOSTERS", "COINFLIPS"]),
+  // Lot promis à tous si l'objectif est atteint (affiché sous la jauge ; l'envoi se fait depuis /admin/lots)
+  "home.eventGauge.rewardLotId": lotRef,
   // Encart « Nouveautés » en haut de l'accueil : textes fr/en, nouveautés et liens (/admin/nouveautes)
   "home.news": newsSchema,
   // Conformité (étape 10) : version des CGU que tout compte inscrit doit avoir acceptée
@@ -733,6 +737,8 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "home.eventGauge.goal": 20_000,
   "home.eventGauge.refreshSeconds": 60,
   "home.eventGauge.cacheSeconds": 30,
+  "home.eventGauge.metric": "BOOSTERS",
+  "home.eventGauge.rewardLotId": null,
   "home.news": NEWS_DEFAULT, // récapitulatif de la v2.5, allumé
   "legal.termsRequiredVersion": 1,
   "account.deletionGraceDays": 30, // anonymisation sous 30 jours (plan, « Pages légales, RGPD »)

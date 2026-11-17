@@ -264,6 +264,14 @@ export async function updateCasinoSettings(input: unknown): Promise<UpdateSettin
 }
 
 export async function updateEventGaugeSettings(input: unknown): Promise<UpdateSettingsResult<EventGaugeSettingKey>> {
+  const admin = await getAdmin();
+  if (!admin) return { ok: false, error: "FORBIDDEN" };
+  const parsed = eventGaugeSettingsSchema.safeParse(input);
+  // Limité avant la vérification du lot en base (bucket à part de celui de l'écriture)
+  if (!(await rateLimit(`admin-check:${admin.id}`, { limit: 20, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
+  // La récompense promise doit exister : sinon la jauge afficherait un lot introuvable
+  const lotId = parsed.success ? parsed.data["home.eventGauge.rewardLotId"] : null;
+  if (lotId && !(await prisma.lot.findUnique({ where: { id: lotId }, select: { id: true } }))) return { ok: false, error: "INVALID" };
   return saveSettings(EVENT_GAUGE_SETTING_KEYS, eventGaugeSettingsSchema, input);
 }
 

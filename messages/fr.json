@@ -3113,14 +3113,24 @@
         "endsAt": "Fin de l'événement",
         "goal": "Objectif (boosters)",
         "refreshSeconds": "Rafraîchissement (secondes)",
-        "cacheSeconds": "Cache du compte (secondes)"
+        "cacheSeconds": "Cache du compte (secondes)",
+        "metric": "Ce que la jauge compte",
+        "rewardLotId": "Récompense pour tous"
       },
       "hints": {
         "date": "Dans l'heure locale de ton navigateur.",
         "goal": "Modifiable pendant l'événement : la jauge s'ajuste tout de suite.",
         "refreshSeconds": "Fréquence à laquelle la page d'un joueur redemande le compte.",
-        "cacheSeconds": "Le compte est recalculé au plus une fois par durée, quel que soit le nombre de joueurs."
-      }
+        "cacheSeconds": "Le compte est recalculé au plus une fois par durée, quel que soit le nombre de joueurs.",
+        "metric": "Lancers : tables de pile ou face jouées pendant la fenêtre (inauguration du casino).",
+        "rewardLotId": "Affichée sous la jauge. Objectif atteint : envoie ce lot à tous depuis la page des lots (jamais versé deux fois au même joueur)."
+      },
+      "metrics": {
+        "BOOSTERS": "Boosters ouverts",
+        "COINFLIPS": "Lancers de pile ou face"
+      },
+      "noReward": "Aucune récompense affichée",
+      "sendReward": "Envoyer la récompense"
     },
     "showcaseEvent": {
       "title": "Event vitrines",
@@ -4454,7 +4464,16 @@
       "percent": "{percent} %",
       "progressLabel": "Progression de la jauge de l'événement",
       "ctaSignup": "Inscris-toi pour faire monter la jauge",
-      "ctaInvite": "Invite des amis pour remplir la jauge"
+      "ctaInvite": "Invite des amis pour remplir la jauge",
+      "reward": "Récompense pour tous : {reward}",
+      "coinflips": {
+        "title": "Inauguration du casino",
+        "rules": "Tous ensemble : chaque lancer de pile ou face joué fait monter la jauge. Objectif commun : {goal} lancers.",
+        "endedReached": "Objectif atteint, bravo à tous : {count} lancers joués !",
+        "endedMissed": "Fin de l'inauguration : {count} lancers joués sur {goal}. Merci à tous !",
+        "progress": "{count} / {goal} lancers",
+        "cta": "Jouer au pile ou face"
+      }
     },
     "showcaseEvent": {
       "title": "Event vitrines",

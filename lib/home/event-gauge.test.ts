@@ -44,3 +44,13 @@ describe("eventGaugeView", () => {
     expect(eventGaugeView({ ...eventWindow, goal: 0, count: 0 }, startsAt)).toBeNull();
   });
 });
+
+describe("jauge des lancers", () => {
+  it("compte des boosters par défaut, sans récompense", () => {
+    expect(eventGaugeView({ ...eventWindow, count: 1 }, startsAt)).toMatchObject({ metric: "BOOSTERS", reward: null });
+  });
+
+  it("garde ce que compte la jauge et la récompense promise", () => {
+    expect(eventGaugeView({ ...eventWindow, count: 1, metric: "COINFLIPS", reward: "Booster" }, startsAt)).toMatchObject({ metric: "COINFLIPS", reward: "Booster" });
+  });
+});

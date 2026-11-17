@@ -5,7 +5,8 @@ import { useState } from "react";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { EVENT_GAUGE_SETTING_KEYS, eventGaugeSettingsSchema, type EventGaugeSettings } from "@/lib/settings/event-gauge-form";
 import { updateEventGaugeSettings } from "@/server/actions/admin-settings";
-import { Field, inputClass, NumberField, Toggle } from "./fields";
+import { Link } from "@/i18n/navigation";
+import { Field, inputClass, NumberField, SelectField, Toggle } from "./fields";
 import { SettingsSaveBar } from "./SettingsSaveBar";
 
 /** Date ISO → valeur d'un champ datetime-local (heure locale du navigateur de l'admin). */
@@ -27,8 +28,18 @@ const LIMITS: Record<NumberKey, [number, number]> = {
 type Short<K> = K extends `home.eventGauge.${infer S}` ? S : never;
 const short = <K extends keyof EventGaugeSettings>(key: K) => key.slice("home.eventGauge.".length) as Short<K>;
 
-/** Réglages de la jauge communautaire de l'accueil. */
-export function EventGaugeSettingsForm({ initial }: { initial: EventGaugeSettings }) {
+/** Réglages de la jauge communautaire de l'accueil (boosters ou lancers du casino, récompense pour tous). */
+export function EventGaugeSettingsForm({
+  initial,
+  lots,
+  reached,
+}: {
+  initial: EventGaugeSettings;
+  /** Lots proposés comme récompense pour tous. */
+  lots: { id: string; name: string; active: boolean }[];
+  /** Objectif atteint : lien vers l'envoi de la récompense. */
+  reached: boolean;
+}) {
   const t = useTranslations("admin.eventGauge");
   const [draft, setDraft] = useState(initial);
   const valid = eventGaugeSettingsSchema.safeParse(draft).success;
@@ -74,12 +85,31 @@ export function EventGaugeSettingsForm({ initial }: { initial: EventGaugeSetting
           checked={draft["home.eventGauge.enabled"]}
           onChange={(v) => setDraft((d) => ({ ...d, "home.eventGauge.enabled": v }))}
         />
+        <SelectField
+          label={label("home.eventGauge.metric")}
+          hint={t("hints.metric")}
+          value={draft["home.eventGauge.metric"]}
+          options={(["BOOSTERS", "COINFLIPS"] as const).map((m) => ({ value: m, label: t(`metrics.${m}`) }))}
+          onChange={(v) => setDraft((d) => ({ ...d, "home.eventGauge.metric": v }))}
+        />
         {date("home.eventGauge.startsAt")}
         {date("home.eventGauge.endsAt")}
         {!valid && <p role="alert" className="text-sm font-bold text-shu">{t("invalid")}</p>}
         {num("home.eventGauge.goal")}
         {num("home.eventGauge.refreshSeconds")}
         {num("home.eventGauge.cacheSeconds")}
+        <SelectField
+          label={label("home.eventGauge.rewardLotId")}
+          hint={t("hints.rewardLotId")}
+          value={draft["home.eventGauge.rewardLotId"] ?? ""}
+          options={[{ value: "", label: t("noReward") }, ...lots.map((l) => ({ value: l.id, label: l.name }))]}
+          onChange={(v) => setDraft((d) => ({ ...d, "home.eventGauge.rewardLotId": v === "" ? null : v }))}
+        />
+        {reached && initial["home.eventGauge.rewardLotId"] && (
+          <Link href="/admin/lots" prefetch={false} className="self-start text-sm font-bold text-link underline underline-offset-4">
+            {t("sendReward")}
+          </Link>
+        )}
       </fieldset>
       <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} save={() => updateEventGaugeSettings(draft)} />
     </form>
