@@ -390,6 +390,9 @@ export const SETTING_SCHEMAS = {
   "discord.joinModal": joinModalSchema,
   "discord.marketEnabled": z.boolean(),
   "discord.rankedEnabled": z.boolean(),
+  // Casino : ouverture postée à l'heure dite et relais des lancers dont le pot atteint casinoMinRarity
+  "discord.casinoEnabled": z.boolean(),
+  "discord.casinoMinRarity": rarityKeySchema,
   // Avatars Discord relus par le bot : intervalle par joueur (heures, 0 = jamais), joueurs actifs depuis
   // N jours seulement, et nombre de joueurs relus par passage du cron (une fois par minute)
   "discord.avatarSyncHours": z.number().int().min(0).max(720),
@@ -706,6 +709,8 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "discord.joinModal": JOIN_MODAL_DEFAULT, // désactivé par défaut
   "discord.marketEnabled": false,
   "discord.rankedEnabled": false,
+  "discord.casinoEnabled": false,
+  "discord.casinoMinRarity": "LEGENDARY",
   "discord.avatarSyncHours": 24, // chaque joueur actif relu au plus une fois par jour
   "discord.avatarSyncActiveDays": 14,
   "discord.avatarSyncBatch": 10, // 10 requêtes par minute au plus : bien sous les limites de Discord

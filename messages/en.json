@@ -2392,9 +2392,23 @@
           "linkBonusZeni": "Discord link bonus",
           "avatarSyncHours": "Avatar refresh (hours)",
           "avatarSyncActiveDays": "Players active within (days)",
-          "avatarSyncBatch": "Players refreshed per minute"
+          "avatarSyncBatch": "Players refreshed per minute",
+          "casinoEnabled": "Casino announcements on Discord",
+          "casinoMinRarity": "Rarity of relayed big flips"
         }
-      }
+      },
+      "casinoEnabled": "Casino announcements (opening and big flips)",
+      "casinoMinRarity": "Big flip from",
+      "casinoHint": "The opening is posted once at the set time (DISCORD_CASINO_CHANNEL_ID). Flips whose pot reaches this rarity are relayed within a minute, without role mentions.",
+      "casinoSection": "Casino",
+      "casinoIntro": "Post the teaser by hand a few days before opening; the opening and big flips go out on their own.",
+      "casinoTeaser": "Post or update the teaser",
+      "casinoTeaserDone": "Teaser posted.",
+      "casinoNotConfigured": "Add DISCORD_CASINO_CHANNEL_ID to the environment to turn on casino announcements.",
+      "casinoPreview": "Announcement preview",
+      "casinoPreviewTeaser": "Teaser",
+      "casinoPreviewOpening": "Opening (trailer attached)",
+      "casinoPreviewFlip": "Big flip"
     },
     "features": {
       "title": "Features",

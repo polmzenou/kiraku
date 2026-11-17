@@ -64,7 +64,7 @@ async function saveSettings<K extends SettingKey>(
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const next = parsed.data as SettingsOf<K>;
-  const rarityKeys = ["booster.rates", "collection.recycleValues", "battle.keywordsByRarity", "booster.slotFloors", "booster.goldenFloor", "gifts.allowedRarities", "trades.allowedRarities", "home.pullFeed.minRarity", "market.maxPriceByRarity", "booster.duplicateGuardRarities", "casino.coinflip.allowedRarities"];
+  const rarityKeys = ["booster.rates", "collection.recycleValues", "battle.keywordsByRarity", "booster.slotFloors", "booster.goldenFloor", "gifts.allowedRarities", "trades.allowedRarities", "home.pullFeed.minRarity", "market.maxPriceByRarity", "booster.duplicateGuardRarities", "casino.coinflip.allowedRarities", "discord.casinoMinRarity"];
   if (keys.some((k) => rarityKeys.includes(k))) {
     const registry = await getRarities();
     for (const key of keys.filter((k) => rarityKeys.includes(k))) {

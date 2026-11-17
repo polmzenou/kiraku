@@ -2392,9 +2392,23 @@
           "linkBonusZeni": "Bonus de liaison Discord",
           "avatarSyncHours": "Relecture des avatars (heures)",
           "avatarSyncActiveDays": "Joueurs actifs depuis (jours)",
-          "avatarSyncBatch": "Joueurs relus par minute"
+          "avatarSyncBatch": "Joueurs relus par minute",
+          "casinoEnabled": "Annonces du casino sur Discord",
+          "casinoMinRarity": "Rareté des gros lancers relayés"
         }
-      }
+      },
+      "casinoEnabled": "Annonces du casino (ouverture et gros lancers)",
+      "casinoMinRarity": "Gros lancer à partir de",
+      "casinoHint": "L'ouverture est postée une fois à l'heure dite (DISCORD_CASINO_CHANNEL_ID). Les lancers dont le pot atteint cette rareté sont relayés dans la minute, sans mention de rôle.",
+      "casinoSection": "Casino",
+      "casinoIntro": "Le teaser se poste à la main, quelques jours avant l'ouverture ; l'ouverture et les gros lancers partent seuls.",
+      "casinoTeaser": "Poster ou actualiser le teaser",
+      "casinoTeaserDone": "Teaser publié.",
+      "casinoNotConfigured": "Ajoute DISCORD_CASINO_CHANNEL_ID à l'environnement pour activer les annonces du casino.",
+      "casinoPreview": "Aperçu des annonces",
+      "casinoPreviewTeaser": "Teaser",
+      "casinoPreviewOpening": "Ouverture (bande-annonce jointe)",
+      "casinoPreviewFlip": "Gros lancer"
     },
     "features": {
       "title": "Fonctionnalités",

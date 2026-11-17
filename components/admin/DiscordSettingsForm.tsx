@@ -7,7 +7,8 @@ import { socialPromoState, type SocialPromoConfig } from "@/lib/discord/social-p
 import { changedSettingKeys } from "@/lib/settings/form";
 import { DISCORD_SETTING_KEYS, discordSettingsSchema, type DiscordSettings } from "@/lib/settings/discord-form";
 import { updateDiscordSettings } from "@/server/actions/admin-settings";
-import { Field, inputClass, NumberField, Toggle } from "./fields";
+import { useRarities } from "@/lib/catalog/use-rarities";
+import { Field, inputClass, NumberField, SelectField, Toggle } from "./fields";
 import { SettingsSaveBar } from "./SettingsSaveBar";
 
 /** Date ISO → valeur d'un champ datetime-local (heure locale du navigateur de l'admin). */
@@ -21,6 +22,8 @@ function toLocalInput(iso: string | null): string {
 /** Annonces automatiques, modal d'invitation, section de la page Social et bonus de liaison du compte Discord. */
 export function DiscordSettingsForm({ initial }: { initial: DiscordSettings }) {
   const t = useTranslations("admin.discord");
+  const tRarity = useTranslations("rarity");
+  const rarities = useRarities();
   const [draft, setDraft] = useState(initial);
   const modal = draft["discord.joinModal"];
   const setModal = (patch: Partial<JoinModalConfig>) => setDraft((d) => ({ ...d, "discord.joinModal": { ...d["discord.joinModal"], ...patch } }));
@@ -41,6 +44,14 @@ export function DiscordSettingsForm({ initial }: { initial: DiscordSettings }) {
         <p className="text-sm text-text-muted">{t("marketHint")}</p>
         <Toggle label={t("rankedEnabled")} checked={draft["discord.rankedEnabled"]} onChange={(v) => setDraft((d) => ({ ...d, "discord.rankedEnabled": v }))} />
         <p className="text-sm text-text-muted">{t("rankedHint")}</p>
+        <Toggle label={t("casinoEnabled")} checked={draft["discord.casinoEnabled"]} onChange={(v) => setDraft((d) => ({ ...d, "discord.casinoEnabled": v }))} />
+        <SelectField
+          label={t("casinoMinRarity")}
+          hint={t("casinoHint")}
+          value={draft["discord.casinoMinRarity"]}
+          options={rarities.map((r) => ({ value: r, label: tRarity(r as "COMMON") }))}
+          onChange={(v) => setDraft((d) => ({ ...d, "discord.casinoMinRarity": v }))}
+        />
       </fieldset>
       <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
         <legend className="px-1 font-title text-lg font-bold">{t("modalSection")}</legend>

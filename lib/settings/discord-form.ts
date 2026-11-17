@@ -10,6 +10,8 @@ export const DISCORD_SETTING_KEYS = [
   "discord.linkBonusZeni",
   "discord.marketEnabled",
   "discord.rankedEnabled",
+  "discord.casinoEnabled",
+  "discord.casinoMinRarity",
   "discord.avatarSyncHours",
   "discord.avatarSyncActiveDays",
   "discord.avatarSyncBatch",
