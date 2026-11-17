@@ -32,6 +32,19 @@ describe("ordre des raretés dans la collection, sur le schéma à jour", () => 
       );
       await db.query(`INSERT INTO "UserCard" (id,"ownerId","cardId") VALUES ($1,'owner',$2)`, [`copy-${rarity}`, `card-${rarity}`]);
     }
+    // Second joueur : AR et VR au même rang (600) avec des numéros entremêlés, une rareté créée dans l'admin
+    // entre AR et Gold (Éclat, 650) et une Gold (700)
+    await db.exec(`INSERT INTO "User" (id,username) VALUES ('mixed','MixedTester');
+      INSERT INTO "RarityDefinition" (key,"nameFr","nameEn","sortOrder",seal,"variantRequired","updatedAt") VALUES ('ECLAT','Éclat','Eclat',650,'閃',true,now());`);
+    const mixed: [string, string, number][] = [["ar-1", "AR", 10], ["vr-1", "VR", 11], ["ar-2", "AR", 12], ["vr-2", "VR", 13], ["eclat", "ECLAT", 14], ["gold", "GOLD", 15]];
+    for (const [id, rarity, rank] of mixed) {
+      await db.query(
+        `INSERT INTO "Card" (id,name,"imageUrl",favorites,rank,"rarityKey",power,ki,"seriesId","searchText","updatedAt",origin,status)
+         VALUES ($1,$1,'',0,$2,$3,10,10,'s',$1,now(),'CUSTOM','PUBLISHED')`,
+        [id, rank, rarity],
+      );
+      await db.query(`INSERT INTO "UserCard" (id,"ownerId","cardId") VALUES ($1,'mixed',$2)`, [`copy-${id}`, id]);
+    }
     reader.query.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) => {
       const query = Prisma.sql(strings, ...values);
       return (await db.query(query.text, [...query.values])).rows;
@@ -45,5 +58,12 @@ describe("ordre des raretés dans la collection, sur le schéma à jour", () => 
       (await getCollectionPage("owner", parseCollectionParams({ sort: "rarity", dir }), 0, "fr")).items.map((c) => c.rarity);
     expect(await order("desc")).toEqual(["AR", "BR", "MYTHIC", "LEGENDARY"]);
     expect(await order("asc")).toEqual(["LEGENDARY", "MYTHIC", "BR", "AR"]);
+  });
+
+  it("garde en bloc deux raretés de même rang et range une rareté de l'admin selon son ordre", async () => {
+    const order = async (dir: "asc" | "desc") =>
+      (await getCollectionPage("mixed", parseCollectionParams({ sort: "rarity", dir }), 0, "fr")).items.map((c) => c.rarity);
+    expect(await order("desc")).toEqual(["GOLD", "ECLAT", "VR", "VR", "AR", "AR"]);
+    expect(await order("asc")).toEqual(["AR", "AR", "VR", "VR", "ECLAT", "GOLD"]);
   });
 });

@@ -2,10 +2,12 @@
 
 import { AnimatePresence, m } from "motion/react";
 import { useTranslations } from "next-intl";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { useClock, useFormatCountdown } from "@/components/boosters/useBoosterClock";
 import { Fuda } from "@/components/fuda/Fuda";
+import { EMAKI_IMAGE, TRAIL_PATH, TRAIL_STATIONS, trailPointAt, walkedPath } from "@/lib/expedition/trail";
 import { EXPEDITION_OUTCOMES } from "@/lib/expedition/types";
 import type { ActiveExpeditionView } from "@/lib/expedition/view";
 import { abandonExpeditionAction } from "@/server/actions/expedition";
@@ -13,8 +15,11 @@ import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
 import { RaritySeal, RewardChips, RiskLanterns, useDuration, useTierStyle } from "./parts";
 
-/** Relais (宿場) le long de la route, en part du trajet. */
-const STATIONS = [0, 1 / 3, 2 / 3, 1];
+/** Paysage du rouleau, même cadrage aux deux heures : le crépuscule se fond sur l'aube au fil du trajet. */
+const EMAKI_DAWN = "/expedition/emaki-dawn-v1.webp";
+const EMAKI_DUSK = "/expedition/emaki-dusk-v1.webp";
+/** Le rouleau prend la largeur du contenu (1 168 px au plus). */
+const EMAKI_SIZES = "(min-width: 1200px) 1168px, 100vw";
 /** Lignes du carnet de route : départ, puis tous les quarts du trajet. */
 const LOG_STEPS = [
   { at: 0, key: "0" },
@@ -27,22 +32,11 @@ function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
-/** Montagnes en silhouette, deux fois côte à côte pour boucler sans couture. */
-function Ridge({ d, className }: { d: string; className: string }) {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 400 100" preserveAspectRatio="none" className={`h-full w-1/2 shrink-0 ${className}`}>
-      <path d={d} fill="currentColor" />
-    </svg>
-  );
-}
-
-const FAR = "M0 100V62l30-18 26 12 40-30 34 22 28-14 46 26 30-20 40 18 36-24 40 26 50-14v94Z";
-const NEAR = "M0 100V78l40-12 30 10 46-22 40 20 36-8 50 16 44-18 34 14 40-10 40 12v20Z";
-
 /**
- * Expédition en route : un emakimono (rouleau peint) où la lanterne du groupe avance vers le dernier relais,
- * montagnes et brume en parallaxe lente, ciel qui passe de l'aube au crépuscule. Dessous : compte à rebours,
- * équipe partie, rappel des chances et des gains, carnet de route et abandon.
+ * Expédition en route : un emakimono (rouleau peint) où la lanterne du groupe suit le chemin tracé sur le
+ * paysage, de la forêt du premier plan jusqu'à la crête lointaine, pendant que le ciel passe de l'aube au
+ * crépuscule. Dessous : compte à rebours, équipe partie, rappel des chances et des gains, carnet de route
+ * et abandon.
  */
 export function ExpeditionEmaki({ active, serverNow, cooldownHours, reduced }: { active: ActiveExpeditionView; serverNow: number; cooldownHours: number; reduced: boolean }) {
   const t = useTranslations("expedition.active");
@@ -75,6 +69,8 @@ export function ExpeditionEmaki({ active, serverNow, cooldownHours, reduced }: {
   const minutes = Math.floor((remaining % 3_600_000) / 60_000);
   const seconds = Math.floor((remaining % 60_000) / 1000);
   const p = { triumph: active.triumphPct, success: active.successPct - active.triumphPct, failure: 100 - active.successPct };
+  const here = trailPointAt(progress);
+  const walked = walkedPath(progress);
 
   const abandon = () =>
     startTransition(async () => {
@@ -92,64 +88,56 @@ export function ExpeditionEmaki({ active, serverNow, cooldownHours, reduced }: {
 
   return (
     <section aria-labelledby="exp-active-title" className="flex flex-col gap-4">
-      {/* Rouleau peint */}
-      <div className={`relative h-56 overflow-hidden rounded-hero border border-border shadow-raised ${tier.className}`} style={tier.style}>
-        {/* Ciel : aube → crépuscule, en fondu */}
-        <span aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(180deg,#2a3550_0%,#d98b6a_70%,#f3c98b_100%)]" />
-        <span
-          aria-hidden="true"
-          className="absolute inset-0 bg-[linear-gradient(180deg,#141428_0%,#5b3a6b_65%,#c8372d_100%)] transition-opacity duration-1000"
-          style={{ opacity: progress }}
-        />
-        {/* Soleil qui descend */}
-        <span
-          aria-hidden="true"
-          className="absolute top-6 right-10 size-14 rounded-full bg-shu/90 shadow-[0_0_40px_rgb(224_83_63/0.6)] transition-transform duration-1000"
-          style={{ transform: `translateY(${progress * 70}px)` }}
-        />
-        {/* Motif du palier, très léger */}
-        <span aria-hidden="true" className="absolute inset-0 opacity-[.07]" style={{ background: "var(--wagara)" }} />
-        {/* Montagnes lointaines et proches, en parallaxe */}
-        <div aria-hidden="true" className="absolute inset-x-0 bottom-10 h-24 overflow-hidden text-[#1b1d2c]/70">
-          <div className="exp-drift flex h-full" style={{ ["--exp-drift" as string]: "120s" }}>
-            <Ridge d={FAR} className="" />
-            <Ridge d={FAR} className="" />
-          </div>
-        </div>
-        {/* Brume suyari-gasumi */}
-        <div aria-hidden="true" className="absolute inset-x-0 bottom-16 h-6 overflow-hidden opacity-60">
-          <div className="exp-drift flex h-full gap-24" style={{ ["--exp-drift" as string]: "45s" }}>
-            {Array.from({ length: 6 }, (_, i) => (
-              <span key={i} className="h-3 w-40 shrink-0 self-center rounded-full bg-washi-paper/50" />
-            ))}
-          </div>
-        </div>
-        <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-20 overflow-hidden text-[#0f1019]">
-          <div className="exp-drift flex h-full" style={{ ["--exp-drift" as string]: "70s" }}>
-            <Ridge d={NEAR} className="" />
-            <Ridge d={NEAR} className="" />
-          </div>
-        </div>
-
-        {/* Route, relais et lanterne du groupe */}
-        <div className="absolute inset-x-6 bottom-6 h-8">
-          <span aria-hidden="true" className="absolute inset-x-0 top-1/2 border-t-2 border-dashed border-washi-paper/40" />
-          <span aria-hidden="true" className="absolute top-1/2 left-0 w-full origin-left border-t-2 border-kin transition-transform duration-1000" style={{ transform: `scaleX(${progress})` }} />
-          {STATIONS.map((s, i) => (
+      {/* Rouleau peint : le paysage (aube, puis crépuscule en fondu) et le chemin du groupe, relevé sur
+          l'image (lib/expedition/trail.ts). La scène garde les proportions de l'image et couvre le rouleau ;
+          sur mobile, la caméra suit la lanterne (expedition.css). */}
+      <div
+        className={`exp-emaki relative h-56 overflow-hidden rounded-hero border border-border bg-sumi shadow-raised ${tier.className}`}
+        style={{
+          ...tier.style,
+          ["--emaki-ratio" as string]: EMAKI_IMAGE.width / EMAKI_IMAGE.height,
+          ["--lx" as string]: here.x / EMAKI_IMAGE.width,
+          ["--ly" as string]: here.y / EMAKI_IMAGE.height,
+          ["--ld" as string]: here.depth,
+        }}
+      >
+        <div className="exp-stage">
+          <Image src={EMAKI_DAWN} alt="" fill sizes={EMAKI_SIZES} loading="eager" fetchPriority="high" className="object-cover" />
+          <Image
+            src={EMAKI_DUSK}
+            alt=""
+            fill
+            sizes={EMAKI_SIZES}
+            loading="eager"
+            className="object-cover transition-opacity duration-1000 ease-linear motion-reduce:transition-none"
+            style={{ opacity: progress }}
+          />
+          {/* Motif du palier, très léger */}
+          <span aria-hidden="true" className="absolute inset-0 opacity-[.07]" style={{ background: "var(--wagara)" }} />
+          {/* Chemin : liseré sombre pour la lisibilité, pointillés à venir, or pour la part parcourue */}
+          <svg aria-hidden="true" viewBox={`0 0 ${EMAKI_IMAGE.width} ${EMAKI_IMAGE.height}`} className="absolute inset-0 size-full overflow-visible">
+            <path d={TRAIL_PATH} fill="none" stroke="rgb(15 16 25 / 0.55)" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+            <path d={TRAIL_PATH} fill="none" stroke="rgb(243 236 223 / 0.75)" strokeWidth="2" strokeDasharray="5 5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+            <path d={walked} fill="none" stroke="rgb(217 181 86 / 0.35)" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+            <path d={walked} fill="none" stroke="var(--color-kin)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          </svg>
+          {/* Relais (宿場), plus petits au loin */}
+          {TRAIL_STATIONS.map((station, i) => (
             <span
               key={i}
               aria-hidden="true"
               lang="ja"
-              className={`absolute top-1/2 inline-flex size-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-[4px] border font-seal text-[10px] ${
-                progress >= s ? "border-kin bg-kin text-sumi" : "border-washi-paper/50 bg-sumi/70 text-washi-paper/70"
+              className={`absolute inline-flex size-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm border font-seal text-[10px] shadow-raised transition-colors duration-500 ${
+                progress >= station.at ? "border-kin bg-kin text-sumi" : "border-washi-paper/55 bg-sumi/75 text-washi-paper/75"
               }`}
-              style={{ left: `${s * 100}%` }}
+              style={{ left: `${(station.x / EMAKI_IMAGE.width) * 100}%`, top: `${(station.y / EMAKI_IMAGE.height) * 100}%`, scale: station.depth }}
             >
               宿
             </span>
           ))}
-          <div aria-hidden="true" className="absolute inset-0 transition-transform duration-1000 ease-linear" style={{ transform: `translateX(${progress * 100}%)` }}>
-            <span className="absolute bottom-3 left-0 flex -translate-x-1/2 flex-col items-center">
+          {/* Lanterne du groupe, posée sur le chemin */}
+          <div aria-hidden="true" className="exp-walker">
+            <span className="exp-lantern">
               <span className="exp-breathe absolute -top-3 size-12 rounded-full bg-kin/40 blur-md" />
               <span className={arrived ? "" : "exp-walk"}>
                 <svg viewBox="0 0 20 28" width="20" height="28" className="exp-flicker relative text-kin drop-shadow-[0_0_6px_rgb(217_181_86/0.8)]">
@@ -162,6 +150,8 @@ export function ExpeditionEmaki({ active, serverNow, cooldownHours, reduced }: {
             </span>
           </div>
         </div>
+        {/* Voile derrière le titre */}
+        <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(165deg,rgb(15_16_25/0.6)_0%,transparent_42%)]" />
 
         {/* Titre posé sur le rouleau */}
         <div className="absolute top-3 left-4 flex max-w-[70%] flex-col gap-1 text-washi-paper">
