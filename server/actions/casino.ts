@@ -22,7 +22,7 @@ import {
   sweepCasinoWith,
   type CoinFlipErrorCode,
 } from "../casino/coinflip-core";
-import { coinFlipContext, getCasinoRules, getTable, listLobby, type CoinFlipTableView, type LobbyPage } from "../casino/queries";
+import { coinFlipContext, getCasinoRules, getTable, listLobby, recentFlips, type CoinFlipTableView, type FeedEntry, type LobbyPage } from "../casino/queries";
 import { prisma } from "../db";
 import { pushNotifications } from "../push/send";
 import { rateLimit } from "../ratelimit";
@@ -46,9 +46,12 @@ const joinSchema = z.object({ flipId: id, cardId: id, confirmLastCopy: z.boolean
 const flipIdSchema = z.object({ flipId: id }).strict();
 const seenSchema = z.object({ flipIds: z.array(id).min(1).max(20) }).strict();
 const adminCancelSchema = z.object({ flipId: id, reason: z.string().trim().min(3).max(200) }).strict();
+const emptySchema = z.object({}).strict();
 const lobbySchema = z.object({ tier: z.number().int().min(-100_000).max(100_000).nullable(), cursor: id.nullable() }).strict();
 
 const MINUTE = 60;
+// Gros lancers mis en avant dans le fil (le relais Discord a son propre seuil)
+const FEED_BIG_FROM = "LEGENDARY";
 const pushLater = (ids: string[]) => after(() => pushNotifications(ids));
 
 type Rule = { limit: number; windowSeconds: number };
@@ -219,4 +222,23 @@ export async function adminCancelCoinFlipAction(input: unknown): Promise<{ ok: t
   } catch (e) {
     return failure(e);
   }
+}
+
+/** Sondage du fil « Derniers lancers » du hall (invités compris : ils regardent sans jouer). */
+export async function coinFlipFeedAction(input: unknown): Promise<{ ok: true; entries: FeedEntry[] } | Failure> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "NO_SESSION" };
+  if (!emptySchema.safeParse(input).success) return { ok: false, error: "INVALID" };
+  const rules = await getCasinoRules();
+  if (!casinoAccess(rules, Date.now(), isStaff(user.role)).canEnter) return { ok: false, error: "CLOSED" };
+  if (!(await rateLimit(`coinflip-feed:${user.id}`, { limit: 20, windowSeconds: MINUTE }, { store: "memory" })).success) {
+    return { ok: false, error: "RATE_LIMITED" };
+  }
+  const entries = await recentFlips({
+    locale: await getLocale(),
+    size: rules.coinflip.feedSize,
+    maxAgeHours: rules.coinflip.feedMaxAgeHours,
+    bigFrom: FEED_BIG_FROM,
+  });
+  return { ok: true, entries };
 }

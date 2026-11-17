@@ -5349,8 +5349,146 @@
   "casino": {
     "title": "Casino",
     "soon": "Soon",
-    "body": "Kiraku's casino is being prepared. It will come later, and will never accept real money.",
-    "back": "Back to boosters"
+    "body": "The Kiraku casino is being prepared. It will arrive later, and will never take real money.",
+    "back": "Back to boosters",
+    "description": "The Kiraku casino: player-versus-player coin flip, one fuda against a fuda of the same tier.",
+    "virtual": "Everything is virtual: no real money is at stake, neither Zeni nor cash.",
+    "preview": {
+      "hidden": "Team preview: the casino is hidden from players.",
+      "teaser": "Team preview: players still see the teaser.",
+      "admin": "Settings"
+    },
+    "rules": {
+      "label": "The rules",
+      "stake": "Set down a fuda and pick 表 heads or 裏 tails.",
+      "tier": "Another player takes the table with a fuda of the same tier.",
+      "winner": "The coin lands: the winner keeps both cards."
+    },
+    "teaser": {
+      "kicker": "Opens on {date}",
+      "kickerNoDate": "Opening soon",
+      "title": "The casino opens soon",
+      "body": "Behind the shōji, a coin is already spinning. First game: coin flip between players.",
+      "countdown": "Time until opening",
+      "days": "{count, plural, one {day} other {days}}",
+      "hours": "{count, plural, one {hour} other {hours}}",
+      "minutes": "min",
+      "seconds": "s",
+      "opening": "The doors are opening…"
+    },
+    "hall": {
+      "label": "Casino games",
+      "coinflip": {
+        "tag": "New",
+        "title": "Coin flip",
+        "body": "One fuda against another. 表 or 裏.",
+        "stats": "{open, plural, =0 {No open tables} one {# open table} other {# open tables}} · {today, plural, =0 {no flips today} one {# flip today} other {# flips today}}",
+        "play": "Play"
+      },
+      "upcoming": "Coming soon",
+      "sealed": "Sealed game",
+      "sealedNext": "Next game",
+      "sealedLater": "Later",
+      "feedTitle": "Latest flips",
+      "feedEmpty": "No flips yet: the first coin is waiting for you.",
+      "feedRow": "<player>{name}</player> wins <b>{card}</b>",
+      "feedMeta": "{rarity} · landed on {side}"
+    },
+    "side": {
+      "OMOTE": "Heads",
+      "URA": "Tails"
+    },
+    "salon": {
+      "title": "Coin flip",
+      "back": "Casino",
+      "tabs": {
+        "label": "Lobby sections",
+        "tables": "Tables",
+        "mine": "My tables",
+        "history": "History"
+      },
+      "filterLabel": "Filter by tier",
+      "all": "All",
+      "empty": "No open tables at this tier.",
+      "emptyAll": "No open tables yet. Set the first one!",
+      "plays": "plays {side}",
+      "reserved": "Set aside for you",
+      "take": "Take",
+      "view": "View",
+      "tableOf": "{name}'s table",
+      "stake": "Set down a card",
+      "more": "Show more",
+      "loading": "Loading…",
+      "retry": "Try again",
+      "guest": "Create an account to play: guests can watch the tables, not stake."
+    },
+    "mine": {
+      "open": "Your open tables",
+      "invitations": "Tables set aside for you",
+      "none": "You have no open tables.",
+      "noInvitation": "No table is set aside for you.",
+      "expires": "Expires {time}",
+      "decline": "Decline",
+      "view": "View table"
+    },
+    "history": {
+      "stats": "{played, plural, =0 {No flips played} one {# flip} other {# flips}} · {won} won · {lost} lost",
+      "streakWin": "{count, plural, one {# win} other {# wins}} in a row",
+      "streakLoss": "{count, plural, one {# loss} other {# losses}} in a row",
+      "sides": "表 {omote} · 裏 {ura}",
+      "empty": "Your played flips will show up here.",
+      "won": "Won",
+      "lost": "Lost",
+      "against": "against <player>{name}</player>",
+      "open": "View"
+    },
+    "stake": {
+      "title": "Set down a card",
+      "step1": "Your fuda",
+      "step2": "Your side",
+      "step3": "Who can take it",
+      "pickLabel": "Stake {name}",
+      "hint": "Tap a fuda to stake it.",
+      "lastCopy": "Last copy of {card}. If you lose, it leaves your collection.",
+      "remaining": "{card} · you'll have {count} left.",
+      "confirmLast": "I'm staking my last copy",
+      "omoteNote": "vermilion",
+      "uraNote": "black lacquer",
+      "everyone": "Everyone",
+      "friend": "A specific player",
+      "friendLabel": "Username of the friend or past opponent",
+      "recap": "{card} is set aside. Without a taker, it comes back {date}.",
+      "recapEmpty": "Pick a fuda and a side.",
+      "submit": "Set the table",
+      "posting": "Setting the table…"
+    },
+    "errors": {
+      "CLOSED": "The casino isn't open yet.",
+      "DISABLED": "Coin flip is closed for now.",
+      "GUEST": "Create an account to play: guests can watch, not stake.",
+      "BANNED": "Your account can't play.",
+      "TOO_NEW": "Your account is too new to stake: come back in a few hours.",
+      "RARITY": "This rarity can't be staked at the casino.",
+      "TABLE_LIMIT": "You already have the maximum number of open tables.",
+      "DAILY_LIMIT": "You've reached today's flip limit. Come back tomorrow!",
+      "LAST_COPY": "You can't stake your last copy of this card.",
+      "CONFIRM_LAST_COPY": "This is your last copy: confirm to stake it.",
+      "RESERVE_TARGET": "You can only set a table aside for a friend or a past opponent.",
+      "BLOCKED": "You can't play with this player.",
+      "NOT_OPEN": "This table is no longer open: someone took it, or it was removed.",
+      "OWN_TABLE": "This is your table: wait for another player to take it.",
+      "RESERVED": "This table is set aside for another player.",
+      "TIER": "You need a card from the same tier as theirs.",
+      "NOT_FOUND": "Table not found.",
+      "NO_USER": "Player not found.",
+      "CARD_GONE": "This card is no longer available in your collection.",
+      "NO_SESSION": "Your session expired: reload the page.",
+      "INVALID": "Invalid request.",
+      "RATE_LIMITED": "Easy! Try again in a moment.",
+      "UNAVAILABLE": "Not possible right now.",
+      "FORBIDDEN": "Access denied.",
+      "unexpected": "Unexpected error. Try again."
+    }
   },
   "pwa": {
     "title": "Install the app",

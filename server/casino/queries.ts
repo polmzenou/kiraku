@@ -5,7 +5,8 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { CardView } from "@/lib/boosters/view";
 import { RARITY_SEAL } from "@/lib/catalog/rarity";
 import type { CoinSide } from "@/lib/casino/fairness";
-import { casinoBadge, type CasinoBadge } from "@/lib/casino/phase";
+import { isStaff } from "@/lib/admin/roles";
+import { casinoAccess, casinoBadge, inLaunchWindow, type CasinoAccess, type CasinoBadge } from "@/lib/casino/phase";
 import { CASINO_SETTING_KEYS, casinoRulesFrom, type CasinoRules } from "@/lib/casino/rules";
 import { isBigFlip, raritiesForTier } from "@/lib/casino/tiers";
 import { coreView, flipStats, outcomeFor, sideOf, type CoinFlipCoreView, type CoinFlipRow, type FlipStats } from "@/lib/casino/view";
@@ -33,6 +34,22 @@ export const getCasinoNav = cache(async (): Promise<{ visible: boolean; badge: C
   const rules = await getCasinoRules();
   return { visible: rules.visible, badge: casinoBadge(rules, Date.now()) };
 });
+
+export type CasinoView = {
+  rules: CasinoRules;
+  access: CasinoAccess;
+  /** Heure du serveur pour les comptes à rebours et les « il y a ». */
+  serverNow: number;
+  /** Fenêtre de lancement (badge, cérémonie, étiquette « Nouveau »). */
+  launching: boolean;
+};
+
+/** Ce qu'une page du casino doit savoir de l'ouverture, pour le joueur connecté (l'équipe voit un aperçu). */
+export async function casinoView(role: string | null | undefined): Promise<CasinoView> {
+  const rules = await getCasinoRules();
+  const serverNow = Date.now();
+  return { rules, access: casinoAccess(rules, serverNow, isStaff(role)), serverNow, launching: inLaunchWindow(rules, serverNow) };
+}
 
 /** Contexte des opérations sur les tables : heure, réglages, jour de jeu, registre, hasard du serveur. */
 export async function coinFlipContext(now = new Date()): Promise<CoinFlipContext> {
@@ -267,43 +284,6 @@ export async function casinoPulse(now = new Date()): Promise<{ openTables: numbe
     prisma.coinFlip.count({ where: { status: "DONE", resolvedAt: { gte: dayStart } } }),
   ]);
   return { openTables, flipsToday };
-}
-
-export type StakeOption = {
-  card: CardView;
-  /** Exemplaires libres (en collection), misables. */
-  free: number;
-  /** Miser cette carte engage son dernier exemplaire hors du casino. */
-  lastCopy: boolean;
-};
-
-/**
- * Cartes que le lecteur peut miser : au moins un exemplaire libre, dans les raretés données (toutes les
- * raretés autorisées pour poser, celles du palier pour relever). Les plus rares d'abord.
- */
-export async function stakeOptions(viewerId: string, rarities: readonly string[], locale: string): Promise<StakeOption[]> {
-  if (rarities.length === 0) return [];
-  const [free, outside] = await Promise.all([
-    prisma.userCard.groupBy({
-      by: ["cardId"],
-      where: { ownerId: viewerId, status: "COLLECTION", card: { rarity: { in: [...rarities] } } },
-      _count: { _all: true },
-    }),
-    prisma.userCard.groupBy({
-      by: ["cardId"],
-      where: { ownerId: viewerId, status: { not: "CASINO" }, card: { rarity: { in: [...rarities] } } },
-      _count: { _all: true },
-    }),
-  ]);
-  const outsideById = new Map(outside.map((r) => [r.cardId, r._count._all]));
-  const [views, definitions] = await Promise.all([cardViews(free.map((r) => r.cardId), locale), getRarityDefinitions()]);
-  const order = new Map(definitions.map((d) => [d.key, d.sortOrder]));
-  return free
-    .flatMap((r) => {
-      const card = views.get(r.cardId);
-      return card ? [{ card, free: r._count._all, lastCopy: (outsideById.get(r.cardId) ?? 0) <= 1 }] : [];
-    })
-    .sort((a, b) => (order.get(b.card.rarity) ?? 0) - (order.get(a.card.rarity) ?? 0) || a.card.name.localeCompare(b.card.name));
 }
 
 /** Raretés misables pour relever une table de ce palier. */

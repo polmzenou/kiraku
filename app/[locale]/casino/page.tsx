@@ -1,32 +1,44 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
+import { CasinoHall } from "@/components/casino/CasinoHall";
+import { CasinoTeaser } from "@/components/casino/CasinoTeaser";
+import { PreviewBanner } from "@/components/casino/PreviewBanner";
 import { PageShell } from "@/components/PageShell";
-import { ButtonLink } from "@/components/ui/ButtonLink";
-import { getSetting } from "@/server/settings";
+import { casinoPulse, casinoView, recentFlips } from "@/server/casino/queries";
+import { getLocale } from "next-intl/server";
+import { getCurrentUser } from "@/server/user";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("casino");
-  return { title: t("title"), robots: { index: false, follow: true } };
+  return { title: t("title"), description: t("description"), robots: { index: false, follow: true } };
 }
 
-/** Casino : simple écran d'attente (« Bientôt »), affiché tant que l'interrupteur features.casino est allumé. */
+// Gros lancers mis en avant dans le fil (le relais Discord a son propre seuil)
+const FEED_BIG_FROM = "LEGENDARY";
+
+/** Casino : teaser avant l'ouverture (l'équipe voit le hall en aperçu), puis le hall et ses jeux. */
 export default async function CasinoPage() {
-  if (!(await getSetting("features.casino"))) notFound();
-  const t = await getTranslations("casino");
+  const user = await getCurrentUser();
+  const view = await casinoView(user?.role);
+  if (!view.access.canEnter) {
+    return (
+      <PageShell>
+        <CasinoTeaser opensAt={view.rules.opensAt} serverNow={view.serverNow} />
+      </PageShell>
+    );
+  }
+  const locale = await getLocale();
+  const { coinflip } = view.rules;
+  const [pulse, feed] = await Promise.all([
+    casinoPulse(),
+    recentFlips({ locale, size: coinflip.feedSize, maxAgeHours: coinflip.feedMaxAgeHours, bigFrom: FEED_BIG_FROM }),
+  ]);
   return (
     <PageShell>
-      <section className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-5 py-10 text-center">
-        <span aria-hidden="true" lang="ja" className="font-seal text-7xl leading-none text-kin">
-          賭
-        </span>
-        <span className="rounded-sm border border-kin/60 px-2 py-0.5 text-xs font-bold tracking-wide text-kin uppercase">
-          {t("soon")}
-        </span>
-        <h1 className="font-heading text-3xl font-extrabold">{t("title")}</h1>
-        <p className="text-text-muted">{t("body")}</p>
-        <ButtonLink href="/">{t("back")}</ButtonLink>
-      </section>
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+        {view.access.preview && <PreviewBanner phase={view.access.phase} />}
+        <CasinoHall pulse={pulse} feed={feed} feedRefreshSeconds={coinflip.lobbyPollSeconds} serverNow={view.serverNow} isNew={view.launching} />
+      </div>
     </PageShell>
   );
 }
