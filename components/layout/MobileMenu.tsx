@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
-import { isActive, MOBILE_NAV_ITEMS, MOBILE_NAV_MORE, type NavAlerts, type NavFeatures } from "@/lib/nav";
+import { isActive, MOBILE_NAV_ITEMS, MOBILE_NAV_MORE, type NavAlerts, type NavBadges, type NavFeatures } from "@/lib/nav";
 import type { Theme } from "@/lib/theme";
 import type { SpoilerMode } from "@/lib/spoiler";
 import { logout } from "@/server/actions/account";
@@ -26,6 +26,7 @@ export function MobileMenu({
   signedIn,
   features,
   alerts = {},
+  badges = {},
 }: {
   theme: Theme;
   spoiler: SpoilerMode;
@@ -34,6 +35,7 @@ export function MobileMenu({
   signedIn: boolean;
   features: NavFeatures;
   alerts?: NavAlerts;
+  badges?: NavBadges;
 }) {
   const t = useTranslations("nav");
   const tAccount = useTranslations("account");
@@ -132,7 +134,7 @@ export function MobileMenu({
           </div>
 
           <nav aria-label={t("label")}>
-            <NavLinks layout="stack" features={features} alerts={alerts} onNavigate={close} />
+            <NavLinks layout="stack" features={features} alerts={alerts} badges={badges} onNavigate={close} />
             <ul className="mt-2 flex flex-col gap-1">
               <li>
                 <Link prefetch={false}

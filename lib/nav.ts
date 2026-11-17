@@ -1,7 +1,8 @@
 // Navigation desktop en haut, navigation mobile en bas (< 1024 px).
 // `ready: false` : la page arrive à une étape suivante, l'entrée s'affiche avec « Bientôt ».
 // NAV_MORE : entrées rangées dans le menu déroulant « Plus », après Marché.
-// `soon` : page d'attente accessible, marquée « Bientôt » ; `feature` : masquée si l'interrupteur admin est coupé.
+// `feature` : masquée si l'interrupteur admin est coupé. Les pastilles « Bientôt » / « Nouveau » d'une entrée
+// accessible (casino : teaser, puis lancement) sont calculées par le serveur (NavBadges).
 
 export type NavKey =
   | "boosters"
@@ -22,12 +23,14 @@ export type NavFeature = "casino" | "event";
 /** Entrées qui attendent une action du joueur (pastille rouge), ex. une mission à réclamer. */
 export type NavAlerts = Partial<Record<NavKey, boolean>>;
 export type NavFeatures = Record<NavFeature, boolean>;
+/** Pastille d'une entrée accessible : page d'attente (« Bientôt ») ou nouveauté (« Nouveau »). */
+export type NavBadge = "soon" | "new";
+export type NavBadges = Partial<Record<NavKey, NavBadge>>;
 
 export type NavItem = {
   key: NavKey;
   href: string;
   ready: boolean;
-  soon?: boolean;
   feature?: NavFeature;
   also?: readonly string[];
 };
@@ -44,7 +47,7 @@ const ENTRIES: Record<NavKey, NavItem> = {
   wiki: { key: "wiki", href: "/wiki", ready: true },
   social: { key: "social", href: "/social", ready: true },
   event: { key: "event", href: "/event", ready: true, feature: "event" },
-  casino: { key: "casino", href: "/casino", ready: true, soon: true, feature: "casino" },
+  casino: { key: "casino", href: "/casino", ready: true, feature: "casino" },
 };
 
 export const NAV_ITEMS: readonly NavItem[] = [ENTRIES.boosters, ENTRIES.missions, ENTRIES.shop, ENTRIES.combat, ENTRIES.market];

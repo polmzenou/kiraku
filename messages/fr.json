@@ -571,7 +571,8 @@
     "social": "Social",
     "event": "Event",
     "casino": "Casino",
-    "alert": "Récompense à réclamer"
+    "alert": "Récompense à réclamer",
+    "new": "Nouveau"
   },
   "header": {
     "stock": "Boosters : {count} sur {max}",

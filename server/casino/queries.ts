@@ -5,6 +5,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { CardView } from "@/lib/boosters/view";
 import { RARITY_SEAL } from "@/lib/catalog/rarity";
 import type { CoinSide } from "@/lib/casino/fairness";
+import { casinoBadge, type CasinoBadge } from "@/lib/casino/phase";
 import { CASINO_SETTING_KEYS, casinoRulesFrom, type CasinoRules } from "@/lib/casino/rules";
 import { isBigFlip, raritiesForTier } from "@/lib/casino/tiers";
 import { coreView, flipStats, outcomeFor, sideOf, type CoinFlipCoreView, type CoinFlipRow, type FlipStats } from "@/lib/casino/view";
@@ -25,6 +26,12 @@ export const getCasinoRules = cache(async (): Promise<CasinoRules> => {
   const values = await Promise.all(CASINO_SETTING_KEYS.map((key) => getSetting(key)));
   const byKey = new Map<string, unknown>(CASINO_SETTING_KEYS.map((key, i) => [key, values[i]]));
   return casinoRulesFrom((key) => byKey.get(key) as SettingValue<typeof key>);
+});
+
+/** Casino visible et pastille du menu et de la tuile du Compte (« Bientôt » au teaser, « Nouveau » après l'ouverture). */
+export const getCasinoNav = cache(async (): Promise<{ visible: boolean; badge: CasinoBadge }> => {
+  const rules = await getCasinoRules();
+  return { visible: rules.visible, badge: casinoBadge(rules, Date.now()) };
 });
 
 /** Contexte des opérations sur les tables : heure, réglages, jour de jeu, registre, hasard du serveur. */

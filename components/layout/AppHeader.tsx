@@ -1,11 +1,13 @@
 import { getTranslations } from "next-intl/server";
 import { isStaff } from "@/lib/admin/roles";
+import type { NavBadges } from "@/lib/nav";
 import { Link } from "@/i18n/navigation";
 import type { Theme } from "@/lib/theme";
 import type { SpoilerMode } from "@/lib/spoiler";
 import { logout } from "@/server/actions/account";
 import { isFrozen } from "@/lib/account/deletion";
 import { getBoosterRules } from "@/server/boosters/rules";
+import { getCasinoNav } from "@/server/casino/queries";
 import { unreadChatCount, visibleSince } from "@/server/chat/queries";
 import { boosterStateFrom } from "@/server/boosters/state";
 import { hasClaimableMission } from "@/server/economy/queries";
@@ -53,7 +55,7 @@ export async function AppHeader({ theme, spoiler }: { theme: Theme; spoiler: Spo
     user ? unreadNotifications(user.id) : 0,
     user ? getSetting("notifications.pollSeconds") : 0,
     user ? getSetting("realtime.safetyPollSeconds") : 0,
-    getSetting("features.casino"),
+    getCasinoNav(),
     user ? getBoosterRules() : null,
     user?.isGuest ? getSetting("guest.retentionDays") : 0,
     // Pastille rouge sur Missions : une mission terminée attend d'être réclamée
@@ -62,8 +64,10 @@ export async function AppHeader({ theme, spoiler }: { theme: Theme; spoiler: Spo
     getSetting("event.showcase.enabled"),
   ]);
   const state = user && boosterRules ? boosterStateFrom(user, boosterRules) : null;
-  const features = { casino, event };
+  const features = { casino: casino.visible, event };
   const alerts = { missions: missionReady };
+  // Casino : « Bientôt » au teaser, « Nouveau » pendant les jours qui suivent l'ouverture
+  const badges: NavBadges = casino.badge ? { casino: casino.badge } : {};
   const chat = chatBase ? { ...chatBase, safetySeconds } : null;
 
   return (
@@ -76,7 +80,7 @@ export async function AppHeader({ theme, spoiler }: { theme: Theme; spoiler: Spo
           </Link>
 
           <nav aria-label={t("nav.label")} className="ml-2 hidden lg:block">
-            <NavLinks layout="bar" features={features} alerts={alerts} />
+            <NavLinks layout="bar" features={features} alerts={alerts} badges={badges} />
           </nav>
 
           <div className="ml-auto flex min-w-0 items-center gap-1.5 md:gap-2">
@@ -150,7 +154,7 @@ export async function AppHeader({ theme, spoiler }: { theme: Theme; spoiler: Spo
           later={t("guestNotice.later")}
         />
       )}
-      <MobileMenu theme={theme} spoiler={spoiler} isAdmin={isAdmin} accountHref={accountHref} signedIn={signedIn} features={features} alerts={alerts} />
+      <MobileMenu theme={theme} spoiler={spoiler} isAdmin={isAdmin} accountHref={accountHref} signedIn={signedIn} features={features} alerts={alerts} badges={badges} />
       {chat && <ChatDock {...chat} />}
     </>
   );
