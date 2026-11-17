@@ -19,6 +19,7 @@ import { ButtonLink } from "../ui/ButtonLink";
 import { chipClasses } from "../ui/Chip";
 import { segmentedCompactItemClass, segmentedFillClass, segmentedTrackClass } from "../ui/Segmented";
 import { CoinFace } from "./CoinFace";
+import { Hanko } from "./Hanko";
 import { StakeSheet } from "./StakeSheet";
 import "./casino.css";
 
@@ -37,6 +38,8 @@ type Props = {
   expiryHours: number;
   pollSeconds: number;
   reserveFor: string | null;
+  /** Tables relevées pendant l'absence du créateur : le lancer l'attend. */
+  replays: CoinFlipTableView[];
   serverNow: number;
 };
 
@@ -158,6 +161,32 @@ export function CoinFlipSalon(props: Props) {
         </p>
       )}
 
+      {props.replays.length > 0 && (
+        <section aria-labelledby="cf-replays" className="flex flex-col gap-2 rounded-card bg-kin/10 p-3 ring-1 ring-kin/50 ring-inset">
+          <h2 id="cf-replays" className="flex items-center gap-2 font-title text-base font-extrabold text-kin">
+            <Hanko glyph="賭" size={24} />
+            {t("replays.title")}
+          </h2>
+          <ul className="flex flex-col gap-1.5">
+            {props.replays.map((r) => (
+              <li key={r.id} className="flex items-center justify-between gap-3 text-sm">
+                <span className="min-w-0 truncate">
+                  {r.opponent &&
+                    t.rich("replays.row", {
+                      name: r.opponent.username,
+                      card: r.creatorCard.name,
+                      player: () => <PlayerName name={r.opponent!.username} color={r.opponent!.decor.nameColor} className="font-bold" />,
+                    })}
+                </span>
+                <ButtonLink href={`/casino/pile-ou-face/${r.id}`} prefetch={false} size="sm" variant="primary">
+                  {t("replays.watch")}
+                </ButtonLink>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {tab === "tables" && (
         <>
           <nav aria-label={t("salon.filterLabel")} className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]">
@@ -249,7 +278,7 @@ export function CoinFlipSalon(props: Props) {
       {tab === "historique" && props.history && <History history={props.history} now={now} />}
 
       {canPlay ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 flex justify-end px-4 lg:static lg:justify-start lg:px-0">
+        <div className="pointer-events-none fixed inset-x-0 bottom-[var(--mobile-nav-height)] z-30 flex justify-end px-4 lg:static lg:justify-start lg:px-0">
           <Button type="button" variant="primary" size="lg" className="pointer-events-auto shadow-float" onClick={() => setSheet(true)}>
             ＋ {t("salon.stake")}
           </Button>

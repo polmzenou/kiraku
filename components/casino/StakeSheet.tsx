@@ -189,19 +189,22 @@ export function StakeSheet({
           </div>
         )}
 
-        <p className="text-sm text-text-muted">
-          {card && side
-            ? t("stake.recap", { card: card.name, date: format.dateTime(backAt, { weekday: "long", hour: "2-digit", minute: "2-digit" }) })
-            : t("stake.recapEmpty")}
-        </p>
-        {error && (
-          <p role="alert" className="text-sm font-bold text-shu">
-            {t(`errors.${error}`)}
+        {/* Récapitulatif et bouton collés en bas de la feuille : visibles sans redescendre la grille */}
+        <div className="sticky bottom-0 -mx-4 flex flex-col gap-2 border-t border-border bg-bg px-4 pt-3 md:-mx-6 md:px-6">
+          <p className="text-sm text-text-muted">
+            {card && side
+              ? t("stake.recap", { card: card.name, date: format.dateTime(backAt, { weekday: "long", hour: "2-digit", minute: "2-digit" }) })
+              : t("stake.recapEmpty")}
           </p>
-        )}
-        <Button type="button" variant="primary" size="lg" disabled={!ready || pending} onClick={submit} className="w-full">
-          {pending ? t("stake.posting") : t("stake.submit")}
-        </Button>
+          {error && (
+            <p role="alert" className="text-sm font-bold text-shu">
+              {t(`errors.${error}`)}
+            </p>
+          )}
+          <Button type="button" variant="primary" size="lg" disabled={!ready || pending} onClick={submit} className="w-full">
+            {pending ? t("stake.posting") : t("stake.submit")}
+          </Button>
+        </div>
       </div>
     </Sheet>
   );

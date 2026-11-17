@@ -9,7 +9,7 @@ import { isFrozen } from "@/lib/account/deletion";
 import { parseSalonParams } from "@/lib/casino/params";
 import { casinoTiers } from "@/lib/casino/tiers";
 import { getRarityDefinitions } from "@/server/catalog/rarities";
-import { casinoView, listHistory, listLobby, listMyTables } from "@/server/casino/queries";
+import { casinoView, listHistory, listLobby, listMyTables, pendingReplays } from "@/server/casino/queries";
 import { prisma } from "@/server/db";
 import { getCurrentUser } from "@/server/user";
 
@@ -49,10 +49,11 @@ export default async function CoinFlipSalonPage({ searchParams }: PageProps<"/[l
     if (past) reserveFor = (past.creatorId === user.id ? past.opponent?.username : past.creator.username) ?? null;
   }
 
-  const [lobby, mine, history] = await Promise.all([
+  const [lobby, mine, history, replays] = await Promise.all([
     tab === "tables" ? listLobby({ viewerId: user.id, tier: tierOrder, cursor: null, locale }) : null,
     tab === "mes-tables" ? listMyTables(user.id, locale) : null,
     tab === "historique" ? listHistory(user.id, locale) : null,
+    member ? pendingReplays(user.id, locale) : [],
   ]);
 
   return (
@@ -71,6 +72,7 @@ export default async function CoinFlipSalonPage({ searchParams }: PageProps<"/[l
           expiryHours={rules.coinflip.expiryHours}
           pollSeconds={rules.coinflip.lobbyPollSeconds}
           reserveFor={member ? reserveFor : null}
+          replays={replays}
           serverNow={view.serverNow}
         />
       </div>

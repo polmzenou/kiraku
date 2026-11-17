@@ -1,4 +1,5 @@
-/* Casino : entrées du fil et du salon. Seulement transform et opacity ; rien en mouvement réduit. */
+/* Casino : entrées du fil et du salon, scène du lancer. Seulement transform et opacity ; rien en mouvement
+   réduit (les animations Web du lancer partent déjà terminées, components/shop/celebration/timeline.ts). */
 
 @keyframes cf-rise {
   from {
@@ -23,4 +24,485 @@
 
 :root[data-motion="reduced"] .cf-rise {
   animation: none;
+}
+
+/* ---------- Scène du lancer (CoinFlipStage) ----------
+   Plateau de 375 × 760 mis à l'échelle de l'écran (--cf-scale), comme le téléphone de la maquette. */
+
+.cf-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #0a0807;
+  touch-action: manipulation;
+}
+
+.cf-board {
+  position: relative;
+  flex: none;
+  width: 375px;
+  height: 760px;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 24px;
+  background: #0a0807;
+  transform: scale(var(--cf-scale, 1));
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--color-text);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@media (max-width: 47.99rem) {
+  .cf-board {
+    border-radius: 0;
+  }
+}
+
+.cf-hk {
+  display: grid;
+  place-items: center;
+  background: url(/casino/fx/hanko-v1.webp) center / 100% 100%;
+  color: var(--color-washi-paper);
+  font-family: var(--font-seal);
+  line-height: 1;
+}
+
+.cf-tshade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgb(10 8 7 / 0.7), rgb(10 8 7 / 0.1) 20%, rgb(10 8 7 / 0.05) 70%, rgb(10 8 7 / 0.75));
+}
+
+.cf-dim {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: radial-gradient(56% 36% at 50% 49%, transparent, rgb(8 6 5 / 0.94) 72%);
+  opacity: 0;
+}
+
+.cf-top {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 20;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px 0 16px;
+}
+
+.cf-top-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-title);
+  font-weight: 800;
+  font-size: 16px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cf-tier {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 10px 2px 7px;
+  border-radius: 999px;
+  background: rgb(21 18 15 / 0.6);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cf-skip {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgb(241 233 218 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(241 233 218 / 0.22);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.cf-banner {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 8px;
+  border-radius: 999px;
+  background: rgb(27 23 19 / 0.92);
+  box-shadow: inset 0 0 0 1px #4a4036, 0 10px 26px rgb(0 0 0 / 0.4);
+}
+
+.cf-banner.cf-theirs {
+  top: 62px;
+}
+
+.cf-banner.cf-mine {
+  top: 650px;
+}
+
+.cf-win-glow {
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  box-shadow: 0 0 0 2px var(--color-kin), 0 0 26px 4px rgb(217 181 86 / 0.55);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cf-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.cf-who b {
+  overflow: hidden;
+  font-family: var(--font-title);
+  font-weight: 800;
+  font-size: 15px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cf-who small {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cf-side {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 40px;
+}
+
+.cf-side img {
+  position: absolute;
+  inset: 0;
+  width: 40px;
+  height: 40px;
+}
+
+.cf-side-glow {
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 226 160 / 0.95), transparent);
+  opacity: 0;
+}
+
+.cf-taisen {
+  position: absolute;
+  left: 50%;
+  top: 370px;
+  z-index: 6;
+  width: 92px;
+  height: 92px;
+  margin: -46px 0 0 -46px;
+  font-size: 60px;
+  opacity: 0;
+  transform: scale(1) rotate(-11deg);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.55);
+}
+
+.cf-scene {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 135px;
+  height: 470px;
+  z-index: 4;
+  perspective: 900px;
+  perspective-origin: 50% 26%;
+}
+
+.cf-table {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 255px;
+  height: 340px;
+  margin: -170px 0 0 -127.5px;
+  transform: rotateX(46deg);
+  transform-style: preserve-3d;
+}
+
+.cf-tray {
+  position: absolute;
+  inset: 0;
+  border-radius: 25px;
+  background: url(/casino/tray-v1.webp) center / 100% 100%;
+  box-shadow: 0 34px 46px rgb(0 0 0 / 0.55);
+}
+
+.cf-spot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 230px;
+  height: 230px;
+  margin: -115px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 226 170 / 0.3), rgb(255 200 130 / 0.08) 60%, transparent);
+  opacity: 0.45;
+  transform: translateZ(1px) scale(1);
+}
+
+.cf-flash {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 200px;
+  height: 200px;
+  margin: -100px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 246 220 / 0.95), rgb(255 210 140 / 0.35) 50%, transparent);
+  opacity: 0;
+  transform: translateZ(3px) scale(0.6);
+}
+
+.cf-slot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 84px;
+  margin: -59px 0 0 -42px;
+  border-radius: 7px;
+  box-shadow: 0 6px 14px rgb(0 0 0 / 0.5);
+}
+
+.cf-slot.cf-theirs {
+  transform: translate3d(0px, -104px, 2px) rotateZ(0deg);
+}
+
+.cf-slot.cf-mine {
+  transform: translate3d(0px, 104px, 2px) rotateZ(0deg);
+}
+
+.cf-coin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 68px;
+  height: 68px;
+  margin: -34px 0 0 -34px;
+  transform-style: preserve-3d;
+  transform: translate3d(92px, 178px, 14px);
+}
+
+.cf-coin-tilt,
+.cf-coin-body {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.cf-coin-tilt {
+  transform: rotateZ(0deg) rotateX(0deg) rotateY(0deg);
+}
+
+.cf-face,
+.cf-edge {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.cf-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: center / 100% 100% no-repeat;
+}
+
+.cf-face.cf-omote {
+  background-image: url(/casino/coin/omote-sm-v1.webp);
+  transform: translateZ(4px);
+}
+
+.cf-face.cf-ura {
+  background-image: url(/casino/coin/ura-sm-v1.webp);
+  transform: rotateX(180deg) translateZ(4px);
+}
+
+.cf-edge {
+  background: #a9842c;
+  transform: translateZ(var(--z));
+}
+
+.cf-edge:nth-child(even) {
+  background: #d9b556;
+}
+
+.cf-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.cf-spark {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 50%;
+  background: #f6e3a1;
+  box-shadow: 0 0 8px 2px rgb(242 216 138 / 0.55);
+  opacity: 0;
+}
+
+.cf-kp {
+  position: absolute;
+  top: 0;
+  background: url(/casino/fx/kinpaku-v1.webp) 0 0 / 400% 400% no-repeat;
+  opacity: 0;
+}
+
+.cf-verdict {
+  position: absolute;
+  left: 50%;
+  top: 370px;
+  z-index: 7;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.cf-burst {
+  position: absolute;
+  left: -175px;
+  top: -175px;
+  width: 350px;
+  height: 350px;
+  max-width: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+
+.cf-ring {
+  position: absolute;
+  left: -64px;
+  top: -64px;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  border: 3px solid var(--color-shu);
+  opacity: 0;
+}
+
+.cf-hanko {
+  position: absolute;
+  left: -52px;
+  top: -52px;
+  width: 104px;
+  height: 104px;
+  font-size: 66px;
+  opacity: 0;
+  transform: translate(0px, 0px) scale(1) rotate(-11deg);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.55);
+}
+
+.cf-outro {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(ellipse at 50% 45%, rgb(11 9 8 / 0.3), rgb(11 9 8 / 0.85));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cf-ov {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+  transform: translateY(0px) scale(1);
+}
+
+.cf-okanji {
+  position: relative;
+  width: 330px;
+  height: 170px;
+  display: grid;
+  place-items: center;
+}
+
+.cf-swash {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 330px;
+  height: 110px;
+  margin-top: -48px;
+  background: var(--cf-swash, #d9b556);
+  -webkit-mask: url(/casino/fx/sumi-v1.webp) center / 100% 100% no-repeat;
+  mask: url(/casino/fx/sumi-v1.webp) center / 100% 100% no-repeat;
+  transform-origin: 8% 50%;
+  opacity: 0;
+}
+
+.cf-ok-k {
+  position: relative;
+  font-family: var(--font-seal);
+  font-size: 150px;
+  line-height: 1;
+  color: #f7f0e3;
+  text-shadow: 0 6px 0 #2b1406, 0 0 40px rgb(0 0 0 / 0.55);
+  opacity: 0;
+}
+
+.cf-outro[data-r="lose"] {
+  --cf-swash: #3a4660;
+}
+
+.cf-outro[data-r="lose"] .cf-ok-k {
+  color: #c9dcf3;
+  text-shadow: 0 6px 0 #101828, 0 0 40px rgb(0 0 0 / 0.55);
+}
+
+.cf-olabel {
+  max-width: 300px;
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 21px;
+  line-height: 1.2;
+  opacity: 0;
+}
+
+.cf-tablet {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  background: linear-gradient(170deg, #2e2721, #1b1713);
+  box-shadow: inset 0 0 0 1px #4a4036, 0 20px 50px rgb(0 0 0 / 0.55);
+  opacity: 0;
 }

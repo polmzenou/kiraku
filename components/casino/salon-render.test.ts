@@ -84,6 +84,7 @@ const base = {
   expiryHours: 24,
   pollSeconds: 20,
   reserveFor: null as string | null,
+  replays: [] as CoinFlipTableView[],
   serverNow: NOW,
 };
 const render = (props: Partial<typeof base> = {}) =>
