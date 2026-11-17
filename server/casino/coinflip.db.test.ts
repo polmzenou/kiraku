@@ -6,6 +6,7 @@ import { DEFAULT_CASINO_RULES, type CasinoRules } from "@/lib/casino/rules";
 import { pairKey } from "@/lib/social/relation";
 import type { MarketRules } from "@/lib/market/rules";
 import { createPgAdapter } from "@/server/pg-adapter";
+import { deleteUserWith } from "../admin/users-delete-core";
 import { recycleWith, RecycleError } from "../collection/recycle-core";
 import { createAuctionWith } from "../market/auction-core";
 import { freeCopy } from "../social/free-copy";
@@ -336,6 +337,22 @@ describe.skipIf(!url)("pile ou face atomique (base réelle)", () => {
     expect(await prisma.coinFlip.count({ where: { OR: [{ creatorId: a }, { reservedForId: a }], status: "OPEN" } })).toBe(0);
     expect(await inStatus(a, "CASINO")).toBe(0);
     expect(await inStatus(b, "CASINO")).toBe(0);
+  }, 60_000);
+
+  it("suppression d'un compte par l'admin : les tables qui lui étaient réservées rendent leur carte", async () => {
+    const [a, gone] = [await player(), await player()];
+    const admin = await player();
+    await prisma.user.update({ where: { id: admin }, data: { role: "ADMIN" } });
+    await give(a, card.EPIC, 2);
+    await give(gone, card.EPIC2, 2);
+    await prisma.friendship.create({ data: { pairKey: pairKey(a, gone), requesterId: a, addresseeId: gone, status: "ACCEPTED", createdAt: OLD, acceptedAt: OLD } });
+    const reserved = await createTableWith(prisma, { userId: a, cardId: card.EPIC, side: "OMOTE", reservedForId: gone }, ctx());
+    const own = await createTableWith(prisma, { userId: gone, cardId: card.EPIC2, side: "OMOTE" }, ctx());
+    await deleteUserWith(prisma, { adminId: admin, userId: gone, reason: "test" });
+    expect(await prisma.coinFlip.findUnique({ where: { id: reserved.flipId }, select: { status: true } })).toEqual({ status: "CANCELLED" });
+    expect(await prisma.coinFlip.findUnique({ where: { id: own.flipId } })).toBeNull();
+    expect(await inStatus(a, "CASINO")).toBe(0);
+    await prisma.adminLog.deleteMany({ where: { adminId: admin } });
   }, 60_000);
 
   it("une carte misée échappe au recyclage, à la vente et aux échanges", async () => {

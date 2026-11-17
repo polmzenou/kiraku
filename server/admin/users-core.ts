@@ -13,6 +13,7 @@ import { lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { writeAdminLog } from "./log";
 import { consumeWishlist } from "../collection/wishlist-core";
+import { withdrawCasinoFor } from "../casino/coinflip-core";
 
 export class AdminUserMutationError extends Error {
   constructor(readonly code: AdminUserError) { super(code); }
@@ -66,6 +67,13 @@ async function giftFromTeam(
 }
 
 export async function mutateAdminUserWith(db: PrismaClient, adminId: string, input: AdminUserMutation, onNotified?: OnNotified) {
+  await mutateUnderLock(db, adminId, input, onNotified);
+  // Bannissement : ses tables de pile ou face se ferment après coup (verrou des tables avant celui des joueurs).
+  // Entre-temps, un joueur banni ne pose plus et ses tables ne se relèvent plus.
+  if (input.kind === "account" && input.banned) await withdrawCasinoFor(db, input.userId, new Date());
+}
+
+async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUserMutation, onNotified?: OnNotified) {
   return notifyingTransaction(db, async (tx) => {
     await lockPlayers(tx, [adminId, input.userId]);
     // Le rôle est revérifié sous verrou : une session ouverte ne conserve pas les droits retirés.

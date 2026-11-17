@@ -47,6 +47,7 @@ export const EXPORT_FIELDS = {
   tradeListings: ["id", "cardId", "wants", "status", "note", "createdAt", "expiresAt", "resolvedAt"],
   listingOffers: ["listingId", "cardId", "status", "createdAt", "resolvedAt"],
   trades: ["id", "direction", "wantedCardId", "chosenCardId", "status", "note", "declineNote", "createdAt", "resolvedAt"],
+  coinFlips: ["id", "role", "status", "creatorCardId", "creatorSide", "opponentCardId", "result", "won", "seed", "seedHash", "createdAt", "resolvedAt"],
   friends: ["username", "status", "direction", "createdAt", "acceptedAt"],
   blocked: ["username", "createdAt"],
   gifts: ["direction", "kind", "cardId", "zeniSpent", "otherUsername", "createdAt"],

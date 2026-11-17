@@ -461,7 +461,8 @@ export async function sweepCasinoWith(
 /**
  * Retire du casino un joueur banni, retiré du jeu ou anonymisé, dans la transaction appelante : ses tables
  * ouvertes sont fermées (carte rendue), celles qui lui étaient réservées aussi (carte rendue à leur créateur).
- * Aucune notification : il n'y a plus personne à qui répondre.
+ * Aucune notification : il n'y a plus personne à qui répondre. Les tables sont verrouillées ici : appeler
+ * avant de verrouiller des joueurs (même ordre qu'une relève : la table, puis les joueurs).
  */
 export async function withdrawCasinoWith(tx: Tx, userId: string, now: Date): Promise<number> {
   const rows = await tx.$queryRaw<{ id: string }[]>`
@@ -473,6 +474,11 @@ export async function withdrawCasinoWith(tx: Tx, userId: string, now: Date): Pro
     if (flip?.status === "OPEN") await returnStake(tx, flip, "CANCELLED", now);
   }
   return rows.length;
+}
+
+/** withdrawCasinoWith dans sa propre transaction (bannissement, demande de suppression, anonymisation). */
+export async function withdrawCasinoFor(db: PrismaClient, userId: string, now: Date): Promise<number> {
+  return db.$transaction((tx) => withdrawCasinoWith(tx, userId, now), TX);
 }
 
 /** Le créateur a vu ses lancers rejoués : ils ne repartent plus à son retour. */
