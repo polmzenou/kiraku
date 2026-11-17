@@ -23,6 +23,7 @@ Kiraku s'adresse aux personnes de **15 ans et plus**. Si tu as moins de 15 ans, 
 - Toute vente, achat ou échange de comptes, de Zeni ou de cartes contre de l'argent réel ou un bien extérieur au jeu est interdit.
 - Les taux de tirage des boosters sont affichés dans le jeu. Le serveur décide seul des tirages, des prix et des résultats de combat.
 - L'éditeur peut faire évoluer l'équilibre du jeu (taux, prix, récompenses) à tout moment.
+- **Casino.** Le pile ou face du casino oppose deux joueurs qui misent chacun une carte du même palier ; le gagnant garde les deux. On n'y mise **ni Zeni ni argent réel**, et rien n'y est vendu : seules des cartes virtuelles, sans valeur monétaire, changent de main. Le tirage est fait par le serveur et vérifiable : son empreinte est publiée à l'ouverture de la table, puis la graine est révélée après le lancer. Une carte misée reste bloquée tant que sa table est ouverte et revient à son propriétaire si personne ne la relève à temps.
 
 ## 5. Règles de conduite
 
