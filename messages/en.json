@@ -1524,7 +1524,10 @@
       "focusCards": "{count, plural, one {# card} other {# cards}}",
       "focusRate": "Share of a rarity’s draws going to these series (%)",
       "focusPity": "Card from these series guaranteed on the Nth booster without one (0 = never)",
-      "focusEndsHint": "Required: the booster disappears at this date and a countdown is shown."
+      "focusEndsHint": "Required: the booster disappears at this date and a countdown is shown.",
+      "includeCustom": "Automatically include original creations",
+      "includeCustomOn": "Hand-made cards join this booster as soon as they pass its filter, like AniList cards: nothing to check on their page. Exclusive variants still need to be checked.",
+      "includeCustomOff": "Only original creations checked on their page join this booster (sealed packs, Prestige, events)."
     },
     "banners": {
       "title": "Featured banners",
@@ -2883,7 +2886,9 @@
       "spoiler": "Spoiler",
       "spoilerHint": "Character or transformation that gives away the story: its art is blurred for players who turned on spoiler mode. The name and details stay visible.",
       "boostersExtra": "Boosters on top of the base card's",
-      "ultimate": "Ultimate in battle"
+      "ultimate": "Ultimate in battle",
+      "boostersAutoHint": "Boosters marked “automatic” already take it if it passes their filter. Check the others here, or a booster whose filter leaves it out.",
+      "boosterAuto": "automatic"
     },
     "cosmetics": {
       "title": "Profile titles and frames",

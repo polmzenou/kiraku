@@ -34,6 +34,12 @@ export const FAMILY_KANJI: Record<BoosterFamily, string> = {
 export const BOOSTER_KINDS = ["STANDARD", "RARITY", "FILTERED", "BANNER", "FORMAT", "FOCUS", "DROP", "PRESTIGE"] as const;
 export type BoosterKind = (typeof BOOSTER_KINDS)[number];
 
+/**
+ * Un type inclut-il d'office les créations originales qui passent son filtre ? Oui, sauf les sachets
+ * scellés (DROP) et les exclusifs boutique (PRESTIGE), dont le contenu se choisit carte par carte.
+ */
+export const includesCustomByDefault = (kind: BoosterKind): boolean => kind !== "DROP" && kind !== "PRESTIGE";
+
 export const BOOSTER_SHAPES = ["SACHET", "POCHIBUKURO", "JUBAKO"] as const;
 export type BoosterShape = (typeof BOOSTER_SHAPES)[number];
 
@@ -126,6 +132,11 @@ export type BoosterTypeView = {
   focusSeriesIds: number[];
   /** Focus série : cartes du pool de ces œuvres, recalculées avec le pool. */
   focusCardIds: string[];
+  /**
+   * Créations originales (origin CUSTOM) qui passent le filtre, comme les cartes AniList. Sinon, seules
+   * celles cochées pour ce type sur leur fiche. Une variante exclusive reste toujours à cocher.
+   */
+  includeCustom: boolean;
   minPoolSize: number | null;
   startsAt: Date | null;
   endsAt: Date | null;

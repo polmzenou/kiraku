@@ -48,6 +48,8 @@ export const boosterTypeFormSchema = z
     countsForPity: z.boolean(),
     resetsPity: z.boolean(),
     bonusEligible: z.boolean(),
+    /** Créations originales qui passent le filtre, sans les cocher une à une sur leur fiche. */
+    includeCustom: z.boolean(),
     /** Boost de rareté : multiplicateur en points de base (×1 à ×10) à partir de rateBoostFrom. */
     rateBoost: z.number().int().min(10_000).max(100_000),
     rateBoostFrom: rarityKeySchema.nullable(),
@@ -91,6 +93,7 @@ export function formFromType(type: BoosterTypeView): BoosterTypeForm {
     countsForPity: type.countsForPity,
     resetsPity: type.resetsPity,
     bonusEligible: type.bonusEligible,
+    includeCustom: type.includeCustom,
     rateBoost: type.rateBoost,
     rateBoostFrom: type.rateBoostFrom,
     featuredCardIds: type.featuredCardIds,
@@ -123,6 +126,7 @@ export function newBannerForm(): BoosterTypeForm {
     countsForPity: true,
     resetsPity: true,
     bonusEligible: true,
+    includeCustom: true,
     rateBoost: 10_000,
     rateBoostFrom: null,
     featuredCardIds: [],
@@ -161,6 +165,7 @@ export function newFocusForm(now = new Date()): BoosterTypeForm {
     countsForPity: true,
     resetsPity: true,
     bonusEligible: true,
+    includeCustom: true,
     rateBoost: 10_000,
     rateBoostFrom: null,
     featuredCardIds: [],

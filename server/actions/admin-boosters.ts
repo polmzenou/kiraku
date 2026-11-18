@@ -78,7 +78,7 @@ export async function saveBoosterType(input: unknown): Promise<AdminBoosterResul
   }
 
   const minPool = v.minPoolSize ?? (await getSetting("booster.minPool"));
-  const poolSize = await poolSizeFor({ filter, featuredCardIds: featured });
+  const poolSize = await poolSizeFor({ filter, featuredCardIds: featured, includeCustom: v.includeCustom });
   if (v.active && poolSize < minPool) return { ok: false, error: "POOL_TOO_SMALL", poolSize };
 
   // Champs écrits un par un, jamais l'objet reçu
@@ -97,6 +97,7 @@ export async function saveBoosterType(input: unknown): Promise<AdminBoosterResul
     countsForPity: v.countsForPity,
     resetsPity: v.resetsPity,
     bonusEligible: v.bonusEligible,
+    includeCustom: v.includeCustom,
     rateBoost: v.rateBoost,
     rateBoostFrom: v.rateBoostFrom,
     featuredCardIds: featured,

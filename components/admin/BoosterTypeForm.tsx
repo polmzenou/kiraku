@@ -327,6 +327,10 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, focusSerie
             <Check label={t("currentSeason")} checked={Boolean(v.filter.currentSeason)} onChange={(c) => setFilter({ currentSeason: c || undefined })} />
             <Check label={t("birthdayToday")} checked={Boolean(v.filter.birthdayToday)} onChange={(c) => setFilter({ birthdayToday: c || undefined })} />
           </div>
+          <div>
+            <Check label={t("includeCustom")} checked={v.includeCustom} onChange={(c) => set("includeCustom", c)} />
+            <p className="text-xs text-text-muted">{t(v.includeCustom ? "includeCustomOn" : "includeCustomOff")}</p>
+          </div>
         </Section>
 
         <Section title={t("composition")}>

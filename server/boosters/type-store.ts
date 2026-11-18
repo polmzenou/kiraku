@@ -6,6 +6,7 @@ import { filterPool, followsBase, isDynamicFilter, parsePoolFilter, type FilterC
 import { isPoolStale } from "@/lib/boosters/pool-freshness";
 import {
   BOOSTER_FAMILIES,
+  includesCustomByDefault,
   isRarity,
   parseLocalized,
   parseTheme,
@@ -45,6 +46,7 @@ export function toBoosterTypeView(row: Omit<BoosterTypeRow, "poolCardIds">): Boo
     featuredPity: row.featuredPity,
     focusSeriesIds: row.focusSeriesIds,
     focusCardIds: row.focusCardIds,
+    includeCustom: row.includeCustom,
     minPoolSize: row.minPoolSize,
     startsAt: row.startsAt,
     endsAt: row.endsAt,
@@ -99,18 +101,30 @@ export async function loadCandidates(db: Pick<PrismaClient, "card">): Promise<Po
 }
 
 /**
- * Cartes du pool d'un type : celles qui passent le filtre, les créations cochées pour ce type, les
- * variantes (AR, Gold) dont la carte de base est dans le pool (sauf variante exclusive), plus les
- * vedettes d'une bannière (toujours tirables, même hors filtre). Un filtre invalide donne un pool vide.
+ * Création originale admise d'office par un type qui inclut les créations : toute création sauf une
+ * variante exclusive, réservée aux types cochés sur sa fiche. Elle doit encore passer le filtre.
+ */
+export function autoCustom(card: Pick<PoolCandidate, "origin" | "boosterExclusive">, type: Pick<BoosterTypeView, "includeCustom">): boolean {
+  return card.origin === "CUSTOM" && type.includeCustom && !card.boosterExclusive;
+}
+
+/**
+ * Cartes du pool d'un type : celles qui passent le filtre (créations originales comprises si le type les
+ * inclut d'office), les créations cochées pour ce type, les variantes (AR, Gold) dont la carte de base est
+ * dans le pool (sauf variante exclusive), plus les vedettes d'une bannière (toujours tirables, même hors
+ * filtre). Un filtre invalide donne un pool vide.
  */
 export function computePoolCards(
-  type: Pick<BoosterTypeView, "filter" | "featuredCardIds"> & { id?: string },
+  type: Pick<BoosterTypeView, "filter" | "featuredCardIds" | "includeCustom"> & { id?: string },
   candidates: readonly PoolCandidate[],
   ctx: FilterContext,
 ): PoolCandidate[] {
   if (!type.filter) return [];
-  const chosen = candidates.filter((c) => c.origin === "CUSTOM" && type.id && c.boosterIds?.includes(type.id));
-  const base = [...filterPool(candidates.filter((c) => c.origin !== "CUSTOM"), type.filter, ctx), ...chosen];
+  const ticked = (c: PoolCandidate) => Boolean(type.id && c.boosterIds?.includes(type.id));
+  const filtered = filterPool(candidates.filter((c) => c.origin !== "CUSTOM" || autoCustom(c, type)), type.filter, ctx);
+  const passed = new Set(filtered.map((c) => c.id));
+  const chosen = candidates.filter((c) => c.origin === "CUSTOM" && ticked(c) && !passed.has(c.id));
+  const base = [...filtered, ...chosen];
   // Une variante suit sa carte de base : pas besoin de la cocher dans chaque nouveau booster
   const inBase = new Set(base.map((c) => c.id));
   const followers = candidates.filter((c) => followsBase(c, (id) => inBase.has(id)) && !inBase.has(c.id));
@@ -118,7 +132,7 @@ export function computePoolCards(
   if (type.featuredCardIds.length === 0) return kept;
   const ids = new Set(kept.map((c) => c.id));
   const featured = new Set(type.featuredCardIds);
-  return [...kept, ...candidates.filter((c) => featured.has(c.id) && !ids.has(c.id) && (c.origin !== "CUSTOM" || (type.id && c.boosterIds?.includes(type.id))))];
+  return [...kept, ...candidates.filter((c) => featured.has(c.id) && !ids.has(c.id) && (c.origin !== "CUSTOM" || autoCustom(c, type) || ticked(c)))];
 }
 
 /** Focus série : cartes du pool qui appartiennent aux œuvres mises en avant (ordre du pool). */
@@ -129,7 +143,7 @@ export function focusCards(cards: readonly Pick<PoolCandidate, "id" | "seriesAni
 }
 
 export function computePool(
-  type: Pick<BoosterTypeView, "filter" | "featuredCardIds"> & { id?: string },
+  type: Pick<BoosterTypeView, "filter" | "featuredCardIds" | "includeCustom"> & { id?: string },
   candidates: readonly PoolCandidate[],
   ctx: FilterContext,
 ): CardPool {
@@ -215,6 +229,7 @@ export async function upsertBoosterSeeds(
       countsForPity: seed.countsForPity ?? true,
       resetsPity: seed.resetsPity ?? true,
       bonusEligible: seed.bonusEligible ?? true,
+      includeCustom: includesCustomByDefault(seed.kind),
       rateBoost: seed.rateBoost ?? 10_000,
       rateBoostFrom: seed.rateBoostFrom ?? null,
       minPoolSize: seed.minPoolSize ?? null,
