@@ -946,6 +946,7 @@
     "soundOff": "Sound off",
     "featured": "Featured",
     "newCard": "New",
+    "regainedCard": "Found again",
     "revealCard": "Flip the card",
     "nextCard": "Next card",
     "deckProgress": "Card {current} of {total}",
@@ -4787,7 +4788,8 @@
         "GIFT": "Booster gifted to a friend",
         "SEASON": "Season reward (ranked)",
         "ABILITY": "Ability bought (workshop)",
-        "EXPEDITION": "Expedition"
+        "EXPEDITION": "Expedition",
+        "REBIRTH": "Rebirth (prestige)"
       }
     },
     "reveal": {

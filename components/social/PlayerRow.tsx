@@ -24,7 +24,7 @@ export function PlayerRow({
   return (
     <li className={`flex min-h-16 items-center gap-3 rounded-control px-2 py-2 transition-colors hover:bg-surface-2/60 ${className}`}>
       <Link href={`/u/${player.username}`} className="flex min-h-11 min-w-0 flex-1 items-center gap-3">
-        <PlayerAvatar username={player.username} image={player.image} size={40} frame={player.decor?.frame} online={player.online} />
+        <PlayerAvatar username={player.username} image={player.image} size={40} frame={player.decor?.frame} prestige={player.decor?.prestige} online={player.online} />
         <span className="flex min-w-0 flex-col">
           <PlayerName name={name} color={player.decor?.nameColor} className="truncate font-bold" />
           {detail && <span className="truncate text-xs text-text-muted">{detail}</span>}

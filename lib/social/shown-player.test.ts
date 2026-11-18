@@ -14,13 +14,13 @@ describe("shownPlayer", () => {
   });
 
   it("ne révèle rien quand le pseudo est remplacé par un libellé", () => {
-    expect(shownPlayer("Joueur", player)).toEqual({ name: "Joueur", profile: null, image: null, color: null, frame: null });
+    expect(shownPlayer("Joueur", player)).toEqual({ name: "Joueur", profile: null, image: null, color: null, frame: null, prestige: 0 });
   });
 
   it("accepte un nom calculé : visible comme une chaîne, révélé à l'admin avec un cadenas et rien d'autre", () => {
     expect(shownPlayer({ name: "Sakura", revealed: false }, player)).toMatchObject({ name: "Sakura", profile: "Sakura", image: player.image });
-    expect(shownPlayer({ name: "Joueur", revealed: false }, player)).toEqual({ name: "Joueur", profile: null, image: null, color: null, frame: null });
-    expect(shownPlayer({ name: "Sakura", revealed: true }, player)).toEqual({ name: "Sakura", profile: null, image: null, color: null, frame: null, locked: true });
+    expect(shownPlayer({ name: "Joueur", revealed: false }, player)).toEqual({ name: "Joueur", profile: null, image: null, color: null, frame: null, prestige: 0 });
+    expect(shownPlayer({ name: "Sakura", revealed: true }, player)).toEqual({ name: "Sakura", profile: null, image: null, color: null, frame: null, prestige: 0, locked: true });
   });
 
   it("ignore un cosmétique désactivé", () => {
@@ -32,13 +32,13 @@ describe("shownPlayer", () => {
 
 describe("shownPlayerRef", () => {
   it("garde le pseudo dans le lien quand le nom affiché diffère (invité)", () => {
-    const ref = { username: "guest_ab12", image: null, decor: { frame: null, nameColor: null } };
-    expect(shownPlayerRef("Invité AB12", ref)).toEqual({ name: "Invité AB12", profile: "guest_ab12", image: null, color: null, frame: null });
+    const ref = { username: "guest_ab12", image: null, decor: { frame: null, nameColor: null, prestige: 0 } };
+    expect(shownPlayerRef("Invité AB12", ref)).toEqual({ name: "Invité AB12", profile: "guest_ab12", image: null, color: null, frame: null, prestige: 0 });
   });
 });
 
 describe("anonymousPlayer", () => {
   it("n'a ni lien ni image", () => {
-    expect(anonymousPlayer("Joueur mystère")).toEqual({ name: "Joueur mystère", profile: null, image: null, color: null, frame: null });
+    expect(anonymousPlayer("Joueur mystère")).toEqual({ name: "Joueur mystère", profile: null, image: null, color: null, frame: null, prestige: 0 });
   });
 });

@@ -145,7 +145,7 @@ const loadRankedTop = unstable_cache(
       ) ranked
       WHERE position <= ${size}
       ORDER BY position`,
-  ["ranked-top-v2"],
+  ["ranked-top-v3"],
   { tags: [RANKED_TAG], revalidate: 60 },
 );
 
@@ -162,7 +162,7 @@ export async function getRankedLeaderboard(r: RankedRules): Promise<RankedEntry[
         pc: row.pc,
         tier: rank.tier,
         division: rank.division,
-        decor: decorFromColumns(row.frameStyle, row.nameColor),
+        decor: decorFromColumns(row.frameStyle, row.nameColor, row.prestige),
       };
     });
 }
@@ -207,7 +207,7 @@ function divisionQuery(min: number, max: number | null, grand: boolean, gc: { mi
 const loadDivision = unstable_cache(
   async (min: number, max: number | null, grand: boolean, gcMin: number, gcTop: number) =>
     prisma.$queryRaw<DivisionRow[]>`${divisionQuery(min, max, grand, { min: gcMin, top: gcTop })} WHERE division.public ORDER BY position LIMIT ${DIVISION_SIZE}`,
-  ["ranked-division-v1"],
+  ["ranked-division-v2"],
   { tags: [RANKED_TAG], revalidate: 60 },
 );
 
@@ -229,7 +229,7 @@ export async function getDivisionBoard(userId: string, rank: Pick<RankView, "tie
       pc: row.pc,
       tier: at.tier,
       division: at.division,
-      decor: decorFromColumns(row.frameStyle, row.nameColor),
+      decor: decorFromColumns(row.frameStyle, row.nameColor, row.prestige),
       self: row.id === userId,
     };
   };

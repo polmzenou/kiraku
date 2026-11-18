@@ -25,6 +25,7 @@ import {
   type TraderRefusal,
 } from "@/lib/market/rules";
 import { chooseCopy, moveCopy } from "../collection/transfer";
+import { recordDiscoveries } from "../collection/discovery";
 import { applyEntries, credit, debit, LedgerError } from "../economy/ledger";
 import { lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
@@ -299,7 +300,7 @@ async function deliverSale(tx: Tx, a: SoldAuction, now: Date) {
   // Une carte réservée ne peut ni être recyclée, ni offerte, ni changer de main : bug, on annule tout
   if (!moved) throw new Error(`Vente ${a.id} : exemplaire réservé introuvable`);
   await tx.showcaseItem.deleteMany({ where: { userCardId: a.userCardId! } });
-  await tx.discovery.createMany({ data: [{ userId: buyerId, cardId: a.cardId, createdAt: now }], skipDuplicates: true });
+  await recordDiscoveries(tx, [{ userId: buyerId, cardId: a.cardId }], now);
   await consumeWishlist(tx, buyerId, [a.cardId]);
 
   const fee = saleFee(a.currentBid, a.feeBp);

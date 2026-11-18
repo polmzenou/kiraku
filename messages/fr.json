@@ -946,6 +946,7 @@
     "soundOff": "Son coupé",
     "featured": "Vedette",
     "newCard": "Nouveau",
+    "regainedCard": "Retrouvée",
     "revealCard": "Retourner la carte",
     "nextCard": "Carte suivante",
     "deckProgress": "Carte {current} sur {total}",
@@ -4787,7 +4788,8 @@
         "GIFT": "Booster offert à un ami",
         "SEASON": "Récompense de saison (classé)",
         "ABILITY": "Capacité achetée (atelier)",
-        "EXPEDITION": "Expédition"
+        "EXPEDITION": "Expédition",
+        "REBIRTH": "Renaissance (prestige)"
       }
     },
     "reveal": {

@@ -28,7 +28,7 @@ describe("pseudo d'un joueur sur le marché", () => {
   });
 
   it("n'ajoute aucun cadenas pour un joueur public ou un libellé générique", () => {
-    const shown: ShownPlayer = { name: "Rin", profile: "Rin", image: null, color: null, frame: null };
+    const shown: ShownPlayer = { name: "Rin", profile: "Rin", image: null, color: null, frame: null, prestige: 0 };
     const html = render(createElement(PlayerLink, { player: shown }));
     expect(html).toContain('href="/u/Rin"');
     expect(html).not.toContain("Caché aux joueurs");

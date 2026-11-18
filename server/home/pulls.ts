@@ -84,7 +84,7 @@ const feeds = new Map<number, typeof loadFeed>();
 function cachedFeed(seconds: number) {
   let feed = feeds.get(seconds);
   if (!feed) {
-    feed = unstable_cache(loadFeed, ["home-pull-feed-v5", String(seconds)], { revalidate: seconds, tags: [PULL_FEED_TAG] });
+    feed = unstable_cache(loadFeed, ["home-pull-feed-v6", String(seconds)], { revalidate: seconds, tags: [PULL_FEED_TAG] });
     feeds.set(seconds, feed);
   }
   return feed;

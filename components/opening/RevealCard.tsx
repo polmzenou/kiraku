@@ -21,13 +21,13 @@ import { REVEAL_SCENES, revealSceneKey } from "@/lib/opening/reveal-scenes";
  * (la carte était dans la liste de souhaits). Sur une petite carte, le souhait se réduit au cœur.
  */
 export function CardStamps({ card, delay = 0, animated = true, small = false }: {
-  card: Pick<OpenedCardView, "isNew" | "wished">;
+  card: Pick<OpenedCardView, "isNew" | "wished" | "regained">;
   delay?: number;
   animated?: boolean;
   small?: boolean;
 }) {
   const t = useTranslations("opening");
-  if (!card.isNew && !card.wished) return null;
+  if (!card.isNew && !card.regained && !card.wished) return null;
   const stamp = (i: number) => ({
     initial: animated ? { opacity: 0, scale: 2.2, rotate: -28 } : false,
     animate: { opacity: 1, scale: 1, rotate: -12 },
@@ -43,11 +43,19 @@ export function CardStamps({ card, delay = 0, animated = true, small = false }: 
           {t("newCard")}
         </m.span>
       )}
+      {card.regained && !card.isNew && (
+        <m.span
+          className="inline-flex min-h-7 items-center justify-center whitespace-nowrap rounded-[4px] bg-kin px-2 py-1 text-xs font-bold leading-none text-sumi"
+          {...stamp(0)}
+        >
+          {t("regainedCard")}
+        </m.span>
+      )}
       {card.wished && (
         <m.span
           className="inline-flex min-h-7 items-center justify-center gap-1 whitespace-nowrap rounded-[4px] bg-ai px-2 py-1 text-xs font-bold leading-none text-washi-paper"
           title={t("wishedCardLong")}
-          {...stamp(card.isNew ? 1 : 0)}
+          {...stamp(card.isNew || card.regained ? 1 : 0)}
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" className="size-3.5 shrink-0" fill="currentColor">
             <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" />

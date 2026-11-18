@@ -10,13 +10,15 @@ export type ShownPlayer = {
   image: string | null;
   color: NameColorStyle | null;
   frame: FrameStyle | null;
+  /** Prestige du joueur (chiffre romain sur l'avatar), 0 sans renaissance. */
+  prestige: number;
   /** Pseudo caché aux joueurs, montré à un admin : affiché avec un cadenas. */
   locked?: true;
 };
 
 /** Un joueur sans identité à montrer : le libellé seul, ni lien ni avatar. */
 export function anonymousPlayer(name: string): ShownPlayer {
-  return { name, profile: null, image: null, color: null, frame: null };
+  return { name, profile: null, image: null, color: null, frame: null, prestige: 0 };
 }
 
 /**
@@ -28,11 +30,11 @@ export function shownPlayer(shown: string | ShownName, player: { username: strin
   const { name, revealed } = typeof shown === "string" ? { name: shown, revealed: false } : shown;
   if (revealed) return { ...anonymousPlayer(name), locked: true };
   if (name !== player.username) return anonymousPlayer(name);
-  const { frame, nameColor } = decorFromRelations(player);
-  return { name, profile: player.username, image: player.image, color: nameColor, frame };
+  const { frame, nameColor, prestige } = decorFromRelations(player);
+  return { name, profile: player.username, image: player.image, color: nameColor, frame, prestige };
 }
 
 /** Depuis un PlayerRef (échanges) : `name` est le nom affiché, qui diffère du pseudo pour un invité. */
 export function shownPlayerRef(name: string, player: { username: string; image: string | null; decor: PlayerDecor }): ShownPlayer {
-  return { name, profile: player.username, image: player.image, color: player.decor.nameColor, frame: player.decor.frame };
+  return { name, profile: player.username, image: player.image, color: player.decor.nameColor, frame: player.decor.frame, prestige: player.decor.prestige };
 }

@@ -132,6 +132,7 @@ function toView(b: OpenedBoosterRow, views: Awaited<ReturnType<typeof cardViews>
       ...views.get(c.cardId)!,
       userCardId: c.userCardId,
       isNew: c.isNew,
+      regained: c.regained,
       featured: c.featured,
       wished: c.wished,
     })),

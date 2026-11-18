@@ -51,7 +51,7 @@ export async function GET(_request: Request, { params }: RouteContext<"/[locale]
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 64, padding: "84px 80px 0", width: "100%" }}>
           {referrer ? (
-            <OgAvatar username={referrer.username} avatar={avatar} frame={referrer.decor.frame} size={AVATAR} />
+            <OgAvatar username={referrer.username} avatar={avatar} frame={referrer.decor.frame} prestige={referrer.decor.prestige} size={AVATAR} />
           ) : (
             <img src={seal} width={AVATAR - 40} height={AVATAR - 40} alt="" style={{ borderRadius: 40, margin: 20, boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }} />
           )}

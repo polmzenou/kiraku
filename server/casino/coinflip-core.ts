@@ -27,6 +27,7 @@ import type { CoinFlipReturnReason } from "@/lib/social/notifications";
 import { pairKey } from "@/lib/social/relation";
 import { consumeWishlist } from "../collection/wishlist-core";
 import { chooseCopy, moveCopy } from "../collection/transfer";
+import { recordDiscoveries } from "../collection/discovery";
 import { blocksBetween, lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 
@@ -326,7 +327,7 @@ export async function joinTableWith(db: PrismaClient, input: JoinInput, ctx: Coi
       if (!fromEscrow || !fromJoiner) throw new CoinFlipError("CARD_GONE");
       // La carte perdue quitte les vitrines de son ancien propriétaire
       await tx.showcaseItem.deleteMany({ where: { userCardId: prize.userCardId } });
-      await tx.discovery.createMany({ data: [{ userId: winnerId, cardId: prize.cardId, createdAt: now }], skipDuplicates: true });
+      await recordDiscoveries(tx, [{ userId: winnerId, cardId: prize.cardId }], now);
       const wished = await consumeWishlist(tx, winnerId, [prize.cardId]);
 
       const done = await tx.coinFlip.updateMany({

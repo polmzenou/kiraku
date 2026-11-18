@@ -16,6 +16,7 @@ import { lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { writeAdminLog } from "./log";
 import { consumeWishlist } from "../collection/wishlist-core";
+import { recordDiscoveries } from "../collection/discovery";
 import { withdrawCasinoFor } from "../casino/coinflip-core";
 
 export class AdminUserMutationError extends Error {
@@ -214,7 +215,7 @@ async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUs
         before = { cardId: input.cardId, copies };
         if (input.mode === "ADD") {
           await tx.userCard.createMany({ data: Array.from({ length: input.amount }, () => ({ ownerId: userId, cardId: input.cardId, obtainedAt: now })) });
-          await tx.discovery.createMany({ data: [{ userId, cardId: input.cardId, createdAt: now }], skipDuplicates: true });
+          await recordDiscoveries(tx, [{ userId, cardId: input.cardId }], now);
           await consumeWishlist(tx, userId, [input.cardId]);
           await giftFromTeam(tx, { kind: "CARD", userId, adminId, cardId: input.cardId, quantity: input.amount, message: input.message, now });
         } else {

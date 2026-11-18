@@ -88,7 +88,7 @@ function Plate({ player, standing, active, children }: { player: PlayerView | nu
       <div className="flex min-w-0 items-center gap-2.5">
         {human ? (
           <span className={`shrink-0 rounded-full transition-shadow ${active ? "shadow-[0_0_16px_var(--board-glow)]" : ""}`}>
-            <PlayerAvatar username={human.username} image={human.image} size={44} frame={human.decor.frame} />
+            <PlayerAvatar username={human.username} image={human.image} size={44} frame={human.decor.frame} prestige={human.decor.prestige} />
           </span>
         ) : (
           <span

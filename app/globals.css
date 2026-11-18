@@ -1197,6 +1197,53 @@
 }
 
 /*
+ * Plaque du prestige (components/profile/AvatarFrame.tsx) : le chiffre romain en or, posé en haut du cadre de
+ * l'avatar, en miroir du sceau du bas. Matière selon le niveau : laque (I à IV), feuille d'or (V à IX), nacre
+ * (X et plus) ; mêmes valeurs dans l'image de partage (server/og/scene.tsx). Aucune animation : elle est partout.
+ */
+@layer components {
+  .prestige-plate {
+    position: absolute;
+    left: 50%;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    min-width: 1.6em;
+    padding: 0 0.42em;
+    translate: -50% 0;
+    border-radius: 3px;
+    white-space: nowrap;
+    pointer-events: none;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.05em;
+    color: var(--plate-num);
+    background: var(--plate-fill);
+    box-shadow: inset 0 0 0 1px var(--plate-edge), 0 2px 4px rgb(0 0 0 / 0.45);
+  }
+  .prestige-plate.is-small {
+    min-width: 0;
+    padding: 0 3px;
+    letter-spacing: 0;
+  }
+  .prestige-plate[data-mat="laque"] {
+    --plate-edge: #d9b556;
+    --plate-fill: linear-gradient(180deg, #332d27, #0d0b09);
+    --plate-num: #f0d583;
+  }
+  .prestige-plate[data-mat="or"] {
+    --plate-edge: #6e5012;
+    --plate-fill: linear-gradient(160deg, #f8e7aa, #d9b556 46%, #b08a2e);
+    --plate-num: #2a1f08;
+  }
+  .prestige-plate[data-mat="nacre"] {
+    --plate-edge: #c9a447;
+    --plate-fill: linear-gradient(135deg, #f6ecff, #cdeee9 30%, #f8ecc9 55%, #dcd0ff 80%, #d2e6f8);
+    --plate-num: #3b2a5c;
+  }
+}
+
+/*
  * Couleurs de pseudo (Cosmetic NAME_COLOR, lib/profile/name-colors.ts). Dégradé vertical clippé au
  * texte, contour sombre et halo en drop-shadow (un text-shadow peindrait par-dessus le texte
  * transparent). Les effets animés passent par un calque ::after dont seule l'opacité varie.

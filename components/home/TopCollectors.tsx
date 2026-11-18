@@ -87,7 +87,7 @@ function Place({ collector }: { collector: Collector }) {
             username={collector.username}
             image={collector.image}
             size={place.avatar}
-            frame={collector.decor.frame}
+            frame={collector.decor.frame} prestige={collector.decor.prestige}
             // Le cadre porté remplace l'anneau de la place
             className={collector.decor.frame ? "" : `ring-[3px] ring-offset-2 ring-offset-bg ${place.ring}`}
           />

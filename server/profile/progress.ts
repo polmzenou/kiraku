@@ -15,6 +15,7 @@ import {
   discoveredPercent,
 } from "@/lib/profile/conditions";
 import { decorFromRelations, type PlayerDecor } from "@/lib/profile/decor";
+import { mergePeak, parsePeak, type PeakStats } from "@/lib/prestige/peak";
 import { isFrameStyle, type FrameStyle } from "@/lib/profile/frames";
 import { isNameColorStyle, type NameColorStyle } from "@/lib/profile/name-colors";
 import { getCatalogStats } from "../catalog/queries";
@@ -38,7 +39,7 @@ type Hint = { fr?: string; en?: string };
 
 /** Statistiques utiles aux conditions, en quelques requêtes. */
 export async function getProfileStats(userId: string, seriesIds: readonly string[]): Promise<ProfileStats> {
-  const [byRarity, completed, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog] = await Promise.all([
+  const [byRarity, completed, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog, cycles] = await Promise.all([
     prisma.$queryRaw<{ rarity: string; n: number }[]>`
       SELECT c."rarityKey" AS rarity, COUNT(DISTINCT uc."cardId")::int AS n
       FROM "UserCard" uc JOIN "Card" c ON c.id = uc."cardId"
@@ -75,16 +76,26 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
       WHERE d."userId" = ${userId} AND c.status = 'PUBLISHED'
       GROUP BY c."rarityKey"`,
     getCatalogStats(),
+    // Prestige : meilleur score de chaque cycle passé, gardé pour les cosmétiques et les thèmes de vitrine
+    prisma.prestigeCycle.findMany({ where: { userId }, select: { stats: true } }),
   ]);
   // Cartes distinctes : chaque carte a une seule rareté, la somme du décompte par rareté suffit (le
   // `distinct` de Prisma 7 s'applique en mémoire et chargeait tous les exemplaires du joueur)
   const unique = byRarity.reduce((sum, r) => sum + r.n, 0);
+  // Un joueur reparti de zéro garde ce qu'il avait gagné lors d'un cycle passé, sans en gagner davantage
+  const peak = cycles
+    .map((c) => parsePeak(c.stats))
+    .reduce<PeakStats>((best, p) => (p ? mergePeak(best, p) : best), {
+      uniqueCards: unique,
+      byRarity: Object.fromEntries(byRarity.map((r) => [r.rarity, r.n])),
+      completedSeries: completed.map((c) => c.id),
+    });
   // Meilleur des deux : un titre de rang ne se reperd pas après une défaite
   const tier = ladderTier(Math.max(user.rankPoints, user.seasonPeakPc), { tiers });
   return {
-    uniqueCards: unique,
-    byRarity: Object.fromEntries(byRarity.map((r) => [r.rarity, r.n])),
-    completedSeries: new Set(completed.map((c) => c.id)),
+    uniqueCards: peak.uniqueCards,
+    byRarity: peak.byRarity,
+    completedSeries: new Set(peak.completedSeries),
     seriesProgress: Object.fromEntries(series.map((s) => [s.id, { owned: s.owned, total: s.total }])),
     boostersOpened,
     tradesDone,
@@ -171,6 +182,7 @@ export async function getProfileDecor(userId: string, locale: string): Promise<P
       title: { select: { label: true, active: true } },
       frame: { select: { frameStyle: true, active: true } },
       nameColor: { select: { nameColor: true, active: true } },
+      prestige: true,
     },
   });
   const badges = orderedBadges(await getEarnedBadges(user), user.badgeOrder);

@@ -22,6 +22,7 @@ import {
   type TradeListingRefusal,
 } from "@/lib/market/listings";
 import { chooseCopy, moveCopy } from "../collection/transfer";
+import { recordDiscoveries } from "../collection/discovery";
 import { blocksBetween, lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { consumeWishlist } from "../collection/wishlist-core";
@@ -345,13 +346,14 @@ export async function acceptOfferWith(
       ]);
       if (!toBidder || !toOwner) throw new ListingError("CARD_GONE");
       await tx.showcaseItem.deleteMany({ where: { userCardId: { in: [ownerCopy.id, bidderCopy.id] } } });
-      await tx.discovery.createMany({
-        data: [
-          { userId: offer.bidderId, cardId: listing.cardId, createdAt: now },
-          { userId: listing.ownerId, cardId: offer.cardId, createdAt: now },
+      await recordDiscoveries(
+        tx,
+        [
+          { userId: offer.bidderId, cardId: listing.cardId },
+          { userId: listing.ownerId, cardId: offer.cardId },
         ],
-        skipDuplicates: true,
-      });
+        now,
+      );
       const [, ownerWished] = await Promise.all([
         consumeWishlist(tx, offer.bidderId, [listing.cardId]),
         consumeWishlist(tx, listing.ownerId, [offer.cardId]),

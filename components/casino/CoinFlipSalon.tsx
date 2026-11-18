@@ -64,7 +64,7 @@ function TableRow({ table, now, action }: { table: CoinFlipTableView; now: numbe
           {table.forMe && <span className="ml-1.5 rounded-pill bg-hisui/15 px-1.5 text-hisui">{t("salon.reserved")}</span>}
         </small>
         <span className="flex min-w-0 items-center gap-1.5 text-xs text-text-muted">
-          <PlayerAvatar username={table.creator.username} image={table.creator.image} size={20} frame={table.creator.decor.frame} />
+          <PlayerAvatar username={table.creator.username} image={table.creator.image} size={20} frame={table.creator.decor.frame} prestige={table.creator.decor.prestige} />
           <PlayerName name={table.creator.username} color={table.creator.decor.nameColor} className="truncate" />
           <span aria-hidden="true">·</span>
           <span className="shrink-0">{format.relativeTime(new Date(table.createdAt), now)}</span>

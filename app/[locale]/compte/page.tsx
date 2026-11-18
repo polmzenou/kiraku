@@ -86,7 +86,7 @@ export default async function AccountPage() {
       <h1 className="sr-only">{t("account.title")}</h1>
 
       <section className="flex items-center gap-4 lacquer rounded-card p-4">
-        <AvatarFrame frame={user.decor.frame} size={56}>
+        <AvatarFrame frame={user.decor.frame} prestige={user.decor.prestige} size={56}>
           {user.image ? (
             <Image
               src={user.image}

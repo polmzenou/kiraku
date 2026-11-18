@@ -5,6 +5,7 @@ import { conicRingSvg, parseConic } from "@/lib/og/conic";
 import { RARITY_SEAL } from "@/lib/catalog/rarity";
 import { FRAME_KANJI, FRAME_RING, type FrameStyle } from "@/lib/profile/frames";
 import { NAME_COLOR_GRADIENT, type NameColorStyle } from "@/lib/profile/name-colors";
+import { plateMaterial, toRoman, type PlateMaterial } from "@/lib/prestige/roman";
 import type { OgCard } from "./data";
 
 // Briques des images de partage (1200 × 630), palette Yoru. Satori : chaque bloc à plusieurs enfants
@@ -169,7 +170,7 @@ export function FudaFan({ cards }: { cards: OgCard[] }) {
 }
 
 /** Avatar rond du joueur dans son cadre (anneau conique en SVG, sceau du cadre en bas), ou l'initiale sur papier. */
-export function OgAvatar({ username, avatar, frame, size }: { username: string; avatar: string | null; frame: FrameStyle | null; size: number }) {
+export function OgAvatar({ username, avatar, frame, prestige = 0, size }: { username: string; avatar: string | null; frame: FrameStyle | null; prestige?: number; size: number }) {
   const ring = Math.round(size / 15);
   const conic = frame ? parseConic(FRAME_RING[frame]) : null;
   const inner = conic ? size - 2 * ring - 4 : size;
@@ -226,9 +227,48 @@ export function OgAvatar({ username, avatar, frame, size }: { username: string; 
           {FRAME_KANJI[frame]}
         </div>
       )}
+      {prestige > 0 && (
+        // Plaque du prestige, mêmes matières que components/profile/AvatarFrame.tsx (rendu en thème Yoru)
+        <div
+          style={{
+            position: "absolute",
+            top: -size * 0.07,
+            left: 0,
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              height: size * 0.17,
+              padding: `0 ${Math.round(size * 0.05)}px`,
+              borderRadius: size * 0.02,
+              border: `2px solid ${PLATE[plateMaterial(prestige)].edge}`,
+              backgroundImage: PLATE[plateMaterial(prestige)].fill,
+              color: PLATE[plateMaterial(prestige)].num,
+              fontFamily: FONT.title,
+              fontWeight: 800,
+              fontSize: size * 0.11,
+              letterSpacing: "0.05em",
+            }}
+          >
+            {toRoman(prestige)}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+/** Matières de la plaque du prestige (components/profile/AvatarFrame.tsx, globals.css). */
+const PLATE: Record<PlateMaterial, { edge: string; fill: string; num: string }> = {
+  laque: { edge: "#d9b556", fill: "linear-gradient(180deg, #332d27, #0d0b09)", num: "#f0d583" },
+  or: { edge: "#6e5012", fill: "linear-gradient(160deg, #f8e7aa, #d9b556 46%, #b08a2e)", num: "#2a1f08" },
+  nacre: { edge: "#c9a447", fill: "linear-gradient(135deg, #f6ecff, #cdeee9 30%, #f8ecc9 55%, #dcd0ff 80%, #d2e6f8)", num: "#3b2a5c" },
+};
 
 /** Pseudo dans sa couleur (dégradé clippé au texte) ; sans couleur, le texte Yoru. */
 export function OgName({ name, color, fontSize }: { name: string; color: NameColorStyle | null; fontSize: number }) {

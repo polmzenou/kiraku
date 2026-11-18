@@ -235,7 +235,7 @@ export function CoinFlipStage({
   const banner = (seat: StageSeat, place: "T" | "M") => (
     <div data-track={place === "T" ? "bannerT" : "bannerM"} className={`cf-banner ${place === "T" ? "cf-theirs" : "cf-mine"}`}>
       <span data-track={place === "T" ? "glowT" : "glowM"} className="cf-win-glow" />
-      <PlayerAvatar username={seat.player.username} image={seat.player.image} size={40} frame={seat.player.decor.frame} />
+      <PlayerAvatar username={seat.player.username} image={seat.player.image} size={40} frame={seat.player.decor.frame} prestige={seat.player.decor.prestige} />
       <span className="cf-who">
         <b>{seat.you ? t("you") : seat.player.username}</b>
         <small>

@@ -22,6 +22,7 @@ import { blocksBetween, lockPlayers, type LockedPlayer, type Tx } from "./lock";
 import { notify, notifyingTransaction, type OnNotified } from "./notify";
 import { consumeWishlist } from "../collection/wishlist-core";
 import { chooseCopy, moveCopy } from "../collection/transfer";
+import { recordDiscoveries } from "../collection/discovery";
 
 export type GiftErrorCode = GiftRefusal | SealedGiftRefusal | "NO_USER" | "NOT_OWNED" | "CHOOSE_COPY" | "RARITY" | "NOT_ENOUGH_ZENI";
 
@@ -104,10 +105,7 @@ export async function giftCardWith(
     const moved = await moveCopy(tx, { userCardId: copy.id, fromId: ctx.senderId, fromStatus: "COLLECTION", toId: ctx.recipientId, via: "GIFT", now });
     if (!moved) throw new GiftError("NOT_OWNED");
     await tx.showcaseItem.deleteMany({ where: { userCardId: copy.id } }); // quitte toutes les vitrines
-    await tx.discovery.createMany({
-      data: [{ userId: ctx.recipientId, cardId: ctx.cardId, createdAt: now }],
-      skipDuplicates: true,
-    });
+    await recordDiscoveries(tx, [{ userId: ctx.recipientId, cardId: ctx.cardId }], now);
     await consumeWishlist(tx, ctx.recipientId, [ctx.cardId]);
 
     const gift = await tx.gift.create({

@@ -26,6 +26,7 @@ import { consumeWishlist } from "../collection/wishlist-core";
 import type { Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { loadOwnedCopies } from "./duplicate-guard";
+import { recordDiscoveries } from "../collection/discovery";
 
 export type OpenErrorCode =
   | "NO_USER"
@@ -87,7 +88,17 @@ export type OpenedBoosterRow = {
   featuredHit: boolean;
   featuredPityTriggered: boolean;
   zeniSpent: number;
-  cards: { userCardId: string; cardId: string; rarity: Rarity; isNew: boolean; featured: boolean; /** Était dans la liste de souhaits (premier exemplaire). */ wished: boolean }[];
+  cards: {
+    userCardId: string;
+    cardId: string;
+    rarity: Rarity;
+    isNew: boolean;
+    /** Prestige : déjà découverte, obtenue pour la première fois dans le cycle en cours (premier exemplaire). */
+    regained: boolean;
+    featured: boolean;
+    /** Était dans la liste de souhaits (premier exemplaire). */
+    wished: boolean;
+  }[];
 };
 
 /** Sachet scellé tombé pendant l'ouverture, à sa place dans la série. */
@@ -160,11 +171,13 @@ async function persistDraw(
   if (input.drawn.some((b) => b.cards.some((c) =>
     !stillDrawable(liveCards.get(c.cardId), { rarity: c.rarity, weight: rules.cardWeights?.[c.cardId] ?? 1 }, ctx),
   ))) throw new OpenError("NOT_FOR_SALE");
-  const known = await tx.discovery.findMany({
-    where: { userId, cardId: { in: drawnIds } },
-    select: { cardId: true },
-  });
+  const [known, owner] = await Promise.all([
+    tx.discovery.findMany({ where: { userId, cardId: { in: drawnIds } }, select: { cardId: true, regainedAt: true } }),
+    tx.user.findUniqueOrThrow({ where: { id: userId }, select: { prestige: true } }),
+  ]);
   const seen = new Set(known.map((k) => k.cardId));
+  // Prestige : une carte découverte lors d'un cycle passé, pas encore obtenue dans celui-ci, est « Retrouvée »
+  const regainable = new Set(owner.prestige > 0 ? known.filter((k) => k.regainedAt === null).map((k) => k.cardId) : []);
   // Les cartes obtenues quittent la liste de souhaits ; le premier exemplaire garde la pastille
   const wished = await consumeWishlist(tx, userId, drawnIds);
 
@@ -173,22 +186,17 @@ async function persistDraw(
     cards: b.cards.map((c) => {
       const isNew = !seen.has(c.cardId);
       seen.add(c.cardId);
-      return { userCardId: randomUUID(), cardId: c.cardId, rarity: c.rarity, isNew, featured: c.featured === true, wished: wished.delete(c.cardId) };
+      const regained = regainable.delete(c.cardId);
+      return { userCardId: randomUUID(), cardId: c.cardId, rarity: c.rarity, isNew, regained, featured: c.featured === true, wished: wished.delete(c.cardId) };
     }),
   }));
-  const discovered = boosters.flatMap((b) => b.cards.filter((c) => c.isNew).map((c) => c.cardId));
 
   await tx.userCard.createMany({
     data: boosters.flatMap((b) =>
       b.cards.map((c) => ({ id: c.userCardId, ownerId: userId, cardId: c.cardId, obtainedAt: now })),
     ),
   });
-  if (discovered.length > 0) {
-    await tx.discovery.createMany({
-      data: discovered.map((cardId) => ({ userId, cardId, createdAt: now })),
-      skipDuplicates: true,
-    });
-  }
+  await recordDiscoveries(tx, drawnIds.map((cardId) => ({ userId, cardId })), now);
   await tx.boosterOpening.createMany({
     data: boosters.map((b) => ({
       id: b.id,

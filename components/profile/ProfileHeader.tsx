@@ -48,7 +48,7 @@ export function ProfileHeader({
     <header className="flex flex-col gap-3">
       <div className="flex items-center gap-4">
         <WithPresence online={presence?.online} size={64} announce={false}>
-          <AvatarFrame frame={decor?.frame ?? null} size={64}>
+          <AvatarFrame frame={decor?.frame ?? null} prestige={decor?.prestige} size={64}>
             {image ? (
               <Image src={image} alt={tAccount("avatarAlt", { name })} width={64} height={64} crossOrigin="anonymous" referrerPolicy="no-referrer" className="rounded-full" />
             ) : (

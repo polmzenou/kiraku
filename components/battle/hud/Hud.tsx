@@ -99,7 +99,7 @@ export function PlayerBanner({
   return (
     <div className="player-banner" data-place={place} data-active={active || undefined}>
       <span className="player-avatar">
-        {human ? <PlayerAvatar username={human.username} image={human.image} size={40} frame={human.decor.frame} /> : <BotMask bot={player && "bot" in player ? player.bot : null} size={40} />}
+        {human ? <PlayerAvatar username={human.username} image={human.image} size={40} frame={human.decor.frame} prestige={human.decor.prestige} /> : <BotMask bot={player && "bot" in player ? player.bot : null} size={40} />}
       </span>
       <span className="player-id">
         <PlayerName name={name(player)} color={human?.decor.nameColor} className="player-name" />

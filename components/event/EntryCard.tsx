@@ -16,7 +16,7 @@ export function EntryCard({ entry, result, action }: { entry: ShowcaseEntryView;
   return (
     <article id={headingId} aria-labelledby={`${headingId}-titre`} className="flex scroll-mt-20 flex-col gap-3">
       <header className="flex min-w-0 items-center gap-3">
-        <PlayerAvatar username={name} image={entry.player.image} size={40} frame={entry.player.decor.frame} />
+        <PlayerAvatar username={name} image={entry.player.image} size={40} frame={entry.player.decor.frame} prestige={entry.player.decor.prestige} />
         <div className="flex min-w-0 flex-1 flex-col">
           <h3 id={`${headingId}-titre`} className="truncate font-title text-lg font-bold">
             {t.rich("of", { name, player: playerTag(entry.player.decor.nameColor) })}

@@ -13,6 +13,7 @@ import { profileAccess, type ProfileVisibility } from "@/lib/collection/visibili
 import { pairKey } from "@/lib/social/relation";
 import { checkProposal, isTradeOpen, tradeExpiresAt, uniqueOffered, type TradeRefusal, type TradeRules } from "@/lib/social/trades";
 import { chooseCopy, moveCopy } from "../collection/transfer";
+import { recordDiscoveries } from "../collection/discovery";
 import { blocksBetween, lockPlayers, type Tx } from "./lock";
 import { notify, notifyingTransaction, type OnNotified } from "./notify";
 import { consumeWishlist } from "../collection/wishlist-core";
@@ -244,13 +245,14 @@ export async function acceptTradeWith(
       ]);
       if (!toProposer || !toRecipient) throw new TradeError("CARD_GONE");
       await tx.showcaseItem.deleteMany({ where: { userCardId: { in: [wantedCopy.id, chosenCopy.id] } } });
-      await tx.discovery.createMany({
-        data: [
-          { userId: trade.proposerId, cardId: trade.wantedCardId, createdAt: now },
-          { userId: trade.recipientId, cardId: input.chosenCardId, createdAt: now },
+      await recordDiscoveries(
+        tx,
+        [
+          { userId: trade.proposerId, cardId: trade.wantedCardId },
+          { userId: trade.recipientId, cardId: input.chosenCardId },
         ],
-        skipDuplicates: true,
-      });
+        now,
+      );
       const [, recipientWished] = await Promise.all([
         consumeWishlist(tx, trade.proposerId, [trade.wantedCardId]),
         consumeWishlist(tx, trade.recipientId, [input.chosenCardId]),

@@ -5,8 +5,8 @@ import { decorFromColumns, type PlayerDecor } from "@/lib/profile/decor";
 import { prisma } from "../db";
 import { decorColumns, type DecorColumns } from "../profile/decor";
 
-// Classement des collectionneurs : cartes uniques possédées (exemplaires en vente compris), puis
-// Mythiques uniques. Seuls les profils publics de joueurs non bannis et non retirés par l'admin y figurent,
+// Classement des collectionneurs : prestige (renaissances), puis cartes uniques possédées (exemplaires en vente
+// compris), puis Mythiques uniques. Seuls les profils publics de joueurs non bannis et non retirés par l'admin y figurent,
 // moins les malus posés par l'admin (`leaderboardMalus` en cartes uniques, `leaderboardMythicMalus` en
 // Mythiques). Le rôle DEV voit les totaux bruts, sans malus. Le calcul parcourt toute la table UserCard :
 // on le garde en cache quelques minutes (une entrée par vue).
@@ -32,16 +32,18 @@ const loadTopCollectors = unstable_cache(
       SELECT u."username", u."image", u."isGuest", ${decorColumns},
         GREATEST(COUNT(DISTINCT uc."cardId") - ${malus}, 0)::int AS "uniqueCards",
         GREATEST(COUNT(DISTINCT uc."cardId") FILTER (WHERE c."rarityKey" = 'MYTHIC') - ${mythicMalus}, 0)::int AS "mythics"
-      FROM "UserCard" uc
-      JOIN "User" u ON u."id" = uc."ownerId"
-      JOIN "Card" c ON c."id" = uc."cardId"
+      FROM "User" u
+      LEFT JOIN "UserCard" uc ON uc."ownerId" = u."id"
+      LEFT JOIN "Card" c ON c."id" = uc."cardId"
       WHERE u."bannedAt" IS NULL AND u."leaderboardHiddenAt" IS NULL AND u."profileVisibility" = 'PUBLIC'
       GROUP BY u."id"
-      ORDER BY "uniqueCards" DESC, "mythics" DESC, u."createdAt" ASC
+      -- Prestige d'abord : un joueur reparti de zéro garde sa place devant ceux qui n'ont jamais renaît
+      HAVING COUNT(uc."id") > 0 OR u."prestige" > 0
+      ORDER BY u."prestige" DESC, "uniqueCards" DESC, "mythics" DESC, u."createdAt" ASC
       LIMIT ${LEADERBOARD_SIZE}`;
-    return rows.map(({ frameStyle, nameColor, ...r }, i) => ({ ...r, rank: i + 1, decor: decorFromColumns(frameStyle, nameColor) }));
+    return rows.map(({ frameStyle, nameColor, prestige, ...r }, i) => ({ ...r, rank: i + 1, decor: decorFromColumns(frameStyle, nameColor, prestige) }));
   },
-  ["top-collectors-v4"],
+  ["top-collectors-v5"],
   { tags: [LEADERBOARD_TAG], revalidate: 300 },
 );
 
