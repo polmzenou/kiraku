@@ -137,6 +137,7 @@ model User {
   ledger       CoinTransaction[]
   authTokens   AuthToken[]
   cards        UserCard[]
+  copyHistory  UserCardOwner[] // exemplaires spéciaux passés par ses mains (provenance)
   openings     BoosterOpening[]
   notablePulls NotablePull[]
   discoveries  Discovery[]
@@ -471,13 +472,47 @@ model UserCard {
   card       Card          @relation(fields: [cardId], references: [id])
   status     CardStatus    @default(COLLECTION)
   obtainedAt DateTime      @default(now())
+  // Prestige (étape 16). Exemplaire spécial = héritier (heritage > 0) ou gravé (printing renseigné) :
+  // le serveur ne le choisit jamais tout seul, et chaque changement de main passe par moveCopy.
+  heritage    Int          @default(0) // prestiges traversés d'affilée, 0 à 5 (CHECK)
+  keptByOwner Int          @default(0) // prestiges traversés chez le propriétaire actuel (remis à 0 au transfert, déclencheur)
+  printing    Int? // tirage de l'édition gravée (null = exemplaire ordinaire)
+  serial      Int? // numéro dans ce tirage ; renseigné avec printing (CHECK)
   showcase   ShowcaseSlot? // ancienne vitrine unique, plus lue
   showcaseItems ShowcaseItem[]
   auctions   Auction[]
+  owners     UserCardOwner[]
 
+  // Dans la migration : index unique partiel (cardId, printing, serial) WHERE printing IS NOT NULL,
+  // et index partiel (ownerId, cardId) des exemplaires spéciaux.
   @@index([ownerId, cardId])
   @@index([ownerId, status, cardId]) // collection groupée par carte (couvre aussi [ownerId, status])
   @@index([cardId]) // exemplaires d'une carte (marché, échanges, fiche)
+}
+
+enum OwnershipVia {
+  DRAW // sortie d'un booster (édition gravée)
+  REBIRTH // gardée à une renaissance (première marque d'héritage)
+  AUCTION
+  LISTING // annonce du Marché
+  TRADE // échange entre joueurs
+  GIFT
+  CASINO // gagnée au pile ou face
+}
+
+// Provenance d'un exemplaire spécial : un propriétaire par ligne, dans l'ordre. Écrite à la sortie d'une
+// gravée, au premier prestige qui garde un exemplaire et à chaque transfert (moveCopy).
+model UserCardOwner {
+  id         String       @id @default(cuid())
+  userCardId String
+  userCard   UserCard     @relation(fields: [userCardId], references: [id], onDelete: Cascade) // exemplaire recyclé = provenance effacée
+  ownerId    String? // null = compte supprimé
+  owner      User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  via        OwnershipVia
+  at         DateTime     @default(now())
+
+  @@index([userCardId, at])
+  @@index([ownerId]) // suppression d'un compte
 }
 
 // Un booster ouvert, partageable par lien (/tirage/[id])
@@ -1548,6 +1583,7 @@ model Trade {
   wantedCardId   String // carte demandée à l'ami (id de Card)
   wantedCard     Card         @relation("tradeWanted", fields: [wantedCardId], references: [id], onDelete: Cascade)
   chosenCardId   String? // carte offerte choisie par l'ami à l'acceptation
+  userCardId     String? // exemplaire donné par l'ami, s'il l'a désigné (sans clé étrangère, comme Gift.userCardId)
   chosenCard     Card?        @relation("tradeChosen", fields: [chosenCardId], references: [id], onDelete: SetNull)
   status         TradeStatus  @default(PENDING)
   expiresAt      DateTime
@@ -1570,6 +1606,7 @@ model TradeOffer {
   trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
   cardId  String
   card    Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  userCardId String? // exemplaire désigné par le proposant (pièce spéciale), sans clé étrangère
 
   @@id([tradeId, cardId])
 }
@@ -1591,6 +1628,7 @@ model TradeListing {
   ownerId    String
   owner      User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   cardId     String // carte donnée (id de Card ; l'exemplaire est choisi à l'acceptation)
+  userCardId String? // exemplaire désigné par l'auteur (pièce spéciale), sans clé étrangère : revérifié à l'acceptation
   card       Card               @relation(fields: [cardId], references: [id], onDelete: Cascade)
   status     ListingStatus      @default(OPEN)
   expiresAt  DateTime
@@ -1635,6 +1673,7 @@ model ListingOffer {
   bidderId     String
   bidder       User               @relation(fields: [bidderId], references: [id], onDelete: Cascade)
   cardId       String // carte proposée (id de Card)
+  userCardId   String? // exemplaire désigné par l'offrant (pièce spéciale), sans clé étrangère
   card         Card               @relation(fields: [cardId], references: [id], onDelete: Cascade)
   fromWants    Boolean // la carte faisait partie des cartes demandées
   status       ListingOfferStatus @default(PENDING)

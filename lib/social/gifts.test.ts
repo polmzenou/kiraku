@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SETTING_DEFAULTS } from "../settings/defaults";
-import { checkGift, checkSealedGift, pickGiftCopy, sealedWindowStart, type GiftCheck } from "./gifts";
+import { onlySpecialCopies } from "../collection/copies";
+import { checkGift, checkSealedGift, pickGiftCopy, pickLoanCopy, sealedWindowStart, type GiftCheck } from "./gifts";
 
 const now = new Date("2026-10-14T12:00:00Z");
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000);
@@ -63,6 +64,32 @@ describe("pickGiftCopy", () => {
   it("prend l'exemplaire exposé s'il n'y a que lui", () => {
     expect(pickGiftCopy([copies[0]], new Set(["old"]))?.id).toBe("old");
     expect(pickGiftCopy([], new Set())).toBeNull();
+  });
+
+  it("ne prend jamais un exemplaire spécial, même le plus récent", () => {
+    const engraved = { id: "engraved", obtainedAt: daysAgo(0), printing: 1 };
+    const heir = { id: "heir", obtainedAt: daysAgo(0), heritage: 3 };
+    expect(pickGiftCopy([...copies, engraved, heir], new Set())?.id).toBe("new");
+    // Que des spéciaux : aucun choix automatique, le joueur doit désigner
+    expect(pickGiftCopy([engraved, heir], new Set())).toBeNull();
+    expect(onlySpecialCopies([engraved, heir])).toBe(true);
+    expect(onlySpecialCopies([engraved, { ...copies[0], heritage: 0 }])).toBe(false);
+    expect(onlySpecialCopies([])).toBe(false);
+  });
+});
+
+describe("pickLoanCopy", () => {
+  const ordinary = { id: "ordinary", obtainedAt: daysAgo(9) };
+  const engraved = { id: "engraved", obtainedAt: daysAgo(1), printing: 1 };
+
+  it("prête un ordinaire d'abord, un spécial s'il n'y a que lui", () => {
+    expect(pickLoanCopy([engraved, ordinary], new Set())?.id).toBe("ordinary");
+    expect(pickLoanCopy([engraved], new Set())?.id).toBe("engraved");
+    expect(pickLoanCopy([], new Set())).toBeNull();
+  });
+
+  it("un ordinaire exposé passe avant un spécial libre", () => {
+    expect(pickLoanCopy([engraved, ordinary], new Set(["ordinary"]))?.id).toBe("ordinary");
   });
 });
 

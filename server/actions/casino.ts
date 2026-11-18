@@ -40,9 +40,10 @@ type Failure = { ok: false; error: CasinoActionError };
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
 const side = z.enum(["OMOTE", "URA"]);
 const createSchema = z
-  .object({ cardId: id, side, reservedFor: z.string().regex(USERNAME_REGEX).nullable(), confirmLastCopy: z.boolean() })
+  // userCardId : exemplaire désigné, obligatoire pour miser une pièce spéciale (héritière ou gravée)
+  .object({ cardId: id, userCardId: id.nullish(), side, reservedFor: z.string().regex(USERNAME_REGEX).nullable(), confirmLastCopy: z.boolean() })
   .strict();
-const joinSchema = z.object({ flipId: id, cardId: id, confirmLastCopy: z.boolean() }).strict();
+const joinSchema = z.object({ flipId: id, cardId: id, userCardId: id.nullish(), confirmLastCopy: z.boolean() }).strict();
 const flipIdSchema = z.object({ flipId: id }).strict();
 const seenSchema = z.object({ flipIds: z.array(id).min(1).max(20) }).strict();
 const adminCancelSchema = z.object({ flipId: id, reason: z.string().trim().min(3).max(200) }).strict();
@@ -89,7 +90,7 @@ export async function createCoinFlipAction(input: unknown): Promise<{ ok: true; 
     }
     const { flipId } = await createTableWith(
       prisma,
-      { userId: g.user.id, cardId: g.data.cardId, side: g.data.side, reservedForId, confirmLastCopy: g.data.confirmLastCopy },
+      { userId: g.user.id, cardId: g.data.cardId, userCardId: g.data.userCardId ?? null, side: g.data.side, reservedForId, confirmLastCopy: g.data.confirmLastCopy },
       await coinFlipContext(),
       pushLater,
     );
@@ -115,7 +116,7 @@ export async function joinCoinFlipAction(input: unknown): Promise<JoinResult | F
   try {
     const res = await joinTableWith(
       prisma,
-      { userId: g.user.id, flipId: g.data.flipId, cardId: g.data.cardId, confirmLastCopy: g.data.confirmLastCopy },
+      { userId: g.user.id, flipId: g.data.flipId, cardId: g.data.cardId, userCardId: g.data.userCardId ?? null, confirmLastCopy: g.data.confirmLastCopy },
       await coinFlipContext(),
       pushLater,
     );

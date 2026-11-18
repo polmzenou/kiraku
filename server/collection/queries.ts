@@ -143,7 +143,8 @@ export async function getCollectionSummary(ownerId: string, values: RecycleValue
              (COUNT(*) FILTER (WHERE g.listed))::int AS "inCatalog"
       FROM (
         SELECT c."rarityKey" AS rarity, c.status = 'PUBLISHED' AS listed, COUNT(*) AS copies,
-               COUNT(*) FILTER (WHERE uc.status = 'COLLECTION') AS free
+               -- Doublons recyclables : exemplaires ordinaires en collection (une pièce spéciale ne part jamais en lot)
+               COUNT(*) FILTER (WHERE uc.status = 'COLLECTION' AND uc.heritage = 0 AND uc.printing IS NULL) AS free
         FROM "UserCard" uc
         JOIN "Card" c ON c.id = uc."cardId"
         WHERE uc."ownerId" = ${ownerId}
@@ -198,12 +199,16 @@ export async function getOwnedCopies(ownerId: string, cardId: string) {
   const copies = await prisma.userCard.findMany({
     where: { ownerId, cardId },
     orderBy: [{ obtainedAt: "asc" }, { id: "asc" }],
-    select: { id: true, status: true, obtainedAt: true, _count: { select: { showcaseItems: true } } },
+    select: { id: true, status: true, obtainedAt: true, heritage: true, printing: true, serial: true, _count: { select: { showcaseItems: true } } },
   });
   return copies.map((c) => ({
     id: c.id,
     status: c.status,
     obtainedAt: c.obtainedAt,
+    /** Prestige : héritage et édition gravée de l'exemplaire (0 et null pour un ordinaire). */
+    heritage: c.heritage,
+    printing: c.printing,
+    serial: c.serial,
     /** Exposé dans au moins une vitrine du joueur. */
     inShowcase: c._count.showcaseItems > 0,
   }));

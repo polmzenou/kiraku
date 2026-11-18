@@ -1,6 +1,7 @@
 import "server-only";
 import { displayNameFor } from "@/lib/collection/display-name";
 import { auctionMessage, tradeListingMessage } from "@/lib/discord/market-message";
+import { promisedCopyLeft } from "../collection/transfer";
 import { prisma } from "../db";
 import { appUrl, discordMarketConfigured, env } from "../env";
 import { getSetting } from "../settings";
@@ -46,7 +47,7 @@ export async function syncDiscordListing(listingId: string): Promise<boolean> {
   const listing = await prisma.tradeListing.findUnique({
     where: { id: listingId },
     select: {
-      id: true, ownerId: true, cardId: true, status: true, expiresAt: true,
+      id: true, ownerId: true, cardId: true, userCardId: true, status: true, expiresAt: true,
       owner: { select: { id: true, username: true, profileVisibility: true, bannedAt: true, anonymizedAt: true } },
       card: { select: { name: true, imageUrl: true, spoiler: true, rarityDefinition: { select: { nameFr: true } } } },
       wants: { orderBy: { cardId: "asc" }, select: { card: { select: { name: true, rarityDefinition: { select: { nameFr: true } } } } } },
@@ -59,7 +60,8 @@ export async function syncDiscordListing(listingId: string): Promise<boolean> {
     await prisma.discordPost.updateMany({ where: { key: post.key, messageId: null }, data: { nextAttemptAt: null } });
     return false;
   }
-  const available = open && await prisma.userCard.count({ where: { ownerId: listing.ownerId, cardId: listing.cardId, status: "COLLECTION" } }) > 0;
+  // Même règle que l'acceptation : l'exemplaire épinglé, sinon un ordinaire
+  const available = open && await promisedCopyLeft(prisma, listing);
   const payload = tradeListingMessage({
     ...listing,
     available,

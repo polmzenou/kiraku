@@ -735,6 +735,7 @@
       "INVALID_BUYOUT": "L'achat immédiat doit être plus élevé que le prix de départ.",
       "INVALID_DURATION": "Durée non proposée.",
       "NOT_OWNED": "Tu n'as plus d'exemplaire disponible de cette carte.",
+      "CHOOSE_COPY": "Tu n'as que des exemplaires spéciaux de cette carte (héritière ou gravée). Choisis celui que tu mets en vente.",
       "TOO_MANY_ACTIVE": "Tu as atteint le nombre maximal de ventes en cours.",
       "NOT_FOUND": "Cette vente n'existe pas.",
       "CLOSED": "Cette vente est terminée.",
@@ -2469,6 +2470,9 @@
         "expedition": {
           "enabled": "Expéditions"
         },
+        "prestige": {
+          "enabled": "Prestige"
+        },
         "notifications": {
           "pushEnabled": "Notifications push"
         }
@@ -2504,6 +2508,9 @@
         },
         "expedition": {
           "enabled": "Page /expedition, entrée du menu et tuile du Compte. Coupé : seul l'admin voit la page (aperçu)."
+        },
+        "prestige": {
+          "enabled": "Page /prestige et bouton « Évoluer » du profil. Coupé : seul l'admin voit la page (aperçu)."
         },
         "notifications": {
           "pushEnabled": "Envoi des notifications quand l'onglet est fermé."
@@ -3664,6 +3671,13 @@
       "inCasino": "{count, plural, one {# en jeu au casino} other {# en jeu au casino}}",
       "inExpedition": "{count, plural, one {# en expédition} other {# en expédition}}",
       "firstObtained": "Première obtention : {date}",
+      "specialTitle": "{count, plural, one {Exemplaire spécial} other {# exemplaires spéciaux}}",
+      "edition": "Édition n° {serial}",
+      "heritage": "Héritage {level}",
+      "specialBusy": "En jeu ailleurs (vente, combat, expédition ou casino)",
+      "recycleCopy": "Recycler cet exemplaire",
+      "recycleCopyEngraved": "Cet exemplaire gravé disparaît pour toujours : son numéro ne ressortira jamais.",
+      "recycleCopyHeir": "Cette héritière disparaît pour toujours, avec son héritage.",
       "recycleTitle": "Recycler les doublons",
       "unitValue": "{zeni, number} Zeni par doublon.",
       "noDuplicates": "Aucun doublon à recycler.",
@@ -4422,6 +4436,7 @@
       "SENT_LIMIT": "Tu as déjà offert {perDaySent} cadeaux à {name} aujourd'hui. Reviens demain !",
       "RECEIVED_LIMIT": "{name} a déjà reçu assez de cadeaux aujourd'hui.",
       "NOT_OWNED": "Tu n'as plus cette carte dans ta collection.",
+      "CHOOSE_COPY": "Tu n'as que des exemplaires spéciaux de cette carte (héritière ou gravée). Choisis celui que tu offres.",
       "RARITY": "Cette rareté ne peut pas être offerte.",
       "NOT_ENOUGH_ZENI": "Pas assez de Zeni ({price} nécessaires).",
       "NOT_GIFTABLE": "Ce sachet ne peut plus être offert.",
@@ -5838,6 +5853,7 @@
       "NOT_FOUND": "Table introuvable.",
       "NO_USER": "Joueur introuvable.",
       "CARD_GONE": "Cette carte n'est plus disponible dans ta collection.",
+      "CHOOSE_COPY": "Tu n'as que des exemplaires spéciaux de cette carte (héritière ou gravée). Choisis celui que tu mises.",
       "NO_SESSION": "Ta session a expiré : recharge la page.",
       "INVALID": "Demande invalide.",
       "RATE_LIMITED": "Doucement ! Réessaie dans un moment.",
@@ -6047,7 +6063,8 @@
       "NOT_FOUND": "Échange introuvable.",
       "CLOSED": "Cet échange n'est plus ouvert.",
       "NOT_OFFERED": "Cette carte ne fait pas partie de l'offre.",
-      "CARD_GONE": "Une des cartes n'est plus disponible : l'échange est annulé."
+      "CARD_GONE": "Une des cartes n'est plus disponible : l'échange est annulé.",
+      "CHOOSE_COPY": "Il ne reste que des exemplaires spéciaux de cette carte (héritière ou gravée). Choisis celui qui part."
     },
     "noteFrom": "Mot de {name}",
     "declineNoteFrom": "Motif du refus de {name}",
@@ -6220,6 +6237,7 @@
       "TOO_NEW": "Ton compte est trop récent pour échanger au Marché.",
       "NO_USER": "Ce joueur n'est plus disponible.",
       "CARD_GONE": "La carte de l'annonce n'est plus disponible.",
+      "CHOOSE_COPY": "Tu n'as que des exemplaires spéciaux de cette carte (héritière ou gravée). Choisis celui que tu proposes.",
       "OFFER_GONE": "La carte proposée n'est plus disponible.",
       "WANT_GONE": "Une des cartes demandées n'existe plus.",
       "NOT_FOUND": "Annonce ou offre introuvable.",

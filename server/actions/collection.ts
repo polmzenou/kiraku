@@ -98,6 +98,7 @@ export async function loadCollectionPage(input: unknown): Promise<({ ok: true } 
 export type RecycleResult = { ok: true; recycled: number; gain: number; coins: number } | Failure;
 
 const recycleCardSchema = z.object({ cardId: cardIdSchema, count: z.number().int().min(1).max(10_000) });
+const recycleCopySchema = z.object({ userCardId: cardIdSchema, expected: z.number().int().min(0).max(100_000_000) }).strict();
 const recycleAllSchema = z.object({
   maxRarity: rarityKeySchema,
   expected: z.number().int().min(1).max(100_000_000),
@@ -108,7 +109,8 @@ async function runRecycle(request: RecycleRequest, userId: string): Promise<Recy
     return { ok: false, error: "RATE_LIMITED" };
   }
   try {
-    const outcome = await recycleWith(prisma, userId, request, await getSetting("collection.recycleValues"));
+    const [values, engravedMultiplier] = await Promise.all([getSetting("collection.recycleValues"), getSetting("prestige.printing.recycleMultiplier")]);
+    const outcome = await recycleWith(prisma, userId, request, values, engravedMultiplier);
     // En-tête (solde) et totaux de la page à jour sans recharger
     refresh();
     return { ok: true, recycled: outcome.recycled, gain: outcome.gain, coins: outcome.coins };
@@ -128,6 +130,17 @@ export async function recycleCardAction(input: unknown): Promise<RecycleResult> 
   // Propriété : seuls les exemplaires du joueur de la session sont lus, dans la transaction
   if (user.bannedAt || isFrozen(user)) return { ok: false, error: "UNAVAILABLE" };
   return runRecycle({ kind: "card", cardId: parsed.data.cardId, count: parsed.data.count }, user.id);
+}
+
+/** Recycle un exemplaire spécial (héritier ou gravé), désigné depuis sa ligne ; `expected` est le gain confirmé. */
+export async function recycleCopyAction(input: unknown): Promise<RecycleResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "NO_SESSION" };
+  const parsed = recycleCopySchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  // Propriété : l'exemplaire est relu sous le verrou du joueur de la session, dans la transaction
+  if (user.bannedAt || isFrozen(user)) return { ok: false, error: "UNAVAILABLE" };
+  return runRecycle({ kind: "copy", userCardId: parsed.data.userCardId, expected: parsed.data.expected }, user.id);
 }
 
 /** Recycle tous les doublons jusqu'à une rareté ; `expected` est le gain que le joueur a confirmé. */

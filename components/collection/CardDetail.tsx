@@ -4,6 +4,8 @@ import { FudaTurnover } from "@/components/fuda/FudaTurnover";
 import { Link } from "@/i18n/navigation";
 import { cardNumber, seriesTitle } from "@/lib/catalog/display";
 import { RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
+import { isSpecialCopy } from "@/lib/collection/copies";
+import { copyRecycleValue } from "@/lib/collection/recycle";
 import { getBattleRules, getCardKit } from "@/server/battle/queries";
 import type { CatalogCardDetail } from "@/server/catalog/queries";
 import { getOwnedCopies } from "@/server/collection/queries";
@@ -12,6 +14,7 @@ import { getSetting } from "@/server/settings";
 import { SellButton } from "../market/SellButton";
 import { ButtonLink } from "../ui/ButtonLink";
 import { RecycleControl } from "./RecycleControl";
+import { RecycleCopyButton } from "./RecycleCopyButton";
 import { ShowcaseToggle } from "./ShowcaseToggle";
 
 /**
@@ -32,7 +35,7 @@ export async function CardDetail({
   isGuest?: boolean;
   headingLevel?: 1 | 2;
 }) {
-  const [t, tMarket, tRarity, tAtelier, tBattle, format, locale, copies, values, sellInfo, onSale, rules] = await Promise.all([
+  const [t, tMarket, tRarity, tAtelier, tBattle, format, locale, copies, values, engravedMultiplier, sellInfo, onSale, rules] = await Promise.all([
     getTranslations("collection.card"),
     getTranslations("market.sell"),
     getTranslations("rarity"),
@@ -42,6 +45,7 @@ export async function CardDetail({
     getLocale(),
     getOwnedCopies(ownerId, card.id),
     getSetting("collection.recycleValues"),
+    getSetting("prestige.printing.recycleMultiplier"),
     sellInfoFor(ownerId, new Date(), card.rarity),
     openAuctionsForCard(ownerId, card.id),
     getBattleRules(),
@@ -53,6 +57,10 @@ export async function CardDetail({
   const Heading = headingLevel === 1 ? "h1" : "h2";
 
   const inCollection = copies.filter((c) => c.status === "COLLECTION").length;
+  // Prestige : les exemplaires spéciaux (héritiers, gravés) ne partent jamais par un choix du serveur ; les
+  // doublons recyclables et la vente rapide ne comptent que les ordinaires
+  const special = copies.filter((c) => isSpecialCopy(c));
+  const ordinaryInCollection = copies.filter((c) => c.status === "COLLECTION" && !isSpecialCopy(c)).length;
   const inShowcase = copies.some((c) => c.inShowcase);
   const byStatus = (s: "AUCTION" | "BATTLE" | "CASINO" | "EXPEDITION") => copies.filter((c) => c.status === s).length;
 
@@ -108,6 +116,30 @@ export async function CardDetail({
               </ul>
             </section>
 
+            {special.length > 0 && (
+              <section className="flex flex-col gap-3 lacquer rounded-card p-4">
+                <h3 className="font-bold">{t("specialTitle", { count: special.length })}</h3>
+                <ul className="flex flex-col gap-3">
+                  {special.map((c) => (
+                    <li key={c.id} className="flex flex-col gap-2 border-t border-border pt-3 first:border-t-0 first:pt-0">
+                      <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+                        {c.printing !== null && <span className="font-bold text-shu">{t("edition", { serial: c.serial ?? 0 })}</span>}
+                        {c.heritage > 0 && <span className="font-bold text-kin">{t("heritage", { level: c.heritage })}</span>}
+                        {c.status !== "COLLECTION" && <span className="text-text-muted">{t("specialBusy")}</span>}
+                      </p>
+                      {c.status === "COLLECTION" && (
+                        <RecycleCopyButton
+                          userCardId={c.id}
+                          engraved={c.printing !== null}
+                          gain={copyRecycleValue({ rarity, printing: c.printing }, values, engravedMultiplier)}
+                        />
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
             {kit && (
               <section className="flex flex-col gap-3 lacquer rounded-card p-4">
                 <div className="flex items-center justify-between gap-3">
@@ -143,7 +175,7 @@ export async function CardDetail({
               <RecycleControl
                 cardId={card.id}
                 copies={copies.length}
-                recyclable={Math.max(0, inCollection - 1)}
+                recyclable={Math.max(0, ordinaryInCollection - 1)}
                 unitValue={values[rarity]}
               />
             </section>
@@ -155,7 +187,7 @@ export async function CardDetail({
                 available={inCollection > 0}
                 profileHref={`/u/${username}`}
               />
-              <SellButton cardId={card.id} cardName={card.name} available={inCollection} info={sellInfo} />
+              <SellButton cardId={card.id} cardName={card.name} available={ordinaryInCollection} info={sellInfo} />
               {onSale.length > 0 && (
                 <ul className="flex flex-col gap-1 text-sm">
                   {onSale.map((a) => (

@@ -735,6 +735,7 @@
       "INVALID_BUYOUT": "The buyout price must be higher than the starting price.",
       "INVALID_DURATION": "Duration not offered.",
       "NOT_OWNED": "You no longer have an available copy of this card.",
+      "CHOOSE_COPY": "You only have special copies of this card (heirloom or engraved). Choose the one you put up for sale.",
       "TOO_MANY_ACTIVE": "You've reached the maximum number of open sales.",
       "NOT_FOUND": "This sale doesn't exist.",
       "CLOSED": "This sale has ended.",
@@ -2469,6 +2470,9 @@
         "expedition": {
           "enabled": "Expeditions"
         },
+        "prestige": {
+          "enabled": "Prestige"
+        },
         "notifications": {
           "pushEnabled": "Push notifications"
         }
@@ -2504,6 +2508,9 @@
         },
         "expedition": {
           "enabled": "The /expedition page, menu entry and Account tile. Off: only admins see the page (preview)."
+        },
+        "prestige": {
+          "enabled": "The /prestige page and the profile's “Evolve” button. Off: only admins see the page (preview)."
         },
         "notifications": {
           "pushEnabled": "Sending notifications when the tab is closed."
@@ -3664,6 +3671,13 @@
       "inCasino": "{count, plural, one {# at stake in the casino} other {# at stake in the casino}}",
       "inExpedition": "{count, plural, one {# on an expedition} other {# on an expedition}}",
       "firstObtained": "First obtained: {date}",
+      "specialTitle": "{count, plural, one {Special copy} other {# special copies}}",
+      "edition": "Edition no. {serial}",
+      "heritage": "Heritage {level}",
+      "specialBusy": "In play elsewhere (sale, battle, expedition or casino)",
+      "recycleCopy": "Recycle this copy",
+      "recycleCopyEngraved": "This engraved copy disappears for good: its number will never come back.",
+      "recycleCopyHeir": "This heirloom disappears for good, along with its heritage.",
       "recycleTitle": "Recycle duplicates",
       "unitValue": "{zeni, number} Zeni per duplicate.",
       "noDuplicates": "No duplicates to recycle.",
@@ -4422,6 +4436,7 @@
       "SENT_LIMIT": "You've already given {perDaySent} gifts to {name} today. Come back tomorrow!",
       "RECEIVED_LIMIT": "{name} has already received enough gifts today.",
       "NOT_OWNED": "This card is no longer in your collection.",
+      "CHOOSE_COPY": "You only have special copies of this card (heirloom or engraved). Choose the one you give.",
       "RARITY": "This rarity can't be given.",
       "NOT_ENOUGH_ZENI": "Not enough Zeni ({price} needed).",
       "NOT_GIFTABLE": "This booster can no longer be gifted.",
@@ -5838,6 +5853,7 @@
       "NOT_FOUND": "Table not found.",
       "NO_USER": "Player not found.",
       "CARD_GONE": "This card is no longer available in your collection.",
+      "CHOOSE_COPY": "You only have special copies of this card (heirloom or engraved). Choose the one you stake.",
       "NO_SESSION": "Your session expired: reload the page.",
       "INVALID": "Invalid request.",
       "RATE_LIMITED": "Easy! Try again in a moment.",
@@ -6047,7 +6063,8 @@
       "NOT_FOUND": "Trade not found.",
       "CLOSED": "This trade is no longer open.",
       "NOT_OFFERED": "This card isn't part of the offer.",
-      "CARD_GONE": "One of the cards is no longer available: the trade is cancelled."
+      "CARD_GONE": "One of the cards is no longer available: the trade is cancelled.",
+      "CHOOSE_COPY": "Only special copies of this card are left (heirloom or engraved). Choose the one that goes."
     },
     "noteFrom": "Note from {name}",
     "declineNoteFrom": "{name}'s reason for declining",
@@ -6220,6 +6237,7 @@
       "TOO_NEW": "Your account is too new to trade on the Market.",
       "NO_USER": "This player is no longer available.",
       "CARD_GONE": "The listed card is no longer available.",
+      "CHOOSE_COPY": "You only have special copies of this card (heirloom or engraved). Choose the one you offer.",
       "OFFER_GONE": "The offered card is no longer available.",
       "WANT_GONE": "One of the wanted cards no longer exists.",
       "NOT_FOUND": "Listing or offer not found.",

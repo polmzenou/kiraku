@@ -38,6 +38,7 @@ export type MarketActionError =
   | "INVALID_BUYOUT"
   | "INVALID_DURATION"
   | "NOT_OWNED"
+  | "CHOOSE_COPY"
   | "TOO_MANY_ACTIVE"
   | "NOT_FOUND"
   | "CLOSED"
@@ -88,6 +89,8 @@ export type CreateAuctionResult = { ok: true; auctionId: string } | Failure;
 const createSchema = z
   .object({
     cardId: idSchema,
+    /** Exemplaire désigné : obligatoire pour vendre une pièce spéciale (héritière ou gravée). */
+    userCardId: idSchema.nullish(),
     startPrice: zeni,
     buyoutPrice: zeni.nullable(),
     durationHours: z.number().int().min(1).max(24 * 14),
@@ -105,6 +108,7 @@ export async function createAuctionAction(input: unknown): Promise<CreateAuction
     const { auctionId } = await createAuctionWith(prisma, {
       sellerId: g.user.id,
       cardId: parsed.data.cardId,
+      userCardId: parsed.data.userCardId ?? null,
       startPrice: parsed.data.startPrice,
       buyoutPrice: parsed.data.buyoutPrice,
       durationHours: parsed.data.durationHours,

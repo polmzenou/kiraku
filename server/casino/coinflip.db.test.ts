@@ -9,7 +9,7 @@ import { createPgAdapter } from "@/server/pg-adapter";
 import { deleteUserWith } from "../admin/users-delete-core";
 import { recycleWith, RecycleError } from "../collection/recycle-core";
 import { createAuctionWith } from "../market/auction-core";
-import { freeCopy } from "../social/free-copy";
+import { chooseCopy } from "../collection/transfer";
 import {
   adminCancelTableWith,
   cancelTableWith,
@@ -369,7 +369,7 @@ describe.skipIf(!url)("pile ou face atomique (base réelle)", () => {
     await expect(
       createAuctionWith(prisma, { sellerId: a, cardId: card.EPIC, startPrice: 10, buyoutPrice: null, durationHours: 24, now: new Date(), rules: MARKET }),
     ).rejects.toThrow();
-    expect(await prisma.$transaction((tx) => freeCopy(tx, a, card.EPIC))).toBeNull();
+    expect(await prisma.$transaction((tx) => chooseCopy(tx, a, card.EPIC))).toEqual({ ok: false, reason: "NONE" });
     // Toujours en jeu après ces tentatives
     expect(await prisma.coinFlip.count({ where: { id: flipId, status: "OPEN" } })).toBe(1);
     expect(await inStatus(a, "CASINO")).toBe(1);

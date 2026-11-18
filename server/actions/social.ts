@@ -46,7 +46,9 @@ type Failure<E extends string = SocialActionError> = { ok: false; error: E };
 const HOUR = 3600;
 const usernameSchema = z.object({ username: z.string().regex(USERNAME_REGEX) });
 const respondSchema = usernameSchema.extend({ accept: z.boolean() });
-const giftCardSchema = usernameSchema.extend({ cardId: z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/) });
+const cardIdSchema = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
+// userCardId : exemplaire désigné, obligatoire pour offrir une pièce spéciale (héritière ou gravée)
+const giftCardSchema = usernameSchema.extend({ cardId: cardIdSchema, userCardId: cardIdSchema.nullish() });
 const giftSealedSchema = usernameSchema.extend({ drop: z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/) });
 
 /** Web Push des notifications créées, une fois la réponse envoyée (hors transaction). */
@@ -229,6 +231,7 @@ export async function giftCardAction(input: unknown): Promise<GiftResult> {
       senderId: g.user.id,
       recipientId: g.recipientId,
       cardId: (g.data as z.infer<typeof giftCardSchema>).cardId,
+      userCardId: (g.data as z.infer<typeof giftCardSchema>).userCardId ?? null,
       rules: g.rules,
       timeZone: g.timeZone,
       allowedRarities: await getSetting("gifts.allowedRarities"),

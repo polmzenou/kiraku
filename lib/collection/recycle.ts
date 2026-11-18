@@ -1,5 +1,6 @@
 import { RARITIES, type Rarity } from "../catalog/rarity";
 import type { SettingValue } from "../settings/defaults";
+import { isSpecialCopy, type CopyMarks } from "./copies";
 
 // Recyclage des doublons en Zeni (section « Raretés et taux de drop » du plan) : on garde toujours
 // un exemplaire de chaque carte, et seuls les exemplaires libres (en collection, hors vitrine) partent.
@@ -12,7 +13,7 @@ export type OwnedCopy = {
   rarity: Rarity;
   status: "COLLECTION" | "AUCTION" | "BATTLE" | "CASINO" | "EXPEDITION";
   obtainedAt: Date;
-};
+} & CopyMarks;
 
 export type RecycleOptions = {
   values: RecycleValues;
@@ -37,6 +38,14 @@ export function recycleValue(rarity: Rarity, count: number, values: RecycleValue
   return (values[rarity] ?? 0) * count;
 }
 
+/**
+ * Valeur d'un exemplaire spécial recyclé seul, depuis sa ligne : une gravée vaut `engravedMultiplier` fois sa
+ * rareté (prestige.printing.recycleMultiplier), une héritière vaut sa rareté.
+ */
+export function copyRecycleValue(copy: { rarity: Rarity } & CopyMarks, values: RecycleValues, engravedMultiplier: number): number {
+  return recycleValue(copy.rarity, 1, values) * ((copy.printing ?? null) !== null ? engravedMultiplier : 1);
+}
+
 function emptyByRarity(): RecyclePlan["byRarity"] {
   return Object.fromEntries(RARITIES.map((r) => [r, { copies: 0, zeni: 0 }])) as RecyclePlan["byRarity"];
 }
@@ -44,7 +53,9 @@ function emptyByRarity(): RecyclePlan["byRarity"] {
 /**
  * Exemplaires à recycler. Par carte : on garde l'exemplaire en vitrine, sinon le plus ancien en
  * collection ; les exemplaires en vente, en combat ou misés au casino ne sont ni recyclés ni comptés comme gardés
- * (ils peuvent partir). Fonction pure et déterministe (départage par id).
+ * (ils peuvent partir). Il en va de même des exemplaires spéciaux (héritiers ou gravés) : ils ne partent jamais
+ * ici, et le recyclage des doublons garde toujours un exemplaire ordinaire à côté d'eux.
+ * Fonction pure et déterministe (départage par id).
  */
 export function planRecycle(copies: readonly OwnedCopy[], opts: RecycleOptions): RecyclePlan {
   const RARITIES = opts.rarities ?? Object.keys(opts.values);
@@ -54,7 +65,7 @@ export function planRecycle(copies: readonly OwnedCopy[], opts: RecycleOptions):
 
   const byCardCopies = new Map<string, OwnedCopy[]>();
   for (const c of copies) {
-    if (c.status !== "COLLECTION") continue;
+    if (c.status !== "COLLECTION" || isSpecialCopy(c)) continue;
     const list = byCardCopies.get(c.cardId);
     if (list) list.push(c);
     else byCardCopies.set(c.cardId, [c]);

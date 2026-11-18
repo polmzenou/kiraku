@@ -5,6 +5,7 @@ import { normalizeSearch, SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
 import type { ListingFilter } from "@/lib/market/listings";
 import { cardViews } from "../boosters/display";
 import { ownedCardIds } from "../collection/owned";
+import { promisedCopyWhere, type PromisedCopy } from "../collection/transfer";
 import { prisma } from "../db";
 import { playerRefSelect as playerSelect, toPlayerRef, type PlayerRef } from "../profile/decor";
 import { expireListingsFor } from "./listing-core";
@@ -49,14 +50,19 @@ async function blockedIds(viewerId: string): Promise<string[]> {
   return [...new Set(rows.map((r) => (r.blockerId === viewerId ? r.blockedId : r.blockerId)))];
 }
 
-/** Paires (joueur, carte) dont le joueur a un exemplaire en collection. */
-async function freePairs(pairs: readonly { ownerId: string; cardId: string }[]): Promise<Set<string>> {
-  if (pairs.length === 0) return new Set();
-  const rows = await prisma.userCard.groupBy({
-    by: ["ownerId", "cardId"],
-    where: { status: "COLLECTION", OR: pairs.map((p) => ({ ownerId: p.ownerId, cardId: p.cardId })) },
+/**
+ * Annonces qui peuvent encore conclure (ids) : l'exemplaire épinglé par l'auteur (pièce spéciale) est toujours
+ * dans sa collection, ou, sans épingle, il lui reste un exemplaire ordinaire de la carte. Même règle que l'acceptation.
+ */
+async function availableListings(rows: readonly ({ id: string } & PromisedCopy)[]): Promise<Set<string>> {
+  if (rows.length === 0) return new Set();
+  const ok = await prisma.userCard.findMany({
+    where: { OR: rows.map(promisedCopyWhere) },
+    select: { id: true, ownerId: true, cardId: true, heritage: true, printing: true },
   });
-  return new Set(rows.map((r) => `${r.ownerId}:${r.cardId}`));
+  const pinned = new Set(ok.map((c) => c.id));
+  const loose = new Set(ok.filter((c) => c.heritage === 0 && c.printing === null).map((c) => `${c.ownerId}:${c.cardId}`));
+  return new Set(rows.filter((r) => (r.userCardId ? pinned.has(r.userCardId) : loose.has(`${r.ownerId}:${r.cardId}`))).map((r) => r.id));
 }
 
 /** Annonces ouvertes, les plus récentes d'abord, filtrées et paginées par id (curseur). */
@@ -99,6 +105,7 @@ export async function listListings(input: {
       createdAt: true,
       expiresAt: true,
       cardId: true,
+      userCardId: true,
       note: true,
       owner: { select: playerSelect },
       wants: { select: { cardId: true } },
@@ -110,7 +117,7 @@ export async function listListings(input: {
 
   const wantIds = [...new Set(page.flatMap((r) => r.wants.map((w) => w.cardId)))];
   const [ownerFree, viewerFree, views, viewerOwned] = await Promise.all([
-    freePairs(page.map((r) => ({ ownerId: r.owner.id, cardId: r.cardId }))),
+    availableListings(page.map((r) => ({ id: r.id, ownerId: r.owner.id, cardId: r.cardId, userCardId: r.userCardId }))),
     wantIds.length
       ? prisma.userCard.groupBy({ by: ["cardId"], where: { ownerId: input.viewerId, status: "COLLECTION", cardId: { in: wantIds } } })
       : Promise.resolve([]),
@@ -126,7 +133,7 @@ export async function listListings(input: {
   const items = page.flatMap((r): ListingView[] => {
     const card = views.get(r.cardId);
     // Une annonce dont l'auteur n'a plus d'exemplaire libre ne peut pas conclure : on la tait
-    if (!card || !ownerFree.has(`${r.owner.id}:${r.cardId}`)) return [];
+    if (!card || !ownerFree.has(r.id)) return [];
     const mine = r.owner.id === input.viewerId;
     const myOffer = r.offers.find((o) => o.bidderId === input.viewerId);
     const myOfferCard = myOffer ? views.get(myOffer.cardId) : undefined;

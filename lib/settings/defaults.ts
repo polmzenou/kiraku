@@ -30,6 +30,19 @@ const rarity = rarityKeySchema;
 const pct = z.number().int().min(0).max(100);
 const expeditionCardBonus = z.object({ below2: pct, below1: pct, same: pct, above1: pct, above2: pct, above3: pct });
 
+// Prestige (étape 16) : seuils d'accès par rareté (% des cartes publiées, 0 = rareté ignorée), barème dégressif
+// des Zeni (tranches croissantes, au-delà de la dernière : rien), éditions gravées (chance en points de base,
+// taille des tirages, sceau de chaque tirage) par clé de rareté ; une rareté absente n'est jamais gravée
+const prestigePercent = z.record(rarityKeySchema, z.number().int().min(0).max(100));
+const prestigeZeniTiers = z
+  .array(z.object({ upTo: z.number().int().min(1).max(100_000_000), pct: z.number().int().min(0).max(100) }).strict())
+  .min(1)
+  .max(5)
+  .refine((tiers) => tiers.every((t, i) => i === 0 || t.upTo > tiers[i - 1].upTo), { message: "Les tranches doivent être croissantes" });
+const printingChance = z.record(rarityKeySchema, z.number().int().min(0).max(10_000));
+const printingSizes = z.record(rarityKeySchema, z.number().int().min(1).max(10_000));
+const printingSeals = z.record(z.string().regex(/^[1-9][0-9]{0,2}$/), z.string().min(1).max(4));
+
 function isTimeZone(tz: string): boolean {
   try {
     new Intl.DateTimeFormat("en", { timeZone: tz });
@@ -418,6 +431,22 @@ export const SETTING_SCHEMAS = {
   "discord.socialPromo": socialPromoSchema,
   // Casino visible (menu, tuile du Compte, /casino) ; éteint, il disparaît pour les joueurs
   "features.casino": z.boolean(),
+  // Prestige (étape 16) : caché tant que l'admin ne l'allume pas
+  "prestige.enabled": z.boolean(),
+  "prestige.requiredPercent": prestigePercent,
+  "prestige.keepSlots": z.number().int().min(1).max(100),
+  "prestige.minDaysBetween": z.number().int().min(0).max(365),
+  "prestige.maxCopies": z.number().int().min(1_000).max(1_000_000),
+  "prestige.heritageMax": z.number().int().min(1).max(5),
+  "prestige.consecrateMinOwnCycles": z.number().int().min(0).max(5),
+  "prestige.zeniTiers": prestigeZeniTiers,
+  "prestige.zeniCap": z.number().int().min(0).max(100_000_000),
+  "prestige.printing.minPrestige": z.number().int().min(1).max(100),
+  "prestige.printing.chanceBp": printingChance,
+  "prestige.printing.sizes": printingSizes,
+  "prestige.printing.current": z.number().int().min(1).max(999),
+  "prestige.printing.seals": printingSeals,
+  "prestige.printing.recycleMultiplier": z.number().int().min(1).max(100),
   // Casino : ouverture (vide = teaser sans date ; future = compte à rebours ; passée = ouvert), badge « Nouveau »
   // et cérémonie pendant newBadgeDays jours après l'ouverture (0 = ni l'un ni l'autre)
   "casino.opensAt": z.string().datetime().nullable(),
@@ -739,6 +768,23 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "discord.avatarSyncBatch": 10, // 10 requêtes par minute au plus : bien sous les limites de Discord
   "discord.socialPromo": SOCIAL_PROMO_DEFAULT, // masquée par défaut
   "features.casino": true,
+  "prestige.enabled": false, // caché tant que l'admin ne l'allume pas
+  // Variantes à 40 % : le booster standard n'en donne presque pas (Gold 2 sur 100 000, BR, VR, MR et XR jamais)
+  "prestige.requiredPercent": { COMMON: 85, UNCOMMON: 85, RARE: 85, EPIC: 80, LEGENDARY: 80, MYTHIC: 70, BR: 40, AR: 40, VR: 40, GOLD: 40, MR: 40, XR: 40 },
+  "prestige.keepSlots": 20,
+  "prestige.minDaysBetween": 0,
+  "prestige.maxCopies": 100_000, // au-delà, le joueur recycle d'abord ses doublons
+  "prestige.heritageMax": 5,
+  "prestige.consecrateMinOwnCycles": 1,
+  "prestige.zeniTiers": [{ upTo: 200_000, pct: 100 }, { upTo: 500_000, pct: 50 }],
+  "prestige.zeniCap": 500_000,
+  "prestige.printing.minPrestige": 1,
+  // Gravées : Mythique et au-dessus seulement, 2 % par carte tirée, tirages de 25
+  "prestige.printing.chanceBp": { MYTHIC: 200, BR: 200, AR: 200, VR: 200, GOLD: 200, MR: 200, XR: 200 },
+  "prestige.printing.sizes": { MYTHIC: 25, BR: 25, AR: 25, VR: 25, GOLD: 25, MR: 25, XR: 25 },
+  "prestige.printing.current": 1,
+  "prestige.printing.seals": { "1": "初摺" },
+  "prestige.printing.recycleMultiplier": 5,
   "casino.opensAt": null, // teaser « Bientôt » sans compte à rebours, comme avant le casino
   "casino.newBadgeDays": 7,
   "casino.minAccountAgeHours": 48, // comme les enchères et les cadeaux

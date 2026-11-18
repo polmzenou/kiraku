@@ -3,7 +3,8 @@
 // Chaque chemin verrouille d'abord la ligne du joueur (lockPlayers), puis l'expédition : une clôture
 // (qui écrit le solde) et un abandon simultanés s'attendent au lieu de s'interbloquer.
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
-import { pickGiftCopy } from "@/lib/social/gifts";
+import { COPY_MARKS } from "@/lib/collection/copies";
+import { pickLoanCopy } from "@/lib/social/gifts";
 import { checkTeam, teamChances, toBasisPoints } from "@/lib/expedition/chance";
 import { boardSeed, generateBoard } from "@/lib/expedition/offers";
 import { outcomeFor, rewardsByOutcome, type RewardBundle } from "@/lib/expedition/rewards";
@@ -114,18 +115,21 @@ export async function discoveryPctWith(db: PrismaClient | Tx, userId: string): P
 
 export type LaunchInput = { userId: string; dayKey: string; slot: number; typeId: string; cardIds: readonly string[] };
 
-/** Exemplaires libres choisis comme pour le combat (le plus récent, hors vitrine si possible), passés en EXPEDITION. */
+/**
+ * Exemplaires libres choisis comme pour le combat (le plus récent, hors vitrine si possible ; un ordinaire
+ * d'abord, une pièce spéciale seulement s'il n'y a qu'elle), passés en EXPEDITION.
+ */
 async function lockCopies(tx: Tx, userId: string, cardIds: readonly string[]): Promise<string[]> {
   const copies = await tx.userCard.findMany({
     where: { ownerId: userId, cardId: { in: [...cardIds] }, status: "COLLECTION" },
-    select: { id: true, cardId: true, obtainedAt: true },
+    select: { id: true, cardId: true, obtainedAt: true, ...COPY_MARKS },
   });
   const shown = new Set(
     (await tx.showcaseItem.findMany({ where: { userCardId: { in: copies.map((c) => c.id) } }, select: { userCardId: true } })).map(
       (s) => s.userCardId,
     ),
   );
-  const chosen = cardIds.map((cardId) => pickGiftCopy(copies.filter((c) => c.cardId === cardId), shown)?.id ?? null);
+  const chosen = cardIds.map((cardId) => pickLoanCopy(copies.filter((c) => c.cardId === cardId), shown)?.id ?? null);
   if (chosen.some((id) => id === null)) throw new ExpeditionError("NOT_OWNED");
   const ids = chosen as string[];
   const reserved = await tx.userCard.updateMany({ where: { id: { in: ids }, ownerId: userId, status: "COLLECTION" }, data: { status: "EXPEDITION" } });

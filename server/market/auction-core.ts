@@ -24,7 +24,7 @@ import {
   type MarketRules,
   type TraderRefusal,
 } from "@/lib/market/rules";
-import { pickGiftCopy } from "@/lib/social/gifts";
+import { chooseCopy, moveCopy } from "../collection/transfer";
 import { applyEntries, credit, debit, LedgerError } from "../economy/ledger";
 import { lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
@@ -36,6 +36,7 @@ export type AuctionErrorCode =
   | ListingRefusal
   | "NO_USER"
   | "NOT_OWNED"
+  | "CHOOSE_COPY"
   | "TOO_MANY_ACTIVE"
   | "NOT_FOUND"
   | "CLOSED"
@@ -90,8 +91,10 @@ function isOpen(a: Pick<LockedAuction, "status" | "endsAt">, now: Date): boolean
 
 export type CreateAuctionInput = {
   sellerId: string;
-  /** Carte du catalogue : le serveur choisit l'exemplaire. */
+  /** Carte du catalogue : le serveur choisit l'exemplaire, parmi les ordinaires. */
   cardId: string;
+  /** Exemplaire désigné par le vendeur : obligatoire pour vendre une pièce spéciale (héritière ou gravée). */
+  userCardId?: string | null;
   startPrice: number;
   buyoutPrice: number | null;
   durationHours: number;
@@ -104,9 +107,10 @@ export type CreateAuctionInput = {
 };
 
 /**
- * Met en vente un exemplaire de `cardId` : le plus récent hors vitrine, sinon le plus récent exposé
- * (son emplacement est libéré, la vitrine n'accepte que des cartes en collection). L'exemplaire
- * passe en AUCTION : il ne peut plus être offert, recyclé ni remis en vente.
+ * Met en vente un exemplaire de `cardId` : celui que le vendeur a désigné, sinon le plus récent ordinaire
+ * hors vitrine, sinon le plus récent ordinaire exposé (son emplacement est libéré, la vitrine n'accepte que
+ * des cartes en collection). Un exemplaire spécial ne part jamais sans être désigné (`CHOOSE_COPY`).
+ * L'exemplaire passe en AUCTION : il ne peut plus être offert, recyclé ni remis en vente.
  */
 export async function createAuctionWith(
   db: PrismaClient,
@@ -128,16 +132,9 @@ export async function createAuctionWith(
     const active = await tx.auction.count({ where: { sellerId: input.sellerId, status: "ACTIVE" } });
     if (active >= input.rules.maxActivePerSeller) throw new AuctionError("TOO_MANY_ACTIVE");
 
-    const copies = await tx.userCard.findMany({
-      where: { ownerId: input.sellerId, cardId: input.cardId, status: "COLLECTION" },
-      select: { id: true, obtainedAt: true },
-    });
-    const shown = await tx.showcaseItem.findMany({
-      where: { userCardId: { in: copies.map((c) => c.id) } },
-      select: { userCardId: true },
-    });
-    const copy = pickGiftCopy(copies, new Set(shown.map((s) => s.userCardId)));
-    if (!copy) throw new AuctionError("NOT_OWNED");
+    const choice = await chooseCopy(tx, input.sellerId, input.cardId, input.userCardId);
+    if (!choice.ok) throw new AuctionError(choice.reason === "CHOOSE_COPY" ? "CHOOSE_COPY" : "NOT_OWNED");
+    const copy = { id: choice.id };
 
     // Réservation conditionnelle : un exemplaire offert ou recyclé entre-temps n'est jamais vendu
     const reserved = await tx.userCard.updateMany({
@@ -297,13 +294,10 @@ type SoldAuction = Pick<LockedAuction, "id" | "sellerId" | "userCardId" | "cardI
 async function deliverSale(tx: Tx, a: SoldAuction, now: Date) {
   const buyerId = a.currentBidderId;
   const moved = a.userCardId
-    ? await tx.userCard.updateMany({
-        where: { id: a.userCardId, ownerId: a.sellerId, status: "AUCTION" },
-        data: { ownerId: buyerId, status: "COLLECTION", obtainedAt: now },
-      })
-    : { count: 0 };
+    ? await moveCopy(tx, { userCardId: a.userCardId, fromId: a.sellerId, fromStatus: "AUCTION", toId: buyerId, via: "AUCTION", now })
+    : false;
   // Une carte réservée ne peut ni être recyclée, ni offerte, ni changer de main : bug, on annule tout
-  if (moved.count !== 1) throw new Error(`Vente ${a.id} : exemplaire réservé introuvable`);
+  if (!moved) throw new Error(`Vente ${a.id} : exemplaire réservé introuvable`);
   await tx.showcaseItem.deleteMany({ where: { userCardId: a.userCardId! } });
   await tx.discovery.createMany({ data: [{ userId: buyerId, cardId: a.cardId, createdAt: now }], skipDuplicates: true });
   await consumeWishlist(tx, buyerId, [a.cardId]);

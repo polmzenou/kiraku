@@ -27,7 +27,8 @@ import {
 } from "@/lib/battle/types";
 import { type Rarity } from "@/lib/catalog/rarity";
 import { mixSeed, seededRng, type Rng } from "@/lib/rng";
-import { pickGiftCopy } from "@/lib/social/gifts";
+import { COPY_MARKS } from "@/lib/collection/copies";
+import { pickLoanCopy } from "@/lib/social/gifts";
 import { pairKey } from "@/lib/social/relation";
 import type { RankedRules } from "@/lib/ranked/rules";
 import { credit } from "../economy/ledger";
@@ -173,20 +174,21 @@ export function checkTeam(cardIds: readonly string[]) {
 
 /**
  * Engage un exemplaire de chacune des 3 cartes (le plus récent hors vitrine de préférence ; la vitrine
- * n'est pas touchée, le blocage n'est que temporaire). Renvoie les ids de UserCard dans l'ordre choisi.
+ * n'est pas touchée, le blocage n'est que temporaire). Un exemplaire ordinaire d'abord : une pièce spéciale
+ * (héritière ou gravée) ne part que s'il n'y a qu'elle, et revient intacte. Renvoie les ids de UserCard dans l'ordre choisi.
  */
 async function lockTeam(tx: Tx, userId: string, cardIds: readonly string[]): Promise<string[]> {
   checkTeam(cardIds);
   const copies = await tx.userCard.findMany({
     where: { ownerId: userId, cardId: { in: [...cardIds] }, status: "COLLECTION" },
-    select: { id: true, cardId: true, obtainedAt: true },
+    select: { id: true, cardId: true, obtainedAt: true, ...COPY_MARKS },
   });
   const shown = new Set(
     (
       await tx.showcaseItem.findMany({ where: { userCardId: { in: copies.map((c) => c.id) } }, select: { userCardId: true } })
     ).map((s) => s.userCardId),
   );
-  const chosen = cardIds.map((cardId) => pickGiftCopy(copies.filter((c) => c.cardId === cardId), shown)?.id ?? null);
+  const chosen = cardIds.map((cardId) => pickLoanCopy(copies.filter((c) => c.cardId === cardId), shown)?.id ?? null);
   if (chosen.some((id) => id === null)) throw new BattleError("NOT_OWNED");
   const ids = chosen as string[];
   const reserved = await tx.userCard.updateMany({

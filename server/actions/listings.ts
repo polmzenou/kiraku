@@ -41,9 +41,10 @@ export type ListingActionError = ListingErrorCode | "NO_SESSION" | "INVALID" | "
 type Failure = { ok: false; error: ListingActionError };
 
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
-const createSchema = z.object({ cardId: id, wantedCardIds: z.array(id).min(1).max(10), note: noteSchema }).strict();
+// userCardId : exemplaire désigné, obligatoire pour proposer une pièce spéciale (héritière ou gravée)
+const createSchema = z.object({ cardId: id, userCardId: id.nullish(), wantedCardIds: z.array(id).min(1).max(10), note: noteSchema }).strict();
 const listingIdSchema = z.object({ listingId: id }).strict();
-const offerSchema = z.object({ listingId: id, cardId: id }).strict();
+const offerSchema = z.object({ listingId: id, cardId: id, userCardId: id.nullish() }).strict();
 const offerIdSchema = z.object({ offerId: id }).strict();
 const declineSchema = z.object({ offerId: id, note: noteSchema }).strict();
 const seenSchema = z.object({ offerIds: z.array(id).min(1).max(50) }).strict();
@@ -100,6 +101,7 @@ export async function createListingAction(input: unknown): Promise<{ ok: true } 
     const { listingId } = await createListingWith(prisma, {
       ownerId: g.user.id,
       cardId: g.data.cardId,
+      userCardId: g.data.userCardId ?? null,
       wantedCardIds: g.data.wantedCardIds,
       note: g.data.note,
       discordChannelId: await discordMarketChannel(),
@@ -131,7 +133,11 @@ export async function makeOfferAction(input: unknown): Promise<{ ok: true } | Fa
   const g = await guard(input, offerSchema, "listing-offer", { limit: 20, windowSeconds: 60 });
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
   try {
-    await makeOfferWith(prisma, { bidderId: g.user.id, listingId: g.data.listingId, cardId: g.data.cardId, rules: await listingRules() }, pushLater);
+    await makeOfferWith(
+      prisma,
+      { bidderId: g.user.id, listingId: g.data.listingId, cardId: g.data.cardId, userCardId: g.data.userCardId ?? null, rules: await listingRules() },
+      pushLater,
+    );
     refresh();
     return { ok: true };
   } catch (e) {
