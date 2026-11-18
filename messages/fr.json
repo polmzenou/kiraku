@@ -2439,7 +2439,8 @@
           "avatarSyncActiveDays": "Joueurs actifs depuis (jours)",
           "avatarSyncBatch": "Joueurs relus par minute",
           "casinoEnabled": "Annonces du casino sur Discord",
-          "casinoMinRarity": "Rareté des gros lancers relayés"
+          "casinoMinRarity": "Rareté des gros lancers relayés",
+          "prestigeEnabled": "Annonces du prestige sur Discord"
         }
       },
       "casinoEnabled": "Annonces du casino (ouverture et gros lancers)",
@@ -2453,7 +2454,9 @@
       "casinoPreview": "Aperçu des annonces",
       "casinoPreviewTeaser": "Teaser",
       "casinoPreviewOpening": "Ouverture (bande-annonce jointe)",
-      "casinoPreviewFlip": "Gros lancer"
+      "casinoPreviewFlip": "Gros lancer",
+      "prestigeEnabled": "Annonces du prestige (renaissances et gravées)",
+      "prestigeHint": "Chaque renaissance et chaque édition gravée tirée sont relayées dans la minute (DISCORD_PRESTIGE_CHANNEL_ID), sans mention de rôle ; un profil privé est annoncé « Un joueur »."
     },
     "features": {
       "title": "Fonctionnalités",
@@ -3676,6 +3679,18 @@
           "INVALID": "Demande invalide.",
           "RATE_LIMITED": "Trop d'essais. Réessaie dans une minute."
         }
+      },
+      "user": {
+        "title": "Prestige",
+        "none": "Pas encore de renaissance.",
+        "level": "Prestige {roman} ({level}) · dernière renaissance le {date}",
+        "cycle": "Cycle {number}",
+        "cycleRow": "rang {rank} · {cards, number} cartes · {zeni, number} Zeni",
+        "special": "{count, plural, one {# exemplaire spécial} other {# exemplaires spéciaux}}",
+        "edition": "tirage {printing} · n° {serial} / {size}",
+        "editionShort": "tirage {printing} · n° {serial}",
+        "heritage": "héritage {level} · gardée {kept} fois par le joueur",
+        "consecrated": "{count, plural, one {# carte consacrée} other {# cartes consacrées}}"
       }
     }
   },

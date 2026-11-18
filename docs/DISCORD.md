@@ -170,6 +170,24 @@ ni du port interne de l'application ni du conteneur PostgreSQL.
 Les messages viennent de `lib/discord/casino-message.ts` ; les images (`public/casino/discord`) sont en JPEG
 1 200 × 630. L'aperçu des trois annonces est en bas du panneau Casino de `/admin/discord`.
 
+### Activer les annonces du prestige
+
+1. Créer un salon d'annonces du prestige, en lecture seule pour les membres (ou réutiliser celui du casino). Donner au
+   bot **Voir le salon**, **Voir l'historique**, **Envoyer des messages** et **Intégrer des liens**.
+2. Ajouter `DISCORD_PRESTIGE_CHANNEL_ID="…"` à l'environnement de l'application du VPS, puis `npm run build` et
+   `pm2 restart kiraku --update-env`.
+3. Dans `/admin/discord`, activer **Annonces du prestige sur Discord** (coupé par défaut), puis enregistrer.
+4. Le cron minute (`/api/cron/discord`) relaie alors, dans la minute :
+   - chaque renaissance (`prestige:rebirth:<cycle>`) : chiffre romain atteint, rang global (« 7ᵉ renaissance de
+     Kiraku »), nombre d'héritières, lien vers le profil s'il est public ;
+   - chaque édition gravée tirée (`prestige:engraved:<gros tirage>`) : carte, sceau du tirage, « n° 17 / 25 », lien
+     vers le registre des gravées de la fiche wiki ; sans illustration pour une carte qui spoile.
+   Un profil privé ou réservé aux amis est annoncé « Un joueur ». Sans mention de rôle. Une annonce de plus de 6 h
+   n'est pas reprise rétroactivement (bot coupé, réglage allumé tard).
+
+Les messages viennent de `lib/discord/prestige-message.ts`, la file et la publication de `server/discord/prestige.ts`.
+Le Marché et le casino annoncent aussi l'exemplaire quand il est spécial (« Gravée 初摺 n° 17 / 25 · héritage 3 »).
+
 ### Guide #bien-débuter
 
 Le salon `1565843323854258276`, dans **👋 ACCUEIL**, contient le guide public : règlement,

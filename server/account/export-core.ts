@@ -2,6 +2,7 @@
 // lib/account/export.ts filtre encore par liste blanche avant d'écrire le fichier.
 import type { PrismaClient } from "@/generated/prisma/client";
 import { buildDataExport, type ExportInput } from "@/lib/account/export";
+import { readJourney } from "@/lib/prestige/journey";
 
 export async function collectExportWith(db: PrismaClient, userId: string, now: Date) {
   const profile = await db.user.findUnique({
@@ -26,6 +27,8 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       discordJoinedAt: true,
       v1WelcomeSeenAt: true,
       deletionRequestedAt: true,
+      prestige: true,
+      prestigedAt: true,
       createdAt: true,
     },
   });
@@ -65,17 +68,30 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     notifications,
     pushSubs,
     requests,
+    prestigeCycles,
+    consecrated,
+    provenance,
   ] = await Promise.all([
     db.account.findMany({ where: { userId }, select: { provider: true, providerAccountId: true } }),
     db.userCard.findMany({
       where: { ownerId: userId },
       orderBy: { obtainedAt: "asc" },
-      select: { id: true, cardId: true, status: true, obtainedAt: true, card: { select: { name: true, rarity: true } } },
+      select: {
+        id: true,
+        cardId: true,
+        status: true,
+        obtainedAt: true,
+        heritage: true,
+        keptByOwner: true,
+        printing: true,
+        serial: true,
+        card: { select: { name: true, rarity: true } },
+      },
     }),
     db.discovery.findMany({
       where: { userId },
       orderBy: { createdAt: "asc" },
-      select: { cardId: true, createdAt: true, card: { select: { name: true } } },
+      select: { cardId: true, createdAt: true, regainedAt: true, card: { select: { name: true } } },
     }),
     db.wishlistEntry.findMany({ where: { userId }, orderBy: { position: "asc" }, select: { cardId: true, position: true, createdAt: true } }),
     db.deck.findMany({ where: { userId }, orderBy: { createdAt: "asc" }, select: { id: true, name: true, cardIds: true, createdAt: true, updatedAt: true } }),
@@ -245,13 +261,39 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       orderBy: { requestedAt: "asc" },
       select: { kind: true, status: true, requestedAt: true, dueAt: true, processedAt: true },
     }),
+    db.prestigeCycle.findMany({
+      where: { userId },
+      orderBy: { number: "asc" },
+      select: { number: true, globalRank: true, uniqueCards: true, zeni: true, heirs: true, createdAt: true },
+    }),
+    db.consecratedCard.findMany({
+      where: { userId },
+      orderBy: { consecratedAt: "asc" },
+      select: { id: true, cardId: true, heritage: true, printing: true, serial: true, size: true, journey: true, consecratedAt: true, card: { select: { name: true } } },
+    }),
+    db.userCardOwner.findMany({ where: { ownerId: userId }, orderBy: { at: "asc" }, select: { userCardId: true, via: true, at: true } }),
   ]);
 
   const input: ExportInput = {
     profile,
     linkedAccounts: accounts,
-    cards: cards.map((c) => ({ id: c.id, cardId: c.cardId, cardName: c.card.name, rarity: c.card.rarity, status: c.status, obtainedAt: c.obtainedAt })),
-    discoveries: discoveries.map((d) => ({ cardId: d.cardId, cardName: d.card.name, createdAt: d.createdAt })),
+    cards: cards.map((c) => ({
+      id: c.id,
+      cardId: c.cardId,
+      cardName: c.card.name,
+      rarity: c.card.rarity,
+      status: c.status,
+      obtainedAt: c.obtainedAt,
+      heritage: c.heritage,
+      keptByOwner: c.keptByOwner,
+      printing: c.printing,
+      serial: c.serial,
+    })),
+    discoveries: discoveries.map((d) => ({ cardId: d.cardId, cardName: d.card.name, createdAt: d.createdAt, regainedAt: d.regainedAt })),
+    prestigeCycles,
+    // Le parcours d'une carte consacrée cite d'autres joueurs : seuls les cycles du joueur sont exportés
+    consecrated: consecrated.map(({ journey, card, ...c }) => ({ ...c, cardName: card.name, cycles: readJourney(journey).cycles })),
+    provenance,
     wishlist,
     decks,
     abilityPurchases,

@@ -4,6 +4,7 @@ import { syncDiscordSeasons } from "@/server/discord/seasons";
 import { syncLinkedDiscordRoles } from "@/server/discord/roles";
 import { syncDiscordAvatars } from "@/server/discord/avatars";
 import { syncDiscordCasino } from "@/server/discord/casino";
+import { syncDiscordPrestige } from "@/server/discord/prestige";
 import { recordDiscordAlert, resolveDiscordAlert } from "@/server/discord/alert-store";
 import { syncDiscordAlerts } from "@/server/discord/alerts";
 import { after } from "next/server";
@@ -28,9 +29,11 @@ export async function GET(request: Request) {
   const market = await run("market", () => syncDiscordMarket(deadline), { synced: 0, failed: 1 });
   // Casino : ouverture postée une fois à l'heure dite, gros lancers relayés dans la minute
   const casino = await run("casino", () => syncDiscordCasino(Math.min(deadline, Date.now() + 15_000)), { opening: false, relayed: 0, failed: 1 });
+  // Prestige : renaissances et éditions gravées tirées, relayées dans la minute
+  const prestige = await run("prestige", () => syncDiscordPrestige(Math.min(deadline, Date.now() + 10_000)), { relayed: 0, failed: 1 });
   // Quelques avatars par passage, sur le temps restant (10 s au plus)
   const avatars = await run("avatars", () => syncDiscordAvatars(Math.min(deadline, Date.now() + 10_000)), { checked: 0, updated: 0 });
   // Temps séparé après la réponse : les alertes ne réduisent pas le budget du marché.
   after(async () => { try { await syncDiscordAlerts(Date.now() + 20_000); } catch { console.warn("[discord] alertes techniques reportées."); } });
-  return Response.json({ ...market, linkedRoles, ranked, avatars, casino });
+  return Response.json({ ...market, linkedRoles, ranked, avatars, casino, prestige });
 }

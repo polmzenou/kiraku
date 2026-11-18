@@ -1,6 +1,7 @@
 import { DeleteUserButton } from "@/components/admin/UserDeletion";
 import { notFound } from "next/navigation";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
+import { AdminUserPrestige } from "@/components/admin/AdminUserPrestige";
 import { DataRequestActions } from "@/components/admin/DataRequestActions";
 import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
 import { UserEditor } from "@/components/admin/UserEditor";
@@ -61,6 +62,8 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
       <UserEditor userId={userId} account={{ username: user.username, role: user.role, banned: !!user.bannedAt, profileVisibility: user.profileVisibility, showCollection: user.showCollection }} ambassadorSince={user.ambassadorSince} leaderboardHiddenAt={user.leaderboardHiddenAt} leaderboardMalus={{ cards: user.leaderboardMalus, mythics: user.leaderboardMythicMalus }} self={admin.id === userId}
         coins={user.coins} incense={incense} stats={{ boosterStock: stock.stock, rankPoints: user.rankPoints, pityCount: user.pityCount, standardCount: user.standardCount }}
         boosters={boosterTypes.map((b) => ({ ...b, pity: pity[b.id] ?? 0 }))} discoveries={discoveries} catalogTotal={catalogTotal} ownedCatalogCards={ownedCatalogCards} selectedCard={selectedCard} sessions={user._count.sessions} />
+
+      <AdminUserPrestige userId={userId} />
 
       <section className="flex flex-col gap-3 lacquer rounded-card p-4">
         <h3 className="font-title text-xl font-bold">{t("gdprTitle")}</h3>

@@ -2439,7 +2439,8 @@
           "avatarSyncActiveDays": "Players active within (days)",
           "avatarSyncBatch": "Players refreshed per minute",
           "casinoEnabled": "Casino announcements on Discord",
-          "casinoMinRarity": "Rarity of relayed big flips"
+          "casinoMinRarity": "Rarity of relayed big flips",
+          "prestigeEnabled": "Prestige announcements on Discord"
         }
       },
       "casinoEnabled": "Casino announcements (opening and big flips)",
@@ -2453,7 +2454,9 @@
       "casinoPreview": "Announcement preview",
       "casinoPreviewTeaser": "Teaser",
       "casinoPreviewOpening": "Opening (trailer attached)",
-      "casinoPreviewFlip": "Big flip"
+      "casinoPreviewFlip": "Big flip",
+      "prestigeEnabled": "Prestige announcements (rebirths and engraved copies)",
+      "prestigeHint": "Every rebirth and every engraved copy pulled is relayed within a minute (DISCORD_PRESTIGE_CHANNEL_ID), without role mentions; a private profile is announced as \"A player\"."
     },
     "features": {
       "title": "Features",
@@ -3676,6 +3679,18 @@
           "INVALID": "Invalid request.",
           "RATE_LIMITED": "Too many attempts. Try again in a minute."
         }
+      },
+      "user": {
+        "title": "Prestige",
+        "none": "No rebirth yet.",
+        "level": "Prestige {roman} ({level}) · last rebirth on {date}",
+        "cycle": "Cycle {number}",
+        "cycleRow": "rank {rank} · {cards, number} cards · {zeni, number} Zeni",
+        "special": "{count, plural, one {# special copy} other {# special copies}}",
+        "edition": "printing {printing} · no. {serial} / {size}",
+        "editionShort": "printing {printing} · no. {serial}",
+        "heritage": "heritage {level} · kept {kept} times by the player",
+        "consecrated": "{count, plural, one {# consecrated card} other {# consecrated cards}}"
       }
     }
   },

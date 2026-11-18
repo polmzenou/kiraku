@@ -87,3 +87,19 @@ export async function printingOverview(): Promise<PrintingOverview[]> {
   const aliveOf = new Map(alive.map((a) => [a.printing, a._count._all]));
   return counters.map((c) => ({ ...c, alive: aliveOf.get(c.printing) ?? 0 }));
 }
+
+/** Fiche joueur de l'admin : prestige, cycles, exemplaires spéciaux (héritières et gravées), sanctuaire. */
+export async function adminUserPrestige(userId: string) {
+  const [user, cycles, special, consecrated] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { prestige: true, prestigedAt: true } }),
+    prisma.prestigeCycle.findMany({ where: { userId }, orderBy: { number: "desc" }, select: { number: true, globalRank: true, zeni: true, uniqueCards: true, createdAt: true } }),
+    prisma.userCard.findMany({
+      where: { ownerId: userId, OR: [{ heritage: { gt: 0 } }, { printing: { not: null } }] },
+      orderBy: [{ heritage: "desc" }, { obtainedAt: "asc" }],
+      take: 200,
+      select: { id: true, status: true, heritage: true, keptByOwner: true, printing: true, serial: true, edition: { select: { size: true } }, card: { select: { name: true, rarity: true } } },
+    }),
+    prisma.consecratedCard.findMany({ where: { userId }, orderBy: { consecratedAt: "asc" }, select: { id: true, heritage: true, printing: true, serial: true, consecratedAt: true, card: { select: { name: true } } } }),
+  ]);
+  return user ? { ...user, cycles, special, consecrated } : null;
+}
