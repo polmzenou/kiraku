@@ -130,7 +130,7 @@ describe("doublons des grandes raretés", () => {
   });
 
   it("réglages par défaut : Mythique et au-dessus, une chance sur 10 000, plus aucune en double", () => {
-    expect(SETTING_DEFAULTS["booster.duplicateGuardRarities"]).toEqual(["MYTHIC", "BR", "AR", "VR", "GOLD", "MR", "XR"]);
+    expect(SETTING_DEFAULTS["booster.duplicateGuardRarities"]).toEqual(["MYTHIC", "BR", "AR", "VR", "GOLD", "MR", "SR", "XR"]);
     expect(SETTING_DEFAULTS["booster.duplicateGuardDivisor"]).toBe(10_000);
     expect(SETTING_DEFAULTS["booster.duplicateGuardBlockAt"]).toBe(2);
     expect(SETTING_SCHEMAS["booster.duplicateGuardRarities"].safeParse([]).success).toBe(true);

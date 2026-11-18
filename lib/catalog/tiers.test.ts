@@ -47,7 +47,7 @@ describe("isTopTier", () => {
 });
 
 describe("rangs des raretés visuelles", () => {
-  it("BR = Mythique < AR = VR < Gold = MR < XR", () => {
+  it("BR = Mythique < AR = VR < Gold = MR < Esprit < XR", () => {
     for (const [a, b] of [["BR", "MYTHIC"], ["VR", "AR"], ["MR", "GOLD"]]) {
       expect(atLeastRarity(a, b, BASE_DEFINITIONS)).toBe(true);
       expect(atLeastRarity(b, a, BASE_DEFINITIONS)).toBe(true);
@@ -55,13 +55,18 @@ describe("rangs des raretés visuelles", () => {
     expect(atLeastRarity("BR", "AR", BASE_DEFINITIONS)).toBe(false);
     expect(atLeastRarity("VR", "GOLD", BASE_DEFINITIONS)).toBe(false);
     expect(atLeastRarity("MR", "XR", BASE_DEFINITIONS)).toBe(false);
+    // Esprit : un peu au-dessus de MR, un peu en dessous de XR
+    expect(atLeastRarity("SR", "MR", BASE_DEFINITIONS)).toBe(true);
+    expect(atLeastRarity("MR", "SR", BASE_DEFINITIONS)).toBe(false);
+    expect(atLeastRarity("SR", "XR", BASE_DEFINITIONS)).toBe(false);
+    expect(isTopTier("SR", BASE_DEFINITIONS)).toBe(true);
     expect(atLeastRarity("XR", "GOLD", BASE_DEFINITIONS)).toBe(true);
     expect(fxTier("BR", BASE_DEFINITIONS)).toBe("MYTHIC");
     expect(isTopTier("XR", BASE_DEFINITIONS)).toBe(true);
   });
   it("à rang égal, la rareté de base d'abord : une BR compte comme « Mythique ou mieux »", () => {
     const order = orderedKeys(BASE_DEFINITIONS);
-    expect(order.slice(4)).toEqual(["LEGENDARY", "MYTHIC", "BR", "AR", "VR", "GOLD", "MR", "XR"]);
+    expect(order.slice(4)).toEqual(["LEGENDARY", "MYTHIC", "BR", "AR", "VR", "GOLD", "MR", "SR", "XR"]);
     expect(order.indexOf("BR")).toBeGreaterThan(order.indexOf("MYTHIC"));
     const rates = Object.fromEntries(order.map((r) => [r, 1]));
     expect(ratesFrom(rates, "MYTHIC").map(([r]) => r)).toContain("BR");

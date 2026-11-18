@@ -143,6 +143,44 @@ de la pile s'effacent le temps de la scène. En effets allégés, moins de calqu
 mouvement réduit, aucune scène. L'aperçu de la fiche et la boutique gardent la cérémonie Mythique. Le rayon qui sort
 du booster reste celui des Mythiques. La fumée du BR vient de `npm run fx:assets` (`public/fx/`).
 
+## Esprit (SR 霊) : la carte spectrale
+
+Cinquième rareté visuelle (migration `20261118160000_rarete_esprit`), une variante comme les autres : carte de base,
+image propre. **Rang 750 : MR < Esprit < XR**, seule à son rang. Elle forme donc un palier à elle seule partout où le
+registre groupe les raretés par rang (expéditions, pile ou face) : une XR est maintenant deux paliers au-dessus de
+Gold/MR. Un tirage XR sans carte publiée redescend sur l'Esprit, puis sur MR.
+
+Réglages posés par la migration sans écraser l'existant :
+- poids de tirage : la moyenne arrondie au-dessus des poids de MR et XR (un peu plus rare que MR, un peu moins que XR) ;
+  tant qu'aucune Esprit n'est publiée, ces tirages redescendent sur MR ;
+- recyclage : la moyenne de MR et XR (1 650 Zeni par défaut) ;
+- passifs : autant que MR ;
+- plafond de prix : celui de MR.
+
+Elle rejoint aussi les listes autorisées (cadeaux, échanges, ventes, pile ou face), l'anti-doublons s'il protège les
+Mythiques, et les ultis si MR en a.
+
+**Carte spectrale** (`appearance.spectral`, préréglage `{ fullArt: true, spectral: true }`). Elle s'inspire de la
+Decay Card de React Bits, réécrite pour Kiraku :
+- `lib/fx/spectral.ts` : un shader WebGL2 qui déforme l'illustration par une turbulence de bruit (plus fort quand le
+  pointeur bouge, un souffle au repos sur les bords), ronge les bords de la carte, la teinte de brume froide et peint
+  le voile sous le nom ;
+- `components/fuda/SpectralCanvas.tsx` : le canvas, monté par `SpectralArt` seulement sur une grande carte vivante,
+  à l'écran, sans mouvement réduit ni spoiler masqué, et avec une place libre (4 contextes WebGL au plus,
+  `lib/fx/gl-budget.ts`) ;
+- `components/fuda/FudaSpectral.css` : partout ailleurs (grilles, cartes figées, sans WebGL2, image sans en-tête CORS),
+  un bord brumeux fixe (masque SVG bruité), un voile froid et un souffle d'opacité lent.
+
+Trois curseurs dans l'apparence (rareté ou carte) : déformation, grain du brouillard, souffle au repos. La couleur du
+cadre, si elle est réglée, teinte la brume.
+
+**Révélation.** Dans la pile du rituel, la nuit tombe (brume `public/fx/mist.webp`, tirée de `npm run fx:assets`). Des
+feux follets (hitodama) s'allument et tournent autour du dos, qui vacille puis s'efface. À la charge, pas de
+retournement : les feux follets plongent dans la carte, qui apparaît comme un fantôme. Le canvas fait monter sa
+présence en 1,6 s depuis des volutes, pendant que la carte vacille et se pose. Puis viennent le sceau 霊 et le nom.
+Hors de la pile (récap à plusieurs boosters, aperçu de l'admin), une carte spectrale se forme aussi dans son canvas
+quand elle se retourne. Le banc `/admin/test-ouverture` a un scénario « Esprit ».
+
 ## Liste, actions groupées et suppression
 
 La liste se trie (modification, nom, rareté, puissance, numéro), se filtre par type (bases ou

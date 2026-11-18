@@ -152,7 +152,7 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false, scene 
       <CardAura rarity={front ? card.rarity : undefined} compact={compactFx} />
       {front ? <m.div className="relative z-10" initial={{ opacity: 0, scale: visual.reveal === "zoom" ? 0.6 : 1 }}
         animate={{ opacity: 1, scale: 1 }} transition={{ duration: visual.duration, delay: visual.delay, ease: visual.easing }}>
-        <Fuda card={card} series={card.series} size={size} />
+        <Fuda card={card} series={card.series} size={size} appear={visual.spectral ? "now" : undefined} />
       </m.div> : <div className="relative aspect-[5/7] w-full [transform:rotateY(180deg)]"><CardBack static premium={premium} /></div>}
       {front && <CardStamps card={card} delay={visual.delay + visual.duration} />}
       {front && card.featured && <FeaturedSeal delay={visual.delay + visual.duration} />}
@@ -202,6 +202,8 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false, scene 
               series={card.series}
               size={size}
               glow={front && sceneKey === "BR" ? BR_RIM : undefined}
+              // Carte spectrale (Esprit) : invisible face cachée, puis apparition fantôme dans son canvas
+              appear={visual.spectral ? (front ? "now" : "hidden") : undefined}
               overlay={front && (sceneKey === "XR" ? <span aria-hidden="true" className="rv-xr-foil"><i /></span> : <RarityCardFx rarity={card.rarity} />)}
             />
           </div>

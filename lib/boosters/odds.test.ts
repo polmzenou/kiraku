@@ -180,11 +180,13 @@ describe("pools troués : les chances suivent le repli du tirage", () => {
     expect(slotDistribution(rates, "COMMON", today)).toEqual(slotDistribution(rates, "COMMON"));
   });
 
-  it("une rareté sans carte retombe sur son rang : BR sur Mythique, VR sur AR, MR sur Gold, XR sur MR", () => {
+  it("une rareté sans carte retombe sur son rang : BR sur Mythique, VR sur AR, MR sur Gold, Esprit sur MR, XR sur Esprit", () => {
     expect(resolveRarity("BR", counts({ BR: 0 }))).toBe("MYTHIC");
     expect(resolveRarity("VR", counts({ VR: 0 }))).toBe("AR");
     expect(resolveRarity("MR", counts({ MR: 0 }))).toBe("GOLD");
-    expect(resolveRarity("XR", counts({ XR: 0 }))).toBe("MR");
+    expect(resolveRarity("SR", counts({ SR: 0 }))).toBe("MR");
+    expect(resolveRarity("XR", counts({ XR: 0 }))).toBe("SR");
+    expect(resolveRarity("XR", counts({ XR: 0, SR: 0 }))).toBe("MR");
   });
 
   it("un pool complet donne les mêmes chances que sans pool", () => {

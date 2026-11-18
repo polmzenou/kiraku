@@ -4,7 +4,7 @@ import { useIsPresent } from "motion/react";
 import { createContext, useContext, useLayoutEffect, useMemo, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { mangaStrokes } from "@/lib/opening/manga-brush";
-import { REVEAL_SCENES, seeded, xrGeometry, type RevealSceneKey } from "@/lib/opening/reveal-scenes";
+import { REVEAL_SCENES, seeded, spiritFlames, xrGeometry, type RevealSceneKey } from "@/lib/opening/reveal-scenes";
 import { CardBack } from "../fuda/CardBack";
 import "./RevealScene.css";
 
@@ -15,7 +15,7 @@ import "./RevealScene.css";
 export const RevealLayerContext = createContext<HTMLElement | null>(null);
 
 /** Images de fumée du brouillard noir, à charger avant que la carte soit touchée. */
-export const SCENE_ASSETS: Partial<Record<RevealSceneKey, readonly string[]>> = { BR: ["/fx/ring.webp", "/fx/puff.webp", "/fx/smoke.webp"] };
+export const SCENE_ASSETS: Partial<Record<RevealSceneKey, readonly string[]>> = { BR: ["/fx/ring.webp", "/fx/puff.webp", "/fx/smoke.webp"], SR: ["/fx/mist.webp"] };
 
 export const XR_ECHOES = ["#ff67ba", "#78bfff", "#63ffba"] as const;
 
@@ -132,6 +132,21 @@ function VrOver({ lite }: { lite: boolean }) {
   </>;
 }
 
+/* ---------- SR ---------- */
+/** Feux follets : chacun tourne autour de la carte (le parent pivote), son rayon fond à l'apparition. */
+function SrOver({ lite }: { lite: boolean }) {
+  const flames = useMemo(() => spiritFlames(lite), [lite]);
+  return <>
+    {flames.map((flame) => (
+      <div key={`${flame.angle}-${flame.delay}`} className="rv-at-center rv-sr-orbit" style={v({ "--s": "0px", "--a": `${flame.angle}deg`, "--turn": `${flame.orbit * flame.spin}deg` })}>
+        <i className="rv-sr-flame" style={v({ "--r": `calc(var(--ch) * ${flame.radius})`, "--f": `${flame.size}px`, "--d": `${flame.delay}ms` })} />
+      </div>
+    ))}
+    <div className="rv-at-center rv-sr-gather" />
+    <div className="rv-sr-breath" />
+  </>;
+}
+
 /* ---------- XR ---------- */
 const XR_CRACKS = [["M50 70L44 52L50 40L42 22L46 0", 60], ["M50 70L60 58L56 40L68 26L66 0", 150], ["M50 70L34 74L22 64L10 70L0 62", 260], ["M50 70L66 78L78 70L90 80L100 74", 350], ["M50 70L42 90L50 108L42 124L46 140", 470], ["M50 70L58 92L54 110L64 128L60 140", 560], ["M44 52L30 44L18 30L8 24", 660], ["M60 58L74 50L84 36L96 30", 730], ["M42 90L28 98L16 114L6 120", 800], ["M58 92L72 100L84 116L94 124", 860]] as const;
 
@@ -216,7 +231,7 @@ export function RevealScene({ scene, box, lite, seal }: { scene: RevealSceneKey;
     "data-leaving": present ? undefined : true,
     style: v({
       "--cx": `${box.cx}px`, "--cy": `${box.cy}px`, "--cw": `${box.cw}px`, "--ch": `${box.ch}px`,
-      "--rv-ring": "url(/fx/ring.webp)", "--rv-puff": "url(/fx/puff.webp)", "--rv-smoke": "url(/fx/smoke.webp)",
+      "--rv-ring": "url(/fx/ring.webp)", "--rv-puff": "url(/fx/puff.webp)", "--rv-smoke": "url(/fx/smoke.webp)", "--rv-mist": "url(/fx/mist.webp)",
     }),
   };
   return <>
@@ -240,6 +255,11 @@ export function RevealScene({ scene, box, lite, seal }: { scene: RevealSceneKey;
           <div className="rv-at-center rv-vr-glow" />
           <div className="rv-at-center rv-vr-rose"><Rosace /></div>
         </>}
+        {scene === "SR" && <>
+          <div className="rv-sr-night" />
+          <div className="rv-at-center rv-sr-moon" />
+          <div className="rv-sr-mist" />
+        </>}
         {scene === "XR" && <XrUnder lite={lite} seal={seal} />}
       </div>,
       under,
@@ -253,6 +273,7 @@ export function RevealScene({ scene, box, lite, seal }: { scene: RevealSceneKey;
           <div lang="ja" className="rv-mr-don font-seal">ドン</div>
         </>}
         {scene === "VR" && <VrOver lite={lite} />}
+        {scene === "SR" && <SrOver lite={lite} />}
         {scene === "XR" && <XrOver lite={lite} box={box} />}
       </div>,
       document.body,
