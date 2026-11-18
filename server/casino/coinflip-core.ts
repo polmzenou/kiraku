@@ -367,9 +367,17 @@ export async function cancelTableWith(db: PrismaClient, input: { userId: string;
   }, TX);
 }
 
-/** Le joueur invité décline une table qui lui est réservée : le créateur récupère sa carte et en est prévenu. */
-export async function declineTableWith(db: PrismaClient, input: { userId: string; flipId: string }, ctx: Pick<CoinFlipContext, "now">, onNotified?: OnNotified) {
-  await notifyingTransaction(
+/**
+ * Le joueur invité décline une table qui lui est réservée : le créateur récupère sa carte et en est prévenu.
+ * Renvoie le créateur (sa page d'attente est prévenue en temps réel).
+ */
+export async function declineTableWith(
+  db: PrismaClient,
+  input: { userId: string; flipId: string },
+  ctx: Pick<CoinFlipContext, "now">,
+  onNotified?: OnNotified,
+): Promise<{ creatorId: string }> {
+  return notifyingTransaction(
     db,
     async (tx) => {
       const flip = await lockFlip(tx, input.flipId);
@@ -378,20 +386,21 @@ export async function declineTableWith(db: PrismaClient, input: { userId: string
       await lockPlayers(tx, [flip.creatorId, input.userId]);
       await returnStake(tx, flip, "CANCELLED", ctx.now);
       await notifyReturned(tx, flip, "DECLINED", input.userId, ctx.now);
+      return { creatorId: flip.creatorId };
     },
     TX,
     onNotified,
   );
 }
 
-/** L'admin retire une table ouverte (motif au journal) : la carte revient, le créateur est prévenu. */
+/** L'admin retire une table ouverte (motif au journal) : la carte revient, le créateur est prévenu. Renvoie le créateur. */
 export async function adminCancelTableWith(
   db: PrismaClient,
   input: { adminId: string; flipId: string; reason: string },
   ctx: Pick<CoinFlipContext, "now">,
   onNotified?: OnNotified,
-) {
-  await notifyingTransaction(
+): Promise<{ creatorId: string }> {
+  return notifyingTransaction(
     db,
     async (tx) => {
       const flip = await lockFlip(tx, input.flipId);
@@ -411,6 +420,7 @@ export async function adminCancelTableWith(
           createdAt: ctx.now,
         },
       });
+      return { creatorId: flip.creatorId };
     },
     TX,
     onNotified,
@@ -481,12 +491,22 @@ export async function withdrawCasinoFor(db: PrismaClient, userId: string, now: D
   return db.$transaction((tx) => withdrawCasinoWith(tx, userId, now), TX);
 }
 
-/** Le créateur a vu ses lancers rejoués : ils ne repartent plus à son retour. */
+/**
+ * Le créateur a vu ses lancers rejoués : ils ne repartent plus à son retour, et « X a relevé ta table » passe
+ * en lu (la cloche ne garde pas une pastille pour un lancer déjà regardé).
+ */
 export async function markSeenWith(db: PrismaClient, input: { userId: string; flipIds: readonly string[]; now: Date }) {
   if (input.flipIds.length === 0) return 0;
-  const { count } = await db.coinFlip.updateMany({
-    where: { id: { in: [...input.flipIds] }, creatorId: input.userId, status: "DONE", creatorSeenAt: null },
-    data: { creatorSeenAt: input.now },
-  });
+  const ids = [...input.flipIds];
+  const [{ count }] = await db.$transaction([
+    db.coinFlip.updateMany({
+      where: { id: { in: ids }, creatorId: input.userId, status: "DONE", creatorSeenAt: null },
+      data: { creatorSeenAt: input.now },
+    }),
+    db.notification.updateMany({
+      where: { userId: input.userId, type: "COINFLIP_RESOLVED", refId: { in: ids }, readAt: null },
+      data: { readAt: input.now },
+    }),
+  ]);
   return count;
 }

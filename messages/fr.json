@@ -5933,7 +5933,12 @@
       "more": "Voir plus",
       "loading": "Chargement…",
       "retry": "Réessayer",
-      "guest": "Crée un compte pour jouer : un invité peut regarder les tables, pas miser."
+      "guest": "Crée un compte pour jouer : un invité peut regarder les tables, pas miser.",
+      "lead": "Une fuda contre une fuda du même palier. Le gagnant repart avec les deux.",
+      "pulse": "{open, plural, =0 {Aucune table ouverte} one {# table ouverte} other {# tables ouvertes}} · {today, plural, =0 {aucun lancer aujourd'hui} one {# lancer aujourd'hui} other {# lancers aujourd'hui}}",
+      "emptyBody": "Pose une fuda et choisis ta face : un autre joueur la relève avec une carte du même palier.",
+      "mineBadge": "{count, plural, one {# table} other {# tables}}",
+      "replayDot": "Un lancer t'attend"
     },
     "mine": {
       "open": "Tes tables ouvertes",
@@ -5942,7 +5947,11 @@
       "noInvitation": "Aucune table ne t'est réservée.",
       "expires": "Expire {time}",
       "decline": "Décliner",
-      "view": "Voir la table"
+      "view": "Voir la table",
+      "count": "{count} / {max}",
+      "countLabel": "{count, plural, one {# table ouverte} other {# tables ouvertes}} sur {max} possibles",
+      "noneBody": "Pose une fuda : elle attend un adversaire jusqu'à ce qu'il la relève ou qu'elle expire.",
+      "reservedTo": "Pour <player>{name}</player>"
     },
     "history": {
       "stats": "{played, plural, =0 {Aucun lancer joué} one {# lancer} other {# lancers}} · {won} gagnés · {lost} perdus",
@@ -5953,7 +5962,12 @@
       "won": "Gagné",
       "lost": "Perdu",
       "against": "contre <player>{name}</player>",
-      "open": "Voir"
+      "open": "Voir",
+      "tiles": {
+        "played": "Lancers",
+        "won": "Gagnés",
+        "lost": "Perdus"
+      }
     },
     "stake": {
       "title": "Poser une carte",

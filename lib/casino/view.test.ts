@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { coreView, flipStats, outcomeFor, revealedSeed, sideOf, type CoinFlipRow } from "./view";
+import { coreView, flipStats, mineSignature, outcomeFor, revealedSeed, sideOf, type CoinFlipRow } from "./view";
 
 const SEED = "ab".repeat(32);
 const row: CoinFlipRow = {
@@ -58,5 +58,29 @@ describe("statistiques", () => {
     expect(flipStats(rows, "a")).toEqual({ played: 4, won: 3, lost: 1, omote: 3, ura: 1, streak: 2 });
     expect(flipStats([lost, lost, won], "a").streak).toBe(-2);
     expect(flipStats([], "a")).toEqual({ played: 0, won: 0, lost: 0, omote: 0, ura: 0, streak: 0 });
+  });
+});
+
+describe("empreinte de « Mes tables »", () => {
+  const base = { mine: [{ id: "t1", status: "OPEN" as const }], invitations: [{ id: "t2" }], replays: [] };
+
+  it("stable quel que soit l'ordre des lignes", () => {
+    const a = { ...base, mine: [{ id: "t1", status: "OPEN" as const }, { id: "t3", status: "OPEN" as const }] };
+    const b = { ...base, mine: [...a.mine].reverse() };
+    expect(mineSignature(a)).toBe(mineSignature(b));
+  });
+
+  it("change quand une table est relevée (replay en attente), retirée, échue ou qu'une invitation arrive", () => {
+    const before = mineSignature(base);
+    expect(mineSignature({ ...base, mine: [], replays: [{ id: "t1" }] })).not.toBe(before);
+    expect(mineSignature({ ...base, mine: [] })).not.toBe(before);
+    expect(mineSignature({ ...base, invitations: [] })).not.toBe(before);
+    expect(mineSignature({ ...base, invitations: [{ id: "t2" }, { id: "t4" }] })).not.toBe(before);
+  });
+
+  it("ne confond pas une table à moi et une invitation de même id", () => {
+    expect(mineSignature({ mine: [{ id: "x", status: "OPEN" }], invitations: [], replays: [] })).not.toBe(
+      mineSignature({ mine: [], invitations: [{ id: "x" }], replays: [] }),
+    );
   });
 });

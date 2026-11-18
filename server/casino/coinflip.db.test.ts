@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { verifyFlip } from "@/lib/casino/fairness";
 import { DEFAULT_CASINO_RULES, type CasinoRules } from "@/lib/casino/rules";
@@ -22,6 +22,17 @@ import {
   withdrawCasinoWith,
   type CoinFlipContext,
 } from "./coinflip-core";
+
+// Les lectures du salon (queries.ts) passent par le client de ce test
+const db = vi.hoisted(() => ({ client: null as unknown }));
+vi.mock("server-only", () => ({}));
+vi.mock("../db", () => ({
+  get prisma() {
+    return db.client;
+  },
+}));
+const { listMyTables, myTablesState } = await import("./queries");
+const { mineSignature } = await import("@/lib/casino/view");
 
 // Pile ou face sur une vraie base (base de test isolée) : sauté sans DATABASE_URL_TEST.
 //   DATABASE_URL_TEST="postgresql://…" npx vitest run server/casino/coinflip.db.test.ts
@@ -46,6 +57,7 @@ const MARKET: MarketRules = {
 
 describe.skipIf(!url)("pile ou face atomique (base réelle)", () => {
   const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });
+  db.client = prisma;
   const users: string[] = [];
   const createdCards: string[] = [];
   let definitions: { key: string; sortOrder: number }[] = [];
@@ -288,6 +300,51 @@ describe.skipIf(!url)("pile ou face atomique (base réelle)", () => {
     await prisma.userCard.create({ data: { ownerId: rematchFrom, cardId: stake } });
     const rematch = await createTableWith(prisma, { userId: rematchFrom, cardId: stake, side: "URA", reservedForId: rematchFor }, ctx());
     expect(rematch.flipId).toBeTruthy();
+  }, 60_000);
+
+  it("« Mes tables » : une table relevée, déclinée, retirée ou échue en sort ; le lancer vu éteint sa notification", async () => {
+    const [a, b, friend, admin] = [await player(), await player(), await player(), await player()];
+    await give(a, card.EPIC, 5);
+    await give(b, card.EPIC2, 2);
+    await prisma.friendship.create({ data: { pairKey: pairKey(a, friend), requesterId: a, addresseeId: friend, status: "ACCEPTED", createdAt: OLD, acceptedAt: OLD } });
+    const locale = "fr";
+
+    const relevee = (await createTableWith(prisma, { userId: a, cardId: card.EPIC, side: "OMOTE" }, ctx())).flipId;
+    const reservee = (await createTableWith(prisma, { userId: a, cardId: card.EPIC, side: "URA", reservedForId: friend }, ctx())).flipId;
+    const start = await myTablesState(a);
+    expect(start.mine.map((m) => m.id).sort()).toEqual([relevee, reservee].sort());
+    expect((await myTablesState(friend)).invitations.map((i) => i.id)).toEqual([reservee]);
+    expect((await listMyTables(friend, locale)).invitations.map((i) => i.id)).toEqual([reservee]);
+
+    // Relevée en l'absence du créateur : elle quitte « Mes tables » et le lancer l'attend
+    await joinTableWith(prisma, { userId: b, flipId: relevee, cardId: card.EPIC2 }, ctx());
+    const after = await myTablesState(a);
+    expect(after.mine.map((m) => m.id)).toEqual([reservee]);
+    expect(after.replays.map((r) => r.id)).toEqual([relevee]);
+    expect(mineSignature(after)).not.toBe(mineSignature(start));
+    expect((await listMyTables(a, locale)).mine.map((m) => m.id)).toEqual([reservee]);
+
+    // Le lancer regardé : plus de replay, et « X a relevé ta table » passe en lu
+    await markSeenWith(prisma, { userId: a, flipIds: [relevee], now: new Date() });
+    expect((await myTablesState(a)).replays).toEqual([]);
+    expect(await prisma.notification.count({ where: { userId: a, type: "COINFLIP_RESOLVED", refId: relevee, readAt: null } })).toBe(0);
+
+    // Déclinée : le créateur est renvoyé (temps réel), la table sort des deux côtés
+    expect(await declineTableWith(prisma, { userId: friend, flipId: reservee }, ctx())).toEqual({ creatorId: a });
+    expect((await myTablesState(a)).mine).toEqual([]);
+    expect((await myTablesState(friend)).invitations).toEqual([]);
+
+    // Retirée par l'admin : idem
+    const retiree = (await createTableWith(prisma, { userId: a, cardId: card.EPIC, side: "OMOTE" }, ctx())).flipId;
+    expect(await adminCancelTableWith(prisma, { adminId: admin, flipId: retiree, reason: "test" }, ctx())).toEqual({ creatorId: a });
+    await prisma.adminLog.deleteMany({ where: { adminId: admin } });
+
+    // Échue mais pas encore balayée : jamais montrée comme ouverte
+    const past = ctx({ now: new Date(Date.now() - 48 * HOUR), dayStart: new Date(Date.now() - 49 * HOUR) });
+    const echue = (await createTableWith(prisma, { userId: a, cardId: card.EPIC, side: "OMOTE" }, past)).flipId;
+    expect((await prisma.coinFlip.findUniqueOrThrow({ where: { id: echue } })).status).toBe("OPEN");
+    expect((await myTablesState(a)).mine).toEqual([]);
+    expect((await listMyTables(a, locale)).mine).toEqual([]);
   }, 60_000);
 
   it("expiration : le balayage rend la carte une seule fois, même lancé deux fois en même temps", async () => {
