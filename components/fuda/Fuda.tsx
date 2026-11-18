@@ -28,13 +28,17 @@ export type FudaCard = {
    */
   spoiler: boolean;
   /**
-   * Exemplaire précis montré (prestige) : héritage (veines d'or) et, plus tard, édition gravée. Absent ou à 0 :
-   * la fuda est inchangée, toutes les sources actuelles continuent de marcher.
+   * Exemplaire précis montré (prestige) : héritage (veines d'or) et édition gravée (habillage d'estampe, cartouche
+   * « 初摺 17 / 25 »). Absent ou ordinaire : la fuda est inchangée, toutes les sources actuelles continuent de marcher.
    */
   copy?: FudaCopy | null;
 };
 
-export type FudaCopy = { heritage: number; printing?: number | null; serial?: number | null };
+/**
+ * Héritage (0 à 5) et édition gravée : tirage, numéro, taille figée du tirage et sceau du tirage (« 初摺 »). Sans
+ * tirage, l'exemplaire n'est pas gravé. Construit par fudaCopyOf (lib/prestige/printing.ts).
+ */
+export type FudaCopy = { heritage: number; printing?: number | null; serial?: number | null; size?: number | null; seal?: string | null };
 
 /** Tracés des veines d'or, dans le repère 250 × 350 de la carte : une de plus par prestige traversé. */
 const SEAMS = [
@@ -57,19 +61,56 @@ export function HeritageSeam({ index, className = "" }: { index: number; classNa
   );
 }
 
-/** Héritière : veines d'or (kintsugi) posées sur la carte ; un point d'or au coin en petit format (FudaCopy.css). */
+/** Héritière : veines d'or (kintsugi) posées sur la carte ; en petit format, un point d'or au coin (CopyCorner). */
 export function HeritageVeins({ level }: { level: number }) {
   const d = SEAMS.slice(0, Math.min(Math.max(level, 0), SEAMS.length)).join("");
   if (!d) return null;
   return (
+    <svg aria-hidden="true" className="fuda-veins" viewBox="0 0 250 350" preserveAspectRatio="none">
+      <path className="v0" d={d} />
+      <path className="v1" d={d} />
+      <path className="v2" d={d} transform="translate(-.8 -.8)" />
+    </svg>
+  );
+}
+
+/**
+ * Gravée : habillage d'estampe posé sur l'illustration (grain de la planche, fibres du washi, encre qui charge les
+ * bords) et repères d'impression (kentō) : l'équerre en haut à droite, le trait sur le bord gauche. Statique, comme toutes les marques d'exemplaire.
+ */
+export function PrintTexture() {
+  return (
     <>
-      <svg aria-hidden="true" className="fuda-veins" viewBox="0 0 250 350" preserveAspectRatio="none">
-        <path className="v0" d={d} />
-        <path className="v1" d={d} />
-        <path className="v2" d={d} transform="translate(-.8 -.8)" />
+      <span aria-hidden="true" className="fuda-print" />
+      <svg aria-hidden="true" className="fuda-kento" viewBox="0 0 250 350" preserveAspectRatio="none">
+        <path d="M218 12H238V32" />
+        <path d="M12 168V196" />
       </svg>
-      <span aria-hidden="true" className="fuda-heir-dot" />
     </>
+  );
+}
+
+/** Cartouche d'édition « 初摺 17 / 25 », accroché au bord du shikishi en miroir du numéro ; le n° 1 est à la feuille d'or. */
+export function EditionCartouche({ copy }: { copy: FudaCopy }) {
+  if (copy.printing == null || copy.serial == null) return null;
+  return (
+    <span aria-hidden="true" className={`kn-ed${copy.serial === 1 ? " kn-ed-first" : ""}`}>
+      {copy.seal && <i lang="ja" className="font-seal">{copy.seal}</i>}
+      <b>{copy.serial}</b>
+      {copy.size != null && <s>/{copy.size}</s>}
+    </span>
+  );
+}
+
+/** Marques d'un exemplaire en petit format, au coin haut-droit : point d'or (héritière), sceau vermillon (gravée). */
+function CopyCorner({ copy }: { copy: FudaCopy }) {
+  const engraved = copy.printing != null && copy.serial != null;
+  if (copy.heritage <= 0 && !engraved) return null;
+  return (
+    <span aria-hidden="true" className="fuda-copy-corner">
+      {copy.heritage > 0 && <i className="fuda-heir-dot" />}
+      {engraved && <i className="fuda-ed-dot" />}
+    </span>
   );
 }
 
@@ -190,9 +231,12 @@ export function Fuda({
   // Anciennes données (copie d'un combat d'avant le mode spoiler) : champ absent = pas spoil
   const spoiler = !locked && card.spoiler === true;
   const spoilerAttr = spoiler ? { "data-spoiler": "" } : undefined;
+  // Exemplaire précis (prestige) : héritière et gravée ; rien pour une silhouette ni un exemplaire ordinaire
+  const copy = !locked ? card.copy ?? null : null;
+  const engraved = copy !== null && copy.printing != null && copy.serial != null;
 
   const content = (
-    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} style={customStyle}>
+    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} data-engraved={engraved || undefined} style={customStyle}>
       {/* Papier posé en absolu dans le cadre : sa hauteur ne dépend pas d'un pourcentage (WebKit la résolvait mal sous aspect-ratio) */}
       <div className={`fuda-paper absolute ${l.inset} overflow-hidden ${l.inner}`}>
         <div className="kn-art">
@@ -216,6 +260,7 @@ export function Fuda({
           )}
           {gilded && <span aria-hidden="true" className="fuda-gilt" />}
           <span aria-hidden="true" className="kn-grain" />
+          {engraved && <PrintTexture />}
           {/* Étiquette visible seulement en mode spoiler (display: none sinon, donc muette aussi pour les lecteurs d'écran) */}
           {spoiler && <span className="kn-spoiler"><span className="font-title">{t("spoiler")}</span></span>}
         </div>
@@ -246,6 +291,7 @@ export function Fuda({
           ) : (
             <span className="kn-no">{t("number", { number: cardNumber(card.rank) })}</span>
           )}
+          {engraved && <EditionCartouche copy={copy!} />}
           <p className="kn-name font-title">{locked ? t("unknown") : card.name}</p>
           <p className="kn-l2">
             {subtitle && <span className="kn-sub">{subtitle}</span>}
@@ -278,12 +324,20 @@ export function Fuda({
         <span aria-hidden="true" className="fuda-sheen" />
       )}
       {!locked && !monochrome && visual.effects?.map((effect) => <span key={effect} aria-hidden="true" className={`fuda-effect fuda-effect-${effect}`} />)}
-      {!locked && card.copy && card.copy.heritage > 0 && (
+      {copy && copy.heritage > 0 && (
         <>
-          <HeritageVeins level={card.copy.heritage} />
-          <span className="sr-only">{t("heritage", { level: card.copy.heritage })}</span>
+          <HeritageVeins level={copy.heritage} />
+          <span className="sr-only">{t("heritage", { level: copy.heritage })}</span>
         </>
       )}
+      {engraved && (
+        <span className="sr-only">
+          {copy!.size != null
+            ? t("printing", { seal: copy!.seal ?? "", serial: copy!.serial!, size: copy!.size })
+            : t("printingShort", { seal: copy!.seal ?? "", serial: copy!.serial! })}
+        </span>
+      )}
+      {copy && <CopyCorner copy={copy} />}
       {overlay && <div className="pointer-events-none absolute inset-0 z-30">{overlay}</div>}
     </div>
   );

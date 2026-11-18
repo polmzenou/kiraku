@@ -411,6 +411,7 @@ model Card {
   auctions         Auction[]
   wishedBy         WishlistEntry[]
   notablePulls     NotablePull[]
+  printings        CardPrinting[]
   tradesWanted     Trade[]            @relation("tradeWanted")
   tradesChosen     Trade[]            @relation("tradeChosen")
   tradeOffers      TradeOffer[]
@@ -483,6 +484,7 @@ model UserCard {
   keptByOwner Int          @default(0) // prestiges traversés chez le propriétaire actuel (remis à 0 au transfert, déclencheur)
   printing    Int? // tirage de l'édition gravée (null = exemplaire ordinaire)
   serial      Int? // numéro dans ce tirage ; renseigné avec printing (CHECK)
+  edition     CardPrinting? @relation(fields: [cardId, printing], references: [cardId, printing], onDelete: Restrict) // compteur du tirage (taille)
   showcase   ShowcaseSlot? // ancienne vitrine unique, plus lue
   showcaseItems ShowcaseItem[]
   auctions   Auction[]
@@ -553,6 +555,7 @@ model BoosterOpening {
   zeniSpent      Int                @default(0) // prix payé pour ce booster (0 = stock gratuit)
   sealedDropId   String? // sachet scellé ouvert (Divin, Apocalyptique)
   apocalypse     ApocalypseOutcome? // issue d'un Apocalyptique
+  editions       Json? // éditions gravées : [{ position, printing, serial, size }], lisibles même après la vente
   createdAt      DateTime           @default(now())
 
   @@index([userId, createdAt])
@@ -571,6 +574,10 @@ model NotablePull {
   legacyRarity     Rarity           @default(COMMON) @map("rarity")
   rarityDefinition RarityDefinition @relation(fields: [rarity], references: [key])
   boosterSlug      String
+  // Édition gravée tirée (prestige) : tirage, numéro et taille du tirage, copiés à la sortie
+  printing         Int?
+  serial           Int?
+  printingSize     Int?
   createdAt        DateTime         @default(now())
 
   @@index([createdAt])
@@ -1933,4 +1940,20 @@ model ExpeditionBoard {
 
   @@id([userId, dayKey])
   @@index([createdAt]) // purge des anciens plateaux
+}
+
+// Compteur de numéros d'une carte dans un tirage d'éditions gravées (prestige, étape 16c). La taille est figée à la
+// création ; le compteur ne redescend jamais et `taken` garde chaque numéro sorti, dans l'ordre de sortie (CHECK et
+// déclencheur dans la migration) : un numéro recyclé ou consacré ne ressort pas.
+model CardPrinting {
+  cardId    String
+  card      Card       @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  printing  Int
+  size      Int
+  issued    Int        @default(0)
+  taken     Int[]      @default([])
+  createdAt DateTime   @default(now())
+  copies    UserCard[]
+
+  @@id([cardId, printing])
 }

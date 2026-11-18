@@ -2,6 +2,7 @@
 
 import { m } from "motion/react";
 import { useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { OpenedCardView } from "@/lib/boosters/view";
@@ -15,19 +16,31 @@ import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import { isTopTier } from "@/lib/catalog/tiers";
 import { RARITY_SEAL } from "@/lib/catalog/rarity";
 import { REVEAL_SCENES, revealSceneKey } from "@/lib/opening/reveal-scenes";
+import type { FudaCopy } from "../fuda/Fuda";
+
+// Révélation d'une gravée à la baren : chargée seulement quand une carte sort gravée
+const BarenReveal = dynamic(() => import("./BarenReveal").then((mod) => mod.BarenReveal), { ssr: false });
+
+/** La carte avant sa gravure : l'édition est retirée, l'héritage reste. */
+function uninked(copy: FudaCopy | null | undefined): FudaCopy | null {
+  return copy && copy.heritage > 0 ? { heritage: copy.heritage } : null;
+}
 
 /**
- * Pastilles du coin haut-droit, empilées : « Nouveau » (jamais obtenue), puis « Souhait exaucé »
- * (la carte était dans la liste de souhaits). Sur une petite carte, le souhait se réduit au cœur.
+ * Pastilles du coin haut-droit, empilées : « Gravée » (édition numérotée, prestige), « Nouveau » (jamais obtenue) ou
+ * « Retrouvée », puis « Souhait exaucé » (la carte était dans la liste de souhaits). Sur une petite carte, le souhait
+ * se réduit au cœur et la gravée à son sceau.
  */
 export function CardStamps({ card, delay = 0, animated = true, small = false }: {
-  card: Pick<OpenedCardView, "isNew" | "wished" | "regained">;
+  card: Pick<OpenedCardView, "isNew" | "wished" | "regained" | "copy">;
   delay?: number;
   animated?: boolean;
   small?: boolean;
 }) {
   const t = useTranslations("opening");
-  if (!card.isNew && !card.regained && !card.wished) return null;
+  const engraved = card.copy?.printing != null && card.copy.serial != null;
+  if (!card.isNew && !card.regained && !card.wished && !engraved) return null;
+  const before = engraved ? 1 : 0;
   const stamp = (i: number) => ({
     initial: animated ? { opacity: 0, scale: 2.2, rotate: -28 } : false,
     animate: { opacity: 1, scale: 1, rotate: -12 },
@@ -35,10 +48,20 @@ export function CardStamps({ card, delay = 0, animated = true, small = false }: 
   } as const);
   return (
     <span className="absolute -top-2 -right-2 z-40 flex flex-col items-end gap-1">
+      {engraved && (
+        <m.span
+          className="inline-flex min-h-7 items-center justify-center gap-1 whitespace-nowrap rounded-[4px] bg-sumi px-2 py-1 text-xs font-bold leading-none text-washi-paper shadow-[inset_0_0_0_1px_var(--color-kin)]"
+          title={t("engravedCardLong", { serial: card.copy!.serial! })}
+          {...stamp(0)}
+        >
+          <span aria-hidden="true" lang="ja" className="font-seal text-shu">{card.copy!.seal ?? "版"}</span>
+          {small ? <span className="sr-only">{t("engravedCardLong", { serial: card.copy!.serial! })}</span> : <span>{t("engravedCard", { serial: card.copy!.serial! })}</span>}
+        </m.span>
+      )}
       {card.isNew && (
         <m.span
           className="inline-flex min-h-7 items-center justify-center whitespace-nowrap rounded-[4px] bg-shu-btn px-2 py-1 text-xs font-bold leading-none text-washi-paper"
-          {...stamp(0)}
+          {...stamp(before)}
         >
           {t("newCard")}
         </m.span>
@@ -46,7 +69,7 @@ export function CardStamps({ card, delay = 0, animated = true, small = false }: 
       {card.regained && !card.isNew && (
         <m.span
           className="inline-flex min-h-7 items-center justify-center whitespace-nowrap rounded-[4px] bg-kin px-2 py-1 text-xs font-bold leading-none text-sumi"
-          {...stamp(0)}
+          {...stamp(before)}
         >
           {t("regainedCard")}
         </m.span>
@@ -55,7 +78,7 @@ export function CardStamps({ card, delay = 0, animated = true, small = false }: 
         <m.span
           className="inline-flex min-h-7 items-center justify-center gap-1 whitespace-nowrap rounded-[4px] bg-ai px-2 py-1 text-xs font-bold leading-none text-washi-paper"
           title={t("wishedCardLong")}
-          {...stamp(card.isNew || card.regained ? 1 : 0)}
+          {...stamp(before + (card.isNew || card.regained ? 1 : 0))}
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" className="size-3.5 shrink-0" fill="currentColor">
             <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" />
@@ -105,6 +128,8 @@ type Props = {
   compactFx?: boolean;
   /** Dans la pile du rituel : les raretés visuelles jouent leur révélation plein écran. */
   scene?: boolean;
+  /** Tirage d'un booster : une carte sortie gravée reçoit sa gravure à la baren (ailleurs, elle est déjà gravée). */
+  engraving?: boolean;
 };
 
 /** Liseré d'argent de la Black, porté par la carte : il suit son inclinaison. */
@@ -114,7 +139,7 @@ const BR_RIM = "rgb(209 205 204 / 0.5)";
  * Une fuda face cachée qui se retourne. Avant le retournement (« charging »), une Épique+ frémit et
  * une Légendaire+ s'illumine d'or ; à l'endroit, l'effet de sa rareté se joue autour d'elle.
  */
-export function FlipCard({ card, phase, size, reduced, compactFx = false, scene = false }: Props) {
+export function FlipCard({ card, phase, size, reduced, compactFx = false, scene = false, engraving = false }: Props) {
   const definitions = useRarityDefinitions();
   const root = useRef<HTMLDivElement>(null);
   const definition = definitions.find((r) => r.key === card.rarity);
@@ -128,6 +153,17 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false, scene 
   const premium = isTopTier(card.rarity, definitions);
   const sceneKey = scene && !reduced ? revealSceneKey(card.rarity, visual.reveal) : null;
   const sceneOn = sceneKey !== null && phase !== "back";
+  // Gravée tirée : après le grand moment de la rareté, la baren frotte la carte, qui reçoit alors son édition
+  const baren = engraving && !reduced && card.copy?.printing != null && card.copy.serial != null;
+  const [inked, setInked] = useState(false);
+  const [barenDone, setBarenDone] = useState(false);
+  const shown = baren && !inked ? { ...card, copy: uninked(card.copy) } : card;
+  const barenDelay = sceneKey !== null
+    ? REVEAL_SCENES[sceneKey].total - REVEAL_SCENES[sceneKey].charge
+    : visual.reveal !== "flip" ? Math.round((visual.delay + visual.duration) * 1000) + 400 : rank >= 5 ? 1300 : rank >= 3 ? 1100 : 700;
+  const barenLayer = front && baren && !barenDone && (
+    <BarenReveal copy={card.copy!} delay={barenDelay} onInked={() => setInked(true)} onDone={() => setBarenDone(true)} />
+  );
   // Les calques plein écran se calent sur la carte : mesurée avant de peindre le début de la charge
   const [sceneBox, setSceneBox] = useState<SceneBox | null>(null);
   useLayoutEffect(() => {
@@ -160,9 +196,10 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false, scene 
       <CardAura rarity={front ? card.rarity : undefined} compact={compactFx} />
       {front ? <m.div className="relative z-10" initial={{ opacity: 0, scale: visual.reveal === "zoom" ? 0.6 : 1 }}
         animate={{ opacity: 1, scale: 1 }} transition={{ duration: visual.duration, delay: visual.delay, ease: visual.easing }}>
-        <Fuda card={card} series={card.series} size={size} />
+        <Fuda card={shown} series={card.series} size={size} />
       </m.div> : <div className="relative aspect-[5/7] w-full [transform:rotateY(180deg)]"><CardBack static premium={premium} /></div>}
-      {front && <CardStamps card={card} delay={visual.delay + visual.duration} />}
+      {barenLayer}
+      {front && <CardStamps card={shown} delay={visual.delay + visual.duration} />}
       {front && card.featured && <FeaturedSeal delay={visual.delay + visual.duration} />}
     </div>;
   }
@@ -206,7 +243,7 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false, scene 
         >
           <div aria-hidden={!front} inert={!front} className="[backface-visibility:hidden]">
             <Fuda
-              card={card}
+              card={shown}
               series={card.series}
               size={size}
               glow={front && sceneKey === "BR" ? BR_RIM : undefined}
@@ -220,7 +257,8 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false, scene 
         {/* Fantômes AR : l'image seule (déjà chargée), pas trois cartes complètes ; rien en effets allégés */}
         {front && variant === "AR" && !compactFx && <ArGhosts><GhostArt card={card} /></ArGhosts>}
       </div>
-      {front && <CardStamps card={card} delay={rank >= 3 ? 0.55 : 0.3} />}
+      {barenLayer}
+      {front && <CardStamps card={shown} delay={rank >= 3 ? 0.55 : 0.3} />}
       {front && card.featured && <FeaturedSeal delay={0.45} />}
     </div>
   );

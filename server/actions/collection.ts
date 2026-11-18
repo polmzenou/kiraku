@@ -12,6 +12,7 @@ import type { CollectionPage } from "@/lib/collection/view";
 import { PROFILE_VISIBILITIES } from "@/lib/collection/visibility";
 import { USERNAME_REGEX } from "@/lib/username";
 import { isFrozen } from "@/lib/account/deletion";
+import { sealOf } from "@/lib/prestige/printing";
 import { getAlbumPage } from "../collection/albums";
 import { accessFor, findProfileOwner } from "../collection/profile";
 import { getCollectionPage, MAX_OFFSET } from "../collection/queries";
@@ -19,6 +20,7 @@ import { RecycleError, recycleWith, type RecycleRequest } from "../collection/re
 import { prisma } from "../db";
 import { clientIp, rateLimit } from "../ratelimit";
 import { getSetting } from "../settings";
+import { getPrintingSeals } from "../prestige/rules";
 import { getCurrentUser, requireActiveUser } from "../user";
 
 // Collection, recyclage et confidentialité (les vitrines : server/actions/showcases.ts). Ordre des contrôles : session → Zod →
@@ -99,7 +101,7 @@ export type CardCopies = {
   /** Exemplaires ordinaires en collection : le serveur en choisit un quand le joueur n'en désigne pas. */
   ordinary: number;
   /** Exemplaires spéciaux en collection (héritiers ou gravés) : ils ne partent que désignés. */
-  special: { userCardId: string; heritage: number; printing: number | null; serial: number | null }[];
+  special: { userCardId: string; heritage: number; printing: number | null; serial: number | null; size: number | null; seal: string | null }[];
 };
 
 const copiesSchema = z.object({ cardId: cardIdSchema }).strict();
@@ -117,14 +119,22 @@ export async function copiesOfCardAction(input: unknown): Promise<{ ok: true; co
   const rows = await prisma.userCard.findMany({
     where: { ownerId: user.id, cardId: parsed.data.cardId, status: "COLLECTION" },
     orderBy: [{ heritage: "desc" }, { obtainedAt: "asc" }],
-    select: { id: true, heritage: true, printing: true, serial: true },
+    select: { id: true, heritage: true, printing: true, serial: true, edition: { select: { size: true } } },
   });
   const special = rows.filter((r) => r.heritage > 0 || r.printing !== null);
+  const seals = special.some((r) => r.printing !== null) ? await getPrintingSeals() : {};
   return {
     ok: true,
     copies: {
       ordinary: rows.length - special.length,
-      special: special.map((r) => ({ userCardId: r.id, heritage: r.heritage, printing: r.printing, serial: r.serial })),
+      special: special.map((r) => ({
+        userCardId: r.id,
+        heritage: r.heritage,
+        printing: r.printing,
+        serial: r.serial,
+        size: r.edition?.size ?? null,
+        seal: r.printing !== null ? sealOf(r.printing, seals) : null,
+      })),
     },
   };
 }

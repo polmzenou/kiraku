@@ -5,21 +5,23 @@ import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Prisma } from "@/generated/prisma/client";
+import { seededRng } from "@/lib/rng";
 import { moveCopy } from "../collection/transfer";
+import { takeSerial } from "./printing-core";
 
-// Migrations du prestige, rejouées après toutes les autres dans un Postgres isolé en mémoire, et moveCopy sur cette
-// base : écriture conditionnelle, remise à zéro de « gardée par son propriétaire », provenance des seuls spéciaux.
+// Migrations du prestige, rejouées après toutes les autres dans un Postgres isolé en mémoire, puis moveCopy et la
+// requête du numéro d'une gravée sur cette base : écriture conditionnelle, remise à zéro de « gardée par son
+// propriétaire », provenance des seuls spéciaux, numéros d'un tirage tous distincts.
 
 let pg: PGlite;
 const NOW = new Date("2026-11-18T12:00:00.000Z");
 const iso = (v: unknown) => (v instanceof Date ? v.toISOString() : v);
 
 // Le template balisé de Prisma devient une requête paramétrée PGlite ($1, $2…) ; la provenance, un INSERT
+const sql = (strings: TemplateStringsArray, values: unknown[]) => strings.reduce((text, part, i) => text + part + (i < values.length ? `$${i + 1}` : ""), "");
 const tx = {
-  $queryRaw: async (strings: TemplateStringsArray, ...values: unknown[]) => {
-    const text = strings.reduce((sql, part, i) => sql + part + (i < values.length ? `$${i + 1}` : ""), "");
-    return (await pg.query(text, values.map(iso))).rows;
-  },
+  $queryRaw: async (strings: TemplateStringsArray, ...values: unknown[]) => (await pg.query(sql(strings, values), values.map(iso))).rows,
+  $executeRaw: async (strings: TemplateStringsArray, ...values: unknown[]) => (await pg.query(sql(strings, values), values.map(iso))).affectedRows ?? 0,
   userCardOwner: {
     create: async ({ data }: { data: { userCardId: string; ownerId: string; via: string; at: Date } }) =>
       pg.query(`INSERT INTO "UserCardOwner" (id, "userCardId", "ownerId", via, at) VALUES ($1, $2, $3, $4::"OwnershipVia", $5)`, [
@@ -43,7 +45,10 @@ beforeAll(async () => {
     INSERT INTO "Series" (id, type, "titleRomaji", genres, tags) VALUES ('s', 'ANIME', 'Série', '{}', '{}');
     INSERT INTO "Card" (id, name, "imageUrl", favorites, "rarityKey", power, ki, "seriesId", "searchText", "updatedAt") VALUES
       ('k1', 'Un', 'x', 1, 'MYTHIC', 1, 1, 's', 'un', now()),
-      ('k2', 'Deux', 'x', 1, 'MYTHIC', 1, 1, 's', 'deux', now());
+      ('k2', 'Deux', 'x', 1, 'MYTHIC', 1, 1, 's', 'deux', now()),
+      ('k3', 'Trois', 'x', 1, 'MYTHIC', 1, 1, 's', 'trois', now());
+    -- Une gravée renvoie au compteur de son tirage (clé étrangère du lot 16c)
+    INSERT INTO "CardPrinting" ("cardId", printing, size) VALUES ('k1', 1, 100), ('k1', 2, 100), ('k2', 1, 100);
   `);
 }, 120_000);
 afterAll(async () => pg.close());
@@ -167,6 +172,78 @@ describe("migration prestige_cycles", () => {
   it("les Zeni d'une renaissance ont leur motif au grand livre", async () => {
     const reasons = (await pg.query<{ v: string }>(`SELECT unnest(enum_range(NULL::"CoinReason"))::text AS v`)).rows.map((r) => r.v);
     expect(reasons).toContain("REBIRTH");
+  });
+});
+
+
+describe("migration prestige_printings", () => {
+  beforeEach(async () => {
+    await pg.exec(`DELETE FROM "NotablePull"; DELETE FROM "CardPrinting" WHERE "cardId" = 'k3';`);
+  });
+  const take = (size: number, seed: number, printing = 1) => takeSerial(tx, { cardId: "k3", printing, size, rng: seededRng(seed) });
+
+  it("un tirage de taille n rend exactement les numéros 1 à n, dans le désordre, puis plus rien", async () => {
+    const serials: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      const edition = await take(5, 11 + i);
+      expect(edition).toMatchObject({ printing: 1, size: 5 });
+      serials.push(edition!.serial);
+    }
+    expect([...serials].sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5]);
+    expect(serials).not.toEqual([1, 2, 3, 4, 5]);
+    // Tirage épuisé : la carte sortira ordinaire
+    expect(await take(5, 99)).toBeNull();
+    expect(await one(`SELECT issued, taken FROM "CardPrinting" WHERE "cardId" = 'k3'`)).toEqual({ issued: 5, taken: serials });
+  });
+
+  it("la taille d'un tirage est figée à sa création ; un autre tirage repart de zéro", async () => {
+    expect(await take(3, 1)).toMatchObject({ size: 3 });
+    expect(await take(9, 2)).toMatchObject({ size: 3 });
+    expect(await take(9, 3, 2)).toMatchObject({ printing: 2, size: 9 });
+    expect(await one(`SELECT count(*)::int AS n FROM "CardPrinting" WHERE "cardId" = 'k3'`)).toEqual({ n: 2 });
+  });
+
+  it("un tirage ne revient jamais en arrière", async () => {
+    await take(4, 5);
+    await take(4, 6);
+    const back = [
+      `UPDATE "CardPrinting" SET issued = issued - 1, taken = taken[1:1] WHERE "cardId" = 'k3'`,
+      `UPDATE "CardPrinting" SET taken = ARRAY[taken[2], taken[1]] WHERE "cardId" = 'k3'`,
+      `UPDATE "CardPrinting" SET size = 10 WHERE "cardId" = 'k3'`,
+    ];
+    for (const statement of back) await expect(pg.exec(statement)).rejects.toThrow(/en arrière/);
+    // Un numéro déjà sorti, hors du tirage ou nul ne peut pas être ajouté
+    const bad = (n: string) => pg.exec(`UPDATE "CardPrinting" SET issued = issued + 1, taken = array_append(taken, ${n}) WHERE "cardId" = 'k3'`);
+    const [first] = (await pg.query<{ taken: number[] }>(`SELECT taken FROM "CardPrinting" WHERE "cardId" = 'k3'`)).rows[0].taken;
+    await expect(bad(String(first))).rejects.toThrow(/hors du tirage ou en double/);
+    await expect(bad("5")).rejects.toThrow(/hors du tirage ou en double/);
+    await expect(bad("0")).rejects.toThrow(/hors du tirage ou en double/);
+    await expect(bad("NULL")).rejects.toThrow(/hors du tirage ou en double/);
+    // Compteur et numéros sortis vont ensemble
+    await expect(pg.exec(`UPDATE "CardPrinting" SET issued = issued + 1 WHERE "cardId" = 'k3'`)).rejects.toThrow(/CardPrinting_bounds/);
+    await expect(pg.exec(`INSERT INTO "CardPrinting" ("cardId", printing, size) VALUES ('k3', 0, 5)`)).rejects.toThrow(/CardPrinting_bounds/);
+  });
+
+  it("une gravée renvoie au compteur de son tirage ; un exemplaire ordinaire n'en a pas besoin", async () => {
+    await expect(pg.exec(`INSERT INTO "UserCard" (id, "ownerId", "cardId", printing, serial) VALUES ('orphan', 'a', 'k3', 1, 1)`)).rejects.toThrow(
+      /UserCard_cardId_printing_fkey/,
+    );
+    const edition = await take(5, 7);
+    await pg.exec(`INSERT INTO "UserCard" (id, "ownerId", "cardId", printing, serial) VALUES ('g', 'a', 'k3', 1, ${edition!.serial}), ('o', 'a', 'k3', NULL, NULL)`);
+    // Le compteur ne part pas tant qu'une gravée y renvoie
+    await expect(pg.exec(`DELETE FROM "CardPrinting" WHERE "cardId" = 'k3'`)).rejects.toThrow(/UserCard_cardId_printing_fkey/);
+    await pg.exec(`DELETE FROM "UserCard" WHERE id IN ('g', 'o')`);
+  });
+
+  it("le carrousel et le lien de partage gardent l'édition tirée", async () => {
+    const pull = (values: string) =>
+      pg.exec(`INSERT INTO "NotablePull" (id, "userId", "cardId", "rarityKey", "boosterSlug", printing, serial, "printingSize") VALUES (${values})`);
+    await pull(`'n1', 'a', 'k3', 'MYTHIC', 'b', 1, 17, 25`);
+    await pull(`'n2', 'a', 'k3', 'MYTHIC', 'b', NULL, NULL, NULL`);
+    await expect(pull(`'n3', 'a', 'k3', 'MYTHIC', 'b', 1, NULL, 25`)).rejects.toThrow(/NotablePull_engraving_check/);
+    await expect(pull(`'n4', 'a', 'k3', 'MYTHIC', 'b', 1, 26, 25`)).rejects.toThrow(/NotablePull_engraving_check/);
+    await pg.exec(`INSERT INTO "BoosterOpening" (id, "userId", "boosterSlug", "cardIds", "catalogCardIds", editions) VALUES ('o1', 'a', 'b', '{}', '{}', '[{"position": 2, "printing": 1, "serial": 17, "size": 25}]')`);
+    expect(await one(`SELECT editions FROM "BoosterOpening" WHERE id = 'o1'`)).toEqual({ editions: [{ position: 2, printing: 1, serial: 17, size: 25 }] });
   });
 });
 

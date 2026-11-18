@@ -2,8 +2,10 @@ import "server-only";
 import { seriesTitle } from "@/lib/catalog/display";
 import type { Rarity } from "@/lib/catalog/rarity";
 import type { ShowcaseCard } from "@/lib/collection/view";
+import { fudaCopyOf } from "@/lib/prestige/printing";
 import { layoutCapacity, type ShowcaseLayoutId } from "@/lib/showcase/layouts";
 import { prisma } from "../db";
+import { getPrintingSeals } from "../prestige/rules";
 import { storedLayout } from "./core";
 
 // Lectures des vitrines. Chaque carte affichée doit appartenir au propriétaire de la vitrine : un
@@ -46,6 +48,11 @@ export async function getShowcaseCards(showcaseId: string, ownerId: string, layo
       position: true,
       userCard: {
         select: {
+          // Exemplaire exposé : une héritière ou une gravée garde ses marques en vitrine
+          heritage: true,
+          printing: true,
+          serial: true,
+          edition: { select: { size: true } },
           card: {
             select: {
               id: true,
@@ -68,8 +75,10 @@ export async function getShowcaseCards(showcaseId: string, ownerId: string, layo
     },
   });
   const result: (ShowcaseCard | null)[] = Array.from({ length: capacity }, () => null);
+  const seals = items.some((i) => i.userCard.printing !== null) ? await getPrintingSeals() : {};
   for (const item of items) {
     const c = item.userCard.card;
+    const { heritage, printing, serial, edition } = item.userCard;
     result[item.position - 1] = {
       position: item.position,
       cardId: c.id,
@@ -85,6 +94,7 @@ export async function getShowcaseCards(showcaseId: string, ownerId: string, layo
       ki: c.ki,
       spoiler: c.spoiler,
       series: seriesTitle(c.series, locale),
+      copy: fudaCopyOf({ heritage, printing, serial, size: edition?.size ?? null }, seals),
     };
   }
   return result;

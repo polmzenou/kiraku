@@ -342,7 +342,9 @@
     "locked": "Carte jamais obtenue",
     "unknown": "???",
     "spoiler": "Spoil",
-    "heritage": "Héritière, héritage {level}"
+    "heritage": "Héritière, héritage {level}",
+    "printing": "Édition gravée {seal} n° {serial} sur {size}",
+    "printingShort": "Édition gravée {seal} n° {serial}"
   },
   "rarity": {
     "COMMON": "Commune",
@@ -548,6 +550,20 @@
         "closed": "Les échanges sont fermés pour le moment.",
         "rarity": "Cette rareté ne s'échange pas."
       }
+    },
+    "engraved": {
+      "title": "Registre des gravées",
+      "intro": "Les éditions gravées sont des exemplaires numérotés que seuls les joueurs renés peuvent tirer. Un numéro sorti ne ressort jamais, même recyclé.",
+      "printing": "Tirage {printing}",
+      "counts": "{issued, plural, one {# sorti} other {# sortis}} sur {size} · {alive, plural, =0 {aucun en circulation} other {# en circulation}}",
+      "boardLabel": "Planche des numéros du tirage {printing}",
+      "state": {
+        "alive": "N° {serial} : en circulation",
+        "gone": "N° {serial} : sorti puis recyclé",
+        "free": "N° {serial} : pas encore sorti"
+      },
+      "serial": "n° {serial}",
+      "hiddenHolders": "{count, plural, one {# exemplaire chez un joueur au profil caché} other {# exemplaires chez des joueurs au profil caché}}"
     }
   },
   "nav": {
@@ -1012,7 +1028,9 @@
     "wishedCardLong": "Était dans ta liste de souhaits",
     "apocalypseSpared": "Apocalypse épargnée",
     "apocalypseRuined": "Apocalypse ruineuse",
-    "backHome": "Retour à l'accueil"
+    "backHome": "Retour à l'accueil",
+    "engravedCard": "Gravée n° {serial}",
+    "engravedCardLong": "Édition gravée n° {serial} : un exemplaire numéroté, unique"
   },
   "draw": {
     "title": "Tirage de {name}",
@@ -3631,6 +3649,14 @@
         "title": "Dernières renaissances",
         "empty": "Aucune renaissance pour l'instant.",
         "row": "prestige {number} · {cards, number} cartes · {zeni, number} Zeni"
+      },
+      "printings": {
+        "title": "Éditions gravées",
+        "hint": "Pour ouvrir un nouveau tirage (saison, événement), monte « Tirage en cours » dans les réglages et donne-lui son sceau : les numéros repartent de 1, sous le nouveau sceau. Les gravées déjà sorties ne changent pas.",
+        "empty": "Aucune gravée sortie pour l'instant.",
+        "name": "Tirage {printing}",
+        "current": "en cours",
+        "row": "{cards, plural, one {# carte gravée} other {# cartes gravées}} · {issued, number} numéros sortis sur {capacity, number} · {alive, number} en circulation"
       }
     }
   },
@@ -3780,7 +3806,21 @@
       "inShowcases": "Dans mes vitrines",
       "noShowcase": "Tu n'as pas encore de vitrine : <link>crée-en une depuis ton profil</link>.",
       "showcaseFullShort": "Pleine",
-      "showcaseSlots": "{count} / {capacity} cartes"
+      "showcaseSlots": "{count} / {capacity} cartes",
+      "editionOf": "Édition n° {serial} / {size}",
+      "circulation": "{issued, plural, one {# numéro sorti} other {# numéros sortis}} sur {size} · {alive, plural, =0 {aucun en circulation} other {# en circulation}}",
+      "journey": {
+        "title": "Provenance",
+        "via": {
+          "DRAW": "tirée d'un booster",
+          "REBIRTH": "gardée à une renaissance",
+          "AUCTION": "achetée aux enchères",
+          "LISTING": "échangée par annonce",
+          "TRADE": "échangée entre amis",
+          "GIFT": "reçue en cadeau",
+          "CASINO": "gagnée au casino"
+        }
+      }
     },
     "views": {
       "label": "Affichage de la collection",
@@ -3813,7 +3853,8 @@
       "engraved": "Gravée, édition n° {serial}",
       "heirToo": "héritage {level}",
       "warning": "C'est une pièce spéciale : elle part avec son héritage et son numéro.",
-      "choose": "Tu n'as que des exemplaires spéciaux de cette carte : choisis celui qui part."
+      "choose": "Tu n'as que des exemplaires spéciaux de cette carte : choisis celui qui part.",
+      "engravedOf": "Gravée, {seal} n° {serial} / {size}"
     }
   },
   "showcase": {

@@ -4,6 +4,7 @@ import type { CardView, OpenedCardView } from "@/lib/boosters/view";
 import { normalizeSearch, SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
 import type { ListingFilter } from "@/lib/market/listings";
 import { cardViews } from "../boosters/display";
+import { copyMarksOf, withCopy } from "../prestige/copy-marks";
 import { ownedCardIds } from "../collection/owned";
 import { promisedCopyWhere, type PromisedCopy } from "../collection/transfer";
 import { prisma } from "../db";
@@ -109,14 +110,14 @@ export async function listListings(input: {
       note: true,
       owner: { select: playerSelect },
       wants: { select: { cardId: true } },
-      offers: { where: { status: "PENDING" }, select: { id: true, bidderId: true, cardId: true } },
+      offers: { where: { status: "PENDING" }, select: { id: true, bidderId: true, cardId: true, userCardId: true } },
     },
   });
   const page = rows.slice(0, LISTINGS_PAGE_SIZE);
   const nextCursor = rows.length > LISTINGS_PAGE_SIZE ? (page[page.length - 1]?.id ?? null) : null;
 
   const wantIds = [...new Set(page.flatMap((r) => r.wants.map((w) => w.cardId)))];
-  const [ownerFree, viewerFree, views, viewerOwned] = await Promise.all([
+  const [ownerFree, viewerFree, views, viewerOwned, marks] = await Promise.all([
     availableListings(page.map((r) => ({ id: r.id, ownerId: r.owner.id, cardId: r.cardId, userCardId: r.userCardId }))),
     wantIds.length
       ? prisma.userCard.groupBy({ by: ["cardId"], where: { ownerId: input.viewerId, status: "COLLECTION", cardId: { in: wantIds } } })
@@ -126,6 +127,8 @@ export async function listListings(input: {
       input.locale,
     ),
     ownedCardIds(input.viewerId, page.map((r) => r.cardId)),
+    // Exemplaire désigné (héritière ou gravée) : l'annonce montre l'exemplaire, pas seulement la carte
+    copyMarksOf(page.flatMap((r) => [r.userCardId, ...r.offers.map((o) => o.userCardId)])),
   ]);
   const givable = new Set(viewerFree.map((r) => r.cardId));
   const owned = new Set(viewerOwned);
@@ -136,14 +139,15 @@ export async function listListings(input: {
     if (!card || !ownerFree.has(r.id)) return [];
     const mine = r.owner.id === input.viewerId;
     const myOffer = r.offers.find((o) => o.bidderId === input.viewerId);
-    const myOfferCard = myOffer ? views.get(myOffer.cardId) : undefined;
+    const myOfferView = myOffer ? views.get(myOffer.cardId) : undefined;
+    const myOfferCard = myOffer && myOfferView ? withCopy(myOfferView, myOffer.userCardId, marks) : undefined;
     return [
       {
         id: r.id,
         createdAt: r.createdAt,
         expiresAt: r.expiresAt,
         owner: toPlayerRef(r.owner),
-        card,
+        card: withCopy(card, r.userCardId, marks),
         viewerOwns: !mine && owned.has(r.cardId),
         note: r.note,
         wants: r.wants.flatMap((w) => {
@@ -211,12 +215,13 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
         createdAt: true,
         expiresAt: true,
         cardId: true,
+        userCardId: true,
         note: true,
         wants: { select: { cardId: true } },
         offers: {
           where: { status: "PENDING", bidder: { bannedAt: null } },
           orderBy: { createdAt: "asc" },
-          select: { id: true, createdAt: true, fromWants: true, cardId: true, bidder: { select: playerSelect } },
+          select: { id: true, createdAt: true, fromWants: true, cardId: true, userCardId: true, bidder: { select: playerSelect } },
         },
       },
     }),
@@ -228,7 +233,8 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
         id: true,
         createdAt: true,
         cardId: true,
-        listing: { select: { id: true, expiresAt: true, cardId: true, note: true, owner: { select: playerSelect } } },
+        userCardId: true,
+        listing: { select: { id: true, expiresAt: true, cardId: true, userCardId: true, note: true, owner: { select: playerSelect } } },
       },
     }),
     prisma.tradeListing.findMany({
@@ -256,7 +262,7 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
     }),
   ]);
 
-  const [views, ownedIds] = await Promise.all([
+  const [views, ownedIds, marks] = await Promise.all([
     cardViews(
       [
         ...open.flatMap((l) => [l.cardId, ...l.wants.map((w) => w.cardId), ...l.offers.map((o) => o.cardId)]),
@@ -268,6 +274,10 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
       locale,
     ),
     ownedCardIds(userId, [...open.flatMap((l) => l.offers.map((o) => o.cardId)), ...sent.map((o) => o.listing.cardId)]),
+    copyMarksOf([
+      ...open.flatMap((l) => [l.userCardId, ...l.offers.map((o) => o.userCardId)]),
+      ...sent.flatMap((o) => [o.userCardId, o.listing.userCardId]),
+    ]),
   ]);
   const owned = new Set(ownedIds);
 
@@ -298,12 +308,14 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
           id: l.id,
           createdAt: l.createdAt,
           expiresAt: l.expiresAt,
-          card,
+          card: withCopy(card, l.userCardId, marks),
           note: l.note,
           wants: l.wants.flatMap((w) => views.get(w.cardId) ?? []),
           offers: l.offers.flatMap((o) => {
             const offered = views.get(o.cardId);
-            return offered ? [{ id: o.id, createdAt: o.createdAt, fromWants: o.fromWants, bidder: toPlayerRef(o.bidder), card: offered, viewerOwns: owned.has(o.cardId) }] : [];
+            return offered
+              ? [{ id: o.id, createdAt: o.createdAt, fromWants: o.fromWants, bidder: toPlayerRef(o.bidder), card: withCopy(offered, o.userCardId, marks), viewerOwns: owned.has(o.cardId) }]
+              : [];
           }),
         },
       ];
@@ -312,7 +324,12 @@ export async function listMyExchanges(userId: string, locale: string, now = new 
       const card = views.get(o.cardId);
       const listingCard = views.get(o.listing.cardId);
       return card && listingCard
-        ? [{ id: o.id, createdAt: o.createdAt, card, listing: { id: o.listing.id, expiresAt: o.listing.expiresAt, owner: toPlayerRef(o.listing.owner), card: listingCard, viewerOwns: owned.has(o.listing.cardId), note: o.listing.note } }]
+        ? [{
+            id: o.id,
+            createdAt: o.createdAt,
+            card: withCopy(card, o.userCardId, marks),
+            listing: { id: o.listing.id, expiresAt: o.listing.expiresAt, owner: toPlayerRef(o.listing.owner), card: withCopy(listingCard, o.listing.userCardId, marks), viewerOwns: owned.has(o.listing.cardId), note: o.listing.note },
+          }]
         : [];
     }),
     history,

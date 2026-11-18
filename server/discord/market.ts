@@ -1,10 +1,12 @@
 import "server-only";
 import { displayNameFor } from "@/lib/collection/display-name";
+import { copyLabel } from "@/lib/discord/copy-label";
 import { auctionMessage, tradeListingMessage } from "@/lib/discord/market-message";
 import { promisedCopyLeft } from "../collection/transfer";
 import { prisma } from "../db";
 import { appUrl, discordMarketConfigured, env } from "../env";
 import { getSetting } from "../settings";
+import { copyMarksOf } from "../prestige/copy-marks";
 import { publishDiscordPost } from "./posts";
 
 export async function discordMarketChannel(): Promise<string | undefined> {
@@ -19,7 +21,7 @@ export async function syncDiscordAuction(auctionId: string): Promise<boolean> {
   const auction = await prisma.auction.findUnique({
     where: { id: auctionId },
     select: {
-      id: true, status: true, startPrice: true, buyoutPrice: true, currentBid: true, finalPrice: true, endsAt: true,
+      id: true, status: true, startPrice: true, buyoutPrice: true, currentBid: true, finalPrice: true, endsAt: true, userCardId: true,
       seller: { select: { id: true, username: true, profileVisibility: true, bannedAt: true, anonymizedAt: true } },
       card: { select: { name: true, imageUrl: true, spoiler: true, rarityDefinition: { select: { nameFr: true } }, series: { select: { titleRomaji: true } } } },
     },
@@ -30,8 +32,10 @@ export async function syncDiscordAuction(auctionId: string): Promise<boolean> {
     await prisma.discordPost.updateMany({ where: { key: post.key, messageId: null }, data: { nextAttemptAt: null } });
     return false;
   }
+  const marks = await copyMarksOf([auction.userCardId]);
   const payload = auctionMessage({
     ...auction,
+    copy: auction.userCardId ? copyLabel(marks.get(auction.userCardId)) : null,
     sellerName: displayNameFor(auction.seller, null, { friends: false, blocked: false }, { hidden: "Un joueur", deleted: "Compte supprimé" }),
     card: { ...auction.card, rarityName: auction.card.rarityDefinition.nameFr, series: auction.card.series.titleRomaji },
   }, appUrl());
@@ -62,9 +66,11 @@ export async function syncDiscordListing(listingId: string): Promise<boolean> {
   }
   // Même règle que l'acceptation : l'exemplaire épinglé, sinon un ordinaire
   const available = open && await promisedCopyLeft(prisma, listing);
+  const marks = await copyMarksOf([listing.userCardId]);
   const payload = tradeListingMessage({
     ...listing,
     available,
+    copy: listing.userCardId ? copyLabel(marks.get(listing.userCardId)) : null,
     ownerName: displayNameFor(listing.owner, null, { friends: false, blocked: false }, { hidden: "Un joueur", deleted: "Compte supprimé" }),
     card: { ...listing.card, rarityName: listing.card.rarityDefinition.nameFr },
     wants: listing.wants.map(({ card }) => ({ name: card.name, rarityName: card.rarityDefinition.nameFr })),

@@ -145,6 +145,8 @@ describe.skipIf(!url)("renaissance (base réelle)", () => {
 
   it("une gravée qui part doit avoir été confirmée", async () => {
     const id = await collector(0);
+    // Une gravée renvoie au compteur de son tirage (clé étrangère)
+    await prisma.cardPrinting.upsert({ where: { cardId_printing: { cardId: cards[3], printing: 1 } }, create: { cardId: cards[3], printing: 1, size: 999 }, update: {} });
     const engraved = await prisma.userCard.create({ data: { ownerId: id, cardId: cards[3], printing: 1, serial: 999 }, select: { id: true } });
     const base = { userId: id, expectedPrestige: 0, keep: { copyIds: [], cardIds: [] } };
     // 4 ordinaires à 10, une gravée à 10 × 5

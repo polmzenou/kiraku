@@ -73,3 +73,17 @@ export async function recentRebirths(take = 30) {
     select: { id: true, number: true, globalRank: true, uniqueCards: true, zeni: true, createdAt: true, user: { select: { username: true } } },
   });
 }
+
+export type PrintingOverview = { printing: number; cards: number; issued: number; capacity: number; alive: number };
+
+/** Tirages gravés : cartes déjà gravées, numéros sortis sur la capacité ouverte, exemplaires encore en jeu. */
+export async function printingOverview(): Promise<PrintingOverview[]> {
+  const [counters, alive] = await Promise.all([
+    prisma.$queryRaw<Omit<PrintingOverview, "alive">[]>`
+      SELECT "printing", COUNT(*)::int AS cards, COALESCE(SUM("issued"), 0)::int AS issued, COALESCE(SUM("size"), 0)::int AS capacity
+      FROM "CardPrinting" GROUP BY 1 ORDER BY 1`,
+    prisma.userCard.groupBy({ by: ["printing"], where: { printing: { not: null } }, _count: { _all: true } }),
+  ]);
+  const aliveOf = new Map(alive.map((a) => [a.printing, a._count._all]));
+  return counters.map((c) => ({ ...c, alive: aliveOf.get(c.printing) ?? 0 }));
+}

@@ -12,6 +12,8 @@ export type DiscordAuction = {
   sellerName: string;
   /** `spoiler` : carte qui dévoile l'histoire, annoncée sans son illustration (le salon ne connaît pas le mode spoiler des joueurs). */
   card: { name: string; imageUrl: string; rarityName: string; series: string; spoiler: boolean };
+  /** Exemplaire spécial mis en vente (« Gravée 初摺 n° 17 / 25 · héritage 3 »), absent pour un ordinaire. */
+  copy?: string | null;
 };
 
 function discordImage(value: string, origin: string): { url: string } | undefined {
@@ -32,6 +34,7 @@ export function auctionMessage(auction: DiscordAuction, origin: string, now = ne
     { name: auction.status === "SOLD" ? "Prix final" : auction.currentBid === null ? "Enchère de départ" : "Enchère actuelle", value: zeni(auction.finalPrice ?? auction.currentBid ?? auction.startPrice), inline: true },
   ];
   if (active && buyoutAvailable(auction.buyoutPrice, auction.currentBid)) fields.push({ name: "Achat immédiat", value: zeni(auction.buyoutPrice), inline: true });
+  if (auction.copy) fields.push({ name: "Exemplaire", value: discordText(auction.copy, 200), inline: false });
   fields.push({ name: "Fin de la vente", value: `<t:${Math.floor(auction.endsAt.getTime() / 1000)}:F>`, inline: false });
   const image = auction.card.spoiler ? undefined : discordImage(auction.card.imageUrl, origin);
   return {
@@ -56,6 +59,8 @@ export type DiscordTradeListing = {
   ownerName: string;
   available: boolean;
   card: { name: string; imageUrl: string; rarityName: string; spoiler: boolean };
+  /** Exemplaire spécial épinglé à l'annonce, absent pour un ordinaire. */
+  copy?: string | null;
   wants: Array<{ name: string; rarityName: string }>;
 };
 
@@ -90,7 +95,7 @@ export function tradeListingMessage(listing: DiscordTradeListing, origin: string
       fields: [
         { name: "Joueur", value: discordText(listing.ownerName, 100), inline: true },
         { name: "Statut", value: status, inline: true },
-        { name: "Carte proposée", value: label(listing.card), inline: false },
+        { name: "Carte proposée", value: listing.copy ? `${label(listing.card)}\n${discordText(listing.copy, 200)}` : label(listing.card), inline: false },
         ...wantedFields,
         { name: "Expiration", value: `<t:${Math.floor(listing.expiresAt.getTime() / 1000)}:F>`, inline: false },
       ],

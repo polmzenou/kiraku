@@ -199,7 +199,16 @@ export async function getOwnedCopies(ownerId: string, cardId: string) {
   const copies = await prisma.userCard.findMany({
     where: { ownerId, cardId },
     orderBy: [{ obtainedAt: "asc" }, { id: "asc" }],
-    select: { id: true, status: true, obtainedAt: true, heritage: true, printing: true, serial: true, _count: { select: { showcaseItems: true } } },
+    select: {
+      id: true,
+      status: true,
+      obtainedAt: true,
+      heritage: true,
+      printing: true,
+      serial: true,
+      edition: { select: { size: true } },
+      _count: { select: { showcaseItems: true } },
+    },
   });
   return copies.map((c) => ({
     id: c.id,
@@ -209,6 +218,8 @@ export async function getOwnedCopies(ownerId: string, cardId: string) {
     heritage: c.heritage,
     printing: c.printing,
     serial: c.serial,
+    /** Taille figée du tirage d'une gravée. */
+    size: c.edition?.size ?? null,
     /** Exposé dans au moins une vitrine du joueur. */
     inShowcase: c._count.showcaseItems > 0,
   }));

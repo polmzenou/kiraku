@@ -1,4 +1,5 @@
 import type { Rarity } from "@/lib/catalog/rarity";
+import type { FudaCopy } from "@/components/fuda/Fuda";
 
 // Combat 1v1 en direct (étape 9) : types partagés par le moteur, le serveur et le plateau.
 // Tout l'état est public (pas de main ni de pioche) : on peut le diffuser tel quel.
@@ -131,6 +132,11 @@ export type FighterSetup = {
   universe?: UniverseRef;
   /** Carte spoil (illustration floutée en mode spoiler) ; absent sinon, et sur les parties lancées avant ce mode. */
   spoiler?: boolean;
+  /**
+   * Exemplaire engagé (prestige) : héritage et édition gravée, figés au lancement. Absent pour un exemplaire
+   * ordinaire, un bot et les parties d'avant : les replays restent lisibles.
+   */
+  copy?: FudaCopy;
 };
 
 export type BattleSetup = {

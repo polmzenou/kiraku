@@ -342,7 +342,9 @@
     "locked": "Card never obtained",
     "unknown": "???",
     "spoiler": "Spoiler",
-    "heritage": "Heirloom, heritage {level}"
+    "heritage": "Heirloom, heritage {level}",
+    "printing": "Engraved edition {seal} no. {serial} of {size}",
+    "printingShort": "Engraved edition {seal} no. {serial}"
   },
   "rarity": {
     "COMMON": "Common",
@@ -548,6 +550,20 @@
         "closed": "Trades are closed for now.",
         "rarity": "This rarity can't be traded."
       }
+    },
+    "engraved": {
+      "title": "Engraved registry",
+      "intro": "Engraved editions are numbered copies only reborn players can pull. A number that has come out never comes back, even once recycled.",
+      "printing": "Printing {printing}",
+      "counts": "{issued} of {size} pulled · {alive, plural, =0 {none in circulation} other {# in circulation}}",
+      "boardLabel": "Number board of printing {printing}",
+      "state": {
+        "alive": "No. {serial}: in circulation",
+        "gone": "No. {serial}: pulled, then recycled",
+        "free": "No. {serial}: not pulled yet"
+      },
+      "serial": "no. {serial}",
+      "hiddenHolders": "{count, plural, one {# copy held by a player with a hidden profile} other {# copies held by players with hidden profiles}}"
     }
   },
   "nav": {
@@ -1012,7 +1028,9 @@
     "wishedCardLong": "Was on your wishlist",
     "apocalypseSpared": "Apocalypse spared",
     "apocalypseRuined": "Apocalypse ruined",
-    "backHome": "Back to home"
+    "backHome": "Back to home",
+    "engravedCard": "Engraved no. {serial}",
+    "engravedCardLong": "Engraved edition no. {serial}: a unique numbered copy"
   },
   "draw": {
     "title": "{name}'s pull",
@@ -3631,6 +3649,14 @@
         "title": "Latest rebirths",
         "empty": "No rebirth yet.",
         "row": "prestige {number} · {cards, number} cards · {zeni, number} Zeni"
+      },
+      "printings": {
+        "title": "Engraved editions",
+        "hint": "To open a new printing (season, event), raise \"Current printing\" in the settings and give it its seal: numbers start again from 1, under the new seal. Engraved copies already out don't change.",
+        "empty": "No engraved copy pulled yet.",
+        "name": "Printing {printing}",
+        "current": "current",
+        "row": "{cards, plural, one {# card engraved} other {# cards engraved}} · {issued, number} of {capacity, number} numbers pulled · {alive, number} in circulation"
       }
     }
   },
@@ -3780,7 +3806,21 @@
       "inShowcases": "In my showcases",
       "noShowcase": "You don't have a showcase yet: <link>create one from your profile</link>.",
       "showcaseFullShort": "Full",
-      "showcaseSlots": "{count} / {capacity} cards"
+      "showcaseSlots": "{count} / {capacity} cards",
+      "editionOf": "Edition no. {serial} / {size}",
+      "circulation": "{issued, plural, one {# number pulled} other {# numbers pulled}} of {size} · {alive, plural, =0 {none in circulation} other {# in circulation}}",
+      "journey": {
+        "title": "Provenance",
+        "via": {
+          "DRAW": "pulled from a booster",
+          "REBIRTH": "kept at a rebirth",
+          "AUCTION": "bought at auction",
+          "LISTING": "traded through a listing",
+          "TRADE": "traded between friends",
+          "GIFT": "received as a gift",
+          "CASINO": "won at the casino"
+        }
+      }
     },
     "views": {
       "label": "Collection view",
@@ -3813,7 +3853,8 @@
       "engraved": "Engraved, edition no. {serial}",
       "heirToo": "heritage {level}",
       "warning": "This is a special piece: it leaves with its heritage and its number.",
-      "choose": "You only have special copies of this card: choose the one that goes."
+      "choose": "You only have special copies of this card: choose the one that goes.",
+      "engravedOf": "Engraved, {seal} no. {serial} / {size}"
     }
   },
   "showcase": {

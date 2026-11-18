@@ -5,9 +5,11 @@ import { displayNameFor } from "@/lib/collection/display-name";
 import { casinoPhase } from "@/lib/casino/phase";
 import { isBigFlip } from "@/lib/casino/tiers";
 import { bigFlipMessage, casinoOpeningMessage, casinoTeaserMessage } from "@/lib/discord/casino-message";
+import { copyLabel } from "@/lib/discord/copy-label";
 import { getRarityDefinitions } from "../catalog/rarities";
 import { getCasinoRules } from "../casino/queries";
 import { prisma } from "../db";
+import { copyMarksOf } from "../prestige/copy-marks";
 import { appUrl, discordCasinoConfigured, env } from "../env";
 import { readEventGauge } from "../home/event-gauge";
 import { getSetting } from "../settings";
@@ -66,6 +68,8 @@ async function syncFlip(key: string, flipId: string): Promise<boolean> {
       winnerId: true,
       creatorId: true,
       creatorRarity: true,
+      creatorUserCardId: true,
+      opponentUserCardId: true,
       creator: { select: { id: true, username: true, profileVisibility: true, bannedAt: true, anonymizedAt: true } },
       opponent: { select: { id: true, username: true, profileVisibility: true, bannedAt: true, anonymizedAt: true } },
       creatorCard: { select: { name: true, imageUrl: true, spoiler: true, rarityDefinition: { select: { nameFr: true, seal: true } } } },
@@ -80,6 +84,8 @@ async function syncFlip(key: string, flipId: string): Promise<boolean> {
   const winner = creatorWon ? flip.creator : flip.opponent;
   // Le gagnant emporte la fuda de l'autre
   const prize = creatorWon ? flip.opponentCard : flip.creatorCard;
+  const prizeCopy = creatorWon ? flip.opponentUserCardId : flip.creatorUserCardId;
+  const marks = await copyMarksOf([prizeCopy]);
   const payload = bigFlipMessage(
     {
       id: flip.id,
@@ -87,6 +93,7 @@ async function syncFlip(key: string, flipId: string): Promise<boolean> {
       seal: prize.rarityDefinition.seal,
       result: flip.result,
       card: { name: prize.name, imageUrl: prize.imageUrl, spoiler: prize.spoiler, rarityName: prize.rarityDefinition.nameFr },
+      copy: prizeCopy ? copyLabel(marks.get(prizeCopy)) : null,
     },
     appUrl(),
   );

@@ -23,6 +23,7 @@ import {
 import type { ShownName } from "@/lib/collection/display-name";
 import { shownPlayer, type ShownPlayer } from "@/lib/social/shown-player";
 import { cardViews } from "../boosters/display";
+import { copyMarksOf, withCopy } from "../prestige/copy-marks";
 import { ownedCardIds } from "../collection/owned";
 import { namedPlayerSelect, publicNamesFor } from "../collection/public-names";
 import { prisma } from "../db";
@@ -118,6 +119,7 @@ const shownPlayerSelect = { ...namedPlayerSelect, image: true } as const;
 const listSelect = {
   id: true,
   cardId: true,
+  userCardId: true,
   status: true,
   price: true,
   currentBid: true,
@@ -196,13 +198,15 @@ export async function listAuctions(input: {
     select: listSelect,
   });
   const page = rows.slice(0, MARKET_PAGE_SIZE);
-  const [views, nameOf, ownedIds] = await Promise.all([
+  const [views, nameOf, ownedIds, marks] = await Promise.all([
     cardViews(
       page.map((r) => r.cardId),
       input.locale,
     ),
     publicNamesFor(viewerId, page.map((r) => r.seller)),
     ownedCardIds(viewerId, page.map((r) => r.cardId)),
+    // Héritière ou gravée mise en vente : l'acheteur voit l'exemplaire, pas seulement la carte
+    copyMarksOf(page.map((r) => r.userCardId)),
   ]);
   const owned = new Set(ownedIds);
   const last = page.at(-1);
@@ -213,7 +217,7 @@ export async function listAuctions(input: {
       return [
         {
           id: r.id,
-          card: view,
+          card: withCopy(view, r.userCardId, marks),
           status: r.status,
           price: r.price,
           hasBids: r.currentBid !== null,
@@ -330,6 +334,7 @@ export async function getAuctionDetail(id: string, viewerId: string | null, loca
     select: {
       id: true,
       cardId: true,
+      userCardId: true,
       sellerId: true,
       startPrice: true,
       feeBp: true,
@@ -345,16 +350,17 @@ export async function getAuctionDetail(id: string, viewerId: string | null, loca
     },
   });
   if (!a) return null;
-  const [views, nameOf, owned] = await Promise.all([
+  const [views, nameOf, owned, marks] = await Promise.all([
     cardViews([a.cardId], locale),
     publicNamesFor(viewerId, [a.seller, ...a.bids.map((b) => b.bidder)]),
     ownedCardIds(viewerId, [a.cardId]),
+    copyMarksOf([a.userCardId]),
   ]);
   const card = views.get(a.cardId);
   if (!card) return null;
   return {
     id: a.id,
-    card,
+    card: withCopy(card, a.userCardId, marks),
     viewerOwns: a.sellerId !== viewerId && owned.length > 0,
     seller: shownPlayer(nameOf(a.seller), a.seller),
     note: a.note,

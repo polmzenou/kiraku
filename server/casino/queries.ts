@@ -13,6 +13,7 @@ import { coreView, flipStats, outcomeFor, sideOf, type CoinFlipCoreView, type Co
 import { periodWindow } from "@/lib/economy/period";
 import type { SettingValue } from "@/lib/settings/defaults";
 import { cardViews } from "../boosters/display";
+import { copyMarksOf, withCopy } from "../prestige/copy-marks";
 import { getRarityDefinitions } from "../catalog/rarities";
 import { prisma } from "../db";
 import { playerRefSelect, toPlayerRef, type PlayerRef } from "../profile/decor";
@@ -68,12 +69,14 @@ const flipSelect = {
   status: true,
   creatorId: true,
   creatorCardId: true,
+  creatorUserCardId: true,
   creatorRarity: true,
   creatorSide: true,
   tierOrder: true,
   reservedForId: true,
   opponentId: true,
   opponentCardId: true,
+  opponentUserCardId: true,
   opponentRarity: true,
   seed: true,
   seedHash: true,
@@ -118,9 +121,11 @@ async function toViews(rows: readonly FlipRecord[], viewerId: string | null, loc
   if (rows.length === 0) return [];
   const playerIds = [...new Set(rows.flatMap((r) => [r.creatorId, r.reservedForId, r.opponentId].filter((x): x is string => x !== null)))];
   const cardIds = rows.flatMap((r) => [r.creatorCardId, ...(r.opponentCardId ? [r.opponentCardId] : [])]);
-  const [players, cards] = await Promise.all([
+  const [players, cards, marks] = await Promise.all([
     prisma.user.findMany({ where: { id: { in: playerIds } }, select: playerRefSelect }),
     cardViews(cardIds, locale),
+    // Une héritière ou une gravée misée : la table, le salon et le résultat montrent l'exemplaire
+    copyMarksOf(rows.flatMap((r) => [r.creatorUserCardId, r.opponentUserCardId])),
   ]);
   const byId = new Map(players.map((p) => [p.id, toPlayerRef(p)]));
   return rows.flatMap((r) => {
@@ -134,8 +139,8 @@ async function toViews(rows: readonly FlipRecord[], viewerId: string | null, loc
         creator,
         reservedFor: r.reservedForId ? (byId.get(r.reservedForId) ?? null) : null,
         opponent: r.opponentId ? (byId.get(r.opponentId) ?? null) : null,
-        creatorCard,
-        opponentCard: r.opponentCardId ? (cards.get(r.opponentCardId) ?? null) : null,
+        creatorCard: withCopy(creatorCard, r.creatorUserCardId, marks),
+        opponentCard: r.opponentCardId && cards.get(r.opponentCardId) ? withCopy(cards.get(r.opponentCardId)!, r.opponentUserCardId, marks) : null,
         rarity: r.creatorRarity,
         mine: viewerId === r.creatorId,
         forMe: viewerId !== null && viewerId === r.reservedForId,

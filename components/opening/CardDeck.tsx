@@ -432,7 +432,7 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
                   : { opacity: 0, x: 170, y: 50, rotate: 16, scale: 0.8, transition: { duration: 0.32 } }}
                 transition={{ duration: reduced ? 0.12 : 0.2 }}
               >
-                <FlipCard card={current} phase={phase} size="lg" reduced={reduced} compactFx={lite} scene />
+                <FlipCard card={current} phase={phase} size="lg" reduced={reduced} compactFx={lite} scene engraving />
               </m.button>
             )}
           </AnimatePresence>

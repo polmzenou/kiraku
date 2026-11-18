@@ -6,13 +6,13 @@ import { PRESTIGE_SETTING_KEYS, type PrestigeSettings } from "@/lib/settings/pre
 import { recentSettingLogs, requireAdmin } from "@/server/admin";
 import { getCatalogStats } from "@/server/catalog/queries";
 import { getRarityDefinitions } from "@/server/catalog/rarities";
-import { prestigeBalance, recentRebirths } from "@/server/prestige/admin-queries";
+import { printingOverview, prestigeBalance, recentRebirths } from "@/server/prestige/admin-queries";
 import { getSetting } from "@/server/settings";
 
 /** Prestige : interrupteur et réglages, aperçu d'équilibrage (seuils, joueurs éligibles), dernières renaissances. */
 export default async function AdminPrestigePage() {
   await requireAdmin();
-  const [t, format, locale, values, logs, definitions, catalog, rebirths] = await Promise.all([
+  const [t, format, locale, values, logs, definitions, catalog, rebirths, printings] = await Promise.all([
     getTranslations("admin.prestige"),
     getFormatter(),
     getLocale(),
@@ -21,6 +21,7 @@ export default async function AdminPrestigePage() {
     getRarityDefinitions(),
     getCatalogStats(),
     recentRebirths(),
+    printingOverview(),
   ]);
   const settings = Object.fromEntries(PRESTIGE_SETTING_KEYS.map((k, i) => [k, values[i]])) as PrestigeSettings;
   const nameOf = (key: string) => {
@@ -76,6 +77,32 @@ export default async function AdminPrestigePage() {
           <p className="text-sm text-text-muted">
             {t("balance.closest")} {balance.closest.map((c) => `${c.username} (${format.number(Math.min(1, c.progress), { style: "percent" })})`).join(" · ")}
           </p>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-title text-lg font-bold">{t("printings.title")}</h2>
+        <p className="max-w-prose text-sm text-text-muted">{t("printings.hint")}</p>
+        {printings.length === 0 ? (
+          <p className="text-sm text-text-muted">{t("printings.empty")}</p>
+        ) : (
+          <ul className="flex flex-col gap-1 text-sm">
+            {printings.map((p) => {
+              const seal = settings["prestige.printing.seals"][String(p.printing)];
+              return (
+                <li key={p.printing} className="flex flex-wrap items-baseline gap-x-3 border-t border-border py-1.5">
+                  {seal && (
+                    <span lang="ja" className="font-seal text-shu">
+                      {seal}
+                    </span>
+                  )}
+                  <b>{t("printings.name", { printing: p.printing })}</b>
+                  {p.printing === settings["prestige.printing.current"] && <span className="text-xs font-bold text-kin">{t("printings.current")}</span>}
+                  <span className="text-text-muted">{t("printings.row", { cards: p.cards, issued: p.issued, capacity: p.capacity, alive: p.alive })}</span>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
 

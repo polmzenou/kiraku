@@ -28,6 +28,7 @@ import {
 import { type Rarity } from "@/lib/catalog/rarity";
 import { mixSeed, seededRng, type Rng } from "@/lib/rng";
 import { COPY_MARKS } from "@/lib/collection/copies";
+import { fudaCopyOf } from "@/lib/prestige/printing";
 import { pickLoanCopy } from "@/lib/social/gifts";
 import { pairKey } from "@/lib/social/relation";
 import type { RankedRules } from "@/lib/ranked/rules";
@@ -234,9 +235,9 @@ function fighterCard({ series, publicId, ...card }: Prisma.CardGetPayload<{ sele
 export async function fightersOf(tx: Tx, userCardIds: readonly string[], rules: BattleRules): Promise<FighterSetup[]> {
   const rows = await tx.userCard.findMany({
     where: { id: { in: [...userCardIds] } },
-    select: { id: true, ownerId: true, card: { select: cardSelect } },
+    select: { id: true, ownerId: true, heritage: true, printing: true, serial: true, edition: { select: { size: true } }, card: { select: cardSelect } },
   });
-  const byId = new Map(rows.map((r) => [r.id, { ownerId: r.ownerId, card: fighterCard(r.card) }]));
+  const byId = new Map(rows.map((r) => [r.id, { ownerId: r.ownerId, card: fighterCard(r.card), copy: fudaCopyOf({ ...r, size: r.edition?.size ?? null }, {}) }]));
   const kits = new Map<string, Map<string, Kit>>();
   for (const ownerId of new Set(rows.map((r) => r.ownerId))) {
     const cards = rows.filter((r) => r.ownerId === ownerId).map((r) => byId.get(r.id)!.card);
@@ -245,7 +246,9 @@ export async function fightersOf(tx: Tx, userCardIds: readonly string[], rules: 
   return userCardIds.map((id) => {
     const row = byId.get(id);
     if (!row) throw new BattleError("NOT_OWNED");
-    return fighterFrom(row.card, rules, kits.get(row.ownerId)?.get(row.card.id));
+    const fighter = fighterFrom(row.card, rules, kits.get(row.ownerId)?.get(row.card.id));
+    // Héritière ou gravée engagée : son habillage la suit sur le plateau et dans les replays
+    return row.copy ? { ...fighter, copy: row.copy } : fighter;
   });
 }
 

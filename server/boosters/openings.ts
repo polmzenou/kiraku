@@ -1,10 +1,12 @@
 import "server-only";
 import { cache } from "react";
 import type { CardView } from "@/lib/boosters/view";
+import { fudaCopyOf, readEditions } from "@/lib/prestige/printing";
 import { guestCode } from "@/lib/username";
 import { prisma } from "../db";
 import { namedPlayerSelect, publicNamesFor } from "../collection/public-names";
 import { cardViews } from "./display";
+import { getPrintingSeals } from "../prestige/rules";
 
 export type PublicOpening = {
   id: string;
@@ -33,17 +35,21 @@ export const getPublicOpening = cache(async (id: string, locale: string, viewerI
       golden: true,
       divine: true,
       apocalypse: true,
+      editions: true,
       createdAt: true,
       user: { select: namedPlayerSelect },
     },
   });
   if (!opening) return null;
 
-  // Ids de Card copiés au tirage : les cartes restent visibles même recyclées ou vendues depuis
-  const views = await cardViews(opening.catalogCardIds, locale);
-  const cards = opening.catalogCardIds.flatMap((cardId) => {
+  // Ids de Card copiés au tirage : les cartes restent visibles même recyclées ou vendues depuis, et une gravée
+  // garde son édition (copiée à sa place dans le booster)
+  const editions = readEditions(opening.editions);
+  const [views, seals] = await Promise.all([cardViews(opening.catalogCardIds, locale), editions.size > 0 ? getPrintingSeals() : {}]);
+  const cards = opening.catalogCardIds.flatMap((cardId, position) => {
     const view = views.get(cardId);
-    return view ? [view] : [];
+    const edition = editions.get(position);
+    return view ? [edition ? { ...view, copy: fudaCopyOf({ heritage: 0, ...edition }, seals) } : view] : [];
   });
 
   const { name, revealed } = (await publicNamesFor(viewerId, [opening.user]))(opening.user);

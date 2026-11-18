@@ -5,12 +5,14 @@ import type { CardView } from "@/lib/boosters/view";
 import { type Rarity } from "@/lib/catalog/rarity";
 import { shownNameFor, type NamedPlayer } from "@/lib/collection/display-name";
 import { decorFromRelations, type PlayerDecor } from "@/lib/profile/decor";
+import { fudaCopyOf } from "@/lib/prestige/printing";
 import { prisma } from "../db";
 import { cardViews } from "../boosters/display";
 import { namedPlayerSelect, revealsHiddenNames } from "../collection/public-names";
 import { getRarities } from "../catalog/rarities";
 import { decorSelect } from "../profile/decor";
 import { getSetting } from "../settings";
+import { getPrintingSeals } from "../prestige/rules";
 import { pullLikes } from "./pull-likes";
 
 export type RecentPull = {
@@ -67,15 +69,22 @@ async function loadFeed({ maxAgeHours, ...query }: FeedKey, locale: string): Pro
     select: {
       id: true,
       cardId: true,
+      printing: true,
+      serial: true,
+      printingSize: true,
       createdAt: true,
       user: { select: { ...namedPlayerSelect, image: true, ...decorSelect } },
     },
   });
   const rows = found.sort((a, b) => order.get(a.id)! - order.get(b.id)!);
-  const views = await cardViews(rows.map((r) => r.cardId), locale);
+  const engraved = rows.some((r) => r.printing !== null);
+  const [views, seals] = await Promise.all([cardViews(rows.map((r) => r.cardId), locale), engraved ? getPrintingSeals() : {}]);
   return rows.flatMap((r) => {
-    const card = views.get(r.cardId);
-    return card ? [{ id: r.id, card, user: r.user, at: new Date(r.createdAt).toISOString() }] : [];
+    const view = views.get(r.cardId);
+    if (!view) return [];
+    // Gravée tirée : l'édition copiée à la sortie (l'exemplaire a pu changer de main depuis)
+    const copy = r.printing !== null ? fudaCopyOf({ heritage: 0, printing: r.printing, serial: r.serial, size: r.printingSize }, seals) : null;
+    return [{ id: r.id, card: copy ? { ...view, copy } : view, user: r.user, at: new Date(r.createdAt).toISOString() }];
   });
 }
 
@@ -84,7 +93,7 @@ const feeds = new Map<number, typeof loadFeed>();
 function cachedFeed(seconds: number) {
   let feed = feeds.get(seconds);
   if (!feed) {
-    feed = unstable_cache(loadFeed, ["home-pull-feed-v6", String(seconds)], { revalidate: seconds, tags: [PULL_FEED_TAG] });
+    feed = unstable_cache(loadFeed, ["home-pull-feed-v7", String(seconds)], { revalidate: seconds, tags: [PULL_FEED_TAG] });
     feeds.set(seconds, feed);
   }
   return feed;

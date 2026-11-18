@@ -49,7 +49,11 @@ export function CopyPicker({ cardId, value, onChange }: { cardId: string; value:
       {copies.special.map((c) =>
         option(
           c.userCardId,
-          c.printing !== null ? t("engraved", { serial: c.serial ?? 0 }) : t("heir", { level: c.heritage }),
+          c.printing !== null
+            ? c.size !== null
+              ? t("engravedOf", { seal: c.seal ?? "", serial: c.serial ?? 0, size: c.size })
+              : t("engraved", { serial: c.serial ?? 0 })
+            : t("heir", { level: c.heritage }),
           c.printing !== null && c.heritage > 0 ? t("heirToo", { level: c.heritage }) : undefined,
         ),
       )}

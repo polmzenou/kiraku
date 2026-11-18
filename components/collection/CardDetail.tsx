@@ -6,14 +6,18 @@ import { cardNumber, seriesTitle } from "@/lib/catalog/display";
 import { RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
 import { isSpecialCopy } from "@/lib/collection/copies";
 import { copyRecycleValue } from "@/lib/collection/recycle";
+import { fudaCopyOf } from "@/lib/prestige/printing";
 import { getBattleRules, getCardKit } from "@/server/battle/queries";
 import type { CatalogCardDetail } from "@/server/catalog/queries";
 import { getOwnedCopies } from "@/server/collection/queries";
 import { openAuctionsForCard, sellInfoFor } from "@/server/market/queries";
 import { getSetting } from "@/server/settings";
+import { copyJourneys, printingStats, type JourneyStep, type PrintingStats } from "@/server/prestige/copies";
+import { getPrintingSeals } from "@/server/prestige/rules";
 import { SellButton } from "../market/SellButton";
 import { ButtonLink } from "../ui/ButtonLink";
 import { RecycleControl } from "./RecycleControl";
+import { CopyJourney } from "./CopyJourney";
 import { RecycleCopyButton } from "./RecycleCopyButton";
 import { ShowcaseToggle } from "./ShowcaseToggle";
 
@@ -63,6 +67,16 @@ export async function CardDetail({
   const ordinaryInCollection = copies.filter((c) => c.status === "COLLECTION" && !isSpecialCopy(c)).length;
   const inShowcase = copies.some((c) => c.inShowcase);
   const byStatus = (s: "AUCTION" | "BATTLE" | "CASINO" | "EXPEDITION") => copies.filter((c) => c.status === s).length;
+  // Fiche de chaque exemplaire spécial : provenance, gravées encore en circulation, sceaux des tirages
+  const [journeys, stats, seals]: [Map<string, JourneyStep[]>, PrintingStats[], Record<string, string>] =
+    special.length > 0
+      ? await Promise.all([
+          copyJourneys(ownerId, special.map((c) => c.id)),
+          special.some((c) => c.printing !== null) ? printingStats(card.id) : Promise.resolve([]),
+          getPrintingSeals(),
+        ])
+      : [new Map(), [], {}];
+  const statsOf = new Map(stats.map((s) => [s.printing, s]));
 
   return (
     <article className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
@@ -119,23 +133,39 @@ export async function CardDetail({
             {special.length > 0 && (
               <section className="flex flex-col gap-3 lacquer rounded-card p-4">
                 <h3 className="font-bold">{t("specialTitle", { count: special.length })}</h3>
-                <ul className="flex flex-col gap-3">
-                  {special.map((c) => (
-                    <li key={c.id} className="flex flex-col gap-2 border-t border-border pt-3 first:border-t-0 first:pt-0">
-                      <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
-                        {c.printing !== null && <span className="font-bold text-shu">{t("edition", { serial: c.serial ?? 0 })}</span>}
-                        {c.heritage > 0 && <span className="font-bold text-kin">{t("heritage", { level: c.heritage })}</span>}
-                        {c.status !== "COLLECTION" && <span className="text-text-muted">{t("specialBusy")}</span>}
-                      </p>
-                      {c.status === "COLLECTION" && (
-                        <RecycleCopyButton
-                          userCardId={c.id}
-                          engraved={c.printing !== null}
-                          gain={copyRecycleValue({ rarity, printing: c.printing }, values, engravedMultiplier)}
-                        />
-                      )}
-                    </li>
-                  ))}
+                <ul className="flex flex-col gap-4">
+                  {special.map((c) => {
+                    const copy = fudaCopyOf(c, seals);
+                    const printing = c.printing !== null ? statsOf.get(c.printing) : undefined;
+                    return (
+                      <li key={c.id} className="flex gap-3 border-t border-border pt-4 first:border-t-0 first:pt-0">
+                        <div className="w-20 shrink-0">
+                          <Fuda card={{ ...card, copy }} size="sm" still />
+                        </div>
+                        <div className="flex min-w-0 flex-1 flex-col gap-2">
+                          <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+                            {copy?.serial != null && (
+                              <span className="font-bold text-shu">
+                                {copy.seal && <span lang="ja" className="font-seal">{copy.seal} </span>}
+                                {copy.size != null ? t("editionOf", { serial: copy.serial, size: copy.size }) : t("edition", { serial: copy.serial })}
+                              </span>
+                            )}
+                            {c.heritage > 0 && <span className="font-bold text-kin">{t("heritage", { level: c.heritage })}</span>}
+                            {c.status !== "COLLECTION" && <span className="text-text-muted">{t("specialBusy")}</span>}
+                          </p>
+                          {printing && <p className="text-xs text-text-muted">{t("circulation", { issued: printing.issued, alive: printing.alive, size: printing.size })}</p>}
+                          <CopyJourney steps={journeys.get(c.id) ?? []} />
+                          {c.status === "COLLECTION" && (
+                            <RecycleCopyButton
+                              userCardId={c.id}
+                              engraved={c.printing !== null}
+                              gain={copyRecycleValue({ rarity, printing: c.printing }, values, engravedMultiplier)}
+                            />
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               </section>
             )}

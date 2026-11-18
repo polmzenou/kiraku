@@ -63,6 +63,8 @@ export type DiscordBigFlip = {
   result: CoinSide;
   /** `spoiler` : carte qui dévoile l'histoire, annoncée sans son illustration. */
   card: { name: string; imageUrl: string; rarityName: string; spoiler: boolean };
+  /** Exemplaire spécial remporté (« Gravée 初摺 n° 17 / 25 · héritage 3 »), absent pour un ordinaire. */
+  copy?: string | null;
 };
 
 function discordImage(value: string, origin: string): { url: string } | undefined {
@@ -83,7 +85,7 @@ export function bigFlipMessage(flip: DiscordBigFlip, origin: string): DiscordMes
     embeds: [
       {
         title: `${discordText(flip.card.name, 80)} · ${discordText(flip.card.rarityName, 35)}`.slice(0, 256),
-        description: `La pièce est tombée sur ${SIDE_KANJI[flip.result]}.`,
+        description: flip.copy ? `${discordText(flip.copy, 200)}\nLa pièce est tombée sur ${SIDE_KANJI[flip.result]}.` : `La pièce est tombée sur ${SIDE_KANJI[flip.result]}.`,
         url,
         color: KIN,
         ...(image && { image }),

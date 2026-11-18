@@ -20,6 +20,7 @@ import type { Rng } from "@/lib/boosters/rng";
 import { computeStock, consumeStock, stockRulesFor, type StockSettings, type StockState } from "@/lib/boosters/stock";
 import { bonusesFor, creditBonuses, priceFor, type BoosterTypeView } from "@/lib/boosters/types";
 import type { Rarity } from "@/lib/catalog/rarity";
+import { printingSize, rollEngravings, type Edition, type PrintingRules } from "@/lib/prestige/printing";
 import { consumeBoosters, CreditError } from "../economy/credits";
 import { applyEntries, LedgerError } from "../economy/ledger";
 import { consumeWishlist } from "../collection/wishlist-core";
@@ -27,6 +28,7 @@ import type { Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { loadOwnedCopies } from "./duplicate-guard";
 import { recordDiscoveries } from "../collection/discovery";
+import { takeSerial } from "../prestige/printing-core";
 
 export type OpenErrorCode =
   | "NO_USER"
@@ -70,6 +72,8 @@ export type OpenInput = {
   sealedTypes?: Partial<Record<SealedKind, string>>;
   /** Règles et tables sous Encens, utilisées si le boost du joueur est actif (lu sous verrou). */
   incense?: IncenseDraw;
+  /** Éditions gravées (prestige) : réglages du moment ; absent ou null quand le prestige est coupé. */
+  printing?: PrintingRules | null;
   rng: Rng;
 };
 
@@ -98,6 +102,8 @@ export type OpenedBoosterRow = {
     featured: boolean;
     /** Était dans la liste de souhaits (premier exemplaire). */
     wished: boolean;
+    /** Édition gravée tirée (prestige), ou null pour un exemplaire ordinaire. */
+    edition: Edition | null;
   }[];
 };
 
@@ -149,12 +155,22 @@ export function readBannerPity(raw: unknown): Record<string, number> {
 type DrawnRow = Omit<OpenedBoosterRow, "cards"> & { cards: DrawnCard[] };
 
 /**
- * Enregistre des boosters tirés : cartes revérifiées (publiées, rareté et poids inchangés), exemplaires,
- * découvertes, liste de souhaits, lignes BoosterOpening et gros tirages du carrousel.
+ * Enregistre des boosters tirés : cartes revérifiées (publiées, rareté et poids inchangés), éditions gravées,
+ * exemplaires, découvertes, liste de souhaits, lignes BoosterOpening et gros tirages du carrousel.
  */
 async function persistDraw(
   tx: Tx,
-  input: { userId: string; type: Pick<OpenType, "id" | "slug">; rules: DrawRules; pool: CardPool; now: Date; drawn: DrawnRow[]; sealedDropId?: string },
+  input: {
+    userId: string;
+    type: Pick<OpenType, "id" | "slug">;
+    rules: DrawRules;
+    pool: CardPool;
+    now: Date;
+    drawn: DrawnRow[];
+    sealedDropId?: string;
+    /** Gravure (prestige) : réglages et générateur de l'ouverture, consommé après le tirage des cartes. */
+    engrave?: { rules: PrintingRules; rng: Rng } | null;
+  },
 ): Promise<OpenedBoosterRow[]> {
   const { userId, type, rules, now } = input;
   // « Nouveau » : jamais obtenue avant, et seulement le premier exemplaire de ce tirage
@@ -187,15 +203,50 @@ async function persistDraw(
       const isNew = !seen.has(c.cardId);
       seen.add(c.cardId);
       const regained = regainable.delete(c.cardId);
-      return { userCardId: randomUUID(), cardId: c.cardId, rarity: c.rarity, isNew, regained, featured: c.featured === true, wished: wished.delete(c.cardId) };
+      return {
+        userCardId: randomUUID(),
+        cardId: c.cardId,
+        rarity: c.rarity,
+        isNew,
+        regained,
+        featured: c.featured === true,
+        wished: wished.delete(c.cardId),
+        edition: null as Edition | null,
+      };
     }),
   }));
 
+  // Éditions gravées : un tirage au sort par carte gravable (prestige minimal, Mythique et au-dessus), puis un numéro
+  // libre au hasard dans le tirage en cours. Compteurs pris dans l'ordre des ids de carte : deux ouvertures qui
+  // gravent les mêmes cartes ne s'interbloquent pas. Un tirage épuisé laisse la carte ordinaire.
+  const rarityOrder = rules.rarities ?? Object.keys(rules.rates);
+  if (input.engrave) {
+    const { rules: printing, rng } = input.engrave;
+    const flat = boosters.flatMap((b) => b.cards);
+    const picked = rollEngravings(rng, flat, { prestige: owner.prestige, order: rarityOrder, rules: printing });
+    picked.sort((a, b) => (flat[a].cardId < flat[b].cardId ? -1 : flat[a].cardId > flat[b].cardId ? 1 : a - b));
+    for (const i of picked) {
+      const card = flat[i];
+      card.edition = await takeSerial(tx, { cardId: card.cardId, printing: printing.current, size: printingSize(card.rarity, printing), rng });
+    }
+  }
+
   await tx.userCard.createMany({
     data: boosters.flatMap((b) =>
-      b.cards.map((c) => ({ id: c.userCardId, ownerId: userId, cardId: c.cardId, obtainedAt: now })),
+      b.cards.map((c) => ({
+        id: c.userCardId,
+        ownerId: userId,
+        cardId: c.cardId,
+        obtainedAt: now,
+        ...(c.edition && { printing: c.edition.printing, serial: c.edition.serial }),
+      })),
     ),
   });
+  // Provenance d'une gravée : son premier propriétaire, sorti du booster
+  const engraved = boosters.flatMap((b) => b.cards.filter((c) => c.edition !== null));
+  if (engraved.length > 0) {
+    await tx.userCardOwner.createMany({ data: engraved.map((c) => ({ userCardId: c.userCardId, ownerId: userId, via: "DRAW" as const, at: now })) });
+  }
   await recordDiscoveries(tx, drawnIds.map((cardId) => ({ userId, cardId })), now);
   await tx.boosterOpening.createMany({
     data: boosters.map((b) => ({
@@ -211,15 +262,25 @@ async function persistDraw(
       zeniSpent: b.zeniSpent,
       sealedDropId: input.sealedDropId ?? null,
       apocalypse: b.apocalypse,
+      // Le lien de partage montre la gravée même après sa vente : édition copiée à sa place dans le booster
+      ...(b.cards.some((c) => c.edition) && {
+        editions: b.cards.flatMap((c, position) => (c.edition ? [{ position, ...c.edition }] : [])),
+      }),
       createdAt: now,
     })),
   });
   // Gros tirages pour le carrousel « En direct » de l'accueil (la rareté affichée se règle à la lecture)
-  const rarityOrder = rules.rarities ?? Object.keys(rules.rates);
   const notable = boosters.flatMap((b) => b.cards.filter((c) => rarityOrder.indexOf(c.rarity) >= rarityOrder.indexOf("EPIC")));
   if (notable.length > 0) {
     await tx.notablePull.createMany({
-      data: notable.map((c) => ({ userId, cardId: c.cardId, rarity: c.rarity, boosterSlug: type.slug, createdAt: now })),
+      data: notable.map((c) => ({
+        userId,
+        cardId: c.cardId,
+        rarity: c.rarity,
+        boosterSlug: type.slug,
+        ...(c.edition && { printing: c.edition.printing, serial: c.edition.serial, printingSize: c.edition.size }),
+        createdAt: now,
+      })),
     });
   }
   return boosters;
@@ -306,6 +367,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         rules: rules.draw,
         pool: input.pool,
         now,
+        engrave: input.printing ? { rules: input.printing, rng: input.rng } : null,
         drawn: drawn.boosters.flatMap((b) =>
           b.drop
             ? []
@@ -380,6 +442,8 @@ export type OpenSealedInput = {
   tables: RarityTables;
   pool: CardPool;
   incense?: IncenseDraw;
+  /** Éditions gravées (prestige) ; absent ou null quand le prestige est coupé. */
+  printing?: PrintingRules | null;
   rng: Rng;
 };
 
@@ -427,6 +491,7 @@ export async function openSealedWith(db: PrismaClient, input: OpenSealedInput, o
       rules: rules.draw,
       pool: input.pool,
       now,
+      engrave: input.printing ? { rules: input.printing, rng: input.rng } : null,
       drawn: [{
         id: randomUUID(),
         golden: false,
