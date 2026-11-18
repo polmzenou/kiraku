@@ -32,11 +32,14 @@ export function CollectionFilters({
   pathname,
   series,
   counts,
+  special = false,
 }: {
   params: CollectionParams;
   pathname: string;
   series: { id: string; title: string; cards: number }[];
   counts?: Partial<Record<Rarity, number>>;
+  /** Prestige : la collection compte des héritières ou des gravées (filtres « Gravées » et « Héritières »). */
+  special?: boolean;
 }) {
   const t = useTranslations("collection");
   const router = useRouter();
@@ -98,9 +101,31 @@ export function CollectionFilters({
         onChange={(rarities) => go({ rarities })}
         counts={counts}
         leading={
-          <button type="button" aria-pressed={params.dupes} onClick={() => go({ dupes: !params.dupes })} className={chip(params.dupes)}>
-            {t("dupesOnly")}
-          </button>
+          <>
+            <button type="button" aria-pressed={params.dupes} onClick={() => go({ dupes: !params.dupes })} className={chip(params.dupes)}>
+              {t("dupesOnly")}
+            </button>
+            {(special || params.special !== null) && (
+              <>
+                <button
+                  type="button"
+                  aria-pressed={params.special === "engraved"}
+                  onClick={() => go({ special: params.special === "engraved" ? null : "engraved" })}
+                  className={chip(params.special === "engraved")}
+                >
+                  <span aria-hidden="true" lang="ja" className="font-seal text-shu">版</span> {t("engravedOnly")}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={params.special === "heirs"}
+                  onClick={() => go({ special: params.special === "heirs" ? null : "heirs" })}
+                  className={chip(params.special === "heirs")}
+                >
+                  <span aria-hidden="true" lang="ja" className="font-seal text-kin">継</span> {t("heirsOnly")}
+                </button>
+              </>
+            )}
+          </>
         }
       />
 

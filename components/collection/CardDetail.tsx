@@ -6,6 +6,7 @@ import { cardNumber, seriesTitle } from "@/lib/catalog/display";
 import { RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
 import { isSpecialCopy } from "@/lib/collection/copies";
 import { copyRecycleValue } from "@/lib/collection/recycle";
+import { canConsecrate } from "@/lib/prestige/heritage";
 import { fudaCopyOf } from "@/lib/prestige/printing";
 import { getBattleRules, getCardKit } from "@/server/battle/queries";
 import type { CatalogCardDetail } from "@/server/catalog/queries";
@@ -17,6 +18,7 @@ import { getPrintingSeals } from "@/server/prestige/rules";
 import { SellButton } from "../market/SellButton";
 import { ButtonLink } from "../ui/ButtonLink";
 import { RecycleControl } from "./RecycleControl";
+import { ConsecrateButton } from "../prestige/ConsecrateButton";
 import { CopyJourney } from "./CopyJourney";
 import { RecycleCopyButton } from "./RecycleCopyButton";
 import { ShowcaseToggle } from "./ShowcaseToggle";
@@ -68,14 +70,17 @@ export async function CardDetail({
   const inShowcase = copies.some((c) => c.inShowcase);
   const byStatus = (s: "AUCTION" | "BATTLE" | "CASINO" | "EXPEDITION") => copies.filter((c) => c.status === s).length;
   // Fiche de chaque exemplaire spécial : provenance, gravées encore en circulation, sceaux des tirages
-  const [journeys, stats, seals]: [Map<string, JourneyStep[]>, PrintingStats[], Record<string, string>] =
+  const [journeys, stats, seals, consecration]: [Map<string, JourneyStep[]>, PrintingStats[], Record<string, string>, { enabled: boolean; heritageMax: number; consecrateMinOwnCycles: number } | null] =
     special.length > 0
       ? await Promise.all([
           copyJourneys(ownerId, special.map((c) => c.id)),
           special.some((c) => c.printing !== null) ? printingStats(card.id) : Promise.resolve([]),
           getPrintingSeals(),
+          Promise.all([getSetting("prestige.enabled"), getSetting("prestige.heritageMax"), getSetting("prestige.consecrateMinOwnCycles")]).then(
+            ([enabled, heritageMax, consecrateMinOwnCycles]) => ({ enabled, heritageMax, consecrateMinOwnCycles }),
+          ),
         ])
-      : [new Map(), [], {}];
+      : [new Map(), [], {}, null];
   const statsOf = new Map(stats.map((s) => [s.printing, s]));
 
   return (
@@ -155,6 +160,17 @@ export async function CardDetail({
                           </p>
                           {printing && <p className="text-xs text-text-muted">{t("circulation", { issued: printing.issued, alive: printing.alive, size: printing.size })}</p>}
                           <CopyJourney steps={journeys.get(c.id) ?? []} />
+                          {/* Héritière au plafond, gardée par le joueur : elle peut entrer au sanctuaire */}
+                          {consecration?.enabled && !isGuest && c.status === "COLLECTION" && canConsecrate(c, consecration) && (
+                            <ConsecrateButton
+                              userCardId={c.id}
+                              card={{ name: card.name, nameNative: card.nameNative, imageUrl: card.imageUrl, rank: card.rank, rarity: card.rarity, power: card.power, ki: card.ki, appearance: card.appearance, formName: card.formName, spoiler: card.spoiler, copy }}
+                              username={username}
+                            />
+                          )}
+                          {consecration?.enabled && c.heritage >= consecration.heritageMax && !canConsecrate(c, consecration) && (
+                            <p className="text-xs text-text-muted">{t("consecrateLater")}</p>
+                          )}
                           {c.status === "COLLECTION" && (
                             <RecycleCopyButton
                               userCardId={c.id}

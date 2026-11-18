@@ -67,6 +67,8 @@ describe("migration du catalogue sur PostgreSQL isolé", () => {
       await db.exec(`CREATE TABLE "ShowcaseItem" ("showcaseId" TEXT NOT NULL, "position" INTEGER NOT NULL, "userCardId" TEXT NOT NULL);`);
       // Colonne d'une migration plus récente (variantes) qui départage le tri par rareté
       await db.exec(`ALTER TABLE "RarityDefinition" ADD COLUMN "variantRequired" BOOLEAN NOT NULL DEFAULT false;`);
+      // Colonnes du prestige (exemplaires distincts) lues par la collection : pastilles des héritières et des gravées
+      await db.exec(`ALTER TABLE "UserCard" ADD COLUMN "heritage" INTEGER NOT NULL DEFAULT 0, ADD COLUMN "printing" INTEGER;`);
       // Vraie migration du mode spoiler : colonne lue par la collection et la couverture des albums
       await db.exec(readFileSync(resolve(root, "20261110120000_cartes_spoiler", "migration.sql"), "utf8"));
       await db.exec(`UPDATE "Card" SET spoiler = true WHERE id='custom'`);

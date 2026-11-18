@@ -4,9 +4,10 @@ import { PGlite } from "@electric-sql/pglite";
 import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { seededRng } from "@/lib/rng";
 import { moveCopy } from "../collection/transfer";
+import { consecrateWith, ConsecrateError } from "./consecrate-core";
 import { takeSerial } from "./printing-core";
 
 // Migrations du prestige, rejouées après toutes les autres dans un Postgres isolé en mémoire, puis moveCopy et la
@@ -31,8 +32,12 @@ const tx = {
         data.via,
         iso(data.at),
       ]),
+    findMany: async ({ where }: { where: { userCardId: string } }) =>
+      (await pg.query<{ ownerId: string | null; via: string; at: Date }>(`SELECT "ownerId", via::text AS via, at FROM "UserCardOwner" WHERE "userCardId" = $1 ORDER BY at, id`, [where.userCardId])).rows,
   },
 } as unknown as Prisma.TransactionClient;
+// Client injecté pour les cœurs qui ouvrent leur transaction : PGlite n'a qu'une connexion, le rappel suffit
+const db = { $transaction: async (fn: (t: Prisma.TransactionClient) => Promise<unknown>) => fn(tx) } as unknown as PrismaClient;
 
 
 beforeAll(async () => {
@@ -247,6 +252,84 @@ describe("migration prestige_printings", () => {
   });
 });
 
+
+describe("migration prestige_sanctuary et consécration", () => {
+  const rules = { heritageMax: 5, consecrateMinOwnCycles: 1 };
+  const consecrate = (userCardId: string, userId = "a") => consecrateWith(db, { userId, userCardId, now: NOW }, rules);
+  const refused = async (run: Promise<unknown>) => {
+    try {
+      await run;
+      return null;
+    } catch (e) {
+      if (e instanceof ConsecrateError) return e.code;
+      throw e;
+    }
+  };
+
+  beforeEach(async () => {
+    await pg.exec(`
+      UPDATE "User" SET prestige = 5, "prestigedAt" = now(), "isGuest" = false WHERE id = 'a';
+      INSERT INTO "UserCard" (id, "ownerId", "cardId", heritage, "keptByOwner") VALUES ('relic', 'a', 'k1', 5, 1);
+      INSERT INTO "UserCardOwner" (id, "userCardId", "ownerId", via, at) VALUES
+        ('o1', 'relic', 'b', 'DRAW', '2026-11-01 10:00'), ('o2', 'relic', 'a', 'TRADE', '2026-11-02 10:00');
+      INSERT INTO "PrestigeCycle" (id, "userId", number, "globalRank", "uniqueCards", zeni, heirs, stats) VALUES
+        ('cy4', 'a', 4, 40, 10, 5, '[{"userCardId": "relic", "cardId": "k1", "heritage": 4}]', '{}'),
+        ('cy5', 'a', 5, 50, 10, 5, '[{"userCardId": "relic", "cardId": "k1", "heritage": 5}]', '{}'),
+        ('cy3', 'a', 3, 30, 10, 5, '[{"userCardId": "autre", "cardId": "k2", "heritage": 1}]', '{}');
+    `);
+  });
+
+  it("l'héritière quitte la collection pour le sanctuaire, avec son parcours", async () => {
+    expect(await consecrate("relic")).toEqual({ id: "relic", cardId: "k1" });
+    expect(await one(`SELECT count(*)::int AS n FROM "UserCard" WHERE id = 'relic'`)).toEqual({ n: 0 });
+    const relic = await one<{ heritage: number; printing: number | null; journey: { owners: { ownerId: string; via: string }[]; cycles: number[]; prestige: number } }>(
+      `SELECT heritage, printing, journey FROM "ConsecratedCard" WHERE id = 'relic' AND "userId" = 'a'`,
+    );
+    expect(relic.heritage).toBe(5);
+    expect(relic.printing).toBeNull();
+    expect(relic.journey.owners.map((o) => [o.ownerId, o.via])).toEqual([
+      ["b", "DRAW"],
+      ["a", "TRADE"],
+    ]);
+    expect(relic.journey.cycles).toEqual([4, 5]);
+    expect(relic.journey.prestige).toBe(5);
+    // La provenance vivante est partie avec l'exemplaire ; le parcours est figé dans le sanctuaire
+    expect(await one(`SELECT count(*)::int AS n FROM "UserCardOwner"`)).toEqual({ n: 0 });
+  });
+
+  it("refuse sans rien toucher : pas au plafond, pas gardée par le joueur, en jeu ailleurs ou à un autre", async () => {
+    await pg.exec(`
+      INSERT INTO "UserCard" (id, "ownerId", "cardId", heritage, "keptByOwner", status) VALUES
+        ('h4', 'a', 'k1', 4, 1, 'COLLECTION'), ('bought', 'a', 'k1', 5, 0, 'COLLECTION'), ('sold', 'a', 'k1', 5, 1, 'AUCTION'), ('theirs', 'b', 'k1', 5, 1, 'COLLECTION');
+    `);
+    for (const id of ["h4", "bought", "sold", "theirs", "absent"]) expect(await refused(consecrate(id)), id).toBe("NOT_ELIGIBLE");
+    expect(await one(`SELECT count(*)::int AS n FROM "ConsecratedCard"`)).toEqual({ n: 0 });
+    expect(await one(`SELECT count(*)::int AS n FROM "UserCard"`)).toEqual({ n: 5 });
+  });
+
+  it("un compte invité, banni ou gelé ne consacre rien", async () => {
+    await pg.exec(`UPDATE "User" SET "isGuest" = true WHERE id = 'a'`);
+    expect(await refused(consecrate("relic"))).toBe("GUEST");
+    await pg.exec(`UPDATE "User" SET "isGuest" = false, "bannedAt" = now() WHERE id = 'a'`);
+    expect(await refused(consecrate("relic"))).toBe("BANNED");
+    await pg.exec(`UPDATE "User" SET "bannedAt" = NULL, "deletionRequestedAt" = now() WHERE id = 'a'`);
+    expect(await refused(consecrate("relic"))).toBe("FROZEN");
+    expect(await one(`SELECT count(*)::int AS n FROM "UserCard" WHERE id = 'relic'`)).toEqual({ n: 1 });
+  });
+
+  it("une gravée consacrée garde son numéro pour toujours ; la carte ne quitte plus le catalogue", async () => {
+    const insert = (id: string, extra: string) =>
+      pg.exec(`INSERT INTO "ConsecratedCard" (id, "userId", "cardId", heritage, printing, serial, size, journey) VALUES ('${id}', 'a', 'k2', ${extra}, '{}')`);
+    await expect(insert("z", "0, NULL, NULL, NULL")).rejects.toThrow(/ConsecratedCard_check/);
+    await expect(insert("p", "5, 1, NULL, 25")).rejects.toThrow(/ConsecratedCard_check/);
+    await insert("g1", "5, 1, 17, 25");
+    await expect(insert("g2", "5, 1, 17, 25")).rejects.toThrow(/ConsecratedCard_engraved_key/);
+    await expect(pg.exec(`DELETE FROM "Card" WHERE id = 'k2'`)).rejects.toThrow(/ConsecratedCard_cardId_fkey/);
+    // Compte supprimé : son sanctuaire part avec lui
+    await pg.exec(`DELETE FROM "UserCard" WHERE "ownerId" = 'a'; DELETE FROM "User" WHERE id = 'a'`);
+    expect(await one(`SELECT count(*)::int AS n FROM "ConsecratedCard"`)).toEqual({ n: 0 });
+  });
+});
 
 const row = async (id: string) =>
   (await pg.query<{ ownerId: string; status: string; keptByOwner: number }>(

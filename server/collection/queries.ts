@@ -33,6 +33,8 @@ type Row = {
   copies: number;
   free: number;
   inShowcase: boolean;
+  maxHeritage: number;
+  engraved: boolean;
   viewerOwns: boolean | null;
 };
 
@@ -72,6 +74,15 @@ function filters(ownerId: string, params: CollectionParams): Prisma.Sql {
   return Prisma.join(conditions, " AND ");
 }
 
+/** Filtres sur les exemplaires d'une carte : doublons, au moins une gravée ou une héritière (prestige). */
+function having(params: CollectionParams): Prisma.Sql {
+  const conditions = [Prisma.sql`TRUE`];
+  if (params.dupes) conditions.push(Prisma.sql`COUNT(*) FILTER (WHERE uc.status = 'COLLECTION') >= 2`);
+  if (params.special === "engraved") conditions.push(Prisma.sql`BOOL_OR(uc.printing IS NOT NULL)`);
+  if (params.special === "heirs") conditions.push(Prisma.sql`BOOL_OR(uc.heritage > 0)`);
+  return Prisma.join(conditions, " AND ");
+}
+
 function toItem(row: Row, locale: string): CollectionItem {
   return {
     cardId: row.cardId,
@@ -90,6 +101,8 @@ function toItem(row: Row, locale: string): CollectionItem {
     free: row.free,
     recyclable: Math.max(0, row.free - 1),
     inShowcase: row.inShowcase,
+    heritage: row.maxHeritage,
+    engraved: row.engraved,
     ...(row.viewerOwns !== null && { viewerOwns: row.viewerOwns }),
   };
 }
@@ -115,6 +128,8 @@ export async function getCollectionPage(
            COUNT(*)::int AS copies,
            (COUNT(*) FILTER (WHERE uc.status = 'COLLECTION'))::int AS free,
            BOOL_OR(EXISTS (SELECT 1 FROM "ShowcaseItem" sh WHERE sh."userCardId" = uc.id)) AS "inShowcase",
+           MAX(uc.heritage)::int AS "maxHeritage",
+           BOOL_OR(uc.printing IS NOT NULL) AS engraved,
            ${viewerOwns} AS "viewerOwns"
     FROM "UserCard" uc
     JOIN "Card" c ON c.id = uc."cardId"
@@ -122,7 +137,7 @@ export async function getCollectionPage(
     JOIN "RarityDefinition" rd ON rd.key = c."rarityKey"
     WHERE ${filters(ownerId, params)}
     GROUP BY c.id, s.id, rd."sortOrder", rd."variantRequired"
-    HAVING ${params.dupes ? Prisma.sql`COUNT(*) FILTER (WHERE uc.status = 'COLLECTION') >= 2` : Prisma.sql`TRUE`}
+    HAVING ${having(params)}
     ORDER BY ${orderBy(params)}, c.id ASC
     LIMIT ${COLLECTION_PAGE_SIZE + 1} OFFSET ${start}`;
   const hasMore = rows.length > COLLECTION_PAGE_SIZE;
@@ -204,6 +219,7 @@ export async function getOwnedCopies(ownerId: string, cardId: string) {
       status: true,
       obtainedAt: true,
       heritage: true,
+      keptByOwner: true,
       printing: true,
       serial: true,
       edition: { select: { size: true } },
@@ -216,6 +232,8 @@ export async function getOwnedCopies(ownerId: string, cardId: string) {
     obtainedAt: c.obtainedAt,
     /** Prestige : héritage et édition gravée de l'exemplaire (0 et null pour un ordinaire). */
     heritage: c.heritage,
+    /** Prestiges traversés chez le joueur : la consécration en demande au moins un. */
+    keptByOwner: c.keptByOwner,
     printing: c.printing,
     serial: c.serial,
     /** Taille figée du tirage d'une gravée. */
@@ -223,4 +241,10 @@ export async function getOwnedCopies(ownerId: string, cardId: string) {
     /** Exposé dans au moins une vitrine du joueur. */
     inShowcase: c._count.showcaseItems > 0,
   }));
+}
+
+/** Le joueur a-t-il au moins un exemplaire spécial (héritière ou gravée) ? Index partiel des exemplaires spéciaux. */
+export async function hasSpecialCopies(ownerId: string): Promise<boolean> {
+  const found = await prisma.userCard.findFirst({ where: { ownerId, OR: [{ heritage: { gt: 0 } }, { printing: { not: null } }] }, select: { id: true } });
+  return found !== null;
 }

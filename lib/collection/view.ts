@@ -13,6 +13,9 @@ export type CollectionItem = CardView & {
   inShowcase: boolean;
   /** Collection d'un autre joueur : le visiteur possède déjà cette carte (absent sinon). */
   viewerOwns?: boolean;
+  /** Prestige : plus haut héritage parmi les exemplaires, et au moins une édition gravée (pastilles de la vignette). */
+  heritage?: number;
+  engraved?: boolean;
 };
 
 export type CollectionPage = { items: CollectionItem[]; nextOffset: number | null };

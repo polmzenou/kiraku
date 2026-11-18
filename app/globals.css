@@ -1298,6 +1298,12 @@
     --nc-base: #5bbf8b;
     --nc-dark: #1f7a4d;
   }
+  /* Kin (feuille d'or) : prestige */
+  .name-color-kin {
+    --nc-light: #fff3c4;
+    --nc-base: #d9b556;
+    --nc-dark: #8a6a1f;
+  }
   [data-theme="washi"] .name-color-lime {
     --nc-light: #7cc21a;
     --nc-base: #4d9a00;
@@ -1327,6 +1333,11 @@
     --nc-light: #3f9a68;
     --nc-base: #25673f;
     --nc-dark: #123d24;
+  }
+  [data-theme="washi"] .name-color-kin {
+    --nc-light: #c9a447;
+    --nc-base: #9a7420;
+    --nc-dark: #5e440c;
   }
 
   .name-color-rainbow,

@@ -20,6 +20,10 @@ export const CONDITION_TYPES = [
   "CATALOG_DISCOVERED_PERCENT",
   "RARITIES_DISCOVERED",
   "AMBASSADOR",
+  // Prestige (étape 16) : niveau atteint, cartes consacrées, éditions gravées possédées (sanctuaire compris)
+  "PRESTIGE",
+  "CONSECRATED_COUNT",
+  "PRINTINGS_OWNED",
 ] as const;
 export type ConditionType = (typeof CONDITION_TYPES)[number];
 
@@ -37,6 +41,9 @@ export const conditionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("RARITIES_DISCOVERED"), rarities: z.array(rarityKeySchema).min(1).max(8), n: count }).strict(),
   // Rôle donné par l'admin : le cosmétique est réservé aux ambassadeurs
   z.object({ type: z.literal("AMBASSADOR") }).strict(),
+  z.object({ type: z.literal("PRESTIGE"), n: count }).strict(),
+  z.object({ type: z.literal("CONSECRATED_COUNT"), n: count }).strict(),
+  z.object({ type: z.literal("PRINTINGS_OWNED"), n: count }).strict(),
 ]);
 export type ProfileCondition = z.infer<typeof conditionSchema>;
 
@@ -66,6 +73,10 @@ export type ProfileStats = {
   discoveredByRarity: Record<string, number>;
   /** Rôle Ambassadeur donné par l'admin. */
   ambassador: boolean;
+  /** Prestige atteint, cartes au sanctuaire, éditions gravées possédées ou consacrées (absents : 0). */
+  prestige?: number;
+  consecrated?: number;
+  printingsOwned?: number;
 };
 
 /** % découvert arrondi à l'inférieur : 99,9 % ne vaut pas 100 %, seul le catalogue entier y mène. */
@@ -113,6 +124,12 @@ export function evaluateCondition(condition: ProfileCondition | null, stats: Pro
     }
     case "AMBASSADOR":
       return capped(stats.ambassador ? 1 : 0, 1);
+    case "PRESTIGE":
+      return capped(stats.prestige ?? 0, condition.n);
+    case "CONSECRATED_COUNT":
+      return capped(stats.consecrated ?? 0, condition.n);
+    case "PRINTINGS_OWNED":
+      return capped(stats.printingsOwned ?? 0, condition.n);
   }
 }
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
+import { Suspense } from "react";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { IncensePanel } from "@/components/boosters/IncensePanel";
 import { PageShell } from "@/components/PageShell";
@@ -12,6 +13,8 @@ import { ShowcaseBanner } from "@/components/showcase/ShowcaseBanner";
 import { EvolveButton } from "@/components/prestige/EvolveButton";
 import { PrestigeAura } from "@/components/prestige/PrestigeAura";
 import { PrestigeBand } from "@/components/prestige/PrestigeBand";
+import { PrestigeEmakis } from "@/components/prestige/PrestigeEmakis";
+import { PrestigeSanctuary } from "@/components/prestige/PrestigeSanctuary";
 import { eligibilityOf } from "@/lib/prestige/eligibility";
 import { toRoman } from "@/lib/prestige/roman";
 import { getCatalogStats } from "@/server/catalog/queries";
@@ -222,6 +225,13 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
         linkBase={access.isOwner ? "/collection" : "/wiki"}
         create={access.isOwner ? <CreateShowcaseButton username={owner.username} count={showcases.length} max={maxShowcases} /> : undefined}
       />
+      {/* Prestige : sanctuaire des cartes consacrées, puis rouleaux des cycles (rien avant la première renaissance) */}
+      {decor.prestige > 0 && (
+        <Suspense fallback={null}>
+          <PrestigeSanctuary userId={owner.id} viewerId={viewer?.id ?? null} locale={locale} />
+          <PrestigeEmakis userId={owner.id} locale={locale} />
+        </Suspense>
+      )}
       <WishlistSection cards={wishlist} editable={access.isOwner} owned={owned} />
       <ProfileSalesSection cards={sales} owned={owned} />
     </PageShell>

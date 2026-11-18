@@ -9,7 +9,7 @@ import type { CollectionItem, CollectionPage } from "@/lib/collection/view";
 import { loadCollectionPage } from "@/server/actions/collection";
 import { Button } from "../ui/Button";
 import { useCollectionStore } from "./CollectionStore";
-import { CopiesBadge, OwnedBadge } from "./OwnedBadge";
+import { CopiesBadge, OwnedBadge, SpecialBadges } from "./OwnedBadge";
 
 // Colonnes alignées sur la grille du wiki : 3 · 4 (≥ 768) · 6 (≥ 1024) · 8 (≥ 1280)
 function columnsFor(width: number) {
@@ -35,8 +35,9 @@ function CollectionCard({ item, href, preload }: { item: CollectionItem; href: s
         size="sm"
         preload={preload}
         corner={
-          (item.copies > 1 || item.viewerOwns) && (
+          (item.copies > 1 || item.viewerOwns || (item.heritage ?? 0) > 0 || item.engraved) && (
             <>
+              <SpecialBadges heritage={item.heritage} engraved={item.engraved} />
               {item.copies > 1 && <CopiesBadge count={item.copies} />}
               {item.viewerOwns && <OwnedBadge />}
             </>
@@ -51,6 +52,8 @@ function CollectionCard({ item, href, preload }: { item: CollectionItem; href: s
         }
       />
       <span className="sr-only">{t("copiesLabel", { count: item.copies })}</span>
+      {(item.heritage ?? 0) > 0 && <span className="sr-only">{t("heirLabel", { level: item.heritage ?? 0 })}</span>}
+      {item.engraved && <span className="sr-only">{t("engravedLabel")}</span>}
     </Link>
   );
 }

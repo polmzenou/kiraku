@@ -23,12 +23,17 @@ export const DEFAULT_DIR: Record<CollectionSort, SortDir> = {
   ki: "desc",
 };
 
+/** Exemplaires spéciaux (prestige) : cartes dont on a au moins une gravée, ou au moins une héritière. */
+export const SPECIAL_FILTERS = ["engraved", "heirs"] as const;
+export type SpecialFilter = (typeof SPECIAL_FILTERS)[number];
+
 export type CollectionParams = {
   q: string;
   terms: string[];
   rarities: Rarity[];
   series: string | null;
   dupes: boolean;
+  special: SpecialFilter | null;
   sort: CollectionSort;
   dir: SortDir;
 };
@@ -39,6 +44,7 @@ export const DEFAULT_PARAMS: CollectionParams = {
   rarities: [],
   series: null,
   dupes: false,
+  special: null,
   sort: "rarity",
   dir: DEFAULT_DIR.rarity,
 };
@@ -51,6 +57,7 @@ const raritySchema = rarityKeySchema;
 const seriesSchema = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
 const sortSchema = z.enum(COLLECTION_SORTS);
 const dirSchema = z.enum(["asc", "desc"]);
+const specialSchema = z.enum(SPECIAL_FILTERS);
 
 /** Paramètres d'URL de la collection ; une valeur invalide est simplement ignorée. */
 export function parseCollectionParams(raw: Raw, knownRarities: readonly string[] = RARITIES): CollectionParams {
@@ -71,6 +78,7 @@ export function parseCollectionParams(raw: Raw, knownRarities: readonly string[]
   const sort = sortSchema.safeParse(first(raw.sort));
   const sortValue = sort.success ? sort.data : DEFAULT_PARAMS.sort;
   const dir = dirSchema.safeParse(first(raw.dir));
+  const special = specialSchema.safeParse(first(raw.special));
 
   return {
     q,
@@ -78,6 +86,7 @@ export function parseCollectionParams(raw: Raw, knownRarities: readonly string[]
     rarities,
     series: series.success ? series.data : null,
     dupes: first(raw.dupes) === "1",
+    special: special.success ? special.data : null,
     sort: sortValue,
     dir: dir.success ? dir.data : DEFAULT_DIR[sortValue],
   };
@@ -90,6 +99,7 @@ export function collectionQuery(params: Partial<CollectionParams>): Record<strin
   if (params.rarities && params.rarities.length > 0) query.rarity = params.rarities.join(",");
   if (params.series) query.series = params.series;
   if (params.dupes) query.dupes = "1";
+  if (params.special) query.special = params.special;
   const sort = params.sort ?? DEFAULT_PARAMS.sort;
   if (sort !== DEFAULT_PARAMS.sort) query.sort = sort;
   if (params.dir && params.dir !== DEFAULT_DIR[sort]) query.dir = params.dir;
@@ -98,7 +108,7 @@ export function collectionQuery(params: Partial<CollectionParams>): Record<strin
 
 /** Des filtres réduisent-ils la liste (pour l'état vide) ? */
 export function hasFilters(params: CollectionParams): boolean {
-  return params.terms.length > 0 || params.rarities.length > 0 || params.series !== null || params.dupes;
+  return params.terms.length > 0 || params.rarities.length > 0 || params.series !== null || params.dupes || params.special !== null;
 }
 
 /**

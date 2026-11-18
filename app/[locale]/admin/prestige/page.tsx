@@ -1,4 +1,5 @@
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
+import { InstallPrestigeCosmetics } from "@/components/admin/InstallPrestigeCosmetics";
 import { PrestigeSettingsForm } from "@/components/admin/PrestigeSettingsForm";
 import { SettingLogList } from "@/components/admin/SettingLogList";
 import { Link } from "@/i18n/navigation";
@@ -107,6 +108,12 @@ export default async function AdminPrestigePage() {
       </section>
 
       <PrestigeSettingsForm initial={settings} rarities={definitions.map((d) => ({ key: d.key, name: nameOf(d.key) }))} />
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-title text-lg font-bold">{t("cosmetics.title")}</h2>
+        <p className="max-w-prose text-sm text-text-muted">{t("cosmetics.intro")}</p>
+        <InstallPrestigeCosmetics />
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="font-title text-lg font-bold">{t("rebirths.title")}</h2>

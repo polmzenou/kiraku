@@ -37,3 +37,22 @@ export function OwnedOverlay() {
     </span>
   );
 }
+
+/** Prestige : la carte compte au moins une héritière (継, or) ou une édition gravée (版, vermillon). Pour le `corner`. */
+export function SpecialBadges({ heritage = 0, engraved = false }: { heritage?: number; engraved?: boolean }) {
+  if (heritage <= 0 && !engraved) return null;
+  return (
+    <>
+      {heritage > 0 && (
+        <span aria-hidden="true" lang="ja" className="grid size-[18px] place-items-center rounded-sm bg-kin font-seal text-[11px] leading-none text-sumi">
+          継
+        </span>
+      )}
+      {engraved && (
+        <span aria-hidden="true" lang="ja" className="grid size-[18px] place-items-center rounded-sm bg-shu-btn font-seal text-[11px] leading-none text-washi-paper">
+          版
+        </span>
+      )}
+    </>
+  );
+}

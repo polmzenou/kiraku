@@ -2982,7 +2982,10 @@
         "APOCALYPSE_RUINED": "Apocalyptiques ruinés",
         "CATALOG_DISCOVERED_PERCENT": "% du catalogue découvert",
         "RARITIES_DISCOVERED": "Cartes découvertes de certaines raretés",
-        "AMBASSADOR": "Rôle Ambassadeur"
+        "AMBASSADOR": "Rôle Ambassadeur",
+        "PRESTIGE": "Prestige atteint",
+        "CONSECRATED_COUNT": "Cartes consacrées",
+        "PRINTINGS_OWNED": "Éditions gravées possédées"
       },
       "frames": {
         "washi": "Washi",
@@ -2998,7 +3001,10 @@
         "momiji": "Momiji",
         "tsuki": "Tsuki",
         "hoo": "Hōō",
-        "hisui": "Hisui (ambassadeur)"
+        "hisui": "Hisui (ambassadeur)",
+        "tensei": "Tensei (renaissance)",
+        "hanga": "Hanga (estampe)",
+        "hono": "Hono (flamme)"
       },
       "settings": {
         "pioneerUntil": "Badge Pionnier : inscrits jusqu'au",
@@ -3023,7 +3029,8 @@
         "scarlet": "Rouge écarlate",
         "rainbow": "Arc-en-ciel",
         "pastel": "Arc-en-ciel pastel",
-        "hisui": "Vert jade (ambassadeur)"
+        "hisui": "Vert jade (ambassadeur)",
+        "kin": "Feuille d'or (prestige)"
       }
     },
     "openingTest": {
@@ -3657,6 +3664,18 @@
         "name": "Tirage {printing}",
         "current": "en cours",
         "row": "{cards, plural, one {# carte gravée} other {# cartes gravées}} · {issued, number} numéros sortis sur {capacity, number} · {alive, number} en circulation"
+      },
+      "cosmetics": {
+        "title": "Cosmétiques du prestige",
+        "intro": "Titres (René, Aux trois vies, Éternel, Gardien du sanctuaire, Maître estampeur), cadres tensei, hanga et hono, pseudo à la feuille d'or. Seuls les absents sont créés : un cosmétique déjà présent, même modifié, n'est jamais touché.",
+        "install": "Installer les cosmétiques du prestige",
+        "installing": "Installation…",
+        "done": "{count, plural, =0 {Déjà tous installés.} one {# cosmétique ajouté.} other {# cosmétiques ajoutés.}}",
+        "errors": {
+          "FORBIDDEN": "Réservé aux admins.",
+          "INVALID": "Demande invalide.",
+          "RATE_LIMITED": "Trop d'essais. Réessaie dans une minute."
+        }
       }
     }
   },
@@ -3820,7 +3839,8 @@
           "GIFT": "reçue en cadeau",
           "CASINO": "gagnée au casino"
         }
-      }
+      },
+      "consecrateLater": "Au plafond de l'héritage : garde-la encore un prestige toi-même pour pouvoir la consacrer."
     },
     "views": {
       "label": "Affichage de la collection",
@@ -3855,7 +3875,11 @@
       "warning": "C'est une pièce spéciale : elle part avec son héritage et son numéro.",
       "choose": "Tu n'as que des exemplaires spéciaux de cette carte : choisis celui qui part.",
       "engravedOf": "Gravée, {seal} n° {serial} / {size}"
-    }
+    },
+    "heirLabel": "Compte une héritière, héritage {level}",
+    "engravedLabel": "Compte une édition gravée",
+    "engravedOnly": "Gravées",
+    "heirsOnly": "Héritières"
   },
   "showcase": {
     "title": "Vitrines",
@@ -3964,7 +3988,10 @@
       "APOCALYPSE_RUINED": "Ruiner {n, plural, one {# sachet Apocalyptique} other {# sachets Apocalyptiques}}",
       "CATALOG_DISCOVERED_PERCENT": "Découvrir {n} % du catalogue",
       "RARITIES_DISCOVERED": "Découvrir {n, plural, one {# carte} other {# cartes}} {rarities}",
-      "AMBASSADOR": "Réservé aux ambassadeurs"
+      "AMBASSADOR": "Réservé aux ambassadeurs",
+      "PRESTIGE": "Atteindre le prestige {n}",
+      "CONSECRATED_COUNT": "Consacrer {n, plural, one {# carte} other {# cartes}}",
+      "PRINTINGS_OWNED": "Posséder {n, plural, one {# édition gravée} other {# éditions gravées}}"
     },
     "pickTitle": "Choisir une carte",
     "searchLabel": "Chercher une carte",
@@ -4406,7 +4433,10 @@
         "AMBASSADOR": "Ambassadeur",
         "VERIFIED": "Compte vérifié",
         "SPONSOR": "Parrain",
-        "RECRUITER": "Recruteur"
+        "RECRUITER": "Recruteur",
+        "REBORN": "René",
+        "CONSECRATOR": "Consacreur",
+        "ENGRAVER": "Graveur"
       },
       "noHint": "Continue ta collection pour le débloquer.",
       "progress": "{current}/{goal}",
@@ -6625,6 +6655,52 @@
       "evolveReady": "Tu peux renaître",
       "level": "Prestige {level}",
       "rank": "{rank, select, 1 {1re} other {{rank}ᵉ}} renaissance de Kiraku"
+    },
+    "emakis": {
+      "title": "Rouleaux des cycles",
+      "cycle": "Cycle {roman}",
+      "rankLabel": "Rang de la renaissance",
+      "rank": "{rank, select, 1 {1re} other {{rank}ᵉ}} renaissance de Kiraku",
+      "zeni": "Zeni reçus",
+      "cards": "Cartes distinctes",
+      "heirs": "{count, plural, one {# héritière} other {# héritières}}"
+    },
+    "sanctuary": {
+      "title": "Sanctuaire",
+      "journey": "Parcours",
+      "kept": "Gardée du cycle {from} au cycle {to}",
+      "keptOnce": "Gardée au cycle {cycle}",
+      "consecratedOn": "Consacrée le {date}"
+    },
+    "consecrate": {
+      "open": "Consacrer",
+      "title": "Consacrer cette héritière",
+      "intro": "Elle a traversé tous les prestiges : tu peux la consacrer au sanctuaire de ton profil.",
+      "forever": "C'est définitif : elle quitte ta collection et ne pourra plus être vendue, offerte, misée ni recyclée.",
+      "sanctuary": "Elle reste exposée pour toujours, avec son parcours : les cycles traversés et ses propriétaires successifs.",
+      "noZeni": "Aucun Zeni n'est versé.",
+      "hold": "Maintiens pour consacrer",
+      "holdConfirm": "Appuie encore pour consacrer",
+      "pending": "Consécration…",
+      "holdHint": "Maintiens le bouton jusqu'à ce qu'il soit rempli : la consécration est définitive.",
+      "errors": {
+        "NO_SESSION": "Ta session a expiré : reconnecte-toi.",
+        "INVALID": "Demande invalide.",
+        "DISABLED": "Le prestige n'est pas ouvert.",
+        "RATE_LIMITED": "Trop d'essais. Réessaie dans une minute.",
+        "NO_USER": "Compte introuvable.",
+        "GUEST": "Réservé aux comptes inscrits.",
+        "BANNED": "Ton compte est suspendu.",
+        "FROZEN": "Ton compte est en cours de suppression.",
+        "NOT_ELIGIBLE": "Cette carte ne peut plus être consacrée (elle a changé de place ou de main) : recharge la fiche."
+      },
+      "rite": {
+        "label": "Rite de consécration",
+        "skip": "Passer",
+        "done": "Consacrée",
+        "doneText": "{name} veille désormais sur ton sanctuaire.",
+        "sanctuary": "Voir mon sanctuaire"
+      }
     }
   }
 }

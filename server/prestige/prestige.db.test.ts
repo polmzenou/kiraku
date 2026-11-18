@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
 import { createPgAdapter } from "@/server/pg-adapter";
+import { consecrateWith, ConsecrateError } from "./consecrate-core";
 import { previewRebirthWith, rebirthWith, RebirthError, type RebirthCtx } from "./prestige-core";
 
 // Renaissance sur une vraie base (base de test isolée) : sauté sans DATABASE_URL_TEST.
@@ -159,5 +160,19 @@ describe.skipIf(!url)("renaissance (base réelle)", () => {
     const id = await player();
     await prisma.userCard.create({ data: { ownerId: id, cardId: cards[0] } });
     expect(await code(rebirthWith(prisma, { userId: id, expectedPrestige: 0, keep: { copyIds: [], cardIds: [] }, expectedZeni: 0, sacrificedEngraved: [] }, ctx()))).toBe("NOT_ELIGIBLE");
+  });
+  it("consécration : une héritière au plafond part au sanctuaire, une seule fois, même à deux clics simultanés", async () => {
+    const id = await player();
+    await prisma.user.update({ where: { id }, data: { prestige: 5, prestigedAt: new Date() } });
+    const relic = await prisma.userCard.create({ data: { ownerId: id, cardId: cards[0], heritage: 5, keptByOwner: 1 }, select: { id: true } });
+    const run = () => consecrateWith(prisma, { userId: id, userCardId: relic.id, now: new Date() }, { heritageMax: 5, consecrateMinOwnCycles: 1 }).then(
+      () => null,
+      (e: unknown) => (e instanceof ConsecrateError ? e.code : Promise.reject(e)),
+    );
+    const codes = await Promise.all([run(), run()]);
+    expect(codes.filter((c) => c === null)).toHaveLength(1);
+    expect(codes.filter((c) => c === "NOT_ELIGIBLE")).toHaveLength(1);
+    expect(await prisma.userCard.count({ where: { id: relic.id } })).toBe(0);
+    expect(await prisma.consecratedCard.count({ where: { id: relic.id, userId: id } })).toBe(1);
   });
 });

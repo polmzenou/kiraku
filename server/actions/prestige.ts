@@ -8,8 +8,10 @@ import { z } from "@/lib/zod";
 import { cardViews } from "../boosters/display";
 import { LEADERBOARD_TAG } from "../collection/leaderboard";
 import { prisma } from "../db";
+import { consecrateWith, ConsecrateError, type ConsecrateErrorCode } from "../prestige/consecrate-core";
 import { previewRebirthWith, rebirthWith, RebirthError, type Departed, type RebirthErrorCode, type RebirthHeir } from "../prestige/prestige-core";
 import { rebirthCtx } from "../prestige/queries";
+import { getPrestigeRules } from "../prestige/rules";
 import { rateLimit } from "../ratelimit";
 import { requireActiveUser } from "../user";
 
@@ -136,5 +138,35 @@ export async function rebirthAction(input: unknown): Promise<{ ok: true; result:
     };
   } catch (e) {
     return failure("renaissance", e);
+  }
+}
+
+export type ConsecrateActionError = "NO_SESSION" | "INVALID" | "DISABLED" | "RATE_LIMITED" | ConsecrateErrorCode;
+
+const consecrateSchema = z.object({ userCardId: id }).strict();
+
+/**
+ * Consécration d'une héritière au plafond, gardée par le joueur : elle quitte le jeu pour le sanctuaire de son profil,
+ * pour toujours. Le client n'envoie que l'id de l'exemplaire ; tout est revérifié sous le verrou du joueur.
+ */
+export async function consecrateAction(input: unknown): Promise<{ ok: true; cardId: string } | { ok: false; error: ConsecrateActionError }> {
+  const user = await requireActiveUser();
+  if (!user) return { ok: false, error: "NO_SESSION" };
+  const parsed = consecrateSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  const rules = await getPrestigeRules();
+  if (!(await allowed(user.role, rules.enabled))) return { ok: false, error: "DISABLED" };
+  // Propriété, statut, héritage et garde : vérifiés sous le verrou du joueur, dans la requête qui déplace l'exemplaire
+  if (!(await rateLimit(`prestige-consecrate:${user.id}`, { limit: 5, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
+  try {
+    const moved = await consecrateWith(prisma, { userId: user.id, userCardId: parsed.data.userCardId, now: new Date() }, rules);
+    // La carte n'est plus possédée : classement des collectionneurs et profil à jour
+    updateTag(LEADERBOARD_TAG);
+    refresh();
+    return { ok: true, cardId: moved.cardId };
+  } catch (e) {
+    if (e instanceof ConsecrateError) return { ok: false, error: e.code };
+    console.error("[prestige] consécration", e);
+    throw e;
   }
 }

@@ -143,6 +143,7 @@ model User {
   cards        UserCard[]
   copyHistory  UserCardOwner[] // exemplaires spéciaux passés par ses mains (provenance)
   prestigeCycles PrestigeCycle[]
+  consecrated         ConsecratedCard[]
   openings     BoosterOpening[]
   notablePulls NotablePull[]
   discoveries  Discovery[]
@@ -412,6 +413,7 @@ model Card {
   wishedBy         WishlistEntry[]
   notablePulls     NotablePull[]
   printings        CardPrinting[]
+  consecrations    ConsecratedCard[]
   tradesWanted     Trade[]            @relation("tradeWanted")
   tradesChosen     Trade[]            @relation("tradeChosen")
   tradeOffers      TradeOffer[]
@@ -1956,4 +1958,23 @@ model CardPrinting {
   copies    UserCard[]
 
   @@id([cardId, printing])
+}
+
+// Sanctuaire (prestige, étape 16d) : héritière au plafond consacrée par son propriétaire. L'exemplaire a quitté
+// UserCard (même id) : plus possédé, il n'entre plus dans aucune requête de collection ; son parcours est figé ici.
+model ConsecratedCard {
+  id            String   @id // ancien id de l'exemplaire
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardId        String
+  card          Card     @relation(fields: [cardId], references: [id], onDelete: Restrict)
+  heritage      Int
+  printing      Int? // édition gravée (tirage, numéro, taille) ; CHECK et index unique partiel dans la migration
+  serial        Int?
+  size          Int?
+  journey       Json // { owners: [{ ownerId, via, at }], cycles: [numéros des prestiges qui l'ont gardée], prestige }
+  consecratedAt DateTime @default(now())
+
+  @@index([userId, consecratedAt])
+  @@index([cardId])
 }

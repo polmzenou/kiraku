@@ -2982,7 +2982,10 @@
         "APOCALYPSE_RUINED": "Ruined Apocalyptic boosters",
         "CATALOG_DISCOVERED_PERCENT": "% of catalogue discovered",
         "RARITIES_DISCOVERED": "Cards discovered of given rarities",
-        "AMBASSADOR": "Ambassador role"
+        "AMBASSADOR": "Ambassador role",
+        "PRESTIGE": "Prestige reached",
+        "CONSECRATED_COUNT": "Consecrated cards",
+        "PRINTINGS_OWNED": "Engraved editions owned"
       },
       "frames": {
         "washi": "Washi",
@@ -2998,7 +3001,10 @@
         "momiji": "Momiji",
         "tsuki": "Tsuki",
         "hoo": "Hōō",
-        "hisui": "Hisui (ambassador)"
+        "hisui": "Hisui (ambassador)",
+        "tensei": "Tensei (rebirth)",
+        "hanga": "Hanga (woodblock print)",
+        "hono": "Hono (flame)"
       },
       "settings": {
         "pioneerUntil": "Pioneer badge: signed up until",
@@ -3023,7 +3029,8 @@
         "scarlet": "Scarlet red",
         "rainbow": "Rainbow",
         "pastel": "Pastel rainbow",
-        "hisui": "Jade green (ambassador)"
+        "hisui": "Jade green (ambassador)",
+        "kin": "Gold leaf (prestige)"
       }
     },
     "openingTest": {
@@ -3657,6 +3664,18 @@
         "name": "Printing {printing}",
         "current": "current",
         "row": "{cards, plural, one {# card engraved} other {# cards engraved}} · {issued, number} of {capacity, number} numbers pulled · {alive, number} in circulation"
+      },
+      "cosmetics": {
+        "title": "Prestige cosmetics",
+        "intro": "Titles (Reborn, Thrice reborn, Eternal, Sanctuary keeper, Master printmaker), tensei, hanga and hono frames, gold-leaf name. Only missing ones are created: an existing cosmetic, even edited, is never touched.",
+        "install": "Install prestige cosmetics",
+        "installing": "Installing…",
+        "done": "{count, plural, =0 {All already installed.} one {# cosmetic added.} other {# cosmetics added.}}",
+        "errors": {
+          "FORBIDDEN": "Admins only.",
+          "INVALID": "Invalid request.",
+          "RATE_LIMITED": "Too many attempts. Try again in a minute."
+        }
       }
     }
   },
@@ -3820,7 +3839,8 @@
           "GIFT": "received as a gift",
           "CASINO": "won at the casino"
         }
-      }
+      },
+      "consecrateLater": "At the heritage cap: keep it yourself through one more prestige to be able to consecrate it."
     },
     "views": {
       "label": "Collection view",
@@ -3855,7 +3875,11 @@
       "warning": "This is a special piece: it leaves with its heritage and its number.",
       "choose": "You only have special copies of this card: choose the one that goes.",
       "engravedOf": "Engraved, {seal} no. {serial} / {size}"
-    }
+    },
+    "heirLabel": "Has an heirloom, heritage {level}",
+    "engravedLabel": "Has an engraved edition",
+    "engravedOnly": "Engraved",
+    "heirsOnly": "Heirlooms"
   },
   "showcase": {
     "title": "Showcases",
@@ -3964,7 +3988,10 @@
       "APOCALYPSE_RUINED": "Ruin {n, plural, one {# Apocalypse pack} other {# Apocalypse packs}}",
       "CATALOG_DISCOVERED_PERCENT": "Discover {n}% of the catalogue",
       "RARITIES_DISCOVERED": "Discover {n, plural, one {# card} other {# cards}} {rarities}",
-      "AMBASSADOR": "Ambassadors only"
+      "AMBASSADOR": "Ambassadors only",
+      "PRESTIGE": "Reach prestige {n}",
+      "CONSECRATED_COUNT": "Consecrate {n, plural, one {# card} other {# cards}}",
+      "PRINTINGS_OWNED": "Own {n, plural, one {# engraved edition} other {# engraved editions}}"
     },
     "pickTitle": "Pick a card",
     "searchLabel": "Search for a card",
@@ -4406,7 +4433,10 @@
         "AMBASSADOR": "Ambassador",
         "VERIFIED": "Verified account",
         "SPONSOR": "Sponsor",
-        "RECRUITER": "Recruiter"
+        "RECRUITER": "Recruiter",
+        "REBORN": "Reborn",
+        "CONSECRATOR": "Consecrator",
+        "ENGRAVER": "Engraver"
       },
       "noHint": "Keep collecting to unlock it.",
       "progress": "{current}/{goal}",
@@ -6625,6 +6655,52 @@
       "evolveReady": "You can be reborn",
       "level": "Prestige {level}",
       "rank": "Kiraku's {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} rebirth"
+    },
+    "emakis": {
+      "title": "Cycle scrolls",
+      "cycle": "Cycle {roman}",
+      "rankLabel": "Rebirth rank",
+      "rank": "Kiraku's {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} rebirth",
+      "zeni": "Zeni received",
+      "cards": "Distinct cards",
+      "heirs": "{count, plural, one {# heirloom} other {# heirlooms}}"
+    },
+    "sanctuary": {
+      "title": "Sanctuary",
+      "journey": "Journey",
+      "kept": "Kept from cycle {from} to cycle {to}",
+      "keptOnce": "Kept in cycle {cycle}",
+      "consecratedOn": "Consecrated on {date}"
+    },
+    "consecrate": {
+      "open": "Consecrate",
+      "title": "Consecrate this heirloom",
+      "intro": "It has been through every prestige: you can consecrate it to your profile's sanctuary.",
+      "forever": "This is final: it leaves your collection and can no longer be sold, gifted, staked or recycled.",
+      "sanctuary": "It stays on display forever, with its journey: the cycles it went through and its successive owners.",
+      "noZeni": "No Zeni is paid.",
+      "hold": "Hold to consecrate",
+      "holdConfirm": "Tap again to consecrate",
+      "pending": "Consecrating…",
+      "holdHint": "Hold the button until it fills: consecration is final.",
+      "errors": {
+        "NO_SESSION": "Your session expired: sign in again.",
+        "INVALID": "Invalid request.",
+        "DISABLED": "Prestige is not open.",
+        "RATE_LIMITED": "Too many attempts. Try again in a minute.",
+        "NO_USER": "Account not found.",
+        "GUEST": "For registered accounts only.",
+        "BANNED": "Your account is suspended.",
+        "FROZEN": "Your account is being deleted.",
+        "NOT_ELIGIBLE": "This card can no longer be consecrated (it moved or changed hands): reload the page."
+      },
+      "rite": {
+        "label": "Consecration rite",
+        "skip": "Skip",
+        "done": "Consecrated",
+        "doneText": "{name} now watches over your sanctuary.",
+        "sanctuary": "See my sanctuary"
+      }
     }
   }
 }
