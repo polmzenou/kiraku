@@ -115,10 +115,12 @@ describe("annonce de l'ouverture du casino", () => {
   const veteran = { id: "player", isGuest: false, createdAt: new Date(Date.now() - 60 * DAY), v1WelcomeSeenAt: v25.at };
 
   it("présentée une fois aux comptes inscrits avant l'ouverture, pendant la fenêtre de lancement", async () => {
-    mocks.casinoRules.mockResolvedValue(opened(1));
+    // Une seule lecture de l'horloge : deux appels à opened() peuvent tomber sur deux millisecondes
+    const rules = opened(1);
+    mocks.casinoRules.mockResolvedValue(rules);
     mocks.user.mockResolvedValue(veteran);
     expect(await claimAnnouncementAction("player", "casino")).toBe(true);
-    expect(mocks.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { v1WelcomeSeenAt: new Date(opened(1).opensAt!) } }));
+    expect(mocks.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { v1WelcomeSeenAt: new Date(rules.opensAt!) } }));
   });
 
   it("jamais aux invités, ni aux comptes créés après l'ouverture, ni après la fenêtre", async () => {
