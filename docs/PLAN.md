@@ -822,7 +822,7 @@ Aucune de ces propriétés ne change les stats en combat ni en expédition : leu
 
 ### Héritage
 
-- **Niveaux** : 1 à 5. La marque se pose sur la fuda sans masquer l'illustration ni le shikishi ; son dessin (veines d'or façon kintsugi, une de plus par prestige traversé, blason de coin en petit format) est arrêté dans les ateliers de maquettes.
+- **Niveaux** : 1 à 5. La marque se pose sur la fuda sans masquer l'illustration ni le shikishi ; son dessin est arrêté dans les ateliers : un blason en fleur de prunier au coin haut-droit, un pétale doré par prestige traversé, lisible à toutes les tailles.
 - **Changement de main** : enchère, annonce, échange, cadeau et pile ou face déplacent la même ligne `UserCard` (`ownerId` modifié) ; héritage, tirage et numéro suivent donc l'exemplaire. Cela fait huit écritures (une pour l'enchère et le cadeau, deux pour l'annonce, l'échange et le pile ou face), toutes derrière `moveCopy` (`server/collection/transfer.ts`), qui remet `UserCard.keptByOwner` à 0 et écrit une ligne de provenance pour un exemplaire spécial. Deux filets : un test interdit d'écrire `ownerId` ailleurs, et un déclencheur `BEFORE UPDATE OF "ownerId"` remet `keptByOwner` à 0 en base. Sans cela, une héritière gagnée au pile ou face garderait le compteur du perdant et pourrait être consacrée aussitôt.
 - **Consécration** : possible quand `heritage ≥ prestige.heritageMax` et `keptByOwner ≥ prestige.consecrateMinOwnCycles` (1). L'héritage s'achète, mais la consécration se mérite : il faut avoir gardé la carte soi-même au moins un prestige. Irréversible, confirmée en maintenant le bouton. L'exemplaire quitte `UserCard` pour `ConsecratedCard` en une seule requête (`WITH moved AS (DELETE … RETURNING …) INSERT … SELECT … FROM moved` ; aucune ligne = refus) : il n'est plus possédé, donc marché, échanges, cadeaux, recyclage, combat, expédition, anti-doublon, complétion et classement l'ignorent sans qu'aucune requête ait à le filtrer. Il reste affiché pour toujours dans le sanctuaire du profil avec son parcours (« gardée du cycle 1 au cycle 5 », propriétaires successifs).
 
@@ -839,7 +839,7 @@ Aucune de ces propriétés ne change les stats en combat ni en expédition : leu
 - **Tirages successifs** : `prestige.printing.current` (1) est le tirage en cours. L'admin en ouvre un nouveau (saison, événement). Chaque tirage a son sceau (初摺 pour le premier), choisi parmi les kanji de `lib/seal-glyphs.ts` ; changer de tirage ne touche pas aux exemplaires déjà sortis. Le sceau s'affiche toujours à côté du numéro : un deuxième tirage redonne un numéro 12, mais sous un autre sceau.
 - **Affichage** : `初摺 17 / 25`, où 25 est la taille figée du tirage.
 - **Provenance** : `UserCardOwner` (exemplaire, propriétaire, date, moyen : `DRAW`, `REBIRTH`, `AUCTION`, `LISTING`, `TRADE`, `GIFT`, `CASINO`), écrit pour les seuls exemplaires spéciaux : à la sortie d'une gravée, au premier prestige qui garde un exemplaire et à chaque transfert. Visible sur la fiche de l'exemplaire, les pseudos passant par le masquage des profils privés (`server/collection/public-names.ts`). Un compte supprimé y devient « joueur supprimé » (`ownerId` mis à null).
-- **Registre des gravées** : la fiche wiki d'une carte liste les numéros sortis, le détenteur de chacun (mêmes règles de confidentialité que la liste des possesseurs, sinon « Un joueur ») et le nombre encore en circulation.
+- **Registre des gravées** : sur la fiche wiki d'une carte, la planche des numéros de chaque tirage (sortis, à toi, consacrés au sanctuaire, recyclés, pas encore sortis), puis en dessous les détenteurs (mêmes règles de confidentialité que la liste des possesseurs, sinon « Un joueur ») et le nombre encore en circulation.
 - **Carrousel « En direct »** et **lien de partage d'un tirage** : `NotablePull.printing` et `serial` ; `BoosterOpening.editions` (position, tirage, numéro, taille) pour que `/tirage/[id]` montre la gravée même après sa vente.
 - **Recyclage** : jamais dans « Recycler tous les doublons » ni dans le recyclage rapide de la fiche. Une gravée se recycle seule, depuis sa ligne d'exemplaire, avec une confirmation qui rappelle que le numéro disparaît, pour `recycleValues × recycleMultiplier` (5).
 
@@ -857,14 +857,13 @@ Aujourd'hui le serveur choisit l'exemplaire d'une carte qui part (`pickGiftCopy`
 
 ### Affichage
 
-Les versions visuelles sont arrêtées dans trois ateliers de maquettes (profil et avatar, cartes, rites) avant d'être codées.
+Les versions visuelles sont arrêtées dans des ateliers de maquettes avant d'être codées : trois d'abord (profil et avatar, cartes, rites), puis un quatrième pour ce qui a été revu à la relecture (matière verte de la plaque, nuées d'or, rouleau des cycles, vrai sanctuaire, consécration).
 
 - **`FudaCard`** gagne un champ optionnel `copy?: { heritage, printing, serial, size, seal }`. Sans lui, la fuda est inchangée : toutes les sources actuelles continuent de marcher.
 - **Sur la fuda** (`components/fuda/FudaCopy.css` ; `FudaFace.css` est généré par `scripts/fuda-face-css.mjs` et ne s'édite pas à la main) :
-  - un cartouche d'édition accroché au bord du shikishi, en miroir du numéro : le shikishi a une hauteur fixe, sans place pour une ligne de plus ;
-  - la gravée prend l'habillage estampe (grain de planche, papier washi, repères d'impression), en CSS sur la même illustration, sans nouvelle image ;
-  - la marque d'héritage.
-- **Sur la fiche** (`CardDetail`) : la mention `初摺 17 / 25` quand la fiche montre un exemplaire gravé. La fiche liste aussi les **exemplaires** : les ordinaires regroupés comme aujourd'hui, chaque spécial sur sa propre ligne (héritage, édition, provenance en sceaux de collectionneur, exemplaires en circulation) avec ses actions (vendre, offrir, exposer, consacrer, recycler).
+  - la gravée ne reçoit que son cartouche vermillon `初摺 17 / 25`, accroché au bord du shikishi en miroir du numéro (le shikishi a une hauteur fixe, sans place pour une ligne de plus), à la feuille d'or pour le n° 1 ; aucun grain ni repère sur l'illustration. Sous 80 px, un coin vermillon ;
+  - la marque d'héritage (fleur de prunier).
+- **Sur la fiche** (`CardDetail`) : la mention `初摺 17 / 25` quand la fiche montre un exemplaire gravé. La fiche liste aussi les **exemplaires** : les ordinaires regroupés comme aujourd'hui, chaque spécial sur sa propre ligne (héritage, édition, provenance en fil simple daté, exemplaires en circulation) avec ses actions (vendre, offrir, exposer, consacrer, recycler).
 - **Collection** : pastille sur la vignette d'une carte dont on a au moins une gravée ou une héritière ; filtres « Gravées » et « Héritières ».
 - **Combat** : `FighterSetup.copy` (optionnel, absent des anciennes parties) garde l'habillage sur le plateau et dans les replays.
 - **Textes** : clés `prestige.*`, `fuda.printing`, `fuda.heritage` dans `messages/fr.json` et `messages/en.json` ; espace `prestige` dans `i18n/client-messages.ts`. Kanji des sceaux (転生, 奉納, 初摺…) ajoutés à `lib/seal-glyphs.ts`, puis `npm run fonts:subset` et `npm run fonts:og`.
@@ -873,24 +872,25 @@ Les versions visuelles sont arrêtées dans trois ateliers de maquettes (profil 
 
 Toutes en `transform` et `opacity`, chargées en import dynamique, passables d'un geste ; avec `prefers-reduced-motion`, un simple fondu. Rien d'animé dans les listes d'avatars ni dans les grilles de cartes.
 
-- **Révélation d'une gravée** (ouverture) : après le grand moment de la rareté, une baren (tampon de l'estampeur) frotte la carte, l'habillage estampe apparaît sous son passage, le numéro s'écrit au pinceau, puis le sceau du tirage se pose. Environ 1,6 s. Le récap marque la carte « Gravée ».
-- **Rite de renaissance** (転生) :
+- **Révélation d'une gravée** (ouverture) : après le grand moment de la rareté, une baren (tampon de l'estampeur) frotte la carte, l'encre apparaît sous son passage, la carte reçoit son cartouche, le numéro s'écrit au pinceau, puis le sceau du tirage se pose. Environ 1,6 s. Le récap marque la carte « Gravée ».
+- **Rite de renaissance** (転生), en bain d'encre :
   1. Récap : ce qui part, les Zeni estimés, les gravées sacrifiées à confirmer.
   2. Départ en maintenant le bouton (`components/ui/HoldButton.tsx`, tiré de celui des expéditions).
-  3. Les cartes qui partent se replient et s'envolent en papier vers le brasero, sans afficher des milliers de cartes : des piles par rareté.
-  4. Les 20 héritières restent, et leur marque se trace ou monte d'un niveau.
+  3. Les cartes qui partent se replient et s'enfoncent dans une pierre à encre, des ondes s'élargissent ; jamais des milliers de cartes à l'écran : des piles par rareté.
+  4. Les 20 héritières restent, et un pétale de plus se dore sur leur fleur de prunier.
   5. Le chiffre romain est frappé sur l'avatar, et l'emaki du cycle se déroule avec le sceau 転生.
-- **Consécration** : la carte s'élève, sa marque s'illumine, elle se pose dans le sanctuaire et reçoit le sceau 奉納.
-- **Sanctuaire et emakis du profil** : cartes figées (`still`), rouleaux qui se déroulent seulement à l'ouverture.
+- **Consécration** : la carte s'élève, sa marque s'illumine, elle se pose dans le sanctuaire et reçoit le sceau 奉納. Animation à revoir dans le vrai sanctuaire (atelier D).
+- **Sanctuaire et emakis du profil** : cartes figées (`still`), rouleaux qui se déroulent seulement à l'ouverture ; dans un rouleau ouvert, la procession des héritières défile seule et se fait glisser, comme « Gros tirages » (`useMarquee`).
 
 ### Profil
 
-- **Chiffre romain** du prestige (`toRoman`) en or sur une plaque, en haut du cadre de l'avatar, en miroir du sceau du bas. Affiché dès le prestige I, avec ou sans cadre, **partout où un avatar apparaît** : plaque complète à partir de 40 px, réduite entre 24 et 39 px, masquée en dessous. Le prestige voyage dans `PlayerDecor` (`lib/profile/decor.ts`, `decorSelect` et `decorColumns` de `server/profile/decor.ts`, `ShownPlayer`), `PlayerAvatar` reçoit une seule prop `decor`, et l'avatar des images de partage (`OgAvatar`) suit. Le décor d'un combat est lu en direct, replays compris : rien n'est figé. Les cinq caches qui gardent le décor changent de version.
+- **Chiffre romain** du prestige (`toRoman`) sur une plaque kikkō (hexagone d'écaille de tortue), en haut du cadre de l'avatar, en miroir du sceau du bas. Matière selon le niveau : laque (I à IV), or (V à XI), émeraude (XII à XVII), nacre (XVIII et plus). Affiché dès le prestige I, avec ou sans cadre, **partout où un avatar apparaît** : plaque complète à partir de 40 px, réduite entre 24 et 39 px, masquée en dessous. Le prestige voyage dans `PlayerDecor` (`lib/profile/decor.ts`, `decorSelect` et `decorColumns` de `server/profile/decor.ts`, `ShownPlayer`), `PlayerAvatar` reçoit une seule prop `decor`, et l'avatar des images de partage (`OgAvatar`) suit. Le décor d'un combat est lu en direct, replays compris : rien n'est figé. Les cinq caches qui gardent le décor changent de version.
+- **En-tête** : poudre d'or qui monte derrière l'en-tête dès le prestige I, plus dense à chaque palier ; nuées d'or à partir du V (dessin à revoir, atelier D).
 - **Bouton « Évoluer »** : rouge (shu), sous « Personnaliser » dans l'action de `ProfileHeader`, sur son propre profil, compte inscrit, quand `prestige.enabled` est actif, que le joueur soit éligible ou non : la page explique ce qui manque.
-- **Page `/prestige`** : sceau 転生, « Comment y accéder » (une jauge par rareté : possédées, exigées, total ; puis les blocages en cours avec leur lien), « Ce que l'évolution t'apporte », « Ce que tu laisses », puis le parcours en trois temps (choix des 20, récap, confirmation maintenue et rite). Un invité y est invité à créer un compte.
-- **Cosmétiques** : conditions `PRESTIGE` (`n`), `CONSECRATED_COUNT` et `PRINTINGS_OWNED` dans `lib/profile/conditions.ts` ; badges dérivés `REBORN` (転), `CONSECRATOR` (奉) et `ENGRAVER` (版) ; cadres `tensei`, `hanga` et `hono` ; couleur de pseudo or. Un jeu par défaut s'installe depuis l'admin.
+- **Page `/prestige`** : sceau 転生, « Comment y accéder » (une jauge par rareté : cercles ensō sur téléphone, barres sur ordinateur ; possédées, exigées, seuil ; puis les blocages en cours avec leur lien), « Ce que l'évolution t'apporte », « Ce que tu laisses », puis le parcours en trois temps (choix des 20, récap, confirmation maintenue et rite). Un invité y est invité à créer un compte.
+- **Cosmétiques** : conditions `PRESTIGE` (`n`), `CONSECRATED_COUNT` et `PRINTINGS_OWNED` dans `lib/profile/conditions.ts` ; badges dérivés `REBORN` (転), `CONSECRATOR` (奉) et `ENGRAVER` (版) ; cadres `tensei`, `hanga` et `hono` ; couleur de pseudo or, débloquée dès le prestige I et choisie dans « Personnaliser » comme les autres. Un jeu par défaut s'installe depuis l'admin.
 - **Emakis** : un rouleau par cycle, avec la date, le rang global (« 7ᵉ renaissance de Kiraku ») et les 20 héritières de ce cycle. Les cartes qu'on n'a pas gardées restent dans l'histoire du profil.
-- **Sanctuaire** : les cartes consacrées, avec leur parcours.
+- **Sanctuaire** : les cartes consacrées, avec leur parcours. À refaire en « vrai » sanctuaire : une illustration générée en fond (image fixe et boucle vidéo, comme les vitrines), l'autel gardé, et une mise en place qui tient beaucoup de cartes (atelier D).
 - Le tout suit `profileVisibility`.
 
 ### Admin (`/admin/prestige`)

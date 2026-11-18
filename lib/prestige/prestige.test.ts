@@ -19,7 +19,7 @@ describe("chiffres romains", () => {
   });
 
   it("change de matière avec le niveau", () => {
-    expect([1, 4, 5, 9, 10, 38].map(plateMaterial)).toEqual(["laque", "laque", "or", "or", "nacre", "nacre"]);
+    expect([1, 4, 5, 11, 12, 17, 18, 38].map(plateMaterial)).toEqual(["laque", "laque", "or", "or", "emeraude", "emeraude", "nacre", "nacre"]);
   });
 });
 

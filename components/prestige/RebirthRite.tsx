@@ -6,7 +6,7 @@ import type { FrameStyle } from "@/lib/profile/frames";
 import { toRoman } from "@/lib/prestige/roman";
 import type { RebirthResultView } from "@/server/actions/prestige";
 import { animate, createTimeline, dispose, removeWhenDone, skip, SPRING, wait, type Timeline } from "../shop/celebration/timeline";
-import { Fuda, HeritageSeam } from "../fuda/Fuda";
+import { Fuda, HeritagePetal } from "../fuda/Fuda";
 import { useReducedFx } from "../motion/MotionPreference";
 import { useRitualFx } from "../opening/useRitualFx";
 import { PlayerAvatar } from "../social/PlayerAvatar";
@@ -15,10 +15,11 @@ import type { RarityInfo } from "./RebirthFlow";
 import "./prestige.css";
 
 /**
- * Rite de renaissance (転生), joué après la transaction (tout est déjà décidé par le serveur). Les piles de cartes,
- * une par rareté, se replient et partent au brasero ; les Zeni montent ; les héritières reçoivent leur veine d'or ;
- * le chiffre romain est frappé sur l'avatar ; le rouleau du cycle se déroule. Un appui passe le rite ; en mouvement
- * réduit, l'état final s'affiche directement.
+ * Rite de renaissance (転生) en bain d'encre, joué après la transaction (tout est déjà décidé par le serveur). Les
+ * piles de cartes, une par rareté, se replient et s'enfoncent dans la pierre à encre, des ondes s'élargissent ; les
+ * Zeni montent ; un pétale de plus se dore sur la fleur de prunier de chaque héritière ; le chiffre romain est frappé
+ * sur l'avatar ; le rouleau du cycle se déroule. Un appui passe le rite ; en mouvement réduit, l'état final
+ * s'affiche directement.
  */
 export function RebirthRite({
   result,
@@ -58,15 +59,15 @@ export function RebirthRite({
       play("taiko", [30, 40, 30]);
       animate(timeline, q("[data-dim]")!, [{ opacity: 0 }, { opacity: 0.42 }], { duration: 400 });
       await wait(timeline, 250);
-      animate(timeline, q("[data-fire]")!, [{ opacity: 0, transform: "translateY(20px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 450 });
-      play("lamp");
+      animate(timeline, q("[data-ink]")!, [{ opacity: 0, transform: "translateY(20px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 450 });
+      play("brush");
       await wait(timeline, 500);
 
-      // Les piles partent au brasero, l'une après l'autre ; des braises montent à chaque arrivée
-      const bowl = q("[data-bowl]")!.getBoundingClientRect();
+      // Les piles s'enfoncent dans la pierre à encre, l'une après l'autre ; des ondes s'élargissent à chaque arrivée
+      const stone = q("[data-stone]")!.getBoundingClientRect();
       const host = el.getBoundingClientRect();
-      const fx = bowl.left + bowl.width / 2;
-      const fy = bowl.top + 4;
+      const fx = stone.left + stone.width / 2;
+      const fy = stone.top + stone.height / 2;
       const stacks = qa("[data-stack]");
       await Promise.all(
         stacks.map(async (stack, i) => {
@@ -81,26 +82,21 @@ export function RebirthRite({
             [
               { transform: "translate(0,0) rotate(0deg) scale(1)", opacity: 1 },
               { transform: `translate(${(dx * 0.35).toFixed(0)}px,-46px) rotate(${i % 2 ? -18 : 16}deg) scale(.8,.5)`, opacity: 1, offset: 0.4 },
-              { transform: `translate(${dx.toFixed(0)}px,${dy.toFixed(0)}px) rotate(${i % 2 ? 40 : -36}deg) scale(.25)`, opacity: 0 },
+              { transform: `translate(${dx.toFixed(0)}px,${dy.toFixed(0)}px) rotate(${i % 2 ? 12 : -10}deg) scale(.22, .12)`, opacity: 0 },
             ],
-            { duration: 720, easing: "cubic-bezier(.45,0,.8,.7)" },
+            { duration: 760, easing: "cubic-bezier(.45,0,.8,.7)" },
           ).finished;
           if (timeline.skipped) return;
-          play("crackle");
-          for (let k = 0; k < 8; k++) {
-            const ember = document.createElement("span");
-            ember.className = "pr-ember";
-            ember.style.left = `${fx - host.left}px`;
-            ember.style.top = `${fy - host.top}px`;
-            el.append(ember);
-            const ex = (Math.random() - 0.5) * 110;
-            const ey = -(90 + Math.random() * 150);
+          play("brush");
+          for (let k = 0; k < 2; k++) {
+            const ripple = document.createElement("span");
+            ripple.className = "pr-ripple";
+            ripple.style.left = `${fx - host.left}px`;
+            ripple.style.top = `${fy - host.top}px`;
+            el.append(ripple);
             removeWhenDone(
-              animate(timeline, ember, [{ transform: "translate(0,0) scale(1)", opacity: 1 }, { transform: `translate(${ex.toFixed(0)}px,${ey.toFixed(0)}px) scale(.3)`, opacity: 0 }], {
-                duration: 900 + Math.random() * 600,
-                easing: "ease-out",
-              }),
-              ember,
+              animate(timeline, ripple, [{ transform: "scale(.2)", opacity: 0.9 }, { transform: "scale(1.25)", opacity: 0 }], { duration: 900, delay: k * 220, easing: "ease-out" }),
+              ripple,
             );
           }
         }),
@@ -115,14 +111,14 @@ export function RebirthRite({
       }
       if (zeniNum) zeniNum.textContent = format.number(result.zeni);
 
-      // Les héritières reçoivent leur veine d'or
+      // Un pétale de plus se dore sur la fleur de prunier de chaque héritière
       play("chime");
       await Promise.all(
         qa("[data-heir]").map(async (card, i) => {
           await wait(timeline, i * 85);
           animate(timeline, card, [{ transform: "scale(1)" }, { transform: "scale(1.09)", offset: 0.4 }, { transform: "scale(1)" }], { duration: 420 });
-          const vein = card.querySelector(".pr-new-vein");
-          if (vein) await animate(timeline, vein, [{ opacity: 0 }, { opacity: 1 }], { duration: 380 }).finished;
+          const petal = card.querySelector(".pr-new-petal");
+          if (petal) await animate(timeline, petal, [{ opacity: 0, transform: "scale(1.5)" }, { opacity: 1, transform: "scale(1)" }], { duration: 380, easing: SPRING }).finished;
         }),
       );
       await wait(timeline, 200);
@@ -137,7 +133,7 @@ export function RebirthRite({
       if (level) level.textContent = t("level", { level: result.prestige });
 
       // Le rouleau du cycle se déroule
-      animate(timeline, q("[data-fire]")!, [{ opacity: 1 }, { opacity: 0 }], { duration: 350 });
+      animate(timeline, q("[data-ink]")!, [{ opacity: 1 }, { opacity: 0 }], { duration: 350 });
       const emaki = q<HTMLElement>("[data-emaki]")!;
       await animate(timeline, emaki, [{ opacity: 0 }, { opacity: 1 }], { duration: 150 }).finished;
       const move = [{ transform: "translateX(0)" }, { transform: `translateX(${emaki.clientWidth - 12}px)` }];
@@ -188,8 +184,13 @@ export function RebirthRite({
         <div className="pr-heirs">
           {heirs.map((h) => (
             <div key={h.userCardId} data-heir className="relative">
-              <Fuda card={{ ...h.card, copy: { heritage: h.before } }} size="sm" still describeImage />
-              {h.after > h.before && <HeritageSeam index={h.before} className="pr-new-vein" />}
+              <Fuda
+                card={{ ...h.card, copy: { heritage: h.before } }}
+                size="sm"
+                still
+                describeImage
+                overlay={h.after > h.before ? <HeritagePetal index={h.before} className="pr-new-petal" /> : undefined}
+              />
             </div>
           ))}
         </div>
@@ -242,12 +243,9 @@ export function RebirthRite({
         </div>
       </div>
 
-      <div data-fire className="pr-fire" aria-hidden="true">
+      <div data-ink className="pr-ink" aria-hidden="true">
         <span className="glow" />
-        <span className="pr-flame f2" />
-        <span className="pr-flame f3" />
-        <span className="pr-flame" />
-        <span data-bowl className="bowl" />
+        <span data-stone className="stone" />
       </div>
       <button
         type="button"

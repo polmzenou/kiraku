@@ -11,7 +11,7 @@ import { ButtonLink } from "../ui/ButtonLink";
 import "./prestige.css";
 
 /**
- * Rite de consécration (奉納), joué après la transaction : la carte s'élève, ses veines d'or s'illuminent, la corde
+ * Rite de consécration (奉納), joué après la transaction : la carte s'élève, sa fleur de prunier d'or s'illumine, la corde
  * shimenawa descend, la cloche sonne, le sceau 奉納 se pose ; puis le lien vers le sanctuaire du profil. Un appui passe
  * le rite ; en mouvement réduit, l'état final s'affiche directement.
  */

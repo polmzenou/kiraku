@@ -1,7 +1,7 @@
 /* Révélation d'une gravée (BarenReveal.tsx) : calque posé sur la carte, tailles en cqw de la carte. */
 .baren-reveal { position: absolute; inset: 0; z-index: 35; pointer-events: none; container-type: inline-size; }
 
-/* Bandes d'estampe, découvertes au passage de la baren (même grain que .fuda-print, FudaCopy.css) */
+/* Bandes d'encre d'estampe, découvertes au passage de la baren, puis effacées quand la carte reçoit son cartouche */
 .baren-band {
   position: absolute; left: 0; right: 0; opacity: 0; mix-blend-mode: multiply;
   background:

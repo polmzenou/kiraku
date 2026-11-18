@@ -28,7 +28,7 @@ export type FudaCard = {
    */
   spoiler: boolean;
   /**
-   * Exemplaire précis montré (prestige) : héritage (veines d'or) et édition gravée (habillage d'estampe, cartouche
+   * Exemplaire précis montré (prestige) : héritage (fleur de prunier) et édition gravée (cartouche vermillon
    * « 初摺 17 / 25 »). Absent ou ordinaire : la fuda est inchangée, toutes les sources actuelles continuent de marcher.
    */
   copy?: FudaCopy | null;
@@ -40,76 +40,59 @@ export type FudaCard = {
  */
 export type FudaCopy = { heritage: number; printing?: number | null; serial?: number | null; size?: number | null; seal?: string | null };
 
-/** Tracés des veines d'or, dans le repère 250 × 350 de la carte : une de plus par prestige traversé. */
-const SEAMS = [
-  "M-5 248L38 232L71 244L118 221L160 236L206 214L255 226",
-  "M172 -5L160 42L181 83L166 128L190 170L178 215",
-  "M-5 96L34 112L58 98L96 126L120 114",
-  "M255 118L214 132L196 118L160 142L146 134",
-  "M64 -5L78 38L58 74L84 112L70 150L92 186L78 232",
-];
+/** Centres des cinq pétales de la fleur de prunier (repère 100 × 100), du pétale du haut dans le sens horaire. */
+const PETALS = Array.from({ length: 5 }, (_, k) => {
+  const angle = ((-90 + 72 * k) * Math.PI) / 180;
+  return { x: Math.round((50 + Math.cos(angle) * 25) * 10) / 10, y: Math.round((50 + Math.sin(angle) * 25) * 10) / 10 };
+});
 
-/** Une seule veine (la `index`-ième) : celle que le rite de renaissance trace sur une héritière. */
-export function HeritageSeam({ index, className = "" }: { index: number; className?: string }) {
-  const d = SEAMS[Math.min(Math.max(index, 0), SEAMS.length - 1)];
+function Petal({ x, y, gilded }: { x: number; y: number; gilded: boolean }) {
   return (
-    <svg aria-hidden="true" className={`fuda-veins ${className}`} viewBox="0 0 250 350" preserveAspectRatio="none">
-      <path className="v0" d={d} />
-      <path className="v1" d={d} />
-      <path className="v2" d={d} transform="translate(-.8 -.8)" />
-    </svg>
+    <>
+      <circle cx={x} cy={y} r={17.5} className={gilded ? "on" : "off"} />
+      {gilded && <circle cx={x - 4.5} cy={y - 5} r={6.5} className="glint" />}
+    </>
   );
 }
 
-/** Héritière : veines d'or (kintsugi) posées sur la carte ; en petit format, un point d'or au coin (CopyCorner). */
-export function HeritageVeins({ level }: { level: number }) {
-  const d = SEAMS.slice(0, Math.min(Math.max(level, 0), SEAMS.length)).join("");
-  if (!d) return null;
+/**
+ * Héritière : blason en fleur de prunier au coin haut-droit, un pétale doré par prestige traversé (cinq au plus).
+ * Lisible à toutes les tailles, et l'illustration reste intacte. Statique, comme toutes les marques d'exemplaire.
+ */
+export function HeritageMon({ level }: { level: number }) {
+  const gilded = Math.min(Math.max(level, 0), PETALS.length);
+  if (gilded === 0) return null;
   return (
-    <svg aria-hidden="true" className="fuda-veins" viewBox="0 0 250 350" preserveAspectRatio="none">
-      <path className="v0" d={d} />
-      <path className="v1" d={d} />
-      <path className="v2" d={d} transform="translate(-.8 -.8)" />
+    <svg aria-hidden="true" className="fuda-mon" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="48" className="disc" />
+      {PETALS.map((p, k) => (
+        <Petal key={k} x={p.x} y={p.y} gilded={k < gilded} />
+      ))}
+      <circle cx="50" cy="50" r="7" className="heart" />
     </svg>
   );
 }
 
 /**
- * Gravée : habillage d'estampe posé sur l'illustration (grain de la planche, fibres du washi, encre qui charge les
- * bords) et repères d'impression (kentō) : l'équerre en haut à droite, le trait sur le bord gauche. Statique, comme toutes les marques d'exemplaire.
+ * Le pétale que le rite de renaissance dore sur une héritière (le `index`-ième en partant du haut), posé exactement
+ * sur le blason : à passer en `overlay` de la fuda.
  */
-export function PrintTexture() {
+export function HeritagePetal({ index, className = "" }: { index: number; className?: string }) {
+  const p = PETALS[Math.min(Math.max(index, 0), PETALS.length - 1)];
   return (
-    <>
-      <span aria-hidden="true" className="fuda-print" />
-      <svg aria-hidden="true" className="fuda-kento" viewBox="0 0 250 350" preserveAspectRatio="none">
-        <path d="M218 12H238V32" />
-        <path d="M12 168V196" />
-      </svg>
-    </>
+    <svg aria-hidden="true" className={`fuda-mon ${className}`} viewBox="0 0 100 100">
+      <Petal x={p.x} y={p.y} gilded />
+    </svg>
   );
 }
 
-/** Cartouche d'édition « 初摺 17 / 25 », accroché au bord du shikishi en miroir du numéro ; le n° 1 est à la feuille d'or. */
+/** Cartouche d'édition vermillon « 初摺 17 / 25 », accroché au bord du shikishi en miroir du numéro ; le n° 1 est à la feuille d'or. */
 export function EditionCartouche({ copy }: { copy: FudaCopy }) {
   if (copy.printing == null || copy.serial == null) return null;
   return (
     <span aria-hidden="true" className={`kn-ed${copy.serial === 1 ? " kn-ed-first" : ""}`}>
       {copy.seal && <i lang="ja" className="font-seal">{copy.seal}</i>}
-      <b>{copy.serial}</b>
-      {copy.size != null && <s>/{copy.size}</s>}
-    </span>
-  );
-}
-
-/** Marques d'un exemplaire en petit format, au coin haut-droit : point d'or (héritière), sceau vermillon (gravée). */
-function CopyCorner({ copy }: { copy: FudaCopy }) {
-  const engraved = copy.printing != null && copy.serial != null;
-  if (copy.heritage <= 0 && !engraved) return null;
-  return (
-    <span aria-hidden="true" className="fuda-copy-corner">
-      {copy.heritage > 0 && <i className="fuda-heir-dot" />}
-      {engraved && <i className="fuda-ed-dot" />}
+      <span>{copy.size != null ? `${copy.serial} / ${copy.size}` : copy.serial}</span>
     </span>
   );
 }
@@ -236,7 +219,7 @@ export function Fuda({
   const engraved = copy !== null && copy.printing != null && copy.serial != null;
 
   const content = (
-    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} data-engraved={engraved || undefined} style={customStyle}>
+    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} style={customStyle}>
       {/* Papier posé en absolu dans le cadre : sa hauteur ne dépend pas d'un pourcentage (WebKit la résolvait mal sous aspect-ratio) */}
       <div className={`fuda-paper absolute ${l.inset} overflow-hidden ${l.inner}`}>
         <div className="kn-art">
@@ -260,7 +243,6 @@ export function Fuda({
           )}
           {gilded && <span aria-hidden="true" className="fuda-gilt" />}
           <span aria-hidden="true" className="kn-grain" />
-          {engraved && <PrintTexture />}
           {/* Étiquette visible seulement en mode spoiler (display: none sinon, donc muette aussi pour les lecteurs d'écran) */}
           {spoiler && <span className="kn-spoiler"><span className="font-title">{t("spoiler")}</span></span>}
         </div>
@@ -326,7 +308,7 @@ export function Fuda({
       {!locked && !monochrome && visual.effects?.map((effect) => <span key={effect} aria-hidden="true" className={`fuda-effect fuda-effect-${effect}`} />)}
       {copy && copy.heritage > 0 && (
         <>
-          <HeritageVeins level={copy.heritage} />
+          <HeritageMon level={copy.heritage} />
           <span className="sr-only">{t("heritage", { level: copy.heritage })}</span>
         </>
       )}
@@ -337,7 +319,8 @@ export function Fuda({
             : t("printingShort", { seal: copy!.seal ?? "", serial: copy!.serial! })}
         </span>
       )}
-      {copy && <CopyCorner copy={copy} />}
+      {/* Gravée en tout petit format (sans shikishi) : un coin vermillon */}
+      {engraved && <span aria-hidden="true" className="fuda-ed-pin" />}
       {overlay && <div className="pointer-events-none absolute inset-0 z-30">{overlay}</div>}
     </div>
   );

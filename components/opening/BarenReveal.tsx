@@ -7,8 +7,8 @@ import { useRitualFx } from "./useRitualFx";
 import "./BarenReveal.css";
 
 // Révélation d'une édition gravée, après le grand moment de la rareté (environ 1,6 s) : la baren (tampon de
-// l'estampeur) frotte la carte en zigzag et l'habillage d'estampe apparaît bande par bande sous son passage ; la carte
-// reçoit alors sa gravure (cartouche et texture définitifs), le numéro s'écrit, puis le sceau du tirage se pose.
+// l'estampeur) frotte la carte en zigzag et l'encre apparaît bande par bande sous son passage ; la carte reçoit alors
+// son cartouche d'édition, les bandes s'effacent, le numéro s'écrit, puis le sceau du tirage se pose.
 // transform et opacity seulement ; démonté (carte suivante) : tout s'arrête. Le mouvement réduit ne la joue pas.
 
 const BANDS = 5;

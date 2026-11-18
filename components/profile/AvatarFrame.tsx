@@ -3,8 +3,9 @@ import { FRAME_KANJI, FRAME_RING, type FrameStyle } from "@/lib/profile/frames";
 import { plateMaterial, toRoman } from "@/lib/prestige/roman";
 
 /**
- * Plaque du prestige : le chiffre romain en or, posé en haut du cadre, en miroir du sceau du bas. Plaque complète
- * à partir de 40 px, réduite de 24 à 39 px, masquée en dessous. Sa matière change avec le niveau (laque, or, nacre).
+ * Plaque du prestige : le chiffre romain sur un hexagone d'écaille de tortue (kikkō), posé en haut du cadre, en
+ * miroir du sceau du bas. Plaque complète à partir de 40 px, réduite de 24 à 39 px, masquée en dessous. Sa matière
+ * change avec le niveau (laque, or, émeraude, nacre).
  */
 function PrestigePlate({ prestige, size }: { prestige: number; size: number }) {
   if (prestige < 1 || size < 24) return null;
@@ -21,7 +22,7 @@ function PrestigePlate({ prestige, size }: { prestige: number; size: number }) {
       data-mat={plateMaterial(prestige)}
       style={{ height, fontSize: font, top: -height / 2 + 2 }}
     >
-      {label}
+      <span>{label}</span>
     </span>
   );
 }

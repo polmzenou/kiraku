@@ -59,30 +59,39 @@ export type RegistryEntry = {
   serial: number;
   size: number;
   seal: string | null;
-  /** Détenteur, si sa collection est visible par le lecteur ; sinon « Un joueur ». */
+  /** En jeu chez un joueur, chez le lecteur lui-même, ou consacrée au sanctuaire d'un joueur. */
+  state: "alive" | "mine" | "shrine";
+  /** Détenteur (ou joueur qui l'a consacrée), si sa collection est visible par le lecteur ; sinon « Un joueur ». */
   holder: PlayerRef | null;
 };
 
 export type EngravedRegistry = { stats: PrintingStats[]; entries: RegistryEntry[] };
 
+const holderSelect = { ...playerRefSelect, profileVisibility: true, showCollection: true, bannedAt: true, deletionRequestedAt: true, anonymizedAt: true } as const;
+
 /**
- * Registre des gravées d'une carte (fiche wiki) : chaque numéro encore en jeu et son détenteur. Même règle que la
- * liste des possesseurs : un détenteur n'est nommé que si sa collection est visible par le lecteur (profil public, ou
- * ami pour un profil réservé aux amis), jamais un invité, un banni, un compte gelé ou anonymisé, ni un blocage.
+ * Registre des gravées d'une carte (fiche wiki) : chaque numéro encore en jeu et son détenteur, et ceux consacrés au
+ * sanctuaire d'un joueur. Même règle que la liste des possesseurs : un joueur n'est nommé que si sa collection est
+ * visible par le lecteur (profil public, ou ami pour un profil réservé aux amis), jamais un invité, un banni, un
+ * compte gelé ou anonymisé, ni un blocage.
  */
 export async function getEngravedRegistry(viewerId: string | null, cardId: string): Promise<EngravedRegistry> {
   const stats = await printingStats(cardId);
   if (stats.length === 0) return { stats, entries: [] };
-  const copies = await prisma.userCard.findMany({
-    where: { cardId, printing: { not: null } },
-    orderBy: [{ printing: "asc" }, { serial: "asc" }],
-    select: {
-      printing: true,
-      serial: true,
-      edition: { select: { size: true } },
-      owner: { select: { ...playerRefSelect, profileVisibility: true, showCollection: true, bannedAt: true, deletionRequestedAt: true, anonymizedAt: true } },
-    },
-  });
+  const [alive, consecrated] = await Promise.all([
+    prisma.userCard.findMany({
+      where: { cardId, printing: { not: null } },
+      select: { printing: true, serial: true, edition: { select: { size: true } }, owner: { select: holderSelect } },
+    }),
+    prisma.consecratedCard.findMany({
+      where: { cardId, printing: { not: null } },
+      select: { printing: true, serial: true, size: true, user: { select: holderSelect } },
+    }),
+  ]);
+  const copies = [
+    ...alive.map((c) => ({ printing: c.printing!, serial: c.serial!, size: c.edition?.size ?? 0, owner: c.owner, shrine: false })),
+    ...consecrated.map((c) => ({ printing: c.printing!, serial: c.serial!, size: c.size ?? 0, owner: c.user, shrine: true })),
+  ].sort((a, b) => a.printing - b.printing || a.serial - b.serial);
   const ownerIds = [...new Set(copies.map((c) => c.owner.id))].filter((id) => id !== viewerId);
   const [blocks, friendships] =
     viewerId && ownerIds.length > 0
@@ -100,17 +109,18 @@ export async function getEngravedRegistry(viewerId: string | null, cardId: strin
   const blocked = new Set(blocks.map((b) => (b.blockerId === viewerId ? b.blockedId : b.blockerId)));
   const friends = new Set(friendships.map((f) => (f.requesterId === viewerId ? f.addresseeId : f.requesterId)));
   const sealOfPrinting = new Map(stats.map((s) => [s.printing, s.seal]));
-  const entries = copies.map((c) => {
+  const entries = copies.map((c): RegistryEntry => {
     const o = c.owner;
     const hidden = o.isGuest || o.deletionRequestedAt !== null || o.anonymizedAt !== null || blocked.has(o.id);
     const access = profileAccess(viewerId, o, { friends: friends.has(o.id), blocked: blocked.has(o.id) });
     // Seuls les champs d'un PlayerRef partent vers la page (pas la visibilité ni les dates du compte)
     const ref = { id: o.id, username: o.username, image: o.image, isGuest: o.isGuest, frame: o.frame, nameColor: o.nameColor, prestige: o.prestige };
     return {
-      printing: c.printing!,
-      serial: c.serial!,
-      size: c.edition?.size ?? 0,
-      seal: sealOfPrinting.get(c.printing!) ?? null,
+      printing: c.printing,
+      serial: c.serial,
+      size: c.size,
+      seal: sealOfPrinting.get(c.printing) ?? null,
+      state: c.shrine ? "shrine" : o.id === viewerId ? "mine" : "alive",
       holder: !hidden && access.collection ? toPlayerRef(ref) : null,
     };
   });

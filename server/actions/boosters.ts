@@ -142,7 +142,7 @@ function toView(b: OpenedBoosterRow, views: Awaited<ReturnType<typeof cardViews>
       regained: c.regained,
       featured: c.featured,
       wished: c.wished,
-      // Gravée : habillage d'estampe, cartouche et révélation à la baren
+      // Gravée : cartouche vermillon et révélation à la baren
       copy: c.edition ? fudaCopyOf({ heritage: 0, ...c.edition }, seals) : null,
     })),
   };

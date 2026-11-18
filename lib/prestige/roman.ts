@@ -19,9 +19,9 @@ export function toRoman(n: number): string {
   return out;
 }
 
-/** Matière de la plaque selon le prestige : laque (I à IV), feuille d'or (V à IX), nacre (X et plus). */
-export type PlateMaterial = "laque" | "or" | "nacre";
+/** Matière de la plaque selon le prestige : laque (I à IV), or (V à XI), émeraude (XII à XVII), nacre (XVIII et plus). */
+export type PlateMaterial = "laque" | "or" | "emeraude" | "nacre";
 
 export function plateMaterial(prestige: number): PlateMaterial {
-  return prestige >= 10 ? "nacre" : prestige >= 5 ? "or" : "laque";
+  return prestige >= 18 ? "nacre" : prestige >= 12 ? "emeraude" : prestige >= 5 ? "or" : "laque";
 }

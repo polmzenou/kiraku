@@ -1,8 +1,9 @@
 import type { CSSProperties } from "react";
 import "./prestige.css";
 
-// Aura du profil d'un joueur au prestige 1 ou plus : les nuées d'or des fuda, à l'échelle du profil. Une bande au
-// prestige I, deux à partir de V, trois et de la poudre d'or à partir de X. Purement décorative.
+// Aura du profil d'un joueur au prestige 1 ou plus : de la poudre d'or qui monte derrière l'en-tête dès le prestige I,
+// plus dense à chaque palier, et les nuées d'or qui dérivent à partir du V (deux bandes, trois à partir du X).
+// Purement décorative.
 
 /** Bande de nuées (lobes en arcs), raccord parfait aux deux bords pour défiler sans couture. */
 function cloudBand(fill: string, stroke: string): string {
@@ -27,7 +28,8 @@ const BANDS = [
   { top: "-0.5rem", height: "5rem", opacity: 0.26, d: "150s", reverse: false, image: cloudBand("#f3dc8c", "#fff3c4") },
 ];
 
-const SPECKS = Array.from({ length: 18 }, (_, i) => ({
+/** Paillettes de poudre d'or : 16 au prestige I, 24 au V, 32 au X, 40 au XVIII. */
+const SPECKS = Array.from({ length: 40 }, (_, i) => ({
   left: `${((i * 61.8) % 100).toFixed(1)}%`,
   size: 2 + (i % 3),
   d: `${(5 + (i % 5) * 1.3).toFixed(1)}s`,
@@ -37,24 +39,24 @@ const SPECKS = Array.from({ length: 18 }, (_, i) => ({
 
 export function PrestigeAura({ prestige }: { prestige: number }) {
   if (prestige < 1) return null;
-  const bands = BANDS.slice(0, prestige >= 10 ? 3 : prestige >= 5 ? 2 : 1);
+  const bands = prestige >= 10 ? 3 : prestige >= 5 ? 2 : 0;
+  const specks = prestige >= 18 ? 40 : prestige >= 10 ? 32 : prestige >= 5 ? 24 : 16;
   return (
     <div className="pr-aura" aria-hidden="true">
-      {bands.map((b, i) => (
+      {BANDS.slice(0, bands).map((b, i) => (
         <span
           key={i}
           className="pr-nuee"
           style={{ top: b.top, height: b.height, opacity: b.opacity, backgroundImage: b.image, animationDirection: b.reverse ? "reverse" : undefined, "--pr-d": b.d } as CSSProperties}
         />
       ))}
-      {prestige >= 10 &&
-        SPECKS.map((s, i) => (
-          <span
-            key={`s${i}`}
-            className="pr-speck"
-            style={{ left: s.left, width: s.size, height: s.size, "--pr-d": s.d, "--pr-delay": s.delay, "--pr-dx": s.dx } as CSSProperties}
-          />
-        ))}
+      {SPECKS.slice(0, specks).map((s, i) => (
+        <span
+          key={`s${i}`}
+          className="pr-speck"
+          style={{ left: s.left, width: s.size, height: s.size, "--pr-d": s.d, "--pr-delay": s.delay, "--pr-dx": s.dx } as CSSProperties}
+        />
+      ))}
     </div>
   );
 }

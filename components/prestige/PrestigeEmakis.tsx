@@ -1,12 +1,13 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import { toRoman } from "@/lib/prestige/roman";
 import { getEmakis } from "@/server/prestige/profile-queries";
-import { Fuda } from "../fuda/Fuda";
+import { HeirProcession } from "./HeirProcession";
 import "./prestige.css";
 
 /**
  * Rouleaux des cycles sur le profil : un emaki par renaissance, roulé sur son étagère. Il se déroule au toucher
- * (élément details natif, sans script) : date, rang global, Zeni, record, et les héritières en procession.
+ * (élément details natif) : date, rang global, Zeni, record, et les héritières en procession qui défile seule et se
+ * fait glisser, comme « Gros tirages ».
  */
 export async function PrestigeEmakis({ userId, locale }: { userId: string; locale: string }) {
   const emakis = await getEmakis(userId, locale);
@@ -46,13 +47,7 @@ export async function PrestigeEmakis({ userId, locale }: { userId: string; local
               {e.heirs.length > 0 && (
                 <>
                   <p className="text-xs font-bold tracking-widest text-[#5b544a] uppercase">{t("heirs", { count: e.heirs.length })}</p>
-                  <ul className="pr-procession">
-                    {e.heirs.map((card, i) => (
-                      <li key={i}>
-                        <Fuda card={card} size="sm" still describeImage />
-                      </li>
-                    ))}
-                  </ul>
+                  <HeirProcession heirs={e.heirs} label={t("heirs", { count: e.heirs.length })} />
                 </>
               )}
             </div>

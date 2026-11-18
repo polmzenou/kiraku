@@ -560,10 +560,21 @@
       "state": {
         "alive": "No. {serial}: in circulation",
         "gone": "No. {serial}: pulled, then recycled",
-        "free": "No. {serial}: not pulled yet"
+        "free": "No. {serial}: not pulled yet",
+        "mine": "No. {serial}: yours",
+        "shrine": "No. {serial}: consecrated to a sanctuary"
       },
       "serial": "no. {serial}",
-      "hiddenHolders": "{count, plural, one {# copy held by a player with a hidden profile} other {# copies held by players with hidden profiles}}"
+      "hiddenHolders": "{count, plural, one {# copy held by a player with a hidden profile} other {# copies held by players with hidden profiles}}",
+      "legend": {
+        "alive": "pulled",
+        "mine": "yours",
+        "shrine": "in a sanctuary",
+        "gone": "recycled",
+        "free": "not pulled yet"
+      },
+      "inCollection": "in a collection",
+      "inShrine": "in a sanctuary"
     }
   },
   "nav": {
@@ -3630,7 +3641,7 @@
         "keepSlots": "Copies the player keeps at rebirth; each gains one heritage level.",
         "minDaysBetween": "0: no wait between two rebirths.",
         "maxCopies": "Above this, the player must recycle duplicates first: the rebirth runs in a single transaction.",
-        "heritageMax": "Five at most: there are only five golden veins.",
+        "heritageMax": "Five at most: the plum blossom only has five petals.",
         "consecrateMinOwnCycles": "A capped heirloom can only be consecrated after going through this many prestiges with the same player.",
         "zeniTiers": "The recycle value of the cards that go is paid in tiers: 100% up to the first threshold, then each tier's share. Beyond the last: nothing.",
         "zeniCap": "Most Zeni for one rebirth, after the scale.",
@@ -6554,7 +6565,10 @@
         "TRADES": "{count, plural, one {You have # pending trade proposal.} other {You have # pending trade proposals.}}"
       },
       "tooSoon": "Your next rebirth is possible on {date}.",
-      "tooMany": "Your collection holds {count, number} copies: recycle your duplicates first (at most {max, number})."
+      "tooMany": "Your collection holds {count, number} copies: recycle your duplicates first (at most {max, number}).",
+      "reached": "reached",
+      "toGo": "{count, number} to go",
+      "gaugeLabel": "{name}: {owned, number} of {required, number}"
     },
     "gains": {
       "title": "What evolving gives you",
@@ -6566,7 +6580,7 @@
       "heirs": {
         "kanji": "継",
         "title": "Your heirlooms",
-        "body": "chosen by you, veined with a little more gold at every rebirth."
+        "body": "chosen by you, with one more golden petal at every rebirth."
       },
       "engraved": {
         "kanji": "版",
@@ -6607,7 +6621,7 @@
       "locked": "You're still missing cards",
       "blocked": "Clear what's blocking first",
       "chooseTitle": "Your heirlooms",
-      "chooseIntro": "Choose up to {slots} cards to keep. Each gets a golden vein, one more at every rebirth.",
+      "chooseIntro": "Choose up to {slots} cards to keep. One petal of their plum blossom turns gold, one more at every rebirth.",
       "count": "{count} / {slots}",
       "specialTitle": "Your special copies",
       "cardsTitle": "Your cards",

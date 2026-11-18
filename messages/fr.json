@@ -560,10 +560,21 @@
       "state": {
         "alive": "N° {serial} : en circulation",
         "gone": "N° {serial} : sorti puis recyclé",
-        "free": "N° {serial} : pas encore sorti"
+        "free": "N° {serial} : pas encore sorti",
+        "mine": "N° {serial} : à toi",
+        "shrine": "N° {serial} : consacrée au sanctuaire"
       },
       "serial": "n° {serial}",
-      "hiddenHolders": "{count, plural, one {# exemplaire chez un joueur au profil caché} other {# exemplaires chez des joueurs au profil caché}}"
+      "hiddenHolders": "{count, plural, one {# exemplaire chez un joueur au profil caché} other {# exemplaires chez des joueurs au profil caché}}",
+      "legend": {
+        "alive": "sortie",
+        "mine": "à toi",
+        "shrine": "au sanctuaire",
+        "gone": "recyclée",
+        "free": "pas encore sortie"
+      },
+      "inCollection": "en collection",
+      "inShrine": "au sanctuaire"
     }
   },
   "nav": {
@@ -3630,7 +3641,7 @@
         "keepSlots": "Exemplaires que le joueur garde à la renaissance ; chacun monte d'un niveau d'héritage.",
         "minDaysBetween": "0 : aucune attente entre deux renaissances.",
         "maxCopies": "Au-delà, le joueur doit d'abord recycler ses doublons : la renaissance se fait en une seule transaction.",
-        "heritageMax": "Cinq au plus : il n'existe que cinq veines d'or.",
+        "heritageMax": "Cinq au plus : la fleur de prunier n'a que cinq pétales.",
         "consecrateMinOwnCycles": "Une héritière au plafond ne se consacre qu'après avoir traversé ce nombre de prestiges chez le même joueur.",
         "zeniTiers": "La valeur de recyclage des cartes parties est versée par tranches : 100 % jusqu'au premier seuil, puis la part de chaque tranche. Au-delà de la dernière : rien.",
         "zeniCap": "Zeni au plus pour une renaissance, après le barème.",
@@ -6554,7 +6565,10 @@
         "TRADES": "{count, plural, one {Tu as # proposition d'échange en attente.} other {Tu as # propositions d'échange en attente.}}"
       },
       "tooSoon": "Prochaine renaissance possible le {date}.",
-      "tooMany": "Ta collection compte {count, number} exemplaires : recycle d'abord tes doublons (au plus {max, number})."
+      "tooMany": "Ta collection compte {count, number} exemplaires : recycle d'abord tes doublons (au plus {max, number}).",
+      "reached": "atteint",
+      "toGo": "manque {count, number}",
+      "gaugeLabel": "{name} : {owned, number} sur {required, number}"
     },
     "gains": {
       "title": "Ce que l'évolution t'apporte",
@@ -6566,7 +6580,7 @@
       "heirs": {
         "kanji": "継",
         "title": "Tes héritières",
-        "body": "que tu choisis, veinées d'or un peu plus à chaque renaissance."
+        "body": "que tu choisis, un pétale d'or de plus à chaque renaissance."
       },
       "engraved": {
         "kanji": "版",
@@ -6607,7 +6621,7 @@
       "locked": "Il te manque des cartes",
       "blocked": "Règle d'abord ce qui bloque",
       "chooseTitle": "Tes héritières",
-      "chooseIntro": "Choisis jusqu'à {slots} cartes à garder. Elles reçoivent une veine d'or, une de plus à chaque renaissance.",
+      "chooseIntro": "Choisis jusqu'à {slots} cartes à garder. Un pétale de leur fleur de prunier se dore, un de plus à chaque renaissance.",
       "count": "{count} / {slots}",
       "specialTitle": "Tes exemplaires spéciaux",
       "cardsTitle": "Tes cartes",

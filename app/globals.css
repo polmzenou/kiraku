@@ -1197,33 +1197,50 @@
 }
 
 /*
- * Plaque du prestige (components/profile/AvatarFrame.tsx) : le chiffre romain en or, posé en haut du cadre de
- * l'avatar, en miroir du sceau du bas. Matière selon le niveau : laque (I à IV), feuille d'or (V à IX), nacre
- * (X et plus) ; mêmes valeurs dans l'image de partage (server/og/scene.tsx). Aucune animation : elle est partout.
+ * Plaque du prestige (components/profile/AvatarFrame.tsx) : le chiffre romain sur un hexagone d'écaille de tortue
+ * (kikkō), posé en haut du cadre de l'avatar, en miroir du sceau du bas. Le liseré est le fond de la face, la matière
+ * son ::before ; l'ombre portée vit sur la plaque, que le découpage de la face ne rogne pas. Matière selon le niveau :
+ * laque (I à IV), or (V à XI), émeraude (XII à XVII), nacre (XVIII et plus) ; mêmes valeurs dans l'image de partage
+ * (server/og/scene.tsx). Aucune animation : elle est partout.
  */
 @layer components {
   .prestige-plate {
+    --kikko: polygon(0.5em 0, calc(100% - 0.5em) 0, 100% 50%, calc(100% - 0.5em) 100%, 0.5em 100%, 0 50%);
     position: absolute;
     left: 50%;
     z-index: 2;
+    display: flex;
+    translate: -50% 0;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.45));
+  }
+  .prestige-plate > span {
+    position: relative;
+    isolation: isolate;
     display: grid;
     place-items: center;
-    min-width: 1.6em;
-    padding: 0 0.42em;
-    translate: -50% 0;
-    border-radius: 3px;
+    height: 100%;
+    min-width: 2.2em;
+    padding: 0 0.8em;
     white-space: nowrap;
-    pointer-events: none;
     font-weight: 800;
     line-height: 1;
     letter-spacing: 0.05em;
     color: var(--plate-num);
-    background: var(--plate-fill);
-    box-shadow: inset 0 0 0 1px var(--plate-edge), 0 2px 4px rgb(0 0 0 / 0.45);
+    background: var(--plate-edge);
+    clip-path: var(--kikko);
   }
-  .prestige-plate.is-small {
+  .prestige-plate > span::before {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    z-index: -1;
+    background: var(--plate-fill);
+    clip-path: var(--kikko);
+  }
+  .prestige-plate.is-small > span {
     min-width: 0;
-    padding: 0 3px;
+    padding: 0 5px;
     letter-spacing: 0;
   }
   .prestige-plate[data-mat="laque"] {
@@ -1235,6 +1252,11 @@
     --plate-edge: #6e5012;
     --plate-fill: linear-gradient(160deg, #f8e7aa, #d9b556 46%, #b08a2e);
     --plate-num: #2a1f08;
+  }
+  .prestige-plate[data-mat="emeraude"] {
+    --plate-edge: #d9b556;
+    --plate-fill: linear-gradient(125deg, #062a1c 0%, #0f5a3a 22%, #2fae74 40%, #0c4a30 52%, #1f8a5a 68%, #052317 100%);
+    --plate-num: #f6dd8e;
   }
   .prestige-plate[data-mat="nacre"] {
     --plate-edge: #c9a447;

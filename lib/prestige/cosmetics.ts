@@ -49,5 +49,6 @@ export const PRESTIGE_COSMETICS: readonly PrestigeCosmetic[] = [
     sortOrder: 901,
   },
   { slug: "prestige-cadre-hono", kind: "FRAME", label: { fr: "Hono", en: "Hono" }, hint: prestige(5), frameStyle: "hono", condition: { type: "PRESTIGE", n: 5 }, sortOrder: 902 },
-  { slug: "prestige-pseudo-kin", kind: "NAME_COLOR", label: { fr: "Feuille d'or", en: "Gold leaf" }, hint: prestige(2), nameColor: "kin", condition: { type: "PRESTIGE", n: 2 }, sortOrder: 900 },
+  // Pseudo or : débloqué dès la première renaissance, puis choisi (ou non) dans « Personnaliser » comme les autres
+  { slug: "prestige-pseudo-kin", kind: "NAME_COLOR", label: { fr: "Feuille d'or", en: "Gold leaf" }, hint: prestige(1), nameColor: "kin", condition: { type: "PRESTIGE", n: 1 }, sortOrder: 900 },
 ];

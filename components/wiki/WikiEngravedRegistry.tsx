@@ -1,17 +1,30 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { isFrozen } from "@/lib/account/deletion";
-import { getEngravedRegistry } from "@/server/prestige/copies";
+import { getEngravedRegistry, type RegistryEntry } from "@/server/prestige/copies";
 import { getCurrentUser } from "@/server/user";
 import { PlayerAvatar } from "../social/PlayerAvatar";
 
 // Au-delà, la planche des numéros deviendrait illisible : seuls les numéros sortis sont listés
 const GRID_MAX = 100;
 
+type CellState = RegistryEntry["state"] | "gone" | "free";
+
+/** Une case de la planche par état : sortie, à toi, au sanctuaire, recyclée, pas encore sortie. */
+const CELL: Record<CellState, string> = {
+  alive: "bg-washi-paper text-sumi shadow-[inset_0_0_0_2px_#b3261e]",
+  mine: "bg-kin text-sumi",
+  shrine: "bg-[linear-gradient(135deg,#f6ecff,#cdeee9_40%,#f8ecc9_70%,#dcd0ff)] text-[#3b2a5c]",
+  gone: "bg-surface-2 text-text-muted line-through",
+  free: "border border-dashed border-border text-text-muted/60",
+};
+const LEGEND: readonly CellState[] = ["alive", "mine", "shrine", "gone", "free"];
+
 /**
- * Registre des gravées d'une carte (fiche wiki) : la planche des numéros de chaque tirage — sortis et encore en jeu,
- * sortis puis recyclés, pas encore sortis — et les détenteurs dont la collection est visible par le lecteur. Personnel
- * au lecteur (confidentialité des détenteurs), rendu sous Suspense hors de la fiche mise en cache.
+ * Registre des gravées d'une carte (fiche wiki) : la planche des numéros de chaque tirage — sortis, à toi, consacrés au
+ * sanctuaire, sortis puis recyclés, pas encore sortis — puis, en dessous, les détenteurs dont la collection est visible
+ * par le lecteur. Personnel au lecteur (confidentialité des détenteurs), rendu sous Suspense hors de la fiche mise en
+ * cache.
  */
 export async function WikiEngravedRegistry({ cardId }: { cardId: string }) {
   const user = await getCurrentUser();
@@ -31,10 +44,11 @@ export async function WikiEngravedRegistry({ cardId }: { cardId: string }) {
       </header>
       {registry.stats.map((s) => {
         const entries = registry.entries.filter((e) => e.printing === s.printing);
-        const alive = new Map(entries.map((e) => [e.serial, e]));
+        const out = new Map(entries.map((e) => [e.serial, e]));
         const taken = new Set(s.taken);
         const shown = entries.filter((e) => e.holder !== null);
         const hidden = entries.length - shown.length;
+        const stateOf = (n: number): CellState => out.get(n)?.state ?? (taken.has(n) ? "gone" : "free");
         return (
           <div key={s.printing} className="flex flex-col gap-3">
             <h3 className="flex flex-wrap items-baseline gap-x-2 text-sm font-bold">
@@ -47,28 +61,27 @@ export async function WikiEngravedRegistry({ cardId }: { cardId: string }) {
               <span className="font-normal text-text-muted">{t("counts", { issued: s.issued, size: s.size, alive: s.alive })}</span>
             </h3>
             {s.size <= GRID_MAX && (
-              <ol aria-label={t("boardLabel", { printing: s.printing })} className="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-1">
-                {Array.from({ length: s.size }, (_, i) => i + 1).map((n) => {
-                  const state = alive.has(n) ? "alive" : taken.has(n) ? "gone" : "free";
-                  return (
-                    <li
-                      key={n}
-                      className={`grid h-9 place-items-center rounded-[2px] text-xs font-bold tabular-nums ${
-                        state === "alive"
-                          ? n === 1
-                            ? "bg-kin text-sumi"
-                            : "bg-shu-btn text-washi-paper"
-                          : state === "gone"
-                            ? "border border-border text-text-muted line-through"
-                            : "border border-dashed border-border text-text-muted/60"
-                      }`}
-                    >
-                      <span aria-hidden="true">{n}</span>
-                      <span className="sr-only">{t(`state.${state}`, { serial: n })}</span>
+              <>
+                <ol aria-label={t("boardLabel", { printing: s.printing })} className="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-1">
+                  {Array.from({ length: s.size }, (_, i) => i + 1).map((n) => {
+                    const state = stateOf(n);
+                    return (
+                      <li key={n} className={`grid h-9 place-items-center rounded-[2px] text-xs font-bold tabular-nums ${CELL[state]}`}>
+                        <span aria-hidden="true">{n}</span>
+                        <span className="sr-only">{t(`state.${state}`, { serial: n })}</span>
+                      </li>
+                    );
+                  })}
+                </ol>
+                <ul aria-hidden="true" className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-muted">
+                  {LEGEND.map((state) => (
+                    <li key={state} className="flex items-center gap-1.5">
+                      <i className={`size-3 rounded-[2px] ${CELL[state]}`} />
+                      {t(`legend.${state}`)}
                     </li>
-                  );
-                })}
-              </ol>
+                  ))}
+                </ul>
+              </>
             )}
             {entries.length > 0 && (
               <ul className="flex flex-col gap-2">
@@ -79,6 +92,7 @@ export async function WikiEngravedRegistry({ cardId }: { cardId: string }) {
                       <PlayerAvatar username={e.holder!.username} image={e.holder!.image} size={32} frame={e.holder!.decor.frame} prestige={e.holder!.decor.prestige} />
                       <span className="truncate">{e.holder!.username}</span>
                     </Link>
+                    <span className="ml-auto shrink-0 text-xs text-text-muted">{e.state === "shrine" ? t("inShrine") : t("inCollection")}</span>
                   </li>
                 ))}
                 {hidden > 0 && <li className="text-sm text-text-muted">{t("hiddenHolders", { count: hidden })}</li>}
