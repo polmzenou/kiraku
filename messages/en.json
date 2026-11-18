@@ -759,6 +759,27 @@
         "NOT_FOUND": "This comment no longer exists.",
         "UNAVAILABLE": "Action unavailable right now."
       }
+    },
+    "quote": {
+      "title": "Market value",
+      "zeni": "{amount, number} Zeni",
+      "none": "No value yet: {sales, plural, =0 {no sales} one {# sale} other {# sales}} over {days} days, {min} needed.",
+      "summary": "Value of {amount, number} Zeni, median of {sales, plural, one {# sale} other {# sales}} over {days} days{hasChange, select, yes { ({change} versus the previous period)} other {}}.",
+      "summaryNone": "No value yet: {sales, plural, =0 {no sales} one {# sale} other {# sales}} over {days} days, {min} needed. Auction sales history.",
+      "stable": "Steady",
+      "basis": "Median of {sales, plural, one {# sale} other {# sales}} over {days} days",
+      "noSales": "No auction sales in the last {days} days.",
+      "method": "Median price of finished auctions: a single outlier sale does not move the value.",
+      "chartSince": "{days} d ago",
+      "chartToday": "Today",
+      "salesCount": "{count, plural, one {# sale} other {# sales}}",
+      "tableCaption": "Card value, day by day",
+      "tableDay": "Day",
+      "tableMedian": "Value",
+      "tableSales": "Sales",
+      "moversTitle": "Biggest gainers",
+      "moversHint": "Value over the last {days} days versus the {days} before",
+      "moverLabel": "{name}, {rarity}: value of {amount, number} Zeni, {change} over {sales, plural, one {# sale} other {# sales}}"
     }
   },
   "time": {
@@ -1701,7 +1722,10 @@
           "perDay": "Listings per player per 24 h",
           "maxPendingOffers": "Max pending offers per player",
           "allowedRarities": "Tradable rarities"
-        }
+        },
+        "quoteWindowDays": "Value window (days)",
+        "quoteMinSales": "Minimum sales for a value",
+        "quoteHistoryDays": "Chart history (days)"
       },
       "feeHint": "The fee is locked when a sale is listed: a change doesn't affect sales already open.",
       "invalid": "Some values are out of range: fix them before saving.",
@@ -1731,7 +1755,9 @@
         "empty": "No public comments right now.",
         "auction": "Sale of {card} · {name}",
         "listing": "Trade listing for {card} · {name}"
-      }
+      },
+      "quote": "Card value",
+      "quoteHint": "A card's value is the median price of its auction sales over the window. Without enough sales, the card has no value; collection worth then uses the median of its rarity."
     },
     "economy": {
       "title": "Economy",
@@ -3629,7 +3655,11 @@
     "stats": {
       "unique": "Unique cards",
       "copies": "Copies",
-      "completion": "Catalog"
+      "completion": "Catalog",
+      "value": "Estimated value",
+      "valueZeni": "{amount, number} Zeni",
+      "valueByRarity": "of which {amount, number} Zeni estimated from the rarity's value",
+      "valueUnpriced": "{count, plural, one {# copy without a value} other {# copies without a value}}"
     },
     "recycleAll": {
       "open": "Recycle duplicates",

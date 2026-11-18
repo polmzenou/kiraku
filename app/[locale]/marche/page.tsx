@@ -1,5 +1,6 @@
 import { getRarities } from "@/server/catalog/rarities";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { hasLocale } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
@@ -8,6 +9,7 @@ import { ListingBoard } from "@/components/market/listings/ListingBoard";
 import { MyExchanges } from "@/components/market/listings/MyExchanges";
 import { MarketFilters } from "@/components/market/MarketFilters";
 import { MarketList } from "@/components/market/MarketList";
+import { TopMovers } from "@/components/market/TopMovers";
 import { SellFromMarket } from "@/components/market/SellFromMarket";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
@@ -137,6 +139,11 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
       {page && (
         <>
           {sellBase && <SellFromMarket base={sellBase} />}
+          {params.tab === "all" && (
+            <Suspense fallback={null}>
+              <TopMovers />
+            </Suspense>
+          )}
           <MarketFilters params={params} />
 
           <MarketList

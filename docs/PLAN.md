@@ -577,6 +577,16 @@ Pour la page du marché : liste paginée par curseur, filtres rareté/série/pri
 - **Écrans** : `/marche` (onglets Toutes · Mes ventes · Mes enchères, filtres en formulaire GET repliable, curseur), `/marche/[id]` (prix sondé toutes les `market.pollSeconds`, mise en deux temps avec `useOptimistic`, achat immédiat, retrait), « Mettre en vente » dans la fiche carte de la collection. Notifications `OUTBID`, `AUCTION_WON`, `AUCTION_SOLD`, `AUCTION_EXPIRED`, `AUCTION_CANCELLED`. `/admin/economie` affiche les Zeni en séquestre.
 - **Tests** : `lib/market/*.test.ts` ; `server/market/market.db.test.ts` (50 enchères simultanées sur une vente, 12 clôtures simultanées, un enchérisseur sur 50 ventes, mises croisées, annulation contre mises, double mise en vente, achat immédiat contre mises, anti-sniping, expiration, annulation admin, bilan global), sauté sans `DATABASE_URL_TEST`.
 
+### Cote des cartes
+
+La cote d'une carte est le **prix médian** de ses ventes aux enchères terminées (`Auction` en `SOLD`) sur les `market.quoteWindowDays` derniers jours (30 par défaut). Elle n'existe qu'à partir de `market.quoteMinSales` ventes (3) : une vente arrangée entre deux comptes, ou un coup de folie isolé, ne la déplace pas. La tendance compare la médiane à celle de la fenêtre précédente, de même durée.
+
+- **Fiche carte** (wiki et collection) : cote, tendance, courbe des médianes quotidiennes et de chaque vente sur `market.quoteHistoryDays` jours (90).
+- **Collection** : valeur estimée = cote de chaque exemplaire, sinon médiane récente de sa rareté ; les exemplaires sans aucune cote comptent pour 0 et sont signalés.
+- **Marché** : « Plus fortes hausses », les cartes cotées sur les deux fenêtres dont la cote monte le plus.
+
+Aucune table dédiée : tout se calcule depuis `Auction` (`lib/market/quotes.ts` pour la logique, `server/market/quotes.ts` pour les lectures, cache de 5 minutes).
+
 ## Combat 1v1
 
 Duel **joué en direct**, façon Hearthstone : chaque joueur agit pendant son tour, le serveur arbitre tout. Trois façons de jouer : **code ami** (salle privée, non classée), **exhibition** (file d'attente, non classée) et **classé** (file d'attente, étape 9b). Personne en vue après `battle.queueSeconds` (20 s) : un **bot** prend la place, affiché comme tel, avec une équipe de même rareté que celle du joueur, différente à chaque fois.

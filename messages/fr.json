@@ -759,6 +759,27 @@
         "NOT_FOUND": "Ce commentaire n'existe plus.",
         "UNAVAILABLE": "Action impossible pour le moment."
       }
+    },
+    "quote": {
+      "title": "Cote",
+      "zeni": "{amount, number} Zeni",
+      "none": "Pas encore de cote : {sales, plural, =0 {aucune vente} one {# vente} other {# ventes}} sur {days} jours, il en faut {min}.",
+      "summary": "Cote de {amount, number} Zeni, médiane de {sales, plural, one {# vente} other {# ventes}} sur {days} jours{hasChange, select, yes { ({change} par rapport à la période précédente)} other {}}.",
+      "summaryNone": "Pas encore de cote : {sales, plural, =0 {aucune vente} one {# vente} other {# ventes}} sur {days} jours, il en faut {min}. Historique des ventes aux enchères.",
+      "stable": "Stable",
+      "basis": "Médiane de {sales, plural, one {# vente} other {# ventes}} sur {days} jours",
+      "noSales": "Aucune vente aux enchères sur les {days} derniers jours.",
+      "method": "Prix médian des enchères terminées : une vente isolée hors norme ne fait pas bouger la cote.",
+      "chartSince": "Il y a {days} j",
+      "chartToday": "Aujourd’hui",
+      "salesCount": "{count, plural, one {# vente} other {# ventes}}",
+      "tableCaption": "Cote de la carte, jour par jour",
+      "tableDay": "Jour",
+      "tableMedian": "Cote",
+      "tableSales": "Ventes",
+      "moversTitle": "Plus fortes hausses",
+      "moversHint": "Cote des {days} derniers jours comparée aux {days} précédents",
+      "moverLabel": "{name}, {rarity} : cote de {amount, number} Zeni, {change} sur {sales, plural, one {# vente} other {# ventes}}"
     }
   },
   "time": {
@@ -1701,7 +1722,10 @@
           "perDay": "Annonces par joueur sur 24 h",
           "maxPendingOffers": "Offres en attente max. par joueur",
           "allowedRarities": "Raretés échangeables"
-        }
+        },
+        "quoteWindowDays": "Fenêtre de la cote (jours)",
+        "quoteMinSales": "Ventes minimales pour une cote",
+        "quoteHistoryDays": "Historique de la courbe (jours)"
       },
       "feeHint": "La taxe est figée à la mise en vente : un changement ne touche pas les ventes déjà ouvertes.",
       "invalid": "Certaines valeurs sont hors limites : corrige-les avant d'enregistrer.",
@@ -1731,7 +1755,9 @@
         "empty": "Aucun commentaire public en ce moment.",
         "auction": "Vente de {card} · {name}",
         "listing": "Annonce d'échange de {card} · {name}"
-      }
+      },
+      "quote": "Cote des cartes",
+      "quoteHint": "La cote d'une carte est le prix médian de ses ventes aux enchères sur la fenêtre. Sans assez de ventes, la carte n'a pas de cote ; la valeur des collections prend alors la médiane de sa rareté."
     },
     "economy": {
       "title": "Économie",
@@ -3629,7 +3655,11 @@
     "stats": {
       "unique": "Cartes uniques",
       "copies": "Exemplaires",
-      "completion": "Catalogue"
+      "completion": "Catalogue",
+      "value": "Valeur estimée",
+      "valueZeni": "{amount, number} Zeni",
+      "valueByRarity": "dont {amount, number} Zeni estimés par la cote de la rareté",
+      "valueUnpriced": "{count, plural, one {# exemplaire sans cote} other {# exemplaires sans cote}}"
     },
     "recycleAll": {
       "open": "Recycler les doublons",

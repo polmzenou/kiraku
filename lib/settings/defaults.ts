@@ -323,6 +323,10 @@ export const SETTING_SCHEMAS = {
   // Plafond de prix par rareté (départ, achat immédiat et mises) ; rareté absente = plafond global seul
   "market.maxPriceByRarity": z.record(rarityKeySchema, z.number().int().min(1).max(100_000_000)),
   "market.pollSeconds": z.number().int().min(2).max(120),
+  // Cote des cartes (lib/market/quotes.ts) : médiane des ventes de la fenêtre, à partir de quoteMinSales ventes
+  "market.quoteWindowDays": z.number().int().min(7).max(180),
+  "market.quoteMinSales": z.number().int().min(1).max(50),
+  "market.quoteHistoryDays": z.number().int().min(30).max(365),
   // Échanges ouverts du Marché : annonces « celle-ci contre l'une de celles-là », offres acceptées ou refusées
   "listings.enabled": z.boolean(),
   "listings.expiryHours": z.number().int().min(1).max(24 * 30),
@@ -602,6 +606,9 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "market.maxPrice": 10_000_000,
   "market.maxPriceByRarity": {},
   "market.pollSeconds": 15, // rafraîchissement du prix d'une vente ouverte
+  "market.quoteWindowDays": 30, // cote = médiane des ventes des 30 derniers jours…
+  "market.quoteMinSales": 3, // …à partir de 3 ventes (une vente arrangée ne suffit pas)
+  "market.quoteHistoryDays": 90, // courbe de la fiche carte
   "listings.enabled": true,
   "listings.expiryHours": 48,
   "listings.maxWants": 5,

@@ -7,6 +7,7 @@ import { z } from "zod";
 import { PageShell } from "@/components/PageShell";
 import { WikiCardDetail, WikiPersonalizedCardDetail } from "@/components/wiki/WikiCardDetail";
 import { WikiCardOwners, WikiCardOwnersSkeleton } from "@/components/wiki/WikiCardOwners";
+import { CardQuote, CardQuoteSkeleton } from "@/components/market/CardQuote";
 import { WikiWishlistAction } from "@/components/wiki/WikiWishlistAction";
 import { routing } from "@/i18n/routing";
 import { seriesTitle } from "@/lib/catalog/display";
@@ -70,7 +71,12 @@ export default async function WikiCardPage({ params }: PageProps<"/[locale]/wiki
       <WikiCardOwners cardId={card.id} rarity={card.rarity} name={card.name} locale={locale} />
     </Suspense>
   );
-  const detail = { card, locale, total: stats.total, related, wishlistAction, ownersSection, isNew: newIds.has(card.anilistId) };
+  const quoteSection = (
+    <Suspense fallback={<CardQuoteSkeleton />}>
+      <CardQuote cardId={card.id} />
+    </Suspense>
+  );
+  const detail = { card, locale, total: stats.total, related, wishlistAction, ownersSection, quoteSection, isNew: newIds.has(card.anilistId) };
   return (
     <PageShell>
       <JsonLd data={trail} />

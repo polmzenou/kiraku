@@ -26,6 +26,9 @@ const BOUNDS: Record<NumKey, [number, number]> = {
   "market.minStartPrice": [1, 1_000_000],
   "market.maxPrice": [1, 100_000_000],
   "market.pollSeconds": [2, 120],
+  "market.quoteWindowDays": [7, 180],
+  "market.quoteMinSales": [1, 50],
+  "market.quoteHistoryDays": [30, 365],
   "listings.expiryHours": [1, 24 * 30],
   "listings.maxWants": [1, 10],
   "listings.maxActive": [1, 100],
@@ -126,6 +129,14 @@ export function MarketSettingsForm({ initial }: { initial: MarketSettings }) {
         {num("market.minAccountAgeHours")}
         {num("market.minStartPrice")}
         {num("market.maxPrice")}
+      </fieldset>
+
+      <fieldset className="grid gap-4 lacquer rounded-card p-4 sm:grid-cols-3">
+        <legend className="px-1 font-bold">{t("quote")}</legend>
+        <p className="text-xs text-text-muted sm:col-span-3">{t("quoteHint")}</p>
+        {num("market.quoteWindowDays")}
+        {num("market.quoteMinSales")}
+        {num("market.quoteHistoryDays")}
       </fieldset>
 
       <fieldset className="flex flex-col gap-3 lacquer rounded-card p-4">
