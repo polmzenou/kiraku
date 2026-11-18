@@ -8,7 +8,7 @@ import { recentSettingLogs, requireAdmin } from "@/server/admin";
 import { adminActiveAuctions, adminRecentNotes, marketTotals } from "@/server/market/queries";
 import { getSetting } from "@/server/settings";
 
-/** Marché : santé (ventes ouvertes, séquestre, taxes), annulation forcée et réglages. */
+/** Marché : santé (ventes et avis ouverts, séquestre, taxes), annulation forcée et réglages. */
 export default async function AdminMarketPage() {
   await requireAdmin();
   const locale = await getLocale();
@@ -26,6 +26,7 @@ export default async function AdminMarketPage() {
   const stats = [
     { label: t("active"), value: t("count", { count: totals.active }) },
     { label: t("escrow"), value: t("zeni", { amount: totals.escrow }) },
+    { label: t("openOrders"), value: t("ordersValue", { count: totals.orders, amount: totals.ordersEscrow }) },
     { label: t("sold24h"), value: t("count", { count: totals.sold24h }) },
     { label: t("fees24h"), value: t("zeni", { amount: totals.fees24h }) },
   ];

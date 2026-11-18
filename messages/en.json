@@ -607,7 +607,8 @@
       "bidding": "My bids",
       "echanges": "Trades",
       "mes-echanges": "My trades",
-      "incoming": "{count, plural, one {# offer received} other {# offers received}}"
+      "incoming": "{count, plural, one {# offer received} other {# offers received}}",
+      "avis": "Buy orders"
     },
     "filters": {
       "label": "Filters",
@@ -780,6 +781,77 @@
       "moversTitle": "Biggest gainers",
       "moversHint": "Value over the last {days} days versus the {days} before",
       "moverLabel": "{name}, {rarity}: value of {amount, number} Zeni, {change} over {sales, plural, one {# sale} other {# sales}}"
+    },
+    "orders": {
+      "title": "Buy orders",
+      "count": "{count, plural, one {# open order} other {# open orders}}",
+      "none": "Nobody is looking for this card yet.",
+      "by": "{name} · until {date}",
+      "byShort": "By {name}",
+      "someone": "A player",
+      "you": "You",
+      "until": "Until {date}",
+      "zeni": "{amount, number} Zeni",
+      "noCopy": "You have no free copy to sell (copies on sale, in your team or on an expedition don't count).",
+      "yours": "Your orders for this card",
+      "guest": "Sign up to post a buy order.",
+      "how": "Your price stays locked until the sale, withdrawal or expiry. The first owner of the card can sell it to you; they pay the market fee.",
+      "priceLabel": "Price you offer",
+      "post": "Post the order",
+      "posting": "Posting…",
+      "range": "Between {min, number} and {max, number} Zeni.",
+      "tooPoor": "You need this many Zeni (balance: {coins, number}).",
+      "hold": "{amount, number} Zeni will be locked (balance: {coins, number}) for {days, plural, one {# day} other {# days}} at most.",
+      "posted": "Order posted: {amount, number} Zeni locked for {days, plural, one {# day} other {# days}}.",
+      "sellFor": "Sell for {amount, number}",
+      "confirmSell": "Confirm the sale",
+      "selling": "Selling…",
+      "cancel": "Cancel",
+      "net": "You'll get {amount, number} Zeni after the fee.",
+      "sold": "Sold: {amount, number} Zeni received.",
+      "withdraw": "Withdraw",
+      "withdrawing": "Withdrawing…",
+      "intro": "A buy order locks a price for a specific card. If you own the card, sell it in one tap at the best price.",
+      "fillTitle": "You have what they want",
+      "fillEmpty": "No order is looking for a card you have a free copy of.",
+      "mineTitle": "My orders",
+      "mineEmpty": "You have no open order. Post one from a card's page.",
+      "history": "Closed orders ({count})",
+      "status": {
+        "FILLED": "filled",
+        "CANCELLED": "withdrawn",
+        "EXPIRED": "expired"
+      },
+      "allTitle": "All orders",
+      "allEmpty": "No open order right now.",
+      "sortLabel": "Sort orders",
+      "sort": {
+        "price": "Highest",
+        "newest": "Newest"
+      },
+      "pagesLabel": "Order pages",
+      "previous": "Previous",
+      "next": "Next",
+      "errors": {
+        "NO_SESSION": "Your session expired: reload the page.",
+        "INVALID": "Invalid request.",
+        "RATE_LIMITED": "Slow down: try again in a moment.",
+        "UNAVAILABLE": "Action unavailable right now.",
+        "DISABLED": "Buy orders are closed.",
+        "GUEST": "Sign up to use buy orders.",
+        "TOO_NEW": "Your account is too new for the market.",
+        "INVALID_PRICE": "Invalid price.",
+        "CAP_REACHED": "This price is above the cap for this rarity.",
+        "NO_CARD": "This card no longer exists.",
+        "TOO_MANY_OPEN": "You already have the maximum number of open orders.",
+        "NOT_ENOUGH_ZENI": "Not enough Zeni to lock this price.",
+        "NOT_FOUND": "Order not found.",
+        "CLOSED": "This order was just filled, withdrawn or expired.",
+        "OWN_ORDER": "You can't fill your own order.",
+        "STALE": "The offer changed: check the new price.",
+        "NOT_OWNED": "You no longer have a free copy of this card.",
+        "unexpected": "Something went wrong, try again."
+      }
     }
   },
   "time": {
@@ -1725,7 +1797,10 @@
         },
         "quoteWindowDays": "Value window (days)",
         "quoteMinSales": "Minimum sales for a value",
-        "quoteHistoryDays": "Chart history (days)"
+        "quoteHistoryDays": "Chart history (days)",
+        "ordersEnabled": "Buy orders open",
+        "orderDurationDays": "Order duration (days)",
+        "maxOpenOrders": "Max. open orders per player"
       },
       "feeHint": "The fee is locked when a sale is listed: a change doesn't affect sales already open.",
       "invalid": "Some values are out of range: fix them before saving.",
@@ -1757,14 +1832,18 @@
         "listing": "Trade listing for {card} · {name}"
       },
       "quote": "Card value",
-      "quoteHint": "A card's value is the median price of its auction sales over the window. Without enough sales, the card has no value; collection worth then uses the median of its rarity."
+      "quoteHint": "A card's value is the median price of its auction sales over the window. Without enough sales, the card has no value; collection worth then uses the median of its rarity.",
+      "orders": "Buy orders",
+      "ordersHint": "A player locks a price for a specific card; the first owner who accepts sells it to them, market fee included. An unfilled order returns its Zeni when it expires.",
+      "openOrders": "Open buy orders",
+      "ordersValue": "{count, number} · {amount, number} Zeni locked"
     },
     "economy": {
       "title": "Economy",
       "intro": "Mission and shop switches, referral anti-fraud rules and the health of the Zeni ledger.",
       "circulating": "Zeni in circulation",
       "escrow": "Zeni in escrow (bids)",
-      "escrowHint": "Already debited from bidders and recorded in the ledger (BID_HOLD).",
+      "escrowHint": "Already debited from bidders and buy-order authors, and recorded in the ledger (BID_HOLD, ORDER_HOLD).",
       "zeni": "{amount, number} Zeni",
       "ledgerSum": "Ledger total",
       "integrity": "Integrity",
@@ -4541,7 +4620,10 @@
     "expeditionTriumph": "Your expedition returns triumphant! Come open its report.",
     "expeditionSuccess": "Your expedition is back, mission accomplished. Come open its report.",
     "expeditionFailure": "Your expedition came back empty-handed… Your cards are home.",
-    "expeditionReturned": "Your expedition is back. Come open its report."
+    "expeditionReturned": "Your expedition is back. Come open its report.",
+    "buyOrderFilled": "{name} sold you {card} for {amount, number} Zeni: your buy order is filled.",
+    "buyOrderExpired": "Your buy order for {card} expired: {amount, number} Zeni are back.",
+    "buyOrderWanted": "{name} is looking for {card} at {amount, number} Zeni. You own a copy: sell it in one tap."
   },
   "push": {
     "title": "Notifications on this device",
@@ -4807,7 +4889,9 @@
         "GIFT": "Booster gifted to a friend",
         "SEASON": "Season reward (ranked)",
         "ABILITY": "Ability bought (workshop)",
-        "EXPEDITION": "Expedition"
+        "EXPEDITION": "Expedition",
+        "ORDER_HOLD": "Buy order (Zeni locked)",
+        "ORDER_REFUND": "Buy order refunded"
       }
     },
     "reveal": {

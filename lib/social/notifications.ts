@@ -25,6 +25,9 @@ export const NOTIFICATION_TYPES = [
   "COINFLIP_RESOLVED",
   "COINFLIP_RETURNED",
   "EXPEDITION_RETURNED",
+  "BUY_ORDER_FILLED",
+  "BUY_ORDER_EXPIRED",
+  "BUY_ORDER_WANTED",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -149,6 +152,16 @@ export function parseCoinFlipPayload(raw: unknown): CoinFlipPayload | null {
   if (!isId(r.flipId) || !isId(r.cardId)) return null;
   const reason = COINFLIP_RETURN_REASONS.includes(r.reason as CoinFlipReturnReason) ? (r.reason as CoinFlipReturnReason) : null;
   return { flipId: r.flipId, cardId: r.cardId, reason };
+}
+
+/** Avis de recherche : l'avis, la carte cherchée et son prix. */
+export type BuyOrderPayload = { orderId: string; cardId: string; amount: number };
+
+export function parseBuyOrderPayload(raw: unknown): BuyOrderPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  if (!isId(r.orderId) || !isId(r.cardId) || !Number.isSafeInteger(r.amount) || (r.amount as number) < 0) return null;
+  return { orderId: r.orderId, cardId: r.cardId, amount: r.amount as number };
 }
 
 /** Expédition rentrée : son issue (le détail se lit sur /expedition). */

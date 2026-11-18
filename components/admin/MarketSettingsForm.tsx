@@ -12,7 +12,7 @@ import { Field, FormMessage, inputClass, NumberField, Toggle } from "./fields";
 
 type NumKey = Exclude<
   keyof MarketSettings,
-  "market.enabled" | "market.durationsHours" | "market.maxPriceByRarity" | "listings.enabled" | "listings.allowOther" | "listings.allowedRarities"
+  "market.enabled" | "market.ordersEnabled" | "market.durationsHours" | "market.maxPriceByRarity" | "listings.enabled" | "listings.allowOther" | "listings.allowedRarities"
 >;
 
 // Bornes des champs (les mêmes que les schémas Zod de lib/settings/defaults.ts)
@@ -29,6 +29,8 @@ const BOUNDS: Record<NumKey, [number, number]> = {
   "market.quoteWindowDays": [7, 180],
   "market.quoteMinSales": [1, 50],
   "market.quoteHistoryDays": [30, 365],
+  "market.orderDurationDays": [1, 30],
+  "market.maxOpenOrders": [1, 100],
   "listings.expiryHours": [1, 24 * 30],
   "listings.maxWants": [1, 10],
   "listings.maxActive": [1, 100],
@@ -129,6 +131,16 @@ export function MarketSettingsForm({ initial }: { initial: MarketSettings }) {
         {num("market.minAccountAgeHours")}
         {num("market.minStartPrice")}
         {num("market.maxPrice")}
+      </fieldset>
+
+      <fieldset className="grid gap-4 lacquer rounded-card p-4 sm:grid-cols-2">
+        <legend className="px-1 font-bold">{t("orders")}</legend>
+        <p className="text-xs text-text-muted sm:col-span-2">{t("ordersHint")}</p>
+        <div className="sm:col-span-2">
+          <Toggle label={t("keys.ordersEnabled")} checked={draft["market.ordersEnabled"]} onChange={(v) => update("market.ordersEnabled", v)} />
+        </div>
+        {num("market.orderDurationDays")}
+        {num("market.maxOpenOrders")}
       </fieldset>
 
       <fieldset className="grid gap-4 lacquer rounded-card p-4 sm:grid-cols-3">

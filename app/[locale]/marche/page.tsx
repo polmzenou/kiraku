@@ -10,6 +10,7 @@ import { MyExchanges } from "@/components/market/listings/MyExchanges";
 import { MarketFilters } from "@/components/market/MarketFilters";
 import { MarketList } from "@/components/market/MarketList";
 import { TopMovers } from "@/components/market/TopMovers";
+import { OrdersTab } from "@/components/market/orders/OrdersTab";
 import { SellFromMarket } from "@/components/market/SellFromMarket";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
@@ -39,8 +40,8 @@ function one(v: string | string[] | undefined) {
 }
 
 /**
- * Hôtel des ventes : ventes ouvertes, filtres dans l'URL, onglets « Mes ventes » et « Mes enchères »,
- * puis les échanges ouverts (« Échanges », « Mes échanges »).
+ * Hôtel des ventes : ventes ouvertes, filtres dans l'URL, onglets « Mes ventes », « Mes enchères » et
+ * « Avis de recherche », puis les échanges ouverts (« Échanges », « Mes échanges »).
  */
 export default async function MarketPage({ searchParams }: PageProps<"/[locale]/marche">) {
   const [t, user, locale] = await Promise.all([getTranslations("market"), getCurrentUser(), getLocale()]);
@@ -53,9 +54,13 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
   }
 
   const raw = await searchParams;
-  const [enabled, listingsOn] = await Promise.all([getSetting("market.enabled"), getSetting("listings.enabled")]);
+  const [enabled, listingsOn, ordersEnabled] = await Promise.all([getSetting("market.enabled"), getSetting("listings.enabled"), getSetting("market.ordersEnabled")]);
   const exchangesOn = enabled && listingsOn;
+  const ordersOn = enabled && ordersEnabled;
   const rawTab = one(raw.onglet);
+  const ordersTab = ordersOn && rawTab === "avis";
+  const ordersSort = one(raw.tri) === "recent" ? ("newest" as const) : ("price" as const);
+  const ordersPage = Math.max(0, Math.min(200, Number.parseInt(one(raw.page) ?? "0", 10) || 0));
   const exchangeTab: ExchangeTab | null =
     exchangesOn && (EXCHANGE_TABS as readonly string[]).includes(rawTab ?? "") && !(user.isGuest && rawTab === "mes-echanges")
       ? (rawTab as ExchangeTab)
@@ -64,20 +69,22 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
   // Les invités n'ont ni ventes ni mises : seulement la liste générale
   const params = user.isGuest ? { ...parsed, tab: "all" as const } : parsed;
   // Invités : une seule piste « Toutes · Échanges » ; membres : une piste pour les ventes, une pour les échanges
-  const tabGroups: (readonly ((typeof MARKET_TABS)[number] | ExchangeTab)[])[] = user.isGuest
-    ? exchangesOn
-      ? [["all", "echanges"]]
+  const salesTabs = ordersOn ? [...MARKET_TABS, "avis" as const] : MARKET_TABS;
+  const guestTabs = [...(ordersOn ? (["all", "avis"] as const) : []), ...(exchangesOn ? (["echanges"] as const) : [])];
+  const tabGroups: (readonly ((typeof MARKET_TABS)[number] | ExchangeTab | "avis")[])[] = user.isGuest
+    ? guestTabs.length > 0
+      ? [exchangesOn && !ordersOn ? ["all", "echanges"] : guestTabs]
       : []
     : exchangesOn
-      ? [MARKET_TABS, EXCHANGE_TABS]
-      : [MARKET_TABS];
+      ? [salesTabs, EXCHANGE_TABS]
+      : [salesTabs];
   const now = new Date();
-  const page = enabled && !exchangeTab ? await listAuctions({ params, cursor: null, viewerId: user.id, locale, now }) : null;
+  const page = enabled && !exchangeTab && !ordersTab ? await listAuctions({ params, cursor: null, viewerId: user.id, locale, now }) : null;
   // Vendre depuis le Marché : onglets des ventes, membres seulement (les échanges ont leur propre bouton)
   const sellBase = page && !user.isGuest ? await sellBaseFor(user.id, now) : null;
   const incoming = exchangesOn && !user.isGuest ? await countIncomingOffers(user.id, now) : 0;
   const tabHref = (tab: string) => (tab === "all" ? "/marche" : `/marche?onglet=${tab}`);
-  const current = exchangeTab ?? params.tab;
+  const current = ordersTab ? "avis" : (exchangeTab ?? params.tab);
 
   return (
     <PageShell>
@@ -133,6 +140,7 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
 
           {exchangeTab === "echanges" && <ExchangeBoard userId={user.id} guest={user.isGuest} isAdmin={user.role === "ADMIN"} locale={locale} raw={raw} />}
           {exchangeTab === "mes-echanges" && <MyExchangesTab userId={user.id} locale={locale} />}
+          {ordersTab && <OrdersTab userId={user.id} guest={user.isGuest} locale={locale} sort={ordersSort} page={ordersPage} />}
         </>
       )}
 

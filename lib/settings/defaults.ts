@@ -327,6 +327,10 @@ export const SETTING_SCHEMAS = {
   "market.quoteWindowDays": z.number().int().min(7).max(180),
   "market.quoteMinSales": z.number().int().min(1).max(50),
   "market.quoteHistoryDays": z.number().int().min(30).max(365),
+  // Avis de recherche (lib/market/buy-orders.ts) : prix bloqué jusqu'à la vente, l'annulation ou l'expiration
+  "market.ordersEnabled": z.boolean(),
+  "market.orderDurationDays": z.number().int().min(1).max(30),
+  "market.maxOpenOrders": z.number().int().min(1).max(100),
   // Échanges ouverts du Marché : annonces « celle-ci contre l'une de celles-là », offres acceptées ou refusées
   "listings.enabled": z.boolean(),
   "listings.expiryHours": z.number().int().min(1).max(24 * 30),
@@ -609,6 +613,9 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "market.quoteWindowDays": 30, // cote = médiane des ventes des 30 derniers jours…
   "market.quoteMinSales": 3, // …à partir de 3 ventes (une vente arrangée ne suffit pas)
   "market.quoteHistoryDays": 90, // courbe de la fiche carte
+  "market.ordersEnabled": true,
+  "market.orderDurationDays": 7, // un avis non rempli rend ses Zeni au bout d'une semaine
+  "market.maxOpenOrders": 10, // avis ouverts par joueur, comme les ventes
   "listings.enabled": true,
   "listings.expiryHours": 48,
   "listings.maxWants": 5,

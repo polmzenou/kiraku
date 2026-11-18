@@ -49,6 +49,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     battles,
     auctions,
     bids,
+    buyOrders,
     tradeListings,
     listingOffers,
     trades,
@@ -142,6 +143,12 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       select: { id: true, cardId: true, startPrice: true, buyoutPrice: true, finalPrice: true, fee: true, status: true, note: true, createdAt: true, endsAt: true },
     }),
     db.bid.findMany({ where: { bidderId: userId }, orderBy: { createdAt: "asc" }, select: { auctionId: true, amount: true, createdAt: true } }),
+    // Avis publiés et avis remplis par le joueur ; jamais l'identité de l'autre partie
+    db.buyOrder.findMany({
+      where: { OR: [{ buyerId: userId }, { sellerId: userId }] },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, buyerId: true, cardId: true, price: true, fee: true, status: true, createdAt: true, expiresAt: true, filledAt: true, closedAt: true },
+    }),
     db.tradeListing.findMany({
       where: { ownerId: userId },
       orderBy: { createdAt: "asc" },
@@ -290,6 +297,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     }),
     auctions,
     bids,
+    buyOrders: buyOrders.map(({ buyerId, fee, ...o }) => ({ ...o, role: buyerId === userId ? "BUYER" : "SELLER", fee: buyerId === userId ? null : fee })),
     tradeListings: tradeListings.map((l) => ({ ...l, wants: l.wants.map((w) => w.cardId) })),
     listingOffers,
     trades: trades.map(({ proposerId, ...t }) => ({ ...t, direction: proposerId === userId ? "OUTGOING" : "INCOMING" })),

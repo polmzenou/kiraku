@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   auctions: vi.fn(),
+  orders: vi.fn(),
   cards: vi.fn(),
   raw: vi.fn(),
   summaries: vi.fn(),
@@ -9,7 +10,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ unstable_cache: (fn: unknown) => fn }));
-vi.mock("../db", () => ({ prisma: { auction: { findMany: mocks.auctions }, card: { findMany: mocks.cards }, $queryRaw: mocks.raw } }));
+vi.mock("../db", () => ({ prisma: { auction: { findMany: mocks.auctions }, buyOrder: { findMany: mocks.orders }, card: { findMany: mocks.cards }, $queryRaw: mocks.raw } }));
 vi.mock("../settings", () => ({ getSetting: (key: string) => Promise.resolve(mocks.settings[key]) }));
 vi.mock("../catalog/queries", () => ({ getCatalogSummaries: mocks.summaries }));
 
@@ -22,6 +23,7 @@ const sold = (cardId: string, price: number, d: number, rarity = "EPIC") => ({ c
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.auctions.mockResolvedValue([]);
+  mocks.orders.mockResolvedValue([]);
   mocks.cards.mockResolvedValue([]);
   mocks.raw.mockResolvedValue([]);
   mocks.summaries.mockResolvedValue([]);
@@ -37,6 +39,13 @@ describe("cotes lues en base", () => {
     expect(where.finalPrice).toEqual({ not: null });
     expect(Date.now() - where.settledAt.gt.getTime()).toBeGreaterThanOrEqual(60 * DAY - 1_000);
     expect(Date.now() - where.settledAt.gt.getTime()).toBeLessThan(60 * DAY + 60_000);
+  });
+
+  it("compte les avis de recherche remplis comme des ventes", async () => {
+    mocks.auctions.mockResolvedValue([sold("a", 100, 1)]);
+    mocks.orders.mockResolvedValue([{ cardId: "a", price: 140, filledAt: ago(2), card: { rarity: "EPIC" } }]);
+    expect((await getMarketQuotes()).byCard.a).toMatchObject({ price: 120, sales: 2 });
+    expect(mocks.orders.mock.calls[0][0].where).toMatchObject({ status: "FILLED" });
   });
 
   it("lit l'historique d'une carte sur la période de la courbe plus une fenêtre de cote", async () => {

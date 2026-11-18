@@ -5,7 +5,8 @@ import { getCatalogSummaries, type CatalogCardSummary } from "../catalog/queries
 import { prisma } from "../db";
 import { getSetting } from "../settings";
 
-// Cote des cartes, lue depuis les ventes aux enchères terminées (Auction SOLD) : aucune table de plus,
+// Cote des cartes, lue depuis les ventes terminées : enchères (Auction SOLD) et avis de recherche remplis
+// (BuyOrder FILLED). Aucune table de plus,
 // rien à tenir à jour à la clôture. Les cotes sont partagées par tous les joueurs et gardées 5 minutes ;
 // la valeur d'une collection (données du joueur) ne passe pas par le cache.
 
@@ -23,16 +24,28 @@ async function quoteRules(): Promise<QuoteRules> {
 const loadQuotes = unstable_cache(
   async (windowDays: number, minSales: number): Promise<MarketQuotes> => {
     const now = new Date();
-    const rows = await prisma.auction.findMany({
-      where: { status: "SOLD", finalPrice: { not: null }, settledAt: { gt: new Date(now.getTime() - 2 * windowDays * DAY_MS) } },
-      orderBy: { settledAt: "desc" },
-      take: MAX_SALES,
-      select: { cardId: true, finalPrice: true, settledAt: true, card: { select: { rarity: true } } },
-    });
-    const sales = rows.flatMap((r) => (r.finalPrice !== null && r.settledAt ? [{ cardId: r.cardId, rarity: r.card.rarity, price: r.finalPrice, at: r.settledAt }] : []));
+    const since = new Date(now.getTime() - 2 * windowDays * DAY_MS);
+    const [auctions, orders] = await Promise.all([
+      prisma.auction.findMany({
+        where: { status: "SOLD", finalPrice: { not: null }, settledAt: { gt: since } },
+        orderBy: { settledAt: "desc" },
+        take: MAX_SALES,
+        select: { cardId: true, finalPrice: true, settledAt: true, card: { select: { rarity: true } } },
+      }),
+      prisma.buyOrder.findMany({
+        where: { status: "FILLED", filledAt: { gt: since } },
+        orderBy: { filledAt: "desc" },
+        take: MAX_SALES,
+        select: { cardId: true, price: true, filledAt: true, card: { select: { rarity: true } } },
+      }),
+    ]);
+    const sales = [
+      ...auctions.flatMap((r) => (r.finalPrice !== null && r.settledAt ? [{ cardId: r.cardId, rarity: r.card.rarity, price: r.finalPrice, at: r.settledAt }] : [])),
+      ...orders.flatMap((r) => (r.filledAt ? [{ cardId: r.cardId, rarity: r.card.rarity, price: r.price, at: r.filledAt }] : [])),
+    ];
     return buildQuotes(sales, now, { windowDays, minSales });
   },
-  ["market-quotes-v1"],
+  ["market-quotes-v2"],
   { revalidate: CACHE_SECONDS, tags: ["market-quotes"] },
 );
 
@@ -54,17 +67,28 @@ const loadHistory = unstable_cache(
     const now = new Date();
     // La cote demande deux fenêtres (tendance) ; la courbe, historyDays plus une fenêtre (cote des premiers jours)
     const since = new Date(now.getTime() - (Math.max(historyDays, windowDays) + windowDays) * DAY_MS);
-    const rows = await prisma.auction.findMany({
-      where: { cardId, status: "SOLD", finalPrice: { not: null }, settledAt: { gt: since } },
-      orderBy: { settledAt: "asc" },
-      take: MAX_SALES,
-      select: { finalPrice: true, settledAt: true },
-    });
-    const sales = rows.flatMap((r) => (r.finalPrice !== null && r.settledAt ? [{ price: r.finalPrice, at: r.settledAt }] : []));
+    const [auctions, orders] = await Promise.all([
+      prisma.auction.findMany({
+        where: { cardId, status: "SOLD", finalPrice: { not: null }, settledAt: { gt: since } },
+        orderBy: { settledAt: "asc" },
+        take: MAX_SALES,
+        select: { finalPrice: true, settledAt: true },
+      }),
+      prisma.buyOrder.findMany({
+        where: { cardId, status: "FILLED", filledAt: { gt: since } },
+        orderBy: { filledAt: "asc" },
+        take: MAX_SALES,
+        select: { price: true, filledAt: true },
+      }),
+    ]);
+    const sales = [
+      ...auctions.flatMap((r) => (r.finalPrice !== null && r.settledAt ? [{ price: r.finalPrice, at: r.settledAt }] : [])),
+      ...orders.flatMap((r) => (r.filledAt ? [{ price: r.price, at: r.filledAt }] : [])),
+    ];
     const rules = { windowDays, minSales };
     return { quote: quoteFor(sales, now, rules), rules, historyDays, series: priceSeries(sales, now, historyDays, windowDays, timeZone) };
   },
-  ["market-card-history-v1"],
+  ["market-card-history-v2"],
   { revalidate: CACHE_SECONDS, tags: ["market-quotes"] },
 );
 
