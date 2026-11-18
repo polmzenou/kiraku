@@ -9,7 +9,7 @@ import { isStaff } from "@/lib/admin/roles";
 import { casinoAccess, casinoBadge, inLaunchWindow, type CasinoAccess, type CasinoBadge } from "@/lib/casino/phase";
 import { CASINO_SETTING_KEYS, casinoRulesFrom, type CasinoRules } from "@/lib/casino/rules";
 import { isBigFlip, raritiesForTier } from "@/lib/casino/tiers";
-import { coreView, flipStats, outcomeFor, sideOf, type CoinFlipCoreView, type CoinFlipRow, type FlipStats } from "@/lib/casino/view";
+import { coreView, flipStats, outcomeFor, sideOf, type CoinFlipCoreView, type CoinFlipRow, type FlipStats, type MineState } from "@/lib/casino/view";
 import { periodWindow } from "@/lib/economy/period";
 import type { SettingValue } from "@/lib/settings/defaults";
 import { cardViews } from "../boosters/display";
@@ -185,10 +185,20 @@ export async function listLobby(input: { viewerId: string; tier: number | null; 
   return { items: await toViews(page, input.viewerId, input.locale), nextCursor: rows.length > LOBBY_PAGE ? page[page.length - 1].id : null };
 }
 
-/** « Mes tables » : mes tables ouvertes et celles qui me sont réservées. */
+/** Tables ouvertes et pas encore échues : les miennes et celles qui me sont réservées. */
+const myOpenWhere = (viewerId: string, now: Date) =>
+  ({ status: "OPEN", expiresAt: { gt: now }, OR: [{ creatorId: viewerId }, { reservedForId: viewerId }] }) as const satisfies Prisma.CoinFlipWhereInput;
+
+/** Lancers joués en l'absence du créateur, pas encore rejoués pour lui. */
+const replayWhere = (viewerId: string) => ({ creatorId: viewerId, status: "DONE", creatorSeenAt: null }) as const satisfies Prisma.CoinFlipWhereInput;
+
+/**
+ * « Mes tables » : mes tables ouvertes et celles qui me sont réservées. Une table échue pas encore balayée
+ * n'y figure plus (la page balaie avant de lire).
+ */
 export async function listMyTables(viewerId: string, locale: string, now = new Date()) {
   const rows = await prisma.coinFlip.findMany({
-    where: { status: "OPEN", OR: [{ creatorId: viewerId }, { reservedForId: viewerId, expiresAt: { gt: now } }] },
+    where: myOpenWhere(viewerId, now),
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: 50,
     select: flipSelect,
@@ -225,12 +235,28 @@ export async function getTable(flipId: string, viewerId: string | null, locale: 
 /** Lancers joués en l'absence du créateur, pas encore rejoués pour lui (les plus anciens d'abord). */
 export async function pendingReplays(viewerId: string, locale: string): Promise<CoinFlipTableView[]> {
   const rows = await prisma.coinFlip.findMany({
-    where: { creatorId: viewerId, status: "DONE", creatorSeenAt: null },
+    where: replayWhere(viewerId),
     orderBy: [{ resolvedAt: "asc" }, { id: "asc" }],
     take: 10,
     select: flipSelect,
   });
   return toViews(rows, viewerId, locale);
+}
+
+/**
+ * État léger des tables du joueur (ids seulement) : compteurs des onglets et empreinte que le salon compare
+ * à chaque sondage pour savoir s'il doit se recharger.
+ */
+export async function myTablesState(viewerId: string, now = new Date()): Promise<MineState> {
+  const [open, replays] = await Promise.all([
+    prisma.coinFlip.findMany({ where: myOpenWhere(viewerId, now), select: { id: true, status: true, creatorId: true }, take: 100 }),
+    prisma.coinFlip.findMany({ where: replayWhere(viewerId), select: { id: true }, take: 10 }),
+  ]);
+  return {
+    mine: open.filter((r) => r.creatorId === viewerId).map((r) => ({ id: r.id, status: r.status })),
+    invitations: open.filter((r) => r.creatorId !== viewerId).map((r) => ({ id: r.id })),
+    replays,
+  };
 }
 
 export type FeedEntry = {

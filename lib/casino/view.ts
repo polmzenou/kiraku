@@ -99,3 +99,23 @@ export function flipStats(rows: readonly Pick<CoinFlipRow, "status" | "creatorId
   }
   return stats;
 }
+
+/** Ce qui fait bouger « Mes tables » et le bandeau des replays : une table posée, relevée, retirée, échue, une invitation. */
+export type MineState = {
+  mine: readonly Pick<CoinFlipRow, "id" | "status">[];
+  invitations: readonly Pick<CoinFlipRow, "id">[];
+  replays: readonly Pick<CoinFlipRow, "id">[];
+};
+
+/**
+ * Empreinte de l'état des tables du joueur, comparée par le salon à celle du rendu serveur : différente, la
+ * page se recharge (sans dépendre de l'ordre des lignes).
+ */
+export function mineSignature(state: MineState): string {
+  const ids = (rows: readonly { id: string; status?: string }[]) =>
+    rows
+      .map((r) => (r.status ? `${r.id}:${r.status}` : r.id))
+      .sort()
+      .join(",");
+  return `m=${ids(state.mine)}|i=${ids(state.invitations)}|r=${ids(state.replays)}`;
+}

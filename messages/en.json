@@ -5933,7 +5933,12 @@
       "more": "Show more",
       "loading": "Loading…",
       "retry": "Try again",
-      "guest": "Create an account to play: guests can watch the tables, not stake."
+      "guest": "Create an account to play: guests can watch the tables, not stake.",
+      "lead": "One fuda against one fuda of the same tier. The winner walks away with both.",
+      "pulse": "{open, plural, =0 {No open tables} one {# open table} other {# open tables}} · {today, plural, =0 {no flips today} one {# flip today} other {# flips today}}",
+      "emptyBody": "Set down a fuda and pick your side: another player takes it with a card of the same tier.",
+      "mineBadge": "{count, plural, one {# table} other {# tables}}",
+      "replayDot": "A flip is waiting for you"
     },
     "mine": {
       "open": "Your open tables",
@@ -5942,7 +5947,11 @@
       "noInvitation": "No table is set aside for you.",
       "expires": "Expires {time}",
       "decline": "Decline",
-      "view": "View table"
+      "view": "View table",
+      "count": "{count} / {max}",
+      "countLabel": "{count, plural, one {# open table} other {# open tables}} out of {max}",
+      "noneBody": "Set down a fuda: it waits for an opponent until someone takes it or it expires.",
+      "reservedTo": "For <player>{name}</player>"
     },
     "history": {
       "stats": "{played, plural, =0 {No flips played} one {# flip} other {# flips}} · {won} won · {lost} lost",
@@ -5953,7 +5962,12 @@
       "won": "Won",
       "lost": "Lost",
       "against": "against <player>{name}</player>",
-      "open": "View"
+      "open": "View",
+      "tiles": {
+        "played": "Flips",
+        "won": "Won",
+        "lost": "Lost"
+      }
     },
     "stake": {
       "title": "Set down a card",
