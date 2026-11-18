@@ -8,7 +8,7 @@ type Db = Pick<PrismaClient, "$queryRaw">;
 /** Les sommes Postgres arrivent en bigint (Prisma) ou en texte (pilotes bruts) : toujours un nombre JS. */
 const num = (v: unknown): number => (v === null || v === undefined ? 0 : Number(v));
 
-export type RawCard = { cardId: string; anilistId: number; name: string; rarity: string; imageUrl: string; spoiler: boolean };
+export type RawCard = { cardId: string; anilistId: number; name: string; rarity: string; imageUrl: string; spoiler: boolean; appearance: unknown };
 
 export type WrappedRaw = {
   username: string | null;
@@ -32,7 +32,7 @@ export async function readWrappedWith(db: Db, userId: string, start: Date, end: 
       FROM "BoosterOpening" WHERE "userId" = ${userId} AND "createdAt" >= ${start} AND "createdAt" < ${end}`,
     // Plus gros tirage : rang de la rareté, une variante passe avant sa base, puis la plus ancienne
     db.$queryRaw<(RawCard & { at: Date })[]>`
-      SELECT c.id AS "cardId", c."publicId" AS "anilistId", c.name, c."rarityKey" AS rarity, c."imageUrl", c.spoiler, o."createdAt" AS at
+      SELECT c.id AS "cardId", c."publicId" AS "anilistId", c.name, c."rarityKey" AS rarity, c."imageUrl", c.spoiler, c.appearance, o."createdAt" AS at
       FROM "BoosterOpening" o
       CROSS JOIN LATERAL unnest(o."catalogCardIds") AS pulled(card_id)
       JOIN "Card" c ON c.id = pulled.card_id
@@ -112,6 +112,6 @@ export async function readWrappedWith(db: Db, userId: string, start: Date, end: 
 /** Fiche d'affichage d'une carte (carte préférée hors plus gros tirage). */
 export async function readCardWith(db: Db, cardId: string): Promise<RawCard | null> {
   const [row] = await db.$queryRaw<RawCard[]>`
-    SELECT id AS "cardId", "publicId" AS "anilistId", name, "rarityKey" AS rarity, "imageUrl", spoiler FROM "Card" WHERE id = ${cardId}`;
+    SELECT id AS "cardId", "publicId" AS "anilistId", name, "rarityKey" AS rarity, "imageUrl", spoiler, appearance FROM "Card" WHERE id = ${cardId}`;
   return row ? { ...row, anilistId: num(row.anilistId) } : null;
 }

@@ -1,9 +1,11 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
+import { rarityColor, resolveAppearance } from "@/lib/catalog/appearance";
 import { rankOf } from "@/lib/ranked/rules";
 import { wrappedPhase, yearWindow, type WrappedPhase } from "@/lib/wrapped/period";
 import { pickFavorite, zeniTotals, type WrappedSummary } from "@/lib/wrapped/summary";
 import { prisma } from "../db";
+import { getRarityDefinitions } from "../catalog/rarities";
 import { getRankedRules } from "../ranked/queries";
 import { getSetting } from "../settings";
 import { readCardWith, readWrappedWith, type RawCard } from "./read";
@@ -45,7 +47,16 @@ const loadWrapped = unstable_cache(
       const rank = rankOf(raw.battles.bestPc, false, await getRankedRules());
       ranked = { played: raw.battles.rankedPlayed, won: raw.battles.rankedWon, bestPc: raw.battles.bestPc, tier: rank.tier, division: rank.division };
     }
-    const card = (c: RawCard) => ({ cardId: c.cardId, anilistId: c.anilistId, name: c.name, rarity: c.rarity, imageUrl: c.imageUrl, spoiler: Boolean(c.spoiler) });
+    // Teinte Gold et couleur du cadre : rareté (registre de l'admin) puis réglages propres à la carte
+    const definitions = await getRarityDefinitions();
+    const card = (c: RawCard) => {
+      const definition = definitions.find((d) => d.key === c.rarity);
+      return {
+        cardId: c.cardId, anilistId: c.anilistId, name: c.name, rarity: c.rarity, imageUrl: c.imageUrl, spoiler: Boolean(c.spoiler),
+        gold: resolveAppearance(definition?.appearance, c.appearance).artTone === "gold",
+        frame: rarityColor(c.rarity, definition?.appearance),
+      };
+    };
     return {
       year,
       username: raw.username,
@@ -59,7 +70,7 @@ const loadWrapped = unstable_cache(
       favorite: favorite && favoriteCard ? { ...card(favoriteCard), source: favorite.source, battles: favorite.battles } : null,
     };
   },
-  ["wrapped-summary-v1"],
+  ["wrapped-summary-v2"],
   { revalidate: 3_600 },
 );
 

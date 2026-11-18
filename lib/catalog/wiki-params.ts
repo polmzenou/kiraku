@@ -8,6 +8,8 @@ export const WIKI_OWNERSHIPS = ["all", "owned", "missing"] as const;
 export type WikiOwnership = (typeof WIKI_OWNERSHIPS)[number];
 export const WIKI_SORTS = ["number", "rarity", "name", "power", "ki", "favorites"] as const;
 export type WikiSort = (typeof WIKI_SORTS)[number];
+/** Tri par défaut, comme la collection : les raretés les plus hautes d'abord (XR, Manga, Gold…). */
+export const WIKI_DEFAULT_SORT: WikiSort = "rarity";
 export const WIKI_DEMOGRAPHICS = ["Shounen", "Seinen", "Shoujo", "Josei", "Kids"] as const;
 export const WIKI_GENDERS = ["Male", "Female", "Non-binary", "unknown"] as const;
 export const WIKI_DEFAULT_DIR: Record<WikiSort, "asc" | "desc"> = {
@@ -70,7 +72,7 @@ export function parseWikiParams(raw: Record<string, string | string[] | undefine
   const genre = genreSchema.safeParse(first(raw.genre));
   const gender = genderSchema.safeParse(first(raw.gender));
   const sort = sortSchema.safeParse(first(raw.sort));
-  const sortValue = sort.success ? sort.data : "number";
+  const sortValue = sort.success ? sort.data : WIKI_DEFAULT_SORT;
   const dir = dirSchema.safeParse(first(raw.dir));
   return {
     q,
@@ -98,8 +100,8 @@ export function wikiQuery(params: Partial<WikiParams>) {
   if (params.demographic) query.demographic = params.demographic;
   if (params.genre) query.genre = params.genre;
   if (params.gender) query.gender = params.gender;
-  const sort = params.sort ?? "number";
-  if (sort !== "number") query.sort = sort;
+  const sort = params.sort ?? WIKI_DEFAULT_SORT;
+  if (sort !== WIKI_DEFAULT_SORT) query.sort = sort;
   if (params.dir && params.dir !== WIKI_DEFAULT_DIR[sort]) query.dir = params.dir;
   return query;
 }

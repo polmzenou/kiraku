@@ -116,13 +116,21 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
           )}
 
           {tabGroups.length > 0 && (
-            // Une piste par famille d'onglets (ventes, échanges), empilées sur mobile : tout reste visible sans défiler
-            <nav aria-label={t("tabs.label")} className="flex flex-col gap-2 md:flex-row md:flex-wrap">
+            // Une piste par famille d'onglets (ventes, échanges), empilées sur mobile : tout reste visible sans défiler.
+            // Plus de 3 onglets (ventes + avis de recherche) : grille 2 × 2 sur mobile, largeur naturelle ensuite.
+            <nav aria-label={t("tabs.label")} className="flex flex-col gap-3 md:flex-row md:flex-wrap">
               {tabGroups.map((group) => (
-                <ul key={group[0]} className={`${segmentedTrackClass} ${segmentedFillClass} md:w-auto`}>
+                <ul
+                  key={group[0]}
+                  className={
+                    group.length > 3
+                      ? "lacquer grid grid-cols-2 gap-1 rounded-3xl p-1 md:inline-flex md:w-auto md:items-center md:rounded-pill"
+                      : `${segmentedTrackClass} ${segmentedFillClass} gap-1 md:w-auto`
+                  }
+                >
                   {group.map((tab) => (
-                    <li key={tab} className="flex min-w-0">
-                      <Link href={tabHref(tab)} aria-current={current === tab ? "page" : undefined} className={segmentedCompactItemClass}>
+                    <li key={tab} className={group.length > 3 ? "flex" : "flex min-w-0"}>
+                      <Link href={tabHref(tab)} aria-current={current === tab ? "page" : undefined} className={`${segmentedCompactItemClass} md:px-5`}>
                         {t(`tabs.${tab}`)}
                         {tab === "mes-echanges" && incoming > 0 && (
                           <span className="rounded-pill bg-shu px-1.5 text-xs font-bold text-washi-paper tabular-nums">

@@ -38,8 +38,9 @@ export async function GET(request: Request, { params }: RouteContext<"/[locale]/
     storyLabels(summary, locale),
     ogFonts(),
     ogSeal(),
-    summary.bestPull && !summary.bestPull.spoiler ? remoteImage(summary.bestPull.imageUrl) : null,
-    summary.favorite && !summary.favorite.spoiler ? remoteImage(summary.favorite.imageUrl) : null,
+    // WebP converti et teinte Gold appliquée comme sur le site (server/og/assets.ts)
+    summary.bestPull && !summary.bestPull.spoiler ? remoteImage(summary.bestPull.imageUrl, 5_000, { gold: summary.bestPull.gold }) : null,
+    summary.favorite && !summary.favorite.spoiler ? remoteImage(summary.favorite.imageUrl, 5_000, { gold: summary.favorite.gold }) : null,
   ]);
   return renderWrappedStory(summary, labels, { fonts, seal, bestPullImage, favoriteImage }, {
     "Cache-Control": "private, max-age=300",

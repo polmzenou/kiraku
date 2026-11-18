@@ -23,7 +23,7 @@ function render(locale: "fr" | "en", element: ReactElement) {
   return renderToStaticMarkup(createElement(NextIntlClientProvider, providerProps, element));
 }
 
-const card = { cardId: "c1", anilistId: 7, name: "Makima", rarity: "MYTHIC", imageUrl: "https://s4.anilist.co/x.jpg", spoiler: false };
+const card = { cardId: "c1", anilistId: 7, name: "Makima", rarity: "MYTHIC", imageUrl: "https://s4.anilist.co/x.jpg", spoiler: false, gold: false, frame: "#d4a9c8" };
 const full: WrappedSummary = {
   year: 2026,
   username: "akira",
