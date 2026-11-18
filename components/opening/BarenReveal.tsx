@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import type { FudaCopy } from "../fuda/Fuda";
 import { animate, createTimeline, dispose, EASE, later, SPRING, wait } from "../shop/celebration/timeline";
 import { useRitualFx } from "./useRitualFx";
@@ -84,12 +84,10 @@ export function BarenReveal({ copy, delay, onInked, onDone }: { copy: FudaCopy; 
             bands.current[i] = node;
           }}
           className="baren-band"
-          style={{ top: `${(i * 100) / BANDS}%`, height: `${100 / BANDS + 1}%` }}
+          style={{ top: `${(i * 100) / BANDS}%`, height: `${100 / BANDS + 1}%`, "--band": i } as CSSProperties}
         />
       ))}
-      <span ref={baren} className="baren-pad">
-        <i />
-      </span>
+      <span ref={baren} className="baren-pad" />
       <span ref={ink} className="baren-ink">
         <b>{copy.serial}</b>
         {copy.size != null && <s>/{copy.size}</s>}

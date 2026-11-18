@@ -866,6 +866,7 @@ Les versions visuelles sont arrêtées dans des ateliers de maquettes avant d'ê
 - **Sur la fiche** (`CardDetail`) : la mention `初摺 17 / 25` quand la fiche montre un exemplaire gravé. La fiche liste aussi les **exemplaires** : les ordinaires regroupés comme aujourd'hui, chaque spécial sur sa propre ligne (héritage, édition, provenance en fil simple daté, exemplaires en circulation) avec ses actions (vendre, offrir, exposer, consacrer, recycler).
 - **Collection** : pastille sur la vignette d'une carte dont on a au moins une gravée ou une héritière ; filtres « Gravées » et « Héritières ».
 - **Combat** : `FighterSetup.copy` (optionnel, absent des anciennes parties) garde l'habillage sur le plateau et dans les replays.
+- **Images générées** : les fonds et les effets (sanctuaire et sa boucle vidéo, rite d'encre, en-tête de `/prestige`, autels, rouleaux, nuées, poudre d'or, baren…) sont produits par une IA d'après un prompt unique (`prompt-prestige.md`, dossier « prestige background » du poste, comme les vitrines), puis convertis par `npm run prestige:assets` dans `public/prestige/` : WebP, boucles traitées comme celles des vitrines, effets livrés sur fond noir ou blanc rendus transparents. Noms versionnés (`…-v1.webp`), mis en cache une semaine.
 - **Textes** : clés `prestige.*`, `fuda.printing`, `fuda.heritage` dans `messages/fr.json` et `messages/en.json` ; espace `prestige` dans `i18n/client-messages.ts`. Kanji des sceaux (転生, 奉納, 初摺…) ajoutés à `lib/seal-glyphs.ts`, puis `npm run fonts:subset` et `npm run fonts:og`.
 
 ### Animations

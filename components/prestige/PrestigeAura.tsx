@@ -28,14 +28,21 @@ const BANDS = [
   { top: "-0.5rem", height: "5rem", opacity: 0.26, d: "150s", reverse: false, image: cloudBand("#f3dc8c", "#fff3c4") },
 ];
 
-/** Paillettes de poudre d'or : 16 au prestige I, 24 au V, 32 au X, 40 au XVIII. */
-const SPECKS = Array.from({ length: 40 }, (_, i) => ({
-  left: `${((i * 61.8) % 100).toFixed(1)}%`,
-  size: 2 + (i % 3),
-  d: `${(5 + (i % 5) * 1.3).toFixed(1)}s`,
-  delay: `${(-((i * 0.77) % 7)).toFixed(2)}s`,
-  dx: `${((i % 7) - 3) * 9}px`,
-}));
+/**
+ * Paillettes de poudre d'or : 16 au prestige I, 24 au V, 32 au X, 40 au XVIII. Chacune est une des 8 cellules (4 × 2) de
+ * la planche générée (poussières, flocons de feuille d'or, étincelles).
+ */
+const SPECKS = Array.from({ length: 40 }, (_, i) => {
+  const cell = (i * 5) % 8;
+  return {
+    left: `${((i * 61.8) % 100).toFixed(1)}%`,
+    size: 10 + (i % 4) * 4,
+    cell: `${(((cell % 4) * 100) / 3).toFixed(2)}% ${cell < 4 ? 0 : 100}%`,
+    d: `${(5 + (i % 5) * 1.3).toFixed(1)}s`,
+    delay: `${(-((i * 0.77) % 7)).toFixed(2)}s`,
+    dx: `${((i % 7) - 3) * 9}px`,
+  };
+});
 
 export function PrestigeAura({ prestige }: { prestige: number }) {
   if (prestige < 1) return null;
@@ -54,7 +61,7 @@ export function PrestigeAura({ prestige }: { prestige: number }) {
         <span
           key={`s${i}`}
           className="pr-speck"
-          style={{ left: s.left, width: s.size, height: s.size, "--pr-d": s.d, "--pr-delay": s.delay, "--pr-dx": s.dx } as CSSProperties}
+          style={{ left: s.left, width: s.size, height: s.size, backgroundPosition: s.cell, "--pr-d": s.d, "--pr-delay": s.delay, "--pr-dx": s.dx } as CSSProperties}
         />
       ))}
     </div>

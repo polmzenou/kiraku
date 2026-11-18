@@ -3,6 +3,7 @@
 import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useRef, type CSSProperties } from "react";
 import type { FrameStyle } from "@/lib/profile/frames";
+import { PRESTIGE_ASSETS } from "@/lib/prestige/assets";
 import { toRoman } from "@/lib/prestige/roman";
 import type { RebirthResultView } from "@/server/actions/prestige";
 import { animate, createTimeline, dispose, removeWhenDone, skip, SPRING, wait, type Timeline } from "../shop/celebration/timeline";
@@ -67,7 +68,8 @@ export function RebirthRite({
       const stone = q("[data-stone]")!.getBoundingClientRect();
       const host = el.getBoundingClientRect();
       const fx = stone.left + stone.width / 2;
-      const fy = stone.top + stone.height / 2;
+      // Centre du bassin d'encre de l'image (lib/prestige/assets.ts)
+      const fy = stone.top + stone.height * 0.42;
       const stacks = qa("[data-stack]");
       await Promise.all(
         stacks.map(async (stack, i) => {
@@ -161,6 +163,11 @@ export function RebirthRite({
       className="pr-rite"
       onClick={() => tl.current && skip(tl.current)}
     >
+      {/* Paysage d'encre nocturne : portrait sur téléphone, paysage sur un écran large */}
+      <picture className="pr-rite-bg">
+        <source media="(orientation: landscape)" srcSet={PRESTIGE_ASSETS.rite.landscape} />
+        <img src={PRESTIGE_ASSETS.rite.portrait} alt="" decoding="async" draggable={false} />
+      </picture>
       <span data-dim className="pr-rite-dim" />
       <div className="pr-inner">
         <div className="flex items-center gap-4 pt-2">

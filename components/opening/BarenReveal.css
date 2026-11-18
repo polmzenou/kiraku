@@ -1,22 +1,20 @@
 /* Révélation d'une gravée (BarenReveal.tsx) : calque posé sur la carte, tailles en cqw de la carte. */
 .baren-reveal { position: absolute; inset: 0; z-index: 35; pointer-events: none; container-type: inline-size; }
 
-/* Bandes d'encre d'estampe, découvertes au passage de la baren, puis effacées quand la carte reçoit son cartouche */
+/* Bandes d'encre d'estampe (texture générée, scripts/prestige-assets.mjs), découvertes au passage de la baren puis
+   effacées quand la carte reçoit son cartouche. Chaque bande montre sa tranche de la même texture : la carte fait
+   140cqw de haut, une bande sur cinq en fait 28. */
 .baren-band {
-  position: absolute; left: 0; right: 0; opacity: 0; mix-blend-mode: multiply;
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.006 0.32' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 .36 0 0 0 0 .24 0 0 0 0 .12 0 0 0 .55 -.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)'/%3E%3C/svg%3E") 0 0 / 240px 240px,
-    linear-gradient(rgb(200 160 110 / .18), rgb(200 160 110 / .18));
+  position: absolute; left: 0; right: 0; opacity: 0;
+  background: url("/prestige/fx/encre-estampe-v1.webp") 0 calc(var(--band, 0) * -28cqw) / 100cqw 140cqw no-repeat;
 }
 
-/* La baren : disque laqué, gaine de feuille de bambou torsadée, nœud de la poignée */
+/* La baren générée, vue de dessus : disque gainé de feuille de bambou, nœud de la poignée */
 .baren-pad {
-  position: absolute; left: 0; top: 0; width: 38%; aspect-ratio: 1; opacity: 0; border-radius: 50%; will-change: transform, opacity;
-  background: radial-gradient(circle at 38% 32%, #a2804a, #5a3f1c 55%, #2b1d0c);
-  box-shadow: 0 10px 18px rgb(0 0 0 / .45), inset 0 0 0 2px rgb(217 181 86 / .35), inset 0 -6px 10px rgb(0 0 0 / .35);
+  position: absolute; left: 0; top: 0; width: 38%; aspect-ratio: 1; opacity: 0; will-change: transform, opacity;
+  background: url("/prestige/fx/baren-v1.webp") center / contain no-repeat;
+  filter: drop-shadow(0 10px 14px rgb(0 0 0 / .45));
 }
-.baren-pad::before { content: ""; position: absolute; inset: 8%; border-radius: 50%; background: repeating-linear-gradient(58deg, rgb(255 236 190 / .18) 0 2px, transparent 2px 7px); }
-.baren-pad i { position: absolute; left: 27%; top: 39%; width: 46%; height: 22%; border-radius: 40%; background: linear-gradient(180deg, #d1ad6e, #7a5626); box-shadow: 0 2px 4px rgb(0 0 0 / .4); }
 
 /* Le numéro écrit au pinceau sur une bande de washi, puis le sceau du tirage */
 .baren-ink {
