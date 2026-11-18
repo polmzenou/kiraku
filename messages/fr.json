@@ -607,7 +607,8 @@
       "bidding": "Mes enchères",
       "echanges": "Échanges",
       "mes-echanges": "Mes échanges",
-      "incoming": "{count, plural, one {# offre reçue} other {# offres reçues}}"
+      "incoming": "{count, plural, one {# offre reçue} other {# offres reçues}}",
+      "avis": "Avis de recherche"
     },
     "filters": {
       "label": "Filtres",
@@ -758,6 +759,98 @@
         "RATE_LIMITED": "Trop d'actions d'affilée : attends un instant.",
         "NOT_FOUND": "Ce commentaire n'existe plus.",
         "UNAVAILABLE": "Action impossible pour le moment."
+      }
+    },
+    "quote": {
+      "title": "Cote",
+      "zeni": "{amount, number} Zeni",
+      "none": "Pas encore de cote : {sales, plural, =0 {aucune vente} one {# vente} other {# ventes}} sur {days} jours, il en faut {min}.",
+      "summary": "Cote de {amount, number} Zeni, médiane de {sales, plural, one {# vente} other {# ventes}} sur {days} jours{hasChange, select, yes { ({change} par rapport à la période précédente)} other {}}.",
+      "summaryNone": "Pas encore de cote : {sales, plural, =0 {aucune vente} one {# vente} other {# ventes}} sur {days} jours, il en faut {min}. Historique des ventes aux enchères.",
+      "stable": "Stable",
+      "basis": "Médiane de {sales, plural, one {# vente} other {# ventes}} sur {days} jours",
+      "noSales": "Aucune vente aux enchères sur les {days} derniers jours.",
+      "method": "Prix médian des enchères terminées : une vente isolée hors norme ne fait pas bouger la cote.",
+      "chartSince": "Il y a {days} j",
+      "chartToday": "Aujourd’hui",
+      "salesCount": "{count, plural, one {# vente} other {# ventes}}",
+      "tableCaption": "Cote de la carte, jour par jour",
+      "tableDay": "Jour",
+      "tableMedian": "Cote",
+      "tableSales": "Ventes",
+      "moversTitle": "Plus fortes hausses",
+      "moversHint": "Cote des {days} derniers jours comparée aux {days} précédents",
+      "moverLabel": "{name}, {rarity} : cote de {amount, number} Zeni, {change} sur {sales, plural, one {# vente} other {# ventes}}"
+    },
+    "orders": {
+      "title": "Avis de recherche",
+      "count": "{count, plural, one {# avis ouvert} other {# avis ouverts}}",
+      "none": "Personne ne cherche encore cette carte.",
+      "by": "{name} · jusqu'au {date}",
+      "byShort": "Par {name}",
+      "someone": "Un joueur",
+      "you": "Toi",
+      "until": "Jusqu'au {date}",
+      "zeni": "{amount, number} Zeni",
+      "noCopy": "Tu n'as pas d'exemplaire libre à vendre (en vente, en équipe ou en expédition, il ne compte pas).",
+      "yours": "Tes avis sur cette carte",
+      "guest": "Inscris-toi pour publier un avis de recherche.",
+      "how": "Ton prix est bloqué jusqu'à la vente, au retrait ou à l'expiration. Le premier qui possède la carte peut te la vendre ; il paie la taxe du marché.",
+      "priceLabel": "Prix que tu proposes",
+      "post": "Publier l'avis",
+      "posting": "Publication…",
+      "range": "Entre {min, number} et {max, number} Zeni.",
+      "tooPoor": "Il te faut ce montant en Zeni (solde : {coins, number}).",
+      "hold": "{amount, number} Zeni seront bloqués (solde : {coins, number}), pendant {days, plural, one {# jour} other {# jours}} au plus.",
+      "posted": "Avis publié : {amount, number} Zeni bloqués pour {days, plural, one {# jour} other {# jours}}.",
+      "sellFor": "Vendre pour {amount, number}",
+      "confirmSell": "Confirmer la vente",
+      "selling": "Vente…",
+      "cancel": "Annuler",
+      "net": "Tu recevras {amount, number} Zeni après la taxe.",
+      "sold": "Vendu : {amount, number} Zeni reçus.",
+      "withdraw": "Retirer",
+      "withdrawing": "Retrait…",
+      "intro": "Un avis de recherche bloque un prix pour une carte précise. Si tu possèdes la carte, vends-la en un clic au meilleur prix.",
+      "fillTitle": "Tu as ce qu'ils cherchent",
+      "fillEmpty": "Aucun avis ne cherche une carte que tu as en exemplaire libre.",
+      "mineTitle": "Mes avis",
+      "mineEmpty": "Tu n'as aucun avis ouvert. Publie-en un depuis la fiche d'une carte.",
+      "history": "Avis clos ({count})",
+      "status": {
+        "FILLED": "rempli",
+        "CANCELLED": "retiré",
+        "EXPIRED": "expiré"
+      },
+      "allTitle": "Tous les avis",
+      "allEmpty": "Aucun avis ouvert pour le moment.",
+      "sortLabel": "Trier les avis",
+      "sort": {
+        "price": "Plus hauts",
+        "newest": "Plus récents"
+      },
+      "pagesLabel": "Pages des avis",
+      "previous": "Précédents",
+      "next": "Suivants",
+      "errors": {
+        "NO_SESSION": "Ta session a expiré : recharge la page.",
+        "INVALID": "Demande invalide.",
+        "RATE_LIMITED": "Doucement : réessaie dans un instant.",
+        "UNAVAILABLE": "Action indisponible pour le moment.",
+        "DISABLED": "Les avis de recherche sont fermés.",
+        "GUEST": "Inscris-toi pour utiliser les avis de recherche.",
+        "TOO_NEW": "Ton compte est trop récent pour le marché.",
+        "INVALID_PRICE": "Prix invalide.",
+        "CAP_REACHED": "Ce prix dépasse le plafond de cette rareté.",
+        "NO_CARD": "Cette carte n'existe plus.",
+        "TOO_MANY_OPEN": "Tu as déjà le maximum d'avis ouverts.",
+        "NOT_ENOUGH_ZENI": "Pas assez de Zeni pour bloquer ce prix.",
+        "NOT_FOUND": "Avis introuvable.",
+        "CLOSED": "Cet avis vient d'être rempli, retiré ou a expiré.",
+        "OWN_ORDER": "Tu ne peux pas remplir ton propre avis.",
+        "STALE": "L'offre a changé : vérifie le nouveau prix.",
+        "NOT_OWNED": "Tu n'as plus d'exemplaire libre de cette carte.",
+        "unexpected": "Une erreur est survenue, réessaie."
       }
     }
   },
@@ -1702,7 +1795,13 @@
           "perDay": "Annonces par joueur sur 24 h",
           "maxPendingOffers": "Offres en attente max. par joueur",
           "allowedRarities": "Raretés échangeables"
-        }
+        },
+        "quoteWindowDays": "Fenêtre de la cote (jours)",
+        "quoteMinSales": "Ventes minimales pour une cote",
+        "quoteHistoryDays": "Historique de la courbe (jours)",
+        "ordersEnabled": "Avis de recherche ouverts",
+        "orderDurationDays": "Durée d'un avis (jours)",
+        "maxOpenOrders": "Avis ouverts max. par joueur"
       },
       "feeHint": "La taxe est figée à la mise en vente : un changement ne touche pas les ventes déjà ouvertes.",
       "invalid": "Certaines valeurs sont hors limites : corrige-les avant d'enregistrer.",
@@ -1732,14 +1831,20 @@
         "empty": "Aucun commentaire public en ce moment.",
         "auction": "Vente de {card} · {name}",
         "listing": "Annonce d'échange de {card} · {name}"
-      }
+      },
+      "quote": "Cote des cartes",
+      "quoteHint": "La cote d'une carte est le prix médian de ses ventes aux enchères sur la fenêtre. Sans assez de ventes, la carte n'a pas de cote ; la valeur des collections prend alors la médiane de sa rareté.",
+      "orders": "Avis de recherche",
+      "ordersHint": "Un joueur bloque un prix pour une carte précise ; le premier détenteur qui accepte la lui vend, taxe du marché comprise. Un avis non rempli rend ses Zeni à son expiration.",
+      "openOrders": "Avis de recherche ouverts",
+      "ordersValue": "{count, number} · {amount, number} Zeni bloqués"
     },
     "economy": {
       "title": "Économie",
       "intro": "Interrupteurs des missions et de la boutique, règles anti-fraude du parrainage et santé du journal des Zeni.",
       "circulating": "Zeni en circulation",
       "escrow": "Zeni en séquestre (enchères)",
-      "escrowHint": "Déjà débités des enchérisseurs et inscrits au journal (BID_HOLD).",
+      "escrowHint": "Déjà débités des enchérisseurs et des auteurs d'avis de recherche, et inscrits au journal (BID_HOLD, ORDER_HOLD).",
       "zeni": "{amount, number} Zeni",
       "ledgerSum": "Somme du journal",
       "integrity": "Intégrité",
@@ -3667,7 +3772,11 @@
     "stats": {
       "unique": "Cartes uniques",
       "copies": "Exemplaires",
-      "completion": "Catalogue"
+      "completion": "Catalogue",
+      "value": "Valeur estimée",
+      "valueZeni": "{amount, number} Zeni",
+      "valueByRarity": "dont {amount, number} Zeni estimés par la cote de la rareté",
+      "valueUnpriced": "{count, plural, one {# exemplaire sans cote} other {# exemplaires sans cote}}"
     },
     "recycleAll": {
       "open": "Recycler les doublons",
@@ -4549,7 +4658,10 @@
     "expeditionTriumph": "Ton expédition revient triomphante ! Viens ouvrir son rapport.",
     "expeditionSuccess": "Ton expédition est de retour, mission accomplie. Viens ouvrir son rapport.",
     "expeditionFailure": "Ton expédition est rentrée bredouille… Tes cartes sont de retour.",
-    "expeditionReturned": "Ton expédition est de retour. Viens ouvrir son rapport."
+    "expeditionReturned": "Ton expédition est de retour. Viens ouvrir son rapport.",
+    "buyOrderFilled": "{name} t'a vendu {card} pour {amount, number} Zeni : ton avis de recherche est rempli.",
+    "buyOrderExpired": "Ton avis de recherche pour {card} a expiré : {amount, number} Zeni te sont rendus.",
+    "buyOrderWanted": "{name} cherche {card} à {amount, number} Zeni. Tu en as un exemplaire : vends-le en un clic."
   },
   "push": {
     "title": "Notifications sur ce téléphone",
@@ -4815,7 +4927,9 @@
         "GIFT": "Booster offert à un ami",
         "SEASON": "Récompense de saison (classé)",
         "ABILITY": "Capacité achetée (atelier)",
-        "EXPEDITION": "Expédition"
+        "EXPEDITION": "Expédition",
+        "ORDER_HOLD": "Avis de recherche (Zeni bloqués)",
+        "ORDER_REFUND": "Avis de recherche remboursé"
       }
     },
     "reveal": {

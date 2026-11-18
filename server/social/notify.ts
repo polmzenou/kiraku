@@ -4,6 +4,7 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import type {
   AuctionPayload,
   BattlePayload,
+  BuyOrderPayload,
   CoinFlipPayload,
   ExpeditionPayload,
   GiftPayload,
@@ -29,7 +30,8 @@ type NewNotification = {
     | TeamGiftPayload
     | SealedPayload
     | CoinFlipPayload
-    | ExpeditionPayload;
+    | ExpeditionPayload
+    | BuyOrderPayload;
   now: Date;
 };
 

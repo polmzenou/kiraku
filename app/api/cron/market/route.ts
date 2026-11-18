@@ -1,9 +1,10 @@
 import { prisma } from "@/server/db";
 import { cronAuthorized } from "@/server/cron-auth";
 import { settleDueWith } from "@/server/market/auction-core";
+import { expireDueWith } from "@/server/market/buy-order-core";
 import { pushLater } from "@/server/market/queries";
 
-// Clôture planifiée des ventes terminées, appelée une fois par jour par Vercel Cron (vercel.json, plan
+// Clôture planifiée des ventes terminées et expiration des avis de recherche échus (Zeni rendus), appelée une fois par jour par Vercel Cron (vercel.json, plan
 // Hobby) : filet de sécurité derrière la clôture paresseuse (pages affichées, sondage de la cloche).
 // Le planificateur envoie « Authorization: Bearer $CRON_SECRET » ; sans secret configuré, la route refuse tout.
 // settleAuctionWith est idempotent : un appel en double (cron + page affichée) ne clôt rien deux fois.
@@ -17,12 +18,19 @@ export async function GET(request: Request) {
   }
   // Une passe par jour peut trouver beaucoup de ventes : on balaie par lots jusqu'à la limite de durée
   const started = Date.now();
-  const result = { settled: 0, failed: 0 };
+  const result = { settled: 0, failed: 0, expired: 0, expireFailed: 0 };
   for (;;) {
     const batch = await settleDueWith(prisma, new Date(), 100, pushLater);
     result.settled += batch.settled;
     result.failed += batch.failed;
     if (batch.settled + batch.failed < 100 || Date.now() - started > 45_000) break;
+  }
+  // Avis échus : déjà masqués et invendables, le cron ne fait que rendre leurs Zeni
+  while (Date.now() - started <= 45_000) {
+    const batch = await expireDueWith(prisma, new Date(), 100, pushLater);
+    result.expired += batch.expired;
+    result.expireFailed += batch.failed;
+    if (batch.expired + batch.failed < 100) break;
   }
   // Détails des échecs dans les logs seulement (settleDueWith les journalise)
   return Response.json(result);
