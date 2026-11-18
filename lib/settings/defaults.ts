@@ -244,10 +244,12 @@ export const SETTING_SCHEMAS = {
   "gifts.minFriendshipHours": z.number().int().min(0).max(24 * 365),
   "gifts.boosterPriceZeni": z.number().int().min(1).max(1_000_000),
   "gifts.allowedRarities": z.array(rarity).max(200),
-  // Sachets scellés offerts : compte lié à Discord, ancienneté, nombre par semaine glissante
+  // Sachets scellés offerts : compte lié à Discord, ancienneté, au plus sealedPerWindow sachets sur les
+  // sealedWindowDays derniers jours (fenêtre glissante)
   "gifts.sealedRequiresDiscord": z.boolean(),
   "gifts.sealedMinAccountDays": z.number().int().min(0).max(365),
-  "gifts.sealedPerWeek": z.number().int().min(0).max(50),
+  "gifts.sealedPerWindow": z.number().int().min(0).max(50),
+  "gifts.sealedWindowDays": z.number().int().min(1).max(30),
   // Échanges entre amis (étape 12f) : rien n'est bloqué pendant l'attente, tout est revérifié à l'acceptation
   "trades.enabled": z.boolean(),
   "trades.nonFriends": z.boolean(),
@@ -404,6 +406,9 @@ export const SETTING_SCHEMAS = {
   "discord.joinModal": joinModalSchema,
   "discord.marketEnabled": z.boolean(),
   "discord.rankedEnabled": z.boolean(),
+  // Casino : ouverture postée à l'heure dite et relais des lancers dont le pot atteint casinoMinRarity
+  "discord.casinoEnabled": z.boolean(),
+  "discord.casinoMinRarity": rarityKeySchema,
   // Avatars Discord relus par le bot : intervalle par joueur (heures, 0 = jamais), joueurs actifs depuis
   // N jours seulement, et nombre de joueurs relus par passage du cron (une fois par minute)
   "discord.avatarSyncHours": z.number().int().min(0).max(720),
@@ -411,8 +416,27 @@ export const SETTING_SCHEMAS = {
   "discord.avatarSyncBatch": z.number().int().min(1).max(50),
   // Section « Rejoins notre Discord » de la page Social : lien, textes fr/en, fenêtre d'affichage
   "discord.socialPromo": socialPromoSchema,
-  // Interrupteurs de fonctionnalités sans module propre (casino : tuile « Bientôt » seulement)
+  // Casino visible (menu, tuile du Compte, /casino) ; éteint, il disparaît pour les joueurs
   "features.casino": z.boolean(),
+  // Casino : ouverture (vide = teaser sans date ; future = compte à rebours ; passée = ouvert), badge « Nouveau »
+  // et cérémonie pendant newBadgeDays jours après l'ouverture (0 = ni l'un ni l'autre)
+  "casino.opensAt": z.string().datetime().nullable(),
+  "casino.newBadgeDays": z.number().int().min(0).max(90),
+  "casino.minAccountAgeHours": z.number().int().min(0).max(24 * 365),
+  // Pile ou face : coupé, le jeu disparaît sans cacher le casino ; les tables ouvertes restent retirables
+  "casino.coinflip.enabled": z.boolean(),
+  "casino.coinflip.expiryHours": z.number().int().min(1).max(24 * 7),
+  "casino.coinflip.maxOpenTables": z.number().int().min(1).max(20),
+  // Lancers par jour (fuseau game.timeZone) : tables posées et tables relevées
+  "casino.coinflip.dailyLimit": z.number().int().min(1).max(500),
+  "casino.coinflip.allowedRarities": z.array(rarity).max(200),
+  // Miser le dernier exemplaire d'une carte (toujours après un avertissement)
+  "casino.coinflip.lastCopyAllowed": z.boolean(),
+  "casino.coinflip.lobbyPollSeconds": z.number().int().min(5).max(120),
+  "casino.coinflip.tablePollSeconds": z.number().int().min(2).max(60),
+  // Fil « Derniers lancers » du hall
+  "casino.coinflip.feedSize": z.number().int().min(4).max(50),
+  "casino.coinflip.feedMaxAgeHours": z.number().int().min(1).max(24 * 30),
   // Carrousel « En direct · Gros tirages » de l'accueil (étape 12c)
   "home.pullFeed.enabled": z.boolean(),
   "home.pullFeed.minRarity": rarityKeySchema,
@@ -431,6 +455,10 @@ export const SETTING_SCHEMAS = {
   "home.eventGauge.refreshSeconds": z.number().int().min(5).max(600),
   // Durée de cache du compte, partagé par tous les joueurs
   "home.eventGauge.cacheSeconds": z.number().int().min(5).max(600),
+  // Ce que la jauge compte : boosters ouverts, ou lancers de pile ou face joués (inauguration du casino)
+  "home.eventGauge.metric": z.enum(["BOOSTERS", "COINFLIPS"]),
+  // Lot promis à tous si l'objectif est atteint (affiché sous la jauge ; l'envoi se fait depuis /admin/lots)
+  "home.eventGauge.rewardLotId": lotRef,
   // Encart « Nouveautés » en haut de l'accueil : textes fr/en, nouveautés et liens (/admin/nouveautes)
   "home.news": newsSchema,
   // Conformité (étape 10) : version des CGU que tout compte inscrit doit avoir acceptée
@@ -521,7 +549,8 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "gifts.allowedRarities": [...RARITIES, ...VARIANT_RARITIES],
   "gifts.sealedRequiresDiscord": true,
   "gifts.sealedMinAccountDays": 7,
-  "gifts.sealedPerWeek": 1,
+  "gifts.sealedPerWindow": 2, // 2 sachets scellés offerts…
+  "gifts.sealedWindowDays": 3, // …tous les 3 jours par joueur
   "trades.enabled": true,
   "trades.nonFriends": true,
   "trades.expiryHours": 48,
@@ -703,11 +732,26 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "discord.joinModal": JOIN_MODAL_DEFAULT, // désactivé par défaut
   "discord.marketEnabled": false,
   "discord.rankedEnabled": false,
+  "discord.casinoEnabled": false,
+  "discord.casinoMinRarity": "LEGENDARY",
   "discord.avatarSyncHours": 24, // chaque joueur actif relu au plus une fois par jour
   "discord.avatarSyncActiveDays": 14,
   "discord.avatarSyncBatch": 10, // 10 requêtes par minute au plus : bien sous les limites de Discord
   "discord.socialPromo": SOCIAL_PROMO_DEFAULT, // masquée par défaut
   "features.casino": true,
+  "casino.opensAt": null, // teaser « Bientôt » sans compte à rebours, comme avant le casino
+  "casino.newBadgeDays": 7,
+  "casino.minAccountAgeHours": 48, // comme les enchères et les cadeaux
+  "casino.coinflip.enabled": true,
+  "casino.coinflip.expiryHours": 24,
+  "casino.coinflip.maxOpenTables": 3,
+  "casino.coinflip.dailyLimit": 20,
+  "casino.coinflip.allowedRarities": [...RARITIES, ...VARIANT_RARITIES],
+  "casino.coinflip.lastCopyAllowed": true,
+  "casino.coinflip.lobbyPollSeconds": 20,
+  "casino.coinflip.tablePollSeconds": 5,
+  "casino.coinflip.feedSize": 20,
+  "casino.coinflip.feedMaxAgeHours": 72,
   "home.pullFeed.enabled": true,
   "home.pullFeed.minRarity": "LEGENDARY",
   "home.pullFeed.size": 20,
@@ -721,6 +765,8 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "home.eventGauge.goal": 20_000,
   "home.eventGauge.refreshSeconds": 60,
   "home.eventGauge.cacheSeconds": 30,
+  "home.eventGauge.metric": "BOOSTERS",
+  "home.eventGauge.rewardLotId": null,
   "home.news": NEWS_DEFAULT, // récapitulatif de la v2.5, allumé
   "legal.termsRequiredVersion": 1,
   "account.deletionGraceDays": 30, // anonymisation sous 30 jours (plan, « Pages légales, RGPD »)

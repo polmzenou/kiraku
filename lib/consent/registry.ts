@@ -20,6 +20,7 @@ export type StoragePurpose =
   | "sound"
   | "discordLater"
   | "news"
+  | "casinoCeremony"
   | "speedInsights";
 
 export type StorageDuration = { unit: "session" | "none" } | { unit: "minutes" | "days"; value: number } | { unit: "persistent" };
@@ -131,6 +132,16 @@ export const STORAGE_REGISTRY: readonly StorageEntry[] = [
     kind: "localStorage",
     category: "preferences",
     purpose: "discordLater",
+    duration: { unit: "persistent" },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
+    // Cérémonie d'ouverture du casino déjà vue sur cet appareil (components/casino/CeremonyGate.tsx)
+    name: "kiraku.casino-ceremony",
+    kind: "localStorage",
+    category: "preferences",
+    purpose: "casinoCeremony",
     duration: { unit: "persistent" },
     provider: "kiraku",
     exempt: true,

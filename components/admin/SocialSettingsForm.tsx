@@ -29,6 +29,9 @@ const LIMITS: Record<NumberKey, [number, number]> = {
   "gifts.minAccountAgeHours": [0, 24 * 365],
   "gifts.minFriendshipHours": [0, 24 * 365],
   "gifts.boosterPriceZeni": [1, 1_000_000],
+  "gifts.sealedMinAccountDays": [0, 365],
+  "gifts.sealedPerWindow": [0, 50],
+  "gifts.sealedWindowDays": [1, 30],
   "trades.expiryHours": [1, 24 * 30],
   "trades.maxOffered": [1, 10],
   "trades.maxPendingSent": [1, 100],
@@ -185,6 +188,14 @@ export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
         </div>
         {rarityChoice("gifts.allowedRarities")}
         <p className="text-xs text-text-muted">{t("giftsHint")}</p>
+        <h3 className="font-title text-base font-bold">{t("sealedTitle")}</h3>
+        <Toggle label={t("keys.gifts.sealedRequiresDiscord")} checked={draft["gifts.sealedRequiresDiscord"]} onChange={(v) => update("gifts.sealedRequiresDiscord", v)} />
+        <div className="grid gap-3 sm:grid-cols-2">
+          {num("gifts.sealedMinAccountDays")}
+          {num("gifts.sealedPerWindow")}
+          {num("gifts.sealedWindowDays")}
+        </div>
+        <p className="text-xs text-text-muted">{t("sealedHint")}</p>
       </fieldset>
 
       <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">

@@ -13,6 +13,7 @@ export function notificationSeal(type: NotificationType): string {
   if (type === "EXPEDITION_RETURNED") return "遠";
   if (type === "OUTBID" || type.startsWith("AUCTION_")) return "競";
   if (type === "BATTLE_INVITE") return "戦";
+  if (type.startsWith("COINFLIP_")) return "賭";
   if (type.startsWith("TRADE_") || type.startsWith("LISTING_")) return "換";
   return type === "REFERRAL_QUALIFIED" ? "招" : "友";
 }

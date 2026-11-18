@@ -10,7 +10,7 @@ export type OwnedCopy = {
   id: string;
   cardId: string;
   rarity: Rarity;
-  status: "COLLECTION" | "AUCTION" | "BATTLE" | "EXPEDITION";
+  status: "COLLECTION" | "AUCTION" | "BATTLE" | "CASINO" | "EXPEDITION";
   obtainedAt: Date;
 };
 
@@ -43,7 +43,7 @@ function emptyByRarity(): RecyclePlan["byRarity"] {
 
 /**
  * Exemplaires à recycler. Par carte : on garde l'exemplaire en vitrine, sinon le plus ancien en
- * collection ; les exemplaires en vente ou en combat ne sont ni recyclés ni comptés comme gardés
+ * collection ; les exemplaires en vente, en combat ou misés au casino ne sont ni recyclés ni comptés comme gardés
  * (ils peuvent partir). Fonction pure et déterministe (départage par id).
  */
 export function planRecycle(copies: readonly OwnedCopy[], opts: RecycleOptions): RecyclePlan {

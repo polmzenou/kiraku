@@ -2,6 +2,9 @@
 
 export type EventGaugePhase = "upcoming" | "live" | "ended";
 
+/** Ce que la jauge compte : boosters ouverts, ou lancers de pile ou face joués. */
+export type EventGaugeMetric = "BOOSTERS" | "COINFLIPS";
+
 export type EventGaugeView = {
   phase: EventGaugePhase;
   /** Boosters comptés ; peut dépasser l'objectif, la barre reste alors pleine. */
@@ -14,6 +17,9 @@ export type EventGaugeView = {
   reached: boolean;
   startsAt: number;
   endsAt: number;
+  metric: EventGaugeMetric;
+  /** Nom du lot promis à tous si l'objectif est atteint (dans la langue du lecteur), ou null. */
+  reward: string | null;
 };
 
 /** Fenêtre `[startsAt, endsAt[` ; null si les dates ne forment pas une fenêtre (pas de jauge). */
@@ -23,7 +29,10 @@ export function eventGaugePhase(startsAt: number, endsAt: number, now: number): 
   return now < endsAt ? "live" : "ended";
 }
 
-export function eventGaugeView(input: { startsAt: number; endsAt: number; goal: number; count: number }, now: number): EventGaugeView | null {
+export function eventGaugeView(
+  input: { startsAt: number; endsAt: number; goal: number; count: number; metric?: EventGaugeMetric; reward?: string | null },
+  now: number,
+): EventGaugeView | null {
   const { startsAt, endsAt, goal, count } = input;
   const phase = eventGaugePhase(startsAt, endsAt, now);
   if (!phase || goal <= 0) return null;
@@ -37,5 +46,7 @@ export function eventGaugeView(input: { startsAt: number; endsAt: number; goal: 
     reached,
     startsAt,
     endsAt,
+    metric: input.metric ?? "BOOSTERS",
+    reward: input.reward ?? null,
   };
 }

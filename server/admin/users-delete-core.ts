@@ -4,10 +4,13 @@
 // le compte bloquait :
 // - ses ventes en cours sont annulées et la mise en tête rendue au meneur (BID_REFUND) ;
 // - les ventes qu'il menait reviennent sans meneur (sa mise en séquestre part avec son solde) ;
-// - les cartes engagées par un adversaire dans un combat en cours avec lui reviennent en collection.
+// - les cartes engagées par un adversaire dans un combat en cours avec lui reviennent en collection ;
+// - ses tables de pile ou face ouvertes se ferment, et celles qui lui étaient réservées rendent leur carte.
 //
-// Ordre des verrous, comme l'hôtel des ventes : les ventes d'abord, puis les joueurs triés par id.
+// Ordre des verrous, comme l'hôtel des ventes et le casino : les ventes et les tables d'abord, puis les
+// joueurs triés par id (une relève verrouille la table avant les joueurs : pas d'interblocage).
 import type { PrismaClient } from "@/generated/prisma/client";
+import { withdrawCasinoWith } from "../casino/coinflip-core";
 import { credit } from "../economy/ledger";
 import { lockPlayers } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
@@ -51,6 +54,7 @@ export async function deleteUserWith(
         ORDER BY id
         FOR UPDATE`;
       const refunded = auctions.filter((a) => a.sellerId === input.userId && a.currentBidderId && a.currentBid !== null);
+      const casinoTables = await withdrawCasinoWith(tx, input.userId, now);
 
       // 2. Joueurs : l'admin, le compte, et chaque meneur à rembourser
       await lockPlayers(tx, [input.adminId, input.userId, ...refunded.map((a) => a.currentBidderId!)]);
@@ -137,7 +141,7 @@ export async function deleteUserWith(
           cards: user._count.cards,
           createdAt: user.createdAt.toISOString(),
         },
-        after: { deleted: true, reason: input.reason, auctionsCancelled: auctions.filter((a) => a.sellerId === input.userId).length },
+        after: { deleted: true, reason: input.reason, auctionsCancelled: auctions.filter((a) => a.sellerId === input.userId).length, casinoTables },
       });
       await tx.user.delete({ where: { id: user.id }, select: { id: true } });
       return { username: user.username };

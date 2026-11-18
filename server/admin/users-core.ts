@@ -15,6 +15,7 @@ import { lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { writeAdminLog } from "./log";
 import { consumeWishlist } from "../collection/wishlist-core";
+import { withdrawCasinoFor } from "../casino/coinflip-core";
 
 export class AdminUserMutationError extends Error {
   constructor(readonly code: AdminUserError) { super(code); }
@@ -77,6 +78,13 @@ async function giftFromTeam(
 }
 
 export async function mutateAdminUserWith(db: PrismaClient, adminId: string, input: AdminUserMutation, onNotified?: OnNotified) {
+  await mutateUnderLock(db, adminId, input, onNotified);
+  // Bannissement : ses tables de pile ou face se ferment après coup (verrou des tables avant celui des joueurs).
+  // Entre-temps, un joueur banni ne pose plus et ses tables ne se relèvent plus.
+  if (input.kind === "account" && input.banned) await withdrawCasinoFor(db, input.userId, new Date());
+}
+
+async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUserMutation, onNotified?: OnNotified) {
   return notifyingTransaction(db, async (tx) => {
     await lockPlayers(tx, [adminId, input.userId]);
     // Le rôle est revérifié sous verrou : une session ouverte ne conserve pas les droits retirés.
@@ -209,7 +217,7 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
           await consumeWishlist(tx, userId, [input.cardId]);
           await giftFromTeam(tx, { kind: "CARD", userId, adminId, cardId: input.cardId, quantity: input.amount, message: input.message, now });
         } else {
-          // On conserve les exemplaires en vitrine, en combat (status BATTLE), en vente ou liés à l'historique d'une vente.
+          // On conserve les exemplaires en vitrine, en combat (BATTLE), misés au casino (CASINO), en vente ou liés à l'historique d'une vente.
           const free = await tx.userCard.findMany({ where: {
             ownerId: userId, cardId: input.cardId, status: "COLLECTION", showcaseItems: { none: {} }, auctions: { none: {} },
           }, orderBy: [{ obtainedAt: "desc" }, { id: "desc" }], take: input.amount, select: { id: true } });

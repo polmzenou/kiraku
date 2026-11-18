@@ -9,6 +9,7 @@ import { env, discordRulesConfigured } from "../env";
 import { rateLimit } from "../ratelimit";
 import { discordBotRequest } from "../discord/api";
 import { publishDiscordPost } from "../discord/posts";
+import { publishCasinoTeaser } from "../discord/casino";
 import { rolesPanelConfigured, safeCommunityRole, selfRoles } from "../discord/roles-config";
 import { discordAlertsConfigured } from "../discord/alert-store";
 import { assertPrivateDiscordChannel } from "../discord/private-channel";
@@ -86,6 +87,23 @@ export async function testDiscordAlertsAction(): Promise<PublishRulesResult> {
     return { ok: true, url: `https://discord.com/channels/${env.DISCORD_GUILD_ID}/${env.DISCORD_ALERTS_CHANNEL_ID}/${result.messageId}` };
   } catch {
     console.warn("[discord] test des alertes indisponible (salon privé et permissions requis).");
+    return { ok: false, error: "DISCORD" };
+  }
+}
+
+/** Teaser du casino : publié ou actualisé depuis l'admin (date et compte à rebours à jour). */
+export async function publishCasinoTeaserAction(): Promise<PublishRulesResult> {
+  const admin = await getAdmin();
+  if (!admin) return { ok: false, error: "FORBIDDEN" };
+  if (!(await rateLimit(`discord-casino:${admin.id}`, { limit: 3, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
+  try {
+    const result = await publishCasinoTeaser();
+    if (!result.ok) return result;
+    await writeAdminLog(prisma, { adminId: admin.id, action: "DISCORD_CASINO_TEASER", targetType: "DiscordPost", targetId: "casino:teaser", after: { messageId: result.messageId } });
+    refresh();
+    return { ok: true, url: `https://discord.com/channels/${env.DISCORD_GUILD_ID}/${env.DISCORD_CASINO_CHANNEL_ID}/${result.messageId}` };
+  } catch {
+    console.warn("[discord] publication du teaser du casino indisponible.");
     return { ok: false, error: "DISCORD" };
   }
 }

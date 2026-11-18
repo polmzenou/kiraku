@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { checkGift, checkSealedGift, pickGiftCopy, type GiftCheck } from "./gifts";
+import { SETTING_DEFAULTS } from "../settings/defaults";
+import { checkGift, checkSealedGift, pickGiftCopy, sealedWindowStart, type GiftCheck } from "./gifts";
 
 const now = new Date("2026-10-14T12:00:00Z");
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000);
@@ -70,9 +71,9 @@ describe("checkSealedGift", () => {
     giftable: true,
     hasDiscord: true,
     senderCreatedAt: daysAgo(30),
-    sentThisWeek: 0,
+    sentInWindow: 0,
     now,
-    rules: { requiresDiscord: true, minAccountDays: 7, perWeek: 1 },
+    rules: { requiresDiscord: true, minAccountDays: 7, perWindow: 2, windowDays: 3 },
   };
 
   it("permet d'offrir un sachet tombé d'un tirage depuis un compte lié et ancien", () => {
@@ -83,12 +84,19 @@ describe("checkSealedGift", () => {
     expect(checkSealedGift({ ...sealedOk, giftable: false })).toBe("NOT_GIFTABLE");
   });
 
-  it("garde-fous contre le farm : Discord, ancienneté, limite de la semaine", () => {
+  it("garde-fous contre le farm : Discord, ancienneté, limite de la fenêtre glissante", () => {
     expect(checkSealedGift({ ...sealedOk, hasDiscord: false })).toBe("NEEDS_DISCORD");
     expect(checkSealedGift({ ...sealedOk, hasDiscord: false, rules: { ...sealedOk.rules, requiresDiscord: false } })).toBeNull();
     expect(checkSealedGift({ ...sealedOk, senderCreatedAt: daysAgo(6) })).toBe("SEALED_ACCOUNT_TOO_NEW");
     expect(checkSealedGift({ ...sealedOk, senderCreatedAt: daysAgo(7) })).toBeNull();
-    expect(checkSealedGift({ ...sealedOk, sentThisWeek: 1 })).toBe("SEALED_WEEK_LIMIT");
-    expect(checkSealedGift({ ...sealedOk, rules: { ...sealedOk.rules, perWeek: 0 } })).toBe("SEALED_WEEK_LIMIT");
+    expect(checkSealedGift({ ...sealedOk, sentInWindow: 1 })).toBeNull();
+    expect(checkSealedGift({ ...sealedOk, sentInWindow: 2 })).toBe("SEALED_LIMIT");
+    expect(checkSealedGift({ ...sealedOk, rules: { ...sealedOk.rules, perWindow: 0 } })).toBe("SEALED_LIMIT");
+  });
+
+  it("2 sachets tous les 3 jours par défaut, sur une fenêtre glissante", () => {
+    expect(SETTING_DEFAULTS["gifts.sealedPerWindow"]).toBe(2);
+    expect(SETTING_DEFAULTS["gifts.sealedWindowDays"]).toBe(3);
+    expect(sealedWindowStart(now, 3).getTime()).toBe(now.getTime() - 3 * 86_400_000);
   });
 });

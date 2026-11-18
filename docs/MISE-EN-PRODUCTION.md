@@ -54,6 +54,31 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
 - [ ] Relecture juridique effectuée ; CGU v1 publiées et parcours d'acceptation validé.
 - [ ] `discord.joinModal.enabled = false`, `shop.premiumEnabled = false`.
 - [ ] État de `features.casino` décidé ; taux, prix et pools de boosters relus dans l'admin.
+
+## Lancement du casino
+
+**Avant :**
+
+- [ ] Migration `20261117120000_casino_pile_ou_face` appliquée par `npm run db:deploy` sur le VPS, **avant**
+  le redémarrage PM2 de la version qui la lit.
+- [ ] Ligne `/api/cron/casino` de `deploy/crontab.example` installée (filet de sécurité quotidien des tables échues).
+- [ ] `/admin/casino` : date d'ouverture réglée, raretés jouables et garde-fous relus. L'équipe vérifie le hall en
+  aperçu et joue une table entre deux comptes de l'équipe.
+- [ ] Discord : `DISCORD_CASINO_CHANNEL_ID` dans l'environnement, annonces du casino allumées dans `/admin/discord`,
+  teaser posté quelques jours avant (voir `docs/DISCORD.md`).
+- [ ] Jauge (`/admin/evenement`) : comptage en lancers, fenêtre calée sur l'ouverture, objectif, lot de récompense
+  prêt dans `/admin/lots`.
+- [ ] Nouvelle clause casino des CGU publiée depuis `/admin/legal` (elle ne force pas une nouvelle acceptation).
+
+**À l'ouverture :**
+
+- [ ] Bannière Nouveautés publiée depuis `/admin/nouveautes` (sceau 賭, lien vers `/casino`).
+- [ ] Annonce d'ouverture postée seule par le cron Discord ; vérifier le message dans le salon.
+- [ ] `/admin/casino` : santé du séquestre « Sain » (autant de cartes en jeu que de tables ouvertes).
+
+**Fin de la fenêtre de la jauge :**
+
+- [ ] Objectif atteint : envoyer la récompense à tous depuis `/admin/lots` (jamais versée deux fois au même joueur).
 - [ ] Registre des cookies relu : Speed Insights est déclaré comme mesure sans stockage sur
   l'appareil, exemptée dans le registre. Faire confirmer cette qualification lors de la relecture
   juridique ; l'absence de cookie seule ne suffit pas à établir une exemption.

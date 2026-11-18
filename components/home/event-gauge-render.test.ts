@@ -77,3 +77,36 @@ describe("EventGauge", () => {
     expect(render({ now: startsAt + 1000, count: 5000, locale: "en" })).toContain("Ends in");
   });
 });
+
+describe("EventGauge de l'inauguration du casino", () => {
+  const renderFlips = (opts: { compact?: boolean; reward?: string | null; locale?: "fr" | "en" } = {}) => {
+    const now = startsAt + 1000;
+    const initial = eventGaugeView({ startsAt, endsAt, goal: 5000, count: 3412, metric: "COINFLIPS", reward: opts.reward ?? null }, now)!;
+    return renderToStaticMarkup(
+      createElement(
+        NextIntlClientProvider,
+        providerProps(opts.locale ?? "fr"),
+        createElement(EventGauge, { initial, refreshSeconds: 60, serverNow: now, cta: "signup", compact: opts.compact }),
+      ),
+    );
+  };
+
+  it("compte des lancers, renvoie vers le pile ou face plutôt que vers l'inscription", () => {
+    const html = renderFlips();
+    expect(html).toContain("Inauguration du casino");
+    expect(html).toContain("3 412 / 5 000 lancers".normalize());
+    expect(html).toContain('href="/casino/pile-ou-face"');
+    expect(html).not.toContain('href="/inscription"');
+  });
+
+  it("annonce la récompense pour tous", () => {
+    expect(renderFlips({ reward: "Booster Impérial" })).toContain("Récompense pour tous : Booster Impérial");
+    expect(renderFlips({ reward: "Imperial booster", locale: "en" })).toContain("Reward for everyone: Imperial booster");
+  });
+
+  it("version compacte (hall, modale) : ni bouton ni titre à kanji", () => {
+    const html = renderFlips({ compact: true });
+    expect(html).toContain("<h3");
+    expect(html).not.toContain("<a ");
+  });
+});

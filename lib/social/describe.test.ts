@@ -28,6 +28,28 @@ describe("describeNotification", () => {
     expect(d.text).toContain('"rarity":"epic"');
   });
 
+  it("pile ou face : invitation et table relevée → page de la table, sans jamais l'issue", () => {
+    const base = { actor: { username: "kenji", isGuest: false }, gift: null, card: { anilistId: 40, name: "Luffy", rarity: "MYTHIC" } };
+    const coinFlip = { flipId: "t1", cardId: "c1", reason: null };
+    const invite = describeNotification({ ...base, type: "COINFLIP_INVITE", coinFlip }, tr);
+    expect(invite.href).toBe("/casino/pile-ou-face/t1");
+    const resolved = describeNotification({ ...base, type: "COINFLIP_RESOLVED", coinFlip }, tr);
+    expect(resolved.href).toBe("/casino/pile-ou-face/t1");
+    expect(resolved.text).toMatch(/^coinFlipResolved:/);
+    expect(resolved.text).toContain('"card":"Luffy"');
+  });
+
+  it("pile ou face : carte rendue selon la raison → fiche de la carte", () => {
+    const base = { actor: { username: "kenji", isGuest: false }, gift: null, card: { anilistId: 40, name: "Luffy", rarity: "MYTHIC" } };
+    const text = (reason: "EXPIRED" | "DECLINED" | "ADMIN" | null) =>
+      describeNotification({ ...base, type: "COINFLIP_RETURNED", coinFlip: { flipId: "t1", cardId: "c1", reason } }, tr);
+    expect(text("EXPIRED").text).toMatch(/^coinFlipExpired:/);
+    expect(text("DECLINED").text).toMatch(/^coinFlipDeclined:/);
+    expect(text("ADMIN").text).toMatch(/^coinFlipAdmin:/);
+    expect(text(null).text).toMatch(/^coinFlipExpired:/);
+    expect(text("EXPIRED").href).toBe("/collection/40");
+  });
+
   it("expédition rentrée → page des expéditions, issue à demi dévoilée", () => {
     const base = { type: "EXPEDITION_RETURNED" as const, actor: { username: "akira", isGuest: false }, gift: null, card: null };
     expect(describeNotification({ ...base, expedition: { outcome: "TRIUMPH" } }, tr)).toEqual({ text: "expeditionTriumph:{}", href: "/expedition" });

@@ -10,6 +10,8 @@ export const EVENT_GAUGE_SETTING_KEYS = [
   "home.eventGauge.goal",
   "home.eventGauge.refreshSeconds",
   "home.eventGauge.cacheSeconds",
+  "home.eventGauge.metric",
+  "home.eventGauge.rewardLotId",
 ] as const satisfies readonly SettingKey[];
 
 export type EventGaugeSettingKey = (typeof EVENT_GAUGE_SETTING_KEYS)[number];

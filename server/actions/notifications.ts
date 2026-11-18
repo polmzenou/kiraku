@@ -1,6 +1,8 @@
 "use server";
 
 import { expireTradesFor } from "../social/trade-core";
+import { sweepCasinoWith } from "../casino/coinflip-core";
+import { pushNotifications } from "../push/send";
 import { refresh } from "next/cache";
 import { after } from "next/server";
 import { isFrozen } from "@/lib/account/deletion";
@@ -127,6 +129,10 @@ export async function pollNotificationsAction(input: unknown): Promise<PollResul
     await sweepBattlesFor(user.id);
     // Propositions d'échange échues
     await expireTradesFor(prisma, user.id).catch((e) => console.error("[echanges] expiration au sondage", e));
+    // Tables de pile ou face échues : carte rendue, « Personne n'a relevé ta table » dans ce sondage
+    await sweepCasinoWith(prisma, { now: new Date() }, { creatorId: user.id }, (ids) => after(() => pushNotifications(ids))).catch((e) =>
+      console.error("[casino] expiration au sondage", e),
+    );
     // Expédition rentrée : gains versés, cartes rendues et « De retour ! » dans ce sondage
     await settleExpeditionsFor(user.id).catch((e) => console.error("[expedition] clôture au sondage", e));
   }

@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
-import { isActive, MOBILE_NAV_MORE, NAV_ITEMS, NAV_MORE, visibleItems, type NavAlerts, type NavFeatures, type NavItem } from "@/lib/nav";
+import { isActive, MOBILE_NAV_MORE, NAV_ITEMS, NAV_MORE, visibleItems, type NavAlerts, type NavBadge, type NavBadges, type NavFeatures, type NavItem } from "@/lib/nav";
 import { Badge } from "../ui/Badge";
 import { segmentedItemClass, segmentedTrackClass } from "../ui/Segmented";
 
@@ -16,12 +16,15 @@ export function NavLinks({
   layout,
   features,
   alerts = {},
+  badges = {},
   onNavigate,
 }: {
   layout: "bar" | "stack";
   features: NavFeatures;
   /** Pastille rouge sur les entrées qui attendent le joueur (mission à réclamer…). */
   alerts?: NavAlerts;
+  /** « Bientôt » ou « Nouveau » à côté d'une entrée (casino). */
+  badges?: NavBadges;
   onNavigate?: () => void;
 }) {
   const t = useTranslations("nav");
@@ -33,7 +36,7 @@ export function NavLinks({
       <ul className="flex flex-col gap-1">
         {visibleItems(MOBILE_NAV_MORE, features).map((item) => (
           <li key={item.key}>
-            <StackLink item={item} active={isActive(item, pathname)} alert={alerts[item.key] === true} onNavigate={onNavigate} />
+            <StackLink item={item} active={isActive(item, pathname)} alert={alerts[item.key] === true} badge={badges[item.key]} onNavigate={onNavigate} />
           </li>
         ))}
       </ul>
@@ -68,13 +71,13 @@ export function NavLinks({
         );
       })}
       <li>
-        <MoreMenu pathname={pathname} items={visibleItems(NAV_MORE, features)} alerts={alerts} />
+        <MoreMenu pathname={pathname} items={visibleItems(NAV_MORE, features)} alerts={alerts} badges={badges} />
       </li>
     </ul>
   );
 }
 
-function StackLink({ item, active, alert, onNavigate }: { item: NavItem; active: boolean; alert: boolean; onNavigate?: () => void }) {
+function StackLink({ item, active, alert, badge, onNavigate }: { item: NavItem; active: boolean; alert: boolean; badge?: NavBadge; onNavigate?: () => void }) {
   const t = useTranslations("nav");
   const base = stackRowClass;
   if (!item.ready) {
@@ -94,7 +97,7 @@ function StackLink({ item, active, alert, onNavigate }: { item: NavItem; active:
     >
       <span className="inline-flex items-center gap-2">
         <AlertLabel alert={alert}>{t(item.key)}</AlertLabel>
-        {item.soon && <SoonBadge />}
+        <EntryBadge badge={badge} />
       </span>
       {active && <span aria-hidden="true" className="size-2 rounded-full bg-shu" />}
     </Link>
@@ -127,13 +130,21 @@ function SoonBadge() {
   return <Badge tone="muted" className="uppercase tracking-wide">{t("soon")}</Badge>;
 }
 
+/** « Bientôt » (page d'attente) ou « Nouveau » (lancement récent), à côté du libellé. */
+function EntryBadge({ badge }: { badge?: NavBadge }) {
+  const t = useTranslations("nav");
+  if (badge === "soon") return <SoonBadge />;
+  if (badge === "new") return <Badge tone="kin" className="uppercase tracking-wide">{t("new")}</Badge>;
+  return null;
+}
+
 /** Rangée de 52 px des listes de liens (panneau « Plus » mobile). */
 export const stackRowClass =
   "flex min-h-13 items-center justify-between gap-3 rounded-control px-3.5 text-base text-text-muted transition-colors hover:bg-surface-2 hover:text-text " +
   "aria-[current=page]:bg-surface-2 aria-[current=page]:font-bold aria-[current=page]:text-text";
 
 /** Menu déroulant « Plus » de la barre du haut : se ferme au clic dehors, à Échap et en changeant de page. */
-function MoreMenu({ pathname, items, alerts }: { pathname: string; items: readonly NavItem[]; alerts: NavAlerts }) {
+function MoreMenu({ pathname, items, alerts, badges }: { pathname: string; items: readonly NavItem[]; alerts: NavAlerts; badges: NavBadges }) {
   const t = useTranslations("nav");
   const [open, setOpen] = useState(false);
   const [openedAt, setOpenedAt] = useState(pathname);
@@ -203,7 +214,7 @@ function MoreMenu({ pathname, items, alerts }: { pathname: string; items: readon
               >
                 <span className="inline-flex items-center gap-2">
                   <AlertLabel alert={alerts[item.key] === true}>{t(item.key)}</AlertLabel>
-                  {item.soon && <SoonBadge />}
+                  <EntryBadge badge={badges[item.key]} />
                 </span>
                 {active && <span aria-hidden="true" className="size-2 rounded-full bg-shu" />}
               </Link>

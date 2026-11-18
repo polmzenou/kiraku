@@ -44,6 +44,7 @@ export const getCurrentUser = cache(async () => {
       ambassadorSince: true,
       lastSeenAt: true,
       appearOffline: true,
+      createdAt: true,
       ...decorSelect,
     },
   });

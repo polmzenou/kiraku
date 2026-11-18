@@ -21,6 +21,9 @@ export const NOTIFICATION_TYPES = [
   "TEAM_GIFT",
   "SEALED_OPENED",
   "AMBASSADOR_GRANTED",
+  "COINFLIP_INVITE",
+  "COINFLIP_RESOLVED",
+  "COINFLIP_RETURNED",
   "EXPEDITION_RETURNED",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -128,6 +131,24 @@ export function parseSealedPayload(raw: unknown): SealedPayload | null {
   if (!isSealedSlug(r.slug)) return null;
   const outcome = r.outcome === "SPARED" || r.outcome === "RUINED" ? r.outcome : null;
   return { slug: r.slug, outcome, cardId: isId(r.cardId) ? r.cardId : null };
+}
+
+/** Pourquoi une carte misée au casino est revenue (le créateur qui retire sa table n'est pas notifié). */
+export const COINFLIP_RETURN_REASONS = ["EXPIRED", "DECLINED", "ADMIN"] as const;
+export type CoinFlipReturnReason = (typeof COINFLIP_RETURN_REASONS)[number];
+
+/**
+ * Notification de pile ou face : la table et la carte du créateur. Jamais l'issue d'un lancer : le créateur
+ * la découvre en rejouant la pièce.
+ */
+export type CoinFlipPayload = { flipId: string; cardId: string; reason: CoinFlipReturnReason | null };
+
+export function parseCoinFlipPayload(raw: unknown): CoinFlipPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  if (!isId(r.flipId) || !isId(r.cardId)) return null;
+  const reason = COINFLIP_RETURN_REASONS.includes(r.reason as CoinFlipReturnReason) ? (r.reason as CoinFlipReturnReason) : null;
+  return { flipId: r.flipId, cardId: r.cardId, reason };
 }
 
 /** Expédition rentrée : son issue (le détail se lit sur /expedition). */

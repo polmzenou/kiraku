@@ -22,6 +22,7 @@ export const NEWS_ICONS = {
   SEASON: "星",
   REFERRAL: "招",
   FRIENDS: "友",
+  CASINO: "賭",
 } as const;
 export type NewsIcon = keyof typeof NEWS_ICONS;
 export const NEWS_ICON_KEYS = Object.keys(NEWS_ICONS) as [NewsIcon, ...NewsIcon[]];

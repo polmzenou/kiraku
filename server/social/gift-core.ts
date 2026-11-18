@@ -8,6 +8,7 @@ import type { Rarity } from "@/lib/catalog/rarity";
 import {
   checkGift,
   checkSealedGift,
+  sealedWindowStart,
   pickGiftCopy,
   type GiftRefusal,
   type GiftRules,
@@ -194,11 +195,9 @@ export async function giftBoosterWith(
   }, TX, onNotified);
 }
 
-const WEEK = 7 * 24 * 3_600_000;
-
 /**
  * Offre un sachet scellé (Divin, Apocalyptique) tombé d'un tirage : une seule fois, depuis un compte
- * lié à Discord et assez ancien, dans la limite de la semaine. Le sachet change de propriétaire par
+ * lié à Discord et assez ancien, dans la limite de la fenêtre glissante. Le sachet change de propriétaire par
  * un UPDATE conditionnel (une ouverture simultanée l'emporte ou échoue, jamais les deux) et ne
  * pourra plus être offert ; celui qui l'a offert recevra le résultat à l'ouverture.
  */
@@ -217,15 +216,16 @@ export async function giftSealedWith(
     });
     const kind = SEALED_KINDS.find((k) => k === drop?.boosterType.slug);
     if (!drop || !kind) throw new GiftError("NOT_OWNED");
-    const [discord, sentThisWeek] = await Promise.all([
+    // Compté sous le verrou de l'expéditeur : deux envois simultanés ne dépassent pas la limite
+    const [discord, sentInWindow] = await Promise.all([
       tx.account.count({ where: { userId: ctx.senderId, provider: "discord" } }),
-      tx.gift.count({ where: { senderId: ctx.senderId, kind: "SEALED", createdAt: { gt: new Date(now.getTime() - WEEK) } } }),
+      tx.gift.count({ where: { senderId: ctx.senderId, kind: "SEALED", createdAt: { gt: sealedWindowStart(now, ctx.sealedRules.windowDays) } } }),
     ]);
     const refusal = checkSealedGift({
       giftable: drop.giftable,
       hasDiscord: discord > 0,
       senderCreatedAt: sender.createdAt,
-      sentThisWeek,
+      sentInWindow,
       now,
       rules: ctx.sealedRules,
     });

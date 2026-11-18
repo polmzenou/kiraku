@@ -1,6 +1,21 @@
 import "server-only";
 import type { FudaCard } from "@/components/fuda/Fuda";
+import { announcementDue } from "@/lib/casino/phase";
+import { ANNOUNCEMENTS, pendingAnnouncement, type Announcement } from "@/lib/welcome/release";
+import { getCasinoRules } from "./casino/queries";
 import { prisma } from "./db";
+
+/**
+ * Annonce à présenter à ce joueur : les annonces du code, plus celle de l'ouverture du casino (datée par
+ * casino.opensAt) pour les comptes inscrits avant l'ouverture, pendant la fenêtre de lancement.
+ */
+export async function pendingAnnouncementFor(user: { v1WelcomeSeenAt: Date | null; isGuest: boolean; createdAt: Date }): Promise<Announcement | null> {
+  const rules = await getCasinoRules();
+  const now = new Date();
+  const list: Announcement[] = [...ANNOUNCEMENTS];
+  if (rules.opensAt !== null && announcementDue(rules, now.getTime(), user)) list.push({ key: "casino", at: new Date(rules.opensAt) });
+  return pendingAnnouncement(user.v1WelcomeSeenAt, now, list);
+}
 
 /**
  * Cartes Gold et AR mises en avant par l'annonce de la v2, dans cet ordre (les cinq premières forment

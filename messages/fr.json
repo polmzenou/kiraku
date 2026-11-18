@@ -573,7 +573,8 @@
     "event": "Event",
     "expedition": "Expéditions",
     "casino": "Casino",
-    "alert": "Récompense à réclamer"
+    "alert": "Récompense à réclamer",
+    "new": "Nouveau"
   },
   "header": {
     "stock": "Boosters : {count} sur {max}",
@@ -1303,7 +1304,8 @@
       "battleSandbox": "Bac à sable combat",
       "news": "Nouveautés",
       "universes": "Univers",
-      "showcases": "Vitrines"
+      "showcases": "Vitrines",
+      "casino": "Casino"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -1583,7 +1585,11 @@
           "minAccountAgeHours": "Ancienneté minimale du compte (h)",
           "minFriendshipHours": "Ancienneté minimale de l'amitié (h)",
           "boosterPriceZeni": "Prix d'un booster offert (Zeni)",
-          "allowedRarities": "Raretés qu'on peut offrir"
+          "allowedRarities": "Raretés qu'on peut offrir",
+          "sealedRequiresDiscord": "Sachets scellés : compte lié à Discord exigé",
+          "sealedMinAccountDays": "Sachets scellés : ancienneté minimale du compte (jours)",
+          "sealedPerWindow": "Sachets scellés offerts au plus",
+          "sealedWindowDays": "… sur une fenêtre glissante de (jours)"
         },
         "notifications": {
           "retentionDays": "Conservation des notifications lues (jours)",
@@ -1645,7 +1651,9 @@
       "chatSection": "Chat entre amis",
       "chatHint": "Messages privés entre amis acceptés, en texte brut, supprimés après leur durée de vie (24 h par défaut). Un blocage coupe la conversation.",
       "activitySection": "Temps réel et activité",
-      "activityHint": "Avec Ably, la cloche et le chat arrivent en direct ; le sondage de secours rattrape un message perdu. Sans geste du joueur ou onglet caché, plus aucun sondage. Sans nouveauté, le délai double jusqu'au multiple indiqué. La pastille « en ligne » suit le battement de présence : garde le délai « en ligne » au-dessus de deux battements."
+      "activityHint": "Avec Ably, la cloche et le chat arrivent en direct ; le sondage de secours rattrape un message perdu. Sans geste du joueur ou onglet caché, plus aucun sondage. Sans nouveauté, le délai double jusqu'au multiple indiqué. La pastille « en ligne » suit le battement de présence : garde le délai « en ligne » au-dessus de deux battements.",
+      "sealedTitle": "Sachets scellés offerts",
+      "sealedHint": "Divins et Apocalyptiques tombés d'un tirage. Par défaut : 2 sachets tous les 3 jours par joueur, en fenêtre glissante ; ils comptent aussi dans les cadeaux du jour."
     },
     "market": {
       "title": "Marché",
@@ -2244,7 +2252,8 @@
         "EVENT": "催 Événement",
         "SEASON": "星 Saison",
         "REFERRAL": "招 Parrainage",
-        "FRIENDS": "友 Amis"
+        "FRIENDS": "友 Amis",
+        "CASINO": "賭 Casino"
       },
       "itemTitle_fr": "Titre (français)",
       "itemTitle_en": "Titre (anglais, facultatif)",
@@ -2406,9 +2415,23 @@
           "linkBonusZeni": "Bonus de liaison Discord",
           "avatarSyncHours": "Relecture des avatars (heures)",
           "avatarSyncActiveDays": "Joueurs actifs depuis (jours)",
-          "avatarSyncBatch": "Joueurs relus par minute"
+          "avatarSyncBatch": "Joueurs relus par minute",
+          "casinoEnabled": "Annonces du casino sur Discord",
+          "casinoMinRarity": "Rareté des gros lancers relayés"
         }
-      }
+      },
+      "casinoEnabled": "Annonces du casino (ouverture et gros lancers)",
+      "casinoMinRarity": "Gros lancer à partir de",
+      "casinoHint": "L'ouverture est postée une fois à l'heure dite (DISCORD_CASINO_CHANNEL_ID). Les lancers dont le pot atteint cette rareté sont relayés dans la minute, sans mention de rôle.",
+      "casinoSection": "Casino",
+      "casinoIntro": "Le teaser se poste à la main, quelques jours avant l'ouverture ; l'ouverture et les gros lancers partent seuls.",
+      "casinoTeaser": "Poster ou actualiser le teaser",
+      "casinoTeaserDone": "Teaser publié.",
+      "casinoNotConfigured": "Ajoute DISCORD_CASINO_CHANNEL_ID à l'environnement pour activer les annonces du casino.",
+      "casinoPreview": "Aperçu des annonces",
+      "casinoPreviewTeaser": "Teaser",
+      "casinoPreviewOpening": "Ouverture (bande-annonce jointe)",
+      "casinoPreviewFlip": "Gros lancer"
     },
     "features": {
       "title": "Fonctionnalités",
@@ -3133,14 +3156,24 @@
         "endsAt": "Fin de l'événement",
         "goal": "Objectif (boosters)",
         "refreshSeconds": "Rafraîchissement (secondes)",
-        "cacheSeconds": "Cache du compte (secondes)"
+        "cacheSeconds": "Cache du compte (secondes)",
+        "metric": "Ce que la jauge compte",
+        "rewardLotId": "Récompense pour tous"
       },
       "hints": {
         "date": "Dans l'heure locale de ton navigateur.",
         "goal": "Modifiable pendant l'événement : la jauge s'ajuste tout de suite.",
         "refreshSeconds": "Fréquence à laquelle la page d'un joueur redemande le compte.",
-        "cacheSeconds": "Le compte est recalculé au plus une fois par durée, quel que soit le nombre de joueurs."
-      }
+        "cacheSeconds": "Le compte est recalculé au plus une fois par durée, quel que soit le nombre de joueurs.",
+        "metric": "Lancers : tables de pile ou face jouées pendant la fenêtre (inauguration du casino).",
+        "rewardLotId": "Affichée sous la jauge. Objectif atteint : envoie ce lot à tous depuis la page des lots (jamais versé deux fois au même joueur)."
+      },
+      "metrics": {
+        "BOOSTERS": "Boosters ouverts",
+        "COINFLIPS": "Lancers de pile ou face"
+      },
+      "noReward": "Aucune récompense affichée",
+      "sendReward": "Envoyer la récompense"
     },
     "showcaseEvent": {
       "title": "Event vitrines",
@@ -3323,6 +3356,85 @@
       "keys": {
         "maxPerPlayer": "Vitrines par joueur",
         "themes": "Thèmes de vitrine"
+      }
+    },
+    "casino": {
+      "title": "Casino",
+      "intro": "Ouverture du casino et pile ou face entre joueurs. Les cartes misées restent en séquestre (statut CASINO) tant que leur table est ouverte : autant de cartes en jeu que de tables ouvertes.",
+      "phases": {
+        "hidden": "Casino caché aux joueurs (interrupteur de /admin/fonctionnalites) : l'équipe le voit en aperçu.",
+        "teaser": "Teaser affiché aux joueurs, sans date d'ouverture.",
+        "open": "Casino ouvert depuis le {date}.",
+        "teaserDated": "Teaser affiché aux joueurs : ouverture le {date}."
+      },
+      "preview": "Voir le casino (aperçu de l'équipe avant l'ouverture)",
+      "escrow": {
+        "title": "Santé du séquestre",
+        "openTables": "Tables ouvertes",
+        "stakedCards": "Cartes en jeu",
+        "expiredOpen": "Échues, à balayer",
+        "status": "État",
+        "healthy": "Sain",
+        "mismatch": "Écart",
+        "mismatchHint": "Le nombre de cartes en jeu ne correspond pas au nombre de tables ouvertes. Lance le balayage (/api/cron/casino) puis vérifie le journal du serveur."
+      },
+      "stats": {
+        "title": "Statistiques sur 30 jours",
+        "played": "Lancers joués",
+        "split": "表 face · 裏 pile",
+        "creatorWins": "Victoires du créateur",
+        "closed": "Retirées · expirées",
+        "closedValue": "{cancelled} · {expired}",
+        "perDay": "Lancers par jour (14 derniers jours)",
+        "byRarity": "Par rareté du pot :"
+      },
+      "tables": {
+        "title": "Tables ouvertes",
+        "empty": "Aucune table ouverte.",
+        "row": "{card} ({rarity}) · {name}",
+        "reservedFor": "réservée à {name}",
+        "expiresAt": "expire le {date}"
+      },
+      "cancel": "Retirer la table",
+      "confirmCancel": "Retirer et rendre la carte",
+      "keep": "Garder",
+      "reason": "Motif du retrait (journal)",
+      "errors": {
+        "NOT_FOUND": "Table introuvable.",
+        "NOT_OPEN": "Cette table n'est plus ouverte.",
+        "RATE_LIMITED": "Trop d'actions. Réessaie dans une minute.",
+        "INVALID": "Motif trop court (3 caractères au moins).",
+        "FORBIDDEN": "Accès refusé.",
+        "UNAVAILABLE": "Action impossible pour le moment.",
+        "unexpected": "Erreur inattendue. Réessaie."
+      },
+      "openingSection": "Ouverture",
+      "coinflipSection": "Pile ou face",
+      "openNow": "Ouvrir maintenant",
+      "clearDate": "Retirer la date (teaser sans compte à rebours)",
+      "invalid": "Vérifie les réglages : au moins une rareté jouable, et des valeurs dans leurs limites.",
+      "keys": {
+        "opensAt": "Date d'ouverture",
+        "newBadgeDays": "Badge « Nouveau » et cérémonie (jours)",
+        "minAccountAgeHours": "Âge minimal du compte (heures)",
+        "enabled": "Pile ou face ouvert",
+        "expiryHours": "Durée d'une table ouverte (heures)",
+        "maxOpenTables": "Tables ouvertes par joueur",
+        "dailyLimit": "Lancers par jour et par joueur",
+        "allowedRarities": "Raretés jouables",
+        "lastCopyAllowed": "Autoriser le dernier exemplaire (après avertissement)",
+        "lobbyPollSeconds": "Rafraîchissement du salon (secondes)",
+        "tablePollSeconds": "Rafraîchissement d'une table (secondes)",
+        "feedSize": "Lancers dans le fil du hall",
+        "feedMaxAgeHours": "Âge maximal du fil (heures)"
+      },
+      "hints": {
+        "opensAt": "Dans l'heure locale de ton navigateur. Vide : teaser sans date ; future : compte à rebours ; passée : casino ouvert.",
+        "newBadgeDays": "Après l'ouverture : badge du menu, cérémonie et annonce. 0 coupe les trois.",
+        "expiryHours": "Sans preneur, la carte revient à son créateur.",
+        "dailyLimit": "Tables posées et tables relevées, par jour de jeu.",
+        "feedMaxAgeHours": "Les lancers plus anciens quittent le fil.",
+        "allowedRarities": "Une table se relève avec une carte du même palier (Mythique = BR, AR = VR, Gold = MR). Une rareté retirée ne se mise plus ; ses tables ouvertes restent jusqu'à leur échéance."
       }
     },
     "expeditions": {
@@ -3549,6 +3661,7 @@
       "inCollection": "{count, plural, =0 {Aucun en collection} one {# en collection} other {# en collection}}",
       "inAuction": "{count, plural, one {# en vente} other {# en vente}}",
       "inBattle": "{count, plural, one {# en combat} other {# en combat}}",
+      "inCasino": "{count, plural, one {# en jeu au casino} other {# en jeu au casino}}",
       "inExpedition": "{count, plural, one {# en expédition} other {# en expédition}}",
       "firstObtained": "Première obtention : {date}",
       "recycleTitle": "Recycler les doublons",
@@ -4314,7 +4427,7 @@
       "NOT_GIFTABLE": "Ce sachet ne peut plus être offert.",
       "NEEDS_DISCORD": "Lie ton compte à Discord pour offrir un sachet scellé.",
       "SEALED_ACCOUNT_TOO_NEW": "Ton compte doit avoir au moins {sealedMinAccountDays} jours pour offrir un sachet scellé.",
-      "SEALED_WEEK_LIMIT": "Tu as déjà offert {sealedPerWeek, plural, one {# sachet scellé} other {# sachets scellés}} cette semaine."
+      "SEALED_LIMIT": "Tu as déjà offert {sealedPerWindow, plural, one {# sachet scellé} other {# sachets scellés}} ces {sealedWindowDays} derniers jours. Reviens un peu plus tard !"
     },
     "sealedDivin": "Ton booster divin",
     "sealedApocalypse": "Ton booster apocalyptique",
@@ -4385,6 +4498,11 @@
     "sealedSpared": "Ton booster apocalyptique a épargné {name} : {card} ({rarity}) !",
     "sealedRuined": "Ton booster apocalyptique a explosé au visage de {name}.",
     "ambassadorGranted": "L'équipe Kiraku te nomme Ambassadeur ! Badge, cadre et couleur verts sont à toi, et un pack de boosters t'attend chaque semaine.",
+    "coinFlipInvite": "{name} t'a réservé une table de pile ou face : sa carte {card} t'attend.",
+    "coinFlipResolved": "{name} a relevé ta table ({card}) : la pièce a été lancée, viens voir comment elle est tombée.",
+    "coinFlipExpired": "Personne n'a relevé ta table de pile ou face : {card} est revenue dans ta collection.",
+    "coinFlipDeclined": "{name} a décliné ta table de pile ou face : {card} est revenue dans ta collection.",
+    "coinFlipAdmin": "L'équipe Kiraku a retiré ta table de pile ou face : {card} est revenue dans ta collection.",
     "expeditionTriumph": "Ton expédition revient triomphante ! Viens ouvrir son rapport.",
     "expeditionSuccess": "Ton expédition est de retour, mission accomplie. Viens ouvrir son rapport.",
     "expeditionFailure": "Ton expédition est rentrée bredouille… Tes cartes sont de retour.",
@@ -4681,7 +4799,16 @@
       "percent": "{percent} %",
       "progressLabel": "Progression de la jauge de l'événement",
       "ctaSignup": "Inscris-toi pour faire monter la jauge",
-      "ctaInvite": "Invite des amis pour remplir la jauge"
+      "ctaInvite": "Invite des amis pour remplir la jauge",
+      "reward": "Récompense pour tous : {reward}",
+      "coinflips": {
+        "title": "Inauguration du casino",
+        "rules": "Tous ensemble : chaque lancer de pile ou face joué fait monter la jauge. Objectif commun : {goal} lancers.",
+        "endedReached": "Objectif atteint, bravo à tous : {count} lancers joués !",
+        "endedMissed": "Fin de l'inauguration : {count} lancers joués sur {goal}. Merci à tous !",
+        "progress": "{count} / {goal} lancers",
+        "cta": "Jouer au pile ou face"
+      }
     },
     "showcaseEvent": {
       "title": "Event vitrines",
@@ -5482,7 +5609,8 @@
       "sound": "Retient si le son est activé.",
       "discordLater": "Retient quand tu as repoussé l'invitation Discord (« Plus tard »).",
       "news": "Retient si tu as réduit l'encart des nouveautés de l'accueil.",
-      "speedInsights": "Mesure des performances Vercel (sans cookie ni identifiant persistant)"
+      "speedInsights": "Mesure des performances Vercel (sans cookie ni identifiant persistant)",
+      "casinoCeremony": "Retient que tu as déjà vu la cérémonie d'ouverture du casino sur cet appareil."
     },
     "kinds": {
       "cookie": "Cookie",
@@ -5578,7 +5706,236 @@
     "title": "Casino",
     "soon": "Bientôt",
     "body": "Le casino de Kiraku est en préparation. Il arrivera plus tard, sans jamais accepter d'argent réel.",
-    "back": "Retour aux boosters"
+    "back": "Retour aux boosters",
+    "description": "Le casino de Kiraku : pile ou face entre joueurs, une fuda contre une fuda du même palier.",
+    "virtual": "Tout est virtuel : aucune somme réelle n'est en jeu, ni Zeni ni argent.",
+    "preview": {
+      "hidden": "Aperçu de l'équipe : le casino est caché aux joueurs.",
+      "teaser": "Aperçu de l'équipe : les joueurs voient encore le teaser.",
+      "admin": "Réglages"
+    },
+    "rules": {
+      "label": "Les règles",
+      "stake": "Pose une fuda et choisis 表 face ou 裏 pile.",
+      "tier": "Un autre joueur relève avec une fuda du même palier.",
+      "winner": "La pièce tombe : le gagnant garde les deux cartes."
+    },
+    "teaser": {
+      "kicker": "Ouverture le {date}",
+      "kickerNoDate": "Ouverture prochaine",
+      "title": "Le casino ouvre bientôt",
+      "body": "Derrière les shōji, une pièce tourne déjà. Le premier jeu : pile ou face entre joueurs.",
+      "countdown": "Temps avant l'ouverture",
+      "days": "{count, plural, one {jour} other {jours}}",
+      "hours": "{count, plural, one {heure} other {heures}}",
+      "minutes": "min",
+      "seconds": "s",
+      "opening": "Les portes s'ouvrent…"
+    },
+    "hall": {
+      "label": "Jeux du casino",
+      "coinflip": {
+        "tag": "Nouveau",
+        "title": "Pile ou face",
+        "body": "Une fuda contre une fuda. 表 ou 裏.",
+        "stats": "{open, plural, =0 {Aucune table ouverte} one {# table ouverte} other {# tables ouvertes}} · {today, plural, =0 {aucun lancer aujourd'hui} one {# lancer aujourd'hui} other {# lancers aujourd'hui}}",
+        "play": "Jouer"
+      },
+      "upcoming": "Bientôt",
+      "sealed": "Jeu scellé",
+      "sealedNext": "Prochain jeu",
+      "sealedLater": "Plus tard",
+      "feedTitle": "Derniers lancers",
+      "feedEmpty": "Aucun lancer pour l'instant : la première pièce t'attend.",
+      "feedRow": "<player>{name}</player> remporte <b>{card}</b>",
+      "feedMeta": "{rarity} · tombé sur {side}"
+    },
+    "side": {
+      "OMOTE": "Face",
+      "URA": "Pile"
+    },
+    "salon": {
+      "title": "Pile ou face",
+      "back": "Casino",
+      "tabs": {
+        "label": "Sections du salon",
+        "tables": "Tables",
+        "mine": "Mes tables",
+        "history": "Historique"
+      },
+      "filterLabel": "Filtrer par palier",
+      "all": "Tous",
+      "empty": "Aucune table ouverte à ce palier.",
+      "emptyAll": "Aucune table ouverte pour l'instant. Pose la première !",
+      "plays": "joue {side}",
+      "reserved": "Réservée pour toi",
+      "take": "Relever",
+      "view": "Voir",
+      "tableOf": "Table de {name}",
+      "stake": "Poser une carte",
+      "more": "Voir plus",
+      "loading": "Chargement…",
+      "retry": "Réessayer",
+      "guest": "Crée un compte pour jouer : un invité peut regarder les tables, pas miser."
+    },
+    "mine": {
+      "open": "Tes tables ouvertes",
+      "invitations": "Tables réservées pour toi",
+      "none": "Tu n'as aucune table ouverte.",
+      "noInvitation": "Aucune table ne t'est réservée.",
+      "expires": "Expire {time}",
+      "decline": "Décliner",
+      "view": "Voir la table"
+    },
+    "history": {
+      "stats": "{played, plural, =0 {Aucun lancer joué} one {# lancer} other {# lancers}} · {won} gagnés · {lost} perdus",
+      "streakWin": "{count, plural, one {# victoire} other {# victoires}} d'affilée",
+      "streakLoss": "{count, plural, one {# défaite} other {# défaites}} d'affilée",
+      "sides": "表 {omote} · 裏 {ura}",
+      "empty": "Tes lancers joués apparaîtront ici.",
+      "won": "Gagné",
+      "lost": "Perdu",
+      "against": "contre <player>{name}</player>",
+      "open": "Voir"
+    },
+    "stake": {
+      "title": "Poser une carte",
+      "step1": "Ta fuda",
+      "step2": "Ta face",
+      "step3": "Qui peut relever",
+      "pickLabel": "Miser {name}",
+      "hint": "Touche une fuda pour la miser.",
+      "lastCopy": "Dernier exemplaire de {card}. Si tu perds, il quitte ta collection.",
+      "remaining": "{card} · il t'en restera {count}.",
+      "confirmLast": "Je mise mon dernier exemplaire",
+      "omoteNote": "vermillon",
+      "uraNote": "laque noire",
+      "everyone": "Tout le monde",
+      "friend": "Un joueur précis",
+      "friendLabel": "Pseudo de l'ami ou de l'ancien adversaire",
+      "recap": "{card} est mise de côté. Sans preneur, elle revient {date}.",
+      "recapEmpty": "Choisis une fuda et une face.",
+      "submit": "Poser la table",
+      "posting": "Pose en cours…"
+    },
+    "errors": {
+      "CLOSED": "Le casino n'est pas encore ouvert.",
+      "DISABLED": "Le pile ou face est fermé pour le moment.",
+      "GUEST": "Crée un compte pour jouer : un invité peut regarder, pas miser.",
+      "BANNED": "Ton compte ne peut pas jouer.",
+      "TOO_NEW": "Ton compte est trop récent pour miser : reviens dans quelques heures.",
+      "RARITY": "Cette rareté ne se mise pas au casino.",
+      "TABLE_LIMIT": "Tu as déjà le nombre maximal de tables ouvertes.",
+      "DAILY_LIMIT": "Tu as atteint la limite de lancers du jour. Reviens demain !",
+      "LAST_COPY": "Tu ne peux pas miser ton dernier exemplaire de cette carte.",
+      "CONFIRM_LAST_COPY": "C'est ton dernier exemplaire : confirme pour le miser.",
+      "RESERVE_TARGET": "On ne réserve une table qu'à un ami ou à un ancien adversaire.",
+      "BLOCKED": "Impossible de jouer avec ce joueur.",
+      "NOT_OPEN": "Cette table n'est plus ouverte : quelqu'un l'a relevée, ou elle a été retirée.",
+      "OWN_TABLE": "C'est ta table : attends qu'un autre joueur la relève.",
+      "RESERVED": "Cette table est réservée à un autre joueur.",
+      "TIER": "Il faut une fuda du même palier que la sienne.",
+      "NOT_FOUND": "Table introuvable.",
+      "NO_USER": "Joueur introuvable.",
+      "CARD_GONE": "Cette carte n'est plus disponible dans ta collection.",
+      "NO_SESSION": "Ta session a expiré : recharge la page.",
+      "INVALID": "Demande invalide.",
+      "RATE_LIMITED": "Doucement ! Réessaie dans un moment.",
+      "UNAVAILABLE": "Action impossible pour le moment.",
+      "FORBIDDEN": "Accès refusé.",
+      "unexpected": "Erreur inattendue. Réessaie."
+    },
+    "stage": {
+      "you": "Toi",
+      "youPlay": "tu joues {side}",
+      "plays": "joue {side}",
+      "skip": "Passer",
+      "soundOn": "Son activé",
+      "soundOff": "Son coupé",
+      "announce": "La pièce est tombée sur {side} : {outcome}.",
+      "won": "tu gagnes",
+      "lost": "tu perds"
+    },
+    "table": {
+      "yourTable": "Ta table",
+      "tableOf": "Table de {name}",
+      "open": "Ouverte",
+      "expires": "Expire {time}",
+      "reservedFor": "Réservée à <player>{name}</player>",
+      "awaiting": "En attente d'un joueur",
+      "youPlayWith": "Tu joues {side} {sideName} avec {card}.",
+      "leaveOk": "Tu peux fermer l'app : quand quelqu'un relève, tu es prévenu, et le lancer t'attend.",
+      "invite": "Inviter",
+      "copied": "Lien copié",
+      "shareTitle": "Viens relever ma table au casino de Kiraku",
+      "cancel": "Retirer",
+      "confirmCancel": "Retirer et reprendre ma carte",
+      "stakes": "{name} mise",
+      "theyPlay": "{name} joue {side}",
+      "youPlay": "Tu joues {side}",
+      "forYou": "Cette table t'est réservée.",
+      "pickTier": "Choisis une fuda du palier {tier}",
+      "against": "contre {card}",
+      "flip": "Lancer la pièce",
+      "flipping": "La pièce part…",
+      "youWin": "Tu remportes {card}",
+      "youLose": "{card} part chez {name}",
+      "joinsCollection": "rejoint ta collection",
+      "landedOn": "la pièce est tombée sur {side}",
+      "new": "Nouveau",
+      "rematch": "Revanche",
+      "again": "Rejouer",
+      "verify": "Vérifier le tirage",
+      "close": "Fermer",
+      "outroWin": "Les deux fuda sont à toi",
+      "outroLose": "Ta fuda part chez {name}",
+      "resultWon": "Tu as gagné : les deux fuda sont à toi.",
+      "resultLost": "Tu as perdu ce lancer.",
+      "resultSpectator": "{name} a remporté {card}.",
+      "expired": "Personne n'a relevé cette table à temps : la carte est revenue à son propriétaire.",
+      "cancelled": "Cette table a été retirée : la carte est revenue à son propriétaire."
+    },
+    "verify": {
+      "title": "Vérifier le tirage",
+      "intro": "À l'ouverture de la table, le serveur a tiré une graine secrète et n'a publié que son empreinte. Après le lancer, il révèle la graine : ton navigateur refait le calcul.",
+      "hash": "Empreinte publiée",
+      "hashSub": "à l'ouverture de la table",
+      "seed": "Graine révélée",
+      "seedSub": "après le lancer",
+      "sha": "SHA-256(graine)",
+      "shaOk": "= l'empreinte publiée : la graine n'a pas changé",
+      "shaKo": "≠ l'empreinte publiée",
+      "computing": "Calcul en cours…",
+      "hmac": "HMAC-SHA256(graine, table)",
+      "table": "table {id}",
+      "byte": "1er octet : 0x{hex} = {value}, {parity} → {side}",
+      "even": "pair",
+      "odd": "impair",
+      "result": "Résultat : {side}",
+      "conform": "Conforme au lancer joué",
+      "mismatch": "Ne correspond pas au lancer annoncé",
+      "unavailable": "Ton navigateur ne permet pas ce calcul (Web Crypto indisponible)."
+    },
+    "replays": {
+      "title": "Un lancer t'attend",
+      "row": "<player>{name}</player> a relevé ta table ({card})",
+      "watch": "Voir le lancer"
+    },
+    "announcement": {
+      "tag": "Nouveau · Événement",
+      "title": "Le casino ouvre ses portes",
+      "body": "Premier jeu : pile ou face entre joueurs. Une fuda contre une fuda du même palier.",
+      "enter": "Entrer au casino",
+      "later": "Plus tard"
+    },
+    "ceremony": {
+      "kicker": "Aujourd'hui",
+      "title": "Le casino est ouvert",
+      "body": "Pose une fuda ou relève la table d'un autre joueur.",
+      "enter": "Entrer au casino",
+      "skip": "Passer",
+      "label": "Cérémonie d'ouverture du casino"
+    }
   },
   "pwa": {
     "title": "Installer l'app",

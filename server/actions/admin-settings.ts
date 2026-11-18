@@ -35,6 +35,7 @@ import {
   themeConditionRarities,
   type ShowcaseSettingKey,
 } from "@/lib/settings/showcase-form";
+import { CASINO_FORM_KEYS, casinoSettingsSchema, type CasinoFormKey } from "@/lib/settings/casino-form";
 import { changedSettingKeys, type SettingsOf } from "@/lib/settings/form";
 import { getAdmin } from "../admin";
 import { prisma } from "../db";
@@ -64,7 +65,7 @@ async function saveSettings<K extends SettingKey>(
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const next = parsed.data as SettingsOf<K>;
-  const rarityKeys = ["booster.rates", "collection.recycleValues", "battle.keywordsByRarity", "booster.slotFloors", "booster.goldenFloor", "gifts.allowedRarities", "trades.allowedRarities", "home.pullFeed.minRarity", "market.maxPriceByRarity", "booster.duplicateGuardRarities"];
+  const rarityKeys = ["booster.rates", "collection.recycleValues", "battle.keywordsByRarity", "booster.slotFloors", "booster.goldenFloor", "gifts.allowedRarities", "trades.allowedRarities", "home.pullFeed.minRarity", "market.maxPriceByRarity", "booster.duplicateGuardRarities", "casino.coinflip.allowedRarities", "discord.casinoMinRarity"];
   if (keys.some((k) => rarityKeys.includes(k))) {
     const registry = await getRarities();
     for (const key of keys.filter((k) => rarityKeys.includes(k))) {
@@ -258,7 +259,20 @@ export async function updatePullFeedSettings(input: unknown): Promise<UpdateSett
   return saveSettings(PULL_FEED_SETTING_KEYS, pullFeedSettingsSchema, input);
 }
 
+/** Casino : ouverture, garde-fous et règles du pile ou face (raretés jouables vérifiées contre le registre). */
+export async function updateCasinoSettings(input: unknown): Promise<UpdateSettingsResult<CasinoFormKey>> {
+  return saveSettings(CASINO_FORM_KEYS, casinoSettingsSchema, input);
+}
+
 export async function updateEventGaugeSettings(input: unknown): Promise<UpdateSettingsResult<EventGaugeSettingKey>> {
+  const admin = await getAdmin();
+  if (!admin) return { ok: false, error: "FORBIDDEN" };
+  const parsed = eventGaugeSettingsSchema.safeParse(input);
+  // Limité avant la vérification du lot en base (bucket à part de celui de l'écriture)
+  if (!(await rateLimit(`admin-check:${admin.id}`, { limit: 20, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
+  // La récompense promise doit exister : sinon la jauge afficherait un lot introuvable
+  const lotId = parsed.success ? parsed.data["home.eventGauge.rewardLotId"] : null;
+  if (lotId && !(await prisma.lot.findUnique({ where: { id: lotId }, select: { id: true } }))) return { ok: false, error: "INVALID" };
   return saveSettings(EVENT_GAUGE_SETTING_KEYS, eventGaugeSettingsSchema, input);
 }
 

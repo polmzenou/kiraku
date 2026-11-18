@@ -154,7 +154,7 @@ Kyara affiche aussi un stock de 15 boosters et une monnaie nommée « Chakra » 
 3. **Classement · Top collectionneurs** : podium 2-1-3 avec avatar, nombre de cartes et de Mythiques, lien vers le classement complet. Ajoute un onglet « Top classé » pour ton mode classé.
 4. **Avis · Ce qu'en disent les joueurs** : note moyenne (Kyara affiche 4,7 ★ sur 4 999 avis) et derniers avis avec avatar, étoiles, date et texte.
 
-Tes tuiles s'ajoutent à la grille du Compte : Combat, Boutique, et Casino avec l'étiquette « Bientôt ».
+Tes tuiles s'ajoutent à la grille du Compte : Combat, Boutique, et Casino, avec l'étiquette « Bientôt » pendant le teaser puis « Nouveau » les jours qui suivent son ouverture (voir « Casino »).
 
 **Récap d'ouverture** (`/ouvrir/[slug]`). Les cartes du booster en grille (3 + 2 chez Kyara, 3 × 3 pour tes 6 cartes), chacune avec un badge « Nouveau » si le joueur ne l'avait jamais eue. En dessous :
 
@@ -442,7 +442,7 @@ Pourquoi 天 et pas 神 : 神 est déjà le sceau de la rareté Mythique, et un 
 
 - Un sachet tombé d'un tirage peut s'offrir **une fois**. Un sachet reçu (ami, lot, récompense) ne se ré-offre pas.
 - Quand le destinataire ouvre un Apocalyptique offert, l'expéditeur reçoit une notification `DROP_OPENED` avec l'issue : « Ton Apocalyptique a explosé au visage de Léa » ou « … a épargné Léa : Gold ! » (payload : ids et rareté, jamais de texte libre). Même chose pour un Divin offert (« Léa a ouvert ton Divin : AR »).
-- **Garde-fous contre le farm de comptes** (les invités sont créés automatiquement) : expéditeur lié à Discord (`gifts.dropRequiresDiscord`), compte de plus de `gifts.dropMinAccountDays` jours (7), amitié de plus de `gifts.minFriendshipHours`, au plus `gifts.dropPerWeek` sachet offert par semaine (1), et le cadeau compte dans les quotas du jour existants. Le stock gratuit, lui, ne se transfère toujours pas.
+- **Garde-fous contre le farm de comptes** (les invités sont créés automatiquement) : expéditeur lié à Discord (`gifts.sealedRequiresDiscord`), compte de plus de `gifts.sealedMinAccountDays` jours (7), amitié de plus de `gifts.minFriendshipHours`, au plus `gifts.sealedPerWindow` sachets offerts sur les `gifts.sealedWindowDays` derniers jours (2 tous les 3 jours, fenêtre glissante, réglable dans `/admin/social`), et le cadeau compte dans les quotas du jour existants. Le stock gratuit, lui, ne se transfère toujours pas.
 
 ### Écran
 
@@ -688,7 +688,7 @@ Mise en œuvre (étape 9b) :
 - **Historique** `/compte/historique` (pièce de l'en-tête et solde du Compte) : par curseur, filtres Tout · Gains · Dépenses, lien vers la source. `/admin/economie` affiche les Zeni en circulation et la liste des soldes qui ne correspondent pas à leur journal (doit rester vide).
 - **Tests** : `lib/economy/*.test.ts` ; `server/economy/economy.db.test.ts` (50 débits simultanés, double réclamation de mission, achats limités, double rattachement et double réclamation de parrainage, soldes = journal).
 
-**Casino.** Une tuile et une entrée de menu « Casino » avec l'étiquette « Bientôt », pilotées par l'interrupteur admin `features.casino`. La page `/casino` affiche un simple écran d'attente ; rien d'autre n'est construit pour l'instant.
+**Casino.** Pile ou face entre joueurs, sans Zeni ni argent réel : voir la section « Casino ».
 
 **Serveur Discord.** Un modal « Rejoins notre Discord » (titre, texte, bouton vers le lien d'invitation), **désactivé par défaut**. Depuis l'admin, tu l'actives, changes le lien, le texte et le moment d'affichage. Il est distinct de la connexion Discord du compte.
 
@@ -744,6 +744,36 @@ Mini-jeu PvE sur `/expedition` (étape 14) : chaque jour, chaque joueur reçoit 
 - **Admin** (`/admin/expeditions`) : interrupteur (aussi sur `/admin/fonctionnalites`), réglages, modèles par palier avec l'aperçu d'équilibrage (chances et gains attendus, Zeni par heure), installation du catalogue par défaut, suppression d'un modèle jamais joué (sinon désactivation), expéditions en route et rappel (cartes rendues sans gain, `AdminLog`), chiffres des 7 derniers jours.
 - **Code** : règles pures dans `lib/expedition/` (testées), écritures dans `server/expedition/expedition-core.ts` (client injecté), lectures dans `server/expedition/queries.ts`, actions dans `server/actions/expedition.ts` et `admin-expedition.ts`, écran dans `components/expedition/`. Export RGPD : section `expeditions`. Tests de base : `server/expedition/expedition.db.test.ts`.
 
+## Casino
+
+Premier jeu : un **pile ou face entre vrais joueurs** (表 face, 裏 pile), sans bot. Chacun mise une fuda du même palier, le gagnant emporte les deux. On n'y mise **ni Zeni ni argent réel** : un lancer payé en Zeni serait un pari, et rien n'y est vendu. Pas de contrôle d'âge (décision du 16 novembre 2026) : une mention « Tout est virtuel » sur chaque écran du casino, et une clause dans les CGU.
+
+**Ouverture** pilotée par `casino.opensAt` (`lib/casino/phase.ts`) :
+
+- `features.casino` éteint : casino caché aux joueurs, aperçu pour l'équipe ;
+- date vide : teaser « Bientôt » sans compte à rebours ; date future : teaser avec compte à rebours (façade fermée en boucle, ombre de la pièce derrière le shōji) ;
+- date passée : casino ouvert. Pendant `casino.newBadgeDays` jours : badge « Nouveau » (menu et tuile du Compte), cérémonie jouée une fois par appareil (`kiraku.casino-ceremony`, sautée en mouvement réduit), modale « Le casino ouvre ses portes » pour les comptes inscrits avant l'ouverture (jamais aux invités).
+- L'équipe (ADMIN, DEV) voit le hall et peut jouer en aperçu avant l'ouverture.
+
+**Tables ouvertes asynchrones** (`CoinFlip`, `server/casino/coinflip-core.ts`) :
+
+- **Poser** : une fuda et une face. L'exemplaire passe en `CardStatus.CASINO` (séquestre) : tous les autres transferts filtrent `COLLECTION`, il ne peut donc être ni vendu, ni échangé, ni offert, ni recyclé, ni engagé en combat ; il reste en vitrine jusqu'au transfert. Toute carte est misable, dernier exemplaire compris, après un avertissement net (`casino.coinflip.lastCopyAllowed`).
+- **Réserver** une table à un ami ou à un ancien adversaire (« Revanche ») ; l'invité reçoit `COINFLIP_INVITE` et peut décliner.
+- **Relever** avec une fuda du même palier : le `sortOrder` du registre (Mythique = BR, AR = VR, Gold = MR). La pièce est lancée aussitôt sur le serveur ; les deux cartes vont au gagnant par des `updateMany` conditionnels. Le créateur reçoit `COINFLIP_RESOLVED` sans l'issue : le lancer se rejoue à son retour (`creatorSeenAt`), ou en direct s'il attend sur la page de sa table (temps réel `coinflip`, sondage en secours).
+- **Retirer** sa table tant qu'elle est ouverte ; sans preneur, elle expire au bout de `casino.coinflip.expiryHours` et la carte revient (`COINFLIP_RETURNED`). Balayage paresseux (cloche, page de la table, relève d'une table échue) et `/api/cron/casino` chaque jour.
+- **Garde-fous** : pas d'invités, pas de comptes de moins de `casino.minAccountAgeHours`, pas de joueurs bloqués dans un sens ou dans l'autre, `casino.coinflip.maxOpenTables` tables ouvertes, `casino.coinflip.dailyLimit` lancers par jour de jeu (tables posées et relevées), comptés sous le verrou du joueur.
+- **Ordre des verrous** partout : la ligne `CoinFlip`, puis les joueurs triés par id. La suppression d'un compte, le bannissement, la demande de suppression et l'anonymisation ferment ses tables et rendent les cartes des tables qui lui étaient réservées.
+
+**Tirage vérifiable** (`lib/casino/fairness.ts`, Web Crypto côté serveur et navigateur) : à l'ouverture, une graine de 32 octets est tirée et seule son empreinte SHA-256 est publiée ; l'issue est le premier octet de HMAC-SHA256(graine, id de la table), pair → 表, impair → 裏. La graine n'est révélée qu'une fois la table jouée ; « Vérifier le tirage » refait les deux calculs dans le navigateur.
+
+**Écrans** (`components/casino/`) : hall `/casino` (carte peinte du pile ou face, jeux scellés, jauge de l'inauguration, fil des derniers lancers), salon `/casino/pile-ou-face` (tables par palier, mes tables et invitations, historique et statistiques, « Poser une carte »), page partageable et non indexée `/casino/pile-ou-face/[id]` (attente, relève, lancer, résultat, vérification). Le lancer (`CoinFlipStage`, chargé à la demande) : face-à-face et 対, pièce 3D aux vraies faces, **Lancer** en dessous de Légendaire et **Toupie** au-dessus, de 3 s (Commune) à 5 s (au-dessus de Mythique), sceau de la face gagnante, pot qui file vers le gagnant, 勝 ou 負 sur un trait de sumi. La chorégraphie est pure et testée (`lib/casino/choreography.ts`) : la pièce retombe toujours sur la face tirée par le serveur, jamais de « presque gagné ». Un appui passe l'animation ; en mouvement réduit, l'état final s'affiche directement. Visuels peints dans `public/casino` (une semaine de cache, renommer un fichier qui change).
+
+**Lancement** : jauge communautaire en lancers (`home.eventGauge.metric = COINFLIPS`, récompense pour tous `home.eventGauge.rewardLotId`, envoyée depuis `/admin/lots`), bannière Nouveautés avec le sceau 賭, annonces Discord (`docs/DISCORD.md` : teaser à la main, ouverture postée une fois par le cron, relais des lancers à partir de `discord.casinoMinRarity`).
+
+**Admin** `/admin/casino` : date d'ouverture (« Ouvrir maintenant »), badge et cérémonie, garde-fous, raretés jouables, santé du séquestre (tables ouvertes = cartes `CASINO`), statistiques sur 30 jours (lancers par jour, répartition 表 / 裏, victoires du créateur), tables ouvertes avec retrait motivé (`AdminLog`).
+
+**Tests** : règles pures (`lib/casino/*.test.ts`), migration rejouée en PGlite (`server/casino/migration.test.ts`), concurrence sur base (`server/casino/coinflip.db.test.ts` : 20 relèves simultanées, relève contre retrait, quota sous charge, conservation des cartes), rendus du salon et de la vérification.
+
 ## Panneau d'administration
 
 `/admin` permet à un compte `role = ADMIN` de tout gérer sans redéployer. Pour ça, aucune règle du jeu ne vit dans des constantes : délais, taux, stats de combat et barème du classé se lisent dans la table `GameSetting`, et les constantes du code ne servent que de valeurs par défaut.
@@ -765,7 +795,8 @@ Mini-jeu PvE sur `/expedition` (étape 14) : chaque jour, chaque joueur reçoit 
 | Module ajouté | Ce que l'admin peut faire |
 | --- | --- |
 | Discord | Activer ou désactiver le modal « Rejoins le serveur », changer le lien d'invitation, le titre, le texte, le déclencheur et la fréquence ; section Discord de la page Social (`discord.socialPromo` : interrupteur, lien, textes fr/en, début et fin d'affichage facultatifs) |
-| Fonctionnalités | Interrupteurs : casino (« Bientôt »), boutique, paiement Stripe, classé, marché, cadeaux |
+| Fonctionnalités | Interrupteurs : casino (visible ou caché), boutique, paiement Stripe, classé, marché, cadeaux |
+| Casino | `/admin/casino` : date d'ouverture, badge et cérémonie, garde-fous et raretés du pile ou face, santé du séquestre, statistiques, retrait motivé d'une table (voir « Casino ») |
 | Vitrines | `/admin/vitrines` : vitrines par joueur, et pour chaque thème son statut (Disponible, Arrive prochainement : visible flouté avec un cadenas, Masqué), sa condition de déblocage et le nombre de vitrines qui l'utilisent |
 | Event vitrines | `/admin/evenement/vitrines` : allumer ou cacher l'event, édition, dates, minimum de cartes, vitrines par page, inscriptions et votes en direct, retrait d'une inscription (voir « Event vitrines ») |
 | Boutique | Articles (boosters, packs, bannières), prix en Zeni, prix en euros et id de prix Stripe, dates de disponibilité |
@@ -804,7 +835,7 @@ Droits des joueurs, dans un onglet « Mes données » du Compte :
 
 Cookies : au départ, n'utilise que ce qui est strictement nécessaire (cookie de session, protection anti-abus) et du stockage local pour la langue et le son. Ces usages sont exemptés de consentement, donc pas de bandeau à afficher, juste la page d'information. Dès que tu ajoutes de la mesure d'audience non exemptée, de la pub ou des intégrations tierces qui déposent des traceurs, il faut un bandeau : « Accepter » et « Refuser » aussi visibles l'un que l'autre, un choix « Personnaliser », rien de déposé avant le choix, et le choix redemandé au bout de 6 mois.
 
-Âge : en France, un mineur de moins de 15 ans a besoin de l'accord d'un parent pour ce type de service. **Décision de l'étape 10 : pas de contrôle d'âge technique.** Les CGU portent une clause déclarative (15 ans ou accord d'un parent) ; `User.birthDate` reste en base, inutilisé. À revoir avant le casino ou tout achat en argent réel (18 ans).
+Âge : en France, un mineur de moins de 15 ans a besoin de l'accord d'un parent pour ce type de service. **Décision de l'étape 10 : pas de contrôle d'âge technique.** Les CGU portent une clause déclarative (15 ans ou accord d'un parent) ; `User.birthDate` reste en base, inutilisé. Revu pour le casino le 16 novembre 2026 : sans Zeni ni argent réel, seulement des cartes virtuelles entre joueurs, **toujours pas de contrôle d'âge** ; une mention « Tout est virtuel » et une clause des CGU. À revoir avant tout achat en argent réel (18 ans).
 
 Acceptation des CGU : chaque page légale porte un numéro de version. Le joueur accepte la version en cours à l'inscription ; si tu changes les CGU, il voit un écran d'acceptation à sa prochaine visite (`User.termsVersion`).
 
@@ -814,7 +845,7 @@ Acceptation des CGU : chaque page légale porte un numéro de version. Le joueur
 - **CGU** : case obligatoire à l'inscription e-mail ; `AccountGate` (layout) montre l'écran d'acceptation à tout compte inscrit en retard de version, Discord compris. Les invités voient une mention dans le pied de page.
 - **Mes données** (`/compte/donnees`) : export JSON (`POST /api/me/export`, liste blanche de champs, `account.exportsPerDay`), changement de pseudo (`account.usernameChangeDays`), langue mémorisée, suppression annulable (`account.deletionGraceDays`, compte gelé), anonymisation par `/api/cron/accounts` ou depuis `/admin/donnees`. Historique dans `DataRequest`.
 - **Cookies** : registre unique `lib/consent/registry.ts` (page Cookies générée depuis lui) ; bandeau CNIL prêt mais masqué tant que tout est exempté ; « Gérer les cookies » en pied de page.
-- **Discord** : `discord.joinModal` (désactivé par défaut), `/admin/discord`. **Casino** : `features.casino`, entrée « Bientôt » et `/casino`. `/admin/fonctionnalites` réunit les interrupteurs.
+- **Discord** : `discord.joinModal` (désactivé par défaut), `/admin/discord`. **Casino** : `features.casino` (visible ou caché), `casino.*` dans `/admin/casino`. `/admin/fonctionnalites` réunit les interrupteurs.
 - **PWA** : service worker à chaque visite, page hors ligne (aucun cache de données), raccourcis, bouton « Installer l'app ».
 - **Admin** : tableau de bord, journal `AdminLog` (`writeAdminLog` partout), envoi de lots à un joueur ou à tous (`LotGrant`, `LotBroadcast`, notification `LOT_GRANTED`), `/admin/general`, tableaux responsives.
 - **Sécurité** : `npm run audit:actions` (session, Zod, rate limit sur chaque Server Action), pseudos masqués selon la visibilité du profil sur `/tirage` et le marché, CI GitHub Actions. **Performance** : messages admin hors du bundle des joueurs, `domMax` chargé à la demande, squelettes `loading.tsx`, Speed Insights, `npm run lighthouse` (375 px).
@@ -934,7 +965,7 @@ datasource db {
 
 enum Rarity { COMMON UNCOMMON RARE EPIC LEGENDARY MYTHIC }
 enum Role { USER ADMIN }
-enum CardStatus { COLLECTION AUCTION BATTLE }
+enum CardStatus { COLLECTION AUCTION BATTLE CASINO } // CASINO : misée sur une table de pile ou face ouverte (séquestre)
 enum FriendStatus { PENDING ACCEPTED }
 enum AuctionStatus { ACTIVE SOLD EXPIRED CANCELLED }
 enum CoinReason { SIGNUP BID_HOLD BID_REFUND SALE FEE DISSOLVE BATTLE_WIN DAILY MISSION REFERRAL ADMIN SHOP DISCORD_LINK BOOSTER GIFT SEASON ABILITY }
@@ -1433,8 +1464,9 @@ Construis dans cet ordre : chaque étape est jouable seule et sert de base à la
     - échanges entre amis, chat éphémère entre amis, profil personnalisable (titres, cadres, badges).
 13. **Sachets scellés** — Divin et Apocalyptique : chute pendant l'ouverture, `SealedDrop`, karma de l'Apocalypse, cadeau empoisonné avec ses garde-fous, animations de transformation et d'ouverture, réglages et tests. Voir « Sachets scellés : Divin et Apocalyptique ».
 14. **Expéditions** — 14a socle (modèles, offres du jour, lancement, clôture, verrou des cartes, admin), 14b écran et animations (laissez-passer, jauge ensō, départ, rouleau peint, rapport), 14c notifications, cron et documentation. Voir « Expéditions ».
+15. **Casino : pile ou face** — `CoinFlip` et séquestre `CASINO`, tirage vérifiable, salon et tables réservées, lancer animé, cérémonie d'ouverture, annonce, badges, jauge des lancers, annonces Discord, `/admin/casino`. Voir « Casino ».
 
-Hors de ce plan : Stripe et le casino, après un avis juridique.
+Hors de ce plan : Stripe, après un avis juridique.
 
 ## Sources
 

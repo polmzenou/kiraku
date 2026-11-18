@@ -15,7 +15,11 @@ export type SoundName =
   | "clap"
   | "launch"
   | "boom"
-  | "crackle";
+  | "crackle"
+  // Casino : pièce qui tourne, trait de sumi, lanterne qui s'allume
+  | "tick"
+  | "brush"
+  | "lamp";
 
 let ctx: AudioContext | null = null;
 let noiseBuffer: AudioBuffer | null = null;
@@ -141,6 +145,16 @@ export function playSound(name: SoundName, volume = 0.6) {
     case "boom": // bouquet qui éclate : grave et souffle
       tone(ac, out, 70, t, { peak: 0.7, decay: 0.7, to: 36 });
       burst(ac, out, t, { duration: 0.9, from: 900, to: 140, q: 0.5, peak: 0.35 });
+      break;
+    case "tick": // pièce qui tourne : petit cliquetis métallique
+      burst(ac, out, t, { duration: 0.02, from: 4200, to: 2600, q: 3, peak: 0.12 });
+      break;
+    case "brush": // trait de pinceau sumi : souffle qui monte
+      burst(ac, out, t, { duration: 0.32, from: 900, to: 3200, q: 0.5, peak: 0.16 });
+      break;
+    case "lamp": // lanterne qui s'allume : souffle grave et flamme
+      burst(ac, out, t, { duration: 0.28, from: 260, to: 1200, q: 0.6, peak: 0.16 });
+      tone(ac, out, 220, t, { peak: 0.08, decay: 0.3, to: 150 });
       break;
     case "crackle": // étincelles qui crépitent
       for (let i = 0; i < 12; i++) burst(ac, out, t + i * 0.05 + (i % 3) * 0.013, { duration: 0.025, from: 5200, to: 3800, q: 2, peak: 0.12 });

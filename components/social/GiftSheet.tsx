@@ -19,7 +19,9 @@ export type GiftLimits = {
   minFriendshipHours: number;
   /** Sachets scellés : ancienneté du compte (jours) et nombre par semaine. */
   sealedMinAccountDays: number;
-  sealedPerWeek: number;
+  /** Sachets scellés offerts au plus sur les sealedWindowDays derniers jours. */
+  sealedPerWindow: number;
+  sealedWindowDays: number;
 };
 
 /** Ce que la feuille doit savoir pour s'afficher ; le serveur revérifie tout au moment du cadeau. */

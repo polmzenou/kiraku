@@ -52,6 +52,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     tradeListings,
     listingOffers,
     trades,
+    coinFlips,
     friendships,
     blocks,
     gifts,
@@ -166,6 +167,25 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
         resolvedAt: true,
       },
     }),
+    // Tables de pile ou face (posées ou relevées) ; jamais la graine d'une table encore ouverte
+    db.coinFlip.findMany({
+      where: { OR: [{ creatorId: userId }, { opponentId: userId }] },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        status: true,
+        creatorId: true,
+        creatorCardId: true,
+        creatorSide: true,
+        opponentCardId: true,
+        seed: true,
+        seedHash: true,
+        result: true,
+        winnerId: true,
+        createdAt: true,
+        resolvedAt: true,
+      },
+    }),
     db.friendship.findMany({
       where: { OR: [{ requesterId: userId }, { addresseeId: userId }] },
       select: {
@@ -273,6 +293,12 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     tradeListings: tradeListings.map((l) => ({ ...l, wants: l.wants.map((w) => w.cardId) })),
     listingOffers,
     trades: trades.map(({ proposerId, ...t }) => ({ ...t, direction: proposerId === userId ? "OUTGOING" : "INCOMING" })),
+    coinFlips: coinFlips.map(({ creatorId, winnerId, seed, ...f }) => ({
+      ...f,
+      role: creatorId === userId ? "CREATOR" : "OPPONENT",
+      seed: f.status === "DONE" ? seed : null,
+      won: f.status === "DONE" ? winnerId === userId : null,
+    })),
     friends: friendships.map((f) => {
       const outgoing = f.requesterId === userId;
       return {

@@ -17,11 +17,13 @@ export type EventGaugeCta = "signup" | "invite" | null;
  * client affiche, le serveur compte. Sondée seulement quand elle est à l'écran pendant l'event ; à
  * chaque échéance, la page est redemandée au serveur, qui donne la nouvelle phase.
  */
-export function EventGauge({ initial, refreshSeconds, serverNow, cta }: {
+export function EventGauge({ initial, refreshSeconds, serverNow, cta, compact = false }: {
   initial: EventGaugeView;
   refreshSeconds: number;
   serverNow: number;
   cta: EventGaugeCta;
+  /** Dans le hall du casino ou la modale d'ouverture : sans titre à kanji ni bouton. */
+  compact?: boolean;
 }) {
   const t = useTranslations("home.eventGauge");
   const format = useFormatter();
@@ -54,16 +56,23 @@ export function EventGauge({ initial, refreshSeconds, serverNow, cta }: {
   usePoll(refresh, { seconds: refreshSeconds, enabled: phase === "live" && inView, backoff: true });
 
   const counts = { count: format.number(count), goal: format.number(goal) };
+  // Inauguration du casino : la jauge compte les lancers de pile ou face
+  const flips = gauge.metric === "COINFLIPS";
   const message = phase === "ended"
-    ? t(reached ? "endedReached" : "endedMissed", counts)
+    ? t(flips ? (reached ? "coinflips.endedReached" : "coinflips.endedMissed") : reached ? "endedReached" : "endedMissed", counts)
     : reached
       ? t("reached")
-      : t("rules", { goal: counts.goal });
+      : t(flips ? "coinflips.rules" : "rules", { goal: counts.goal });
+  const progress = t(flips ? "coinflips.progress" : "progress", counts);
 
   return (
-    <section ref={section} aria-labelledby="event-gauge" className="flex flex-col gap-3 lacquer rounded-card p-4">
+    <section ref={section} aria-labelledby="event-gauge" className={`flex flex-col gap-3 lacquer rounded-card p-4 ${compact ? "text-left" : ""}`}>
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <SectionTitle id="event-gauge" kanji="祭" title={t("title")} />
+        {compact ? (
+          <h3 id="event-gauge" className="font-title text-base font-extrabold">{t(flips ? "coinflips.title" : "title")}</h3>
+        ) : (
+          <SectionTitle id="event-gauge" kanji={flips ? "賭" : "祭"} title={t(flips ? "coinflips.title" : "title")} />
+        )}
         <p className="text-xs font-bold tabular-nums text-text-muted">
           {remaining === null ? t("ended") : t(phase === "upcoming" ? "startsIn" : "endsIn", { time: formatTime(remaining) })}
         </p>
@@ -73,7 +82,7 @@ export function EventGauge({ initial, refreshSeconds, serverNow, cta }: {
 
       <div className="flex flex-col gap-1.5">
         <div className="flex items-baseline justify-between gap-3 tabular-nums">
-          <p className="font-bold">{t("progress", counts)}</p>
+          <p className="font-bold">{progress}</p>
           <p className="text-sm font-bold text-kin">{t("percent", { percent })}</p>
         </div>
         <div
@@ -82,7 +91,7 @@ export function EventGauge({ initial, refreshSeconds, serverNow, cta }: {
           aria-valuemin={0}
           aria-valuemax={goal}
           aria-valuenow={Math.min(count, goal)}
-          aria-valuetext={t("progress", counts)}
+          aria-valuetext={progress}
           className="h-4 overflow-hidden rounded-full border border-border bg-surface-2"
         >
           <div
@@ -92,7 +101,20 @@ export function EventGauge({ initial, refreshSeconds, serverNow, cta }: {
         </div>
       </div>
 
-      {phase !== "ended" && cta && (
+      {gauge.reward && (
+        <p className="flex items-center gap-2 text-sm text-text-muted">
+          <span aria-hidden="true" lang="ja" className="font-seal text-base text-kin">贈</span>
+          {t("reward", { reward: gauge.reward })}
+        </p>
+      )}
+
+      {!compact && flips && phase === "live" && (
+        <ButtonLink href="/casino/pile-ou-face" variant="primary" className="self-start">
+          {t("coinflips.cta")}
+        </ButtonLink>
+      )}
+
+      {!compact && !flips && phase !== "ended" && cta && (
         <ButtonLink href={cta === "signup" ? "/inscription" : "/parrainage"} variant={cta === "signup" ? "primary" : "secondary"} className="max-w-full self-start text-center whitespace-normal!">
           {t(cta === "signup" ? "ctaSignup" : "ctaInvite")}
         </ButtonLink>

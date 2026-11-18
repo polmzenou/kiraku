@@ -26,6 +26,7 @@ import { linkDiscord } from "@/server/actions/auth";
 import { discordEnabled, env, isProduction, mailEnabled } from "@/server/env";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { pushAvailable } from "@/server/push/send";
+import { getCasinoNav } from "@/server/casino/queries";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
 
@@ -38,7 +39,7 @@ const ACCOUNT_TILES = [
   { key: "ledger", href: "/compte/historique", kanji: "銭" },
   { key: "data", href: "/compte/donnees", kanji: "私" },
   { key: "social", href: "/social", kanji: "縁" },
-  { key: "casino", href: "/casino", kanji: "賭", soon: true },
+  { key: "casino", href: "/casino", kanji: "賭" },
 ] as const;
 
 export default async function AccountPage() {
@@ -60,11 +61,13 @@ export default async function AccountPage() {
     getBoosterRules(),
     getSetting("discord.linkBonusZeni"),
     pushAvailable(),
-    getSetting("features.casino"),
+    getCasinoNav(),
     getSetting("expedition.enabled"),
   ]);
-  // Casino et expéditions : tuiles masquées tant que l'admin ne les allume pas
-  const tiles = ACCOUNT_TILES.filter((tile) => (tile.key !== "casino" || casino) && (tile.key !== "expedition" || expedition));
+  // Casino : tuile selon sa phase ; expéditions : tuile masquée tant que l'admin ne les allume pas
+  const tiles = ACCOUNT_TILES.filter((tile) => (tile.key !== "casino" || casino.visible) && (tile.key !== "expedition" || expedition));
+  // Même pastille que le menu : « Bientôt » au teaser, « Nouveau » après l'ouverture
+  const casinoTag = casino.badge;
   const code = guestCode(user.username);
   const displayName = user.isGuest && code ? t("account.guestName", { code }) : user.username;
   const canLinkDiscord = discordEnabled && !user.discordLinkedAt;
@@ -139,10 +142,13 @@ export default async function AccountPage() {
                 </span>
                 <span className="flex flex-wrap items-center gap-2">
                   {t(`account.tiles.${tile.key}`)}
-                  {"soon" in tile && (
+                  {tile.key === "casino" && casinoTag === "soon" && (
                     <span className="rounded-sm border border-border px-1.5 text-[10px] font-normal tracking-wide text-text-muted uppercase">
                       {t("nav.soon")}
                     </span>
+                  )}
+                  {tile.key === "casino" && casinoTag === "new" && (
+                    <span className="rounded-sm bg-kin px-1.5 text-[10px] tracking-wide text-sumi uppercase">{t("nav.new")}</span>
                   )}
                 </span>
               </Link>

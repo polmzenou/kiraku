@@ -4,6 +4,7 @@ import { guestCode } from "../username";
 import type {
   AuctionPayload,
   BattlePayload,
+  CoinFlipPayload,
   ExpeditionPayload,
   GiftPayload,
   NotificationType,
@@ -28,6 +29,8 @@ export type DescribableNotification = {
   team?: (TeamGiftPayload & { boosterSlug: string | null }) | null;
   /** Sachet scellé offert puis ouvert par l'ami (la meilleure carte est dans `card`). */
   sealed?: SealedPayload | null;
+  /** Table de pile ou face (la carte du créateur est dans `card`). */
+  coinFlip?: CoinFlipPayload | null;
   /** Expédition rentrée : son issue. */
   expedition?: ExpeditionPayload | null;
   card: { anilistId: number; name: string; rarity: string } | null;
@@ -71,6 +74,11 @@ export type DescribeTranslators = {
       | "listingAccepted"
       | "listingDeclined"
       | "ambassadorGranted"
+      | "coinFlipInvite"
+      | "coinFlipResolved"
+      | "coinFlipExpired"
+      | "coinFlipDeclined"
+      | "coinFlipAdmin"
       | "expeditionTriumph"
       | "expeditionSuccess"
       | "expeditionFailure"
@@ -156,6 +164,18 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
       const key = n.type === "LISTING_OFFER" ? "listingOffer" : n.type === "LISTING_ACCEPTED" ? "listingAccepted" : "listingDeclined";
       const values = { name, card: n.card?.name ?? t("aCard"), offered: n.offeredCard?.name ?? t("aCard") };
       return { text: t(key, values), href: "/marche?onglet=mes-echanges" };
+    }
+    case "COINFLIP_INVITE":
+    case "COINFLIP_RESOLVED":
+    case "COINFLIP_RETURNED": {
+      const card = n.card?.name ?? t("aCard");
+      const table = n.coinFlip ? `/casino/pile-ou-face/${n.coinFlip.flipId}` : "/casino/pile-ou-face";
+      if (n.type === "COINFLIP_INVITE") return { text: t("coinFlipInvite", { name, card }), href: table };
+      // L'issue n'est jamais dans le texte : la pièce se rejoue sur la page de la table
+      if (n.type === "COINFLIP_RESOLVED") return { text: t("coinFlipResolved", { name, card }), href: table };
+      const reason = n.coinFlip?.reason;
+      const key = reason === "DECLINED" ? "coinFlipDeclined" : reason === "ADMIN" ? "coinFlipAdmin" : "coinFlipExpired";
+      return { text: t(key, { name, card }), href: n.card ? `/collection/${n.card.anilistId}` : "/collection" };
     }
     case "EXPEDITION_RETURNED": {
       // Le résultat se révèle sur la page : la notification ne le dévoile qu'à moitié

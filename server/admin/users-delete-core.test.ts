@@ -83,6 +83,16 @@ describe("suppression définitive d'un compte", () => {
     expect(tx.user.delete).toHaveBeenCalledWith({ where: { id: "target" }, select: { id: true } });
   });
 
+  it("verrouille ses tables de pile ou face avant les joueurs, comme une relève", async () => {
+    const { tx, db } = setup();
+    await deleteUserWith(db, input);
+    const sql = tx.$queryRaw.mock.calls.map(([strings]) => (strings as TemplateStringsArray).join("?"));
+    const tables = sql.findIndex((q) => q.includes('FROM "CoinFlip"'));
+    const players = sql.findIndex((q) => q.includes('FROM "User"'));
+    expect(tables).toBeGreaterThanOrEqual(0);
+    expect(tables).toBeLessThan(players);
+  });
+
   it("rend à l'adversaire les cartes engagées dans un combat en cours", async () => {
     const { tx, db } = setup({ battles: [{ p1Id: "target", p2Id: "rival", p1Team: ["t1"], p2Team: ["r1", "r2"] }] });
     await deleteUserWith(db, input);

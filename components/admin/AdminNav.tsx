@@ -48,6 +48,7 @@ const GROUPS = [
       { key: "eventGauge", href: "/admin/evenement" },
       { key: "showcaseEvent", href: "/admin/evenement/vitrines" },
       { key: "market", href: "/admin/marche" },
+      { key: "casino", href: "/admin/casino" },
     ],
   },
   {

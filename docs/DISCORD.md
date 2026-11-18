@@ -147,6 +147,29 @@ Le cron s'installe sur l'hôte VPS. Le déploiement PM2 n'installe pas automatiq
 `deploy/crontab.example`. La procédure ci-dessous appelle l'URL HTTPS publique et ne dépend
 ni du port interne de l'application ni du conteneur PostgreSQL.
 
+### Activer les annonces du casino
+
+1. Créer un salon d'annonces du casino, en lecture seule pour les membres. Donner au bot **Voir le salon**,
+   **Voir l'historique**, **Envoyer des messages**, **Intégrer des liens** et **Joindre des fichiers**
+   (la bande-annonce de l'ouverture est jointe au message).
+2. Ajouter `DISCORD_CASINO_CHANNEL_ID="…"` à l'environnement de l'application du VPS, puis
+   `npm run build` et `pm2 restart kiraku --update-env`.
+3. Dans `/admin/discord`, activer **Annonces du casino sur Discord**, choisir la rareté à partir de laquelle
+   un lancer est relayé (Légendaire par défaut), puis enregistrer.
+4. Quelques jours avant l'ouverture, une fois la date réglée dans `/admin/casino`, cliquer sur
+   **Poster ou actualiser le teaser** : la façade fermée et le compte à rebours natif de Discord
+   (`<t:…:R>`, lu dans le fuseau de chaque membre). Un nouveau clic actualise le même message.
+5. À l'heure d'ouverture, le cron minute (`/api/cron/discord`) poste une seule fois l'annonce d'ouverture :
+   façade ouverte, bande-annonce de 8 s avec le son, objectif commun et récompense si la jauge compte les
+   lancers. Clé de la file : `casino:opening:<date>` ; une date d'ouverture déplacée donne une nouvelle annonce.
+   Une ouverture manquée de plus de 24 h n'est plus annoncée.
+6. Ensuite, chaque lancer dont le pot atteint la rareté réglée est relayé dans la minute (`coinflip:<table>`) :
+   gagnant public (sinon « Un joueur »), fuda remportée, face sortie et lien vers la page de la table, où le
+   tirage se vérifie. Sans mention de rôle. Les lancers de plus de 6 h ne sont pas repris rétroactivement.
+
+Les messages viennent de `lib/discord/casino-message.ts` ; les images (`public/casino/discord`) sont en JPEG
+1 200 × 630. L'aperçu des trois annonces est en bas du panneau Casino de `/admin/discord`.
+
 ### Guide #bien-débuter
 
 Le salon `1565843323854258276`, dans **👋 ACCUEIL**, contient le guide public : règlement,

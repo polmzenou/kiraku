@@ -23,6 +23,7 @@ Kiraku is meant for people aged **15 and over**. If you are under 15, you need t
 - Selling, buying or trading accounts, Zeni or cards for real money or any item outside the game is forbidden.
 - Booster drop rates are shown in the game. The server alone decides draws, prices and battle results.
 - The publisher may change the game balance (rates, prices, rewards) at any time.
+- **Casino.** The casino coin flip pits two players who each stake a card of the same tier; the winner keeps both. **Neither Zeni nor real money** can be staked, and nothing is sold: only virtual cards with no monetary value change hands. The server draws the result and anyone can verify it: its fingerprint is published when the table opens, and the seed is revealed after the flip. A staked card stays locked while its table is open and goes back to its owner if nobody takes it in time.
 
 ## 5. Code of conduct
 

@@ -8,6 +8,7 @@ import { randomBytes } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { anonymizedUsername, deletionDueAt } from "@/lib/account/deletion";
 import { leaveQueueWith } from "../battle/battle-core";
+import { withdrawCasinoFor } from "../casino/coinflip-core";
 import { AuctionError, cancelAuctionWith } from "../market/auction-core";
 import type { Tx } from "../social/lock";
 import { writeAdminLog } from "../admin/log";
@@ -58,7 +59,10 @@ export async function requestDeletionWith(
   return { dueAt };
 }
 
-/** Ventes sans mise retirées (celles avec une mise vont à leur terme), file de combat quittée. */
+/**
+ * Ventes sans mise retirées (celles avec une mise vont à leur terme), file de combat quittée, tables de
+ * pile ou face fermées (cartes rendues).
+ */
 async function withdrawFromGame(db: PrismaClient, userId: string, now: Date) {
   const open = await db.auction.findMany({
     where: { sellerId: userId, status: "ACTIVE", currentBidderId: null, endsAt: { gt: now } },
@@ -73,6 +77,7 @@ async function withdrawFromGame(db: PrismaClient, userId: string, now: Date) {
     }
   }
   await leaveQueueWith(db, { userId });
+  await withdrawCasinoFor(db, userId, now);
 }
 
 /** Annule une demande en attente (par le joueur, ou par un admin : `adminId`). */
@@ -111,6 +116,8 @@ export async function anonymizeUserWith(
   db: PrismaClient,
   input: { userId: string; now: Date; adminId?: string | null },
 ): Promise<boolean> {
+  // Tables du casino fermées avant de verrouiller le compte (ordre des verrous d'une relève : la table, puis le joueur)
+  await withdrawCasinoFor(db, input.userId, input.now);
   return db.$transaction(async (tx) => {
     const user = await lockAccount(tx, input.userId);
     if (!user) throw new AccountError("NO_USER");

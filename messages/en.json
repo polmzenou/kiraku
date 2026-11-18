@@ -573,7 +573,8 @@
     "event": "Event",
     "expedition": "Expeditions",
     "casino": "Casino",
-    "alert": "Reward to claim"
+    "alert": "Reward to claim",
+    "new": "New"
   },
   "header": {
     "stock": "Boosters: {count} of {max}",
@@ -1303,7 +1304,8 @@
       "battleSandbox": "Battle sandbox",
       "news": "What's new",
       "universes": "Universes",
-      "showcases": "Showcases"
+      "showcases": "Showcases",
+      "casino": "Casino"
     },
     "boosters": {
       "title": "Booster settings",
@@ -1583,7 +1585,11 @@
           "minAccountAgeHours": "Minimum account age (h)",
           "minFriendshipHours": "Minimum friendship age (h)",
           "boosterPriceZeni": "Gifted booster price (Zeni)",
-          "allowedRarities": "Rarities that can be given"
+          "allowedRarities": "Rarities that can be given",
+          "sealedRequiresDiscord": "Sealed boosters: Discord-linked account required",
+          "sealedMinAccountDays": "Sealed boosters: minimum account age (days)",
+          "sealedPerWindow": "Sealed boosters gifted at most",
+          "sealedWindowDays": "… over a rolling window of (days)"
         },
         "notifications": {
           "retentionDays": "Keep read notifications for (days)",
@@ -1645,7 +1651,9 @@
       "chatSection": "Chat between friends",
       "chatHint": "Private plain-text messages between accepted friends, deleted after their lifetime (24 h by default). A block ends the conversation.",
       "activitySection": "Realtime and activity",
-      "activityHint": "With Ably, the bell and chat arrive live; the safety poll catches a lost message. With no player input or a hidden tab, polling stops. When nothing changes, the delay doubles up to the given multiple. The online dot follows the presence heartbeat: keep the online delay above two heartbeats."
+      "activityHint": "With Ably, the bell and chat arrive live; the safety poll catches a lost message. With no player input or a hidden tab, polling stops. When nothing changes, the delay doubles up to the given multiple. The online dot follows the presence heartbeat: keep the online delay above two heartbeats.",
+      "sealedTitle": "Gifted sealed boosters",
+      "sealedHint": "Divine and Apocalyptic boosters dropped from a pull. Default: 2 boosters every 3 days per player, over a rolling window; they also count toward daily gifts."
     },
     "market": {
       "title": "Market",
@@ -2244,7 +2252,8 @@
         "EVENT": "催 Event",
         "SEASON": "星 Season",
         "REFERRAL": "招 Referral",
-        "FRIENDS": "友 Friends"
+        "FRIENDS": "友 Friends",
+        "CASINO": "賭 Casino"
       },
       "itemTitle_fr": "Title (French)",
       "itemTitle_en": "Title (English, optional)",
@@ -2406,9 +2415,23 @@
           "linkBonusZeni": "Discord link bonus",
           "avatarSyncHours": "Avatar refresh (hours)",
           "avatarSyncActiveDays": "Players active within (days)",
-          "avatarSyncBatch": "Players refreshed per minute"
+          "avatarSyncBatch": "Players refreshed per minute",
+          "casinoEnabled": "Casino announcements on Discord",
+          "casinoMinRarity": "Rarity of relayed big flips"
         }
-      }
+      },
+      "casinoEnabled": "Casino announcements (opening and big flips)",
+      "casinoMinRarity": "Big flip from",
+      "casinoHint": "The opening is posted once at the set time (DISCORD_CASINO_CHANNEL_ID). Flips whose pot reaches this rarity are relayed within a minute, without role mentions.",
+      "casinoSection": "Casino",
+      "casinoIntro": "Post the teaser by hand a few days before opening; the opening and big flips go out on their own.",
+      "casinoTeaser": "Post or update the teaser",
+      "casinoTeaserDone": "Teaser posted.",
+      "casinoNotConfigured": "Add DISCORD_CASINO_CHANNEL_ID to the environment to turn on casino announcements.",
+      "casinoPreview": "Announcement preview",
+      "casinoPreviewTeaser": "Teaser",
+      "casinoPreviewOpening": "Opening (trailer attached)",
+      "casinoPreviewFlip": "Big flip"
     },
     "features": {
       "title": "Features",
@@ -3133,14 +3156,24 @@
         "endsAt": "Event end",
         "goal": "Goal (boosters)",
         "refreshSeconds": "Refresh (seconds)",
-        "cacheSeconds": "Count cache (seconds)"
+        "cacheSeconds": "Count cache (seconds)",
+        "metric": "What the gauge counts",
+        "rewardLotId": "Reward for everyone"
       },
       "hints": {
         "date": "In your browser's local time.",
         "goal": "Can be changed during the event: the gauge adjusts right away.",
         "refreshSeconds": "How often a player's page asks for the count again.",
-        "cacheSeconds": "The count is recalculated at most once per period, however many players there are."
-      }
+        "cacheSeconds": "The count is recalculated at most once per period, however many players there are.",
+        "metric": "Flips: coin flip tables played during the window (casino opening).",
+        "rewardLotId": "Shown under the gauge. Goal reached: send this lot to everyone from the lots page (never paid twice to the same player)."
+      },
+      "metrics": {
+        "BOOSTERS": "Boosters opened",
+        "COINFLIPS": "Coin flips"
+      },
+      "noReward": "No reward shown",
+      "sendReward": "Send the reward"
     },
     "showcaseEvent": {
       "title": "Showcase event",
@@ -3323,6 +3356,85 @@
       "keys": {
         "maxPerPlayer": "Showcases per player",
         "themes": "Showcase themes"
+      }
+    },
+    "casino": {
+      "title": "Casino",
+      "intro": "Casino opening and player-versus-player coin flip. Staked cards stay in escrow (CASINO status) while their table is open: as many cards at stake as open tables.",
+      "phases": {
+        "hidden": "Casino hidden from players (switch in /admin/fonctionnalites): the team sees a preview.",
+        "teaser": "Teaser shown to players, without an opening date.",
+        "open": "Casino open since {date}.",
+        "teaserDated": "Teaser shown to players: opens on {date}."
+      },
+      "preview": "View the casino (team preview before opening)",
+      "escrow": {
+        "title": "Escrow health",
+        "openTables": "Open tables",
+        "stakedCards": "Cards at stake",
+        "expiredOpen": "Expired, awaiting sweep",
+        "status": "Status",
+        "healthy": "Healthy",
+        "mismatch": "Mismatch",
+        "mismatchHint": "The number of cards at stake doesn't match the number of open tables. Run the sweep (/api/cron/casino), then check the server log."
+      },
+      "stats": {
+        "title": "Last 30 days",
+        "played": "Flips played",
+        "split": "表 heads · 裏 tails",
+        "creatorWins": "Creator wins",
+        "closed": "Withdrawn · expired",
+        "closedValue": "{cancelled} · {expired}",
+        "perDay": "Flips per day (last 14 days)",
+        "byRarity": "By pot rarity:"
+      },
+      "tables": {
+        "title": "Open tables",
+        "empty": "No open tables.",
+        "row": "{card} ({rarity}) · {name}",
+        "reservedFor": "reserved for {name}",
+        "expiresAt": "expires {date}"
+      },
+      "cancel": "Remove table",
+      "confirmCancel": "Remove and return the card",
+      "keep": "Keep",
+      "reason": "Reason for removal (log)",
+      "errors": {
+        "NOT_FOUND": "Table not found.",
+        "NOT_OPEN": "This table is no longer open.",
+        "RATE_LIMITED": "Too many actions. Try again in a minute.",
+        "INVALID": "Reason too short (at least 3 characters).",
+        "FORBIDDEN": "Access denied.",
+        "UNAVAILABLE": "Not possible right now.",
+        "unexpected": "Unexpected error. Try again."
+      },
+      "openingSection": "Opening",
+      "coinflipSection": "Coin flip",
+      "openNow": "Open now",
+      "clearDate": "Clear the date (teaser without countdown)",
+      "invalid": "Check the settings: at least one playable rarity, and values within their limits.",
+      "keys": {
+        "opensAt": "Opening date",
+        "newBadgeDays": "“New” badge and ceremony (days)",
+        "minAccountAgeHours": "Minimum account age (hours)",
+        "enabled": "Coin flip open",
+        "expiryHours": "Open table lifetime (hours)",
+        "maxOpenTables": "Open tables per player",
+        "dailyLimit": "Flips per day per player",
+        "allowedRarities": "Playable rarities",
+        "lastCopyAllowed": "Allow the last copy (after a warning)",
+        "lobbyPollSeconds": "Lobby refresh (seconds)",
+        "tablePollSeconds": "Table refresh (seconds)",
+        "feedSize": "Flips in the hall feed",
+        "feedMaxAgeHours": "Feed maximum age (hours)"
+      },
+      "hints": {
+        "opensAt": "In your browser's local time. Empty: teaser without a date; future: countdown; past: casino open.",
+        "newBadgeDays": "After opening: menu badge, ceremony and announcement. 0 turns all three off.",
+        "expiryHours": "Without a taker, the card goes back to its creator.",
+        "dailyLimit": "Tables set and tables taken, per game day.",
+        "feedMaxAgeHours": "Older flips leave the feed.",
+        "allowedRarities": "A table is taken with a card of the same tier (Mythic = BR, AR = VR, Gold = MR). A removed rarity can no longer be staked; its open tables stay until they expire."
       }
     },
     "expeditions": {
@@ -3549,6 +3661,7 @@
       "inCollection": "{count, plural, =0 {None in collection} one {# in collection} other {# in collection}}",
       "inAuction": "{count, plural, one {# on sale} other {# on sale}}",
       "inBattle": "{count, plural, one {# in battle} other {# in battle}}",
+      "inCasino": "{count, plural, one {# at stake in the casino} other {# at stake in the casino}}",
       "inExpedition": "{count, plural, one {# on an expedition} other {# on an expedition}}",
       "firstObtained": "First obtained: {date}",
       "recycleTitle": "Recycle duplicates",
@@ -4314,7 +4427,7 @@
       "NOT_GIFTABLE": "This booster can no longer be gifted.",
       "NEEDS_DISCORD": "Link your account to Discord to gift a sealed booster.",
       "SEALED_ACCOUNT_TOO_NEW": "Your account must be at least {sealedMinAccountDays} days old to gift a sealed booster.",
-      "SEALED_WEEK_LIMIT": "You've already gifted {sealedPerWeek, plural, one {# sealed booster} other {# sealed boosters}} this week."
+      "SEALED_LIMIT": "You've already gifted {sealedPerWindow, plural, one {# sealed booster} other {# sealed boosters}} in the last {sealedWindowDays} days. Come back a bit later!"
     },
     "sealedDivin": "Your divine booster",
     "sealedApocalypse": "Your apocalyptic booster",
@@ -4385,6 +4498,11 @@
     "sealedSpared": "Your apocalyptic booster spared {name}: {card} ({rarity})!",
     "sealedRuined": "Your apocalyptic booster blew up in {name}'s face.",
     "ambassadorGranted": "The Kiraku team made you an Ambassador! The green badge, frame and color are yours, and a booster pack awaits you every week.",
+    "coinFlipInvite": "{name} set a coin flip table aside for you: their card {card} is waiting.",
+    "coinFlipResolved": "{name} took your table ({card}): the coin has been flipped, come and see how it landed.",
+    "coinFlipExpired": "Nobody took your coin flip table: {card} is back in your collection.",
+    "coinFlipDeclined": "{name} declined your coin flip table: {card} is back in your collection.",
+    "coinFlipAdmin": "The Kiraku team removed your coin flip table: {card} is back in your collection.",
     "expeditionTriumph": "Your expedition returns triumphant! Come open its report.",
     "expeditionSuccess": "Your expedition is back, mission accomplished. Come open its report.",
     "expeditionFailure": "Your expedition came back empty-handed… Your cards are home.",
@@ -4681,7 +4799,16 @@
       "percent": "{percent}%",
       "progressLabel": "Event gauge progress",
       "ctaSignup": "Sign up to fill the gauge",
-      "ctaInvite": "Invite friends to fill the gauge"
+      "ctaInvite": "Invite friends to fill the gauge",
+      "reward": "Reward for everyone: {reward}",
+      "coinflips": {
+        "title": "Casino opening",
+        "rules": "All together: every coin flip played raises the gauge. Shared goal: {goal} flips.",
+        "endedReached": "Goal reached, well done everyone: {count} flips played!",
+        "endedMissed": "The opening is over: {count} flips played out of {goal}. Thanks, everyone!",
+        "progress": "{count} / {goal} flips",
+        "cta": "Play coin flip"
+      }
     },
     "showcaseEvent": {
       "title": "Showcase event",
@@ -5482,7 +5609,8 @@
       "sound": "Remembers whether sound is on.",
       "discordLater": "Remembers when you postponed the Discord invitation (\"Later\").",
       "news": "Remembers whether you collapsed the home page news panel.",
-      "speedInsights": "Vercel performance measurement (no cookies or persistent identifiers)"
+      "speedInsights": "Vercel performance measurement (no cookies or persistent identifiers)",
+      "casinoCeremony": "Remembers that you've already seen the casino opening ceremony on this device."
     },
     "kinds": {
       "cookie": "Cookie",
@@ -5577,8 +5705,237 @@
   "casino": {
     "title": "Casino",
     "soon": "Soon",
-    "body": "Kiraku's casino is being prepared. It will come later, and will never accept real money.",
-    "back": "Back to boosters"
+    "body": "The Kiraku casino is being prepared. It will arrive later, and will never take real money.",
+    "back": "Back to boosters",
+    "description": "The Kiraku casino: player-versus-player coin flip, one fuda against a fuda of the same tier.",
+    "virtual": "Everything is virtual: no real money is at stake, neither Zeni nor cash.",
+    "preview": {
+      "hidden": "Team preview: the casino is hidden from players.",
+      "teaser": "Team preview: players still see the teaser.",
+      "admin": "Settings"
+    },
+    "rules": {
+      "label": "The rules",
+      "stake": "Set down a fuda and pick 表 heads or 裏 tails.",
+      "tier": "Another player takes the table with a fuda of the same tier.",
+      "winner": "The coin lands: the winner keeps both cards."
+    },
+    "teaser": {
+      "kicker": "Opens on {date}",
+      "kickerNoDate": "Opening soon",
+      "title": "The casino opens soon",
+      "body": "Behind the shōji, a coin is already spinning. First game: coin flip between players.",
+      "countdown": "Time until opening",
+      "days": "{count, plural, one {day} other {days}}",
+      "hours": "{count, plural, one {hour} other {hours}}",
+      "minutes": "min",
+      "seconds": "s",
+      "opening": "The doors are opening…"
+    },
+    "hall": {
+      "label": "Casino games",
+      "coinflip": {
+        "tag": "New",
+        "title": "Coin flip",
+        "body": "One fuda against another. 表 or 裏.",
+        "stats": "{open, plural, =0 {No open tables} one {# open table} other {# open tables}} · {today, plural, =0 {no flips today} one {# flip today} other {# flips today}}",
+        "play": "Play"
+      },
+      "upcoming": "Coming soon",
+      "sealed": "Sealed game",
+      "sealedNext": "Next game",
+      "sealedLater": "Later",
+      "feedTitle": "Latest flips",
+      "feedEmpty": "No flips yet: the first coin is waiting for you.",
+      "feedRow": "<player>{name}</player> wins <b>{card}</b>",
+      "feedMeta": "{rarity} · landed on {side}"
+    },
+    "side": {
+      "OMOTE": "Heads",
+      "URA": "Tails"
+    },
+    "salon": {
+      "title": "Coin flip",
+      "back": "Casino",
+      "tabs": {
+        "label": "Lobby sections",
+        "tables": "Tables",
+        "mine": "My tables",
+        "history": "History"
+      },
+      "filterLabel": "Filter by tier",
+      "all": "All",
+      "empty": "No open tables at this tier.",
+      "emptyAll": "No open tables yet. Set the first one!",
+      "plays": "plays {side}",
+      "reserved": "Set aside for you",
+      "take": "Take",
+      "view": "View",
+      "tableOf": "{name}'s table",
+      "stake": "Set down a card",
+      "more": "Show more",
+      "loading": "Loading…",
+      "retry": "Try again",
+      "guest": "Create an account to play: guests can watch the tables, not stake."
+    },
+    "mine": {
+      "open": "Your open tables",
+      "invitations": "Tables set aside for you",
+      "none": "You have no open tables.",
+      "noInvitation": "No table is set aside for you.",
+      "expires": "Expires {time}",
+      "decline": "Decline",
+      "view": "View table"
+    },
+    "history": {
+      "stats": "{played, plural, =0 {No flips played} one {# flip} other {# flips}} · {won} won · {lost} lost",
+      "streakWin": "{count, plural, one {# win} other {# wins}} in a row",
+      "streakLoss": "{count, plural, one {# loss} other {# losses}} in a row",
+      "sides": "表 {omote} · 裏 {ura}",
+      "empty": "Your played flips will show up here.",
+      "won": "Won",
+      "lost": "Lost",
+      "against": "against <player>{name}</player>",
+      "open": "View"
+    },
+    "stake": {
+      "title": "Set down a card",
+      "step1": "Your fuda",
+      "step2": "Your side",
+      "step3": "Who can take it",
+      "pickLabel": "Stake {name}",
+      "hint": "Tap a fuda to stake it.",
+      "lastCopy": "Last copy of {card}. If you lose, it leaves your collection.",
+      "remaining": "{card} · you'll have {count} left.",
+      "confirmLast": "I'm staking my last copy",
+      "omoteNote": "vermilion",
+      "uraNote": "black lacquer",
+      "everyone": "Everyone",
+      "friend": "A specific player",
+      "friendLabel": "Username of the friend or past opponent",
+      "recap": "{card} is set aside. Without a taker, it comes back {date}.",
+      "recapEmpty": "Pick a fuda and a side.",
+      "submit": "Set the table",
+      "posting": "Setting the table…"
+    },
+    "errors": {
+      "CLOSED": "The casino isn't open yet.",
+      "DISABLED": "Coin flip is closed for now.",
+      "GUEST": "Create an account to play: guests can watch, not stake.",
+      "BANNED": "Your account can't play.",
+      "TOO_NEW": "Your account is too new to stake: come back in a few hours.",
+      "RARITY": "This rarity can't be staked at the casino.",
+      "TABLE_LIMIT": "You already have the maximum number of open tables.",
+      "DAILY_LIMIT": "You've reached today's flip limit. Come back tomorrow!",
+      "LAST_COPY": "You can't stake your last copy of this card.",
+      "CONFIRM_LAST_COPY": "This is your last copy: confirm to stake it.",
+      "RESERVE_TARGET": "You can only set a table aside for a friend or a past opponent.",
+      "BLOCKED": "You can't play with this player.",
+      "NOT_OPEN": "This table is no longer open: someone took it, or it was removed.",
+      "OWN_TABLE": "This is your table: wait for another player to take it.",
+      "RESERVED": "This table is set aside for another player.",
+      "TIER": "You need a card from the same tier as theirs.",
+      "NOT_FOUND": "Table not found.",
+      "NO_USER": "Player not found.",
+      "CARD_GONE": "This card is no longer available in your collection.",
+      "NO_SESSION": "Your session expired: reload the page.",
+      "INVALID": "Invalid request.",
+      "RATE_LIMITED": "Easy! Try again in a moment.",
+      "UNAVAILABLE": "Not possible right now.",
+      "FORBIDDEN": "Access denied.",
+      "unexpected": "Unexpected error. Try again."
+    },
+    "stage": {
+      "you": "You",
+      "youPlay": "you play {side}",
+      "plays": "plays {side}",
+      "skip": "Skip",
+      "soundOn": "Sound on",
+      "soundOff": "Sound off",
+      "announce": "The coin landed on {side}: {outcome}.",
+      "won": "you win",
+      "lost": "you lose"
+    },
+    "table": {
+      "yourTable": "Your table",
+      "tableOf": "{name}'s table",
+      "open": "Open",
+      "expires": "Expires {time}",
+      "reservedFor": "Set aside for <player>{name}</player>",
+      "awaiting": "Waiting for a player",
+      "youPlayWith": "You play {side} {sideName} with {card}.",
+      "leaveOk": "You can close the app: when someone takes it, you'll be notified and the flip will wait for you.",
+      "invite": "Invite",
+      "copied": "Link copied",
+      "shareTitle": "Come take my table at the Kiraku casino",
+      "cancel": "Remove",
+      "confirmCancel": "Remove and take my card back",
+      "stakes": "{name} stakes",
+      "theyPlay": "{name} plays {side}",
+      "youPlay": "You play {side}",
+      "forYou": "This table is set aside for you.",
+      "pickTier": "Pick a fuda from the {tier} tier",
+      "against": "against {card}",
+      "flip": "Flip the coin",
+      "flipping": "Flipping…",
+      "youWin": "You win {card}",
+      "youLose": "{card} goes to {name}",
+      "joinsCollection": "joins your collection",
+      "landedOn": "the coin landed on {side}",
+      "new": "New",
+      "rematch": "Rematch",
+      "again": "Play again",
+      "verify": "Verify the draw",
+      "close": "Close",
+      "outroWin": "Both fuda are yours",
+      "outroLose": "Your fuda goes to {name}",
+      "resultWon": "You won: both fuda are yours.",
+      "resultLost": "You lost this flip.",
+      "resultSpectator": "{name} won {card}.",
+      "expired": "Nobody took this table in time: the card went back to its owner.",
+      "cancelled": "This table was removed: the card went back to its owner."
+    },
+    "verify": {
+      "title": "Verify the draw",
+      "intro": "When the table opened, the server drew a secret seed and only published its fingerprint. After the flip, it reveals the seed: your browser redoes the math.",
+      "hash": "Published fingerprint",
+      "hashSub": "when the table opened",
+      "seed": "Revealed seed",
+      "seedSub": "after the flip",
+      "sha": "SHA-256(seed)",
+      "shaOk": "= the published fingerprint: the seed didn't change",
+      "shaKo": "≠ the published fingerprint",
+      "computing": "Computing…",
+      "hmac": "HMAC-SHA256(seed, table)",
+      "table": "table {id}",
+      "byte": "1st byte: 0x{hex} = {value}, {parity} → {side}",
+      "even": "even",
+      "odd": "odd",
+      "result": "Result: {side}",
+      "conform": "Matches the flip that was played",
+      "mismatch": "Doesn't match the announced flip",
+      "unavailable": "Your browser can't run this check (Web Crypto unavailable)."
+    },
+    "replays": {
+      "title": "A flip is waiting for you",
+      "row": "<player>{name}</player> took your table ({card})",
+      "watch": "Watch the flip"
+    },
+    "announcement": {
+      "tag": "New · Event",
+      "title": "The casino opens its doors",
+      "body": "First game: coin flip between players. One fuda against a fuda of the same tier.",
+      "enter": "Enter the casino",
+      "later": "Later"
+    },
+    "ceremony": {
+      "kicker": "Today",
+      "title": "The casino is open",
+      "body": "Set down a fuda or take another player's table.",
+      "enter": "Enter the casino",
+      "skip": "Skip",
+      "label": "Casino opening ceremony"
+    }
   },
   "pwa": {
     "title": "Install the app",

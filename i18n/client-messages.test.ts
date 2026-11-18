@@ -20,7 +20,8 @@ describe("messages transmis aux composants client", () => {
         if (namespace !== "admin") expect(CLIENT_NAMESPACES, `${file} : ${namespace}`).toContain(namespace);
       }
     }
-  });
+    // Lit tout le code source : plus de 5 s quand la suite entière tourne en parallèle
+  }, 30_000);
 
   it.each(["fr", "en"])("dispose de tous les textes retenus en %s, sans l'admin", (locale) => {
     const messages = JSON.parse(readFileSync(`messages/${locale}.json`, "utf8"));
