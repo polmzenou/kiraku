@@ -577,6 +577,26 @@ Pour la page du marché : liste paginée par curseur, filtres rareté/série/pri
 - **Écrans** : `/marche` (onglets Toutes · Mes ventes · Mes enchères, filtres en formulaire GET repliable, curseur), `/marche/[id]` (prix sondé toutes les `market.pollSeconds`, mise en deux temps avec `useOptimistic`, achat immédiat, retrait), « Mettre en vente » dans la fiche carte de la collection. Notifications `OUTBID`, `AUCTION_WON`, `AUCTION_SOLD`, `AUCTION_EXPIRED`, `AUCTION_CANCELLED`. `/admin/economie` affiche les Zeni en séquestre.
 - **Tests** : `lib/market/*.test.ts` ; `server/market/market.db.test.ts` (50 enchères simultanées sur une vente, 12 clôtures simultanées, un enchérisseur sur 50 ventes, mises croisées, annulation contre mises, double mise en vente, achat immédiat contre mises, anti-sniping, expiration, annulation admin, bilan global), sauté sans `DATABASE_URL_TEST`.
 
+### Avis de recherche
+
+Un joueur publie un avis « je veux cette carte à ce prix » : le prix est **bloqué** sur son solde (`ORDER_HOLD`) pendant `market.orderDurationDays` jours (7). Le premier détenteur d'un exemplaire libre peut la lui vendre **en un clic** (fiche carte, onglet « Avis de recherche » du marché) : la carte change de main, le vendeur reçoit `SALE` + prix puis `FEE` − taxe (taux figé à la publication). Retrait à tout moment ou expiration : les Zeni reviennent (`ORDER_REFUND`).
+
+- Même verrou que les enchères : l'avis (`FOR UPDATE`) puis les joueurs triés par id ; transfert de l'exemplaire par `updateMany` conditionnel. Invariant : Σ soldes + Σ séquestres (enchères ACTIVE et avis OPEN) + Σ taxes ne bouge pas (`server/market/buy-orders.db.test.ts`).
+- Bornes de prix des mises en vente (prix de départ minimal, plafond de la rareté), au plus `market.maxOpenOrders` avis ouverts (10), comptes récents et invités exclus.
+- Les détenteurs sont prévenus (`BUY_ORDER_WANTED`) si l'offre dépasse la cote ou qu'il n'y en a pas, au plus une fois par jour et par carte.
+- Un avis échu est masqué et invendable aussitôt ; ses Zeni reviennent au passage du cron du marché, ou dès que l'acheteur ouvre ses avis.
+- Les ventes sur avis comptent dans la cote.
+
+### Cote des cartes
+
+La cote d'une carte est le **prix médian** de ses ventes terminées, enchères (`Auction` en `SOLD`) et avis de recherche remplis (`BuyOrder` en `FILLED`), sur les `market.quoteWindowDays` derniers jours (30 par défaut). Elle n'existe qu'à partir de `market.quoteMinSales` ventes (3) : une vente arrangée entre deux comptes, ou un coup de folie isolé, ne la déplace pas. La tendance compare la médiane à celle de la fenêtre précédente, de même durée.
+
+- **Fiche carte** (wiki et collection) : cote, tendance, courbe des médianes quotidiennes et de chaque vente sur `market.quoteHistoryDays` jours (90).
+- **Collection** : valeur estimée = cote de chaque exemplaire, sinon médiane récente de sa rareté ; les exemplaires sans aucune cote comptent pour 0 et sont signalés.
+- **Marché** : « Plus fortes hausses », les cartes cotées sur les deux fenêtres dont la cote monte le plus.
+
+Aucune table dédiée : tout se calcule depuis `Auction` et `BuyOrder` (`lib/market/quotes.ts` pour la logique, `server/market/quotes.ts` pour les lectures, cache de 5 minutes).
+
 ## Combat 1v1
 
 Duel **joué en direct**, façon Hearthstone : chaque joueur agit pendant son tour, le serveur arbitre tout. Trois façons de jouer : **code ami** (salle privée, non classée), **exhibition** (file d'attente, non classée) et **classé** (file d'attente, étape 9b). Personne en vue après `battle.queueSeconds` (20 s) : un **bot** prend la place, affiché comme tel, avec une équipe de même rareté que celle du joueur, différente à chaque fois.
@@ -773,6 +793,14 @@ Premier jeu : un **pile ou face entre vrais joueurs** (表 face, 裏 pile), sans
 **Admin** `/admin/casino` : date d'ouverture (« Ouvrir maintenant »), badge et cérémonie, garde-fous, raretés jouables, santé du séquestre (tables ouvertes = cartes `CASINO`), statistiques sur 30 jours (lancers par jour, répartition 表 / 裏, victoires du créateur), tables ouvertes avec retrait motivé (`AdminLog`).
 
 **Tests** : règles pures (`lib/casino/*.test.ts`), migration rejouée en PGlite (`server/casino/migration.test.ts`), concurrence sur base (`server/casino/coinflip.db.test.ts` : 20 relèves simultanées, relève contre retrait, quota sous charge, conservation des cartes), rendus du salon et de la vérification.
+
+## Wrapped de l'année
+
+Récap personnel de l'année, ouvert en décembre : boosters ouverts (dorés, divins), plus gros tirage, cartes tirées et découvertes, Zeni gagnés et dépensés (séquestres rendus neutralisés), combats et meilleur rang en classé, carte préférée (la plus alignée en combat, sinon la vitrine, sinon le plus gros tirage). Il se termine par une image story 1080 × 1920 à partager (bouton natif du téléphone, sinon téléchargement).
+
+- **Livré éteint** : `wrapped.enabled`, `wrapped.year`, `wrapped.opensAt` et `wrapped.closesAt` se règlent dans `/admin/wrapped`, qui montre aussi un aperçu du diaporama et de l'image pour n'importe quel pseudo, même éteint.
+- Pendant la période : page `/wrapped` (diaporama plein écran), bannière de l'accueil (masquable) et bouton sur son propre profil, pour qui a ouvert au moins un booster dans l'année.
+- Aucune table : tout se lit dans `BoosterOpening`, `CoinTransaction`, `Battle`, `Discovery` et la vitrine (`server/wrapped/read.ts`, testé sur le vrai schéma), gardé une heure par joueur. L'image est privée (le joueur connecté, ou l'admin pour l'aperçu) et ne montre jamais l'illustration d'une carte spoil.
 
 ## Panneau d'administration
 

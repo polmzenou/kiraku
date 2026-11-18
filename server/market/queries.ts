@@ -412,19 +412,27 @@ export async function openAuctionsForCard(sellerId: string, cardId: string) {
 
 // --- Admin ---
 
-/** Ventes ouvertes, séquestre et taxes : la santé du marché pour /admin/marche et /admin/economie. */
+/**
+ * Ventes ouvertes, avis de recherche ouverts, séquestre et taxes : la santé du marché pour /admin/marche
+ * et /admin/economie. `escrow` compte les deux séquestres (mises en tête et prix des avis ouverts).
+ */
 export async function marketTotals(now: Date) {
   const since = new Date(now.getTime() - 86_400_000);
-  const [active, sold] = await Promise.all([
+  const [active, sold, orders, filled] = await Promise.all([
     prisma.auction.aggregate({ where: { status: "ACTIVE" }, _count: true, _sum: { currentBid: true } }),
     prisma.auction.aggregate({ where: { status: "SOLD", settledAt: { gte: since } }, _count: true, _sum: { fee: true, finalPrice: true } }),
+    prisma.buyOrder.aggregate({ where: { status: "OPEN" }, _count: true, _sum: { price: true } }),
+    prisma.buyOrder.aggregate({ where: { status: "FILLED", filledAt: { gte: since } }, _count: true, _sum: { fee: true, price: true } }),
   ]);
+  const ordersEscrow = orders._sum.price ?? 0;
   return {
     active: active._count,
-    escrow: active._sum.currentBid ?? 0,
-    sold24h: sold._count,
-    volume24h: sold._sum.finalPrice ?? 0,
-    fees24h: sold._sum.fee ?? 0,
+    escrow: (active._sum.currentBid ?? 0) + ordersEscrow,
+    orders: orders._count,
+    ordersEscrow,
+    sold24h: sold._count + filled._count,
+    volume24h: (sold._sum.finalPrice ?? 0) + (filled._sum.price ?? 0),
+    fees24h: (sold._sum.fee ?? 0) + (filled._sum.fee ?? 0),
   };
 }
 

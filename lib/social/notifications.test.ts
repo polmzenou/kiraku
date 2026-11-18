@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatBadge, parseCoinFlipPayload, parseGiftPayload, parseTeamGiftPayload } from "./notifications";
+import { formatBadge, parseBuyOrderPayload, parseCoinFlipPayload, parseGiftPayload, parseTeamGiftPayload } from "./notifications";
 
 describe("formatBadge", () => {
   it("cache la pastille à zéro et plafonne à 9+", () => {
@@ -41,5 +41,19 @@ describe("parseTeamGiftPayload", () => {
     expect(parseTeamGiftPayload({ kind: "INCENSE", quantity: 0 })).toBeNull();
     expect(parseTeamGiftPayload({ kind: "INCENSE", quantity: "3" })).toBeNull();
     expect(parseTeamGiftPayload({ kind: "OTHER", quantity: 1 })).toBeNull();
+  });
+});
+
+describe("parseBuyOrderPayload", () => {
+  it("garde l'avis, la carte et un prix entier positif", () => {
+    expect(parseBuyOrderPayload({ orderId: "o1", cardId: "c1", amount: 1200 })).toEqual({ orderId: "o1", cardId: "c1", amount: 1200 });
+  });
+
+  it("refuse une forme inconnue ou un prix invalide", () => {
+    expect(parseBuyOrderPayload(null)).toBeNull();
+    expect(parseBuyOrderPayload({ orderId: "o1", cardId: "c1" })).toBeNull();
+    expect(parseBuyOrderPayload({ orderId: "o1", cardId: "c1", amount: -1 })).toBeNull();
+    expect(parseBuyOrderPayload({ orderId: "o1", cardId: "c1", amount: 1.5 })).toBeNull();
+    expect(parseBuyOrderPayload({ orderId: "<script>", cardId: "c1", amount: 1 })).toBeNull();
   });
 });

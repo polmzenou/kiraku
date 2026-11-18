@@ -323,6 +323,14 @@ export const SETTING_SCHEMAS = {
   // Plafond de prix par rareté (départ, achat immédiat et mises) ; rareté absente = plafond global seul
   "market.maxPriceByRarity": z.record(rarityKeySchema, z.number().int().min(1).max(100_000_000)),
   "market.pollSeconds": z.number().int().min(2).max(120),
+  // Cote des cartes (lib/market/quotes.ts) : médiane des ventes de la fenêtre, à partir de quoteMinSales ventes
+  "market.quoteWindowDays": z.number().int().min(7).max(180),
+  "market.quoteMinSales": z.number().int().min(1).max(50),
+  "market.quoteHistoryDays": z.number().int().min(30).max(365),
+  // Avis de recherche (lib/market/buy-orders.ts) : prix bloqué jusqu'à la vente, l'annulation ou l'expiration
+  "market.ordersEnabled": z.boolean(),
+  "market.orderDurationDays": z.number().int().min(1).max(30),
+  "market.maxOpenOrders": z.number().int().min(1).max(100),
   // Échanges ouverts du Marché : annonces « celle-ci contre l'une de celles-là », offres acceptées ou refusées
   "listings.enabled": z.boolean(),
   "listings.expiryHours": z.number().int().min(1).max(24 * 30),
@@ -448,6 +456,11 @@ export const SETTING_SCHEMAS = {
   // Apparitions max d'un même joueur dans le carrousel : au-delà, ses plus anciens tirages en sortent
   "home.pullFeed.maxPerPlayer": z.number().int().min(1).max(50),
   // Jauge communautaire au-dessus de la vitrine : boosters ouverts par les inscrits, dans la fenêtre
+  // Wrapped (récap de l'année, lib/wrapped) : livré éteint, allumé depuis /admin/wrapped
+  "wrapped.enabled": z.boolean(),
+  "wrapped.year": z.number().int().min(2025).max(2100),
+  "wrapped.opensAt": z.string().datetime(),
+  "wrapped.closesAt": z.string().datetime(),
   "home.eventGauge.enabled": z.boolean(),
   "home.eventGauge.startsAt": z.string().datetime(),
   "home.eventGauge.endsAt": z.string().datetime(),
@@ -602,6 +615,12 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "market.maxPrice": 10_000_000,
   "market.maxPriceByRarity": {},
   "market.pollSeconds": 15, // rafraîchissement du prix d'une vente ouverte
+  "market.quoteWindowDays": 30, // cote = médiane des ventes des 30 derniers jours…
+  "market.quoteMinSales": 3, // …à partir de 3 ventes (une vente arrangée ne suffit pas)
+  "market.quoteHistoryDays": 90, // courbe de la fiche carte
+  "market.ordersEnabled": true,
+  "market.orderDurationDays": 7, // un avis non rempli rend ses Zeni au bout d'une semaine
+  "market.maxOpenOrders": 10, // avis ouverts par joueur, comme les ventes
   "listings.enabled": true,
   "listings.expiryHours": 48,
   "listings.maxWants": 5,
@@ -759,6 +778,10 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "home.pullFeed.refreshSeconds": 60,
   "home.pullFeed.cacheSeconds": 30,
   "home.pullFeed.maxPerPlayer": 5,
+  "wrapped.enabled": false,
+  "wrapped.year": 2026,
+  "wrapped.opensAt": "2026-11-30T23:00:00.000Z", // 1er décembre, 0 h à Paris
+  "wrapped.closesAt": "2027-01-31T23:00:00.000Z", // 1er février, 0 h à Paris
   "home.eventGauge.enabled": true,
   "home.eventGauge.startsAt": "2026-11-04T18:00:00.000Z", // 19h à Paris
   "home.eventGauge.endsAt": "2026-11-10T18:00:00.000Z", // 19h à Paris

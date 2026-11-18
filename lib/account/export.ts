@@ -45,6 +45,7 @@ export const EXPORT_FIELDS = {
   battles: ["id", "mode", "status", "side", "opponent", "won", "endReason", "rewardZeni", "pcDelta", "createdAt", "endedAt"],
   auctions: ["id", "cardId", "startPrice", "buyoutPrice", "finalPrice", "fee", "status", "note", "createdAt", "endsAt"],
   bids: ["auctionId", "amount", "createdAt"],
+  buyOrders: ["id", "role", "cardId", "price", "fee", "status", "createdAt", "expiresAt", "filledAt", "closedAt"],
   tradeListings: ["id", "cardId", "wants", "status", "note", "createdAt", "expiresAt", "resolvedAt"],
   listingOffers: ["listingId", "cardId", "status", "createdAt", "resolvedAt"],
   trades: ["id", "direction", "wantedCardId", "chosenCardId", "status", "note", "declineNote", "createdAt", "resolvedAt"],

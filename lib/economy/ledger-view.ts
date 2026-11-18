@@ -21,6 +21,8 @@ export const COIN_REASONS = [
   "SEASON",
   "ABILITY",
   "EXPEDITION",
+  "ORDER_HOLD",
+  "ORDER_REFUND",
 ] as const;
 export type CoinReason = (typeof COIN_REASONS)[number];
 
@@ -63,6 +65,9 @@ export function ledgerHref(reason: CoinReason, refId: string | null): string | n
       return "/combat";
     case "EXPEDITION":
       return "/expedition";
+    case "ORDER_HOLD":
+    case "ORDER_REFUND":
+      return "/marche?onglet=avis";
     case "ABILITY":
       // refId : id de la Card achetée, rouverte directement à l'atelier
       return refId ? `/combat/atelier?carte=${encodeURIComponent(refId)}` : "/combat/atelier";

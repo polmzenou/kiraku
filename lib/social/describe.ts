@@ -4,6 +4,7 @@ import { guestCode } from "../username";
 import type {
   AuctionPayload,
   BattlePayload,
+  BuyOrderPayload,
   CoinFlipPayload,
   ExpeditionPayload,
   GiftPayload,
@@ -33,6 +34,8 @@ export type DescribableNotification = {
   coinFlip?: CoinFlipPayload | null;
   /** Expédition rentrée : son issue. */
   expedition?: ExpeditionPayload | null;
+  /** Avis de recherche (la carte cherchée est dans `card`). */
+  buyOrder?: BuyOrderPayload | null;
   card: { anilistId: number; name: string; rarity: string } | null;
 };
 
@@ -83,6 +86,9 @@ export type DescribeTranslators = {
       | "expeditionSuccess"
       | "expeditionFailure"
       | "expeditionReturned"
+      | "buyOrderFilled"
+      | "buyOrderExpired"
+      | "buyOrderWanted"
       | "aCard",
     values?: Values,
   ) => string;
@@ -182,6 +188,17 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
       const outcome = n.expedition?.outcome;
       const key = outcome === "TRIUMPH" ? "expeditionTriumph" : outcome === "SUCCESS" ? "expeditionSuccess" : outcome === "FAILURE" ? "expeditionFailure" : "expeditionReturned";
       return { text: t(key), href: "/expedition" };
+    }
+    case "BUY_ORDER_FILLED":
+    case "BUY_ORDER_EXPIRED":
+    case "BUY_ORDER_WANTED": {
+      const values = { name, card: n.card?.name ?? t("aCard"), amount: n.buyOrder?.amount ?? 0 };
+      if (n.type === "BUY_ORDER_EXPIRED") return { text: t("buyOrderExpired", values), href: "/marche?onglet=avis" };
+      // La carte arrive dans la collection de l'acheteur ; le détenteur la vend depuis sa fiche de collection
+      return {
+        text: t(n.type === "BUY_ORDER_FILLED" ? "buyOrderFilled" : "buyOrderWanted", values),
+        href: n.card ? `/collection/${n.card.anilistId}` : "/marche?onglet=avis",
+      };
     }
     case "SEALED_OPENED": {
       // Cadeau empoisonné : celui qui a offert le sachet apprend ce qu'il a donné

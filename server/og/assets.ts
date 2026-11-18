@@ -5,7 +5,7 @@ import { join } from "node:path";
 // Ressources des images de partage : polices TrueType (scripts/og-fonts.mts), sceau 気楽, et images
 // distantes (avatar Discord, illustrations) téléchargées ici puis passées à Satori en data URI.
 
-type OgFont = { name: string; data: Buffer; weight: 400 | 500 | 700 | 800; style: "normal" };
+export type OgFont = { name: string; data: Buffer; weight: 400 | 500 | 700 | 800; style: "normal" };
 
 const FONT_FILES = [
   { name: "Dela Gothic One", file: "dela-gothic-one-400-latin.ttf", weight: 400 },

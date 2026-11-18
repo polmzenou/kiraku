@@ -7,7 +7,7 @@ export const CLIENT_NAMESPACES = [
   "common", "consent", "data", "discordJoin", "economy", "error", "event", "expedition", "footer", "friends",
   "fuda", "gifts", "header", "home", "incense", "legal", "locale", "mail", "market", "nav",
   "news", "notifications", "opening", "playerName", "presence", "privacy", "profile", "push", "pwa", "ranked", "rarity", "sealed",
-  "listings", "showcase", "spoiler", "theme", "time", "trades", "v1Welcome", "v2Announcement", "wiki", "wishlist",
+  "listings", "showcase", "spoiler", "theme", "time", "trades", "v1Welcome", "v2Announcement", "wiki", "wishlist", "wrapped",
 ] as const;
 
 export function pickClientMessages(messages: AbstractIntlMessages): AbstractIntlMessages {

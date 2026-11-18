@@ -38,6 +38,8 @@ enum CoinReason {
   SEASON // récompense de fin de saison du classé
   ABILITY // capacité achetée à l'atelier (refId = id de la Card)
   EXPEDITION // gains d'une expédition (refId = id de l'Expedition)
+  ORDER_HOLD // prix d'un avis de recherche mis en séquestre (refId = id du BuyOrder)
+  ORDER_REFUND // avis annulé ou expiré : séquestre rendu
 }
 
 // Qui voit le profil public (/u/[username]) ; FRIENDS = amis acceptés seulement
@@ -172,6 +174,8 @@ model User {
   auctions    Auction[] @relation("seller")
   leadingBids Auction[] @relation("leader")
   bids        Bid[]
+  buyOrders    BuyOrder[] @relation("orderBuyer")
+  filledOrders BuyOrder[] @relation("orderSeller")
 
   review        Review?
   battlesAsP1   Battle[]       @relation("battleP1")
@@ -403,6 +407,7 @@ model Card {
   discoveries      Discovery[]
   lotItems         LotItem[]
   auctions         Auction[]
+  buyOrders        BuyOrder[]
   wishedBy         WishlistEntry[]
   notablePulls     NotablePull[]
   tradesWanted     Trade[]            @relation("tradeWanted")
@@ -474,6 +479,7 @@ model UserCard {
   showcase   ShowcaseSlot? // ancienne vitrine unique, plus lue
   showcaseItems ShowcaseItem[]
   auctions   Auction[]
+  buyOrders  BuyOrder[]
 
   @@index([ownerId, cardId])
   @@index([ownerId, status, cardId]) // collection groupée par carte (couvre aussi [ownerId, status])
@@ -813,6 +819,9 @@ enum NotificationType {
   COINFLIP_INVITE // une table de pile ou face t'est réservée (ami ou revanche)
   COINFLIP_RESOLVED // quelqu'un a relevé ta table : le lancer t'attend (l'issue n'est pas dévoilée)
   COINFLIP_RETURNED // table retirée, déclinée ou expirée : la carte misée est revenue
+  BUY_ORDER_FILLED // ton avis de recherche a trouvé preneur : la carte est arrivée
+  BUY_ORDER_EXPIRED // ton avis a expiré : les Zeni bloqués sont revenus
+  BUY_ORDER_WANTED // quelqu'un cherche une carte que tu possèdes (refId = id de la Card)
 }
 
 // Notifications en base ; le texte est rendu à la lecture (pseudo à jour, langue du lecteur)
@@ -1142,6 +1151,44 @@ model Auction {
   @@index([currentBidderId, status])
   @@index([cardId, status])
   @@index([userCardId]) // clé étrangère : recycler un exemplaire ne parcourt plus toutes les ventes
+}
+
+enum BuyOrderStatus {
+  OPEN
+  FILLED
+  CANCELLED
+  EXPIRED
+}
+
+// Avis de recherche (ordre d'achat) : l'acheteur bloque le prix (ORDER_HOLD) pour une carte précise ;
+// le premier détenteur qui accepte la lui vend. Le vendeur reçoit SALE + prix puis FEE − taxe (feeBp
+// figé à la création). Invariant étendu : Σ soldes + Σ currentBid des ventes ACTIVE + Σ price des avis
+// OPEN + Σ taxes ne bouge pas. Verrous : l'avis (FOR UPDATE) puis les joueurs triés par id.
+model BuyOrder {
+  id         String         @id @default(cuid())
+  buyerId    String
+  buyer      User           @relation("orderBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
+  cardId     String
+  card       Card           @relation(fields: [cardId], references: [id])
+  price      Int // bloqué en séquestre tant que l'avis est OPEN
+  feeBp      Int // taxe figée à la création (points de base)
+  status     BuyOrderStatus @default(OPEN)
+  expiresAt  DateTime
+  createdAt  DateTime       @default(now())
+  sellerId   String? // qui a rempli l'avis
+  seller     User?          @relation("orderSeller", fields: [sellerId], references: [id], onDelete: SetNull)
+  userCardId String? // exemplaire livré (null s'il a été recyclé depuis)
+  userCard   UserCard?      @relation(fields: [userCardId], references: [id], onDelete: SetNull)
+  filledAt   DateTime?
+  closedAt   DateTime? // annulé ou expiré
+  fee        Int?
+
+  @@index([cardId, status, price, createdAt]) // meilleure offre d'une carte
+  @@index([buyerId, status])
+  @@index([status, expiresAt]) // balayage d'expiration
+  @@index([status, filledAt]) // ventes récentes pour la cote
+  @@index([sellerId])
+  @@index([userCardId])
 }
 
 // Journal immuable des mises acceptées
