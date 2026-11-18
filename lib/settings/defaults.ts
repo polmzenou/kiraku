@@ -448,6 +448,11 @@ export const SETTING_SCHEMAS = {
   // Apparitions max d'un même joueur dans le carrousel : au-delà, ses plus anciens tirages en sortent
   "home.pullFeed.maxPerPlayer": z.number().int().min(1).max(50),
   // Jauge communautaire au-dessus de la vitrine : boosters ouverts par les inscrits, dans la fenêtre
+  // Wrapped (récap de l'année, lib/wrapped) : livré éteint, allumé depuis /admin/wrapped
+  "wrapped.enabled": z.boolean(),
+  "wrapped.year": z.number().int().min(2025).max(2100),
+  "wrapped.opensAt": z.string().datetime(),
+  "wrapped.closesAt": z.string().datetime(),
   "home.eventGauge.enabled": z.boolean(),
   "home.eventGauge.startsAt": z.string().datetime(),
   "home.eventGauge.endsAt": z.string().datetime(),
@@ -759,6 +764,10 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "home.pullFeed.refreshSeconds": 60,
   "home.pullFeed.cacheSeconds": 30,
   "home.pullFeed.maxPerPlayer": 5,
+  "wrapped.enabled": false,
+  "wrapped.year": 2026,
+  "wrapped.opensAt": "2026-11-30T23:00:00.000Z", // 1er décembre, 0 h à Paris
+  "wrapped.closesAt": "2027-01-31T23:00:00.000Z", // 1er février, 0 h à Paris
   "home.eventGauge.enabled": true,
   "home.eventGauge.startsAt": "2026-11-04T18:00:00.000Z", // 19h à Paris
   "home.eventGauge.endsAt": "2026-11-10T18:00:00.000Z", // 19h à Paris

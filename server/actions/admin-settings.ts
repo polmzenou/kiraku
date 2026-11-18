@@ -19,6 +19,7 @@ import { FEATURE_SETTING_KEYS, featureSettingsSchema, type FeatureSettingKey } f
 import { GENERAL_SETTING_KEYS, generalSettingsSchema, type GeneralSettingKey } from "@/lib/settings/general-form";
 import { PULL_FEED_SETTING_KEYS, pullFeedSettingsSchema, type PullFeedSettingKey } from "@/lib/settings/pull-feed-form";
 import { EVENT_GAUGE_SETTING_KEYS, eventGaugeSettingsSchema, type EventGaugeSettingKey } from "@/lib/settings/event-gauge-form";
+import { WRAPPED_SETTING_KEYS, wrappedSettingsSchema, type WrappedSettingKey } from "@/lib/settings/wrapped-form";
 import { SHOWCASE_EVENT_SETTING_KEYS, showcaseEventSettingsSchema, type ShowcaseEventSettingKey } from "@/lib/settings/showcase-event-form";
 import { EXPEDITION_SETTING_KEYS, expeditionSettingsSchema, type ExpeditionSettingKey } from "@/lib/settings/expedition-form";
 import { USAGE_SETTING_KEYS, usageSettingsSchema, type UsageSettingKey } from "@/lib/settings/usage-form";
@@ -274,6 +275,11 @@ export async function updateEventGaugeSettings(input: unknown): Promise<UpdateSe
   const lotId = parsed.success ? parsed.data["home.eventGauge.rewardLotId"] : null;
   if (lotId && !(await prisma.lot.findUnique({ where: { id: lotId }, select: { id: true } }))) return { ok: false, error: "INVALID" };
   return saveSettings(EVENT_GAUGE_SETTING_KEYS, eventGaugeSettingsSchema, input);
+}
+
+/** Wrapped : interrupteur, année racontée et période d'ouverture. */
+export async function updateWrappedSettings(input: unknown): Promise<UpdateSettingsResult<WrappedSettingKey>> {
+  return saveSettings(WRAPPED_SETTING_KEYS, wrappedSettingsSchema, input);
 }
 
 export async function updateShowcaseEventSettings(input: unknown): Promise<UpdateSettingsResult<ShowcaseEventSettingKey>> {

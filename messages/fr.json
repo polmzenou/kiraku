@@ -1305,7 +1305,8 @@
       "news": "Nouveautés",
       "universes": "Univers",
       "showcases": "Vitrines",
-      "casino": "Casino"
+      "casino": "Casino",
+      "wrapped": "Wrapped"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -2474,6 +2475,9 @@
         },
         "notifications": {
           "pushEnabled": "Notifications push"
+        },
+        "wrapped": {
+          "enabled": "Wrapped de l'année"
         }
       },
       "help": {
@@ -2510,6 +2514,9 @@
         },
         "notifications": {
           "pushEnabled": "Envoi des notifications quand l'onglet est fermé."
+        },
+        "wrapped": {
+          "enabled": "Récap personnel de l'année (/wrapped), bannière de l'accueil et bouton du profil, pendant la période réglée dans /admin/wrapped. Coupé : seul l'admin voit l'aperçu."
         }
       }
     },
@@ -3557,6 +3564,37 @@
         "NO_BOOSTER": "Booster « Tout anime » (standard) introuvable.",
         "unexpected": "Erreur inattendue."
       }
+    },
+    "wrapped": {
+      "title": "Wrapped de l'année",
+      "intro": "Récap personnel de l'année : boosters, plus gros tirage, Zeni, classé et carte préférée, avec une image story à partager. Livré éteint : allume-le ici quand tu es prêt.",
+      "settingsSection": "Ouverture",
+      "keys": {
+        "enabled": "Wrapped ouvert aux joueurs",
+        "year": "Année racontée",
+        "opensAt": "Ouverture",
+        "closesAt": "Fermeture"
+      },
+      "hints": {
+        "date": "Heure de ton navigateur. Hors de cette période, seul l'admin voit le Wrapped.",
+        "year": "Année civile, dans le fuseau du jeu."
+      },
+      "invalid": "La fermeture doit suivre l'ouverture.",
+      "phase": "État : {phase}",
+      "phases": {
+        "off": "éteint (seul l'admin le voit)",
+        "before": "programmé, pas encore ouvert",
+        "open": "ouvert aux joueurs",
+        "closed": "terminé"
+      },
+      "preview": "Aperçu",
+      "previewHint": "Le Wrapped tel que le joueur le verra, même éteint. Par défaut le tien.",
+      "previewUser": "Pseudo",
+      "previewShow": "Afficher",
+      "previewEmpty": "{name} n'a ouvert aucun booster en {year} : pas de Wrapped.",
+      "previewMissing": "Aucun joueur « {name} ».",
+      "image": "Image à partager",
+      "openImage": "Ouvrir l'image en grand"
     }
   },
   "collection": {
@@ -6339,5 +6377,85 @@
     "appearOfflineHint": "Tu restes connecté : les autres te voient déconnecté depuis ce moment.",
     "saved": "Enregistré.",
     "error": "Impossible d'enregistrer, réessaie."
+  },
+  "wrapped": {
+    "metaTitle": "Ton année {year} sur Kiraku",
+    "image": {
+      "kicker": "Kiraku Wrapped {year}",
+      "title": "L'année de {name}",
+      "boosters": "Boosters ouverts",
+      "zeni": "Zeni gagnés",
+      "ranked": "Meilleur rang",
+      "battlesWon": "Combats gagnés",
+      "discoveries": "Nouvelles cartes",
+      "bestPull": "Plus gros tirage",
+      "favorite": "Carte préférée"
+    },
+    "story": {
+      "label": "Ton année {year}",
+      "progress": "Écran {n} sur {total}",
+      "next": "Suivant",
+      "previous": "Précédent",
+      "close": "Quitter",
+      "intro": {
+        "kicker": "Kiraku Wrapped",
+        "title": "{year}, ton année sur Kiraku",
+        "body": "Tes sachets, tes combats et tes Zeni ont une histoire à raconter. Touche l'écran pour avancer."
+      },
+      "boosters": {
+        "kicker": "Boosters",
+        "value": "{count, plural, one {# booster ouvert} other {# boosters ouverts}}",
+        "special": "dont {golden, plural, one {# doré} other {# dorés}} et {divine, plural, one {# divin} other {# divins}}",
+        "cards": "{count, plural, one {# carte tirée} other {# cartes tirées}}, {discoveries, plural, =0 {aucune nouvelle} one {# nouvelle pour ta collection} other {# nouvelles pour ta collection}}."
+      },
+      "bestPull": {
+        "kicker": "Plus gros tirage",
+        "body": "Tirée le {date}. Personne n'oublie un sachet comme celui-là."
+      },
+      "zeni": {
+        "kicker": "Zeni",
+        "value": "{amount, number} Zeni gagnés",
+        "source": "Ta meilleure source : {source}.",
+        "spent": "{amount, number} Zeni dépensés, sans compter les mises rendues."
+      },
+      "battles": {
+        "kicker": "Combats",
+        "value": "{count, plural, one {# victoire} other {# victoires}}",
+        "rate": "{played, plural, one {# combat} other {# combats}}, {rate} % de victoires.",
+        "ranked": "Meilleur rang en classé : {rank} ({pc, number} PC).",
+        "none": "Pas encore de combat cette année : l'arène t'attend."
+      },
+      "favorite": {
+        "kicker": "Carte préférée",
+        "battle": "Alignée dans {count, plural, one {# combat} other {# combats}}. Ta carte, sans discussion.",
+        "showcase": "La star de ta vitrine.",
+        "pull": "Ton plus beau tirage, en attendant tes premiers combats."
+      },
+      "outro": {
+        "kicker": "C'est ton année",
+        "title": "Partage-la",
+        "share": "Partager l'image",
+        "download": "Télécharger l'image",
+        "sharing": "Préparation…",
+        "failed": "Le partage n'a pas marché : télécharge l'image.",
+        "copy": "Copier le lien de Kiraku",
+        "copied": "Lien copié",
+        "replay": "Revoir depuis le début",
+        "imageAlt": "Image de ton année {year} sur Kiraku"
+      }
+    },
+    "empty": {
+      "title": "Pas encore d'année à raconter",
+      "body": "Ouvre ton premier booster : ton Wrapped {year} se remplira tout seul.",
+      "cta": "Ouvrir un booster"
+    },
+    "banner": {
+      "kicker": "Kiraku Wrapped {year}",
+      "title": "Ton année est prête",
+      "body": "Boosters, plus gros tirage, Zeni, classé : revis-la et partage-la.",
+      "cta": "Voir mon année",
+      "dismiss": "Masquer"
+    },
+    "profileButton": "Mon année {year}"
   }
 }

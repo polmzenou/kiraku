@@ -774,6 +774,14 @@ Premier jeu : un **pile ou face entre vrais joueurs** (表 face, 裏 pile), sans
 
 **Tests** : règles pures (`lib/casino/*.test.ts`), migration rejouée en PGlite (`server/casino/migration.test.ts`), concurrence sur base (`server/casino/coinflip.db.test.ts` : 20 relèves simultanées, relève contre retrait, quota sous charge, conservation des cartes), rendus du salon et de la vérification.
 
+## Wrapped de l'année
+
+Récap personnel de l'année, ouvert en décembre : boosters ouverts (dorés, divins), plus gros tirage, cartes tirées et découvertes, Zeni gagnés et dépensés (séquestres rendus neutralisés), combats et meilleur rang en classé, carte préférée (la plus alignée en combat, sinon la vitrine, sinon le plus gros tirage). Il se termine par une image story 1080 × 1920 à partager (bouton natif du téléphone, sinon téléchargement).
+
+- **Livré éteint** : `wrapped.enabled`, `wrapped.year`, `wrapped.opensAt` et `wrapped.closesAt` se règlent dans `/admin/wrapped`, qui montre aussi un aperçu du diaporama et de l'image pour n'importe quel pseudo, même éteint.
+- Pendant la période : page `/wrapped` (diaporama plein écran), bannière de l'accueil (masquable) et bouton sur son propre profil, pour qui a ouvert au moins un booster dans l'année.
+- Aucune table : tout se lit dans `BoosterOpening`, `CoinTransaction`, `Battle`, `Discovery` et la vitrine (`server/wrapped/read.ts`, testé sur le vrai schéma), gardé une heure par joueur. L'image est privée (le joueur connecté, ou l'admin pour l'aperçu) et ne montre jamais l'illustration d'une carte spoil.
+
 ## Panneau d'administration
 
 `/admin` permet à un compte `role = ADMIN` de tout gérer sans redéployer. Pour ça, aucune règle du jeu ne vit dans des constantes : délais, taux, stats de combat et barème du classé se lisent dans la table `GameSetting`, et les constantes du code ne servent que de valeurs par défaut.
