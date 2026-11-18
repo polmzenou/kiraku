@@ -112,6 +112,11 @@ L'alerte restante vient de `braces` via `micromatch` → `fast-glob` → `@next/
 annonce qu'aucun correctif n'est publié. La proposition automatique de downgrade vers Next/ESLint
 14 n'a pas été appliquée. La CI reste volontairement bloquante ; ne pas abaisser son seuil.
 
+Mise à jour du 18/11/2026 : cet avis a été retiré le 23/10 (non exploitable en pratique) et son
+exception supprimée. L'exception porte désormais sur `picomatch`
+([GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf), sans correctif), avec
+la liste fermée de ses héritiers dans `scripts/audit-dependencies.mjs`.
+
 ## Lighthouse
 
 Build `next build`, serveur `next start`, Lighthouse 13.5, Chrome installé, 375 × 812 à DPR 3,
