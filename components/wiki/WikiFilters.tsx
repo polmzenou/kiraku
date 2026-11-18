@@ -13,6 +13,7 @@ import {
   parseWikiParams,
   wikiQuery,
   WIKI_DEFAULT_DIR,
+  WIKI_DEFAULT_SORT,
   WIKI_DEMOGRAPHICS,
   WIKI_GENDERS,
   WIKI_OWNERSHIPS,
@@ -81,7 +82,7 @@ export function WikiFilters({ params, options, counts, action }: {
     ...(filters.gender ? [{ key: "gender" as const, label: `${t("gender")} : ${t(`genders.${filters.gender}`)}` }] : []),
   ];
   const filterCount = activeFilters.length + filters.rarities.length + Number(filters.ownership !== "all");
-  const sortChanged = filters.sort !== "number" || filters.dir !== WIKI_DEFAULT_DIR.number;
+  const sortChanged = filters.sort !== WIKI_DEFAULT_SORT || filters.dir !== WIKI_DEFAULT_DIR[WIKI_DEFAULT_SORT];
   const canReset = Boolean(search || filterCount || sortChanged);
   const seriesTerms = normalizeSearch(seriesSearch).split(" ").filter(Boolean);
   const visibleSeries = options.series.filter((series) =>

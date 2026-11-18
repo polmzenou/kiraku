@@ -65,7 +65,11 @@ export function pickFavorite(
 /** Une carte mise en avant, prête à afficher (fuda, image). */
 export type WrappedCard = { cardId: string; anilistId: number; name: string; rarity: string; imageUrl: string;
   /** Personnage qui dévoile l'histoire : jamais son illustration sur l'image partagée. */
-  spoiler: boolean };
+  spoiler: boolean;
+  /** Teinte Gold de l'illustration (rareté ou réglage de la carte), comme sur le site. */
+  gold: boolean;
+  /** Couleur du cadre de la rareté (réglée dans l'admin, sinon celle de sa matière). */
+  frame: string };
 
 export type WrappedSummary = {
   year: number;

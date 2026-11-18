@@ -106,7 +106,7 @@ export function OgFuda({ card, width, style }: { card: OgCard; width: number; st
         display: "flex",
         padding: pad,
         borderRadius: width / 16,
-        backgroundImage: MATERIAL[card.rarity] ?? MATERIAL.RARE,
+        backgroundImage: MATERIAL[card.rarity] ?? (card.frame ? `linear-gradient(140deg, ${card.frame} 0%, #f7efe0 35%, ${card.frame} 60%, #f7efe0 85%, ${card.frame} 100%)` : MATERIAL.RARE),
         boxShadow: "0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.4)",
         ...style,
       }}

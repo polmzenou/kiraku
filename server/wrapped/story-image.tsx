@@ -28,6 +28,9 @@ export type StoryAssets = {
   favoriteImage: string | null;
 };
 
+/** Taille du chiffre d'une case : une seule ligne même pour un rang long (« Grand Champion », « Champion I »). */
+export const statSize = (value: string) => (value.length <= 7 ? 64 : value.length <= 10 ? 50 : value.length <= 14 ? 38 : 30);
+
 function Panel({ children, style }: { children: ReactNode; style?: React.CSSProperties }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", borderRadius: 36, background: "rgba(34,29,24,0.86)", border: `2px solid ${OG.border}`, ...style }}>
@@ -37,12 +40,12 @@ function Panel({ children, style }: { children: ReactNode; style?: React.CSSProp
 }
 
 /** Une carte mise en avant : fuda (ou sceau si l'illustration est absente ou spoil), légende au-dessus. */
-function Highlight({ caption, card, image, seal }: { caption: string; card: { name: string; rarity: string }; image: string | null; seal: string }) {
+function Highlight({ caption, card, image, seal }: { caption: string; card: { name: string; rarity: string; frame: string }; image: string | null; seal: string }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22, width: 440 }}>
       <div style={{ display: "flex", color: OG.kin, fontSize: 30, fontWeight: 700, letterSpacing: 5, textTransform: "uppercase" }}>{caption}</div>
       <div style={{ display: "flex", position: "relative", width: 380, height: 532 }}>
-        <OgFuda card={{ name: card.name, rarity: card.rarity, image: image ?? seal }} width={380} style={{ left: 0, top: 0 }} />
+        <OgFuda card={{ name: card.name, rarity: card.rarity, frame: card.frame, image: image ?? seal }} width={380} style={{ left: 0, top: 0 }} />
       </div>
     </div>
   );
@@ -71,7 +74,7 @@ export function renderWrappedStory(summary: WrappedSummary, labels: StoryLabels,
             {labels.stats.slice(0, 4).map((s) => (
               <Panel key={s.label} style={{ width: 442, padding: "34px 36px", gap: 8 }}>
                 <div style={{ display: "flex", color: OG.muted, fontSize: 30 }}>{s.label}</div>
-                <div style={{ display: "flex", fontFamily: FONT.heading, fontSize: 64, color: OG.text }}>{s.value}</div>
+                <div style={{ display: "flex", fontFamily: FONT.heading, fontSize: statSize(s.value), whiteSpace: "nowrap", color: OG.text }}>{s.value}</div>
               </Panel>
             ))}
           </div>

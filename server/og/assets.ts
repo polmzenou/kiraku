@@ -1,6 +1,7 @@
 import "server-only";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { GOLD_TONE } from "@/lib/og/gold";
 
 // Ressources des images de partage : polices TrueType (scripts/og-fonts.mts), sceau 気楽, et images
 // distantes (avatar Discord, illustrations) téléchargées ici puis passées à Satori en data URI.
@@ -48,12 +49,38 @@ function allowedHost(hostname: string): boolean {
 
 const MAX_BYTES = 3 * 1024 * 1024;
 const TYPES = new Set(["image/png", "image/jpeg", "image/gif"]);
+/** Formats convertis en PNG par sharp : les créations originales sont enregistrées en WebP (éditeur du catalogue). */
+const CONVERTED = new Set(["image/webp"]);
+/** Largeur maximale d'une illustration passée à Satori (les fuda des images font au plus ~400 px). */
+const MAX_WIDTH = 640;
+
+type Sharp = (typeof import("sharp"))["default"];
+let sharpModule: Promise<Sharp | null> | null = null;
+
+/** sharp, fourni par Next.js (dépendance optionnelle) ; null s'il manque sur cette machine. */
+function loadSharp(): Promise<Sharp | null> {
+  sharpModule ??= import("sharp").then((m) => m.default).catch(() => null);
+  return sharpModule;
+}
+
+/**
+ * Illustration retravaillée pour Satori : WebP converti en PNG, réduite, et teinte Gold du site appliquée
+ * si demandé (Satori ignore les filtres CSS). Null si sharp manque et que le format l'exige.
+ */
+export async function processImage(body: Buffer, type: string, gold: boolean): Promise<{ body: Buffer; type: string } | null> {
+  if (!gold && !CONVERTED.has(type)) return { body, type };
+  const sharp = await loadSharp();
+  if (!sharp) return CONVERTED.has(type) ? null : { body, type };
+  let image = sharp(body).rotate().resize({ width: MAX_WIDTH, withoutEnlargement: true });
+  if (gold) image = image.recomb(GOLD_TONE.matrix.map((row) => [...row]) as [[number, number, number], [number, number, number], [number, number, number]]).linear(GOLD_TONE.slope, GOLD_TONE.intercept);
+  return { body: await image.png().toBuffer(), type: "image/png" };
+}
 
 /**
  * Image distante en data URI, ou null (hôte inconnu, format que Satori ne lit pas, délai dépassé).
  * Les avatars Discord sont demandés en PNG : Satori ne décode pas le WebP.
  */
-export async function remoteImage(raw: string | null | undefined, timeoutMs = 3_000): Promise<string | null> {
+export async function remoteImage(raw: string | null | undefined, timeoutMs = 3_000, opts: { gold?: boolean } = {}): Promise<string | null> {
   if (!raw) return null;
   let url: URL;
   try {
@@ -69,10 +96,11 @@ export async function remoteImage(raw: string | null | undefined, timeoutMs = 3_
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), redirect: "error" });
     const type = res.headers.get("content-type")?.split(";")[0].trim() ?? "";
-    if (!res.ok || !TYPES.has(type)) return null;
+    if (!res.ok || !(TYPES.has(type) || CONVERTED.has(type))) return null;
     const body = Buffer.from(await res.arrayBuffer());
     if (body.length > MAX_BYTES) return null;
-    return `data:${type};base64,${body.toString("base64")}`;
+    const image = await processImage(body, type, opts.gold === true);
+    return image ? `data:${image.type};base64,${image.body.toString("base64")}` : null;
   } catch {
     return null;
   }
