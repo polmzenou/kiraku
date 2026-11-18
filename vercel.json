@@ -6,6 +6,7 @@
     { "path": "/api/cron/market", "schedule": "0 4 * * *" },
     { "path": "/api/cron/battle", "schedule": "15 4 * * *" },
     { "path": "/api/cron/accounts", "schedule": "30 4 * * *" },
-    { "path": "/api/cron/casino", "schedule": "45 4 * * *" }
+    { "path": "/api/cron/casino", "schedule": "45 4 * * *" },
+    { "path": "/api/cron/expedition", "schedule": "45 4 * * *" }
   ]
 }

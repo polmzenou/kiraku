@@ -129,9 +129,10 @@ const loadSearchIndex = unstable_cache(
   async (params: WikiCatalogParams, _version: number): Promise<CatalogSearchIndex> => {
     void _version;
     const { terms, rarities, series, demographic, genre, gender, sort, dir } = params;
-    // À rang égal, une variante (Black Edition) passe au-dessus de sa rareté de base, comme dans compareRarities.
+    // À rang égal, une variante (Black Edition) passe au-dessus de sa rareté de base, et deux raretés de même
+    // rang (AR et VR) restent chacune en bloc au lieu de s'entremêler par numéro, comme dans compareRarities.
     const orderBy: Prisma.CardOrderByWithRelationInput[] = sort === "rarity"
-      ? [{ rarityDefinition: { sortOrder: dir } }, { rarityDefinition: { variantRequired: dir } }]
+      ? [{ rarityDefinition: { sortOrder: dir } }, { rarityDefinition: { variantRequired: dir } }, { rarity: dir }]
       : [{ [sort === "number" ? "rank" : sort]: dir }];
     // Le rang est unique et départage les égalités pour que la pagination reste stable.
     if (sort !== "number") orderBy.push({ rank: "asc" });

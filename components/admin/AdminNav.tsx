@@ -33,6 +33,7 @@ const GROUPS = [
       { key: "cosmetics", href: "/admin/cosmetiques" },
       { key: "lots", href: "/admin/lots" },
       { key: "missions", href: "/admin/missions" },
+      { key: "expeditions", href: "/admin/expeditions" },
       { key: "shop", href: "/admin/boutique" },
     ],
   },

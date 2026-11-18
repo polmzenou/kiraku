@@ -171,6 +171,7 @@
     "tilesLabel": "Raccourcis du compte",
     "tiles": {
       "missions": "Missions",
+      "expedition": "Expéditions",
       "shop": "Boutique",
       "referral": "Parrainage",
       "ledger": "Historique des Zeni",
@@ -570,6 +571,7 @@
     "more": "Plus",
     "social": "Social",
     "event": "Event",
+    "expedition": "Expéditions",
     "casino": "Casino",
     "alert": "Récompense à réclamer",
     "new": "Nouveau"
@@ -1050,6 +1052,7 @@
       "coins": "Zeni",
       "cards": "Cartes possédées",
       "discoveries": "Catalogue découvert",
+      "friends": "Amis",
       "created": "Inscription",
       "manage": "Gérer",
       "noEmail": "Aucun e-mail",
@@ -1072,6 +1075,7 @@
       "uniqueCards": "Cartes uniques possédées",
       "boosters": "Boosters à ouvrir",
       "openings": "Boosters déjà ouverts",
+      "incenseMetric": "Encens disponibles",
       "reason": "Motif de la modification",
       "defaultReason": "Correction administrative",
       "reasonHint": "Ce motif sera ajouté à chaque modification effectuée depuis cette fiche.",
@@ -1127,6 +1131,11 @@
       "boosterCount": "Stock de ce type : {count, number}",
       "bannerPity": "Pitié vedette de ce booster",
       "bannerPityHint": "Nombre d'ouvertures sans carte vedette pour ce type. Ce compteur est utilisé par les bannières.",
+      "incense": "Encens",
+      "incenseAvailable": "Encens disponibles : {count, number}",
+      "incenseDetail": "{earned, number} gagnés en tirant · ajustement de l'équipe {bonus} · {used, number} déjà activés",
+      "incenseActiveUntil": "Boost en cours jusqu'au {date}",
+      "incenseHint": "Un ajout est notifié au joueur comme un cadeau de l'équipe. Les Encens gagnés en tirant des cartes continuent de s'ajouter.",
       "cardSearch": "Choisir n'importe quelle carte",
       "cardSearchPlaceholder": "Personnage, œuvre, numéro AniList ou identifiant exact",
       "cardSearchHint": "Recherche dans toutes les raretés et toutes les cartes, même sorties du catalogue. Les 30 premiers résultats sont affichés : précise la recherche si nécessaire.",
@@ -1147,6 +1156,12 @@
       "collection": "Collection et découvertes du joueur",
       "filterCollection": "Filtrer par personnage ou œuvre",
       "collectionEmpty": "Aucune carte ou découverte ne correspond.",
+      "friendsTitle": "Amis du joueur",
+      "friendsSummary": "{count, plural, =0 {Aucun ami} one {# ami} other {# amis}}",
+      "friendsEmpty": "Ce joueur n'a encore aucun ami.",
+      "friendSince": "Amis depuis",
+      "friendsMore": "et {count, number} de plus",
+      "friendsOf": "Amis de {username}",
       "card": "Carte",
       "rarity": "Rareté",
       "copies": "Exemplaires",
@@ -1172,7 +1187,8 @@
         "USER_SESSIONS": "Déconnexion des sessions",
         "USER_AMBASSADOR": "Rôle Ambassadeur",
         "USER_LEADERBOARD": "Classement des collectionneurs",
-        "USER_LEADERBOARDMALUS": "Malus au classement"
+        "USER_LEADERBOARDMALUS": "Malus au classement",
+        "USER_INCENSE": "Encens"
       },
       "errors": {
         "FORBIDDEN": "Accès refusé : les droits administrateur sont requis.",
@@ -1267,6 +1283,7 @@
       "economy": "Économie",
       "lots": "Lots",
       "missions": "Missions",
+      "expeditions": "Expéditions",
       "shop": "Boutique",
       "referral": "Parrainages",
       "reviews": "Avis",
@@ -2449,6 +2466,9 @@
         "referral": {
           "enabled": "Parrainage"
         },
+        "expedition": {
+          "enabled": "Expéditions"
+        },
         "notifications": {
           "pushEnabled": "Notifications push"
         }
@@ -2481,6 +2501,9 @@
         },
         "referral": {
           "enabled": "Liens d'invitation et récompenses."
+        },
+        "expedition": {
+          "enabled": "Page /expedition, entrée du menu et tuile du Compte. Coupé : seul l'admin voit la page (aperçu)."
         },
         "notifications": {
           "pushEnabled": "Envoi des notifications quand l'onglet est fermé."
@@ -3413,6 +3436,122 @@
         "feedMaxAgeHours": "Les lancers plus anciens quittent le fil.",
         "allowedRarities": "Une table se relève avec une carte du même palier (Mythique = BR, AR = VR, Gold = MR). Une rareté retirée ne se mise plus ; ses tables ouvertes restent jusqu'à leur échéance."
       }
+    },
+    "expeditions": {
+      "title": "Expéditions",
+      "intro": "Mini-jeu : chaque jour, chaque joueur reçoit ses routes (une sûre, des équilibrées, une périlleuse) et y envoie 3 cartes. Les cartes parties sont bloquées jusqu'au retour.",
+      "statusOn": "Allumées : les joueurs y ont accès.",
+      "statusOff": "Coupées : seuls les admins voient la page (aperçu), aucune entrée de menu.",
+      "openPage": "Ouvrir la page",
+      "previewPage": "Voir l'aperçu",
+      "preview": {
+        "title": "Aperçu d'équilibrage",
+        "minimal": "Équipe juste : {success} % (triomphe {triumph} %) · ~{zeni} Zeni et {boosters} boosters · {perHour} Zeni/h",
+        "ideal": "Équipe idéale : {success} % (triomphe {triumph} %) · ~{zeni} Zeni et {boosters} boosters · {perHour} Zeni/h",
+        "rewards": "Triomphe : {triumph} Zeni + {triumphBoosters} B · Réussite : {success} Zeni + {successBoosters} B · Échec : {failure} Zeni"
+      },
+      "settingsSection": "Réglages",
+      "keys": {
+        "enabled": "Expéditions ouvertes aux joueurs",
+        "offersPerDay": "Routes par jour",
+        "abandonCooldownHours": "Repos après un abandon (heures)",
+        "cardBonus": "Bonus de chance des cartes",
+        "triumphRewardPct": "Gains du triomphe (%)",
+        "failRewardPct": "Consolation d'un échec (% des Zeni)"
+      },
+      "hints": {
+        "enabled": "Coupé : 404 pour les joueurs (sauf expédition encore en route ou à révéler), aperçu pour les admins, aucune entrée de menu.",
+        "offersPerDay": "La première est sûre, la dernière périlleuse. Les plateaux déjà tirés aujourd'hui ne changent pas.",
+        "abandonCooldownHours": "0 : aucune attente.",
+        "triumphRewardPct": "Zeni et boosters de la réussite multipliés (boosters arrondis au supérieur).",
+        "failRewardPct": "Part des Zeni de la réussite versée en cas d'échec ; jamais de booster.",
+        "cardBonus": "Points de chance qu'apporte chaque carte selon son palier par rapport à la rareté exigée ; trois paliers ou plus en dessous : rien. Les raretés de même rang (Mythique et BR, AR et VR, Gold et MR) forment un palier. Valable pour les prochains départs."
+      },
+      "bonus": {
+        "below2": "2 paliers en dessous",
+        "below1": "1 palier en dessous",
+        "same": "Même palier",
+        "above1": "1 palier au-dessus",
+        "above2": "2 paliers au-dessus",
+        "above3": "3 paliers et plus au-dessus"
+      },
+      "statsTitle": "7 derniers jours",
+      "stats": "{active} en route · {completed} rentrées ({triumph} triomphes, {success} réussites, {failure} échecs, {rate} % de réussite) · {abandoned} abandons · {zeni} Zeni versés",
+      "typesTitle": "Modèles ({count})",
+      "typesHint": "Les expéditions déjà lancées gardent les valeurs de leur départ. Un modèle déjà joué se désactive, il ne se supprime pas.",
+      "needBooster": "Aucun type de booster disponible.",
+      "typeMeta": "{hours} h · base {base} % → {max} % · {zeni} Zeni + {boosters} × {booster} · découverte {discovery} % · poids {weight} · joué {played} fois",
+      "typeLot": "lot bonus : {lot}",
+      "typeBalance": "Réussite de {min} à {max} % (triomphe jusqu'à {triumph} %) · équipe juste : ~{zeni} Zeni, {perHour} Zeni/h",
+      "inactive": "désactivé",
+      "edit": "Modifier",
+      "newType": "Nouvelle expédition",
+      "editType": "Modifier l'expédition",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "saved": "Expédition enregistrée.",
+      "cancelEdit": "Annuler",
+      "fields": {
+        "nameFr": "Nom (fr)",
+        "nameEn": "Nom (en)",
+        "loreFr": "Ambiance (fr)",
+        "loreEn": "Ambiance (en)",
+        "slug": "Identifiant",
+        "slugHint": "Minuscules et tirets, unique.",
+        "minRarity": "Rareté exigée",
+        "risk": "Risque",
+        "durationMinutes": "Durée (minutes)",
+        "durationHint": "De 1 min à 72 h.",
+        "baseSuccessPct": "Chances de base (%)",
+        "baseHint": "Avant les bonus des cartes. Sûre : 100.",
+        "maxSuccessPct": "Plafond de réussite (%)",
+        "maxTriumphPct": "Plafond de triomphe (%)",
+        "triumphHint": "Le surplus au-dessus du plafond de réussite devient du triomphe, jusqu'à ce plafond. 0 : jamais.",
+        "minDiscoveryPct": "Catalogue découvert exigé (%)",
+        "discoveryHint": "0 : aucune condition.",
+        "zeni": "Zeni",
+        "boosters": "Boosters",
+        "boosterType": "Type de booster",
+        "extraLot": "Lot bonus",
+        "extraLotHint": "Versé en cas de réussite ou de triomphe (par exemple une carte tirée dans une rareté).",
+        "noLot": "Aucun",
+        "weight": "Poids au tirage",
+        "weightHint": "0 : jamais proposé.",
+        "sortOrder": "Ordre",
+        "active": "Actif"
+      },
+      "seed": {
+        "label": "Installer le catalogue par défaut",
+        "title": "Installer le catalogue par défaut ?",
+        "description": "Crée les 18 expéditions par défaut (Épique à XR, sûre, équilibrée et périlleuse) qui manquent, avec leurs lots bonus. Un modèle déjà présent n'est jamais modifié.",
+        "confirm": "Installer"
+      },
+      "delete": {
+        "label": "Supprimer",
+        "title": "Supprimer « {name} » ?",
+        "description": "Ce modèle n'a jamais été joué : il disparaît définitivement.",
+        "confirm": "Supprimer"
+      },
+      "recall": {
+        "label": "Rappeler",
+        "title": "Rappeler l'expédition de {username} ?",
+        "description": "Ses cartes reviennent tout de suite, sans gain et sans attente.",
+        "confirm": "Rappeler"
+      },
+      "activeTitle": "En route ({count})",
+      "activeEmpty": "Aucune expédition en route.",
+      "activeMeta": "Partie le {started} · retour le {ends} · {chance} % de réussite",
+      "errors": {
+        "FORBIDDEN": "Accès refusé.",
+        "INVALID": "Champs invalides.",
+        "RATE_LIMITED": "Trop de requêtes, patiente un instant.",
+        "NOT_FOUND": "Introuvable.",
+        "SLUG_TAKEN": "Identifiant déjà pris.",
+        "UNKNOWN_REF": "Rareté, booster ou lot introuvable (un sachet scellé passe par un lot bonus).",
+        "IN_USE": "Déjà joué : désactive-le plutôt.",
+        "NO_BOOSTER": "Booster « Tout anime » (standard) introuvable.",
+        "unexpected": "Erreur inattendue."
+      }
     }
   },
   "collection": {
@@ -3523,6 +3662,7 @@
       "inAuction": "{count, plural, one {# en vente} other {# en vente}}",
       "inBattle": "{count, plural, one {# en combat} other {# en combat}}",
       "inCasino": "{count, plural, one {# en jeu au casino} other {# en jeu au casino}}",
+      "inExpedition": "{count, plural, one {# en expédition} other {# en expédition}}",
       "firstObtained": "Première obtention : {date}",
       "recycleTitle": "Recycler les doublons",
       "unitValue": "{zeni, number} Zeni par doublon.",
@@ -3878,6 +4018,175 @@
       "OWN_ENTRY": "Tu ne peux pas voter pour ta propre vitrine."
     }
   },
+  "expedition": {
+    "title": "Expéditions",
+    "metaTitle": "Expéditions",
+    "subtitle": "Envoie trois cartes sur les routes : plus elles sont rares, plus elles reviennent chargées.",
+    "previewBanner": "Aperçu admin : les expéditions sont coupées pour les joueurs.",
+    "closedBanner": "Les expéditions sont fermées pour l'instant. Ton expédition en cours se termine normalement.",
+    "risk": {
+      "SAFE": "Sûre",
+      "BALANCED": "Équilibrée",
+      "RISKY": "Périlleuse"
+    },
+    "outcome": {
+      "TRIUMPH": "Triomphe",
+      "SUCCESS": "Réussite",
+      "FAILURE": "Échec"
+    },
+    "duration": {
+      "h": "{hours} h",
+      "hm": "{hours} h {minutes}",
+      "m": "{minutes} min"
+    },
+    "reward": {
+      "zeni": "{amount} Zeni",
+      "boosters": "{count, plural, one {# booster} other {# boosters}}",
+      "bonusBoosters": "{count, plural, one {+# booster} other {+# boosters}}",
+      "cards": "{count, plural, one {# carte {rarity}} other {# cartes {rarity}}}",
+      "namedCards": "{count, plural, one {# carte offerte} other {# cartes offertes}}",
+      "nothing": "Aucun gain"
+    },
+    "offer": {
+      "requirement": "Au moins une carte {rarity} ou mieux",
+      "chance": "{min} à {max} % de réussite",
+      "chanceOne": "{value} % de réussite",
+      "chanceSafe": "Réussite assurée",
+      "discovery": "{need} % du catalogue requis",
+      "done": "Faite aujourd'hui",
+      "unavailable": "Plus proposée aujourd'hui",
+      "locked": "Débloquée à {need} % du catalogue découvert (tu es à {have} %)",
+      "needCard": "Il te faut une carte {rarity} libre",
+      "choose": "Préparer l'équipe",
+      "chooseLabel": "Préparer l'équipe pour {name}"
+    },
+    "board": {
+      "title": "Les routes du jour",
+      "resetIn": "Nouvelles routes dans {time}",
+      "empty": "Aucune route aujourd'hui. Reviens plus tard !",
+      "oneAtATime": "Une seule expédition à la fois : attends le retour de ton groupe.",
+      "rules": "Chaque route se fait une fois par jour. Abandonner rend tes cartes tout de suite, mais impose {hours} h de repos. Catalogue découvert : {discovery} %."
+    },
+    "team": {
+      "title": "Équipe · {name}",
+      "slots": "Ton équipe",
+      "empty": "Choisis une carte",
+      "remove": "Retirer {name} de l'équipe",
+      "pick": "Envoyer {name}",
+      "bonus": "+{value} %",
+      "chance": "réussite",
+      "triumphShort": "dont {value} % de triomphe",
+      "gaugeLabel": "{success} % de réussite, dont {triumph} % de triomphe",
+      "requirementMet": "Condition remplie",
+      "probability": "{value} %",
+      "meta": "Durée {duration} · base {base} % · plafond {max} %",
+      "best": "Équipe optimale",
+      "thrifty": "Équipe économe",
+      "lockNotice": "Pendant l'expédition, tes 3 cartes sont bloquées : ni vente, ni échange, ni cadeau, ni combat, ni recyclage. Elles restent dans tes vitrines.",
+      "pickMore": "{count, plural, one {Encore # carte à choisir} other {Encore # cartes à choisir}}",
+      "needRequirement": "Il manque une carte {rarity} ou mieux",
+      "hold": "Maintenir pour partir · {duration}",
+      "holdHint": "Garde le bouton enfoncé jusqu'à ce qu'il soit plein.",
+      "confirmLaunch": "Touche encore pour partir",
+      "launching": "Départ…",
+      "later": "Plus tard"
+    },
+    "launch": {
+      "label": "Départ de l'expédition {name}",
+      "sealed": "Le groupe est prêt : {name}",
+      "departed": "Le groupe est parti !",
+      "skip": "Touche pour passer"
+    },
+    "active": {
+      "endsIn": "Retour dans",
+      "arriving": "Le groupe arrive…",
+      "progress": "Progression du voyage",
+      "elapsed": "En route depuis {time} · voyage de {total}",
+      "team": "Le groupe",
+      "locked": "Ces cartes sont bloquées jusqu'au retour.",
+      "requirement": "Condition : au moins une carte {rarity}",
+      "gains": "Gains possibles",
+      "probability": "{value} %",
+      "journal": "Carnet de route",
+      "log": {
+        "SAFE": {
+          "0": "Le groupe prend la route d'un pas tranquille.",
+          "1": "Une halte au salon de thé du bord du chemin.",
+          "2": "Le paysage défile, rien à signaler.",
+          "3": "Les lanternes du dernier relais se dessinent au loin."
+        },
+        "BALANCED": {
+          "0": "Le groupe s'élance, bien décidé.",
+          "1": "Le sentier se perd dans la brume : il faut choisir.",
+          "2": "Une rencontre inattendue au détour d'un col…",
+          "3": "Le dernier relais est en vue. Encore un effort !"
+        },
+        "RISKY": {
+          "0": "Le groupe part à l'aventure, sans regarder en arrière.",
+          "1": "Des traces étranges barrent le chemin…",
+          "2": "Le danger rôde : chacun garde la main sur sa fuda.",
+          "3": "Épuisé mais debout, le groupe aperçoit enfin le but."
+        }
+      },
+      "abandon": "Abandonner l'expédition",
+      "abandonTitle": "Abandonner l'expédition ?",
+      "abandonBody": "Tes cartes reviennent tout de suite, sans aucun gain, et tu devras attendre {hours} h avant une nouvelle expédition.",
+      "abandonBodyFree": "Tes cartes reviennent tout de suite, sans aucun gain.",
+      "abandonConfirm": "Abandonner",
+      "abandoning": "Retour…",
+      "keepGoing": "Continuer"
+    },
+    "result": {
+      "banner": "Ton expédition est de retour !",
+      "open": "Ouvrir le rapport",
+      "title": "Rapport : {name}",
+      "breakSeal": "Touche le sceau pour l'ouvrir",
+      "body": {
+        "TRIUMPH": "Un retour triomphal ! Le groupe rapporte bien plus que prévu.",
+        "SUCCESS": "Mission accomplie : le groupe rentre les bras chargés.",
+        "FAILURE": "La route a été trop rude cette fois. Le groupe rentre sain et sauf, avec un petit dédommagement."
+      },
+      "zeni": "Zeni",
+      "bonusCard": "Trouvaille",
+      "cardsBack": "Tes cartes sont de retour",
+      "openBoosters": "Ouvrir mes boosters",
+      "again": "Retour aux routes"
+    },
+    "rest": {
+      "title": "Le groupe se repose",
+      "body": "Prochaine expédition possible dans {time}"
+    },
+    "history": {
+      "title": "Journal des expéditions",
+      "outcome": {
+        "TRIUMPH": "Triomphe",
+        "SUCCESS": "Réussite",
+        "FAILURE": "Échec",
+        "ABANDONED": "Abandonnée"
+      },
+      "gains": "+{zeni} Zeni · {boosters, plural, one {# booster} other {# boosters}}"
+    },
+    "errors": {
+      "NO_SESSION": "Ta session a expiré : recharge la page.",
+      "INVALID": "Demande invalide.",
+      "RATE_LIMITED": "Doucement ! Réessaie dans un instant.",
+      "DISABLED": "Les expéditions sont fermées.",
+      "NO_USER": "Compte introuvable.",
+      "BANNED": "Compte suspendu.",
+      "TEAM": "Choisis 3 personnages différents.",
+      "ACTIVE": "Une expédition est déjà en route.",
+      "COOLDOWN": "Ton groupe se repose encore.",
+      "STALE": "Les routes ont changé : la page se met à jour.",
+      "DONE": "Tu as déjà fait cette route aujourd'hui.",
+      "UNAVAILABLE": "Cette route n'est plus proposée.",
+      "DISCOVERY": "Tu n'as pas encore découvert assez du catalogue.",
+      "NOT_QUALIFIED": "Il faut au moins une carte de la rareté demandée.",
+      "NOT_OWNED": "Une de ces cartes n'est plus libre.",
+      "NOT_FOUND": "Expédition introuvable.",
+      "NO_BOOSTER": "Booster introuvable.",
+      "unexpected": "Erreur inattendue. Réessaie."
+    }
+  },
   "wishlist": {
     "title": "Liste de souhaits",
     "count": "{count} / {max}",
@@ -4180,6 +4489,7 @@
     },
     "teamGiftCards": "L'équipe Kiraku t'offre {count, plural, one {la carte {card}} other {# × {card}}}.",
     "teamGiftBoosters": "L'équipe Kiraku t'offre {count, plural, one {un booster} other {# boosters}} : ouvre-{count, plural, one {le} other {les}} !",
+    "teamGiftIncense": "L'équipe Kiraku t'offre {count, plural, one {un Encens} other {# Encens}} : allume-{count, plural, one {le} other {les}} depuis l'accueil !",
     "teamNote": "Mot de l'équipe",
     "declineNote": "Motif du refus",
     "giftSealedDivin": "{name} t'a offert un booster divin !",
@@ -4192,7 +4502,11 @@
     "coinFlipResolved": "{name} a relevé ta table ({card}) : la pièce a été lancée, viens voir comment elle est tombée.",
     "coinFlipExpired": "Personne n'a relevé ta table de pile ou face : {card} est revenue dans ta collection.",
     "coinFlipDeclined": "{name} a décliné ta table de pile ou face : {card} est revenue dans ta collection.",
-    "coinFlipAdmin": "L'équipe Kiraku a retiré ta table de pile ou face : {card} est revenue dans ta collection."
+    "coinFlipAdmin": "L'équipe Kiraku a retiré ta table de pile ou face : {card} est revenue dans ta collection.",
+    "expeditionTriumph": "Ton expédition revient triomphante ! Viens ouvrir son rapport.",
+    "expeditionSuccess": "Ton expédition est de retour, mission accomplie. Viens ouvrir son rapport.",
+    "expeditionFailure": "Ton expédition est rentrée bredouille… Tes cartes sont de retour.",
+    "expeditionReturned": "Ton expédition est de retour. Viens ouvrir son rapport."
   },
   "push": {
     "title": "Notifications sur ce téléphone",
@@ -4457,7 +4771,8 @@
         "BOOSTER": "Achat de booster",
         "GIFT": "Booster offert à un ami",
         "SEASON": "Récompense de saison (classé)",
-        "ABILITY": "Capacité achetée (atelier)"
+        "ABILITY": "Capacité achetée (atelier)",
+        "EXPEDITION": "Expédition"
       }
     },
     "reveal": {

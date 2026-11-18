@@ -54,7 +54,8 @@ function slotsOf(items: readonly Item[], capacity: number): ShowcaseSlots {
 
 /**
  * Exemplaire de chaque carte : celui déjà exposé dans une vitrine du joueur (un exemplaire en combat
- * ou misé au casino y reste jusqu'à son transfert), sinon le plus ancien en collection. NOT_OWNED si une carte n'en a aucun.
+ * ou misé au casino, ou en expédition, y reste jusqu'à son retour ou son transfert), sinon le plus ancien en collection.
+ * NOT_OWNED si une carte n'en a aucun.
  */
 async function pickCopies(tx: Tx, userId: string, cardIds: readonly string[]): Promise<Map<string, string>> {
   if (cardIds.length === 0) return new Map();
@@ -62,7 +63,7 @@ async function pickCopies(tx: Tx, userId: string, cardIds: readonly string[]): P
     where: {
       ownerId: userId,
       cardId: { in: [...cardIds] },
-      OR: [{ status: "COLLECTION" }, { status: { in: ["BATTLE", "CASINO"] }, showcaseItems: { some: {} } }],
+      OR: [{ status: "COLLECTION" }, { status: { in: ["BATTLE", "CASINO", "EXPEDITION"] }, showcaseItems: { some: {} } }],
     },
     orderBy: [{ obtainedAt: "asc" }, { id: "asc" }],
     select: { id: true, cardId: true, _count: { select: { showcaseItems: true } } },

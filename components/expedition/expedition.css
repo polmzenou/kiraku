@@ -1,0 +1,118 @@
+/* Expéditions (étape 14) : rouleau du voyage, lanterne, bougie et talon perforé des laissez-passer.
+   Uniquement transform et opacity ; tout s'arrête en mouvement réduit. */
+
+/* Laissez-passer (tegata) : talon perforé à gauche, papier teinté par le palier */
+.exp-tegata {
+  --exp-tint: #c8a140;
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(105deg, color-mix(in srgb, var(--exp-tint) 16%, transparent), transparent 55%),
+    var(--color-surface);
+  -webkit-mask: radial-gradient(circle 5px at 4.75rem 0, #0000 98%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle 5px at 4.75rem 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+  mask: radial-gradient(circle 5px at 4.75rem 0, #0000 98%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle 5px at 4.75rem 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+}
+.exp-tegata::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--wagara);
+  opacity: 0.16;
+  -webkit-mask: linear-gradient(90deg, #000 0 4.75rem, transparent 9rem);
+  mask: linear-gradient(90deg, #000 0 4.75rem, transparent 9rem);
+}
+.exp-perforation {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 4.75rem;
+  border-left: 2px dotted color-mix(in srgb, var(--color-text-muted) 45%, transparent);
+}
+
+/* Rouleau du voyage : la scène garde les proportions du paysage (--emaki-ratio) et couvre le rouleau.
+   Rouleau large (ordinateur) : toute la largeur, bande du milieu. Rouleau étroit (mobile) : toute la
+   hauteur, et la caméra suit la lanterne à l'horizontale (--lx, --ly : position sur l'image, de 0 à 1). */
+.exp-emaki {
+  container-type: size;
+}
+.exp-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: max(100cqw, 100cqh * var(--emaki-ratio, 2.6667));
+  aspect-ratio: var(--emaki-ratio, 2.6667);
+  transform: translate(clamp(100cqw - 100%, 50cqw - var(--lx, 0) * 100%, 0px), calc((100cqh - 100%) / 2));
+  transition: transform 1s linear;
+}
+/* Calque de la taille de la scène, déplacé en % de la scène : la lanterne suit le chemin */
+.exp-walker {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform: translate(calc(var(--lx, 0) * 100%), calc(var(--ly, 0) * 100%));
+  transition: transform 1s linear;
+}
+/* Le pied de la lanterne sur le chemin ; elle rapetit au loin (--ld) */
+.exp-lantern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translate(-50%, calc(-100% - 2px)) scale(var(--ld, 1));
+  transform-origin: 50% 100%;
+}
+
+/* Lanterne du voyageur : flamme qui vacille, halo qui respire */
+@keyframes exp-flicker {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  40% { opacity: 0.82; transform: scale(0.96); }
+  70% { opacity: 0.95; transform: scale(1.03); }
+}
+.exp-flicker {
+  animation: exp-flicker 2.4s ease-in-out infinite;
+  transform-origin: 50% 70%;
+}
+@keyframes exp-breathe {
+  0%, 100% { opacity: 0.35; transform: scale(0.9); }
+  50% { opacity: 0.7; transform: scale(1.12); }
+}
+.exp-breathe {
+  animation: exp-breathe 3.2s ease-in-out infinite;
+}
+
+/* Le voyageur sautille un peu en marchant */
+@keyframes exp-walk {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.exp-walk {
+  animation: exp-walk 0.9s ease-in-out infinite;
+}
+
+/* Rapport de retour : la lettre scellée appelle le geste */
+@keyframes exp-call {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-6px) rotate(2deg); }
+}
+.exp-call {
+  animation: exp-call 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exp-flicker, .exp-breathe, .exp-walk, .exp-call { animation: none; }
+  .exp-stage, .exp-walker { transition: none; }
+}
+:root[data-motion="reduced"] :is(.exp-flicker, .exp-breathe, .exp-walk, .exp-call) {
+  animation: none;
+}
+:root[data-motion="reduced"] :is(.exp-stage, .exp-walker) {
+  transition: none;
+}
+:root[data-fx="lite"] .exp-breathe {
+  animation: none;
+}

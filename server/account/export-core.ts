@@ -39,6 +39,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     decks,
     abilityPurchases,
     cardLoadouts,
+    expeditions,
     showcases,
     showcaseEventEntries,
     showcaseEventVotes,
@@ -84,6 +85,14 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       select: { cardId: true, kind: true, ability: true, price: true, createdAt: true },
     }),
     db.cardLoadout.findMany({ where: { userId }, orderBy: { updatedAt: "asc" }, select: { cardId: true, keywords: true, technique: true, updatedAt: true } }),
+    db.expedition.findMany({
+      where: { userId },
+      orderBy: { startedAt: "asc" },
+      select: {
+        id: true, dayKey: true, cardIds: true, status: true, outcome: true, startedAt: true, endsAt: true, settledAt: true, abandonedAt: true,
+        type: { select: { slug: true } },
+      },
+    }),
     db.showcase.findMany({
       where: { userId },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -247,6 +256,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     decks,
     abilityPurchases,
     cardLoadouts,
+    expeditions: expeditions.map(({ type, ...e }) => ({ ...e, typeSlug: type.slug })),
     showcases: showcases.map((s) => ({
       id: s.id,
       name: s.name,

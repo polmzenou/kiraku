@@ -24,6 +24,7 @@ export const NOTIFICATION_TYPES = [
   "COINFLIP_INVITE",
   "COINFLIP_RESOLVED",
   "COINFLIP_RETURNED",
+  "EXPEDITION_RETURNED",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -101,7 +102,10 @@ export function parseListingPayload(raw: unknown): ListingPayload | null {
  * Contenu d'un cadeau de l'équipe ajouté depuis la fiche du joueur : la carte ou le type de booster
  * et le nombre. Le mot de l'équipe, texte libre, reste dans sa ligne TeamGift (lu par refId).
  */
-export type TeamGiftPayload = { kind: "CARD"; cardId: string; quantity: number } | { kind: "BOOSTER"; boosterTypeId: string; quantity: number };
+export type TeamGiftPayload =
+  | { kind: "CARD"; cardId: string; quantity: number }
+  | { kind: "BOOSTER"; boosterTypeId: string; quantity: number }
+  | { kind: "INCENSE"; quantity: number };
 
 export function parseTeamGiftPayload(raw: unknown): TeamGiftPayload | null {
   if (!raw || typeof raw !== "object") return null;
@@ -111,6 +115,7 @@ export function parseTeamGiftPayload(raw: unknown): TeamGiftPayload | null {
   if (quantity === null) return null;
   if (r.kind === "CARD" && id(r.cardId)) return { kind: "CARD", cardId: r.cardId, quantity };
   if (r.kind === "BOOSTER" && id(r.boosterTypeId)) return { kind: "BOOSTER", boosterTypeId: r.boosterTypeId, quantity };
+  if (r.kind === "INCENSE") return { kind: "INCENSE", quantity };
   return null;
 }
 
@@ -144,4 +149,13 @@ export function parseCoinFlipPayload(raw: unknown): CoinFlipPayload | null {
   if (!isId(r.flipId) || !isId(r.cardId)) return null;
   const reason = COINFLIP_RETURN_REASONS.includes(r.reason as CoinFlipReturnReason) ? (r.reason as CoinFlipReturnReason) : null;
   return { flipId: r.flipId, cardId: r.cardId, reason };
+}
+
+/** Expédition rentrée : son issue (le détail se lit sur /expedition). */
+export type ExpeditionPayload = { outcome: "FAILURE" | "SUCCESS" | "TRIUMPH" };
+
+export function parseExpeditionPayload(raw: unknown): ExpeditionPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const outcome = (raw as Record<string, unknown>).outcome;
+  return outcome === "FAILURE" || outcome === "SUCCESS" || outcome === "TRIUMPH" ? { outcome } : null;
 }

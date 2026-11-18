@@ -3,12 +3,14 @@
 // l'admin) et notification TEAM_GIFT dans la même transaction. Client injecté pour vérifier ces
 // opérations sans importer la connexion de production.
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
-import { adjustedValue, type AdminUserError, type AdminUserMutation } from "@/lib/admin/users";
+import { adjustedValue, MAX_ADMIN_VALUE, type AdminUserError, type AdminUserMutation } from "@/lib/admin/users";
 import { computeStock, stockRulesFor, type StockSettings } from "@/lib/boosters/stock";
 import { MAX_MOVEMENT } from "@/lib/economy/amount";
 import { parseSetting } from "@/lib/settings/defaults";
 import { applyEntries, type LedgerEntry } from "../economy/ledger";
+import { incenseAvailable, incenseBonusFor } from "@/lib/boosters/incense";
 import { readBannerPity } from "../boosters/open-core";
+import { cardsPulled } from "../boosters/incense-core";
 import { lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { writeAdminLog } from "./log";
@@ -32,12 +34,19 @@ async function stockSettings(tx: Tx): Promise<StockSettings> {
   };
 }
 
+/** Palier de l'Encens lu en base dans la transaction (pas dans le cache), comme le stock. */
+async function incenseCardStep(tx: Tx): Promise<number> {
+  const row = await tx.gameSetting.findUnique({ where: { key: "incense.cardStep" }, select: { value: true } });
+  return parseSetting("incense.cardStep", row?.value);
+}
+
 /** Cadeau de l'équipe : le joueur est notifié, l'admin n'est jamais nommé. */
 async function giftFromTeam(
   tx: Tx,
   gift: { userId: string; adminId: string; quantity: number; message: string | null; now: Date } & (
     | { kind: "CARD"; cardId: string }
     | { kind: "BOOSTER"; boosterTypeId: string }
+    | { kind: "INCENSE" }
   ),
 ) {
   const row = await tx.teamGift.create({
@@ -61,7 +70,9 @@ async function giftFromTeam(
     payload:
       gift.kind === "CARD"
         ? { kind: "CARD", cardId: gift.cardId, quantity: gift.quantity }
-        : { kind: "BOOSTER", boosterTypeId: gift.boosterTypeId, quantity: gift.quantity },
+        : gift.kind === "BOOSTER"
+          ? { kind: "BOOSTER", boosterTypeId: gift.boosterTypeId, quantity: gift.quantity }
+          : { kind: "INCENSE", quantity: gift.quantity },
     now: gift.now,
   });
 }
@@ -83,6 +94,7 @@ async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUs
       id: true, username: true, role: true, bannedAt: true, profileVisibility: true, showCollection: true,
       coins: true, boosterStock: true, boosterAnchor: true, rankPoints: true, pityCount: true, standardCount: true, bannerPity: true, battleTeam: true,
       ambassadorSince: true, titleId: true, frameId: true, nameColorId: true, leaderboardHiddenAt: true, leaderboardMalus: true, leaderboardMythicMalus: true,
+      incenseUsed: true, incenseBonus: true,
     } });
     if (!user) throw new AdminUserMutationError("NOT_FOUND");
     const userId = user.id;
@@ -176,6 +188,22 @@ async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUs
           if (input.mode === "ADD") {
             await giftFromTeam(tx, { kind: "BOOSTER", userId, adminId, boosterTypeId: input.boosterTypeId, quantity: input.amount, message: input.message, now });
           }
+        }
+        break;
+      }
+      case "incense": {
+        // Les disponibles se recalculent sous le verrou du joueur (comme à l'activation) : on ne
+        // touche qu'au bonus, les Encens gagnés en tirant restent calculés depuis BoosterOpening.
+        const [pulled, step] = await Promise.all([cardsPulled(tx, userId), incenseCardStep(tx)]);
+        const available = incenseAvailable(pulled, step, user.incenseUsed, user.incenseBonus);
+        const target = adjust(available, input.mode, input.amount);
+        const bonus = incenseBonusFor(pulled, step, user.incenseUsed, target);
+        if (Math.abs(bonus) > MAX_ADMIN_VALUE) throw new AdminUserMutationError("LIMIT");
+        before = { available, bonus: user.incenseBonus };
+        after = { available: target, bonus };
+        await tx.user.update({ where: { id: userId }, data: { incenseBonus: bonus } });
+        if (input.mode === "ADD") {
+          await giftFromTeam(tx, { kind: "INCENSE", userId, adminId, quantity: input.amount, message: input.message, now });
         }
         break;
       }

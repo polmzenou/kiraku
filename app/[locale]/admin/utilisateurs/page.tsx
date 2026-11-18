@@ -77,6 +77,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/[loca
             { key: "coins", ...column("coins", t("coins")), className: "tabular-nums text-kin" },
             { key: "cards", ...column("cards", t("cards")), className: "tabular-nums" },
             { key: "discoveries", ...column("discoveries", t("discoveries")), className: "tabular-nums" },
+            { key: "friends", label: t("friends"), className: "min-w-36" },
             { key: "created", ...column("created", t("created")), className: "whitespace-nowrap" },
             { key: "manage", label: t("manage"), actions: true },
           ]}
@@ -106,6 +107,19 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/[loca
               coins: format.number(u.coins),
               cards: format.number(u._count.cards),
               discoveries: format.number(u._count.discoveries),
+              friends: u.friends.count === 0 ? <span className="tabular-nums text-text-muted">0</span> : (
+                <span className="flex flex-col gap-1">
+                  <Link href={{ pathname: `/admin/utilisateurs/${u.id}`, hash: "user-friends" }} className="font-bold tabular-nums text-link underline underline-offset-4">
+                    {format.number(u.friends.count)}<span className="sr-only"> {t("friendsOf", { username: u.username })}</span>
+                  </Link>
+                  <span className="text-xs break-all text-text-muted">
+                    {u.friends.preview.map((f, i) => (
+                      <span key={f.id}>{i > 0 && ", "}<Link href={`/admin/utilisateurs/${f.id}`} className="underline underline-offset-2">{f.username}</Link></span>
+                    ))}
+                    {u.friends.count > u.friends.preview.length && ` ${t("friendsMore", { count: u.friends.count - u.friends.preview.length })}`}
+                  </span>
+                </span>
+              ),
               created: format.dateTime(u.createdAt, { dateStyle: "short" }),
               manage: (
                 <Link href={`/admin/utilisateurs/${u.id}`} className={buttonClasses()}>

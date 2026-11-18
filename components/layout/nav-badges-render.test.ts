@@ -14,7 +14,7 @@ const providerProps = { locale: "fr" as const, messages: fr, timeZone: "Europe/P
 
 const render = (badges: NavBadges, casino = true) =>
   renderToStaticMarkup(
-    createElement(NextIntlClientProvider, providerProps, createElement(NavLinks, { layout: "stack", features: { casino, event: false }, badges })),
+    createElement(NextIntlClientProvider, providerProps, createElement(NavLinks, { layout: "stack", features: { casino, event: false, expedition: false }, badges })),
   );
 
 /** Ligne du casino dans le panneau « Plus ». */

@@ -9,13 +9,15 @@ const target = {
   coins: 500, boosterStock: 2, boosterAnchor: new Date(0), rankPoints: 0, pityCount: 3, standardCount: 4, bannerPity: {}, battleTeam: [],
   ambassadorSince: null as Date | null, titleId: null as string | null, frameId: "frame-hisui" as string | null, nameColorId: "color-lime" as string | null,
   leaderboardHiddenAt: null as Date | null, leaderboardMalus: 0, leaderboardMythicMalus: 0,
+  incenseUsed: 0, incenseBonus: 0,
 };
 
-function setup({ role = "ADMIN", banned = false, exists = true, player = {} as Partial<typeof target> } = {}) {
+function setup({ role = "ADMIN", banned = false, exists = true, player = {} as Partial<typeof target>, pulled = 0 } = {}) {
   const tx = {
     $queryRaw: vi.fn(async (strings: TemplateStringsArray, ...values: unknown[]) => {
       const sql = strings.join("?");
       if (sql.includes('UPDATE "User" SET coins')) return [{ coins: target.coins + Number(values[0]) }];
+      if (sql.includes('FROM "BoosterOpening"')) return [{ n: pulled }];
       return [];
     }),
     user: {
@@ -33,7 +35,7 @@ function setup({ role = "ADMIN", banned = false, exists = true, player = {} as P
     wishlistEntry: { findMany: vi.fn().mockResolvedValue([]), deleteMany: vi.fn() },
     teamGift: { create: vi.fn().mockResolvedValue({ id: "gift" }) },
     notification: { create: vi.fn().mockResolvedValue({ id: "notif" }) },
-    gameSetting: { findMany: vi.fn().mockResolvedValue([]) },
+    gameSetting: { findMany: vi.fn().mockResolvedValue([]), findUnique: vi.fn().mockResolvedValue({ value: 1000 }) },
     // Seul le cadre porté est réservé aux ambassadeurs
     cosmetic: { findMany: vi.fn().mockResolvedValue([{ id: "frame-hisui" }]) },
   };
@@ -104,6 +106,35 @@ describe("mutations admin atomiques", () => {
       data: expect.objectContaining({ userId: "player", type: "TEAM_GIFT", refId: "gift", payload: { kind: "CARD", cardId: "card", quantity: 2 } }),
     }));
     expect(notified).toHaveBeenCalledWith(["notif"]);
+  });
+  it("ajoute des Encens par le bonus, sans toucher aux gagnés, et notifie le joueur", async () => {
+    // 2 500 cartes tirées, un Encens tous les 1 000 : 2 gagnés, 1 déjà activé → 1 disponible
+    const { tx, db } = setup({ pulled: 2500, player: { incenseUsed: 1 } });
+    const notified = vi.fn();
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "incense", mode: "ADD", amount: 3, message: "Merci !" }, notified);
+    expect(tx.user.update).toHaveBeenCalledWith({ where: { id: "player" }, data: { incenseBonus: 3 } });
+    expect(tx.teamGift.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ userId: "player", kind: "INCENSE", cardId: null, boosterTypeId: null, quantity: 3, message: "Merci !" }),
+    }));
+    expect(tx.notification.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ type: "TEAM_GIFT", payload: { kind: "INCENSE", quantity: 3 } }),
+    }));
+    expect(notified).toHaveBeenCalledWith(["notif"]);
+    const log = tx.adminLog.create.mock.calls[0][0].data;
+    expect(log.action).toBe("USER_INCENSE");
+    expect(log.before).toEqual({ available: 1, bonus: 0 });
+    expect(log.after.values).toEqual({ available: 4, bonus: 3 });
+  });
+  it("retire ou fixe les Encens disponibles sans notifier, et refuse d'en retirer trop", async () => {
+    const { tx, db } = setup({ pulled: 2500, player: { incenseUsed: 1, incenseBonus: 2 } });
+    // 2 gagnés + 2 donnés − 1 activé = 3 disponibles ; les fixer à 0 retire aussi un gagné
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "incense", mode: "SET", amount: 0, message: "" });
+    expect(tx.user.update).toHaveBeenCalledWith({ where: { id: "player" }, data: { incenseBonus: -1 } });
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "incense", mode: "REMOVE", amount: 2, message: "" });
+    expect(tx.user.update).toHaveBeenLastCalledWith({ where: { id: "player" }, data: { incenseBonus: 0 } });
+    expect(tx.teamGift.create).not.toHaveBeenCalled();
+    expect(tx.notification.create).not.toHaveBeenCalled();
+    await expect(mutateAdminUserWith(db, "admin", { ...base, kind: "incense", mode: "REMOVE", amount: 4, message: "" })).rejects.toMatchObject({ code: "INSUFFICIENT" });
   });
   it("ne notifie ni un retrait ni un crédit fixé", async () => {
     const { tx, db } = setup();

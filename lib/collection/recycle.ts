@@ -10,7 +10,7 @@ export type OwnedCopy = {
   id: string;
   cardId: string;
   rarity: Rarity;
-  status: "COLLECTION" | "AUCTION" | "BATTLE" | "CASINO";
+  status: "COLLECTION" | "AUCTION" | "BATTLE" | "CASINO" | "EXPEDITION";
   obtainedAt: Date;
 };
 

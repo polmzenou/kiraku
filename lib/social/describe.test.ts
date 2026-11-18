@@ -50,6 +50,21 @@ describe("describeNotification", () => {
     expect(text("EXPIRED").href).toBe("/collection/40");
   });
 
+  it("expédition rentrée → page des expéditions, issue à demi dévoilée", () => {
+    const base = { type: "EXPEDITION_RETURNED" as const, actor: { username: "akira", isGuest: false }, gift: null, card: null };
+    expect(describeNotification({ ...base, expedition: { outcome: "TRIUMPH" } }, tr)).toEqual({ text: "expeditionTriumph:{}", href: "/expedition" });
+    expect(describeNotification({ ...base, expedition: { outcome: "FAILURE" } }, tr).text).toBe("expeditionFailure:{}");
+    expect(describeNotification({ ...base, expedition: null }, tr).text).toBe("expeditionReturned:{}");
+  });
+
+  it("Encens offerts par l'équipe → accueil, avec la quantité", () => {
+    const d = describeNotification(
+      { type: "TEAM_GIFT", actor: null, gift: null, card: null, team: { kind: "INCENSE", quantity: 3, boosterSlug: null } },
+      tr,
+    );
+    expect(d).toEqual({ text: 'teamGiftIncense:{"count":3}', href: "/" });
+  });
+
   it("sans auteur : « un joueur »", () => {
     const d = describeNotification({ type: "FRIEND_ACCEPTED", actor: null, gift: null, card: null }, tr);
     expect(d.href).toBe("/amis");

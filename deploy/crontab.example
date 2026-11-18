@@ -15,3 +15,6 @@
 
 # Discord : marché, rôles de compte lié et bilans de saison, toutes les minutes.
 * * * * * curl -fsS -m 55 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/discord >/dev/null
+
+# Expéditions rentrées : gains, cartes rendues et notification « De retour ! », toutes les 5 minutes.
+*/5 * * * * curl -fsS -m 55 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/expedition >/dev/null

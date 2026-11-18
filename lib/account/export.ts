@@ -35,6 +35,7 @@ export const EXPORT_FIELDS = {
   decks: ["id", "name", "cardIds", "createdAt", "updatedAt"],
   abilityPurchases: ["cardId", "kind", "ability", "price", "createdAt"],
   cardLoadouts: ["cardId", "keywords", "technique", "updatedAt"],
+  expeditions: ["id", "typeSlug", "dayKey", "cardIds", "status", "outcome", "startedAt", "endsAt", "settledAt", "abandonedAt"],
   showcases: ["id", "name", "layout", "theme", "sortOrder", "cards", "createdAt", "updatedAt"],
   showcaseEventEntries: ["id", "edition", "showcaseId", "name", "layout", "theme", "cards", "createdAt"],
   showcaseEventVotes: ["edition", "entryId", "createdAt", "updatedAt"],

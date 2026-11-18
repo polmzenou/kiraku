@@ -14,6 +14,7 @@ function render(locale: "fr" | "en", self = false, empty = false) {
   return renderToStaticMarkup(createElement(NextIntlClientProvider, providerProps, createElement(UserEditor, {
     userId: "player", self, ambassadorSince: null, leaderboardHiddenAt: null, leaderboardMalus: { cards: 0, mythics: 0 }, account: { username: "Player", role: self ? "ADMIN" : "USER", banned: false, profileVisibility: "PUBLIC", showCollection: true },
     stats: { boosterStock: 5, rankPoints: 100, pityCount: 7, standardCount: 8 }, coins: 1000,
+    incense: { available: 4, earned: 3, bonus: 2, used: 1, activeUntil: new Date("2030-01-01T12:00:00Z") },
     boosters: empty ? [] : [{ id: "type", name: "Ancien événement", active: false, count: 3, pity: 4 }],
     discoveries: 20, catalogTotal: 100, ownedCatalogCards: 5, sessions: 2,
     selectedCard: empty ? null : { id: "card", anilistId: 1, name: "Levi", imageUrl: "https://s4.anilist.co/card.jpg", rarity: "MYTHIC", rank: null, series: "Attack on Titan" },
@@ -28,7 +29,9 @@ describe("rendu de la fiche admin", () => {
     expect(html).toContain("Ancien événement");
     expect(html).not.toContain("MISSING_MESSAGE");
     expect(html).not.toContain("NaN");
-    expect(html.match(/<form/g)).toHaveLength(15);
+    expect(html.match(/<form/g)).toHaveLength(16);
+    expect(html).toContain(locale === "fr" ? "Encens disponibles : 4" : "Incense available: 4");
+    expect(html).toContain("+2");
     expect(html).toContain(locale === "fr" ? "Enlever du classement" : "Remove from leaderboard");
   });
   it("rend un catalogue vide sans erreur", () => {

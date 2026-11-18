@@ -44,7 +44,7 @@ describe("filtres et tri publics du wiki", () => {
         expect(mocks.cards).toHaveBeenLastCalledWith(expect.objectContaining({
           orderBy: sort === "number"
             ? [{ rank: dir }, { publicId: "asc" }]
-            : [...(sort === "rarity" ? [{ rarityDefinition: { sortOrder: dir } }, { rarityDefinition: { variantRequired: dir } }] : [{ [sort]: dir }]), { rank: "asc" }, { publicId: "asc" }],
+            : [...(sort === "rarity" ? [{ rarityDefinition: { sortOrder: dir } }, { rarityDefinition: { variantRequired: dir } }, { rarity: dir }] : [{ [sort]: dir }]), { rank: "asc" }, { publicId: "asc" }],
         }));
       }
     }

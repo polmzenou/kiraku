@@ -33,6 +33,7 @@ import { getCurrentUser } from "@/server/user";
 // Grille de tuiles du Compte (comme Kyara) : les écrans hors barre de navigation
 const ACCOUNT_TILES = [
   { key: "missions", href: "/missions", kanji: "任" },
+  { key: "expedition", href: "/expedition", kanji: "遠" },
   { key: "shop", href: "/boutique", kanji: "商" },
   { key: "referral", href: "/parrainage", kanji: "招" },
   { key: "ledger", href: "/compte/historique", kanji: "銭" },
@@ -56,13 +57,15 @@ export default async function AccountPage() {
     );
   }
 
-  const [rules, discordBonus, push, casino] = await Promise.all([
+  const [rules, discordBonus, push, casino, expedition] = await Promise.all([
     getBoosterRules(),
     getSetting("discord.linkBonusZeni"),
     pushAvailable(),
     getCasinoNav(),
+    getSetting("expedition.enabled"),
   ]);
-  const tiles = ACCOUNT_TILES.filter((tile) => tile.key !== "casino" || casino.visible);
+  // Casino : tuile selon sa phase ; expéditions : tuile masquée tant que l'admin ne les allume pas
+  const tiles = ACCOUNT_TILES.filter((tile) => (tile.key !== "casino" || casino.visible) && (tile.key !== "expedition" || expedition));
   // Même pastille que le menu : « Bientôt » au teaser, « Nouveau » après l'ouverture
   const casinoTag = casino.badge;
   const code = guestCode(user.username);

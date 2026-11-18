@@ -37,6 +37,7 @@ enum CoinReason {
   GIFT // booster offert à un ami
   SEASON // récompense de fin de saison du classé
   ABILITY // capacité achetée à l'atelier (refId = id de la Card)
+  EXPEDITION // gains d'une expédition (refId = id de l'Expedition)
 }
 
 // Qui voit le profil public (/u/[username]) ; FRIENDS = amis acceptés seulement
@@ -87,8 +88,9 @@ model User {
   standardCount       Int               @default(0) // pour le booster doré
   bannerPity          Json              @default("{}") // { boosterTypeId: boosters sans vedette }
   apocalypseKarma     Int               @default(0) // Apocalyptiques ruinés d'affilée (CHECK >= 0) : au seuil, le suivant est épargné
-  // Encens : un gagné par palier de cartes tirées en boosters (incense.cardStep), disponibles = gagnés − incenseUsed
+  // Encens : un gagné par palier de cartes tirées en boosters (incense.cardStep), disponibles = gagnés + incenseBonus − incenseUsed
   incenseUsed         Int               @default(0) // Encens déjà activés (CHECK >= 0)
+  incenseBonus        Int               @default(0) // Encens donnés (+) ou retirés (−) depuis l'admin
   incenseUntil        DateTime? // fin du boost de l'Encens en cours (null = jamais activé)
   discordJoinedAt     DateTime? // a cliqué sur « Rejoindre le serveur »
   v1WelcomeSeenAt     DateTime? // date de la dernière annonce de l'équipe vue (une fois par annonce, lib/welcome/release.ts)
@@ -198,6 +200,8 @@ model User {
   coinFlipsCreated  CoinFlip[] @relation("coinFlipCreator")
   coinFlipsJoined   CoinFlip[] @relation("coinFlipOpponent")
   coinFlipsReserved CoinFlip[] @relation("coinFlipReserved")
+  expeditions      Expedition[]
+  expeditionBoards ExpeditionBoard[]
 
   @@index([rankPoints])
   @@index([ambassadorSince])
@@ -308,6 +312,7 @@ model RarityDefinition {
   notablePulls    NotablePull[]
   lotItems        LotItem[]
   missions        Mission[]
+  expeditionTypes ExpeditionType[]
 }
 
 enum CatalogCardStatus {
@@ -453,6 +458,7 @@ enum CardStatus {
   COLLECTION
   AUCTION
   BATTLE
+  EXPEDITION // partie en expédition : ni échange, ni vente, ni combat, ni recyclage jusqu'au retour
   CASINO // misée sur une table de pile ou face ouverte (séquestre) : ni vendue, ni échangée, ni recyclée
 }
 
@@ -600,6 +606,7 @@ model BoosterType {
   credits         BoosterCredit[]
   sealedDrops     SealedDrop[]
   lotItems        LotItem[]
+  expeditionTypes ExpeditionType[]
 
   @@index([family, sortOrder])
 }
@@ -756,6 +763,7 @@ enum GiftKind {
   CARD
   BOOSTER
   SEALED // sachet scellé tombé d'un tirage (offert une seule fois)
+  INCENSE // Encens offerts par l'équipe (TeamGift seulement)
 }
 
 // Journal des cadeaux : quotas du jour et historique des cartes transférées
@@ -800,6 +808,7 @@ enum NotificationType {
   LISTING_DECLINED // ton offre a été refusée (ou l'annonce s'est fermée sans elle)
   TEAM_GIFT // cartes ou boosters ajoutés par l'équipe depuis la fiche du joueur (TeamGift)
   AMBASSADOR_GRANTED // l'équipe a donné le rôle Ambassadeur
+  EXPEDITION_RETURNED // l'expédition est rentrée : résultat à révéler (refId = id de l'Expedition)
   COINFLIP_INVITE // une table de pile ou face t'est réservée (ami ou revanche)
   COINFLIP_RESOLVED // quelqu'un a relevé ta table : le lancer t'attend (l'issue n'est pas dévoilée)
   COINFLIP_RETURNED // table retirée, déclinée ou expirée : la carte misée est revenue
@@ -905,6 +914,7 @@ model Lot {
   shopItems  ShopItem[]
   grants     LotGrant[]
   broadcasts LotBroadcast[]
+  expeditionTypes ExpeditionType[]
 }
 
 model LotItem {
@@ -1764,4 +1774,99 @@ model CoinFlip {
   @@index([reservedForId, status]) // tables qui me sont réservées
   @@index([creatorCardId])
   @@index([opponentCardId])
+}
+
+// --- Expéditions (étape 14) ---
+
+enum ExpeditionRisk {
+  SAFE // sûre : aucun échec possible, gains modestes
+  BALANCED // équilibrée
+  RISKY // périlleuse : échec probable, gros gains
+}
+
+enum ExpeditionStatus {
+  ACTIVE // en route, cartes en EXPEDITION
+  COMPLETED // rentrée : résultat tiré et gains versés (revealedAt null = pas encore vu)
+  ABANDONED // arrêtée par le joueur (attente cooldownUntil) ou rappelée par l'admin
+}
+
+enum ExpeditionOutcome {
+  FAILURE // échec : consolation seulement
+  SUCCESS
+  TRIUMPH // triomphe : gains majorés
+}
+
+// Modèle d'expédition, géré dans /admin/expeditions. Un modèle déjà joué se désactive, il ne se supprime pas.
+model ExpeditionType {
+  id              String           @id @default(cuid())
+  slug            String           @unique
+  name            Json // { fr, en }
+  lore            Json             @default("{}") // { fr, en } : une ligne d'ambiance
+  minRarity       String // au moins une carte de cette rareté (ou mieux) dans l'équipe
+  rarity          RarityDefinition @relation(fields: [minRarity], references: [key])
+  risk            ExpeditionRisk
+  durationMinutes Int
+  baseSuccessPct  Int // chances avant les bonus des cartes
+  maxSuccessPct   Int // plafond de réussite ; le surplus devient du triomphe
+  maxTriumphPct   Int // plafond de triomphe (0 = jamais)
+  minDiscoveryPct Int              @default(0) // part du catalogue découverte exigée (0 = aucune)
+  zeni            Int              @default(0)
+  boosterTypeId   String
+  boosterType     BoosterType      @relation(fields: [boosterTypeId], references: [id])
+  boosters        Int              @default(0)
+  extraLotId      String? // lot bonus versé en cas de réussite ou de triomphe
+  extraLot        Lot?             @relation(fields: [extraLotId], references: [id])
+  weight          Int              @default(10) // poids au tirage des offres du jour
+  active          Boolean          @default(true)
+  sortOrder       Int              @default(0)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  expeditions     Expedition[]
+
+  @@index([active])
+}
+
+// Une expédition lancée. Chances et gains sont photographiés au lancement : modifier le modèle ensuite ne
+// change rien. Le résultat n'est tiré qu'à la clôture (settledAt), jamais avant.
+// Index uniques partiels (migration) : une seule ACTIVE par joueur ; une offre (dayKey, slot) jouée une fois,
+// les abandons exceptés.
+model Expedition {
+  id            String             @id @default(cuid())
+  userId        String
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  typeId        String
+  type          ExpeditionType     @relation(fields: [typeId], references: [id])
+  dayKey        String // jour de l'offre (fuseau du jeu), ex. 2026-11-16
+  slot          Int // position de l'offre dans le plateau du jour
+  userCardIds   String[] // exemplaires envoyés (UserCard)
+  cardIds       String[] // ids de Card dans le même ordre : lisible après le retour
+  startedAt     DateTime           @default(now())
+  endsAt        DateTime
+  successPct    Int // en points de base (10 000 = 100 %), triomphe compris
+  triumphPct    Int // en points de base
+  snapshot      Json // ExpeditionSnapshot (lib/expedition/snapshot.ts) : nom, rareté, risque, gains par issue
+  status        ExpeditionStatus   @default(ACTIVE)
+  outcome       ExpeditionOutcome?
+  roll          Int? // tirage de 0 à 9 999, fait à la clôture
+  rewardCardIds String[]           @default([]) // cartes versées par le lot bonus (révélation)
+  settledAt     DateTime?
+  revealedAt    DateTime? // résultat vu par le joueur
+  abandonedAt   DateTime?
+  cooldownUntil DateTime? // abandon : pas de nouvelle expédition avant
+
+  @@index([userId, startedAt])
+  @@index([status, endsAt]) // balayage des expéditions rentrées
+  @@index([typeId])
+}
+
+// Offres du jour d'un joueur, figées à la première lecture (tirage à graine).
+model ExpeditionBoard {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dayKey    String
+  typeIds   String[]
+  createdAt DateTime @default(now())
+
+  @@id([userId, dayKey])
+  @@index([createdAt]) // purge des anciens plateaux
 }

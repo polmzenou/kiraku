@@ -12,6 +12,7 @@ import { rateLimit } from "../ratelimit";
 import { sweepBattlesFor } from "../battle/queries";
 import { purgeOldMessages, unreadChatCount, visibleSince } from "../chat/queries";
 import { settleDueFor } from "../market/queries";
+import { settleExpeditionsFor } from "../expedition/queries";
 import { getSetting } from "../settings";
 import { listNotifications, notificationsSince, type NotificationView } from "../social/queries";
 import { requireActiveUser } from "../user";
@@ -132,6 +133,8 @@ export async function pollNotificationsAction(input: unknown): Promise<PollResul
     await sweepCasinoWith(prisma, { now: new Date() }, { creatorId: user.id }, (ids) => after(() => pushNotifications(ids))).catch((e) =>
       console.error("[casino] expiration au sondage", e),
     );
+    // Expédition rentrée : gains versés, cartes rendues et « De retour ! » dans ce sondage
+    await settleExpeditionsFor(user.id).catch((e) => console.error("[expedition] clôture au sondage", e));
   }
   const now = new Date();
   // Jamais plus d'une heure en arrière : un onglet resté caché longtemps ne déverse pas tout

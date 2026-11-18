@@ -25,4 +25,5 @@ export const SEAL_GLYPHS = [
   "ドンゴォ", // onomatopées des impact frames
   "銅銀翠精覇極番付季", // emblèmes des rangs du classé, classement, saison
   "賭表裏", // casino : emblème, faces de la pièce (表 face, 裏 pile)
+  "遠征出発成功大失敗済封可宿中止", // expéditions : titre, départ, issues, faite, rapport scellé, condition, relais, abandon
 ].join("");

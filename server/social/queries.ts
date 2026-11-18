@@ -10,6 +10,8 @@ import {
   parseTeamGiftPayload,
   parseSealedPayload,
   type SealedPayload,
+  parseExpeditionPayload,
+  type ExpeditionPayload,
   parseTradePayload,
   type CoinFlipPayload,
   type AuctionPayload,
@@ -169,6 +171,8 @@ export type NotificationView = {
   sealed: SealedPayload | null;
   /** Table de pile ou face (la carte du créateur est dans `card`). */
   coinFlip: CoinFlipPayload | null;
+  /** Expédition rentrée : son issue. */
+  expedition: ExpeditionPayload | null;
   /** Texte libre joint : mot de l'équipe (cadeaux, lots) ou motif d'un refus d'échange. */
   note: string | null;
   card: { anilistId: number; name: string; rarity: string } | null;
@@ -306,6 +310,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
       team: team ? { ...team, boosterSlug: team.kind === "BOOSTER" ? (slugById.get(team.boosterTypeId) ?? null) : null } : null,
       sealed,
       coinFlip,
+      expedition: r.type === "EXPEDITION_RETURNED" ? parseExpeditionPayload(r.payload) : null,
       note: notes.get(r.id) ?? null,
       card: card ? { anilistId: card.publicId, name: card.name, rarity: card.rarity } : null,
     };

@@ -1,7 +1,17 @@
 // Texte et lien d'une notification, sans dépendance au rendu : la page /notifications, les toasts
 // (côté client) et le Web Push (côté serveur, dans la langue du joueur) partagent ce code.
 import { guestCode } from "../username";
-import type { AuctionPayload, BattlePayload, CoinFlipPayload, GiftPayload, NotificationType, SealedPayload, TeamGiftPayload, TradePayload } from "./notifications";
+import type {
+  AuctionPayload,
+  BattlePayload,
+  CoinFlipPayload,
+  ExpeditionPayload,
+  GiftPayload,
+  NotificationType,
+  SealedPayload,
+  TeamGiftPayload,
+  TradePayload,
+} from "./notifications";
 
 export type DescribableNotification = {
   type: NotificationType;
@@ -21,6 +31,8 @@ export type DescribableNotification = {
   sealed?: SealedPayload | null;
   /** Table de pile ou face (la carte du créateur est dans `card`). */
   coinFlip?: CoinFlipPayload | null;
+  /** Expédition rentrée : son issue. */
+  expedition?: ExpeditionPayload | null;
   card: { anilistId: number; name: string; rarity: string } | null;
 };
 
@@ -54,6 +66,7 @@ export type DescribeTranslators = {
       | "teamGift"
       | "teamGiftCards"
       | "teamGiftBoosters"
+      | "teamGiftIncense"
       | "tradeProposed"
       | "tradeAccepted"
       | "tradeDeclined"
@@ -66,6 +79,10 @@ export type DescribeTranslators = {
       | "coinFlipExpired"
       | "coinFlipDeclined"
       | "coinFlipAdmin"
+      | "expeditionTriumph"
+      | "expeditionSuccess"
+      | "expeditionFailure"
+      | "expeditionReturned"
       | "aCard",
     values?: Values,
   ) => string;
@@ -129,6 +146,8 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
         const slug = n.team.boosterSlug;
         return { text: t("teamGiftBoosters", { count: n.team.quantity }), href: slug && !SEALED_SLUGS.has(slug) ? `/ouvrir/${slug}?credit=1` : "/" };
       }
+      // Le panneau de l'Encens est sur l'accueil
+      if (n.team?.kind === "INCENSE") return { text: t("teamGiftIncense", { count: n.team.quantity }), href: "/" };
       return {
         text: t("teamGiftCards", { count: n.team?.quantity ?? 1, card: n.card?.name ?? t("aCard") }),
         href: n.card ? `/collection/${n.card.anilistId}` : "/collection",
@@ -157,6 +176,12 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
       const reason = n.coinFlip?.reason;
       const key = reason === "DECLINED" ? "coinFlipDeclined" : reason === "ADMIN" ? "coinFlipAdmin" : "coinFlipExpired";
       return { text: t(key, { name, card }), href: n.card ? `/collection/${n.card.anilistId}` : "/collection" };
+    }
+    case "EXPEDITION_RETURNED": {
+      // Le résultat se révèle sur la page : la notification ne le dévoile qu'à moitié
+      const outcome = n.expedition?.outcome;
+      const key = outcome === "TRIUMPH" ? "expeditionTriumph" : outcome === "SUCCESS" ? "expeditionSuccess" : outcome === "FAILURE" ? "expeditionFailure" : "expeditionReturned";
+      return { text: t(key), href: "/expedition" };
     }
     case "SEALED_OPENED": {
       // Cadeau empoisonné : celui qui a offert le sachet apprend ce qu'il a donné

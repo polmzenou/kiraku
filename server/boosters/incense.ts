@@ -33,12 +33,12 @@ export type IncenseState = {
 export async function getIncenseState(userId: string, now = new Date()): Promise<IncenseState | null> {
   const [settings, user, pulled] = await Promise.all([
     getIncenseSettings(),
-    prisma.user.findUnique({ where: { id: userId }, select: { incenseUsed: true, incenseUntil: true } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { incenseUsed: true, incenseBonus: true, incenseUntil: true } }),
     cardsPulled(prisma, userId),
   ]);
   if (!user) return null;
   return {
-    available: incenseAvailable(pulled, settings.cardStep, user.incenseUsed),
+    available: incenseAvailable(pulled, settings.cardStep, user.incenseUsed, user.incenseBonus),
     activeUntil: isIncenseActive(user.incenseUntil, now) ? user.incenseUntil!.getTime() : null,
     pulled,
     cardStep: settings.cardStep,

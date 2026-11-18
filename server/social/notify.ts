@@ -5,6 +5,7 @@ import type {
   AuctionPayload,
   BattlePayload,
   CoinFlipPayload,
+  ExpeditionPayload,
   GiftPayload,
   ListingPayload,
   NotificationType,
@@ -19,7 +20,16 @@ type NewNotification = {
   type: NotificationType;
   actorId: string;
   refId?: string;
-  payload?: GiftPayload | AuctionPayload | BattlePayload | TradePayload | ListingPayload | TeamGiftPayload | SealedPayload | CoinFlipPayload;
+  payload?:
+    | GiftPayload
+    | AuctionPayload
+    | BattlePayload
+    | TradePayload
+    | ListingPayload
+    | TeamGiftPayload
+    | SealedPayload
+    | CoinFlipPayload
+    | ExpeditionPayload;
   now: Date;
 };
 
