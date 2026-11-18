@@ -11,21 +11,24 @@ const rules = (minRarity: string, base: number, max: number, triumph = 10) => ({
 
 describe("paliers de rareté", () => {
   it("regroupe les raretés de même rang", () => {
-    expect(tierLevels(defs)).toEqual([0, 100, 200, 300, 400, 500, 600, 700, 800]);
+    expect(tierLevels(defs)).toEqual([0, 100, 200, 300, 400, 500, 600, 700, 750, 800]);
     expect(tierOf("MYTHIC", defs)).toBe(tierOf("BR", defs));
     expect(tierOf("AR", defs)).toBe(tierOf("VR", defs));
     expect(tierOf("GOLD", defs)).toBe(tierOf("MR", defs));
-    expect(tierOf("XR", defs)).toBe(8);
+    // L'Esprit est seul à son rang, entre Gold/MR et XR
+    expect(tierOf("SR", defs)).toBe(8);
+    expect(tierOf("XR", defs)).toBe(9);
     expect(tierOf("INCONNUE", defs)).toBeNull();
   });
 
   it("mesure l'écart avec la rareté exigée", () => {
-    expect(tierDelta("XR", "GOLD", defs)).toBe(1);
+    expect(tierDelta("XR", "GOLD", defs)).toBe(2);
+    expect(tierDelta("SR", "GOLD", defs)).toBe(1);
     expect(tierDelta("MR", "GOLD", defs)).toBe(0);
-    expect(tierDelta("COMMON", "XR", defs)).toBe(-8);
+    expect(tierDelta("COMMON", "XR", defs)).toBe(-9);
     expect(tierDelta("INCONNUE", "EPIC", defs)).toBe(Number.NEGATIVE_INFINITY);
     expect(headroom("XR", defs)).toBe(0);
-    expect(headroom("EPIC", defs)).toBe(5);
+    expect(headroom("EPIC", defs)).toBe(6);
   });
 });
 
@@ -37,8 +40,10 @@ describe("chances d'une équipe", () => {
   it("XR périlleuse : plus il y a de XR, plus les chances montent (exemples du plan)", () => {
     const xr = rules("XR", 20, 80);
     expect(teamChances(team("XR", "COMMON", "COMMON"), xr, bonus, defs).success).toBe(30);
-    expect(teamChances(team("XR", "GOLD", "MR"), xr, bonus, defs).success).toBe(38);
-    expect(teamChances(team("XR", "XR", "GOLD"), xr, bonus, defs).success).toBe(44);
+    // Gold et MR sont deux paliers sous XR depuis l'Esprit (2 points chacune), une Esprit un seul (4 points)
+    expect(teamChances(team("XR", "GOLD", "MR"), xr, bonus, defs).success).toBe(34);
+    expect(teamChances(team("XR", "SR", "MR"), xr, bonus, defs).success).toBe(36);
+    expect(teamChances(team("XR", "XR", "GOLD"), xr, bonus, defs).success).toBe(42);
     expect(teamChances(team("XR", "XR", "XR"), xr, bonus, defs).success).toBe(50);
   });
 

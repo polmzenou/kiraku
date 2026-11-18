@@ -1,0 +1,34 @@
+/* Carte spectrale (rareté Esprit, appearance.spectral) : pas de cadre, l'illustration se dissout sur ses bords.
+   Repli CSS (petites cartes, cartes figées, mouvement réduit, sans WebGL2) : bord rongé par un masque bruité
+   statique, voile froid et souffle d'opacité lent. Canvas vivant (SpectralArt pose data-spectral-live) : le shader
+   peint l'image, le voile et les bords ; l'image et le repli s'effacent. Animations en opacity seulement. */
+.fuda[data-spectral] {
+  --kn-spirit-edge: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 700' preserveAspectRatio='none'%3E%3Cfilter id='f' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.028' numOctaves='4' seed='7'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='46' xChannelSelector='R' yChannelSelector='G'/%3E%3CfeGaussianBlur stdDeviation='6'/%3E%3C/filter%3E%3Crect x='30' y='30' width='440' height='640' rx='22' fill='%23fff' filter='url(%23f)'/%3E%3C/svg%3E");
+  background: radial-gradient(70% 60% at 50% 45%, rgb(159 227 236 / .14), transparent 72%);
+  box-shadow: none;
+}
+.fuda[data-spectral] .fuda-paper { background: none; box-shadow: none; }
+.fuda[data-spectral] .fuda-paper::after { display: none; }
+.fuda[data-spectral] .kn-art { background: none; mask: var(--kn-spirit-edge) 0 0 / 100% 100% no-repeat; }
+/* Teinte froide sur l'image, puis (pleine carte) voile sombre sous le nom, rongé avec elle */
+.fuda[data-spectral] .kn-art::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; mix-blend-mode: soft-light;
+  background: radial-gradient(110% 80% at 50% 30%, rgb(159 227 236 / .25), rgb(127 200 214 / .65)); }
+.fuda[data-spectral][data-full-art] .kn-art::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(transparent 40%, rgb(8 14 26 / .6) 74%, rgb(6 10 20 / .88)); }
+.fuda[data-spectral][data-full-art] .kn-bank { background: none; }
+.fuda[data-spectral] .kn-name { text-shadow: 0 0 6px rgb(159 227 236 / .55), 0 1px 3px rgb(0 0 0 / .85); }
+
+/* Souffle du repli sur les cartes vivantes (pas les grilles figées) */
+@keyframes kn-spirit-breathe { from { opacity: 1; } to { opacity: .74; } }
+.fuda-live[data-spectral]:not([data-spectral-live]) .kn-art { animation: kn-spirit-breathe 4.6s ease-in-out infinite alternate; }
+:root[data-fx="lite"] .fuda-live[data-spectral] .kn-art { animation: none; }
+@media (prefers-reduced-motion: reduce) { .fuda-live[data-spectral] .kn-art { animation: none; } }
+:root[data-motion="reduced"] .fuda-live[data-spectral] .kn-art { animation: none; }
+
+/* Canvas vivant : le shader dessine tout, bords compris */
+.kn-spectral-host { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.kn-spectral { position: absolute; inset: 0; }
+.kn-spectral > canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.fuda[data-spectral-live] .kn-art { mask: none; }
+.fuda[data-spectral-live] .kn-art > img, .fuda[data-spectral-live] .kn-grain { opacity: 0; }
+.fuda[data-spectral-live] .kn-art::before, .fuda[data-spectral-live] .kn-art::after { display: none; }

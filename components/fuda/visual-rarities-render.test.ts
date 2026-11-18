@@ -39,6 +39,30 @@ describe("préréglages des raretés visuelles", () => {
     expect(html).not.toContain("kn-cutout");
     expect(render("XR", { cutoutUrl: "https://s4.anilist.co/cut.png" })).toContain("kn-cutout");
   });
+  it("Esprit : pleine carte spectrale, sans reflet, laque ni sceau de rareté", () => {
+    const html = render("SR");
+    expect(html).toContain('data-spectral="true"');
+    expect(html).toContain('data-full-art="true"');
+    expect(html).not.toContain("kn-seal");
+    expect(html).not.toContain("霊");
+    // Sans le spectral, la carte retrouve son sceau
+    expect(render("SR", { spectral: false })).toContain(">霊</span>");
+    expect(html).not.toContain("fuda-effect");
+    expect(html).not.toContain("fuda-sheen");
+    // L'image reste dans la page (texte alternatif, repli CSS) ; le canvas se monte côté client seulement
+    expect(html.match(/<img/g)).toHaveLength(1);
+    expect(html).toContain("kn-spectral-host");
+    expect(html).not.toContain("<canvas");
+  });
+  it("Esprit : pas de canvas sur les petites cartes ni les cartes figées, rien de spectral une fois verrouillée", () => {
+    expect(render("SR", {}, { still: true })).not.toContain("kn-spectral-host");
+    expect(render("SR", {}, { size: "sm" })).not.toContain("kn-spectral-host");
+    expect(render("SR", {}, { still: true })).toContain('data-spectral="true"');
+    expect(render("SR", { spectral: false })).not.toContain("data-spectral");
+    const locked = render("SR", {}, { locked: true });
+    expect(locked).not.toContain("data-spectral");
+    expect(locked).not.toContain("luffy.png");
+  });
   it("ne révèle ni l'image ni le détourage d'une carte verrouillée", () => {
     const locked = render("XR", { cutoutUrl: "https://s4.anilist.co/cut.png" }, { locked: true });
     expect(locked).not.toContain("cut.png");

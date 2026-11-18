@@ -9,6 +9,7 @@ import { Sheet } from "@/components/ui/Sheet";
 import { useRouter } from "@/i18n/navigation";
 import { type Rarity } from "@/lib/catalog/rarity";
 import { normalizeSearch, SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
+import { publishedFromCounts, visibleRarities } from "@/lib/catalog/visible-rarities";
 import {
   parseWikiParams,
   wikiQuery,
@@ -37,6 +38,8 @@ export function WikiFilters({ params, options, counts, action }: {
 }) {
   const RARITIES = useRarities();
   const RARITY_SEAL = useRaritySeals();
+  // Seules les raretés qui ont des fiches publiées (ou déjà cochées) sont proposées
+  const shown = visibleRarities(RARITIES, publishedFromCounts(RARITIES, counts), params.rarities);
   const t = useTranslations("wiki");
   const tRarity = useTranslations("rarity");
   const router = useRouter();
@@ -134,7 +137,7 @@ export function WikiFilters({ params, options, counts, action }: {
         <button type="button" aria-pressed={filters.rarities.length === 0} onClick={() => go({ rarities: [] })} className={chip(filters.rarities.length === 0)}>
           {t("allRarities")}
         </button>
-        {[...RARITIES].reverse().map((rarity) => {
+        {[...shown].reverse().map((rarity) => {
           const active = filters.rarities.includes(rarity);
           return (
             <button

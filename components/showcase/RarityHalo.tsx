@@ -6,7 +6,7 @@ import "./rarity-halo.css";
 // pixel, de petites lumières), sans seconde bordure épaisse ni lueur qui déborde sur les voisines.
 // Sans hook : rendu côté serveur comme côté client.
 
-type Halo = "thread" | "mirror" | "motes" | "gilt" | "tone" | "vitrail" | "prism";
+type Halo = "thread" | "mirror" | "motes" | "gilt" | "tone" | "vitrail" | "mist" | "prism";
 
 const HALO_BY_RARITY: Record<string, Halo> = {
   BR: "thread",
@@ -15,6 +15,7 @@ const HALO_BY_RARITY: Record<string, Halo> = {
   GOLD: "gilt",
   MR: "tone",
   VR: "vitrail",
+  SR: "mist",
   XR: "prism",
 };
 
@@ -76,9 +77,11 @@ export function RarityHalo({
         </span>
       )}
       {halo === "vitrail" && <span aria-hidden="true" className="vt-halo-back vt-halo-frame" />}
+      {halo === "mist" && <span aria-hidden="true" className="vt-halo-back vt-halo-mist" />}
       <div className="vt-halo-card">{children}</div>
       {halo === "mirror" && <Bits count={6} className="vt-halo-shards" />}
       {halo === "motes" && <Bits count={8} className="vt-halo-motes" />}
+      {halo === "mist" && <Bits count={4} className="vt-halo-wisps" />}
       {halo === "gilt" && <Bits count={4} className="vt-halo-flakes" />}
       {halo === "prism" && (
         <span aria-hidden="true" className="vt-halo-front vt-halo-sparkles">

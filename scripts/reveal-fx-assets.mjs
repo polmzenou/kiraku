@@ -1,4 +1,4 @@
-// Génère public/fx/ : la fumée du brouillard noir (BR). Déplacer une image fixe en transform coûte bien
+// Génère public/fx/ : la fumée du brouillard noir (BR) et la brume froide de l'Esprit (SR). Déplacer une image fixe en transform coûte bien
 // moins cher sur téléphone qu'un filtre ou un masque CSS animé. Relancer `npm run fx:assets` après toute retouche.
 import { mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -47,6 +47,18 @@ for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) {
 const smoke = await sharp(raw, { raw: { width: S, height: S, channels: 4 } }).blur(3).raw().toBuffer();
 await sharp(smoke, { raw: { width: S, height: S, channels: 4 } }).webp({ quality: 60, alphaQuality: 62 }).toFile(`${out}smoke.webp`);
 
+// Brume de l'Esprit : le même champ, en lumière froide et plus diffuse (posée sur la nuit de la scène SR)
+const mistRaw = Buffer.alloc(S * S * 4);
+for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) {
+  const x = i / S, y = j / S, f = field(x, y);
+  const lit = Math.min(1, Math.max(0, 0.5 + (field(x + 0.03, y + 0.045) - f) * -5));
+  const k = (j * S + i) * 4;
+  mistRaw[k] = 170 + lit * 60; mistRaw[k + 1] = 205 + lit * 45; mistRaw[k + 2] = 215 + lit * 40; mistRaw[k + 3] = 200 * smooth(0.34, 0.8, f);
+}
+const mist = await sharp(mistRaw, { raw: { width: S, height: S, channels: 4 } }).blur(6).raw().toBuffer();
+// Alpha sans perte : une brume claire et douce montrerait sinon des paliers après compression
+await sharp(mist, { raw: { width: S, height: S, channels: 4 } }).webp({ quality: 60, alphaQuality: 100 }).toFile(`${out}mist.webp`);
+
 // Formes cuites dans l'image : pas de masque à recalculer pendant l'animation
 const shaped = async (size, repeat, alpha, file) => {
   const buffer = Buffer.alloc(size * size * 4);
@@ -59,4 +71,4 @@ const shaped = async (size, repeat, alpha, file) => {
 };
 await shaped(1024, 3, (r) => smooth(0.2, 0.4, r) * (1 - smooth(0.72, 1, r)), "ring.webp");
 await shaped(320, 1, (r) => 1 - smooth(0.3, 1, r), "puff.webp");
-console.log("public/fx/ : smoke.webp, ring.webp, puff.webp");
+console.log("public/fx/ : smoke.webp, mist.webp, ring.webp, puff.webp");

@@ -4,11 +4,13 @@ import { cardNumber } from "@/lib/catalog/display";
 import { BASE_RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
 import { fxTier } from "@/lib/catalog/tiers";
 import { FudaTilt } from "./FudaTilt";
+import { SpectralArt } from "./SpectralArt";
 import type { CSSProperties, ReactNode } from "react";
 import { resolveAppearance } from "@/lib/catalog/appearance";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import "./FudaEffects.css";
 import "./FudaFace.css";
+import "./FudaSpectral.css";
 
 export type FudaCard = {
   name: string;
@@ -87,6 +89,7 @@ export function Fuda({
   corner,
   glow,
   describeImage = size !== "sm",
+  appear,
 }: {
   card: FudaCard;
   series?: string;
@@ -116,6 +119,11 @@ export function Fuda({
    * pour la recherche d'images sans double lecture.
    */
   describeImage?: boolean;
+  /**
+   * Carte spectrale (Esprit) dans la révélation : « hidden » la tient invisible, « now » joue son apparition
+   * fantôme dans le canvas. Sans effet sur les autres raretés.
+   */
+  appear?: "hidden" | "now";
 }) {
   const t = useTranslations("fuda");
   const rarity = useTranslations("rarity");
@@ -139,6 +147,8 @@ export function Fuda({
   const longest = native ? Math.max(...native.map((part) => part.length)) : 0;
   const gilded = !locked && !monochrome && visual.artTone === "gold";
   const fullArt = !locked && visual.fullArt === true;
+  // Esprit : illustration spectrale ; le canvas WebGL ne vit que sur les grandes cartes animées
+  const spectral = !locked && !monochrome && visual.spectral === true;
   const artStyle = { objectPosition: `${visual.focalX}% ${visual.focalY}%`, transform: `scale(${visual.zoom})`, transformOrigin: `${visual.focalX}% ${visual.focalY}%` };
   const subtitle = (!locked && card.formName) || series || (inBattle ? rarity(card.rarity) : undefined);
   const flip = flipBank(card.name) ? " kn-flip" : "";
@@ -147,7 +157,7 @@ export function Fuda({
   const spoilerAttr = spoiler ? { "data-spoiler": "" } : undefined;
 
   const content = (
-    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} style={customStyle}>
+    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} data-spectral={spectral || undefined} style={customStyle}>
       {/* Papier posé en absolu dans le cadre : sa hauteur ne dépend pas d'un pourcentage (WebKit la résolvait mal sous aspect-ratio) */}
       <div className={`fuda-paper absolute ${l.inset} overflow-hidden ${l.inner}`}>
         <div className="kn-art">
@@ -170,6 +180,22 @@ export function Fuda({
             />
           )}
           {gilded && <span aria-hidden="true" className="fuda-gilt" />}
+          {spectral && !still && size !== "sm" && (
+            <SpectralArt
+              src={card.imageUrl}
+              name={card.name}
+              focalX={visual.focalX}
+              focalY={visual.focalY}
+              zoom={visual.zoom}
+              strength={visual.spectralStrength}
+              grain={visual.spectralGrain}
+              idle={visual.spectralIdle}
+              tint={visual.frame}
+              veil={fullArt}
+              spoiler={spoiler}
+              appear={appear}
+            />
+          )}
           <span aria-hidden="true" className="kn-grain" />
           {/* Étiquette visible seulement en mode spoiler (display: none sinon, donc muette aussi pour les lecteurs d'écran) */}
           {spoiler && <span className="kn-spoiler"><span className="font-title">{t("spoiler")}</span></span>}
@@ -181,10 +207,13 @@ export function Fuda({
           <i className="kn-sn" />
         </span>
         {card.rarity === "AR" && <span aria-hidden="true" className={`kn-ar${flip}`} />}
-        <span aria-hidden="true" className="kn-sc">
-          <i className="kn-ln" />
-          <span className="kn-seal font-seal">{visual.seal || definition?.seal || RARITY_SEAL[card.rarity]}</span>
-        </span>
+        {/* Carte spectrale (Esprit) : ni cadre ni sceau, seule l'illustration flotte */}
+        {!spectral && (
+          <span aria-hidden="true" className="kn-sc">
+            <i className="kn-ln" />
+            <span className="kn-seal font-seal">{visual.seal || definition?.seal || RARITY_SEAL[card.rarity]}</span>
+          </span>
+        )}
         {native && (
           <span lang="ja" className="kn-tz" style={longest > 7 ? ({ "--kn-tzl": longest } as CSSProperties) : undefined}>
             {native.map((part, i) => (

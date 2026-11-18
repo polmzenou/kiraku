@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import type { Prisma } from "@/generated/prisma/client";
 import { countByRarity, type Rarity } from "@/lib/catalog/rarity";
+import { publishedFromCounts } from "@/lib/catalog/visible-rarities";
 import { seriesTitle } from "@/lib/catalog/display";
 import type { WikiCatalogParams, WikiFilterOptions, WikiParams } from "@/lib/catalog/wiki-params";
 import { emptyWikiCollection, selectWikiPage, type CatalogSearchIndex } from "@/lib/catalog/wiki-state";
@@ -117,6 +118,15 @@ export async function getSitemapCards() {
 /** Taille du catalogue actif et nombre de cartes par rareté. */
 export async function getCatalogStats() {
   return loadStats(await getCatalogVersion());
+}
+
+/**
+ * Raretés qui ont au moins une carte publiée, dans l'ordre du registre : seules celles-ci sont proposées dans les
+ * filtres par rareté. Même cache que les statistiques (invalidé par chaque écriture du catalogue).
+ */
+export async function getPublishedRarities(): Promise<string[]> {
+  const [{ byRarity }, order] = await Promise.all([getCatalogStats(), getRarities()]);
+  return publishedFromCounts(order, byRarity);
 }
 
 /** Fiche d'un personnage, y compris s'il est sorti du catalogue (des joueurs peuvent le posséder). */

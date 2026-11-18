@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mangaStrokes } from "./manga-brush";
-import { REVEAL_SCENES, REVEAL_SCENE_KEYS, revealSceneKey, xrGeometry } from "./reveal-scenes";
+import { REVEAL_SCENES, REVEAL_SCENE_KEYS, revealSceneKey, spiritFlames, xrGeometry } from "./reveal-scenes";
 
 describe("déroulé des révélations", () => {
   it("chaque scène se retourne avant sa fin, et ses sons passent avant le retournement", () => {
@@ -22,6 +22,30 @@ describe("déroulé des révélations", () => {
     expect(REVEAL_SCENES.XR.hanko).toBeNull();
     expect(REVEAL_SCENES.BR.flash).toBe(false);
     expect(REVEAL_SCENES.MR.paper).toBe(true);
+  });
+});
+
+describe("l'apparition de l'Esprit", () => {
+  it("pas de retournement : la carte se forme à la charge, sceau froid puis nom", () => {
+    const scene = REVEAL_SCENES.SR;
+    expect(revealSceneKey("SR")).toBe("SR");
+    expect(scene.flip.duration).toBe(0);
+    expect(scene.flash).toBe(false);
+    expect(scene.hanko).toBeLessThan(scene.title);
+    expect(scene.hankoColor).toBe("#7fc8d6");
+    expect(scene.cues.map(([, sound]) => sound)).toContain("spirit");
+  });
+  it("les feux follets s'allument pendant la charge, avant de plonger dans la carte", () => {
+    for (const lite of [false, true]) {
+      const flames = spiritFlames(lite);
+      expect(flames).toHaveLength(lite ? 4 : 8);
+      for (const flame of flames) {
+        expect(flame.delay).toBeLessThan(REVEAL_SCENES.SR.charge - 500);
+        expect(flame.radius).toBeGreaterThan(0.5);
+        expect(Math.abs(flame.spin)).toBe(1);
+      }
+    }
+    expect(spiritFlames(false)).toEqual(spiritFlames(false));
   });
 });
 

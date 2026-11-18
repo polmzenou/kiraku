@@ -16,13 +16,14 @@ const seeds = [
 ] as const;
 export const BASE_DEFINITIONS: RarityDefinition[] = [
   ...seeds.map(([key, nameFr, nameEn, seal], i) => ({ key, nameFr, nameEn, sortOrder: i * 100, seal, appearance: {} })),
-  // Repli sans base (pages statiques) : mêmes valeurs que les migrations catalogue_variantes_ar_gold et raretes_visuelles.
-  // BR = Mythique < AR = VR < Gold = MR < XR
+  // Repli sans base (pages statiques) : mêmes valeurs que les migrations catalogue_variantes_ar_gold, raretes_visuelles
+  // et rarete_esprit. BR = Mythique < AR = VR < Gold = MR < Esprit < XR
   { key: "BR", nameFr: "Black Rare", nameEn: "Black Rare", sortOrder: 500, seal: "闇", appearance: VISUAL_PRESETS.BR, variantRequired: true },
   { key: "AR", nameFr: "AR", nameEn: "AR", sortOrder: 600, seal: "異", appearance: {}, variantRequired: true },
   { key: "VR", nameFr: "Vitrail Rare", nameEn: "Vitrail Rare", sortOrder: 600, seal: "彩", appearance: VISUAL_PRESETS.VR, variantRequired: true },
   { key: "GOLD", nameFr: "Gold", nameEn: "Gold", sortOrder: 700, seal: "煌", appearance: { artTone: "gold" }, variantRequired: true },
   { key: "MR", nameFr: "Manga Rare", nameEn: "Manga Rare", sortOrder: 700, seal: "漫", appearance: VISUAL_PRESETS.MR, variantRequired: true },
+  { key: "SR", nameFr: "Esprit", nameEn: "Spirit", sortOrder: 750, seal: "霊", appearance: VISUAL_PRESETS.SR, variantRequired: true },
   { key: "XR", nameFr: "Xtreme Rare", nameEn: "Xtreme Rare", sortOrder: 800, seal: "極", appearance: VISUAL_PRESETS.XR, variantRequired: true },
 ];
 export const rarityDefinitionSchema = z.object({

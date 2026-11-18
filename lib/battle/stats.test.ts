@@ -258,10 +258,10 @@ describe("bot", () => {
 describe("ultis", () => {
   const card = (anilistId: number, rarity: string) => ({ id: `c${anilistId}`, anilistId, name: "x", nameNative: null, imageUrl: "/x", rank: 1, rarity, power: 60, ki: 60 });
 
-  it("Gold, MR et XR par défaut, et seulement les raretés cochées", () => {
-    expect(rules.ultimateRarities).toEqual(["GOLD", "MR", "XR"]);
+  it("Gold, MR, Esprit et XR par défaut, et seulement les raretés cochées", () => {
+    expect(rules.ultimateRarities).toEqual(["GOLD", "MR", "SR", "XR"]);
     for (const rarity of [...RARITIES, "BR", "AR", "VR"]) expect(ultimateFor(7, rarity, rules)).toBeNull();
-    for (const rarity of ["GOLD", "MR", "XR"]) expect(ultimateFor(7, rarity, rules)).not.toBeNull();
+    for (const rarity of ["GOLD", "MR", "SR", "XR"]) expect(ultimateFor(7, rarity, rules)).not.toBeNull();
     expect(ultimateFor(7, "XR", { ultimateRarities: [] })).toBeNull();
     expect(ultimateFor(7, "EPIC", { ultimateRarities: ["EPIC"] })).not.toBeNull();
   });

@@ -2979,6 +2979,11 @@
         "gold": "Golden"
       },
       "fullArt": "Full Art (image across the whole card, name on top)",
+      "spectral": "Spectral card (Spirit): the art warps and its edges dissolve",
+      "spectralHint": "WebGL rendering on large animated cards; elsewhere (grids, reduced motion), a fixed misty edge. The frame colour tints the mist.",
+      "spectralStrength": "Warp on movement",
+      "spectralGrain": "Fog grain",
+      "spectralIdle": "Idle breath",
       "cutout": "Cut-out character (optional)",
       "cutoutHint": "PNG or WebP with a transparent background, framed like the image. It passes in front of the frame, and the name stays on top.",
       "cutoutRemove": "Remove the cut-out",
@@ -3127,10 +3132,11 @@
         "mythic": "Mythic",
         "ar": "AR",
         "gold": "Gold",
-        "visual": "BR + VR + MR + XR",
+        "visual": "BR + VR + MR + Spirit + XR",
         "br": "Black Rare",
         "vr": "Vitrail Rare",
         "mr": "Manga Rare",
+        "sr": "Spirit",
         "xr": "Xtreme Rare",
         "none": "No top rarity",
         "dropDivin": "Divine drop",
@@ -3582,7 +3588,7 @@
         "abandonCooldownHours": "0: no wait.",
         "triumphRewardPct": "Success Zeni and boosters multiplied (boosters rounded up).",
         "failRewardPct": "Share of the success Zeni paid on failure; never boosters.",
-        "cardBonus": "Chance points each card adds depending on its tier relative to the required rarity; three tiers or more below: nothing. Rarities of the same rank (Mythic and BR, AR and VR, Gold and MR) share a tier. Applies to future departures."
+        "cardBonus": "Chance points each card adds depending on its tier relative to the required rarity; three tiers or more below: nothing. Rarities of the same rank (Mythic and BR, AR and VR, Gold and MR) share a tier; Spirit has its own, between Gold/MR and XR. Applies to future departures."
       },
       "bonus": {
         "below2": "2 tiers below",

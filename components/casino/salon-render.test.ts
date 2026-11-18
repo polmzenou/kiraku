@@ -19,7 +19,7 @@ vi.mock("@/components/fuda/Fuda", async () => {
   return { Fuda: ({ card }: { card: { name: string } }) => h("span", { "data-card": card.name }) };
 });
 vi.mock("@/components/realtime/usePoll", () => ({ usePoll: () => () => {} }));
-vi.mock("@/lib/catalog/use-rarities", () => ({ useRaritySeals: () => ({ MYTHIC: "神", BR: "闇", RARE: "稀" }), useRarities: () => ["RARE", "MYTHIC", "BR"] }));
+vi.mock("@/lib/catalog/use-rarities", () => ({ useRaritySeals: () => ({ MYTHIC: "神", BR: "闇", RARE: "稀" }), useRarities: () => ["RARE", "MYTHIC", "BR"], useFilterRarities: () => ["RARE", "MYTHIC", "BR"] }));
 vi.mock("@/i18n/navigation", async () => {
   const { createElement: h } = await import("react");
   return { Link: ({ prefetch, ...props }: Record<string, unknown>) => (void prefetch, h("a", props)), useRouter: () => ({ refresh() {}, push() {} }) };

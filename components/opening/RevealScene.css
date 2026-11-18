@@ -1,4 +1,4 @@
-/* Révélations des raretés visuelles (BR, MR, VR, XR) : tout part du début de la charge, chaque calque a son
+/* Révélations des raretés visuelles (BR, MR, VR, SR, XR) : tout part du début de la charge, chaque calque a son
    délai dans ce fichier. Animations en transform et opacity, sauf le tracé du pinceau (stroke-dashoffset, moins
    de 2 s sur une zone limitée). Montées uniquement hors mouvement réduit ; `data-lite` retire ce qui tourne en continu. */
 
@@ -29,6 +29,19 @@
 .rv-card-XR[data-front] .kn-cutout { animation: rv-xr-pop .55s cubic-bezier(.2, .9, .3, 1.25); }
 @keyframes rv-xr-pop { 0% { transform: scale(1.3); } 100% { transform: scale(1); } }
 .rv-flip-XR { animation: rv-xr-sweep 1.5s ease-in-out 510ms; }
+/* Esprit : le dos vacille puis s'efface ; à la charge la face revient en fantôme (vacille, flotte, se pose) */
+.rv-card-SR { animation: rv-sr-waver 1.1s steps(1) 700ms, rv-sr-leave .55s ease-in 1900ms forwards, rv-sr-apparition 1.6s linear 2500ms forwards; }
+@keyframes rv-sr-waver { 0% { opacity: 1; } 20% { opacity: .82; } 35% { opacity: 1; } 60% { opacity: .7; } 72% { opacity: .95; } 100% { opacity: 1; } }
+@keyframes rv-sr-leave { to { opacity: 0; transform: translateY(-10px) scale(.97); } }
+@keyframes rv-sr-apparition {
+  0% { opacity: 0; transform: translateY(16px) scale(.95); }
+  14% { opacity: .55; }
+  24% { opacity: .2; }
+  38% { opacity: .78; transform: translateY(6px) scale(.98); }
+  50% { opacity: .45; }
+  66% { opacity: .92; transform: translateY(-3px) scale(1.01); }
+  100% { opacity: 1; transform: none; }
+}
 
 /* ---------- BR : brouillard noir ---------- */
 .rv-br-dim { position: absolute; inset: 0; background: #000; opacity: 0; animation: rv-on .5s ease-out forwards; }
@@ -110,6 +123,33 @@
 .rv-vr-veil { position: absolute; left: 0; right: 0; top: 0; height: 100%; opacity: 0; background: conic-gradient(from 170deg at 50% -40%, transparent 0deg, rgb(255 246 222 / .3) 10deg, transparent 20deg, transparent 360deg);
   animation: rv-on .9s ease-out 1100ms forwards, rv-off .9s ease-out 3400ms forwards; }
 .rv-vr-flash { position: absolute; inset: 0; background: linear-gradient(rgb(255 252 240 / .95), rgb(255 244 214 / .55) 45%, rgb(255 244 214 / .12) 80%, transparent); opacity: 0; animation: fx-flash .9s ease-out 2420ms forwards; }
+
+/* ---------- SR : l'Esprit ---------- */
+.rv-sr-night { position: absolute; inset: 0; background: radial-gradient(120% 90% at var(--cx) var(--cy), #10283a, #07101b 55%, #03060b); opacity: 0; animation: rv-on .7s ease-out forwards; }
+.rv-sr-moon { --s: calc(var(--ch) * 2.3); border-radius: 50%; background: radial-gradient(closest-side, rgb(205 246 252 / .5), rgb(127 200 214 / .2) 45%, transparent); opacity: 0; animation: rv-sr-moon 5.6s ease-in-out forwards; }
+@keyframes rv-sr-moon { 0% { opacity: 0; transform: scale(.8); } 14% { opacity: .7; } 40% { opacity: .4; transform: scale(1); } 45% { opacity: 1; transform: scale(1.1); } 100% { opacity: .55; transform: scale(1.02); } }
+.rv-sr-mist { position: absolute; left: -60%; width: 220%; top: calc(var(--cy) + var(--ch) * .12); bottom: 0; background: var(--rv-mist) 0 0 / 56vmax 56vmax; opacity: 0;
+  -webkit-mask: linear-gradient(transparent, #000 38%); mask: linear-gradient(transparent, #000 38%);
+  animation: rv-sr-mist 1.4s ease-out 150ms forwards, rv-floor-drift 9s linear forwards; }
+@keyframes rv-sr-mist { to { opacity: .6; } }
+.rv-layer[data-lite] .rv-sr-mist { display: none; }
+/* Feu follet : le parent pivote autour de la carte, la flamme s'allume, vacille, puis plonge vers le centre */
+.rv-sr-orbit { transform: rotate(var(--a)); animation: rv-sr-orbit 2.6s cubic-bezier(.4, 0, .6, 1) forwards; }
+@keyframes rv-sr-orbit { to { transform: rotate(calc(var(--a) + var(--turn))); } }
+.rv-sr-flame { position: absolute; left: 0; top: 0; width: var(--f); height: calc(var(--f) * 1.35); margin: calc(var(--f) * -.675) 0 0 calc(var(--f) * -.5);
+  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: radial-gradient(circle at 50% 66%, #f4feff 0 22%, rgb(170 236 246 / .95) 42%, rgb(96 190 214 / .35) 64%, transparent 74%);
+  box-shadow: 0 0 calc(var(--f) * .9) calc(var(--f) * .2) rgb(127 200 214 / .5); translate: var(--r) 0; opacity: 0;
+  animation: rv-sr-kindle .5s ease-out var(--d) forwards, rv-sr-flicker .34s steps(2) calc(var(--d) + 500ms) 5, rv-sr-dive .42s cubic-bezier(.6, 0, .9, .5) 2180ms forwards; }
+@keyframes rv-sr-kindle { from { opacity: 0; scale: .3; } to { opacity: .95; scale: 1; } }
+@keyframes rv-sr-flicker { 50% { opacity: .6; scale: .9 1.08; } }
+@keyframes rv-sr-dive { from { translate: var(--r) 0; opacity: .95; scale: 1; } to { translate: 0 0; opacity: 0; scale: .25; } }
+.rv-layer[data-lite] .rv-sr-flame { box-shadow: none; animation: rv-sr-kindle .5s ease-out var(--d) forwards, rv-sr-dive .42s cubic-bezier(.6, 0, .9, .5) 2180ms forwards; }
+/* Les feux follets entrent dans la carte : un éclat froid, puis un souffle balaie l'écran */
+.rv-sr-gather { --s: calc(var(--ch) * 1.6); border-radius: 50%; background: radial-gradient(closest-side, rgb(240 253 255 / .95), rgb(159 227 236 / .5) 40%, transparent); opacity: 0; animation: rv-sr-gather .9s ease-out 2480ms forwards; }
+@keyframes rv-sr-gather { 0% { opacity: 0; transform: scale(.4); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(1.6); } }
+.rv-sr-breath { position: absolute; top: 0; bottom: 0; left: 0; width: 60vw; background: linear-gradient(90deg, transparent, rgb(200 244 250 / .16) 40%, rgb(230 251 255 / .28) 50%, rgb(200 244 250 / .16) 60%, transparent); opacity: 0; transform: translateX(-70vw) skewX(-12deg);
+  animation: rv-sr-breath 1.3s cubic-bezier(.3, .1, .4, 1) 2500ms forwards; }
+@keyframes rv-sr-breath { 0% { opacity: 0; transform: translateX(-70vw) skewX(-12deg); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateX(120vw) skewX(-12deg); } }
 
 /* ---------- XR : l'écran coupé en X ---------- */
 .rv-xr-shake { animation: rv-xr-shake 150ms linear 1000ms, rv-xr-shake 220ms linear 1250ms, rv-xr-shake 340ms linear 2790ms; }

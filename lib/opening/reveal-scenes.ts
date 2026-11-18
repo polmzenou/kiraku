@@ -4,7 +4,7 @@ import type { SoundName } from "@/lib/sound/synth";
 // Révélations propres aux raretés visuelles : tout se joue depuis le début de la charge (instant zéro),
 // le retournement arrive à `charge` et la scène s'achève à `total`. Durées en ms.
 
-export const REVEAL_SCENE_KEYS = ["BR", "MR", "VR", "XR"] as const;
+export const REVEAL_SCENE_KEYS = ["BR", "MR", "VR", "SR", "XR"] as const;
 export type RevealSceneKey = (typeof REVEAL_SCENE_KEYS)[number];
 
 type Cue = [at: number, sound: SoundName, haptic?: number | number[]];
@@ -49,6 +49,13 @@ export const REVEAL_SCENES: Record<RevealSceneKey, RevealScene> = {
     cues: [[250, "chime"], [1100, "bell", 20]],
     frontCues: [["chime", [30, 40, 30]], ["bell", 20]],
   },
+  // Esprit : la nuit tombe, des feux follets tournent autour du dos qui s'efface ; la carte apparaît comme un fantôme
+  // (pas de retournement : elle se forme dans son canvas spectral pendant MATERIALIZE_MS)
+  SR: {
+    charge: 2500, total: 5600, flip: { duration: 0 }, hanko: 700, hankoColor: "#7fc8d6", flash: false, title: 900,
+    cues: [[0, "spirit"], [1100, "bell", 20], [1900, "spirit", [20, 80, 20]]],
+    frontCues: [["chime", [20, 60, 20]], ["stamp", 30]],
+  },
   // L'écran coupé en X : à la charge, la carte s'écrase au premier plan
   XR: {
     charge: 2790, total: 5700, flip: { duration: 0 }, hanko: null, flash: false, title: 290,
@@ -68,6 +75,24 @@ export function revealSceneKey(rarity: Rarity, reveal: string = "flip"): RevealS
 export const seeded = (seed: number) => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 
 const round = (n: number) => Math.round(n * 10) / 10;
+
+export type SpiritFlame = { angle: number; radius: number; size: number; delay: number; orbit: number; spin: number };
+
+/**
+ * Feux follets (hitodama) de l'Esprit : ils s'allument l'un après l'autre pendant la charge, tournent autour de la
+ * carte à des distances différentes, puis plongent dedans à l'apparition. Rayon en hauteurs de carte, temps en ms.
+ */
+export function spiritFlames(lite: boolean): SpiritFlame[] {
+  const r = seeded(4096), total = lite ? 4 : 8;
+  return Array.from({ length: total }, (_, i) => ({
+    angle: Math.round((i / total) * 360 + r() * 30),
+    radius: round(0.62 + r() * 0.28),
+    size: Math.round(16 + r() * 14),
+    delay: Math.round(150 + (i / total) * 1300 + r() * 120),
+    orbit: Math.round(120 + r() * 120),
+    spin: r() < 0.5 ? -1 : 1,
+  }));
+}
 
 /**
  * Le X de la XR : deux lames qui se croisent sur la carte, parallèles aux diagonales de l'écran, et les
