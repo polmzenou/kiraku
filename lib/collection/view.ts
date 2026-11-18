@@ -17,7 +17,14 @@ export type CollectionItem = CardView & {
 
 export type CollectionPage = { items: CollectionItem[]; nextOffset: number | null };
 
-export type RarityTotals = { unique: number; copies: number; recyclable: number; zeni: number };
+export type RarityTotals = {
+  unique: number;
+  copies: number;
+  recyclable: number;
+  zeni: number;
+  /** Cartes distinctes publiées possédées (accès à la renaissance, prestige). */
+  inCatalog: number;
+};
 
 export type CollectionSummary = {
   unique: number;

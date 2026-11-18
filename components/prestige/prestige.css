@@ -1,0 +1,145 @@
+/* Prestige : aura du profil, bouton « Évoluer », bandeau, jauges d'accès et rite de renaissance (転生).
+   Animations en transform et opacity seulement ; rien ne bouge en mouvement réduit. */
+
+/* --- Aura du profil : nuées d'or qui dérivent derrière l'en-tête, plus riches à chaque palier --- */
+.pr-aura {
+  position: absolute;
+  z-index: -1;
+  top: -1.5rem;
+  left: 50%;
+  width: 100vw;
+  height: 16rem;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateX(-50%);
+  -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent);
+  mask-image: linear-gradient(180deg, #000 55%, transparent);
+}
+.pr-nuee {
+  position: absolute;
+  left: 0;
+  width: 200%;
+  background-repeat: repeat-x;
+  background-size: 50% 100%;
+  animation: pr-drift var(--pr-d, 90s) linear infinite;
+}
+@keyframes pr-drift {
+  to { transform: translateX(-50%); }
+}
+.pr-speck {
+  position: absolute;
+  bottom: 0.75rem;
+  border-radius: 50%;
+  background: #f3dc8c;
+  opacity: 0;
+  animation: pr-rise var(--pr-d, 6s) linear infinite;
+  animation-delay: var(--pr-delay, 0s);
+}
+@keyframes pr-rise {
+  0% { transform: translate(0, 0); opacity: 0; }
+  12% { opacity: 0.9; }
+  100% { transform: translate(var(--pr-dx, 0), -14rem); opacity: 0; }
+}
+
+/* --- Bouton « Évoluer » : un halo d'or quand le joueur peut renaître --- */
+.pr-evolve { position: relative; isolation: isolate; }
+.pr-evolve[data-ready]::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  z-index: -1;
+  border-radius: 999px;
+  border: 2px solid var(--color-kin);
+  animation: pr-halo 1.9s ease-in-out infinite;
+}
+@keyframes pr-halo {
+  0%, 100% { opacity: 0.12; transform: scale(0.985); }
+  50% { opacity: 0.95; transform: scale(1.02); }
+}
+
+/* --- Bandeau sous le pseudo : 転生 III · 7ᵉ renaissance de Kiraku --- */
+.pr-band {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: flex-start;
+  padding: 0.3rem 0.9rem 0.3rem 0.35rem;
+  color: var(--color-kin);
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-block: 1px solid color-mix(in srgb, var(--color-kin) 55%, transparent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--color-kin) 16%, transparent), transparent);
+}
+
+/* --- Jauges d'accès, une par rareté : le trait marque le seuil --- */
+.pr-track { position: relative; height: 8px; }
+.pr-track > span { position: absolute; inset: 0; overflow: hidden; border-radius: 4px; background: var(--color-surface-2); }
+.pr-track > span > i { position: absolute; inset: 0; transform-origin: 0 50%; background: var(--pr-color); }
+.pr-track > b { position: absolute; top: -3px; bottom: -3px; width: 2px; border-radius: 1px; background: var(--color-text); }
+
+/* --- Rite de renaissance (転生) --- */
+.pr-rite {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  overflow: hidden;
+  padding: calc(1rem + env(safe-area-inset-top, 0px)) max(1rem, env(safe-area-inset-right, 0px)) calc(1rem + env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px));
+  color: #f1e9da;
+  background: radial-gradient(120% 70% at 50% 0%, #2c2118, #15120f 62%);
+}
+.pr-rite > * { position: relative; }
+.pr-rite .pr-inner { width: 100%; max-width: 30rem; margin: 0 auto; display: flex; flex: 1; flex-direction: column; gap: 0.6rem; }
+.pr-rite-dim { position: absolute !important; inset: 0; background: #060504; opacity: 0; pointer-events: none; }
+.pr-heirs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.pr-heirs .fuda-veins { display: block !important; }
+.pr-heirs .fuda-heir-dot { display: none !important; }
+.pr-heirs .pr-new-vein { opacity: 0; }
+.pr-piles { display: flex; justify-content: space-between; gap: 6px; }
+.pr-pile { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: #a89f92; font-variant-numeric: tabular-nums; }
+.pr-pile .stack { position: relative; width: 34px; height: 46px; }
+.pr-pile .stack i { position: absolute; inset: 0; border-radius: 4px; background: var(--pr-color); box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.25); }
+.pr-pile .stack i:nth-child(1) { translate: -4px 4px; opacity: 0.55; }
+.pr-pile .stack i:nth-child(2) { translate: -2px 2px; opacity: 0.8; }
+.pr-fire { position: absolute !important; left: 50%; bottom: 6rem; width: 150px; height: 150px; translate: -50% 0; opacity: 0; pointer-events: none; }
+.pr-fire .glow { position: absolute; left: 50%; bottom: 10px; width: 240px; height: 200px; translate: -50% 0; background: radial-gradient(closest-side, rgb(224 83 63 / 0.5), rgb(217 181 86 / 0.16) 55%, transparent); }
+.pr-fire .bowl { position: absolute; left: 50%; bottom: 0; width: 120px; height: 46px; translate: -50% 0; border-radius: 6px 6px 60px 60px / 6px 6px 40px 40px; background: linear-gradient(180deg, #3a322a, #14110e); box-shadow: inset 0 3px 0 #5a4c3e, 0 6px 14px rgb(0 0 0 / 0.6); }
+.pr-flame { position: absolute; left: 50%; bottom: 36px; width: 34px; height: 64px; margin-left: -17px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; transform-origin: 50% 100%; background: linear-gradient(180deg, #fff3c4, #f29a3a 45%, #c8372d); animation: pr-flame 0.9s ease-in-out infinite alternate; }
+.pr-flame.f2 { margin-left: -30px; width: 26px; height: 46px; animation-delay: -0.3s; opacity: 0.9; }
+.pr-flame.f3 { margin-left: 4px; width: 24px; height: 42px; animation-delay: -0.6s; opacity: 0.85; }
+@keyframes pr-flame {
+  from { transform: scale(1, 1) rotate(-3deg); }
+  to { transform: scale(0.86, 1.18) rotate(4deg); }
+}
+.pr-ember { position: absolute; z-index: 4; width: 5px; height: 5px; border-radius: 50%; background: #f8d27a; pointer-events: none; }
+.pr-emaki { position: relative; height: 92px; overflow: hidden; border-radius: 6px; opacity: 0; }
+.pr-emaki .paper { position: absolute; inset: 0 12px; display: flex; align-items: center; gap: 12px; padding: 0 14px; color: #1f1b17;
+  background: repeating-linear-gradient(93deg, rgb(120 100 70 / 0.05) 0 1px, transparent 1px 6px), linear-gradient(180deg, #d9b556 0 5px, #f9f3e7 5px calc(100% - 5px), #d9b556 calc(100% - 5px)); }
+.pr-emaki .cover { position: absolute; inset: 0 0 0 12px; background: #0b0a08; }
+.pr-emaki .rod { position: absolute; top: 0; bottom: 0; left: 0; width: 12px; border-radius: 4px; background: linear-gradient(90deg, #3a2414, #7a5634 45%, #2a180c); box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pr-nuee, .pr-speck, .pr-evolve[data-ready]::before, .pr-flame { animation: none; }
+  .pr-speck { opacity: 0.5; }
+}
+:root[data-motion="reduced"] :is(.pr-nuee, .pr-speck, .pr-evolve[data-ready]::before, .pr-flame) { animation: none; }
+
+/* Avatar du prochain prestige, en filigrane sur /prestige */
+.pr-ghost { animation: pr-ghost 2.2s ease-in-out infinite; }
+@keyframes pr-ghost {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+.pr-hero::before {
+  content: "";
+  position: absolute;
+  inset: -1.5rem -1rem 0;
+  z-index: -1;
+  background: radial-gradient(70% 55% at 50% 0%, color-mix(in srgb, var(--color-kin) 22%, transparent), transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pr-ghost { animation: none; opacity: 0.6; }
+}
+:root[data-motion="reduced"] .pr-ghost { animation: none; opacity: 0.6; }

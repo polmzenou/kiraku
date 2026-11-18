@@ -1,0 +1,275 @@
+"use client";
+
+import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
+import { useState, useTransition } from "react";
+import type { CollectionItem } from "@/lib/collection/view";
+import type { FrameStyle } from "@/lib/profile/frames";
+import { previewRebirthAction, rebirthAction, type PrestigeActionError, type RebirthPreviewView, type RebirthResultView } from "@/server/actions/prestige";
+import type { SpecialCopyView } from "@/server/prestige/queries";
+import { CardPickGrid } from "../collection/CardPickGrid";
+import { Fuda } from "../fuda/Fuda";
+import { useReducedFx } from "../motion/MotionPreference";
+import { Button } from "../ui/Button";
+import { HoldButton } from "../ui/HoldButton";
+
+// Rite chargé à la demande : il ne pèse rien tant que le joueur ne renaît pas
+const RebirthRite = dynamic(() => import("./RebirthRite").then((m) => m.RebirthRite), { ssr: false });
+
+/** Rareté telle que l'affichent les jauges et le rite. */
+export type RarityInfo = { key: string; seal: string; name: string; color: string };
+
+type Step = "intro" | "choose" | "recap" | "rite";
+
+/**
+ * Parcours de la renaissance : choix des héritières (exemplaires spéciaux d'abord, puis n'importe quelles cartes),
+ * récapitulatif calculé par le serveur (ce qui part, les Zeni, les gravées à confirmer une à une), confirmation
+ * maintenue, puis le rite 転生. Le serveur relit tout sous verrou : ce que voit le joueur n'est qu'une proposition.
+ */
+export function RebirthFlow({
+  ready,
+  reason,
+  prestige,
+  slots,
+  special,
+  rarities,
+  player,
+}: {
+  ready: boolean;
+  /** Pourquoi le joueur ne peut pas encore renaître (seuils ou blocages). */
+  reason: "locked" | "blocked" | null;
+  prestige: number;
+  slots: number;
+  special: SpecialCopyView[];
+  rarities: RarityInfo[];
+  player: { username: string; image: string | null; frame: FrameStyle | null };
+}) {
+  const t = useTranslations("prestige.flow");
+  const tErr = useTranslations("prestige.errors");
+  const reduced = useReducedFx();
+  const [step, setStep] = useState<Step>("intro");
+  const [copyIds, setCopyIds] = useState<Set<string>>(() => new Set());
+  const [cards, setCards] = useState<Map<string, string>>(() => new Map());
+  const [preview, setPreview] = useState<RebirthPreviewView | null>(null);
+  const [sacrificed, setSacrificed] = useState<Set<string>>(() => new Set());
+  const [result, setResult] = useState<RebirthResultView | null>(null);
+  const [error, setError] = useState<PrestigeActionError | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const kept = copyIds.size + cards.size;
+  const full = kept >= slots;
+  const keep = { keepCopyIds: [...copyIds], keepCardIds: [...cards.keys()] };
+
+  const toggleCopy = (id: string) =>
+    setCopyIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else if (!full) next.add(id);
+      return next;
+    });
+  const toggleCard = (card: CollectionItem) =>
+    setCards((prev) => {
+      const next = new Map(prev);
+      if (next.has(card.cardId)) next.delete(card.cardId);
+      else if (!full) next.set(card.cardId, card.name);
+      return next;
+    });
+
+  const openRecap = () =>
+    startTransition(async () => {
+      setError(null);
+      try {
+        const res = await previewRebirthAction(keep);
+        if (!res.ok) return setError(res.error);
+        setPreview(res.preview);
+        setSacrificed(new Set());
+        setStep("recap");
+      } catch {
+        setError("STALE");
+      }
+    });
+
+  const rebirth = () =>
+    startTransition(async () => {
+      if (!preview) return;
+      setError(null);
+      try {
+        const res = await rebirthAction({
+          ...keep,
+          expectedPrestige: prestige,
+          expectedZeni: preview.zeni,
+          sacrificedEngraved: preview.engraved.map((e) => e.id),
+        });
+        if (!res.ok) {
+          setError(res.error);
+          if (res.error === "STALE") setStep("choose");
+          return;
+        }
+        setResult(res.result);
+        setStep("rite");
+      } catch {
+        setError("STALE");
+      }
+    });
+
+  if (step === "rite" && result) {
+    return <RebirthRite result={result} previous={prestige} rarities={rarities} player={player} />;
+  }
+
+  const errorLine = error && (
+    <p role="alert" className="text-sm font-bold text-shu">
+      {tErr.has(error) ? tErr(error) : tErr("UNAVAILABLE")}
+    </p>
+  );
+
+  if (step === "intro") {
+    return (
+      <section className="sticky bottom-[calc(var(--mobile-nav-height)+0.5rem)] z-10 flex flex-col gap-2">
+        <Button type="button" variant="primary" className="min-h-14 w-full" disabled={!ready} onClick={() => setStep("choose")}>
+          {ready ? t("start", { slots }) : reason === "blocked" ? t("blocked") : t("locked")}
+        </Button>
+      </section>
+    );
+  }
+
+  if (step === "choose") {
+    return (
+      <section className="flex flex-col gap-4">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="font-title text-lg font-extrabold">{t("chooseTitle")}</h2>
+          <output aria-live="polite" className={`font-bold tabular-nums ${full ? "text-kin" : "text-text-muted"}`}>
+            {t("count", { count: kept, slots })}
+          </output>
+        </div>
+        <p className="text-sm text-text-muted">{t("chooseIntro", { slots })}</p>
+        {special.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <h3 className="font-bold">{t("specialTitle")}</h3>
+            <ul className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+              {special.map((s) => {
+                const on = copyIds.has(s.userCardId);
+                return (
+                  <li key={s.userCardId}>
+                    <button
+                      type="button"
+                      aria-pressed={on}
+                      disabled={!on && full}
+                      onClick={() => toggleCopy(s.userCardId)}
+                      className="flex w-full flex-col gap-1 rounded-card p-1 text-left text-xs aria-pressed:ring-2 aria-pressed:ring-kin disabled:opacity-40"
+                    >
+                      <Fuda card={{ ...s.card, copy: { heritage: s.heritage, printing: s.printing, serial: s.serial } }} size="sm" still describeImage />
+                      <span className="truncate font-bold">{s.card.name}</span>
+                      <span className="text-kin">{s.printing !== null ? t("engravedCopy", { serial: s.serial ?? 0 }) : t("heirCopy", { level: s.heritage })}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+        <div className="flex flex-col gap-2">
+          <h3 className="font-bold">{t("cardsTitle")}</h3>
+          <CardPickGrid
+            selected={new Set(cards.keys())}
+            onPick={toggleCard}
+            pickLabel={(name) => t("pick", { name })}
+            unavailable={(card) => full && !cards.has(card.cardId)}
+          />
+        </div>
+        {errorLine}
+        <div className="sticky bottom-[calc(var(--mobile-nav-height)+0.5rem)] z-10 grid grid-cols-2 gap-2">
+          <Button type="button" onClick={() => setStep("intro")} disabled={pending}>
+            {t("cancel")}
+          </Button>
+          <Button type="button" variant="primary" onClick={openRecap} disabled={pending}>
+            {pending ? t("loading") : t("next")}
+          </Button>
+        </div>
+      </section>
+    );
+  }
+
+  // Récapitulatif
+  const p = preview!;
+  const byRarity = rarities
+    .map((r) => ({ ...r, count: p.departed.filter((d) => d.rarity === r.key).reduce((sum, d) => sum + d.count, 0) }))
+    .filter((r) => r.count > 0);
+  const confirmed = p.engraved.every((e) => sacrificed.has(e.id));
+  return (
+    <section className="flex flex-col gap-4">
+      <h2 className="font-title text-lg font-extrabold">{t("recapTitle")}</h2>
+      <dl className="grid grid-cols-2 gap-2">
+        <div className="flex flex-col gap-0.5 lacquer rounded-card p-3">
+          <dt className="text-xs text-text-muted">{t("keptLabel")}</dt>
+          <dd className="text-lg font-bold tabular-nums">{t("kept", { count: kept })}</dd>
+        </div>
+        <div className="flex flex-col gap-0.5 lacquer rounded-card p-3">
+          <dt className="text-xs text-text-muted">{t("leavingLabel")}</dt>
+          <dd className="text-lg font-bold tabular-nums">{t("leaving", { count: p.leaving })}</dd>
+        </div>
+        <div className="col-span-2 flex flex-col gap-0.5 lacquer rounded-card border-kin/45 p-3">
+          <dt className="text-xs text-text-muted">{t("zeniLabel")}</dt>
+          <dd className="text-lg font-bold tabular-nums text-kin">{t("zeni", { zeni: p.zeni })}</dd>
+        </div>
+      </dl>
+      {byRarity.length > 0 && (
+        <ul className="flex flex-wrap gap-2 text-xs">
+          {byRarity.map((r) => (
+            <li key={r.key} className="inline-flex items-center gap-1.5 rounded-pill border border-border px-2.5 py-1 tabular-nums">
+              <span aria-hidden="true" lang="ja" className="font-seal" style={{ color: r.color }}>
+                {r.seal}
+              </span>
+              {r.name} · {r.count}
+            </li>
+          ))}
+        </ul>
+      )}
+      {p.engraved.length > 0 && (
+        <div className="flex flex-col gap-2 lacquer rounded-card border-shu/50 p-4">
+          <h3 className="font-bold text-shu">{t("engravedTitle")}</h3>
+          <p className="text-sm text-text-muted">{t("engravedIntro")}</p>
+          <ul className="flex flex-col gap-1">
+            {p.engraved.map((e) => (
+              <li key={e.id}>
+                <label className="flex min-h-11 items-center gap-3 text-sm">
+                  <input
+                    type="checkbox"
+                    className="size-5 accent-shu-btn"
+                    checked={sacrificed.has(e.id)}
+                    onChange={(ev) =>
+                      setSacrificed((prev) => {
+                        const next = new Set(prev);
+                        if (ev.target.checked) next.add(e.id);
+                        else next.delete(e.id);
+                        return next;
+                      })
+                    }
+                  />
+                  {t("engravedConfirm", { name: e.card.name, serial: e.serial })}
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <p className="text-sm text-text-muted">{t("final")}</p>
+      {errorLine}
+      <div className="sticky bottom-[calc(var(--mobile-nav-height)+0.5rem)] z-10 flex flex-col gap-2">
+        <HoldButton
+          label={t("hold")}
+          kanji="転生"
+          pendingLabel={t("holding")}
+          confirmLabel={t("holdConfirm")}
+          hint={t("holdHint")}
+          disabled={!confirmed}
+          pending={pending}
+          reduced={reduced}
+          onHold={rebirth}
+        />
+        <Button type="button" onClick={() => setStep("choose")} disabled={pending}>
+          {t("back")}
+        </Button>
+      </div>
+    </section>
+  );
+}

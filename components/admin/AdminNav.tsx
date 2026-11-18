@@ -34,6 +34,7 @@ const GROUPS = [
       { key: "lots", href: "/admin/lots" },
       { key: "missions", href: "/admin/missions" },
       { key: "expeditions", href: "/admin/expeditions" },
+      { key: "prestige", href: "/admin/prestige" },
       { key: "shop", href: "/admin/boutique" },
     ],
   },

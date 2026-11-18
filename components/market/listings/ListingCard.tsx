@@ -6,6 +6,7 @@ import type { CardView } from "@/lib/boosters/view";
 import type { CollectionItem } from "@/lib/collection/view";
 import { shownPlayerRef } from "@/lib/social/shown-player";
 import { cancelListingAction, makeOfferAction, withdrawOfferAction } from "@/server/actions/listings";
+import { CopyPicker } from "../../collection/CopyPicker";
 import type { ListingView } from "@/server/market/listings";
 import { CardPickGrid } from "../../collection/CardPickGrid";
 import { OwnedBadge } from "../../collection/OwnedBadge";
@@ -19,7 +20,8 @@ import { AdminNoteDelete } from "../AdminNoteDelete";
 import { CardThumb } from "./CardThumb";
 
 /** Ce que le joueur s'apprête à proposer : une carte demandée, ou une carte choisie dans sa collection. */
-type Pending = { cardId: string; name: string };
+/** Carte proposée, et l'exemplaire désigné s'il s'agit d'une pièce spéciale (sinon le serveur en prend un ordinaire). */
+type Pending = { cardId: string; name: string; userCardId?: string | null };
 
 /**
  * Une annonce : la carte donnée à gauche, les cartes demandées à droite (cerclées d'or quand le
@@ -70,7 +72,7 @@ export function ListingCard({
 
   const send = (offer: Pending) =>
     run(
-      () => makeOfferAction({ listingId: listing.id, cardId: offer.cardId }),
+      () => makeOfferAction({ listingId: listing.id, cardId: offer.cardId, userCardId: offer.userCardId ?? null }),
       () => {
         setConfirm(null);
         setPicking(false);
@@ -148,6 +150,9 @@ export function ListingCard({
           ) : confirm ? (
             <>
               <p className="mr-auto text-sm font-bold">{t("confirmOffer", { give: confirm.name, get: listing.card.name })}</p>
+              <div className="w-full">
+                <CopyPicker cardId={confirm.cardId} value={confirm.userCardId ?? null} onChange={(userCardId) => setConfirm({ ...confirm, userCardId })} />
+              </div>
               <Button type="button" onClick={() => setConfirm(null)} disabled={pending}>
                 {t("back")}
               </Button>
@@ -205,6 +210,7 @@ function OtherCardSheet({
 }) {
   const t = useTranslations("listings");
   const [chosen, setChosen] = useState<CollectionItem | null>(null);
+  const [copyId, setCopyId] = useState<string | null>(null);
   return (
     <Sheet open onClose={onClose} title={t("otherTitle", { card: listingCard.name })} wide>
       {chosen ? (
@@ -222,6 +228,7 @@ function OtherCardSheet({
               <Fuda card={listingCard} series={listingCard.series} size="sm" tilt={false} />
             </div>
           </div>
+          <CopyPicker cardId={chosen.cardId} value={copyId} onChange={setCopyId} />
           <p className="text-xs text-text-muted">{t("offerRules")}</p>
           {error && (
             <p role="alert" className="text-sm text-shu">
@@ -232,7 +239,7 @@ function OtherCardSheet({
             <Button type="button" onClick={() => setChosen(null)} disabled={pending}>
               {t("back")}
             </Button>
-            <Button type="button" variant="primary" onClick={() => onSend({ cardId: chosen.cardId, name: chosen.name })} disabled={pending}>
+            <Button type="button" variant="primary" onClick={() => onSend({ cardId: chosen.cardId, name: chosen.name, userCardId: copyId })} disabled={pending}>
               {pending ? t("pending") : t("send")}
             </Button>
           </div>
@@ -244,7 +251,10 @@ function OtherCardSheet({
             selected={new Set()}
             disabled={new Set([listingCard.cardId])}
             pickLabel={(card) => t("pickOther", { card })}
-            onPick={setChosen}
+            onPick={(card) => {
+              setChosen(card);
+              setCopyId(null);
+            }}
           />
         </>
       )}

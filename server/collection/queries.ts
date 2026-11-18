@@ -156,7 +156,7 @@ export async function getCollectionSummary(ownerId: string, values: RecycleValue
 
   const RARITIES = await getRarities();
   const byRarity = Object.fromEntries(
-    RARITIES.map((r) => [r, { unique: 0, copies: 0, recyclable: 0, zeni: 0 }]),
+    RARITIES.map((r) => [r, { unique: 0, copies: 0, recyclable: 0, zeni: 0, inCatalog: 0 }]),
   ) as Record<Rarity, RarityTotals>;
   const summary: CollectionSummary = {
     unique: 0,
@@ -169,7 +169,7 @@ export async function getCollectionSummary(ownerId: string, values: RecycleValue
   };
   for (const row of rows) {
     const zeni = recycleValue(row.rarity, row.recyclable, values);
-    byRarity[row.rarity] = { unique: row.unique, copies: row.copies, recyclable: row.recyclable, zeni };
+    byRarity[row.rarity] = { unique: row.unique, copies: row.copies, recyclable: row.recyclable, zeni, inCatalog: row.inCatalog };
     summary.unique += row.unique;
     summary.copies += row.copies;
     summary.inCatalog += row.inCatalog;

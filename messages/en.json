@@ -341,7 +341,8 @@
     "ki": "Ki {value}",
     "locked": "Card never obtained",
     "unknown": "???",
-    "spoiler": "Spoiler"
+    "spoiler": "Spoiler",
+    "heritage": "Heirloom, heritage {level}"
   },
   "rarity": {
     "COMMON": "Common",
@@ -1307,7 +1308,8 @@
       "news": "What's new",
       "universes": "Universes",
       "showcases": "Showcases",
-      "casino": "Casino"
+      "casino": "Casino",
+      "prestige": "Prestige"
     },
     "boosters": {
       "title": "Booster settings",
@@ -3560,6 +3562,76 @@
         "NO_BOOSTER": "“All anime” (standard) booster not found.",
         "unexpected": "Unexpected error."
       }
+    },
+    "prestige": {
+      "title": "Prestige",
+      "intro": "Endgame: a player who owns a share of every rarity can be reborn. They recycle their collection for Zeni, keep their heirlooms and gain a prestige level. From prestige 1, their openings can engrave numbered editions.",
+      "statusOn": "Open: players have access.",
+      "statusOff": "Off: only the team sees the page (preview), no button on profiles.",
+      "openPage": "Open the page",
+      "rebirthSection": "Rebirth",
+      "printingSection": "Engraved editions",
+      "unset": "unset",
+      "tierUpTo": "Up to (raw Zeni)",
+      "tierPct": "Share paid (%)",
+      "removeTier": "Remove",
+      "addTier": "Add a tier",
+      "seal": "Seal of printing {printing}",
+      "keys": {
+        "enabled": "Prestige open to players",
+        "requiredPercent": "Access threshold per rarity (%)",
+        "keepSlots": "Heirlooms kept",
+        "minDaysBetween": "Days between two rebirths",
+        "maxCopies": "Most copies allowed to be reborn",
+        "heritageMax": "Maximum heritage",
+        "consecrateMinOwnCycles": "Prestiges kept by the owner before consecration",
+        "zeniTiers": "Zeni scale",
+        "zeniCap": "Zeni cap",
+        "printing": {
+          "minPrestige": "Minimum prestige to engrave",
+          "chanceBp": "Engraving chance per rarity (basis points)",
+          "sizes": "Printing size per rarity",
+          "current": "Current printing",
+          "seals": "Printing seals",
+          "recycleMultiplier": "Recycle value of an engraved copy (×)"
+        }
+      },
+      "hints": {
+        "enabled": "Off: 404 for players, preview for the team, no \"Evolve\" button. Roman numerals already earned stay visible.",
+        "requiredPercent": "Share of the rarity's published cards the player must own (rounded up). Empty: rarity ignored; 0: ignored too.",
+        "keepSlots": "Copies the player keeps at rebirth; each gains one heritage level.",
+        "minDaysBetween": "0: no wait between two rebirths.",
+        "maxCopies": "Above this, the player must recycle duplicates first: the rebirth runs in a single transaction.",
+        "heritageMax": "Five at most: there are only five golden veins.",
+        "consecrateMinOwnCycles": "A capped heirloom can only be consecrated after going through this many prestiges with the same player.",
+        "zeniTiers": "The recycle value of the cards that go is paid in tiers: 100% up to the first threshold, then each tier's share. Beyond the last: nothing.",
+        "zeniCap": "Most Zeni for one rebirth, after the scale.",
+        "printingSection": "From the minimum prestige, a card drawn from a booster or a sealed pack can come out engraved, with a random number from the current printing. Never from a bundle, a mission or the admin.",
+        "printing": {
+          "minPrestige": "Players below it only open ordinary copies.",
+          "chanceBp": "Per 10,000 cards drawn: 200 = 2%. Empty: the rarity is never engraved. Mythic and above only.",
+          "sizes": "Numbers in a printing, fixed when it opens: changing the size only affects printings not started yet.",
+          "current": "Raising this number opens a new printing for every card: numbers start again from 1, with the printing's seal.",
+          "recycleMultiplier": "A recycled engraved copy is worth this multiple of an ordinary copy, at rebirth as when recycling."
+        },
+        "seals": "Two to four kanji per printing, from the seal font (lib/seal-glyphs.ts): any other kanji is refused."
+      },
+      "balance": {
+        "title": "Balance preview",
+        "summary": "{eligible, plural, =0 {No eligible player} one {# eligible player} other {# eligible players}} · {near, plural, =0 {none close} other {# at 90% of every threshold}}. Updated every 10 minutes.",
+        "rarity": "Rarity",
+        "published": "Published",
+        "required": "Required",
+        "players": "Players at threshold",
+        "requiredValue": "{count} ({pct}%)",
+        "unset": "Missing from the setting, so ignored: {rarities}.",
+        "closest": "Closest:"
+      },
+      "rebirths": {
+        "title": "Latest rebirths",
+        "empty": "No rebirth yet.",
+        "row": "prestige {number} · {cards, number} cards · {zeni, number} Zeni"
+      }
     }
   },
   "collection": {
@@ -3733,6 +3805,15 @@
       "retry": "Try again",
       "loading": "Loading…",
       "noMatch": "No album matches."
+    },
+    "copyPicker": {
+      "title": "Copy that goes",
+      "ordinary": "{count, plural, one {The ordinary copy} other {An ordinary copy (# in your collection)}}",
+      "heir": "Heirloom, heritage {level}",
+      "engraved": "Engraved, edition no. {serial}",
+      "heirToo": "heritage {level}",
+      "warning": "This is a special piece: it leaves with its heritage and its number.",
+      "choose": "You only have special copies of this card: choose the one that goes."
     }
   },
   "showcase": {
@@ -4235,7 +4316,9 @@
     "stats": {
       "unique": "Unique cards",
       "mythic": "Mythics",
-      "completion": "Catalog"
+      "completion": "Catalog",
+      "cycle": "Prestige {prestige} · cycle {cycle} under way",
+      "cycleRecord": "Best: {count, number} cards in one cycle"
     },
     "viewCollection": "View collection",
     "accountSettings": "Account settings",
@@ -6354,5 +6437,153 @@
     "appearOfflineHint": "You stay signed in: others see you offline since this moment.",
     "saved": "Saved.",
     "error": "Couldn't save, try again."
+  },
+  "prestige": {
+    "metaTitle": "Prestige",
+    "preview": "Team preview: prestige is off for players (switch in /admin/prestige).",
+    "hero": {
+      "title": "Be reborn, and keep what matters",
+      "subtitle": "Recycle your collection, keep {slots} heirloom cards, and start a new cycle.",
+      "next": "After the rebirth: prestige {level}."
+    },
+    "guest": {
+      "title": "Prestige is for registered accounts",
+      "body": "Create your account to keep your collection, then come back when you near the end of the catalog.",
+      "cta": "Create my account"
+    },
+    "access": {
+      "title": "How to get there",
+      "intro": "Own a share of every rarity. The mark shows the threshold.",
+      "met": "✓",
+      "missing": "−{count}",
+      "blockersTitle": "Before your rebirth",
+      "see": "See",
+      "blocker": {
+        "AUCTION": "{count, plural, one {# card is up for sale: withdraw it or wait for the sale to end.} other {# cards are up for sale: withdraw them or wait for the sales to end.}}",
+        "BATTLE": "{count, plural, one {# card is in a battle.} other {# cards are in a battle.}}",
+        "EXPEDITION": "{count, plural, one {# card is away on an expedition.} other {# cards are away on an expedition.}}",
+        "CASINO": "{count, plural, one {# card is staked at the casino.} other {# cards are staked at the casino.}}",
+        "LISTINGS": "{count, plural, one {You have # open trade listing.} other {You have # open trade listings.}}",
+        "OFFERS": "{count, plural, one {You have # pending offer on a listing.} other {You have # pending offers on listings.}}",
+        "TRADES": "{count, plural, one {You have # pending trade proposal.} other {You have # pending trade proposals.}}"
+      },
+      "tooSoon": "Your next rebirth is possible on {date}.",
+      "tooMany": "Your collection holds {count, number} copies: recycle your duplicates first (at most {max, number})."
+    },
+    "gains": {
+      "title": "What evolving gives you",
+      "roman": {
+        "kanji": "位",
+        "title": "Your roman numeral",
+        "body": "in gold on your avatar, everywhere in the game."
+      },
+      "heirs": {
+        "kanji": "継",
+        "title": "Your heirlooms",
+        "body": "chosen by you, veined with a little more gold at every rebirth."
+      },
+      "engraved": {
+        "kanji": "版",
+        "title": "Engraved editions",
+        "body": "numbered Mythics, only for reborn players."
+      },
+      "cosmetics": {
+        "kanji": "飾",
+        "title": "Prestige titles, frames and badges",
+        "body": "to show off."
+      },
+      "zeni": {
+        "kanji": "銭",
+        "title": "Zeni",
+        "body": "for every recycled card."
+      },
+      "emaki": {
+        "kanji": "巻",
+        "title": "The cycle's scroll",
+        "body": "on your profile, and later the sanctuary."
+      }
+    },
+    "leave": {
+      "title": "What you leave behind",
+      "cards": {
+        "kanji": "灰",
+        "title": "All your other cards",
+        "body": "are recycled. This is final."
+      },
+      "keep": {
+        "kanji": "守",
+        "title": "You keep",
+        "body": "your balance, boosters, Incense, decks, ranking and the wiki entries you have already discovered."
+      }
+    },
+    "flow": {
+      "start": "Choose my {slots} heirlooms",
+      "locked": "You're still missing cards",
+      "blocked": "Clear what's blocking first",
+      "chooseTitle": "Your heirlooms",
+      "chooseIntro": "Choose up to {slots} cards to keep. Each gets a golden vein, one more at every rebirth.",
+      "count": "{count} / {slots}",
+      "specialTitle": "Your special copies",
+      "cardsTitle": "Your cards",
+      "heirCopy": "Heritage {level}",
+      "engravedCopy": "Edition no. {serial}",
+      "pick": "Keep {name}",
+      "cancel": "Cancel",
+      "next": "See the summary",
+      "loading": "Working it out…",
+      "recapTitle": "Summary",
+      "keptLabel": "You keep",
+      "kept": "{count, plural, =0 {No heirloom} one {# heirloom} other {# heirlooms}}",
+      "leavingLabel": "Recycled",
+      "leaving": "{count, plural, one {# card} other {# cards}}",
+      "zeniLabel": "You receive",
+      "zeni": "{zeni, number} Zeni",
+      "engravedTitle": "Engraved copies you give up",
+      "engravedIntro": "These numbered editions go with the rest: their number will never come back. Tick each one to confirm.",
+      "engravedConfirm": "I give up {name}, edition no. {serial}",
+      "final": "The rebirth is final: recycled cards don't come back.",
+      "hold": "Hold to be reborn",
+      "holdConfirm": "Tap again to be reborn",
+      "holding": "Rebirth…",
+      "holdHint": "Hold the button until it fills: the rebirth is final.",
+      "back": "Change my heirlooms"
+    },
+    "errors": {
+      "NO_SESSION": "Your session expired: sign in again.",
+      "INVALID": "Invalid request.",
+      "DISABLED": "Prestige is not open.",
+      "RATE_LIMITED": "Too many attempts. Try again in a minute.",
+      "NO_USER": "Account not found.",
+      "GUEST": "Prestige is for registered accounts.",
+      "BANNED": "Your account is suspended.",
+      "FROZEN": "Your account is being deleted.",
+      "STALE": "Your collection changed: check the summary before confirming.",
+      "TOO_SOON": "Your next rebirth isn't possible yet.",
+      "BUSY": "A card is still in play elsewhere (sale, battle, expedition, casino or trade).",
+      "TOO_MANY": "Recycle your duplicates first: your collection is too large to be reborn in one go.",
+      "NOT_ELIGIBLE": "You're still missing cards in at least one rarity.",
+      "KEEP_INVALID": "An heirloom you chose is no longer available: choose them again.",
+      "UNAVAILABLE": "Not possible right now. Try again."
+    },
+    "rite": {
+      "label": "Rebirth rite",
+      "skip": "Skip",
+      "firstCycle": "First cycle",
+      "level": "Prestige {level}",
+      "heirs": "{count, plural, =0 {No heirloom} one {Your heirloom} other {Your # heirlooms}}",
+      "gone": "{count, plural, one {Recycled: # card} other {Recycled: {count, number} cards}}",
+      "zeni": "Zeni",
+      "cycle": "Cycle {roman}",
+      "rank": "Kiraku's {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} rebirth",
+      "done": "You've reached prestige {roman}",
+      "doneText": "A new cycle begins, with your heirlooms.",
+      "profile": "See my profile"
+    },
+    "profile": {
+      "evolve": "Evolve",
+      "evolveReady": "You can be reborn",
+      "level": "Prestige {level}",
+      "rank": "Kiraku's {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} rebirth"
+    }
   }
 }

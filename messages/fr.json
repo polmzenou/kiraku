@@ -341,7 +341,8 @@
     "ki": "Ki {value}",
     "locked": "Carte jamais obtenue",
     "unknown": "???",
-    "spoiler": "Spoil"
+    "spoiler": "Spoil",
+    "heritage": "Héritière, héritage {level}"
   },
   "rarity": {
     "COMMON": "Commune",
@@ -1307,7 +1308,8 @@
       "news": "Nouveautés",
       "universes": "Univers",
       "showcases": "Vitrines",
-      "casino": "Casino"
+      "casino": "Casino",
+      "prestige": "Prestige"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -3560,6 +3562,76 @@
         "NO_BOOSTER": "Booster « Tout anime » (standard) introuvable.",
         "unexpected": "Erreur inattendue."
       }
+    },
+    "prestige": {
+      "title": "Prestige",
+      "intro": "Fin de partie : un joueur qui possède une part de chaque rareté peut renaître. Il recycle sa collection contre des Zeni, garde ses héritières et monte d'un prestige. À partir du prestige 1, ses ouvertures peuvent graver des éditions numérotées.",
+      "statusOn": "Ouvert : les joueurs y ont accès.",
+      "statusOff": "Coupé : seule l'équipe voit la page (aperçu), aucun bouton sur les profils.",
+      "openPage": "Ouvrir la page",
+      "rebirthSection": "Renaissance",
+      "printingSection": "Éditions gravées",
+      "unset": "absente",
+      "tierUpTo": "Jusqu'à (Zeni bruts)",
+      "tierPct": "Part versée (%)",
+      "removeTier": "Retirer",
+      "addTier": "Ajouter une tranche",
+      "seal": "Sceau du tirage {printing}",
+      "keys": {
+        "enabled": "Prestige ouvert aux joueurs",
+        "requiredPercent": "Seuil d'accès par rareté (%)",
+        "keepSlots": "Héritières gardées",
+        "minDaysBetween": "Jours entre deux renaissances",
+        "maxCopies": "Exemplaires au plus pour renaître",
+        "heritageMax": "Héritage maximal",
+        "consecrateMinOwnCycles": "Prestiges gardés soi-même avant consécration",
+        "zeniTiers": "Barème des Zeni",
+        "zeniCap": "Plafond des Zeni",
+        "printing": {
+          "minPrestige": "Prestige minimal pour graver",
+          "chanceBp": "Chance de gravure par rareté (points de base)",
+          "sizes": "Taille d'un tirage par rareté",
+          "current": "Tirage en cours",
+          "seals": "Sceaux des tirages",
+          "recycleMultiplier": "Valeur de recyclage d'une gravée (×)"
+        }
+      },
+      "hints": {
+        "enabled": "Coupé : 404 pour les joueurs, aperçu pour l'équipe, aucun bouton « Évoluer ». Les chiffres romains déjà gagnés restent affichés.",
+        "requiredPercent": "Part des cartes publiées de la rareté que le joueur doit posséder (arrondie au supérieur). Vide : rareté ignorée ; 0 : ignorée aussi.",
+        "keepSlots": "Exemplaires que le joueur garde à la renaissance ; chacun monte d'un niveau d'héritage.",
+        "minDaysBetween": "0 : aucune attente entre deux renaissances.",
+        "maxCopies": "Au-delà, le joueur doit d'abord recycler ses doublons : la renaissance se fait en une seule transaction.",
+        "heritageMax": "Cinq au plus : il n'existe que cinq veines d'or.",
+        "consecrateMinOwnCycles": "Une héritière au plafond ne se consacre qu'après avoir traversé ce nombre de prestiges chez le même joueur.",
+        "zeniTiers": "La valeur de recyclage des cartes parties est versée par tranches : 100 % jusqu'au premier seuil, puis la part de chaque tranche. Au-delà de la dernière : rien.",
+        "zeniCap": "Zeni au plus pour une renaissance, après le barème.",
+        "printingSection": "À partir du prestige minimal, une carte tirée d'un booster ou d'un sachet scellé peut sortir gravée, avec un numéro tiré au hasard dans le tirage en cours. Jamais par un lot, une mission ou l'admin.",
+        "printing": {
+          "minPrestige": "Les joueurs en dessous n'ouvrent que des exemplaires ordinaires.",
+          "chanceBp": "Pour 10 000 cartes tirées : 200 = 2 %. Vide : la rareté n'est jamais gravée. Réservé aux Mythiques et au-dessus.",
+          "sizes": "Nombre de numéros d'un tirage, figé à son ouverture : changer la taille ne touche que les tirages pas encore commencés.",
+          "current": "Monter ce numéro ouvre un nouveau tirage pour toutes les cartes : les numéros repartent de 1, avec le sceau du tirage.",
+          "recycleMultiplier": "Une gravée recyclée vaut ce multiple d'un exemplaire ordinaire, à la renaissance comme au recyclage."
+        },
+        "seals": "Deux à quatre kanji par tirage, pris dans la police des sceaux (lib/seal-glyphs.ts) : un autre kanji est refusé."
+      },
+      "balance": {
+        "title": "Aperçu d'équilibrage",
+        "summary": "{eligible, plural, =0 {Aucun joueur éligible} one {# joueur éligible} other {# joueurs éligibles}} · {near, plural, =0 {aucun tout proche} one {# à 90 % de chaque seuil} other {# à 90 % de chaque seuil}}. Mis à jour toutes les 10 minutes.",
+        "rarity": "Rareté",
+        "published": "Publiées",
+        "required": "Exigées",
+        "players": "Joueurs au seuil",
+        "requiredValue": "{count} ({pct} %)",
+        "unset": "Absentes du réglage, donc ignorées : {rarities}.",
+        "closest": "Les plus proches :"
+      },
+      "rebirths": {
+        "title": "Dernières renaissances",
+        "empty": "Aucune renaissance pour l'instant.",
+        "row": "prestige {number} · {cards, number} cartes · {zeni, number} Zeni"
+      }
     }
   },
   "collection": {
@@ -3733,6 +3805,15 @@
       "retry": "Réessayer",
       "loading": "Chargement…",
       "noMatch": "Aucun album ne correspond."
+    },
+    "copyPicker": {
+      "title": "Exemplaire qui part",
+      "ordinary": "{count, plural, one {L'exemplaire ordinaire} other {Un exemplaire ordinaire (# en collection)}}",
+      "heir": "Héritière, héritage {level}",
+      "engraved": "Gravée, édition n° {serial}",
+      "heirToo": "héritage {level}",
+      "warning": "C'est une pièce spéciale : elle part avec son héritage et son numéro.",
+      "choose": "Tu n'as que des exemplaires spéciaux de cette carte : choisis celui qui part."
     }
   },
   "showcase": {
@@ -4235,7 +4316,9 @@
     "stats": {
       "unique": "Cartes uniques",
       "mythic": "Mythiques",
-      "completion": "Catalogue"
+      "completion": "Catalogue",
+      "cycle": "Prestige {prestige} · {cycle}ᵉ cycle en cours",
+      "cycleRecord": "Record : {count, number} cartes en un cycle"
     },
     "viewCollection": "Voir la collection",
     "accountSettings": "Paramètres du compte",
@@ -6354,5 +6437,153 @@
     "appearOfflineHint": "Tu restes connecté : les autres te voient déconnecté depuis ce moment.",
     "saved": "Enregistré.",
     "error": "Impossible d'enregistrer, réessaie."
+  },
+  "prestige": {
+    "metaTitle": "Prestige",
+    "preview": "Aperçu de l'équipe : le prestige est coupé pour les joueurs (interrupteur dans /admin/prestige).",
+    "hero": {
+      "title": "Renaître, et garder ce qui compte",
+      "subtitle": "Recycle ta collection, garde {slots} cartes héritières, et repars pour un nouveau cycle.",
+      "next": "Après la renaissance : prestige {level}."
+    },
+    "guest": {
+      "title": "Le prestige est réservé aux comptes inscrits",
+      "body": "Crée ton compte pour garder ta collection, puis reviens quand tu approcheras de la fin du catalogue.",
+      "cta": "Créer mon compte"
+    },
+    "access": {
+      "title": "Comment y accéder",
+      "intro": "Possède une part de chaque rareté. Le trait marque le seuil.",
+      "met": "✓",
+      "missing": "−{count}",
+      "blockersTitle": "Avant de renaître",
+      "see": "Voir",
+      "blocker": {
+        "AUCTION": "{count, plural, one {# carte est en vente : retire-la ou attends la fin de la vente.} other {# cartes sont en vente : retire-les ou attends la fin des ventes.}}",
+        "BATTLE": "{count, plural, one {# carte est en combat.} other {# cartes sont en combat.}}",
+        "EXPEDITION": "{count, plural, one {# carte est partie en expédition.} other {# cartes sont parties en expédition.}}",
+        "CASINO": "{count, plural, one {# carte est misée au casino.} other {# cartes sont misées au casino.}}",
+        "LISTINGS": "{count, plural, one {Tu as # annonce d'échange ouverte.} other {Tu as # annonces d'échange ouvertes.}}",
+        "OFFERS": "{count, plural, one {Tu as # offre en attente sur une annonce.} other {Tu as # offres en attente sur des annonces.}}",
+        "TRADES": "{count, plural, one {Tu as # proposition d'échange en attente.} other {Tu as # propositions d'échange en attente.}}"
+      },
+      "tooSoon": "Prochaine renaissance possible le {date}.",
+      "tooMany": "Ta collection compte {count, number} exemplaires : recycle d'abord tes doublons (au plus {max, number})."
+    },
+    "gains": {
+      "title": "Ce que l'évolution t'apporte",
+      "roman": {
+        "kanji": "位",
+        "title": "Ton chiffre romain",
+        "body": "en or sur ton avatar, partout dans le jeu."
+      },
+      "heirs": {
+        "kanji": "継",
+        "title": "Tes héritières",
+        "body": "que tu choisis, veinées d'or un peu plus à chaque renaissance."
+      },
+      "engraved": {
+        "kanji": "版",
+        "title": "Les éditions gravées",
+        "body": "des Mythiques numérotées, réservées aux joueurs renés."
+      },
+      "cosmetics": {
+        "kanji": "飾",
+        "title": "Titres, cadres et badges",
+        "body": "de prestige."
+      },
+      "zeni": {
+        "kanji": "銭",
+        "title": "Des Zeni",
+        "body": "pour chaque carte recyclée."
+      },
+      "emaki": {
+        "kanji": "巻",
+        "title": "Le rouleau du cycle",
+        "body": "sur ton profil, et plus tard le sanctuaire."
+      }
+    },
+    "leave": {
+      "title": "Ce que tu laisses",
+      "cards": {
+        "kanji": "灰",
+        "title": "Toutes tes autres cartes",
+        "body": "sont recyclées. C'est définitif."
+      },
+      "keep": {
+        "kanji": "守",
+        "title": "Tu gardes",
+        "body": "ton solde, tes boosters, tes Encens, tes decks, ton classement et les fiches déjà découvertes du wiki."
+      }
+    },
+    "flow": {
+      "start": "Choisir mes {slots} héritières",
+      "locked": "Il te manque des cartes",
+      "blocked": "Règle d'abord ce qui bloque",
+      "chooseTitle": "Tes héritières",
+      "chooseIntro": "Choisis jusqu'à {slots} cartes à garder. Elles reçoivent une veine d'or, une de plus à chaque renaissance.",
+      "count": "{count} / {slots}",
+      "specialTitle": "Tes exemplaires spéciaux",
+      "cardsTitle": "Tes cartes",
+      "heirCopy": "Héritage {level}",
+      "engravedCopy": "Édition n° {serial}",
+      "pick": "Garder {name}",
+      "cancel": "Annuler",
+      "next": "Voir le récapitulatif",
+      "loading": "Calcul…",
+      "recapTitle": "Récapitulatif",
+      "keptLabel": "Tu gardes",
+      "kept": "{count, plural, =0 {Aucune héritière} one {# héritière} other {# héritières}}",
+      "leavingLabel": "Recyclées",
+      "leaving": "{count, plural, one {# carte} other {# cartes}}",
+      "zeniLabel": "Tu reçois",
+      "zeni": "{zeni, number} Zeni",
+      "engravedTitle": "Gravées sacrifiées",
+      "engravedIntro": "Ces éditions numérotées partent avec le reste : leur numéro ne ressortira jamais. Coche chacune pour confirmer.",
+      "engravedConfirm": "Je sacrifie {name}, édition n° {serial}",
+      "final": "La renaissance est définitive : les cartes recyclées ne reviennent pas.",
+      "hold": "Maintiens pour renaître",
+      "holdConfirm": "Appuie encore pour renaître",
+      "holding": "Renaissance…",
+      "holdHint": "Maintiens le bouton jusqu'à ce qu'il soit rempli : la renaissance est définitive.",
+      "back": "Modifier mes héritières"
+    },
+    "errors": {
+      "NO_SESSION": "Ta session a expiré : reconnecte-toi.",
+      "INVALID": "Demande invalide.",
+      "DISABLED": "Le prestige n'est pas ouvert.",
+      "RATE_LIMITED": "Trop d'essais. Réessaie dans une minute.",
+      "NO_USER": "Compte introuvable.",
+      "GUEST": "Le prestige est réservé aux comptes inscrits.",
+      "BANNED": "Ton compte est suspendu.",
+      "FROZEN": "Ton compte est en cours de suppression.",
+      "STALE": "Ta collection a changé : vérifie le récapitulatif avant de confirmer.",
+      "TOO_SOON": "Ta prochaine renaissance n'est pas encore possible.",
+      "BUSY": "Une carte est encore en jeu ailleurs (vente, combat, expédition, casino ou échange).",
+      "TOO_MANY": "Recycle d'abord tes doublons : ta collection est trop grande pour renaître d'un coup.",
+      "NOT_ELIGIBLE": "Il te manque encore des cartes dans au moins une rareté.",
+      "KEEP_INVALID": "Une héritière choisie n'est plus disponible : choisis-les à nouveau.",
+      "UNAVAILABLE": "Action impossible pour le moment. Réessaie."
+    },
+    "rite": {
+      "label": "Rite de renaissance",
+      "skip": "Passer",
+      "firstCycle": "Premier cycle",
+      "level": "Prestige {level}",
+      "heirs": "{count, plural, =0 {Aucune héritière} one {Ton héritière} other {Tes # héritières}}",
+      "gone": "{count, plural, one {Recyclée : # carte} other {Recyclées : {count, number} cartes}}",
+      "zeni": "Zeni",
+      "cycle": "Cycle {roman}",
+      "rank": "{rank, select, 1 {1re} other {{rank}ᵉ}} renaissance de Kiraku",
+      "done": "Te voilà au prestige {roman}",
+      "doneText": "Un nouveau cycle commence, avec tes héritières.",
+      "profile": "Voir mon profil"
+    },
+    "profile": {
+      "evolve": "Évoluer",
+      "evolveReady": "Tu peux renaître",
+      "level": "Prestige {level}",
+      "rank": "{rank, select, 1 {1re} other {{rank}ᵉ}} renaissance de Kiraku"
+    }
   }
 }

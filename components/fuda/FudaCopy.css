@@ -1,0 +1,19 @@
+/* Marques d'un exemplaire précis (prestige) posées sur la fuda : FudaFace.css est généré par
+   scripts/fuda-face-css.mjs et ne s'édite pas à la main. Niveaux de détail par container queries sur la largeur
+   réelle de la carte, comme la face. Aucune animation : les marques sont statiques, partout.
+
+   Héritière : des veines d'or façon kintsugi, une de plus par prestige traversé ; à cinq, la carte est veinée de
+   part en part. Sous 100 px, un point d'or au coin remplace les veines. */
+.fuda-veins { position: absolute; inset: 0; z-index: 6; width: 100%; height: 100%; pointer-events: none; }
+.fuda-veins path { fill: none; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.fuda-veins .v0 { stroke: #4a3208; stroke-opacity: .6; stroke-width: 3.4px; }
+.fuda-veins .v1 { stroke: #e8c867; stroke-width: 1.9px; }
+.fuda-veins .v2 { stroke: #fffbe8; stroke-width: .7px; }
+.fuda-heir-dot {
+  display: none; position: absolute; right: 5cqw; top: 5cqw; z-index: 6; width: max(9px, 15cqw); aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff3c4, #d9b556 55%, #8a6a1f); box-shadow: 0 0 0 1px rgb(0 0 0 / .45);
+}
+@container fuda (max-width: 99px) {
+  .fuda-veins { display: none; }
+  .fuda-heir-dot { display: block; }
+}

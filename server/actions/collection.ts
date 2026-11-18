@@ -93,6 +93,42 @@ export async function loadCollectionPage(input: unknown): Promise<({ ok: true } 
   return { ok: true, ...page };
 }
 
+// --- Exemplaires d'une carte (prestige) ---
+
+export type CardCopies = {
+  /** Exemplaires ordinaires en collection : le serveur en choisit un quand le joueur n'en désigne pas. */
+  ordinary: number;
+  /** Exemplaires spéciaux en collection (héritiers ou gravés) : ils ne partent que désignés. */
+  special: { userCardId: string; heritage: number; printing: number | null; serial: number | null }[];
+};
+
+const copiesSchema = z.object({ cardId: cardIdSchema }).strict();
+
+/** Exemplaires en collection d'une carte du joueur : de quoi choisir celui qui part (CopyPicker). */
+export async function copiesOfCardAction(input: unknown): Promise<{ ok: true; copies: CardCopies } | Failure> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "NO_SESSION" };
+  const parsed = copiesSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (!(await rateLimit(`copies:${user.id}`, { limit: 60, windowSeconds: 60 }, { store: "memory" })).success) {
+    return { ok: false, error: "RATE_LIMITED" };
+  }
+  // Propriété : seuls les exemplaires du joueur de la session sont lus
+  const rows = await prisma.userCard.findMany({
+    where: { ownerId: user.id, cardId: parsed.data.cardId, status: "COLLECTION" },
+    orderBy: [{ heritage: "desc" }, { obtainedAt: "asc" }],
+    select: { id: true, heritage: true, printing: true, serial: true },
+  });
+  const special = rows.filter((r) => r.heritage > 0 || r.printing !== null);
+  return {
+    ok: true,
+    copies: {
+      ordinary: rows.length - special.length,
+      special: special.map((r) => ({ userCardId: r.id, heritage: r.heritage, printing: r.printing, serial: r.serial })),
+    },
+  };
+}
+
 // --- Recyclage ---
 
 export type RecycleResult = { ok: true; recycled: number; gain: number; coins: number } | Failure;

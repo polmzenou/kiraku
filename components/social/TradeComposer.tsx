@@ -6,6 +6,7 @@ import type { CardView } from "@/lib/boosters/view";
 import type { Rarity } from "@/lib/catalog/rarity";
 import type { CollectionItem } from "@/lib/collection/view";
 import { proposeTradeAction } from "@/server/actions/trades";
+import { CopyPicker } from "../collection/CopyPicker";
 import { CardPickGrid } from "../collection/CardPickGrid";
 import { OwnedBadge } from "../collection/OwnedBadge";
 import { Fuda } from "../fuda/Fuda";
@@ -35,6 +36,8 @@ export function TradeComposer({ username, name, maxOffered, allowedRarities, ini
   const [wanted, setWanted] = useState<WantedCard | null>(initialWanted ?? null);
   const [offered, setOffered] = useState<CollectionItem[]>([]);
   const [note, setNote] = useState("");
+  // Exemplaires désignés parmi les cartes offertes (pièces spéciales) ; une carte absente : un ordinaire
+  const [copies, setCopies] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const offeredIds = new Set(offered.map((c) => c.cardId));
@@ -54,7 +57,8 @@ export function TradeComposer({ username, name, maxOffered, allowedRarities, ini
     if (!wanted || offered.length === 0) return;
     startTransition(async () => {
       try {
-        const res = await proposeTradeAction({ username, wantedCardId: wanted.cardId, offeredCardIds: offered.map((c) => c.cardId), note });
+        const offeredCopies = offered.flatMap((c) => (copies[c.cardId] ? [{ cardId: c.cardId, userCardId: copies[c.cardId] }] : []));
+        const res = await proposeTradeAction({ username, wantedCardId: wanted.cardId, offeredCardIds: offered.map((c) => c.cardId), offeredCopies, note });
         if (!res.ok) setError(tErrors(res.error, { max: maxOffered }));
         else setStep("sent");
       } catch {
@@ -147,6 +151,21 @@ export function TradeComposer({ username, name, maxOffered, allowedRarities, ini
               </ul>
             </div>
           </div>
+          {offered.map((c) => (
+            <CopyPicker
+              key={c.cardId}
+              cardId={c.cardId}
+              value={copies[c.cardId] ?? null}
+              onChange={(userCardId) =>
+                setCopies((prev) => {
+                  const next = { ...prev };
+                  if (userCardId) next[c.cardId] = userCardId;
+                  else delete next[c.cardId];
+                  return next;
+                })
+              }
+            />
+          ))}
           <NoteField label={t("note")} placeholder={t("notePlaceholder", { name })} value={note} onChange={setNote} disabled={pending} />
           <p className="text-xs text-text-muted">{t("rules")}</p>
           {error && (

@@ -9,6 +9,7 @@ import { resolveAppearance } from "@/lib/catalog/appearance";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import "./FudaEffects.css";
 import "./FudaFace.css";
+import "./FudaCopy.css";
 
 export type FudaCard = {
   name: string;
@@ -26,7 +27,51 @@ export type FudaCard = {
    * (`data-spoiler="hide"` sur <html>, FudaFace.css). Le nom et les stats restent lisibles.
    */
   spoiler: boolean;
+  /**
+   * Exemplaire précis montré (prestige) : héritage (veines d'or) et, plus tard, édition gravée. Absent ou à 0 :
+   * la fuda est inchangée, toutes les sources actuelles continuent de marcher.
+   */
+  copy?: FudaCopy | null;
 };
+
+export type FudaCopy = { heritage: number; printing?: number | null; serial?: number | null };
+
+/** Tracés des veines d'or, dans le repère 250 × 350 de la carte : une de plus par prestige traversé. */
+const SEAMS = [
+  "M-5 248L38 232L71 244L118 221L160 236L206 214L255 226",
+  "M172 -5L160 42L181 83L166 128L190 170L178 215",
+  "M-5 96L34 112L58 98L96 126L120 114",
+  "M255 118L214 132L196 118L160 142L146 134",
+  "M64 -5L78 38L58 74L84 112L70 150L92 186L78 232",
+];
+
+/** Une seule veine (la `index`-ième) : celle que le rite de renaissance trace sur une héritière. */
+export function HeritageSeam({ index, className = "" }: { index: number; className?: string }) {
+  const d = SEAMS[Math.min(Math.max(index, 0), SEAMS.length - 1)];
+  return (
+    <svg aria-hidden="true" className={`fuda-veins ${className}`} viewBox="0 0 250 350" preserveAspectRatio="none">
+      <path className="v0" d={d} />
+      <path className="v1" d={d} />
+      <path className="v2" d={d} transform="translate(-.8 -.8)" />
+    </svg>
+  );
+}
+
+/** Héritière : veines d'or (kintsugi) posées sur la carte ; un point d'or au coin en petit format (FudaCopy.css). */
+export function HeritageVeins({ level }: { level: number }) {
+  const d = SEAMS.slice(0, Math.min(Math.max(level, 0), SEAMS.length)).join("");
+  if (!d) return null;
+  return (
+    <>
+      <svg aria-hidden="true" className="fuda-veins" viewBox="0 0 250 350" preserveAspectRatio="none">
+        <path className="v0" d={d} />
+        <path className="v1" d={d} />
+        <path className="v2" d={d} transform="translate(-.8 -.8)" />
+      </svg>
+      <span aria-hidden="true" className="fuda-heir-dot" />
+    </>
+  );
+}
 
 type FudaSize = "sm" | "md" | "lg";
 
@@ -233,6 +278,12 @@ export function Fuda({
         <span aria-hidden="true" className="fuda-sheen" />
       )}
       {!locked && !monochrome && visual.effects?.map((effect) => <span key={effect} aria-hidden="true" className={`fuda-effect fuda-effect-${effect}`} />)}
+      {!locked && card.copy && card.copy.heritage > 0 && (
+        <>
+          <HeritageVeins level={card.copy.heritage} />
+          <span className="sr-only">{t("heritage", { level: card.copy.heritage })}</span>
+        </>
+      )}
       {overlay && <div className="pointer-events-none absolute inset-0 z-30">{overlay}</div>}
     </div>
   );

@@ -9,6 +9,14 @@ import { ShareProfileButton } from "@/components/profile/ShareProfileButton";
 import { CreateShowcaseButton } from "@/components/showcase/CreateShowcaseSheet";
 import { ProfileShowcases } from "@/components/showcase/ProfileShowcases";
 import { ShowcaseBanner } from "@/components/showcase/ShowcaseBanner";
+import { EvolveButton } from "@/components/prestige/EvolveButton";
+import { PrestigeAura } from "@/components/prestige/PrestigeAura";
+import { PrestigeBand } from "@/components/prestige/PrestigeBand";
+import { eligibilityOf } from "@/lib/prestige/eligibility";
+import { toRoman } from "@/lib/prestige/roman";
+import { getCatalogStats } from "@/server/catalog/queries";
+import { getRarities } from "@/server/catalog/rarities";
+import { getPrestigeSummary } from "@/server/prestige/queries";
 import { ProfileSalesSection, WishlistSection } from "@/components/profile/ProfileCardSections";
 import { profileSocialBar } from "@/components/profile/ProfileSocialBar";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -115,6 +123,19 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
         ...sales.map((c) => c.cardId),
       ]);
 
+  // Prestige : bandeau et record pour un joueur qui a renaît ; sur son propre profil, le bouton « Évoluer »
+  // (un halo d'or quand les seuils sont atteints), tant que l'interrupteur est allumé
+  const [prestigeOn, prestigeSummary] = await Promise.all([
+    getSetting("prestige.enabled"),
+    decor.prestige > 0 ? getPrestigeSummary(owner.id) : null,
+  ]);
+  let evolveReady: boolean | null = null;
+  if (customize && prestigeOn) {
+    const [order, catalog, percent] = await Promise.all([getRarities(), getCatalogStats(), getSetting("prestige.requiredPercent")]);
+    const owned = Object.fromEntries(Object.entries(summary.byRarity).map(([rarity, totals]) => [rarity, totals.inCatalog]));
+    evolveReady = eligibilityOf({ order, published: catalog.byRarity, owned, percent }).eligible;
+  }
+
   const stats = [
     [t("stats.unique"), format.number(summary.unique)],
     [t("stats.mythic"), format.number(summary.byRarity.MYTHIC.unique)],
@@ -126,6 +147,7 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
       {/* Haut du profil : le décor de la vitrine principale l'habille en bannière (dessous, bloc isolé) */}
       <div className="relative isolate flex flex-col gap-6">
         <ShowcaseBanner theme={shelf[0]?.theme ?? "none"} />
+        <PrestigeAura prestige={decor.prestige} />
         <ProfileHeader
           username={owner.username}
           image={owner.image}
@@ -133,8 +155,10 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
           createdAt={owner.createdAt}
           decor={decor}
           presence={presence}
+          band={<PrestigeBand prestige={decor.prestige} globalRank={prestigeSummary?.last.globalRank ?? null} />}
           action={
             customize && (
+              <div className="flex flex-col gap-2">
               <ProfileCustomizeButton
                 username={owner.username}
                 image={owner.image}
@@ -145,6 +169,8 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
                 privacy={{ visibility: owner.profileVisibility, showCollection: owner.showCollection }}
                 appearOffline={viewer && isStaff(viewer.role) ? viewer.appearOffline : null}
               />
+              {evolveReady !== null && <EvolveButton ready={evolveReady} />}
+              </div>
             )
           }
         />
@@ -170,6 +196,17 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
               <dd className="text-lg font-bold tabular-nums">{value}</dd>
             </div>
           ))}
+          {prestigeSummary && (
+            <div className="col-span-3 flex min-w-0 items-center gap-4 lacquer rounded-card border-kin/45 p-3">
+              <span aria-hidden="true" className="min-w-11 text-center font-title text-3xl font-extrabold text-kin">
+                {toRoman(decor.prestige)}
+              </span>
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <dt className="text-sm font-bold">{t("stats.cycle", { prestige: decor.prestige, cycle: decor.prestige + 1 })}</dt>
+                <dd className="text-xs text-text-muted">{t("stats.cycleRecord", { count: prestigeSummary.bestUniqueCards })}</dd>
+              </div>
+            </div>
+          )}
         </dl>
       </div>
 
