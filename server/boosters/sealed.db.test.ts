@@ -25,7 +25,7 @@ describe.skipIf(!url)("sachets scellés atomiques (base réelle)", () => {
   const rules = { draw: DEFAULT_RULES, ruin: DEFAULT_RUIN };
   const tables = buildRarityTables(DEFAULT_RULES.rates);
   let pool: CardPool;
-  let type: { id: string; slug: string };
+  let type: { id: string; slug: string; includeCustom: boolean };
 
   async function player() {
     const user = await prisma.user.create({
@@ -75,6 +75,7 @@ describe.skipIf(!url)("sachets scellés atomiques (base réelle)", () => {
       data: {
         slug,
         kind: "DROP",
+        includeCustom: false,
         family: "special",
         name: { fr: "Test" },
         tagline: { fr: "Test" },
@@ -89,7 +90,7 @@ describe.skipIf(!url)("sachets scellés atomiques (base réelle)", () => {
         poolCardIds: [],
         active: false,
       },
-      select: { id: true, slug: true },
+      select: { id: true, slug: true, includeCustom: true },
     });
   }, 30_000);
 

@@ -1524,7 +1524,10 @@
       "focusCards": "{count, plural, one {# carte} other {# cartes}}",
       "focusRate": "Part des tirages d’une rareté sur ces séries (%)",
       "focusPity": "Carte de ces séries garantie au N-ième booster sans (0 = jamais)",
-      "focusEndsHint": "Obligatoire : le booster disparaît à cette date et un compte à rebours s’affiche."
+      "focusEndsHint": "Obligatoire : le booster disparaît à cette date et un compte à rebours s’affiche.",
+      "includeCustom": "Inclure automatiquement les créations originales",
+      "includeCustomOn": "Les cartes créées à la main entrent dans ce booster dès qu'elles passent son filtre, comme les cartes AniList : rien à cocher sur leur fiche. Les variantes exclusives restent à cocher.",
+      "includeCustomOff": "Seules les créations originales cochées sur leur fiche entrent dans ce booster (sachets scellés, Prestige, événements)."
     },
     "banners": {
       "title": "Bannières vedettes",
@@ -2883,7 +2886,9 @@
       "spoiler": "Spoil",
       "spoilerHint": "Personnage ou transformation qui dévoile l'histoire : son illustration est floutée pour les joueurs qui ont activé le mode spoiler. Le nom et les infos restent visibles.",
       "boostersExtra": "Boosters en plus de ceux de la carte de base",
-      "ultimate": "Ultime en combat"
+      "ultimate": "Ultime en combat",
+      "boostersAutoHint": "Les boosters marqués « automatique » la prennent déjà si elle passe leur filtre. Coche ici les autres, ou un booster dont le filtre l'exclut.",
+      "boosterAuto": "automatique"
     },
     "cosmetics": {
       "title": "Titres et cadres de profil",

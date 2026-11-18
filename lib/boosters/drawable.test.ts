@@ -3,10 +3,10 @@ import { stillDrawable, type LiveCard } from "./drawable";
 
 describe("revérification d'une carte tirée", () => {
   const pool = new Set(["aki", "denji", "makima-ar-cochee"]);
-  const ctx = { typeId: "standard", inPool: (id: string) => pool.has(id) };
+  const ctx = { typeId: "standard", includeCustom: false, inPool: (id: string) => pool.has(id) };
   const drawn = { rarity: "AR", weight: 1 };
   const live = (extra: Partial<LiveCard> = {}): LiveCard => ({
-    status: "PUBLISHED", rarity: "AR", dropWeight: 1, origin: "CUSTOM", boosterIds: [], variantOfId: "aki", boosterExclusive: false, ...extra,
+    id: "makima-ar", status: "PUBLISHED", rarity: "AR", dropWeight: 1, origin: "CUSTOM", boosterIds: [], variantOfId: "aki", boosterExclusive: false, ...extra,
   });
 
   it("une AR qui suit sa carte de base passe sans être cochée pour le type", () => {
@@ -25,6 +25,13 @@ describe("revérification d'une carte tirée", () => {
   it("une création originale qui n'est pas une variante doit être cochée", () => {
     expect(stillDrawable(live({ variantOfId: null }), drawn, ctx)).toBe(false);
     expect(stillDrawable(live({ variantOfId: null, boosterIds: ["standard"] }), drawn, ctx)).toBe(true);
+  });
+
+  it("une création admise d'office par le type passe si elle est au pool, sauf variante exclusive", () => {
+    const auto = { ...ctx, includeCustom: true };
+    expect(stillDrawable(live({ id: "makima-ar-cochee", variantOfId: null }), drawn, auto)).toBe(true);
+    expect(stillDrawable(live({ id: "hors-pool", variantOfId: null }), drawn, auto)).toBe(false);
+    expect(stillDrawable(live({ id: "makima-ar-cochee", variantOfId: "hors-pool", boosterExclusive: true }), drawn, auto)).toBe(false);
   });
 
   it("une carte AniList n'a rien à cocher", () => {

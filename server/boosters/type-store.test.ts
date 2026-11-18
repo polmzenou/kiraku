@@ -5,6 +5,7 @@ import { computePoolCards, focusCards, upsertBoosterSeeds } from "./type-store";
 import { filterContext, type PoolCandidate } from "@/lib/boosters/pool-filter";
 import { featuredFromPool, groupByRarity } from "@/lib/boosters/draw";
 import { stillDrawable } from "@/lib/boosters/drawable";
+import { includesCustomByDefault } from "@/lib/boosters/types";
 
 describe("seed ciblé de booster", () => {
   it("ajoute Antagonistes dans Par personnage sans réécrire les autres types", async () => {
@@ -64,30 +65,79 @@ describe("variantes dans les pools", () => {
   const ids = (type: Parameters<typeof computePoolCards>[0]) => computePoolCards(type, all, ctx).map((c) => c.id);
 
   it("une variante suit sa carte de base, même sans être cochée ni remplir le filtre", () => {
-    expect(ids({ id: "focus-csm", filter: { seriesIds: [127230] }, featuredCardIds: [] })).toEqual(["makima", "denji", "makima-ar"]);
-    expect(ids({ id: "waifus", filter: { gender: "Female" }, featuredCardIds: [] })).toEqual(["makima", "makima-ar"]);
-    expect(ids({ id: "husbandos", filter: { gender: "Male" }, featuredCardIds: [] })).toEqual(["denji"]);
+    expect(ids({ id: "focus-csm", filter: { seriesIds: [127230] }, featuredCardIds: [], includeCustom: false })).toEqual(["makima", "denji", "makima-ar"]);
+    expect(ids({ id: "waifus", filter: { gender: "Female" }, featuredCardIds: [], includeCustom: false })).toEqual(["makima", "makima-ar"]);
+    expect(ids({ id: "husbandos", filter: { gender: "Male" }, featuredCardIds: [], includeCustom: false })).toEqual(["denji"]);
   });
 
   it("une variante exclusive ne sort que des boosters cochés", () => {
-    expect(ids({ id: "divin", filter: {}, featuredCardIds: [] })).not.toContain("makima-gold");
-    expect(ids({ id: "event", filter: { seriesIds: [1] }, featuredCardIds: [] })).toEqual(["makima-gold"]);
+    expect(ids({ id: "divin", filter: {}, featuredCardIds: [], includeCustom: false })).not.toContain("makima-gold");
+    expect(ids({ id: "event", filter: { seriesIds: [1] }, featuredCardIds: [], includeCustom: false })).toEqual(["makima-gold"]);
+  });
+
+  it("ne prend jamais d'office une variante exclusive, même avec les créations incluses", () => {
+    expect(ids({ id: "auto", filter: {}, featuredCardIds: [], includeCustom: true })).not.toContain("makima-gold");
   });
 
   // Régression : une AR qui suivait sa base entrait au pool, mais l'ouverture la refusait (NOT_FOR_SALE)
   it("toute carte d'un pool calculé passe la revérification de l'ouverture", () => {
     const types = [
-      { id: "focus-csm", filter: { seriesIds: [127230] }, featuredCardIds: [] },
-      { id: "waifus", filter: { gender: "Female" as const }, featuredCardIds: [] },
-      { id: "event", filter: { seriesIds: [1] }, featuredCardIds: [] },
+      { id: "focus-csm", filter: { seriesIds: [127230] }, featuredCardIds: [], includeCustom: false },
+      { id: "waifus", filter: { gender: "Female" as const }, featuredCardIds: [], includeCustom: false },
+      { id: "event", filter: { seriesIds: [1] }, featuredCardIds: [], includeCustom: false },
+      { id: "auto", filter: {}, featuredCardIds: [], includeCustom: true },
+      { id: "auto-csm", filter: { seriesIds: [127230] }, featuredCardIds: [], includeCustom: true },
     ];
     for (const type of types) {
       const cards = computePoolCards(type, all, ctx);
       const inPool = new Set(cards.map((c) => c.id));
       for (const c of cards) {
-        const row = { status: "PUBLISHED", rarity: c.rarity, dropWeight: 1, origin: c.origin ?? "ANILIST", boosterIds: c.boosterIds ?? [], variantOfId: c.variantOfId ?? null, boosterExclusive: c.boosterExclusive ?? false };
-        expect(stillDrawable(row, { rarity: c.rarity, weight: 1 }, { typeId: type.id, inPool: (id) => inPool.has(id) }), `${c.id} dans ${type.id}`).toBe(true);
+        const row = { id: c.id, status: "PUBLISHED", rarity: c.rarity, dropWeight: 1, origin: c.origin ?? "ANILIST", boosterIds: c.boosterIds ?? [], variantOfId: c.variantOfId ?? null, boosterExclusive: c.boosterExclusive ?? false };
+        expect(stillDrawable(row, { rarity: c.rarity, weight: 1 }, { typeId: type.id, includeCustom: type.includeCustom, inPool: (id) => inPool.has(id) }), `${c.id} dans ${type.id}`).toBe(true);
       }
     }
+  });
+});
+
+describe("créations originales incluses d'office", () => {
+  const ctx = filterContext(new Date("2026-10-27T10:00:00Z"), "Europe/Paris");
+  const card = (id: string, extra: Partial<PoolCandidate> = {}): PoolCandidate => ({
+    id, anilistId: null, rarity: "EPIC", gender: "Female", role: "MAIN", birthMonth: null, birthDay: null,
+    seriesAnilistId: 127230, mediaType: "ANIME", genres: [], tags: [], year: 2022, season: null, seasonYear: null, studio: null,
+    origin: "ANILIST", ...extra,
+  });
+  const makima = card("makima");
+  const reze = card("reze-creation", { origin: "CUSTOM", boosterIds: [] });
+  const luffy = card("luffy-creation", { origin: "CUSTOM", seriesAnilistId: 21, gender: "Male", boosterIds: ["husbandos"] });
+  const all = [makima, reze, luffy];
+  const ids = (type: Parameters<typeof computePoolCards>[0]) => computePoolCards(type, all, ctx).map((c) => c.id);
+
+  it("une nouvelle création entre dans tout booster dont elle passe le filtre, sans être cochée", () => {
+    expect(ids({ id: "standard", filter: {}, featuredCardIds: [], includeCustom: true })).toEqual(["makima", "reze-creation", "luffy-creation"]);
+    expect(ids({ id: "focus-csm", filter: { seriesIds: [127230] }, featuredCardIds: [], includeCustom: true })).toEqual(["makima", "reze-creation"]);
+  });
+
+  it("une création cochée reste dans son booster même hors filtre, sans doublon", () => {
+    expect(ids({ id: "husbandos", filter: { seriesIds: [127230] }, featuredCardIds: [], includeCustom: true })).toEqual(["makima", "reze-creation", "luffy-creation"]);
+    expect(ids({ id: "husbandos", filter: {}, featuredCardIds: [], includeCustom: true })).toEqual(["makima", "reze-creation", "luffy-creation"]);
+  });
+
+  it("sans l'option, seules les créations cochées entrent", () => {
+    expect(ids({ id: "standard", filter: {}, featuredCardIds: [], includeCustom: false })).toEqual(["makima"]);
+    expect(ids({ id: "husbandos", filter: {}, featuredCardIds: [], includeCustom: false })).toEqual(["makima", "luffy-creation"]);
+  });
+
+  it("une vedette créée à la main suit la même règle", () => {
+    const outside = card("vedette", { origin: "CUSTOM", seriesAnilistId: 1 });
+    const pool = (includeCustom: boolean) => computePoolCards({ id: "banniere", filter: { seriesIds: [127230] }, featuredCardIds: ["vedette"], includeCustom }, [makima, outside], ctx).map((c) => c.id);
+    expect(pool(true)).toEqual(["makima", "vedette"]);
+    expect(pool(false)).toEqual(["makima"]);
+  });
+
+  it("les sachets scellés et les exclusifs boutique ne prennent pas les créations d'office", () => {
+    expect(includesCustomByDefault("STANDARD")).toBe(true);
+    expect(includesCustomByDefault("FOCUS")).toBe(true);
+    expect(includesCustomByDefault("DROP")).toBe(false);
+    expect(includesCustomByDefault("PRESTIGE")).toBe(false);
   });
 });

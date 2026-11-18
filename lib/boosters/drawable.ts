@@ -5,6 +5,7 @@ import { followsBase } from "./pool-filter";
 
 /** Carte relue en base, dans la transaction d'ouverture. */
 export type LiveCard = {
+  id: string;
   status: string;
   rarity: string;
   dropWeight: number;
@@ -16,15 +17,17 @@ export type LiveCard = {
 
 /**
  * La carte tirée peut-elle encore être donnée ? Publiée, avec la rareté et le poids du tirage. Une
- * création originale doit être cochée pour ce type, ou suivre sa carte de base présente dans le pool
+ * création originale doit être cochée pour ce type, être admise d'office par le type (`includeCustom`,
+ * sauf variante exclusive) et présente dans son pool, ou suivre sa carte de base présente dans le pool
  * (variante non exclusive), exactement comme dans le calcul du pool.
  */
 export function stillDrawable(
   card: LiveCard | undefined,
   drawn: { rarity: string; weight: number },
-  ctx: { typeId: string; inPool: (cardId: string) => boolean },
+  ctx: { typeId: string; includeCustom: boolean; inPool: (cardId: string) => boolean },
 ): boolean {
   if (!card || card.status !== "PUBLISHED" || card.rarity !== drawn.rarity) return false;
   if (card.dropWeight <= 0 || card.dropWeight !== drawn.weight) return false;
-  return card.origin !== "CUSTOM" || card.boosterIds.includes(ctx.typeId) || followsBase(card, ctx.inPool);
+  if (card.origin !== "CUSTOM" || card.boosterIds.includes(ctx.typeId) || followsBase(card, ctx.inPool)) return true;
+  return ctx.includeCustom && !card.boosterExclusive && ctx.inPool(card.id);
 }

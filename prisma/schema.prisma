@@ -594,6 +594,7 @@ model BoosterType {
   focusSeriesIds  Int[]           @default([]) // Focus série : œuvres mises en avant (ids AniList)
   focusCardIds    String[]        @default([]) // Focus série : cartes du pool de ces œuvres (recalculé avec le pool)
   minPoolSize     Int? // sinon GameSetting booster.minPool
+  includeCustom   Boolean         @default(true) // créations originales (origin CUSTOM) qui passent le filtre ; sinon seulement celles cochées sur la carte
   poolCardIds     String[] // recalculé après import, seed ou modification admin
   poolCounts      Json? // { COMMON: n, … }
   poolComputedAt  DateTime?
