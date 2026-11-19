@@ -154,7 +154,7 @@ async function engravedLeaving(db: Pick<Tx, "$queryRaw">, userId: string, keepId
 
 /** Meilleur score du cycle qui se termine, photographié pour les cosmétiques (lib/prestige/peak.ts). */
 async function peakStatsWith(tx: Tx, userId: string): Promise<PeakStats> {
-  const [byRarity, completed] = await Promise.all([
+  const [byRarity, completed, engraved, consecratedEngraved] = await Promise.all([
     tx.$queryRaw<{ rarity: string; n: number }[]>`
       SELECT c."rarityKey" AS rarity, COUNT(DISTINCT uc."cardId")::int AS n
       FROM "UserCard" uc JOIN "Card" c ON c.id = uc."cardId"
@@ -167,11 +167,15 @@ async function peakStatsWith(tx: Tx, userId: string): Promise<PeakStats> {
       WHERE c.status = 'PUBLISHED'
       GROUP BY c."seriesId"
       HAVING COUNT(o."cardId") = COUNT(*) AND COUNT(*) > 0`,
+    // Éditions gravées, sanctuaire compris : celles recyclées par cette renaissance restent acquises
+    tx.userCard.count({ where: { ownerId: userId, printing: { not: null } } }),
+    tx.consecratedCard.count({ where: { userId, printing: { not: null } } }),
   ]);
   return {
     uniqueCards: byRarity.reduce((sum, r) => sum + r.n, 0),
     byRarity: Object.fromEntries(byRarity.map((r) => [r.rarity, r.n])),
     completedSeries: completed.map((c) => c.id),
+    printingsOwned: engraved + consecratedEngraved,
   };
 }
 

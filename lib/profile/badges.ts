@@ -46,7 +46,10 @@ export function earnedBadges(input: {
   sponsorReferrals: number;
   recruiterReferrals: number;
   discordLinked: boolean;
-  /** Prestige : niveau atteint, cartes au sanctuaire, éditions gravées possédées (absents : 0). */
+  /**
+   * Prestige : niveau atteint, cartes au sanctuaire, éditions gravées possédées (sanctuaire compris, ou le meilleur
+   * d'un cycle passé : une gravée recyclée à une renaissance laisse le badge acquis) ; absents : 0.
+   */
   prestige?: number;
   consecrated?: number;
   engraved?: number;

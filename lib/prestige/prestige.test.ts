@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { evaluateCondition, type ProfileCondition, type ProfileStats } from "../profile/conditions";
 import { SETTING_DEFAULTS } from "../settings/defaults";
 import { eligibilityOf, requiredCount } from "./eligibility";
 import { canConsecrate, nextHeritage } from "./heritage";
-import { mergePeak, parsePeak } from "./peak";
+import { bestOfCycles, mergePeak, parsePeak, type PeakStats } from "./peak";
 import { kanjiNumber, plateMaterial, toRoman } from "./roman";
 import { rebirthRawValue, rebirthZeni } from "./zeni";
 
@@ -104,13 +105,64 @@ describe("héritage et consécration", () => {
 
 describe("meilleur score d'un cycle", () => {
   it("garde le meilleur, rareté par rareté, et additionne les séries", () => {
-    const a = { uniqueCards: 6100, byRarity: { MYTHIC: 150, COMMON: 1600 }, completedSeries: ["s1"] };
-    const b = { uniqueCards: 900, byRarity: { MYTHIC: 160 }, completedSeries: ["s2"] };
-    expect(mergePeak(a, b)).toEqual({ uniqueCards: 6100, byRarity: { MYTHIC: 160, COMMON: 1600 }, completedSeries: ["s1", "s2"] });
+    const a = { uniqueCards: 6100, byRarity: { MYTHIC: 150, COMMON: 1600 }, completedSeries: ["s1"], printingsOwned: 2 };
+    const b = { uniqueCards: 900, byRarity: { MYTHIC: 160 }, completedSeries: ["s2"], printingsOwned: 5 };
+    expect(mergePeak(a, b)).toEqual({ uniqueCards: 6100, byRarity: { MYTHIC: 160, COMMON: 1600 }, completedSeries: ["s1", "s2"], printingsOwned: 5 });
   });
 
   it("lit une photo stockée et ignore une valeur illisible", () => {
-    expect(parsePeak({ uniqueCards: 3, byRarity: { RARE: 2, BAD: "x" }, completedSeries: ["s", 4] })).toEqual({ uniqueCards: 3, byRarity: { RARE: 2 }, completedSeries: ["s"] });
+    expect(parsePeak({ uniqueCards: 3, byRarity: { RARE: 2, BAD: "x" }, completedSeries: ["s", 4], printingsOwned: 1 })).toEqual({
+      uniqueCards: 3,
+      byRarity: { RARE: 2 },
+      completedSeries: ["s"],
+      printingsOwned: 1,
+    });
+    // Photo prise avant que les gravées y soient comptées
+    expect(parsePeak({ uniqueCards: 3, byRarity: {}, completedSeries: [] })?.printingsOwned).toBe(0);
     expect(parsePeak("nope")).toBeNull();
+  });
+
+  it("sans cycle passé ni photo lisible, le cycle en cours seul", () => {
+    const now = { uniqueCards: 20, byRarity: { MYTHIC: 20 }, completedSeries: [], printingsOwned: 0 };
+    expect(bestOfCycles(now, [])).toEqual(now);
+    expect(bestOfCycles(now, [null, "x", 4])).toEqual(now);
+  });
+
+  it("un joueur reparti de zéro garde tout ce qu'il avait débloqué", () => {
+    const stats = (peak: PeakStats, seriesProgress: ProfileStats["seriesProgress"]): ProfileStats => ({
+      uniqueCards: peak.uniqueCards,
+      byRarity: peak.byRarity,
+      completedSeries: new Set(peak.completedSeries),
+      seriesProgress,
+      printingsOwned: peak.printingsOwned,
+      // Ce qu'une renaissance ne touche pas : découvertes du wiki, ouvertures, échanges, rang
+      discoveredPercent: 96,
+      discoveredByRarity: { MYTHIC: 150, AR: 12, GOLD: 3 },
+      boostersOpened: 2400,
+      tradesDone: 30,
+      apocalypseRuined: 1,
+      tier: "GOLD",
+      ambassador: false,
+      prestige: 2,
+    });
+    // Les conditions de collection et de découverte des titres, cadres, couleurs de pseudo et thèmes de vitrine
+    const conditions: ProfileCondition[] = [
+      { type: "UNIQUE_CARDS", n: 1000 },
+      { type: "RARITY_OWNED", rarity: "MYTHIC", n: 3 },
+      { type: "RARITY_OWNED", rarity: "LEGENDARY", n: 5 },
+      { type: "RARITY_OWNED", rarity: "GOLD", n: 1 },
+      { type: "SERIES_COMPLETE", seriesId: "frieren" },
+      { type: "SERIES_COMPLETED_COUNT", n: 2 },
+      { type: "CATALOG_DISCOVERED_PERCENT", n: 95 },
+      { type: "RARITIES_DISCOVERED", rarities: ["MYTHIC", "AR", "GOLD"], n: 20 },
+      { type: "PRINTINGS_OWNED", n: 5 },
+    ];
+    // Avant la renaissance : tout est débloqué
+    const before: PeakStats = { uniqueCards: 6100, byRarity: { COMMON: 1600, LEGENDARY: 80, MYTHIC: 150, GOLD: 3 }, completedSeries: ["frieren", "one-piece"], printingsOwned: 6 };
+    for (const c of conditions) expect(evaluateCondition(c, stats(before, { frieren: { owned: 40, total: 40 } })).unlocked, c.type).toBe(true);
+    // Après : 20 héritières dont une gravée, la photo du cycle passé relue depuis la base (JSON)
+    const now: PeakStats = { uniqueCards: 20, byRarity: { MYTHIC: 18, LEGENDARY: 2 }, completedSeries: [], printingsOwned: 1 };
+    const after = bestOfCycles(now, [JSON.parse(JSON.stringify(before))]);
+    for (const c of conditions) expect(evaluateCondition(c, stats(after, { frieren: { owned: 1, total: 40 } })).unlocked, c.type).toBe(true);
   });
 });

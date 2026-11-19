@@ -816,7 +816,7 @@ Aucune de ces propriétés ne change les stats en combat ni en expédition : leu
 - **Après la renaissance** :
   - « Nouveau » à l'ouverture devient « Retrouvée » pour une carte déjà découverte que le joueur obtient pour la première fois dans le cycle en cours (`Discovery.regainedAt`, posée dans la même écriture que la découverte) ;
   - la mission `DISCOVER_CARDS` compte, pour un joueur au prestige ≥ 1, les découvertes et les retrouvailles de sa fenêtre (`createdAt` ou `regainedAt`) ;
-  - cosmétiques et thèmes de vitrine : le meilleur score de chaque cycle est gardé (`PrestigeCycle.stats` : cartes distinctes, par rareté, séries complétées). Les conditions `UNIQUE_CARDS`, `RARITY_OWNED`, `SERIES_COMPLETE` et `SERIES_COMPLETED_COUNT` lisent le meilleur entre le cycle en cours et les cycles passés : le joueur garde ce qu'il a gagné, rien de plus. Les conditions de découverte (`CATALOG_DISCOVERED_PERCENT`, `RARITIES_DISCOVERED`) ne bougent pas, `Discovery` restant intacte ;
+  - cosmétiques, badges et thèmes de vitrine : tout ce qui était débloqué avant la renaissance le reste. Le meilleur score de chaque cycle est gardé (`PrestigeCycle.stats` : cartes distinctes, par rareté, séries complétées, éditions gravées sanctuaire compris). Les conditions `UNIQUE_CARDS`, `RARITY_OWNED`, `SERIES_COMPLETE`, `SERIES_COMPLETED_COUNT` et `PRINTINGS_OWNED`, et le badge 版, lisent le meilleur entre le cycle en cours et les cycles passés : le joueur garde ce qu'il a gagné, rien de plus. Les conditions de découverte (`CATALOG_DISCOVERED_PERCENT`, `RARITIES_DISCOVERED`) ne bougent pas, `Discovery` restant intacte ;
   - classement des collectionneurs : trié par prestige, puis par cartes distinctes ; un joueur au prestige ≥ 1 y figure même reparti sans carte ;
   - profil : tuile « Cycle III » et record du meilleur cycle, à côté des cartes du cycle en cours.
 
@@ -992,7 +992,7 @@ model PrestigeCycle {
   uniqueCards Int // cartes distinctes possédées au départ
   zeni        Int
   heirs       Json // [{ userCardId, cardId, heritage, printing, serial }] : photo, comme Expedition.snapshot
-  stats       Json // meilleur score du cycle : cartes distinctes, par rareté, séries complétées
+  stats       Json // meilleur score du cycle : cartes distinctes, par rareté, séries complétées, éditions gravées
   createdAt   DateTime @default(now())
   @@unique([userId, number])
 }

@@ -15,7 +15,7 @@ import {
   discoveredPercent,
 } from "@/lib/profile/conditions";
 import { decorFromRelations, type PlayerDecor } from "@/lib/profile/decor";
-import { mergePeak, parsePeak, type PeakStats } from "@/lib/prestige/peak";
+import { bestOfCycles, parsePeak } from "@/lib/prestige/peak";
 import { isFrameStyle, type FrameStyle } from "@/lib/profile/frames";
 import { isNameColorStyle, type NameColorStyle } from "@/lib/profile/name-colors";
 import { getCatalogStats } from "../catalog/queries";
@@ -39,7 +39,7 @@ type Hint = { fr?: string; en?: string };
 
 /** Statistiques utiles aux conditions, en quelques requêtes. */
 export async function getProfileStats(userId: string, seriesIds: readonly string[]): Promise<ProfileStats> {
-  const [byRarity, completed, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog, cycles, prestigeCounts] = await Promise.all([
+  const [byRarity, completed, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog, prestigeCounts] = await Promise.all([
     prisma.$queryRaw<{ rarity: string; n: number }[]>`
       SELECT c."rarityKey" AS rarity, COUNT(DISTINCT uc."cardId")::int AS n
       FROM "UserCard" uc JOIN "Card" c ON c.id = uc."cardId"
@@ -76,21 +76,22 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
       WHERE d."userId" = ${userId} AND c.status = 'PUBLISHED'
       GROUP BY c."rarityKey"`,
     getCatalogStats(),
-    // Prestige : meilleur score de chaque cycle passé, gardé pour les cosmétiques et les thèmes de vitrine
-    prisma.prestigeCycle.findMany({ where: { userId }, select: { stats: true } }),
     prestigeCountsOf(userId),
   ]);
   // Cartes distinctes : chaque carte a une seule rareté, la somme du décompte par rareté suffit (le
   // `distinct` de Prisma 7 s'applique en mémoire et chargeait tous les exemplaires du joueur)
   const unique = byRarity.reduce((sum, r) => sum + r.n, 0);
-  // Un joueur reparti de zéro garde ce qu'il avait gagné lors d'un cycle passé, sans en gagner davantage
-  const peak = cycles
-    .map((c) => parsePeak(c.stats))
-    .reduce<PeakStats>((best, p) => (p ? mergePeak(best, p) : best), {
+  // Un joueur reparti de zéro garde ce qu'il avait gagné lors d'un cycle passé, sans en gagner davantage. Les
+  // conditions de découverte n'en ont pas besoin : une renaissance n'efface pas les découvertes du wiki.
+  const peak = bestOfCycles(
+    {
       uniqueCards: unique,
       byRarity: Object.fromEntries(byRarity.map((r) => [r.rarity, r.n])),
       completedSeries: completed.map((c) => c.id),
-    });
+      printingsOwned: prestigeCounts.printings,
+    },
+    prestigeCounts.snapshots,
+  );
   // Meilleur des deux : un titre de rang ne se reperd pas après une défaite
   const tier = ladderTier(Math.max(user.rankPoints, user.seasonPeakPc), { tiers });
   return {
@@ -110,18 +111,25 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
     ambassador: user.ambassadorSince !== null,
     prestige: user.prestige,
     consecrated: prestigeCounts.consecrated,
-    printingsOwned: prestigeCounts.engraved + prestigeCounts.consecratedEngraved,
+    printingsOwned: peak.printingsOwned,
   };
 }
 
-/** Cartes au sanctuaire (dont gravées) et éditions gravées possédées : conditions et badges du prestige. */
+/**
+ * Prestige du joueur pour les conditions et les badges : cartes au sanctuaire, éditions gravées (possédées ou
+ * consacrées, ou le meilleur d'un cycle passé : celles recyclées à une renaissance restent acquises) et photos des
+ * cycles passés.
+ */
 async function prestigeCountsOf(userId: string) {
-  const [consecrated, consecratedEngraved, engraved] = await Promise.all([
+  const [consecrated, consecratedEngraved, engraved, cycles] = await Promise.all([
     prisma.consecratedCard.count({ where: { userId } }),
     prisma.consecratedCard.count({ where: { userId, printing: { not: null } } }),
     prisma.userCard.count({ where: { ownerId: userId, printing: { not: null } } }),
+    prisma.prestigeCycle.findMany({ where: { userId }, select: { stats: true } }),
   ]);
-  return { consecrated, consecratedEngraved, engraved };
+  const snapshots = cycles.map((c) => c.stats);
+  const printings = snapshots.reduce<number>((best, raw) => Math.max(best, parsePeak(raw)?.printingsOwned ?? 0), engraved + consecratedEngraved);
+  return { consecrated, printings, snapshots };
 }
 
 /** Titres, cadres et couleurs actifs, avec la progression du joueur vers chacun. */
@@ -175,7 +183,7 @@ export async function getEarnedBadges(user: { id: string; createdAt: Date; disco
     discordLinked: user.discordLinkedAt !== null,
     prestige: prestige?.prestige ?? 0,
     consecrated: counts.consecrated,
-    engraved: counts.engraved,
+    engraved: counts.printings,
   });
 }
 
