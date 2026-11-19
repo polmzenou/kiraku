@@ -3968,7 +3968,47 @@
         "onlyFriend": "Seul ami de {names}",
         "flowGifts": "{count, plural, one {# cadeau} other {# cadeaux}}",
         "flowSales": "{count, plural, one {# vente} other {# ventes}}",
-        "flowFlips": "{count, plural, one {# pile ou face perdu} other {# pile ou face perdus}}"
+        "flowFlips": "{count, plural, one {# pile ou face perdu} other {# pile ou face perdus}}",
+        "seeExchanges": "Voir le détail des échanges"
+      },
+      "exchanges": {
+        "back": "← Multi-comptes",
+        "titleBetween": "Échanges entre",
+        "intro": "Tous les transferts entre ces deux comptes, comptés comme la détection : cadeaux, ventes conclues (enchères et avis de recherche), pile ou face lancés, échanges et annonces acceptés.",
+        "total": "Total",
+        "directed": "{from} → {to}",
+        "swaps": "Échanges (deux sens)",
+        "salesZeni": "{buyer} a payé {zeni, number} Zeni à {seller}",
+        "truncated": "Liste partielle : 500 lignes au plus par type de transfert.",
+        "empty": "Aucun transfert entre ces deux comptes.",
+        "tableCaption": "Transferts entre les deux comptes",
+        "columns": {
+          "at": "Date",
+          "kind": "Type",
+          "direction": "Sens",
+          "detail": "Détail"
+        },
+        "kinds": {
+          "gift": "Cadeau",
+          "auction": "Enchère",
+          "buyOrder": "Avis de recherche",
+          "flip": "Pile ou face",
+          "trade": "Échange",
+          "listing": "Annonce d'échange"
+        },
+        "directionOne": "{from} → {to}",
+        "directionSwap": "{from} ⇄ {to}",
+        "card": "{name} ({rarity})",
+        "unknownCard": "Carte inconnue",
+        "forZeni": "pour {zeni, number} Zeni",
+        "flipAgainst": "perdue contre",
+        "gives": "{name} donne",
+        "gift": {
+          "BOOSTER": "Booster ({zeni, number} Zeni)",
+          "SEALED": "Sachet scellé",
+          "INCENSE": "Encens",
+          "CARD": "Carte"
+        }
       }
     }
   },

@@ -3968,7 +3968,47 @@
         "onlyFriend": "Only friend of {names}",
         "flowGifts": "{count, plural, one {# gift} other {# gifts}}",
         "flowSales": "{count, plural, one {# sale} other {# sales}}",
-        "flowFlips": "{count, plural, one {# coin flip lost} other {# coin flips lost}}"
+        "flowFlips": "{count, plural, one {# coin flip lost} other {# coin flips lost}}",
+        "seeExchanges": "See exchange details"
+      },
+      "exchanges": {
+        "back": "← Multi-accounts",
+        "titleBetween": "Exchanges between",
+        "intro": "Every transfer between these two accounts, counted the way detection counts them: gifts, completed sales (auctions and buy orders), coin flips played, accepted trades and trade listings.",
+        "total": "Total",
+        "directed": "{from} → {to}",
+        "swaps": "Trades (both ways)",
+        "salesZeni": "{buyer} paid {zeni, number} Zeni to {seller}",
+        "truncated": "Partial list: at most 500 rows per transfer type.",
+        "empty": "No transfer between these two accounts.",
+        "tableCaption": "Transfers between the two accounts",
+        "columns": {
+          "at": "Date",
+          "kind": "Type",
+          "direction": "Direction",
+          "detail": "Details"
+        },
+        "kinds": {
+          "gift": "Gift",
+          "auction": "Auction",
+          "buyOrder": "Buy order",
+          "flip": "Coin flip",
+          "trade": "Trade",
+          "listing": "Trade listing"
+        },
+        "directionOne": "{from} → {to}",
+        "directionSwap": "{from} ⇄ {to}",
+        "card": "{name} ({rarity})",
+        "unknownCard": "Unknown card",
+        "forZeni": "for {zeni, number} Zeni",
+        "flipAgainst": "lost against",
+        "gives": "{name} gives",
+        "gift": {
+          "BOOSTER": "Booster ({zeni, number} Zeni)",
+          "SEALED": "Sealed pack",
+          "INCENSE": "Incense",
+          "CARD": "Card"
+        }
       }
     }
   },

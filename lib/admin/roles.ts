@@ -13,6 +13,7 @@ export const DEV_ADMIN_PAGES = [
   "/admin/journal",
   "/admin/utilisateurs",
   "/admin/multi-comptes",
+  "/admin/multi-comptes/echanges",
   "/admin/fonctionnalites",
   "/admin/economie",
   "/admin/combat",
