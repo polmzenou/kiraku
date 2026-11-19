@@ -56,14 +56,25 @@ export function TopCollectors({ collectors, withHeader = true }: { collectors: C
   );
 }
 
-/** Ligne d'un collectionneur sous le podium (/classement, page Social) : joueur, prestige, cartes, Mythiques et place. */
+/**
+ * Ligne d'un collectionneur sous le podium (/classement, page Social) : joueur, prestige, cartes, Mythiques et place.
+ * Le prestige passe devant les cartes dans le tri : il est écrit en or, en tête du détail.
+ */
 export function CollectorRow({ collector }: { collector: Collector }) {
   const t = useTranslations("home.collectors");
-  const prestige = collector.decor.prestige > 0 ? `${t("prestige", { roman: toRoman(collector.decor.prestige) })} · ` : "";
+  const counts = `${t("cards", { count: collector.uniqueCards })} · ${t("mythics", { count: collector.mythics })}`;
   return (
     <PlayerRow
       player={collector}
-      detail={`${prestige}${t("cards", { count: collector.uniqueCards })} · ${t("mythics", { count: collector.mythics })}`}
+      detail={
+        collector.decor.prestige > 0 ? (
+          <>
+            <b className="font-title font-extrabold text-kin">{t("prestige", { roman: toRoman(collector.decor.prestige) })}</b> · {counts}
+          </>
+        ) : (
+          counts
+        )
+      }
     >
       <span className="w-10 text-right font-title text-lg font-extrabold text-text-muted tabular-nums">
         <span className="sr-only">{t("rank", { rank: collector.rank })}</span>
