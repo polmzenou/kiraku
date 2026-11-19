@@ -1,5 +1,5 @@
 import "server-only";
-import { displayNameFor, profileUsername } from "@/lib/collection/display-name";
+import { profileUsername } from "@/lib/collection/display-name";
 import { engravedMessage, rebirthMessage } from "@/lib/discord/prestige-message";
 import { readHeirs } from "@/lib/prestige/journey";
 import { sealOf } from "@/lib/prestige/printing";
@@ -7,7 +7,8 @@ import { prisma } from "../db";
 import { appUrl, discordPrestigeConfigured, env } from "../env";
 import { getPrintingSeals } from "../prestige/rules";
 import { getSetting } from "../settings";
-import { publishDiscordPost } from "./posts";
+import { discordPlayerName, discordPlayerSelect } from "./labels";
+import { dropDiscordPost, publishDiscordPost } from "./posts";
 
 // Annonces du prestige dans DISCORD_PRESTIGE_CHANNEL_ID (interrupteur discord.prestigeEnabled) : chaque renaissance et
 // chaque édition gravée tirée. Mises en file puis publiées par le cron de la minute, jamais dans la transaction de jeu.
@@ -16,8 +17,6 @@ import { publishDiscordPost } from "./posts";
 const HOUR = 3_600_000;
 // Au-delà, une annonce manquée (bot coupé, réglage allumé tard) n'est plus publiée
 const GRACE_MS = 6 * HOUR;
-const LABELS = { hidden: "Un joueur", deleted: "Compte supprimé" };
-const playerSelect = { id: true, username: true, profileVisibility: true, bannedAt: true, anonymizedAt: true } as const;
 
 export async function discordPrestigeChannel(): Promise<string | undefined> {
   return discordPrestigeConfigured && (await getSetting("discord.prestigeEnabled")) ? env.DISCORD_PRESTIGE_CHANNEL_ID : undefined;
@@ -25,17 +24,17 @@ export async function discordPrestigeChannel(): Promise<string | undefined> {
 
 /** Pseudo affichable et lien de profil : un profil privé ou réservé aux amis est annoncé « Un joueur ». */
 function shown(player: { id: string; username: string; profileVisibility: "PUBLIC" | "FRIENDS" | "PRIVATE"; bannedAt: Date | null; anonymizedAt: Date | null }) {
-  const name = displayNameFor(player, null, { friends: false, blocked: false }, LABELS);
+  const name = discordPlayerName(player);
   return { name, username: profileUsername({ name, revealed: false }, player.username) };
 }
 
 async function publishRebirth(key: string, cycleId: string): Promise<boolean> {
   const cycle = await prisma.prestigeCycle.findUnique({
     where: { id: cycleId },
-    select: { number: true, globalRank: true, heirs: true, user: { select: playerSelect } },
+    select: { number: true, globalRank: true, heirs: true, user: { select: discordPlayerSelect } },
   });
   if (!cycle) {
-    await prisma.discordPost.updateMany({ where: { key, messageId: null }, data: { nextAttemptAt: null } });
+    await dropDiscordPost(key);
     return false;
   }
   const payload = rebirthMessage({ ...shown(cycle.user), prestige: cycle.number, globalRank: cycle.globalRank, heirs: readHeirs(cycle.heirs).length }, appUrl());
@@ -49,12 +48,12 @@ async function publishEngraved(key: string, pullId: string): Promise<boolean> {
       printing: true,
       serial: true,
       printingSize: true,
-      user: { select: playerSelect },
+      user: { select: discordPlayerSelect },
       card: { select: { name: true, imageUrl: true, spoiler: true, publicId: true, rarityDefinition: { select: { nameFr: true } } } },
     },
   });
   if (!pull || pull.printing === null || pull.serial === null || pull.printingSize === null) {
-    await prisma.discordPost.updateMany({ where: { key, messageId: null }, data: { nextAttemptAt: null } });
+    await dropDiscordPost(key);
     return false;
   }
   const seals = await getPrintingSeals();

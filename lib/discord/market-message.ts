@@ -1,5 +1,5 @@
 import { buyoutAvailable } from "@/lib/market/rules";
-import { discordText, type DiscordMessageBody } from "./community";
+import { discordImage, discordText, type DiscordMessageBody } from "./community";
 
 export type DiscordAuction = {
   id: string;
@@ -15,13 +15,6 @@ export type DiscordAuction = {
   /** Exemplaire spécial mis en vente (« Gravée 初摺 n° 17 / 25 · héritage 3 »), absent pour un ordinaire. */
   copy?: string | null;
 };
-
-function discordImage(value: string, origin: string): { url: string } | undefined {
-  try {
-    const url = new URL(value, origin);
-    if (["https:", "http:"].includes(url.protocol) && !url.username && !url.password) return { url: url.href };
-  } catch { /* Une image invalide n'empêche pas l'annonce. */ }
-}
 
 export function auctionMessage(auction: DiscordAuction, origin: string, now = new Date()): DiscordMessageBody {
   const url = new URL(`/marche/${encodeURIComponent(auction.id)}`, origin).href;

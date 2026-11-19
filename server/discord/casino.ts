@@ -1,19 +1,17 @@
 import "server-only";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { displayNameFor } from "@/lib/collection/display-name";
 import { casinoPhase } from "@/lib/casino/phase";
 import { isBigFlip } from "@/lib/casino/tiers";
 import { bigFlipMessage, casinoOpeningMessage, casinoTeaserMessage } from "@/lib/discord/casino-message";
-import { copyLabel } from "@/lib/discord/copy-label";
 import { getRarityDefinitions } from "../catalog/rarities";
 import { getCasinoRules } from "../casino/queries";
 import { prisma } from "../db";
-import { copyMarksOf } from "../prestige/copy-marks";
 import { appUrl, discordCasinoConfigured, env } from "../env";
 import { readEventGauge } from "../home/event-gauge";
 import { getSetting } from "../settings";
-import { publishDiscordPost, type PublishResult } from "./posts";
+import { copyLabelOf, discordPlayerName, discordPlayerSelect } from "./labels";
+import { dropDiscordPost, publishDiscordPost, type PublishResult } from "./posts";
 
 // Annonces du casino dans DISCORD_CASINO_CHANNEL_ID : teaser posté depuis l'admin, ouverture postée une seule fois
 // par le cron quand casino.opensAt passe, relais des gros lancers. Aucun appel Discord dans une transaction de jeu.
@@ -70,14 +68,14 @@ async function syncFlip(key: string, flipId: string): Promise<boolean> {
       creatorRarity: true,
       creatorUserCardId: true,
       opponentUserCardId: true,
-      creator: { select: { id: true, username: true, profileVisibility: true, bannedAt: true, anonymizedAt: true } },
-      opponent: { select: { id: true, username: true, profileVisibility: true, bannedAt: true, anonymizedAt: true } },
+      creator: { select: discordPlayerSelect },
+      opponent: { select: discordPlayerSelect },
       creatorCard: { select: { name: true, imageUrl: true, spoiler: true, rarityDefinition: { select: { nameFr: true, seal: true } } } },
       opponentCard: { select: { name: true, imageUrl: true, spoiler: true, rarityDefinition: { select: { nameFr: true, seal: true } } } },
     },
   });
   if (!flip || flip.status !== "DONE" || !flip.result || !flip.opponent || !flip.opponentCard) {
-    await prisma.discordPost.updateMany({ where: { key, messageId: null }, data: { nextAttemptAt: null } });
+    await dropDiscordPost(key);
     return false;
   }
   const creatorWon = flip.winnerId === flip.creatorId;
@@ -85,15 +83,14 @@ async function syncFlip(key: string, flipId: string): Promise<boolean> {
   // Le gagnant emporte la fuda de l'autre
   const prize = creatorWon ? flip.opponentCard : flip.creatorCard;
   const prizeCopy = creatorWon ? flip.opponentUserCardId : flip.creatorUserCardId;
-  const marks = await copyMarksOf([prizeCopy]);
   const payload = bigFlipMessage(
     {
       id: flip.id,
-      winnerName: displayNameFor(winner, null, { friends: false, blocked: false }, { hidden: "Un joueur", deleted: "Compte supprimé" }),
+      winnerName: discordPlayerName(winner),
       seal: prize.rarityDefinition.seal,
       result: flip.result,
       card: { name: prize.name, imageUrl: prize.imageUrl, spoiler: prize.spoiler, rarityName: prize.rarityDefinition.nameFr },
-      copy: prizeCopy ? copyLabel(marks.get(prizeCopy)) : null,
+      copy: await copyLabelOf(prizeCopy),
     },
     appUrl(),
   );

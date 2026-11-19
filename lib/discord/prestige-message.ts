@@ -1,24 +1,8 @@
 import { toRoman } from "@/lib/prestige/roman";
-import { discordText, type DiscordMessageBody } from "./community";
+import { absolute, discordImage, discordText, KIN, SHU, type DiscordMessageBody } from "./community";
 
 // Annonces du prestige dans le salon Discord : une renaissance, une édition gravée tirée. Pur : le serveur fournit
 // l'origine du site, le pseudo affichable (« Un joueur » pour un profil privé) et les données déjà relues en base.
-
-const KIN = 0xd9b556;
-const SHU = 0xc8372d;
-
-function absolute(path: string, origin: string): string {
-  return new URL(path, origin).href;
-}
-
-function discordImage(value: string, origin: string): { url: string } | undefined {
-  try {
-    const url = new URL(value, origin);
-    if (["https:", "http:"].includes(url.protocol) && !url.username && !url.password) return { url: url.href };
-  } catch {
-    // Une image invalide n'empêche pas l'annonce
-  }
-}
 
 const ordinal = (rank: number) => (rank === 1 ? "1re" : `${rank}ᵉ`);
 

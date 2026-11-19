@@ -1,13 +1,11 @@
 import "server-only";
-import { displayNameFor } from "@/lib/collection/display-name";
-import { copyLabel } from "@/lib/discord/copy-label";
 import { auctionMessage, tradeListingMessage } from "@/lib/discord/market-message";
 import { promisedCopyLeft } from "../collection/transfer";
 import { prisma } from "../db";
 import { appUrl, discordMarketConfigured, env } from "../env";
 import { getSetting } from "../settings";
-import { copyMarksOf } from "../prestige/copy-marks";
-import { publishDiscordPost } from "./posts";
+import { copyLabelOf, discordPlayerName, discordPlayerSelect } from "./labels";
+import { dropDiscordPost, publishDiscordPost } from "./posts";
 
 export async function discordMarketChannel(): Promise<string | undefined> {
   return discordMarketConfigured && await getSetting("discord.marketEnabled") ? env.DISCORD_MARKET_CHANNEL_ID : undefined;
@@ -22,21 +20,20 @@ export async function syncDiscordAuction(auctionId: string): Promise<boolean> {
     where: { id: auctionId },
     select: {
       id: true, status: true, startPrice: true, buyoutPrice: true, currentBid: true, finalPrice: true, endsAt: true, userCardId: true,
-      seller: { select: { id: true, username: true, profileVisibility: true, bannedAt: true, anonymizedAt: true } },
+      seller: { select: discordPlayerSelect },
       card: { select: { name: true, imageUrl: true, spoiler: true, rarityDefinition: { select: { nameFr: true } }, series: { select: { titleRomaji: true } } } },
     },
   });
   if (!auction) return false;
   // Une offre déjà terminée avant son premier envoi n'encombre pas le salon.
   if (!post.messageId && post.attempts === 0 && (auction.status !== "ACTIVE" || auction.endsAt <= new Date())) {
-    await prisma.discordPost.updateMany({ where: { key: post.key, messageId: null }, data: { nextAttemptAt: null } });
+    await dropDiscordPost(post.key);
     return false;
   }
-  const marks = await copyMarksOf([auction.userCardId]);
   const payload = auctionMessage({
     ...auction,
-    copy: auction.userCardId ? copyLabel(marks.get(auction.userCardId)) : null,
-    sellerName: displayNameFor(auction.seller, null, { friends: false, blocked: false }, { hidden: "Un joueur", deleted: "Compte supprimé" }),
+    copy: await copyLabelOf(auction.userCardId),
+    sellerName: discordPlayerName(auction.seller),
     card: { ...auction.card, rarityName: auction.card.rarityDefinition.nameFr, series: auction.card.series.titleRomaji },
   }, appUrl());
   const next = auction.status === "ACTIVE" ? new Date(Date.now() + 60_000) : null;
@@ -52,7 +49,7 @@ export async function syncDiscordListing(listingId: string): Promise<boolean> {
     where: { id: listingId },
     select: {
       id: true, ownerId: true, cardId: true, userCardId: true, status: true, expiresAt: true,
-      owner: { select: { id: true, username: true, profileVisibility: true, bannedAt: true, anonymizedAt: true } },
+      owner: { select: discordPlayerSelect },
       card: { select: { name: true, imageUrl: true, spoiler: true, rarityDefinition: { select: { nameFr: true } } } },
       wants: { orderBy: { cardId: "asc" }, select: { card: { select: { name: true, rarityDefinition: { select: { nameFr: true } } } } } },
     },
@@ -61,17 +58,16 @@ export async function syncDiscordListing(listingId: string): Promise<boolean> {
   const now = new Date();
   const open = listing.status === "OPEN" && listing.expiresAt > now;
   if (!post.messageId && post.attempts === 0 && !open) {
-    await prisma.discordPost.updateMany({ where: { key: post.key, messageId: null }, data: { nextAttemptAt: null } });
+    await dropDiscordPost(post.key);
     return false;
   }
   // Même règle que l'acceptation : l'exemplaire épinglé, sinon un ordinaire
   const available = open && await promisedCopyLeft(prisma, listing);
-  const marks = await copyMarksOf([listing.userCardId]);
   const payload = tradeListingMessage({
     ...listing,
     available,
-    copy: listing.userCardId ? copyLabel(marks.get(listing.userCardId)) : null,
-    ownerName: displayNameFor(listing.owner, null, { friends: false, blocked: false }, { hidden: "Un joueur", deleted: "Compte supprimé" }),
+    copy: await copyLabelOf(listing.userCardId),
+    ownerName: discordPlayerName(listing.owner),
     card: { ...listing.card, rarityName: listing.card.rarityDefinition.nameFr },
     wants: listing.wants.map(({ card }) => ({ name: card.name, rarityName: card.rarityDefinition.nameFr })),
   }, appUrl(), now);

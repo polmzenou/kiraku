@@ -89,3 +89,8 @@ export async function publishDiscordPost(key: string, payload: DiscordMessageBod
     return { ok: false, error: "DISCORD" };
   }
 }
+
+/** Annonce abandonnée avant son premier envoi (objet disparu ou déjà terminé) : elle sort de la file. */
+export async function dropDiscordPost(key: string): Promise<void> {
+  await prisma.discordPost.updateMany({ where: { key, messageId: null }, data: { nextAttemptAt: null } });
+}

@@ -47,8 +47,10 @@ export type PrintingStats = {
 
 /** Tirages gravés d'une carte : taille, numéros sortis, exemplaires encore en jeu (les autres ont été recyclés). */
 export async function printingStats(cardId: string): Promise<PrintingStats[]> {
-  const [printings, alive, seals] = await Promise.all([
-    prisma.cardPrinting.findMany({ where: { cardId }, orderBy: { printing: "asc" }, select: { printing: true, size: true, issued: true, taken: true } }),
+  const printings = await prisma.cardPrinting.findMany({ where: { cardId }, orderBy: { printing: "asc" }, select: { printing: true, size: true, issued: true, taken: true } });
+  // Carte jamais gravée (presque toutes, sur le wiki) : rien d'autre à lire
+  if (printings.length === 0) return [];
+  const [alive, seals] = await Promise.all([
     prisma.userCard.groupBy({ by: ["printing"], where: { cardId, printing: { not: null } }, _count: { _all: true } }),
     getPrintingSeals(),
   ]);

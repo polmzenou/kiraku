@@ -50,3 +50,22 @@ export function rolesMessage(roles: readonly SelfRole[]): DiscordMessageBody {
 export function discordText(value: string, max = 256): string {
   return value.slice(0, max).replace(/[\r\n\t]/g, " ").replace(/([\\`*_{}\[\]()<>|~])/g, "\\$1");
 }
+
+/** Couleurs des encadrés : or (kin) et vermillon (shu) de la DA. */
+export const KIN = 0xd9b556;
+export const SHU = 0xc8372d;
+
+/** Lien absolu vers une page du site. */
+export function absolute(path: string, origin: string): string {
+  return new URL(path, origin).href;
+}
+
+/** Image d'un encadré : http(s) sans identifiants seulement ; une image invalide n'empêche pas l'annonce. */
+export function discordImage(value: string, origin: string): { url: string } | undefined {
+  try {
+    const url = new URL(value, origin);
+    if (["https:", "http:"].includes(url.protocol) && !url.username && !url.password) return { url: url.href };
+  } catch {
+    // Une image invalide n'empêche pas l'annonce
+  }
+}
