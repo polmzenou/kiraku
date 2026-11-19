@@ -1,16 +1,17 @@
 import { getFormatter, getTranslations } from "next-intl/server";
+import { ReadOnly } from "@/components/admin/ReadOnly";
 import { SettingLogList } from "@/components/admin/SettingLogList";
 import { ShowcaseEventEntries } from "@/components/admin/ShowcaseEventEntries";
 import { ShowcaseEventSettingsForm } from "@/components/admin/ShowcaseEventSettingsForm";
 import { Link } from "@/i18n/navigation";
 import { SHOWCASE_EVENT_SETTING_KEYS, type ShowcaseEventSettings } from "@/lib/settings/showcase-event-form";
-import { recentSettingLogs, requireAdmin } from "@/server/admin";
+import { recentSettingLogs, requireAdminView } from "@/server/admin";
 import { getAdminEntries, getShowcaseEventState } from "@/server/event/showcase-queries";
 import { getSetting } from "@/server/settings";
 
 /** Event vitrines : visibilité, édition, dates, inscriptions (votes en direct) et retrait de modération. */
 export default async function AdminShowcaseEventPage() {
-  await requireAdmin();
+  const { readOnly } = await requireAdminView();
   const [t, format, values, logs, state] = await Promise.all([
     getTranslations("admin.showcaseEvent"),
     getFormatter(),
@@ -34,11 +35,15 @@ export default async function AdminShowcaseEventPage() {
           {t(state.enabled ? "open" : "preview")}
         </Link>
       </div>
-      <ShowcaseEventSettingsForm initial={settings} />
+      <ReadOnly when={readOnly}>
+        <ShowcaseEventSettingsForm initial={settings} />
+      </ReadOnly>
       <section className="flex flex-col gap-3">
         <h3 className="font-title text-xl font-bold">{t("entriesTitle", { edition: state.edition })}</h3>
         <p className="max-w-prose text-sm text-text-muted">{t("entriesHint")}</p>
-        <ShowcaseEventEntries rows={rows} />
+        <ReadOnly when={readOnly}>
+          <ShowcaseEventEntries rows={rows} />
+        </ReadOnly>
       </section>
       <SettingLogList logs={logs} />
     </div>

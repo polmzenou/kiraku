@@ -4,19 +4,21 @@ import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { AdminUserPrestige } from "@/components/admin/AdminUserPrestige";
 import { DataRequestActions } from "@/components/admin/DataRequestActions";
 import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
+import { ReadOnly } from "@/components/admin/ReadOnly";
 import { UserEditor } from "@/components/admin/UserEditor";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
 import { parseUserListParams, USER_ADMIN_ACTIONS } from "@/lib/admin/users";
 import { computeStock, stockRulesFor } from "@/lib/boosters/stock";
-import { requireAdmin } from "@/server/admin";
+import { requireAdminView } from "@/server/admin";
 import { adminCardById, getAdminUser, getAdminUserCards, getAdminUserFriends } from "@/server/admin/users";
 import { readBannerPity } from "@/server/boosters/open-core";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { inputClass } from "@/components/ui/Field";
 
 export default async function AdminUserPage({ params, searchParams }: PageProps<"/[locale]/admin/utilisateurs/[userId]">) {
-  const admin = await requireAdmin();
+  // DEV : fiche en lecture seule, sans e-mail ni actions RGPD
+  const { user: admin, readOnly } = await requireAdminView();
   const [{ userId }, raw, locale, t, reason, format, rarity] = await Promise.all([params, searchParams, getLocale(), getTranslations("admin.users"), getTranslations("economy.ledger.reasons"), getFormatter(), getTranslations("rarity")]);
   if (!/^[A-Za-z0-9_-]{1,40}$/.test(userId)) notFound();
   const cardParams = parseUserListParams({ q: raw.cardQuery, page: raw.cardPage });
@@ -50,7 +52,7 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
         <div className="min-w-0">
           <h2 className="break-all font-heading text-2xl font-bold">{user.username}</h2>
           <p className="mt-1 break-all text-xs text-text-muted">{user.id}</p>
-          <p className="mt-2 text-sm">{user.email ?? t("noEmail")}{user.emailVerified ? ` · ${t("verified")}` : ""}</p>
+          {!readOnly && <p className="mt-2 text-sm">{user.email ?? t("noEmail")}{user.emailVerified ? ` · ${t("verified")}` : ""}</p>}
           <p className="mt-1 text-sm text-text-muted">{t(user.bannedAt ? "banned" : user.role === "ADMIN" ? "adminRole" : user.role === "DEV" ? "devRole" : user.isGuest ? "guest" : "registered")}{user.ambassadorSince ? ` · ${t("ambassadorRole")}` : ""} · {t("joined", { date: format.dateTime(user.createdAt, { dateStyle: "medium" }) })}</p>
           {user.discordLinkedAt && <p className="mt-1 text-xs text-text-muted">{t("discordLinked")}</p>}
         </div>
@@ -59,9 +61,11 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
       <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {metrics.map((m) => <div key={m.label} className="lacquer rounded-card p-4"><dt className="text-xs text-text-muted">{t(m.label)}</dt><dd className="mt-1 text-xl font-bold tabular-nums">{m.value}</dd></div>)}
       </dl>
+      <ReadOnly when={readOnly}>
       <UserEditor userId={userId} account={{ username: user.username, role: user.role, banned: !!user.bannedAt, profileVisibility: user.profileVisibility, showCollection: user.showCollection }} ambassadorSince={user.ambassadorSince} leaderboardHiddenAt={user.leaderboardHiddenAt} leaderboardMalus={{ cards: user.leaderboardMalus, mythics: user.leaderboardMythicMalus }} self={admin.id === userId}
         coins={user.coins} incense={incense} stats={{ boosterStock: stock.stock, rankPoints: user.rankPoints, pityCount: user.pityCount, standardCount: user.standardCount }}
         boosters={boosterTypes.map((b) => ({ ...b, pity: pity[b.id] ?? 0 }))} discoveries={discoveries} catalogTotal={catalogTotal} ownedCatalogCards={ownedCatalogCards} selectedCard={selectedCard} sessions={user._count.sessions} />
+      </ReadOnly>
 
       <AdminUserPrestige userId={userId} />
 
@@ -76,10 +80,10 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
           {" · "}
           {user.termsVersion ? t("termsAccepted", { version: user.termsVersion }) : t("termsNotAccepted")}
         </p>
-        {!user.anonymizedAt && admin.id !== userId && (
+        {!readOnly && !user.anonymizedAt && admin.id !== userId && (
           <DataRequestActions userId={userId} username={user.username} showCancel={user.deletionRequestedAt !== null} />
         )}
-        {admin.id !== userId && user.role !== "ADMIN" && (
+        {!readOnly && admin.id !== userId && user.role !== "ADMIN" && (
           <div className="flex flex-col gap-2 border-t border-border pt-3">
             <p className="text-sm text-text-muted">{t("deletion.hint")}</p>
             <div>

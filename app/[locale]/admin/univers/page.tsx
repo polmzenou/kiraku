@@ -1,10 +1,11 @@
 import { getTranslations } from "next-intl/server";
+import { ReadOnly } from "@/components/admin/ReadOnly";
 import { UniverseManager, type UniverseRow } from "@/components/admin/UniverseManager";
 import { inputClass } from "@/components/admin/fields";
 import { buttonClasses } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
 import type { Prisma } from "@/generated/prisma/client";
-import { requireAdmin } from "@/server/admin";
+import { requireAdminView } from "@/server/admin";
 import { prisma } from "@/server/db";
 
 const PER_PAGE = 40;
@@ -12,7 +13,7 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 /** Univers de séries : regroupés par `npm run catalog:universes`, corrigés ici. Les plus gros d'abord. */
 export default async function AdminUniversesPage({ searchParams }: PageProps<"/[locale]/admin/univers">) {
-  await requireAdmin();
+  const { readOnly } = await requireAdminView();
   const sp = await searchParams;
   const q = (one(sp.q) ?? "").trim().slice(0, 100);
   const page = Math.max(1, Math.floor(Number(one(sp.page))) || 1);
@@ -63,7 +64,9 @@ export default async function AdminUniversesPage({ searchParams }: PageProps<"/[
       </form>
 
       <p className="text-sm tabular-nums text-text-muted">{t("total", { count: total })}</p>
-      <UniverseManager universes={universes} targets={targets} />
+      <ReadOnly when={readOnly}>
+        <UniverseManager universes={universes} targets={targets} />
+      </ReadOnly>
 
       {pages > 1 && (
         <nav aria-label={t("pagination")} className="flex items-center justify-between gap-3">

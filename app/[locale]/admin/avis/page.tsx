@@ -11,7 +11,7 @@ import {
   REVIEW_MAX_PINNED,
   type AdminReviewFilter,
 } from "@/lib/admin/reviews";
-import { requireAdmin } from "@/server/admin";
+import { requireAdminView } from "@/server/admin";
 import { listReviewsForAdmin, recentReviewModeration } from "@/server/social/reviews-admin";
 
 function one(v: string | string[] | undefined) {
@@ -31,7 +31,7 @@ function href(filter: AdminReviewFilter, page: number) {
 
 /** Avis : liste paginée (masqués compris), filtres, masquer, épingler en tête de l'accueil, répondre. */
 export default async function AdminReviewsPage({ searchParams }: PageProps<"/[locale]/admin/avis">) {
-  await requireAdmin();
+  const { readOnly } = await requireAdminView();
   const sp = await searchParams;
   const filter = parseAdminReviewFilter(one(sp.filtre));
   const page = parseAdminReviewPage(one(sp.page));
@@ -104,7 +104,7 @@ export default async function AdminReviewsPage({ searchParams }: PageProps<"/[lo
                   {r.user.bannedAt && <span className="font-bold text-shu">{t("bannedBadge")}</span>}
                 </p>
               </div>
-              <AdminReviewActions reviewId={r.id} hidden={r.hidden} pinned={r.pinned} reply={r.reply} />
+              {!readOnly && <AdminReviewActions reviewId={r.id} hidden={r.hidden} pinned={r.pinned} reply={r.reply} />}
             </li>
           ))}
         </ul>

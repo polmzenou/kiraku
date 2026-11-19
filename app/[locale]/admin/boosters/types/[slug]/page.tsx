@@ -4,19 +4,20 @@ import { useTranslations } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { BoosterTypeForm } from "@/components/admin/BoosterTypeForm";
+import { ReadOnly } from "@/components/admin/ReadOnly";
 import { usePercent } from "@/components/boosters/format";
 import { Link } from "@/i18n/navigation";
 import { formFromType } from "@/lib/boosters/admin-form";
 import { atLeastOdds } from "@/lib/boosters/odds";
 import { localize, SLUG_PATTERN, typeDrawRules } from "@/lib/boosters/types";
 import { type Rarity } from "@/lib/catalog/rarity";
-import { requireAdmin } from "@/server/admin";
+import { requireAdminView } from "@/server/admin";
 import { adminBoosterType, featuredCandidates, focusSeriesCandidates } from "@/server/admin-boosters";
 import { getBoosterOffers } from "@/server/boosters/pools";
 import { getBoosterRules } from "@/server/boosters/rules";
 
 export default async function AdminBoosterTypePage({ params }: PageProps<"/[locale]/admin/boosters/types/[slug]">) {
-  await requireAdmin();
+  const { readOnly } = await requireAdminView();
   const { slug } = await params;
   if (!SLUG_PATTERN.test(slug)) notFound();
   const type = await adminBoosterType(slug);
@@ -43,7 +44,9 @@ export default async function AdminBoosterTypePage({ params }: PageProps<"/[loca
 
       {offer && <OddsTable floors={[...draw.slotFloors]} rates={draw.rates} counts={offer.counts} size={offer.size} />}
 
-      <BoosterTypeForm initial={formFromType(type)} featured={featured} focusSeries={focusSeries} globalCards={rules.draw.slotFloors.length} />
+      <ReadOnly when={readOnly}>
+        <BoosterTypeForm initial={formFromType(type)} featured={featured} focusSeries={focusSeries} globalCards={rules.draw.slotFloors.length} />
+      </ReadOnly>
     </div>
   );
 }

@@ -12,7 +12,7 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
  * Toute la section /admin : équipe vérifiée côté serveur (404 sinon), chaque page et action revérifie son rôle
- * (le DEV n'ouvre que le catalogue).
+ * (le DEV n'ouvre que DEV_ADMIN_PAGES : brouillons du catalogue, le reste en lecture seule).
  * Pleine largeur, sans le pied de page public : barre latérale en desktop, puces en mobile.
  */
 export default async function AdminLayout({ children }: LayoutProps<"/[locale]/admin">) {
@@ -35,10 +35,14 @@ export default async function AdminLayout({ children }: LayoutProps<"/[locale]/a
             <SectionTitle level={1} kanji="管理" title={t("title")} />
           </div>
           {/* Quotas des services : ne retarde jamais la page (rendu en différé, rien en cas d'échec) */}
-          {scope === "full" && (
+          {scope === "full" ? (
             <Suspense fallback={null}>
               <QuotaBanner />
             </Suspense>
+          ) : (
+            <p role="note" className="rounded-card border border-ai/40 bg-ai/10 px-4 py-3 text-sm">
+              {t("devReadOnly")}
+            </p>
           )}
           {children}
         </main>

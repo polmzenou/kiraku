@@ -2,7 +2,7 @@
 
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
-import { usePathname } from "@/i18n/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { unreadBadge } from "@/lib/chat/message";
 import {
   chatStatusAction,
@@ -210,7 +210,19 @@ export function ChatDock({ pollSeconds, safetySeconds, initialUnread, maxLength,
             )}
             <h2 className="min-w-0 flex-1 truncate font-heading text-lg font-extrabold">
               {chat.with ? (
-                <PlayerName name={chat.with} color={conversations?.find((c) => c.username === chat.with)?.decor.nameColor} className="truncate" />
+                // Profil du correspondant ; sur mobile le chat couvre l'écran, il se ferme pour laisser voir la page
+                <Link
+                  href={`/u/${chat.with}`}
+                  prefetch={false}
+                  aria-label={t("profile", { name: chat.with })}
+                  title={t("profile", { name: chat.with })}
+                  onClick={() => {
+                    if (!window.matchMedia("(min-width: 64rem)").matches) closeChat();
+                  }}
+                  className="inline-flex min-h-11 max-w-full items-center rounded-control hover:underline focus-visible:underline"
+                >
+                  <PlayerName name={chat.with} color={conversations?.find((c) => c.username === chat.with)?.decor.nameColor} className="truncate" />
+                </Link>
               ) : (
                 t("title")
               )}

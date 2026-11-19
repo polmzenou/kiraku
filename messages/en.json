@@ -1145,6 +1145,7 @@
     "anonymous": "Mystery player"
   },
   "admin": {
+    "devReadOnly": "DEV access: you can view settings and data but not change them; only an admin saves changes or turns features on. In the catalog, you prepare drafts for an admin to publish. The test benches (battle, opening) stay usable; nothing there is saved.",
     "title": "Administration",
     "modules": "Modules",
     "navGroups": {
@@ -6440,6 +6441,7 @@
     "open": "{count, plural, =0 {Open chat} one {Open chat, # unread message} other {Open chat, # unread messages}}",
     "close": "Close chat",
     "back": "Back to conversations",
+    "profile": "View {name}'s profile",
     "loading": "Loading…",
     "noFriends": "Add friends to chat with them.",
     "startTalking": "Say hi!",
