@@ -20,8 +20,8 @@ export function ScoreBadge({ score, label }: { score: number; label: string }) {
   return <span className={`inline-flex min-h-7 items-center rounded-pill border px-3 text-sm font-bold tabular-nums ${tone}`}>{label}</span>;
 }
 
-/** Puces des indices d'une paire, avec leur poids. */
-export async function ReasonChips({ reasons, members, masked }: { reasons: readonly Reason[]; members: Map<string, MemberInfo>; masked: boolean }) {
+/** Puces des indices d'une paire, avec leur poids. Les transferts (flux, échanges) mènent au détail de la paire. */
+export async function ReasonChips({ reasons, members, masked, pair }: { reasons: readonly Reason[]; members: Map<string, MemberInfo>; masked: boolean; pair?: { a: string; b: string } }) {
   const t = await getTranslations("admin.multiAccounts.reasons");
   const text = (r: Reason): string => {
     switch (r.kind) {
@@ -57,12 +57,31 @@ export async function ReasonChips({ reasons, members, masked }: { reasons: reado
   };
   return (
     <ul className="flex flex-wrap gap-2">
-      {reasons.map((r) => (
-        <li key={r.kind} className="inline-flex items-center gap-2 rounded-pill border border-border bg-surface-2 px-3 py-1 text-xs">
-          <span>{text(r)}</span>
-          <span className="font-bold tabular-nums text-text-muted">+{reasonWeight(r)}</span>
-        </li>
-      ))}
+      {reasons.map((r) => {
+        const content = (
+          <>
+            <span>{text(r)}</span>
+            <span className="font-bold tabular-nums text-text-muted">+{reasonWeight(r)}</span>
+          </>
+        );
+        const detail = pair && (r.kind === "interactions" || r.kind === "flow");
+        return (
+          <li key={r.kind} className="inline-flex">
+            {detail ? (
+              <Link
+                href={`/admin/multi-comptes/echanges?a=${encodeURIComponent(pair.a)}&b=${encodeURIComponent(pair.b)}`}
+                title={t("seeExchanges")}
+                className="inline-flex min-h-11 items-center gap-2 rounded-pill border border-kin/60 bg-surface-2 px-3 py-1 text-xs underline-offset-2 hover:border-kin hover:underline"
+              >
+                {content}
+                <span aria-hidden="true" className="text-kin">›</span>
+              </Link>
+            ) : (
+              <span className="inline-flex items-center gap-2 rounded-pill border border-border bg-surface-2 px-3 py-1 text-xs">{content}</span>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -128,7 +147,7 @@ export async function PairList({ pairs, members, masked, minScore, focus }: { pa
               <ScoreBadge score={p.score} label={t("score", { score: p.score })} />
               {p.score < minScore && <span className="text-xs text-text-muted">{t("belowThreshold")}</span>}
             </div>
-            <ReasonChips reasons={p.reasons} members={members} masked={masked} />
+            <ReasonChips reasons={p.reasons} members={members} masked={masked} pair={{ a: p.a, b: p.b }} />
           </li>
         );
       })}
