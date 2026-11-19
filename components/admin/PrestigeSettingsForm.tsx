@@ -2,12 +2,13 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { useRarities } from "@/lib/catalog/use-rarities";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { PRESTIGE_SETTING_KEYS, prestigeSettingsSchema, type PrestigeSettings } from "@/lib/settings/prestige-form";
 import { updatePrestigeSettings } from "@/server/actions/admin-settings";
 import { Button } from "../ui/Button";
 import { inputClass } from "../ui/Field";
-import { NumberField, Toggle } from "./fields";
+import { NumberField, OptionalNumberField, Toggle } from "./fields";
 import { SettingsSaveBar } from "./SettingsSaveBar";
 
 type NumberKey =
@@ -47,8 +48,10 @@ const short = <K extends keyof PrestigeSettings>(key: K) => key.slice("prestige.
  * Réglages du prestige : interrupteur, accès par rareté, héritières, délai et garde de taille, héritage et
  * consécration, barème dégressif des Zeni, éditions gravées (chance et taille par rareté, tirage en cours, sceaux).
  */
-export function PrestigeSettingsForm({ initial, rarities }: { initial: PrestigeSettings; rarities: { key: string; name: string }[] }) {
+export function PrestigeSettingsForm({ initial }: { initial: PrestigeSettings }) {
   const t = useTranslations("admin.prestige");
+  const tRarity = useTranslations("rarity");
+  const rarities = useRarities();
   const [draft, setDraft] = useState(initial);
   const valid = prestigeSettingsSchema.safeParse(draft).success;
   const changed = valid ? changedSettingKeys(PRESTIGE_SETTING_KEYS, initial, draft) : [];
@@ -72,31 +75,24 @@ export function PrestigeSettingsForm({ initial, rarities }: { initial: PrestigeS
       <legend className="px-1 font-title text-lg font-bold">{name(key)}</legend>
       <p className="text-xs text-text-muted">{t(`hints.${short(key)}`)}</p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {rarities.map((r) => {
-          const value = draft[key][r.key];
-          return (
-            <label key={r.key} className="flex min-w-0 flex-col gap-1 text-sm">
-              <span className="truncate">{r.name}</span>
-              <input
-                type="number"
-                inputMode="numeric"
-                className={inputClass}
-                min={RECORD_LIMITS[key][0]}
-                max={RECORD_LIMITS[key][1]}
-                value={value ?? ""}
-                placeholder={t("unset")}
-                onChange={(e) =>
-                  setDraft((d) => {
-                    const next = { ...d[key] };
-                    if (e.target.value === "") delete next[r.key];
-                    else next[r.key] = Number(e.target.value);
-                    return { ...d, [key]: next };
-                  })
-                }
-              />
-            </label>
-          );
-        })}
+        {rarities.map((r) => (
+          <OptionalNumberField
+            key={r}
+            label={tRarity(r as "COMMON")}
+            value={draft[key][r] ?? null}
+            min={RECORD_LIMITS[key][0]}
+            max={RECORD_LIMITS[key][1]}
+            placeholder={t("unset")}
+            onChange={(v) =>
+              setDraft((d) => {
+                const next = { ...d[key] };
+                if (v === null) delete next[r];
+                else next[r] = v;
+                return { ...d, [key]: next };
+              })
+            }
+          />
+        ))}
       </div>
     </fieldset>
   );

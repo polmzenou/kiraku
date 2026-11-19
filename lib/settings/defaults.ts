@@ -512,6 +512,28 @@ export const SETTING_SCHEMAS = {
 } as const;
 
 export type SettingKey = keyof typeof SETTING_SCHEMAS;
+
+/**
+ * Réglages dont les clés (ou les valeurs) sont des raretés du registre, revérifiées à l'enregistrement ; "all" :
+ * chaque rareté du registre doit y figurer.
+ */
+export const RARITY_KEYED: Partial<Record<SettingKey, "subset" | "all">> = {
+  "booster.rates": "all",
+  "collection.recycleValues": "all",
+  "battle.keywordsByRarity": "all",
+  "booster.slotFloors": "subset",
+  "booster.goldenFloor": "subset",
+  "gifts.allowedRarities": "subset",
+  "trades.allowedRarities": "subset",
+  "home.pullFeed.minRarity": "subset",
+  "market.maxPriceByRarity": "subset",
+  "booster.duplicateGuardRarities": "subset",
+  "casino.coinflip.allowedRarities": "subset",
+  "discord.casinoMinRarity": "subset",
+  "prestige.requiredPercent": "subset",
+  "prestige.printing.chanceBp": "subset",
+  "prestige.printing.sizes": "subset",
+};
 export type SettingValue<K extends SettingKey> = z.infer<(typeof SETTING_SCHEMAS)[K]>;
 
 export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {

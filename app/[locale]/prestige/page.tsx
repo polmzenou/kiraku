@@ -25,9 +25,10 @@ export async function generateMetadata(): Promise<Metadata> {
  * (404), sauf pour l'équipe qui en voit l'aperçu.
  */
 export default async function PrestigePage() {
-  const [user, t, locale, format, ctx, definitions] = await Promise.all([
+  const [user, t, tRarity, locale, format, ctx, definitions] = await Promise.all([
     getCurrentUser(),
     getTranslations("prestige"),
+    getTranslations("rarity"),
     getLocale(),
     getFormatter(),
     rebirthCtx(),
@@ -47,7 +48,7 @@ export default async function PrestigePage() {
   const rarities: RarityInfo[] = definitions.map((d) => ({
     key: d.key,
     seal: d.seal,
-    name: locale === "en" ? d.nameEn : d.nameFr,
+    name: tRarity(d.key as "COMMON"),
     color: rarityColor(d.key, d.appearance),
   }));
 

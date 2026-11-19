@@ -64,6 +64,7 @@ export function OptionalNumberField({
   min,
   max,
   hint,
+  placeholder,
 }: {
   label: string;
   value: number | null;
@@ -71,6 +72,8 @@ export function OptionalNumberField({
   min: number;
   max: number;
   hint?: string;
+  /** Texte d'un champ vide (« non réglé »). */
+  placeholder?: string;
 }) {
   const invalid = value !== null && (!Number.isInteger(value) || value < min || value > max);
   return (
@@ -84,6 +87,7 @@ export function OptionalNumberField({
           max={max}
           step={1}
           value={value === null || !Number.isFinite(value) ? "" : value}
+          placeholder={placeholder}
           aria-invalid={invalid || undefined}
           onChange={(e) => onChange(e.target.value === "" ? null : e.target.valueAsNumber)}
           className={`${inputClass} tabular-nums`}

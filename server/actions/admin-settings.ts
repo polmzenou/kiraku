@@ -9,7 +9,7 @@ import {
   collectionSettingsSchema,
   type CollectionSettingKey,
 } from "@/lib/settings/collection-form";
-import { parseSetting, type SettingKey } from "@/lib/settings/defaults";
+import { parseSetting, RARITY_KEYED, type SettingKey } from "@/lib/settings/defaults";
 import { COMBAT_SETTING_KEYS, combatSettingsSchema, type CombatSettingKey } from "@/lib/settings/combat-form";
 import { DISCORD_SETTING_KEYS, discordSettingsSchema, type DiscordSettingKey } from "@/lib/settings/discord-form";
 import { NEWS_MAX_ITEMS, nextPublication, validNewsImageUrl, type NewsVisuals } from "@/lib/home/news";
@@ -66,14 +66,14 @@ async function saveSettings<K extends SettingKey>(
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const next = parsed.data as SettingsOf<K>;
-  const rarityKeys = ["booster.rates", "collection.recycleValues", "battle.keywordsByRarity", "booster.slotFloors", "booster.goldenFloor", "gifts.allowedRarities", "trades.allowedRarities", "home.pullFeed.minRarity", "market.maxPriceByRarity", "booster.duplicateGuardRarities", "casino.coinflip.allowedRarities", "discord.casinoMinRarity", "prestige.requiredPercent", "prestige.printing.chanceBp", "prestige.printing.sizes"];
-  if (keys.some((k) => rarityKeys.includes(k))) {
+  const rarityKeyed = keys.filter((k) => RARITY_KEYED[k]);
+  if (rarityKeyed.length > 0) {
     const registry = await getRarities();
-    for (const key of keys.filter((k) => rarityKeys.includes(k))) {
+    for (const key of rarityKeyed) {
       const value = next[key];
       const selected = typeof value === "string" ? [value] : Array.isArray(value) ? value : Object.keys(value as object);
       if (selected.some((r) => !registry.includes(String(r)))) return { ok: false, error: "INVALID" };
-      if (["booster.rates", "collection.recycleValues", "battle.keywordsByRarity"].includes(key) && selected.length !== registry.length) return { ok: false, error: "INVALID" };
+      if (RARITY_KEYED[key] === "all" && selected.length !== registry.length) return { ok: false, error: "INVALID" };
     }
   }
 

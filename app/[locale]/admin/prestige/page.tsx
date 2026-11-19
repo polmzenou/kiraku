@@ -1,8 +1,9 @@
-import { getFormatter, getLocale, getTranslations } from "next-intl/server";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { InstallPrestigeCosmetics } from "@/components/admin/InstallPrestigeCosmetics";
 import { PrestigeSettingsForm } from "@/components/admin/PrestigeSettingsForm";
 import { SettingLogList } from "@/components/admin/SettingLogList";
 import { Link } from "@/i18n/navigation";
+import { sealOf } from "@/lib/prestige/printing";
 import { PRESTIGE_SETTING_KEYS, type PrestigeSettings } from "@/lib/settings/prestige-form";
 import { recentSettingLogs, requireAdmin } from "@/server/admin";
 import { getCatalogStats } from "@/server/catalog/queries";
@@ -13,10 +14,10 @@ import { getSetting } from "@/server/settings";
 /** Prestige : interrupteur et réglages, aperçu d'équilibrage (seuils, joueurs éligibles), dernières renaissances. */
 export default async function AdminPrestigePage() {
   await requireAdmin();
-  const [t, format, locale, values, logs, definitions, catalog, rebirths, printings] = await Promise.all([
+  const [t, format, tRarity, values, logs, definitions, catalog, rebirths, printings] = await Promise.all([
     getTranslations("admin.prestige"),
     getFormatter(),
-    getLocale(),
+    getTranslations("rarity"),
     Promise.all(PRESTIGE_SETTING_KEYS.map((k) => getSetting(k))),
     recentSettingLogs(["prestige."]),
     getRarityDefinitions(),
@@ -25,10 +26,7 @@ export default async function AdminPrestigePage() {
     printingOverview(),
   ]);
   const settings = Object.fromEntries(PRESTIGE_SETTING_KEYS.map((k, i) => [k, values[i]])) as PrestigeSettings;
-  const nameOf = (key: string) => {
-    const d = definitions.find((x) => x.key === key);
-    return d ? (locale === "en" ? d.nameEn : d.nameFr) : key;
-  };
+  const nameOf = (key: string) => (tRarity.has(key as "COMMON") ? tRarity(key as "COMMON") : key);
   const balance = await prestigeBalance({
     order: definitions.map((d) => d.key),
     published: catalog.byRarity,
@@ -89,7 +87,7 @@ export default async function AdminPrestigePage() {
         ) : (
           <ul className="flex flex-col gap-1 text-sm">
             {printings.map((p) => {
-              const seal = settings["prestige.printing.seals"][String(p.printing)];
+              const seal = sealOf(p.printing, settings["prestige.printing.seals"]);
               return (
                 <li key={p.printing} className="flex flex-wrap items-baseline gap-x-3 border-t border-border py-1.5">
                   {seal && (
@@ -107,7 +105,7 @@ export default async function AdminPrestigePage() {
         )}
       </section>
 
-      <PrestigeSettingsForm initial={settings} rarities={definitions.map((d) => ({ key: d.key, name: nameOf(d.key) }))} />
+      <PrestigeSettingsForm initial={settings} />
 
       <section className="flex flex-col gap-3">
         <h2 className="font-title text-lg font-bold">{t("cosmetics.title")}</h2>
