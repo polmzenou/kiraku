@@ -1,0 +1,23 @@
+/* Fuda sans cadre (rareté Esprit, appearance.frameless) : l'illustration détourée porte ses propres bords.
+   Ni cadre, ni papier, ni liseré, ni ombre rectangulaire ; le nom est posé sur l'image comme en Full Art
+   (Fuda pose aussi data-full-art). Les ombres passent par drop-shadow, qui suit les bords de l'image.
+   Écrit à la main (FudaFace.css est généré) ; sélecteurs à trois attributs/classes pour passer devant
+   les règles Full Art et les matières, quel que soit l'ordre des feuilles. */
+.fuda[data-full-art][data-frameless] {
+  --fuda-aura: #8cbcec;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--fuda-aura) 75%, transparent)) drop-shadow(0 6px 10px rgb(0 0 0 / .35));
+}
+.fuda[data-full-art][data-frameless] .fuda-paper { background: none; box-shadow: none; border-radius: 0; }
+.fuda[data-full-art][data-frameless] .fuda-paper::after { display: none; }
+.fuda[data-full-art][data-frameless] .kn-art { background: none; }
+.fuda[data-full-art][data-frameless] .kn-grain { display: none; }
+/* Le voile d'ombre du Full Art est un rectangle : sans lui, le nom tient par son ombre portée */
+.fuda[data-full-art][data-frameless] .kn-bank { background: none; }
+.fuda[data-full-art][data-frameless] :is(.kn-shk, .kn-no) { text-shadow: 0 1px 3px rgb(0 0 0 / .9), 0 0 10px rgb(0 0 0 / .65); }
+/* Reflets de révélation rectangulaires (calque overlay) : ils dépasseraient des bords */
+.fuda[data-full-art][data-frameless] :is(.fx-sheen, .fx-gold-glint) { display: none; }
+/* Parallaxe : l'image agrandie serait rognée net par la boîte, ses bords déchirés coupés */
+.fuda.fuda-live[data-frameless] :is(.kn-art, .kn-cutout) { translate: none; scale: none; }

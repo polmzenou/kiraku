@@ -374,3 +374,42 @@
     transform: translate(8px, 8px);
   }
 }
+
+/* --- Esprit · carte sans cadre (appearance.frameless) : ni anneau ni liseré, une aura bleutée qui
+   respire derrière la carte. Repérée par la fuda elle-même, quelle que soit la clé de sa rareté. --- */
+.vt-card:has(.fuda[data-frameless]) {
+  isolation: isolate;
+}
+.vt-card:has(.fuda[data-frameless])::before {
+  content: "";
+  position: absolute;
+  inset: -7% -9%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgb(140 188 236 / 0.5), rgb(112 160 222 / 0.2) 55%, transparent);
+  opacity: 0.8;
+}
+/* Une rareté qui aurait aussi un anneau : il suivrait un rectangle que la carte n'a pas */
+.vt-halo:has(.fuda[data-frameless]) :is(.vt-halo-ring, .vt-halo-frame, .vt-halo-tone) {
+  display: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="reduced"]) .vt-card:has(.fuda[data-frameless])::before {
+    animation: vt-spirit 4.8s ease-in-out infinite alternate;
+  }
+}
+:root[data-fx="lite"] .vt-card:has(.fuda[data-frameless])::before,
+.vt-stage[data-offscreen] .vt-card:has(.fuda[data-frameless])::before {
+  animation-play-state: paused;
+}
+
+@keyframes vt-spirit {
+  from {
+    opacity: 0.55;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 0.95;
+    transform: scale(1.03);
+  }
+}

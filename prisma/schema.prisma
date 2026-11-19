@@ -142,6 +142,7 @@ model User {
   openings     BoosterOpening[]
   notablePulls NotablePull[]
   discoveries  Discovery[]
+  seriesCompletions SeriesCompletion[]
   adminLogs    AdminLog[]
   showcase     ShowcaseSlot[] // ancienne vitrine unique, plus lue
   showcases    Showcase[]
@@ -348,6 +349,7 @@ model Series {
   seasonYear   Int?
   studio       String? // studio principal
   cards        Card[]
+  completions  SeriesCompletion[]
   // Univers de l'œuvre (JJK, JJK Manga et JJK Modulo = un seul). Sans groupe, la série forme son propre univers.
   universeId   String?
   universe     Universe? @relation(fields: [universeId], references: [id], onDelete: SetNull)
@@ -536,6 +538,20 @@ model Discovery {
   @@id([userId, cardId])
   @@index([userId, createdAt]) // missions « découvrir des cartes »
   @@index([cardId])
+}
+
+// Série complétée au moins une fois (toutes ses cartes publiées possédées en même temps). Acquise pour de bon :
+// donner une carte, l'arrivée d'une nouvelle carte dans la série ou un futur prestige ne la retirent pas.
+// Écrite par le trigger series_completion sur UserCard (migration 20261119120000_series_completion).
+model SeriesCompletion {
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  seriesId    String
+  series      Series   @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  completedAt DateTime @default(now())
+
+  @@id([userId, seriesId])
+  @@index([seriesId])
 }
 
 // Journal de toutes les écritures faites depuis /admin

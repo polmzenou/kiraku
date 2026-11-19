@@ -9,6 +9,7 @@ import { resolveAppearance } from "@/lib/catalog/appearance";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import "./FudaEffects.css";
 import "./FudaFace.css";
+import "./FudaFrameless.css";
 
 export type FudaCard = {
   name: string;
@@ -57,6 +58,14 @@ function flipBank(name: string) {
   let h = 2166136261;
   for (const c of name) h = Math.imul(h ^ (c.codePointAt(0) ?? 0), 16777619);
   return (h >>> 0) % 2 === 1;
+}
+
+/** Anneau lumineux ; sans cadre, il suivrait un rectangle qui n'existe pas : la lueur épouse les bords de l'image. */
+function glowStyle(glow: string | undefined, frameless: boolean): CSSProperties | undefined {
+  if (!glow) return undefined;
+  return frameless
+    ? { filter: `drop-shadow(0 0 2px ${glow}) drop-shadow(0 0 16px ${glow})` }
+    : { boxShadow: `0 0 0 2px ${glow}, 0 0 28px ${glow}` };
 }
 
 /** Colonnes du tanzaku : à partir de cinq signes, le nom japonais se coupe à son dernier séparateur. */
@@ -125,6 +134,8 @@ export function Fuda({
   const definition = definitions.find((r) => r.key === card.rarity);
   const tier = BASE_RARITIES.indexOf(fxTier(card.rarity, definitions));
   const visual = resolveAppearance(definition?.appearance, card.appearance);
+  // Sans cadre (Esprit) : une carte verrouillée garde la silhouette ordinaire, l'image n'étant pas envoyée
+  const frameless = !locked && visual.frameless === true;
   const customStyle = {
     ...(visual.frame && { "--fuda-frame": visual.frame, "--fuda-frame-bg": visual.frame }),
     // Papier et encre réglés dans l'admin : le shikishi devient uni, dans ce papier
@@ -132,13 +143,15 @@ export function Fuda({
     ...(visual.ink && { "--kn-ink": visual.ink, "--kn-muted": visual.ink, "--kn-kanji": visual.ink }),
     "--fx-color": visual.effectColor, "--fx-intensity": visual.intensity,
     "--fx-duration": `${8 / visual.speed}s`,
-    ...(glow && { boxShadow: `0 0 0 2px ${glow}, 0 0 28px ${glow}` }),
+    // Lueur d'une carte sans cadre : couleur du cadre réglée dans l'admin, sinon bleu esprit (FudaFrameless.css)
+    ...(frameless && visual.frame && { "--fuda-aura": visual.frame }),
+    ...glowStyle(glow, frameless),
   } as CSSProperties;
   const inBattle = variant === "battle";
   const native = !inBattle && !locked && card.nameNative ? tanzakuColumns(card.nameNative) : null;
   const longest = native ? Math.max(...native.map((part) => part.length)) : 0;
   const gilded = !locked && !monochrome && visual.artTone === "gold";
-  const fullArt = !locked && visual.fullArt === true;
+  const fullArt = !locked && (visual.fullArt === true || frameless);
   const artStyle = { objectPosition: `${visual.focalX}% ${visual.focalY}%`, transform: `scale(${visual.zoom})`, transformOrigin: `${visual.focalX}% ${visual.focalY}%` };
   const subtitle = (!locked && card.formName) || series || (inBattle ? rarity(card.rarity) : undefined);
   const flip = flipBank(card.name) ? " kn-flip" : "";
@@ -147,7 +160,7 @@ export function Fuda({
   const spoilerAttr = spoiler ? { "data-spoiler": "" } : undefined;
 
   const content = (
-    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} style={customStyle}>
+    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} data-frameless={frameless || undefined} style={customStyle}>
       {/* Papier posé en absolu dans le cadre : sa hauteur ne dépend pas d'un pourcentage (WebKit la résolvait mal sous aspect-ratio) */}
       <div className={`fuda-paper absolute ${l.inset} overflow-hidden ${l.inner}`}>
         <div className="kn-art">
@@ -229,10 +242,11 @@ export function Fuda({
       {/* Full Art : le personnage détouré passe devant le cadre, sous le nom et les reflets */}
       {fullArt && visual.cutoutUrl && <span aria-hidden="true" className="kn-cutout" {...spoilerAttr}><Image src={visual.cutoutUrl} alt="" fill sizes={sizes ?? l.sizes} draggable={false} className="object-cover object-top" style={artStyle} /></span>}
       {/* Effet de matière (laque, or, nacre) au-dessus de la carte, à partir d'Épique */}
-      {!locked && !monochrome && visual.effects === undefined && tier >= BASE_RARITIES.indexOf("EPIC") && (
+      {/* Pas sur une carte sans cadre : ces calques rectangulaires se verraient autour de ses bords */}
+      {!locked && !monochrome && !frameless && visual.effects === undefined && tier >= BASE_RARITIES.indexOf("EPIC") && (
         <span aria-hidden="true" className="fuda-sheen" />
       )}
-      {!locked && !monochrome && visual.effects?.map((effect) => <span key={effect} aria-hidden="true" className={`fuda-effect fuda-effect-${effect}`} />)}
+      {!locked && !monochrome && !frameless && visual.effects?.map((effect) => <span key={effect} aria-hidden="true" className={`fuda-effect fuda-effect-${effect}`} />)}
       {overlay && <div className="pointer-events-none absolute inset-0 z-30">{overlay}</div>}
     </div>
   );

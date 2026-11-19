@@ -17,6 +17,11 @@ export const appearanceSchema = z.object({
   fullArt: z.boolean().optional(),
   /** Full Art : personnage détouré (fond transparent, même cadrage que l'image), posé devant le cadre et sous le nom. */
   cutoutUrl: z.string().max(2048).optional(),
+  /**
+   * Sans cadre (Esprit) : l'illustration porte ses propres bords (PNG détouré, bords déchirés) ; ni cadre, ni
+   * papier, ni liseré, ni ombre rectangulaire. Nom posé sur l'image comme en Full Art, lueur qui suit ses bords.
+   */
+  frameless: z.boolean().optional(),
 }).strict();
 export type CardAppearance = z.infer<typeof appearanceSchema>;
 export function parseAppearance(raw: unknown): CardAppearance {

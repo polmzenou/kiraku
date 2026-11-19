@@ -2979,6 +2979,7 @@
         "gold": "Golden"
       },
       "fullArt": "Full Art (image across the whole card, name on top)",
+      "frameless": "Frameless (Spirit: cut-out image with its own edges, no frame or paper)",
       "cutout": "Cut-out character (optional)",
       "cutoutHint": "PNG or WebP with a transparent background, framed like the image. It passes in front of the frame, and the name stays on top.",
       "cutoutRemove": "Remove the cut-out",
