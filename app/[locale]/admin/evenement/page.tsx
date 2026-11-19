@@ -1,15 +1,16 @@
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { EventGaugeSettingsForm } from "@/components/admin/EventGaugeSettingsForm";
+import { ReadOnly } from "@/components/admin/ReadOnly";
 import { SettingLogList } from "@/components/admin/SettingLogList";
 import { EVENT_GAUGE_SETTING_KEYS, type EventGaugeSettings } from "@/lib/settings/event-gauge-form";
-import { recentSettingLogs, requireAdmin } from "@/server/admin";
+import { recentSettingLogs, requireAdminView } from "@/server/admin";
 import { lotOptions } from "@/server/economy/admin-queries";
 import { readEventGauge } from "@/server/home/event-gauge";
 import { getSetting } from "@/server/settings";
 
 /** Jauge communautaire de l'accueil : fenêtre, objectif, interrupteur et compte actuel. */
 export default async function AdminEventGaugePage() {
-  await requireAdmin();
+  const { readOnly } = await requireAdminView();
   const [t, format, values, logs, gauge, lots] = await Promise.all([
     getTranslations("admin.eventGauge"),
     getFormatter(),
@@ -31,7 +32,9 @@ export default async function AdminEventGaugePage() {
           </p>
         )}
       </div>
-      <EventGaugeSettingsForm initial={settings} lots={lots} reached={gauge?.reached ?? false} />
+      <ReadOnly when={readOnly}>
+        <EventGaugeSettingsForm initial={settings} lots={lots} reached={gauge?.reached ?? false} />
+      </ReadOnly>
       <SettingLogList logs={logs} />
     </div>
   );

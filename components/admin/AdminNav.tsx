@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
-import type { CatalogScope } from "@/lib/admin/roles";
+import { DEV_ADMIN_PAGES, type CatalogScope } from "@/lib/admin/roles";
 
 const GROUPS = [
   { key: "overview", modules: [{ key: "dashboard", href: "/admin" }, { key: "journal", href: "/admin/journal" }] },
@@ -72,7 +72,7 @@ function activeHref(pathname: string) {
 }
 
 /** Modules ouverts au DEV : le reste lui répond 404 côté serveur, la nav ne fait que le refléter. */
-const DEV_MODULES: readonly string[] = ["catalog"];
+const DEV_HREFS: readonly string[] = DEV_ADMIN_PAGES;
 
 /**
  * Navigation de l'admin : barre latérale groupée et collante en desktop (≥ 1024 px),
@@ -81,7 +81,7 @@ const DEV_MODULES: readonly string[] = ["catalog"];
 export function AdminNav({ scope }: { scope: CatalogScope }) {
   const t = useTranslations("admin");
   const active = activeHref(usePathname());
-  const visible = (m: Module) => scope === "full" || DEV_MODULES.includes(m.key);
+  const visible = (m: Module) => scope === "full" || DEV_HREFS.includes(m.href);
   const groups = GROUPS.map((g) => ({ key: g.key, modules: g.modules.filter(visible) })).filter((g) => g.modules.length > 0);
 
   return (

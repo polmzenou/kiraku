@@ -3,7 +3,7 @@ import dynamic from "next/dynamic";
 import type { OpeningType } from "@/components/opening/OpeningStage";
 import { contentsLabel } from "@/lib/boosters/catalog";
 import { effectiveSlotFloors, localize } from "@/lib/boosters/types";
-import { requireAdmin } from "@/server/admin";
+import { requireAdminView } from "@/server/admin";
 import { openingTestPool, testBoosterState } from "@/server/admin/opening-test";
 import { getBoosterOffers } from "@/server/boosters/pools";
 import { getBoosterRules } from "@/server/boosters/rules";
@@ -14,7 +14,7 @@ const OpeningTestBench = dynamic(() => import("@/components/admin/OpeningTestBen
 
 /** Banc de test de l'ouverture : vrais boosters et vraies cartes, tirages factices jamais enregistrés. */
 export default async function AdminOpeningTestPage() {
-  await requireAdmin();
+  await requireAdminView();
   const [t, locale, offers, rules] = await Promise.all([
     getTranslations("admin.openingTest"),
     getLocale(),

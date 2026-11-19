@@ -1112,6 +1112,7 @@
     "anonymous": "Joueur mystère"
   },
   "admin": {
+    "devReadOnly": "Accès DEV : tu consultes les réglages et les données sans pouvoir les modifier, seul un admin enregistre ou active une fonctionnalité. Dans le catalogue, tu prépares des brouillons que l'admin publie. Les bancs de test (combat, ouverture) restent utilisables, rien n'y est enregistré.",
     "title": "Administration",
     "modules": "Modules",
     "navGroups": {
@@ -6237,6 +6238,7 @@
     "open": "{count, plural, =0 {Ouvrir le chat} one {Ouvrir le chat, # message non lu} other {Ouvrir le chat, # messages non lus}}",
     "close": "Fermer le chat",
     "back": "Retour aux conversations",
+    "profile": "Voir le profil de {name}",
     "loading": "Chargement…",
     "noFriends": "Ajoute des amis pour discuter avec eux.",
     "startTalking": "Dis bonjour !",

@@ -1,15 +1,16 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { PullFeedModeration } from "@/components/admin/PullFeedModeration";
 import { PullFeedSettingsForm } from "@/components/admin/PullFeedSettingsForm";
+import { ReadOnly } from "@/components/admin/ReadOnly";
 import { SettingLogList } from "@/components/admin/SettingLogList";
 import { PULL_FEED_SETTING_KEYS, type PullFeedSettings } from "@/lib/settings/pull-feed-form";
-import { recentSettingLogs, requireAdmin } from "@/server/admin";
+import { recentSettingLogs, requireAdminView } from "@/server/admin";
 import { getPullFeedBlocklist, getPullFeedPreview } from "@/server/admin/pull-feed";
 import { getSetting } from "@/server/settings";
 
 /** Carrousel « En direct · Gros tirages » : réglages, max d'apparitions par joueur, blacklist et fil actuel. */
 export default async function AdminPullFeedPage() {
-  await requireAdmin();
+  const { readOnly } = await requireAdminView();
   const locale = await getLocale();
   const [t, values, logs, blocked, preview] = await Promise.all([
     getTranslations("admin.pullFeed"),
@@ -26,8 +27,12 @@ export default async function AdminPullFeedPage() {
         <h2 className="font-heading text-2xl font-bold">{t("title")}</h2>
         <p className="max-w-prose text-sm text-text-muted">{t("intro")}</p>
       </div>
-      <PullFeedSettingsForm initial={settings} />
-      <PullFeedModeration blocked={blocked} preview={preview} />
+      <ReadOnly when={readOnly}>
+        <PullFeedSettingsForm initial={settings} />
+      </ReadOnly>
+      <ReadOnly when={readOnly}>
+        <PullFeedModeration blocked={blocked} preview={preview} />
+      </ReadOnly>
       <SettingLogList logs={logs} />
     </div>
   );

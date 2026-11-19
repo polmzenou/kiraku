@@ -1,16 +1,17 @@
 import { getTranslations } from "next-intl/server";
+import { ReadOnly } from "@/components/admin/ReadOnly";
 import { SettingLogList } from "@/components/admin/SettingLogList";
 import { ShowcaseThemesForm } from "@/components/admin/ShowcaseThemesForm";
 import { referencedSeries } from "@/lib/profile/conditions";
 import type { ShowcaseSettings } from "@/lib/settings/showcase-form";
 import { themeConditions } from "@/lib/showcase/themes";
-import { recentSettingLogs, requireAdmin } from "@/server/admin";
+import { recentSettingLogs, requireAdminView } from "@/server/admin";
 import { prisma } from "@/server/db";
 import { getSetting } from "@/server/settings";
 
 /** Vitrines des joueurs : nombre par joueur, statut et condition de déblocage de chaque thème. */
 export default async function AdminShowcasesPage() {
-  await requireAdmin();
+  const { readOnly } = await requireAdminView();
   const [t, maxPerPlayer, themes, usage, logs] = await Promise.all([
     getTranslations("admin.showcases"),
     getSetting("showcase.maxPerPlayer"),
@@ -37,7 +38,9 @@ export default async function AdminShowcasesPage() {
         <p className="max-w-prose text-sm text-text-muted">{t("intro")}</p>
       </div>
 
-      <ShowcaseThemesForm initial={settings} usage={counts} seriesTitles={seriesTitles} />
+      <ReadOnly when={readOnly}>
+        <ShowcaseThemesForm initial={settings} usage={counts} seriesTitles={seriesTitles} />
+      </ReadOnly>
 
       <SettingLogList logs={logs} />
     </div>
