@@ -8,7 +8,8 @@ export function AppearanceFields({ value, defaults, onChange, animation = false 
   const t = useTranslations("admin.catalog");
   const displayed = { ...defaults, ...value };
   const set = (v: Partial<CardAppearance>) => onChange({ ...value, ...v });
-  const range = (key: "focalX" | "focalY" | "zoom" | "intensity" | "speed" | "tilt" | "duration" | "delay", min: number, max: number, step: number) => (
+  type RangeKey = "focalX" | "focalY" | "zoom" | "intensity" | "speed" | "tilt" | "duration" | "delay" | "spectralStrength" | "spectralGrain" | "spectralIdle";
+  const range = (key: RangeKey, min: number, max: number, step: number) => (
     <Field key={key} label={`${t(key)} · ${displayed[key] ?? APPEARANCE_DEFAULTS[key]}`}>
       {(id) => <input id={id} type="range" className="min-h-11 w-full accent-shu" min={min} max={max} step={step} value={displayed[key] ?? APPEARANCE_DEFAULTS[key]} onChange={(e) => set({ [key]: e.target.valueAsNumber })} />}
     </Field>
@@ -27,7 +28,11 @@ export function AppearanceFields({ value, defaults, onChange, animation = false 
       <SelectField label={t("artTone")} hint={t("artToneHint")} value={value.artTone ?? ""} onChange={(artTone) => { const next = { ...value }; if (artTone) next.artTone = artTone; else delete next.artTone; onChange(next); }}
         options={[{ value: "" as const, label: `${t("inherit")}${defaults ? ` (${t(`artTones.${defaults.artTone ?? "natural"}`)})` : ""}` }, { value: "natural" as const, label: t("artTones.natural") }, { value: "gold" as const, label: t("artTones.gold") }]} />
       <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={displayed.fullArt ?? false} onChange={(e) => set({ fullArt: e.target.checked })} />{t("fullArt")}</label>
-      <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={displayed.frameless ?? false} onChange={(e) => set({ frameless: e.target.checked })} />{t("frameless")}</label>
+      <div className="sm:col-span-2">
+        <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={displayed.spectral ?? false} onChange={(e) => set({ spectral: e.target.checked })} />{t("spectral")}</label>
+        <p className="text-xs text-text-muted">{t("spectralHint")}</p>
+      </div>
+      {displayed.spectral && <>{range("spectralStrength", 0, 2, 0.05)}{range("spectralGrain", 0, 1, 0.05)}{range("spectralIdle", 0, 1, 0.05)}</>}
       <fieldset className="sm:col-span-2"><legend className="mb-2 text-sm">{t("effects")}</legend><div className="flex flex-wrap gap-2">
         {EFFECTS.map((effect) => <label key={effect} className="flex min-h-11 items-center gap-2 rounded-control border border-border px-3 text-sm"><input type="checkbox" checked={displayed.effects?.includes(effect) ?? false} onChange={(e) => set({ effects: e.target.checked ? [...displayed.effects ?? [], effect] : (displayed.effects ?? []).filter((v) => v !== effect) })} />{t(effect)}</label>)}
         <button type="button" className="min-h-11 text-xs underline" onClick={() => { const next = { ...value }; delete next.effects; onChange(next); }}>{t("inherit")}</button>

@@ -66,9 +66,9 @@ const sunago = (() => {
   return svg(BANK_VB, `<g fill='#fff'>${dots}</g>`);
 })();
 // AR : triple contour shu, kin et ai décalé (les fantômes de la révélation) et faille de lumière
-const AR_LINES = svg(BANK_VB, `<g fill='none' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'><path d='${BANK_TOP}' stroke='#e0533f' stroke-opacity='.9' transform='translate(-11 -10)'/><path d='${BANK_TOP}' stroke='#e9cd78' transform='translate(5 -5)'/><path d='${BANK_TOP}' stroke='#7fa3d1' stroke-opacity='.95' transform='translate(13 9)'/></g>`);
+const AR_LINES = svg(BANK_VB, `<g fill='none' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'><path d='${BANK_TOP}' stroke='#f08ab0' stroke-opacity='.9' transform='translate(-11 -10)'/><path d='${BANK_TOP}' stroke='#fde4ec' transform='translate(5 -5)'/><path d='${BANK_TOP}' stroke='#8f83e0' stroke-opacity='.95' transform='translate(13 9)'/></g>`);
 const CRACK = "M598 150L586 214L606 268L590 342L612 410L600 520";
-const AR_CRACK = svg(BANK_VB, `<path d='${CRACK}' fill='none' stroke='#fff6dc' stroke-opacity='.55' stroke-width='12' stroke-linejoin='round'/><path d='${CRACK}' fill='none' stroke='#fff' stroke-width='3' stroke-linejoin='round'/>`);
+const AR_CRACK = svg(BANK_VB, `<path d='${CRACK}' fill='none' stroke='#ffe9f1' stroke-opacity='.55' stroke-width='12' stroke-linejoin='round'/><path d='${CRACK}' fill='none' stroke='#fff' stroke-width='3' stroke-linejoin='round'/>`);
 // Gold : coutures d'or (kintsugi des fissures de la révélation)
 const SEAMS = (() => {
   const r = rng(hash("bankkin"));
@@ -125,7 +125,7 @@ const RARITIES = {
     detail: "linear-gradient(90deg, rgb(122 90 22 / .2) 0 1px, transparent 1px) 0 0 / 7.4cqw 7.4cqw, linear-gradient(rgb(122 90 22 / .15) 0 1px, transparent 1px) 3.7cqw 0 / 7.4cqw 7.4cqw, conic-gradient(rgb(255 248 214 / .1) 25%, transparent 0 50%, rgb(255 248 214 / .07) 0 75%, transparent 0) 0 0 / 14.8cqw 14.8cqw, radial-gradient(circle, rgb(255 244 205 / .5) 0 .6px, transparent 1px) 0 0 / 5px 6px" },
   MYTHIC: { line: "#584a7c", lo: 0.66, hi: "#fff", ho: 0.95, sh: "#3b3060", so: 0.22, dot: "#fff", dotO: 0.9, extra: "--kn-edge: #d8cdeb; --kn-kanji: #6f5d9c; --kn-rim: rgb(70 58 105 / .45);",
     detail: "repeating-linear-gradient(62deg, transparent 0 9px, rgb(74 62 110 / .3) 9px 10px), repeating-linear-gradient(-58deg, transparent 0 12px, rgb(74 62 110 / .24) 12px 13px), repeating-linear-gradient(2deg, transparent 0 14px, rgb(74 62 110 / .18) 14px 15px), conic-gradient(from 20deg, rgb(255 228 244 / .55), rgb(200 240 234 / .55), rgb(250 234 200 / .55), rgb(220 206 250 / .55), rgb(255 228 244 / .55)) 0 0 / 19px 17px" },
-  AR: { line: "#f3ecdf", lo: 0.92, hi: "#fff", ho: 0.55, sh: "#121a36", so: 0.5, dot: "#f2d88a", dotO: 0.85, extra: `--kn-kanji: #c8372d; --kn-bx: ${AR_CRACK};`,
+  AR: { line: "#f3ecdf", lo: 0.92, hi: "#fff", ho: 0.55, sh: "#120f2a", so: 0.5, dot: "#f9c3d6", dotO: 0.85, extra: `--kn-kanji: #c8487a; --kn-bx: ${AR_CRACK};`,
     detail: "radial-gradient(130% 70% at 50% 0%, rgb(255 255 255 / .2), transparent 60%)" },
   GOLD: { line: "#6e5012", lo: 0.9, hi: "#fffbe6", ho: 1, sh: "#5e430c", so: 0.42, dot: "#fff6d6", dotO: 1, extra: `--kn-seal: #a47a22; --kn-edge: #e2c46e; --kn-kanji: #8a6a1f; --kn-bx-lg: ${SEAMS};`,
     detail: "linear-gradient(90deg, rgb(110 80 18 / .24) 0 1px, transparent 1px) 0 0 / 6.6cqw 6.6cqw, linear-gradient(rgb(110 80 18 / .18) 0 1px, transparent 1px) 3.3cqw 0 / 6.6cqw 6.6cqw, conic-gradient(rgb(255 250 225 / .14) 25%, transparent 0 50%, rgb(255 250 225 / .1) 0 75%, transparent 0) 0 0 / 13.2cqw 13.2cqw, radial-gradient(circle, rgb(255 250 225 / .7) 0 .7px, transparent 1.1px) 0 0 / 6px 5px" },
@@ -137,6 +137,10 @@ const RARITIES = {
   VR: { line: "#b9851f", lo: 1, hi: "#fff6cf", ho: 1, sh: "#6a3fa0", so: 0.3, dot: "#fff1c4", dotO: 0.95,
     extra: `--kn-paper: #faf5f4; --kn-washi: linear-gradient(115deg, transparent 20%, rgb(255 255 255 / .75) 30%, transparent 40%, transparent 60%, rgb(255 255 255 / .6) 68%, transparent 76%), radial-gradient(130% 150% at 50% 0%, #fff8f6, #faf1f2 55%, #f1e3f2); --kn-ink: #241a24; --kn-muted: #6a5a70; --kn-kanji: #6a3fa0; --kn-seal: #4a1f9a; --kn-seal-ring: #f2cf7a; --kn-rule: #8f5fb0; --kn-edge: #d9a93b; --kn-rim: #f2cf7a; --kn-sc-fill: #4a1f9a; --kn-sc-line: #f2cf7a; --kn-sc-bg: radial-gradient(120% 120% at 30% 20%, #8a54e0, #4a1f9a 55%, #2a1670); --kn-sc-bx: ${crescent("#f2cf7a")}; --kn-bank-bg: radial-gradient(55% 110% at 18% 85%, #a97ff0, transparent 72%), radial-gradient(45% 100% at 78% 75%, #7fa4f5, transparent 72%), radial-gradient(38% 85% at 50% 100%, #f29ad6, transparent 72%), radial-gradient(30% 60% at 34% 30%, #fff, transparent 70%), linear-gradient(180deg, #fbf0ff, #e6cdf6);`,
     detail: "linear-gradient(115deg, transparent 38%, rgb(255 255 255 / .55) 46%, transparent 54%), linear-gradient(115deg, transparent 68%, rgb(255 255 255 / .4) 74%, transparent 80%)" },
+  // Esprit : pleine carte spectrale, encre de brume et sceau d'eau profonde (la matière vient de FudaSpectral.css)
+  SR: { line: "#e6fbff", lo: 0.9, hi: "#fff", ho: 0.5, sh: "#000", so: 0.4, dot: "#c9f3f8", dotO: 0.9,
+    extra: "--kn-seal: #1c4a55; --kn-seal-ring: rgb(159 227 236 / .6); --kn-kanji: #c9f3f8;",
+    detail: "none" },
   XR: { line: "#fff", lo: 0.9, hi: "#fff", ho: 0.5, sh: "#000", so: 0.4, dot: "#fff", dotO: 0.9, extra: "--kn-seal: #141210;",
     detail: "none" },
   // Black : laque noire, contours d'argent, liseré rouge
@@ -328,6 +332,22 @@ ${perRarity}
 .fuda[data-full-art] .kn-sc::before, .fuda[data-full-art] .kn-sc::after, .fuda[data-full-art] .kn-sc > .kn-ln { display: none; }
 /* Personnage détouré : même boîte que l'illustration, devant le cadre. Il passe sous le nom et s'efface avant le voile d'ombre, pour que le nom reste entier et lisible */
 .kn-cutout { position: absolute; inset: 0; z-index: 4; pointer-events: none; mask: linear-gradient(#000 72%, transparent 84%); }
+
+/* Mode spoiler (data-spoiler="hide" sur <html>) : seule l'illustration d'une carte spoil est floutée ; cadre, rareté,
+   nom et stats restent. Le rayon suit la largeur de la carte ; \`scale\` (indépendant du cadrage en \`transform\`)
+   repousse les bords flous hors du papier. Les filtres déjà posés (ton or, gris des fiches non découvertes) sont repris. */
+.kn-art img[data-spoiler] { --kn-spoiler-blur: blur(max(4px, 6cqw)); }
+:root[data-spoiler="hide"] .kn-art img[data-spoiler] { filter: var(--kn-spoiler-blur); scale: 1.18; }
+:root[data-spoiler="hide"] .kn-art img[data-spoiler].grayscale { filter: grayscale(1) var(--kn-spoiler-blur); }
+:root[data-spoiler="hide"] .kn-art img[data-spoiler].fuda-art-gold { filter: sepia(1) saturate(2.4) hue-rotate(-14deg) brightness(1.04) contrast(1.08) var(--kn-spoiler-blur); }
+:root[data-spoiler="hide"] .kn-cutout[data-spoiler] { display: none; }
+.kn-spoiler { display: none; }
+:root[data-spoiler="hide"] .kn-spoiler { position: absolute; inset: 0 0 34cqw; display: grid; place-items: center; pointer-events: none; }
+.kn-spoiler > span {
+  padding: .5cqw 3.5cqw; border-radius: 999px; background: rgb(21 18 15 / .72); color: #f1e9da;
+  font-size: max(9px, 7cqw); font-weight: 700; line-height: 1.3; letter-spacing: .06em;
+  box-shadow: 0 0 0 max(1px, .4cqw) rgb(224 83 63 / .9);
+}
 
 /* Mouvement réduit : FudaTilt ne pose pas .fuda-live ; rien ne se déplace par sécurité */
 @media (prefers-reduced-motion: reduce) {

@@ -1,4 +1,6 @@
 
+import { visibleRarities } from "@/lib/catalog/visible-rarities";
+import { getPublishedRarities } from "@/server/catalog/queries";
 import { getRarities } from "@/server/catalog/rarities";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -15,7 +17,9 @@ const input = inputClass;
  * téléphone. Le serveur revalide chaque paramètre (lib/market/filters.ts).
  */
 export async function MarketFilters({ params }: { params: MarketParams }) {
-  const RARITIES = await getRarities();
+  // Raretés qui ont des cartes publiées, plus celle déjà choisie (un lien partagé reste lisible)
+  const [order, published] = await Promise.all([getRarities(), getPublishedRarities().catch(() => null)]);
+  const RARITIES = visibleRarities(order, published, params.rarity ? [params.rarity] : []);
   const [t, tRarity] = await Promise.all([getTranslations("market.filters"), getTranslations("rarity")]);
   const reset = params.tab === "all" ? "/marche" : `/marche?onglet=${params.tab}`;
   const count = [params.rarity, params.q || null, params.minPrice, params.maxPrice, params.buyout || null].filter((v) => v !== null).length;

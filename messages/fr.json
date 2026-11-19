@@ -2979,7 +2979,11 @@
         "gold": "Doré"
       },
       "fullArt": "Full Art (image sur toute la carte, nom posé dessus)",
-      "frameless": "Sans cadre (Esprit : image détourée qui porte ses propres bords, sans cadre ni papier)",
+      "spectral": "Carte spectrale (Esprit) : l’illustration se déforme et ses bords se dissolvent",
+      "spectralHint": "Rendu WebGL sur les grandes cartes animées ; ailleurs (grilles, mouvement réduit), un bord brumeux fixe. La couleur du cadre teinte la brume.",
+      "spectralStrength": "Déformation au mouvement",
+      "spectralGrain": "Grain du brouillard",
+      "spectralIdle": "Souffle au repos",
       "cutout": "Personnage détouré (facultatif)",
       "cutoutHint": "PNG ou WebP à fond transparent, avec le même cadrage que l’image. Il passe devant le cadre, et le nom reste au-dessus.",
       "cutoutRemove": "Retirer le détourage",
@@ -3128,10 +3132,11 @@
         "mythic": "Mythique",
         "ar": "AR",
         "gold": "Gold",
-        "visual": "BR + VR + MR + XR",
+        "visual": "BR + VR + MR + Esprit + XR",
         "br": "Black Rare",
         "vr": "Vitrail Rare",
         "mr": "Manga Rare",
+        "sr": "Esprit",
         "xr": "Xtreme Rare",
         "none": "Sans grosse rareté",
         "dropDivin": "Chute d'un Divin",
@@ -3583,7 +3588,7 @@
         "abandonCooldownHours": "0 : aucune attente.",
         "triumphRewardPct": "Zeni et boosters de la réussite multipliés (boosters arrondis au supérieur).",
         "failRewardPct": "Part des Zeni de la réussite versée en cas d'échec ; jamais de booster.",
-        "cardBonus": "Points de chance qu'apporte chaque carte selon son palier par rapport à la rareté exigée ; trois paliers ou plus en dessous : rien. Les raretés de même rang (Mythique et BR, AR et VR, Gold et MR) forment un palier. Valable pour les prochains départs."
+        "cardBonus": "Points de chance qu'apporte chaque carte selon son palier par rapport à la rareté exigée ; trois paliers ou plus en dessous : rien. Les raretés de même rang (Mythique et BR, AR et VR, Gold et MR) forment un palier ; l'Esprit est seul au sien, entre Gold/MR et XR. Valable pour les prochains départs."
       },
       "bonus": {
         "below2": "2 paliers en dessous",

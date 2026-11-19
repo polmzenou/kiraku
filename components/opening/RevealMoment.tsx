@@ -121,6 +121,7 @@ export function RevealTitle({ moment, scene = false }: { moment: Moment; scene?:
       </span>
       <span
         data-chroma={key === "XR" || undefined}
+        data-spirit={key === "SR" || undefined}
         data-lines={lines.length > 1 ? lines.length : undefined}
         className="moment-title flex min-w-0 flex-col items-center gap-[0.14em] text-center font-title leading-none font-extrabold tracking-[0.06em]"
         style={{ fontSize: `clamp(0.875rem, ${titleSizeCqi(lines)}cqi, 3rem)` }}

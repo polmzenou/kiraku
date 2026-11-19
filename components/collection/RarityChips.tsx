@@ -3,12 +3,13 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import type { Rarity } from "@/lib/catalog/rarity";
-import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
+import { useFilterRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
 import { chipClasses } from "../ui/Chip";
 
 /**
- * Puces de rareté à cocher (de la plus rare à la plus courante), avec leur sceau. `allowed` limite
- * les puces proposées ; `leading` ajoute des puces avant (ex. « doublons »).
+ * Puces de rareté à cocher (de la plus rare à la plus courante), avec leur sceau. Une rareté sans carte publiée
+ * n'apparaît pas, sauf si elle est cochée ou comptée dans `counts` (cartes possédées, archivées comprises).
+ * `allowed` limite les puces proposées ; `leading` ajoute des puces avant (ex. « doublons »).
  */
 export function RarityChips({
   value,
@@ -25,7 +26,8 @@ export function RarityChips({
   leading?: ReactNode;
   className?: string;
 }) {
-  const RARITIES = useRarities();
+  const owned = counts ? Object.keys(counts).filter((r) => (counts[r] ?? 0) > 0) : [];
+  const RARITIES = useFilterRarities([...value, ...owned]);
   const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("collection");
   const tRarity = useTranslations("rarity");

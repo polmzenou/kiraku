@@ -1,6 +1,6 @@
 /* Effets autour des cartes en vitrine, un par rareté (clé du registre, nom réglé dans l'admin) :
    BR « Fil rouge », AR « Miroir », MYTHIC « Poussière de lumière », GOLD « Feuille d'or », MR « Trame »,
-   VR « Vitrail », XR « Prisme ».
+   VR « Vitrail », SR « Brume », XR « Prisme ».
    La carte porte déjà le cadre de sa rareté : chaque effet est un geste fin collé à elle (liseré d'un
    pixel et demi au plus, petites lumières à quelques pixels du bord), jamais une seconde bordure ni une
    lueur qui déborde sur les cartes voisines. Animations en transform et opacity seulement, lancées
@@ -46,12 +46,14 @@
 /* Petits éléments autour de la carte : leur boîte est celle de la carte */
 .vt-halo-shards,
 .vt-halo-motes,
+.vt-halo-wisps,
 .vt-halo-flakes,
 .vt-halo-sparkles {
   inset: 0;
 }
 .vt-halo-shards > span,
 .vt-halo-motes > span,
+.vt-halo-wisps > span,
 .vt-halo-flakes > span,
 .vt-halo-sparkles > svg {
   position: absolute;
@@ -183,6 +185,26 @@
   fill: #ffe7a8;
 }
 
+/* --- SR · Brume : un voile froid respire derrière la carte, quelques feux follets (hitodama) montent --- */
+.vt-halo-mist {
+  inset: -4px;
+  border-radius: calc(var(--vt-r) + 4px);
+  background: radial-gradient(closest-side, rgba(159, 227, 236, 0.32), rgba(127, 200, 214, 0.12) 70%, transparent);
+  opacity: 0.6;
+}
+.vt-halo-wisps > span {
+  width: 4px;
+  height: 5px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: radial-gradient(circle at 50% 65%, #f2fdff 0 30%, rgba(159, 227, 236, 0.9) 55%, transparent 75%);
+  box-shadow: 0 0 4px rgba(159, 227, 236, 0.8);
+  opacity: 0.5;
+}
+.vt-halo-wisps > span:nth-child(1) { left: -7px; top: 70%; }
+.vt-halo-wisps > span:nth-child(2) { left: calc(100% + 4px); top: 52%; }
+.vt-halo-wisps > span:nth-child(3) { left: -6px; top: 30%; width: 3px; height: 4px; }
+.vt-halo-wisps > span:nth-child(4) { left: calc(100% + 3px); top: 18%; width: 3px; height: 4px; }
+
 /* --- XR · Prisme : un filet argent d'un pixel, détaché de la carte, où passe une lueur prismatique ;
    deux petites étoiles s'allument aux coins --- */
 .vt-halo[data-halo="prism"] .vt-halo-ring {
@@ -280,6 +302,16 @@
     animation: vt-twinkle 4s ease-in-out infinite;
     animation-delay: var(--vt-delay, 0s);
   }
+  :root:not([data-motion="reduced"]) .vt-halo-mist {
+    animation: vt-breathe 6s ease-in-out infinite;
+    animation-delay: var(--vt-delay, 0s);
+  }
+  :root:not([data-motion="reduced"]) .vt-halo-wisps > span {
+    animation: vt-wisp 5.6s ease-in-out infinite;
+  }
+  :root:not([data-motion="reduced"]) .vt-halo-wisps > span:nth-child(2) { animation-delay: -1.4s; }
+  :root:not([data-motion="reduced"]) .vt-halo-wisps > span:nth-child(3) { animation-delay: -2.8s; }
+  :root:not([data-motion="reduced"]) .vt-halo-wisps > span:nth-child(4) { animation-delay: -4.2s; }
   :root:not([data-motion="reduced"]) .vt-halo[data-halo="prism"] .vt-halo-spin {
     animation: vt-orbit 7s linear infinite;
     animation-delay: var(--vt-delay, 0s);
@@ -355,6 +387,22 @@
     transform: translateY(-7px) scale(0.6);
   }
 }
+/* Feu follet : il s'allume, monte en oscillant et s'éteint */
+@keyframes vt-wisp {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(0, 4px) scale(0.6);
+  }
+  35% {
+    opacity: 0.9;
+    transform: translate(2px, -6px) scale(1);
+  }
+  70% {
+    opacity: 0;
+    transform: translate(-2px, -16px) scale(0.7);
+  }
+}
 @keyframes vt-flake {
   0% {
     opacity: 0;
@@ -372,44 +420,5 @@
 @keyframes vt-tone {
   to {
     transform: translate(8px, 8px);
-  }
-}
-
-/* --- Esprit · carte sans cadre (appearance.frameless) : ni anneau ni liseré, une aura bleutée qui
-   respire derrière la carte. Repérée par la fuda elle-même, quelle que soit la clé de sa rareté. --- */
-.vt-card:has(.fuda[data-frameless]) {
-  isolation: isolate;
-}
-.vt-card:has(.fuda[data-frameless])::before {
-  content: "";
-  position: absolute;
-  inset: -7% -9%;
-  z-index: -1;
-  pointer-events: none;
-  background: radial-gradient(closest-side, rgb(140 188 236 / 0.5), rgb(112 160 222 / 0.2) 55%, transparent);
-  opacity: 0.8;
-}
-/* Une rareté qui aurait aussi un anneau : il suivrait un rectangle que la carte n'a pas */
-.vt-halo:has(.fuda[data-frameless]) :is(.vt-halo-ring, .vt-halo-frame, .vt-halo-tone) {
-  display: none;
-}
-@media (prefers-reduced-motion: no-preference) {
-  :root:not([data-motion="reduced"]) .vt-card:has(.fuda[data-frameless])::before {
-    animation: vt-spirit 4.8s ease-in-out infinite alternate;
-  }
-}
-:root[data-fx="lite"] .vt-card:has(.fuda[data-frameless])::before,
-.vt-stage[data-offscreen] .vt-card:has(.fuda[data-frameless])::before {
-  animation-play-state: paused;
-}
-
-@keyframes vt-spirit {
-  from {
-    opacity: 0.55;
-    transform: scale(0.97);
-  }
-  to {
-    opacity: 0.95;
-    transform: scale(1.03);
   }
 }

@@ -23,6 +23,7 @@ export const CHARGE_MS: Record<Rarity, number> = {
   VR: 1700,
   GOLD: 1900,
   MR: 1900,
+  SR: 2000,
   XR: 2100,
 };
 
@@ -42,6 +43,8 @@ export const LEAK_COLOR: Record<Rarity, string> = {
   BR: MYTHIC_LEAK,
   VR: MYTHIC_LEAK,
   MR: MYTHIC_LEAK,
+  // Esprit : lueur froide de feu follet
+  SR: "rgb(170 232 242 / 0.95)",
   XR: MYTHIC_LEAK,
 };
 

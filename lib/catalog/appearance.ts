@@ -17,11 +17,14 @@ export const appearanceSchema = z.object({
   fullArt: z.boolean().optional(),
   /** Full Art : personnage détouré (fond transparent, même cadrage que l'image), posé devant le cadre et sous le nom. */
   cutoutUrl: z.string().max(2048).optional(),
-  /**
-   * Sans cadre (Esprit) : l'illustration porte ses propres bords (PNG détouré, bords déchirés) ; ni cadre, ni
-   * papier, ni liseré, ni ombre rectangulaire. Nom posé sur l'image comme en Full Art, lueur qui suit ses bords.
-   */
-  frameless: z.boolean().optional(),
+  /** Carte spectrale (Esprit) : l'illustration se déforme et ses bords se dissolvent, comme un fantôme. */
+  spectral: z.boolean().optional(),
+  /** Déformation quand la carte bouge (0 = aucune, 2 = très forte). */
+  spectralStrength: z.number().min(0).max(2).optional(),
+  /** Grain du brouillard : 0 = larges volutes, 1 = fin. */
+  spectralGrain: z.number().min(0).max(1).optional(),
+  /** Souffle au repos : les bords ondulent même immobiles. */
+  spectralIdle: z.number().min(0).max(1).optional(),
 }).strict();
 export type CardAppearance = z.infer<typeof appearanceSchema>;
 export function parseAppearance(raw: unknown): CardAppearance {
@@ -31,6 +34,7 @@ export function parseAppearance(raw: unknown): CardAppearance {
 export const APPEARANCE_DEFAULTS = {
   focalX: 50, focalY: 0, zoom: 1, effectColor: "#f7c75d", intensity: 0.45,
   speed: 1, reactive: true, tilt: 16, reveal: "flip", duration: 0.5, delay: 0, easing: "easeOut",
+  spectralStrength: 0.6, spectralGrain: 0.3, spectralIdle: 0.4,
 } satisfies CardAppearance;
 const merge = (base: unknown, card: unknown) => ({ ...APPEARANCE_DEFAULTS, ...parseAppearance(base), ...parseAppearance(card) });
 type ResolvedAppearance = ReturnType<typeof merge>;
@@ -52,13 +56,15 @@ export function resolveAppearance(base: unknown, card: unknown): ResolvedAppeara
   return value;
 }
 
-const MATERIAL_COLORS: Record<string, string> = { COMMON: "#897e6d", UNCOMMON: "#618d68", RARE: "#557ca5", EPIC: "#9872bc", LEGENDARY: "#c8a140", MYTHIC: "#d4a9c8", AR: "#f08ab0", GOLD: "#d9b556", MR: "#d8d3c8", VR: "#a98be0", XR: "#e0609f", BR: "#a8a5a3" };
+const MATERIAL_COLORS: Record<string, string> = { COMMON: "#897e6d", UNCOMMON: "#618d68", RARE: "#557ca5", EPIC: "#9872bc", LEGENDARY: "#c8a140", MYTHIC: "#d4a9c8", AR: "#f08ab0", GOLD: "#d9b556", MR: "#d8d3c8", VR: "#a98be0", SR: "#7fc8d6", XR: "#e0609f", BR: "#a8a5a3" };
 
-/** Préréglages des raretés visuelles : mêmes valeurs que la migration raretes_visuelles. */
+/** Préréglages des raretés visuelles : mêmes valeurs que les migrations raretes_visuelles et rarete_esprit. */
 export const VISUAL_PRESETS = {
   MR: { effects: ["holographic"], intensity: 0.25 },
   VR: { effects: ["holographic"], intensity: 0.25 },
   XR: { fullArt: true, effects: ["holographic"], intensity: 0.25 },
+  // Esprit : pleine carte, sans reflet ni laque (aucun effet) ; la matière est le brouillard du canvas spectral
+  SR: { fullArt: true, spectral: true, effects: [] },
   BR: { effects: ["holographic"], intensity: 0.25 },
 } satisfies Record<string, CardAppearance>;
 
