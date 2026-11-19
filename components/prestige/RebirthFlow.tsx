@@ -13,8 +13,12 @@ import { useReducedFx } from "../motion/MotionPreference";
 import { Button } from "../ui/Button";
 import { HoldButton } from "../ui/HoldButton";
 
-// Rite chargé à la demande : il ne pèse rien tant que le joueur ne renaît pas
+// Rites chargés à la demande : ils ne pèsent rien tant que le joueur ne renaît pas
 const RebirthRite = dynamic(() => import("./RebirthRite").then((m) => m.RebirthRite), { ssr: false });
+const RebirthCinematic = dynamic(() => import("./RebirthCinematic").then((m) => m.RebirthCinematic), { ssr: false });
+
+/** Rite joué après la renaissance (prestige.riteStyle) : bain d'encre ou cinématique de lumière. */
+export type RiteStyle = "INK" | "CINEMATIC";
 
 /** Rareté telle que l'affichent les jauges et le rite. */
 export type RarityInfo = { key: string; seal: string; name: string; color: string };
@@ -40,6 +44,7 @@ export function RebirthFlow({
   special,
   rarities,
   player,
+  riteStyle,
 }: {
   /** Pourquoi le joueur ne peut pas encore renaître (seuils ou blocages) ; null : il peut. */
   reason: "locked" | "blocked" | null;
@@ -47,7 +52,8 @@ export function RebirthFlow({
   slots: number;
   special: SpecialCopyView[];
   rarities: RarityInfo[];
-  player: { username: string; image: string | null; frame: FrameStyle | null };
+  player: { username: string; image: string | null; frame: FrameStyle | null; agreement: "MASC" | "FEM" };
+  riteStyle: RiteStyle;
 }) {
   const t = useTranslations("prestige.flow");
   const tErr = useTranslations("prestige.errors");
@@ -115,7 +121,11 @@ export function RebirthFlow({
     });
 
   if (step === "rite" && result) {
-    return <RebirthRite result={result} previous={prestige} rarities={rarities} player={player} />;
+    return riteStyle === "CINEMATIC" ? (
+      <RebirthCinematic result={result} rarities={rarities} username={player.username} agreement={player.agreement} />
+    ) : (
+      <RebirthRite result={result} previous={prestige} rarities={rarities} player={player} />
+    );
   }
 
   const errorLine = error && (
@@ -211,6 +221,12 @@ export function RebirthFlow({
           <dt className="text-xs text-text-muted">{t("zeniLabel")}</dt>
           <dd className="text-lg font-bold tabular-nums text-kin">{t("zeni", { zeni: p.zeni })}</dd>
         </div>
+        {p.booster && (
+          <div className="col-span-2 flex flex-col gap-0.5 lacquer rounded-card border-kin/45 p-3">
+            <dt className="text-xs text-text-muted">{t("boosterLabel")}</dt>
+            <dd className="text-lg font-bold text-kin">{t("booster", { count: p.booster.count, name: p.booster.name })}</dd>
+          </div>
+        )}
       </dl>
       {byRarity.length > 0 && (
         <ul className="flex flex-wrap gap-2 text-xs">

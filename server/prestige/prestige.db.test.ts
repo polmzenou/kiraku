@@ -19,9 +19,13 @@ describe.skipIf(!url)("renaissance (base réelle)", () => {
   const rarity = `TP${tag.toUpperCase()}`;
   const seriesId = `test-series-${tag}`;
   const cards = Array.from({ length: 4 }, (_, i) => `test-prestige-${tag}-${i}`);
+  // Booster offert à la renaissance, et un sachet scellé (jamais crédité)
+  const boosterSlug = `test-prestige-${tag}`;
+  const sealedSlug = `test-prestige-scelle-${tag}`;
+  let boosterTypeId = "";
   const users: string[] = [];
 
-  const ctx = (): RebirthCtx => ({
+  const ctx = (booster = { slug: boosterSlug, count: 1 }): RebirthCtx => ({
     now: new Date(),
     rules: {
       enabled: true,
@@ -38,7 +42,11 @@ describe.skipIf(!url)("renaissance (base réelle)", () => {
     },
     values: { [rarity]: 10 },
     rarityOrder: [rarity],
+    booster,
   });
+
+  const credits = async (userId: string) =>
+    (await prisma.boosterCredit.findUnique({ where: { userId_boosterTypeId: { userId, boosterTypeId } }, select: { count: true } }))?.count ?? 0;
 
   async function player() {
     const user = await prisma.user.create({ data: { username: `test-${randomBytes(4).toString("hex")}`, isGuest: false } });
@@ -67,14 +75,23 @@ describe.skipIf(!url)("renaissance (base réelle)", () => {
     await prisma.rarityDefinition.create({ data: { key: rarity, nameFr: "Test", nameEn: "Test", sortOrder: 9_000, seal: "試" } });
     await prisma.series.create({ data: { id: seriesId, type: "ANIME", titleRomaji: "Prestige" } });
     await prisma.card.createMany({
-      data: cards.map((id, i) => ({ id, name: `Carte ${i}`, imageUrl: "", favorites: 0, power: 10, ki: 10, seriesId, searchText: `carte ${i}`, rarity })),
+      // Statut fixé par l'admin : sans rang, le déclencheur catalog_sync_card_identity archiverait ces cartes AniList
+      data: cards.map((id, i) => ({ id, name: `Carte ${i}`, imageUrl: "", favorites: 0, power: 10, ki: 10, seriesId, searchText: `carte ${i}`, rarity, adminOverrides: ["status"] })),
     });
+    const type = (slug: string, kind: "STANDARD" | "DROP") =>
+      prisma.boosterType.create({
+        data: { slug, kind, family: "special", name: { fr: "Test" }, tagline: { fr: "Test" }, emblem: "試", theme: {}, slotFloors: [], featuredCardIds: [], poolCardIds: [], active: false },
+        select: { id: true },
+      });
+    boosterTypeId = (await type(boosterSlug, "STANDARD")).id;
+    await type(sealedSlug, "DROP");
   }, 30_000);
 
   afterAll(async () => {
     const where = { userId: { in: users } };
     await prisma.$transaction([
       prisma.coinTransaction.deleteMany({ where }),
+      prisma.boosterCredit.deleteMany({ where }),
       prisma.prestigeCycle.deleteMany({ where }),
       prisma.discovery.deleteMany({ where }),
       prisma.auction.deleteMany({ where: { sellerId: { in: users } } }),
@@ -83,6 +100,7 @@ describe.skipIf(!url)("renaissance (base réelle)", () => {
       prisma.card.deleteMany({ where: { id: { in: cards } } }),
       prisma.series.deleteMany({ where: { id: seriesId } }),
       prisma.rarityDefinition.deleteMany({ where: { key: rarity } }),
+      prisma.boosterType.deleteMany({ where: { slug: { in: [boosterSlug, sealedSlug] } } }),
     ]);
     await prisma.$disconnect();
   }, 30_000);
@@ -110,15 +128,40 @@ describe.skipIf(!url)("renaissance (base réelle)", () => {
     const regained = await prisma.discovery.findMany({ where: { userId: id, regainedAt: { not: null } }, select: { cardId: true } });
     expect(regained.map((d) => d.cardId).sort()).toEqual([cards[1], cards[2]].sort());
     expect(await prisma.prestigeCycle.count({ where: { userId: id, number: 1 } })).toBe(1);
+    // Le nouveau cycle commence avec le booster offert
+    expect(out.boosters).toEqual({ slug: boosterSlug, count: 1 });
+    expect(await credits(id)).toBe(1);
   });
 
-  it("deux renaissances simultanées : une seule passe", async () => {
+  it("deux renaissances simultanées : une seule passe, un seul booster offert", async () => {
     const id = await collector(0);
     const run = () => rebirthWith(prisma, { userId: id, expectedPrestige: 0, keep: { copyIds: [], cardIds: [] }, expectedZeni: 40, sacrificedEngraved: [] }, ctx());
     const codes = await Promise.all([code(run()), code(run())]);
     expect(codes.filter((c) => c === null)).toHaveLength(1);
     expect(codes.filter((c) => c === "STALE")).toHaveLength(1);
     expect((await prisma.user.findUniqueOrThrow({ where: { id }, select: { prestige: true } })).prestige).toBe(1);
+    expect(await credits(id)).toBe(1);
+  });
+
+  it("booster offert introuvable, scellé ou coupé : la renaissance passe sans rien créditer", async () => {
+    const base = { expectedPrestige: 0, keep: { copyIds: [], cardIds: [] }, expectedZeni: 40, sacrificedEngraved: [] };
+    for (const booster of [
+      { slug: `inconnu-${tag}`, count: 1 },
+      { slug: sealedSlug, count: 1 },
+      { slug: boosterSlug, count: 0 },
+    ]) {
+      const id = await collector(0);
+      const out = await rebirthWith(prisma, { ...base, userId: id }, ctx(booster));
+      expect(out.prestige).toBe(1);
+      expect(out.boosters).toBeNull();
+      expect(await prisma.boosterCredit.count({ where: { userId: id } })).toBe(0);
+    }
+  });
+
+  it("un récapitulatif périmé ne crédite aucun booster", async () => {
+    const id = await collector(1);
+    expect(await code(rebirthWith(prisma, { userId: id, expectedPrestige: 0, keep: { copyIds: [], cardIds: [] }, expectedZeni: 41, sacrificedEngraved: [] }, ctx()))).toBe("STALE");
+    expect(await credits(id)).toBe(0);
   });
 
   it("dix renaissances simultanées de joueurs différents : dix rangs distincts", async () => {

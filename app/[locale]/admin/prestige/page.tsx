@@ -1,20 +1,30 @@
-import { getFormatter, getTranslations } from "next-intl/server";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
+import dynamic from "next/dynamic";
 import { InstallPrestigeCosmetics } from "@/components/admin/InstallPrestigeCosmetics";
 import { PrestigeSettingsForm } from "@/components/admin/PrestigeSettingsForm";
 import { SettingLogList } from "@/components/admin/SettingLogList";
+import type { RarityInfo } from "@/components/prestige/RebirthFlow";
 import { Link } from "@/i18n/navigation";
+import { localize, parseLocalized } from "@/lib/boosters/types";
+import { rarityColor } from "@/lib/catalog/appearance";
 import { sealOf } from "@/lib/prestige/printing";
 import { PRESTIGE_SETTING_KEYS, type PrestigeSettings } from "@/lib/settings/prestige-form";
 import { recentSettingLogs, requireAdmin } from "@/server/admin";
 import { getCatalogStats } from "@/server/catalog/queries";
 import { getRarityDefinitions } from "@/server/catalog/rarities";
-import { printingOverview, prestigeBalance, recentRebirths } from "@/server/prestige/admin-queries";
+import { prisma } from "@/server/db";
+import { printingOverview, prestigeBalance, recentRebirths, ritePreviewSample } from "@/server/prestige/admin-queries";
 import { getSetting } from "@/server/settings";
+import { getCurrentUser } from "@/server/user";
 
-/** Prestige : interrupteur et réglages, aperçu d'équilibrage (seuils, joueurs éligibles), dernières renaissances. */
+// Banc des rites : les deux rites (sons, Web Animations, images) ne se chargent que sur cette page, au premier essai
+const RitePreviewBench = dynamic(() => import("@/components/admin/RitePreviewBench").then((m) => m.RitePreviewBench));
+
+/** Prestige : interrupteur et réglages, banc des rites, aperçu d'équilibrage (seuils, joueurs éligibles), dernières renaissances. */
 export default async function AdminPrestigePage() {
   await requireAdmin();
-  const [t, format, tRarity, values, logs, definitions, catalog, rebirths, printings] = await Promise.all([
+  const locale = await getLocale();
+  const [t, format, tRarity, values, logs, definitions, catalog, rebirths, printings, sample, me, boosterTypes] = await Promise.all([
     getTranslations("admin.prestige"),
     getFormatter(),
     getTranslations("rarity"),
@@ -24,9 +34,14 @@ export default async function AdminPrestigePage() {
     getCatalogStats(),
     recentRebirths(),
     printingOverview(),
+    ritePreviewSample(locale),
+    getCurrentUser(),
+    // Booster offert à la renaissance : des boosters à ouvrir, jamais un sachet scellé
+    prisma.boosterType.findMany({ where: { kind: { not: "DROP" } }, orderBy: [{ family: "asc" }, { sortOrder: "asc" }, { id: "asc" }], select: { slug: true, name: true } }),
   ]);
   const settings = Object.fromEntries(PRESTIGE_SETTING_KEYS.map((k, i) => [k, values[i]])) as PrestigeSettings;
   const nameOf = (key: string) => (tRarity.has(key as "COMMON") ? tRarity(key as "COMMON") : key);
+  const rarities: RarityInfo[] = definitions.map((d) => ({ key: d.key, seal: d.seal, name: nameOf(d.key), color: rarityColor(d.key, d.appearance) }));
   const balance = await prestigeBalance({
     order: definitions.map((d) => d.key),
     published: catalog.byRarity,
@@ -105,7 +120,26 @@ export default async function AdminPrestigePage() {
         )}
       </section>
 
-      <PrestigeSettingsForm initial={settings} />
+      <section className="flex flex-col gap-3">
+        <h2 className="font-title text-lg font-bold">{t("ritePreview.title")}</h2>
+        <p className="max-w-prose text-sm text-text-muted">{t("ritePreview.intro")}</p>
+        <RitePreviewBench
+          rarities={rarities}
+          cards={sample.cards}
+          booster={sample.booster}
+          boosters={sample.boosters}
+          current={settings["prestige.riteStyle"]}
+          player={{
+            username: me?.username ?? "Kiraku",
+            image: me?.image ?? null,
+            frame: me?.decor.frame ?? null,
+            prestige: me?.prestige ?? 0,
+            agreement: me?.titleAgreement ?? "MASC",
+          }}
+        />
+      </section>
+
+      <PrestigeSettingsForm initial={settings} boosterTypes={boosterTypes.map((b) => ({ slug: b.slug, name: localize(parseLocalized(b.name), locale) }))} />
 
       <section className="flex flex-col gap-3">
         <h2 className="font-title text-lg font-bold">{t("cosmetics.title")}</h2>

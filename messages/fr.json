@@ -3829,7 +3829,10 @@
           "current": "Tirage en cours",
           "seals": "Sceaux des tirages",
           "recycleMultiplier": "Valeur de recyclage d'une gravée (×)"
-        }
+        },
+        "riteStyle": "Rite joué après une renaissance",
+        "rebirthBoosterSlug": "Booster offert à chaque renaissance",
+        "rebirthBoosters": "Boosters offerts par renaissance"
       },
       "hints": {
         "enabled": "Coupé : 404 pour les joueurs, aperçu pour l'équipe, aucun bouton « Évoluer ». Les chiffres romains déjà gagnés restent affichés.",
@@ -3849,7 +3852,10 @@
           "current": "Monter ce numéro ouvre un nouveau tirage pour toutes les cartes : les numéros repartent de 1, avec le sceau du tirage.",
           "recycleMultiplier": "Une gravée recyclée vaut ce multiple d'un exemplaire ordinaire, à la renaissance comme au recyclage."
         },
-        "seals": "Deux à quatre kanji par tirage, pris dans la police des sceaux (lib/seal-glyphs.ts) : un autre kanji est refusé."
+        "seals": "Deux à quatre kanji par tirage, pris dans la police des sceaux (lib/seal-glyphs.ts) : un autre kanji est refusé.",
+        "riteStyle": "Cinématique : l'écran passe au noir, les cartes recyclées filent en lumière vers le centre, éclat et plaque d'or, puis les box. Encre : pierre à encre, pétales dorés, rouleau du cycle. Essaie les deux depuis le banc « Rites de renaissance » plus haut.",
+        "rebirthBoosterSlug": "Crédité dans la transaction de la renaissance, à ouvrir depuis l'accueil. Un type supprimé ou scellé ne crédite rien (la renaissance passe quand même).",
+        "rebirthBoosters": "0 : aucun booster offert."
       },
       "balance": {
         "title": "Aperçu d'équilibrage",
@@ -3898,6 +3904,25 @@
         "editionShort": "tirage {printing} · n° {serial}",
         "heritage": "héritage {level} · gardée {kept} fois par le joueur",
         "consecrated": "{count, plural, one {# carte consacrée} other {# cartes consacrées}}"
+      },
+      "riteSection": "Rite et récompense de la renaissance",
+      "riteStyles": {
+        "CINEMATIC": "Cinématique de lumière",
+        "INK": "Rite d'encre"
+      },
+      "ritePreview": {
+        "title": "Rites de renaissance",
+        "intro": "Joue la cinématique ou le rite d'encre avec un résultat factice : de vraies cartes pour les héritières, le booster du réglage. Rien n'est écrit en base.",
+        "current": "Joué aujourd'hui après une vraie renaissance : {style}. Le choix se fait dans « Rite et récompense de la renaissance », plus bas.",
+        "prestige": "Prestige atteint",
+        "zeni": "Zeni du recyclage",
+        "heirs": "Héritières",
+        "printings": "Gravées débloquées",
+        "booster": "Booster offert ({name})",
+        "noBooster": "Le booster du réglage est introuvable ou scellé : aucune renaissance n'en crédite.",
+        "playCinematic": "Tester la cinématique",
+        "playInk": "Tester le rite d'encre",
+        "hint": "Appuie n'importe où pendant le rite pour le passer ; « Fermer » revient ici. Les sons suivent le réglage du son de l'ouverture."
       }
     },
     "multiAccounts": {
@@ -7064,7 +7089,9 @@
       "holdConfirm": "Appuie encore pour renaître",
       "holding": "Renaissance…",
       "holdHint": "Maintiens le bouton jusqu'à ce qu'il soit rempli : la renaissance est définitive.",
-      "back": "Modifier mes héritières"
+      "back": "Modifier mes héritières",
+      "boosterLabel": "Offert",
+      "booster": "{count, plural, one {# booster {name}} other {# boosters {name}}}"
     },
     "errors": {
       "NO_SESSION": "Ta session a expiré : reconnecte-toi.",
@@ -7095,7 +7122,10 @@
       "rank": "{rank, select, 1 {1re} other {{rank}ᵉ}} renaissance de Kiraku",
       "done": "Te voilà au prestige {roman}",
       "doneText": "Un nouveau cycle commence, avec tes héritières.",
-      "profile": "Voir mon profil"
+      "profile": "Voir mon profil",
+      "booster": "{count, plural, one {Un booster {name} t'attend} other {# boosters {name} t'attendent}}",
+      "openBooster": "Ouvrir mon booster",
+      "close": "Fermer"
     },
     "profile": {
       "evolve": "Évoluer",
@@ -7150,6 +7180,20 @@
         "doneText": "{name} veille désormais sur ton sanctuaire.",
         "sanctuary": "Voir mon sanctuaire"
       }
+    },
+    "cinematic": {
+      "label": "Cinématique de renaissance",
+      "skip": "Passer",
+      "title": "{agreement, select, FEM {Tu es passée} other {Tu es passé}} Prestige {roman} !",
+      "rank": "{rank, select, 1 {1re} other {{rank}ᵉ}} renaissance de Kiraku",
+      "heirs": "{count, plural, one {Retrouve ta carte prestige !} other {Retrouve tes # cartes prestige !}}",
+      "printings": "Découvre les cartes gravées !",
+      "cosmetics": "De nouveaux badges et titres pour ton profil !",
+      "zeni": "+<num>{zeni}</num> Zeni récupérés grâce au recyclage",
+      "booster": "{count, plural, one {Un booster {name} t'attend pour débuter cette nouvelle aventure} other {# boosters {name} t'attendent pour débuter cette nouvelle aventure}}",
+      "openBooster": "Ouvrir mon booster",
+      "profile": "Voir mon profil",
+      "close": "Fermer"
     }
   }
 }

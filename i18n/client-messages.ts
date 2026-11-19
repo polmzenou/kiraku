@@ -11,9 +11,9 @@ export const CLIENT_NAMESPACES = [
 ] as const;
 
 // Namespaces dont seuls quelques sous-espaces servent aux composants client : le reste, lu par les pages serveur,
-// ne traverse pas chaque page (prestige : parcours de renaissance, erreurs, rite, consécration).
+// ne traverse pas chaque page (prestige : parcours de renaissance, erreurs, rite d'encre, cinématique, consécration).
 export const CLIENT_SUBSETS: Partial<Record<(typeof CLIENT_NAMESPACES)[number], readonly string[]>> = {
-  prestige: ["flow", "errors", "rite", "consecrate"],
+  prestige: ["flow", "errors", "rite", "cinematic", "consecrate"],
 };
 
 export function pickClientMessages(messages: AbstractIntlMessages): AbstractIntlMessages {

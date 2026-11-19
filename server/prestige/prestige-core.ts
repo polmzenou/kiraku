@@ -15,6 +15,7 @@ import { heritageCap } from "@/lib/prestige/heritage";
 import type { PeakStats } from "@/lib/prestige/peak";
 import { nextRebirthAt, type PrestigeRules } from "@/lib/prestige/rules";
 import { rebirthRawValue, rebirthZeni } from "@/lib/prestige/zeni";
+import { grantBoosters } from "../economy/credits";
 import { credit } from "../economy/ledger";
 
 type Tx = Prisma.TransactionClient;
@@ -44,7 +45,11 @@ export type RebirthCtx = {
   values: RecycleValues;
   /** Ordre du registre des raretés (affichage des seuils). */
   rarityOrder: readonly string[];
+  /** Boosters offerts à chaque renaissance (prestige.rebirthBoosterSlug et prestige.rebirthBoosters ; 0 = aucun). */
+  booster: RebirthBooster;
 };
+
+export type RebirthBooster = { slug: string; count: number };
 
 /** Héritières demandées : des exemplaires désignés (pièces spéciales), et des cartes dont on garde le plus ancien ordinaire. */
 export type KeepRequest = { copyIds: readonly string[]; cardIds: readonly string[] };
@@ -254,7 +259,24 @@ export type RebirthOutcome = {
   coins: number;
   departed: Departed[];
   heirs: RebirthHeir[];
+  /** Boosters crédités par cette renaissance ; null si le réglage n'en offre pas ou vise un type introuvable. */
+  boosters: RebirthBooster | null;
 };
+
+/**
+ * Boosters offerts par la renaissance, crédités dans sa transaction. Un type introuvable ou scellé (DROP) ne crédite
+ * rien : une récompense mal réglée ne doit jamais faire échouer la renaissance.
+ */
+async function grantRebirthBoosters(tx: Tx, userId: string, booster: RebirthBooster): Promise<RebirthBooster | null> {
+  if (booster.count < 1) return null;
+  const type = await tx.boosterType.findUnique({ where: { slug: booster.slug }, select: { id: true, kind: true } });
+  if (!type || type.kind === "DROP") {
+    console.warn(`[prestige] booster de renaissance introuvable ou scellé : ${booster.slug}`);
+    return null;
+  }
+  await grantBoosters(tx, userId, type.id, booster.count);
+  return booster;
+}
 
 const sameSet = (a: readonly string[], b: readonly string[]) => a.length === b.length && new Set(b).size === b.length && a.every((x) => b.includes(x));
 
@@ -341,8 +363,11 @@ export async function rebirthWith(db: PrismaClient, input: RebirthInput, ctx: Re
     const bumped = await tx.user.updateMany({ where: { id: userId, prestige: player.prestige }, data: { prestige: { increment: 1 }, prestigedAt: now } });
     if (bumped.count !== 1) throw new RebirthError("STALE");
 
+    // Le nouveau cycle commence avec des boosters à ouvrir (un Mythique par défaut)
+    const boosters = await grantRebirthBoosters(tx, userId, ctx.booster);
+
     // Contrôle final : il ne reste au joueur que ses héritières
     if ((await tx.userCard.count({ where: { ownerId: userId } })) !== keepIds.length) throw new RebirthError("STALE");
-    return { cycleId, prestige: player.prestige + 1, globalRank: rank, zeni, coins, departed, heirs };
+    return { cycleId, prestige: player.prestige + 1, globalRank: rank, zeni, coins, departed, heirs, boosters };
   }, TX);
 }

@@ -4,13 +4,14 @@ import { getLocale } from "next-intl/server";
 import { refresh, updateTag } from "next/cache";
 import { isStaff } from "@/lib/admin/roles";
 import type { CardView } from "@/lib/boosters/view";
+import type { RebirthBoosterView } from "@/lib/prestige/cinematic";
 import { z } from "@/lib/zod";
 import { cardViews } from "../boosters/display";
 import { LEADERBOARD_TAG } from "../collection/leaderboard";
 import { prisma } from "../db";
 import { consecrateWith, ConsecrateError, type ConsecrateErrorCode } from "../prestige/consecrate-core";
 import { previewRebirthWith, rebirthWith, RebirthError, type Departed, type RebirthErrorCode, type RebirthHeir } from "../prestige/prestige-core";
-import { rebirthCtx } from "../prestige/queries";
+import { printingsUnlockedAt, rebirthBoosterView, rebirthCtx } from "../prestige/queries";
 import { getPrestigeRules } from "../prestige/rules";
 import { rateLimit } from "../ratelimit";
 import { requireActiveUser } from "../user";
@@ -55,6 +56,8 @@ export type RebirthPreviewView = {
   zeni: number;
   /** Gravées qui partiraient : à confirmer une à une. */
   engraved: { id: string; serial: number; printing: number; card: CardView }[];
+  /** Boosters offerts avec la renaissance. */
+  booster: RebirthBoosterView | null;
 };
 
 /** Récapitulatif de la renaissance pour les héritières choisies : ce qui part, les Zeni, les gravées sacrifiées. */
@@ -70,7 +73,8 @@ export async function previewRebirthAction(input: unknown): Promise<{ ok: true; 
   }
   try {
     const preview = await previewRebirthWith(prisma, user.id, { copyIds: parsed.data.keepCopyIds, cardIds: parsed.data.keepCardIds }, ctx);
-    const views = await cardViews(preview.engraved.map((e) => e.cardId), await getLocale());
+    const locale = await getLocale();
+    const [views, booster] = await Promise.all([cardViews(preview.engraved.map((e) => e.cardId), locale), rebirthBoosterView(ctx.booster, locale)]);
     return {
       ok: true,
       preview: {
@@ -81,6 +85,7 @@ export async function previewRebirthAction(input: unknown): Promise<{ ok: true; 
           const card = views.get(e.cardId);
           return card ? [{ id: e.id, serial: e.serial, printing: e.printing, card }] : [];
         }),
+        booster,
       },
     };
   } catch (e) {
@@ -95,6 +100,10 @@ export type RebirthResultView = {
   coins: number;
   departed: Departed[];
   heirs: (RebirthHeir & { card: CardView })[];
+  /** Boosters crédités par la renaissance (à ouvrir depuis l'accueil ou le lien de fin du rite). */
+  booster: RebirthBoosterView | null;
+  /** Les éditions gravées tombent déjà à ce prestige (box de la cinématique). */
+  printingsUnlocked: boolean;
 };
 
 /** La renaissance : une seule transaction, idempotente par le prestige que voit le joueur. */
@@ -121,7 +130,12 @@ export async function rebirthAction(input: unknown): Promise<{ ok: true; result:
     // Classement des collectionneurs et en-tête (solde, chiffre romain) à jour
     updateTag(LEADERBOARD_TAG);
     refresh();
-    const views = await cardViews(outcome.heirs.map((h) => h.cardId), await getLocale());
+    const locale = await getLocale();
+    const [views, booster, printingsUnlocked] = await Promise.all([
+      cardViews(outcome.heirs.map((h) => h.cardId), locale),
+      rebirthBoosterView(outcome.boosters, locale),
+      printingsUnlockedAt(outcome.prestige),
+    ]);
     return {
       ok: true,
       result: {
@@ -134,6 +148,8 @@ export async function rebirthAction(input: unknown): Promise<{ ok: true; result:
           const card = views.get(h.cardId);
           return card ? [{ ...h, card }] : [];
         }),
+        booster,
+        printingsUnlocked,
       },
     };
   } catch (e) {

@@ -6,11 +6,12 @@ import type { FrameStyle } from "@/lib/profile/frames";
 import { PRESTIGE_ASSETS } from "@/lib/prestige/assets";
 import { toRoman } from "@/lib/prestige/roman";
 import type { RebirthResultView } from "@/server/actions/prestige";
-import { animate, createTimeline, dispose, removeWhenDone, skip, SPRING, wait, type Timeline } from "../shop/celebration/timeline";
+import { animate as animateOn, createTimeline, dispose, removeWhenDone, skip, SPRING, wait, type Timeline } from "../shop/celebration/timeline";
 import { Fuda, HeritagePetal } from "../fuda/Fuda";
 import { useReducedFx } from "../motion/MotionPreference";
 import { useRitualFx } from "../opening/useRitualFx";
 import { PlayerAvatar } from "../social/PlayerAvatar";
+import { Button } from "../ui/Button";
 import { ButtonLink } from "../ui/ButtonLink";
 import { departedByRarity, type RarityInfo } from "./RebirthFlow";
 import "./prestige.css";
@@ -27,11 +28,14 @@ export function RebirthRite({
   previous,
   rarities,
   player,
+  onClose,
 }: {
   result: RebirthResultView;
   previous: number;
   rarities: RarityInfo[];
   player: { username: string; image: string | null; frame: FrameStyle | null };
+  /** Banc de l'admin : pas de lien de sortie, un bouton « Fermer ». */
+  onClose?: () => void;
 }) {
   const t = useTranslations("prestige.rite");
   const format = useFormatter();
@@ -49,6 +53,14 @@ export function RebirthRite({
     if (!el) return;
     const timeline = createTimeline(reduced);
     tl.current = timeline;
+    // Démonté (ou rejoué deux fois par le mode strict en dev), le rite ne laisse rien derrière lui : le déroulé
+    // abandonné file en mode passé, chaque animation qu'il crée encore est annulée et sa suite s'arrête
+    let alive = true;
+    const animate: typeof animateOn = (...args) => {
+      const a = animateOn(...args);
+      if (!alive) a.cancel();
+      return a;
+    };
     const q = <T extends Element>(sel: string) => el.querySelector<T>(sel);
     const qa = (sel: string) => [...el.querySelectorAll<HTMLElement>(sel)];
     const zeniNum = q<HTMLElement>("[data-zeni]");
@@ -144,10 +156,13 @@ export function RebirthRite({
       ]);
       play("bell");
       await animate(timeline, q("[data-done]")!, [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 350 }).finished;
-      q<HTMLElement>("[data-done] a")?.focus();
+      q<HTMLElement>("[data-done] a, [data-done] button")?.focus();
     };
     run().catch(() => undefined);
-    return () => dispose(timeline);
+    return () => {
+      alive = false;
+      dispose(timeline);
+    };
     // Le rite ne se joue qu'une fois, avec le résultat reçu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -158,7 +173,7 @@ export function RebirthRite({
       role="dialog"
       aria-modal="true"
       aria-label={t("label")}
-      className="pr-rite"
+      className="pr-rite is-scroll"
       onClick={() => tl.current && skip(tl.current)}
     >
       {/* Paysage d'encre nocturne : portrait sur téléphone, paysage sur un écran large */}
@@ -242,9 +257,31 @@ export function RebirthRite({
         <div data-done className="mt-auto flex flex-col items-center gap-2 pb-2 text-center opacity-0">
           <b className="font-heading text-2xl">{t("done", { roman: toRoman(result.prestige) })}</b>
           <span className="text-sm text-[#a89f92]">{t("doneText")}</span>
-          <ButtonLink href={`/u/${player.username}`} variant="primary" className="w-full max-w-xs" onClick={(e) => e.stopPropagation()}>
-            {t("profile")}
-          </ButtonLink>
+          {result.booster && <span className="text-sm font-bold text-kin">{t("booster", { count: result.booster.count, name: result.booster.name })}</span>}
+          {onClose ? (
+            <Button
+              type="button"
+              variant="primary"
+              className="w-full max-w-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+            >
+              {t("close")}
+            </Button>
+          ) : (
+            <>
+              {result.booster && (
+                <ButtonLink href={`/ouvrir/${result.booster.slug}?credit=1`} variant="primary" className="w-full max-w-xs" onClick={(e) => e.stopPropagation()}>
+                  {t("openBooster")}
+                </ButtonLink>
+              )}
+              <ButtonLink href={`/u/${player.username}`} variant={result.booster ? "secondary" : "primary"} className="w-full max-w-xs" onClick={(e) => e.stopPropagation()}>
+                {t("profile")}
+              </ButtonLink>
+            </>
+          )}
         </div>
       </div>
 

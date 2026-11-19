@@ -195,12 +195,13 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
           </ul>}
         </section>
       </div>
-      <section className="flex flex-col gap-3">
+      {/* DEV : les modifications faites sur le compte d'un administrateur ne lui sont pas montrées (rendu serveur : elles ne quittent pas le serveur) */}
+      {!(readOnly && user.role === "ADMIN") && <section className="flex flex-col gap-3">
         <h3 className="font-title text-xl font-bold">{t("audit")}</h3>
         {logs.length === 0 ? <p className="text-sm text-text-muted">{t("historyEmpty")}</p> : <ul className="flex flex-col gap-2">
           {logs.map((log) => <li key={log.id}><details className="lacquer rounded-card p-3 text-sm"><summary className="cursor-pointer"><strong>{actionNames.get(log.action) ?? log.action}</strong> · {log.admin.username} · {format.dateTime(log.createdAt, { dateStyle: "short", timeStyle: "short" })}</summary><div className="mt-3 grid gap-3 sm:grid-cols-2"><div><h4 className="mb-1 font-bold">{t("before")}</h4><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all text-xs text-text-muted">{JSON.stringify(log.before, null, 2)}</pre></div><div><h4 className="mb-1 font-bold">{t("after")}</h4><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all text-xs text-text-muted">{JSON.stringify(log.after, null, 2)}</pre></div></div></details></li>)}
         </ul>}
-      </section>
+      </section>}
     </div>
   );
 }
