@@ -10,6 +10,19 @@ export const CLIENT_NAMESPACES = [
   "listings", "showcase", "spoiler", "theme", "time", "trades", "v1Welcome", "v2Announcement", "wiki", "wishlist",
 ] as const;
 
+// Namespaces dont seuls quelques sous-espaces servent aux composants client : le reste, lu par les pages serveur,
+// ne traverse pas chaque page (prestige : parcours de renaissance, erreurs, rite, consécration).
+export const CLIENT_SUBSETS: Partial<Record<(typeof CLIENT_NAMESPACES)[number], readonly string[]>> = {
+  prestige: ["flow", "errors", "rite", "consecrate"],
+};
+
 export function pickClientMessages(messages: AbstractIntlMessages): AbstractIntlMessages {
-  return Object.fromEntries(CLIENT_NAMESPACES.map((key) => [key, messages[key]]));
+  return Object.fromEntries(
+    CLIENT_NAMESPACES.map((key) => {
+      const value = messages[key];
+      const keep = CLIENT_SUBSETS[key];
+      if (!keep || !value || typeof value !== "object") return [key, value];
+      return [key, Object.fromEntries(keep.map((sub) => [sub, value[sub]]))];
+    }),
+  );
 }

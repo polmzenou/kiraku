@@ -162,7 +162,7 @@ export async function getRankedLeaderboard(r: RankedRules): Promise<RankedEntry[
         pc: row.pc,
         tier: rank.tier,
         division: rank.division,
-        decor: decorFromColumns(row.frameStyle, row.nameColor, row.prestige),
+        decor: decorFromColumns(row),
       };
     });
 }
@@ -229,7 +229,7 @@ export async function getDivisionBoard(userId: string, rank: Pick<RankView, "tie
       pc: row.pc,
       tier: at.tier,
       division: at.division,
-      decor: decorFromColumns(row.frameStyle, row.nameColor, row.prestige),
+      decor: decorFromColumns(row),
       self: row.id === userId,
     };
   };

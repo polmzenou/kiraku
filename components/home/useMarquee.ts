@@ -22,11 +22,6 @@ function place(el: HTMLElement | null, x: number | null) {
 
 export function useMarquee<T extends HTMLElement>({ enabled, periodSeconds, paused = false }: { enabled: boolean; periodSeconds: number; paused?: boolean }) {
   const track = useRef<T>(null);
-  // Hors écran : la piste ne bouge plus, mais garde sa position (pas de saut quand on y revient)
-  const pausedRef = useRef(paused);
-  useEffect(() => {
-    pausedRef.current = paused;
-  }, [paused]);
   const state = useRef({
     x: 0,
     velocity: 0,
@@ -57,6 +52,8 @@ export function useMarquee<T extends HTMLElement>({ enabled, periodSeconds, paus
       place(el, null);
       return;
     }
+    // Hors écran : plus aucune image n'est calculée, et la piste garde sa position (pas de saut au retour)
+    if (paused) return;
     let frame = 0;
     let last = performance.now();
     const tick = (now: number) => {
@@ -64,7 +61,7 @@ export function useMarquee<T extends HTMLElement>({ enabled, periodSeconds, paus
       const dt = Math.min(now - last, 64) / 1000;
       last = now;
       const s = state.current;
-      if (document.hidden || pausedRef.current || s.pointer?.dragging || !s.period) return;
+      if (document.hidden || s.pointer?.dragging || !s.period) return;
       const cruise = s.hovered || s.focused ? 0 : -s.period / periodSeconds;
       s.velocity = relaxVelocity(s.velocity, cruise, dt, RELAX_TAU);
       s.x = wrap(s.x + s.velocity * dt, s.period);
@@ -74,7 +71,7 @@ export function useMarquee<T extends HTMLElement>({ enabled, periodSeconds, paus
     state.current.velocity = state.current.period ? -state.current.period / periodSeconds : 0;
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [track, enabled, periodSeconds]);
+  }, [track, enabled, periodSeconds, paused]);
 
   const onPointerDown = (e: PointerEvent<HTMLElement>) => {
     if (!enabled || !e.isPrimary || (e.pointerType === "mouse" && e.button !== 0)) return;

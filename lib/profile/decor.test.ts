@@ -12,8 +12,8 @@ describe("décor d'un joueur", () => {
 
   it("lit le prestige : un entier positif, sinon 0", () => {
     expect(decorFromRelations({ prestige: 3 }).prestige).toBe(3);
-    expect(decorFromColumns(null, null, 12)).toEqual({ ...NO_DECOR, prestige: 12 });
-    for (const bad of [0, -1, 2.5, null, undefined]) expect(decorFromColumns(null, null, bad).prestige).toBe(0);
+    expect(decorFromColumns({ prestige: 12 })).toEqual({ ...NO_DECOR, prestige: 12 });
+    for (const bad of [0, -1, 2.5, null, undefined]) expect(decorFromColumns({ prestige: bad }).prestige).toBe(0);
   });
 
   it("ignore un cosmétique désactivé, un style inconnu ou absent", () => {
@@ -24,7 +24,7 @@ describe("décor d'un joueur", () => {
   });
 
   it("lit les colonnes du SQL brut", () => {
-    expect(decorFromColumns("hoo", "rainbow")).toEqual({ frame: "hoo", nameColor: "rainbow", prestige: 0 });
-    expect(decorFromColumns(null, undefined)).toEqual(NO_DECOR);
+    expect(decorFromColumns({ frameStyle: "hoo", nameColor: "rainbow" })).toEqual({ frame: "hoo", nameColor: "rainbow", prestige: 0 });
+    expect(decorFromColumns({ frameStyle: null, nameColor: undefined })).toEqual(NO_DECOR);
   });
 });

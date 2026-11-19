@@ -72,7 +72,7 @@ export async function searchPlayers(viewerId: string, q: string, limit: number):
     return {
       username: r.username,
       image: access.profile ? r.image : null,
-      decor: access.profile ? decorFromColumns(r.frameStyle, r.nameColor, r.prestige) : NO_DECOR,
+      decor: access.profile ? decorFromColumns(r) : NO_DECOR,
       profile: access.profile,
       collection: access.collection,
       relation,

@@ -73,7 +73,7 @@ export async function listConversations(me: string, since: Date, onlineSeconds: 
     username: r.username,
     image: r.image,
     isGuest: r.isGuest,
-    decor: decorFromColumns(r.frameStyle, r.nameColor, r.prestige),
+    decor: decorFromColumns(r),
     online: isOnline(r, now, onlineSeconds),
     last: r.body !== null && r.lastAt ? { body: r.body, at: r.lastAt.toISOString(), mine: r.lastMine === true } : null,
     unread: r.unread,

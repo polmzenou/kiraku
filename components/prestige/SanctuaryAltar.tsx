@@ -45,7 +45,7 @@ export function SanctuaryAltar({ relics, labels }: { relics: Relic[]; labels: { 
   return (
     <div className="flex flex-col gap-3">
       <div className="pr-sanctum">
-        <ThemeBackdrop media={PRESTIGE_ASSETS.sanctuary} />
+        <ThemeBackdrop media={PRESTIGE_ASSETS.sanctuary} lazy />
         <div className="pr-sanctum-altar">
           {TIERS.map((tier, k) => {
             const cards = relics.slice(tier.from, tier.to);

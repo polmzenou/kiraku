@@ -41,7 +41,7 @@ const loadTopCollectors = unstable_cache(
       HAVING COUNT(uc."id") > 0 OR u."prestige" > 0
       ORDER BY u."prestige" DESC, "uniqueCards" DESC, "mythics" DESC, u."createdAt" ASC
       LIMIT ${LEADERBOARD_SIZE}`;
-    return rows.map(({ frameStyle, nameColor, prestige, ...r }, i) => ({ ...r, rank: i + 1, decor: decorFromColumns(frameStyle, nameColor, prestige) }));
+    return rows.map(({ frameStyle, nameColor, prestige, ...r }, i) => ({ ...r, rank: i + 1, decor: decorFromColumns({ frameStyle, nameColor, prestige }) }));
   },
   ["top-collectors-v5"],
   { tags: [LEADERBOARD_TAG], revalidate: 300 },

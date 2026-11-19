@@ -25,8 +25,11 @@ function saveDataWanted() {
   return (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
 }
 
-/** `stillOnly` : image fixe seulement, chargée à l'approche (galeries de nombreuses vitrines, /event). */
-export function ThemeBackdrop({ media, stillOnly = false }: { media: ThemeMedia; stillOnly?: boolean }) {
+/**
+ * `stillOnly` : image fixe seulement, chargée à l'approche (galeries de nombreuses vitrines, /event). `lazy` : fond
+ * placé loin dans la page (sanctuaire du profil), image et vidéo chargées à l'approche seulement.
+ */
+export function ThemeBackdrop({ media, stillOnly = false, lazy = false }: { media: ThemeMedia; stillOnly?: boolean; lazy?: boolean }) {
   const level = useFxLevel();
   const wide = useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE).matches, () => false);
   // Faux au rendu serveur et pendant l'hydratation, vrai ensuite
@@ -34,11 +37,23 @@ export function ThemeBackdrop({ media, stillOnly = false }: { media: ThemeMedia;
   const saveData = useSyncExternalStore(subscribeNothing, saveDataWanted, () => false);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
+  // Fond loin dans la page : la vidéo n'existe qu'une fois le fond à l'approche de l'écran
+  const [near, setNear] = useState(!lazy);
   const holder = useRef<HTMLSpanElement>(null);
   const video = useRef<HTMLVideoElement>(null);
 
-  const mode = mounted && !failed && !stillOnly ? backdropMode(level, saveData) : "still";
+  const mode = mounted && !failed && !stillOnly && near ? backdropMode(level, saveData) : "still";
   const src = wide ? media.desktop.loop : media.mobile.loop;
+
+  useEffect(() => {
+    const box = holder.current;
+    if (near || !box) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setNear(true);
+    }, { rootMargin: "50% 0px" });
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [near]);
 
   useEffect(() => {
     const v = video.current;
@@ -72,7 +87,7 @@ export function ThemeBackdrop({ media, stillOnly = false }: { media: ThemeMedia;
     <span ref={holder} className="vt-media-holder">
       <picture>
         <source media={WIDE} srcSet={media.desktop.still} />
-        <img src={media.mobile.still} alt="" decoding="async" loading={stillOnly ? "lazy" : undefined} draggable={false} className="vt-media" />
+        <img src={media.mobile.still} alt="" decoding="async" loading={stillOnly || lazy ? "lazy" : undefined} draggable={false} className="vt-media" />
       </picture>
       {mode === "video" && (
         <video

@@ -41,7 +41,7 @@ const loadSample = unstable_cache(
       WHERE r."hidden" = false AND u."bannedAt" IS NULL
       ORDER BY r."pinned" DESC, r."pinnedAt" ASC, random()
       LIMIT ${SAMPLE_SIZE}`;
-    return rows.map(({ frameStyle, nameColor, prestige, ...r }) => ({ ...r, updatedAt: r.updatedAt.toISOString(), decor: decorFromColumns(frameStyle, nameColor, prestige) }));
+    return rows.map(({ frameStyle, nameColor, prestige, ...r }) => ({ ...r, updatedAt: r.updatedAt.toISOString(), decor: decorFromColumns({ frameStyle, nameColor, prestige }) }));
   },
   ["reviews-sample-v4"],
   { tags: [REVIEWS_TAG], revalidate: 300 },
