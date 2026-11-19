@@ -1,6 +1,8 @@
 // Lectures sûres des photos JSON du prestige : parcours d'un exemplaire consacré (ConsecratedCard.journey) et
 // héritières d'un cycle (PrestigeCycle.heirs). Une entrée illisible est ignorée, jamais devinée.
 
+import { HERITAGE_LEVELS } from "./heritage";
+
 export const OWNERSHIP_VIAS = ["DRAW", "REBIRTH", "AUCTION", "LISTING", "TRADE", "GIFT", "CASINO"] as const;
 export type OwnershipViaKey = (typeof OWNERSHIP_VIAS)[number];
 
@@ -32,7 +34,7 @@ export function readHeirs(raw: unknown): CycleHeir[] {
   return raw.flatMap((h): CycleHeir[] => {
     if (!isObject(h) || typeof h.userCardId !== "string" || typeof h.cardId !== "string" || !positiveInt(h.heritage)) return [];
     const engraved = positiveInt(h.printing) && positiveInt(h.serial);
-    return [{ userCardId: h.userCardId, cardId: h.cardId, heritage: Math.min(h.heritage, 5), printing: engraved ? (h.printing as number) : null, serial: engraved ? (h.serial as number) : null }];
+    return [{ userCardId: h.userCardId, cardId: h.cardId, heritage: Math.min(h.heritage, HERITAGE_LEVELS), printing: engraved ? (h.printing as number) : null, serial: engraved ? (h.serial as number) : null }];
   });
 }
 

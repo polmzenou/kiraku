@@ -2,7 +2,8 @@
 // `consecrateMinOwnCycles` prestiges, quitte le jeu pour le sanctuaire de son profil. Irréversible. Client injecté
 // (serveur ou tests) ; une seule transaction sous le verrou du joueur.
 import type { PrismaClient } from "@/generated/prisma/client";
-import { HERITAGE_LEVELS } from "@/lib/prestige/heritage";
+import { heritageCap } from "@/lib/prestige/heritage";
+import { accountRefusal, lockPlayer } from "./prestige-core";
 
 export type ConsecrateErrorCode = "NO_USER" | "GUEST" | "BANNED" | "FROZEN" | "NOT_ELIGIBLE";
 
@@ -25,15 +26,13 @@ export async function consecrateWith(
   rules: ConsecrateRules,
 ): Promise<{ id: string; cardId: string }> {
   const { userId, userCardId, now } = input;
-  const heritage = Math.min(rules.heritageMax, HERITAGE_LEVELS);
+  const heritage = heritageCap(rules);
   return db.$transaction(async (tx) => {
     // Verrou du joueur : un cadeau, une vente ou une mise de cet exemplaire attend la fin de la consécration
-    const [user] = await tx.$queryRaw<{ isGuest: boolean; bannedAt: Date | null; deletionRequestedAt: Date | null; anonymizedAt: Date | null; prestige: number }[]>`
-      SELECT "isGuest", "bannedAt", "deletionRequestedAt", "anonymizedAt", "prestige" FROM "User" WHERE id = ${userId} FOR UPDATE`;
+    const user = await lockPlayer(tx, userId);
     if (!user) throw new ConsecrateError("NO_USER");
-    if (user.isGuest) throw new ConsecrateError("GUEST");
-    if (user.bannedAt) throw new ConsecrateError("BANNED");
-    if (user.deletionRequestedAt || user.anonymizedAt) throw new ConsecrateError("FROZEN");
+    const refusal = accountRefusal(user);
+    if (refusal) throw new ConsecrateError(refusal);
 
     // Parcours lu avant le déplacement : la provenance part avec la ligne UserCard (cascade)
     const [owners, cycles] = await Promise.all([

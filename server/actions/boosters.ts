@@ -88,7 +88,7 @@ export async function openBoosterAction(input: unknown): Promise<OpenBoosterResu
   const { outcome, rules } = opened;
   const [views, seals] = await Promise.all([
     cardViews(outcome.boosters.flatMap((b) => b.cards.map((c) => c.cardId)), await getLocale()),
-    sealsFor(outcome.boosters),
+    getPrintingSeals(),
   ]);
   const boosters = outcome.boosters.map((b) => toView(b, views, seals));
   const state = boosterStateFrom(
@@ -117,11 +117,6 @@ export async function openBoosterAction(input: unknown): Promise<OpenBoosterResu
     zeniSpent: outcome.zeniSpent,
     credits: outcome.credits,
   };
-}
-
-/** Sceaux des tirages, lus seulement si une carte est sortie gravée. */
-async function sealsFor(boosters: readonly OpenedBoosterRow[]): Promise<Record<string, string>> {
-  return boosters.some((b) => b.cards.some((c) => c.edition)) ? getPrintingSeals() : {};
 }
 
 function toView(b: OpenedBoosterRow, views: Awaited<ReturnType<typeof cardViews>>, seals: Record<string, string>): OpenedBoosterView {
@@ -178,7 +173,7 @@ export async function openSealedAction(input: unknown): Promise<OpenSealedResult
     return { ok: false, error: "UNAVAILABLE" };
   }
   const { booster, karma } = opened.outcome;
-  const [views, seals] = await Promise.all([cardViews(booster.cards.map((c) => c.cardId), await getLocale()), sealsFor([booster])]);
+  const [views, seals] = await Promise.all([cardViews(booster.cards.map((c) => c.cardId), await getLocale()), getPrintingSeals()]);
   refresh();
   return { ok: true, booster: toView(booster, views, seals), karma };
 }

@@ -75,7 +75,7 @@ export async function getShowcaseCards(showcaseId: string, ownerId: string, layo
     },
   });
   const result: (ShowcaseCard | null)[] = Array.from({ length: capacity }, () => null);
-  const seals = items.some((i) => i.userCard.printing !== null) ? await getPrintingSeals() : {};
+  const seals = await getPrintingSeals();
   for (const item of items) {
     const c = item.userCard.card;
     const { heritage, printing, serial, edition } = item.userCard;

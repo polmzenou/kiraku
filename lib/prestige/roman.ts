@@ -19,25 +19,6 @@ export function toRoman(n: number): string {
   return out;
 }
 
-const KANJI_DIGITS = ["", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
-
-/**
- * Nombre en kanji pour le titre d'un rouleau (巻之三, 巻之十二) : de 1 à 999 avec 十 et 百, au-delà le nombre. Tous ces
- * caractères sont dans la police des sceaux (lib/seal-glyphs.ts).
- */
-export function kanjiNumber(n: number): string {
-  if (!Number.isInteger(n) || n < 1) return "";
-  if (n >= 1000) return String(n);
-  const hundreds = Math.floor(n / 100);
-  const tens = Math.floor((n % 100) / 10);
-  const units = n % 10;
-  return (
-    (hundreds ? (hundreds > 1 ? KANJI_DIGITS[hundreds] : "") + "百" : "") +
-    (tens ? (tens > 1 ? KANJI_DIGITS[tens] : "") + "十" : "") +
-    KANJI_DIGITS[units]
-  );
-}
-
 /** Matière de la plaque selon le prestige : laque (I à IV), or (V à XI), émeraude (XII à XVII), nacre (XVIII et plus). */
 export type PlateMaterial = "laque" | "or" | "emeraude" | "nacre";
 

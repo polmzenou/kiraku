@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import { evaluateCondition, type ProfileCondition, type ProfileStats } from "../profile/conditions";
 import { SETTING_DEFAULTS } from "../settings/defaults";
 import { eligibilityOf, requiredCount } from "./eligibility";
-import { canConsecrate, nextHeritage } from "./heritage";
+import { canConsecrate, heritageCap } from "./heritage";
 import { bestOfCycles, mergePeak, parsePeak, type PeakStats } from "./peak";
-import { kanjiNumber, plateMaterial, toRoman } from "./roman";
+import { kanjiNumber } from "../kanji";
+import { plateMaterial, toRoman } from "./roman";
 import { rebirthRawValue, rebirthZeni } from "./zeni";
 
 describe("chiffres romains", () => {
@@ -88,11 +89,9 @@ describe("Zeni d'une renaissance", () => {
 
 describe("héritage et consécration", () => {
   it("monte d'un niveau, sans dépasser le plafond ni cinq", () => {
-    expect(nextHeritage(0, 5)).toBe(1);
-    expect(nextHeritage(4, 5)).toBe(5);
-    expect(nextHeritage(5, 5)).toBe(5);
-    expect(nextHeritage(2, 3)).toBe(3);
-    expect(nextHeritage(3, 9)).toBe(4);
+    expect(heritageCap({ heritageMax: 5 })).toBe(5);
+    expect(heritageCap({ heritageMax: 3 })).toBe(3);
+    expect(heritageCap({ heritageMax: 9 })).toBe(5);
   });
 
   it("la consécration se mérite : plafond atteint et gardée soi-même", () => {

@@ -4,10 +4,11 @@
 
 export const HERITAGE_LEVELS = 5;
 
-export function nextHeritage(current: number, max: number): number {
-  return Math.min(Math.max(current, 0) + 1, Math.min(max, HERITAGE_LEVELS));
+/** Héritage le plus haut : le réglage, jamais plus que les cinq pétales de la marque. */
+export function heritageCap(rules: { heritageMax: number }): number {
+  return Math.min(rules.heritageMax, HERITAGE_LEVELS);
 }
 
 export function canConsecrate(copy: { heritage: number; keptByOwner: number }, rules: { heritageMax: number; consecrateMinOwnCycles: number }): boolean {
-  return copy.heritage >= Math.min(rules.heritageMax, HERITAGE_LEVELS) && copy.keptByOwner >= rules.consecrateMinOwnCycles;
+  return copy.heritage >= heritageCap(rules) && copy.keptByOwner >= rules.consecrateMinOwnCycles;
 }

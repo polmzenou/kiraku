@@ -29,6 +29,11 @@ export function displayNameFor(
 /** Nom affiché ; `revealed` : vrai pseudo montré à un admin alors qu'il reste caché aux joueurs (cadenas). */
 export type ShownName = { name: string; revealed: boolean };
 
+/** Pseudo à mettre dans un lien de profil : seulement quand le nom affiché est le vrai pseudo, ni masqué ni révélé à un admin. */
+export function profileUsername(shown: ShownName, username: string): string | null {
+  return !shown.revealed && shown.name === username ? username : null;
+}
+
 /**
  * Comme displayNameFor, mais un admin (`revealHidden`) lit le vrai pseudo d'un joueur caché (profil privé
  * ou réservé aux amis, banni, blocage), marqué `revealed`. Un compte supprimé n'a plus de pseudo à montrer.

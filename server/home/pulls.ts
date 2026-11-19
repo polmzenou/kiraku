@@ -77,8 +77,7 @@ async function loadFeed({ maxAgeHours, ...query }: FeedKey, locale: string): Pro
     },
   });
   const rows = found.sort((a, b) => order.get(a.id)! - order.get(b.id)!);
-  const engraved = rows.some((r) => r.printing !== null);
-  const [views, seals] = await Promise.all([cardViews(rows.map((r) => r.cardId), locale), engraved ? getPrintingSeals() : {}]);
+  const [views, seals] = await Promise.all([cardViews(rows.map((r) => r.cardId), locale), getPrintingSeals()]);
   return rows.flatMap((r) => {
     const view = views.get(r.cardId);
     if (!view) return [];

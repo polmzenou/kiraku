@@ -45,7 +45,7 @@ export const getPublicOpening = cache(async (id: string, locale: string, viewerI
   // Ids de Card copiés au tirage : les cartes restent visibles même recyclées ou vendues depuis, et une gravée
   // garde son édition (copiée à sa place dans le booster)
   const editions = readEditions(opening.editions);
-  const [views, seals] = await Promise.all([cardViews(opening.catalogCardIds, locale), editions.size > 0 ? getPrintingSeals() : {}]);
+  const [views, seals] = await Promise.all([cardViews(opening.catalogCardIds, locale), getPrintingSeals()]);
   const cards = opening.catalogCardIds.flatMap((cardId, position) => {
     const view = views.get(cardId);
     const edition = editions.get(position);

@@ -18,7 +18,7 @@ export async function copyMarksOf(ids: readonly (string | null | undefined)[]): 
     select: { id: true, heritage: true, printing: true, serial: true, edition: { select: { size: true } } },
   });
   if (rows.length === 0) return new Map();
-  const seals = rows.some((r) => r.printing !== null) ? await getPrintingSeals() : {};
+  const seals = await getPrintingSeals();
   return new Map(
     rows.flatMap((r) => {
       const copy = fudaCopyOf({ heritage: r.heritage, printing: r.printing, serial: r.serial, size: r.edition?.size ?? null }, seals);

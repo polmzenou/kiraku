@@ -1,5 +1,5 @@
 import "server-only";
-import { displayNameFor } from "@/lib/collection/display-name";
+import { displayNameFor, profileUsername } from "@/lib/collection/display-name";
 import { engravedMessage, rebirthMessage } from "@/lib/discord/prestige-message";
 import { readHeirs } from "@/lib/prestige/journey";
 import { sealOf } from "@/lib/prestige/printing";
@@ -26,7 +26,7 @@ export async function discordPrestigeChannel(): Promise<string | undefined> {
 /** Pseudo affichable et lien de profil : un profil privé ou réservé aux amis est annoncé « Un joueur ». */
 function shown(player: { id: string; username: string; profileVisibility: "PUBLIC" | "FRIENDS" | "PRIVATE"; bannedAt: Date | null; anonymizedAt: Date | null }) {
   const name = displayNameFor(player, null, { friends: false, blocked: false }, LABELS);
-  return { name, username: name === player.username ? player.username : null };
+  return { name, username: profileUsername({ name, revealed: false }, player.username) };
 }
 
 async function publishRebirth(key: string, cycleId: string): Promise<boolean> {

@@ -1,7 +1,8 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import type { CSSProperties } from "react";
 import { scrollCover } from "@/lib/prestige/assets";
-import { kanjiNumber, toRoman } from "@/lib/prestige/roman";
+import { kanjiNumber } from "@/lib/kanji";
+import { toRoman } from "@/lib/prestige/roman";
 import { getEmakis } from "@/server/prestige/profile-queries";
 import { HeirProcession } from "./HeirProcession";
 import "./prestige.css";

@@ -1,6 +1,7 @@
 import "server-only";
 import { getTranslations } from "next-intl/server";
 import type { CardView } from "@/lib/boosters/view";
+import { profileUsername } from "@/lib/collection/display-name";
 import { fudaCopyOf } from "@/lib/prestige/printing";
 import { readHeirs, readJourney, type OwnershipViaKey } from "@/lib/prestige/journey";
 import { cardViews } from "../boosters/display";
@@ -31,7 +32,7 @@ export async function getEmakis(userId: string, locale: string): Promise<EmakiVi
   if (cycles.length === 0) return [];
   const heirsOf = cycles.map((c) => readHeirs(c.heirs));
   const all = heirsOf.flat();
-  const [views, seals] = await Promise.all([cardViews(all.map((h) => h.cardId), locale), all.some((h) => h.printing !== null) ? getPrintingSeals() : {}]);
+  const [views, seals] = await Promise.all([cardViews(all.map((h) => h.cardId), locale), getPrintingSeals()]);
   return cycles.map((c, i) => ({
     number: c.number,
     globalRank: c.globalRank,
@@ -45,7 +46,7 @@ export async function getEmakis(userId: string, locale: string): Promise<EmakiVi
   }));
 }
 
-export type SanctuaryOwner = { name: string; username: string | null; via: OwnershipViaKey; at: Date };
+export type SanctuaryOwner = { name: string; username: string | null; via: OwnershipViaKey };
 
 export type SanctuaryEntry = {
   id: string;
@@ -68,7 +69,7 @@ export async function getSanctuary(viewerId: string | null, userId: string, loca
   const ownerIds = [...new Set(journeys.flatMap((j) => j.owners.flatMap((o) => (o.ownerId ? [o.ownerId] : []))))];
   const [views, seals, players, t] = await Promise.all([
     cardViews(rows.map((r) => r.cardId), locale),
-    rows.some((r) => r.printing !== null) ? getPrintingSeals() : {},
+    getPrintingSeals(),
     ownerIds.length > 0 ? prisma.user.findMany({ where: { id: { in: ownerIds } }, select: namedPlayerSelect }) : [],
     getTranslations("playerName"),
   ]);
@@ -79,9 +80,9 @@ export async function getSanctuary(viewerId: string | null, userId: string, loca
     if (!view) return [];
     const owners = journeys[i].owners.map((o): SanctuaryOwner => {
       const player = o.ownerId ? byId.get(o.ownerId) : undefined;
-      if (!player) return { name: t("deleted"), username: null, via: o.via, at: o.at };
+      if (!player) return { name: t("deleted"), username: null, via: o.via };
       const shown = nameOf(player);
-      return { name: shown.name, username: !shown.revealed && shown.name === player.username ? player.username : null, via: o.via, at: o.at };
+      return { name: shown.name, username: profileUsername(shown, player.username), via: o.via };
     });
     return [
       {

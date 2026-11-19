@@ -8,8 +8,10 @@
 // contrôle final : s'il reste au joueur autre chose que ses héritières, tout est annulé.
 import { randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
+import { isFrozen } from "@/lib/account/deletion";
 import type { RecycleValues } from "@/lib/collection/recycle";
 import { eligibilityOf, type Eligibility } from "@/lib/prestige/eligibility";
+import { heritageCap } from "@/lib/prestige/heritage";
 import type { PeakStats } from "@/lib/prestige/peak";
 import { nextRebirthAt, type PrestigeRules } from "@/lib/prestige/rules";
 import { rebirthRawValue, rebirthZeni } from "@/lib/prestige/zeni";
@@ -63,20 +65,24 @@ type LockedPlayer = {
   anonymizedAt: Date | null;
 };
 
-async function lockPlayer(tx: Tx, userId: string): Promise<LockedPlayer | null> {
+export async function lockPlayer(tx: Tx, userId: string): Promise<LockedPlayer | null> {
   const [row] = await tx.$queryRaw<LockedPlayer[]>`
     SELECT prestige, "prestigedAt", "isGuest", "bannedAt", "deletionRequestedAt", "anonymizedAt"
     FROM "User" WHERE id = ${userId} FOR UPDATE`;
   return row ?? null;
 }
 
-/** Ce qui interdit de renaître à ce joueur maintenant (hors blocages et seuils). */
-export function playerRefusal(player: Omit<LockedPlayer, "prestige">, rules: Pick<PrestigeRules, "minDaysBetween">, now: Date): RebirthErrorCode | null {
+/** Compte qui ne peut ni renaître ni consacrer : invité, banni, gelé ou anonymisé. */
+export function accountRefusal(player: Pick<LockedPlayer, "isGuest" | "bannedAt" | "deletionRequestedAt" | "anonymizedAt">): "GUEST" | "BANNED" | "FROZEN" | null {
   if (player.isGuest) return "GUEST";
   if (player.bannedAt) return "BANNED";
-  if (player.deletionRequestedAt || player.anonymizedAt) return "FROZEN";
-  if (nextRebirthAt(player.prestigedAt, rules.minDaysBetween, now)) return "TOO_SOON";
+  if (isFrozen(player)) return "FROZEN";
   return null;
+}
+
+/** Ce qui interdit de renaître à ce joueur maintenant (hors blocages et seuils). */
+export function playerRefusal(player: Omit<LockedPlayer, "prestige">, rules: Pick<PrestigeRules, "minDaysBetween">, now: Date): RebirthErrorCode | null {
+  return accountRefusal(player) ?? (nextRebirthAt(player.prestigedAt, rules.minDaysBetween, now) ? "TOO_SOON" : null);
 }
 
 export type Busy = {
@@ -273,7 +279,7 @@ export async function rebirthWith(db: PrismaClient, input: RebirthInput, ctx: Re
             WHERE id = ANY(${keepIds}::text[]) AND "ownerId" = ${userId} AND status = 'COLLECTION'
           )
           UPDATE "UserCard" uc
-          SET heritage = LEAST(uc.heritage + 1, ${ctx.rules.heritageMax}::int), "keptByOwner" = uc."keptByOwner" + 1
+          SET heritage = LEAST(uc.heritage + 1, ${heritageCap(ctx.rules)}::int), "keptByOwner" = uc."keptByOwner" + 1
           FROM old WHERE uc.id = old.id
           RETURNING uc.id AS "userCardId", uc."cardId", old.heritage AS before, uc.heritage AS after, uc.printing, uc.serial`
       : [];

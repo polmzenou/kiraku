@@ -1,6 +1,8 @@
 import "server-only";
 import { getTranslations } from "next-intl/server";
 import type { OwnershipVia } from "@/generated/prisma/client";
+import { profileUsername } from "@/lib/collection/display-name";
+import { isFrozen } from "@/lib/account/deletion";
 import { profileAccess } from "@/lib/collection/visibility";
 import { sealOf } from "@/lib/prestige/printing";
 import { prisma } from "../db";
@@ -25,9 +27,9 @@ export async function copyJourneys(viewerId: string | null, userCardIds: readonl
   });
   const [nameOf, t] = await Promise.all([publicNamesFor(viewerId, rows.flatMap((r) => (r.owner ? [r.owner] : []))), getTranslations("playerName")]);
   for (const r of rows) {
-    const shown = r.owner ? nameOf(r.owner) : null;
-    const visible = r.owner !== null && shown !== null && !shown.revealed && shown.name === r.owner.username;
-    const step: JourneyStep = { name: shown?.name ?? t("deleted"), username: visible ? r.owner!.username : null, locked: shown?.revealed ?? false, via: r.via, at: r.at };
+    const owner = r.owner;
+    const shown = owner ? nameOf(owner) : null;
+    const step: JourneyStep = { name: shown?.name ?? t("deleted"), username: owner && shown ? profileUsername(shown, owner.username) : null, locked: shown?.revealed ?? false, via: r.via, at: r.at };
     out.set(r.userCardId, [...(out.get(r.userCardId) ?? []), step]);
   }
   return out;
@@ -57,8 +59,6 @@ export async function printingStats(cardId: string): Promise<PrintingStats[]> {
 export type RegistryEntry = {
   printing: number;
   serial: number;
-  size: number;
-  seal: string | null;
   /** En jeu chez un joueur, chez le lecteur lui-même, ou consacrée au sanctuaire d'un joueur. */
   state: "alive" | "mine" | "shrine";
   /** Détenteur (ou joueur qui l'a consacrée), si sa collection est visible par le lecteur ; sinon « Un joueur ». */
@@ -81,16 +81,16 @@ export async function getEngravedRegistry(viewerId: string | null, cardId: strin
   const [alive, consecrated] = await Promise.all([
     prisma.userCard.findMany({
       where: { cardId, printing: { not: null } },
-      select: { printing: true, serial: true, edition: { select: { size: true } }, owner: { select: holderSelect } },
+      select: { printing: true, serial: true, owner: { select: holderSelect } },
     }),
     prisma.consecratedCard.findMany({
       where: { cardId, printing: { not: null } },
-      select: { printing: true, serial: true, size: true, user: { select: holderSelect } },
+      select: { printing: true, serial: true, user: { select: holderSelect } },
     }),
   ]);
   const copies = [
-    ...alive.map((c) => ({ printing: c.printing!, serial: c.serial!, size: c.edition?.size ?? 0, owner: c.owner, shrine: false })),
-    ...consecrated.map((c) => ({ printing: c.printing!, serial: c.serial!, size: c.size ?? 0, owner: c.user, shrine: true })),
+    ...alive.map((c) => ({ printing: c.printing!, serial: c.serial!, owner: c.owner, shrine: false })),
+    ...consecrated.map((c) => ({ printing: c.printing!, serial: c.serial!, owner: c.user, shrine: true })),
   ].sort((a, b) => a.printing - b.printing || a.serial - b.serial);
   const ownerIds = [...new Set(copies.map((c) => c.owner.id))].filter((id) => id !== viewerId);
   const [blocks, friendships] =
@@ -108,18 +108,15 @@ export async function getEngravedRegistry(viewerId: string | null, cardId: strin
       : [[], []];
   const blocked = new Set(blocks.map((b) => (b.blockerId === viewerId ? b.blockedId : b.blockerId)));
   const friends = new Set(friendships.map((f) => (f.requesterId === viewerId ? f.addresseeId : f.requesterId)));
-  const sealOfPrinting = new Map(stats.map((s) => [s.printing, s.seal]));
   const entries = copies.map((c): RegistryEntry => {
     const o = c.owner;
-    const hidden = o.isGuest || o.deletionRequestedAt !== null || o.anonymizedAt !== null || blocked.has(o.id);
+    const hidden = o.isGuest || isFrozen(o) || blocked.has(o.id);
     const access = profileAccess(viewerId, o, { friends: friends.has(o.id), blocked: blocked.has(o.id) });
     // Seuls les champs d'un PlayerRef partent vers la page (pas la visibilité ni les dates du compte)
     const ref = { id: o.id, username: o.username, image: o.image, isGuest: o.isGuest, frame: o.frame, nameColor: o.nameColor, prestige: o.prestige };
     return {
       printing: c.printing,
       serial: c.serial,
-      size: c.size,
-      seal: sealOfPrinting.get(c.printing) ?? null,
       state: c.shrine ? "shrine" : o.id === viewerId ? "mine" : "alive",
       holder: !hidden && access.collection ? toPlayerRef(ref) : null,
     };
