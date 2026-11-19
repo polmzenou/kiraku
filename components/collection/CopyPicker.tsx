@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useState } from "react";
+import { isEngraved } from "@/lib/collection/copies";
 import { copiesOfCardAction, type CardCopies } from "@/server/actions/collection";
 
 /**
@@ -49,12 +50,12 @@ export function CopyPicker({ cardId, value, onChange }: { cardId: string; value:
       {copies.special.map((c) =>
         option(
           c.userCardId,
-          c.printing !== null
-            ? c.size !== null
-              ? t("engravedOf", { seal: c.seal ?? "", serial: c.serial ?? 0, size: c.size })
-              : t("engraved", { serial: c.serial ?? 0 })
+          isEngraved(c)
+            ? c.size != null
+              ? t("engravedOf", { seal: c.seal ?? "", serial: c.serial, size: c.size })
+              : t("engraved", { serial: c.serial })
             : t("heir", { level: c.heritage }),
-          c.printing !== null && c.heritage > 0 ? t("heirToo", { level: c.heritage }) : undefined,
+          isEngraved(c) && c.heritage > 0 ? t("heirToo", { level: c.heritage }) : undefined,
         ),
       )}
       {value !== null && <p className="text-xs text-shu">{t("warning")}</p>}

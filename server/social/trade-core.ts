@@ -12,7 +12,7 @@ import type { Rarity } from "@/lib/catalog/rarity";
 import { profileAccess, type ProfileVisibility } from "@/lib/collection/visibility";
 import { pairKey } from "@/lib/social/relation";
 import { checkProposal, isTradeOpen, tradeExpiresAt, uniqueOffered, type TradeRefusal, type TradeRules } from "@/lib/social/trades";
-import { chooseCopy, moveCopy } from "../collection/transfer";
+import { chooseCopy, moveCopy, pinOf } from "../collection/transfer";
 import { recordDiscoveries } from "../collection/discovery";
 import { blocksBetween, lockPlayers, type Tx } from "./lock";
 import { notify, notifyingTransaction, type OnNotified } from "./notify";
@@ -130,8 +130,7 @@ export async function proposeTradeWith(db: PrismaClient, input: ProposeInput, on
           expiresAt: tradeExpiresAt(now, input.rules.expiryHours),
           createdAt: now,
           note: input.note ?? null,
-          // Un ordinaire n'est pas épinglé : n'importe lequel fera l'affaire à l'acceptation
-          offers: { create: offeredIds.map((cardId, i) => ({ cardId, userCardId: offeredCopies[i].ok && offeredCopies[i].special ? offeredCopies[i].id : null })) },
+          offers: { create: offeredIds.map((cardId, i) => ({ cardId, userCardId: pinOf(offeredCopies[i]) })) },
         },
         select: { id: true },
       });

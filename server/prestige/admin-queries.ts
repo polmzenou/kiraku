@@ -1,5 +1,6 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
+import { SPECIAL_COPY } from "@/lib/collection/copies";
 import { eligibilityOf, requiredCount } from "@/lib/prestige/eligibility";
 import { prisma } from "../db";
 
@@ -94,7 +95,7 @@ export async function adminUserPrestige(userId: string) {
     prisma.user.findUnique({ where: { id: userId }, select: { prestige: true, prestigedAt: true } }),
     prisma.prestigeCycle.findMany({ where: { userId }, orderBy: { number: "desc" }, select: { number: true, globalRank: true, zeni: true, uniqueCards: true, createdAt: true } }),
     prisma.userCard.findMany({
-      where: { ownerId: userId, OR: [{ heritage: { gt: 0 } }, { printing: { not: null } }] },
+      where: { ownerId: userId, ...SPECIAL_COPY },
       orderBy: [{ heritage: "desc" }, { obtainedAt: "asc" }],
       take: 200,
       select: { id: true, status: true, heritage: true, keptByOwner: true, printing: true, serial: true, edition: { select: { size: true } }, card: { select: { name: true, rarity: true } } },

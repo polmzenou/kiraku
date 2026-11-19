@@ -135,21 +135,20 @@ export async function createAuctionWith(
 
     const choice = await chooseCopy(tx, input.sellerId, input.cardId, input.userCardId);
     if (!choice.ok) throw new AuctionError(choice.reason === "CHOOSE_COPY" ? "CHOOSE_COPY" : "NOT_OWNED");
-    const copy = { id: choice.id };
 
     // Réservation conditionnelle : un exemplaire offert ou recyclé entre-temps n'est jamais vendu
     const reserved = await tx.userCard.updateMany({
-      where: { id: copy.id, ownerId: input.sellerId, status: "COLLECTION" },
+      where: { id: choice.id, ownerId: input.sellerId, status: "COLLECTION" },
       data: { status: "AUCTION" },
     });
     if (reserved.count !== 1) throw new AuctionError("NOT_OWNED");
-    await tx.showcaseItem.deleteMany({ where: { userCardId: copy.id } }); // quitte toutes les vitrines
+    await tx.showcaseItem.deleteMany({ where: { userCardId: choice.id } }); // quitte toutes les vitrines
 
     const endsAt = listingEndsAt(input.now, input.durationHours);
     const auction = await tx.auction.create({
       data: {
         sellerId: input.sellerId,
-        userCardId: copy.id,
+        userCardId: choice.id,
         cardId: input.cardId,
         startPrice: input.startPrice,
         buyoutPrice: input.buyoutPrice,
@@ -164,7 +163,7 @@ export async function createAuctionWith(
     if (input.discordChannelId) {
       await tx.discordPost.create({ data: { key: `auction:${auction.id}`, auctionId: auction.id, channelId: input.discordChannelId, nextAttemptAt: input.now } });
     }
-    return { auctionId: auction.id, userCardId: copy.id, endsAt };
+    return { auctionId: auction.id, userCardId: choice.id, endsAt };
   }, TX);
 }
 

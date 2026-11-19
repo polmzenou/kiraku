@@ -2,6 +2,7 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { seriesTitle } from "@/lib/catalog/display";
 import { type Rarity } from "@/lib/catalog/rarity";
+import { SPECIAL_COPY } from "@/lib/collection/copies";
 import { COLLECTION_PAGE_SIZE, type CollectionParams } from "@/lib/collection/params";
 import { recycleValue, type RecycleValues } from "@/lib/collection/recycle";
 import type { CollectionItem, CollectionPage, CollectionSummary, RarityTotals } from "@/lib/collection/view";
@@ -245,6 +246,6 @@ export async function getOwnedCopies(ownerId: string, cardId: string) {
 
 /** Le joueur a-t-il au moins un exemplaire spécial (héritière ou gravée) ? Index partiel des exemplaires spéciaux. */
 export async function hasSpecialCopies(ownerId: string): Promise<boolean> {
-  const found = await prisma.userCard.findFirst({ where: { ownerId, OR: [{ heritage: { gt: 0 } }, { printing: { not: null } }] }, select: { id: true } });
+  const found = await prisma.userCard.findFirst({ where: { ownerId, ...SPECIAL_COPY }, select: { id: true } });
   return found !== null;
 }

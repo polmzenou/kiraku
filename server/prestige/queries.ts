@@ -1,5 +1,6 @@
 import "server-only";
 import type { CardView } from "@/lib/boosters/view";
+import { SPECIAL_COPY } from "@/lib/collection/copies";
 import type { Eligibility } from "@/lib/prestige/eligibility";
 import { nextRebirthAt, type PrestigeRules } from "@/lib/prestige/rules";
 import { cardViews } from "../boosters/display";
@@ -53,7 +54,7 @@ export async function getPrestigeOverview(userId: string, locale: string, ctx: R
     busyWith(prisma, userId, ctx.now),
     prisma.userCard.count({ where: { ownerId: userId } }),
     prisma.userCard.findMany({
-      where: { ownerId: userId, status: "COLLECTION", OR: [{ heritage: { gt: 0 } }, { printing: { not: null } }] },
+      where: { ownerId: userId, status: "COLLECTION", ...SPECIAL_COPY },
       orderBy: [{ heritage: "desc" }, { obtainedAt: "asc" }],
       take: 200,
       select: { id: true, cardId: true, heritage: true, printing: true, serial: true },

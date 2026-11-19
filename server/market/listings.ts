@@ -57,13 +57,15 @@ async function blockedIds(viewerId: string): Promise<string[]> {
  */
 async function availableListings(rows: readonly ({ id: string } & PromisedCopy)[]): Promise<Set<string>> {
   if (rows.length === 0) return new Set();
-  const ok = await prisma.userCard.findMany({
-    where: { OR: rows.map(promisedCopyWhere) },
-    select: { id: true, ownerId: true, cardId: true, heritage: true, printing: true },
-  });
-  const pinned = new Set(ok.map((c) => c.id));
-  const loose = new Set(ok.filter((c) => c.heritage === 0 && c.printing === null).map((c) => `${c.ownerId}:${c.cardId}`));
-  return new Set(rows.filter((r) => (r.userCardId ? pinned.has(r.userCardId) : loose.has(`${r.ownerId}:${r.cardId}`))).map((r) => r.id));
+  const pins = rows.filter((r) => r.userCardId);
+  const loose = rows.filter((r) => !r.userCardId);
+  const [pinnedLeft, looseLeft] = await Promise.all([
+    pins.length > 0 ? prisma.userCard.findMany({ where: { OR: pins.map(promisedCopyWhere) }, select: { id: true } }) : [],
+    loose.length > 0 ? prisma.userCard.groupBy({ by: ["ownerId", "cardId"], where: { OR: loose.map(promisedCopyWhere) } }) : [],
+  ]);
+  const pinned = new Set(pinnedLeft.map((c) => c.id));
+  const pairs = new Set(looseLeft.map((c) => `${c.ownerId}:${c.cardId}`));
+  return new Set(rows.filter((r) => (r.userCardId ? pinned.has(r.userCardId) : pairs.has(`${r.ownerId}:${r.cardId}`))).map((r) => r.id));
 }
 
 /** Annonces ouvertes, les plus récentes d'abord, filtrées et paginées par id (curseur). */

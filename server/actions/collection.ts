@@ -12,10 +12,12 @@ import type { CollectionPage } from "@/lib/collection/view";
 import { PROFILE_VISIBILITIES } from "@/lib/collection/visibility";
 import { USERNAME_REGEX } from "@/lib/username";
 import { isFrozen } from "@/lib/account/deletion";
-import { sealOf } from "@/lib/prestige/printing";
+import type { FudaCopy } from "@/components/fuda/Fuda";
+import { isSpecialCopy } from "@/lib/collection/copies";
+import { fudaCopyOf } from "@/lib/prestige/printing";
 import { getAlbumPage } from "../collection/albums";
 import { accessFor, findProfileOwner } from "../collection/profile";
-import { getCollectionPage, MAX_OFFSET } from "../collection/queries";
+import { getCollectionPage, getOwnedCopies, MAX_OFFSET } from "../collection/queries";
 import { RecycleError, recycleWith, type RecycleRequest } from "../collection/recycle-core";
 import { prisma } from "../db";
 import { clientIp, rateLimit } from "../ratelimit";
@@ -101,7 +103,7 @@ export type CardCopies = {
   /** Exemplaires ordinaires en collection : le serveur en choisit un quand le joueur n'en désigne pas. */
   ordinary: number;
   /** Exemplaires spéciaux en collection (héritiers ou gravés) : ils ne partent que désignés. */
-  special: { userCardId: string; heritage: number; printing: number | null; serial: number | null; size: number | null; seal: string | null }[];
+  special: ({ userCardId: string } & FudaCopy)[];
 };
 
 const copiesSchema = z.object({ cardId: cardIdSchema }).strict();
@@ -115,26 +117,18 @@ export async function copiesOfCardAction(input: unknown): Promise<{ ok: true; co
   if (!(await rateLimit(`copies:${user.id}`, { limit: 60, windowSeconds: 60 }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
-  // Propriété : seuls les exemplaires du joueur de la session sont lus
-  const rows = await prisma.userCard.findMany({
-    where: { ownerId: user.id, cardId: parsed.data.cardId, status: "COLLECTION" },
-    orderBy: [{ heritage: "desc" }, { obtainedAt: "asc" }],
-    select: { id: true, heritage: true, printing: true, serial: true, edition: { select: { size: true } } },
-  });
-  const special = rows.filter((r) => r.heritage > 0 || r.printing !== null);
-  const seals = special.some((r) => r.printing !== null) ? await getPrintingSeals() : {};
+  // Propriété : seuls les exemplaires du joueur de la session sont lus ; les plus hauts héritages d'abord
+  const [owned, seals] = await Promise.all([getOwnedCopies(user.id, parsed.data.cardId), getPrintingSeals()]);
+  const inCollection = owned.filter((c) => c.status === "COLLECTION");
+  const special = inCollection.filter(isSpecialCopy).sort((a, b) => b.heritage - a.heritage);
   return {
     ok: true,
     copies: {
-      ordinary: rows.length - special.length,
-      special: special.map((r) => ({
-        userCardId: r.id,
-        heritage: r.heritage,
-        printing: r.printing,
-        serial: r.serial,
-        size: r.edition?.size ?? null,
-        seal: r.printing !== null ? sealOf(r.printing, seals) : null,
-      })),
+      ordinary: inCollection.length - special.length,
+      special: special.flatMap((c) => {
+        const copy = fudaCopyOf(c, seals);
+        return copy ? [{ userCardId: c.id, ...copy }] : [];
+      }),
     },
   };
 }

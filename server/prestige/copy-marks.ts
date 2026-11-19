@@ -1,5 +1,6 @@
 import "server-only";
 import type { FudaCopy } from "@/components/fuda/Fuda";
+import { SPECIAL_COPY } from "@/lib/collection/copies";
 import { fudaCopyOf } from "@/lib/prestige/printing";
 import { prisma } from "../db";
 import { getPrintingSeals } from "./rules";
@@ -13,7 +14,7 @@ export async function copyMarksOf(ids: readonly (string | null | undefined)[]): 
   const wanted = [...new Set(ids.filter((id): id is string => typeof id === "string" && id.length > 0))];
   if (wanted.length === 0) return new Map();
   const rows = await prisma.userCard.findMany({
-    where: { id: { in: wanted }, OR: [{ heritage: { gt: 0 } }, { printing: { not: null } }] },
+    where: { id: { in: wanted }, ...SPECIAL_COPY },
     select: { id: true, heritage: true, printing: true, serial: true, edition: { select: { size: true } } },
   });
   if (rows.length === 0) return new Map();

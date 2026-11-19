@@ -1,4 +1,5 @@
 import type { FudaCopy } from "@/components/fuda/Fuda";
+import { isEngraved } from "@/lib/collection/copies";
 
 // Exemplaire spécial annoncé sur Discord (les messages du salon sont en français, comme le reste de lib/discord).
 
@@ -6,7 +7,7 @@ import type { FudaCopy } from "@/components/fuda/Fuda";
 export function copyLabel(copy: FudaCopy | null | undefined): string | null {
   if (!copy) return null;
   const parts: string[] = [];
-  if (copy.printing != null && copy.serial != null) {
+  if (isEngraved(copy)) {
     const seal = copy.seal ? `${copy.seal} ` : "";
     parts.push(`Gravée ${seal}n° ${copy.serial}${copy.size != null ? ` / ${copy.size}` : ""}`);
   }

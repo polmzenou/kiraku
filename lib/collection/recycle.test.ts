@@ -12,6 +12,8 @@ function copies(cardId: string, rarity: OwnedCopy["rarity"], n: number, status: 
     rarity,
     status,
     obtainedAt: new Date(Date.UTC(2026, 0, 1 + i)),
+    heritage: 0,
+    printing: null as number | null,
   }));
 }
 
@@ -70,8 +72,7 @@ describe("recyclage des doublons", () => {
 
   it("un exemplaire spécial recyclé seul : la gravée vaut le multiple de sa rareté, l'héritière sa rareté", () => {
     expect(copyRecycleValue({ rarity: "MYTHIC", printing: 1 }, values, 5)).toBe(values.MYTHIC * 5);
-    expect(copyRecycleValue({ rarity: "MYTHIC", heritage: 3 }, values, 5)).toBe(values.MYTHIC);
-    expect(copyRecycleValue({ rarity: "MYTHIC", printing: null, heritage: 1 }, values, 5)).toBe(values.MYTHIC);
+    expect(copyRecycleValue({ rarity: "MYTHIC", printing: null }, values, 5)).toBe(values.MYTHIC);
   });
 
   it("respecte la rareté maximale", () => {

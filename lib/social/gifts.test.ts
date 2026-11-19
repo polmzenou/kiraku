@@ -51,9 +51,9 @@ describe("checkGift", () => {
 
 describe("pickGiftCopy", () => {
   const copies = [
-    { id: "old", obtainedAt: daysAgo(10) },
-    { id: "new", obtainedAt: daysAgo(1) },
-    { id: "mid", obtainedAt: daysAgo(5) },
+    { id: "old", obtainedAt: daysAgo(10), heritage: 0, printing: null },
+    { id: "new", obtainedAt: daysAgo(1), heritage: 0, printing: null },
+    { id: "mid", obtainedAt: daysAgo(5), heritage: 0, printing: null },
   ];
 
   it("prend le plus récent hors vitrine", () => {
@@ -67,8 +67,8 @@ describe("pickGiftCopy", () => {
   });
 
   it("ne prend jamais un exemplaire spécial, même le plus récent", () => {
-    const engraved = { id: "engraved", obtainedAt: daysAgo(0), printing: 1 };
-    const heir = { id: "heir", obtainedAt: daysAgo(0), heritage: 3 };
+    const engraved = { id: "engraved", obtainedAt: daysAgo(0), heritage: 0, printing: 1 };
+    const heir = { id: "heir", obtainedAt: daysAgo(0), heritage: 3, printing: null };
     expect(pickGiftCopy([...copies, engraved, heir], new Set())?.id).toBe("new");
     // Que des spéciaux : aucun choix automatique, le joueur doit désigner
     expect(pickGiftCopy([engraved, heir], new Set())).toBeNull();
@@ -79,8 +79,8 @@ describe("pickGiftCopy", () => {
 });
 
 describe("pickLoanCopy", () => {
-  const ordinary = { id: "ordinary", obtainedAt: daysAgo(9) };
-  const engraved = { id: "engraved", obtainedAt: daysAgo(1), printing: 1 };
+  const ordinary = { id: "ordinary", obtainedAt: daysAgo(9), heritage: 0, printing: null };
+  const engraved = { id: "engraved", obtainedAt: daysAgo(1), heritage: 0, printing: 1 };
 
   it("prête un ordinaire d'abord, un spécial s'il n'y a que lui", () => {
     expect(pickLoanCopy([engraved, ordinary], new Set())?.id).toBe("ordinary");

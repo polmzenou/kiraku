@@ -21,7 +21,7 @@ import {
   type ListingRules,
   type TradeListingRefusal,
 } from "@/lib/market/listings";
-import { chooseCopy, moveCopy } from "../collection/transfer";
+import { chooseCopy, moveCopy, pinOf } from "../collection/transfer";
 import { recordDiscoveries } from "../collection/discovery";
 import { blocksBetween, lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
@@ -149,8 +149,7 @@ export async function createListingWith(db: PrismaClient, input: CreateListingIn
       data: {
         ownerId: input.ownerId,
         cardId: input.cardId,
-        // Un ordinaire n'est pas épinglé : n'importe lequel fera l'affaire à l'acceptation
-        userCardId: offeredCopy.special ? offeredCopy.id : null,
+        userCardId: pinOf(offeredCopy),
         expiresAt: listingExpiresAt(now, input.rules.expiryHours),
         createdAt: now,
         note: input.note ?? null,
@@ -239,7 +238,7 @@ export async function makeOfferWith(db: PrismaClient, input: MakeOfferInput, onN
           listingId: listing.id,
           bidderId: input.bidderId,
           cardId: input.cardId,
-          userCardId: offeredCopy.special ? offeredCopy.id : null,
+          userCardId: pinOf(offeredCopy),
           fromWants: want !== null,
           createdAt: now,
         },

@@ -1,3 +1,5 @@
+import { engravedFactor, recycleValue } from "../collection/recycle";
+
 // Zeni d'une renaissance : valeur de recyclage des exemplaires partis (une gravée vaut un multiple de sa rareté),
 // puis barème dégressif par tranches (prestige.zeniTiers : au-delà de la dernière tranche, rien) et plafond.
 
@@ -22,5 +24,5 @@ export function rebirthRawValue(
   values: Readonly<Record<string, number>>,
   engravedMultiplier: number,
 ): number {
-  return departed.reduce((sum, d) => sum + (values[d.rarity] ?? 0) * d.count * (d.engraved ? engravedMultiplier : 1), 0);
+  return departed.reduce((sum, d) => sum + recycleValue(d.rarity, d.count, values) * engravedFactor(d.engraved, engravedMultiplier), 0);
 }

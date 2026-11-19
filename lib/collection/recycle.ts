@@ -38,12 +38,14 @@ export function recycleValue(rarity: Rarity, count: number, values: RecycleValue
   return (values[rarity] ?? 0) * count;
 }
 
-/**
- * Valeur d'un exemplaire spécial recyclé seul, depuis sa ligne : une gravée vaut `engravedMultiplier` fois sa
- * rareté (prestige.printing.recycleMultiplier), une héritière vaut sa rareté.
- */
-export function copyRecycleValue(copy: { rarity: Rarity } & CopyMarks, values: RecycleValues, engravedMultiplier: number): number {
-  return recycleValue(copy.rarity, 1, values) * ((copy.printing ?? null) !== null ? engravedMultiplier : 1);
+/** Une gravée vaut `engravedMultiplier` fois sa rareté (prestige.printing.recycleMultiplier), au recyclage comme à la renaissance. */
+export function engravedFactor(engraved: boolean, engravedMultiplier: number): number {
+  return engraved ? engravedMultiplier : 1;
+}
+
+/** Valeur d'un exemplaire spécial recyclé seul, depuis sa ligne : une gravée vaut un multiple de sa rareté, une héritière sa rareté. */
+export function copyRecycleValue(copy: { rarity: Rarity; printing: number | null }, values: RecycleValues, engravedMultiplier: number): number {
+  return recycleValue(copy.rarity, 1, values) * engravedFactor(copy.printing !== null, engravedMultiplier);
 }
 
 function emptyByRarity(): RecyclePlan["byRarity"] {

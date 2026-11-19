@@ -17,6 +17,7 @@ import { isTopTier } from "@/lib/catalog/tiers";
 import { RARITY_SEAL } from "@/lib/catalog/rarity";
 import { REVEAL_SCENES, revealSceneKey } from "@/lib/opening/reveal-scenes";
 import type { FudaCopy } from "../fuda/Fuda";
+import { isEngraved } from "@/lib/collection/copies";
 
 // Révélation d'une gravée à la baren : chargée seulement quand une carte sort gravée
 const BarenReveal = dynamic(() => import("./BarenReveal").then((mod) => mod.BarenReveal), { ssr: false });
@@ -38,7 +39,8 @@ export function CardStamps({ card, delay = 0, animated = true, small = false }: 
   small?: boolean;
 }) {
   const t = useTranslations("opening");
-  const engraved = card.copy?.printing != null && card.copy.serial != null;
+  const copy = card.copy;
+  const engraved = isEngraved(copy);
   if (!card.isNew && !card.regained && !card.wished && !engraved) return null;
   const before = engraved ? 1 : 0;
   const stamp = (i: number) => ({
@@ -51,11 +53,11 @@ export function CardStamps({ card, delay = 0, animated = true, small = false }: 
       {engraved && (
         <m.span
           className="inline-flex min-h-7 items-center justify-center gap-1 whitespace-nowrap rounded-[4px] bg-sumi px-2 py-1 text-xs font-bold leading-none text-washi-paper shadow-[inset_0_0_0_1px_var(--color-kin)]"
-          title={t("engravedCardLong", { serial: card.copy!.serial! })}
+          title={t("engravedCardLong", { serial: copy.serial })}
           {...stamp(0)}
         >
-          <span aria-hidden="true" lang="ja" className="font-seal text-shu">{card.copy!.seal ?? "版"}</span>
-          {small ? <span className="sr-only">{t("engravedCardLong", { serial: card.copy!.serial! })}</span> : <span>{t("engravedCard", { serial: card.copy!.serial! })}</span>}
+          <span aria-hidden="true" lang="ja" className="font-seal text-shu">{copy.seal ?? "版"}</span>
+          {small ? <span className="sr-only">{t("engravedCardLong", { serial: copy.serial })}</span> : <span>{t("engravedCard", { serial: copy.serial })}</span>}
         </m.span>
       )}
       {card.isNew && (
@@ -154,7 +156,7 @@ export function FlipCard({ card, phase, size, reduced, compactFx = false, scene 
   const sceneKey = scene && !reduced ? revealSceneKey(card.rarity, visual.reveal) : null;
   const sceneOn = sceneKey !== null && phase !== "back";
   // Gravée tirée : après le grand moment de la rareté, la baren frotte la carte, qui reçoit alors son édition
-  const baren = engraving && !reduced && card.copy?.printing != null && card.copy.serial != null;
+  const baren = engraving && !reduced && isEngraved(card.copy);
   const [inked, setInked] = useState(false);
   const [barenDone, setBarenDone] = useState(false);
   const shown = baren && !inked ? { ...card, copy: uninked(card.copy) } : card;

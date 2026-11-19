@@ -1,4 +1,5 @@
 import type { FudaCopy } from "@/components/fuda/Fuda";
+import { isEngraved } from "@/lib/collection/copies";
 import type { Rng } from "@/lib/rng";
 
 // Éditions gravées numérotées (prestige, étape 16c). Le serveur décide de tout : tirage au sort de la gravure à
@@ -76,15 +77,8 @@ export function fudaCopyOf(
   copy: { heritage: number; printing: number | null; serial: number | null; size?: number | null },
   seals: Readonly<Record<string, string>>,
 ): FudaCopy | null {
-  const engraved = copy.printing !== null && copy.serial !== null;
-  if (copy.heritage <= 0 && !engraved) return null;
-  return {
-    heritage: copy.heritage,
-    printing: engraved ? copy.printing : null,
-    serial: engraved ? copy.serial : null,
-    size: engraved ? (copy.size ?? null) : null,
-    seal: engraved ? sealOf(copy.printing!, seals) : null,
-  };
+  if (!isEngraved(copy)) return copy.heritage > 0 ? { heritage: copy.heritage, printing: null, serial: null, size: null, seal: null } : null;
+  return { heritage: copy.heritage, printing: copy.printing, serial: copy.serial, size: copy.size ?? null, seal: sealOf(copy.printing, seals) };
 }
 
 /** Éditions d'une ouverture (BoosterOpening.editions), relues sans faire confiance au JSON stocké. */

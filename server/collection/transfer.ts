@@ -38,6 +38,14 @@ export async function chooseCopy(tx: Tx, ownerId: string, cardId: string, chosen
   return { ok: true, id: pickGiftCopy(copies, new Set(shown.map((s) => s.userCardId)))!.id, special: false };
 }
 
+/**
+ * Exemplaire qu'une annonce, une offre ou une proposition épingle : la pièce spéciale désignée. Un ordinaire n'est
+ * pas épinglé : n'importe lequel fera l'affaire à l'acceptation (promisedCopyWhere).
+ */
+export function pinOf(choice: CopyChoice): string | null {
+  return choice.ok && choice.special ? choice.id : null;
+}
+
 /** Ce qu'une annonce ou une offre promet. Sans exemplaire épinglé, n'importe quel exemplaire ordinaire de la carte. */
 export type PromisedCopy = { ownerId: string; cardId: string; userCardId: string | null };
 

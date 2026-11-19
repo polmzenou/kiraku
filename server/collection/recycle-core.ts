@@ -2,7 +2,7 @@
 // concurrence) : pas de server/db.ts ici. Le serveur choisit les exemplaires et calcule le gain.
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { type Rarity } from "@/lib/catalog/rarity";
-import { isSpecialCopy, ORDINARY_COPY } from "@/lib/collection/copies";
+import { COPY_MARKS, isSpecialCopy } from "@/lib/collection/copies";
 import { copyRecycleValue, planRecycle, type RecyclePlan, type RecycleValues } from "@/lib/collection/recycle";
 import { credit } from "../economy/ledger";
 
@@ -59,17 +59,16 @@ export async function recycleWith(
           where: {
             ownerId: userId,
             status: "COLLECTION",
-            // Les pièces spéciales (héritières ou gravées) ne partent jamais ici, et ne comptent pas comme l'exemplaire gardé
-            ...ORDINARY_COPY,
             ...(request.kind === "card" ? { cardId: request.cardId } : { card: { rarity: { in: [...allowed] } } }),
           },
-          select: { id: true, cardId: true, status: true, obtainedAt: true, card: { select: { rarity: true } } },
+          select: { id: true, cardId: true, status: true, obtainedAt: true, ...COPY_MARKS, card: { select: { rarity: true } } },
         }),
         tx.showcaseItem.findMany({ where: { showcase: { userId } }, select: { userCardId: true } }),
       ]);
 
+      // Les pièces spéciales (héritières ou gravées) ne partent jamais ici, et ne comptent pas comme l'exemplaire gardé
       const plan = planRecycle(
-        copies.map((c) => ({ id: c.id, cardId: c.cardId, status: c.status, obtainedAt: c.obtainedAt, rarity: c.card.rarity as Rarity })),
+        copies.map((c) => ({ id: c.id, cardId: c.cardId, status: c.status, obtainedAt: c.obtainedAt, heritage: c.heritage, printing: c.printing, rarity: c.card.rarity as Rarity })),
         {
           values,
           rarities: RARITIES,

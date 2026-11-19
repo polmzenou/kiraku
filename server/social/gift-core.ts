@@ -99,12 +99,11 @@ export async function giftCardWith(
     if (!choice.ok) throw new GiftError(choice.reason === "CHOOSE_COPY" ? "CHOOSE_COPY" : "NOT_OWNED");
     const card = await tx.card.findUniqueOrThrow({ where: { id: ctx.cardId }, select: { rarity: true } });
     if (!ctx.allowedRarities.includes(card.rarity as Rarity)) throw new GiftError("RARITY");
-    const copy = { id: choice.id };
 
     // Transfert conditionnel : un exemplaire vendu ou recyclé entre-temps n'est jamais offert
-    const moved = await moveCopy(tx, { userCardId: copy.id, fromId: ctx.senderId, fromStatus: "COLLECTION", toId: ctx.recipientId, via: "GIFT", now });
+    const moved = await moveCopy(tx, { userCardId: choice.id, fromId: ctx.senderId, fromStatus: "COLLECTION", toId: ctx.recipientId, via: "GIFT", now });
     if (!moved) throw new GiftError("NOT_OWNED");
-    await tx.showcaseItem.deleteMany({ where: { userCardId: copy.id } }); // quitte toutes les vitrines
+    await tx.showcaseItem.deleteMany({ where: { userCardId: choice.id } }); // quitte toutes les vitrines
     await recordDiscoveries(tx, [{ userId: ctx.recipientId, cardId: ctx.cardId }], now);
     await consumeWishlist(tx, ctx.recipientId, [ctx.cardId]);
 
@@ -114,7 +113,7 @@ export async function giftCardWith(
         recipientId: ctx.recipientId,
         kind: "CARD",
         cardId: ctx.cardId,
-        userCardId: copy.id,
+        userCardId: choice.id,
         dayKey: day,
         createdAt: now,
       },
@@ -128,7 +127,7 @@ export async function giftCardWith(
       payload: { kind: "CARD", cardId: ctx.cardId },
       now,
     });
-    return { giftId: gift.id, userCardId: copy.id };
+    return { giftId: gift.id, userCardId: choice.id };
   }, TX, onNotified);
 }
 

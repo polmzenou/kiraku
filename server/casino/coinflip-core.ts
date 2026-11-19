@@ -187,9 +187,8 @@ export async function createTableWith(db: PrismaClient, input: CreateInput, ctx:
       // Sans désignation, un exemplaire ordinaire : une pièce spéciale ne se mise jamais par défaut
       const choice = await chooseCopy(tx, input.userId, input.cardId, input.userCardId);
       if (!choice.ok) throw new CoinFlipError(choice.reason === "CHOOSE_COPY" ? "CHOOSE_COPY" : "CARD_GONE");
-      const copy = { id: choice.id };
       const escrow = await tx.userCard.updateMany({
-        where: { id: copy.id, ownerId: input.userId, status: "COLLECTION" },
+        where: { id: choice.id, ownerId: input.userId, status: "COLLECTION" },
         data: { status: "CASINO" },
       });
       if (escrow.count !== 1) throw new CoinFlipError("CARD_GONE");
@@ -198,7 +197,7 @@ export async function createTableWith(db: PrismaClient, input: CreateInput, ctx:
       const flip = await tx.coinFlip.create({
         data: {
           creatorId: input.userId,
-          creatorUserCardId: copy.id,
+          creatorUserCardId: choice.id,
           creatorCardId: input.cardId,
           creatorRarity: card.rarity,
           creatorSide: input.side,
@@ -300,14 +299,13 @@ export async function joinTableWith(db: PrismaClient, input: JoinInput, ctx: Coi
 
       const joinerChoice = await chooseCopy(tx, input.userId, input.cardId, input.userCardId);
       if (!joinerChoice.ok) throw new CoinFlipError(joinerChoice.reason === "CHOOSE_COPY" ? "CHOOSE_COPY" : "CARD_GONE");
-      const joinerCopy = { id: joinerChoice.id };
 
       // La pièce : issue fixée par la graine tirée à la pose et l'id de la table
       const result = await flipOutcome(flip.seed, flip.id);
       const winnerId = flipWinner(flip, input.userId, result);
       const creatorWins = winnerId === flip.creatorId;
       const prize = creatorWins
-        ? { cardId: input.cardId, userCardId: joinerCopy.id }
+        ? { cardId: input.cardId, userCardId: joinerChoice.id }
         : { cardId: flip.creatorCardId, userCardId: flip.creatorUserCardId };
       const winnerKnew = await tx.discovery.findUnique({ where: { userId_cardId: { userId: winnerId, cardId: prize.cardId } }, select: { userId: true } });
 
@@ -321,8 +319,8 @@ export async function joinTableWith(db: PrismaClient, input: JoinInput, ctx: Coi
           ? stays(flip.creatorUserCardId, flip.creatorId, "CASINO")
           : moveCopy(tx, { userCardId: flip.creatorUserCardId, fromId: flip.creatorId, fromStatus: "CASINO", toId: input.userId, via: "CASINO", now }),
         creatorWins
-          ? moveCopy(tx, { userCardId: joinerCopy.id, fromId: input.userId, fromStatus: "COLLECTION", toId: flip.creatorId, via: "CASINO", now })
-          : stays(joinerCopy.id, input.userId, "COLLECTION"),
+          ? moveCopy(tx, { userCardId: joinerChoice.id, fromId: input.userId, fromStatus: "COLLECTION", toId: flip.creatorId, via: "CASINO", now })
+          : stays(joinerChoice.id, input.userId, "COLLECTION"),
       ]);
       if (!fromEscrow || !fromJoiner) throw new CoinFlipError("CARD_GONE");
       // La carte perdue quitte les vitrines de son ancien propriétaire
@@ -335,7 +333,7 @@ export async function joinTableWith(db: PrismaClient, input: JoinInput, ctx: Coi
         data: {
           status: "DONE",
           opponentId: input.userId,
-          opponentUserCardId: joinerCopy.id,
+          opponentUserCardId: joinerChoice.id,
           opponentCardId: input.cardId,
           opponentRarity: card.rarity,
           result,

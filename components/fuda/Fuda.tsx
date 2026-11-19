@@ -6,6 +6,7 @@ import { fxTier } from "@/lib/catalog/tiers";
 import { FudaTilt } from "./FudaTilt";
 import type { CSSProperties, ReactNode } from "react";
 import { resolveAppearance } from "@/lib/catalog/appearance";
+import { isEngraved } from "@/lib/collection/copies";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import "./FudaEffects.css";
 import "./FudaFace.css";
@@ -88,7 +89,7 @@ export function HeritagePetal({ index, className = "" }: { index: number; classN
 
 /** Cartouche d'édition vermillon « 初摺 17 / 25 », accroché au bord du shikishi en miroir du numéro ; le n° 1 est à la feuille d'or. */
 export function EditionCartouche({ copy }: { copy: FudaCopy }) {
-  if (copy.printing == null || copy.serial == null) return null;
+  if (!isEngraved(copy)) return null;
   return (
     <span aria-hidden="true" className={`kn-ed${copy.serial === 1 ? " kn-ed-first" : ""}`}>
       {copy.seal && <i lang="ja" className="font-seal">{copy.seal}</i>}
@@ -216,7 +217,7 @@ export function Fuda({
   const spoilerAttr = spoiler ? { "data-spoiler": "" } : undefined;
   // Exemplaire précis (prestige) : héritière et gravée ; rien pour une silhouette ni un exemplaire ordinaire
   const copy = !locked ? card.copy ?? null : null;
-  const engraved = copy !== null && copy.printing != null && copy.serial != null;
+  const engraved = isEngraved(copy);
 
   const content = (
     <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} style={customStyle}>
@@ -273,7 +274,7 @@ export function Fuda({
           ) : (
             <span className="kn-no">{t("number", { number: cardNumber(card.rank) })}</span>
           )}
-          {engraved && <EditionCartouche copy={copy!} />}
+          {engraved && <EditionCartouche copy={copy} />}
           <p className="kn-name font-title">{locked ? t("unknown") : card.name}</p>
           <p className="kn-l2">
             {subtitle && <span className="kn-sub">{subtitle}</span>}
@@ -314,9 +315,9 @@ export function Fuda({
       )}
       {engraved && (
         <span className="sr-only">
-          {copy!.size != null
-            ? t("printing", { seal: copy!.seal ?? "", serial: copy!.serial!, size: copy!.size })
-            : t("printingShort", { seal: copy!.seal ?? "", serial: copy!.serial! })}
+          {copy.size != null
+            ? t("printing", { seal: copy.seal ?? "", serial: copy.serial, size: copy.size })
+            : t("printingShort", { seal: copy.seal ?? "", serial: copy.serial })}
         </span>
       )}
       {/* Gravée en tout petit format (sans shikishi) : un coin vermillon */}
