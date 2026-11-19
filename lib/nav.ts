@@ -1,6 +1,6 @@
-// Navigation desktop en haut, navigation mobile en bas (< 1024 px).
+// Navigation desktop (≥ 1024 px) : barre du haut à menus groupés (NAV_ITEMS + NAV_GROUPS) ou barre
+// latérale (RAIL_GROUPS), au choix du joueur (lib/nav-layout.ts) ; navigation mobile en bas (< 1024 px).
 // `ready: false` : la page arrive à une étape suivante, l'entrée s'affiche avec « Bientôt ».
-// NAV_MORE : entrées rangées dans le menu déroulant « Plus », après Marché.
 // `feature` : masquée si l'interrupteur admin est coupé. Les pastilles « Bientôt » / « Nouveau » d'une entrée
 // accessible (casino : teaser, puis lancement) sont calculées par le serveur (NavBadges).
 
@@ -52,10 +52,42 @@ const ENTRIES: Record<NavKey, NavItem> = {
   casino: { key: "casino", href: "/casino", ready: true, feature: "casino" },
 };
 
-export const NAV_ITEMS: readonly NavItem[] = [ENTRIES.boosters, ENTRIES.missions, ENTRIES.shop, ENTRIES.combat, ENTRIES.market];
+/** Kanji de chaque entrée, pris dans lib/seal-glyphs.ts (la police des sceaux n'a que ceux-là). */
+export const NAV_KANJI: Record<NavKey, string> = {
+  boosters: "封",
+  collection: "蒐",
+  missions: "任",
+  combat: "戦",
+  expedition: "遠",
+  casino: "賭",
+  shop: "店",
+  market: "売",
+  event: "催",
+  friends: "友",
+  social: "訪",
+  referral: "招",
+  wiki: "札",
+};
 
-export const NAV_MORE: readonly NavItem[] = [
-  ENTRIES.event, ENTRIES.expedition, ENTRIES.collection, ENTRIES.friends, ENTRIES.referral, ENTRIES.wiki, ENTRIES.social, ENTRIES.casino,
+export type NavGroupKey = "play" | "trade" | "community";
+export type NavGroup = { key: NavGroupKey; kanji: string; items: readonly NavItem[] };
+
+/** Barre du haut : la boucle principale (ouvrir, collectionner) en accès direct… */
+export const NAV_ITEMS: readonly NavItem[] = [ENTRIES.boosters, ENTRIES.collection];
+
+/** …puis un menu par intention : jouer, échanger, retrouver les autres joueurs. */
+export const NAV_GROUPS: readonly NavGroup[] = [
+  { key: "play", kanji: "楽", items: [ENTRIES.combat, ENTRIES.expedition, ENTRIES.missions, ENTRIES.casino] },
+  { key: "trade", kanji: "商", items: [ENTRIES.shop, ENTRIES.market] },
+  { key: "community", kanji: "和", items: [ENTRIES.event, ENTRIES.friends, ENTRIES.social, ENTRIES.referral, ENTRIES.wiki] },
+];
+
+/** Barre latérale : toutes les entrées à plat, en blocs séparés par un filet. */
+export const RAIL_GROUPS: readonly (readonly NavItem[])[] = [
+  [ENTRIES.boosters, ENTRIES.collection, ENTRIES.missions],
+  [ENTRIES.combat, ENTRIES.expedition, ENTRIES.casino],
+  [ENTRIES.shop, ENTRIES.market],
+  [ENTRIES.event, ENTRIES.friends, ENTRIES.social, ENTRIES.referral, ENTRIES.wiki],
 ];
 
 export const MOBILE_NAV_ITEMS: readonly NavItem[] = [

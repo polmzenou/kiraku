@@ -16,6 +16,7 @@ export type StoragePurpose =
   | "theme"
   | "motion"
   | "spoiler"
+  | "nav"
   | "locale"
   | "sound"
   | "discordLater"
@@ -105,6 +106,16 @@ export const STORAGE_REGISTRY: readonly StorageEntry[] = [
     kind: "cookie",
     category: "preferences",
     purpose: "spoiler",
+    duration: { unit: "days", value: 365 },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
+    // Navigation desktop : menus groupés ou barre latérale (lib/nav-layout.ts)
+    name: "kiraku-nav",
+    kind: "cookie",
+    category: "preferences",
+    purpose: "nav",
     duration: { unit: "days", value: 365 },
     provider: "kiraku",
     exempt: true,

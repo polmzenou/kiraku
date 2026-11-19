@@ -9,6 +9,8 @@
     @slot;
   }
 }
+/* Navigation desktop en barre latérale (<html data-nav="rail">, réglage du joueur, lib/nav-layout.ts) */
+@custom-variant nav-rail (&:where([data-nav="rail"] *));
 @custom-variant motion-safe {
   @media (prefers-reduced-motion: no-preference) {
     &:not(:where([data-motion="reduced"], [data-motion="reduced"] *)) {

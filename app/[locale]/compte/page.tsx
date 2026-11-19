@@ -14,12 +14,14 @@ import { PlayerName } from "@/components/social/PlayerName";
 import { PushToggle } from "@/components/social/PushToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SpoilerToggle } from "@/components/SpoilerToggle";
+import { NavLayoutToggle } from "@/components/NavLayoutToggle";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
 import { stockRulesFor } from "@/lib/boosters/stock";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { parseSpoilerMode, SPOILER_COOKIE } from "@/lib/spoiler";
+import { NAV_LAYOUT_COOKIE, parseNavLayout } from "@/lib/nav-layout";
 import { guestCode } from "@/lib/username";
 import { logout } from "@/server/actions/account";
 import { linkDiscord } from "@/server/actions/auth";
@@ -43,10 +45,10 @@ const ACCOUNT_TILES = [
 ] as const;
 
 export default async function AccountPage() {
-  const [t, user, [theme, spoiler]] = await Promise.all([
+  const [t, user, [theme, spoiler, navLayout]] = await Promise.all([
     getTranslations(),
     getCurrentUser(),
-    cookies().then((c) => [parseTheme(c.get(THEME_COOKIE)?.value), parseSpoilerMode(c.get(SPOILER_COOKIE)?.value)] as const),
+    cookies().then((c) => [parseTheme(c.get(THEME_COOKIE)?.value), parseSpoilerMode(c.get(SPOILER_COOKIE)?.value), parseNavLayout(c.get(NAV_LAYOUT_COOKIE)?.value)] as const),
   ]);
 
   if (!user) {
@@ -217,6 +219,7 @@ export default async function AccountPage() {
         <h2 className="text-lg font-bold">{t("account.settings")}</h2>
         <ThemeToggle initial={theme} />
         <SpoilerToggle initial={spoiler} />
+        <NavLayoutToggle initial={navLayout} />
         <LocaleSwitcher />
       </section>
 

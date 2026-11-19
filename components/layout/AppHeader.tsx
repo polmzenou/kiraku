@@ -22,12 +22,14 @@ import { PlayerAvatar } from "../social/PlayerAvatar";
 import { iconButtonClasses } from "../ui/IconButton";
 import { MobileMenu } from "./MobileMenu";
 import { NavLinks } from "./NavLinks";
+import { NavRail } from "./NavRail";
 import { hasExpeditionToReveal } from "@/server/expedition/status";
 import { StockEnso } from "./StockEnso";
 import { ZeniCoin } from "./ZeniCoin";
 
 /**
- * En-tête fixe : logo, navigation desktop, stock ensō, solde et notifications.
+ * En-tête fixe : logo, navigation desktop (menus groupés en haut, ou barre latérale au choix du joueur),
+ * stock ensō, solde et notifications.
  * La navigation mobile est rendue à côté pour ne pas piéger son `fixed` dans le backdrop-filter.
  * Le stock est calculé ici, côté serveur ; le client n'affiche que le compte à rebours.
  */
@@ -80,12 +82,13 @@ export async function AppHeader({ theme, spoiler }: { theme: Theme; spoiler: Spo
     <>
       <header className="sticky top-0 z-40 border-b border-border/60 bg-bg/95 pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center gap-2 px-4 md:h-16 md:gap-4">
-          <Link prefetch={false} href="/" aria-label={t("nav.home")} className="flex min-h-11 min-w-0 shrink-0 items-center gap-2">
+          {/* En barre latérale, le sceau du logo passe en haut du rail */}
+          <Link prefetch={false} href="/" aria-label={t("nav.home")} className="flex min-h-11 min-w-0 shrink-0 items-center gap-2 lg:nav-rail:hidden">
             <SealMark glyphs="気楽" size={32} />
             <span className="hidden font-title text-xl font-extrabold tracking-wide sm:inline">{t("common.appName")}</span>
           </Link>
 
-          <nav aria-label={t("nav.label")} className="ml-2 hidden lg:block">
+          <nav aria-label={t("nav.label")} className="ml-2 hidden lg:block lg:nav-rail:hidden">
             <NavLinks layout="bar" features={features} alerts={alerts} badges={badges} />
           </nav>
 
@@ -152,6 +155,7 @@ export async function AppHeader({ theme, spoiler }: { theme: Theme; spoiler: Spo
           </div>
         </div>
       </header>
+      <NavRail features={features} alerts={alerts} badges={badges} />
       {/* Invité : sans compte, sa progression est supprimée après guest.retentionDays jours sans visite */}
       {user?.isGuest && guestDays > 0 && (
         <GuestRetentionNotice

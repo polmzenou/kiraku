@@ -574,7 +574,33 @@
     "expedition": "Expéditions",
     "casino": "Casino",
     "alert": "Récompense à réclamer",
-    "new": "Nouveau"
+    "new": "Nouveau",
+    "groups": {
+      "play": "Jouer",
+      "trade": "Échanger",
+      "community": "Communauté"
+    },
+    "desc": {
+      "boosters": "Ouvre tes sachets",
+      "collection": "Toutes tes fuda",
+      "combat": "Duels 1v1 et classé",
+      "expedition": "Envoie tes fuda en voyage",
+      "missions": "Objectifs et récompenses",
+      "casino": "Tente ta chance en Zeni",
+      "shop": "Sachets et offres",
+      "market": "Enchères entre joueurs",
+      "event": "L'event du moment",
+      "friends": "Amis et échanges",
+      "social": "Découvre d'autres joueurs",
+      "referral": "Invite tes proches",
+      "wiki": "Toutes les cartes du jeu"
+    },
+    "layout": {
+      "label": "Navigation sur ordinateur",
+      "menu": "Menus en haut",
+      "rail": "Barre latérale",
+      "hint": "Menus groupés dans la barre du haut, ou toutes les sections dans une barre à gauche de l'écran."
+    }
   },
   "header": {
     "stock": "Boosters : {count} sur {max}",
@@ -5774,7 +5800,8 @@
       "discordLater": "Retient quand tu as repoussé l'invitation Discord (« Plus tard »).",
       "news": "Retient si tu as réduit l'encart des nouveautés de l'accueil.",
       "speedInsights": "Mesure des performances Vercel (sans cookie ni identifiant persistant)",
-      "casinoCeremony": "Retient que tu as déjà vu la cérémonie d'ouverture du casino sur cet appareil."
+      "casinoCeremony": "Retient que tu as déjà vu la cérémonie d'ouverture du casino sur cet appareil.",
+      "nav": "Retient la disposition de la navigation sur ordinateur (menus en haut ou barre latérale)."
     },
     "kinds": {
       "cookie": "Cookie",
