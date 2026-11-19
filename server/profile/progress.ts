@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import type { Role } from "@/generated/prisma/client";
 import { ladderTier, LADDER } from "@/lib/ranked/rules";
 import {
@@ -20,6 +21,7 @@ import { isFrameStyle, type FrameStyle } from "@/lib/profile/frames";
 import { isNameColorStyle, type NameColorStyle } from "@/lib/profile/name-colors";
 import { getCatalogStats } from "../catalog/queries";
 import { prisma } from "../db";
+import { collectionStatsWith } from "../prestige/prestige-core";
 import { getSetting } from "../settings";
 
 // Progression du joueur vers les titres, cadres et couleurs de pseudo, badges dérivés, et ce que son profil affiche.
@@ -39,19 +41,8 @@ type Hint = { fr?: string; en?: string };
 
 /** Statistiques utiles aux conditions, en quelques requêtes. */
 export async function getProfileStats(userId: string, seriesIds: readonly string[]): Promise<ProfileStats> {
-  const [byRarity, completed, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog, prestigeCounts] = await Promise.all([
-    prisma.$queryRaw<{ rarity: string; n: number }[]>`
-      SELECT c."rarityKey" AS rarity, COUNT(DISTINCT uc."cardId")::int AS n
-      FROM "UserCard" uc JOIN "Card" c ON c.id = uc."cardId"
-      WHERE uc."ownerId" = ${userId}
-      GROUP BY c."rarityKey"`,
-    prisma.$queryRaw<{ id: string }[]>`
-      WITH owned AS (SELECT DISTINCT "cardId" FROM "UserCard" WHERE "ownerId" = ${userId})
-      SELECT c."seriesId" AS id
-      FROM "Card" c LEFT JOIN owned o ON o."cardId" = c.id
-      WHERE c.status = 'PUBLISHED'
-      GROUP BY c."seriesId"
-      HAVING COUNT(o."cardId") = COUNT(*) AND COUNT(*) > 0`,
+  const [collection, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog, prestigeCounts] = await Promise.all([
+    collectionStatsWith(prisma, userId),
     seriesIds.length === 0
       ? Promise.resolve([] as { id: string; owned: number; total: number }[])
       : prisma.$queryRaw<{ id: string; owned: number; total: number }[]>`
@@ -78,20 +69,9 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
     getCatalogStats(),
     prestigeCountsOf(userId),
   ]);
-  // Cartes distinctes : chaque carte a une seule rareté, la somme du décompte par rareté suffit (le
-  // `distinct` de Prisma 7 s'applique en mémoire et chargeait tous les exemplaires du joueur)
-  const unique = byRarity.reduce((sum, r) => sum + r.n, 0);
   // Un joueur reparti de zéro garde ce qu'il avait gagné lors d'un cycle passé, sans en gagner davantage. Les
   // conditions de découverte n'en ont pas besoin : une renaissance n'efface pas les découvertes du wiki.
-  const peak = bestOfCycles(
-    {
-      uniqueCards: unique,
-      byRarity: Object.fromEntries(byRarity.map((r) => [r.rarity, r.n])),
-      completedSeries: completed.map((c) => c.id),
-      printingsOwned: prestigeCounts.printings,
-    },
-    prestigeCounts.snapshots,
-  );
+  const peak = bestOfCycles({ ...collection, printingsOwned: prestigeCounts.printings }, prestigeCounts.snapshots);
   // Meilleur des deux : un titre de rang ne se reperd pas après une défaite
   const tier = ladderTier(Math.max(user.rankPoints, user.seasonPeakPc), { tiers });
   return {
@@ -120,17 +100,18 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
  * consacrées, ou le meilleur d'un cycle passé : celles recyclées à une renaissance restent acquises) et photos des
  * cycles passés.
  */
-async function prestigeCountsOf(userId: string) {
-  const [consecrated, consecratedEngraved, engraved, cycles] = await Promise.all([
-    prisma.consecratedCard.count({ where: { userId } }),
-    prisma.consecratedCard.count({ where: { userId, printing: { not: null } } }),
+// Une fois par requête : l'en-tête du profil, la personnalisation et ses badges le demandent chacun
+const prestigeCountsOf = cache(async (userId: string) => {
+  const [[shrine], engraved, cycles] = await Promise.all([
+    prisma.$queryRaw<{ consecrated: number; engraved: number }[]>`
+      SELECT COUNT(*)::int AS consecrated, COUNT(printing)::int AS engraved FROM "ConsecratedCard" WHERE "userId" = ${userId}`,
     prisma.userCard.count({ where: { ownerId: userId, printing: { not: null } } }),
     prisma.prestigeCycle.findMany({ where: { userId }, select: { stats: true } }),
   ]);
   const snapshots = cycles.map((c) => c.stats);
-  const printings = snapshots.reduce<number>((best, raw) => Math.max(best, parsePeak(raw)?.printingsOwned ?? 0), engraved + consecratedEngraved);
-  return { consecrated, printings, snapshots };
-}
+  const printings = snapshots.reduce<number>((best, raw) => Math.max(best, parsePeak(raw)?.printingsOwned ?? 0), engraved + shrine.engraved);
+  return { consecrated: shrine.consecrated, printings, snapshots };
+});
 
 /** Titres, cadres et couleurs actifs, avec la progression du joueur vers chacun. */
 export async function getCosmeticOptions(userId: string, locale: string): Promise<CosmeticOption[]> {
@@ -162,13 +143,12 @@ export async function getCosmeticProgress(userId: string, locale: string): Promi
 }
 
 /** Badges obtenus par le joueur (ordre par défaut). */
-export async function getEarnedBadges(user: { id: string; createdAt: Date; discordLinkedAt: Date | null; ambassadorSince: Date | null; role: Role }): Promise<Badge[]> {
-  const [pioneerUntil, sponsorReferrals, recruiterReferrals, qualifiedReferrals, prestige, counts] = await Promise.all([
+export async function getEarnedBadges(user: { id: string; createdAt: Date; discordLinkedAt: Date | null; ambassadorSince: Date | null; role: Role; prestige: number }): Promise<Badge[]> {
+  const [pioneerUntil, sponsorReferrals, recruiterReferrals, qualifiedReferrals, counts] = await Promise.all([
     getSetting("profile.pioneerUntil"),
     getSetting("profile.sponsorReferrals"),
     getSetting("profile.recruiterReferrals"),
     prisma.referral.count({ where: { referrerId: user.id, qualifiedAt: { not: null } } }),
-    prisma.user.findUnique({ where: { id: user.id }, select: { prestige: true } }),
     prestigeCountsOf(user.id),
   ]);
   return earnedBadges({
@@ -181,7 +161,7 @@ export async function getEarnedBadges(user: { id: string; createdAt: Date; disco
     sponsorReferrals,
     recruiterReferrals,
     discordLinked: user.discordLinkedAt !== null,
-    prestige: prestige?.prestige ?? 0,
+    prestige: user.prestige,
     consecrated: counts.consecrated,
     engraved: counts.printings,
   });

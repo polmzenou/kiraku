@@ -94,7 +94,7 @@ export type Busy = {
   trades: number;
 };
 
-export const isBusy = (b: Busy) => b.copies.length > 0 || b.listings > 0 || b.offers > 0 || b.trades > 0;
+const isBusy = (b: Busy) => b.copies.length > 0 || b.listings > 0 || b.offers > 0 || b.trades > 0;
 
 /**
  * Ce qui empêche de renaître. Les propositions reçues ne bloquent pas : elles échouent d'elles-mêmes à
@@ -110,11 +110,20 @@ export async function busyWith(db: Pick<Tx, "userCard" | "tradeListing" | "listi
   return { copies: copies.map((c) => ({ status: c.status, count: c._count._all })), listings, offers, trades };
 }
 
-/** Cartes distinctes publiées possédées, par rareté, contre les seuils réglés. */
-export async function eligibilityWith(db: Pick<Tx, "$queryRaw">, userId: string, ctx: Pick<RebirthCtx, "rules" | "rarityOrder">): Promise<Eligibility> {
-  const [published, owned] = await Promise.all([
-    db.$queryRaw<{ rarity: string; n: number }[]>`
-      SELECT "rarityKey" AS rarity, count(*)::int AS n FROM "Card" WHERE status = 'PUBLISHED' GROUP BY 1`,
+/**
+ * Cartes distinctes publiées possédées, par rareté, contre les seuils réglés. `published` : décompte du catalogue déjà
+ * en cache (page /prestige) ; sans lui, relu en base (transaction de la renaissance).
+ */
+export async function eligibilityWith(
+  db: Pick<Tx, "$queryRaw">,
+  userId: string,
+  ctx: Pick<RebirthCtx, "rules" | "rarityOrder">,
+  published?: Readonly<Record<string, number>>,
+): Promise<Eligibility> {
+  const [catalog, owned] = await Promise.all([
+    published ??
+      db.$queryRaw<{ rarity: string; n: number }[]>`
+        SELECT "rarityKey" AS rarity, count(*)::int AS n FROM "Card" WHERE status = 'PUBLISHED' GROUP BY 1`.then((rows) => Object.fromEntries(rows.map((r) => [r.rarity, r.n]))),
     db.$queryRaw<{ rarity: string; n: number }[]>`
       SELECT c."rarityKey" AS rarity, COUNT(DISTINCT uc."cardId")::int AS n
       FROM "UserCard" uc JOIN "Card" c ON c.id = uc."cardId"
@@ -123,7 +132,7 @@ export async function eligibilityWith(db: Pick<Tx, "$queryRaw">, userId: string,
   ]);
   return eligibilityOf({
     order: ctx.rarityOrder,
-    published: Object.fromEntries(published.map((r) => [r.rarity, r.n])),
+    published: catalog,
     owned: Object.fromEntries(owned.map((r) => [r.rarity, r.n])),
     percent: ctx.rules.requiredPercent,
   });
@@ -158,9 +167,14 @@ async function engravedLeaving(db: Pick<Tx, "$queryRaw">, userId: string, keepId
     ORDER BY "cardId", printing, serial`;
 }
 
-/** Meilleur score du cycle qui se termine, photographié pour les cosmétiques (lib/prestige/peak.ts). */
-async function peakStatsWith(tx: Tx, userId: string): Promise<PeakStats> {
-  const [byRarity, completed, engraved, consecratedEngraved] = await Promise.all([
+/**
+ * Collection telle que la retiennent les cosmétiques : cartes distinctes par rareté (chaque carte a une seule rareté,
+ * leur somme donne les cartes distinctes ; le `distinct` de Prisma 7 s'appliquerait en mémoire, sur tous les
+ * exemplaires) et séries publiées complètes. Le profil et la photo de la renaissance la
+ * lisent de la même façon : bestOfCycles compare des chiffres comparables.
+ */
+export async function collectionStatsWith(tx: Pick<Tx, "$queryRaw">, userId: string): Promise<Omit<PeakStats, "printingsOwned">> {
+  const [byRarity, completed] = await Promise.all([
     tx.$queryRaw<{ rarity: string; n: number }[]>`
       SELECT c."rarityKey" AS rarity, COUNT(DISTINCT uc."cardId")::int AS n
       FROM "UserCard" uc JOIN "Card" c ON c.id = uc."cardId"
@@ -173,16 +187,23 @@ async function peakStatsWith(tx: Tx, userId: string): Promise<PeakStats> {
       WHERE c.status = 'PUBLISHED'
       GROUP BY c."seriesId"
       HAVING COUNT(o."cardId") = COUNT(*) AND COUNT(*) > 0`,
-    // Éditions gravées, sanctuaire compris : celles recyclées par cette renaissance restent acquises
-    tx.userCard.count({ where: { ownerId: userId, printing: { not: null } } }),
-    tx.consecratedCard.count({ where: { userId, printing: { not: null } } }),
   ]);
   return {
     uniqueCards: byRarity.reduce((sum, r) => sum + r.n, 0),
     byRarity: Object.fromEntries(byRarity.map((r) => [r.rarity, r.n])),
     completedSeries: completed.map((c) => c.id),
-    printingsOwned: engraved + consecratedEngraved,
   };
+}
+
+/** Meilleur score du cycle qui se termine, photographié pour les cosmétiques (lib/prestige/peak.ts). */
+async function peakStatsWith(tx: Tx, userId: string): Promise<PeakStats> {
+  const [collection, engraved, consecratedEngraved] = await Promise.all([
+    collectionStatsWith(tx, userId),
+    // Éditions gravées, sanctuaire compris : celles recyclées par cette renaissance restent acquises
+    tx.userCard.count({ where: { ownerId: userId, printing: { not: null } } }),
+    tx.consecratedCard.count({ where: { userId, printing: { not: null } } }),
+  ]);
+  return { ...collection, printingsOwned: engraved + consecratedEngraved };
 }
 
 export type RebirthPreview = {

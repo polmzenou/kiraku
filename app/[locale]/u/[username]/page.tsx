@@ -102,13 +102,16 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
   ]);
   // Son propre profil (compte inscrit) : de quoi le personnaliser
   const customize = access.isOwner && viewer && !viewer.isGuest ? await customizeData(owner.id, locale) : null;
-  const [featuredCards, summary, wishlist, sales, incense, tShowcase] = await Promise.all([
+  const [featuredCards, summary, wishlist, sales, incense, tShowcase, prestigeOn, prestigeSummary] = await Promise.all([
     showcases[0] ? getShowcaseCards(showcases[0].id, owner.id, showcases[0].layout, locale) : [],
     getCollectionSummary(owner.id, values),
     getWishlist(owner.id, locale), getProfileSales(owner.id, locale),
     // Encens : seulement sur son propre profil
     access.isOwner && viewer && !viewer.bannedAt ? getIncenseState(owner.id) : null,
     getTranslations("showcase"),
+    // Prestige : bandeau et record pour un joueur qui a renaît
+    getSetting("prestige.enabled"),
+    decor.prestige > 0 ? getPrestigeSummary(owner.id) : null,
   ]);
   const shelf = showcases.map((s, i) => ({
     id: s.id,
@@ -126,12 +129,8 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
         ...sales.map((c) => c.cardId),
       ]);
 
-  // Prestige : bandeau et record pour un joueur qui a renaît ; sur son propre profil, le bouton « Évoluer »
-  // (un halo d'or quand les seuils sont atteints), tant que l'interrupteur est allumé
-  const [prestigeOn, prestigeSummary] = await Promise.all([
-    getSetting("prestige.enabled"),
-    decor.prestige > 0 ? getPrestigeSummary(owner.id) : null,
-  ]);
+  // Sur son propre profil, le bouton « Évoluer » (un halo d'or quand les seuils sont atteints), tant que
+  // l'interrupteur est allumé
   let evolveReady: boolean | null = null;
   if (customize && prestigeOn) {
     const [order, catalog, percent] = await Promise.all([getRarities(), getCatalogStats(), getSetting("prestige.requiredPercent")]);
@@ -242,7 +241,7 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
 async function customizeData(userId: string, locale: string) {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { id: true, bio: true, titleAgreement: true, titleId: true, frameId: true, nameColorId: true, badgeOrder: true, createdAt: true, discordLinkedAt: true, ambassadorSince: true, role: true },
+    select: { id: true, bio: true, titleAgreement: true, titleId: true, frameId: true, nameColorId: true, badgeOrder: true, createdAt: true, discordLinkedAt: true, ambassadorSince: true, role: true, prestige: true },
   });
   const [{ options, stats }, badges] = await Promise.all([getCosmeticProgress(userId, locale), getEarnedBadges(user)]);
   return {

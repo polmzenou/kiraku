@@ -12,7 +12,7 @@ import { useReducedFx } from "../motion/MotionPreference";
 import { useRitualFx } from "../opening/useRitualFx";
 import { PlayerAvatar } from "../social/PlayerAvatar";
 import { ButtonLink } from "../ui/ButtonLink";
-import type { RarityInfo } from "./RebirthFlow";
+import { departedByRarity, type RarityInfo } from "./RebirthFlow";
 import "./prestige.css";
 
 /**
@@ -40,9 +40,7 @@ export function RebirthRite({
   const root = useRef<HTMLDivElement>(null);
   const tl = useRef<Timeline | null>(null);
 
-  const piles = rarities
-    .map((r) => ({ ...r, count: result.departed.filter((d) => d.rarity === r.key).reduce((sum, d) => sum + d.count, 0) }))
-    .filter((r) => r.count > 0);
+  const piles = departedByRarity(rarities, result.departed);
   const gone = piles.reduce((sum, p) => sum + p.count, 0);
   const heirs = result.heirs.slice(0, 20);
 

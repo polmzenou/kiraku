@@ -11,7 +11,7 @@ import { isFrozen } from "@/lib/account/deletion";
 import { isStaff } from "@/lib/admin/roles";
 import { rarityColor } from "@/lib/catalog/appearance";
 import { getRarityDefinitions } from "@/server/catalog/rarities";
-import { getPrestigeOverview, rebirthCtx } from "@/server/prestige/queries";
+import { getPrestigeOverview, getSpecialCopies, rebirthCtx } from "@/server/prestige/queries";
 import { getCurrentUser } from "@/server/user";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -66,10 +66,12 @@ export default async function PrestigePage() {
     );
   }
 
-  const overview = await getPrestigeOverview(user.id, locale, ctx);
+  const overview = await getPrestigeOverview(user.id, ctx);
   if (!overview) notFound();
   const tooMany = overview.copies > ctx.rules.maxCopies;
-  const ready = overview.eligibility.eligible && overview.blockers.length === 0 && !overview.nextAt && !tooMany;
+  const reason = !overview.eligibility.eligible ? "locked" : overview.blockers.length > 0 || overview.nextAt || tooMany ? "blocked" : null;
+  // Les héritières possibles ne servent qu'au choix, inaccessible tant que le joueur ne peut pas renaître
+  const special = reason === null ? await getSpecialCopies(user.id, locale) : [];
 
   return (
     <PageShell>
@@ -114,11 +116,10 @@ export default async function PrestigePage() {
       </section>
 
       <RebirthFlow
-        ready={ready}
-        reason={!overview.eligibility.eligible ? "locked" : overview.blockers.length > 0 || overview.nextAt || tooMany ? "blocked" : null}
+        reason={reason}
         prestige={overview.prestige}
         slots={ctx.rules.keepSlots}
-        special={overview.special}
+        special={special}
         rarities={rarities}
         player={{ username: user.username, image: user.image, frame: user.decor.frame }}
       />

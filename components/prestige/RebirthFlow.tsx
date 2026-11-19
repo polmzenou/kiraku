@@ -19,6 +19,13 @@ const RebirthRite = dynamic(() => import("./RebirthRite").then((m) => m.RebirthR
 /** Rareté telle que l'affichent les jauges et le rite. */
 export type RarityInfo = { key: string; seal: string; name: string; color: string };
 
+/** Cartes parties, par rareté et dans l'ordre du registre (récapitulatif et piles du rite) ; les raretés vides ne comptent pas. */
+export function departedByRarity(rarities: readonly RarityInfo[], departed: readonly { rarity: string; count: number }[]) {
+  return rarities
+    .map((r) => ({ ...r, count: departed.filter((d) => d.rarity === r.key).reduce((sum, d) => sum + d.count, 0) }))
+    .filter((r) => r.count > 0);
+}
+
 type Step = "intro" | "choose" | "recap" | "rite";
 
 /**
@@ -27,7 +34,6 @@ type Step = "intro" | "choose" | "recap" | "rite";
  * maintenue, puis le rite 転生. Le serveur relit tout sous verrou : ce que voit le joueur n'est qu'une proposition.
  */
 export function RebirthFlow({
-  ready,
   reason,
   prestige,
   slots,
@@ -35,8 +41,7 @@ export function RebirthFlow({
   rarities,
   player,
 }: {
-  ready: boolean;
-  /** Pourquoi le joueur ne peut pas encore renaître (seuils ou blocages). */
+  /** Pourquoi le joueur ne peut pas encore renaître (seuils ou blocages) ; null : il peut. */
   reason: "locked" | "blocked" | null;
   prestige: number;
   slots: number;
@@ -49,31 +54,28 @@ export function RebirthFlow({
   const reduced = useReducedFx();
   const [step, setStep] = useState<Step>("intro");
   const [copyIds, setCopyIds] = useState<Set<string>>(() => new Set());
-  const [cards, setCards] = useState<Map<string, string>>(() => new Map());
+  const [cards, setCards] = useState<Set<string>>(() => new Set());
   const [preview, setPreview] = useState<RebirthPreviewView | null>(null);
   const [sacrificed, setSacrificed] = useState<Set<string>>(() => new Set());
   const [result, setResult] = useState<RebirthResultView | null>(null);
   const [error, setError] = useState<PrestigeActionError | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const ready = reason === null;
   const kept = copyIds.size + cards.size;
   const full = kept >= slots;
-  const keep = { keepCopyIds: [...copyIds], keepCardIds: [...cards.keys()] };
+  const keep = { keepCopyIds: [...copyIds], keepCardIds: [...cards] };
 
-  const toggleCopy = (id: string) =>
-    setCopyIds((prev) => {
+  // Coche ou décoche une héritière (exemplaire désigné ou carte), dans la limite des places
+  const toggle = (set: typeof setCards, id: string) =>
+    set((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else if (!full) next.add(id);
       return next;
     });
-  const toggleCard = (card: CollectionItem) =>
-    setCards((prev) => {
-      const next = new Map(prev);
-      if (next.has(card.cardId)) next.delete(card.cardId);
-      else if (!full) next.set(card.cardId, card.name);
-      return next;
-    });
+  const toggleCopy = (id: string) => toggle(setCopyIds, id);
+  const toggleCard = (card: CollectionItem) => toggle(setCards, card.cardId);
 
   const openRecap = () =>
     startTransition(async () => {
@@ -170,7 +172,7 @@ export function RebirthFlow({
         <div className="flex flex-col gap-2">
           <h3 className="font-bold">{t("cardsTitle")}</h3>
           <CardPickGrid
-            selected={new Set(cards.keys())}
+            selected={cards}
             onPick={toggleCard}
             pickLabel={(name) => t("pick", { name })}
             unavailable={(card) => full && !cards.has(card.cardId)}
@@ -191,9 +193,7 @@ export function RebirthFlow({
 
   // Récapitulatif
   const p = preview!;
-  const byRarity = rarities
-    .map((r) => ({ ...r, count: p.departed.filter((d) => d.rarity === r.key).reduce((sum, d) => sum + d.count, 0) }))
-    .filter((r) => r.count > 0);
+  const byRarity = departedByRarity(rarities, p.departed);
   const confirmed = p.engraved.every((e) => sacrificed.has(e.id));
   return (
     <section className="flex flex-col gap-4">

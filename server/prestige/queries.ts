@@ -2,12 +2,13 @@ import "server-only";
 import type { CardView } from "@/lib/boosters/view";
 import { SPECIAL_COPY } from "@/lib/collection/copies";
 import type { Eligibility } from "@/lib/prestige/eligibility";
-import { nextRebirthAt, type PrestigeRules } from "@/lib/prestige/rules";
+import { nextRebirthAt } from "@/lib/prestige/rules";
 import { cardViews } from "../boosters/display";
+import { getCatalogStats } from "../catalog/queries";
 import { getRarities } from "../catalog/rarities";
 import { prisma } from "../db";
 import { getSetting } from "../settings";
-import { busyWith, eligibilityWith, isBusy, type RebirthCtx } from "./prestige-core";
+import { busyWith, eligibilityWith, type RebirthCtx } from "./prestige-core";
 import { getPrestigeRules } from "./rules";
 
 // Lectures du prestige : page /prestige (accès, blocages, héritières possibles), cycles d'un joueur.
@@ -26,7 +27,6 @@ export type SpecialCopyView = { userCardId: string; card: CardView; heritage: nu
 export type CycleView = { number: number; globalRank: number; uniqueCards: number; zeni: number; createdAt: Date };
 
 export type PrestigeOverview = {
-  rules: PrestigeRules;
   prestige: number;
   eligibility: Eligibility;
   blockers: Blocker[];
@@ -34,9 +34,6 @@ export type PrestigeOverview = {
   copies: number;
   /** Fin du délai entre deux renaissances, ou null. */
   nextAt: Date | null;
-  /** Exemplaires spéciaux en collection : héritières à garder en priorité. */
-  special: SpecialCopyView[];
-  cycles: CycleView[];
 };
 
 const STATUS_HREF: Record<string, { kind: Blocker["kind"]; href: string }> = {
@@ -46,43 +43,35 @@ const STATUS_HREF: Record<string, { kind: Blocker["kind"]; href: string }> = {
   CASINO: { kind: "CASINO", href: "/casino/pile-ou-face?onglet=mes-tables" },
 };
 
-export async function getPrestigeOverview(userId: string, locale: string, ctx: RebirthCtx): Promise<PrestigeOverview | null> {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { prestige: true, prestigedAt: true } });
-  if (!user) return null;
-  const [eligibility, busy, copies, specialRows, cycles] = await Promise.all([
-    eligibilityWith(prisma, userId, ctx),
+export async function getPrestigeOverview(userId: string, ctx: RebirthCtx): Promise<PrestigeOverview | null> {
+  const [user, eligibility, busy, copies] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { prestige: true, prestigedAt: true } }),
+    // Décompte du catalogue en cache : la transaction de la renaissance, elle, le relit en base
+    getCatalogStats().then((catalog) => eligibilityWith(prisma, userId, ctx, catalog.byRarity)),
     busyWith(prisma, userId, ctx.now),
     prisma.userCard.count({ where: { ownerId: userId } }),
-    prisma.userCard.findMany({
-      where: { ownerId: userId, status: "COLLECTION", ...SPECIAL_COPY },
-      orderBy: [{ heritage: "desc" }, { obtainedAt: "asc" }],
-      take: 200,
-      select: { id: true, cardId: true, heritage: true, printing: true, serial: true },
-    }),
-    prisma.prestigeCycle.findMany({
-      where: { userId },
-      orderBy: { number: "desc" },
-      select: { number: true, globalRank: true, uniqueCards: true, zeni: true, createdAt: true },
-    }),
   ]);
+  if (!user) return null;
   const blockers: Blocker[] = busy.copies.flatMap((c) => (STATUS_HREF[c.status] ? [{ ...STATUS_HREF[c.status], count: c.count }] : []));
   if (busy.listings > 0) blockers.push({ kind: "LISTINGS", count: busy.listings, href: "/marche?onglet=mes-echanges" });
   if (busy.offers > 0) blockers.push({ kind: "OFFERS", count: busy.offers, href: "/marche?onglet=mes-echanges" });
   if (busy.trades > 0) blockers.push({ kind: "TRADES", count: busy.trades, href: "/amis" });
-  const views = await cardViews(specialRows.map((r) => r.cardId), locale);
-  return {
-    rules: ctx.rules,
-    prestige: user.prestige,
-    eligibility,
-    blockers: isBusy(busy) ? blockers : [],
-    copies,
-    nextAt: nextRebirthAt(user.prestigedAt, ctx.rules.minDaysBetween, ctx.now),
-    special: specialRows.flatMap((r) => {
-      const card = views.get(r.cardId);
-      return card ? [{ userCardId: r.id, card, heritage: r.heritage, printing: r.printing, serial: r.serial }] : [];
-    }),
-    cycles,
-  };
+  return { prestige: user.prestige, eligibility, blockers, copies, nextAt: nextRebirthAt(user.prestigedAt, ctx.rules.minDaysBetween, ctx.now) };
+}
+
+/** Exemplaires spéciaux en collection : héritières à garder en priorité (étape du choix de la renaissance). */
+export async function getSpecialCopies(userId: string, locale: string): Promise<SpecialCopyView[]> {
+  const rows = await prisma.userCard.findMany({
+    where: { ownerId: userId, status: "COLLECTION", ...SPECIAL_COPY },
+    orderBy: [{ heritage: "desc" }, { obtainedAt: "asc" }],
+    take: 200,
+    select: { id: true, cardId: true, heritage: true, printing: true, serial: true },
+  });
+  const views = await cardViews(rows.map((r) => r.cardId), locale);
+  return rows.flatMap((r) => {
+    const card = views.get(r.cardId);
+    return card ? [{ userCardId: r.id, card, heritage: r.heritage, printing: r.printing, serial: r.serial }] : [];
+  });
 }
 
 /** Dernière renaissance et record d'un joueur (profil) ; null s'il n'a jamais renaît. */
