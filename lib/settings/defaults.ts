@@ -462,6 +462,11 @@ export const SETTING_SCHEMAS = {
   "prestige.printing.current": z.number().int().min(1).max(999),
   "prestige.printing.seals": printingSeals,
   "prestige.printing.recycleMultiplier": z.number().int().min(1).max(100),
+  // Rite joué après la renaissance : bain d'encre (INK) ou cinématique de lumière (CINEMATIC)
+  "prestige.riteStyle": z.enum(["INK", "CINEMATIC"]),
+  // Boosters offerts à chaque renaissance (crédités, à ouvrir) : type et nombre (0 = aucun)
+  "prestige.rebirthBoosterSlug": slugSchema,
+  "prestige.rebirthBoosters": z.number().int().min(0).max(10),
   // Casino : ouverture (vide = teaser sans date ; future = compte à rebours ; passée = ouvert), badge « Nouveau »
   // et cérémonie pendant newBadgeDays jours après l'ouverture (0 = ni l'un ni l'autre)
   "casino.opensAt": z.string().datetime().nullable(),
@@ -838,6 +843,9 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "prestige.printing.current": 1,
   "prestige.printing.seals": { "1": "初摺" },
   "prestige.printing.recycleMultiplier": 5,
+  "prestige.riteStyle": "CINEMATIC",
+  "prestige.rebirthBoosterSlug": "mythique", // 1 Mythique garantie
+  "prestige.rebirthBoosters": 1,
   "casino.opensAt": null, // teaser « Bientôt » sans compte à rebours, comme avant le casino
   "casino.newBadgeDays": 7,
   "casino.minAccountAgeHours": 48, // comme les enchères et les cadeaux

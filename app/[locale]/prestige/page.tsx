@@ -12,6 +12,7 @@ import { isStaff } from "@/lib/admin/roles";
 import { rarityColor } from "@/lib/catalog/appearance";
 import { getRarityDefinitions } from "@/server/catalog/rarities";
 import { getPrestigeOverview, getSpecialCopies, rebirthCtx } from "@/server/prestige/queries";
+import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -25,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * (404), sauf pour l'équipe qui en voit l'aperçu.
  */
 export default async function PrestigePage() {
-  const [user, t, tRarity, locale, format, ctx, definitions] = await Promise.all([
+  const [user, t, tRarity, locale, format, ctx, definitions, riteStyle] = await Promise.all([
     getCurrentUser(),
     getTranslations("prestige"),
     getTranslations("rarity"),
@@ -33,6 +34,7 @@ export default async function PrestigePage() {
     getFormatter(),
     rebirthCtx(),
     getRarityDefinitions(),
+    getSetting("prestige.riteStyle"),
   ]);
   const staff = isStaff(user?.role);
   if (!ctx.rules.enabled && !staff) notFound();
@@ -122,7 +124,8 @@ export default async function PrestigePage() {
         slots={ctx.rules.keepSlots}
         special={special}
         rarities={rarities}
-        player={{ username: user.username, image: user.image, frame: user.decor.frame }}
+        player={{ username: user.username, image: user.image, frame: user.decor.frame, agreement: user.titleAgreement }}
+        riteStyle={riteStyle}
       />
     </PageShell>
   );

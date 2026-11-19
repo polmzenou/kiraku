@@ -1,22 +1,59 @@
 import "server-only";
+import { contentsLabel } from "@/lib/boosters/catalog";
+import { effectiveSlotFloors, localize } from "@/lib/boosters/types";
 import type { CardView } from "@/lib/boosters/view";
 import { SPECIAL_COPY } from "@/lib/collection/copies";
+import type { RebirthBoosterView } from "@/lib/prestige/cinematic";
 import type { Eligibility } from "@/lib/prestige/eligibility";
 import { nextRebirthAt } from "@/lib/prestige/rules";
 import { cardViews } from "../boosters/display";
+import { getBoosterTypeEntry } from "../boosters/pools";
+import { getBoosterRules } from "../boosters/rules";
 import { getCatalogStats } from "../catalog/queries";
 import { getRarities } from "../catalog/rarities";
 import { prisma } from "../db";
 import { getSetting } from "../settings";
-import { busyWith, eligibilityWith, type RebirthCtx } from "./prestige-core";
-import { getPrestigeRules } from "./rules";
+import { busyWith, eligibilityWith, type RebirthBooster, type RebirthCtx } from "./prestige-core";
+import { getPrestigeRules, getPrintingRules } from "./rules";
 
 // Lectures du prestige : page /prestige (accès, blocages, héritières possibles), cycles d'un joueur.
 
-/** Contexte d'une renaissance : heure, réglages, valeurs de recyclage, ordre du registre des raretés. */
+/** Contexte d'une renaissance : heure, réglages, valeurs de recyclage, ordre du registre des raretés, boosters offerts. */
 export async function rebirthCtx(now = new Date()): Promise<RebirthCtx> {
-  const [rules, values, rarityOrder] = await Promise.all([getPrestigeRules(), getSetting("collection.recycleValues"), getRarities()]);
-  return { now, rules, values, rarityOrder };
+  const [rules, values, rarityOrder, slug, count] = await Promise.all([
+    getPrestigeRules(),
+    getSetting("collection.recycleValues"),
+    getRarities(),
+    getSetting("prestige.rebirthBoosterSlug"),
+    getSetting("prestige.rebirthBoosters"),
+  ]);
+  return { now, rules, values, rarityOrder, booster: { slug, count } };
+}
+
+/**
+ * Booster offert, pour l'affichage (récapitulatif, rites, banc de l'admin) : null si rien n'est offert ou si le type
+ * est introuvable ou scellé (la renaissance ne le crédite pas non plus, prestige-core.ts).
+ */
+export async function rebirthBoosterView(booster: RebirthBooster | null, locale: string): Promise<RebirthBoosterView | null> {
+  if (!booster || booster.count < 1) return null;
+  const [entry, rules] = await Promise.all([getBoosterTypeEntry(booster.slug), getBoosterRules()]);
+  if (!entry || entry.type.kind === "DROP") return null;
+  const { type } = entry;
+  return {
+    slug: type.slug,
+    name: localize(type.name, locale),
+    count: booster.count,
+    shape: type.shape,
+    theme: type.theme,
+    emblem: type.emblem,
+    contents: contentsLabel(effectiveSlotFloors(type.slotFloors, rules.draw.slotFloors).length),
+  };
+}
+
+/** Les éditions gravées tombent-elles déjà à ce prestige ? (box « gravées » de la cinématique) */
+export async function printingsUnlockedAt(prestige: number): Promise<boolean> {
+  const rules = await getPrintingRules();
+  return rules !== null && prestige >= rules.minPrestige;
 }
 
 /** Un élément qui bloque la renaissance, avec où aller le régler. */

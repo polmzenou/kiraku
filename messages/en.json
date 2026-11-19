@@ -3829,7 +3829,10 @@
           "current": "Current printing",
           "seals": "Printing seals",
           "recycleMultiplier": "Recycle value of an engraved copy (×)"
-        }
+        },
+        "riteStyle": "Rite played after a rebirth",
+        "rebirthBoosterSlug": "Booster given at each rebirth",
+        "rebirthBoosters": "Boosters given per rebirth"
       },
       "hints": {
         "enabled": "Off: 404 for players, preview for the team, no \"Evolve\" button. Roman numerals already earned stay visible.",
@@ -3849,7 +3852,10 @@
           "current": "Raising this number opens a new printing for every card: numbers start again from 1, with the printing's seal.",
           "recycleMultiplier": "A recycled engraved copy is worth this multiple of an ordinary copy, at rebirth as when recycling."
         },
-        "seals": "Two to four kanji per printing, from the seal font (lib/seal-glyphs.ts): any other kanji is refused."
+        "seals": "Two to four kanji per printing, from the seal font (lib/seal-glyphs.ts): any other kanji is refused.",
+        "riteStyle": "Cinematic: the screen fades to black, recycled cards stream as light to the centre, a burst and a gold plate, then the boxes. Ink: inkstone, golden petals, cycle scroll. Try both in the “Rebirth rites” bench above.",
+        "rebirthBoosterSlug": "Credited in the rebirth transaction, to open from the home page. A deleted or sealed type credits nothing (the rebirth still goes through).",
+        "rebirthBoosters": "0: no booster given."
       },
       "balance": {
         "title": "Balance preview",
@@ -3898,6 +3904,25 @@
         "editionShort": "printing {printing} · no. {serial}",
         "heritage": "heritage {level} · kept {kept} times by the player",
         "consecrated": "{count, plural, one {# consecrated card} other {# consecrated cards}}"
+      },
+      "riteSection": "Rebirth rite and reward",
+      "riteStyles": {
+        "CINEMATIC": "Light cinematic",
+        "INK": "Ink rite"
+      },
+      "ritePreview": {
+        "title": "Rebirth rites",
+        "intro": "Plays the cinematic or the ink rite with a fake result: real cards for the heirlooms, the configured booster. Nothing is written to the database.",
+        "current": "Currently played after a real rebirth: {style}. Pick it in “Rebirth rite and reward”, below.",
+        "prestige": "Prestige reached",
+        "zeni": "Recycling Zeni",
+        "heirs": "Heirlooms",
+        "printings": "Engraved editions unlocked",
+        "booster": "Booster given ({name})",
+        "noBooster": "The configured booster is missing or sealed: no rebirth credits it.",
+        "playCinematic": "Try the cinematic",
+        "playInk": "Try the ink rite",
+        "hint": "Tap anywhere during the rite to skip it; “Close” comes back here. Sounds follow the opening sound setting."
       }
     },
     "multiAccounts": {
@@ -7021,7 +7046,9 @@
       "holdConfirm": "Tap again to be reborn",
       "holding": "Rebirth…",
       "holdHint": "Hold the button until it fills: the rebirth is final.",
-      "back": "Change my heirlooms"
+      "back": "Change my heirlooms",
+      "boosterLabel": "Gift",
+      "booster": "{count, plural, one {# {name} booster} other {# {name} boosters}}"
     },
     "errors": {
       "NO_SESSION": "Your session expired: sign in again.",
@@ -7052,7 +7079,10 @@
       "rank": "Kiraku's {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} rebirth",
       "done": "You've reached prestige {roman}",
       "doneText": "A new cycle begins, with your heirlooms.",
-      "profile": "See my profile"
+      "profile": "See my profile",
+      "booster": "{count, plural, one {A {name} booster awaits you} other {# {name} boosters await you}}",
+      "openBooster": "Open my booster",
+      "close": "Close"
     },
     "profile": {
       "evolve": "Evolve",
@@ -7107,6 +7137,20 @@
         "doneText": "{name} now watches over your sanctuary.",
         "sanctuary": "See my sanctuary"
       }
+    },
+    "cinematic": {
+      "label": "Rebirth cinematic",
+      "skip": "Skip",
+      "title": "You reached Prestige {roman}!",
+      "rank": "Kiraku's {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} rebirth",
+      "heirs": "{count, plural, one {Find your prestige card again!} other {Find your # prestige cards again!}}",
+      "printings": "Discover engraved cards!",
+      "cosmetics": "New badges and titles for your profile!",
+      "zeni": "+<num>{zeni}</num> Zeni recovered from recycling",
+      "booster": "{count, plural, one {A {name} booster awaits you to begin this new adventure} other {# {name} boosters await you to begin this new adventure}}",
+      "openBooster": "Open my booster",
+      "profile": "See my profile",
+      "close": "Close"
     }
   }
 }

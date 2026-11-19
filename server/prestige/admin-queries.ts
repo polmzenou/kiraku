@@ -1,8 +1,27 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
+import type { CardView } from "@/lib/boosters/view";
 import { SPECIAL_COPY } from "@/lib/collection/copies";
+import type { RebirthBoosterView } from "@/lib/prestige/cinematic";
 import { eligibilityOf, requiredCount } from "@/lib/prestige/eligibility";
+import { cardViews } from "../boosters/display";
 import { prisma } from "../db";
+import { getSetting } from "../settings";
+import { rebirthBoosterView } from "./queries";
+
+/**
+ * Banc des rites (/admin/prestige) : de vraies cartes pour les héritières factices, et le booster du réglage (montré
+ * même si le réglage n'en offre aucun : `boosters` dit combien la vraie renaissance en crédite).
+ */
+export async function ritePreviewSample(locale: string): Promise<{ cards: CardView[]; booster: RebirthBoosterView | null; boosters: number }> {
+  const [rows, slug, count] = await Promise.all([
+    prisma.card.findMany({ where: { status: "PUBLISHED" }, select: { id: true }, orderBy: [{ favorites: "desc" }, { id: "asc" }], take: 20 }),
+    getSetting("prestige.rebirthBoosterSlug"),
+    getSetting("prestige.rebirthBoosters"),
+  ]);
+  const [views, booster] = await Promise.all([cardViews(rows.map((r) => r.id), locale), rebirthBoosterView({ slug, count: Math.max(count, 1) }, locale)]);
+  return { cards: rows.flatMap((r) => views.get(r.id) ?? []), booster, boosters: count };
+}
 
 // Admin du prestige : aperçu d'équilibrage (cartes exigées par rareté, joueurs éligibles et presque éligibles) et
 // dernières renaissances. L'aperçu parcourt toute la table UserCard : il est mis en cache quelques minutes.

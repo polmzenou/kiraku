@@ -8,7 +8,7 @@ import { PRESTIGE_SETTING_KEYS, prestigeSettingsSchema, type PrestigeSettings } 
 import { updatePrestigeSettings } from "@/server/actions/admin-settings";
 import { Button } from "../ui/Button";
 import { inputClass } from "../ui/Field";
-import { NumberField, OptionalNumberField, Toggle } from "./fields";
+import { NumberField, OptionalNumberField, SelectField, Toggle } from "./fields";
 import { SettingsSaveBar } from "./SettingsSaveBar";
 
 type NumberKey =
@@ -20,7 +20,8 @@ type NumberKey =
   | "prestige.zeniCap"
   | "prestige.printing.minPrestige"
   | "prestige.printing.current"
-  | "prestige.printing.recycleMultiplier";
+  | "prestige.printing.recycleMultiplier"
+  | "prestige.rebirthBoosters";
 
 const LIMITS: Record<NumberKey, [number, number]> = {
   "prestige.keepSlots": [1, 100],
@@ -32,6 +33,7 @@ const LIMITS: Record<NumberKey, [number, number]> = {
   "prestige.printing.minPrestige": [1, 100],
   "prestige.printing.current": [1, 999],
   "prestige.printing.recycleMultiplier": [1, 100],
+  "prestige.rebirthBoosters": [0, 10],
 };
 
 type RecordKey = "prestige.requiredPercent" | "prestige.printing.chanceBp" | "prestige.printing.sizes";
@@ -46,9 +48,10 @@ const short = <K extends keyof PrestigeSettings>(key: K) => key.slice("prestige.
 
 /**
  * Réglages du prestige : interrupteur, accès par rareté, héritières, délai et garde de taille, héritage et
- * consécration, barème dégressif des Zeni, éditions gravées (chance et taille par rareté, tirage en cours, sceaux).
+ * consécration, rite joué et boosters offerts, barème dégressif des Zeni, éditions gravées (chance et taille par
+ * rareté, tirage en cours, sceaux).
  */
-export function PrestigeSettingsForm({ initial }: { initial: PrestigeSettings }) {
+export function PrestigeSettingsForm({ initial, boosterTypes }: { initial: PrestigeSettings; boosterTypes: { slug: string; name: string }[] }) {
   const t = useTranslations("admin.prestige");
   const tRarity = useTranslations("rarity");
   const rarities = useRarities();
@@ -114,6 +117,39 @@ export function PrestigeSettingsForm({ initial }: { initial: PrestigeSettings })
           {num("prestige.maxCopies")}
           {num("prestige.heritageMax")}
           {num("prestige.consecrateMinOwnCycles")}
+        </div>
+      </fieldset>
+      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
+        <legend className="px-1 font-title text-lg font-bold">{t("riteSection")}</legend>
+        <div role="radiogroup" aria-label={name("prestige.riteStyle")} className="flex flex-col gap-1">
+          <span className="text-sm font-bold">{name("prestige.riteStyle")}</span>
+          {(["CINEMATIC", "INK"] as const).map((style) => (
+            <label key={style} className="flex min-h-11 items-center gap-3">
+              <input
+                type="radio"
+                name="prestige-rite-style"
+                className="choice"
+                checked={draft["prestige.riteStyle"] === style}
+                onChange={() => setDraft((d) => ({ ...d, "prestige.riteStyle": style }))}
+              />
+              <span>{t(`riteStyles.${style}`)}</span>
+            </label>
+          ))}
+          <p className="text-xs text-text-muted">{t("hints.riteStyle")}</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SelectField
+            label={name("prestige.rebirthBoosterSlug")}
+            hint={t("hints.rebirthBoosterSlug")}
+            value={draft["prestige.rebirthBoosterSlug"]}
+            // Le réglage peut viser un type supprimé depuis : il reste affiché pour ne pas changer en silence
+            options={[
+              ...(boosterTypes.some((b) => b.slug === draft["prestige.rebirthBoosterSlug"]) ? [] : [{ value: draft["prestige.rebirthBoosterSlug"], label: draft["prestige.rebirthBoosterSlug"] }]),
+              ...boosterTypes.map((b) => ({ value: b.slug, label: b.name })),
+            ]}
+            onChange={(v) => setDraft((d) => ({ ...d, "prestige.rebirthBoosterSlug": v }))}
+          />
+          {num("prestige.rebirthBoosters")}
         </div>
       </fieldset>
       {byRarity("prestige.requiredPercent")}

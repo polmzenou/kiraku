@@ -21,6 +21,9 @@ export const PRESTIGE_SETTING_KEYS = [
   "prestige.printing.current",
   "prestige.printing.seals",
   "prestige.printing.recycleMultiplier",
+  "prestige.riteStyle",
+  "prestige.rebirthBoosterSlug",
+  "prestige.rebirthBoosters",
 ] as const satisfies readonly SettingKey[];
 
 export type PrestigeSettingKey = (typeof PRESTIGE_SETTING_KEYS)[number];
