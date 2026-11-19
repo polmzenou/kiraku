@@ -1460,7 +1460,8 @@
       "showcases": "Vitrines",
       "casino": "Casino",
       "wrapped": "Wrapped",
-      "prestige": "Prestige"
+      "prestige": "Prestige",
+      "multiAccounts": "Multi-comptes"
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -2808,6 +2809,12 @@
           "deletionGraceDays": "Délai avant anonymisation (jours)",
           "usernameChangeDays": "Délai entre deux changements de pseudo (jours)",
           "exportsPerDay": "Exports de données par jour et par joueur"
+        },
+        "multiAccount": {
+          "retentionDays": "Conservation des IP et appareils (jours)",
+          "seenThrottleMinutes": "Relevé pendant la présence (minutes)",
+          "sharedIpCap": "Comptes au-delà desquels une IP est publique",
+          "minScore": "Score minimal d'un groupe suspect"
         }
       },
       "hints": {
@@ -2828,8 +2835,15 @@
           "deletionGraceDays": "Pendant ce délai, le compte est gelé et la suppression annulable. 30 jours conseillés.",
           "usernameChangeDays": "0 = sans délai.",
           "exportsPerDay": "Fichier JSON « Télécharger mes données »."
+        },
+        "multiAccount": {
+          "retentionDays": "IP et appareils non revus depuis ce délai sont effacés chaque nuit. 90 jours conseillés (RGPD).",
+          "seenThrottleMinutes": "Un joueur connecté est relevé au plus une fois par ce délai.",
+          "sharedIpCap": "4G, école, entreprise : une IP (ou une racine d'e-mail) partagée par plus de comptes ne les relie plus.",
+          "minScore": "Somme des indices d'une paire pour former un groupe dans Multi-comptes."
         }
-      }
+      },
+      "multiAccountSection": "Multi-comptes"
     },
     "catalog": {
       "title": "Catalogue de cartes",
@@ -3884,6 +3898,77 @@
         "editionShort": "tirage {printing} · n° {serial}",
         "heritage": "héritage {level} · gardée {kept} fois par le joueur",
         "consecrated": "{count, plural, one {# carte consacrée} other {# cartes consacrées}}"
+      }
+    },
+    "multiAccounts": {
+      "title": "Multi-comptes",
+      "intro": "Comptes reliés par des indices : même appareil, même IP, e-mails ou pseudos proches, transferts à sens unique, parrainage, ami unique. Un groupe se forme à partir d'un score de {minScore}. C'est un soupçon à vérifier, pas une preuve : une famille ou une colocation partage aussi une IP.",
+      "maskedNote": "Lecture seule : les IP et les e-mails sont masqués pour le rôle DEV.",
+      "searchUser": "Pseudo dans le groupe",
+      "filter": "Indice",
+      "filters": {
+        "all": "Tous les groupes",
+        "device": "Avec un appareil commun",
+        "ip": "Avec une IP commune",
+        "flow": "Avec un flux à sens unique"
+      },
+      "includeGuests": "Inclure les invités",
+      "apply": "Filtrer",
+      "clustersTitle": "{count, plural, =0 {Aucun groupe suspect} one {# groupe suspect} other {# groupes suspects}}",
+      "noClusters": "Aucun groupe n'atteint le seuil avec ces filtres.",
+      "clusterTitle": "Groupe {index} · {count} comptes",
+      "moreClusters": "{count, plural, one {# autre groupe} other {# autres groupes}}, moins suspects : affinez la recherche.",
+      "score": "Score {score}",
+      "belowThreshold": "sous le seuil",
+      "pairsTitle": "{count, plural, one {Détail de # lien} other {Détail des # liens}}",
+      "lastSeen": "Dernière activité",
+      "discord": "Discord lié",
+      "ipsTitle": "IP partagées",
+      "ipsIntro": "IP vues pour plusieurs comptes depuis la mise en place du relevé. Au-delà de {cap} comptes, une IP est jugée publique (4G, école, entreprise) et ne relie plus les comptes.",
+      "searchIp": "Rechercher une IP (début de l'adresse)",
+      "searchIpButton": "Rechercher",
+      "noIpResult": "Aucune IP ne commence ainsi.",
+      "noSharedIp": "Aucune IP partagée pour l'instant.",
+      "accounts": "Comptes",
+      "publicIp": "IP publique probable",
+      "more": "+{count}",
+      "linkedTitle": "Comptes liés",
+      "linkedIntro": "Comptes reliés à ce joueur par au moins un indice, invités compris. Au-dessus de {minScore}, ils forment un groupe dans Multi-comptes.",
+      "noLinked": "Aucun compte relié.",
+      "signalsTitle": "IP et appareils",
+      "noSignals": "Rien de relevé : le joueur ne s'est pas connecté depuis la mise en place du relevé.",
+      "signalValue": "Valeur",
+      "firstEvent": "Vu d'abord à",
+      "firstSeen": "Première fois",
+      "lastSeenSignal": "Dernière fois",
+      "otherAccounts": "Autres comptes",
+      "noOther": "Aucun",
+      "kinds": {
+        "IP": "IP",
+        "DEVICE": "Appareil"
+      },
+      "events": {
+        "SIGNUP": "Création invité",
+        "REGISTER": "Inscription",
+        "LOGIN": "Connexion",
+        "DISCORD": "Discord",
+        "SEEN": "Présence"
+      },
+      "reasons": {
+        "device": "{count, plural, one {Même appareil} other {# appareils communs}}",
+        "ip": "{count, plural, one {Même IP} other {# IP communes}} : {ips}",
+        "emailAlias": "Même boîte e-mail (alias)",
+        "emailStem": "E-mails proches ({stem})",
+        "usernameStem": "Pseudos proches ({stem})",
+        "flow": "{from} → {to} : {items}",
+        "interactions": "{count} échanges entre eux",
+        "referral": "Parrainé par {referrer}",
+        "createdClose": "Créés à {minutes} min d'écart",
+        "createdCloseIp": "Créés à {minutes} min d'écart, même IP",
+        "onlyFriend": "Seul ami de {names}",
+        "flowGifts": "{count, plural, one {# cadeau} other {# cadeaux}}",
+        "flowSales": "{count, plural, one {# vente} other {# ventes}}",
+        "flowFlips": "{count, plural, one {# pile ou face perdu} other {# pile ou face perdus}}"
       }
     }
   },

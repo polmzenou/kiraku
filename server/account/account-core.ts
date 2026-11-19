@@ -158,6 +158,7 @@ export async function anonymizeUserWith(
     await tx.session.deleteMany({ where: { userId } });
     await tx.authToken.deleteMany({ where: { userId } });
     await tx.pushSubscription.deleteMany({ where: { userId } });
+    await tx.userSignal.deleteMany({ where: { userId } }); // IP et appareils (multi-comptes)
     // Liens sociaux et contenus personnels
     await tx.notification.deleteMany({ where: { OR: [{ userId }, { actorId: userId }] } });
     await tx.friendship.deleteMany({ where: { OR: [{ requesterId: userId }, { addresseeId: userId }] } });

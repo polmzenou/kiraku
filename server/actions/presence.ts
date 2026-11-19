@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { hidesPresence, isStaff, shouldTouch, touchThreshold } from "@/lib/social/presence";
 import { z } from "@/lib/zod";
+import { recordSeenSignals } from "../anticheat/signals";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
 import { getSetting } from "../settings";
@@ -24,6 +25,8 @@ export async function presencePingAction(): Promise<{ ok: true } | Failure> {
   if (!(await rateLimit(`presence:${user.id}`, { limit: 6, windowSeconds: 60 }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
+  // IP et appareil (multi-comptes), invités et équipe compris
+  await recordSeenSignals(user.id);
   if (user.isGuest || hidesPresence(user)) return { ok: true };
   const [now, heartbeatSeconds] = [new Date(), await getSetting("presence.heartbeatSeconds")];
   if (!shouldTouch(user.lastSeenAt, now, heartbeatSeconds)) return { ok: true };

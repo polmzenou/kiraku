@@ -422,6 +422,12 @@ export const SETTING_SCHEMAS = {
   "guest.createPerHourPerIp": z.number().int().min(1).max(1_000),
   // Invités sans activité supprimés après ce nombre de jours (0 = jamais), par le cron des comptes
   "guest.retentionDays": z.number().int().min(0).max(365),
+  // Multi-comptes (/admin/multi-comptes) : conservation des IP et appareils vus, fréquence du relevé de présence,
+  // nombre de comptes au-delà duquel une IP est jugée publique (4G, école) et ne lie plus, score minimal d'un groupe
+  "multiAccount.retentionDays": z.number().int().min(1).max(365),
+  "multiAccount.seenThrottleMinutes": z.number().int().min(1).max(1_440),
+  "multiAccount.sharedIpCap": z.number().int().min(2).max(100),
+  "multiAccount.minScore": z.number().int().min(1).max(500),
   "discord.linkBonusZeni": z.number().int().min(0).max(100_000),
   // Modal « Rejoins notre Discord » : lien, textes fr/en, déclencheur et fréquence
   "discord.joinModal": joinModalSchema,
@@ -799,6 +805,10 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "ranked.rewardLots": { BRONZE: null, SILVER: null, GOLD: null, EMERALD: null, ELITE: null, CHAMPION: null, GRAND_CHAMPION: null },
   "guest.createPerHourPerIp": 5,
   "guest.retentionDays": 7,
+  "multiAccount.retentionDays": 90,
+  "multiAccount.seenThrottleMinutes": 30,
+  "multiAccount.sharedIpCap": 8,
+  "multiAccount.minScore": 40,
   "discord.linkBonusZeni": 500, // versé une seule fois, à la première liaison
   "discord.joinModal": JOIN_MODAL_DEFAULT, // désactivé par défaut
   "discord.marketEnabled": false,

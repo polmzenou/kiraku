@@ -1460,7 +1460,8 @@
       "showcases": "Showcases",
       "casino": "Casino",
       "wrapped": "Wrapped",
-      "prestige": "Prestige"
+      "prestige": "Prestige",
+      "multiAccounts": "Multi-accounts"
     },
     "boosters": {
       "title": "Booster settings",
@@ -2808,6 +2809,12 @@
           "deletionGraceDays": "Delay before anonymization (days)",
           "usernameChangeDays": "Delay between two username changes (days)",
           "exportsPerDay": "Data exports per day and per player"
+        },
+        "multiAccount": {
+          "retentionDays": "IP and device retention (days)",
+          "seenThrottleMinutes": "Recording while present (minutes)",
+          "sharedIpCap": "Accounts above which an IP is public",
+          "minScore": "Minimum score of a suspicious group"
         }
       },
       "hints": {
@@ -2828,8 +2835,15 @@
           "deletionGraceDays": "During this period the account is frozen and the deletion can be cancelled. 30 days recommended.",
           "usernameChangeDays": "0 = no delay.",
           "exportsPerDay": "\"Download my data\" JSON file."
+        },
+        "multiAccount": {
+          "retentionDays": "IPs and devices not seen again for this long are deleted every night. 90 days advised (GDPR).",
+          "seenThrottleMinutes": "A logged-in player is recorded at most once per this delay.",
+          "sharedIpCap": "Mobile, school, office: an IP (or email stem) shared by more accounts no longer links them.",
+          "minScore": "Sum of a pair's clues needed to form a group in Multi-accounts."
         }
-      }
+      },
+      "multiAccountSection": "Multi-accounts"
     },
     "catalog": {
       "title": "Card catalogue",
@@ -3884,6 +3898,77 @@
         "editionShort": "printing {printing} · no. {serial}",
         "heritage": "heritage {level} · kept {kept} times by the player",
         "consecrated": "{count, plural, one {# consecrated card} other {# consecrated cards}}"
+      }
+    },
+    "multiAccounts": {
+      "title": "Multi-accounts",
+      "intro": "Accounts linked by clues: same device, same IP, similar emails or usernames, one-way transfers, referrals, only friend. A group forms from a score of {minScore}. It's a suspicion to check, not proof: a family or flatmates also share an IP.",
+      "maskedNote": "Read only: IPs and emails are masked for the DEV role.",
+      "searchUser": "Username in the group",
+      "filter": "Clue",
+      "filters": {
+        "all": "All groups",
+        "device": "With a shared device",
+        "ip": "With a shared IP",
+        "flow": "With a one-way flow"
+      },
+      "includeGuests": "Include guests",
+      "apply": "Filter",
+      "clustersTitle": "{count, plural, =0 {No suspicious group} one {# suspicious group} other {# suspicious groups}}",
+      "noClusters": "No group reaches the threshold with these filters.",
+      "clusterTitle": "Group {index} · {count} accounts",
+      "moreClusters": "{count, plural, one {# more group} other {# more groups}}, less suspicious: narrow the search.",
+      "score": "Score {score}",
+      "belowThreshold": "below threshold",
+      "pairsTitle": "{count, plural, one {Details of # link} other {Details of # links}}",
+      "lastSeen": "Last active",
+      "discord": "Discord linked",
+      "ipsTitle": "Shared IPs",
+      "ipsIntro": "IPs seen for several accounts since recording started. Above {cap} accounts, an IP is considered public (mobile, school, office) and no longer links accounts.",
+      "searchIp": "Search an IP (start of the address)",
+      "searchIpButton": "Search",
+      "noIpResult": "No IP starts like this.",
+      "noSharedIp": "No shared IP yet.",
+      "accounts": "Accounts",
+      "publicIp": "Likely public IP",
+      "more": "+{count}",
+      "linkedTitle": "Linked accounts",
+      "linkedIntro": "Accounts linked to this player by at least one clue, guests included. Above {minScore}, they form a group in Multi-accounts.",
+      "noLinked": "No linked account.",
+      "signalsTitle": "IPs and devices",
+      "noSignals": "Nothing recorded: the player hasn't connected since recording started.",
+      "signalValue": "Value",
+      "firstEvent": "First seen at",
+      "firstSeen": "First time",
+      "lastSeenSignal": "Last time",
+      "otherAccounts": "Other accounts",
+      "noOther": "None",
+      "kinds": {
+        "IP": "IP",
+        "DEVICE": "Device"
+      },
+      "events": {
+        "SIGNUP": "Guest creation",
+        "REGISTER": "Sign-up",
+        "LOGIN": "Login",
+        "DISCORD": "Discord",
+        "SEEN": "Presence"
+      },
+      "reasons": {
+        "device": "{count, plural, one {Same device} other {# shared devices}}",
+        "ip": "{count, plural, one {Same IP} other {# shared IPs}}: {ips}",
+        "emailAlias": "Same inbox (alias)",
+        "emailStem": "Similar emails ({stem})",
+        "usernameStem": "Similar usernames ({stem})",
+        "flow": "{from} → {to}: {items}",
+        "interactions": "{count} exchanges between them",
+        "referral": "Referred by {referrer}",
+        "createdClose": "Created {minutes} min apart",
+        "createdCloseIp": "Created {minutes} min apart, same IP",
+        "onlyFriend": "Only friend of {names}",
+        "flowGifts": "{count, plural, one {# gift} other {# gifts}}",
+        "flowSales": "{count, plural, one {# sale} other {# sales}}",
+        "flowFlips": "{count, plural, one {# coin flip lost} other {# coin flips lost}}"
       }
     }
   },

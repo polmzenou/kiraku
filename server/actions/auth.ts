@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { z } from "@/lib/zod";
 import { auth, signIn, signOut } from "../auth";
 import { discordEnabled } from "../env";
+import { recordSignals } from "../anticheat/signals";
 import { createGuestSession } from "../guest";
 import { clientIp, rateLimit } from "../ratelimit";
 import { setSessionCookie } from "../session";
@@ -42,7 +43,9 @@ export async function ensureGuest(): Promise<ActionResult> {
     if (!success) return { ok: false, error: "RATE_LIMITED" };
   }
 
-  await setSessionCookie(await createGuestSession());
+  const guest = await createGuestSession();
+  await setSessionCookie(guest);
+  await recordSignals(guest.userId, "SIGNUP");
   return { ok: true };
 }
 

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { AdminUserPrestige } from "@/components/admin/AdminUserPrestige";
 import { DataRequestActions } from "@/components/admin/DataRequestActions";
+import { PairList, SignalTable } from "@/components/admin/MultiAccount";
 import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
 import { ReadOnly } from "@/components/admin/ReadOnly";
 import { UserEditor } from "@/components/admin/UserEditor";
@@ -12,6 +13,7 @@ import { parseUserListParams, USER_ADMIN_ACTIONS } from "@/lib/admin/users";
 import { computeStock, stockRulesFor } from "@/lib/boosters/stock";
 import { requireAdminView } from "@/server/admin";
 import { adminCardById, getAdminUser, getAdminUserCards, getAdminUserFriends } from "@/server/admin/users";
+import { linkedAccountsFor, signalsFor } from "@/server/anticheat/queries";
 import { readBannerPity } from "@/server/boosters/open-core";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { inputClass } from "@/components/ui/Field";
@@ -22,11 +24,14 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
   const [{ userId }, raw, locale, t, reason, format, rarity] = await Promise.all([params, searchParams, getLocale(), getTranslations("admin.users"), getTranslations("economy.ledger.reasons"), getFormatter(), getTranslations("rarity")]);
   if (!/^[A-Za-z0-9_-]{1,40}$/.test(userId)) notFound();
   const cardParams = parseUserListParams({ q: raw.cardQuery, page: raw.cardPage });
-  const [data, collection, selectedCard, rules, friendList] = await Promise.all([
+  const [data, collection, selectedCard, rules, friendList, linked, signals, ma] = await Promise.all([
     getAdminUser(userId, locale), getAdminUserCards(userId, cardParams.query, cardParams.page),
     typeof raw.card === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(raw.card) ? adminCardById(raw.card) : null,
     getBoosterRules(),
     getAdminUserFriends(userId),
+    linkedAccountsFor(userId),
+    signalsFor(userId),
+    getTranslations("admin.multiAccounts"),
   ]);
   if (!data) notFound();
   const { user, discoveries, catalogTotal, ownedCatalogCards, uniqueCards, boosterTypes, ledger, openings, logs, incense } = data;
@@ -93,6 +98,19 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
         )}
       </section>
 
+      {/* Multi-comptes : comptes reliés et IP/appareils (masqués pour le DEV) */}
+      <section id="user-linked" className="flex scroll-mt-8 flex-col gap-3">
+        <div>
+          <h3 className="font-title text-xl font-bold">{ma("linkedTitle")}</h3>
+          <p className="text-sm text-text-muted">{ma("linkedIntro", { minScore: linked.minScore })}</p>
+        </div>
+        {linked.pairs.length === 0 ? <p className="text-sm text-text-muted">{ma("noLinked")}</p> : (
+          <PairList pairs={linked.pairs} members={linked.members} masked={readOnly} minScore={linked.minScore} focus={userId} />
+        )}
+        <h4 className="font-title text-lg font-bold">{ma("signalsTitle")}</h4>
+        {signals.length === 0 ? <p className="text-sm text-text-muted">{ma("noSignals")}</p> : <SignalTable rows={signals} masked={readOnly} />}
+      </section>
+
       <section id="user-friends" className="flex scroll-mt-8 flex-col gap-3">
         <div>
           <h3 className="font-title text-xl font-bold">{t("friendsTitle")}</h3>
@@ -113,7 +131,8 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
                 player: (
                   <span className="min-w-0">
                     <Link href={`/admin/utilisateurs/${f.id}`} className="font-bold text-link underline underline-offset-4">{f.username}</Link>
-                    <p className="text-xs break-all text-text-muted">{f.email ?? t("noEmail")}</p>
+                    {/* DEV : pas d'e-mail, comme dans la liste des joueurs */}
+                    {!readOnly && <p className="text-xs break-all text-text-muted">{f.email ?? t("noEmail")}</p>}
                   </span>
                 ),
                 status: (

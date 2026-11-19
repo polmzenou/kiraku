@@ -27,6 +27,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("next-auth", () => ({ default: mocks.init }));
 vi.mock("next/server", () => ({ after: mocks.after }));
 vi.mock("./auth-adapter", () => ({ kirakuAdapter: () => ({}) }));
+vi.mock("./anticheat/signals", () => ({ recordSignals: vi.fn() }));
 vi.mock("./db", () => ({ prisma: { $transaction: mocks.transaction } }));
 vi.mock("./economy/ledger", () => ({ credit: mocks.credit }));
 vi.mock("./economy/referral", () => ({ attachFromCookie: mocks.attach }));
