@@ -14,7 +14,7 @@ import { getSetting } from "@/server/settings";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-/** Collection d'un autre joueur, en lecture seule (si son profil et son réglage le permettent). */
+/** Collection d'un autre joueur, en lecture seule (si son profil et son réglage le permettent, ou pour un admin). */
 export default async function PublicCollectionPage({ params, searchParams }: PageProps<"/[locale]/u/[username]/collection">) {
   const { username } = await params;
   const locale = await getLocale();
@@ -52,6 +52,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pag
     <PageShell>
       {back}
       <h1 className="font-heading text-3xl font-extrabold">{t("collectionOf", { name })}</h1>
+      {access.adminOverride && <p className="lacquer rounded-card border-ai/45 p-3 text-sm text-text-muted">{t("adminOverrideCollection")}</p>}
       <CollectionStats summary={summary} />
       <CollectionFilters params={filters} pathname={`/u/${owner.username}/collection`} series={series} />
       {page.items.length === 0 ? (

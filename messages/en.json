@@ -4687,6 +4687,9 @@
     },
     "viewCollection": "View collection",
     "accountSettings": "Account settings",
+    "adminOverride": "Admin view: this player limits who sees their profile or collection. You see everything because of your role.",
+    "adminOverrideCollection": "Admin view: this collection is hidden from other players. You see it because of your role.",
+    "adminSheet": "Open their admin page",
     "ownerNotice": {
       "FRIENDS": "Your profile is for your friends only.",
       "PRIVATE": "Your profile is private: nobody but you can see it."
