@@ -13,7 +13,6 @@ import { wikiCardState, type WikiCollection } from "@/lib/catalog/wiki-state";
 import { getWikiCards } from "@/server/catalog/ownership";
 import type { CatalogCardDetail, CatalogCardSummary } from "@/server/catalog/queries";
 import { WikiBiography, WikiBiographySkeleton } from "./WikiBiography";
-import { WikiCardValuation } from "./WikiCardValuation";
 
 type DetailProps = {
   card: CatalogCardDetail;
@@ -23,6 +22,8 @@ type DetailProps = {
   wishlistAction?: ReactNode;
   /** Joueurs qui possèdent la carte (personnel au lecteur, rendu sous Suspense). */
   ownersSection?: ReactNode;
+  /** Cote de la carte (components/market/CardQuote.tsx), rendue sous Suspense par la page. */
+  quoteSection?: ReactNode;
   /** Carte de la dernière sortie qui porte encore le badge « Nouveau ». */
   isNew?: boolean;
 };
@@ -41,7 +42,7 @@ function LockIcon() {
   );
 }
 
-export function WikiCardDetail({ card, related, locale, total, collection, wishlistAction, ownersSection, isNew = false }: DetailProps & { collection: WikiCollection | null }) {
+export function WikiCardDetail({ card, related, locale, total, collection, wishlistAction, ownersSection, quoteSection, isNew = false }: DetailProps & { collection: WikiCollection | null }) {
   const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("wiki");
   const tRarity = useTranslations("rarity");
@@ -163,7 +164,7 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
             </section>
           )}
 
-          <WikiCardValuation />
+          {quoteSection}
 
           {ownersSection}
 

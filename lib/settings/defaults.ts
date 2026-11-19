@@ -336,6 +336,14 @@ export const SETTING_SCHEMAS = {
   // Plafond de prix par rareté (départ, achat immédiat et mises) ; rareté absente = plafond global seul
   "market.maxPriceByRarity": z.record(rarityKeySchema, z.number().int().min(1).max(100_000_000)),
   "market.pollSeconds": z.number().int().min(2).max(120),
+  // Cote des cartes (lib/market/quotes.ts) : médiane des ventes de la fenêtre, à partir de quoteMinSales ventes
+  "market.quoteWindowDays": z.number().int().min(7).max(180),
+  "market.quoteMinSales": z.number().int().min(1).max(50),
+  "market.quoteHistoryDays": z.number().int().min(30).max(365),
+  // Avis de recherche (lib/market/buy-orders.ts) : prix bloqué jusqu'à la vente, l'annulation ou l'expiration
+  "market.ordersEnabled": z.boolean(),
+  "market.orderDurationDays": z.number().int().min(1).max(30),
+  "market.maxOpenOrders": z.number().int().min(1).max(100),
   // Échanges ouverts du Marché : annonces « celle-ci contre l'une de celles-là », offres acceptées ou refusées
   "listings.enabled": z.boolean(),
   "listings.expiryHours": z.number().int().min(1).max(24 * 30),
@@ -478,6 +486,11 @@ export const SETTING_SCHEMAS = {
   // Apparitions max d'un même joueur dans le carrousel : au-delà, ses plus anciens tirages en sortent
   "home.pullFeed.maxPerPlayer": z.number().int().min(1).max(50),
   // Jauge communautaire au-dessus de la vitrine : boosters ouverts par les inscrits, dans la fenêtre
+  // Wrapped (récap de l'année, lib/wrapped) : livré éteint, allumé depuis /admin/wrapped
+  "wrapped.enabled": z.boolean(),
+  "wrapped.year": z.number().int().min(2025).max(2100),
+  "wrapped.opensAt": z.string().datetime(),
+  "wrapped.closesAt": z.string().datetime(),
   "home.eventGauge.enabled": z.boolean(),
   "home.eventGauge.startsAt": z.string().datetime(),
   "home.eventGauge.endsAt": z.string().datetime(),
@@ -543,7 +556,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   // Parts de Kyara (total 99 975) : 0,025 % · 0,15 % · 1,4 % · 11,4 % · 25 % · 62 %
   // AR et Gold (variantes au-dessus de Mythique) prennent 10 des 25 parts Mythique : « Mythique ou mieux »
   // reste à 0,025 %, et sans carte AR/Gold publiée le tirage retombe sur Mythique.
-  "booster.rates": { COMMON: 62_000, UNCOMMON: 25_000, RARE: 11_400, EPIC: 1_400, LEGENDARY: 150, MYTHIC: 15, BR: 0, AR: 8, VR: 0, GOLD: 2, MR: 0, XR: 0 },
+  "booster.rates": { COMMON: 62_000, UNCOMMON: 25_000, RARE: 11_400, EPIC: 1_400, LEGENDARY: 150, MYTHIC: 15, BR: 0, AR: 8, VR: 0, GOLD: 2, MR: 0, SR: 0, XR: 0 },
   "booster.slotFloors": ["COMMON", "COMMON", "UNCOMMON", "RARE"],
   "booster.pityThreshold": 250,
   "booster.goldenEvery": 10,
@@ -556,7 +569,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "booster.apocalypseKarma": 2,
   "booster.apocalypseRuinFloors": ["COMMON", "COMMON", "COMMON", "UNCOMMON"],
   "booster.apocalypseRuinCeiling": "UNCOMMON",
-  "booster.duplicateGuardRarities": ["MYTHIC", "BR", "AR", "VR", "GOLD", "MR", "XR"], // liste vide = règle coupée
+  "booster.duplicateGuardRarities": ["MYTHIC", "BR", "AR", "VR", "GOLD", "MR", "SR", "XR"], // liste vide = règle coupée
   "booster.duplicateGuardDivisor": 10_000, // déjà possédée : 1 chance sur 10 000
   "booster.duplicateGuardBlockAt": 2, // en double : plus aucune chance
   "booster.minPool": 100,
@@ -570,7 +583,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "incense.boostFrom": "LEGENDARY",
   "game.timeZone": "Europe/Paris",
   // Valeurs de Kyara : 1 · 1 · 3 · 10 · 40 · 150 Zeni
-  "collection.recycleValues": { COMMON: 1, UNCOMMON: 1, RARE: 3, EPIC: 10, LEGENDARY: 40, MYTHIC: 150, BR: 150, AR: 450, VR: 450, GOLD: 1050, MR: 1050, XR: 2250 },
+  "collection.recycleValues": { COMMON: 1, UNCOMMON: 1, RARE: 3, EPIC: 10, LEGENDARY: 40, MYTHIC: 150, BR: 150, AR: 450, VR: 450, GOLD: 1050, MR: 1050, SR: 1650, XR: 2250 },
   "showcase.maxPerPlayer": 6,
   "showcase.themes": THEMES_DEFAULT,
   "event.showcase.enabled": false, // caché tant que l'admin ne l'allume pas
@@ -654,6 +667,12 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "market.maxPrice": 10_000_000,
   "market.maxPriceByRarity": {},
   "market.pollSeconds": 15, // rafraîchissement du prix d'une vente ouverte
+  "market.quoteWindowDays": 30, // cote = médiane des ventes des 30 derniers jours…
+  "market.quoteMinSales": 3, // …à partir de 3 ventes (une vente arrangée ne suffit pas)
+  "market.quoteHistoryDays": 90, // courbe de la fiche carte
+  "market.ordersEnabled": true,
+  "market.orderDurationDays": 7, // un avis non rempli rend ses Zeni au bout d'une semaine
+  "market.maxOpenOrders": 10, // avis ouverts par joueur, comme les ventes
   "listings.enabled": true,
   "listings.expiryHours": 48,
   "listings.maxWants": 5,
@@ -667,7 +686,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "battle.damage": { critPermille: 100, critPct: 150, varianceMinPct: 90, varianceMaxPct: 110 },
   "battle.orbs": { start: 1, perTurn: 1, max: 5, secondBonus: 1 },
   "battle.firstTurnActions": 2, // ~53 % de victoires pour le premier joueur en simulation (65 % sans limite)
-  "battle.keywordsByRarity": { COMMON: 0, UNCOMMON: 0, RARE: 1, EPIC: 1, LEGENDARY: 2, MYTHIC: 2, BR: 2, AR: 2, VR: 2, GOLD: 3, MR: 3, XR: 4 },
+  "battle.keywordsByRarity": { COMMON: 0, UNCOMMON: 0, RARE: 1, EPIC: 1, LEGENDARY: 2, MYTHIC: 2, BR: 2, AR: 2, VR: 2, GOLD: 3, MR: 3, SR: 3, XR: 4 },
   "battle.keywordValues": {
     poisonPct: 8,
     poisonTurns: 2,
@@ -745,7 +764,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
       MEISO: 450, // 44,9 %
     },
   },
-  "battle.ultimateRarities": ["GOLD", "MR", "XR"],
+  "battle.ultimateRarities": ["GOLD", "MR", "SR", "XR"],
   // +50 par action, et la jauge entière pour la moitié des PV perdue : prête au 3e tour de la carte au plus
   // tard, plus tôt si elle encaisse. À +25 et +25, une partie (4 tours par camp) finissait avant : 0 à 14 % d'ultis lancés.
   "battle.ultimateCharge": { perAction: 50, damagePct: 200 },
@@ -829,6 +848,10 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "home.pullFeed.refreshSeconds": 60,
   "home.pullFeed.cacheSeconds": 30,
   "home.pullFeed.maxPerPlayer": 5,
+  "wrapped.enabled": false,
+  "wrapped.year": 2026,
+  "wrapped.opensAt": "2026-11-30T23:00:00.000Z", // 1er décembre, 0 h à Paris
+  "wrapped.closesAt": "2027-01-31T23:00:00.000Z", // 1er février, 0 h à Paris
   "home.eventGauge.enabled": true,
   "home.eventGauge.startsAt": "2026-11-04T18:00:00.000Z", // 19h à Paris
   "home.eventGauge.endsAt": "2026-11-10T18:00:00.000Z", // 19h à Paris

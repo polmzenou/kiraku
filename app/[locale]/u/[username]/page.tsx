@@ -41,6 +41,7 @@ import { getCosmeticProgress, getEarnedBadges, getProfileDecor } from "@/server/
 import type { Badge } from "@/lib/profile/conditions";
 import { getIncenseState } from "@/server/boosters/incense";
 import { isStaff, presenceOf } from "@/lib/social/presence";
+import { wrappedTeaser } from "@/server/wrapped/queries";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/u/[username]">): Promise<Metadata> {
   const { locale: raw, username: rawUsername } = await params;
@@ -113,6 +114,9 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
     getSetting("prestige.enabled"),
     decor.prestige > 0 ? getPrestigeSummary(owner.id) : null,
   ]);
+  // Wrapped : bouton sur son propre profil, pendant la période
+  const wrappedYear = access.isOwner && viewer ? await wrappedTeaser(viewer) : null;
+  const tWrapped = await getTranslations("wrapped");
   const shelf = showcases.map((s, i) => ({
     id: s.id,
     name: s.name ?? tShowcase("untitled", { n: i + 1 }),
@@ -183,6 +187,7 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
           {access.collection && <ButtonLink href={`/u/${owner.username}/collection`}>{t("viewCollection")}</ButtonLink>}
           {access.isOwner && <ButtonLink href="/compte">{t("accountSettings")}</ButtonLink>}
           {access.isOwner && <ButtonLink href="/amis">{t("friends")}</ButtonLink>}
+          {wrappedYear !== null && <ButtonLink href="/wrapped" variant="primary">{tWrapped("profileButton", { year: wrappedYear })}</ButtonLink>}
         </div>
 
         {access.isOwner && owner.profileVisibility !== "PUBLIC" && (

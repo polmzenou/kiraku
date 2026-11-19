@@ -21,6 +21,7 @@
 .card-aura-fx[data-rarity="GOLD"] { --card-aura-color: var(--color-rarity-gold); }
 .card-aura-fx[data-rarity="MR"] { --card-aura-color: var(--color-rarity-mr); }
 .card-aura-fx[data-rarity="VR"] { --card-aura-color: var(--color-rarity-vr); }
+.card-aura-fx[data-rarity="SR"] { --card-aura-color: var(--color-rarity-sr); }
 .card-aura-fx[data-rarity="XR"] { --card-aura-color: var(--color-rarity-xr); }
 .card-aura-fx[data-rarity="BR"] { --card-aura-color: var(--color-rarity-br); }
 

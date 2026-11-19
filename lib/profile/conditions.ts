@@ -57,7 +57,7 @@ export type ProfileStats = {
   uniqueCards: number;
   /** Cartes distinctes possédées par clé de rareté. */
   byRarity: Record<string, number>;
-  /** Séries complétées (ids). */
+  /** Séries complétées au moins une fois (ids) : acquises même si une carte a été donnée depuis. */
   completedSeries: ReadonlySet<string>;
   /** Avancée des séries citées par une condition : possédées / total. */
   seriesProgress: Record<string, { owned: number; total: number }>;
@@ -101,8 +101,11 @@ export function evaluateCondition(condition: ProfileCondition | null, stats: Pro
       return capped(stats.byRarity[condition.rarity] ?? 0, condition.n);
     case "SERIES_COMPLETE": {
       const p = stats.seriesProgress[condition.seriesId];
+      const total = p && p.total > 0 ? p.total : 1;
+      // Complétée une fois = acquise pour de bon, même après avoir donné une carte ou l'arrivée d'une nouvelle
+      if (stats.completedSeries.has(condition.seriesId)) return { unlocked: true, current: total, goal: total };
       if (!p || p.total === 0) return { unlocked: false, current: 0, goal: 1 };
-      return { unlocked: stats.completedSeries.has(condition.seriesId) || p.owned >= p.total, current: Math.min(p.owned, p.total), goal: p.total };
+      return { unlocked: p.owned >= p.total, current: Math.min(p.owned, p.total), goal: p.total };
     }
     case "SERIES_COMPLETED_COUNT":
       return capped(stats.completedSeries.size, condition.n);

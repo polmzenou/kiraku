@@ -7,6 +7,7 @@ import { isFrozen } from "@/lib/account/deletion";
 import { isStaff } from "@/lib/admin/roles";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { casinoAccess } from "@/lib/casino/phase";
+import { mineSignature } from "@/lib/casino/view";
 import { USERNAME_REGEX } from "@/lib/username";
 import { z } from "@/lib/zod";
 import { getAdmin } from "../admin";
@@ -22,7 +23,17 @@ import {
   sweepCasinoWith,
   type CoinFlipErrorCode,
 } from "../casino/coinflip-core";
-import { coinFlipContext, getCasinoRules, getTable, listLobby, recentFlips, type CoinFlipTableView, type FeedEntry, type LobbyPage } from "../casino/queries";
+import {
+  coinFlipContext,
+  getCasinoRules,
+  getTable,
+  listLobby,
+  myTablesState,
+  recentFlips,
+  type CoinFlipTableView,
+  type FeedEntry,
+  type LobbyPage,
+} from "../casino/queries";
 import { prisma } from "../db";
 import { pushNotifications } from "../push/send";
 import { rateLimit } from "../ratelimit";
@@ -160,7 +171,9 @@ export async function declineCoinFlipAction(input: unknown): Promise<{ ok: true 
   const g = await guard(input, flipIdSchema, "coinflip-respond", { limit: 20, windowSeconds: MINUTE });
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
   try {
-    await declineTableWith(prisma, { userId: g.user.id, flipId: g.data.flipId }, { now: new Date() }, pushLater);
+    const { creatorId } = await declineTableWith(prisma, { userId: g.user.id, flipId: g.data.flipId }, { now: new Date() }, pushLater);
+    // Le créateur qui attend sur la page de sa table la voit se fermer aussitôt
+    after(() => publishToUser(creatorId, "coinflip", { flipId: g.data.flipId }));
     refresh();
     return { ok: true };
   } catch (e) {
@@ -178,6 +191,8 @@ export async function markCoinFlipsSeenAction(input: unknown): Promise<{ ok: tru
     return { ok: false, error: "RATE_LIMITED" };
   }
   await markSeenWith(prisma, { userId: user.id, flipIds: parsed.data.flipIds, now: new Date() });
+  // Vide le cache du routeur du créateur : « Mes tables » et le bandeau des replays ne reviennent pas périmés
+  refresh();
   return { ok: true };
 }
 
@@ -187,6 +202,16 @@ export async function coinFlipLobbyAction(input: unknown): Promise<{ ok: true; p
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
   const page = await listLobby({ viewerId: g.user.id, tier: g.data.tier, cursor: g.data.cursor, locale: await getLocale() });
   return { ok: true, page };
+}
+
+/**
+ * Sondage du salon : empreinte de « Mes tables », des invitations et des replays. Le salon la compare à celle
+ * de son rendu et se recharge si elle a changé (table relevée, retirée, échue, invitation reçue).
+ */
+export async function coinFlipMineAction(input: unknown): Promise<{ ok: true; signature: string } | Failure> {
+  const g = await guard(input, emptySchema, "coinflip-mine", { limit: 30, windowSeconds: MINUTE }, "memory");
+  if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
+  return { ok: true, signature: mineSignature(await myTablesState(g.user.id)) };
 }
 
 /**
@@ -217,7 +242,13 @@ export async function adminCancelCoinFlipAction(input: unknown): Promise<{ ok: t
   if (!parsed.success) return { ok: false, error: "INVALID" };
   if (!(await rateLimit(`admin:${admin.id}`, { limit: 20, windowSeconds: MINUTE })).success) return { ok: false, error: "RATE_LIMITED" };
   try {
-    await adminCancelTableWith(prisma, { adminId: admin.id, flipId: parsed.data.flipId, reason: parsed.data.reason }, { now: new Date() }, pushLater);
+    const { creatorId } = await adminCancelTableWith(
+      prisma,
+      { adminId: admin.id, flipId: parsed.data.flipId, reason: parsed.data.reason },
+      { now: new Date() },
+      pushLater,
+    );
+    after(() => publishToUser(creatorId, "coinflip", { flipId: parsed.data.flipId }));
     refresh();
     return { ok: true };
   } catch (e) {

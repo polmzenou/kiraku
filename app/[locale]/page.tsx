@@ -8,6 +8,7 @@ import { AmbassadorPackCard } from "@/components/ambassador/AmbassadorPackCard";
 import { BoosterShowcase } from "@/components/boosters/showcase/BoosterShowcase";
 import type { ShowcaseFamily, ShowcaseItem } from "@/components/boosters/showcase/types";
 import { EventGauge, type EventGaugeCta } from "@/components/home/EventGauge";
+import { WrappedBanner } from "@/components/home/WrappedBanner";
 import { NewsPanel } from "@/components/home/NewsPanel";
 import { RecentPulls } from "@/components/home/RecentPulls";
 import { ReviewsSection, type ReviewViewer } from "@/components/home/ReviewsSection";
@@ -43,6 +44,7 @@ import { boosterStateFrom } from "@/server/boosters/state";
 import { getTopCollectors } from "@/server/collection/leaderboard";
 import { getWishlistCardIds } from "@/server/collection/profile-cards";
 import { getEventGauge } from "@/server/home/event-gauge";
+import { wrappedTeaser } from "@/server/wrapped/queries";
 import { getHomeShowcaseEvent } from "@/server/home/showcase-event";
 import { getRecentPulls } from "@/server/home/pulls";
 import { ownedCardIds } from "@/server/collection/owned";
@@ -113,7 +115,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
   // Tout ce qui ne dépend que du joueur part en une seule vague (avant : trois allers-retours de suite)
   const [
     credits, allTypes, reviews, reviewSummary, ownReview, collectors, [pulls, pullsOwned], pullRefresh,
-    sealedDrops, sealedDisplays, apocalypseKarma, ambassadorPack, incense, wished, gauge, gaugeRefresh, referralEnabled, showcaseEvent,
+    sealedDrops, sealedDisplays, apocalypseKarma, ambassadorPack, incense, wished, gauge, gaugeRefresh, referralEnabled, showcaseEvent, wrappedYear,
   ] = await Promise.all([
     user ? getBoosterCredits(user.id) : new Map<string, number>(),
     getBoosterTypes(),
@@ -137,6 +139,8 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
     getSetting("referral.enabled"),
     // Event vitrines (caché tant que l'admin ne l'allume pas) : invitation, puis podium après la clôture
     getHomeShowcaseEvent(),
+    // Wrapped de l'année : seulement pendant la période, et pour qui a ouvert des boosters cette année
+    wrappedTeaser(user ?? null),
   ]);
   // Seuls les inscrits comptent : les autres sont invités à créer un compte, les inscrits à amener du monde
   const gaugeCta: EventGaugeCta = !user || user.isGuest ? "signup" : !user.bannedAt && referralEnabled ? "invite" : null;
@@ -244,6 +248,8 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
       {sealedDrops.length > 0 && (
         <SealedDropsRow drops={sealedDrops} displays={sealedDisplays} karma={{ current: user?.apocalypseKarma ?? 0, threshold: apocalypseKarma }} />
       )}
+
+      {wrappedYear !== null && <WrappedBanner year={wrappedYear} />}
 
       {gauge && <EventGauge key={gauge.phase} initial={gauge} refreshSeconds={gaugeRefresh} serverNow={state.serverNow} cta={gaugeCta} />}
 

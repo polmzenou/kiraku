@@ -41,8 +41,10 @@ type Hint = { fr?: string; en?: string };
 
 /** Statistiques utiles aux conditions, en quelques requêtes. */
 export async function getProfileStats(userId: string, seriesIds: readonly string[]): Promise<ProfileStats> {
-  const [collection, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog, prestigeCounts] = await Promise.all([
+  const [collection, kept, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog, prestigeCounts] = await Promise.all([
     collectionStatsWith(prisma, userId),
+    // Séries déjà complétées une fois : acquises même si une carte est partie depuis (trigger sur UserCard)
+    prisma.seriesCompletion.findMany({ where: { userId }, select: { seriesId: true } }),
     seriesIds.length === 0
       ? Promise.resolve([] as { id: string; owned: number; total: number }[])
       : prisma.$queryRaw<{ id: string; owned: number; total: number }[]>`
@@ -74,10 +76,20 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
   const peak = bestOfCycles({ ...collection, printingsOwned: prestigeCounts.printings }, prestigeCounts.snapshots);
   // Meilleur des deux : un titre de rang ne se reperd pas après une défaite
   const tier = ladderTier(Math.max(user.rankPoints, user.seasonPeakPc), { tiers });
+  const completedSeries = new Set(kept.map((k) => k.seriesId));
+  // Complète sans être enregistrée : la série l'est devenue sans échange de carte (carte retirée du
+  // catalogue par l'admin). On l'acquiert maintenant pour qu'elle ne se reperde pas non plus.
+  const fresh = collection.completedSeries.filter((id) => !completedSeries.has(id));
+  if (fresh.length > 0) {
+    await prisma.seriesCompletion.createMany({ data: fresh.map((seriesId) => ({ userId, seriesId })), skipDuplicates: true });
+    for (const id of fresh) completedSeries.add(id);
+  }
+  // Prestige : une série complétée lors d'un cycle passé reste acquise (photos prises avant cet enregistrement)
+  for (const id of peak.completedSeries) completedSeries.add(id);
   return {
     uniqueCards: peak.uniqueCards,
     byRarity: peak.byRarity,
-    completedSeries: new Set(peak.completedSeries),
+    completedSeries,
     seriesProgress: Object.fromEntries(series.map((s) => [s.id, { owned: s.owned, total: s.total }])),
     boostersOpened,
     tradesDone,

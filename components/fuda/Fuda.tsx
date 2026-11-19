@@ -4,6 +4,7 @@ import { cardNumber } from "@/lib/catalog/display";
 import { BASE_RARITIES, RARITY_SEAL, type Rarity } from "@/lib/catalog/rarity";
 import { fxTier } from "@/lib/catalog/tiers";
 import { FudaTilt } from "./FudaTilt";
+import { SpectralArt } from "./SpectralArt";
 import type { CSSProperties, ReactNode } from "react";
 import { resolveAppearance } from "@/lib/catalog/appearance";
 import { isEngraved } from "@/lib/collection/copies";
@@ -11,6 +12,7 @@ import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import "./FudaEffects.css";
 import "./FudaFace.css";
 import "./FudaCopy.css";
+import "./FudaSpectral.css";
 
 export type FudaCard = {
   name: string;
@@ -129,6 +131,17 @@ function flipBank(name: string) {
   return (h >>> 0) % 2 === 1;
 }
 
+/**
+ * Anneau lumineux (meilleure carte du récap, liseré BR). Une carte spectrale n'a pas de cadre : l'anneau
+ * dessinerait un rectangle arrondi autour d'elle, la lueur suit donc les bords dissous de l'image.
+ */
+function glowStyle(glow: string | undefined, spectral: boolean): CSSProperties | undefined {
+  if (!glow) return undefined;
+  return spectral
+    ? { filter: `drop-shadow(0 0 3px ${glow}) drop-shadow(0 0 18px ${glow})` }
+    : { boxShadow: `0 0 0 2px ${glow}, 0 0 28px ${glow}` };
+}
+
 /** Colonnes du tanzaku : à partir de cinq signes, le nom japonais se coupe à son dernier séparateur. */
 function tanzakuColumns(name: string) {
   if (name.length < 5) return [name];
@@ -157,6 +170,7 @@ export function Fuda({
   corner,
   glow,
   describeImage = size !== "sm",
+  appear,
 }: {
   card: FudaCard;
   series?: string;
@@ -186,6 +200,11 @@ export function Fuda({
    * pour la recherche d'images sans double lecture.
    */
   describeImage?: boolean;
+  /**
+   * Carte spectrale (Esprit) dans la révélation : « hidden » la tient invisible, « now » joue son apparition
+   * fantôme dans le canvas. Sans effet sur les autres raretés.
+   */
+  appear?: "hidden" | "now";
 }) {
   const t = useTranslations("fuda");
   const rarity = useTranslations("rarity");
@@ -195,6 +214,8 @@ export function Fuda({
   const definition = definitions.find((r) => r.key === card.rarity);
   const tier = BASE_RARITIES.indexOf(fxTier(card.rarity, definitions));
   const visual = resolveAppearance(definition?.appearance, card.appearance);
+  // Esprit : illustration spectrale ; le canvas WebGL ne vit que sur les grandes cartes animées
+  const spectral = !locked && !monochrome && visual.spectral === true;
   const customStyle = {
     ...(visual.frame && { "--fuda-frame": visual.frame, "--fuda-frame-bg": visual.frame }),
     // Papier et encre réglés dans l'admin : le shikishi devient uni, dans ce papier
@@ -202,7 +223,7 @@ export function Fuda({
     ...(visual.ink && { "--kn-ink": visual.ink, "--kn-muted": visual.ink, "--kn-kanji": visual.ink }),
     "--fx-color": visual.effectColor, "--fx-intensity": visual.intensity,
     "--fx-duration": `${8 / visual.speed}s`,
-    ...(glow && { boxShadow: `0 0 0 2px ${glow}, 0 0 28px ${glow}` }),
+    ...glowStyle(glow, spectral),
   } as CSSProperties;
   const inBattle = variant === "battle";
   const native = !inBattle && !locked && card.nameNative ? tanzakuColumns(card.nameNative) : null;
@@ -220,7 +241,7 @@ export function Fuda({
   const engraved = isEngraved(copy);
 
   const content = (
-    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} style={customStyle}>
+    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} data-spectral={spectral || undefined} style={customStyle}>
       {/* Papier posé en absolu dans le cadre : sa hauteur ne dépend pas d'un pourcentage (WebKit la résolvait mal sous aspect-ratio) */}
       <div className={`fuda-paper absolute ${l.inset} overflow-hidden ${l.inner}`}>
         <div className="kn-art">
@@ -243,6 +264,22 @@ export function Fuda({
             />
           )}
           {gilded && <span aria-hidden="true" className="fuda-gilt" />}
+          {spectral && !still && size !== "sm" && (
+            <SpectralArt
+              src={card.imageUrl}
+              name={card.name}
+              focalX={visual.focalX}
+              focalY={visual.focalY}
+              zoom={visual.zoom}
+              strength={visual.spectralStrength}
+              grain={visual.spectralGrain}
+              idle={visual.spectralIdle}
+              tint={visual.frame}
+              veil={fullArt}
+              spoiler={spoiler}
+              appear={appear}
+            />
+          )}
           <span aria-hidden="true" className="kn-grain" />
           {/* Étiquette visible seulement en mode spoiler (display: none sinon, donc muette aussi pour les lecteurs d'écran) */}
           {spoiler && <span className="kn-spoiler"><span className="font-title">{t("spoiler")}</span></span>}
@@ -254,10 +291,13 @@ export function Fuda({
           <i className="kn-sn" />
         </span>
         {card.rarity === "AR" && <span aria-hidden="true" className={`kn-ar${flip}`} />}
-        <span aria-hidden="true" className="kn-sc">
-          <i className="kn-ln" />
-          <span className="kn-seal font-seal">{visual.seal || definition?.seal || RARITY_SEAL[card.rarity]}</span>
-        </span>
+        {/* Carte spectrale (Esprit) : ni cadre ni sceau, seule l'illustration flotte */}
+        {!spectral && (
+          <span aria-hidden="true" className="kn-sc">
+            <i className="kn-ln" />
+            <span className="kn-seal font-seal">{visual.seal || definition?.seal || RARITY_SEAL[card.rarity]}</span>
+          </span>
+        )}
         {native && (
           <span lang="ja" className="kn-tz" style={longest > 7 ? ({ "--kn-tzl": longest } as CSSProperties) : undefined}>
             {native.map((part, i) => (

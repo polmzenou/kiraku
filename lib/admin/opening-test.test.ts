@@ -38,9 +38,9 @@ describe("testBoosters", () => {
       expect(revealOrder(cards, order).at(-1)?.rarity).toBe(rarity);
     }
   });
-  it("réunit les quatre dans un seul booster, XR en dernier", () => {
+  it("réunit les cinq dans un seul booster, XR en dernier", () => {
     const cards = testBoosters({ pool, scenario: "visual", count: 1, cardsPerBooster: 5, run: 5 }).flatMap((b) => b.cards);
-    expect(revealOrder(cards, order).slice(-4).map((c) => c.rarity)).toEqual(["BR", "VR", "MR", "XR"]);
+    expect(revealOrder(cards, order).slice(-5).map((c) => c.rarity)).toEqual(["BR", "VR", "MR", "SR", "XR"]);
   });
   it("propose chaque scénario dans les deux langues", () => {
     for (const scenario of OPENING_TEST_SCENARIOS) {

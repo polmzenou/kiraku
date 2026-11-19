@@ -31,6 +31,7 @@ export const RARITY_TEXT: Record<Rarity, string> = {
   GOLD: "text-rarity-gold",
   MR: "text-rarity-mr",
   VR: "text-rarity-vr",
+  SR: "text-rarity-sr",
   XR: "text-rarity-xr",
   BR: "text-rarity-br",
 };

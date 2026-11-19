@@ -8,6 +8,8 @@ import { PageShell } from "@/components/PageShell";
 import { WikiCardDetail, WikiPersonalizedCardDetail } from "@/components/wiki/WikiCardDetail";
 import { WikiCardOwners, WikiCardOwnersSkeleton } from "@/components/wiki/WikiCardOwners";
 import { WikiEngravedRegistry } from "@/components/wiki/WikiEngravedRegistry";
+import { CardQuote, CardQuoteSkeleton } from "@/components/market/CardQuote";
+import { CardBuyOrders, CardBuyOrdersSkeleton } from "@/components/market/orders/CardBuyOrders";
 import { WikiWishlistAction } from "@/components/wiki/WikiWishlistAction";
 import { routing } from "@/i18n/routing";
 import { seriesTitle } from "@/lib/catalog/display";
@@ -77,7 +79,18 @@ export default async function WikiCardPage({ params }: PageProps<"/[locale]/wiki
       </Suspense>
     </>
   );
-  const detail = { card, locale, total: stats.total, related, wishlistAction, ownersSection, isNew: newIds.has(card.anilistId) };
+  // Cote puis avis de recherche : personnels ou changeants, rendus hors de la fiche en cache
+  const quoteSection = (
+    <>
+      <Suspense fallback={<CardQuoteSkeleton />}>
+        <CardQuote cardId={card.id} />
+      </Suspense>
+      <Suspense fallback={<CardBuyOrdersSkeleton />}>
+        <CardBuyOrders cardId={card.id} rarity={card.rarity} />
+      </Suspense>
+    </>
+  );
+  const detail = { card, locale, total: stats.total, related, wishlistAction, ownersSection, quoteSection, isNew: newIds.has(card.anilistId) };
   return (
     <PageShell>
       <JsonLd data={trail} />

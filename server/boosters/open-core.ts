@@ -48,7 +48,7 @@ export class OpenError extends Error {
 /** Ce que l'ouverture doit savoir du type (validé en amont). */
 export type OpenType = Pick<
   BoosterTypeView,
-  "id" | "slug" | "kind" | "usesFreeStock" | "priceZeni" | "countsForPity" | "resetsPity" | "bonusEligible"
+  "id" | "slug" | "kind" | "usesFreeStock" | "priceZeni" | "countsForPity" | "resetsPity" | "bonusEligible" | "includeCustom"
 >;
 
 export type OpenInput = {
@@ -163,7 +163,7 @@ async function persistDraw(
   tx: Tx,
   input: {
     userId: string;
-    type: Pick<OpenType, "id" | "slug">;
+    type: Pick<OpenType, "id" | "slug" | "includeCustom">;
     rules: DrawRules;
     pool: CardPool;
     now: Date;
@@ -184,9 +184,10 @@ async function persistDraw(
     select: { id: true, status: true, rarity: true, dropWeight: true, origin: true, boosterIds: true, variantOfId: true, boosterExclusive: true },
   });
   const liveCards = new Map(eligible.map((c) => [c.id, c]));
-  // Une variante qui suit sa carte de base n'est pas cochée pour le type : elle passe si sa base est au pool
+  // Une variante qui suit sa carte de base, ou une création admise d'office par le type, n'est pas cochée :
+  // elle passe si elle (ou sa base) est au pool
   const poolIds = new Set(Object.values(input.pool).flat());
-  const ctx = { typeId: type.id, inPool: (id: string) => poolIds.has(id) };
+  const ctx = { typeId: type.id, includeCustom: type.includeCustom, inPool: (id: string) => poolIds.has(id) };
   if (input.drawn.some((b) => b.cards.some((c) =>
     !stillDrawable(liveCards.get(c.cardId), { rarity: c.rarity, weight: rules.cardWeights?.[c.cardId] ?? 1 }, ctx),
   ))) throw new OpenError("NOT_FOR_SALE");
@@ -439,7 +440,7 @@ export type OpenSealedInput = {
   dropId: string;
   kind: SealedKind;
   /** Type du sachet (ligne BoosterType de kind DROP). */
-  type: Pick<OpenType, "id" | "slug">;
+  type: Pick<OpenType, "id" | "slug" | "includeCustom">;
   rules: { draw: DrawRules; ruin: RuinRules };
   tables: RarityTables;
   pool: CardPool;

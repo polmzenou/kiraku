@@ -34,6 +34,7 @@ describe("paliers", () => {
       { order: 500, rarities: ["MYTHIC", "BR"] },
       { order: 600, rarities: ["AR", "VR"] },
       { order: 700, rarities: ["GOLD", "MR"] },
+      { order: 750, rarities: ["SR"] },
       { order: 800, rarities: ["XR"] },
     ]);
   });

@@ -1,4 +1,5 @@
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 import { Fuda } from "@/components/fuda/Fuda";
 import { FudaTurnover } from "@/components/fuda/FudaTurnover";
 import { Link } from "@/i18n/navigation";
@@ -15,6 +16,8 @@ import { openAuctionsForCard, sellInfoFor } from "@/server/market/queries";
 import { getSetting } from "@/server/settings";
 import { copyJourneys, printingStats, type JourneyStep, type PrintingStats } from "@/server/prestige/copies";
 import { getPrestigeRules, getPrintingSeals } from "@/server/prestige/rules";
+import { CardQuote, CardQuoteSkeleton } from "../market/CardQuote";
+import { CardBuyOrders, CardBuyOrdersSkeleton } from "../market/orders/CardBuyOrders";
 import { SellButton } from "../market/SellButton";
 import { ButtonLink } from "../ui/ButtonLink";
 import { RecycleControl } from "./RecycleControl";
@@ -241,6 +244,13 @@ export async function CardDetail({
             </section>
           </>
         )}
+
+        <Suspense fallback={<CardQuoteSkeleton />}>
+          <CardQuote cardId={card.id} headingLevel={headingLevel === 1 ? 2 : 3} />
+        </Suspense>
+        <Suspense fallback={<CardBuyOrdersSkeleton />}>
+          <CardBuyOrders cardId={card.id} rarity={card.rarity} headingLevel={headingLevel === 1 ? 2 : 3} />
+        </Suspense>
 
         <Link href={`/wiki/${card.anilistId}`} className="inline-flex min-h-11 w-fit items-center text-link underline underline-offset-4">
           {t("wiki")}

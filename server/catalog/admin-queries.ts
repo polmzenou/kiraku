@@ -57,7 +57,7 @@ async function statMedians() {
 export async function catalogEditorOptions() {
   const [rarities, boosters, medians] = await Promise.all([
     getRarityDefinitions(),
-    prisma.boosterType.findMany({ orderBy: [{ family: "asc" }, { sortOrder: "asc" }], select: { id: true, slug: true, name: true, active: true } }),
+    prisma.boosterType.findMany({ orderBy: [{ family: "asc" }, { sortOrder: "asc" }], select: { id: true, slug: true, name: true, active: true, includeCustom: true } }),
     statMedians(),
   ]);
   return { rarities, boosters, medians, storageConfigured: Boolean(process.env.BLOB_READ_WRITE_TOKEN && process.env.BLOB_PUBLIC_HOST) };

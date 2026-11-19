@@ -32,6 +32,14 @@ describe("précontrôle de déploiement", () => {
     expect(check({ DISCORD_MARKET_CHANNEL_ID: "wrong", DISCORD_GUILD_ID: "123456789012345678", DISCORD_BOT_TOKEN: "bot" }).stderr).toContain("DISCORD_MARKET_CHANNEL_ID invalide");
     expect(check({ DISCORD_PUBLIC_KEY: "wrong" }).stderr).toContain("DISCORD_PUBLIC_KEY invalide");
   });
+  it("exige le bot et le serveur pour le salon du casino, et vérifie son identifiant", () => {
+    const missing = check({ DISCORD_CASINO_CHANNEL_ID: "1565778336947634266" });
+    expect(missing.status).toBe(1);
+    expect(missing.stderr).toContain("DISCORD_BOT_TOKEN manquante");
+    expect(missing.stderr).toContain("DISCORD_GUILD_ID manquante");
+    expect(check({ DISCORD_CASINO_CHANNEL_ID: "wrong", DISCORD_GUILD_ID: "123456789012345678", DISCORD_BOT_TOKEN: "bot" }).stderr).toContain("DISCORD_CASINO_CHANNEL_ID invalide");
+    expect(check({ DISCORD_CASINO_CHANNEL_ID: "1565778336947634266", DISCORD_GUILD_ID: "123456789012345678", DISCORD_BOT_TOKEN: "bot" }).status).toBe(0);
+  });
   it("refuse de lancer les tests contre l'application même via l'hôte direct", () => {
     const result = check({ DATABASE_URL_TEST: "postgresql://postgres:secret@db.abcref.supabase.co:5432/postgres" });
     expect(result.status).toBe(1);

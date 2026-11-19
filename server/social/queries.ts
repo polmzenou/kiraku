@@ -4,6 +4,7 @@ import { Prisma } from "@/generated/prisma/client";
 import {
   parseAuctionPayload,
   parseBattlePayload,
+  parseBuyOrderPayload,
   parseCoinFlipPayload,
   parseGiftPayload,
   parseListingPayload,
@@ -16,6 +17,7 @@ import {
   type CoinFlipPayload,
   type AuctionPayload,
   type BattlePayload,
+  type BuyOrderPayload,
   type GiftPayload,
   type ListingPayload,
   type NotificationType,
@@ -173,6 +175,8 @@ export type NotificationView = {
   coinFlip: CoinFlipPayload | null;
   /** Expédition rentrée : son issue. */
   expedition: ExpeditionPayload | null;
+  /** Avis de recherche (la carte cherchée est dans `card`). */
+  buyOrder: BuyOrderPayload | null;
   /** Texte libre joint : mot de l'équipe (cadeaux, lots) ou motif d'un refus d'échange. */
   note: string | null;
   card: { anilistId: number; name: string; rarity: string } | null;
@@ -247,6 +251,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
   const teams = rows.map((r) => (r.type === "TEAM_GIFT" ? parseTeamGiftPayload(r.payload) : null));
   const sealeds = rows.map((r) => (r.type === "SEALED_OPENED" ? parseSealedPayload(r.payload) : null));
   const coinFlips = rows.map((r) => (r.type.startsWith("COINFLIP_") ? parseCoinFlipPayload(r.payload) : null));
+  const buyOrders = rows.map((r) => (r.type.startsWith("BUY_ORDER_") ? parseBuyOrderPayload(r.payload) : null));
   const cardIds = [
     ...new Set([
       ...gifts.flatMap((g) => (g?.kind === "CARD" ? [g.cardId] : [])),
@@ -256,6 +261,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
       ...teams.flatMap((g) => (g?.kind === "CARD" ? [g.cardId] : [])),
       ...sealeds.flatMap((s) => (s?.cardId ? [s.cardId] : [])),
       ...coinFlips.flatMap((f) => (f ? [f.cardId] : [])),
+      ...buyOrders.flatMap((o) => (o ? [o.cardId] : [])),
     ]),
   ];
   const boosterTypeIds = [...new Set(teams.flatMap((g) => (g?.kind === "BOOSTER" ? [g.boosterTypeId] : [])))];
@@ -277,6 +283,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
     const team = teams[i];
     const sealed = sealeds[i];
     const coinFlip = coinFlips[i];
+    const buyOrder = buyOrders[i];
     const offered = listing ? cardById.get(listing.offeredCardId) : undefined;
     const card =
       gift?.kind === "CARD"
@@ -293,7 +300,9 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
                   ? cardById.get(sealed.cardId)
                   : coinFlip
                     ? cardById.get(coinFlip.cardId)
-                    : undefined;
+                    : buyOrder
+                      ? cardById.get(buyOrder.cardId)
+                      : undefined;
     return {
       id: r.id,
       type: r.type,
@@ -311,6 +320,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
       sealed,
       coinFlip,
       expedition: r.type === "EXPEDITION_RETURNED" ? parseExpeditionPayload(r.payload) : null,
+      buyOrder,
       note: notes.get(r.id) ?? null,
       card: card ? { anilistId: card.publicId, name: card.name, rarity: card.rarity } : null,
     };

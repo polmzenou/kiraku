@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseWikiParams, wikiIndexing, wikiQuery, WIKI_DEFAULT_DIR, WIKI_SORTS } from "./wiki-params";
+import { parseWikiParams, wikiIndexing, wikiQuery, WIKI_DEFAULT_DIR, WIKI_DEFAULT_SORT, WIKI_SORTS } from "./wiki-params";
 
 const defaults = {
   q: "", terms: [], rarities: [], after: null, ownership: "all",
-  series: null, demographic: null, genre: null, gender: null, sort: "number", dir: "asc",
+  series: null, demographic: null, genre: null, gender: null, sort: "rarity", dir: "desc",
 };
 
 describe("paramètres du wiki", () => {
@@ -61,12 +61,20 @@ describe("paramètres du wiki", () => {
     expect(parseWikiParams({ ...raw, after: undefined }).after).toBeNull();
   });
 
+  it("trie par défaut comme la collection : raretés les plus hautes d'abord", () => {
+    expect(WIKI_DEFAULT_SORT).toBe("rarity");
+    expect(parseWikiParams({})).toMatchObject({ sort: "rarity", dir: "desc" });
+    expect(wikiQuery(parseWikiParams({}))).toEqual({});
+    // L'ancien tri par numéro reste disponible, et explicite dans l'URL
+    expect(wikiQuery(parseWikiParams({ sort: "number" }))).toEqual({ sort: "number" });
+  });
+
   it("ignore les critères invalides et respecte le sens naturel de chaque tri", () => {
     expect(parseWikiParams({ series: "../bad", demographic: "invalid", genre: "x".repeat(61), gender: "invalid", sort: "invalid", dir: "invalid" })).toEqual(defaults);
     for (const sort of WIKI_SORTS) {
       const params = parseWikiParams({ sort });
       expect(params.dir).toBe(WIKI_DEFAULT_DIR[sort]);
-      expect(wikiQuery(params)).toEqual(sort === "number" ? {} : { sort });
+      expect(wikiQuery(params)).toEqual(sort === WIKI_DEFAULT_SORT ? {} : { sort });
       expect(parseWikiParams(wikiQuery({ ...params, dir: "asc" })).dir).toBe("asc");
       expect(parseWikiParams(wikiQuery({ ...params, dir: "desc" })).dir).toBe("desc");
     }

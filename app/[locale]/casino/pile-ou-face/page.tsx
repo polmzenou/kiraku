@@ -9,8 +9,12 @@ import { isFrozen } from "@/lib/account/deletion";
 import { parseSalonParams } from "@/lib/casino/params";
 import { casinoTiers } from "@/lib/casino/tiers";
 import { getRarityDefinitions } from "@/server/catalog/rarities";
-import { casinoView, listHistory, listLobby, listMyTables, pendingReplays } from "@/server/casino/queries";
+import { mineSignature } from "@/lib/casino/view";
+import { sweepCasinoWith } from "@/server/casino/coinflip-core";
+import { casinoPulse, casinoView, listHistory, listLobby, listMyTables, myTablesState, pendingReplays } from "@/server/casino/queries";
 import { prisma } from "@/server/db";
+import { pushLater } from "@/server/market/queries";
+import { rateLimit } from "@/server/ratelimit";
 import { getCurrentUser } from "@/server/user";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -49,11 +53,19 @@ export default async function CoinFlipSalonPage({ searchParams }: PageProps<"/[l
     if (past) reserveFor = (past.creatorId === user.id ? past.opponent?.username : past.creator.username) ?? null;
   }
 
-  const [lobby, mine, history, replays] = await Promise.all([
+  // Mes tables échues pas encore balayées : la carte revient (« Personne n'a relevé ta table »). Au plus une fois
+  // par minute : l'affichage, lui, ignore déjà les tables échues.
+  if (member && (await rateLimit(`coinflip-sweep:${user.id}`, { limit: 1, windowSeconds: 60 }, { store: "memory" })).success) {
+    await sweepCasinoWith(prisma, { now: new Date(view.serverNow) }, { creatorId: user.id }, pushLater).catch((e) => console.error("[casino] balayage du salon", e));
+  }
+
+  const [lobby, mine, history, replays, state, pulse] = await Promise.all([
     tab === "tables" ? listLobby({ viewerId: user.id, tier: tierOrder, cursor: null, locale }) : null,
     tab === "mes-tables" ? listMyTables(user.id, locale) : null,
     tab === "historique" ? listHistory(user.id, locale) : null,
     member ? pendingReplays(user.id, locale) : [],
+    member ? myTablesState(user.id) : null,
+    casinoPulse(),
   ]);
 
   return (
@@ -73,6 +85,10 @@ export default async function CoinFlipSalonPage({ searchParams }: PageProps<"/[l
           pollSeconds={rules.coinflip.lobbyPollSeconds}
           reserveFor={member ? reserveFor : null}
           replays={replays}
+          counts={state ? { mine: state.mine.length, invitations: state.invitations.length } : null}
+          maxOpenTables={rules.coinflip.maxOpenTables}
+          signature={state ? mineSignature(state) : null}
+          pulse={pulse}
           serverNow={view.serverNow}
         />
       </div>

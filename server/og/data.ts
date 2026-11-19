@@ -8,7 +8,7 @@ import { remoteImage } from "./assets";
 
 // Données des images de partage : quelques fuda vedettes pour l'accueil, le parrain d'un lien /i/CODE.
 
-export type OgCard = { name: string; rarity: string; image: string };
+export type OgCard = { name: string; rarity: string; image: string; /** Cadre des raretés sans matière dédiée (XR, Gold…). */ frame?: string };
 
 const SHOWCASE_RARITIES = ["LEGENDARY", "MYTHIC", "EPIC"] as const;
 

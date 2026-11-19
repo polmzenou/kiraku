@@ -21,6 +21,7 @@ const WAGARA: Record<string, string> = {
   VR: "wagara-sakura",
   GOLD: "wagara-kin",
   MR: "wagara-kin",
+  SR: "wagara-kumo",
   XR: "wagara-raden",
 };
 

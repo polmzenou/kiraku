@@ -212,6 +212,11 @@
   color: #fff;
   text-shadow: 2px 0 #ff2fa0, -2px 0 #23e0ff, 0 0 18px rgb(255 103 186 / 0.7);
 }
+/* Esprit : lettres pâles nimbées de brume froide */
+.moment-title[data-spirit] .moment-letter {
+  color: #effcfe;
+  text-shadow: 0 0 10px rgb(159 227 236 / 0.9), 0 0 26px rgb(127 200 214 / 0.55), 0 2px 0 rgb(0 0 0 / 0.5);
+}
 /* Lettres et sceau : entrée, 2 s de pause, puis envol (deux animations, la seconde prend le relais) */
 .moment-letter {
   opacity: 0;

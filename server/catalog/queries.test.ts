@@ -33,7 +33,9 @@ describe("filtres et tri publics du wiki", () => {
         series: { tags: { has: "Shounen" }, genres: { has: "Action" } }, gender: "Male",
         AND: [{ searchText: { contains: "eren" } }, { searchText: { contains: "titan" } }],
       },
-      orderBy: [{ rank: "asc" }, { publicId: "asc" }], select: { publicId: true },
+      // Tri par défaut : raretés les plus hautes d'abord, comme la collection
+      orderBy: [{ rarityDefinition: { sortOrder: "desc" } }, { rarityDefinition: { variantRequired: "desc" } }, { rarity: "desc" }, { rank: "asc" }, { publicId: "asc" }],
+      select: { publicId: true },
     });
   });
 

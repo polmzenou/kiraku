@@ -75,15 +75,22 @@ export function CoinFlipTable({ initial, viewerId, canJoin, joinBlock, joinRarit
     const changed = res.table.status !== table.status;
     setTable(res.table);
     if (res.table.status === "DONE" && res.table.replayPending) setPlaying({ table: res.table, prize: null, won: res.table.outcome === "won" });
+    // Table relevée, retirée ou échue : on oublie les pages déjà vues (« Mes tables » ne revient pas périmée)
+    if (changed) router.refresh();
     return changed;
-  }, [initial.id, table.status]);
+  }, [initial.id, router, table.status]);
   const pollNow = usePoll(poll, { seconds: pollSeconds, realtimeSeconds: pollSeconds * 6, enabled: waiting, channel: "user" });
   const { subscribe } = useRealtime();
   useEffect(() => {
     if (!waiting) return;
-    return subscribe("user", "coinflip", (data) => {
-      if ((data as { flipId?: string } | null)?.flipId === initial.id) void pollNow();
-    });
+    const stops = [
+      subscribe("user", "coinflip", (data) => {
+        if ((data as { flipId?: string } | null)?.flipId === initial.id) void pollNow();
+      }),
+      // Une notification (table déclinée, retirée par l'admin, échue) peut concerner cette table
+      subscribe("user", "notification", () => void pollNow()),
+    ];
+    return () => stops.forEach((stop) => stop());
   }, [initial.id, pollNow, subscribe, waiting]);
 
   const settled = useCallback(() => {

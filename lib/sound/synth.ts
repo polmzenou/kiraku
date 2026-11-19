@@ -10,6 +10,8 @@ export type SoundName =
   | "taiko"
   | "stamp"
   | "whoosh"
+  // Esprit : souffle froid et plainte qui glisse
+  | "spirit"
   // Boutique : offrande et feu d'artifice
   | "coin"
   | "clap"
@@ -155,6 +157,11 @@ export function playSound(name: SoundName, volume = 0.6) {
     case "lamp": // lanterne qui s'allume : souffle grave et flamme
       burst(ac, out, t, { duration: 0.28, from: 260, to: 1200, q: 0.6, peak: 0.16 });
       tone(ac, out, 220, t, { peak: 0.08, decay: 0.3, to: 150 });
+      break;
+    case "spirit": // Esprit : vent froid et deux voix désaccordées qui glissent vers le haut, comme une plainte
+      burst(ac, out, t, { duration: 1.3, from: 320, to: 950, q: 0.4, peak: 0.12 });
+      tone(ac, out, 392, t + 0.05, { peak: 0.07, decay: 1.5, to: 587 });
+      tone(ac, out, 399, t + 0.12, { peak: 0.05, decay: 1.4, to: 600 });
       break;
     case "crackle": // étincelles qui crépitent
       for (let i = 0; i < 12; i++) burst(ac, out, t + i * 0.05 + (i % 3) * 0.013, { duration: 0.025, from: 5200, to: 3800, q: 2, peak: 0.12 });

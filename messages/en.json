@@ -635,7 +635,8 @@
       "bidding": "My bids",
       "echanges": "Trades",
       "mes-echanges": "My trades",
-      "incoming": "{count, plural, one {# offer received} other {# offers received}}"
+      "incoming": "{count, plural, one {# offer received} other {# offers received}}",
+      "avis": "Buy orders"
     },
     "filters": {
       "label": "Filters",
@@ -787,6 +788,99 @@
         "RATE_LIMITED": "Too many actions in a row: wait a moment.",
         "NOT_FOUND": "This comment no longer exists.",
         "UNAVAILABLE": "Action unavailable right now."
+      }
+    },
+    "quote": {
+      "title": "Market value",
+      "zeni": "{amount, number} Zeni",
+      "none": "No value yet: {sales, plural, =0 {no sales} one {# sale} other {# sales}} over {days} days, {min} needed.",
+      "summary": "Value of {amount, number} Zeni, median of {sales, plural, one {# sale} other {# sales}} over {days} days{hasChange, select, yes { ({change} versus the previous period)} other {}}.",
+      "summaryNone": "No value yet: {sales, plural, =0 {no sales} one {# sale} other {# sales}} over {days} days, {min} needed. Auction sales history.",
+      "stable": "Steady",
+      "basis": "Median of {sales, plural, one {# sale} other {# sales}} over {days} days",
+      "noSales": "No auction sales in the last {days} days.",
+      "method": "Median price of finished auctions: a single outlier sale does not move the value.",
+      "chartSince": "{days} d ago",
+      "chartToday": "Today",
+      "salesCount": "{count, plural, one {# sale} other {# sales}}",
+      "tableCaption": "Card value, day by day",
+      "tableDay": "Day",
+      "tableMedian": "Value",
+      "tableSales": "Sales",
+      "moversTitle": "Biggest gainers",
+      "moversHint": "Value over the last {days} days versus the {days} before",
+      "moverLabel": "{name}, {rarity}: value of {amount, number} Zeni, {change} over {sales, plural, one {# sale} other {# sales}}"
+    },
+    "orders": {
+      "title": "Buy orders",
+      "count": "{count, plural, one {# open order} other {# open orders}}",
+      "none": "Nobody is looking for this card yet.",
+      "by": "{name} · until {date}",
+      "byShort": "By {name}",
+      "someone": "A player",
+      "you": "You",
+      "until": "Until {date}",
+      "zeni": "{amount, number} Zeni",
+      "noCopy": "You have no free copy to sell (copies on sale, in your team or on an expedition don't count).",
+      "yours": "Your orders for this card",
+      "guest": "Sign up to post a buy order.",
+      "how": "Your price stays locked until the sale, withdrawal or expiry. The first owner of the card can sell it to you; they pay the market fee.",
+      "priceLabel": "Price you offer",
+      "post": "Post the order",
+      "posting": "Posting…",
+      "range": "Between {min, number} and {max, number} Zeni.",
+      "tooPoor": "You need this many Zeni (balance: {coins, number}).",
+      "hold": "{amount, number} Zeni will be locked (balance: {coins, number}) for {days, plural, one {# day} other {# days}} at most.",
+      "posted": "Order posted: {amount, number} Zeni locked for {days, plural, one {# day} other {# days}}.",
+      "sellFor": "Sell for {amount, number}",
+      "confirmSell": "Confirm the sale",
+      "selling": "Selling…",
+      "cancel": "Cancel",
+      "net": "You'll get {amount, number} Zeni after the fee.",
+      "sold": "Sold: {amount, number} Zeni received.",
+      "withdraw": "Withdraw",
+      "withdrawing": "Withdrawing…",
+      "intro": "A buy order locks a price for a specific card. If you own the card, sell it in one tap at the best price.",
+      "fillTitle": "You have what they want",
+      "fillEmpty": "No order is looking for a card you have a free copy of.",
+      "mineTitle": "My orders",
+      "mineEmpty": "You have no open order. Post one from a card's page.",
+      "history": "Closed orders ({count})",
+      "status": {
+        "FILLED": "filled",
+        "CANCELLED": "withdrawn",
+        "EXPIRED": "expired"
+      },
+      "allTitle": "All orders",
+      "allEmpty": "No open order right now.",
+      "sortLabel": "Sort orders",
+      "sort": {
+        "price": "Highest",
+        "newest": "Newest"
+      },
+      "pagesLabel": "Order pages",
+      "previous": "Previous",
+      "next": "Next",
+      "errors": {
+        "NO_SESSION": "Your session expired: reload the page.",
+        "INVALID": "Invalid request.",
+        "RATE_LIMITED": "Slow down: try again in a moment.",
+        "UNAVAILABLE": "Action unavailable right now.",
+        "DISABLED": "Buy orders are closed.",
+        "GUEST": "Sign up to use buy orders.",
+        "TOO_NEW": "Your account is too new for the market.",
+        "INVALID_PRICE": "Invalid price.",
+        "CAP_REACHED": "This price is above the cap for this rarity.",
+        "NO_CARD": "This card no longer exists.",
+        "TOO_MANY_OPEN": "You already have the maximum number of open orders.",
+        "NOT_ENOUGH_ZENI": "Not enough Zeni to lock this price.",
+        "NOT_FOUND": "Order not found.",
+        "CLOSED": "This order was just filled, withdrawn or expired.",
+        "OWN_ORDER": "You can't fill your own order.",
+        "STALE": "The offer changed: check the new price.",
+        "NOT_OWNED": "You no longer have a free copy of this card.",
+        "SPECIAL_ONLY": "Your copies of this card are special pieces (heirs or engraved): a wanted notice never takes them.",
+        "unexpected": "Something went wrong, try again."
       }
     }
   },
@@ -1338,6 +1432,7 @@
       "universes": "Universes",
       "showcases": "Showcases",
       "casino": "Casino",
+      "wrapped": "Wrapped",
       "prestige": "Prestige"
     },
     "boosters": {
@@ -1557,7 +1652,10 @@
       "focusCards": "{count, plural, one {# card} other {# cards}}",
       "focusRate": "Share of a rarity’s draws going to these series (%)",
       "focusPity": "Card from these series guaranteed on the Nth booster without one (0 = never)",
-      "focusEndsHint": "Required: the booster disappears at this date and a countdown is shown."
+      "focusEndsHint": "Required: the booster disappears at this date and a countdown is shown.",
+      "includeCustom": "Automatically include original creations",
+      "includeCustomOn": "Hand-made cards join this booster as soon as they pass its filter, like AniList cards: nothing to check on their page. Exclusive variants still need to be checked.",
+      "includeCustomOff": "Only original creations checked on their page join this booster (sealed packs, Prestige, events)."
     },
     "banners": {
       "title": "Featured banners",
@@ -1731,7 +1829,13 @@
           "perDay": "Listings per player per 24 h",
           "maxPendingOffers": "Max pending offers per player",
           "allowedRarities": "Tradable rarities"
-        }
+        },
+        "quoteWindowDays": "Value window (days)",
+        "quoteMinSales": "Minimum sales for a value",
+        "quoteHistoryDays": "Chart history (days)",
+        "ordersEnabled": "Buy orders open",
+        "orderDurationDays": "Order duration (days)",
+        "maxOpenOrders": "Max. open orders per player"
       },
       "feeHint": "The fee is locked when a sale is listed: a change doesn't affect sales already open.",
       "invalid": "Some values are out of range: fix them before saving.",
@@ -1761,14 +1865,20 @@
         "empty": "No public comments right now.",
         "auction": "Sale of {card} · {name}",
         "listing": "Trade listing for {card} · {name}"
-      }
+      },
+      "quote": "Card value",
+      "quoteHint": "A card's value is the median price of its auction sales over the window. Without enough sales, the card has no value; collection worth then uses the median of its rarity.",
+      "orders": "Buy orders",
+      "ordersHint": "A player locks a price for a specific card; the first owner who accepts sells it to them, market fee included. An unfilled order returns its Zeni when it expires.",
+      "openOrders": "Open buy orders",
+      "ordersValue": "{count, number} · {amount, number} Zeni locked"
     },
     "economy": {
       "title": "Economy",
       "intro": "Mission and shop switches, referral anti-fraud rules and the health of the Zeni ledger.",
       "circulating": "Zeni in circulation",
       "escrow": "Zeni in escrow (bids)",
-      "escrowHint": "Already debited from bidders and recorded in the ledger (BID_HOLD).",
+      "escrowHint": "Already debited from bidders and buy-order authors, and recorded in the ledger (BID_HOLD, ORDER_HOLD).",
       "zeni": "{amount, number} Zeni",
       "ledgerSum": "Ledger total",
       "integrity": "Integrity",
@@ -2510,6 +2620,9 @@
         },
         "notifications": {
           "pushEnabled": "Push notifications"
+        },
+        "wrapped": {
+          "enabled": "Year Wrapped"
         }
       },
       "help": {
@@ -2549,6 +2662,9 @@
         },
         "notifications": {
           "pushEnabled": "Sending notifications when the tab is closed."
+        },
+        "wrapped": {
+          "enabled": "Personal year recap (/wrapped), home banner and profile button, during the window set in /admin/wrapped. Off: only the admin sees the preview."
         }
       }
     },
@@ -2906,6 +3022,11 @@
         "gold": "Golden"
       },
       "fullArt": "Full Art (image across the whole card, name on top)",
+      "spectral": "Spectral card (Spirit): the art warps and its edges dissolve",
+      "spectralHint": "WebGL rendering on large animated cards; elsewhere (grids, reduced motion), a fixed misty edge. The frame colour tints the mist.",
+      "spectralStrength": "Warp on movement",
+      "spectralGrain": "Fog grain",
+      "spectralIdle": "Idle breath",
       "cutout": "Cut-out character (optional)",
       "cutoutHint": "PNG or WebP with a transparent background, framed like the image. It passes in front of the frame, and the name stays on top.",
       "cutoutRemove": "Remove the cut-out",
@@ -2925,7 +3046,9 @@
       "spoiler": "Spoiler",
       "spoilerHint": "Character or transformation that gives away the story: its art is blurred for players who turned on spoiler mode. The name and details stay visible.",
       "boostersExtra": "Boosters on top of the base card's",
-      "ultimate": "Ultimate in battle"
+      "ultimate": "Ultimate in battle",
+      "boostersAutoHint": "Boosters marked “automatic” already take it if it passes their filter. Check the others here, or a booster whose filter leaves it out.",
+      "boosterAuto": "automatic"
     },
     "cosmetics": {
       "title": "Profile titles and frames",
@@ -3059,10 +3182,11 @@
         "mythic": "Mythic",
         "ar": "AR",
         "gold": "Gold",
-        "visual": "BR + VR + MR + XR",
+        "visual": "BR + VR + MR + Spirit + XR",
         "br": "Black Rare",
         "vr": "Vitrail Rare",
         "mr": "Manga Rare",
+        "sr": "Spirit",
         "xr": "Xtreme Rare",
         "none": "No top rarity",
         "dropDivin": "Divine drop",
@@ -3514,7 +3638,7 @@
         "abandonCooldownHours": "0: no wait.",
         "triumphRewardPct": "Success Zeni and boosters multiplied (boosters rounded up).",
         "failRewardPct": "Share of the success Zeni paid on failure; never boosters.",
-        "cardBonus": "Chance points each card adds depending on its tier relative to the required rarity; three tiers or more below: nothing. Rarities of the same rank (Mythic and BR, AR and VR, Gold and MR) share a tier. Applies to future departures."
+        "cardBonus": "Chance points each card adds depending on its tier relative to the required rarity; three tiers or more below: nothing. Rarities of the same rank (Mythic and BR, AR and VR, Gold and MR) share a tier; Spirit has its own, between Gold/MR and XR. Applies to future departures."
       },
       "bonus": {
         "below2": "2 tiers below",
@@ -3601,6 +3725,37 @@
         "NO_BOOSTER": "“All anime” (standard) booster not found.",
         "unexpected": "Unexpected error."
       }
+    },
+    "wrapped": {
+      "title": "Year Wrapped",
+      "intro": "Personal year recap: boosters, biggest pull, Zeni, ranked and favorite card, with a story image to share. Shipped off: switch it on here when you're ready.",
+      "settingsSection": "Opening",
+      "keys": {
+        "enabled": "Wrapped open to players",
+        "year": "Year told",
+        "opensAt": "Opens",
+        "closesAt": "Closes"
+      },
+      "hints": {
+        "date": "Your browser's time. Outside this window, only the admin sees the Wrapped.",
+        "year": "Calendar year, in the game's time zone."
+      },
+      "invalid": "Closing must come after opening.",
+      "phase": "Status: {phase}",
+      "phases": {
+        "off": "off (admin only)",
+        "before": "scheduled, not open yet",
+        "open": "open to players",
+        "closed": "over"
+      },
+      "preview": "Preview",
+      "previewHint": "The Wrapped as the player will see it, even when off. Yours by default.",
+      "previewUser": "Username",
+      "previewShow": "Show",
+      "previewEmpty": "{name} opened no booster in {year}: no Wrapped.",
+      "previewMissing": "No player “{name}”.",
+      "image": "Share image",
+      "openImage": "Open the full image"
     },
     "prestige": {
       "title": "Prestige",
@@ -3775,7 +3930,11 @@
     "stats": {
       "unique": "Unique cards",
       "copies": "Copies",
-      "completion": "Catalog"
+      "completion": "Catalog",
+      "value": "Estimated value",
+      "valueZeni": "{amount, number} Zeni",
+      "valueByRarity": "of which {amount, number} Zeni estimated from the rarity's value",
+      "valueUnpriced": "{count, plural, one {# copy without a value} other {# copies without a value}}"
     },
     "recycleAll": {
       "open": "Recycle duplicates",
@@ -4702,7 +4861,10 @@
     "expeditionTriumph": "Your expedition returns triumphant! Come open its report.",
     "expeditionSuccess": "Your expedition is back, mission accomplished. Come open its report.",
     "expeditionFailure": "Your expedition came back empty-handed… Your cards are home.",
-    "expeditionReturned": "Your expedition is back. Come open its report."
+    "expeditionReturned": "Your expedition is back. Come open its report.",
+    "buyOrderFilled": "{name} sold you {card} for {amount, number} Zeni: your buy order is filled.",
+    "buyOrderExpired": "Your buy order for {card} expired: {amount, number} Zeni are back.",
+    "buyOrderWanted": "{name} is looking for {card} at {amount, number} Zeni. You own a copy: sell it in one tap."
   },
   "push": {
     "title": "Notifications on this device",
@@ -4969,6 +5131,8 @@
         "SEASON": "Season reward (ranked)",
         "ABILITY": "Ability bought (workshop)",
         "EXPEDITION": "Expedition",
+        "ORDER_HOLD": "Buy order (Zeni locked)",
+        "ORDER_REFUND": "Buy order refunded",
         "REBIRTH": "Rebirth (prestige)"
       }
     },
@@ -5976,7 +6140,12 @@
       "more": "Show more",
       "loading": "Loading…",
       "retry": "Try again",
-      "guest": "Create an account to play: guests can watch the tables, not stake."
+      "guest": "Create an account to play: guests can watch the tables, not stake.",
+      "lead": "One fuda against one fuda of the same tier. The winner walks away with both.",
+      "pulse": "{open, plural, =0 {No open tables} one {# open table} other {# open tables}} · {today, plural, =0 {no flips today} one {# flip today} other {# flips today}}",
+      "emptyBody": "Set down a fuda and pick your side: another player takes it with a card of the same tier.",
+      "mineBadge": "{count, plural, one {# table} other {# tables}}",
+      "replayDot": "A flip is waiting for you"
     },
     "mine": {
       "open": "Your open tables",
@@ -5985,7 +6154,11 @@
       "noInvitation": "No table is set aside for you.",
       "expires": "Expires {time}",
       "decline": "Decline",
-      "view": "View table"
+      "view": "View table",
+      "count": "{count} / {max}",
+      "countLabel": "{count, plural, one {# open table} other {# open tables}} out of {max}",
+      "noneBody": "Set down a fuda: it waits for an opponent until someone takes it or it expires.",
+      "reservedTo": "For <player>{name}</player>"
     },
     "history": {
       "stats": "{played, plural, =0 {No flips played} one {# flip} other {# flips}} · {won} won · {lost} lost",
@@ -5996,7 +6169,12 @@
       "won": "Won",
       "lost": "Lost",
       "against": "against <player>{name}</player>",
-      "open": "View"
+      "open": "View",
+      "tiles": {
+        "played": "Flips",
+        "won": "Won",
+        "lost": "Lost"
+      }
     },
     "stake": {
       "title": "Set down a card",
@@ -6537,6 +6715,86 @@
     "appearOfflineHint": "You stay signed in: others see you offline since this moment.",
     "saved": "Saved.",
     "error": "Couldn't save, try again."
+  },
+  "wrapped": {
+    "metaTitle": "Your {year} on Kiraku",
+    "image": {
+      "kicker": "Kiraku Wrapped {year}",
+      "title": "{name}'s year",
+      "boosters": "Boosters opened",
+      "zeni": "Zeni earned",
+      "ranked": "Best rank",
+      "battlesWon": "Battles won",
+      "discoveries": "New cards",
+      "bestPull": "Biggest pull",
+      "favorite": "Favorite card"
+    },
+    "story": {
+      "label": "Your year {year}",
+      "progress": "Screen {n} of {total}",
+      "next": "Next",
+      "previous": "Previous",
+      "close": "Exit",
+      "intro": {
+        "kicker": "Kiraku Wrapped",
+        "title": "{year}, your year on Kiraku",
+        "body": "Your packs, battles and Zeni have a story to tell. Tap the screen to go on."
+      },
+      "boosters": {
+        "kicker": "Boosters",
+        "value": "{count, plural, one {# booster opened} other {# boosters opened}}",
+        "special": "including {golden, plural, one {# golden} other {# golden}} and {divine, plural, one {# divine} other {# divine}}",
+        "cards": "{count, plural, one {# card pulled} other {# cards pulled}}, {discoveries, plural, =0 {none new} one {# new to your collection} other {# new to your collection}}."
+      },
+      "bestPull": {
+        "kicker": "Biggest pull",
+        "body": "Pulled on {date}. Nobody forgets a pack like that."
+      },
+      "zeni": {
+        "kicker": "Zeni",
+        "value": "{amount, number} Zeni earned",
+        "source": "Your best source: {source}.",
+        "spent": "{amount, number} Zeni spent, refunded bids aside."
+      },
+      "battles": {
+        "kicker": "Battles",
+        "value": "{count, plural, one {# win} other {# wins}}",
+        "rate": "{played, plural, one {# battle} other {# battles}}, {rate}% won.",
+        "ranked": "Best ranked tier: {rank} ({pc, number} PC).",
+        "none": "No battle this year yet: the arena is waiting."
+      },
+      "favorite": {
+        "kicker": "Favorite card",
+        "battle": "Fielded in {count, plural, one {# battle} other {# battles}}. Your card, no question.",
+        "showcase": "The star of your showcase.",
+        "pull": "Your finest pull, until your first battles."
+      },
+      "outro": {
+        "kicker": "That's your year",
+        "title": "Share it",
+        "share": "Share the image",
+        "download": "Download the image",
+        "sharing": "Preparing…",
+        "failed": "Sharing didn't work: download the image.",
+        "copy": "Copy the Kiraku link",
+        "copied": "Link copied",
+        "replay": "Watch again",
+        "imageAlt": "Image of your {year} on Kiraku"
+      }
+    },
+    "empty": {
+      "title": "No year to tell yet",
+      "body": "Open your first booster: your Wrapped {year} will fill itself.",
+      "cta": "Open a booster"
+    },
+    "banner": {
+      "kicker": "Kiraku Wrapped {year}",
+      "title": "Your year is ready",
+      "body": "Boosters, biggest pull, Zeni, ranked: relive it and share it.",
+      "cta": "See my year",
+      "dismiss": "Hide"
+    },
+    "profileButton": "My year {year}"
   },
   "prestige": {
     "metaTitle": "Prestige",

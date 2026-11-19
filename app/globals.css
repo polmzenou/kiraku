@@ -30,6 +30,8 @@
   --k-shu-btn: #c8372d;
   --k-ai: #7fa3d1;
   --k-kin: #d9b556;
+  /* Courbe de la cote : kin, ≥ 3:1 sur la surface (components/market/PriceChart.tsx) */
+  --k-chart-line: #d9b556;
   /* Hisui (翡翠, jade) : rôle Ambassadeur */
   --k-hisui: #5bbf8b;
   /* Sakura (桜) : liste de souhaits */
@@ -65,6 +67,8 @@
   --k-shu-btn: #c8372d;
   --k-ai: #1e3557;
   --k-kin: #b08a2e;
+  /* Kin plus sombre : #b08a2e ne fait que 2,45:1 sur la surface Washi */
+  --k-chart-line: #8f6e1f;
   --k-hisui: #25673f;
   --k-sakura: #a63d63;
   --k-link: #75541c;
@@ -90,6 +94,7 @@
   --color-shu-btn: var(--k-shu-btn);
   --color-ai: var(--k-ai);
   --color-kin: var(--k-kin);
+  --color-chart-line: var(--k-chart-line);
   --color-hisui: var(--k-hisui);
   --color-sakura: var(--k-sakura);
   --color-link: var(--k-link);
@@ -112,6 +117,7 @@
   --color-rarity-gold: #d9b556;
   --color-rarity-mr: #d8d3c8;
   --color-rarity-vr: #a98be0;
+  --color-rarity-sr: #7fc8d6;
   --color-rarity-xr: #e0609f;
   --color-rarity-br: #a8a5a3;
   --color-washi-paper: #f3ecdf;
@@ -666,6 +672,11 @@
     /* Vitrail : nacre irisée, bordée de rose */
     --fuda-frame-bg: conic-gradient(from 210deg, #fbeaff, #cfe0ff, #fff1d8, #f3d6ff, #d9ecff, #ffe3f2, #fbeaff);
     box-shadow: inset 0 0 0 1px #ca9ba4, 0 6px 14px rgb(0 0 0 / 0.28);
+  }
+  .fuda[data-rarity="SR"] {
+    --fuda-frame: var(--color-rarity-sr);
+    /* Esprit : brume froide (la carte spectrale n'a pas de cadre ; cette matière sert au filet sans canvas) */
+    --fuda-frame-bg: linear-gradient(160deg, #e6fbff, #7fc8d6 45%, #2d5f6b);
   }
   .fuda[data-rarity="XR"] {
     --fuda-frame: var(--color-rarity-xr);

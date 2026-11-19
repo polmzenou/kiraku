@@ -65,6 +65,19 @@ describe("describeNotification", () => {
     expect(d).toEqual({ text: 'teamGiftIncense:{"count":3}', href: "/" });
   });
 
+  it("avis de recherche : rempli et alerte → fiche de collection, expiré → onglet des avis, avec le prix", () => {
+    const base = { actor: { username: "mika", isGuest: false }, gift: null, card: { anilistId: 7, name: "Makima", rarity: "MYTHIC" } };
+    const buyOrder = { orderId: "o1", cardId: "c1", amount: 1200 };
+    const filled = describeNotification({ ...base, type: "BUY_ORDER_FILLED", buyOrder }, tr);
+    expect(filled).toEqual({ text: 'buyOrderFilled:{"name":"mika","card":"Makima","amount":1200}', href: "/collection/7" });
+    expect(describeNotification({ ...base, type: "BUY_ORDER_WANTED", buyOrder }, tr).href).toBe("/collection/7");
+    expect(describeNotification({ ...base, type: "BUY_ORDER_EXPIRED", buyOrder }, tr).href).toBe("/marche?onglet=avis");
+    // Carte disparue : lien vers les avis, texte générique
+    const gone = describeNotification({ ...base, card: null, type: "BUY_ORDER_WANTED", buyOrder }, tr);
+    expect(gone.href).toBe("/marche?onglet=avis");
+    expect(gone.text).toContain("aCard");
+  });
+
   it("sans auteur : « un joueur »", () => {
     const d = describeNotification({ type: "FRIEND_ACCEPTED", actor: null, gift: null, card: null }, tr);
     expect(d.href).toBe("/amis");
