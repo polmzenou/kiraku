@@ -602,7 +602,33 @@
     "expedition": "Expeditions",
     "casino": "Casino",
     "alert": "Reward to claim",
-    "new": "New"
+    "new": "New",
+    "groups": {
+      "play": "Play",
+      "trade": "Trade",
+      "community": "Community"
+    },
+    "desc": {
+      "boosters": "Open your packs",
+      "collection": "All your fuda",
+      "combat": "1v1 duels and ranked",
+      "expedition": "Send your fuda on a journey",
+      "missions": "Goals and rewards",
+      "casino": "Try your luck with Zeni",
+      "shop": "Packs and offers",
+      "market": "Auctions between players",
+      "event": "The current event",
+      "friends": "Friends and trades",
+      "social": "Discover other players",
+      "referral": "Invite your friends",
+      "wiki": "Every card in the game"
+    },
+    "layout": {
+      "label": "Navigation on desktop",
+      "menu": "Top menus",
+      "rail": "Sidebar",
+      "hint": "Grouped menus in the top bar, or every section in a bar on the left of the screen."
+    }
   },
   "header": {
     "stock": "Boosters: {count} of {max}",
@@ -5975,7 +6001,8 @@
       "discordLater": "Remembers when you postponed the Discord invitation (\"Later\").",
       "news": "Remembers whether you collapsed the home page news panel.",
       "speedInsights": "Vercel performance measurement (no cookies or persistent identifiers)",
-      "casinoCeremony": "Remembers that you've already seen the casino opening ceremony on this device."
+      "casinoCeremony": "Remembers that you've already seen the casino opening ceremony on this device.",
+      "nav": "Remembers the desktop navigation layout (top menus or sidebar)."
     },
     "kinds": {
       "cookie": "Cookie",

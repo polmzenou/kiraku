@@ -15,6 +15,7 @@ import { pickClientMessages } from "@/i18n/client-messages";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { parseSpoilerMode, SPOILER_COOKIE } from "@/lib/spoiler";
 import { MOTION_COOKIE, parseMotionPref } from "@/lib/motion-pref";
+import { NAV_LAYOUT_COOKIE, parseNavLayout } from "@/lib/nav-layout";
 import { MotionPreferenceProvider } from "@/components/motion/MotionPreference";
 import { RealtimeRoot } from "@/components/realtime/RealtimeRoot";
 import { fontVariables } from "../fonts";
@@ -64,12 +65,14 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   const theme = parseTheme(jar.get(THEME_COOKIE)?.value);
   const motion = parseMotionPref(jar.get(MOTION_COOKIE)?.value);
   const spoiler = parseSpoilerMode(jar.get(SPOILER_COOKIE)?.value);
+  const navLayout = parseNavLayout(jar.get(NAV_LAYOUT_COOKIE)?.value);
   const clientMessages = pickClientMessages(await getMessages());
   const nonce = adsEnabled() ? ((await headers()).get("x-nonce") ?? undefined) : undefined;
 
   return (
-    <html lang={locale} data-theme={theme} data-motion={motion === "reduced" ? "reduced" : undefined} data-fx={motion === "lite" ? "lite" : undefined} data-spoiler={spoiler === "hide" ? "hide" : undefined} className={fontVariables}>
-      <body className="min-h-dvh">
+    <html lang={locale} data-theme={theme} data-motion={motion === "reduced" ? "reduced" : undefined} data-fx={motion === "lite" ? "lite" : undefined} data-spoiler={spoiler === "hide" ? "hide" : undefined} data-nav={navLayout === "rail" ? "rail" : undefined} className={fontVariables}>
+      {/* Barre latérale (data-nav="rail", ≥ 1024 px) : le contenu et l'en-tête se décalent de sa largeur */}
+      <body className="min-h-dvh lg:nav-rail:pl-24">
         <NextIntlClientProvider messages={clientMessages}>
           <MotionPreferenceProvider initial={motion}>
             <RealtimeRoot>
