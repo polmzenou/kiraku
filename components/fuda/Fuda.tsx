@@ -61,6 +61,17 @@ function flipBank(name: string) {
   return (h >>> 0) % 2 === 1;
 }
 
+/**
+ * Anneau lumineux (meilleure carte du récap, liseré BR). Une carte spectrale n'a pas de cadre : l'anneau
+ * dessinerait un rectangle arrondi autour d'elle, la lueur suit donc les bords dissous de l'image.
+ */
+function glowStyle(glow: string | undefined, spectral: boolean): CSSProperties | undefined {
+  if (!glow) return undefined;
+  return spectral
+    ? { filter: `drop-shadow(0 0 3px ${glow}) drop-shadow(0 0 18px ${glow})` }
+    : { boxShadow: `0 0 0 2px ${glow}, 0 0 28px ${glow}` };
+}
+
 /** Colonnes du tanzaku : à partir de cinq signes, le nom japonais se coupe à son dernier séparateur. */
 function tanzakuColumns(name: string) {
   if (name.length < 5) return [name];
@@ -133,6 +144,8 @@ export function Fuda({
   const definition = definitions.find((r) => r.key === card.rarity);
   const tier = BASE_RARITIES.indexOf(fxTier(card.rarity, definitions));
   const visual = resolveAppearance(definition?.appearance, card.appearance);
+  // Esprit : illustration spectrale ; le canvas WebGL ne vit que sur les grandes cartes animées
+  const spectral = !locked && !monochrome && visual.spectral === true;
   const customStyle = {
     ...(visual.frame && { "--fuda-frame": visual.frame, "--fuda-frame-bg": visual.frame }),
     // Papier et encre réglés dans l'admin : le shikishi devient uni, dans ce papier
@@ -140,15 +153,13 @@ export function Fuda({
     ...(visual.ink && { "--kn-ink": visual.ink, "--kn-muted": visual.ink, "--kn-kanji": visual.ink }),
     "--fx-color": visual.effectColor, "--fx-intensity": visual.intensity,
     "--fx-duration": `${8 / visual.speed}s`,
-    ...(glow && { boxShadow: `0 0 0 2px ${glow}, 0 0 28px ${glow}` }),
+    ...glowStyle(glow, spectral),
   } as CSSProperties;
   const inBattle = variant === "battle";
   const native = !inBattle && !locked && card.nameNative ? tanzakuColumns(card.nameNative) : null;
   const longest = native ? Math.max(...native.map((part) => part.length)) : 0;
   const gilded = !locked && !monochrome && visual.artTone === "gold";
   const fullArt = !locked && visual.fullArt === true;
-  // Esprit : illustration spectrale ; le canvas WebGL ne vit que sur les grandes cartes animées
-  const spectral = !locked && !monochrome && visual.spectral === true;
   const artStyle = { objectPosition: `${visual.focalX}% ${visual.focalY}%`, transform: `scale(${visual.zoom})`, transformOrigin: `${visual.focalX}% ${visual.focalY}%` };
   const subtitle = (!locked && card.formName) || series || (inBattle ? rarity(card.rarity) : undefined);
   const flip = flipBank(card.name) ? " kn-flip" : "";

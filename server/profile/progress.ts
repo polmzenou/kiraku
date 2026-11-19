@@ -38,7 +38,7 @@ type Hint = { fr?: string; en?: string };
 
 /** Statistiques utiles aux conditions, en quelques requêtes. */
 export async function getProfileStats(userId: string, seriesIds: readonly string[]): Promise<ProfileStats> {
-  const [byRarity, completed, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog] = await Promise.all([
+  const [byRarity, completed, kept, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog] = await Promise.all([
     prisma.$queryRaw<{ rarity: string; n: number }[]>`
       SELECT c."rarityKey" AS rarity, COUNT(DISTINCT uc."cardId")::int AS n
       FROM "UserCard" uc JOIN "Card" c ON c.id = uc."cardId"
@@ -51,6 +51,8 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
       WHERE c.status = 'PUBLISHED'
       GROUP BY c."seriesId"
       HAVING COUNT(o."cardId") = COUNT(*) AND COUNT(*) > 0`,
+    // Séries déjà complétées une fois : acquises même si une carte est partie depuis (trigger sur UserCard)
+    prisma.seriesCompletion.findMany({ where: { userId }, select: { seriesId: true } }),
     seriesIds.length === 0
       ? Promise.resolve([] as { id: string; owned: number; total: number }[])
       : prisma.$queryRaw<{ id: string; owned: number; total: number }[]>`
@@ -81,10 +83,18 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
   const unique = byRarity.reduce((sum, r) => sum + r.n, 0);
   // Meilleur des deux : un titre de rang ne se reperd pas après une défaite
   const tier = ladderTier(Math.max(user.rankPoints, user.seasonPeakPc), { tiers });
+  const completedSeries = new Set(kept.map((k) => k.seriesId));
+  // Complète sans être enregistrée : la série l'est devenue sans échange de carte (carte retirée du
+  // catalogue par l'admin). On l'acquiert maintenant pour qu'elle ne se reperde pas non plus.
+  const fresh = completed.map((c) => c.id).filter((id) => !completedSeries.has(id));
+  if (fresh.length > 0) {
+    await prisma.seriesCompletion.createMany({ data: fresh.map((seriesId) => ({ userId, seriesId })), skipDuplicates: true });
+    for (const id of fresh) completedSeries.add(id);
+  }
   return {
     uniqueCards: unique,
     byRarity: Object.fromEntries(byRarity.map((r) => [r.rarity, r.n])),
-    completedSeries: new Set(completed.map((c) => c.id)),
+    completedSeries,
     seriesProgress: Object.fromEntries(series.map((s) => [s.id, { owned: s.owned, total: s.total }])),
     boostersOpened,
     tradesDone,

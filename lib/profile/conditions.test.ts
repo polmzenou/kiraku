@@ -55,6 +55,18 @@ describe("conditions de déblocage", () => {
     expect(parseCondition({ type: "AMBASSADOR", n: 1 })).toBeNull();
   });
 
+  it("une série complétée une fois reste acquise après avoir donné une carte ou l'arrivée d'une nouvelle", () => {
+    const condition = parseCondition({ type: "SERIES_COMPLETE", seriesId: "csm" });
+    const gaveOne = { ...stats, seriesProgress: { csm: { owned: 11, total: 12 } } };
+    expect(evaluateCondition(condition, gaveOne)).toEqual({ unlocked: true, current: 12, goal: 12 });
+    const newCard = { ...stats, seriesProgress: { csm: { owned: 12, total: 13 } } };
+    expect(evaluateCondition(condition, newCard)).toEqual({ unlocked: true, current: 13, goal: 13 });
+    // Collection vidée (prestige) : le titre reste
+    expect(evaluateCondition(condition, { ...stats, seriesProgress: {} }).unlocked).toBe(true);
+    // Jamais complétée : la progression en direct décide
+    expect(evaluateCondition(condition, { ...gaveOne, completedSeries: new Set() })).toEqual({ unlocked: false, current: 11, goal: 12 });
+  });
+
   it("une condition illisible ou une série inconnue ne débloque rien", () => {
     expect(evaluateCondition(parseCondition({ type: "NOPE" }), stats).unlocked).toBe(false);
     expect(evaluateCondition(parseCondition({ type: "SERIES_COMPLETE", seriesId: "inconnue" }), stats).unlocked).toBe(false);
