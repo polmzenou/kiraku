@@ -214,6 +214,7 @@ model User {
   coinFlipsReserved CoinFlip[] @relation("coinFlipReserved")
   expeditions      Expedition[]
   expeditionBoards ExpeditionBoard[]
+  signals          UserSignal[]
 
   @@index([rankPoints])
   @@index([ambassadorSince])
@@ -271,6 +272,39 @@ model AuthToken {
   createdAt DateTime      @default(now())
 
   @@index([userId, type])
+}
+
+// --- Détection des multi-comptes ---
+
+enum SignalKind {
+  IP // adresse IP vue par Nginx (dernière entrée de x-forwarded-for)
+  DEVICE // identifiant aléatoire du cookie appareil (kiraku.device)
+}
+
+enum SignalEvent {
+  SIGNUP // création d'un invité
+  REGISTER // inscription e-mail
+  LOGIN // connexion e-mail
+  DISCORD // connexion ou liaison Discord
+  SEEN // battement de présence
+}
+
+// IP et appareils vus pour un joueur (une ligne par valeur), pour repérer les multi-comptes dans /admin/multi-comptes.
+// Purgés après multiAccount.retentionDays sans être revus (cron des comptes) et à l'anonymisation RGPD.
+model UserSignal {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind        SignalKind
+  value       String      @db.VarChar(64)
+  firstEvent  SignalEvent
+  firstSeenAt DateTime    @default(now())
+  lastSeenAt  DateTime    @default(now())
+  hits        Int         @default(1)
+
+  @@unique([userId, kind, value])
+  @@index([kind, value])
+  @@index([lastSeenAt])
 }
 
 // --- Réglages et économie ---

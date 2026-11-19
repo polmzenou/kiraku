@@ -68,6 +68,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     review,
     notifications,
     pushSubs,
+    signals,
     requests,
     prestigeCycles,
     consecrated,
@@ -263,6 +264,11 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       select: { type: true, refId: true, readAt: true, createdAt: true },
     }),
     db.pushSubscription.findMany({ where: { userId }, select: { endpoint: true, createdAt: true, lastSentAt: true } }),
+    db.userSignal.findMany({
+      where: { userId },
+      orderBy: { firstSeenAt: "asc" },
+      select: { kind: true, value: true, firstEvent: true, firstSeenAt: true, lastSeenAt: true },
+    }),
     db.dataRequest.findMany({
       where: { userId },
       orderBy: { requestedAt: "asc" },
@@ -384,6 +390,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     review,
     notifications,
     pushSubscriptions: pushSubs,
+    signals,
     dataRequests: requests,
   };
   return buildDataExport(input, now);

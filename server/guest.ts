@@ -14,6 +14,6 @@ export async function createGuestSession() {
   return prisma.$transaction(async (tx) => {
     const username = await availableUsername(tx, guestUsername(randomBytes(3)));
     const user = await createPlayer(tx, { username, isGuest: true }, start);
-    return createSessionRow(tx, user.id);
+    return { ...(await createSessionRow(tx, user.id)), userId: user.id };
   });
 }

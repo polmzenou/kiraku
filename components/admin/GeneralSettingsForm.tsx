@@ -18,9 +18,13 @@ const LIMITS: Record<NumberKey, [number, number]> = {
   "account.deletionGraceDays": [0, 365],
   "account.usernameChangeDays": [0, 365],
   "account.exportsPerDay": [1, 50],
+  "multiAccount.retentionDays": [1, 365],
+  "multiAccount.seenThrottleMinutes": [1, 1_440],
+  "multiAccount.sharedIpCap": [2, 100],
+  "multiAccount.minScore": [1, 500],
 };
 
-/** Réglages généraux : Zeni de départ, fuseau du jeu, invités, droits du joueur sur ses données. */
+/** Réglages généraux : Zeni de départ, fuseau du jeu, invités, droits du joueur sur ses données, multi-comptes. */
 export function GeneralSettingsForm({ initial }: { initial: GeneralSettings }) {
   const t = useTranslations("admin.general");
   const [draft, setDraft] = useState(initial);
@@ -67,6 +71,13 @@ export function GeneralSettingsForm({ initial }: { initial: GeneralSettings }) {
         {num("account.deletionGraceDays")}
         {num("account.usernameChangeDays")}
         {num("account.exportsPerDay")}
+      </fieldset>
+      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
+        <legend className="px-1 font-title text-lg font-bold">{t("multiAccountSection")}</legend>
+        {num("multiAccount.retentionDays")}
+        {num("multiAccount.seenThrottleMinutes")}
+        {num("multiAccount.sharedIpCap")}
+        {num("multiAccount.minScore")}
       </fieldset>
       <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} save={() => updateGeneralSettings(draft)} />
     </form>

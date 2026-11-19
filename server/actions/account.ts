@@ -15,6 +15,7 @@ import {
   tokenSchema,
 } from "@/lib/auth/schemas";
 import { hashToken } from "@/lib/auth/tokens";
+import { recordSignals } from "../anticheat/signals";
 import { sendPasswordResetEmail, sendVerificationEmail } from "../auth-emails";
 import { prisma } from "../db";
 import { mailEnabled } from "../env";
@@ -102,6 +103,7 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
 
   const locale = await getLocale();
   await startSession(userId);
+  await recordSignals(userId, "REGISTER");
   // Lien d'invitation suivi avant l'inscription : rattaché maintenant, sans jamais bloquer
   await attachFromCookie(userId);
   // Jamais bloquant : un e-mail raté est journalisé, le joueur peut le redemander depuis son compte
@@ -135,6 +137,7 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
   if (user.bannedAt) return { error: "banned", values };
 
   await startSession(user.id);
+  await recordSignals(user.id, "LOGIN");
   redirect({ href: "/", locale: await getLocale() });
   return {};
 }

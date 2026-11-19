@@ -12,6 +12,7 @@ export const DEV_ADMIN_PAGES = [
   "/admin/catalogue",
   "/admin/journal",
   "/admin/utilisateurs",
+  "/admin/multi-comptes",
   "/admin/fonctionnalites",
   "/admin/economie",
   "/admin/combat",

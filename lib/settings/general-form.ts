@@ -2,7 +2,7 @@ import type { SettingKey } from "./defaults";
 import { settingsSchemaFor, type SettingsOf } from "./form";
 
 // Réglages de /admin/general : ceux qui n'appartiennent à aucun module (départ, fuseau, invités et leur durée de conservation,
-// droits RGPD du joueur). La version exigée des CGU se change en publiant les CGU (/admin/legal). Le carrousel des gros
+// droits RGPD du joueur, détection des multi-comptes). La version exigée des CGU se change en publiant les CGU (/admin/legal). Le carrousel des gros
 // tirages a son propre module (/admin/gros-tirages, pull-feed-form.ts).
 
 export const GENERAL_SETTING_KEYS = [
@@ -14,6 +14,10 @@ export const GENERAL_SETTING_KEYS = [
   "account.deletionGraceDays",
   "account.usernameChangeDays",
   "account.exportsPerDay",
+  "multiAccount.retentionDays",
+  "multiAccount.seenThrottleMinutes",
+  "multiAccount.sharedIpCap",
+  "multiAccount.minScore",
 ] as const satisfies readonly SettingKey[];
 
 export type GeneralSettingKey = (typeof GENERAL_SETTING_KEYS)[number];

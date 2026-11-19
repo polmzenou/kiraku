@@ -68,6 +68,8 @@ export const EXPORT_FIELDS = {
   review: ["rating", "body", "reply", "hidden", "createdAt", "updatedAt"],
   notifications: ["type", "refId", "readAt", "createdAt"],
   pushSubscriptions: ["endpoint", "createdAt", "lastSentAt"],
+  // IP et appareils relevés contre les multi-comptes (conservés multiAccount.retentionDays)
+  signals: ["kind", "value", "firstEvent", "firstSeenAt", "lastSeenAt"],
   dataRequests: ["kind", "status", "requestedAt", "dueAt", "processedAt"],
 } as const;
 
