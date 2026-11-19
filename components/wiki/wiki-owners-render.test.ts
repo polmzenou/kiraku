@@ -23,7 +23,7 @@ const card: CardView = {
   cardId: "card-a", anilistId: 1, series: "Attack on Titan", name: "Levi", nameNative: "リヴァイ", imageUrl: "https://s4.anilist.co/levi.png",
   rank: 2, rarity: "MYTHIC", power: 100, ki: 84, spoiler: false,
 };
-const player = (username: string): PlayerRef => ({ id: `id-${username}`, username, image: null, isGuest: false, decor: { frame: null, nameColor: null } });
+const player = (username: string): PlayerRef => ({ id: `id-${username}`, username, image: null, isGuest: false, decor: { frame: null, nameColor: null, prestige: 0 } });
 
 const render = (props: Partial<Parameters<typeof WikiCardOwnersList>[0]> = {}) =>
   renderToStaticMarkup(createElement(WikiCardOwnersList, {

@@ -38,6 +38,7 @@ enum CoinReason {
   SEASON // récompense de fin de saison du classé
   ABILITY // capacité achetée à l'atelier (refId = id de la Card)
   EXPEDITION // gains d'une expédition (refId = id de l'Expedition)
+  REBIRTH // Zeni d'une renaissance (prestige, refId = id du PrestigeCycle)
   ORDER_HOLD // prix d'un avis de recherche mis en séquestre (refId = id du BuyOrder)
   ORDER_REFUND // avis annulé ou expiré : séquestre rendu
 }
@@ -121,6 +122,9 @@ model User {
   badgeOrder          String[]          @default([])
   // Rôle Ambassadeur donné par l'admin (null = pas ambassadeur) : badge, cadre et couleur verts, stock et pack hebdo
   ambassadorSince     DateTime?
+  // Prestige (étape 16) : renaissances faites (0 = jamais), date de la dernière (CHECK : nulle exactement à 0)
+  prestige            Int               @default(0)
+  prestigedAt         DateTime?
   // Retiré du classement des collectionneurs par l'admin (null = classé), sans toucher à son profil
   leaderboardHiddenAt DateTime?
   // Cartes uniques retirées de son total dans ce classement par l'admin (0 = aucun malus)
@@ -139,6 +143,9 @@ model User {
   ledger       CoinTransaction[]
   authTokens   AuthToken[]
   cards        UserCard[]
+  copyHistory  UserCardOwner[] // exemplaires spéciaux passés par ses mains (provenance)
+  prestigeCycles PrestigeCycle[]
+  consecrated         ConsecratedCard[]
   openings     BoosterOpening[]
   notablePulls NotablePull[]
   discoveries  Discovery[]
@@ -412,6 +419,8 @@ model Card {
   buyOrders        BuyOrder[]
   wishedBy         WishlistEntry[]
   notablePulls     NotablePull[]
+  printings        CardPrinting[]
+  consecrations    ConsecratedCard[]
   tradesWanted     Trade[]            @relation("tradeWanted")
   tradesChosen     Trade[]            @relation("tradeChosen")
   tradeOffers      TradeOffer[]
@@ -478,14 +487,67 @@ model UserCard {
   card       Card          @relation(fields: [cardId], references: [id])
   status     CardStatus    @default(COLLECTION)
   obtainedAt DateTime      @default(now())
+  // Prestige (étape 16). Exemplaire spécial = héritier (heritage > 0) ou gravé (printing renseigné) :
+  // le serveur ne le choisit jamais tout seul, et chaque changement de main passe par moveCopy.
+  heritage    Int          @default(0) // prestiges traversés d'affilée, 0 à 5 (CHECK)
+  keptByOwner Int          @default(0) // prestiges traversés chez le propriétaire actuel (remis à 0 au transfert, déclencheur)
+  printing    Int? // tirage de l'édition gravée (null = exemplaire ordinaire)
+  serial      Int? // numéro dans ce tirage ; renseigné avec printing (CHECK)
+  edition     CardPrinting? @relation(fields: [cardId, printing], references: [cardId, printing], onDelete: Restrict) // compteur du tirage (taille)
   showcase   ShowcaseSlot? // ancienne vitrine unique, plus lue
   showcaseItems ShowcaseItem[]
   auctions   Auction[]
+  owners     UserCardOwner[]
   buyOrders  BuyOrder[]
 
+  // Dans la migration : index unique partiel (cardId, printing, serial) WHERE printing IS NOT NULL,
+  // et index partiel (ownerId, cardId) des exemplaires spéciaux.
   @@index([ownerId, cardId])
   @@index([ownerId, status, cardId]) // collection groupée par carte (couvre aussi [ownerId, status])
   @@index([cardId]) // exemplaires d'une carte (marché, échanges, fiche)
+}
+
+enum OwnershipVia {
+  DRAW // sortie d'un booster (édition gravée)
+  REBIRTH // gardée à une renaissance (première marque d'héritage)
+  AUCTION
+  LISTING // annonce du Marché
+  TRADE // échange entre joueurs
+  GIFT
+  CASINO // gagnée au pile ou face
+}
+
+// Une renaissance (prestige, étape 16) : numéro atteint, rang global (n-ième de Kiraku), photo des héritières
+// et meilleur score du cycle (cartes distinctes, par rareté, séries complétées) gardé pour les cosmétiques.
+model PrestigeCycle {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  number      Int // prestige atteint (1, 2…)
+  globalRank  Int      @unique // n-ième renaissance de Kiraku
+  uniqueCards Int // cartes distinctes possédées au départ
+  zeni        Int
+  heirs       Json // [{ userCardId, cardId, heritage, printing, serial }] : photo, comme Expedition.snapshot
+  stats       Json // PeakStats (lib/prestige/peak.ts)
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, number])
+  @@index([createdAt])
+}
+
+// Provenance d'un exemplaire spécial : un propriétaire par ligne, dans l'ordre. Écrite à la sortie d'une
+// gravée, au premier prestige qui garde un exemplaire et à chaque transfert (moveCopy).
+model UserCardOwner {
+  id         String       @id @default(cuid())
+  userCardId String
+  userCard   UserCard     @relation(fields: [userCardId], references: [id], onDelete: Cascade) // exemplaire recyclé = provenance effacée
+  ownerId    String? // null = compte supprimé
+  owner      User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  via        OwnershipVia
+  at         DateTime     @default(now())
+
+  @@index([userCardId, at])
+  @@index([ownerId]) // suppression d'un compte
 }
 
 // Un booster ouvert, partageable par lien (/tirage/[id])
@@ -503,6 +565,7 @@ model BoosterOpening {
   zeniSpent      Int                @default(0) // prix payé pour ce booster (0 = stock gratuit)
   sealedDropId   String? // sachet scellé ouvert (Divin, Apocalyptique)
   apocalypse     ApocalypseOutcome? // issue d'un Apocalyptique
+  editions       Json? // éditions gravées : [{ position, printing, serial, size }], lisibles même après la vente
   createdAt      DateTime           @default(now())
 
   @@index([userId, createdAt])
@@ -521,6 +584,10 @@ model NotablePull {
   legacyRarity     Rarity           @default(COMMON) @map("rarity")
   rarityDefinition RarityDefinition @relation(fields: [rarity], references: [key])
   boosterSlug      String
+  // Édition gravée tirée (prestige) : tirage, numéro et taille du tirage, copiés à la sortie
+  printing         Int?
+  serial           Int?
+  printingSize     Int?
   createdAt        DateTime         @default(now())
 
   @@index([createdAt])
@@ -534,8 +601,10 @@ model Discovery {
   cardId    String
   card      Card     @relation(fields: [cardId], references: [id])
   createdAt DateTime @default(now())
+  regainedAt DateTime? // première obtention dans le cycle en cours (prestige ≥ 1), remis à zéro à chaque renaissance
 
   @@id([userId, cardId])
+  @@index([userId, regainedAt]) // missions « découvrir des cartes » d'un joueur au prestige 1 ou plus
   @@index([userId, createdAt]) // missions « découvrir des cartes »
   @@index([cardId])
 }
@@ -1612,6 +1681,7 @@ model Trade {
   wantedCardId   String // carte demandée à l'ami (id de Card)
   wantedCard     Card         @relation("tradeWanted", fields: [wantedCardId], references: [id], onDelete: Cascade)
   chosenCardId   String? // carte offerte choisie par l'ami à l'acceptation
+  userCardId     String? // exemplaire donné par l'ami, s'il l'a désigné (sans clé étrangère, comme Gift.userCardId)
   chosenCard     Card?        @relation("tradeChosen", fields: [chosenCardId], references: [id], onDelete: SetNull)
   status         TradeStatus  @default(PENDING)
   expiresAt      DateTime
@@ -1634,6 +1704,7 @@ model TradeOffer {
   trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
   cardId  String
   card    Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  userCardId String? // exemplaire désigné par le proposant (pièce spéciale), sans clé étrangère
 
   @@id([tradeId, cardId])
 }
@@ -1655,6 +1726,7 @@ model TradeListing {
   ownerId    String
   owner      User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   cardId     String // carte donnée (id de Card ; l'exemplaire est choisi à l'acceptation)
+  userCardId String? // exemplaire désigné par l'auteur (pièce spéciale), sans clé étrangère : revérifié à l'acceptation
   card       Card               @relation(fields: [cardId], references: [id], onDelete: Cascade)
   status     ListingStatus      @default(OPEN)
   expiresAt  DateTime
@@ -1699,6 +1771,7 @@ model ListingOffer {
   bidderId     String
   bidder       User               @relation(fields: [bidderId], references: [id], onDelete: Cascade)
   cardId       String // carte proposée (id de Card)
+  userCardId   String? // exemplaire désigné par l'offrant (pièce spéciale), sans clé étrangère
   card         Card               @relation(fields: [cardId], references: [id], onDelete: Cascade)
   fromWants    Boolean // la carte faisait partie des cartes demandées
   status       ListingOfferStatus @default(PENDING)
@@ -1933,4 +2006,39 @@ model ExpeditionBoard {
 
   @@id([userId, dayKey])
   @@index([createdAt]) // purge des anciens plateaux
+}
+
+// Compteur de numéros d'une carte dans un tirage d'éditions gravées (prestige, étape 16c). La taille est figée à la
+// création ; le compteur ne redescend jamais et `taken` garde chaque numéro sorti, dans l'ordre de sortie (CHECK et
+// déclencheur dans la migration) : un numéro recyclé ou consacré ne ressort pas.
+model CardPrinting {
+  cardId    String
+  card      Card       @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  printing  Int
+  size      Int
+  issued    Int        @default(0)
+  taken     Int[]      @default([])
+  createdAt DateTime   @default(now())
+  copies    UserCard[]
+
+  @@id([cardId, printing])
+}
+
+// Sanctuaire (prestige, étape 16d) : héritière au plafond consacrée par son propriétaire. L'exemplaire a quitté
+// UserCard (même id) : plus possédé, il n'entre plus dans aucune requête de collection ; son parcours est figé ici.
+model ConsecratedCard {
+  id            String   @id // ancien id de l'exemplaire
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardId        String
+  card          Card     @relation(fields: [cardId], references: [id], onDelete: Restrict)
+  heritage      Int
+  printing      Int? // édition gravée (tirage, numéro, taille) ; CHECK et index unique partiel dans la migration
+  serial        Int?
+  size          Int?
+  journey       Json // { owners: [{ ownerId, via, at }], cycles: [numéros des prestiges qui l'ont gardée], prestige }
+  consecratedAt DateTime @default(now())
+
+  @@index([userId, consecratedAt])
+  @@index([cardId])
 }

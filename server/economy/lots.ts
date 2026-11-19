@@ -12,6 +12,7 @@ import { credit } from "./ledger";
 import { consumeWishlist } from "../collection/wishlist-core";
 import { markWished } from "@/lib/collection/wishlist";
 import { loadOwnedCopies } from "../boosters/duplicate-guard";
+import { recordDiscoveries } from "../collection/discovery";
 
 type Tx = Prisma.TransactionClient;
 
@@ -113,10 +114,7 @@ export async function grantLot(
     await tx.userCard.createMany({
       data: grant.cards.map((c) => ({ id: c.userCardId, ownerId: userId, cardId: c.cardId, obtainedAt: now })),
     });
-    await tx.discovery.createMany({
-      data: [...new Set(drawn.map((c) => c.cardId))].map((cardId) => ({ userId, cardId, createdAt: now })),
-      skipDuplicates: true,
-    });
+    await recordDiscoveries(tx, [...new Set(drawn.map((c) => c.cardId))].map((cardId) => ({ userId, cardId })), now);
   }
   return grant;
 }

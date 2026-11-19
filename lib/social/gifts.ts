@@ -1,5 +1,6 @@
 // Règles anti-abus des cadeaux entre amis. Fonction pure : gift-core.ts l'applique sous le
 // verrou des deux joueurs, la feuille « Offrir » s'en sert pour afficher ce qui reste possible.
+import { isSpecialCopy, type CopyMarks } from "../collection/copies";
 
 export type GiftRules = {
   enabled: boolean;
@@ -89,13 +90,28 @@ export function checkSealedGift(c: {
   return null;
 }
 
-export type GiftCopy = { id: string; obtainedAt: Date };
+export type GiftCopy = { id: string; obtainedAt: Date } & CopyMarks;
 
-/**
- * Exemplaire offert pour une carte : le plus récent hors vitrine, sinon le plus récent exposé
- * (son emplacement est retiré dans la même transaction). Null si le joueur n'en a aucun.
- */
-export function pickGiftCopy(copies: readonly GiftCopy[], showcased: ReadonlySet<string>): GiftCopy | null {
+/** Le plus récent hors vitrine, sinon le plus récent exposé. */
+function newestFree<T extends GiftCopy>(copies: readonly T[], showcased: ReadonlySet<string>): T | null {
   const newestFirst = [...copies].sort((a, b) => b.obtainedAt.getTime() - a.obtainedAt.getTime() || (a.id < b.id ? 1 : -1));
   return newestFirst.find((c) => !showcased.has(c.id)) ?? newestFirst[0] ?? null;
+}
+
+/**
+ * Exemplaire qui part pour une carte (cadeau, vente, échange, mise) : le plus récent hors vitrine, sinon le
+ * plus récent exposé (son emplacement est retiré dans la même transaction), parmi les seuls exemplaires
+ * ordinaires. Un exemplaire spécial (héritier ou gravé) ne part jamais par ce choix : le joueur le désigne.
+ * Null si le joueur n'a aucun exemplaire ordinaire.
+ */
+export function pickGiftCopy<T extends GiftCopy>(copies: readonly T[], showcased: ReadonlySet<string>): T | null {
+  return newestFree(copies.filter((c) => !isSpecialCopy(c)), showcased);
+}
+
+/**
+ * Exemplaire prêté à un combat ou à une expédition : un ordinaire d'abord, sinon un spécial. Il ne change pas
+ * de main et revient intact, mais il est bloqué pendant ce temps : on garde donc les pièces spéciales libres.
+ */
+export function pickLoanCopy<T extends GiftCopy>(copies: readonly T[], showcased: ReadonlySet<string>): T | null {
+  return pickGiftCopy(copies, showcased) ?? newestFree(copies, showcased);
 }

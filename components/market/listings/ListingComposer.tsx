@@ -5,6 +5,8 @@ import { useState, useTransition } from "react";
 import type { CardView } from "@/lib/boosters/view";
 import type { CollectionItem } from "@/lib/collection/view";
 import { createListingAction } from "@/server/actions/listings";
+import { CopyPicker } from "../../collection/CopyPicker";
+import { hasSpecialCopy } from "@/lib/collection/copies";
 import { CardPickGrid } from "../../collection/CardPickGrid";
 import { Fuda } from "../../fuda/Fuda";
 import { Button } from "../../ui/Button";
@@ -23,6 +25,8 @@ export function ListingComposer({ maxWants, onClose }: { maxWants: number; onClo
   const tErrors = useTranslations("listings.errors");
   const [step, setStep] = useState<Step>("give");
   const [give, setGive] = useState<CollectionItem | null>(null);
+  // Exemplaire désigné (pièce spéciale), sinon l'annonce promet un exemplaire ordinaire
+  const [copyId, setCopyId] = useState<string | null>(null);
   const [wants, setWants] = useState<CardView[]>([]);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +48,7 @@ export function ListingComposer({ maxWants, onClose }: { maxWants: number; onClo
     if (!give || wants.length === 0) return;
     startTransition(async () => {
       try {
-        const res = await createListingAction({ cardId: give.cardId, wantedCardIds: wants.map((c) => c.cardId), note });
+        const res = await createListingAction({ cardId: give.cardId, userCardId: copyId, wantedCardIds: wants.map((c) => c.cardId), note });
         if (!res.ok) setError(tErrors(res.error as "UNAVAILABLE", { max: maxWants }));
         else setStep("sent");
       } catch {
@@ -79,6 +83,7 @@ export function ListingComposer({ maxWants, onClose }: { maxWants: number; onClo
             pickLabel={(card) => t("pickGive", { card })}
             onPick={(card) => {
               setGive(card);
+              setCopyId(null);
               setWants((current) => current.filter((c) => c.cardId !== card.cardId));
               setStep("want");
             }}
@@ -125,6 +130,7 @@ export function ListingComposer({ maxWants, onClose }: { maxWants: number; onClo
               </ul>
             </div>
           </div>
+          <CopyPicker cardId={give.cardId} special={hasSpecialCopy(give)} value={copyId} onChange={setCopyId} />
           <NoteField label={t("note")} placeholder={t("notePlaceholder")} value={note} onChange={setNote} disabled={pending} />
           <p className="text-xs text-text-muted">{t("rules")}</p>
           {error && (

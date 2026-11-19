@@ -178,7 +178,7 @@ function PullList({ pulls, owned, now, pendingLikeIds, onLike, copy = false }: {
           <div className="flex min-w-0 items-center gap-2">
             {p.profile ? (
               <Link prefetch={false} href={`/u/${p.profile.username}`} tabIndex={tabIndex} className="flex min-h-11 min-w-0 items-center gap-2">
-                <PlayerAvatar username={p.profile.username} image={p.profile.image} size={28} frame={p.profile.decor.frame} />
+                <PlayerAvatar username={p.profile.username} image={p.profile.image} size={28} frame={p.profile.decor.frame} prestige={p.profile.decor.prestige} />
                 <PlayerName name={p.name} color={p.profile.decor.nameColor} className="truncate text-sm font-bold" />
               </Link>
             ) : (

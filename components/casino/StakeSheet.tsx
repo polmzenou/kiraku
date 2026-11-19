@@ -9,6 +9,8 @@ import type { Rarity } from "@/lib/catalog/rarity";
 import type { CollectionItem } from "@/lib/collection/view";
 import { USERNAME_REGEX } from "@/lib/username";
 import { createCoinFlipAction, type CasinoActionError } from "@/server/actions/casino";
+import { CopyPicker } from "../collection/CopyPicker";
+import { hasSpecialCopy } from "@/lib/collection/copies";
 import { CardPickGrid } from "../collection/CardPickGrid";
 import { Button } from "../ui/Button";
 import { inputClass } from "../ui/Field";
@@ -56,6 +58,8 @@ export function StakeSheet({
   const router = useRouter();
   const friendId = useId();
   const [card, setCard] = useState<CollectionItem | null>(null);
+  // Exemplaire désigné : une pièce spéciale ne se mise que choisie, après l'avertissement du sélecteur
+  const [copyId, setCopyId] = useState<string | null>(null);
   const [side, setSide] = useState<CoinSide | null>(null);
   const [reserved, setReserved] = useState(initialReserveFor !== null);
   const [username, setUsername] = useState(initialReserveFor ?? "");
@@ -72,6 +76,7 @@ export function StakeSheet({
 
   const pick = (item: CollectionItem) => {
     setCard((current) => (current?.cardId === item.cardId ? null : item));
+    setCopyId(null);
     setConfirmLast(false);
     setServerSaysLast(false);
     setError(null);
@@ -83,6 +88,7 @@ export function StakeSheet({
       try {
         const res = await createCoinFlipAction({
           cardId: card.cardId,
+          userCardId: copyId,
           side,
           reservedFor: reserved ? username.trim() : null,
           confirmLastCopy: lastCopy && confirmLast,
@@ -113,6 +119,7 @@ export function StakeSheet({
           unavailable={(item) => item.free === 0}
           allowed={allowed}
         />
+        {card && <CopyPicker cardId={card.cardId} special={hasSpecialCopy(card)} value={copyId} onChange={setCopyId} />}
         <div
           aria-live="polite"
           className={`flex min-h-12 items-center gap-2.5 rounded-control px-3 py-2 text-sm ${

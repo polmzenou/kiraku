@@ -135,7 +135,7 @@ export async function AppHeader({ theme, spoiler }: { theme: Theme; spoiler: Spo
                 title={t("nav.account")}
                 className="hidden size-11 shrink-0 items-center justify-center rounded-full lg:inline-flex"
               >
-                <PlayerAvatar username={user.username} image={user.image} size={34} frame={user.decor.frame} />
+                <PlayerAvatar username={user.username} image={user.image} size={34} frame={user.decor.frame} prestige={user.decor.prestige} />
               </Link>
             )}
             {signedIn ? (

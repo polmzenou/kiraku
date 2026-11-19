@@ -5,6 +5,7 @@ import { conicRingSvg, parseConic } from "@/lib/og/conic";
 import { RARITY_SEAL } from "@/lib/catalog/rarity";
 import { FRAME_KANJI, FRAME_RING, type FrameStyle } from "@/lib/profile/frames";
 import { NAME_COLOR_GRADIENT, type NameColorStyle } from "@/lib/profile/name-colors";
+import { plateMaterial, toRoman, type PlateMaterial } from "@/lib/prestige/roman";
 import type { OgCard } from "./data";
 
 // Briques des images de partage (1200 × 630), palette Yoru. Satori : chaque bloc à plusieurs enfants
@@ -169,7 +170,7 @@ export function FudaFan({ cards }: { cards: OgCard[] }) {
 }
 
 /** Avatar rond du joueur dans son cadre (anneau conique en SVG, sceau du cadre en bas), ou l'initiale sur papier. */
-export function OgAvatar({ username, avatar, frame, size }: { username: string; avatar: string | null; frame: FrameStyle | null; size: number }) {
+export function OgAvatar({ username, avatar, frame, prestige = 0, size }: { username: string; avatar: string | null; frame: FrameStyle | null; prestige?: number; size: number }) {
   const ring = Math.round(size / 15);
   const conic = frame ? parseConic(FRAME_RING[frame]) : null;
   const inner = conic ? size - 2 * ring - 4 : size;
@@ -226,6 +227,46 @@ export function OgAvatar({ username, avatar, frame, size }: { username: string; 
           {FRAME_KANJI[frame]}
         </div>
       )}
+      {prestige > 0 && <OgPlate prestige={prestige} size={size} />}
+    </div>
+  );
+}
+
+/** Matières de la plaque du prestige (components/profile/AvatarFrame.tsx, globals.css), en dégradés SVG. */
+const PLATE: Record<PlateMaterial, { edge: string; stops: [number, string][]; vertical?: boolean; num: string }> = {
+  laque: { edge: "#d9b556", stops: [[0, "#332d27"], [1, "#0d0b09"]], vertical: true, num: "#f0d583" },
+  or: { edge: "#6e5012", stops: [[0, "#f8e7aa"], [0.46, "#d9b556"], [1, "#b08a2e"]], num: "#2a1f08" },
+  emeraude: { edge: "#d9b556", stops: [[0, "#062a1c"], [0.22, "#0f5a3a"], [0.4, "#2fae74"], [0.52, "#0c4a30"], [0.68, "#1f8a5a"], [1, "#052317"]], num: "#f6dd8e" },
+  nacre: { edge: "#c9a447", stops: [[0, "#f6ecff"], [0.3, "#cdeee9"], [0.55, "#f8ecc9"], [0.8, "#dcd0ff"], [1, "#d2e6f8"]], num: "#3b2a5c" },
+};
+
+/** Hexagone kikkō de la plaque, en SVG (le moteur des images de partage ne découpe pas en polygone). */
+function plateSvg(material: PlateMaterial, width: number, height: number): string {
+  const m = PLATE[material];
+  const cut = Math.round(height * 0.42);
+  const hexagon = (inset: number) =>
+    `${cut + inset},${inset} ${width - cut - inset},${inset} ${width - inset},${height / 2} ${width - cut - inset},${height - inset} ${cut + inset},${height - inset} ${inset},${height / 2}`;
+  const stops = m.stops.map(([offset, color]) => `<stop offset="${offset}" stop-color="${color}"/>`).join("");
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
+    `<defs><linearGradient id="f" x1="0" y1="0" x2="${m.vertical ? 0 : 1}" y2="1">${stops}</linearGradient></defs>` +
+    `<polygon points="${hexagon(0)}" fill="${m.edge}"/><polygon points="${hexagon(2)}" fill="url(#f)"/></svg>`
+  );
+}
+
+/** Plaque du prestige au-dessus de l'avatar, mêmes matières que components/profile/AvatarFrame.tsx (thème Yoru). */
+function OgPlate({ prestige, size }: { prestige: number; size: number }) {
+  const label = toRoman(prestige);
+  const material = plateMaterial(prestige);
+  const height = Math.round(size * 0.17);
+  const fontSize = size * 0.11;
+  const width = Math.round(label.length * fontSize * 0.72 + height * 1.7);
+  return (
+    <div style={{ position: "absolute", top: -size * 0.07, left: 0, width: "100%", display: "flex", justifyContent: "center" }}>
+      <div style={{ position: "relative", width, height, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <img src={svgUri(plateSvg(material, width, height))} width={width} height={height} alt="" style={{ position: "absolute", top: 0, left: 0 }} />
+        <span style={{ color: PLATE[material].num, fontFamily: FONT.title, fontWeight: 800, fontSize, letterSpacing: "0.05em" }}>{label}</span>
+      </div>
     </div>
   );
 }

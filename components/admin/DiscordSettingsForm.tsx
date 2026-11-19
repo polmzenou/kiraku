@@ -52,6 +52,8 @@ export function DiscordSettingsForm({ initial }: { initial: DiscordSettings }) {
           options={rarities.map((r) => ({ value: r, label: tRarity(r as "COMMON") }))}
           onChange={(v) => setDraft((d) => ({ ...d, "discord.casinoMinRarity": v }))}
         />
+        <Toggle label={t("prestigeEnabled")} checked={draft["discord.prestigeEnabled"]} onChange={(v) => setDraft((d) => ({ ...d, "discord.prestigeEnabled": v }))} />
+        <p className="text-sm text-text-muted">{t("prestigeHint")}</p>
       </fieldset>
       <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
         <legend className="px-1 font-title text-lg font-bold">{t("modalSection")}</legend>

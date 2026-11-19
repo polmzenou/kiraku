@@ -5,6 +5,7 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { DEFAULT_LAYOUT, isLayoutId, layoutCapacity, MAX_SHOWCASE_CARDS, type ShowcaseLayoutId } from "@/lib/showcase/layouts";
 import { addToSlots, fitToCapacity, normalizeShowcase, type ShowcaseSlots } from "@/lib/showcase/slots";
+import { COPY_MARKS, isSpecialCopy } from "@/lib/collection/copies";
 import type { ShowcaseThemeId } from "@/lib/showcase/theme-registry";
 
 export type ShowcaseErrorCode = "NO_USER" | "BANNED" | "INVALID" | "NOT_OWNED" | "NOT_FOUND" | "LIMIT" | "FULL";
@@ -54,7 +55,8 @@ function slotsOf(items: readonly Item[], capacity: number): ShowcaseSlots {
 
 /**
  * Exemplaire de chaque carte : celui déjà exposé dans une vitrine du joueur (un exemplaire en combat
- * ou misé au casino, ou en expédition, y reste jusqu'à son retour ou son transfert), sinon le plus ancien en collection.
+ * ou misé au casino, ou en expédition, y reste jusqu'à son retour ou son transfert), sinon une pièce spéciale
+ * (héritière ou gravée : une vitrine sert à la montrer), sinon le plus ancien en collection.
  * NOT_OWNED si une carte n'en a aucun.
  */
 async function pickCopies(tx: Tx, userId: string, cardIds: readonly string[]): Promise<Map<string, string>> {
@@ -66,13 +68,14 @@ async function pickCopies(tx: Tx, userId: string, cardIds: readonly string[]): P
       OR: [{ status: "COLLECTION" }, { status: { in: ["BATTLE", "CASINO", "EXPEDITION"] }, showcaseItems: { some: {} } }],
     },
     orderBy: [{ obtainedAt: "asc" }, { id: "asc" }],
-    select: { id: true, cardId: true, _count: { select: { showcaseItems: true } } },
+    select: { id: true, cardId: true, ...COPY_MARKS, _count: { select: { showcaseItems: true } } },
   });
-  const chosen = new Map<string, { id: string; shown: boolean }>();
+  // Rang : déjà exposé (2), pièce spéciale (1), ordinaire (0) ; à rang égal, le plus ancien (ordre de lecture)
+  const chosen = new Map<string, { id: string; rank: number }>();
   for (const c of copies) {
-    const shown = c._count.showcaseItems > 0;
+    const rank = c._count.showcaseItems > 0 ? 2 : isSpecialCopy(c) ? 1 : 0;
     const current = chosen.get(c.cardId);
-    if (!current || (!current.shown && shown)) chosen.set(c.cardId, { id: c.id, shown });
+    if (!current || rank > current.rank) chosen.set(c.cardId, { id: c.id, rank });
   }
   if (cardIds.some((id) => !chosen.has(id))) throw new ShowcaseError("NOT_OWNED");
   return new Map([...chosen].map(([cardId, copy]) => [cardId, copy.id]));

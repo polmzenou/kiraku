@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SETTING_DEFAULTS } from "../settings/defaults";
-import { planRecycle, recycleValue, type OwnedCopy } from "./recycle";
+import { copyRecycleValue, planRecycle, recycleValue, type OwnedCopy } from "./recycle";
 
 const values = SETTING_DEFAULTS["collection.recycleValues"];
 
@@ -12,6 +12,8 @@ function copies(cardId: string, rarity: OwnedCopy["rarity"], n: number, status: 
     rarity,
     status,
     obtainedAt: new Date(Date.UTC(2026, 0, 1 + i)),
+    heritage: 0,
+    printing: null as number | null,
   }));
 }
 
@@ -52,6 +54,25 @@ describe("recyclage des doublons", () => {
     const plan = planRecycle(two, { values });
     expect(plan.ids).toHaveLength(1);
     expect(plan.ids).not.toContain(two[0].id);
+  });
+
+  it("ne recycle jamais un exemplaire spécial, et garde un ordinaire à côté de lui", () => {
+    const engraved = { ...copies("a", "MYTHIC", 1)[0], printing: 1, serial: 7 };
+    const heir = { ...copies("a", "MYTHIC", 1)[0], heritage: 2 };
+    // Deux spéciaux et un seul ordinaire : rien ne part, l'ordinaire est celui qu'on garde
+    expect(planRecycle([engraved, heir, ...copies("a", "MYTHIC", 1)], { values }).ids).toEqual([]);
+    // Trois ordinaires en plus : deux partent, jamais les spéciaux, même plus récents
+    const ordinary = copies("b", "MYTHIC", 3);
+    const special = { ...copies("b", "MYTHIC", 1)[0], heritage: 5, obtainedAt: new Date(Date.UTC(2026, 5, 1)) };
+    const plan = planRecycle([special, ...ordinary], { values });
+    expect(plan.ids).toHaveLength(2);
+    expect(plan.ids).not.toContain(special.id);
+    expect(plan.ids).not.toContain(ordinary[0].id);
+  });
+
+  it("un exemplaire spécial recyclé seul : la gravée vaut le multiple de sa rareté, l'héritière sa rareté", () => {
+    expect(copyRecycleValue({ rarity: "MYTHIC", printing: 1 }, values, 5)).toBe(values.MYTHIC * 5);
+    expect(copyRecycleValue({ rarity: "MYTHIC", printing: null }, values, 5)).toBe(values.MYTHIC);
   });
 
   it("respecte la rareté maximale", () => {

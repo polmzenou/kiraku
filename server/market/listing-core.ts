@@ -5,7 +5,8 @@
 // bloqué pendant l'attente. À l'acceptation, l'annonce puis l'offre puis les deux joueurs sont
 // verrouillés (même ordre que l'hôtel des ventes : les lignes d'objet, puis les joueurs triés par id),
 // les blocages et un exemplaire libre de chaque côté sont relus, puis les deux exemplaires changent
-// de propriétaire par des updateMany conditionnels.
+// de propriétaire par des écritures conditionnelles (moveCopy). Une annonce ou une offre promet un exemplaire
+// ordinaire, sauf si son auteur a désigné une pièce spéciale (userCardId), revérifiée à l'acceptation.
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { Rarity } from "@/lib/catalog/rarity";
 import {
@@ -20,7 +21,8 @@ import {
   type ListingRules,
   type TradeListingRefusal,
 } from "@/lib/market/listings";
-import { freeCopy } from "../social/free-copy";
+import { chooseCopy, moveCopy, pinOf } from "../collection/transfer";
+import { recordDiscoveries } from "../collection/discovery";
 import { blocksBetween, lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { consumeWishlist } from "../collection/wishlist-core";
@@ -31,6 +33,7 @@ export type ListingErrorCode =
   | ExchangerRefusal
   | "NO_USER"
   | "CARD_GONE"
+  | "CHOOSE_COPY"
   | "OFFER_GONE"
   | "WANT_GONE"
   | "NOT_FOUND";
@@ -47,19 +50,19 @@ const DAY_MS = 24 * 3_600_000;
 const touchDiscordListing = (tx: Tx, listingId: string, now: Date) =>
   tx.discordPost.updateMany({ where: { listingId, attempts: 0 }, data: { nextAttemptAt: now } });
 
-type LockedListing = { id: string; ownerId: string; cardId: string; status: string; expiresAt: Date };
-type LockedOffer = { id: string; listingId: string; bidderId: string; cardId: string; status: string };
+type LockedListing = { id: string; ownerId: string; cardId: string; userCardId: string | null; status: string; expiresAt: Date };
+type LockedOffer = { id: string; listingId: string; bidderId: string; cardId: string; userCardId: string | null; status: string };
 
 async function lockListing(tx: Tx, listingId: string): Promise<LockedListing | null> {
   const [row] = await tx.$queryRaw<LockedListing[]>`
-    SELECT id, "ownerId", "cardId", status::text AS status, "expiresAt"
+    SELECT id, "ownerId", "cardId", "userCardId", status::text AS status, "expiresAt"
     FROM "TradeListing" WHERE id = ${listingId} FOR UPDATE`;
   return row ?? null;
 }
 
 async function lockOffer(tx: Tx, offerId: string): Promise<LockedOffer | null> {
   const [row] = await tx.$queryRaw<LockedOffer[]>`
-    SELECT id, "listingId", "bidderId", "cardId", status::text AS status
+    SELECT id, "listingId", "bidderId", "cardId", "userCardId", status::text AS status
     FROM "ListingOffer" WHERE id = ${offerId} FOR UPDATE`;
   return row ?? null;
 }
@@ -95,6 +98,8 @@ async function closePendingOffers(tx: Tx, listing: LockedListing, now: Date, exc
 export type CreateListingInput = {
   ownerId: string;
   cardId: string;
+  /** Exemplaire désigné par l'auteur : obligatoire pour annoncer une pièce spéciale. */
+  userCardId?: string | null;
   wantedCardIds: readonly string[];
   /** Commentaire public de l'auteur, déjà nettoyé (texte brut). */
   note?: string | null;
@@ -114,17 +119,19 @@ export async function createListingWith(db: PrismaClient, input: CreateListingIn
     const refusal = checkExchanger(owner, now, input.rules);
     if (refusal) throw new ListingError(refusal);
 
-    const [cards, ownedWants, offeredFree, duplicate, active, createdLastDay] = await Promise.all([
+    // Ce que l'annonce promet : l'exemplaire désigné, sinon un ordinaire (jamais une pièce spéciale par défaut)
+    const offeredCopy = await chooseCopy(tx, input.ownerId, input.cardId, input.userCardId);
+    const [cards, ownedWants, duplicate, active, createdLastDay] = await Promise.all([
       tx.card.findMany({ where: { id: { in: [input.cardId, ...wants] }, status: "PUBLISHED" }, select: { id: true, rarity: true } }),
       tx.userCard.count({ where: { ownerId: input.ownerId, cardId: { in: wants } } }),
-      tx.userCard.count({ where: { ownerId: input.ownerId, cardId: input.cardId, status: "COLLECTION" } }),
       tx.tradeListing.count({ where: { ownerId: input.ownerId, cardId: input.cardId, status: "OPEN", expiresAt: { gt: now } } }),
       tx.tradeListing.count({ where: { ownerId: input.ownerId, status: "OPEN", expiresAt: { gt: now } } }),
       tx.tradeListing.count({ where: { ownerId: input.ownerId, createdAt: { gt: new Date(now.getTime() - DAY_MS) } } }),
     ]);
     const rarity = new Map(cards.map((c) => [c.id, c.rarity as Rarity]));
     const offeredRarity = rarity.get(input.cardId);
-    if (!offeredRarity || offeredFree === 0) throw new ListingError("CARD_GONE");
+    if (!offeredRarity) throw new ListingError("CARD_GONE");
+    if (!offeredCopy.ok) throw new ListingError(offeredCopy.reason === "CHOOSE_COPY" ? "CHOOSE_COPY" : "CARD_GONE");
     if (wants.some((id) => !rarity.has(id))) throw new ListingError("WANT_GONE");
 
     const listingRefusal = checkTradeListing({
@@ -142,6 +149,7 @@ export async function createListingWith(db: PrismaClient, input: CreateListingIn
       data: {
         ownerId: input.ownerId,
         cardId: input.cardId,
+        userCardId: pinOf(offeredCopy),
         expiresAt: listingExpiresAt(now, input.rules.expiryHours),
         createdAt: now,
         note: input.note ?? null,
@@ -174,7 +182,15 @@ export async function cancelListingWith(db: PrismaClient, input: { userId: strin
   );
 }
 
-export type MakeOfferInput = { bidderId: string; listingId: string; cardId: string; rules: ListingRules; now?: Date };
+export type MakeOfferInput = {
+  bidderId: string;
+  listingId: string;
+  cardId: string;
+  /** Exemplaire désigné par l'offrant : obligatoire pour proposer une pièce spéciale. */
+  userCardId?: string | null;
+  rules: ListingRules;
+  now?: Date;
+};
 
 /** Un joueur propose une de ses cartes sur une annonce ; l'auteur est notifié. */
 export async function makeOfferWith(db: PrismaClient, input: MakeOfferInput, onNotified?: OnNotified): Promise<{ offerId: string }> {
@@ -192,7 +208,7 @@ export async function makeOfferWith(db: PrismaClient, input: MakeOfferInput, onN
       if (refusal) throw new ListingError(refusal);
       if (!owner || owner.bannedAt) throw new ListingError("CLOSED");
 
-      const [blocks, card, want, alreadyOffered, pendingOffers, free] = await Promise.all([
+      const [blocks, card, want, alreadyOffered, pendingOffers, offeredCopy] = await Promise.all([
         blocksBetween(tx, input.bidderId, listing.ownerId),
         tx.card.findUnique({ where: { id: input.cardId }, select: { rarity: true } }),
         tx.tradeListingWant.findUnique({ where: { listingId_cardId: { listingId: listing.id, cardId: input.cardId } }, select: { cardId: true } }),
@@ -200,7 +216,7 @@ export async function makeOfferWith(db: PrismaClient, input: MakeOfferInput, onN
         tx.listingOffer.count({
           where: { bidderId: input.bidderId, status: "PENDING", listing: { status: "OPEN", expiresAt: { gt: now } } },
         }),
-        tx.userCard.count({ where: { ownerId: input.bidderId, cardId: input.cardId, status: "COLLECTION" } }),
+        chooseCopy(tx, input.bidderId, input.cardId, input.userCardId),
       ]);
       if (!card) throw new ListingError("OFFER_GONE");
       const offerRefusal = checkListingOffer({
@@ -215,10 +231,17 @@ export async function makeOfferWith(db: PrismaClient, input: MakeOfferInput, onN
         now,
       });
       if (offerRefusal) throw new ListingError(offerRefusal);
-      if (free === 0) throw new ListingError("OFFER_GONE");
+      if (!offeredCopy.ok) throw new ListingError(offeredCopy.reason === "CHOOSE_COPY" ? "CHOOSE_COPY" : "OFFER_GONE");
 
       const offer = await tx.listingOffer.create({
-        data: { listingId: listing.id, bidderId: input.bidderId, cardId: input.cardId, fromWants: want !== null, createdAt: now },
+        data: {
+          listingId: listing.id,
+          bidderId: input.bidderId,
+          cardId: input.cardId,
+          userCardId: pinOf(offeredCopy),
+          fromWants: want !== null,
+          createdAt: now,
+        },
         select: { id: true },
       });
       await notify(tx, {
@@ -291,17 +314,18 @@ export async function acceptOfferWith(
       const allowed = new Set(input.allowedRarities);
       if (rarities.length !== 2 || rarities.some((c) => !allowed.has(c.rarity as Rarity))) throw new ListingError("RARITY");
 
+      // L'exemplaire désigné s'il y en a un, sinon un ordinaire : une pièce spéciale ne part jamais par défaut
       const [ownerCopy, bidderCopy] = await Promise.all([
-        freeCopy(tx, listing.ownerId, listing.cardId),
-        freeCopy(tx, offer.bidderId, offer.cardId),
+        chooseCopy(tx, listing.ownerId, listing.cardId, listing.userCardId),
+        chooseCopy(tx, offer.bidderId, offer.cardId, offer.userCardId),
       ]);
-      if (!ownerCopy) {
+      if (!ownerCopy.ok) {
         await tx.tradeListing.update({ where: { id: listing.id }, data: { status: "FAILED", resolvedAt: now } });
         await touchDiscordListing(tx, listing.id, now);
         await closePendingOffers(tx, listing, now);
         return { ok: false, code: "CARD_GONE" };
       }
-      if (!bidderCopy) {
+      if (!bidderCopy.ok) {
         await tx.listingOffer.update({ where: { id: offer.id }, data: { status: "FAILED", resolvedAt: now } });
         await tx.notification.updateMany({ where: { type: "LISTING_OFFER", refId: offer.id, readAt: null }, data: { readAt: now } });
         await notify(tx, { userId: offer.bidderId, type: "LISTING_DECLINED", actorId: listing.ownerId, refId: offer.id, payload, now });
@@ -316,24 +340,19 @@ export async function acceptOfferWith(
 
       // Transferts conditionnels : sous verrou ils réussissent, sinon tout est annulé
       const [toBidder, toOwner] = await Promise.all([
-        tx.userCard.updateMany({
-          where: { id: ownerCopy.id, ownerId: listing.ownerId, status: "COLLECTION" },
-          data: { ownerId: offer.bidderId, obtainedAt: now },
-        }),
-        tx.userCard.updateMany({
-          where: { id: bidderCopy.id, ownerId: offer.bidderId, status: "COLLECTION" },
-          data: { ownerId: listing.ownerId, obtainedAt: now },
-        }),
+        moveCopy(tx, { userCardId: ownerCopy.id, fromId: listing.ownerId, fromStatus: "COLLECTION", toId: offer.bidderId, via: "LISTING", now }),
+        moveCopy(tx, { userCardId: bidderCopy.id, fromId: offer.bidderId, fromStatus: "COLLECTION", toId: listing.ownerId, via: "LISTING", now }),
       ]);
-      if (toBidder.count !== 1 || toOwner.count !== 1) throw new ListingError("CARD_GONE");
+      if (!toBidder || !toOwner) throw new ListingError("CARD_GONE");
       await tx.showcaseItem.deleteMany({ where: { userCardId: { in: [ownerCopy.id, bidderCopy.id] } } });
-      await tx.discovery.createMany({
-        data: [
-          { userId: offer.bidderId, cardId: listing.cardId, createdAt: now },
-          { userId: listing.ownerId, cardId: offer.cardId, createdAt: now },
+      await recordDiscoveries(
+        tx,
+        [
+          { userId: offer.bidderId, cardId: listing.cardId },
+          { userId: listing.ownerId, cardId: offer.cardId },
         ],
-        skipDuplicates: true,
-      });
+        now,
+      );
       const [, ownerWished] = await Promise.all([
         consumeWishlist(tx, offer.bidderId, [listing.cardId]),
         consumeWishlist(tx, listing.ownerId, [offer.cardId]),

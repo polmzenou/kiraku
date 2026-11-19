@@ -106,7 +106,7 @@ export function ReviewsCarousel({ reviews }: { reviews: ReviewCard[] }) {
         {current.map((r, i) => (
           <li key={r.id} className={`${VISIBILITY[i]} min-h-36 flex-col gap-3 lacquer rounded-card p-4`}>
             <div className="flex items-start gap-3">
-              <PlayerAvatar username={r.username} image={r.image} size={40} frame={r.decor.frame} />
+              <PlayerAvatar username={r.username} image={r.image} size={40} frame={r.decor.frame} prestige={r.decor.prestige} />
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <PlayerName name={r.name} color={r.decor.nameColor} className="truncate font-bold" />
                 <Stars rating={r.rating} label={t("ratingLabel", { rating: r.rating })} size={14} />

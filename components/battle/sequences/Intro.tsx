@@ -22,7 +22,7 @@ function Fighter({ player, tier, place }: { player: PlayerView | null; tier: Boa
   const human = player && "username" in player ? player : null;
   return (
     <div className="intro-player" data-place={place}>
-      {human ? <PlayerAvatar username={human.username} image={human.image} size={64} frame={human.decor.frame} /> : <BotMask bot={player && "bot" in player ? player.bot : null} size={64} />}
+      {human ? <PlayerAvatar username={human.username} image={human.image} size={64} frame={human.decor.frame} prestige={human.decor.prestige} /> : <BotMask bot={player && "bot" in player ? player.bot : null} size={64} />}
       <span className="intro-player-id">
         <PlayerName name={name(player)} color={human?.decor.nameColor} className="intro-player-name" />
         {tier && <RankEmblem tier={tier} size={34} />}

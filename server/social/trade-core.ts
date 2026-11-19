@@ -4,13 +4,16 @@
 // la proposition puis les deux joueurs sont verrouillés (même ordre que l'hôtel des ventes : la
 // ligne d'objet, puis les joueurs triés par id), l'amitié si elle est exigée, les blocages et la présence d'un
 // exemplaire libre de chaque côté sont relus, puis les deux exemplaires changent de propriétaire par
-// des updateMany conditionnels. Si une carte n'est plus là, la proposition passe en FAILED.
+// des écritures conditionnelles (moveCopy). Si une carte n'est plus là, la proposition passe en FAILED.
+// Une carte offerte ou demandée est honorée par un exemplaire ordinaire, sauf si celui qui la donne a
+// désigné une pièce spéciale (héritière ou gravée).
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { profileAccess, type ProfileVisibility } from "@/lib/collection/visibility";
 import { pairKey } from "@/lib/social/relation";
 import { checkProposal, isTradeOpen, tradeExpiresAt, uniqueOffered, type TradeRefusal, type TradeRules } from "@/lib/social/trades";
-import { freeCopy } from "./free-copy";
+import { chooseCopy, moveCopy, pinOf } from "../collection/transfer";
+import { recordDiscoveries } from "../collection/discovery";
 import { blocksBetween, lockPlayers, type Tx } from "./lock";
 import { notify, notifyingTransaction, type OnNotified } from "./notify";
 import { consumeWishlist } from "../collection/wishlist-core";
@@ -23,7 +26,8 @@ export type TradeErrorCode =
   | "NOT_FOUND"
   | "CLOSED"
   | "NOT_OFFERED"
-  | "CARD_GONE";
+  | "CARD_GONE"
+  | "CHOOSE_COPY";
 
 export class TradeError extends Error {
   constructor(readonly code: TradeErrorCode) {
@@ -47,6 +51,8 @@ export type ProposeInput = {
   recipientId: string;
   wantedCardId: string;
   offeredCardIds: readonly string[];
+  /** Exemplaires désignés par le proposant, par carte offerte : obligatoire pour offrir une pièce spéciale. */
+  offeredCopyIds?: ReadonlyMap<string, string>;
   /** Mot du proposant, déjà nettoyé (texte brut). */
   note?: string | null;
   rules: TradeRules;
@@ -68,15 +74,13 @@ export async function proposeTradeWith(db: PrismaClient, input: ProposeInput, on
       if (!proposer || proposer.bannedAt) throw new TradeError("NO_USER");
       if (!recipient || recipient.isGuest || recipient.bannedAt) throw new TradeError("NOT_FRIENDS");
 
-      const [relation, privacy, cards, wantedCopies, offeredOwned, pendingSent, sentLastDay, duplicate] = await Promise.all([
+      // Ce que chaque carte offerte promet : l'exemplaire désigné, sinon un ordinaire
+      const offeredCopies = await Promise.all(offeredIds.map((id) => chooseCopy(tx, input.proposerId, id, input.offeredCopyIds?.get(id))));
+      const [relation, privacy, cards, wantedCopies, pendingSent, sentLastDay, duplicate] = await Promise.all([
         friendsAndBlocks(tx, input.proposerId, input.recipientId),
         tx.user.findUnique({ where: { id: input.recipientId }, select: { profileVisibility: true, showCollection: true } }),
         tx.card.findMany({ where: { id: { in: [input.wantedCardId, ...offeredIds] } }, select: { id: true, rarity: true } }),
         tx.userCard.count({ where: { ownerId: input.recipientId, cardId: input.wantedCardId, status: "COLLECTION" } }),
-        tx.userCard.groupBy({
-          by: ["cardId"],
-          where: { ownerId: input.proposerId, cardId: { in: offeredIds }, status: "COLLECTION" },
-        }),
         tx.trade.count({ where: { proposerId: input.proposerId, status: "PENDING", expiresAt: { gt: now } } }),
         tx.trade.count({ where: { proposerId: input.proposerId, createdAt: { gt: new Date(now.getTime() - DAY_MS) } } }),
         tx.trade.count({
@@ -115,7 +119,8 @@ export async function proposeTradeWith(db: PrismaClient, input: ProposeInput, on
       });
       if (refusal) throw new TradeError(refusal);
       if (wantedCopies === 0) throw new TradeError("WANTED_GONE");
-      if (offeredOwned.length !== offeredIds.length) throw new TradeError("OFFER_GONE");
+      if (offeredCopies.some((c) => !c.ok && c.reason === "CHOOSE_COPY")) throw new TradeError("CHOOSE_COPY");
+      if (offeredCopies.some((c) => !c.ok)) throw new TradeError("OFFER_GONE");
 
       const trade = await tx.trade.create({
         data: {
@@ -125,7 +130,7 @@ export async function proposeTradeWith(db: PrismaClient, input: ProposeInput, on
           expiresAt: tradeExpiresAt(now, input.rules.expiryHours),
           createdAt: now,
           note: input.note ?? null,
-          offers: { create: offeredIds.map((cardId) => ({ cardId })) },
+          offers: { create: offeredIds.map((cardId, i) => ({ cardId, userCardId: pinOf(offeredCopies[i]) })) },
         },
         select: { id: true },
       });
@@ -171,7 +176,16 @@ export type AcceptOutcome =
  */
 export async function acceptTradeWith(
   db: PrismaClient,
-  input: { userId: string; tradeId: string; chosenCardId: string; allowedRarities: readonly Rarity[]; nonFriendsAllowed: boolean; now?: Date },
+  input: {
+    userId: string;
+    tradeId: string;
+    chosenCardId: string;
+    /** Exemplaire de la carte demandée que le destinataire choisit de donner (pièce spéciale). */
+    userCardId?: string | null;
+    allowedRarities: readonly Rarity[];
+    nonFriendsAllowed: boolean;
+    now?: Date;
+  },
   onNotified?: OnNotified,
 ): Promise<AcceptOutcome> {
   const now = input.now ?? new Date();
@@ -187,7 +201,7 @@ export async function acceptTradeWith(
       }
       const offered = await tx.tradeOffer.findUnique({
         where: { tradeId_cardId: { tradeId: trade.id, cardId: input.chosenCardId } },
-        select: { card: { select: { rarity: true } } },
+        select: { userCardId: true, card: { select: { rarity: true } } },
       });
       if (!offered) throw new TradeError("NOT_OFFERED");
 
@@ -206,10 +220,13 @@ export async function acceptTradeWith(
       }
 
       const [wantedCopy, chosenCopy] = await Promise.all([
-        freeCopy(tx, trade.recipientId, trade.wantedCardId),
-        freeCopy(tx, trade.proposerId, input.chosenCardId),
+        chooseCopy(tx, trade.recipientId, trade.wantedCardId, input.userCardId),
+        chooseCopy(tx, trade.proposerId, input.chosenCardId, offered.userCardId),
       ]);
-      if (!wantedCopy || !chosenCopy) {
+      // Le destinataire n'a plus que des pièces spéciales de la carte demandée : à lui d'en désigner une,
+      // la proposition reste ouverte
+      if (!wantedCopy.ok && wantedCopy.reason === "CHOOSE_COPY") throw new TradeError("CHOOSE_COPY");
+      if (!wantedCopy.ok || !chosenCopy.ok) {
         await tx.trade.update({ where: { id: trade.id }, data: { status: "FAILED", resolvedAt: now } });
         return { ok: false, code: "CARD_GONE" };
       }
@@ -222,24 +239,19 @@ export async function acceptTradeWith(
 
       // Transferts conditionnels : sous verrou ils réussissent, sinon tout est annulé
       const [toProposer, toRecipient] = await Promise.all([
-        tx.userCard.updateMany({
-          where: { id: wantedCopy.id, ownerId: trade.recipientId, status: "COLLECTION" },
-          data: { ownerId: trade.proposerId, obtainedAt: now },
-        }),
-        tx.userCard.updateMany({
-          where: { id: chosenCopy.id, ownerId: trade.proposerId, status: "COLLECTION" },
-          data: { ownerId: trade.recipientId, obtainedAt: now },
-        }),
+        moveCopy(tx, { userCardId: wantedCopy.id, fromId: trade.recipientId, fromStatus: "COLLECTION", toId: trade.proposerId, via: "TRADE", now }),
+        moveCopy(tx, { userCardId: chosenCopy.id, fromId: trade.proposerId, fromStatus: "COLLECTION", toId: trade.recipientId, via: "TRADE", now }),
       ]);
-      if (toProposer.count !== 1 || toRecipient.count !== 1) throw new TradeError("CARD_GONE");
+      if (!toProposer || !toRecipient) throw new TradeError("CARD_GONE");
       await tx.showcaseItem.deleteMany({ where: { userCardId: { in: [wantedCopy.id, chosenCopy.id] } } });
-      await tx.discovery.createMany({
-        data: [
-          { userId: trade.proposerId, cardId: trade.wantedCardId, createdAt: now },
-          { userId: trade.recipientId, cardId: input.chosenCardId, createdAt: now },
+      await recordDiscoveries(
+        tx,
+        [
+          { userId: trade.proposerId, cardId: trade.wantedCardId },
+          { userId: trade.recipientId, cardId: input.chosenCardId },
         ],
-        skipDuplicates: true,
-      });
+        now,
+      );
       const [, recipientWished] = await Promise.all([
         consumeWishlist(tx, trade.proposerId, [trade.wantedCardId]),
         consumeWishlist(tx, trade.recipientId, [input.chosenCardId]),
@@ -247,7 +259,7 @@ export async function acceptTradeWith(
 
       await tx.trade.update({
         where: { id: trade.id },
-        data: { status: "ACCEPTED", chosenCardId: input.chosenCardId, resolvedAt: now, proposerNew: !proposerKnew },
+        data: { status: "ACCEPTED", chosenCardId: input.chosenCardId, userCardId: wantedCopy.id, resolvedAt: now, proposerNew: !proposerKnew },
       });
       await notify(tx, {
         userId: trade.proposerId,

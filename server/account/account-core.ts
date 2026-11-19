@@ -175,6 +175,8 @@ export async function anonymizeUserWith(
     await tx.trade.updateMany({ where: { recipientId: userId, declineNote: { not: null } }, data: { declineNote: null } });
     await tx.listingOffer.updateMany({ where: { listing: { ownerId: userId }, declineNote: { not: null } }, data: { declineNote: null } });
     await tx.battleQueue.deleteMany({ where: { userId } });
+    // Provenance des exemplaires spéciaux : le joueur y devient « compte supprimé », chez lui comme chez les autres
+    await tx.userCardOwner.updateMany({ where: { ownerId: userId }, data: { ownerId: null } });
 
     await tx.dataRequest.updateMany({
       where: { userId, kind: "DELETION", status: "PENDING" },

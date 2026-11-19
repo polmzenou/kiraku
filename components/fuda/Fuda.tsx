@@ -7,9 +7,11 @@ import { FudaTilt } from "./FudaTilt";
 import { SpectralArt } from "./SpectralArt";
 import type { CSSProperties, ReactNode } from "react";
 import { resolveAppearance } from "@/lib/catalog/appearance";
+import { isEngraved } from "@/lib/collection/copies";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import "./FudaEffects.css";
 import "./FudaFace.css";
+import "./FudaCopy.css";
 import "./FudaSpectral.css";
 
 export type FudaCard = {
@@ -28,7 +30,75 @@ export type FudaCard = {
    * (`data-spoiler="hide"` sur <html>, FudaFace.css). Le nom et les stats restent lisibles.
    */
   spoiler: boolean;
+  /**
+   * Exemplaire précis montré (prestige) : héritage (fleur de prunier) et édition gravée (cartouche vermillon
+   * « 初摺 17 / 25 »). Absent ou ordinaire : la fuda est inchangée, toutes les sources actuelles continuent de marcher.
+   */
+  copy?: FudaCopy | null;
 };
+
+/**
+ * Héritage (0 à 5) et édition gravée : tirage, numéro, taille figée du tirage et sceau du tirage (« 初摺 »). Sans
+ * tirage, l'exemplaire n'est pas gravé. Construit par fudaCopyOf (lib/prestige/printing.ts).
+ */
+export type FudaCopy = { heritage: number; printing?: number | null; serial?: number | null; size?: number | null; seal?: string | null };
+
+/** Centres des cinq pétales de la fleur de prunier (repère 100 × 100), du pétale du haut dans le sens horaire. */
+const PETALS = Array.from({ length: 5 }, (_, k) => {
+  const angle = ((-90 + 72 * k) * Math.PI) / 180;
+  return { x: Math.round((50 + Math.cos(angle) * 25) * 10) / 10, y: Math.round((50 + Math.sin(angle) * 25) * 10) / 10 };
+});
+
+function Petal({ x, y, gilded }: { x: number; y: number; gilded: boolean }) {
+  return (
+    <>
+      <circle cx={x} cy={y} r={17.5} className={gilded ? "on" : "off"} />
+      {gilded && <circle cx={x - 4.5} cy={y - 5} r={6.5} className="glint" />}
+    </>
+  );
+}
+
+/**
+ * Héritière : blason en fleur de prunier au coin haut-droit, un pétale doré par prestige traversé (cinq au plus).
+ * Lisible à toutes les tailles, et l'illustration reste intacte. Statique, comme toutes les marques d'exemplaire.
+ */
+export function HeritageMon({ level }: { level: number }) {
+  const gilded = Math.min(Math.max(level, 0), PETALS.length);
+  if (gilded === 0) return null;
+  return (
+    <svg aria-hidden="true" className="fuda-mon" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="48" className="disc" />
+      {PETALS.map((p, k) => (
+        <Petal key={k} x={p.x} y={p.y} gilded={k < gilded} />
+      ))}
+      <circle cx="50" cy="50" r="7" className="heart" />
+    </svg>
+  );
+}
+
+/**
+ * Le pétale que le rite de renaissance dore sur une héritière (le `index`-ième en partant du haut), posé exactement
+ * sur le blason : à passer en `overlay` de la fuda.
+ */
+export function HeritagePetal({ index, className = "" }: { index: number; className?: string }) {
+  const p = PETALS[Math.min(Math.max(index, 0), PETALS.length - 1)];
+  return (
+    <svg aria-hidden="true" className={`fuda-mon ${className}`} viewBox="0 0 100 100">
+      <Petal x={p.x} y={p.y} gilded />
+    </svg>
+  );
+}
+
+/** Cartouche d'édition vermillon « 初摺 17 / 25 », accroché au bord du shikishi en miroir du numéro ; le n° 1 est à la feuille d'or. */
+export function EditionCartouche({ copy }: { copy: FudaCopy }) {
+  if (!isEngraved(copy)) return null;
+  return (
+    <span aria-hidden="true" className={`kn-ed${copy.serial === 1 ? " kn-ed-first" : ""}`}>
+      {copy.seal && <i lang="ja" className="font-seal">{copy.seal}</i>}
+      <span>{copy.size != null ? `${copy.serial} / ${copy.size}` : copy.serial}</span>
+    </span>
+  );
+}
 
 type FudaSize = "sm" | "md" | "lg";
 
@@ -166,6 +236,9 @@ export function Fuda({
   // Anciennes données (copie d'un combat d'avant le mode spoiler) : champ absent = pas spoil
   const spoiler = !locked && card.spoiler === true;
   const spoilerAttr = spoiler ? { "data-spoiler": "" } : undefined;
+  // Exemplaire précis (prestige) : héritière et gravée ; rien pour une silhouette ni un exemplaire ordinaire
+  const copy = !locked ? card.copy ?? null : null;
+  const engraved = isEngraved(copy);
 
   const content = (
     <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} data-spectral={spectral || undefined} style={customStyle}>
@@ -241,6 +314,7 @@ export function Fuda({
           ) : (
             <span className="kn-no">{t("number", { number: cardNumber(card.rank) })}</span>
           )}
+          {engraved && <EditionCartouche copy={copy} />}
           <p className="kn-name font-title">{locked ? t("unknown") : card.name}</p>
           <p className="kn-l2">
             {subtitle && <span className="kn-sub">{subtitle}</span>}
@@ -273,6 +347,21 @@ export function Fuda({
         <span aria-hidden="true" className="fuda-sheen" />
       )}
       {!locked && !monochrome && visual.effects?.map((effect) => <span key={effect} aria-hidden="true" className={`fuda-effect fuda-effect-${effect}`} />)}
+      {copy && copy.heritage > 0 && (
+        <>
+          <HeritageMon level={copy.heritage} />
+          <span className="sr-only">{t("heritage", { level: copy.heritage })}</span>
+        </>
+      )}
+      {engraved && (
+        <span className="sr-only">
+          {copy.size != null
+            ? t("printing", { seal: copy.seal ?? "", serial: copy.serial, size: copy.size })
+            : t("printingShort", { seal: copy.seal ?? "", serial: copy.serial })}
+        </span>
+      )}
+      {/* Gravée en tout petit format (sans shikishi) : un coin vermillon */}
+      {engraved && <span aria-hidden="true" className="fuda-ed-pin" />}
       {overlay && <div className="pointer-events-none absolute inset-0 z-30">{overlay}</div>}
     </div>
   );

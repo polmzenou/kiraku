@@ -8,11 +8,12 @@ const db = vi.hoisted(() => ({
   userCard: { count: vi.fn() },
 }));
 const publish = vi.hoisted(() => vi.fn());
+const drop = vi.hoisted(() => vi.fn());
 vi.mock("server-only", () => ({}));
 vi.mock("../db", () => ({ prisma: { discordPost: db.post, auction: db.auction, tradeListing: db.listing, userCard: db.userCard } }));
 vi.mock("../env", () => ({ appUrl: () => "https://kiraku.example", discordMarketConfigured: true, env: { DISCORD_MARKET_CHANNEL_ID: "1565793902324219925" } }));
 vi.mock("../settings", () => ({ getSetting: async () => state.enabled }));
-vi.mock("./posts", () => ({ publishDiscordPost: publish }));
+vi.mock("./posts", () => ({ publishDiscordPost: publish, dropDiscordPost: drop }));
 import { syncDiscordAuction, syncDiscordListing, syncDiscordMarket } from "./market";
 
 const record = () => ({ key: "auction:a1", auctionId: "a1", messageId: null, attempts: 0, nextAttemptAt: new Date(Date.now() - 1000) });
@@ -105,7 +106,7 @@ describe("relais des ventes Discord", () => {
     db.auction.findUnique.mockResolvedValue({ ...auction(), status: "SOLD" });
     expect(await syncDiscordAuction("a1")).toBe(false);
     expect(publish).not.toHaveBeenCalled();
-    expect(db.post.updateMany.mock.calls[0][0].data.nextAttemptAt).toBeNull();
+    expect(drop).toHaveBeenCalledWith("auction:a1");
   });
   it("récupère un envoi incertain même si la vente est maintenant terminée", async () => {
     db.post.findUnique.mockResolvedValue({ ...record(), attempts: 1 });

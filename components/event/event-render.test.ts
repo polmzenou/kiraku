@@ -22,7 +22,7 @@ const card = (id: string, spoiler = false): ShowcaseCard => ({
   cardId: id, anilistId: 1, position: 1, name: `Carte ${id}`, nameNative: null, imageUrl: `https://s4.anilist.co/${id}.png`,
   rank: 1, rarity: "MYTHIC", power: 90, ki: 70, appearance: {}, series: "Série", spoiler,
 });
-const player = { id: "u-akane", username: "Akane", image: null, decor: { frame: null, nameColor: null } };
+const player = { id: "u-akane", username: "Akane", image: null, decor: { frame: null, nameColor: null, prestige: 0 } };
 const entry: ShowcaseEntryView = {
   id: "e1", player, name: "Nuées d'or", layout: "GRID_3X2", theme: "gold",
   cards: [card("a"), null, card("spoil", true), null, null, null],

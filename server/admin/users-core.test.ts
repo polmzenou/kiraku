@@ -32,6 +32,8 @@ function setup({ role = "ADMIN", banned = false, exists = true, player = {} as P
     card: { findUnique: vi.fn().mockResolvedValue({ id: "card" }), count: vi.fn().mockResolvedValue(100) },
     userCard: { count: vi.fn().mockResolvedValue(3), createMany: vi.fn(), findMany: vi.fn().mockResolvedValue([]), deleteMany: vi.fn() },
     discovery: { createMany: vi.fn(), count: vi.fn().mockResolvedValue(3) },
+    // Retrouvailles du prestige (server/collection/discovery.ts)
+    $executeRaw: vi.fn().mockResolvedValue(0),
     wishlistEntry: { findMany: vi.fn().mockResolvedValue([]), deleteMany: vi.fn() },
     teamGift: { create: vi.fn().mockResolvedValue({ id: "gift" }) },
     notification: { create: vi.fn().mockResolvedValue({ id: "notif" }) },

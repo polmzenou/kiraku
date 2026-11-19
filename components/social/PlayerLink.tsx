@@ -12,7 +12,7 @@ export function PlayerLink({ player, size = 28 }: { player: ShownPlayer; size?: 
   const className = "inline-flex min-h-11 max-w-full min-w-0 items-center gap-1.5 align-middle";
   const content = (
     <>
-      <PlayerAvatar username={player.name} image={player.image} size={size} frame={player.frame} />
+      <PlayerAvatar username={player.name} image={player.image} size={size} frame={player.frame} prestige={player.prestige} />
       <PlayerName name={player.name} color={player.color} className="min-w-0 truncate font-bold" />
       {player.locked && <PrivateNameLock />}
     </>

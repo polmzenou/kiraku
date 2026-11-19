@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { CLIENT_NAMESPACES, pickClientMessages } from "./client-messages";
+import { CLIENT_NAMESPACES, CLIENT_SUBSETS, pickClientMessages } from "./client-messages";
 
 function files(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -16,8 +16,12 @@ describe("messages transmis aux composants client", () => {
       const source = readFileSync(file, "utf8");
       if (!source.includes('"use client"') && !file.startsWith("lib")) continue;
       for (const match of source.matchAll(/useTranslations\(["']([^"']+)["']\)/g)) {
-        const namespace = match[1].split(".")[0];
-        if (namespace !== "admin") expect(CLIENT_NAMESPACES, `${file} : ${namespace}`).toContain(namespace);
+        const [namespace, sub] = match[1].split(".");
+        if (namespace === "admin") continue;
+        expect(CLIENT_NAMESPACES, `${file} : ${namespace}`).toContain(namespace);
+        // Namespace transmis en partie : le sous-espace lu doit en faire partie
+        const subset = CLIENT_SUBSETS[namespace as keyof typeof CLIENT_SUBSETS];
+        if (subset) expect(subset, `${file} : ${match[1]}`).toContain(sub);
       }
     }
     // Lit tout le code source : plus de 5 s quand la suite entière tourne en parallèle
@@ -27,6 +31,9 @@ describe("messages transmis aux composants client", () => {
     const messages = JSON.parse(readFileSync(`messages/${locale}.json`, "utf8"));
     const client = pickClientMessages(messages);
     for (const namespace of CLIENT_NAMESPACES) expect(client[namespace], namespace).toBeDefined();
+    for (const [namespace, subs] of Object.entries(CLIENT_SUBSETS)) {
+      for (const sub of subs) expect((client[namespace] as Record<string, unknown>)[sub], `${namespace}.${sub}`).toBeDefined();
+    }
     expect(client.admin).toBeUndefined();
   });
 });

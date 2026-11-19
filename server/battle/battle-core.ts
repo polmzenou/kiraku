@@ -27,7 +27,9 @@ import {
 } from "@/lib/battle/types";
 import { type Rarity } from "@/lib/catalog/rarity";
 import { mixSeed, seededRng, type Rng } from "@/lib/rng";
-import { pickGiftCopy } from "@/lib/social/gifts";
+import { COPY_MARKS } from "@/lib/collection/copies";
+import { fudaCopyOf } from "@/lib/prestige/printing";
+import { pickLoanCopy } from "@/lib/social/gifts";
 import { pairKey } from "@/lib/social/relation";
 import type { RankedRules } from "@/lib/ranked/rules";
 import { credit } from "../economy/ledger";
@@ -173,20 +175,21 @@ export function checkTeam(cardIds: readonly string[]) {
 
 /**
  * Engage un exemplaire de chacune des 3 cartes (le plus récent hors vitrine de préférence ; la vitrine
- * n'est pas touchée, le blocage n'est que temporaire). Renvoie les ids de UserCard dans l'ordre choisi.
+ * n'est pas touchée, le blocage n'est que temporaire). Un exemplaire ordinaire d'abord : une pièce spéciale
+ * (héritière ou gravée) ne part que s'il n'y a qu'elle, et revient intacte. Renvoie les ids de UserCard dans l'ordre choisi.
  */
 async function lockTeam(tx: Tx, userId: string, cardIds: readonly string[]): Promise<string[]> {
   checkTeam(cardIds);
   const copies = await tx.userCard.findMany({
     where: { ownerId: userId, cardId: { in: [...cardIds] }, status: "COLLECTION" },
-    select: { id: true, cardId: true, obtainedAt: true },
+    select: { id: true, cardId: true, obtainedAt: true, ...COPY_MARKS },
   });
   const shown = new Set(
     (
       await tx.showcaseItem.findMany({ where: { userCardId: { in: copies.map((c) => c.id) } }, select: { userCardId: true } })
     ).map((s) => s.userCardId),
   );
-  const chosen = cardIds.map((cardId) => pickGiftCopy(copies.filter((c) => c.cardId === cardId), shown)?.id ?? null);
+  const chosen = cardIds.map((cardId) => pickLoanCopy(copies.filter((c) => c.cardId === cardId), shown)?.id ?? null);
   if (chosen.some((id) => id === null)) throw new BattleError("NOT_OWNED");
   const ids = chosen as string[];
   const reserved = await tx.userCard.updateMany({
@@ -232,9 +235,9 @@ function fighterCard({ series, publicId, ...card }: Prisma.CardGetPayload<{ sele
 export async function fightersOf(tx: Tx, userCardIds: readonly string[], rules: BattleRules): Promise<FighterSetup[]> {
   const rows = await tx.userCard.findMany({
     where: { id: { in: [...userCardIds] } },
-    select: { id: true, ownerId: true, card: { select: cardSelect } },
+    select: { id: true, ownerId: true, heritage: true, printing: true, serial: true, edition: { select: { size: true } }, card: { select: cardSelect } },
   });
-  const byId = new Map(rows.map((r) => [r.id, { ownerId: r.ownerId, card: fighterCard(r.card) }]));
+  const byId = new Map(rows.map((r) => [r.id, { ownerId: r.ownerId, card: fighterCard(r.card), copy: fudaCopyOf({ ...r, size: r.edition?.size ?? null }, {}) }]));
   const kits = new Map<string, Map<string, Kit>>();
   for (const ownerId of new Set(rows.map((r) => r.ownerId))) {
     const cards = rows.filter((r) => r.ownerId === ownerId).map((r) => byId.get(r.id)!.card);
@@ -243,7 +246,9 @@ export async function fightersOf(tx: Tx, userCardIds: readonly string[], rules: 
   return userCardIds.map((id) => {
     const row = byId.get(id);
     if (!row) throw new BattleError("NOT_OWNED");
-    return fighterFrom(row.card, rules, kits.get(row.ownerId)?.get(row.card.id));
+    const fighter = fighterFrom(row.card, rules, kits.get(row.ownerId)?.get(row.card.id));
+    // Héritière ou gravée engagée : son habillage la suit sur le plateau et dans les replays
+    return row.copy ? { ...fighter, copy: row.copy } : fighter;
   });
 }
 

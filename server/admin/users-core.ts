@@ -5,6 +5,7 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { adjustedValue, MAX_ADMIN_VALUE, type AdminUserError, type AdminUserMutation } from "@/lib/admin/users";
 import { computeStock, stockRulesFor, type StockSettings } from "@/lib/boosters/stock";
+import { ORDINARY_COPY } from "@/lib/collection/copies";
 import { MAX_MOVEMENT } from "@/lib/economy/amount";
 import { parseSetting } from "@/lib/settings/defaults";
 import { applyEntries, type LedgerEntry } from "../economy/ledger";
@@ -15,6 +16,7 @@ import { lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { writeAdminLog } from "./log";
 import { consumeWishlist } from "../collection/wishlist-core";
+import { recordDiscoveries } from "../collection/discovery";
 import { withdrawCasinoFor } from "../casino/coinflip-core";
 
 export class AdminUserMutationError extends Error {
@@ -213,13 +215,14 @@ async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUs
         before = { cardId: input.cardId, copies };
         if (input.mode === "ADD") {
           await tx.userCard.createMany({ data: Array.from({ length: input.amount }, () => ({ ownerId: userId, cardId: input.cardId, obtainedAt: now })) });
-          await tx.discovery.createMany({ data: [{ userId, cardId: input.cardId, createdAt: now }], skipDuplicates: true });
+          await recordDiscoveries(tx, [{ userId, cardId: input.cardId }], now);
           await consumeWishlist(tx, userId, [input.cardId]);
           await giftFromTeam(tx, { kind: "CARD", userId, adminId, cardId: input.cardId, quantity: input.amount, message: input.message, now });
         } else {
-          // On conserve les exemplaires en vitrine, en combat (BATTLE), misés au casino (CASINO), en vente ou liés à l'historique d'une vente.
+          // On conserve les exemplaires en vitrine, en combat (BATTLE), misés au casino (CASINO), en vente ou liés à l'historique d'une vente,
+          // et toujours les pièces spéciales (héritières ou gravées) : un retrait en nombre ne les emporte jamais.
           const free = await tx.userCard.findMany({ where: {
-            ownerId: userId, cardId: input.cardId, status: "COLLECTION", showcaseItems: { none: {} }, auctions: { none: {} },
+            ownerId: userId, cardId: input.cardId, status: "COLLECTION", ...ORDINARY_COPY, showcaseItems: { none: {} }, auctions: { none: {} },
           }, orderBy: [{ obtainedAt: "desc" }, { id: "desc" }], take: input.amount, select: { id: true } });
           if (free.length !== input.amount) throw new AdminUserMutationError("CARDS_LOCKED");
           await tx.userCard.deleteMany({ where: { id: { in: free.map((c) => c.id) }, ownerId: userId } });

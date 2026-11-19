@@ -21,6 +21,7 @@ export const COIN_REASONS = [
   "SEASON",
   "ABILITY",
   "EXPEDITION",
+  "REBIRTH",
   "ORDER_HOLD",
   "ORDER_REFUND",
 ] as const;
@@ -65,6 +66,8 @@ export function ledgerHref(reason: CoinReason, refId: string | null): string | n
       return "/combat";
     case "EXPEDITION":
       return "/expedition";
+    case "REBIRTH":
+      return "/prestige";
     case "ORDER_HOLD":
     case "ORDER_REFUND":
       return "/marche?onglet=avis";

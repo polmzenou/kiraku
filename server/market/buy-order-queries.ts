@@ -2,6 +2,7 @@ import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import type { BuyOrderRules } from "@/lib/market/buy-orders";
 import type { CardView } from "@/lib/boosters/view";
+import { ORDINARY_COPY } from "@/lib/collection/copies";
 import { cardViews } from "../boosters/display";
 import { namedPlayerSelect, publicNamesFor } from "../collection/public-names";
 import { prisma } from "../db";
@@ -84,7 +85,8 @@ export async function cardOrders(cardId: string, viewerId: string | null, now = 
     prisma.buyOrder.findMany({ where: viewerId ? { ...where, buyerId: { not: viewerId } } : where, orderBy: bestFirst, take: limit, select: orderSelect }),
     prisma.buyOrder.count({ where }),
     viewerId ? prisma.buyOrder.findMany({ where: { cardId, buyerId: viewerId, status: "OPEN", expiresAt: { gt: now } }, orderBy: bestFirst, select: orderSelect }) : [],
-    viewerId ? prisma.userCard.count({ where: { ownerId: viewerId, cardId, status: "COLLECTION" } }) : 0,
+    // Exemplaires qu'un avis peut prendre : les ordinaires (une pièce spéciale ne part jamais par un avis)
+    viewerId ? prisma.userCard.count({ where: { ownerId: viewerId, cardId, status: "COLLECTION", ...ORDINARY_COPY } }) : 0,
   ]);
   const [bestViews, mineViews] = await Promise.all([toViews(best, viewerId), toViews(mine, viewerId)]);
   return { best: bestViews, total, mine: mineViews, freeCopies };
@@ -111,7 +113,8 @@ export async function ordersYouCanFill(userId: string, locale: string, now = new
     JOIN "User" b ON b.id = o."buyerId"
     WHERE o.status = 'OPEN' AND o."expiresAt" > ${now} AND o."buyerId" <> ${userId}
       AND b."bannedAt" IS NULL AND b."deletionRequestedAt" IS NULL AND b."anonymizedAt" IS NULL
-      AND EXISTS (SELECT 1 FROM "UserCard" uc WHERE uc."ownerId" = ${userId} AND uc."cardId" = o."cardId" AND uc.status = 'COLLECTION')
+      AND EXISTS (SELECT 1 FROM "UserCard" uc WHERE uc."ownerId" = ${userId} AND uc."cardId" = o."cardId" AND uc.status = 'COLLECTION'
+                  AND uc.heritage = 0 AND uc.printing IS NULL)
     ORDER BY o."cardId", o.price DESC, o."createdAt" ASC, o.id ASC`;
   if (rows.length === 0) return [];
   const orders = await prisma.buyOrder.findMany({ where: { id: { in: rows.map((r) => r.id) } }, orderBy: bestFirst, take: limit, select: orderSelect });

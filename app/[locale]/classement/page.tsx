@@ -12,6 +12,7 @@ import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { localeAlternates } from "@/lib/seo/alternates";
 import { getTopCollectors, LEADERBOARD_SIZE } from "@/server/collection/leaderboard";
+import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
 import { ensureSeason, getRankedLeaderboard, getRankedRules, type RankedEntry } from "@/server/ranked/queries";
 
@@ -33,7 +34,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/classeme
 export default async function LeaderboardPage({ searchParams }: PageProps<"/[locale]/classement">) {
   const { vue } = await searchParams;
   const ranked = vue === "classe";
-  const [t, tRanked, user] = await Promise.all([getTranslations("leaderboard"), getTranslations("ranked"), getCurrentUser()]);
+  const [t, tRanked, user, prestigeOpen] = await Promise.all([getTranslations("leaderboard"), getTranslations("ranked"), getCurrentUser(), getSetting("prestige.enabled")]);
   const collectors = ranked ? [] : await getTopCollectors(LEADERBOARD_SIZE, { raw: user?.role === "DEV" });
 
   const tabs = (
@@ -69,7 +70,8 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/[loc
 
   return (
     <PageShell>
-      <SectionTitle level={1} kanji="番付" title={t("title")} subtitle={t("intro", { count: LEADERBOARD_SIZE })} />
+      {/* Prestige ouvert : le classement le dit, chaque renaissance passe devant toutes les collections */}
+      <SectionTitle level={1} kanji="番付" title={t("title")} subtitle={t(prestigeOpen ? "introPrestige" : "intro", { count: LEADERBOARD_SIZE })} />
       {tabs}
       {collectors.length === 0 ? (
         <p className="text-sm text-text-muted">{t("empty")}</p>

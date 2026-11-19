@@ -66,7 +66,7 @@ export function WikiCardOwnersList({
           {players.map((player) => (
             <li key={player.id} className="flex min-w-0 flex-col items-center gap-3 rounded-card border border-border bg-bg p-4 text-center">
               <Link href={`/u/${player.username}`} className="flex min-h-11 w-full min-w-0 flex-col items-center gap-2">
-                <PlayerAvatar username={player.username} image={player.image} size={56} frame={player.decor.frame} />
+                <PlayerAvatar username={player.username} image={player.image} size={56} frame={player.decor.frame} prestige={player.decor.prestige} />
                 <PlayerName name={player.username} color={player.decor.nameColor} className="w-full truncate font-bold" />
               </Link>
               {canAsk && (

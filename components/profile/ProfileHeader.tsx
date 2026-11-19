@@ -24,6 +24,7 @@ export function ProfileHeader({
   createdAt,
   decor,
   presence,
+  band,
   action,
 }: {
   username: string;
@@ -33,7 +34,9 @@ export function ProfileHeader({
   decor?: HeaderDecor;
   /** Absente quand le visiteur ne voit pas le profil (même règle que sa visibilité) ou pour un invité. */
   presence?: Presence;
-  /** Bouton « Personnaliser » sur son propre profil. */
+  /** Bandeau du prestige (転生 III · n-ième renaissance de Kiraku), sous le titre. */
+  band?: React.ReactNode;
+  /** Boutons « Personnaliser » et « Évoluer » sur son propre profil. */
   action?: React.ReactNode;
 }) {
   const t = useTranslations("profile");
@@ -48,7 +51,7 @@ export function ProfileHeader({
     <header className="flex flex-col gap-3">
       <div className="flex items-center gap-4">
         <WithPresence online={presence?.online} size={64} announce={false}>
-          <AvatarFrame frame={decor?.frame ?? null} size={64}>
+          <AvatarFrame frame={decor?.frame ?? null} prestige={decor?.prestige} size={64}>
             {image ? (
               <Image src={image} alt={tAccount("avatarAlt", { name })} width={64} height={64} crossOrigin="anonymous" referrerPolicy="no-referrer" className="rounded-full" />
             ) : (
@@ -61,6 +64,7 @@ export function ProfileHeader({
             <PlayerName name={name} color={decor?.nameColor} className="truncate" />
           </h1>
           {decor?.title && <p className="text-sm font-bold text-kin">{decor.title}</p>}
+          {band}
           <div className="flex flex-wrap items-center gap-2 text-sm text-text-muted">
             {isGuest && <span className="rounded-sm border border-border px-2 text-xs">{tAccount("guestBadge")}</span>}
             {presence?.online && <span className="font-bold text-hisui">{tPresence("online")}</span>}

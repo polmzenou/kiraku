@@ -35,9 +35,17 @@ type Failure = { ok: false; error: TradeActionError };
 
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
 const proposeSchema = z
-  .object({ username: z.string().regex(USERNAME_REGEX), wantedCardId: id, offeredCardIds: z.array(id).min(1).max(10), note: noteSchema })
+  .object({
+    username: z.string().regex(USERNAME_REGEX),
+    wantedCardId: id,
+    offeredCardIds: z.array(id).min(1).max(10),
+    // Exemplaires désignés parmi les cartes offertes : obligatoire pour offrir une pièce spéciale
+    offeredCopies: z.array(z.object({ cardId: id, userCardId: id }).strict()).max(10).optional(),
+    note: noteSchema,
+  })
   .strict();
-const acceptSchema = z.object({ tradeId: id, chosenCardId: id }).strict();
+// userCardId : exemplaire de la carte demandée que le destinataire choisit de donner (pièce spéciale)
+const acceptSchema = z.object({ tradeId: id, chosenCardId: id, userCardId: id.nullish() }).strict();
 const tradeIdSchema = z.object({ tradeId: id }).strict();
 const declineSchema = z.object({ tradeId: id, note: noteSchema }).strict();
 const seenSchema = z.object({ tradeIds: z.array(id).min(1).max(50) }).strict();
@@ -84,7 +92,15 @@ export async function proposeTradeAction(input: unknown): Promise<{ ok: true } |
   try {
     await proposeTradeWith(
       prisma,
-      { proposerId: g.user.id, recipientId: owner.id, wantedCardId: g.data.wantedCardId, offeredCardIds: g.data.offeredCardIds, note: g.data.note, rules: await tradeRules() },
+      {
+        proposerId: g.user.id,
+        recipientId: owner.id,
+        wantedCardId: g.data.wantedCardId,
+        offeredCardIds: g.data.offeredCardIds,
+        offeredCopyIds: new Map((g.data.offeredCopies ?? []).map((c) => [c.cardId, c.userCardId])),
+        note: g.data.note,
+        rules: await tradeRules(),
+      },
       pushLater,
     );
     refresh();
@@ -105,6 +121,7 @@ export async function acceptTradeAction(input: unknown): Promise<{ ok: true; car
         userId: g.user.id,
         tradeId: g.data.tradeId,
         chosenCardId: g.data.chosenCardId,
+        userCardId: g.data.userCardId ?? null,
         allowedRarities: await getSetting("trades.allowedRarities"),
         nonFriendsAllowed: await getSetting("trades.nonFriends"),
       },

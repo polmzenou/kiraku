@@ -20,6 +20,8 @@ function fakeTx(owned: Record<string, number>, items: { kind: string; rarity?: s
       createMany: async ({ data }: { data: { cardId: string }[] }) => void created.push(...data.map((d) => d.cardId)),
     },
     discovery: { findMany: async () => [], createMany: async () => ({ count: 0 }) },
+    // Retrouvailles du prestige (server/collection/discovery.ts)
+    $executeRaw: async () => 0,
     wishlistEntry: { findMany: async () => [], deleteMany: async () => ({ count: 0 }) },
   };
   return { tx: tx as unknown as Prisma.TransactionClient, created, groupBy: tx.userCard.groupBy };

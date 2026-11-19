@@ -39,7 +39,7 @@ export const visibleSince = (retentionHours: number, now = new Date()) => new Da
 /** Amis acceptés, triés par dernier message, avec les non-lus de chacun et leur présence. */
 export async function listConversations(me: string, since: Date, onlineSeconds: number): Promise<Conversation[]> {
   const rows = await prisma.$queryRaw<
-    { username: string; image: string | null; isGuest: boolean; body: string | null; lastAt: Date | null; lastMine: boolean | null; unread: number; frameStyle: string | null; nameColor: string | null; lastSeenAt: Date | null; appearOffline: boolean; role: string }[]
+    { username: string; image: string | null; isGuest: boolean; body: string | null; lastAt: Date | null; lastMine: boolean | null; unread: number; frameStyle: string | null; nameColor: string | null; prestige: number; lastSeenAt: Date | null; appearOffline: boolean; role: string }[]
   >`
     WITH friends AS (
       SELECT CASE WHEN f."requesterId" = ${me} THEN f."addresseeId" ELSE f."requesterId" END AS id, f."pairKey"
@@ -73,7 +73,7 @@ export async function listConversations(me: string, since: Date, onlineSeconds: 
     username: r.username,
     image: r.image,
     isGuest: r.isGuest,
-    decor: decorFromColumns(r.frameStyle, r.nameColor),
+    decor: decorFromColumns(r),
     online: isOnline(r, now, onlineSeconds),
     last: r.body !== null && r.lastAt ? { body: r.body, at: r.lastAt.toISOString(), mine: r.lastMine === true } : null,
     unread: r.unread,

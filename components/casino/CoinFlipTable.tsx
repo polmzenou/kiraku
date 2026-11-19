@@ -18,6 +18,8 @@ import {
 } from "@/server/actions/casino";
 import type { CoinFlipTableView } from "@/server/casino/queries";
 import { CardPickGrid } from "../collection/CardPickGrid";
+import { CopyPicker } from "../collection/CopyPicker";
+import { hasSpecialCopy } from "@/lib/collection/copies";
 import { Fuda } from "../fuda/Fuda";
 import { useHoldAwake } from "../realtime/activity";
 import { useRealtime } from "../realtime/RealtimeProvider";
@@ -250,6 +252,8 @@ function Join({
   const seals = useRaritySeals();
   const mySide = otherSide(table.creatorSide);
   const [card, setCard] = useState<CollectionItem | null>(null);
+  // Exemplaire désigné : une pièce spéciale ne se mise que choisie
+  const [copyId, setCopyId] = useState<string | null>(null);
   const [confirmLast, setConfirmLast] = useState(false);
   const [serverSaysLast, setServerSaysLast] = useState(false);
   const [error, setError] = useState<CasinoActionError | null>(null);
@@ -262,7 +266,7 @@ function Join({
       if (!card || sending.current) return;
       sending.current = true;
       try {
-        const res = await joinCoinFlipAction({ flipId: table.id, cardId: card.cardId, confirmLastCopy: lastCopy && confirmLast });
+        const res = await joinCoinFlipAction({ flipId: table.id, cardId: card.cardId, userCardId: copyId, confirmLastCopy: lastCopy && confirmLast });
         if (res.ok) {
           onThrow({ table: res.table, prize: res.prize, won: res.won });
           return;
@@ -319,6 +323,7 @@ function Join({
             selected={new Set(card ? [card.cardId] : [])}
             onPick={(item) => {
               setCard((c) => (c?.cardId === item.cardId ? null : item));
+              setCopyId(null);
               setConfirmLast(false);
               setServerSaysLast(false);
               setError(null);
@@ -327,6 +332,7 @@ function Join({
             unavailable={(item) => item.free === 0}
             allowed={rarities}
           />
+          {card && <CopyPicker cardId={card.cardId} special={hasSpecialCopy(card)} value={copyId} onChange={setCopyId} />}
           {/* La mise choisie et « Lancer la pièce » restent sous le pouce, au-dessus de la navigation */}
           <div className="sticky bottom-[calc(var(--mobile-nav-height)+0.5rem)] z-20 -mx-2 flex flex-col gap-3 rounded-card bg-surface/95 p-2 shadow-float ring-1 ring-border ring-inset lg:bottom-4">
             {card && (

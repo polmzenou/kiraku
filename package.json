@@ -23,6 +23,7 @@
     "fonts:subset": "tsx scripts/subset-seal-font.mts",
     "fx:assets": "node scripts/reveal-fx-assets.mjs",
     "vitrines:assets": "node scripts/vitrine-video.mjs",
+    "prestige:assets": "node scripts/prestige-assets.mjs",
     "fonts:og": "tsx scripts/og-fonts.mts",
     "catalog:import": "tsx scripts/import-characters.mts",
     "catalog:import-media": "tsx scripts/import-media.mts",

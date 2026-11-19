@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
+import { Suspense } from "react";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { IncensePanel } from "@/components/boosters/IncensePanel";
 import { PageShell } from "@/components/PageShell";
@@ -9,6 +10,16 @@ import { ShareProfileButton } from "@/components/profile/ShareProfileButton";
 import { CreateShowcaseButton } from "@/components/showcase/CreateShowcaseSheet";
 import { ProfileShowcases } from "@/components/showcase/ProfileShowcases";
 import { ShowcaseBanner } from "@/components/showcase/ShowcaseBanner";
+import { EvolveButton } from "@/components/prestige/EvolveButton";
+import { PrestigeAura } from "@/components/prestige/PrestigeAura";
+import { PrestigeBand } from "@/components/prestige/PrestigeBand";
+import { PrestigeEmakis } from "@/components/prestige/PrestigeEmakis";
+import { PrestigeSanctuary } from "@/components/prestige/PrestigeSanctuary";
+import { eligibilityOf } from "@/lib/prestige/eligibility";
+import { toRoman } from "@/lib/prestige/roman";
+import { getCatalogStats } from "@/server/catalog/queries";
+import { getRarities } from "@/server/catalog/rarities";
+import { getPrestigeSummary } from "@/server/prestige/queries";
 import { ProfileSalesSection, WishlistSection } from "@/components/profile/ProfileCardSections";
 import { profileSocialBar } from "@/components/profile/ProfileSocialBar";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -92,13 +103,16 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
   ]);
   // Son propre profil (compte inscrit) : de quoi le personnaliser
   const customize = access.isOwner && viewer && !viewer.isGuest ? await customizeData(owner.id, locale) : null;
-  const [featuredCards, summary, wishlist, sales, incense, tShowcase] = await Promise.all([
+  const [featuredCards, summary, wishlist, sales, incense, tShowcase, prestigeOn, prestigeSummary] = await Promise.all([
     showcases[0] ? getShowcaseCards(showcases[0].id, owner.id, showcases[0].layout, locale) : [],
     getCollectionSummary(owner.id, values),
     getWishlist(owner.id, locale), getProfileSales(owner.id, locale),
     // Encens : seulement sur son propre profil
     access.isOwner && viewer && !viewer.bannedAt ? getIncenseState(owner.id) : null,
     getTranslations("showcase"),
+    // Prestige : bandeau et record pour un joueur qui a renaît
+    getSetting("prestige.enabled"),
+    decor.prestige > 0 ? getPrestigeSummary(owner.id) : null,
   ]);
   // Wrapped : bouton sur son propre profil, pendant la période
   const wrappedYear = access.isOwner && viewer ? await wrappedTeaser(viewer) : null;
@@ -119,6 +133,15 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
         ...sales.map((c) => c.cardId),
       ]);
 
+  // Sur son propre profil, le bouton « Évoluer » (un halo d'or quand les seuils sont atteints), tant que
+  // l'interrupteur est allumé
+  let evolveReady: boolean | null = null;
+  if (customize && prestigeOn) {
+    const [order, catalog, percent] = await Promise.all([getRarities(), getCatalogStats(), getSetting("prestige.requiredPercent")]);
+    const owned = Object.fromEntries(Object.entries(summary.byRarity).map(([rarity, totals]) => [rarity, totals.inCatalog]));
+    evolveReady = eligibilityOf({ order, published: catalog.byRarity, owned, percent }).eligible;
+  }
+
   const stats = [
     [t("stats.unique"), format.number(summary.unique)],
     [t("stats.mythic"), format.number(summary.byRarity.MYTHIC.unique)],
@@ -130,6 +153,7 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
       {/* Haut du profil : le décor de la vitrine principale l'habille en bannière (dessous, bloc isolé) */}
       <div className="relative isolate flex flex-col gap-6">
         <ShowcaseBanner theme={shelf[0]?.theme ?? "none"} />
+        <PrestigeAura prestige={decor.prestige} />
         <ProfileHeader
           username={owner.username}
           image={owner.image}
@@ -137,8 +161,10 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
           createdAt={owner.createdAt}
           decor={decor}
           presence={presence}
+          band={<PrestigeBand prestige={decor.prestige} globalRank={prestigeSummary?.last.globalRank ?? null} />}
           action={
             customize && (
+              <div className="flex flex-col gap-2">
               <ProfileCustomizeButton
                 username={owner.username}
                 image={owner.image}
@@ -149,6 +175,8 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
                 privacy={{ visibility: owner.profileVisibility, showCollection: owner.showCollection }}
                 appearOffline={viewer && isStaff(viewer.role) ? viewer.appearOffline : null}
               />
+              {evolveReady !== null && <EvolveButton ready={evolveReady} />}
+              </div>
             )
           }
         />
@@ -175,6 +203,17 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
               <dd className="text-lg font-bold tabular-nums">{value}</dd>
             </div>
           ))}
+          {prestigeSummary && (
+            <div className="col-span-3 flex min-w-0 items-center gap-4 lacquer rounded-card border-kin/45 p-3">
+              <span aria-hidden="true" className="min-w-11 text-center font-title text-3xl font-extrabold text-kin">
+                {toRoman(decor.prestige)}
+              </span>
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <dt className="text-sm font-bold">{t("stats.cycle", { prestige: decor.prestige, cycle: decor.prestige + 1 })}</dt>
+                <dd className="text-xs text-text-muted">{t("stats.cycleRecord", { count: prestigeSummary.bestUniqueCards })}</dd>
+              </div>
+            </div>
+          )}
         </dl>
       </div>
 
@@ -190,6 +229,13 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
         linkBase={access.isOwner ? "/collection" : "/wiki"}
         create={access.isOwner ? <CreateShowcaseButton username={owner.username} count={showcases.length} max={maxShowcases} /> : undefined}
       />
+      {/* Prestige : sanctuaire des cartes consacrées, puis rouleaux des cycles (rien avant la première renaissance) */}
+      {decor.prestige > 0 && (
+        <Suspense fallback={null}>
+          <PrestigeSanctuary userId={owner.id} viewerId={viewer?.id ?? null} locale={locale} />
+          <PrestigeEmakis userId={owner.id} locale={locale} />
+        </Suspense>
+      )}
       <WishlistSection cards={wishlist} editable={access.isOwner} owned={owned} />
       <ProfileSalesSection cards={sales} owned={owned} />
     </PageShell>
@@ -200,7 +246,7 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
 async function customizeData(userId: string, locale: string) {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { id: true, bio: true, titleAgreement: true, titleId: true, frameId: true, nameColorId: true, badgeOrder: true, createdAt: true, discordLinkedAt: true, ambassadorSince: true, role: true },
+    select: { id: true, bio: true, titleAgreement: true, titleId: true, frameId: true, nameColorId: true, badgeOrder: true, createdAt: true, discordLinkedAt: true, ambassadorSince: true, role: true, prestige: true },
   });
   const [{ options, stats }, badges] = await Promise.all([getCosmeticProgress(userId, locale), getEarnedBadges(user)]);
   return {

@@ -6,11 +6,22 @@ export const BIO_MAX = 160;
 
 // --- Badges (dérivés, sans table) ---
 
-// DEV vient du rôle d'équipe (DEV ou ADMIN), AMBASSADOR du rôle donné par l'admin ; SPONSOR (Parrain) et RECRUITER (Recruteur) des filleuls qualifiés
-export const BADGES = ["DEV", "PIONEER", "AMBASSADOR", "SPONSOR", "RECRUITER", "VERIFIED"] as const;
+// DEV vient du rôle d'équipe (DEV ou ADMIN), AMBASSADOR du rôle donné par l'admin ; SPONSOR (Parrain) et RECRUITER (Recruteur) des filleuls qualifiés ;
+// REBORN (prestige 1 ou plus), CONSECRATOR (une carte au sanctuaire) et ENGRAVER (une édition gravée possédée) du prestige
+export const BADGES = ["DEV", "PIONEER", "AMBASSADOR", "SPONSOR", "RECRUITER", "VERIFIED", "REBORN", "CONSECRATOR", "ENGRAVER"] as const;
 export type Badge = (typeof BADGES)[number];
 
-export const BADGE_KANJI: Record<Badge, string> = { DEV: "匠", PIONEER: "先", AMBASSADOR: "使", SPONSOR: "縁", RECRUITER: "募", VERIFIED: "認" };
+export const BADGE_KANJI: Record<Badge, string> = {
+  DEV: "匠",
+  PIONEER: "先",
+  AMBASSADOR: "使",
+  SPONSOR: "縁",
+  RECRUITER: "募",
+  VERIFIED: "認",
+  REBORN: "転",
+  CONSECRATOR: "奉",
+  ENGRAVER: "版",
+};
 
 /** Pastille du badge : l'or par défaut, l'indigo ai pour l'équipe, le vert hisui pour le rôle Ambassadeur. */
 export const BADGE_CLASS: Record<Badge, { pill: string; kanji: string }> = {
@@ -20,6 +31,9 @@ export const BADGE_CLASS: Record<Badge, { pill: string; kanji: string }> = {
   SPONSOR: { pill: "border-kin/50 text-kin", kanji: "text-kin" },
   RECRUITER: { pill: "border-kin/50 text-kin", kanji: "text-kin" },
   VERIFIED: { pill: "border-kin/50 text-kin", kanji: "text-kin" },
+  REBORN: { pill: "border-kin/70 text-kin", kanji: "text-kin" },
+  CONSECRATOR: { pill: "border-kin/70 text-kin", kanji: "text-kin" },
+  ENGRAVER: { pill: "border-shu/60 text-shu", kanji: "text-shu" },
 };
 
 export function earnedBadges(input: {
@@ -32,6 +46,13 @@ export function earnedBadges(input: {
   sponsorReferrals: number;
   recruiterReferrals: number;
   discordLinked: boolean;
+  /**
+   * Prestige : niveau atteint, cartes au sanctuaire, éditions gravées possédées (sanctuaire compris, ou le meilleur
+   * d'un cycle passé : une gravée recyclée à une renaissance laisse le badge acquis) ; absents : 0.
+   */
+  prestige?: number;
+  consecrated?: number;
+  engraved?: number;
 }): Badge[] {
   const out: Badge[] = [];
   if (input.staff) out.push("DEV");
@@ -40,6 +61,9 @@ export function earnedBadges(input: {
   if (input.sponsorReferrals > 0 && input.qualifiedReferrals >= input.sponsorReferrals) out.push("SPONSOR");
   if (input.recruiterReferrals > 0 && input.qualifiedReferrals >= input.recruiterReferrals) out.push("RECRUITER");
   if (input.discordLinked) out.push("VERIFIED");
+  if ((input.prestige ?? 0) > 0) out.push("REBORN");
+  if ((input.consecrated ?? 0) > 0) out.push("CONSECRATOR");
+  if ((input.engraved ?? 0) > 0) out.push("ENGRAVER");
   return out;
 }
 

@@ -11,17 +11,22 @@ import { SellForm, useSellBlockReason } from "./SellForm";
 export function SellButton({ cardId, cardName, available, info }: { cardId: string; cardName: string; available: number; info: SellInfo }) {
   const t = useTranslations("market");
   const [open, setOpen] = useState(false);
+  // Le formulaire, et la lecture des exemplaires par CopyPicker, n'existent qu'à partir de la première ouverture
+  const [opened, setOpened] = useState(false);
   const reason = useSellBlockReason(info, available);
 
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)} disabled={reason !== null}>
+      <Button type="button" onClick={() => {
+          setOpen(true);
+          setOpened(true);
+        }} disabled={reason !== null}>
         {t("sell.button")}
       </Button>
       {reason && <p className="text-xs text-text-muted">{reason}</p>}
 
       <Sheet open={open} onClose={() => setOpen(false)} title={t("sell.title", { card: cardName })}>
-        <SellForm cardId={cardId} info={info} />
+        {opened && <SellForm cardId={cardId} info={info} />}
       </Sheet>
     </>
   );

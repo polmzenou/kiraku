@@ -7,6 +7,7 @@ import { MAX_OPEN_COUNT } from "@/lib/boosters/catalog";
 import { slugSchema } from "@/lib/boosters/types";
 import type { DroppedSealedView, OpenedBoosterView } from "@/lib/boosters/view";
 import { isFrozen } from "@/lib/account/deletion";
+import { fudaCopyOf } from "@/lib/prestige/printing";
 import { boosterStateFrom, type BoosterState } from "../boosters/state";
 import { cardViews } from "../boosters/display";
 import { openBoosters, openSealed } from "../boosters/open";
@@ -15,6 +16,7 @@ import { pushLater } from "../market/queries";
 import { qualifyLater } from "../economy/referral";
 import { rateLimit } from "../ratelimit";
 import { getCurrentUser } from "../user";
+import { getPrintingSeals } from "../prestige/rules";
 
 // Ouverture de boosters. Ordre des contrôles : session → Zod → propriété → rate limit.
 // Le client n'envoie qu'une intention (quel booster, combien, accepte-t-il de payer) ;
@@ -84,11 +86,11 @@ export async function openBoosterAction(input: unknown): Promise<OpenBoosterResu
   }
 
   const { outcome, rules } = opened;
-  const views = await cardViews(
-    outcome.boosters.flatMap((b) => b.cards.map((c) => c.cardId)),
-    await getLocale(),
-  );
-  const boosters = outcome.boosters.map((b) => toView(b, views));
+  const [views, seals] = await Promise.all([
+    cardViews(outcome.boosters.flatMap((b) => b.cards.map((c) => c.cardId)), await getLocale()),
+    getPrintingSeals(),
+  ]);
+  const boosters = outcome.boosters.map((b) => toView(b, views, seals));
   const state = boosterStateFrom(
     {
       boosterStock: outcome.stock.stock,
@@ -117,7 +119,7 @@ export async function openBoosterAction(input: unknown): Promise<OpenBoosterResu
   };
 }
 
-function toView(b: OpenedBoosterRow, views: Awaited<ReturnType<typeof cardViews>>): OpenedBoosterView {
+function toView(b: OpenedBoosterRow, views: Awaited<ReturnType<typeof cardViews>>, seals: Record<string, string>): OpenedBoosterView {
   return {
     id: b.id,
     golden: b.golden,
@@ -132,8 +134,11 @@ function toView(b: OpenedBoosterRow, views: Awaited<ReturnType<typeof cardViews>
       ...views.get(c.cardId)!,
       userCardId: c.userCardId,
       isNew: c.isNew,
+      regained: c.regained,
       featured: c.featured,
       wished: c.wished,
+      // Gravée : cartouche vermillon et révélation à la baren
+      copy: c.edition ? fudaCopyOf({ heritage: 0, ...c.edition }, seals) : null,
     })),
   };
 }
@@ -168,7 +173,7 @@ export async function openSealedAction(input: unknown): Promise<OpenSealedResult
     return { ok: false, error: "UNAVAILABLE" };
   }
   const { booster, karma } = opened.outcome;
-  const views = await cardViews(booster.cards.map((c) => c.cardId), await getLocale());
+  const [views, seals] = await Promise.all([cardViews(booster.cards.map((c) => c.cardId), await getLocale()), getPrintingSeals()]);
   refresh();
-  return { ok: true, booster: toView(booster, views), karma };
+  return { ok: true, booster: toView(booster, views, seals), karma };
 }

@@ -33,7 +33,7 @@ const messages = {
 const providerProps = (locale: "fr" | "en") => ({ locale, messages: messages[locale], timeZone: "Europe/Paris", onError: (e: Error) => { throw e; }, children: null });
 
 const NOW = Date.parse("2026-12-05T12:00:00.000Z");
-const player = (username: string) => ({ id: username, username, image: null, isGuest: false, decor: { frame: null, nameColor: null } });
+const player = (username: string) => ({ id: username, username, image: null, isGuest: false, decor: { frame: null, nameColor: null, prestige: 0 } });
 const card = (name: string, rarity = "MYTHIC") => ({
   cardId: name,
   anilistId: 1,

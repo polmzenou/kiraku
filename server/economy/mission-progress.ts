@@ -32,7 +32,8 @@ export async function measureProgress(db: Db, userId: string, measure: Measure, 
       return Number(row?.n ?? 0);
     }
     case "DISCOVER_CARDS":
-      return db.discovery.count({ where: { userId, createdAt } });
+      // Découvertes, et pour un joueur au prestige 1 ou plus les cartes retrouvées dans son cycle en cours
+      return db.discovery.count({ where: { userId, OR: [{ createdAt }, { regainedAt: createdAt }] } });
     case "RECYCLE_ZENI": {
       const agg = await db.coinTransaction.aggregate({ where: { userId, reason: "DISSOLVE", createdAt }, _sum: { amount: true } });
       return agg._sum.amount ?? 0;

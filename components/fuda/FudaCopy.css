@@ -1,0 +1,43 @@
+/* Marques d'un exemplaire précis (prestige) posées sur la fuda : FudaFace.css est généré par
+   scripts/fuda-face-css.mjs et ne s'édite pas à la main. Niveaux de détail par container queries sur la largeur
+   réelle de la carte, comme la face. Aucune animation : les marques sont statiques, partout.
+
+   Héritière : blason en fleur de prunier au coin haut-droit, un pétale doré par prestige traversé ; à cinq, la fleur
+   est toute d'or. Lisible à toutes les tailles, l'illustration reste intacte.
+   Gravée : cartouche vermillon « 初摺 17 / 25 » accroché au bord du shikishi, en miroir du numéro (sceau du tirage à
+   partir de 140 px) ; sous 80 px, le shikishi disparaît et un coin vermillon signale la gravée. */
+.fuda-mon { position: absolute; right: 3cqw; top: 3cqw; z-index: 6; width: max(15px, 17cqw); aspect-ratio: 1; pointer-events: none; filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / .45)); }
+.fuda-mon .disc { fill: #15120f; fill-opacity: .85; }
+.fuda-mon .off { fill: #15120f; stroke: #d9b556; stroke-width: 3px; }
+.fuda-mon .on { fill: #d9b556; stroke: #e8c867; stroke-width: 3px; }
+.fuda-mon .glint { fill: #fff3c4; fill-opacity: .7; }
+.fuda-mon .heart { fill: #d9b556; }
+
+/* Cartouche d'édition, en miroir du numéro (.kn-no, FudaFace.css) : papier du shikishi, encre vermillon */
+.kn-ed {
+  position: absolute; left: 4cqw; top: 0; transform: translateY(-94%);
+  display: inline-flex; align-items: baseline; gap: .3em; padding: 0 max(3px, 1.3cqw); border-radius: 1px; white-space: nowrap;
+  background: var(--kn-paper, #f5efe2); color: #b3261e; font-weight: 700; font-size: max(9.5px, 4.6cqw); line-height: 1.4;
+  font-variant-numeric: tabular-nums; letter-spacing: .02em;
+  box-shadow: inset 0 0 0 max(1px, .25cqw) rgb(179 38 30 / .5), 0 1px 2px rgb(0 0 0 / .38);
+}
+.kn-ed i { font-style: normal; font-weight: 400; font-size: 1.02em; line-height: 1; }
+/* Le n° 1 d'un tirage : feuille d'or */
+.kn-ed-first {
+  background: linear-gradient(160deg, #f8e7aa, #d9b556 50%, #b8902f); color: #2a1f08;
+  box-shadow: inset 0 0 0 max(1px, .25cqw) rgb(255 248 220 / .7), 0 1px 2px rgb(0 0 0 / .38);
+}
+.fuda[data-full-art] .kn-ed { box-shadow: inset 0 0 0 max(1px, .25cqw) rgb(179 38 30 / .5), 0 1px 3px rgb(0 0 0 / .6); }
+
+/* Tout petit format : coin vermillon en bas à gauche */
+.fuda-ed-pin { display: none; position: absolute; left: 0; bottom: 0; z-index: 6; width: 30cqw; aspect-ratio: 1; pointer-events: none; background: #c8372d; clip-path: polygon(0 100%, 0 0, 100% 100%); }
+
+@container fuda (max-width: 139px) {
+  .kn-ed i { display: none; }
+}
+@container fuda (min-width: 140px) {
+  .kn-ed { left: 3.4cqw; transform: translateY(-64%); }
+}
+@container fuda (max-width: 79px) {
+  .fuda-ed-pin { display: block; }
+}

@@ -19,7 +19,7 @@ import { type Rarity } from "@/lib/catalog/rarity";
 import { albumQuery, isAlbumView, parseAlbumParams } from "@/lib/collection/albums";
 import { collectionQuery, hasFilters, parseCollectionParams } from "@/lib/collection/params";
 import { getAlbumPage } from "@/server/collection/albums";
-import { getCollectionPage, getCollectionSummary, getOwnedSeries } from "@/server/collection/queries";
+import { getCollectionPage, getCollectionSummary, getOwnedSeries, hasSpecialCopies } from "@/server/collection/queries";
 import { getCollectionValue } from "@/server/market/quotes";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
@@ -47,11 +47,12 @@ export default async function CollectionPage({ searchParams }: PageProps<"/[loca
   const params = parseCollectionParams(raw, await getRarities());
   const albumParams = parseAlbumParams(raw);
   const values = await getSetting("collection.recycleValues");
-  const [summary, page, series, albums, worth] = await Promise.all([
+  const [summary, page, series, albums, special, worth] = await Promise.all([
     getCollectionSummary(user.id, values),
     albumView ? null : getCollectionPage(user.id, params, 0, locale),
     albumView ? [] : getOwnedSeries(user.id, locale),
     albumView ? getAlbumPage(user.id, albumParams, 0, locale) : null,
+    albumView ? false : hasSpecialCopies(user.id),
     getCollectionValue(user.id),
   ]);
   const query = collectionQuery(params);
@@ -98,7 +99,7 @@ export default async function CollectionPage({ searchParams }: PageProps<"/[loca
           ) : (
             page && (
               <>
-                <CollectionFilters params={params} pathname="/collection" series={series} counts={counts} />
+                <CollectionFilters params={params} pathname="/collection" series={series} counts={counts} special={special} />
                 {page.items.length === 0 ? (
                   <p className="lacquer rounded-card p-6 text-center text-text-muted">
                     {hasFilters(params) ? t("noMatch") : t("empty")}

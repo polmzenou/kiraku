@@ -12,6 +12,7 @@ export const DISCORD_SETTING_KEYS = [
   "discord.rankedEnabled",
   "discord.casinoEnabled",
   "discord.casinoMinRarity",
+  "discord.prestigeEnabled",
   "discord.avatarSyncHours",
   "discord.avatarSyncActiveDays",
   "discord.avatarSyncBatch",

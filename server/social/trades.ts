@@ -2,6 +2,7 @@ import "server-only";
 import type { CardView, OpenedCardView } from "@/lib/boosters/view";
 import { prisma } from "../db";
 import { cardViews } from "../boosters/display";
+import { copyMarksOf, withCopy } from "../prestige/copy-marks";
 import { ownedCardIds } from "../collection/owned";
 import { playerRefSelect as playerSelect, toPlayerRef, type PlayerRef } from "../profile/decor";
 
@@ -44,13 +45,14 @@ const tradeSelect = {
   resolvedAt: true,
   wantedCardId: true,
   chosenCardId: true,
+  userCardId: true,
   proposerNew: true,
   proposerSeenAt: true,
   note: true,
   declineNote: true,
   proposer: { select: playerSelect },
   recipient: { select: playerSelect },
-  offers: { select: { cardId: true } },
+  offers: { select: { cardId: true, userCardId: true } },
 } as const;
 
 export async function listTrades(userId: string, locale: string, now = new Date()): Promise<TradeLists> {
@@ -69,12 +71,14 @@ export async function listTrades(userId: string, locale: string, now = new Date(
     }),
   ]);
   const rows = [...open, ...history];
-  const [views, ownedIds] = await Promise.all([
+  const [views, ownedIds, marks] = await Promise.all([
     cardViews(
       rows.flatMap((r) => [r.wantedCardId, ...r.offers.map((o) => o.cardId), ...(r.chosenCardId ? [r.chosenCardId] : [])]),
       locale,
     ),
     ownedCardIds(userId, open.flatMap((r) => (r.recipient.id === userId ? r.offers.map((o) => o.cardId) : [r.wantedCardId]))),
+    // Exemplaires désignés (héritière ou gravée) : proposés, ou donné en retour à l'acceptation
+    copyMarksOf(rows.flatMap((r) => [r.userCardId, ...r.offers.map((o) => o.userCardId)])),
   ]);
   const owned = new Set(ownedIds);
   const toView = (r: (typeof rows)[number]): TradeView | null => {
@@ -88,8 +92,11 @@ export async function listTrades(userId: string, locale: string, now = new Date(
       resolvedAt: r.resolvedAt,
       proposer: toPlayerRef(r.proposer),
       recipient: toPlayerRef(r.recipient),
-      wanted,
-      offers: r.offers.flatMap((o) => views.get(o.cardId) ?? []),
+      wanted: withCopy(wanted, r.userCardId, marks),
+      offers: r.offers.flatMap((o) => {
+        const view = views.get(o.cardId);
+        return view ? [withCopy(view, o.userCardId, marks)] : [];
+      }),
       chosen: r.chosenCardId ? (views.get(r.chosenCardId) ?? null) : null,
       viewerOwned: [r.wantedCardId, ...r.offers.map((o) => o.cardId)].filter((id) => owned.has(id)),
       note: r.note,

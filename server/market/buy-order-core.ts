@@ -13,10 +13,12 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { isFrozen } from "@/lib/account/deletion";
 import { checkOrder, orderExpiresAt, orderOpen, shouldAlert, type OrderRefusal } from "@/lib/market/buy-orders";
 import { checkTrader, saleFee, type MarketRules, type TraderRefusal } from "@/lib/market/rules";
-import { pickGiftCopy } from "@/lib/social/gifts";
+import { ORDINARY_COPY } from "@/lib/collection/copies";
 import { applyEntries, credit, debit, LedgerError } from "../economy/ledger";
 import { lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
+import { recordDiscoveries } from "../collection/discovery";
+import { chooseCopy, moveCopy } from "../collection/transfer";
 import { consumeWishlist } from "../collection/wishlist-core";
 
 export type BuyOrderErrorCode =
@@ -32,7 +34,9 @@ export type BuyOrderErrorCode =
   | "OWN_ORDER"
   | "STALE"
   | "UNAVAILABLE"
-  | "NOT_OWNED";
+  | "NOT_OWNED"
+  // Prestige : le vendeur n'a de cette carte que des pièces spéciales (héritières, gravées), jamais prises par un avis
+  | "SPECIAL_ONLY";
 
 export class BuyOrderError extends Error {
   constructor(readonly code: BuyOrderErrorCode) {
@@ -195,7 +199,8 @@ export type FilledOrder = { orderId: string; cardId: string; price: number; net:
 
 /**
  * Vend un exemplaire de la carte cherchée à l'acheteur, au prix de l'avis (`expectedPrice` = prix vu ;
- * STALE s'il a changé). L'exemplaire est le plus récent hors vitrine, sinon le plus récent exposé.
+ * STALE s'il a changé). L'exemplaire est un ordinaire, le plus récent hors vitrine, sinon le plus récent exposé :
+ * une pièce spéciale (héritière, gravée) ne part jamais par un avis.
  */
 export async function fillOrderWith(db: PrismaClient, input: FillOrderInput, onNotified?: OnNotified): Promise<FilledOrder> {
   const { now } = input;
@@ -218,28 +223,21 @@ export async function fillOrderWith(db: PrismaClient, input: FillOrderInput, onN
       const buyerState = buyer ? await tx.user.findUnique({ where: { id: buyer.id }, select: { deletionRequestedAt: true, anonymizedAt: true } }) : null;
       if (!buyer || buyer.bannedAt || !buyerState || isFrozen(buyerState)) throw new BuyOrderError("UNAVAILABLE");
 
-      const copies = await tx.userCard.findMany({
-        where: { ownerId: input.sellerId, cardId: order.cardId, status: "COLLECTION" },
-        select: { id: true, obtainedAt: true },
-      });
-      const shown = await tx.showcaseItem.findMany({ where: { userCardId: { in: copies.map((c) => c.id) } }, select: { userCardId: true } });
-      const copy = pickGiftCopy(copies, new Set(shown.map((s) => s.userCardId)));
-      if (!copy) throw new BuyOrderError("NOT_OWNED");
+      const choice = await chooseCopy(tx, input.sellerId, order.cardId);
+      if (!choice.ok) throw new BuyOrderError(choice.reason === "CHOOSE_COPY" ? "SPECIAL_ONLY" : "NOT_OWNED");
 
-      // Transfert conditionnel : un exemplaire offert, recyclé ou mis en vente entre-temps ne part jamais
-      const moved = await tx.userCard.updateMany({
-        where: { id: copy.id, ownerId: input.sellerId, status: "COLLECTION" },
-        data: { ownerId: order.buyerId, obtainedAt: now },
-      });
-      if (moved.count !== 1) throw new BuyOrderError("NOT_OWNED");
-      await tx.showcaseItem.deleteMany({ where: { userCardId: copy.id } });
-      await tx.discovery.createMany({ data: [{ userId: order.buyerId, cardId: order.cardId, createdAt: now }], skipDuplicates: true });
+      // Transfert conditionnel (moveCopy) : un exemplaire offert, recyclé ou mis en vente entre-temps ne part jamais.
+      // Toujours un ordinaire ici : aucune provenance n'est écrite, `via` ne sert pas.
+      const moved = await moveCopy(tx, { userCardId: choice.id, fromId: input.sellerId, fromStatus: "COLLECTION", toId: order.buyerId, via: "AUCTION", now });
+      if (!moved) throw new BuyOrderError("NOT_OWNED");
+      await tx.showcaseItem.deleteMany({ where: { userCardId: choice.id } });
+      await recordDiscoveries(tx, [{ userId: order.buyerId, cardId: order.cardId }], now);
       await consumeWishlist(tx, order.buyerId, [order.cardId]);
 
       const fee = saleFee(order.price, order.feeBp);
       await tx.buyOrder.update({
         where: { id: order.id },
-        data: { status: "FILLED", sellerId: input.sellerId, userCardId: copy.id, filledAt: now, fee },
+        data: { status: "FILLED", sellerId: input.sellerId, userCardId: choice.id, filledAt: now, fee },
       });
       const coins = await applyEntries(
         tx,
@@ -284,7 +282,7 @@ export async function alertOwnersWith(
     db,
     async (tx) => {
       const holders = await tx.userCard.findMany({
-        where: { cardId: order.cardId, status: "COLLECTION", ownerId: { not: order.buyerId }, owner: { bannedAt: null, isGuest: false } },
+        where: { cardId: order.cardId, status: "COLLECTION", ...ORDINARY_COPY, ownerId: { not: order.buyerId }, owner: { bannedAt: null, isGuest: false } },
         distinct: ["ownerId"],
         select: { ownerId: true },
         take: MAX_ALERTS,

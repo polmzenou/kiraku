@@ -16,6 +16,7 @@ export const FEATURE_SETTING_KEYS = [
   "missions.enabled",
   "referral.enabled",
   "expedition.enabled",
+  "prestige.enabled",
   "wrapped.enabled",
   "notifications.pushEnabled",
 ] as const satisfies readonly SettingKey[];

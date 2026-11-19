@@ -138,7 +138,7 @@ function Battle({
     return state;
   }, [scenario, setup]);
   const players = useMemo<[PlayerView, PlayerView]>(
-    () => [{ username: ts("you"), image: PLAYER_AVATAR, isGuest: false, decor: { frame: "kinpaku", nameColor: null } }, { bot: scenario === "demo" ? "KITSUNE" : "ONI" }],
+    () => [{ username: ts("you"), image: PLAYER_AVATAR, isGuest: false, decor: { frame: "kinpaku", nameColor: null, prestige: 0 } }, { bot: scenario === "demo" ? "KITSUNE" : "ONI" }],
     [scenario, ts],
   );
   const speed = useBattleSpeed();

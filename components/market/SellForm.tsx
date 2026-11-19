@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { sellerNet, type SellBase, type SellInfo } from "@/lib/market/rules";
 import { createAuctionAction, type MarketActionError } from "@/server/actions/market";
+import { CopyPicker } from "../collection/CopyPicker";
 import { ButtonLink } from "../ui/ButtonLink";
 import { Button } from "../ui/Button";
 import { inputClass } from "../ui/Field";
@@ -41,6 +42,8 @@ export function SellForm({ cardId, info, onSold }: { cardId: string; info: SellI
   const [duration, setDuration] = useState(info.durationsHours.includes(24) ? 24 : info.durationsHours[0]);
   const [error, setError] = useState<MarketActionError | "unexpected" | null>(null);
   const [created, setCreated] = useState<string | null>(null);
+  // Exemplaire désigné (pièce spéciale), sinon le serveur en vend un ordinaire
+  const [copyId, setCopyId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const startPrice = Number(start);
@@ -52,7 +55,7 @@ export function SellForm({ cardId, info, onSold }: { cardId: string; info: SellI
     startTransition(async () => {
       setError(null);
       try {
-        const res = await createAuctionAction({ cardId, startPrice, buyoutPrice, durationHours: duration, note });
+        const res = await createAuctionAction({ cardId, userCardId: copyId, startPrice, buyoutPrice, durationHours: duration, note });
         if (res.ok) {
           setCreated(res.auctionId);
           onSold?.();
@@ -81,6 +84,7 @@ export function SellForm({ cardId, info, onSold }: { cardId: string; info: SellI
         if (valid) submit();
       }}
     >
+      <CopyPicker cardId={cardId} value={copyId} onChange={setCopyId} />
       <label className="flex flex-col gap-1 text-sm">
         {t("sell.startPrice")}
         <input

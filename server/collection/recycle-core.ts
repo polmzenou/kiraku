@@ -1,8 +1,9 @@
 // Recyclage atomique des doublons en Zeni. Le client Prisma est injecté (serveur ou test de
 // concurrence) : pas de server/db.ts ici. Le serveur choisit les exemplaires et calcule le gain.
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { type Rarity } from "@/lib/catalog/rarity";
-import { planRecycle, type RecyclePlan, type RecycleValues } from "@/lib/collection/recycle";
+import { COPY_MARKS, isSpecialCopy } from "@/lib/collection/copies";
+import { copyRecycleValue, planRecycle, type RecyclePlan, type RecycleValues } from "@/lib/collection/recycle";
 import { credit } from "../economy/ledger";
 
 export type RecycleErrorCode = "NO_USER" | "BANNED" | "NOTHING" | "STALE";
@@ -17,7 +18,9 @@ export type RecycleRequest =
   /** Depuis la fiche : `count` doublons d'une carte. */
   | { kind: "card"; cardId: string; count: number }
   /** Tous les doublons jusqu'à `maxRarity` ; `expected` = gain affiché dans le récap. */
-  | { kind: "all"; maxRarity: Rarity; expected: number };
+  | { kind: "all"; maxRarity: Rarity; expected: number }
+  /** Un exemplaire spécial (héritier ou gravé), depuis sa ligne ; `expected` = gain affiché dans la confirmation. */
+  | { kind: "copy"; userCardId: string; expected: number };
 
 export type RecycleOutcome = {
   recycled: number;
@@ -34,6 +37,8 @@ export async function recycleWith(
   userId: string,
   request: RecycleRequest,
   values: RecycleValues,
+  /** Une gravée recyclée seule vaut ce multiple de sa rareté (prestige.printing.recycleMultiplier). */
+  engravedMultiplier = 1,
 ): Promise<RecycleOutcome> {
   return db.$transaction(
     async (tx) => {
@@ -41,6 +46,10 @@ export async function recycleWith(
       const [user] = await tx.$queryRaw<{ bannedAt: Date | null }[]>`
         SELECT "bannedAt" FROM "User" WHERE id = ${userId} FOR UPDATE`;
       if (!user) throw new RecycleError("NO_USER");
+      if (request.kind === "copy") {
+        if (user.bannedAt) throw new RecycleError("BANNED");
+        return recycleCopyLocked(tx, userId, request, values, engravedMultiplier);
+      }
       if (user.bannedAt) throw new RecycleError("BANNED");
 
       const RARITIES = (await tx.rarityDefinition.findMany({ orderBy: [{ sortOrder: "asc" }, { key: "asc" }], select: { key: true } })).map((r) => r.key);
@@ -52,13 +61,14 @@ export async function recycleWith(
             status: "COLLECTION",
             ...(request.kind === "card" ? { cardId: request.cardId } : { card: { rarity: { in: [...allowed] } } }),
           },
-          select: { id: true, cardId: true, status: true, obtainedAt: true, card: { select: { rarity: true } } },
+          select: { id: true, cardId: true, status: true, obtainedAt: true, ...COPY_MARKS, card: { select: { rarity: true } } },
         }),
         tx.showcaseItem.findMany({ where: { showcase: { userId } }, select: { userCardId: true } }),
       ]);
 
+      // Les pièces spéciales (héritières ou gravées) ne partent jamais ici, et ne comptent pas comme l'exemplaire gardé
       const plan = planRecycle(
-        copies.map((c) => ({ id: c.id, cardId: c.cardId, status: c.status, obtainedAt: c.obtainedAt, rarity: c.card.rarity as Rarity })),
+        copies.map((c) => ({ id: c.id, cardId: c.cardId, status: c.status, obtainedAt: c.obtainedAt, heritage: c.heritage, printing: c.printing, rarity: c.card.rarity as Rarity })),
         {
           values,
           rarities: RARITIES,
@@ -94,4 +104,34 @@ export async function recycleWith(
     },
     { maxWait: 10_000, timeout: 20_000 },
   );
+}
+
+/**
+ * Recycle un exemplaire spécial désigné (héritier ou gravé) : il n'entre jamais dans le recyclage des doublons.
+ * Un exemplaire ordinaire est refusé ici (NOTHING) : il passe par le recyclage des doublons, qui en garde un.
+ */
+async function recycleCopyLocked(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  request: Extract<RecycleRequest, { kind: "copy" }>,
+  values: RecycleValues,
+  engravedMultiplier: number,
+): Promise<RecycleOutcome> {
+  const copy = await tx.userCard.findFirst({
+    where: { id: request.userCardId, ownerId: userId, status: "COLLECTION" },
+    select: { id: true, cardId: true, heritage: true, printing: true, card: { select: { rarity: true } } },
+  });
+  if (!copy || !isSpecialCopy(copy)) throw new RecycleError("NOTHING");
+  const rarity = copy.card.rarity as Rarity;
+  const gain = copyRecycleValue({ rarity, printing: copy.printing }, values, engravedMultiplier);
+  // L'écran du joueur n'est plus à jour (réglage changé entre-temps) : il doit revoir ce qu'il confirme
+  if (gain !== request.expected) throw new RecycleError("STALE");
+  const res = await tx.userCard.deleteMany({ where: { id: copy.id, ownerId: userId, status: "COLLECTION" } });
+  if (res.count !== 1) throw new RecycleError("STALE");
+  const coins =
+    gain > 0
+      ? await credit(tx, { userId, amount: gain, reason: "DISSOLVE", refId: copy.cardId })
+      : (await tx.user.findUniqueOrThrow({ where: { id: userId }, select: { coins: true } })).coins;
+  const byRarity = { [rarity]: { copies: 1, zeni: gain } } as RecyclePlan["byRarity"];
+  return { recycled: 1, gain, coins, byRarity };
 }

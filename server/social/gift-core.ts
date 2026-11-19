@@ -9,7 +9,6 @@ import {
   checkGift,
   checkSealedGift,
   sealedWindowStart,
-  pickGiftCopy,
   type GiftRefusal,
   type GiftRules,
   type SealedGiftRefusal,
@@ -22,8 +21,10 @@ import { debit, LedgerError } from "../economy/ledger";
 import { blocksBetween, lockPlayers, type LockedPlayer, type Tx } from "./lock";
 import { notify, notifyingTransaction, type OnNotified } from "./notify";
 import { consumeWishlist } from "../collection/wishlist-core";
+import { chooseCopy, moveCopy } from "../collection/transfer";
+import { recordDiscoveries } from "../collection/discovery";
 
-export type GiftErrorCode = GiftRefusal | SealedGiftRefusal | "NO_USER" | "NOT_OWNED" | "RARITY" | "NOT_ENOUGH_ZENI";
+export type GiftErrorCode = GiftRefusal | SealedGiftRefusal | "NO_USER" | "NOT_OWNED" | "CHOOSE_COPY" | "RARITY" | "NOT_ENOUGH_ZENI";
 
 export class GiftError extends Error {
   constructor(readonly code: GiftErrorCode) {
@@ -81,42 +82,29 @@ async function checkUnderLock(tx: Tx, ctx: GiftContext, now: Date): Promise<{ se
 }
 
 /**
- * Offre un exemplaire de `cardId` (id de Card) : le serveur choisit l'exemplaire, le plus récent
- * hors vitrine. L'exemplaire garde son id : l'historique (tirage, cadeau) reste lisible.
+ * Offre un exemplaire de `cardId` (id de Card). Sans `userCardId`, le serveur choisit le plus récent exemplaire
+ * ordinaire hors vitrine ; un exemplaire spécial (héritier ou gravé) ne part que désigné (`CHOOSE_COPY` sinon).
+ * L'exemplaire garde son id : l'historique (tirage, cadeau) reste lisible.
  */
 export async function giftCardWith(
   db: PrismaClient,
-  ctx: GiftContext & { cardId: string; allowedRarities: readonly Rarity[] },
+  ctx: GiftContext & { cardId: string; userCardId?: string | null; allowedRarities: readonly Rarity[] },
   onNotified?: OnNotified,
 ): Promise<{ giftId: string; userCardId: string }> {
   return notifyingTransaction(db, async (tx) => {
     const now = new Date();
     const { day } = await checkUnderLock(tx, ctx, now);
 
-    const copies = await tx.userCard.findMany({
-      where: { ownerId: ctx.senderId, cardId: ctx.cardId, status: "COLLECTION" },
-      select: { id: true, obtainedAt: true, card: { select: { rarity: true } } },
-    });
-    if (copies.length === 0) throw new GiftError("NOT_OWNED");
-    if (!ctx.allowedRarities.includes(copies[0].card.rarity as Rarity)) throw new GiftError("RARITY");
-
-    const shown = await tx.showcaseItem.findMany({
-      where: { userCardId: { in: copies.map((c) => c.id) } },
-      select: { userCardId: true },
-    });
-    const copy = pickGiftCopy(copies, new Set(shown.map((s) => s.userCardId)))!;
+    const choice = await chooseCopy(tx, ctx.senderId, ctx.cardId, ctx.userCardId);
+    if (!choice.ok) throw new GiftError(choice.reason === "CHOOSE_COPY" ? "CHOOSE_COPY" : "NOT_OWNED");
+    const card = await tx.card.findUniqueOrThrow({ where: { id: ctx.cardId }, select: { rarity: true } });
+    if (!ctx.allowedRarities.includes(card.rarity as Rarity)) throw new GiftError("RARITY");
 
     // Transfert conditionnel : un exemplaire vendu ou recyclé entre-temps n'est jamais offert
-    const moved = await tx.userCard.updateMany({
-      where: { id: copy.id, ownerId: ctx.senderId, status: "COLLECTION" },
-      data: { ownerId: ctx.recipientId, obtainedAt: now },
-    });
-    if (moved.count !== 1) throw new GiftError("NOT_OWNED");
-    await tx.showcaseItem.deleteMany({ where: { userCardId: copy.id } }); // quitte toutes les vitrines
-    await tx.discovery.createMany({
-      data: [{ userId: ctx.recipientId, cardId: ctx.cardId, createdAt: now }],
-      skipDuplicates: true,
-    });
+    const moved = await moveCopy(tx, { userCardId: choice.id, fromId: ctx.senderId, fromStatus: "COLLECTION", toId: ctx.recipientId, via: "GIFT", now });
+    if (!moved) throw new GiftError("NOT_OWNED");
+    await tx.showcaseItem.deleteMany({ where: { userCardId: choice.id } }); // quitte toutes les vitrines
+    await recordDiscoveries(tx, [{ userId: ctx.recipientId, cardId: ctx.cardId }], now);
     await consumeWishlist(tx, ctx.recipientId, [ctx.cardId]);
 
     const gift = await tx.gift.create({
@@ -125,7 +113,7 @@ export async function giftCardWith(
         recipientId: ctx.recipientId,
         kind: "CARD",
         cardId: ctx.cardId,
-        userCardId: copy.id,
+        userCardId: choice.id,
         dayKey: day,
         createdAt: now,
       },
@@ -139,7 +127,7 @@ export async function giftCardWith(
       payload: { kind: "CARD", cardId: ctx.cardId },
       now,
     });
-    return { giftId: gift.id, userCardId: copy.id };
+    return { giftId: gift.id, userCardId: choice.id };
   }, TX, onNotified);
 }
 

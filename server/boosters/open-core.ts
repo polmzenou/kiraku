@@ -20,12 +20,15 @@ import type { Rng } from "@/lib/boosters/rng";
 import { computeStock, consumeStock, stockRulesFor, type StockSettings, type StockState } from "@/lib/boosters/stock";
 import { bonusesFor, creditBonuses, priceFor, type BoosterTypeView } from "@/lib/boosters/types";
 import type { Rarity } from "@/lib/catalog/rarity";
+import { printingSize, rollEngravings, type Edition, type PrintingRules } from "@/lib/prestige/printing";
 import { consumeBoosters, CreditError } from "../economy/credits";
 import { applyEntries, LedgerError } from "../economy/ledger";
 import { consumeWishlist } from "../collection/wishlist-core";
 import type { Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { loadOwnedCopies } from "./duplicate-guard";
+import { recordDiscoveries } from "../collection/discovery";
+import { takeSerial } from "../prestige/printing-core";
 
 export type OpenErrorCode =
   | "NO_USER"
@@ -69,6 +72,8 @@ export type OpenInput = {
   sealedTypes?: Partial<Record<SealedKind, string>>;
   /** Règles et tables sous Encens, utilisées si le boost du joueur est actif (lu sous verrou). */
   incense?: IncenseDraw;
+  /** Éditions gravées (prestige) : réglages du moment ; absent ou null quand le prestige est coupé. */
+  printing?: PrintingRules | null;
   rng: Rng;
 };
 
@@ -87,7 +92,19 @@ export type OpenedBoosterRow = {
   featuredHit: boolean;
   featuredPityTriggered: boolean;
   zeniSpent: number;
-  cards: { userCardId: string; cardId: string; rarity: Rarity; isNew: boolean; featured: boolean; /** Était dans la liste de souhaits (premier exemplaire). */ wished: boolean }[];
+  cards: {
+    userCardId: string;
+    cardId: string;
+    rarity: Rarity;
+    isNew: boolean;
+    /** Prestige : déjà découverte, obtenue pour la première fois dans le cycle en cours (premier exemplaire). */
+    regained: boolean;
+    featured: boolean;
+    /** Était dans la liste de souhaits (premier exemplaire). */
+    wished: boolean;
+    /** Édition gravée tirée (prestige), ou null pour un exemplaire ordinaire. */
+    edition: Edition | null;
+  }[];
 };
 
 /** Sachet scellé tombé pendant l'ouverture, à sa place dans la série. */
@@ -121,6 +138,7 @@ type LockedUser = {
   bannedAt: Date | null;
   ambassadorSince: Date | null;
   incenseUntil: Date | null;
+  prestige: number;
 };
 
 const TX = { maxWait: 10_000, timeout: 15_000 };
@@ -138,12 +156,24 @@ export function readBannerPity(raw: unknown): Record<string, number> {
 type DrawnRow = Omit<OpenedBoosterRow, "cards"> & { cards: DrawnCard[] };
 
 /**
- * Enregistre des boosters tirés : cartes revérifiées (publiées, rareté et poids inchangés), exemplaires,
- * découvertes, liste de souhaits, lignes BoosterOpening et gros tirages du carrousel.
+ * Enregistre des boosters tirés : cartes revérifiées (publiées, rareté et poids inchangés), éditions gravées,
+ * exemplaires, découvertes, liste de souhaits, lignes BoosterOpening et gros tirages du carrousel.
  */
 async function persistDraw(
   tx: Tx,
-  input: { userId: string; type: Pick<OpenType, "id" | "slug" | "includeCustom">; rules: DrawRules; pool: CardPool; now: Date; drawn: DrawnRow[]; sealedDropId?: string },
+  input: {
+    userId: string;
+    type: Pick<OpenType, "id" | "slug" | "includeCustom">;
+    rules: DrawRules;
+    pool: CardPool;
+    now: Date;
+    /** Prestige du joueur, lu sous son verrou : retrouvailles et gravure. */
+    prestige: number;
+    drawn: DrawnRow[];
+    sealedDropId?: string;
+    /** Gravure (prestige) : réglages et générateur de l'ouverture, consommé après le tirage des cartes. */
+    engrave?: { rules: PrintingRules; rng: Rng } | null;
+  },
 ): Promise<OpenedBoosterRow[]> {
   const { userId, type, rules, now } = input;
   // « Nouveau » : jamais obtenue avant, et seulement le premier exemplaire de ce tirage
@@ -161,11 +191,10 @@ async function persistDraw(
   if (input.drawn.some((b) => b.cards.some((c) =>
     !stillDrawable(liveCards.get(c.cardId), { rarity: c.rarity, weight: rules.cardWeights?.[c.cardId] ?? 1 }, ctx),
   ))) throw new OpenError("NOT_FOR_SALE");
-  const known = await tx.discovery.findMany({
-    where: { userId, cardId: { in: drawnIds } },
-    select: { cardId: true },
-  });
+  const known = await tx.discovery.findMany({ where: { userId, cardId: { in: drawnIds } }, select: { cardId: true, regainedAt: true } });
   const seen = new Set(known.map((k) => k.cardId));
+  // Prestige : une carte découverte lors d'un cycle passé, pas encore obtenue dans celui-ci, est « Retrouvée »
+  const regainable = new Set(input.prestige > 0 ? known.filter((k) => k.regainedAt === null).map((k) => k.cardId) : []);
   // Les cartes obtenues quittent la liste de souhaits ; le premier exemplaire garde la pastille
   const wished = await consumeWishlist(tx, userId, drawnIds);
 
@@ -174,22 +203,53 @@ async function persistDraw(
     cards: b.cards.map((c) => {
       const isNew = !seen.has(c.cardId);
       seen.add(c.cardId);
-      return { userCardId: randomUUID(), cardId: c.cardId, rarity: c.rarity, isNew, featured: c.featured === true, wished: wished.delete(c.cardId) };
+      const regained = regainable.delete(c.cardId);
+      return {
+        userCardId: randomUUID(),
+        cardId: c.cardId,
+        rarity: c.rarity,
+        isNew,
+        regained,
+        featured: c.featured === true,
+        wished: wished.delete(c.cardId),
+        edition: null as Edition | null,
+      };
     }),
   }));
-  const discovered = boosters.flatMap((b) => b.cards.filter((c) => c.isNew).map((c) => c.cardId));
+
+  // Éditions gravées : un tirage au sort par carte gravable (prestige minimal, Mythique et au-dessus), puis un numéro
+  // libre au hasard dans le tirage en cours. Compteurs pris dans l'ordre des ids de carte : deux ouvertures qui
+  // gravent les mêmes cartes ne s'interbloquent pas. Un tirage épuisé laisse la carte ordinaire.
+  const rarityOrder = rules.rarities ?? Object.keys(rules.rates);
+  if (input.engrave) {
+    const { rules: printing, rng } = input.engrave;
+    const flat = boosters.flatMap((b) => b.cards);
+    const picked = rollEngravings(rng, flat, { prestige: input.prestige, order: rarityOrder, rules: printing });
+    picked.sort((a, b) => (flat[a].cardId < flat[b].cardId ? -1 : flat[a].cardId > flat[b].cardId ? 1 : a - b));
+    for (const i of picked) {
+      const card = flat[i];
+      card.edition = await takeSerial(tx, { cardId: card.cardId, printing: printing.current, size: printingSize(card.rarity, printing), rng });
+    }
+  }
 
   await tx.userCard.createMany({
     data: boosters.flatMap((b) =>
-      b.cards.map((c) => ({ id: c.userCardId, ownerId: userId, cardId: c.cardId, obtainedAt: now })),
+      b.cards.map((c) => ({
+        id: c.userCardId,
+        ownerId: userId,
+        cardId: c.cardId,
+        obtainedAt: now,
+        ...(c.edition && { printing: c.edition.printing, serial: c.edition.serial }),
+      })),
     ),
   });
-  if (discovered.length > 0) {
-    await tx.discovery.createMany({
-      data: discovered.map((cardId) => ({ userId, cardId, createdAt: now })),
-      skipDuplicates: true,
-    });
+  // Provenance d'une gravée : son premier propriétaire, sorti du booster
+  const engraved = boosters.flatMap((b) => b.cards.filter((c) => c.edition !== null));
+  if (engraved.length > 0) {
+    await tx.userCardOwner.createMany({ data: engraved.map((c) => ({ userCardId: c.userCardId, ownerId: userId, via: "DRAW" as const, at: now })) });
   }
+  // Seules les cartes nouvelles ou retrouvées ont quelque chose à écrire : un tirage sans nouveauté n'écrit rien
+  await recordDiscoveries(tx, drawnIds.filter((id) => !seen.has(id) || regainable.has(id)).map((cardId) => ({ userId, cardId })), now);
   await tx.boosterOpening.createMany({
     data: boosters.map((b) => ({
       id: b.id,
@@ -204,15 +264,25 @@ async function persistDraw(
       zeniSpent: b.zeniSpent,
       sealedDropId: input.sealedDropId ?? null,
       apocalypse: b.apocalypse,
+      // Le lien de partage montre la gravée même après sa vente : édition copiée à sa place dans le booster
+      ...(b.cards.some((c) => c.edition) && {
+        editions: b.cards.flatMap((c, position) => (c.edition ? [{ position, ...c.edition }] : [])),
+      }),
       createdAt: now,
     })),
   });
   // Gros tirages pour le carrousel « En direct » de l'accueil (la rareté affichée se règle à la lecture)
-  const rarityOrder = rules.rarities ?? Object.keys(rules.rates);
   const notable = boosters.flatMap((b) => b.cards.filter((c) => rarityOrder.indexOf(c.rarity) >= rarityOrder.indexOf("EPIC")));
   if (notable.length > 0) {
     await tx.notablePull.createMany({
-      data: notable.map((c) => ({ userId, cardId: c.cardId, rarity: c.rarity, boosterSlug: type.slug, createdAt: now })),
+      data: notable.map((c) => ({
+        userId,
+        cardId: c.cardId,
+        rarity: c.rarity,
+        boosterSlug: type.slug,
+        ...(c.edition && { printing: c.edition.printing, serial: c.edition.serial, printingSize: c.edition.size }),
+        createdAt: now,
+      })),
     });
   }
   return boosters;
@@ -228,7 +298,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
       await tx.$executeRaw`SELECT pg_advisory_xact_lock_shared(740_210_001)`;
       // Verrou sur la ligne du joueur : deux ouvertures simultanées passent l'une après l'autre
       const [user] = await tx.$queryRaw<LockedUser[]>`
-        SELECT "boosterStock", "boosterAnchor", "pityCount", "standardCount", "coins", "bannerPity", "bannedAt", "ambassadorSince", "incenseUntil"
+        SELECT "boosterStock", "boosterAnchor", "pityCount", "standardCount", "coins", "bannerPity", "bannedAt", "ambassadorSince", "incenseUntil", "prestige"
         FROM "User" WHERE id = ${userId} FOR UPDATE`;
       if (!user) throw new OpenError("NO_USER");
       if (user.bannedAt) throw new OpenError("BANNED");
@@ -299,6 +369,8 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         rules: rules.draw,
         pool: input.pool,
         now,
+        prestige: user.prestige,
+        engrave: input.printing ? { rules: input.printing, rng: input.rng } : null,
         drawn: drawn.boosters.flatMap((b) =>
           b.drop
             ? []
@@ -373,6 +445,8 @@ export type OpenSealedInput = {
   tables: RarityTables;
   pool: CardPool;
   incense?: IncenseDraw;
+  /** Éditions gravées (prestige) ; absent ou null quand le prestige est coupé. */
+  printing?: PrintingRules | null;
   rng: Rng;
 };
 
@@ -390,8 +464,8 @@ export async function openSealedWith(db: PrismaClient, input: OpenSealedInput, o
 
   return notifyingTransaction(db, async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock_shared(740_210_001)`;
-    const [user] = await tx.$queryRaw<{ apocalypseKarma: number; bannedAt: Date | null; incenseUntil: Date | null }[]>`
-      SELECT "apocalypseKarma", "bannedAt", "incenseUntil" FROM "User" WHERE id = ${userId} FOR UPDATE`;
+    const [user] = await tx.$queryRaw<{ apocalypseKarma: number; bannedAt: Date | null; incenseUntil: Date | null; prestige: number }[]>`
+      SELECT "apocalypseKarma", "bannedAt", "incenseUntil", "prestige" FROM "User" WHERE id = ${userId} FOR UPDATE`;
     if (!user) throw new OpenError("NO_USER");
     if (user.bannedAt) throw new OpenError("BANNED");
 
@@ -420,6 +494,8 @@ export async function openSealedWith(db: PrismaClient, input: OpenSealedInput, o
       rules: rules.draw,
       pool: input.pool,
       now,
+      prestige: user.prestige,
+      engrave: input.printing ? { rules: input.printing, rng: input.rng } : null,
       drawn: [{
         id: randomUUID(),
         golden: false,

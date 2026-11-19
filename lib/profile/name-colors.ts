@@ -1,7 +1,7 @@
 // Couleurs de pseudo : un dégradé clippé au texte avec un halo (classes .name-color-* de globals.css).
 // L'admin associe un style à une condition (Cosmetic.nameColor) ; le libellé vient du Cosmetic.
 
-export const NAME_COLOR_STYLES = ["lime", "azure", "violet", "ember", "scarlet", "rainbow", "pastel", "hisui"] as const;
+export const NAME_COLOR_STYLES = ["lime", "azure", "violet", "ember", "scarlet", "rainbow", "pastel", "hisui", "kin"] as const;
 export type NameColorStyle = (typeof NAME_COLOR_STYLES)[number];
 
 /** Pastille du sélecteur. */
@@ -14,6 +14,7 @@ export const NAME_COLOR_SWATCH: Record<NameColorStyle, string> = {
   rainbow: "conic-gradient(#ff2d4a,#ff9a1f,#ffe600,#a3ff12,#38bdf8,#b44dff,#ff2d4a)",
   pastel: "conic-gradient(#ffb3c7,#ffd6a5,#fdffb6,#caffbf,#9bf6ff,#bdb2ff,#ffb3c7)",
   hisui: "#5bbf8b",
+  kin: "#d9b556",
 };
 
 /**
@@ -29,6 +30,7 @@ export const NAME_COLOR_GRADIENT: Record<NameColorStyle, string> = {
   rainbow: "linear-gradient(90deg, #ff2d4a, #ff9a1f, #ffe600, #a3ff12, #2de2d0, #38bdf8, #b44dff)",
   pastel: "linear-gradient(90deg, #ffb3c7, #ffd6a5, #fdffb6, #caffbf, #9bf6ff, #a0c4ff, #bdb2ff)",
   hisui: "linear-gradient(180deg, #d4f7e3 0%, #5bbf8b 55%, #1f7a4d 100%)",
+  kin: "linear-gradient(180deg, #fff3c4 0%, #d9b556 55%, #8a6a1f 100%)",
 };
 
 /** Classes écrites en entier pour que Tailwind garde les règles de globals.css. */
@@ -41,6 +43,7 @@ export const NAME_COLOR_CLASS: Record<NameColorStyle, string> = {
   rainbow: "name-color name-color-rainbow",
   pastel: "name-color name-color-pastel",
   hisui: "name-color name-color-hisui",
+  kin: "name-color name-color-kin",
 };
 
 export function isNameColorStyle(value: unknown): value is NameColorStyle {

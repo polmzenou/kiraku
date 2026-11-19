@@ -9,7 +9,7 @@ import {
   collectionSettingsSchema,
   type CollectionSettingKey,
 } from "@/lib/settings/collection-form";
-import { parseSetting, type SettingKey } from "@/lib/settings/defaults";
+import { parseSetting, RARITY_KEYED, type SettingKey } from "@/lib/settings/defaults";
 import { COMBAT_SETTING_KEYS, combatSettingsSchema, type CombatSettingKey } from "@/lib/settings/combat-form";
 import { DISCORD_SETTING_KEYS, discordSettingsSchema, type DiscordSettingKey } from "@/lib/settings/discord-form";
 import { NEWS_MAX_ITEMS, nextPublication, validNewsImageUrl, type NewsVisuals } from "@/lib/home/news";
@@ -22,6 +22,7 @@ import { EVENT_GAUGE_SETTING_KEYS, eventGaugeSettingsSchema, type EventGaugeSett
 import { WRAPPED_SETTING_KEYS, wrappedSettingsSchema, type WrappedSettingKey } from "@/lib/settings/wrapped-form";
 import { SHOWCASE_EVENT_SETTING_KEYS, showcaseEventSettingsSchema, type ShowcaseEventSettingKey } from "@/lib/settings/showcase-event-form";
 import { EXPEDITION_SETTING_KEYS, expeditionSettingsSchema, type ExpeditionSettingKey } from "@/lib/settings/expedition-form";
+import { PRESTIGE_SETTING_KEYS, prestigeSettingsSchema, type PrestigeSettingKey } from "@/lib/settings/prestige-form";
 import { USAGE_SETTING_KEYS, usageSettingsSchema, type UsageSettingKey } from "@/lib/settings/usage-form";
 import { ECONOMY_SETTING_KEYS, economySettingsSchema, type EconomySettingKey } from "@/lib/settings/economy-form";
 import { RANKED_FORM_KEYS, rankedSettingsSchema, type RankedSettingKey } from "@/lib/settings/ranked-form";
@@ -66,14 +67,14 @@ async function saveSettings<K extends SettingKey>(
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const next = parsed.data as SettingsOf<K>;
-  const rarityKeys = ["booster.rates", "collection.recycleValues", "battle.keywordsByRarity", "booster.slotFloors", "booster.goldenFloor", "gifts.allowedRarities", "trades.allowedRarities", "home.pullFeed.minRarity", "market.maxPriceByRarity", "booster.duplicateGuardRarities", "casino.coinflip.allowedRarities", "discord.casinoMinRarity"];
-  if (keys.some((k) => rarityKeys.includes(k))) {
+  const rarityKeyed = keys.filter((k) => RARITY_KEYED[k]);
+  if (rarityKeyed.length > 0) {
     const registry = await getRarities();
-    for (const key of keys.filter((k) => rarityKeys.includes(k))) {
+    for (const key of rarityKeyed) {
       const value = next[key];
       const selected = typeof value === "string" ? [value] : Array.isArray(value) ? value : Object.keys(value as object);
       if (selected.some((r) => !registry.includes(String(r)))) return { ok: false, error: "INVALID" };
-      if (["booster.rates", "collection.recycleValues", "battle.keywordsByRarity"].includes(key) && selected.length !== registry.length) return { ok: false, error: "INVALID" };
+      if (RARITY_KEYED[key] === "all" && selected.length !== registry.length) return { ok: false, error: "INVALID" };
     }
   }
 
@@ -284,6 +285,11 @@ export async function updateWrappedSettings(input: unknown): Promise<UpdateSetti
 
 export async function updateShowcaseEventSettings(input: unknown): Promise<UpdateSettingsResult<ShowcaseEventSettingKey>> {
   return saveSettings(SHOWCASE_EVENT_SETTING_KEYS, showcaseEventSettingsSchema, input);
+}
+
+/** Prestige : le schéma refuse un sceau de tirage hors de la police des sceaux. */
+export async function updatePrestigeSettings(input: unknown): Promise<UpdateSettingsResult<PrestigeSettingKey>> {
+  return saveSettings(PRESTIGE_SETTING_KEYS, prestigeSettingsSchema, input);
 }
 
 export async function updateExpeditionSettings(input: unknown): Promise<UpdateSettingsResult<ExpeditionSettingKey>> {

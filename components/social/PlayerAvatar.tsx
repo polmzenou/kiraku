@@ -20,6 +20,7 @@ export function PlayerAvatar({
   image,
   size,
   frame = null,
+  prestige = 0,
   online,
   className = "",
 }: {
@@ -27,6 +28,8 @@ export function PlayerAvatar({
   image: string | null;
   size: number;
   frame?: FrameStyle | null;
+  /** Prestige du joueur : chiffre romain en or au-dessus de l'avatar (dès I, à partir de 24 px). */
+  prestige?: number;
   online?: boolean;
   className?: string;
 }) {
@@ -46,7 +49,7 @@ export function PlayerAvatar({
   );
   return (
     <WithPresence online={online} size={size}>
-      <AvatarFrame frame={frame} size={size}>
+      <AvatarFrame frame={frame} prestige={prestige} size={size}>
         {avatar}
       </AvatarFrame>
     </WithPresence>

@@ -1,5 +1,6 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { toRoman } from "@/lib/prestige/roman";
 import type { Collector } from "@/server/collection/leaderboard";
 import { displayName } from "../profile/ProfileHeader";
 import { SectionTitle } from "../SectionTitle";
@@ -26,6 +27,8 @@ export function TopCollectors({ collectors, withHeader = true }: { collectors: C
   if (collectors.length === 0) return null;
   // Ordre visuel 2-1-3 ; l'ordre de lecture (lecteur d'écran) reste 1-2-3 grâce à `order`
   const podium = collectors.slice(0, 3);
+  // Dès qu'un joueur a renaît, le classement passe par le prestige d'abord : le sous-titre le dit
+  const prestigeLed = collectors.some((c) => c.decor.prestige > 0);
 
   return (
     <section
@@ -35,7 +38,7 @@ export function TopCollectors({ collectors, withHeader = true }: { collectors: C
     >
       {withHeader && (
         <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-          <SectionTitle id="top-collectionneurs" kanji="番付" title={t("title")} subtitle={t("subtitle")} />
+          <SectionTitle id="top-collectionneurs" kanji="番付" title={t("title")} subtitle={t(prestigeLed ? "subtitlePrestige" : "subtitle")} />
           <Link
             href="/classement"
             className="inline-flex min-h-11 items-center text-sm font-bold text-shu underline-offset-4 hover:underline"
@@ -53,13 +56,25 @@ export function TopCollectors({ collectors, withHeader = true }: { collectors: C
   );
 }
 
-/** Ligne d'un collectionneur sous le podium (/classement, page Social) : joueur, cartes, Mythiques et place. */
+/**
+ * Ligne d'un collectionneur sous le podium (/classement, page Social) : joueur, prestige, cartes, Mythiques et place.
+ * Le prestige passe devant les cartes dans le tri : il est écrit en or, en tête du détail.
+ */
 export function CollectorRow({ collector }: { collector: Collector }) {
   const t = useTranslations("home.collectors");
+  const counts = `${t("cards", { count: collector.uniqueCards })} · ${t("mythics", { count: collector.mythics })}`;
   return (
     <PlayerRow
       player={collector}
-      detail={`${t("cards", { count: collector.uniqueCards })} · ${t("mythics", { count: collector.mythics })}`}
+      detail={
+        collector.decor.prestige > 0 ? (
+          <>
+            <b className="font-title font-extrabold text-kin">{t("prestige", { roman: toRoman(collector.decor.prestige) })}</b> · {counts}
+          </>
+        ) : (
+          counts
+        )
+      }
     >
       <span className="w-10 text-right font-title text-lg font-extrabold text-text-muted tabular-nums">
         <span className="sr-only">{t("rank", { rank: collector.rank })}</span>
@@ -87,7 +102,7 @@ function Place({ collector }: { collector: Collector }) {
             username={collector.username}
             image={collector.image}
             size={place.avatar}
-            frame={collector.decor.frame}
+            frame={collector.decor.frame} prestige={collector.decor.prestige}
             // Le cadre porté remplace l'anneau de la place
             className={collector.decor.frame ? "" : `ring-[3px] ring-offset-2 ring-offset-bg ${place.ring}`}
           />
@@ -101,6 +116,10 @@ function Place({ collector }: { collector: Collector }) {
         </span>
         <PlayerName name={name} color={collector.decor.nameColor} className="mt-1 max-w-full truncate text-sm font-bold group-hover:underline sm:text-base" />
       </Link>
+      {/* Le prestige passe avant les cartes : il est écrit au-dessus d'elles */}
+      {collector.decor.prestige > 0 && (
+        <p className="-mb-1.5 font-title text-sm font-extrabold tracking-wide text-kin">{t("prestige", { roman: toRoman(collector.decor.prestige) })}</p>
+      )}
       <p className="text-center text-xs text-text-muted tabular-nums">
         {t("cards", { count: collector.uniqueCards })}
         <span aria-hidden="true"> · </span>

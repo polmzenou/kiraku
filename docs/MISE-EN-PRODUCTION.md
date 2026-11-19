@@ -83,6 +83,32 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
   l'appareil, exemptée dans le registre. Faire confirmer cette qualification lors de la relecture
   juridique ; l'absence de cookie seule ne suffit pas à établir une exemption.
 
+## Lancement du prestige
+
+**Avant :**
+
+- [ ] Migrations `20261118120000_prestige_copies`, `20261118130000_prestige_cycles`,
+  `20261118140000_prestige_printings` et `20261118150000_prestige_sanctuary` appliquées par `npm run db:deploy` sur le
+  VPS, **avant** le redémarrage PM2 de la version qui les lit. Elles ne réécrivent pas `UserCard` (valeurs par défaut
+  constantes, clé étrangère des gravées posée `NOT VALID`).
+- [ ] Tests sur base réelle passés sur la base de test (`DATABASE_URL_TEST`) : `server/prestige/prestige.db.test.ts`
+  (renaissances et consécrations simultanées) et `server/prestige/printing.db.test.ts` (50 gravures sur un tirage
+  presque épuisé, aucun numéro en double, aucun interblocage).
+- [ ] `/admin/prestige` : seuils par rareté relus avec l'aperçu d'équilibrage (combien de joueurs seraient
+  éligibles), héritières, barème des Zeni, chances et tailles des gravées (Mythique et au-dessus seulement), sceau du
+  premier tirage. L'équipe renaît en aperçu (interrupteur coupé) sur un compte de test et vérifie le rite, le chiffre
+  romain partout, une gravée tirée, sa vente au Marché et sa mise au casino.
+- [ ] Cosmétiques du prestige installés depuis `/admin/prestige` (titres, cadres tensei, hanga et hono, pseudo or).
+- [ ] Discord : `DISCORD_PRESTIGE_CHANNEL_ID` dans l'environnement si les annonces sont voulues (voir
+  `docs/DISCORD.md`), interrupteur `discord.prestigeEnabled` dans `/admin/discord`.
+- [ ] Essai sur un vrai téléphone en 375 px, Yoru et Washi : page `/prestige`, rite 転生, révélation à la baren,
+  consécration 奉納, sanctuaire et rouleaux du profil ; puis en mouvement réduit.
+
+**À l'ouverture :**
+
+- [ ] Interrupteur `prestige.enabled` allumé (`/admin/prestige` ou `/admin/fonctionnalites`).
+- [ ] Bannière Nouveautés depuis `/admin/nouveautes` (sceau 転, lien vers `/prestige`).
+
 ## Contrôles techniques
 
 - [ ] `npm run lint`, `npm run typecheck`, `npm test`, `npm run audit:actions` passent.

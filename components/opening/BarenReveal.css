@@ -1,0 +1,37 @@
+/* Révélation d'une gravée (BarenReveal.tsx) : calque posé sur la carte, tailles en cqw de la carte. */
+.baren-reveal { position: absolute; inset: 0; z-index: 35; pointer-events: none; container-type: inline-size; }
+
+/* Bandes d'encre d'estampe (texture générée, scripts/prestige-assets.mjs), découvertes au passage de la baren puis
+   effacées quand la carte reçoit son cartouche. Chaque bande montre sa tranche de la même texture : la carte fait
+   140cqw de haut, une bande sur cinq en fait 28. */
+.baren-band {
+  position: absolute; left: 0; right: 0; opacity: 0;
+  background: url("/prestige/fx/encre-estampe-v1.webp") 0 calc(var(--band, 0) * -28cqw) / 100cqw 140cqw no-repeat;
+}
+
+/* La baren générée, vue de dessus : disque gainé de feuille de bambou, nœud de la poignée */
+.baren-pad {
+  position: absolute; left: 0; top: 0; width: 38%; aspect-ratio: 1; opacity: 0; will-change: transform, opacity;
+  background: url("/prestige/fx/baren-v1.webp") center / contain no-repeat;
+  filter: drop-shadow(0 10px 14px rgb(0 0 0 / .45));
+}
+
+/* Le numéro écrit au pinceau sur une bande de washi, puis le sceau du tirage */
+.baren-ink {
+  position: absolute; left: 50%; top: 44%; translate: -50% -50%; opacity: 0; display: flex; align-items: baseline; gap: 1.5cqw;
+  padding: 2.5cqw 6cqw; border-radius: 1px; white-space: nowrap; color: #1f1b17; font-variant-numeric: tabular-nums;
+  background: linear-gradient(#fbf6ea, #efe5cf); box-shadow: 0 0 0 .6cqw #c8372d, 0 6px 16px rgb(0 0 0 / .4);
+  font-family: var(--font-title), serif;
+}
+.baren-ink b { font-size: 17cqw; font-weight: 800; line-height: 1; }
+.baren-ink s { font-size: 8cqw; font-weight: 600; text-decoration: none; opacity: .7; }
+.baren-seal {
+  position: absolute; left: 66%; top: 52%; width: 19cqw; aspect-ratio: 1; opacity: 0; display: grid; place-items: center;
+  border-radius: 2px; background: #c8372d; color: #f8f1e3; font-size: 7.6cqw; line-height: 1.05; writing-mode: vertical-rl;
+  box-shadow: inset 0 0 0 1cqw #c8372d, inset 0 0 0 1.5cqw rgb(248 241 227 / .85), 0 3px 8px rgb(0 0 0 / .35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .baren-reveal { display: none; }
+}
+:root[data-motion="reduced"] .baren-reveal { display: none; }

@@ -7,6 +7,7 @@ import { z } from "zod";
 import { PageShell } from "@/components/PageShell";
 import { WikiCardDetail, WikiPersonalizedCardDetail } from "@/components/wiki/WikiCardDetail";
 import { WikiCardOwners, WikiCardOwnersSkeleton } from "@/components/wiki/WikiCardOwners";
+import { WikiEngravedRegistry } from "@/components/wiki/WikiEngravedRegistry";
 import { CardQuote, CardQuoteSkeleton } from "@/components/market/CardQuote";
 import { CardBuyOrders, CardBuyOrdersSkeleton } from "@/components/market/orders/CardBuyOrders";
 import { WikiWishlistAction } from "@/components/wiki/WikiWishlistAction";
@@ -68,9 +69,15 @@ export default async function WikiCardPage({ params }: PageProps<"/[locale]/wiki
   ]);
   const wishlistAction = <Suspense fallback={null}><WikiWishlistAction cardId={card.id} name={card.name} /></Suspense>;
   const ownersSection = (
-    <Suspense fallback={<WikiCardOwnersSkeleton />}>
-      <WikiCardOwners cardId={card.id} rarity={card.rarity} name={card.name} locale={locale} />
-    </Suspense>
+    <>
+      {/* Registre des gravées (prestige) : rien tant qu'aucune n'est sortie */}
+      <Suspense fallback={null}>
+        <WikiEngravedRegistry cardId={card.id} />
+      </Suspense>
+      <Suspense fallback={<WikiCardOwnersSkeleton />}>
+        <WikiCardOwners cardId={card.id} rarity={card.rarity} name={card.name} locale={locale} />
+      </Suspense>
+    </>
   );
   // Cote puis avis de recherche : personnels ou changeants, rendus hors de la fiche en cache
   const quoteSection = (

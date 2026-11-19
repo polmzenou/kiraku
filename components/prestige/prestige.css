@@ -1,0 +1,247 @@
+/* Prestige : aura du profil, bouton « Évoluer », bandeau, jauges d'accès et rite de renaissance (転生).
+   Animations en transform et opacity seulement ; rien ne bouge en mouvement réduit. */
+
+/* --- Aura du profil (images générées) : poudre d'or dès le prestige I, nuées zuiun du V au IX, Raigō à partir du X.
+   L'aura couvre toute la largeur de l'écran ; --c0 est le bord gauche du contenu de la page (PageShell : 1 200 px au
+   plus, marges de 1 rem). L'avatar a son centre à 36 px de ce bord et à 60 px du haut de l'aura. --- */
+.pr-aura {
+  --c0: calc(50% - (min(100%, 1200px) - 2rem) / 2);
+  position: absolute;
+  z-index: -1;
+  top: -1.5rem;
+  left: 50%;
+  width: 100vw;
+  height: 16rem;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateX(-50%);
+  /* Fondu en haut (les rayons de Raigō ne s'arrêtent pas net) et en bas */
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 14%, #000 55%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 14%, #000 55%, transparent);
+}
+/* Zuiun : nuées porte-bonheur en laque d'or qui encadrent l'avatar et le pseudo, et flottent à peine */
+.pr-zuiun {
+  position: absolute;
+  aspect-ratio: 2 / 1;
+  background: center / contain no-repeat;
+  scale: var(--pr-flip, 1) 1;
+  filter: drop-shadow(0 3px 6px rgb(0 0 0 / 0.35));
+  animation: pr-float var(--pr-d, 8s) ease-in-out infinite alternate;
+  animation-delay: var(--pr-delay, 0s);
+}
+@keyframes pr-float {
+  from { transform: translateY(-4px); }
+  to { transform: translateY(4px); }
+}
+/* Raigō : rayons d'or qui tournent derrière l'avatar (un tour en deux minutes et demie), halo de flammes au XVIII,
+   deux bancs de nuages lumineux qui dérivent d'une tuile (--tile) à chaque boucle */
+.pr-raigo-rays, .pr-raigo-halo { position: absolute; left: calc(var(--c0) + 36px); top: 60px; translate: -50% -50%; background: center / contain no-repeat; }
+.pr-raigo-rays { width: 520px; height: 520px; background-image: url("/prestige/fx/raigo-rayons-v1.webp"); animation: pr-spin 150s linear infinite; }
+.pr-raigo-halo { width: 156px; height: 156px; background-image: url("/prestige/fx/raigo-halo-v1.webp"); }
+@keyframes pr-spin {
+  to { transform: rotate(360deg); }
+}
+.pr-raigo-bank {
+  --tile: 34rem;
+  position: absolute;
+  left: 0;
+  top: 7.5rem;
+  width: calc(100% + var(--tile));
+  height: 8.5rem;
+  opacity: 0.7;
+  background: url("/prestige/fx/raigo-nuages-v1.webp") 0 100% / var(--tile) 100% repeat-x;
+  animation: pr-bank 60s linear infinite;
+}
+.pr-raigo-bank.far { --tile: 26rem; top: 5rem; height: 6.5rem; opacity: 0.35; animation-duration: 90s; animation-direction: reverse; }
+@keyframes pr-bank {
+  to { transform: translateX(calc(-1 * var(--tile))); }
+}
+/* Poudre d'or : une des 8 paillettes de la planche générée (poussières, flocons de feuille d'or, étincelles ;
+   scripts/prestige-assets.mjs), choisie par background-position */
+.pr-speck {
+  position: absolute;
+  bottom: 0.75rem;
+  background: url("/prestige/fx/poudre-or-v1.webp") 0 0 / 400% 200% no-repeat;
+  opacity: 0;
+  animation: pr-rise var(--pr-d, 6s) linear infinite;
+  animation-delay: var(--pr-delay, 0s);
+}
+@keyframes pr-rise {
+  0% { transform: translate(0, 0); opacity: 0; }
+  12% { opacity: 1; }
+  100% { transform: translate(var(--pr-dx, 0), -14rem); opacity: 0; }
+}
+
+/* --- Bouton « Évoluer » : un halo d'or quand le joueur peut renaître --- */
+.pr-evolve { position: relative; isolation: isolate; }
+.pr-evolve[data-ready]::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  z-index: -1;
+  border-radius: 999px;
+  border: 2px solid var(--color-kin);
+  animation: pr-halo 1.9s ease-in-out infinite;
+}
+@keyframes pr-halo {
+  0%, 100% { opacity: 0.12; transform: scale(0.985); }
+  50% { opacity: 0.95; transform: scale(1.02); }
+}
+
+/* --- Bandeau sous le pseudo : 転生 III · 7ᵉ renaissance de Kiraku --- */
+.pr-band {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: flex-start;
+  padding: 0.3rem 0.9rem 0.3rem 0.35rem;
+  color: var(--color-kin);
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-block: 1px solid color-mix(in srgb, var(--color-kin) 55%, transparent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--color-kin) 16%, transparent), transparent);
+}
+
+/* --- Jauges d'accès, une par rareté : le trait marque le seuil --- */
+.pr-track { position: relative; height: 8px; }
+.pr-track > span { position: absolute; inset: 0; overflow: hidden; border-radius: 4px; background: var(--color-surface-2); }
+.pr-track > span > i { position: absolute; inset: 0; transform-origin: 0 50%; background: var(--pr-color); }
+.pr-track > b { position: absolute; top: -3px; bottom: -3px; width: 2px; border-radius: 1px; background: var(--color-text); }
+
+/* --- Rite de renaissance (転生) --- */
+.pr-rite {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  overflow: hidden;
+  padding: calc(1rem + env(safe-area-inset-top, 0px)) max(1rem, env(safe-area-inset-right, 0px)) calc(1rem + env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px));
+  color: #f1e9da;
+  background: radial-gradient(120% 70% at 50% 0%, #20242c, #121315 62%);
+}
+/* Bouton « Passer », au-dessus de tous les calques du rite */
+.pr-skip { z-index: 6; }
+.pr-rite .pr-inner { position: relative; width: 100%; max-width: 30rem; margin: 0 auto; display: flex; flex: 1; flex-direction: column; gap: 0.6rem; }
+.pr-rite-dim { position: absolute; inset: 0; background: #050608; opacity: 0; pointer-events: none; }
+.pr-heirs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.pr-heirs .pr-new-petal { opacity: 0; }
+.pr-piles { display: flex; justify-content: space-between; gap: 6px; }
+.pr-pile { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: #a89f92; font-variant-numeric: tabular-nums; }
+.pr-pile .stack { position: relative; width: 34px; height: 46px; }
+.pr-pile .stack i { position: absolute; inset: 0; border-radius: 4px; background: var(--pr-color); box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.25); }
+.pr-pile .stack i:nth-child(1) { translate: -4px 4px; opacity: 0.55; }
+.pr-pile .stack i:nth-child(2) { translate: -2px 2px; opacity: 0.8; }
+/* Fond du rite : paysage d'encre nocturne généré, sous tout le reste */
+.pr-rite-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.pr-rite-bg img { width: 100%; height: 100%; object-fit: cover; }
+/* Pierre à encre générée, lueur froide ; une onde générée par pile qui s'y enfonce (centre du bassin à 42 %) */
+.pr-ink { position: absolute; left: 50%; bottom: 5rem; width: 190px; height: 130px; translate: -50% 0; opacity: 0; pointer-events: none; }
+.pr-ink .glow { position: absolute; left: 50%; bottom: 0; width: 280px; height: 180px; translate: -50% 0; background: radial-gradient(closest-side, rgb(127 163 209 / 0.34), transparent 70%); }
+.pr-ink .stone { position: absolute; left: 0; bottom: 6px; width: 100%; aspect-ratio: 2 / 1; background: url("/prestige/fx/pierre-a-encre-v1.webp") center / contain no-repeat; filter: drop-shadow(0 8px 12px rgb(0 0 0 / 0.6)); }
+.pr-ripple { position: absolute; z-index: 4; width: 150px; height: 50px; margin: -25px 0 0 -75px; background: url("/prestige/fx/onde-encre-v1.webp") center / contain no-repeat; pointer-events: none; }
+.pr-emaki { position: relative; height: 92px; overflow: hidden; border-radius: 6px; opacity: 0; }
+.pr-emaki .paper { position: absolute; inset: 0 12px; display: flex; align-items: center; gap: 12px; padding: 0 14px; color: #1f1b17;
+  background: repeating-linear-gradient(93deg, rgb(120 100 70 / 0.05) 0 1px, transparent 1px 6px), linear-gradient(180deg, #d9b556 0 5px, #f9f3e7 5px calc(100% - 5px), #d9b556 calc(100% - 5px)); }
+.pr-emaki .cover { position: absolute; inset: 0 0 0 12px; background: #0b0a08; }
+.pr-emaki .rod { position: absolute; top: 0; bottom: 0; left: 0; width: 12px; border-radius: 4px; background: linear-gradient(90deg, #3a2414, #7a5634 45%, #2a180c); box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pr-zuiun, .pr-raigo-rays, .pr-raigo-bank, .pr-speck, .pr-evolve[data-ready]::before { animation: none; }
+  .pr-speck { opacity: 0.5; }
+}
+:root[data-motion="reduced"] :is(.pr-zuiun, .pr-raigo-rays, .pr-raigo-bank, .pr-speck, .pr-evolve[data-ready]::before) { animation: none; }
+:root[data-motion="reduced"] .pr-speck { opacity: 0.5; }
+
+/* Avatar du prochain prestige, en filigrane sur /prestige */
+.pr-ghost { animation: pr-ghost 2.2s ease-in-out infinite; }
+@keyframes pr-ghost {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+/* En-tête de /prestige : l'aube au-dessus d'une mer de nuages (image générée), fondue vers la page en bas. L'image
+   est sombre dans les deux thèmes : les textes de l'en-tête restent clairs. */
+.pr-hero { color: #f6efe2; }
+.pr-hero-bg { position: absolute; z-index: -1; inset: -1.5rem -1rem 0; overflow: hidden; pointer-events: none; -webkit-mask-image: linear-gradient(180deg, #000 68%, transparent); mask-image: linear-gradient(180deg, #000 68%, transparent); }
+.pr-hero-bg img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+@media (min-width: 48rem) {
+  .pr-hero-bg { inset: -1.5rem 0 0; border-radius: var(--radius-card, 12px) var(--radius-card, 12px) 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pr-ghost { animation: none; opacity: 0.6; }
+}
+:root[data-motion="reduced"] .pr-ghost { animation: none; opacity: 0.6; }
+
+/* Rouleaux des cycles (PrestigeEmakis) : rouleaux de brocart générés sur une étagère, déroulés au toucher (élément
+   details). Rouleau ouvert : papier généré entre deux baguettes ; à l'ouverture, la baguette de droite glisse et découvre
+   le papier (transform seulement ; l'état de repos est l'état final, rien ne bouge en mouvement réduit). */
+.pr-shelf { display: flex; flex-direction: column; gap: 0.5rem; }
+.pr-plank { height: 12px; margin: 0 -4px; border-radius: 3px; background: linear-gradient(180deg, #7a5634, #4a3220); box-shadow: 0 6px 12px rgb(0 0 0 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.2); }
+.pr-scroll > summary { list-style: none; }
+.pr-scroll > summary::-webkit-details-marker { display: none; }
+.pr-scroll-rolled { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 4px; cursor: pointer; border-radius: 8px; }
+.pr-scroll-rolled:focus-visible { outline: 2px solid var(--color-kin); outline-offset: 3px; }
+.pr-roll { position: relative; flex: none; width: 160px; aspect-ratio: 4 / 1; background: center / contain no-repeat; filter: drop-shadow(0 6px 8px rgb(0 0 0 / 0.45)); }
+/* Titre 巻之三 sur l'étiquette blanche du rouleau généré */
+.pr-roll-slip { position: absolute; left: 15%; top: 31%; width: 27%; height: 38%; display: grid; place-items: center; color: #1f1b17; font-size: 12px; line-height: 1; white-space: nowrap; }
+.pr-roll-slip.long { font-size: 9.5px; }
+.pr-scroll[open] .pr-roll { filter: drop-shadow(0 0 6px rgb(243 220 140 / 0.8)); }
+.pr-scroll-label { display: flex; min-width: 0; flex-direction: column; }
+.pr-scroll-label span { color: var(--color-text-muted); font-size: 0.75rem; }
+.pr-scroll-open { position: relative; overflow: hidden; margin-top: 0.4rem; padding: 6px 22px; }
+.pr-scroll-paper { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; color: #1f1b17; background: url("/prestige/fx/rouleau-papier-v1.webp") 0 0 / auto 100% repeat-x; box-shadow: inset 0 0 12px rgb(80 50 20 / 0.25); }
+.pr-rod { position: absolute; top: 0; bottom: 0; left: 0; width: 44px; background: url("/prestige/fx/rouleau-baguette-v1.webp") center / auto 100% no-repeat; filter: drop-shadow(2px 0 3px rgb(0 0 0 / 0.4)); }
+.pr-unroller { position: absolute; inset: 0; z-index: 2; transform: translateX(calc(100% - 44px)); pointer-events: none; }
+.pr-unroller .pr-cover { position: absolute; inset: 0 0 0 22px; background: var(--color-bg); }
+.pr-scroll[open] .pr-unroller { animation: pr-unroll 0.95s cubic-bezier(0.3, 0.7, 0.2, 1) both; }
+@keyframes pr-unroll {
+  from { transform: translateX(0); }
+}
+
+/* Sanctuaire (SanctuaryAltar) : le fond généré (image fixe et boucle vidéo, ThemeBackdrop des vitrines), l'autel à
+   gradins généré et les cartes debout sur ses plateaux (bas des cartes à 21 %, 39 % et 63 % de sa hauteur), dans un halo
+   de nacre généré. */
+.pr-sanctum { position: relative; isolation: isolate; width: 100%; max-width: 60rem; margin-inline: auto; aspect-ratio: 3 / 4; overflow: hidden; border-radius: var(--radius-card, 12px); background: #0b0807; box-shadow: inset 0 0 0 1px var(--color-border); }
+.pr-sanctum-altar, .pr-cs-altar { position: absolute; z-index: 2; aspect-ratio: 3 / 2; }
+.pr-sanctum-altar { left: 3%; right: 3%; bottom: 2%; }
+.pr-sanctum-altar::before, .pr-cs-altar::before { content: ""; position: absolute; inset: 0; background: url("/prestige/fx/autel-gradins-v1.webp") center / 100% 100% no-repeat; filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.6)); }
+@media (min-width: 48rem) {
+  .pr-sanctum { aspect-ratio: 16 / 9; }
+  .pr-sanctum-altar { left: 27%; right: 27%; }
+}
+.pr-tier { position: absolute; z-index: 1; left: 0; right: 0; display: flex; justify-content: center; align-items: flex-end; gap: 2%; }
+.pr-tier.t1 { bottom: 79%; }
+.pr-tier.t2 { bottom: 61%; z-index: 2; }
+.pr-tier.t3 { bottom: 37%; z-index: 3; }
+.pr-tier.t1 > * { width: 19%; }
+.pr-tier.t2 > * { width: 15%; }
+.pr-tier.t3 > * { width: 13.5%; }
+.pr-relic { position: relative; display: block; padding: 0; border: 0; background: none; border-radius: 6px; isolation: isolate; cursor: pointer; }
+.pr-relic::before { content: ""; position: absolute; inset: -32% -40%; z-index: -1; background: url("/prestige/fx/halo-nacre-v1.webp") center / contain no-repeat; opacity: 0.75; pointer-events: none; }
+.pr-relic[aria-pressed="true"] { outline: 2px solid #f3dc8c; outline-offset: 3px; }
+.pr-relic:focus-visible { outline: 2px solid var(--color-ai); outline-offset: 3px; }
+.pr-treasure-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.pr-treasure-grid .pr-relic::before { display: none; }
+@media (min-width: 48rem) {
+  .pr-treasure-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+}
+
+/* Rite de consécration (montée à l'autel), dans le vrai sanctuaire : fond généré, lueur des lanternes, cloche, rayon
+   d'or, autel à gradins dont la place du haut attend la carte, éclat et sceau 奉納. */
+.pr-consecrate { background: #0b0807; }
+.pr-cs-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.pr-cs-bg img { width: 100%; height: 100%; object-fit: cover; }
+.pr-cs-bloom { position: absolute; inset: 0; opacity: 0; pointer-events: none; background: radial-gradient(70% 45% at 50% 32%, rgb(255 186 110 / 0.32), transparent 72%); }
+.pr-cs-suzu { position: absolute; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 2.25rem); width: 3.4rem; aspect-ratio: 1 / 3; translate: -50% 0; transform-origin: 50% 0; background: url("/prestige/fx/suzu-v1.webp") center / contain no-repeat; filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.5)); pointer-events: none; }
+.pr-cs-ray { position: absolute; left: 50%; top: 0; width: 14rem; height: 70%; translate: -50% 0; opacity: 0; pointer-events: none; background: url("/prestige/fx/rayon-v1.webp") center top / 100% 100% no-repeat; }
+.pr-cs-altar { left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 9rem); width: min(92vw, 30rem); translate: -50% 0; }
+.pr-cs-slot { position: absolute; left: 50%; bottom: 79%; width: 19%; aspect-ratio: 5 / 7; translate: -50% 0; border: 1.5px dashed rgb(243 220 140 / 0.6); border-radius: 6px; }
+.pr-cs-slot > i { position: absolute; inset: -40%; opacity: 0; background: url("/prestige/fx/halo-nacre-v1.webp") center / contain no-repeat; }
+.pr-cs-card { position: absolute; z-index: 3; left: 50%; top: 16%; width: 11rem; margin-left: -5.5rem; }
+.pr-cs-card > .halo { position: absolute; left: 50%; top: 50%; z-index: -1; width: 300%; aspect-ratio: 1; translate: -50% -50%; opacity: 0; pointer-events: none; background: url("/prestige/fx/halo-nacre-v1.webp") center / contain no-repeat; }
+.pr-cs-burst { position: absolute; z-index: 4; left: 0; top: 0; width: 14rem; aspect-ratio: 1; translate: -50% -50%; opacity: 0; pointer-events: none; background: url("/prestige/fx/eclat-v1.webp") center / contain no-repeat; }
+.pr-cs-seal { position: absolute; z-index: 5; left: 0; top: 0; display: grid; place-items: center; width: 40px; height: 58px; translate: -50% -50%; opacity: 0; border-radius: 3px;
+  background: #c8372d; color: #f8f1e3; font-size: 17px; line-height: 1.05; writing-mode: vertical-rl;
+  box-shadow: inset 0 0 0 3px #c8372d, inset 0 0 0 4.5px rgb(248 241 227 / 0.85), 0 4px 10px rgb(0 0 0 / 0.45); }
+.pr-cs-done { position: absolute; z-index: 5; left: 0; right: 0; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); padding: 0 1rem; }

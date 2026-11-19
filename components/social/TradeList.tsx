@@ -7,6 +7,7 @@ import { useRouter } from "@/i18n/navigation";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { shownPlayerRef } from "@/lib/social/shown-player";
 import { acceptTradeAction, cancelTradeAction, declineTradeAction, markTradesSeenAction } from "@/server/actions/trades";
+import { CopyPicker } from "../collection/CopyPicker";
 import type { TradeView } from "@/server/social/trades";
 import { OwnedOverlay } from "../collection/OwnedBadge";
 import { Fuda } from "../fuda/Fuda";
@@ -44,6 +45,8 @@ function TradeCard({ trade, mode }: { trade: TradeView; mode: Mode }) {
   const now = useNow();
   const router = useRouter();
   const [chosen, setChosen] = useState<string | null>(null);
+  // Exemplaire de la carte demandée que je donne (pièce spéciale), sinon un ordinaire
+  const [copyId, setCopyId] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [declining, setDeclining] = useState(false);
   const [declineNote, setDeclineNote] = useState("");
@@ -70,7 +73,7 @@ function TradeCard({ trade, mode }: { trade: TradeView; mode: Mode }) {
       if (!chosen) return;
       setError(null);
       try {
-        const res = await acceptTradeAction({ tradeId: trade.id, chosenCardId: chosen });
+        const res = await acceptTradeAction({ tradeId: trade.id, chosenCardId: chosen, userCardId: copyId });
         if (!res.ok) {
           setError(t(`errors.${res.error}` as "errors.UNAVAILABLE", { max: 0 }));
           setConfirming(false);
@@ -182,6 +185,9 @@ function TradeCard({ trade, mode }: { trade: TradeView; mode: Mode }) {
           ) : confirming ? (
             <>
               <p className="mr-auto text-sm font-bold">{t("confirm")}</p>
+              <div className="w-full">
+                <CopyPicker cardId={trade.wanted.cardId} value={copyId} onChange={setCopyId} />
+              </div>
               <Button type="button" onClick={() => setConfirming(false)} disabled={pending}>
                 {t("cancelConfirm")}
               </Button>

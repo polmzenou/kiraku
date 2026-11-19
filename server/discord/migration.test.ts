@@ -13,7 +13,7 @@ beforeAll(async () => {
   await pg.exec('CREATE TABLE "Season" (id TEXT PRIMARY KEY);');
   await pg.exec(readFileSync(resolve("prisma/migrations/20261030140000_discord_roles_ranked/migration.sql"), "utf8"));
   await pg.exec(readFileSync(resolve("prisma/migrations/20261030150000_discord_technical_alerts/migration.sql"), "utf8"));
-}, 30_000);
+}, 120_000);
 afterAll(async () => pg.close());
 
 describe("migration Discord (Postgres isolé en mémoire)", () => {

@@ -12,13 +12,17 @@ import type { CollectionPage } from "@/lib/collection/view";
 import { PROFILE_VISIBILITIES } from "@/lib/collection/visibility";
 import { USERNAME_REGEX } from "@/lib/username";
 import { isFrozen } from "@/lib/account/deletion";
+import type { FudaCopy } from "@/components/fuda/Fuda";
+import { isSpecialCopy } from "@/lib/collection/copies";
+import { fudaCopyOf } from "@/lib/prestige/printing";
 import { getAlbumPage } from "../collection/albums";
 import { accessFor, findProfileOwner } from "../collection/profile";
-import { getCollectionPage, MAX_OFFSET } from "../collection/queries";
+import { getCollectionPage, getOwnedCopies, MAX_OFFSET } from "../collection/queries";
 import { RecycleError, recycleWith, type RecycleRequest } from "../collection/recycle-core";
 import { prisma } from "../db";
 import { clientIp, rateLimit } from "../ratelimit";
 import { getSetting } from "../settings";
+import { getPrintingSeals } from "../prestige/rules";
 import { getCurrentUser, requireActiveUser } from "../user";
 
 // Collection, recyclage et confidentialité (les vitrines : server/actions/showcases.ts). Ordre des contrôles : session → Zod →
@@ -93,11 +97,48 @@ export async function loadCollectionPage(input: unknown): Promise<({ ok: true } 
   return { ok: true, ...page };
 }
 
+// --- Exemplaires d'une carte (prestige) ---
+
+export type CardCopies = {
+  /** Exemplaires ordinaires en collection : le serveur en choisit un quand le joueur n'en désigne pas. */
+  ordinary: number;
+  /** Exemplaires spéciaux en collection (héritiers ou gravés) : ils ne partent que désignés. */
+  special: ({ userCardId: string } & FudaCopy)[];
+};
+
+const copiesSchema = z.object({ cardId: cardIdSchema }).strict();
+
+/** Exemplaires en collection d'une carte du joueur : de quoi choisir celui qui part (CopyPicker). */
+export async function copiesOfCardAction(input: unknown): Promise<{ ok: true; copies: CardCopies } | Failure> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "NO_SESSION" };
+  const parsed = copiesSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (!(await rateLimit(`copies:${user.id}`, { limit: 60, windowSeconds: 60 }, { store: "memory" })).success) {
+    return { ok: false, error: "RATE_LIMITED" };
+  }
+  // Propriété : seuls les exemplaires du joueur de la session sont lus ; les plus hauts héritages d'abord
+  const [owned, seals] = await Promise.all([getOwnedCopies(user.id, parsed.data.cardId), getPrintingSeals()]);
+  const inCollection = owned.filter((c) => c.status === "COLLECTION");
+  const special = inCollection.filter(isSpecialCopy).sort((a, b) => b.heritage - a.heritage);
+  return {
+    ok: true,
+    copies: {
+      ordinary: inCollection.length - special.length,
+      special: special.flatMap((c) => {
+        const copy = fudaCopyOf(c, seals);
+        return copy ? [{ userCardId: c.id, ...copy }] : [];
+      }),
+    },
+  };
+}
+
 // --- Recyclage ---
 
 export type RecycleResult = { ok: true; recycled: number; gain: number; coins: number } | Failure;
 
 const recycleCardSchema = z.object({ cardId: cardIdSchema, count: z.number().int().min(1).max(10_000) });
+const recycleCopySchema = z.object({ userCardId: cardIdSchema, expected: z.number().int().min(0).max(100_000_000) }).strict();
 const recycleAllSchema = z.object({
   maxRarity: rarityKeySchema,
   expected: z.number().int().min(1).max(100_000_000),
@@ -108,7 +149,8 @@ async function runRecycle(request: RecycleRequest, userId: string): Promise<Recy
     return { ok: false, error: "RATE_LIMITED" };
   }
   try {
-    const outcome = await recycleWith(prisma, userId, request, await getSetting("collection.recycleValues"));
+    const [values, engravedMultiplier] = await Promise.all([getSetting("collection.recycleValues"), getSetting("prestige.printing.recycleMultiplier")]);
+    const outcome = await recycleWith(prisma, userId, request, values, engravedMultiplier);
     // En-tête (solde) et totaux de la page à jour sans recharger
     refresh();
     return { ok: true, recycled: outcome.recycled, gain: outcome.gain, coins: outcome.coins };
@@ -128,6 +170,17 @@ export async function recycleCardAction(input: unknown): Promise<RecycleResult> 
   // Propriété : seuls les exemplaires du joueur de la session sont lus, dans la transaction
   if (user.bannedAt || isFrozen(user)) return { ok: false, error: "UNAVAILABLE" };
   return runRecycle({ kind: "card", cardId: parsed.data.cardId, count: parsed.data.count }, user.id);
+}
+
+/** Recycle un exemplaire spécial (héritier ou gravé), désigné depuis sa ligne ; `expected` est le gain confirmé. */
+export async function recycleCopyAction(input: unknown): Promise<RecycleResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "NO_SESSION" };
+  const parsed = recycleCopySchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  // Propriété : l'exemplaire est relu sous le verrou du joueur de la session, dans la transaction
+  if (user.bannedAt || isFrozen(user)) return { ok: false, error: "UNAVAILABLE" };
+  return runRecycle({ kind: "copy", userCardId: parsed.data.userCardId, expected: parsed.data.expected }, user.id);
 }
 
 /** Recycle tous les doublons jusqu'à une rareté ; `expected` est le gain que le joueur a confirmé. */

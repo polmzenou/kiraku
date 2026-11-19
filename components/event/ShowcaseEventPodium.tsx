@@ -41,7 +41,7 @@ function Place({ entry }: { entry: PodiumEntry }) {
             username={entry.player.username}
             image={entry.player.image}
             size={place.avatar}
-            frame={entry.player.decor.frame}
+            frame={entry.player.decor.frame} prestige={entry.player.decor.prestige}
             className={entry.player.decor.frame ? "" : `ring-[3px] ring-offset-2 ring-offset-bg ${place.ring}`}
           />
           <span

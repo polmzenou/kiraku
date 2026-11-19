@@ -6,6 +6,8 @@ import type { SealedKind } from "@/lib/boosters/draw";
 import type { Rarity } from "@/lib/catalog/rarity";
 import type { CollectionItem } from "@/lib/collection/view";
 import { giftBoosterAction, giftCardAction, giftSealedAction } from "@/server/actions/social";
+import { CopyPicker } from "../collection/CopyPicker";
+import { hasSpecialCopy } from "@/lib/collection/copies";
 import { ZeniCoin } from "../layout/ZeniCoin";
 import { ShowcasePicker } from "../profile/ShowcasePicker";
 import { Button } from "../ui/Button";
@@ -49,6 +51,8 @@ export function GiftSheet({ username, name, info, onClose }: { username: string;
   const [remaining, setRemaining] = useState(info.remaining);
   const [sealed, setSealed] = useState(info.sealed ?? []);
   const [result, setResult] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+  // Exemplaire désigné (pièce spéciale), sinon le serveur en offre un ordinaire
+  const [copyId, setCopyId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const values = { ...info.limits, name, price: info.price };
 
@@ -58,7 +62,7 @@ export function GiftSheet({ username, name, info, onClose }: { username: string;
       try {
         const res =
           choice.kind === "card"
-            ? await giftCardAction({ username, cardId: choice.card.cardId })
+            ? await giftCardAction({ username, cardId: choice.card.cardId, userCardId: copyId })
             : choice.kind === "sealed"
               ? await giftSealedAction({ username, drop: choice.id })
               : await giftBoosterAction({ username });
@@ -95,6 +99,7 @@ export function GiftSheet({ username, name, info, onClose }: { username: string;
         onPick={(card) => {
           setPicking(false);
           setChoice({ kind: "card", card });
+          setCopyId(null);
           setResult(null);
         }}
       />
@@ -114,6 +119,7 @@ export function GiftSheet({ username, name, info, onClose }: { username: string;
                 ? t(choice.sealed === "divin" ? "confirmSealedDivin" : "confirmSealedApocalypse", { name })
                 : t("confirmBooster", { name, price: info.price })}
           </p>
+          {choice.kind === "card" && <CopyPicker cardId={choice.card.cardId} special={hasSpecialCopy(choice.card)} value={copyId} onChange={setCopyId} />}
           {choice.kind === "booster" && (
             <p className="flex items-center gap-1.5 text-sm text-text-muted">
               <ZeniCoin size={14} />

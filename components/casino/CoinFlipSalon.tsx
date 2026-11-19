@@ -118,7 +118,7 @@ function TableCard({ table, now, children }: { table: CoinFlipTableView; now: nu
             )
           ) : (
             <>
-              <PlayerAvatar username={table.creator.username} image={table.creator.image} size={20} frame={table.creator.decor.frame} />
+              <PlayerAvatar username={table.creator.username} image={table.creator.image} size={20} frame={table.creator.decor.frame} prestige={table.creator.decor.prestige} />
               <PlayerName name={table.creator.username} color={table.creator.decor.nameColor} className="truncate" />
             </>
           )}

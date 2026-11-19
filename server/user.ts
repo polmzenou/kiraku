@@ -51,7 +51,7 @@ export const getCurrentUser = cache(async () => {
   if (!user) return null;
   // Le hash ne quitte jamais ce module
   const { passwordHash, frame, nameColor, ...rest } = user;
-  return { ...rest, hasPassword: passwordHash !== null, decor: decorFromRelations({ frame, nameColor }) };
+  return { ...rest, hasPassword: passwordHash !== null, decor: decorFromRelations({ frame, nameColor, prestige: rest.prestige }) };
 });
 
 /**

@@ -1,19 +1,12 @@
 import type { CoinSide } from "@/lib/casino/fairness";
 import { SIDE_KANJI } from "@/lib/casino/media";
-import { discordText, type DiscordMessageBody } from "./community";
+import { absolute, discordImage, discordText, KIN, SHU, type DiscordMessageBody } from "./community";
 
 // Annonces du casino dans le salon Discord : teaser (posté depuis l'admin), ouverture (postée une fois par le
 // cron à l'heure dite) et relais des gros lancers. Pur : le serveur fournit l'origine du site et les données.
 
-const KIN = 0xd9b556;
-const SHU = 0xc8372d;
-
 /** Horodatage natif de Discord : chaque membre le lit dans son fuseau (`R` relatif, `F` date complète). */
 const stamp = (at: Date, style: "R" | "F") => `<t:${Math.floor(at.getTime() / 1000)}:${style}>`;
-
-function absolute(path: string, origin: string): string {
-  return new URL(path, origin).href;
-}
 
 /** Teaser : la façade fermée, et le compte à rebours si la date est fixée. */
 export function casinoTeaserMessage(input: { opensAt: Date | null; origin: string }): DiscordMessageBody {
@@ -63,16 +56,9 @@ export type DiscordBigFlip = {
   result: CoinSide;
   /** `spoiler` : carte qui dévoile l'histoire, annoncée sans son illustration. */
   card: { name: string; imageUrl: string; rarityName: string; spoiler: boolean };
+  /** Exemplaire spécial remporté (« Gravée 初摺 n° 17 / 25 · héritage 3 »), absent pour un ordinaire. */
+  copy?: string | null;
 };
-
-function discordImage(value: string, origin: string): { url: string } | undefined {
-  try {
-    const url = new URL(value, origin);
-    if (["https:", "http:"].includes(url.protocol) && !url.username && !url.password) return { url: url.href };
-  } catch {
-    // Une image invalide n'empêche pas l'annonce
-  }
-}
 
 /** Relais d'un gros lancer : qui remporte quelle fuda, sur quelle face, avec le lien vers la table jouée. */
 export function bigFlipMessage(flip: DiscordBigFlip, origin: string): DiscordMessageBody {
@@ -83,7 +69,7 @@ export function bigFlipMessage(flip: DiscordBigFlip, origin: string): DiscordMes
     embeds: [
       {
         title: `${discordText(flip.card.name, 80)} · ${discordText(flip.card.rarityName, 35)}`.slice(0, 256),
-        description: `La pièce est tombée sur ${SIDE_KANJI[flip.result]}.`,
+        description: flip.copy ? `${discordText(flip.copy, 200)}\nLa pièce est tombée sur ${SIDE_KANJI[flip.result]}.` : `La pièce est tombée sur ${SIDE_KANJI[flip.result]}.`,
         url,
         color: KIN,
         ...(image && { image }),

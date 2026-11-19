@@ -9,6 +9,8 @@ export type CardView = FudaCard & { cardId: string; anilistId: number; series: s
 export type OpenedCardView = CardView & {
   userCardId: string;
   isNew: boolean;
+  /** Prestige : carte déjà découverte, obtenue pour la première fois dans le cycle en cours (tampon « Retrouvée »). */
+  regained?: boolean;
   /** Vedette de la bannière. */
   featured: boolean;
   /** Était dans la liste de souhaits du joueur (absent pour les révélations différées). */
