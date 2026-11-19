@@ -19,6 +19,7 @@ import {
 import type { CoinFlipTableView } from "@/server/casino/queries";
 import { CardPickGrid } from "../collection/CardPickGrid";
 import { CopyPicker } from "../collection/CopyPicker";
+import { hasSpecialCopy } from "@/lib/collection/copies";
 import { Fuda } from "../fuda/Fuda";
 import { useHoldAwake } from "../realtime/activity";
 import { useRealtime } from "../realtime/RealtimeProvider";
@@ -324,7 +325,7 @@ function Join({
             unavailable={(item) => item.free === 0}
             allowed={rarities}
           />
-          {card && <CopyPicker cardId={card.cardId} value={copyId} onChange={setCopyId} />}
+          {card && <CopyPicker cardId={card.cardId} special={hasSpecialCopy(card)} value={copyId} onChange={setCopyId} />}
           {/* La mise choisie et « Lancer la pièce » restent sous le pouce, au-dessus de la navigation */}
           <div className="sticky bottom-[calc(var(--mobile-nav-height)+0.5rem)] z-20 -mx-2 flex flex-col gap-3 rounded-card bg-surface/95 p-2 shadow-float ring-1 ring-border ring-inset lg:bottom-4">
             {card && (

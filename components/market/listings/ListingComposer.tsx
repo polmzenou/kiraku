@@ -6,6 +6,7 @@ import type { CardView } from "@/lib/boosters/view";
 import type { CollectionItem } from "@/lib/collection/view";
 import { createListingAction } from "@/server/actions/listings";
 import { CopyPicker } from "../../collection/CopyPicker";
+import { hasSpecialCopy } from "@/lib/collection/copies";
 import { CardPickGrid } from "../../collection/CardPickGrid";
 import { Fuda } from "../../fuda/Fuda";
 import { Button } from "../../ui/Button";
@@ -129,7 +130,7 @@ export function ListingComposer({ maxWants, onClose }: { maxWants: number; onClo
               </ul>
             </div>
           </div>
-          <CopyPicker cardId={give.cardId} value={copyId} onChange={setCopyId} />
+          <CopyPicker cardId={give.cardId} special={hasSpecialCopy(give)} value={copyId} onChange={setCopyId} />
           <NoteField label={t("note")} placeholder={t("notePlaceholder")} value={note} onChange={setNote} disabled={pending} />
           <p className="text-xs text-text-muted">{t("rules")}</p>
           {error && (

@@ -10,6 +10,7 @@ import type { CollectionItem } from "@/lib/collection/view";
 import { USERNAME_REGEX } from "@/lib/username";
 import { createCoinFlipAction, type CasinoActionError } from "@/server/actions/casino";
 import { CopyPicker } from "../collection/CopyPicker";
+import { hasSpecialCopy } from "@/lib/collection/copies";
 import { CardPickGrid } from "../collection/CardPickGrid";
 import { Button } from "../ui/Button";
 import { inputClass } from "../ui/Field";
@@ -118,7 +119,7 @@ export function StakeSheet({
           unavailable={(item) => item.free === 0}
           allowed={allowed}
         />
-        {card && <CopyPicker cardId={card.cardId} value={copyId} onChange={setCopyId} />}
+        {card && <CopyPicker cardId={card.cardId} special={hasSpecialCopy(card)} value={copyId} onChange={setCopyId} />}
         <div
           aria-live="polite"
           className={`flex min-h-12 items-center gap-2.5 rounded-control px-3 py-2 text-sm ${

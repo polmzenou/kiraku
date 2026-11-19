@@ -9,9 +9,10 @@ import { copiesOfCardAction, type CardCopies } from "@/server/actions/collection
  * Exemplaire d'une carte qui part (vente, cadeau, annonce, offre, échange, mise). Tant que le joueur n'a que des
  * exemplaires ordinaires, rien ne s'affiche : le serveur en choisit un. S'il a des exemplaires spéciaux (héritiers
  * ou gravés), il choisit lequel part ; le serveur ne prend jamais une pièce spéciale tout seul (CHOOSE_COPY).
- * `value` : l'exemplaire désigné, ou null pour « un exemplaire ordinaire ».
+ * `value` : l'exemplaire désigné, ou null pour « un exemplaire ordinaire ». `special` : ce que la liste de la
+ * collection sait déjà (hasSpecialCopy) ; faux, rien n'est demandé au serveur.
  */
-export function CopyPicker({ cardId, value, onChange }: { cardId: string; value: string | null; onChange: (userCardId: string | null) => void }) {
+export function CopyPicker({ cardId, value, onChange, special }: { cardId: string; value: string | null; onChange: (userCardId: string | null) => void; special?: boolean }) {
   const t = useTranslations("collection.copyPicker");
   // Exemplaires lus, avec la carte à laquelle ils appartiennent : au changement de carte, l'ancienne liste ne s'affiche plus
   const [loaded, setLoaded] = useState<{ cardId: string; copies: CardCopies } | null>(null);
@@ -19,6 +20,7 @@ export function CopyPicker({ cardId, value, onChange }: { cardId: string; value:
   const name = useId();
 
   useEffect(() => {
+    if (special === false) return;
     let live = true;
     copiesOfCardAction({ cardId })
       .then((res) => {
@@ -33,9 +35,9 @@ export function CopyPicker({ cardId, value, onChange }: { cardId: string; value:
     };
     // onChange vient du parent, souvent recréé à chaque rendu : on ne relit qu'au changement de carte
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cardId]);
+  }, [cardId, special]);
 
-  if (!copies || copies.special.length === 0) return null;
+  if (special === false || !copies || copies.special.length === 0) return null;
   const option = (id: string | null, label: string, hint?: string) => (
     <label key={id ?? "ordinary"} className="flex min-h-11 items-center gap-3 rounded-control border border-border px-3 py-2 text-sm has-checked:border-kin">
       <input type="radio" name={name} className="size-4 accent-kin" checked={value === id} onChange={() => onChange(id)} />

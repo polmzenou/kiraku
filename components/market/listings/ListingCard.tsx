@@ -7,6 +7,7 @@ import type { CollectionItem } from "@/lib/collection/view";
 import { shownPlayerRef } from "@/lib/social/shown-player";
 import { cancelListingAction, makeOfferAction, withdrawOfferAction } from "@/server/actions/listings";
 import { CopyPicker } from "../../collection/CopyPicker";
+import { hasSpecialCopy } from "@/lib/collection/copies";
 import type { ListingView } from "@/server/market/listings";
 import { CardPickGrid } from "../../collection/CardPickGrid";
 import { OwnedBadge } from "../../collection/OwnedBadge";
@@ -228,7 +229,7 @@ function OtherCardSheet({
               <Fuda card={listingCard} series={listingCard.series} size="sm" tilt={false} />
             </div>
           </div>
-          <CopyPicker cardId={chosen.cardId} value={copyId} onChange={setCopyId} />
+          <CopyPicker cardId={chosen.cardId} special={hasSpecialCopy(chosen)} value={copyId} onChange={setCopyId} />
           <p className="text-xs text-text-muted">{t("offerRules")}</p>
           {error && (
             <p role="alert" className="text-sm text-shu">

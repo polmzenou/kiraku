@@ -7,6 +7,7 @@ import type { Rarity } from "@/lib/catalog/rarity";
 import type { CollectionItem } from "@/lib/collection/view";
 import { proposeTradeAction } from "@/server/actions/trades";
 import { CopyPicker } from "../collection/CopyPicker";
+import { hasSpecialCopy } from "@/lib/collection/copies";
 import { CardPickGrid } from "../collection/CardPickGrid";
 import { OwnedBadge } from "../collection/OwnedBadge";
 import { Fuda } from "../fuda/Fuda";
@@ -155,6 +156,7 @@ export function TradeComposer({ username, name, maxOffered, allowedRarities, ini
             <CopyPicker
               key={c.cardId}
               cardId={c.cardId}
+              special={hasSpecialCopy(c)}
               value={copies[c.cardId] ?? null}
               onChange={(userCardId) =>
                 setCopies((prev) => {

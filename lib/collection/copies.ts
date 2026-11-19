@@ -26,6 +26,11 @@ export const SPECIAL_COPY = { OR: [{ heritage: { gt: 0 } }, { printing: { not: n
 /** Colonnes à lire pour reconnaître un exemplaire spécial. */
 export const COPY_MARKS = { heritage: true, printing: true } as const;
 
+/** Carte de la collection dont au moins un exemplaire est spécial (marques agrégées de la liste : CollectionItem). */
+export function hasSpecialCopy(item: { heritage?: number; engraved?: boolean }): boolean {
+  return (item.heritage ?? 0) > 0 || item.engraved === true;
+}
+
 /** Le joueur a bien la carte, mais seulement en exemplaires spéciaux : il doit en désigner un (`CHOOSE_COPY`). */
 export function onlySpecialCopies(copies: readonly CopyMarks[]): boolean {
   return copies.length > 0 && copies.every(isSpecialCopy);
