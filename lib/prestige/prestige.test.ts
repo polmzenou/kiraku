@@ -3,7 +3,7 @@ import { SETTING_DEFAULTS } from "../settings/defaults";
 import { eligibilityOf, requiredCount } from "./eligibility";
 import { canConsecrate, nextHeritage } from "./heritage";
 import { mergePeak, parsePeak } from "./peak";
-import { plateMaterial, toRoman } from "./roman";
+import { kanjiNumber, plateMaterial, toRoman } from "./roman";
 import { rebirthRawValue, rebirthZeni } from "./zeni";
 
 describe("chiffres romains", () => {
@@ -16,6 +16,10 @@ describe("chiffres romains", () => {
     expect(toRoman(-2)).toBe("");
     expect(toRoman(2.5)).toBe("");
     expect(toRoman(4000)).toBe("4000");
+  });
+
+  it("écrit le numéro d'un rouleau en kanji", () => {
+    expect([1, 3, 10, 12, 20, 38, 100, 111, 999, 0, 1000].map(kanjiNumber)).toEqual(["一", "三", "十", "十二", "二十", "三十八", "百", "百十一", "九百九十九", "", "1000"]);
   });
 
   it("change de matière avec le niveau", () => {

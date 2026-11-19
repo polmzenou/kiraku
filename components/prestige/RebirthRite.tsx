@@ -261,7 +261,7 @@ export function RebirthRite({
           e.stopPropagation();
           if (tl.current) skip(tl.current);
         }}
-        className="absolute top-[calc(0.75rem+env(safe-area-inset-top,0px))] right-[max(0.75rem,env(safe-area-inset-right,0px))] min-h-11 rounded-pill px-4 text-sm text-[#a89f92]"
+        className="pr-skip absolute top-[calc(0.75rem+env(safe-area-inset-top,0px))] right-[max(0.75rem,env(safe-area-inset-right,0px))] min-h-11 rounded-pill px-4 text-sm text-[#a89f92]"
       >
         {t("skip")}
       </button>

@@ -1,32 +1,13 @@
 import type { CSSProperties } from "react";
+import { PRESTIGE_ASSETS } from "@/lib/prestige/assets";
 import "./prestige.css";
 
-// Aura du profil d'un joueur au prestige 1 ou plus : de la poudre d'or qui monte derrière l'en-tête dès le prestige I,
-// plus dense à chaque palier, et les nuées d'or qui dérivent à partir du V (deux bandes, trois à partir du X).
-// Purement décorative.
-
-/** Bande de nuées (lobes en arcs), raccord parfait aux deux bords pour défiler sans couture. */
-function cloudBand(fill: string, stroke: string): string {
-  const pts: [number, number][] = [[0, 70], [62, 46], [150, 28], [236, 44], [300, 74], [362, 56], [446, 30], [532, 46], [600, 70]];
-  let d = "M0 70";
-  for (let i = 1; i < pts.length; i++) {
-    const [x0, y0] = pts[i - 1];
-    const [x1, y1] = pts[i];
-    const r = (Math.hypot(x1 - x0, y1 - y0) * 0.62).toFixed(1);
-    d += `A${r} ${r} 0 0 1 ${x1} ${y1}`;
-  }
-  const svg =
-    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 130' preserveAspectRatio='none'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'>` +
-    `<stop offset='0' stop-color='${fill}'/><stop offset='1' stop-color='${fill}' stop-opacity='0'/></linearGradient></defs>` +
-    `<path d='${d}L600 130L0 130Z' fill='url(#g)'/><path d='${d}' fill='none' stroke='${stroke}' stroke-width='2'/></svg>`;
-  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
-}
-
-const BANDS = [
-  { top: "5.5rem", height: "7.5rem", opacity: 0.5, d: "70s", reverse: false, image: cloudBand("#d9b556", "#f6e3a1") },
-  { top: "2rem", height: "6rem", opacity: 0.34, d: "110s", reverse: true, image: cloudBand("#b08a2e", "#e8cb75") },
-  { top: "-0.5rem", height: "5rem", opacity: 0.26, d: "150s", reverse: false, image: cloudBand("#f3dc8c", "#fff3c4") },
-];
+// Aura du profil d'un joueur au prestige 1 ou plus, derrière l'en-tête. Purement décorative, images générées :
+// - dès le prestige I : de la poudre d'or qui monte, plus dense à chaque palier ;
+// - du V au IX : les nuées porte-bonheur zuiun, en laque d'or, qui encadrent l'avatar et le pseudo ;
+// - à partir du X : Raigō, des rayons d'or qui tournent derrière l'avatar sur un banc de nuages lumineux, et au XVIII
+//   le halo de flammes des statues de temple.
+// L'aura couvre toute la largeur de l'écran ; ses décors se placent par rapport au contenu (--c0, prestige.css).
 
 /**
  * Paillettes de poudre d'or : 16 au prestige I, 24 au V, 32 au X, 40 au XVIII. Chacune est une des 8 cellules (4 × 2) de
@@ -44,19 +25,36 @@ const SPECKS = Array.from({ length: 40 }, (_, i) => {
   };
 });
 
+/** Nuées zuiun, en px par rapport au coin haut-gauche du contenu : derrière l'avatar, à droite du pseudo, au-dessus. */
+const ZUIUN = [
+  { k: 0, x: -70, y: -12, w: 230, flip: false, d: "7s" },
+  { k: 1, x: 184, y: 100, w: 200, flip: false, d: "8.5s" },
+  { k: 2, x: 160, y: -36, w: 180, flip: true, d: "9.5s" },
+];
+
 export function PrestigeAura({ prestige }: { prestige: number }) {
   if (prestige < 1) return null;
-  const bands = prestige >= 10 ? 3 : prestige >= 5 ? 2 : 0;
   const specks = prestige >= 18 ? 40 : prestige >= 10 ? 32 : prestige >= 5 ? 24 : 16;
+  const raigo = prestige >= 10;
   return (
     <div className="pr-aura" aria-hidden="true">
-      {BANDS.slice(0, bands).map((b, i) => (
-        <span
-          key={i}
-          className="pr-nuee"
-          style={{ top: b.top, height: b.height, opacity: b.opacity, backgroundImage: b.image, animationDirection: b.reverse ? "reverse" : undefined, "--pr-d": b.d } as CSSProperties}
-        />
-      ))}
+      {raigo && (
+        <>
+          <span className="pr-raigo-rays" />
+          {prestige >= 18 && <span className="pr-raigo-halo" />}
+          <span className="pr-raigo-bank" />
+          <span className="pr-raigo-bank far" />
+        </>
+      )}
+      {!raigo &&
+        prestige >= 5 &&
+        ZUIUN.map((c, i) => (
+          <span
+            key={i}
+            className="pr-zuiun"
+            style={{ left: `calc(var(--c0) + ${c.x}px)`, top: c.y, width: c.w, backgroundImage: `url("${PRESTIGE_ASSETS.zuiun[c.k]}")`, "--pr-flip": c.flip ? -1 : 1, "--pr-d": c.d, "--pr-delay": `${-i * 1.7}s` } as CSSProperties}
+          />
+        ))}
       {SPECKS.slice(0, specks).map((s, i) => (
         <span
           key={`s${i}`}

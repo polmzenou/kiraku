@@ -6702,7 +6702,9 @@
       "journey": "Journey",
       "kept": "Kept from cycle {from} to cycle {to}",
       "keptOnce": "Kept in cycle {cycle}",
-      "consecratedOn": "Consecrated on {date}"
+      "consecratedOn": "Consecrated on {date}",
+      "treasure": "{count, plural, one {Sanctuary treasury · # card} other {Sanctuary treasury · # cards}}",
+      "hint": "Tap a card on the altar to read its journey."
     },
     "consecrate": {
       "open": "Consecrate",

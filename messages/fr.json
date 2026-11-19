@@ -6702,7 +6702,9 @@
       "journey": "Parcours",
       "kept": "Gardée du cycle {from} au cycle {to}",
       "keptOnce": "Gardée au cycle {cycle}",
-      "consecratedOn": "Consacrée le {date}"
+      "consecratedOn": "Consacrée le {date}",
+      "treasure": "{count, plural, one {Trésor du sanctuaire · # carte} other {Trésor du sanctuaire · # cartes}}",
+      "hint": "Touche une carte de l'autel pour lire son parcours."
     },
     "consecrate": {
       "open": "Consacrer",
