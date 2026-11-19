@@ -2,12 +2,13 @@ import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { DeleteExpeditionTypeButton, RecallExpeditionButton, SeedExpeditionsButton } from "@/components/admin/ExpeditionAdminActions";
 import { ExpeditionSettingsForm } from "@/components/admin/ExpeditionSettingsForm";
 import { ExpeditionTypeForm } from "@/components/admin/ExpeditionTypeForm";
+import { ReadOnly } from "@/components/admin/ReadOnly";
 import { SettingLogList } from "@/components/admin/SettingLogList";
 import { Link } from "@/i18n/navigation";
 import { balanceFor } from "@/lib/expedition/balance";
 import { headroom, tierOf } from "@/lib/expedition/tiers";
 import { EXPEDITION_SETTING_KEYS, type ExpeditionSettings } from "@/lib/settings/expedition-form";
-import { recentSettingLogs, requireAdmin } from "@/server/admin";
+import { recentSettingLogs, requireAdminView } from "@/server/admin";
 import { getRarityDefinitions } from "@/server/catalog/rarities";
 import { lotOptions } from "@/server/economy/admin-queries";
 import { activeExpeditions, adminExpeditionTypes, boosterTypeOptions, expeditionStats } from "@/server/expedition/admin-queries";
@@ -15,7 +16,7 @@ import { getSetting } from "@/server/settings";
 
 /** Expéditions : interrupteur et réglages, modèles par palier avec l'aperçu d'équilibrage, expéditions en route. */
 export default async function AdminExpeditionsPage({ searchParams }: PageProps<"/[locale]/admin/expeditions">) {
-  await requireAdmin();
+  const { readOnly } = await requireAdminView();
   const [t, tRisk, tRarity, format, locale, sp, values, logs, definitions] = await Promise.all([
     getTranslations("admin.expeditions"),
     getTranslations("expedition.risk"),
@@ -63,7 +64,9 @@ export default async function AdminExpeditionsPage({ searchParams }: PageProps<"
         </Link>
       </div>
 
-      <ExpeditionSettingsForm initial={settings} />
+      <ReadOnly when={readOnly}>
+        <ExpeditionSettingsForm initial={settings} />
+      </ReadOnly>
 
       <section className="flex flex-col gap-3">
         <h3 className="font-title text-xl font-bold">{t("statsTitle")}</h3>
@@ -84,13 +87,15 @@ export default async function AdminExpeditionsPage({ searchParams }: PageProps<"
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-title text-xl font-bold">{t("typesTitle", { count: types.length })}</h3>
-          <SeedExpeditionsButton />
+          {!readOnly && <SeedExpeditionsButton />}
         </div>
         <p className="max-w-prose text-sm text-text-muted">{t("typesHint")}</p>
         {boosters.length === 0 ? (
           <p className="text-sm text-text-muted">{t("needBooster")}</p>
         ) : (
-          <ExpeditionTypeForm key={editId ?? "new"} initial={editing?.input ?? null} boosters={boosters} lots={lots} rules={rules} />
+          <ReadOnly when={readOnly}>
+            <ExpeditionTypeForm key={editId ?? "new"} initial={editing?.input ?? null} boosters={boosters} lots={lots} rules={rules} />
+          </ReadOnly>
         )}
         <ul className="flex flex-col gap-2">
           {byTier.map(({ input: x, played }) => {
@@ -132,7 +137,7 @@ export default async function AdminExpeditionsPage({ searchParams }: PageProps<"
                   <Link href={{ pathname: "/admin/expeditions", query: { id: x.id } }} className="inline-flex min-h-11 items-center text-sm text-link underline underline-offset-4">
                     {t("edit")}
                   </Link>
-                  {played === 0 && x.id && <DeleteExpeditionTypeButton id={x.id} name={x.name.fr} />}
+                  {!readOnly && played === 0 && x.id && <DeleteExpeditionTypeButton id={x.id} name={x.name.fr} />}
                 </div>
               </li>
             );
@@ -158,7 +163,7 @@ export default async function AdminExpeditionsPage({ searchParams }: PageProps<"
                     })}
                   </span>
                 </p>
-                <RecallExpeditionButton id={a.id} username={a.username} />
+                {!readOnly && <RecallExpeditionButton id={a.id} username={a.username} />}
               </li>
             ))}
           </ul>

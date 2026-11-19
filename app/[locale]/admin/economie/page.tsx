@@ -1,14 +1,15 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { EconomySettingsForm } from "@/components/admin/EconomySettingsForm";
+import { ReadOnly } from "@/components/admin/ReadOnly";
 import { ECONOMY_SETTING_KEYS, type EconomySettings } from "@/lib/settings/economy-form";
-import { recentSettingLogs, requireAdmin } from "@/server/admin";
+import { recentSettingLogs, requireAdminView } from "@/server/admin";
 import { economyTotals, flowsLastDay, ledgerMismatches, lotOptions } from "@/server/economy/admin-queries";
 import { marketTotals } from "@/server/market/queries";
 import { getSetting } from "@/server/settings";
 
 /** Économie : interrupteurs, parrainage, Zeni en circulation et contrôle d'intégrité du journal. */
 export default async function AdminEconomyPage() {
-  await requireAdmin();
+  const { readOnly } = await requireAdminView();
   const locale = await getLocale();
   const [t, tReason, values, totals, mismatches, flows, lots, logs, market] = await Promise.all([
     getTranslations("admin.economy"),
@@ -81,7 +82,9 @@ export default async function AdminEconomyPage() {
         )}
       </section>
 
-      <EconomySettingsForm initial={settings} lots={lots} />
+      <ReadOnly when={readOnly}>
+        <EconomySettingsForm initial={settings} lots={lots} />
+      </ReadOnly>
 
       <section className="flex flex-col gap-3">
         <h3 className="font-title text-lg font-bold">{t("log")}</h3>

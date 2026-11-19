@@ -1,13 +1,13 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import { RevokeReferralButton } from "@/components/admin/RevokeReferralButton";
 import { Link } from "@/i18n/navigation";
-import { requireAdmin } from "@/server/admin";
+import { requireAdminView } from "@/server/admin";
 import { prisma } from "@/server/db";
 import { topReferrers } from "@/server/economy/admin-queries";
 
 /** Parrainages récents : repérer les grappes de filleuls d'un même parrain, révoquer en cas de fraude. */
 export default async function AdminReferralPage() {
-  await requireAdmin();
+  const { readOnly } = await requireAdminView();
   const [t, format] = await Promise.all([getTranslations("admin.economy"), getFormatter()]);
   const [referrals, top] = await Promise.all([
     prisma.referral.findMany({
@@ -70,7 +70,7 @@ export default async function AdminReferralPage() {
                     {r.refereeClaimedAt && ` · ${t("refereeClaimed")}`}
                   </span>
                 </div>
-                {r.status !== "REVOKED" && <RevokeReferralButton referralId={r.id} />}
+                {!readOnly && r.status !== "REVOKED" && <RevokeReferralButton referralId={r.id} />}
               </li>
             ))}
           </ul>

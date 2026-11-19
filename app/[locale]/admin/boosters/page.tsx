@@ -1,15 +1,16 @@
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { AmbassadorSettingsForm } from "@/components/admin/AmbassadorSettingsForm";
 import { BoosterSettingsForm } from "@/components/admin/BoosterSettingsForm";
+import { ReadOnly } from "@/components/admin/ReadOnly";
 import { localize, parseLocalized } from "@/lib/boosters/types";
 import { AMBASSADOR_SETTING_KEYS, type AmbassadorSettings } from "@/lib/settings/ambassador-form";
 import { BOOSTER_SETTING_KEYS, type BoosterSettings } from "@/lib/settings/booster-form";
-import { recentBoosterSettingLogs, requireAdmin } from "@/server/admin";
+import { recentBoosterSettingLogs, requireAdminView } from "@/server/admin";
 import { prisma } from "@/server/db";
 import { getSetting } from "@/server/settings";
 
 export default async function AdminBoostersPage() {
-  await requireAdmin();
+  const { readOnly } = await requireAdminView();
   const [t, format, locale, values, ambassadorValues, types, logs] = await Promise.all([
     getTranslations("admin.boosters"),
     getFormatter(),
@@ -30,9 +31,13 @@ export default async function AdminBoostersPage() {
         <p className="max-w-prose text-sm text-text-muted">{t("intro")}</p>
       </div>
 
-      <BoosterSettingsForm initial={settings} />
+      <ReadOnly when={readOnly}>
+        <BoosterSettingsForm initial={settings} />
+      </ReadOnly>
 
-      <AmbassadorSettingsForm initial={ambassador} boosterTypes={types.map((b) => ({ slug: b.slug, name: localize(parseLocalized(b.name), locale) }))} />
+      <ReadOnly when={readOnly}>
+        <AmbassadorSettingsForm initial={ambassador} boosterTypes={types.map((b) => ({ slug: b.slug, name: localize(parseLocalized(b.name), locale) }))} />
+      </ReadOnly>
 
       <section className="flex flex-col gap-3">
         <h2 className="font-heading text-lg font-bold">{t("log")}</h2>

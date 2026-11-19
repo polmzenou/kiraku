@@ -36,6 +36,16 @@ export async function requireStaff() {
   return staff;
 }
 
+/**
+ * Pour les pages ouvertes au DEV en lecture seule (lib/admin/roles.ts, DEV_ADMIN_PAGES) : il voit les réglages et
+ * les données, seul l'admin les modifie. `readOnly` désactive les formulaires (composant ReadOnly) ; la vraie
+ * barrière reste getAdmin() dans chaque Server Action d'écriture.
+ */
+export async function requireAdminView() {
+  const { user, scope } = await requireStaff();
+  return { user, readOnly: scope !== "full" };
+}
+
 /** Derniers changements de réglages des boosters, pour le journal de /admin/boosters. */
 export async function recentBoosterSettingLogs(take = 15) {
   return recentSettingLogs(["booster.", "ambassador."], take);

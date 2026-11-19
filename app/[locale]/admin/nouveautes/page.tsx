@@ -1,15 +1,16 @@
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { NewsSettingsForm } from "@/components/admin/NewsSettingsForm";
+import { ReadOnly } from "@/components/admin/ReadOnly";
 import { SettingLogList } from "@/components/admin/SettingLogList";
 import { localize, parseLocalized } from "@/lib/boosters/types";
-import { recentSettingLogs, requireAdmin } from "@/server/admin";
+import { recentSettingLogs, requireAdminView } from "@/server/admin";
 import { prisma } from "@/server/db";
 import { resolveNewsVisuals } from "@/server/home/news";
 import { getSetting } from "@/server/settings";
 
 /** Nouveautés : le carrousel en haut de l'accueil (bannières, visuels, boutons), en français et en anglais. */
 export default async function AdminNewsPage() {
-  await requireAdmin();
+  const { readOnly } = await requireAdminView();
   const [t, format, locale, news, logs, types] = await Promise.all([
     getTranslations("admin.news"),
     getFormatter(),
@@ -33,7 +34,9 @@ export default async function AdminNewsPage() {
             : t("revisionNever", { revision: news.revision })}
         </p>
       </div>
-      <NewsSettingsForm initial={{ "home.news": news }} boosters={boosters} initialVisuals={visuals} />
+      <ReadOnly when={readOnly}>
+        <NewsSettingsForm initial={{ "home.news": news }} boosters={boosters} initialVisuals={visuals} />
+      </ReadOnly>
       <SettingLogList logs={logs} />
     </div>
   );

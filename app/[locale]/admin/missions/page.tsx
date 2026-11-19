@@ -1,17 +1,18 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { MissionForm } from "@/components/admin/MissionForm";
+import { ReadOnly } from "@/components/admin/ReadOnly";
 import { Link } from "@/i18n/navigation";
 import { localizedSchema } from "@/lib/boosters/types";
 import type { Rarity } from "@/lib/catalog/rarity";
 import type { MissionInput } from "@/lib/economy/missions";
 import { missionDifficulty } from "@/lib/economy/mission-rotation";
-import { requireAdmin } from "@/server/admin";
+import { requireAdminView } from "@/server/admin";
 import { prisma } from "@/server/db";
 import { lotOptions } from "@/server/economy/admin-queries";
 
 /** Missions quotidiennes et hebdomadaires : objectif, période, lot ; activer ou désactiver. */
 export default async function AdminMissionsPage({ searchParams }: PageProps<"/[locale]/admin/missions">) {
-  await requireAdmin();
+  const { readOnly } = await requireAdminView();
   const [t, tMetric, tPeriod, tDifficulty, tRarity, locale, sp] = await Promise.all([
     getTranslations("admin.economy"),
     getTranslations("economy.missions.metric"),
@@ -68,7 +69,9 @@ export default async function AdminMissionsPage({ searchParams }: PageProps<"/[l
         <p className="max-w-prose text-sm text-text-muted">{t("missionsIntro")}</p>
       </div>
 
-      <MissionForm key={editId ?? "new"} initial={initial} lots={lots} />
+      <ReadOnly when={readOnly}>
+        <MissionForm key={editId ?? "new"} initial={initial} lots={lots} />
+      </ReadOnly>
 
       <ul className="flex flex-col gap-2">
         {missions.map((m) => (

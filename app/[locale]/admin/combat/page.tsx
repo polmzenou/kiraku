@@ -1,14 +1,15 @@
 import { getTranslations } from "next-intl/server";
 import { CombatSettingsForm } from "@/components/admin/CombatSettingsForm";
+import { ReadOnly } from "@/components/admin/ReadOnly";
 import { COMBAT_SETTING_KEYS, type CombatSettings } from "@/lib/settings/combat-form";
-import { recentSettingLogs, requireAdmin } from "@/server/admin";
+import { recentSettingLogs, requireAdminView } from "@/server/admin";
 import type { Keyword, Technique } from "@/lib/battle/types";
 import { abilitySales, combatTotals } from "@/server/battle/queries";
 import { getSetting } from "@/server/settings";
 
 /** Combat : santé (parties, salles, file, gains du jour) et réglages battle.*. */
 export default async function AdminCombatPage() {
-  await requireAdmin();
+  const { readOnly } = await requireAdminView();
   const now = new Date();
   const [t, tBattle, values, totals, sales, logs] = await Promise.all([
     getTranslations("admin.combat"),
@@ -65,7 +66,9 @@ export default async function AdminCombatPage() {
         )}
       </section>
 
-      <CombatSettingsForm initial={settings} />
+      <ReadOnly when={readOnly}>
+        <CombatSettingsForm initial={settings} />
+      </ReadOnly>
 
       <section className="flex flex-col gap-3">
         <h3 className="font-title text-lg font-bold">{t("log")}</h3>
