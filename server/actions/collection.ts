@@ -77,11 +77,11 @@ export async function loadCollectionPage(input: unknown): Promise<({ ok: true } 
   const parsed = pageSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
 
-  // Propriété : sa propre collection, ou celle d'un autre si son profil l'autorise
+  // Propriété : sa propre collection, ou celle d'un autre si son profil l'autorise (ou si le visiteur est admin)
   let ownerId: string;
   if (parsed.data.username) {
     const owner = await findProfileOwner(parsed.data.username);
-    if (!owner || !(await accessFor(viewer?.id ?? null, owner)).collection) return { ok: false, error: "FORBIDDEN" };
+    if (!owner || !(await accessFor(viewer, owner)).collection) return { ok: false, error: "FORBIDDEN" };
     ownerId = owner.id;
   } else {
     if (!viewer) return { ok: false, error: "NO_SESSION" };

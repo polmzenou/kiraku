@@ -8,7 +8,7 @@ import { accessFor, findProfileOwner } from "./profile";
 
 /**
  * Chargement commun de /u/[username] et /u/[username]/collection : pseudo validé, joueur trouvé
- * (sinon 404), orthographe exacte du pseudo dans l'URL, droits du visiteur.
+ * (sinon 404), orthographe exacte du pseudo dans l'URL, droits du visiteur (rôle lu en session).
  */
 export async function loadProfile(rawUsername: string, locale: Locale, suffix = "") {
   const username = decodeURIComponent(rawUsername);
@@ -16,5 +16,5 @@ export async function loadProfile(rawUsername: string, locale: Locale, suffix = 
   const [owner, viewer] = await Promise.all([findProfileOwner(username), getCurrentUser()]);
   if (!owner) notFound();
   if (owner.username !== username) redirect({ href: `/u/${owner.username}${suffix}`, locale });
-  return { owner, viewer, access: await accessFor(viewer?.id ?? null, owner) };
+  return { owner, viewer, access: await accessFor(viewer, owner) };
 }

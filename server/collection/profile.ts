@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { profileAccess, type ProfileAccess, type ProfileVisibility } from "@/lib/collection/visibility";
+import { bypassesProfilePrivacy, profileAccess, type ProfileAccess, type ProfileVisibility } from "@/lib/collection/visibility";
 import type { Relation } from "@/lib/social/relation";
 import { prisma } from "../db";
 import { getRelation } from "../social/queries";
@@ -47,18 +47,22 @@ export function anonymousAccess(owner: ProfileOwnerRow): ProfileAccess {
   return profileAccess(null, owner, { friends: false });
 }
 
+/** Visiteur tel que lu en session par getCurrentUser (jamais une donnée venue du client). */
+export type ProfileViewer = { id: string; role: string; bannedAt: Date | null };
+
 /**
- * Ce que `viewerId` peut voir du profil, et sa relation avec le propriétaire. Un visiteur que le
+ * Ce que `viewer` peut voir du profil, et sa relation avec le propriétaire. Un visiteur que le
  * propriétaire a bloqué voit un profil privé et une relation « NONE » : rien ne trahit le blocage.
+ * Un admin voit tout (`adminOverride` quand c'est son rôle qui lui ouvre la page).
  */
 export async function accessFor(
-  viewerId: string | null,
+  viewer: ProfileViewer | null,
   owner: ProfileOwnerRow,
 ): Promise<ProfileAccess & { relation: Relation | null }> {
-  if (!viewerId || viewerId === owner.id) return { ...profileAccess(viewerId, owner, { friends: false }), relation: null };
-  const rel = await getRelation(viewerId, owner.id);
+  if (!viewer || viewer.id === owner.id) return { ...profileAccess(viewer?.id ?? null, owner, { friends: false }), relation: null };
+  const rel = await getRelation(viewer.id, owner.id);
   return {
-    ...profileAccess(viewerId, owner, { friends: rel.relation === "FRIENDS", blocked: rel.blockedByThem }),
+    ...profileAccess(viewer.id, owner, { friends: rel.relation === "FRIENDS", blocked: rel.blockedByThem }, bypassesProfilePrivacy(viewer)),
     relation: rel.relation,
   };
 }

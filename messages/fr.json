@@ -4687,6 +4687,9 @@
     },
     "viewCollection": "Voir la collection",
     "accountSettings": "Paramètres du compte",
+    "adminOverride": "Vue admin : ce joueur limite qui voit son profil ou sa collection. Tu vois tout grâce à ton rôle.",
+    "adminOverrideCollection": "Vue admin : cette collection n'est pas visible des autres joueurs. Tu la vois grâce à ton rôle.",
+    "adminSheet": "Ouvrir sa fiche dans l'admin",
     "ownerNotice": {
       "FRIENDS": "Ton profil est réservé à tes amis.",
       "PRIVATE": "Ton profil est privé : personne d'autre que toi ne le voit."
