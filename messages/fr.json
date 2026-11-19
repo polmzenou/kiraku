@@ -5027,7 +5027,9 @@
       "full": "Classement complet",
       "cards": "{count, plural, one {# carte} other {# cartes}}",
       "mythics": "{count, plural, one {# Mythique} other {# Mythiques}}",
-      "rank": "{rank, selectordinal, one {#er} other {#e}}"
+      "rank": "{rank, selectordinal, one {#er} other {#e}}",
+      "subtitlePrestige": "Prestige, puis cartes uniques",
+      "prestige": "Prestige {roman}"
     },
     "reviews": {
       "title": "Ce qu’en disent les joueurs",
@@ -5077,7 +5079,8 @@
     "title": "Classement des collectionneurs",
     "metaDescription": "Les {count} joueurs qui possèdent le plus de cartes uniques sur Kiraku.",
     "intro": "Les {count} joueurs aux profils publics qui possèdent le plus de cartes uniques. À égalité, le plus de Mythiques passe devant. Mis à jour toutes les 5 minutes.",
-    "empty": "Personne n’est encore classé."
+    "empty": "Personne n’est encore classé.",
+    "introPrestige": "Les {count} joueurs aux profils publics, classés par prestige d'abord : chaque renaissance passe devant toutes les collections. À prestige égal, le plus de cartes uniques, puis de Mythiques. Mis à jour toutes les 5 minutes."
   },
   "battle": {
     "title": "Combat",

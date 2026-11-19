@@ -5027,7 +5027,9 @@
       "full": "Full leaderboard",
       "cards": "{count, plural, one {# card} other {# cards}}",
       "mythics": "{count, plural, one {# Mythic} other {# Mythics}}",
-      "rank": "{rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
+      "rank": "{rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+      "subtitlePrestige": "Prestige, then unique cards",
+      "prestige": "Prestige {roman}"
     },
     "reviews": {
       "title": "What players say",
@@ -5077,7 +5079,8 @@
     "title": "Collectors leaderboard",
     "metaDescription": "The {count} players who own the most unique cards on Kiraku.",
     "intro": "The {count} players with public profiles who own the most unique cards. Ties go to the most Mythics. Updated every 5 minutes.",
-    "empty": "Nobody is ranked yet."
+    "empty": "Nobody is ranked yet.",
+    "introPrestige": "The top {count} players with public profiles, ranked by prestige first: every rebirth outranks any collection. At equal prestige, the most unique cards, then the most Mythics. Updated every 5 minutes."
   },
   "battle": {
     "title": "Battle",
