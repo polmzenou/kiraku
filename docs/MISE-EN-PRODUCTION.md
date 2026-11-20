@@ -109,6 +109,30 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
 - [ ] Interrupteur `prestige.enabled` allumé (`/admin/prestige` ou `/admin/fonctionnalites`).
 - [ ] Bannière Nouveautés depuis `/admin/nouveautes` (sceau 転, lien vers `/prestige`).
 
+## Bans réseau
+
+**Avant :**
+
+- [ ] Migration `20261120100000_network_bans` appliquée par `npm run db:deploy` sur le VPS, **avant** le redémarrage PM2
+  de la version qui la lit. Sans elle, la lecture des bans échoue à chaque page ; elle laisse alors passer (journalisée
+  `[bans réseau] lecture`), mais aucun ban ne tient.
+- [ ] Nginx : `X-Forwarded-For` doit se terminer par l'IP du visiteur (`proxy_set_header X-Forwarded-For
+  $proxy_add_x_forwarded_for;`), sans CDN ni autre proxy devant Nginx. Sinon l'IP vue serait celle du proxy, la même
+  pour tout le monde : la limite `multiAccount.sharedIpCap` refuserait tout ban d'IP. À vérifier sur sa propre fiche
+  admin : les IP relevées doivent être celles de sa box et de son téléphone.
+- [ ] Tests sur base réelle passés sur la base de test : `server/anticheat/network-ban.db.test.ts`.
+- [ ] Politique de confidentialité : publier depuis `/admin/legal` une nouvelle version reprenant
+  `prisma/seed/legal/confidentialite.{fr,en}.md` (IP et identifiant d'appareil gardés 90 jours, et tant que dure un
+  bannissement). La page Cookies liste désormais `__Secure-kiraku.device`.
+- [ ] `/admin/general`, section multi-comptes : relire le ban qui suit l'appareil (interrupteur, comptes tolérés,
+  durée, IP par appareil).
+
+**Essai :**
+
+- [ ] Sur un compte de test : bannir son appareil depuis sa fiche admin. L'écran « Accès bloqué » remplace toutes les
+  pages sauf les textes légaux et `/connexion` ; un compte de l'équipe sur le même navigateur passe ; « Lever » rend
+  l'accès.
+
 ## Contrôles techniques
 
 - [ ] `npm run lint`, `npm run typecheck`, `npm test`, `npm run audit:actions` passent.

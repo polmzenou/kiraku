@@ -1,9 +1,11 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { after } from "next/server";
 import { z } from "@/lib/zod";
 import { auth, signIn, signOut } from "../auth";
 import { discordEnabled } from "../env";
+import { noteBlocked, requestNetworkBan } from "../anticheat/network-ban";
 import { recordSignals } from "../anticheat/signals";
 import { createGuestSession } from "../guest";
 import { clientIp, rateLimit } from "../ratelimit";
@@ -11,7 +13,7 @@ import { setSessionCookie } from "../session";
 import { getSetting } from "../settings";
 import { getCurrentUser } from "../user";
 
-type ActionResult = { ok: true } | { ok: false; error: "RATE_LIMITED" };
+type ActionResult = { ok: true } | { ok: false; error: "RATE_LIMITED" | "BANNED" };
 
 const internalPath = z
   .string()
@@ -25,6 +27,13 @@ export async function ensureGuest(): Promise<ActionResult> {
   if (session?.user?.id) {
     refresh();
     return { ok: true };
+  }
+
+  // Réseau banni (IP ou appareil) : aucun compte ne naît d'ici
+  const networkBan = await requestNetworkBan();
+  if (networkBan) {
+    after(() => noteBlocked(networkBan));
+    return { ok: false, error: "BANNED" };
   }
 
   const ip = await clientIp();

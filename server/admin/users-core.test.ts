@@ -22,7 +22,7 @@ function setup({ role = "ADMIN", banned = false, exists = true, player = {} as P
     }),
     user: {
       findUnique: vi.fn(async ({ where }: { where: { id: string } }) => where.id === "admin" ? { ...target, id: "admin", role, bannedAt: banned ? new Date() : null } : exists ? { ...target, ...player } : null),
-      findFirst: vi.fn().mockResolvedValue(null), update: vi.fn(),
+      findFirst: vi.fn().mockResolvedValue(null), update: vi.fn(), updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     coinTransaction: { createMany: vi.fn() },
     adminLog: { create: vi.fn() },
@@ -89,7 +89,16 @@ describe("mutations admin atomiques", () => {
     const { tx, db } = setup();
     await mutateAdminUserWith(db, "admin", { ...base, kind: "account", username: "Player", role: "USER", banned: true, profileVisibility: "PRIVATE", showCollection: false });
     expect(tx.session.deleteMany).toHaveBeenCalledWith({ where: { userId: "player" } });
-    expect(tx.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ bannedAt: expect.any(Date) }) }));
+    // Date du ban posée seulement s'il ne l'était pas déjà (banAccountWith, partagé avec les bans réseau)
+    expect(tx.user.updateMany).toHaveBeenCalledWith({ where: { id: "player", bannedAt: null }, data: { bannedAt: expect.any(Date) } });
+    expect(tx.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.not.objectContaining({ bannedAt: expect.anything() }) }));
+  });
+  it("lève un bannissement en effaçant sa date", async () => {
+    const { tx, db } = setup();
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "account", username: "Player", role: "USER", banned: false, profileVisibility: "PRIVATE", showCollection: false });
+    expect(tx.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ bannedAt: null }) }));
+    expect(tx.user.updateMany).not.toHaveBeenCalled();
+    expect(tx.session.deleteMany).not.toHaveBeenCalled();
   });
   it("ajoute des cartes sans doublonner leur découverte", async () => {
     const { tx, db } = setup();

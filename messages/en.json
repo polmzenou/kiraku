@@ -146,6 +146,7 @@
     "guestName": "Guest-{code}",
     "preparing": "Setting up your account…",
     "rateLimited": "Too many accounts created from this connection. Try again in a while.",
+    "networkBanned": "Access to Kiraku is blocked from this network or device.",
     "retry": "Try again",
     "balance": "Balance",
     "boosterStock": "Packs",
@@ -205,6 +206,15 @@
     "back": "Back to account",
     "emailExistsTitle": "This email address already has an account",
     "emailExistsBody": "Sign in with your email and password, then link Discord from your account."
+  },
+  "networkBan": {
+    "title": "Access blocked",
+    "body": "Access to Kiraku is blocked from this network or device following a ban (cheating or multiple accounts).",
+    "contact": "Think this is a mistake? <link>Message us on Discord</link>.",
+    "contactLegal": "Think this is a mistake? Our contact details are in the legal notice.",
+    "legal": "Legal notice",
+    "terms": "Terms of use",
+    "privacy": "Privacy policy"
   },
   "notFound": {
     "title": "Page not found",
@@ -283,6 +293,7 @@
       "usernameTaken": "This username is already taken.",
       "invalidCredentials": "Wrong email or password.",
       "banned": "This account is suspended.",
+      "networkBanned": "Can't sign in: access is blocked from this network or device.",
       "tokenInvalid": "This link is no longer valid. Request a new one.",
       "unexpected": "Something went wrong. Please try again.",
       "tooFast": "Sent too quickly: wait a moment and try again.",
@@ -1341,7 +1352,11 @@
         "USER_AMBASSADOR": "Ambassador role",
         "USER_LEADERBOARD": "Collector leaderboard",
         "USER_LEADERBOARDMALUS": "Leaderboard penalty",
-        "USER_INCENSE": "Incense"
+        "USER_INCENSE": "Incense",
+        "USER_NETWORK_BAN": "Network ban",
+        "USER_NETWORK_UNBAN": "Network ban lifted",
+        "USER_NETWORK_KEEP": "Automatic ban made permanent",
+        "USER_NETWORK_AUTO": "Ban following the device"
       },
       "errors": {
         "FORBIDDEN": "Access denied: administrator permissions are required.",
@@ -2814,7 +2829,11 @@
           "retentionDays": "IP and device retention (days)",
           "seenThrottleMinutes": "Recording while present (minutes)",
           "sharedIpCap": "Accounts above which an IP is public",
-          "minScore": "Minimum score of a suspicious group"
+          "minScore": "Minimum score of a suspicious group",
+          "followDevice": "Bans follow the device",
+          "autoBanMaxOthers": "Other active accounts allowed on an automatically banned IP",
+          "autoBanDays": "Automatic ban length (days)",
+          "autoBanPerDevice": "Most IPs banned per banned device"
         }
       },
       "hints": {
@@ -2839,8 +2858,12 @@
         "multiAccount": {
           "retentionDays": "IPs and devices not seen again for this long are deleted every night. 90 days advised (GDPR).",
           "seenThrottleMinutes": "A logged-in player is recorded at most once per this delay.",
-          "sharedIpCap": "Mobile, school, office: an IP (or email stem) shared by more accounts no longer links them.",
-          "minScore": "Sum of a pair's clues needed to form a group in Multi-accounts."
+          "sharedIpCap": "Mobile data, school, office: an IP (or e-mail root) shared by more accounts no longer links them, and can't be banned.",
+          "minScore": "Sum of a pair's clues needed to form a group in Multi-accounts.",
+          "followDevice": "A banned device that comes back from a new IP (mobile data, another Wi-Fi) gets that IP banned too, unless a team member uses it.",
+          "autoBanMaxOthers": "0 recommended: an IP already used by other players who aren't banned is never cut automatically.",
+          "autoBanDays": "An automatic ban expires after this delay, unless an admin makes it permanent in Network bans.",
+          "autoBanPerDevice": "Caps how many IPs one banned device can get banned, should it go through a café or school Wi-Fi on purpose."
         }
       },
       "multiAccountSection": "Multi-accounts"
@@ -4034,6 +4057,94 @@
           "INCENSE": "Incense",
           "CARD": "Card"
         }
+      }
+    },
+    "networkBans": {
+      "panelTitle": "Ban the network",
+      "panelIntro": "Cut all access from their IPs and devices recorded by the detection: no account plays from them anymore, except the team. An IPv6 address is banned by its /64 prefix. A ban set here is permanent until lifted.",
+      "staffTarget": "Team accounts can't be banned here.",
+      "userBansTitle": "Bans from this account",
+      "noKeys": "No IP or device recorded for this account: only the account can be banned.",
+      "kinds": {
+        "IP": "IP",
+        "DEVICE": "Device"
+      },
+      "lastSeen": "seen {date}",
+      "states": {
+        "OK": "Cuts no other account",
+        "SHARED": "{count, plural, =0 {Shared with other active accounts} one {Shared with # other active account, cut too if you ban it} other {Shared with # other active accounts, cut too if you ban it}}",
+        "BANNED": "Already banned",
+        "STAFF": "Used by the team: never banned",
+        "PRIVATE": "Private or local address: never banned",
+        "CAP": "Public or carrier network (too many accounts): never banned"
+      },
+      "cuts": "Also cut:",
+      "more": "and {count} more",
+      "accountAlreadyBanned": "The account is already banned.",
+      "banAccount": "Ban the account too (sessions closed)",
+      "reason": "Reason (admin log)",
+      "reasonHint": "Shown in the admin history, never to the player.",
+      "confirm": "{account, select, yes {Ban the account and cut} other {Cut}} access from {count, plural, =0 {no IP or device} one {# IP or device} other {# IPs and devices}}?{cut, plural, =0 {} one { # other active account will be cut too.} other { # other active accounts will be cut too.}}",
+      "done": "{count, plural, =0 {No network banned} one {# IP or device banned} other {# IPs and devices banned}}{account, select, yes {, account banned} other {}}.",
+      "pending": "Working…",
+      "submit": "Cut access",
+      "lift": "Lift",
+      "keep": "Make permanent",
+      "liftReason": "Reason for lifting",
+      "keepReason": "Reason",
+      "liftConfirm": "Lift the ban",
+      "keepConfirm": "Confirm",
+      "cancel": "Cancel",
+      "groupOpen": "Ban this group",
+      "groupHint": "Every account in the group is banned, along with their IPs and devices that cut no one else.",
+      "groupSubmit": "Ban the {count} accounts and their network",
+      "groupConfirm": "Ban the {count} accounts in this group and cut access from their network?",
+      "groupDone": "{accounts, plural, =0 {No new account banned} one {# account banned} other {# accounts banned}}, {bans, plural, =0 {no IP or device cut} one {# IP or device cut} other {# IPs and devices cut}}.",
+      "groupSkipped": "Skipped, ban them from a player page if needed:",
+      "groupTooBig": "Group of more than {max} accounts: ban them from their pages.",
+      "bannedBadge": "Banned",
+      "listLink": "{count, plural, =0 {Network bans} other {Network bans ({count})}}",
+      "columns": {
+        "value": "IP or device",
+        "source": "Origin",
+        "account": "Account",
+        "reason": "Reason",
+        "created": "Set",
+        "hits": "Blocked visits",
+        "actions": "Actions"
+      },
+      "sources": {
+        "MANUAL": "Player page",
+        "GROUP": "Multi-account group",
+        "AUTO": "Follows a banned device"
+      },
+      "follows": "follows device {device}",
+      "followed": "{count, plural, one {got # IP banned} other {got # IPs banned}}",
+      "expires": "expires {date}",
+      "permanent": "permanent",
+      "noAccount": "deleted account",
+      "by": "by {admin}",
+      "hits": "{count, plural, =0 {none} one {# visit} other {# visits}}",
+      "lastHit": "last {date}",
+      "back": "← Multi-accounts",
+      "pageTitle": "Network bans",
+      "pageIntro": "Banned IPs and devices: no one plays from them anymore, except the team (an \"Access blocked\" screen, except legal pages and sign-in). A ban is set from a player page or on a multi-account group.",
+      "followOn": "Bans follow the device: a banned device coming back from a new IP gets it banned for {days} days, if it cuts no other active account.",
+      "followOff": "Bans don't follow the device (setting in General).",
+      "maskedNote": "DEV access: IPs masked, no actions.",
+      "empty": "No network ban in place.",
+      "truncated": "Only the {count} most recent bans are shown.",
+      "errors": {
+        "FORBIDDEN": "Admins only.",
+        "NOT_FOUND": "Not found: this page is out of date, reload it.",
+        "SELF": "You can't ban yourself.",
+        "STAFF_TARGET": "Team accounts can't be banned here.",
+        "NOTHING": "Nothing to ban: tick an IP, a device or the account.",
+        "REFUSED": "A chosen IP or device can't be banned (team, private address or public network). Reload the page.",
+        "NOT_AUTO": "Only an automatic ban can be made permanent.",
+        "INVALID": "Invalid request.",
+        "RATE_LIMITED": "Too many requests, try again in a minute.",
+        "UNAVAILABLE": "Unavailable right now, try again."
       }
     }
   },
@@ -6155,7 +6266,8 @@
       "news": "Remembers whether you collapsed the home page news panel.",
       "speedInsights": "Vercel performance measurement (no cookies or persistent identifiers)",
       "casinoCeremony": "Remembers that you've already seen the casino opening ceremony on this device.",
-      "nav": "Remembers the desktop navigation layout (top menus or sidebar)."
+      "nav": "Remembers the desktop navigation layout (top menus or sidebar).",
+      "security": "Random identifier for this device: spots mass account creation and enforces bans."
     },
     "kinds": {
       "cookie": "Cookie",

@@ -13,7 +13,8 @@ const ID = /^[A-Za-z0-9_-]{1,40}$/;
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
-  if (!user) return Response.json({ error: "unauthorized" }, { status: 401 });
+  // Banni (compte, ou réseau : server/anticheat/network-ban.ts) : plus de temps réel
+  if (!user || user.bannedAt) return Response.json({ error: "unauthorized" }, { status: 401 });
   if (!(await rateLimit(`realtime-token:${user.id}`, { limit: 30, windowSeconds: 60 })).success) {
     return Response.json({ error: "rate_limited" }, { status: 429 });
   }

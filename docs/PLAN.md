@@ -1208,10 +1208,40 @@ Aucune donnée envoyée par un joueur n'est jamais exécutée, ni comme SQL, ni 
 | Redirections | Les `callbackUrl` d'Auth.js et tout paramètre de redirection sont limités à des chemins internes. |
 | Contenu de l'admin | Le lien Discord n'accepte que `https://discord.gg/…` ou `https://discord.com/invite/…` ; les URL d'images que les domaines listés dans `next.config` (`remotePatterns`). |
 | Abus et robots | Rate limit en base (repli en mémoire si la base ne répond pas) sur l'ouverture, les enchères, les défis, l'inscription et les formulaires ; protection anti-robots et pare-feu Vercel. |
+| Comptes en série, ban contourné | Détection des multi-comptes (IP et appareil relevés) et bans réseau : une IP ou un appareil banni coupe tout l'accès, l'équipe exceptée (voir « Multi-comptes et bans réseau »). |
 | Secrets | Variables d'environnement côté serveur uniquement (jamais `NEXT_PUBLIC_`), modules marqués `server-only`, messages d'erreur génériques côté client, détails dans les logs. |
 | Dépendances | `npm audit` en CI, Dependabot ou Renovate, versions verrouillées. |
 
 Pour l'admin : rôle vérifié côté serveur à chaque action, session courte, journal `AdminLog` de toutes les écritures, et confirmation pour les actions irréversibles.
+
+## Multi-comptes et bans réseau
+
+Bannir un compte ne suffisait pas : ses sessions fermées, le navigateur recréait aussitôt un invité. La détection des multi-comptes relève l'IP et un identifiant d'appareil (cookie `kiraku.device`) de chaque joueur (`UserSignal`, `/admin/multi-comptes`) ; les bans réseau s'appuient sur ces relevés.
+
+**Ce qui est bloqué.** Depuis une IP ou un appareil banni (`NetworkBan`), personne ne joue plus, même déjà connecté. Seule l'équipe (ADMIN, DEV) passe.
+
+- Une IPv4 se bannit à l'adresse exacte, une IPv6 par son préfixe /64, une IPv4 encapsulée (`::ffff:a.b.c.d`) comme une IPv4 (`lib/anticheat/network.ts`).
+- Pages : l'écran « Accès bloqué » (sceau 禁) remplace la page (`AccountGate`), sauf les textes légaux et `/connexion`, pour qu'un membre de l'équipe déconnecté puisse revenir.
+- Actions et routes : `getCurrentUser` traite le joueur comme banni (`bannedAt` à la date du ban), toutes les vérifications existantes s'appliquent.
+- Entrées sans session refusées : invité automatique, inscription et connexion par e-mail, connexion et liaison Discord (callback `signIn`).
+- Une lecture de la table qui échoue laisse passer (journalisée) : un incident sur les bans ne ferme pas le site.
+
+**Durée.** Un ban posé par un admin est définitif jusqu'à sa levée, qui supprime la ligne (le journal admin ne garde que la valeur masquée). Lever un appareil lève les IP qu'il a fait bannir.
+
+**Le ban suit l'appareil.** Un appareil banni qui revient d'une IP qui ne l'est pas la fait bannir (source `AUTO`, `multiAccount.autoBanDays` jours, 30 par défaut), sauf si :
+
+- le suivi est coupé (`multiAccount.followDevice`) ou l'IP n'est pas publique ;
+- un compte de l'équipe l'a utilisée ;
+- plus de `multiAccount.autoBanMaxOthers` autres comptes actifs l'ont utilisée (0 par défaut ; ceux déjà vus sur l'appareil banni ne comptent pas) ;
+- l'appareil a déjà fait bannir `multiAccount.autoBanPerDevice` IP (5 par défaut).
+
+L'expiration et le plafond évitent qu'un banni fasse bannir exprès le wifi d'un café ou d'un lycée. L'admin peut rendre définitif un ban automatique ; le cron des comptes efface les expirés.
+
+**Garde-fous à la pose.** Jamais une IP ou un appareil utilisé par l'équipe, une adresse privée, locale ou réservée (signe d'un proxy mal réglé), ni une IP vue sur plus de `multiAccount.sharedIpCap` comptes (réseau public ou d'opérateur). Une IP partagée avec d'autres comptes actifs se bannit depuis la fiche joueur, décochée par défaut et avec les comptes coupés nommés ; un ban de groupe la saute. Un compte de l'équipe ne se bannit pas.
+
+**Admin.** Fiche joueur (bloc « Bannir le réseau » : IP et appareils précochés s'ils ne coupent personne d'autre, avec ou sans le compte), groupe suspect de `/admin/multi-comptes` (« Bannir ce groupe », 20 comptes au plus), liste `/admin/multi-comptes/bans` (origine, accès bloqués, lever, rendre définitif). Écritures dans `server/anticheat/network-ban-core.ts`, sous verrou, admin revérifié ; le DEV voit tout en lecture seule, IP masquées.
+
+**RGPD.** IP et identifiant d'appareil gardés 90 jours après la dernière visite (`multiAccount.retentionDays`), et tant que dure un ban, même après la suppression du compte (intérêt légitime : un ban ne doit pas se contourner en supprimant son compte). L'export des données inclut les bans venus du compte, sans la raison ni l'admin. Le cookie d'appareil figure dans le registre des cookies (rôle « sécurité »).
 
 ## Fluidité et animations
 

@@ -2,6 +2,8 @@ import { DeleteUserButton } from "@/components/admin/UserDeletion";
 import { notFound } from "next/navigation";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { AdminUserPrestige } from "@/components/admin/AdminUserPrestige";
+import { NetworkBanPanel } from "@/components/admin/NetworkBanPanel";
+import { isStaff } from "@/lib/admin/roles";
 import { DataRequestActions } from "@/components/admin/DataRequestActions";
 import { PairList, SignalTable } from "@/components/admin/MultiAccount";
 import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
@@ -109,6 +111,7 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
         )}
         <h4 className="font-title text-lg font-bold">{ma("signalsTitle")}</h4>
         {signals.length === 0 ? <p className="text-sm text-text-muted">{ma("noSignals")}</p> : <SignalTable rows={signals} masked={readOnly} />}
+        <NetworkBanPanel userId={userId} readOnly={readOnly} accountBanned={user.bannedAt !== null} staffTarget={isStaff(user.role)} />
       </section>
 
       <section id="user-friends" className="flex scroll-mt-8 flex-col gap-3">

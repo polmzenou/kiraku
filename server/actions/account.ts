@@ -15,6 +15,8 @@ import {
   tokenSchema,
 } from "@/lib/auth/schemas";
 import { hashToken } from "@/lib/auth/tokens";
+import { isStaff } from "@/lib/admin/roles";
+import { noteBlocked, requestNetworkBan } from "../anticheat/network-ban";
 import { recordSignals } from "../anticheat/signals";
 import { sendPasswordResetEmail, sendVerificationEmail } from "../auth-emails";
 import { prisma } from "../db";
@@ -65,6 +67,13 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
     rateLimit(`register:email:${email}`, { limit: 3, windowSeconds: HOUR }),
   ]);
   if (!byIp.success || !byEmail.success) return { error: "rateLimited", values };
+
+  // Réseau banni (IP ou appareil) : aucun compte ne s'inscrit d'ici, pas même un invité qui s'y trouvait déjà
+  const networkBan = await requestNetworkBan();
+  if (networkBan) {
+    after(() => noteBlocked(networkBan));
+    return { error: "networkBanned", values };
+  }
 
   const passwordHash = await hashPassword(password);
   const start = current ? null : await startingValues();
@@ -130,11 +139,17 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
 
   const user = await prisma.user.findUnique({
     where: { email },
-    select: { id: true, passwordHash: true, bannedAt: true },
+    select: { id: true, passwordHash: true, bannedAt: true, role: true },
   });
   const valid = await verifyPassword(user?.passwordHash ?? null, password);
   if (!user || !valid) return { error: "invalidCredentials", values };
   if (user.bannedAt) return { error: "banned", values };
+  // Réseau banni (IP ou appareil) : seule l'équipe se connecte encore d'ici
+  const networkBan = isStaff(user.role) ? null : await requestNetworkBan();
+  if (networkBan) {
+    after(() => noteBlocked(networkBan));
+    return { error: "networkBanned", values };
+  }
 
   await startSession(user.id);
   await recordSignals(user.id, "LOGIN");

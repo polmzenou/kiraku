@@ -3,8 +3,10 @@ import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 import { after } from "next/server";
 import { GUEST_PREFIX } from "@/lib/username";
+import { isStaff } from "@/lib/admin/roles";
 import { discordAvatarUrl } from "@/lib/discord/avatar";
 import { safeRedirect } from "@/lib/safe-redirect";
+import { noteBlocked, requestNetworkBan } from "./anticheat/network-ban";
 import { recordSignals } from "./anticheat/signals";
 import { kirakuAdapter } from "./auth-adapter";
 import { prisma } from "./db";
@@ -48,6 +50,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     : [],
   pages: { error: "/connexion/erreur" },
   callbacks: {
+    // Réseau banni (IP ou appareil) : ni connexion ni liaison Discord, sauf pour un compte de l'équipe. Refusé,
+    // Auth.js renvoie vers /connexion/erreur, où la barrière montre l'écran du ban.
+    async signIn({ user }) {
+      const networkBan = await requestNetworkBan();
+      if (!networkBan) return true;
+      // Compte existant : `user` vient de la base ; nouveau compte : du profil Discord (aucun id de la base)
+      const known = user.id ? await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } }) : null;
+      if (isStaff(known?.role)) return true;
+      after(() => noteBlocked(networkBan));
+      return false;
+    },
     session({ session, user }) {
       session.user.id = user.id;
       return session;
