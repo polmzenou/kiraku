@@ -10,6 +10,7 @@ import {
   keepNetworkBanWith,
   liftNetworkBanWith,
   NetworkBanError,
+  purgeExpiredNetworkBans,
   type FollowRules,
 } from "./network-ban-core";
 
@@ -179,8 +180,19 @@ describe.skipIf(!url)("bans réseau (base réelle)", () => {
     expect(kept.userId).toBeNull();
     await prisma.networkBan.delete({ where: { id: kept.id } });
 
-    const old = ip();
-    await prisma.networkBan.create({ data: { kind: "IP", value: old, source: "AUTO", reason: "x", userId: admin, expiresAt: new Date(Date.now() - 1000) } });
+    const [old, again, forever] = [ip(), ip(), ip()];
+    const expired = { kind: "IP" as const, source: "AUTO" as const, reason: "x", userId: admin, expiresAt: new Date(Date.now() - 1000) };
+    await prisma.networkBan.create({ data: { ...expired, value: old } });
+    await prisma.networkBan.create({ data: { ...expired, value: again } });
+    await prisma.networkBan.create({ data: { kind: "IP", value: forever, source: "MANUAL", reason: "x", userId: admin } });
     expect(await findNetworkBans(prisma, { ipKey: old, device: null }, new Date())).toHaveLength(0);
+    // Un ban expiré pas encore effacé ne bloque pas un ban neuf sur la même IP
+    const target = await player();
+    await seen(target, "IP", again);
+    expect(await ban(admin, target, await signalIds(target))).toEqual({ bans: 1, account: false });
+    expect(await prisma.networkBan.findUniqueOrThrow({ where: { kind_value: { kind: "IP", value: again } } })).toMatchObject({ source: "MANUAL", expiresAt: null });
+    // Le ménage du cron efface l'expiré (son IP ne reste pas en base), jamais un ban définitif
+    expect(await purgeExpiredNetworkBans(prisma, new Date())).toBeGreaterThanOrEqual(1);
+    expect(await prisma.networkBan.count({ where: { value: { in: [old, forever] } } })).toBe(1);
   });
 });

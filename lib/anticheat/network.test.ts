@@ -114,10 +114,11 @@ describe("le ban suit l'appareil", () => {
 
 describe("pages lisibles depuis un réseau banni", () => {
   it("laisse les textes légaux et la connexion, rien d'autre", () => {
-    for (const path of ["/cgu", "/en/confidentialite", "/mentions-legales", "/cookies", "/connexion", "/en/connexion/erreur"]) {
+    for (const path of ["/cgu", "/en/confidentialite", "/mentions-legales", "/cookies", "/connexion", "/en/connexion", "/connexion/mot-de-passe-oublie", "/en/connexion/reinitialiser"]) {
       expect(isNetworkGateFree(path), path).toBe(true);
     }
-    for (const path of ["/", "/en", "/inscription", "/boosters", "/u/tristan", "/cguu"]) {
+    // La page d'erreur de connexion montre l'écran du ban (un refus Discord y mène)
+    for (const path of ["/", "/en", "/inscription", "/boosters", "/u/tristan", "/cguu", "/connexion/erreur", "/en/connexion/erreur", "/connexionx"]) {
       expect(isNetworkGateFree(path), path).toBe(false);
     }
   });

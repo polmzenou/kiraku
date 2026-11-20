@@ -137,6 +137,15 @@ export async function keyStates(db: Db, keys: readonly NetworkKey[], targets: Re
   });
 }
 
+/**
+ * Un ban automatique expiré garde sa ligne jusqu'au ménage du cron : elle est retirée avant d'en poser un neuf sur la
+ * même clé (l'index unique le sauterait sinon sans rien dire).
+ */
+async function clearExpired(db: Db, keys: readonly { kind: NetworkKind; key: string }[], now: Date) {
+  if (keys.length === 0) return;
+  await db.networkBan.deleteMany({ where: { expiresAt: { lte: now }, OR: keys.map((k) => ({ kind: k.kind, value: k.key })) } });
+}
+
 /** Admin non banni, revérifié dans la transaction : une session ouverte ne conserve pas des droits retirés. */
 async function assertAdmin(tx: Prisma.TransactionClient, adminId: string) {
   const actor = await tx.user.findUnique({ where: { id: adminId }, select: { role: true, bannedAt: true } });
@@ -169,6 +178,7 @@ export async function banNetworkWith(
     if (states.some((s) => REFUSED_STATES.includes(s.state))) throw new NetworkBanError("REFUSED");
     const toBan = states.filter((s) => s.state === "OK" || s.state === "SHARED");
 
+    await clearExpired(tx, toBan, input.now);
     await tx.networkBan.createMany({
       data: toBan.map((s) => ({ kind: s.kind, value: s.key, source: "MANUAL" as const, reason: input.reason, userId: target.id, createdById: input.adminId })),
       skipDuplicates: true,
@@ -210,6 +220,7 @@ export async function banGroupWith(
 
     const states = await keyStates(tx, await networkKeysOf(tx, ids), new Set(ids), input.sharedIpCap, input.now);
     const toBan = states.filter((s) => s.state === "OK");
+    await clearExpired(tx, toBan, input.now);
     await tx.networkBan.createMany({
       data: toBan.map((s) => ({ kind: s.kind, value: s.key, source: "GROUP" as const, reason: input.reason, userId: s.userIds[0], createdById: input.adminId })),
       skipDuplicates: true,
@@ -276,6 +287,12 @@ export async function keepNetworkBanWith(db: PrismaClient, input: { adminId: str
   }, TX);
 }
 
+/** Ménage quotidien (cron des comptes) : bans automatiques expirés, pour que leur IP ne reste pas en base. */
+export async function purgeExpiredNetworkBans(db: Db, now: Date): Promise<number> {
+  const { count } = await db.networkBan.deleteMany({ where: { expiresAt: { lte: now } } });
+  return count;
+}
+
 /** Réglages du ban qui suit l'appareil (multiAccount.*), lus par l'appelant. */
 export type FollowRules = { enabled: boolean; maxOthers: number; days: number; perDevice: number };
 
@@ -305,6 +322,7 @@ export async function followDeviceWith(
     perDevice: rules.perDevice,
   });
   if (decision !== "FOLLOW") return decision;
+  await clearExpired(db, [{ kind: "IP", key: input.ipKey }], input.now);
   const { count } = await db.networkBan.createMany({
     data: [{
       kind: "IP",

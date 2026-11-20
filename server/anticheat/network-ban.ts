@@ -24,12 +24,20 @@ export type RequestBan = { bans: MatchedBan[]; ipKey: string | null; device: str
 /**
  * Ban réseau de la requête en cours (son IP, son cookie d'appareil), lu une fois par requête. null : rien de banni.
  * Le cookie n'est que lu ici : il est posé par le relevé des multi-comptes (server/anticheat/signals.ts).
+ * Une lecture qui échoue laisse passer (journalisée) : toutes les pages en dépendent, un incident sur la table des
+ * bans (migration pas encore appliquée, base lente) ne doit pas fermer le site.
  */
 export const requestNetworkBan = cache(async (): Promise<RequestBan | null> => {
   const [ip, jar] = await Promise.all([clientIp(), cookies()]);
   const raw = jar.get(DEVICE_COOKIE.name)?.value;
   const target = { ipKey: ipBanKey(ip), device: isDeviceId(raw) ? raw : null };
-  const bans = await findNetworkBans(prisma, target, new Date());
+  let bans: MatchedBan[];
+  try {
+    bans = await findNetworkBans(prisma, target, new Date());
+  } catch (e) {
+    console.error("[bans réseau] lecture", e instanceof Error ? e.message : e);
+    return null;
+  }
   if (bans.length === 0) return null;
   const since = new Date(Math.min(...bans.map((b) => b.createdAt.getTime())));
   return { bans, ...target, since };
