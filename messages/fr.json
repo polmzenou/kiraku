@@ -2814,7 +2814,11 @@
           "retentionDays": "Conservation des IP et appareils (jours)",
           "seenThrottleMinutes": "Relevé pendant la présence (minutes)",
           "sharedIpCap": "Comptes au-delà desquels une IP est publique",
-          "minScore": "Score minimal d'un groupe suspect"
+          "minScore": "Score minimal d'un groupe suspect",
+          "followDevice": "Le ban suit l'appareil",
+          "autoBanMaxOthers": "Autres comptes actifs tolérés sur une IP bannie automatiquement",
+          "autoBanDays": "Durée d'un ban automatique (jours)",
+          "autoBanPerDevice": "IP bannies au plus par appareil banni"
         }
       },
       "hints": {
@@ -2839,8 +2843,12 @@
         "multiAccount": {
           "retentionDays": "IP et appareils non revus depuis ce délai sont effacés chaque nuit. 90 jours conseillés (RGPD).",
           "seenThrottleMinutes": "Un joueur connecté est relevé au plus une fois par ce délai.",
-          "sharedIpCap": "4G, école, entreprise : une IP (ou une racine d'e-mail) partagée par plus de comptes ne les relie plus.",
-          "minScore": "Somme des indices d'une paire pour former un groupe dans Multi-comptes."
+          "sharedIpCap": "4G, école, entreprise : une IP (ou une racine d'e-mail) partagée par plus de comptes ne les relie plus, et ne peut pas être bannie.",
+          "minScore": "Somme des indices d'une paire pour former un groupe dans Multi-comptes.",
+          "followDevice": "Un appareil banni qui revient avec une nouvelle IP (4G, autre wifi) la fait bannir aussi, si aucun membre de l'équipe ne l'utilise.",
+          "autoBanMaxOthers": "0 conseillé : une IP déjà utilisée par d'autres joueurs non bannis n'est jamais coupée automatiquement.",
+          "autoBanDays": "Un ban automatique expire après ce délai, sauf si un admin le rend définitif dans Bans réseau.",
+          "autoBanPerDevice": "Limite les IP qu'un appareil banni peut faire bannir, s'il passe exprès par le wifi d'un café ou d'un lycée."
         }
       },
       "multiAccountSection": "Multi-comptes"

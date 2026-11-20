@@ -82,9 +82,21 @@ export function stripLocale(pathname: string): string {
   return rest === "" ? "/" : rest;
 }
 
-export function isTermsGateFree(pathname: string): boolean {
+// Chemins lisibles depuis un réseau banni (server/anticheat/network-ban.ts) : les textes légaux, et la connexion,
+// pour qu'un membre de l'équipe déconnecté puisse revenir (elle refuse tout autre compte).
+const NETWORK_GATE_FREE = ["/connexion", ...LEGAL_SLUGS.map((s) => `/${s}`)];
+
+const startsWithAny = (paths: readonly string[], pathname: string) => {
   const path = stripLocale(pathname);
-  return GATE_FREE.some((p) => path === p || path.startsWith(`${p}/`));
+  return paths.some((p) => path === p || path.startsWith(`${p}/`));
+};
+
+export function isTermsGateFree(pathname: string): boolean {
+  return startsWithAny(GATE_FREE, pathname);
+}
+
+export function isNetworkGateFree(pathname: string): boolean {
+  return startsWithAny(NETWORK_GATE_FREE, pathname);
 }
 
 /**

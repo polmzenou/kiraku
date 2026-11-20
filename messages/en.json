@@ -2814,7 +2814,11 @@
           "retentionDays": "IP and device retention (days)",
           "seenThrottleMinutes": "Recording while present (minutes)",
           "sharedIpCap": "Accounts above which an IP is public",
-          "minScore": "Minimum score of a suspicious group"
+          "minScore": "Minimum score of a suspicious group",
+          "followDevice": "Bans follow the device",
+          "autoBanMaxOthers": "Other active accounts allowed on an automatically banned IP",
+          "autoBanDays": "Automatic ban length (days)",
+          "autoBanPerDevice": "Most IPs banned per banned device"
         }
       },
       "hints": {
@@ -2839,8 +2843,12 @@
         "multiAccount": {
           "retentionDays": "IPs and devices not seen again for this long are deleted every night. 90 days advised (GDPR).",
           "seenThrottleMinutes": "A logged-in player is recorded at most once per this delay.",
-          "sharedIpCap": "Mobile, school, office: an IP (or email stem) shared by more accounts no longer links them.",
-          "minScore": "Sum of a pair's clues needed to form a group in Multi-accounts."
+          "sharedIpCap": "Mobile data, school, office: an IP (or e-mail root) shared by more accounts no longer links them, and can't be banned.",
+          "minScore": "Sum of a pair's clues needed to form a group in Multi-accounts.",
+          "followDevice": "A banned device that comes back from a new IP (mobile data, another Wi-Fi) gets that IP banned too, unless a team member uses it.",
+          "autoBanMaxOthers": "0 recommended: an IP already used by other players who aren't banned is never cut automatically.",
+          "autoBanDays": "An automatic ban expires after this delay, unless an admin makes it permanent in Network bans.",
+          "autoBanPerDevice": "Caps how many IPs one banned device can get banned, should it go through a café or school Wi-Fi on purpose."
         }
       },
       "multiAccountSection": "Multi-accounts"

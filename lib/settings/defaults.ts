@@ -428,6 +428,12 @@ export const SETTING_SCHEMAS = {
   "multiAccount.seenThrottleMinutes": z.number().int().min(1).max(1_440),
   "multiAccount.sharedIpCap": z.number().int().min(2).max(100),
   "multiAccount.minScore": z.number().int().min(1).max(500),
+  // Bans réseau : un appareil banni revenu avec une nouvelle IP la fait bannir (si elle ne coupe pas d'autres
+  // comptes actifs au-delà de autoBanMaxOthers), pour autoBanDays jours, et au plus autoBanPerDevice IP par appareil
+  "multiAccount.followDevice": z.boolean(),
+  "multiAccount.autoBanMaxOthers": z.number().int().min(0).max(5),
+  "multiAccount.autoBanDays": z.number().int().min(1).max(365),
+  "multiAccount.autoBanPerDevice": z.number().int().min(1).max(50),
   "discord.linkBonusZeni": z.number().int().min(0).max(100_000),
   // Modal « Rejoins notre Discord » : lien, textes fr/en, déclencheur et fréquence
   "discord.joinModal": joinModalSchema,
@@ -814,6 +820,10 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "multiAccount.seenThrottleMinutes": 30,
   "multiAccount.sharedIpCap": 8,
   "multiAccount.minScore": 40,
+  "multiAccount.followDevice": true,
+  "multiAccount.autoBanMaxOthers": 0, // aucun autre joueur actif coupé par un ban automatique
+  "multiAccount.autoBanDays": 30, // un ban automatique n'est jamais définitif sans l'admin
+  "multiAccount.autoBanPerDevice": 5,
   "discord.linkBonusZeni": 500, // versé une seule fois, à la première liaison
   "discord.joinModal": JOIN_MODAL_DEFAULT, // désactivé par défaut
   "discord.marketEnabled": false,
