@@ -1,4 +1,5 @@
 import { processDueDeletionsWith } from "@/server/account/account-core";
+import { purgeExpiredNetworkBans } from "@/server/anticheat/network-ban-core";
 import { purgeOldSignals } from "@/server/anticheat/signals";
 import { purgeInactiveGuestsWith } from "@/server/account/guest-purge";
 import { purgeOldMessages } from "@/server/chat/queries";
@@ -12,7 +13,8 @@ import { getSetting } from "@/server/settings";
 // - anonymisation des comptes dont la suppression est arrivée à échéance (idempotente : un compte
 //   déjà anonymisé est ignoré) ;
 // - comptes invités abandonnés (créés il y a plus de guest.retentionDays jours, sans activité depuis) ;
-// - IP et appareils des joueurs non revus depuis multiAccount.retentionDays (multi-comptes) ;
+// - IP et appareils des joueurs non revus depuis multiAccount.retentionDays (multi-comptes), et bans réseau
+//   automatiques expirés (ceux posés par l'admin restent jusqu'à leur levée) ;
 // - compteurs de limitation expirés, messages de chat et gros tirages périmés (filet de sécurité
 //   derrière le ménage paresseux des sondages).
 // Détails des échecs dans les logs seulement ; un ménage raté n'empêche pas les autres.
@@ -47,6 +49,7 @@ export async function GET(request: Request) {
     chat: await housekeeping("chat", async () => purgeOldMessages(await getSetting("chat.retentionHours"))),
     pulls: await housekeeping("tirages", () => purgeOldPulls()),
     signals: await housekeeping("signaux", () => purgeOldSignals(new Date())),
+    networkBans: await housekeeping("bans réseau", () => purgeExpiredNetworkBans(prisma, new Date())),
   };
   return Response.json({ ...deletions, guests, rateLimits, cleaned });
 }

@@ -22,7 +22,8 @@ export type StoragePurpose =
   | "discordLater"
   | "news"
   | "casinoCeremony"
-  | "speedInsights";
+  | "speedInsights"
+  | "security";
 
 export type StorageDuration = { unit: "session" | "none" } | { unit: "minutes" | "days"; value: number } | { unit: "persistent" };
 
@@ -62,6 +63,17 @@ export const STORAGE_REGISTRY: readonly StorageEntry[] = [
     category: "necessary",
     purpose: "referral",
     duration: { unit: "days", value: 30 },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
+    // Identifiant aléatoire de l'appareil (server/anticheat/signals.ts) : repère les comptes en série et fait
+    // respecter un ban réseau (server/anticheat/network-ban.ts)
+    name: "__Secure-kiraku.device",
+    kind: "cookie",
+    category: "necessary",
+    purpose: "security",
+    duration: { unit: "days", value: 730 },
     provider: "kiraku",
     exempt: true,
   },

@@ -6266,7 +6266,8 @@
       "news": "Remembers whether you collapsed the home page news panel.",
       "speedInsights": "Vercel performance measurement (no cookies or persistent identifiers)",
       "casinoCeremony": "Remembers that you've already seen the casino opening ceremony on this device.",
-      "nav": "Remembers the desktop navigation layout (top menus or sidebar)."
+      "nav": "Remembers the desktop navigation layout (top menus or sidebar).",
+      "security": "Random identifier for this device: spots mass account creation and enforces bans."
     },
     "kinds": {
       "cookie": "Cookie",

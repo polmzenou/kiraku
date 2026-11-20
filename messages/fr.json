@@ -6266,7 +6266,8 @@
       "news": "Retient si tu as réduit l'encart des nouveautés de l'accueil.",
       "speedInsights": "Mesure des performances Vercel (sans cookie ni identifiant persistant)",
       "casinoCeremony": "Retient que tu as déjà vu la cérémonie d'ouverture du casino sur cet appareil.",
-      "nav": "Retient la disposition de la navigation sur ordinateur (menus en haut ou barre latérale)."
+      "nav": "Retient la disposition de la navigation sur ordinateur (menus en haut ou barre latérale).",
+      "security": "Identifiant aléatoire de cet appareil : repère la création de comptes en série et fait respecter un bannissement."
     },
     "kinds": {
       "cookie": "Cookie",
