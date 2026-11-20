@@ -1,6 +1,6 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
-import { ADMIN_USER_PAGE_SIZE, type SortDir, type UserListParams, type UserSort } from "@/lib/admin/users";
+import { ADMIN_USER_PAGE_SIZE, type AdminPrinting, type AdminUserCopy, type SortDir, type UserListParams, type UserSort } from "@/lib/admin/users";
 import { localize, parseLocalized } from "@/lib/boosters/types";
 import { incenseAvailable, incenseEarned, isIncenseActive } from "@/lib/boosters/incense";
 import { normalizeSearch } from "@/lib/catalog/search";
@@ -162,4 +162,25 @@ export async function getAdminUserCards(userId: string, query: string, requested
 export async function adminCardById(id: string) {
   const card = await prisma.card.findUnique({ where: { id }, select: { id: true, anilistId: true, publicId: true, appearance: true, name: true, imageUrl: true, rarity: true, rank: true, series: { select: { titleRomaji: true } } } });
   return card ? { ...card, anilistId: card.publicId, series: card.series.titleRomaji } : null;
+}
+
+export const ADMIN_USER_COPIES_LIMIT = 60;
+
+/**
+ * Exemplaires d'une carte chez le joueur (fiche admin) : héritiers et gravés d'abord, puis les plus récents. Avec les
+ * tirages gravés de la carte, pour choisir un numéro libre.
+ */
+export async function getAdminUserCopies(userId: string, cardId: string): Promise<{ copies: AdminUserCopy[]; total: number; printings: AdminPrinting[] }> {
+  const where = { ownerId: userId, cardId };
+  const [rows, total, printings] = await Promise.all([
+    prisma.userCard.findMany({
+      where,
+      orderBy: [{ heritage: "desc" }, { printing: { sort: "asc", nulls: "last" } }, { obtainedAt: "desc" }, { id: "asc" }],
+      take: ADMIN_USER_COPIES_LIMIT,
+      select: { id: true, status: true, heritage: true, keptByOwner: true, printing: true, serial: true, obtainedAt: true, edition: { select: { size: true } } },
+    }),
+    prisma.userCard.count({ where }),
+    prisma.cardPrinting.findMany({ where: { cardId }, orderBy: { printing: "asc" }, select: { printing: true, size: true, taken: true } }),
+  ]);
+  return { copies: rows.map(({ edition, ...c }) => ({ ...c, size: edition?.size ?? null })), total, printings };
 }

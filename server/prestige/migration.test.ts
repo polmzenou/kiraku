@@ -8,7 +8,7 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { seededRng } from "@/lib/rng";
 import { moveCopy } from "../collection/transfer";
 import { consecrateWith, ConsecrateError } from "./consecrate-core";
-import { takeSerial } from "./printing-core";
+import { takeChosenSerial, takeSerial } from "./printing-core";
 
 // Migrations du prestige, rejouées après toutes les autres dans un Postgres isolé en mémoire, puis moveCopy et la
 // requête du numéro d'une gravée sur cette base : écriture conditionnelle, remise à zéro de « gardée par son
@@ -199,6 +199,20 @@ describe("migration prestige_printings", () => {
     // Tirage épuisé : la carte sortira ordinaire
     expect(await take(5, 99)).toBeNull();
     expect(await one(`SELECT issued, taken FROM "CardPrinting" WHERE "cardId" = 'k3'`)).toEqual({ issued: 5, taken: serials });
+  });
+
+  it("un numéro choisi (admin) est pris s'il est libre, jamais deux fois ni hors du tirage", async () => {
+    const chosen = (serial: number) => takeChosenSerial(tx, { cardId: "k3", printing: 1, size: 5, serial });
+    expect(await chosen(3)).toEqual({ printing: 1, serial: 3, size: 5 });
+    expect(await chosen(3)).toBeNull();
+    expect(await chosen(6)).toBeNull();
+    expect(await chosen(0)).toBeNull();
+    // Le hasard ne reprend jamais le numéro choisi ; le tirage s'épuise sur les autres
+    const rest: number[] = [];
+    for (let i = 0; i < 4; i++) rest.push((await take(5, 40 + i))!.serial);
+    expect([...rest].sort((a, b) => a - b)).toEqual([1, 2, 4, 5]);
+    expect(await chosen(1)).toBeNull();
+    expect(await one(`SELECT issued, taken FROM "CardPrinting" WHERE "cardId" = 'k3'`)).toEqual({ issued: 5, taken: [3, ...rest] });
   });
 
   it("la taille d'un tirage est figée à sa création ; un autre tirage repart de zéro", async () => {
