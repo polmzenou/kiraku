@@ -28,6 +28,8 @@ const BOUNDS: Record<NumKey, [number, number]> = {
   "market.pollSeconds": [2, 120],
   "market.quoteWindowDays": [7, 180],
   "market.quoteMinSales": [1, 50],
+  "market.quoteMinSellers": [1, 20],
+  "market.quoteCapMultiplier": [0, 100],
   "market.quoteHistoryDays": [30, 365],
   "market.orderDurationDays": [1, 30],
   "market.maxOpenOrders": [1, 100],
@@ -148,6 +150,8 @@ export function MarketSettingsForm({ initial }: { initial: MarketSettings }) {
         <p className="text-xs text-text-muted sm:col-span-3">{t("quoteHint")}</p>
         {num("market.quoteWindowDays")}
         {num("market.quoteMinSales")}
+        {num("market.quoteMinSellers")}
+        {num("market.quoteCapMultiplier")}
         {num("market.quoteHistoryDays")}
       </fieldset>
 

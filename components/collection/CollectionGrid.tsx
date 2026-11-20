@@ -3,7 +3,7 @@
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Fuda } from "@/components/fuda/Fuda";
+import { Fuda, HeritageMon } from "@/components/fuda/Fuda";
 import { Link } from "@/i18n/navigation";
 import type { CollectionItem, CollectionPage } from "@/lib/collection/view";
 import { loadCollectionPage } from "@/server/actions/collection";
@@ -22,6 +22,7 @@ const SSR_WIDTH = 343;
 
 function CollectionCard({ item, href, preload }: { item: CollectionItem; href: string; preload: boolean }) {
   const t = useTranslations("collection");
+  const heritage = item.heritage ?? 0;
   return (
     <Link
       href={href}
@@ -44,15 +45,21 @@ function CollectionCard({ item, href, preload }: { item: CollectionItem; href: s
           )
         }
         overlay={
-          item.inShowcase && (
-            <span className="absolute bottom-6 left-1 rounded-sm bg-kin px-1 text-[10px] font-bold text-sumi">
-              {t("inShowcaseBadge")}
-            </span>
+          (item.inShowcase || heritage > 0) && (
+            <>
+              {/* Héritière : le blason à pétales de la meilleure héritière, en plus de la pastille 継 (texte lu plus bas) */}
+              {heritage > 0 && <HeritageMon level={heritage} />}
+              {item.inShowcase && (
+                <span className="absolute bottom-6 left-1 rounded-sm bg-kin px-1 text-[10px] font-bold text-sumi">
+                  {t("inShowcaseBadge")}
+                </span>
+              )}
+            </>
           )
         }
       />
       <span className="sr-only">{t("copiesLabel", { count: item.copies })}</span>
-      {(item.heritage ?? 0) > 0 && <span className="sr-only">{t("heirLabel", { level: item.heritage ?? 0 })}</span>}
+      {heritage > 0 && <span className="sr-only">{t("heirLabel", { level: heritage })}</span>}
       {item.engraved && <span className="sr-only">{t("engravedLabel")}</span>}
     </Link>
   );

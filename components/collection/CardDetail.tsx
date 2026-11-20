@@ -71,6 +71,7 @@ export async function CardDetail({
   const special = copies.filter((c) => isSpecialCopy(c));
   const ordinaryInCollection = copies.filter((c) => c.status === "COLLECTION" && !isSpecialCopy(c)).length;
   const inShowcase = copies.some((c) => c.inShowcase);
+  const bestHeritage = copies.reduce((best, c) => Math.max(best, c.heritage), 0);
   const byStatus = (s: "AUCTION" | "BATTLE" | "CASINO" | "EXPEDITION") => copies.filter((c) => c.status === s).length;
   // Fiche de chaque exemplaire spécial : provenance, gravées encore en circulation, sceaux des tirages
   const [journeys, stats, seals]: [Map<string, JourneyStep[]>, PrintingStats[], Record<string, string>] =
@@ -82,7 +83,8 @@ export async function CardDetail({
   return (
     <article className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
       <FudaTurnover rarity={card.rarity} className="mx-auto w-full max-w-[260px] md:mx-0 md:w-[300px] md:max-w-none md:shrink-0">
-        <Fuda card={card} series={series} size="lg" preload />
+        {/* Héritière : la grande carte porte le blason de la meilleure héritière du joueur */}
+        <Fuda card={bestHeritage > 0 ? { ...card, copy: { heritage: bestHeritage } } : card} series={series} size="lg" preload />
       </FudaTurnover>
 
       <div className="flex min-w-0 flex-1 flex-col gap-5">

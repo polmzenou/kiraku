@@ -339,6 +339,10 @@ export const SETTING_SCHEMAS = {
   // Cote des cartes (lib/market/quotes.ts) : médiane des ventes de la fenêtre, à partir de quoteMinSales ventes
   "market.quoteWindowDays": z.number().int().min(7).max(180),
   "market.quoteMinSales": z.number().int().min(1).max(50),
+  // Une voix par joueur qui fixe le prix, et ce nombre de joueurs différents au moins
+  "market.quoteMinSellers": z.number().int().min(1).max(20),
+  // Cote d'une carte plafonnée à ce multiple de la référence de sa rareté (0 : sans plafond)
+  "market.quoteCapMultiplier": z.number().int().min(0).max(100),
   "market.quoteHistoryDays": z.number().int().min(30).max(365),
   // Avis de recherche (lib/market/buy-orders.ts) : prix bloqué jusqu'à la vente, l'annulation ou l'expiration
   "market.ordersEnabled": z.boolean(),
@@ -686,6 +690,8 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "market.pollSeconds": 15, // rafraîchissement du prix d'une vente ouverte
   "market.quoteWindowDays": 30, // cote = médiane des ventes des 30 derniers jours…
   "market.quoteMinSales": 3, // …à partir de 3 ventes (une vente arrangée ne suffit pas)
+  "market.quoteMinSellers": 2, // …venant d'au moins 2 joueurs, chacun ne pesant qu'une voix
+  "market.quoteCapMultiplier": 5, // une carte ne vaut pas plus de 5 fois la référence de sa rareté
   "market.quoteHistoryDays": 90, // courbe de la fiche carte
   "market.ordersEnabled": true,
   "market.orderDurationDays": 7, // un avis non rempli rend ses Zeni au bout d'une semaine

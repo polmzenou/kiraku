@@ -19,7 +19,7 @@ import "./prestige.css";
 /**
  * Rite de renaissance (転生) en bain d'encre, joué après la transaction (tout est déjà décidé par le serveur). Les
  * piles de cartes, une par rareté, se replient et s'enfoncent dans la pierre à encre, des ondes s'élargissent ; les
- * Zeni montent ; un pétale de plus se dore sur la fleur de prunier de chaque héritière ; le chiffre romain est frappé
+ * Zeni montent ; un pétale de plus se dore sur la fleur de cerisier de chaque héritière ; le chiffre romain est frappé
  * sur l'avatar ; le rouleau du cycle se déroule. Un appui passe le rite ; en mouvement réduit, l'état final
  * s'affiche directement.
  */
@@ -123,7 +123,7 @@ export function RebirthRite({
       }
       if (zeniNum) zeniNum.textContent = format.number(result.zeni);
 
-      // Un pétale de plus se dore sur la fleur de prunier de chaque héritière
+      // Un pétale de plus se dore sur la fleur de cerisier de chaque héritière
       play("chime");
       await Promise.all(
         qa("[data-heir]").map(async (card, i) => {

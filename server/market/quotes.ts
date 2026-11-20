@@ -15,14 +15,22 @@ const DAY_MS = 86_400_000;
 /** Garde-fou : au-delà, les ventes les plus anciennes de la période sont ignorées. */
 const MAX_SALES = 50_000;
 
-async function quoteRules(): Promise<QuoteRules> {
-  const [windowDays, minSales] = await Promise.all([getSetting("market.quoteWindowDays"), getSetting("market.quoteMinSales")]);
-  return { windowDays, minSales };
+type FullQuoteRules = Required<QuoteRules>;
+
+async function quoteRules(): Promise<FullQuoteRules> {
+  const [windowDays, minSales, minSellers, capMultiplier] = await Promise.all([
+    getSetting("market.quoteWindowDays"),
+    getSetting("market.quoteMinSales"),
+    getSetting("market.quoteMinSellers"),
+    getSetting("market.quoteCapMultiplier"),
+  ]);
+  return { windowDays, minSales, minSellers, capMultiplier };
 }
 
-// `windowDays` et `minSales` font partie de la clé : un réglage modifié dans l'admin donne de nouvelles cotes
+// Les réglages font partie de la clé : un réglage modifié dans l'admin donne de nouvelles cotes. Le prix d'une
+// enchère est fixé par son vendeur, celui d'un avis de recherche par son acheteur : c'est leur voix qui compte.
 const loadQuotes = unstable_cache(
-  async (windowDays: number, minSales: number): Promise<MarketQuotes> => {
+  async (windowDays: number, minSales: number, minSellers: number, capMultiplier: number): Promise<MarketQuotes> => {
     const now = new Date();
     const since = new Date(now.getTime() - 2 * windowDays * DAY_MS);
     const [auctions, orders] = await Promise.all([
@@ -30,29 +38,29 @@ const loadQuotes = unstable_cache(
         where: { status: "SOLD", finalPrice: { not: null }, settledAt: { gt: since } },
         orderBy: { settledAt: "desc" },
         take: MAX_SALES,
-        select: { cardId: true, finalPrice: true, settledAt: true, card: { select: { rarity: true } } },
+        select: { cardId: true, finalPrice: true, settledAt: true, sellerId: true, card: { select: { rarity: true } } },
       }),
       prisma.buyOrder.findMany({
         where: { status: "FILLED", filledAt: { gt: since } },
         orderBy: { filledAt: "desc" },
         take: MAX_SALES,
-        select: { cardId: true, price: true, filledAt: true, card: { select: { rarity: true } } },
+        select: { cardId: true, price: true, filledAt: true, buyerId: true, card: { select: { rarity: true } } },
       }),
     ]);
     const sales = [
-      ...auctions.flatMap((r) => (r.finalPrice !== null && r.settledAt ? [{ cardId: r.cardId, rarity: r.card.rarity, price: r.finalPrice, at: r.settledAt }] : [])),
-      ...orders.flatMap((r) => (r.filledAt ? [{ cardId: r.cardId, rarity: r.card.rarity, price: r.price, at: r.filledAt }] : [])),
+      ...auctions.flatMap((r) => (r.finalPrice !== null && r.settledAt ? [{ cardId: r.cardId, rarity: r.card.rarity, price: r.finalPrice, at: r.settledAt, setter: r.sellerId }] : [])),
+      ...orders.flatMap((r) => (r.filledAt ? [{ cardId: r.cardId, rarity: r.card.rarity, price: r.price, at: r.filledAt, setter: r.buyerId }] : [])),
     ];
-    return buildQuotes(sales, now, { windowDays, minSales });
+    return buildQuotes(sales, now, { windowDays, minSales, minSellers, capMultiplier });
   },
-  ["market-quotes-v2"],
+  ["market-quotes-v3"],
   { revalidate: CACHE_SECONDS, tags: ["market-quotes"] },
 );
 
-/** Cotes de toutes les cartes vendues récemment, et médiane de chaque rareté. */
+/** Cotes de toutes les cartes vendues récemment, et référence de chaque rareté. */
 export async function getMarketQuotes(): Promise<MarketQuotes> {
-  const { windowDays, minSales } = await quoteRules();
-  return loadQuotes(windowDays, minSales);
+  const { windowDays, minSales, minSellers, capMultiplier } = await quoteRules();
+  return loadQuotes(windowDays, minSales, minSellers, capMultiplier);
 }
 
 export type CardPriceHistory = {
@@ -63,7 +71,7 @@ export type CardPriceHistory = {
 };
 
 const loadHistory = unstable_cache(
-  async (cardId: string, windowDays: number, minSales: number, historyDays: number, timeZone: string): Promise<CardPriceHistory> => {
+  async (cardId: string, windowDays: number, minSales: number, minSellers: number, historyDays: number, timeZone: string): Promise<CardPriceHistory> => {
     const now = new Date();
     // La cote demande deux fenêtres (tendance) ; la courbe, historyDays plus une fenêtre (cote des premiers jours)
     const since = new Date(now.getTime() - (Math.max(historyDays, windowDays) + windowDays) * DAY_MS);
@@ -72,35 +80,39 @@ const loadHistory = unstable_cache(
         where: { cardId, status: "SOLD", finalPrice: { not: null }, settledAt: { gt: since } },
         orderBy: { settledAt: "asc" },
         take: MAX_SALES,
-        select: { finalPrice: true, settledAt: true },
+        select: { finalPrice: true, settledAt: true, sellerId: true },
       }),
       prisma.buyOrder.findMany({
         where: { cardId, status: "FILLED", filledAt: { gt: since } },
         orderBy: { filledAt: "asc" },
         take: MAX_SALES,
-        select: { price: true, filledAt: true },
+        select: { price: true, filledAt: true, buyerId: true },
       }),
     ]);
     const sales = [
-      ...auctions.flatMap((r) => (r.finalPrice !== null && r.settledAt ? [{ price: r.finalPrice, at: r.settledAt }] : [])),
-      ...orders.flatMap((r) => (r.filledAt ? [{ price: r.price, at: r.filledAt }] : [])),
+      ...auctions.flatMap((r) => (r.finalPrice !== null && r.settledAt ? [{ price: r.finalPrice, at: r.settledAt, setter: r.sellerId }] : [])),
+      ...orders.flatMap((r) => (r.filledAt ? [{ price: r.price, at: r.filledAt, setter: r.buyerId }] : [])),
     ];
-    const rules = { windowDays, minSales };
+    const rules = { windowDays, minSales, minSellers };
     return { quote: quoteFor(sales, now, rules), rules, historyDays, series: priceSeries(sales, now, historyDays, windowDays, timeZone) };
   },
-  ["market-card-history-v2"],
+  ["market-card-history-v3"],
   { revalidate: CACHE_SECONDS, tags: ["market-quotes"] },
 );
 
-/** Cote, tendance et courbe des ventes d'une carte (fiche carte). */
+/**
+ * Cote, tendance et courbe des ventes d'une carte (fiche carte). La cote affichée est celle du marché, plafonnée par
+ * la référence de la rareté, pour que la fiche, la valeur de collection et les avis de recherche disent le même prix.
+ */
 export async function getCardPriceHistory(cardId: string): Promise<CardPriceHistory> {
-  const [{ windowDays, minSales }, historyDays, timeZone] = await Promise.all([
-    quoteRules(), getSetting("market.quoteHistoryDays"), getSetting("game.timeZone"),
+  const [{ windowDays, minSales, minSellers }, historyDays, timeZone, quotes] = await Promise.all([
+    quoteRules(), getSetting("market.quoteHistoryDays"), getSetting("game.timeZone"), getMarketQuotes(),
   ]);
-  return loadHistory(cardId, windowDays, minSales, historyDays, timeZone);
+  const history = await loadHistory(cardId, windowDays, minSales, minSellers, historyDays, timeZone);
+  return { ...history, quote: quotes.byCard[cardId] ?? history.quote };
 }
 
-/** Valeur estimée de la collection d'un joueur : cote de chaque carte, sinon médiane de sa rareté. */
+/** Valeur estimée de la collection d'un joueur : cote de chaque carte, sinon référence de sa rareté. */
 export async function getCollectionValue(ownerId: string): Promise<CollectionValue> {
   const [owned, quotes] = await Promise.all([
     prisma.$queryRaw<{ cardId: string; rarity: string; copies: number }[]>`

@@ -591,7 +591,7 @@ Un joueur publie un avis « je veux cette carte à ce prix » : le prix est **bl
 
 ### Cote des cartes
 
-La cote d'une carte est le **prix médian** de ses ventes terminées, enchères (`Auction` en `SOLD`) et avis de recherche remplis (`BuyOrder` en `FILLED`), sur les `market.quoteWindowDays` derniers jours (30 par défaut). Elle n'existe qu'à partir de `market.quoteMinSales` ventes (3) : une vente arrangée entre deux comptes, ou un coup de folie isolé, ne la déplace pas. La tendance compare la médiane à celle de la fenêtre précédente, de même durée.
+La cote d'une carte est le **prix médian** de ses ventes terminées, enchères (`Auction` en `SOLD`) et avis de recherche remplis (`BuyOrder` en `FILLED`), sur les `market.quoteWindowDays` derniers jours (30 par défaut). Elle n'existe qu'à partir de `market.quoteMinSales` ventes (3) : une vente arrangée entre deux comptes, ou un coup de folie isolé, ne la déplace pas. Chaque joueur qui fixe le prix (vendeur d'une enchère, acheteur d'un avis) ne pèse qu'**une voix**, la médiane de ses propres ventes, et il faut `market.quoteMinSellers` joueurs différents (2) : un vendeur qui écoule des dizaines de communes à un prix absurde ne fait pas la cote. La référence d'une rareté (repli de la valeur de collection) se calcule de la même façon, et la cote d'une carte est plafonnée à `market.quoteCapMultiplier` fois cette référence (5, 0 pour aucun plafond). La tendance compare la médiane à celle de la fenêtre précédente, de même durée.
 
 - **Fiche carte** (wiki et collection) : cote, tendance, courbe des médianes quotidiennes et de chaque vente sur `market.quoteHistoryDays` jours (90).
 - **Collection** : valeur estimée = cote de chaque exemplaire, sinon médiane récente de sa rareté ; les exemplaires sans aucune cote comptent pour 0 et sont signalés.
@@ -844,7 +844,7 @@ Aucune de ces propriétés ne change les stats en combat ni en expédition : leu
 
 ### Héritage
 
-- **Niveaux** : 1 à 5. La marque se pose sur la fuda sans masquer l'illustration ni le shikishi ; son dessin est arrêté dans les ateliers : un blason en fleur de prunier au coin haut-droit, un pétale doré par prestige traversé, lisible à toutes les tailles.
+- **Niveaux** : 1 à 5. La marque se pose sur la fuda sans masquer l'illustration ni le shikishi ; son dessin est arrêté dans les ateliers : un blason en fleur de cerisier au coin haut-droit, un pétale doré par prestige traversé, lisible à toutes les tailles.
 - **Changement de main** : enchère, annonce, échange, cadeau et pile ou face déplacent la même ligne `UserCard` (`ownerId` modifié) ; héritage, tirage et numéro suivent donc l'exemplaire. Cela fait huit écritures (une pour l'enchère et le cadeau, deux pour l'annonce, l'échange et le pile ou face), toutes derrière `moveCopy` (`server/collection/transfer.ts`), qui remet `UserCard.keptByOwner` à 0 et écrit une ligne de provenance pour un exemplaire spécial. Deux filets : un test interdit d'écrire `ownerId` ailleurs, et un déclencheur `BEFORE UPDATE OF "ownerId"` remet `keptByOwner` à 0 en base. Sans cela, une héritière gagnée au pile ou face garderait le compteur du perdant et pourrait être consacrée aussitôt.
 - **Consécration** : possible quand `heritage ≥ prestige.heritageMax` et `keptByOwner ≥ prestige.consecrateMinOwnCycles` (1). L'héritage s'achète, mais la consécration se mérite : il faut avoir gardé la carte soi-même au moins un prestige. Irréversible, confirmée en maintenant le bouton. L'exemplaire quitte `UserCard` pour `ConsecratedCard` en une seule requête (`WITH moved AS (DELETE … RETURNING …) INSERT … SELECT … FROM moved` ; aucune ligne = refus) : il n'est plus possédé, donc marché, échanges, cadeaux, recyclage, combat, expédition, anti-doublon, complétion et classement l'ignorent sans qu'aucune requête ait à le filtrer. Il reste affiché pour toujours dans le sanctuaire du profil avec son parcours (« gardée du cycle 1 au cycle 5 », propriétaires successifs).
 
@@ -884,7 +884,7 @@ Les versions visuelles sont arrêtées dans des ateliers de maquettes avant d'ê
 - **`FudaCard`** gagne un champ optionnel `copy?: { heritage, printing, serial, size, seal }`. Sans lui, la fuda est inchangée : toutes les sources actuelles continuent de marcher.
 - **Sur la fuda** (`components/fuda/FudaCopy.css` ; `FudaFace.css` est généré par `scripts/fuda-face-css.mjs` et ne s'édite pas à la main) :
   - la gravée ne reçoit que son cartouche vermillon `初摺 17 / 25`, accroché au bord du shikishi en miroir du numéro (le shikishi a une hauteur fixe, sans place pour une ligne de plus), à la feuille d'or pour le n° 1 ; aucun grain ni repère sur l'illustration. Sous 80 px, un coin vermillon ;
-  - la marque d'héritage (fleur de prunier).
+  - la marque d'héritage (fleur de cerisier).
 - **Sur la fiche** (`CardDetail`) : la mention `初摺 17 / 25` quand la fiche montre un exemplaire gravé. La fiche liste aussi les **exemplaires** : les ordinaires regroupés comme aujourd'hui, chaque spécial sur sa propre ligne (héritage, édition, provenance en fil simple daté, exemplaires en circulation) avec ses actions (vendre, offrir, exposer, consacrer, recycler).
 - **Collection** : pastille sur la vignette d'une carte dont on a au moins une gravée ou une héritière ; filtres « Gravées » et « Héritières ».
 - **Combat** : `FighterSetup.copy` (optionnel, absent des anciennes parties) garde l'habillage sur le plateau et dans les replays.
@@ -900,7 +900,7 @@ Toutes en `transform` et `opacity`, chargées en import dynamique, passables d'u
   1. Récap : ce qui part, les Zeni estimés, les gravées sacrifiées à confirmer.
   2. Départ en maintenant le bouton (`components/ui/HoldButton.tsx`, tiré de celui des expéditions).
   3. Les cartes qui partent se replient et s'enfoncent dans une pierre à encre, des ondes s'élargissent ; jamais des milliers de cartes à l'écran : des piles par rareté.
-  4. Les 20 héritières restent, et un pétale de plus se dore sur leur fleur de prunier.
+  4. Les 20 héritières restent, et un pétale de plus se dore sur leur fleur de cerisier.
   5. Le chiffre romain est frappé sur l'avatar, et l'emaki du cycle se déroule avec le sceau 転生.
 - **Consécration** (montée à l'autel, dans le vrai sanctuaire) : les lanternes s'embrasent, un rayon d'or tombe sur la carte qui s'élève dans son halo, la cloche du sanctuaire sonne, puis la carte prend la place du haut de l'autel à gradins et le sceau 奉納 se pose dans un éclat.
 - **Sanctuaire et emakis du profil** : cartes figées (`still`), rouleaux qui se déroulent seulement à l'ouverture ; dans un rouleau ouvert, la procession des héritières défile seule et se fait glisser, comme « Gros tirages » (`useMarquee`).
