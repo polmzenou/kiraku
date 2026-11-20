@@ -18,6 +18,8 @@ export const MARKET_SETTING_KEYS = [
   "market.pollSeconds",
   "market.quoteWindowDays",
   "market.quoteMinSales",
+  "market.quoteMinSellers",
+  "market.quoteCapMultiplier",
   "market.quoteHistoryDays",
   "market.ordersEnabled",
   "market.orderDurationDays",

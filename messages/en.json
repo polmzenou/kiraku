@@ -1875,6 +1875,8 @@
         },
         "quoteWindowDays": "Value window (days)",
         "quoteMinSales": "Minimum sales for a value",
+        "quoteMinSellers": "Minimum different players for a value (one vote each)",
+        "quoteCapMultiplier": "Value cap (× the rarity reference, 0 = none)",
         "quoteHistoryDays": "Chart history (days)",
         "ordersEnabled": "Buy orders open",
         "orderDurationDays": "Order duration (days)",

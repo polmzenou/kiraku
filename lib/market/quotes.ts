@@ -1,20 +1,31 @@
 import { dayKey, filterContext } from "@/lib/boosters/pool-filter";
 
-// Cote des cartes, tirée des ventes aux enchères terminées (Auction SOLD). La cote est la médiane
-// des ventes de la fenêtre récente : une vente arrangée entre deux comptes, ou un coup de folie, ne la
-// déplace pas tant qu'elle reste minoritaire. Sans assez de ventes, pas de cote (null), jamais un prix
-// inventé. Tout ici est pur : les lectures en base sont dans server/market/quotes.ts.
+// Cote des cartes, tirée des ventes terminées (enchères, avis de recherche remplis). La cote est la médiane
+// des ventes de la fenêtre récente, avec une voix par joueur qui a fixé le prix : un vendeur qui écoule des
+// dizaines de communes à un prix absurde ne pèse qu'une voix, pas des dizaines. Il faut aussi plusieurs
+// joueurs différents, et la cote d'une carte est plafonnée à un multiple de la référence de sa rareté. Sans
+// assez de ventes, pas de cote (null), jamais un prix inventé. Tout ici est pur : les lectures en base sont
+// dans server/market/quotes.ts.
 
 const DAY_MS = 86_400_000;
 
-/** Une vente terminée : carte, rareté actuelle de la carte, prix final, date de clôture. */
-export type Sale = { cardId: string; rarity: string; price: number; at: Date };
+/**
+ * Une vente terminée : carte, rareté actuelle de la carte, prix final, date de clôture, et le joueur qui a fixé
+ * le prix (vendeur d'une enchère, acheteur d'un avis de recherche). Sans joueur connu, la vente est sa propre voix.
+ */
+export type Sale = { cardId: string; rarity: string; price: number; at: Date; setter?: string | null };
+
+type Priced = Pick<Sale, "price" | "setter">;
 
 export type QuoteRules = {
   /** Fenêtre de la cote, en jours ; la tendance la compare à la fenêtre précédente de même durée. */
   windowDays: number;
   /** Nombre minimal de ventes dans une fenêtre pour en tirer une médiane. */
   minSales: number;
+  /** Nombre minimal de joueurs différents ayant fixé les prix (1 par défaut). */
+  minSellers?: number;
+  /** Plafond de la cote d'une carte : ce multiple de la référence de sa rareté. 0 ou absent : sans plafond. */
+  capMultiplier?: number;
 };
 
 export type Quote = {
@@ -31,7 +42,7 @@ export type Quote = {
 /** Objets simples : passent par unstable_cache. */
 export type MarketQuotes = {
   byCard: Record<string, Quote>;
-  /** Médiane des ventes de chaque rareté sur la fenêtre (même seuil), repli de la valeur de collection. */
+  /** Référence de chaque rareté sur la fenêtre (médiane des voix, mêmes seuils), repli de la valeur de collection. */
   byRarity: Record<string, number>;
 };
 
@@ -50,52 +61,87 @@ function windows(now: Date, windowDays: number) {
   return { end, start, previousStart: start - windowDays * DAY_MS };
 }
 
-const settled = (median: number | null, count: number, minSales: number) => (count >= minSales ? median : null);
+/**
+ * Une voix par joueur : chacun pèse la médiane de ses propres ventes. Une vente sans joueur connu compte pour une
+ * voix à elle seule (anciennes ventes, compte supprimé).
+ */
+export function setterVotes(sales: readonly Priced[]): number[] {
+  const votes: number[] = [];
+  const bySetter = new Map<string, number[]>();
+  for (const { price, setter } of sales) {
+    if (!setter) {
+      votes.push(price);
+      continue;
+    }
+    const prices = bySetter.get(setter) ?? [];
+    bySetter.set(setter, prices);
+    prices.push(price);
+  }
+  for (const prices of bySetter.values()) votes.push(median(prices)!);
+  return votes;
+}
 
-function quoteFromPrices(current: number[], previous: number[], minSales: number): Quote {
-  const price = settled(median(current), current.length, minSales);
-  const before = settled(median(previous), previous.length, minSales);
+/** Médiane des voix, si la fenêtre a assez de ventes et assez de joueurs différents ; sinon null. */
+function settle(sales: readonly Priced[], rules: QuoteRules): number | null {
+  if (sales.length < rules.minSales) return null;
+  const votes = setterVotes(sales);
+  return votes.length >= (rules.minSellers ?? 1) ? median(votes) : null;
+}
+
+function quoteFromSales(current: readonly Priced[], previous: readonly Priced[], rules: QuoteRules, cap: number | null = null): Quote {
+  const capped = (value: number | null) => (value !== null && cap !== null ? Math.min(value, cap) : value);
+  const price = capped(settle(current, rules));
+  const before = capped(settle(previous, rules));
   const changeBp = price !== null && before !== null && before > 0 ? Math.round(((price - before) * 10_000) / before) : null;
   return { price, sales: current.length, previous: before, changeBp };
 }
 
-/** Cote d'un ensemble de ventes (une carte) à l'instant `now`. */
-export function quoteFor(sales: readonly Pick<Sale, "price" | "at">[], now: Date, rules: QuoteRules): Quote {
+/** Cote d'un ensemble de ventes (une carte) à l'instant `now`, sans le plafond de rareté (voir buildQuotes). */
+export function quoteFor(sales: readonly Pick<Sale, "price" | "at" | "setter">[], now: Date, rules: QuoteRules): Quote {
   const { end, start, previousStart } = windows(now, rules.windowDays);
-  const current: number[] = [];
-  const previous: number[] = [];
+  const current: Priced[] = [];
+  const previous: Priced[] = [];
   for (const sale of sales) {
     const at = sale.at.getTime();
-    if (at > start && at <= end) current.push(sale.price);
-    else if (at > previousStart && at <= start) previous.push(sale.price);
+    if (at > start && at <= end) current.push(sale);
+    else if (at > previousStart && at <= start) previous.push(sale);
   }
-  return quoteFromPrices(current, previous, rules.minSales);
+  return quoteFromSales(current, previous, rules);
 }
 
-/** Cotes de toutes les cartes vendues, et médiane de chaque rareté sur la fenêtre récente. */
+/**
+ * Cotes de toutes les cartes vendues, et référence de chaque rareté sur la fenêtre récente (médiane des voix : un
+ * joueur qui vend beaucoup de cartes de la rareté n'y pèse qu'une voix). La cote d'une carte est plafonnée à
+ * `capMultiplier` fois la référence de sa rareté.
+ */
 export function buildQuotes(sales: readonly Sale[], now: Date, rules: QuoteRules): MarketQuotes {
   const { end, start, previousStart } = windows(now, rules.windowDays);
-  const cards = new Map<string, { current: number[]; previous: number[] }>();
-  const rarities = new Map<string, number[]>();
+  const cards = new Map<string, { rarity: string; current: Priced[]; previous: Priced[] }>();
+  const rarities = new Map<string, Priced[]>();
   for (const sale of sales) {
     const at = sale.at.getTime();
     const recent = at > start && at <= end;
     if (!recent && !(at > previousStart && at <= start)) continue;
-    const entry = cards.get(sale.cardId) ?? { current: [], previous: [] };
+    const entry = cards.get(sale.cardId) ?? { rarity: sale.rarity, current: [], previous: [] };
     cards.set(sale.cardId, entry);
-    (recent ? entry.current : entry.previous).push(sale.price);
+    (recent ? entry.current : entry.previous).push(sale);
     if (recent) {
       const prices = rarities.get(sale.rarity) ?? [];
       rarities.set(sale.rarity, prices);
-      prices.push(sale.price);
+      prices.push(sale);
     }
   }
-  const byCard: Record<string, Quote> = {};
-  for (const [cardId, { current, previous }] of cards) byCard[cardId] = quoteFromPrices(current, previous, rules.minSales);
   const byRarity: Record<string, number> = {};
   for (const [rarity, prices] of rarities) {
-    const value = settled(median(prices), prices.length, rules.minSales);
+    const value = settle(prices, rules);
     if (value !== null) byRarity[rarity] = value;
+  }
+  const multiplier = rules.capMultiplier ?? 0;
+  const byCard: Record<string, Quote> = {};
+  for (const [cardId, { rarity, current, previous }] of cards) {
+    const reference = byRarity[rarity];
+    const cap = multiplier > 0 && reference !== undefined ? multiplier * reference : null;
+    byCard[cardId] = quoteFromSales(current, previous, rules, cap);
   }
   return { byCard, byRarity };
 }
@@ -143,7 +189,7 @@ export type CollectionValue = {
   total: number;
   /** Part venant de la cote de chaque carte. */
   fromCard: number;
-  /** Part estimée par la médiane de la rareté (cartes sans cote propre). */
+  /** Part estimée par la référence de la rareté (cartes sans cote propre). */
   fromRarity: number;
   /** Exemplaires sans aucune cote, ni de carte ni de rareté : comptés pour 0. */
   unpriced: number;

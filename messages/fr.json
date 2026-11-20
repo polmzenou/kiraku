@@ -1875,6 +1875,8 @@
         },
         "quoteWindowDays": "Fenêtre de la cote (jours)",
         "quoteMinSales": "Ventes minimales pour une cote",
+        "quoteMinSellers": "Joueurs différents minimum pour une cote (une voix chacun)",
+        "quoteCapMultiplier": "Plafond de la cote (× la référence de la rareté, 0 = aucun)",
         "quoteHistoryDays": "Historique de la courbe (jours)",
         "ordersEnabled": "Avis de recherche ouverts",
         "orderDurationDays": "Durée d'un avis (jours)",

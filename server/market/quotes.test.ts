@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   cards: vi.fn(),
   raw: vi.fn(),
   summaries: vi.fn(),
-  settings: { "market.quoteWindowDays": 30, "market.quoteMinSales": 2, "market.quoteHistoryDays": 90, "game.timeZone": "Europe/Paris" } as Record<string, unknown>,
+  settings: { "market.quoteWindowDays": 30, "market.quoteMinSales": 2, "market.quoteMinSellers": 1, "market.quoteCapMultiplier": 0,"market.quoteHistoryDays": 90, "game.timeZone": "Europe/Paris" } as Record<string, unknown>,
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ unstable_cache: (fn: unknown) => fn }));
@@ -49,14 +49,29 @@ describe("cotes lues en base", () => {
   });
 
   it("lit l'historique d'une carte sur la période de la courbe plus une fenêtre de cote", async () => {
-    mocks.auctions.mockResolvedValue([{ finalPrice: 100, settledAt: ago(1) }, { finalPrice: 140, settledAt: ago(2) }]);
+    // La fiche lit aussi les cotes du marché (sans filtre de carte) : ici, aucune vente de ce côté
+    mocks.auctions.mockImplementation(({ where }: { where: { cardId?: string } }) =>
+      Promise.resolve(where.cardId ? [{ finalPrice: 100, settledAt: ago(1) }, { finalPrice: 140, settledAt: ago(2) }] : []));
     const history = await getCardPriceHistory("card-1");
     expect(history.quote.price).toBe(120);
     expect(history.series.sales).toHaveLength(2);
-    const { where } = mocks.auctions.mock.calls[0][0];
+    const { where } = mocks.auctions.mock.calls.find(([args]) => args.where.cardId)![0];
     expect(where).toMatchObject({ cardId: "card-1", status: "SOLD" });
     expect(Date.now() - where.settledAt.gt.getTime()).toBeGreaterThanOrEqual(120 * DAY - 1_000);
     expect(Date.now() - where.settledAt.gt.getTime()).toBeLessThan(120 * DAY + 60_000);
+  });
+
+  it("la fiche d'une carte affiche la cote du marché, plafonnée par la référence de la rareté", async () => {
+    mocks.settings["market.quoteCapMultiplier"] = 2;
+    try {
+      const rows = [sold("x", 100, 1), sold("x", 100, 2), sold("y", 900, 1), sold("y", 900, 2), sold("z", 100, 1), sold("z", 100, 2)];
+      mocks.auctions.mockImplementation(({ where }: { where: { cardId?: string } }) =>
+        Promise.resolve(where.cardId ? rows.filter((r) => r.cardId === where.cardId) : rows));
+      // Référence EPIC : médiane de 100, 100, 900, 900, 100, 100 = 100 ; y plafonnée à 2 × 100
+      expect((await getCardPriceHistory("y")).quote.price).toBe(200);
+    } finally {
+      mocks.settings["market.quoteCapMultiplier"] = 0;
+    }
   });
 
   it("estime la collection avec la cote de la carte, sinon celle de sa rareté", async () => {

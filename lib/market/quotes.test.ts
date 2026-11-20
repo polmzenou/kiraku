@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildQuotes, collectionValue, median, priceSeries, quoteFor, topMovers, type Sale } from "./quotes";
+import { buildQuotes, collectionValue, median, priceSeries, quoteFor, setterVotes, topMovers, type Sale } from "./quotes";
 
 const now = new Date("2026-11-18T12:00:00Z");
 const daysAgo = (d: number) => new Date(now.getTime() - d * 86_400_000);
@@ -64,6 +64,44 @@ describe("cotes du marché", () => {
 
   it("ne garde aucune carte vendue hors des deux fenêtres", () => {
     expect(buildQuotes([sale("old", 100, 90)], now, rules)).toEqual({ byCard: {}, byRarity: {} });
+  });
+});
+
+describe("marché inondé par un seul vendeur", () => {
+  const by = (setter: string, cardId: string, price: number, ago = 1, rarity = "COMMON"): Sale => ({ ...sale(cardId, price, ago, rarity), setter });
+  const strict = { ...rules, minSellers: 2, capMultiplier: 5 };
+  // Trois joueurs vendent des communes autour de 10 Zeni ; un quatrième en écoule 40 à 450
+  const honest = [by("ana", "c1", 8), by("ben", "c2", 10), by("ben", "c3", 12), by("cam", "c1", 11), by("cam", "c4", 9)];
+  const flood = Array.from({ length: 40 }, (_, i) => by("spam", `c${(i % 4) + 1}`, 450));
+
+  it("chaque joueur pèse la médiane de ses propres ventes, une vente sans joueur est sa propre voix", () => {
+    expect(setterVotes([{ price: 450, setter: "s" }, { price: 450, setter: "s" }, { price: 10, setter: "a" }, { price: 7 }, { price: 9, setter: null }]).sort((a, b) => a - b)).toEqual([7, 9, 10, 450]);
+  });
+
+  it("la référence de la rareté ne bouge pas : le vendeur n'a qu'une voix", () => {
+    expect(buildQuotes(honest, now, strict).byRarity.COMMON).toBe(10);
+    expect(buildQuotes([...honest, ...flood], now, strict).byRarity.COMMON).toBe(11); // 4 voix : 8 · 11 · 10 · 450
+    // L'ancien calcul (une voix par vente) s'envolait
+    const anonymous = [...honest, ...flood].map((s) => ({ ...s, setter: undefined }));
+    expect(buildQuotes(anonymous, now, rules).byRarity.COMMON).toBe(450);
+  });
+
+  it("la cote d'une carte reste plafonnée à un multiple de la référence de sa rareté", () => {
+    const quotes = buildQuotes([...honest, ...flood], now, strict);
+    // c1 : ana 8, cam 11, spam 450 → médiane 11 ; c2 : ben 10, spam 450 → 230, plafonnée à 5 × 11
+    expect(quotes.byCard.c1.price).toBe(11);
+    expect(quotes.byCard.c2.price).toBe(55);
+  });
+
+  it("un seul joueur ne suffit pas à coter une carte", () => {
+    const solo = Array.from({ length: 10 }, () => by("spam", "x", 450, 1, "EPIC"));
+    const quotes = buildQuotes(solo, now, strict);
+    expect(quotes.byCard.x.price).toBeNull();
+    expect(quotes.byRarity.EPIC).toBeUndefined();
+  });
+
+  it("sans réglage, une voix par vente et aucun plafond, comme avant", () => {
+    expect(quoteFor([sale("a", 100, 1), sale("a", 100, 2), sale("a", 100, 3)], now, rules).price).toBe(100);
   });
 });
 
