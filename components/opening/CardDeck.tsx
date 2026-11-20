@@ -141,7 +141,6 @@ type Props = {
  */
 export function CardDeck({ cards, from, origin, reduced, lite = false, play, onMythic, onMoment, onDone }: Props) {
   const t = useTranslations("opening");
-  const tRarity = useTranslations("rarity");
   const rarities = useRarities();
   const definitions = useRarityDefinitions();
   const [order] = useState(() => revealOrder(cards, rarities));
@@ -464,7 +463,8 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
         <m.div ref={belowRef} className="reveal-chrome flex flex-wrap justify-center gap-2" {...appear(0.55)}>
           {canSkip && (
             <Button variant="primary" onClick={skipToBig} className="min-w-40">
-              {t("skipToBig", { rarity: tRarity(order[bigAt].rarity) })}
+              {/* Libellé neutre : nommer la rareté gâcherait la révélation */}
+              {t("skipToBig")}
             </Button>
           )}
           <Button onClick={finish} className="min-w-40">
