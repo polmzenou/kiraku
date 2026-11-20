@@ -47,10 +47,10 @@ export type FudaCopy = { heritage: number; printing?: number | null; serial?: nu
 const PETAL_COUNT = 5;
 
 /**
- * Pétale de cerisier pointé vers le haut (repère 100 × 100, cœur de la fleur en 50, 50) : étroit au cœur, large au
- * bord, avec l'encoche en V du sakura au bout. Tourné de 72° pour chacun des cinq.
+ * Pétale de cerisier pointé vers le haut (repère 100 × 100, cœur de la fleur en 50, 50) : étroit au cœur, rond et
+ * large au bord, avec l'encoche en V du sakura au bout. Tourné de 72° pour chacun des cinq.
  */
-const PETAL_PATH = "M50 50 L39.5 32 C35 25 32 20 34 14 Q37 8 45 9 L50 16 L55 9 Q63 8 66 14 C68 20 65 25 60.5 32 Z";
+const PETAL_PATH = "M50 50 C42 44 30 34 30 21 C30 12 38 7 45 9 L50 15 L55 9 C62 7 70 12 70 21 C70 34 58 44 50 50 Z";
 
 function Petal({ index, gilded }: { index: number; gilded: boolean }) {
   return (
