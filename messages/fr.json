@@ -146,6 +146,7 @@
     "guestName": "Invité-{code}",
     "preparing": "Préparation de ton compte…",
     "rateLimited": "Trop de comptes créés depuis cette connexion. Réessaie dans un moment.",
+    "networkBanned": "L'accès à Kiraku est bloqué depuis ce réseau ou cet appareil.",
     "retry": "Réessayer",
     "balance": "Solde",
     "boosterStock": "Boosters",
@@ -205,6 +206,15 @@
     "back": "Retour au compte",
     "emailExistsTitle": "Cette adresse e-mail a déjà un compte",
     "emailExistsBody": "Connecte-toi avec ton e-mail et ton mot de passe, puis lie Discord depuis ton compte."
+  },
+  "networkBan": {
+    "title": "Accès bloqué",
+    "body": "L'accès à Kiraku est bloqué depuis ce réseau ou cet appareil, à la suite d'un bannissement (triche ou comptes multiples).",
+    "contact": "Tu penses que c'est une erreur ? <link>Écris-nous sur Discord</link>.",
+    "contactLegal": "Tu penses que c'est une erreur ? Nos coordonnées sont dans les mentions légales.",
+    "legal": "Mentions légales",
+    "terms": "Conditions générales d'utilisation",
+    "privacy": "Politique de confidentialité"
   },
   "notFound": {
     "title": "Page introuvable",
@@ -283,6 +293,7 @@
       "usernameTaken": "Ce pseudo est déjà pris.",
       "invalidCredentials": "E-mail ou mot de passe incorrect.",
       "banned": "Ce compte est suspendu.",
+      "networkBanned": "Connexion impossible : l'accès est bloqué depuis ce réseau ou cet appareil.",
       "tokenInvalid": "Ce lien n'est plus valable. Demande-en un nouveau.",
       "unexpected": "Une erreur est survenue. Réessaie.",
       "tooFast": "Envoi trop rapide : patiente un instant puis réessaie.",

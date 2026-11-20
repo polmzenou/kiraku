@@ -12,14 +12,14 @@ import { Button } from "./ui/Button";
 export function GuestBootstrap() {
   const t = useTranslations("account");
   const started = useRef(false);
-  const [limited, setLimited] = useState(false);
+  const [failure, setFailure] = useState<"RATE_LIMITED" | "BANNED" | null>(null);
   const [pending, startTransition] = useTransition();
 
   const run = useCallback(() => {
     startTransition(async () => {
       // Le cookie de session posé par l'action fait re-rendre la page dans la même réponse
       const result = await ensureGuest();
-      if (!result.ok) setLimited(true);
+      if (!result.ok) setFailure(result.error);
     });
   }, []);
 
@@ -29,13 +29,16 @@ export function GuestBootstrap() {
     run();
   }, [run]);
 
-  if (!limited) {
+  if (!failure) {
     return (
       <p role="status" className="text-text-muted">
         {t("preparing")}
       </p>
     );
   }
+
+  // Réseau banni : réessayer n'y changerait rien (l'écran du ban s'affiche au prochain chargement)
+  if (failure === "BANNED") return <p role="alert">{t("networkBanned")}</p>;
 
   return (
     <div className="flex flex-col items-start gap-3">

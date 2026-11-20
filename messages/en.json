@@ -146,6 +146,7 @@
     "guestName": "Guest-{code}",
     "preparing": "Setting up your account…",
     "rateLimited": "Too many accounts created from this connection. Try again in a while.",
+    "networkBanned": "Access to Kiraku is blocked from this network or device.",
     "retry": "Try again",
     "balance": "Balance",
     "boosterStock": "Packs",
@@ -205,6 +206,15 @@
     "back": "Back to account",
     "emailExistsTitle": "This email address already has an account",
     "emailExistsBody": "Sign in with your email and password, then link Discord from your account."
+  },
+  "networkBan": {
+    "title": "Access blocked",
+    "body": "Access to Kiraku is blocked from this network or device following a ban (cheating or multiple accounts).",
+    "contact": "Think this is a mistake? <link>Message us on Discord</link>.",
+    "contactLegal": "Think this is a mistake? Our contact details are in the legal notice.",
+    "legal": "Legal notice",
+    "terms": "Terms of use",
+    "privacy": "Privacy policy"
   },
   "notFound": {
     "title": "Page not found",
@@ -283,6 +293,7 @@
       "usernameTaken": "This username is already taken.",
       "invalidCredentials": "Wrong email or password.",
       "banned": "This account is suspended.",
+      "networkBanned": "Can't sign in: access is blocked from this network or device.",
       "tokenInvalid": "This link is no longer valid. Request a new one.",
       "unexpected": "Something went wrong. Please try again.",
       "tooFast": "Sent too quickly: wait a moment and try again.",
