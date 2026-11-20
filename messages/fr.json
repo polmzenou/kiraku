@@ -1352,7 +1352,11 @@
         "USER_AMBASSADOR": "Rôle Ambassadeur",
         "USER_LEADERBOARD": "Classement des collectionneurs",
         "USER_LEADERBOARDMALUS": "Malus au classement",
-        "USER_INCENSE": "Encens"
+        "USER_INCENSE": "Encens",
+        "USER_NETWORK_BAN": "Ban réseau",
+        "USER_NETWORK_UNBAN": "Ban réseau levé",
+        "USER_NETWORK_KEEP": "Ban automatique rendu définitif",
+        "USER_NETWORK_AUTO": "Ban qui suit l'appareil"
       },
       "errors": {
         "FORBIDDEN": "Accès refusé : les droits administrateur sont requis.",
@@ -4053,6 +4057,94 @@
           "INCENSE": "Encens",
           "CARD": "Carte"
         }
+      }
+    },
+    "networkBans": {
+      "panelTitle": "Bannir le réseau",
+      "panelIntro": "Couper tout l'accès depuis ses IP et ses appareils relevés par la détection : plus aucun compte n'y joue, l'équipe exceptée. Une IPv6 se bannit par son préfixe /64. Un ban posé ici est définitif jusqu'à sa levée.",
+      "staffTarget": "Un compte de l'équipe ne se bannit pas ici.",
+      "userBansTitle": "Bans venus de ce compte",
+      "noKeys": "Aucune IP ni aucun appareil relevé pour ce compte : seul le compte peut être banni.",
+      "kinds": {
+        "IP": "IP",
+        "DEVICE": "Appareil"
+      },
+      "lastSeen": "vu le {date}",
+      "states": {
+        "OK": "Ne coupe aucun autre compte",
+        "SHARED": "{count, plural, =0 {Partagé avec d'autres comptes actifs} one {Partagé avec # autre compte actif, coupé aussi si tu le bannis} other {Partagé avec # autres comptes actifs, coupés aussi si tu le bannis}}",
+        "BANNED": "Déjà banni",
+        "STAFF": "Utilisé par l'équipe : jamais banni",
+        "PRIVATE": "Adresse privée ou locale : jamais bannie",
+        "CAP": "Réseau public ou d'opérateur (trop de comptes) : jamais banni"
+      },
+      "cuts": "Coupés aussi :",
+      "more": "et {count} de plus",
+      "accountAlreadyBanned": "Le compte est déjà banni.",
+      "banAccount": "Bannir aussi le compte (sessions fermées)",
+      "reason": "Raison (journal admin)",
+      "reasonHint": "Visible dans l'historique de l'admin, jamais par le joueur.",
+      "confirm": "{account, select, yes {Bannir le compte et couper} other {Couper}} l'accès depuis {count, plural, =0 {aucune IP ni aucun appareil} one {# IP ou appareil} other {# IP et appareils}} ?{cut, plural, =0 {} one { # autre compte actif sera coupé aussi.} other { # autres comptes actifs seront coupés aussi.}}",
+      "done": "{count, plural, =0 {Aucun réseau banni} one {# IP ou appareil banni} other {# IP et appareils bannis}}{account, select, yes {, compte banni} other {}}.",
+      "pending": "En cours…",
+      "submit": "Couper l'accès",
+      "lift": "Lever",
+      "keep": "Rendre définitif",
+      "liftReason": "Raison de la levée",
+      "keepReason": "Raison",
+      "liftConfirm": "Lever le ban",
+      "keepConfirm": "Confirmer",
+      "cancel": "Annuler",
+      "groupOpen": "Bannir ce groupe",
+      "groupHint": "Tous les comptes du groupe sont bannis, avec leurs IP et appareils qui ne coupent personne d'autre.",
+      "groupSubmit": "Bannir les {count} comptes et leur réseau",
+      "groupConfirm": "Bannir les {count} comptes de ce groupe et couper l'accès depuis leur réseau ?",
+      "groupDone": "{accounts, plural, =0 {Aucun nouveau compte banni} one {# compte banni} other {# comptes bannis}}, {bans, plural, =0 {aucune IP ni aucun appareil coupé} one {# IP ou appareil coupé} other {# IP et appareils coupés}}.",
+      "groupSkipped": "Sautés, à bannir si besoin depuis une fiche joueur :",
+      "groupTooBig": "Groupe de plus de {max} comptes : bannis-les depuis leurs fiches.",
+      "bannedBadge": "Bannie",
+      "listLink": "{count, plural, =0 {Bans réseau} other {Bans réseau ({count})}}",
+      "columns": {
+        "value": "IP ou appareil",
+        "source": "Origine",
+        "account": "Compte",
+        "reason": "Raison",
+        "created": "Posé",
+        "hits": "Accès bloqués",
+        "actions": "Actions"
+      },
+      "sources": {
+        "MANUAL": "Fiche joueur",
+        "GROUP": "Groupe de multi-comptes",
+        "AUTO": "Suit un appareil banni"
+      },
+      "follows": "suit l'appareil {device}",
+      "followed": "{count, plural, one {a fait bannir # IP} other {a fait bannir # IP}}",
+      "expires": "expire le {date}",
+      "permanent": "définitif",
+      "noAccount": "compte supprimé",
+      "by": "par {admin}",
+      "hits": "{count, plural, =0 {aucun} one {# accès} other {# accès}}",
+      "lastHit": "dernier le {date}",
+      "back": "← Multi-comptes",
+      "pageTitle": "Bans réseau",
+      "pageIntro": "IP et appareils bannis : depuis eux, personne ne joue plus, l'équipe exceptée (écran « Accès bloqué », sauf textes légaux et connexion). Un ban se pose depuis la fiche d'un joueur ou sur un groupe de multi-comptes.",
+      "followOn": "Le ban suit l'appareil : un appareil banni revenu d'une nouvelle IP la fait bannir pour {days} jours, si elle ne coupe aucun autre compte actif.",
+      "followOff": "Le ban ne suit pas l'appareil (réglage dans Général).",
+      "maskedNote": "Accès DEV : IP masquées, aucune action.",
+      "empty": "Aucun ban réseau en place.",
+      "truncated": "Seuls les {count} bans les plus récents sont affichés.",
+      "errors": {
+        "FORBIDDEN": "Réservé aux admins.",
+        "NOT_FOUND": "Introuvable : la page n'est plus à jour, recharge-la.",
+        "SELF": "Tu ne peux pas te bannir toi-même.",
+        "STAFF_TARGET": "Un compte de l'équipe ne se bannit pas ici.",
+        "NOTHING": "Rien à bannir : coche une IP, un appareil ou le compte.",
+        "REFUSED": "Une IP ou un appareil choisi ne peut pas être banni (équipe, adresse privée ou réseau public). Recharge la page.",
+        "NOT_AUTO": "Seul un ban automatique se rend définitif.",
+        "INVALID": "Demande invalide.",
+        "RATE_LIMITED": "Trop de demandes, réessaie dans une minute.",
+        "UNAVAILABLE": "Indisponible pour l'instant, réessaie."
       }
     }
   },

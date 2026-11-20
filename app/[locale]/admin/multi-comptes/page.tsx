@@ -1,12 +1,15 @@
 import { getFormatter, getTranslations } from "next-intl/server";
+import { GroupBanButton } from "@/components/admin/GroupBanButton";
 import { MemberTable, PairList, ScoreBadge } from "@/components/admin/MultiAccount";
 import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
 import { Button } from "@/components/ui/Button";
 import { inputClass, selectClass } from "@/components/ui/Field";
 import { Link } from "@/i18n/navigation";
 import { maskIp } from "@/lib/anticheat/mask";
+import { GROUP_BAN_MAX, ipBanKey } from "@/lib/anticheat/network";
 import { z } from "@/lib/zod";
 import { requireAdminView } from "@/server/admin";
+import { bannedIpKeys, countNetworkBans } from "@/server/anticheat/network-ban-queries";
 import { sharedIps, suspectClusters } from "@/server/anticheat/queries";
 import { getSetting } from "@/server/settings";
 
@@ -23,21 +26,24 @@ const paramsSchema = z.object({
 
 /**
  * Détection des multi-comptes : groupes de comptes reliés par des indices (appareil, IP, e-mails, transferts,
- * parrainage, ami unique). Ouverte au DEV en lecture, IP et e-mails masqués ; aucune action ici, on bannit
- * depuis la fiche du joueur.
+ * parrainage, ami unique). Ouverte au DEV en lecture, IP et e-mails masqués. L'ADMIN bannit ici un groupe entier
+ * (comptes, IP et appareils) ; un ban précis se fait depuis la fiche du joueur.
  */
 export default async function AdminMultiAccountsPage({ searchParams }: PageProps<"/[locale]/admin/multi-comptes">) {
   const { readOnly: masked } = await requireAdminView();
   const raw = await searchParams;
   const params = paramsSchema.parse({ q: raw.q ?? "", filter: raw.filter ?? "all", guests: raw.guests, ip: raw.ip });
   const ipSearch = masked ? undefined : params.ip;
-  const [t, users, format, detection, ips, cap] = await Promise.all([
+  const [t, nb, users, format, detection, ips, cap, banCount, bannedIps] = await Promise.all([
     getTranslations("admin.multiAccounts"),
+    getTranslations("admin.networkBans"),
     getTranslations("admin.users"),
     getFormatter(),
     suspectClusters({ includeGuests: params.guests === "1" }),
     sharedIps({ prefix: ipSearch, take: ipSearch ? 50 : 20 }),
     getSetting("multiAccount.sharedIpCap"),
+    countNetworkBans(),
+    bannedIpKeys(),
   ]);
   const { members, minScore } = detection;
   const query = params.q.toLowerCase();
@@ -54,6 +60,9 @@ export default async function AdminMultiAccountsPage({ searchParams }: PageProps
         <h2 className="font-heading text-2xl font-bold">{t("title")}</h2>
         <p className="mt-1 max-w-prose text-sm text-text-muted">{t("intro", { minScore })}</p>
         {masked && <p className="mt-2 max-w-prose text-sm text-text-muted">{t("maskedNote")}</p>}
+        <Link href="/admin/multi-comptes/bans" className="mt-2 inline-flex min-h-11 items-center font-bold text-link underline underline-offset-4">
+          {nb("listLink", { count: banCount })}
+        </Link>
       </div>
 
       <form className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto_auto]">
@@ -82,6 +91,7 @@ export default async function AdminMultiAccountsPage({ searchParams }: PageProps
                 <ScoreBadge score={c.score} label={t("score", { score: c.score })} />
               </header>
               <MemberTable ids={c.userIds} members={members} masked={masked} caption={t("clusterTitle", { index: i + 1, count: c.userIds.length })} />
+              {!masked && (c.userIds.length <= GROUP_BAN_MAX ? <GroupBanButton userIds={c.userIds} /> : <p className="text-sm text-text-muted">{nb("groupTooBig", { max: GROUP_BAN_MAX })}</p>)}
               <details>
                 <summary className="flex min-h-11 cursor-pointer items-center text-sm font-bold">{t("pairsTitle", { count: c.pairs.length })}</summary>
                 <div className="mt-2">
@@ -123,6 +133,7 @@ export default async function AdminMultiAccountsPage({ searchParams }: PageProps
                   <span className="flex flex-col">
                     <span className="tabular-nums">{masked ? maskIp(ip.value) : ip.value}</span>
                     {ip.accounts > cap && <span className="text-xs text-text-muted">{t("publicIp")}</span>}
+                    {bannedIps.has(ipBanKey(ip.value) ?? "") && <span className="text-xs font-bold text-shu">{nb("bannedBadge")}</span>}
                   </span>
                 ),
                 accounts: format.number(ip.accounts),

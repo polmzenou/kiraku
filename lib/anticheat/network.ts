@@ -8,6 +8,9 @@ import { isDeviceId } from "./signals";
 
 export type NetworkKind = "IP" | "DEVICE";
 
+/** Comptes au plus dans un ban de groupe (/admin/multi-comptes) ; au-delà, on bannit depuis les fiches. */
+export const GROUP_BAN_MAX = 20;
+
 /** Quatre octets d'une IPv4 écrite en décimal pointé, ou null. */
 function parseIpv4(ip: string): number[] | null {
   const parts = ip.split(".");
