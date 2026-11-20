@@ -1,6 +1,6 @@
 "use client";
 import { useRarities, useRarityDefinitions } from "@/lib/catalog/use-rarities";
-import { fxTier, isBigMoment, isTopTier } from "@/lib/catalog/tiers";
+import { atLeastRarity, fxTier, isTopTier } from "@/lib/catalog/tiers";
 import { AnimatePresence, m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
@@ -284,9 +284,9 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
     setTopVisible(false);
   };
 
-  // Passage rapide : droit à la première carte Légendaire ou mieux (la Mythique d'un pack sans
-  // Légendaire), les cartes d'avant comptent comme découvertes ; seulement s'il y a de quoi sauter
-  const bigAt = skipTarget(order, index, (rarity) => isBigMoment(rarity, definitions));
+  // Passage rapide : droit à la première carte Mythique ou mieux dans l'ordre du registre (AR, Gold…) ;
+  // une Légendaire ne compte pas. Les cartes d'avant comptent comme découvertes ; seulement s'il y a de quoi sauter
+  const bigAt = skipTarget(order, index, (rarity) => atLeastRarity(rarity, "MYTHIC", definitions));
   const canSkip = bigAt >= 0;
   const skipToBig = () => {
     if (!canSkip || finished.current) return;
