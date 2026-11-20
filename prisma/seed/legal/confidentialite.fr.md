@@ -10,7 +10,7 @@
 
 - **Compte** : pseudo, adresse e-mail et mot de passe, stocké sous forme d'empreinte et jamais en clair (compte e-mail), ou identifiant, pseudo et avatar Discord (connexion Discord). *Finalité* : créer et sécuriser ton compte. *Base légale* : exécution des conditions d'utilisation.
 - **Jeu** : cartes, boosters ouverts, Zeni et leur journal, ventes et enchères, combats, missions, amis, cadeaux, avis, liste de souhaits, préférences (langue, visibilité du profil). *Finalité* : faire fonctionner le jeu et garder une économie juste. *Base légale* : exécution des conditions d'utilisation.
-- **Sécurité** : adresse IP et données techniques de connexion. *Finalité* : limiter les abus (création de comptes en série, robots, triche). *Base légale* : intérêt légitime à protéger le service.
+- **Sécurité** : adresse IP, identifiant aléatoire de l'appareil (cookie technique) et données techniques de connexion. *Finalité* : limiter les abus (création de comptes en série, robots, triche) et faire respecter un bannissement. *Base légale* : intérêt légitime à protéger le service.
 - **Mesure des performances** : temps de chargement et de réponse des pages (Vercel Speed Insights), sans cookie ni identifiant. *Base légale* : intérêt légitime à garder le site rapide.
 - **Notifications push** (si tu les actives) : adresse d'abonnement de ton navigateur. *Base légale* : ton consentement, retirable à tout moment depuis le Compte.
 
@@ -21,7 +21,8 @@ Kiraku ne vend aucune donnée, n'affiche aucune publicité et ne fait aucun prof
 - Compte invité (sans e-mail ni Discord) : supprimé avec ses cartes après 7 jours sans visite.
 - Compte et données de jeu : tant que le compte existe. Après une demande de suppression, le compte est anonymisé au bout de 30 jours.
 - Notifications : 30 jours.
-- Adresse IP utilisée contre les abus : quelques heures au plus dans le service de limitation ; journaux d'hébergement selon la durée de Vercel.
+- Adresse IP et identifiant d'appareil relevés contre les comptes en série : 90 jours après ta dernière visite. L'adresse IP passe aussi quelques heures au plus dans le service de limitation ; journaux d'hébergement selon la durée de Vercel.
+- En cas de bannissement (triche, comptes en série) : l'adresse IP (ou son préfixe, pour une adresse IPv6) et l'identifiant d'appareil concernés sont gardés tant que le bannissement dure, même après la suppression du compte, pour qu'il ne soit pas contourné. Un bannissement posé automatiquement expire au bout de 30 jours.
 - Le journal des Zeni et les cartes d'un compte supprimé sont gardés **sans lien avec une personne**, pour l'intégrité de l'économie du jeu.
 
 ## Sous-traitants

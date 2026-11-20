@@ -9,7 +9,11 @@ export const MAX_ADMIN_VALUE = 2_147_483_647;
 export const MAX_ADMIN_QUANTITY = 1_000;
 export const USER_FILTERS = ["all", "registered", "guests", "admins", "ambassadors", "banned"] as const;
 export const USER_STATS = ["boosterStock", "rankPoints", "pityCount", "standardCount"] as const;
-export const USER_ADMIN_ACTIONS = ["USER_ACCOUNT", "USER_COINS", "USER_STAT", "USER_BOOSTER", "USER_BANNERPITY", "USER_CARD", "USER_DISCOVERIES", "USER_SESSIONS", "USER_AMBASSADOR", "USER_LEADERBOARD", "USER_LEADERBOARDMALUS", "USER_INCENSE"] as const;
+export const USER_ADMIN_ACTIONS = [
+  "USER_ACCOUNT", "USER_COINS", "USER_STAT", "USER_BOOSTER", "USER_BANNERPITY", "USER_CARD", "USER_DISCOVERIES", "USER_SESSIONS", "USER_AMBASSADOR", "USER_LEADERBOARD", "USER_LEADERBOARDMALUS", "USER_INCENSE",
+  // Bans réseau (server/anticheat/network-ban-core.ts) : pose, levée, ban automatique rendu définitif, ban qui suit l'appareil
+  "USER_NETWORK_BAN", "USER_NETWORK_UNBAN", "USER_NETWORK_KEEP", "USER_NETWORK_AUTO",
+] as const;
 export type UserFilter = (typeof USER_FILTERS)[number];
 /** Colonnes triables de la liste des joueurs, et le sens naturel de chacune. */
 export const USER_SORTS = ["created", "name", "email", "status", "coins", "cards", "discoveries"] as const;

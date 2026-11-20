@@ -1,0 +1,125 @@
+import { describe, expect, it } from "vitest";
+import { isNetworkGateFree } from "@/lib/legal/legal";
+import { banState, followDecision, ipBanKey, ipKeyPatterns, isBannableIp, selectionOf, signalBanKey, type KeyFacts } from "./network";
+
+describe("clé de ban d'une IP", () => {
+  it("garde une IPv4 telle quelle, sans zéros de tête", () => {
+    expect(ipBanKey("86.245.12.3")).toBe("86.245.12.3");
+    expect(ipBanKey("86.245.012.003")).toBe("86.245.12.3");
+  });
+
+  it("ramène une IPv4 encapsulée (serveur en double pile) à l'IPv4", () => {
+    expect(ipBanKey("::ffff:86.245.12.3")).toBe("86.245.12.3");
+    expect(ipBanKey("::FFFF:56f5:c03")).toBe("86.245.12.3");
+  });
+
+  it("donne le même préfixe /64 pour toutes les écritures et adresses d'un même réseau IPv6", () => {
+    const key = "2a01:cb00:1:2::/64";
+    for (const ip of [
+      "2a01:cb00:1:2::5",
+      "2a01:cb00:0001:0002:0000:0000:0000:0005",
+      "2A01:CB00:1:2:AB:CD:EF:1",
+      "2a01:cb00:1:2:1234:5678:9abc:def0",
+      "2a01:cb00:1:2::5%eth0",
+    ]) {
+      expect(ipBanKey(ip), ip).toBe(key);
+    }
+    expect(ipBanKey("2a01:cb00:1:3::5")).not.toBe(key);
+  });
+
+  it("n'écrit jamais les groupes nuls compressés dans la clé", () => {
+    expect(ipBanKey("2a01:cb00::1")).toBe("2a01:cb00:0:0::/64");
+    expect(ipBanKey("2a01::1:2:3:4")).toBe("2a01:0:0:0::/64");
+  });
+
+  it("refuse ce qui n'est pas une IP", () => {
+    for (const bad of ["local", "", "1.2.3", "1.2.3.256", "1.2.3.4.5", "::1::", "2a01:cb00:1:2:3:4:5:6:7", "2a01:cb00::1.2.3.4::", "g::1", ":1", "1:", "1.2.3.4:5"]) {
+      expect(ipBanKey(bad), bad).toBeNull();
+    }
+  });
+});
+
+describe("IP bannissables", () => {
+  it("accepte les adresses publiques", () => {
+    expect(isBannableIp("86.245.12.3")).toBe(true);
+    expect(isBannableIp("2a01:cb00:1:2::5")).toBe(true);
+    expect(isBannableIp("2a01:cb00:1:2::/64")).toBe(true);
+  });
+
+  it("refuse les adresses privées, locales, partagées d'opérateur et réservées", () => {
+    for (const ip of ["10.1.2.3", "172.16.0.1", "172.31.255.255", "192.168.1.10", "127.0.0.1", "169.254.1.1", "100.64.0.1", "100.127.255.255", "0.1.2.3", "192.0.2.5", "224.0.0.1", "255.255.255.255", "::1", "::", "fe80::1", "fd00::1", "ff02::1", "2001:db8::1", "::ffff:192.168.1.1", "local"]) {
+      expect(isBannableIp(ip), ip).toBe(false);
+    }
+    // Aux bords des plages
+    expect(isBannableIp("172.32.0.1")).toBe(true);
+    expect(isBannableIp("100.128.0.1")).toBe(true);
+  });
+});
+
+describe("clé d'un relevé", () => {
+  it("prend l'appareil tel quel s'il a la bonne forme", () => {
+    expect(signalBanKey("DEVICE", "a".repeat(32))).toBe("a".repeat(32));
+    expect(signalBanKey("DEVICE", "pas-un-appareil")).toBeNull();
+    expect(signalBanKey("IP", "2a01:cb00:1:2::5")).toBe("2a01:cb00:1:2::/64");
+  });
+
+  it("préfiltre les relevés qui peuvent tomber sous une clé", () => {
+    expect(ipKeyPatterns("86.245.12.3")).toEqual(["86.245.12.3", "::ffff:86.245.12.3"]);
+    expect(ipKeyPatterns("2a01:cb00:1:2::/64")).toEqual(["2a01:cb00:%"]);
+    // Second groupe nul : il peut être compressé dans le relevé (« 2a01::… »)
+    expect(ipKeyPatterns("2a01:0:0:0::/64")).toEqual(["2a01:0:%", "2a01::%"]);
+  });
+});
+
+describe("état d'une clé au moment de bannir", () => {
+  const ip = (facts: Partial<KeyFacts>): KeyFacts => ({ kind: "IP", key: "86.245.12.3", banned: false, staffSeen: false, accounts: 1, othersActive: 0, ...facts });
+
+  it("refuse dans l'ordre : déjà bannie, privée, équipe, trop partagée", () => {
+    expect(banState(ip({ banned: true, staffSeen: true }), 8)).toBe("BANNED");
+    expect(banState(ip({ key: "192.168.1.1", staffSeen: true }), 8)).toBe("PRIVATE");
+    expect(banState(ip({ staffSeen: true, accounts: 20 }), 8)).toBe("STAFF");
+    expect(banState(ip({ accounts: 9 }), 8)).toBe("CAP");
+    expect(banState(ip({ accounts: 8, othersActive: 2 }), 8)).toBe("SHARED");
+    expect(banState(ip({ accounts: 3 }), 8)).toBe("OK");
+  });
+
+  it("n'applique ni la plage ni la limite de partage à un appareil", () => {
+    expect(banState({ kind: "DEVICE", key: "a".repeat(32), banned: false, staffSeen: false, accounts: 30, othersActive: 0 }, 8)).toBe("OK");
+  });
+
+  it("précoche seulement ce qui ne coupe personne d'autre", () => {
+    expect(selectionOf("OK")).toEqual({ selectable: true, checked: true });
+    expect(selectionOf("SHARED")).toEqual({ selectable: true, checked: false });
+    for (const state of ["BANNED", "STAFF", "PRIVATE", "CAP"] as const) expect(selectionOf(state)).toEqual({ selectable: false, checked: false });
+  });
+});
+
+describe("le ban suit l'appareil", () => {
+  const base = { enabled: true, ipKey: "86.245.12.3", staffSeen: false, othersActive: 0, maxOthers: 0, autoBans: 0, perDevice: 5 };
+
+  it("bannit une nouvelle IP propre", () => {
+    expect(followDecision(base)).toBe("FOLLOW");
+    expect(followDecision({ ...base, othersActive: 1, maxOthers: 1 })).toBe("FOLLOW");
+  });
+
+  it("ne bannit pas quand c'est coupé, privé, à l'équipe, plein ou partagé", () => {
+    expect(followDecision({ ...base, enabled: false })).toBe("OFF");
+    expect(followDecision({ ...base, ipKey: null })).toBe("NOT_BANNABLE");
+    expect(followDecision({ ...base, ipKey: "10.0.0.1" })).toBe("NOT_BANNABLE");
+    expect(followDecision({ ...base, staffSeen: true })).toBe("STAFF");
+    expect(followDecision({ ...base, autoBans: 5 })).toBe("LIMIT");
+    expect(followDecision({ ...base, othersActive: 1 })).toBe("SHARED");
+  });
+});
+
+describe("pages lisibles depuis un réseau banni", () => {
+  it("laisse les textes légaux et la connexion, rien d'autre", () => {
+    for (const path of ["/cgu", "/en/confidentialite", "/mentions-legales", "/cookies", "/connexion", "/en/connexion", "/connexion/mot-de-passe-oublie", "/en/connexion/reinitialiser"]) {
+      expect(isNetworkGateFree(path), path).toBe(true);
+    }
+    // La page d'erreur de connexion montre l'écran du ban (un refus Discord y mène)
+    for (const path of ["/", "/en", "/inscription", "/boosters", "/u/tristan", "/cguu", "/connexion/erreur", "/en/connexion/erreur", "/connexionx"]) {
+      expect(isNetworkGateFree(path), path).toBe(false);
+    }
+  });
+});

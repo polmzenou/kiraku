@@ -1,5 +1,6 @@
 import { useFormatter, useTranslations } from "next-intl";
 import Image from "next/image";
+import { Link } from "@/i18n/navigation";
 import { SealMark } from "@/components/SealMark";
 import { guestCode } from "@/lib/username";
 import type { Badge } from "@/lib/profile/badges";
@@ -26,6 +27,7 @@ export function ProfileHeader({
   presence,
   band,
   action,
+  nameHref,
 }: {
   username: string;
   image: string | null;
@@ -38,6 +40,8 @@ export function ProfileHeader({
   band?: React.ReactNode;
   /** Boutons « Personnaliser » et « Évoluer » sur son propre profil. */
   action?: React.ReactNode;
+  /** Lien du pseudo : la fiche admin du joueur, pour un admin seulement (sinon le pseudo reste du texte). */
+  nameHref?: string;
 }) {
   const t = useTranslations("profile");
   const tAccount = useTranslations("account");
@@ -61,7 +65,13 @@ export function ProfileHeader({
         </WithPresence>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <h1 className="truncate font-heading text-2xl font-extrabold md:text-3xl">
-            <PlayerName name={name} color={decor?.nameColor} className="truncate" />
+            {nameHref ? (
+              <Link href={nameHref} title={t("adminSheet")} className="inline-flex min-h-11 max-w-full items-center underline-offset-4 hover:underline">
+                <PlayerName name={name} color={decor?.nameColor} className="truncate" />
+              </Link>
+            ) : (
+              <PlayerName name={name} color={decor?.nameColor} className="truncate" />
+            )}
           </h1>
           {decor?.title && <p className="text-sm font-bold text-kin">{decor.title}</p>}
           {band}

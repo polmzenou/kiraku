@@ -7,6 +7,11 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 // fautif ne vient jamais d'un joueur. Chacune nomme l'alerte, le paquet touché, les seuls paquets
 // autorisés à en hériter (tout nouvel héritier bloque) et les seules installations hors
 // développement admises. Retirer une exception dès qu'un correctif compatible est publié.
+//
+// Une alerte qui a un correctif publié se règle plutôt par un override (package.json, « overrides ») :
+// - effect ^3.22.5 : @prisma/config (CLI Prisma) fige effect 3.20.0, touché par GHSA-7589-6fvf-x4pw (ReDoS de
+//   Schema.TemplateLiteral, corrigé en 3.22.1). Validé avec npm ci, prisma validate et prisma generate. Retirer
+//   l'override dès qu'une version de Prisma embarque un effect corrigé.
 export const EXCEPTIONS = [
   {
     // Aucun correctif de picomatch au 18/11/2026. picomatch ne compile que des motifs écrits dans le

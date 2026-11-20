@@ -17,6 +17,9 @@ const mocks = vi.hoisted(() => ({
   linkedRole: false,
   queueRole: vi.fn(),
   syncRole: vi.fn(),
+  networkBan: vi.fn(),
+  noteBlocked: vi.fn(),
+  roleOf: vi.fn(),
   config: {
     discordEnabled: true,
     discordLinkConfigured: true,
@@ -28,7 +31,8 @@ vi.mock("next-auth", () => ({ default: mocks.init }));
 vi.mock("next/server", () => ({ after: mocks.after }));
 vi.mock("./auth-adapter", () => ({ kirakuAdapter: () => ({}) }));
 vi.mock("./anticheat/signals", () => ({ recordSignals: vi.fn() }));
-vi.mock("./db", () => ({ prisma: { $transaction: mocks.transaction } }));
+vi.mock("./anticheat/network-ban", () => ({ requestNetworkBan: mocks.networkBan, noteBlocked: mocks.noteBlocked }));
+vi.mock("./db", () => ({ prisma: { $transaction: mocks.transaction, user: { findUnique: mocks.roleOf } } }));
 vi.mock("./economy/ledger", () => ({ credit: mocks.credit }));
 vi.mock("./economy/referral", () => ({ attachFromCookie: mocks.attach }));
 vi.mock("./env", () => mocks.config);
@@ -126,5 +130,40 @@ describe("annonce à la première liaison Auth.js", () => {
     expect(mocks.queueRole).toHaveBeenCalledWith(event.account.providerAccountId);
     expect(mocks.syncRole).toHaveBeenCalledWith(event.account.providerAccountId);
     expect(mocks.notify).not.toHaveBeenCalled();
+  });
+});
+
+describe("connexion Discord depuis un réseau banni", () => {
+  const signIn = config.callbacks!.signIn!;
+  const attempt = (id?: string) => signIn({ user: { id }, account: event.account } as Parameters<typeof signIn>[0]);
+  const BAN = { bans: [{ id: "ban", kind: "IP" }], ipKey: "86.245.12.3", device: null, since: new Date(0) };
+
+  it("laisse passer quand rien n'est banni", async () => {
+    mocks.networkBan.mockResolvedValue(null);
+    expect(await attempt("player")).toBe(true);
+    expect(mocks.roleOf).not.toHaveBeenCalled();
+  });
+
+  it("refuse un joueur et compte la tentative après la réponse", async () => {
+    mocks.networkBan.mockResolvedValue(BAN);
+    mocks.roleOf.mockResolvedValue({ role: "USER" });
+    expect(await attempt("player")).toBe(false);
+    await mocks.after.mock.calls[0][0]();
+    expect(mocks.noteBlocked).toHaveBeenCalledWith(BAN);
+  });
+
+  it("refuse un nouveau compte (l'id vient du profil Discord, inconnu en base)", async () => {
+    mocks.networkBan.mockResolvedValue(BAN);
+    mocks.roleOf.mockResolvedValue(null);
+    expect(await attempt("987654321098765432")).toBe(false);
+  });
+
+  it("laisse passer l'équipe", async () => {
+    mocks.networkBan.mockResolvedValue(BAN);
+    for (const role of ["ADMIN", "DEV"]) {
+      mocks.roleOf.mockResolvedValue({ role });
+      expect(await attempt("staff"), role).toBe(true);
+    }
+    expect(mocks.after).not.toHaveBeenCalled();
   });
 });

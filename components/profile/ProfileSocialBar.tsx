@@ -63,8 +63,10 @@ export async function profileSocialBar({
       sealed: sealed.filter((s) => s.giftable).map((s) => ({ id: s.id, kind: s.kind })),
     };
   }
-  // Entre amis toujours ; hors amis si le réglage l'ouvre et que la collection est visible (même règle qu'à l'envoi)
-  const canTrade = tradeOfferable(access.relation, access.collection, await getSetting("trades.nonFriends"));
+  // Entre amis toujours ; hors amis si le réglage l'ouvre et que la collection est visible (même règle qu'à l'envoi,
+  // qui ignore le passe-droit admin : une collection vue grâce au rôle n'ouvre pas l'échange)
+  const collectionVisible = access.collection && !access.adminOverride;
+  const canTrade = tradeOfferable(access.relation, collectionVisible, await getSetting("trades.nonFriends"));
   const trade =
     canTrade && (await getSetting("trades.enabled"))
       ? { maxOffered: await getSetting("trades.maxOffered"), allowedRarities: await getSetting("trades.allowedRarities") }

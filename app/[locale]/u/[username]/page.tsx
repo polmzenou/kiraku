@@ -26,6 +26,7 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { getPathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { completion } from "@/lib/collection/view";
+import { bypassesProfilePrivacy } from "@/lib/collection/visibility";
 import { effectiveTheme } from "@/lib/showcase/themes";
 import { USERNAME_REGEX } from "@/lib/username";
 import { anonymousAccess, findProfileOwner } from "@/server/collection/profile";
@@ -75,6 +76,8 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
   const social = await profileSocialBar({ owner, viewer, access, name });
   // Présence : visible comme le profil lui-même (public, ou amis), jamais pour un invité
   const presence = access.profile && !owner.isGuest ? presenceOf(owner, new Date(), await getSetting("presence.onlineSeconds")) : undefined;
+  // Admin : le pseudo mène à la fiche du joueur dans l'admin (rôle lu en session)
+  const nameHref = bypassesProfilePrivacy(viewer) ? `/admin/utilisateurs/${owner.id}` : undefined;
 
   if (!access.profile) {
     return (
@@ -161,6 +164,7 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
           createdAt={owner.createdAt}
           decor={decor}
           presence={presence}
+          nameHref={nameHref}
           band={<PrestigeBand prestige={decor.prestige} globalRank={prestigeSummary?.last.globalRank ?? null} />}
           action={
             customize && (
@@ -189,6 +193,8 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
           {access.isOwner && <ButtonLink href="/amis">{t("friends")}</ButtonLink>}
           {wrappedYear !== null && <ButtonLink href="/wrapped" variant="primary">{tWrapped("profileButton", { year: wrappedYear })}</ButtonLink>}
         </div>
+
+        {access.adminOverride && <p className="lacquer rounded-card border-ai/45 p-3 text-sm text-text-muted">{t("adminOverride")}</p>}
 
         {access.isOwner && owner.profileVisibility !== "PUBLIC" && (
           <p className="lacquer rounded-card p-3 text-sm text-text-muted">

@@ -38,6 +38,14 @@ describe("export des données", () => {
     expect(out).toMatchObject({ format: "kiraku-data-export", version: 1, generatedAt: now.toISOString(), review: null });
   });
 
+  it("exporte les bans réseau venus du compte, sans la raison de l'équipe ni son auteur", () => {
+    const out = buildDataExport(
+      input({ networkBans: [{ kind: "IP", value: "86.245.12.3", source: "MANUAL", reason: "triche", createdById: "admin", createdAt: now, expiresAt: null }] }),
+      now,
+    );
+    expect(out.networkBans).toEqual([{ kind: "IP", value: "86.245.12.3", source: "MANUAL", createdAt: now.toISOString(), expiresAt: null }]);
+  });
+
   it("exporte les achats de l'atelier et les kits choisis", () => {
     const out = buildDataExport(
       input({

@@ -215,6 +215,8 @@ model User {
   expeditions      Expedition[]
   expeditionBoards ExpeditionBoard[]
   signals          UserSignal[]
+  networkBans      NetworkBan[] @relation("networkBanUser")
+  networkBansSet   NetworkBan[] @relation("networkBanCreatedBy")
 
   @@index([rankPoints])
   @@index([ambassadorSince])
@@ -305,6 +307,42 @@ model UserSignal {
   @@unique([userId, kind, value])
   @@index([kind, value])
   @@index([lastSeenAt])
+}
+
+enum NetworkBanSource {
+  MANUAL // fiche joueur de l'admin
+  GROUP // groupe suspect de /admin/multi-comptes
+  AUTO // IP prise par un appareil banni (le ban suit l'appareil)
+}
+
+// Bans réseau : une IP (IPv4 exacte, IPv6 par préfixe /64) ou un appareil (cookie kiraku.device). Tout l'accès est
+// coupé depuis ce réseau, l'équipe exceptée (server/anticheat/network-ban.ts). Définitif jusqu'à la levée par un
+// admin, qui supprime la ligne ; seuls les bans AUTO expirent (multiAccount.autoBanDays).
+model NetworkBan {
+  id          String           @id @default(cuid())
+  kind        SignalKind
+  value       String           @db.VarChar(64) // clé : « 86.245.12.3 », « 2a01:cb00:1:2::/64 » ou id d'appareil
+  source      NetworkBanSource
+  reason      String           @db.VarChar(300)
+  // Compte à l'origine : le ban survit à sa suppression (le contourner ne doit pas suffire à le lever)
+  userId      String?
+  user        User?            @relation("networkBanUser", fields: [userId], references: [id], onDelete: SetNull)
+  createdById String?
+  createdBy   User?            @relation("networkBanCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  // AUTO : le ban d'appareil suivi ; lever l'appareil lève les IP qu'il a fait bannir. Seul un AUTO a un parent
+  // ou une expiration (CHECK) ; rendu définitif par l'admin, il perd les deux.
+  parentId    String?
+  parent      NetworkBan?      @relation("networkBanParent", fields: [parentId], references: [id], onDelete: Cascade)
+  children    NetworkBan[]     @relation("networkBanParent")
+  expiresAt   DateTime? // null : définitif
+  hits        Int              @default(0) // accès bloqués
+  lastHitAt   DateTime?
+  createdAt   DateTime         @default(now())
+
+  @@unique([kind, value])
+  @@index([userId])
+  @@index([parentId])
+  @@index([createdAt])
 }
 
 // --- Réglages et économie ---

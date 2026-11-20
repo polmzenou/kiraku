@@ -79,6 +79,17 @@ async function giftFromTeam(
   });
 }
 
+/**
+ * Bannit un compte dans la transaction de l'appelant (joueur déjà verrouillé) : date du ban gardée s'il l'était déjà,
+ * sessions fermées. Ses tables de pile ou face se ferment après la transaction (withdrawCasinoFor). Partagé par
+ * l'édition du compte et les bans réseau (server/anticheat/network-ban-core.ts). true s'il ne l'était pas encore.
+ */
+export async function banAccountWith(tx: Tx, userId: string, now: Date): Promise<boolean> {
+  const { count } = await tx.user.updateMany({ where: { id: userId, bannedAt: null }, data: { bannedAt: now } });
+  await tx.session.deleteMany({ where: { userId } });
+  return count === 1;
+}
+
 export async function mutateAdminUserWith(db: PrismaClient, adminId: string, input: AdminUserMutation, onNotified?: OnNotified) {
   await mutateUnderLock(db, adminId, input, onNotified);
   // Bannissement : ses tables de pile ou face se ferment après coup (verrou des tables avant celui des joueurs).
@@ -117,10 +128,10 @@ async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUs
         before = { username: user.username, role: user.role, banned: !!user.bannedAt, profileVisibility: user.profileVisibility, showCollection: user.showCollection };
         after = { username: input.username, role: input.role, banned: input.banned, profileVisibility: input.profileVisibility, showCollection: input.showCollection };
         await tx.user.update({ where: { id: userId }, data: {
-          username: input.username, role: input.role, bannedAt: input.banned ? user.bannedAt ?? now : null,
-          profileVisibility: input.profileVisibility, showCollection: input.showCollection,
+          username: input.username, role: input.role, profileVisibility: input.profileVisibility, showCollection: input.showCollection,
+          ...(input.banned ? {} : { bannedAt: null }),
         } });
-        if (input.banned) await tx.session.deleteMany({ where: { userId } });
+        if (input.banned) await banAccountWith(tx, userId, now);
         break;
       }
       case "coins": {

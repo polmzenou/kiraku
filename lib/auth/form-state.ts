@@ -8,6 +8,7 @@ export const FORM_ERROR_CODES = [
   "usernameTaken",
   "invalidCredentials",
   "banned",
+  "networkBanned", // IP ou appareil banni (server/anticheat/network-ban.ts)
   "tokenInvalid",
   "tooFast",
   "formExpired",

@@ -146,6 +146,7 @@
     "guestName": "Invité-{code}",
     "preparing": "Préparation de ton compte…",
     "rateLimited": "Trop de comptes créés depuis cette connexion. Réessaie dans un moment.",
+    "networkBanned": "L'accès à Kiraku est bloqué depuis ce réseau ou cet appareil.",
     "retry": "Réessayer",
     "balance": "Solde",
     "boosterStock": "Boosters",
@@ -205,6 +206,15 @@
     "back": "Retour au compte",
     "emailExistsTitle": "Cette adresse e-mail a déjà un compte",
     "emailExistsBody": "Connecte-toi avec ton e-mail et ton mot de passe, puis lie Discord depuis ton compte."
+  },
+  "networkBan": {
+    "title": "Accès bloqué",
+    "body": "L'accès à Kiraku est bloqué depuis ce réseau ou cet appareil, à la suite d'un bannissement (triche ou comptes multiples).",
+    "contact": "Tu penses que c'est une erreur ? <link>Écris-nous sur Discord</link>.",
+    "contactLegal": "Tu penses que c'est une erreur ? Nos coordonnées sont dans les mentions légales.",
+    "legal": "Mentions légales",
+    "terms": "Conditions générales d'utilisation",
+    "privacy": "Politique de confidentialité"
   },
   "notFound": {
     "title": "Page introuvable",
@@ -283,6 +293,7 @@
       "usernameTaken": "Ce pseudo est déjà pris.",
       "invalidCredentials": "E-mail ou mot de passe incorrect.",
       "banned": "Ce compte est suspendu.",
+      "networkBanned": "Connexion impossible : l'accès est bloqué depuis ce réseau ou cet appareil.",
       "tokenInvalid": "Ce lien n'est plus valable. Demande-en un nouveau.",
       "unexpected": "Une erreur est survenue. Réessaie.",
       "tooFast": "Envoi trop rapide : patiente un instant puis réessaie.",
@@ -1106,7 +1117,7 @@
     "revealSlots": "Emplacements du tirage",
     "unrevealedSlot": "Carte {position} sur {total} à découvrir",
     "revealAll": "Tout révéler",
-    "skipToBig": "Passer à la carte {rarity}",
+    "skipToBig": "Passer à la grosse carte",
     "toRecap": "Voir le récap",
     "gridHint": "{count} cartes : touche-les une à une, ou révèle tout",
     "recapCounts": "{boosters, plural, one {# booster} other {# boosters}} · {cards, plural, one {# carte} other {# cartes}}",
@@ -1341,7 +1352,11 @@
         "USER_AMBASSADOR": "Rôle Ambassadeur",
         "USER_LEADERBOARD": "Classement des collectionneurs",
         "USER_LEADERBOARDMALUS": "Malus au classement",
-        "USER_INCENSE": "Encens"
+        "USER_INCENSE": "Encens",
+        "USER_NETWORK_BAN": "Ban réseau",
+        "USER_NETWORK_UNBAN": "Ban réseau levé",
+        "USER_NETWORK_KEEP": "Ban automatique rendu définitif",
+        "USER_NETWORK_AUTO": "Ban qui suit l'appareil"
       },
       "errors": {
         "FORBIDDEN": "Accès refusé : les droits administrateur sont requis.",
@@ -2814,7 +2829,11 @@
           "retentionDays": "Conservation des IP et appareils (jours)",
           "seenThrottleMinutes": "Relevé pendant la présence (minutes)",
           "sharedIpCap": "Comptes au-delà desquels une IP est publique",
-          "minScore": "Score minimal d'un groupe suspect"
+          "minScore": "Score minimal d'un groupe suspect",
+          "followDevice": "Le ban suit l'appareil",
+          "autoBanMaxOthers": "Autres comptes actifs tolérés sur une IP bannie automatiquement",
+          "autoBanDays": "Durée d'un ban automatique (jours)",
+          "autoBanPerDevice": "IP bannies au plus par appareil banni"
         }
       },
       "hints": {
@@ -2839,8 +2858,12 @@
         "multiAccount": {
           "retentionDays": "IP et appareils non revus depuis ce délai sont effacés chaque nuit. 90 jours conseillés (RGPD).",
           "seenThrottleMinutes": "Un joueur connecté est relevé au plus une fois par ce délai.",
-          "sharedIpCap": "4G, école, entreprise : une IP (ou une racine d'e-mail) partagée par plus de comptes ne les relie plus.",
-          "minScore": "Somme des indices d'une paire pour former un groupe dans Multi-comptes."
+          "sharedIpCap": "4G, école, entreprise : une IP (ou une racine d'e-mail) partagée par plus de comptes ne les relie plus, et ne peut pas être bannie.",
+          "minScore": "Somme des indices d'une paire pour former un groupe dans Multi-comptes.",
+          "followDevice": "Un appareil banni qui revient avec une nouvelle IP (4G, autre wifi) la fait bannir aussi, si aucun membre de l'équipe ne l'utilise.",
+          "autoBanMaxOthers": "0 conseillé : une IP déjà utilisée par d'autres joueurs non bannis n'est jamais coupée automatiquement.",
+          "autoBanDays": "Un ban automatique expire après ce délai, sauf si un admin le rend définitif dans Bans réseau.",
+          "autoBanPerDevice": "Limite les IP qu'un appareil banni peut faire bannir, s'il passe exprès par le wifi d'un café ou d'un lycée."
         }
       },
       "multiAccountSection": "Multi-comptes"
@@ -3993,7 +4016,135 @@
         "onlyFriend": "Seul ami de {names}",
         "flowGifts": "{count, plural, one {# cadeau} other {# cadeaux}}",
         "flowSales": "{count, plural, one {# vente} other {# ventes}}",
-        "flowFlips": "{count, plural, one {# pile ou face perdu} other {# pile ou face perdus}}"
+        "flowFlips": "{count, plural, one {# pile ou face perdu} other {# pile ou face perdus}}",
+        "seeExchanges": "Voir le détail des échanges"
+      },
+      "exchanges": {
+        "back": "← Multi-comptes",
+        "titleBetween": "Échanges entre",
+        "intro": "Tous les transferts entre ces deux comptes, comptés comme la détection : cadeaux, ventes conclues (enchères et avis de recherche), pile ou face lancés, échanges et annonces acceptés.",
+        "total": "Total",
+        "directed": "{from} → {to}",
+        "swaps": "Échanges (deux sens)",
+        "salesZeni": "{buyer} a payé {zeni, number} Zeni à {seller}",
+        "truncated": "Liste partielle : 500 lignes au plus par type de transfert.",
+        "empty": "Aucun transfert entre ces deux comptes.",
+        "tableCaption": "Transferts entre les deux comptes",
+        "columns": {
+          "at": "Date",
+          "kind": "Type",
+          "direction": "Sens",
+          "detail": "Détail"
+        },
+        "kinds": {
+          "gift": "Cadeau",
+          "auction": "Enchère",
+          "buyOrder": "Avis de recherche",
+          "flip": "Pile ou face",
+          "trade": "Échange",
+          "listing": "Annonce d'échange"
+        },
+        "directionOne": "{from} → {to}",
+        "directionSwap": "{from} ⇄ {to}",
+        "card": "{name} ({rarity})",
+        "unknownCard": "Carte inconnue",
+        "forZeni": "pour {zeni, number} Zeni",
+        "flipAgainst": "perdue contre",
+        "gives": "{name} donne",
+        "gift": {
+          "BOOSTER": "Booster ({zeni, number} Zeni)",
+          "SEALED": "Sachet scellé",
+          "INCENSE": "Encens",
+          "CARD": "Carte"
+        }
+      }
+    },
+    "networkBans": {
+      "panelTitle": "Bannir le réseau",
+      "panelIntro": "Couper tout l'accès depuis ses IP et ses appareils relevés par la détection : plus aucun compte n'y joue, l'équipe exceptée. Une IPv6 se bannit par son préfixe /64. Un ban posé ici est définitif jusqu'à sa levée.",
+      "staffTarget": "Un compte de l'équipe ne se bannit pas ici.",
+      "userBansTitle": "Bans venus de ce compte",
+      "noKeys": "Aucune IP ni aucun appareil relevé pour ce compte : seul le compte peut être banni.",
+      "kinds": {
+        "IP": "IP",
+        "DEVICE": "Appareil"
+      },
+      "lastSeen": "vu le {date}",
+      "states": {
+        "OK": "Ne coupe aucun autre compte",
+        "SHARED": "{count, plural, =0 {Partagé avec d'autres comptes actifs} one {Partagé avec # autre compte actif, coupé aussi si tu le bannis} other {Partagé avec # autres comptes actifs, coupés aussi si tu le bannis}}",
+        "BANNED": "Déjà banni",
+        "STAFF": "Utilisé par l'équipe : jamais banni",
+        "PRIVATE": "Adresse privée ou locale : jamais bannie",
+        "CAP": "Réseau public ou d'opérateur (trop de comptes) : jamais banni"
+      },
+      "cuts": "Coupés aussi :",
+      "more": "et {count} de plus",
+      "accountAlreadyBanned": "Le compte est déjà banni.",
+      "banAccount": "Bannir aussi le compte (sessions fermées)",
+      "reason": "Raison (journal admin)",
+      "reasonHint": "Visible dans l'historique de l'admin, jamais par le joueur.",
+      "confirm": "{account, select, yes {Bannir le compte et couper} other {Couper}} l'accès depuis {count, plural, =0 {aucune IP ni aucun appareil} one {# IP ou appareil} other {# IP et appareils}} ?{cut, plural, =0 {} one { # autre compte actif sera coupé aussi.} other { # autres comptes actifs seront coupés aussi.}}",
+      "done": "{count, plural, =0 {Aucun réseau banni} one {# IP ou appareil banni} other {# IP et appareils bannis}}{account, select, yes {, compte banni} other {}}.",
+      "pending": "En cours…",
+      "submit": "Couper l'accès",
+      "lift": "Lever",
+      "keep": "Rendre définitif",
+      "liftReason": "Raison de la levée",
+      "keepReason": "Raison",
+      "liftConfirm": "Lever le ban",
+      "keepConfirm": "Confirmer",
+      "cancel": "Annuler",
+      "groupOpen": "Bannir ce groupe",
+      "groupHint": "Tous les comptes du groupe sont bannis, avec leurs IP et appareils qui ne coupent personne d'autre.",
+      "groupSubmit": "Bannir les {count} comptes et leur réseau",
+      "groupConfirm": "Bannir les {count} comptes de ce groupe et couper l'accès depuis leur réseau ?",
+      "groupDone": "{accounts, plural, =0 {Aucun nouveau compte banni} one {# compte banni} other {# comptes bannis}}, {bans, plural, =0 {aucune IP ni aucun appareil coupé} one {# IP ou appareil coupé} other {# IP et appareils coupés}}.",
+      "groupSkipped": "Sautés, à bannir si besoin depuis une fiche joueur :",
+      "groupTooBig": "Groupe de plus de {max} comptes : bannis-les depuis leurs fiches.",
+      "bannedBadge": "Bannie",
+      "listLink": "{count, plural, =0 {Bans réseau} other {Bans réseau ({count})}}",
+      "columns": {
+        "value": "IP ou appareil",
+        "source": "Origine",
+        "account": "Compte",
+        "reason": "Raison",
+        "created": "Posé",
+        "hits": "Accès bloqués",
+        "actions": "Actions"
+      },
+      "sources": {
+        "MANUAL": "Fiche joueur",
+        "GROUP": "Groupe de multi-comptes",
+        "AUTO": "Suit un appareil banni"
+      },
+      "follows": "suit l'appareil {device}",
+      "followed": "{count, plural, one {a fait bannir # IP} other {a fait bannir # IP}}",
+      "expires": "expire le {date}",
+      "permanent": "définitif",
+      "noAccount": "compte supprimé",
+      "by": "par {admin}",
+      "hits": "{count, plural, =0 {aucun} one {# accès} other {# accès}}",
+      "lastHit": "dernier le {date}",
+      "back": "← Multi-comptes",
+      "pageTitle": "Bans réseau",
+      "pageIntro": "IP et appareils bannis : depuis eux, personne ne joue plus, l'équipe exceptée (écran « Accès bloqué », sauf textes légaux et connexion). Un ban se pose depuis la fiche d'un joueur ou sur un groupe de multi-comptes.",
+      "followOn": "Le ban suit l'appareil : un appareil banni revenu d'une nouvelle IP la fait bannir pour {days} jours, si elle ne coupe aucun autre compte actif.",
+      "followOff": "Le ban ne suit pas l'appareil (réglage dans Général).",
+      "maskedNote": "Accès DEV : IP masquées, aucune action.",
+      "empty": "Aucun ban réseau en place.",
+      "truncated": "Seuls les {count} bans les plus récents sont affichés.",
+      "errors": {
+        "FORBIDDEN": "Réservé aux admins.",
+        "NOT_FOUND": "Introuvable : la page n'est plus à jour, recharge-la.",
+        "SELF": "Tu ne peux pas te bannir toi-même.",
+        "STAFF_TARGET": "Un compte de l'équipe ne se bannit pas ici.",
+        "NOTHING": "Rien à bannir : coche une IP, un appareil ou le compte.",
+        "REFUSED": "Une IP ou un appareil choisi ne peut pas être banni (équipe, adresse privée ou réseau public). Recharge la page.",
+        "NOT_AUTO": "Seul un ban automatique se rend définitif.",
+        "INVALID": "Demande invalide.",
+        "RATE_LIMITED": "Trop de demandes, réessaie dans une minute.",
+        "UNAVAILABLE": "Indisponible pour l'instant, réessaie."
       }
     }
   },
@@ -4712,6 +4863,9 @@
     },
     "viewCollection": "Voir la collection",
     "accountSettings": "Paramètres du compte",
+    "adminOverride": "Vue admin : ce joueur limite qui voit son profil ou sa collection. Tu vois tout grâce à ton rôle.",
+    "adminOverrideCollection": "Vue admin : cette collection n'est pas visible des autres joueurs. Tu la vois grâce à ton rôle.",
+    "adminSheet": "Ouvrir sa fiche dans l'admin",
     "ownerNotice": {
       "FRIENDS": "Ton profil est réservé à tes amis.",
       "PRIVATE": "Ton profil est privé : personne d'autre que toi ne le voit."
@@ -6112,7 +6266,8 @@
       "news": "Retient si tu as réduit l'encart des nouveautés de l'accueil.",
       "speedInsights": "Mesure des performances Vercel (sans cookie ni identifiant persistant)",
       "casinoCeremony": "Retient que tu as déjà vu la cérémonie d'ouverture du casino sur cet appareil.",
-      "nav": "Retient la disposition de la navigation sur ordinateur (menus en haut ou barre latérale)."
+      "nav": "Retient la disposition de la navigation sur ordinateur (menus en haut ou barre latérale).",
+      "security": "Identifiant aléatoire de cet appareil : repère la création de comptes en série et fait respecter un bannissement."
     },
     "kinds": {
       "cookie": "Cookie",
