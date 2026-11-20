@@ -14,7 +14,9 @@ import { Link } from "@/i18n/navigation";
 import { parseUserListParams, USER_ADMIN_ACTIONS } from "@/lib/admin/users";
 import { computeStock, stockRulesFor } from "@/lib/boosters/stock";
 import { requireAdminView } from "@/server/admin";
-import { adminCardById, getAdminUser, getAdminUserCards, getAdminUserFriends } from "@/server/admin/users";
+import { adminCardById, getAdminUser, getAdminUserCards, getAdminUserCopies, getAdminUserFriends } from "@/server/admin/users";
+import { heritageCap } from "@/lib/prestige/heritage";
+import { getSetting } from "@/server/settings";
 import { linkedAccountsFor, signalsFor } from "@/server/anticheat/queries";
 import { readBannerPity } from "@/server/boosters/open-core";
 import { getBoosterRules } from "@/server/boosters/rules";
@@ -26,9 +28,14 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
   const [{ userId }, raw, locale, t, reason, format, rarity] = await Promise.all([params, searchParams, getLocale(), getTranslations("admin.users"), getTranslations("economy.ledger.reasons"), getFormatter(), getTranslations("rarity")]);
   if (!/^[A-Za-z0-9_-]{1,40}$/.test(userId)) notFound();
   const cardParams = parseUserListParams({ q: raw.cardQuery, page: raw.cardPage });
-  const [data, collection, selectedCard, rules, friendList, linked, signals, ma] = await Promise.all([
+  const cardId = typeof raw.card === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(raw.card) ? raw.card : null;
+  const [data, collection, selectedCard, selectedCopies, heritageMax, printingSizes, currentPrinting, rules, friendList, linked, signals, ma] = await Promise.all([
     getAdminUser(userId, locale), getAdminUserCards(userId, cardParams.query, cardParams.page),
-    typeof raw.card === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(raw.card) ? adminCardById(raw.card) : null,
+    cardId ? adminCardById(cardId) : null,
+    cardId ? getAdminUserCopies(userId, cardId) : null,
+    getSetting("prestige.heritageMax"),
+    getSetting("prestige.printing.sizes"),
+    getSetting("prestige.printing.current"),
     getBoosterRules(),
     getAdminUserFriends(userId),
     linkedAccountsFor(userId),
@@ -71,7 +78,7 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
       <ReadOnly when={readOnly}>
       <UserEditor userId={userId} account={{ username: user.username, role: user.role, banned: !!user.bannedAt, profileVisibility: user.profileVisibility, showCollection: user.showCollection }} ambassadorSince={user.ambassadorSince} leaderboardHiddenAt={user.leaderboardHiddenAt} leaderboardMalus={{ cards: user.leaderboardMalus, mythics: user.leaderboardMythicMalus }} self={admin.id === userId}
         coins={user.coins} incense={incense} stats={{ boosterStock: stock.stock, rankPoints: user.rankPoints, pityCount: user.pityCount, standardCount: user.standardCount }}
-        boosters={boosterTypes.map((b) => ({ ...b, pity: pity[b.id] ?? 0 }))} discoveries={discoveries} catalogTotal={catalogTotal} ownedCatalogCards={ownedCatalogCards} selectedCard={selectedCard} sessions={user._count.sessions} />
+        boosters={boosterTypes.map((b) => ({ ...b, pity: pity[b.id] ?? 0 }))} discoveries={discoveries} catalogTotal={catalogTotal} ownedCatalogCards={ownedCatalogCards} selectedCard={selectedCard} selectedCopies={selectedCard ? selectedCopies : null} heritageMax={heritageCap({ heritageMax })} printing={{ sizes: printingSizes, current: currentPrinting }} sessions={user._count.sessions} />
       </ReadOnly>
 
       <AdminUserPrestige userId={userId} />

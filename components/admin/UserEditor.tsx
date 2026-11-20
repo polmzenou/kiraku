@@ -3,8 +3,12 @@
 import Image from "next/image";
 import { useFormatter, useTranslations } from "next-intl";
 import { createContext, useContext, useRef, useState, useTransition, type ReactNode } from "react";
-import { adminUserMutationSchema, adjustedValue, MAX_ADMIN_QUANTITY, MAX_ADMIN_VALUE, USER_STATS, type AdminCardCandidate, type AdminUserMutation, type AdminUserResult, type UserStat } from "@/lib/admin/users";
+import {
+  adminUserMutationSchema, adjustedValue, MAX_ADMIN_QUANTITY, MAX_ADMIN_VALUE, MAX_PRINTING, MAX_SERIAL, USER_STATS,
+  type AdminCardCandidate, type AdminPrinting, type AdminUserCopy, type AdminUserMutation, type AdminUserResult, type UserStat,
+} from "@/lib/admin/users";
 import { MAX_MOVEMENT } from "@/lib/economy/amount";
+import { printingSize } from "@/lib/prestige/printing";
 import { mutateAdminUserAction, searchAdminCards } from "@/server/actions/admin-users";
 import { Button } from "../ui/Button";
 import { NoteField } from "../ui/NoteField";
@@ -18,7 +22,9 @@ type Booster = { id: string; name: string; active: boolean; count: number; pity:
 const EditorContext = createContext<{ userId: string; reason: string; report: (result: AdminUserResult | "unexpected") => void }>({ userId: "", reason: "", report: () => {} });
 const panel = "flex flex-col gap-4 lacquer rounded-card p-4";
 
-function MutationForm({ title, change, children, disabled = false, button }: { title: string; change: Change; children?: ReactNode; disabled?: boolean; button?: string }) {
+function MutationForm({ title, change, children, disabled = false, button, className = panel, heading: Heading = "h3" }: {
+  title: string; change: Change; children?: ReactNode; disabled?: boolean; button?: string; className?: string; heading?: "h3" | "h4" | "h5";
+}) {
   const t = useTranslations("admin.users");
   const context = useContext(EditorContext);
   const { userId, reason } = context;
@@ -27,7 +33,7 @@ function MutationForm({ title, change, children, disabled = false, button }: { t
   const valid = adminUserMutationSchema.safeParse({ ...change, userId, reason }).success;
   const text = result === "unexpected" ? t("errors.unexpected") : result ? result.ok ? t("saved") : t(`errors.${result.error}`) : "";
   return (
-    <form className={panel} onSubmit={(e) => {
+    <form className={className} onSubmit={(e) => {
       e.preventDefault();
       if (!valid || pending || disabled) return;
       setResult(null);
@@ -36,7 +42,7 @@ function MutationForm({ title, change, children, disabled = false, button }: { t
         catch { setResult("unexpected"); context.report("unexpected"); }
       });
     }}>
-      <h3 className="font-title text-lg font-bold">{title}</h3>
+      <Heading className={Heading === "h3" ? "font-title text-lg font-bold" : "text-sm font-bold"}>{title}</Heading>
       <fieldset disabled={pending} className="flex min-w-0 flex-col gap-4">{children}</fieldset>
       <FormMessage message={result ? { tone: result !== "unexpected" && result.ok ? "ok" : "error", text } : null} />
       <Button type="submit" variant="primary" disabled={disabled || pending || !valid} className="self-start">{pending ? t("saving") : button ?? t("save")}</Button>
@@ -203,7 +209,117 @@ function BannerPityForm({ booster }: { booster: Booster }) {
   </MutationForm>;
 }
 
-function CardForm({ initial }: { initial: AdminCardCandidate | null }) {
+type Copies = { copies: AdminUserCopy[]; total: number; printings: AdminPrinting[] };
+/** Réglages des gravures : taille d'un nouveau tirage par rareté, tirage en cours. */
+type PrintingSettings = { sizes: Record<string, number>; current: number };
+/** Gravure en cours de saisie : tirage, et numéro choisi ou libre au hasard. */
+type EngravingDraft = { printing: number; random: boolean; serial: number };
+const innerForm = "flex flex-col gap-3 border-t border-border pt-3";
+const TAKEN_SHOWN = 60;
+
+/**
+ * Tirage et numéro d'une gravure. `printings` : tirages déjà ouverts pour cette carte (null : inconnus, carte choisie
+ * par la recherche) ; `newSize` : taille d'un tirage encore jamais ouvert pour sa rareté.
+ */
+function EngravingFields({ draft, onChange, printings, newSize, canChoose, keep }: {
+  draft: EngravingDraft; onChange: (d: EngravingDraft) => void; printings: AdminPrinting[] | null; newSize: number; canChoose: boolean;
+  /** Numéro actuel de l'exemplaire : le garder n'est pas un conflit. */
+  keep?: { printing: number; serial: number } | null;
+}) {
+  const t = useTranslations("admin.users");
+  const counter = printings?.find((p) => p.printing === draft.printing) ?? null;
+  const size = Math.min(counter?.size ?? newSize, MAX_SERIAL);
+  const taken = [...(counter?.taken ?? [])].sort((a, b) => a - b);
+  const clash = canChoose && serialClash(draft, printings, keep ?? null);
+  return (
+    <>
+      <NumberField label={t("printingField")} min={1} max={MAX_PRINTING} value={draft.printing} onChange={(printing) => onChange({ ...draft, printing })} />
+      {printings === null ? <p className="text-xs text-text-muted">{t("printingUnknown")}</p>
+        : counter ? <p className="text-xs text-text-muted">{t("printingInfo", { printing: counter.printing, issued: counter.taken.length, size: counter.size })}
+          {taken.length > 0 && <> · {t("printingTaken", { list: taken.slice(0, TAKEN_SHOWN).join(", ") + (taken.length > TAKEN_SHOWN ? "…" : "") })}</>}</p>
+          : <p className="text-xs text-text-muted">{t("printingNew", { printing: draft.printing, size: newSize })}</p>}
+      {canChoose ? <>
+        <Toggle label={t("randomSerial")} checked={draft.random} onChange={(random) => onChange({ ...draft, random })} />
+        {!draft.random && <NumberField label={t("serialField")} min={1} max={size} value={draft.serial} onChange={(serial) => onChange({ ...draft, serial })} />}
+        {clash && <p role="alert" className="text-xs text-shu">{t("serialTaken")}</p>}
+      </> : <p className="text-xs text-text-muted">{t("randomOnlyHint")}</p>}
+    </>
+  );
+}
+
+/** Le numéro choisi est-il déjà sorti (hors numéro actuel de l'exemplaire) ? Le serveur revérifie sous verrou. */
+function serialClash(draft: EngravingDraft, printings: AdminPrinting[] | null, keep: { printing: number; serial: number } | null = null): boolean {
+  if (draft.random || (keep?.printing === draft.printing && keep.serial === draft.serial)) return false;
+  return printings?.find((p) => p.printing === draft.printing)?.taken.includes(draft.serial) ?? false;
+}
+
+/** Prestige (héritage) d'un exemplaire précis : 0 le rend ordinaire, sauf s'il est gravé. */
+function CopyHeritageForm({ copy, max }: { copy: AdminUserCopy; max: number }) {
+  const t = useTranslations("admin.users");
+  const [heritage, setHeritage] = useState(copy.heritage);
+  return (
+    <MutationForm title={t("copyHeritage")} heading="h5" className={innerForm}
+      change={{ kind: "copyHeritage", userCardId: copy.id, heritage }} disabled={heritage === copy.heritage}>
+      <NumberField label={t("heritageLevel", { max })} min={0} max={max} value={heritage} onChange={setHeritage} />
+    </MutationForm>
+  );
+}
+
+/** Gravure d'un exemplaire précis : posée, changée ou retirée. L'ancien numéro reste sorti. */
+function CopyEngravingForm({ copy, printings, newSize, current }: { copy: AdminUserCopy; printings: AdminPrinting[]; newSize: number; current: number }) {
+  const t = useTranslations("admin.users");
+  const was = copy.printing !== null && copy.serial !== null ? { printing: copy.printing, serial: copy.serial } : null;
+  const [engraved, setEngraved] = useState(was !== null);
+  const [draft, setDraft] = useState<EngravingDraft>({ printing: was?.printing ?? current, random: was === null, serial: was?.serial ?? 1 });
+  const unchanged = engraved ? was !== null && !draft.random && draft.printing === was.printing && draft.serial === was.serial : was === null;
+  return (
+    <MutationForm title={t("engraving")} heading="h5" className={innerForm}
+      change={{ kind: "copyEngraving", userCardId: copy.id, engraving: engraved ? { printing: draft.printing, serial: draft.random ? null : draft.serial } : null }}
+      disabled={unchanged || (engraved && serialClash(draft, printings, was))}>
+      <Toggle label={t("engraved")} checked={engraved} onChange={setEngraved} />
+      {engraved && <EngravingFields draft={draft} onChange={setDraft} printings={printings} newSize={newSize} canChoose keep={was} />}
+      {was && <p className="text-xs text-text-muted">{t("engravingBurnHint")}</p>}
+    </MutationForm>
+  );
+}
+
+function CopyCard({ copy, max, printings, newSize, current }: { copy: AdminUserCopy; max: number; printings: AdminPrinting[]; newSize: number; current: number }) {
+  const t = useTranslations("admin.users");
+  const format = useFormatter();
+  const marks = [
+    copy.status !== "COLLECTION" ? t(`copyStatuses.${copy.status}`) : null,
+    copy.printing !== null ? t("copyEdition", { printing: copy.printing, serial: copy.serial ?? 0, size: copy.size ?? 0 }) : null,
+    copy.heritage > 0 ? t("copyKept", { kept: copy.keptByOwner }) : null,
+  ].filter((m): m is string => m !== null);
+  return (
+    <div className="flex flex-col gap-3 rounded-control border border-border bg-surface p-3">
+      <h4 className="text-sm font-bold">{t("copyTitle", { date: format.dateTime(copy.obtainedAt, { dateStyle: "medium" }) })}</h4>
+      {marks.length > 0 && <p className="text-xs text-text-muted">{marks.join(" · ")}</p>}
+      <CopyHeritageForm copy={copy} max={max} />
+      <CopyEngravingForm copy={copy} printings={printings} newSize={newSize} current={current} />
+    </div>
+  );
+}
+
+function CopyList({ copies, max, newSize, current }: { copies: Copies; max: number; newSize: number; current: number }) {
+  const t = useTranslations("admin.users");
+  return (
+    <section className={panel} aria-labelledby="admin-user-copies">
+      <h3 id="admin-user-copies" className="font-title text-lg font-bold">{t("copiesTitle", { count: copies.total })}</h3>
+      <p className="text-xs text-text-muted">{t("copiesHint", { max })}</p>
+      {copies.total === 0 ? <p className="text-sm text-text-muted">{t("copiesEmpty")}</p> : (
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {copies.copies.map((c) => <li key={`${c.id}:${c.heritage}:${c.printing}:${c.serial}`}>
+            <CopyCard copy={c} max={max} printings={copies.printings} newSize={newSize} current={current} />
+          </li>)}
+        </ul>
+      )}
+      {copies.total > copies.copies.length && <p className="text-xs text-text-muted">{t("copiesMore", { shown: copies.copies.length })}</p>}
+    </section>
+  );
+}
+
+function CardForm({ initial, copies, heritageMax, printing }: { initial: AdminCardCandidate | null; copies: Copies | null; heritageMax: number; printing: PrintingSettings }) {
   const t = useTranslations("admin.users");
   const tRarity = useTranslations("rarity");
   const [query, setQuery] = useState("");
@@ -211,8 +327,18 @@ function CardForm({ initial }: { initial: AdminCardCandidate | null }) {
   const [selected, setSelected] = useState(initial);
   const [mode, setMode] = useState<"ADD" | "REMOVE">("ADD");
   const [amount, setAmount] = useState(1);
+  const [heritage, setHeritage] = useState(0);
+  const [engrave, setEngrave] = useState(false);
+  const [draft, setDraft] = useState<EngravingDraft>({ printing: printing.current, random: true, serial: 1 });
   const [message, setMessage] = useState("");
   const [searched, setSearched] = useState(false);
+  // Tirages connus seulement pour la carte ouverte depuis la collection (lus côté serveur)
+  const opened = copies !== null && initial !== null && selected?.id === initial.id;
+  const printings = opened ? copies.printings : null;
+  const newSize = selected ? printingSize(selected.rarity, printing) : 0;
+  // Un numéro choisi ne grave qu'un exemplaire ; plusieurs exemplaires prennent chacun un numéro au hasard
+  const canChoose = amount === 1;
+  const engraving = mode === "ADD" && engrave ? { printing: draft.printing, serial: draft.random || !canChoose ? null : draft.serial } : null;
   const [failed, setFailed] = useState(false);
   const [pending, startTransition] = useTransition();
   const searchVersion = useRef(0);
@@ -240,13 +366,19 @@ function CardForm({ initial }: { initial: AdminCardCandidate | null }) {
           <span className="min-w-0 text-sm"><strong>{c.name}</strong><span className="block text-xs text-text-muted">{tRarity(c.rarity)} · {c.series}</span></span>
         </button></li>)}
       </ul>}
-      <MutationForm title={t("giveCards")} change={{ kind: "card", cardId: selected?.id ?? "", mode, amount, message: mode === "ADD" ? message : "" }} disabled={!selected}>
+      <MutationForm title={t("giveCards")} change={{ kind: "card", cardId: selected?.id ?? "", mode, amount, heritage: mode === "ADD" ? heritage : 0, engraving, message: mode === "ADD" ? message : "" }}
+        disabled={!selected || (mode === "ADD" && heritage > heritageMax) || (engraving !== null && engraving.serial !== null && serialClash(draft, printings))}>
         {selected ? <div className="flex items-center gap-3"><Image src={selected.imageUrl} width={56} height={80} alt="" className="h-20 w-14 rounded object-cover" /><div><p className="font-bold">{selected.name}</p><p className="text-sm text-text-muted">{tRarity(selected.rarity)} · {selected.series}</p><p className="text-xs text-text-muted">AniList #{selected.anilistId}{selected.rank === null ? ` · ${t("archivedCard")}` : ""}</p></div></div> : <p className="text-sm text-text-muted">{t("selectCard")}</p>}
         <SelectField label={t("operation")} value={mode} onChange={setMode} options={(["ADD", "REMOVE"] as const).map((v) => ({ value: v, label: t(`cardModes.${v}`) }))} />
         <NumberField label={t("quantity")} min={1} max={MAX_ADMIN_QUANTITY} value={amount} onChange={setAmount} />
+        {mode === "ADD" && <NumberField label={t("giveHeritage")} min={0} max={heritageMax} value={heritage} onChange={setHeritage} hint={t("giveHeritageHint", { max: heritageMax })} />}
+        {mode === "ADD" && <Toggle label={t("giveEngrave")} checked={engrave} onChange={setEngrave} />}
+        {mode === "ADD" && engrave && selected && <EngravingFields draft={draft} onChange={setDraft} printings={printings} newSize={newSize} canChoose={canChoose} />}
         <p className="text-xs text-text-muted">{mode === "ADD" ? t("giveCardHint") : t("removeCardHint")}</p>
         {mode === "ADD" && <NoteField label={t("giftMessage")} placeholder={t("giftMessagePlaceholder")} value={message} onChange={setMessage} />}
       </MutationForm>
+      {/* Exemplaires du joueur : seulement pour la carte ouverte depuis sa collection (lus côté serveur) */}
+      {opened ? <CopyList copies={copies} max={heritageMax} newSize={newSize} current={printing.current} /> : selected && <p className="text-xs text-text-muted">{t("copiesFromCollection")}</p>}
     </section>
   );
 }
@@ -261,9 +393,10 @@ function DiscoveryForm({ count, total, minimum }: { count: number; total: number
   </MutationForm>;
 }
 
-export function UserEditor({ userId, account, ambassadorSince, leaderboardHiddenAt, leaderboardMalus, self, stats, coins, incense, boosters, discoveries, catalogTotal, ownedCatalogCards, selectedCard, sessions }: {
+export function UserEditor({ userId, account, ambassadorSince, leaderboardHiddenAt, leaderboardMalus, self, stats, coins, incense, boosters, discoveries, catalogTotal, ownedCatalogCards, selectedCard, selectedCopies, heritageMax, printing, sessions }: {
   userId: string; account: Account; ambassadorSince: Date | null; leaderboardHiddenAt: Date | null; leaderboardMalus: LeaderboardMalus; self: boolean; stats: Record<UserStat, number>; coins: number; incense: Incense;
-  boosters: Booster[]; discoveries: number; catalogTotal: number; ownedCatalogCards: number; selectedCard: AdminCardCandidate | null; sessions: number;
+  boosters: Booster[]; discoveries: number; catalogTotal: number; ownedCatalogCards: number; selectedCard: AdminCardCandidate | null; selectedCopies: Copies | null; heritageMax: number;
+  printing: PrintingSettings; sessions: number;
 }) {
   const t = useTranslations("admin.users");
   const [reason, setReason] = useState(t("defaultReason"));
@@ -287,6 +420,6 @@ export function UserEditor({ userId, account, ambassadorSince, leaderboardHidden
       </MutationForm>
     </div>
     <BoosterForms boosters={boosters} />
-    <CardForm key={selectedCard?.id ?? "search"} initial={selectedCard} />
+    <CardForm key={selectedCard?.id ?? "search"} initial={selectedCard} copies={selectedCopies} heritageMax={heritageMax} printing={printing} />
   </EditorContext.Provider>;
 }

@@ -2,8 +2,12 @@
 // Un ajout de cartes ou de boosters est un cadeau de l'équipe : ligne TeamGift (avec le mot de
 // l'admin) et notification TEAM_GIFT dans la même transaction. Client injecté pour vérifier ces
 // opérations sans importer la connexion de production.
+import { randomInt, randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
-import { adjustedValue, MAX_ADMIN_VALUE, type AdminUserError, type AdminUserMutation } from "@/lib/admin/users";
+import { heritageCap } from "@/lib/prestige/heritage";
+import { printingSize, type Edition } from "@/lib/prestige/printing";
+import { adjustedValue, MAX_ADMIN_VALUE, type AdminEngraving, type AdminUserError, type AdminUserMutation } from "@/lib/admin/users";
+import { takeChosenSerial, takeSerial } from "../prestige/printing-core";
 import { computeStock, stockRulesFor, type StockSettings } from "@/lib/boosters/stock";
 import { ORDINARY_COPY } from "@/lib/collection/copies";
 import { MAX_MOVEMENT } from "@/lib/economy/amount";
@@ -34,6 +38,36 @@ async function stockSettings(tx: Tx): Promise<StockSettings> {
     ambassadorMax: parseSetting("ambassador.maxStock", stored.get("ambassador.maxStock")),
     intervalMs: parseSetting("booster.intervalMinutes", stored.get("booster.intervalMinutes")) * 60_000,
   };
+}
+
+/** Héritage le plus haut qu'un admin peut poser (prestige.heritageMax, 5 au plus), lu dans la transaction. */
+async function heritageCapIn(tx: Tx): Promise<number> {
+  const row = await tx.gameSetting.findUnique({ where: { key: "prestige.heritageMax" }, select: { value: true } });
+  return heritageCap({ heritageMax: parseSetting("prestige.heritageMax", row?.value) });
+}
+
+/**
+ * Numéros de gravure de `count` exemplaires d'une carte : le numéro choisi (un seul exemplaire), sinon un numéro libre
+ * au hasard. Un tirage encore jamais ouvert pour cette carte est créé avec la taille réglée pour sa rareté.
+ */
+async function engraveFor(tx: Tx, card: { id: string; rarity: string }, engraving: AdminEngraving, count: number): Promise<Edition[]> {
+  const row = await tx.gameSetting.findUnique({ where: { key: "prestige.printing.sizes" }, select: { value: true } });
+  const size = printingSize(card.rarity, { sizes: parseSetting("prestige.printing.sizes", row?.value) });
+  const editions: Edition[] = [];
+  for (let i = 0; i < count; i++) {
+    const edition = engraving.serial !== null
+      ? await takeChosenSerial(tx, { cardId: card.id, printing: engraving.printing, size, serial: engraving.serial })
+      : await takeSerial(tx, { cardId: card.id, printing: engraving.printing, size, rng: (max) => randomInt(0, max) });
+    if (!edition) throw new AdminUserMutationError("SERIAL_UNAVAILABLE");
+    editions.push(edition);
+  }
+  return editions;
+}
+
+/** Exemplaire ordinaire devenu spécial depuis l'admin : il ouvre sa provenance chez son propriétaire actuel (cadeau de l'équipe). */
+async function openProvenance(tx: Tx, userCardId: string, ownerId: string, now: Date) {
+  if ((await tx.userCardOwner.count({ where: { userCardId } })) > 0) return;
+  await tx.userCardOwner.create({ data: { userCardId, ownerId, via: "GIFT", at: now } });
 }
 
 /** Palier de l'Encens lu en base dans la transaction (pas dans le cache), comme le stock. */
@@ -221,11 +255,26 @@ async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUs
         break;
       }
       case "card": {
-        if (!await tx.card.findUnique({ where: { id: input.cardId, status: { not: "DRAFT" } }, select: { id: true } })) throw new AdminUserMutationError("NOT_FOUND");
+        const card = await tx.card.findUnique({ where: { id: input.cardId, status: { not: "DRAFT" } }, select: { id: true, rarity: true } });
+        if (!card) throw new AdminUserMutationError("NOT_FOUND");
+        const heritage = input.mode === "ADD" ? (input.heritage ?? 0) : 0;
+        const engraving = input.mode === "ADD" ? (input.engraving ?? null) : null;
+        if (heritage > 0 && heritage > await heritageCapIn(tx)) throw new AdminUserMutationError("LIMIT");
         const copies = await tx.userCard.count({ where: { ownerId: userId, cardId: input.cardId } });
         before = { cardId: input.cardId, copies };
+        let editions: Edition[] = [];
         if (input.mode === "ADD") {
-          await tx.userCard.createMany({ data: Array.from({ length: input.amount }, () => ({ ownerId: userId, cardId: input.cardId, obtainedAt: now })) });
+          // Numéros pris sous le verrou du compteur du tirage, comme à l'ouverture d'un booster
+          if (engraving) editions = await engraveFor(tx, { id: card.id, rarity: card.rarity }, engraving, input.amount);
+          // Identifiants choisis ici : un exemplaire spécial (héritier ou gravé) ouvre sa provenance dans la même transaction
+          const ids = Array.from({ length: input.amount }, () => randomUUID());
+          await tx.userCard.createMany({ data: ids.map((id, i) => ({
+            id, ownerId: userId, cardId: input.cardId, obtainedAt: now, heritage,
+            ...(editions[i] ? { printing: editions[i].printing, serial: editions[i].serial } : {}),
+          })) });
+          if (heritage > 0 || engraving) {
+            await tx.userCardOwner.createMany({ data: ids.map((id) => ({ userCardId: id, ownerId: userId, via: "GIFT" as const, at: now })) });
+          }
           await recordDiscoveries(tx, [{ userId, cardId: input.cardId }], now);
           await consumeWishlist(tx, userId, [input.cardId]);
           await giftFromTeam(tx, { kind: "CARD", userId, adminId, cardId: input.cardId, quantity: input.amount, message: input.message, now });
@@ -238,7 +287,52 @@ async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUs
           if (free.length !== input.amount) throw new AdminUserMutationError("CARDS_LOCKED");
           await tx.userCard.deleteMany({ where: { id: { in: free.map((c) => c.id) }, ownerId: userId } });
         }
-        after = { cardId: input.cardId, copies: copies + (input.mode === "ADD" ? input.amount : -input.amount) };
+        after = {
+          cardId: input.cardId, copies: copies + (input.mode === "ADD" ? input.amount : -input.amount),
+          ...(heritage > 0 ? { heritage } : {}),
+          ...(editions.length > 0 ? { editions: editions.map((e) => ({ printing: e.printing, serial: e.serial })) } : {}),
+        };
+        break;
+      }
+      case "copyHeritage": {
+        // L'exemplaire doit être au joueur : sous son verrou, aucun transfert ne peut le déplacer entre-temps
+        const copy = await tx.userCard.findFirst({
+          where: { id: input.userCardId, ownerId: userId },
+          select: { id: true, cardId: true, heritage: true, keptByOwner: true, printing: true },
+        });
+        if (!copy) throw new AdminUserMutationError("NOT_FOUND");
+        if (input.heritage > await heritageCapIn(tx)) throw new AdminUserMutationError("LIMIT");
+        // Sans héritage, plus de prestige « gardé par son propriétaire » (CHECK UserCard_heritage_check)
+        const keptByOwner = input.heritage === 0 ? 0 : copy.keptByOwner;
+        before = { userCardId: copy.id, cardId: copy.cardId, heritage: copy.heritage, keptByOwner: copy.keptByOwner };
+        after = { userCardId: copy.id, cardId: copy.cardId, heritage: input.heritage, keptByOwner };
+        const { count } = await tx.userCard.updateMany({ where: { id: copy.id, ownerId: userId }, data: { heritage: input.heritage, keptByOwner } });
+        if (count !== 1) throw new AdminUserMutationError("NOT_FOUND");
+        if (copy.heritage === 0 && copy.printing === null && input.heritage > 0) await openProvenance(tx, copy.id, userId, now);
+        break;
+      }
+      case "copyEngraving": {
+        const copy = await tx.userCard.findFirst({
+          where: { id: input.userCardId, ownerId: userId },
+          select: { id: true, cardId: true, heritage: true, printing: true, serial: true, card: { select: { rarity: true } } },
+        });
+        if (!copy) throw new AdminUserMutationError("NOT_FOUND");
+        const was = copy.printing !== null && copy.serial !== null ? { printing: copy.printing, serial: copy.serial } : null;
+        // Même tirage et même numéro : rien à changer. Même tirage sans numéro choisi : un nouveau numéro au hasard.
+        const same = input.engraving !== null && was !== null && input.engraving.printing === was.printing && input.engraving.serial === was.serial;
+        let next = input.engraving === null ? null : was;
+        if (input.engraving && !same) {
+          const [edition] = await engraveFor(tx, { id: copy.cardId, rarity: copy.card.rarity }, input.engraving, 1);
+          next = { printing: edition.printing, serial: edition.serial };
+        }
+        before = { userCardId: copy.id, cardId: copy.cardId, engraving: was };
+        after = { userCardId: copy.id, cardId: copy.cardId, engraving: next };
+        if (next?.printing !== was?.printing || next?.serial !== was?.serial) {
+          // L'ancien numéro reste sorti dans son tirage (cardprinting_forward_only) : il ne ressortira jamais
+          const { count } = await tx.userCard.updateMany({ where: { id: copy.id, ownerId: userId }, data: { printing: next?.printing ?? null, serial: next?.serial ?? null } });
+          if (count !== 1) throw new AdminUserMutationError("NOT_FOUND");
+        }
+        if (copy.heritage === 0 && was === null && next !== null) await openProvenance(tx, copy.id, userId, now);
         break;
       }
       case "discoveries": {

@@ -117,7 +117,7 @@ export async function adminUserPrestige(userId: string) {
       where: { ownerId: userId, ...SPECIAL_COPY },
       orderBy: [{ heritage: "desc" }, { obtainedAt: "asc" }],
       take: 200,
-      select: { id: true, status: true, heritage: true, keptByOwner: true, printing: true, serial: true, edition: { select: { size: true } }, card: { select: { name: true, rarity: true } } },
+      select: { id: true, cardId: true, status: true, heritage: true, keptByOwner: true, printing: true, serial: true, edition: { select: { size: true } }, card: { select: { name: true, rarity: true } } },
     }),
     prisma.consecratedCard.findMany({ where: { userId }, orderBy: { consecratedAt: "asc" }, select: { id: true, heritage: true, printing: true, serial: true, consecratedAt: true, card: { select: { name: true } } } }),
   ]);

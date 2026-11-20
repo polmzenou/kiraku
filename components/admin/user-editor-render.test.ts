@@ -18,6 +18,12 @@ function render(locale: "fr" | "en", self = false, empty = false) {
     boosters: empty ? [] : [{ id: "type", name: "Ancien événement", active: false, count: 3, pity: 4 }],
     discoveries: 20, catalogTotal: 100, ownedCatalogCards: 5, sessions: 2,
     selectedCard: empty ? null : { id: "card", anilistId: 1, name: "Levi", imageUrl: "https://s4.anilist.co/card.jpg", rarity: "MYTHIC", rank: null, series: "Attack on Titan" },
+    selectedCopies: empty ? null : { total: 3, printings: [{ printing: 1, size: 50, taken: [7, 2] }], copies: [
+      { id: "heir", status: "COLLECTION", heritage: 3, keptByOwner: 1, printing: null, serial: null, size: null, obtainedAt: new Date("2026-11-01T12:00:00Z") },
+      { id: "engraved", status: "AUCTION", heritage: 0, keptByOwner: 0, printing: 1, serial: 7, size: 50, obtainedAt: new Date("2026-11-02T12:00:00Z") },
+    ] },
+    heritageMax: 5,
+    printing: { sizes: { MYTHIC: 25 }, current: 1 },
   })));
 }
 
@@ -29,7 +35,14 @@ describe("rendu de la fiche admin", () => {
     expect(html).toContain("Ancien événement");
     expect(html).not.toContain("MISSING_MESSAGE");
     expect(html).not.toContain("NaN");
-    expect(html.match(/<form/g)).toHaveLength(16);
+    // 16 formulaires de la fiche + prestige et gravure de chaque exemplaire affiché de la carte ouverte
+    expect(html.match(/<form/g)).toHaveLength(20);
+    expect(html).toContain('value="3"');
+    // Gravée : son tirage, avec les numéros déjà sortis triés
+    expect(html).toContain(locale === "fr" ? "Tirage 1 : 2 / 50 numéros sortis" : "Printing 1: 2 / 50 numbers issued");
+    expect(html).toContain("2, 7");
+    expect(html).toContain(locale === "fr" ? "Exemplaires du joueur (3)" : "Player&#x27;s copies (3)");
+    expect(html).toContain(locale === "fr" ? "Gravée n° 7 / 50" : "Engraved no. 7 / 50");
     expect(html).toContain(locale === "fr" ? "Encens disponibles : 4" : "Incense available: 4");
     expect(html).toContain("+2");
     expect(html).toContain(locale === "fr" ? "Enlever du classement" : "Remove from leaderboard");

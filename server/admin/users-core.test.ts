@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { describe, expect, it, vi } from "vitest";
-import { MAX_ADMIN_VALUE } from "@/lib/admin/users";
+import { adminUserMutationSchema, MAX_ADMIN_VALUE } from "@/lib/admin/users";
 import { mutateAdminUserWith } from "./users-core";
 
 const base = { userId: "player", reason: "Correction" };
@@ -12,12 +12,14 @@ const target = {
   incenseUsed: 0, incenseBonus: 0,
 };
 
-function setup({ role = "ADMIN", banned = false, exists = true, player = {} as Partial<typeof target>, pulled = 0 } = {}) {
+function setup({ role = "ADMIN", banned = false, exists = true, player = {} as Partial<typeof target>, pulled = 0, counter = { size: 25, taken: [] as number[] } } = {}) {
   const tx = {
     $queryRaw: vi.fn(async (strings: TemplateStringsArray, ...values: unknown[]) => {
       const sql = strings.join("?");
       if (sql.includes('UPDATE "User" SET coins')) return [{ coins: target.coins + Number(values[0]) }];
       if (sql.includes('FROM "BoosterOpening"')) return [{ n: pulled }];
+      // Compteur du tirage gravé, verrouillé (server/prestige/printing-core.ts)
+      if (sql.includes('FROM "CardPrinting"')) return [counter];
       return [];
     }),
     user: {
@@ -30,7 +32,12 @@ function setup({ role = "ADMIN", banned = false, exists = true, player = {} as P
     boosterType: { findUnique: vi.fn().mockResolvedValue({ id: "type" }) },
     boosterCredit: { findUnique: vi.fn().mockResolvedValue({ count: 5 }), upsert: vi.fn() },
     card: { findUnique: vi.fn().mockResolvedValue({ id: "card" }), count: vi.fn().mockResolvedValue(100) },
-    userCard: { count: vi.fn().mockResolvedValue(3), createMany: vi.fn(), findMany: vi.fn().mockResolvedValue([]), deleteMany: vi.fn() },
+    userCard: {
+      count: vi.fn().mockResolvedValue(3), createMany: vi.fn(), findMany: vi.fn().mockResolvedValue([]), deleteMany: vi.fn(),
+      findFirst: vi.fn().mockResolvedValue(null as { id: string; cardId: string; heritage: number; keptByOwner: number; printing: number | null } | null),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+    },
+    userCardOwner: { createMany: vi.fn(), create: vi.fn(), count: vi.fn().mockResolvedValue(0) },
     discovery: { createMany: vi.fn(), count: vi.fn().mockResolvedValue(3) },
     // Retrouvailles du prestige (server/collection/discovery.ts)
     $executeRaw: vi.fn().mockResolvedValue(0),
@@ -165,6 +172,116 @@ describe("mutations admin atomiques", () => {
     expect(tx.boosterCredit.upsert).toHaveBeenCalledWith(expect.objectContaining({ update: { count: 12 } }));
     tx.boosterType.findUnique.mockResolvedValueOnce(null);
     await expect(mutateAdminUserWith(db, "admin", { ...base, kind: "booster", boosterTypeId: "missing", mode: "SET", amount: 1, message: null })).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+  it("donne des exemplaires ordinaires sans provenance quand le prestige vaut 0", async () => {
+    const { tx, db } = setup();
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "card", cardId: "card", mode: "ADD", amount: 2, heritage: 0, message: null });
+    expect(tx.userCard.createMany.mock.calls[0][0].data.every((c: { heritage: number }) => c.heritage === 0)).toBe(true);
+    expect(tx.userCardOwner.createMany).not.toHaveBeenCalled();
+    // Pas de prestige demandé : le plafond n'est même pas lu
+    expect(tx.gameSetting.findUnique).not.toHaveBeenCalledWith(expect.objectContaining({ where: { key: "prestige.heritageMax" } }));
+  });
+  it("donne des exemplaires héritiers qui ouvrent leur provenance chez le joueur", async () => {
+    const { tx, db } = setup();
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "card", cardId: "card", mode: "ADD", amount: 2, heritage: 3, message: null });
+    const created = tx.userCard.createMany.mock.calls[0][0].data as { id: string; heritage: number; ownerId: string }[];
+    expect(created).toHaveLength(2);
+    expect(created.every((c) => c.heritage === 3 && c.ownerId === "player" && typeof c.id === "string")).toBe(true);
+    expect(tx.userCardOwner.createMany).toHaveBeenCalledWith({ data: created.map((c) => expect.objectContaining({ userCardId: c.id, ownerId: "player", via: "GIFT" })) });
+    expect(tx.adminLog.create.mock.calls[0][0].data.after.values).toEqual({ cardId: "card", copies: 5, heritage: 3 });
+  });
+  it("refuse un prestige au-dessus du plafond réglé", async () => {
+    const { tx, db } = setup();
+    tx.gameSetting.findUnique.mockResolvedValue({ value: 2 });
+    await expect(mutateAdminUserWith(db, "admin", { ...base, kind: "card", cardId: "card", mode: "ADD", amount: 1, heritage: 3, message: null })).rejects.toMatchObject({ code: "LIMIT" });
+    expect(tx.userCard.createMany).not.toHaveBeenCalled();
+    expect(tx.teamGift.create).not.toHaveBeenCalled();
+  });
+  it("change le prestige d'un exemplaire du joueur et ouvre sa provenance s'il était ordinaire", async () => {
+    const { tx, db } = setup();
+    tx.userCard.findFirst.mockResolvedValue({ id: "copy", cardId: "card", heritage: 0, keptByOwner: 0, printing: null });
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "copyHeritage", userCardId: "copy", heritage: 4 });
+    expect(tx.userCard.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "copy", ownerId: "player" } }));
+    expect(tx.userCard.updateMany).toHaveBeenCalledWith({ where: { id: "copy", ownerId: "player" }, data: { heritage: 4, keptByOwner: 0 } });
+    expect(tx.userCardOwner.create).toHaveBeenCalledWith({ data: expect.objectContaining({ userCardId: "copy", ownerId: "player", via: "GIFT" }) });
+    const log = tx.adminLog.create.mock.calls[0][0].data;
+    expect(log.action).toBe("USER_COPYHERITAGE");
+    expect(log.before).toEqual({ userCardId: "copy", cardId: "card", heritage: 0, keptByOwner: 0 });
+    expect(log.after.values).toEqual({ userCardId: "copy", cardId: "card", heritage: 4, keptByOwner: 0 });
+  });
+  it("garde le compteur d'une héritière, le remet à zéro au prestige 0, sans réécrire de provenance", async () => {
+    const { tx, db } = setup();
+    tx.userCard.findFirst.mockResolvedValue({ id: "heir", cardId: "card", heritage: 2, keptByOwner: 2, printing: null });
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "copyHeritage", userCardId: "heir", heritage: 5 });
+    expect(tx.userCard.updateMany).toHaveBeenLastCalledWith({ where: { id: "heir", ownerId: "player" }, data: { heritage: 5, keptByOwner: 2 } });
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "copyHeritage", userCardId: "heir", heritage: 0 });
+    expect(tx.userCard.updateMany).toHaveBeenLastCalledWith({ where: { id: "heir", ownerId: "player" }, data: { heritage: 0, keptByOwner: 0 } });
+    expect(tx.userCardOwner.create).not.toHaveBeenCalled();
+  });
+  it("refuse l'exemplaire d'un autre joueur et un prestige au-dessus du plafond", async () => {
+    const { tx, db } = setup();
+    await expect(mutateAdminUserWith(db, "admin", { ...base, kind: "copyHeritage", userCardId: "elsewhere", heritage: 1 })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    tx.userCard.findFirst.mockResolvedValue({ id: "copy", cardId: "card", heritage: 0, keptByOwner: 0, printing: 1 });
+    tx.gameSetting.findUnique.mockResolvedValue({ value: 3 });
+    await expect(mutateAdminUserWith(db, "admin", { ...base, kind: "copyHeritage", userCardId: "copy", heritage: 4 })).rejects.toMatchObject({ code: "LIMIT" });
+    expect(tx.userCard.updateMany).not.toHaveBeenCalled();
+    expect(tx.adminLog.create).not.toHaveBeenCalled();
+  });
+  it("donne un exemplaire gravé au numéro choisi, pris dans le compteur du tirage", async () => {
+    const { tx, db } = setup({ counter: { size: 25, taken: [1, 2] } });
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "card", cardId: "card", mode: "ADD", amount: 1, heritage: 0, engraving: { printing: 2, serial: 7 }, message: null });
+    expect(tx.userCard.createMany.mock.calls[0][0].data[0]).toMatchObject({ ownerId: "player", heritage: 0, printing: 2, serial: 7 });
+    const issued = tx.$executeRaw.mock.calls.find((c) => (c[0] as TemplateStringsArray).join("?").includes("array_append"));
+    expect(issued?.slice(1)).toEqual([7, "card", 2]);
+    expect(tx.userCardOwner.createMany).toHaveBeenCalledWith({ data: [expect.objectContaining({ ownerId: "player", via: "GIFT" })] });
+    expect(tx.adminLog.create.mock.calls[0][0].data.after.values).toMatchObject({ editions: [{ printing: 2, serial: 7 }] });
+  });
+  it("tire au hasard un numéro libre pour chaque exemplaire gravé", async () => {
+    const { tx, db } = setup({ counter: { size: 5, taken: [1, 2, 3] } });
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "card", cardId: "card", mode: "ADD", amount: 2, engraving: { printing: 1, serial: null }, message: null });
+    const serials = (tx.userCard.createMany.mock.calls[0][0].data as { serial: number }[]).map((c) => c.serial);
+    expect(serials.every((s) => s === 4 || s === 5)).toBe(true);
+  });
+  it("refuse un numéro déjà sorti ou hors du tirage, sans rien donner", async () => {
+    for (const serial of [2, 26]) {
+      const { tx, db } = setup({ counter: { size: 25, taken: [1, 2] } });
+      await expect(mutateAdminUserWith(db, "admin", { ...base, kind: "card", cardId: "card", mode: "ADD", amount: 1, engraving: { printing: 1, serial }, message: null }))
+        .rejects.toMatchObject({ code: "SERIAL_UNAVAILABLE" });
+      expect(tx.userCard.createMany).not.toHaveBeenCalled();
+      expect(tx.teamGift.create).not.toHaveBeenCalled();
+    }
+  });
+  it("n'accepte un numéro choisi que pour un seul exemplaire donné", () => {
+    const input = { ...base, kind: "card", cardId: "card", mode: "ADD", amount: 2, heritage: 0, engraving: { printing: 1, serial: 3 }, message: "" };
+    expect(adminUserMutationSchema.safeParse(input).success).toBe(false);
+    expect(adminUserMutationSchema.safeParse({ ...input, amount: 1 }).success).toBe(true);
+    expect(adminUserMutationSchema.safeParse({ ...input, engraving: { printing: 1, serial: null } }).success).toBe(true);
+  });
+  it("grave un exemplaire ordinaire du joueur et ouvre sa provenance", async () => {
+    const { tx, db } = setup();
+    tx.userCard.findFirst.mockResolvedValue({ id: "copy", cardId: "card", heritage: 0, printing: null, serial: null, card: { rarity: "MYTHIC" } } as never);
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "copyEngraving", userCardId: "copy", engraving: { printing: 1, serial: 3 } });
+    expect(tx.userCard.updateMany).toHaveBeenCalledWith({ where: { id: "copy", ownerId: "player" }, data: { printing: 1, serial: 3 } });
+    expect(tx.userCardOwner.create).toHaveBeenCalledWith({ data: expect.objectContaining({ userCardId: "copy", ownerId: "player", via: "GIFT" }) });
+    const log = tx.adminLog.create.mock.calls[0][0].data;
+    expect(log.action).toBe("USER_COPYENGRAVING");
+    expect(log.before).toEqual({ userCardId: "copy", cardId: "card", engraving: null });
+    expect(log.after.values).toEqual({ userCardId: "copy", cardId: "card", engraving: { printing: 1, serial: 3 } });
+  });
+  it("change ou retire la gravure d'un exemplaire, sans rien écrire si elle ne change pas", async () => {
+    const { tx, db } = setup();
+    tx.userCard.findFirst.mockResolvedValue({ id: "g", cardId: "card", heritage: 2, printing: 1, serial: 4, card: { rarity: "MYTHIC" } } as never);
+    // Même tirage, même numéro : ni compteur, ni écriture
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "copyEngraving", userCardId: "g", engraving: { printing: 1, serial: 4 } });
+    expect(tx.userCard.updateMany).not.toHaveBeenCalled();
+    expect(tx.$executeRaw.mock.calls.some((c) => (c[0] as TemplateStringsArray).join("?").includes("CardPrinting"))).toBe(false);
+    // Nouveau numéro : l'ancien reste sorti
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "copyEngraving", userCardId: "g", engraving: { printing: 1, serial: 9 } });
+    expect(tx.userCard.updateMany).toHaveBeenLastCalledWith({ where: { id: "g", ownerId: "player" }, data: { printing: 1, serial: 9 } });
+    // Retrait : l'exemplaire reste héritier, sans nouvelle provenance
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "copyEngraving", userCardId: "g", engraving: null });
+    expect(tx.userCard.updateMany).toHaveBeenLastCalledWith({ where: { id: "g", ownerId: "player" }, data: { printing: null, serial: null } });
+    expect(tx.userCardOwner.create).not.toHaveBeenCalled();
   });
   it("empêche d'effacer les découvertes des cartes possédées", async () => {
     const { tx, db } = setup();
