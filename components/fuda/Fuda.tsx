@@ -31,7 +31,7 @@ export type FudaCard = {
    */
   spoiler: boolean;
   /**
-   * Exemplaire précis montré (prestige) : héritage (fleur de prunier) et édition gravée (cartouche vermillon
+   * Exemplaire précis montré (prestige) : héritage (fleur de cerisier) et édition gravée (cartouche vermillon
    * « 初摺 17 / 25 »). Absent ou ordinaire : la fuda est inchangée, toutes les sources actuelles continuent de marcher.
    */
   copy?: FudaCopy | null;
@@ -43,35 +43,41 @@ export type FudaCard = {
  */
 export type FudaCopy = { heritage: number; printing?: number | null; serial?: number | null; size?: number | null; seal?: string | null };
 
-/** Centres des cinq pétales de la fleur de prunier (repère 100 × 100), du pétale du haut dans le sens horaire. */
-const PETALS = Array.from({ length: 5 }, (_, k) => {
-  const angle = ((-90 + 72 * k) * Math.PI) / 180;
-  return { x: Math.round((50 + Math.cos(angle) * 25) * 10) / 10, y: Math.round((50 + Math.sin(angle) * 25) * 10) / 10 };
-});
+/** Les cinq pétales de la fleur de cerisier, du pétale du haut dans le sens horaire. */
+const PETAL_COUNT = 5;
 
-function Petal({ x, y, gilded }: { x: number; y: number; gilded: boolean }) {
+/**
+ * Pétale de cerisier pointé vers le haut (repère 100 × 100, cœur de la fleur en 50, 50) : étroit au cœur, large au
+ * bord, avec l'encoche en V du sakura au bout. Tourné de 72° pour chacun des cinq.
+ */
+const PETAL_PATH = "M50 50 L39.5 32 C35 25 32 20 34 14 Q37 8 45 9 L50 16 L55 9 Q63 8 66 14 C68 20 65 25 60.5 32 Z";
+
+function Petal({ index, gilded }: { index: number; gilded: boolean }) {
   return (
-    <>
-      <circle cx={x} cy={y} r={17.5} className={gilded ? "on" : "off"} />
-      {gilded && <circle cx={x - 4.5} cy={y - 5} r={6.5} className="glint" />}
-    </>
+    <g transform={`rotate(${72 * index} 50 50)`}>
+      <path d={PETAL_PATH} className={gilded ? "on" : "off"} />
+      {gilded && <ellipse cx="41" cy="20" rx="3" ry="5.5" transform="rotate(-20 41 20)" className="glint" />}
+      {/* Étamine sur l'axe du pétale : encre sur l'or, or sur le pétale éteint */}
+      <path d="M50 50 L50 31" className={gilded ? "stamen-on" : "stamen-off"} />
+      <circle cx="50" cy="30" r="3" className={gilded ? "anther-on" : "anther-off"} />
+    </g>
   );
 }
 
 /**
- * Héritière : blason en fleur de prunier au coin haut-droit, un pétale doré par prestige traversé (cinq au plus).
+ * Héritière : blason en fleur de cerisier au coin haut-droit, un pétale doré par prestige traversé (cinq au plus).
  * Lisible à toutes les tailles, et l'illustration reste intacte. Statique, comme toutes les marques d'exemplaire.
  */
 export function HeritageMon({ level }: { level: number }) {
-  const gilded = Math.min(Math.max(level, 0), PETALS.length);
+  const gilded = Math.min(Math.max(level, 0), PETAL_COUNT);
   if (gilded === 0) return null;
   return (
     <svg aria-hidden="true" className="fuda-mon" viewBox="0 0 100 100">
       <circle cx="50" cy="50" r="48" className="disc" />
-      {PETALS.map((p, k) => (
-        <Petal key={k} x={p.x} y={p.y} gilded={k < gilded} />
+      {Array.from({ length: PETAL_COUNT }, (_, k) => (
+        <Petal key={k} index={k} gilded={k < gilded} />
       ))}
-      <circle cx="50" cy="50" r="7" className="heart" />
+      <circle cx="50" cy="50" r="6" className="heart" />
     </svg>
   );
 }
@@ -81,10 +87,10 @@ export function HeritageMon({ level }: { level: number }) {
  * sur le blason : à passer en `overlay` de la fuda.
  */
 export function HeritagePetal({ index, className = "" }: { index: number; className?: string }) {
-  const p = PETALS[Math.min(Math.max(index, 0), PETALS.length - 1)];
   return (
     <svg aria-hidden="true" className={`fuda-mon ${className}`} viewBox="0 0 100 100">
-      <Petal x={p.x} y={p.y} gilded />
+      <Petal index={Math.min(Math.max(index, 0), PETAL_COUNT - 1)} gilded />
+      <circle cx="50" cy="50" r="6" className="heart" />
     </svg>
   );
 }

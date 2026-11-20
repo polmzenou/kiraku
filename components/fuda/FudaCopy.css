@@ -2,16 +2,21 @@
    scripts/fuda-face-css.mjs et ne s'édite pas à la main. Niveaux de détail par container queries sur la largeur
    réelle de la carte, comme la face. Aucune animation : les marques sont statiques, partout.
 
-   Héritière : blason en fleur de prunier au coin haut-droit, un pétale doré par prestige traversé ; à cinq, la fleur
+   Héritière : blason en fleur de cerisier au coin haut-droit, un pétale doré par prestige traversé ; à cinq, la fleur
    est toute d'or. Lisible à toutes les tailles, l'illustration reste intacte.
    Gravée : cartouche vermillon « 初摺 17 / 25 » accroché au bord du shikishi, en miroir du numéro (sceau du tirage à
    partir de 140 px) ; sous 80 px, le shikishi disparaît et un coin vermillon signale la gravée. */
 .fuda-mon { position: absolute; right: 3cqw; top: 3cqw; z-index: 6; width: max(15px, 17cqw); aspect-ratio: 1; pointer-events: none; filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / .45)); }
 .fuda-mon .disc { fill: #15120f; fill-opacity: .85; }
-.fuda-mon .off { fill: #15120f; stroke: #d9b556; stroke-width: 3px; }
-.fuda-mon .on { fill: #d9b556; stroke: #e8c867; stroke-width: 3px; }
-.fuda-mon .glint { fill: #fff3c4; fill-opacity: .7; }
-.fuda-mon .heart { fill: #d9b556; }
+.fuda-mon .off { fill: #15120f; stroke: #d9b556; stroke-width: 3px; stroke-linejoin: round; }
+.fuda-mon .on { fill: #d9b556; stroke: #f0d27a; stroke-width: 2.5px; stroke-linejoin: round; }
+.fuda-mon .glint { fill: #fff3c4; fill-opacity: .6; }
+.fuda-mon .stamen-on, .fuda-mon .stamen-off { fill: none; stroke-width: 2.4px; stroke-linecap: round; }
+.fuda-mon .stamen-on { stroke: #7a5714; }
+.fuda-mon .stamen-off { stroke: #d9b556; stroke-opacity: .7; }
+.fuda-mon .anther-on { fill: #7a5714; }
+.fuda-mon .anther-off { fill: #d9b556; fill-opacity: .8; }
+.fuda-mon .heart { fill: #f0d27a; stroke: #7a5714; stroke-width: 2px; }
 
 /* Cartouche d'édition, en miroir du numéro (.kn-no, FudaFace.css) : papier du shikishi, encre vermillon */
 .kn-ed {
