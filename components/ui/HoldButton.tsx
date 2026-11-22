@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import { primeAudio, vibrate } from "@/lib/sound/synth";
 
 const HOLD_MS = 750;
@@ -40,15 +40,19 @@ export function HoldButton({
   const hintId = useId();
   const blocked = disabled || pending;
 
+  // Le parent peut se redessiner pendant l'appui (horloge de l'écran des expéditions, chaque seconde) et passer
+  // une nouvelle fonction `onHold` : la minuterie ne doit pas repartir de zéro pour autant, sinon le pinceau
+  // paraît plein et rien ne part
+  const complete = useEffectEvent(() => {
+    setHolding(false);
+    vibrate([18, 40, 30]);
+    onHold();
+  });
   useEffect(() => {
     if (!holding || blocked) return;
-    timer.current = setTimeout(() => {
-      setHolding(false);
-      vibrate([18, 40, 30]);
-      onHold();
-    }, HOLD_MS);
+    timer.current = setTimeout(() => complete(), HOLD_MS);
     return () => clearTimeout(timer.current);
-  }, [holding, blocked, onHold]);
+  }, [holding, blocked]);
 
   const start = () => {
     if (blocked) return;
