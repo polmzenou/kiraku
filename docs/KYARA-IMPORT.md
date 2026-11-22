@@ -38,6 +38,20 @@ Ce ne sont pas des routes officielles : elles viennent de projets tiers et peuve
 Notre serveur n'appelle jamais ces routes : il reçoit `403 {"error":"verification_required"}`. Seul le navigateur
 connecté de l'équipe les lit.
 
+## Essai du 22/11 (un seul compte Kyara, app locale)
+
+Parcours complet réussi : demande, « Traiter », favori, réception, versement (55 personnages lus, 13 cartes et 383 Zeni).
+
+- Le routeur de Kyara garde `#kiraku=…` à l'ouverture du profil.
+- Le favori s'exécute sur kyara.games (Chrome) ; les `fetch` lancés depuis la page passent la vérification anti-robots.
+- `GET /api/me` renvoie l'id du compte (l'uuid du profil) ; `GET /api/me/collection?lean=1` renvoie la collection.
+- L'avatar du profil public contient l'ID Discord, identique à celui lié à Kiraku.
+- Les ids Kyara sont bien des ids AniList : 41 personnages sur 55 reconnus. Les 14 autres, tous des Communes, n'existent
+  pas dans notre catalogue (23418, 42363, 77175, 124033, 131093, 131387, 131569, 132727, 160227, 161007, 189160, 230268,
+  295292, 354398).
+- **Pas encore essayé : la route d'un ami** (`/api/me/friends/<uuid>/collection`), celle de la production, où le compte
+  Kiraku lit la collection d'un autre joueur. Il faut un second compte Kyara.
+
 ## Test du lot 0 (deux vrais comptes Kyara)
 
 Avec un compte « Kiraku » et un compte joueur ayant au moins deux pages de collection :
