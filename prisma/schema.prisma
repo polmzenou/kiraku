@@ -222,6 +222,7 @@ model User {
   networkBans      NetworkBan[] @relation("networkBanUser")
   networkBansSet   NetworkBan[] @relation("networkBanCreatedBy")
   kyaraImports     KyaraImport[]
+  kyaraStaffKey    KyaraStaffKey?
 
   @@index([rankPoints])
   @@index([ambassadorSince])
@@ -360,25 +361,22 @@ enum KyaraImportStatus {
   CANCELLED
 }
 
-// Demande d'import de la collection Kyara d'un joueur. Notre serveur n'appelle jamais Kyara : l'équipe lit la
-// collection sur Kyara avec le favori (lib/kyara/bookmarklet.ts), en ami du joueur, et la renvoie à l'admin.
+// Demande d'import de la collection Kyara d'un joueur. Notre serveur n'appelle jamais Kyara : l'équipe, connectée au
+// compte Kiraku sur Kyara, ouvre le profil du joueur (ami) et clique son favori (lib/kyara/bookmarklet.ts) ; la
+// demande est retrouvée par le compte Discord de l'avatar Kyara, puis versée (ou laissée « à vérifier »).
 // Index uniques partiels (migration) : une demande en cours ou versée par compte et par compte Discord
-// (PENDING, READY, DONE) ; un profil Kyara lu ou versé une seule fois (READY, DONE), pour qu'une adresse collée
-// par un autre ne bloque pas le vrai propriétaire. userId SetNull : le verrou survit à la suppression du compte.
-// Les ids de l'équipe sont du texte, sans clé étrangère (AdminLog fait foi).
+// (PENDING, READY, DONE) ; un profil Kyara lu ou versé une seule fois (READY, DONE). userId SetNull : le verrou
+// survit à la suppression du compte. Les ids de l'équipe sont du texte, sans clé étrangère (AdminLog fait foi).
 model KyaraImport {
   id              String            @id @default(cuid())
   userId          String?
   user            User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   discordId       String            @db.VarChar(25) // compte Discord lié du joueur à la demande
-  kyaraUserId     String            @db.VarChar(36) // uuid du profil Kyara collé
+  kyaraUserId     String?           @db.VarChar(36) // uuid du profil Kyara, connu à la lecture
   status          KyaraImportStatus @default(PENDING)
   requestedAt     DateTime          @default(now())
   deadlineAt      DateTime? // fin de la fenêtre du joueur à la demande (null : demande de test de l'équipe)
-  // Lien de traitement de l'équipe (#kiraku=<code>) : empreinte SHA-256 seulement, un seul actif par demande
-  nonceHash       String?           @unique @db.VarChar(64)
-  nonceById       String?
-  nonceExpiresAt  DateTime?
+  reviewReason    String?           @db.VarChar(24) // READY : pourquoi la lecture attend l'équipe (DISCORD_UNVERIFIED, TRUNCATED)
   // Lecture de l'équipe (READY)
   kyaraUsername   String?           @db.VarChar(64)
   kyaraAvatarUrl  String?           @db.VarChar(500)
@@ -412,6 +410,15 @@ model KyaraImport {
   @@index([userId])
   @@index([kyaraUserId])
   @@index([closedAt])
+}
+
+// Clé du favori d'un membre de l'équipe (empreinte SHA-256) : un lot n'est accepté que s'il porte la clé du membre
+// connecté, ce qui déjoue un lien piégé. Générer un nouveau favori remplace la clé (l'ancien favori ne sert plus).
+model KyaraStaffKey {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  keyHash   String   @unique @db.VarChar(64)
+  createdAt DateTime @default(now())
 }
 
 // --- Réglages et économie ---

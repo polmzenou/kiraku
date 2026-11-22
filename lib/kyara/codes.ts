@@ -43,5 +43,19 @@ export function isKyaraRejectCode(value: unknown): value is KyaraRejectCode {
   return typeof value === "string" && (KYARA_REJECT_CODES as readonly string[]).includes(value);
 }
 
+/** Version du format du lot envoyé par le favori (lib/kyara/payload.ts). */
+export const KYARA_PAYLOAD_VERSION = 2;
+
+/**
+ * Pourquoi une collection lue attend l'équipe (READY) au lieu d'être versée tout de suite : avatar Kyara sans ID
+ * Discord (demande choisie à la main), rien de lu, moins de personnages lus qu'annoncés par Kyara.
+ */
+export const KYARA_REVIEW_REASONS = ["DISCORD_UNVERIFIED", "EMPTY", "TRUNCATED"] as const;
+export type KyaraReviewReason = (typeof KYARA_REVIEW_REASONS)[number];
+
+export function isKyaraReviewReason(value: unknown): value is KyaraReviewReason {
+  return typeof value === "string" && (KYARA_REVIEW_REASONS as readonly string[]).includes(value);
+}
+
 /** Sceau de l'import (越 : passer de l'autre côté), dans le sous-ensemble Yuji Syuku (lib/seal-glyphs.ts). */
 export const KYARA_SEAL = "越";

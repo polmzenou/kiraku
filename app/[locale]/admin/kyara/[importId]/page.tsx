@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { KyaraDecision } from "@/components/admin/kyara/KyaraDecision";
-import { KyaraProcessButton } from "@/components/admin/kyara/KyaraProcessButton";
 import { Link } from "@/i18n/navigation";
 import { canProcessKyaraImports } from "@/lib/admin/roles";
+import { isKyaraReviewReason } from "@/lib/kyara/codes";
 import { kyaraProfileUrl } from "@/lib/kyara/profile-url";
 import { CONVERTED_KINDS } from "@/lib/kyara/summary";
 import { requireAdminView } from "@/server/admin";
@@ -71,9 +71,13 @@ export default async function AdminKyaraImportPage({ params }: PageProps<"/[loca
         <div className="lacquer rounded-card p-3">
           <dt className="text-text-muted">{t("detail.kyara")}</dt>
           <dd className="flex flex-col">
-            <a href={kyaraProfileUrl(row.kyaraUserId)} target="_blank" rel="noopener noreferrer" className="w-fit text-ai underline underline-offset-4">
-              {row.kyaraUsername ?? t("queue.kyaraProfile")}
-            </a>
+            {row.kyaraUserId ? (
+              <a href={kyaraProfileUrl(row.kyaraUserId)} target="_blank" rel="noopener noreferrer" className="w-fit text-ai underline underline-offset-4">
+                {row.kyaraUsername ?? t("queue.kyaraProfile")}
+              </a>
+            ) : (
+              <span className="text-text-muted">{t("detail.notRead")}</span>
+            )}
             {row.snapshotCards !== null && (
               <span className="text-xs text-text-muted">
                 {t("detail.read", {
@@ -90,11 +94,11 @@ export default async function AdminKyaraImportPage({ params }: PageProps<"/[loca
         </div>
       </dl>
 
-      {row.status === "PENDING" && canProcess && (
-        <div className="flex flex-col gap-2">
-          <p className="text-sm text-text-muted">{t("detail.processHelp")}</p>
-          <KyaraProcessButton importId={row.id} />
-        </div>
+      {row.status === "PENDING" && <p className="text-sm text-text-muted">{t("detail.processHelp")}</p>}
+      {row.status === "READY" && isKyaraReviewReason(row.reviewReason) && (
+        <p role="status" className="text-sm font-bold text-kin">
+          {t("detail.review", { reason: t(`reviewReasons.${row.reviewReason}`) })}
+        </p>
       )}
 
       {preview && (

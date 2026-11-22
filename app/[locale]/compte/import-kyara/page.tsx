@@ -27,8 +27,8 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 const PAGE = "/compte/import-kyara";
 
 /**
- * Import Kyara (étape 17) : une seule demande, dans la fenêtre ; l'équipe lit la collection sur Kyara (compte
- * Kiraku en ami) puis la verse. Un panneau par phase (lib/kyara/phase.ts).
+ * Import Kyara (étape 17) : une seule demande, dans la fenêtre, sans rien coller ; le joueur ajoute le compte Kiraku
+ * en ami sur Kyara, l'équipe y lit sa collection et elle est versée aussitôt. Un panneau par phase (lib/kyara/phase.ts).
  */
 export default async function KyaraImportPage() {
   const [t, tRarity, format, user, locale] = await Promise.all([
@@ -143,17 +143,11 @@ export default async function KyaraImportPage() {
       panel = (
         <>
           <h2 className="font-title text-lg font-bold">{t("pending.title")}</h2>
-          <p className="text-sm">{t("pending.body")}</p>
-          {request && (
-            <p className="text-sm text-text-muted">
-              {t("pending.requested", { date: date(request.requestedAt) })}{" "}
-              <a href={kyaraProfileUrl(request.kyaraUserId)} target="_blank" rel="noopener noreferrer" className="text-ai underline underline-offset-4">
-                {t("pending.profile")}
-              </a>
-            </p>
-          )}
-          <p className="text-sm font-bold">{t("pending.checklist")}</p>
-          {steps}
+          <p className="text-sm">
+            {t("pending.body")} {staffLink}
+          </p>
+          <p className="text-sm text-text-muted">{t("pending.sameDiscord")}</p>
+          {request && <p className="text-xs text-text-muted">{t("pending.requested", { date: date(request.requestedAt) })}</p>}
           {request && <KyaraCancelButton importId={request.id} />}
         </>
       );

@@ -10,13 +10,12 @@ import { Button } from "../ui/Button";
 import { Field, inputClass, NumberField, toLocalInput, Toggle } from "./fields";
 import { SettingsSaveBar } from "./SettingsSaveBar";
 
-type NumberKey = "kyaraImport.windowDays" | "kyaraImport.zeniCap" | "kyaraImport.nonceMinutes" | "kyaraImport.retentionDays";
+type NumberKey = "kyaraImport.windowDays" | "kyaraImport.zeniCap" | "kyaraImport.retentionDays";
 
 // Bornes des champs (les mêmes que les schémas Zod de lib/settings/defaults.ts)
 const LIMITS: Record<NumberKey, [number, number]> = {
   "kyaraImport.windowDays": [1, 90],
   "kyaraImport.zeniCap": [0, 10_000_000],
-  "kyaraImport.nonceMinutes": [5, 120],
   "kyaraImport.retentionDays": [7, 365],
 };
 
@@ -106,10 +105,7 @@ export function KyaraImportSettingsForm({ initial }: { initial: KyaraSettings })
 
       <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
         <legend className="px-1 font-title text-lg font-bold">{t("upkeepSection")}</legend>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {num("kyaraImport.nonceMinutes")}
-          {num("kyaraImport.retentionDays")}
-        </div>
+        {num("kyaraImport.retentionDays")}
       </fieldset>
 
       {!valid && (

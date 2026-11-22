@@ -4,8 +4,9 @@ import { PGlite } from "@electric-sql/pglite";
 import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-// Migration de l'import Kyara, rejouée dans un Postgres isolé en mémoire : les migrations d'avant, puis des comptes
-// existants, puis celle de l'import (reprise de registeredAt) et celles d'après.
+// Migrations de l'import Kyara, rejouées dans un Postgres isolé en mémoire : les migrations d'avant, puis des comptes
+// existants, puis celle de l'import (reprise de registeredAt), sa version simplifiée (profil connu à la lecture,
+// clé du favori de l'équipe) et celles d'après.
 
 const KYARA = "20261122160000_kyara_import";
 const ROOT = resolve("prisma/migrations");
@@ -40,12 +41,12 @@ const registeredAt = async (id: string) =>
   (await pg.query<{ at: string | null }>(`SELECT to_char("registeredAt", 'YYYY-MM-DD HH24:MI:SS.MS') AS at FROM "User" WHERE id = '${id}'`)).rows[0]
     ?.at ?? null;
 
-function insert(id: string, userId: string | null, discordId: string, kyaraUserId: string, status = "PENDING") {
+function insert(id: string, userId: string | null, discordId: string, kyaraUserId: string | null, status = "PENDING") {
   const read = status === "READY" || status === "DONE";
   const done = status === "DONE";
   return pg.exec(`
     INSERT INTO "KyaraImport" (id, "userId", "discordId", "kyaraUserId", status, snapshot, "receivedAt", "appliedAt", "grantedCards", "grantedZeni", "zeniRaw")
-    VALUES ('${id}', ${userId ? `'${userId}'` : "NULL"}, '${discordId}', '${kyaraUserId}', '${status}',
+    VALUES ('${id}', ${userId ? `'${userId}'` : "NULL"}, '${discordId}', ${kyaraUserId ? `'${kyaraUserId}'` : "NULL"}, '${status}',
             ${read ? `'[]'` : "NULL"}, ${read ? "now()" : "NULL"}, ${done ? "now()" : "NULL"}, ${done ? 1 : "NULL"}, ${done ? 0 : "NULL"}, ${done ? 0 : "NULL"})`);
 }
 
@@ -92,24 +93,37 @@ describe("migration de l'import Kyara", () => {
     await insert("c", "disc", "33333", K2);
   });
 
-  it("un profil Kyara n'est verrouillé qu'une fois lu : deux demandes possibles, une seule lecture", async () => {
-    await insert("a", "mail", "11111", K1);
-    await insert("b", "disc", "22222", K1);
-    await pg.exec(`UPDATE "KyaraImport" SET status = 'READY', snapshot = '[]', "receivedAt" = now() WHERE id = 'a'`);
-    await expect(pg.exec(`UPDATE "KyaraImport" SET status = 'READY', snapshot = '[]', "receivedAt" = now() WHERE id = 'b'`)).rejects.toThrow();
+  it("un profil Kyara n'est verrouillé qu'une fois lu : connu à la lecture, une seule lecture", async () => {
+    await insert("a", "mail", "11111", null);
+    await insert("b", "disc", "22222", null);
+    const read = (id: string) => pg.exec(`UPDATE "KyaraImport" SET status = 'READY', "kyaraUserId" = '${K1}', snapshot = '[]', "receivedAt" = now() WHERE id = '${id}'`);
+    await read("a");
+    await expect(read("b")).rejects.toThrow();
   });
 
-  it("vérifie les ids, le lien de traitement et les états READY et DONE", async () => {
+  it("vérifie les ids et les états READY et DONE ; plus de lien de traitement", async () => {
     await expect(insert("a", "mail", "11111", "pas-un-uuid")).rejects.toThrow();
     await expect(insert("a", "mail", "abc", K1)).rejects.toThrow();
-    await insert("a", "mail", "11111", K1);
-    await expect(pg.exec(`UPDATE "KyaraImport" SET "nonceHash" = '${"f".repeat(64)}' WHERE id = 'a'`)).rejects.toThrow();
-    await pg.exec(`UPDATE "KyaraImport" SET "nonceHash" = '${"f".repeat(64)}', "nonceExpiresAt" = now() WHERE id = 'a'`);
+    await insert("a", "mail", "11111", null);
+    const cols = await pg.query<{ column_name: string }>(`SELECT column_name FROM information_schema.columns WHERE table_name = 'KyaraImport' AND column_name LIKE 'nonce%'`);
+    expect(cols.rows).toEqual([]);
     await expect(pg.exec(`UPDATE "KyaraImport" SET status = 'READY' WHERE id = 'a'`)).rejects.toThrow();
+    // Lue sans profil Kyara : refusé
+    await expect(pg.exec(`UPDATE "KyaraImport" SET status = 'READY', snapshot = '[]', "receivedAt" = now() WHERE id = 'a'`)).rejects.toThrow();
+    await pg.exec(`UPDATE "KyaraImport" SET "kyaraUserId" = '${K1}' WHERE id = 'a'`);
     await expect(pg.exec(`UPDATE "KyaraImport" SET status = 'DONE', snapshot = '[]', "receivedAt" = now() WHERE id = 'a'`)).rejects.toThrow();
     await expect(
       pg.exec(`UPDATE "KyaraImport" SET status = 'DONE', "appliedAt" = now(), "grantedCards" = 1, "grantedZeni" = 10, "zeniRaw" = 5 WHERE id = 'a'`),
     ).rejects.toThrow();
+  });
+
+  it("clé du favori : une par membre, empreinte unique, supprimée avec le compte", async () => {
+    await pg.exec(`INSERT INTO "User" (id, username, "battleTeam", "isGuest") VALUES ('staff', 'staff', '{}', false), ('staff2', 'staff2', '{}', false)`);
+    await pg.exec(`INSERT INTO "KyaraStaffKey" ("userId", "keyHash") VALUES ('staff', '${"a".repeat(64)}')`);
+    await expect(pg.exec(`INSERT INTO "KyaraStaffKey" ("userId", "keyHash") VALUES ('staff', '${"b".repeat(64)}')`)).rejects.toThrow();
+    await expect(pg.exec(`INSERT INTO "KyaraStaffKey" ("userId", "keyHash") VALUES ('staff2', '${"a".repeat(64)}')`)).rejects.toThrow();
+    await pg.exec(`DELETE FROM "User" WHERE id = 'staff'`);
+    expect((await pg.query(`SELECT 1 FROM "KyaraStaffKey"`)).rows).toHaveLength(0);
   });
 
   it("ajoute les valeurs d'enum et la marque des découvertes importées", async () => {

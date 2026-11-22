@@ -137,20 +137,22 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
 
 **Avant :**
 
-- [ ] Migration `20261122160000_kyara_import` appliquée par `npm run db:deploy` **avant** le redémarrage PM2. Elle
-  reprend `User.registeredAt` des comptes déjà inscrits (`COALESCE(discordLinkedAt, createdAt)`).
+- [ ] Migrations `20261122160000_kyara_import` et `20261122200000_kyara_import_simple` appliquées par
+  `npm run db:deploy` **avant** le redémarrage PM2. La première reprend `User.registeredAt` des comptes déjà inscrits
+  (`COALESCE(discordLinkedAt, createdAt)`).
 - [ ] Le test des routes de Kyara (`docs/KYARA-IMPORT.md`) est fait avec deux vrais comptes, et le favori recalé si
   besoin (`BOOKMARKLET_BUILD` augmenté).
 - [ ] Un compte Kyara « Kiraku » existe, lié à un compte Discord de l'équipe, et chaque membre qui traite la file
   peut s'y connecter.
-- [ ] `/admin/kyara` : profil Kyara du compte Kiraku renseigné, barème et plafond relus, favori installé (« Copier le
-  favori ») chez chaque membre qui traite la file.
+- [ ] `/admin/kyara` : profil Kyara du compte Kiraku renseigné, barème et plafond relus. Chaque membre qui traite la
+  file génère son favori (« Générer mon favori », sur le site de prod) et l'installe.
 - [ ] Nouvelles versions de la politique de confidentialité et des CGU publiées depuis `/admin/legal`.
 
 **Lancement :**
 
 - [ ] Essai complet en prod avec l'import coupé : un membre de l'équipe demande l'import de son propre compte Kyara
-  (l'équipe peut demander même coupé), un autre membre le traite et le verse.
+  (l'équipe peut demander même coupé), un autre membre ouvre son profil sur Kyara et clique son favori : versé
+  aussitôt.
 - [ ] Date de sortie posée (pas avant le déploiement), puis interrupteur allumé. Les comptes déjà inscrits ont
   `kyaraImport.windowDays` jours à partir de cette date.
 - [ ] Annonce sur le Discord : la page `/compte/import-kyara` et les deux étapes sur Kyara (ami, « Montrer ma

@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import type { KyaraCode } from "@/lib/kyara/codes";
 import type { KyaraPayload } from "@/lib/kyara/payload";
+import type { KyaraEntry } from "@/lib/kyara/plan";
 import { DEFAULT_KYARA_RULES, type KyaraRules } from "@/lib/kyara/rules";
 import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
 import { createPgAdapter } from "@/server/pg-adapter";
@@ -10,8 +11,8 @@ import {
   applyImportWith,
   cancelImportWith,
   forgetKyaraImportsFor,
+  issueStaffKeyWith,
   KyaraImportError,
-  prepareProcessingWith,
   previewImportWith,
   purgeKyaraImportsWith,
   receivePayloadWith,
@@ -44,11 +45,14 @@ describe.skipIf(!url)("import Kyara (base réelle)", () => {
   const discords: string[] = [];
   const staffKyaraUserId = randomUUID();
   const rules: KyaraRules = { ...DEFAULT_KYARA_RULES, enabled: true, launchAt: Date.now() - DAY, staffKyaraUserId };
+  const NO_ID = "https://cdn.discordapp.com/embed/avatars/2.png";
 
   const discordId = () => `${randomInt(100_000_000, 999_999_999)}${randomInt(100_000_000, 999_999_999)}`;
   const avatarOf = (id: string) => `https://cdn.discordapp.com/avatars/${id}/${"a".repeat(32)}.png`;
 
-  async function player(opts: { role?: "USER" | "ADMIN" | "DEV"; guest?: boolean; discord?: string | null; createdAt?: Date } = {}) {
+  type Player = { id: string; discord: string | null };
+
+  async function player(opts: { role?: "USER" | "ADMIN" | "DEV"; guest?: boolean; discord?: string | null; createdAt?: Date } = {}): Promise<Player> {
     const user = await prisma.user.create({
       data: {
         username: `ky-${randomBytes(4).toString("hex")}`,
@@ -64,6 +68,12 @@ describe.skipIf(!url)("import Kyara (base réelle)", () => {
       await prisma.account.create({ data: { userId: user.id, type: "oauth", provider: "discord", providerAccountId: discord } });
     }
     return { id: user.id, discord };
+  }
+
+  /** Membre de l'équipe avec la clé de son favori. */
+  async function staffMember(role: "ADMIN" | "DEV" = "ADMIN") {
+    const p = await player({ role });
+    return { ...p, key: await issueStaffKeyWith(prisma, { staffId: p.id, now: new Date() }) };
   }
 
   const code = async (p: Promise<unknown>) => {
@@ -87,18 +97,39 @@ describe.skipIf(!url)("import Kyara (base réelle)", () => {
       [A[5], 1, "U"], // MISSING
     ]);
 
-  function payload(nonceUrl: string, kyaraUserId: string, avatarUrl: string | null, list = COLLECTION()): KyaraPayload {
-    const nonce = new URL(nonceUrl).hash.replace("#kiraku=", "");
-    return { build: 1, kyaraUserId, nonce, pseudo: "Joueur Kyara", avatarUrl, readAt: new Date(), total: list.length, entries: list, copies: list.reduce((s, e) => s + e.qty, 0) };
+  function payload(o: { key: string; avatarUrl: string | null; kyaraUserId?: string; list?: KyaraEntry[]; total?: number | null }): KyaraPayload {
+    const list = o.list ?? COLLECTION();
+    return {
+      build: 2,
+      kyaraUserId: o.kyaraUserId ?? randomUUID(),
+      key: o.key,
+      pseudo: "Joueur Kyara",
+      avatarUrl: o.avatarUrl,
+      readAt: new Date(),
+      total: o.total === undefined ? list.length : o.total,
+      entries: list,
+      copies: list.reduce((s, e) => s + e.qty, 0),
+    };
   }
 
-  /** Demande d'un joueur, lue par l'équipe : la demande est prête à verser. */
-  async function ready(p: { id: string; discord: string | null }, staffId: string, list = COLLECTION()) {
-    const kyaraUserId = randomUUID();
-    const { id } = await requestImportWith(prisma, { userId: p.id, kyaraUserId, rules, staff: false, now: new Date() });
-    const { url: link } = await prepareProcessingWith(prisma, { staffId, importId: id, nonceMinutes: 30, now: new Date() });
-    await receivePayloadWith(prisma, { staffId, payload: payload(link, kyaraUserId, avatarOf(p.discord!), list), confirmWithoutDiscord: false, now: new Date() });
-    return { id, kyaraUserId };
+  const receive = (staffId: string, p: KyaraPayload, opts: { importId?: string; confirm?: boolean; now?: Date } = {}) =>
+    receivePayloadWith(prisma, {
+      staffId,
+      payload: p,
+      importId: opts.importId ?? null,
+      confirmWithoutDiscord: opts.confirm ?? false,
+      staffKyaraUserId,
+      now: opts.now ?? new Date(),
+    });
+
+  const request = (p: Player, r: KyaraRules = rules) => requestImportWith(prisma, { userId: p.id, rules: r, staff: false, now: new Date() });
+
+  /** Demande lue mais laissée à l'équipe (lecture incomplète) : prête à verser après l'aperçu. */
+  async function ready(p: Player, staff: { id: string; key: string }, list = COLLECTION()) {
+    const { id } = await request(p);
+    const res = await receive(staff.id, payload({ key: staff.key, avatarUrl: avatarOf(p.discord!), list, total: list.length + 5 }));
+    expect(res).toMatchObject({ status: "READY", importId: id, reason: "TRUNCATED" });
+    return { id };
   }
 
   beforeAll(async () => {
@@ -142,19 +173,17 @@ describe.skipIf(!url)("import Kyara (base réelle)", () => {
     await prisma.$disconnect();
   }, 30_000);
 
-  it("verse une collection lue : cartes, découvertes importées, liste de souhaits, Zeni et notification", async () => {
-    const staff = await player({ role: "ADMIN" });
+  it("lecture sûre : versée dès la réception (cartes, découvertes importées, liste de souhaits, Zeni, notification)", async () => {
+    const staff = await staffMember();
     const me = await player();
     await prisma.userCard.create({ data: { id: randomUUID(), ownerId: me.id, cardId: cards[4] } });
     await prisma.wishlistEntry.create({ data: { userId: me.id, cardId: cards[0], position: 1 } });
+    const { id } = await request(me);
+    const kyaraUserId = randomUUID();
 
-    const { id } = await ready(me, staff.id);
-    const preview = await previewImportWith(prisma, id);
-    expect(preview?.plan.grant.map((g) => g.cardId)).toEqual([cards[0], cards[2]]);
     const zeni = ZENI.R + ZENI.L + RECYCLE.RARE + ZENI.U;
-    expect(preview?.plan).toMatchObject({ zeni, extraCopies: 2 });
-
-    expect(await applyImportWith(prisma, { staffId: staff.id, importId: id, expectedCards: 2, expectedZeni: zeni, now: new Date() })).toEqual({ cards: 2, zeni });
+    const res = await receive(staff.id, payload({ key: staff.key, avatarUrl: avatarOf(me.discord!), kyaraUserId }));
+    expect(res).toEqual({ status: "DONE", importId: id, userId: me.id, cards: 2, zeni });
     const owned = await prisma.userCard.findMany({ where: { ownerId: me.id }, select: { cardId: true, status: true } });
     expect(owned.map((c) => c.cardId).sort()).toEqual([cards[0], cards[2], cards[4]].sort());
     expect(owned.every((c) => c.status === "COLLECTION")).toBe(true);
@@ -165,97 +194,114 @@ describe.skipIf(!url)("import Kyara (base réelle)", () => {
     expect(ledger).toMatchObject([{ amount: zeni, refId: id }]);
     expect(await prisma.notification.count({ where: { userId: me.id, type: "KYARA_IMPORT_DONE", refId: id } })).toBe(1);
     const row = await prisma.kyaraImport.findUniqueOrThrow({ where: { id } });
-    expect(row).toMatchObject({ status: "DONE", grantedCards: 2, grantedZeni: zeni, zeniRaw: zeni, discordVerified: true, appliedById: staff.id });
-    expect(await prisma.adminLog.count({ where: { targetId: id, action: { startsWith: "KYARA_IMPORT_" } } })).toBe(3);
+    expect(row).toMatchObject({ status: "DONE", kyaraUserId, reviewReason: null, grantedCards: 2, grantedZeni: zeni, discordVerified: true, appliedById: staff.id });
+    expect(await prisma.adminLog.count({ where: { targetId: id, action: { startsWith: "KYARA_IMPORT_" } } })).toBe(2);
+    // Relancer le favori sur le même ami ne verse rien de plus
+    expect(await code(receive(staff.id, payload({ key: staff.key, avatarUrl: avatarOf(me.discord!), kyaraUserId })))).toBe("ALREADY_DONE");
   });
 
-  it("verse exactement une fois, même sous dix clics simultanés", async () => {
-    const staff = await player({ role: "ADMIN" });
+  it("deux réceptions simultanées du même lot : versé une seule fois", async () => {
+    const staff = await staffMember();
     const me = await player();
-    const { id } = await ready(me, staff.id);
-    const preview = await previewImportWith(prisma, id);
+    await request(me);
+    const lot = payload({ key: staff.key, avatarUrl: avatarOf(me.discord!) });
+    const results = await Promise.allSettled(Array.from({ length: 5 }, () => receive(staff.id, lot)));
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    expect(await prisma.coinTransaction.count({ where: { userId: me.id, reason: "KYARA_IMPORT" } })).toBe(1);
+    expect(await prisma.userCard.count({ where: { ownerId: me.id } })).toBe(3);
+  });
+
+  it("lecture douteuse (incomplète, vide) : attend l'équipe, puis versée exactement une fois", async () => {
+    const staff = await staffMember();
+    const me = await player();
+    const { id } = await ready(me, staff);
+    expect(await prisma.userCard.count({ where: { ownerId: me.id } })).toBe(0);
+    expect(await code(receive(staff.id, payload({ key: staff.key, avatarUrl: avatarOf(me.discord!) })))).toBe("ALREADY_READ");
+
+    const preview = (await previewImportWith(prisma, id))!.plan;
+    expect(preview.grant).toHaveLength(3);
     const results = await Promise.allSettled(
       Array.from({ length: 10 }, () =>
-        applyImportWith(prisma, { staffId: staff.id, importId: id, expectedCards: preview!.plan.grant.length, expectedZeni: preview!.plan.zeni, now: new Date() }),
+        applyImportWith(prisma, { staffId: staff.id, importId: id, expectedCards: preview.grant.length, expectedZeni: preview.zeni, now: new Date() }),
       ),
     );
     expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
     expect(await prisma.coinTransaction.count({ where: { userId: me.id, reason: "KYARA_IMPORT" } })).toBe(1);
-    // Sans la Rare déjà possédée : Mythique, Commune et Rare versées, une seule fois chacune
-    expect(preview!.plan.grant).toHaveLength(3);
     expect(await prisma.userCard.count({ where: { ownerId: me.id } })).toBe(3);
-    const again = { staffId: staff.id, importId: id, expectedCards: 3, expectedZeni: preview!.plan.zeni, now: new Date() };
-    expect(await code(applyImportWith(prisma, again))).toBe("ALREADY_DONE");
+    expect(await prisma.kyaraImport.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: "DONE", reviewReason: "TRUNCATED" });
+
+    const empty = await player();
+    const other = await request(empty);
+    expect(await receive(staff.id, payload({ key: staff.key, avatarUrl: avatarOf(empty.discord!), list: [] }))).toMatchObject({
+      status: "READY",
+      importId: other.id,
+      reason: "EMPTY",
+    });
   });
 
-  it("une seule demande par compte, par Discord et par profil Kyara ; règles d'accès", async () => {
+  it("une seule demande par compte et par Discord ; règles d'accès", async () => {
     const me = await player();
-    const kyara = randomUUID();
     const now = new Date();
-    await requestImportWith(prisma, { userId: me.id, kyaraUserId: kyara, rules, staff: false, now });
-    expect(await code(requestImportWith(prisma, { userId: me.id, kyaraUserId: randomUUID(), rules, staff: false, now }))).toBe("ALREADY_REQUESTED");
-    // Une adresse publique collée par un autre ne bloque pas le vrai propriétaire tant qu'elle n'est pas lue
-    const other = await player();
-    expect(await code(requestImportWith(prisma, { userId: other.id, kyaraUserId: kyara, rules, staff: false, now }))).toBeNull();
-    expect(await code(requestImportWith(prisma, { userId: (await player()).id, kyaraUserId: staffKyaraUserId, rules, staff: false, now }))).toBe("OWN_STAFF_PROFILE");
-    expect(await code(requestImportWith(prisma, { userId: (await player({ guest: true })).id, kyaraUserId: randomUUID(), rules, staff: false, now }))).toBe("GUEST");
-    expect(await code(requestImportWith(prisma, { userId: (await player({ discord: null })).id, kyaraUserId: randomUUID(), rules, staff: false, now }))).toBe("NO_DISCORD");
+    await request(me);
+    expect(await code(request(me))).toBe("ALREADY_REQUESTED");
+    expect(await code(request(await player({ guest: true })))).toBe("GUEST");
+    expect(await code(request(await player({ discord: null })))).toBe("NO_DISCORD");
     const old = await player({ createdAt: new Date(Date.now() - 90 * DAY) });
-    const lateRules = { ...rules, launchAt: Date.now() - 30 * DAY };
-    expect(await code(requestImportWith(prisma, { userId: old.id, kyaraUserId: randomUUID(), rules: lateRules, staff: false, now }))).toBe("EXPIRED");
-    expect(await code(requestImportWith(prisma, { userId: old.id, kyaraUserId: randomUUID(), rules: { ...rules, enabled: false }, staff: false, now }))).toBe("DISABLED");
+    expect(await code(request(old, { ...rules, launchAt: Date.now() - 30 * DAY }))).toBe("EXPIRED");
+    expect(await code(request(old, { ...rules, enabled: false }))).toBe("DISABLED");
     // Annulée, la demande ne verrouille plus rien
+    const other = await player();
     const mine = await prisma.kyaraImport.findFirstOrThrow({ where: { userId: me.id, status: "PENDING" } });
     await cancelImportWith(prisma, { userId: me.id, importId: mine.id, now });
     expect(await code(cancelImportWith(prisma, { userId: me.id, importId: mine.id, now }))).toBe("NOT_PENDING");
     expect(await code(cancelImportWith(prisma, { userId: other.id, importId: mine.id, now }))).toBe("NOT_FOUND");
-    expect(await code(requestImportWith(prisma, { userId: me.id, kyaraUserId: randomUUID(), rules, staff: false, now }))).toBeNull();
+    expect(await code(request(me))).toBeNull();
   });
 
-  it("le lien de traitement : à usage unique, propre au membre qui l'a préparé, expiré, remplacé", async () => {
-    const [staff, staff2] = [await player({ role: "ADMIN" }), await player({ role: "DEV" })];
+  it("la clé du favori : propre au membre, remplacée par une nouvelle ; demande retrouvée par le Discord", async () => {
+    const [staff, staff2] = [await staffMember("ADMIN"), await staffMember("DEV")];
+    const noKey = await player({ role: "ADMIN" });
     const me = await player();
-    const kyara = randomUUID();
-    const { id } = await requestImportWith(prisma, { userId: me.id, kyaraUserId: kyara, rules, staff: false, now: new Date() });
-    expect(await code(prepareProcessingWith(prisma, { staffId: me.id, importId: id, nonceMinutes: 30, now: new Date() }))).toBe("SELF");
-    const first = await prepareProcessingWith(prisma, { staffId: staff.id, importId: id, nonceMinutes: 30, now: new Date() });
-    const send = (staffId: string, link: string, uuid = kyara, now = new Date(), avatar: string | null = avatarOf(me.discord!), confirm = false) =>
-      receivePayloadWith(prisma, { staffId, payload: payload(link, uuid, avatar), confirmWithoutDiscord: confirm, now });
+    const { id } = await request(me);
+    const lot = (key: string, extra: Partial<Parameters<typeof payload>[0]> = {}) => payload({ key, avatarUrl: avatarOf(me.discord!), ...extra });
 
-    expect(await code(send(staff2.id, first.url))).toBe("NONCE_OTHER_STAFF");
-    expect(await code(send(staff.id, first.url, kyara, new Date(Date.now() + 31 * 60_000)))).toBe("NONCE_EXPIRED");
-    expect(await code(send(staff.id, first.url, randomUUID()))).toBe("UUID_MISMATCH");
-    expect(await code(send(staff.id, first.url, kyara, new Date(), avatarOf(discordId())))).toBe("DISCORD_MISMATCH");
-    expect(await code(send(staff.id, first.url, kyara, new Date(), "https://cdn.discordapp.com/embed/avatars/1.png"))).toBe("DISCORD_UNVERIFIED");
-    // Un nouveau « Traiter » remplace le lien ; les refus n'ont rien consommé
-    const second = await prepareProcessingWith(prisma, { staffId: staff.id, importId: id, nonceMinutes: 30, now: new Date() });
-    expect(await code(send(staff.id, first.url))).toBe("NONCE_INVALID");
-    expect(await send(staff.id, second.url)).toEqual({ importId: id, discordVerified: true });
-    expect(await code(send(staff.id, second.url))).toBe("NONCE_INVALID");
+    expect(await code(receive(noKey.id, lot(staff.key)))).toBe("KEY_INVALID");
+    expect(await code(receive(staff2.id, lot(staff.key)))).toBe("KEY_INVALID");
+    const renewed = await issueStaffKeyWith(prisma, { staffId: staff.id, now: new Date() });
+    expect(await code(receive(staff.id, lot(staff.key)))).toBe("KEY_INVALID");
+    // Profil du compte Kiraku lui-même, Discord sans demande
+    expect(await code(receive(staff.id, lot(renewed, { kyaraUserId: staffKyaraUserId })))).toBe("OWN_STAFF_PROFILE");
+    expect(await code(receive(staff.id, lot(renewed, { avatarUrl: avatarOf(discordId()) })))).toBe("NO_REQUEST");
+    // Un membre de l'équipe ne verse jamais sa propre demande
+    await request(staff2);
+    expect(await code(receive(staff2.id, payload({ key: staff2.key, avatarUrl: avatarOf(staff2.discord!) })))).toBe("SELF");
+    // Les refus n'ont rien changé : la demande est toujours en attente, puis versée
+    expect((await prisma.kyaraImport.findUniqueOrThrow({ where: { id } })).status).toBe("PENDING");
+    expect(await receive(staff.id, lot(renewed))).toMatchObject({ status: "DONE", importId: id });
   });
 
-  it("avatar sans ID Discord : confirmation explicite ; un profil lu une seule fois (KYARA_TAKEN)", async () => {
-    const staff = await player({ role: "ADMIN" });
+  it("avatar sans ID Discord : demande choisie et confirmée, gardée à vérifier ; un profil lu une seule fois", async () => {
+    const staff = await staffMember();
     const [me, other] = [await player(), await player()];
+    const mine = await request(me);
+    const theirs = await request(other);
     const kyara = randomUUID();
-    const mine = await requestImportWith(prisma, { userId: me.id, kyaraUserId: kyara, rules, staff: false, now: new Date() });
-    const theirs = await requestImportWith(prisma, { userId: other.id, kyaraUserId: kyara, rules, staff: false, now: new Date() });
-    const noId = "https://cdn.discordapp.com/embed/avatars/2.png";
-    const a = await prepareProcessingWith(prisma, { staffId: staff.id, importId: mine.id, nonceMinutes: 30, now: new Date() });
-    expect(await receivePayloadWith(prisma, { staffId: staff.id, payload: payload(a.url, kyara, noId), confirmWithoutDiscord: true, now: new Date() })).toEqual({
-      importId: mine.id,
-      discordVerified: false,
-    });
-    const b = await prepareProcessingWith(prisma, { staffId: staff.id, importId: theirs.id, nonceMinutes: 30, now: new Date() });
-    expect(await code(receivePayloadWith(prisma, { staffId: staff.id, payload: payload(b.url, kyara, noId), confirmWithoutDiscord: true, now: new Date() }))).toBe(
-      "KYARA_TAKEN",
-    );
+    const lot = payload({ key: staff.key, avatarUrl: NO_ID, kyaraUserId: kyara });
+
+    expect(await code(receive(staff.id, lot))).toBe("DISCORD_UNVERIFIED");
+    expect(await code(receive(staff.id, lot, { importId: mine.id }))).toBe("DISCORD_UNVERIFIED");
+    expect(await code(receive(staff.id, payload({ key: staff.key, avatarUrl: avatarOf(discordId()) }), { importId: mine.id, confirm: true }))).toBe("DISCORD_MISMATCH");
+    expect(await receive(staff.id, lot, { importId: mine.id, confirm: true })).toMatchObject({ status: "READY", importId: mine.id, reason: "DISCORD_UNVERIFIED" });
+    expect(await prisma.kyaraImport.findUniqueOrThrow({ where: { id: mine.id } })).toMatchObject({ kyaraUserId: kyara, discordVerified: false });
+    // Le même profil Kyara lu pour une autre demande
+    expect(await code(receive(staff.id, payload({ key: staff.key, avatarUrl: avatarOf(other.discord!), kyaraUserId: kyara })))).toBe("KYARA_TAKEN");
+    expect((await prisma.kyaraImport.findUniqueOrThrow({ where: { id: theirs.id } })).status).toBe("PENDING");
   });
 
   it("refuse un versement qui ne correspond plus à l'aperçu (STALE), puis verse le nouvel aperçu", async () => {
-    const staff = await player({ role: "ADMIN" });
+    const staff = await staffMember();
     const me = await player();
-    const { id } = await ready(me, staff.id);
+    const { id } = await ready(me, staff);
     const before = (await previewImportWith(prisma, id))!.plan;
     // Le joueur obtient entre-temps la Mythique : elle devient « déjà possédée »
     await prisma.userCard.create({ data: { id: randomUUID(), ownerId: me.id, cardId: cards[0] } });
@@ -268,29 +314,41 @@ describe.skipIf(!url)("import Kyara (base réelle)", () => {
   });
 
   it("refus avec motif et note, réouverture, relecture", async () => {
-    const staff = await player({ role: "ADMIN" });
+    const staff = await staffMember();
     const me = await player();
-    const { id } = await ready(me, staff.id);
+    const { id } = await ready(me, staff);
     await rereadImportWith(prisma, { staffId: staff.id, importId: id, now: new Date() });
-    expect(await prisma.kyaraImport.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: "PENDING", snapshot: null, receivedAt: null });
+    expect(await prisma.kyaraImport.findUniqueOrThrow({ where: { id } })).toMatchObject({
+      status: "PENDING",
+      snapshot: null,
+      receivedAt: null,
+      kyaraUserId: null,
+      reviewReason: null,
+    });
     await rejectImportWith(prisma, { staffId: staff.id, importId: id, code: "NOT_FRIEND", note: "Ajoute le compte Kiraku en ami", now: new Date() });
     expect(await prisma.kyaraImport.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: "REJECTED", rejectCode: "NOT_FRIEND" });
     const notif = await prisma.notification.findFirstOrThrow({ where: { userId: me.id, type: "KYARA_IMPORT_REJECTED" } });
     expect(notif.payload).toEqual({ kind: "REJECTED", code: "NOT_FRIEND" });
     expect(await code(rejectImportWith(prisma, { staffId: staff.id, importId: id, code: "OTHER", note: null, now: new Date() }))).toBe("NOT_REJECTABLE");
+    // Refusée : le favori ne la retrouve plus
+    expect(await code(receive(staff.id, payload({ key: staff.key, avatarUrl: avatarOf(me.discord!) })))).toBe("NO_REQUEST");
     await reopenImportWith(prisma, { staffId: staff.id, importId: id, now: new Date() });
     expect(await prisma.kyaraImport.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: "PENDING", reopenCount: 1, rejectCode: null });
     // Une nouvelle demande du joueur entre-temps : la réouverture serait en conflit
     await rejectImportWith(prisma, { staffId: staff.id, importId: id, code: "OTHER", note: null, now: new Date() });
-    await requestImportWith(prisma, { userId: me.id, kyaraUserId: randomUUID(), rules, staff: false, now: new Date() });
+    await request(me);
     expect(await code(reopenImportWith(prisma, { staffId: staff.id, importId: id, now: new Date() }))).toBe("CONFLICT");
   });
 
   it("RGPD : suppression du compte, le verrou du Discord reste ; purge des photos anciennes", async () => {
-    const staff = await player({ role: "ADMIN" });
+    const staff = await staffMember();
     const me = await player();
-    const { id } = await ready(me, staff.id, entries([[A[2], 1, "C"]]));
-    await applyImportWith(prisma, { staffId: staff.id, importId: id, expectedCards: 1, expectedZeni: 0, now: new Date() });
+    const { id } = await request(me);
+    expect(await receive(staff.id, payload({ key: staff.key, avatarUrl: avatarOf(me.discord!), list: entries([[A[2], 1, "C"]]) }))).toMatchObject({
+      status: "DONE",
+      cards: 1,
+      zeni: 0,
+    });
     await prisma.$transaction((tx) => forgetKyaraImportsFor(tx, me.id, new Date()));
     expect(await prisma.kyaraImport.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: "DONE", snapshot: null, kyaraUsername: null });
     await prisma.userCard.deleteMany({ where: { ownerId: me.id } });
@@ -298,7 +356,7 @@ describe.skipIf(!url)("import Kyara (base réelle)", () => {
     expect((await prisma.kyaraImport.findUniqueOrThrow({ where: { id } })).userId).toBeNull();
     // Le même Discord lié à un nouveau compte ne peut plus servir
     const again = await player({ discord: me.discord });
-    expect(await code(requestImportWith(prisma, { userId: again.id, kyaraUserId: randomUUID(), rules, staff: false, now: new Date() }))).toBe("DISCORD_ALREADY_USED");
+    expect(await code(request(again))).toBe("DISCORD_ALREADY_USED");
 
     const purge = await purgeKyaraImportsWith(prisma, { now: new Date(Date.now() + 100 * DAY), retentionDays: 90 });
     expect(purge.purged + purge.deleted).toBeGreaterThanOrEqual(0);

@@ -500,8 +500,8 @@ export const SETTING_SCHEMAS = {
   "casino.coinflip.feedMaxAgeHours": z.number().int().min(1).max(24 * 30),
   // Import Kyara (étape 17) : interrupteur ; date de sortie (vide = « Bientôt » ; les comptes déjà inscrits ont leur
   // fenêtre à partir de là) ; durée de la fenêtre ; profil Kyara du compte Kiraku que les joueurs ajoutent en ami ;
-  // Zeni d'une carte convertie, par code de rareté Kyara, et plafond par import ; durée de vie d'un lien de
-  // traitement de l'équipe ; conservation de la photo d'une collection lue
+  // Zeni d'une carte convertie, par code de rareté Kyara, et plafond par import ; conservation de la photo d'une
+  // collection lue
   "kyaraImport.enabled": z.boolean(),
   "kyaraImport.launchAt": z.string().datetime().nullable(),
   "kyaraImport.windowDays": z.number().int().min(1).max(90),
@@ -512,7 +512,6 @@ export const SETTING_SCHEMAS = {
     .nullable(),
   "kyaraImport.zeniByRarity": z.object({ C: kyaraZeni, U: kyaraZeni, R: kyaraZeni, E: kyaraZeni, L: kyaraZeni, M: kyaraZeni }).strict(),
   "kyaraImport.zeniCap": z.number().int().min(0).max(10_000_000),
-  "kyaraImport.nonceMinutes": z.number().int().min(5).max(120),
   "kyaraImport.retentionDays": z.number().int().min(7).max(365),
   // Carrousel « En direct · Gros tirages » de l'accueil (étape 12c)
   "home.pullFeed.enabled": z.boolean(),
@@ -900,7 +899,6 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   // Valeurs de recyclage des raretés de base (collection.recycleValues)
   "kyaraImport.zeniByRarity": { C: 1, U: 1, R: 3, E: 10, L: 40, M: 150 },
   "kyaraImport.zeniCap": 10_000, // 50 boosters : ne bride que les collections hors norme
-  "kyaraImport.nonceMinutes": 30,
   "kyaraImport.retentionDays": 90,
   "home.pullFeed.enabled": true,
   "home.pullFeed.minRarity": "LEGENDARY",

@@ -2,7 +2,6 @@
 
 import { refresh } from "next/cache";
 import { isStaff } from "@/lib/admin/roles";
-import { kyaraProfileInputSchema } from "@/lib/kyara/profile-url";
 import { z } from "@/lib/zod";
 import { prisma } from "../db";
 import { cancelImportWith, KyaraImportError, requestImportWith, type KyaraErrorCode } from "../kyara/import-core";
@@ -11,13 +10,13 @@ import { clientIp, rateLimit } from "../ratelimit";
 import { requireActiveUser } from "../user";
 
 // Import Kyara, côté joueur. Ordre des contrôles : session → Zod → rate limit, puis tout est relu sous le verrou
-// du joueur (server/kyara/import-core.ts) : fenêtre, Discord lié, une seule demande par compte, Discord et profil.
-// Le client n'envoie que l'adresse de son profil Kyara (réduite à son uuid) ou l'id de sa demande.
+// du joueur (server/kyara/import-core.ts) : fenêtre, Discord lié, une seule demande par compte et par Discord.
+// La demande ne porte rien d'autre : l'équipe lit le profil Kyara de l'ami, retrouvé par son Discord. Le client
+// n'envoie que l'id de sa demande pour l'annuler.
 
 export type KyaraImportActionError = "NO_SESSION" | "INVALID" | "RATE_LIMITED" | KyaraErrorCode;
 type Result = { ok: true } | { ok: false; error: KyaraImportActionError };
 
-const requestSchema = z.object({ profileUrl: kyaraProfileInputSchema }).strict();
 const cancelSchema = z.object({ importId: z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/) }).strict();
 
 function failure(scope: string, e: unknown): Result {
@@ -26,11 +25,9 @@ function failure(scope: string, e: unknown): Result {
   return { ok: false, error: "UNAVAILABLE" };
 }
 
-export async function requestKyaraImportAction(input: unknown): Promise<Result> {
+export async function requestKyaraImportAction(): Promise<Result> {
   const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
-  const parsed = requestSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "INVALID" };
   // Par joueur, et par adresse pour freiner les comptes en série
   const [mine, network] = await Promise.all([
     rateLimit(`kyara-request:${user.id}`, { limit: 5, windowSeconds: 3_600 }),
@@ -40,7 +37,6 @@ export async function requestKyaraImportAction(input: unknown): Promise<Result> 
   try {
     await requestImportWith(prisma, {
       userId: user.id,
-      kyaraUserId: parsed.data.profileUrl,
       rules: await getKyaraRules(),
       staff: isStaff(user.role),
       now: new Date(),

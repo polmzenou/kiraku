@@ -11,7 +11,6 @@ export const KYARA_SETTING_KEYS = [
   "kyaraImport.staffProfileUrl",
   "kyaraImport.zeniByRarity",
   "kyaraImport.zeniCap",
-  "kyaraImport.nonceMinutes",
   "kyaraImport.retentionDays",
 ] as const;
 
@@ -26,7 +25,6 @@ export type KyaraRules = {
   staffKyaraUserId: string | null;
   zeniByCode: Readonly<Record<KyaraCode, number>>;
   zeniCap: number;
-  nonceMinutes: number;
   retentionDays: number;
 };
 
@@ -46,7 +44,6 @@ export function kyaraRulesFrom(get: <K extends KyaraSettingKey>(key: K) => Setti
     staffKyaraUserId: staffUrl === null ? null : parseKyaraProfileUrl(staffUrl),
     zeniByCode: get("kyaraImport.zeniByRarity"),
     zeniCap: get("kyaraImport.zeniCap"),
-    nonceMinutes: get("kyaraImport.nonceMinutes"),
     retentionDays: get("kyaraImport.retentionDays"),
   };
 }

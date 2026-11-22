@@ -1,28 +1,29 @@
 import { z } from "@/lib/zod";
-import { KYARA_CODES, type KyaraCode } from "./codes";
+import { KYARA_CODES, KYARA_PAYLOAD_VERSION, type KyaraCode } from "./codes";
 import { mergeEntries, type KyaraEntry } from "./plan";
 import { isKyaraUserId } from "./profile-url";
 
-// Lot envoyé par le favori de l'équipe, de Kyara vers /admin/kyara/recevoir#<lot> : « v1. » + base64url(JSON),
-// ou « v1z. » + base64url(deflate-raw(JSON)). Le fragment d'une URL ne part vers aucun serveur : la page de
+// Lot envoyé par le favori de l'équipe, de Kyara vers /admin/kyara/recevoir#<lot> : « v2. » + base64url(JSON),
+// ou « v2z. » + base64url(deflate-raw(JSON)). Le fragment d'une URL ne part vers aucun serveur : la page de
 // réception le lit, l'efface et l'envoie à l'action. Tout est revérifié ici, bornes comprises, et la donnée
-// n'est de toute façon versée qu'après la vérification du code de la demande et du compte Discord.
+// n'est de toute façon versée qu'après la vérification de la clé du membre de l'équipe et du compte Discord.
 //
-// JSON : { v: 1, b: version du favori, k: uuid du profil lu, n: code de la demande (#kiraku=…), p: pseudo Kyara,
+// JSON : { v: 2, b: version du favori, k: uuid du profil lu, s: clé du favori du membre de l'équipe, p: pseudo Kyara,
 //          a: avatar Kyara, r: lu le (ISO), t: total annoncé par Kyara ou null, c: [[anilistId, quantité, code]] }
+// v1 (code par demande, #kiraku=…) n'est plus accepté : PAYLOAD_VERSION, il faut régénérer son favori.
 
 export const KYARA_PAYLOAD_LIMITS = { fragmentChars: 700_000, inflatedBytes: 2_000_000, entries: 20_000 } as const;
-/** Code d'une demande : 32 octets en base64url. */
-export const KYARA_NONCE_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+/** Clé du favori d'un membre de l'équipe : 32 octets en base64url. */
+export const KYARA_STAFF_KEY_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
 const entrySchema = z.tuple([z.number().int().min(1).max(2_147_483_647), z.number().int().min(1).max(100_000), z.enum(KYARA_CODES)]);
 
 const payloadSchema = z
   .object({
-    v: z.literal(1),
+    v: z.literal(KYARA_PAYLOAD_VERSION),
     b: z.number().int().min(1).max(10_000),
     k: z.string().refine(isKyaraUserId),
-    n: z.string().regex(KYARA_NONCE_PATTERN),
+    s: z.string().regex(KYARA_STAFF_KEY_PATTERN),
     p: z.string().max(200).nullable(),
     a: z.string().max(500).nullable(),
     r: z.string().datetime(),
@@ -36,7 +37,8 @@ export type KyaraPayloadJson = z.input<typeof payloadSchema>;
 export type KyaraPayload = {
   build: number;
   kyaraUserId: string;
-  nonce: string;
+  /** Clé du favori qui a lu la collection (vérifiée contre KyaraStaffKey). */
+  key: string;
   pseudo: string | null;
   avatarUrl: string | null;
   readAt: Date;
@@ -101,7 +103,7 @@ export function toBase64Url(bytes: Uint8Array): string {
 /** Encodage du lot (tests et variante console du favori, qui fait la même chose en ligne). */
 export function encodeKyaraPayload(json: KyaraPayloadJson, deflateRaw?: (bytes: Uint8Array) => Uint8Array): string {
   const bytes = new TextEncoder().encode(JSON.stringify(json));
-  return deflateRaw ? `v1z.${toBase64Url(deflateRaw(bytes))}` : `v1.${toBase64Url(bytes)}`;
+  return deflateRaw ? `v2z.${toBase64Url(deflateRaw(bytes))}` : `v2.${toBase64Url(bytes)}`;
 }
 
 export function decodeKyaraFragment(
@@ -112,7 +114,7 @@ export function decodeKyaraFragment(
   if (raw.length > KYARA_PAYLOAD_LIMITS.fragmentChars) return { ok: false, error: "PAYLOAD_TOO_LARGE" };
   const m = /^v(\d{1,3})(z?)\.([A-Za-z0-9_-]+)$/.exec(raw);
   if (!m) return { ok: false, error: "PAYLOAD_INVALID" };
-  if (m[1] !== "1") return { ok: false, error: "PAYLOAD_VERSION" };
+  if (Number(m[1]) !== KYARA_PAYLOAD_VERSION) return { ok: false, error: "PAYLOAD_VERSION" };
 
   let bytes: Uint8Array;
   try {
@@ -150,7 +152,7 @@ export function decodeKyaraFragment(
     payload: {
       build: data.b,
       kyaraUserId: data.k.toLowerCase(),
-      nonce: data.n,
+      key: data.s,
       pseudo: cleanPseudo(data.p),
       avatarUrl: cleanAvatar(data.a),
       readAt: new Date(data.r),

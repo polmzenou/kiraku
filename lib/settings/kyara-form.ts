@@ -10,7 +10,6 @@ export const KYARA_FORM_KEYS = [
   "kyaraImport.staffProfileUrl",
   "kyaraImport.zeniByRarity",
   "kyaraImport.zeniCap",
-  "kyaraImport.nonceMinutes",
   "kyaraImport.retentionDays",
 ] as const satisfies readonly SettingKey[];
 

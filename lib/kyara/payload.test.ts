@@ -12,16 +12,16 @@ const inflate: InflateRaw = (bytes, max) => {
 };
 const deflate = (bytes: Uint8Array) => new Uint8Array(deflateRawSync(bytes));
 
-const NONCE = "a".repeat(43);
+const KEY = "a".repeat(43);
 const ID = "2af84af1-f619-45a3-bc8b-7072d0a8fd10";
 const AVATAR = "https://cdn.discordapp.com/avatars/80351110224678912/8342729096ea3675442027381ff50dfe.webp?size=128";
 
 function json(p: Partial<KyaraPayloadJson> = {}): KyaraPayloadJson {
   return {
-    v: 1,
-    b: 1,
+    v: 2,
+    b: 2,
     k: ID,
-    n: NONCE,
+    s: KEY,
     p: "Tristan",
     a: AVATAR,
     r: "2026-11-22T14:00:00.000Z",
@@ -41,7 +41,7 @@ describe("lot du favori de l'équipe", () => {
       const res = decodeKyaraFragment(fragment, inflate);
       expect(res.ok).toBe(true);
       if (!res.ok) continue;
-      expect(res.payload).toMatchObject({ build: 1, kyaraUserId: ID, nonce: NONCE, pseudo: "Tristan", avatarUrl: AVATAR, total: 3, copies: 4 });
+      expect(res.payload).toMatchObject({ build: 2, kyaraUserId: ID, key: KEY, pseudo: "Tristan", avatarUrl: AVATAR, total: 3, copies: 4 });
       expect(res.payload.entries.map((e) => e.anilistId)).toEqual([5, 40, 127691]);
       expect(res.payload.readAt.toISOString()).toBe("2026-11-22T14:00:00.000Z");
     }
@@ -60,23 +60,25 @@ describe("lot du favori de l'équipe", () => {
     expect(empty.ok && empty.payload).toMatchObject({ pseudo: null, avatarUrl: null });
   });
 
-  it("refuse une version inconnue, un lot abîmé ou une clé de trop", () => {
-    expect(decodeKyaraFragment("v2.e30", inflate)).toEqual({ ok: false, error: "PAYLOAD_VERSION" });
+  it("refuse une version inconnue ou ancienne, un lot abîmé ou une clé de trop", () => {
+    expect(decodeKyaraFragment("v3.e30", inflate)).toEqual({ ok: false, error: "PAYLOAD_VERSION" });
+    // Ancien favori (code par demande) : il faut régénérer son favori
+    expect(decodeKyaraFragment(`v1.${toBase64Url(new TextEncoder().encode(JSON.stringify({ ...json(), v: 1 })))}`, inflate)).toEqual({ ok: false, error: "PAYLOAD_VERSION" });
     expect(decodeKyaraFragment("bonjour", inflate)).toEqual({ ok: false, error: "PAYLOAD_INVALID" });
-    expect(decodeKyaraFragment("v1z.AAAA", inflate)).toEqual({ ok: false, error: "PAYLOAD_INVALID" });
-    expect(decodeKyaraFragment(`v1.${toBase64Url(new Uint8Array([0xff, 0xfe]))}`, inflate)).toEqual({ ok: false, error: "PAYLOAD_INVALID" });
+    expect(decodeKyaraFragment("v2z.AAAA", inflate)).toEqual({ ok: false, error: "PAYLOAD_INVALID" });
+    expect(decodeKyaraFragment(`v2.${toBase64Url(new Uint8Array([0xff, 0xfe]))}`, inflate)).toEqual({ ok: false, error: "PAYLOAD_INVALID" });
     const extra = { ...json(), x: 1 } as unknown as KyaraPayloadJson;
     expect(decodeKyaraFragment(encodeKyaraPayload(extra), inflate)).toEqual({ ok: false, error: "PAYLOAD_INVALID" });
-    for (const bad of [{ k: "pas-un-uuid" }, { n: "court" }, { c: [[40, 0, "M"]] }, { c: [[40, 1, "X"]] }, { c: [[-1, 1, "M"]] }, { r: "hier" }] as Partial<KyaraPayloadJson>[]) {
+    for (const bad of [{ k: "pas-un-uuid" }, { s: "court" }, { s: "a".repeat(42) + "=" }, { c: [[40, 0, "M"]] }, { c: [[40, 1, "X"]] }, { c: [[-1, 1, "M"]] }, { r: "hier" }] as Partial<KyaraPayloadJson>[]) {
       expect(decodeKyaraFragment(encodeKyaraPayload(json(bad)), inflate), JSON.stringify(bad)).toEqual({ ok: false, error: "PAYLOAD_INVALID" });
     }
   });
 
   it("borne la taille : fragment, nombre d'entrées et bombe de décompression", () => {
-    expect(decodeKyaraFragment(`v1.${"A".repeat(KYARA_PAYLOAD_LIMITS.fragmentChars + 1)}`, inflate)).toEqual({ ok: false, error: "PAYLOAD_TOO_LARGE" });
+    expect(decodeKyaraFragment(`v2.${"A".repeat(KYARA_PAYLOAD_LIMITS.fragmentChars + 1)}`, inflate)).toEqual({ ok: false, error: "PAYLOAD_TOO_LARGE" });
     const many = json({ c: Array.from({ length: KYARA_PAYLOAD_LIMITS.entries + 1 }, (_, i) => [i + 1, 1, "C"] as [number, number, "C"]) });
     expect(decodeKyaraFragment(encodeKyaraPayload(many, deflate), inflate).ok).toBe(false);
-    const bomb = `v1z.${toBase64Url(deflate(new Uint8Array(KYARA_PAYLOAD_LIMITS.inflatedBytes + 10).fill(32)))}`;
+    const bomb = `v2z.${toBase64Url(deflate(new Uint8Array(KYARA_PAYLOAD_LIMITS.inflatedBytes + 10).fill(32)))}`;
     expect(bomb.length).toBeLessThan(10_000);
     expect(decodeKyaraFragment(bomb, inflate)).toEqual({ ok: false, error: "PAYLOAD_TOO_LARGE" });
   });

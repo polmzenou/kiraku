@@ -1,22 +1,23 @@
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { KyaraBookmarklet } from "@/components/admin/kyara/KyaraBookmarklet";
-import { KyaraProcessButton } from "@/components/admin/kyara/KyaraProcessButton";
 import { KyaraImportSettingsForm } from "@/components/admin/KyaraImportSettingsForm";
 import { ReadOnly } from "@/components/admin/ReadOnly";
 import { SettingLogList } from "@/components/admin/SettingLogList";
 import { Link } from "@/i18n/navigation";
 import { canProcessKyaraImports } from "@/lib/admin/roles";
-import { bookmarkletHref, bookmarkletSource, BOOKMARKLET_BUILD } from "@/lib/kyara/bookmarklet";
+import type { BookmarkletTexts } from "@/lib/kyara/bookmarklet";
+import { isKyaraReviewReason } from "@/lib/kyara/codes";
 import { kyaraProfileUrl } from "@/lib/kyara/profile-url";
 import { KYARA_FORM_KEYS, type KyaraSettings } from "@/lib/settings/kyara-form";
 import { recentSettingLogs, requireAdminView } from "@/server/admin";
 import { appUrl } from "@/server/env";
-import { getKyaraRules, kyaraAdminOverview, kyaraQueue, QUEUE_TABS, type QueueTab } from "@/server/kyara/queries";
+import { getKyaraRules, kyaraAdminOverview, kyaraQueue, QUEUE_TABS, staffKeyIssuedAt, type QueueTab } from "@/server/kyara/queries";
 import { getSetting } from "@/server/settings";
 
 /**
- * Import Kyara (étape 17) : état de la sortie, file des demandes (toute l'équipe la traite), favori à installer et
- * réglages (admin seul ; lecture seule pour le DEV).
+ * Import Kyara (étape 17) : état de la sortie, file des demandes (les lectures sûres sont versées dès la réception,
+ * les douteuses attendent « à vérifier »), favori de chaque membre de l'équipe et réglages (admin seul ; lecture
+ * seule pour le DEV).
  */
 export default async function AdminKyaraPage({ searchParams }: PageProps<"/[locale]/admin/kyara">) {
   const { user, readOnly } = await requireAdminView();
@@ -24,7 +25,7 @@ export default async function AdminKyaraPage({ searchParams }: PageProps<"/[loca
   const sp = await searchParams;
   const raw = Array.isArray(sp.onglet) ? sp.onglet[0] : sp.onglet;
   const tab: QueueTab = (QUEUE_TABS as readonly string[]).includes(raw ?? "") ? (raw as QueueTab) : "PENDING";
-  const [t, tBookmarklet, format, locale, values, rules, overview, logs, queue] = await Promise.all([
+  const [t, tBookmarklet, format, locale, values, rules, overview, logs, queue, keyIssuedAt] = await Promise.all([
     getTranslations("admin.kyara"),
     getTranslations("admin.kyara.bookmarklet.texts"),
     getFormatter(),
@@ -34,12 +35,13 @@ export default async function AdminKyaraPage({ searchParams }: PageProps<"/[loca
     kyaraAdminOverview(),
     recentSettingLogs(["kyaraImport."]),
     kyaraQueue(tab),
+    staffKeyIssuedAt(user.id),
   ]);
   const canProcess = canProcessKyaraImports(user.role);
   const receiveUrl = `${appUrl()}${locale === "fr" ? "" : `/${locale}`}/admin/kyara/recevoir`;
   // Textes bruts : « {n} » et « {e} » sont remplis par le favori lui-même, sur kyara.games
-  const template = (key: "wrongPage" | "noToken" | "reading" | "hidden" | "failed" | "copy") => String(tBookmarklet.raw(key));
-  const texts = {
+  const template = (key: keyof BookmarkletTexts) => String(tBookmarklet.raw(key));
+  const texts: BookmarkletTexts = {
     wrongPage: template("wrongPage"),
     noToken: template("noToken"),
     reading: template("reading"),
@@ -98,6 +100,7 @@ export default async function AdminKyaraPage({ searchParams }: PageProps<"/[loca
         <h3 id="kyara-queue" className="font-title text-lg font-bold">
           {t("queue.title")}
         </h3>
+        {tab === "PENDING" && <p className="max-w-prose text-sm text-text-muted">{t("queue.pendingHelp")}</p>}
         <nav aria-label={t("queue.tabs")} className="flex gap-1 overflow-x-auto border-b border-border">
           {QUEUE_TABS.map((key) => (
             <Link
@@ -130,16 +133,17 @@ export default async function AdminKyaraPage({ searchParams }: PageProps<"/[loca
                     {t("queue.requested", { date: format.relativeTime(row.requestedAt, now) })}
                     {row.user && ` · ${t("queue.accountAge", { date: format.relativeTime(row.user.createdAt, now) })}`}
                     {row.snapshotCards !== null && ` · ${t("queue.cards", { count: row.snapshotCards })}`}
-                    {row.discordVerified === false && ` · ${t("queue.noDiscordId")}`}
+                    {tab === "READY" && isKyaraReviewReason(row.reviewReason) && ` · ${t(`reviewReasons.${row.reviewReason}`)}`}
                     {row.grantedCards !== null && ` · ${t("queue.granted", { cards: row.grantedCards, zeni: row.grantedZeni ?? 0 })}`}
                     {row.rejectCode && ` · ${t(`rejectCodes.${row.rejectCode as "OTHER"}`)}`}
                   </span>
-                  <a href={kyaraProfileUrl(row.kyaraUserId)} target="_blank" rel="noopener noreferrer" className="w-fit text-xs text-ai underline underline-offset-4">
-                    {t("queue.kyaraProfile")}
-                  </a>
+                  {row.kyaraUserId && (
+                    <a href={kyaraProfileUrl(row.kyaraUserId)} target="_blank" rel="noopener noreferrer" className="w-fit text-xs text-ai underline underline-offset-4">
+                      {t("queue.kyaraProfile")}
+                    </a>
+                  )}
                 </div>
                 <div className="flex shrink-0 flex-wrap items-start gap-2">
-                  {tab === "PENDING" && canProcess && row.user?.id !== user.id && <KyaraProcessButton importId={row.id} />}
                   <Link href={`/admin/kyara/${row.id}`} className="inline-flex min-h-11 items-center text-sm font-bold underline underline-offset-4">
                     {t("queue.open")}
                   </Link>
@@ -151,11 +155,7 @@ export default async function AdminKyaraPage({ searchParams }: PageProps<"/[loca
       </section>
 
       {canProcess && (
-        <KyaraBookmarklet
-          href={bookmarkletHref(bookmarkletSource({ receiveUrl, texts, mode: "navigate" }))}
-          console={bookmarkletSource({ receiveUrl, texts, mode: "print" })}
-          build={BOOKMARKLET_BUILD}
-        />
+        <KyaraBookmarklet receiveUrl={receiveUrl} texts={texts} issuedAt={keyIssuedAt?.toISOString() ?? null} />
       )}
 
       <section className="flex flex-col gap-3" aria-labelledby="kyara-settings">

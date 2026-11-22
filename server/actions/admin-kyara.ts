@@ -2,7 +2,7 @@
 
 import { refresh, updateTag } from "next/cache";
 import { canProcessKyaraImports } from "@/lib/admin/roles";
-import { KYARA_REJECT_CODES } from "@/lib/kyara/codes";
+import { KYARA_REJECT_CODES, type KyaraReviewReason } from "@/lib/kyara/codes";
 import { KYARA_PAYLOAD_LIMITS, type KyaraDecodeError } from "@/lib/kyara/payload";
 import { z } from "@/lib/zod";
 import { getStaff } from "../admin";
@@ -10,8 +10,8 @@ import { LEADERBOARD_TAG } from "../collection/leaderboard";
 import { prisma } from "../db";
 import {
   applyImportWith,
+  issueStaffKeyWith,
   KyaraImportError,
-  prepareProcessingWith,
   receivePayloadWith,
   rejectImportWith,
   reopenImportWith,
@@ -26,13 +26,16 @@ import { rateLimit } from "../ratelimit";
 // File de l'import Kyara : toute l'équipe (ADMIN et DEV) la traite, exception explicite au « seul l'admin écrit »
 // (lib/admin/roles.ts, vérifiée par lib/admin/dev-access.test.ts). Ordre : équipe → Zod → rate limit, puis tout est
 // relu sous verrou (server/kyara/import-core.ts). Chaque décision est écrite dans le journal admin.
+// Chaque membre a son favori, avec sa clé : un lot n'est accepté que s'il vient du favori du membre connecté.
 
 export type KyaraStaffError = "FORBIDDEN" | "INVALID" | "RATE_LIMITED" | KyaraDecodeError | KyaraErrorCode;
 type Fail = { ok: false; error: KyaraStaffError };
 
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
 const importSchema = z.object({ importId: id }).strict();
-const receiveSchema = z.object({ fragment: z.string().min(1).max(KYARA_PAYLOAD_LIMITS.fragmentChars + 1), confirmWithoutDiscord: z.boolean() }).strict();
+const receiveSchema = z
+  .object({ fragment: z.string().min(1).max(KYARA_PAYLOAD_LIMITS.fragmentChars + 1), importId: id.nullable(), confirmWithoutDiscord: z.boolean() })
+  .strict();
 const applySchema = z
   .object({ importId: id, expectedCards: z.number().int().min(0).max(100_000), expectedZeni: z.number().int().min(0).max(100_000_000) })
   .strict();
@@ -55,46 +58,68 @@ function failure(scope: string, e: unknown): Fail {
 
 const limited = async (userId: string, bucket: string, limit: number) => !(await rateLimit(`kyara-${bucket}:${userId}`, { limit, windowSeconds: 60 })).success;
 
-/** Lien de traitement : le profil Kyara du joueur avec un code à usage unique, propre à ce membre de l'équipe. */
-export async function prepareKyaraProcessingAction(input: unknown): Promise<{ ok: true; url: string; expiresAt: string } | Fail> {
+/**
+ * Clé du favori de ce membre, montrée une seule fois (seule son empreinte est gardée) ; la page en fait le favori.
+ * En générer une nouvelle désactive l'ancien favori.
+ */
+export async function issueKyaraStaffKeyAction(): Promise<{ ok: true; key: string } | Fail> {
   const user = await staff();
   if (!user) return { ok: false, error: "FORBIDDEN" };
-  const parsed = importSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "INVALID" };
-  if (await limited(user.id, "prepare", 60)) return { ok: false, error: "RATE_LIMITED" };
+  if (await limited(user.id, "key", 5)) return { ok: false, error: "RATE_LIMITED" };
   try {
-    const rules = await getKyaraRules();
-    const res = await prepareProcessingWith(prisma, { staffId: user.id, importId: parsed.data.importId, nonceMinutes: rules.nonceMinutes, now: new Date() });
-    return { ok: true, url: res.url, expiresAt: res.expiresAt.toISOString() };
+    return { ok: true, key: await issueStaffKeyWith(prisma, { staffId: user.id, now: new Date() }) };
   } catch (e) {
-    return failure("préparation", e);
+    return failure("clé du favori", e);
   }
 }
 
-/** Lot du favori (fragment d'URL de la page de réception) : décodé, borné, puis vérifié sous verrou. */
-export async function receiveKyaraPayloadAction(input: unknown): Promise<{ ok: true; importId: string; discordVerified: boolean } | Fail> {
+export type KyaraReceiveOk =
+  | { ok: true; status: "DONE"; importId: string; player: string | null; cards: number; zeni: number }
+  | { ok: true; status: "READY"; importId: string; player: string | null; reason: KyaraReviewReason };
+/** Profil lu, rendu avec un refus pour aider l'équipe (pseudo Kyara à comparer, demande à choisir à la main). */
+export type KyaraReceiveFail = Fail & { profile?: { pseudo: string | null; kyaraUserId: string } };
+
+/**
+ * Lot du favori (fragment d'URL de la page de réception) : décodé, borné, puis vérifié sous verrou. Lecture sûre :
+ * versée tout de suite ; lecture douteuse : gardée « à vérifier ». `importId` : demande choisie par l'équipe quand
+ * l'avatar Kyara ne montre pas d'ID Discord (avec `confirmWithoutDiscord`).
+ */
+export async function receiveKyaraPayloadAction(input: unknown): Promise<KyaraReceiveOk | KyaraReceiveFail> {
   const user = await staff();
   if (!user) return { ok: false, error: "FORBIDDEN" };
   const parsed = receiveSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
-  if (await limited(user.id, "receive", 20)) return { ok: false, error: "RATE_LIMITED" };
+  if (await limited(user.id, "receive", 30)) return { ok: false, error: "RATE_LIMITED" };
   const decoded = decodeFragment(parsed.data.fragment);
   if (!decoded.ok) return { ok: false, error: decoded.error };
+  const profile = { pseudo: decoded.payload.pseudo, kyaraUserId: decoded.payload.kyaraUserId };
   try {
-    const res = await receivePayloadWith(prisma, {
-      staffId: user.id,
-      payload: decoded.payload,
-      confirmWithoutDiscord: parsed.data.confirmWithoutDiscord,
-      now: new Date(),
-    });
+    const rules = await getKyaraRules();
+    const res = await receivePayloadWith(
+      prisma,
+      {
+        staffId: user.id,
+        payload: decoded.payload,
+        importId: parsed.data.importId,
+        confirmWithoutDiscord: parsed.data.confirmWithoutDiscord,
+        staffKyaraUserId: rules.staffKyaraUserId,
+        now: new Date(),
+      },
+      pushLater,
+    );
+    const player = (await prisma.user.findUnique({ where: { id: res.userId }, select: { username: true } }))?.username ?? null;
+    // Les cartes versées comptent au classement des collectionneurs
+    if (res.status === "DONE") updateTag(LEADERBOARD_TAG);
     refresh();
-    return { ok: true, ...res };
+    return res.status === "DONE"
+      ? { ok: true, status: "DONE", importId: res.importId, player, cards: res.cards, zeni: res.zeni }
+      : { ok: true, status: "READY", importId: res.importId, player, reason: res.reason };
   } catch (e) {
-    return failure("réception", e);
+    return { ...failure("réception", e), profile };
   }
 }
 
-/** Versement, avec les totaux de l'aperçu validé : refusé (STALE) si la collection du joueur a changé depuis. */
+/** Versement d'une lecture « à vérifier », avec les totaux de l'aperçu validé : refusé (STALE) s'ils ont changé. */
 export async function applyKyaraImportAction(input: unknown): Promise<{ ok: true; cards: number; zeni: number } | Fail> {
   const user = await staff();
   if (!user) return { ok: false, error: "FORBIDDEN" };

@@ -36,7 +36,8 @@ const ACTIVE = ["PENDING", "READY", "DONE"] as const;
 
 export type KyaraRequestView = {
   id: string;
-  kyaraUserId: string;
+  /** Connu une fois la collection lue par l'équipe. */
+  kyaraUserId: string | null;
   status: KyaraImportStatus;
   requestedAt: Date;
   rejectNote: string | null;
@@ -168,8 +169,8 @@ export async function kyaraQueue(tab: QueueTab, take = 50) {
       receivedAt: true,
       appliedAt: true,
       rejectCode: true,
+      reviewReason: true,
       snapshotCards: true,
-      discordVerified: true,
       grantedCards: true,
       grantedZeni: true,
       reopenCount: true,
@@ -187,10 +188,26 @@ export async function kyaraImportDetail(importId: string) {
   if (!row) return null;
   const [preview, others] = await Promise.all([
     row.status === "READY" ? previewImportWith(prisma, row.id) : null,
-    // Autres demandes sur ce profil Kyara (une adresse collée par plusieurs comptes)
-    prisma.kyaraImport.count({ where: { kyaraUserId: row.kyaraUserId, id: { not: row.id }, status: { in: ["PENDING", "READY", "DONE"] } } }),
+    // Autres demandes où ce profil Kyara a été lu (refusées comprises)
+    row.kyaraUserId === null ? 0 : prisma.kyaraImport.count({ where: { kyaraUserId: row.kyaraUserId, id: { not: row.id } } }),
   ]);
   return { row, preview: preview?.plan ?? null, sameProfile: others };
+}
+
+/** Date de la clé du favori de ce membre de l'équipe, ou null s'il n'en a pas encore. */
+export async function staffKeyIssuedAt(userId: string): Promise<Date | null> {
+  return (await prisma.kyaraStaffKey.findUnique({ where: { userId }, select: { createdAt: true } }))?.createdAt ?? null;
+}
+
+/** Demandes en attente, à choisir à la main quand l'avatar Kyara ne montre pas d'ID Discord (jamais la sienne). */
+export async function pendingKyaraRequests(staffId: string, take = 200) {
+  const rows = await prisma.kyaraImport.findMany({
+    where: { status: "PENDING", userId: { not: staffId } },
+    orderBy: { requestedAt: "asc" },
+    take,
+    select: { id: true, requestedAt: true, user: { select: { username: true } } },
+  });
+  return rows.flatMap((r) => (r.user ? [{ id: r.id, requestedAt: r.requestedAt, username: r.user.username }] : []));
 }
 
 /** Tableau de bord de /admin/kyara : demandes par statut et plus ancienne demande en attente. */

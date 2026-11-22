@@ -13,7 +13,7 @@
 - **Security**: IP address, random device identifier (technical cookie) and technical connection data. *Purpose*: limit abuse (mass account creation, bots, cheating) and enforce bans. *Legal basis*: legitimate interest in protecting the service.
 - **Performance measurement**: page load and response times (Vercel Speed Insights), without cookies or identifiers. *Legal basis*: legitimate interest in keeping the site fast.
 - **Push notifications** (if you turn them on): your browser's subscription address. *Legal basis*: your consent, which you can withdraw at any time from your Account.
-- **Kyara import** (if you request it): the identifier of your public Kyara profile, the identifier of the Discord account linked to Kiraku, then, read by the team from the Kiraku account added as a friend on Kyara, your Kyara nickname and avatar (which contains your Discord account identifier) and the list of your characters with their quantity and rarity. *Purpose*: check that the Kyara profile is yours and grant your cards once. *Legal basis*: performance of the terms of use. Kiraku is not affiliated with Kyara and sends it nothing.
+- **Kyara import** (if you request it): the identifier of the Discord account linked to Kiraku, then, read by the team from the Kiraku account added as a friend on Kyara, the identifier of your Kyara profile, your Kyara nickname and avatar (which contains your Discord account identifier) and the list of your characters with their quantity and rarity. *Purpose*: check that the Kyara profile is yours and grant your cards once. *Legal basis*: performance of the terms of use. Kiraku is not affiliated with Kyara and sends it nothing.
 
 Kiraku sells no data, shows no advertising and does no profiling.
 
