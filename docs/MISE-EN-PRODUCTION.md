@@ -133,6 +133,29 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
   pages sauf les textes légaux et `/connexion` ; un compte de l'équipe sur le même navigateur passe ; « Lever » rend
   l'accès.
 
+## Lancement de l'import Kyara
+
+**Avant :**
+
+- [ ] Migration `20261122160000_kyara_import` appliquée par `npm run db:deploy` **avant** le redémarrage PM2. Elle
+  reprend `User.registeredAt` des comptes déjà inscrits (`COALESCE(discordLinkedAt, createdAt)`).
+- [ ] Le test des routes de Kyara (`docs/KYARA-IMPORT.md`) est fait avec deux vrais comptes, et le favori recalé si
+  besoin (`BOOKMARKLET_BUILD` augmenté).
+- [ ] Un compte Kyara « Kiraku » existe, lié à un compte Discord de l'équipe, et chaque membre qui traite la file
+  peut s'y connecter.
+- [ ] `/admin/kyara` : profil Kyara du compte Kiraku renseigné, barème et plafond relus, favori installé (« Copier le
+  favori ») chez chaque membre qui traite la file.
+- [ ] Nouvelles versions de la politique de confidentialité et des CGU publiées depuis `/admin/legal`.
+
+**Lancement :**
+
+- [ ] Essai complet en prod avec l'import coupé : un membre de l'équipe demande l'import de son propre compte Kyara
+  (l'équipe peut demander même coupé), un autre membre le traite et le verse.
+- [ ] Date de sortie posée (pas avant le déploiement), puis interrupteur allumé. Les comptes déjà inscrits ont
+  `kyaraImport.windowDays` jours à partir de cette date.
+- [ ] Annonce sur le Discord : la page `/compte/import-kyara` et les deux étapes sur Kyara (ami, « Montrer ma
+  collection »).
+
 ## Contrôles techniques
 
 - [ ] `npm run lint`, `npm run typecheck`, `npm test`, `npm run audit:actions` passent.

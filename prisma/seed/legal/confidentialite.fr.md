@@ -13,6 +13,7 @@
 - **Sécurité** : adresse IP, identifiant aléatoire de l'appareil (cookie technique) et données techniques de connexion. *Finalité* : limiter les abus (création de comptes en série, robots, triche) et faire respecter un bannissement. *Base légale* : intérêt légitime à protéger le service.
 - **Mesure des performances** : temps de chargement et de réponse des pages (Vercel Speed Insights), sans cookie ni identifiant. *Base légale* : intérêt légitime à garder le site rapide.
 - **Notifications push** (si tu les actives) : adresse d'abonnement de ton navigateur. *Base légale* : ton consentement, retirable à tout moment depuis le Compte.
+- **Import Kyara** (si tu le demandes) : identifiant de ton profil public Kyara, l'identifiant de ton compte Discord lié à Kiraku, puis, lus par l'équipe depuis le compte Kiraku ajouté en ami sur Kyara, ton pseudo et ton avatar Kyara (qui contient l'identifiant de ton compte Discord) et la liste de tes personnages avec leur quantité et leur rareté. *Finalité* : vérifier que le profil Kyara est le tien et verser tes cartes une seule fois. *Base légale* : exécution des conditions d'utilisation. Kiraku n'est pas affilié à Kyara et ne lui transmet rien.
 
 Kiraku ne vend aucune donnée, n'affiche aucune publicité et ne fait aucun profilage.
 
@@ -23,6 +24,7 @@ Kiraku ne vend aucune donnée, n'affiche aucune publicité et ne fait aucun prof
 - Notifications : 30 jours.
 - Adresse IP et identifiant d'appareil relevés contre les comptes en série : 90 jours après ta dernière visite. L'adresse IP passe aussi quelques heures au plus dans le service de limitation ; journaux d'hébergement selon la durée de Vercel.
 - En cas de bannissement (triche, comptes en série) : l'adresse IP (ou son préfixe, pour une adresse IPv6) et l'identifiant d'appareil concernés sont gardés tant que le bannissement dure, même après la suppression du compte, pour qu'il ne soit pas contourné. Un bannissement posé automatiquement expire au bout de 30 jours.
+- Import Kyara : la liste de tes personnages, ton pseudo et ton avatar Kyara sont effacés 90 jours après la clôture de ta demande. L'identifiant de ton profil Kyara, celui de ton compte Discord et les totaux versés sont gardés, même après la suppression du compte, pour qu'un même profil ou un même compte Discord ne serve qu'une fois.
 - Le journal des Zeni et les cartes d'un compte supprimé sont gardés **sans lien avec une personne**, pour l'intégrité de l'économie du jeu.
 
 ## Sous-traitants

@@ -13,6 +13,7 @@
 - **Security**: IP address, random device identifier (technical cookie) and technical connection data. *Purpose*: limit abuse (mass account creation, bots, cheating) and enforce bans. *Legal basis*: legitimate interest in protecting the service.
 - **Performance measurement**: page load and response times (Vercel Speed Insights), without cookies or identifiers. *Legal basis*: legitimate interest in keeping the site fast.
 - **Push notifications** (if you turn them on): your browser's subscription address. *Legal basis*: your consent, which you can withdraw at any time from your Account.
+- **Kyara import** (if you request it): the identifier of your public Kyara profile, the identifier of the Discord account linked to Kiraku, then, read by the team from the Kiraku account added as a friend on Kyara, your Kyara nickname and avatar (which contains your Discord account identifier) and the list of your characters with their quantity and rarity. *Purpose*: check that the Kyara profile is yours and grant your cards once. *Legal basis*: performance of the terms of use. Kiraku is not affiliated with Kyara and sends it nothing.
 
 Kiraku sells no data, shows no advertising and does no profiling.
 
@@ -23,6 +24,7 @@ Kiraku sells no data, shows no advertising and does no profiling.
 - Notifications: 30 days.
 - IP address and device identifier recorded against mass account creation: 90 days after your last visit. The IP address also stays a few hours at most in the rate-limiting service; hosting logs according to Vercel's retention.
 - If you are banned (cheating, mass account creation): the IP address (or its prefix, for an IPv6 address) and the device identifier concerned are kept as long as the ban lasts, even after the account is deleted, so that it can't be bypassed. A ban set automatically expires after 30 days.
+- Kyara import: the list of your characters and your Kyara nickname and avatar are erased 90 days after your request closes. The identifier of your Kyara profile, of your Discord account and the granted totals are kept, even after the account is deleted, so that a profile or a Discord account can only be used once.
 - The Zeni ledger and cards of a deleted account are kept **without any link to a person**, for the integrity of the game economy.
 
 ## Processors
