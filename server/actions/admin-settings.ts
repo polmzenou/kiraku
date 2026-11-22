@@ -38,6 +38,7 @@ import {
   type ShowcaseSettingKey,
 } from "@/lib/settings/showcase-form";
 import { CASINO_FORM_KEYS, casinoSettingsSchema, type CasinoFormKey } from "@/lib/settings/casino-form";
+import { KYARA_FORM_KEYS, kyaraSettingsSchema, type KyaraFormKey } from "@/lib/settings/kyara-form";
 import { changedSettingKeys, type SettingsOf } from "@/lib/settings/form";
 import { getAdmin } from "../admin";
 import { prisma } from "../db";
@@ -264,6 +265,11 @@ export async function updatePullFeedSettings(input: unknown): Promise<UpdateSett
 /** Casino : ouverture, garde-fous et règles du pile ou face (raretés jouables vérifiées contre le registre). */
 export async function updateCasinoSettings(input: unknown): Promise<UpdateSettingsResult<CasinoFormKey>> {
   return saveSettings(CASINO_FORM_KEYS, casinoSettingsSchema, input);
+}
+
+/** Import Kyara (/admin/kyara) : réservé à l'admin, comme tous les réglages (l'équipe entière traite la file). */
+export async function updateKyaraImportSettings(input: unknown): Promise<UpdateSettingsResult<KyaraFormKey>> {
+  return saveSettings(KYARA_FORM_KEYS, kyaraSettingsSchema, input);
 }
 
 export async function updateEventGaugeSettings(input: unknown): Promise<UpdateSettingsResult<EventGaugeSettingKey>> {

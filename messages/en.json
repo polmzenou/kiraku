@@ -1511,7 +1511,59 @@
       "casino": "Casino",
       "wrapped": "Wrapped",
       "prestige": "Prestige",
-      "multiAccounts": "Multi-accounts"
+      "multiAccounts": "Multi-accounts",
+      "kyara": "Kyara import"
+    },
+    "kyara": {
+      "title": "Kyara import",
+      "intro": "A player requests the import of their Kyara collection and adds the Kiraku account as a friend on Kyara. The team (admin and dev) reads the collection with the bookmarklet, then approves or declines. Our server never calls Kyara.",
+      "preview": "See the player page",
+      "status": {
+        "off": "Import off: no new requests (the queue can still be processed).",
+        "unconfigured": "Import on but not configured: players see “Coming soon”.",
+        "scheduled": "Launch planned on {date}.",
+        "open": "Import open since {date}."
+      },
+      "unconfiguredHelp": "Fill in the launch date and the Kyara profile address of the Kiraku account.",
+      "stats": {
+        "title": "Requests",
+        "pending": "Waiting",
+        "ready": "Read, to approve",
+        "done": "Granted",
+        "rejected": "Declined",
+        "cancelled": "Cancelled",
+        "oldest": "Oldest waiting request: {date}."
+      },
+      "settings": {
+        "title": "Settings",
+        "readOnly": "Read only: only the admin changes settings.",
+        "launchSection": "Launch",
+        "zeniSection": "Cards converted into Zeni",
+        "upkeepSection": "Processing links and retention",
+        "launchNow": "Launch now",
+        "clearDate": "Clear the date",
+        "invalid": "A setting is invalid: check the Kyara profile address and the limits.",
+        "codeLabel": "{code} · {rarity}",
+        "keys": {
+          "enabled": "Import on",
+          "launchAt": "Launch date",
+          "windowDays": "Days to make a request",
+          "staffProfileUrl": "Kyara profile of the Kiraku account",
+          "zeniByRarity": "Zeni per Kyara rarity",
+          "zeniCap": "Zeni cap per import",
+          "nonceMinutes": "Processing link lifetime (minutes)",
+          "retentionDays": "Read collections kept (days)"
+        },
+        "hints": {
+          "launchAt": "Accounts registered before this date get their window from it, new ones from their registration.",
+          "windowDays": "A single request, within this delay; a request made in time can be processed later.",
+          "staffProfileUrl": "Address of the “My public profile” button of the account players add as a friend.",
+          "zeniByRarity": "For a card missing from our catalog, not published, or rarer here than on Kyara. A card already owned is worth its recycling value.",
+          "zeniCap": "Maximum Zeni for one import; 0 = no conversion.",
+          "nonceMinutes": "The bookmarklet must run before the link expires.",
+          "retentionDays": "After a request closes: read collection, Kyara nickname and avatar erased. The locking ids remain."
+        }
+      }
     },
     "boosters": {
       "title": "Booster settings",

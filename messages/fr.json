@@ -1511,7 +1511,59 @@
       "casino": "Casino",
       "wrapped": "Wrapped",
       "prestige": "Prestige",
-      "multiAccounts": "Multi-comptes"
+      "multiAccounts": "Multi-comptes",
+      "kyara": "Import Kyara"
+    },
+    "kyara": {
+      "title": "Import Kyara",
+      "intro": "Un joueur demande l'import de sa collection Kyara et ajoute le compte Kiraku en ami sur Kyara. L'équipe (admin et dev) lit sa collection avec le favori, puis valide ou refuse. Notre serveur n'appelle jamais Kyara.",
+      "preview": "Voir la page du joueur",
+      "status": {
+        "off": "Import coupé : aucune nouvelle demande (la file reste traitable).",
+        "unconfigured": "Import allumé mais pas configuré : les joueurs voient « Bientôt ».",
+        "scheduled": "Sortie prévue le {date}.",
+        "open": "Import ouvert depuis le {date}."
+      },
+      "unconfiguredHelp": "Renseigne la date de sortie et l'adresse du profil Kyara du compte Kiraku.",
+      "stats": {
+        "title": "Demandes",
+        "pending": "En attente",
+        "ready": "Lues, à valider",
+        "done": "Versées",
+        "rejected": "Refusées",
+        "cancelled": "Annulées",
+        "oldest": "Plus ancienne demande en attente : {date}."
+      },
+      "settings": {
+        "title": "Réglages",
+        "readOnly": "Lecture seule : seul l'admin modifie les réglages.",
+        "launchSection": "Sortie",
+        "zeniSection": "Cartes converties en Zeni",
+        "upkeepSection": "Liens de traitement et conservation",
+        "launchNow": "Sortir maintenant",
+        "clearDate": "Effacer la date",
+        "invalid": "Un réglage est invalide : vérifie l'adresse du profil Kyara et les bornes.",
+        "codeLabel": "{code} · {rarity}",
+        "keys": {
+          "enabled": "Import allumé",
+          "launchAt": "Date de sortie",
+          "windowDays": "Jours pour faire sa demande",
+          "staffProfileUrl": "Profil Kyara du compte Kiraku",
+          "zeniByRarity": "Zeni par rareté Kyara",
+          "zeniCap": "Plafond de Zeni par import",
+          "nonceMinutes": "Durée d'un lien de traitement (minutes)",
+          "retentionDays": "Conservation des collections lues (jours)"
+        },
+        "hints": {
+          "launchAt": "Les comptes inscrits avant cette date ont leur fenêtre à partir d'elle, les nouveaux à partir de leur inscription.",
+          "windowDays": "Une seule demande, dans ce délai ; une demande faite à temps peut être traitée après.",
+          "staffProfileUrl": "Adresse du bouton « Mon profil public » du compte que les joueurs ajoutent en ami.",
+          "zeniByRarity": "Pour une carte absente de notre catalogue, non publiée ou plus rare chez nous que chez Kyara. Une carte déjà possédée vaut sa valeur de recyclage.",
+          "zeniCap": "Total maximum de Zeni pour un import ; 0 = aucune conversion.",
+          "nonceMinutes": "Le favori doit être lancé avant l'expiration du lien.",
+          "retentionDays": "Après la clôture d'une demande : collection lue, pseudo et avatar Kyara effacés. Les ids qui verrouillent restent."
+        }
+      }
     },
     "boosters": {
       "title": "Réglages des boosters",
