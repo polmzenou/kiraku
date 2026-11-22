@@ -1537,7 +1537,6 @@
       },
       "settings": {
         "title": "Settings",
-        "readOnly": "Read only: only the admin changes settings.",
         "launchSection": "Launch",
         "zeniSection": "Cards converted into Zeni",
         "upkeepSection": "Retention",

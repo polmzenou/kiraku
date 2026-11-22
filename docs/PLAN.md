@@ -1252,7 +1252,7 @@ Beaucoup de joueurs viennent de Kyara et veulent retrouver leurs cartes. Un impo
 **Parcours.**
 
 - Le joueur (compte non invité, lié à Discord) clique « Demander l'import » sur `/compte/import-kyara` (demande PENDING, rien à coller), ajoute le compte Kiraku en ami sur Kyara et lui montre sa collection.
-- Chaque membre de l'équipe (ADMIN ou DEV, `canProcessKyaraImports`) génère son favori dans `/admin/kyara` : il porte sa clé (32 octets, empreinte SHA-256 dans `KyaraStaffKey`, remplacée à chaque génération).
+- Toute l'équipe (ADMIN et DEV, `canProcessKyaraImports`) a la main sur l'import : file, décisions et réglages, interrupteur compris. Chaque membre génère son favori dans `/admin/kyara` : il porte sa clé (32 octets, empreinte SHA-256 dans `KyaraStaffKey`, remplacée à chaque génération).
 - Sur Kyara, connecté au compte Kiraku, il ouvre le profil d'un ami et clique le favori « Envoyer à Kiraku » (`lib/kyara/bookmarklet.ts`) : collection de l'ami, profil (avatar, donc ID Discord) et raretés, puis `/admin/kyara/recevoir#<lot>` (`lib/kyara/payload.ts`, `v2z` compressé, avec la clé). Le jeton Kyara ne quitte jamais kyara.games.
 - La page de réception efface le fragment et l'envoie à l'action : clé du membre connecté vérifiée, demande PENDING retrouvée par l'ID Discord de l'avatar, profil Kyara enregistré. Lecture sûre : versée dans la même transaction (DONE). Lecture douteuse (`reviewReason` : avatar sans ID Discord, rien de lu, moins de personnages que le total annoncé) : READY, « À vérifier », puis « Verser » après l'aperçu ou « Refuser » avec un motif. Avatar sans ID Discord : l'équipe choisit la demande et confirme.
 

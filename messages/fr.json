@@ -1537,7 +1537,6 @@
       },
       "settings": {
         "title": "Réglages",
-        "readOnly": "Lecture seule : seul l'admin modifie les réglages.",
         "launchSection": "Sortie",
         "zeniSection": "Cartes converties en Zeni",
         "upkeepSection": "Conservation",

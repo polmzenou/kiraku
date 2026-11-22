@@ -16,11 +16,11 @@ import { getSetting } from "@/server/settings";
 
 /**
  * Import Kyara (étape 17) : état de la sortie, file des demandes (les lectures sûres sont versées dès la réception,
- * les douteuses attendent « à vérifier »), favori de chaque membre de l'équipe et réglages (admin seul ; lecture
- * seule pour le DEV).
+ * les douteuses attendent « à vérifier »), favori de chaque membre de l'équipe et réglages. Toute l'équipe (ADMIN et
+ * DEV) a la main sur tout (canProcessKyaraImports).
  */
 export default async function AdminKyaraPage({ searchParams }: PageProps<"/[locale]/admin/kyara">) {
-  const { user, readOnly } = await requireAdminView();
+  const { user } = await requireAdminView();
   const now = new Date().getTime();
   const sp = await searchParams;
   const raw = Array.isArray(sp.onglet) ? sp.onglet[0] : sp.onglet;
@@ -162,8 +162,7 @@ export default async function AdminKyaraPage({ searchParams }: PageProps<"/[loca
         <h3 id="kyara-settings" className="font-title text-lg font-bold">
           {t("settings.title")}
         </h3>
-        {readOnly && <p className="text-sm text-text-muted">{t("settings.readOnly")}</p>}
-        <ReadOnly when={readOnly}>
+        <ReadOnly when={!canProcess}>
           <KyaraImportSettingsForm initial={settings} />
         </ReadOnly>
       </section>

@@ -6,8 +6,8 @@ export const STAFF_ROLES = ["ADMIN", "DEV"] as const;
 /**
  * Pages de l'admin ouvertes au DEV : le catalogue (brouillons), les bancs de test (rien n'est enregistré) et,
  * en lecture seule, le reste. Aucune n'est ouverte en écriture : réglages, interrupteurs de fonctionnalités et
- * données des joueurs restent l'affaire de l'admin. Les autres pages lui répondent 404. Seule exception : la file
- * de l'import Kyara, que toute l'équipe traite (canProcessKyaraImports) ; ses réglages restent à l'admin.
+ * données des joueurs restent l'affaire de l'admin. Les autres pages lui répondent 404. Seule exception : l'import
+ * Kyara, que toute l'équipe traite et règle (canProcessKyaraImports) : file, favori, décisions et réglages.
  */
 export const DEV_ADMIN_PAGES = [
   "/admin/catalogue",
@@ -45,8 +45,9 @@ export function isStaff(role: string | null | undefined): role is StaffRole {
 }
 
 /**
- * Import Kyara (étape 17) : toute l'équipe, ADMIN et DEV, lit les collections et valide ou refuse les demandes
- * (choix du 22/11, pour vider la file plus vite). Chaque décision est écrite dans le journal admin.
+ * Import Kyara (étape 17) : toute l'équipe, ADMIN et DEV, lit les collections, valide ou refuse les demandes
+ * (choix du 22/11, pour vider la file plus vite) et modifie les réglages de l'import, interrupteur compris (accès
+ * complet du DEV, demandé le 22/11). Chaque décision et chaque réglage sont écrits dans le journal admin.
  */
 export function canProcessKyaraImports(role: string | null | undefined): boolean {
   return isStaff(role);
