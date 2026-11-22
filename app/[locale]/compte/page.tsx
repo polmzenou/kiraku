@@ -29,6 +29,7 @@ import { discordEnabled, env, isProduction, mailEnabled } from "@/server/env";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { pushAvailable } from "@/server/push/send";
 import { getCasinoNav } from "@/server/casino/queries";
+import { kyaraTileVisible } from "@/server/kyara/queries";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
 
@@ -42,6 +43,7 @@ const ACCOUNT_TILES = [
   { key: "data", href: "/compte/donnees", kanji: "私" },
   { key: "social", href: "/social", kanji: "縁" },
   { key: "casino", href: "/casino", kanji: "賭" },
+  { key: "kyaraImport", href: "/compte/import-kyara", kanji: "越" },
 ] as const;
 
 export default async function AccountPage() {
@@ -59,15 +61,19 @@ export default async function AccountPage() {
     );
   }
 
-  const [rules, discordBonus, push, casino, expedition] = await Promise.all([
+  const [rules, discordBonus, push, casino, expedition, kyara] = await Promise.all([
     getBoosterRules(),
     getSetting("discord.linkBonusZeni"),
     pushAvailable(),
     getCasinoNav(),
     getSetting("expedition.enabled"),
+    kyaraTileVisible(user, new Date().getTime()),
   ]);
-  // Casino : tuile selon sa phase ; expéditions : tuile masquée tant que l'admin ne les allume pas
-  const tiles = ACCOUNT_TILES.filter((tile) => (tile.key !== "casino" || casino.visible) && (tile.key !== "expedition" || expedition));
+  // Casino : tuile selon sa phase ; expéditions : tuile masquée tant que l'admin ne les allume pas ; import Kyara :
+  // pendant la fenêtre du joueur, ou tant qu'il a une demande à suivre ou à relire
+  const tiles = ACCOUNT_TILES.filter(
+    (tile) => (tile.key !== "casino" || casino.visible) && (tile.key !== "expedition" || expedition) && (tile.key !== "kyaraImport" || kyara),
+  );
   // Même pastille que le menu : « Bientôt » au teaser, « Nouveau » après l'ouverture
   const casinoTag = casino.badge;
   const code = guestCode(user.username);

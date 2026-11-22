@@ -22,6 +22,7 @@ export type StoragePurpose =
   | "discordLater"
   | "news"
   | "casinoCeremony"
+  | "kyaraBanner"
   | "speedInsights"
   | "security";
 
@@ -165,6 +166,16 @@ export const STORAGE_REGISTRY: readonly StorageEntry[] = [
     kind: "localStorage",
     category: "preferences",
     purpose: "casinoCeremony",
+    duration: { unit: "persistent" },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
+    // Bannière de l'import Kyara masquée sur cet appareil (components/kyara/KyaraImportBanner.tsx)
+    name: "kiraku.kyara-banner",
+    kind: "localStorage",
+    category: "preferences",
+    purpose: "kyaraBanner",
     duration: { unit: "persistent" },
     provider: "kiraku",
     exempt: true,

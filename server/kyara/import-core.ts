@@ -10,6 +10,7 @@ import { parseSnapshot, snapshotOf, type KyaraPayload } from "@/lib/kyara/payloa
 import { planKyaraImport, type KyaraEntry, type KyaraPlan, type KyaraPlanInput } from "@/lib/kyara/plan";
 import { kyaraProfileUrl } from "@/lib/kyara/profile-url";
 import type { KyaraRules } from "@/lib/kyara/rules";
+import { importSummary } from "@/lib/kyara/summary";
 import { kyaraEligibility, type KyaraIneligibility } from "@/lib/kyara/window";
 import { parseSetting } from "@/lib/settings/defaults";
 import { writeAdminLog } from "../admin/log";
@@ -60,8 +61,6 @@ const ACTIVE = ["PENDING", "READY", "DONE"] as const;
 const NO_NONCE = { nonceHash: null, nonceById: null, nonceExpiresAt: null };
 /** Ce que la purge efface d'un import versé : la photo et ce qui vient de Kyara ; restent les ids et les totaux. */
 const PURGED = { snapshot: Prisma.DbNull, kyaraUsername: null, kyaraAvatarUrl: null, kyaraDiscordId: null };
-/** Vignettes gardées dans le résumé d'un import versé (page du joueur). */
-const TOP_CARDS = 12;
 const CREATE_BATCH = 1_000;
 
 const isUniqueViolation = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
@@ -117,17 +116,6 @@ export async function loadPlanInput(db: Db, userId: string, entries: readonly Ky
     zeniCap: parseSetting("kyaraImport.zeniCap", raw.get("kyaraImport.zeniCap")),
     recycleValues: parseSetting("collection.recycleValues", raw.get("collection.recycleValues")),
   };
-}
-
-/** Résumé gardé avec un import versé : issues, cartes par rareté, meilleures cartes (vignettes de la page). */
-export function importSummary(plan: KyaraPlan, sortOrder: ReadonlyMap<string, number>) {
-  const byRarity: Record<string, number> = {};
-  for (const g of plan.grant) byRarity[g.rarity] = (byRarity[g.rarity] ?? 0) + 1;
-  const top = [...plan.grant]
-    .sort((a, b) => (sortOrder.get(b.rarity) ?? 0) - (sortOrder.get(a.rarity) ?? 0) || (a.cardId < b.cardId ? -1 : 1))
-    .slice(0, TOP_CARDS)
-    .map((g) => g.cardId);
-  return { byKind: plan.byKind, byRarity, extraCopies: plan.extraCopies, capped: plan.capped, top };
 }
 
 // --- Joueur ---------------------------------------------------------------------------------------------------

@@ -178,7 +178,8 @@
       "ledger": "Zeni history",
       "data": "My data",
       "social": "Social",
-      "casino": "Casino"
+      "casino": "Casino",
+      "kyaraImport": "Kyara import"
     }
   },
   "theme": {
@@ -6365,6 +6366,7 @@
       "news": "Remembers whether you collapsed the home page news panel.",
       "speedInsights": "Vercel performance measurement (no cookies or persistent identifiers)",
       "casinoCeremony": "Remembers that you've already seen the casino opening ceremony on this device.",
+      "kyaraBanner": "Remembers that you've hidden the Kyara import banner on this device.",
       "nav": "Remembers the desktop navigation layout (top menus or sidebar).",
       "security": "Random identifier for this device: spots mass account creation and enforces bans."
     },
@@ -7188,6 +7190,131 @@
       "dismiss": "Hide"
     },
     "profileButton": "My year {year}"
+  },
+  "kyaraImport": {
+    "title": "Import your Kyara collection",
+    "intro": "Coming from Kyara? Bring your cards over: once only, and they land in your collection.",
+    "notAffiliated": "Kiraku is not affiliated with Kyara. Your Kyara account is untouched: your cards stay there.",
+    "soon": "Importing your Kyara collection is coming soon.",
+    "soonDated": "Importing your Kyara collection opens on {date}.",
+    "deadline": "You have until {date} to make your request.",
+    "guest": {
+      "title": "Create your account to import",
+      "body": "Imports are made from an account linked to Discord (the same one as on Kyara). You'll have {days} days after signing up to request it.",
+      "register": "Sign up with an email"
+    },
+    "closed": {
+      "NO_DISCORD": "To prove the Kyara account is yours, link your Discord account (the same one as on Kyara) before {date}.",
+      "EXPIRED": "The import window closed on {date}.",
+      "DISCORD_USED": "This Discord account was already used for a Kyara import.",
+      "UNAVAILABLE": "Imports aren't available for this account.",
+      "linkDiscord": "Link my Discord account"
+    },
+    "steps": {
+      "one": "On Kyara, open “My public profile” and copy the page address.",
+      "two": "Add the Kiraku account as a friend on Kyara and let it see your collection (“Show my collection”):",
+      "three": "Paste the address here. The team reads your collection from the Kiraku account and lets you know when it's done.",
+      "staffProfile": "Kiraku profile on Kyara"
+    },
+    "rules": {
+      "title": "What you get",
+      "card": "Each Kyara card becomes the same card here, as a single copy: duplicates don't count.",
+      "cap": "If the card is rarer here than on Kyara, you get Zeni instead.",
+      "owned": "A card you already own on Kiraku gives you its recycling value in Zeni.",
+      "missing": "A character we don't have yet gives you Zeni:",
+      "scale": "{rarity} ({code}): {zeni, number} Zeni",
+      "zeniCap": "At most {cap, number} Zeni per import.",
+      "once": "One import per Kiraku account, per Discord account and per Kyara account."
+    },
+    "form": {
+      "label": "Address of your Kyara public profile",
+      "placeholder": "https://kyara.games/profil/…",
+      "submit": "Request the import",
+      "pending": "Sending…",
+      "confirm": "You can only request one import. Is this your Kyara profile?"
+    },
+    "pending": {
+      "title": "Request sent",
+      "body": "The team will read your collection from the Kiraku account on Kyara. You'll get a notification when it's done.",
+      "requested": "Requested on {date}.",
+      "profile": "Your Kyara profile",
+      "checklist": "Meanwhile, check that the Kiraku account is in your Kyara friends and can see your collection."
+    },
+    "cancel": {
+      "button": "Cancel my request",
+      "confirm": "Cancel your import request? You can make a new one while the window is open.",
+      "pending": "Cancelling…"
+    },
+    "ready": {
+      "title": "Collection read",
+      "body": "The team has read your collection: your cards are coming very soon."
+    },
+    "rejected": {
+      "title": "Request declined",
+      "reason": "{reason, select, NOT_FRIEND {The Kiraku account isn't in your Kyara friends.} COLLECTION_HIDDEN {Your collection isn't visible to the Kiraku account.} PROFILE_NOT_FOUND {This Kyara profile can't be found.} DISCORD_MISMATCH {This Kyara profile isn't linked to your Discord account.} ALREADY_IMPORTED {This Kyara profile was already imported.} SUSPECT {The team couldn't verify this profile.} other {The team declined the request.}}",
+      "note": "Team note: {note}",
+      "noRetry": "The import window is closed."
+    },
+    "done": {
+      "title": "Import complete",
+      "cardsLabel": "Cards received",
+      "zeniLabel": "Zeni received",
+      "capped": "Cap reached: {raw, number} Zeni before the cap.",
+      "rarityCount": "{rarity}: {count, number}",
+      "kind": {
+        "OWNED": "{count, plural, one {# card already in your collection} other {# cards already in your collection}}: {zeni, number} Zeni",
+        "ABOVE": "{count, plural, one {# card rarer here} other {# cards rarer here}}: {zeni, number} Zeni",
+        "MISSING": "{count, plural, one {# character missing from Kiraku} other {# characters missing from Kiraku}}: {zeni, number} Zeni",
+        "UNPUBLISHED": "{count, plural, one {# card not published yet} other {# cards not published yet}}: {zeni, number} Zeni"
+      },
+      "extraCopies": "{count, plural, one {# extra copy ignored} other {# extra copies ignored}}",
+      "top": "Your best cards",
+      "collection": "See my collection"
+    },
+    "banner": {
+      "kicker": "Kyara import",
+      "title": "Coming from Kyara?",
+      "body": {
+        "OPEN": "Import your Kyara collection until {date}.",
+        "GUEST": "Create your account: you'll be able to import your Kyara collection.",
+        "NO_DISCORD": "Link your Discord to import your Kyara collection before {date}."
+      },
+      "cta": "Import",
+      "dismiss": "Later"
+    },
+    "errors": {
+      "NO_SESSION": "Your session expired: reload the page.",
+      "INVALID": "That's not a Kyara profile address (kyara.games/profil/…).",
+      "RATE_LIMITED": "Too many requests: try again a bit later.",
+      "DISABLED": "Kyara imports are off for now.",
+      "NOT_LAUNCHED": "Kyara imports aren't open yet.",
+      "UNAVAILABLE": "Imports aren't available right now.",
+      "GUEST": "Create your account before requesting the import.",
+      "EXPIRED": "The import window is closed.",
+      "NO_DISCORD": "Link your Discord account first.",
+      "OWN_STAFF_PROFILE": "That's the Kiraku account's profile: paste your own profile address.",
+      "ALREADY_REQUESTED": "You already have a request in progress.",
+      "ALREADY_DONE": "Your Kyara collection was already imported.",
+      "DISCORD_ALREADY_USED": "This Discord account was already used for a Kyara import.",
+      "KYARA_ALREADY_IMPORTED": "This Kyara profile was already imported.",
+      "CONFLICT": "Another request was just made: reload the page.",
+      "NOT_FOUND": "Request not found.",
+      "NOT_PENDING": "This request is no longer waiting.",
+      "NOT_READY": "This request isn't ready.",
+      "SELF": "You can't do this on your own request.",
+      "NONCE_INVALID": "Invalid processing link.",
+      "NONCE_EXPIRED": "Processing link expired.",
+      "NONCE_OTHER_STAFF": "Link prepared by another team member.",
+      "UUID_MISMATCH": "This isn't the request's Kyara profile.",
+      "DISCORD_MISMATCH": "This Kyara profile isn't linked to the player's Discord account.",
+      "DISCORD_UNVERIFIED": "The Kyara avatar doesn't show a Discord ID.",
+      "KYARA_TAKEN": "This Kyara profile is already read for another request.",
+      "PLAYER_UNAVAILABLE": "This account is no longer available.",
+      "SNAPSHOT_INVALID": "The read collection can't be used.",
+      "STALE": "The preview changed: read it again before approving.",
+      "NOT_REJECTABLE": "This request can no longer be declined.",
+      "NOT_REOPENABLE": "This request can't be reopened."
+    }
   },
   "prestige": {
     "metaTitle": "Prestige",

@@ -5,7 +5,7 @@ import type { AbstractIntlMessages } from "next-intl";
 export const CLIENT_NAMESPACES = [
   "account", "ambassador", "arcadePromo", "auth", "battle", "boosters", "cardBack", "casino", "chat", "collection",
   "common", "consent", "data", "discordJoin", "economy", "error", "event", "expedition", "footer", "friends", "prestige",
-  "fuda", "gifts", "header", "home", "incense", "legal", "locale", "mail", "market", "nav",
+  "fuda", "gifts", "header", "home", "incense", "kyaraImport", "legal", "locale", "mail", "market", "nav",
   "news", "notifications", "opening", "playerName", "presence", "privacy", "profile", "push", "pwa", "ranked", "rarity", "sealed",
   "listings", "showcase", "spoiler", "theme", "time", "trades", "v1Welcome", "v2Announcement", "wiki", "wishlist", "wrapped",
 ] as const;
@@ -14,6 +14,8 @@ export const CLIENT_NAMESPACES = [
 // ne traverse pas chaque page (prestige : parcours de renaissance, erreurs, rite d'encre, cinématique, consécration).
 export const CLIENT_SUBSETS: Partial<Record<(typeof CLIENT_NAMESPACES)[number], readonly string[]>> = {
   prestige: ["flow", "errors", "rite", "cinematic", "consecrate"],
+  // Import Kyara : formulaire, annulation, erreurs et bannière de l'accueil ; la page elle-même est rendue au serveur
+  kyaraImport: ["form", "cancel", "errors", "banner"],
 };
 
 export function pickClientMessages(messages: AbstractIntlMessages): AbstractIntlMessages {
