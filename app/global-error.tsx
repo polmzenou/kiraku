@@ -1,12 +1,18 @@
 "use client";
 
+import { useEffect } from "react";
+import { clientErrorReport, sendClientError } from "@/lib/errors/client-report";
 import "./globals.css";
 
 /**
  * Dernier filet : une erreur dans le layout lui-même. Il remplace tout le document, sans
  * next-intl ni thème : le texte est donc fixe, dans les deux langues, et ne dit rien de l'erreur.
+ * L'erreur part dans les logs du serveur (app/api/client-error).
  */
-export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => {
+    sendClientError(clientErrorReport(error, window.location.pathname, "global"));
+  }, [error]);
   return (
     <html lang="fr" data-theme="yoru">
       <body className="flex min-h-dvh flex-col items-start justify-center gap-4 px-4 py-10">

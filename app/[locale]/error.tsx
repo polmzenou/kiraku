@@ -4,15 +4,18 @@ import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
+import { clientErrorReport, sendClientError } from "@/lib/errors/client-report";
 
 /**
  * Erreur inattendue dans une page : message générique (aucun détail technique côté client), la
- * référence `digest` relie l'incident aux logs du serveur.
+ * référence `digest` relie l'incident aux logs du serveur. L'erreur part aussi dans ces logs
+ * (app/api/client-error) : sans ça, un plantage dans le navigateur d'un joueur ne laisse aucune trace.
  */
 export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const t = useTranslations("error");
   useEffect(() => {
     console.error(error);
+    sendClientError(clientErrorReport(error, window.location.pathname, "page"));
   }, [error]);
 
   return (
