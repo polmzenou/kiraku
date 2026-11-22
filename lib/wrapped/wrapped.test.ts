@@ -44,6 +44,14 @@ describe("Zeni de l'année", () => {
     expect(zeniTotals([{ reason: "BOOSTER", gained: 0, spent: 200 }])).toEqual({ earned: 0, spent: 200, topSource: null });
     expect(zeniTotals([])).toEqual({ earned: 0, spent: 0, topSource: null });
   });
+
+  it("ignore les Zeni de l'import Kyara : ni gain ni source de l'année", () => {
+    const totals = zeniTotals([
+      { reason: "KYARA_IMPORT", gained: 9_000, spent: 0 },
+      { reason: "DAILY", gained: 300, spent: 0 },
+    ]);
+    expect(totals).toEqual({ earned: 300, spent: 0, topSource: "DAILY" });
+  });
 });
 
 describe("carte préférée", () => {

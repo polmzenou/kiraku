@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatBadge, parseBuyOrderPayload, parseCoinFlipPayload, parseGiftPayload, parseTeamGiftPayload } from "./notifications";
+import { formatBadge, parseBuyOrderPayload, parseCoinFlipPayload, parseGiftPayload, parseKyaraImportPayload, parseTeamGiftPayload } from "./notifications";
 
 describe("formatBadge", () => {
   it("cache la pastille à zéro et plafonne à 9+", () => {
@@ -55,5 +55,19 @@ describe("parseBuyOrderPayload", () => {
     expect(parseBuyOrderPayload({ orderId: "o1", cardId: "c1", amount: -1 })).toBeNull();
     expect(parseBuyOrderPayload({ orderId: "o1", cardId: "c1", amount: 1.5 })).toBeNull();
     expect(parseBuyOrderPayload({ orderId: "<script>", cardId: "c1", amount: 1 })).toBeNull();
+  });
+});
+
+describe("parseKyaraImportPayload", () => {
+  it("garde les nombres d'un import versé ou un motif de refus connu", () => {
+    expect(parseKyaraImportPayload({ kind: "DONE", cards: 12, zeni: 0 })).toEqual({ kind: "DONE", cards: 12, zeni: 0 });
+    expect(parseKyaraImportPayload({ kind: "REJECTED", code: "DISCORD_MISMATCH" })).toEqual({ kind: "REJECTED", code: "DISCORD_MISMATCH" });
+  });
+
+  it("refuse une forme inconnue, un nombre invalide ou un motif hors liste", () => {
+    expect(parseKyaraImportPayload(null)).toBeNull();
+    expect(parseKyaraImportPayload({ kind: "DONE", cards: -1, zeni: 0 })).toBeNull();
+    expect(parseKyaraImportPayload({ kind: "DONE", cards: 1.5, zeni: 0 })).toBeNull();
+    expect(parseKyaraImportPayload({ kind: "REJECTED", code: "<b>libre</b>" })).toBeNull();
   });
 });

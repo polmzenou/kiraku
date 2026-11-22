@@ -27,4 +27,5 @@ export const SEAL_GLYPHS = [
   "賭表裏", // casino : emblème, faces de la pièce (表 face, 裏 pile)
   "遠征出発成功大失敗済封可宿中止", // expéditions : titre, départ, issues, faite, rapport scellé, condition, relais, abandon
   "転生位継版巻之灰奉納初摺炎", // prestige : renaissance, rang, héritage, gravure, rouleaux, cendres, consécration, premier tirage, cadre flamme
+  "越", // import Kyara
 ].join("");

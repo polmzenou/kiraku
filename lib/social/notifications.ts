@@ -1,4 +1,5 @@
 // Notifications : types connus et pastille de la cloche.
+import { isKyaraRejectCode, type KyaraRejectCode } from "../kyara/codes";
 
 export const NOTIFICATION_TYPES = [
   "FRIEND_REQUEST",
@@ -28,6 +29,8 @@ export const NOTIFICATION_TYPES = [
   "BUY_ORDER_FILLED",
   "BUY_ORDER_EXPIRED",
   "BUY_ORDER_WANTED",
+  "KYARA_IMPORT_DONE",
+  "KYARA_IMPORT_REJECTED",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -162,6 +165,21 @@ export function parseBuyOrderPayload(raw: unknown): BuyOrderPayload | null {
   const r = raw as Record<string, unknown>;
   if (!isId(r.orderId) || !isId(r.cardId) || !Number.isSafeInteger(r.amount) || (r.amount as number) < 0) return null;
   return { orderId: r.orderId, cardId: r.cardId, amount: r.amount as number };
+}
+
+/**
+ * Import Kyara : versé (cartes et Zeni ; le détail se lit sur /compte/import-kyara) ou refusé (motif de la liste
+ * fermée ; la note libre de l'équipe reste dans sa ligne KyaraImport, lue par refId).
+ */
+export type KyaraImportPayload = { kind: "DONE"; cards: number; zeni: number } | { kind: "REJECTED"; code: KyaraRejectCode };
+
+export function parseKyaraImportPayload(raw: unknown): KyaraImportPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const count = (v: unknown): v is number => Number.isSafeInteger(v) && (v as number) >= 0;
+  if (r.kind === "DONE" && count(r.cards) && count(r.zeni)) return { kind: "DONE", cards: r.cards, zeni: r.zeni };
+  if (r.kind === "REJECTED" && isKyaraRejectCode(r.code)) return { kind: "REJECTED", code: r.code };
+  return null;
 }
 
 /** Expédition rentrée : son issue (le détail se lit sur /expedition). */

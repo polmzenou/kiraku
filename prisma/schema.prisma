@@ -41,6 +41,7 @@ enum CoinReason {
   REBIRTH // Zeni d'une renaissance (prestige, refId = id du PrestigeCycle)
   ORDER_HOLD // prix d'un avis de recherche mis en séquestre (refId = id du BuyOrder)
   ORDER_REFUND // avis annulé ou expiré : séquestre rendu
+  KYARA_IMPORT // cartes Kyara converties en Zeni à l'import (refId = id du KyaraImport)
 }
 
 // Qui voit le profil public (/u/[username]) ; FRIENDS = amis acceptés seulement
@@ -87,6 +88,9 @@ model User {
   bannedAt            DateTime?
   pullFeedHiddenUntil DateTime? // modération : retiré du carrousel des gros tirages jusqu'à cette date
   isGuest             Boolean           @default(true)
+  // Le compte devient réel (inscription e-mail ou liaison Discord) : posé par un trigger quand isGuest passe à
+  // false, jamais réécrit. Départ de la fenêtre de l'import Kyara pour un compte inscrit après sa sortie.
+  registeredAt        DateTime?
   pityCount           Int               @default(0) // boosters ouverts depuis la dernière Mythique
   standardCount       Int               @default(0) // pour le booster doré
   bannerPity          Json              @default("{}") // { boosterTypeId: boosters sans vedette }
@@ -217,6 +221,7 @@ model User {
   signals          UserSignal[]
   networkBans      NetworkBan[] @relation("networkBanUser")
   networkBansSet   NetworkBan[] @relation("networkBanCreatedBy")
+  kyaraImports     KyaraImport[]
 
   @@index([rankPoints])
   @@index([ambassadorSince])
@@ -343,6 +348,70 @@ model NetworkBan {
   @@index([userId])
   @@index([parentId])
   @@index([createdAt])
+}
+
+// Import Kyara (étape 17) : PENDING (demande du joueur) → READY (collection lue par l'équipe) → DONE (versé) ;
+// REJECTED et CANCELLED ne verrouillent rien.
+enum KyaraImportStatus {
+  PENDING
+  READY
+  DONE
+  REJECTED
+  CANCELLED
+}
+
+// Demande d'import de la collection Kyara d'un joueur. Notre serveur n'appelle jamais Kyara : l'équipe lit la
+// collection sur Kyara avec le favori (lib/kyara/bookmarklet.ts), en ami du joueur, et la renvoie à l'admin.
+// Index uniques partiels (migration) : une demande en cours ou versée par compte et par compte Discord
+// (PENDING, READY, DONE) ; un profil Kyara lu ou versé une seule fois (READY, DONE), pour qu'une adresse collée
+// par un autre ne bloque pas le vrai propriétaire. userId SetNull : le verrou survit à la suppression du compte.
+// Les ids de l'équipe sont du texte, sans clé étrangère (AdminLog fait foi).
+model KyaraImport {
+  id              String            @id @default(cuid())
+  userId          String?
+  user            User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  discordId       String            @db.VarChar(25) // compte Discord lié du joueur à la demande
+  kyaraUserId     String            @db.VarChar(36) // uuid du profil Kyara collé
+  status          KyaraImportStatus @default(PENDING)
+  requestedAt     DateTime          @default(now())
+  deadlineAt      DateTime? // fin de la fenêtre du joueur à la demande (null : demande de test de l'équipe)
+  // Lien de traitement de l'équipe (#kiraku=<code>) : empreinte SHA-256 seulement, un seul actif par demande
+  nonceHash       String?           @unique @db.VarChar(64)
+  nonceById       String?
+  nonceExpiresAt  DateTime?
+  // Lecture de l'équipe (READY)
+  kyaraUsername   String?           @db.VarChar(64)
+  kyaraAvatarUrl  String?           @db.VarChar(500)
+  kyaraDiscordId  String?           @db.VarChar(25) // lu dans l'avatar Kyara ; null si avatar par défaut
+  discordVerified Boolean? // l'ID de l'avatar est celui du joueur ; false : confirmé à la main par l'équipe
+  snapshot        Json? // [[anilistId, quantité, code]], une entrée par personnage (lib/kyara/payload.ts)
+  snapshotCards   Int? // personnages lus
+  snapshotCopies  Int? // exemplaires lus
+  snapshotTotal   Int? // total annoncé par Kyara
+  bookmarkletBuild Int?
+  readAt          DateTime?
+  receivedAt      DateTime?
+  receivedById    String?
+  // Versement (DONE)
+  grantedCards    Int?
+  grantedZeni     Int?
+  zeniRaw         Int? // avant le plafond
+  summary         Json? // issues par type (lib/kyara/plan.ts)
+  appliedAt       DateTime?
+  appliedById     String?
+  // Refus (REJECTED)
+  rejectCode      String?           @db.VarChar(24)
+  rejectNote      String?           @db.VarChar(300)
+  rejectedAt      DateTime?
+  rejectedById    String?
+  reopenCount     Int               @default(0)
+  closedAt        DateTime? // passage à DONE, REJECTED ou CANCELLED (purge des photos)
+  purgedAt        DateTime? // photo, pseudo et avatar effacés ; restent les ids et les totaux
+
+  @@index([status, requestedAt])
+  @@index([userId])
+  @@index([kyaraUserId])
+  @@index([closedAt])
 }
 
 // --- Réglages et économie ---
@@ -674,6 +743,7 @@ model Discovery {
   card      Card     @relation(fields: [cardId], references: [id])
   createdAt DateTime @default(now())
   regainedAt DateTime? // première obtention dans le cycle en cours (prestige ≥ 1), remis à zéro à chaque renaissance
+  imported   Boolean  @default(false) // découverte venue de l'import Kyara : ne compte ni pour les missions ni pour le Wrapped
 
   @@id([userId, cardId])
   @@index([userId, regainedAt]) // missions « découvrir des cartes » d'un joueur au prestige 1 ou plus
@@ -979,6 +1049,8 @@ enum NotificationType {
   BUY_ORDER_FILLED // ton avis de recherche a trouvé preneur : la carte est arrivée
   BUY_ORDER_EXPIRED // ton avis a expiré : les Zeni bloqués sont revenus
   BUY_ORDER_WANTED // quelqu'un cherche une carte que tu possèdes (refId = id de la Card)
+  KYARA_IMPORT_DONE // l'import de ta collection Kyara est fait (refId = id du KyaraImport)
+  KYARA_IMPORT_REJECTED // ta demande d'import Kyara est refusée, avec un motif (refId = id du KyaraImport)
 }
 
 // Notifications en base ; le texte est rendu à la lecture (pseudo à jour, langue du lecteur)

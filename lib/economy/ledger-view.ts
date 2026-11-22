@@ -24,6 +24,7 @@ export const COIN_REASONS = [
   "REBIRTH",
   "ORDER_HOLD",
   "ORDER_REFUND",
+  "KYARA_IMPORT",
 ] as const;
 export type CoinReason = (typeof COIN_REASONS)[number];
 
@@ -68,6 +69,8 @@ export function ledgerHref(reason: CoinReason, refId: string | null): string | n
       return "/expedition";
     case "REBIRTH":
       return "/prestige";
+    case "KYARA_IMPORT":
+      return "/compte/import-kyara";
     case "ORDER_HOLD":
     case "ORDER_REFUND":
       return "/marche?onglet=avis";
