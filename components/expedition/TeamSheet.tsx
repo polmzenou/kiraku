@@ -114,7 +114,10 @@ export function TeamSheet({
       <div className="flex flex-col gap-5">
         {/* Emplacements et jauge */}
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <ol className="grid w-full max-w-[22rem] grid-cols-3 gap-2.5" aria-label={t("slots")}>
+          {/* min-w-0 : sans lui, la ligne (écran large) mesure la taille minimale de la liste en posant les cartes
+              à une largeur quasi nulle ; leurs container queries changent alors de masques en pleine mise en page,
+              et Chromium 155 (Opera 139) fait planter l'onglet dès qu'une carte rejoint l'équipe. */}
+          <ol className="grid w-full min-w-0 max-w-[22rem] grid-cols-3 gap-2.5" aria-label={t("slots")}>
             {Array.from({ length: EXPEDITION_TEAM_SIZE }, (_, i) => {
               const card = team[i];
               return (
