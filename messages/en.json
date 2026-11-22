@@ -2698,6 +2698,9 @@
         "prestige": {
           "enabled": "Prestige"
         },
+        "kyaraImport": {
+          "enabled": "Kyara import"
+        },
         "notifications": {
           "pushEnabled": "Push notifications"
         },
@@ -2739,6 +2742,9 @@
         },
         "prestige": {
           "enabled": "The /prestige page and the profile's “Evolve” button. Off: only admins see the page (preview)."
+        },
+        "kyaraImport": {
+          "enabled": "Requests to import a Kyara collection (Account page, home banner). Off: no new requests, but the team can finish the queue."
         },
         "notifications": {
           "pushEnabled": "Sending notifications when the tab is closed."

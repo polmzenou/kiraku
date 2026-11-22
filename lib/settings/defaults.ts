@@ -9,6 +9,7 @@ import { JOIN_MODAL_DEFAULT, joinModalSchema } from "@/lib/discord/join-modal";
 import { SOCIAL_PROMO_DEFAULT, socialPromoSchema } from "@/lib/discord/social-promo";
 import { NEWS_DEFAULT, newsSchema } from "@/lib/home/news-schema";
 import { alertThresholdsSchema, DEFAULT_ALERT_THRESHOLDS } from "@/lib/usage/quota";
+import { KYARA_PROFILE_INPUT_MAX, parseKyaraProfileUrl } from "@/lib/kyara/profile-url";
 
 // Seuils de rareté en points de base (300 = top 3 %), du plus rare au plus courant
 const rarityThresholds = z
@@ -56,6 +57,7 @@ function isTimeZone(tz: string): boolean {
 const rarityRates = z.record(rarityKeySchema, z.number().int().min(0).max(1_000_000))
   .refine((rates) => Object.values(rates).some((r) => r > 0), { message: "Au moins une rareté doit avoir une part" });
 const recycleValues = z.record(rarityKeySchema, z.number().int().min(0).max(100_000));
+const kyaraZeni = z.number().int().min(0).max(100_000);
 
 const cardStats = z.object({
   powerMax: z.number().int().min(1).max(999),
@@ -496,6 +498,22 @@ export const SETTING_SCHEMAS = {
   // Fil « Derniers lancers » du hall
   "casino.coinflip.feedSize": z.number().int().min(4).max(50),
   "casino.coinflip.feedMaxAgeHours": z.number().int().min(1).max(24 * 30),
+  // Import Kyara (étape 17) : interrupteur ; date de sortie (vide = « Bientôt » ; les comptes déjà inscrits ont leur
+  // fenêtre à partir de là) ; durée de la fenêtre ; profil Kyara du compte Kiraku que les joueurs ajoutent en ami ;
+  // Zeni d'une carte convertie, par code de rareté Kyara, et plafond par import ; durée de vie d'un lien de
+  // traitement de l'équipe ; conservation de la photo d'une collection lue
+  "kyaraImport.enabled": z.boolean(),
+  "kyaraImport.launchAt": z.string().datetime().nullable(),
+  "kyaraImport.windowDays": z.number().int().min(1).max(90),
+  "kyaraImport.staffProfileUrl": z
+    .string()
+    .max(KYARA_PROFILE_INPUT_MAX)
+    .refine((v) => parseKyaraProfileUrl(v) !== null, { message: "Adresse de profil Kyara invalide" })
+    .nullable(),
+  "kyaraImport.zeniByRarity": z.object({ C: kyaraZeni, U: kyaraZeni, R: kyaraZeni, E: kyaraZeni, L: kyaraZeni, M: kyaraZeni }).strict(),
+  "kyaraImport.zeniCap": z.number().int().min(0).max(10_000_000),
+  "kyaraImport.nonceMinutes": z.number().int().min(5).max(120),
+  "kyaraImport.retentionDays": z.number().int().min(7).max(365),
   // Carrousel « En direct · Gros tirages » de l'accueil (étape 12c)
   "home.pullFeed.enabled": z.boolean(),
   "home.pullFeed.minRarity": rarityKeySchema,
@@ -875,6 +893,15 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "casino.coinflip.tablePollSeconds": 5,
   "casino.coinflip.feedSize": 20,
   "casino.coinflip.feedMaxAgeHours": 72,
+  "kyaraImport.enabled": false, // caché tant que l'admin ne l'allume pas
+  "kyaraImport.launchAt": null,
+  "kyaraImport.windowDays": 7,
+  "kyaraImport.staffProfileUrl": null,
+  // Valeurs de recyclage des raretés de base (collection.recycleValues)
+  "kyaraImport.zeniByRarity": { C: 1, U: 1, R: 3, E: 10, L: 40, M: 150 },
+  "kyaraImport.zeniCap": 10_000, // 50 boosters : ne bride que les collections hors norme
+  "kyaraImport.nonceMinutes": 30,
+  "kyaraImport.retentionDays": 90,
   "home.pullFeed.enabled": true,
   "home.pullFeed.minRarity": "LEGENDARY",
   "home.pullFeed.size": 20,

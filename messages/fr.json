@@ -2698,6 +2698,9 @@
         "prestige": {
           "enabled": "Prestige"
         },
+        "kyaraImport": {
+          "enabled": "Import Kyara"
+        },
         "notifications": {
           "pushEnabled": "Notifications push"
         },
@@ -2739,6 +2742,9 @@
         },
         "prestige": {
           "enabled": "Page /prestige et bouton « Évoluer » du profil. Coupé : seul l'admin voit la page (aperçu)."
+        },
+        "kyaraImport": {
+          "enabled": "Demandes d'import de la collection Kyara (page du Compte, bannière de l'accueil). Coupé : plus de nouvelle demande, mais l'équipe peut finir la file."
         },
         "notifications": {
           "pushEnabled": "Envoi des notifications quand l'onglet est fermé."

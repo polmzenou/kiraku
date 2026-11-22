@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { discordAvatarUrl, isDiscordId } from "./avatar";
+import { discordAvatarUrl, discordIdFromAvatarUrl, isDiscordId } from "./avatar";
 
 const ID = "80351110224678912";
 const HASH = "8342729096ea3675442027381ff50dfe";
@@ -14,6 +14,23 @@ describe("avatar Discord", () => {
     expect(discordAvatarUrl({ id: ID, avatar: null, discriminator: "0" })).toBe(`https://cdn.discordapp.com/embed/avatars/${Number((BigInt(ID) >> 22n) % 6n)}.png`);
     expect(discordAvatarUrl({ id: ID, avatar: null })).toMatch(/^https:\/\/cdn\.discordapp\.com\/embed\/avatars\/[0-5]\.png$/);
     expect(discordAvatarUrl({ id: ID, avatar: null, discriminator: "1337" })).toBe("https://cdn.discordapp.com/embed/avatars/2.png");
+  });
+
+  it("lit l'ID Discord d'un avatar personnalisé (import Kyara), jamais d'un avatar par défaut ni d'un autre hôte", () => {
+    expect(discordIdFromAvatarUrl(`https://cdn.discordapp.com/avatars/${ID}/${HASH}.png`)).toBe(ID);
+    expect(discordIdFromAvatarUrl(`https://cdn.discordapp.com/avatars/${ID}/a_${HASH}.gif?size=256`)).toBe(ID);
+    expect(discordIdFromAvatarUrl(`https://media.discordapp.net/avatars/${ID}/${HASH}.webp`)).toBe(ID);
+    for (const bad of [
+      null,
+      "https://cdn.discordapp.com/embed/avatars/3.png",
+      `http://cdn.discordapp.com/avatars/${ID}/${HASH}.png`,
+      `https://cdn.discordapp.com.evil.com/avatars/${ID}/${HASH}.png`,
+      `https://cdn.discordapp.com/avatars/${ID}/pas-un-hash.png`,
+      `https://cdn.discordapp.com/avatars/abc/${HASH}.png`,
+      "pas une adresse",
+    ]) {
+      expect(discordIdFromAvatarUrl(bad), String(bad)).toBeNull();
+    }
   });
 
   it("refuse une réponse inattendue plutôt que d'écrire une adresse douteuse", () => {
