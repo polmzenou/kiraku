@@ -36,10 +36,19 @@ export function DiscordJoinModal({
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    // Après l'hydratation, et un peu plus tard : on ne coupe pas l'arrivée sur la page
-    const timer = window.setTimeout(() => {
-      if (laterCooldownOver(readLaterAt(), cooldownDays, Date.now())) setOpen(true);
-    }, 1_500);
+    // Après l'hydratation, et un peu plus tard : on ne coupe pas l'arrivée sur la page. Jamais par-dessus une
+    // autre fenêtre (feuille d'équipe d'une expédition, rite…) : elle deviendrait inerte sous lui, et le premier
+    // clic du joueur ne ferait que fermer ce modal. On attend qu'elle soit refermée.
+    let timer = 0;
+    const tryOpen = () => {
+      if (!laterCooldownOver(readLaterAt(), cooldownDays, Date.now())) return;
+      if (document.querySelector("dialog[open]")) {
+        timer = window.setTimeout(tryOpen, 2_000);
+        return;
+      }
+      setOpen(true);
+    };
+    timer = window.setTimeout(tryOpen, 1_500);
     return () => window.clearTimeout(timer);
   }, [cooldownDays]);
 
