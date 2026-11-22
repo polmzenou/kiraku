@@ -2,6 +2,7 @@ import { processDueDeletionsWith } from "@/server/account/account-core";
 import { purgeExpiredNetworkBans } from "@/server/anticheat/network-ban-core";
 import { purgeOldSignals } from "@/server/anticheat/signals";
 import { purgeInactiveGuestsWith } from "@/server/account/guest-purge";
+import { purgeKyaraImportsWith } from "@/server/kyara/import-core";
 import { purgeOldMessages } from "@/server/chat/queries";
 import { cronAuthorized } from "@/server/cron-auth";
 import { prisma } from "@/server/db";
@@ -50,6 +51,9 @@ export async function GET(request: Request) {
     pulls: await housekeeping("tirages", () => purgeOldPulls()),
     signals: await housekeeping("signaux", () => purgeOldSignals(new Date())),
     networkBans: await housekeeping("bans réseau", () => purgeExpiredNetworkBans(prisma, new Date())),
+    kyaraImports: await housekeeping("imports Kyara", async () =>
+      purgeKyaraImportsWith(prisma, { now: new Date(), retentionDays: await getSetting("kyaraImport.retentionDays") }),
+    ),
   };
   return Response.json({ ...deletions, guests, rateLimits, cleaned });
 }

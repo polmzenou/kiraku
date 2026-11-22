@@ -9,6 +9,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { anonymizedUsername, deletionDueAt } from "@/lib/account/deletion";
 import { leaveQueueWith } from "../battle/battle-core";
 import { withdrawCasinoFor } from "../casino/coinflip-core";
+import { forgetKyaraImportsFor } from "../kyara/import-core";
 import { AuctionError, cancelAuctionWith } from "../market/auction-core";
 import type { Tx } from "../social/lock";
 import { writeAdminLog } from "../admin/log";
@@ -159,6 +160,7 @@ export async function anonymizeUserWith(
     await tx.authToken.deleteMany({ where: { userId } });
     await tx.pushSubscription.deleteMany({ where: { userId } });
     await tx.userSignal.deleteMany({ where: { userId } }); // IP et appareils (multi-comptes)
+    await forgetKyaraImportsFor(tx, userId, input.now); // import Kyara : le verrou d'un import versé reste
     // Liens sociaux et contenus personnels
     await tx.notification.deleteMany({ where: { OR: [{ userId }, { actorId: userId }] } });
     await tx.friendship.deleteMany({ where: { OR: [{ requesterId: userId }, { addresseeId: userId }] } });

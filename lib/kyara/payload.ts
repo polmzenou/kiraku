@@ -50,6 +50,19 @@ export type KyaraPayload = {
 
 export type KyaraDecodeError = "PAYLOAD_INVALID" | "PAYLOAD_TOO_LARGE" | "PAYLOAD_VERSION";
 
+/** Photo d'une collection lue, gardée en base (KyaraImport.snapshot) : [[anilistId, quantité, code]]. */
+export function snapshotOf(entries: readonly KyaraEntry[]): [number, number, KyaraCode][] {
+  return entries.map((e) => [e.anilistId, e.qty, e.code]);
+}
+
+const snapshotSchema = z.array(entrySchema).max(KYARA_PAYLOAD_LIMITS.entries);
+
+/** Photo relue en base : une entrée par personnage, ou null si elle a été abîmée. */
+export function parseSnapshot(json: unknown): KyaraEntry[] | null {
+  const parsed = snapshotSchema.safeParse(json);
+  return parsed.success ? mergeEntries(parsed.data.map(([anilistId, qty, code]) => ({ anilistId, qty, code }))) : null;
+}
+
 /** Décompression deflate-raw bornée : null si le résultat dépasserait maxBytes, exception si les données sont abîmées. */
 export type InflateRaw = (bytes: Uint8Array, maxBytes: number) => Uint8Array | null;
 

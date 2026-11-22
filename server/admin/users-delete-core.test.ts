@@ -41,6 +41,7 @@ function setup({
     coinTransaction: { createMany: vi.fn() },
     notification: { create: vi.fn().mockResolvedValue({ id: "n1" }) },
     adminLog: { create: vi.fn() },
+    kyaraImport: { deleteMany: vi.fn(), updateMany: vi.fn() },
   };
   const db = { $transaction: vi.fn(async (run: (client: typeof tx) => Promise<unknown>) => run(tx)) } as unknown as PrismaClient;
   return { tx, db };
@@ -80,6 +81,8 @@ describe("suppression définitive d'un compte", () => {
     expect(refund).toEqual([expect.objectContaining({ userId: "bidder", amount: 50, reason: "BID_REFUND", refId: "a1" })]);
     expect(tx.auction.update).toHaveBeenCalledWith({ where: { id: "a2" }, data: { currentBid: null, currentBidderId: null, price: 20 } });
     expect(tx.adminLog.create).toHaveBeenCalledWith({ data: expect.objectContaining({ action: "USER_DELETE", targetId: "target" }) });
+    // Import Kyara : demandes non versées oubliées, import versé purgé mais gardé (verrou du Discord)
+    expect(tx.kyaraImport.deleteMany).toHaveBeenCalledWith({ where: { userId: "target", status: { not: "DONE" } } });
     expect(tx.user.delete).toHaveBeenCalledWith({ where: { id: "target" }, select: { id: true } });
   });
 
