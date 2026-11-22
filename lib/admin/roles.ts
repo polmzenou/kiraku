@@ -34,6 +34,7 @@ export const DEV_ADMIN_PAGES = [
   "/admin/evenement",
   "/admin/evenement/vitrines",
   "/admin/kyara",
+  "/admin/kyara/recevoir",
 ] as const;
 export type StaffRole = (typeof STAFF_ROLES)[number];
 export type CatalogScope = "full" | "drafts";

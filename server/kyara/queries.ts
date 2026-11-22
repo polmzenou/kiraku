@@ -10,6 +10,7 @@ import { kyaraEligibility } from "@/lib/kyara/window";
 import type { SettingValue } from "@/lib/settings/defaults";
 import { prisma } from "../db";
 import { getSetting } from "../settings";
+import { previewImportWith } from "./import-core";
 
 // Lectures de l'import Kyara (pages du joueur et de l'équipe). Les écritures sont dans import-core.ts.
 
@@ -148,6 +149,48 @@ export async function kyaraTileVisible(user: KyaraUser, now: number): Promise<bo
     now,
   );
   return e.ok;
+}
+
+export const QUEUE_TABS = ["PENDING", "READY", "DONE", "REJECTED"] as const;
+export type QueueTab = (typeof QUEUE_TABS)[number];
+
+/** File de /admin/kyara : demandes d'un statut, les plus anciennes d'abord (les traitées, les plus récentes). */
+export async function kyaraQueue(tab: QueueTab, take = 50) {
+  return prisma.kyaraImport.findMany({
+    where: { status: tab },
+    orderBy: { requestedAt: tab === "PENDING" || tab === "READY" ? "asc" : "desc" },
+    take,
+    select: {
+      id: true,
+      kyaraUserId: true,
+      requestedAt: true,
+      deadlineAt: true,
+      receivedAt: true,
+      appliedAt: true,
+      rejectCode: true,
+      snapshotCards: true,
+      discordVerified: true,
+      grantedCards: true,
+      grantedZeni: true,
+      reopenCount: true,
+      user: { select: { id: true, username: true, createdAt: true } },
+    },
+  });
+}
+
+/** Fiche d'une demande pour l'équipe, avec l'aperçu recalculé si elle est lue. */
+export async function kyaraImportDetail(importId: string) {
+  const row = await prisma.kyaraImport.findUnique({
+    where: { id: importId },
+    include: { user: { select: { id: true, username: true, createdAt: true, registeredAt: true, bannedAt: true } } },
+  });
+  if (!row) return null;
+  const [preview, others] = await Promise.all([
+    row.status === "READY" ? previewImportWith(prisma, row.id) : null,
+    // Autres demandes sur ce profil Kyara (une adresse collée par plusieurs comptes)
+    prisma.kyaraImport.count({ where: { kyaraUserId: row.kyaraUserId, id: { not: row.id }, status: { in: ["PENDING", "READY", "DONE"] } } }),
+  ]);
+  return { row, preview: preview?.plan ?? null, sameProfile: others };
 }
 
 /** Tableau de bord de /admin/kyara : demandes par statut et plus ancienne demande en attente. */
