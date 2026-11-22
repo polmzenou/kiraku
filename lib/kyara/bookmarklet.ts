@@ -6,6 +6,8 @@
 //   - Les routes de Kyara ne sont pas une API officielle (vues dans des projets tiers) : à confirmer par le test
 //     du lot 0 (docs/KYARA-IMPORT.md), et BOOKMARKLET_BUILD à augmenter à chaque changement.
 // Variante « console » : même code, qui affiche le lot au lieu d'ouvrir Kiraku (secours si un favori est bloqué).
+// Profil ouvert = compte Kyara connecté (essai avec un seul compte) : la collection est lue par /api/me/collection.
+// Rien n'est affaibli : le lot n'est accepté qu'avec le code préparé par l'équipe et le même compte Discord.
 
 export const BOOKMARKLET_BUILD = 1;
 
@@ -39,8 +41,10 @@ const get=async(p,a)=>{const r=await fetch("/api"+p,a?{headers:H}:{});if(!r.ok)t
 const list=d=>Array.isArray(d)?d:(d&&(d.items||d.cards))||[];
 try{
 const prof=await get("/users/"+id,0);
+let path="/me/friends/"+id+"/collection?";
+try{const me=await get("/me",1);if(String(me.id??(me.user&&me.user.id)??"").toLowerCase()===id)path="/me/collection?lean=1&"}catch(e){}
 const items=[];let total=null;
-for(let page=1;page<=K.x;page++){const d=await get("/me/friends/"+id+"/collection?page="+page,1),it=list(d);items.push(...it);
+for(let page=1;page<=K.x;page++){const d=await get(path+"page="+page,1),it=list(d);items.push(...it);
 if(d&&Number.isInteger(d.total))total=d.total;document.title=T.reading.replace("{n}",items.length);
 if(!(d&&d.more)||it.length===0)break;await new Promise(r=>setTimeout(r,K.w))}
 const rar={};if(items.some(i=>!i.rarity)){for(const c of list(await get("/characters",0)))rar[c.id]=c.rarity}

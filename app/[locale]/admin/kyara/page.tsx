@@ -37,13 +37,15 @@ export default async function AdminKyaraPage({ searchParams }: PageProps<"/[loca
   ]);
   const canProcess = canProcessKyaraImports(user.role);
   const receiveUrl = `${appUrl()}${locale === "fr" ? "" : `/${locale}`}/admin/kyara/recevoir`;
+  // Textes bruts : « {n} » et « {e} » sont remplis par le favori lui-même, sur kyara.games
+  const template = (key: "wrongPage" | "noToken" | "reading" | "hidden" | "failed" | "copy") => String(tBookmarklet.raw(key));
   const texts = {
-    wrongPage: tBookmarklet("wrongPage"),
-    noToken: tBookmarklet("noToken"),
-    reading: tBookmarklet("reading"),
-    hidden: tBookmarklet("hidden"),
-    failed: tBookmarklet("failed"),
-    copy: tBookmarklet("copy"),
+    wrongPage: template("wrongPage"),
+    noToken: template("noToken"),
+    reading: template("reading"),
+    hidden: template("hidden"),
+    failed: template("failed"),
+    copy: template("copy"),
   };
   const settings = Object.fromEntries(KYARA_FORM_KEYS.map((k, i) => [k, values[i]])) as KyaraSettings;
   const configured = rules.launchAt !== null && rules.staffKyaraUserId !== null;

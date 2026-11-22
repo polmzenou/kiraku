@@ -38,8 +38,9 @@ function sandbox(opts: { origin?: string; path?: string; hash?: string; token?: 
       calls.push(url);
       const reply = routes[url] ?? { status: 404 };
       // Les routes « /me » exigent le jeton ; les routes publiques ne le reçoivent pas
-      if (url.startsWith("/api/me/") && init?.headers?.authorization !== `Bearer ${opts.token === undefined ? TOKEN : opts.token}`) return { ok: false, status: 401 };
-      if (!url.startsWith("/api/me/") && init?.headers) throw new Error("jeton envoyé à une route publique");
+      const mine = url === "/api/me" || url.startsWith("/api/me/");
+      if (mine && init?.headers?.authorization !== `Bearer ${opts.token === undefined ? TOKEN : opts.token}`) return { ok: false, status: 401 };
+      if (!mine && init?.headers) throw new Error("jeton envoyé à une route publique");
       const status = reply.status ?? 200;
       return { ok: status < 400, status, json: async () => reply.body };
     },
@@ -77,7 +78,28 @@ describe("favori de l'équipe", () => {
       { anilistId: 40, qty: 2, code: "M" },
       { anilistId: 41, qty: 1, code: "L" },
     ]);
-    expect(s.calls).toEqual([`/api/users/${ID}`, `/api/me/friends/${ID}/collection?page=1`, `/api/me/friends/${ID}/collection?page=2`, "/api/characters"]);
+    expect(s.calls).toEqual([
+      `/api/users/${ID}`,
+      "/api/me",
+      `/api/me/friends/${ID}/collection?page=1`,
+      `/api/me/friends/${ID}/collection?page=2`,
+      "/api/characters",
+    ]);
+  });
+
+  it("profil du compte connecté (essai avec un seul compte) : lit sa propre collection", async () => {
+    const s = sandbox({
+      routes: {
+        [`/api/users/${ID}`]: { body: { pseudo: "Moi", avatar: AVATAR } },
+        "/api/me": { body: { id: ID.toUpperCase() } },
+        "/api/me/collection?lean=1&page=1": { body: [{ characterId: 40, qty: 1, rarity: "M" }] },
+      },
+    });
+    await s.run();
+    expect(s.alerts).toEqual([]);
+    expect(s.calls).toEqual([`/api/users/${ID}`, "/api/me", "/api/me/collection?lean=1&page=1"]);
+    const decoded = decodeKyaraFragment(s.assigned[0].split("#")[1], inflate);
+    expect(decoded.ok && decoded.payload.entries).toEqual([{ anilistId: 40, qty: 1, code: "M" }]);
   });
 
   it("ne lit rien hors d'un profil kyara.games ouvert depuis « Traiter », ni sans session Kyara", async () => {
