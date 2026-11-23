@@ -11,6 +11,24 @@ export function isDiscordId(id: string): boolean {
   return SNOWFLAKE.test(id);
 }
 
+const AVATAR_PATH = /^\/avatars\/(\d{5,25})\/(?:a_)?[0-9a-f]{32}\.(?:png|jpe?g|webp|gif)$/i;
+
+/**
+ * ID Discord lu dans l'adresse d'un avatar personnalisé (cdn.discordapp.com/avatars/<id>/<hash>.<ext>), comme celui
+ * qu'affiche Kyara. null pour l'avatar par défaut (embed/avatars/<n>.png), qui ne porte pas l'ID, ou une autre adresse.
+ */
+export function discordIdFromAvatarUrl(url: string | null): string | null {
+  if (url === null) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "https:" || (parsed.hostname !== "cdn.discordapp.com" && parsed.hostname !== "media.discordapp.net")) return null;
+  return AVATAR_PATH.exec(parsed.pathname)?.[1] ?? null;
+}
+
 /**
  * Adresse de l'avatar : l'image du joueur (GIF si animée), sinon l'avatar par défaut de Discord.
  * null si la réponse n'a pas la forme attendue (rien n'est alors écrit).

@@ -178,7 +178,8 @@
       "ledger": "Historique des Zeni",
       "data": "Mes données",
       "social": "Social",
-      "casino": "Casino"
+      "casino": "Casino",
+      "kyaraImport": "Import Kyara"
     }
   },
   "theme": {
@@ -1511,7 +1512,225 @@
       "casino": "Casino",
       "wrapped": "Wrapped",
       "prestige": "Prestige",
-      "multiAccounts": "Multi-comptes"
+      "multiAccounts": "Multi-comptes",
+      "kyara": "Import Kyara"
+    },
+    "kyara": {
+      "title": "Import Kyara",
+      "intro": "Un joueur demande l'import, puis ajoute le compte Kiraku en ami sur Kyara. Un membre de l'équipe (admin ou dev) ouvre le profil de cet ami sur Kyara et clique son favori : Kiraku retrouve la demande par le Discord de l'avatar et verse aussitôt. Seules les lectures douteuses attendent, dans « À vérifier ». Notre serveur n'appelle jamais Kyara.",
+      "preview": "Voir la page du joueur",
+      "status": {
+        "off": "Import coupé : aucune nouvelle demande (la file reste traitable).",
+        "unconfigured": "Import allumé mais pas configuré : les joueurs voient « Bientôt ».",
+        "scheduled": "Sortie prévue le {date}.",
+        "open": "Import ouvert depuis le {date}."
+      },
+      "unconfiguredHelp": "Renseigne la date de sortie et l'adresse du profil Kyara du compte Kiraku.",
+      "stats": {
+        "title": "Demandes",
+        "pending": "En attente",
+        "ready": "À vérifier",
+        "done": "Versées",
+        "rejected": "Refusées",
+        "cancelled": "Annulées",
+        "oldest": "Plus ancienne demande en attente : {date}."
+      },
+      "settings": {
+        "title": "Réglages",
+        "launchSection": "Sortie",
+        "zeniSection": "Cartes converties en Zeni",
+        "upkeepSection": "Conservation",
+        "launchNow": "Sortir maintenant",
+        "clearDate": "Effacer la date",
+        "invalid": "Un réglage est invalide : vérifie l'adresse du profil Kyara et les bornes.",
+        "codeLabel": "{code} · {rarity}",
+        "keys": {
+          "enabled": "Import allumé",
+          "launchAt": "Date de sortie",
+          "windowDays": "Jours pour faire sa demande",
+          "staffProfileUrl": "Profil Kyara du compte Kiraku",
+          "zeniByRarity": "Zeni par rareté Kyara",
+          "zeniCap": "Plafond de Zeni par import",
+          "retentionDays": "Conservation des collections lues (jours)"
+        },
+        "hints": {
+          "launchAt": "Les comptes inscrits avant cette date ont leur fenêtre à partir d'elle, les nouveaux à partir de leur inscription.",
+          "windowDays": "Une seule demande, dans ce délai ; une demande faite à temps peut être traitée après.",
+          "staffProfileUrl": "Adresse du bouton « Mon profil public » du compte que les joueurs ajoutent en ami.",
+          "zeniByRarity": "Pour une carte absente de notre catalogue, non publiée ou plus rare chez nous que chez Kyara. Une carte déjà possédée vaut sa valeur de recyclage.",
+          "zeniCap": "Total maximum de Zeni pour un import ; 0 = aucune conversion.",
+          "retentionDays": "Après la clôture d'une demande : collection lue, pseudo et avatar Kyara effacés. Les ids qui verrouillent restent."
+        }
+      },
+      "queue": {
+        "title": "File des demandes",
+        "tabs": "Statut des demandes",
+        "tab": {
+          "PENDING": "En attente",
+          "READY": "À vérifier",
+          "DONE": "Versées",
+          "REJECTED": "Refusées"
+        },
+        "empty": "Aucune demande ici.",
+        "deletedPlayer": "Compte supprimé",
+        "requested": "Demandée {date}",
+        "accountAge": "compte créé {date}",
+        "cards": "{count, plural, one {# personnage lu} other {# personnages lus}}",
+        "granted": "{cards, number} cartes, {zeni, number} Zeni",
+        "kyaraProfile": "Profil Kyara",
+        "open": "Fiche",
+        "pendingHelp": "Ces joueurs attendent que tu lises leur collection : accepte leurs demandes d'ami sur Kyara (compte Kiraku), ouvre le profil de chacun et clique ton favori."
+      },
+      "bookmarklet": {
+        "title": "Favori « Envoyer à Kiraku » (version {build})",
+        "install": "Une fois : « Générer mon favori », puis crée un favori dans ton navigateur et colle comme adresse le code copié. Il contient ta clé : ne le partage pas.",
+        "use": "Sur Kyara, connecté au compte Kiraku : accepte les demandes d'ami, ouvre le profil d'un ami, puis clique le favori.",
+        "after": "Kiraku retrouve la demande par le Discord de l'avatar et verse aussitôt ; une lecture douteuse attend dans « À vérifier ». Reviens sur Kyara pour l'ami suivant, et retire de tes amis ceux qui sont traités.",
+        "copyBookmarklet": "Copier le favori",
+        "copyConsole": "Copier le code console",
+        "copiedBookmarklet": "Favori copié : colle-le comme adresse d'un nouveau favori.",
+        "copiedConsole": "Code copié : colle-le dans la console de kyara.games (F12), puis colle le lot affiché sur la page de réception.",
+        "copyFailed": "Copie impossible : autorise le presse-papiers.",
+        "texts": {
+          "wrongPage": "Ouvre d'abord le profil d'un ami sur kyara.games.",
+          "noToken": "Connecte-toi à Kyara avec le compte Kiraku.",
+          "reading": "Lecture… {n} cartes",
+          "hidden": "Collection invisible : le joueur doit ajouter le compte Kiraku en ami et lui montrer sa collection.",
+          "failed": "Lecture impossible (erreur {e}).",
+          "copy": "Copie ce lot, puis colle-le sur la page de réception de Kiraku :"
+        },
+        "generate": "Générer mon favori",
+        "regenerate": "Générer un nouveau favori",
+        "regenerateConfirm": "Ton favori actuel ne marchera plus. En générer un nouveau ?",
+        "issued": "Ton favori actuel date du {date}. Perdu ? Génères-en un nouveau.",
+        "none": "Tu n'as pas encore de favori.",
+        "generated": "Favori prêt : copie-le maintenant, il ne sera plus affiché."
+      },
+      "receive": {
+        "title": "Réception d'une collection",
+        "intro": "Le favori ouvre cette page avec la collection lue sur Kyara. Kiraku vérifie ta clé, retrouve la demande par le Discord de l'avatar, puis verse les cartes.",
+        "back": "Retour à la file",
+        "sending": "Vérification…",
+        "empty": "Aucune collection reçue : lance ton favori depuis le profil d'un ami sur Kyara, ou colle un lot ci-dessous.",
+        "confirmNoDiscord": "Je confirme que ce profil Kyara est bien celui de ce joueur.",
+        "confirmSend": "Confirmer et garder la collection",
+        "pasteLabel": "Coller un lot (variante console)",
+        "pasteSend": "Envoyer le lot",
+        "done": "Versé à {player} : {cards, plural, one {# carte} other {# cartes}} et {zeni, number} Zeni.",
+        "review": "Collection de {player} gardée, à vérifier : {reason}.",
+        "openDetail": "Ouvrir la fiche",
+        "next": "Reviens sur Kyara (page précédente) et ouvre le profil de l'ami suivant.",
+        "readProfile": "Profil Kyara lu : {pseudo}",
+        "matchTitle": "Avatar sans ID Discord",
+        "matchHelp": "Choisis la demande de ce joueur en comparant les pseudos. La collection attendra ensuite dans « À vérifier ».",
+        "matchLabel": "Demande en attente",
+        "matchPlaceholder": "Choisir…",
+        "matchNone": "Aucune demande en attente.",
+        "matchOption": "{player} · demandée le {date}"
+      },
+      "detail": {
+        "back": "Retour à la file",
+        "status": {
+          "PENDING": "en attente",
+          "READY": "à vérifier",
+          "DONE": "versée",
+          "REJECTED": "refusée",
+          "CANCELLED": "annulée"
+        },
+        "requested": "Demande",
+        "deadline": "fenêtre jusqu'au {date}",
+        "player": "Joueur",
+        "accountAge": "Compte créé {date}",
+        "banned": "Banni",
+        "discord": "Discord",
+        "discordKiraku": "Lié à Kiraku : {id}",
+        "discordKyara": "Avatar Kyara : {id}",
+        "discordMatch": "Même compte Discord",
+        "discordConfirmed": "Pas d'ID dans l'avatar : confirmé à la main",
+        "discordChanged": "Le Discord lié a changé depuis la demande",
+        "kyara": "Profil Kyara",
+        "read": "{cards, number} personnages, {copies, number} exemplaires{announced, select, yes {, {total, number} annoncés par Kyara} other {}}, lus le {date}",
+        "sameProfile": "{count, plural, one {# autre demande} other {# autres demandes}} sur ce profil",
+        "processHelp": "En attente : quand ce joueur est dans les amis du compte Kiraku sur Kyara, ouvre son profil et clique ton favori.",
+        "preview": "Aperçu : {cards, number} cartes et {zeni, number} Zeni",
+        "capped": "Plafond atteint ({raw, number} Zeni avant plafond).",
+        "kind": {
+          "OWNED": "{count, plural, one {# déjà possédée} other {# déjà possédées}} : {zeni, number} Zeni",
+          "ABOVE": "{count, plural, one {# plus rare chez nous} other {# plus rares chez nous}} : {zeni, number} Zeni",
+          "MISSING": "{count, plural, one {# absente du catalogue} other {# absentes du catalogue}} : {zeni, number} Zeni",
+          "UNPUBLISHED": "{count, plural, one {# non publiée} other {# non publiées}} : {zeni, number} Zeni"
+        },
+        "extraCopies": "{count, plural, one {# copie en plus ignorée} other {# copies en plus ignorées}}",
+        "truncated": "Lecture incomplète : {read, number} personnages lus sur {total, number} annoncés. Relis avant de valider.",
+        "done": "Versé le {date} : {cards, number} cartes et {zeni, number} Zeni.",
+        "rejected": "Refusée le {date} : {reason}.",
+        "removeFriend": "Après le traitement, retire le joueur des amis du compte Kiraku sur Kyara.",
+        "review": "À vérifier : {reason}.",
+        "notRead": "Pas encore lu"
+      },
+      "decision": {
+        "title": "Décision",
+        "apply": "Verser {cards, number} cartes et {zeni, number} Zeni",
+        "applyConfirm": "Verser {cards, number} cartes et {zeni, number} Zeni à ce joueur ? Une seule fois, sans retour.",
+        "applied": "Import versé.",
+        "rereadButton": "Relire sur Kyara",
+        "reread": "Demande remise en attente : relis la collection.",
+        "rejectCode": "Motif du refus",
+        "noteOptional": "Mot pour le joueur (facultatif)",
+        "noteRequired": "Mot pour le joueur (obligatoire)",
+        "reject": "Refuser",
+        "rejected": "Demande refusée, joueur prévenu.",
+        "reopen": "Rouvrir la demande",
+        "reopened": "Demande remise en attente."
+      },
+      "rejectCodes": {
+        "NOT_FRIEND": "Compte Kiraku pas en ami",
+        "COLLECTION_HIDDEN": "Collection non montrée",
+        "PROFILE_NOT_FOUND": "Profil introuvable",
+        "DISCORD_MISMATCH": "Discord différent",
+        "ALREADY_IMPORTED": "Déjà importé",
+        "SUSPECT": "Profil douteux",
+        "OTHER": "Autre (mot obligatoire)"
+      },
+      "errors": {
+        "FORBIDDEN": "Réservé à l'équipe.",
+        "INVALID": "Demande invalide.",
+        "RATE_LIMITED": "Trop d'actions : patiente une minute.",
+        "PAYLOAD_INVALID": "Lot illisible : relance le favori.",
+        "PAYLOAD_TOO_LARGE": "Lot trop gros.",
+        "PAYLOAD_VERSION": "Favori trop ancien : génère-en un nouveau sur /admin/kyara.",
+        "DISABLED": "Import coupé.",
+        "NOT_LAUNCHED": "Import pas encore ouvert.",
+        "UNAVAILABLE": "Action impossible pour le moment.",
+        "GUEST": "Compte invité.",
+        "EXPIRED": "Fenêtre fermée.",
+        "NO_DISCORD": "Discord non lié.",
+        "OWN_STAFF_PROFILE": "C'est le profil du compte Kiraku : ouvre le profil d'un ami.",
+        "ALREADY_REQUESTED": "Demande déjà en cours.",
+        "ALREADY_DONE": "Déjà versé.",
+        "DISCORD_ALREADY_USED": "Discord déjà utilisé.",
+        "CONFLICT": "Le joueur a une autre demande en cours.",
+        "NOT_FOUND": "Demande introuvable.",
+        "NOT_PENDING": "La demande n'est plus en attente.",
+        "NOT_READY": "La collection n'est pas lue.",
+        "SELF": "Tu ne traites pas ta propre demande.",
+        "DISCORD_MISMATCH": "L'avatar Kyara montre un autre compte Discord que celui de cette demande.",
+        "DISCORD_UNVERIFIED": "L'avatar Kyara ne montre pas d'ID Discord : choisis la demande du joueur, puis confirme.",
+        "KYARA_TAKEN": "Ce profil Kyara est déjà lu ou versé pour une autre demande.",
+        "PLAYER_UNAVAILABLE": "Le compte du joueur n'est plus disponible (banni, supprimé).",
+        "SNAPSHOT_INVALID": "Collection gardée illisible : relis-la.",
+        "STALE": "La collection du joueur a changé : recharge la fiche avant de valider.",
+        "NOT_REJECTABLE": "Cette demande ne peut plus être refusée.",
+        "NOT_REOPENABLE": "Cette demande ne peut pas être rouverte.",
+        "ALREADY_READ": "Collection déjà lue : elle attend dans « À vérifier ».",
+        "NO_REQUEST": "Aucune demande en attente pour ce compte Discord : le joueur doit d'abord demander l'import sur Kiraku, avec le même Discord.",
+        "KEY_INVALID": "Favori inconnu ou remplacé : génère ton favori sur /admin/kyara et réinstalle-le."
+      },
+      "reviewReasons": {
+        "DISCORD_UNVERIFIED": "avatar sans ID Discord",
+        "EMPTY": "aucune carte lue",
+        "TRUNCATED": "lecture incomplète"
+      }
     },
     "boosters": {
       "title": "Réglages des boosters",
@@ -2698,6 +2917,9 @@
         "prestige": {
           "enabled": "Prestige"
         },
+        "kyaraImport": {
+          "enabled": "Import Kyara"
+        },
         "notifications": {
           "pushEnabled": "Notifications push"
         },
@@ -2739,6 +2961,9 @@
         },
         "prestige": {
           "enabled": "Page /prestige et bouton « Évoluer » du profil. Coupé : seul l'admin voit la page (aperçu)."
+        },
+        "kyaraImport": {
+          "enabled": "Demandes d'import de la collection Kyara (page du Compte, bannière de l'accueil). Coupé : plus de nouvelle demande, mais l'équipe peut finir la file."
         },
         "notifications": {
           "pushEnabled": "Envoi des notifications quand l'onglet est fermé."
@@ -5193,7 +5418,9 @@
     "expeditionReturned": "Ton expédition est de retour. Viens ouvrir son rapport.",
     "buyOrderFilled": "{name} t'a vendu {card} pour {amount, number} Zeni : ton avis de recherche est rempli.",
     "buyOrderExpired": "Ton avis de recherche pour {card} a expiré : {amount, number} Zeni te sont rendus.",
-    "buyOrderWanted": "{name} cherche {card} à {amount, number} Zeni. Tu en as un exemplaire : vends-le en un clic."
+    "buyOrderWanted": "{name} cherche {card} à {amount, number} Zeni. Tu en as un exemplaire : vends-le en un clic.",
+    "kyaraImportDone": "Ta collection Kyara est arrivée : {cards, plural, =0 {aucune carte} one {# carte} other {# cartes}} et {zeni, number} Zeni.",
+    "kyaraImportRejected": "Ta demande d'import Kyara est refusée : {reason, select, NOT_FRIEND {le compte Kiraku n'est pas dans tes amis Kyara} COLLECTION_HIDDEN {ta collection n'est pas visible pour le compte Kiraku} PROFILE_NOT_FOUND {ce profil Kyara est introuvable} DISCORD_MISMATCH {ce profil Kyara n'est pas lié à ton compte Discord} ALREADY_IMPORTED {ce profil Kyara a déjà été importé} SUSPECT {l'équipe n'a pas pu vérifier ce profil} other {voir le mot de l'équipe}}."
   },
   "push": {
     "title": "Notifications sur ce téléphone",
@@ -5462,7 +5689,8 @@
         "EXPEDITION": "Expédition",
         "ORDER_HOLD": "Avis de recherche (Zeni bloqués)",
         "ORDER_REFUND": "Avis de recherche remboursé",
-        "REBIRTH": "Renaissance (prestige)"
+        "REBIRTH": "Renaissance (prestige)",
+        "KYARA_IMPORT": "Import Kyara (cartes converties)"
       }
     },
     "reveal": {
@@ -6304,6 +6532,7 @@
       "news": "Retient si tu as réduit l'encart des nouveautés de l'accueil.",
       "speedInsights": "Mesure des performances Vercel (sans cookie ni identifiant persistant)",
       "casinoCeremony": "Retient que tu as déjà vu la cérémonie d'ouverture du casino sur cet appareil.",
+      "kyaraBanner": "Retient que tu as masqué la bannière de l'import Kyara sur cet appareil.",
       "nav": "Retient la disposition de la navigation sur ordinateur (menus en haut ou barre latérale).",
       "security": "Identifiant aléatoire de cet appareil : repère la création de comptes en série et fait respecter un bannissement."
     },
@@ -7127,6 +7356,126 @@
       "dismiss": "Masquer"
     },
     "profileButton": "Mon année {year}"
+  },
+  "kyaraImport": {
+    "title": "Importer ta collection Kyara",
+    "intro": "Tu viens de Kyara ? Fais venir tes cartes : une seule fois, et elles arrivent dans ta collection.",
+    "notAffiliated": "Kiraku n'est pas affilié à Kyara. On ne touche pas à ton compte Kyara : tes cartes y restent.",
+    "soon": "L'import de ta collection Kyara arrive bientôt.",
+    "soonDated": "L'import de ta collection Kyara ouvre le {date}.",
+    "deadline": "Tu as jusqu'au {date} pour faire ta demande.",
+    "guest": {
+      "title": "Crée ton compte pour importer",
+      "body": "L'import se fait depuis un compte lié à Discord (le même que sur Kyara). Tu auras {days} jours après ton inscription pour le demander.",
+      "register": "Créer un compte avec un e-mail"
+    },
+    "closed": {
+      "NO_DISCORD": "Pour prouver que le compte Kyara est bien le tien, lie ton compte Discord (le même que sur Kyara) avant le {date}.",
+      "EXPIRED": "La fenêtre d'import est fermée depuis le {date}.",
+      "DISCORD_USED": "Ce compte Discord a déjà servi à un import Kyara.",
+      "UNAVAILABLE": "L'import n'est pas disponible pour ce compte.",
+      "linkDiscord": "Lier mon compte Discord"
+    },
+    "steps": {
+      "one": "Demande l'import avec le bouton ci-dessous.",
+      "two": "Sur Kyara, ajoute le compte Kiraku en ami et laisse-le voir ta collection (« Montrer ma collection ») :",
+      "three": "L'équipe lit ta collection depuis le compte Kiraku et tes cartes arrivent aussitôt. Ton compte Kyara doit être lié au même Discord que Kiraku.",
+      "staffProfile": "profil Kiraku sur Kyara"
+    },
+    "rules": {
+      "title": "Ce que tu reçois",
+      "card": "Chaque carte Kyara devient la même carte chez nous, en un seul exemplaire : les doublons ne comptent pas.",
+      "cap": "Si la carte est plus rare chez nous que chez Kyara, tu reçois des Zeni à la place.",
+      "owned": "Une carte que tu as déjà sur Kiraku te rapporte sa valeur de recyclage en Zeni.",
+      "missing": "Un personnage qu'on n'a pas encore te rapporte des Zeni :",
+      "scale": "{rarity} ({code}) : {zeni, number} Zeni",
+      "zeniCap": "Au plus {cap, number} Zeni pour un import.",
+      "once": "Un seul import par compte Kiraku, par compte Discord et par compte Kyara."
+    },
+    "form": {
+      "submit": "Demander l'import",
+      "pending": "Envoi…",
+      "confirm": "Un seul import par compte. Ton compte Kyara est bien lié au même Discord que ton compte Kiraku ?"
+    },
+    "pending": {
+      "title": "Demande envoyée",
+      "body": "Dernière étape : sur Kyara, ajoute le compte Kiraku en ami et laisse-le voir ta collection (« Montrer ma collection »). Dès que l'équipe l'a lue, tes cartes arrivent et tu reçois une notification.",
+      "sameDiscord": "L'équipe retrouve ta demande grâce au compte Discord de ton profil Kyara : il doit être le même que celui lié à Kiraku.",
+      "requested": "Demandée le {date}."
+    },
+    "cancel": {
+      "button": "Annuler ma demande",
+      "confirm": "Annuler ta demande d'import ? Tu pourras en refaire une tant que la fenêtre est ouverte.",
+      "pending": "Annulation…"
+    },
+    "ready": {
+      "title": "Collection lue",
+      "body": "L'équipe a lu ta collection et vérifie un détail avant de verser tes cartes."
+    },
+    "rejected": {
+      "title": "Demande refusée",
+      "reason": "{reason, select, NOT_FRIEND {Le compte Kiraku n'est pas dans tes amis Kyara.} COLLECTION_HIDDEN {Ta collection n'est pas visible pour le compte Kiraku.} PROFILE_NOT_FOUND {Ce profil Kyara est introuvable.} DISCORD_MISMATCH {Ce profil Kyara n'est pas lié à ton compte Discord.} ALREADY_IMPORTED {Ce profil Kyara a déjà été importé.} SUSPECT {L'équipe n'a pas pu vérifier ce profil.} other {L'équipe a refusé la demande.}}",
+      "note": "Mot de l'équipe : {note}",
+      "noRetry": "La fenêtre d'import est fermée."
+    },
+    "done": {
+      "title": "Import terminé",
+      "cardsLabel": "Cartes arrivées",
+      "zeniLabel": "Zeni reçus",
+      "capped": "Plafond atteint : {raw, number} Zeni avant plafond.",
+      "rarityCount": "{rarity} : {count, number}",
+      "kind": {
+        "OWNED": "{count, plural, one {# carte déjà dans ta collection} other {# cartes déjà dans ta collection}} : {zeni, number} Zeni",
+        "ABOVE": "{count, plural, one {# carte plus rare chez nous} other {# cartes plus rares chez nous}} : {zeni, number} Zeni",
+        "MISSING": "{count, plural, one {# personnage absent de Kiraku} other {# personnages absents de Kiraku}} : {zeni, number} Zeni",
+        "UNPUBLISHED": "{count, plural, one {# carte pas encore publiée} other {# cartes pas encore publiées}} : {zeni, number} Zeni"
+      },
+      "extraCopies": "{count, plural, one {# copie en plus ignorée} other {# copies en plus ignorées}}",
+      "top": "Tes meilleures cartes",
+      "collection": "Voir ma collection"
+    },
+    "banner": {
+      "kicker": "Import Kyara",
+      "title": "Tu viens de Kyara ?",
+      "body": {
+        "OPEN": "Importe ta collection Kyara jusqu'au {date}.",
+        "GUEST": "Crée ton compte : tu pourras importer ta collection Kyara.",
+        "NO_DISCORD": "Lie ton Discord pour importer ta collection Kyara avant le {date}."
+      },
+      "cta": "Importer",
+      "dismiss": "Plus tard"
+    },
+    "errors": {
+      "NO_SESSION": "Ta session a expiré : recharge la page.",
+      "INVALID": "Demande invalide : recharge la page.",
+      "RATE_LIMITED": "Trop de demandes : réessaie un peu plus tard.",
+      "DISABLED": "L'import Kyara est coupé pour le moment.",
+      "NOT_LAUNCHED": "L'import Kyara n'est pas encore ouvert.",
+      "UNAVAILABLE": "L'import n'est pas disponible pour le moment.",
+      "GUEST": "Crée ton compte avant de demander l'import.",
+      "EXPIRED": "La fenêtre d'import est fermée.",
+      "NO_DISCORD": "Lie d'abord ton compte Discord.",
+      "OWN_STAFF_PROFILE": "C'est le profil du compte Kiraku.",
+      "ALREADY_REQUESTED": "Tu as déjà une demande en cours.",
+      "ALREADY_DONE": "Ta collection Kyara a déjà été importée.",
+      "DISCORD_ALREADY_USED": "Ce compte Discord a déjà servi à un import Kyara.",
+      "CONFLICT": "Une autre demande vient d'être faite : recharge la page.",
+      "NOT_FOUND": "Demande introuvable.",
+      "NOT_PENDING": "Cette demande n'est plus en attente.",
+      "NOT_READY": "Cette demande n'est pas prête.",
+      "SELF": "Action impossible sur ta propre demande.",
+      "DISCORD_MISMATCH": "Ce profil Kyara n'est pas lié au compte Discord du joueur.",
+      "DISCORD_UNVERIFIED": "L'avatar Kyara ne montre pas d'ID Discord.",
+      "KYARA_TAKEN": "Ce profil Kyara est déjà lu pour une autre demande.",
+      "PLAYER_UNAVAILABLE": "Ce compte n'est plus disponible.",
+      "SNAPSHOT_INVALID": "La collection lue est illisible.",
+      "STALE": "L'aperçu a changé : relis-le avant de valider.",
+      "NOT_REJECTABLE": "Cette demande ne peut plus être refusée.",
+      "NOT_REOPENABLE": "Cette demande ne peut pas être rouverte.",
+      "ALREADY_READ": "Ta collection a déjà été lue.",
+      "NO_REQUEST": "Aucune demande en attente pour ce compte Discord.",
+      "KEY_INVALID": "Favori de l'équipe invalide."
+    }
   },
   "prestige": {
     "metaTitle": "Prestige",

@@ -48,7 +48,8 @@ export async function readWrappedWith(db: Db, userId: string, start: Date, end: 
       WHERE o."userId" = ${userId} AND o."createdAt" >= ${start} AND o."createdAt" < ${end}
       GROUP BY c."rarityKey"`,
     db.$queryRaw<{ n: unknown }[]>`
-      SELECT count(*) AS n FROM "Discovery" WHERE "userId" = ${userId} AND "createdAt" >= ${start} AND "createdAt" < ${end}`,
+      SELECT count(*) AS n FROM "Discovery"
+      WHERE "userId" = ${userId} AND "createdAt" >= ${start} AND "createdAt" < ${end} AND NOT imported`,
     db.$queryRaw<{ reason: string; gained: unknown; spent: unknown }[]>`
       SELECT reason::text AS reason,
              COALESCE(sum(amount) FILTER (WHERE amount > 0), 0) AS gained,

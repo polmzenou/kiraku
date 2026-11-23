@@ -24,6 +24,7 @@ Kiraku is meant for people aged **15 and over**. If you are under 15, you need t
 - Booster drop rates are shown in the game. The server alone decides draws, prices and battle results.
 - The publisher may change the game balance (rates, prices, rewards) at any time.
 - **Casino.** The casino coin flip pits two players who each stake a card of the same tier; the winner keeps both. **Neither Zeni nor real money** can be staked, and nothing is sold: only virtual cards with no monetary value change hands. The server draws the result and anyone can verify it: its fingerprint is published when the table opens, and the seed is revealed after the flip. A staked card stays locked while its table is open and goes back to its owner if nobody takes it in time.
+- **Kyara import.** A player can request, once and within the displayed delay, the import of their Kyara collection from an account linked to the same Discord account as on Kyara. Each character becomes the matching base card, as a single copy; a card rarer on Kiraku than on Kyara, already owned or missing from the catalog is converted into Zeni according to the displayed scale. A Kyara profile or a Discord account can only be used for one import. The team may decline a request it cannot verify. Kiraku is not affiliated with Kyara.
 
 ## 5. Code of conduct
 

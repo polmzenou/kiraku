@@ -1243,6 +1243,29 @@ L'expiration et le plafond évitent qu'un banni fasse bannir exprès le wifi d'u
 
 **RGPD.** IP et identifiant d'appareil gardés 90 jours après la dernière visite (`multiAccount.retentionDays`), et tant que dure un ban, même après la suppression du compte (intérêt légitime : un ban ne doit pas se contourner en supprimant son compte). L'export des données inclut les bans venus du compte, sans la raison ni l'admin. Le cookie d'appareil figure dans le registre des cookies (rôle « sécurité »).
 
+## Import Kyara
+
+Beaucoup de joueurs viennent de Kyara et veulent retrouver leurs cartes. Un import unique, comme Kizuna, mais outillé.
+
+**Pourquoi l'équipe lit la collection.** L'API de Kyara refuse tout client hors navigateur (`403 verification_required`, Cloudflare et anti-robots) : notre serveur n'appelle jamais Kyara, et on ne contourne pas sa protection. Une collection envoyée par le navigateur du joueur serait falsifiable ; lue par l'équipe, depuis le compte « Kiraku » que le joueur ajoute en ami sur Kyara, elle est fiable.
+
+**Parcours.**
+
+- Le joueur (compte non invité, lié à Discord) clique « Demander l'import » sur `/compte/import-kyara` (demande PENDING, rien à coller), ajoute le compte Kiraku en ami sur Kyara et lui montre sa collection.
+- Toute l'équipe (ADMIN et DEV, `canProcessKyaraImports`) a la main sur l'import : file, décisions et réglages, interrupteur compris. Chaque membre génère son favori dans `/admin/kyara` : il porte sa clé (32 octets, empreinte SHA-256 dans `KyaraStaffKey`, remplacée à chaque génération).
+- Sur Kyara, connecté au compte Kiraku, il ouvre le profil d'un ami et clique le favori « Envoyer à Kiraku » (`lib/kyara/bookmarklet.ts`) : collection de l'ami, profil (avatar, donc ID Discord) et raretés, puis `/admin/kyara/recevoir#<lot>` (`lib/kyara/payload.ts`, `v2z` compressé, avec la clé). Le jeton Kyara ne quitte jamais kyara.games.
+- La page de réception efface le fragment et l'envoie à l'action : clé du membre connecté vérifiée, demande PENDING retrouvée par l'ID Discord de l'avatar, profil Kyara enregistré. Lecture sûre : versée dans la même transaction (DONE). Lecture douteuse (`reviewReason` : avatar sans ID Discord, rien de lu, moins de personnages que le total annoncé) : READY, « À vérifier », puis « Verser » après l'aperçu ou « Refuser » avec un motif. Avatar sans ID Discord : l'équipe choisit la demande et confirme.
+
+**Règles** (`lib/kyara/plan.ts`), par personnage Kyara (l'id Kyara est l'id AniList, donc `Card.anilistId`, cartes de base seulement ; les copies en plus ne rapportent rien) : absent du catalogue ou non publié → Zeni de la rareté Kyara ; plus rare chez nous que chez Kyara (plafond) → Zeni de la rareté Kyara ; déjà possédé → valeur de recyclage de notre rareté ; sinon la carte. Plafond de Zeni par import.
+
+**Une seule fois** par compte Kiraku, par Discord et par profil Kyara (index uniques partiels sur `KyaraImport` ; le profil Kyara, connu à la lecture seulement, est verrouillé dès qu'il est lu). Le verrou survit à la suppression du compte. **Fenêtre** : `kyaraImport.windowDays` jours à partir de la sortie pour un compte déjà inscrit, de l'inscription (`User.registeredAt`, posé par trigger) pour un nouveau.
+
+**Effets neutralisés.** Les découvertes importées (`Discovery.imported`) ne comptent ni pour la mission « découvrir des cartes » ni pour le Wrapped ; les Zeni (`KYARA_IMPORT`) ne sont ni un gain ni une source du Wrapped. Aucun gros tirage ni annonce.
+
+**RGPD.** Collection lue, pseudo et avatar Kyara effacés `kyaraImport.retentionDays` jours après la clôture (cron quotidien) ; ids et totaux gardés pour le verrou. Export, anonymisation et suppression traités.
+
+**Réglages** (`/admin/kyara`) : interrupteur (aussi dans les fonctionnalités), date de sortie, jours de fenêtre, profil Kyara du compte Kiraku, Zeni par rareté Kyara, plafond, conservation.
+
 ## Fluidité et animations
 
 Objectif : un téléphone milieu de gamme en 4G charge une page en moins de 2,5 s (LCP), répond à un appui en moins de 200 ms (INP), ne fait pas sauter la page (CLS < 0,1) et anime à 60 images par seconde.
@@ -1781,6 +1804,7 @@ Construis dans cet ordre : chaque étape est jouable seule et sert de base à la
     - **16c Éditions gravées.** Migration `prestige_printings`. Tirage au sort et numéro dans la transaction d'ouverture, `CardPrinting`, carrousel « En direct », lien de partage d'un tirage. Habillage estampe et cartouche d'édition, animation de la baren, affichage sur le Marché, au casino, en combat et dans le bot Discord, registre des gravées du wiki, recyclage unitaire. Admin : chances, tailles, tirages. Test des 50 ouvertures simultanées.
     - **16d Consécration et profil.** Migration `prestige_sanctuary`. Consécration et sanctuaire, conditions et cosmétiques de prestige, emakis des cycles, filtres de la collection.
     - **16e Finitions.** Export et anonymisation RGPD, annonces Discord, fiche joueur de l'admin, `docs/MISE-EN-PRODUCTION.md`, essai sur un vrai téléphone en 375 px, lint, typecheck et tests.
+17. **Import Kyara** — voir « Import Kyara ». 17-0 test des routes de Kyara avec deux vrais comptes (`docs/KYARA-IMPORT.md`), 17a logique pure et réglages, 17b schéma, migration et notifications, 17c cœurs serveur, RGPD et tests en base, 17d accès de l'équipe et réglages, 17e côté joueur, 17f outillage de l'équipe (file, favori, réception, fiche), 17g textes légaux et documentation, 17h version simplifiée (demande sans adresse, favori à clé par membre, versement dès la lecture, « À vérifier » pour les cas douteux).
 
 Hors de ce plan : Stripe, après un avis juridique.
 

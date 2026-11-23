@@ -60,6 +60,7 @@ function lookupUser(id: string) {
       appearOffline: true,
       titleAgreement: true,
       createdAt: true,
+      registeredAt: true,
       ...decorSelect,
     },
   });

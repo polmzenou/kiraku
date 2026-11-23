@@ -5,6 +5,8 @@ import type { BoardTier } from "@/lib/battle/tiers";
 
 /** Motifs de séquestre : une mise ou un avis bloqué puis rendu n'est ni un gain ni une dépense. */
 const HOLDS = { BID_HOLD: "BID", BID_REFUND: "BID", ORDER_HOLD: "ORDER", ORDER_REFUND: "ORDER" } as const;
+/** Zeni venus d'ailleurs que du jeu (cartes Kyara converties à l'import) : ni gain ni source de l'année. */
+const OUTSIDE = new Set(["KYARA_IMPORT"]);
 
 export type LedgerByReason = { reason: string; gained: number; spent: number };
 
@@ -28,6 +30,7 @@ export function zeniTotals(rows: readonly LedgerByReason[]): ZeniTotals {
   const held = { BID: 0, ORDER: 0 };
   const sources = new Map<string, number>();
   for (const row of rows) {
+    if (OUTSIDE.has(row.reason)) continue;
     const hold = HOLDS[row.reason as keyof typeof HOLDS];
     if (hold) {
       held[hold] += row.gained - row.spent;

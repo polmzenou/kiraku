@@ -6,7 +6,8 @@ export const STAFF_ROLES = ["ADMIN", "DEV"] as const;
 /**
  * Pages de l'admin ouvertes au DEV : le catalogue (brouillons), les bancs de test (rien n'est enregistré) et,
  * en lecture seule, le reste. Aucune n'est ouverte en écriture : réglages, interrupteurs de fonctionnalités et
- * données des joueurs restent l'affaire de l'admin. Les autres pages lui répondent 404.
+ * données des joueurs restent l'affaire de l'admin. Les autres pages lui répondent 404. Seule exception : l'import
+ * Kyara, que toute l'équipe traite et règle (canProcessKyaraImports) : file, favori, décisions et réglages.
  */
 export const DEV_ADMIN_PAGES = [
   "/admin/catalogue",
@@ -32,6 +33,8 @@ export const DEV_ADMIN_PAGES = [
   "/admin/gros-tirages",
   "/admin/evenement",
   "/admin/evenement/vitrines",
+  "/admin/kyara",
+  "/admin/kyara/recevoir",
 ] as const;
 export type StaffRole = (typeof STAFF_ROLES)[number];
 export type CatalogScope = "full" | "drafts";
@@ -39,6 +42,15 @@ type CardStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
 export function isStaff(role: string | null | undefined): role is StaffRole {
   return (STAFF_ROLES as readonly string[]).includes(role ?? "");
+}
+
+/**
+ * Import Kyara (étape 17) : toute l'équipe, ADMIN et DEV, lit les collections, valide ou refuse les demandes
+ * (choix du 22/11, pour vider la file plus vite) et modifie les réglages de l'import, interrupteur compris (accès
+ * complet du DEV, demandé le 22/11). Chaque décision et chaque réglage sont écrits dans le journal admin.
+ */
+export function canProcessKyaraImports(role: string | null | undefined): boolean {
+  return isStaff(role);
 }
 
 export function catalogScope(role: string | null | undefined): CatalogScope | null {

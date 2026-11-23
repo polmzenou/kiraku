@@ -49,8 +49,19 @@ describe("accès du DEV à l'admin", () => {
     const files = readdirSync(ACTIONS).filter((n) => /^admin-.*\.ts$/.test(n) && !n.endsWith(".test.ts"));
     for (const name of files) {
       const source = readFileSync(join(ACTIONS, name), "utf8");
-      // Le catalogue passe par getStaff() + son périmètre « drafts » (lib/admin/roles.ts)
-      expect(source, name).toMatch(name === "admin-catalog.ts" ? /\bgetStaff\(\)/ : /\bgetAdmin\(\)/);
+      // Le catalogue passe par getStaff() + son périmètre « drafts » ; l'import Kyara par getStaff() +
+      // canProcessKyaraImports, toute l'équipe traitant la file et ses réglages (lib/admin/roles.ts)
+      if (name === "admin-catalog.ts") expect(source, name).toMatch(/\bgetStaff\(\)/);
+      else if (name === "admin-kyara.ts") {
+        expect(source, name).toMatch(/\bgetStaff\(\)/);
+        expect(source, name).toMatch(/\bcanProcessKyaraImports\(/);
+      } else expect(source, name).toMatch(/\bgetAdmin\(\)/);
+      if (name === "admin-settings.ts") {
+        // Une seule exception au rôle admin : les réglages de l'import Kyara
+        expect(source, name).toContain("saveSettings(KYARA_FORM_KEYS, kyaraSettingsSchema, input, undefined, kyaraStaff)");
+        expect(source.match(/,\s*undefined,\s*\w+\)/g), name).toEqual([", undefined, kyaraStaff)"]);
+        expect(source, name).toMatch(/\bcanProcessKyaraImports\(/);
+      }
       expect(source, name).not.toMatch(/\brequireAdminView\b/);
     }
   });

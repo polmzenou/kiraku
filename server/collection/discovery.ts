@@ -5,9 +5,20 @@ import type { Prisma } from "@/generated/prisma/client";
 
 type Tx = Prisma.TransactionClient;
 
-export async function recordDiscoveries(tx: Tx, entries: readonly { userId: string; cardId: string }[], now: Date): Promise<void> {
+export async function recordDiscoveries(
+  tx: Tx,
+  entries: readonly { userId: string; cardId: string }[],
+  now: Date,
+  options: { imported?: boolean } = {},
+): Promise<void> {
   if (entries.length === 0) return;
-  await tx.discovery.createMany({ data: entries.map((e) => ({ userId: e.userId, cardId: e.cardId, createdAt: now })), skipDuplicates: true });
+  const imported = options.imported === true;
+  await tx.discovery.createMany({
+    data: entries.map((e) => ({ userId: e.userId, cardId: e.cardId, createdAt: now, imported })),
+    skipDuplicates: true,
+  });
+  // Import Kyara : une découverte marquée, jamais une retrouvaille (ni mission ni tampon « Retrouvée »)
+  if (imported) return;
   for (const userId of new Set(entries.map((e) => e.userId))) {
     const cardIds = [...new Set(entries.filter((e) => e.userId === userId).map((e) => e.cardId))];
     // Seul un joueur au prestige 1 ou plus a des retrouvailles ; une carte se retrouve une fois par cycle

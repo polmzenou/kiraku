@@ -9,6 +9,7 @@ import { BoosterShowcase } from "@/components/boosters/showcase/BoosterShowcase"
 import type { ShowcaseFamily, ShowcaseItem } from "@/components/boosters/showcase/types";
 import { EventGauge, type EventGaugeCta } from "@/components/home/EventGauge";
 import { WrappedBanner } from "@/components/home/WrappedBanner";
+import { KyaraImportBanner } from "@/components/kyara/KyaraImportBanner";
 import { NewsPanel } from "@/components/home/NewsPanel";
 import { RecentPulls } from "@/components/home/RecentPulls";
 import { ReviewsSection, type ReviewViewer } from "@/components/home/ReviewsSection";
@@ -56,6 +57,7 @@ import { IncensePanel } from "@/components/boosters/IncensePanel";
 import { getIncenseState } from "@/server/boosters/incense";
 import { getOwnReview, getReviewSample, getReviewSummary } from "@/server/social/reviews";
 import { getCurrentUser } from "@/server/user";
+import { kyaraBannerFor } from "@/server/kyara/queries";
 import { getAmbassadorPack } from "@/server/ambassador/queries";
 import { getSetting } from "@/server/settings";
 
@@ -116,6 +118,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
   const [
     credits, allTypes, reviews, reviewSummary, ownReview, collectors, [pulls, pullsOwned], pullRefresh,
     sealedDrops, sealedDisplays, apocalypseKarma, ambassadorPack, incense, wished, gauge, gaugeRefresh, referralEnabled, showcaseEvent, wrappedYear,
+    kyaraBanner,
   ] = await Promise.all([
     user ? getBoosterCredits(user.id) : new Map<string, number>(),
     getBoosterTypes(),
@@ -141,6 +144,8 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
     getHomeShowcaseEvent(),
     // Wrapped de l'année : seulement pendant la période, et pour qui a ouvert des boosters cette année
     wrappedTeaser(user ?? null),
+    // Import Kyara : pendant la fenêtre du joueur, tant qu'il n'a rien demandé
+    kyaraBannerFor(user ?? null, state.serverNow),
   ]);
   // Seuls les inscrits comptent : les autres sont invités à créer un compte, les inscrits à amener du monde
   const gaugeCta: EventGaugeCta = !user || user.isGuest ? "signup" : !user.bannedAt && referralEnabled ? "invite" : null;
@@ -250,6 +255,8 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
       )}
 
       {wrappedYear !== null && <WrappedBanner year={wrappedYear} />}
+
+      {kyaraBanner && <KyaraImportBanner kind={kyaraBanner.kind} deadline={kyaraBanner.deadline} />}
 
       {gauge && <EventGauge key={gauge.phase} initial={gauge} refreshSeconds={gaugeRefresh} serverNow={state.serverNow} cta={gaugeCta} />}
 

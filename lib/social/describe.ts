@@ -8,6 +8,7 @@ import type {
   CoinFlipPayload,
   ExpeditionPayload,
   GiftPayload,
+  KyaraImportPayload,
   NotificationType,
   SealedPayload,
   TeamGiftPayload,
@@ -36,6 +37,8 @@ export type DescribableNotification = {
   expedition?: ExpeditionPayload | null;
   /** Avis de recherche (la carte cherchée est dans `card`). */
   buyOrder?: BuyOrderPayload | null;
+  /** Import Kyara versé ou refusé. */
+  kyara?: KyaraImportPayload | null;
   card: { anilistId: number; name: string; rarity: string } | null;
 };
 
@@ -89,6 +92,8 @@ export type DescribeTranslators = {
       | "buyOrderFilled"
       | "buyOrderExpired"
       | "buyOrderWanted"
+      | "kyaraImportDone"
+      | "kyaraImportRejected"
       | "aCard",
     values?: Values,
   ) => string;
@@ -200,6 +205,12 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
         href: n.card ? `/collection/${n.card.anilistId}` : "/marche?onglet=avis",
       };
     }
+    case "KYARA_IMPORT_DONE": {
+      const done = n.kyara?.kind === "DONE" ? n.kyara : null;
+      return { text: t("kyaraImportDone", { cards: done?.cards ?? 0, zeni: done?.zeni ?? 0 }), href: "/compte/import-kyara" };
+    }
+    case "KYARA_IMPORT_REJECTED":
+      return { text: t("kyaraImportRejected", { reason: n.kyara?.kind === "REJECTED" ? n.kyara.code : "OTHER" }), href: "/compte/import-kyara" };
     case "SEALED_OPENED": {
       // Cadeau empoisonné : celui qui a offert le sachet apprend ce qu'il a donné
       const key = n.sealed?.outcome === "RUINED" ? "sealedRuined" : n.sealed?.outcome === "SPARED" ? "sealedSpared" : "sealedDivin";

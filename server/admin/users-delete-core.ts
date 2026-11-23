@@ -12,6 +12,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { withdrawCasinoWith } from "../casino/coinflip-core";
 import { credit } from "../economy/ledger";
+import { forgetKyaraImportsFor } from "../kyara/import-core";
 import { lockPlayers } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { writeAdminLog } from "./log";
@@ -143,6 +144,8 @@ export async function deleteUserWith(
         },
         after: { deleted: true, reason: input.reason, auctionsCancelled: auctions.filter((a) => a.sellerId === input.userId).length, casinoTables },
       });
+      // Import Kyara : demandes non versées oubliées ; un import versé garde ses ids (SetNull), qui verrouillent
+      await forgetKyaraImportsFor(tx, user.id, now);
       await tx.user.delete({ where: { id: user.id }, select: { id: true } });
       return { username: user.username };
     },

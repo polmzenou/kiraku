@@ -30,6 +30,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       prestige: true,
       prestigedAt: true,
       createdAt: true,
+      registeredAt: true,
     },
   });
   if (!profile) return null;
@@ -74,6 +75,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     prestigeCycles,
     consecrated,
     provenance,
+    kyaraImports,
   ] = await Promise.all([
     db.account.findMany({ where: { userId }, select: { provider: true, providerAccountId: true } }),
     db.userCard.findMany({
@@ -94,7 +96,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     db.discovery.findMany({
       where: { userId },
       orderBy: { createdAt: "asc" },
-      select: { cardId: true, createdAt: true, regainedAt: true, card: { select: { name: true } } },
+      select: { cardId: true, createdAt: true, regainedAt: true, imported: true, card: { select: { name: true } } },
     }),
     db.wishlistEntry.findMany({ where: { userId }, orderBy: { position: "asc" }, select: { cardId: true, position: true, createdAt: true } }),
     db.deck.findMany({ where: { userId }, orderBy: { createdAt: "asc" }, select: { id: true, name: true, cardIds: true, createdAt: true, updatedAt: true } }),
@@ -291,6 +293,24 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       select: { id: true, cardId: true, heritage: true, printing: true, serial: true, size: true, journey: true, consecratedAt: true, card: { select: { name: true } } },
     }),
     db.userCardOwner.findMany({ where: { ownerId: userId }, orderBy: { at: "asc" }, select: { userCardId: true, via: true, at: true } }),
+    db.kyaraImport.findMany({
+      where: { userId },
+      orderBy: { requestedAt: "asc" },
+      select: {
+        id: true,
+        kyaraUserId: true,
+        kyaraUsername: true,
+        status: true,
+        requestedAt: true,
+        readAt: true,
+        appliedAt: true,
+        grantedCards: true,
+        grantedZeni: true,
+        rejectCode: true,
+        rejectNote: true,
+        snapshot: true,
+      },
+    }),
   ]);
 
   const input: ExportInput = {
@@ -308,11 +328,12 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       printing: c.printing,
       serial: c.serial,
     })),
-    discoveries: discoveries.map((d) => ({ cardId: d.cardId, cardName: d.card.name, createdAt: d.createdAt, regainedAt: d.regainedAt })),
+    discoveries: discoveries.map((d) => ({ cardId: d.cardId, cardName: d.card.name, createdAt: d.createdAt, regainedAt: d.regainedAt, imported: d.imported })),
     prestigeCycles,
     // Le parcours d'une carte consacrée cite d'autres joueurs : seuls les cycles du joueur sont exportés
     consecrated: consecrated.map(({ journey, card, ...c }) => ({ ...c, cardName: card.name, cycles: readJourney(journey).cycles })),
     provenance,
+    kyaraImports,
     wishlist,
     decks,
     abilityPurchases,

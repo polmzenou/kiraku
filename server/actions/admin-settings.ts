@@ -38,8 +38,10 @@ import {
   type ShowcaseSettingKey,
 } from "@/lib/settings/showcase-form";
 import { CASINO_FORM_KEYS, casinoSettingsSchema, type CasinoFormKey } from "@/lib/settings/casino-form";
+import { KYARA_FORM_KEYS, kyaraSettingsSchema, type KyaraFormKey } from "@/lib/settings/kyara-form";
 import { changedSettingKeys, type SettingsOf } from "@/lib/settings/form";
-import { getAdmin } from "../admin";
+import { canProcessKyaraImports } from "@/lib/admin/roles";
+import { getAdmin, getStaff } from "../admin";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
 import { forgetSettings, SETTINGS_TAG } from "../settings";
@@ -49,6 +51,7 @@ import { resolveNewsVisuals } from "../home/news";
 
 // Réglages de jeu depuis /admin. Ordre : rôle admin vérifié → Zod par clé → rate limit.
 // Chaque clé modifiée écrit sa ligne GameSetting et une ligne AdminLog (avant / après).
+// Seule exception au rôle admin : les réglages de l'import Kyara, ouverts à toute l'équipe (kyaraStaff).
 
 export type UpdateSettingsResult<K extends SettingKey = SettingKey> =
   | { ok: true; changed: K[] }
@@ -60,8 +63,10 @@ async function saveSettings<K extends SettingKey>(
   input: unknown,
   // Champs que le serveur décide d'après les valeurs en vigueur, lues dans la transaction
   finalize?: (next: SettingsOf<K>, before: SettingsOf<K>) => SettingsOf<K>,
+  // Qui peut enregistrer, si ce n'est pas l'admin seul
+  editor?: () => Promise<{ id: string } | null>,
 ): Promise<UpdateSettingsResult<K>> {
-  const admin = await getAdmin();
+  const admin = editor ? await editor() : await getAdmin();
   if (!admin) return { ok: false, error: "FORBIDDEN" };
 
   const parsed = schema.safeParse(input);
@@ -264,6 +269,17 @@ export async function updatePullFeedSettings(input: unknown): Promise<UpdateSett
 /** Casino : ouverture, garde-fous et règles du pile ou face (raretés jouables vérifiées contre le registre). */
 export async function updateCasinoSettings(input: unknown): Promise<UpdateSettingsResult<CasinoFormKey>> {
   return saveSettings(CASINO_FORM_KEYS, casinoSettingsSchema, input);
+}
+
+/** Import Kyara (/admin/kyara) : réservé à l'admin, comme tous les réglages (l'équipe entière traite la file). */
+/** Import Kyara : toute l'équipe (ADMIN et DEV) le règle, comme elle traite la file (lib/admin/roles.ts). */
+async function kyaraStaff() {
+  const staff = await getStaff();
+  return staff && canProcessKyaraImports(staff.user.role) ? staff.user : null;
+}
+
+export async function updateKyaraImportSettings(input: unknown): Promise<UpdateSettingsResult<KyaraFormKey>> {
+  return saveSettings(KYARA_FORM_KEYS, kyaraSettingsSchema, input, undefined, kyaraStaff);
 }
 
 export async function updateEventGaugeSettings(input: unknown): Promise<UpdateSettingsResult<EventGaugeSettingKey>> {

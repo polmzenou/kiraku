@@ -24,6 +24,7 @@ Kiraku s'adresse aux personnes de **15 ans et plus**. Si tu as moins de 15 ans, 
 - Les taux de tirage des boosters sont affichés dans le jeu. Le serveur décide seul des tirages, des prix et des résultats de combat.
 - L'éditeur peut faire évoluer l'équilibre du jeu (taux, prix, récompenses) à tout moment.
 - **Casino.** Le pile ou face du casino oppose deux joueurs qui misent chacun une carte du même palier ; le gagnant garde les deux. On n'y mise **ni Zeni ni argent réel**, et rien n'y est vendu : seules des cartes virtuelles, sans valeur monétaire, changent de main. Le tirage est fait par le serveur et vérifiable : son empreinte est publiée à l'ouverture de la table, puis la graine est révélée après le lancer. Une carte misée reste bloquée tant que sa table est ouverte et revient à son propriétaire si personne ne la relève à temps.
+- **Import Kyara.** Un joueur peut demander, une seule fois et dans le délai affiché, l'import de sa collection Kyara depuis un compte lié au même compte Discord que sur Kyara. Chaque personnage devient la carte de base correspondante, en un exemplaire ; une carte plus rare sur Kiraku que sur Kyara, déjà possédée ou absente du catalogue est convertie en Zeni selon le barème affiché. Un profil Kyara ou un compte Discord ne sert qu'à un seul import. L'équipe peut refuser une demande qu'elle ne peut pas vérifier. Kiraku n'est pas affilié à Kyara.
 
 ## 5. Règles de conduite
 

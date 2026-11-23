@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { KYARA_SEAL } from "@/lib/kyara/codes";
 import { describeNotification } from "@/lib/social/describe";
 import type { NotificationType } from "@/lib/social/notifications";
 import type { NotificationView } from "@/server/social/queries";
@@ -11,6 +12,7 @@ export function notificationSeal(type: NotificationType): string {
   if (type === "SEALED_OPENED") return "封";
   if (type === "AMBASSADOR_GRANTED") return "使";
   if (type === "EXPEDITION_RETURNED") return "遠";
+  if (type.startsWith("KYARA_IMPORT_")) return KYARA_SEAL;
   if (type === "OUTBID" || type.startsWith("AUCTION_")) return "競";
   if (type === "BATTLE_INVITE") return "戦";
   if (type.startsWith("COINFLIP_")) return "賭";

@@ -178,7 +178,8 @@
       "ledger": "Zeni history",
       "data": "My data",
       "social": "Social",
-      "casino": "Casino"
+      "casino": "Casino",
+      "kyaraImport": "Kyara import"
     }
   },
   "theme": {
@@ -1511,7 +1512,225 @@
       "casino": "Casino",
       "wrapped": "Wrapped",
       "prestige": "Prestige",
-      "multiAccounts": "Multi-accounts"
+      "multiAccounts": "Multi-accounts",
+      "kyara": "Kyara import"
+    },
+    "kyara": {
+      "title": "Kyara import",
+      "intro": "A player requests the import, then adds the Kiraku account as a friend on Kyara. A team member (admin or dev) opens that friend's profile on Kyara and clicks their bookmarklet: Kiraku finds the request through the avatar's Discord and grants it right away. Only doubtful reads wait, in “To check”. Our server never calls Kyara.",
+      "preview": "See the player page",
+      "status": {
+        "off": "Import off: no new requests (the queue can still be processed).",
+        "unconfigured": "Import on but not configured: players see “Coming soon”.",
+        "scheduled": "Launch planned on {date}.",
+        "open": "Import open since {date}."
+      },
+      "unconfiguredHelp": "Fill in the launch date and the Kyara profile address of the Kiraku account.",
+      "stats": {
+        "title": "Requests",
+        "pending": "Waiting",
+        "ready": "To check",
+        "done": "Granted",
+        "rejected": "Declined",
+        "cancelled": "Cancelled",
+        "oldest": "Oldest waiting request: {date}."
+      },
+      "settings": {
+        "title": "Settings",
+        "launchSection": "Launch",
+        "zeniSection": "Cards converted into Zeni",
+        "upkeepSection": "Retention",
+        "launchNow": "Launch now",
+        "clearDate": "Clear the date",
+        "invalid": "A setting is invalid: check the Kyara profile address and the limits.",
+        "codeLabel": "{code} · {rarity}",
+        "keys": {
+          "enabled": "Import on",
+          "launchAt": "Launch date",
+          "windowDays": "Days to make a request",
+          "staffProfileUrl": "Kyara profile of the Kiraku account",
+          "zeniByRarity": "Zeni per Kyara rarity",
+          "zeniCap": "Zeni cap per import",
+          "retentionDays": "Read collections kept (days)"
+        },
+        "hints": {
+          "launchAt": "Accounts registered before this date get their window from it, new ones from their registration.",
+          "windowDays": "A single request, within this delay; a request made in time can be processed later.",
+          "staffProfileUrl": "Address of the “My public profile” button of the account players add as a friend.",
+          "zeniByRarity": "For a card missing from our catalog, not published, or rarer here than on Kyara. A card already owned is worth its recycling value.",
+          "zeniCap": "Maximum Zeni for one import; 0 = no conversion.",
+          "retentionDays": "After a request closes: read collection, Kyara nickname and avatar erased. The locking ids remain."
+        }
+      },
+      "queue": {
+        "title": "Request queue",
+        "tabs": "Request status",
+        "tab": {
+          "PENDING": "Waiting",
+          "READY": "To check",
+          "DONE": "Granted",
+          "REJECTED": "Declined"
+        },
+        "empty": "No requests here.",
+        "deletedPlayer": "Deleted account",
+        "requested": "Requested {date}",
+        "accountAge": "account created {date}",
+        "cards": "{count, plural, one {# character read} other {# characters read}}",
+        "granted": "{cards, number} cards, {zeni, number} Zeni",
+        "kyaraProfile": "Kyara profile",
+        "open": "Details",
+        "pendingHelp": "These players are waiting for you to read their collection: accept their friend requests on Kyara (Kiraku account), open each profile and click your bookmarklet."
+      },
+      "bookmarklet": {
+        "title": "“Send to Kiraku” bookmarklet (version {build})",
+        "install": "Once: “Generate my bookmarklet”, then create a bookmark in your browser and paste the copied code as its address. It holds your key: don't share it.",
+        "use": "On Kyara, logged in as the Kiraku account: accept friend requests, open a friend's profile, then click the bookmarklet.",
+        "after": "Kiraku finds the request through the avatar's Discord and grants it right away; a doubtful read waits in “To check”. Go back to Kyara for the next friend, and remove processed players from your friends.",
+        "copyBookmarklet": "Copy the bookmarklet",
+        "copyConsole": "Copy the console code",
+        "copiedBookmarklet": "Bookmarklet copied: paste it as the address of a new bookmark.",
+        "copiedConsole": "Code copied: paste it in the kyara.games console (F12), then paste the printed batch on the receive page.",
+        "copyFailed": "Copy failed: allow clipboard access.",
+        "texts": {
+          "wrongPage": "First open a friend's profile on kyara.games.",
+          "noToken": "Log in to Kyara with the Kiraku account.",
+          "reading": "Reading… {n} cards",
+          "hidden": "Collection not visible: the player must add the Kiraku account as a friend and show it their collection.",
+          "failed": "Reading failed (error {e}).",
+          "copy": "Copy this batch, then paste it on Kiraku's receive page:"
+        },
+        "generate": "Generate my bookmarklet",
+        "regenerate": "Generate a new bookmarklet",
+        "regenerateConfirm": "Your current bookmarklet will stop working. Generate a new one?",
+        "issued": "Your current bookmarklet is from {date}. Lost it? Generate a new one.",
+        "none": "You don't have a bookmarklet yet.",
+        "generated": "Bookmarklet ready: copy it now, it won't be shown again."
+      },
+      "receive": {
+        "title": "Receive a collection",
+        "intro": "The bookmarklet opens this page with the collection read on Kyara. Kiraku checks your key, finds the request through the avatar's Discord, then grants the cards.",
+        "back": "Back to the queue",
+        "sending": "Checking…",
+        "empty": "No collection received: run your bookmarklet from a friend's profile on Kyara, or paste a batch below.",
+        "confirmNoDiscord": "I confirm this Kyara profile belongs to this player.",
+        "confirmSend": "Confirm and keep the collection",
+        "pasteLabel": "Paste a batch (console variant)",
+        "pasteSend": "Send the batch",
+        "done": "Granted to {player}: {cards, plural, one {# card} other {# cards}} and {zeni, number} Zeni.",
+        "review": "{player}'s collection kept, to check: {reason}.",
+        "openDetail": "Open the request",
+        "next": "Go back to Kyara (previous page) and open the next friend's profile.",
+        "readProfile": "Kyara profile read: {pseudo}",
+        "matchTitle": "Avatar without a Discord ID",
+        "matchHelp": "Pick this player's request by comparing nicknames. The collection will then wait in “To check”.",
+        "matchLabel": "Waiting request",
+        "matchPlaceholder": "Choose…",
+        "matchNone": "No waiting request.",
+        "matchOption": "{player} · requested on {date}"
+      },
+      "detail": {
+        "back": "Back to the queue",
+        "status": {
+          "PENDING": "waiting",
+          "READY": "to check",
+          "DONE": "granted",
+          "REJECTED": "declined",
+          "CANCELLED": "cancelled"
+        },
+        "requested": "Request",
+        "deadline": "window until {date}",
+        "player": "Player",
+        "accountAge": "Account created {date}",
+        "banned": "Banned",
+        "discord": "Discord",
+        "discordKiraku": "Linked to Kiraku: {id}",
+        "discordKyara": "Kyara avatar: {id}",
+        "discordMatch": "Same Discord account",
+        "discordConfirmed": "No ID in the avatar: confirmed by hand",
+        "discordChanged": "The linked Discord changed since the request",
+        "kyara": "Kyara profile",
+        "read": "{cards, number} characters, {copies, number} copies{announced, select, yes {, {total, number} announced by Kyara} other {}}, read on {date}",
+        "sameProfile": "{count, plural, one {# other request} other {# other requests}} on this profile",
+        "processHelp": "Waiting: once this player is among the Kiraku account's friends on Kyara, open their profile and click your bookmarklet.",
+        "preview": "Preview: {cards, number} cards and {zeni, number} Zeni",
+        "capped": "Cap reached ({raw, number} Zeni before the cap).",
+        "kind": {
+          "OWNED": "{count, number} already owned: {zeni, number} Zeni",
+          "ABOVE": "{count, number} rarer here: {zeni, number} Zeni",
+          "MISSING": "{count, number} missing from the catalog: {zeni, number} Zeni",
+          "UNPUBLISHED": "{count, number} not published: {zeni, number} Zeni"
+        },
+        "extraCopies": "{count, plural, one {# extra copy ignored} other {# extra copies ignored}}",
+        "truncated": "Incomplete read: {read, number} characters read out of {total, number} announced. Read again before approving.",
+        "done": "Granted on {date}: {cards, number} cards and {zeni, number} Zeni.",
+        "rejected": "Declined on {date}: {reason}.",
+        "removeFriend": "After processing, remove the player from the Kiraku account's friends on Kyara.",
+        "review": "To check: {reason}.",
+        "notRead": "Not read yet"
+      },
+      "decision": {
+        "title": "Decision",
+        "apply": "Grant {cards, number} cards and {zeni, number} Zeni",
+        "applyConfirm": "Grant {cards, number} cards and {zeni, number} Zeni to this player? Once only, no undo.",
+        "applied": "Import granted.",
+        "rereadButton": "Read again on Kyara",
+        "reread": "Request back to waiting: read the collection again.",
+        "rejectCode": "Decline reason",
+        "noteOptional": "Note for the player (optional)",
+        "noteRequired": "Note for the player (required)",
+        "reject": "Decline",
+        "rejected": "Request declined, player notified.",
+        "reopen": "Reopen the request",
+        "reopened": "Request back to waiting."
+      },
+      "rejectCodes": {
+        "NOT_FRIEND": "Kiraku account not a friend",
+        "COLLECTION_HIDDEN": "Collection not shown",
+        "PROFILE_NOT_FOUND": "Profile not found",
+        "DISCORD_MISMATCH": "Different Discord",
+        "ALREADY_IMPORTED": "Already imported",
+        "SUSPECT": "Suspicious profile",
+        "OTHER": "Other (note required)"
+      },
+      "errors": {
+        "FORBIDDEN": "Team only.",
+        "INVALID": "Invalid request.",
+        "RATE_LIMITED": "Too many actions: wait a minute.",
+        "PAYLOAD_INVALID": "Unreadable batch: run the bookmarklet again.",
+        "PAYLOAD_TOO_LARGE": "Batch too large.",
+        "PAYLOAD_VERSION": "Bookmarklet too old: generate a new one on /admin/kyara.",
+        "DISABLED": "Import off.",
+        "NOT_LAUNCHED": "Import not open yet.",
+        "UNAVAILABLE": "Action unavailable right now.",
+        "GUEST": "Guest account.",
+        "EXPIRED": "Window closed.",
+        "NO_DISCORD": "Discord not linked.",
+        "OWN_STAFF_PROFILE": "That's the Kiraku account's profile: open a friend's profile.",
+        "ALREADY_REQUESTED": "Request already in progress.",
+        "ALREADY_DONE": "Already granted.",
+        "DISCORD_ALREADY_USED": "Discord already used.",
+        "CONFLICT": "The player has another request in progress.",
+        "NOT_FOUND": "Request not found.",
+        "NOT_PENDING": "The request is no longer waiting.",
+        "NOT_READY": "The collection hasn't been read.",
+        "SELF": "You don't process your own request.",
+        "DISCORD_MISMATCH": "The Kyara avatar shows another Discord account than this request's.",
+        "DISCORD_UNVERIFIED": "The Kyara avatar shows no Discord ID: pick the player's request, then confirm.",
+        "KYARA_TAKEN": "This Kyara profile is already read or granted for another request.",
+        "PLAYER_UNAVAILABLE": "The player's account is no longer available (banned, deleted).",
+        "SNAPSHOT_INVALID": "Stored collection unreadable: read it again.",
+        "STALE": "The player's collection changed: reload the details before approving.",
+        "NOT_REJECTABLE": "This request can no longer be declined.",
+        "NOT_REOPENABLE": "This request can't be reopened.",
+        "ALREADY_READ": "Collection already read: it's waiting in “To check”.",
+        "NO_REQUEST": "No waiting request for this Discord account: the player must first request the import on Kiraku, with the same Discord.",
+        "KEY_INVALID": "Unknown or replaced bookmarklet: generate yours on /admin/kyara and reinstall it."
+      },
+      "reviewReasons": {
+        "DISCORD_UNVERIFIED": "avatar without a Discord ID",
+        "EMPTY": "no card read",
+        "TRUNCATED": "incomplete read"
+      }
     },
     "boosters": {
       "title": "Booster settings",
@@ -2698,6 +2917,9 @@
         "prestige": {
           "enabled": "Prestige"
         },
+        "kyaraImport": {
+          "enabled": "Kyara import"
+        },
         "notifications": {
           "pushEnabled": "Push notifications"
         },
@@ -2739,6 +2961,9 @@
         },
         "prestige": {
           "enabled": "The /prestige page and the profile's “Evolve” button. Off: only admins see the page (preview)."
+        },
+        "kyaraImport": {
+          "enabled": "Requests to import a Kyara collection (Account page, home banner). Off: no new requests, but the team can finish the queue."
         },
         "notifications": {
           "pushEnabled": "Sending notifications when the tab is closed."
@@ -5193,7 +5418,9 @@
     "expeditionReturned": "Your expedition is back. Come open its report.",
     "buyOrderFilled": "{name} sold you {card} for {amount, number} Zeni: your buy order is filled.",
     "buyOrderExpired": "Your buy order for {card} expired: {amount, number} Zeni are back.",
-    "buyOrderWanted": "{name} is looking for {card} at {amount, number} Zeni. You own a copy: sell it in one tap."
+    "buyOrderWanted": "{name} is looking for {card} at {amount, number} Zeni. You own a copy: sell it in one tap.",
+    "kyaraImportDone": "Your Kyara collection has arrived: {cards, plural, =0 {no cards} one {# card} other {# cards}} and {zeni, number} Zeni.",
+    "kyaraImportRejected": "Your Kyara import request was declined: {reason, select, NOT_FRIEND {the Kiraku account isn't in your Kyara friends} COLLECTION_HIDDEN {your collection isn't visible to the Kiraku account} PROFILE_NOT_FOUND {this Kyara profile can't be found} DISCORD_MISMATCH {this Kyara profile isn't linked to your Discord account} ALREADY_IMPORTED {this Kyara profile was already imported} SUSPECT {the team couldn't verify this profile} other {see the team's note}}."
   },
   "push": {
     "title": "Notifications on this device",
@@ -5462,7 +5689,8 @@
         "EXPEDITION": "Expedition",
         "ORDER_HOLD": "Buy order (Zeni locked)",
         "ORDER_REFUND": "Buy order refunded",
-        "REBIRTH": "Rebirth (prestige)"
+        "REBIRTH": "Rebirth (prestige)",
+        "KYARA_IMPORT": "Kyara import (converted cards)"
       }
     },
     "reveal": {
@@ -6304,6 +6532,7 @@
       "news": "Remembers whether you collapsed the home page news panel.",
       "speedInsights": "Vercel performance measurement (no cookies or persistent identifiers)",
       "casinoCeremony": "Remembers that you've already seen the casino opening ceremony on this device.",
+      "kyaraBanner": "Remembers that you've hidden the Kyara import banner on this device.",
       "nav": "Remembers the desktop navigation layout (top menus or sidebar).",
       "security": "Random identifier for this device: spots mass account creation and enforces bans."
     },
@@ -7127,6 +7356,126 @@
       "dismiss": "Hide"
     },
     "profileButton": "My year {year}"
+  },
+  "kyaraImport": {
+    "title": "Import your Kyara collection",
+    "intro": "Coming from Kyara? Bring your cards over: once only, and they land in your collection.",
+    "notAffiliated": "Kiraku is not affiliated with Kyara. Your Kyara account is untouched: your cards stay there.",
+    "soon": "Importing your Kyara collection is coming soon.",
+    "soonDated": "Importing your Kyara collection opens on {date}.",
+    "deadline": "You have until {date} to make your request.",
+    "guest": {
+      "title": "Create your account to import",
+      "body": "Imports are made from an account linked to Discord (the same one as on Kyara). You'll have {days} days after signing up to request it.",
+      "register": "Sign up with an email"
+    },
+    "closed": {
+      "NO_DISCORD": "To prove the Kyara account is yours, link your Discord account (the same one as on Kyara) before {date}.",
+      "EXPIRED": "The import window closed on {date}.",
+      "DISCORD_USED": "This Discord account was already used for a Kyara import.",
+      "UNAVAILABLE": "Imports aren't available for this account.",
+      "linkDiscord": "Link my Discord account"
+    },
+    "steps": {
+      "one": "Request the import with the button below.",
+      "two": "On Kyara, add the Kiraku account as a friend and let it see your collection (“Show my collection”):",
+      "three": "The team reads your collection from the Kiraku account and your cards arrive right away. Your Kyara account must use the same Discord as Kiraku.",
+      "staffProfile": "Kiraku profile on Kyara"
+    },
+    "rules": {
+      "title": "What you get",
+      "card": "Each Kyara card becomes the same card here, as a single copy: duplicates don't count.",
+      "cap": "If the card is rarer here than on Kyara, you get Zeni instead.",
+      "owned": "A card you already own on Kiraku gives you its recycling value in Zeni.",
+      "missing": "A character we don't have yet gives you Zeni:",
+      "scale": "{rarity} ({code}): {zeni, number} Zeni",
+      "zeniCap": "At most {cap, number} Zeni per import.",
+      "once": "One import per Kiraku account, per Discord account and per Kyara account."
+    },
+    "form": {
+      "submit": "Request the import",
+      "pending": "Sending…",
+      "confirm": "One import per account. Is your Kyara account linked to the same Discord as your Kiraku account?"
+    },
+    "pending": {
+      "title": "Request sent",
+      "body": "Last step: on Kyara, add the Kiraku account as a friend and let it see your collection (“Show my collection”). As soon as the team has read it, your cards arrive and you get a notification.",
+      "sameDiscord": "The team finds your request through the Discord account of your Kyara profile: it must be the one linked to Kiraku.",
+      "requested": "Requested on {date}."
+    },
+    "cancel": {
+      "button": "Cancel my request",
+      "confirm": "Cancel your import request? You can make a new one while the window is open.",
+      "pending": "Cancelling…"
+    },
+    "ready": {
+      "title": "Collection read",
+      "body": "The team read your collection and is checking a detail before granting your cards."
+    },
+    "rejected": {
+      "title": "Request declined",
+      "reason": "{reason, select, NOT_FRIEND {The Kiraku account isn't in your Kyara friends.} COLLECTION_HIDDEN {Your collection isn't visible to the Kiraku account.} PROFILE_NOT_FOUND {This Kyara profile can't be found.} DISCORD_MISMATCH {This Kyara profile isn't linked to your Discord account.} ALREADY_IMPORTED {This Kyara profile was already imported.} SUSPECT {The team couldn't verify this profile.} other {The team declined the request.}}",
+      "note": "Team note: {note}",
+      "noRetry": "The import window is closed."
+    },
+    "done": {
+      "title": "Import complete",
+      "cardsLabel": "Cards received",
+      "zeniLabel": "Zeni received",
+      "capped": "Cap reached: {raw, number} Zeni before the cap.",
+      "rarityCount": "{rarity}: {count, number}",
+      "kind": {
+        "OWNED": "{count, plural, one {# card already in your collection} other {# cards already in your collection}}: {zeni, number} Zeni",
+        "ABOVE": "{count, plural, one {# card rarer here} other {# cards rarer here}}: {zeni, number} Zeni",
+        "MISSING": "{count, plural, one {# character missing from Kiraku} other {# characters missing from Kiraku}}: {zeni, number} Zeni",
+        "UNPUBLISHED": "{count, plural, one {# card not published yet} other {# cards not published yet}}: {zeni, number} Zeni"
+      },
+      "extraCopies": "{count, plural, one {# extra copy ignored} other {# extra copies ignored}}",
+      "top": "Your best cards",
+      "collection": "See my collection"
+    },
+    "banner": {
+      "kicker": "Kyara import",
+      "title": "Coming from Kyara?",
+      "body": {
+        "OPEN": "Import your Kyara collection until {date}.",
+        "GUEST": "Create your account: you'll be able to import your Kyara collection.",
+        "NO_DISCORD": "Link your Discord to import your Kyara collection before {date}."
+      },
+      "cta": "Import",
+      "dismiss": "Later"
+    },
+    "errors": {
+      "NO_SESSION": "Your session expired: reload the page.",
+      "INVALID": "Invalid request: reload the page.",
+      "RATE_LIMITED": "Too many requests: try again a bit later.",
+      "DISABLED": "Kyara imports are off for now.",
+      "NOT_LAUNCHED": "Kyara imports aren't open yet.",
+      "UNAVAILABLE": "Imports aren't available right now.",
+      "GUEST": "Create your account before requesting the import.",
+      "EXPIRED": "The import window is closed.",
+      "NO_DISCORD": "Link your Discord account first.",
+      "OWN_STAFF_PROFILE": "That's the Kiraku account's profile.",
+      "ALREADY_REQUESTED": "You already have a request in progress.",
+      "ALREADY_DONE": "Your Kyara collection was already imported.",
+      "DISCORD_ALREADY_USED": "This Discord account was already used for a Kyara import.",
+      "CONFLICT": "Another request was just made: reload the page.",
+      "NOT_FOUND": "Request not found.",
+      "NOT_PENDING": "This request is no longer waiting.",
+      "NOT_READY": "This request isn't ready.",
+      "SELF": "You can't do this on your own request.",
+      "DISCORD_MISMATCH": "This Kyara profile isn't linked to the player's Discord account.",
+      "DISCORD_UNVERIFIED": "The Kyara avatar doesn't show a Discord ID.",
+      "KYARA_TAKEN": "This Kyara profile is already read for another request.",
+      "PLAYER_UNAVAILABLE": "This account is no longer available.",
+      "SNAPSHOT_INVALID": "The read collection can't be used.",
+      "STALE": "The preview changed: read it again before approving.",
+      "NOT_REJECTABLE": "This request can no longer be declined.",
+      "NOT_REOPENABLE": "This request can't be reopened.",
+      "ALREADY_READ": "Your collection was already read.",
+      "NO_REQUEST": "No waiting request for this Discord account.",
+      "KEY_INVALID": "Invalid team bookmarklet."
+    }
   },
   "prestige": {
     "metaTitle": "Prestige",

@@ -8,6 +8,7 @@ import type {
   CoinFlipPayload,
   ExpeditionPayload,
   GiftPayload,
+  KyaraImportPayload,
   ListingPayload,
   NotificationType,
   SealedPayload,
@@ -31,7 +32,8 @@ type NewNotification = {
     | SealedPayload
     | CoinFlipPayload
     | ExpeditionPayload
-    | BuyOrderPayload;
+    | BuyOrderPayload
+    | KyaraImportPayload;
   now: Date;
 };
 

@@ -43,6 +43,7 @@ const GROUPS = [
     modules: [
       { key: "users", href: "/admin/utilisateurs" },
       { key: "multiAccounts", href: "/admin/multi-comptes" },
+      { key: "kyara", href: "/admin/kyara" },
       { key: "social", href: "/admin/social" },
       { key: "referral", href: "/admin/parrainage" },
       { key: "reviews", href: "/admin/avis" },

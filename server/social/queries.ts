@@ -13,6 +13,8 @@ import {
   type SealedPayload,
   parseExpeditionPayload,
   type ExpeditionPayload,
+  parseKyaraImportPayload,
+  type KyaraImportPayload,
   parseTradePayload,
   type CoinFlipPayload,
   type AuctionPayload,
@@ -177,7 +179,9 @@ export type NotificationView = {
   expedition: ExpeditionPayload | null;
   /** Avis de recherche (la carte cherchée est dans `card`). */
   buyOrder: BuyOrderPayload | null;
-  /** Texte libre joint : mot de l'équipe (cadeaux, lots) ou motif d'un refus d'échange. */
+  /** Import Kyara versé ou refusé. */
+  kyara: KyaraImportPayload | null;
+  /** Texte libre joint : mot de l'équipe (cadeaux, lots), motif d'un refus d'échange ou d'import Kyara. */
   note: string | null;
   card: { anilistId: number; name: string; rarity: string } | null;
 };
@@ -223,22 +227,30 @@ const AUCTION_TYPES: ReadonlySet<NotificationType> = new Set([
 
 /**
  * Textes libres joints aux notifications, lus dans leur ligne d'origine (jamais dans le payload) :
- * mot de l'équipe d'un cadeau ou d'un lot, motif d'un refus d'échange ou d'offre.
+ * mot de l'équipe d'un cadeau ou d'un lot, motif d'un refus d'échange, d'offre ou d'import Kyara.
  */
 async function notesFor(rows: { id: string; type: NotificationType; refId: string | null }[]): Promise<Map<string, string>> {
   const refs = (types: NotificationType[]) => [...new Set(rows.flatMap((r) => (types.includes(r.type) && r.refId ? [r.refId] : [])))];
-  const [teamIds, lotIds, tradeIds, offerIds] = [refs(["TEAM_GIFT"]), refs(["LOT_GRANTED"]), refs(["TRADE_DECLINED"]), refs(["LISTING_DECLINED"])];
-  const [teams, grants, broadcasts, trades, offers] = await Promise.all([
+  const [teamIds, lotIds, tradeIds, offerIds, kyaraIds] = [
+    refs(["TEAM_GIFT"]),
+    refs(["LOT_GRANTED"]),
+    refs(["TRADE_DECLINED"]),
+    refs(["LISTING_DECLINED"]),
+    refs(["KYARA_IMPORT_REJECTED"]),
+  ];
+  const [teams, grants, broadcasts, trades, offers, kyara] = await Promise.all([
     teamIds.length ? prisma.teamGift.findMany({ where: { id: { in: teamIds } }, select: { id: true, message: true } }) : [],
     // Un lot envoyé à un joueur pointe sur son LotGrant, un envoi à tous sur le LotBroadcast
     lotIds.length ? prisma.lotGrant.findMany({ where: { id: { in: lotIds } }, select: { id: true, message: true } }) : [],
     lotIds.length ? prisma.lotBroadcast.findMany({ where: { id: { in: lotIds } }, select: { id: true, message: true } }) : [],
     tradeIds.length ? prisma.trade.findMany({ where: { id: { in: tradeIds } }, select: { id: true, declineNote: true } }) : [],
     offerIds.length ? prisma.listingOffer.findMany({ where: { id: { in: offerIds } }, select: { id: true, declineNote: true } }) : [],
+    kyaraIds.length ? prisma.kyaraImport.findMany({ where: { id: { in: kyaraIds } }, select: { id: true, rejectNote: true } }) : [],
   ]);
   const byRef = new Map<string, string>();
   for (const row of [...teams, ...grants, ...broadcasts]) if (row.message) byRef.set(row.id, row.message);
   for (const row of [...trades, ...offers]) if (row.declineNote) byRef.set(row.id, row.declineNote);
+  for (const row of kyara) if (row.rejectNote) byRef.set(row.id, row.rejectNote);
   return new Map(rows.flatMap((r) => (r.refId && byRef.has(r.refId) ? [[r.id, byRef.get(r.refId)!] as const] : [])));
 }
 
@@ -321,6 +333,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
       coinFlip,
       expedition: r.type === "EXPEDITION_RETURNED" ? parseExpeditionPayload(r.payload) : null,
       buyOrder,
+      kyara: r.type.startsWith("KYARA_IMPORT_") ? parseKyaraImportPayload(r.payload) : null,
       note: notes.get(r.id) ?? null,
       card: card ? { anilistId: card.publicId, name: card.name, rarity: card.rarity } : null,
     };

@@ -28,6 +28,16 @@ describe("describeNotification", () => {
     expect(d.text).toContain('"rarity":"epic"');
   });
 
+  it("import Kyara versé ou refusé → page de l'import, avec les nombres ou le motif", () => {
+    const base = { actor: { username: "akira", isGuest: false }, gift: null, card: null };
+    const done = describeNotification({ ...base, type: "KYARA_IMPORT_DONE", kyara: { kind: "DONE", cards: 120, zeni: 340 } }, tr);
+    expect(done).toEqual({ text: 'kyaraImportDone:{"cards":120,"zeni":340}', href: "/compte/import-kyara" });
+    const rejected = describeNotification({ ...base, type: "KYARA_IMPORT_REJECTED", kyara: { kind: "REJECTED", code: "NOT_FRIEND" } }, tr);
+    expect(rejected).toEqual({ text: 'kyaraImportRejected:{"reason":"NOT_FRIEND"}', href: "/compte/import-kyara" });
+    // Contenu illisible : motif générique
+    expect(describeNotification({ ...base, type: "KYARA_IMPORT_REJECTED", kyara: null }, tr).text).toContain('"reason":"OTHER"');
+  });
+
   it("pile ou face : invitation et table relevée → page de la table, sans jamais l'issue", () => {
     const base = { actor: { username: "kenji", isGuest: false }, gift: null, card: { anilistId: 40, name: "Luffy", rarity: "MYTHIC" } };
     const coinFlip = { flipId: "t1", cardId: "c1", reason: null };
