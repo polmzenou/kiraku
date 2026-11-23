@@ -76,6 +76,7 @@ export default async function KyaraImportPage() {
       <li>
         {t("steps.two")} {staffLink}
       </li>
+      <li>{t("steps.share")}</li>
       <li>{t("steps.three")}</li>
     </ol>
   );

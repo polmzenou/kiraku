@@ -46,6 +46,7 @@ export default async function AdminKyaraPage({ searchParams }: PageProps<"/[loca
     noToken: template("noToken"),
     reading: template("reading"),
     hidden: template("hidden"),
+    notShared: template("notShared"),
     failed: template("failed"),
     copy: template("copy"),
   };

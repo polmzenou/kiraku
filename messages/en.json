@@ -1584,7 +1584,7 @@
       "bookmarklet": {
         "title": "“Send to Kiraku” bookmarklet (version {build})",
         "install": "Once: “Generate my bookmarklet”, then create a bookmark in your browser and paste the copied code as its address. It holds your key: don't share it.",
-        "use": "On Kyara, logged in as the Kiraku account: accept friend requests, open a friend's profile, then click the bookmarklet.",
+        "use": "On Kyara, logged in as the Kiraku account: accept friend requests, open a friend's profile, then click the bookmarklet. The “… shows you their collection” notification means a player is ready.",
         "after": "Kiraku finds the request through the avatar's Discord and grants it right away; a doubtful read waits in “To check”. Go back to Kyara for the next friend, and remove processed players from your friends.",
         "copyBookmarklet": "Copy the bookmarklet",
         "copyConsole": "Copy the console code",
@@ -1595,7 +1595,8 @@
           "wrongPage": "First open a friend's profile on kyara.games.",
           "noToken": "Log in to Kyara with the Kiraku account.",
           "reading": "Reading… {n} cards",
-          "hidden": "Collection not visible: the player must add the Kiraku account as a friend and show it their collection.",
+          "hidden": "Collection not visible to the Kiraku account: the player must add it as a friend, then click “Show my collection” in their conversation.",
+          "notShared": "Collection not shared yet: the player must open their conversation with Kiraku on Kyara (Friends, messages tab) and click “Show my collection”.",
           "failed": "Reading failed (error {e}).",
           "copy": "Copy this batch, then paste it on Kiraku's receive page:"
         },
@@ -7378,7 +7379,8 @@
     },
     "steps": {
       "one": "Request the import with the button below.",
-      "two": "On Kyara, add the Kiraku account as a friend and let it see your collection (“Show my collection”):",
+      "two": "On Kyara, add the Kiraku account as a friend:",
+      "share": "Then, still on Kyara, open your conversation with Kiraku (Friends, messages tab) and click “Show my collection”. Being friends isn't enough: without this click, the team can't see your cards.",
       "three": "The team reads your collection from the Kiraku account and your cards arrive right away. Your Kyara account must use the same Discord as Kiraku.",
       "staffProfile": "Kiraku profile on Kyara"
     },
@@ -7399,7 +7401,7 @@
     },
     "pending": {
       "title": "Request sent",
-      "body": "Last step: on Kyara, add the Kiraku account as a friend and let it see your collection (“Show my collection”). As soon as the team has read it, your cards arrive and you get a notification.",
+      "body": "Last step, on Kyara: add the Kiraku account as a friend, then open your conversation (Friends, messages tab) and click “Show my collection”. As soon as the team has read it, your cards arrive and you get a notification.",
       "sameDiscord": "The team finds your request through the Discord account of your Kyara profile: it must be the one linked to Kiraku.",
       "requested": "Requested on {date}."
     },

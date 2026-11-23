@@ -10,9 +10,11 @@ import { KYARA_PAYLOAD_VERSION } from "./codes";
 //     docs/KYARA-IMPORT.md) : BOOKMARKLET_BUILD à augmenter à chaque changement.
 // Variante « console » : même code, qui affiche le lot au lieu d'ouvrir Kiraku (secours si un favori est bloqué).
 // Profil ouvert = compte Kyara connecté (essai avec un seul compte) : la collection est lue par /api/me/collection.
+// Être ami ne suffit pas : Kyara répond 403 « not_shared » tant que le joueur n'a pas cliqué « Montrer ma collection »
+// dans sa conversation avec le compte Kiraku (essai du 23/11 en production). Un refus affiche la raison de Kyara.
 // Rien n'est affaibli : le lot n'est accepté qu'avec la clé du membre connecté à Kiraku et le même compte Discord.
 
-export const BOOKMARKLET_BUILD = 2;
+export const BOOKMARKLET_BUILD = 3;
 
 export type BookmarkletTexts = {
   /** Pas sur un profil kyara.games. */
@@ -21,8 +23,10 @@ export type BookmarkletTexts = {
   noToken: string;
   /** Titre de l'onglet pendant la lecture (« {n} » = cartes lues). */
   reading: string;
-  /** Collection non visible pour le compte Kiraku (pas ami, ou « Montrer ma collection » coupé). */
+  /** Collection non visible pour le compte Kiraku (pas ami, autre refus) ; la raison de Kyara est ajoutée entre parenthèses. */
   hidden: string;
+  /** Kyara répond « not_shared » : ami, mais « Montrer ma collection » pas encore cliqué dans la conversation. */
+  notShared: string;
   /** Autre échec (« {e} » = code d'erreur). */
   failed: string;
   /** Variante console : invite à copier le lot. */
@@ -49,7 +53,7 @@ const m=location.pathname.match(/^\\/profil\\/([0-9a-fA-F-]{36})\\/?$/);
 if(location.origin!=="https://kyara.games"||!m){alert(T.wrongPage);return}
 const tok=localStorage.getItem("kyara_token");if(!tok){alert(T.noToken);return}
 const id=m[1].toLowerCase(),H={authorization:"Bearer "+tok};
-const get=async(p,a)=>{const r=await fetch("/api"+p,a?{headers:H}:{});if(!r.ok)throw r.status;return r.json()};
+const get=async(p,a)=>{const r=await fetch("/api"+p,a?{headers:H}:{});if(!r.ok){let b=null;try{b=await r.json()}catch(e){}throw{s:r.status,c:b&&b.error,m:b&&b.message}}return r.json()};
 const list=d=>Array.isArray(d)?d:(d&&(d.items||d.cards))||[];
 try{
 const prof=await get("/users/"+id,0);
@@ -67,7 +71,8 @@ if(typeof CompressionStream==="function"){bytes=new Uint8Array(await new Respons
 let bin="";for(let i=0;i<bytes.length;i+=32768)bin+=String.fromCharCode(...bytes.subarray(i,i+32768));
 const frag=tag+"."+btoa(bin).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");
 if(K.m==="print"){console.log(frag);prompt(T.copy,frag)}else location.assign(K.r+"#"+frag)
-}catch(e){alert(e===403||e===401?T.hidden:T.failed.replace("{e}",String(e)))}})();`;
+}catch(e){const s=e&&e.s,c=e&&typeof e.c==="string"?e.c:"",w=e&&typeof e.m==="string"?" ("+e.m.slice(0,200)+")":"";
+alert(c==="not_shared"?T.notShared:s===403||s===401?T.hidden+w:T.failed.replace("{e}",String(s??e)+(c?" · "+c:"")))}})();`;
 }
 
 /** Adresse du favori : « javascript: » + code encodé (un « # » brut couperait le favori). */

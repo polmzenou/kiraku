@@ -1584,7 +1584,7 @@
       "bookmarklet": {
         "title": "Favori « Envoyer à Kiraku » (version {build})",
         "install": "Une fois : « Générer mon favori », puis crée un favori dans ton navigateur et colle comme adresse le code copié. Il contient ta clé : ne le partage pas.",
-        "use": "Sur Kyara, connecté au compte Kiraku : accepte les demandes d'ami, ouvre le profil d'un ami, puis clique le favori.",
+        "use": "Sur Kyara, connecté au compte Kiraku : accepte les demandes d'ami, ouvre le profil d'un ami, puis clique le favori. La notification « … te montre sa collection » dit qu'un joueur est prêt.",
         "after": "Kiraku retrouve la demande par le Discord de l'avatar et verse aussitôt ; une lecture douteuse attend dans « À vérifier ». Reviens sur Kyara pour l'ami suivant, et retire de tes amis ceux qui sont traités.",
         "copyBookmarklet": "Copier le favori",
         "copyConsole": "Copier le code console",
@@ -1595,7 +1595,8 @@
           "wrongPage": "Ouvre d'abord le profil d'un ami sur kyara.games.",
           "noToken": "Connecte-toi à Kyara avec le compte Kiraku.",
           "reading": "Lecture… {n} cartes",
-          "hidden": "Collection invisible : le joueur doit ajouter le compte Kiraku en ami et lui montrer sa collection.",
+          "hidden": "Collection invisible pour le compte Kiraku : le joueur doit l'ajouter en ami, puis cliquer « Montrer ma collection » dans leur conversation.",
+          "notShared": "Collection pas encore partagée : le joueur doit ouvrir sa conversation avec Kiraku sur Kyara (Amis, onglet des messages) et cliquer « Montrer ma collection ».",
           "failed": "Lecture impossible (erreur {e}).",
           "copy": "Copie ce lot, puis colle-le sur la page de réception de Kiraku :"
         },
@@ -7378,7 +7379,8 @@
     },
     "steps": {
       "one": "Demande l'import avec le bouton ci-dessous.",
-      "two": "Sur Kyara, ajoute le compte Kiraku en ami et laisse-le voir ta collection (« Montrer ma collection ») :",
+      "two": "Sur Kyara, ajoute le compte Kiraku en ami :",
+      "share": "Puis, toujours sur Kyara, ouvre ta conversation avec Kiraku (Amis, onglet des messages) et clique « Montrer ma collection ». Être ami ne suffit pas : sans ce clic, l'équipe ne voit pas tes cartes.",
       "three": "L'équipe lit ta collection depuis le compte Kiraku et tes cartes arrivent aussitôt. Ton compte Kyara doit être lié au même Discord que Kiraku.",
       "staffProfile": "profil Kiraku sur Kyara"
     },
@@ -7399,7 +7401,7 @@
     },
     "pending": {
       "title": "Demande envoyée",
-      "body": "Dernière étape : sur Kyara, ajoute le compte Kiraku en ami et laisse-le voir ta collection (« Montrer ma collection »). Dès que l'équipe l'a lue, tes cartes arrivent et tu reçois une notification.",
+      "body": "Dernière étape, sur Kyara : ajoute le compte Kiraku en ami, puis ouvre votre conversation (Amis, onglet des messages) et clique « Montrer ma collection ». Dès que l'équipe l'a lue, tes cartes arrivent et tu reçois une notification.",
       "sameDiscord": "L'équipe retrouve ta demande grâce au compte Discord de ton profil Kyara : il doit être le même que celui lié à Kiraku.",
       "requested": "Demandée le {date}."
     },

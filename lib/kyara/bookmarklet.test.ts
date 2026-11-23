@@ -8,7 +8,7 @@ import { decodeKyaraFragment, type InflateRaw } from "./payload";
 // que les routes vues dans des projets tiers ; à recaler sur le test du lot 0).
 
 const inflate: InflateRaw = (bytes, max) => new Uint8Array(inflateRawSync(bytes, { maxOutputLength: max }));
-const TEXTS: BookmarkletTexts = { wrongPage: "mauvaise page", noToken: "pas connecté", reading: "{n} cartes", hidden: "cachée", failed: "échec {e}", copy: "copie" };
+const TEXTS: BookmarkletTexts = { wrongPage: "mauvaise page", noToken: "pas connecté", reading: "{n} cartes", hidden: "cachée", notShared: "pas partagée", failed: "échec {e}", copy: "copie" };
 const ID = "2af84af1-f619-45a3-bc8b-7072d0a8fd10";
 const KEY = "S".repeat(43);
 const TOKEN = "jeton-secret-de-kyara";
@@ -114,12 +114,30 @@ describe("favori de l'équipe", () => {
     expect(noToken.calls).toEqual([]);
   });
 
-  it("collection masquée pour le compte Kiraku : message dédié, rien n'est envoyé", async () => {
-    const s = sandbox({
-      routes: { [`/api/users/${ID}`]: { body: { pseudo: "Joueur", avatar: null } }, [`/api/me/friends/${ID}/collection?page=1`]: { status: 403 } },
-    });
+  // Réponse vue le 23/11 en production : ami, mais « Montrer ma collection » pas encore cliqué dans la conversation
+  const refusal = (reply: Reply) => sandbox({ routes: { [`/api/users/${ID}`]: { body: { pseudo: "Joueur", avatar: null } }, [`/api/me/friends/${ID}/collection?page=1`]: reply } });
+
+  it("collection pas partagée avec le compte Kiraku : message dédié, rien n'est envoyé", async () => {
+    const s = refusal({ status: 403, body: { error: "not_shared", message: "Cette collection n’est pas partagée avec toi" } });
     await s.run();
-    expect(s.alerts).toEqual(["cachée"]);
+    expect(s.alerts).toEqual(["pas partagée"]);
+    expect(s.assigned).toEqual([]);
+  });
+
+  it("autre refus de Kyara : message générique suivi de la raison de Kyara", async () => {
+    const withReason = refusal({ status: 403, body: { error: "not_friends", message: "Vous n’êtes pas amis" } });
+    await withReason.run();
+    expect(withReason.alerts).toEqual(["cachée (Vous n’êtes pas amis)"]);
+    const bare = refusal({ status: 403 });
+    await bare.run();
+    expect(bare.alerts).toEqual(["cachée"]);
+    expect([...withReason.assigned, ...bare.assigned]).toEqual([]);
+  });
+
+  it("échec hors refus : code HTTP et code d'erreur de Kyara", async () => {
+    const s = refusal({ status: 500, body: { error: "internal" } });
+    await s.run();
+    expect(s.alerts).toEqual(["échec 500 · internal"]);
     expect(s.assigned).toEqual([]);
   });
 
