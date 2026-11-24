@@ -13,6 +13,7 @@ import {
   type RarityTables,
   type RuinRules,
   type SealedKind,
+  GuaranteeEmptyError,
 } from "@/lib/boosters/draw";
 import { stillDrawable } from "@/lib/boosters/drawable";
 import { isIncenseActive } from "@/lib/boosters/incense";
@@ -37,7 +38,8 @@ export type OpenErrorCode =
   | "EMPTY_POOL"
   | "NEEDS_PAYMENT"
   | "NOT_ENOUGH_ZENI"
-  | "NOT_FOR_SALE";
+  | "NOT_FOR_SALE"
+  | "GUARANTEE_EMPTY";
 
 export class OpenError extends Error {
   constructor(readonly code: OpenErrorCode) {
@@ -48,7 +50,7 @@ export class OpenError extends Error {
 /** Ce que l'ouverture doit savoir du type (validé en amont). */
 export type OpenType = Pick<
   BoosterTypeView,
-  "id" | "slug" | "kind" | "usesFreeStock" | "priceZeni" | "countsForPity" | "resetsPity" | "bonusEligible" | "includeCustom"
+  "id" | "slug" | "kind" | "usesFreeStock" | "priceZeni" | "countsForPity" | "resetsPity" | "bonusEligible" | "includeCustom" | "guaranteed"
 >;
 
 export type OpenInput = {
@@ -163,7 +165,7 @@ async function persistDraw(
   tx: Tx,
   input: {
     userId: string;
-    type: Pick<OpenType, "id" | "slug" | "includeCustom">;
+    type: Pick<OpenType, "id" | "slug" | "includeCustom"> & { kind?: OpenType["kind"] };
     rules: DrawRules;
     pool: CardPool;
     now: Date;
@@ -272,7 +274,8 @@ async function persistDraw(
     })),
   });
   // Gros tirages pour le carrousel « En direct » de l'accueil (la rareté affichée se règle à la lecture)
-  const notable = boosters.flatMap((b) => b.cards.filter((c) => rarityOrder.indexOf(c.rarity) >= rarityOrder.indexOf("EPIC")));
+  // Pas pour un booster garanti : le fil montre la chance, pas les cadeaux de l'équipe
+  const notable = type.kind === "GUARANTEED" ? [] : boosters.flatMap((b) => b.cards.filter((c) => rarityOrder.indexOf(c.rarity) >= rarityOrder.indexOf("EPIC")));
   if (notable.length > 0) {
     await tx.notablePull.createMany({
       data: notable.map((c) => ({
@@ -286,6 +289,16 @@ async function persistDraw(
     });
   }
   return boosters;
+}
+
+/** Tirage d'un booster garanti sans carte de sa rareté : l'ouverture s'annule, le booster reste au joueur. */
+function drawGuarded<T>(draw: () => T): T {
+  try {
+    return draw();
+  } catch (e) {
+    if (e instanceof GuaranteeEmptyError) throw new OpenError("GUARANTEE_EMPTY");
+    throw e;
+  }
 }
 
 export async function openBoostersWith(db: PrismaClient, input: OpenInput): Promise<OpenOutcome> {
@@ -336,7 +349,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
       const drawRules = incense?.draw ?? rules.draw;
       // Doublons des grandes raretés : exemplaires lus sous le verrou du joueur
       const owned = await loadOwnedCopies(tx, userId, drawRules.duplicateGuard);
-      const drawn = drawBoosters(input.rng, {
+      const drawn = drawGuarded(() => drawBoosters(input.rng, {
         pool: input.pool,
         rules: {
           ...drawRules,
@@ -353,7 +366,8 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         },
         count,
         owned,
-      });
+        guaranteed: type.kind === "GUARANTEED" ? type.guaranteed : null,
+      }));
 
       // Un booster transformé devient un sachet scellé à garder, ouvrir ou offrir (une fois)
       const drops: DroppedSealed[] = drawn.boosters.flatMap((b, position) => (b.drop ? [{ id: randomUUID(), kind: b.drop, position }] : []));

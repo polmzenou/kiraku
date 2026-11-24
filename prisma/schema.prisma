@@ -799,6 +799,7 @@ enum BoosterKind {
   FOCUS // Focus série : taux augmenté sur une ou plusieurs œuvres, à durée limitée
   DROP // sachet scellé (Divin, Apocalyptique) : tombe d'un booster, jamais en vente
   PRESTIGE // exclusif boutique : absent des pages de boosters, garde le doré quand on l'ouvre depuis un crédit
+  GUARANTEED // booster garanti (une rareté de variante) : jamais proposé ni vendu, seulement donné depuis l'admin
 }
 
 enum BoosterShape {
@@ -828,6 +829,7 @@ model BoosterType {
   bonusEligible   Boolean         @default(true) // sachets doré et divin
   rateBoost       Int             @default(10000) // points de base : parts des raretés ≥ rateBoostFrom multipliées (27000 = ×2,7)
   rateBoostFrom   String? // rareté de départ du boost ; null = taux normaux
+  guaranteed      String? // GUARANTEED : rareté de la dernière carte, toujours servie (clé de RarityDefinition)
   featuredCardIds String[] // cartes vedettes (bannière)
   featuredRate    Int             @default(5000) // points de base : part des tirages d'une rareté qui va aux vedettes
   featuredPity    Int             @default(100) // vedette garantie au N-ième booster sans vedette

@@ -64,6 +64,8 @@ type Props = {
   prism?: boolean;
   /** Le prisme démarre (une fois) : sons, vibration et voile plein écran côté parent. */
   onPrism?: () => void;
+  /** Booster garanti : sceau « 確定 » sur le sachet. */
+  guarantee?: boolean;
   /**
    * Cartes du tirage, dès que le serveur a répondu (null avant) : leurs dos sortent par l'ouverture.
    * 0 : le booster s'est changé en sachet scellé, rien ne sort et la scène passe tout de suite la main.
@@ -348,6 +350,7 @@ export function BoosterScene(props: Props) {
               name={name}
               tagline={tagline}
               contents={contents}
+              guarantee={props.guarantee}
               hideCover={shape !== "SACHET"}
               overlay={overlay}
               flatShadow

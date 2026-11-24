@@ -2,7 +2,7 @@ import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { AmbassadorSettingsForm } from "@/components/admin/AmbassadorSettingsForm";
 import { BoosterSettingsForm } from "@/components/admin/BoosterSettingsForm";
 import { ReadOnly } from "@/components/admin/ReadOnly";
-import { localize, parseLocalized } from "@/lib/boosters/types";
+import { localize, NOT_REWARDABLE_KINDS, parseLocalized } from "@/lib/boosters/types";
 import { AMBASSADOR_SETTING_KEYS, type AmbassadorSettings } from "@/lib/settings/ambassador-form";
 import { BOOSTER_SETTING_KEYS, type BoosterSettings } from "@/lib/settings/booster-form";
 import { recentBoosterSettingLogs, requireAdminView } from "@/server/admin";
@@ -17,8 +17,8 @@ export default async function AdminBoostersPage() {
     getLocale(),
     Promise.all(BOOSTER_SETTING_KEYS.map((k) => getSetting(k))),
     Promise.all(AMBASSADOR_SETTING_KEYS.map((k) => getSetting(k))),
-    // Pack hebdo des ambassadeurs : des boosters à ouvrir, jamais un sachet scellé
-    prisma.boosterType.findMany({ where: { kind: { not: "DROP" } }, orderBy: [{ family: "asc" }, { sortOrder: "asc" }, { id: "asc" }], select: { slug: true, name: true } }),
+    // Pack hebdo des ambassadeurs : des boosters à ouvrir, jamais un sachet scellé ni un booster garanti
+    prisma.boosterType.findMany({ where: { kind: { notIn: [...NOT_REWARDABLE_KINDS] } }, orderBy: [{ family: "asc" }, { sortOrder: "asc" }, { id: "asc" }], select: { slug: true, name: true } }),
     recentBoosterSettingLogs(),
   ]);
   const settings = Object.fromEntries(BOOSTER_SETTING_KEYS.map((k, i) => [k, values[i]])) as BoosterSettings;

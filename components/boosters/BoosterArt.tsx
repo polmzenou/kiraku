@@ -12,6 +12,8 @@ export type BoosterArtProps = {
   contents: string;
   /** Sachet doré (feuille d'or) dans la scène d'ouverture. Le Divin garde le dessin de son type. */
   variant?: "golden";
+  /** Booster garanti : sceau rouge « 確定 » (garanti) posé en coin. */
+  guarantee?: boolean;
   /** Vignette (panneau, barre du bas) : sans nom ni accroche. */
   compact?: boolean;
   /**
@@ -37,7 +39,7 @@ export type BoosterArtProps = {
  * propres à chaque type. Purement décoratif : le nom accessible est porté par le parent.
  */
 export function BoosterArt(props: BoosterArtProps) {
-  const { shape, theme, variant, overlay, flatShadow = false, className = "" } = props;
+  const { shape, theme, variant, guarantee = false, overlay, flatShadow = false, className = "" } = props;
   const vars = { "--booster-base": theme.base, "--booster-dark": theme.dark } as CSSProperties;
   return (
     <div aria-hidden="true" className={`w-full select-none ${flatShadow ? "relative" : "drop-shadow-[0_10px_10px_rgb(0_0_0/0.5)]"} ${className}`}>
@@ -50,6 +52,11 @@ export function BoosterArt(props: BoosterArtProps) {
         style={vars}
       >
         {shape === "POCHIBUKURO" ? <Pochibukuro {...props} /> : shape === "JUBAKO" ? <Jubako {...props} /> : <Sachet {...props} />}
+        {guarantee && (
+          <span lang="ja" className="booster-guarantee" data-shape={shape}>
+            確定
+          </span>
+        )}
         {overlay}
       </div>
     </div>
@@ -59,7 +66,7 @@ export function BoosterArt(props: BoosterArtProps) {
 function Label({ emblem, contents, compact }: Pick<BoosterArtProps, "emblem" | "contents" | "compact">) {
   return (
     <div className="tanzaku flex h-[50%] w-[46%] flex-col items-center justify-between gap-[1.5cqw] rounded-[1.5cqw] py-[4.5cqw] shadow-[0_0_0_1px_rgb(0_0_0/0.25),0_0_0_2.6cqw_rgb(255_255_255/0.16),0_6px_12px_rgb(0_0_0/0.35)]">
-      <span lang="ja" className="font-seal text-[25cqw] leading-none text-[var(--booster-dark)]">
+      <span lang="ja" className="booster-emblem font-seal text-[25cqw] leading-none text-[var(--label-ink,var(--booster-dark))]">
         {emblem}
       </span>
       <span className="h-[1.4cqw] w-[40%] bg-shu-btn" />
@@ -153,18 +160,19 @@ export const JUBAKO_CORD = "absolute top-[3%] bottom-[3%] left-1/2 w-[5cqw] -tra
 function Jubako({ emblem, name, tagline, compact, hideCover }: BoosterArtProps) {
   return (
     <>
+      {/* Filets en métal : or par défaut, --metal / --metal-light pour un autre (argent du Black Rare) */}
       <div className={`booster-foil ${JUBAKO_BODY} flex flex-col items-center justify-center gap-[6cqw] shadow-[inset_0_0_0_1px_rgb(217_181_86/0.4)]`}>
-        <span className="absolute inset-x-0 top-[36%] h-[1.4cqw] bg-[#b8902f]" />
-        <span className="absolute inset-x-0 top-[68%] h-[1.4cqw] bg-[#b8902f]" />
+        <span className="absolute inset-x-0 top-[36%] h-[1.4cqw] bg-[var(--metal,#b8902f)]" />
+        <span className="absolute inset-x-0 top-[68%] h-[1.4cqw] bg-[var(--metal,#b8902f)]" />
         <span
           lang="ja"
-          className="relative flex size-[38cqw] items-center justify-center rounded-full border-[1.4cqw] border-[#d9b556] bg-[#15120f] font-seal text-[20cqw] leading-none text-[#d9b556]"
+          className="booster-emblem relative flex size-[38cqw] items-center justify-center rounded-full border-[1.4cqw] border-[var(--metal-light,#d9b556)] bg-[#15120f] font-seal text-[20cqw] leading-none text-[var(--metal-light,#d9b556)]"
         >
           {emblem}
         </span>
         {!compact && (
           <>
-            <span className="relative rounded-[2cqw] border border-[#b8902f] bg-[#15120f] px-[5cqw] py-[2cqw] font-title text-[8.5cqw] leading-tight font-extrabold text-[#f1e9da]">
+            <span className="relative rounded-[2cqw] border border-[var(--metal,#b8902f)] bg-[#15120f] px-[5cqw] py-[2cqw] font-title text-[8.5cqw] leading-tight font-extrabold text-[#f1e9da]">
               {name}
             </span>
             {tagline && <span className="relative px-[4cqw] text-center text-[7cqw] leading-tight text-[#cfc5b4]">{tagline}</span>}

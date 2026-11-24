@@ -59,6 +59,8 @@ export type OpeningType = {
   priceZeni: number | null;
   countsForPity: boolean;
   bonusEligible: boolean;
+  /** Booster garanti (donné par l'équipe) : sceau « 確定 » sur le sachet. */
+  guaranteed?: boolean;
   /** Bannière : seuil de pitié vedette et compteur du joueur. */
   featured: { threshold: number; count: number } | null;
 };
@@ -464,6 +466,7 @@ export function OpeningStage({
                 leak={boosters && !veiled && deckCards.length > 0 ? bestRarity(boosters, rarities) : null}
                 prism={prism}
                 onPrism={onPrism}
+                guarantee={!sealedDisplay && type.guaranteed === true}
                 cards={boosters ? boosters.reduce((n, booster) => n + booster.cards.length, 0) : null}
                 onTrigger={() => void trigger()}
                 onOpened={onOpened}
