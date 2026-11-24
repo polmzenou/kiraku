@@ -113,8 +113,9 @@ export async function qualifyReferralsWith(
   onNotified?: OnNotified,
 ): Promise<number> {
   if (!rules.enabled) return 0;
+  // Les parrainages v2 ont leurs propres étapes (server/referral/progress-core.ts) : la v1 ne les qualifie jamais
   const pending = await db.referral.findMany({
-    where: { status: "PENDING", OR: [{ referrerId: userId }, { refereeId: userId }] },
+    where: { status: "PENDING", version: 1, OR: [{ referrerId: userId }, { refereeId: userId }] },
     select: { id: true, referrerId: true, refereeId: true, createdAt: true },
     take: 50,
   });

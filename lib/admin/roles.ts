@@ -53,6 +53,15 @@ export function canProcessKyaraImports(role: string | null | undefined): boolean
   return isStaff(role);
 }
 
+/**
+ * Parrainage v2 et Ennichi (étape 18) : mêmes droits pour ADMIN et DEV sur toute la feature (choix du 23/11) : suivi,
+ * file « À vérifier » (valider, révoquer, révoquer et bannir), codes perso, Ambassadeurs proposés, réglages et
+ * interrupteurs, clôture et tirage de l'Ennichi. Chaque action est écrite dans le journal admin.
+ */
+export function canManageReferrals(role: string | null | undefined): boolean {
+  return isStaff(role);
+}
+
 export function catalogScope(role: string | null | undefined): CatalogScope | null {
   return role === "ADMIN" ? "full" : role === "DEV" ? "drafts" : null;
 }

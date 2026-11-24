@@ -55,6 +55,11 @@ describe("accès du DEV à l'admin", () => {
       else if (name === "admin-kyara.ts") {
         expect(source, name).toMatch(/\bgetStaff\(\)/);
         expect(source, name).toMatch(/\bcanProcessKyaraImports\(/);
+      } else if (name === "admin-referral.ts") {
+        // Parrainage v2 : mêmes droits pour ADMIN et DEV sur toute la feature (lib/admin/roles.ts, canManageReferrals)
+        expect(source, name).toMatch(/\bgetStaff\(\)/);
+        expect(source, name).toMatch(/\bcanManageReferrals\(/);
+        expect(source, name).not.toMatch(/\bgetAdmin\(\)/);
       } else expect(source, name).toMatch(/\bgetAdmin\(\)/);
       if (name === "admin-settings.ts") {
         // Une seule exception au rôle admin : les réglages de l'import Kyara

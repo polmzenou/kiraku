@@ -18,3 +18,7 @@
 
 # Expéditions rentrées : gains, cartes rendues et notification « De retour ! », toutes les 5 minutes.
 */5 * * * * curl -fsS -m 55 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/expedition >/dev/null
+
+# Parrainage v2 : étapes, contrôles et versements des parrainages en cours, toutes les heures (sans effet tant que
+# referral.v2.enabled est coupé).
+7 * * * * curl -fsS -m 60 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/referral >/dev/null

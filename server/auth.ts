@@ -11,7 +11,7 @@ import { recordSignals } from "./anticheat/signals";
 import { kirakuAdapter } from "./auth-adapter";
 import { prisma } from "./db";
 import { credit } from "./economy/ledger";
-import { attachFromCookie } from "./economy/referral";
+import { attachFromCookie, referralDiscordLinked } from "./economy/referral";
 import { discordEnabled, discordLinkConfigured, env } from "./env";
 import { notifyDiscordLink } from "./discord/link-notification";
 import { queueLinkedDiscordRole, syncLinkedDiscordRole } from "./discord/roles";
@@ -159,6 +159,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       // Lien d'invitation suivi avant l'inscription : rattaché après la liaison, sans la bloquer
       await attachFromCookie(userId);
+      // Filleul du parrainage v2 : date du compte Discord (confiance), empreinte, avancement
+      await referralDiscordLinked(userId, account.providerAccountId);
     },
   },
 });
