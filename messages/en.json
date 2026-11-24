@@ -3792,7 +3792,8 @@
         "hisui": "Hisui (ambassador)",
         "tensei": "Tensei (rebirth)",
         "hanga": "Hanga (woodblock print)",
-        "hono": "Hono (flame)"
+        "hono": "Hono (flame)",
+        "fil": "Red thread"
       },
       "settings": {
         "pioneerUntil": "Pioneer badge: signed up until",
@@ -5522,6 +5523,30 @@
       "percent": "{value}%",
       "discoveredHint": "Discover new cards to unlock frames and username colours.",
       "equipped": "equipped"
+    },
+    "tree": {
+      "title": "Referral tree",
+      "kids": "{count, plural, one {# referral} other {# referrals}}",
+      "grandkids": "{count, plural, one {# second-level referral} other {# second-level referrals}}",
+      "referredBy": "Invited by {name}",
+      "referredByFem": "Invited by {name}",
+      "none": "No link yet",
+      "referrer": "referrer",
+      "referrerFem": "referrer",
+      "private": "Private profile",
+      "others": "{count, plural, one {other} other {others}}",
+      "label": "Referral tree of {name}, {kids, plural, =0 {no installed friend} one {# installed friend} other {# installed friends}}",
+      "labelUp": "Referral tree of {name}, invited by {up}, {kids, plural, =0 {no installed friend} one {# installed friend} other {# installed friends}}",
+      "empty": "Your tree appears as soon as an invited friend is installed: they open {openings} boosters in {days, plural, one {# day} other {# days}}.",
+      "hiddenTitle": "Tree hidden",
+      "hiddenBody": "Other players can't see your tree.",
+      "legendInstalled": "Only installed friends appear",
+      "legendPrivate": "Private profiles stay anonymous",
+      "visibleOwner": "Visible on your profile",
+      "hiddenOwner": "Hidden from other players",
+      "hide": "Hide",
+      "show": "Show",
+      "error": "Not possible right now."
     }
   },
   "privacy": {

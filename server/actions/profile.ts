@@ -67,3 +67,19 @@ export async function saveProfileAction(input: unknown): Promise<{ ok: true } | 
   refresh();
   return { ok: true };
 }
+
+const treeSchema = z.object({ hidden: z.boolean() }).strict();
+
+/** Masque son arbre des liens aux autres joueurs (ou le montre de nouveau) ; le joueur le voit toujours. */
+export async function setReferralTreeHiddenAction(input: unknown): Promise<{ ok: true } | { ok: false; error: ProfileSaveError }> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "NO_SESSION" };
+  const parsed = treeSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (user.isGuest) return { ok: false, error: "GUEST" };
+  if (user.bannedAt || isFrozen(user)) return { ok: false, error: "UNAVAILABLE" };
+  if (!(await rateLimit(`profile-tree:${user.id}`, { limit: 10, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
+  await prisma.user.update({ where: { id: user.id }, data: { referralTreeHidden: parsed.data.hidden }, select: { id: true } });
+  refresh();
+  return { ok: true };
+}

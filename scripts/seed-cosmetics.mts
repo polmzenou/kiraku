@@ -111,6 +111,8 @@ try {
     ...nameColors,
     // Réservés au rôle Ambassadeur, donné depuis la fiche joueur de l'admin
     { slug: "cadre-ambassadeur", kind: "FRAME", label: { fr: "Hisui", en: "Hisui" }, hint: ambassador, frameStyle: "hisui", condition: { type: "AMBASSADOR" } },
+    // Parrainage v2 : premier ami installé (palier 1, avec le badge 縁 Parrain)
+    { slug: "cadre-fil-rouge", kind: "FRAME", label: { fr: "Fil rouge", en: "Red thread" }, hint: { fr: "Inviter un ami jusqu'à l'étape « Installé ».", en: "Invite a friend up to the “Installed” step." }, frameStyle: "fil", condition: { type: "INSTALLED_REFERRALS", n: 1 } },
     { slug: "pseudo-ambassadeur", kind: "NAME_COLOR", label: { fr: "Vert jade", en: "Jade green" }, hint: ambassador, nameColor: "hisui", condition: { type: "AMBASSADOR" } },
   ];
   const current = await prisma.cosmetic.findMany({ select: { slug: true, kind: true, sortOrder: true } });

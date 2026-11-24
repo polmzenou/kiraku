@@ -1,9 +1,10 @@
 // Cadres d'avatar : des matières de la DA Kiraku (papier, bambou, indigo, laque, feuille d'or,
 // nacre, cerisier, kintsugi, puis nuage, vagues, érable, lune et phénix ; jade réservé aux ambassadeurs ; renaissance,
-// estampe et flamme pour le prestige). L'admin associe un style à une condition (Cosmetic.frameStyle).
+// estampe et flamme pour le prestige ; fil rouge du parrainage, dessiné par l'image PV2-CADRE-FIL dès 40 px).
+// L'admin associe un style à une condition (Cosmetic.frameStyle).
 // Classes écrites en entier pour que Tailwind les détecte ; anneau peint en dégradé conique.
 
-export const FRAME_STYLES = ["washi", "bambou", "aizome", "urushi", "kinpaku", "raden", "sakura", "kintsugi", "kumo", "seigaiha", "momiji", "tsuki", "hoo", "hisui", "tensei", "hanga", "hono"] as const;
+export const FRAME_STYLES = ["washi", "bambou", "aizome", "urushi", "kinpaku", "raden", "sakura", "kintsugi", "kumo", "seigaiha", "momiji", "tsuki", "hoo", "hisui", "tensei", "hanga", "hono", "fil"] as const;
 export type FrameStyle = (typeof FRAME_STYLES)[number];
 
 export const FRAME_KANJI: Record<FrameStyle, string> = {
@@ -24,6 +25,7 @@ export const FRAME_KANJI: Record<FrameStyle, string> = {
   tensei: "転",
   hanga: "版",
   hono: "炎",
+  fil: "縁",
 };
 
 /** Anneau autour de l'avatar (le padding fait l'épaisseur). */
@@ -48,7 +50,12 @@ export const FRAME_RING: Record<FrameStyle, string> = {
   hanga: "bg-[conic-gradient(from_90deg,#f3e6cc,#c8372d_12%,#f3e6cc_24%,#7a5634_50%,#f3e6cc_62%,#c8372d_74%,#f3e6cc)]",
   // Flamme du brasero
   hono: "bg-[conic-gradient(from_200deg,#6e1a12,#e0533f,#f29a3a,#fff3c4,#f29a3a,#c8372d,#6e1a12)]",
+  // Fil rouge du parrainage : cordon de soie vermillon (repli des petites tailles et des aperçus de liens)
+  fil: "bg-[conic-gradient(from_30deg,#8e2018,#e0533f,#c8372d,#f08a74,#b3261e,#e0533f,#8e2018)]",
 };
+
+/** Taille d'avatar à partir de laquelle le fil rouge est dessiné par son image (en dessous, son anneau conique). */
+export const FRAME_IMAGE_MIN_SIZE = 40;
 
 export function isFrameStyle(value: unknown): value is FrameStyle {
   return typeof value === "string" && (FRAME_STYLES as readonly string[]).includes(value);

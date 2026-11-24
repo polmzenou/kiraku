@@ -3792,7 +3792,8 @@
         "hisui": "Hisui (ambassadeur)",
         "tensei": "Tensei (renaissance)",
         "hanga": "Hanga (estampe)",
-        "hono": "Hono (flamme)"
+        "hono": "Hono (flamme)",
+        "fil": "Fil rouge"
       },
       "settings": {
         "pioneerUntil": "Badge Pionnier : inscrits jusqu'au",
@@ -5522,6 +5523,30 @@
       "percent": "{value} %",
       "discoveredHint": "Découvre de nouvelles cartes pour débloquer des cadres et des couleurs de pseudo.",
       "equipped": "équipé"
+    },
+    "tree": {
+      "title": "Arbre des liens",
+      "kids": "{count, plural, one {# filleul} other {# filleuls}}",
+      "grandkids": "{count, plural, one {# petit-filleul} other {# petits-filleuls}}",
+      "referredBy": "Parrainé par {name}",
+      "referredByFem": "Parrainée par {name}",
+      "none": "Pas encore de lien",
+      "referrer": "parrain",
+      "referrerFem": "marraine",
+      "private": "Profil privé",
+      "others": "{count, plural, one {autre} other {autres}}",
+      "label": "Arbre des liens de {name}, {kids, plural, =0 {aucun filleul installé} one {# filleul installé} other {# filleuls installés}}",
+      "labelUp": "Arbre des liens de {name}, parrainage de {up}, {kids, plural, =0 {aucun filleul installé} one {# filleul installé} other {# filleuls installés}}",
+      "empty": "Ton arbre apparaît dès qu'un ami invité est installé : il ouvre {openings} boosters en {days, plural, one {# jour} other {# jours}}.",
+      "hiddenTitle": "Arbre masqué",
+      "hiddenBody": "Les autres joueurs ne voient pas ton arbre.",
+      "legendInstalled": "Seuls les amis installés apparaissent",
+      "legendPrivate": "Les profils privés restent anonymes",
+      "visibleOwner": "Visible sur ton profil",
+      "hiddenOwner": "Masqué pour les autres joueurs",
+      "hide": "Masquer",
+      "show": "Montrer",
+      "error": "Impossible pour le moment."
     }
   },
   "privacy": {

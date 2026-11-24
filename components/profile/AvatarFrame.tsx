@@ -1,5 +1,7 @@
+import Image from "next/image";
 import type { ReactNode } from "react";
-import { FRAME_KANJI, FRAME_RING, type FrameStyle } from "@/lib/profile/frames";
+import { FRAME_IMAGE_MIN_SIZE, FRAME_KANJI, FRAME_RING, type FrameStyle } from "@/lib/profile/frames";
+import { REFERRAL_IMAGES } from "@/lib/referral/assets";
 import { plateMaterial, toRoman } from "@/lib/prestige/roman";
 
 /**
@@ -42,6 +44,27 @@ export function AvatarFrame({ frame, size, prestige = 0, children }: { frame: Fr
     );
   }
   const ring = Math.max(3, Math.round(size / 16));
+  if (frame === "fil" && size >= FRAME_IMAGE_MIN_SIZE) {
+    // Fil rouge (PV2-CADRE-FIL) : le cordon de soie enroulé deux fois et son nœud awaji, en image autour de l'avatar ;
+    // même encombrement que les autres cadres, le cordon déborde un peu (l'avatar en occupe 84 %)
+    const box = Math.round(size / 0.84);
+    const offset = ring + 1 + size / 2 - box / 2;
+    return (
+      <span className="relative inline-flex shrink-0" style={{ padding: ring }}>
+        <span className="inline-flex overflow-hidden rounded-full bg-bg p-px [&>*]:rounded-full">{children}</span>
+        <Image
+          src={REFERRAL_IMAGES["cadre-fil"].src}
+          alt=""
+          width={box}
+          height={box}
+          aria-hidden="true"
+          className="pointer-events-none absolute max-w-none select-none drop-shadow-[0_2px_3px_rgb(0_0_0/0.35)]"
+          style={{ left: offset, top: offset, width: box, height: box }}
+        />
+        <PrestigePlate prestige={prestige} size={size} />
+      </span>
+    );
+  }
   return (
     <span className="relative inline-flex shrink-0">
       <span className={`inline-flex rounded-full shadow-raised ${FRAME_RING[frame]}`} style={{ padding: ring }}>
