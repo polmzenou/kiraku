@@ -45,6 +45,7 @@ import { isStaff, presenceOf } from "@/lib/social/presence";
 import { wrappedTeaser } from "@/server/wrapped/queries";
 import { referralPreview } from "@/server/referral/preview";
 import { ProfileReferralTree } from "@/components/profile/ReferralTree";
+import { EnnichiTitles } from "@/components/ennichi/EnnichiTitles";
 
 export async function generateMetadata({ params, searchParams }: PageProps<"/[locale]/u/[username]">): Promise<Metadata> {
   const [{ locale: raw, username: rawUsername }, sp] = await Promise.all([params, searchParams]);
@@ -246,6 +247,12 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
         <Suspense fallback={null}>
           <PrestigeSanctuary userId={owner.id} viewerId={viewer?.id ?? null} locale={locale} />
           <PrestigeEmakis userId={owner.id} locale={locale} />
+        </Suspense>
+      )}
+      {/* Titres sumo du banzuke de l'Ennichi */}
+      {!owner.isGuest && (
+        <Suspense fallback={null}>
+          <EnnichiTitles userId={owner.id} />
         </Suspense>
       )}
       {/* Arbre des liens du parrainage (rien pour un invité ni tant que le parrainage v2 est coupé) */}

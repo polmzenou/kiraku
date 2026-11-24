@@ -9,6 +9,10 @@
 //   4. La graine est révélée : SHA-256(graine) redonne l'empreinte, et le tirage se refait à l'identique.
 import { commitOf, isSeedHex, toHex } from "@/lib/casino/fairness";
 
+/** Chance écrite sur chaque feuille, par ligne de la cagnotte (du plus rare au moins rare). */
+export const OMIKUJI_LUCK = ["大吉", "中吉", "小吉", "吉", "末吉", "末小吉"] as const;
+export const luckOf = (line: number) => OMIKUJI_LUCK[line] ?? "吉";
+
 export type OmikujiDraw = {
   /** Numéro du tirage, à partir de 1, dans l'ordre de la cagnotte. */
   n: number;

@@ -60,6 +60,8 @@ import { getCurrentUser } from "@/server/user";
 import { kyaraBannerFor } from "@/server/kyara/queries";
 import { getAmbassadorPack } from "@/server/ambassador/queries";
 import { getSetting } from "@/server/settings";
+import { EnnichiBanner } from "@/components/ennichi/EnnichiBanner";
+import { Suspense } from "react";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]">): Promise<Metadata> {
   const { locale: raw } = await params;
@@ -255,6 +257,10 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
       )}
 
       {wrappedYear !== null && <WrappedBanner year={wrappedYear} />}
+      {/* Ennichi : la rue des lanternes pendant la fête, les résultats après le tirage */}
+      <Suspense fallback={null}>
+        <EnnichiBanner locale={locale} userId={user && !user.isGuest ? user.id : null} />
+      </Suspense>
 
       {kyaraBanner && <KyaraImportBanner kind={kyaraBanner.kind} deadline={kyaraBanner.deadline} />}
 
