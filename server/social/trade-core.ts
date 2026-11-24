@@ -12,7 +12,9 @@ import type { Rarity } from "@/lib/catalog/rarity";
 import { profileAccess, type ProfileVisibility } from "@/lib/collection/visibility";
 import { pairKey } from "@/lib/social/relation";
 import { checkProposal, isTradeOpen, tradeExpiresAt, uniqueOffered, type TradeRefusal, type TradeRules } from "@/lib/social/trades";
+import type { LockRefusal } from "@/lib/referral/locks";
 import { chooseCopy, moveCopy, pinOf } from "../collection/transfer";
+import { checkReferralLocks } from "../referral/locks";
 import { recordDiscoveries } from "../collection/discovery";
 import { blocksBetween, lockPlayers, type Tx } from "./lock";
 import { notify, notifyingTransaction, type OnNotified } from "./notify";
@@ -27,7 +29,8 @@ export type TradeErrorCode =
   | "CLOSED"
   | "NOT_OFFERED"
   | "CARD_GONE"
-  | "CHOOSE_COPY";
+  | "CHOOSE_COPY"
+  | LockRefusal;
 
 export class TradeError extends Error {
   constructor(readonly code: TradeErrorCode) {
@@ -73,6 +76,8 @@ export async function proposeTradeWith(db: PrismaClient, input: ProposeInput, on
       const recipient = players.get(input.recipientId);
       if (!proposer || proposer.bannedAt) throw new TradeError("NO_USER");
       if (!recipient || recipient.isGuest || recipient.bannedAt) throw new TradeError("NOT_FRIENDS");
+      const locked = await checkReferralLocks(tx, { actorId: input.proposerId, counterpartyId: input.recipientId, ownItems: true, mutual: true, now });
+      if (locked) throw new TradeError(locked);
 
       // Ce que chaque carte offerte promet : l'exemplaire désigné, sinon un ordinaire
       const offeredCopies = await Promise.all(offeredIds.map((id) => chooseCopy(tx, input.proposerId, id, input.offeredCopyIds?.get(id))));
@@ -213,6 +218,8 @@ export async function acceptTradeWith(
       // Réglage refermé entre-temps : une proposition entre non-amis ne passe plus
       if (!relation.friends && !input.nonFriendsAllowed) throw new TradeError("NOT_FRIENDS");
       if (relation.blocked) throw new TradeError("BLOCKED");
+      const locked = await checkReferralLocks(tx, { actorId: trade.recipientId, counterpartyId: trade.proposerId, ownItems: true, mutual: true, now });
+      if (locked) throw new TradeError(locked);
       const wantedRarity = await tx.card.findUnique({ where: { id: trade.wantedCardId }, select: { rarity: true } });
       const allowed = new Set(input.allowedRarities);
       if (!wantedRarity || !allowed.has(wantedRarity.rarity as Rarity) || !allowed.has(offered.card.rarity as Rarity)) {

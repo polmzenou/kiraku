@@ -35,7 +35,9 @@ export type BuyOrderActionError =
   | "OWN_ORDER"
   | "STALE"
   | "NOT_OWNED"
-  | "SPECIAL_ONLY";
+  | "SPECIAL_ONLY"
+  | "REFEREE_LOCKED"
+  | "PAIR_LOCKED";
 
 type Failure = { ok: false; error: BuyOrderActionError };
 

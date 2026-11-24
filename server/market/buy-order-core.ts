@@ -14,7 +14,9 @@ import { isFrozen } from "@/lib/account/deletion";
 import { checkOrder, orderExpiresAt, orderOpen, shouldAlert, type OrderRefusal } from "@/lib/market/buy-orders";
 import { checkTrader, saleFee, type MarketRules, type TraderRefusal } from "@/lib/market/rules";
 import { ORDINARY_COPY } from "@/lib/collection/copies";
+import type { LockRefusal } from "@/lib/referral/locks";
 import { applyEntries, credit, debit, LedgerError } from "../economy/ledger";
+import { checkReferralLocks } from "../referral/locks";
 import { lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { recordDiscoveries } from "../collection/discovery";
@@ -36,7 +38,8 @@ export type BuyOrderErrorCode =
   | "UNAVAILABLE"
   | "NOT_OWNED"
   // Prestige : le vendeur n'a de cette carte que des pièces spéciales (héritières, gravées), jamais prises par un avis
-  | "SPECIAL_ONLY";
+  | "SPECIAL_ONLY"
+  | LockRefusal;
 
 export class BuyOrderError extends Error {
   constructor(readonly code: BuyOrderErrorCode) {
@@ -222,6 +225,8 @@ export async function fillOrderWith(db: PrismaClient, input: FillOrderInput, onN
       const buyer = players.get(order.buyerId);
       const buyerState = buyer ? await tx.user.findUnique({ where: { id: buyer.id }, select: { deletionRequestedAt: true, anonymizedAt: true } }) : null;
       if (!buyer || buyer.bannedAt || !buyerState || isFrozen(buyerState)) throw new BuyOrderError("UNAVAILABLE");
+      const locked = await checkReferralLocks(tx, { actorId: input.sellerId, counterpartyId: order.buyerId, ownItems: true, mutual: true, now });
+      if (locked) throw new BuyOrderError(locked);
 
       const choice = await chooseCopy(tx, input.sellerId, order.cardId);
       if (!choice.ok) throw new BuyOrderError(choice.reason === "CHOOSE_COPY" ? "SPECIAL_ONLY" : "NOT_OWNED");

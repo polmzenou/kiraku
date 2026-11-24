@@ -49,7 +49,9 @@ export type MarketActionError =
   | "NOT_ENOUGH_ZENI"
   | "HAS_BIDS"
   | "NO_BUYOUT"
-  | "STALE";
+  | "STALE"
+  | "REFEREE_LOCKED"
+  | "PAIR_LOCKED";
 
 type Failure = { ok: false; error: MarketActionError };
 

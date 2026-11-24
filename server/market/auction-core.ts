@@ -24,9 +24,11 @@ import {
   type MarketRules,
   type TraderRefusal,
 } from "@/lib/market/rules";
+import type { LockRefusal } from "@/lib/referral/locks";
 import { chooseCopy, moveCopy } from "../collection/transfer";
 import { recordDiscoveries } from "../collection/discovery";
 import { applyEntries, credit, debit, LedgerError } from "../economy/ledger";
+import { checkReferralLocks } from "../referral/locks";
 import { lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { consumeWishlist } from "../collection/wishlist-core";
@@ -48,7 +50,8 @@ export type AuctionErrorCode =
   | "NOT_ENOUGH_ZENI"
   | "HAS_BIDS"
   | "NO_BUYOUT"
-  | "STALE";
+  | "STALE"
+  | LockRefusal;
 
 export class AuctionError extends Error {
   constructor(readonly code: AuctionErrorCode) {
@@ -128,6 +131,8 @@ export async function createAuctionWith(
     if (!seller) throw new AuctionError("NO_USER");
     const notAllowed = checkTrader(seller, input.now, input.rules);
     if (notAllowed) throw new AuctionError(notAllowed);
+    const locked = await checkReferralLocks(tx, { actorId: input.sellerId, counterpartyId: null, ownItems: true, mutual: true, now: input.now });
+    if (locked) throw new AuctionError(locked);
 
     // Compté sous le verrou du vendeur : deux ventes simultanées ne dépassent pas la limite
     const active = await tx.auction.count({ where: { sellerId: input.sellerId, status: "ACTIVE" } });
@@ -222,6 +227,9 @@ async function bidInTx(tx: Tx, req: BidRequest): Promise<BidOutcome> {
   if (!bidder) throw new AuctionError("NO_USER");
   const notAllowed = checkTrader(bidder, now, rules);
   if (notAllowed) throw new AuctionError(notAllowed);
+  // Les Zeni du filleul n'achètent pas la carte de son parrain, ni l'inverse
+  const locked = await checkReferralLocks(tx, { actorId: req.bidderId, counterpartyId: a.sellerId, ownItems: false, mutual: true, now });
+  if (locked) throw new AuctionError(locked);
 
   let coins: number;
   try {

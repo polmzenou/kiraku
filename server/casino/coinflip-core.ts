@@ -25,13 +25,15 @@ import type { CasinoRules } from "@/lib/casino/rules";
 import { tierOf } from "@/lib/casino/tiers";
 import type { CoinFlipReturnReason } from "@/lib/social/notifications";
 import { pairKey } from "@/lib/social/relation";
+import type { LockRefusal } from "@/lib/referral/locks";
 import { consumeWishlist } from "../collection/wishlist-core";
+import { checkReferralLocks } from "../referral/locks";
 import { chooseCopy, moveCopy } from "../collection/transfer";
 import { recordDiscoveries } from "../collection/discovery";
 import { blocksBetween, lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 
-export type CoinFlipErrorCode = CoinFlipRefusal | "NOT_FOUND" | "NO_USER" | "CARD_GONE" | "CHOOSE_COPY";
+export type CoinFlipErrorCode = CoinFlipRefusal | LockRefusal | "NOT_FOUND" | "NO_USER" | "CARD_GONE" | "CHOOSE_COPY";
 
 export class CoinFlipError extends Error {
   constructor(readonly code: CoinFlipErrorCode) {
@@ -144,6 +146,8 @@ export async function createTableWith(db: PrismaClient, input: CreateInput, ctx:
       if (!player) throw new CoinFlipError("NO_USER");
       const refusal = checkPlayer({ ...player, isAdmin: await staffRole(tx, input.userId) }, now, rules);
       if (refusal) throw new CoinFlipError(refusal);
+      const locked = await checkReferralLocks(tx, { actorId: input.userId, counterpartyId: reservedForId, ownItems: true, mutual: true, now });
+      if (locked) throw new CoinFlipError(locked);
 
       let reserve = null;
       if (reservedForId) {
@@ -275,6 +279,8 @@ export async function joinTableWith(db: PrismaClient, input: JoinInput, ctx: Coi
       if (refusal) throw new CoinFlipError(refusal);
       // Créateur banni ou supprimé entre-temps : ses tables sont retirées par withdrawCasinoWith
       if (!creator || creator.bannedAt) throw new CoinFlipError("NOT_OPEN");
+      const locked = await checkReferralLocks(tx, { actorId: input.userId, counterpartyId: flip.creatorId, ownItems: true, mutual: true, now });
+      if (locked) throw new CoinFlipError(locked);
 
       const [blocks, card, copies, today] = await Promise.all([
         blocksBetween(tx, input.userId, flip.creatorId),

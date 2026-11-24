@@ -16,7 +16,9 @@ import {
 } from "@/lib/social/gifts";
 import { SEALED_KINDS } from "@/lib/boosters/draw";
 import { pairKey } from "@/lib/social/relation";
+import type { LockRefusal } from "@/lib/referral/locks";
 import { grantBoosters } from "../economy/credits";
+import { checkReferralLocks } from "../referral/locks";
 import { debit, LedgerError } from "../economy/ledger";
 import { blocksBetween, lockPlayers, type LockedPlayer, type Tx } from "./lock";
 import { notify, notifyingTransaction, type OnNotified } from "./notify";
@@ -24,7 +26,7 @@ import { consumeWishlist } from "../collection/wishlist-core";
 import { chooseCopy, moveCopy } from "../collection/transfer";
 import { recordDiscoveries } from "../collection/discovery";
 
-export type GiftErrorCode = GiftRefusal | SealedGiftRefusal | "NO_USER" | "NOT_OWNED" | "CHOOSE_COPY" | "RARITY" | "NOT_ENOUGH_ZENI";
+export type GiftErrorCode = GiftRefusal | SealedGiftRefusal | LockRefusal | "NO_USER" | "NOT_OWNED" | "CHOOSE_COPY" | "RARITY" | "NOT_ENOUGH_ZENI";
 
 export class GiftError extends Error {
   constructor(readonly code: GiftErrorCode) {
@@ -78,6 +80,9 @@ async function checkUnderLock(tx: Tx, ctx: GiftContext, now: Date): Promise<{ se
     rules: ctx.rules,
   });
   if (refusal) throw new GiftError(refusal);
+  // Parrainage v2 : un filleul récent n'offre rien, et rien ne passe de lui à son parrain
+  const locked = await checkReferralLocks(tx, { actorId: ctx.senderId, counterpartyId: ctx.recipientId, ownItems: true, mutual: false, now });
+  if (locked) throw new GiftError(locked);
   return { sender, day };
 }
 

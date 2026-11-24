@@ -21,8 +21,10 @@ import {
   type ListingRules,
   type TradeListingRefusal,
 } from "@/lib/market/listings";
+import type { LockRefusal } from "@/lib/referral/locks";
 import { chooseCopy, moveCopy, pinOf } from "../collection/transfer";
 import { recordDiscoveries } from "../collection/discovery";
+import { checkReferralLocks } from "../referral/locks";
 import { blocksBetween, lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { consumeWishlist } from "../collection/wishlist-core";
@@ -36,7 +38,8 @@ export type ListingErrorCode =
   | "CHOOSE_COPY"
   | "OFFER_GONE"
   | "WANT_GONE"
-  | "NOT_FOUND";
+  | "NOT_FOUND"
+  | LockRefusal;
 
 export class ListingError extends Error {
   constructor(readonly code: ListingErrorCode) {
@@ -118,6 +121,8 @@ export async function createListingWith(db: PrismaClient, input: CreateListingIn
     if (!owner) throw new ListingError("NO_USER");
     const refusal = checkExchanger(owner, now, input.rules);
     if (refusal) throw new ListingError(refusal);
+    const locked = await checkReferralLocks(tx, { actorId: input.ownerId, counterpartyId: null, ownItems: true, mutual: true, now });
+    if (locked) throw new ListingError(locked);
 
     // Ce que l'annonce promet : l'exemplaire désigné, sinon un ordinaire (jamais une pièce spéciale par défaut)
     const offeredCopy = await chooseCopy(tx, input.ownerId, input.cardId, input.userCardId);
@@ -206,6 +211,8 @@ export async function makeOfferWith(db: PrismaClient, input: MakeOfferInput, onN
       if (!bidder) throw new ListingError("NO_USER");
       const refusal = checkExchanger(bidder, now, input.rules);
       if (refusal) throw new ListingError(refusal);
+      const locked = await checkReferralLocks(tx, { actorId: input.bidderId, counterpartyId: listing.ownerId, ownItems: true, mutual: true, now });
+      if (locked) throw new ListingError(locked);
       if (!owner || owner.bannedAt) throw new ListingError("CLOSED");
 
       const [blocks, card, want, alreadyOffered, pendingOffers, offeredCopy] = await Promise.all([
@@ -310,6 +317,8 @@ export async function acceptOfferWith(
       if (!owner || !bidder || owner.bannedAt || bidder.bannedAt) throw new ListingError("NO_USER");
       const blocks = await blocksBetween(tx, listing.ownerId, offer.bidderId);
       if (blocks.byMe || blocks.byThem) throw new ListingError("BLOCKED");
+      const locked = await checkReferralLocks(tx, { actorId: listing.ownerId, counterpartyId: offer.bidderId, ownItems: true, mutual: true, now });
+      if (locked) throw new ListingError(locked);
       const rarities = await tx.card.findMany({ where: { id: { in: [listing.cardId, offer.cardId] } }, select: { rarity: true } });
       const allowed = new Set(input.allowedRarities);
       if (rarities.length !== 2 || rarities.some((c) => !allowed.has(c.rarity as Rarity))) throw new ListingError("RARITY");
