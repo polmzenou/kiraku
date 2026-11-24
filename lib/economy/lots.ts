@@ -11,13 +11,19 @@ export type LotItemKind = (typeof LOT_ITEM_KINDS)[number];
 
 export const MAX_LOT_ITEMS = 10;
 export const MAX_LOT_QUANTITY = 50;
+/**
+ * Boosters d'une ligne : un seul crédit (ou une ligne par sachet scellé), d'où un plafond plus haut que pour les cartes.
+ * Les paliers de lanternes de l'Ennichi versent jusqu'à 250 boosters d'un coup (choisis le 2026-11-23).
+ */
+export const MAX_LOT_BOOSTERS = 500;
 export const MAX_LOT_ZENI = 1_000_000;
 
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
 const quantity = z.number().int().min(1).max(MAX_LOT_QUANTITY);
+const boosterQuantity = z.number().int().min(1).max(MAX_LOT_BOOSTERS);
 
 export const lotItemSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("BOOSTER"), boosterTypeId: id, quantity }).strict(),
+  z.object({ kind: z.literal("BOOSTER"), boosterTypeId: id, quantity: boosterQuantity }).strict(),
   z.object({ kind: z.literal("CARD"), cardId: id, quantity }).strict(),
   z.object({ kind: z.literal("RARITY_CARD"), rarity: rarityKeySchema, quantity }).strict(),
 ]);

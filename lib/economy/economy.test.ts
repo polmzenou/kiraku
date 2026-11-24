@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { balancesAfter, isValidAmount, isValidSignedAmount, MAX_MOVEMENT } from "./amount";
 import { ledgerHref, ledgerWhere, parseLedgerFilter } from "./ledger-view";
-import { lotInputSchema, parseLotItemRow } from "./lots";
+import { lotInputSchema, MAX_LOT_BOOSTERS, MAX_LOT_QUANTITY, parseLotItemRow } from "./lots";
 import { measureKey, missionInputSchema, missionState, raritiesFrom, shownProgress } from "./missions";
 import { SETTING_SCHEMAS } from "@/lib/settings/defaults";
 import {
@@ -112,6 +112,18 @@ describe("lots", () => {
     expect(lotInputSchema.safeParse({ ...lot, items: [{ kind: "BOOSTER", boosterTypeId: "t1", quantity: 2 }] }).success).toBe(true);
     expect(lotInputSchema.safeParse({ ...lot, items: [{ kind: "BOOSTER", cardId: "c1", quantity: 2 }] }).success).toBe(false);
     expect(lotInputSchema.safeParse({ ...lot, items: [{ kind: "RARITY_CARD", rarity: "EPIC", quantity: 0 }] }).success).toBe(false);
+  });
+
+  it("plafonds : jusqu'à 500 boosters par ligne, 50 cartes", () => {
+    const lot = { name: { fr: "Lot", en: "" }, zeni: 0, active: true };
+    const ok = (item: object) => lotInputSchema.safeParse({ ...lot, items: [item] }).success;
+    expect(ok({ kind: "BOOSTER", boosterTypeId: "t1", quantity: MAX_LOT_BOOSTERS })).toBe(true);
+    expect(ok({ kind: "BOOSTER", boosterTypeId: "t1", quantity: MAX_LOT_BOOSTERS + 1 })).toBe(false);
+    expect(ok({ kind: "CARD", cardId: "c1", quantity: MAX_LOT_QUANTITY })).toBe(true);
+    expect(ok({ kind: "CARD", cardId: "c1", quantity: MAX_LOT_QUANTITY + 1 })).toBe(false);
+    expect(ok({ kind: "RARITY_CARD", rarity: "EPIC", quantity: MAX_LOT_QUANTITY + 1 })).toBe(false);
+    // Une ligne de 250 boosters (palier 四 de l'Ennichi) est versée, pas ignorée
+    expect(parseLotItemRow({ kind: "BOOSTER", boosterTypeId: "t1", cardId: null, rarity: null, quantity: 250 })).toEqual({ kind: "BOOSTER", boosterTypeId: "t1", quantity: 250 });
   });
 
   it("une ligne incohérente en base est ignorée au versement", () => {

@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { type Rarity } from "@/lib/catalog/rarity";
-import { lotInputSchema, MAX_LOT_ITEMS, MAX_LOT_QUANTITY, MAX_LOT_ZENI, type LotInput, type LotItemInput } from "@/lib/economy/lots";
+import { lotInputSchema, MAX_LOT_BOOSTERS, MAX_LOT_ITEMS, MAX_LOT_QUANTITY, MAX_LOT_ZENI, type LotInput, type LotItemInput } from "@/lib/economy/lots";
 import { searchFeaturedCards, type FeaturedCandidate } from "@/server/actions/admin-boosters";
 import { saveLotAction } from "@/server/actions/admin-economy";
 import { Button } from "../ui/Button";
@@ -107,7 +107,13 @@ export function LotForm({
                 options={RARITIES.map((r) => ({ value: r, label: tRarity(r) }))}
               />
             )}
-            <NumberField label={t("quantity")} value={item.quantity} onChange={(quantity) => setItem(i, { ...item, quantity })} min={1} max={MAX_LOT_QUANTITY} />
+            <NumberField
+              label={t("quantity")}
+              value={item.quantity}
+              onChange={(quantity) => setItem(i, { ...item, quantity })}
+              min={1}
+              max={item.kind === "BOOSTER" ? MAX_LOT_BOOSTERS : MAX_LOT_QUANTITY}
+            />
             <Button type="button" onClick={() => removeItem(i)}>
               {t("remove")}
             </Button>
