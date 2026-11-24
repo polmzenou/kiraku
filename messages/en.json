@@ -7875,6 +7875,36 @@
       "body": "These gifts from the previous referral program are still waiting for you."
     }
   },
+  "invite": {
+    "metaTitle": "{name} invites you to Kiraku",
+    "metaTitleGeneric": "An invitation is waiting for you on Kiraku",
+    "metaDescription": "Open packs of anime cards and collect your favourite characters. A gift is waiting when you sign up.",
+    "eyebrow": "Invitation",
+    "title": "{name} invites you to Kiraku",
+    "lead": "Open packs of anime cards and collect your favourite characters.",
+    "gift": "Your welcome gift, paid automatically when you sign up",
+    "doubled": "Gift ×{factor} during the Ennichi",
+    "open": "Open my first booster",
+    "signup": "Create my account",
+    "free": "Your first booster is free, no account needed.",
+    "ogRibbon": "{gifts} free",
+    "registered": {
+      "title": "You already have an account",
+      "body": "{name}'s gift is for new players, but you can invite your own friends.",
+      "cta": "Go to my account",
+      "invite": "Invite my friends"
+    },
+    "unknown": {
+      "title": "This invitation is no longer valid",
+      "body": "The link may be incomplete. You can still discover Kiraku and open your first booster.",
+      "cta": "Discover Kiraku"
+    },
+    "prompt": {
+      "title": "Keep these cards and get your gift",
+      "body": "From {name}, paid automatically as soon as your account is created.",
+      "signUp": "Create my account"
+    }
+  },
   "prestige": {
     "metaTitle": "Prestige",
     "preview": "Team preview: prestige is off for players (switch in /admin/prestige).",

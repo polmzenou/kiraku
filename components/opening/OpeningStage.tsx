@@ -23,7 +23,7 @@ import { ApocalypseOmen, SealedTransform } from "./SealedFx";
 import { CardDeck, revealOrder, type DeckFrom } from "./CardDeck";
 import { CountPicker } from "./CountPicker";
 import { GoldenDust } from "./GoldenDust";
-import { GuestSignupPrompt } from "./GuestSignupPrompt";
+import { GuestSignupPrompt, type GuestInvite } from "./GuestSignupPrompt";
 import { Recap } from "./Recap";
 import { RecapActionBar } from "./RecapActionBar";
 import { RevealOverlay, momentTint, TINT_DELAY, useMomentFor, type Moment } from "./RevealMoment";
@@ -69,6 +69,8 @@ type Props = {
   type: OpeningType;
   initialState: BoosterState;
   isGuest: boolean;
+  /** Invité arrivé par le lien d'un parrain : son cadeau, montré après le premier booster. */
+  guestInvite?: GuestInvite | null;
   credits?: number;
   /** Nombre présélectionné (×5 ou « Tous » choisi dans la vitrine) ; ramené à ce qui est ouvrable. */
   initialCount?: OpenChoice;
@@ -111,6 +113,7 @@ export function OpeningStage({
   type,
   initialState,
   isGuest,
+  guestInvite = null,
   credits = 0,
   initialCount = 1,
   open = openBoosterAction,
@@ -641,7 +644,7 @@ export function OpeningStage({
                   setConfirmed(null);
                 }}
               />
-              {isGuest && <GuestSignupPrompt />}
+              {isGuest && <GuestSignupPrompt invite={guestInvite} />}
             </m.div>
           )}
         </AnimatePresence>

@@ -14,6 +14,7 @@ import { boosterStateFrom } from "@/server/boosters/state";
 import { getBoosterCredits, hadBoosterCredit } from "@/server/economy/queries";
 import { findOwnSealed } from "@/server/boosters/open";
 import { getSealedDisplays } from "@/server/boosters/sealed";
+import { guestInviteOf } from "@/server/referral/invite";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
 
@@ -107,6 +108,7 @@ export default async function OpenBoosterPage({ params, searchParams }: PageProp
         }}
         initialState={boosterStateFrom(user, rules)}
         isGuest={user.isGuest}
+        guestInvite={user.isGuest ? await guestInviteOf(locale) : null}
         credits={credits}
         initialCount={askedCount}
         sealedTypes={sealedTypes}

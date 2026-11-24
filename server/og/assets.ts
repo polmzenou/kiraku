@@ -76,6 +76,30 @@ export async function processImage(body: Buffer, type: string, gold: boolean): P
   return { body: await image.png().toBuffer(), type: "image/png" };
 }
 
+const locals = new Map<string, Promise<string | null>>();
+
+/**
+ * Image du dossier public en data URI pour Satori (décors du parrainage…), gardée en mémoire : un WebP est converti
+ * en PNG par sharp (Satori ne le lit pas) et réduit à `maxWidth`. null si le fichier ou sharp manque.
+ */
+export function localImage(publicPath: string, maxWidth = 1200): Promise<string | null> {
+  let image = locals.get(publicPath);
+  if (!image) {
+    image = (async () => {
+      const body = await readFile(join(process.cwd(), "public", publicPath.replace(/^\/+/, "")));
+      if (/\.webp$/i.test(publicPath)) {
+        const sharp = await loadSharp();
+        if (!sharp) return null;
+        const png = await sharp(body).resize({ width: maxWidth, withoutEnlargement: true }).png().toBuffer();
+        return `data:image/png;base64,${png.toString("base64")}`;
+      }
+      return `data:${/\.jpe?g$/i.test(publicPath) ? "image/jpeg" : "image/png"};base64,${body.toString("base64")}`;
+    })().catch(() => null);
+    locals.set(publicPath, image);
+  }
+  return image;
+}
+
 /**
  * Image distante en data URI, ou null (hôte inconnu, format que Satori ne lit pas, délai dépassé).
  * Les avatars Discord sont demandés en PNG : Satori ne décode pas le WebP.

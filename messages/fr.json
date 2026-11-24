@@ -7875,6 +7875,36 @@
       "body": "Ces cadeaux de l'ancien parrainage t'attendent encore."
     }
   },
+  "invite": {
+    "metaTitle": "{name} t'invite sur Kiraku",
+    "metaTitleGeneric": "Une invitation t'attend sur Kiraku",
+    "metaDescription": "Ouvre des sachets de cartes d'anime et collectionne tes personnages préférés. Un cadeau t'attend à l'inscription.",
+    "eyebrow": "Invitation",
+    "title": "{name} t'invite sur Kiraku",
+    "lead": "Ouvre des sachets de cartes d'anime et collectionne tes personnages préférés.",
+    "gift": "Ton cadeau de bienvenue, versé tout seul à l'inscription",
+    "doubled": "Cadeau ×{factor} pendant l'Ennichi",
+    "open": "Ouvrir mon premier booster",
+    "signup": "Créer mon compte",
+    "free": "Ton premier booster est gratuit, sans compte.",
+    "ogRibbon": "{gifts} offerts",
+    "registered": {
+      "title": "Tu as déjà un compte",
+      "body": "Le cadeau de {name} est réservé aux nouveaux joueurs, mais tu peux inviter tes propres amis.",
+      "cta": "Aller sur mon compte",
+      "invite": "Inviter mes amis"
+    },
+    "unknown": {
+      "title": "Cette invitation n'est plus valable",
+      "body": "Le lien est peut-être incomplet. Tu peux quand même découvrir Kiraku et ouvrir ton premier booster.",
+      "cta": "Découvrir Kiraku"
+    },
+    "prompt": {
+      "title": "Garde ces cartes et reçois ton cadeau",
+      "body": "De la part de {name}, versé tout seul dès que ton compte est créé.",
+      "signUp": "Créer mon compte"
+    }
+  },
   "prestige": {
     "metaTitle": "Prestige",
     "preview": "Aperçu de l'équipe : le prestige est coupé pour les joueurs (interrupteur dans /admin/prestige).",

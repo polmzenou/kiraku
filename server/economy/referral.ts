@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { cookies } from "next/headers";
 import { snowflakeDate } from "@/lib/discord/snowflake";
 import { parseInviteCode } from "@/lib/referral/codes";
+import { REFERRAL_COOKIE_MAX_AGE, referralCookieName } from "@/lib/referral/cookie";
 import { prisma } from "../db";
 import { isProduction } from "../env";
 import { pushNotifications } from "../push/send";
@@ -19,9 +20,10 @@ import { attachReferralWith, qualifyReferralsWith, ReferralError, type ReferralE
 // contient que le code, jamais d'id ; rien n'est écrit en base avant que le filleul ait un compte. Interrupteur
 // referral.v2.enabled allumé : rattachement, étapes et versements du parrainage v2 (server/referral/*) ; coupé, la v1.
 
+/** Cookie du lien d'invitation, posé par proxy.ts (/i/CODE et ?ref=CODE), voir lib/referral/cookie.ts. */
 export const REFERRAL_COOKIE = {
-  name: isProduction ? "__Secure-kiraku.ref" : "kiraku.ref",
-  maxAge: 30 * 24 * 60 * 60,
+  name: referralCookieName(isProduction),
+  maxAge: REFERRAL_COOKIE_MAX_AGE,
   options: { httpOnly: true, sameSite: "lax" as const, path: "/", secure: isProduction },
 };
 

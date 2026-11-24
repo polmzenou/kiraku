@@ -2,6 +2,7 @@ import createMiddleware from "next-intl/middleware";
 import type { NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
 import { buildCsp, generateNonce } from "./lib/csp";
+import { inviteCodeFromUrl, referralCookieName, referralCookieOptions } from "./lib/referral/cookie";
 
 const handleI18nRouting = createMiddleware(routing);
 
@@ -18,6 +19,13 @@ export default function proxy(request: NextRequest) {
 
   const response = handleI18nRouting(request);
   response.headers.set("Content-Security-Policy", csp);
+  // Lien d'invitation (/i/CODE) ou page partagée avec ?ref=CODE : le code suit sur l'appareil jusqu'à l'inscription.
+  // Simple contrôle de format ; le dernier lien suivi l'emporte. Rien n'est écrit en base ici.
+  const code = inviteCodeFromUrl(request.nextUrl.pathname, request.nextUrl.searchParams, routing.locales);
+  if (code) {
+    const production = process.env.NODE_ENV === "production";
+    response.cookies.set(referralCookieName(production), code, referralCookieOptions(production));
+  }
   return response;
 }
 

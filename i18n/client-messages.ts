@@ -6,7 +6,7 @@ export const CLIENT_NAMESPACES = [
   "account", "ambassador", "arcadePromo", "auth", "battle", "boosters", "cardBack", "casino", "chat", "collection",
   "common", "consent", "data", "discordJoin", "economy", "error", "event", "expedition", "footer", "friends", "prestige",
   "fuda", "gifts", "header", "home", "incense", "kyaraImport", "legal", "locale", "mail", "market", "nav",
-  "news", "notifications", "opening", "playerName", "presence", "privacy", "profile", "push", "pwa", "ranked", "rarity", "referralV2", "sealed",
+  "news", "notifications", "opening", "playerName", "presence", "privacy", "profile", "push", "pwa", "ranked", "rarity", "referralV2", "invite", "sealed",
   "listings", "showcase", "spoiler", "theme", "time", "trades", "v1Welcome", "v2Announcement", "wiki", "wishlist", "wrapped",
 ] as const;
 
@@ -18,6 +18,8 @@ export const CLIENT_SUBSETS: Partial<Record<(typeof CLIENT_NAMESPACES)[number], 
   kyaraImport: ["form", "cancel", "errors", "banner"],
   // Parrainage v2 : cartes des étapes et tableau des filleuls (avec leurs cadeaux et leur jauge) ; le reste est rendu au serveur
   referralV2: ["steps", "gifts", "table", "meter"],
+  // Invitation : la fenêtre qui suit le premier booster d'un invité arrivé par un lien ; la page /i/CODE est rendue au serveur
+  invite: ["prompt"],
 };
 
 export function pickClientMessages(messages: AbstractIntlMessages): AbstractIntlMessages {

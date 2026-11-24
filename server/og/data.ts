@@ -1,6 +1,6 @@
 import "server-only";
 import { isFrozen } from "@/lib/account/deletion";
-import { normalizeReferralCode } from "@/lib/economy/referral";
+import { parseInviteCode } from "@/lib/referral/codes";
 import { decorFromRelations, type PlayerDecor } from "@/lib/profile/decor";
 import { prisma } from "../db";
 import { decorSelect } from "../profile/decor";
@@ -42,12 +42,12 @@ export async function showcaseCards(): Promise<OgCard[]> {
 
 export type OgReferrer = { username: string; image: string | null; decor: PlayerDecor };
 
-/** Parrain d'un code d'invitation : joueur inscrit, actif. null sinon (invitation générique). */
+/** Parrain d'un code d'invitation (code standard ou code perso) : joueur inscrit, actif. null sinon (invitation générique). */
 export async function referrerByCode(raw: string): Promise<OgReferrer | null> {
-  const code = normalizeReferralCode(raw);
-  if (!code) return null;
+  const parsed = parseInviteCode(raw);
+  if (!parsed) return null;
   const user = await prisma.user.findUnique({
-    where: { referralCode: code },
+    where: parsed.kind === "STANDARD" ? { referralCode: parsed.code } : { vanityCode: parsed.code },
     select: { username: true, image: true, isGuest: true, bannedAt: true, deletionRequestedAt: true, anonymizedAt: true, ...decorSelect },
   });
   if (!user || user.isGuest || user.bannedAt || isFrozen(user)) return null;
