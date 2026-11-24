@@ -1,7 +1,7 @@
 "use client";
 
 import { animate, m, useMotionValue, useTransform, type MotionValue } from "motion/react";
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode, type Ref } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode, type Ref } from "react";
 import type { BoosterShape, BoosterTheme } from "@/lib/boosters/types";
 import { openingGestureProgress, startOpeningGesture, type OpeningGesture } from "@/lib/boosters/opening-gesture";
 import { belowClip, pieceTorn, tearLine, tornRange, type TearPoint } from "@/lib/boosters/tear-line";
@@ -10,6 +10,8 @@ import { BoosterArt, JUBAKO_CORD, JUBAKO_LID, POCHI_BODY } from "../boosters/Boo
 import { CardBack } from "../fuda/CardBack";
 import { leakFor } from "./RarityFx";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
+import { PRISM, prismShake } from "@/lib/opening/prism";
+import { PrismBurst, PrismHalo } from "./PrismLight";
 
 /** Part du geste à partir de laquelle l'ouverture est envoyée au serveur. */
 const TRIGGER_AT = 0.55;
@@ -56,6 +58,15 @@ type Props = {
   /** Meilleure rareté du tirage, dès que le serveur a répondu : couleur de la lumière qui s'échappe. */
   leak: Rarity | null;
   /**
+   * Le tirage cache une XR : une fois le sachet ouvert, il tremble de plus en plus fort et un arc-en-ciel
+   * jaillit de la déchirure, puis les cartes attendent la fin du spectacle pour sortir.
+   */
+  prism?: boolean;
+  /** Le prisme démarre (une fois) : sons, vibration et voile plein écran côté parent. */
+  onPrism?: () => void;
+  /** Booster garanti : sceau « 確定 » sur le sachet. */
+  guarantee?: boolean;
+  /**
    * Cartes du tirage, dès que le serveur a répondu (null avant) : leurs dos sortent par l'ouverture.
    * 0 : le booster s'est changé en sachet scellé, rien ne sort et la scène passe tout de suite la main.
    */
@@ -79,12 +90,13 @@ type Props = {
  * pochibukuro et jūbako : on glisse vers le haut pour soulever le rabat ou le couvercle.
  */
 export function BoosterScene(props: Props) {
-  const { shape, theme, emblem, name, tagline, contents, count, armed, reduced, leak, cards, lite = false } = props;
+  const { shape, theme, emblem, name, tagline, contents, count, armed, reduced, leak, cards, lite = false, prism = false } = props;
   const definitions = useRarityDefinitions();
   const progress = useMotionValue(0);
   const [opened, setOpened] = useState(false);
   const [flown, setFlown] = useState(false);
   const [dropped, setDropped] = useState(false);
+  const [rising, setRising] = useState(false);
   const front = useRef<HTMLDivElement>(null);
   const handedOff = useRef(false);
   const [direction, setDirection] = useState<1 | -1>(1);
@@ -96,9 +108,19 @@ export function BoosterScene(props: Props) {
   const animation = useRef<{ stop: () => void } | null>(null);
   const tilt = useRef<HTMLDivElement>(null);
   const drag = useRef<(OpeningGesture & { id: number }) | null>(null);
-  const { onTrigger, onOpened, onTearSound, openRef } = props;
+  const { onTrigger, onOpened, onTearSound, openRef, onPrism } = props;
   const onOpenedRef = useRef(onOpened);
   useEffect(() => { onOpenedRef.current = onOpened; }, [onOpened]);
+  const onPrismRef = useRef(onPrism);
+  useEffect(() => { onPrismRef.current = onPrism; }, [onPrism]);
+  // Prisme : sachet ouvert et XR dans le tirage (jamais en mouvement réduit)
+  const wow = prism && opened && !reduced;
+  const prismFired = useRef(false);
+  useEffect(() => {
+    if (!wow || prismFired.current) return;
+    prismFired.current = true;
+    onPrismRef.current?.();
+  }, [wow]);
 
   useTilt(tilt, !reduced && !opened);
 
@@ -116,9 +138,10 @@ export function BoosterScene(props: Props) {
 
   // Booster ouvert et tirage connu : les cartes montent par l'ouverture, puis le booster tombe et les
   // découvre. Minuteries plutôt que fins d'animation : un onglet en arrière-plan ne bloque rien.
+  // Avec le prisme, elles attendent que l'arc-en-ciel ait fini de jaillir.
   const received = cards !== null;
   const shown = Math.min(cards ?? 0, PEEK_MAX);
-  const emerging = flown && !reduced && shown > 0;
+  const emerging = rising && !reduced && shown > 0;
   useEffect(() => {
     if (!flown) return;
     const handOff = () => {
@@ -135,14 +158,17 @@ export function BoosterScene(props: Props) {
       handOff();
       return;
     }
+    const hold = prism ? PRISM.holdMs : 0;
     const rise = (PEEK_RISE + (shown - 1) * PEEK_STAGGER) * 1000;
-    const drop = setTimeout(() => setDropped(true), rise);
-    const end = setTimeout(handOff, rise + (PACK_DROP + (shown - 1) * PEEK_STAGGER * 0.6) * 1000);
+    const start = setTimeout(() => setRising(true), hold);
+    const drop = setTimeout(() => setDropped(true), hold + rise);
+    const end = setTimeout(handOff, hold + rise + (PACK_DROP + (shown - 1) * PEEK_STAGGER * 0.6) * 1000);
     return () => {
+      clearTimeout(start);
       clearTimeout(drop);
       clearTimeout(end);
     };
-  }, [flown, reduced, received, shown]);
+  }, [flown, reduced, received, shown, prism]);
 
   const fire = () => {
     if (fired.current || !armed) return;
@@ -221,6 +247,7 @@ export function BoosterScene(props: Props) {
 
   // Seule la meilleure rareté colore la lumière : avant la réponse du serveur, la fente reste blanche
   const leakColor = leak ? leakFor(leak, definitions) ?? null : null;
+  const shake = useMemo(() => prismShake(lite), [lite]);
 
   const overlay = (
     <>
@@ -232,7 +259,7 @@ export function BoosterScene(props: Props) {
         animate={{ opacity: emerging ? 0 : 1 }}
         transition={{ duration: 0.5 }}
       >
-        <Leak progress={progress} color={leakColor} strong={opened && leakColor !== null} shape={shape} reduced={reduced} />
+        <Leak progress={progress} color={leakColor} strong={opened && leakColor !== null} shape={shape} reduced={reduced} lite={lite} prism={prism} />
       </m.span>
       {/* Impérial (laque et kikkō d'or) : éclat de feuille d'or qui jaillit à la déchirure */}
       {theme.pattern === "kikko" && opened && !reduced && (
@@ -278,6 +305,7 @@ export function BoosterScene(props: Props) {
       }}
     >
       {!opened && <IdleHalo progress={progress} color={theme.base} reduced={reduced} />}
+      {wow && <PrismHalo lite={lite} fading={dropped} />}
       {count > 1 && (
         <>
           <m.div
@@ -300,10 +328,11 @@ export function BoosterScene(props: Props) {
           </m.div>
         </>
       )}
+      {/* À l'ouverture, le sachet accuse le coup ; avec une XR dedans, il tremble de plus en plus fort, puis « pop » */}
       <m.div
         className={reduced || opened ? "" : "booster-idle"}
-        animate={opened && !reduced ? { y: [0, 9, -4, 0], scale: [1, 0.97, 1.025, 1] } : undefined}
-        transition={{ duration: 0.55, ease: "easeOut" }}
+        animate={wow ? { x: shake.x, rotate: shake.rotate, scale: shake.scale } : opened && !reduced ? { y: [0, 9, -4, 0], scale: [1, 0.97, 1.025, 1] } : undefined}
+        transition={wow ? { duration: shake.duration, ease: "easeInOut" } : { duration: 0.55, ease: "easeOut" }}
       >
         <div ref={tilt} className="relative [transform-style:preserve-3d]">
           {emerging && <PeekCards count={shown} dropped={dropped} frontRef={front} />}
@@ -321,6 +350,7 @@ export function BoosterScene(props: Props) {
               name={name}
               tagline={tagline}
               contents={contents}
+              guarantee={props.guarantee}
               hideCover={shape !== "SACHET"}
               overlay={overlay}
               flatShadow
@@ -625,6 +655,8 @@ function Leak({
   strong,
   shape,
   reduced,
+  lite,
+  prism,
 }: {
   progress: MotionValue<number>;
   /** null tant que le serveur n'a pas répondu : fente blanche, pas de halo coloré. */
@@ -632,6 +664,9 @@ function Leak({
   strong: boolean;
   shape: BoosterShape;
   reduced: boolean;
+  lite: boolean;
+  /** XR dans le tirage : fente irisée, et l'arc-en-ciel remplace le faisceau et les étincelles blanches. */
+  prism: boolean;
 }) {
   const opacity = useTransform(progress, [0, 0.35, 1], [0, 0.3, reduced ? 0.4 : 0.85]);
   const top = shape === "SACHET" ? "top-[13%]" : shape === "POCHIBUKURO" ? "top-[20%]" : "top-[8%]";
@@ -647,8 +682,9 @@ function Leak({
           style={{ opacity, background: `radial-gradient(circle, ${color}, transparent 60%)` }}
         />
       )}
-      <m.span className="booster-opening-seam" style={{ opacity, scaleX: progress }} />
-      {strong && !reduced && (
+      <m.span className={`booster-opening-seam ${prism ? "prism-seam" : ""}`} style={{ opacity, scaleX: progress }} />
+      {strong && !reduced && prism && <PrismBurst lite={lite} />}
+      {strong && !reduced && !prism && (
         <>
           <span className="booster-opening-beam-anchor">
             <m.span

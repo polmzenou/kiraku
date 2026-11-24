@@ -182,6 +182,7 @@ function sellsAsPack(s: BoosterSeed): boolean {
     s.kind !== "STANDARD" &&
     s.kind !== "DROP" &&
     s.kind !== "PRESTIGE" &&
+    s.kind !== "GUARANTEED" &&
     s.active !== false &&
     !(s.filter && isDynamicFilter(s.filter))
   );

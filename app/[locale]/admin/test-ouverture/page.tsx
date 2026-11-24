@@ -14,7 +14,7 @@ const OpeningTestBench = dynamic(() => import("@/components/admin/OpeningTestBen
 
 /** Banc de test de l'ouverture : vrais boosters et vraies cartes, tirages factices jamais enregistrés. */
 export default async function AdminOpeningTestPage() {
-  await requireAdminView();
+  const { readOnly } = await requireAdminView();
   const [t, locale, offers, rules] = await Promise.all([
     getTranslations("admin.openingTest"),
     getLocale(),
@@ -23,7 +23,8 @@ export default async function AdminOpeningTestPage() {
   ]);
   const [pool, sealedTypes] = await Promise.all([openingTestPool(locale), getSealedDisplays(locale)]);
   // Les sachets scellés se testent par les scénarios de chute, pas comme des boosters à choisir
-  const types: OpeningType[] = offers.filter(({ type }) => type.kind !== "DROP").map(({ type }) => {
+  // Boosters garantis : l'admin seulement (le DEV ne les voit nulle part)
+  const types: OpeningType[] = offers.filter(({ type }) => type.kind !== "DROP" && !(readOnly && type.kind === "GUARANTEED")).map(({ type }) => {
     const cards = effectiveSlotFloors(type.slotFloors, rules.draw.slotFloors).length;
     return {
       slug: type.slug,
@@ -39,6 +40,7 @@ export default async function AdminOpeningTestPage() {
       priceZeni: null,
       countsForPity: false,
       bonusEligible: false,
+      guaranteed: type.kind === "GUARANTEED",
       featured: null,
     };
   });

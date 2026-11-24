@@ -165,6 +165,7 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
       theme: e.type.theme,
       emblem: e.type.emblem,
       contents: contentsLabel(cardsOf(e)),
+      guarantee: e.type.kind === "GUARANTEED",
     }));
 
   const bannerPity = readBannerPity(user?.bannerPity ?? {});

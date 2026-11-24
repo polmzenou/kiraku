@@ -27,6 +27,7 @@ const GROUPS = [
       { key: "showcases", href: "/admin/vitrines" },
       { key: "boosters", href: "/admin/boosters" },
       { key: "types", href: "/admin/boosters/types" },
+      { key: "guaranteed", href: "/admin/boosters/garantis" },
       { key: "openingTest", href: "/admin/test-ouverture" },
       { key: "banners", href: "/admin/bannieres" },
       { key: "focus", href: "/admin/focus" },

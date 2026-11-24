@@ -2,7 +2,7 @@ import { useTranslations } from "next-intl";
 import { ButtonLink } from "../ui/ButtonLink";
 import { BoosterArt, type BoosterArtProps } from "./BoosterArt";
 
-export type CreditedBooster = Pick<BoosterArtProps, "shape" | "theme" | "emblem" | "contents"> & {
+export type CreditedBooster = Pick<BoosterArtProps, "shape" | "theme" | "emblem" | "contents" | "guarantee"> & {
   slug: string;
   name: string;
   count: number;
@@ -52,7 +52,7 @@ export function CreditStrip({ credits }: { credits: CreditedBooster[] }) {
           <li key={c.slug} className="flex w-38 shrink-0 snap-start flex-col gap-2 rounded-card border border-kin/60 bg-surface p-3">
             <div className="flex items-start justify-between gap-2">
               <div className="w-12 shrink-0">
-                <BoosterArt shape={c.shape} theme={c.theme} emblem={c.emblem} name={c.name} contents={c.contents} compact flatShadow />
+                <BoosterArt shape={c.shape} theme={c.theme} emblem={c.emblem} name={c.name} contents={c.contents} guarantee={c.guarantee} compact flatShadow />
               </div>
               {/* Le nombre est redit en entier dans le lien */}
               <span aria-hidden="true" className="rounded-pill border border-kin/60 bg-bg/80 px-2 py-0.5 text-sm font-bold text-kin tabular-nums">

@@ -1164,6 +1164,7 @@
       "NEEDS_PAYMENT": "Ton stock a changé : confirme le paiement en Zeni.",
       "NOT_ENOUGH_ZENI": "Pas assez de Zeni pour cette ouverture.",
       "NOT_FOR_SALE": "Ce booster n'est pas disponible en ce moment.",
+      "GUARANTEE_EMPTY": "Ce booster attend encore des cartes de sa rareté : il reste dans tes boosters à ouvrir, réessaie plus tard.",
       "UNAVAILABLE": "Ouverture impossible pour le moment. Réessaie."
     },
     "creditLeft": "{count, plural, one {Booster crédité · # à ouvrir} other {Boosters crédités · # à ouvrir}}",
@@ -1501,6 +1502,7 @@
       "general": "Général",
       "cosmetics": "Titres et cadres",
       "openingTest": "Test d'ouverture",
+      "guaranteed": "Boosters garantis",
       "focus": "Focus série",
       "pullFeed": "Gros tirages",
       "eventGauge": "Événement",
@@ -1818,6 +1820,45 @@
       "duplicateSection": "Doublons des grandes raretés",
       "duplicateHint": "Une carte de ces raretés déjà dans la collection du joueur n'a plus qu'une chance sur N de retomber ; à partir du nombre d'exemplaires choisi, plus aucune. Quand toutes les cartes de la rareté tirée sont bloquées, l'emplacement donne une rareté en dessous. S'applique aux boosters (vedettes et pitiés comprises), aux sachets Divin et Apocalyptique et aux cartes au hasard des lots."
     },
+    "guaranteed": {
+      "title": "Boosters garantis",
+      "intro": "Un booster par rareté de variante : 3 cartes Épique ou mieux, puis une carte de la rareté garantie, toujours. Jamais proposés ni vendus aux joueurs, ils n'existent que d'ici : donne-les à qui tu veux, le joueur les reçoit en cadeau de l'équipe (notification) et les ouvre depuis l'accueil.",
+      "empty": "Aucun booster garanti en base : lance le seed des boosters (deploy.sh --seed).",
+      "pool": "Cartes de la rareté dans le pool",
+      "held": "Encore à ouvrir chez les joueurs",
+      "heldValue": "{count, plural, =0 {aucun} one {# booster} other {# boosters}}{holders, plural, =0 {} one { · # joueur} other { · # joueurs}}",
+      "emptyRarity": "Aucune carte {rarity} publiée dans ce pool : le booster ne pourrait pas s'ouvrir, il ne se donne pas.",
+      "give": "Donner",
+      "edit": "Modifier le type",
+      "grantTitle": "Donner un booster garanti",
+      "booster": "Booster",
+      "unavailable": "aucune carte",
+      "username": "Pseudo du joueur",
+      "usernameHint": "Pseudo exact (majuscules indifférentes).",
+      "quantity": "Quantité",
+      "reason": "Raison (journal de l'admin)",
+      "reasonHint": "Visible dans le journal, pas par le joueur.",
+      "reasonDefault": "Booster garanti offert",
+      "message": "Mot au joueur (facultatif)",
+      "messagePlaceholder": "Joint à la notification du cadeau",
+      "emptyHint": "Ce booster n'a aucune carte de sa rareté dans son pool : publie-en avant de le donner.",
+      "submit": "{count, plural, one {Donner le booster} other {Donner # boosters}}",
+      "sending": "Envoi…",
+      "done": "{count, plural, one {# booster {booster} donné} other {# boosters {booster} donnés}} à {username}.",
+      "seePlayer": "Voir la fiche du joueur",
+      "errors": {
+        "FORBIDDEN": "Réservé à l'admin.",
+        "INVALID": "Vérifie le pseudo, la quantité et la raison.",
+        "RATE_LIMITED": "Trop d'envois d'affilée : réessaie dans une minute.",
+        "NO_USER": "Aucun joueur avec ce pseudo.",
+        "NOT_FOUND": "Joueur ou booster introuvable.",
+        "NOT_GUARANTEED": "Ce booster n'est pas un booster garanti.",
+        "EMPTY_RARITY": "Aucune carte de cette rareté dans le pool : rien à garantir.",
+        "LIMIT": "Quantité trop grande.",
+        "INSUFFICIENT": "Quantité refusée.",
+        "unexpected": "Envoi impossible pour le moment."
+      }
+    },
     "types": {
       "title": "Types de boosters",
       "intro": "Chaque type est un filtre sur le catalogue, des planchers et un prix. Un type dont le pool est sous le minimum ({min} cartes par défaut) ne peut pas être activé et disparaît de la page.",
@@ -1840,7 +1881,8 @@
         "filter": "filtre invalide",
         "rotation": "au repos (rotation)",
         "featured": "en avant (rotation)",
-        "shopOnly": "vendu en boutique seulement"
+        "shopOnly": "vendu en boutique seulement",
+        "guaranteed": "booster garanti, donné par l'équipe"
       },
       "price": {
         "free": "Gratuit",
@@ -1850,6 +1892,7 @@
       },
       "oddsTitle": "Chances exactes sur le pool actuel",
       "oddsHint": "Calculées avec les parts globales et les paliers vides de ce pool, comme au tirage.",
+      "guaranteedLast": "Dernière carte : toujours {rarity} ({count, plural, =0 {aucune carte dans le pool : le booster ne peut pas s'ouvrir} one {# carte dans le pool} other {# cartes dans le pool}}). Le tableau ne compte que les autres cartes.",
       "back": "Tous les types",
       "editTitle": "Modifier « {name} »",
       "newBannerTitle": "Nouvelle bannière vedette",
@@ -3472,7 +3515,14 @@
         "hisui": "Hisui (ambassadeur)",
         "tensei": "Tensei (renaissance)",
         "hanga": "Hanga (estampe)",
-        "hono": "Hono (flamme)"
+        "hono": "Hono (flamme)",
+        "rang-bronze": "Bronze (rang classé)",
+        "rang-argent": "Argent (rang classé)",
+        "rang-or": "Or (rang classé)",
+        "rang-emeraude": "Émeraude (rang classé)",
+        "rang-elite": "Élite (rang classé)",
+        "rang-champion": "Champion (rang classé)",
+        "rang-grand-champion": "Grand Champion (rang classé)"
       },
       "settings": {
         "pioneerUntil": "Badge Pionnier : inscrits jusqu'au",

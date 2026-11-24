@@ -1,5 +1,5 @@
 import "server-only";
-import { localize, parseLocalized } from "@/lib/boosters/types";
+import { localize, NOT_REWARDABLE_KINDS, parseLocalized } from "@/lib/boosters/types";
 import type { ExpeditionTypeInput } from "@/lib/expedition/admin-form";
 import { loreOf } from "@/lib/expedition/snapshot";
 import type { ExpeditionRisk } from "@/lib/expedition/types";
@@ -39,10 +39,10 @@ export async function adminExpeditionTypes() {
   }));
 }
 
-/** Types de booster qu'une expédition peut verser en crédits (pas les sachets scellés). */
+/** Types de booster qu'une expédition peut verser en crédits (ni sachets scellés, ni boosters garantis). */
 export async function boosterTypeOptions(locale: string) {
   const rows = await prisma.boosterType.findMany({
-    where: { kind: { not: "DROP" } },
+    where: { kind: { notIn: [...NOT_REWARDABLE_KINDS] } },
     orderBy: [{ family: "asc" }, { sortOrder: "asc" }],
     select: { id: true, slug: true, name: true },
   });

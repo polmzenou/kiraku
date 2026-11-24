@@ -30,6 +30,7 @@ describe.skipIf(!url)("ouverture atomique (base réelle)", () => {
     resetsPity: true,
     bonusEligible: true,
     includeCustom: true,
+    guaranteed: null,
   };
   const rare: OpenType = { ...standard, id: "test-rare", slug: "rare", usesFreeStock: false, priceZeni: 300, countsForPity: false, bonusEligible: false };
 

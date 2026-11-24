@@ -5,6 +5,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { periodWindow } from "@/lib/economy/period";
 import { grantBoosters } from "../economy/credits";
 import { lockPlayers } from "../social/lock";
+import { isRewardableKind } from "@/lib/boosters/types";
 
 export type AmbassadorPackErrorCode = "NO_USER" | "BANNED" | "NOT_AMBASSADOR" | "ALREADY_CLAIMED" | "UNAVAILABLE";
 
@@ -40,7 +41,7 @@ export async function claimAmbassadorPackWith(
 
       // Des boosters à ouvrir, jamais un sachet scellé ; un pack coupé (0) ne se réclame pas
       const type = await tx.boosterType.findUnique({ where: { slug: settings.boosterSlug }, select: { id: true, kind: true } });
-      if (!type || type.kind === "DROP" || settings.weeklyBoosters < 1) throw new AmbassadorPackError("UNAVAILABLE");
+      if (!type || !isRewardableKind(type.kind) || settings.weeklyBoosters < 1) throw new AmbassadorPackError("UNAVAILABLE");
 
       await tx.ambassadorPackClaim.create({
         data: { userId: input.userId, periodKey: week.key, boosterTypeId: type.id, count: settings.weeklyBoosters, createdAt: input.now },

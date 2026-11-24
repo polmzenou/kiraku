@@ -5,7 +5,7 @@ import { PrestigeSettingsForm } from "@/components/admin/PrestigeSettingsForm";
 import { SettingLogList } from "@/components/admin/SettingLogList";
 import type { RarityInfo } from "@/components/prestige/RebirthFlow";
 import { Link } from "@/i18n/navigation";
-import { localize, parseLocalized } from "@/lib/boosters/types";
+import { localize, NOT_REWARDABLE_KINDS, parseLocalized } from "@/lib/boosters/types";
 import { rarityColor } from "@/lib/catalog/appearance";
 import { sealOf } from "@/lib/prestige/printing";
 import { PRESTIGE_SETTING_KEYS, type PrestigeSettings } from "@/lib/settings/prestige-form";
@@ -36,8 +36,8 @@ export default async function AdminPrestigePage() {
     printingOverview(),
     ritePreviewSample(locale),
     getCurrentUser(),
-    // Booster offert à la renaissance : des boosters à ouvrir, jamais un sachet scellé
-    prisma.boosterType.findMany({ where: { kind: { not: "DROP" } }, orderBy: [{ family: "asc" }, { sortOrder: "asc" }, { id: "asc" }], select: { slug: true, name: true } }),
+    // Booster offert à la renaissance : des boosters à ouvrir, jamais un sachet scellé ni un booster garanti
+    prisma.boosterType.findMany({ where: { kind: { notIn: [...NOT_REWARDABLE_KINDS] } }, orderBy: [{ family: "asc" }, { sortOrder: "asc" }, { id: "asc" }], select: { slug: true, name: true } }),
   ]);
   const settings = Object.fromEntries(PRESTIGE_SETTING_KEYS.map((k, i) => [k, values[i]])) as PrestigeSettings;
   const nameOf = (key: string) => (tRarity.has(key as "COMMON") ? tRarity(key as "COMMON") : key);
