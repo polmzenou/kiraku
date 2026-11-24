@@ -101,6 +101,8 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
 - [ ] Cosmétiques du prestige installés depuis `/admin/prestige` (titres, cadres tensei, hanga et hono, pseudo or).
 - [ ] Discord : `DISCORD_PRESTIGE_CHANNEL_ID` dans l'environnement si les annonces sont voulues (voir
   `docs/DISCORD.md`), interrupteur `discord.prestigeEnabled` dans `/admin/discord`.
+- [ ] Parrainage v2 : salon Discord **privé** de l'équipe créé, bot autorisé, `DISCORD_REFERRAL_CHANNEL_ID` posé sur
+  le VPS (voir `docs/DISCORD.md`, « Activer le fil du parrainage »).
 - [ ] Essai sur un vrai téléphone en 375 px, Yoru et Washi : page `/prestige`, rite 転生, révélation à la baren,
   consécration 奉納, sanctuaire et rouleaux du profil ; puis en mouvement réduit.
 

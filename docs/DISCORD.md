@@ -188,6 +188,24 @@ Les messages viennent de `lib/discord/casino-message.ts` ; les images (`public/c
 Les messages viennent de `lib/discord/prestige-message.ts`, la file et la publication de `server/discord/prestige.ts`.
 Le Marché et le casino annoncent aussi l'exemplaire quand il est spécial (« Gravée 初摺 n° 17 / 25 · héritage 3 »).
 
+### Activer le fil du parrainage (salon privé de l'équipe)
+
+1. Créer un salon **privé** : le rôle @everyone ne le voit pas, seuls les rôles de l'équipe et le bot y ont accès.
+   Donner au bot **Voir le salon**, **Voir l'historique**, **Envoyer des messages** et **Intégrer des liens**.
+2. Ajouter `DISCORD_REFERRAL_CHANNEL_ID="…"` à l'environnement de l'application du VPS, puis `npm run build` et
+   `pm2 restart kiraku --update-env`. Sans cette variable, rien n'est posté et le parrainage marche pareil.
+3. Le cron minute (`/api/cron/discord`) relaie alors, dans l'ordre d'arrivée :
+   - chaque étape versée (`referral:step:<parrainage>:<n>`) : ce que le filleul et le parrain ont reçu, l'Ennichi,
+     l'âge et la confiance du filleul, ses boosters hors cadeau et ses jours actifs, la paire (appareil et IP communs
+     par oui ou non, score), les amis installés et les paliers du parrain ;
+   - une part « confiance » versée à part, un palier, un grand-parrainage ;
+   - un parrainage mis « À vérifier » (motif, indices, étapes en attente) et chaque décision de l'équipe.
+   Chaque message a un bouton vers la fiche du parrainage dans `/admin/parrainage/suivi`. Aucune adresse IP n'est
+   envoyée. Avant d'envoyer, le bot vérifie que le salon est privé : lisible par un rôle ordinaire, il n'y poste rien.
+   Un événement de plus de 48 h n'est pas repris (le suivi de l'admin le garde).
+
+Les messages viennent de `lib/discord/referral-feed.ts`, la file et la publication de `server/discord/referral-feed.ts`.
+
 ### Guide #bien-débuter
 
 Le salon `1565843323854258276`, dans **👋 ACCUEIL**, contient le guide public : règlement,

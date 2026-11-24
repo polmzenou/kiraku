@@ -1,13 +1,8 @@
 import { useTranslations } from "next-intl";
+import { boosterWord } from "@/lib/referral/lot-text";
 import type { LotView } from "@/server/economy/lot-view";
 import { BoosterArt } from "../boosters/BoosterArt";
 import { ZeniCoin } from "../layout/ZeniCoin";
-
-/** Nom d'un booster sans le mot « booster » déjà écrit par le texte (« Booster divin » → « divin », « Divine booster » → « Divine »). */
-export function boosterWord(name: string): string {
-  const bare = name.replace(/^booster\s+/i, "").replace(/\s+booster$/i, "").trim();
-  return bare || name;
-}
 
 /**
  * Cadeaux d'un lot en images : les vrais sachets du jeu avec leur nombre, les Zeni, les cartes, et le texte en clair à

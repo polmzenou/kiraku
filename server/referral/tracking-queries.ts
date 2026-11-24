@@ -165,7 +165,7 @@ export async function trackingRows(filter: TrackingFilter, q: string, rules: Pic
   };
 }
 
-export type FicheReward = { kind: RewardKind; side: RewardSide | null; step: number | null; milestone: number | null; to: string; lot: LotView | null; multiplier: number; at: string; clawedBack: boolean };
+export type FicheReward = { id: string; kind: RewardKind; side: RewardSide | null; step: number | null; milestone: number | null; to: string; lot: LotView | null; multiplier: number; at: string; clawedBack: boolean };
 export type FicheStep = { state: StepState; at: string | null; deadline: string | null; have: number; need: number; rewards: FicheReward[] };
 export type FicheEvent = { kind: "HOLD" | "MILESTONE" | "GRAND" | "DECISION"; at: string; text: string | null; by: string | null; reward: FicheReward | null; decision: string | null; reason: string | null };
 export type ReferralFiche = {
@@ -219,7 +219,7 @@ export async function referralFiche(id: string, rules: ReferralV2Rules, ctx: { t
       discordCreatedAt: true,
       referee: { select: { username: true, registeredAt: true, createdAt: true, email: true, emailVerified: true, discordLinkedAt: true, bannedAt: true, referredAt: true } },
       referrer: { select: { username: true, ambassadorSince: true, bannedAt: true } },
-      rewards: { orderBy: { createdAt: "asc" }, select: { kind: true, side: true, step: true, milestone: true, lotId: true, multiplier: true, createdAt: true, clawedBackAt: true, userId: true, user: { select: { username: true } } } },
+      rewards: { orderBy: { createdAt: "asc" }, select: { id: true, kind: true, side: true, step: true, milestone: true, lotId: true, multiplier: true, createdAt: true, clawedBackAt: true, userId: true, user: { select: { username: true } } } },
     },
   });
   if (!r || r.version !== 2) return null;
@@ -244,6 +244,7 @@ export async function referralFiche(id: string, rules: ReferralV2Rules, ctx: { t
   ]);
   const lots = await lotViews(r.rewards.flatMap((w) => (w.lotId ? [w.lotId] : [])), ctx.locale);
   const reward = (w: (typeof r.rewards)[number]): FicheReward => ({
+    id: w.id,
     kind: w.kind,
     side: w.side,
     step: w.step,

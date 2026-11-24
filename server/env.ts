@@ -27,6 +27,8 @@ const schema = z.object({
   DISCORD_CASINO_CHANNEL_ID: z.string().regex(/^[0-9]{17,20}$/).optional(),
   // Salon des annonces du prestige (renaissances, éditions gravées tirées)
   DISCORD_PRESTIGE_CHANNEL_ID: z.string().regex(/^[0-9]{17,20}$/).optional(),
+  // Salon privé de l'équipe : fil du parrainage v2 (versements, blocages, décisions)
+  DISCORD_REFERRAL_CHANNEL_ID: z.string().regex(/^[0-9]{17,20}$/).optional(),
   ADMIN_DISCORD_ID: z.string().optional(),
   // E-mails (Resend) en attente : sans clé, les liens sont écrits dans les logs en dev
   RESEND_API_KEY: z.string().min(1).optional(),
@@ -84,6 +86,7 @@ export const discordRulesConfigured = Boolean(env.DISCORD_BOT_TOKEN && env.AUTH_
 export const discordMarketConfigured = Boolean(env.DISCORD_BOT_TOKEN && env.DISCORD_GUILD_ID && env.DISCORD_MARKET_CHANNEL_ID);
 export const discordCasinoConfigured = Boolean(env.DISCORD_BOT_TOKEN && env.DISCORD_GUILD_ID && env.DISCORD_CASINO_CHANNEL_ID);
 export const discordPrestigeConfigured = Boolean(env.DISCORD_BOT_TOKEN && env.DISCORD_GUILD_ID && env.DISCORD_PRESTIGE_CHANNEL_ID);
+export const discordReferralConfigured = Boolean(env.DISCORD_BOT_TOKEN && env.DISCORD_GUILD_ID && env.DISCORD_REFERRAL_CHANNEL_ID);
 export const mailEnabled = Boolean(env.RESEND_API_KEY && env.MAIL_FROM);
 export const pushConfigured = Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY && env.VAPID_SUBJECT);
 export const ablyEnabled = Boolean(env.ABLY_API_KEY);
