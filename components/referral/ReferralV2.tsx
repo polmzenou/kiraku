@@ -9,7 +9,8 @@ import { LotGifts } from "./LotGifts";
 import { RefereeTable } from "./RefereeTable";
 import { ReferralLadder } from "./ReferralLadder";
 import { SelfStairs } from "./SelfStairs";
-import { StepCards, type StepConditions } from "./StepCards";
+import { StepCards } from "./StepCards";
+import type { StepConditions } from "./step-meta";
 import { ThemedArt } from "./ThemedArt";
 
 // Page /parrainage du parrainage v2 (étape 18), selon le joueur (designs validés de l'atelier 1) :
@@ -56,7 +57,8 @@ async function LinkCard({ code }: { code: string }) {
   const t = await getTranslations("referralV2.link");
   return (
     <section className="flex flex-col gap-2 lacquer rounded-card p-4" aria-labelledby="lien">
-      <h2 id="lien" className="text-[11px] font-bold uppercase tracking-wide text-text-muted">{t("title")}</h2>
+      {/* Titre pour les lecteurs d'écran : ReferralShare affiche déjà « Ton code » */}
+      <h2 id="lien" className="sr-only">{t("title")}</h2>
       <ReferralShare code={code} />
       <p className="text-xs text-text-muted">{t("hint")}</p>
     </section>

@@ -1,5 +1,5 @@
 import type { StepState } from "@/lib/referral/steps";
-import { STEP_KANJI } from "./StepCards";
+import { STEP_KANJI } from "./step-meta";
 
 const KNOT: Record<StepState, string> = {
   DONE: "bg-shu-btn text-washi-paper border-shu-btn",

@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 import type { SelfView, StepGifts } from "@/server/referral/queries";
 import { LotGifts } from "./LotGifts";
-import { STEP_KANJI, stepNo, type StepConditions } from "./StepCards";
+import { STEP_KANJI, stepNo, type StepConditions } from "./step-meta";
 import { StepMeter } from "./StepMeter";
 
 /** Vue du filleul (design « bienvenue d'abord ») : ses quatre étapes en marches, ses cadeaux, où il en est. */

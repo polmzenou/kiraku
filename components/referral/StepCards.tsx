@@ -4,14 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { StepGifts } from "@/server/referral/queries";
 import { LotGifts } from "./LotGifts";
-
-export const STEP_KANJI = ["一", "二", "三", "四"] as const;
-
-/** Numéro d'étape pour les clés de traduction (« 1.name »…). */
-export const stepNo = (n: number) => Math.min(4, Math.max(1, Math.round(n))) as 1 | 2 | 3 | 4;
-
-/** Conditions des étapes, lues dans les réglages, pour leurs textes (« Il ouvre 20 boosters en 2 jours »…). */
-export type StepConditions = { openings: number; installDays: number; accroDays: number; accroWindow: number; fideleDays: number; fideleWindow: number };
+import { STEP_KANJI, stepNo, type StepConditions } from "./step-meta";
 
 /**
  * Ce que vous gagnez (design « fuda à retourner ») : une carte par étape ; retournée, elle montre les cadeaux de chacun

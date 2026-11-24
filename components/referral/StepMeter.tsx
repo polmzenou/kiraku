@@ -13,12 +13,12 @@ export function StepMeter({ row, step, timeZone }: { row: Pick<StepRow, "have" |
     format.dateTime(new Date(iso), withTime ? { weekday: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone } : { day: "numeric", month: "short", timeZone });
   const when = row.readyAt ? t("readyAt", { date: date(row.readyAt, true) }) : row.deadline ? t("deadline", { date: date(row.deadline, false) }) : null;
   return (
-    <div className="flex items-center gap-2">
-      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
+    <div className="flex flex-col gap-1">
+      <span className="h-1.5 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
         <span className="block h-full origin-left rounded-full bg-shu" style={{ transform: `scaleX(${Math.min(1, row.have / row.need)})` }} />
       </span>
-      <span className="shrink-0 text-[11px] tabular-nums text-text-muted">
-        {t(step === 2 ? "openings" : "days", { have: row.have, need: row.need })}
+      <span className="text-[11px] tabular-nums text-text-muted">
+        <b className="font-bold text-text">{t(step === 2 ? "openings" : "days", { have: row.have, need: row.need })}</b>
         {when && ` · ${when}`}
       </span>
     </div>

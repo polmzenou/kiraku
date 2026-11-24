@@ -4,7 +4,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 import type { RefereeRowView, RefereeStatus } from "@/server/referral/queries";
 import { LotGifts } from "./LotGifts";
-import { stepNo, type StepConditions } from "./StepCards";
+import { stepNo, type StepConditions } from "./step-meta";
 import { StepKnots } from "./StepKnots";
 import { StepMeter } from "./StepMeter";
 

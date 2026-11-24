@@ -3,6 +3,12 @@ import type { LotView } from "@/server/economy/lot-view";
 import { BoosterArt } from "../boosters/BoosterArt";
 import { ZeniCoin } from "../layout/ZeniCoin";
 
+/** Nom d'un booster sans le mot « booster » déjà écrit par le texte (« Booster divin » → « divin », « Divine booster » → « Divine »). */
+export function boosterWord(name: string): string {
+  const bare = name.replace(/^booster\s+/i, "").replace(/\s+booster$/i, "").trim();
+  return bare || name;
+}
+
 /**
  * Cadeaux d'un lot en images : les vrais sachets du jeu avec leur nombre, les Zeni, les cartes, et le texte en clair à
  * côté (« 20 boosters », « 1 Jūbako »). `multiplier` : ×2 de l'Ennichi sur les étapes 1 et 2.
@@ -22,7 +28,7 @@ export function LotGifts({ lot, multiplier = 1, compact = false, className = "" 
               <span className={`${art} shrink-0`}>
                 <BoosterArt shape={line.look.shape} theme={line.look.theme} emblem={line.look.emblem} name={line.name} contents={line.look.contents} compact flatShadow />
               </span>
-              <span>{t("booster", { count: line.quantity * m, name: line.name })}</span>
+              <span>{t("booster", { count: line.quantity * m, name: boosterWord(line.name) })}</span>
             </>
           ) : line.kind === "CARD" ? (
             <span>{t("card", { count: line.quantity * m, name: line.name })}</span>
