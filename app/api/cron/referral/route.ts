@@ -23,13 +23,14 @@ export async function GET(request: Request) {
   const started = Date.now();
   const deps = await progressDeps(new Date());
   // Au-delà de la fenêtre de l'étape 4 (plus deux jours), seule l'étape 2 peut encore tomber : elle tombe aussi à la
-  // prochaine ouverture du filleul
+  // prochaine ouverture du filleul. Les parrainages déjà à l'étape 4 restent dans le lot : un versement qui a échoué
+  // juste après la pose de son étape est retenté chaque heure pendant au moins deux jours (rien n'est versé deux fois).
   const since = new Date(deps.now.getTime() - (deps.rules.fideleWindowDays + 2) * DAY);
   const result = { referrals: 0, reached: 0, paid: 0, failed: 0 };
   let cursor: string | undefined;
   for (;;) {
     const batch = await prisma.referral.findMany({
-      where: { version: 2, revokedAt: null, step4At: null, createdAt: { gte: since } },
+      where: { version: 2, revokedAt: null, createdAt: { gte: since } },
       orderBy: { id: "asc" },
       take: BATCH,
       ...(cursor && { cursor: { id: cursor }, skip: 1 }),
