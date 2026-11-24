@@ -10,6 +10,7 @@ import type {
   GiftPayload,
   KyaraImportPayload,
   NotificationType,
+  ReferralRewardPayload,
   SealedPayload,
   TeamGiftPayload,
   TradePayload,
@@ -39,6 +40,8 @@ export type DescribableNotification = {
   buyOrder?: BuyOrderPayload | null;
   /** Import Kyara versé ou refusé. */
   kyara?: KyaraImportPayload | null;
+  /** Parrainage v2 : étape, part « confiance », palier ou grand-parrainage versé. */
+  referral?: ReferralRewardPayload | null;
   card: { anilistId: number; name: string; rarity: string } | null;
 };
 
@@ -94,6 +97,7 @@ export type DescribeTranslators = {
       | "buyOrderWanted"
       | "kyaraImportDone"
       | "kyaraImportRejected"
+      | "referralReward"
       | "aCard",
     values?: Values,
   ) => string;
@@ -211,6 +215,18 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
     }
     case "KYARA_IMPORT_REJECTED":
       return { text: t("kyaraImportRejected", { reason: n.kyara?.kind === "REJECTED" ? n.kyara.code : "OTHER" }), href: "/compte/import-kyara" };
+    case "REFERRAL_REWARD": {
+      const r = n.referral;
+      const values = {
+        name,
+        kind: r?.kind ?? "OTHER",
+        side: r?.side ?? "REFERRER",
+        step: String(r?.step ?? 0),
+        milestone: r?.milestone ?? 0,
+        multiplier: r?.multiplier ?? 1,
+      };
+      return { text: t("referralReward", values), href: "/parrainage" };
+    }
     case "SEALED_OPENED": {
       // Cadeau empoisonné : celui qui a offert le sachet apprend ce qu'il a donné
       const key = n.sealed?.outcome === "RUINED" ? "sealedRuined" : n.sealed?.outcome === "SPARED" ? "sealedSpared" : "sealedDivin";

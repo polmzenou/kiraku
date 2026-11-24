@@ -38,6 +38,18 @@ describe("describeNotification", () => {
     expect(describeNotification({ ...base, type: "KYARA_IMPORT_REJECTED", kyara: null }, tr).text).toContain('"reason":"OTHER"');
   });
 
+  it("versement du parrainage v2 → page Parrainage, avec l'étape, le côté et le ×2", () => {
+    const base = { actor: { username: "lea", isGuest: false }, gift: null, card: null };
+    const step = describeNotification({ ...base, type: "REFERRAL_REWARD", referral: { kind: "STEP", side: "REFERRER", step: 2, milestone: null, multiplier: 2 } }, tr);
+    expect(step.href).toBe("/parrainage");
+    expect(step.text).toBe('referralReward:{"name":"lea","kind":"STEP","side":"REFERRER","step":"2","milestone":0,"multiplier":2}');
+    const milestone = describeNotification({ ...base, type: "REFERRAL_REWARD", referral: { kind: "MILESTONE", side: null, step: null, milestone: 10, multiplier: 1 } }, tr);
+    expect(milestone.text).toContain('"kind":"MILESTONE"');
+    expect(milestone.text).toContain('"milestone":10');
+    // Contenu illisible : texte générique
+    expect(describeNotification({ ...base, type: "REFERRAL_REWARD", referral: null }, tr).text).toContain('"kind":"OTHER"');
+  });
+
   it("pile ou face : invitation et table relevée → page de la table, sans jamais l'issue", () => {
     const base = { actor: { username: "kenji", isGuest: false }, gift: null, card: { anilistId: 40, name: "Luffy", rarity: "MYTHIC" } };
     const coinFlip = { flipId: "t1", cardId: "c1", reason: null };

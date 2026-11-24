@@ -31,6 +31,7 @@ export const NOTIFICATION_TYPES = [
   "BUY_ORDER_WANTED",
   "KYARA_IMPORT_DONE",
   "KYARA_IMPORT_REJECTED",
+  "REFERRAL_REWARD",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -180,6 +181,34 @@ export function parseKyaraImportPayload(raw: unknown): KyaraImportPayload | null
   if (r.kind === "DONE" && count(r.cards) && count(r.zeni)) return { kind: "DONE", cards: r.cards, zeni: r.zeni };
   if (r.kind === "REJECTED" && isKyaraRejectCode(r.code)) return { kind: "REJECTED", code: r.code };
   return null;
+}
+
+/**
+ * Parrainage v2 : ce qui vient d'être versé (le détail se lit sur /parrainage). `step` pour une étape ou la part
+ * « confiance » (1 à 4), `milestone` pour un palier (amis installés) ; l'autre joueur est l'acteur de la notification.
+ */
+export type ReferralRewardPayload = {
+  kind: "STEP" | "TRUST_BONUS" | "MILESTONE" | "GRAND";
+  side: "REFEREE" | "REFERRER" | null;
+  step: number | null;
+  milestone: number | null;
+  /** ×2 de l'Ennichi sur les étapes 1 et 2 */
+  multiplier: number;
+};
+
+const REFERRAL_REWARD_KINDS = new Set(["STEP", "TRUST_BONUS", "MILESTONE", "GRAND"]);
+
+export function parseReferralRewardPayload(raw: unknown): ReferralRewardPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.kind !== "string" || !REFERRAL_REWARD_KINDS.has(r.kind)) return null;
+  const side = r.side === "REFEREE" || r.side === "REFERRER" ? r.side : null;
+  const int = (v: unknown, min: number, max: number) => (Number.isSafeInteger(v) && (v as number) >= min && (v as number) <= max ? (v as number) : null);
+  const step = int(r.step, 1, 4);
+  const milestone = int(r.milestone, 1, 1_000_000);
+  if ((r.kind === "STEP" || r.kind === "TRUST_BONUS") && (step === null || side === null)) return null;
+  if (r.kind === "MILESTONE" && milestone === null) return null;
+  return { kind: r.kind as ReferralRewardPayload["kind"], side, step, milestone, multiplier: int(r.multiplier, 1, 10) ?? 1 };
 }
 
 /** Expédition rentrée : son issue (le détail se lit sur /expedition). */

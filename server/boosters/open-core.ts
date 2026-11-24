@@ -21,6 +21,7 @@ import { computeStock, consumeStock, stockRulesFor, type StockSettings, type Sto
 import { bonusesFor, creditBonuses, priceFor, type BoosterTypeView } from "@/lib/boosters/types";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { printingSize, rollEngravings, type Edition, type PrintingRules } from "@/lib/prestige/printing";
+import type { OpeningSource } from "@/lib/referral/steps";
 import { consumeBoosters, CreditError } from "../economy/credits";
 import { applyEntries, LedgerError } from "../economy/ledger";
 import { consumeWishlist } from "../collection/wishlist-core";
@@ -170,6 +171,8 @@ async function persistDraw(
     /** Prestige du joueur, lu sous son verrou : retrouvailles et gravure. */
     prestige: number;
     drawn: DrawnRow[];
+    /** Origine des boosters : réserve gratuite, achat en Zeni, crédit ou sachet (l'étape 2 du parrainage v2 en dépend). */
+    source: OpeningSource;
     sealedDropId?: string;
     /** Gravure (prestige) : réglages et générateur de l'ouverture, consommé après le tirage des cartes. */
     engrave?: { rules: PrintingRules; rng: Rng } | null;
@@ -263,6 +266,7 @@ async function persistDraw(
       featuredHit: b.featuredHit,
       zeniSpent: b.zeniSpent,
       sealedDropId: input.sealedDropId ?? null,
+      source: input.source,
       apocalypse: b.apocalypse,
       // Le lien de partage montre la gravée même après sa vente : édition copiée à sa place dans le booster
       ...(b.cards.some((c) => c.edition) && {
@@ -370,6 +374,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         pool: input.pool,
         now,
         prestige: user.prestige,
+        source: price.kind === "credit" ? "CREDIT" : price.kind === "free" ? "FREE" : "PAID",
         engrave: input.printing ? { rules: input.printing, rng: input.rng } : null,
         drawn: drawn.boosters.flatMap((b) =>
           b.drop
@@ -495,6 +500,7 @@ export async function openSealedWith(db: PrismaClient, input: OpenSealedInput, o
       pool: input.pool,
       now,
       prestige: user.prestige,
+      source: "SEALED",
       engrave: input.printing ? { rules: input.printing, rng: input.rng } : null,
       drawn: [{
         id: randomUUID(),

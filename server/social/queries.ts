@@ -15,6 +15,8 @@ import {
   type ExpeditionPayload,
   parseKyaraImportPayload,
   type KyaraImportPayload,
+  parseReferralRewardPayload,
+  type ReferralRewardPayload,
   parseTradePayload,
   type CoinFlipPayload,
   type AuctionPayload,
@@ -181,6 +183,8 @@ export type NotificationView = {
   buyOrder: BuyOrderPayload | null;
   /** Import Kyara versé ou refusé. */
   kyara: KyaraImportPayload | null;
+  /** Parrainage v2 : étape, part « confiance », palier ou grand-parrainage versé. */
+  referral: ReferralRewardPayload | null;
   /** Texte libre joint : mot de l'équipe (cadeaux, lots), motif d'un refus d'échange ou d'import Kyara. */
   note: string | null;
   card: { anilistId: number; name: string; rarity: string } | null;
@@ -334,6 +338,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
       expedition: r.type === "EXPEDITION_RETURNED" ? parseExpeditionPayload(r.payload) : null,
       buyOrder,
       kyara: r.type.startsWith("KYARA_IMPORT_") ? parseKyaraImportPayload(r.payload) : null,
+      referral: r.type === "REFERRAL_REWARD" ? parseReferralRewardPayload(r.payload) : null,
       note: notes.get(r.id) ?? null,
       card: card ? { anilistId: card.publicId, name: card.name, rarity: card.rarity } : null,
     };

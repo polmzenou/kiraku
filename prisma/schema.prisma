@@ -42,6 +42,7 @@ enum CoinReason {
   ORDER_HOLD // prix d'un avis de recherche mis en séquestre (refId = id du BuyOrder)
   ORDER_REFUND // avis annulé ou expiré : séquestre rendu
   KYARA_IMPORT // cartes Kyara converties en Zeni à l'import (refId = id du KyaraImport)
+  REFERRAL_CLAWBACK // reprise d'un parrainage v2 révoqué et banni (refId = id du Referral)
 }
 
 // Qui voit le profil public (/u/[username]) ; FRIENDS = amis acceptés seulement
@@ -110,6 +111,11 @@ model User {
   // Code de parrainage court (8 caractères sans 0/O/1/I), généré par la base
   referralCode        String            @unique @default(dbgenerated("kiraku_referral_code()"))
   referredById        String? // parrain, posé au rattachement (Referral fait foi)
+  // Parrainage v2 (étape 18) : date du rattachement v2 (verrous de transfert ; null pour un ancien filleul), code perso
+  // posé par l'équipe (CHECK : disjoint des codes standard), arbre des liens masqué sur le profil public
+  referredAt          DateTime?
+  vanityCode          String?           @unique @db.VarChar(16)
+  referralTreeHidden  Boolean           @default(false)
   profileVisibility   ProfileVisibility @default(PUBLIC) // invités créés en PRIVATE
   showCollection      Boolean           @default(true) // collection complète visible sur le profil
   showcaseLayout      ShowcaseLayout    @default(GRID) // ancienne vitrine unique, plus lue (voir Showcase)
@@ -181,6 +187,12 @@ model User {
   referralsMade      Referral[]               @relation("referrer")
   referral           Referral?                @relation("referee")
   referralMilestones ReferralMilestoneClaim[]
+  referralsReviewed  Referral[]               @relation("referralReviewer")
+  grandReferrals     Referral[]               @relation("grandReferrer")
+  referralRewards    ReferralReward[]
+  vouchers           Voucher[]
+  ambassadorProposals AmbassadorProposal[]    @relation("proposalUser")
+  proposalsDecided   AmbassadorProposal[]     @relation("proposalDecider")
   pollVotes          PollVote[]
 
   auctions    Auction[] @relation("seller")
@@ -577,6 +589,7 @@ model Card {
   listingOffers    ListingOffer[]
   abilityPurchases AbilityPurchase[]
   loadouts         CardLoadout[]
+  vouchers         Voucher[]
   coinFlipsStaked  CoinFlip[]         @relation("coinFlipCreatorCard")
   coinFlipsMatched CoinFlip[]         @relation("coinFlipOpponentCard")
 
@@ -647,6 +660,7 @@ model UserCard {
   auctions   Auction[]
   owners     UserCardOwner[]
   buyOrders  BuyOrder[]
+  vouchers   Voucher[]
 
   // Dans la migration : index unique partiel (cardId, printing, serial) WHERE printing IS NOT NULL,
   // et index partiel (ownerId, cardId) des exemplaires spéciaux.
@@ -712,12 +726,22 @@ model BoosterOpening {
   featuredHit    Boolean            @default(false) // au moins une carte vedette (bannière)
   zeniSpent      Int                @default(0) // prix payé pour ce booster (0 = stock gratuit)
   sealedDropId   String? // sachet scellé ouvert (Divin, Apocalyptique)
+  // Origine : réserve gratuite, achat en Zeni, crédit (cadeaux, lots, boutique) ou sachet ; l'étape 2 du parrainage v2
+  // ne compte que FREE et PAID. Une ouverture écrite sans origine compte comme un crédit.
+  source         OpeningSource      @default(CREDIT)
   apocalypse     ApocalypseOutcome? // issue d'un Apocalyptique
   editions       Json? // éditions gravées : [{ position, printing, serial, size }], lisibles même après la vente
   createdAt      DateTime           @default(now())
 
   @@index([userId, createdAt])
   @@index([createdAt], type: Brin) // fenêtres de dates du tableau de bord admin
+}
+
+enum OpeningSource {
+  FREE // réserve gratuite
+  PAID // acheté en Zeni sur la page des boosters
+  CREDIT // crédit : cadeau d'un ami, lot, mission, boutique, parrainage
+  SEALED // sachet scellé
 }
 
 // Gros tirage (Épique ou mieux) sorti d'un booster : carrousel « En direct » de l'accueil.
@@ -1058,6 +1082,7 @@ enum NotificationType {
   BUY_ORDER_WANTED // quelqu'un cherche une carte que tu possèdes (refId = id de la Card)
   KYARA_IMPORT_DONE // l'import de ta collection Kyara est fait (refId = id du KyaraImport)
   KYARA_IMPORT_REJECTED // ta demande d'import Kyara est refusée, avec un motif (refId = id du KyaraImport)
+  REFERRAL_REWARD // parrainage v2 : étape, part « confiance », palier ou grand-parrainage versé (refId = id du ReferralReward)
 }
 
 // Notifications en base ; le texte est rendu à la lecture (pseudo à jour, langue du lecteur)
@@ -1260,9 +1285,142 @@ model Referral {
   qualifiedAt       DateTime?
   referrerClaimedAt DateTime?
   refereeClaimedAt  DateTime?
+  // Parrainage v2 (étape 18) : version 2 pour les rattachements v2 (et les v1 en attente convertis au lancement)
+  version           Int                 @default(1) @db.SmallInt
+  // Étapes atteintes (CHECK en v2 : une étape exige la précédente, sauf l'étape 4 après une étape 3 manquée) ;
+  // à la migration, step2At = qualifiedAt (un ami qualifié en v1 compte comme installé)
+  step1At           DateTime?
+  step2At           DateTime?
+  step3At           DateTime?
+  step4At           DateTime?
+  // Date de création du compte Discord du filleul (lue dans son identifiant), pour sa confiance
+  discordCreatedAt  DateTime?
+  // « À vérifier » : appareil commun ou score de la paire, indices pour l'équipe ; rien n'est versé avant sa décision
+  heldAt            DateTime?
+  holdReason        ReferralHoldReason?
+  holdEvidence      Json?
+  score             Int?
+  scoredAt          DateTime?
+  reviewedAt        DateTime?
+  reviewedById      String?
+  reviewedBy        User?               @relation("referralReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewDecision    ReferralDecision?
+  // Révoqué (ou révoqué et banni) : ne compte plus, plus rien n'est versé
+  revokedAt         DateTime?
+  // Grand-parrain figé au rattachement (le parrain du parrain)
+  grandReferrerId   String?
+  grandReferrer     User?               @relation("grandReferrer", fields: [grandReferrerId], references: [id], onDelete: SetNull)
+  // Édition de l'Ennichi pendant laquelle le filleul est arrivé (bonus, lanternes, banzuke, omikuji)
+  ennichiEdition    Int?
+  rewards           ReferralReward[]
+  fingerprints      RefereeFingerprint[]
 
   @@index([referrerId, createdAt])
   @@index([createdAt])
+  @@index([referrerId, step2At])
+  // Index partiels dans la migration 20261124120000_referral_v2 : grand-parrain, file « À vérifier », parrainages v2
+  // en cours (cron), édition de l'Ennichi
+}
+
+enum ReferralHoldReason {
+  DEVICE // même appareil que le parrain, ou qu'un autre filleul du même parrain
+  SCORE // score de la paire au-dessus de referral.v2.holdScore
+}
+
+enum ReferralDecision {
+  VALIDATED // l'équipe valide : tout ce qui était dû est versé
+  REVOKED // ne compte plus, rien n'est repris
+  BANNED // révoqué, tout est repris, les deux comptes bannis
+}
+
+enum ReferralRewardKind {
+  STEP // étape du filleul, d'un côté
+  TRUST_BONUS // part « confiance » du parrain (étapes 1 et 2), versée à son étape ou à l'étape 3
+  MILESTONE // palier du parrain
+  GRAND // grand-parrainage
+}
+
+enum ReferralSide {
+  REFEREE
+  REFERRER
+}
+
+/// Versement du parrainage v2 : garde contre le double versement (index uniques partiels dans la migration) et
+/// journal de la reprise (ce que le versement a donné : Zeni, crédits par type, sachets, exemplaires, bons).
+model ReferralReward {
+  id             String             @id @default(cuid())
+  referralId     String? // SET NULL : le journal survit au parrainage
+  referral       Referral?          @relation(fields: [referralId], references: [id], onDelete: SetNull)
+  userId         String // bénéficiaire
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind           ReferralRewardKind
+  side           ReferralSide?
+  step           Int?               @db.SmallInt
+  milestone      Int? // palier, en amis installés
+  multiplier     Int                @default(1) @db.SmallInt // ×2 de l'Ennichi sur les étapes 1 et 2
+  lotId          String? // lot versé, gardé même si l'admin le supprime
+  granted        Json // { zeni, credits: { boosterTypeId: n }, sealedIds, cardIds, voucherIds } (lib/referral/clawback.ts)
+  ennichiEdition Int?
+  createdAt      DateTime           @default(now())
+  clawedBackAt   DateTime? // repris (« Révoquer et bannir ») : un palier repris peut être de nouveau atteint
+
+  @@index([userId, createdAt])
+  @@index([referralId])
+  @@index([createdAt])
+}
+
+enum FingerprintKind {
+  DISCORD
+  EMAIL
+}
+
+/// Empreinte d'un filleul (HMAC de l'id Discord ou de l'e-mail normalisé) : filleul une seule fois par compte Discord
+/// et par boîte e-mail, même après déliaison ou suppression du compte.
+model RefereeFingerprint {
+  kind       FingerprintKind
+  hash       String          @db.VarChar(64)
+  referralId String?
+  referral   Referral?       @relation(fields: [referralId], references: [id], onDelete: SetNull)
+  createdAt  DateTime        @default(now())
+
+  @@id([kind, hash])
+}
+
+enum VoucherKind {
+  MYTHIC_CHOICE // une Mythique publiée, au choix
+  ONE_OF_ONE // une carte 1/1 (tirage gravé réservé 1000, d'un seul exemplaire), au choix
+}
+
+/// Bon du parrainage ou de l'Ennichi : arrive tout seul, le joueur choisit ensuite sa carte.
+model Voucher {
+  id         String      @id @default(cuid())
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind       VoucherKind
+  createdAt  DateTime    @default(now())
+  usedAt     DateTime? // CHECK : posé avec cardId
+  cardId     String?
+  card       Card?       @relation(fields: [cardId], references: [id], onDelete: Restrict)
+  userCardId String?
+  userCard   UserCard?   @relation(fields: [userCardId], references: [id], onDelete: SetNull)
+
+  @@index([userId, usedAt])
+}
+
+/// Ambassadeur proposé à l'équipe, créé seul au palier du parrainage ; une seule proposition ouverte par joueur
+/// (index partiel dans la migration).
+model AmbassadorProposal {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation("proposalUser", fields: [userId], references: [id], onDelete: Cascade)
+  installed   Int // amis installés à la proposition
+  createdAt   DateTime  @default(now())
+  decidedAt   DateTime?
+  decidedById String?
+  decidedBy   User?     @relation("proposalDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+  accepted    Boolean?
+
+  @@index([decidedAt, createdAt])
 }
 
 // Palier de parrainage réclamé : un seul par seuil et par parrain (referral.milestones)

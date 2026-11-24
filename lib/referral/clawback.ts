@@ -3,7 +3,7 @@
 // encore scellés, les exemplaires encore possédés (en collection, ordinaires, jamais mis aux enchères : l'appelant les
 // filtre) et les bons inutilisés sont repris. Le reste est noté comme manquant dans le journal de l'équipe.
 
-/** Ce qu'un versement a donné (ReferralReward.grant). */
+/** Ce qu'un versement a donné (ReferralReward.granted). */
 export type RewardGrant = {
   zeni: number;
   /** Crédits de boosters par type (BoosterType.id). */

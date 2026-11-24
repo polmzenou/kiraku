@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { formatBadge, parseBuyOrderPayload, parseCoinFlipPayload, parseGiftPayload, parseKyaraImportPayload, parseTeamGiftPayload } from "./notifications";
+import {
+  formatBadge,
+  parseBuyOrderPayload,
+  parseCoinFlipPayload,
+  parseGiftPayload,
+  parseKyaraImportPayload,
+  parseReferralRewardPayload,
+  parseTeamGiftPayload,
+} from "./notifications";
 
 describe("formatBadge", () => {
   it("cache la pastille à zéro et plafonne à 9+", () => {
@@ -69,5 +77,22 @@ describe("parseKyaraImportPayload", () => {
     expect(parseKyaraImportPayload({ kind: "DONE", cards: -1, zeni: 0 })).toBeNull();
     expect(parseKyaraImportPayload({ kind: "DONE", cards: 1.5, zeni: 0 })).toBeNull();
     expect(parseKyaraImportPayload({ kind: "REJECTED", code: "<b>libre</b>" })).toBeNull();
+  });
+});
+
+describe("parseReferralRewardPayload", () => {
+  it("garde une étape, une part « confiance », un palier ou un grand-parrainage", () => {
+    expect(parseReferralRewardPayload({ kind: "STEP", side: "REFEREE", step: 1, multiplier: 2 })).toEqual({ kind: "STEP", side: "REFEREE", step: 1, milestone: null, multiplier: 2 });
+    expect(parseReferralRewardPayload({ kind: "TRUST_BONUS", side: "REFERRER", step: 2 })).toEqual({ kind: "TRUST_BONUS", side: "REFERRER", step: 2, milestone: null, multiplier: 1 });
+    expect(parseReferralRewardPayload({ kind: "MILESTONE", milestone: 25 })).toEqual({ kind: "MILESTONE", side: null, step: null, milestone: 25, multiplier: 1 });
+    expect(parseReferralRewardPayload({ kind: "GRAND" })).toEqual({ kind: "GRAND", side: null, step: null, milestone: null, multiplier: 1 });
+  });
+
+  it("refuse une forme inconnue, une étape hors bornes ou un palier manquant", () => {
+    expect(parseReferralRewardPayload(null)).toBeNull();
+    expect(parseReferralRewardPayload({ kind: "BONUS" })).toBeNull();
+    expect(parseReferralRewardPayload({ kind: "STEP", side: "REFEREE", step: 5 })).toBeNull();
+    expect(parseReferralRewardPayload({ kind: "STEP", step: 1 })).toBeNull();
+    expect(parseReferralRewardPayload({ kind: "MILESTONE" })).toBeNull();
   });
 });
