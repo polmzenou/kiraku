@@ -7,6 +7,7 @@ import { AdminNav } from "@/components/admin/AdminNav";
 import { QuotaBanner } from "@/components/admin/QuotaBanner";
 import { SectionTitle } from "@/components/SectionTitle";
 import { requireStaff } from "@/server/admin";
+import { heldReferralCount } from "@/server/referral/admin-queries";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -19,6 +20,8 @@ export default async function AdminLayout({ children }: LayoutProps<"/[locale]/a
   const { scope } = await requireStaff();
   const t = await getTranslations("admin");
   const messages = await getMessages();
+  // Ce qui attend l'équipe, en pastilles dans le menu (jamais bloquant pour la page)
+  const held = await heldReferralCount().catch(() => 0);
 
   // Tous les messages, admin compris, pour les formulaires de l'admin (le layout racine les retire)
   return (
@@ -28,7 +31,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/[locale]/a
           <div className="lg:hidden">
             <SectionTitle level={1} kanji="管理" title={t("title")} />
           </div>
-          <AdminNav scope={scope} />
+          <AdminNav scope={scope} counts={{ referral: held }} />
         </div>
         <main className="flex min-w-0 flex-col gap-6 py-6">
           <div className="hidden lg:block">

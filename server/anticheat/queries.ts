@@ -63,7 +63,8 @@ export type MemberInfo = {
   cards: number;
 };
 
-async function membersById(ids: string[]): Promise<Map<string, MemberInfo>> {
+/** Fiche courte de ces comptes (pseudo, rôle, ban, Discord…), pour les puces d'indices et les tableaux de membres. */
+export async function membersById(ids: string[]): Promise<Map<string, MemberInfo>> {
   if (ids.length === 0) return new Map();
   const rows = await prisma.user.findMany({
     where: { id: { in: ids } },

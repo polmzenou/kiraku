@@ -29,6 +29,7 @@ export const DEV_ADMIN_PAGES = [
   "/admin/missions",
   "/admin/expeditions",
   "/admin/parrainage",
+  "/admin/parrainage/ancien",
   "/admin/avis",
   "/admin/gros-tirages",
   "/admin/evenement",

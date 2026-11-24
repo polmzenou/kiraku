@@ -1,0 +1,120 @@
+import "server-only";
+import type { Prisma } from "@/generated/prisma/client";
+import type { Reason } from "@/lib/anticheat/score";
+import { mergeLots } from "@/lib/economy/lot-merge";
+import { planPayouts } from "@/lib/referral/payout";
+import type { ReferralV2Rules } from "@/lib/referral/rules";
+import type { StepTimes } from "@/lib/referral/steps";
+import { refereeTrust } from "@/lib/referral/trust";
+import { membersById, type MemberInfo } from "../anticheat/queries";
+import { prisma } from "../db";
+import { lotViews, type LotLine, type LotView } from "../economy/lot-view";
+
+// Lectures de l'admin du parrainage v2 (étape 18) : la file « À vérifier » (design « cartes » de l'atelier équipe) et
+// son compteur dans le menu. Rien n'est écrit ici : les décisions passent par server/actions/admin-referral.ts.
+
+/** Parrainages bloqués sans décision : la file « À vérifier ». */
+const QUEUE_WHERE = { version: 2, heldAt: { not: null }, reviewedAt: null, revokedAt: null } satisfies Prisma.ReferralWhereInput;
+
+/** Parrainages « À vérifier » sans décision (compteur du menu de l'admin). */
+export function heldReferralCount(): Promise<number> {
+  return prisma.referral.count({ where: QUEUE_WHERE });
+}
+
+export type QueueItem = {
+  id: string;
+  referee: { id: string; name: string };
+  referrer: { id: string; name: string };
+  holdReason: "DEVICE" | "SCORE";
+  heldAt: string;
+  score: number | null;
+  scoredAt: string | null;
+  /** Appareil commun : avec le parrain, et les pseudos des autres filleuls du même parrain sur cet appareil. */
+  device: { withReferrer: boolean; siblings: string[] } | null;
+  /** Indices du score de la paire, au moment du blocage. */
+  reasons: Reason[];
+  stepsDone: number;
+  /** Ce qui attend la décision, de chaque côté : étapes atteintes et parts « confiance » dues, pas encore versées. */
+  pending: { referee: LotView | null; referrer: LotView | null };
+};
+
+type Evidence = { device?: { withReferrer?: unknown; siblings?: unknown }; score?: { reasons?: unknown } };
+
+const lineKey = (l: LotLine) => (l.kind === "BOOSTER" ? `B:${l.look.slug}` : l.kind === "CARD" ? `C:${l.card?.cardId ?? l.name}` : `R:${l.rarity}`);
+
+/** File « À vérifier », du plus ancien blocage au plus récent, avec la fiche courte des comptes cités. */
+export async function referralQueue(rules: ReferralV2Rules, locale: string, take = 50): Promise<{ items: QueueItem[]; members: Map<string, MemberInfo> }> {
+  const rows = await prisma.referral.findMany({
+    where: QUEUE_WHERE,
+    orderBy: { heldAt: "asc" },
+    take,
+    select: {
+      id: true,
+      referrerId: true,
+      refereeId: true,
+      grandReferrerId: true,
+      ennichiEdition: true,
+      holdReason: true,
+      heldAt: true,
+      holdEvidence: true,
+      score: true,
+      scoredAt: true,
+      step1At: true,
+      step2At: true,
+      step3At: true,
+      step4At: true,
+      discordCreatedAt: true,
+      referee: { select: { username: true, discordLinkedAt: true } },
+      referrer: { select: { username: true } },
+      rewards: { select: { kind: true, side: true, step: true, milestone: true } },
+    },
+  });
+
+  const parsed = rows.map((r) => {
+    const ev = (r.holdEvidence && typeof r.holdEvidence === "object" && !Array.isArray(r.holdEvidence) ? r.holdEvidence : {}) as Evidence;
+    const siblings = Array.isArray(ev.device?.siblings) ? ev.device.siblings.filter((s): s is string => typeof s === "string") : [];
+    const reasons = Array.isArray(ev.score?.reasons) ? (ev.score.reasons as Reason[]) : [];
+    const times: StepTimes = [r.step1At, r.step2At, r.step3At, r.step4At];
+    // Ce que la validation verserait pour ce parrainage (paliers et grand-parrainage à part)
+    const due = planPayouts(
+      {
+        referral: {
+          referrerId: r.referrerId,
+          refereeId: r.refereeId,
+          grandReferrerId: null,
+          ennichiEdition: r.ennichiEdition,
+          times,
+          trust: refereeTrust({ createdAt: r.discordCreatedAt, linkedAt: r.referee.discordLinkedAt }, rules),
+        },
+        paid: r.rewards,
+        paidMilestones: [],
+        installed: 0,
+        grandAllowed: false,
+        ennichiMultiplier: 1,
+      },
+      rules,
+    ).filter((d) => d.kind === "STEP" || d.kind === "TRUST_BONUS");
+    return { r, siblings, reasons, times, due, device: ev.device ? { withReferrer: ev.device.withReferrer === true, siblings } : null };
+  });
+
+  const lotIds = parsed.flatMap((p) => p.due.flatMap((d) => (d.lotId ? [d.lotId] : [])));
+  const memberIds = [...new Set(parsed.flatMap((p) => [p.r.referrerId, p.r.refereeId, ...p.siblings]))];
+  const [lots, members] = await Promise.all([lotViews(lotIds, locale), membersById(memberIds)]);
+  const side = (due: typeof parsed[number]["due"], s: "REFEREE" | "REFERRER") =>
+    mergeLots<LotLine, LotView>(due.filter((d) => d.side === s && d.lotId).map((d) => lots.get(d.lotId!) ?? null), lineKey);
+
+  const items = parsed.map(({ r, siblings, reasons, times, due, device }): QueueItem => ({
+    id: r.id,
+    referee: { id: r.refereeId, name: r.referee.username },
+    referrer: { id: r.referrerId, name: r.referrer.username },
+    holdReason: r.holdReason ?? "SCORE",
+    heldAt: (r.heldAt ?? new Date(0)).toISOString(),
+    score: r.score,
+    scoredAt: r.scoredAt?.toISOString() ?? null,
+    device: device && { withReferrer: device.withReferrer, siblings: siblings.map((id) => members.get(id)?.username ?? id) },
+    reasons,
+    stepsDone: times.filter(Boolean).length,
+    pending: { referee: side(due, "REFEREE"), referrer: side(due, "REFERRER") },
+  }));
+  return { items, members };
+}

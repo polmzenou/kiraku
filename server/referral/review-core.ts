@@ -94,6 +94,48 @@ function grantOf(raw: Prisma.JsonValue): RewardGrant {
   };
 }
 
+/** Versements qu'une reprise vise : tous ceux du parrainage, et les paliers du parrain au-dessus de `installedAfter`. */
+function clawbackTargets(tx: Prisma.TransactionClient, r: { id: string; referrerId: string }, installedAfter: number) {
+  return tx.referralReward.findMany({
+    where: { clawedBackAt: null, OR: [{ referralId: r.id }, { userId: r.referrerId, kind: "MILESTONE", milestone: { gt: installedAfter } }] },
+    select: { id: true, userId: true, kind: true, milestone: true, granted: true },
+  });
+}
+
+function grantsByUser(rewards: readonly { userId: string; granted: Prisma.JsonValue }[]): Map<string, RewardGrant[]> {
+  const byUser = new Map<string, RewardGrant[]>();
+  for (const w of rewards) byUser.set(w.userId, [...(byUser.get(w.userId) ?? []), grantOf(w.granted)]);
+  return byUser;
+}
+
+export type RevokePreview = { referrerId: string; refereeId: string; reports: ClawbackReport[]; milestones: number[] };
+
+/**
+ * Ce que « Révoquer et bannir » reprendrait maintenant, sans rien écrire ni verrouiller : l'aperçu de la confirmation
+ * (la reprise relit tout sous verrou). null : parrainage introuvable, v1 ou déjà révoqué.
+ */
+export async function previewRevokeWith(db: PrismaClient, referralId: string): Promise<RevokePreview | null> {
+  const r = await db.referral.findUnique({
+    where: { id: referralId },
+    select: { id: true, version: true, referrerId: true, refereeId: true, revokedAt: true, step2At: true, heldAt: true, reviewDecision: true },
+  });
+  if (!r || r.version !== 2 || r.revokedAt) return null;
+  // Amis installés du parrain une fois ce parrainage révoqué (même prédicat que installedCount)
+  const counted = r.step2At !== null && (r.heldAt === null || r.reviewDecision === "VALIDATED");
+  const installed = (await installedCount(db, r.referrerId)) - (counted ? 1 : 0);
+  const rewards = await clawbackTargets(db, r, installed);
+  const byUser = grantsByUser(rewards);
+  const players = await db.user.findMany({ where: { id: { in: [...byUser.keys()] } }, select: { id: true, coins: true } });
+  const reports: ClawbackReport[] = [];
+  for (const p of players) {
+    const grants = byUser.get(p.id) ?? [];
+    const granted = sumGrants(grants);
+    reports.push({ userId: p.id, granted, taken: planClawback(grants, await holdingsOf(db, p.id, p.coins, granted)) });
+  }
+  const milestones = rewards.flatMap((w) => (w.kind === "MILESTONE" && w.milestone !== null ? [w.milestone] : [])).sort((a, b) => a - b);
+  return { referrerId: r.referrerId, refereeId: r.refereeId, reports, milestones };
+}
+
 export async function revokeReferralWith(
   db: PrismaClient,
   input: { staffId: string; referralId: string; ban: boolean; reason: string; now: Date; sharedIpCap: number },
@@ -112,16 +154,8 @@ export async function revokeReferralWith(
     }
 
     // Versements à reprendre : tous ceux du parrainage, et les paliers du parrain au-dessus de son nouveau compte
-    const installed = await installedCount(tx, r.referrerId);
-    const rewards = await tx.referralReward.findMany({
-      where: {
-        clawedBackAt: null,
-        OR: [{ referralId: r.id }, { userId: r.referrerId, kind: "MILESTONE", milestone: { gt: installed } }],
-      },
-      select: { id: true, userId: true, granted: true },
-    });
-    const byUser = new Map<string, RewardGrant[]>();
-    for (const w of rewards) byUser.set(w.userId, [...(byUser.get(w.userId) ?? []), grantOf(w.granted)]);
+    const rewards = await clawbackTargets(tx, r, await installedCount(tx, r.referrerId));
+    const byUser = grantsByUser(rewards);
     const players = await lockPlayers(tx, [r.referrerId, r.refereeId, ...byUser.keys()]);
 
     const reports: ClawbackReport[] = [];

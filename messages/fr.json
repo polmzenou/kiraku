@@ -1187,9 +1187,10 @@
     "anonymous": "Joueur mystère"
   },
   "admin": {
-    "devReadOnly": "Accès DEV : tu consultes les réglages et les données sans pouvoir les modifier, seul un admin enregistre ou active une fonctionnalité. Dans le catalogue, tu prépares des brouillons que l'admin publie. Les bancs de test (combat, ouverture) restent utilisables, rien n'y est enregistré.",
+    "devReadOnly": "Accès DEV : tu consultes les réglages et les données sans pouvoir les modifier, seul un admin enregistre ou active une fonctionnalité. Dans le catalogue, tu prépares des brouillons que l'admin publie. Les bancs de test (combat, ouverture) restent utilisables, rien n'y est enregistré. Exceptions : l'import Kyara et le parrainage, que toute l'équipe traite et règle.",
     "title": "Administration",
     "modules": "Modules",
+    "waiting": "{count, plural, one {# en attente} other {# en attente}}",
     "navGroups": {
       "overview": "Pilotage",
       "settings": "Réglages",
@@ -2320,6 +2321,76 @@
       "revoke": "Révoquer",
       "revokeConfirm": "Confirmer la révocation",
       "cancel": "Annuler"
+    },
+    "referralV2": {
+      "tabs": {
+        "label": "Parrainage",
+        "queue": "À vérifier",
+        "legacy": "Ancien parrainage"
+      },
+      "queue": {
+        "title": "À vérifier",
+        "intro": "Rien n'est versé tant qu'un parrainage est ici. « Valider et verser » verse tout ce qui était dû.",
+        "off": "Le parrainage v2 est coupé : la file se remplira quand il sera allumé.",
+        "empty": "File vide : aucun parrainage n'attend de décision.",
+        "referredBy": "parrainé par",
+        "score": "Score {score}",
+        "steps": "{count, plural, =0 {Aucune étape atteinte} other {Étape # atteinte}}",
+        "since": "bloqué {time}",
+        "deviceReferrer": "Même appareil que le parrain",
+        "deviceSiblings": "Même appareil que {names}",
+        "scoreOver": "Score {score} (seuil {threshold})",
+        "pendingFor": "En attente pour {name} :",
+        "pendingNone": "En attente : rien pour l'instant"
+      },
+      "actions": {
+        "validate": "Valider et verser",
+        "revoke": "Révoquer",
+        "ban": "Révoquer et bannir",
+        "rescore": "Recalculer le score",
+        "fiche": "Voir la fiche",
+        "reason": "Raison (journal admin)",
+        "reasonHint": "Obligatoire pour révoquer.",
+        "revokeIntro": "Plus rien ne sera versé ; ce qui a déjà été reçu reste aux joueurs.",
+        "banIntro": "Les deux comptes sont bannis avec leurs appareils (le ban suit l'appareil). Ce que le parrainage a versé est repris :",
+        "loading": "Calcul de ce qui serait repris…",
+        "nothing": "Rien n'a encore été versé : rien à reprendre.",
+        "line": {
+          "ZENI": "{user} · Zeni",
+          "BOOSTERS": "{user} · boosters {name} non ouverts",
+          "SEALED": "{user} · sachets encore scellés",
+          "CARDS": "{user} · cartes encore possédées",
+          "VOUCHERS": "{user} · bons inutilisés"
+        },
+        "takenOf": "{taken, number} sur {given, number}",
+        "spent": "{count, number} déjà dépensés",
+        "used": "{count, plural, one {# déjà utilisé} other {# déjà utilisés}}",
+        "milestones": "Paliers de {name} qui tombent : {list}",
+        "milestonesNone": "Paliers de {name} : aucun ne tombe",
+        "confirmRevoke": "Révoquer",
+        "confirmBan": "Révoquer et bannir",
+        "cancel": "Annuler",
+        "pending": "En cours…",
+        "bannedNote": "Révoqué et banni : plus aucune décision à prendre.",
+        "done": {
+          "validate": "Validé : {count, plural, =0 {rien à verser pour l'instant} one {# versement fait} other {# versements faits}}.",
+          "revoke": "Parrainage révoqué : plus rien ne sera versé.",
+          "ban": "Révoqué et repris : {count, plural, =0 {aucun compte banni (compte de l'équipe)} one {# compte banni} other {# comptes bannis}}.",
+          "rescore": "Score recalculé.",
+          "rescoreHeld": "Score recalculé : le parrainage passe « À vérifier »."
+        },
+        "errors": {
+          "FORBIDDEN": "Action réservée à l'équipe.",
+          "INVALID": "Demande invalide : vérifie le motif.",
+          "RATE_LIMITED": "Trop de décisions d'affilée : attends une minute.",
+          "UNAVAILABLE": "Impossible pour l'instant : réessaie.",
+          "NOT_FOUND": "Parrainage introuvable.",
+          "NOT_V2": "Ce parrainage est un parrainage v1 : il se gère dans l'onglet « Ancien parrainage ».",
+          "NOT_HELD": "Ce parrainage n'est pas à vérifier.",
+          "ALREADY_REVIEWED": "Une décision a déjà été prise sur ce parrainage.",
+          "ALREADY_REVOKED": "Ce parrainage est déjà révoqué."
+        }
+      }
     },
     "rotation": {
       "title": "Rotation en cours",

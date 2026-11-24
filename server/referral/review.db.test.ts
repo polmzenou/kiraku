@@ -10,7 +10,7 @@ import { attachReferralV2With } from "./attach-core";
 import { fingerprintKey, refereeFingerprints } from "./fingerprint";
 import { payDueRewardsWith } from "./payout-core";
 import { progressReferralWith, type ProgressDeps } from "./progress-core";
-import { revokeReferralWith, validateReferralWith } from "./review-core";
+import { previewRevokeWith, revokeReferralWith, validateReferralWith } from "./review-core";
 
 vi.mock("server-only", () => ({}));
 
@@ -143,8 +143,14 @@ describe.skipIf(!url)("décisions de l'équipe sur un parrainage (base réelle)"
       await debit(tx, { userId: users.lea.id, amount: 200, reason: "BOOSTER", refId: "test", now: T0 });
       await consumeBoosters(tx, users.lea.id, creditType, 1);
     });
+    // L'aperçu de la confirmation annonce exactement ce que la reprise prendra, palier compris
+    const preview = await previewRevokeWith(prisma, referralId);
+    expect(preview?.milestones).toEqual([1]);
     const outcome = await revokeReferralWith(prisma, { staffId: users.staff.id, referralId, ban: true, reason: "triche (test)", now: new Date(T0.getTime() + 4 * DAY), sharedIpCap: 4 });
     expect(outcome.banned.sort()).toEqual([users.lea.id, users.par.id].sort());
+    const byUser = (list: { userId: string }[]) => [...list].sort((a, b) => a.userId.localeCompare(b.userId));
+    expect(byUser(preview!.reports)).toEqual(byUser(outcome.reports));
+    expect(await previewRevokeWith(prisma, referralId)).toBeNull();
 
     const lea = await state("lea");
     expect(lea).toMatchObject({ coins: 0, credits: 0, banned: true, minCredit: 0 });

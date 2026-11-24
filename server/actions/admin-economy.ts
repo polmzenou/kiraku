@@ -228,7 +228,10 @@ export async function saveShopItemAction(input: unknown): Promise<AdminEconomyRe
 
 const revokeSchema = z.object({ referralId: z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/) }).strict();
 
-/** Révoque un parrainage (fraude) : plus aucune récompense ne peut être réclamée ; ce qui l'a déjà été reste. */
+/**
+ * Révoque un parrainage v1 (fraude) : plus aucune récompense ne peut être réclamée ; ce qui l'a déjà été reste. Un
+ * parrainage v2 se révoque depuis la file de l'équipe (admin-referral.ts), qui arrête aussi ses versements.
+ */
 export async function revokeReferralAction(input: unknown): Promise<AdminEconomyResult> {
   const g = await guard();
   if ("error" in g) return { ok: false, error: g.error };
@@ -238,7 +241,7 @@ export async function revokeReferralAction(input: unknown): Promise<AdminEconomy
 
   const done = await prisma.$transaction(async (tx) => {
     const before = await tx.referral.findUnique({ where: { id: referralId } });
-    if (!before || before.status === "REVOKED") return false;
+    if (!before || before.version !== 1 || before.status === "REVOKED") return false;
     await tx.referral.update({ where: { id: referralId }, data: { status: "REVOKED" } });
     await writeAdminLog(tx, {
       adminId: g.adminId,

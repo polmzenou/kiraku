@@ -77,11 +77,21 @@ function activeHref(pathname: string) {
 /** Modules ouverts au DEV : le reste lui répond 404 côté serveur, la nav ne fait que le refléter. */
 const DEV_HREFS: readonly string[] = DEV_ADMIN_PAGES;
 
+/** Pastille d'un module qui attend l'équipe (parrainages « À vérifier »…). */
+function CountBadge({ count, label }: { count: number | undefined; label: string }) {
+  if (!count) return null;
+  return (
+    <b className="ml-auto rounded-pill bg-shu-btn px-2 text-xs tabular-nums text-washi-paper" aria-label={label}>
+      {count}
+    </b>
+  );
+}
+
 /**
  * Navigation de l'admin : barre latérale groupée et collante en desktop (≥ 1024 px),
- * rangée de puces défilante sur mobile.
+ * rangée de puces défilante sur mobile. `counts` : ce qui attend l'équipe, par module.
  */
-export function AdminNav({ scope }: { scope: CatalogScope }) {
+export function AdminNav({ scope, counts = {} }: { scope: CatalogScope; counts?: Partial<Record<Module["key"], number>> }) {
   const t = useTranslations("admin");
   const active = activeHref(usePathname());
   const visible = (m: Module) => scope === "full" || DEV_HREFS.includes(m.href);
@@ -96,9 +106,10 @@ export function AdminNav({ scope }: { scope: CatalogScope }) {
             <Link
               href={m.href}
               aria-current={m.href === active ? "page" : undefined}
-              className="inline-flex min-h-11 items-center whitespace-nowrap rounded-pill border border-border bg-surface px-4 text-sm font-bold text-text-muted aria-[current=page]:border-shu aria-[current=page]:bg-shu/15 aria-[current=page]:text-text"
+              className="inline-flex min-h-11 items-center gap-2 whitespace-nowrap rounded-pill border border-border bg-surface px-4 text-sm font-bold text-text-muted aria-[current=page]:border-shu aria-[current=page]:bg-shu/15 aria-[current=page]:text-text"
             >
               {t(`moduleNames.${m.key}`)}
+              <CountBadge count={counts[m.key]} label={t("waiting", { count: counts[m.key] ?? 0 })} />
             </Link>
           </li>
         ))}
@@ -118,6 +129,7 @@ export function AdminNav({ scope }: { scope: CatalogScope }) {
                     className="relative flex min-h-11 items-center rounded-control px-3 text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text aria-[current=page]:bg-surface-2 aria-[current=page]:font-bold aria-[current=page]:text-text before:absolute before:inset-y-2.5 before:left-0 before:w-[3px] before:rounded-full before:bg-shu before:opacity-0 aria-[current=page]:before:opacity-100"
                   >
                     {t(`moduleNames.${m.key}`)}
+                    <CountBadge count={counts[m.key]} label={t("waiting", { count: counts[m.key] ?? 0 })} />
                   </Link>
                 </li>
               ))}

@@ -1187,9 +1187,10 @@
     "anonymous": "Mystery player"
   },
   "admin": {
-    "devReadOnly": "DEV access: you can view settings and data but not change them; only an admin saves changes or turns features on. In the catalog, you prepare drafts for an admin to publish. The test benches (battle, opening) stay usable; nothing there is saved.",
+    "devReadOnly": "DEV access: you can view settings and data but not change them; only an admin saves changes or turns features on. In the catalog, you prepare drafts for an admin to publish. The test benches (battle, opening) stay usable; nothing there is saved. Exceptions: the Kyara import and referrals, which the whole team handles and configures.",
     "title": "Administration",
     "modules": "Modules",
+    "waiting": "{count, plural, one {# waiting} other {# waiting}}",
     "navGroups": {
       "overview": "Overview",
       "settings": "Settings",
@@ -2320,6 +2321,76 @@
       "revoke": "Revoke",
       "revokeConfirm": "Confirm revocation",
       "cancel": "Cancel"
+    },
+    "referralV2": {
+      "tabs": {
+        "label": "Referrals",
+        "queue": "To review",
+        "legacy": "Previous program"
+      },
+      "queue": {
+        "title": "To review",
+        "intro": "Nothing is paid while a referral is here. “Validate and pay” pays everything that was due.",
+        "off": "Referrals v2 is switched off: the queue will fill once it's on.",
+        "empty": "Queue empty: no referral is waiting for a decision.",
+        "referredBy": "referred by",
+        "score": "Score {score}",
+        "steps": "{count, plural, =0 {No step reached} other {Step # reached}}",
+        "since": "held {time}",
+        "deviceReferrer": "Same device as the referrer",
+        "deviceSiblings": "Same device as {names}",
+        "scoreOver": "Score {score} (threshold {threshold})",
+        "pendingFor": "Waiting for {name}:",
+        "pendingNone": "Waiting: nothing yet"
+      },
+      "actions": {
+        "validate": "Validate and pay",
+        "revoke": "Revoke",
+        "ban": "Revoke and ban",
+        "rescore": "Recompute score",
+        "fiche": "Open record",
+        "reason": "Reason (admin log)",
+        "reasonHint": "Required to revoke.",
+        "revokeIntro": "Nothing more will be paid; what was already received stays with the players.",
+        "banIntro": "Both accounts are banned along with their devices (the ban follows the device). What the referral paid is taken back:",
+        "loading": "Working out what would be taken back…",
+        "nothing": "Nothing has been paid yet: nothing to take back.",
+        "line": {
+          "ZENI": "{user} · Zeni",
+          "BOOSTERS": "{user} · unopened {name} boosters",
+          "SEALED": "{user} · still-sealed packs",
+          "CARDS": "{user} · cards still owned",
+          "VOUCHERS": "{user} · unused vouchers"
+        },
+        "takenOf": "{taken, number} of {given, number}",
+        "spent": "{count, number} already spent",
+        "used": "{count, plural, one {# already used} other {# already used}}",
+        "milestones": "{name}'s milestones that drop: {list}",
+        "milestonesNone": "{name}'s milestones: none drop",
+        "confirmRevoke": "Revoke",
+        "confirmBan": "Revoke and ban",
+        "cancel": "Cancel",
+        "pending": "Working…",
+        "bannedNote": "Revoked and banned: no decision left to make.",
+        "done": {
+          "validate": "Validated: {count, plural, =0 {nothing to pay yet} one {# payout made} other {# payouts made}}.",
+          "revoke": "Referral revoked: nothing more will be paid.",
+          "ban": "Revoked and taken back: {count, plural, =0 {no account banned (team account)} one {# account banned} other {# accounts banned}}.",
+          "rescore": "Score recomputed.",
+          "rescoreHeld": "Score recomputed: the referral moves to “To review”."
+        },
+        "errors": {
+          "FORBIDDEN": "Team members only.",
+          "INVALID": "Invalid request: check the reason.",
+          "RATE_LIMITED": "Too many decisions in a row: wait a minute.",
+          "UNAVAILABLE": "Not possible right now: try again.",
+          "NOT_FOUND": "Referral not found.",
+          "NOT_V2": "This is a v1 referral: manage it in the “Previous program” tab.",
+          "NOT_HELD": "This referral isn't waiting for review.",
+          "ALREADY_REVIEWED": "A decision has already been made on this referral.",
+          "ALREADY_REVOKED": "This referral is already revoked."
+        }
+      }
     },
     "rotation": {
       "title": "Current rotation",
