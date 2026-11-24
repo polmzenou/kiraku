@@ -94,6 +94,7 @@ export type DescribeTranslators = {
       | "buyOrderWanted"
       | "kyaraImportDone"
       | "kyaraImportRejected"
+      | "kyaraImportReminder"
       | "aCard",
     values?: Values,
   ) => string;
@@ -211,6 +212,9 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
     }
     case "KYARA_IMPORT_REJECTED":
       return { text: t("kyaraImportRejected", { reason: n.kyara?.kind === "REJECTED" ? n.kyara.code : "OTHER" }), href: "/compte/import-kyara" };
+    // Relance de l'équipe : le texte porte le rappel de la marche à suivre, sur plusieurs lignes
+    case "KYARA_IMPORT_REMINDER":
+      return { text: t("kyaraImportReminder"), href: "/compte/import-kyara" };
     case "SEALED_OPENED": {
       // Cadeau empoisonné : celui qui a offert le sachet apprend ce qu'il a donné
       const key = n.sealed?.outcome === "RUINED" ? "sealedRuined" : n.sealed?.outcome === "SPARED" ? "sealedSpared" : "sealedDivin";

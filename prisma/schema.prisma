@@ -1058,6 +1058,7 @@ enum NotificationType {
   BUY_ORDER_WANTED // quelqu'un cherche une carte que tu possèdes (refId = id de la Card)
   KYARA_IMPORT_DONE // l'import de ta collection Kyara est fait (refId = id du KyaraImport)
   KYARA_IMPORT_REJECTED // ta demande d'import Kyara est refusée, avec un motif (refId = id du KyaraImport)
+  KYARA_IMPORT_REMINDER // l'équipe relance le joueur : montrer sa collection au compte Kiraku sur Kyara (refId = id du KyaraImport)
 }
 
 // Notifications en base ; le texte est rendu à la lecture (pseudo à jour, langue du lecteur)

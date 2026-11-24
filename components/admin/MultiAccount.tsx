@@ -86,45 +86,54 @@ export async function ReasonChips({ reasons, members, masked, pair }: { reasons:
   );
 }
 
-/** Tableau des comptes d'un groupe. */
-export async function MemberTable({ ids, members, masked, caption }: { ids: readonly string[]; members: Map<string, MemberInfo>; masked: boolean; caption: string }) {
+/** Au-delà, les comptes d'un groupe se déplient : un gros groupe ne repousse pas les suivants hors de l'écran. */
+const MEMBERS_SHOWN = 6;
+
+/** Comptes d'un groupe en tuiles compactes (pseudo, statut, Zeni, cartes, dates), côte à côte. */
+export async function MemberGrid({ ids, members, masked }: { ids: readonly string[]; members: Map<string, MemberInfo>; masked: boolean }) {
   const [t, users, format] = await Promise.all([getTranslations("admin.multiAccounts"), getTranslations("admin.users"), getFormatter()]);
   const rows = ids.flatMap((id) => members.get(id) ?? []);
+  const tile = (m: MemberInfo) => {
+    const status = m.banned ? "banned" : m.role === "ADMIN" ? "admin" : m.role === "DEV" ? "dev" : m.isGuest ? "guest" : "registered";
+    return (
+      <li key={m.id} className="min-w-0">
+        <Link
+          href={`/admin/utilisateurs/${m.id}`}
+          className="flex h-full min-h-11 flex-col gap-0.5 rounded-control border border-border bg-surface-2 px-3 py-2 text-xs hover:border-text-muted"
+        >
+          <span className="flex min-w-0 items-center justify-between gap-2">
+            <span className="truncate text-sm font-bold text-link underline underline-offset-4">{m.username}</span>
+            <span className={`shrink-0 font-bold ${m.banned ? "text-shu" : "text-text-muted"}`}>
+              {t(`memberStatus.${status}`)}
+              {m.discordLinked && <span className="hidden font-normal @sm:inline"> · {t("memberDiscord")}</span>}
+            </span>
+          </span>
+          {/* Carte de groupe étroite (téléphone) : deux tuiles par ligne, l'e-mail et la création restent sur la fiche */}
+          <span className="hidden truncate text-text-muted @sm:block">{m.email ? (masked ? maskEmail(m.email) : m.email) : users("noEmail")}</span>
+          <span className="flex flex-wrap gap-x-3 tabular-nums">
+            <span className="text-kin">{t("memberCoins", { count: m.coins })}</span>
+            <span>{t("memberCards", { count: m.cards })}</span>
+          </span>
+          <span className="flex flex-wrap gap-x-3 text-text-muted">
+            <span className="hidden @sm:inline">{t("memberCreated", { date: format.dateTime(m.createdAt, { dateStyle: "short", timeStyle: "short" }) })}</span>
+            <span>{m.lastSeenAt ? t("memberSeen", { when: format.relativeTime(m.lastSeenAt) }) : t("memberNeverSeen")}</span>
+          </span>
+        </Link>
+      </li>
+    );
+  };
+  const grid = "grid grid-cols-2 gap-2 @3xl:grid-cols-3";
+  const rest = rows.slice(MEMBERS_SHOWN);
   return (
-    <ResponsiveTable
-      caption={caption}
-      columns={[
-        { key: "player", label: users("player"), primary: true },
-        { key: "status", label: users("status") },
-        { key: "created", label: users("created"), className: "whitespace-nowrap" },
-        { key: "seen", label: t("lastSeen"), className: "whitespace-nowrap" },
-        { key: "coins", label: users("coins"), className: "tabular-nums text-kin" },
-        { key: "cards", label: users("cards"), className: "tabular-nums" },
-      ]}
-      rows={rows.map((m) => ({
-        id: m.id,
-        cells: {
-          player: (
-            <span className="flex flex-col">
-              <Link href={`/admin/utilisateurs/${m.id}`} className={userLink}>{m.username}</Link>
-              <span className="text-xs break-all text-text-muted">{m.email ? (masked ? maskEmail(m.email) : m.email) : users("noEmail")}</span>
-            </span>
-          ),
-          status: (
-            <span className="flex flex-col text-xs">
-              <span className={m.banned ? "font-bold text-shu" : ""}>
-                {users(m.banned ? "banned" : m.role === "ADMIN" ? "adminRole" : m.role === "DEV" ? "devRole" : m.isGuest ? "guest" : "registered")}
-              </span>
-              {m.discordLinked && <span className="text-text-muted">{t("discord")}</span>}
-            </span>
-          ),
-          created: format.dateTime(m.createdAt, { dateStyle: "short", timeStyle: "short" }),
-          seen: m.lastSeenAt ? format.relativeTime(m.lastSeenAt) : "—",
-          coins: format.number(m.coins),
-          cards: format.number(m.cards),
-        },
-      }))}
-    />
+    <div className="flex flex-col gap-2">
+      <ul className={grid}>{rows.slice(0, MEMBERS_SHOWN).map(tile)}</ul>
+      {rest.length > 0 && (
+        <details>
+          <summary className="flex min-h-11 cursor-pointer items-center text-sm font-bold">{t("moreMembers", { count: rest.length })}</summary>
+          <ul className={grid}>{rest.map(tile)}</ul>
+        </details>
+      )}
+    </div>
   );
 }
 

@@ -38,6 +38,11 @@ describe("describeNotification", () => {
     expect(describeNotification({ ...base, type: "KYARA_IMPORT_REJECTED", kyara: null }, tr).text).toContain('"reason":"OTHER"');
   });
 
+  it("relance de l'import Kyara → rappel de la marche à suivre et page de l'import", () => {
+    const base = { actor: { username: "akira", isGuest: false }, gift: null, card: null };
+    expect(describeNotification({ ...base, type: "KYARA_IMPORT_REMINDER", kyara: null }, tr)).toEqual({ text: "kyaraImportReminder:{}", href: "/compte/import-kyara" });
+  });
+
   it("pile ou face : invitation et table relevée → page de la table, sans jamais l'issue", () => {
     const base = { actor: { username: "kenji", isGuest: false }, gift: null, card: { anilistId: 40, name: "Luffy", rarity: "MYTHIC" } };
     const coinFlip = { flipId: "t1", cardId: "c1", reason: null };

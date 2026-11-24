@@ -451,6 +451,29 @@ export async function rejectImportWith(
 }
 
 /** Refus annulé (erreur de l'équipe, ami ajouté entre-temps) : la demande repart en attente. */
+/**
+ * Relance d'une demande en attente : le joueur reçoit une notification qui lui rappelle de montrer sa collection au
+ * compte Kiraku sur Kyara. La demande ne change pas ; chaque relance est écrite dans le journal admin.
+ */
+export async function remindImportWith(
+  db: PrismaClient,
+  input: { staffId: string; importId: string; now: Date },
+  onNotified?: OnNotified,
+): Promise<void> {
+  await notifyingTransaction(
+    db,
+    async (tx) => {
+      const row = await lockRequest(tx, input.importId);
+      if (row.status !== "PENDING") throw new KyaraImportError("NOT_PENDING");
+      if (!row.userId) throw new KyaraImportError("PLAYER_UNAVAILABLE");
+      await notify(tx, { userId: row.userId, type: "KYARA_IMPORT_REMINDER", actorId: row.userId, refId: row.id, now: input.now });
+      await writeAdminLog(tx, { adminId: input.staffId, action: "KYARA_IMPORT_REMIND", targetType: "KyaraImport", targetId: row.id });
+    },
+    TX,
+    onNotified,
+  );
+}
+
 export async function reopenImportWith(db: PrismaClient, input: { staffId: string; importId: string; now: Date }): Promise<void> {
   try {
     await db.$transaction(async (tx) => {

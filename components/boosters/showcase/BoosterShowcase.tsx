@@ -3,6 +3,7 @@
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OPEN_COUNTS, choiceCount, contentsLabel, openAllCount, type OpenChoice } from "@/lib/boosters/catalog";
+import { CHANCE_ROWS, chanceRows } from "@/lib/boosters/panel";
 import type { FilterContext } from "@/lib/boosters/pool-filter";
 import { familyRows, firstSelectable, positionInFamily } from "@/lib/boosters/showcase";
 import { localize, priceFor, type BoosterFamily } from "@/lib/boosters/types";
@@ -10,7 +11,7 @@ import { useRaritySeals } from "@/lib/catalog/use-rarities";
 import type { BoosterState } from "@/server/boosters/state";
 import { segmentedFillClass, segmentedItemClass, segmentedTrackClass } from "../../ui/Segmented";
 import { BoosterArt } from "../BoosterArt";
-import { BoosterPanel, CHANCE_ROWS, chanceRows, RARITY_TEXT } from "../BoosterPanel";
+import { BoosterPanel, RARITY_TEXT } from "../BoosterPanel";
 import { RARITY_BG, usePercent } from "../format";
 import { NextFreeIn } from "../NextFreeIn";
 import { OpenLink } from "../OpenLink";
@@ -387,7 +388,7 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
                       </RatesSheet>
                     </div>
                     <ul className="flex flex-col gap-2">
-                      {chanceRows(panel.odds).map((r) => (
+                      {chanceRows(panel).map((r) => (
                         <li key={r} className="grid grid-cols-[8rem_minmax(0,1fr)_3.75rem] items-center gap-3 text-[13px] font-bold">
                           <span className="flex min-w-0 items-center gap-1.5">
                             <span aria-hidden="true" lang="ja" className="font-seal">
