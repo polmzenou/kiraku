@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import type { Role } from "@/generated/prisma/client";
-import { ladderTier, LADDER } from "@/lib/ranked/rules";
+import { careerTier } from "@/lib/ranked/career";
 import {
   earnedBadges,
   evaluateCondition,
@@ -41,7 +41,7 @@ type Hint = { fr?: string; en?: string };
 
 /** Statistiques utiles aux conditions, en quelques requêtes. */
 export async function getProfileStats(userId: string, seriesIds: readonly string[]): Promise<ProfileStats> {
-  const [collection, kept, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog, prestigeCounts] = await Promise.all([
+  const [collection, kept, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog, prestigeCounts, seasons] = await Promise.all([
     collectionStatsWith(prisma, userId),
     // Séries déjà complétées une fois : acquises même si une carte est partie depuis (trigger sur UserCard)
     prisma.seriesCompletion.findMany({ where: { userId }, select: { seriesId: true } }),
@@ -59,7 +59,10 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
       prisma.trade.count({ where: { status: "ACCEPTED", OR: [{ proposerId: userId }, { recipientId: userId }] } }),
       prisma.listingOffer.count({ where: { status: "ACCEPTED", OR: [{ bidderId: userId }, { listing: { ownerId: userId } }] } }),
     ]).then(([friends, market]) => friends + market),
-    prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { rankPoints: true, seasonPeakPc: true, ambassadorSince: true, prestige: true } }),
+    prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { rankPoints: true, seasonPeakPc: true, seasonPeakGrand: true, seasonGames: true, ambassadorSince: true, prestige: true },
+    }),
     getSetting("ranked.tiers"),
     prisma.boosterOpening.count({ where: { userId, apocalypse: "RUINED" } }),
     // Cartes publiées découvertes (une découverte ne se perd pas, même si la carte est vendue)
@@ -70,12 +73,14 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
       GROUP BY c."rarityKey"`,
     getCatalogStats(),
     prestigeCountsOf(userId),
+    // Meilleur rang de chaque saison close
+    prisma.seasonResult.findMany({ where: { userId }, select: { peakTier: true } }),
   ]);
   // Un joueur reparti de zéro garde ce qu'il avait gagné lors d'un cycle passé, sans en gagner davantage. Les
   // conditions de découverte n'en ont pas besoin : une renaissance n'efface pas les découvertes du wiki.
   const peak = bestOfCycles({ ...collection, printingsOwned: prestigeCounts.printings }, prestigeCounts.snapshots);
-  // Meilleur des deux : un titre de rang ne se reperd pas après une défaite
-  const tier = ladderTier(Math.max(user.rankPoints, user.seasonPeakPc), { tiers });
+  // Meilleur rang de la carrière : un cosmétique de rang ne se reperd ni après une défaite ni à la fin d'une saison
+  const tier = careerTier({ ...user, pastPeaks: seasons.map((s) => s.peakTier) }, { tiers });
   const completedSeries = new Set(kept.map((k) => k.seriesId));
   // Complète sans être enregistrée : la série l'est devenue sans échange de carte (carte retirée du
   // catalogue par l'admin). On l'acquiert maintenant pour qu'elle ne se reperde pas non plus.
@@ -94,7 +99,7 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
     boostersOpened,
     tradesDone,
     apocalypseRuined,
-    tier: LADDER.includes(tier) ? tier : "BRONZE",
+    tier,
     discoveredPercent: discoveredPercent(
       discovered.reduce((sum, r) => sum + r.n, 0),
       catalog.total,

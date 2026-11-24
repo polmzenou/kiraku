@@ -1,9 +1,11 @@
 // Cadres d'avatar : des matières de la DA Kiraku (papier, bambou, indigo, laque, feuille d'or,
 // nacre, cerisier, kintsugi, puis nuage, vagues, érable, lune et phénix ; jade réservé aux ambassadeurs ; renaissance,
-// estampe et flamme pour le prestige). L'admin associe un style à une condition (Cosmetic.frameStyle).
+// estampe et flamme pour le prestige), et les cadres illustrés des rangs du classé (images de public/frames, anneau
+// conique aux couleurs du rang en repli). L'admin associe un style à une condition (Cosmetic.frameStyle).
 // Classes écrites en entier pour que Tailwind les détecte ; anneau peint en dégradé conique.
+import { FRAME_ART_SCALE, FRAME_ART_VERSION, FRAME_ART_WIDTHS } from "./frame-art";
 
-export const FRAME_STYLES = ["washi", "bambou", "aizome", "urushi", "kinpaku", "raden", "sakura", "kintsugi", "kumo", "seigaiha", "momiji", "tsuki", "hoo", "hisui", "tensei", "hanga", "hono"] as const;
+export const FRAME_STYLES = ["washi", "bambou", "aizome", "urushi", "kinpaku", "raden", "sakura", "kintsugi", "kumo", "seigaiha", "momiji", "tsuki", "hoo", "hisui", "tensei", "hanga", "hono", "rang-bronze", "rang-argent", "rang-or", "rang-emeraude", "rang-elite", "rang-champion", "rang-grand-champion"] as const;
 export type FrameStyle = (typeof FRAME_STYLES)[number];
 
 export const FRAME_KANJI: Record<FrameStyle, string> = {
@@ -24,6 +26,14 @@ export const FRAME_KANJI: Record<FrameStyle, string> = {
   tensei: "転",
   hanga: "版",
   hono: "炎",
+  // Emblèmes des rangs du classé (glyphes déjà dans SEAL_GLYPHS)
+  "rang-bronze": "銅",
+  "rang-argent": "銀",
+  "rang-or": "金",
+  "rang-emeraude": "翠",
+  "rang-elite": "精",
+  "rang-champion": "覇",
+  "rang-grand-champion": "極",
 };
 
 /** Anneau autour de l'avatar (le padding fait l'épaisseur). */
@@ -48,8 +58,31 @@ export const FRAME_RING: Record<FrameStyle, string> = {
   hanga: "bg-[conic-gradient(from_90deg,#f3e6cc,#c8372d_12%,#f3e6cc_24%,#7a5634_50%,#f3e6cc_62%,#c8372d_74%,#f3e6cc)]",
   // Flamme du brasero
   hono: "bg-[conic-gradient(from_200deg,#6e1a12,#e0533f,#f29a3a,#fff3c4,#f29a3a,#c8372d,#6e1a12)]",
+  // Rangs du classé : anneau des petits avatars et des images de partage, aux couleurs du cadre illustré
+  "rang-bronze": "bg-[conic-gradient(from_200deg,#6b3a1f,#c87a45,#f0b07a,#8f4f2a,#d98b52,#6b3a1f)]",
+  "rang-argent": "bg-[conic-gradient(from_200deg,#5d6470,#d8dde5,#ffffff,#8a93a2,#7fa8e8,#5d6470)]",
+  "rang-or": "bg-[conic-gradient(from_200deg,#8a5f12,#f2c440,#fff0a8,#c08a1c,#f7d360,#8a5f12)]",
+  "rang-emeraude": "bg-[conic-gradient(from_200deg,#0e4a2a,#1f9a55,#d9b556,#137a40,#e7c873,#0e4a2a)]",
+  "rang-elite": "bg-[conic-gradient(from_200deg,#13307a,#2f6fe0,#e5ecf5,#39c4f0,#1d4aa8,#13307a)]",
+  "rang-champion": "bg-[conic-gradient(from_200deg,#3a0d0b,#b3231b,#f29a3a,#d9a441,#8f1d14,#3a0d0b)]",
+  "rang-grand-champion": "bg-[conic-gradient(from_200deg,#3c1460,#8e3fd6,#e8c35a,#b46ef0,#c9952e,#3c1460)]",
 };
 
 export function isFrameStyle(value: unknown): value is FrameStyle {
   return typeof value === "string" && (FRAME_STYLES as readonly string[]).includes(value);
+}
+
+/** Cadres illustrés : côté de l'image / diamètre de l'avatar (lib/profile/frame-art.ts, généré avec les images). */
+export const FRAME_ART: Partial<Record<FrameStyle, number>> = FRAME_ART_SCALE;
+
+export type FrameArtWidth = (typeof FRAME_ART_WIDTHS)[number];
+
+/** Image d'un cadre illustré, versionnée (cache d'une semaine sur /frames). */
+export function frameArtSrc(style: FrameStyle, width: FrameArtWidth, format: "avif" | "webp"): string {
+  return `/frames/${style}-${width}-v${FRAME_ART_VERSION}.${format}`;
+}
+
+/** srcset des tailles produites : le navigateur prend la plus petite qui couvre l'écran. */
+export function frameArtSrcSet(style: FrameStyle, format: "avif" | "webp"): string {
+  return FRAME_ART_WIDTHS.map((w) => `${frameArtSrc(style, w, format)} ${w}w`).join(", ");
 }
