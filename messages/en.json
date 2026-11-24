@@ -2329,6 +2329,7 @@
         "tracking": "Tracking",
         "codes": "Custom codes",
         "ennichi": "Ennichi",
+        "announce": "Announcement",
         "settings": "Settings",
         "legacy": "Previous program"
       },
@@ -2770,6 +2771,33 @@
           "addLine": "Add a line",
           "toFix": "To fix: {list}.",
           "savedBy": "Saved by the team, ADMIN or DEV, and logged."
+        }
+      },
+      "announce": {
+        "title": "Community announcement",
+        "intro": "The launch message, posted in the Discord announcements channel with @everyone: the new referral program, and the Ennichi if it's announced or running. Amounts are the ones set right now; “Update” fixes the message without notifying again.",
+        "notConfigured": "Channel not configured: set DISCORD_ANNOUNCE_CHANNEL_ID on the server (docs/MISE-EN-PRODUCTION.md).",
+        "published": "Published on {date}",
+        "notYet": "Not published yet.",
+        "open": "Open in Discord",
+        "publish": "Publish",
+        "update": "Update",
+        "confirm": "Post in the announcements channel with @everyone? The whole Discord server will be notified.",
+        "confirmUpdate": "Update the posted message with the current amounts? Nobody is notified again.",
+        "confirmButton": "Publish",
+        "confirmUpdateButton": "Update",
+        "cancel": "Cancel",
+        "done": "Announcement posted.",
+        "doneUpdate": "Announcement updated.",
+        "readOnly": "Publishing is for the referral team.",
+        "preview": "Preview",
+        "previewNote": "Approximate preview: Discord shows dates in each reader's time zone.",
+        "errors": {
+          "FORBIDDEN": "Team only.",
+          "RATE_LIMITED": "Too many tries in a row: wait a minute.",
+          "CONFIG": "Channel not found, or it isn't a text channel of the server.",
+          "BUSY": "Already publishing: try again in a minute.",
+          "DISCORD": "Discord refused the message: check the bot can post and mention @everyone in that channel, then try again."
         }
       }
     },

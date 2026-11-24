@@ -18,6 +18,8 @@ import { getSetting } from "../settings";
 import { checkEnnichiWith, drawEnnichiWith, EnnichiCloseError, payAwardsWith, type EnnichiCloseErrorCode } from "../ennichi/close-core";
 import { ennichiPayDeps, ennichiState } from "../ennichi/deps";
 import { ENNICHI_TAG } from "../ennichi/queries";
+import { writeAdminLog } from "../admin/log";
+import { publishReferralAnnouncement } from "../discord/referral-announce";
 
 // Parrainage v2 : toute l'équipe (ADMIN et DEV) traite la file « À vérifier », exception explicite au « seul l'admin
 // écrit » (lib/admin/roles.ts, canManageReferrals, vérifiée par lib/admin/dev-access.test.ts). Ordre : équipe → Zod →
@@ -294,5 +296,35 @@ export async function drawEnnichiAction(
     return { ok: true, ranked: out.ranked, tickets: out.tickets, draws: out.draws, paid, left: Math.max(0, out.awards - paid) };
   } catch (e) {
     return ennichiFailure("tirage", e);
+  }
+}
+
+/* ---------------- Annonce à la communauté ---------------- */
+
+export type AnnounceStaffError = "FORBIDDEN" | "RATE_LIMITED" | "CONFIG" | "BUSY" | "DISCORD";
+
+/**
+ * Annonce du lancement dans le salon public des annonces (avec @everyone à la première publication) : publiée ou mise à
+ * jour par l'équipe, ADMIN ou DEV, et notée au journal admin. Rien à saisir : le message est construit au serveur.
+ */
+export async function publishReferralAnnouncementAction(): Promise<{ ok: true; url: string } | { ok: false; error: AnnounceStaffError }> {
+  const user = await staff();
+  if (!user) return { ok: false, error: "FORBIDDEN" };
+  if (await limited(user.id, "announce", 3)) return { ok: false, error: "RATE_LIMITED" };
+  try {
+    const result = await publishReferralAnnouncement();
+    if (!result.ok) return { ok: false, error: result.error };
+    await writeAdminLog(prisma, {
+      adminId: user.id,
+      action: "DISCORD_REFERRAL_ANNOUNCE",
+      targetType: "DiscordPost",
+      targetId: "announce:referral",
+      after: { messageId: result.messageId },
+    });
+    refresh();
+    return { ok: true, url: result.url ?? "" };
+  } catch {
+    console.warn("[discord] annonce du parrainage indisponible.");
+    return { ok: false, error: "DISCORD" };
   }
 }

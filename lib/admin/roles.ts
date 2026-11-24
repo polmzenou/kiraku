@@ -34,6 +34,7 @@ export const DEV_ADMIN_PAGES = [
   "/admin/parrainage/reglages",
   "/admin/parrainage/codes",
   "/admin/parrainage/ennichi",
+  "/admin/parrainage/annonce",
   "/admin/avis",
   "/admin/gros-tirages",
   "/admin/evenement",

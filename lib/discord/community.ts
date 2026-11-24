@@ -23,7 +23,8 @@ export type DiscordMessageBody = {
     url?: string;
   }> }>;
   attachments?: Array<{ id: number; filename: string }>;
-  allowed_mentions: { parse: []; roles?: string[] };
+  // « everyone » : seulement l'annonce du lancement du parrainage, publiée à la main depuis l'admin
+  allowed_mentions: { parse: [] | ["everyone"]; roles?: string[] };
 };
 
 export function rulesMessage(): DiscordMessageBody {

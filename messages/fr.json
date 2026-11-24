@@ -2329,6 +2329,7 @@
         "tracking": "Suivi",
         "codes": "Codes perso",
         "ennichi": "Ennichi",
+        "announce": "Annonce",
         "settings": "Réglages",
         "legacy": "Ancien parrainage"
       },
@@ -2770,6 +2771,33 @@
           "addLine": "Ajouter une ligne",
           "toFix": "À corriger : {list}.",
           "savedBy": "Enregistré par l'équipe, ADMIN ou DEV, et noté au journal."
+        }
+      },
+      "announce": {
+        "title": "Annonce à la communauté",
+        "intro": "Le message du lancement, publié dans le salon des annonces du Discord avec @everyone : le nouveau parrainage, et l'Ennichi s'il est annoncé ou en cours. Les montants sont ceux réglés en ce moment ; « Mettre à jour » corrige le message sans notifier de nouveau.",
+        "notConfigured": "Salon non configuré : pose DISCORD_ANNOUNCE_CHANNEL_ID sur le serveur (docs/MISE-EN-PRODUCTION.md).",
+        "published": "Publiée le {date}",
+        "notYet": "Pas encore publiée.",
+        "open": "Voir sur Discord",
+        "publish": "Publier",
+        "update": "Mettre à jour",
+        "confirm": "Publier dans le salon des annonces avec @everyone ? Tout le serveur Discord sera notifié.",
+        "confirmUpdate": "Mettre à jour le message publié avec les montants actuels ? Personne n'est notifié de nouveau.",
+        "confirmButton": "Publier",
+        "confirmUpdateButton": "Mettre à jour",
+        "cancel": "Annuler",
+        "done": "Annonce publiée.",
+        "doneUpdate": "Annonce mise à jour.",
+        "readOnly": "Publication réservée à l'équipe du parrainage.",
+        "preview": "Aperçu",
+        "previewNote": "Aperçu indicatif : Discord affiche les dates dans le fuseau de chacun.",
+        "errors": {
+          "FORBIDDEN": "Action réservée à l'équipe.",
+          "RATE_LIMITED": "Trop d'essais d'affilée : attends une minute.",
+          "CONFIG": "Salon introuvable, ou ce n'est pas un salon texte du serveur.",
+          "BUSY": "Publication déjà en cours : réessaie dans une minute.",
+          "DISCORD": "Discord a refusé le message : vérifie que le bot peut écrire et mentionner @everyone dans ce salon, puis réessaie."
         }
       }
     },
