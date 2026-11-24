@@ -176,7 +176,7 @@
 .enn .ehero .rue-board { width: max(100cqw, calc(100cqh * var(--img-r, 1.5))); top: 50%; translate: -50% -50%; }
 }
 
-.enn .ehero h2 { font-family: var(--font-heading); font-weight: 400; font-size: 28px; line-height: 1.1; }
+.enn .ehero h1, .enn .ehero h2 { font-family: var(--font-heading); font-weight: 400; font-size: 28px; line-height: 1.1; }
 
 .enn .ehero-in { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 3; display: flex; flex-direction: column; gap: 8px; color: #f8f2e4; }
 
@@ -306,7 +306,7 @@
 
 .enn .procl { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 16px; text-align: center; }
 
-.enn .procl h3 { font-family: var(--font-heading); font-weight: 400; font-size: 22px; }
+.enn .procl h2, .enn .procl h3 { font-family: var(--font-heading); font-weight: 400; font-size: 22px; }
 
 .enn .title-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--k-kin) 60%, transparent); background: var(--k-surface-2); font-size: 12.5px; font-weight: 700; }
 
@@ -562,9 +562,9 @@
 
 .enn .win-g { display: flex; flex-direction: column; gap: 6px; padding: 12px; }
 
-.enn .win-g h4 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-family: var(--font-title); font-weight: 800; font-size: 15px; }
+.enn .win-g h3 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-family: var(--font-title); font-weight: 800; font-size: 15px; }
 
-.enn .win-g h4 span.k { font: 400 18px/1 var(--font-seal); color: var(--k-shu); }
+.enn .win-g h3 span.k { font: 400 18px/1 var(--font-seal); color: var(--k-shu); }
 
 .enn .win-names { display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; }
 
