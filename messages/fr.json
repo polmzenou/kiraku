@@ -7912,7 +7912,8 @@
         "PENDING": "en attente de l'équipe",
         "REFUSED": "pas retenu",
         "GRANTED": "reçu"
-      }
+      },
+      "legendsLink": "Mur des légendes"
     },
     "self": {
       "welcome": "Bienvenue !",
@@ -8031,6 +8032,17 @@
         "RATE_LIMITED": "Doucement : réessaie dans un instant.",
         "UNAVAILABLE": "Impossible pour le moment. Réessaie."
       }
+    },
+    "legends": {
+      "title": "Mur des légendes",
+      "lead": "Les joueurs qui ont amené {count} amis.",
+      "back": "Parrainage",
+      "rollLabel": "Rouleau d'honneur",
+      "me": "toi",
+      "friends": "{count, plural, one {# ami} other {# amis}}",
+      "emptyTitle": "Le rouleau attend son premier nom",
+      "emptyBody": "Le premier joueur à amener {count} amis y sera inscrit avec le sceau 壱.",
+      "you": "Toi : {count, plural, one {# ami installé} other {# amis installés}} sur {threshold}."
     }
   },
   "invite": {

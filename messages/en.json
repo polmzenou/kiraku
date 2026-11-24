@@ -7912,7 +7912,8 @@
         "PENDING": "waiting for the team",
         "REFUSED": "not granted",
         "GRANTED": "received"
-      }
+      },
+      "legendsLink": "Wall of legends"
     },
     "self": {
       "welcome": "Welcome!",
@@ -8031,6 +8032,17 @@
         "RATE_LIMITED": "Easy there: try again in a moment.",
         "UNAVAILABLE": "Not possible right now. Try again."
       }
+    },
+    "legends": {
+      "title": "Wall of legends",
+      "lead": "The players who brought {count} friends.",
+      "back": "Referrals",
+      "rollLabel": "Roll of honour",
+      "me": "you",
+      "friends": "{count, plural, one {# friend} other {# friends}}",
+      "emptyTitle": "The roll is waiting for its first name",
+      "emptyBody": "The first player to bring {count} friends will be written on it with the 壱 seal.",
+      "you": "You: {count, plural, one {# installed friend} other {# installed friends}} out of {threshold}."
     }
   },
   "invite": {

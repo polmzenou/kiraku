@@ -1,4 +1,5 @@
 import { useFormatter, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import type { RungView } from "@/server/referral/queries";
 import { LotGifts } from "./LotGifts";
 
@@ -54,6 +55,14 @@ export function ReferralLadder({ ladder, installed, limit, hint = false }: { lad
           <summary className="flex min-h-11 cursor-pointer items-center text-sm font-bold text-ai group-open:hidden">{t("seeAll", { count: ladder.length })}</summary>
           <ol className="flex flex-col gap-2">{rest.map(rung)}</ol>
         </details>
+      )}
+      {ladder.some((r) => r.legend) && (
+        <Link href="/parrainage/legendes" className="inline-flex min-h-11 items-center gap-2 self-start text-sm font-bold text-text-muted hover:text-text">
+          <span aria-hidden="true" lang="ja" className="font-seal text-base text-shu">
+            絵
+          </span>
+          {t("legendsLink")}
+        </Link>
       )}
     </section>
   );
