@@ -2910,7 +2910,10 @@
           "enabled": "Missions"
         },
         "referral": {
-          "enabled": "Parrainage"
+          "enabled": "Parrainage",
+          "v2": {
+            "enabled": "Parrainage v2"
+          }
         },
         "expedition": {
           "enabled": "Expéditions"
@@ -2955,7 +2958,10 @@
           "enabled": "Missions quotidiennes et hebdomadaires."
         },
         "referral": {
-          "enabled": "Liens d'invitation et récompenses."
+          "enabled": "Liens d'invitation et récompenses.",
+          "v2": {
+            "enabled": "Quatre étapes payées des deux côtés, paliers, contrôles. Coupé : l'ancien parrainage continue."
+          }
         },
         "expedition": {
           "enabled": "Page /expedition, entrée du menu et tuile du Compte. Coupé : seul l'admin voit la page (aperçu)."

@@ -6,7 +6,7 @@ import { dayKey, filterContext } from "@/lib/boosters/pool-filter";
 
 export type Period = "DAILY" | "WEEKLY";
 
-type YMD = { year: number; month: number; day: number };
+export type YMD = { year: number; month: number; day: number };
 
 const DAY = 86_400_000;
 
@@ -37,7 +37,7 @@ export function localMidnight(d: YMD, timeZone: string): Date {
   return new Date(at);
 }
 
-function addDays(d: YMD, n: number): YMD {
+export function addDays(d: YMD, n: number): YMD {
   const t = new Date(Date.UTC(d.year, d.month - 1, d.day) + n * DAY);
   return { year: t.getUTCFullYear(), month: t.getUTCMonth() + 1, day: t.getUTCDate() };
 }

@@ -2910,7 +2910,10 @@
           "enabled": "Missions"
         },
         "referral": {
-          "enabled": "Referral"
+          "enabled": "Referral",
+          "v2": {
+            "enabled": "Referral v2"
+          }
         },
         "expedition": {
           "enabled": "Expeditions"
@@ -2955,7 +2958,10 @@
           "enabled": "Daily and weekly missions."
         },
         "referral": {
-          "enabled": "Invite links and rewards."
+          "enabled": "Invite links and rewards.",
+          "v2": {
+            "enabled": "Four steps paid on both sides, milestones, checks. Off: the old referral keeps running."
+          }
         },
         "expedition": {
           "enabled": "The /expedition page, menu entry and Account tile. Off: only admins see the page (preview)."

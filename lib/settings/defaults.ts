@@ -167,6 +167,36 @@ const referralMilestones = z
     message: "Les paliers doivent monter strictement",
   });
 
+// Parrainage v2 (étape 18) : lot de chaque étape du filleul, des deux côtés, et part « confiance » du parrain (les
+// boosters Mythiques des étapes 1 et 2, versés à l'étape 3 quand le filleul n'a pas de Discord ancien)
+const referralV2StepLots = z
+  .array(z.object({ referee: lotRef, referrer: lotRef, referrerTrust: lotRef }).strict())
+  .length(4)
+  .refine((steps) => steps.slice(2).every((s) => s.referrerTrust === null), {
+    message: "La part « confiance » ne concerne que les étapes 1 et 2",
+  });
+
+// Paliers du parrain v2, en amis installés : lot, bons « Mythique au choix », carte 1/1, rôle Ambassadeur proposé à
+// l'équipe, nom au mur des légendes. Les badges et le cadre se débloquent par leurs conditions de profil.
+export const MAX_REFERRAL_V2_MILESTONES = 12;
+const referralV2Milestones = z
+  .array(
+    z
+      .object({
+        installed: z.number().int().min(1).max(10_000),
+        lotId: lotRef,
+        choiceVouchers: z.number().int().min(0).max(20),
+        oneOfOne: z.boolean(),
+        ambassador: z.boolean(),
+        legend: z.boolean(),
+      })
+      .strict(),
+  )
+  .max(MAX_REFERRAL_V2_MILESTONES)
+  .refine((ms) => ms.every((m, i) => i === 0 || m.installed > ms[i - 1].installed), {
+    message: "Les paliers doivent monter strictement",
+  });
+
 // Lot de fin de saison par meilleur rang atteint
 const rankedRewardLots = z.object(
   Object.fromEntries([...LADDER_KEYS, "GRAND_CHAMPION"].map((k) => [k, lotRef])) as {
@@ -320,6 +350,27 @@ export const SETTING_SCHEMAS = {
   "referral.refereeLotId": lotRef,
   // Paliers : lot réclamable une fois atteint ce nombre d'amis qualifiés, sans limite de temps
   "referral.milestones": referralMilestones,
+  // Parrainage v2 (étape 18), coupé par défaut : tant qu'il l'est, la v1 ci-dessus tourne sans changement.
+  // Étapes du filleul comptées depuis son rattachement ; jours dans le fuseau game.timeZone, jour du rattachement compris
+  "referral.v2.enabled": z.boolean(),
+  "referral.v2.maxPerMonth": z.number().int().min(0).max(1_000),
+  "referral.v2.installHours": z.number().int().min(0).max(24 * 30),
+  "referral.v2.installOpenings": z.number().int().min(1).max(10_000),
+  "referral.v2.guestGraceHours": z.number().int().min(0).max(48),
+  "referral.v2.accroDays": z.number().int().min(1).max(90),
+  "referral.v2.accroWindowDays": z.number().int().min(1).max(90),
+  "referral.v2.fideleDays": z.number().int().min(1).max(180),
+  "referral.v2.fideleWindowDays": z.number().int().min(1).max(180),
+  "referral.v2.stepLots": referralV2StepLots,
+  "referral.v2.grandLotId": lotRef,
+  "referral.v2.milestones": referralV2Milestones,
+  // Contrôles : confiance (âge du compte Discord à sa liaison), file « À vérifier » au-dessus du score de la paire,
+  // durée de validité d'un score, verrous de transfert
+  "referral.v2.trustDiscordDays": z.number().int().min(0).max(3_650),
+  "referral.v2.holdScore": z.number().int().min(1).max(1_000),
+  "referral.v2.scoreTtlHours": z.number().int().min(1).max(24 * 30),
+  "referral.v2.cardLockDays": z.number().int().min(0).max(365),
+  "referral.v2.pairLockDays": z.number().int().min(0).max(365),
   // Hôtel des ventes (étape 8) ; taux en points de base (500 = 5 %)
   "market.enabled": z.boolean(),
   "market.feeBp": z.number().int().min(0).max(5_000),
@@ -693,6 +744,37 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "referral.referrerLotId": null,
   "referral.refereeLotId": null,
   "referral.milestones": [], // posés par le seed (prisma/seed/economy.ts), modifiables dans /admin/economie
+  "referral.v2.enabled": false, // coupé tant que l'équipe ne l'allume pas
+  "referral.v2.maxPerMonth": 30, // levé pendant l'Ennichi ; la v1 garde referral.maxPerMonth
+  "referral.v2.installHours": 48,
+  "referral.v2.installOpenings": 20,
+  "referral.v2.guestGraceHours": 2, // le premier booster ouvert en invité, juste avant l'inscription, compte
+  "referral.v2.accroDays": 5,
+  "referral.v2.accroWindowDays": 14,
+  "referral.v2.fideleDays": 15,
+  "referral.v2.fideleWindowDays": 30,
+  // Lots posés par le seed du parrainage v2 (lots à id fixe), réglables dans l'admin
+  "referral.v2.stepLots": [
+    { referee: null, referrer: null, referrerTrust: null },
+    { referee: null, referrer: null, referrerTrust: null },
+    { referee: null, referrer: null, referrerTrust: null },
+    { referee: null, referrer: null, referrerTrust: null },
+  ],
+  "referral.v2.grandLotId": null,
+  "referral.v2.milestones": [
+    { installed: 1, lotId: null, choiceVouchers: 0, oneOfOne: false, ambassador: false, legend: false }, // badge 縁 et cadre « fil rouge »
+    { installed: 3, lotId: null, choiceVouchers: 0, oneOfOne: false, ambassador: false, legend: false }, // lot : 1 Divin
+    { installed: 5, lotId: null, choiceVouchers: 1, oneOfOne: false, ambassador: false, legend: false },
+    { installed: 10, lotId: null, choiceVouchers: 0, oneOfOne: false, ambassador: false, legend: false }, // lot : 1 booster Mythique + 2 Divins ; badge 募
+    { installed: 25, lotId: null, choiceVouchers: 0, oneOfOne: false, ambassador: true, legend: false },
+    { installed: 50, lotId: null, choiceVouchers: 2, oneOfOne: false, ambassador: false, legend: false },
+    { installed: 100, lotId: null, choiceVouchers: 0, oneOfOne: true, ambassador: false, legend: true },
+  ],
+  "referral.v2.trustDiscordDays": 30,
+  "referral.v2.holdScore": 60,
+  "referral.v2.scoreTtlHours": 24,
+  "referral.v2.cardLockDays": 14,
+  "referral.v2.pairLockDays": 30,
   "market.enabled": true,
   "market.feeBp": 500, // taxe de 5 % : retire des Zeni du jeu
   "market.minIncrementBp": 500, // surenchère minimale de 5 % (au moins 1 Zeni)
