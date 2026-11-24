@@ -12,6 +12,7 @@ import { pushLater } from "../market/queries";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
 import { REVIEWS_TAG } from "../social/reviews";
+import { referralFingerprintKey } from "../referral/deps";
 
 export async function mutateAdminUserAction(input: unknown): Promise<AdminUserResult> {
   const admin = await getAdmin();
@@ -80,7 +81,7 @@ export async function adminDeleteUsersAction(input: unknown): Promise<DeleteUser
   const failed: { id: string; error: UserDeleteErrorCode }[] = [];
   for (const id of [...new Set(parsed.data.ids)]) {
     try {
-      await deleteUserWith(prisma, { adminId: admin.id, userId: id, reason: parsed.data.reason }, pushLater);
+      await deleteUserWith(prisma, { adminId: admin.id, userId: id, reason: parsed.data.reason, fingerprintKey: referralFingerprintKey() }, pushLater);
       deleted.push(id);
     } catch (e) {
       if (e instanceof UserDeleteError) failed.push({ id, error: e.code });

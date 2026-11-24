@@ -13,6 +13,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { withdrawCasinoWith } from "../casino/coinflip-core";
 import { credit } from "../economy/ledger";
 import { forgetKyaraImportsFor } from "../kyara/import-core";
+import { keepRefereeFingerprints } from "../referral/fingerprint";
 import { lockPlayers } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { writeAdminLog } from "./log";
@@ -38,7 +39,8 @@ const TX = { maxWait: 10_000, timeout: 30_000 };
 
 export async function deleteUserWith(
   db: PrismaClient,
-  input: { adminId: string; userId: string; reason: string; now?: Date },
+  /** `fingerprintKey` : clé des empreintes du parrainage v2, gardées avant la suppression (null : rien n'est gardé, tests). */
+  input: { adminId: string; userId: string; reason: string; now?: Date; fingerprintKey: Buffer | null },
   onNotified?: OnNotified,
 ) {
   const now = input.now ?? new Date();
@@ -146,6 +148,8 @@ export async function deleteUserWith(
       });
       // Import Kyara : demandes non versées oubliées ; un import versé garde ses ids (SetNull), qui verrouillent
       await forgetKyaraImportsFor(tx, user.id, now);
+      // Filleul : e-mail et Discord gardés en empreintes, le compte neuf de la même personne ne sera pas filleul
+      if (input.fingerprintKey) await keepRefereeFingerprints(tx, user.id, input.fingerprintKey);
       await tx.user.delete({ where: { id: user.id }, select: { id: true } });
       return { username: user.username };
     },

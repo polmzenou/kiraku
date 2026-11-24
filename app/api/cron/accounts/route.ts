@@ -7,6 +7,7 @@ import { purgeOldMessages } from "@/server/chat/queries";
 import { cronAuthorized } from "@/server/cron-auth";
 import { prisma } from "@/server/db";
 import { purgeOldPulls } from "@/server/home/pulls";
+import { referralFingerprintKey } from "@/server/referral/deps";
 import { purgeExpiredRateLimits } from "@/server/ratelimit";
 import { getSetting } from "@/server/settings";
 
@@ -37,7 +38,8 @@ export async function GET(request: Request) {
   if (!cronAuthorized(request.headers.get("authorization"))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
-  const deletions = await processDueDeletionsWith(prisma, new Date(), { budgetMs: 30_000 });
+  // Empreintes des filleuls gardées avant l'anonymisation (parrainage v2)
+  const deletions = await processDueDeletionsWith(prisma, new Date(), { budgetMs: 30_000, fingerprintKey: referralFingerprintKey() });
   let rateLimits = 0;
   let guests = { deleted: 0, failed: 0 };
   const cleaned = {

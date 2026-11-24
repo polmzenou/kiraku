@@ -405,7 +405,7 @@ describe.skipIf(!url)("pile ou face atomique (base réelle)", () => {
     await prisma.friendship.create({ data: { pairKey: pairKey(a, gone), requesterId: a, addresseeId: gone, status: "ACCEPTED", createdAt: OLD, acceptedAt: OLD } });
     const reserved = await createTableWith(prisma, { userId: a, cardId: card.EPIC, side: "OMOTE", reservedForId: gone }, ctx());
     const own = await createTableWith(prisma, { userId: gone, cardId: card.EPIC2, side: "OMOTE" }, ctx());
-    await deleteUserWith(prisma, { adminId: admin, userId: gone, reason: "test" });
+    await deleteUserWith(prisma, { adminId: admin, userId: gone, reason: "test", fingerprintKey: null });
     expect(await prisma.coinFlip.findUnique({ where: { id: reserved.flipId }, select: { status: true } })).toEqual({ status: "CANCELLED" });
     expect(await prisma.coinFlip.findUnique({ where: { id: own.flipId } })).toBeNull();
     expect(await inStatus(a, "CASINO")).toBe(0);

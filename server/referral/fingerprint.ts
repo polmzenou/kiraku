@@ -40,6 +40,17 @@ export async function fingerprintTaken(tx: Tx, prints: readonly Fingerprint[], e
   return rows.some((r) => exceptReferralId === null || r.referralId !== exceptReferralId);
 }
 
+/**
+ * Avant la suppression ou l'anonymisation d'un compte filleul : ses empreintes du moment (un e-mail changé depuis le
+ * rattachement, un Discord lié ensuite) sont gardées avec son parrainage, pour qu'un compte neuf avec la même boîte ou
+ * le même Discord ne redevienne pas filleul. Rien à faire pour un compte qui n'a pas été parrainé.
+ */
+export async function keepRefereeFingerprints(tx: Tx, userId: string, key: Buffer): Promise<void> {
+  const referral = await tx.referral.findUnique({ where: { refereeId: userId }, select: { id: true } });
+  if (!referral) return;
+  await recordFingerprints(tx, await userFingerprints(tx, userId, key), referral.id);
+}
+
 /** Garde les empreintes du filleul ; une empreinte déjà connue ne change pas de parrainage. */
 export async function recordFingerprints(tx: Tx, prints: readonly Fingerprint[], referralId: string): Promise<void> {
   for (const p of prints) {

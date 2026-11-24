@@ -10,6 +10,7 @@ import { anonymizedUsername, deletionDueAt } from "@/lib/account/deletion";
 import { leaveQueueWith } from "../battle/battle-core";
 import { withdrawCasinoFor } from "../casino/coinflip-core";
 import { forgetKyaraImportsFor } from "../kyara/import-core";
+import { keepRefereeFingerprints } from "../referral/fingerprint";
 import { AuctionError, cancelAuctionWith } from "../market/auction-core";
 import type { Tx } from "../social/lock";
 import { writeAdminLog } from "../admin/log";
@@ -111,11 +112,12 @@ export async function cancelDeletionWith(
 
 /**
  * Anonymise le compte, une seule fois (idempotent : false s'il l'était déjà). Appelé par le cron à
- * l'échéance, ou par un admin (`adminId`) avant l'échéance ou sans demande du joueur.
+ * l'échéance, ou par un admin (`adminId`) avant l'échéance ou sans demande du joueur. `fingerprintKey` : clé des
+ * empreintes du parrainage v2, gardées avant d'effacer l'e-mail et le Discord (null : rien n'est gardé, tests).
  */
 export async function anonymizeUserWith(
   db: PrismaClient,
-  input: { userId: string; now: Date; adminId?: string | null },
+  input: { userId: string; now: Date; adminId?: string | null; fingerprintKey: Buffer | null },
 ): Promise<boolean> {
   // Tables du casino fermées avant de verrouiller le compte (ordre des verrous d'une relève : la table, puis le joueur)
   await withdrawCasinoFor(db, input.userId, input.now);
@@ -127,6 +129,9 @@ export async function anonymizeUserWith(
       where: { id: input.userId },
       select: { username: true, role: true },
     });
+
+    // Filleul : e-mail et Discord du moment gardés en empreintes avant d'être effacés
+    if (input.fingerprintKey) await keepRefereeFingerprints(tx, input.userId, input.fingerprintKey);
 
     // Pseudo tiré au hasard ; une collision (improbable) en retire un autre
     let username = anonymizedUsername(randomBytes(8));
@@ -204,7 +209,7 @@ export async function anonymizeUserWith(
 export async function processDueDeletionsWith(
   db: PrismaClient,
   now: Date,
-  opts: { limit?: number; budgetMs?: number } = {},
+  opts: { limit?: number; budgetMs?: number; fingerprintKey: Buffer | null },
 ): Promise<{ anonymized: number; failed: number }> {
   const started = Date.now();
   const due = await db.dataRequest.findMany({
@@ -217,7 +222,7 @@ export async function processDueDeletionsWith(
   for (const { userId } of due) {
     if (Date.now() - started > (opts.budgetMs ?? 45_000)) break;
     try {
-      if (await anonymizeUserWith(db, { userId, now })) result.anonymized++;
+      if (await anonymizeUserWith(db, { userId, now, fingerprintKey: opts.fingerprintKey })) result.anonymized++;
     } catch (e) {
       result.failed++;
       console.error("[account] anonymisation échouée", userId, e);

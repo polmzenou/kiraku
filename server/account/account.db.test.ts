@@ -100,7 +100,7 @@ describe.skipIf(!url)("suppression et anonymisation du compte (base réelle)", (
     const past = new Date(Date.now() - 31 * 86_400_000);
     await requestDeletionWith(prisma, { userId: b.id, now: past, graceDays: 30 });
 
-    const result = await processDueDeletionsWith(prisma, new Date());
+    const result = await processDueDeletionsWith(prisma, new Date(), { fingerprintKey: null });
     expect(result.anonymized).toBeGreaterThanOrEqual(1);
 
     const user = await prisma.user.findUniqueOrThrow({ where: { id: b.id } });
@@ -116,6 +116,6 @@ describe.skipIf(!url)("suppression et anonymisation du compte (base réelle)", (
     expect(req.status).toBe("DONE");
 
     // Idempotent : une seconde passe ne fait rien
-    expect(await anonymizeUserWith(prisma, { userId: b.id, now: new Date() })).toBe(false);
+    expect(await anonymizeUserWith(prisma, { userId: b.id, now: new Date(), fingerprintKey: null })).toBe(false);
   });
 });

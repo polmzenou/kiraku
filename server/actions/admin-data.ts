@@ -6,6 +6,7 @@ import { confirmsUsername } from "@/lib/account/deletion";
 import { AccountError, anonymizeUserWith, cancelDeletionWith } from "../account/account-core";
 import { getAdmin } from "../admin";
 import { prisma } from "../db";
+import { referralFingerprintKey } from "../referral/deps";
 import { rateLimit } from "../ratelimit";
 
 // Données personnelles depuis /admin (demandes de suppression, anonymisation RGPD).
@@ -34,7 +35,7 @@ export async function adminAnonymizeAction(input: unknown): Promise<AdminDataRes
   if (target.anonymizedAt) return { ok: false, error: "ANONYMIZED" };
   if (!confirmsUsername(parsed.data.confirm, target.username)) return { ok: false, error: "CONFIRM_MISMATCH" };
 
-  await anonymizeUserWith(prisma, { userId: parsed.data.userId, now: new Date(), adminId: admin.id });
+  await anonymizeUserWith(prisma, { userId: parsed.data.userId, now: new Date(), adminId: admin.id, fingerprintKey: referralFingerprintKey() });
   refresh();
   return { ok: true };
 }

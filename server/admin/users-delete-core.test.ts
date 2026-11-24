@@ -47,7 +47,7 @@ function setup({
   return { tx, db };
 }
 
-const input = { adminId: "admin", userId: "target", reason: "Spam" };
+const input = { adminId: "admin", userId: "target", reason: "Spam", fingerprintKey: null };
 
 describe("suppression définitive d'un compte", () => {
   it("refuse de se supprimer soi-même, sans transaction", async () => {

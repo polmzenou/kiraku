@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { DEFAULT_REFERRAL_V2_RULES, type ReferralV2Rules } from "@/lib/referral/rules";
 import { createPgAdapter } from "@/server/pg-adapter";
+import { anonymizeUserWith } from "../account/account-core";
 import type { LotDeps } from "../economy/lots";
 import { attachReferralV2With, ReferralV2Error } from "./attach-core";
 import { fingerprintKey, refereeFingerprints } from "./fingerprint";
@@ -59,7 +60,7 @@ describe.skipIf(!url)("parrainage v2 (base réelle)", () => {
     });
 
   beforeAll(async () => {
-    for (const name of ["par", "lea", "papi", "max", "a1", "a2", "cible", "ghost", "ghost2"]) {
+    for (const name of ["par", "lea", "papi", "max", "a1", "a2", "cible", "ghost", "ghost2", "mue", "mue2"]) {
       // ghost.player.<tag>+v2@gmail.com et ghostplayer<tag>@gmail.com arrivent dans la même boîte
       const email = name === "ghost" ? `ghost.player.${tag}+v2@gmail.com` : name === "ghost2" ? `ghostplayer${tag}@gmail.com` : `${name}.${tag}@exemple.fr`;
       emails.push(email);
@@ -178,6 +179,18 @@ describe.skipIf(!url)("parrainage v2 (base réelle)", () => {
     const prints = refereeFingerprints({ discordId: null, email: emails[7] }, KEY);
     expect(await prisma.refereeFingerprint.findMany({ where: { OR: prints.map((p) => ({ kind: p.kind, hash: p.hash })) }, select: { referralId: true } })).toEqual([{ referralId: null }]);
     await expect(attach("ghost2", "a2")).rejects.toMatchObject({ code: "ALREADY_REFERRED" });
+  });
+
+  it("un filleul change d'e-mail puis est anonymisé : sa nouvelle boîte n'est pas filleule une deuxième fois", async () => {
+    await attach("mue", "a1");
+    const fresh = `nouvelle.${tag}@exemple.fr`;
+    emails.push(fresh);
+    await prisma.user.update({ where: { id: users.mue.id }, data: { email: fresh } });
+    expect(await anonymizeUserWith(prisma, { userId: users.mue.id, now: new Date(), fingerprintKey: KEY })).toBe(true);
+
+    // Un compte neuf avec cette boîte (libérée par l'anonymisation) est reconnu
+    await prisma.user.update({ where: { id: users.mue2.id }, data: { email: fresh } });
+    await expect(attach("mue2", "a2")).rejects.toMatchObject({ code: "ALREADY_REFERRED" });
   });
 
   it("verrous : cartes du filleul 14 jours, rien vers le parrain 30 jours, réglage de l'admin respecté", async () => {
