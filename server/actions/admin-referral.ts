@@ -11,6 +11,7 @@ import { rateLimit } from "../ratelimit";
 import { progressDeps, referralV2Rules } from "../referral/deps";
 import { applyHold } from "../referral/holds";
 import { AmbassadorDecisionError, decideAmbassadorWith, type AmbassadorDecisionErrorCode } from "../referral/ambassador-core";
+import { setVanityCodeWith, VanityError, vanityStatusWith, type VanityErrorCode } from "../referral/vanity-core";
 import { pushLater } from "../market/queries";
 import { previewRevokeWith, ReviewError, revokeReferralWith, validateReferralWith, type ReviewErrorCode } from "../referral/review-core";
 import { getSetting } from "../settings";
@@ -22,6 +23,7 @@ import { getSetting } from "../settings";
 
 export type ReferralStaffError = "FORBIDDEN" | "INVALID" | "RATE_LIMITED" | "UNAVAILABLE" | ReviewErrorCode;
 export type AmbassadorStaffError = "FORBIDDEN" | "INVALID" | "RATE_LIMITED" | "UNAVAILABLE" | AmbassadorDecisionErrorCode;
+export type VanityStaffError = "FORBIDDEN" | "INVALID" | "RATE_LIMITED" | "UNAVAILABLE" | VanityErrorCode;
 type Fail = { ok: false; error: ReferralStaffError };
 
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
@@ -31,6 +33,14 @@ const reviewSchema = z
   .refine((v) => v.decision === "VALIDATE" || (v.reason !== null && v.reason.length > 0), { message: "Motif obligatoire" });
 const referralSchema = z.object({ referralId: id }).strict();
 const proposalSchema = z.object({ proposalId: id, accept: z.boolean() }).strict();
+const username = z.string().trim().min(1).max(40);
+const vanitySetSchema = z.object({ username, code: z.string().trim().min(1).max(40) }).strict();
+const vanityClearSchema = z.object({ userId: id }).strict();
+const vanityStatusSchema = z.object({ username: z.string().trim().max(40), code: z.string().trim().max(40) }).strict();
+
+/** Joueur inscrit désigné par son pseudo (sans tenir compte des majuscules). */
+const playerByName = (name: string) =>
+  prisma.user.findFirst({ where: { username: { equals: name, mode: "insensitive" }, isGuest: false }, select: { id: true } });
 
 /** Membre de l'équipe autorisé sur le parrainage, ou null. */
 async function staff() {
@@ -94,6 +104,61 @@ export async function decideAmbassadorAction(input: unknown): Promise<{ ok: true
     if (e instanceof AmbassadorDecisionError) return { ok: false, error: e.code };
     console.error("[parrainage admin] ambassadeur", e);
     return { ok: false, error: "UNAVAILABLE" };
+  }
+}
+
+function vanityFailure(e: unknown): { ok: false; error: VanityStaffError } {
+  if (e instanceof VanityError) return { ok: false, error: e.code };
+  console.error("[parrainage admin] code perso", e);
+  return { ok: false, error: "UNAVAILABLE" };
+}
+
+/** Pose le code perso d'un joueur (désigné par son pseudo) ; son code standard marche toujours. */
+export async function setVanityCodeAction(input: unknown): Promise<{ ok: true; code: string } | { ok: false; error: VanityStaffError }> {
+  const user = await staff();
+  if (!user) return { ok: false, error: "FORBIDDEN" };
+  const parsed = vanitySetSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (await limited(user.id, "vanity", 20)) return { ok: false, error: "RATE_LIMITED" };
+  try {
+    const player = await playerByName(parsed.data.username);
+    if (!player) return { ok: false, error: "NOT_FOUND" };
+    const { code } = await setVanityCodeWith(prisma, { staffId: user.id, userId: player.id, code: parsed.data.code });
+    refresh();
+    return { ok: true, code: code ?? "" };
+  } catch (e) {
+    return vanityFailure(e);
+  }
+}
+
+/** Retire le code perso d'un joueur : son code standard reste. */
+export async function clearVanityCodeAction(input: unknown): Promise<{ ok: true } | { ok: false; error: VanityStaffError }> {
+  const user = await staff();
+  if (!user) return { ok: false, error: "FORBIDDEN" };
+  const parsed = vanityClearSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (await limited(user.id, "vanity", 20)) return { ok: false, error: "RATE_LIMITED" };
+  try {
+    await setVanityCodeWith(prisma, { staffId: user.id, userId: parsed.data.userId, code: null });
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    return vanityFailure(e);
+  }
+}
+
+/** Indication du formulaire pendant la saisie : code libre, déjà pris, ou refusé par sa forme. */
+export async function vanityStatusAction(input: unknown): Promise<{ ok: true; status: "FREE" | "TAKEN" | "FORMAT" | "STANDARD_SHAPE" } | { ok: false; error: VanityStaffError }> {
+  const user = await staff();
+  if (!user) return { ok: false, error: "FORBIDDEN" };
+  const parsed = vanityStatusSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (await limited(user.id, "vanity-status", 120)) return { ok: false, error: "RATE_LIMITED" };
+  try {
+    const player = parsed.data.username ? await playerByName(parsed.data.username) : null;
+    return { ok: true, status: await vanityStatusWith(prisma, parsed.data.code, player?.id ?? null) };
+  } catch (e) {
+    return vanityFailure(e);
   }
 }
 

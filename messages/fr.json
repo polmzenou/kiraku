@@ -2327,6 +2327,7 @@
         "label": "Parrainage",
         "queue": "À vérifier",
         "tracking": "Suivi",
+        "codes": "Codes perso",
         "settings": "Réglages",
         "legacy": "Ancien parrainage"
       },
@@ -2594,6 +2595,42 @@
           "NOT_FOUND": "Proposition introuvable.",
           "ALREADY_DECIDED": "Quelqu'un de l'équipe a déjà tranché cette proposition.",
           "BANNED": "Ce compte est banni : refuse la proposition."
+        }
+      },
+      "codes": {
+        "title": "Codes perso",
+        "intro": "Un code perso (/i/TRISTREN) remplace le code standard dans les liens du joueur ; l'ancien code marche toujours. Réservé aux Ambassadeurs et aux streamers partenaires.",
+        "formTitle": "Poser un code",
+        "player": "Joueur (pseudo)",
+        "code": "Code perso (4 à 16 lettres ou chiffres)",
+        "hint": "Un code qui a la forme d'un code standard (8 caractères sans 0, O, 1 ni I) est refusé. Poser un nouveau code remplace l'ancien code perso du joueur.",
+        "submit": "Poser le code",
+        "done": "Code {code} posé pour {name}.",
+        "status": {
+          "FREE": "Libre",
+          "TAKEN": "Déjà pris",
+          "FORMAT": "4 à 16 lettres ou chiffres",
+          "STANDARD_SHAPE": "Forme d'un code standard"
+        },
+        "listTitle": "{count, plural, =0 {Aucun code posé} one {# code posé} other {# codes posés}}",
+        "empty": "Aucun joueur n'a de code perso pour l'instant.",
+        "ambassador": "Ambassadeur",
+        "standard": "Code standard : {code} (marche toujours)",
+        "setBy": "Posé par {name} le {date}",
+        "clear": "Retirer",
+        "confirmClear": "Retirer {code} à {name} ?",
+        "confirm": "Confirmer",
+        "cancel": "Annuler",
+        "errors": {
+          "FORBIDDEN": "Action réservée à l'équipe.",
+          "INVALID": "Remplis le pseudo et le code.",
+          "RATE_LIMITED": "Trop de changements d'affilée : attends une minute.",
+          "UNAVAILABLE": "Impossible pour l'instant : réessaie.",
+          "FORMAT": "Le code doit faire 4 à 16 lettres ou chiffres.",
+          "STANDARD_SHAPE": "Ce code a la forme d'un code standard : choisis-en un autre.",
+          "TAKEN": "Ce code est déjà pris par un autre joueur.",
+          "NOT_FOUND": "Aucun joueur inscrit avec ce pseudo.",
+          "GUEST": "Un invité n'a pas de code perso."
         }
       }
     },
@@ -5938,7 +5975,9 @@
         "badge": "+ badge {name}",
         "perReferral": "À chaque ami qualifié",
         "empty": "Aucun palier pour l'instant."
-      }
+      },
+      "vanityLabel": "Code perso",
+      "oldCode": "L'ancien code <s>{code}</s> marche toujours."
     },
     "ledger": {
       "title": "Historique des Zeni",
@@ -7782,7 +7821,10 @@
     "lead": "Invite un ami : vous gagnez tous les deux, à chaque étape.",
     "link": {
       "title": "Ton lien",
-      "hint": "Tes tirages, ton profil et tes vitrines partagés portent aussi ton code."
+      "hint": "Tes tirages, ton profil et tes vitrines partagés portent aussi ton code.",
+      "liveTitle": "Pour le live :",
+      "live": "« Inscrivez-vous avec le code {code} »",
+      "askVanity": "Streamer ou Ambassadeur ? Demande un code perso à l'équipe, plus facile à dire en live."
     },
     "rules": {
       "title": "Règles",

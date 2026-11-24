@@ -1,16 +1,17 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 
-export type ReferralAdminTab = "queue" | "tracking" | "settings" | "legacy";
+export type ReferralAdminTab = "queue" | "tracking" | "codes" | "settings" | "legacy";
 
 const TABS: { key: ReferralAdminTab; href: string }[] = [
   { key: "queue", href: "/admin/parrainage" },
   { key: "tracking", href: "/admin/parrainage/suivi" },
+  { key: "codes", href: "/admin/parrainage/codes" },
   { key: "settings", href: "/admin/parrainage/reglages" },
   { key: "legacy", href: "/admin/parrainage/ancien" },
 ];
 
-/** Onglets de l'admin du parrainage : file « À vérifier » (avec son nombre), suivi, réglages, ancien parrainage (v1). */
+/** Onglets de l'admin du parrainage : file « À vérifier » (avec son nombre), suivi, codes perso, réglages, ancien parrainage (v1). */
 export async function ReferralAdminTabs({ active, held }: { active: ReferralAdminTab; held: number }) {
   const t = await getTranslations("admin.referralV2.tabs");
   return (

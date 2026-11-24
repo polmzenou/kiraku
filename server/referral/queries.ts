@@ -65,7 +65,11 @@ export type LastReward = {
   at: string;
 };
 export type ReferralV2View = {
+  /** Code à partager : le code perso s'il y en a un, sinon le code standard. */
   code: string;
+  /** Code standard du joueur (marche toujours, même avec un code perso). */
+  standardCode: string;
+  vanity: boolean;
   steps: StepGifts[];
   ladder: RungView[];
   installed: number;
@@ -284,7 +288,20 @@ export async function referralPageV2(
   const since = me.registeredAt ?? me.createdAt;
   const canAttach = !own && now.getTime() - since.getTime() <= ctx.attachWindowDays * DAY;
 
-  return { code: me.vanityCode ?? me.referralCode, steps, ladder, installed, self, referees, totals, lastReward, canAttach, vouchers };
+  return {
+    code: me.vanityCode ?? me.referralCode,
+    standardCode: me.referralCode,
+    vanity: me.vanityCode !== null,
+    steps,
+    ladder,
+    installed,
+    self,
+    referees,
+    totals,
+    lastReward,
+    canAttach,
+    vouchers,
+  };
 }
 
 export type LegacyClaim = { referralId: string; name: string; lot: LotView | null };

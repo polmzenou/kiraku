@@ -2327,6 +2327,7 @@
         "label": "Referrals",
         "queue": "To review",
         "tracking": "Tracking",
+        "codes": "Custom codes",
         "settings": "Settings",
         "legacy": "Previous program"
       },
@@ -2594,6 +2595,42 @@
           "NOT_FOUND": "Proposal not found.",
           "ALREADY_DECIDED": "Someone on the team already decided on this proposal.",
           "BANNED": "This account is banned: refuse the proposal."
+        }
+      },
+      "codes": {
+        "title": "Custom codes",
+        "intro": "A custom code (/i/TRISTREN) replaces the standard code in the player's links; the old code still works. For Ambassadors and partner streamers.",
+        "formTitle": "Set a code",
+        "player": "Player (username)",
+        "code": "Custom code (4 to 16 letters or digits)",
+        "hint": "A code shaped like a standard code (8 characters without 0, O, 1 or I) is refused. Setting a new code replaces the player's previous custom code.",
+        "submit": "Set the code",
+        "done": "Code {code} set for {name}.",
+        "status": {
+          "FREE": "Available",
+          "TAKEN": "Already taken",
+          "FORMAT": "4 to 16 letters or digits",
+          "STANDARD_SHAPE": "Shaped like a standard code"
+        },
+        "listTitle": "{count, plural, =0 {No code set} one {# code set} other {# codes set}}",
+        "empty": "No player has a custom code yet.",
+        "ambassador": "Ambassador",
+        "standard": "Standard code: {code} (still works)",
+        "setBy": "Set by {name} on {date}",
+        "clear": "Remove",
+        "confirmClear": "Remove {code} from {name}?",
+        "confirm": "Confirm",
+        "cancel": "Cancel",
+        "errors": {
+          "FORBIDDEN": "Only the team can do this.",
+          "INVALID": "Fill in the username and the code.",
+          "RATE_LIMITED": "Too many changes in a row: wait a minute.",
+          "UNAVAILABLE": "Not possible right now: try again.",
+          "FORMAT": "The code must be 4 to 16 letters or digits.",
+          "STANDARD_SHAPE": "This code is shaped like a standard code: pick another one.",
+          "TAKEN": "This code is already taken by another player.",
+          "NOT_FOUND": "No registered player with this username.",
+          "GUEST": "A guest has no custom code."
         }
       }
     },
@@ -5938,7 +5975,9 @@
         "badge": "+ {name} badge",
         "perReferral": "For every qualified friend",
         "empty": "No milestones yet."
-      }
+      },
+      "vanityLabel": "Custom code",
+      "oldCode": "The old code <s>{code}</s> still works."
     },
     "ledger": {
       "title": "Zeni history",
@@ -7782,7 +7821,10 @@
     "lead": "Invite a friend: you both win, at every step.",
     "link": {
       "title": "Your link",
-      "hint": "Your shared pulls, profile and showcases carry your code too."
+      "hint": "Your shared pulls, profile and showcases carry your code too.",
+      "liveTitle": "For your stream:",
+      "live": "“Sign up with the code {code}”",
+      "askVanity": "Streamer or Ambassador? Ask the team for a custom code, easier to say live."
     },
     "rules": {
       "title": "Rules",

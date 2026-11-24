@@ -54,14 +54,22 @@ async function Hero() {
   );
 }
 
-async function LinkCard({ code }: { code: string }) {
+async function LinkCard({ view }: { view: Pick<ReferralV2View, "code" | "standardCode" | "vanity"> }) {
   const t = await getTranslations("referralV2.link");
   return (
     <section className="flex flex-col gap-2 lacquer rounded-card p-4" aria-labelledby="lien">
       {/* Titre pour les lecteurs d'écran : ReferralShare affiche déjà « Ton code » */}
       <h2 id="lien" className="sr-only">{t("title")}</h2>
-      <ReferralShare code={code} />
+      <ReferralShare code={view.code} vanity={view.vanity ? { standard: view.standardCode } : null} />
       <p className="text-xs text-text-muted">{t("hint")}</p>
+      {/* Code perso : la phrase à dire en live ; sans lui, où le demander */}
+      {view.vanity ? (
+        <p className="text-xs">
+          <b>{t("liveTitle")}</b> {t("live", { code: view.code })}
+        </p>
+      ) : (
+        <p className="text-xs text-text-muted">{t("askVanity")}</p>
+      )}
     </section>
   );
 }
@@ -202,7 +210,7 @@ export async function ReferralV2({
         <section className="flex flex-col gap-2 lacquer rounded-card p-4">
           <h2 className="font-title text-base font-bold">{t("self.inviteTitle")}</h2>
           <p className="text-xs text-text-muted">{t("self.inviteBody")}</p>
-          <ReferralShare code={view.code} />
+          <ReferralShare code={view.code} vanity={view.vanity ? { standard: view.standardCode } : null} />
         </section>
         {table && (
           <>
@@ -226,7 +234,7 @@ export async function ReferralV2({
             {vouchers}
             {table}
             {last}
-            <LinkCard code={view.code} />
+            <LinkCard view={view} />
           </>,
           <>
             {attach}
@@ -248,7 +256,7 @@ export async function ReferralV2({
           {last}
         </>,
         <>
-          <LinkCard code={view.code} />
+          <LinkCard view={view} />
           {attach}
           <ReferralLadder ladder={view.ladder} installed={view.installed} limit={3} hint />
           <Rules rules={rules} />

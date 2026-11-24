@@ -27,6 +27,42 @@ export async function heldReferralCount(): Promise<number> {
   return held + proposals;
 }
 
+export type VanityRow = {
+  userId: string;
+  name: string;
+  code: string;
+  /** Le code standard du joueur, qui marche toujours. */
+  standard: string;
+  ambassador: boolean;
+  /** Dernière pose dans le journal de l'équipe (absente pour un code posé autrement). */
+  setAt: string | null;
+  setBy: string | null;
+};
+
+/** Codes perso posés, par pseudo. */
+export async function vanityCodes(take = 500): Promise<VanityRow[]> {
+  const users = await prisma.user.findMany({
+    where: { vanityCode: { not: null } },
+    orderBy: { username: "asc" },
+    take,
+    select: { id: true, username: true, vanityCode: true, referralCode: true, ambassadorSince: true },
+  });
+  const logs = users.length
+    ? await prisma.adminLog.findMany({
+        where: { action: "REFERRAL_VANITY_SET", targetType: "User", targetId: { in: users.map((u) => u.id) } },
+        orderBy: { createdAt: "desc" },
+        select: { targetId: true, createdAt: true, admin: { select: { username: true } } },
+      })
+    : [];
+  const last = new Map<string, (typeof logs)[number]>();
+  for (const l of logs) if (l.targetId && !last.has(l.targetId)) last.set(l.targetId, l);
+  return users.flatMap((u) => {
+    if (!u.vanityCode) return [];
+    const log = last.get(u.id);
+    return [{ userId: u.id, name: u.username, code: u.vanityCode, standard: u.referralCode, ambassador: u.ambassadorSince !== null, setAt: log ? log.createdAt.toISOString() : null, setBy: log?.admin.username ?? null }];
+  });
+}
+
 export type ProposalItem = {
   id: string;
   user: { id: string; name: string; banned: boolean; ambassador: boolean };
