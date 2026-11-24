@@ -16,8 +16,9 @@ export const CLIENT_SUBSETS: Partial<Record<(typeof CLIENT_NAMESPACES)[number], 
   prestige: ["flow", "errors", "rite", "cinematic", "consecrate"],
   // Import Kyara : formulaire, annulation, erreurs et bannière de l'accueil ; la page elle-même est rendue au serveur
   kyaraImport: ["form", "cancel", "errors", "banner"],
-  // Parrainage v2 : cartes des étapes et tableau des filleuls (avec leurs cadeaux et leur jauge) ; le reste est rendu au serveur
-  referralV2: ["steps", "gifts", "table", "meter"],
+  // Parrainage v2 : cartes des étapes et tableau des filleuls (avec leurs cadeaux et leur jauge), grille du choix des
+  // bons ; le reste est rendu au serveur
+  referralV2: ["steps", "gifts", "table", "meter", "picker"],
   // Invitation : la fenêtre qui suit le premier booster d'un invité arrivé par un lien ; la page /i/CODE est rendue au serveur
   invite: ["prompt"],
 };

@@ -6,11 +6,13 @@ import type { ReferralV2Rules } from "@/lib/referral/rules";
 import { stepProgress, type StepState, type StepTimes } from "@/lib/referral/steps";
 import { refereeTrust, trustPartDue, type Trust } from "@/lib/referral/trust";
 import { lockEnd } from "@/lib/referral/locks";
+import type { VoucherGroup } from "@/lib/referral/vouchers";
 import { prisma } from "../db";
 import { lotViews, type LotLine, type LotView } from "../economy/lot-view";
 import { getSetting } from "../settings";
 import { installedCount } from "./payout-core";
 import { refereeFactsWith } from "./progress-core";
+import { voucherGroupsOf } from "./vouchers";
 
 // Lectures de la page /parrainage v2 (étape 18) : ce que rapporte chaque étape des deux côtés, l'échelle des paliers,
 // les filleuls du joueur et leur avancement, sa propre vue de filleul, le dernier cadeau reçu. Rien n'est écrit ici :
@@ -70,6 +72,8 @@ export type ReferralV2View = {
   lastReward: LastReward | null;
   /** Sans parrain et encore dans les jours de saisie : il peut entrer le code d'un ami. */
   canAttach: boolean;
+  /** Bons à utiliser (bandeau qui mène au choix de la carte). */
+  vouchers: VoucherGroup[];
 };
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
@@ -143,7 +147,7 @@ export async function referralPageV2(
   ctx: { timeZone: string; locale: string; now: Date; attachWindowDays: number },
 ): Promise<ReferralV2View> {
   const { timeZone, locale, now } = ctx;
-  const [me, installed, own, mine, last] = await Promise.all([
+  const [me, installed, own, mine, last, vouchers] = await Promise.all([
     prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { referralCode: true, vanityCode: true, registeredAt: true, createdAt: true } }),
     installedCount(prisma, userId),
     prisma.referral.findUnique({
@@ -197,6 +201,7 @@ export async function referralPageV2(
         referral: { select: { referrerId: true, referee: { select: { username: true } }, referrer: { select: { username: true } } } },
       },
     }),
+    voucherGroupsOf(userId),
   ]);
   const { steps, ladder, lot } = await referralGifts(rules, locale, installed);
   const times = (r: { step1At: Date | null; step2At: Date | null; step3At: Date | null; step4At: Date | null }): StepTimes => [r.step1At, r.step2At, r.step3At, r.step4At];
@@ -262,7 +267,7 @@ export async function referralPageV2(
   const since = me.registeredAt ?? me.createdAt;
   const canAttach = !own && now.getTime() - since.getTime() <= ctx.attachWindowDays * DAY;
 
-  return { code: me.vanityCode ?? me.referralCode, steps, ladder, installed, self, referees, totals, lastReward, canAttach };
+  return { code: me.vanityCode ?? me.referralCode, steps, ladder, installed, self, referees, totals, lastReward, canAttach, vouchers };
 }
 
 export type LegacyClaim = { referralId: string; name: string; lot: LotView | null };

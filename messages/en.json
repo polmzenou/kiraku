@@ -7873,6 +7873,89 @@
     "legacy": {
       "title": "Previous referral program",
       "body": "These gifts from the previous referral program are still waiting for you."
+    },
+    "vouchers": {
+      "metaTitle": "Your vouchers",
+      "title": "Your vouchers",
+      "lead": "A voucher lets you pick your card.",
+      "back": "Referrals",
+      "titleMythic": "Pick your Mythic",
+      "leadMythic": "Any Mythic in the catalogue.",
+      "titleOne": "Pick your 1/1 card",
+      "leadOne": "Any published card. Only one copy of it will ever exist.",
+      "tabsLabel": "Voucher to use",
+      "kind": {
+        "MYTHIC_CHOICE": "Mythic of your choice",
+        "ONE_OF_ONE": "1/1 card"
+      },
+      "kindCount": {
+        "MYTHIC_CHOICE": "{count, plural, one {# Mythic of your choice} other {# Mythics of your choice}}",
+        "ONE_OF_ONE": "{count, plural, one {# 1/1 card} other {# 1/1 cards}}"
+      },
+      "banner": {
+        "title": "{count, plural, one {You have a voucher to use} other {You have # vouchers to use}}",
+        "body": "{what}: pick your card.",
+        "cta": "Choose"
+      },
+      "none": "You don't have any voucher to use right now.",
+      "noneHint": "{count, plural, one {The {list} installed friends milestone gives you one.} other {The {list} installed friends milestones give you one.}}",
+      "seeMilestones": "See the milestones",
+      "guest": "You need an account to receive vouchers.",
+      "seeReferral": "See referrals",
+      "used": {
+        "title": "Used vouchers",
+        "unknown": "Card",
+        "line": "{kind} · {date}"
+      }
+    },
+    "picker": {
+      "searchLabel": "Search for a character",
+      "searchPlaceholder": "Search for a character",
+      "filtersLabel": "Filter the cards",
+      "filters": {
+        "all": "All",
+        "freeOne": "Available",
+        "freeMythic": "Not mine yet",
+        "series": "My series"
+      },
+      "count": "{count, plural, =0 {No card} one {# card} other {# cards}}",
+      "empty": "No card matches.",
+      "loading": "Loading…",
+      "retry": "Try again",
+      "more": "Show more",
+      "owned": "Yours",
+      "taken": "Taken",
+      "bar": {
+        "takenTitle": "{name} is already taken",
+        "takenBody": "Someone already has its 1/1. Pick another card.",
+        "free": "Its 1/1 is available",
+        "double": "You already have it: this will be a duplicate",
+        "missing": "You don't have it yet",
+        "choose": "Choose this card"
+      },
+      "confirm": {
+        "label": "Confirm your choice",
+        "title": "Take {name}?",
+        "titleOne": "Take the 1/1 of {name}?",
+        "final": "This choice is final.",
+        "cancel": "Cancel",
+        "take": "Take it",
+        "pending": "One moment…"
+      },
+      "done": {
+        "title": "It's yours",
+        "body": "{name} is in your collection.",
+        "new": "New card!",
+        "collection": "See my collection",
+        "continue": "Continue"
+      },
+      "errors": {
+        "USED": "This voucher has already been used.",
+        "NOT_MYTHIC": "This voucher only takes a Mythic.",
+        "CARD_UNAVAILABLE": "This card can no longer be taken.",
+        "RATE_LIMITED": "Easy there: try again in a moment.",
+        "UNAVAILABLE": "Not possible right now. Try again."
+      }
     }
   },
   "invite": {

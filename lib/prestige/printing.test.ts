@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { seededRng, type Rng } from "@/lib/rng";
-import { engravable, fudaCopyOf, pickFreeSerial, printingSize, readEditions, rollEngravings, sealOf, type PrintingRules } from "./printing";
+import { engravable, fudaCopyOf, ONE_OF_ONE_PRINTING, pickFreeSerial, printingSize, readEditions, rollEngravings, sealOf, type PrintingRules } from "./printing";
 
 const ORDER = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "BR", "AR", "VR", "GOLD", "MR", "XR"];
 const RULES: PrintingRules = { minPrestige: 1, chanceBp: { MYTHIC: 200, XR: 10_000, LEGENDARY: 10_000 }, sizes: { MYTHIC: 25 }, current: 1 };
@@ -82,6 +82,9 @@ describe("affichage d'une édition", () => {
     expect(printingSize("XR", { sizes: {} })).toBe(25);
     expect(sealOf(1, { "1": "初摺" })).toBe("初摺");
     expect(sealOf(2, { "1": "初摺" })).toBeNull();
+    // Tirage réservé des cartes 1/1 : son sceau par défaut, jamais pris par le réglage du prestige
+    expect(sealOf(ONE_OF_ONE_PRINTING, {})).toBe("唯");
+    expect(fudaCopyOf({ heritage: 0, printing: ONE_OF_ONE_PRINTING, serial: 1, size: 1 }, { "1": "初摺" })).toEqual({ heritage: 0, printing: 1000, serial: 1, size: 1, seal: "唯" });
   });
 
   it("une fuda ordinaire reste inchangée ; une héritière ou une gravée porte ses marques", () => {

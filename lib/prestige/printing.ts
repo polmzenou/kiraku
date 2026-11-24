@@ -67,9 +67,17 @@ export function pickFreeSerial(rng: Rng, size: number, taken: readonly number[])
   return free[rng(free.length)] ?? null;
 }
 
-/** Sceau d'un tirage (« 初摺 » pour le premier) ; null s'il n'est pas réglé. */
+/**
+ * Tirage réservé aux cartes 1/1 (bons du parrainage et de l'Ennichi) : un seul exemplaire, numéro 1. Les tirages du
+ * prestige s'arrêtent à 999 (réglage prestige.printing.current), si bien qu'une 1/1 ne croise jamais un tirage normal.
+ */
+export const ONE_OF_ONE_PRINTING = 1000;
+/** Sceau d'une carte 1/1 (« unique »), quand le réglage des sceaux n'en donne pas. */
+export const ONE_OF_ONE_SEAL = "唯";
+
+/** Sceau d'un tirage (« 初摺 » pour le premier, « 唯 » pour une 1/1) ; null s'il n'est pas réglé. */
 export function sealOf(printing: number, seals: Readonly<Record<string, string>>): string | null {
-  return seals[String(printing)] || null;
+  return seals[String(printing)] || (printing === ONE_OF_ONE_PRINTING ? ONE_OF_ONE_SEAL : null);
 }
 
 /** Ce qu'une fuda montre d'un exemplaire précis ; null pour un exemplaire ordinaire (la fuda reste inchangée). */

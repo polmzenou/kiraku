@@ -12,6 +12,7 @@ import { SelfStairs } from "./SelfStairs";
 import { StepCards } from "./StepCards";
 import type { StepConditions } from "./step-meta";
 import { ThemedArt } from "./ThemedArt";
+import { VoucherBanner } from "./VoucherBanner";
 
 // Page /parrainage du parrainage v2 (étape 18), selon le joueur (designs validés de l'atelier 1) :
 //   - filleul v2 : « Bienvenue d'abord » (ses étapes en marches, le verrou de ses cartes, son parrain) ;
@@ -165,6 +166,7 @@ export async function ReferralV2({
     </section>
   );
   const table = view.referees.length > 0 && <RefereeTable rows={view.referees} totals={view.totals} conditions={conditions} timeZone={timeZone} />;
+  const vouchers = <VoucherBanner groups={view.vouchers} />;
 
   if (view.self) {
     const self = view.self;
@@ -177,6 +179,7 @@ export async function ReferralV2({
             <p className="text-sm text-text-muted">{t("self.invitedBy", { name: self.referrer.name })}</p>
           </div>
         </div>
+        {vouchers}
         <SelfStairs self={self} steps={view.steps} conditions={conditions} timeZone={timeZone} />
       </>,
       <>
@@ -220,6 +223,7 @@ export async function ReferralV2({
         </div>
         {grid(
           <>
+            {vouchers}
             {table}
             {last}
             <LinkCard code={view.code} />
@@ -239,6 +243,7 @@ export async function ReferralV2({
       <Hero />
       {grid(
         <>
+          {vouchers}
           <StepsSection steps={view.steps} conditions={conditions} />
           {last}
         </>,

@@ -11,6 +11,7 @@ import { fingerprintKey, refereeFingerprints } from "./fingerprint";
 import { payDueRewardsWith } from "./payout-core";
 import { progressReferralWith, type ProgressDeps } from "./progress-core";
 import { previewRevokeWith, revokeReferralWith, validateReferralWith } from "./review-core";
+import { redeemVoucherWith } from "./voucher-core";
 
 vi.mock("server-only", () => ({}));
 
@@ -35,6 +36,8 @@ describe.skipIf(!url)("décisions de l'équipe sur un parrainage (base réelle)"
   const emails: string[] = [];
   let rules: ReferralV2Rules;
   let creditType: string;
+  const seriesId = `test-series-rev-${tag}`;
+  const mythic = `test-rev-mythic-${tag}`;
 
   const deps = (now: Date): ProgressDeps => ({ rules, now, sharedCap: 4, ennichiMultiplier: 1, lotDeps, timeZone: "Europe/Paris" });
   const attach = (referee: string, referrer: string) =>
@@ -88,6 +91,11 @@ describe.skipIf(!url)("décisions de l'équipe sur un parrainage (base réelle)"
       });
       users[name] = { id: u.id, code: u.referralCode };
     }
+    // Une Mythique publiée, pour le bon que le parrain utilise avant la reprise
+    await prisma.series.create({ data: { id: seriesId, type: "ANIME", titleRomaji: "Reprise" } });
+    await prisma.card.create({
+      data: { id: mythic, name: "Mythique", imageUrl: "", favorites: 0, power: 10, ki: 10, seriesId, searchText: "mythique", rarity: "MYTHIC", adminOverrides: ["status"] },
+    });
     creditType = await type("STANDARD");
     const dropType = await type("DROP");
     types.push(creditType, dropType);
@@ -101,7 +109,7 @@ describe.skipIf(!url)("décisions de l'équipe sur un parrainage (base réelle)"
         { referee: null, referrer: null, referrerTrust: null },
         { referee: null, referrer: null, referrerTrust: null },
       ],
-      milestones: [{ installed: 1, lotId: await lot(1000), choiceVouchers: 1, oneOfOne: false, ambassador: false, legend: false }],
+      milestones: [{ installed: 1, lotId: await lot(1000), choiceVouchers: 2, oneOfOne: false, ambassador: false, legend: false }],
     };
   }, 60_000);
 
@@ -113,6 +121,8 @@ describe.skipIf(!url)("décisions de l'équipe sur un parrainage (base réelle)"
       prisma.networkBan.deleteMany({ where: { OR: [{ userId: { in: ids } }, { createdById: { in: ids } }] } }),
       prisma.notification.deleteMany({ where: { userId: { in: ids } } }),
       prisma.voucher.deleteMany({ where: { userId: { in: ids } } }),
+      prisma.userCard.deleteMany({ where: { ownerId: { in: ids } } }),
+      prisma.discovery.deleteMany({ where: { userId: { in: ids } } }),
       prisma.referralReward.deleteMany({ where: { userId: { in: ids } } }),
       prisma.refereeFingerprint.deleteMany({ where: { OR: prints.map((p) => ({ kind: p.kind, hash: p.hash })) } }),
       prisma.referral.deleteMany({ where: { OR: [{ referrerId: { in: ids } }, { refereeId: { in: ids } }] } }),
@@ -123,6 +133,8 @@ describe.skipIf(!url)("décisions de l'équipe sur un parrainage (base réelle)"
       prisma.lot.deleteMany({ where: { id: { in: lots } } }),
       prisma.boosterType.deleteMany({ where: { id: { in: types } } }),
       prisma.user.deleteMany({ where: { id: { in: ids } } }),
+      prisma.card.deleteMany({ where: { id: mythic } }),
+      prisma.series.deleteMany({ where: { id: seriesId } }),
     ]);
     await prisma.$disconnect();
   }, 60_000);
@@ -136,7 +148,10 @@ describe.skipIf(!url)("décisions de l'équipe sur un parrainage (base réelle)"
     expect(await state("lea")).toMatchObject({ coins: 500, credits: 3 });
     expect((await state("par")).coins).toBe(300 + 1000);
     expect(await prisma.sealedDrop.count({ where: { ownerId: users.lea.id } })).toBe(1);
-    expect(await prisma.voucher.count({ where: { userId: users.par.id } })).toBe(1);
+    expect(await prisma.voucher.count({ where: { userId: users.par.id } })).toBe(2);
+    // Tristren utilise un de ses deux bons : la reprise visera la carte choisie
+    const [used] = await prisma.voucher.findMany({ where: { userId: users.par.id }, orderBy: { id: "asc" }, take: 1, select: { id: true } });
+    await redeemVoucherWith(prisma, { userId: users.par.id, voucherId: used.id, cardId: mythic, now: new Date(T0.getTime() + 3 * DAY) });
 
     // Léa a déjà dépensé 200 Zeni et ouvert un crédit : on reprend ce qui reste
     await prisma.$transaction(async (tx) => {
@@ -159,7 +174,10 @@ describe.skipIf(!url)("décisions de l'équipe sur un parrainage (base réelle)"
     expect(par).toMatchObject({ coins: 0, banned: true });
     expect(par.ledger).toBe(par.coins);
     expect(await prisma.sealedDrop.count({ where: { ownerId: users.lea.id } })).toBe(0);
-    expect(await prisma.voucher.count({ where: { userId: users.par.id } })).toBe(0);
+    // Le bon inutilisé est supprimé, la Mythique choisie avec l'autre est reprise
+    expect(await prisma.voucher.count({ where: { userId: users.par.id, usedAt: null } })).toBe(0);
+    expect(await prisma.userCard.count({ where: { ownerId: users.par.id, cardId: mythic } })).toBe(0);
+    expect(outcome.reports.find((r) => r.userId === users.par.id)?.taken.missing).toMatchObject({ cards: 0, vouchers: 0 });
     expect(await prisma.referralReward.count({ where: { userId: { in: [users.lea.id, users.par.id] }, clawedBackAt: null } })).toBe(0);
     const leaReport = outcome.reports.find((r) => r.userId === users.lea.id);
     expect(leaReport?.taken.missing).toMatchObject({ zeni: 200, credits: { [creditType]: 1 } });

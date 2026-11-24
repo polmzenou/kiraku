@@ -7873,6 +7873,89 @@
     "legacy": {
       "title": "Ancien parrainage",
       "body": "Ces cadeaux de l'ancien parrainage t'attendent encore."
+    },
+    "vouchers": {
+      "metaTitle": "Tes bons",
+      "title": "Tes bons",
+      "lead": "Un bon te laisse choisir ta carte.",
+      "back": "Parrainage",
+      "titleMythic": "Choisis ta Mythique",
+      "leadMythic": "N'importe quelle Mythique du catalogue.",
+      "titleOne": "Choisis ta carte 1/1",
+      "leadOne": "N'importe quelle carte publiée. Elle n'existera qu'en un seul exemplaire.",
+      "tabsLabel": "Bon à utiliser",
+      "kind": {
+        "MYTHIC_CHOICE": "Mythique au choix",
+        "ONE_OF_ONE": "Carte 1/1"
+      },
+      "kindCount": {
+        "MYTHIC_CHOICE": "{count, plural, one {# Mythique au choix} other {# Mythiques au choix}}",
+        "ONE_OF_ONE": "{count, plural, one {# carte 1/1} other {# cartes 1/1}}"
+      },
+      "banner": {
+        "title": "{count, plural, one {Tu as un bon à utiliser} other {Tu as # bons à utiliser}}",
+        "body": "{what} : choisis ta carte.",
+        "cta": "Choisir"
+      },
+      "none": "Tu n'as pas de bon à utiliser pour l'instant.",
+      "noneHint": "{count, plural, one {Le palier de {list} amis installés t'en donne un.} other {Les paliers de {list} amis installés t'en donnent un.}}",
+      "seeMilestones": "Voir les paliers",
+      "guest": "Il faut un compte pour recevoir des bons.",
+      "seeReferral": "Voir le parrainage",
+      "used": {
+        "title": "Bons utilisés",
+        "unknown": "Carte",
+        "line": "{kind} · {date}"
+      }
+    },
+    "picker": {
+      "searchLabel": "Chercher un personnage",
+      "searchPlaceholder": "Chercher un personnage",
+      "filtersLabel": "Filtrer les cartes",
+      "filters": {
+        "all": "Toutes",
+        "freeOne": "Libres",
+        "freeMythic": "Pas encore à moi",
+        "series": "Mes séries"
+      },
+      "count": "{count, plural, =0 {Aucune carte} one {# carte} other {# cartes}}",
+      "empty": "Aucune carte ne correspond.",
+      "loading": "Chargement…",
+      "retry": "Réessayer",
+      "more": "Voir plus",
+      "owned": "À toi",
+      "taken": "Prise",
+      "bar": {
+        "takenTitle": "{name} est déjà prise",
+        "takenBody": "Quelqu'un a déjà sa 1/1. Choisis une autre carte.",
+        "free": "Sa 1/1 est libre",
+        "double": "Tu l'as déjà : ce sera un double",
+        "missing": "Tu ne l'as pas encore",
+        "choose": "Choisir cette carte"
+      },
+      "confirm": {
+        "label": "Confirmer ton choix",
+        "title": "Prendre {name} ?",
+        "titleOne": "Prendre la 1/1 de {name} ?",
+        "final": "Ce choix est définitif.",
+        "cancel": "Annuler",
+        "take": "Prendre",
+        "pending": "Un instant…"
+      },
+      "done": {
+        "title": "Elle est à toi",
+        "body": "{name} est dans ta collection.",
+        "new": "Nouvelle carte !",
+        "collection": "Voir ma collection",
+        "continue": "Continuer"
+      },
+      "errors": {
+        "USED": "Ce bon a déjà servi.",
+        "NOT_MYTHIC": "Ce bon ne prend qu'une Mythique.",
+        "CARD_UNAVAILABLE": "Cette carte ne peut plus être prise.",
+        "RATE_LIMITED": "Doucement : réessaie dans un instant.",
+        "UNAVAILABLE": "Impossible pour le moment. Réessaie."
+      }
     }
   },
   "invite": {

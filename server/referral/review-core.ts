@@ -80,6 +80,24 @@ async function holdingsOf(tx: Prisma.TransactionClient, userId: string, coins: n
   };
 }
 
+/**
+ * Un bon déjà utilisé est devenu une carte : la reprise vise cette carte (si le joueur l'a encore, ordinaire et jamais
+ * mise aux enchères, comme les autres) à la place du bon. Une 1/1 gravée reste donc au joueur et se lit comme manquante.
+ */
+async function withChosenCards(tx: Prisma.TransactionClient, userId: string, grants: readonly RewardGrant[]): Promise<RewardGrant[]> {
+  const ids = [...new Set(grants.flatMap((g) => g.voucherIds))];
+  const used = ids.length
+    ? await tx.voucher.findMany({ where: { id: { in: ids }, userId, usedAt: { not: null }, userCardId: { not: null } }, select: { id: true, userCardId: true } })
+    : [];
+  const cardOf = new Map(used.flatMap((v) => (v.userCardId ? [[v.id, v.userCardId] as const] : [])));
+  if (cardOf.size === 0) return [...grants];
+  return grants.map((g) => ({
+    ...g,
+    voucherIds: g.voucherIds.filter((id) => !cardOf.has(id)),
+    cardIds: [...g.cardIds, ...g.voucherIds.flatMap((id) => cardOf.get(id) ?? [])],
+  }));
+}
+
 /** Lit le contenu d'un versement (ReferralReward.granted), à défaut vide. */
 function grantOf(raw: Prisma.JsonValue): RewardGrant {
   const g = (raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {}) as Record<string, unknown>;
@@ -128,7 +146,7 @@ export async function previewRevokeWith(db: PrismaClient, referralId: string): P
   const players = await db.user.findMany({ where: { id: { in: [...byUser.keys()] } }, select: { id: true, coins: true } });
   const reports: ClawbackReport[] = [];
   for (const p of players) {
-    const grants = byUser.get(p.id) ?? [];
+    const grants = await withChosenCards(db, p.id, byUser.get(p.id) ?? []);
     const granted = sumGrants(grants);
     reports.push({ userId: p.id, granted, taken: planClawback(grants, await holdingsOf(db, p.id, p.coins, granted)) });
   }
@@ -159,9 +177,10 @@ export async function revokeReferralWith(
     const players = await lockPlayers(tx, [r.referrerId, r.refereeId, ...byUser.keys()]);
 
     const reports: ClawbackReport[] = [];
-    for (const [userId, grants] of byUser) {
+    for (const [userId, rewardGrants] of byUser) {
       const player = players.get(userId);
       if (!player) continue;
+      const grants = await withChosenCards(tx, userId, rewardGrants);
       const granted = sumGrants(grants);
       const plan = planClawback(grants, await holdingsOf(tx, userId, player.coins, granted));
       if (plan.zeni > 0) await debit(tx, { userId, amount: plan.zeni, reason: "REFERRAL_CLAWBACK", refId: r.id, now: input.now });
