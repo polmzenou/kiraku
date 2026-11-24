@@ -3246,6 +3246,9 @@
         },
         "wrapped": {
           "enabled": "Year Wrapped"
+        },
+        "ennichi": {
+          "enabled": "Ennichi (referral festival)"
         }
       },
       "help": {
@@ -3294,6 +3297,9 @@
         },
         "wrapped": {
           "enabled": "Personal year recap (/wrapped), home banner and profile button, during the window set in /admin/wrapped. Off: only the admin sees the preview."
+        },
+        "ennichi": {
+          "enabled": "The referral v2 launch festival: lanterns, banzuke and omikuji. Its dates and prizes are set in /admin/parrainage/ennichi."
         }
       }
     },

@@ -16,6 +16,7 @@ export const FEATURE_SETTING_KEYS = [
   "missions.enabled",
   "referral.enabled",
   "referral.v2.enabled",
+  "ennichi.enabled",
   "expedition.enabled",
   "prestige.enabled",
   "kyaraImport.enabled",

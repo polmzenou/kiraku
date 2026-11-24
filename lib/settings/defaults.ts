@@ -197,6 +197,37 @@ const referralV2Milestones = z
     message: "Les paliers doivent monter strictement",
   });
 
+// Ennichi (étape 18d) : paliers de lanternes (exactement 4, seuils qui montent, lot pour chaque joueur éligible et bons
+// « Mythique au choix »), rangs du banzuke (titre sumo, lot, bons, carte 1/1) et cagnotte de l'omikuji, du plus rare au
+// moins rare (chaque ticket gagne au plus un lot, dans cet ordre).
+export const ENNICHI_TITLES = ["yokozuna", "ozeki", "sekiwake"] as const;
+const ennichiTiers = z
+  .array(z.object({ lanterns: z.number().int().min(1).max(1_000_000), lotId: lotRef, choiceVouchers: z.number().int().min(0).max(20) }).strict())
+  .length(4)
+  .refine((ts) => ts.every((t, i) => i === 0 || t.lanterns > ts[i - 1].lanterns), { message: "Les seuils doivent monter strictement" });
+const ennichiRanks = z
+  .array(
+    z
+      .object({
+        from: z.number().int().min(1).max(10_000),
+        to: z.number().int().min(1).max(10_000),
+        title: z.enum(ENNICHI_TITLES).nullable(),
+        lotId: lotRef,
+        choiceVouchers: z.number().int().min(0).max(20),
+        oneOfOne: z.boolean(),
+      })
+      .strict(),
+  )
+  .max(12)
+  .refine((rs) => rs.every((r, i) => r.from <= r.to && (i === 0 ? r.from === 1 : r.from === rs[i - 1].to + 1)), {
+    message: "Les rangs se suivent sans trou, à partir du 1er",
+  });
+const ennichiOmikuji = z
+  .array(z.object({ lotId: lotRef, oneOfOne: z.boolean(), count: z.number().int().min(0).max(10_000) }).strict())
+  .max(8)
+  // Une ligne est une carte 1/1 ou un lot ; sans lot posé (seed absent), elle ne part pas
+  .refine((ps) => ps.every((p) => !(p.oneOfOne && p.lotId !== null)), { message: "Une ligne de carte 1/1 n'a pas de lot" });
+
 // Lot de fin de saison par meilleur rang atteint
 const rankedRewardLots = z.object(
   Object.fromEntries([...LADDER_KEYS, "GRAND_CHAMPION"].map((k) => [k, lotRef])) as {
@@ -371,6 +402,21 @@ export const SETTING_SCHEMAS = {
   "referral.v2.scoreTtlHours": z.number().int().min(1).max(24 * 30),
   "referral.v2.cardLockDays": z.number().int().min(0).max(365),
   "referral.v2.pairLockDays": z.number().int().min(0).max(365),
+  // Ennichi 縁日 (étape 18d), coupé par défaut : début choisi dans l'admin, puis `days` jours de fête et `closingDays`
+  // jours de clôture avant le tirage. L'édition marque les filleuls arrivés pendant la fête, les titres et les résultats.
+  "ennichi.enabled": z.boolean(),
+  "ennichi.edition": z.number().int().min(1).max(1_000),
+  "ennichi.startsAt": z.string().datetime().nullable(),
+  "ennichi.days": z.number().int().min(1).max(60),
+  "ennichi.closingDays": z.number().int().min(0).max(14),
+  // Étapes 1 et 2 d'un ami arrivé pendant la fête, des deux côtés ; plafond mensuel des parrains levé pendant la fête
+  "ennichi.stepMultiplier": z.number().int().min(1).max(10),
+  "ennichi.liftCap": z.boolean(),
+  "ennichi.tiers": ennichiTiers,
+  "ennichi.ranks": ennichiRanks,
+  "ennichi.omikuji": ennichiOmikuji,
+  // Lots des lanternes : au plus ce nombre de comptes servis par IP vue pendant la fête (multicomptes)
+  "ennichi.tierGrantsPerIp": z.number().int().min(1).max(100),
   // Hôtel des ventes (étape 8) ; taux en points de base (500 = 5 %)
   "market.enabled": z.boolean(),
   "market.feeBp": z.number().int().min(0).max(5_000),
@@ -775,6 +821,32 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "referral.v2.scoreTtlHours": 24,
   "referral.v2.cardLockDays": 14,
   "referral.v2.pairLockDays": 30,
+  "ennichi.enabled": false, // coupé tant que l'équipe ne lance pas la fête
+  "ennichi.edition": 1,
+  "ennichi.startsAt": null,
+  "ennichi.days": 14,
+  "ennichi.closingDays": 3,
+  "ennichi.stepMultiplier": 2,
+  "ennichi.liftCap": true,
+  // Seuils choisis le 2026-11-24 ; lots posés par seed:referral (choisis le 2026-11-23), bons du 4e palier
+  "ennichi.tiers": [
+    { lanterns: 25, lotId: null, choiceVouchers: 0 }, // 30 boosters + 2 Jūbako
+    { lanterns: 50, lotId: null, choiceVouchers: 0 }, // 50 boosters + 2 Impériaux + 1 booster Mythique
+    { lanterns: 200, lotId: null, choiceVouchers: 0 }, // 80 boosters + 3 boosters Mythiques + 1 Divin
+    { lanterns: 500, lotId: null, choiceVouchers: 1 }, // 250 boosters + 3 Divins, et 1 Mythique au choix
+  ],
+  "ennichi.ranks": [
+    { from: 1, to: 1, title: "yokozuna", lotId: null, choiceVouchers: 3, oneOfOne: true },
+    { from: 2, to: 3, title: "ozeki", lotId: null, choiceVouchers: 2, oneOfOne: false },
+    { from: 4, to: 10, title: "sekiwake", lotId: null, choiceVouchers: 1, oneOfOne: false },
+    { from: 11, to: 50, title: null, lotId: null, choiceVouchers: 0, oneOfOne: false }, // lot : 1 Divin
+  ],
+  "ennichi.omikuji": [
+    { lotId: null, oneOfOne: true, count: 1 },
+    { lotId: null, oneOfOne: false, count: 20 }, // lot : 1 Divin (posé par le seed)
+    { lotId: null, oneOfOne: false, count: 55 }, // lot : 1 booster Mythique (posé par le seed)
+  ],
+  "ennichi.tierGrantsPerIp": 3,
   "market.enabled": true,
   "market.feeBp": 500, // taxe de 5 % : retire des Zeni du jeu
   "market.minIncrementBp": 500, // surenchère minimale de 5 % (au moins 1 Zeni)
