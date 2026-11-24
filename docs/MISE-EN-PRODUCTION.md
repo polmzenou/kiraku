@@ -101,8 +101,6 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
 - [ ] Cosmétiques du prestige installés depuis `/admin/prestige` (titres, cadres tensei, hanga et hono, pseudo or).
 - [ ] Discord : `DISCORD_PRESTIGE_CHANNEL_ID` dans l'environnement si les annonces sont voulues (voir
   `docs/DISCORD.md`), interrupteur `discord.prestigeEnabled` dans `/admin/discord`.
-- [ ] Parrainage v2 : salon Discord **privé** de l'équipe créé, bot autorisé, `DISCORD_REFERRAL_CHANNEL_ID` posé sur
-  le VPS (voir `docs/DISCORD.md`, « Activer le fil du parrainage »).
 - [ ] Essai sur un vrai téléphone en 375 px, Yoru et Washi : page `/prestige`, rite 転生, révélation à la baren,
   consécration 奉納, sanctuaire et rouleaux du profil ; puis en mouvement réduit.
 
@@ -159,6 +157,64 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
   `kyaraImport.windowDays` jours à partir de cette date.
 - [ ] Annonce sur le Discord : la page `/compte/import-kyara` et les deux étapes sur Kyara (ami, « Montrer ma
   collection »).
+
+## Lancement du parrainage v2 et de l'Ennichi
+
+Étape 18 (`docs/PLAN.md`, « Parrainage v2 et événement Ennichi »). Deux interrupteurs coupés par défaut :
+`referral.v2.enabled` et `ennichi.enabled`. Tant qu'ils le sont, la v1 tourne sans changement.
+
+**Avant (dans cet ordre, sur le VPS) :**
+
+- [ ] Migrations `20261124120000_referral_v2` et `20261124180000_ennichi` appliquées par `npm run db:deploy`, **avant**
+  le redémarrage PM2 de la version qui les lit.
+- [ ] `npm run seed:referral` : lots à identifiant fixe (`seed-lot-pv2-*` des étapes, des paliers et du
+  grand-parrainage, `seed-lot-enn-*` des lanternes, du banzuke et de l'omikuji) et réglages absents. Rien n'est écrasé.
+  Les Divins sont des sachets scellés : le type de booster divin doit exister.
+- [ ] `npm run seed:cosmetics` : cadre « fil rouge » (`cadre-fil-rouge`, palier 1 ami installé).
+- [ ] `npm run referral:switch` : parrainages v1 en attente convertis en v2, empreintes des filleuls existants
+  posées. Idempotent ; à lancer une fois, **avant** d'allumer le parrainage v2.
+- [ ] Crons de `deploy/crontab.example` installés : `/api/cron/referral` (chaque heure) et `/api/cron/ennichi`
+  (toutes les 5 minutes : envoi des paliers de lanternes, tirage de secours à la date de clôture, prix restants).
+- [ ] Discord : salon **privé** de l'équipe créé, bot autorisé, `DISCORD_REFERRAL_CHANNEL_ID` posé (voir
+  `docs/DISCORD.md`, « Activer le fil du parrainage ») ; salon public des annonces : `DISCORD_ANNOUNCE_CHANNEL_ID`,
+  bot autorisé à y écrire et à mentionner @everyone. Puis `npm run build` et redémarrage PM2.
+- [ ] Tests sur base réelle passés sur la base de test (`DATABASE_URL_TEST`) : `server/referral/*.db.test.ts`,
+  `server/ennichi/ennichi.db.test.ts`, `server/collection/transfer-guard.test.ts`.
+- [ ] `/admin/parrainage/reglages` relu par l'équipe : lots des étapes des deux côtés, part « confiance », paliers,
+  contrôles (âge Discord 30 j, score, verrous 14 j / 30 j). `/admin/parrainage/ennichi` : paliers 25 / 50 / 200 / 500
+  et leurs lots, rangs du banzuke, cagnotte de l'omikuji, limite par IP.
+- [ ] Nouvelles versions des CGU (règles du parrainage, de l'Ennichi et de la triche) et de la politique de
+  confidentialité (contrôles, empreintes, résultats publiés) publiées depuis `/admin/legal`, reprises de
+  `prisma/seed/legal/{cgu,confidentialite}.{fr,en}.md`. La page Cookies décrit déjà `__Secure-kiraku.ref`.
+- [ ] Essai sur un vrai téléphone en 375 px, Yoru et Washi : lien partagé `?ref=`, lettre `/i/CODE`, premier booster
+  en invité, inscription, `/parrainage` (sans filleul, avec, vue du filleul), « Comment ça marche », bons ; puis
+  `/ennichi` et ses trois pages, en mouvement réduit aussi.
+
+**Lancement du parrainage v2 :**
+
+- [ ] `referral.v2.enabled` allumé (`/admin/parrainage/reglages` ou `/admin/fonctionnalites`).
+- [ ] Date de l'annonce `referral.v2.announceAt` posée **après** le déploiement (« Maintenant » dans
+  `/admin/parrainage/reglages`) : la fenêtre « Le parrainage change » s'affiche une fois aux comptes déjà inscrits,
+  pendant `referral.v2.announceDays` jours.
+- [ ] Un premier parrainage réel suivi de bout en bout : étape 1 versée des deux côtés avec la notification, message dans
+  le salon privé.
+
+**Lancement de l'Ennichi :**
+
+- [ ] `/admin/parrainage/ennichi` : édition, date de début, jours de fête (14) et de clôture (3), multiplicateur (×2),
+  puis « Fête allumée ». L'empreinte de la graine est engagée dès que la fête est allumée et datée (visible sur
+  `/ennichi/omikuji`) : ne plus changer l'édition ensuite.
+- [ ] Annonce à la communauté publiée depuis `/admin/parrainage/annonce` (aperçu relu, puis « Publier » : @everyone).
+- [ ] Bannière Nouveautés depuis `/admin/nouveautes` si voulue (sceau 祭, lien vers `/ennichi`).
+
+**Clôture (après les 14 jours) :**
+
+- [ ] `/admin/parrainage/ennichi` : « Contrôler » (scores recalculés, file « À vérifier » remplie), puis trancher la
+  file dans `/admin/parrainage`.
+- [ ] « Arrêter et tirer » avant la date de clôture (sinon le cron tire seul à cette date) : banzuke et tickets figés,
+  omikuji tiré, prix versés ; ce qui reste est versé par le cron. Vérifier le tirage depuis `/ennichi/omikuji`
+  (« Vérifier ») et le message des résultats dans le salon privé.
+- [ ] Gagnants de bons (Mythique au choix, carte 1/1) : ils choisissent leur carte sur `/parrainage/bons`.
 
 ## Contrôles techniques
 

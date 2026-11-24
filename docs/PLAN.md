@@ -1272,7 +1272,7 @@ Le parrainage de l'étape 7 rapportait trop peu : un ami qualifié valait moins 
 
 ### Étapes du filleul
 
-Quatre étapes, chacune réclamée une fois par côté, avec une notification (et un push) au parrain. Un jour actif est un jour (fuseau `game.timeZone`) où le filleul a ouvert au moins un booster, compté depuis le rattachement.
+Quatre étapes, chacune versée automatiquement une fois par côté, avec une notification (et un push) des deux côtés. Un jour actif est un jour (fuseau `game.timeZone`) où le filleul a ouvert au moins un booster, compté depuis le rattachement.
 
 | Étape | Condition | Filleul | Parrain |
 | --- | --- | --- | --- |
@@ -1298,13 +1298,13 @@ Paliers du parrain, en amis installés (étape 2 atteinte, révoqués exclus) de
 | 100 | carte 1/1 + nom au mur des légendes |
 
 - **Mythique au choix** (nouveau) : un bon ; le joueur choisit une Mythique publiée du catalogue, le serveur vérifie le bon et verse la carte dans la même transaction.
-- **Carte 1/1** (nouveau) : édition gravée d'un seul exemplaire (voir « Éditions gravées numérotées ») d'une carte choisie par le gagnant, créée à la réclamation.
+- **Carte 1/1** (nouveau) : édition gravée d'un seul exemplaire (voir « Éditions gravées numérotées ») d'une carte choisie par le gagnant, créée quand il utilise son bon (tirage réservé n° 1000, sceau 唯, un seul par carte).
 - **Grand-parrainage** : quand le filleul d'un filleul atteint l'étape 2, le grand-parrain reçoit 1 Impérial + 1 Jūbako. Un seul niveau ; ne compte pas pour les paliers.
 - **Plafond** : 30 filleuls par mois en v2 (`referral.v2.maxPerMonth`), levé pendant l'Ennichi ; la v1 garde `referral.maxPerMonth` (10) tant que la v2 est coupée.
 
 ### Chaque partage est une invitation
 
-- Les liens de tirage, de profil, de vitrine, du Wrapped, de table de casino et de salle de combat d'un joueur inscrit portent son code : `/i/CODE?vers=/tirage/…` retient le parrain (cookie, comme aujourd'hui) puis ouvre le contenu, jamais une adresse hors du site. Aperçu : « Pseudo a tiré X · 20 boosters offerts si tu le rejoins ».
+- Les liens de tirage, de profil, de vitrine, du Wrapped, de table de casino et de salle de combat d'un joueur inscrit portent son code en `?ref=CODE` sur l'adresse du contenu : `proxy.ts` pose le cookie du parrain après un simple contrôle de format, puis le contenu s'ouvre (jamais de redirection hors du site). Aperçu : « Pseudo a tiré X · 20 boosters offerts si tu le rejoins ».
 - **Arrivée en cadeau** : une pochibukuro scellée au nom du parrain s'ouvre sur le cadeau de bienvenue ; l'ami ouvre un premier booster en invité, crée son compte, et l'étape 1 tombe à l'inscription.
 - **Arbre des liens** sur le profil public : son parrain, ses filleuls installés et les leurs, reliés par des fils rouges (masquable dans les réglages du profil).
 - **Code perso** (`/i/TRISTREN`) pour les Ambassadeurs et les comptes choisis par l'équipe : unique, validé par l'équipe ; l'ancien code reste valide.
@@ -1350,6 +1350,31 @@ Quatorze jours, lancés dès que le parrainage v2 est prêt (pas de date fixe), 
 | Équipe | Suivi : tableau · Fiche : deux colonnes · File « À vérifier » : cartes · Ambassadeurs et codes : cartes · Admin de l'Ennichi : tableau de bord · Salon Discord privé : message détaillé · Annonce à la communauté : annonce détaillée |
 
 **Réglages.** Interrupteurs du parrainage et de l'Ennichi. Lots de chaque étape et de chaque côté, des paliers, du grand-parrainage, des paliers de lanternes, des rangs du banzuke et de la cagnotte ; conditions et fenêtres des étapes ; seuils de confiance (âge du compte Discord, score) ; durées des verrous ; plafond ; dates, seuils des lanternes et multiplicateur de l'Ennichi. `/admin/parrainage` tient aussi la file « À vérifier » (indices, valider, révoquer, révoquer et bannir), les codes perso et les Ambassadeurs proposés.
+
+### Mise en œuvre (écarts et précisions, 2026-11-24)
+
+- **Liens partagés** : `?ref=CODE` sur l'adresse du contenu au lieu de `/i/CODE?vers=…`. `/i/CODE` est devenue la page
+  d'arrivée (la lettre au nom du parrain) : une page ne peut pas poser de cookie, `proxy.ts` le fait pour les deux.
+- **Étapes horodatées** (`step1At` à `step4At` sur `Referral`) plutôt qu'un numéro d'étape : l'étape 4 peut tomber
+  après une étape 3 manquée. Les états (verrouillée, atteinte et versée, manquée, en vérification) se déduisent dans
+  `lib/referral/`.
+- **Étape 2 hors cadeau** : seules comptent les ouvertures de la réserve gratuite ou achetées (`BoosterOpening.source`
+  FREE ou PAID), depuis le rattachement moins `referral.v2.guestGraceHours` (le premier booster ouvert en invité
+  compte). Les cadeaux comptent pour les jours actifs.
+- **Versements** : tout est versé tout seul (étapes, part « confiance », paliers, grand-parrainage, lanternes, prix du
+  banzuke et de l'omikuji). `ReferralReward` empêche le double versement et sert de journal à la reprise. Seuls les
+  bons (Mythique au choix, carte 1/1) demandent de choisir une carte, sur `/parrainage/bons`.
+- **Lots** : jusqu'à 500 boosters par ligne de lot (`MAX_LOT_BOOSTERS`, pour les paliers de lanternes), 50 cartes.
+- **Ennichi** : phases annoncée, fête, clôture, tirage fait. L'empreinte de la graine est engagée dès que la fête est
+  allumée et datée. Le cron `/api/cron/ennichi` (toutes les 5 minutes) fige les paliers atteints, envoie leurs lots par
+  lots et tire seul à la date de clôture si l'équipe ne l'a pas fait. « Contrôler » puis « Arrêter et tirer » se font
+  depuis `/admin/parrainage/ennichi`. Les titres sumo sont des cosmétiques `ennichi-{édition}-{titre}` (condition
+  `ENNICHI_TITLE`).
+- **Annonce** : la fenêtre « Le parrainage change » (`ReferralStory`, design « Enveloppe ») est datée par
+  `referral.v2.announceAt` comme celle du casino, et se rouvre par « Comment ça marche » sur `/parrainage`. Le post de
+  la communauté part de `/admin/parrainage/annonce` dans `DISCORD_ANNOUNCE_CHANNEL_ID`, avec @everyone.
+- **Droits** : toutes les pages `/admin/parrainage/*` (file, suivi, codes perso, Ennichi, annonce, réglages) sont
+  ouvertes à l'équipe entière, ADMIN et DEV (`canManageReferrals`) ; chaque action va au journal admin.
 
 ## Fluidité et animations
 
@@ -1890,7 +1915,7 @@ Construis dans cet ordre : chaque étape est jouable seule et sert de base à la
     - **16d Consécration et profil.** Migration `prestige_sanctuary`. Consécration et sanctuaire, conditions et cosmétiques de prestige, emakis des cycles, filtres de la collection.
     - **16e Finitions.** Export et anonymisation RGPD, annonces Discord, fiche joueur de l'admin, `docs/MISE-EN-PRODUCTION.md`, essai sur un vrai téléphone en 375 px, lint, typecheck et tests.
 17. **Import Kyara** — voir « Import Kyara ». 17-0 test des routes de Kyara avec deux vrais comptes (`docs/KYARA-IMPORT.md`), 17a logique pure et réglages, 17b schéma, migration et notifications, 17c cœurs serveur, RGPD et tests en base, 17d accès de l'équipe et réglages, 17e côté joueur, 17f outillage de l'équipe (file, favori, réception, fiche), 17g textes légaux et documentation, 17h version simplifiée (demande sans adresse, favori à clé par membre, versement dès la lecture, « À vérifier » pour les cas douteux).
-18. **Parrainage v2 et Ennichi** — voir « Parrainage v2 et événement Ennichi ». Prérequis : bans réseau en production. Découpage à préciser en mode Plan : 18a étapes du filleul, paliers, grand-parrainage et anti-farm (confiance, appareil commun, score, verrous de transfert, reprise, file « À vérifier ») ; 18b code sur tous les liens partagés, arrivée en pochibukuro, aperçus ; 18c arbre des liens, code perso, bon « Mythique au choix », carte 1/1, Ambassadeur proposé ; 18d Ennichi (lanternes, banzuke, omikuji, bonus), maquettes validées avant le code du visuel ; 18e règlement de l'Ennichi, textes légaux, documentation, essai sur un vrai téléphone.
+18. **Parrainage v2 et Ennichi** — voir « Parrainage v2 et événement Ennichi ». Prérequis : bans réseau en production. Codé sur `tristan-dev` en lots (2026-11-24) : 18a étapes du filleul, paliers, grand-parrainage et anti-farm (confiance, appareil commun, score, verrous de transfert, reprise, file « À vérifier ») ; 18b code sur tous les liens partagés, arrivée en pochibukuro, aperçus ; 18c arbre des liens, code perso, bon « Mythique au choix », carte 1/1, Ambassadeur proposé ; 18d Ennichi (lanternes, banzuke, omikuji, bonus, admin) ; 18e annonce, règlement et textes légaux, documentation. Restent l'essai sur un vrai téléphone et le lancement (`docs/MISE-EN-PRODUCTION.md`, « Lancement du parrainage v2 et de l'Ennichi »).
 
 Hors de ce plan : Stripe, après un avis juridique.
 

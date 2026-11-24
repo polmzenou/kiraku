@@ -7061,7 +7061,7 @@
     },
     "purposes": {
       "session": "Keeps your session open (guest or account).",
-      "referral": "Remembers the referral link you followed, until you sign up.",
+      "referral": "Remembers the referral code of a shared link (invite, pull, profile, showcase), until you sign up.",
       "discordSignIn": "Secures signing in with Discord (protection against request forgery).",
       "consent": "Remembers your cookie choices.",
       "theme": "Remembers the Yoru or Washi theme.",

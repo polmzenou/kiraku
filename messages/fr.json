@@ -7061,7 +7061,7 @@
     },
     "purposes": {
       "session": "Garde ta session ouverte (invité ou compte).",
-      "referral": "Retient le lien de parrainage suivi, jusqu'à ton inscription.",
+      "referral": "Retient le code de parrainage d'un lien partagé (invitation, tirage, profil, vitrine), jusqu'à ton inscription.",
       "discordSignIn": "Sécurise la connexion avec Discord (protection contre la falsification de requête).",
       "consent": "Retient tes choix de cookies.",
       "theme": "Retient le thème Yoru ou Washi.",

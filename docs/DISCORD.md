@@ -204,6 +204,17 @@ Le Marché et le casino annoncent aussi l'exemplaire quand il est spécial (« G
    envoyée. Avant d'envoyer, le bot vérifie que le salon est privé : lisible par un rôle ordinaire, il n'y poste rien.
    Un événement de plus de 48 h n'est pas repris (le suivi de l'admin le garde).
 
+### Annoncer le lancement du parrainage v2 et de l'Ennichi (salon public)
+
+1. Choisir le salon des annonces de la communauté. Donner au bot **Voir le salon**, **Envoyer des messages**,
+   **Intégrer des liens** et **Mentionner @everyone, @here et tous les rôles**.
+2. Ajouter `DISCORD_ANNOUNCE_CHANNEL_ID="…"` à l'environnement de l'application du VPS, puis `npm run build` et
+   `pm2 restart kiraku --update-env`.
+3. Dans `/admin/parrainage/annonce`, relire l'aperçu (montants réglés en ce moment, Ennichi s'il est annoncé ou en
+   cours) puis « Publier » : le message part avec @everyone. « Mettre à jour » corrige le même message plus tard, sans
+   notifier de nouveau. Toute l'équipe peut publier ; chaque publication va au journal admin. Aucun cron ne reprend
+   ce message (clé `announce:referral:…`) : en cas d'échec, relancer depuis l'admin.
+
 Les messages viennent de `lib/discord/referral-feed.ts`, la file et la publication de `server/discord/referral-feed.ts`.
 
 ### Guide #bien-débuter

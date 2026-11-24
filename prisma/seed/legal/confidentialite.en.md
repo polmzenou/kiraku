@@ -14,6 +14,7 @@
 - **Performance measurement**: page load and response times (Vercel Speed Insights), without cookies or identifiers. *Legal basis*: legitimate interest in keeping the site fast.
 - **Push notifications** (if you turn them on): your browser's subscription address. *Legal basis*: your consent, which you can withdraw at any time from your Account.
 - **Kyara import** (if you request it): the identifier of the Discord account linked to Kiraku, then, read by the team from the Kiraku account added as a friend on Kyara, the identifier of your Kyara profile, your Kyara nickname and avatar (which contains your Discord account identifier) and the list of your characters with their quantity and rarity. *Purpose*: check that the Kyara profile is yours and grant your cards once. *Legal basis*: performance of the terms of use. Kiraku is not affiliated with Kyara and sends it nothing.
+- **Referrals and Ennichi**: the link between referrer and referred friend, the dates of the steps reached, the gifts paid and taken back, the age of the linked Discord account (read from its identifier) and, against fraud, a comparison of the referrer's and the friend's devices and IP addresses and a shared-activity score (trades, gifts), recomputed before large payments. Non-reversible fingerprints of the friend's Discord identifier and email address prevent the same friend from being referred twice. The nicknames of ranked referrers and Ennichi winners are shown in its results, and the list of tickets (number and nickname) is published so that anyone can verify the draw. *Purpose*: pay the referral and Ennichi gifts and prevent fraud. *Legal basis*: performance of the terms of use and legitimate interest in protecting the game.
 
 Kiraku sells no data, shows no advertising and does no profiling.
 
@@ -25,6 +26,7 @@ Kiraku sells no data, shows no advertising and does no profiling.
 - IP address and device identifier recorded against mass account creation: 90 days after your last visit. The IP address also stays a few hours at most in the rate-limiting service; hosting logs according to Vercel's retention.
 - If you are banned (cheating, mass account creation): the IP address (or its prefix, for an IPv6 address) and the device identifier concerned are kept as long as the ban lasts, even after the account is deleted, so that it can't be bypassed. A ban set automatically expires after 30 days.
 - Kyara import: the list of your characters and your Kyara nickname and avatar are erased 90 days after your request closes. The identifier of your Kyara profile, of your Discord account and the granted totals are kept, even after the account is deleted, so that a profile or a Discord account can only be used once.
+- Referrals: the link and its payments are kept as long as the account exists. The friend's fingerprints (Discord, email) are kept even after the account is deleted, so that a friend can only be referred once; they reveal neither the identifier nor the address. The Ennichi results (ranking, tickets, draw) stay published with the nicknames at the time of the draw.
 - The Zeni ledger and cards of a deleted account are kept **without any link to a person**, for the integrity of the game economy.
 
 ## Processors
@@ -33,7 +35,7 @@ Kiraku sells no data, shows no advertising and does no profiling.
 - **Supabase** (database) — region [[RÉGION_SUPABASE]].
 - **Resend** (verification and password e-mails).
 - **Ably** (real-time battles).
-- **Discord** (sign-in, if you choose it).
+- **Discord** (sign-in, if you choose it; the team's private channel for following referrals: nicknames, steps, gifts and review signals, without IP addresses).
 
 Some of these providers are established in the United States. Transfers rely on the EU–US Data Privacy Framework or on the European Commission's standard contractual clauses.
 
