@@ -2,6 +2,7 @@ import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Reason } from "@/lib/anticheat/score";
 import {
+  ambassadorDecisionMessage,
   clueText,
   decisionMessage,
   grandPayoutMessage,
@@ -30,6 +31,7 @@ import { dropDiscordPost, publishDiscordPost } from "./posts";
 //   referral:trust:{versement}       part « confiance » versée à part (Discord ancien lié après coup)
 //   referral:milestone:{versement}   palier du parrain        referral:grand:{versement}  grand-parrainage
 //   referral:hold:{parrainage}       mis « À vérifier »       referral:decision:{journal} décision de l'équipe
+//   referral:ambassador:{proposition} Ambassadeur proposé accepté ou refusé par l'équipe
 // Sans la variable, rien n'est posté et le parrainage marche pareil. Le salon doit être privé (vérifié avant d'envoyer).
 
 const DAY = 86_400_000;
@@ -45,7 +47,7 @@ export function discordReferralChannel(): string | undefined {
 
 /** Met en file les événements récents, chacun daté de son arrivée (ordre de publication). */
 async function enqueue(channelId: string, since: Date): Promise<void> {
-  const [rewards, holds, logs] = await Promise.all([
+  const [rewards, holds, logs, proposals] = await Promise.all([
     prisma.referralReward.findMany({
       where: { createdAt: { gte: since }, referralId: { not: null } },
       orderBy: { createdAt: "asc" },
@@ -58,6 +60,7 @@ async function enqueue(channelId: string, since: Date): Promise<void> {
       take: 200,
       select: { id: true, createdAt: true },
     }),
+    prisma.ambassadorProposal.findMany({ where: { decidedAt: { gte: since } }, take: 100, select: { id: true, decidedAt: true } }),
   ]);
   const rows = new Map<string, Date>();
   const add = (key: string, at: Date) => {
@@ -76,6 +79,7 @@ async function enqueue(channelId: string, since: Date): Promise<void> {
   }
   for (const h of holds) if (h.heldAt) add(`referral:hold:${h.id}`, h.heldAt);
   for (const l of logs) add(`referral:decision:${l.id}`, l.createdAt);
+  for (const p of proposals) if (p.decidedAt) add(`referral:ambassador:${p.id}`, p.decidedAt);
   if (rows.size === 0) return;
   await prisma.discordPost.createMany({
     data: [...rows].map(([key, at]) => ({ key, channelId, nextAttemptAt: at })),
@@ -215,6 +219,18 @@ async function decisionPayload(logId: string, ctx: Context): Promise<DiscordMess
   );
 }
 
+async function ambassadorPayload(proposalId: string, ctx: Context): Promise<DiscordMessageBody | null> {
+  const p = await prisma.ambassadorProposal.findUnique({
+    where: { id: proposalId },
+    select: { installed: true, accepted: true, decidedAt: true, user: { select: { id: true, username: true } }, decidedBy: { select: { username: true } } },
+  });
+  if (!p?.decidedAt || p.accepted === null) return null;
+  return ambassadorDecisionMessage(
+    { userId: p.user.id, name: p.user.username, installed: p.installed, accepted: p.accepted, by: p.decidedBy?.username ?? "l'équipe" },
+    ctx.origin,
+  );
+}
+
 /** Ce que « Révoquer et bannir » a repris (journal de la décision), en une ligne. */
 function takenText(raw: unknown): string | null {
   if (!Array.isArray(raw)) return null;
@@ -248,6 +264,7 @@ async function payloadFor(key: string, ctx: Context): Promise<DiscordMessageBody
   if (kind === "trust" || kind === "milestone" || kind === "grand") return rewardPayload(kind, id, ctx);
   if (kind === "hold") return holdPayload(id, ctx);
   if (kind === "decision") return decisionPayload(id, ctx);
+  if (kind === "ambassador") return ambassadorPayload(id, ctx);
   return null;
 }
 

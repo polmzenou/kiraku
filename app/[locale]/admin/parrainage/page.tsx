@@ -1,11 +1,13 @@
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { ReasonChips, ScoreBadge } from "@/components/admin/MultiAccount";
+import { AmbassadorActions } from "@/components/admin/referral/AmbassadorActions";
 import { ReferralAdminTabs } from "@/components/admin/referral/ReferralAdminTabs";
 import { ReviewActions } from "@/components/admin/referral/ReviewActions";
 import { LotGifts } from "@/components/referral/LotGifts";
+import { Link } from "@/i18n/navigation";
 import { canManageReferrals } from "@/lib/admin/roles";
 import { requireAdminView } from "@/server/admin";
-import { referralQueue } from "@/server/referral/admin-queries";
+import { ambassadorProposals, referralQueue } from "@/server/referral/admin-queries";
 import { referralV2Rules } from "@/server/referral/deps";
 import { getSetting } from "@/server/settings";
 
@@ -17,19 +19,22 @@ import { getSetting } from "@/server/settings";
 export default async function AdminReferralQueuePage() {
   const { user } = await requireAdminView();
   const now = new Date();
-  const [t, format, locale, rules, enabled] = await Promise.all([
+  const [t, tAmb, format, locale, rules, enabled, proposals] = await Promise.all([
     getTranslations("admin.referralV2.queue"),
+    getTranslations("admin.referralV2.ambassador"),
     getFormatter(),
     getLocale(),
     referralV2Rules(),
     getSetting("referral.v2.enabled"),
+    ambassadorProposals(),
   ]);
   const { items, members } = await referralQueue(rules, locale);
+  const ambassadorAt = rules.milestones.find((m) => m.ambassador)?.installed ?? null;
   const canManage = canManageReferrals(user.role);
 
   return (
     <div className="flex flex-col gap-6">
-      <ReferralAdminTabs active="queue" held={items.length} />
+      <ReferralAdminTabs active="queue" held={items.length + proposals.length} />
       <div className="flex flex-col gap-1">
         <h2 className="font-heading text-2xl font-bold">{t("title")}</h2>
         <p className="max-w-prose text-sm text-text-muted">{t("intro")}</p>
@@ -38,6 +43,33 @@ export default async function AdminReferralQueuePage() {
         <p role="note" className="rounded-card border border-ai/40 bg-ai/10 px-4 py-3 text-sm">
           {t("off")}
         </p>
+      )}
+
+      {proposals.length > 0 && (
+        <section className="flex flex-col gap-3" aria-labelledby="ambassadeurs">
+          <div className="flex flex-col gap-1">
+            <h3 id="ambassadeurs" className="font-title text-lg font-bold">{tAmb("title", { count: proposals.length })}</h3>
+            <p className="max-w-prose text-sm text-text-muted">{ambassadorAt ? tAmb("intro", { count: ambassadorAt }) : tAmb("introNoRung")}</p>
+          </div>
+          <ul className="flex flex-col gap-3">
+            {proposals.map((p) => (
+              <li key={p.id} className="flex flex-col gap-3 lacquer rounded-card border-hisui/50 p-4">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span aria-hidden="true" lang="ja" className="flex size-9 shrink-0 items-center justify-center rounded-sm bg-hisui font-seal text-lg text-bg">使</span>
+                  <Link href={`/admin/utilisateurs/${p.user.id}`} className="text-base font-bold text-link underline-offset-4 hover:underline">
+                    {p.user.name}
+                  </Link>
+                  {p.user.ambassador && <span className="rounded-pill border border-hisui/60 px-2.5 py-0.5 text-xs font-bold text-hisui">{tAmb("already")}</span>}
+                  {p.user.banned && <span className="rounded-pill border border-shu/60 px-2.5 py-0.5 text-xs font-bold text-shu">{tAmb("banned")}</span>}
+                </div>
+                <p className="text-xs text-text-muted">
+                  {tAmb("installed", { then: p.installed.then, now: p.installed.now })} · {tAmb("since", { time: format.relativeTime(new Date(p.createdAt), now) })}
+                </p>
+                {canManage && <AmbassadorActions proposalId={p.id} name={p.user.name} banned={p.user.banned} />}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {items.length === 0 ? (

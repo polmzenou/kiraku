@@ -26,9 +26,12 @@ export type RungView = {
   choiceVouchers: number;
   oneOfOne: boolean;
   ambassador: boolean;
+  /** Palier Ambassadeur atteint : la proposition attend l'équipe, n'a pas été retenue, ou le rôle est reçu. */
+  ambassadorState: AmbassadorState | null;
   legend: boolean;
   state: "DONE" | "NEXT" | "LOCKED";
 };
+export type AmbassadorState = "PENDING" | "REFUSED" | "GRANTED";
 /** `readyAt` (étape 2) et `deadline` (étapes 3 et 4) ne sont donnés que s'ils sont encore à venir. */
 export type StepRow = { state: StepState; at: string | null; have: number; need: number; readyAt: string | null; deadline: string | null };
 export type RefereeStatus = "ON_THE_WAY" | "INSTALLED" | "DONE" | "HELD" | "REVOKED" | "BANNED";
@@ -135,10 +138,22 @@ export async function referralGifts(rules: ReferralV2Rules, locale: string, inst
     choiceVouchers: m.choiceVouchers,
     oneOfOne: m.oneOfOne,
     ambassador: m.ambassador,
+    ambassadorState: null,
     legend: m.legend,
     state: reached.has(m.installed) ? "DONE" : next?.installed === m.installed ? "NEXT" : "LOCKED",
   }));
   return { steps, ladder, lot };
+}
+
+/** État de l'échelon Ambassadeur atteint : rôle reçu, proposition ouverte, ou dernière proposition refusée. */
+async function withAmbassadorState(ladder: RungView[], userId: string, isAmbassador: boolean): Promise<RungView[]> {
+  if (!ladder.some((r) => r.ambassador && r.state === "DONE")) return ladder;
+  const last = isAmbassador
+    ? null
+    : await prisma.ambassadorProposal.findFirst({ where: { userId }, orderBy: { createdAt: "desc" }, select: { decidedAt: true, accepted: true } });
+  // Rôle retiré depuis par l'équipe : la proposition acceptée ne dit plus rien, l'échelon ne montre pas d'état
+  const state: AmbassadorState | null = isAmbassador ? "GRANTED" : !last ? null : last.decidedAt === null ? "PENDING" : last.accepted ? null : "REFUSED";
+  return ladder.map((r) => (r.ambassador && r.state === "DONE" ? { ...r, ambassadorState: state } : r));
 }
 
 export async function referralPageV2(
@@ -148,7 +163,7 @@ export async function referralPageV2(
 ): Promise<ReferralV2View> {
   const { timeZone, locale, now } = ctx;
   const [me, installed, own, mine, last, vouchers] = await Promise.all([
-    prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { referralCode: true, vanityCode: true, registeredAt: true, createdAt: true } }),
+    prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { referralCode: true, vanityCode: true, registeredAt: true, createdAt: true, ambassadorSince: true } }),
     installedCount(prisma, userId),
     prisma.referral.findUnique({
       where: { refereeId: userId },
@@ -203,7 +218,9 @@ export async function referralPageV2(
     }),
     voucherGroupsOf(userId),
   ]);
-  const { steps, ladder, lot } = await referralGifts(rules, locale, installed);
+  const gifts = await referralGifts(rules, locale, installed);
+  const { steps, lot } = gifts;
+  const ladder = await withAmbassadorState(gifts.ladder, userId, me.ambassadorSince !== null);
   const times = (r: { step1At: Date | null; step2At: Date | null; step3At: Date | null; step4At: Date | null }): StepTimes => [r.step1At, r.step2At, r.step3At, r.step4At];
 
   // Vue du filleul (parrainage v2 seulement)

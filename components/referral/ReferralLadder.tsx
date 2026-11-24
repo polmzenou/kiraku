@@ -20,7 +20,7 @@ export function ReferralLadder({ ladder, installed, limit, hint = false }: { lad
     const extras = [
       r.choiceVouchers > 0 ? t("vouchers", { count: r.choiceVouchers }) : null,
       r.oneOfOne ? t("oneOfOne") : null,
-      r.ambassador ? t("ambassador") : null,
+      r.ambassador ? (r.ambassadorState ? `${t("ambassador")} · ${t(`ambassadorState.${r.ambassadorState}`)}` : t("ambassador")) : null,
       r.legend ? t("legend") : null,
       !r.lot && r.choiceVouchers === 0 && !r.oneOfOne && !r.ambassador && !r.legend ? t("cosmetic") : null,
     ].filter(Boolean);

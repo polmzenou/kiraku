@@ -2567,6 +2567,34 @@
           "lots": "Rewards are created in Rewards. The trust share only applies to steps 1 and 2.",
           "milestones": "Up to {max} milestones, in settled friends, strictly increasing. Paid automatically."
         }
+      },
+      "ambassador": {
+        "title": "{count, plural, one {Proposed Ambassador} other {# proposed Ambassadors}}",
+        "intro": "The {count} installed friends milestone proposes the Ambassador role. Accepting grants it right away (bigger booster stock, role cosmetics) and notifies the player.",
+        "introNoRung": "Proposal created by a referral milestone. Accepting grants the role right away and notifies the player.",
+        "installed": "{then, plural, one {# installed friend} other {# installed friends}} when proposed, {now} today",
+        "since": "proposed {time}",
+        "already": "Already an Ambassador",
+        "banned": "Banned account",
+        "accept": "Accept",
+        "refuse": "Refuse",
+        "confirmAccept": "Grant the Ambassador role to {name}?",
+        "confirmRefuse": "Refuse the proposal for {name}?",
+        "confirm": "Confirm",
+        "cancel": "Cancel",
+        "done": {
+          "accept": "Role granted: the player has been notified.",
+          "refuse": "Proposal refused."
+        },
+        "errors": {
+          "FORBIDDEN": "Only the team can do this.",
+          "INVALID": "Invalid request.",
+          "RATE_LIMITED": "Too many decisions in a row: wait a minute.",
+          "UNAVAILABLE": "Not possible right now: try again.",
+          "NOT_FOUND": "Proposal not found.",
+          "ALREADY_DECIDED": "Someone on the team already decided on this proposal.",
+          "BANNED": "This account is banned: refuse the proposal."
+        }
       }
     },
     "rotation": {
@@ -7837,6 +7865,11 @@
         "DONE": "Received",
         "NEXT": "{count, plural, one {# more friend} other {# more friends}}",
         "LOCKED": "Locked"
+      },
+      "ambassadorState": {
+        "PENDING": "waiting for the team",
+        "REFUSED": "not granted",
+        "GRANTED": "received"
       }
     },
     "self": {

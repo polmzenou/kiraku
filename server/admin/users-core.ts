@@ -124,6 +124,42 @@ export async function banAccountWith(tx: Tx, userId: string, now: Date): Promise
   return count === 1;
 }
 
+/** Ce que setAmbassadorInTx lit du joueur (verrouillé par l'appelant). */
+export const AMBASSADOR_USER_SELECT = {
+  id: true, ambassadorSince: true, boosterStock: true, boosterAnchor: true, titleId: true, frameId: true, nameColorId: true,
+} satisfies Prisma.UserSelect;
+export type AmbassadorUser = Prisma.UserGetPayload<{ select: typeof AMBASSADOR_USER_SELECT }>;
+
+/**
+ * Pose ou retire le rôle d'Ambassadeur d'un joueur déjà verrouillé par l'appelant (fiche d'un joueur dans l'admin,
+ * proposition acceptée du parrainage), dans sa transaction. Renvoie l'avant et l'après pour le journal de l'équipe.
+ */
+export async function setAmbassadorInTx(tx: Tx, user: AmbassadorUser, ambassador: boolean, ctx: { actorId: string; now: Date }) {
+  const { now } = ctx;
+  const was = user.ambassadorSince !== null;
+  // Stock arrêté avec le max en vigueur avant le changement : un joueur plein à 10 repart de
+  // maintenant vers 15 (pas d'un coup depuis sa vieille ancre), un retrait garde ce qui est acquis.
+  const stock = computeStock(user.boosterStock, user.boosterAnchor, now, stockRulesFor(await stockSettings(tx), was));
+  const since = ambassador ? (user.ambassadorSince ?? now) : null;
+  // Un cosmétique porté le reste même s'il se reverrouille : ceux du rôle s'enlèvent avec lui
+  const reserved = ambassador ? [] : (await tx.cosmetic.findMany({
+    where: { id: { in: [user.titleId, user.frameId, user.nameColorId].filter((id): id is string => id !== null) }, condition: { path: ["type"], equals: "AMBASSADOR" } },
+    select: { id: true },
+  })).map((c) => c.id);
+  const before = { ambassador: was, boosterStock: user.boosterStock, boosterAnchor: user.boosterAnchor };
+  const after = { ambassador, boosterStock: stock.stock, boosterAnchor: stock.anchor, ...(reserved.length ? { removedCosmetics: reserved } : {}) };
+  await tx.user.update({ where: { id: user.id }, data: {
+    ambassadorSince: since,
+    boosterStock: stock.stock,
+    boosterAnchor: stock.anchor,
+    ...(user.titleId && reserved.includes(user.titleId) ? { titleId: null } : {}),
+    ...(user.frameId && reserved.includes(user.frameId) ? { frameId: null } : {}),
+    ...(user.nameColorId && reserved.includes(user.nameColorId) ? { nameColorId: null } : {}),
+  } });
+  if (ambassador && !was) await notify(tx, { userId: user.id, type: "AMBASSADOR_GRANTED", actorId: ctx.actorId, now });
+  return { before, after };
+}
+
 export async function mutateAdminUserWith(db: PrismaClient, adminId: string, input: AdminUserMutation, onNotified?: OnNotified) {
   await mutateUnderLock(db, adminId, input, onNotified);
   // Bannissement : ses tables de pile ou face se ferment après coup (verrou des tables avant celui des joueurs).
@@ -364,27 +400,7 @@ async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUs
         break;
       }
       case "ambassador": {
-        const was = user.ambassadorSince !== null;
-        // Stock arrêté avec le max en vigueur avant le changement : un joueur plein à 10 repart de
-        // maintenant vers 15 (pas d'un coup depuis sa vieille ancre), un retrait garde ce qui est acquis.
-        const stock = computeStock(user.boosterStock, user.boosterAnchor, now, stockRulesFor(await stockSettings(tx), was));
-        const since = input.ambassador ? (user.ambassadorSince ?? now) : null;
-        // Un cosmétique porté le reste même s'il se reverrouille : ceux du rôle s'enlèvent avec lui
-        const reserved = input.ambassador ? [] : (await tx.cosmetic.findMany({
-          where: { id: { in: [user.titleId, user.frameId, user.nameColorId].filter((id): id is string => id !== null) }, condition: { path: ["type"], equals: "AMBASSADOR" } },
-          select: { id: true },
-        })).map((c) => c.id);
-        before = { ambassador: was, boosterStock: user.boosterStock, boosterAnchor: user.boosterAnchor };
-        after = { ambassador: input.ambassador, boosterStock: stock.stock, boosterAnchor: stock.anchor, ...(reserved.length ? { removedCosmetics: reserved } : {}) };
-        await tx.user.update({ where: { id: userId }, data: {
-          ambassadorSince: since,
-          boosterStock: stock.stock,
-          boosterAnchor: stock.anchor,
-          ...(user.titleId && reserved.includes(user.titleId) ? { titleId: null } : {}),
-          ...(user.frameId && reserved.includes(user.frameId) ? { frameId: null } : {}),
-          ...(user.nameColorId && reserved.includes(user.nameColorId) ? { nameColorId: null } : {}),
-        } });
-        if (input.ambassador && !was) await notify(tx, { userId, type: "AMBASSADOR_GRANTED", actorId: adminId, now });
+        ({ before, after } = await setAmbassadorInTx(tx, user, input.ambassador, { actorId: adminId, now }));
         break;
       }
       case "leaderboard": {

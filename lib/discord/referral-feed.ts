@@ -223,3 +223,22 @@ export function decisionMessage(
     [{ label: "Ouvrir dans l'admin", url }],
   );
 }
+
+/** Décision de l'équipe sur un Ambassadeur proposé par le parrainage (palier atteint). */
+export function ambassadorDecisionMessage(
+  f: { userId: string; name: string; installed: number; accepted: boolean; by: string },
+  origin: string,
+): DiscordMessageBody {
+  const url = absolute(`/admin/utilisateurs/${encodeURIComponent(f.userId)}`, origin);
+  return message(
+    `使 ${f.accepted ? "Ambassadeur accepté" : "Ambassadeur refusé"} · ${who(f.name)}`,
+    f.accepted ? HISUI : GRIS,
+    url,
+    `Par ${who(f.by)}.`,
+    [
+      field("Parrainage", `${plural(f.installed, "ami installé", "amis installés")} à la proposition`),
+      field("Suite", f.accepted ? "Rôle posé : stock de boosters et cosmétiques du rôle. Le joueur est prévenu." : "La proposition est fermée, le joueur garde ses lots."),
+    ],
+    [{ label: "Ouvrir la fiche du joueur", url }],
+  );
+}

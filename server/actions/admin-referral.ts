@@ -10,6 +10,8 @@ import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
 import { progressDeps, referralV2Rules } from "../referral/deps";
 import { applyHold } from "../referral/holds";
+import { AmbassadorDecisionError, decideAmbassadorWith, type AmbassadorDecisionErrorCode } from "../referral/ambassador-core";
+import { pushLater } from "../market/queries";
 import { previewRevokeWith, ReviewError, revokeReferralWith, validateReferralWith, type ReviewErrorCode } from "../referral/review-core";
 import { getSetting } from "../settings";
 
@@ -19,6 +21,7 @@ import { getSetting } from "../settings";
 // journal admin.
 
 export type ReferralStaffError = "FORBIDDEN" | "INVALID" | "RATE_LIMITED" | "UNAVAILABLE" | ReviewErrorCode;
+export type AmbassadorStaffError = "FORBIDDEN" | "INVALID" | "RATE_LIMITED" | "UNAVAILABLE" | AmbassadorDecisionErrorCode;
 type Fail = { ok: false; error: ReferralStaffError };
 
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
@@ -27,6 +30,7 @@ const reviewSchema = z
   .strict()
   .refine((v) => v.decision === "VALIDATE" || (v.reason !== null && v.reason.length > 0), { message: "Motif obligatoire" });
 const referralSchema = z.object({ referralId: id }).strict();
+const proposalSchema = z.object({ proposalId: id, accept: z.boolean() }).strict();
 
 /** Membre de l'équipe autorisé sur le parrainage, ou null. */
 async function staff() {
@@ -72,6 +76,24 @@ export async function reviewReferralAction(input: unknown): Promise<{ ok: true; 
     return { ok: true, paid: 0, banned: banned.length };
   } catch (e) {
     return failure("décision", e);
+  }
+}
+
+/** Ambassadeur proposé par le parrainage : accepter pose le rôle (le joueur est prévenu), refuser ferme la proposition. */
+export async function decideAmbassadorAction(input: unknown): Promise<{ ok: true } | { ok: false; error: AmbassadorStaffError }> {
+  const user = await staff();
+  if (!user) return { ok: false, error: "FORBIDDEN" };
+  const parsed = proposalSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (await limited(user.id, "ambassador", 20)) return { ok: false, error: "RATE_LIMITED" };
+  try {
+    await decideAmbassadorWith(prisma, { staffId: user.id, proposalId: parsed.data.proposalId, accept: parsed.data.accept, now: new Date() }, pushLater);
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof AmbassadorDecisionError) return { ok: false, error: e.code };
+    console.error("[parrainage admin] ambassadeur", e);
+    return { ok: false, error: "UNAVAILABLE" };
   }
 }
 

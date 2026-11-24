@@ -2567,6 +2567,34 @@
           "lots": "Les lots se créent dans Lots. La part « confiance » ne concerne que les étapes 1 et 2.",
           "milestones": "Jusqu'à {max} paliers, en amis installés, qui montent strictement. Versés tout seuls."
         }
+      },
+      "ambassador": {
+        "title": "{count, plural, one {Ambassadeur proposé} other {# Ambassadeurs proposés}}",
+        "intro": "Le palier de {count} amis installés propose le rôle d'Ambassadeur. Accepter le pose tout de suite (stock de boosters plus grand, cosmétiques du rôle) et prévient le joueur.",
+        "introNoRung": "Proposition créée par un palier du parrainage. Accepter pose le rôle tout de suite et prévient le joueur.",
+        "installed": "{then, plural, one {# ami installé} other {# amis installés}} à la proposition, {now} aujourd'hui",
+        "since": "proposé {time}",
+        "already": "Déjà Ambassadeur",
+        "banned": "Compte banni",
+        "accept": "Accepter",
+        "refuse": "Refuser",
+        "confirmAccept": "Poser le rôle d'Ambassadeur à {name} ?",
+        "confirmRefuse": "Refuser la proposition pour {name} ?",
+        "confirm": "Confirmer",
+        "cancel": "Annuler",
+        "done": {
+          "accept": "Rôle posé : le joueur est prévenu.",
+          "refuse": "Proposition refusée."
+        },
+        "errors": {
+          "FORBIDDEN": "Action réservée à l'équipe.",
+          "INVALID": "Demande invalide.",
+          "RATE_LIMITED": "Trop de décisions d'affilée : attends une minute.",
+          "UNAVAILABLE": "Impossible pour l'instant : réessaie.",
+          "NOT_FOUND": "Proposition introuvable.",
+          "ALREADY_DECIDED": "Quelqu'un de l'équipe a déjà tranché cette proposition.",
+          "BANNED": "Ce compte est banni : refuse la proposition."
+        }
       }
     },
     "rotation": {
@@ -7837,6 +7865,11 @@
         "DONE": "Reçu",
         "NEXT": "Encore {count, plural, one {# ami} other {# amis}}",
         "LOCKED": "Verrouillé"
+      },
+      "ambassadorState": {
+        "PENDING": "en attente de l'équipe",
+        "REFUSED": "pas retenu",
+        "GRANTED": "reçu"
       }
     },
     "self": {

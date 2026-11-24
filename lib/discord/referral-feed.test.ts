@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageText, clueText, decisionMessage, grandPayoutMessage, holdMessage, milestonePayoutMessage, stepPayoutMessage, trustPayoutMessage, type FeedReferral } from "./referral-feed";
+import { ageText, ambassadorDecisionMessage, clueText, decisionMessage, grandPayoutMessage, holdMessage, milestonePayoutMessage, stepPayoutMessage, trustPayoutMessage, type FeedReferral } from "./referral-feed";
 
 const origin = "https://kiraku.example";
 const base: FeedReferral = {
@@ -90,5 +90,15 @@ describe("fil du parrainage (salon privé de l'équipe)", () => {
     expect(fieldsOf(ban)).toMatchObject({ Raison: "même appareil", Repris: "300 Zeni · 2 boosters" });
     const ok = decisionMessage({ referralId: "ref_1", referee: "Max", referrer: "Tristren", decision: "VALIDATED", by: "Staff", reason: null, taken: null }, origin);
     expect(fieldsOf(ok)).toEqual({ Suite: "Tout ce qui était dû est versé." });
+
+    // Ambassadeur proposé par le palier : décision de l'équipe, lien vers la fiche du joueur
+    const yes = ambassadorDecisionMessage({ userId: "u_1", name: "Tristren", installed: 25, accepted: true, by: "Staff" }, origin);
+    expect(yes.embeds![0].title).toBe("使 Ambassadeur accepté · Tristren");
+    expect(yes.embeds![0].url).toBe("https://kiraku.example/admin/utilisateurs/u_1");
+    expect(fieldsOf(yes).Parrainage).toBe("25 amis installés à la proposition");
+    const no = ambassadorDecisionMessage({ userId: "u_1", name: "Tristren", installed: 26, accepted: false, by: "Staff" }, origin);
+    expect(no.embeds![0].title).toBe("使 Ambassadeur refusé · Tristren");
+    expect(fieldsOf(no).Suite).toBe("La proposition est fermée, le joueur garde ses lots.");
+    expect(no.allowed_mentions).toEqual({ parse: [] });
   });
 });

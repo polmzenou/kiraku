@@ -9,16 +9,47 @@ import { refereeTrust } from "@/lib/referral/trust";
 import { membersById, type MemberInfo } from "../anticheat/queries";
 import { prisma } from "../db";
 import { lotViews, type LotLine, type LotView } from "../economy/lot-view";
+import { installedCount } from "./payout-core";
 
-// Lectures de l'admin du parrainage v2 (étape 18) : la file « À vérifier » (design « cartes » de l'atelier équipe) et
-// son compteur dans le menu. Rien n'est écrit ici : les décisions passent par server/actions/admin-referral.ts.
+// Lectures de l'admin du parrainage v2 (étape 18) : la file « À vérifier » (design « cartes » de l'atelier équipe), les
+// Ambassadeurs proposés et leur compteur dans le menu. Rien n'est écrit ici : les décisions passent par
+// server/actions/admin-referral.ts.
 
 /** Parrainages bloqués sans décision : la file « À vérifier ». */
 const QUEUE_WHERE = { version: 2, heldAt: { not: null }, reviewedAt: null, revokedAt: null } satisfies Prisma.ReferralWhereInput;
 
-/** Parrainages « À vérifier » sans décision (compteur du menu de l'admin). */
-export function heldReferralCount(): Promise<number> {
-  return prisma.referral.count({ where: QUEUE_WHERE });
+/** Propositions d'Ambassadeur pas encore tranchées. */
+const PROPOSAL_WHERE = { decidedAt: null } satisfies Prisma.AmbassadorProposalWhereInput;
+
+/** Ce qui attend l'équipe dans la file : parrainages « À vérifier » et Ambassadeurs proposés (compteur du menu). */
+export async function heldReferralCount(): Promise<number> {
+  const [held, proposals] = await Promise.all([prisma.referral.count({ where: QUEUE_WHERE }), prisma.ambassadorProposal.count({ where: PROPOSAL_WHERE })]);
+  return held + proposals;
+}
+
+export type ProposalItem = {
+  id: string;
+  user: { id: string; name: string; banned: boolean; ambassador: boolean };
+  /** Amis installés quand la proposition s'est créée, et maintenant. */
+  installed: { then: number; now: number };
+  createdAt: string;
+};
+
+/** Ambassadeurs proposés par le parrainage, du plus ancien au plus récent. */
+export async function ambassadorProposals(take = 50): Promise<ProposalItem[]> {
+  const rows = await prisma.ambassadorProposal.findMany({
+    where: PROPOSAL_WHERE,
+    orderBy: { createdAt: "asc" },
+    take,
+    select: { id: true, installed: true, createdAt: true, user: { select: { id: true, username: true, bannedAt: true, ambassadorSince: true } } },
+  });
+  const now = await Promise.all(rows.map((r) => installedCount(prisma, r.user.id)));
+  return rows.map((r, i) => ({
+    id: r.id,
+    user: { id: r.user.id, name: r.user.username, banned: r.user.bannedAt !== null, ambassador: r.user.ambassadorSince !== null },
+    installed: { then: r.installed, now: now[i] },
+    createdAt: r.createdAt.toISOString(),
+  }));
 }
 
 export type QueueItem = {
