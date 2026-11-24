@@ -1,19 +1,29 @@
 import "server-only";
 import type { FudaCard } from "@/components/fuda/Fuda";
 import { announcementDue } from "@/lib/casino/phase";
+import { referralAnnouncementAt } from "@/lib/referral/announce";
 import { ANNOUNCEMENTS, pendingAnnouncement, type Announcement } from "@/lib/welcome/release";
 import { getCasinoRules } from "./casino/queries";
 import { prisma } from "./db";
+import { getSetting } from "./settings";
 
 /**
  * Annonce à présenter à ce joueur : les annonces du code, plus celle de l'ouverture du casino (datée par
- * casino.opensAt) pour les comptes inscrits avant l'ouverture, pendant la fenêtre de lancement.
+ * casino.opensAt) et celle du nouveau parrainage (referral.v2.announceAt), pour les comptes inscrits avant, pendant
+ * leur fenêtre de lancement.
  */
 export async function pendingAnnouncementFor(user: { v1WelcomeSeenAt: Date | null; isGuest: boolean; createdAt: Date }): Promise<Announcement | null> {
-  const rules = await getCasinoRules();
+  const [rules, enabled, announceAt, announceDays] = await Promise.all([
+    getCasinoRules(),
+    getSetting("referral.v2.enabled"),
+    getSetting("referral.v2.announceAt"),
+    getSetting("referral.v2.announceDays"),
+  ]);
   const now = new Date();
   const list: Announcement[] = [...ANNOUNCEMENTS];
   if (rules.opensAt !== null && announcementDue(rules, now.getTime(), user)) list.push({ key: "casino", at: new Date(rules.opensAt) });
+  const referralAt = referralAnnouncementAt({ enabled, announceAt, announceDays }, now.getTime(), user);
+  if (referralAt) list.push({ key: "referral", at: referralAt });
   return pendingAnnouncement(user.v1WelcomeSeenAt, now, list);
 }
 

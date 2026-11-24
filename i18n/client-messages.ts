@@ -18,7 +18,7 @@ export const CLIENT_SUBSETS: Partial<Record<(typeof CLIENT_NAMESPACES)[number], 
   kyaraImport: ["form", "cancel", "errors", "banner"],
   // Parrainage v2 : cartes des étapes et tableau des filleuls (avec leurs cadeaux et leur jauge), grille du choix des
   // bons ; le reste est rendu au serveur
-  referralV2: ["steps", "gifts", "table", "meter", "picker"],
+  referralV2: ["steps", "gifts", "table", "meter", "picker", "story"],
   // Invitation : la fenêtre qui suit le premier booster d'un invité arrivé par un lien ; la page /i/CODE est rendue au serveur
   invite: ["prompt"],
   // Ennichi : compte à rebours, explications « ? », rediffusion de l'omikuji et sa vérification ; le reste est rendu au serveur

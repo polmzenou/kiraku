@@ -402,6 +402,10 @@ export const SETTING_SCHEMAS = {
   "referral.v2.scoreTtlHours": z.number().int().min(1).max(24 * 30),
   "referral.v2.cardLockDays": z.number().int().min(0).max(365),
   "referral.v2.pairLockDays": z.number().int().min(0).max(365),
+  // Annonce « Le parrainage change » (lib/welcome/release.ts) : une fois, aux comptes créés avant cette date, pendant
+  // announceDays jours ; vide = pas d'annonce
+  "referral.v2.announceAt": z.string().datetime().nullable(),
+  "referral.v2.announceDays": z.number().int().min(0).max(60),
   // Ennichi 縁日 (étape 18d), coupé par défaut : début choisi dans l'admin, puis `days` jours de fête et `closingDays`
   // jours de clôture avant le tirage. L'édition marque les filleuls arrivés pendant la fête, les titres et les résultats.
   "ennichi.enabled": z.boolean(),
@@ -821,6 +825,8 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "referral.v2.scoreTtlHours": 24,
   "referral.v2.cardLockDays": 14,
   "referral.v2.pairLockDays": 30,
+  "referral.v2.announceAt": null, // posée par l'équipe au lancement
+  "referral.v2.announceDays": 14,
   "ennichi.enabled": false, // coupé tant que l'équipe ne lance pas la fête
   "ennichi.edition": 1,
   "ennichi.startsAt": null,

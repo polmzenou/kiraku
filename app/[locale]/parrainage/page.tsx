@@ -25,6 +25,7 @@ import { pendingReferralCode, progressOwnReferral, qualifyLater } from "@/server
 import { referrerByCode } from "@/server/og/data";
 import { qualifyReferralsWith, refereeProgress } from "@/server/economy/referral-core";
 import { pushNotifications } from "@/server/push/send";
+import { ennichiView } from "@/server/ennichi/queries";
 import { referralV2Rules } from "@/server/referral/deps";
 import { legacyReferralClaims, referralGifts, referralPageV2 } from "@/server/referral/queries";
 import { getSetting } from "@/server/settings";
@@ -62,10 +63,12 @@ const STEP_KANJI = ["一", "二", "三"] as const;
  * propre parrainage avance avant la lecture, ceux de ses filleuls après la réponse.
  */
 async function referralV2Content(user: { id: string; isGuest: boolean }, locale: string, now: Date) {
-  const [rules, timeZone, cookieCode] = await Promise.all([referralV2Rules(), getSetting("game.timeZone"), pendingReferralCode()]);
+  const [rules, timeZone, cookieCode, fete] = await Promise.all([referralV2Rules(), getSetting("game.timeZone"), pendingReferralCode(), ennichiView(locale)]);
+  // Pendant l'Ennichi, les étapes 1 et 2 d'un ami qui arrive sont multipliées
+  const multiplier = fete.phase === "live" ? fete.multiplier : 1;
   if (user.isGuest) {
     const { steps } = await referralGifts(rules, locale, 0);
-    return <ReferralV2Guest steps={steps} rules={rules} invited={cookieCode !== null} />;
+    return <ReferralV2Guest steps={steps} rules={rules} invited={cookieCode !== null} multiplier={multiplier} />;
   }
   await progressOwnReferral(user.id);
   qualifyLater(user.id);
@@ -76,7 +79,7 @@ async function referralV2Content(user: { id: string; isGuest: boolean }, locale:
   ]);
   return (
     <>
-      <ReferralV2 view={view} rules={rules} timeZone={timeZone} now={now} cookieCode={cookieCode} />
+      <ReferralV2 view={view} rules={rules} timeZone={timeZone} now={now} cookieCode={cookieCode} multiplier={multiplier} />
       {legacy.length > 0 && <LegacyClaims claims={legacy} />}
     </>
   );

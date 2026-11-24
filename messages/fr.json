@@ -2549,7 +2549,9 @@
           "holdScore": "Score qui met « À vérifier »",
           "scoreTtlHours": "Durée de vie du score (heures)",
           "cardLockDays": "Verrou des cartes du filleul (jours)",
-          "pairLockDays": "Verrou filleul vers parrain (jours)"
+          "pairLockDays": "Verrou filleul vers parrain (jours)",
+          "announceAt": "Annonce aux joueurs",
+          "announceDays": "Jours d'affichage de l'annonce"
         },
         "hints": {
           "enabled": "Coupé, l'ancien parrainage (v1) continue. Allumé, les nouveaux rattachements passent en v2. Aussi dans Fonctionnalités.",
@@ -2567,8 +2569,11 @@
           "cardLockDays": "Ni vente ni don des cartes du filleul pendant ce délai.",
           "pairLockDays": "Rien ne passe du filleul à son parrain pendant ce délai.",
           "lots": "Les lots se créent dans Lots. La part « confiance » ne concerne que les étapes 1 et 2.",
-          "milestones": "Jusqu'à {max} paliers, en amis installés, qui montent strictement. Versés tout seuls."
-        }
+          "milestones": "Jusqu'à {max} paliers, en amis installés, qui montent strictement. Versés tout seuls.",
+          "announceAt": "La fenêtre « Le parrainage change » s'affiche une fois aux comptes créés avant cette date. Vide : pas d'annonce. Ne la pose qu'une fois le parrainage v2 allumé.",
+          "announceDays": "Passé ce délai, un joueur qui ne s'est pas connecté ne la voit plus."
+        },
+        "now": "Maintenant"
       },
       "ambassador": {
         "title": "{count, plural, one {Ambassadeur proposé} other {# Ambassadeurs proposés}}",
@@ -7995,6 +8000,7 @@
   "referralV2": {
     "title": "Parrainage",
     "lead": "Invite un ami : vous gagnez tous les deux, à chaque étape.",
+    "x2Ennichi": "×{n} sur les étapes 1 et 2 · Ennichi",
     "link": {
       "title": "Ton lien",
       "hint": "Tes tirages, ton profil et tes vitrines partagés portent aussi ton code.",
@@ -8219,6 +8225,45 @@
       "emptyTitle": "Le rouleau attend son premier nom",
       "emptyBody": "Le premier joueur à amener {count} amis y sera inscrit avec le sceau 壱.",
       "you": "Toi : {count, plural, one {# ami installé} other {# amis installés}} sur {threshold}."
+    },
+    "story": {
+      "label": "Le parrainage",
+      "how": "Comment ça marche",
+      "next": "Suivant",
+      "later": "Plus tard",
+      "invite": "Inviter un ami",
+      "gotIt": "Compris",
+      "pane": "Écran {n} sur {count}",
+      "new": "Nouveau",
+      "x2": "×{n}",
+      "x2Fete": "×{n} pendant la fête",
+      "p1": {
+        "title": "Le parrainage change",
+        "lead": "Invite un ami : vous gagnez tous les deux, à chaque étape.",
+        "step": "Dès qu'il crée son compte",
+        "more": "Puis encore plus à chaque étape. Tout est versé tout seul."
+      },
+      "p2": {
+        "eyebrow": "{count, plural, one {# étape} other {# étapes}}",
+        "title": "Un cadeau à chaque étape",
+        "total": "Pour un ami qui reste un mois, tu reçois en tout",
+        "trust": "Si ton ami s'inscrit sans compte Discord ancien, les Mythiques de tes étapes 1 et 2 arrivent à son étape 3."
+      },
+      "p3": {
+        "eyebrow": "Tes paliers",
+        "title": "Plus tu invites, plus tu gagnes",
+        "lead": "En plus des étapes, chaque ami installé te rapproche d'un palier. Versé tout seul."
+      },
+      "p4": {
+        "days": "{days} jours de fête",
+        "day": "Jour {n} sur {days}",
+        "start": "L'Ennichi commence",
+        "on": "C'est l'Ennichi",
+        "lanterns": "<b>Lanternes</b> · chaque ami allume une lanterne : des cadeaux pour tous",
+        "banzuke": "<b>Banzuke</b> · le classement des recruteurs",
+        "omikuji": "<b>Omikuji</b> · la tombola de la fête",
+        "x2": "×{n} sur les étapes 1 et 2 pendant la fête"
+      }
     }
   },
   "invite": {

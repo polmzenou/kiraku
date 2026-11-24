@@ -41,6 +41,6 @@ describe("annonces de l'équipe", () => {
   });
 
   it("toutes les clés sont connues pour la réservation", () => {
-    expect(ANNOUNCEMENT_KEYS).toEqual(expect.arrayContaining(["apology", "v2", "v25", "casino"]));
+    expect(ANNOUNCEMENT_KEYS).toEqual(expect.arrayContaining(["apology", "v2", "v25", "casino", "referral"]));
   });
 });

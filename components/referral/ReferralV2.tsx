@@ -10,7 +10,8 @@ import { RefereeTable } from "./RefereeTable";
 import { ReferralLadder } from "./ReferralLadder";
 import { SelfStairs } from "./SelfStairs";
 import { StepCards } from "./StepCards";
-import type { StepConditions } from "./step-meta";
+import { stepConditions, type StepConditions } from "./step-meta";
+import { ReferralStory } from "./ReferralStory";
 import { ThemedArt } from "./ThemedArt";
 import { VoucherBanner } from "./VoucherBanner";
 
@@ -18,17 +19,6 @@ import { VoucherBanner } from "./VoucherBanner";
 //   - filleul v2 : « Bienvenue d'abord » (ses étapes en marches, le verrou de ses cartes, son parrain) ;
 //   - avec des filleuls : « Tableau » (compteurs, filleuls et leurs nœuds, dernier cadeau, lien, paliers) ;
 //   - sans filleul : « Fuda à retourner » (bandeau, ce que vous gagnez, lien, paliers, règles).
-
-export function stepConditions(rules: ReferralV2Rules): StepConditions {
-  return {
-    openings: rules.installOpenings,
-    installDays: Math.max(1, Math.round(rules.installHours / 24)),
-    accroDays: rules.accroDays,
-    accroWindow: rules.accroWindowDays,
-    fideleDays: rules.fideleDays,
-    fideleWindow: rules.fideleWindowDays,
-  };
-}
 
 function Seal({ kanji }: { kanji: string }) {
   return (
@@ -38,8 +28,8 @@ function Seal({ kanji }: { kanji: string }) {
   );
 }
 
-/** Bandeau : l'illustration du thème et de l'appareil, le titre, une phrase. */
-async function Hero() {
+/** Bandeau : l'illustration du thème et de l'appareil, le titre, une phrase, et le ×N de l'Ennichi pendant la fête. */
+async function Hero({ multiplier = 1 }: { multiplier?: number }) {
   const t = await getTranslations("referralV2");
   return (
     <section className="relative isolate flex min-h-48 flex-col justify-end gap-1 overflow-hidden rounded-card border border-border p-5 md:min-h-56">
@@ -50,6 +40,9 @@ async function Hero() {
         <h1 className="font-heading text-2xl">{t("title")}</h1>
       </div>
       <p className="max-w-md text-sm">{t("lead")}</p>
+      {multiplier > 1 && (
+        <span className="mt-1 self-start rounded-pill bg-shu-btn px-2.5 py-0.5 text-xs font-bold text-washi-paper">{t("x2Ennichi", { n: multiplier })}</span>
+      )}
     </section>
   );
 }
@@ -57,7 +50,7 @@ async function Hero() {
 async function LinkCard({ view }: { view: Pick<ReferralV2View, "code" | "standardCode" | "vanity"> }) {
   const t = await getTranslations("referralV2.link");
   return (
-    <section className="flex flex-col gap-2 lacquer rounded-card p-4" aria-labelledby="lien">
+    <section id="ton-lien" className="flex scroll-mt-24 flex-col gap-2 lacquer rounded-card p-4" aria-labelledby="lien">
       {/* Titre pour les lecteurs d'écran : ReferralShare affiche déjà « Ton code » */}
       <h2 id="lien" className="sr-only">{t("title")}</h2>
       <ReferralShare code={view.code} vanity={view.vanity ? { standard: view.standardCode } : null} />
@@ -70,6 +63,7 @@ async function LinkCard({ view }: { view: Pick<ReferralV2View, "code" | "standar
       ) : (
         <p className="text-xs text-text-muted">{t("askVanity")}</p>
       )}
+      <ReferralStory mode="how" isGuest={false} className="self-start" />
     </section>
   );
 }
@@ -89,7 +83,7 @@ async function Rules({ rules }: { rules: ReferralV2Rules }) {
   );
 }
 
-async function StepsSection({ steps, conditions }: { steps: StepGifts[]; conditions: StepConditions }) {
+async function StepsSection({ steps, conditions, multiplier = 1 }: { steps: StepGifts[]; conditions: StepConditions; multiplier?: number }) {
   const t = await getTranslations("referralV2.steps");
   return (
     <section className="flex flex-col gap-3" aria-labelledby="gains">
@@ -97,7 +91,7 @@ async function StepsSection({ steps, conditions }: { steps: StepGifts[]; conditi
         <h2 id="gains" className="font-title text-lg font-bold">{t("title")}</h2>
         <span className="text-xs text-text-muted">{t("tapAny")}</span>
       </div>
-      <StepCards steps={steps} conditions={conditions} />
+      <StepCards steps={steps} conditions={conditions} multiplier={multiplier} />
     </section>
   );
 }
@@ -135,18 +129,19 @@ const grid = (left: ReactNode, right: ReactNode) => (
 );
 
 /** Invité : ce que rapporte le parrainage, et l'inscription d'abord. */
-export async function ReferralV2Guest({ steps, rules, invited }: { steps: StepGifts[]; rules: ReferralV2Rules; invited: boolean }) {
+export async function ReferralV2Guest({ steps, rules, invited, multiplier = 1 }: { steps: StepGifts[]; rules: ReferralV2Rules; invited: boolean; multiplier?: number }) {
   const [t, tAccount] = await Promise.all([getTranslations("referralV2.guest"), getTranslations("account")]);
   return (
     <>
-      <Hero />
+      <Hero multiplier={multiplier} />
       <section className="flex flex-col gap-3 rounded-card border border-kin/60 bg-[linear-gradient(135deg,var(--color-surface),var(--color-surface-2))] p-5">
         <p className="font-title text-lg font-bold">{t(invited ? "invited" : "body")}</p>
         <ButtonLink href="/inscription" variant="primary" className="self-start">
           {tAccount("createAccount")}
         </ButtonLink>
       </section>
-      <StepsSection steps={steps} conditions={stepConditions(rules)} />
+      <StepsSection steps={steps} conditions={stepConditions(rules)} multiplier={multiplier} />
+      <ReferralStory mode="how" isGuest className="self-start" />
     </>
   );
 }
@@ -158,12 +153,15 @@ export async function ReferralV2({
   timeZone,
   now,
   cookieCode,
+  multiplier = 1,
 }: {
   view: ReferralV2View;
   rules: ReferralV2Rules;
   timeZone: string;
   now: Date;
   cookieCode: string | null;
+  /** ×N de l'Ennichi sur les étapes 1 et 2, pendant la fête. */
+  multiplier?: number;
 }) {
   const [t, format] = await Promise.all([getTranslations("referralV2"), getFormatter()]);
   const conditions = stepConditions(rules);
@@ -207,10 +205,11 @@ export async function ReferralV2({
           <p className="text-xs text-text-muted">{t("self.referrerBody")}</p>
         </section>
         {last}
-        <section className="flex flex-col gap-2 lacquer rounded-card p-4">
+        <section id="ton-lien" className="flex scroll-mt-24 flex-col gap-2 lacquer rounded-card p-4">
           <h2 className="font-title text-base font-bold">{t("self.inviteTitle")}</h2>
           <p className="text-xs text-text-muted">{t("self.inviteBody")}</p>
           <ReferralShare code={view.code} vanity={view.vanity ? { standard: view.standardCode } : null} />
+          <ReferralStory mode="how" isGuest={false} className="self-start" />
         </section>
         {table && (
           <>
@@ -248,11 +247,11 @@ export async function ReferralV2({
 
   return (
     <>
-      <Hero />
+      <Hero multiplier={multiplier} />
       {grid(
         <>
           {vouchers}
-          <StepsSection steps={view.steps} conditions={conditions} />
+          <StepsSection steps={view.steps} conditions={conditions} multiplier={multiplier} />
           {last}
         </>,
         <>

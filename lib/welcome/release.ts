@@ -15,10 +15,11 @@ export const ANNOUNCEMENTS = [
 ] as const;
 
 /**
- * Annonces datées par un réglage plutôt que par le code : l'ouverture du casino (casino.opensAt). Le serveur
- * l'ajoute à la liste pour les comptes concernés (lib/casino/phase.ts, announcementDue).
+ * Annonces datées par un réglage plutôt que par le code : l'ouverture du casino (casino.opensAt) et le nouveau
+ * parrainage (referral.v2.announceAt). Le serveur les ajoute à la liste pour les comptes concernés
+ * (lib/casino/phase.ts, announcementDue ; lib/referral/announce.ts, referralAnnouncementAt).
  */
-export const DYNAMIC_ANNOUNCEMENT_KEYS = ["casino"] as const;
+export const DYNAMIC_ANNOUNCEMENT_KEYS = ["casino", "referral"] as const;
 
 export type AnnouncementKey = (typeof ANNOUNCEMENTS)[number]["key"] | (typeof DYNAMIC_ANNOUNCEMENT_KEYS)[number];
 export type Announcement = { key: AnnouncementKey; at: Date };

@@ -2549,7 +2549,9 @@
           "holdScore": "Score that sends to review",
           "scoreTtlHours": "Score lifetime (hours)",
           "cardLockDays": "Referee card lock (days)",
-          "pairLockDays": "Referee-to-referrer lock (days)"
+          "pairLockDays": "Referee-to-referrer lock (days)",
+          "announceAt": "Announcement to players",
+          "announceDays": "Days the announcement shows"
         },
         "hints": {
           "enabled": "Off, the previous program (v1) keeps running. On, new attachments use v2. Also in Features.",
@@ -2567,8 +2569,11 @@
           "cardLockDays": "The referee can't sell or give cards during this delay.",
           "pairLockDays": "Nothing moves from the referee to their referrer during this delay.",
           "lots": "Rewards are created in Rewards. The trust share only applies to steps 1 and 2.",
-          "milestones": "Up to {max} milestones, in settled friends, strictly increasing. Paid automatically."
-        }
+          "milestones": "Up to {max} milestones, in settled friends, strictly increasing. Paid automatically.",
+          "announceAt": "The “Referrals are changing” window shows once to accounts created before this date. Empty: no announcement. Only set it once referrals v2 are on.",
+          "announceDays": "After this, a player who hasn't logged in no longer sees it."
+        },
+        "now": "Now"
       },
       "ambassador": {
         "title": "{count, plural, one {Proposed Ambassador} other {# proposed Ambassadors}}",
@@ -7995,6 +8000,7 @@
   "referralV2": {
     "title": "Referrals",
     "lead": "Invite a friend: you both win, at every step.",
+    "x2Ennichi": "×{n} on steps 1 and 2 · Ennichi",
     "link": {
       "title": "Your link",
       "hint": "Your shared pulls, profile and showcases carry your code too.",
@@ -8219,6 +8225,45 @@
       "emptyTitle": "The roll is waiting for its first name",
       "emptyBody": "The first player to bring {count} friends will be written on it with the 壱 seal.",
       "you": "You: {count, plural, one {# installed friend} other {# installed friends}} out of {threshold}."
+    },
+    "story": {
+      "label": "Referrals",
+      "how": "How it works",
+      "next": "Next",
+      "later": "Later",
+      "invite": "Invite a friend",
+      "gotIt": "Got it",
+      "pane": "Screen {n} of {count}",
+      "new": "New",
+      "x2": "×{n}",
+      "x2Fete": "×{n} during the festival",
+      "p1": {
+        "title": "Referrals are changing",
+        "lead": "Invite a friend: you both win, at every step.",
+        "step": "As soon as they create their account",
+        "more": "Then even more at every step. Everything is paid on its own."
+      },
+      "p2": {
+        "eyebrow": "{count, plural, one {# step} other {# steps}}",
+        "title": "A gift at every step",
+        "total": "For a friend who stays a month, you get in total",
+        "trust": "If your friend signs up without an older Discord account, the Mythics of your steps 1 and 2 arrive at their step 3."
+      },
+      "p3": {
+        "eyebrow": "Your milestones",
+        "title": "The more you invite, the more you win",
+        "lead": "On top of the steps, each settled friend brings you closer to a milestone. Paid on its own."
+      },
+      "p4": {
+        "days": "{days} days of festival",
+        "day": "Day {n} of {days}",
+        "start": "The Ennichi begins",
+        "on": "It's the Ennichi",
+        "lanterns": "<b>Lanterns</b> · each friend lights a lantern: gifts for everyone",
+        "banzuke": "<b>Banzuke</b> · the recruiters' ranking",
+        "omikuji": "<b>Omikuji</b> · the festival raffle",
+        "x2": "×{n} on steps 1 and 2 during the festival"
+      }
     }
   },
   "invite": {

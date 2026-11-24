@@ -90,6 +90,15 @@ const DAY = 86_400_000;
 const lineKey = (l: LotLine) => (l.kind === "BOOSTER" ? `B:${l.look.slug}` : l.kind === "CARD" ? `C:${l.card?.cardId ?? l.name}` : `R:${l.rarity}`);
 const merge = (lots: readonly (LotView | null)[]) => mergeLots<LotLine, LotView>(lots, lineKey);
 
+/** Lot multiplié (×2 de l'Ennichi sur les étapes 1 et 2), pour l'additionner à d'autres. */
+const scaleLot = (lot: LotView | null, m: number): LotView | null =>
+  lot && m !== 1 ? { ...lot, zeni: lot.zeni * m, lines: lot.lines.map((l) => ({ ...l, quantity: l.quantity * m })) } : lot;
+
+/** Ce que reçoit le parrain, en tout, pour un ami qui va au bout des étapes ; `multiplier` sur les étapes 1 et 2. */
+export function referrerMonthTotal(steps: readonly StepGifts[], multiplier = 1): LotView | null {
+  return merge(steps.map((s, i) => scaleLot(s.referrerTotal, i < 2 ? multiplier : 1)));
+}
+
 function rowsOf(progress: ReturnType<typeof stepProgress>, now: Date): StepRow[] {
   const ahead = (d: Date | null) => (d && d.getTime() > now.getTime() ? d.toISOString() : null);
   return progress.map((p) => ({ state: p.state, at: iso(p.at), have: p.have, need: p.need, readyAt: ahead(p.readyAt), deadline: ahead(p.deadline) }));

@@ -7,7 +7,7 @@ import { changedSettingKeys } from "@/lib/settings/form";
 import { REFERRAL_V2_FORM_KEYS, referralV2SettingsSchema, type ReferralV2Settings } from "@/lib/settings/referral-v2-form";
 import { updateReferralV2Settings } from "@/server/actions/admin-settings";
 import { Button } from "../../ui/Button";
-import { NumberField, SelectField, Toggle } from "../fields";
+import { Field, inputClass, NumberField, SelectField, Toggle, toLocalInput } from "../fields";
 import { SettingsSaveBar } from "../SettingsSaveBar";
 
 type NumberKey =
@@ -23,7 +23,8 @@ type NumberKey =
   | "referral.v2.holdScore"
   | "referral.v2.scoreTtlHours"
   | "referral.v2.cardLockDays"
-  | "referral.v2.pairLockDays";
+  | "referral.v2.pairLockDays"
+  | "referral.v2.announceDays";
 
 // Bornes des champs (les mêmes que les schémas Zod de lib/settings/defaults.ts)
 const LIMITS: Record<NumberKey, [number, number]> = {
@@ -40,6 +41,7 @@ const LIMITS: Record<NumberKey, [number, number]> = {
   "referral.v2.scoreTtlHours": [1, 24 * 30],
   "referral.v2.cardLockDays": [0, 365],
   "referral.v2.pairLockDays": [0, 365],
+  "referral.v2.announceDays": [0, 60],
 };
 
 type Short<K> = K extends `referral.v2.${infer S}` ? S : never;
@@ -92,6 +94,23 @@ export function ReferralV2SettingsForm({ initial, lots }: { initial: ReferralV2S
         <Toggle label={label("referral.v2.enabled")} checked={draft["referral.v2.enabled"]} onChange={(v) => set("referral.v2.enabled", v)} />
         <p className="text-xs text-text-muted">{t("hints.enabled")}</p>
         {num("referral.v2.maxPerMonth")}
+        <Field label={label("referral.v2.announceAt")} hint={t("hints.announceAt")}>
+          {(id) => (
+            <div className="flex flex-wrap gap-2">
+              <input
+                id={id}
+                type="datetime-local"
+                value={toLocalInput(draft["referral.v2.announceAt"])}
+                onChange={(e) => set("referral.v2.announceAt", e.target.value ? new Date(e.target.value).toISOString() : null)}
+                className={`${inputClass} min-w-0 flex-1`}
+              />
+              <Button type="button" size="sm" className="self-center" onClick={() => set("referral.v2.announceAt", new Date().toISOString())}>
+                {t("now")}
+              </Button>
+            </div>
+          )}
+        </Field>
+        {num("referral.v2.announceDays")}
       </fieldset>
 
       <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
