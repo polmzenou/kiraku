@@ -704,7 +704,7 @@ Mise en œuvre (étape 9b) :
 - **Crédits de boosters** (`BoosterCredit`, un compteur par joueur et par type) : cadeaux d'amis, boutique, missions et parrainage. `User.giftBoosters` y a migré. Un crédit s'ouvre depuis l'accueil (`/ouvrir/[slug]?credit=1`), même après la fin d'un événement, avec la pitié Mythique mais sans doré ni divin.
 - **Lots** (`Lot`, `LotItem`) : Zeni, boosters d'un type, carte précise ou carte tirée dans une rareté (pool du booster standard). Versés par `grantLot` dans la transaction de ce qui les cause. `/admin/lots`.
 - **Missions** (`Mission`, `UserMission`) : quotidiennes et hebdomadaires dans le fuseau `game.timeZone` (semaine ISO, lundi). La progression est **dérivée des journaux** (ouvertures, raretés tirées, découvertes, recyclage, dépenses, cadeaux, amitiés), recalculée sous verrou au moment de réclamer ; la clé `(userId, missionId, periodKey)` interdit la double réclamation. `/missions`, `/admin/missions`.
-- **Parrainage** (`Referral`, code court de 8 caractères généré par la base) : lien `/i/[code]` (cookie httpOnly 30 j, rien en base) puis rattachement à l'inscription ou par saisie dans `referral.attachWindowDays`. Refus : soi-même, invité, déjà parrainé, cycle, blocage, parrain au plafond `referral.maxPerMonth`, plus de 3 rattachements par IP et par jour. Rien n'est versé avant la **qualification** (compte vérifié, `referral.minAccountAgeHours`, `referral.minBoostersOpened` boosters ouverts depuis le rattachement), évaluée à la visite de `/parrainage` et à l'ouverture de boosters du filleul ; chacun réclame ensuite son lot (`referral.referrerLotId`, `referral.refereeLotId`). `/admin/parrainage` pour révoquer.
+- **Parrainage** (`Referral`, code court de 8 caractères généré par la base) : lien `/i/[code]` (cookie httpOnly 30 j, rien en base) puis rattachement à l'inscription ou par saisie dans `referral.attachWindowDays`. Refus : soi-même, invité, déjà parrainé, cycle, blocage, parrain au plafond `referral.maxPerMonth`, plus de 3 rattachements par IP et par jour. Rien n'est versé avant la **qualification** (compte vérifié, `referral.minAccountAgeHours`, `referral.minBoostersOpened` boosters ouverts depuis le rattachement), évaluée à la visite de `/parrainage` et à l'ouverture de boosters du filleul ; chacun réclame ensuite son lot (`referral.referrerLotId`, `referral.refereeLotId`). `/admin/parrainage` pour révoquer. Refonte prévue à l'étape 18 : voir « Parrainage v2 et événement Ennichi ».
 - **Boutique en Zeni** (`ShopItem` livre un lot, `Purchase`) : prix vu revérifié (`STALE`), limite par joueur (une fois, par jour, par semaine) comptée sous verrou, puis `fulfillPurchase`. `/boutique`, `/admin/boutique`.
 - **Paiement par carte** : interface seulement (`server/payments/provider.ts`, `getPaymentProvider()` renvoie `null`). Brancher Stripe = écrire le fournisseur et une route webhook qui appelle `fulfillPurchase`, le même chemin que l'achat en Zeni ; la zone « Packs premium » exige `shop.premiumEnabled` **et** un fournisseur.
 - **Historique** `/compte/historique` (pièce de l'en-tête et solde du Compte) : par curseur, filtres Tout · Gains · Dépenses, lien vers la source. `/admin/economie` affiche les Zeni en circulation et la liste des soldes qui ne correspondent pas à leur journal (doit rester vide).
@@ -1266,6 +1266,91 @@ Beaucoup de joueurs viennent de Kyara et veulent retrouver leurs cartes. Un impo
 
 **Réglages** (`/admin/kyara`) : interrupteur (aussi dans les fonctionnalités), date de sortie, jours de fenêtre, profil Kyara du compte Kiraku, Zeni par rareté Kyara, plafond, conservation.
 
+## Parrainage v2 et événement Ennichi
+
+Le parrainage de l'étape 7 rapportait trop peu : un ami qualifié valait moins d'une heure de réserve gratuite. Rien ne se passait pendant deux jours, et l'ami invité arrivait sur un formulaire. La v2 récompense chaque étape du filleul, des deux côtés et bien plus fort, fait de chaque lien partagé une invitation, et s'ouvre par un événement, l'Ennichi 縁日 (la fête des liens). Montants choisis le 2026-11-23 ; ce sont des lots, tous réglables dans `/admin/parrainage`.
+
+### Étapes du filleul
+
+Quatre étapes, chacune réclamée une fois par côté, avec une notification (et un push) au parrain. Un jour actif est un jour (fuseau `game.timeZone`) où le filleul a ouvert au moins un booster, compté depuis le rattachement.
+
+| Étape | Condition | Filleul | Parrain |
+| --- | --- | --- | --- |
+| 1 · Arrivée | compte inscrit et vérifié, parrain rattaché | 20 boosters + 1 Jūbako | 1 booster Mythique + 5 boosters |
+| 2 · Installé | 48 h depuis le rattachement, 20 boosters ouverts hors cadeau depuis le rattachement (le premier, ouvert en invité juste avant l'inscription, compte) | 2 boosters Mythiques + 10 boosters + 2 000 Zeni | 1 booster Mythique + 2 Jūbako + 1 000 Zeni |
+| 3 · Accro | 5 jours actifs dans ses 14 premiers (jour du rattachement compris) | 1 Divin + 1 booster Mythique + 10 boosters | 1 Divin + 5 boosters |
+| 4 · Fidèle | 15 jours actifs dans ses 30 premiers | 2 Divins + 1 booster Mythique | 2 Divins |
+
+« Boosters » : boosters standard, versés en crédits. Une étape dont la fenêtre est passée ne se rattrape pas. L'étape 2 remplace l'ancienne qualification : c'est elle qui compte pour les paliers, le banzuke et les lanternes.
+
+### Paliers, grand-parrainage, plafond
+
+Paliers du parrain, en amis installés (étape 2 atteinte, révoqués exclus) depuis toujours, en plus des étapes :
+
+| Amis | Récompense |
+| --- | --- |
+| 1 | badge 縁 Parrain + cadre de profil « fil rouge » |
+| 3 | 1 Divin |
+| 5 | 1 Mythique au choix |
+| 10 | 1 booster Mythique + 2 Divins + badge 募 Recruteur |
+| 25 | rôle Ambassadeur, proposé à l'équipe qui le valide |
+| 50 | 2 Mythiques au choix |
+| 100 | carte 1/1 + nom au mur des légendes |
+
+- **Mythique au choix** (nouveau) : un bon ; le joueur choisit une Mythique publiée du catalogue, le serveur vérifie le bon et verse la carte dans la même transaction.
+- **Carte 1/1** (nouveau) : édition gravée d'un seul exemplaire (voir « Éditions gravées numérotées ») d'une carte choisie par le gagnant, créée à la réclamation.
+- **Grand-parrainage** : quand le filleul d'un filleul atteint l'étape 2, le grand-parrain reçoit 1 Impérial + 1 Jūbako. Un seul niveau ; ne compte pas pour les paliers.
+- **Plafond** : 30 filleuls par mois en v2 (`referral.v2.maxPerMonth`), levé pendant l'Ennichi ; la v1 garde `referral.maxPerMonth` (10) tant que la v2 est coupée.
+
+### Chaque partage est une invitation
+
+- Les liens de tirage, de profil, de vitrine, du Wrapped, de table de casino et de salle de combat d'un joueur inscrit portent son code : `/i/CODE?vers=/tirage/…` retient le parrain (cookie, comme aujourd'hui) puis ouvre le contenu, jamais une adresse hors du site. Aperçu : « Pseudo a tiré X · 20 boosters offerts si tu le rejoins ».
+- **Arrivée en cadeau** : une pochibukuro scellée au nom du parrain s'ouvre sur le cadeau de bienvenue ; l'ami ouvre un premier booster en invité, crée son compte, et l'étape 1 tombe à l'inscription.
+- **Arbre des liens** sur le profil public : son parrain, ses filleuls installés et les leurs, reliés par des fils rouges (masquable dans les réglages du profil).
+- **Code perso** (`/i/TRISTREN`) pour les Ambassadeurs et les comptes choisis par l'équipe : unique, validé par l'équipe ; l'ancien code reste valide.
+
+### Anti-farm : payer selon la confiance
+
+On ne refuse personne de plus qu'aujourd'hui ; la confiance décide quand on paie.
+
+- **Vérification** : Discord ou e-mail, comme aujourd'hui. Discord de plus de 30 jours quand il est lié (date lue dans l'identifiant Discord) : chaque étape paie dès qu'elle est atteinte. E-mail seul ou Discord plus récent : les boosters Mythiques du parrain des étapes 1 et 2 ne sont versés qu'à l'étape 3 (tout de suite si le filleul lie ensuite un Discord ancien ; perdus s'il s'arrête avant l'étape 3).
+- **Filleul une seule fois** par compte Discord et par boîte e-mail (alias ramenés à la même boîte), même après déliaison ou suppression du compte : empreinte gardée, comme pour l'import Kyara.
+- **Appareil commun** (même cookie `kiraku.device` chez le parrain et le filleul, ou chez deux filleuls du même parrain) : le parrainage passe « À vérifier » et rien n'est versé avant la décision de l'équipe. Une IP partagée seule ne bloque rien (frères et sœurs, lycée) mais compte dans le score.
+- **Score de la paire** (`lib/anticheat/score.ts`) recalculé avant chaque grosse récompense (étapes 3 et 4, paliers à partir de 3, lots de l'Ennichi) : au-dessus du seuil, la récompense attend l'équipe.
+- **Transferts** : pendant 14 jours, les cartes du filleul ne se vendent, ne s'offrent, ne s'échangent ni ne se misent ; pendant 30 jours, rien ne passe du filleul à son parrain (l'inverse reste permis).
+- **Triche avérée** : les deux comptes bannis (bans réseau, le ban suit l'appareil) et tout ce que le parrainage a versé est repris (crédits non ouverts, Zeni dans la limite du solde, cartes encore possédées). La règle est écrite sur `/parrainage`.
+- Restent : 3 rattachements par IP et par jour, fenêtre de saisie du code, pas de cycle. Pas de contrôle des VPN pour l'instant ; à ajouter si des abus apparaissent.
+- **Prérequis** : les bans réseau en production.
+
+### Événement Ennichi 縁日
+
+Quatorze jours, lancés dès que le parrainage v2 est prêt (pas de date fixe), derrière leur interrupteur, puis 3 jours de clôture. L'événement doit être très visuel : maquettes validées avant le code du visuel (rue des lanternes, pochibukuro d'invitation, banzuke, omikuji, arbre des liens).
+
+- **Rue des lanternes** (objectif commun) : chaque ami arrivé pendant l'événement pose une lanterne éteinte sur l'accueil, qui s'allume quand il atteint l'étape 2 (jusqu'à la clôture). À chaque palier de lanternes allumées (quatre seuils, calés sur la fréquentation), chaque joueur éligible reçoit le lot entier du palier, versé tout seul ; éligible : compte inscrit et vérifié, au moins un booster ouvert pendant l'événement, limite par IP. Lots choisis le 2026-11-23, par joueur :
+
+  | Palier | Lot pour chaque joueur |
+  | --- | --- |
+  | 一 | 30 boosters + 2 Jūbako |
+  | 二 | 50 boosters + 2 Impériaux + 1 booster Mythique |
+  | 三 | 80 boosters + 3 boosters Mythiques + 1 Divin |
+  | 四 | 250 boosters + 3 Divins + 1 Mythique au choix |
+
+  Seuils et lots se règlent dans l'admin ; un palier déjà atteint se fige (son lot ne change plus).
+- **Banzuke 番付** : classement des recruteurs en amis arrivés pendant l'événement et installés, arrêté à la clôture, une fois les cas « À vérifier » tranchés. 1er : titre Yokozuna + carte 1/1 + 3 Mythiques au choix ; 2e et 3e : Ōzeki + 2 Mythiques au choix ; 4e à 10e : Sekiwake + 1 Mythique au choix ; 11e à 50e : 1 Divin. Titres permanents, marqués de l'édition.
+- **Omikuji おみくじ** : tirage en direct le soir de la clôture, un ticket par ami arrivé pendant l'événement et installé. Cagnotte fixe, toujours distribuée en entier : 1 carte 1/1, 20 Divins, 55 boosters Mythiques. Chacun gagne au plus un lot tant que d'autres n'ont rien ; s'il reste des lots, on refait un tour. Tirage par le serveur, vérifiable comme le pile ou face.
+- **Bonus** : pour les amis arrivés pendant l'événement, les étapes 1 et 2 comptent double, des deux côtés.
+
+**Designs retenus le 2026-11-23** (une proposition par écran dans les quatre ateliers de maquettes) :
+
+| Atelier | Écran : proposition |
+| --- | --- |
+| Parrainage | Annonce : enveloppe · Page sans filleul : fuda à retourner · Page avec filleuls : tableau · Vue du filleul : bienvenue d'abord · Paliers : sceaux · Cadeaux reçus : le nœud · Notifications : ligne et sachets · Bons : grille · Mur des légendes : rouleau d'honneur |
+| Invitation | Arrivée (invité) : lettre · Arrivée (déjà inscrit) : carte centrée · Après le premier booster : sous le récap · Partager : feuille de partage · Aperçus des liens : enveloppe · Arbre des liens : arbre · Cadre et badges : double anneau · Code perso : plaque d'or |
+| Ennichi | Bannière : rue des lanternes · Page de la fête : ta fête d'abord · Lanternes : liste des paliers · Banzuke en direct : tableau de sumo · Banzuke final : podium (à retravailler, plus riche) · Omikuji : rouleaux · Vérification : en bref · Explications « ? » : carte dorée |
+| Équipe | Suivi : tableau · Fiche : deux colonnes · File « À vérifier » : cartes · Ambassadeurs et codes : cartes · Admin de l'Ennichi : tableau de bord · Salon Discord privé : message détaillé · Annonce à la communauté : annonce détaillée |
+
+**Réglages.** Interrupteurs du parrainage et de l'Ennichi. Lots de chaque étape et de chaque côté, des paliers, du grand-parrainage, des paliers de lanternes, des rangs du banzuke et de la cagnotte ; conditions et fenêtres des étapes ; seuils de confiance (âge du compte Discord, score) ; durées des verrous ; plafond ; dates, seuils des lanternes et multiplicateur de l'Ennichi. `/admin/parrainage` tient aussi la file « À vérifier » (indices, valider, révoquer, révoquer et bannir), les codes perso et les Ambassadeurs proposés.
+
 ## Fluidité et animations
 
 Objectif : un téléphone milieu de gamme en 4G charge une page en moins de 2,5 s (LCP), répond à un appui en moins de 200 ms (INP), ne fait pas sauter la page (CLS < 0,1) et anime à 60 images par seconde.
@@ -1805,6 +1890,7 @@ Construis dans cet ordre : chaque étape est jouable seule et sert de base à la
     - **16d Consécration et profil.** Migration `prestige_sanctuary`. Consécration et sanctuaire, conditions et cosmétiques de prestige, emakis des cycles, filtres de la collection.
     - **16e Finitions.** Export et anonymisation RGPD, annonces Discord, fiche joueur de l'admin, `docs/MISE-EN-PRODUCTION.md`, essai sur un vrai téléphone en 375 px, lint, typecheck et tests.
 17. **Import Kyara** — voir « Import Kyara ». 17-0 test des routes de Kyara avec deux vrais comptes (`docs/KYARA-IMPORT.md`), 17a logique pure et réglages, 17b schéma, migration et notifications, 17c cœurs serveur, RGPD et tests en base, 17d accès de l'équipe et réglages, 17e côté joueur, 17f outillage de l'équipe (file, favori, réception, fiche), 17g textes légaux et documentation, 17h version simplifiée (demande sans adresse, favori à clé par membre, versement dès la lecture, « À vérifier » pour les cas douteux).
+18. **Parrainage v2 et Ennichi** — voir « Parrainage v2 et événement Ennichi ». Prérequis : bans réseau en production. Découpage à préciser en mode Plan : 18a étapes du filleul, paliers, grand-parrainage et anti-farm (confiance, appareil commun, score, verrous de transfert, reprise, file « À vérifier ») ; 18b code sur tous les liens partagés, arrivée en pochibukuro, aperçus ; 18c arbre des liens, code perso, bon « Mythique au choix », carte 1/1, Ambassadeur proposé ; 18d Ennichi (lanternes, banzuke, omikuji, bonus), maquettes validées avant le code du visuel ; 18e règlement de l'Ennichi, textes légaux, documentation, essai sur un vrai téléphone.
 
 Hors de ce plan : Stripe, après un avis juridique.
 
