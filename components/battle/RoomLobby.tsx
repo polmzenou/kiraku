@@ -1,8 +1,10 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { Link, useRouter } from "@/i18n/navigation";
+import { getPathname, Link, useRouter } from "@/i18n/navigation";
+import { withShareCode } from "@/lib/referral/share";
+import { useShareCode } from "../referral/ShareCode";
 import type { BattleView, CandidateCard, DeckView } from "@/lib/battle/view";
 import { battleViewAction, cancelRoomAction, joinRoomAction } from "@/server/actions/battle";
 import { useHoldAwake } from "../realtime/activity";
@@ -43,6 +45,8 @@ export function RoomLobby({
   decks: DeckView[];
 }) {
   const t = useTranslations("battle");
+  const locale = useLocale();
+  const shareCode = useShareCode();
   const router = useRouter();
   const name = usePlayerName();
   const [copied, setCopied] = useState(false);
@@ -139,7 +143,7 @@ export function RoomLobby({
               {copied ? t("room.copied") : t("room.copy")}
             </Button>
             {typeof navigator !== "undefined" && "share" in navigator && (
-              <Button onClick={() => void navigator.share({ text: t("room.shareText", { code }) }).catch(() => undefined)}>{t("room.share")}</Button>
+              <Button onClick={() => void navigator.share({ text: t("room.shareText", { code }), url: withShareCode(new URL(getPathname({ href: "/combat", locale }), window.location.origin).href, shareCode) }).catch(() => undefined)}>{t("room.share")}</Button>
             )}
           </div>
         </>

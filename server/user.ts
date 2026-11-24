@@ -46,6 +46,8 @@ function lookupUser(id: string) {
       role: true,
       bannedAt: true,
       referredById: true,
+      referralCode: true,
+      vanityCode: true,
       profileVisibility: true,
       showCollection: true,
       locale: true,

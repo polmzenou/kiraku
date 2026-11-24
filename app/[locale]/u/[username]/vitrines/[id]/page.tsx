@@ -22,9 +22,10 @@ import { loadProfile } from "@/server/collection/profile-page";
 import { ownedCardIds } from "@/server/collection/owned";
 import { getSetting } from "@/server/settings";
 import { getShowcaseCards, listShowcases } from "@/server/showcase/queries";
+import { referralPreview } from "@/server/referral/preview";
 
-export async function generateMetadata({ params }: PageProps<"/[locale]/u/[username]/vitrines/[id]">): Promise<Metadata> {
-  const { locale: raw, username: rawUsername, id } = await params;
+export async function generateMetadata({ params, searchParams }: PageProps<"/[locale]/u/[username]/vitrines/[id]">): Promise<Metadata> {
+  const [{ locale: raw, username: rawUsername, id }, sp] = await Promise.all([params, searchParams]);
   const locale = hasLocale(routing.locales, raw) ? raw : routing.defaultLocale;
   const username = decodeURIComponent(rawUsername);
   const owner = USERNAME_REGEX.test(username) ? await findProfileOwner(username) : null;
@@ -36,12 +37,16 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/u/[usern
   const [t, tAccount] = await Promise.all([getTranslations({ locale, namespace: "showcase" }), getTranslations({ locale, namespace: "account" })]);
   const name = displayName(owner.username, owner.isGuest, (code) => tAccount("guestName", { code }));
   const showcaseName = showcases[index].name ?? t("untitled", { n: index + 1 });
+  const title = t("metaTitle", { name: showcaseName, owner: name });
+  const description = t("metaDescription", { name: showcaseName, owner: name, count: showcases[index].count });
   return {
-    title: t("metaTitle", { name: showcaseName, owner: name }),
-    description: t("metaDescription", { name: showcaseName, owner: name, count: showcases[index].count }),
+    title,
+    description,
     // Comme le profil : jamais indexée, liens suivis seulement s'il est public pour tous
     robots: { index: false, follow: !owner.isGuest && anonymousAccess(owner).profile },
     alternates: { canonical: getPathname({ href: `/u/${owner.username}/vitrines/${id}`, locale }) },
+    // Lien partagé avec le code d'un parrain : aperçu de l'invitation
+    ...(await referralPreview(sp.ref, locale, title, description)),
   };
 }
 

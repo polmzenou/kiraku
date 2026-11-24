@@ -22,6 +22,9 @@ import { fontVariables } from "../fonts";
 import { appUrl } from "@/server/env";
 import { baseOpenGraph, ogImageUrl } from "@/lib/seo/open-graph";
 import { ADSENSE_CLIENT, ADSENSE_SCRIPT_URL, adsEnabled } from "@/lib/ads/config";
+import { ShareCodeProvider } from "@/components/referral/ShareCode";
+import { shareCodeOf } from "@/lib/referral/share";
+import { getCurrentUser } from "@/server/user";
 
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
   const { locale } = await params;
@@ -67,6 +70,8 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   const spoiler = parseSpoilerMode(jar.get(SPOILER_COOKIE)?.value);
   const navLayout = parseNavLayout(jar.get(NAV_LAYOUT_COOKIE)?.value);
   const clientMessages = pickClientMessages(await getMessages());
+  // Code de parrain du joueur connecté, ajouté aux liens qu'il partage (lu une fois par requête, comme l'en-tête)
+  const shareCode = shareCodeOf(await getCurrentUser());
   const nonce = adsEnabled() ? ((await headers()).get("x-nonce") ?? undefined) : undefined;
 
   return (
@@ -74,6 +79,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
       {/* Barre latérale (data-nav="rail", ≥ 1024 px) : le contenu et l'en-tête se décalent de sa largeur */}
       <body className="min-h-dvh lg:nav-rail:pl-24">
         <NextIntlClientProvider messages={clientMessages}>
+          <ShareCodeProvider code={shareCode}>
           <MotionPreferenceProvider initial={motion}>
             <RealtimeRoot>
               <AppHeader theme={theme} spoiler={spoiler} />
@@ -85,6 +91,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
             <ConsentManager />
             <ServiceWorkerRegister />
           </MotionPreferenceProvider>
+          </ShareCodeProvider>
         </NextIntlClientProvider>
         {/* Mesure des performances (LCP, INP, CLS) sans cookie ni identifiant : exemptée de consentement */}
         {process.env.VERCEL === "1" && <SpeedInsights />}

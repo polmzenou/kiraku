@@ -1,9 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { Link, useRouter } from "@/i18n/navigation";
+import { getPathname, Link, useRouter } from "@/i18n/navigation";
+import { withShareCode } from "@/lib/referral/share";
+import { useShareCode } from "../referral/ShareCode";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { otherSide } from "@/lib/casino/fairness";
 import { CASINO_MEDIA, SIDE_KANJI } from "@/lib/casino/media";
@@ -154,9 +156,12 @@ function Waiting({ table, now }: { table: CoinFlipTableView; now: number }) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<CasinoActionError | null>(null);
   const [pending, startTransition] = useTransition();
+  const locale = useLocale();
+  const shareCode = useShareCode();
 
+  // Le lien de la table, propre (sans les paramètres de la page) et avec le code de parrain du joueur
   const invite = async () => {
-    const url = window.location.href;
+    const url = withShareCode(new URL(getPathname({ href: `/casino/pile-ou-face/${table.id}`, locale }), window.location.origin).href, shareCode);
     try {
       if (navigator.share) await navigator.share({ title: t("shareTitle"), url });
       else {

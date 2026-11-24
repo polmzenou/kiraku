@@ -12,6 +12,7 @@ import { FALLBACK_THEME, localize } from "@/lib/boosters/types";
 import { getPublicOpening } from "@/server/boosters/openings";
 import { getBoosterTypeEntry } from "@/server/boosters/pools";
 import { getCurrentUser } from "@/server/user";
+import { referralPreview } from "@/server/referral/preview";
 
 const ID = /^[A-Za-z0-9-]{8,64}$/;
 
@@ -33,17 +34,21 @@ function ownerName(
   return loaded.opening.owner.guestCode ? t.guest(loaded.opening.owner.guestCode) : loaded.opening.owner.name;
 }
 
-export async function generateMetadata({ params }: PageProps<"/[locale]/tirage/[id]">): Promise<Metadata> {
-  const { id } = await params;
+export async function generateMetadata({ params, searchParams }: PageProps<"/[locale]/tirage/[id]">): Promise<Metadata> {
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
   const loaded = await load(id);
   if (!loaded) return {};
-  const [t, tAccount] = await Promise.all([getTranslations("draw"), getTranslations("account")]);
+  const [t, tAccount, locale] = await Promise.all([getTranslations("draw"), getTranslations("account"), getLocale()]);
   const { boosterName } = loaded;
   const name = ownerName(loaded, { anonymous: () => t("anonymous"), guest: (code) => tAccount("guestName", { code }) });
+  const title = t("title", { name });
+  const description = t("description", { name, booster: boosterName });
   return {
-    title: t("title", { name }),
-    description: t("description", { name, booster: boosterName }),
+    title,
+    description,
     robots: { index: false },
+    // Lien partagé avec le code d'un parrain : aperçu de l'invitation
+    ...(await referralPreview(sp.ref, locale, title, description)),
   };
 }
 

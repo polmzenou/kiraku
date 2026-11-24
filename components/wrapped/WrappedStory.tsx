@@ -5,7 +5,9 @@ import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode 
 import { Fuda } from "@/components/fuda/Fuda";
 import { Link } from "@/i18n/navigation";
 import type { CardView } from "@/lib/boosters/view";
+import { withShareCode } from "@/lib/referral/share";
 import { winRate, type WrappedSummary } from "@/lib/wrapped/summary";
+import { useShareCode } from "../referral/ShareCode";
 import { Button } from "../ui/Button";
 import "./wrapped.css";
 
@@ -189,6 +191,8 @@ export function WrappedStory({ summary, cards, imageSrc, siteUrl, embedded = fal
 /** Écran de fin : l'image story, le partage natif ou le téléchargement, le lien de Kiraku. */
 function Outro({ year, imageSrc, siteUrl, onReplay }: { year: number; imageSrc: string; siteUrl: string; onReplay: () => void }) {
   const t = useTranslations("wrapped.story.outro");
+  // Lien du site avec le code de parrain du joueur
+  const link = withShareCode(siteUrl, useShareCode());
   const [state, setState] = useState<"idle" | "sharing" | "failed" | "copied">("idle");
   const filename = `kiraku-wrapped-${year}.png`;
 
@@ -217,7 +221,7 @@ function Outro({ year, imageSrc, siteUrl, onReplay }: { year: number; imageSrc: 
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(siteUrl);
+      await navigator.clipboard.writeText(link);
       setState("copied");
     } catch {
       setState("failed");

@@ -43,9 +43,10 @@ import type { Badge } from "@/lib/profile/conditions";
 import { getIncenseState } from "@/server/boosters/incense";
 import { isStaff, presenceOf } from "@/lib/social/presence";
 import { wrappedTeaser } from "@/server/wrapped/queries";
+import { referralPreview } from "@/server/referral/preview";
 
-export async function generateMetadata({ params }: PageProps<"/[locale]/u/[username]">): Promise<Metadata> {
-  const { locale: raw, username: rawUsername } = await params;
+export async function generateMetadata({ params, searchParams }: PageProps<"/[locale]/u/[username]">): Promise<Metadata> {
+  const [{ locale: raw, username: rawUsername }, sp] = await Promise.all([params, searchParams]);
   const locale = hasLocale(routing.locales, raw) ? raw : routing.defaultLocale;
   const username = decodeURIComponent(rawUsername);
   const owner = USERNAME_REGEX.test(username) ? await findProfileOwner(username) : null;
@@ -59,11 +60,15 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/u/[usern
   // pour tous, et jamais pour un invité
   const followable = !owner.isGuest && anonymousAccess(owner).profile;
   const href = `/u/${owner.username}`;
+  const title = t("metaTitle", { name });
+  const description = t("metaDescription", { name });
   return {
-    title: t("metaTitle", { name }),
-    description: t("metaDescription", { name }),
+    title,
+    description,
     robots: { index: false, follow: followable },
     alternates: { canonical: getPathname({ href, locale }) },
+    // Lien partagé avec le code d'un parrain : aperçu de l'invitation
+    ...(await referralPreview(sp.ref, locale, title, description)),
   };
 }
 

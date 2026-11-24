@@ -3,16 +3,19 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { getPathname } from "@/i18n/navigation";
+import { withShareCode } from "@/lib/referral/share";
+import { useShareCode } from "../referral/ShareCode";
 import { Button } from "../ui/Button";
 
 /** Partage du profil public (ou d'une de ses pages, `path`) : feuille de partage du téléphone, sinon copie du lien. */
 export function ShareProfileButton({ username, title, path, label }: { username: string; title: string; path?: string; label?: string }) {
   const t = useTranslations("profile");
+  const shareCode = useShareCode();
   const locale = useLocale();
   const [copied, setCopied] = useState(false);
 
   async function share() {
-    const url = new URL(getPathname({ href: path ?? `/u/${username}`, locale }), window.location.origin).href;
+    const url = withShareCode(new URL(getPathname({ href: path ?? `/u/${username}`, locale }), window.location.origin).href, shareCode);
     if (typeof navigator.share === "function") {
       try {
         await navigator.share({ title, url });
