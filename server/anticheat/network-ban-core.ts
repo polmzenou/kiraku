@@ -209,42 +209,54 @@ export async function banGroupWith(
   db: PrismaClient,
   input: { adminId: string; userIds: readonly string[]; reason: string; now: Date; sharedIpCap: number },
 ): Promise<{ accounts: number; bans: number; skipped: SkippedKey[] }> {
-  const ids = [...new Set(input.userIds)];
   const result = await db.$transaction(async (tx) => {
-    await lockPlayers(tx, [input.adminId, ...ids]);
+    await lockPlayers(tx, [input.adminId, ...input.userIds]);
     await assertAdmin(tx, input.adminId);
-    if (ids.includes(input.adminId)) throw new NetworkBanError("SELF");
-    const users = await tx.user.findMany({ where: { id: { in: ids } }, select: { id: true, role: true } });
-    if (users.length !== ids.length) throw new NetworkBanError("NOT_FOUND");
-    if (users.some((u) => isStaff(u.role))) throw new NetworkBanError("STAFF_TARGET");
-
-    const states = await keyStates(tx, await networkKeysOf(tx, ids), new Set(ids), input.sharedIpCap, input.now);
-    const toBan = states.filter((s) => s.state === "OK");
-    await clearExpired(tx, toBan, input.now);
-    await tx.networkBan.createMany({
-      data: toBan.map((s) => ({ kind: s.kind, value: s.key, source: "GROUP" as const, reason: input.reason, userId: s.userIds[0], createdById: input.adminId })),
-      skipDuplicates: true,
-    });
-    const banned: string[] = [];
-    for (const id of ids) {
-      const account = await banAccountWith(tx, id, input.now);
-      if (account) banned.push(id);
-      const own = toBan.filter((s) => s.userIds.includes(id));
-      await writeAdminLog(tx, {
-        adminId: input.adminId,
-        action: "USER_NETWORK_BAN",
-        targetType: "User",
-        targetId: id,
-        after: json({ values: { account, group: ids.length, bans: own.map((s) => ({ kind: s.kind, value: maskedKey(s.kind, s.key) })) }, reason: input.reason }),
-      });
-    }
-    const skipped = states
-      .filter((s) => s.state !== "OK" && s.state !== "BANNED")
-      .map((s): SkippedKey => ({ kind: s.kind, value: maskedKey(s.kind, s.key), state: s.state }));
-    return { banned, bans: toBan.length, skipped };
+    return banGroupInTx(tx, input);
   }, TX);
   for (const id of result.banned) await withdrawCasinoFor(db, id, input.now);
   return { accounts: result.banned.length, bans: result.bans, skipped: result.skipped };
+}
+
+/**
+ * Bannissement d'un groupe dans la transaction de l'appelant, qui a vérifié le droit de l'auteur (ADMIN pour
+ * /admin/multi-comptes ; ADMIN ou DEV pour la file « À vérifier » du parrainage) et verrouillé les comptes. L'appelant
+ * retire ensuite les tables de pile ou face des comptes bannis (withdrawCasinoFor), hors de la transaction.
+ */
+export async function banGroupInTx(
+  tx: Prisma.TransactionClient,
+  input: { adminId: string; userIds: readonly string[]; reason: string; now: Date; sharedIpCap: number },
+): Promise<{ banned: string[]; bans: number; skipped: SkippedKey[] }> {
+  const ids = [...new Set(input.userIds)];
+  if (ids.includes(input.adminId)) throw new NetworkBanError("SELF");
+  const users = await tx.user.findMany({ where: { id: { in: ids } }, select: { id: true, role: true } });
+  if (users.length !== ids.length) throw new NetworkBanError("NOT_FOUND");
+  if (users.some((u) => isStaff(u.role))) throw new NetworkBanError("STAFF_TARGET");
+
+  const states = await keyStates(tx, await networkKeysOf(tx, ids), new Set(ids), input.sharedIpCap, input.now);
+  const toBan = states.filter((s) => s.state === "OK");
+  await clearExpired(tx, toBan, input.now);
+  await tx.networkBan.createMany({
+    data: toBan.map((s) => ({ kind: s.kind, value: s.key, source: "GROUP" as const, reason: input.reason, userId: s.userIds[0], createdById: input.adminId })),
+    skipDuplicates: true,
+  });
+  const banned: string[] = [];
+  for (const id of ids) {
+    const account = await banAccountWith(tx, id, input.now);
+    if (account) banned.push(id);
+    const own = toBan.filter((s) => s.userIds.includes(id));
+    await writeAdminLog(tx, {
+      adminId: input.adminId,
+      action: "USER_NETWORK_BAN",
+      targetType: "User",
+      targetId: id,
+      after: json({ values: { account, group: ids.length, bans: own.map((s) => ({ kind: s.kind, value: maskedKey(s.kind, s.key) })) }, reason: input.reason }),
+    });
+  }
+  const skipped = states
+    .filter((s) => s.state !== "OK" && s.state !== "BANNED")
+    .map((s): SkippedKey => ({ kind: s.kind, value: maskedKey(s.kind, s.key), state: s.state }));
+  return { banned, bans: toBan.length, skipped };
 }
 
 /** Lève un ban (la ligne part : l'IP n'est plus gardée) ; lever un appareil lève les IP qu'il a fait bannir. */

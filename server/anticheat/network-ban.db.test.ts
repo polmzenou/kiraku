@@ -54,6 +54,8 @@ describe.skipIf(!url)("bans réseau (base réelle)", () => {
 
   afterAll(async () => {
     await prisma.networkBan.deleteMany({ where: { OR: [{ userId: { in: users } }, { createdById: { in: users } }] } });
+    // Le journal de l'équipe référence l'admin de test : effacé avant les comptes
+    await prisma.adminLog.deleteMany({ where: { adminId: { in: users } } });
     await prisma.user.deleteMany({ where: { id: { in: users } } });
     await prisma.$disconnect();
   });
