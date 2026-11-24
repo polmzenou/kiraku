@@ -1,4 +1,4 @@
-import { type Rarity } from "@/lib/catalog/rarity";
+import { VARIANT_RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import { boostersUntilGolden, boostersUntilPity, rarityIndex, type CardPool, type DrawRules, type DuplicateGuard } from "./draw";
 import { atLeastOdds, featuredBoosterChance, type PoolCounts, type RarityOdds } from "./odds";
 import { priceFor, typeDrawRules, type Availability, type BoosterTypeView, type Price } from "./types";
@@ -12,6 +12,8 @@ export type BoosterPanelData = {
   best: Rarity;
   /** P(au moins une ≥ R), paliers vides du pool repliés comme au tirage. */
   odds: RarityOdds;
+  /** Raretés qui ont au moins une carte publiée dans le pool : seules celles-là ont une ligne de chances. */
+  inPool: Rarity[];
   poolSize: number;
   /** Mythique garantie dans N boosters, null si le type ne compte pas pour la pitié. */
   pityLeft: number | null;
@@ -50,6 +52,7 @@ export function boosterPanelData(input: {
     slotFloors,
     best,
     odds: atLeastOdds(rules.rates, slotFloors, counts),
+    inPool: RARITIES.filter((r) => (counts[r] ?? 0) > 0),
     poolSize: RARITIES.reduce((s, r) => s + counts[r], 0),
     pityLeft: type.countsForPity ? boostersUntilPity(user.pityCount, rules.pityThreshold) : null,
     pityKept: type.countsForPity && !type.resetsPity,
@@ -71,6 +74,18 @@ export function boosterPanelData(input: {
     price: priceFor(type, user.stock, 1),
     availability: input.availability,
   };
+}
+
+/** Seuils de chances toujours affichés. */
+export const CHANCE_ROWS: Rarity[] = ["RARE", "EPIC", "LEGENDARY", "MYTHIC"];
+
+/**
+ * Lignes de chances : les seuils de base, puis les variantes qui ont au moins une carte publiée dans
+ * le pool. La chance est « R ou mieux » : sans ce filtre, une variante vide hériterait de celles du dessus.
+ */
+export function chanceRows(panel: Pick<BoosterPanelData, "odds" | "inPool">): Rarity[] {
+  const inPool = new Set(panel.inPool);
+  return [...CHANCE_ROWS, ...VARIANT_RARITIES.filter((r) => inPool.has(r) && (panel.odds[r] ?? 0) > 0)];
 }
 
 /** Souhaits du joueur : combien peuvent sortir de ce booster, sur combien au total. */
