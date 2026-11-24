@@ -171,8 +171,6 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
   grand-parrainage, `seed-lot-enn-*` des lanternes, du banzuke et de l'omikuji) et réglages absents. Rien n'est écrasé.
   Les Divins sont des sachets scellés : le type de booster divin doit exister.
 - [ ] `npm run seed:cosmetics` : cadre « fil rouge » (`cadre-fil-rouge`, palier 1 ami installé).
-- [ ] `npm run referral:switch` : parrainages v1 en attente convertis en v2, empreintes des filleuls existants
-  posées. Idempotent ; à lancer une fois, **avant** d'allumer le parrainage v2.
 - [ ] Crons de `deploy/crontab.example` installés : `/api/cron/referral` (chaque heure) et `/api/cron/ennichi`
   (toutes les 5 minutes : envoi des paliers de lanternes, tirage de secours à la date de clôture, prix restants).
 - [ ] Discord : salon **privé** de l'équipe créé, bot autorisé, `DISCORD_REFERRAL_CHANNEL_ID` posé (voir
@@ -192,6 +190,9 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
 
 **Lancement du parrainage v2 :**
 
+- [ ] `npm run referral:switch`, **juste avant** d'allumer : parrainages v1 en attente convertis en v2, empreintes des
+  filleuls existants posées. Il ne convertit que les parrainages en attente au moment où il tourne (la v1 en crée tant
+  que l'interrupteur est coupé) : pas au déploiement s'il précède le lancement de plusieurs jours. Idempotent.
 - [ ] `referral.v2.enabled` allumé (`/admin/parrainage/reglages` ou `/admin/fonctionnalites`).
 - [ ] Date de l'annonce `referral.v2.announceAt` posée **après** le déploiement (« Maintenant » dans
   `/admin/parrainage/reglages`) : la fenêtre « Le parrainage change » s'affiche une fois aux comptes déjà inscrits,
