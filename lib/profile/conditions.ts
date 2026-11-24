@@ -24,6 +24,8 @@ export const CONDITION_TYPES = [
   "PRESTIGE",
   "CONSECRATED_COUNT",
   "PRINTINGS_OWNED",
+  // Parrainage v2 (étape 18) : amis installés (le cadre « fil rouge »…)
+  "INSTALLED_REFERRALS",
 ] as const;
 export type ConditionType = (typeof CONDITION_TYPES)[number];
 
@@ -44,6 +46,7 @@ export const conditionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("PRESTIGE"), n: count }).strict(),
   z.object({ type: z.literal("CONSECRATED_COUNT"), n: count }).strict(),
   z.object({ type: z.literal("PRINTINGS_OWNED"), n: count }).strict(),
+  z.object({ type: z.literal("INSTALLED_REFERRALS"), n: count }).strict(),
 ]);
 export type ProfileCondition = z.infer<typeof conditionSchema>;
 
@@ -77,6 +80,8 @@ export type ProfileStats = {
   prestige?: number;
   consecrated?: number;
   printingsOwned?: number;
+  /** Amis installés grâce au parrainage (absent : 0). */
+  installedReferrals?: number;
 };
 
 /** % découvert arrondi à l'inférieur : 99,9 % ne vaut pas 100 %, seul le catalogue entier y mène. */
@@ -133,6 +138,8 @@ export function evaluateCondition(condition: ProfileCondition | null, stats: Pro
       return capped(stats.consecrated ?? 0, condition.n);
     case "PRINTINGS_OWNED":
       return capped(stats.printingsOwned ?? 0, condition.n);
+    case "INSTALLED_REFERRALS":
+      return capped(stats.installedReferrals ?? 0, condition.n);
   }
 }
 

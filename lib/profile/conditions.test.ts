@@ -78,6 +78,13 @@ describe("conditions de déblocage", () => {
     expect(parseCondition({ type: "RARITIES_DISCOVERED", rarities: [], n: 1 })).toBeNull();
   });
 
+  it("amis installés grâce au parrainage (cadre « fil rouge ») : absent vaut 0", () => {
+    const condition = parseCondition({ type: "INSTALLED_REFERRALS", n: 1 });
+    expect(evaluateCondition(condition, stats)).toEqual({ unlocked: false, current: 0, goal: 1 });
+    expect(evaluateCondition(condition, { ...stats, installedReferrals: 3 })).toEqual({ unlocked: true, current: 1, goal: 1 });
+    expect(parseCondition({ type: "INSTALLED_REFERRALS", n: 0 })).toBeNull();
+  });
+
   it("liste les séries à charger", () => {
     expect(referencedSeries([parseCondition({ type: "SERIES_COMPLETE", seriesId: "a" }), null, parseCondition({ type: "SERIES_COMPLETE", seriesId: "a" })])).toEqual(["a"]);
   });
@@ -109,24 +116,24 @@ describe("badges", () => {
     pioneerUntil: new Date("2026-12-31"),
     staff: false,
     ambassador: true,
-    qualifiedReferrals: 3,
+    installedReferrals: 3,
     sponsorReferrals: 3,
     recruiterReferrals: 10,
     discordLinked: true,
   };
   it("dérive les badges du compte", () => {
     expect(earnedBadges(base)).toEqual(["PIONEER", "AMBASSADOR", "SPONSOR", "VERIFIED"]);
-    expect(earnedBadges({ ...base, pioneerUntil: null, ambassador: false, qualifiedReferrals: 1, discordLinked: false })).toEqual([]);
+    expect(earnedBadges({ ...base, pioneerUntil: null, ambassador: false, installedReferrals: 1, discordLinked: false })).toEqual([]);
   });
   it("Ambassadeur vient du rôle, Parrain des filleuls", () => {
     expect(earnedBadges({ ...base, ambassador: false })).not.toContain("AMBASSADOR");
-    expect(earnedBadges({ ...base, qualifiedReferrals: 0 })).toEqual(["PIONEER", "AMBASSADOR", "VERIFIED"]);
+    expect(earnedBadges({ ...base, installedReferrals: 0 })).toEqual(["PIONEER", "AMBASSADOR", "VERIFIED"]);
     expect(earnedBadges({ ...base, sponsorReferrals: 0 })).not.toContain("SPONSOR");
   });
   it("Recruteur vient du palier de filleuls qualifiés, en plus de Parrain", () => {
-    expect(earnedBadges({ ...base, qualifiedReferrals: 9 })).not.toContain("RECRUITER");
-    expect(earnedBadges({ ...base, qualifiedReferrals: 10 })).toEqual(["PIONEER", "AMBASSADOR", "SPONSOR", "RECRUITER", "VERIFIED"]);
-    expect(earnedBadges({ ...base, qualifiedReferrals: 50, recruiterReferrals: 0 })).not.toContain("RECRUITER");
+    expect(earnedBadges({ ...base, installedReferrals: 9 })).not.toContain("RECRUITER");
+    expect(earnedBadges({ ...base, installedReferrals: 10 })).toEqual(["PIONEER", "AMBASSADOR", "SPONSOR", "RECRUITER", "VERIFIED"]);
+    expect(earnedBadges({ ...base, installedReferrals: 50, recruiterReferrals: 0 })).not.toContain("RECRUITER");
   });
   it("DEV vient du rôle d'équipe, en tête des badges", () => {
     expect(earnedBadges({ ...base, staff: true })).toEqual(["DEV", "PIONEER", "AMBASSADOR", "SPONSOR", "VERIFIED"]);

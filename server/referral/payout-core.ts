@@ -50,13 +50,18 @@ type ReferralRow = {
 
 const blocked = (r: Pick<ReferralRow, "heldAt" | "reviewDecision" | "revokedAt">) => r.revokedAt !== null || (r.heldAt !== null && r.reviewDecision !== "VALIDATED");
 
-/** Amis installés d'un parrain : étape 2 atteinte, ni révoqués, ni bloqués sans décision. */
+/**
+ * Amis installés d'un parrain : étape 2 atteinte, ni révoqués, ni bloqués sans décision. Un parrainage v1 qualifié
+ * compte (son étape 2 a été recopiée de qualifiedAt par la migration), sauf s'il a été révoqué par l'admin : la v1
+ * ne marque que son statut, sans revokedAt (un parrainage v2 garde le statut PENDING).
+ */
 export async function installedCount(db: Prisma.TransactionClient | PrismaClient, referrerId: string): Promise<number> {
   return db.referral.count({
     where: {
       referrerId,
       step2At: { not: null },
       revokedAt: null,
+      status: { not: "REVOKED" },
       OR: [{ heldAt: null }, { reviewDecision: "VALIDATED" }],
     },
   });

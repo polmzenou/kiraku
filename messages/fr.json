@@ -3707,7 +3707,8 @@
         "AMBASSADOR": "Rôle Ambassadeur",
         "PRESTIGE": "Prestige atteint",
         "CONSECRATED_COUNT": "Cartes consacrées",
-        "PRINTINGS_OWNED": "Éditions gravées possédées"
+        "PRINTINGS_OWNED": "Éditions gravées possédées",
+        "INSTALLED_REFERRALS": "Amis installés (parrainage)"
       },
       "frames": {
         "washi": "Washi",
@@ -4986,7 +4987,8 @@
       "AMBASSADOR": "Réservé aux ambassadeurs",
       "PRESTIGE": "Atteindre le prestige {n}",
       "CONSECRATED_COUNT": "Consacrer {n, plural, one {# carte} other {# cartes}}",
-      "PRINTINGS_OWNED": "Posséder {n, plural, one {# édition gravée} other {# éditions gravées}}"
+      "PRINTINGS_OWNED": "Posséder {n, plural, one {# édition gravée} other {# éditions gravées}}",
+      "INSTALLED_REFERRALS": "Installer {n, plural, one {# ami} other {# amis}} grâce au parrainage"
     },
     "pickTitle": "Choisir une carte",
     "searchLabel": "Chercher une carte",

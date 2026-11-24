@@ -73,7 +73,7 @@ describe("cosmétiques du prestige", () => {
   });
 
   it("badges du prestige : rené, consacreur, graveur", () => {
-    const base = { createdAt: new Date(), pioneerUntil: null, staff: false, ambassador: false, qualifiedReferrals: 0, sponsorReferrals: 0, recruiterReferrals: 0, discordLinked: false };
+    const base = { createdAt: new Date(), pioneerUntil: null, staff: false, ambassador: false, installedReferrals: 0, sponsorReferrals: 0, recruiterReferrals: 0, discordLinked: false };
     expect(earnedBadges(base)).toEqual([]);
     expect(earnedBadges({ ...base, prestige: 1, consecrated: 2, engraved: 1 })).toEqual(["REBORN", "CONSECRATOR", "ENGRAVER"]);
   });

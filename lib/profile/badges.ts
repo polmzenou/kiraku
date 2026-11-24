@@ -42,7 +42,8 @@ export function earnedBadges(input: {
   /** Membre de l'équipe (rôle DEV ou ADMIN). */
   staff: boolean;
   ambassador: boolean;
-  qualifiedReferrals: number;
+  /** Amis installés (étape 2 du parrainage, v1 qualifiés compris). */
+  installedReferrals: number;
   sponsorReferrals: number;
   recruiterReferrals: number;
   discordLinked: boolean;
@@ -58,8 +59,8 @@ export function earnedBadges(input: {
   if (input.staff) out.push("DEV");
   if (input.pioneerUntil && input.createdAt <= input.pioneerUntil) out.push("PIONEER");
   if (input.ambassador) out.push("AMBASSADOR");
-  if (input.sponsorReferrals > 0 && input.qualifiedReferrals >= input.sponsorReferrals) out.push("SPONSOR");
-  if (input.recruiterReferrals > 0 && input.qualifiedReferrals >= input.recruiterReferrals) out.push("RECRUITER");
+  if (input.sponsorReferrals > 0 && input.installedReferrals >= input.sponsorReferrals) out.push("SPONSOR");
+  if (input.recruiterReferrals > 0 && input.installedReferrals >= input.recruiterReferrals) out.push("RECRUITER");
   if (input.discordLinked) out.push("VERIFIED");
   if ((input.prestige ?? 0) > 0) out.push("REBORN");
   if ((input.consecrated ?? 0) > 0) out.push("CONSECRATOR");

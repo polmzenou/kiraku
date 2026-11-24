@@ -8,7 +8,7 @@ import type { LotDeps } from "../economy/lots";
 import { attachReferralV2With, ReferralV2Error } from "./attach-core";
 import { fingerprintKey, refereeFingerprints } from "./fingerprint";
 import { checkReferralLocks } from "./locks";
-import { payDueRewardsWith } from "./payout-core";
+import { installedCount, payDueRewardsWith } from "./payout-core";
 import { progressReferralWith, type ProgressDeps } from "./progress-core";
 
 vi.mock("server-only", () => ({}));
@@ -191,6 +191,17 @@ describe.skipIf(!url)("parrainage v2 (base réelle)", () => {
     // Un compte neuf avec cette boîte (libérée par l'anonymisation) est reconnu
     await prisma.user.update({ where: { id: users.mue2.id }, data: { email: fresh } });
     await expect(attach("mue2", "a2")).rejects.toMatchObject({ code: "ALREADY_REFERRED" });
+  });
+
+  it("amis installés : un parrainage v1 qualifié compte, un v1 révoqué par l'admin non", async () => {
+    const at = new Date(T0.getTime() - 40 * DAY);
+    await prisma.referral.createMany({
+      data: [
+        { referrerId: users.lea.id, refereeId: users.ghost2.id, version: 1, status: "QUALIFIED", createdAt: at, qualifiedAt: at, step2At: at },
+        { referrerId: users.lea.id, refereeId: users.mue2.id, version: 1, status: "REVOKED", createdAt: at, qualifiedAt: at, step2At: at },
+      ],
+    });
+    expect(await installedCount(prisma, users.lea.id)).toBe(1);
   });
 
   it("verrous : cartes du filleul 14 jours, rien vers le parrain 30 jours, réglage de l'admin respecté", async () => {

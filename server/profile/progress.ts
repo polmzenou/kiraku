@@ -22,6 +22,7 @@ import { isNameColorStyle, type NameColorStyle } from "@/lib/profile/name-colors
 import { getCatalogStats } from "../catalog/queries";
 import { prisma } from "../db";
 import { collectionStatsWith } from "../prestige/prestige-core";
+import { installedCount } from "../referral/payout-core";
 import { getSetting } from "../settings";
 
 // Progression du joueur vers les titres, cadres et couleurs de pseudo, badges dérivés, et ce que son profil affiche.
@@ -41,7 +42,7 @@ type Hint = { fr?: string; en?: string };
 
 /** Statistiques utiles aux conditions, en quelques requêtes. */
 export async function getProfileStats(userId: string, seriesIds: readonly string[]): Promise<ProfileStats> {
-  const [collection, kept, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog, prestigeCounts] = await Promise.all([
+  const [collection, kept, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog, prestigeCounts, installedReferrals] = await Promise.all([
     collectionStatsWith(prisma, userId),
     // Séries déjà complétées une fois : acquises même si une carte est partie depuis (trigger sur UserCard)
     prisma.seriesCompletion.findMany({ where: { userId }, select: { seriesId: true } }),
@@ -70,6 +71,7 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
       GROUP BY c."rarityKey"`,
     getCatalogStats(),
     prestigeCountsOf(userId),
+    installedCount(prisma, userId),
   ]);
   // Un joueur reparti de zéro garde ce qu'il avait gagné lors d'un cycle passé, sans en gagner davantage. Les
   // conditions de découverte n'en ont pas besoin : une renaissance n'efface pas les découvertes du wiki.
@@ -104,6 +106,7 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
     prestige: user.prestige,
     consecrated: prestigeCounts.consecrated,
     printingsOwned: peak.printingsOwned,
+    installedReferrals,
   };
 }
 
@@ -156,11 +159,12 @@ export async function getCosmeticProgress(userId: string, locale: string): Promi
 
 /** Badges obtenus par le joueur (ordre par défaut). */
 export async function getEarnedBadges(user: { id: string; createdAt: Date; discordLinkedAt: Date | null; ambassadorSince: Date | null; role: Role; prestige: number }): Promise<Badge[]> {
-  const [pioneerUntil, sponsorReferrals, recruiterReferrals, qualifiedReferrals, counts] = await Promise.all([
+  const [pioneerUntil, sponsorReferrals, recruiterReferrals, installedReferrals, counts] = await Promise.all([
     getSetting("profile.pioneerUntil"),
     getSetting("profile.sponsorReferrals"),
     getSetting("profile.recruiterReferrals"),
-    prisma.referral.count({ where: { referrerId: user.id, qualifiedAt: { not: null } } }),
+    // Amis installés, comme les paliers du parrainage (v1 qualifiés compris, révoqués et bloqués exclus)
+    installedCount(prisma, user.id),
     prestigeCountsOf(user.id),
   ]);
   return earnedBadges({
@@ -169,7 +173,7 @@ export async function getEarnedBadges(user: { id: string; createdAt: Date; disco
     pioneerUntil: pioneerUntil ? new Date(`${pioneerUntil}T23:59:59+01:00`) : null,
     staff: user.role !== "USER",
     ambassador: user.ambassadorSince !== null,
-    qualifiedReferrals,
+    installedReferrals,
     sponsorReferrals,
     recruiterReferrals,
     discordLinked: user.discordLinkedAt !== null,

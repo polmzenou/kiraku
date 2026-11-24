@@ -3707,7 +3707,8 @@
         "AMBASSADOR": "Ambassador role",
         "PRESTIGE": "Prestige reached",
         "CONSECRATED_COUNT": "Consecrated cards",
-        "PRINTINGS_OWNED": "Engraved editions owned"
+        "PRINTINGS_OWNED": "Engraved editions owned",
+        "INSTALLED_REFERRALS": "Friends settled (referrals)"
       },
       "frames": {
         "washi": "Washi",
@@ -4986,7 +4987,8 @@
       "AMBASSADOR": "Ambassadors only",
       "PRESTIGE": "Reach prestige {n}",
       "CONSECRATED_COUNT": "Consecrate {n, plural, one {# card} other {# cards}}",
-      "PRINTINGS_OWNED": "Own {n, plural, one {# engraved edition} other {# engraved editions}}"
+      "PRINTINGS_OWNED": "Own {n, plural, one {# engraved edition} other {# engraved editions}}",
+      "INSTALLED_REFERRALS": "Settle {n, plural, one {# friend} other {# friends}} through referrals"
     },
     "pickTitle": "Pick a card",
     "searchLabel": "Search for a card",
