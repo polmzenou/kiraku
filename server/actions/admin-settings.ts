@@ -39,8 +39,9 @@ import {
 } from "@/lib/settings/showcase-form";
 import { CASINO_FORM_KEYS, casinoSettingsSchema, type CasinoFormKey } from "@/lib/settings/casino-form";
 import { KYARA_FORM_KEYS, kyaraSettingsSchema, type KyaraFormKey } from "@/lib/settings/kyara-form";
+import { REFERRAL_V2_FORM_KEYS, referralV2SettingsSchema, type ReferralV2FormKey } from "@/lib/settings/referral-v2-form";
 import { changedSettingKeys, type SettingsOf } from "@/lib/settings/form";
-import { canProcessKyaraImports } from "@/lib/admin/roles";
+import { canManageReferrals, canProcessKyaraImports } from "@/lib/admin/roles";
 import { getAdmin, getStaff } from "../admin";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
@@ -51,7 +52,8 @@ import { resolveNewsVisuals } from "../home/news";
 
 // Réglages de jeu depuis /admin. Ordre : rôle admin vérifié → Zod par clé → rate limit.
 // Chaque clé modifiée écrit sa ligne GameSetting et une ligne AdminLog (avant / après).
-// Seule exception au rôle admin : les réglages de l'import Kyara, ouverts à toute l'équipe (kyaraStaff).
+// Deux exceptions au rôle admin, ouvertes à toute l'équipe : les réglages de l'import Kyara (kyaraStaff) et ceux du
+// parrainage v2 (referralStaff).
 
 export type UpdateSettingsResult<K extends SettingKey = SettingKey> =
   | { ok: true; changed: K[] }
@@ -280,6 +282,16 @@ async function kyaraStaff() {
 
 export async function updateKyaraImportSettings(input: unknown): Promise<UpdateSettingsResult<KyaraFormKey>> {
   return saveSettings(KYARA_FORM_KEYS, kyaraSettingsSchema, input, undefined, kyaraStaff);
+}
+
+/** Parrainage v2 : toute l'équipe (ADMIN et DEV) le règle, interrupteur compris, comme elle tient la file (lib/admin/roles.ts). */
+async function referralStaff() {
+  const staff = await getStaff();
+  return staff && canManageReferrals(staff.user.role) ? staff.user : null;
+}
+
+export async function updateReferralV2Settings(input: unknown): Promise<UpdateSettingsResult<ReferralV2FormKey>> {
+  return saveSettings(REFERRAL_V2_FORM_KEYS, referralV2SettingsSchema, input, undefined, referralStaff);
 }
 
 export async function updateEventGaugeSettings(input: unknown): Promise<UpdateSettingsResult<EventGaugeSettingKey>> {
