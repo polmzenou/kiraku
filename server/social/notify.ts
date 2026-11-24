@@ -6,6 +6,7 @@ import type {
   BattlePayload,
   BuyOrderPayload,
   CoinFlipPayload,
+  EnnichiRewardPayload,
   ExpeditionPayload,
   GiftPayload,
   KyaraImportPayload,
@@ -35,7 +36,8 @@ type NewNotification = {
     | ExpeditionPayload
     | BuyOrderPayload
     | KyaraImportPayload
-    | ReferralRewardPayload;
+    | ReferralRewardPayload
+    | EnnichiRewardPayload;
   now: Date;
 };
 

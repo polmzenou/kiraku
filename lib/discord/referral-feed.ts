@@ -242,3 +242,44 @@ export function ambassadorDecisionMessage(
     [{ label: "Ouvrir la fiche du joueur", url }],
   );
 }
+
+const TIER_KANJI = ["一", "二", "三", "四"] as const;
+
+/** Ennichi : un palier de lanternes atteint, une fois son lot envoyé à tous les joueurs éligibles. */
+export function ennichiTierMessage(
+  f: { edition: number; tier: number; lanterns: number; lot: string | null; vouchers: number; served: number },
+  origin: string,
+): DiscordMessageBody {
+  const url = absolute("/admin/parrainage/ennichi", origin);
+  const got = [f.lot, f.vouchers > 0 ? plural(f.vouchers, "Mythique au choix", "Mythiques au choix") : null].filter(Boolean).join(" · ");
+  return message(
+    `灯 Palier ${TIER_KANJI[f.tier] ?? f.tier + 1} des lanternes · Ennichi n° ${nf.format(f.edition)}`,
+    KIN,
+    url,
+    `${plural(f.lanterns, "lanterne allumée", "lanternes allumées")} : lot versé tout seul à chaque joueur éligible.`,
+    [field("Lot de chaque joueur", got || "rien (palier sans lot)"), field("Joueurs servis", nf.format(f.served), true)],
+    [{ label: "Ouvrir l'admin de l'Ennichi", url }],
+  );
+}
+
+/** Ennichi : banzuke figé et omikuji tiré (par l'équipe ou par le cron de secours). */
+export function ennichiResultsMessage(
+  f: { edition: number; by: string | null; top: { rank: number; name: string; count: number; title: string | null }[]; ranked: number; tickets: number; draws: number },
+  origin: string,
+): DiscordMessageBody {
+  const url = absolute("/admin/parrainage/ennichi", origin);
+  const titles: Record<string, string> = { yokozuna: "Yokozuna", ozeki: "Ōzeki", sekiwake: "Sekiwake" };
+  const podium = f.top.map((r) => `${r.rank}. ${who(r.name)} · ${plural(r.count, "ami", "amis")}${r.title ? ` · ${titles[r.title] ?? r.title}` : ""}`).join("\n");
+  return message(
+    `番 Résultats de l'Ennichi n° ${nf.format(f.edition)}`,
+    KIN,
+    url,
+    f.by ? `Tirage lancé par ${who(f.by)}.` : "Tirage fait tout seul à la date de clôture.",
+    [
+      field("Banzuke", podium || "personne de classé"),
+      field("Classés", nf.format(f.ranked), true),
+      field("Omikuji", `${plural(f.draws, "lot tiré", "lots tirés")} pour ${plural(f.tickets, "ticket", "tickets")}`, true),
+    ],
+    [{ label: "Ouvrir l'admin de l'Ennichi", url }],
+  );
+}

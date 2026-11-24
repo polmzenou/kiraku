@@ -3754,7 +3754,9 @@
         "active": "Visible to players",
         "nameColor": "Colour",
         "percent": "Catalogue percentage",
-        "rarities": "Counted rarities"
+        "rarities": "Counted rarities",
+        "edition": "Ennichi edition",
+        "ennichiTitle": "Title"
       },
       "hints": {
         "slug": "Lowercase, digits and dashes: devil-hunter.",
@@ -3779,7 +3781,8 @@
         "PRESTIGE": "Prestige reached",
         "CONSECRATED_COUNT": "Consecrated cards",
         "PRINTINGS_OWNED": "Engraved editions owned",
-        "INSTALLED_REFERRALS": "Friends settled (referrals)"
+        "INSTALLED_REFERRALS": "Friends settled (referrals)",
+        "ENNICHI_TITLE": "Banzuke title (Ennichi)"
       },
       "frames": {
         "washi": "Washi",
@@ -3826,6 +3829,11 @@
         "pastel": "Pastel rainbow",
         "hisui": "Jade green (ambassador)",
         "kin": "Gold leaf (prestige)"
+      },
+      "ennichiTitles": {
+        "yokozuna": "Yokozuna",
+        "ozeki": "Ōzeki",
+        "sekiwake": "Sekiwake"
       }
     },
     "openingTest": {
@@ -5060,7 +5068,8 @@
       "PRESTIGE": "Reach prestige {n}",
       "CONSECRATED_COUNT": "Consecrate {n, plural, one {# card} other {# cards}}",
       "PRINTINGS_OWNED": "Own {n, plural, one {# engraved edition} other {# engraved editions}}",
-      "INSTALLED_REFERRALS": "Settle {n, plural, one {# friend} other {# friends}} through referrals"
+      "INSTALLED_REFERRALS": "Settle {n, plural, one {# friend} other {# friends}} through referrals",
+      "ENNICHI_TITLE": "Finish as {title, select, yokozuna {Yokozuna} ozeki {Ōzeki} other {Sekiwake}} in the banzuke of Ennichi no. {edition}"
     },
     "pickTitle": "Pick a card",
     "searchLabel": "Search for a card",

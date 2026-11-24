@@ -5,6 +5,7 @@ import { referrerByCode } from "../og/data";
 import { getSetting } from "../settings";
 import { referralV2Rules } from "./deps";
 import { referralGifts } from "./queries";
+import { ennichiInviteMultiplier } from "../ennichi/hooks";
 
 /**
  * Invité arrivé par le lien d'un parrain (cookie du lien d'invitation, parrainage v2) : le nom du parrain et le cadeau
@@ -17,6 +18,6 @@ export async function guestInviteOf(locale: string): Promise<GuestInvite | null>
   const referrer = await referrerByCode(code).catch(() => null);
   if (!referrer) return null;
   const { steps } = await referralGifts(await referralV2Rules(), locale, 0);
-  // Ennichi : le cadeau des étapes 1 et 2 est multiplié pendant la fête (lot 18d)
-  return { referrer: referrer.username, lot: steps[0]?.referee ?? null, multiplier: 1 };
+  // Ennichi : le cadeau des étapes 1 et 2 est multiplié pendant la fête
+  return { referrer: referrer.username, lot: steps[0]?.referee ?? null, multiplier: await ennichiInviteMultiplier() };
 }

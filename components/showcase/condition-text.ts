@@ -15,6 +15,8 @@ export function conditionText(condition: ProfileCondition, t: Translate, rarityN
       return t("conditions.RARITIES_DISCOVERED", { n: condition.n, rarities: condition.rarities.map(rarityName).join(", ") });
     case "RANK_TIER":
       return t("conditions.RANK_TIER", { tier: condition.tier });
+    case "ENNICHI_TITLE":
+      return t("conditions.ENNICHI_TITLE", { edition: condition.edition, title: condition.title });
     default:
       return t(`conditions.${condition.type}`, { n: condition.n });
   }

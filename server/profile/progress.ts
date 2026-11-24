@@ -42,7 +42,7 @@ type Hint = { fr?: string; en?: string };
 
 /** Statistiques utiles aux conditions, en quelques requêtes. */
 export async function getProfileStats(userId: string, seriesIds: readonly string[]): Promise<ProfileStats> {
-  const [collection, kept, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog, prestigeCounts, installedReferrals] = await Promise.all([
+  const [collection, kept, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog, prestigeCounts, installedReferrals, ennichiTitles] = await Promise.all([
     collectionStatsWith(prisma, userId),
     // Séries déjà complétées une fois : acquises même si une carte est partie depuis (trigger sur UserCard)
     prisma.seriesCompletion.findMany({ where: { userId }, select: { seriesId: true } }),
@@ -72,6 +72,8 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
     getCatalogStats(),
     prestigeCountsOf(userId),
     installedCount(prisma, userId),
+    // Titres sumo des banzuke de l'Ennichi (permanents)
+    prisma.ennichiResult.findMany({ where: { userId, title: { not: null } }, select: { edition: true, title: true } }),
   ]);
   // Un joueur reparti de zéro garde ce qu'il avait gagné lors d'un cycle passé, sans en gagner davantage. Les
   // conditions de découverte n'en ont pas besoin : une renaissance n'efface pas les découvertes du wiki.
@@ -107,6 +109,7 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
     consecrated: prestigeCounts.consecrated,
     printingsOwned: peak.printingsOwned,
     installedReferrals,
+    ennichiTitles: new Set(ennichiTitles.map((r) => `${r.edition}:${r.title}`)),
   };
 }
 

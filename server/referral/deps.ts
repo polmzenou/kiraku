@@ -26,7 +26,12 @@ export function referralFingerprintKey(): Buffer {
 }
 
 export async function progressDeps(now = new Date()): Promise<ProgressDeps> {
-  const [rules, timeZone, sharedCap] = await Promise.all([referralV2Rules(), getSetting("game.timeZone"), getSetting("multiAccount.sharedIpCap")]);
-  // Multiplicateur de l'Ennichi : branché avec l'événement (lot 18d)
-  return { rules, now, timeZone, sharedCap, ennichiMultiplier: 1, lotDeps: lotDeps(), onNotified: (ids) => void pushNotifications(ids) };
+  const [rules, timeZone, sharedCap, ennichiMultiplier] = await Promise.all([
+    referralV2Rules(),
+    getSetting("game.timeZone"),
+    getSetting("multiAccount.sharedIpCap"),
+    getSetting("ennichi.stepMultiplier"),
+  ]);
+  // Multiplicateur de l'Ennichi : appliqué aux étapes 1 et 2 des seuls amis arrivés pendant une fête (ennichiEdition)
+  return { rules, now, timeZone, sharedCap, ennichiMultiplier, lotDeps: lotDeps(), onNotified: (ids) => void pushNotifications(ids) };
 }

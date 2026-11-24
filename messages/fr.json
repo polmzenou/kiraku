@@ -3754,7 +3754,9 @@
         "active": "Visible des joueurs",
         "nameColor": "Couleur",
         "percent": "Pourcentage du catalogue",
-        "rarities": "Raretés comptées"
+        "rarities": "Raretés comptées",
+        "edition": "Édition de l'Ennichi",
+        "ennichiTitle": "Titre"
       },
       "hints": {
         "slug": "Minuscules, chiffres et tirets : devil-hunter.",
@@ -3779,7 +3781,8 @@
         "PRESTIGE": "Prestige atteint",
         "CONSECRATED_COUNT": "Cartes consacrées",
         "PRINTINGS_OWNED": "Éditions gravées possédées",
-        "INSTALLED_REFERRALS": "Amis installés (parrainage)"
+        "INSTALLED_REFERRALS": "Amis installés (parrainage)",
+        "ENNICHI_TITLE": "Titre du banzuke (Ennichi)"
       },
       "frames": {
         "washi": "Washi",
@@ -3826,6 +3829,11 @@
         "pastel": "Arc-en-ciel pastel",
         "hisui": "Vert jade (ambassadeur)",
         "kin": "Feuille d'or (prestige)"
+      },
+      "ennichiTitles": {
+        "yokozuna": "Yokozuna",
+        "ozeki": "Ōzeki",
+        "sekiwake": "Sekiwake"
       }
     },
     "openingTest": {
@@ -5060,7 +5068,8 @@
       "PRESTIGE": "Atteindre le prestige {n}",
       "CONSECRATED_COUNT": "Consacrer {n, plural, one {# carte} other {# cartes}}",
       "PRINTINGS_OWNED": "Posséder {n, plural, one {# édition gravée} other {# éditions gravées}}",
-      "INSTALLED_REFERRALS": "Installer {n, plural, one {# ami} other {# amis}} grâce au parrainage"
+      "INSTALLED_REFERRALS": "Installer {n, plural, one {# ami} other {# amis}} grâce au parrainage",
+      "ENNICHI_TITLE": "Finir {title, select, yokozuna {Yokozuna} ozeki {Ōzeki} other {Sekiwake}} au banzuke de l'Ennichi n° {edition}"
     },
     "pickTitle": "Choisir une carte",
     "searchLabel": "Chercher une carte",

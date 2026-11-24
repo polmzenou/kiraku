@@ -22,3 +22,7 @@
 # Parrainage v2 : étapes, contrôles et versements des parrainages en cours, toutes les heures (sans effet tant que
 # referral.v2.enabled est coupé).
 7 * * * * curl -fsS -m 60 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/referral >/dev/null
+
+# Ennichi : paliers de lanternes versés à tous les joueurs éligibles, tirage de secours à la clôture et prix versés,
+# toutes les 5 minutes (sans effet tant que ennichi.enabled est coupé).
+*/5 * * * * curl -fsS -m 60 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/ennichi >/dev/null

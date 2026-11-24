@@ -12,6 +12,7 @@ import { referralV2Rules } from "@/server/referral/deps";
 import { referralGifts } from "@/server/referral/queries";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
+import { ennichiInviteMultiplier } from "@/server/ennichi/hooks";
 
 // Lien d'invitation /i/CODE (code standard ou code perso). Le code est déjà gardé sur l'appareil par proxy.ts ; rien
 // n'est écrit en base avant l'inscription. Parrainage v2 : page d'arrivée (lettre du parrain et cadeau de bienvenue) ;
@@ -67,5 +68,5 @@ export default async function InvitePage({ params }: PageProps<"/[locale]/i/[cod
   const rules = await referralV2Rules();
   const [{ steps }, openHref] = await Promise.all([referralGifts(rules, locale, 0), firstBoosterHref()]);
   // Ennichi : le cadeau des étapes 1 et 2 est multiplié pendant la fête (lot 18d)
-  return <InviteLetter referrer={referrer.username} lot={steps[0]?.referee ?? null} multiplier={1} openHref={openHref} />;
+  return <InviteLetter referrer={referrer.username} lot={steps[0]?.referee ?? null} multiplier={await ennichiInviteMultiplier()} openHref={openHref} />;
 }

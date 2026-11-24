@@ -26,6 +26,8 @@ export const CONDITION_TYPES = [
   "PRINTINGS_OWNED",
   // Parrainage v2 (étape 18) : amis installés (le cadre « fil rouge »…)
   "INSTALLED_REFERRALS",
+  // Ennichi (étape 18d) : titre sumo gagné au banzuke d'une édition (créé au tirage, permanent)
+  "ENNICHI_TITLE",
 ] as const;
 export type ConditionType = (typeof CONDITION_TYPES)[number];
 
@@ -47,6 +49,7 @@ export const conditionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("CONSECRATED_COUNT"), n: count }).strict(),
   z.object({ type: z.literal("PRINTINGS_OWNED"), n: count }).strict(),
   z.object({ type: z.literal("INSTALLED_REFERRALS"), n: count }).strict(),
+  z.object({ type: z.literal("ENNICHI_TITLE"), edition: z.number().int().min(1).max(1_000), title: z.enum(["yokozuna", "ozeki", "sekiwake"]) }).strict(),
 ]);
 export type ProfileCondition = z.infer<typeof conditionSchema>;
 
@@ -82,6 +85,8 @@ export type ProfileStats = {
   printingsOwned?: number;
   /** Amis installés grâce au parrainage (absent : 0). */
   installedReferrals?: number;
+  /** Titres du banzuke de l'Ennichi, « édition:titre » (absent : aucun). */
+  ennichiTitles?: ReadonlySet<string>;
 };
 
 /** % découvert arrondi à l'inférieur : 99,9 % ne vaut pas 100 %, seul le catalogue entier y mène. */
@@ -140,6 +145,8 @@ export function evaluateCondition(condition: ProfileCondition | null, stats: Pro
       return capped(stats.printingsOwned ?? 0, condition.n);
     case "INSTALLED_REFERRALS":
       return capped(stats.installedReferrals ?? 0, condition.n);
+    case "ENNICHI_TITLE":
+      return capped(stats.ennichiTitles?.has(`${condition.edition}:${condition.title}`) ? 1 : 0, 1);
   }
 }
 

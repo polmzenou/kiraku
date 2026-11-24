@@ -24,6 +24,8 @@ export function defaultCondition(type: ConditionType, rarity: string): ProfileCo
       return { type, n: 50 };
     case "RARITIES_DISCOVERED":
       return { type, rarities: [rarity], n: 1 };
+    case "ENNICHI_TITLE":
+      return { type, edition: 1, title: "yokozuna" };
     default:
       return { type, n: 10 };
   }
@@ -93,6 +95,17 @@ export function ConditionFields({
           options={rarities.map((r) => ({ value: r.key, label: `${r.seal} ${r.nameFr}` }))}
           onChange={(rarity) => onChange({ ...c, rarity })}
         />
+      )}
+      {c.type === "ENNICHI_TITLE" && (
+        <>
+          <NumberField label={t("fields.edition")} value={c.edition} min={1} max={1_000} onChange={(edition) => onChange({ ...c, edition: edition ?? 1 })} />
+          <SelectField
+            label={t("fields.ennichiTitle")}
+            value={c.title}
+            options={(["yokozuna", "ozeki", "sekiwake"] as const).map((title) => ({ value: title, label: t(`ennichiTitles.${title}`) }))}
+            onChange={(title) => onChange({ ...c, title })}
+          />
+        </>
       )}
       {c.type === "RANK_TIER" && (
         <SelectField label={t("fields.tier")} value={c.tier} options={LADDER.map((tier) => ({ value: tier, label: tier }))} onChange={(tier) => onChange({ ...c, tier })} />

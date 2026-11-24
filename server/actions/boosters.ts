@@ -17,6 +17,7 @@ import { qualifyLater } from "../economy/referral";
 import { rateLimit } from "../ratelimit";
 import { getCurrentUser } from "../user";
 import { getPrintingSeals } from "../prestige/rules";
+import { ennichiCatchUpLater } from "../ennichi/hooks";
 
 // Ouverture de boosters. Ordre des contrôles : session → Zod → propriété → rate limit.
 // Le client n'envoie qu'une intention (quel booster, combien, accepte-t-il de payer) ;
@@ -105,6 +106,8 @@ export async function openBoosterAction(input: unknown): Promise<OpenBoosterResu
 
   // Un filleul qui ouvre des boosters avance vers sa qualification (vérifiée après la réponse)
   if (user.referredById) qualifyLater(user.id);
+  // Ennichi : paliers de lanternes déjà atteints que le joueur n'a pas encore reçus
+  ennichiCatchUpLater(user.id);
 
   // En-tête (stock, ensō, solde) à jour sans recharger la page
   refresh();

@@ -5,6 +5,8 @@ import {
   ambassadorDecisionMessage,
   clueText,
   decisionMessage,
+  ennichiResultsMessage,
+  ennichiTierMessage,
   grandPayoutMessage,
   holdMessage,
   milestonePayoutMessage,
@@ -17,6 +19,7 @@ import type { ReferralV2Rules } from "@/lib/referral/rules";
 import type { DiscordMessageBody } from "@/lib/discord/community";
 import { getRarityDefinitions } from "../catalog/rarities";
 import { prisma } from "../db";
+import { lotViews } from "../economy/lot-view";
 import { appUrl, discordReferralConfigured, env } from "../env";
 import { referralV2Rules } from "../referral/deps";
 import { referralFiche, type FicheReward, type ReferralFiche } from "../referral/tracking-queries";
@@ -32,6 +35,7 @@ import { dropDiscordPost, publishDiscordPost } from "./posts";
 //   referral:milestone:{versement}   palier du parrain        referral:grand:{versement}  grand-parrainage
 //   referral:hold:{parrainage}       mis « À vérifier »       referral:decision:{journal} décision de l'équipe
 //   referral:ambassador:{proposition} Ambassadeur proposé accepté ou refusé par l'équipe
+//   referral:ennichi-tier:{édition}:{palier}  palier de lanternes envoyé à tous   referral:ennichi-results:{édition}  tirage
 // Sans la variable, rien n'est posté et le parrainage marche pareil. Le salon doit être privé (vérifié avant d'envoyer).
 
 const DAY = 86_400_000;
@@ -47,7 +51,7 @@ export function discordReferralChannel(): string | undefined {
 
 /** Met en file les événements récents, chacun daté de son arrivée (ordre de publication). */
 async function enqueue(channelId: string, since: Date): Promise<void> {
-  const [rewards, holds, logs, proposals] = await Promise.all([
+  const [rewards, holds, logs, proposals, tiers, draws] = await Promise.all([
     prisma.referralReward.findMany({
       where: { createdAt: { gte: since }, referralId: { not: null } },
       orderBy: { createdAt: "asc" },
@@ -61,6 +65,8 @@ async function enqueue(channelId: string, since: Date): Promise<void> {
       select: { id: true, createdAt: true },
     }),
     prisma.ambassadorProposal.findMany({ where: { decidedAt: { gte: since } }, take: 100, select: { id: true, decidedAt: true } }),
+    prisma.ennichiTierReached.findMany({ where: { finishedAt: { gte: since } }, take: 20, select: { edition: true, tier: true, finishedAt: true } }),
+    prisma.ennichiDraw.findMany({ where: { drawnAt: { gte: since } }, take: 5, select: { edition: true, drawnAt: true } }),
   ]);
   const rows = new Map<string, Date>();
   const add = (key: string, at: Date) => {
@@ -80,6 +86,8 @@ async function enqueue(channelId: string, since: Date): Promise<void> {
   for (const h of holds) if (h.heldAt) add(`referral:hold:${h.id}`, h.heldAt);
   for (const l of logs) add(`referral:decision:${l.id}`, l.createdAt);
   for (const p of proposals) if (p.decidedAt) add(`referral:ambassador:${p.id}`, p.decidedAt);
+  for (const t of tiers) if (t.finishedAt) add(`referral:ennichi-tier:${t.edition}:${t.tier}`, t.finishedAt);
+  for (const d of draws) if (d.drawnAt) add(`referral:ennichi-results:${d.edition}`, d.drawnAt);
   if (rows.size === 0) return;
   await prisma.discordPost.createMany({
     data: [...rows].map(([key, at]) => ({ key, channelId, nextAttemptAt: at })),
@@ -231,6 +239,26 @@ async function ambassadorPayload(proposalId: string, ctx: Context): Promise<Disc
   );
 }
 
+async function ennichiTierPayload(edition: number, tier: number, ctx: Context): Promise<DiscordMessageBody | null> {
+  const t = await prisma.ennichiTierReached.findUnique({ where: { edition_tier: { edition, tier } }, select: { lanterns: true, lotId: true, choiceVouchers: true, served: true } });
+  if (!t) return null;
+  const lot = t.lotId ? (await lotViews([t.lotId], "fr")).get(t.lotId) ?? null : null;
+  return ennichiTierMessage({ edition, tier, lanterns: t.lanterns, lot: lotText(lot, ctx.rarity, 1), vouchers: t.choiceVouchers, served: t.served }, ctx.origin);
+}
+
+async function ennichiResultsPayload(edition: number, ctx: Context): Promise<DiscordMessageBody | null> {
+  const [draw, top, ranked, draws] = await Promise.all([
+    prisma.ennichiDraw.findUnique({ where: { edition }, select: { drawnAt: true, drawnById: true, tickets: true } }),
+    prisma.ennichiResult.findMany({ where: { edition }, orderBy: { rank: "asc" }, take: 3, select: { rank: true, name: true, count: true, title: true } }),
+    prisma.ennichiResult.count({ where: { edition } }),
+    prisma.ennichiAward.count({ where: { edition, kind: "OMIKUJI" } }),
+  ]);
+  if (!draw?.drawnAt) return null;
+  const by = draw.drawnById ? (await prisma.user.findUnique({ where: { id: draw.drawnById }, select: { username: true } }))?.username ?? null : null;
+  const tickets = Array.isArray(draw.tickets) ? draw.tickets.length : 0;
+  return ennichiResultsMessage({ edition, by, top, ranked, tickets, draws }, ctx.origin);
+}
+
 /** Ce que « Révoquer et bannir » a repris (journal de la décision), en une ligne. */
 function takenText(raw: unknown): string | null {
   if (!Array.isArray(raw)) return null;
@@ -265,6 +293,8 @@ async function payloadFor(key: string, ctx: Context): Promise<DiscordMessageBody
   if (kind === "hold") return holdPayload(id, ctx);
   if (kind === "decision") return decisionPayload(id, ctx);
   if (kind === "ambassador") return ambassadorPayload(id, ctx);
+  if (kind === "ennichi-tier") return ennichiTierPayload(Number(id), Number(step), ctx);
+  if (kind === "ennichi-results") return ennichiResultsPayload(Number(id), ctx);
   return null;
 }
 

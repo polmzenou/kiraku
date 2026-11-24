@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageText, ambassadorDecisionMessage, clueText, decisionMessage, grandPayoutMessage, holdMessage, milestonePayoutMessage, stepPayoutMessage, trustPayoutMessage, type FeedReferral } from "./referral-feed";
+import { ageText, ambassadorDecisionMessage, clueText, decisionMessage, ennichiResultsMessage, ennichiTierMessage, grandPayoutMessage, holdMessage, milestonePayoutMessage, stepPayoutMessage, trustPayoutMessage, type FeedReferral } from "./referral-feed";
 
 const origin = "https://kiraku.example";
 const base: FeedReferral = {
@@ -100,5 +100,14 @@ describe("fil du parrainage (salon privé de l'équipe)", () => {
     expect(no.embeds![0].title).toBe("使 Ambassadeur refusé · Tristren");
     expect(fieldsOf(no).Suite).toBe("La proposition est fermée, le joueur garde ses lots.");
     expect(no.allowed_mentions).toEqual({ parse: [] });
+
+    // Ennichi : palier de lanternes envoyé, puis résultats
+    const tier = ennichiTierMessage({ edition: 1, tier: 1, lanterns: 50, lot: "50 boosters", vouchers: 0, served: 73 }, origin);
+    expect(tier.embeds![0].title).toBe("灯 Palier 二 des lanternes · Ennichi n° 1");
+    expect(fieldsOf(tier)).toMatchObject({ "Lot de chaque joueur": "50 boosters", "Joueurs servis": "73" });
+    const results = ennichiResultsMessage({ edition: 1, by: null, top: [{ rank: 1, name: "Tristren", count: 12, title: "yokozuna" }], ranked: 9, tickets: 40, draws: 40 }, origin);
+    expect(results.embeds![0].description).toBe("Tirage fait tout seul à la date de clôture.");
+    expect(fieldsOf(results).Banzuke).toBe("1. Tristren · 12 amis · Yokozuna");
+    expect(results.embeds![0].url).toBe("https://kiraku.example/admin/parrainage/ennichi");
   });
 });
