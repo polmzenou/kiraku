@@ -15,7 +15,9 @@ import {
   type ExpeditionPayload,
   parseKyaraImportPayload,
   type KyaraImportPayload,
+  parseEnnichiRewardPayload,
   parseReferralRewardPayload,
+  type EnnichiRewardPayload,
   type ReferralRewardPayload,
   parseTradePayload,
   type CoinFlipPayload,
@@ -185,6 +187,8 @@ export type NotificationView = {
   kyara: KyaraImportPayload | null;
   /** Parrainage v2 : étape, part « confiance », palier ou grand-parrainage versé. */
   referral: ReferralRewardPayload | null;
+  /** Ennichi : palier de lanternes, prix du banzuke ou lot de l'omikuji versé. */
+  ennichi: EnnichiRewardPayload | null;
   /** Texte libre joint : mot de l'équipe (cadeaux, lots), motif d'un refus d'échange ou d'import Kyara. */
   note: string | null;
   card: { anilistId: number; name: string; rarity: string } | null;
@@ -339,6 +343,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
       buyOrder,
       kyara: r.type.startsWith("KYARA_IMPORT_") ? parseKyaraImportPayload(r.payload) : null,
       referral: r.type === "REFERRAL_REWARD" ? parseReferralRewardPayload(r.payload) : null,
+      ennichi: r.type === "ENNICHI_REWARD" ? parseEnnichiRewardPayload(r.payload) : null,
       note: notes.get(r.id) ?? null,
       card: card ? { anilistId: card.publicId, name: card.name, rarity: card.rarity } : null,
     };

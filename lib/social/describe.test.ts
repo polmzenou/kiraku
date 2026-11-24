@@ -50,6 +50,15 @@ describe("describeNotification", () => {
     expect(describeNotification({ ...base, type: "REFERRAL_REWARD", referral: null }, tr).text).toContain('"kind":"OTHER"');
   });
 
+  it("lot de l'Ennichi → la page de la fête, du banzuke ou de l'omikuji", () => {
+    const base = { actor: null, gift: null, card: null };
+    const tier = describeNotification({ ...base, type: "ENNICHI_REWARD", ennichi: { kind: "TIER", edition: 1, tier: 2, rank: null, draw: null } }, tr);
+    expect(tier).toEqual({ text: 'ennichiReward:{"kind":"TIER","tier":"3","rank":0,"draw":0}', href: "/ennichi" });
+    expect(describeNotification({ ...base, type: "ENNICHI_REWARD", ennichi: { kind: "BANZUKE", edition: 1, tier: null, rank: 2, draw: null } }, tr).href).toBe("/ennichi/banzuke");
+    expect(describeNotification({ ...base, type: "ENNICHI_REWARD", ennichi: { kind: "OMIKUJI", edition: 1, tier: null, rank: null, draw: 7 } }, tr).href).toBe("/ennichi/omikuji");
+    expect(describeNotification({ ...base, type: "ENNICHI_REWARD", ennichi: null }, tr).text).toContain('"kind":"OTHER"');
+  });
+
   it("pile ou face : invitation et table relevée → page de la table, sans jamais l'issue", () => {
     const base = { actor: { username: "kenji", isGuest: false }, gift: null, card: { anilistId: 40, name: "Luffy", rarity: "MYTHIC" } };
     const coinFlip = { flipId: "t1", cardId: "c1", reason: null };

@@ -6,6 +6,7 @@ import type {
   BattlePayload,
   BuyOrderPayload,
   CoinFlipPayload,
+  EnnichiRewardPayload,
   ExpeditionPayload,
   GiftPayload,
   KyaraImportPayload,
@@ -42,6 +43,8 @@ export type DescribableNotification = {
   kyara?: KyaraImportPayload | null;
   /** Parrainage v2 : étape, part « confiance », palier ou grand-parrainage versé. */
   referral?: ReferralRewardPayload | null;
+  /** Ennichi : palier de lanternes, prix du banzuke ou lot de l'omikuji versé. */
+  ennichi?: EnnichiRewardPayload | null;
   card: { anilistId: number; name: string; rarity: string } | null;
 };
 
@@ -98,6 +101,7 @@ export type DescribeTranslators = {
       | "kyaraImportDone"
       | "kyaraImportRejected"
       | "referralReward"
+      | "ennichiReward"
       | "aCard",
     values?: Values,
   ) => string;
@@ -226,6 +230,11 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
         multiplier: r?.multiplier ?? 1,
       };
       return { text: t("referralReward", values), href: "/parrainage" };
+    }
+    case "ENNICHI_REWARD": {
+      const e = n.ennichi;
+      const values = { kind: e?.kind ?? "OTHER", tier: String((e?.tier ?? 0) + 1), rank: e?.rank ?? 0, draw: e?.draw ?? 0 };
+      return { text: t("ennichiReward", values), href: e?.kind === "BANZUKE" ? "/ennichi/banzuke" : e?.kind === "OMIKUJI" ? "/ennichi/omikuji" : "/ennichi" };
     }
     case "SEALED_OPENED": {
       // Cadeau empoisonné : celui qui a offert le sachet apprend ce qu'il a donné

@@ -32,6 +32,7 @@ export const NOTIFICATION_TYPES = [
   "KYARA_IMPORT_DONE",
   "KYARA_IMPORT_REJECTED",
   "REFERRAL_REWARD",
+  "ENNICHI_REWARD",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -209,6 +210,22 @@ export function parseReferralRewardPayload(raw: unknown): ReferralRewardPayload 
   if ((r.kind === "STEP" || r.kind === "TRUST_BONUS") && (step === null || side === null)) return null;
   if (r.kind === "MILESTONE" && milestone === null) return null;
   return { kind: r.kind as ReferralRewardPayload["kind"], side, step, milestone, multiplier: int(r.multiplier, 1, 10) ?? 1 };
+}
+
+/** Lot de l'Ennichi versé : palier de lanternes (0 à 3), rang du banzuke ou n° du tirage de l'omikuji. */
+export type EnnichiRewardPayload = { kind: "TIER" | "BANZUKE" | "OMIKUJI"; edition: number; tier: number | null; rank: number | null; draw: number | null };
+
+export function parseEnnichiRewardPayload(raw: unknown): EnnichiRewardPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const int = (v: unknown, min: number, max: number) => (Number.isSafeInteger(v) && (v as number) >= min && (v as number) <= max ? (v as number) : null);
+  const edition = int(r.edition, 1, 1_000);
+  if (edition === null || (r.kind !== "TIER" && r.kind !== "BANZUKE" && r.kind !== "OMIKUJI")) return null;
+  const tier = int(r.tier, 0, 3);
+  const rank = int(r.rank, 1, 100_000);
+  const draw = int(r.draw, 1, 100_000);
+  if ((r.kind === "TIER" && tier === null) || (r.kind === "BANZUKE" && rank === null) || (r.kind === "OMIKUJI" && draw === null)) return null;
+  return { kind: r.kind, edition, tier, rank, draw };
 }
 
 /** Expédition rentrée : son issue (le détail se lit sur /expedition). */

@@ -5780,7 +5780,8 @@
     "buyOrderWanted": "{name} cherche {card} à {amount, number} Zeni. Tu en as un exemplaire : vends-le en un clic.",
     "kyaraImportDone": "Ta collection Kyara est arrivée : {cards, plural, =0 {aucune carte} one {# carte} other {# cartes}} et {zeni, number} Zeni.",
     "kyaraImportRejected": "Ta demande d'import Kyara est refusée : {reason, select, NOT_FRIEND {le compte Kiraku n'est pas dans tes amis Kyara} COLLECTION_HIDDEN {ta collection n'est pas visible pour le compte Kiraku} PROFILE_NOT_FOUND {ce profil Kyara est introuvable} DISCORD_MISMATCH {ce profil Kyara n'est pas lié à ton compte Discord} ALREADY_IMPORTED {ce profil Kyara a déjà été importé} SUSPECT {l'équipe n'a pas pu vérifier ce profil} other {voir le mot de l'équipe}}.",
-    "referralReward": "{kind, select, STEP {{side, select, REFEREE {Étape {step, select, 1 {1 · Arrivée} 2 {2 · Installé} 3 {3 · Accro} other {4 · Fidèle}} franchie : tes cadeaux sont arrivés{multiplier, select, 2 { (×2 de l'Ennichi)} other {}}.} other {{name} a franchi l'étape {step, select, 1 {1 · Arrivée} 2 {2 · Installé} 3 {3 · Accro} other {4 · Fidèle}} : tes cadeaux sont arrivés{multiplier, select, 2 { (×2 de l'Ennichi)} other {}}.}}} TRUST_BONUS {{name} : tes boosters Mythiques de l'étape {step} sont arrivés.} MILESTONE {{milestone, number} amis installés : tes cadeaux de palier sont arrivés.} GRAND {Un ami de {name} s'est installé : tes cadeaux de grand-parrain sont arrivés.} other {Parrainage : tes cadeaux sont arrivés.}}"
+    "referralReward": "{kind, select, STEP {{side, select, REFEREE {Étape {step, select, 1 {1 · Arrivée} 2 {2 · Installé} 3 {3 · Accro} other {4 · Fidèle}} franchie : tes cadeaux sont arrivés{multiplier, select, 2 { (×2 de l'Ennichi)} other {}}.} other {{name} a franchi l'étape {step, select, 1 {1 · Arrivée} 2 {2 · Installé} 3 {3 · Accro} other {4 · Fidèle}} : tes cadeaux sont arrivés{multiplier, select, 2 { (×2 de l'Ennichi)} other {}}.}}} TRUST_BONUS {{name} : tes boosters Mythiques de l'étape {step} sont arrivés.} MILESTONE {{milestone, number} amis installés : tes cadeaux de palier sont arrivés.} GRAND {Un ami de {name} s'est installé : tes cadeaux de grand-parrain sont arrivés.} other {Parrainage : tes cadeaux sont arrivés.}}",
+    "ennichiReward": "{kind, select, TIER {Palier {tier} des lanternes atteint : ton lot de la fête est arrivé.} BANZUKE {Banzuke de l'Ennichi : tu finis {rank, selectordinal, one {#er} other {#e}}, tes prix sont arrivés.} OMIKUJI {Omikuji : ton ticket a tiré un lot (tirage n° {draw}).} other {Ennichi : ton lot est arrivé.}}"
   },
   "push": {
     "title": "Notifications sur ce téléphone",
@@ -6053,7 +6054,8 @@
         "ORDER_REFUND": "Avis de recherche remboursé",
         "REBIRTH": "Renaissance (prestige)",
         "KYARA_IMPORT": "Import Kyara (cartes converties)",
-        "REFERRAL_CLAWBACK": "Reprise du parrainage (triche)"
+        "REFERRAL_CLAWBACK": "Reprise du parrainage (triche)",
+        "ENNICHI": "Ennichi (fête du parrainage)"
       }
     },
     "reveal": {

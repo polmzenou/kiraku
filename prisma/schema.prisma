@@ -43,6 +43,7 @@ enum CoinReason {
   ORDER_REFUND // avis annulé ou expiré : séquestre rendu
   KYARA_IMPORT // cartes Kyara converties en Zeni à l'import (refId = id du KyaraImport)
   REFERRAL_CLAWBACK // reprise d'un parrainage v2 révoqué et banni (refId = id du Referral)
+  ENNICHI // lot de l'Ennichi : palier de lanternes, prix du banzuke ou de l'omikuji (refId = id du versement)
 }
 
 // Qui voit le profil public (/u/[username]) ; FRIENDS = amis acceptés seulement
@@ -193,6 +194,9 @@ model User {
   vouchers           Voucher[]
   ambassadorProposals AmbassadorProposal[]    @relation("proposalUser")
   proposalsDecided   AmbassadorProposal[]     @relation("proposalDecider")
+  ennichiTierGrants  EnnichiTierGrant[]
+  ennichiResults     EnnichiResult[]
+  ennichiAwards      EnnichiAward[]
   pollVotes          PollVote[]
 
   auctions    Auction[] @relation("seller")
@@ -1083,6 +1087,7 @@ enum NotificationType {
   KYARA_IMPORT_DONE // l'import de ta collection Kyara est fait (refId = id du KyaraImport)
   KYARA_IMPORT_REJECTED // ta demande d'import Kyara est refusée, avec un motif (refId = id du KyaraImport)
   REFERRAL_REWARD // parrainage v2 : étape, part « confiance », palier ou grand-parrainage versé (refId = id du ReferralReward)
+  ENNICHI_REWARD // Ennichi : palier de lanternes, prix du banzuke ou lot de l'omikuji versé (payload : kind, édition)
 }
 
 // Notifications en base ; le texte est rendu à la lecture (pseudo à jour, langue du lecteur)
@@ -1421,6 +1426,92 @@ model AmbassadorProposal {
   accepted    Boolean?
 
   @@index([decidedAt, createdAt])
+}
+
+// --- Ennichi 縁日 (étape 18d) ---
+
+enum EnnichiAwardKind {
+  BANZUKE // prix d'un rang du banzuke (ref = rang)
+  OMIKUJI // lot tiré à l'omikuji (ref = n° du tirage)
+}
+
+/// Une édition de l'Ennichi : graine engagée au lancement (seule son empreinte est publiée), contrôle de fin de fête,
+/// tirage (liste des tickets et cagnotte figées, graine révélée). Une ligne par édition.
+model EnnichiDraw {
+  edition     Int       @id
+  seedHash    String    @db.Char(64)
+  seed        String    @db.Char(64) // secrète jusqu'au tirage : jamais lue par une page avant drawnAt
+  committedAt DateTime  @default(now())
+  checkedAt   DateTime? // « Contrôler » : scores recalculés, file « À vérifier » remplie
+  checkedById String?
+  drawnAt     DateTime? // « Arrêter et tirer » (ou cron de secours)
+  drawnById   String? // null : cron de secours
+  ticketsHash String?   @db.Char(64)
+  tickets     Json? // libellés des tickets figés à la clôture (« n · pseudo »)
+  prizes      Json? // cagnotte dépliée et figée : [{ lotId, oneOfOne }]
+}
+
+/// Palier de lanternes atteint : figé (lot et bons du moment), avec l'avancement de son envoi à tous les éligibles.
+model EnnichiTierReached {
+  edition        Int
+  tier           Int // 0 à 3
+  lanterns       Int // seuil atteint
+  lotId          String?
+  choiceVouchers Int       @default(0)
+  reachedAt      DateTime  @default(now())
+  served         Int       @default(0)
+  finishedAt     DateTime? // envoi fini ; le rattrapage sert ensuite ceux qui deviennent éligibles
+
+  @@id([edition, tier])
+}
+
+/// Lot d'un palier versé à un joueur : la clé (édition, palier, joueur) empêche tout doublon entre l'envoi et le
+/// rattrapage. ipHash : l'IP retenue pour la limite par IP.
+model EnnichiTierGrant {
+  id        String   @id @default(cuid())
+  edition   Int
+  tier      Int
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipHash    String?
+  granted   Json     @default("{}") // ce que le lot a donné (reprise)
+  createdAt DateTime @default(now())
+
+  @@unique([edition, tier, userId])
+  @@index([edition, tier, ipHash])
+  @@index([userId])
+}
+
+/// Classement final du banzuke, figé au tirage (titre sumo des trois premières lignes de lots).
+model EnnichiResult {
+  edition   Int
+  rank      Int
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name      String // pseudo au tirage
+  count     Int // amis arrivés pendant la fête et installés
+  reachedAt DateTime
+  title     String? // yokozuna, ozeki, sekiwake
+
+  @@id([edition, rank])
+  @@index([userId])
+}
+
+/// Prix versé à la clôture, banzuke ou omikuji : la clé (édition, type, rang ou n° de tirage) empêche tout doublon.
+model EnnichiAward {
+  id        String           @id @default(cuid())
+  edition   Int
+  kind      EnnichiAwardKind
+  ref       Int
+  userId    String?
+  user      User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name      String // pseudo au tirage (rouleaux de l'omikuji)
+  prize     Json // ce qui était promis : lot, bons, carte 1/1, titre
+  granted   Json             @default("{}")
+  createdAt DateTime         @default(now())
+
+  @@unique([edition, kind, ref])
+  @@index([userId])
 }
 
 // Palier de parrainage réclamé : un seul par seuil et par parrain (referral.milestones)
