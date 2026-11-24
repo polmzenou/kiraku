@@ -11,6 +11,7 @@ import type {
   KyaraImportPayload,
   ListingPayload,
   NotificationType,
+  ReferralRewardPayload,
   SealedPayload,
   TeamGiftPayload,
   TradePayload,
@@ -33,7 +34,8 @@ type NewNotification = {
     | CoinFlipPayload
     | ExpeditionPayload
     | BuyOrderPayload
-    | KyaraImportPayload;
+    | KyaraImportPayload
+    | ReferralRewardPayload;
   now: Date;
 };
 

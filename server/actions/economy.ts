@@ -129,7 +129,7 @@ export async function claimAllMissionsAction(): Promise<ClaimResult> {
   if (!(await getSetting("missions.enabled"))) return { ok: false, error: "DISABLED" };
   const now = new Date();
   const timeZone = await getSetting("game.timeZone");
-  const total: LotGrant = { zeni: 0, boosters: [], cards: [], coins: null };
+  const total: LotGrant = { zeni: 0, boosters: [], sealedIds: [], cards: [], coins: null };
   let claimed = 0;
   try {
     const ready = (await playerMissionsWith(prisma, g.user.id, now, timeZone)).filter((m) => m.state === "CLAIMABLE");
@@ -138,6 +138,7 @@ export async function claimAllMissionsAction(): Promise<ClaimResult> {
         const { grant } = await claimMissionWith(prisma, { userId: g.user.id, missionId: m.id, now, timeZone }, lotDeps());
         total.zeni += grant.zeni;
         total.boosters.push(...grant.boosters);
+        total.sealedIds.push(...grant.sealedIds);
         total.cards.push(...grant.cards);
         claimed++;
       } catch (e) {

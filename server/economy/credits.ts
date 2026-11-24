@@ -34,6 +34,23 @@ export async function consumeBoosters(tx: Tx, userId: string, boosterTypeId: str
   return Number(rows[0].count);
 }
 
+/**
+ * Retire au plus `max` boosters du type, sans jamais descendre sous zéro (reprise d'un parrainage : on reprend ce qui
+ * reste). Renvoie le nombre retiré. Le joueur doit être verrouillé par l'appelant.
+ */
+export async function consumeBoostersUpTo(tx: Tx, userId: string, boosterTypeId: string, max: number): Promise<number> {
+  if (!Number.isInteger(max) || max < 1) return 0;
+  const rows = await tx.$queryRaw<{ taken: number }[]>`
+    WITH before AS (
+      SELECT "count" FROM "BoosterCredit" WHERE "userId" = ${userId} AND "boosterTypeId" = ${boosterTypeId} FOR UPDATE
+    )
+    UPDATE "BoosterCredit" c SET "count" = c."count" - LEAST(before."count", ${max}::int), "updatedAt" = CURRENT_TIMESTAMP
+    FROM before
+    WHERE c."userId" = ${userId} AND c."boosterTypeId" = ${boosterTypeId} AND before."count" > 0
+    RETURNING LEAST(before."count", ${max}::int) AS taken`;
+  return rows.length === 0 ? 0 : Number(rows[0].taken);
+}
+
 /** Boosters à ouvrir d'un type. */
 export async function creditCount(tx: Tx, userId: string, boosterTypeId: string): Promise<number> {
   const row = await tx.boosterCredit.findUnique({

@@ -26,7 +26,10 @@ export type LotDeps = {
 
 export type LotGrant = {
   zeni: number;
-  boosters: { boosterTypeId: string; count: number }[];
+  /** Boosters versés : en crédits, sauf les sachets scellés (types DROP, `sealed`), versés un par un (`sealedIds`). */
+  boosters: { boosterTypeId: string; count: number; sealed?: true }[];
+  /** Ids des sachets scellés créés (générés à l'avance : la reprise d'un parrainage les retrouve). */
+  sealedIds: string[];
   /** `isNew` : jamais obtenue avant ce versement (badge 新 à la révélation). */
   cards: { userCardId: string; cardId: string; rarity: Rarity; isNew: boolean; /** Était dans la liste de souhaits. */ wished: boolean }[];
   /** Solde après le versement (null si le lot ne contient pas de Zeni). */
@@ -53,7 +56,7 @@ export async function grantLot(
   });
   if (!lot) throw new LotError("NO_LOT");
 
-  const grant: LotGrant = { zeni: 0, boosters: [], cards: [], coins: null };
+  const grant: LotGrant = { zeni: 0, boosters: [], sealedIds: [], cards: [], coins: null };
   if (lot.zeni > 0) {
     grant.coins = await credit(tx, { userId, amount: lot.zeni, reason: ledger.reason, refId: ledger.refId, now });
     grant.zeni = lot.zeni;
@@ -72,13 +75,16 @@ export async function grantLot(
       if (!type) continue;
       if (type.kind === "DROP") {
         // Sachet scellé : une ligne par sachet, qu'on ne peut pas offrir (seul un tirage en donne d'offrables)
+        const ids = Array.from({ length: item.quantity }, () => randomUUID());
         await tx.sealedDrop.createMany({
-          data: Array.from({ length: item.quantity }, () => ({ ownerId: userId, boosterTypeId: item.boosterTypeId, source: "LOT" as const, giftable: false, createdAt: now })),
+          data: ids.map((id) => ({ id, ownerId: userId, boosterTypeId: item.boosterTypeId, source: "LOT" as const, giftable: false, createdAt: now })),
         });
+        grant.sealedIds.push(...ids);
+        grant.boosters.push({ boosterTypeId: item.boosterTypeId, count: item.quantity, sealed: true });
       } else {
         await grantBoosters(tx, userId, item.boosterTypeId, item.quantity);
+        grant.boosters.push({ boosterTypeId: item.boosterTypeId, count: item.quantity });
       }
-      grant.boosters.push({ boosterTypeId: item.boosterTypeId, count: item.quantity });
     } else if (item.kind === "CARD") {
       const card = await tx.card.findUnique({ where: { id: item.cardId }, select: { id: true, rarity: true } });
       if (!card) continue;
