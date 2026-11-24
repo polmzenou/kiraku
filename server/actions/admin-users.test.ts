@@ -8,6 +8,8 @@ vi.mock("next/cache", () => ({ refresh: mocks.refresh, updateTag: mocks.updateTa
 vi.mock("../collection/leaderboard", () => ({ LEADERBOARD_TAG: "leaderboard" }));
 vi.mock("../social/reviews", () => ({ REVIEWS_TAG: "reviews" }));
 vi.mock("../market/queries", () => ({ pushLater: vi.fn() }));
+// Clé des empreintes du parrainage (module serveur) : sans effet ici, la suppression est simulée
+vi.mock("../referral/deps", () => ({ referralFingerprintKey: () => null }));
 vi.mock("../admin/users-delete-core", async (original) => ({ ...await original<typeof import("../admin/users-delete-core")>(), deleteUserWith: mocks.remove }));
 vi.mock("../admin/users-core", async (original) => ({ ...await original<typeof import("../admin/users-core")>(), mutateAdminUserWith: mocks.mutate }));
 
