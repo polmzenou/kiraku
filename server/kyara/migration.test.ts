@@ -128,6 +128,8 @@ describe("migration de l'import Kyara", () => {
 
   it("ajoute les valeurs d'enum et la marque des découvertes importées", async () => {
     await pg.exec(`SELECT 'KYARA_IMPORT'::"CoinReason", 'KYARA_IMPORT_DONE'::"NotificationType", 'KYARA_IMPORT_REJECTED'::"NotificationType"`);
+    // Relance de l'équipe, ajoutée ensuite
+    await pg.exec(`SELECT 'KYARA_IMPORT_REMINDER'::"NotificationType"`);
     const col = await pg.query<{ column_default: string }>(
       `SELECT column_default FROM information_schema.columns WHERE table_name = 'Discovery' AND column_name = 'imported'`,
     );

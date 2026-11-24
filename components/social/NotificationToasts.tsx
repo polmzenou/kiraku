@@ -112,7 +112,7 @@ function Toast({ seal, text, onOpen, onClose }: { seal: string; text: string; on
         <span aria-hidden="true" lang="ja" className="font-seal text-xl leading-none text-shu">
           {seal}
         </span>
-        <span className="min-w-0 flex-1 text-sm">
+        <span className="min-w-0 flex-1 text-sm whitespace-pre-line">
           {text}
           <span className="sr-only"> {t("toastOpen")}</span>
         </span>

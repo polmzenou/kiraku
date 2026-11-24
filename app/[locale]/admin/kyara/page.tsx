@@ -1,5 +1,6 @@
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { KyaraBookmarklet } from "@/components/admin/kyara/KyaraBookmarklet";
+import { KyaraRemindButton } from "@/components/admin/kyara/KyaraRemindButton";
 import { KyaraImportSettingsForm } from "@/components/admin/KyaraImportSettingsForm";
 import { ReadOnly } from "@/components/admin/ReadOnly";
 import { SettingLogList } from "@/components/admin/SettingLogList";
@@ -137,6 +138,7 @@ export default async function AdminKyaraPage({ searchParams }: PageProps<"/[loca
                     {tab === "READY" && isKyaraReviewReason(row.reviewReason) && ` · ${t(`reviewReasons.${row.reviewReason}`)}`}
                     {row.grantedCards !== null && ` · ${t("queue.granted", { cards: row.grantedCards, zeni: row.grantedZeni ?? 0 })}`}
                     {row.rejectCode && ` · ${t(`rejectCodes.${row.rejectCode as "OTHER"}`)}`}
+                    {row.reminders && ` · ${t("queue.reminded", { count: row.reminders.count, date: format.relativeTime(row.reminders.lastAt, now) })}`}
                   </span>
                   {row.kyaraUserId && (
                     <a href={kyaraProfileUrl(row.kyaraUserId)} target="_blank" rel="noopener noreferrer" className="w-fit text-xs text-ai underline underline-offset-4">
@@ -144,7 +146,8 @@ export default async function AdminKyaraPage({ searchParams }: PageProps<"/[loca
                     </a>
                   )}
                 </div>
-                <div className="flex shrink-0 flex-wrap items-start gap-2">
+                <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2">
+                  {canProcess && tab === "PENDING" && row.user && <KyaraRemindButton importId={row.id} player={row.user.username} />}
                   <Link href={`/admin/kyara/${row.id}`} className="inline-flex min-h-11 items-center text-sm font-bold underline underline-offset-4">
                     {t("queue.open")}
                   </Link>

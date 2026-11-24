@@ -1579,7 +1579,11 @@
         "granted": "{cards, number} cartes, {zeni, number} Zeni",
         "kyaraProfile": "Profil Kyara",
         "open": "Fiche",
-        "pendingHelp": "Ces joueurs attendent que tu lises leur collection : accepte leurs demandes d'ami sur Kyara (compte Kiraku), ouvre le profil de chacun et clique ton favori."
+        "pendingHelp": "Ces joueurs attendent que tu lises leur collection : accepte leurs demandes d'ami sur Kyara (compte Kiraku), ouvre le profil de chacun et clique ton favori. « Relance » prévient un joueur qui ne t'a pas encore montré sa collection, avec le rappel de la marche à suivre.",
+        "remind": "Relance",
+        "remindPending": "Envoi…",
+        "remindDone": "Relancé",
+        "reminded": "{count, plural, one {relancé {date}} other {relancé # fois, dernière {date}}}"
       },
       "bookmarklet": {
         "title": "Favori « Envoyer à Kiraku » (version {build})",
@@ -5433,7 +5437,8 @@
     "buyOrderExpired": "Ton avis de recherche pour {card} a expiré : {amount, number} Zeni te sont rendus.",
     "buyOrderWanted": "{name} cherche {card} à {amount, number} Zeni. Tu en as un exemplaire : vends-le en un clic.",
     "kyaraImportDone": "Ta collection Kyara est arrivée : {cards, plural, =0 {aucune carte} one {# carte} other {# cartes}} et {zeni, number} Zeni.",
-    "kyaraImportRejected": "Ta demande d'import Kyara est refusée : {reason, select, NOT_FRIEND {le compte Kiraku n'est pas dans tes amis Kyara} COLLECTION_HIDDEN {ta collection n'est pas visible pour le compte Kiraku} PROFILE_NOT_FOUND {ce profil Kyara est introuvable} DISCORD_MISMATCH {ce profil Kyara n'est pas lié à ton compte Discord} ALREADY_IMPORTED {ce profil Kyara a déjà été importé} SUSPECT {l'équipe n'a pas pu vérifier ce profil} other {voir le mot de l'équipe}}."
+    "kyaraImportRejected": "Ta demande d'import Kyara est refusée : {reason, select, NOT_FRIEND {le compte Kiraku n'est pas dans tes amis Kyara} COLLECTION_HIDDEN {ta collection n'est pas visible pour le compte Kiraku} PROFILE_NOT_FOUND {ce profil Kyara est introuvable} DISCORD_MISMATCH {ce profil Kyara n'est pas lié à ton compte Discord} ALREADY_IMPORTED {ce profil Kyara a déjà été importé} SUSPECT {l'équipe n'a pas pu vérifier ce profil} other {voir le mot de l'équipe}}.",
+    "kyaraImportReminder": "Le compte Kiraku a été ajouté sur Kyara, va lui montrer ta collection pour récupérer ta collection entière !\n1. Toujours sur Kyara : Amis → onglet des messages, ouvre ta conversation avec Kiraku et clique « Montrer ma collection ».\n⚠️ Être ami ne suffit pas : sans ce clic, on ne voit pas tes cartes.\n2. L'équipe lit ta collection, et tes cartes arrivent sur ton compte avec une notification."
   },
   "push": {
     "title": "Notifications sur ce téléphone",

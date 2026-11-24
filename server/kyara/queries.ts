@@ -155,9 +155,12 @@ export async function kyaraTileVisible(user: KyaraUser, now: number): Promise<bo
 export const QUEUE_TABS = ["PENDING", "READY", "DONE", "REJECTED"] as const;
 export type QueueTab = (typeof QUEUE_TABS)[number];
 
-/** File de /admin/kyara : demandes d'un statut, les plus anciennes d'abord (les traitées, les plus récentes). */
+/**
+ * File de /admin/kyara : demandes d'un statut, les plus anciennes d'abord (les traitées, les plus récentes). En attente :
+ * relances déjà envoyées (nombre et dernière), lues dans les notifications des joueurs.
+ */
 export async function kyaraQueue(tab: QueueTab, take = 50) {
-  return prisma.kyaraImport.findMany({
+  const rows = await prisma.kyaraImport.findMany({
     where: { status: tab },
     orderBy: { requestedAt: tab === "PENDING" || tab === "READY" ? "asc" : "desc" },
     take,
@@ -177,6 +180,19 @@ export async function kyaraQueue(tab: QueueTab, take = 50) {
       user: { select: { id: true, username: true, createdAt: true } },
     },
   });
+  const userIds = tab === "PENDING" ? rows.flatMap((r) => (r.user ? [r.user.id] : [])) : [];
+  // Par joueur d'abord : l'index (userId, createdAt) des notifications borne la lecture
+  const sent =
+    userIds.length > 0
+      ? await prisma.notification.groupBy({
+          by: ["refId"],
+          where: { userId: { in: userIds }, type: "KYARA_IMPORT_REMINDER", refId: { in: rows.map((r) => r.id) } },
+          _count: { _all: true },
+          _max: { createdAt: true },
+        })
+      : [];
+  const byImport = new Map(sent.flatMap((s) => (s.refId && s._max.createdAt ? [[s.refId, { count: s._count._all, lastAt: s._max.createdAt }] as const] : [])));
+  return rows.map((r) => ({ ...r, reminders: byImport.get(r.id) ?? null }));
 }
 
 /** Fiche d'une demande pour l'équipe, avec l'aperçu recalculé si elle est lue. */

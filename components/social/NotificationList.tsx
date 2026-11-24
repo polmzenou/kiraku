@@ -112,13 +112,16 @@ export function NotificationList({ initial, initialCursor }: { initial: Notifica
       <ul className="flex flex-col gap-2">
         {items.map((n) => {
           const { text, href } = describe(n);
+          const [head, ...more] = text.split("\n");
           const row = (
             <>
               <span aria-hidden="true" lang="ja" className="mt-0.5 font-seal text-lg leading-none text-shu">
                 {notificationSeal(n.type)}
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className={n.read ? "" : "font-bold"}>{text}</span>
+                <span className={n.read ? "" : "font-bold"}>{head}</span>
+                {/* Texte sur plusieurs lignes (relance Kyara) : seule la première est le titre, le reste est le détail */}
+                {more.length > 0 && <span className="whitespace-pre-line text-sm">{more.join("\n")}</span>}
                 {n.note && (
                   <span className="whitespace-pre-line break-words border-l-2 border-kin/60 pl-2 text-sm">
                     <span className="block text-xs text-text-muted">

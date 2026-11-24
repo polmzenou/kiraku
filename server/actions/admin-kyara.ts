@@ -14,6 +14,7 @@ import {
   KyaraImportError,
   receivePayloadWith,
   rejectImportWith,
+  remindImportWith,
   reopenImportWith,
   rereadImportWith,
   type KyaraErrorCode,
@@ -150,6 +151,22 @@ export async function rejectKyaraImportAction(input: unknown): Promise<{ ok: tru
     return { ok: true };
   } catch (e) {
     return failure("refus", e);
+  }
+}
+
+/** Relance du joueur d'une demande en attente : notification avec le rappel de la marche à suivre sur Kyara. */
+export async function remindKyaraImportAction(input: unknown): Promise<{ ok: true } | Fail> {
+  const user = await staff();
+  if (!user) return { ok: false, error: "FORBIDDEN" };
+  const parsed = importSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (await limited(user.id, "remind", 30)) return { ok: false, error: "RATE_LIMITED" };
+  try {
+    await remindImportWith(prisma, { staffId: user.id, importId: parsed.data.importId, now: new Date() }, pushLater);
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    return failure("relance", e);
   }
 }
 

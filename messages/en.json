@@ -1579,7 +1579,11 @@
         "granted": "{cards, number} cards, {zeni, number} Zeni",
         "kyaraProfile": "Kyara profile",
         "open": "Details",
-        "pendingHelp": "These players are waiting for you to read their collection: accept their friend requests on Kyara (Kiraku account), open each profile and click your bookmarklet."
+        "pendingHelp": "These players are waiting for you to read their collection: accept their friend requests on Kyara (Kiraku account), open each profile and click your bookmarklet. “Remind” nudges a player who hasn't shown you their collection yet, with a reminder of the steps.",
+        "remind": "Remind",
+        "remindPending": "Sending…",
+        "remindDone": "Reminded",
+        "reminded": "{count, plural, one {reminded {date}} other {reminded # times, last {date}}}"
       },
       "bookmarklet": {
         "title": "“Send to Kiraku” bookmarklet (version {build})",
@@ -5433,7 +5437,8 @@
     "buyOrderExpired": "Your buy order for {card} expired: {amount, number} Zeni are back.",
     "buyOrderWanted": "{name} is looking for {card} at {amount, number} Zeni. You own a copy: sell it in one tap.",
     "kyaraImportDone": "Your Kyara collection has arrived: {cards, plural, =0 {no cards} one {# card} other {# cards}} and {zeni, number} Zeni.",
-    "kyaraImportRejected": "Your Kyara import request was declined: {reason, select, NOT_FRIEND {the Kiraku account isn't in your Kyara friends} COLLECTION_HIDDEN {your collection isn't visible to the Kiraku account} PROFILE_NOT_FOUND {this Kyara profile can't be found} DISCORD_MISMATCH {this Kyara profile isn't linked to your Discord account} ALREADY_IMPORTED {this Kyara profile was already imported} SUSPECT {the team couldn't verify this profile} other {see the team's note}}."
+    "kyaraImportRejected": "Your Kyara import request was declined: {reason, select, NOT_FRIEND {the Kiraku account isn't in your Kyara friends} COLLECTION_HIDDEN {your collection isn't visible to the Kiraku account} PROFILE_NOT_FOUND {this Kyara profile can't be found} DISCORD_MISMATCH {this Kyara profile isn't linked to your Discord account} ALREADY_IMPORTED {this Kyara profile was already imported} SUSPECT {the team couldn't verify this profile} other {see the team's note}}.",
+    "kyaraImportReminder": "The Kiraku account has been added on Kyara: go show it your collection to get your whole collection!\n1. Still on Kyara: Friends → messages tab, open your conversation with Kiraku and click “Show my collection”.\n⚠️ Being friends isn't enough: without this click, we can't see your cards.\n2. The team reads your collection, and your cards arrive on your account with a notification."
   },
   "push": {
     "title": "Notifications on this device",

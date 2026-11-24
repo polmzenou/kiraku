@@ -17,6 +17,7 @@ import {
   purgeKyaraImportsWith,
   receivePayloadWith,
   rejectImportWith,
+  remindImportWith,
   reopenImportWith,
   requestImportWith,
   rereadImportWith,
@@ -338,6 +339,27 @@ describe.skipIf(!url)("import Kyara (base réelle)", () => {
     await rejectImportWith(prisma, { staffId: staff.id, importId: id, code: "OTHER", note: null, now: new Date() });
     await request(me);
     expect(await code(reopenImportWith(prisma, { staffId: staff.id, importId: id, now: new Date() }))).toBe("CONFLICT");
+  });
+
+  it("relance : notification au joueur et journal, seulement tant que la demande attend", async () => {
+    const staff = await staffMember("DEV");
+    const me = await player();
+    const { id } = await request(me);
+    const pushed: string[][] = [];
+    await remindImportWith(prisma, { staffId: staff.id, importId: id, now: new Date() }, (ids) => pushed.push(ids));
+    await remindImportWith(prisma, { staffId: staff.id, importId: id, now: new Date() });
+    const notifs = await prisma.notification.findMany({ where: { userId: me.id, type: "KYARA_IMPORT_REMINDER" } });
+    expect(notifs).toHaveLength(2);
+    expect(notifs[0]).toMatchObject({ refId: id, actorId: me.id, readAt: null });
+    expect(pushed).toEqual([[expect.any(String)]]);
+    expect(await prisma.adminLog.count({ where: { targetId: id, action: "KYARA_IMPORT_REMIND", adminId: staff.id } })).toBe(2);
+    // La demande ne bouge pas
+    expect(await prisma.kyaraImport.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: "PENDING", receivedAt: null });
+    // Lue (à vérifier) ou refusée : plus de relance
+    await receive(staff.id, payload({ key: staff.key, avatarUrl: avatarOf(me.discord!), total: COLLECTION().length + 5 }));
+    expect(await code(remindImportWith(prisma, { staffId: staff.id, importId: id, now: new Date() }))).toBe("NOT_PENDING");
+    expect(await code(remindImportWith(prisma, { staffId: staff.id, importId: "inconnue", now: new Date() }))).toBe("NOT_FOUND");
+    expect(await prisma.notification.count({ where: { userId: me.id, type: "KYARA_IMPORT_REMINDER" } })).toBe(2);
   });
 
   it("RGPD : suppression du compte, le verrou du Discord reste ; purge des photos anciennes", async () => {
