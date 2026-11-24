@@ -1326,7 +1326,7 @@ On ne refuse personne de plus qu'aujourd'hui ; la confiance décide quand on pai
 
 Quatorze jours, lancés dès que le parrainage v2 est prêt (pas de date fixe), derrière leur interrupteur, puis 3 jours de clôture. L'événement doit être très visuel : maquettes validées avant le code du visuel (rue des lanternes, pochibukuro d'invitation, banzuke, omikuji, arbre des liens).
 
-- **Rue des lanternes** (objectif commun) : chaque ami arrivé pendant l'événement pose une lanterne éteinte sur l'accueil, qui s'allume quand il atteint l'étape 2 (jusqu'à la clôture). À chaque palier de lanternes allumées (quatre seuils, calés sur la fréquentation), chaque joueur éligible reçoit le lot entier du palier, versé tout seul ; éligible : compte inscrit et vérifié, au moins un booster ouvert pendant l'événement, limite par IP. Lots choisis le 2026-11-23, par joueur :
+- **Rue des lanternes** (objectif commun) : chaque ami arrivé pendant l'événement pose une lanterne éteinte sur l'accueil, qui s'allume quand il atteint l'étape 2 (jusqu'à la clôture). À chaque palier de lanternes allumées (quatre seuils : 25, 50, 200 et 500 lanternes, choisis le 2026-11-24), chaque joueur éligible reçoit le lot entier du palier, versé tout seul ; éligible : compte inscrit et vérifié, au moins un booster ouvert pendant l'événement, limite par IP. Lots choisis le 2026-11-23, par joueur :
 
   | Palier | Lot pour chaque joueur |
   | --- | --- |
@@ -1337,7 +1337,7 @@ Quatorze jours, lancés dès que le parrainage v2 est prêt (pas de date fixe), 
 
   Seuils et lots se règlent dans l'admin ; un palier déjà atteint se fige (son lot ne change plus).
 - **Banzuke 番付** : classement des recruteurs en amis arrivés pendant l'événement et installés, arrêté à la clôture, une fois les cas « À vérifier » tranchés. 1er : titre Yokozuna + carte 1/1 + 3 Mythiques au choix ; 2e et 3e : Ōzeki + 2 Mythiques au choix ; 4e à 10e : Sekiwake + 1 Mythique au choix ; 11e à 50e : 1 Divin. Titres permanents, marqués de l'édition.
-- **Omikuji おみくじ** : tirage en direct le soir de la clôture, un ticket par ami arrivé pendant l'événement et installé. Cagnotte fixe, toujours distribuée en entier : 1 carte 1/1, 20 Divins, 55 boosters Mythiques. Chacun gagne au plus un lot tant que d'autres n'ont rien ; s'il reste des lots, on refait un tour. Tirage par le serveur, vérifiable comme le pile ou face.
+- **Omikuji おみくじ** : tirage en direct le soir de la clôture, un ticket par ami arrivé pendant l'événement et installé. Cagnotte : 1 carte 1/1, 20 Divins, 55 boosters Mythiques. Chaque ticket gagne au plus un lot (choix du 2026-11-24), du plus rare au moins rare : la 1/1, puis les Divins, puis les Mythiques ; ce qui reste n'est pas distribué (avec 76 tickets ou plus, toute la cagnotte part). Tirage par le serveur, vérifiable comme le pile ou face.
 - **Bonus** : pour les amis arrivés pendant l'événement, les étapes 1 et 2 comptent double, des deux côtés.
 
 **Designs retenus le 2026-11-23** (une proposition par écran dans les quatre ateliers de maquettes) :
@@ -1346,7 +1346,7 @@ Quatorze jours, lancés dès que le parrainage v2 est prêt (pas de date fixe), 
 | --- | --- |
 | Parrainage | Annonce : enveloppe · Page sans filleul : fuda à retourner · Page avec filleuls : tableau · Vue du filleul : bienvenue d'abord · Paliers : sceaux · Cadeaux reçus : le nœud · Notifications : ligne et sachets · Bons : grille · Mur des légendes : rouleau d'honneur |
 | Invitation | Arrivée (invité) : lettre · Arrivée (déjà inscrit) : carte centrée · Après le premier booster : sous le récap · Partager : feuille de partage · Aperçus des liens : enveloppe · Arbre des liens : arbre · Cadre et badges : double anneau · Code perso : plaque d'or |
-| Ennichi | Bannière : rue des lanternes · Page de la fête : ta fête d'abord · Lanternes : liste des paliers · Banzuke en direct : tableau de sumo · Banzuke final : podium (à retravailler, plus riche) · Omikuji : rouleaux · Vérification : en bref · Explications « ? » : carte dorée |
+| Ennichi | Bannière : rue des lanternes · Page de la fête : ta fête d'abord · Lanternes : liste des paliers · Banzuke en direct : tableau de sumo · Banzuke final : podium A Dohyō (retravaillé, choisi le 2026-11-24 contre B Estrade d'honneur) · Omikuji : rouleaux · Vérification : en bref · Explications « ? » : carte dorée |
 | Équipe | Suivi : tableau · Fiche : deux colonnes · File « À vérifier » : cartes · Ambassadeurs et codes : cartes · Admin de l'Ennichi : tableau de bord · Salon Discord privé : message détaillé · Annonce à la communauté : annonce détaillée |
 
 **Réglages.** Interrupteurs du parrainage et de l'Ennichi. Lots de chaque étape et de chaque côté, des paliers, du grand-parrainage, des paliers de lanternes, des rangs du banzuke et de la cagnotte ; conditions et fenêtres des étapes ; seuils de confiance (âge du compte Discord, score) ; durées des verrous ; plafond ; dates, seuils des lanternes et multiplicateur de l'Ennichi. `/admin/parrainage` tient aussi la file « À vérifier » (indices, valider, révoquer, révoquer et bannir), les codes perso et les Ambassadeurs proposés.
