@@ -305,7 +305,7 @@ export function BoosterScene(props: Props) {
       }}
     >
       {!opened && <IdleHalo progress={progress} color={theme.base} reduced={reduced} />}
-      {wow && <PrismHalo lite={lite} fading={dropped} />}
+      {wow && <PrismHalo lite={lite} fading={dropped} shape={shape} />}
       {count > 1 && (
         <>
           <m.div

@@ -520,6 +520,7 @@
   /* Shūchūsen (集中線, Manga Rare) : papier, lignes de vitesse vers l'étiquette et trame de points */
   .wagara-shuchusen {
     --wagara:
+      linear-gradient(to top, var(--booster-base, #f4f0e6) 0 24%, transparent 40%),
       radial-gradient(ellipse 46% 36% at 50% 36%, var(--booster-base, #f4f0e6) 58%, transparent 100%),
       repeating-conic-gradient(from 0deg at 50% 36%, rgb(31 27 23 / 0.55) 0 0.7deg, transparent 0.7deg 3.6deg, rgb(31 27 23 / 0.35) 3.6deg 4deg, transparent 4deg 7deg),
       radial-gradient(circle, rgb(31 27 23 / 0.2) 0 1.1px, transparent 1.5px) 0 0 / 6px 6px;
@@ -781,19 +782,20 @@
     left: 5%;
     top: 16%;
     display: flex;
-    width: 17cqw;
+    width: 21cqw;
     aspect-ratio: 1;
     align-items: center;
     justify-content: center;
-    border: 0.9cqw solid #c8372d;
+    border: 1cqw solid #c8372d;
     border-radius: 9999px;
     background: rgb(244 237 224 / 0.9);
     box-shadow: 0 2px 4px rgb(0 0 0 / 0.35);
     color: #c8372d;
     font-family: var(--font-seal);
-    font-size: 5.4cqw;
+    font-size: 7.6cqw;
+    font-weight: 700;
     line-height: 1;
-    letter-spacing: 0.06em;
+    letter-spacing: -0.02em;
     writing-mode: vertical-rl;
     pointer-events: none;
     transform: rotate(-12deg);

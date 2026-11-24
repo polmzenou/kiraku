@@ -22,8 +22,8 @@ export const PRISM = {
 export const XR_ECHOES = ["#ff67ba", "#78bfff", "#63ffba"] as const;
 /** Palette holographique de la XR : la même du sachet à la révélation. */
 export const HOLO = [...XR_ECHOES, "#ffe881", "#ffffff"] as const;
-/** Arc-en-ciel du prisme, dans l'ordre du spectre (rayons, faisceau, halo). */
-export const PRISM_SPECTRUM = ["#ff67ba", "#ff9a5c", "#ffe881", "#63ffba", "#78bfff", "#b18cff"] as const;
+/** Arc-en-ciel du prisme, en pastel nacré et dans l'ordre du spectre (étincelles ; rayons et halo dans PrismLight.css). */
+export const PRISM_SPECTRUM = ["#ffb3da", "#ffd7a8", "#fff3b8", "#b8ffdc", "#b8dcff", "#d8c2ff"] as const;
 
 /** Le tirage contient-il une XR ? */
 export const hasPrism = (cards: readonly { rarity: Rarity }[]): boolean => cards.some((c) => c.rarity === PRISM_RARITY);
@@ -59,7 +59,7 @@ export function prismSparks(lite: boolean): PrismSpark[] {
       left,
       dx: Math.round(spread * (40 + r() * 70)),
       dy: Math.round(-90 - r() * 150),
-      size: Math.round(3 + r() * 4),
+      size: Math.round(6 + r() * 6),
       delay: Math.round((second ? 900 : 120) + r() * 380),
       duration: Math.round(800 + r() * 500),
     };
