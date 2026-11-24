@@ -50,7 +50,7 @@ import { forgetSettings, SETTINGS_TAG } from "../settings";
 import { writeAdminLog } from "../admin/log";
 import { getRarities } from "../catalog/rarities";
 import { resolveNewsVisuals } from "../home/news";
-import { ENNICHI_TAG } from "../ennichi/queries";
+import { ENNICHI_TAG } from "../ennichi/tag";
 
 // Réglages de jeu depuis /admin. Ordre : rôle admin vérifié → Zod par clé → rate limit.
 // Chaque clé modifiée écrit sa ligne GameSetting et une ligne AdminLog (avant / après).

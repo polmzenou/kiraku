@@ -17,7 +17,7 @@ import { previewRevokeWith, ReviewError, revokeReferralWith, validateReferralWit
 import { getSetting } from "../settings";
 import { checkEnnichiWith, drawEnnichiWith, EnnichiCloseError, payAwardsWith, type EnnichiCloseErrorCode } from "../ennichi/close-core";
 import { ennichiPayDeps, ennichiState } from "../ennichi/deps";
-import { ENNICHI_TAG } from "../ennichi/queries";
+import { ENNICHI_TAG } from "../ennichi/tag";
 import { writeAdminLog } from "../admin/log";
 import { publishReferralAnnouncement } from "../discord/referral-announce";
 

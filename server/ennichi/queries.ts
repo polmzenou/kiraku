@@ -7,12 +7,13 @@ import { lotViews, type LotLine, type LotView } from "../economy/lot-view";
 import { recruitersWith, ticketsWith } from "./close-core";
 import { ennichiState } from "./deps";
 import { lanternCountsWith } from "./lanterns-core";
+import { ENNICHI_TAG } from "./tag";
 
 // Lectures des écrans de l'Ennichi (étape 18d). La vue publique (rue, paliers, rangs, cagnotte) est la même pour tous :
 // en cache une minute (tag ENNICHI_TAG) ; la part du joueur est lue à chaque fois. La graine du tirage n'est lue
 // qu'après le tirage (vérification) : avant, seule son empreinte sort d'ici.
 
-export const ENNICHI_TAG = "ennichi";
+export { ENNICHI_TAG };
 const TIER_KANJI = ["一", "二", "三", "四"] as const;
 
 export type TierView = { index: number; kanji: string; lanterns: number; lot: LotView | null; choiceVouchers: number; reachedAt: string | null; served: number };

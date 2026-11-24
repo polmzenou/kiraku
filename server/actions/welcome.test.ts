@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ user: vi.fn(), updateMany: vi.fn(), rateLimit: vi.fn(), casinoRules: vi.fn() }));
+const mocks = vi.hoisted(() => ({ user: vi.fn(), updateMany: vi.fn(), rateLimit: vi.fn(), casinoRules: vi.fn(), setting: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("../user", () => ({ requireActiveUser: mocks.user }));
 vi.mock("../db", () => ({ prisma: { user: { updateMany: mocks.updateMany } } }));
 vi.mock("../ratelimit", () => ({ rateLimit: mocks.rateLimit }));
 vi.mock("../casino/queries", () => ({ getCasinoRules: mocks.casinoRules }));
+vi.mock("../settings", () => ({ getSetting: mocks.setting }));
 import { DEFAULT_CASINO_RULES } from "@/lib/casino/rules";
+import { SETTING_DEFAULTS, type SettingKey } from "@/lib/settings/defaults";
 import { ANNOUNCEMENTS } from "@/lib/welcome/release";
 import { claimAnnouncementAction } from "./welcome";
 
@@ -18,6 +20,8 @@ beforeEach(() => {
   mocks.rateLimit.mockResolvedValue({ success: true });
   mocks.updateMany.mockResolvedValue({ count: 1 });
   mocks.casinoRules.mockResolvedValue(DEFAULT_CASINO_RULES);
+  // Réglages par défaut : parrainage v2 coupé, pas d'annonce datée
+  mocks.setting.mockImplementation(async (key: SettingKey) => SETTING_DEFAULTS[key]);
 });
 
 describe("annonces uniques par compte", () => {
@@ -139,5 +143,34 @@ describe("annonce de l'ouverture du casino", () => {
     mocks.casinoRules.mockResolvedValue({ ...DEFAULT_CASINO_RULES, opensAt: Date.now() + DAY });
     mocks.user.mockResolvedValue(veteran);
     expect(await claimAnnouncementAction("player", "casino")).toBe(false);
+  });
+});
+
+describe("annonce du nouveau parrainage", () => {
+  const DAY = 86_400_000;
+  const veteran = { id: "player", isGuest: false, createdAt: new Date(Date.now() - 60 * DAY), v1WelcomeSeenAt: v25.at };
+  const announced = (at: string | null, enabled = true) =>
+    mocks.setting.mockImplementation(async (key: SettingKey) =>
+      key === "referral.v2.enabled" ? enabled : key === "referral.v2.announceAt" ? at : SETTING_DEFAULTS[key],
+    );
+
+  it("présentée une fois aux comptes inscrits avant la date, parrainage v2 allumé", async () => {
+    const at = new Date(Date.now() - DAY).toISOString();
+    announced(at);
+    mocks.user.mockResolvedValue(veteran);
+    expect(await claimAnnouncementAction("player", "referral")).toBe(true);
+    expect(mocks.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { v1WelcomeSeenAt: new Date(at) } }));
+  });
+
+  it("rien sans date, parrainage v2 coupé, ni pour un compte créé après l'annonce", async () => {
+    mocks.user.mockResolvedValue(veteran);
+    announced(null);
+    expect(await claimAnnouncementAction("player", "referral")).toBe(false);
+    announced(new Date(Date.now() - DAY).toISOString(), false);
+    expect(await claimAnnouncementAction("player", "referral")).toBe(false);
+    announced(new Date(Date.now() - DAY).toISOString());
+    mocks.user.mockResolvedValue({ ...veteran, createdAt: new Date() });
+    expect(await claimAnnouncementAction("player", "referral")).toBe(false);
+    expect(mocks.updateMany).not.toHaveBeenCalled();
   });
 });
