@@ -40,6 +40,7 @@ import {
 import { CASINO_FORM_KEYS, casinoSettingsSchema, type CasinoFormKey } from "@/lib/settings/casino-form";
 import { KYARA_FORM_KEYS, kyaraSettingsSchema, type KyaraFormKey } from "@/lib/settings/kyara-form";
 import { REFERRAL_V2_FORM_KEYS, referralV2SettingsSchema, type ReferralV2FormKey } from "@/lib/settings/referral-v2-form";
+import { ENNICHI_FORM_KEYS, ennichiSettingsSchema, type EnnichiFormKey } from "@/lib/settings/ennichi-form";
 import { changedSettingKeys, type SettingsOf } from "@/lib/settings/form";
 import { canManageReferrals, canProcessKyaraImports } from "@/lib/admin/roles";
 import { getAdmin, getStaff } from "../admin";
@@ -49,11 +50,12 @@ import { forgetSettings, SETTINGS_TAG } from "../settings";
 import { writeAdminLog } from "../admin/log";
 import { getRarities } from "../catalog/rarities";
 import { resolveNewsVisuals } from "../home/news";
+import { ENNICHI_TAG } from "../ennichi/queries";
 
 // Réglages de jeu depuis /admin. Ordre : rôle admin vérifié → Zod par clé → rate limit.
 // Chaque clé modifiée écrit sa ligne GameSetting et une ligne AdminLog (avant / après).
-// Deux exceptions au rôle admin, ouvertes à toute l'équipe : les réglages de l'import Kyara (kyaraStaff) et ceux du
-// parrainage v2 (referralStaff).
+// Exceptions au rôle admin, ouvertes à toute l'équipe : les réglages de l'import Kyara (kyaraStaff), ceux du
+// parrainage v2 et ceux de l'Ennichi (referralStaff).
 
 export type UpdateSettingsResult<K extends SettingKey = SettingKey> =
   | { ok: true; changed: K[] }
@@ -292,6 +294,13 @@ async function referralStaff() {
 
 export async function updateReferralV2Settings(input: unknown): Promise<UpdateSettingsResult<ReferralV2FormKey>> {
   return saveSettings(REFERRAL_V2_FORM_KEYS, referralV2SettingsSchema, input, undefined, referralStaff);
+}
+
+/** Ennichi : toute l'équipe aussi (canManageReferrals) ; les pages de la fête suivent tout de suite. */
+export async function updateEnnichiSettings(input: unknown): Promise<UpdateSettingsResult<EnnichiFormKey>> {
+  const result = await saveSettings(ENNICHI_FORM_KEYS, ennichiSettingsSchema, input, undefined, referralStaff);
+  if (result.ok && result.changed.length > 0) updateTag(ENNICHI_TAG);
+  return result;
 }
 
 export async function updateEventGaugeSettings(input: unknown): Promise<UpdateSettingsResult<EventGaugeSettingKey>> {

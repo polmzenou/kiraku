@@ -4,7 +4,7 @@
 // plus `tierGrantsPerIp` comptes par IP. Envoi par lots mené par le cron, rattrapage à l'ouverture d'un booster ; la
 // clé (édition, palier, joueur) empêche tout doublon entre les deux. Client injecté : serveur ou tests sur base.
 import { createHash, randomUUID } from "node:crypto";
-import type { Prisma, PrismaClient } from "@/generated/prisma/client";
+import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import type { EnnichiRules, EnnichiSchedule } from "@/lib/ennichi/rules";
 import type { LotDeps } from "../economy/lots";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
@@ -106,20 +106,31 @@ export async function grantTierWith(
   );
 }
 
-/** Joueurs à servir pour un palier : éligibles d'après la base, pas encore servis, les plus anciens comptes d'abord. */
-async function pendingUsers(db: Db, input: { edition: number; tier: number; schedule: EnnichiSchedule; take: number }): Promise<string[]> {
+type PendingInput = { edition: number; tier: number; schedule: EnnichiSchedule };
+
+/** Joueur `u` à servir pour un palier : éligible d'après la base (inscrit, vérifié, un booster ouvert pendant la fête), pas encore servi. */
+const pendingWhere = (input: PendingInput) => Prisma.sql`
+  u."isGuest" = false AND u."bannedAt" IS NULL
+  AND (u."emailVerified" IS NOT NULL OR u."discordLinkedAt" IS NOT NULL)
+  AND EXISTS (
+    SELECT 1 FROM "BoosterOpening" o
+    WHERE o."userId" = u.id AND o."createdAt" >= ${input.schedule.startsAt} AND o."createdAt" < ${input.schedule.endsAt}
+  )
+  AND NOT EXISTS (SELECT 1 FROM "EnnichiTierGrant" g WHERE g.edition = ${input.edition} AND g.tier = ${input.tier} AND g."userId" = u.id)`;
+
+/** Joueurs à servir pour un palier, les plus anciens comptes d'abord. */
+async function pendingUsers(db: Db, input: PendingInput & { take: number }): Promise<string[]> {
   const rows = await db.$queryRaw<{ id: string }[]>`
-    SELECT u.id FROM "User" u
-    WHERE u."isGuest" = false AND u."bannedAt" IS NULL
-      AND (u."emailVerified" IS NOT NULL OR u."discordLinkedAt" IS NOT NULL)
-      AND EXISTS (
-        SELECT 1 FROM "BoosterOpening" o
-        WHERE o."userId" = u.id AND o."createdAt" >= ${input.schedule.startsAt} AND o."createdAt" < ${input.schedule.endsAt}
-      )
-      AND NOT EXISTS (SELECT 1 FROM "EnnichiTierGrant" g WHERE g.edition = ${input.edition} AND g.tier = ${input.tier} AND g."userId" = u.id)
+    SELECT u.id FROM "User" u WHERE ${pendingWhere(input)}
     ORDER BY u."registeredAt" ASC NULLS LAST, u.id ASC
     LIMIT ${input.take}`;
   return rows.map((r) => r.id);
+}
+
+/** Nombre de joueurs encore à servir pour un palier (suivi de l'envoi dans l'admin). */
+export async function pendingCountWith(db: Db, input: PendingInput): Promise<number> {
+  const [row] = await db.$queryRaw<{ n: number }[]>`SELECT COUNT(*)::int AS n FROM "User" u WHERE ${pendingWhere(input)}`;
+  return row?.n ?? 0;
 }
 
 /**

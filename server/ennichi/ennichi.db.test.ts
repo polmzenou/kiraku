@@ -6,7 +6,7 @@ import type { EnnichiRules } from "@/lib/ennichi/rules";
 import { createPgAdapter } from "@/server/pg-adapter";
 import type { LotDeps } from "../economy/lots";
 import { commitSeedWith, drawEnnichiWith, EnnichiCloseError, payAwardsWith } from "./close-core";
-import { catchUpTiersWith, grantTierWith, lanternCountsWith, recordReachedTiersWith, sendTierWith } from "./lanterns-core";
+import { catchUpTiersWith, grantTierWith, lanternCountsWith, pendingCountWith, recordReachedTiersWith, sendTierWith } from "./lanterns-core";
 
 vi.mock("server-only", () => ({}));
 
@@ -171,6 +171,11 @@ describe.skipIf(!url)("Ennichi (base réelle)", () => {
     expect(await grantTierWith(prisma, { ...input, tier: 1, userId: users.papa }, deps())).toBe("ALREADY");
     expect(await prisma.voucher.count({ where: { userId: users.papa, kind: "MYTHIC_CHOICE" } })).toBe(1);
     expect(await grantTierWith(prisma, { ...input, tier: 1, userId: users.solo }, deps())).toBe("GRANTED");
+    // Suivi de l'envoi dans l'admin : plus personne à servir pour le palier 0 (chaque éligible y a sa ligne) ; pour le
+    // palier 1, tous ces éligibles sauf ceux déjà servis
+    expect(await pendingCountWith(prisma, { edition, tier: 0, schedule: schedule() })).toBe(0);
+    const tier1 = await prisma.ennichiTierGrant.count({ where: { edition, tier: 1 } });
+    expect(await pendingCountWith(prisma, { edition, tier: 1, schedule: schedule() })).toBe(grants.length - tier1);
   });
 
   it("tirage lancé deux fois en même temps : un seul résultat ; banzuke sans bloqués ni révoqués ; prix versés une fois", async () => {

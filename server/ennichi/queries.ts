@@ -108,6 +108,11 @@ export function ennichiView(locale: string, now = new Date()): Promise<EnnichiVi
   return cachedView(locale, Math.floor(now.getTime() / 60_000));
 }
 
+/** La même vue relue à l'instant, sans cache : suivi de l'équipe dans l'admin. */
+export function freshEnnichiView(locale: string, now = new Date()): Promise<EnnichiView> {
+  return buildView(locale, now.getTime());
+}
+
 /* ---------------- Ta fête ---------------- */
 
 export type MyFete = {

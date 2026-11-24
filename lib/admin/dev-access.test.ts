@@ -62,10 +62,12 @@ describe("accès du DEV à l'admin", () => {
         expect(source, name).not.toMatch(/\bgetAdmin\(\)/);
       } else expect(source, name).toMatch(/\bgetAdmin\(\)/);
       if (name === "admin-settings.ts") {
-        // Deux exceptions au rôle admin, ouvertes à l'équipe : les réglages de l'import Kyara et ceux du parrainage v2
+        // Exceptions au rôle admin, ouvertes à l'équipe : les réglages de l'import Kyara, ceux du parrainage v2 et ceux de
+        // l'Ennichi (même droit, canManageReferrals)
         expect(source, name).toContain("saveSettings(KYARA_FORM_KEYS, kyaraSettingsSchema, input, undefined, kyaraStaff)");
         expect(source, name).toContain("saveSettings(REFERRAL_V2_FORM_KEYS, referralV2SettingsSchema, input, undefined, referralStaff)");
-        expect(source.match(/,\s*undefined,\s*\w+\)/g), name).toEqual([", undefined, kyaraStaff)", ", undefined, referralStaff)"]);
+        expect(source, name).toContain("saveSettings(ENNICHI_FORM_KEYS, ennichiSettingsSchema, input, undefined, referralStaff)");
+        expect(source.match(/,\s*undefined,\s*\w+\)/g), name).toEqual([", undefined, kyaraStaff)", ", undefined, referralStaff)", ", undefined, referralStaff)"]);
         expect(source, name).toMatch(/\bcanProcessKyaraImports\(/);
         expect(source, name).toMatch(/\bcanManageReferrals\(/);
       }

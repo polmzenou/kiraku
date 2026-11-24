@@ -1,6 +1,6 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { getLocale } from "next-intl/server";
 import { canManageReferrals } from "@/lib/admin/roles";
 import { localize, parseLocalized } from "@/lib/boosters/types";
@@ -15,6 +15,9 @@ import { setVanityCodeWith, VanityError, vanityStatusWith, type VanityErrorCode 
 import { pushLater } from "../market/queries";
 import { previewRevokeWith, ReviewError, revokeReferralWith, validateReferralWith, type ReviewErrorCode } from "../referral/review-core";
 import { getSetting } from "../settings";
+import { checkEnnichiWith, drawEnnichiWith, EnnichiCloseError, payAwardsWith, type EnnichiCloseErrorCode } from "../ennichi/close-core";
+import { ennichiPayDeps, ennichiState } from "../ennichi/deps";
+import { ENNICHI_TAG } from "../ennichi/queries";
 
 // Parrainage v2 : toute l'équipe (ADMIN et DEV) traite la file « À vérifier », exception explicite au « seul l'admin
 // écrit » (lib/admin/roles.ts, canManageReferrals, vérifiée par lib/admin/dev-access.test.ts). Ordre : équipe → Zod →
@@ -226,5 +229,70 @@ export async function revokePreviewAction(input: unknown): Promise<{ ok: true; l
     return { ok: true, lines, milestones: preview.milestones, referrer: nameOf.get(preview.referrerId) ?? "" };
   } catch (e) {
     return failure("aperçu", e);
+  }
+}
+
+/* ---------------- Clôture de l'Ennichi ---------------- */
+
+export type EnnichiStaffError = "FORBIDDEN" | "INVALID" | "RATE_LIMITED" | "UNAVAILABLE" | "STALE" | EnnichiCloseErrorCode;
+type EnnichiFail = { ok: false; error: EnnichiStaffError };
+
+// L'édition affichée par la page : une page restée ouverte sur l'édition précédente n'agit pas sur la nouvelle
+const ennichiSchema = z.object({ edition: z.number().int().min(1).max(1_000) }).strict();
+
+function ennichiFailure(scope: string, e: unknown): EnnichiFail {
+  if (e instanceof EnnichiCloseError) return { ok: false, error: e.code };
+  console.error(`[ennichi admin] ${scope}`, e);
+  return { ok: false, error: "UNAVAILABLE" };
+}
+
+/**
+ * « Contrôler » (jours de clôture) : le score de chaque parrainage de la fête est recalculé ; ceux qui dépassent le
+ * seuil passent « À vérifier ». Relançable ; écrit dans le journal admin (checkEnnichiWith).
+ */
+export async function checkEnnichiAction(input: unknown): Promise<{ ok: true; checked: number; held: number } | EnnichiFail> {
+  const user = await staff();
+  if (!user) return { ok: false, error: "FORBIDDEN" };
+  const parsed = ennichiSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (await limited(user.id, "ennichi", 6)) return { ok: false, error: "RATE_LIMITED" };
+  try {
+    const now = new Date();
+    const state = await ennichiState(now);
+    if (state.rules.edition !== parsed.data.edition) return { ok: false, error: "STALE" };
+    if (state.phase !== "closing") return { ok: false, error: state.phase === "closed" ? "ALREADY_DRAWN" : "NOT_CLOSING" };
+    const [rules, sharedCap] = await Promise.all([referralV2Rules(), getSetting("multiAccount.sharedIpCap")]);
+    const out = await checkEnnichiWith(prisma, { staffId: user.id, edition: state.rules.edition, now, rules, sharedCap });
+    refresh();
+    return { ok: true, ...out };
+  } catch (e) {
+    return ennichiFailure("contrôle", e);
+  }
+}
+
+/**
+ * « Arrêter et tirer » : banzuke, tickets et cagnotte figés, omikuji tiré (une seule fois : un second appel trouve le
+ * tirage fait), puis les prix versés pendant au plus 20 secondes ; le cron de l'Ennichi verse ce qui reste.
+ */
+export async function drawEnnichiAction(
+  input: unknown,
+): Promise<{ ok: true; ranked: number; tickets: number; draws: number; paid: number; left: number } | EnnichiFail> {
+  const user = await staff();
+  if (!user) return { ok: false, error: "FORBIDDEN" };
+  const parsed = ennichiSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (await limited(user.id, "ennichi", 6)) return { ok: false, error: "RATE_LIMITED" };
+  try {
+    const now = new Date();
+    const state = await ennichiState(now);
+    if (state.rules.edition !== parsed.data.edition) return { ok: false, error: "STALE" };
+    const out = await drawEnnichiWith(prisma, { staffId: user.id, rules: state.rules, now });
+    // Les pages de la fête passent tout de suite aux résultats
+    updateTag(ENNICHI_TAG);
+    const { paid } = await payAwardsWith(prisma, state.rules.edition, { ...ennichiPayDeps(now), deadline: Date.now() + 20_000 });
+    refresh();
+    return { ok: true, ranked: out.ranked, tickets: out.tickets, draws: out.draws, paid, left: Math.max(0, out.awards - paid) };
+  } catch (e) {
+    return ennichiFailure("tirage", e);
   }
 }
