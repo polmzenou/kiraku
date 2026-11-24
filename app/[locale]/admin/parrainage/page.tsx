@@ -91,7 +91,7 @@ export default async function AdminReferralQueuePage() {
                   )}
                 </div>
 
-                {canManage && <ReviewActions referralId={item.id} state="HELD" />}
+                {canManage && <ReviewActions referralId={item.id} state="HELD" ficheHref={`/admin/parrainage/suivi/${item.id}`} />}
               </li>
             );
           })}
