@@ -4,6 +4,7 @@ import { useIsPresent } from "motion/react";
 import { createContext, useContext, useLayoutEffect, useMemo, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { mangaStrokes } from "@/lib/opening/manga-brush";
+import { HOLO } from "@/lib/opening/prism";
 import { REVEAL_SCENES, seeded, spiritFlames, xrGeometry, type RevealSceneKey } from "@/lib/opening/reveal-scenes";
 import { CardBack } from "../fuda/CardBack";
 import "./RevealScene.css";
@@ -17,9 +18,8 @@ export const RevealLayerContext = createContext<HTMLElement | null>(null);
 /** Images de fumée du brouillard noir, à charger avant que la carte soit touchée. */
 export const SCENE_ASSETS: Partial<Record<RevealSceneKey, readonly string[]>> = { BR: ["/fx/ring.webp", "/fx/puff.webp", "/fx/smoke.webp"], SR: ["/fx/mist.webp"] };
 
-export const XR_ECHOES = ["#ff67ba", "#78bfff", "#63ffba"] as const;
+export { XR_ECHOES } from "@/lib/opening/prism";
 
-const HOLO = ["#ff67ba", "#78bfff", "#63ffba", "#ffe881", "#ffffff"] as const;
 const JEWELS = ["#ee2f4c", "#3f7bff", "#ffc52e", "#22c98e", "#a44bff", "#ff8a2a", "#23c4ea"] as const;
 const v = (vars: Record<string, string | number>) => vars as CSSProperties;
 const round = (n: number) => Math.round(n * 10) / 10;
