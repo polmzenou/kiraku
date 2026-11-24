@@ -7,7 +7,7 @@ import type { OpenedCardView } from "@/lib/boosters/view";
 import { parseLedgerFilter } from "@/lib/economy/ledger-view";
 import { isFrozen } from "@/lib/account/deletion";
 import { cardViews } from "../boosters/display";
-import { normalizeReferralCode } from "@/lib/economy/referral";
+import { parseInviteCode } from "@/lib/referral/codes";
 import { prisma } from "../db";
 import { lotDeps } from "../economy/deps";
 import { LotError, type LotGrant } from "../economy/lots";
@@ -213,7 +213,8 @@ const attachSchema = z.object({ code: z.string().min(1).max(32) }).strict();
 export async function attachReferralAction(input: unknown): Promise<SimpleResult> {
   const parsed = attachSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
-  const code = normalizeReferralCode(parsed.data.code);
+  // Code standard ou code perso (le parrainage v2 accepte les deux ; la v1 ne trouvera pas un code perso)
+  const code = parseInviteCode(parsed.data.code)?.code ?? null;
   if (!code) return { ok: false, error: "INVALID_CODE" };
   // Par joueur en plus de la limite par IP : on ne devine pas les codes en série
   const g = await session("referral-attach", { limit: 5, windowSeconds: 3600 });

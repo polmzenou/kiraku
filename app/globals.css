@@ -11,6 +11,8 @@
 }
 /* Navigation desktop en barre latérale (<html data-nav="rail">, réglage du joueur, lib/nav-layout.ts) */
 @custom-variant nav-rail (&:where([data-nav="rail"] *));
+/* Thème clair Washi (<html data-theme="washi">) : décors propres à chaque thème (parrainage v2, lib/referral/assets.ts) */
+@custom-variant washi (&:where([data-theme="washi"] *));
 @custom-variant motion-safe {
   @media (prefers-reduced-motion: no-preference) {
     &:not(:where([data-motion="reduced"], [data-motion="reduced"] *)) {

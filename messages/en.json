@@ -7499,6 +7499,132 @@
       "KEY_INVALID": "Invalid team bookmarklet."
     }
   },
+  "referralV2": {
+    "title": "Referrals",
+    "lead": "Invite a friend: you both win, at every step.",
+    "link": {
+      "title": "Your link",
+      "hint": "Your shared pulls, profile and showcases carry your code too."
+    },
+    "rules": {
+      "title": "Rules",
+      "once": "A friend can only be referred once.",
+      "lock": "For {days, plural, one {# day} other {# days}}, your friend can't sell or give away their cards.",
+      "device": "Same device as your friend: we check before paying out.",
+      "cheat": "Cheating: both accounts are banned and everything is taken back."
+    },
+    "guest": {
+      "body": "Create your account to get your link and invite your friends.",
+      "invited": "A friend invited you! Create your account: your gifts arrive as soon as you sign up."
+    },
+    "steps": {
+      "1": {
+        "name": "Arrival",
+        "say": "They create their account",
+        "you": "You create your account"
+      },
+      "2": {
+        "name": "Settled",
+        "say": "They open {openings} boosters in {installDays, plural, one {# day} other {# days}}",
+        "you": "You open {openings} boosters in {installDays, plural, one {# day} other {# days}}"
+      },
+      "3": {
+        "name": "Hooked",
+        "say": "They come back {accroDays, plural, one {# day} other {# days}}",
+        "you": "You come back {accroDays, plural, one {# day} other {# days}}"
+      },
+      "4": {
+        "name": "Loyal",
+        "say": "They play {fideleDays, plural, one {# day} other {# days}} {fideleWindow, select, 30 {in their first month} other {in their first {fideleWindow} days}}",
+        "you": "You play {fideleDays, plural, one {# day} other {# days}} {fideleWindow, select, 30 {in your first month} other {in your first {fideleWindow} days}}"
+      },
+      "title": "What you win",
+      "tapAny": "Tap a card",
+      "tapHint": "Tap to see the gifts",
+      "you": "You",
+      "friend": "Your friend"
+    },
+    "meter": {
+      "openings": "{have, plural, one {# booster} other {# boosters}} of {need}",
+      "days": "{have, plural, one {# day} other {# days}} of {need}",
+      "readyAt": "step paid from {date}",
+      "deadline": "before {date}"
+    },
+    "table": {
+      "label": "Your referrals",
+      "empty": "Nobody here yet.",
+      "counter": {
+        "INSTALLED": "settled",
+        "ON_THE_WAY": "on the way",
+        "HELD": "to review"
+      },
+      "filtered": "{filter, select, INSTALLED {Settled} ON_THE_WAY {On the way} other {To review}}: {shown} of {total}",
+      "showAll": "Show all",
+      "status": {
+        "HELD": "Being reviewed by the team · nothing is lost",
+        "REVOKED": "Referral stopped by the team",
+        "BANNED": "Banned by the team",
+        "DONE": "All steps reached",
+        "NONE": "No more steps ahead"
+      },
+      "next": "Next: {step}",
+      "forYou": "For you:",
+      "trustLater": "Recent account: arrives at step 3",
+      "knots": "{done, plural, one {# step} other {# steps}} of 4",
+      "more": "Show {count} more"
+    },
+    "ladder": {
+      "title": "Your milestones",
+      "installed": "{count, plural, one {# friend settled} other {# friends settled}}",
+      "hint": "Every settled friend counts, forever. Paid automatically.",
+      "seeAll": "See all {count} milestones",
+      "vouchers": "{count, plural, one {# Mythic of your choice} other {# Mythics of your choice}}",
+      "oneOfOne": "1/1 card",
+      "ambassador": "Ambassador role",
+      "legend": "Wall of legends",
+      "cosmetic": "Badge and frame",
+      "state": {
+        "DONE": "Received",
+        "NEXT": "{count, plural, one {# more friend} other {# more friends}}",
+        "LOCKED": "Locked"
+      }
+    },
+    "self": {
+      "welcome": "Welcome!",
+      "invitedBy": "{name} invited you to Kiraku.",
+      "lock": "Your cards are protected until {date}.",
+      "lockBody": "During your first {days} days, they can't be sold or given away. That's what stops referral cheating.",
+      "referrer": "Your referrer",
+      "referrerBody": "You both win at every step.",
+      "inviteTitle": "Invite your friends too",
+      "inviteBody": "Your link earns you the same gifts, as a referrer.",
+      "refereesTitle": "Your referrals",
+      "giftsTitle": "Your gifts",
+      "stepsDone": "{count, plural, one {# step} other {# steps}} of 4",
+      "held": "We're checking your referral. Nothing is lost: your gifts arrive as soon as it's cleared.",
+      "revoked": "This referral has been stopped. Gifts already received are yours to keep.",
+      "received": "Received",
+      "waiting": "Pending",
+      "missed": "Deadline passed",
+      "paidAlone": "Paid automatically, as soon as you reach the step."
+    },
+    "last": {
+      "title": "Recently received",
+      "what": "{kind, select, STEP {{side, select, REFERRER {{step, select, 1 {{name} created their account} 2 {{name} is settled} 3 {{name} is hooked} other {{name} is loyal}}} other {{step, select, 1 {Your welcome gift, from {name}} other {Step {step} · {stepName}, from {name}}}}}} TRUST_BONUS {{name}: your pending gifts have arrived} MILESTONE {{milestone, plural, one {# friend} other {# friends}} milestone} other {{name}'s referral is settled}}"
+    },
+    "gifts": {
+      "none": "Nothing at this step",
+      "label": "Gifts",
+      "booster": "{count, plural, one {# {name} booster} other {# {name} boosters}}",
+      "card": "{count, plural, one {{name}} other {# × {name}}}",
+      "rarityCard": "{count, plural, one {# random {rarity} card} other {# random {rarity} cards}}",
+      "zeni": "{amount, number} Zeni"
+    },
+    "legacy": {
+      "title": "Previous referral program",
+      "body": "These gifts from the previous referral program are still waiting for you."
+    }
+  },
   "prestige": {
     "metaTitle": "Prestige",
     "preview": "Team preview: prestige is off for players (switch in /admin/prestige).",

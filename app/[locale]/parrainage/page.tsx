@@ -8,6 +8,8 @@ import { RefereeChecklist } from "@/components/economy/RefereeChecklist";
 import { ReferralCodeForm } from "@/components/economy/ReferralCodeForm";
 import { ReferralMilestones } from "@/components/economy/ReferralMilestones";
 import { ReferralShare } from "@/components/economy/ReferralShare";
+import { LegacyClaims } from "@/components/referral/LegacyClaims";
+import { ReferralV2, ReferralV2Guest } from "@/components/referral/ReferralV2";
 import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { PageShell } from "@/components/PageShell";
 import { SectionTitle } from "@/components/SectionTitle";
@@ -19,10 +21,12 @@ import { guestCode } from "@/lib/username";
 import { prisma } from "@/server/db";
 import { referralRules } from "@/server/economy/deps";
 import { lotViews } from "@/server/economy/lot-view";
-import { pendingReferralCode } from "@/server/economy/referral";
+import { pendingReferralCode, progressOwnReferral, qualifyLater } from "@/server/economy/referral";
 import { referrerByCode } from "@/server/og/data";
 import { qualifyReferralsWith, refereeProgress } from "@/server/economy/referral-core";
 import { pushNotifications } from "@/server/push/send";
+import { referralV2Rules } from "@/server/referral/deps";
+import { legacyReferralClaims, referralGifts, referralPageV2 } from "@/server/referral/queries";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
 
@@ -52,6 +56,32 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/[lo
 const DAY = 86_400_000;
 const STEP_KANJI = ["一", "二", "三"] as const;
 
+/**
+ * Parrainage v2 (interrupteur referral.v2.enabled) : un invité voit ce que rapporte le parrainage et l'inscription ;
+ * un joueur inscrit, sa page selon qu'il est filleul, parrain ou pas encore (components/referral/ReferralV2.tsx). Son
+ * propre parrainage avance avant la lecture, ceux de ses filleuls après la réponse.
+ */
+async function referralV2Content(user: { id: string; isGuest: boolean }, locale: string, now: Date) {
+  const [rules, timeZone, cookieCode] = await Promise.all([referralV2Rules(), getSetting("game.timeZone"), pendingReferralCode()]);
+  if (user.isGuest) {
+    const { steps } = await referralGifts(rules, locale, 0);
+    return <ReferralV2Guest steps={steps} rules={rules} invited={cookieCode !== null} />;
+  }
+  await progressOwnReferral(user.id);
+  qualifyLater(user.id);
+  const attachWindowDays = await getSetting("referral.attachWindowDays");
+  const [view, legacy] = await Promise.all([
+    referralPageV2(user.id, rules, { timeZone, locale, now, attachWindowDays }),
+    legacyReferralClaims(user.id, locale),
+  ]);
+  return (
+    <>
+      <ReferralV2 view={view} rules={rules} timeZone={timeZone} now={now} cookieCode={cookieCode} />
+      {legacy.length > 0 && <LegacyClaims claims={legacy} />}
+    </>
+  );
+}
+
 /** Parrainage : son code, ses paliers, ses filleuls et leur progression, son propre parrain. */
 export default async function ReferralPage() {
   const [t, tAccount, user, locale] = await Promise.all([
@@ -79,6 +109,10 @@ export default async function ReferralPage() {
         <p className="lacquer rounded-card p-6 text-center text-text-muted">{t("disabled")}</p>
       </PageShell>
     );
+  }
+
+  if (await getSetting("referral.v2.enabled")) {
+    return <PageShell>{await referralV2Content(user, locale, now)}</PageShell>;
   }
 
   const [referrerLotId, refereeLotId, milestones, recruiterReferrals, cookieCode] = await Promise.all([

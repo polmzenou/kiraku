@@ -34,7 +34,7 @@ vi.mock("./anticheat/signals", () => ({ recordSignals: vi.fn() }));
 vi.mock("./anticheat/network-ban", () => ({ requestNetworkBan: mocks.networkBan, noteBlocked: mocks.noteBlocked }));
 vi.mock("./db", () => ({ prisma: { $transaction: mocks.transaction, user: { findUnique: mocks.roleOf } } }));
 vi.mock("./economy/ledger", () => ({ credit: mocks.credit }));
-vi.mock("./economy/referral", () => ({ attachFromCookie: mocks.attach }));
+vi.mock("./economy/referral", () => ({ attachFromCookie: mocks.attach, referralDiscordLinked: vi.fn(async () => undefined) }));
 vi.mock("./env", () => mocks.config);
 vi.mock("./players", () => ({ availableUsername: vi.fn(), publishProfileOnSignup: mocks.publish }));
 vi.mock("./session", () => ({ SESSION_COOKIE: { name: "session", options: {} }, SESSION_MAX_AGE: 3600 }));

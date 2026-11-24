@@ -7499,6 +7499,132 @@
       "KEY_INVALID": "Favori de l'équipe invalide."
     }
   },
+  "referralV2": {
+    "title": "Parrainage",
+    "lead": "Invite un ami : vous gagnez tous les deux, à chaque étape.",
+    "link": {
+      "title": "Ton lien",
+      "hint": "Tes tirages, ton profil et tes vitrines partagés portent aussi ton code."
+    },
+    "rules": {
+      "title": "Règles",
+      "once": "Un ami ne peut être parrainé qu'une fois.",
+      "lock": "Pendant {days, plural, one {# jour} other {# jours}}, ton ami ne peut ni vendre ni donner ses cartes.",
+      "device": "Même appareil que ton ami : on vérifie avant de verser.",
+      "cheat": "Triche : les deux comptes sont bannis et tout est repris."
+    },
+    "guest": {
+      "body": "Crée ton compte pour obtenir ton lien et inviter tes amis.",
+      "invited": "Un ami t'a invité ! Crée ton compte : vos cadeaux arrivent dès l'inscription."
+    },
+    "steps": {
+      "1": {
+        "name": "Arrivée",
+        "say": "Il crée son compte",
+        "you": "Tu crées ton compte"
+      },
+      "2": {
+        "name": "Installé",
+        "say": "Il ouvre {openings} boosters en {installDays, plural, one {# jour} other {# jours}}",
+        "you": "Tu ouvres {openings} boosters en {installDays, plural, one {# jour} other {# jours}}"
+      },
+      "3": {
+        "name": "Accro",
+        "say": "Il revient {accroDays, plural, one {# jour} other {# jours}}",
+        "you": "Tu reviens {accroDays, plural, one {# jour} other {# jours}}"
+      },
+      "4": {
+        "name": "Fidèle",
+        "say": "Il joue {fideleDays, plural, one {# jour} other {# jours}} {fideleWindow, select, 30 {dans son premier mois} other {dans ses {fideleWindow} premiers jours}}",
+        "you": "Tu joues {fideleDays, plural, one {# jour} other {# jours}} {fideleWindow, select, 30 {dans ton premier mois} other {dans tes {fideleWindow} premiers jours}}"
+      },
+      "title": "Ce que vous gagnez",
+      "tapAny": "Touche une carte",
+      "tapHint": "Touche pour voir les cadeaux",
+      "you": "Toi",
+      "friend": "Ton ami"
+    },
+    "meter": {
+      "openings": "{have, plural, one {# booster} other {# boosters}} sur {need}",
+      "days": "{have, plural, one {# jour} other {# jours}} sur {need}",
+      "readyAt": "étape versée dès {date}",
+      "deadline": "avant le {date}"
+    },
+    "table": {
+      "label": "Tes filleuls",
+      "empty": "Personne ici pour l'instant.",
+      "counter": {
+        "INSTALLED": "{count, plural, one {installé} other {installés}}",
+        "ON_THE_WAY": "en route",
+        "HELD": "à vérifier"
+      },
+      "filtered": "{filter, select, INSTALLED {Installés} ON_THE_WAY {En route} other {À vérifier}} : {shown} sur {total}",
+      "showAll": "Tout voir",
+      "status": {
+        "HELD": "En vérification par l'équipe · rien n'est perdu",
+        "REVOKED": "Parrainage arrêté par l'équipe",
+        "BANNED": "Banni par l'équipe",
+        "DONE": "Toutes les étapes atteintes",
+        "NONE": "Plus d'étape à venir"
+      },
+      "next": "Prochaine : {step}",
+      "forYou": "Pour toi :",
+      "trustLater": "Compte récent : arrive à l'étape 3",
+      "knots": "{done, plural, one {# étape} other {# étapes}} sur 4",
+      "more": "Voir les {count} autres"
+    },
+    "ladder": {
+      "title": "Tes paliers",
+      "installed": "{count, plural, one {# ami installé} other {# amis installés}}",
+      "hint": "Chaque ami installé compte, depuis toujours. Versé tout seul.",
+      "seeAll": "Voir les {count} paliers",
+      "vouchers": "{count, plural, one {# Mythique au choix} other {# Mythiques au choix}}",
+      "oneOfOne": "Carte 1/1",
+      "ambassador": "Rôle Ambassadeur",
+      "legend": "Mur des légendes",
+      "cosmetic": "Badge et cadre",
+      "state": {
+        "DONE": "Reçu",
+        "NEXT": "Encore {count, plural, one {# ami} other {# amis}}",
+        "LOCKED": "Verrouillé"
+      }
+    },
+    "self": {
+      "welcome": "Bienvenue !",
+      "invitedBy": "{name} t'a invité sur Kiraku.",
+      "lock": "Tes cartes sont protégées jusqu'au {date}.",
+      "lockBody": "Pendant tes {days} premiers jours, elles ne se vendent ni ne se donnent. C'est ce qui empêche la triche au parrainage.",
+      "referrer": "Ton parrain",
+      "referrerBody": "Vous gagnez tous les deux à chaque étape.",
+      "inviteTitle": "Toi aussi, invite tes amis",
+      "inviteBody": "Ton lien te rapporte les mêmes cadeaux, côté parrain.",
+      "refereesTitle": "Tes filleuls",
+      "giftsTitle": "Tes cadeaux",
+      "stepsDone": "{count, plural, one {# étape} other {# étapes}} sur 4",
+      "held": "On vérifie ton parrainage. Rien n'est perdu : tes cadeaux arrivent dès que c'est bon.",
+      "revoked": "Ce parrainage est arrêté. Les cadeaux déjà reçus restent à toi.",
+      "received": "Reçu",
+      "waiting": "En attente",
+      "missed": "Délai passé",
+      "paidAlone": "Versé tout seul, dès que tu atteins l'étape."
+    },
+    "last": {
+      "title": "Reçu récemment",
+      "what": "{kind, select, STEP {{side, select, REFERRER {{step, select, 1 {{name} a créé son compte} 2 {{name} est installé} 3 {{name} est accro} other {{name} est fidèle}}} other {{step, select, 1 {Ton cadeau de bienvenue, de la part de {name}} other {Étape {step} · {stepName}, de la part de {name}}}}}} TRUST_BONUS {{name} : tes cadeaux en attente sont arrivés} MILESTONE {Palier de {milestone, plural, one {# ami} other {# amis}}} other {Le filleul de {name} est installé}}"
+    },
+    "gifts": {
+      "none": "Rien à cette étape",
+      "label": "Cadeaux",
+      "booster": "{count, plural, one {# booster {name}} other {# boosters {name}}}",
+      "card": "{count, plural, one {{name}} other {# × {name}}}",
+      "rarityCard": "{count, plural, one {# carte {rarity} au hasard} other {# cartes {rarity} au hasard}}",
+      "zeni": "{amount, number} Zeni"
+    },
+    "legacy": {
+      "title": "Ancien parrainage",
+      "body": "Ces cadeaux de l'ancien parrainage t'attendent encore."
+    }
+  },
   "prestige": {
     "metaTitle": "Prestige",
     "preview": "Aperçu de l'équipe : le prestige est coupé pour les joueurs (interrupteur dans /admin/prestige).",

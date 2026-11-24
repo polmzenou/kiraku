@@ -115,6 +115,22 @@ export function qualifyLater(userId: string): void {
 }
 
 /**
+ * Visite de /parrainage par un filleul v2 : son parrainage avance avant la lecture, pour que la page montre ses étapes
+ * et ses cadeaux à jour (au plus 3 fois par minute). Ceux où il est parrain avancent après la réponse (qualifyLater).
+ * Jamais bloquant.
+ */
+export async function progressOwnReferral(userId: string): Promise<void> {
+  try {
+    const own = await prisma.referral.findUnique({ where: { refereeId: userId }, select: { id: true, version: true, revokedAt: true, step4At: true } });
+    if (!own || own.version !== 2 || own.revokedAt || own.step4At) return;
+    if (!(await rateLimit(`referral-self:${userId}`, { limit: 3, windowSeconds: 60 })).success) return;
+    await progressReferralWith(prisma, own.id, await progressDeps());
+  } catch (e) {
+    console.error("[parrainage] avancement impossible", e);
+  }
+}
+
+/**
  * Liaison Discord d'un filleul v2 : date de son compte Discord (confiance : un Discord ancien libère tout de suite la
  * part « confiance » de son parrain), empreinte gardée, puis avancement. Jamais bloquant.
  */
