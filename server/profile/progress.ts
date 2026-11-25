@@ -3,6 +3,7 @@ import { cache } from "react";
 import type { Role } from "@/generated/prisma/client";
 import { careerTier } from "@/lib/ranked/career";
 import {
+  conditionAvailable,
   earnedBadges,
   evaluateCondition,
   labelFor,
@@ -149,11 +150,17 @@ export async function getCosmeticOptions(userId: string, locale: string): Promis
 
 /** Les options et les statistiques qui les ont jugées (le sélecteur affiche le % découvert). */
 export async function getCosmeticProgress(userId: string, locale: string): Promise<{ options: CosmeticOption[]; stats: ProfileStats }> {
-  const rows = await prisma.cosmetic.findMany({
-    where: { active: true },
-    orderBy: [{ kind: "asc" }, { sortOrder: "asc" }, { slug: "asc" }],
-    select: { id: true, kind: true, label: true, hint: true, frameStyle: true, nameColor: true, condition: true },
-  });
+  const [active, referralV2] = await Promise.all([
+    prisma.cosmetic.findMany({
+      where: { active: true },
+      orderBy: [{ kind: "asc" }, { sortOrder: "asc" }, { slug: "asc" }],
+      select: { id: true, kind: true, label: true, hint: true, frameStyle: true, nameColor: true, condition: true },
+    }),
+    getSetting("referral.v2.enabled"),
+  ]);
+  // Cadre « fil rouge » et autres cosmétiques du parrainage v2 : cachés tant que la v2 est coupée (ni affichés, ni
+  // portables : l'action qui équipe relit cette liste)
+  const rows = active.filter((r) => conditionAvailable(parseCondition(r.condition), { referralV2 }));
   const conditions = rows.map((r) => parseCondition(r.condition));
   const stats = await getProfileStats(userId, referencedSeries(conditions));
   const options = rows.map((r, i): CosmeticOption => {

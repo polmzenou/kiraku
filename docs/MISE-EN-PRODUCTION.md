@@ -170,7 +170,8 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
 - [ ] `npm run seed:referral` : lots à identifiant fixe (`seed-lot-pv2-*` des étapes, des paliers et du
   grand-parrainage, `seed-lot-enn-*` des lanternes, du banzuke et de l'omikuji) et réglages absents. Rien n'est écrasé.
   Les Divins sont des sachets scellés : le type de booster divin doit exister.
-- [ ] `npm run seed:cosmetics` : cadre « fil rouge » (`cadre-fil-rouge`, palier 1 ami installé).
+- [ ] `npm run seed:cosmetics` : cadre « fil rouge » (`cadre-fil-rouge`, palier 1 ami installé). Il reste caché aux
+  joueurs, ni affiché ni portable, tant que `referral.v2.enabled` est coupé.
 - [ ] Crons de `deploy/crontab.example` installés : `/api/cron/referral` (chaque heure) et `/api/cron/ennichi`
   (toutes les 5 minutes : envoi des paliers de lanternes, tirage de secours à la date de clôture, prix restants).
 - [ ] Discord : salon **privé** de l'équipe créé, bot autorisé, `DISCORD_REFERRAL_CHANNEL_ID` posé (voir

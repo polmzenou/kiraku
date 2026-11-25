@@ -151,6 +151,14 @@ export function evaluateCondition(condition: ProfileCondition | null, stats: Pro
   }
 }
 
+/**
+ * Cosmétique proposé aux joueurs : ceux du parrainage v2 (amis installés, cadre « fil rouge ») restent cachés, ni
+ * affichés ni portables, tant que son interrupteur est coupé. La v1 tourne alors sans changement.
+ */
+export function conditionAvailable(condition: ProfileCondition | null, features: { referralV2: boolean }): boolean {
+  return condition?.type !== "INSTALLED_REFERRALS" || features.referralV2;
+}
+
 /** Séries citées par des conditions SERIES_COMPLETE (à charger pour la progression). */
 export function referencedSeries(conditions: readonly (ProfileCondition | null)[]): string[] {
   return [...new Set(conditions.flatMap((c) => (c?.type === "SERIES_COMPLETE" ? [c.seriesId] : [])))];

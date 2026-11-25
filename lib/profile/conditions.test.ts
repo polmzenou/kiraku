@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  conditionAvailable,
   discoveredPercent,
   earnedBadges,
   evaluateCondition,
@@ -83,6 +84,14 @@ describe("conditions de déblocage", () => {
     expect(evaluateCondition(condition, stats)).toEqual({ unlocked: false, current: 0, goal: 1 });
     expect(evaluateCondition(condition, { ...stats, installedReferrals: 3 })).toEqual({ unlocked: true, current: 1, goal: 1 });
     expect(parseCondition({ type: "INSTALLED_REFERRALS", n: 0 })).toBeNull();
+  });
+
+  it("cosmétiques du parrainage v2 cachés tant que son interrupteur est coupé, les autres toujours proposés", () => {
+    const installed = parseCondition({ type: "INSTALLED_REFERRALS", n: 1 });
+    expect(conditionAvailable(installed, { referralV2: false })).toBe(false);
+    expect(conditionAvailable(installed, { referralV2: true })).toBe(true);
+    expect(conditionAvailable(parseCondition({ type: "AMBASSADOR" }), { referralV2: false })).toBe(true);
+    expect(conditionAvailable(null, { referralV2: false })).toBe(true);
   });
 
   it("liste les séries à charger", () => {
