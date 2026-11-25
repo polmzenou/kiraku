@@ -31,19 +31,30 @@ export const FAMILY_KANJI: Record<BoosterFamily, string> = {
   special: "特別",
 };
 
-export const BOOSTER_KINDS = ["STANDARD", "RARITY", "FILTERED", "BANNER", "FORMAT", "FOCUS", "DROP", "PRESTIGE"] as const;
+export const BOOSTER_KINDS = ["STANDARD", "RARITY", "FILTERED", "BANNER", "FORMAT", "FOCUS", "DROP", "PRESTIGE", "GUARANTEED"] as const;
 export type BoosterKind = (typeof BOOSTER_KINDS)[number];
 
 /**
  * Un type inclut-il d'office les créations originales qui passent son filtre ? Oui, sauf les sachets
  * scellés (DROP) et les exclusifs boutique (PRESTIGE), dont le contenu se choisit carte par carte.
  */
+/**
+ * Types qu'une récompense réglée dans l'admin peut verser en crédits (pack Ambassadeur, renaissance,
+ * expédition) : ni sachet scellé (il ne se crédite pas), ni booster garanti (il ne se donne qu'à la main).
+ */
+export const NOT_REWARDABLE_KINDS = ["DROP", "GUARANTEED"] as const satisfies readonly BoosterKind[];
+export const isRewardableKind = (kind: BoosterKind): boolean => !(NOT_REWARDABLE_KINDS as readonly BoosterKind[]).includes(kind);
+
 export const includesCustomByDefault = (kind: BoosterKind): boolean => kind !== "DROP" && kind !== "PRESTIGE";
 
 export const BOOSTER_SHAPES = ["SACHET", "POCHIBUKURO", "JUBAKO"] as const;
 export type BoosterShape = (typeof BOOSTER_SHAPES)[number];
 
-/** Motifs traditionnels (wagara) dessinés en CSS (classes .wagara-*), plus or, nacre et uni. */
+/**
+ * Motifs traditionnels (wagara) dessinés en CSS (classes .wagara-*), plus or, nacre et uni. Les sept
+ * derniers sont les matières des boosters garantis, une par rareté de variante (BR, AR, VR, Gold, MR,
+ * Esprit, XR) : aura, reflet et étiquette assortis, choisissables pour tout booster.
+ */
 export const WAGARA = [
   "asanoha",
   "seigaiha",
@@ -58,6 +69,13 @@ export const WAGARA = [
   "goko",
   "kikko",
   "none",
+  "yami",
+  "suminagashi",
+  "vitrail",
+  "kinpaku",
+  "shuchusen",
+  "hitodama",
+  "prisme",
 ] as const;
 export type Wagara = (typeof WAGARA)[number];
 
@@ -125,6 +143,8 @@ export type BoosterTypeView = {
   rateBoost: number;
   /** Rareté de départ du boost ; null = taux normaux. */
   rateBoostFrom: Rarity | null;
+  /** Booster garanti : la dernière carte est toujours de cette rareté (null pour les autres types). */
+  guaranteed: Rarity | null;
   featuredCardIds: string[];
   featuredRate: number;
   featuredPity: number;
@@ -206,8 +226,9 @@ export function availability(
   channel: "pages" | "shop" = "pages",
 ): Availability {
   if (!type.active || type.filter === null) return "hidden";
-  // Sachet scellé : jamais proposé, il s'ouvre seulement depuis l'inventaire
-  if (type.kind === "DROP") return "hidden";
+  // Sachet scellé : jamais proposé, il s'ouvre seulement depuis l'inventaire. Booster garanti : donné
+  // par l'équipe, il ne s'ouvre que depuis les crédits du joueur
+  if (type.kind === "DROP" || type.kind === "GUARANTEED") return "hidden";
   if (type.startsAt && type.startsAt > now) return "hidden";
   if (type.endsAt && type.endsAt <= now) return "hidden";
   if (poolSize < minPool) return "hidden";

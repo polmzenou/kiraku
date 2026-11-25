@@ -11,6 +11,7 @@ import { priceFor, type BoosterShape, type BoosterTheme, type Price } from "@/li
 import type { DroppedSealedView, OpenedBoosterView, SealedDisplay } from "@/lib/boosters/view";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { useRarities } from "@/lib/catalog/use-rarities";
+import { hasPrism, PRISM } from "@/lib/opening/prism";
 import { openBoosterAction, openSealedAction, type OpenBoosterError } from "@/server/actions/boosters";
 import type { BoosterState } from "@/server/boosters/state";
 import { NextFreeIn } from "../boosters/NextFreeIn";
@@ -24,6 +25,7 @@ import { CardDeck, revealOrder, type DeckFrom } from "./CardDeck";
 import { CountPicker } from "./CountPicker";
 import { GoldenDust } from "./GoldenDust";
 import { GuestSignupPrompt, type GuestInvite } from "./GuestSignupPrompt";
+import { PrismWash } from "./PrismLight";
 import { Recap } from "./Recap";
 import { RecapActionBar } from "./RecapActionBar";
 import { RevealOverlay, momentTint, TINT_DELAY, useMomentFor, type Moment } from "./RevealMoment";
@@ -57,6 +59,8 @@ export type OpeningType = {
   priceZeni: number | null;
   countsForPity: boolean;
   bonusEligible: boolean;
+  /** Booster garanti (donné par l'équipe) : sceau « 確定 » sur le sachet. */
+  guaranteed?: boolean;
   /** Bannière : seuil de pitié vedette et compteur du joueur. */
   featured: { threshold: number; count: number } | null;
 };
@@ -145,6 +149,8 @@ export function OpeningStage({
   const [confirmed, setConfirmed] = useState<number | null>(null);
   const [depth, setDepth] = useState(0);
   const [shake, setShake] = useState(0);
+  // Prisme de la XR : le sachet tremble et l'arc-en-ciel jaillit (voile plein écran, sons)
+  const [prismOn, setPrismOn] = useState(false);
   const [creditLeft, setCreditLeft] = useState(credits);
   const [openedCredit, setOpenedCredit] = useState(false);
   const [momentCard, setMomentCard] = useState<Pick<Moment, "id" | "rarity"> | null>(null);
@@ -284,6 +290,19 @@ export function OpeningStage({
     goReveal();
   };
 
+  const { play } = fx;
+  const onPrism = useCallback(() => {
+    setPrismOn(true);
+    setDepth(0.6);
+    play("crackle", [30, 40, 30, 40, 120]);
+  }, [play]);
+  // Le « pop » du tremblement : la lumière éclate
+  useEffect(() => {
+    if (!prismOn) return;
+    const id = setTimeout(() => play("launch", [60, 30, 140]), PRISM.popMs);
+    return () => clearTimeout(id);
+  }, [prismOn, play]);
+
   const onMythic = useCallback(() => {
     setDepth(1);
     setShake((s) => s + 1);
@@ -304,6 +323,7 @@ export function OpeningStage({
     omenRef.current = null;
     transformSeen.current = false;
     omenSeen.current = false;
+    setPrismOn(false);
     setBoosters(null);
     setError(null);
     setConfirmed(null);
@@ -371,6 +391,8 @@ export function OpeningStage({
   const ritual = stage !== "recap";
   // Apocalyptique : ni lumière ni nacre pendant la déchirure, l'issue attend le sceau fendu
   const veiled = sealedOpen?.kind === "apocalypse";
+  // Une XR dans l'ouverture (tous boosters confondus) : prisme sur le sachet
+  const prism = !!boosters && !veiled && hasPrism(deckCards);
   const blessed = initialKarma.threshold > 0 && karma >= initialKarma.threshold;
   const firstDrop = drops[0];
   const dropDisplay = firstDrop ? sealedTypes[firstDrop.kind] : undefined;
@@ -445,6 +467,9 @@ export function OpeningStage({
                 reduced={reduced}
                 lite={lite}
                 leak={boosters && !veiled && deckCards.length > 0 ? bestRarity(boosters, rarities) : null}
+                prism={prism}
+                onPrism={onPrism}
+                guarantee={!sealedDisplay && type.guaranteed === true}
                 cards={boosters ? boosters.reduce((n, booster) => n + booster.cards.length, 0) : null}
                 onTrigger={() => void trigger()}
                 onOpened={onOpened}
@@ -662,6 +687,7 @@ export function OpeningStage({
       {/* Hors du calque qui tremble : un `transform` ancêtre casserait le `fixed` mobile */}
       {stage === "reveal" && moment && !reduced && <RevealOverlay key={moment.id} moment={moment} />}
       {variant === "golden" && ritual && !reduced && <GoldenDust key={`dust-${attempt}`} lite={lite} />}
+      {prismOn && ritual && !reduced && !lite && <PrismWash key={`prism-${attempt}`} />}
       {stage === "omen" && outcome && <ApocalypseOmen key={`omen-${attempt}`} outcome={outcome} lite={lite} reduced={reduced} onDone={omenDone} />}
       {stage === "recap" && boosters && (
         <RecapActionBar

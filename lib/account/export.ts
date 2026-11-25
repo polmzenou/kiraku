@@ -28,6 +28,7 @@ export const EXPORT_FIELDS = {
     "deletionRequestedAt",
     "prestige",
     "prestigedAt",
+    "featuredAchievement",
     "createdAt",
     "registeredAt",
   ],
@@ -55,6 +56,8 @@ export const EXPORT_FIELDS = {
   consecrated: ["id", "cardId", "cardName", "heritage", "printing", "serial", "size", "cycles", "consecratedAt"],
   provenance: ["userCardId", "via", "at"],
   wishlist: ["cardId", "position", "createdAt"],
+  // Succès débloqués (clé du catalogue lib/achievements/catalog.ts)
+  achievements: ["key", "unlockedAt"],
   decks: ["id", "name", "cardIds", "createdAt", "updatedAt"],
   abilityPurchases: ["cardId", "kind", "ability", "price", "createdAt"],
   cardLoadouts: ["cardId", "keywords", "technique", "updatedAt"],

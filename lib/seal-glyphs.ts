@@ -28,4 +28,6 @@ export const SEAL_GLYPHS = [
   "遠征出発成功大失敗済封可宿中止", // expéditions : titre, départ, issues, faite, rapport scellé, condition, relais, abandon
   "転生位継版巻之灰奉納初摺炎", // prestige : renaissance, rang, héritage, gravure, rouleaux, cendres, consécration, premier tirage, cadre flamme
   "越", // import Kyara
+  "確定", // sceau « garanti » des boosters garantis
+  "実績市縁段旅歳", // succès : titre de la page et sceaux des catégories (marché, liens, classé, voyages, ancienneté)
 ].join("");

@@ -200,6 +200,26 @@ export function pickCard(rng: Rng, pool: CardPool, rarity: Rarity, weights: Card
   throw new Error("EMPTY_POOL");
 }
 
+/**
+ * Carte d'un booster garanti, toujours de la rareté voulue : une carte jamais possédée d'abord (doublons
+ * comme pour un tirage), sinon n'importe laquelle de cette rareté, même bloquée par la protection des
+ * doublons (la garantie passe avant). Jamais de repli sur une autre rareté : sans aucune carte de cette
+ * rareté dans le pool, erreur GUARANTEE_EMPTY (le serveur annule l'ouverture, le booster reste au joueur).
+ */
+export function pickGuaranteed(rng: Rng, pool: CardPool, rarity: Rarity, weights: CardWeights = {}, guard: GuardState | null = null): DrawnCard {
+  const ids = pool[rarity] ?? [];
+  const cardId = pickFresh(rng, ids, guard?.weight ?? weights, guard) ?? weightedPick(rng, ids, weights);
+  if (!cardId) throw new GuaranteeEmptyError(rarity);
+  return { cardId, rarity };
+}
+
+/** Aucune carte de la rareté garantie dans le pool : le booster garanti ne peut pas s'ouvrir. */
+export class GuaranteeEmptyError extends Error {
+  constructor(readonly rarity: Rarity) {
+    super("GUARANTEE_EMPTY");
+  }
+}
+
 export type DrawState = {
   pityCount: number;
   standardCount: number;
@@ -253,6 +273,8 @@ export function drawBoosters(
     bonuses?: DrawBonuses;
     featured?: FeaturedDraw;
     owned?: OwnedCopies;
+    /** Booster garanti : la dernière carte est toujours de cette rareté (pickGuaranteed). */
+    guaranteed?: Rarity | null;
   },
 ): { boosters: DrawnBooster[]; state: Required<DrawState> } {
   const { pool, rules, count } = input;
@@ -290,6 +312,13 @@ export function drawBoosters(
     guard?.take(card.cardId);
     return card;
   };
+  // Dernière carte d'un booster garanti : servie dans sa rareté, sans tirage de rareté
+  const drawGuaranteed = (rarity: Rarity): DrawnCard => {
+    const card = pickGuaranteed(rng, pool, rarity, weights, guard);
+    guard?.take(card.cardId);
+    return featuredIds.has(card.cardId) ? { ...card, featured: true } : card;
+  };
+  const guaranteed = input.guaranteed ?? null;
   const replace = (cards: DrawnCard[], slot: number, card: DrawnCard) => {
     guard?.release(cards[slot].cardId);
     guard?.take(card.cardId);
@@ -307,13 +336,14 @@ export function drawBoosters(
     if (bonuses.golden) standardCount += 1;
 
     const floors = floorsFor(rules.slotFloors, { golden, divine: false, goldenFloor: rules.goldenFloor, rarities: order });
-    const cards = floors.map(drawCounted);
+    const cards = floors.map((floor, i) => (guaranteed && i === floors.length - 1 ? drawGuaranteed(guaranteed) : drawCounted(floor)));
 
     const pity = pityCount + 1;
     let pityTriggered = false;
     if (bonuses.pity && pity >= rules.pityThreshold && !cards.some((c) => qualifies(c.rarity))) {
-      // Toutes les Mythiques bloquées : la pitié retombe en Légendaire, et son compteur continue
-      replace(cards, cards.length - 1, pickCard(rng, pool, "MYTHIC", w, order, guard));
+      // Toutes les Mythiques bloquées : la pitié retombe en Légendaire, et son compteur continue.
+      // La carte garantie ne se remplace pas : la pitié prend l'emplacement d'avant.
+      replace(cards, guaranteed ? Math.max(0, cards.length - 2) : cards.length - 1, pickCard(rng, pool, "MYTHIC", w, order, guard));
       pityTriggered = true;
     }
 
@@ -324,7 +354,8 @@ export function drawBoosters(
         // Jamais une vedette déjà possédée, sauf la même chance sur N : la pitié vedette attend alors
         const chosen = pickFresh(rng, featuredAll.map((c) => c.cardId), w, guard);
         if (chosen) {
-          const slot = pityTriggered ? Math.max(0, cards.length - 2) : cards.length - 1;
+          // Ni la carte de la pitié, ni la carte garantie : l'emplacement libre le plus à droite
+          const slot = Math.max(0, cards.length - 1 - (pityTriggered ? 1 : 0) - (guaranteed ? 1 : 0));
           replace(cards, slot, { ...featuredAll.find((c) => c.cardId === chosen)!, featured: true });
           featuredPityTriggered = true;
         }

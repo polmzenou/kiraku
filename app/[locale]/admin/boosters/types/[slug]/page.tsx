@@ -21,7 +21,7 @@ export default async function AdminBoosterTypePage({ params }: PageProps<"/[loca
   const { slug } = await params;
   if (!SLUG_PATTERN.test(slug)) notFound();
   const type = await adminBoosterType(slug);
-  if (!type) notFound();
+  if (!type || (readOnly && type.kind === "GUARANTEED")) notFound();
 
   const [t, locale, rules, offers, featured, focusSeries] = await Promise.all([
     getTranslations("admin.types"),
@@ -34,6 +34,9 @@ export default async function AdminBoosterTypePage({ params }: PageProps<"/[loca
   const offer = offers.find((o) => o.type.slug === slug);
   // Planchers et taux du type (boostés pour un Impérial), comme dans le panneau des joueurs
   const draw = typeDrawRules(type, rules.draw);
+  // Booster garanti : la dernière carte ne se tire pas, elle est toujours de sa rareté
+  const guaranteed = type.kind === "GUARANTEED" ? type.guaranteed : null;
+  const floors = guaranteed ? draw.slotFloors.slice(0, -1) : [...draw.slotFloors];
 
   return (
     <div className="flex flex-col gap-6">
@@ -42,7 +45,7 @@ export default async function AdminBoosterTypePage({ params }: PageProps<"/[loca
       </Link>
       <h2 className="font-heading text-2xl font-bold">{t("editTitle", { name: localize(type.name, locale) })}</h2>
 
-      {offer && <OddsTable floors={[...draw.slotFloors]} rates={draw.rates} counts={offer.counts} size={offer.size} />}
+      {offer && <OddsTable floors={floors} rates={draw.rates} counts={offer.counts} size={offer.size} guaranteed={guaranteed} />}
 
       <ReadOnly when={readOnly}>
         <BoosterTypeForm initial={formFromType(type)} featured={featured} focusSeries={focusSeries} globalCards={rules.draw.slotFloors.length} />
@@ -57,11 +60,14 @@ function OddsTable({
   rates,
   counts,
   size,
+  guaranteed,
 }: {
   floors: Rarity[];
   rates: Record<Rarity, number>;
   counts: Record<Rarity, number>;
   size: number;
+  /** Booster garanti : rareté de la dernière carte (hors des chances du tableau). */
+  guaranteed: Rarity | null;
 }) {
   const RARITIES = useRarities();
   const RARITY_SEAL = useRaritySeals();
@@ -78,6 +84,14 @@ function OddsTable({
           {floors.map((f) => RARITY_SEAL[f]).join(" · ")}
         </span>
       </p>
+      {guaranteed && (
+        <p className="text-sm font-bold text-shu">
+          <span aria-hidden="true" lang="ja" className="font-seal">
+            {RARITY_SEAL[guaranteed]}
+          </span>{" "}
+          {t("guaranteedLast", { rarity: guaranteed, count: counts[guaranteed] ?? 0 })}
+        </p>
+      )}
       <table className="w-full text-sm tabular-nums">
         <tbody>
           {RARITIES.slice(2).map((r) => (

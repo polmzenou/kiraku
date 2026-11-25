@@ -101,6 +101,7 @@ export default async function OpenBoosterPage({ params, searchParams }: PageProp
           priceZeni: mode.sellable ? type.priceZeni : null,
           countsForPity: type.countsForPity,
           bonusEligible: type.bonusEligible,
+          guaranteed: type.kind === "GUARANTEED",
           featured:
             featuredIdsOf(type).length > 0 && type.featuredPity > 0
               ? { threshold: type.featuredPity, count: bannerPity[type.id] ?? 0 }

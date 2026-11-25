@@ -27,6 +27,8 @@ export type BoosterSeed = {
   /** Boost de rareté en points de base (27 000 = ×2,7), à partir de rateBoostFrom. */
   rateBoost?: number;
   rateBoostFrom?: Rarity;
+  /** Booster garanti (kind GUARANTEED) : rareté de la dernière carte, toujours servie. */
+  guaranteed?: Rarity;
   minPoolSize?: number;
   active?: boolean;
 };
@@ -43,6 +45,25 @@ const theme = (base: string, dark: string, pattern: BoosterTheme["pattern"], ink
 
 const free = { usesFreeStock: true, priceZeni: EMPTY_STOCK_PRICE } as const;
 const paid = (priceZeni: number | null) => ({ usesFreeStock: false, priceZeni, countsForPity: false, bonusEligible: false });
+
+/** Booster garanti d'une rareté de variante : slug « garanti-xr », nom de la rareté (fr, en). */
+function guaranteed(rarity: Rarity, emblem: string, [fr, en]: [string, string], t: BoosterTheme, shape: BoosterShape = "SACHET"): BoosterSeed {
+  return {
+    slug: `garanti-${rarity.toLowerCase()}`,
+    kind: "GUARANTEED",
+    family: "special",
+    emblem,
+    name: { fr, en },
+    tagline: { fr: `1 ${fr} garantie`, en: `1 ${en} guaranteed` },
+    shape,
+    theme: t,
+    filter: {},
+    slotFloors: ["EPIC", "EPIC", "EPIC", "EPIC"],
+    guaranteed: rarity,
+    ...paid(null),
+    resetsPity: false,
+  };
+}
 
 const filtered = (
   family: BoosterFamily,
@@ -253,4 +274,14 @@ export const BOOSTER_SEEDS: BoosterSeed[] = [
     filter: {},
     ...paid(null),
   },
+
+  // 確定 Boosters garantis : 3 Épiques ou mieux, puis une carte de la rareté garantie. Jamais proposés ni
+  // vendus : l'admin les donne depuis /admin/boosters/garantis (ou la fiche joueur). Une matière par rareté.
+  guaranteed("BR", "闇", ["Black Rare", "Black Rare"], theme("#1C1A19", "#050404", "yami")),
+  guaranteed("AR", "異", ["AR", "AR"], theme("#E07FA6", "#3A2152", "suminagashi")),
+  guaranteed("VR", "彩", ["Vitrail Rare", "Vitrail Rare"], theme("#4B3A8C", "#160E33", "vitrail")),
+  guaranteed("GOLD", "煌", ["Gold", "Gold"], theme("#D9B556", "#6B4E12", "kinpaku", "dark"), "POCHIBUKURO"),
+  guaranteed("MR", "漫", ["Manga Rare", "Manga Rare"], theme("#F4F0E6", "#1F1B17", "shuchusen", "dark")),
+  guaranteed("SR", "霊", ["Esprit", "Spirit"], theme("#123A44", "#04141A", "hitodama")),
+  guaranteed("XR", "極", ["Xtreme Rare", "Xtreme Rare"], theme("#2E2152", "#0B0817", "prisme")),
 ];

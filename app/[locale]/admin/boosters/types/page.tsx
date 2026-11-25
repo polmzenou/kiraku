@@ -16,6 +16,7 @@ import { getSetting } from "@/server/settings";
 /** Pourquoi un type n'apparaît pas sur la page des boosters. */
 function hiddenReason(type: BoosterTypeView, size: number, minPool: number, now: Date) {
   if (type.filter === null) return "filter" as const;
+  if (type.kind === "GUARANTEED") return "guaranteed" as const;
   if (!type.active) return "inactive" as const;
   if ((type.startsAt && type.startsAt > now) || (type.endsAt && type.endsAt <= now)) return "dates" as const;
   if (size < minPool) return "pool" as const;
@@ -91,7 +92,8 @@ export default async function AdminBoosterTypesPage() {
       </section>
 
       {BOOSTER_FAMILIES.map((family) => {
-        const items = offers.filter((o) => o.type.family === family);
+        // Boosters garantis : visibles de l'admin seulement (le DEV, en lecture seule, ne les voit pas)
+        const items = offers.filter((o) => o.type.family === family && !(readOnly && o.type.kind === "GUARANTEED"));
         if (items.length === 0) return null;
         return (
           <section key={family} className="flex flex-col gap-3">
@@ -107,7 +109,7 @@ export default async function AdminBoosterTypesPage() {
                 return (
                   <li key={type.slug} className="flex gap-3 lacquer rounded-card p-3">
                     <div className="w-12 shrink-0">
-                      <BoosterArt shape={type.shape} theme={type.theme} emblem={type.emblem} name="" contents="" compact />
+                      <BoosterArt shape={type.shape} theme={type.theme} emblem={type.emblem} name="" contents="" guarantee={type.kind === "GUARANTEED"} compact />
                     </div>
                     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                       <div className="flex flex-wrap items-baseline justify-between gap-2">

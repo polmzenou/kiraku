@@ -29,6 +29,8 @@ import { RANKED_FORM_KEYS, rankedSettingsSchema, type RankedSettingKey } from "@
 import { MARKET_SETTING_KEYS, marketSettingsSchema, type MarketSettingKey } from "@/lib/settings/market-form";
 import { SOCIAL_SETTING_KEYS, socialSettingsSchema, type SocialSettingKey } from "@/lib/settings/social-form";
 import { PROFILE_SETTING_KEYS, profileSettingsSchema, type ProfileSettingKey } from "@/lib/settings/profile-form";
+import { ACHIEVEMENT_SETTING_KEYS, achievementSettingsSchema, type AchievementSettingKey } from "@/lib/settings/achievements-form";
+import { normalizeGoals } from "@/lib/achievements/evaluate";
 import { AMBASSADOR_SETTING_KEYS, ambassadorSettingsSchema, type AmbassadorSettingKey } from "@/lib/settings/ambassador-form";
 import {
   normalizeThemes,
@@ -51,6 +53,7 @@ import { writeAdminLog } from "../admin/log";
 import { getRarities } from "../catalog/rarities";
 import { resolveNewsVisuals } from "../home/news";
 import { ENNICHI_TAG } from "../ennichi/tag";
+import { isRewardableKind } from "@/lib/boosters/types";
 
 // Réglages de jeu depuis /admin. Ordre : rôle admin vérifié → Zod par clé → rate limit.
 // Chaque clé modifiée écrit sa ligne GameSetting et une ligne AdminLog (avant / après).
@@ -165,6 +168,14 @@ export async function updateProfileSettings(input: unknown): Promise<UpdateSetti
   return saveSettings(PROFILE_SETTING_KEYS, profileSettingsSchema, input);
 }
 
+/** Succès : seuils figés ou égaux au défaut du catalogue écartés (le catalogue fait foi quand rien n'est réglé). */
+export async function updateAchievementSettings(input: unknown): Promise<UpdateSettingsResult<AchievementSettingKey>> {
+  return saveSettings(ACHIEVEMENT_SETTING_KEYS, achievementSettingsSchema, input, (next) => ({
+    ...next,
+    "achievements.goals": normalizeGoals(next["achievements.goals"]),
+  }));
+}
+
 export async function updateAmbassadorSettings(input: unknown): Promise<UpdateSettingsResult<AmbassadorSettingKey>> {
   const admin = await getAdmin();
   if (!admin) return { ok: false, error: "FORBIDDEN" };
@@ -174,7 +185,7 @@ export async function updateAmbassadorSettings(input: unknown): Promise<UpdateSe
   // Le pack donne des boosters à ouvrir : le type doit exister et ne pas être un sachet scellé
   if (parsed.success) {
     const type = await prisma.boosterType.findUnique({ where: { slug: parsed.data["ambassador.weeklyBoosterSlug"] }, select: { kind: true } });
-    if (!type || type.kind === "DROP") return { ok: false, error: "INVALID" };
+    if (!type || !isRewardableKind(type.kind)) return { ok: false, error: "INVALID" };
   }
   return saveSettings(AMBASSADOR_SETTING_KEYS, ambassadorSettingsSchema, input);
 }

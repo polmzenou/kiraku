@@ -3,7 +3,7 @@ import type { AbstractIntlMessages } from "next-intl";
 // Namespaces lus par les composants client et leurs imports (dont Fuda et PageShell).
 // Les textes réservés au serveur et l'admin ne traversent pas le fournisseur public.
 export const CLIENT_NAMESPACES = [
-  "account", "ambassador", "arcadePromo", "auth", "battle", "boosters", "cardBack", "casino", "chat", "collection",
+  "account", "achievements", "ambassador", "arcadePromo", "auth", "battle", "boosters", "cardBack", "casino", "chat", "collection",
   "common", "consent", "data", "discordJoin", "economy", "error", "event", "expedition", "footer", "friends", "prestige",
   "fuda", "gifts", "header", "home", "incense", "kyaraImport", "legal", "locale", "mail", "market", "nav",
   "news", "notifications", "opening", "playerName", "presence", "privacy", "profile", "push", "pwa", "ranked", "rarity", "referralV2", "invite", "ennichi", "sealed",
@@ -14,6 +14,8 @@ export const CLIENT_NAMESPACES = [
 // ne traverse pas chaque page (prestige : parcours de renaissance, erreurs, rite d'encre, cinématique, consécration).
 export const CLIENT_SUBSETS: Partial<Record<(typeof CLIENT_NAMESPACES)[number], readonly string[]>> = {
   prestige: ["flow", "errors", "rite", "cinematic", "consecrate"],
+  // Succès : la grille (filtre, mise en avant) ; noms et descriptions sont traduits au serveur (secrets masqués)
+  achievements: ["grid"],
   // Import Kyara : formulaire, annulation, erreurs et bannière de l'accueil ; la page elle-même est rendue au serveur
   kyaraImport: ["form", "cancel", "errors", "banner"],
   // Parrainage v2 : cartes des étapes et tableau des filleuls (avec leurs cadeaux et leur jauge), grille du choix des

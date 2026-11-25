@@ -64,6 +64,8 @@ export function shopContentIssue(
   definitions: readonly { key: string; sortOrder: number }[],
 ): ShopContentIssue | null {
   if (lines.some((l) => l.kind === "BOOSTER" && l.boosterKind === "DROP")) return "SEALED";
+  // Booster garanti : sa dernière carte est une rareté de variante, au-dessus de Mythique
+  if (lines.some((l) => l.kind === "BOOSTER" && l.boosterKind === "GUARANTEED")) return "MYTHIC";
   const rarities = lines.flatMap((l) => (l.kind === "BOOSTER" ? l.floors : [l.rarity]));
   return rarities.some((r) => isTopTier(r, definitions)) ? "MYTHIC" : null;
 }

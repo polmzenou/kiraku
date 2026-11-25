@@ -38,6 +38,11 @@ describe("describeNotification", () => {
     expect(describeNotification({ ...base, type: "KYARA_IMPORT_REJECTED", kyara: null }, tr).text).toContain('"reason":"OTHER"');
   });
 
+  it("relance de l'import Kyara → rappel de la marche à suivre et page de l'import", () => {
+    const base = { actor: { username: "akira", isGuest: false }, gift: null, card: null };
+    expect(describeNotification({ ...base, type: "KYARA_IMPORT_REMINDER", kyara: null }, tr)).toEqual({ text: "kyaraImportReminder:{}", href: "/compte/import-kyara" });
+  });
+
   it("versement du parrainage v2 → page Parrainage, avec l'étape, le côté et le ×2", () => {
     const base = { actor: { username: "lea", isGuest: false }, gift: null, card: null };
     const step = describeNotification({ ...base, type: "REFERRAL_REWARD", referral: { kind: "STEP", side: "REFERRER", step: 2, milestone: null, multiplier: 2 } }, tr);

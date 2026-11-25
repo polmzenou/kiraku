@@ -90,6 +90,7 @@ describe("consumeWishlist", () => {
   function txWith(entries: { cardId: string }[]) {
     return {
       wishlistEntry: { findMany: vi.fn().mockResolvedValue(entries), deleteMany: vi.fn() },
+      $executeRaw: vi.fn().mockResolvedValue(1),
     };
   }
 
@@ -99,12 +100,16 @@ describe("consumeWishlist", () => {
     expect([...wished]).toEqual(["b"]);
     expect(tx.wishlistEntry.findMany).toHaveBeenCalledWith({ where: { userId: "u", cardId: { in: ["a", "b"] } }, select: { cardId: true } });
     expect(tx.wishlistEntry.deleteMany).toHaveBeenCalledWith({ where: { userId: "u", cardId: { in: ["b"] } } });
+    // Succès « Vœu exaucé », dans la même transaction
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(tx.$executeRaw.mock.calls[0].slice(1)).toEqual(["u", "wish-granted"]);
   });
 
   it("ne touche à rien quand aucune carte n'était souhaitée", async () => {
     const tx = txWith([]);
     expect((await consumeWishlist(tx as unknown as Prisma.TransactionClient, "u", ["a"])).size).toBe(0);
     expect(tx.wishlistEntry.deleteMany).not.toHaveBeenCalled();
+    expect(tx.$executeRaw).not.toHaveBeenCalled();
   });
 
   it("ne lit rien pour un versement vide", async () => {

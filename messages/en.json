@@ -1168,6 +1168,7 @@
       "NEEDS_PAYMENT": "Your stock changed: confirm the Zeni payment.",
       "NOT_ENOUGH_ZENI": "Not enough Zeni for this opening.",
       "NOT_FOR_SALE": "This booster isn't available right now.",
+      "GUARANTEE_EMPTY": "This booster is still waiting for cards of its rarity: it stays in your boosters to open, try again later.",
       "UNAVAILABLE": "Can't open right now. Try again."
     },
     "creditLeft": "{count, plural, one {Credited booster · # to open} other {Credited boosters · # to open}}",
@@ -1506,6 +1507,7 @@
       "general": "General",
       "cosmetics": "Titles and frames",
       "openingTest": "Opening test",
+      "guaranteed": "Guaranteed boosters",
       "focus": "Series focus",
       "pullFeed": "Big pulls",
       "eventGauge": "Event",
@@ -1518,7 +1520,8 @@
       "wrapped": "Wrapped",
       "prestige": "Prestige",
       "multiAccounts": "Multi-accounts",
-      "kyara": "Kyara import"
+      "kyara": "Kyara import",
+      "achievements": "Achievements"
     },
     "kyara": {
       "title": "Kyara import",
@@ -1584,7 +1587,11 @@
         "granted": "{cards, number} cards, {zeni, number} Zeni",
         "kyaraProfile": "Kyara profile",
         "open": "Details",
-        "pendingHelp": "These players are waiting for you to read their collection: accept their friend requests on Kyara (Kiraku account), open each profile and click your bookmarklet."
+        "pendingHelp": "These players are waiting for you to read their collection: accept their friend requests on Kyara (Kiraku account), open each profile and click your bookmarklet. “Remind” nudges a player who hasn't shown you their collection yet, with a reminder of the steps.",
+        "remind": "Remind",
+        "remindPending": "Sending…",
+        "remindDone": "Reminded",
+        "reminded": "{count, plural, one {reminded {date}} other {reminded # times, last {date}}}"
       },
       "bookmarklet": {
         "title": "“Send to Kiraku” bookmarklet (version {build})",
@@ -1819,6 +1826,45 @@
       "duplicateSection": "Duplicates of top rarities",
       "duplicateHint": "A card of these rarities already in the player's collection has only a 1 in N chance of dropping again; from the chosen number of copies, none at all. When every card of the drawn rarity is blocked, the slot gives the rarity below. Applies to boosters (featured cards and pity included), Divine and Apocalypse packs, and random cards from lots."
     },
+    "guaranteed": {
+      "title": "Guaranteed boosters",
+      "intro": "One booster per variant rarity: 3 Epic-or-better cards, then a card of the guaranteed rarity, every time. Never offered or sold to players, they only exist here: give them to anyone, the player receives them as a gift from the team (notification) and opens them from the home page.",
+      "empty": "No guaranteed booster in the database: run the booster seed (deploy.sh --seed).",
+      "pool": "Cards of the rarity in the pool",
+      "held": "Still unopened by players",
+      "heldValue": "{count, plural, =0 {none} one {# booster} other {# boosters}}{holders, plural, =0 {} one { · # player} other { · # players}}",
+      "emptyRarity": "No published {rarity} card in this pool: the booster couldn't be opened, so it can't be given.",
+      "give": "Give",
+      "edit": "Edit the type",
+      "grantTitle": "Give a guaranteed booster",
+      "booster": "Booster",
+      "unavailable": "no card",
+      "username": "Player's username",
+      "usernameHint": "Exact username (case doesn't matter).",
+      "quantity": "Quantity",
+      "reason": "Reason (admin log)",
+      "reasonHint": "Shown in the log, not to the player.",
+      "reasonDefault": "Guaranteed booster gift",
+      "message": "Note to the player (optional)",
+      "messagePlaceholder": "Sent with the gift notification",
+      "emptyHint": "This booster has no card of its rarity in its pool: publish some before giving it.",
+      "submit": "{count, plural, one {Give the booster} other {Give # boosters}}",
+      "sending": "Sending…",
+      "done": "{count, plural, one {# {booster} booster given} other {# {booster} boosters given}} to {username}.",
+      "seePlayer": "Open the player's page",
+      "errors": {
+        "FORBIDDEN": "Admins only.",
+        "INVALID": "Check the username, quantity and reason.",
+        "RATE_LIMITED": "Too many gifts in a row: try again in a minute.",
+        "NO_USER": "No player with this username.",
+        "NOT_FOUND": "Player or booster not found.",
+        "NOT_GUARANTEED": "This booster isn't a guaranteed booster.",
+        "EMPTY_RARITY": "No card of this rarity in the pool: nothing to guarantee.",
+        "LIMIT": "Quantity too large.",
+        "INSUFFICIENT": "Quantity refused.",
+        "unexpected": "Can't send right now."
+      }
+    },
     "types": {
       "title": "Booster types",
       "intro": "Each type is a catalogue filter, slot floors and a price. A type whose pool is under the minimum ({min} cards by default) can't be enabled and disappears from the page.",
@@ -1841,7 +1887,8 @@
         "filter": "invalid filter",
         "rotation": "resting (rotation)",
         "featured": "featured (rotation)",
-        "shopOnly": "sold in the shop only"
+        "shopOnly": "sold in the shop only",
+        "guaranteed": "guaranteed booster, given by the team"
       },
       "price": {
         "free": "Free",
@@ -1851,6 +1898,7 @@
       },
       "oddsTitle": "Exact odds on the current pool",
       "oddsHint": "Computed with the global shares and this pool's empty tiers, exactly as drawn.",
+      "guaranteedLast": "Last card: always {rarity} ({count, plural, =0 {no card in the pool: the booster cannot be opened} one {# card in the pool} other {# cards in the pool}}). The table only counts the other cards.",
       "back": "All types",
       "editTitle": "Edit “{name}”",
       "newBannerTitle": "New featured banner",
@@ -3969,6 +4017,13 @@
         "tensei": "Tensei (rebirth)",
         "hanga": "Hanga (woodblock print)",
         "hono": "Hono (flame)",
+        "rang-bronze": "Bronze (ranked)",
+        "rang-argent": "Silver (ranked)",
+        "rang-or": "Gold (ranked)",
+        "rang-emeraude": "Emerald (ranked)",
+        "rang-elite": "Elite (ranked)",
+        "rang-champion": "Champion (ranked)",
+        "rang-grand-champion": "Grand Champion (ranked)",
         "fil": "Red thread"
       },
       "settings": {
@@ -4739,8 +4794,20 @@
       "score": "Score {score}",
       "belowThreshold": "below threshold",
       "pairsTitle": "{count, plural, one {Details of # link} other {Details of # links}}",
-      "lastSeen": "Last active",
-      "discord": "Discord linked",
+      "memberStatus": {
+        "banned": "Banned",
+        "admin": "Admin",
+        "dev": "Dev",
+        "guest": "Guest",
+        "registered": "Registered"
+      },
+      "memberDiscord": "Discord",
+      "memberCoins": "{count, number} Zeni",
+      "memberCards": "{count, plural, one {# card} other {# cards}}",
+      "memberCreated": "created {date}",
+      "memberSeen": "seen {when}",
+      "memberNeverSeen": "never seen",
+      "moreMembers": "{count, plural, one {Show the other account} other {Show the # other accounts}}",
       "ipsTitle": "Shared IPs",
       "ipsIntro": "IPs seen for several accounts since recording started. Above {cap} accounts, an IP is considered public (mobile, school, office) and no longer links accounts.",
       "searchIp": "Search an IP (start of the address)",
@@ -4916,6 +4983,20 @@
         "RATE_LIMITED": "Too many requests, try again in a minute.",
         "UNAVAILABLE": "Unavailable right now, try again."
       }
+    },
+    "achievements": {
+      "title": "Achievements",
+      "intro": "Players' honorary achievements. An empty threshold follows the catalogue. A disabled achievement disappears from the page and from profiles, without erasing unlocks already recorded.",
+      "settings": {
+        "enabled": "Achievements enabled",
+        "enabledHint": "Off: the achievements page and featured achievements on profiles are hidden.",
+        "goals": "Achievement thresholds",
+        "disabled": "Disabled achievements"
+      },
+      "unlocked": "{count, plural, =0 {no players} one {# player} other {# players}}",
+      "goalLabel": "Threshold for “{name}”",
+      "fixed": "Fixed threshold",
+      "active": "Active"
     }
   },
   "collection": {
@@ -5729,7 +5810,8 @@
       "hide": "Hide",
       "show": "Show",
       "error": "Not possible right now."
-    }
+    },
+    "achievements": "Achievements ({unlocked, number}/{total, number})"
   },
   "privacy": {
     "title": "Privacy",
@@ -5956,6 +6038,7 @@
     "buyOrderWanted": "{name} is looking for {card} at {amount, number} Zeni. You own a copy: sell it in one tap.",
     "kyaraImportDone": "Your Kyara collection has arrived: {cards, plural, =0 {no cards} one {# card} other {# cards}} and {zeni, number} Zeni.",
     "kyaraImportRejected": "Your Kyara import request was declined: {reason, select, NOT_FRIEND {the Kiraku account isn't in your Kyara friends} COLLECTION_HIDDEN {your collection isn't visible to the Kiraku account} PROFILE_NOT_FOUND {this Kyara profile can't be found} DISCORD_MISMATCH {this Kyara profile isn't linked to your Discord account} ALREADY_IMPORTED {this Kyara profile was already imported} SUSPECT {the team couldn't verify this profile} other {see the team's note}}.",
+    "kyaraImportReminder": "The Kiraku account has been added on Kyara: go show it your collection to get your whole collection!\n1. Still on Kyara: Friends → messages tab, open your conversation with Kiraku and click “Show my collection”.\n⚠️ Being friends isn't enough: without this click, we can't see your cards.\n2. The team reads your collection, and your cards arrive on your account with a notification.",
     "referralReward": "{kind, select, STEP {{side, select, REFEREE {Step {step, select, 1 {1 · Arrival} 2 {2 · Settled} 3 {3 · Hooked} other {4 · Loyal}} reached: your gifts have arrived{multiplier, select, 2 { (×2 Ennichi)} other {}}.} other {{name} reached step {step, select, 1 {1 · Arrival} 2 {2 · Settled} 3 {3 · Hooked} other {4 · Loyal}}: your gifts have arrived{multiplier, select, 2 { (×2 Ennichi)} other {}}.}}} TRUST_BONUS {{name}: your Mythic boosters from step {step} have arrived.} MILESTONE {{milestone, number} friends settled in: your milestone gifts have arrived.} GRAND {A friend of {name} settled in: your grand-referrer gifts have arrived.} other {Referral: your gifts have arrived.}}",
     "ennichiReward": "{kind, select, TIER {Lantern tier {tier} reached: your festival prize has arrived.} BANZUKE {Ennichi banzuke: you finished {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, your prizes have arrived.} OMIKUJI {Omikuji: your ticket won a prize (draw no. {draw}).} other {Ennichi: your prize has arrived.}}"
   },
@@ -8777,6 +8860,691 @@
       "openBooster": "Open my booster",
       "profile": "See my profile",
       "close": "Close"
+    }
+  },
+  "achievements": {
+    "title": "Achievements",
+    "intro": "Honorary challenges to unlock as you play. Feature your favourite under your avatar.",
+    "disabled": "Achievements are paused for now.",
+    "summary": "{unlocked, number} / {total, number} achievements unlocked",
+    "summaryLabel": "Achievements unlocked",
+    "unlockedOn": "Unlocked on {date}",
+    "featuredLabel": "Featured achievement",
+    "progress": {
+      "count": "{value, number} / {goal, number}",
+      "percent": "{value, number}% / {goal, number}%",
+      "bestPlace": "Best place: #{place, number}",
+      "noPlace": "Not ranked yet",
+      "done": "Done",
+      "todo": "To do",
+      "hidden": "Secret achievement"
+    },
+    "secret": {
+      "name": "???",
+      "desc": "A secret achievement. Keep playing to find it."
+    },
+    "categories": {
+      "boosters": "Boosters",
+      "collection": "Collection",
+      "zeni": "Zeni, daily and missions",
+      "market": "Auction house and Market",
+      "social": "Friends and trades",
+      "showcase": "Showcases and profile",
+      "combat": "Battle",
+      "ranked": "Ranked",
+      "expedition": "Expeditions",
+      "casino": "Coin flip",
+      "prestige": "Prestige",
+      "seniority": "Seniority",
+      "secret": "Secrets"
+    },
+    "grid": {
+      "filterLabel": "Show",
+      "filter": {
+        "all": "All",
+        "unlocked": "Unlocked",
+        "locked": "In progress"
+      },
+      "guestHint": "Sign up to feature an achievement on your profile.",
+      "empty": "No achievements to show here.",
+      "count": "{done, number} / {total, number}",
+      "featured": "Featured",
+      "feature": "Feature",
+      "unfeature": "Remove",
+      "errors": {
+        "NO_SESSION": "Your session expired, reload the page.",
+        "INVALID": "This achievement can't be found.",
+        "GUEST": "Sign up to feature an achievement.",
+        "UNAVAILABLE": "Your account can't do that right now.",
+        "LOCKED": "This achievement isn't unlocked.",
+        "RATE_LIMITED": "Easy! Try again in a moment."
+      }
+    },
+    "items": {
+      "booster-1": {
+        "name": "First Pack",
+        "desc": "Open {count, plural, one {# booster} other {# boosters}}"
+      },
+      "booster-50": {
+        "name": "Ripper",
+        "desc": "Open {count, plural, one {# booster} other {# boosters}}"
+      },
+      "booster-250": {
+        "name": "Konbini Regular",
+        "desc": "Open {count, plural, one {# booster} other {# boosters}}"
+      },
+      "booster-1000": {
+        "name": "Silver Hands",
+        "desc": "Open {count, plural, one {# booster} other {# boosters}}"
+      },
+      "booster-5000": {
+        "name": "Washi Avalanche",
+        "desc": "Open {count, plural, one {# booster} other {# boosters}}"
+      },
+      "booster-10000": {
+        "name": "Ten Thousand Tears",
+        "desc": "Open {count, plural, one {# booster} other {# boosters}}"
+      },
+      "golden-1": {
+        "name": "Ray of Sunshine",
+        "desc": "Open {count, plural, one {a golden booster} other {# golden boosters}}"
+      },
+      "golden-25": {
+        "name": "Golden Rain",
+        "desc": "Open {count, plural, one {a golden booster} other {# golden boosters}}"
+      },
+      "divine-1": {
+        "name": "Divine Grace",
+        "desc": "Open {count, plural, one {a Divine pack} other {# Divine packs}}"
+      },
+      "divine-10": {
+        "name": "Chosen by the Gods",
+        "desc": "Open {count, plural, one {a Divine pack} other {# Divine packs}}"
+      },
+      "apocalypse-spared": {
+        "name": "Survivor",
+        "desc": "Have {count, plural, one {an Apocalyptic pack} other {# Apocalyptic packs}} spared"
+      },
+      "apocalypse-ruined": {
+        "name": "Ashes",
+        "desc": "Have {count, plural, one {an Apocalyptic pack} other {# Apocalyptic packs}} ruined"
+      },
+      "apocalypse-ruined-10": {
+        "name": "Field of Ruins",
+        "desc": "Have {count, plural, one {an Apocalyptic pack} other {# Apocalyptic packs}} ruined"
+      },
+      "pity": {
+        "name": "Mercy of the Gods",
+        "desc": "Trigger the Mythic pity {count, plural, one {once} other {# times}}"
+      },
+      "featured-1": {
+        "name": "Headliner",
+        "desc": "Pull a featured banner card in {count, plural, one {a booster} other {# boosters}}"
+      },
+      "featured-25": {
+        "name": "Star Hunter",
+        "desc": "Pull a featured banner card in {count, plural, one {a booster} other {# boosters}}"
+      },
+      "pochibukuro": {
+        "name": "Little Envelope",
+        "desc": "Open a pochibukuro"
+      },
+      "jubako": {
+        "name": "Lacquered Box",
+        "desc": "Open a jūbako"
+      },
+      "booster-types-15": {
+        "name": "Aisle Explorer",
+        "desc": "Open {count, number} different booster types"
+      },
+      "incense-1": {
+        "name": "Scent of Incense",
+        "desc": "Light {count, plural, one {an Incense} other {# Incenses}}"
+      },
+      "incense-25": {
+        "name": "Smoky Temple",
+        "desc": "Light {count, plural, one {an Incense} other {# Incenses}}"
+      },
+      "unique-10": {
+        "name": "First Steps",
+        "desc": "Own {count, number} unique cards"
+      },
+      "unique-100": {
+        "name": "Budding Album",
+        "desc": "Own {count, number} unique cards"
+      },
+      "unique-500": {
+        "name": "Full Binder",
+        "desc": "Own {count, number} unique cards"
+      },
+      "catalog-10": {
+        "name": "Curious",
+        "desc": "Discover {count, number}% of the catalogue"
+      },
+      "catalog-25": {
+        "name": "Scholar",
+        "desc": "Discover {count, number}% of the catalogue"
+      },
+      "catalog-50": {
+        "name": "Archivist",
+        "desc": "Discover {count, number}% of the catalogue"
+      },
+      "catalog-75": {
+        "name": "Keeper of the Fuda",
+        "desc": "Discover {count, number}% of the catalogue"
+      },
+      "catalog-100": {
+        "name": "Living Encyclopedia",
+        "desc": "Discover the whole catalogue"
+      },
+      "first-rare": {
+        "name": "Indigo Glint",
+        "desc": "Obtain a Rare card"
+      },
+      "first-epic": {
+        "name": "Lacquer Shine",
+        "desc": "Obtain an Epic card"
+      },
+      "first-legendary": {
+        "name": "Gold Leaf",
+        "desc": "Obtain a Legendary card"
+      },
+      "first-mythic": {
+        "name": "Mother-of-Pearl",
+        "desc": "Obtain a Mythic card"
+      },
+      "mythic-10": {
+        "name": "Pearl Nest",
+        "desc": "Obtain {count, number} different Mythics"
+      },
+      "mythic-50": {
+        "name": "Treasure of the Gods",
+        "desc": "Obtain {count, number} different Mythics"
+      },
+      "first-br": {
+        "name": "Shadow",
+        "desc": "Obtain a Black Rare"
+      },
+      "first-ar": {
+        "name": "Other Form",
+        "desc": "Obtain an AR"
+      },
+      "first-vr": {
+        "name": "Stained Glass",
+        "desc": "Obtain a Vitrail Rare"
+      },
+      "first-gold": {
+        "name": "Gilding",
+        "desc": "Obtain a Gold"
+      },
+      "first-mr": {
+        "name": "Ink",
+        "desc": "Obtain a Manga Rare"
+      },
+      "first-sr": {
+        "name": "Spirit",
+        "desc": "Obtain a Spirit card"
+      },
+      "first-xr": {
+        "name": "Extreme",
+        "desc": "Obtain an Xtreme Rare"
+      },
+      "all-variants": {
+        "name": "Full Prism",
+        "desc": "Obtain a card of every variant ({count, number} rarities)"
+      },
+      "variant-family": {
+        "name": "A Thousand Faces",
+        "desc": "Obtain a character's base version and {count, number} of its variants"
+      },
+      "series-1": {
+        "name": "End of the Arc",
+        "desc": "Complete {count, plural, one {a series} other {# series}}"
+      },
+      "series-10": {
+        "name": "Librarian",
+        "desc": "Complete {count, plural, one {a series} other {# series}}"
+      },
+      "series-50": {
+        "name": "Master of Arcs",
+        "desc": "Complete {count, plural, one {a series} other {# series}}"
+      },
+      "series-150": {
+        "name": "Series Pantheon",
+        "desc": "Complete {count, plural, one {a series} other {# series}}"
+      },
+      "series-touched-100": {
+        "name": "Multiverse",
+        "desc": "Obtain cards from {count, number} different series"
+      },
+      "top-1": {
+        "name": "Icon",
+        "desc": "Own the most popular character in the catalogue"
+      },
+      "top-10": {
+        "name": "Pantheon",
+        "desc": "Own the {count, number} most popular characters at once"
+      },
+      "copies-10": {
+        "name": "Obsession",
+        "desc": "Own {count, number} copies of the same card"
+      },
+      "wish-granted": {
+        "name": "Wish Granted",
+        "desc": "Obtain a card from your wishlist"
+      },
+      "recycle-1": {
+        "name": "First Recycle",
+        "desc": "Recycle a card"
+      },
+      "recycle-zeni-50k": {
+        "name": "Alchemist",
+        "desc": "Earn {count, number} Zeni by recycling"
+      },
+      "recycle-zeni-1m": {
+        "name": "Grand Alchemist",
+        "desc": "Earn {count, number} Zeni by recycling"
+      },
+      "balance-10k": {
+        "name": "Piggy Bank",
+        "desc": "Hold {count, number} Zeni at once"
+      },
+      "balance-100k": {
+        "name": "Full Chest",
+        "desc": "Hold {count, number} Zeni at once"
+      },
+      "balance-1m": {
+        "name": "Tycoon",
+        "desc": "Hold {count, number} Zeni at once"
+      },
+      "spent-100k": {
+        "name": "Big Spender",
+        "desc": "Spend {count, number} Zeni in total"
+      },
+      "daily-7": {
+        "name": "Diligent",
+        "desc": "Claim the daily reward on {count, number} days"
+      },
+      "daily-30": {
+        "name": "Faithful",
+        "desc": "Claim the daily reward on {count, number} days"
+      },
+      "daily-100": {
+        "name": "Pillar",
+        "desc": "Claim the daily reward on {count, number} days"
+      },
+      "daily-365": {
+        "name": "A Year of Rituals",
+        "desc": "Claim the daily reward on {count, number} days"
+      },
+      "daily-streak-7": {
+        "name": "Ritual",
+        "desc": "Claim the daily reward {count, number} days in a row"
+      },
+      "daily-streak-30": {
+        "name": "Iron Discipline",
+        "desc": "Claim the daily reward {count, number} days in a row"
+      },
+      "missions-10": {
+        "name": "Missionary",
+        "desc": "Complete {count, number} missions"
+      },
+      "missions-100": {
+        "name": "Tireless",
+        "desc": "Complete {count, number} missions"
+      },
+      "missions-500": {
+        "name": "Board Legend",
+        "desc": "Complete {count, number} missions"
+      },
+      "perfect-day": {
+        "name": "Perfect Day",
+        "desc": "Claim every daily mission in a single day"
+      },
+      "auction-sold-1": {
+        "name": "First Sale",
+        "desc": "Sell {count, plural, one {a card} other {# cards}} at auction"
+      },
+      "auction-sold-25": {
+        "name": "Merchant",
+        "desc": "Sell {count, plural, one {a card} other {# cards}} at auction"
+      },
+      "auction-sold-250": {
+        "name": "Trader",
+        "desc": "Sell {count, plural, one {a card} other {# cards}} at auction"
+      },
+      "auction-top-sale": {
+        "name": "Big Ticket",
+        "desc": "Sell a card for {count, number} Zeni or more at auction"
+      },
+      "auction-sales-1m": {
+        "name": "Market Baron",
+        "desc": "Total {count, number} Zeni in auction sales"
+      },
+      "auction-won-1": {
+        "name": "Hammer Down",
+        "desc": "Win {count, plural, one {an auction} other {# auctions}}"
+      },
+      "auction-won-25": {
+        "name": "Bidder",
+        "desc": "Win {count, plural, one {an auction} other {# auctions}}"
+      },
+      "auction-contested": {
+        "name": "Bidding War",
+        "desc": "Win an auction that received at least 10 bids"
+      },
+      "buyout": {
+        "name": "Impatient",
+        "desc": "Use buy it now"
+      },
+      "order-received": {
+        "name": "Wanted",
+        "desc": "Receive a card through one of your wanted notices"
+      },
+      "orders-filled-10": {
+        "name": "Bounty Hunter",
+        "desc": "Fill {count, number} wanted notices from other players"
+      },
+      "listing-trade": {
+        "name": "Public Barter",
+        "desc": "Complete {count, plural, one {a trade} other {# trades}} through a Market listing"
+      },
+      "friends-1": {
+        "name": "First Friend",
+        "desc": "Have {count, plural, one {a friend} other {# friends}}"
+      },
+      "friends-10": {
+        "name": "Circle of Friends",
+        "desc": "Have {count, plural, one {a friend} other {# friends}}"
+      },
+      "friends-50": {
+        "name": "Network",
+        "desc": "Have {count, plural, one {a friend} other {# friends}}"
+      },
+      "trades-1": {
+        "name": "First Trade",
+        "desc": "Complete {count, plural, one {a trade} other {# trades}}"
+      },
+      "trades-25": {
+        "name": "Barterer",
+        "desc": "Complete {count, plural, one {a trade} other {# trades}}"
+      },
+      "trades-100": {
+        "name": "Master Trader",
+        "desc": "Complete {count, plural, one {a trade} other {# trades}}"
+      },
+      "gift-card-1": {
+        "name": "Generous",
+        "desc": "Gift {count, plural, one {a card} other {# cards}}"
+      },
+      "gift-card-50": {
+        "name": "Patron",
+        "desc": "Gift {count, plural, one {a card} other {# cards}}"
+      },
+      "gift-booster-25": {
+        "name": "Round on Me",
+        "desc": "Gift {count, plural, one {a booster} other {# boosters}}"
+      },
+      "gift-sealed": {
+        "name": "Sealed Letter",
+        "desc": "Gift a sealed pack to a friend"
+      },
+      "referral-1": {
+        "name": "Sponsor",
+        "desc": "Refer {count, plural, one {a qualified friend} other {# qualified friends}}"
+      },
+      "referral-5": {
+        "name": "Sensei",
+        "desc": "Refer {count, plural, one {a qualified friend} other {# qualified friends}}"
+      },
+      "referral-20": {
+        "name": "Clan",
+        "desc": "Refer {count, plural, one {a qualified friend} other {# qualified friends}}"
+      },
+      "discord": {
+        "name": "Voice of the Server",
+        "desc": "Link your Discord account"
+      },
+      "review": {
+        "name": "Your Voice Matters",
+        "desc": "Post a review of Kiraku"
+      },
+      "showcase-full-1": {
+        "name": "Decorator",
+        "desc": "Fill {count, plural, one {a showcase} other {# showcases}}"
+      },
+      "showcase-full-6": {
+        "name": "Gallerist",
+        "desc": "Fill {count, plural, one {a showcase} other {# showcases}}"
+      },
+      "event-entry": {
+        "name": "Candidate",
+        "desc": "Enter a showcase in the showcase event"
+      },
+      "event-vote": {
+        "name": "Juror",
+        "desc": "Vote in the showcase event"
+      },
+      "full-style": {
+        "name": "Signature Style",
+        "desc": "Equip a title, a frame and a name colour"
+      },
+      "battle-1": {
+        "name": "Baptism of Fire",
+        "desc": "Play a battle"
+      },
+      "win-1": {
+        "name": "First Victory",
+        "desc": "Win {count, plural, one {a battle} other {# battles}}"
+      },
+      "win-25": {
+        "name": "Warrior",
+        "desc": "Win {count, plural, one {a battle} other {# battles}}"
+      },
+      "win-100": {
+        "name": "Veteran",
+        "desc": "Win {count, plural, one {a battle} other {# battles}}"
+      },
+      "win-500": {
+        "name": "Warlord",
+        "desc": "Win {count, plural, one {a battle} other {# battles}}"
+      },
+      "win-2000": {
+        "name": "Arena Legend",
+        "desc": "Win {count, plural, one {a battle} other {# battles}}"
+      },
+      "crushing-1": {
+        "name": "Crushing",
+        "desc": "Score {count, plural, one {a crushing victory} other {# crushing victories}}"
+      },
+      "crushing-25": {
+        "name": "Steamroller",
+        "desc": "Score {count, plural, one {a crushing victory} other {# crushing victories}}"
+      },
+      "win-streak-5": {
+        "name": "On a Roll",
+        "desc": "Win {count, number} battles in a row"
+      },
+      "win-streak-10": {
+        "name": "Unstoppable",
+        "desc": "Win {count, number} battles in a row"
+      },
+      "friend-win": {
+        "name": "Friendly Challenge",
+        "desc": "Win a battle in a private room"
+      },
+      "mono-universe-win": {
+        "name": "Fan Service",
+        "desc": "Win with a team from a single universe"
+      },
+      "commons-win": {
+        "name": "David and Goliath",
+        "desc": "Win with a team of Commons only"
+      },
+      "ability-1": {
+        "name": "Apprentice",
+        "desc": "Buy {count, plural, one {an ability} other {# abilities}} at the workshop"
+      },
+      "ability-50": {
+        "name": "Weapons Master",
+        "desc": "Buy {count, plural, one {an ability} other {# abilities}} at the workshop"
+      },
+      "tier-silver": {
+        "name": "Silver",
+        "desc": "Reach Silver rank in ranked"
+      },
+      "tier-gold": {
+        "name": "Gold",
+        "desc": "Reach Gold rank in ranked"
+      },
+      "tier-emerald": {
+        "name": "Emerald",
+        "desc": "Reach Emerald rank in ranked"
+      },
+      "tier-elite": {
+        "name": "Elite",
+        "desc": "Reach Elite rank in ranked"
+      },
+      "tier-champion": {
+        "name": "Champion",
+        "desc": "Reach Champion rank in ranked"
+      },
+      "tier-grand-champion": {
+        "name": "Grand Champion",
+        "desc": "Reach Grand Champion rank in ranked"
+      },
+      "season-games-50": {
+        "name": "Full Season",
+        "desc": "Play {count, number} ranked games in a single season"
+      },
+      "seasons-5": {
+        "name": "Arena Pillar",
+        "desc": "Play {count, number} ranked seasons"
+      },
+      "season-top-100": {
+        "name": "Top 100",
+        "desc": "Finish a season in the top {count, number}"
+      },
+      "season-top-10": {
+        "name": "Top 10",
+        "desc": "Finish a season in the top {count, number}"
+      },
+      "season-first": {
+        "name": "Crowned",
+        "desc": "Finish a season in 1st place"
+      },
+      "expedition-1": {
+        "name": "First Journey",
+        "desc": "Complete {count, plural, one {an expedition} other {# expeditions}}"
+      },
+      "expedition-25": {
+        "name": "Traveller",
+        "desc": "Complete {count, plural, one {an expedition} other {# expeditions}}"
+      },
+      "expedition-200": {
+        "name": "Great Explorer",
+        "desc": "Complete {count, plural, one {an expedition} other {# expeditions}}"
+      },
+      "triumph-1": {
+        "name": "Triumph",
+        "desc": "Return in triumph from {count, plural, one {an expedition} other {# expeditions}}"
+      },
+      "triumph-25": {
+        "name": "Conqueror",
+        "desc": "Return in triumph from {count, plural, one {an expedition} other {# expeditions}}"
+      },
+      "risky-success": {
+        "name": "Daredevil",
+        "desc": "Succeed at a perilous expedition"
+      },
+      "coinflip-1": {
+        "name": "表か裏か",
+        "desc": "Play {count, plural, one {a coin flip table} other {# coin flip tables}}"
+      },
+      "coinflip-win-10": {
+        "name": "Lucky Hand",
+        "desc": "Win {count, number} coin flips"
+      },
+      "coinflip-streak-5": {
+        "name": "Outrageous Luck",
+        "desc": "Win {count, number} coin flips in a row"
+      },
+      "coinflip-mythic": {
+        "name": "High Roller",
+        "desc": "Win a coin flip table at the Mythic tier"
+      },
+      "prestige-1": {
+        "name": "Rebirth",
+        "desc": "Reach prestige {count, number}"
+      },
+      "prestige-3": {
+        "name": "Cycle of Souls",
+        "desc": "Reach prestige {count, number}"
+      },
+      "prestige-5": {
+        "name": "Eternal",
+        "desc": "Reach prestige {count, number}"
+      },
+      "heritage-max": {
+        "name": "Lineage",
+        "desc": "Own an heir at the cap (heritage {count, number})"
+      },
+      "consecrated-1": {
+        "name": "Consecration",
+        "desc": "Consecrate {count, plural, one {a card} other {# cards}} in the sanctuary"
+      },
+      "consecrated-5": {
+        "name": "Sanctuary",
+        "desc": "Consecrate {count, plural, one {a card} other {# cards}} in the sanctuary"
+      },
+      "printings-10": {
+        "name": "Print Shop",
+        "desc": "Own {count, number} engraved editions"
+      },
+      "serial-one": {
+        "name": "Number One",
+        "desc": "Own #1 of an engraved print run"
+      },
+      "account-30": {
+        "name": "A Month in Kiraku",
+        "desc": "Have an account older than {count, number} days"
+      },
+      "account-365": {
+        "name": "A Year in Kiraku",
+        "desc": "Have an account older than {count, number} days"
+      },
+      "kyara-import": {
+        "name": "Fresh Start",
+        "desc": "Import your Kyara collection"
+      },
+      "birthday-pull": {
+        "name": "Happy Birthday",
+        "desc": "Pull a character on their birthday"
+      },
+      "night-owl": {
+        "name": "Night Owl",
+        "desc": "Open a booster between 3 and 4 a.m."
+      },
+      "double-mythic": {
+        "name": "Lightning Strikes Twice",
+        "desc": "Pull two Mythics in the same booster"
+      },
+      "cursed": {
+        "name": "Cursed",
+        "desc": "Have {count, number} Apocalyptic packs ruined in a row"
+      },
+      "jackpot": {
+        "name": "Jackpot",
+        "desc": "Hold exactly 77,777 Zeni"
+      },
+      "bad-luck": {
+        "name": "Rotten Luck",
+        "desc": "Lose {count, number} coin flips in a row"
+      },
+      "sacrilege": {
+        "name": "Sacrilege",
+        "desc": "Recycle a Mythic"
+      }
     }
   }
 }

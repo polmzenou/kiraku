@@ -17,6 +17,7 @@ import { nextRebirthAt, type PrestigeRules } from "@/lib/prestige/rules";
 import { rebirthRawValue, rebirthZeni } from "@/lib/prestige/zeni";
 import { grantBoosters } from "../economy/credits";
 import { credit } from "../economy/ledger";
+import { isRewardableKind } from "@/lib/boosters/types";
 
 type Tx = Prisma.TransactionClient;
 
@@ -270,7 +271,7 @@ export type RebirthOutcome = {
 async function grantRebirthBoosters(tx: Tx, userId: string, booster: RebirthBooster): Promise<RebirthBooster | null> {
   if (booster.count < 1) return null;
   const type = await tx.boosterType.findUnique({ where: { slug: booster.slug }, select: { id: true, kind: true } });
-  if (!type || type.kind === "DROP") {
+  if (!type || !isRewardableKind(type.kind)) {
     console.warn(`[prestige] booster de renaissance introuvable ou scellé : ${booster.slug}`);
     return null;
   }

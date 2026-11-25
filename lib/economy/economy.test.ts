@@ -359,7 +359,7 @@ describe("boutique", () => {
       key,
       sortOrder,
     }));
-    const booster = (boosterKind: "FILTERED" | "FORMAT" | "RARITY" | "DROP", floors: string[]) => ({ kind: "BOOSTER" as const, boosterKind, floors });
+    const booster = (boosterKind: "FILTERED" | "FORMAT" | "RARITY" | "DROP" | "GUARANTEED", floors: string[]) => ({ kind: "BOOSTER" as const, boosterKind, floors });
 
     it("accepte les boosters gratuits, les formats et une Légendaire", () => {
       expect(shopContentIssue([booster("FILTERED", ["COMMON", "COMMON", "UNCOMMON", "RARE"])], definitions)).toBeNull();
@@ -374,6 +374,8 @@ describe("boutique", () => {
       expect(shopContentIssue([{ kind: "RARITY_CARD", rarity: "MYTHIC" }], definitions)).toBe("MYTHIC");
       expect(shopContentIssue([{ kind: "CARD", rarity: "AR" }], definitions)).toBe("MYTHIC");
       expect(shopContentIssue([{ kind: "RARITY_CARD", rarity: "GOLD" }], definitions)).toBe("MYTHIC");
+      // Booster garanti : ses planchers sont Épiques, mais sa dernière carte est une rareté de variante
+      expect(shopContentIssue([booster("GUARANTEED", ["EPIC", "EPIC", "EPIC", "EPIC"])], definitions)).toBe("MYTHIC");
     });
 
     it("vend seulement un booster qui s'ouvre en ce moment : ni au repos dans la rotation, ni caché, ni réservé", () => {

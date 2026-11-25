@@ -66,8 +66,9 @@ const nextConfig: NextConfig = {
         // Images et vidéos fixes de public/ servies par Node (pas de CDN devant le VPS) : une semaine de
         // cache évite un aller-retour (304) par fichier à chaque chargement. Renommer un fichier quand il
         // change : les décors d'arène, les fonds des thèmes de vitrine et les images du prestige portent un numéro
-        // de version (arenas/<id>/loop-v1.mp4, vitrines/<thème>/loop-mobile-v1.mp4, prestige/fx/baren-v1.webp…).
-        source: "/:dir(brand|card-backs|icons|arenas|vitrines|casino|prestige)/:file*",
+        // de version (arenas/<id>/loop-v1.mp4, vitrines/<thème>/loop-mobile-v1.mp4, prestige/fx/baren-v1.webp,
+        // frames/rang-or-192-v1.avif…).
+        source: "/:dir(brand|card-backs|icons|arenas|vitrines|casino|prestige|frames)/:file*",
         headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }],
       },
       {

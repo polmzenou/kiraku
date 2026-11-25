@@ -39,7 +39,7 @@ export default async function ShopPreviewPage() {
   // Sélection du moment calculée comme en prod (réglages par défaut, sans épingle de l'admin)
   const hours = SETTING_DEFAULTS["booster.rotationHours"];
   const rotation = rotationWindow(now, hours, timeZone);
-  const offered = (s: (typeof BOOSTER_SEEDS)[number]) => s.active !== false && s.kind !== "DROP";
+  const offered = (s: (typeof BOOSTER_SEEDS)[number]) => s.active !== false && s.kind !== "DROP" && s.kind !== "GUARANTEED";
   const selection = rotationSelection({
     candidates: Object.fromEntries(
       ROTATING_FAMILIES.map((f) => [f, BOOSTER_SEEDS.filter((s) => s.family === f && offered(s)).map((s) => s.slug)]),

@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import type { Role } from "@/generated/prisma/client";
-import { ladderTier, LADDER } from "@/lib/ranked/rules";
+import { careerTier } from "@/lib/ranked/career";
 import {
   earnedBadges,
   evaluateCondition,
@@ -19,6 +19,12 @@ import { decorFromRelations, type PlayerDecor } from "@/lib/profile/decor";
 import { bestOfCycles, parsePeak } from "@/lib/prestige/peak";
 import { isFrameStyle, type FrameStyle } from "@/lib/profile/frames";
 import { isNameColorStyle, type NameColorStyle } from "@/lib/profile/name-colors";
+import { hasLocale } from "next-intl";
+import { getTranslations } from "next-intl/server";
+import { routing, type Locale } from "@/i18n/routing";
+import type { FeaturedAchievementView } from "@/components/profile/FeaturedAchievement";
+import { achievementByKey } from "@/lib/achievements/catalog";
+import { effectiveGoal } from "@/lib/achievements/evaluate";
 import { getCatalogStats } from "../catalog/queries";
 import { prisma } from "../db";
 import { collectionStatsWith } from "../prestige/prestige-core";
@@ -42,7 +48,7 @@ type Hint = { fr?: string; en?: string };
 
 /** Statistiques utiles aux conditions, en quelques requêtes. */
 export async function getProfileStats(userId: string, seriesIds: readonly string[]): Promise<ProfileStats> {
-  const [collection, kept, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog, prestigeCounts, installedReferrals, ennichiTitles] = await Promise.all([
+  const [collection, kept, series, boostersOpened, tradesDone, user, tiers, apocalypseRuined, discovered, catalog, prestigeCounts, seasons, installedReferrals, ennichiTitles] = await Promise.all([
     collectionStatsWith(prisma, userId),
     // Séries déjà complétées une fois : acquises même si une carte est partie depuis (trigger sur UserCard)
     prisma.seriesCompletion.findMany({ where: { userId }, select: { seriesId: true } }),
@@ -60,7 +66,10 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
       prisma.trade.count({ where: { status: "ACCEPTED", OR: [{ proposerId: userId }, { recipientId: userId }] } }),
       prisma.listingOffer.count({ where: { status: "ACCEPTED", OR: [{ bidderId: userId }, { listing: { ownerId: userId } }] } }),
     ]).then(([friends, market]) => friends + market),
-    prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { rankPoints: true, seasonPeakPc: true, ambassadorSince: true, prestige: true } }),
+    prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { rankPoints: true, seasonPeakPc: true, seasonPeakGrand: true, seasonGames: true, ambassadorSince: true, prestige: true },
+    }),
     getSetting("ranked.tiers"),
     prisma.boosterOpening.count({ where: { userId, apocalypse: "RUINED" } }),
     // Cartes publiées découvertes (une découverte ne se perd pas, même si la carte est vendue)
@@ -71,6 +80,8 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
       GROUP BY c."rarityKey"`,
     getCatalogStats(),
     prestigeCountsOf(userId),
+    // Meilleur rang de chaque saison close
+    prisma.seasonResult.findMany({ where: { userId }, select: { peakTier: true } }),
     installedCount(prisma, userId),
     // Titres sumo des banzuke de l'Ennichi (permanents)
     prisma.ennichiResult.findMany({ where: { userId, title: { not: null } }, select: { edition: true, title: true } }),
@@ -78,8 +89,8 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
   // Un joueur reparti de zéro garde ce qu'il avait gagné lors d'un cycle passé, sans en gagner davantage. Les
   // conditions de découverte n'en ont pas besoin : une renaissance n'efface pas les découvertes du wiki.
   const peak = bestOfCycles({ ...collection, printingsOwned: prestigeCounts.printings }, prestigeCounts.snapshots);
-  // Meilleur des deux : un titre de rang ne se reperd pas après une défaite
-  const tier = ladderTier(Math.max(user.rankPoints, user.seasonPeakPc), { tiers });
+  // Meilleur rang de la carrière : un cosmétique de rang ne se reperd ni après une défaite ni à la fin d'une saison
+  const tier = careerTier({ ...user, pastPeaks: seasons.map((s) => s.peakTier) }, { tiers });
   const completedSeries = new Set(kept.map((k) => k.seriesId));
   // Complète sans être enregistrée : la série l'est devenue sans échange de carte (carte retirée du
   // catalogue par l'admin). On l'acquiert maintenant pour qu'elle ne se reperde pas non plus.
@@ -98,7 +109,7 @@ export async function getProfileStats(userId: string, seriesIds: readonly string
     boostersOpened,
     tradesDone,
     apocalypseRuined,
-    tier: LADDER.includes(tier) ? tier : "BRONZE",
+    tier,
     discoveredPercent: discoveredPercent(
       discovered.reduce((sum, r) => sum + r.n, 0),
       catalog.total,
@@ -190,7 +201,32 @@ export type ProfileDecor = PlayerDecor & {
   bio: string | null;
   title: string | null;
   badges: Badge[];
+  featuredAchievement: FeaturedAchievementView | null;
 };
+
+/**
+ * Succès mis en avant, traduit : seulement s'il est débloqué, toujours au catalogue, actif, et si les succès sont
+ * allumés (un succès désactivé dans l'admin disparaît du profil sans toucher au choix du joueur).
+ */
+async function featuredAchievementOf(userId: string, key: string | null, locale: string): Promise<FeaturedAchievementView | null> {
+  const def = key ? achievementByKey(key) : undefined;
+  if (!key || !def) return null;
+  const [enabled, disabled, owned] = await Promise.all([
+    getSetting("achievements.enabled"),
+    getSetting("achievements.disabled"),
+    prisma.userAchievement.findUnique({ where: { userId_key: { userId, key } }, select: { key: true } }),
+  ]);
+  if (!enabled || disabled.includes(key) || !owned) return null;
+  const lang: Locale = hasLocale(routing.locales, locale) ? locale : routing.defaultLocale;
+  const [t, goals] = await Promise.all([getTranslations({ locale: lang, namespace: "achievements" }), getSetting("achievements.goals")]);
+  return {
+    key,
+    rank: def.rank,
+    name: t(`items.${key}.name` as "items.booster-1.name"),
+    desc: t(`items.${key}.desc` as "items.booster-1.desc", { count: effectiveGoal(def, goals) }),
+    label: t("featuredLabel"),
+  };
+}
 
 /** Ce que l'en-tête d'un profil affiche : bio, titre accordé, cadre, couleur et badges dans l'ordre choisi. */
 export async function getProfileDecor(userId: string, locale: string): Promise<ProfileDecor> {
@@ -209,13 +245,16 @@ export async function getProfileDecor(userId: string, locale: string): Promise<P
       frame: { select: { frameStyle: true, active: true } },
       nameColor: { select: { nameColor: true, active: true } },
       prestige: true,
+      featuredAchievement: true,
     },
   });
-  const badges = orderedBadges(await getEarnedBadges(user), user.badgeOrder);
+  const [earned, featuredAchievement] = await Promise.all([getEarnedBadges(user), featuredAchievementOf(user.id, user.featuredAchievement, locale)]);
+  const badges = orderedBadges(earned, user.badgeOrder);
   return {
     bio: user.bio,
     title: user.title?.active ? labelFor(parseLabel(user.title.label), locale, user.titleAgreement) : null,
     ...decorFromRelations(user),
     badges,
+    featuredAchievement,
   };
 }

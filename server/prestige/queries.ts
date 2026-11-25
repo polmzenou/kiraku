@@ -1,6 +1,6 @@
 import "server-only";
 import { contentsLabel } from "@/lib/boosters/catalog";
-import { effectiveSlotFloors, localize } from "@/lib/boosters/types";
+import { effectiveSlotFloors, isRewardableKind, localize } from "@/lib/boosters/types";
 import type { CardView } from "@/lib/boosters/view";
 import { SPECIAL_COPY } from "@/lib/collection/copies";
 import type { RebirthBoosterView } from "@/lib/prestige/cinematic";
@@ -37,7 +37,7 @@ export async function rebirthCtx(now = new Date()): Promise<RebirthCtx> {
 export async function rebirthBoosterView(booster: RebirthBooster | null, locale: string): Promise<RebirthBoosterView | null> {
   if (!booster || booster.count < 1) return null;
   const [entry, rules] = await Promise.all([getBoosterTypeEntry(booster.slug), getBoosterRules()]);
-  if (!entry || entry.type.kind === "DROP") return null;
+  if (!entry || !isRewardableKind(entry.type.kind)) return null;
   const { type } = entry;
   return {
     slug: type.slug,

@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import { CONDITION_TYPES, type ConditionType, type ProfileCondition } from "@/lib/profile/conditions";
-import { LADDER } from "@/lib/ranked/rules";
+import { BOARD_TIERS } from "@/lib/battle/tiers";
 import { adminSearchSeriesAction } from "@/server/actions/admin-cosmetics";
 import { Field, inputClass, NumberField, SelectField } from "./fields";
 
@@ -108,7 +108,7 @@ export function ConditionFields({
         </>
       )}
       {c.type === "RANK_TIER" && (
-        <SelectField label={t("fields.tier")} value={c.tier} options={LADDER.map((tier) => ({ value: tier, label: tier }))} onChange={(tier) => onChange({ ...c, tier })} />
+        <SelectField label={t("fields.tier")} value={c.tier} options={BOARD_TIERS.map((tier) => ({ value: tier, label: tier }))} onChange={(tier) => onChange({ ...c, tier })} />
       )}
       {c.type === "SERIES_COMPLETE" && (
         <Field label={t("fields.series")} hint={seriesLabel ? t("hints.seriesChosen", { title: seriesLabel }) : t("hints.series")}>

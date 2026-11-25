@@ -9,6 +9,7 @@ import {
   boosterThemeSchema,
   bonusesFor,
   creditBonuses,
+  isRewardableKind,
   localize,
   localizedSchema,
   priceFor,
@@ -16,6 +17,7 @@ import {
   typeDrawRules,
 } from "./types";
 import { DEFAULT_RULES } from "./fixtures";
+import { VARIANT_RARITIES } from "@/lib/catalog/rarity";
 
 const base = { kind: "FILTERED" as const, active: true, startsAt: null, endsAt: null, usesFreeStock: true, priceZeni: 200, filter: {} };
 const now = new Date("2026-10-14T12:00:00Z");
@@ -69,13 +71,26 @@ describe("contenu admin", () => {
   });
 });
 
-describe("les 38 boosters de départ", () => {
-  it("35 boosters proposés, l'Impérial exclusif boutique et 2 sachets scellés, en 8 familles, slugs uniques", () => {
-    expect(BOOSTER_SEEDS).toHaveLength(38);
+describe("les 45 boosters de départ", () => {
+  it("35 boosters proposés, l'Impérial exclusif boutique, 2 sachets scellés et 7 boosters garantis, en 8 familles, slugs uniques", () => {
+    expect(BOOSTER_SEEDS).toHaveLength(45);
     expect(BOOSTER_SEEDS.filter((s) => s.kind === "PRESTIGE").map((s) => s.slug)).toEqual(["imperial"]);
     expect(BOOSTER_SEEDS.filter((s) => s.kind === "DROP").map((s) => s.slug)).toEqual(["divin", "apocalypse"]);
     expect(new Set(BOOSTER_SEEDS.map((s) => s.family))).toEqual(new Set(BOOSTER_FAMILIES));
-    expect(new Set(BOOSTER_SEEDS.map((s) => s.slug)).size).toBe(38);
+    expect(new Set(BOOSTER_SEEDS.map((s) => s.slug)).size).toBe(45);
+  });
+
+  it("un booster garanti par rareté de variante : 3 Épiques ou mieux puis la carte garantie, ni vente, ni pitié, ni bonus", () => {
+    const guaranteed = BOOSTER_SEEDS.filter((s) => s.kind === "GUARANTEED");
+    expect(guaranteed.map((s) => s.guaranteed).sort()).toEqual([...VARIANT_RARITIES].sort());
+    for (const s of guaranteed) {
+      expect(s.slug).toBe(`garanti-${s.guaranteed!.toLowerCase()}`);
+      expect(s).toMatchObject({ family: "special", slotFloors: ["EPIC", "EPIC", "EPIC", "EPIC"], usesFreeStock: false, priceZeni: null, countsForPity: false, resetsPity: false, bonusEligible: false });
+    }
+    // Une matière propre à chaque rareté
+    expect(new Set(guaranteed.map((s) => s.theme.pattern)).size).toBe(guaranteed.length);
+    // Seuls les boosters garantis ont une rareté garantie
+    expect(BOOSTER_SEEDS.filter((s) => s.guaranteed).every((s) => s.kind === "GUARANTEED")).toBe(true);
   });
 
   it("sachets scellés : jamais en vente, ni stock gratuit, ni pitié, ni bonus", () => {
@@ -126,6 +141,17 @@ describe("Impérial (Prestige)", () => {
     // Les autres types ont la même disponibilité sur les deux canaux
     expect(availability(base, now, 500, 100, "shop")).toBe("open");
     expect(availability({ ...base, kind: "DROP" as const }, now, 500, 100, "shop")).toBe("hidden");
+  });
+
+  it("un booster garanti n'est jamais proposé, ni sur les pages ni en boutique, ni versé par une récompense réglée", () => {
+    const guaranteed = { ...base, kind: "GUARANTEED" as const, usesFreeStock: false, priceZeni: null };
+    expect(availability(guaranteed, now, 5000, 100)).toBe("hidden");
+    expect(availability(guaranteed, now, 5000, 100, "shop")).toBe("hidden");
+    expect(availability({ ...guaranteed, priceZeni: 100, usesFreeStock: true }, now, 5000, 100)).toBe("hidden");
+    expect(isRewardableKind("GUARANTEED")).toBe(false);
+    expect(isRewardableKind("DROP")).toBe(false);
+    expect(isRewardableKind("RARITY")).toBe(true);
+    expect(isRewardableKind("PRESTIGE")).toBe(true);
   });
 
   it("depuis un crédit, garde la pitié et le doré, jamais de sachet scellé", () => {

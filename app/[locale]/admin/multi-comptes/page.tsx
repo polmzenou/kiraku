@@ -1,6 +1,6 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import { GroupBanButton } from "@/components/admin/GroupBanButton";
-import { MemberTable, PairList, ScoreBadge } from "@/components/admin/MultiAccount";
+import { MemberGrid, PairList, ScoreBadge } from "@/components/admin/MultiAccount";
 import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
 import { Button } from "@/components/ui/Button";
 import { inputClass, selectClass } from "@/components/ui/Field";
@@ -84,22 +84,32 @@ export default async function AdminMultiAccountsPage({ searchParams }: PageProps
       <section className="flex flex-col gap-4">
         <h3 className="font-title text-xl font-bold">{t("clustersTitle", { count: clusters.length })}</h3>
         {clusters.length === 0 ? <p className="text-sm text-text-muted">{t("noClusters")}</p> : (
-          clusters.slice(0, SHOWN).map((c, i) => (
-            <article key={c.userIds.join("|")} className="flex flex-col gap-4 lacquer rounded-card p-4">
-              <header className="flex flex-wrap items-center gap-3">
-                <h4 className="font-title text-lg font-bold">{t("clusterTitle", { index: i + 1, count: c.userIds.length })}</h4>
-                <ScoreBadge score={c.score} label={t("score", { score: c.score })} />
-              </header>
-              <MemberTable ids={c.userIds} members={members} masked={masked} caption={t("clusterTitle", { index: i + 1, count: c.userIds.length })} />
-              {!masked && (c.userIds.length <= GROUP_BAN_MAX ? <GroupBanButton userIds={c.userIds} /> : <p className="text-sm text-text-muted">{nb("groupTooBig", { max: GROUP_BAN_MAX })}</p>)}
-              <details>
-                <summary className="flex min-h-11 cursor-pointer items-center text-sm font-bold">{t("pairsTitle", { count: c.pairs.length })}</summary>
-                <div className="mt-2">
-                  <PairList pairs={c.pairs} members={members} masked={masked} minScore={minScore} />
+          // Grille de cartes plutôt qu'une liste : plusieurs groupes par écran, chacun se lit d'un coup d'œil
+          <ul className="grid items-start gap-3 xl:grid-cols-2 min-[112.5rem]:grid-cols-3">
+            {clusters.slice(0, SHOWN).map((c, i) => (
+              <li key={c.userIds.join("|")} className="@container flex min-w-0 flex-col gap-3 lacquer rounded-card p-3">
+                <header className="flex flex-wrap items-center gap-2">
+                  <h4 className="font-title text-base font-bold">{t("clusterTitle", { index: i + 1, count: c.userIds.length })}</h4>
+                  <ScoreBadge score={c.score} label={t("score", { score: c.score })} />
+                </header>
+                <MemberGrid ids={c.userIds} members={members} masked={masked} />
+                {/* Liens et ban sur une ligne ; le détail ouvert ou le formulaire de ban prennent toute la largeur */}
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                  <details className="min-w-0 open:basis-full">
+                    <summary className="flex min-h-11 cursor-pointer items-center text-sm font-bold">{t("pairsTitle", { count: c.pairs.length })}</summary>
+                    <div className="mt-2">
+                      <PairList pairs={c.pairs} members={members} masked={masked} minScore={minScore} />
+                    </div>
+                  </details>
+                  {!masked && (
+                    <div className="has-[input]:basis-full">
+                      {c.userIds.length <= GROUP_BAN_MAX ? <GroupBanButton userIds={c.userIds} /> : <p className="text-sm text-text-muted">{nb("groupTooBig", { max: GROUP_BAN_MAX })}</p>}
+                    </div>
+                  )}
                 </div>
-              </details>
-            </article>
-          ))
+              </li>
+            ))}
+          </ul>
         )}
         {clusters.length > SHOWN && <p className="text-sm text-text-muted">{t("moreClusters", { count: clusters.length - SHOWN })}</p>}
       </section>

@@ -1,8 +1,8 @@
 // Conditions de déblocage des titres, cadres et couleurs de pseudo (catalogue Cosmetic géré dans l'admin).
 // Fonctions pures : les statistiques du joueur sont rassemblées par server/profile/progress.ts.
 import { z } from "@/lib/zod";
+import { BOARD_TIERS, type BoardTier } from "../battle/tiers";
 import { rarityKeySchema } from "../catalog/definitions";
-import { LADDER, type LadderTier } from "../ranked/rules";
 
 const count = z.number().int().min(1).max(1_000_000);
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
@@ -39,7 +39,8 @@ export const conditionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("SERIES_COMPLETED_COUNT"), n: count }).strict(),
   z.object({ type: z.literal("BOOSTERS_OPENED"), n: count }).strict(),
   z.object({ type: z.literal("TRADES_DONE"), n: count }).strict(),
-  z.object({ type: z.literal("RANK_TIER"), tier: z.enum(LADDER) }).strict(),
+  // Meilleur rang de la carrière classée, Grand Champion compris
+  z.object({ type: z.literal("RANK_TIER"), tier: z.enum(BOARD_TIERS) }).strict(),
   z.object({ type: z.literal("APOCALYPSE_RUINED"), n: count }).strict(),
   z.object({ type: z.literal("CATALOG_DISCOVERED_PERCENT"), n: z.number().int().min(1).max(100) }).strict(),
   z.object({ type: z.literal("RARITIES_DISCOVERED"), rarities: z.array(rarityKeySchema).min(1).max(8), n: count }).strict(),
@@ -71,8 +72,8 @@ export type ProfileStats = {
   tradesDone: number;
   /** Sachets Apocalyptiques ouverts et ruinés. */
   apocalypseRuined: number;
-  /** Meilleur rang atteint (cette saison ou actuel). */
-  tier: LadderTier;
+  /** Meilleur rang atteint en classé, toutes saisons (lib/ranked/career.ts) ; null : jamais joué en classé. */
+  tier: BoardTier | null;
   /** Part du catalogue publié déjà découverte, en % entier arrondi à l'inférieur. */
   discoveredPercent: number;
   /** Cartes publiées découvertes par clé de rareté. */
@@ -126,8 +127,8 @@ export function evaluateCondition(condition: ProfileCondition | null, stats: Pro
     case "APOCALYPSE_RUINED":
       return capped(stats.apocalypseRuined, condition.n);
     case "RANK_TIER": {
-      const goal = LADDER.indexOf(condition.tier) + 1;
-      return capped(LADDER.indexOf(stats.tier) + 1, goal);
+      const goal = BOARD_TIERS.indexOf(condition.tier) + 1;
+      return capped(stats.tier ? BOARD_TIERS.indexOf(stats.tier) + 1 : 0, goal);
     }
     case "CATALOG_DISCOVERED_PERCENT":
       return capped(stats.discoveredPercent, condition.n);

@@ -19,6 +19,7 @@ import { getAlbumPage } from "../collection/albums";
 import { accessFor, findProfileOwner } from "../collection/profile";
 import { getCollectionPage, getOwnedCopies, MAX_OFFSET } from "../collection/queries";
 import { RecycleError, recycleWith, type RecycleRequest } from "../collection/recycle-core";
+import { EVENT_ACHIEVEMENTS, unlockAchievementWith } from "../achievements/unlock";
 import { prisma } from "../db";
 import { clientIp, rateLimit } from "../ratelimit";
 import { getSetting } from "../settings";
@@ -151,6 +152,10 @@ async function runRecycle(request: RecycleRequest, userId: string): Promise<Recy
   try {
     const [values, engravedMultiplier] = await Promise.all([getSetting("collection.recycleValues"), getSetting("prestige.printing.recycleMultiplier")]);
     const outcome = await recycleWith(prisma, userId, request, values, engravedMultiplier);
+    // Succès secret « Sacrilège » : après coup, hors de la transaction des Zeni (un échec ici ne coûte rien au joueur)
+    if ((outcome.byRarity.MYTHIC?.copies ?? 0) > 0) {
+      await unlockAchievementWith(prisma, userId, EVENT_ACHIEVEMENTS.mythicRecycled).catch((e: unknown) => console.error("[achievements] sacrilège", e));
+    }
     // En-tête (solde) et totaux de la page à jour sans recharger
     refresh();
     return { ok: true, recycled: outcome.recycled, gain: outcome.gain, coins: outcome.coins };

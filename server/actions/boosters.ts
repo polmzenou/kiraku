@@ -31,6 +31,7 @@ export type OpenBoosterError =
   | "NEEDS_PAYMENT"
   | "NOT_ENOUGH_ZENI"
   | "NOT_FOR_SALE"
+  | "GUARANTEE_EMPTY"
   | "UNAVAILABLE";
 
 export type OpenBoosterResult =
@@ -61,6 +62,7 @@ const PUBLIC_ERRORS: Partial<Record<OpenErrorCode, OpenBoosterError>> = {
   NEEDS_PAYMENT: "NEEDS_PAYMENT",
   NOT_ENOUGH_ZENI: "NOT_ENOUGH_ZENI",
   NOT_FOR_SALE: "NOT_FOR_SALE",
+  GUARANTEE_EMPTY: "GUARANTEE_EMPTY",
 };
 
 export async function openBoosterAction(input: unknown): Promise<OpenBoosterResult> {

@@ -131,6 +131,8 @@ model User {
   nameColorId         String? // couleur du pseudo (Cosmetic NAME_COLOR)
   nameColor           Cosmetic?         @relation("userNameColor", fields: [nameColorId], references: [id], onDelete: SetNull)
   badgeOrder          String[]          @default([])
+  // Succès mis en avant sous l'avatar (clé du catalogue lib/achievements/catalog.ts) ; affiché seulement s'il est débloqué
+  featuredAchievement String?           @db.VarChar(40)
   // Rôle Ambassadeur donné par l'admin (null = pas ambassadeur) : badge, cadre et couleur verts, stock et pack hebdo
   ambassadorSince     DateTime?
   // Prestige (étape 16) : renaissances faites (0 = jamais), date de la dernière (CHECK : nulle exactement à 0)
@@ -161,6 +163,7 @@ model User {
   notablePulls NotablePull[]
   discoveries  Discovery[]
   seriesCompletions SeriesCompletion[]
+  achievements UserAchievement[]
   adminLogs    AdminLog[]
   showcase     ShowcaseSlot[] // ancienne vitrine unique, plus lue
   showcases    Showcase[]
@@ -800,6 +803,19 @@ model SeriesCompletion {
   @@index([seriesId])
 }
 
+// Succès débloqué (honorifique). Le catalogue est dans le code (lib/achievements/catalog.ts) : la clé n'a pas de
+// clé étrangère. Acquis pour de bon : ni une vente, ni une renaissance, ni un seuil relevé dans l'admin ne le retirent.
+// Écrit par server/achievements/sync.ts (calcul depuis l'historique) et par quelques crochets (liste de souhaits, recyclage).
+model UserAchievement {
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key        String   @db.VarChar(40)
+  unlockedAt DateTime @default(now())
+
+  @@id([userId, key])
+  @@index([key]) // nombre de joueurs par succès (admin)
+}
+
 // Journal de toutes les écritures faites depuis /admin
 model AdminLog {
   id         String   @id @default(cuid())
@@ -827,6 +843,7 @@ enum BoosterKind {
   FOCUS // Focus série : taux augmenté sur une ou plusieurs œuvres, à durée limitée
   DROP // sachet scellé (Divin, Apocalyptique) : tombe d'un booster, jamais en vente
   PRESTIGE // exclusif boutique : absent des pages de boosters, garde le doré quand on l'ouvre depuis un crédit
+  GUARANTEED // booster garanti (une rareté de variante) : jamais proposé ni vendu, seulement donné depuis l'admin
 }
 
 enum BoosterShape {
@@ -856,6 +873,7 @@ model BoosterType {
   bonusEligible   Boolean         @default(true) // sachets doré et divin
   rateBoost       Int             @default(10000) // points de base : parts des raretés ≥ rateBoostFrom multipliées (27000 = ×2,7)
   rateBoostFrom   String? // rareté de départ du boost ; null = taux normaux
+  guaranteed      String? // GUARANTEED : rareté de la dernière carte, toujours servie (clé de RarityDefinition)
   featuredCardIds String[] // cartes vedettes (bannière)
   featuredRate    Int             @default(5000) // points de base : part des tirages d'une rareté qui va aux vedettes
   featuredPity    Int             @default(100) // vedette garantie au N-ième booster sans vedette
@@ -1086,6 +1104,7 @@ enum NotificationType {
   BUY_ORDER_WANTED // quelqu'un cherche une carte que tu possèdes (refId = id de la Card)
   KYARA_IMPORT_DONE // l'import de ta collection Kyara est fait (refId = id du KyaraImport)
   KYARA_IMPORT_REJECTED // ta demande d'import Kyara est refusée, avec un motif (refId = id du KyaraImport)
+  KYARA_IMPORT_REMINDER // l'équipe relance le joueur : montrer sa collection au compte Kiraku sur Kyara (refId = id du KyaraImport)
   REFERRAL_REWARD // parrainage v2 : étape, part « confiance », palier ou grand-parrainage versé (refId = id du ReferralReward)
   ENNICHI_REWARD // Ennichi : palier de lanternes, prix du banzuke ou lot de l'omikuji versé (payload : kind, édition)
 }

@@ -46,6 +46,7 @@ import { wrappedTeaser } from "@/server/wrapped/queries";
 import { referralPreview } from "@/server/referral/preview";
 import { ProfileReferralTree } from "@/components/profile/ReferralTree";
 import { EnnichiTitles } from "@/components/ennichi/EnnichiTitles";
+import { countUnlocked } from "@/server/achievements/sync";
 
 export async function generateMetadata({ params, searchParams }: PageProps<"/[locale]/u/[username]">): Promise<Metadata> {
   const [{ locale: raw, username: rawUsername }, sp] = await Promise.all([params, searchParams]);
@@ -124,8 +125,11 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
     getSetting("prestige.enabled"),
     decor.prestige > 0 ? getPrestigeSummary(owner.id) : null,
   ]);
-  // Wrapped : bouton sur son propre profil, pendant la période
-  const wrappedYear = access.isOwner && viewer ? await wrappedTeaser(viewer) : null;
+  // Wrapped : bouton sur son propre profil, pendant la période ; succès : compteur sur son propre profil
+  const [wrappedYear, achievements] = await Promise.all([
+    access.isOwner && viewer ? wrappedTeaser(viewer) : null,
+    access.isOwner ? countUnlocked(owner.id) : null,
+  ]);
   const tWrapped = await getTranslations("wrapped");
   const shelf = showcases.map((s, i) => ({
     id: s.id,
@@ -198,6 +202,14 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
           {access.collection && <ButtonLink href={`/u/${owner.username}/collection`}>{t("viewCollection")}</ButtonLink>}
           {access.isOwner && <ButtonLink href="/compte">{t("accountSettings")}</ButtonLink>}
           {access.isOwner && <ButtonLink href="/amis">{t("friends")}</ButtonLink>}
+          {achievements && (
+            <ButtonLink href="/succes">
+              <span aria-hidden="true" lang="ja" className="font-seal text-shu">
+                績
+              </span>
+              {t("achievements", { unlocked: achievements.unlocked, total: achievements.total })}
+            </ButtonLink>
+          )}
           {wrappedYear !== null && <ButtonLink href="/wrapped" variant="primary">{tWrapped("profileButton", { year: wrappedYear })}</ButtonLink>}
         </div>
 

@@ -9,6 +9,7 @@ import { writeAdminLog } from "../admin/log";
 import { prisma } from "../db";
 import { ExpeditionError, recallWith, seedCatalogWith } from "../expedition/expedition-core";
 import { rateLimit } from "../ratelimit";
+import { isRewardableKind } from "@/lib/boosters/types";
 
 // Expéditions depuis /admin/expeditions. Ordre : rôle admin → Zod → rate limit → références vérifiées →
 // transaction avec une ligne AdminLog. Chaque champ écrit est choisi un par un, jamais l'objet reçu.
@@ -78,7 +79,7 @@ export async function saveExpeditionTypeAction(input: unknown): Promise<{ ok: tr
         tx.expeditionType.findUnique({ where: { slug: v.slug }, select: { id: true } }),
       ]);
       // Un sachet scellé (DROP) ne se verse pas en crédits : il passe par un lot bonus
-      if (!rarity || !booster || booster.kind === "DROP" || (v.extraLotId && !lot)) throw new RefError("UNKNOWN_REF");
+      if (!rarity || !booster || !isRewardableKind(booster.kind) || (v.extraLotId && !lot)) throw new RefError("UNKNOWN_REF");
       if (sameSlug && sameSlug.id !== v.id) throw new RefError("SLUG_TAKEN");
       if (v.id) {
         const before = await tx.expeditionType.findUnique({ where: { id: v.id } });

@@ -41,6 +41,7 @@ export function toBoosterTypeView(row: Omit<BoosterTypeRow, "poolCardIds">): Boo
     bonusEligible: row.bonusEligible,
     rateBoost: row.rateBoost,
     rateBoostFrom: row.rateBoostFrom !== null && isRarity(row.rateBoostFrom) ? row.rateBoostFrom : null,
+    guaranteed: row.kind === "GUARANTEED" && row.guaranteed !== null && isRarity(row.guaranteed) ? row.guaranteed : null,
     featuredCardIds: row.featuredCardIds,
     featuredRate: row.featuredRate,
     featuredPity: row.featuredPity,
@@ -232,6 +233,7 @@ export async function upsertBoosterSeeds(
       includeCustom: includesCustomByDefault(seed.kind),
       rateBoost: seed.rateBoost ?? 10_000,
       rateBoostFrom: seed.rateBoostFrom ?? null,
+      guaranteed: seed.guaranteed ?? null,
       minPoolSize: seed.minPoolSize ?? null,
       active: seed.active ?? true,
     };

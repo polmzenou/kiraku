@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { MAX_WISHLIST_CARDS } from "@/lib/collection/wishlist";
+import { EVENT_ACHIEVEMENTS, unlockAchievementWith } from "../achievements/unlock";
 
 export type WishlistErrorCode = "NO_USER" | "BANNED" | "NOT_FOUND" | "FULL" | "OWNED";
 
@@ -48,5 +49,7 @@ export async function consumeWishlist(tx: Prisma.TransactionClient, userId: stri
   const entries = await tx.wishlistEntry.findMany({ where: { userId, cardId: { in: ids } }, select: { cardId: true } });
   if (entries.length === 0) return new Set();
   await tx.wishlistEntry.deleteMany({ where: { userId, cardId: { in: entries.map((e) => e.cardId) } } });
+  // Succès « Vœu exaucé » : toutes les façons d'obtenir une carte passent par ici
+  await unlockAchievementWith(tx, userId, EVENT_ACHIEVEMENTS.wishGranted);
   return new Set(entries.map((e) => e.cardId));
 }

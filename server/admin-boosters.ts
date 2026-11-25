@@ -1,4 +1,5 @@
 import "server-only";
+import { guaranteedPoolCount } from "@/lib/boosters/guaranteed";
 import type { FeaturedCandidate, FocusSeriesCandidate } from "./actions/admin-boosters";
 import { toBoosterTypeView } from "./boosters/type-store";
 import { prisma } from "./db";
@@ -9,6 +10,30 @@ import { prisma } from "./db";
 export async function adminBoosterType(slug: string) {
   const row = await prisma.boosterType.findUnique({ where: { slug }, omit: { poolCardIds: true } });
   return row ? toBoosterTypeView(row) : null;
+}
+
+/**
+ * Boosters garantis (/admin/boosters/garantis) : le type, les cartes de sa rareté dans le pool (0 : il ne
+ * s'ouvrirait pas) et les crédits que les joueurs en gardent encore à ouvrir.
+ */
+export async function adminGuaranteedBoosters() {
+  const rows = await prisma.boosterType.findMany({ where: { kind: "GUARANTEED" }, omit: { poolCardIds: true } });
+  const held = await prisma.boosterCredit.groupBy({
+    by: ["boosterTypeId"],
+    where: { boosterTypeId: { in: rows.map((r) => r.id) }, count: { gt: 0 } },
+    _sum: { count: true },
+    _count: { _all: true },
+  });
+  const byType = new Map(held.map((h) => [h.boosterTypeId, { held: h._sum.count ?? 0, holders: h._count._all }]));
+  return rows.map((row) => {
+    const type = toBoosterTypeView(row);
+    return {
+      type,
+      poolCount: type.guaranteed ? guaranteedPoolCount(row.poolCounts, type.guaranteed) : 0,
+      held: byType.get(row.id)?.held ?? 0,
+      holders: byType.get(row.id)?.holders ?? 0,
+    };
+  });
 }
 
 /** Vedettes d'une bannière, dans l'ordre choisi. */
