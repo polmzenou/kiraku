@@ -54,7 +54,7 @@ function guaranteed(rarity: Rarity, emblem: string, [fr, en]: [string, string], 
     family: "special",
     emblem,
     name: { fr, en },
-    tagline: { fr: `3 Épiques ou mieux + 1 ${fr} garantie`, en: `3 Epics or better + 1 ${en} guaranteed` },
+    tagline: { fr: `1 ${fr} garantie`, en: `1 ${en} guaranteed` },
     shape,
     theme: t,
     filter: {},
@@ -277,7 +277,7 @@ export const BOOSTER_SEEDS: BoosterSeed[] = [
 
   // 確定 Boosters garantis : 3 Épiques ou mieux, puis une carte de la rareté garantie. Jamais proposés ni
   // vendus : l'admin les donne depuis /admin/boosters/garantis (ou la fiche joueur). Une matière par rareté.
-  guaranteed("BR", "闇", ["Black Rare", "Black Rare"], theme("#1C1A19", "#050404", "yami"), "JUBAKO"),
+  guaranteed("BR", "闇", ["Black Rare", "Black Rare"], theme("#1C1A19", "#050404", "yami")),
   guaranteed("AR", "異", ["AR", "AR"], theme("#E07FA6", "#3A2152", "suminagashi")),
   guaranteed("VR", "彩", ["Vitrail Rare", "Vitrail Rare"], theme("#4B3A8C", "#160E33", "vitrail")),
   guaranteed("GOLD", "煌", ["Gold", "Gold"], theme("#D9B556", "#6B4E12", "kinpaku", "dark"), "POCHIBUKURO"),
