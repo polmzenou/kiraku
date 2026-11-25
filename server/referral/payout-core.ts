@@ -9,6 +9,7 @@ import { refereeTrust } from "@/lib/referral/trust";
 import { grantLot, type LotDeps, type LotGrant } from "../economy/lots";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { applyHold } from "./holds";
+import { installedReferralWhere } from "./installed";
 
 // Versements du parrainage v2, tous automatiques : étapes des deux côtés, part « confiance » du parrain, paliers,
 // grand-parrainage. Rien n'est versé tant que le parrainage est bloqué sans décision ou révoqué ; une validation de
@@ -50,21 +51,9 @@ type ReferralRow = {
 
 const blocked = (r: Pick<ReferralRow, "heldAt" | "reviewDecision" | "revokedAt">) => r.revokedAt !== null || (r.heldAt !== null && r.reviewDecision !== "VALIDATED");
 
-/**
- * Amis installés d'un parrain : étape 2 atteinte, ni révoqués, ni bloqués sans décision. Un parrainage v1 qualifié
- * compte (son étape 2 a été recopiée de qualifiedAt par la migration), sauf s'il a été révoqué par l'admin : la v1
- * ne marque que son statut, sans revokedAt (un parrainage v2 garde le statut PENDING).
- */
+/** Amis installés d'un parrain (server/referral/installed.ts : v1 qualifiés compris, révoqués et bloqués exclus). */
 export async function installedCount(db: Prisma.TransactionClient | PrismaClient, referrerId: string): Promise<number> {
-  return db.referral.count({
-    where: {
-      referrerId,
-      step2At: { not: null },
-      revokedAt: null,
-      status: { not: "REVOKED" },
-      OR: [{ heldAt: null }, { reviewDecision: "VALIDATED" }],
-    },
-  });
+  return db.referral.count({ where: installedReferralWhere(referrerId) });
 }
 
 /** Ce que les lots versés ont donné, tel que la reprise le relira. */

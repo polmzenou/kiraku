@@ -124,9 +124,10 @@ export async function qualifyReferralsWith(
     const progress = await refereeProgress(db, r.refereeId, r.createdAt);
     if (!progress || !isQualified(progress, rules, now)) continue;
     const done = await notifyingTransaction(db, async (tx) => {
+      // step2At : un v1 qualifié est un ami installé (paliers, badges, succès), comme ceux recopiés par la migration
       const moved = await tx.referral.updateMany({
         where: { id: r.id, status: "PENDING" },
-        data: { status: "QUALIFIED", qualifiedAt: now },
+        data: { status: "QUALIFIED", qualifiedAt: now, step2At: now },
       });
       if (moved.count !== 1) return false;
       await notify(tx, { userId: r.referrerId, type: "REFERRAL_QUALIFIED", actorId: r.refereeId, refId: r.id, now });

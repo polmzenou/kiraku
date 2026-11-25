@@ -9,6 +9,7 @@ import { BOARD_TIERS } from "@/lib/battle/tiers";
 import { SPEND_REASONS } from "@/lib/economy/missions";
 import type { ProfileStats } from "@/lib/profile/conditions";
 import { isLayoutId, layoutCapacity } from "@/lib/showcase/layouts";
+import { installedReferralWhere } from "../referral/installed";
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
@@ -328,7 +329,8 @@ export async function getAchievementStatsWith(db: Db, userId: string, needed: Re
     );
   }
   if (want("REFERRALS")) {
-    tasks.push(db.referral.count({ where: { referrerId: userId, qualifiedAt: { not: null } } }).then((n) => set("REFERRALS", n)));
+    // Amis installés, comme les paliers et les badges du parrainage (v1 qualifiés compris, v2 à l'étape 2)
+    tasks.push(db.referral.count({ where: installedReferralWhere(userId) }).then((n) => set("REFERRALS", n)));
   }
   if (want("REVIEW")) tasks.push(db.review.count({ where: { userId } }).then((n) => set("REVIEW", Math.min(n, 1))));
 
