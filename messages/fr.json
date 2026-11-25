@@ -1515,7 +1515,8 @@
       "wrapped": "Wrapped",
       "prestige": "Prestige",
       "multiAccounts": "Multi-comptes",
-      "kyara": "Import Kyara"
+      "kyara": "Import Kyara",
+      "achievements": "Succès"
     },
     "kyara": {
       "title": "Import Kyara",
@@ -4476,6 +4477,20 @@
         "RATE_LIMITED": "Trop de demandes, réessaie dans une minute.",
         "UNAVAILABLE": "Indisponible pour l'instant, réessaie."
       }
+    },
+    "achievements": {
+      "title": "Succès",
+      "intro": "Succès honorifiques des joueurs. Un seuil vide suit le catalogue. Un succès désactivé disparaît de la page et des profils, sans effacer les déblocages déjà enregistrés.",
+      "settings": {
+        "enabled": "Succès activés",
+        "enabledHint": "Éteint : la page des succès et le succès mis en avant sur les profils sont masqués.",
+        "goals": "Seuils des succès",
+        "disabled": "Succès désactivés"
+      },
+      "unlocked": "{count, plural, =0 {aucun joueur} one {# joueur} other {# joueurs}}",
+      "goalLabel": "Seuil de « {name} »",
+      "fixed": "Seuil figé",
+      "active": "Actif"
     }
   },
   "collection": {
@@ -5263,7 +5278,8 @@
       "percent": "{value} %",
       "discoveredHint": "Découvre de nouvelles cartes pour débloquer des cadres et des couleurs de pseudo.",
       "equipped": "équipé"
-    }
+    },
+    "achievements": "Succès ({unlocked, number}/{total, number})"
   },
   "privacy": {
     "title": "Confidentialité",
@@ -7762,6 +7778,691 @@
       "openBooster": "Ouvrir mon booster",
       "profile": "Voir mon profil",
       "close": "Fermer"
+    }
+  },
+  "achievements": {
+    "title": "Succès",
+    "intro": "Des défis honorifiques à débloquer en jouant. Mets ton préféré en avant sous ton avatar.",
+    "disabled": "Les succès sont en pause pour le moment.",
+    "summary": "{unlocked, number} / {total, number} succès débloqués",
+    "summaryLabel": "Succès débloqués",
+    "unlockedOn": "Débloqué le {date}",
+    "featuredLabel": "Succès mis en avant",
+    "progress": {
+      "count": "{value, number} / {goal, number}",
+      "percent": "{value, number} % / {goal, number} %",
+      "bestPlace": "Meilleure place : {place, number}e",
+      "noPlace": "Pas encore classé",
+      "done": "Fait",
+      "todo": "À faire",
+      "hidden": "Succès secret"
+    },
+    "secret": {
+      "name": "???",
+      "desc": "Un succès secret. Continue de jouer pour le découvrir."
+    },
+    "categories": {
+      "boosters": "Boosters",
+      "collection": "Collection",
+      "zeni": "Zeni, quotidien et missions",
+      "market": "Hôtel des ventes et Marché",
+      "social": "Amis et échanges",
+      "showcase": "Vitrines et profil",
+      "combat": "Combat",
+      "ranked": "Classé",
+      "expedition": "Expéditions",
+      "casino": "Pile ou face",
+      "prestige": "Prestige",
+      "seniority": "Ancienneté",
+      "secret": "Secrets"
+    },
+    "grid": {
+      "filterLabel": "Afficher",
+      "filter": {
+        "all": "Tous",
+        "unlocked": "Débloqués",
+        "locked": "En cours"
+      },
+      "guestHint": "Inscris-toi pour mettre un succès en avant sur ton profil.",
+      "empty": "Aucun succès à afficher ici.",
+      "count": "{done, number} / {total, number}",
+      "featured": "En avant",
+      "feature": "Mettre en avant",
+      "unfeature": "Retirer",
+      "errors": {
+        "NO_SESSION": "Ta session a expiré, recharge la page.",
+        "INVALID": "Ce succès est introuvable.",
+        "GUEST": "Inscris-toi pour mettre un succès en avant.",
+        "UNAVAILABLE": "Ton compte ne peut pas faire ça pour le moment.",
+        "LOCKED": "Ce succès n'est pas débloqué.",
+        "RATE_LIMITED": "Doucement ! Réessaie dans un instant."
+      }
+    },
+    "items": {
+      "booster-1": {
+        "name": "Premier sachet",
+        "desc": "Ouvrir {count, plural, one {# booster} other {# boosters}}"
+      },
+      "booster-50": {
+        "name": "Déchireur",
+        "desc": "Ouvrir {count, plural, one {# booster} other {# boosters}}"
+      },
+      "booster-250": {
+        "name": "Habitué du konbini",
+        "desc": "Ouvrir {count, plural, one {# booster} other {# boosters}}"
+      },
+      "booster-1000": {
+        "name": "Mains d'argent",
+        "desc": "Ouvrir {count, plural, one {# booster} other {# boosters}}"
+      },
+      "booster-5000": {
+        "name": "Avalanche de washi",
+        "desc": "Ouvrir {count, plural, one {# booster} other {# boosters}}"
+      },
+      "booster-10000": {
+        "name": "Dix mille déchirures",
+        "desc": "Ouvrir {count, plural, one {# booster} other {# boosters}}"
+      },
+      "golden-1": {
+        "name": "Rayon de soleil",
+        "desc": "Ouvrir {count, plural, one {un booster doré} other {# boosters dorés}}"
+      },
+      "golden-25": {
+        "name": "Pluie d'or",
+        "desc": "Ouvrir {count, plural, one {un booster doré} other {# boosters dorés}}"
+      },
+      "divine-1": {
+        "name": "Grâce divine",
+        "desc": "Ouvrir {count, plural, one {un sachet Divin} other {# sachets Divins}}"
+      },
+      "divine-10": {
+        "name": "Élu des dieux",
+        "desc": "Ouvrir {count, plural, one {un sachet Divin} other {# sachets Divins}}"
+      },
+      "apocalypse-spared": {
+        "name": "Survivant",
+        "desc": "Voir {count, plural, one {un sachet Apocalyptique épargné} other {# sachets Apocalyptiques épargnés}}"
+      },
+      "apocalypse-ruined": {
+        "name": "Cendres",
+        "desc": "Voir {count, plural, one {un sachet Apocalyptique ruiné} other {# sachets Apocalyptiques ruinés}}"
+      },
+      "apocalypse-ruined-10": {
+        "name": "Champ de ruines",
+        "desc": "Voir {count, plural, one {un sachet Apocalyptique ruiné} other {# sachets Apocalyptiques ruinés}}"
+      },
+      "pity": {
+        "name": "La pitié des dieux",
+        "desc": "Déclencher la pitié Mythique {count, plural, one {une fois} other {# fois}}"
+      },
+      "featured-1": {
+        "name": "Tête d'affiche",
+        "desc": "Tirer une carte vedette de bannière dans {count, plural, one {un booster} other {# boosters}}"
+      },
+      "featured-25": {
+        "name": "Chasseur de vedettes",
+        "desc": "Tirer une carte vedette de bannière dans {count, plural, one {un booster} other {# boosters}}"
+      },
+      "pochibukuro": {
+        "name": "Petite enveloppe",
+        "desc": "Ouvrir un pochibukuro"
+      },
+      "jubako": {
+        "name": "Boîte laquée",
+        "desc": "Ouvrir un jūbako"
+      },
+      "booster-types-15": {
+        "name": "Explorateur de rayons",
+        "desc": "Ouvrir {count, number} types de boosters différents"
+      },
+      "incense-1": {
+        "name": "Parfum d'encens",
+        "desc": "Activer {count, plural, one {un Encens} other {# Encens}}"
+      },
+      "incense-25": {
+        "name": "Temple enfumé",
+        "desc": "Activer {count, plural, one {un Encens} other {# Encens}}"
+      },
+      "unique-10": {
+        "name": "Premiers pas",
+        "desc": "Posséder {count, number} cartes uniques"
+      },
+      "unique-100": {
+        "name": "Album naissant",
+        "desc": "Posséder {count, number} cartes uniques"
+      },
+      "unique-500": {
+        "name": "Classeur plein",
+        "desc": "Posséder {count, number} cartes uniques"
+      },
+      "catalog-10": {
+        "name": "Curieux",
+        "desc": "Découvrir {count, number} % du catalogue"
+      },
+      "catalog-25": {
+        "name": "Érudit",
+        "desc": "Découvrir {count, number} % du catalogue"
+      },
+      "catalog-50": {
+        "name": "Archiviste",
+        "desc": "Découvrir {count, number} % du catalogue"
+      },
+      "catalog-75": {
+        "name": "Gardien des fuda",
+        "desc": "Découvrir {count, number} % du catalogue"
+      },
+      "catalog-100": {
+        "name": "Encyclopédie vivante",
+        "desc": "Découvrir tout le catalogue"
+      },
+      "first-rare": {
+        "name": "Reflet d'indigo",
+        "desc": "Obtenir une carte Rare"
+      },
+      "first-epic": {
+        "name": "Éclat de laque",
+        "desc": "Obtenir une carte Épique"
+      },
+      "first-legendary": {
+        "name": "Feuille d'or",
+        "desc": "Obtenir une carte Légendaire"
+      },
+      "first-mythic": {
+        "name": "Nacre",
+        "desc": "Obtenir une carte Mythique"
+      },
+      "mythic-10": {
+        "name": "Nid de nacre",
+        "desc": "Obtenir {count, number} Mythiques différentes"
+      },
+      "mythic-50": {
+        "name": "Trésor des dieux",
+        "desc": "Obtenir {count, number} Mythiques différentes"
+      },
+      "first-br": {
+        "name": "Ombre",
+        "desc": "Obtenir une Black Rare"
+      },
+      "first-ar": {
+        "name": "Autre forme",
+        "desc": "Obtenir une AR"
+      },
+      "first-vr": {
+        "name": "Vitrail",
+        "desc": "Obtenir une Vitrail Rare"
+      },
+      "first-gold": {
+        "name": "Dorure",
+        "desc": "Obtenir une Gold"
+      },
+      "first-mr": {
+        "name": "Encre",
+        "desc": "Obtenir une Manga Rare"
+      },
+      "first-sr": {
+        "name": "Esprit",
+        "desc": "Obtenir une carte Esprit"
+      },
+      "first-xr": {
+        "name": "Extrême",
+        "desc": "Obtenir une Xtreme Rare"
+      },
+      "all-variants": {
+        "name": "Prisme complet",
+        "desc": "Obtenir une carte de chaque variante ({count, number} raretés)"
+      },
+      "variant-family": {
+        "name": "Mille visages",
+        "desc": "Obtenir un personnage en version de base et {count, number} de ses variantes"
+      },
+      "series-1": {
+        "name": "Fin de l'arc",
+        "desc": "Compléter {count, plural, one {une série} other {# séries}}"
+      },
+      "series-10": {
+        "name": "Bibliothécaire",
+        "desc": "Compléter {count, plural, one {une série} other {# séries}}"
+      },
+      "series-50": {
+        "name": "Maître des arcs",
+        "desc": "Compléter {count, plural, one {une série} other {# séries}}"
+      },
+      "series-150": {
+        "name": "Panthéon des séries",
+        "desc": "Compléter {count, plural, one {une série} other {# séries}}"
+      },
+      "series-touched-100": {
+        "name": "Multivers",
+        "desc": "Obtenir des cartes de {count, number} séries différentes"
+      },
+      "top-1": {
+        "name": "Icône",
+        "desc": "Posséder le personnage le plus populaire du catalogue"
+      },
+      "top-10": {
+        "name": "Panthéon",
+        "desc": "Posséder en même temps les {count, number} personnages les plus populaires"
+      },
+      "copies-10": {
+        "name": "Obsession",
+        "desc": "Posséder {count, number} exemplaires d'une même carte"
+      },
+      "wish-granted": {
+        "name": "Vœu exaucé",
+        "desc": "Obtenir une carte de sa liste de souhaits"
+      },
+      "recycle-1": {
+        "name": "Premier recyclage",
+        "desc": "Recycler une carte"
+      },
+      "recycle-zeni-50k": {
+        "name": "Alchimiste",
+        "desc": "Gagner {count, number} Zeni en recyclant"
+      },
+      "recycle-zeni-1m": {
+        "name": "Grand alchimiste",
+        "desc": "Gagner {count, number} Zeni en recyclant"
+      },
+      "balance-10k": {
+        "name": "Tirelire",
+        "desc": "Avoir {count, number} Zeni en même temps"
+      },
+      "balance-100k": {
+        "name": "Coffre plein",
+        "desc": "Avoir {count, number} Zeni en même temps"
+      },
+      "balance-1m": {
+        "name": "Magnat",
+        "desc": "Avoir {count, number} Zeni en même temps"
+      },
+      "spent-100k": {
+        "name": "Dépensier",
+        "desc": "Dépenser {count, number} Zeni au total"
+      },
+      "daily-7": {
+        "name": "Assidu",
+        "desc": "Réclamer la récompense quotidienne {count, number} jours"
+      },
+      "daily-30": {
+        "name": "Fidèle",
+        "desc": "Réclamer la récompense quotidienne {count, number} jours"
+      },
+      "daily-100": {
+        "name": "Pilier",
+        "desc": "Réclamer la récompense quotidienne {count, number} jours"
+      },
+      "daily-365": {
+        "name": "Une année de rituels",
+        "desc": "Réclamer la récompense quotidienne {count, number} jours"
+      },
+      "daily-streak-7": {
+        "name": "Rituel",
+        "desc": "Réclamer la récompense quotidienne {count, number} jours d'affilée"
+      },
+      "daily-streak-30": {
+        "name": "Discipline de fer",
+        "desc": "Réclamer la récompense quotidienne {count, number} jours d'affilée"
+      },
+      "missions-10": {
+        "name": "Missionnaire",
+        "desc": "Accomplir {count, number} missions"
+      },
+      "missions-100": {
+        "name": "Infatigable",
+        "desc": "Accomplir {count, number} missions"
+      },
+      "missions-500": {
+        "name": "Légende du tableau",
+        "desc": "Accomplir {count, number} missions"
+      },
+      "perfect-day": {
+        "name": "Journée parfaite",
+        "desc": "Réclamer toutes les missions du jour en une journée"
+      },
+      "auction-sold-1": {
+        "name": "Première vente",
+        "desc": "Vendre {count, plural, one {une carte} other {# cartes}} aux enchères"
+      },
+      "auction-sold-25": {
+        "name": "Marchand",
+        "desc": "Vendre {count, plural, one {une carte} other {# cartes}} aux enchères"
+      },
+      "auction-sold-250": {
+        "name": "Négociant",
+        "desc": "Vendre {count, plural, one {une carte} other {# cartes}} aux enchères"
+      },
+      "auction-top-sale": {
+        "name": "Gros lot",
+        "desc": "Vendre une carte {count, number} Zeni ou plus aux enchères"
+      },
+      "auction-sales-1m": {
+        "name": "Baron du marché",
+        "desc": "Cumuler {count, number} Zeni de ventes aux enchères"
+      },
+      "auction-won-1": {
+        "name": "Coup de marteau",
+        "desc": "Remporter {count, plural, one {une enchère} other {# enchères}}"
+      },
+      "auction-won-25": {
+        "name": "Enchérisseur",
+        "desc": "Remporter {count, plural, one {une enchère} other {# enchères}}"
+      },
+      "auction-contested": {
+        "name": "Guerre d'enchères",
+        "desc": "Remporter une vente qui a reçu au moins 10 mises"
+      },
+      "buyout": {
+        "name": "Impatient",
+        "desc": "Utiliser l'achat immédiat"
+      },
+      "order-received": {
+        "name": "Avis de recherche",
+        "desc": "Recevoir une carte grâce à un de tes avis de recherche"
+      },
+      "orders-filled-10": {
+        "name": "Chasseur de primes",
+        "desc": "Remplir {count, number} avis de recherche d'autres joueurs"
+      },
+      "listing-trade": {
+        "name": "Troc public",
+        "desc": "Conclure {count, plural, one {un échange} other {# échanges}} via une annonce du Marché"
+      },
+      "friends-1": {
+        "name": "Premier ami",
+        "desc": "Avoir {count, plural, one {un ami} other {# amis}}"
+      },
+      "friends-10": {
+        "name": "Cercle d'amis",
+        "desc": "Avoir {count, plural, one {un ami} other {# amis}}"
+      },
+      "friends-50": {
+        "name": "Réseau",
+        "desc": "Avoir {count, plural, one {un ami} other {# amis}}"
+      },
+      "trades-1": {
+        "name": "Premier échange",
+        "desc": "Conclure {count, plural, one {un échange} other {# échanges}}"
+      },
+      "trades-25": {
+        "name": "Troqueur",
+        "desc": "Conclure {count, plural, one {un échange} other {# échanges}}"
+      },
+      "trades-100": {
+        "name": "Maître du troc",
+        "desc": "Conclure {count, plural, one {un échange} other {# échanges}}"
+      },
+      "gift-card-1": {
+        "name": "Généreux",
+        "desc": "Offrir {count, plural, one {une carte} other {# cartes}}"
+      },
+      "gift-card-50": {
+        "name": "Mécène",
+        "desc": "Offrir {count, plural, one {une carte} other {# cartes}}"
+      },
+      "gift-booster-25": {
+        "name": "Tournée générale",
+        "desc": "Offrir {count, plural, one {un booster} other {# boosters}}"
+      },
+      "gift-sealed": {
+        "name": "Pli scellé",
+        "desc": "Offrir un sachet scellé à un ami"
+      },
+      "referral-1": {
+        "name": "Parrain",
+        "desc": "Parrainer {count, plural, one {un ami qualifié} other {# amis qualifiés}}"
+      },
+      "referral-5": {
+        "name": "Sensei",
+        "desc": "Parrainer {count, plural, one {un ami qualifié} other {# amis qualifiés}}"
+      },
+      "referral-20": {
+        "name": "Clan",
+        "desc": "Parrainer {count, plural, one {un ami qualifié} other {# amis qualifiés}}"
+      },
+      "discord": {
+        "name": "Voix du serveur",
+        "desc": "Lier son compte Discord"
+      },
+      "review": {
+        "name": "Ta voix compte",
+        "desc": "Publier un avis sur Kiraku"
+      },
+      "showcase-full-1": {
+        "name": "Décorateur",
+        "desc": "Remplir {count, plural, one {une vitrine} other {# vitrines}}"
+      },
+      "showcase-full-6": {
+        "name": "Galeriste",
+        "desc": "Remplir {count, plural, one {une vitrine} other {# vitrines}}"
+      },
+      "event-entry": {
+        "name": "Candidat",
+        "desc": "Inscrire une vitrine à l'event vitrines"
+      },
+      "event-vote": {
+        "name": "Juré",
+        "desc": "Voter à l'event vitrines"
+      },
+      "full-style": {
+        "name": "Style signature",
+        "desc": "Équiper un titre, un cadre et une couleur de pseudo"
+      },
+      "battle-1": {
+        "name": "Baptême du feu",
+        "desc": "Jouer un combat"
+      },
+      "win-1": {
+        "name": "Première victoire",
+        "desc": "Gagner {count, plural, one {un combat} other {# combats}}"
+      },
+      "win-25": {
+        "name": "Guerrier",
+        "desc": "Gagner {count, plural, one {un combat} other {# combats}}"
+      },
+      "win-100": {
+        "name": "Vétéran",
+        "desc": "Gagner {count, plural, one {un combat} other {# combats}}"
+      },
+      "win-500": {
+        "name": "Seigneur de guerre",
+        "desc": "Gagner {count, plural, one {un combat} other {# combats}}"
+      },
+      "win-2000": {
+        "name": "Légende de l'arène",
+        "desc": "Gagner {count, plural, one {un combat} other {# combats}}"
+      },
+      "crushing-1": {
+        "name": "Écrasant",
+        "desc": "Remporter {count, plural, one {une victoire écrasante} other {# victoires écrasantes}}"
+      },
+      "crushing-25": {
+        "name": "Rouleau compresseur",
+        "desc": "Remporter {count, plural, one {une victoire écrasante} other {# victoires écrasantes}}"
+      },
+      "win-streak-5": {
+        "name": "Lancé",
+        "desc": "Gagner {count, number} combats d'affilée"
+      },
+      "win-streak-10": {
+        "name": "Inarrêtable",
+        "desc": "Gagner {count, number} combats d'affilée"
+      },
+      "friend-win": {
+        "name": "Défi entre amis",
+        "desc": "Gagner un combat en salle privée"
+      },
+      "mono-universe-win": {
+        "name": "Fan service",
+        "desc": "Gagner avec une équipe d'un seul univers"
+      },
+      "commons-win": {
+        "name": "David contre Goliath",
+        "desc": "Gagner avec une équipe de Communes seulement"
+      },
+      "ability-1": {
+        "name": "Apprenti",
+        "desc": "Acheter {count, plural, one {une capacité} other {# capacités}} à l'atelier"
+      },
+      "ability-50": {
+        "name": "Maître d'armes",
+        "desc": "Acheter {count, plural, one {une capacité} other {# capacités}} à l'atelier"
+      },
+      "tier-silver": {
+        "name": "Argent",
+        "desc": "Atteindre le rang Argent en classé"
+      },
+      "tier-gold": {
+        "name": "Or",
+        "desc": "Atteindre le rang Or en classé"
+      },
+      "tier-emerald": {
+        "name": "Émeraude",
+        "desc": "Atteindre le rang Émeraude en classé"
+      },
+      "tier-elite": {
+        "name": "Élite",
+        "desc": "Atteindre le rang Élite en classé"
+      },
+      "tier-champion": {
+        "name": "Champion",
+        "desc": "Atteindre le rang Champion en classé"
+      },
+      "tier-grand-champion": {
+        "name": "Grand Champion",
+        "desc": "Atteindre le rang Grand Champion en classé"
+      },
+      "season-games-50": {
+        "name": "Saison pleine",
+        "desc": "Jouer {count, number} parties classées dans une même saison"
+      },
+      "seasons-5": {
+        "name": "Pilier de l'arène",
+        "desc": "Jouer {count, number} saisons classées"
+      },
+      "season-top-100": {
+        "name": "Top 100",
+        "desc": "Finir une saison dans le top {count, number}"
+      },
+      "season-top-10": {
+        "name": "Top 10",
+        "desc": "Finir une saison dans le top {count, number}"
+      },
+      "season-first": {
+        "name": "Couronné",
+        "desc": "Finir une saison à la 1re place"
+      },
+      "expedition-1": {
+        "name": "Premier voyage",
+        "desc": "Terminer {count, plural, one {une expédition} other {# expéditions}}"
+      },
+      "expedition-25": {
+        "name": "Voyageur",
+        "desc": "Terminer {count, plural, one {une expédition} other {# expéditions}}"
+      },
+      "expedition-200": {
+        "name": "Grand explorateur",
+        "desc": "Terminer {count, plural, one {une expédition} other {# expéditions}}"
+      },
+      "triumph-1": {
+        "name": "Triomphe",
+        "desc": "Revenir en triomphe {count, plural, one {d'une expédition} other {de # expéditions}}"
+      },
+      "triumph-25": {
+        "name": "Conquérant",
+        "desc": "Revenir en triomphe {count, plural, one {d'une expédition} other {de # expéditions}}"
+      },
+      "risky-success": {
+        "name": "Tête brûlée",
+        "desc": "Réussir une expédition périlleuse"
+      },
+      "coinflip-1": {
+        "name": "表か裏か",
+        "desc": "Jouer {count, plural, one {une table} other {# tables}} de pile ou face"
+      },
+      "coinflip-win-10": {
+        "name": "Main heureuse",
+        "desc": "Gagner {count, number} lancers de pile ou face"
+      },
+      "coinflip-streak-5": {
+        "name": "Insolente chance",
+        "desc": "Gagner {count, number} lancers d'affilée"
+      },
+      "coinflip-mythic": {
+        "name": "Gros joueur",
+        "desc": "Gagner une table de pile ou face au palier Mythique"
+      },
+      "prestige-1": {
+        "name": "Renaissance",
+        "desc": "Atteindre le prestige {count, number}"
+      },
+      "prestige-3": {
+        "name": "Cycle des âmes",
+        "desc": "Atteindre le prestige {count, number}"
+      },
+      "prestige-5": {
+        "name": "Éternel",
+        "desc": "Atteindre le prestige {count, number}"
+      },
+      "heritage-max": {
+        "name": "Lignée",
+        "desc": "Posséder une héritière au plafond (héritage {count, number})"
+      },
+      "consecrated-1": {
+        "name": "Consécration",
+        "desc": "Consacrer {count, plural, one {une carte} other {# cartes}} au sanctuaire"
+      },
+      "consecrated-5": {
+        "name": "Sanctuaire",
+        "desc": "Consacrer {count, plural, one {une carte} other {# cartes}} au sanctuaire"
+      },
+      "printings-10": {
+        "name": "Imprimerie",
+        "desc": "Posséder {count, number} éditions gravées"
+      },
+      "serial-one": {
+        "name": "Numéro un",
+        "desc": "Posséder le n° 1 d'un tirage gravé"
+      },
+      "account-30": {
+        "name": "Un mois à Kiraku",
+        "desc": "Avoir un compte de plus de {count, number} jours"
+      },
+      "account-365": {
+        "name": "Un an à Kiraku",
+        "desc": "Avoir un compte de plus de {count, number} jours"
+      },
+      "kyara-import": {
+        "name": "Nouveau départ",
+        "desc": "Importer sa collection Kyara"
+      },
+      "birthday-pull": {
+        "name": "Joyeux anniversaire",
+        "desc": "Tirer un personnage le jour de son anniversaire"
+      },
+      "night-owl": {
+        "name": "Insomniaque",
+        "desc": "Ouvrir un booster entre 3 h et 4 h du matin"
+      },
+      "double-mythic": {
+        "name": "La foudre frappe deux fois",
+        "desc": "Tirer deux Mythiques dans le même booster"
+      },
+      "cursed": {
+        "name": "Maudit",
+        "desc": "Voir {count, number} sachets Apocalyptiques ruinés d'affilée"
+      },
+      "jackpot": {
+        "name": "Jackpot",
+        "desc": "Avoir exactement 77 777 Zeni"
+      },
+      "bad-luck": {
+        "name": "Pas de veine",
+        "desc": "Perdre {count, number} lancers de pile ou face d'affilée"
+      },
+      "sacrilege": {
+        "name": "Sacrilège",
+        "desc": "Recycler une Mythique"
+      }
     }
   }
 }

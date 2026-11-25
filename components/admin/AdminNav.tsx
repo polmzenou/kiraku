@@ -32,6 +32,7 @@ const GROUPS = [
       { key: "banners", href: "/admin/bannieres" },
       { key: "focus", href: "/admin/focus" },
       { key: "cosmetics", href: "/admin/cosmetiques" },
+      { key: "achievements", href: "/admin/succes" },
       { key: "lots", href: "/admin/lots" },
       { key: "missions", href: "/admin/missions" },
       { key: "expeditions", href: "/admin/expeditions" },

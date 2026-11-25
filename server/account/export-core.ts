@@ -29,6 +29,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       deletionRequestedAt: true,
       prestige: true,
       prestigedAt: true,
+      featuredAchievement: true,
       createdAt: true,
       registeredAt: true,
     },
@@ -313,8 +314,15 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     }),
   ]);
 
+  const achievements = await db.userAchievement.findMany({
+    where: { userId },
+    orderBy: [{ unlockedAt: "asc" }, { key: "asc" }],
+    select: { key: true, unlockedAt: true },
+  });
+
   const input: ExportInput = {
     profile,
+    achievements,
     linkedAccounts: accounts,
     cards: cards.map((c) => ({
       id: c.id,

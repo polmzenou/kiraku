@@ -124,6 +124,8 @@ model User {
   nameColorId         String? // couleur du pseudo (Cosmetic NAME_COLOR)
   nameColor           Cosmetic?         @relation("userNameColor", fields: [nameColorId], references: [id], onDelete: SetNull)
   badgeOrder          String[]          @default([])
+  // Succès mis en avant sous l'avatar (clé du catalogue lib/achievements/catalog.ts) ; affiché seulement s'il est débloqué
+  featuredAchievement String?           @db.VarChar(40)
   // Rôle Ambassadeur donné par l'admin (null = pas ambassadeur) : badge, cadre et couleur verts, stock et pack hebdo
   ambassadorSince     DateTime?
   // Prestige (étape 16) : renaissances faites (0 = jamais), date de la dernière (CHECK : nulle exactement à 0)
@@ -154,6 +156,7 @@ model User {
   notablePulls NotablePull[]
   discoveries  Discovery[]
   seriesCompletions SeriesCompletion[]
+  achievements UserAchievement[]
   adminLogs    AdminLog[]
   showcase     ShowcaseSlot[] // ancienne vitrine unique, plus lue
   showcases    Showcase[]
@@ -770,6 +773,19 @@ model SeriesCompletion {
 
   @@id([userId, seriesId])
   @@index([seriesId])
+}
+
+// Succès débloqué (honorifique). Le catalogue est dans le code (lib/achievements/catalog.ts) : la clé n'a pas de
+// clé étrangère. Acquis pour de bon : ni une vente, ni une renaissance, ni un seuil relevé dans l'admin ne le retirent.
+// Écrit par server/achievements/sync.ts (calcul depuis l'historique) et par quelques crochets (liste de souhaits, recyclage).
+model UserAchievement {
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key        String   @db.VarChar(40)
+  unlockedAt DateTime @default(now())
+
+  @@id([userId, key])
+  @@index([key]) // nombre de joueurs par succès (admin)
 }
 
 // Journal de toutes les écritures faites depuis /admin

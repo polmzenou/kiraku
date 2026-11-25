@@ -10,6 +10,7 @@ import { SOCIAL_PROMO_DEFAULT, socialPromoSchema } from "@/lib/discord/social-pr
 import { NEWS_DEFAULT, newsSchema } from "@/lib/home/news-schema";
 import { alertThresholdsSchema, DEFAULT_ALERT_THRESHOLDS } from "@/lib/usage/quota";
 import { KYARA_PROFILE_INPUT_MAX, parseKyaraProfileUrl } from "@/lib/kyara/profile-url";
+import { ACHIEVEMENTS, achievementByKey } from "@/lib/achievements/catalog";
 
 // Seuils de rareté en points de base (300 = top 3 %), du plus rare au plus courant
 const rarityThresholds = z
@@ -174,6 +175,17 @@ const rankedRewardLots = z.object(
   },
 );
 
+// Succès : seuils réglés (clé du catalogue → seuil) et succès désactivés. Une clé retirée du catalogue est
+// ignorée à la lecture au lieu d'invalider tout le réglage (qui retomberait sur les défauts).
+const achievementGoals = z.preprocess(
+  (raw) => (isRecord(raw) ? Object.fromEntries(Object.entries(raw).filter(([key]) => achievementByKey(key) !== undefined)) : raw),
+  z.record(z.string(), z.number().int().min(1).max(100_000_000)),
+);
+const achievementDisabled = z.preprocess(
+  (raw) => (Array.isArray(raw) ? [...new Set(raw.filter((key) => typeof key === "string" && achievementByKey(key) !== undefined))] : raw),
+  z.array(z.string()).max(ACHIEVEMENTS.length),
+);
+
 // Réglages de jeu modifiables depuis /admin (table GameSetting).
 // Le code ne garde que les valeurs par défaut ; chaque clé a son schéma Zod.
 export const SETTING_SCHEMAS = {
@@ -285,6 +297,10 @@ export const SETTING_SCHEMAS = {
   "profile.sponsorReferrals": z.number().int().min(0).max(1_000),
   // Badge Recruteur : à partir de ce nombre de filleuls qualifiés (0 = jamais)
   "profile.recruiterReferrals": z.number().int().min(0).max(1_000),
+  // Succès (honorifiques) : interrupteur, seuils réglés dans l'admin et succès désactivés (lib/achievements/catalog.ts)
+  "achievements.enabled": z.boolean(),
+  "achievements.goals": achievementGoals,
+  "achievements.disabled": achievementDisabled,
   // Rôle Ambassadeur (donné par l'admin) : stock de boosters gratuits et pack hebdomadaire (0 = aucun pack)
   "ambassador.maxStock": z.number().int().min(1).max(100),
   "ambassador.weeklyBoosters": z.number().int().min(0).max(50),
@@ -669,6 +685,9 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "profile.pioneerUntil": "2026-12-31",
   "profile.sponsorReferrals": 3,
   "profile.recruiterReferrals": 10,
+  "achievements.enabled": true,
+  "achievements.goals": {}, // seuils du catalogue
+  "achievements.disabled": [],
   "ambassador.maxStock": 15,
   "ambassador.weeklyBoosters": 5,
   "ambassador.weeklyBoosterSlug": "standard", // Tout anime

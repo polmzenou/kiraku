@@ -9,10 +9,11 @@ import { offlineFor, type Presence } from "@/lib/social/presence";
 import { PlayerName } from "../social/PlayerName";
 import { WithPresence } from "../social/PresenceDot";
 import { AvatarFrame } from "./AvatarFrame";
+import { FeaturedAchievement, type FeaturedAchievementView } from "./FeaturedAchievement";
 import { BadgeRow } from "./ProfileCustomizeSheet";
 
-/** Ce que le joueur a choisi d'afficher (étape 12h). */
-export type HeaderDecor = PlayerDecor & { bio: string | null; title: string | null; badges: Badge[] };
+/** Ce que le joueur a choisi d'afficher (étape 12h), et le succès qu'il met en avant sous son avatar. */
+export type HeaderDecor = PlayerDecor & { bio: string | null; title: string | null; badges: Badge[]; featuredAchievement?: FeaturedAchievementView | null };
 
 /**
  * En-tête du profil : avatar ou sceau (dans son cadre), pseudo dans sa couleur (« Invité-XXXX » pour un invité),
@@ -54,15 +55,18 @@ export function ProfileHeader({
   return (
     <header className="flex flex-col gap-3">
       <div className="flex items-center gap-4">
-        <WithPresence online={presence?.online} size={64} announce={false}>
-          <AvatarFrame frame={decor?.frame ?? null} prestige={decor?.prestige} size={64}>
-            {image ? (
-              <Image src={image} alt={tAccount("avatarAlt", { name })} width={64} height={64} crossOrigin="anonymous" referrerPolicy="no-referrer" className="rounded-full" />
-            ) : (
-              <SealMark glyphs="札" size={64} />
-            )}
-          </AvatarFrame>
-        </WithPresence>
+        <div className="flex shrink-0 flex-col items-center gap-1.5">
+          <WithPresence online={presence?.online} size={64} announce={false}>
+            <AvatarFrame frame={decor?.frame ?? null} prestige={decor?.prestige} size={64}>
+              {image ? (
+                <Image src={image} alt={tAccount("avatarAlt", { name })} width={64} height={64} crossOrigin="anonymous" referrerPolicy="no-referrer" className="rounded-full" />
+              ) : (
+                <SealMark glyphs="札" size={64} />
+              )}
+            </AvatarFrame>
+          </WithPresence>
+          {decor?.featuredAchievement && <FeaturedAchievement achievement={decor.featuredAchievement} />}
+        </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <h1 className="truncate font-heading text-2xl font-extrabold md:text-3xl">
             {nameHref ? (
