@@ -29,6 +29,8 @@ import { RANKED_FORM_KEYS, rankedSettingsSchema, type RankedSettingKey } from "@
 import { MARKET_SETTING_KEYS, marketSettingsSchema, type MarketSettingKey } from "@/lib/settings/market-form";
 import { SOCIAL_SETTING_KEYS, socialSettingsSchema, type SocialSettingKey } from "@/lib/settings/social-form";
 import { PROFILE_SETTING_KEYS, profileSettingsSchema, type ProfileSettingKey } from "@/lib/settings/profile-form";
+import { ACHIEVEMENT_SETTING_KEYS, achievementSettingsSchema, type AchievementSettingKey } from "@/lib/settings/achievements-form";
+import { normalizeGoals } from "@/lib/achievements/evaluate";
 import { AMBASSADOR_SETTING_KEYS, ambassadorSettingsSchema, type AmbassadorSettingKey } from "@/lib/settings/ambassador-form";
 import {
   normalizeThemes,
@@ -160,6 +162,14 @@ export async function updateSocialSettings(input: unknown): Promise<UpdateSettin
 
 export async function updateProfileSettings(input: unknown): Promise<UpdateSettingsResult<ProfileSettingKey>> {
   return saveSettings(PROFILE_SETTING_KEYS, profileSettingsSchema, input);
+}
+
+/** Succès : seuils figés ou égaux au défaut du catalogue écartés (le catalogue fait foi quand rien n'est réglé). */
+export async function updateAchievementSettings(input: unknown): Promise<UpdateSettingsResult<AchievementSettingKey>> {
+  return saveSettings(ACHIEVEMENT_SETTING_KEYS, achievementSettingsSchema, input, (next) => ({
+    ...next,
+    "achievements.goals": normalizeGoals(next["achievements.goals"]),
+  }));
 }
 
 export async function updateAmbassadorSettings(input: unknown): Promise<UpdateSettingsResult<AmbassadorSettingKey>> {
