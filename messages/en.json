@@ -2280,6 +2280,9 @@
         "UNKNOWN_REF": "A reward, booster type or card doesn't exist.",
         "SHOP_SEALED": "A shop item can't sell a sealed sachet (Divine, Apocalyptic).",
         "SHOP_MYTHIC": "A shop item can't sell anything Mythic or above (booster or card).",
+        "NOT_REFERRAL_LOT": "This isn't a referral or Ennichi reward: an admin edits it in Rewards.",
+        "LOT_SHARED": "This reward is also used elsewhere (missions, shop, expeditions, ranked or gauge): an admin edits it in Rewards.",
+        "UNAVAILABLE": "Unavailable right now, try again in a moment.",
         "unexpected": "Something went wrong."
       },
       "lotSaved": "Reward saved.",
@@ -2379,7 +2382,29 @@
         "ennichi": "Ennichi",
         "announce": "Announcement",
         "settings": "Settings",
+        "lots": "Rewards",
         "legacy": "Previous program"
+      },
+      "lots": {
+        "title": "Referral rewards",
+        "intro": "What the steps, milestones, lanterns, banzuke and omikuji hand out. The whole team edits their contents; a new reward is then picked in the settings. What was already handed out doesn't change. Sending a reward to players, or editing a reward used elsewhere, stays with admins in Rewards.",
+        "listTitle": "{count, plural, =0 {No rewards} one {# reward} other {# rewards}}",
+        "empty": "No rewards yet: run npm run seed:referral, or create one above and pick it in the settings.",
+        "usedBy": "Handed out by",
+        "unused": "Created here, not picked in the settings yet",
+        "shared": "Also used elsewhere (missions, shop, expeditions, ranked or gauge): an admin edits it in Rewards.",
+        "edit": "Edit",
+        "usage": {
+          "V1_REFERRER": "Previous program · referrer",
+          "V1_REFEREE": "Previous program · referee",
+          "V1_MILESTONE": "Previous program · {referrals, plural, one {# friend} other {# friends}} milestone",
+          "STEP": "Step {step, select, 1 {1 · Arrival} 2 {2 · Settled} 3 {3 · Hooked} other {4 · Loyal}} · {side, select, REFEREE {friend} REFERRER {referrer} other {trust share}}",
+          "GRAND": "Grand-referrer",
+          "MILESTONE": "{installed, plural, one {# settled friend} other {# settled friends}} milestone",
+          "TIER": "Lanterns · tier {tier}",
+          "RANK": "Banzuke · {count, plural, one {rank} other {ranks}} {range}",
+          "OMIKUJI": "Omikuji · line {line}"
+        }
       },
       "queue": {
         "title": "To review",

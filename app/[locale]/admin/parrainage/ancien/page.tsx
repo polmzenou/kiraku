@@ -2,6 +2,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { ReferralAdminTabs } from "@/components/admin/referral/ReferralAdminTabs";
 import { RevokeReferralButton } from "@/components/admin/RevokeReferralButton";
 import { Link } from "@/i18n/navigation";
+import { canManageReferrals } from "@/lib/admin/roles";
 import { requireAdminView } from "@/server/admin";
 import { prisma } from "@/server/db";
 import { topReferrers } from "@/server/economy/admin-queries";
@@ -12,7 +13,9 @@ import { heldReferralCount } from "@/server/referral/admin-queries";
  * cas de fraude. Le parrainage v2 se suit et se décide dans les autres onglets.
  */
 export default async function AdminLegacyReferralPage() {
-  const { readOnly } = await requireAdminView();
+  const { user } = await requireAdminView();
+  // Révoquer un parrainage v1 : toute l'équipe, comme le reste du parrainage
+  const canManage = canManageReferrals(user.role);
   const [t, format] = await Promise.all([getTranslations("admin.economy"), getFormatter()]);
   const [referrals, top, held] = await Promise.all([
     prisma.referral.findMany({
@@ -78,7 +81,7 @@ export default async function AdminLegacyReferralPage() {
                     {r.refereeClaimedAt && ` · ${t("refereeClaimed")}`}
                   </span>
                 </div>
-                {!readOnly && r.status !== "REVOKED" && <RevokeReferralButton referralId={r.id} />}
+                {canManage && r.status !== "REVOKED" && <RevokeReferralButton referralId={r.id} />}
               </li>
             ))}
           </ul>

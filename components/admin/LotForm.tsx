@@ -9,6 +9,7 @@ import { type Rarity } from "@/lib/catalog/rarity";
 import { lotInputSchema, MAX_LOT_BOOSTERS, MAX_LOT_ITEMS, MAX_LOT_QUANTITY, MAX_LOT_ZENI, type LotInput, type LotItemInput } from "@/lib/economy/lots";
 import { searchFeaturedCards, type FeaturedCandidate } from "@/server/actions/admin-boosters";
 import { saveLotAction } from "@/server/actions/admin-economy";
+import { saveReferralLotAction, searchReferralLotCards } from "@/server/actions/admin-referral";
 import { Button } from "../ui/Button";
 import { FormMessage, inputClass, NumberField, SelectField, TextField, Toggle } from "./fields";
 
@@ -16,15 +17,20 @@ type Option = { id: string; name: string };
 
 const EMPTY: LotInput = { name: { fr: "", en: "" }, zeni: 0, items: [], active: true };
 
-/** Création ou modification d'un lot : Zeni, boosters d'un type, cartes précises ou tirées dans une rareté. */
+/**
+ * Création ou modification d'un lot : Zeni, boosters d'un type, cartes précises ou tirées dans une rareté. `referral` :
+ * depuis /admin/parrainage/lots, pour toute l'équipe (ADMIN et DEV), limité aux lots du parrainage et de l'Ennichi.
+ */
 export function LotForm({
   initial,
   boosterTypes,
   cardNames,
+  scope = "admin",
 }: {
   initial: LotInput | null;
   boosterTypes: Option[];
   cardNames: Record<string, string>;
+  scope?: "admin" | "referral";
 }) {
   const RARITIES = useRarities();
   const t = useTranslations("admin.economy");
@@ -44,13 +50,13 @@ export function LotForm({
 
   const search = () =>
     startTransition(async () => {
-      setResults(query.trim().length >= 2 ? await searchFeaturedCards(query) : []);
+      setResults(query.trim().length >= 2 ? await (scope === "referral" ? searchReferralLotCards : searchFeaturedCards)(query) : []);
     });
 
   const save = () =>
     startTransition(async () => {
       try {
-        const res = await saveLotAction(draft);
+        const res = await (scope === "referral" ? saveReferralLotAction : saveLotAction)(draft);
         if (res.ok) {
           setMessage({ tone: "ok", text: t("lotSaved") });
           if (!draft.id) setDraft(EMPTY);

@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 
-export type ReferralAdminTab = "queue" | "tracking" | "codes" | "ennichi" | "announce" | "settings" | "legacy";
+export type ReferralAdminTab = "queue" | "tracking" | "codes" | "ennichi" | "announce" | "settings" | "lots" | "legacy";
 
 const TABS: { key: ReferralAdminTab; href: string }[] = [
   { key: "queue", href: "/admin/parrainage" },
@@ -10,10 +10,11 @@ const TABS: { key: ReferralAdminTab; href: string }[] = [
   { key: "ennichi", href: "/admin/parrainage/ennichi" },
   { key: "announce", href: "/admin/parrainage/annonce" },
   { key: "settings", href: "/admin/parrainage/reglages" },
+  { key: "lots", href: "/admin/parrainage/lots" },
   { key: "legacy", href: "/admin/parrainage/ancien" },
 ];
 
-/** Onglets de l'admin du parrainage : file « À vérifier » (avec son nombre), suivi, codes perso, Ennichi, annonce à la communauté, réglages, ancien parrainage (v1). */
+/** Onglets de l'admin du parrainage : file « À vérifier » (avec son nombre), suivi, codes perso, Ennichi, annonce à la communauté, réglages, lots, ancien parrainage (v1). */
 export async function ReferralAdminTabs({ active, held }: { active: ReferralAdminTab; held: number }) {
   const t = await getTranslations("admin.referralV2.tabs");
   return (

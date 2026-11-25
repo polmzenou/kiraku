@@ -3,10 +3,10 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { revokeReferralAction } from "@/server/actions/admin-economy";
+import { revokeLegacyReferralAction } from "@/server/actions/admin-referral";
 import { Button } from "../ui/Button";
 
-/** Révocation d'un parrainage (fraude), avec confirmation : irréversible. */
+/** Révocation d'un parrainage v1 (fraude), avec confirmation : irréversible. ADMIN ou DEV. */
 export function RevokeReferralButton({ referralId }: { referralId: string }) {
   const t = useTranslations("admin.economy");
   const router = useRouter();
@@ -17,7 +17,7 @@ export function RevokeReferralButton({ referralId }: { referralId: string }) {
   const revoke = () =>
     startTransition(async () => {
       try {
-        const res = await revokeReferralAction({ referralId });
+        const res = await revokeLegacyReferralAction({ referralId });
         if (res.ok) router.refresh();
         else setError(t(`errors.${res.error}`));
       } catch {

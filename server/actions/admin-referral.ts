@@ -20,11 +20,16 @@ import { ennichiPayDeps, ennichiState } from "../ennichi/deps";
 import { ENNICHI_TAG } from "../ennichi/tag";
 import { writeAdminLog } from "../admin/log";
 import { publishReferralAnnouncement } from "../discord/referral-announce";
+import { lotInputSchema } from "@/lib/economy/lots";
+import { SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
+import { lotRefsExist, LotSaveError, writeLotWith } from "../economy/lot-save";
+import { REFERRAL_LOT_CREATE, REFERRAL_LOT_UPDATE, referralLotAccessWith } from "../referral/lots";
+import { publishedCardCandidates, type CardCandidate } from "../catalog/card-search";
 
-// Parrainage v2 : toute l'équipe (ADMIN et DEV) traite la file « À vérifier », exception explicite au « seul l'admin
-// écrit » (lib/admin/roles.ts, canManageReferrals, vérifiée par lib/admin/dev-access.test.ts). Ordre : équipe → Zod →
-// rate limit, puis tout est relu sous verrou (server/referral/review-core.ts), qui écrit chaque décision dans le
-// journal admin.
+// Parrainage (v1 et v2) et Ennichi : toute l'équipe (ADMIN et DEV) traite la file « À vérifier », les codes perso, les
+// Ambassadeurs proposés, la clôture de la fête, l'annonce, les lots du parrainage et l'ancien parrainage : exception
+// explicite au « seul l'admin écrit » (lib/admin/roles.ts, canManageReferrals, vérifiée par lib/admin/dev-access.test.ts).
+// Ordre : équipe → Zod → rate limit, puis tout est relu sous verrou, et chaque décision écrite dans le journal admin.
 
 export type ReferralStaffError = "FORBIDDEN" | "INVALID" | "RATE_LIMITED" | "UNAVAILABLE" | ReviewErrorCode;
 export type AmbassadorStaffError = "FORBIDDEN" | "INVALID" | "RATE_LIMITED" | "UNAVAILABLE" | AmbassadorDecisionErrorCode;
@@ -327,4 +332,96 @@ export async function publishReferralAnnouncementAction(): Promise<{ ok: true; u
     console.warn("[discord] annonce du parrainage indisponible.");
     return { ok: false, error: "DISCORD" };
   }
+}
+
+/* ---------------- Lots du parrainage et de l'Ennichi ---------------- */
+
+export type ReferralLotStaffError = "FORBIDDEN" | "INVALID" | "RATE_LIMITED" | "UNAVAILABLE" | "NOT_FOUND" | "UNKNOWN_REF" | ReferralLotRefusal;
+type ReferralLotRefusal = "NOT_REFERRAL_LOT" | "LOT_SHARED";
+
+class LotRefused extends Error {
+  constructor(readonly code: ReferralLotRefusal) {
+    super(code);
+  }
+}
+
+/**
+ * Lot créé ou modifié par l'équipe (ADMIN ou DEV) depuis /admin/parrainage/lots. Un lot existant doit être versé par
+ * un réglage du parrainage ou de l'Ennichi (ou avoir été créé depuis cette page), et par rien d'autre : un lot partagé
+ * avec les missions, la boutique, les expéditions ou un autre réglage reste à l'admin. Envoyer un lot aux joueurs aussi.
+ */
+export async function saveReferralLotAction(input: unknown): Promise<{ ok: true; id: string } | { ok: false; error: ReferralLotStaffError }> {
+  const user = await staff();
+  if (!user) return { ok: false, error: "FORBIDDEN" };
+  const parsed = lotInputSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (await limited(user.id, "lots", 20)) return { ok: false, error: "RATE_LIMITED" };
+  try {
+    if (!(await lotRefsExist(prisma, parsed.data.items))) return { ok: false, error: "UNKNOWN_REF" };
+    const id = await writeLotWith(prisma, parsed.data, {
+      staffId: user.id,
+      actions: { create: REFERRAL_LOT_CREATE, update: REFERRAL_LOT_UPDATE },
+      // Relu dans la transaction : un réglage changé entre-temps compte
+      check: async (tx, lotId) => {
+        const access = await referralLotAccessWith(tx, lotId);
+        if (access === "NOT_REFERRAL_LOT" || access === "LOT_SHARED") throw new LotRefused(access);
+      },
+    });
+    refresh();
+    return { ok: true, id };
+  } catch (e) {
+    if (e instanceof LotSaveError || e instanceof LotRefused) return { ok: false, error: e.code };
+    console.error("[parrainage admin] lot", e);
+    return { ok: false, error: "UNAVAILABLE" };
+  }
+}
+
+const cardSearchSchema = z.string().trim().min(2).max(SEARCH_MAX_LENGTH);
+
+/** Recherche de cartes publiées pour le contenu d'un lot du parrainage (10 résultats au plus). */
+export async function searchReferralLotCards(input: unknown): Promise<CardCandidate[]> {
+  const user = await staff();
+  if (!user) return [];
+  const parsed = cardSearchSchema.safeParse(input);
+  if (!parsed.success) return [];
+  // Recherche à la frappe : bucket à part, plus large que celui des écritures
+  if (await limited(user.id, "lot-search", 60)) return [];
+  return publishedCardCandidates(parsed.data);
+}
+
+/* ---------------- Ancien parrainage (v1) ---------------- */
+
+export type LegacyReferralStaffError = "FORBIDDEN" | "INVALID" | "RATE_LIMITED" | "NOT_FOUND";
+
+/**
+ * Révoque un parrainage v1 (fraude), ADMIN ou DEV : plus aucune récompense ne peut être réclamée ; ce qui l'a déjà été
+ * reste. Un parrainage v2 se révoque depuis la file « À vérifier », qui arrête aussi ses versements.
+ */
+export async function revokeLegacyReferralAction(input: unknown): Promise<{ ok: true } | { ok: false; error: LegacyReferralStaffError }> {
+  const user = await staff();
+  if (!user) return { ok: false, error: "FORBIDDEN" };
+  const parsed = referralSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (await limited(user.id, "legacy", 30)) return { ok: false, error: "RATE_LIMITED" };
+  const { referralId } = parsed.data;
+
+  const done = await prisma.$transaction(async (tx) => {
+    const before = await tx.referral.findUnique({ where: { id: referralId } });
+    if (!before || before.version !== 1 || before.status === "REVOKED") return false;
+    // Conditionnel : deux révocations simultanées n'écrivent qu'une ligne au journal
+    const moved = await tx.referral.updateMany({ where: { id: referralId, version: 1, status: { not: "REVOKED" } }, data: { status: "REVOKED" } });
+    if (moved.count !== 1) return false;
+    await writeAdminLog(tx, {
+      adminId: user.id,
+      action: "REFERRAL_REVOKE",
+      targetType: "Referral",
+      targetId: referralId,
+      before: JSON.parse(JSON.stringify(before)),
+      after: { status: "REVOKED" },
+    });
+    return true;
+  });
+  if (!done) return { ok: false, error: "NOT_FOUND" };
+  refresh();
+  return { ok: true };
 }

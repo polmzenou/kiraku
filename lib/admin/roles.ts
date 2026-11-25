@@ -5,9 +5,9 @@ export const STAFF_ROLES = ["ADMIN", "DEV"] as const;
 
 /**
  * Pages de l'admin ouvertes au DEV : le catalogue (brouillons), les bancs de test (rien n'est enregistré) et,
- * en lecture seule, le reste. Aucune n'est ouverte en écriture : réglages, interrupteurs de fonctionnalités et
- * données des joueurs restent l'affaire de l'admin. Les autres pages lui répondent 404. Seule exception : l'import
- * Kyara, que toute l'équipe traite et règle (canProcessKyaraImports) : file, favori, décisions et réglages.
+ * en lecture seule, le reste. Réglages, interrupteurs de fonctionnalités et données des joueurs restent l'affaire de
+ * l'admin ; les autres pages lui répondent 404. Deux exceptions, en écriture pour toute l'équipe : l'import Kyara
+ * (canProcessKyaraImports) et le parrainage avec l'Ennichi (canManageReferrals, pages /admin/parrainage/*).
  */
 export const DEV_ADMIN_PAGES = [
   "/admin/catalogue",
@@ -35,6 +35,7 @@ export const DEV_ADMIN_PAGES = [
   "/admin/parrainage/codes",
   "/admin/parrainage/ennichi",
   "/admin/parrainage/annonce",
+  "/admin/parrainage/lots",
   "/admin/avis",
   "/admin/gros-tirages",
   "/admin/evenement",
@@ -62,7 +63,9 @@ export function canProcessKyaraImports(role: string | null | undefined): boolean
 /**
  * Parrainage v2 et Ennichi (étape 18) : mêmes droits pour ADMIN et DEV sur toute la feature (choix du 23/11) : suivi,
  * file « À vérifier » (valider, révoquer, révoquer et bannir), codes perso, Ambassadeurs proposés, réglages et
- * interrupteurs, clôture et tirage de l'Ennichi. Chaque action est écrite dans le journal admin.
+ * interrupteurs, clôture et tirage de l'Ennichi, annonce à la communauté. Depuis le 25/11, aussi le contenu des lots
+ * du parrainage et de l'Ennichi (pas ceux qui servent ailleurs, ni l'envoi de lots aux joueurs) et la révocation d'un
+ * parrainage v1. Chaque action est écrite dans le journal admin.
  */
 export function canManageReferrals(role: string | null | undefined): boolean {
   return isStaff(role);

@@ -7,7 +7,7 @@ import { boosterTypeFormSchema } from "@/lib/boosters/admin-form";
 import { filterContext } from "@/lib/boosters/pool-filter";
 import { ROTATING_FAMILIES, type RotationPin } from "@/lib/boosters/rotation";
 import { slugSchema } from "@/lib/boosters/types";
-import { normalizeSearch, SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
+import { SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
 import { parseSetting } from "@/lib/settings/defaults";
 import { getAdmin } from "../admin";
 import { BOOSTER_TYPES_TAG, getBoosterRotation } from "../boosters/pools";
@@ -17,6 +17,7 @@ import { rateLimit } from "../ratelimit";
 import { forgetSettings, getSetting, SETTINGS_TAG } from "../settings";
 import { writeAdminLog } from "../admin/log";
 import { getRarities } from "../catalog/rarities";
+import { publishedCardCandidates } from "../catalog/card-search";
 
 // Types de boosters et bannières depuis /admin. Ordre : rôle admin → Zod → rate limit → transaction
 // avec une ligne AdminLog (avant / après) → recalcul du pool → cache invalidé (effet immédiat).
@@ -193,15 +194,7 @@ export async function searchFeaturedCards(input: unknown): Promise<FeaturedCandi
   if (!parsed.success) return [];
   // Recherche à la frappe : bucket à part, plus large que celui des écritures admin
   if (!(await rateLimit(`admin-search:${admin.id}`, { limit: 60, windowSeconds: 60 })).success) return [];
-  const terms = normalizeSearch(parsed.data);
-  if (!terms) return [];
-  const rows = await prisma.card.findMany({
-    where: { status: "PUBLISHED", searchText: { contains: terms } },
-    orderBy: { rank: "asc" },
-    take: 10,
-    select: { id: true, name: true, rarity: true, rank: true, imageUrl: true, series: { select: { titleRomaji: true } } },
-  });
-  return rows.map((c) => ({ id: c.id, name: c.name, rarity: c.rarity, rank: c.rank, imageUrl: c.imageUrl, series: c.series.titleRomaji }));
+  return publishedCardCandidates(parsed.data);
 }
 
 export type FocusSeriesCandidate = { anilistId: number; title: string; type: string; cards: number };

@@ -1373,8 +1373,11 @@ Quatorze jours, lancés dès que le parrainage v2 est prêt (pas de date fixe), 
 - **Annonce** : la fenêtre « Le parrainage change » (`ReferralStory`, design « Enveloppe ») est datée par
   `referral.v2.announceAt` comme celle du casino, et se rouvre par « Comment ça marche » sur `/parrainage`. Le post de
   la communauté part de `/admin/parrainage/annonce` dans `DISCORD_ANNOUNCE_CHANNEL_ID`, avec @everyone.
-- **Droits** : toutes les pages `/admin/parrainage/*` (file, suivi, codes perso, Ennichi, annonce, réglages) sont
-  ouvertes à l'équipe entière, ADMIN et DEV (`canManageReferrals`) ; chaque action va au journal admin.
+- **Droits** : toutes les pages `/admin/parrainage/*` (file, suivi, codes perso, Ennichi, annonce, réglages, lots,
+  ancien parrainage) sont ouvertes à l'équipe entière, ADMIN et DEV (`canManageReferrals`) ; chaque action va au journal
+  admin. Depuis le 2026-11-25, cela couvre aussi le contenu des lots du parrainage et de l'Ennichi
+  (`/admin/parrainage/lots` : ceux que leurs réglages versent, ou créés depuis cette page ; un lot qui sert aussi
+  ailleurs et l'envoi de lots aux joueurs restent à l'admin dans `/admin/lots`) et la révocation d'un parrainage v1.
 
 ## Fluidité et animations
 

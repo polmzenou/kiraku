@@ -2280,6 +2280,9 @@
         "UNKNOWN_REF": "Un lot, un type de booster ou une carte n'existe pas.",
         "SHOP_SEALED": "Un article de la boutique ne peut pas vendre de sachet scellé (Divin, Apocalyptique).",
         "SHOP_MYTHIC": "Un article de la boutique ne peut rien vendre de Mythique ou au-dessus (booster ou carte).",
+        "NOT_REFERRAL_LOT": "Ce lot n'est pas un lot du parrainage ou de l'Ennichi : un admin le modifie dans Lots.",
+        "LOT_SHARED": "Ce lot sert aussi ailleurs (missions, boutique, expéditions, classé ou jauge) : un admin le modifie dans Lots.",
+        "UNAVAILABLE": "Indisponible pour le moment, réessaie dans un instant.",
         "unexpected": "Une erreur est survenue."
       },
       "lotSaved": "Lot enregistré.",
@@ -2379,7 +2382,29 @@
         "ennichi": "Ennichi",
         "announce": "Annonce",
         "settings": "Réglages",
+        "lots": "Lots",
         "legacy": "Ancien parrainage"
+      },
+      "lots": {
+        "title": "Lots du parrainage",
+        "intro": "Ce que versent les étapes, les paliers, les lanternes, le banzuke et l'omikuji. Toute l'équipe en modifie le contenu ; un nouveau lot se choisit ensuite dans les réglages. Ce qui a déjà été versé ne change pas. Envoyer un lot à des joueurs, ou modifier un lot qui sert ailleurs, reste à l'admin dans Lots.",
+        "listTitle": "{count, plural, =0 {Aucun lot} one {# lot} other {# lots}}",
+        "empty": "Aucun lot pour l'instant : lance npm run seed:referral, ou crée un lot ci-dessus puis choisis-le dans les réglages.",
+        "usedBy": "Versé par",
+        "unused": "Créé ici, pas encore choisi dans les réglages",
+        "shared": "Sert aussi ailleurs (missions, boutique, expéditions, classé ou jauge) : un admin le modifie dans Lots.",
+        "edit": "Modifier",
+        "usage": {
+          "V1_REFERRER": "Ancien parrainage · parrain",
+          "V1_REFEREE": "Ancien parrainage · filleul",
+          "V1_MILESTONE": "Ancien parrainage · palier {referrals, plural, one {# ami} other {# amis}}",
+          "STEP": "Étape {step, select, 1 {1 · Arrivée} 2 {2 · Installé} 3 {3 · Accro} other {4 · Fidèle}} · {side, select, REFEREE {ami} REFERRER {parrain} other {part confiance}}",
+          "GRAND": "Grand-parrainage",
+          "MILESTONE": "Palier {installed, plural, one {# ami installé} other {# amis installés}}",
+          "TIER": "Lanternes · palier {tier}",
+          "RANK": "Banzuke · {count, plural, one {rang} other {rangs}} {range}",
+          "OMIKUJI": "Omikuji · ligne {line}"
+        }
       },
       "queue": {
         "title": "À vérifier",
