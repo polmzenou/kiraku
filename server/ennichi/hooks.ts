@@ -16,7 +16,8 @@ export function ennichiCatchUpLater(userId: string): void {
   after(async () => {
     try {
       const state = await ennichiState();
-      if ((state.phase !== "live" && state.phase !== "closing") || !state.schedule) return;
+      // Aussi après le tirage : un joueur éligible pendant la fête qui n'a pas encore reçu un palier atteint le reçoit
+      if (state.phase === "off" || !state.schedule) return;
       if (!(await prisma.ennichiTierReached.count({ where: { edition: state.rules.edition } }))) return;
       if (!(await rateLimit(`ennichi-catchup:${userId}`, { limit: 1, windowSeconds: 60 }, { store: "memory" })).success) return;
       await catchUpTiersWith(prisma, { edition: state.rules.edition, userId, schedule: state.schedule, perIp: state.rules.tierGrantsPerIp }, ennichiPayDeps());

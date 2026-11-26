@@ -9,7 +9,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { commitOf, seedHex } from "@/lib/casino/fairness";
 import { drawOmikuji, ticketsHash } from "@/lib/ennichi/omikuji";
-import { ennichiPhase, rankBand, rankRecruiters, type EnnichiRules, type EnnichiTitle } from "@/lib/ennichi/rules";
+import { ennichiPhase, ennichiSchedule, rankBand, rankRecruiters, type EnnichiRules, type EnnichiTitle } from "@/lib/ennichi/rules";
 import type { ReferralV2Rules } from "@/lib/referral/rules";
 import { writeAdminLog } from "../admin/log";
 import type { LotDeps } from "../economy/lots";
@@ -52,7 +52,7 @@ export async function recruitersWith(db: Db, edition: number, until: Date): Prom
     JOIN "User" e ON e.id = r."refereeId"
     WHERE r."ennichiEdition" = ${edition} AND r."step2At" IS NOT NULL AND r."step2At" <= ${until}
       AND r."revokedAt" IS NULL AND r.status <> 'REVOKED' AND (r."heldAt" IS NULL OR r."reviewDecision" = 'VALIDATED')
-      AND u."bannedAt" IS NULL AND e."bannedAt" IS NULL
+      AND u."bannedAt" IS NULL AND u."deletionRequestedAt" IS NULL AND u."anonymizedAt" IS NULL AND e."bannedAt" IS NULL
     GROUP BY r."referrerId", u.username`;
 }
 
@@ -65,7 +65,7 @@ export async function ticketsWith(db: Db, edition: number, until: Date): Promise
     JOIN "User" e ON e.id = r."refereeId"
     WHERE r."ennichiEdition" = ${edition} AND r."step2At" IS NOT NULL AND r."step2At" <= ${until}
       AND r."revokedAt" IS NULL AND r.status <> 'REVOKED' AND (r."heldAt" IS NULL OR r."reviewDecision" = 'VALIDATED')
-      AND u."bannedAt" IS NULL AND e."bannedAt" IS NULL
+      AND u."bannedAt" IS NULL AND u."deletionRequestedAt" IS NULL AND u."anonymizedAt" IS NULL AND e."bannedAt" IS NULL
     ORDER BY r."step2At" ASC, r.id ASC`;
 }
 
@@ -140,8 +140,11 @@ export async function drawEnnichiWith(
     if (draw.drawnAt) throw new EnnichiCloseError("ALREADY_DRAWN");
     if (ennichiPhase(rules, now, null) !== "closing") throw new EnnichiCloseError("NOT_CLOSING");
 
-    const ranked = rankRecruiters(await recruitersWith(tx, edition, now));
-    const tickets = await ticketsWith(tx, edition, now);
+    // Comptés jusqu'à la clôture annoncée (« figé le … »), même si le tirage se fait après (cron de secours, retard)
+    const schedule = ennichiSchedule(rules);
+    const until = schedule && schedule.closesAt < now ? schedule.closesAt : now;
+    const ranked = rankRecruiters(await recruitersWith(tx, edition, until));
+    const tickets = await ticketsWith(tx, edition, until);
     const labels = tickets.map((t, i) => ticketLabel(i + 1, t.name));
     const prizes = unfoldPool(rules.omikuji);
     const draws = await drawOmikuji(draw.seed, tickets.length, prizes.length);

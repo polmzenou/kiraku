@@ -5,6 +5,7 @@
 // clé (édition, palier, joueur) empêche tout doublon entre les deux. Client injecté : serveur ou tests sur base.
 import { createHash, randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
+import { ipBanKey } from "@/lib/anticheat/network";
 import type { EnnichiRules, EnnichiSchedule } from "@/lib/ennichi/rules";
 import type { LotDeps } from "../economy/lots";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
@@ -63,9 +64,11 @@ export async function grantTierWith(
       const [reached] = await tx.$queryRaw<{ lotId: string | null; choiceVouchers: number }[]>`
         SELECT "lotId", "choiceVouchers" FROM "EnnichiTierReached" WHERE edition = ${edition} AND tier = ${tier}`;
       if (!reached) return "INELIGIBLE" as const;
-      const [user] = await tx.$queryRaw<{ isGuest: boolean; bannedAt: Date | null; emailVerified: Date | null; discordLinkedAt: Date | null }[]>`
-        SELECT "isGuest", "bannedAt", "emailVerified", "discordLinkedAt" FROM "User" WHERE id = ${userId} FOR UPDATE`;
-      if (!user || user.isGuest || user.bannedAt || (user.emailVerified === null && user.discordLinkedAt === null)) return "INELIGIBLE" as const;
+      const [user] = await tx.$queryRaw<{ isGuest: boolean; bannedAt: Date | null; frozen: boolean; emailVerified: Date | null; discordLinkedAt: Date | null }[]>`
+        SELECT "isGuest", "bannedAt", ("deletionRequestedAt" IS NOT NULL OR "anonymizedAt" IS NOT NULL) AS frozen, "emailVerified", "discordLinkedAt"
+        FROM "User" WHERE id = ${userId} FOR UPDATE`;
+      // Compte gelé (suppression demandée) ou anonymisé : rien ne lui est plus versé
+      if (!user || user.isGuest || user.bannedAt || user.frozen || (user.emailVerified === null && user.discordLinkedAt === null)) return "INELIGIBLE" as const;
       const opened = await tx.boosterOpening.findFirst({
         where: { userId, createdAt: { gte: schedule.startsAt, lt: schedule.endsAt } },
         select: { id: true },
@@ -73,9 +76,10 @@ export async function grantTierWith(
       if (!opened) return "INELIGIBLE" as const;
       if (await tx.ennichiTierGrant.findUnique({ where: { edition_tier_userId: { edition, tier, userId } }, select: { id: true } })) return "ALREADY" as const;
 
-      // IP la plus récente vue pendant la fête (sinon la dernière connue) : au plus `perIp` comptes servis par IP
+      // Dernière IP connue du joueur, prise par sa clé réseau (IPv4 exacte, IPv6 par /64 : les adresses temporaires d'un
+      // même foyer comptent ensemble) : au plus `perIp` comptes servis par réseau
       const ip = await tx.userSignal.findFirst({ where: { userId, kind: "IP" }, orderBy: { lastSeenAt: "desc" }, select: { value: true } });
-      const ipHash = ip ? ipHashOf(ip.value) : null;
+      const ipHash = ip ? ipHashOf(ipBanKey(ip.value) ?? ip.value) : null;
       let overLimit = false;
       if (ipHash) {
         // Deux versements de la même IP passent l'un après l'autre : le compte est juste
@@ -110,7 +114,7 @@ type PendingInput = { edition: number; tier: number; schedule: EnnichiSchedule }
 
 /** Joueur `u` à servir pour un palier : éligible d'après la base (inscrit, vérifié, un booster ouvert pendant la fête), pas encore servi. */
 const pendingWhere = (input: PendingInput) => Prisma.sql`
-  u."isGuest" = false AND u."bannedAt" IS NULL
+  u."isGuest" = false AND u."bannedAt" IS NULL AND u."deletionRequestedAt" IS NULL AND u."anonymizedAt" IS NULL
   AND (u."emailVerified" IS NOT NULL OR u."discordLinkedAt" IS NOT NULL)
   AND EXISTS (
     SELECT 1 FROM "BoosterOpening" o
@@ -152,7 +156,15 @@ export async function sendTierWith(
     let progressed = false;
     for (const userId of users) {
       if (Date.now() > input.deadline) return { granted, done: false };
-      const outcome = await grantTierWith(db, { edition: input.edition, tier: input.tier, userId, schedule: input.schedule, perIp: input.perIp }, deps);
+      // Un versement qui échoue (lot supprimé, panne) est journalisé et passé : il ne bloque ni les autres joueurs ni
+      // le reste du cron (tirage de secours, prix) ; il sera retenté au passage suivant
+      let outcome: Awaited<ReturnType<typeof grantTierWith>>;
+      try {
+        outcome = await grantTierWith(db, { edition: input.edition, tier: input.tier, userId, schedule: input.schedule, perIp: input.perIp }, deps);
+      } catch (e) {
+        console.error("[ennichi] lot de palier impossible", { tier: input.tier, userId }, e);
+        continue;
+      }
       if (outcome === "GRANTED") granted++;
       if (outcome !== "INELIGIBLE") progressed = true;
     }

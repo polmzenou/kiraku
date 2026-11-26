@@ -26,16 +26,29 @@ export async function GET(request: Request) {
   const deps = ennichiPayDeps(now);
   const result = { phase: state.phase, lit: 0, reached: [] as number[], granted: 0, drawn: false, paid: 0 };
 
-  if (state.phase === "live" || state.phase === "closing") {
-    const { lit } = await lanternCountsWith(prisma, rules.edition, now < schedule.closesAt ? now : schedule.closesAt);
-    result.lit = lit;
-    result.reached = await recordReachedTiersWith(prisma, rules, lit, now);
-    const open = await prisma.ennichiTierReached.findMany({ where: { edition: rules.edition, finishedAt: null }, orderBy: { tier: "asc" }, select: { tier: true } });
-    for (const { tier } of open) {
+  // Trois étapes isolées : une erreur dans l'une (versement impossible, panne) n'empêche pas les suivantes
+  const errors: string[] = [];
+  try {
+    if (state.phase === "live" || state.phase === "closing") {
+      const { lit } = await lanternCountsWith(prisma, rules.edition, now < schedule.closesAt ? now : schedule.closesAt);
+      result.lit = lit;
+      result.reached = await recordReachedTiersWith(prisma, rules, lit, now);
+    }
+    // Paliers atteints : pendant la fête et la clôture, tous à chaque passage (un joueur devenu éligible après la fin
+    // d'un envoi est servi même s'il n'ouvre plus de booster) ; après le tirage, les envois pas encore finis continuent
+    const tiers = await prisma.ennichiTierReached.findMany({
+      where: { edition: rules.edition, ...(state.phase === "closed" ? { finishedAt: null } : {}) },
+      orderBy: { tier: "asc" },
+      select: { tier: true },
+    });
+    for (const { tier } of tiers) {
       if (Date.now() > deadline) break;
       const sent = await sendTierWith(prisma, { edition: rules.edition, tier, schedule, perIp: rules.tierGrantsPerIp, deadline }, deps);
       result.granted += sent.granted;
     }
+  } catch (e) {
+    console.error("[cron ennichi] paliers", e);
+    errors.push("tiers");
   }
 
   // Cron de secours : la date de clôture est passée et l'équipe n'a pas tiré
@@ -44,11 +57,19 @@ export async function GET(request: Request) {
       await drawEnnichiWith(prisma, { staffId: null, rules, now });
       result.drawn = true;
     } catch (e) {
-      if (!(e instanceof EnnichiCloseError)) throw e;
+      if (!(e instanceof EnnichiCloseError)) {
+        console.error("[cron ennichi] tirage", e);
+        errors.push("draw");
+      }
     }
   }
   if ((state.phase === "closed" || result.drawn) && Date.now() < deadline) {
-    result.paid = (await payAwardsWith(prisma, rules.edition, { ...deps, deadline })).paid;
+    try {
+      result.paid = (await payAwardsWith(prisma, rules.edition, { ...deps, deadline })).paid;
+    } catch (e) {
+      console.error("[cron ennichi] prix", e);
+      errors.push("awards");
+    }
   }
-  return Response.json(result);
+  return Response.json({ ...result, errors }, { status: errors.length ? 500 : 200 });
 }

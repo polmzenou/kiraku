@@ -42,10 +42,10 @@ export async function ennichiState(now = new Date()): Promise<EnnichiState> {
   return { rules, schedule, phase: ennichiPhase(rules, now, draw.drawnAt), draw };
 }
 
-/** Édition d'un ami qui se rattache maintenant (pendant la fête), sinon null. */
-export async function ennichiEditionNow(now = new Date()): Promise<number | null> {
+/** Pour un rattachement maintenant : édition en cours (sinon null) et réglage « plafond mensuel levé pendant la fête ». */
+export async function ennichiAttachNow(now = new Date()): Promise<{ edition: number | null; liftCap: boolean }> {
   const state = await ennichiState(now);
-  return state.phase === "live" ? state.rules.edition : null;
+  return state.phase === "live" ? { edition: state.rules.edition, liftCap: state.rules.liftCap } : { edition: null, liftCap: false };
 }
 
 export const ennichiPayDeps = (now = new Date()) => ({ lotDeps: lotDeps(), now, onNotified: (ids: string[]) => void pushNotifications(ids) });

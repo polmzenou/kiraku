@@ -309,6 +309,18 @@ export async function updateReferralV2Settings(input: unknown): Promise<UpdateSe
 
 /** Ennichi : toute l'équipe aussi (canManageReferrals) ; les pages de la fête suivent tout de suite. */
 export async function updateEnnichiSettings(input: unknown): Promise<UpdateSettingsResult<EnnichiFormKey>> {
+  const staff = await referralStaff();
+  if (!staff) return { ok: false, error: "FORBIDDEN" };
+  const parsed = ennichiSettingsSchema.safeParse(input);
+  if (parsed.success) {
+    const v = parsed.data as SettingsOf<EnnichiFormKey>;
+    if (!(await rateLimit(`admin-check:${staff.id}`, { limit: 20, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
+    // Les lots cités doivent exister (sinon chaque versement échouerait), et la fête ne s'allume pas avec un palier
+    // vide : il se figerait sans rien à donner et annoncerait quand même « ton lot est arrivé »
+    const lotIds = [...new Set([...v["ennichi.tiers"], ...v["ennichi.ranks"], ...v["ennichi.omikuji"]].flatMap((x) => (x.lotId ? [x.lotId] : [])))];
+    if (lotIds.length > 0 && (await prisma.lot.count({ where: { id: { in: lotIds } } })) !== lotIds.length) return { ok: false, error: "INVALID" };
+    if (v["ennichi.enabled"] && v["ennichi.tiers"].some((t) => !t.lotId && t.choiceVouchers === 0)) return { ok: false, error: "INVALID" };
+  }
   const result = await saveSettings(ENNICHI_FORM_KEYS, ennichiSettingsSchema, input, undefined, referralStaff);
   if (result.ok && result.changed.length > 0) updateTag(ENNICHI_TAG);
   return result;

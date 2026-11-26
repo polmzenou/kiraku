@@ -28,8 +28,10 @@ export type AttachV2Input = {
   rules: Pick<ReferralV2Rules, "enabled" | "maxPerMonth">;
   /** referral.attachWindowDays : jours pendant lesquels un compte peut saisir un code après son inscription. */
   attachWindowDays: number;
-  /** Édition de l'Ennichi en cours (plafond levé, bonus des étapes 1 et 2), sinon null. */
+  /** Édition de l'Ennichi en cours (bonus des étapes 1 et 2), sinon null. */
   ennichiEdition: number | null;
+  /** ennichi.liftCap : pendant la fête, le plafond mensuel ne s'applique pas (par défaut oui). */
+  ennichiLiftCap?: boolean;
   fingerprintKey: Buffer;
 };
 
@@ -60,7 +62,7 @@ export async function attachReferralV2With(db: PrismaClient, input: AttachV2Inpu
       tx.user.findUnique({ where: { id: referee.id }, select: { registeredAt: true, createdAt: true, referredById: true } }),
       tx.referral.findUnique({ where: { refereeId: referee.id }, select: { id: true } }),
       blocksBetween(tx, referee.id, referrer.id),
-      input.ennichiEdition !== null
+      input.ennichiEdition !== null && input.ennichiLiftCap !== false
         ? Promise.resolve(0)
         : tx.referral.count({ where: { referrerId: referrer.id, createdAt: { gt: new Date(input.now.getTime() - MONTH) } } }),
       // Le filleul est-il déjà dans la lignée des parrains du parrain ? (cycle A → B → … → A, même lointain)

@@ -16,7 +16,8 @@ export const FEATURE_SETTING_KEYS = [
   "missions.enabled",
   "referral.enabled",
   "referral.v2.enabled",
-  "ennichi.enabled",
+  // ennichi.enabled : seulement sur /admin/parrainage/ennichi, qui refuse d'allumer la fête sans lots (un formulaire
+  // resté ouvert ici l'aurait aussi rallumée ou coupée en silence)
   "expedition.enabled",
   "prestige.enabled",
   "kyaraImport.enabled",

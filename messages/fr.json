@@ -3487,9 +3487,6 @@
         },
         "wrapped": {
           "enabled": "Wrapped de l'année"
-        },
-        "ennichi": {
-          "enabled": "Ennichi (fête du parrainage)"
         }
       },
       "help": {
@@ -3538,9 +3535,6 @@
         },
         "wrapped": {
           "enabled": "Récap personnel de l'année (/wrapped), bannière de l'accueil et bouton du profil, pendant la période réglée dans /admin/wrapped. Coupé : seul l'admin voit l'aperçu."
-        },
-        "ennichi": {
-          "enabled": "La fête de lancement du parrainage v2 : lanternes, banzuke et omikuji. Ses dates et ses lots se règlent dans /admin/parrainage/ennichi."
         }
       }
     },

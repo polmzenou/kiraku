@@ -15,7 +15,7 @@ import { openReferralIdsOf, progressReferralWith } from "../referral/progress-co
 import { getSetting } from "../settings";
 import { referralRules } from "./deps";
 import { attachReferralWith, qualifyReferralsWith, ReferralError, type ReferralErrorCode } from "./referral-core";
-import { ennichiEditionNow } from "../ennichi/deps";
+import { ennichiAttachNow } from "../ennichi/deps";
 
 // Parrainage côté serveur : cookie du lien d'invitation (/i/[code]) et rattachement à l'inscription. Le cookie ne
 // contient que le code, jamais d'id ; rien n'est écrit en base avant que le filleul ait un compte. Interrupteur
@@ -47,15 +47,16 @@ export async function attachReferral(userId: string, code: string): Promise<{ ok
   }
   try {
     if (await getSetting("referral.v2.enabled")) {
-      const [rules, attachWindowDays] = await Promise.all([referralV2Rules(), getSetting("referral.attachWindowDays")]);
+      const [rules, attachWindowDays, ennichi] = await Promise.all([referralV2Rules(), getSetting("referral.attachWindowDays"), ennichiAttachNow()]);
       const { referralId } = await attachReferralV2With(prisma, {
         refereeId: userId,
         code,
         now: new Date(),
         rules,
         attachWindowDays,
-        // Ennichi : un ami qui arrive pendant la fête porte l'édition (×2, lanterne, banzuke, omikuji, plafond levé)
-        ennichiEdition: await ennichiEditionNow(),
+        // Ennichi : un ami qui arrive pendant la fête porte l'édition (×2, lanterne, banzuke, omikuji), plafond levé si réglé
+        ennichiEdition: ennichi.edition,
+        ennichiLiftCap: ennichi.liftCap,
         fingerprintKey: referralFingerprintKey(),
       });
       progressLater([referralId]);
