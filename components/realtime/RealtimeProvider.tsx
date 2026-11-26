@@ -11,6 +11,11 @@ import { configureActivity, getActivity, subscribeActivity } from "./activity";
 // rejeté, quota Ably dépassé) compte comme hors ligne : l'écran qui l'écoute garde son sondage normal.
 
 type Handler = (data: unknown) => void;
+/**
+ * Un abonnement et son écouteur Ably (gardé pour le désabonnement : sans écouteur, unsubscribe(event) retire TOUS
+ * les écouteurs de l'événement sur le canal, y compris ceux de la cloche ou d'un autre écran).
+ */
+type Sub = { channel: string; event: string; handler: Handler; battle: string | null; listener?: (msg: { data?: unknown }) => void };
 type Channel = "user" | { battle: string };
 
 // Connexion en échec définitif (clé refusée, compte Ably bloqué) : nouvel essai espacé, sans attendre
@@ -59,11 +64,11 @@ export function RealtimeProvider({
   const client = useRef<Realtime | null>(null);
   const battleId = useRef<string | null>(null);
   // Abonnements demandés, rejoués quand le client est prêt
-  const pending = useRef(new Set<{ channel: string; event: string; handler: Handler; battle: string | null }>());
+  const pending = useRef(new Set<Sub>());
 
   useEffect(() => configureActivity(idleSeconds), [idleSeconds]);
 
-  const attach = useCallback((ably: Realtime, sub: { channel: string; event: string; handler: Handler }) => {
+  const attach = useCallback((ably: Realtime, sub: Sub) => {
     const channel = ably.channels.get(sub.channel);
     if (!watched.current.has(sub.channel)) {
       // L'état du canal fait foi : attaché = en direct ; refusé, suspendu ou détaché = sondage normal
@@ -81,7 +86,9 @@ export function RealtimeProvider({
     }
     // Rejeté quand la connexion se ferme (joueur absent) ou que le jeton n'ouvre pas ce canal : l'état
     // du canal le signale, Ably rattache le canal à la reconnexion
-    channel.subscribe(sub.event, (msg) => sub.handler(msg.data)).catch(() => {});
+    // Un écouteur propre à l'abonnement, créé une fois (rejoué tel quel à la reconnexion)
+    if (!sub.listener) sub.listener = (msg) => sub.handler(msg.data);
+    channel.subscribe(sub.event, sub.listener).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -136,7 +143,7 @@ export function RealtimeProvider({
     (channel, event, handler) => {
       if (!userId) return () => {};
       const battle = channel === "user" ? null : channel.battle;
-      const sub = { channel: battle ? `kiraku:battle:${battle}` : `kiraku:user:${userId}`, event, handler, battle };
+      const sub: Sub = { channel: battle ? `kiraku:battle:${battle}` : `kiraku:user:${userId}`, event, handler, battle };
       pending.current.add(sub);
       const ably = client.current;
       if (ably && battle && battleId.current !== battle) {
@@ -153,7 +160,8 @@ export function RealtimeProvider({
       }
       return () => {
         pending.current.delete(sub);
-        client.current?.channels.get(sub.channel).unsubscribe(event);
+        // Seulement cet écouteur : les autres abonnés au même événement (cloche, autres écrans) restent en direct
+        if (sub.listener) client.current?.channels.get(sub.channel).unsubscribe(event, sub.listener);
       };
     },
     [attach, userId],

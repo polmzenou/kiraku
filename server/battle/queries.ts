@@ -129,6 +129,7 @@ export async function getBattleView(
     turnSeconds: timing.turnSeconds,
     // Le rang d'une partie classée sera figé au lancement (étape 9b)
     tier: previewTier ?? parseBoardTier(mySide === 0 ? b.p1Tier : b.p2Tier),
+    tiers: previewTier ? [previewTier, previewTier] : [parseBoardTier(b.p1Tier), parseBoardTier(b.p2Tier)],
     ranked:
       b.mode === "RANKED" && finished
         ? { crushing: b.crushing, before: [b.pcBeforeP1, b.pcBeforeP2], delta: [b.pcDeltaP1, b.pcDeltaP2] }

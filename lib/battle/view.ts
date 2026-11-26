@@ -43,6 +43,8 @@ export type BattleView = {
   turnSeconds: number;
   /** Rang de mon camp au lancement (couleur du plateau) ; null hors classé. */
   tier: BoardTier | null;
+  /** Rangs figés au lancement, dans l'ordre des camps (p1, p2) : emblème de chaque joueur (intro, bannière). */
+  tiers: [BoardTier | null, BoardTier | null];
   /** Partie classée terminée : PC avant et variation de chaque camp. */
   ranked: { crushing: boolean; before: [number | null, number | null]; delta: [number | null, number | null] } | null;
   /** Classé : rangs et barème, pour situer les PC dans l'écran de fin. */

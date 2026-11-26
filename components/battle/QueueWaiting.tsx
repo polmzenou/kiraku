@@ -44,32 +44,50 @@ export function QueueWaiting({
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
+    // Démontage ou redémarrage pendant une requête : la boucle s'arrête au lieu de se reprogrammer sans composant
+    let cancelled = false;
+    // Essais du bot espacés après un refus passager (réseau, rate limit, indisponible) : 1 s, 2 s, 5 s, puis 5 s
+    let botRetries = 0;
+    let botRetryAt = 0;
     const go = (battleId: string) => {
       done.current = true;
       router.push(`/combat/${battleId}`);
     };
     const poll = async () => {
-      if (done.current) return;
+      if (done.current || cancelled) return;
       try {
         // L'heure du bot est passée : on le demande (le serveur revérifie l'attente)
-        if (Date.now() >= bot && !botRequested.current) {
+        if (Date.now() >= bot && !botRequested.current && Date.now() >= botRetryAt) {
           botRequested.current = true;
           const res = await startBotBattleAction();
+          if (cancelled) return;
           if (res.ok) return go(res.battleId);
           if (res.error === "IN_BATTLE" && res.battleId) return go(res.battleId);
-          botRequested.current = res.error === "TOO_EARLY" ? false : true;
+          if (res.error === "NOT_QUEUED" || res.error === "DISABLED" || res.error === "NO_BOT_CARDS") {
+            // Refus définitif : plus rien à attendre dans cette file
+            done.current = true;
+            return onLeft(res.error);
+          }
+          // Refus passager (TOO_EARLY compris : horloge en avance, délai relevé par l'admin) : nouvel essai plus tard
+          botRequested.current = false;
+          botRetryAt = Date.now() + [1_000, 2_000, 5_000][Math.min(botRetries, 2)];
+          botRetries += 1;
         }
         const res = await pollQueueAction();
+        if (cancelled) return;
         if (res.ok && res.state === "MATCHED") return go(res.battleId);
         if (res.ok && res.state === "NONE") {
           done.current = true;
           return onLeft();
         }
       } catch {
-        // Réseau coupé : on retente au prochain tour
+        // Réseau coupé : on retente au prochain tour (le bot aussi)
+        botRequested.current = false;
       }
-      // Le bot ne doit pas attendre un tour de sondage de plus que prévu
-      timer = setTimeout(poll, Math.max(500, Math.min(pollSeconds * 1000, bot - Date.now() + 250)));
+      if (cancelled) return;
+      // Le bot ne doit pas attendre un tour de sondage de plus que prévu ; une fois son heure passée, rythme normal
+      const untilBot = bot - Date.now();
+      timer = setTimeout(poll, untilBot > 0 ? Math.max(500, Math.min(pollSeconds * 1000, untilBot + 250)) : Math.min(pollSeconds * 1000, 5_000));
     };
     timer = setTimeout(poll, 600);
     const unsubscribe = subscribe("user", "matched", (data) => {
@@ -77,6 +95,7 @@ export function QueueWaiting({
       if (typeof battleId === "string" && !done.current) go(battleId);
     });
     return () => {
+      cancelled = true;
       clearTimeout(timer);
       unsubscribe();
     };

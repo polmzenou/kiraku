@@ -102,7 +102,7 @@ export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup
         mySide={mySide}
         players={view.players}
         tier={view.tier}
-        tiers={[view.tier, view.tier]}
+        tiers={view.tiers}
         arena={arena}
         level={level}
         arenaRef={arenaRef}
@@ -133,7 +133,7 @@ export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup
               arena={arena}
               players={view.players}
               mySide={mySide}
-              tiers={[view.tier, view.tier]}
+              tiers={view.tiers}
               first={setup.first}
               level={level}
               deal={() => director.deal([other(mySide), mySide].flatMap((side) => [0, 1, 2].map((index) => ({ side, index }))))}
