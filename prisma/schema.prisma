@@ -1443,6 +1443,7 @@ model Voucher {
   userCard   UserCard?   @relation(fields: [userCardId], references: [id], onDelete: SetNull)
 
   @@index([userId, usedAt])
+  @@index([userCardId]) // clé étrangère : un exemplaire supprimé (renaissance, recyclage) ne parcourt plus tous les bons
 }
 
 /// Ambassadeur proposé à l'équipe, créé seul au palier du parrainage ; une seule proposition ouverte par joueur

@@ -127,6 +127,12 @@ describe("migration du parrainage v2", () => {
     await refused(`UPDATE "Voucher" SET "usedAt" = now() WHERE id = 'v1'`, /Voucher_used_check/);
   });
 
+  it("la clé étrangère vers l'exemplaire est indexée : supprimer des exemplaires ne parcourt pas tous les bons", async () => {
+    expect(await rows(`SELECT indexdef FROM pg_indexes WHERE indexname = 'Voucher_userCardId_idx'`)).toEqual([
+      { indexdef: 'CREATE INDEX "Voucher_userCardId_idx" ON public."Voucher" USING btree ("userCardId")' },
+    ]);
+  });
+
   it("une seule proposition d'Ambassadeur ouverte par joueur", async () => {
     await pg.exec(`INSERT INTO "AmbassadorProposal" (id, "userId", installed) VALUES ('p1', 'par', 25)`);
     await refused(`INSERT INTO "AmbassadorProposal" (id, "userId", installed) VALUES ('p2', 'par', 26)`, /AmbassadorProposal_userId_open/);

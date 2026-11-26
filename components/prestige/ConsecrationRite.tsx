@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 import type { FudaCard } from "@/components/fuda/Fuda";
 import { PRESTIGE_ASSETS } from "@/lib/prestige/assets";
-import { animate, createTimeline, dispose, skip, SPRING, wait, type Timeline } from "../shop/celebration/timeline";
+import { animate as animateOn, createTimeline, dispose, skip, SPRING, wait, type Timeline } from "../shop/celebration/timeline";
 import { Fuda } from "../fuda/Fuda";
 import { useReducedFx } from "../motion/MotionPreference";
 import { useRitualFx } from "../opening/useRitualFx";
@@ -15,7 +15,9 @@ import "./prestige.css";
  * Rite de consécration (奉納), montée à l'autel, joué après la transaction dans le vrai sanctuaire (fond généré) : les
  * lanternes s'embrasent, un rayon d'or tombe sur la carte qui s'élève, la cloche sonne, puis la carte va prendre la place
  * du haut de l'autel à gradins et le sceau 奉納 se pose dans un éclat ; enfin le lien vers le sanctuaire du profil. Un
- * appui passe le rite ; en mouvement réduit, l'état final s'affiche directement.
+ * appui passe le rite ; en mouvement réduit, l'état final s'affiche directement, sans bruit.
+ *
+ * Rendu dans le <dialog> modal de ConsecrationRiteHost, qui porte le rôle et le libellé.
  */
 export function ConsecrationRite({ card, username }: { card: FudaCard; username: string }) {
   const t = useTranslations("prestige.consecrate.rite");
@@ -29,22 +31,37 @@ export function ConsecrationRite({ card, username }: { card: FudaCard; username:
     if (!el) return;
     const timeline = createTimeline(reduced);
     tl.current = timeline;
+    // Démonté (Échap, ou rejoué deux fois par le mode strict en dev), le rite ne laisse rien derrière lui : le déroulé
+    // abandonné file en mode passé, chaque animation qu'il crée encore est annulée et sa suite s'arrête
+    let alive = true;
+    const animate: typeof animateOn = (...args) => {
+      const a = animateOn(...args);
+      if (!alive) a.cancel();
+      return a;
+    };
+    // Passé (appui, mouvement réduit), le rite file sans bruit (sinon tous les sons partiraient d'un coup)
+    const fx: typeof play = (name, haptic) => {
+      if (!timeline.skipped) play(name, haptic);
+    };
     const q = <T extends Element = HTMLElement>(sel: string) => el.querySelector<T>(sel)!;
+    // Le dialogue de l'hôte s'ouvre sur son premier élément focalisable, le lien de fin encore invisible : le focus va
+    // sur « Passer » (autoFocus ne suffit pas, il agit avant l'ouverture du dialogue)
+    q("[data-skip]").focus();
     const run = async () => {
-      play("taiko", [30, 40, 30]);
+      fx("taiko", [30, 40, 30]);
       animate(timeline, q("[data-dim]"), [{ opacity: 0 }, { opacity: 0.35 }], { duration: 420 });
       await wait(timeline, 300);
       // Les lanternes s'embrasent
-      play("lamp");
+      fx("lamp");
       await animate(timeline, q("[data-bloom]"), [{ opacity: 0 }, { opacity: 1 }], { duration: 700 }).finished;
       // La carte s'élève dans son halo, sous un rayon d'or
-      play("chime");
+      fx("chime");
       animate(timeline, q("[data-halo]"), [{ opacity: 0, transform: "scale(.6)" }, { opacity: 1, transform: "scale(1)" }], { duration: 900 });
       animate(timeline, q("[data-ray]"), [{ opacity: 0 }, { opacity: 1 }], { duration: 900 });
       const relic = q("[data-relic]");
       await animate(timeline, relic, [{ opacity: 0, transform: "translateY(60px) scale(.9)" }, { opacity: 1, transform: "translateY(0) scale(1)" }], { duration: 900, easing: "cubic-bezier(.2,.8,.25,1)" }).finished;
       // La cloche sonne
-      play("bell", [20, 40, 20]);
+      fx("bell", [20, 40, 20]);
       await animate(timeline, q("[data-suzu]"), [
         { transform: "rotate(0)" },
         { transform: "rotate(9deg)" },
@@ -58,7 +75,7 @@ export function ConsecrationRite({ card, username }: { card: FudaCard; username:
       const to = q("[data-slot]").getBoundingClientRect();
       const dx = to.left + to.width / 2 - (from.left + from.width / 2);
       const dy = to.top + to.height / 2 - (from.top + from.height / 2);
-      play("whoosh");
+      fx("whoosh");
       animate(timeline, q("[data-halo]"), [{ opacity: 1 }, { opacity: 0 }], { duration: 820 });
       animate(timeline, q("[data-ray]"), [{ opacity: 1 }, { opacity: 0 }], { duration: 820 });
       animate(timeline, q("[data-dim]"), [{ opacity: 0.35 }, { opacity: 0 }], { duration: 820 });
@@ -78,20 +95,23 @@ export function ConsecrationRite({ card, username }: { card: FudaCard; username:
       animate(timeline, q("[data-slot-glow]"), [{ opacity: 0 }, { opacity: 1 }], { duration: 400 });
       animate(timeline, burst, [{ opacity: 0, transform: "scale(.4)" }, { opacity: 1, transform: "scale(1)", offset: 0.35 }, { opacity: 0, transform: "scale(1.25)" }], { duration: 900, easing: "ease-out" });
       await wait(timeline, 260);
-      play("stamp", 40);
+      fx("stamp", 40);
       await animate(timeline, seal, [{ opacity: 0, transform: "scale(2.4) rotate(-20deg)" }, { opacity: 1, transform: "scale(1) rotate(-6deg)" }], { duration: 320, easing: SPRING }).finished;
       await animate(timeline, q("[data-done]"), [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 350 }).finished;
       el.querySelector<HTMLElement>("[data-done] a")?.focus();
     };
     run().catch(() => undefined);
-    return () => dispose(timeline);
+    return () => {
+      alive = false;
+      dispose(timeline);
+    };
     // Le rite ne se joue qu'une fois
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const scene = PRESTIGE_ASSETS.sanctuary;
   return (
-    <div ref={root} role="dialog" aria-modal="true" aria-label={t("label")} className="pr-rite pr-consecrate" onClick={() => tl.current && skip(tl.current)}>
+    <div ref={root} className="pr-rite pr-consecrate" onClick={() => tl.current && skip(tl.current)}>
       {/* Le sanctuaire du profil : portrait sur téléphone, paysage sur un écran large */}
       <picture className="pr-cs-bg">
         <source media="(orientation: landscape)" srcSet={scene.desktop.still} />
@@ -123,7 +143,7 @@ export function ConsecrationRite({ card, username }: { card: FudaCard; username:
       </div>
       <button
         type="button"
-        autoFocus
+        data-skip
         onClick={(e) => {
           e.stopPropagation();
           if (tl.current) skip(tl.current);

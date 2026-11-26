@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import dynamic from "next/dynamic";
 import { useCallback, useState, useTransition } from "react";
 import type { FudaCard } from "@/components/fuda/Fuda";
 import { consecrateAction } from "@/server/actions/prestige";
@@ -10,21 +9,22 @@ import { useReducedFx } from "../motion/MotionPreference";
 import { Button } from "../ui/Button";
 import { HoldButton } from "../ui/HoldButton";
 import { Sheet } from "../ui/Sheet";
-
-// Rite de consécration (奉納) : chargé seulement après une consécration réussie
-const ConsecrationRite = dynamic(() => import("./ConsecrationRite").then((mod) => mod.ConsecrationRite), { ssr: false });
+import { useConsecrationRite } from "./ConsecrationRiteHost";
 
 /**
  * « Consacrer » une héritière au plafond, depuis sa ligne d'exemplaire : la feuille explique ce qui se passe (la carte
  * quitte le jeu pour toujours), le bouton se maintient, puis le rite se joue et mène au sanctuaire du profil.
+ *
+ * Le rite n'est pas rendu ici : l'action rafraîchit la fiche, et cette ligne disparaît avec l'exemplaire consacré. Il
+ * est confié à l'hôte du layout de /collection (ConsecrationRiteHost), qui reste monté.
  */
 export function ConsecrateButton({ userCardId, card, username }: { userCardId: string; card: FudaCard & { series?: string }; username: string }) {
   const t = useTranslations("prestige.consecrate");
   const reduced = useReducedFx();
+  const startRite = useConsecrationRite();
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
 
   const consecrate = useCallback(() => {
     setError(null);
@@ -34,14 +34,24 @@ export function ConsecrateButton({ userCardId, card, username }: { userCardId: s
         setError(t(`errors.${res.error}`));
         return;
       }
+      // Cette ligne est peut-être déjà démontée par la fiche rafraîchie : seul l'hôte, stable, compte ici
       setOpen(false);
-      setDone(true);
+      startRite?.({ card, username });
     });
-  }, [t, userCardId]);
+  }, [card, startRite, t, userCardId, username]);
 
   return (
     <>
-      <Button type="button" size="sm" className="self-start border-kin/60 text-kin" onClick={() => setOpen(true)}>
+      <Button
+        type="button"
+        size="sm"
+        className="self-start border-kin/60 text-kin"
+        onClick={() => {
+          setOpen(true);
+          // Le rite est préchargé pendant que la feuille explique et que le bouton se maintient
+          void import("./ConsecrationRite");
+        }}
+      >
         <span aria-hidden="true" lang="ja" className="font-seal">奉</span> {t("open")}
       </Button>
       <Sheet open={open} onClose={() => setOpen(false)} title={t("title")}>
@@ -73,7 +83,6 @@ export function ConsecrateButton({ userCardId, card, username }: { userCardId: s
           />
         </div>
       </Sheet>
-      {done && <ConsecrationRite card={card} username={username} />}
     </>
   );
 }
