@@ -7293,6 +7293,7 @@
       "speedInsights": "Vercel performance measurement (no cookies or persistent identifiers)",
       "casinoCeremony": "Remembers that you've already seen the casino opening ceremony on this device.",
       "kyaraBanner": "Remembers that you've hidden the Kyara import banner on this device.",
+      "wrappedBanner": "Remembers that you've hidden this year's Wrapped banner on this device.",
       "nav": "Remembers the desktop navigation layout (top menus or sidebar).",
       "security": "Random identifier for this device: spots mass account creation and enforces bans."
     },

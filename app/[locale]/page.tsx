@@ -45,7 +45,7 @@ import { boosterStateFrom } from "@/server/boosters/state";
 import { getTopCollectors } from "@/server/collection/leaderboard";
 import { getWishlistCardIds } from "@/server/collection/profile-cards";
 import { getEventGauge } from "@/server/home/event-gauge";
-import { wrappedTeaser } from "@/server/wrapped/queries";
+import { wrappedBannerFor } from "@/server/wrapped/queries";
 import { getHomeShowcaseEvent } from "@/server/home/showcase-event";
 import { getRecentPulls } from "@/server/home/pulls";
 import { ownedCardIds } from "@/server/collection/owned";
@@ -144,8 +144,8 @@ export default async function BoostersPage({ searchParams }: PageProps<"/[locale
     getSetting("referral.enabled"),
     // Event vitrines (caché tant que l'admin ne l'allume pas) : invitation, puis podium après la clôture
     getHomeShowcaseEvent(),
-    // Wrapped de l'année : seulement pendant la période, et pour qui a ouvert des boosters cette année
-    wrappedTeaser(user ?? null),
+    // Wrapped de l'année : seulement pendant la période, pour qui a ouvert des boosters cette année et ne l'a pas masqué
+    wrappedBannerFor(user ?? null),
     // Import Kyara : pendant la fenêtre du joueur, tant qu'il n'a rien demandé
     kyaraBannerFor(user ?? null, state.serverNow),
   ]);

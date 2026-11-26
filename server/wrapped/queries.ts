@@ -1,8 +1,9 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
+import { cookies } from "next/headers";
 import { rarityColor, resolveAppearance } from "@/lib/catalog/appearance";
 import { rankOf } from "@/lib/ranked/rules";
-import { wrappedPhase, yearWindow, type WrappedPhase } from "@/lib/wrapped/period";
+import { WRAPPED_BANNER_COOKIE, wrappedBannerHidden, wrappedPhase, yearWindow, type WrappedPhase } from "@/lib/wrapped/period";
 import { pickFavorite, zeniTotals, type WrappedSummary } from "@/lib/wrapped/summary";
 import { prisma } from "../db";
 import { getRarityDefinitions } from "../catalog/rarities";
@@ -79,17 +80,29 @@ export async function getWrapped(userId: string, year: number): Promise<WrappedS
   return loadWrapped(userId, year, await getSetting("game.timeZone"));
 }
 
+type TeaserUser = { id: string; bannedAt: Date | null } | null;
+
 /**
  * Annonce du Wrapped (bannière de l'accueil, bouton du profil) : l'année à montrer si la période est ouverte
- * et que le joueur a ouvert au moins un booster dans l'année, sinon null. Une seule lecture indexée.
+ * et que le joueur a ouvert au moins un booster dans l'année, sinon null. Une seule lecture indexée, évitée
+ * quand `skip` écarte déjà l'année (bannière masquée).
  */
-export async function wrappedTeaser(user: { id: string; bannedAt: Date | null } | null, now = new Date()): Promise<number | null> {
+export async function wrappedTeaser(user: TeaserUser, now = new Date(), skip?: (year: number) => boolean): Promise<number | null> {
   if (!user || user.bannedAt) return null;
   const { settings, phase } = await getWrappedPhase(now);
-  if (phase !== "open") return null;
+  if (phase !== "open" || skip?.(settings.year)) return null;
   const { start, end } = yearWindow(settings.year, await getSetting("game.timeZone"));
   const any = await prisma.boosterOpening.findFirst({ where: { userId: user.id, createdAt: { gte: start, lt: end } }, select: { id: true } });
   return any ? settings.year : null;
+}
+
+/**
+ * Bannière de l'accueil : l'annonce, sauf « Plus tard » choisi pour cette année. Le cookie est lu au rendu serveur,
+ * qui ne rend plus la bannière masquée (avant, elle s'affichait puis disparaissait à l'hydratation).
+ */
+export async function wrappedBannerFor(user: TeaserUser, now = new Date()): Promise<number | null> {
+  const hidden = (await cookies()).get(WRAPPED_BANNER_COOKIE)?.value;
+  return wrappedTeaser(user, now, (year) => wrappedBannerHidden(hidden, year));
 }
 
 /** Aperçu de l'admin : le récap d'un joueur par son pseudo. */

@@ -7293,6 +7293,7 @@
       "speedInsights": "Mesure des performances Vercel (sans cookie ni identifiant persistant)",
       "casinoCeremony": "Retient que tu as déjà vu la cérémonie d'ouverture du casino sur cet appareil.",
       "kyaraBanner": "Retient que tu as masqué la bannière de l'import Kyara sur cet appareil.",
+      "wrappedBanner": "Retient que tu as masqué la bannière du Wrapped de l'année sur cet appareil.",
       "nav": "Retient la disposition de la navigation sur ordinateur (menus en haut ou barre latérale).",
       "security": "Identifiant aléatoire de cet appareil : repère la création de comptes en série et fait respecter un bannissement."
     },

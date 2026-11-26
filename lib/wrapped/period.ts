@@ -20,3 +20,11 @@ export function wrappedPhase(w: WrappedWindow, now: Date): WrappedPhase {
   if (t >= Date.parse(w.closesAt)) return "closed";
   return "open";
 }
+
+/** Cookie « Plus tard » de la bannière de l'accueil : l'année masquée, lue au rendu serveur (préférence exemptée). */
+export const WRAPPED_BANNER_COOKIE = "kiraku-wrapped-banner";
+
+/** Bannière masquée pour `year` : le cookie porte l'année du « Plus tard », le Wrapped d'une autre année la remontre. */
+export function wrappedBannerHidden(cookie: string | undefined, year: number): boolean {
+  return cookie === String(year);
+}

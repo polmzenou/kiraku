@@ -1,10 +1,12 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { WRAPPED_BANNER_COOKIE } from "@/lib/wrapped/period";
 import { ButtonLink } from "../ui/ButtonLink";
 
 const key = (year: number) => `kiraku:wrapped-banner:${year}`;
+const ONE_YEAR = 60 * 60 * 24 * 365;
 const noop = () => () => {};
 
 function hiddenHere(year: number): boolean {
@@ -15,22 +17,33 @@ function hiddenHere(year: number): boolean {
   }
 }
 
+/** « Plus tard » retenu pour le rendu serveur suivant : la bannière de cette année n'est plus rendue (préférence exemptée, lib/consent/registry.ts). */
+function rememberDismissed(year: number) {
+  const secure = location.protocol === "https:" ? "; secure" : "";
+  document.cookie = `${WRAPPED_BANNER_COOKIE}=${year}; path=/; max-age=${ONE_YEAR}; samesite=lax${secure}`;
+}
+
 /**
- * Annonce du Wrapped sur l'accueil, pendant la période. Masquable : le choix reste dans ce navigateur
- * (stockage local, par année) ; le rendu serveur montre toujours la bannière.
+ * Annonce du Wrapped sur l'accueil, pendant la période. Masquable sur cet appareil, par année : un cookie, que le
+ * serveur lit pour ne plus la rendre (server/wrapped/queries.ts), et le stockage local en secours (masquage d'avant
+ * le cookie, recopié dans le cookie à la visite suivante).
  */
 export function WrappedBanner({ year }: { year: number }) {
   const t = useTranslations("wrapped.banner");
   const stored = useSyncExternalStore(noop, () => hiddenHere(year), () => false);
   const [dismissed, setDismissed] = useState(false);
+  useEffect(() => {
+    if (stored) rememberDismissed(year);
+  }, [stored, year]);
   if (stored || dismissed) return null;
 
   const dismiss = () => {
     setDismissed(true);
+    rememberDismissed(year);
     try {
       window.localStorage.setItem(key(year), "1");
     } catch {
-      /* rien à garder */
+      /* le cookie suffit */
     }
   };
 

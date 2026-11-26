@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { wrappedPhase, yearWindow } from "./period";
+import { wrappedBannerHidden, wrappedPhase, yearWindow } from "./period";
 import { hasYear, pickFavorite, winRate, zeniTotals } from "./summary";
 
 describe("période du Wrapped", () => {
@@ -20,6 +20,14 @@ describe("période du Wrapped", () => {
     expect(wrappedPhase(w, new Date("2026-11-30T23:00:00Z"))).toBe("open");
     expect(wrappedPhase(w, new Date("2027-01-31T23:00:00Z"))).toBe("closed");
     expect(wrappedPhase({ ...w, enabled: false }, new Date("2026-12-10T12:00:00Z"))).toBe("off");
+  });
+
+  it("bannière masquée par « Plus tard » pour son année seulement", () => {
+    expect(wrappedBannerHidden("2026", 2026)).toBe(true);
+    // Le Wrapped de l'année suivante se remontre ; cookie absent ou abîmé : la bannière reste
+    expect(wrappedBannerHidden("2026", 2027)).toBe(false);
+    expect(wrappedBannerHidden(undefined, 2026)).toBe(false);
+    expect(wrappedBannerHidden("1", 2026)).toBe(false);
   });
 });
 

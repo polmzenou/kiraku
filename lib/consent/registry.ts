@@ -23,6 +23,7 @@ export type StoragePurpose =
   | "news"
   | "casinoCeremony"
   | "kyaraBanner"
+  | "wrappedBanner"
   | "speedInsights"
   | "security";
 
@@ -186,6 +187,26 @@ export const STORAGE_REGISTRY: readonly StorageEntry[] = [
     kind: "localStorage",
     category: "preferences",
     purpose: "kyaraBanner",
+    duration: { unit: "persistent" },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
+    // Bannière du Wrapped masquée sur cet appareil pour une année (components/home/WrappedBanner.tsx) : le cookie, qui
+    // porte l'année et que le rendu serveur lit pour ne plus la rendre, et le stockage local en secours
+    name: "kiraku-wrapped-banner",
+    kind: "cookie",
+    category: "preferences",
+    purpose: "wrappedBanner",
+    duration: { unit: "days", value: 365 },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
+    name: "kiraku:wrapped-banner:YYYY",
+    kind: "localStorage",
+    category: "preferences",
+    purpose: "wrappedBanner",
     duration: { unit: "persistent" },
     provider: "kiraku",
     exempt: true,
