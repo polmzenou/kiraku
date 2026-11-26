@@ -7,9 +7,13 @@ import { discordRequestBody, validDiscordSignature } from "@/server/discord/sign
 import { linkedRoleConfigured, rolesPanelConfigured, selfRoles } from "@/server/discord/roles-config";
 import { assertCommunityRole } from "@/server/discord/role-permissions";
 import { recordDiscordAlert, resolveDiscordAlert } from "@/server/discord/alert-store";
+import { rateLimit } from "@/server/ratelimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
+
+// Clics de boutons par membre Discord : largement de quoi choisir ses rôles, pas de quoi boucler sur l'API
+const BUTTON_LIMIT = { limit: 5, windowSeconds: 60 };
 
 const snowflake = z.string().regex(/^\d{17,20}$/);
 const interactionSchema = z.object({
@@ -65,6 +69,13 @@ export async function POST(request: Request) {
   // Accusé de réception immédiat (< 3 s). L'API des rôles et la confirmation tournent après.
   const userId = input.member.user.id;
   const token = input.token;
+  // Chaque clic coûte plusieurs appels à Discord (et des écritures pour « Vérifier mon compte ») : un clic automatique
+  // ne doit pas saturer l'API des rôles. Compteur de l'instance, sans écriture en base.
+  if (!(await rateLimit(`discord-button:${userId}`, BUTTON_LIMIT, { store: "memory" })).success) {
+    return reply("Doucement ! Réessaie dans une minute.");
+  }
+  // Un incident par bouton (règlement, rôle, vérification), pas un par joueur
+  const alertSource = acceptingRules ? "member" : role?.key ?? "verify";
   after(async () => {
     let content: string;
     try {
@@ -92,10 +103,10 @@ export async function POST(request: Request) {
         await discordBotRequest(`/guilds/${env.DISCORD_GUILD_ID}/members/${userId}/roles/${role!.id}`, remove ? "DELETE" : "PUT");
         content = `${remove ? "➖" : "✅"} Rôle ${role!.label} ${remove ? "retiré" : "ajouté"}.`;
       }
-      await resolveDiscordAlert("interaction-role", `${acceptingRules ? "member" : role?.key ?? "verify"}:${userId}`);
+      await resolveDiscordAlert("interaction-role", alertSource);
     } catch (error) {
       console.warn("[discord] attribution du rôle impossible.");
-      await recordDiscordAlert("interaction-role", `${acceptingRules ? "member" : role?.key ?? "verify"}:${userId}`, error instanceof DiscordApiError ? error.status : undefined);
+      await recordDiscordAlert("interaction-role", alertSource, error instanceof DiscordApiError ? error.status : undefined);
       content = "Je n’ai pas pu modifier ton rôle. Réessaie ; si le problème persiste, contacte l’équipe.";
     }
     await editInteractionReply(input.application_id, token, content).catch(() => console.warn("[discord] confirmation privée non envoyée."));

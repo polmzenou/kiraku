@@ -23,6 +23,7 @@ import { consumeWishlist } from "../collection/wishlist-core";
 import { recordDiscoveries } from "../collection/discovery";
 import { withdrawCasinoFor } from "../casino/coinflip-core";
 import { withdrawMarketFor } from "../market/withdraw";
+import { requeueLinkedDiscordRoleWith } from "../discord/linked-role-queue";
 
 export class AdminUserMutationError extends Error {
   constructor(readonly code: AdminUserError) { super(code); }
@@ -122,6 +123,8 @@ async function giftFromTeam(
 export async function banAccountWith(tx: Tx, userId: string, now: Date): Promise<boolean> {
   const { count } = await tx.user.updateMany({ where: { id: userId, bannedAt: null }, data: { bannedAt: now } });
   await tx.session.deleteMany({ where: { userId } });
+  // Rôle Discord « vérifié » retiré dans la minute, pas au contrôle quotidien
+  if (count === 1) await requeueLinkedDiscordRoleWith(tx, userId, now);
   return count === 1;
 }
 
@@ -207,6 +210,8 @@ async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUs
           ...(input.banned ? {} : { bannedAt: null }),
         } });
         if (input.banned) await banAccountWith(tx, userId, now);
+        // Ban levé : le rôle Discord « vérifié » revient dans la minute
+        else if (user.bannedAt) await requeueLinkedDiscordRoleWith(tx, userId, now);
         break;
       }
       case "coins": {

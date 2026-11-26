@@ -31,6 +31,8 @@ const schema = z.object({
   DISCORD_REFERRAL_CHANNEL_ID: z.string().regex(/^[0-9]{17,20}$/).optional(),
   // Salon public des annonces de la communauté : lancement du parrainage v2 et de l'Ennichi, publié depuis l'admin
   DISCORD_ANNOUNCE_CHANNEL_ID: z.string().regex(/^[0-9]{17,20}$/).optional(),
+  // Rôles d'équipe en plus de ceux du code (« id,id ») : admis à lire les salons privés (#logs-bot, parrainage)
+  DISCORD_STAFF_ROLE_IDS: z.string().regex(/^[0-9]{17,20}(,[0-9]{17,20})*$/).optional(),
   ADMIN_DISCORD_ID: z.string().optional(),
   // E-mails (Resend) en attente : sans clé, les liens sont écrits dans les logs en dev
   RESEND_API_KEY: z.string().min(1).optional(),

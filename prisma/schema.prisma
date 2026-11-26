@@ -1743,6 +1743,9 @@ model DiscordPost {
   nextAttemptAt DateTime? @default(now())
   leaseId       String?
   leaseUntil    DateTime?
+  // Création envoyée sans issue connue (réseau, 5xx, réponse perdue) : la tentative suivante cherche ce message
+  // avant d'en créer un autre. Nul après un refus net de Discord (429, 4xx) ou une fois le message enregistré.
+  sendStartedAt DateTime?
   createdAt     DateTime @default(now())
 
   @@index([nextAttemptAt])

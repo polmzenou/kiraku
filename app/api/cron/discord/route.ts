@@ -6,16 +6,20 @@ import { syncDiscordAvatars } from "@/server/discord/avatars";
 import { syncDiscordCasino } from "@/server/discord/casino";
 import { syncDiscordPrestige } from "@/server/discord/prestige";
 import { syncDiscordReferrals } from "@/server/discord/referral-feed";
-import { recordDiscordAlert, resolveDiscordAlert } from "@/server/discord/alert-store";
+import { openDiscordAlerts, recordDiscordAlert, resolveDiscordAlert } from "@/server/discord/alert-store";
 import { syncDiscordAlerts } from "@/server/discord/alerts";
 import { after } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 90;
 
-async function run<T>(name: string, task: () => Promise<T>, fallback: T): Promise<T> {
-  try { const result = await task(); await resolveDiscordAlert("cron", name); return result; }
-  catch {
+/** Une tâche du passage ; un incident « cron » n'est résolu que s'il est ouvert (lus une fois au début du passage). */
+async function runTask<T>(open: ReadonlySet<string>, name: string, task: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    const result = await task();
+    if (open.has(name)) await resolveDiscordAlert("cron", name);
+    return result;
+  } catch {
     console.warn(`[discord] tâche ${name} reportée au prochain passage.`);
     await recordDiscordAlert("cron", name);
     return fallback;
@@ -25,6 +29,8 @@ async function run<T>(name: string, task: () => Promise<T>, fallback: T): Promis
 export async function GET(request: Request) {
   if (!cronAuthorized(request.headers.get("authorization"))) return Response.json({ error: "unauthorized" }, { status: 401 });
   const deadline = Date.now() + 45_000;
+  const open = await openDiscordAlerts("cron");
+  const run = <T,>(name: string, task: () => Promise<T>, fallback: T) => runTask(open, name, task, fallback);
   const ranked = await run("ranked", () => syncDiscordSeasons(deadline), { published: 0, failed: 1 });
   const linkedRoles = await run("linked-roles", () => syncLinkedDiscordRoles(Math.min(deadline - 15_000, Date.now() + 20_000)), { synced: 0, deferred: 1 });
   const market = await run("market", () => syncDiscordMarket(deadline), { synced: 0, failed: 1 });

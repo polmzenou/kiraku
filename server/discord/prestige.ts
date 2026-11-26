@@ -7,6 +7,7 @@ import { prisma } from "../db";
 import { appUrl, discordPrestigeConfigured, env } from "../env";
 import { getPrintingSeals } from "../prestige/rules";
 import { getSetting } from "../settings";
+import { discordPaused } from "./api";
 import { discordPlayerName, discordPlayerSelect } from "./labels";
 import { dropDiscordPost, publishDiscordPost } from "./posts";
 
@@ -76,9 +77,18 @@ export async function syncDiscordPrestige(deadline = Date.now() + 15_000): Promi
   const channelId = await discordPrestigeChannel();
   if (!channelId) return result;
   const since = new Date(Date.now() - GRACE_MS);
+  // Événements déjà en file écartés : sinon les 20 plus anciens de la fenêtre reviendraient à chaque passage et les
+  // suivants attendraient leur sortie. Une ligne de file est toujours créée après son événement (createdAt ≥ since).
+  const queued = await prisma.discordPost.findMany({ where: { key: { startsWith: "prestige:" }, createdAt: { gte: since } }, select: { key: true } });
+  const known = (kind: "rebirth" | "engraved") => queued.flatMap((p) => (p.key.startsWith(`prestige:${kind}:`) ? [p.key.slice(`prestige:${kind}:`.length)] : []));
   const [cycles, pulls] = await Promise.all([
-    prisma.prestigeCycle.findMany({ where: { createdAt: { gte: since } }, orderBy: { createdAt: "asc" }, take: 20, select: { id: true } }),
-    prisma.notablePull.findMany({ where: { createdAt: { gte: since }, printing: { not: null } }, orderBy: { createdAt: "asc" }, take: 20, select: { id: true } }),
+    prisma.prestigeCycle.findMany({ where: { createdAt: { gte: since }, id: { notIn: known("rebirth") } }, orderBy: { createdAt: "asc" }, take: 20, select: { id: true } }),
+    prisma.notablePull.findMany({
+      where: { createdAt: { gte: since }, printing: { not: null }, id: { notIn: known("engraved") } },
+      orderBy: { createdAt: "asc" },
+      take: 20,
+      select: { id: true },
+    }),
   ]);
   const keys = [...cycles.map((c) => `prestige:rebirth:${c.id}`), ...pulls.map((p) => `prestige:engraved:${p.id}`)];
   if (keys.length > 0) {
@@ -92,7 +102,7 @@ export async function syncDiscordPrestige(deadline = Date.now() + 15_000): Promi
     select: { key: true },
   });
   for (const post of posts) {
-    if (Date.now() + 5_000 > deadline) break;
+    if (Date.now() + 5_000 > deadline || discordPaused()) break;
     const [, kind, id] = post.key.split(":");
     try {
       const ok = kind === "rebirth" ? await publishRebirth(post.key, id) : kind === "engraved" ? await publishEngraved(post.key, id) : false;

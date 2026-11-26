@@ -7,9 +7,13 @@ import { appUrl, env } from "../env";
 import { getSetting } from "../settings";
 import { getRankedRules } from "../ranked/queries";
 import { rollSeasonWith } from "../ranked/ranked-core";
+import { discordPaused } from "./api";
 import { publishDiscordPost } from "./posts";
 import { seasonImage } from "./season-image";
 import { recordDiscordAlert, resolveDiscordAlert } from "./alert-store";
+
+// Au-delà, une clôture manquée (bot coupé, annonce activée tard) n'est plus annoncée, comme l'ouverture du casino
+const GRACE_MS = 24 * 3_600_000;
 
 export async function rankedDiscordEnabled(): Promise<boolean> {
   return Boolean(env.DISCORD_BOT_TOKEN && env.DISCORD_GUILD_ID && env.DISCORD_RANKED_CHANNEL_ID && await getSetting("discord.rankedEnabled"));
@@ -33,8 +37,10 @@ export async function syncDiscordSeasons(deadline = Date.now() + 25_000): Promis
   if (!(await rankedDiscordEnabled())) return result;
   const [rules, timeZone] = await Promise.all([getRankedRules(), getSetting("game.timeZone")]);
   if (rules.enabled) await rollSeasonWith(prisma, new Date(), rules, timeZone);
+  // Le classement est figé à chaque clôture, annonce activée ou non : au-delà de la fenêtre, une saison close depuis
+  // longtemps n'est pas annoncée (« Début de la saison N+1 ! » des semaines après) quand on active l'annonce.
   const closed = await prisma.season.findMany({
-    where: { closedAt: { not: null }, leaderboardSnapshot: { not: Prisma.DbNull }, discordPost: { is: null } },
+    where: { closedAt: { gte: new Date(Date.now() - GRACE_MS) }, leaderboardSnapshot: { not: Prisma.DbNull }, discordPost: { is: null } },
     orderBy: { number: "asc" }, take: 5, select: { id: true },
   });
   if (closed.length) await prisma.discordPost.createMany({ data: closed.map((season) => ({ key: `season:${season.id}`, seasonId: season.id, channelId: env.DISCORD_RANKED_CHANNEL_ID! })), skipDuplicates: true });
@@ -43,7 +49,7 @@ export async function syncDiscordSeasons(deadline = Date.now() + 25_000): Promis
     orderBy: { nextAttemptAt: "asc" }, take: 3, select: { key: true, season: { select: { leaderboardSnapshot: true } } },
   });
   for (const post of posts) {
-    if (Date.now() + 20_000 > deadline) break;
+    if (Date.now() + 20_000 > deadline || discordPaused()) break;
     try {
       const snapshot = seasonSnapshotSchema.parse(post.season?.leaderboardSnapshot);
       const png = new Uint8Array(await (await seasonImage(snapshot)).arrayBuffer());

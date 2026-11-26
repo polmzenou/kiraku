@@ -47,7 +47,7 @@ export function DiscordCommunityPanel({ configured, endpoint, rulesUrl, rolesCon
       <div aria-live="polite" className="text-sm">
         {result && (result.ok ? t("success") : t(`errors.${result.error}`))}
       </div>
-      {url && <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-link underline">{t("open")}</a>}
+      {url && <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center self-start text-sm text-link underline">{t("open")}</a>}
       <div className="mt-2 flex flex-col gap-3 border-t border-border pt-4">
         <h4 className="font-bold">{t("rolesTitle")}</h4>
         <p className="text-sm text-text-muted">{t("rolesIntro")}</p>
@@ -57,7 +57,7 @@ export function DiscordCommunityPanel({ configured, endpoint, rulesUrl, rolesCon
           catch { setRolesResult({ ok: false, error: "DISCORD" }); }
         })}>{pending ? t("publishing") : t("publishRoles")}</Button>
         <div aria-live="polite" className="text-sm">{rolesResult && (rolesResult.ok ? t("rolesSuccess") : t(`errors.${rolesResult.error}`))}</div>
-        {roleUrl && <a href={roleUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-link underline">{t("openRoles")}</a>}
+        {roleUrl && <a href={roleUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center self-start text-sm text-link underline">{t("openRoles")}</a>}
         <p className="text-sm text-text-muted">{linkedConfigured ? t("linkedReady") : t("linkedMissing")}</p>
       </div>
       <div className="flex flex-col gap-3 border-t border-border pt-4">
@@ -68,12 +68,12 @@ export function DiscordCommunityPanel({ configured, endpoint, rulesUrl, rolesCon
           catch { setAlertsResult({ ok: false, error: "DISCORD" }); }
         })}>{t("alertsTest")}</Button>
         <div aria-live="polite" className="text-sm">{alertsResult && (alertsResult.ok ? t("alertsSuccess") : t(`errors.${alertsResult.error}`))}</div>
-        {alertsResult?.ok && <a href={alertsResult.url} target="_blank" rel="noopener noreferrer" className="text-sm text-link underline">{t("alertsOpen")}</a>}
+        {alertsResult?.ok && <a href={alertsResult.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center self-start text-sm text-link underline">{t("alertsOpen")}</a>}
       </div>
       <div className="flex flex-col gap-3 border-t border-border pt-4">
         <h4 className="font-bold">{t("rankedTitle")}</h4>
         <p className="text-sm text-text-muted">{t("rankedIntro")}</p>
-        <a href="/api/admin/discord/ranked-preview" target="_blank" rel="noopener noreferrer" className="self-start text-sm text-link underline">{t("rankedPreview")}</a>
+        <a href="/api/admin/discord/ranked-preview" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center self-start text-sm text-link underline">{t("rankedPreview")}</a>
       </div>
     </section>
   );

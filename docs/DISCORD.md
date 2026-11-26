@@ -114,7 +114,8 @@ réessayé par le cron, sans refaire le classement avec les scores de la saison 
 Le cron clôt une saison arrivée à échéance même si personne n'ouvre le jeu. Une clôture anticipée
 depuis l'administration produit aussi un bilan. Les saisons closes avant cette migration n'ont
 pas de classement figé : elles ne sont pas publiées rétroactivement. L'activation prend effet
-pour les prochaines clôtures, sans annoncer immédiatement un faux début de saison.
+pour les prochaines clôtures, sans annoncer immédiatement un faux début de saison : seule une saison
+close depuis moins de 24 h est annoncée.
 
 ### Activer le marché
 
@@ -134,10 +135,14 @@ pour les prochaines clôtures, sans annoncer immédiatement un faux début de sa
 La file `DiscordPost` est créée dans la transaction de vente ou d'annonce d'échange. L'envoi part après la réponse ;
 les échecs sont réessayés avec un délai progressif et le délai imposé par Discord en cas de 429.
 Les mises, achats et annulations actualisent le message ; le cron reprend les échecs et les
-clôtures différées. Les annonces inchangées ne sont pas renvoyées. Une lease en base évite les
+clôtures différées. Les annonces inchangées ne sont pas renvoyées : le cron relit une annonce active
+toutes les 5 minutes (et à l'heure de fin), en une seule écriture si rien n'a changé ; une vente échue
+en attente de clôture, toutes les 10 minutes. Une lease en base évite les
 publications concurrentes, et un nonce stable déduplique les créations rapprochées. Après un
-envoi incertain, les 100 messages récents sont examinés avant une nouvelle création ; cette
-récupération reste limitée à cette fenêtre si le salon reçoit beaucoup de messages.
+envoi incertain (réseau, 5xx, réponse perdue ; jamais après un 429 ou un autre 4xx), les 100 messages
+récents sont examinés avant une nouvelle création : seul un message du bot posté depuis la mise en file,
+dont le lien de l'encadré porte le repère de la clé (`#k=…`), est repris. Cette récupération reste
+limitée à cette fenêtre si le salon reçoit beaucoup de messages.
 
 Le relais est désactivé par défaut. Il concerne les **nouvelles ventes aux enchères avec ou sans
 achat immédiat et les nouveaux échanges carte contre carte**. Les anciennes annonces ne sont pas
@@ -192,6 +197,8 @@ Le Marché et le casino annoncent aussi l'exemplaire quand il est spécial (« G
 
 1. Créer un salon **privé** : le rôle @everyone ne le voit pas, seuls les rôles de l'équipe et le bot y ont accès.
    Donner au bot **Voir le salon**, **Voir l'historique**, **Envoyer des messages** et **Intégrer des liens**.
+   Un rôle d'équipe sans droit de gestion (nouveau rôle de modération) s'ajoute par
+   `DISCORD_STAFF_ROLE_IDS="id,id"` ; sinon le salon est refusé et une alerte `referral-channel` part dans #logs-bot.
 2. Ajouter `DISCORD_REFERRAL_CHANNEL_ID="…"` à l'environnement de l'application du VPS, puis `npm run build` et
    `pm2 restart kiraku --update-env`. Sans cette variable, rien n'est posté et le parrainage marche pareil.
 3. Le cron minute (`/api/cron/discord`) relaie alors, dans l'ordre d'arrivée :
@@ -257,7 +264,11 @@ du rôle de compte lié, attribution d'un rôle par bouton, génération/publica
 d'un traitement du cron. L'alerte présente une référence interne, le statut HTTP, la dernière occurrence,
 un compteur et une piste de correction. Elle n'inclut aucun jeton, corps brut d'erreur ou nom de joueur.
 
-Une ligne `DiscordAlert` regroupe chaque type/source d'incident. Le premier incident est envoyé au
+Une ligne `DiscordAlert` regroupe chaque type/source d'incident : une publication par salon
+(`channel:<id>`), le rôle de compte lié par rôle, un bouton par type (règlement, rôle, vérification),
+jamais un incident par joueur ou par annonce. Le salon des alertes n'est contrôlé que s'il y a une
+alerte à envoyer. Après un 429, le passage du cron s'arrête et reprend au suivant ; une limite globale
+bloque tout appel du bot jusqu'au délai imposé. Le premier incident est envoyé au
 prochain passage ; les répétitions et résolutions actualisent le même message au maximum toutes les
 15 minutes, sans mention générale. Un incident résolu avant sa première publication n'est pas envoyé.
 La lease et le nonce de `DiscordPost` restent utilisés pour les envois concurrents et les reprises.

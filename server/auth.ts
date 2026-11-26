@@ -86,7 +86,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const userId = user.id;
       const bonus = await getSetting("discord.linkBonusZeni");
 
-      const firstLink = await prisma.$transaction(async (tx) => {
+      const announceLink = await prisma.$transaction(async (tx) => {
         const current = await tx.user.findUnique({
           where: { id: userId },
           select: { username: true, email: true },
@@ -134,12 +134,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             });
           }
         }
-        return first.count === 1;
+        if (first.count !== 1) return false;
+        // Le pseudo Discord n'est annoncé que pour un profil public, comme le marché, le casino ou le prestige
+        const shown = await tx.user.findUnique({ where: { id: userId }, select: { profileVisibility: true } });
+        return shown?.profileVisibility === "PUBLIC";
       });
 
       // Après validation de la transaction et envoi de la réponse : Discord ne ralentit pas
       // la connexion. Les reconnexions et les nouvelles liaisons du même joueur n'annoncent rien.
-      if (firstLink && discordLinkConfigured) {
+      if (announceLink && discordLinkConfigured) {
         after(async () => {
           await notifyDiscordLink({
             discordId: account.providerAccountId,

@@ -25,7 +25,7 @@ import { NAV_LAYOUT_COOKIE, parseNavLayout } from "@/lib/nav-layout";
 import { guestCode } from "@/lib/username";
 import { logout } from "@/server/actions/account";
 import { linkDiscord } from "@/server/actions/auth";
-import { discordEnabled, env, isProduction, mailEnabled } from "@/server/env";
+import { discordEnabled, discordLinkConfigured, env, isProduction, mailEnabled } from "@/server/env";
 import { getBoosterRules } from "@/server/boosters/rules";
 import { pushAvailable } from "@/server/push/send";
 import { getCasinoNav } from "@/server/casino/queries";
@@ -81,11 +81,13 @@ export default async function AccountPage() {
   const canLinkDiscord = discordEnabled && !user.discordLinkedAt;
 
   const discordForm = (
-    <form action={linkDiscord}>
+    <form action={linkDiscord} className="flex flex-col gap-2">
       <input type="hidden" name="redirectTo" value="/compte" />
       <Button type="submit" className="w-full">
         {t("account.linkDiscord")}
       </Button>
+      {/* Annonce de première liaison sur le serveur (server/discord/link-notification.ts), seulement pour un profil public */}
+      {discordLinkConfigured && <p className="text-xs text-text-muted">{t("account.discordLinkAnnounce")}</p>}
     </form>
   );
 

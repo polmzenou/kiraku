@@ -150,7 +150,7 @@ export function DiscordSettingsForm({ initial }: { initial: DiscordSettings }) {
           )}
         </Field>
         {promo.inviteUrl === "" && modal.inviteUrl !== "" && (
-          <button type="button" className="self-start text-sm text-link underline" onClick={() => setPromo({ inviteUrl: modal.inviteUrl })}>
+          <button type="button" className="inline-flex min-h-11 items-center self-start text-sm text-link underline" onClick={() => setPromo({ inviteUrl: modal.inviteUrl })}>
             {t("promoUseModalUrl")}
           </button>
         )}

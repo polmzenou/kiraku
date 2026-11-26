@@ -58,7 +58,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.linkedRole = false;
   mocks.config.discordLinkConfigured = true;
-  mocks.findUnique.mockResolvedValue({ username: "PseudoKiraku", email: null });
+  mocks.findUnique.mockResolvedValue({ username: "PseudoKiraku", email: null, profileVisibility: "PUBLIC" });
   mocks.updateMany.mockResolvedValue({ count: 1 });
   mocks.setting.mockResolvedValue(500);
   mocks.notify.mockResolvedValue(true);
@@ -94,6 +94,13 @@ describe("annonce à la première liaison Auth.js", () => {
     expect(mocks.notify).not.toHaveBeenCalled();
     await mocks.after.mock.calls[0][0]();
     expect(mocks.notify).toHaveBeenCalledWith({ discordId: "987654321098765432", username: "sakura", displayName: "Sakura" });
+  });
+
+  it.each(["PRIVATE", "FRIENDS"])("n'annonce pas la liaison d'un profil %s", async (visibility) => {
+    mocks.findUnique.mockResolvedValue({ username: "PseudoKiraku", email: null, profileVisibility: visibility });
+    await onLink(event);
+    expect(mocks.credit).toHaveBeenCalledOnce();
+    expect(mocks.after).not.toHaveBeenCalled();
   });
 
   it("n'annonce pas une nouvelle liaison d'un joueur déjà lié", async () => {

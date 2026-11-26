@@ -14,7 +14,8 @@ export function discordAlertId(kind: DiscordAlertKind, sourceId: string): string
 
 /** L'appelant ne transmet que des identifiants internes et un statut HTTP, jamais Error.message. */
 export async function recordDiscordAlert(kind: DiscordAlertKind, sourceId: string, httpStatus?: number): Promise<void> {
-  if (!discordAlertsConfigured() || !/^[a-zA-Z0-9:_-]{1,160}$/.test(sourceId)) return;
+  // Point accepté : la clé de l'ouverture du casino porte une date ISO (millisecondes)
+  if (!discordAlertsConfigured() || !/^[a-zA-Z0-9:._-]{1,160}$/.test(sourceId)) return;
   try {
     const { prisma } = await import("../db");
     await prisma.discordAlert.upsert({
@@ -23,6 +24,19 @@ export async function recordDiscordAlert(kind: DiscordAlertKind, sourceId: strin
       update: { occurrences: { increment: 1 }, lastSeenAt: new Date(), resolvedAt: null, dirty: true, httpStatus: httpStatus ?? null },
     });
   } catch { console.warn("[discord] incident technique conservé uniquement dans les logs PM2."); }
+}
+
+/** Sources des incidents encore ouverts d'un type, lues une fois par passage : seules celles-ci sont à résoudre. */
+export async function openDiscordAlerts(kind: DiscordAlertKind): Promise<Set<string>> {
+  if (!discordAlertsConfigured()) return new Set();
+  try {
+    const { prisma } = await import("../db");
+    const rows = await prisma.discordAlert.findMany({ where: { kind, resolvedAt: null }, select: { sourceId: true } });
+    return new Set(rows.map((row) => row.sourceId));
+  } catch {
+    console.warn("[discord] incidents ouverts non relus.");
+    return new Set();
+  }
 }
 
 export async function resolveDiscordAlert(kind: DiscordAlertKind, sourceId: string): Promise<void> {

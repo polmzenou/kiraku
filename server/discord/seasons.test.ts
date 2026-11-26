@@ -28,6 +28,10 @@ describe("relais des bilans de saison", () => {
   it("clôt si nécessaire, puis publie uniquement le bilan conservé", async () => {
     expect(await syncDiscordSeasons()).toEqual({ published: 1, failed: 0 });
     expect(mocks.roll).toHaveBeenCalledOnce();
+    // Seules les saisons closes depuis moins de 24 h : activer l'annonce ne publie pas un vieux bilan
+    const closedSince = mocks.closed.mock.calls[0][0].where.closedAt.gte.getTime();
+    expect(Date.now() - closedSince).toBeGreaterThanOrEqual(24 * 3_600_000 - 1000);
+    expect(Date.now() - closedSince).toBeLessThan(24 * 3_600_000 + 1000);
     expect(mocks.create).toHaveBeenCalledWith({ data: [{ key: "season:s4", seasonId: "s4", channelId: "ranked" }], skipDuplicates: true });
     expect(mocks.image).toHaveBeenCalledWith(snapshot);
     expect(mocks.publish).toHaveBeenCalledWith("season:s4", expect.objectContaining({ content: expect.stringContaining("Début de la saison 5") }), null, false, {

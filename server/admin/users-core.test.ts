@@ -5,7 +5,7 @@ import { mutateAdminUserWith } from "./users-core";
 
 const base = { userId: "player", reason: "Correction" };
 const target = {
-  id: "player", username: "Player", role: "USER", bannedAt: null, profileVisibility: "PUBLIC", showCollection: true,
+  id: "player", username: "Player", role: "USER", bannedAt: null as Date | null, profileVisibility: "PUBLIC", showCollection: true,
   coins: 500, boosterStock: 2, boosterAnchor: new Date(0), rankPoints: 0, pityCount: 3, standardCount: 4, bannerPity: {}, battleTeam: [],
   ambassadorSince: null as Date | null, titleId: null as string | null, frameId: "frame-hisui" as string | null, nameColorId: "color-lime" as string | null,
   leaderboardHiddenAt: null as Date | null, leaderboardMalus: 0, leaderboardMythicMalus: 0,
@@ -29,6 +29,9 @@ function setup({ role = "ADMIN", banned = false, exists = true, player = {} as P
     coinTransaction: { createMany: vi.fn() },
     adminLog: { create: vi.fn() },
     session: { deleteMany: vi.fn().mockResolvedValue({ count: 2 }) },
+    // Rôle Discord « vérifié » remis en file au ban et à sa levée (server/discord/linked-role-queue.ts)
+    account: { findMany: vi.fn().mockResolvedValue([{ providerAccountId: "987654321098765432" }]) },
+    discordRoleSync: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     boosterType: { findUnique: vi.fn().mockResolvedValue({ id: "type" }) },
     boosterCredit: { findUnique: vi.fn().mockResolvedValue({ count: 5 }), upsert: vi.fn() },
     card: { findUnique: vi.fn().mockResolvedValue({ id: "card" }), count: vi.fn().mockResolvedValue(100) },
@@ -99,13 +102,22 @@ describe("mutations admin atomiques", () => {
     // Date du ban posée seulement s'il ne l'était pas déjà (banAccountWith, partagé avec les bans réseau)
     expect(tx.user.updateMany).toHaveBeenCalledWith({ where: { id: "player", bannedAt: null }, data: { bannedAt: expect.any(Date) } });
     expect(tx.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.not.objectContaining({ bannedAt: expect.anything() }) }));
+    // Le cron Discord retire le rôle « vérifié » dans la minute
+    expect(tx.discordRoleSync.updateMany).toHaveBeenCalledWith({ where: { discordId: { in: ["987654321098765432"] } }, data: { nextAttemptAt: expect.any(Date) } });
   });
   it("lève un bannissement en effaçant sa date", async () => {
-    const { tx, db } = setup();
+    const { tx, db } = setup({ player: { bannedAt: new Date(0) } });
     await mutateAdminUserWith(db, "admin", { ...base, kind: "account", username: "Player", role: "USER", banned: false, profileVisibility: "PRIVATE", showCollection: false });
     expect(tx.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ bannedAt: null }) }));
     expect(tx.user.updateMany).not.toHaveBeenCalled();
     expect(tx.session.deleteMany).not.toHaveBeenCalled();
+    expect(tx.discordRoleSync.updateMany).toHaveBeenCalledOnce();
+  });
+  it("ne relance pas le rôle Discord d'un compte qui n'était pas banni", async () => {
+    const { tx, db } = setup();
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "account", username: "Player", role: "USER", banned: false, profileVisibility: "PUBLIC", showCollection: true });
+    expect(tx.account.findMany).not.toHaveBeenCalled();
+    expect(tx.discordRoleSync.updateMany).not.toHaveBeenCalled();
   });
   it("ajoute des cartes sans doublonner leur découverte", async () => {
     const { tx, db } = setup();

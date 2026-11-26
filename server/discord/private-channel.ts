@@ -1,7 +1,7 @@
 import "server-only";
 import { env } from "../env";
 import { DiscordApiError, discordBotRequest } from "./api";
-import { discordStaffRole } from "@/lib/discord/staff";
+import { discordStaffRole, staffRoleIds } from "@/lib/discord/staff";
 
 type Overwrite = { id: string; type: number; allow: string; deny: string };
 type Role = { id: string; permissions: string };
@@ -22,7 +22,7 @@ export async function assertPrivateDiscordChannel(channelId: string): Promise<vo
       if (overwrite.id !== env.AUTH_DISCORD_ID) throw new DiscordApiError(403);
     } else {
       const role = roles.find((item) => item.id === overwrite.id);
-      if (!role || !discordStaffRole(role, env.DISCORD_GUILD_ID!)) throw new DiscordApiError(403);
+      if (!role || !discordStaffRole(role, env.DISCORD_GUILD_ID!, staffRoleIds(env.DISCORD_STAFF_ROLE_IDS))) throw new DiscordApiError(403);
     }
   }
 }

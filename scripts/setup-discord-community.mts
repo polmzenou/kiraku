@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { config } from "dotenv";
 import { gettingStartedMessage } from "../lib/discord/getting-started";
 import { autoModRules } from "../lib/discord/automod";
-import { discordStaffRole } from "../lib/discord/staff";
+import { discordStaffRole, staffRoleIds } from "../lib/discord/staff";
 
 config({ path: [".env.local", ".env"], quiet: true });
 const mode = process.argv[2];
@@ -55,11 +55,12 @@ async function main() {
   ]);
   const view = 1n << 10n;
   if (channel.guild_id !== guildId || channel.type !== 0 || !channel.permission_overwrites.some((item) => item.id === guildId && (BigInt(item.deny) & view))) throw new Error("Le salon des alertes doit être privé.");
+  const extraStaff = staffRoleIds(env.DISCORD_STAFF_ROLE_IDS);
   for (const item of channel.permission_overwrites) {
     if (!(BigInt(item.allow) & view)) continue;
-    if (item.type === 1 ? item.id !== bot.id : !roles.some((role) => role.id === item.id && discordStaffRole(role, guildId))) throw new Error("Un accès non réservé à l’équipe existe dans le salon des alertes.");
+    if (item.type === 1 ? item.id !== bot.id : !roles.some((role) => role.id === item.id && discordStaffRole(role, guildId, extraStaff))) throw new Error("Un accès non réservé à l’équipe existe dans le salon des alertes.");
   }
-  const plans = autoModRules(alertsId, roles.filter((role) => discordStaffRole(role, guildId)).map((role) => role.id));
+  const plans = autoModRules(alertsId, roles.filter((role) => discordStaffRole(role, guildId, extraStaff)).map((role) => role.id));
   if (!apply) { console.log(JSON.stringify({ rules: plans }, null, 2)); return; }
   for (const plan of plans) {
     const owned = existing.find((rule) => rule.name === plan.name && rule.creator_id === bot.id && rule.trigger_type === plan.trigger_type);

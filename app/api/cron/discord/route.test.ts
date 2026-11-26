@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ auth: vi.fn(), market: vi.fn(), seasons: vi.fn(), roles: vi.fn(), avatars: vi.fn(), casino: vi.fn(), prestige: vi.fn(), referral: vi.fn(), alerts: vi.fn(), record: vi.fn(), resolve: vi.fn(), jobs: [] as Array<() => Promise<void>> }));
+const mocks = vi.hoisted(() => ({ auth: vi.fn(), market: vi.fn(), seasons: vi.fn(), roles: vi.fn(), avatars: vi.fn(), casino: vi.fn(), prestige: vi.fn(), referral: vi.fn(), alerts: vi.fn(), record: vi.fn(), resolve: vi.fn(), open: vi.fn(), jobs: [] as Array<() => Promise<void>> }));
 vi.mock("@/server/discord/avatars", () => ({ syncDiscordAvatars: mocks.avatars }));
 vi.mock("@/server/discord/casino", () => ({ syncDiscordCasino: mocks.casino }));
 vi.mock("@/server/discord/prestige", () => ({ syncDiscordPrestige: mocks.prestige }));
 vi.mock("@/server/discord/referral-feed", () => ({ syncDiscordReferrals: mocks.referral }));
-vi.mock("@/server/discord/alert-store", () => ({ recordDiscordAlert: mocks.record, resolveDiscordAlert: mocks.resolve }));
+vi.mock("@/server/discord/alert-store", () => ({ recordDiscordAlert: mocks.record, resolveDiscordAlert: mocks.resolve, openDiscordAlerts: mocks.open }));
 vi.mock("@/server/discord/alerts", () => ({ syncDiscordAlerts: mocks.alerts }));
 vi.mock("next/server", () => ({ after: (job: () => Promise<void>) => mocks.jobs.push(job) }));
 vi.mock("@/server/cron-auth", () => ({ cronAuthorized: mocks.auth }));
@@ -25,6 +25,7 @@ beforeEach(() => {
   mocks.casino.mockResolvedValue({ opening: false, relayed: 0, failed: 0 });
   mocks.prestige.mockResolvedValue({ relayed: 1, failed: 0 });
   mocks.referral.mockResolvedValue({ relayed: 2, failed: 0 });
+  mocks.open.mockResolvedValue(new Set());
 });
 const request = () => new Request("https://kiraku.example/api/cron/discord");
 
@@ -57,5 +58,11 @@ describe("cron Discord commun", () => {
     expect(mocks.record).toHaveBeenCalledWith("cron", "avatars");
     expect(JSON.stringify(warn.mock.calls)).not.toContain("private");
     warn.mockRestore();
+  });
+  it("ne résout que les incidents du cron encore ouverts", async () => {
+    mocks.open.mockResolvedValue(new Set(["market"]));
+    await GET(request());
+    expect(mocks.open).toHaveBeenCalledWith("cron");
+    expect(mocks.resolve.mock.calls).toEqual([["cron", "market"]]);
   });
 });

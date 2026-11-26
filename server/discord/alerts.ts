@@ -4,6 +4,7 @@ import type { DiscordMessageBody } from "@/lib/discord/community";
 import { prisma } from "../db";
 import { appUrl, env } from "../env";
 import { discordAlertsConfigured } from "./alert-store";
+import { discordPaused } from "./api";
 import { assertPrivateDiscordChannel } from "./private-channel";
 import { publishDiscordPost } from "./posts";
 
@@ -43,17 +44,19 @@ export function technicalAlertMessage(alert: DiscordAlert): DiscordMessageBody {
 
 export async function syncDiscordAlerts(deadline = Date.now() + 20_000): Promise<{ sent: number; failed: number }> {
   const result = { sent: 0, failed: 0 };
-  if (!discordAlertsConfigured() || Date.now() + 15_000 > deadline) return result;
-  try { await assertPrivateDiscordChannel(env.DISCORD_ALERTS_CHANNEL_ID!); }
-  catch { console.warn("[discord] salon des alertes inaccessible ou non privé."); return { sent: 0, failed: 1 }; }
+  if (!discordAlertsConfigured() || Date.now() + 15_000 > deadline || discordPaused()) return result;
   const alerts = await prisma.discordAlert.findMany({
     where: { dirty: true, nextAttemptAt: { lte: new Date() }, AND: [
       { OR: [{ lastNotifiedAt: null }, { lastNotifiedAt: { lte: new Date(Date.now() - COOLDOWN_MS) } }] },
       { OR: [{ resolvedAt: null }, { lastNotifiedAt: { not: null } }] },
     ] }, orderBy: { nextAttemptAt: "asc" }, take: 5,
   });
+  // Salon vérifié seulement s'il y a quelque chose à y envoyer : pas deux appels à Discord à chaque minute
+  if (alerts.length === 0) return result;
+  try { await assertPrivateDiscordChannel(env.DISCORD_ALERTS_CHANNEL_ID!); }
+  catch { console.warn("[discord] salon des alertes inaccessible ou non privé."); return { sent: 0, failed: 1 }; }
   for (const alert of alerts) {
-    if (Date.now() + 10_000 > deadline) break;
+    if (Date.now() + 10_000 > deadline || discordPaused()) break;
     const key = `alert:${env.DISCORD_ALERTS_CHANNEL_ID}:${alert.id}`;
     try {
       await prisma.discordPost.upsert({ where: { key }, update: {}, create: { key, channelId: env.DISCORD_ALERTS_CHANNEL_ID! } });

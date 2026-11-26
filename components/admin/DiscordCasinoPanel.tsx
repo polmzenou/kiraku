@@ -40,7 +40,7 @@ export function DiscordCasinoPanel({ configured, teaserUrl, previews }: { config
         {result && (result.ok ? t("casinoTeaserDone") : tc(`errors.${result.error}`))}
       </div>
       {url && (
-        <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-link underline">
+        <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center self-start text-sm text-link underline">
           {tc("open")}
         </a>
       )}

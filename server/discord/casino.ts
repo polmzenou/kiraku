@@ -10,6 +10,7 @@ import { prisma } from "../db";
 import { appUrl, discordCasinoConfigured, env } from "../env";
 import { readEventGauge } from "../home/event-gauge";
 import { getSetting } from "../settings";
+import { discordPaused } from "./api";
 import { copyLabelOf, discordPlayerName, discordPlayerSelect } from "./labels";
 import { dropDiscordPost, publishDiscordPost, type PublishResult } from "./posts";
 
@@ -126,7 +127,7 @@ export async function syncDiscordCasino(deadline = Date.now() + 25_000): Promise
     select: { key: true, coinFlipId: true },
   });
   for (const post of posts) {
-    if (Date.now() + 10_000 > deadline) break;
+    if (Date.now() + 10_000 > deadline || discordPaused()) break;
     try {
       if (await syncFlip(post.key, post.coinFlipId!)) result.relayed++;
       else result.failed++;

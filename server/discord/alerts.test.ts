@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DiscordAlert } from "@/generated/prisma/client";
 
-const config = vi.hoisted(() => ({ DISCORD_BOT_TOKEN: "private-token", DISCORD_GUILD_ID: "1565773684243697905", AUTH_DISCORD_ID: "1560046493153493164", DISCORD_ALERTS_CHANNEL_ID: "1565779152106291380" as string | undefined }));
+const config = vi.hoisted(() => ({ DISCORD_BOT_TOKEN: "private-token", DISCORD_GUILD_ID: "1565773684243697905", AUTH_DISCORD_ID: "1560046493153493164", DISCORD_ALERTS_CHANNEL_ID: "1565779152106291380" as string | undefined, DISCORD_STAFF_ROLE_IDS: undefined as string | undefined }));
 const mocks = vi.hoisted(() => ({ upsert: vi.fn(), resolve: vi.fn(), findMany: vi.fn(), updateMany: vi.fn(), post: vi.fn(), publish: vi.fn(), request: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("../env", () => ({ env: config, appUrl: () => "https://kiraku.example" }));
 vi.mock("../db", () => ({ prisma: { discordAlert: { upsert: mocks.upsert, updateMany: mocks.updateMany, findMany: mocks.findMany }, discordPost: { upsert: mocks.post } } }));
 vi.mock("./posts", () => ({ publishDiscordPost: mocks.publish }));
 vi.mock("./api", async (original) => ({ ...await original<object>(), discordBotRequest: mocks.request }));
-import { discordAlertId, recordDiscordAlert, resolveDiscordAlert } from "./alert-store";
+import { discordAlertId, openDiscordAlerts, recordDiscordAlert, resolveDiscordAlert } from "./alert-store";
 import { assertPrivateDiscordChannel } from "./private-channel";
 import { syncDiscordAlerts, technicalAlertMessage } from "./alerts";
 
@@ -17,6 +17,7 @@ let channel: { guild_id: string; type: number; permission_overwrites: { id: stri
 beforeEach(() => {
   vi.clearAllMocks();
   config.DISCORD_ALERTS_CHANNEL_ID = "1565779152106291380";
+  config.DISCORD_STAFF_ROLE_IDS = undefined;
   channel = { guild_id: config.DISCORD_GUILD_ID, type: 0, permission_overwrites: [
     { id: config.DISCORD_GUILD_ID, type: 0, allow: "0", deny: "1024" },
     { id: "staff", type: 0, allow: "1024", deny: "0" },
@@ -43,6 +44,10 @@ describe("file des incidents techniques", () => {
     expect(discordAlertId("publication", "auction:a1")).not.toBe(discordAlertId("linked-role", "auction:a1"));
     expect(discordAlertId("publication", "auction:a1")).not.toBe(discordAlertId("publication", "auction:a2"));
   });
+  it("accepte une référence datée (clé de l'ouverture du casino, millisecondes comprises)", async () => {
+    await recordDiscordAlert("ranked-render", "casino:opening:2026-11-18T15:00:00.000Z", 500);
+    expect(mocks.upsert).toHaveBeenCalledOnce();
+  });
   it("ignore les références contenant du texte libre ou des URLs", async () => {
     await recordDiscordAlert("publication", "https://discord.example/token");
     await recordDiscordAlert("publication", "raw error private-token");
@@ -52,6 +57,11 @@ describe("file des incidents techniques", () => {
     mocks.upsert.mockRejectedValueOnce(new Error("private-token"));
     await expect(recordDiscordAlert("publication", "auction:a1", 403)).resolves.toBeUndefined();
     expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toContain("private-token");
+  });
+  it("lit en une fois les incidents encore ouverts d'un type", async () => {
+    mocks.findMany.mockResolvedValue([{ sourceId: "market" }, { sourceId: "ranked" }]);
+    expect(await openDiscordAlerts("cron")).toEqual(new Set(["market", "ranked"]));
+    expect(mocks.findMany).toHaveBeenCalledWith({ where: { kind: "cron", resolvedAt: null }, select: { sourceId: true } });
   });
   it("marque l'incident résolu et laisse le cron actualiser le message", async () => {
     await resolveDiscordAlert("linked-role", "123456789012345678");
@@ -75,6 +85,19 @@ describe("relais privé et absence de boucle d'alertes", () => {
     expect(payload.embeds[0].fields).toContainEqual({ name: "Occurrences", value: "3", inline: true });
     expect(mocks.findMany.mock.calls[0][0].where.AND[0].OR[1].lastNotifiedAt.lte.getTime()).toBeLessThanOrEqual(Date.now() - 899_000);
     expect(mocks.updateMany.mock.calls[0][0].where).toMatchObject({ lastSeenAt: alert().lastSeenAt, resolvedAt: null });
+  });
+  it("ne contacte pas Discord quand aucune alerte n'est à envoyer", async () => {
+    mocks.findMany.mockResolvedValue([]);
+    expect(await syncDiscordAlerts()).toEqual({ sent: 0, failed: 0 });
+    expect(mocks.request).not.toHaveBeenCalled();
+    expect(mocks.publish).not.toHaveBeenCalled();
+  });
+  it("accepte un rôle d'équipe ajouté par DISCORD_STAFF_ROLE_IDS", async () => {
+    channel.permission_overwrites.push({ id: "1565799999999999999", type: 0, allow: "1024", deny: "0" });
+    mocks.request.mockImplementation(async (path: string) => path.endsWith("/roles") ? [{ id: "staff", permissions: "8192" }, { id: "1565799999999999999", permissions: "0" }] : channel);
+    await expect(assertPrivateDiscordChannel(config.DISCORD_ALERTS_CHANNEL_ID!)).rejects.toThrow();
+    config.DISCORD_STAFF_ROLE_IDS = "1565788888888888888,1565799999999999999";
+    await expect(assertPrivateDiscordChannel(config.DISCORD_ALERTS_CHANNEL_ID!)).resolves.toBeUndefined();
   });
   it("bloque le relais si Membre ou un utilisateur ordinaire peut lire le salon", async () => {
     channel.permission_overwrites.push({ id: "member", type: 0, allow: "1024", deny: "0" });

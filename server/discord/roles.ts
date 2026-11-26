@@ -2,7 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../db";
 import { env } from "../env";
-import { DiscordApiError, discordBotRequest } from "./api";
+import { DiscordApiError, discordBotRequest, discordPaused } from "./api";
 import { linkedRoleConfigured } from "./roles-config";
 import { assertCommunityRole } from "./role-permissions";
 import { recordDiscordAlert, resolveDiscordAlert } from "./alert-store";
@@ -59,14 +59,15 @@ export async function syncLinkedDiscordRole(discordId: string): Promise<"linked"
       await discordBotRequest(`/guilds/${guildId}/members/${discordId}/roles/${roleId}`, linked ? "PUT" : "DELETE");
     }
     await release(86_400_000);
-    await resolveDiscordAlert("linked-role", discordId);
+    await resolveDiscordAlert("linked-role", roleId);
     return linked ? "linked" : "unlinked";
   } catch (e) {
     const job = await prisma.discordRoleSync.findUniqueOrThrow({ where });
     const delay = Math.max(e instanceof DiscordApiError ? e.retryAfterMs : 0, Math.min(3_600_000, 30_000 * 2 ** Math.min(job.attempts, 7)));
     await prisma.discordRoleSync.updateMany({ where: { guildId, discordId, leaseId }, data: { leaseId: null, leaseUntil: null, nextAttemptAt: new Date(Date.now() + delay) } });
     console.warn(`[discord] rôle de compte lié non synchronisé (${e instanceof DiscordApiError ? e.status : "base"}).`);
-    await recordDiscordAlert("linked-role", discordId, e instanceof DiscordApiError ? e.status : undefined);
+    // Un incident pour le rôle, pas un par joueur : une permission cassée touche tout le monde à la fois
+    await recordDiscordAlert("linked-role", roleId, e instanceof DiscordApiError ? e.status : undefined);
     return "error";
   }
 }
@@ -87,7 +88,7 @@ export async function syncLinkedDiscordRoles(deadline = Date.now() + 30_000): Pr
     orderBy: { nextAttemptAt: "asc" }, take: 5, select: { discordId: true },
   });
   for (const job of jobs) {
-    if (Date.now() + 15_000 > deadline) break;
+    if (Date.now() + 15_000 > deadline || discordPaused()) break;
     const outcome = await syncLinkedDiscordRole(job.discordId);
     if (outcome === "error" || outcome === "pending") result.deferred++;
     else result.synced++;

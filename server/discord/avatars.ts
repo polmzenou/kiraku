@@ -4,7 +4,7 @@ import { discordAvatarUrl, isDiscordId, type DiscordUserAvatar } from "@/lib/dis
 import { prisma } from "../db";
 import { env } from "../env";
 import { getSetting } from "../settings";
-import { DiscordApiError, discordBotRequest } from "./api";
+import { DiscordApiError, discordBotRequest, discordPaused } from "./api";
 
 // Avatars Discord des joueurs liés, relus par le bot sans que le joueur se reconnecte. Léger : quelques
 // joueurs par passage du cron Discord (une fois par minute), seulement ceux qui jouent encore, chacun au
@@ -58,7 +58,8 @@ export async function syncAvatarsWith(
 
 /** Passage du cron Discord : sans bot configuré, rien n'est fait. */
 export async function syncDiscordAvatars(deadline: number, now = new Date()): Promise<AvatarSyncResult> {
-  if (!env.DISCORD_BOT_TOKEN) return { checked: 0, updated: 0 };
+  // Un 429 récent : rien de plus à demander à Discord dans ce passage
+  if (!env.DISCORD_BOT_TOKEN || discordPaused()) return { checked: 0, updated: 0 };
   const [hours, activeDays, batch] = await Promise.all([
     getSetting("discord.avatarSyncHours"),
     getSetting("discord.avatarSyncActiveDays"),

@@ -14,6 +14,7 @@ import { keepRefereeFingerprints } from "../referral/fingerprint";
 import { AuctionError, cancelAuctionWith } from "../market/auction-core";
 import type { Tx } from "../social/lock";
 import { writeAdminLog } from "../admin/log";
+import { requeueLinkedDiscordRoleWith } from "../discord/linked-role-queue";
 
 export type AccountErrorCode = "NO_USER" | "ALREADY_REQUESTED" | "NOT_REQUESTED" | "ANONYMIZED";
 
@@ -49,6 +50,8 @@ export async function requestDeletionWith(
     if (user.anonymizedAt) throw new AccountError("ANONYMIZED");
     if (user.deletionRequestedAt) throw new AccountError("ALREADY_REQUESTED");
     await tx.user.update({ where: { id: input.userId }, data: { deletionRequestedAt: input.now } });
+    // Compte gelé : le rôle Discord « vérifié » est retiré dans la minute
+    await requeueLinkedDiscordRoleWith(tx, input.userId, input.now);
     await tx.dataRequest.create({
       data: { userId: input.userId, kind: "DELETION", status: "PENDING", requestedAt: input.now, dueAt },
     });
@@ -93,6 +96,7 @@ export async function cancelDeletionWith(
     if (user.anonymizedAt) throw new AccountError("ANONYMIZED");
     if (!user.deletionRequestedAt) throw new AccountError("NOT_REQUESTED");
     await tx.user.update({ where: { id: input.userId }, data: { deletionRequestedAt: null } });
+    await requeueLinkedDiscordRoleWith(tx, input.userId, input.now); // rôle Discord « vérifié » rendu
     await tx.dataRequest.updateMany({
       where: { userId: input.userId, kind: "DELETION", status: "PENDING" },
       data: { status: "CANCELLED", processedAt: input.now, processedById: input.adminId ?? null },
@@ -167,6 +171,8 @@ export async function anonymizeUserWith(
       },
     });
     const userId = input.userId;
+    // Rôle Discord « vérifié » retiré dans la minute : la file est relancée tant que le lien Discord est encore lisible
+    await requeueLinkedDiscordRoleWith(tx, userId, input.now);
     // Identité et accès
     await tx.account.deleteMany({ where: { userId } });
     await tx.session.deleteMany({ where: { userId } });

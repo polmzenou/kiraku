@@ -151,6 +151,14 @@ export function DirectSendPanel({ boosterTypes, registered }: { boosterTypes: { 
                 const r = await startDirectBroadcastAction({ rewards, reason, message: note, confirm: typed });
                 if (!r.ok) return t(`errors.${r.error}`);
                 setMessage({ tone: "ok", text: r.done === false ? t("partial", { count: r.granted ?? 0 }) : t("sent", { count: r.granted ?? 0 }) });
+                // Formulaire vidé : un second clic ne renvoie pas les mêmes cadeaux à tout le monde
+                setZeni(0);
+                setBoosterTypeId("");
+                setBoosterQty(1);
+                setCard(null);
+                setCardQty(1);
+                setReason("");
+                setNote("");
                 return null;
               }}
             />

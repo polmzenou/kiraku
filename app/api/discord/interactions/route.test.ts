@@ -17,7 +17,11 @@ const config = vi.hoisted(() => ({
 }));
 const jobs = vi.hoisted(() => [] as Array<() => Promise<void>>);
 const linked = vi.hoisted(() => ({ queue: vi.fn(), sync: vi.fn() }));
+const limiter = vi.hoisted(() => vi.fn());
+const alerts = vi.hoisted(() => ({ record: vi.fn(), resolve: vi.fn() }));
 vi.mock("server-only", () => ({}));
+vi.mock("@/server/ratelimit", () => ({ rateLimit: limiter }));
+vi.mock("@/server/discord/alert-store", () => ({ recordDiscordAlert: alerts.record, resolveDiscordAlert: alerts.resolve }));
 vi.mock("@/server/env", () => ({ env: config, discordRulesConfigured: true, appUrl: () => "https://kiraku.example" }));
 vi.mock("@/server/discord/roles", () => ({ queueLinkedDiscordRole: linked.queue, syncLinkedDiscordRole: linked.sync }));
 vi.mock("next/server", () => ({ after: (job: () => Promise<void>) => jobs.push(job) }));
@@ -49,6 +53,9 @@ beforeEach(() => {
   config.DISCORD_LINKED_ROLE_ID = undefined;
   linked.queue.mockReset();
   linked.sync.mockReset().mockResolvedValue("linked");
+  limiter.mockReset().mockResolvedValue({ success: true });
+  alerts.record.mockReset();
+  alerts.resolve.mockReset();
   config.DISCORD_PUBLIC_KEY = publicKey;
   request.mockReset().mockResolvedValueOnce(new Response(null, { status: 204 })).mockResolvedValue(new Response("{}"));
   vi.stubGlobal("fetch", request);
@@ -103,6 +110,21 @@ describe("choix de rôles et vérification de compte", () => {
     await jobs[0]();
     expect(JSON.parse(request.mock.calls[0][1]!.body as string).content).toContain("https://kiraku.example/compte");
     expect(request.mock.calls.every(([, init]) => init?.method === "PATCH")).toBe(true);
+  });
+  it("limite les clics d'un même membre avant tout appel à Discord", async () => {
+    limiter.mockResolvedValue({ success: false });
+    const response = await POST(signed(roleFixture()));
+    expect((await response.json()).data).toMatchObject({ flags: 64, content: expect.stringContaining("Réessaie dans une minute") });
+    expect(limiter).toHaveBeenCalledWith(`discord-button:${userId}`, { limit: 5, windowSeconds: 60 }, { store: "memory" });
+    expect(jobs).toHaveLength(0);
+    expect(request).not.toHaveBeenCalled();
+  });
+  it("regroupe les refus d'un bouton en un seul incident, sans identifiant de joueur", async () => {
+    request.mockReset().mockImplementation(async (_url, init) => new Response(init?.method === "GET" ? JSON.stringify([{ id: config.DISCORD_MERCHANT_ROLE_ID, permissions: "8" }]) : "{}"));
+    await POST(signed(roleFixture()));
+    await jobs[0]();
+    expect(alerts.record).toHaveBeenCalledWith("interaction-role", "merchant", 403);
+    expect(JSON.stringify(alerts.record.mock.calls)).not.toContain(userId);
   });
   it("synchronise aussi le compte lié après acceptation du règlement", async () => {
     config.DISCORD_LINKED_ROLE_ID = "1565817846720757880";

@@ -7,7 +7,6 @@ import { z } from "@/lib/zod";
 export const DISCORD_INVITE_PATTERN = /^https:\/\/(?:discord\.gg|discord\.com\/invite)\/[A-Za-z0-9-]{2,32}\/?$/;
 
 export const JOIN_MODAL_TRIGGERS = ["AFTER_BOOSTERS", "ON_VISIT"] as const;
-export type JoinModalTrigger = (typeof JOIN_MODAL_TRIGGERS)[number];
 
 const text = (max: number) => z.object({ fr: z.string().trim().min(1).max(max), en: z.string().trim().max(max) }).strict();
 

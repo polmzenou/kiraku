@@ -51,6 +51,8 @@ describe("relais des échanges Discord", () => {
     expect(message.embeds[0].fields).toContainEqual({ name: "Carte recherchée", value: "• Naruto · AR", inline: false });
     expect(publish.mock.calls[0][0]).toBe("listing:l1");
     expect(publish.mock.calls[0][2]).toBeInstanceOf(Date);
+    // Relecture de la disponibilité de la carte toutes les cinq minutes, pas chaque minute
+    expect(publish.mock.calls[0][2].getTime() - Date.now()).toBeGreaterThan(299_000);
   });
   it("cache un auteur privé et signale une carte qui n'est plus disponible", async () => {
     db.listing.findUnique.mockResolvedValue({ ...listing(), owner: { ...listing().owner, profileVisibility: "PRIVATE" } });
@@ -107,6 +109,23 @@ describe("relais des ventes Discord", () => {
     expect(await syncDiscordAuction("a1")).toBe(false);
     expect(publish).not.toHaveBeenCalled();
     expect(drop).toHaveBeenCalledWith("auction:a1");
+  });
+  it("relit une vente active toutes les cinq minutes, et à l'heure de fin si elle tombe avant", async () => {
+    await syncDiscordAuction("a1");
+    const next = publish.mock.calls[0][2].getTime() - Date.now();
+    expect(next).toBeGreaterThan(299_000);
+    expect(next).toBeLessThanOrEqual(300_000);
+    const endsAt = new Date(Date.now() + 90_000);
+    db.auction.findUnique.mockResolvedValue({ ...auction(), endsAt });
+    await syncDiscordAuction("a1");
+    expect(publish.mock.calls[1][2]).toEqual(endsAt);
+  });
+  it("espace la relecture d'une vente échue en attente de sa clôture", async () => {
+    db.post.findUnique.mockResolvedValue({ ...record(), messageId: "123456789012345678" });
+    db.auction.findUnique.mockResolvedValue({ ...auction(), endsAt: new Date(Date.now() - 1000) });
+    await syncDiscordAuction("a1");
+    expect(publish.mock.calls[0][1].embeds[0].fields).toContainEqual({ name: "Statut", value: "Terminée — clôture en cours", inline: true });
+    expect(publish.mock.calls[0][2].getTime() - Date.now()).toBeGreaterThan(599_000);
   });
   it("récupère un envoi incertain même si la vente est maintenant terminée", async () => {
     db.post.findUnique.mockResolvedValue({ ...record(), attempts: 1 });

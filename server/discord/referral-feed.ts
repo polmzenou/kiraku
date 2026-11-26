@@ -25,6 +25,8 @@ import { appUrl, discordReferralConfigured, env } from "../env";
 import { referralV2Rules } from "../referral/deps";
 import { referralFiche, type FicheReward, type ReferralFiche } from "../referral/tracking-queries";
 import { getSetting } from "../settings";
+import { recordDiscordAlert, resolveDiscordAlert } from "./alert-store";
+import { DiscordApiError, discordPaused } from "./api";
 import { assertPrivateDiscordChannel } from "./private-channel";
 import { dropDiscordPost, publishDiscordPost } from "./posts";
 
@@ -45,6 +47,8 @@ const GRACE_MS = 2 * DAY;
 // Versements d'un même passage : même instant (part « confiance » versée avec son étape)
 const SAME_RUN_MS = 1_000;
 const BATCH = 5;
+// Incident du contrôle du salon (refusé ou injoignable), distinct des échecs d'envoi d'un message
+const CHANNEL_ALERT = "referral-channel";
 
 export function discordReferralChannel(): string | undefined {
   return discordReferralConfigured ? env.DISCORD_REFERRAL_CHANNEL_ID : undefined;
@@ -59,15 +63,17 @@ async function enqueue(channelId: string, since: Date): Promise<void> {
       take: 500,
       select: { id: true, kind: true, step: true, referralId: true, createdAt: true },
     }),
-    prisma.referral.findMany({ where: { version: 2, heldAt: { gte: since } }, take: 200, select: { id: true, heldAt: true } }),
+    // Toujours dans l'ordre d'arrivée : au-delà de la limite, les plus anciens d'abord, pas un sous-ensemble arbitraire
+    prisma.referral.findMany({ where: { version: 2, heldAt: { gte: since } }, orderBy: { heldAt: "asc" }, take: 200, select: { id: true, heldAt: true } }),
     prisma.adminLog.findMany({
       where: { targetType: "Referral", action: { in: ["REFERRAL_VALIDATE", "REFERRAL_REVOKE"] }, createdAt: { gte: since } },
+      orderBy: { createdAt: "asc" },
       take: 200,
       select: { id: true, createdAt: true },
     }),
-    prisma.ambassadorProposal.findMany({ where: { decidedAt: { gte: since } }, take: 100, select: { id: true, decidedAt: true } }),
-    prisma.ennichiTierReached.findMany({ where: { finishedAt: { gte: since } }, take: 20, select: { edition: true, tier: true, finishedAt: true } }),
-    prisma.ennichiDraw.findMany({ where: { drawnAt: { gte: since } }, take: 5, select: { edition: true, drawnAt: true } }),
+    prisma.ambassadorProposal.findMany({ where: { decidedAt: { gte: since } }, orderBy: { decidedAt: "asc" }, take: 100, select: { id: true, decidedAt: true } }),
+    prisma.ennichiTierReached.findMany({ where: { finishedAt: { gte: since } }, orderBy: { finishedAt: "asc" }, take: 20, select: { edition: true, tier: true, finishedAt: true } }),
+    prisma.ennichiDraw.findMany({ where: { drawnAt: { gte: since } }, orderBy: { drawnAt: "asc" }, take: 5, select: { edition: true, drawnAt: true } }),
   ]);
   const rows = new Map<string, Date>();
   const add = (key: string, at: Date) => {
@@ -306,20 +312,25 @@ export async function syncDiscordReferrals(deadline = Date.now() + 15_000): Prom
   if (!channelId) return result;
   const now = new Date();
   await enqueue(channelId, new Date(now.getTime() - GRACE_MS));
-  const due: Prisma.DiscordPostWhereInput = { key: { startsWith: "referral:" }, nextAttemptAt: { lte: now }, OR: [{ leaseUntil: null }, { leaseUntil: { lte: now } }] };
+  // Seulement les messages du salon vérifié ci-dessous : une ligne mise en file pour un ancien salon n'y part pas
+  const due: Prisma.DiscordPostWhereInput = { key: { startsWith: "referral:" }, channelId, nextAttemptAt: { lte: now }, OR: [{ leaseUntil: null }, { leaseUntil: { lte: now } }] };
   const posts = await prisma.discordPost.findMany({ where: due, orderBy: { nextAttemptAt: "asc" }, take: BATCH, select: { key: true } });
   if (posts.length === 0) return result;
   try {
     await assertPrivateDiscordChannel(channelId);
-  } catch {
+  } catch (e) {
     console.warn("[discord] salon du parrainage inaccessible ou lisible par les joueurs : rien n'est posté.");
+    // Visible dans #logs-bot : sans cela, le fil s'arrêterait sans bruit (la tâche du cron, elle, réussit)
+    await recordDiscordAlert("publication", CHANNEL_ALERT, e instanceof DiscordApiError ? e.status : undefined);
     return { relayed: 0, failed: posts.length };
   }
+  // Salon de nouveau accepté : l'incident ci-dessus est clos (ses messages, jamais tentés, ne le résoudraient pas)
+  await resolveDiscordAlert("publication", CHANNEL_ALERT);
   const [rules, timeZone, sharedCap, scoring, rarities] = await Promise.all([referralV2Rules(), getSetting("game.timeZone"), getSetting("multiAccount.sharedIpCap"), getSetting("multiAccount.scoring"), getRarityDefinitions()]);
   const names = new Map(rarities.map((r) => [r.key, r.nameFr]));
   const ctx: Context = { rules, timeZone, sharedCap, scoring, now, rarity: (key) => names.get(key) ?? key, origin: appUrl() };
   for (const post of posts) {
-    if (Date.now() + 5_000 > deadline) break;
+    if (Date.now() + 5_000 > deadline || discordPaused()) break;
     try {
       const payload = await payloadFor(post.key, ctx);
       if (!payload) {

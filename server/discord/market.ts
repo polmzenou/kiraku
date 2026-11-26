@@ -4,6 +4,7 @@ import { promisedCopyLeft } from "../collection/transfer";
 import { prisma } from "../db";
 import { appUrl, discordMarketConfigured, env } from "../env";
 import { getSetting } from "../settings";
+import { discordPaused } from "./api";
 import { copyLabelOf, discordPlayerName, discordPlayerSelect } from "./labels";
 import { dropDiscordPost, publishDiscordPost } from "./posts";
 
@@ -36,8 +37,20 @@ export async function syncDiscordAuction(auctionId: string): Promise<boolean> {
     sellerName: discordPlayerName(auction.seller),
     card: { ...auction.card, rarityName: auction.card.rarityDefinition.nameFr, series: auction.card.series.titleRomaji },
   }, appUrl());
-  const next = auction.status === "ACTIVE" ? new Date(Date.now() + 60_000) : null;
-  return (await publishDiscordPost(post.key, payload, next, false, { mentionRoleId: env.DISCORD_MERCHANT_ROLE_ID })).ok;
+  return (await publishDiscordPost(post.key, payload, auctionRecheckAt(auction), false, { mentionRoleId: env.DISCORD_MERCHANT_ROLE_ID })).ok;
+}
+
+// Relecture de sécurité d'une annonce active : mises, achats, clôtures et annulations remettent déjà l'annonce en tête
+// de file (touchDiscordPost, dans leur transaction). Ne changent sans événement que le passage à « Terminée » (à
+// l'heure de fin), la disponibilité de la carte d'un échange et le nom affiché du joueur.
+const RECHECK_MS = 5 * 60_000;
+// Vente échue en attente de sa clôture (paresseuse ou par le cron du marché, qui remet l'annonce en tête de file)
+const SETTLING_RECHECK_MS = 10 * 60_000;
+
+function auctionRecheckAt(auction: { status: string; endsAt: Date }, now = Date.now()): Date | null {
+  if (auction.status !== "ACTIVE") return null;
+  const end = auction.endsAt.getTime();
+  return new Date(end > now ? Math.min(end, now + RECHECK_MS) : now + SETTLING_RECHECK_MS);
 }
 
 /** Même file et même salon pour les annonces d'échange, sans prix ni achat immédiat. */
@@ -71,7 +84,8 @@ export async function syncDiscordListing(listingId: string): Promise<boolean> {
     card: { ...listing.card, rarityName: listing.card.rarityDefinition.nameFr },
     wants: listing.wants.map(({ card }) => ({ name: card.name, rarityName: card.rarityDefinition.nameFr })),
   }, appUrl(), now);
-  return (await publishDiscordPost(post.key, payload, open ? new Date(Date.now() + 60_000) : null, false, { mentionRoleId: env.DISCORD_MERCHANT_ROLE_ID })).ok;
+  const next = open ? new Date(Math.min(listing.expiresAt.getTime(), Date.now() + RECHECK_MS)) : null;
+  return (await publishDiscordPost(post.key, payload, next, false, { mentionRoleId: env.DISCORD_MERCHANT_ROLE_ID })).ok;
 }
 
 /** Lot borné pour le cron ; les instances concurrentes se partagent les leases de publication. */
@@ -86,7 +100,7 @@ export async function syncDiscordMarket(deadline = Date.now() + 35_000): Promise
     orderBy: { nextAttemptAt: "asc" }, take: 20, select: { auctionId: true, listingId: true },
   });
   for (const post of posts) {
-    if (Date.now() + 15_000 > deadline) break;
+    if (Date.now() + 15_000 > deadline || discordPaused()) break;
     try {
       if (await (post.auctionId ? syncDiscordAuction(post.auctionId) : syncDiscordListing(post.listingId!))) result.synced++;
       else result.failed++;
