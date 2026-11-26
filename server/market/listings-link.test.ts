@@ -5,7 +5,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("../db", () => ({ prisma: { userBlock: { findMany: db.blocks }, tradeListing: { findMany: db.listings } } }));
 vi.mock("../boosters/display", () => ({ cardViews: async () => new Map() }));
 vi.mock("../profile/decor", () => ({ playerRefSelect: { id: true }, toPlayerRef: vi.fn() }));
-vi.mock("../collection/public-names", () => ({ maskablePlayerSelect: { id: true }, maskedPlayerRefs: async () => new Map() }));
+vi.mock("../collection/masked-players", () => ({ maskablePlayerSelect: { id: true }, maskedPlayerRefs: async () => new Map() }));
 import { listListings } from "./listings";
 
 const now = new Date("2026-10-30T12:00:00Z");

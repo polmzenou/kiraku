@@ -8,7 +8,7 @@ import { copyMarksOf, withCopy } from "../prestige/copy-marks";
 import { ownedCardIds } from "../collection/owned";
 import { promisedCopyWhere, type PromisedCopy } from "../collection/transfer";
 import { prisma } from "../db";
-import { maskablePlayerSelect, maskedPlayerRefs } from "../collection/public-names";
+import { maskablePlayerSelect, maskedPlayerRefs } from "../collection/masked-players";
 import { playerRefSelect as playerSelect, toPlayerRef, type PlayerRef } from "../profile/decor";
 import { expireListingsFor } from "./listing-core";
 

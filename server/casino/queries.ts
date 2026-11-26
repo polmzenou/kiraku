@@ -16,7 +16,7 @@ import { cardViews } from "../boosters/display";
 import { copyMarksOf, withCopy } from "../prestige/copy-marks";
 import { getRarityDefinitions } from "../catalog/rarities";
 import { prisma } from "../db";
-import { maskablePlayerSelect, maskedPlayerRefs } from "../collection/public-names";
+import { maskablePlayerSelect, maskedPlayerRefs } from "../collection/masked-players";
 import { toPlayerRef, type PlayerRef } from "../profile/decor";
 import { getSetting } from "../settings";
 import type { CoinFlipContext } from "./coinflip-core";
