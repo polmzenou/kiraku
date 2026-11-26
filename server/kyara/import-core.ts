@@ -76,7 +76,9 @@ type LockedImport = {
 export function reviewReasonOf(payload: Pick<KyaraPayload, "avatarUrl" | "total" | "entries">): KyaraReviewReason | null {
   if (discordIdFromAvatarUrl(payload.avatarUrl) === null) return "DISCORD_UNVERIFIED";
   if (payload.entries.length === 0) return "EMPTY";
-  if (payload.total !== null && payload.total > payload.entries.length) return "TRUNCATED";
+  // Sans total annoncé, rien ne prouve que la lecture est complète : l'équipe vérifie avant un versement définitif
+  if (payload.total === null) return "TOTAL_UNKNOWN";
+  if (payload.total > payload.entries.length) return "TRUNCATED";
   return null;
 }
 

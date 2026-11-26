@@ -74,7 +74,13 @@ export async function getExpeditionPage(user: { id: string; role: string }, loca
   const admin = user.role === "ADMIN";
   const ctx = await expeditionCtx(admin);
   const { now, rules, definitions } = ctx;
-  await settleExpeditionsFor(user.id, now);
+  // Une clôture en erreur (lot introuvable, photo illisible) est journalisée : la page s'affiche quand même, et le
+  // cron ou le sondage retenteront, comme pour le sondage
+  try {
+    await settleExpeditionsFor(user.id, now);
+  } catch (e) {
+    console.error("[expedition] clôture à l'affichage impossible", e);
+  }
 
   const canLaunch = rules.enabled || ctx.preview;
   const typeIds = canLaunch ? await ensureBoardWith(prisma, user.id, ctx) : [];

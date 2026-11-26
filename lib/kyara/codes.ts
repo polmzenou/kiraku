@@ -48,9 +48,10 @@ export const KYARA_PAYLOAD_VERSION = 2;
 
 /**
  * Pourquoi une collection lue attend l'équipe (READY) au lieu d'être versée tout de suite : avatar Kyara sans ID
- * Discord (demande choisie à la main), rien de lu, moins de personnages lus qu'annoncés par Kyara.
+ * Discord (demande choisie à la main), rien de lu, moins de personnages lus qu'annoncés par Kyara, ou total que
+ * Kyara n'a pas donné (impossible de savoir si la lecture est complète : le versement est définitif).
  */
-export const KYARA_REVIEW_REASONS = ["DISCORD_UNVERIFIED", "EMPTY", "TRUNCATED"] as const;
+export const KYARA_REVIEW_REASONS = ["DISCORD_UNVERIFIED", "EMPTY", "TRUNCATED", "TOTAL_UNKNOWN"] as const;
 export type KyaraReviewReason = (typeof KYARA_REVIEW_REASONS)[number];
 
 export function isKyaraReviewReason(value: unknown): value is KyaraReviewReason {

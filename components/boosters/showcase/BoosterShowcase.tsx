@@ -361,7 +361,8 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
                   )}
                   {stat(tb("possible"), format.number(panel.poolSize))}
                   <div className="flex items-center gap-2.5 pt-0.5 lg:rounded-control lg:border lg:border-[var(--chip-b)] lg:bg-[var(--chip)] lg:px-3.5 lg:py-2">
-                    {pityRing(panel.pityLeft ?? 0)}
+                    {/* Booster hors pitié : aucun anneau (un anneau plein laissait croire à une pitié atteinte) */}
+                    {panel.pityLeft !== null && pityRing(panel.pityLeft)}
                     <div className="flex flex-col-reverse gap-0.5">
                       <dt className="text-xs text-[var(--ink-2)]">{panel.pityLeft !== null ? t("pity") : tb("noPity")}</dt>
                       <dd className="text-sm font-black tabular-nums lg:font-title lg:text-[1.4rem] lg:leading-none lg:font-extrabold">

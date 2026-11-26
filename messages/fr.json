@@ -1743,7 +1743,8 @@
       "reviewReasons": {
         "DISCORD_UNVERIFIED": "avatar sans ID Discord",
         "EMPTY": "aucune carte lue",
-        "TRUNCATED": "lecture incomplète"
+        "TRUNCATED": "lecture incomplète",
+        "TOTAL_UNKNOWN": "total non annoncé par Kyara"
       }
     },
     "boosters": {

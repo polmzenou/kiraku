@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
-import { useReducedFx } from "@/components/motion/MotionPreference";
+import { useFxLevel, useReducedFx } from "@/components/motion/MotionPreference";
 import { acquireGl } from "@/lib/fx/gl-budget";
 import { spectralSeed } from "@/lib/fx/spectral";
 
@@ -42,6 +42,8 @@ function markLive(el: HTMLElement | null, on: boolean) {
 export function SpectralArt({ spoiler, appear, name, ...settings }: Props) {
   const anchor = useRef<HTMLSpanElement>(null);
   const reduced = useReducedFx();
+  // Effets allégés (réglage du joueur ou appareil lent) : une image fixe peinte une fois, pas 60 images par seconde
+  const still = useFxLevel() === "lite";
   const [slot, setSlot] = useState<(() => void) | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -81,6 +83,7 @@ export function SpectralArt({ spoiler, appear, name, ...settings }: Props) {
       {slot && !failed && (
         <SpectralCanvas
           {...settings}
+          still={still}
           seed={spectralSeed(name)}
           appear={appear}
           onReady={() => markLive(anchor.current, true)}

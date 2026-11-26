@@ -323,7 +323,8 @@ export async function rebirthWith(db: PrismaClient, input: RebirthInput, ctx: Re
             WHERE id = ANY(${keepIds}::text[]) AND "ownerId" = ${userId} AND status = 'COLLECTION'
           )
           UPDATE "UserCard" uc
-          SET heritage = LEAST(uc.heritage + 1, ${heritageCap(ctx.rules)}::int), "keptByOwner" = uc."keptByOwner" + 1
+          -- Jamais de baisse : un plafond abaissé dans l'admin arrête la progression, il ne retire pas l'héritage acquis
+          SET heritage = GREATEST(uc.heritage, LEAST(uc.heritage + 1, ${heritageCap(ctx.rules)}::int)), "keptByOwner" = uc."keptByOwner" + 1
           FROM old WHERE uc.id = old.id
           RETURNING uc.id AS "userCardId", uc."cardId", old.heritage AS before, uc.heritage AS after, uc.printing, uc.serial`
       : [];
