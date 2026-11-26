@@ -4,7 +4,9 @@ import type { CasinoRules } from "./rules";
 // passent `now`).
 //   - features.casino éteint → caché (aperçu admin seulement) ;
 //   - date vide ou future → teaser (avec compte à rebours si la date est posée) ;
-//   - date passée → ouvert. Pendant newBadgeDays jours : badge « Nouveau », cérémonie et annonce.
+//   - date passée → ouvert. Pendant newBadgeDays jours : badge « Nouveau », cérémonie et annonce. La cérémonie se
+//     joue une fois par appareil : le serveur dit si la fenêtre est ouverte, le navigateur s'il l'a déjà vue
+//     (components/casino/CeremonyGate.tsx).
 
 export type CasinoPhase = "hidden" | "teaser" | "open";
 
@@ -33,12 +35,6 @@ export function casinoAccess(r: Opening, now: number, isAdmin: boolean): CasinoA
   return { phase, canEnter: isAdmin, preview: isAdmin };
 }
 
-/** Temps restant avant l'ouverture, en ms ; null sans date posée ou une fois ouvert. */
-export function untilOpening(r: Opening, now: number): number | null {
-  if (casinoPhase(r, now) !== "teaser" || r.opensAt === null) return null;
-  return r.opensAt - now;
-}
-
 /** Fenêtre de lancement `[opensAt, opensAt + newBadgeDays[` ; vide si newBadgeDays vaut 0. */
 export function inLaunchWindow(r: Launch, now: number): boolean {
   if (casinoPhase(r, now) !== "open" || r.opensAt === null) return false;
@@ -52,11 +48,6 @@ export function casinoBadge(r: Launch, now: number): CasinoBadge {
   const phase = casinoPhase(r, now);
   if (phase === "teaser") return "soon";
   return inLaunchWindow(r, now) ? "new" : null;
-}
-
-/** Cérémonie d'ouverture : une fois par appareil (`seen`), pendant la fenêtre de lancement seulement. */
-export function ceremonyDue(r: Launch, now: number, seen: boolean): boolean {
-  return !seen && inLaunchWindow(r, now);
 }
 
 /**

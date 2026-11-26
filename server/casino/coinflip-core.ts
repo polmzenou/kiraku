@@ -28,6 +28,7 @@ import { pairKey } from "@/lib/social/relation";
 import type { LockRefusal } from "@/lib/referral/locks";
 import { consumeWishlist } from "../collection/wishlist-core";
 import { checkReferralLocks } from "../referral/locks";
+import { sealedSeed, tableSeed } from "./seed";
 import { chooseCopy, moveCopy } from "../collection/transfer";
 import { recordDiscoveries } from "../collection/discovery";
 import { blocksBetween, lockPlayers, type Tx } from "../social/lock";
@@ -52,6 +53,8 @@ export type CoinFlipContext = {
   definitions: readonly { key: string; sortOrder: number }[];
   /** Octets aléatoires du serveur (crypto.randomBytes) ; les tests en injectent de fixes. */
   randomBytes: (n: number) => Uint8Array;
+  /** Clé des graines scellées, dérivée d'AUTH_SECRET (server/casino/seed.ts) ; jamais en base. */
+  seedKey: Uint8Array;
 };
 
 type LockedFlip = {
@@ -63,14 +66,18 @@ type LockedFlip = {
   creatorSide: CoinSide;
   tierOrder: number;
   reservedForId: string | null;
-  seed: string;
+  /** En clair : table jouée, ou posée avant le scellement des graines. */
+  seed: string | null;
+  /** Table scellée : la graine se retrouve avec la clé du serveur. */
+  seedNonce: string | null;
+  seedHash: string;
   expiresAt: Date;
 };
 
 async function lockFlip(tx: Tx, flipId: string): Promise<LockedFlip | null> {
   const [row] = await tx.$queryRaw<LockedFlip[]>`
     SELECT id, status::text AS status, "creatorId", "creatorUserCardId", "creatorCardId", "creatorSide"::text AS "creatorSide",
-           "tierOrder", "reservedForId", seed, "expiresAt"
+           "tierOrder", "reservedForId", seed, "seedNonce", "seedHash", "expiresAt"
     FROM "CoinFlip" WHERE id = ${flipId} FOR UPDATE`;
   return row ?? null;
 }
@@ -80,8 +87,11 @@ async function staffRole(tx: Tx, userId: string): Promise<boolean> {
   return isStaff(user?.role);
 }
 
-/** Lancers du jour : tables posées (même retirées ensuite) et tables relevées. Lu sous le verrou du joueur. */
-async function flipsToday(tx: Tx, userId: string, dayStart: Date): Promise<number> {
+/**
+ * Lancers du jour : tables posées (même retirées ensuite) et tables relevées. Lu sous le verrou du joueur, et sans
+ * verrou par l'interface pour griser d'avance ce qui sera refusé (deps.ts).
+ */
+export async function flipsToday(tx: Tx, userId: string, dayStart: Date): Promise<number> {
   const [created, joined] = await Promise.all([
     tx.coinFlip.count({ where: { creatorId: userId, createdAt: { gte: dayStart } } }),
     tx.coinFlip.count({ where: { opponentId: userId, resolvedAt: { gte: dayStart } } }),
@@ -198,7 +208,8 @@ export async function createTableWith(db: PrismaClient, input: CreateInput, ctx:
       });
       if (escrow.count !== 1) throw new CoinFlipError("CARD_GONE");
 
-      const seed = seedHex(ctx.randomBytes(SEED_BYTES));
+      // Graine scellée : seuls le nonce et l'engagement vont en base, la graine n'y sera écrite qu'au lancer
+      const seedNonce = seedHex(ctx.randomBytes(SEED_BYTES));
       const flip = await tx.coinFlip.create({
         data: {
           creatorId: input.userId,
@@ -208,8 +219,8 @@ export async function createTableWith(db: PrismaClient, input: CreateInput, ctx:
           creatorSide: input.side,
           tierOrder: tier,
           reservedForId,
-          seed,
-          seedHash: await commitOf(seed),
+          seedNonce,
+          seedHash: await commitOf(sealedSeed(ctx.seedKey, seedNonce)),
           expiresAt: coinFlipExpiresAt(now, rules.coinflip.expiryHours),
           createdAt: now,
         },
@@ -247,6 +258,8 @@ export type JoinOutcome =
   | {
       ok: true;
       flipId: string;
+      /** Créateur de la table : sa page d'attente est prévenue en temps réel, avant toute relecture. */
+      creatorId: string;
       result: CoinSide;
       won: boolean;
       /** Carte remportée par le gagnant (celle du perdant) : badge « Nouveau », pastille de souhait. */
@@ -307,8 +320,12 @@ export async function joinTableWith(db: PrismaClient, input: JoinInput, ctx: Coi
       const joinerChoice = await chooseCopy(tx, input.userId, input.cardId, input.userCardId);
       if (!joinerChoice.ok) throw new CoinFlipError(joinerChoice.reason === "CHOOSE_COPY" ? "CHOOSE_COPY" : "CARD_GONE");
 
-      // La pièce : issue fixée par la graine tirée à la pose et l'id de la table
-      const result = await flipOutcome(flip.seed, flip.id);
+      // La pièce : issue fixée par la graine tirée à la pose et l'id de la table. Une graine qui ne redonne pas
+      // l'engagement (clé du serveur changée, copie de la base avec un autre AUTH_SECRET) ne se joue jamais :
+      // le joueur ne pourrait pas vérifier le lancer.
+      const seed = tableSeed(flip, ctx.seedKey);
+      if (!seed || (await commitOf(seed)) !== flip.seedHash) throw new Error(`Graine de la table ${flip.id} illisible avec la clé du serveur`);
+      const result = await flipOutcome(seed, flip.id);
       const winnerId = flipWinner(flip, input.userId, result);
       const creatorWins = winnerId === flip.creatorId;
       const prize = creatorWins
@@ -344,6 +361,8 @@ export async function joinTableWith(db: PrismaClient, input: JoinInput, ctx: Coi
           opponentCardId: input.cardId,
           opponentRarity: card.rarity,
           result,
+          // Révélée : chacun peut maintenant vérifier le lancer
+          seed,
           winnerId,
           winnerNew: !winnerKnew,
           resolvedAt: now,
@@ -363,6 +382,7 @@ export async function joinTableWith(db: PrismaClient, input: JoinInput, ctx: Coi
       return {
         ok: true,
         flipId: flip.id,
+        creatorId: flip.creatorId,
         result,
         won: winnerId === input.userId,
         prize: { ...prize, isNew: !winnerKnew, wished: wished.size > 0 },
@@ -489,9 +509,9 @@ export async function sweepCasinoWith(
 
 /**
  * Retire du casino un joueur banni, retiré du jeu ou anonymisé, dans la transaction appelante : ses tables
- * ouvertes sont fermées (carte rendue), celles qui lui étaient réservées aussi (carte rendue à leur créateur).
- * Aucune notification : il n'y a plus personne à qui répondre. Les tables sont verrouillées ici : appeler
- * avant de verrouiller des joueurs (même ordre qu'une relève : la table, puis les joueurs).
+ * ouvertes sont fermées (carte rendue), sans notification (il n'y a plus personne à qui répondre). Celles qui lui
+ * étaient réservées aussi : leur créateur récupère sa carte et en est prévenu (« WITHDRAWN »). Les tables sont
+ * verrouillées ici : appeler avant de verrouiller des joueurs (même ordre qu'une relève : la table, puis les joueurs).
  */
 export async function withdrawCasinoWith(tx: Tx, userId: string, now: Date): Promise<number> {
   const rows = await tx.$queryRaw<{ id: string }[]>`
@@ -500,14 +520,19 @@ export async function withdrawCasinoWith(tx: Tx, userId: string, now: Date): Pro
     ORDER BY id FOR UPDATE`;
   for (const { id } of rows) {
     const flip = await lockFlip(tx, id);
-    if (flip?.status === "OPEN") await returnStake(tx, flip, "CANCELLED", now);
+    if (flip?.status !== "OPEN") continue;
+    await returnStake(tx, flip, "CANCELLED", now);
+    if (flip.creatorId !== userId) await notifyReturned(tx, flip, "WITHDRAWN", flip.creatorId, now);
   }
   return rows.length;
 }
 
-/** withdrawCasinoWith dans sa propre transaction (bannissement, demande de suppression, anonymisation). */
-export async function withdrawCasinoFor(db: PrismaClient, userId: string, now: Date): Promise<number> {
-  return db.$transaction((tx) => withdrawCasinoWith(tx, userId, now), TX);
+/**
+ * withdrawCasinoWith dans sa propre transaction (bannissement, demande de suppression, anonymisation). Le Web Push
+ * des créateurs prévenus part après validation (`onNotified`) ; il signale aussi leur page de table en temps réel.
+ */
+export async function withdrawCasinoFor(db: PrismaClient, userId: string, now: Date, onNotified?: OnNotified): Promise<number> {
+  return notifyingTransaction(db, (tx) => withdrawCasinoWith(tx, userId, now), TX, onNotified);
 }
 
 /**

@@ -1,3 +1,4 @@
+import { seededFloat } from "@/lib/rng";
 import type { SoundName } from "@/lib/sound/synth";
 import type { CoinSide } from "./fairness";
 import type { FlipChoreography } from "./tiers";
@@ -163,18 +164,6 @@ export type FlipScript = {
   landedAt: number;
 };
 
-/** Générateur à graine (mulberry32), pour qu'un même lancer rejoue à l'identique. */
-function seeded(seed: number) {
-  let s = seed >>> 0;
-  return () => {
-    s = (s + 0x6d2b79f5) >>> 0;
-    let t = s;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 export type ScriptInput = {
   /** Face tirée par le serveur. */
   result: CoinSide;
@@ -252,7 +241,8 @@ export function flipScript(input: ScriptInput): FlipScript {
   // Lancer : coup de pouce, ralenti au sommet, retombée, rebonds et oscillation. La rotation finale F est un
   // multiple de 360° pour 表 (face vers le haut), décalé de 180° pour 裏.
   const toss = () => {
-    const rand = seeded(input.seed);
+    // Générateur à graine (mulberry32) : un même lancer rejoue à l'identique
+    const rand = seededFloat(input.seed);
     const t0 = 650;
     const rise = 400;
     const fall = 360;

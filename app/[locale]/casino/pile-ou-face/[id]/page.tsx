@@ -9,10 +9,11 @@ import { redirect } from "@/i18n/navigation";
 import { isFrozen } from "@/lib/account/deletion";
 import type { CasinoActionError } from "@/server/actions/casino";
 import { sweepCasinoWith } from "@/server/casino/coinflip-core";
+import { playBlockFor } from "@/server/casino/deps";
 import { casinoView, getTable, joinableRarities } from "@/server/casino/queries";
 import { namedPlayerSelect, publicNamesFor } from "@/server/collection/public-names";
 import { prisma } from "@/server/db";
-import { pushLater } from "@/server/market/queries";
+import { pushLater } from "@/server/push/send";
 import { getCurrentUser } from "@/server/user";
 
 const ID = /^[A-Za-z0-9_-]{1,40}$/;
@@ -53,9 +54,11 @@ export default async function CoinFlipTablePage({ params }: PageProps<"/[locale]
   let joinBlock: CasinoActionError | null = null;
   if (table.status === "OPEN" && !table.mine) {
     if (user.isGuest) joinBlock = "GUEST";
-    else if (!member) joinBlock = "UNAVAILABLE";
+    else if (!member) joinBlock = user.bannedAt ? "BANNED" : "UNAVAILABLE";
     else if (!view.rules.coinflip.enabled) joinBlock = "DISABLED";
     else if (table.reservedForId !== null && table.reservedForId !== user.id) joinBlock = "RESERVED";
+    // Refus déjà connus (compte trop récent, verrou du parrainage, lancers du jour) : dits avant le choix de la fuda
+    else joinBlock = await playBlockFor(user, { counterpartyId: table.creatorId, creating: false }, new Date(view.serverNow));
   }
   const joinRarities = table.status === "OPEN" && !table.mine ? await joinableRarities(table.tierOrder) : [];
   if (joinBlock === null && table.status === "OPEN" && !table.mine && joinRarities.length === 0) joinBlock = "RARITY";

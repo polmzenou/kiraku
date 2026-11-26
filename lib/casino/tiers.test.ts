@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BASE_DEFINITIONS } from "@/lib/catalog/definitions";
-import { casinoTiers, flipStaging, isBigFlip, raritiesForTier, sameTier, tierOf } from "./tiers";
+import { casinoTiers, flipStaging, isBigFlip, raritiesForTier, tierOf } from "./tiers";
 
 const DEFS = BASE_DEFINITIONS;
 const ALL = DEFS.map((d) => d.key);
@@ -13,15 +13,11 @@ describe("paliers", () => {
   });
 
   it("Mythique = BR, AR = VR, Gold = MR ; XR seule au sommet", () => {
-    expect(sameTier("MYTHIC", "BR", DEFS)).toBe(true);
-    expect(sameTier("AR", "VR", DEFS)).toBe(true);
-    expect(sameTier("GOLD", "MR", DEFS)).toBe(true);
-    expect(sameTier("BR", "AR", DEFS)).toBe(false);
-    expect(sameTier("XR", "GOLD", DEFS)).toBe(false);
-  });
-
-  it("deux raretés inconnues ne font pas un palier", () => {
-    expect(sameTier("X", "Y", DEFS)).toBe(false);
+    expect(tierOf("MYTHIC", DEFS)).toBe(tierOf("BR", DEFS));
+    expect(tierOf("AR", DEFS)).toBe(tierOf("VR", DEFS));
+    expect(tierOf("GOLD", DEFS)).toBe(tierOf("MR", DEFS));
+    expect(tierOf("BR", DEFS)).not.toBe(tierOf("AR", DEFS));
+    expect(tierOf("XR", DEFS)).not.toBe(tierOf("GOLD", DEFS));
   });
 
   it("regroupe les raretés autorisées par palier, la rareté de base d'abord", () => {
@@ -67,15 +63,15 @@ describe("mise en scène du lancer", () => {
     expect(flipStaging("AR", DEFS).choreography).toBe("spin");
   });
 
-  it("environ 3 s pour une Commune, 5 s au-dessus de Mythique", () => {
-    expect(flipStaging("COMMON", DEFS)).toMatchObject({ fx: "COMMON", level: 0, durationMs: 3_000 });
+  it("palier de mise en scène : 0 pour une Commune, 6 au-dessus de Mythique", () => {
+    expect(flipStaging("COMMON", DEFS)).toMatchObject({ fx: "COMMON", level: 0 });
     expect(flipStaging("MYTHIC", DEFS)).toMatchObject({ fx: "MYTHIC", level: 5 });
     expect(flipStaging("BR", DEFS).level).toBe(5);
-    expect(flipStaging("XR", DEFS)).toMatchObject({ fx: "MYTHIC", level: 6, durationMs: 5_000 });
+    expect(flipStaging("XR", DEFS)).toMatchObject({ fx: "MYTHIC", level: 6 });
   });
 
-  it("la durée croît avec le palier", () => {
-    const durations = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "GOLD"].map((r) => flipStaging(r, DEFS).durationMs);
-    expect([...durations].sort((a, b) => a - b)).toEqual(durations);
+  it("le palier croît avec la rareté (la durée du lancer suit, lib/casino/choreography.ts)", () => {
+    const levels = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "GOLD"].map((r) => flipStaging(r, DEFS).level);
+    expect([...levels].sort((a, b) => a - b)).toEqual(levels);
   });
 });

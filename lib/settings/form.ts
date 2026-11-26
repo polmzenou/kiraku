@@ -12,6 +12,15 @@ export function settingsSchemaFor<K extends SettingKey>(keys: readonly K[]) {
   );
 }
 
+/** Réglages dont la valeur est un nombre. */
+export type NumberSettingKey = { [K in SettingKey]: SettingValue<K> extends number ? K : never }[SettingKey];
+
+/** Bornes [min, max] d'un réglage numérique, lues dans son schéma Zod : un formulaire ne les recopie jamais. */
+export function numberBounds(key: NumberSettingKey): [number, number] {
+  const schema = SETTING_SCHEMAS[key] as unknown as z.ZodNumber;
+  return [schema.minValue ?? Number.MIN_SAFE_INTEGER, schema.maxValue ?? Number.MAX_SAFE_INTEGER];
+}
+
 /** Clés dont la valeur change (comparaison par valeur, ordre des clés d'objet compris). */
 export function changedSettingKeys<K extends SettingKey>(
   keys: readonly K[],

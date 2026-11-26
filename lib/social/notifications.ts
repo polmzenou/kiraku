@@ -142,8 +142,11 @@ export function parseSealedPayload(raw: unknown): SealedPayload | null {
   return { slug: r.slug, outcome, cardId: isId(r.cardId) ? r.cardId : null };
 }
 
-/** Pourquoi une carte misée au casino est revenue (le créateur qui retire sa table n'est pas notifié). */
-export const COINFLIP_RETURN_REASONS = ["EXPIRED", "DECLINED", "ADMIN"] as const;
+/**
+ * Pourquoi une carte misée au casino est revenue (le créateur qui retire sa table n'est pas notifié). WITHDRAWN : le
+ * joueur à qui la table était réservée a quitté le jeu (banni, compte supprimé ou anonymisé).
+ */
+export const COINFLIP_RETURN_REASONS = ["EXPIRED", "DECLINED", "ADMIN", "WITHDRAWN"] as const;
 export type CoinFlipReturnReason = (typeof COINFLIP_RETURN_REASONS)[number];
 
 /**

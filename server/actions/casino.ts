@@ -23,19 +23,10 @@ import {
   sweepCasinoWith,
   type CoinFlipErrorCode,
 } from "../casino/coinflip-core";
-import {
-  coinFlipContext,
-  getCasinoRules,
-  getTable,
-  listLobby,
-  myTablesState,
-  recentFlips,
-  type CoinFlipTableView,
-  type FeedEntry,
-  type LobbyPage,
-} from "../casino/queries";
+import { coinFlipContext } from "../casino/deps";
+import { getCasinoRules, getTable, listLobby, myTablesState, recentFlips, type CoinFlipTableView, type FeedEntry, type LobbyPage } from "../casino/queries";
 import { prisma } from "../db";
-import { pushNotifications } from "../push/send";
+import { pushLater } from "../push/send";
 import { rateLimit } from "../ratelimit";
 import { publishToUser } from "../realtime";
 import { getCurrentUser } from "../user";
@@ -62,9 +53,6 @@ const emptySchema = z.object({}).strict();
 const lobbySchema = z.object({ tier: z.number().int().min(-100_000).max(100_000).nullable(), cursor: id.nullable() }).strict();
 
 const MINUTE = 60;
-// Gros lancers mis en avant dans le fil (le relais Discord a son propre seuil)
-const FEED_BIG_FROM = "LEGENDARY";
-const pushLater = (ids: string[]) => after(() => pushNotifications(ids));
 
 type Rule = { limit: number; windowSeconds: number };
 
@@ -118,43 +106,54 @@ export async function createCoinFlipAction(input: unknown): Promise<{ ok: true; 
 
 export type JoinResult = {
   ok: true;
-  table: CoinFlipTableView;
+  flipId: string;
+  /** La table jouée, pour l'animation ; null si sa relecture a échoué (la page de la table, rechargée, montre le résultat). */
+  table: CoinFlipTableView | null;
   won: boolean;
   /** Carte remportée (celle de l'autre joueur), à révéler si le lecteur gagne. */
-  prize: OpenedCardView;
+  prize: OpenedCardView | null;
 };
 
 /** Relève une table avec une fuda du même palier : la pièce est lancée sur le serveur, l'animation suit. */
 export async function joinCoinFlipAction(input: unknown): Promise<JoinResult | Failure> {
   const g = await guard(input, joinSchema, "coinflip-join", { limit: 12, windowSeconds: MINUTE });
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
+  let res: Awaited<ReturnType<typeof joinTableWith>>;
   try {
-    const res = await joinTableWith(
+    res = await joinTableWith(
       prisma,
       { userId: g.user.id, flipId: g.data.flipId, cardId: g.data.cardId, userCardId: g.data.userCardId ?? null, confirmLastCopy: g.data.confirmLastCopy },
       await coinFlipContext(),
       pushLater,
     );
-    if (!res.ok) {
-      refresh();
-      return { ok: false, error: res.code };
-    }
-    const locale = await getLocale();
-    const [table, views] = await Promise.all([getTable(res.flipId, g.user.id, locale), cardViews([res.prize.cardId], locale)]);
-    const view = views.get(res.prize.cardId);
-    if (!table || !view) return { ok: false, error: "UNAVAILABLE" };
-    // Le créateur qui attend sur la page de sa table voit le lancer en direct
-    after(() => publishToUser(table.creatorId, "coinflip", { flipId: table.id }));
-    refresh();
-    return {
-      ok: true,
-      table,
-      won: res.won,
-      prize: { ...view, userCardId: res.prize.userCardId, isNew: res.prize.isNew, wished: res.prize.wished, featured: false },
-    };
   } catch (e) {
     return failure(e);
   }
+  refresh();
+  if (!res.ok) return { ok: false, error: res.code };
+  const played = res;
+  // Les cartes ont déjà changé de main : le créateur qui attend sur la page de sa table voit le lancer en direct,
+  // quoi qu'il arrive à la relecture
+  after(() => publishToUser(played.creatorId, "coinflip", { flipId: played.flipId }));
+  try {
+    const locale = await getLocale();
+    const [table, views] = await Promise.all([getTable(played.flipId, g.user.id, locale), cardViews([played.prize.cardId], locale)]);
+    const view = views.get(played.prize.cardId);
+    if (table && view) {
+      return {
+        ok: true,
+        flipId: played.flipId,
+        table,
+        won: played.won,
+        prize: { ...view, userCardId: played.prize.userCardId, isNew: played.prize.isNew, wished: played.prize.wished, featured: false },
+      };
+    }
+  } catch (e) {
+    console.error("[casino] relecture après une relève", e);
+  }
+  // Relève validée mais table ou carte illisible (carte repassée en brouillon…) : jamais « Action impossible »,
+  // la page de la table se recharge et montre le résultat
+  return { ok: true, flipId: played.flipId, table: null, won: played.won, prize: null };
 }
 
 /** Le créateur retire sa table ouverte : la carte revient dans sa collection. */
@@ -270,11 +269,5 @@ export async function coinFlipFeedAction(input: unknown): Promise<{ ok: true; en
   if (!(await rateLimit(`coinflip-feed:${user.id}`, { limit: 20, windowSeconds: MINUTE }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
-  const entries = await recentFlips({
-    locale: await getLocale(),
-    size: rules.coinflip.feedSize,
-    maxAgeHours: rules.coinflip.feedMaxAgeHours,
-    bigFrom: FEED_BIG_FROM,
-  });
-  return { ok: true, entries };
+  return { ok: true, entries: await recentFlips(await getLocale(), rules.coinflip) };
 }

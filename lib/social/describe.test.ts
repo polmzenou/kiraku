@@ -77,11 +77,12 @@ describe("describeNotification", () => {
 
   it("pile ou face : carte rendue selon la raison → fiche de la carte", () => {
     const base = { actor: { username: "kenji", isGuest: false }, gift: null, card: { anilistId: 40, name: "Luffy", rarity: "MYTHIC" } };
-    const text = (reason: "EXPIRED" | "DECLINED" | "ADMIN" | null) =>
+    const text = (reason: "EXPIRED" | "DECLINED" | "ADMIN" | "WITHDRAWN" | null) =>
       describeNotification({ ...base, type: "COINFLIP_RETURNED", coinFlip: { flipId: "t1", cardId: "c1", reason } }, tr);
     expect(text("EXPIRED").text).toMatch(/^coinFlipExpired:/);
     expect(text("DECLINED").text).toMatch(/^coinFlipDeclined:/);
     expect(text("ADMIN").text).toMatch(/^coinFlipAdmin:/);
+    expect(text("WITHDRAWN").text).toMatch(/^coinFlipWithdrawn:/);
     expect(text(null).text).toMatch(/^coinFlipExpired:/);
     expect(text("EXPIRED").href).toBe("/collection/40");
   });

@@ -1,5 +1,4 @@
 import "server-only";
-import { after } from "next/server";
 import type { Prisma } from "@/generated/prisma/client";
 import type { CardView } from "@/lib/boosters/view";
 import {
@@ -27,15 +26,15 @@ import { copyMarksOf, withCopy } from "../prestige/copy-marks";
 import { ownedCardIds } from "../collection/owned";
 import { namedPlayerSelect, publicNamesFor } from "../collection/public-names";
 import { prisma } from "../db";
-import { pushNotifications } from "../push/send";
+import { pushLater } from "../push/send";
 import { getSetting } from "../settings";
 import { settleAuctionWith } from "./auction-core";
 
 // Lectures de l'hôtel des ventes. Les ventes terminées affichées sont closes au passage (clôture
 // paresseuse), comme celles du joueur à chaque sondage de la cloche ; le cron quotidien balaie le reste.
 
-/** Web Push des notifications créées, une fois la réponse envoyée (hors transaction). */
-export const pushLater = (ids: string[]) => after(() => pushNotifications(ids));
+// Web Push après la réponse : défini avec l'envoi (server/push/send.ts), gardé ici pour les modules qui l'importent du Marché
+export { pushLater };
 
 export async function getMarketRules(): Promise<MarketRules> {
   const [enabled, feeBp, minIncrementBp, antiSnipeSeconds, extendSeconds, durationsHours, maxActivePerSeller, minAccountAgeHours, minStartPrice, maxPrice, maxPriceByRarity] =

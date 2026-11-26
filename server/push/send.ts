@@ -1,5 +1,6 @@
 import "server-only";
 import { getTranslations } from "next-intl/server";
+import { after } from "next/server";
 import webpush from "web-push";
 import { getPathname } from "@/i18n/navigation";
 import { routing, type Locale } from "@/i18n/routing";
@@ -90,6 +91,9 @@ async function signalBells(notificationIds: readonly string[]) {
   const rows = await prisma.notification.findMany({ where: { id: { in: [...notificationIds] } }, select: { userId: true } });
   await Promise.all([...new Set(rows.map((r) => r.userId))].map((userId) => publishToUser(userId, "notification", {})));
 }
+
+/** Web Push des notifications créées, une fois la réponse envoyée (hors transaction) : le `onNotified` des cœurs. */
+export const pushLater = (ids: string[]) => after(() => pushNotifications(ids));
 
 /** Envoie le push de chaque notification créée ; ne lève jamais (le jeu ne dépend pas du push). */
 export async function pushNotifications(notificationIds: readonly string[]): Promise<void> {

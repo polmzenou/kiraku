@@ -10,10 +10,12 @@ import { parseSalonParams } from "@/lib/casino/params";
 import { casinoTiers } from "@/lib/casino/tiers";
 import { getRarityDefinitions } from "@/server/catalog/rarities";
 import { mineSignature } from "@/lib/casino/view";
+import type { CasinoActionError } from "@/server/actions/casino";
 import { sweepCasinoWith } from "@/server/casino/coinflip-core";
+import { playBlockFor } from "@/server/casino/deps";
 import { casinoPulse, casinoView, listHistory, listLobby, listMyTables, myTablesState, pendingReplays } from "@/server/casino/queries";
 import { prisma } from "@/server/db";
-import { pushLater } from "@/server/market/queries";
+import { pushLater } from "@/server/push/send";
 import { rateLimit } from "@/server/ratelimit";
 import { getCurrentUser } from "@/server/user";
 
@@ -59,13 +61,24 @@ export default async function CoinFlipSalonPage({ searchParams }: PageProps<"/[l
     await sweepCasinoWith(prisma, { now: new Date(view.serverNow) }, { creatorId: user.id }, pushLater).catch((e) => console.error("[casino] balayage du salon", e));
   }
 
-  const [lobby, mine, history, replays, state, pulse] = await Promise.all([
+  // Pourquoi le joueur ne peut pas poser de carte (null : il peut), dit à la place du bouton : invité, compte banni
+  // ou en suppression, jeu coupé, puis les refus déjà connus (compte trop récent, verrou du parrainage, tables ou
+  // lancers du jour au maximum). Le serveur revérifie tout sous verrou à la pose.
+  const stakeBlock = async (): Promise<CasinoActionError | null> => {
+    if (user.isGuest) return "GUEST";
+    if (!member) return user.bannedAt ? "BANNED" : "UNAVAILABLE";
+    if (!rules.coinflip.enabled) return "DISABLED";
+    return playBlockFor(user, { counterpartyId: null, creating: true }, new Date(view.serverNow));
+  };
+
+  const [lobby, mine, history, replays, state, pulse, block] = await Promise.all([
     tab === "tables" ? listLobby({ viewerId: user.id, tier: tierOrder, cursor: null, locale }) : null,
     tab === "mes-tables" ? listMyTables(user.id, locale) : null,
     tab === "historique" ? listHistory(user.id, locale) : null,
     member ? pendingReplays(user.id, locale) : [],
     member ? myTablesState(user.id) : null,
     casinoPulse(),
+    stakeBlock(),
   ]);
 
   return (
@@ -79,7 +92,7 @@ export default async function CoinFlipSalonPage({ searchParams }: PageProps<"/[l
           lobby={lobby}
           mine={mine}
           history={history}
-          canPlay={member && rules.coinflip.enabled}
+          stakeBlock={block}
           allowed={rules.coinflip.allowedRarities}
           expiryHours={rules.coinflip.expiryHours}
           pollSeconds={rules.coinflip.lobbyPollSeconds}

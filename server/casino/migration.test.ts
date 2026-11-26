@@ -83,6 +83,29 @@ describe("migration du pile ou face (Postgres isolé en mémoire)", () => {
   it("refuse une graine ou une empreinte mal formée", async () => {
     await expect(insert({ ...BASE, seed: "AB".repeat(32) })).rejects.toThrow();
     await expect(insert({ ...BASE, seedHash: "cd" })).rejects.toThrow();
+    await expect(insert({ ...BASE, seed: null, seedNonce: "EF".repeat(32) })).rejects.toThrow();
+  });
+
+  it("graine scellée : une table ouverte n'a que son nonce, la graine n'arrive qu'au lancer", async () => {
+    const SEALED: Row = { ...BASE, seed: null, seedNonce: "ef".repeat(32) };
+    await insert(SEALED);
+    // Jamais la graine en clair à côté du nonce tant que la table attend
+    await expect(insert({ ...SEALED, id: "t2", creatorUserCardId: "uc9", seed: SEED })).rejects.toThrow();
+    // Ni graine ni nonce : rien à lancer
+    await expect(insert({ ...BASE, id: "t3", creatorUserCardId: "uc8", seed: null })).rejects.toThrow();
+    // Jouée : la graine est révélée, toujours
+    await expect(insert({ ...SEALED, id: "t4", creatorUserCardId: "uc7", ...DONE })).rejects.toThrow();
+    await insert({ ...SEALED, id: "t5", creatorUserCardId: "uc6", ...DONE, seed: SEED });
+    // Retirée ou expirée sans avoir été jouée : la graine n'est jamais révélée
+    await insert({ ...SEALED, id: "t6", creatorUserCardId: "uc5", status: "EXPIRED", resolvedAt: "2026-12-06T12:00:00Z" });
+    await pg.exec(`UPDATE "CoinFlip" SET status = 'DONE', "opponentId" = 'b', "opponentUserCardId" = 'uc2', "opponentCardId" = 'k2', "opponentRarity" = 'BR', result = 'URA', "winnerId" = 'b', "resolvedAt" = now(), seed = '${SEED}' WHERE id = 't1'`);
+    expect((await pg.query(`SELECT seed FROM "CoinFlip" WHERE id = 't1'`)).rows).toEqual([{ seed: SEED }]);
+  });
+
+  it("index partiel des exemplaires hors collection (santé du séquestre)", async () => {
+    const rows = (await pg.query<{ indexdef: string }>(`SELECT indexdef FROM pg_indexes WHERE indexname = 'UserCard_locked_status_idx'`)).rows;
+    expect(rows).toHaveLength(1);
+    expect(rows[0].indexdef).toMatch(/WHERE \(status <> 'COLLECTION'/);
   });
 
   it("on ne joue pas contre soi-même, on ne se réserve pas sa table", async () => {

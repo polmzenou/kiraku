@@ -111,7 +111,8 @@ export function CoinFlipTable({ initial, viewerId, canJoin, joinBlock, joinRarit
 
   return (
     <div className="flex flex-col gap-5">
-      <Link href="/casino/pile-ou-face" prefetch={false} className="self-start text-sm text-text-muted underline-offset-4 hover:underline">
+      {/* Zone tactile de 44 px, marges négatives : le texte garde sa place */}
+      <Link href="/casino/pile-ou-face" prefetch={false} className="-my-3 inline-flex min-h-11 items-center self-start text-sm text-text-muted underline-offset-4 hover:underline">
         ‹ {t("salon.title")}
       </Link>
 
@@ -273,7 +274,14 @@ function Join({
       try {
         const res = await joinCoinFlipAction({ flipId: table.id, cardId: card.cardId, userCardId: copyId, confirmLastCopy: lastCopy && confirmLast });
         if (res.ok) {
-          onThrow({ table: res.table, prize: res.prize, won: res.won });
+          if (res.table) {
+            onThrow({ table: res.table, prize: res.prize, won: res.won });
+            return;
+          }
+          // Pièce lancée mais table illisible juste après : on la relit pour jouer le lancer, sinon la page se recharge
+          const fresh = await coinFlipTableAction({ flipId: table.id });
+          if (fresh.ok && fresh.table.status === "DONE") onThrow({ table: fresh.table, prize: null, won: res.won });
+          else window.location.reload();
           return;
         }
         if (res.error === "CONFIRM_LAST_COPY") {
@@ -441,6 +449,7 @@ function Throwing({ play, onSettled, onClose, onVerify }: { play: Throw; onSettl
       outroLabel={won ? t("outroWin") : t("outroLose", { name: top.player.username })}
       tablet={tablet}
       onSettled={onSettled}
+      onClose={onClose}
     />
   );
 }

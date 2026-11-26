@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { flipCurves, flipFx, flipScript, NO_OPACITY, BASE, opacityKeyframes, seedOf, toKeyframes, type Track } from "@/lib/casino/choreography";
 import type { CoinSide } from "@/lib/casino/fairness";
 import { CASINO_MEDIA, coinImage, SIDE_KANJI } from "@/lib/casino/media";
@@ -11,6 +11,7 @@ import type { CardView } from "@/lib/boosters/view";
 import type { PlayerRef } from "@/server/profile/decor";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import { prefersReducedMotion } from "@/lib/motion-pref-dom";
+import { seededFloat } from "@/lib/rng";
 import { playSound } from "@/lib/sound/synth";
 import { Fuda } from "../fuda/Fuda";
 import { useFxLevel } from "../motion/MotionPreference";
@@ -31,18 +32,6 @@ export type StageSeat = {
 const BOARD = { w: 375, h: 760 } as const;
 const EDGES = [-3, -2, -1, 0, 1, 2, 3];
 
-/** Générateur à graine pour la position des étincelles et des feuilles d'or. */
-function seeded(seed: number) {
-  let s = seed >>> 0;
-  return () => {
-    s = (s + 0x6d2b79f5) >>> 0;
-    let t = s;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 /**
  * Le lancer, en plein écran : face-à-face et 対, la pièce part du pouce (ou se dresse en toupie pour les gros
  * pots), le sceau de la face gagnante frappe, le pot file vers le gagnant, puis 勝 ou 負 et la tablette du
@@ -59,6 +48,7 @@ export function CoinFlipStage({
   tablet,
   outroLabel,
   onSettled,
+  onClose,
 }: {
   flipId: string;
   /** L'autre joueur (en haut). */
@@ -75,6 +65,8 @@ export function CoinFlipStage({
   outroLabel: string;
   /** Fin du déroulé (ou animation passée) : la tablette est en place. */
   onSettled?: () => void;
+  /** Échap une fois le résultat affiché : la scène se ferme. */
+  onClose?: () => void;
 }) {
   const t = useTranslations("casino.stage");
   const tRarity = useTranslations("rarity");
@@ -94,10 +86,18 @@ export function CoinFlipStage({
   const skipButton = useRef<HTMLButtonElement>(null);
   const tabletRef = useRef<HTMLDivElement>(null);
   const board = useRef<HTMLDivElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     soundRef.current = soundOn;
   }, [soundOn]);
+
+  // <dialog> modal : le focus reste dans la scène et la page dessous devient inerte. Ouvert avant le premier
+  // affichage (la scène est cachée tant qu'il est fermé).
+  useLayoutEffect(() => {
+    const el = dialog.current;
+    if (el && !el.open) el.showModal();
+  }, []);
 
   // Plateau mis à l'échelle de l'écran, jamais plus grand que 1,25 fois sa taille
   useEffect(() => {
@@ -156,7 +156,8 @@ export function CoinFlipStage({
     // Étincelles au coup de sceau, feuilles d'or pour le gagnant d'un gros pot (moins en effets allégés)
     const layer = root?.querySelector<HTMLElement>("[data-fx]") ?? null;
     if (layer && !reduced) {
-      const rand = seeded(seedOf(flipId) + 7);
+      // Position des étincelles et des feuilles d'or : à graine, la même à chaque rejeu
+      const rand = seededFloat(seedOf(flipId) + 7);
       const lite = fxLevel === "lite";
       const dust = lite ? Math.ceil(fx.dust / 2) : fx.dust;
       for (let i = 0; i < dust; i++) {
@@ -224,14 +225,6 @@ export function CoinFlipStage({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- composé une fois : la table jouée ne change plus
   }, []);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") pass();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [pass]);
-
   const banner = (seat: StageSeat, place: "T" | "M") => (
     <div data-track={place === "T" ? "bannerT" : "bannerM"} className={`cf-banner ${place === "T" ? "cf-theirs" : "cf-mine"}`}>
       <span data-track={place === "T" ? "glowT" : "glowM"} className="cf-win-glow" />
@@ -244,13 +237,25 @@ export function CoinFlipStage({
       </span>
       <span className="cf-side">
         <span data-track={place === "T" ? "haloT" : "haloM"} className="cf-side-glow" />
-        <Image data-track={place === "T" ? "sealT" : "sealM"} src={coinImage(seat.side, true)} alt="" width={40} height={40} />
+        <Image data-track={place === "T" ? "sealT" : "sealM"} src={coinImage(seat.side)} alt="" width={40} height={40} />
       </span>
     </div>
   );
 
   return (
-    <div className="cf-overlay" role="dialog" aria-modal="true" aria-labelledby={titleId} onPointerDown={settled ? undefined : pass}>
+    <dialog
+      ref={dialog}
+      className="cf-overlay"
+      aria-labelledby={titleId}
+      onPointerDown={settled ? undefined : pass}
+      onCancel={(e) => {
+        // Échap pendant le lancer : l'animation passe ; une fois le résultat affiché, la scène se ferme
+        if (settledRef.current) return;
+        e.preventDefault();
+        pass();
+      }}
+      onClose={() => onClose?.()}
+    >
       <div ref={board} className="cf-board" style={{ "--cf-scale": scale } as CSSProperties}>
         <LoopBackdrop mobile={CASINO_MEDIA.room} desktop={CASINO_MEDIA.room} priority />
         <div className="cf-tshade" />
@@ -344,6 +349,6 @@ export function CoinFlipStage({
           {settled ? t("announce", { side: SIDE_KANJI[result], outcome: bottomWins ? t("won") : t("lost") }) : ""}
         </p>
       </div>
-    </div>
+    </dialog>
   );
 }

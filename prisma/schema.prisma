@@ -670,7 +670,8 @@ model UserCard {
   vouchers   Voucher[]
 
   // Dans la migration : index unique partiel (cardId, printing, serial) WHERE printing IS NOT NULL,
-  // et index partiel (ownerId, cardId) des exemplaires spéciaux.
+  // index partiel (ownerId, cardId) des exemplaires spéciaux, et index partiel (status) des exemplaires hors
+  // collection (20261126130100_index_cartes_bloquees : santé du séquestre du casino).
   @@index([ownerId, cardId])
   @@index([ownerId, status, cardId]) // collection groupée par carte (couvre aussi [ownerId, status])
   @@index([cardId]) // exemplaires d'une carte (marché, échanges, fiche)
@@ -2312,7 +2313,8 @@ model CoinFlip {
   opponentCardId     String?
   opponentCard       Card?          @relation("coinFlipOpponentCard", fields: [opponentCardId], references: [id], onDelete: Cascade)
   opponentRarity     String?
-  seed               String         @db.Char(64) // secrète jusqu'au lancer (hexadécimal)
+  seed               String?        @db.Char(64) // en clair une fois la table jouée (hexadécimal) ; dès la pose pour les tables d'avant seedNonce
+  seedNonce          String?        @db.Char(64) // nonce tiré à la pose : graine = HMAC(clé dérivée d'AUTH_SECRET, nonce), jamais en base avant le lancer (CHECK)
   seedHash           String         @db.Char(64) // SHA-256 de la graine, public dès l'ouverture
   result             CoinSide?
   winnerId           String? // créateur ou adversaire (CHECK), sans clé étrangère

@@ -4,10 +4,10 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
 import { CASINO_FORM_KEYS, casinoSettingsSchema, type CasinoSettings } from "@/lib/settings/casino-form";
-import { changedSettingKeys } from "@/lib/settings/form";
+import { changedSettingKeys, numberBounds } from "@/lib/settings/form";
 import { updateCasinoSettings } from "@/server/actions/admin-settings";
 import { Button } from "../ui/Button";
-import { Field, inputClass, NumberField, Toggle } from "./fields";
+import { Field, inputClass, NumberField, SelectField, Toggle } from "./fields";
 import { SettingsSaveBar } from "./SettingsSaveBar";
 
 /** Date ISO → valeur d'un champ datetime-local (heure locale du navigateur de l'admin). */
@@ -20,21 +20,8 @@ function toLocalInput(iso: string | null): string {
 
 type NumberKey = Exclude<
   keyof CasinoSettings,
-  "casino.opensAt" | "casino.coinflip.enabled" | "casino.coinflip.allowedRarities" | "casino.coinflip.lastCopyAllowed"
+  "casino.opensAt" | "casino.coinflip.enabled" | "casino.coinflip.allowedRarities" | "casino.coinflip.lastCopyAllowed" | "casino.coinflip.feedBigFrom"
 >;
-
-// Bornes des champs (les mêmes que les schémas Zod de lib/settings/defaults.ts)
-const LIMITS: Record<NumberKey, [number, number]> = {
-  "casino.newBadgeDays": [0, 90],
-  "casino.minAccountAgeHours": [0, 24 * 365],
-  "casino.coinflip.expiryHours": [1, 24 * 7],
-  "casino.coinflip.maxOpenTables": [1, 20],
-  "casino.coinflip.dailyLimit": [1, 500],
-  "casino.coinflip.lobbyPollSeconds": [5, 120],
-  "casino.coinflip.tablePollSeconds": [2, 60],
-  "casino.coinflip.feedSize": [4, 50],
-  "casino.coinflip.feedMaxAgeHours": [1, 24 * 30],
-};
 
 // Réglages accompagnés d'une aide sous le champ
 const HINTED: ReadonlySet<NumberKey> = new Set(["casino.newBadgeDays", "casino.coinflip.expiryHours", "casino.coinflip.dailyLimit", "casino.coinflip.feedMaxAgeHours"]);
@@ -54,17 +41,21 @@ export function CasinoSettingsForm({ initial }: { initial: CasinoSettings }) {
   const label = (k: keyof CasinoSettings) => t(`keys.${short(k)}`);
   const set = <K extends keyof CasinoSettings>(key: K, value: CasinoSettings[K]) => setDraft((d) => ({ ...d, [key]: value }));
 
-  const num = (key: NumberKey) => (
-    <NumberField
-      key={key}
-      label={label(key)}
-      hint={HINTED.has(key) ? t(`hints.${short(key)}` as "hints.newBadgeDays") : undefined}
-      value={draft[key]}
-      min={LIMITS[key][0]}
-      max={LIMITS[key][1]}
-      onChange={(v) => set(key, v)}
-    />
-  );
+  const num = (key: NumberKey) => {
+    // Bornes des schémas Zod de lib/settings/defaults.ts
+    const [min, max] = numberBounds(key);
+    return (
+      <NumberField
+        key={key}
+        label={label(key)}
+        hint={HINTED.has(key) ? t(`hints.${short(key)}` as "hints.newBadgeDays") : undefined}
+        value={draft[key]}
+        min={min}
+        max={max}
+        onChange={(v) => set(key, v)}
+      />
+    );
+  };
   const allowed = draft["casino.coinflip.allowedRarities"];
 
   return (
@@ -110,6 +101,13 @@ export function CasinoSettingsForm({ initial }: { initial: CasinoSettings }) {
           {num("casino.coinflip.tablePollSeconds")}
           {num("casino.coinflip.feedSize")}
           {num("casino.coinflip.feedMaxAgeHours")}
+          <SelectField
+            label={label("casino.coinflip.feedBigFrom")}
+            hint={t("hints.feedBigFrom")}
+            value={draft["casino.coinflip.feedBigFrom"]}
+            options={rarities.map((r) => ({ value: r, label: tRarity(r as "COMMON") }))}
+            onChange={(v) => set("casino.coinflip.feedBigFrom", v)}
+          />
         </div>
         <fieldset className="flex flex-col gap-2">
           <legend className="text-sm">{label("casino.coinflip.allowedRarities")}</legend>

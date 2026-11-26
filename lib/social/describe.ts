@@ -91,6 +91,7 @@ export type DescribeTranslators = {
       | "coinFlipExpired"
       | "coinFlipDeclined"
       | "coinFlipAdmin"
+      | "coinFlipWithdrawn"
       | "expeditionTriumph"
       | "expeditionSuccess"
       | "expeditionFailure"
@@ -194,7 +195,8 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
       // L'issue n'est jamais dans le texte : la pièce se rejoue sur la page de la table
       if (n.type === "COINFLIP_RESOLVED") return { text: t("coinFlipResolved", { name, card }), href: table };
       const reason = n.coinFlip?.reason;
-      const key = reason === "DECLINED" ? "coinFlipDeclined" : reason === "ADMIN" ? "coinFlipAdmin" : "coinFlipExpired";
+      const key =
+        reason === "DECLINED" ? "coinFlipDeclined" : reason === "ADMIN" ? "coinFlipAdmin" : reason === "WITHDRAWN" ? "coinFlipWithdrawn" : "coinFlipExpired";
       return { text: t(key, { name, card }), href: n.card ? `/collection/${n.card.anilistId}` : "/collection" };
     }
     case "EXPEDITION_RETURNED": {

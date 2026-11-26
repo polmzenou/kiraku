@@ -1,7 +1,8 @@
 // Tirage vérifiable du pile ou face, en Web Crypto : le même code tourne sur le serveur (Node) et dans le
 // navigateur du joueur, qui recalcule tout.
-//   1. À l'ouverture de la table, le serveur tire une graine de 32 octets et ne publie que son empreinte
-//      SHA-256 (l'engagement) : il ne peut plus la changer sans que ça se voie.
+//   1. À l'ouverture de la table, le serveur fixe une graine de 32 octets et ne publie que son empreinte
+//      SHA-256 (l'engagement) : il ne peut plus la changer sans que ça se voie. La base n'en garde qu'un nonce,
+//      la graine se retrouve avec une clé du serveur (server/casino/seed.ts).
 //   2. Issue : premier octet de HMAC-SHA256(graine, id de la table). Pair → 表 (face), impair → 裏 (pile).
 //      L'id de la table est connu de tous ; la graine reste secrète jusqu'au lancer.
 //   3. Une fois la table jouée, la graine est révélée : SHA-256(graine) doit redonner l'empreinte, et le

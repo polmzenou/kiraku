@@ -12,7 +12,8 @@ export type CoinFlipRow = {
   tierOrder: number;
   reservedForId: string | null;
   opponentId: string | null;
-  seed: string;
+  /** En clair une fois la table jouée (null tant qu'une table scellée attend). */
+  seed: string | null;
   seedHash: string;
   result: CoinSide | null;
   winnerId: string | null;
@@ -21,14 +22,7 @@ export type CoinFlipRow = {
   resolvedAt: Date | null;
 };
 
-export type CoinFlipProofView = {
-  seedHash: string;
-  /** Révélée une fois la table jouée seulement. */
-  seed: string | null;
-};
-
-export type CoinFlipCoreView = Omit<CoinFlipRow, "seed" | "createdAt" | "expiresAt" | "resolvedAt"> & {
-  seed: string | null;
+export type CoinFlipCoreView = Omit<CoinFlipRow, "createdAt" | "expiresAt" | "resolvedAt"> & {
   createdAt: string;
   expiresAt: string;
   resolvedAt: string | null;

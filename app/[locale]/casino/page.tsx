@@ -17,9 +17,6 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("title"), description: t("description"), robots: { index: false, follow: true } };
 }
 
-// Gros lancers mis en avant dans le fil (le relais Discord a son propre seuil)
-const FEED_BIG_FROM = "LEGENDARY";
-
 /** Casino : teaser avant l'ouverture (l'équipe voit le hall en aperçu), puis le hall et ses jeux. */
 export default async function CasinoPage() {
   const user = await getCurrentUser();
@@ -35,7 +32,7 @@ export default async function CasinoPage() {
   const { coinflip } = view.rules;
   const [pulse, feed, gauge, gaugeRefresh] = await Promise.all([
     casinoPulse(),
-    recentFlips({ locale, size: coinflip.feedSize, maxAgeHours: coinflip.feedMaxAgeHours, bigFrom: FEED_BIG_FROM }),
+    recentFlips(locale, coinflip),
     getEventGauge(view.serverNow),
     getSetting("home.eventGauge.refreshSeconds"),
   ]);

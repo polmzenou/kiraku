@@ -4542,7 +4542,8 @@
         "lobbyPollSeconds": "Rafraîchissement du salon (secondes)",
         "tablePollSeconds": "Rafraîchissement d'une table (secondes)",
         "feedSize": "Lancers dans le fil du hall",
-        "feedMaxAgeHours": "Âge maximal du fil (heures)"
+        "feedMaxAgeHours": "Âge maximal du fil (heures)",
+        "feedBigFrom": "Gros lancers du fil à partir de"
       },
       "hints": {
         "opensAt": "Dans l'heure locale de ton navigateur. Vide : teaser sans date ; future : compte à rebours ; passée : casino ouvert.",
@@ -4550,6 +4551,7 @@
         "expiryHours": "Sans preneur, la carte revient à son créateur.",
         "dailyLimit": "Tables posées et tables relevées, par jour de jeu.",
         "feedMaxAgeHours": "Les lancers plus anciens quittent le fil.",
+        "feedBigFrom": "Un pot de cette rareté ou plus est mis en avant dans le fil du hall. Le relais Discord a son propre seuil.",
         "allowedRarities": "Une table se relève avec une carte du même palier (Mythique = BR, AR = VR, Gold = MR). Une rareté retirée ne se mise plus ; ses tables ouvertes restent jusqu'à leur échéance."
       }
     },
@@ -6084,6 +6086,7 @@
     "coinFlipExpired": "Personne n'a relevé ta table de pile ou face : {card} est revenue dans ta collection.",
     "coinFlipDeclined": "{name} a décliné ta table de pile ou face : {card} est revenue dans ta collection.",
     "coinFlipAdmin": "L'équipe Kiraku a retiré ta table de pile ou face : {card} est revenue dans ta collection.",
+    "coinFlipWithdrawn": "Le joueur à qui tu avais réservé ta table de pile ou face a quitté le jeu : {card} est revenue dans ta collection.",
     "expeditionTriumph": "Ton expédition revient triomphante ! Viens ouvrir son rapport.",
     "expeditionSuccess": "Ton expédition est de retour, mission accomplie. Viens ouvrir son rapport.",
     "expeditionFailure": "Ton expédition est rentrée bredouille… Tes cartes sont de retour.",
@@ -7307,8 +7310,6 @@
   },
   "casino": {
     "title": "Casino",
-    "soon": "Bientôt",
-    "body": "Le casino de Kiraku est en préparation. Il arrivera plus tard, sans jamais accepter d'argent réel.",
     "back": "Retour aux boosters",
     "description": "Le casino de Kiraku : pile ou face entre joueurs, une fuda contre une fuda du même palier.",
     "virtual": "Tout est virtuel : aucune somme réelle n'est en jeu, ni Zeni ni argent.",
@@ -7378,7 +7379,6 @@
       "stake": "Poser une carte",
       "more": "Voir plus",
       "loading": "Chargement…",
-      "retry": "Réessayer",
       "guest": "Crée un compte pour jouer : un invité peut regarder les tables, pas miser.",
       "lead": "Une fuda contre une fuda du même palier. Le gagnant repart avec les deux.",
       "pulse": "{open, plural, =0 {Aucune table ouverte} one {# table ouverte} other {# tables ouvertes}} · {today, plural, =0 {aucun lancer aujourd'hui} one {# lancer aujourd'hui} other {# lancers aujourd'hui}}",
@@ -7390,17 +7390,14 @@
       "open": "Tes tables ouvertes",
       "invitations": "Tables réservées pour toi",
       "none": "Tu n'as aucune table ouverte.",
-      "noInvitation": "Aucune table ne t'est réservée.",
       "expires": "Expire {time}",
       "decline": "Décliner",
-      "view": "Voir la table",
       "count": "{count} / {max}",
       "countLabel": "{count, plural, one {# table ouverte} other {# tables ouvertes}} sur {max} possibles",
       "noneBody": "Pose une fuda : elle attend un adversaire jusqu'à ce qu'il la relève ou qu'elle expire.",
       "reservedTo": "Pour <player>{name}</player>"
     },
     "history": {
-      "stats": "{played, plural, =0 {Aucun lancer joué} one {# lancer} other {# lancers}} · {won} gagnés · {lost} perdus",
       "streakWin": "{count, plural, one {# victoire} other {# victoires}} d'affilée",
       "streakLoss": "{count, plural, one {# défaite} other {# défaites}} d'affilée",
       "sides": "表 {omote} · 裏 {ura}",
@@ -7408,7 +7405,6 @@
       "won": "Gagné",
       "lost": "Perdu",
       "against": "contre <player>{name}</player>",
-      "open": "Voir",
       "tiles": {
         "played": "Lancers",
         "won": "Gagnés",
@@ -7462,8 +7458,7 @@
       "INVALID": "Demande invalide.",
       "RATE_LIMITED": "Doucement ! Réessaie dans un moment.",
       "UNAVAILABLE": "Action impossible pour le moment.",
-      "FORBIDDEN": "Accès refusé.",
-      "unexpected": "Erreur inattendue. Réessaie."
+      "FORBIDDEN": "Accès refusé."
     },
     "stage": {
       "you": "Toi",

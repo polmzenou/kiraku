@@ -4,17 +4,25 @@
 /** Entier uniforme dans [0, maxExclusive). */
 export type Rng = (maxExclusive: number) => number;
 
-/** mulberry32 : générateur 32 bits rapide et reproductible (jamais utilisé pour les vrais tirages). */
-export function seededRng(seed: number): Rng {
+/**
+ * mulberry32 en flottants dans [0, 1) : générateur 32 bits rapide et reproductible (jamais utilisé pour les vrais
+ * tirages). Sert aussi aux effets visuels qui doivent rejouer à l'identique (étincelles, feuilles d'or, lancer).
+ */
+export function seededFloat(seed: number): () => number {
   let a = seed >>> 0;
-  return (maxExclusive) => {
+  return () => {
     a = (a + 0x6d2b79f5) >>> 0;
     let t = a;
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    const u = ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
-    return Math.floor(u * maxExclusive);
+    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
   };
+}
+
+/** mulberry32 en entiers : même suite que seededFloat pour une même graine. */
+export function seededRng(seed: number): Rng {
+  const next = seededFloat(seed);
+  return (maxExclusive) => Math.floor(next() * maxExclusive);
 }
 
 /** Mélange deux entiers 32 bits en une graine bien répartie (finaliseur de murmur3). */

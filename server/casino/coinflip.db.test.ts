@@ -22,6 +22,7 @@ import {
   withdrawCasinoWith,
   type CoinFlipContext,
 } from "./coinflip-core";
+import { coinFlipSeedKey, sealedSeed } from "./seed";
 
 // Les lectures du salon (queries.ts) passent par le client de ce test
 const db = vi.hoisted(() => ({ client: null as unknown }));
@@ -31,7 +32,7 @@ vi.mock("../db", () => ({
     return db.client;
   },
 }));
-const { listMyTables, myTablesState } = await import("./queries");
+const { listLobby, listMyTables, myTablesState } = await import("./queries");
 const { mineSignature } = await import("@/lib/casino/view");
 
 // Pile ou face sur une vraie base (base de test isolée) : sauté sans DATABASE_URL_TEST.
@@ -39,6 +40,7 @@ const { mineSignature } = await import("@/lib/casino/view");
 // Joueurs et cartes jetables supprimés à la fin (tables, exemplaires et notifications partent en cascade).
 
 const url = process.env.DATABASE_URL_TEST;
+const SEED_KEY = coinFlipSeedKey("secret-de-test-assez-long-pour-auth-secret");
 const OLD = new Date(Date.now() - 30 * 86_400_000);
 const HOUR = 3_600_000;
 const MARKET: MarketRules = {
@@ -74,6 +76,7 @@ describe.skipIf(!url)("pile ou face atomique (base réelle)", () => {
     dayStart: new Date(Date.now() - HOUR),
     definitions,
     randomBytes: (n) => new Uint8Array(randomBytes(n)),
+    seedKey: SEED_KEY,
     ...over,
   });
 
@@ -153,13 +156,37 @@ describe.skipIf(!url)("pile ou face atomique (base réelle)", () => {
     expect(res.prize.isNew).toBe(true);
     expect(done.winnerNew).toBe(true);
 
-    const v = await verifyFlip({ tableId: flipId, seed: done.seed, seedHash: done.seedHash, result: done.result! });
+    // Graine scellée tant que la table attendait, révélée au lancer
+    expect(open.seed).toBeNull();
+    expect(open.seedNonce).toMatch(/^[0-9a-f]{64}$/);
+    expect(done.seed).toBe(sealedSeed(SEED_KEY, open.seedNonce!));
+    const v = await verifyFlip({ tableId: flipId, seed: done.seed!, seedHash: done.seedHash, result: done.result! });
     expect(v).toMatchObject({ commitOk: true, outcomeOk: true });
     // Le créateur est prévenu sans l'issue
     const notif = await prisma.notification.findFirstOrThrow({ where: { userId: a, type: "COINFLIP_RESOLVED", refId: flipId } });
     expect(JSON.stringify(notif.payload)).not.toMatch(/OMOTE|URA|won|winner/);
     expect(await markSeenWith(prisma, { userId: a, flipIds: [flipId], now: new Date() })).toBe(1);
     expect(await markSeenWith(prisma, { userId: a, flipIds: [flipId], now: new Date() })).toBe(0);
+  }, 60_000);
+
+  it("graine : une table d'avant le scellement (graine en clair) se joue ; une autre clé ne joue rien", async () => {
+    const [a, b] = [await player(), await player()];
+    await give(a, card.MYTHIC, 2);
+    await give(b, card.BR, 2);
+    const { flipId: sealed } = await createTableWith(prisma, { userId: a, cardId: card.MYTHIC, side: "OMOTE" }, ctx());
+    // Copie de la base avec un autre AUTH_SECRET : la graine retrouvée ne redonne pas l'engagement, rien ne bouge
+    const otherKey = coinFlipSeedKey("un-autre-secret-de-test-assez-long-pour-auth");
+    expect(await code(joinTableWith(prisma, { userId: b, flipId: sealed, cardId: card.BR }, ctx({ seedKey: otherKey })))).toMatch(/illisible/);
+    expect(await prisma.coinFlip.count({ where: { id: sealed, status: "OPEN" } })).toBe(1);
+    expect(await inStatus(b, "COLLECTION")).toBe(2);
+
+    // Ancien format : graine écrite en clair à la pose, sans nonce
+    const row = await prisma.coinFlip.findUniqueOrThrow({ where: { id: sealed }, select: { seedNonce: true } });
+    await prisma.coinFlip.update({ where: { id: sealed }, data: { seed: sealedSeed(SEED_KEY, row.seedNonce!), seedNonce: null } });
+    const res = await joinTableWith(prisma, { userId: b, flipId: sealed, cardId: card.BR }, ctx({ seedKey: otherKey }));
+    expect(res.ok).toBe(true);
+    const done = await prisma.coinFlip.findUniqueOrThrow({ where: { id: sealed } });
+    expect(await verifyFlip({ tableId: sealed, seed: done.seed!, seedHash: done.seedHash, result: done.result! })).toMatchObject({ commitOk: true, outcomeOk: true });
   }, 60_000);
 
   it("paliers : une BR relève une Mythique, une AR ou une Épique non", async () => {
@@ -347,6 +374,29 @@ describe.skipIf(!url)("pile ou face atomique (base réelle)", () => {
     expect((await listMyTables(a, locale)).mine).toEqual([]);
   }, 60_000);
 
+  it("salon : tables publiques et réservées au lecteur ; ni réservées à un autre, ni d'un joueur bloqué, ni échues", async () => {
+    const [viewer, a, b, other, blocker] = [await player(), await player(), await player(), await player(), await player()];
+    await give(a, card.EPIC, 3);
+    await give(b, card.EPIC, 3);
+    await give(blocker, card.EPIC, 2);
+    for (const [x, y] of [[a, viewer], [b, other]] as const) {
+      await prisma.friendship.create({ data: { pairKey: pairKey(x, y), requesterId: x, addresseeId: y, status: "ACCEPTED", createdAt: OLD, acceptedAt: OLD } });
+    }
+    await prisma.userBlock.create({ data: { blockerId: blocker, blockedId: viewer } });
+    const publique = (await createTableWith(prisma, { userId: a, cardId: card.EPIC, side: "OMOTE" }, ctx())).flipId;
+    const pourMoi = (await createTableWith(prisma, { userId: a, cardId: card.EPIC, side: "URA", reservedForId: viewer }, ctx())).flipId;
+    const pourUnAutre = (await createTableWith(prisma, { userId: b, cardId: card.EPIC, side: "OMOTE", reservedForId: other }, ctx())).flipId;
+    const bloquee = (await createTableWith(prisma, { userId: blocker, cardId: card.EPIC, side: "OMOTE" }, ctx())).flipId;
+    const past = ctx({ now: new Date(Date.now() - 48 * HOUR), dayStart: new Date(Date.now() - 49 * HOUR) });
+    const echue = (await createTableWith(prisma, { userId: b, cardId: card.EPIC, side: "URA" }, past)).flipId;
+
+    const ids = (await listLobby({ viewerId: viewer, tier: 300, cursor: null, locale: "fr" })).items.map((t) => t.id);
+    expect(ids).toEqual(expect.arrayContaining([publique, pourMoi]));
+    for (const hidden of [pourUnAutre, bloquee, echue]) expect(ids).not.toContain(hidden);
+    // Ses propres tables ne sont pas au salon (elles sont dans « Mes tables »)
+    expect((await listLobby({ viewerId: a, tier: 300, cursor: null, locale: "fr" })).items.map((t) => t.id)).not.toContain(publique);
+  }, 60_000);
+
   it("expiration : le balayage rend la carte une seule fois, même lancé deux fois en même temps", async () => {
     const a = await player();
     await give(a, card.EPIC, 4);
@@ -389,11 +439,15 @@ describe.skipIf(!url)("pile ou face atomique (base réelle)", () => {
     await give(b, card.EPIC2, 2);
     await prisma.friendship.create({ data: { pairKey: pairKey(a, b), requesterId: a, addresseeId: b, status: "ACCEPTED", createdAt: OLD, acceptedAt: OLD } });
     await createTableWith(prisma, { userId: a, cardId: card.EPIC, side: "OMOTE" }, ctx());
-    await createTableWith(prisma, { userId: b, cardId: card.EPIC2, side: "OMOTE", reservedForId: a }, ctx());
+    const { flipId: reserved } = await createTableWith(prisma, { userId: b, cardId: card.EPIC2, side: "OMOTE", reservedForId: a }, ctx());
     await prisma.$transaction((tx) => withdrawCasinoWith(tx, a, new Date()));
     expect(await prisma.coinFlip.count({ where: { OR: [{ creatorId: a }, { reservedForId: a }], status: "OPEN" } })).toBe(0);
     expect(await inStatus(a, "CASINO")).toBe(0);
     expect(await inStatus(b, "CASINO")).toBe(0);
+    // Le créateur de la table réservée au joueur retiré est prévenu ; le joueur retiré, non
+    const back = await prisma.notification.findFirstOrThrow({ where: { userId: b, type: "COINFLIP_RETURNED", refId: reserved } });
+    expect(back.payload).toMatchObject({ reason: "WITHDRAWN" });
+    expect(await prisma.notification.count({ where: { userId: a, type: "COINFLIP_RETURNED" } })).toBe(0);
   }, 60_000);
 
   it("suppression d'un compte par l'admin : les tables qui lui étaient réservées rendent leur carte", async () => {

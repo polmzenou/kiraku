@@ -5,7 +5,8 @@ import { useId, type ReactNode } from "react";
 import { useAnnouncementDialog } from "../welcome/useAnnouncementDialog";
 import { ButtonLink } from "../ui/ButtonLink";
 import { CasinoRules } from "./CasinoRules";
-import "./casino.css";
+// Rendue par le layout racine : seule la pièce qui tourne, pas tout casino.css (qui entrerait dans chaque page)
+import "./coin-spin.css";
 
 /**
  * « Le casino ouvre ses portes » : une fois par compte, à la première visite d'un écran de découverte après

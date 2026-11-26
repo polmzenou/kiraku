@@ -6,7 +6,7 @@ import { coinImage } from "@/lib/casino/media";
 export function CoinFace({ side, size = 28, className = "" }: { side: CoinSide; size?: number; className?: string }) {
   return (
     <Image
-      src={coinImage(side, size <= 128)}
+      src={coinImage(side)}
       alt=""
       width={size}
       height={size}

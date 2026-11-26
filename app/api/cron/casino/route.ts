@@ -1,7 +1,7 @@
 import { sweepCasinoWith } from "@/server/casino/coinflip-core";
 import { cronAuthorized } from "@/server/cron-auth";
 import { prisma } from "@/server/db";
-import { pushLater } from "@/server/market/queries";
+import { pushLater } from "@/server/push/send";
 
 // Tables de pile ou face échues (carte rendue, créateur prévenu), une fois par jour : filet de sécurité derrière
 // le balayage paresseux (sondage de la cloche, page de la table, relève d'une table échue).

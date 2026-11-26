@@ -34,8 +34,11 @@ type Props = {
   lobby: LobbyPage | null;
   mine: { mine: CoinFlipTableView[]; invitations: CoinFlipTableView[] } | null;
   history: { items: CoinFlipTableView[]; stats: FlipStats } | null;
-  /** Compte inscrit qui peut miser (sinon : message aux invités). */
-  canPlay: boolean;
+  /**
+   * Pourquoi le lecteur ne peut pas poser de carte, dit à la place du bouton (invité, jeu coupé, compte trop récent,
+   * tables au maximum…) ; null : il peut miser.
+   */
+  stakeBlock: CasinoActionError | null;
   allowed: readonly Rarity[];
   expiryHours: number;
   pollSeconds: number;
@@ -159,7 +162,8 @@ function EmptyState({ title, body, onStake }: { title: string; body?: string; on
 
 /** Salon du pile ou face : tables ouvertes (filtre par palier), mes tables et invitations, historique. */
 export function CoinFlipSalon(props: Props) {
-  const { tab, tiers, tier, canPlay } = props;
+  const { tab, tiers, tier, stakeBlock } = props;
+  const canPlay = stakeBlock === null;
   const t = useTranslations("casino");
   const tRarity = useTranslations("rarity");
   const seals = useRaritySeals();
@@ -170,6 +174,10 @@ export function CoinFlipSalon(props: Props) {
   const [lobbySource, setLobbySource] = useState(props.lobby);
   const [loadingMore, setLoadingMore] = useState(false);
   const [sheet, setSheet] = useState(props.reserveFor !== null && canPlay);
+  // La feuille (et la lecture de la collection qu'elle déclenche) ne se monte qu'à la première ouverture, puis
+  // reste montée pour garder l'animation de fermeture
+  const [sheetMounted, setSheetMounted] = useState(sheet);
+  if (sheet && !sheetMounted) setSheetMounted(true);
   const [error, setError] = useState<CasinoActionError | null>(null);
   const [pending, startTransition] = useTransition();
   const tierOrder = tiers.find((x) => x.key === tier)?.order ?? null;
@@ -266,7 +274,8 @@ export function CoinFlipSalon(props: Props) {
         <span aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgb(13_11_9/0.94),rgb(13_11_9/0.7)_55%,rgb(13_11_9/0.35))]" />
         <div className="flex w-full flex-col gap-1.5 p-4 md:flex-row md:items-end md:justify-between md:gap-6 md:p-6">
           <div className="flex min-w-0 flex-col gap-1.5">
-            <Link href="/casino" prefetch={false} className="self-start text-sm text-[#C9BFAF] underline-offset-4 hover:underline">
+            {/* Zone tactile de 44 px, marges négatives : le texte garde sa place dans l'en-tête */}
+            <Link href="/casino" prefetch={false} className="-my-3 inline-flex min-h-11 items-center self-start text-sm text-[#C9BFAF] underline-offset-4 hover:underline">
               ‹ {t("salon.back")}
             </Link>
             <h1 className="flex items-center gap-2.5 font-title text-2xl font-extrabold md:text-3xl">
@@ -439,17 +448,17 @@ export function CoinFlipSalon(props: Props) {
 
       {tab === "historique" && props.history && <History history={props.history} now={now} />}
 
-      {canPlay ? (
+      {stakeBlock === null ? (
         <div className="pointer-events-none fixed inset-x-0 bottom-[var(--mobile-nav-height)] z-30 flex justify-end px-4 lg:hidden">
           <Button type="button" variant="primary" size="lg" className="pointer-events-auto shadow-float" onClick={() => setSheet(true)}>
             ＋ {t("salon.stake")}
           </Button>
         </div>
       ) : (
-        <p className="rounded-card bg-surface p-4 text-sm text-text-muted">{t("salon.guest")}</p>
+        <p className="rounded-card bg-surface p-4 text-sm text-text-muted">{stakeBlock === "GUEST" ? t("salon.guest") : t(`errors.${stakeBlock}`)}</p>
       )}
 
-      {canPlay && (
+      {canPlay && sheetMounted && (
         <StakeSheet
           open={sheet}
           onClose={() => setSheet(false)}

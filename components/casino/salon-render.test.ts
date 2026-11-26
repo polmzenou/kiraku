@@ -88,7 +88,7 @@ const base = {
   lobby: { items: [table()], nextCursor: null as string | null },
   mine: null as ComponentProps<typeof CoinFlipSalon>["mine"],
   history: null as ComponentProps<typeof CoinFlipSalon>["history"],
-  canPlay: true,
+  stakeBlock: null as ComponentProps<typeof CoinFlipSalon>["stakeBlock"],
   allowed: ["RARE", "MYTHIC", "BR"],
   expiryHours: 24,
   pollSeconds: 20,
@@ -129,10 +129,28 @@ describe("salon du pile ou face", () => {
   });
 
   it("état vide, et message aux invités à la place du bouton", () => {
-    const html = render({ lobby: { items: [], nextCursor: null }, canPlay: false, signature: null, counts: null });
+    const html = render({ lobby: { items: [], nextCursor: null }, stakeBlock: "GUEST", signature: null, counts: null });
     expect(html).toContain("Aucune table ouverte pour l&#x27;instant");
     expect(html).toContain("Crée un compte pour jouer");
     expect(html).not.toContain("Poser une carte");
+  });
+
+  it.each([
+    ["DISABLED", "Le pile ou face est fermé pour le moment."],
+    ["TOO_NEW", "Ton compte est trop récent pour miser"],
+    ["TABLE_LIMIT", "Tu as déjà le nombre maximal de tables ouvertes."],
+    ["REFEREE_LOCKED", "Tu viens d&#x27;arriver par parrainage"],
+  ] as const)("membre qui ne peut pas miser (%s) : la raison à la place du bouton, jamais le message aux invités", (block, text) => {
+    const html = render({ stakeBlock: block });
+    expect(html).toContain(text);
+    expect(html).not.toContain("Crée un compte pour jouer");
+    expect(html).not.toContain("Poser une carte");
+  });
+
+  it("la feuille « Poser une carte » ne se monte qu'à son ouverture (pas de lecture de la collection au rendu)", () => {
+    expect(render()).not.toContain("<dialog");
+    // Lien « Revanche » ou « Inviter » : la feuille s'ouvre d'elle-même
+    expect(render({ reserveFor: "Nami" })).toContain("<dialog");
   });
 
   it("état vide d'un membre : « Poser une carte » dans l'état vide", () => {

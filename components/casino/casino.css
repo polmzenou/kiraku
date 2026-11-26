@@ -40,6 +40,27 @@
   touch-action: manipulation;
 }
 
+/* Le lancer et la cérémonie sont des <dialog> ouverts par showModal() (focus piégé, page dessous inerte) :
+   on retire les marges, bordure et tailles maximales du navigateur. Fermé, il ne s'affiche pas. */
+dialog.cf-overlay {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: inherit;
+}
+
+dialog.cf-overlay:not([open]) {
+  display: none;
+}
+
+dialog.cf-overlay::backdrop {
+  background: #0a0807;
+}
+
 .cf-board {
   position: relative;
   flex: none;
@@ -66,7 +87,8 @@
 .cf-hk {
   display: grid;
   place-items: center;
-  background: url(/casino/fx/hanko-v1.webp) center / 100% 100%;
+  /* 320 px : assez pour le sceau de la scène (104 px) sur un écran 3x */
+  background: url(/casino/fx/hanko-sm-v1.webp) center / 100% 100%;
   color: var(--color-washi-paper);
   font-family: var(--font-seal);
   line-height: 1;
@@ -91,7 +113,7 @@
   position: absolute;
   inset: 0 0 auto;
   z-index: 20;
-  height: 52px;
+  min-height: 52px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -122,8 +144,10 @@
   white-space: nowrap;
 }
 
+/* Le plateau est mis à l'échelle de l'écran (--cf-scale, souvent < 1 sur téléphone) : la hauteur est compensée pour
+   que « Son » et « Passer » gardent 44 px à l'écran */
 .cf-skip {
-  min-height: 40px;
+  min-height: calc(44px / var(--cf-scale, 1));
   padding: 0 14px;
   border-radius: 999px;
   background: rgb(241 233 218 / 0.08);
@@ -507,56 +531,4 @@
   opacity: 0;
 }
 
-/* ---------- Pièce qui tourne en boucle (annonce de l'ouverture) ---------- */
-
-.cf-mspin {
-  width: 96px;
-  height: 96px;
-  perspective: 520px;
-}
-
-.cf-mspin-coin {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  animation: cf-spin-y 2.6s linear infinite;
-}
-
-.cf-mspin-coin > span {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: center / 100% 100% no-repeat;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-.cf-mspin-coin > .cf-mspin-front {
-  background-image: url(/casino/coin/omote-sm-v1.webp);
-  transform: translateZ(3px);
-}
-
-.cf-mspin-coin > .cf-mspin-back {
-  background-image: url(/casino/coin/ura-sm-v1.webp);
-  transform: rotateY(180deg) translateZ(3px);
-}
-
-@keyframes cf-spin-y {
-  from {
-    transform: rotateY(0deg);
-  }
-  to {
-    transform: rotateY(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cf-mspin-coin {
-    animation: none;
-  }
-}
-
-:root[data-motion="reduced"] .cf-mspin-coin {
-  animation: none;
-}
+/* La pièce qui tourne de l'annonce d'ouverture vit dans coin-spin.css (importée par la seule modale). */

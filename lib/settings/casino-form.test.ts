@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SETTING_DEFAULTS } from "./defaults";
 import { CASINO_FORM_KEYS, casinoSettingsSchema } from "./casino-form";
+import { numberBounds } from "./form";
 
 const defaults = Object.fromEntries(CASINO_FORM_KEYS.map((k) => [k, SETTING_DEFAULTS[k]]));
 
@@ -19,6 +20,21 @@ describe("réglages du casino", () => {
     expect(casinoSettingsSchema.safeParse({ ...defaults, "casino.coinflip.allowedRarities": [] }).success).toBe(false);
     expect(casinoSettingsSchema.safeParse({ ...defaults, "casino.coinflip.maxOpenTables": 0 }).success).toBe(false);
     expect(casinoSettingsSchema.safeParse({ ...defaults, "casino.coinflip.expiryHours": 24 * 8 }).success).toBe(false);
+  });
+
+  it("bornes des champs lues dans les schémas Zod, comme celles recopiées jusqu'ici", () => {
+    expect(numberBounds("casino.newBadgeDays")).toEqual([0, 90]);
+    expect(numberBounds("casino.minAccountAgeHours")).toEqual([0, 24 * 365]);
+    expect(numberBounds("casino.coinflip.expiryHours")).toEqual([1, 24 * 7]);
+    expect(numberBounds("casino.coinflip.maxOpenTables")).toEqual([1, 20]);
+    expect(numberBounds("casino.coinflip.dailyLimit")).toEqual([1, 500]);
+    expect(numberBounds("casino.coinflip.tablePollSeconds")).toEqual([2, 60]);
+    expect(numberBounds("casino.coinflip.feedMaxAgeHours")).toEqual([1, 24 * 30]);
+  });
+
+  it("gros lancers du fil : « Légendaire » par défaut, une rareté du registre", () => {
+    expect(defaults["casino.coinflip.feedBigFrom"]).toBe("LEGENDARY");
+    expect(casinoSettingsSchema.safeParse({ ...defaults, "casino.coinflip.feedBigFrom": "" }).success).toBe(false);
   });
 
   it("ne mélange pas l'interrupteur de visibilité au formulaire", () => {

@@ -1,5 +1,5 @@
 import "server-only";
-import { randomBytes } from "node:crypto";
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import type { Prisma } from "@/generated/prisma/client";
 import type { CardView } from "@/lib/boosters/view";
@@ -7,7 +7,7 @@ import { RARITY_SEAL } from "@/lib/catalog/rarity";
 import type { CoinSide } from "@/lib/casino/fairness";
 import { isStaff } from "@/lib/admin/roles";
 import { casinoAccess, casinoBadge, inLaunchWindow, type CasinoAccess, type CasinoBadge } from "@/lib/casino/phase";
-import { CASINO_SETTING_KEYS, casinoRulesFrom, type CasinoRules } from "@/lib/casino/rules";
+import { CASINO_SETTING_KEYS, casinoRulesFrom, type CasinoRules, type CoinFlipRules } from "@/lib/casino/rules";
 import { isBigFlip, raritiesForTier } from "@/lib/casino/tiers";
 import { coreView, flipStats, outcomeFor, sideOf, type CoinFlipCoreView, type CoinFlipRow, type FlipStats, type MineState } from "@/lib/casino/view";
 import { periodWindow } from "@/lib/economy/period";
@@ -19,10 +19,9 @@ import { prisma } from "../db";
 import { maskablePlayerSelect, maskedPlayerRefs } from "../collection/masked-players";
 import { toPlayerRef, type PlayerRef } from "../profile/decor";
 import { getSetting } from "../settings";
-import type { CoinFlipContext } from "./coinflip-core";
 
-// Lectures du casino. La graine d'une table ne sort d'ici qu'une fois la table jouée (coreView), et seuls
-// des champs publics des joueurs (pseudo, avatar, décor) accompagnent une table.
+// Lectures du casino. La graine d'une table ne sort d'ici qu'une fois la table jouée (coreView), le nonce d'une
+// table scellée jamais, et seuls des champs publics des joueurs (pseudo, avatar, décor) accompagnent une table.
 
 /** Réglages du casino (lus une fois par requête). */
 export const getCasinoRules = cache(async (): Promise<CasinoRules> => {
@@ -51,18 +50,6 @@ export async function casinoView(role: string | null | undefined): Promise<Casin
   const rules = await getCasinoRules();
   const serverNow = Date.now();
   return { rules, access: casinoAccess(rules, serverNow, isStaff(role)), serverNow, launching: inLaunchWindow(rules, serverNow) };
-}
-
-/** Contexte des opérations sur les tables : heure, réglages, jour de jeu, registre, hasard du serveur. */
-export async function coinFlipContext(now = new Date()): Promise<CoinFlipContext> {
-  const [rules, timeZone, definitions] = await Promise.all([getCasinoRules(), getSetting("game.timeZone"), getRarityDefinitions()]);
-  return {
-    now,
-    rules,
-    dayStart: periodWindow("DAILY", now, timeZone).start,
-    definitions: definitions.map((d) => ({ key: d.key, sortOrder: d.sortOrder })),
-    randomBytes: (n) => new Uint8Array(randomBytes(n)),
-  };
 }
 
 const flipSelect = {
@@ -117,9 +104,10 @@ function toRow(r: FlipRecord): CoinFlipRow {
   return { ...r, status: r.status, creatorSide: r.creatorSide, result: r.result };
 }
 
-/** Lignes → vues : joueurs et cartes résolus en deux requêtes. Une table dont la carte a disparu du catalogue est omise. */
-async function toViews(rows: readonly FlipRecord[], viewerId: string | null, locale: string): Promise<CoinFlipTableView[]> {
-  if (rows.length === 0) return [];
+type MaskablePlayer = Prisma.UserGetPayload<{ select: typeof maskablePlayerSelect }>;
+
+/** Joueurs (pseudo, avatar, décor, de quoi décider du masquage), cartes et marques d'exemplaire des tables : trois requêtes. */
+async function tableRefs(rows: readonly FlipRecord[], locale: string) {
   const playerIds = [...new Set(rows.flatMap((r) => [r.creatorId, r.reservedForId, r.opponentId].filter((x): x is string => x !== null)))];
   const cardIds = rows.flatMap((r) => [r.creatorCardId, ...(r.opponentCardId ? [r.opponentCardId] : [])]);
   const [players, cards, marks] = await Promise.all([
@@ -128,6 +116,13 @@ async function toViews(rows: readonly FlipRecord[], viewerId: string | null, loc
     // Une héritière ou une gravée misée : la table, le salon et le résultat montrent l'exemplaire
     copyMarksOf(rows.flatMap((r) => [r.creatorUserCardId, r.opponentUserCardId])),
   ]);
+  return { players, cards, marks };
+}
+
+/** Lignes → vues : joueurs et cartes résolus en trois requêtes. Une table dont la carte a disparu du catalogue est omise. */
+async function toViews(rows: readonly FlipRecord[], viewerId: string | null, locale: string): Promise<CoinFlipTableView[]> {
+  if (rows.length === 0) return [];
+  const { players, cards, marks } = await tableRefs(rows, locale);
   // Mêmes règles que le reste du site : un profil privé, réservé aux amis, banni ou supprimé reste « Joueur », sans
   // avatar ni décor, sauf pour les joueurs de sa propre table (ils jouent l'un contre l'autre, la réservation se fait au pseudo)
   const real = new Map(players.map((p) => [p.id, toPlayerRef(p)]));
@@ -283,44 +278,87 @@ export type FeedEntry = {
   big: boolean;
 };
 
-/** Fil « Derniers lancers » du hall : les plus récents dans la fenêtre réglée. */
-export async function recentFlips(input: { locale: string; size: number; maxAgeHours: number; bigFrom: string; now?: Date }): Promise<FeedEntry[]> {
-  const now = input.now ?? new Date();
+// Fil du hall et pouls : les mêmes pour tous les visiteurs, relus au plus toutes les 10 s (comme le carrousel des gros
+// tirages de l'accueil) au lieu de l'être par chaque visiteur à chaque sondage.
+const SHARED_CACHE_SECONDS = 10;
+
+type CachedFeedEntry = Omit<FeedEntry, "winner" | "loser"> & { winnerId: string; loserId: string };
+
+/**
+ * Lecture brute du fil, sans lecteur : lignes, fuda remportées, joueurs pas encore masqués (le masquage traduit ses
+ * libellés avec la langue de la requête, après le cache). Une table dont une carte a disparu du catalogue est omise.
+ */
+async function loadFeed(locale: string, size: number, maxAgeHours: number, bigFrom: string): Promise<{ entries: CachedFeedEntry[]; players: MaskablePlayer[] }> {
   const rows = await prisma.coinFlip.findMany({
-    where: { status: "DONE", resolvedAt: { gte: new Date(now.getTime() - input.maxAgeHours * 3_600_000) } },
+    where: { status: "DONE", resolvedAt: { gte: new Date(Date.now() - maxAgeHours * 3_600_000) } },
     orderBy: [{ resolvedAt: "desc" }, { id: "desc" }],
-    take: input.size,
+    take: size,
     select: flipSelect,
   });
-  const [views, definitions] = await Promise.all([toViews(rows, null, input.locale), getRarityDefinitions()]);
-  return views.flatMap((v) => {
-    if (!v.result || !v.winnerId || !v.opponent || !v.opponentCard || !v.resolvedAt) return [];
-    const creatorWon = v.winnerId === v.creatorId;
+  if (rows.length === 0) return { entries: [], players: [] };
+  const [{ players, cards, marks }, definitions] = await Promise.all([tableRefs(rows, locale), getRarityDefinitions()]);
+  const entries = rows.flatMap((r): CachedFeedEntry[] => {
+    if (!r.result || !r.winnerId || !r.opponentId || !r.opponentCardId || !r.resolvedAt) return [];
+    const creatorCard = cards.get(r.creatorCardId);
+    const opponentCard = cards.get(r.opponentCardId);
+    if (!creatorCard || !opponentCard) return [];
+    const creatorWon = r.winnerId === r.creatorId;
     return [
       {
-        id: v.id,
-        resolvedAt: v.resolvedAt,
-        rarity: v.rarity,
-        seal: RARITY_SEAL[v.rarity] ?? definitions.find((d) => d.key === v.rarity)?.seal ?? "",
-        result: v.result,
-        winner: creatorWon ? v.creator : v.opponent,
-        loser: creatorWon ? v.opponent : v.creator,
-        prize: creatorWon ? v.opponentCard : v.creatorCard,
-        big: isBigFlip(v.rarity, input.bigFrom, definitions),
+        id: r.id,
+        resolvedAt: r.resolvedAt.toISOString(),
+        rarity: r.creatorRarity,
+        seal: RARITY_SEAL[r.creatorRarity] ?? definitions.find((d) => d.key === r.creatorRarity)?.seal ?? "",
+        result: r.result,
+        winnerId: r.winnerId,
+        loserId: creatorWon ? r.opponentId : r.creatorId,
+        // Carte remportée par le gagnant : celle du perdant
+        prize: creatorWon ? withCopy(opponentCard, r.opponentUserCardId, marks) : withCopy(creatorCard, r.creatorUserCardId, marks),
+        big: isBigFlip(r.creatorRarity, bigFrom, definitions),
       },
     ];
   });
+  return { entries, players };
 }
 
-/** Chiffres du héros du hall : tables ouvertes et lancers joués depuis le début du jour de jeu. */
-export async function casinoPulse(now = new Date()): Promise<{ openTables: number; flipsToday: number }> {
-  const timeZone = await getSetting("game.timeZone");
-  const dayStart = periodWindow("DAILY", now, timeZone).start;
-  const [openTables, flipsToday] = await Promise.all([
-    prisma.coinFlip.count({ where: { status: "OPEN", expiresAt: { gt: now } } }),
-    prisma.coinFlip.count({ where: { status: "DONE", resolvedAt: { gte: dayStart } } }),
-  ]);
-  return { openTables, flipsToday };
+const cachedFeed = unstable_cache(loadFeed, ["casino-feed-v1"], { revalidate: SHARED_CACHE_SECONDS });
+
+/** Le cache passe par JSON : les dates des joueurs reviennent en texte. */
+const asDate = (value: Date | string | null): Date | null => (value === null ? null : new Date(value));
+
+/** Fil « Derniers lancers » du hall : les plus récents dans la fenêtre réglée, gros pots mis en avant. */
+export async function recentFlips(locale: string, rules: Pick<CoinFlipRules, "feedSize" | "feedMaxAgeHours" | "feedBigFrom">): Promise<FeedEntry[]> {
+  const feed = await cachedFeed(locale, rules.feedSize, rules.feedMaxAgeHours, rules.feedBigFrom);
+  // Vue commune à tous (aucun lecteur) : un profil privé, réservé aux amis, banni ou supprimé reste « Joueur », sans
+  // avatar ni décor
+  const players = await maskedPlayerRefs(
+    null,
+    feed.players.map((p) => ({ ...p, bannedAt: asDate(p.bannedAt), anonymizedAt: asDate(p.anonymizedAt) })),
+  );
+  return feed.entries.flatMap(({ winnerId, loserId, ...entry }) => {
+    const winner = players.get(winnerId);
+    const loser = players.get(loserId);
+    return winner && loser ? [{ ...entry, winner, loser }] : [];
+  });
+}
+
+const cachedPulse = unstable_cache(
+  async (timeZone: string): Promise<{ openTables: number; flipsToday: number }> => {
+    const now = new Date();
+    const dayStart = periodWindow("DAILY", now, timeZone).start;
+    const [openTables, flipsToday] = await Promise.all([
+      prisma.coinFlip.count({ where: { status: "OPEN", expiresAt: { gt: now } } }),
+      prisma.coinFlip.count({ where: { status: "DONE", resolvedAt: { gte: dayStart } } }),
+    ]);
+    return { openTables, flipsToday };
+  },
+  ["casino-pulse-v1"],
+  { revalidate: SHARED_CACHE_SECONDS },
+);
+
+/** Chiffres du héros du hall et du salon : tables ouvertes et lancers joués depuis le début du jour de jeu. */
+export async function casinoPulse(): Promise<{ openTables: number; flipsToday: number }> {
+  return cachedPulse(await getSetting("game.timeZone"));
 }
 
 /** Raretés misables pour relever une table de ce palier. */

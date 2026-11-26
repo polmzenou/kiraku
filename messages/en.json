@@ -4542,7 +4542,8 @@
         "lobbyPollSeconds": "Lobby refresh (seconds)",
         "tablePollSeconds": "Table refresh (seconds)",
         "feedSize": "Flips in the hall feed",
-        "feedMaxAgeHours": "Feed maximum age (hours)"
+        "feedMaxAgeHours": "Feed maximum age (hours)",
+        "feedBigFrom": "Big flips in the feed from"
       },
       "hints": {
         "opensAt": "In your browser's local time. Empty: teaser without a date; future: countdown; past: casino open.",
@@ -4550,6 +4551,7 @@
         "expiryHours": "Without a taker, the card goes back to its creator.",
         "dailyLimit": "Tables set and tables taken, per game day.",
         "feedMaxAgeHours": "Older flips leave the feed.",
+        "feedBigFrom": "A pot of this rarity or higher is highlighted in the hall feed. The Discord relay has its own threshold.",
         "allowedRarities": "A table is taken with a card of the same tier (Mythic = BR, AR = VR, Gold = MR). A removed rarity can no longer be staked; its open tables stay until they expire."
       }
     },
@@ -6084,6 +6086,7 @@
     "coinFlipExpired": "Nobody took your coin flip table: {card} is back in your collection.",
     "coinFlipDeclined": "{name} declined your coin flip table: {card} is back in your collection.",
     "coinFlipAdmin": "The Kiraku team removed your coin flip table: {card} is back in your collection.",
+    "coinFlipWithdrawn": "The player you set your coin flip table aside for has left the game: {card} is back in your collection.",
     "expeditionTriumph": "Your expedition returns triumphant! Come open its report.",
     "expeditionSuccess": "Your expedition is back, mission accomplished. Come open its report.",
     "expeditionFailure": "Your expedition came back empty-handed… Your cards are home.",
@@ -7307,8 +7310,6 @@
   },
   "casino": {
     "title": "Casino",
-    "soon": "Soon",
-    "body": "The Kiraku casino is being prepared. It will arrive later, and will never take real money.",
     "back": "Back to boosters",
     "description": "The Kiraku casino: player-versus-player coin flip, one fuda against a fuda of the same tier.",
     "virtual": "Everything is virtual: no real money is at stake, neither Zeni nor cash.",
@@ -7378,7 +7379,6 @@
       "stake": "Set down a card",
       "more": "Show more",
       "loading": "Loading…",
-      "retry": "Try again",
       "guest": "Create an account to play: guests can watch the tables, not stake.",
       "lead": "One fuda against one fuda of the same tier. The winner walks away with both.",
       "pulse": "{open, plural, =0 {No open tables} one {# open table} other {# open tables}} · {today, plural, =0 {no flips today} one {# flip today} other {# flips today}}",
@@ -7390,17 +7390,14 @@
       "open": "Your open tables",
       "invitations": "Tables set aside for you",
       "none": "You have no open tables.",
-      "noInvitation": "No table is set aside for you.",
       "expires": "Expires {time}",
       "decline": "Decline",
-      "view": "View table",
       "count": "{count} / {max}",
       "countLabel": "{count, plural, one {# open table} other {# open tables}} out of {max}",
       "noneBody": "Set down a fuda: it waits for an opponent until someone takes it or it expires.",
       "reservedTo": "For <player>{name}</player>"
     },
     "history": {
-      "stats": "{played, plural, =0 {No flips played} one {# flip} other {# flips}} · {won} won · {lost} lost",
       "streakWin": "{count, plural, one {# win} other {# wins}} in a row",
       "streakLoss": "{count, plural, one {# loss} other {# losses}} in a row",
       "sides": "表 {omote} · 裏 {ura}",
@@ -7408,7 +7405,6 @@
       "won": "Won",
       "lost": "Lost",
       "against": "against <player>{name}</player>",
-      "open": "View",
       "tiles": {
         "played": "Flips",
         "won": "Won",
@@ -7462,8 +7458,7 @@
       "INVALID": "Invalid request.",
       "RATE_LIMITED": "Easy! Try again in a moment.",
       "UNAVAILABLE": "Not possible right now.",
-      "FORBIDDEN": "Access denied.",
-      "unexpected": "Unexpected error. Try again."
+      "FORBIDDEN": "Access denied."
     },
     "stage": {
       "you": "You",

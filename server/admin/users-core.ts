@@ -167,7 +167,7 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
   // Entre-temps, un joueur banni ne pose plus et ses tables ne se relèvent plus.
   if (input.kind === "account" && input.banned) {
     const now = new Date();
-    await withdrawCasinoFor(db, input.userId, now);
+    await withdrawCasinoFor(db, input.userId, now, onNotified);
     await withdrawMarketFor(db, { userId: input.userId, adminId, now }, onNotified);
   }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
-import { announcementDue, casinoAccess, casinoBadge, casinoPhase, ceremonyDue, inLaunchWindow, untilOpening } from "./phase";
+import { announcementDue, casinoAccess, casinoBadge, casinoPhase, inLaunchWindow } from "./phase";
 import { casinoRulesFrom, DEFAULT_CASINO_RULES, parseOpensAt, type CasinoRules } from "./rules";
 
 const DAY = 86_400_000;
@@ -38,13 +38,6 @@ describe("phase", () => {
   it("ouvert pile à l'heure dite", () => {
     expect(casinoPhase(rules(), OPENS)).toBe("open");
   });
-
-  it("compte à rebours seulement avec une date future", () => {
-    expect(untilOpening(rules(), OPENS - 5_000)).toBe(5_000);
-    expect(untilOpening(rules({ opensAt: null }), OPENS)).toBeNull();
-    expect(untilOpening(rules(), OPENS)).toBeNull();
-    expect(untilOpening(rules({ visible: false }), OPENS - 5_000)).toBeNull();
-  });
 });
 
 describe("accès", () => {
@@ -78,13 +71,6 @@ describe("lancement : badge, cérémonie, annonce", () => {
     expect(casinoBadge(rules(), OPENS + DAY)).toBe("new");
     expect(casinoBadge(rules(), OPENS + 8 * DAY)).toBeNull();
     expect(casinoBadge(rules({ visible: false }), OPENS + DAY)).toBeNull();
-  });
-
-  it("cérémonie une fois par appareil, pendant la fenêtre", () => {
-    expect(ceremonyDue(rules(), OPENS + DAY, false)).toBe(true);
-    expect(ceremonyDue(rules(), OPENS + DAY, true)).toBe(false);
-    expect(ceremonyDue(rules(), OPENS - 1, false)).toBe(false);
-    expect(ceremonyDue(rules(), OPENS + 30 * DAY, false)).toBe(false);
   });
 
   it("annonce aux comptes inscrits avant l'ouverture, jamais aux invités", () => {

@@ -35,36 +35,58 @@ export function CoinFlipFeed({ initial, refreshSeconds, serverNow }: { initial: 
   }, []);
   usePoll(poll, { seconds: refreshSeconds, backoff: true });
 
-  if (entries.length === 0) return <p className="rounded-card bg-surface p-4 text-sm text-text-muted">{t("feedEmpty")}</p>;
+  // Seuls les lancers arrivés par le sondage sont annoncés : la liste, dont les « il y a n min » changent à chaque
+  // sondage, n'est pas une région vivante
+  const announced = entries.filter((e) => fresh.has(e.id));
+  const live = (
+    <p className="sr-only" aria-live="polite">
+      {announced.map((e) => (
+        <span key={e.id}>
+          {t.rich("feedRow", { name: e.winner.username, card: e.prize.name, player: () => e.winner.username, b: (chunks) => chunks })}{" "}
+        </span>
+      ))}
+    </p>
+  );
+
+  if (entries.length === 0)
+    return (
+      <>
+        <p className="rounded-card bg-surface p-4 text-sm text-text-muted">{t("feedEmpty")}</p>
+        {live}
+      </>
+    );
 
   return (
-    <ul aria-live="polite" className="flex flex-col gap-1.5">
-      {entries.map((e) => (
-        <li
-          key={e.id}
-          className={`flex min-h-14 items-center gap-3 rounded-control bg-surface py-1 pr-3 pl-1 ${fresh.has(e.id) ? "cf-rise" : ""} ${e.big ? "ring-1 ring-kin/40 ring-inset" : ""}`}
-        >
-          <span className="w-9 shrink-0">
-            <Fuda card={e.prize} size="sm" tilt={false} still />
-          </span>
-          <span className="flex min-w-0 flex-col text-sm leading-snug">
-            <span className="truncate">
-              {t.rich("feedRow", {
-                name: e.winner.username,
-                card: e.prize.name,
-                player: () => <PlayerName name={e.winner.username} color={e.winner.decor.nameColor} className="font-bold" />,
-                b: (chunks) => <b>{chunks}</b>,
-              })}
+    <>
+      {live}
+      <ul className="flex flex-col gap-1.5">
+        {entries.map((e) => (
+          <li
+            key={e.id}
+            className={`flex min-h-14 items-center gap-3 rounded-control bg-surface py-1 pr-3 pl-1 ${fresh.has(e.id) ? "cf-rise" : ""} ${e.big ? "ring-1 ring-kin/40 ring-inset" : ""}`}
+          >
+            <span className="w-9 shrink-0">
+              <Fuda card={e.prize} size="sm" tilt={false} still />
             </span>
-            <small className="truncate text-xs text-text-muted">
-              <span aria-hidden="true" lang="ja" className="font-seal">
-                {seals[e.rarity]}
-              </span>{" "}
-              {t("feedMeta", { rarity: tRarity(e.rarity as "COMMON"), side: SIDE_KANJI[e.result] })} · {format.relativeTime(new Date(e.resolvedAt), now)}
-            </small>
-          </span>
-        </li>
-      ))}
-    </ul>
+            <span className="flex min-w-0 flex-col text-sm leading-snug">
+              <span className="truncate">
+                {t.rich("feedRow", {
+                  name: e.winner.username,
+                  card: e.prize.name,
+                  player: () => <PlayerName name={e.winner.username} color={e.winner.decor.nameColor} className="font-bold" />,
+                  b: (chunks) => <b>{chunks}</b>,
+                })}
+              </span>
+              <small className="truncate text-xs text-text-muted">
+                <span aria-hidden="true" lang="ja" className="font-seal">
+                  {seals[e.rarity]}
+                </span>{" "}
+                {t("feedMeta", { rarity: tRarity(e.rarity as "COMMON"), side: SIDE_KANJI[e.result] })} · {format.relativeTime(new Date(e.resolvedAt), now)}
+              </small>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }

@@ -12,11 +12,6 @@ export function tierOf(rarity: string, definitions: readonly Ordered[]): number 
   return definitions.find((d) => d.key === rarity)?.sortOrder ?? null;
 }
 
-export function sameTier(a: string, b: string, definitions: readonly Ordered[]): boolean {
-  const ta = tierOf(a, definitions);
-  return ta !== null && ta === tierOf(b, definitions);
-}
-
 export type CasinoTier = {
   order: number;
   /** Raretés du palier, dans l'ordre du registre (la rareté de base d'abord). */
@@ -53,14 +48,13 @@ export type FlipStaging = {
   choreography: FlipChoreography;
   /** Palier de mise en scène (poudre d'or, assombrissement, taiko) : la rareté de base la plus proche. */
   fx: BaseRarity;
-  /** 0 (Commune) à 6 (au-dessus de Mythique : AR, Gold, XR…). */
+  /**
+   * 0 (Commune) à 6 (au-dessus de Mythique : AR, Gold, XR…). La durée du lancer en découle, par la table des effets
+   * de lib/casino/choreography.ts (flipFx) : plus le pot est rare, plus le suspense dure.
+   */
   level: number;
-  /** Durée du lancer, du pouce au sceau : environ 3 s pour une Commune, 5 s au sommet. */
-  durationMs: number;
 };
 
-const MIN_MS = 3_000;
-const MAX_MS = 5_000;
 const TOP_LEVEL = BASE_RARITIES.length; // 6
 
 export function flipStaging(rarity: string, definitions: readonly Ordered[]): FlipStaging {
@@ -73,6 +67,5 @@ export function flipStaging(rarity: string, definitions: readonly Ordered[]): Fl
     choreography: atLeastRarity(rarity, "LEGENDARY", definitions) ? "spin" : "toss",
     fx,
     level,
-    durationMs: MIN_MS + Math.round(((MAX_MS - MIN_MS) * level) / TOP_LEVEL),
   };
 }

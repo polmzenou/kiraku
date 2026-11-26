@@ -612,9 +612,11 @@ export const SETTING_SCHEMAS = {
   "casino.coinflip.lastCopyAllowed": z.boolean(),
   "casino.coinflip.lobbyPollSeconds": z.number().int().min(5).max(120),
   "casino.coinflip.tablePollSeconds": z.number().int().min(2).max(60),
-  // Fil « Derniers lancers » du hall
+  // Fil « Derniers lancers » du hall ; feedBigFrom : pot mis en avant à partir de cette rareté (le relais Discord a
+  // son propre seuil, discord.casinoMinRarity)
   "casino.coinflip.feedSize": z.number().int().min(4).max(50),
   "casino.coinflip.feedMaxAgeHours": z.number().int().min(1).max(24 * 30),
+  "casino.coinflip.feedBigFrom": rarity,
   // Import Kyara (étape 17) : interrupteur ; date de sortie (vide = « Bientôt » ; les comptes déjà inscrits ont leur
   // fenêtre à partir de là) ; durée de la fenêtre ; profil Kyara du compte Kiraku que les joueurs ajoutent en ami ;
   // Zeni d'une carte convertie, par code de rareté Kyara, et plafond par import ; conservation de la photo d'une
@@ -697,6 +699,7 @@ export const RARITY_KEYED: Partial<Record<SettingKey, "subset" | "all">> = {
   "market.maxPriceByRarity": "subset",
   "booster.duplicateGuardRarities": "subset",
   "casino.coinflip.allowedRarities": "subset",
+  "casino.coinflip.feedBigFrom": "subset",
   "discord.casinoMinRarity": "subset",
   "prestige.requiredPercent": "subset",
   "prestige.printing.chanceBp": "subset",
@@ -1071,6 +1074,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "casino.coinflip.tablePollSeconds": 5,
   "casino.coinflip.feedSize": 20,
   "casino.coinflip.feedMaxAgeHours": 72,
+  "casino.coinflip.feedBigFrom": "LEGENDARY", // comme le seuil écrit en dur jusqu'ici
   "kyaraImport.enabled": false, // caché tant que l'admin ne l'allume pas
   "kyaraImport.launchAt": null,
   "kyaraImport.windowDays": 7,

@@ -18,6 +18,7 @@ export const CASINO_FORM_KEYS = [
   "casino.coinflip.tablePollSeconds",
   "casino.coinflip.feedSize",
   "casino.coinflip.feedMaxAgeHours",
+  "casino.coinflip.feedBigFrom",
 ] as const satisfies readonly SettingKey[];
 
 export type CasinoFormKey = (typeof CASINO_FORM_KEYS)[number];

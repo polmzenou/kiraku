@@ -1,9 +1,10 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { CASINO_MEDIA } from "@/lib/casino/media";
 import { flipCurves } from "@/lib/casino/choreography";
+import { seededFloat } from "@/lib/rng";
 import { playSound, type SoundName } from "@/lib/sound/synth";
 import { useFxLevel } from "../motion/MotionPreference";
 import { useRitualFx } from "../opening/useRitualFx";
@@ -26,17 +27,6 @@ const SOUNDS: { t: number; name: SoundName; volume: number }[] = [
   { t: 7450, name: "chime", volume: 0.5 },
 ];
 
-function seeded(seed: number) {
-  let s = seed >>> 0;
-  return () => {
-    s = (s + 0x6d2b79f5) >>> 0;
-    let t = s;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 /**
  * Cérémonie d'ouverture (une fois par appareil) : deux claquements de hyōshigi, les lanternes s'allument une à
  * une, les shōji coulissent et le noren tombe (vidéo peinte), puis le sceau 開店 frappe, l'éclat doré et la
@@ -48,6 +38,7 @@ export function InaugurationCeremony({ onDone }: { onDone: () => void }) {
   const fxLevel = useFxLevel();
   const { enabled: soundOn } = useRitualFx();
   const titleId = useId();
+  const dialog = useRef<HTMLDialogElement>(null);
   const board = useRef<HTMLDivElement>(null);
   const ceremony = useRef<HTMLVideoElement>(null);
   const openLoop = useRef<HTMLVideoElement>(null);
@@ -153,7 +144,7 @@ export function InaugurationCeremony({ onDone }: { onDone: () => void }) {
     // Feuilles d'or et étincelles au coup de sceau (moins en effets allégés)
     const layer = node(".cf-fx");
     if (layer) {
-      const rand = seeded(20261201);
+      const rand = seededFloat(20261201);
       const lite = fxLevel === "lite";
       for (let i = 0; i < (lite ? 12 : 30); i++) {
         const f = document.createElement("span");
@@ -212,19 +203,27 @@ export function InaugurationCeremony({ onDone }: { onDone: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- jouée une seule fois, au montage
   }, []);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (settledRef.current) onDone();
-        else pass();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onDone, pass]);
+  // <dialog> modal : le focus reste dans la cérémonie et la page dessous devient inerte. Ouvert avant le premier
+  // affichage (la cérémonie est cachée tant qu'il est fermé).
+  useLayoutEffect(() => {
+    const el = dialog.current;
+    if (el && !el.open) el.showModal();
+  }, []);
 
   return (
-    <div className="cf-overlay" role="dialog" aria-modal="true" aria-labelledby={titleId} onPointerDown={settled ? undefined : pass}>
+    <dialog
+      ref={dialog}
+      className="cf-overlay"
+      aria-labelledby={titleId}
+      onPointerDown={settled ? undefined : pass}
+      onCancel={(e) => {
+        // Échap pendant la cérémonie : elle passe à la façade ouverte ; ensuite, elle se ferme
+        if (settledRef.current) return;
+        e.preventDefault();
+        pass();
+      }}
+      onClose={onDone}
+    >
       <div ref={board} className="cf-board" style={{ "--cf-scale": scale } as CSSProperties}>
         <video
           ref={ceremony}
@@ -288,6 +287,6 @@ export function InaugurationCeremony({ onDone }: { onDone: () => void }) {
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

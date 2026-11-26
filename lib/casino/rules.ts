@@ -17,6 +17,7 @@ export const CASINO_SETTING_KEYS = [
   "casino.coinflip.tablePollSeconds",
   "casino.coinflip.feedSize",
   "casino.coinflip.feedMaxAgeHours",
+  "casino.coinflip.feedBigFrom",
 ] as const;
 
 export type CasinoSettingKey = (typeof CASINO_SETTING_KEYS)[number];
@@ -32,6 +33,8 @@ export type CoinFlipRules = {
   tablePollSeconds: number;
   feedSize: number;
   feedMaxAgeHours: number;
+  /** Lancers mis en avant dans le fil du hall : pot d'au moins cette rareté. */
+  feedBigFrom: string;
 };
 
 export type CasinoRules = {
@@ -68,6 +71,7 @@ export function casinoRulesFrom(get: <K extends CasinoSettingKey>(key: K) => Set
       tablePollSeconds: get("casino.coinflip.tablePollSeconds"),
       feedSize: get("casino.coinflip.feedSize"),
       feedMaxAgeHours: get("casino.coinflip.feedMaxAgeHours"),
+      feedBigFrom: get("casino.coinflip.feedBigFrom"),
     },
   };
 }

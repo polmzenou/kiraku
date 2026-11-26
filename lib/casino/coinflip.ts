@@ -53,7 +53,10 @@ export function checkPlayer(player: CasinoPlayer, now: Date, rules: CasinoRules)
 
 export type StakeCheck = {
   rarity: string;
-  /** Exemplaires de la carte que possède le joueur, mise comprise (tous statuts). */
+  /**
+   * Exemplaires de la carte que possède le joueur hors du casino (tous statuts sauf CASINO), mise comprise : ceux
+   * déjà en jeu sur d'autres tables ne comptent pas.
+   */
   copies: number;
   confirmLastCopy: boolean;
 };
