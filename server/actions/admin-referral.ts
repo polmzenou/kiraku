@@ -297,7 +297,14 @@ export async function drawEnnichiAction(
     const out = await drawEnnichiWith(prisma, { staffId: user.id, rules: state.rules, now, ...(await ennichiDrawSecrets()) });
     // Les pages de la fête passent tout de suite aux résultats
     updateTag(ENNICHI_TAG);
-    const { paid } = await payAwardsWith(prisma, state.rules.edition, { ...ennichiPayDeps(now), deadline: Date.now() + 20_000 });
+    // Le tirage est fait et figé : un versement qui échoue ensuite ne doit pas répondre « indisponible » à l'équipe.
+    // Les prix restants partent au prochain passage du cron (left le dit)
+    let paid = 0;
+    try {
+      paid = (await payAwardsWith(prisma, state.rules.edition, { ...ennichiPayDeps(now), deadline: Date.now() + 20_000 })).paid;
+    } catch (e) {
+      console.error("[ennichi] versement des prix après le tirage", e);
+    }
     refresh();
     return { ok: true, ranked: out.ranked, tickets: out.tickets, draws: out.draws, paid, left: Math.max(0, out.awards - paid) };
   } catch (e) {

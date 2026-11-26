@@ -237,46 +237,64 @@ export async function payAwardsWith(
   db: PrismaClient,
   edition: number,
   deps: { lotDeps: LotDeps; now: Date; onNotified?: OnNotified; deadline?: number },
-): Promise<{ paid: number; skipped: number }> {
+): Promise<{ paid: number; skipped: number; failed: number }> {
   const pending = await db.$queryRaw<{ id: string }[]>`
     SELECT id FROM "EnnichiAward" WHERE edition = ${edition} AND granted = '{}'::jsonb ORDER BY kind, ref`;
   let paid = 0;
   let skipped = 0;
+  let failed = 0;
   for (const { id } of pending) {
     if (deps.deadline && Date.now() > deps.deadline) break;
-    const outcome = await notifyingTransaction(
-      db,
-      async (tx) => {
-        const [award] = await tx.$queryRaw<{ kind: "BANZUKE" | "OMIKUJI"; ref: number; userId: string | null; prize: Prisma.JsonValue; granted: Prisma.JsonValue }[]>`
-          SELECT kind::text AS kind, ref, "userId", prize, granted FROM "EnnichiAward" WHERE id = ${id} FOR UPDATE`;
-        if (!award || (award.granted && typeof award.granted === "object" && Object.keys(award.granted).length > 0)) return "DONE" as const;
-        const [user] = award.userId
-          ? await tx.$queryRaw<{ bannedAt: Date | null }[]>`SELECT "bannedAt" FROM "User" WHERE id = ${award.userId} FOR UPDATE`
-          : [];
-        if (!award.userId || !user || user.bannedAt) {
-          await tx.ennichiAward.update({ where: { id }, data: { granted: { skipped: award.userId ? "BANNED" : "DELETED", at: deps.now.toISOString() } }, select: { id: true } });
-          return "SKIPPED" as const;
-        }
-        const granted = await grantPrizeInTx(tx, award.userId, readPrize(award.prize), { refId: id }, deps);
-        await tx.ennichiAward.update({ where: { id }, data: { granted: granted as unknown as Prisma.InputJsonValue }, select: { id: true } });
-        await notify(tx, {
-          userId: award.userId,
-          type: "ENNICHI_REWARD",
-          actorId: award.userId,
-          refId: id,
-          payload:
-            award.kind === "BANZUKE"
-              ? { kind: "BANZUKE", edition, tier: null, rank: award.ref, draw: null }
-              : { kind: "OMIKUJI", edition, tier: null, rank: null, draw: award.ref },
-          now: deps.now,
-        });
-        return "PAID" as const;
-      },
-      TX,
-      deps.onNotified,
-    );
-    if (outcome === "PAID") paid++;
-    if (outcome === "SKIPPED") skipped++;
+    // Un prix qui échoue (lot supprimé après le tirage, panne) est journalisé et passé : il ne bloque pas les prix
+    // suivants, et reste à verser (granted vide) pour le passage suivant du cron
+    try {
+      const outcome = await payAward(db, edition, id, deps);
+      if (outcome === "PAID") paid++;
+      if (outcome === "SKIPPED") skipped++;
+    } catch (e) {
+      failed++;
+      console.error("[ennichi] versement d'un prix impossible", { awardId: id }, e);
+    }
   }
-  return { paid, skipped };
+  return { paid, skipped, failed };
+}
+
+/** Un prix, dans sa transaction : le gagnant verrouillé, le prix versé et noté, la notification envoyée. */
+function payAward(
+  db: PrismaClient,
+  edition: number,
+  id: string,
+  deps: { lotDeps: LotDeps; now: Date; onNotified?: OnNotified },
+): Promise<"DONE" | "SKIPPED" | "PAID"> {
+  return notifyingTransaction(
+    db,
+    async (tx) => {
+      const [award] = await tx.$queryRaw<{ kind: "BANZUKE" | "OMIKUJI"; ref: number; userId: string | null; prize: Prisma.JsonValue; granted: Prisma.JsonValue }[]>`
+        SELECT kind::text AS kind, ref, "userId", prize, granted FROM "EnnichiAward" WHERE id = ${id} FOR UPDATE`;
+      if (!award || (award.granted && typeof award.granted === "object" && Object.keys(award.granted).length > 0)) return "DONE" as const;
+      const [user] = award.userId
+        ? await tx.$queryRaw<{ bannedAt: Date | null }[]>`SELECT "bannedAt" FROM "User" WHERE id = ${award.userId} FOR UPDATE`
+        : [];
+      if (!award.userId || !user || user.bannedAt) {
+        await tx.ennichiAward.update({ where: { id }, data: { granted: { skipped: award.userId ? "BANNED" : "DELETED", at: deps.now.toISOString() } }, select: { id: true } });
+        return "SKIPPED" as const;
+      }
+      const granted = await grantPrizeInTx(tx, award.userId, readPrize(award.prize), { refId: id }, deps);
+      await tx.ennichiAward.update({ where: { id }, data: { granted: granted as unknown as Prisma.InputJsonValue }, select: { id: true } });
+      await notify(tx, {
+        userId: award.userId,
+        type: "ENNICHI_REWARD",
+        actorId: award.userId,
+        refId: id,
+        payload:
+          award.kind === "BANZUKE"
+            ? { kind: "BANZUKE", edition, tier: null, rank: award.ref, draw: null }
+            : { kind: "OMIKUJI", edition, tier: null, rank: null, draw: award.ref },
+        now: deps.now,
+      });
+      return "PAID" as const;
+    },
+    TX,
+    deps.onNotified,
+  );
 }
