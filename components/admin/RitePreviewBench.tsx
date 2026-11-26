@@ -8,6 +8,7 @@ import type { RebirthBoosterView } from "@/lib/prestige/cinematic";
 import type { FrameStyle } from "@/lib/profile/frames";
 import type { RebirthResultView } from "@/server/actions/prestige";
 import type { RarityInfo, RiteStyle } from "../prestige/RebirthFlow";
+import { RiteDialog } from "../prestige/RiteDialog";
 import { Button } from "../ui/Button";
 import { NumberField, Toggle } from "./fields";
 
@@ -45,6 +46,8 @@ export function RitePreviewBench({
 }) {
   const t = useTranslations("admin.prestige.ritePreview");
   const tStyle = useTranslations("admin.prestige.riteStyles");
+  const tInk = useTranslations("prestige.rite");
+  const tCine = useTranslations("prestige.cinematic");
   const [draft, setDraft] = useState<Draft>({
     prestige: Math.max(1, player.prestige + 1),
     zeni: 184_250,
@@ -62,11 +65,10 @@ export function RitePreviewBench({
       prestige: clamp(draft.prestige, 1, 60),
       globalRank: 42,
       zeni: clamp(draft.zeni, 0, 10_000_000),
-      coins: 0,
       departed: fakeDeparted(rarities),
       heirs: cards.slice(0, clamp(draft.heirs, 0, 20)).map((card, i) => {
         const before = i % 3;
-        return { userCardId: `preview-${i}`, cardId: card.cardId, before, after: before + 1, printing: null, serial: null, card };
+        return { userCardId: `preview-${i}`, cardId: card.cardId, before, after: before + 1, printing: null, serial: null, card, copy: null };
       }),
       booster: draft.booster && booster ? { ...booster, count: Math.max(1, boosters) } : null,
       printingsUnlocked: draft.printings,
@@ -98,19 +100,22 @@ export function RitePreviewBench({
       </div>
       <p className="text-xs text-text-muted">{t("hint")}</p>
 
-      {playing &&
-        (playing.style === "CINEMATIC" ? (
-          <RebirthCinematic key={playing.run} result={playing.result} rarities={rarities} username={player.username} agreement={player.agreement} onClose={close} />
-        ) : (
-          <RebirthRite
-            key={playing.run}
-            result={playing.result}
-            previous={Math.max(0, playing.result.prestige - 1)}
-            rarities={rarities}
-            player={{ username: player.username, image: player.image, frame: player.frame }}
-            onClose={close}
-          />
-        ))}
+      {/* Dans le même <dialog> modal qu'après une vraie renaissance (Échap ferme aussi l'essai) */}
+      {playing && (
+        <RiteDialog key={playing.run} label={playing.style === "CINEMATIC" ? tCine("label") : tInk("label")} onClose={close}>
+          {playing.style === "CINEMATIC" ? (
+            <RebirthCinematic result={playing.result} rarities={rarities} username={player.username} agreement={player.agreement} onClose={close} />
+          ) : (
+            <RebirthRite
+              result={playing.result}
+              previous={Math.max(0, playing.result.prestige - 1)}
+              rarities={rarities}
+              player={{ username: player.username, image: player.image, frame: player.frame }}
+              onClose={close}
+            />
+          )}
+        </RiteDialog>
+      )}
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { Fuda } from "../fuda/Fuda";
 import { useReducedFx } from "../motion/MotionPreference";
 import { useRitualFx } from "../opening/useRitualFx";
 import { ButtonLink } from "../ui/ButtonLink";
-import "./prestige.css";
+import "./prestige-rites.css";
 
 /**
  * Rite de consécration (奉納), montée à l'autel, joué après la transaction dans le vrai sanctuaire (fond généré) : les
@@ -17,7 +17,7 @@ import "./prestige.css";
  * du haut de l'autel à gradins et le sceau 奉納 se pose dans un éclat ; enfin le lien vers le sanctuaire du profil. Un
  * appui passe le rite ; en mouvement réduit, l'état final s'affiche directement, sans bruit.
  *
- * Rendu dans le <dialog> modal de ConsecrationRiteHost, qui porte le rôle et le libellé.
+ * Rendu dans le <dialog> modal des rites (RiteDialog, via ConsecrationRiteHost), qui porte le rôle et le libellé.
  */
 export function ConsecrationRite({ card, username }: { card: FudaCard; username: string }) {
   const t = useTranslations("prestige.consecrate.rite");
@@ -44,8 +44,8 @@ export function ConsecrationRite({ card, username }: { card: FudaCard; username:
       if (!timeline.skipped) play(name, haptic);
     };
     const q = <T extends Element = HTMLElement>(sel: string) => el.querySelector<T>(sel)!;
-    // Le dialogue de l'hôte s'ouvre sur son premier élément focalisable, le lien de fin encore invisible : le focus va
-    // sur « Passer » (autoFocus ne suffit pas, il agit avant l'ouverture du dialogue)
+    // Le dialogue des rites (RiteDialog) s'ouvre sur son premier élément focalisable, le lien de fin encore invisible :
+    // le focus va sur « Passer » (autoFocus agirait avant l'ouverture du dialogue)
     q("[data-skip]").focus();
     const run = async () => {
       fx("taiko", [30, 40, 30]);

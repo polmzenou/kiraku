@@ -18,7 +18,9 @@ export function InstallPrestigeCosmetics() {
         disabled={pending}
         onClick={() =>
           start(async () => {
-            const res = await adminInstallPrestigeCosmeticsAction({});
+            // Coupure réseau ou erreur relancée par l'action : un message sous le bouton, pas l'écran d'erreur
+            const res = await adminInstallPrestigeCosmeticsAction({}).catch(() => null);
+            if (!res) return setMessage({ tone: "error", text: t("errors.UNAVAILABLE") });
             setMessage(res.ok ? { tone: "ok", text: t("done", { count: res.created }) } : { tone: "error", text: t(`errors.${res.error}`) });
           })
         }

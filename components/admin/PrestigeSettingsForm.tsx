@@ -111,6 +111,12 @@ export function PrestigeSettingsForm({ initial, boosterTypes }: { initial: Prest
         <legend className="px-1 font-title text-lg font-bold">{t("rebirthSection")}</legend>
         <Toggle label={name("prestige.enabled")} checked={draft["prestige.enabled"]} onChange={(v) => setDraft((d) => ({ ...d, "prestige.enabled": v }))} />
         <p className="-mt-2 text-xs text-text-muted">{t("hints.enabled")}</p>
+        <Toggle
+          label={name("prestige.staffLiveWhenDisabled")}
+          checked={draft["prestige.staffLiveWhenDisabled"]}
+          onChange={(v) => setDraft((d) => ({ ...d, "prestige.staffLiveWhenDisabled": v }))}
+        />
+        <p className="-mt-2 text-xs text-text-muted">{t("hints.staffLiveWhenDisabled")}</p>
         <div className="grid gap-4 sm:grid-cols-2">
           {num("prestige.keepSlots")}
           {num("prestige.minDaysBetween")}

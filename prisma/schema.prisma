@@ -707,6 +707,7 @@ model PrestigeCycle {
   zeni        Int
   heirs       Json // [{ userCardId, cardId, heritage, printing, serial }] : photo, comme Expedition.snapshot
   stats       Json // PeakStats (lib/prestige/peak.ts)
+  boosters    Json? // { slug, count } crédités par cette renaissance ; null = aucun (ou cycle d'avant ce champ)
   createdAt   DateTime @default(now())
 
   @@unique([userId, number])

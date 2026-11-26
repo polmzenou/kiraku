@@ -7,6 +7,7 @@ import { settingsSchemaFor, type SettingsOf } from "./form";
 
 export const PRESTIGE_SETTING_KEYS = [
   "prestige.enabled",
+  "prestige.staffLiveWhenDisabled",
   "prestige.requiredPercent",
   "prestige.keepSlots",
   "prestige.minDaysBetween",

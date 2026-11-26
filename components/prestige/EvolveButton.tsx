@@ -2,7 +2,11 @@ import { useTranslations } from "next-intl";
 import { ButtonLink } from "../ui/ButtonLink";
 import "./prestige.css";
 
-/** Bouton rouge « Évoluer », sous « Personnaliser » sur son propre profil : un halo d'or quand on peut renaître. */
+/**
+ * Bouton rouge « Évoluer », sous « Personnaliser » sur son propre profil : un halo d'or quand les seuils par rareté sont
+ * atteints. Les blocages (carte en jeu ailleurs, délai, taille de la collection) se lisent sur /prestige : le halo et le
+ * texte lu ne promettent donc que les seuils, pas une renaissance possible tout de suite.
+ */
 export function EvolveButton({ ready }: { ready: boolean }) {
   const t = useTranslations("prestige.profile");
   return (

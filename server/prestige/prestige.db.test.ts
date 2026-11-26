@@ -25,7 +25,7 @@ describe.skipIf(!url)("renaissance (base réelle)", () => {
   let boosterTypeId = "";
   const users: string[] = [];
 
-  const ctx = (booster = { slug: boosterSlug, count: 1 }): RebirthCtx => ({
+  const ctx = (booster = { slug: boosterSlug, count: 1 }, rules: Partial<RebirthCtx["rules"]> = {}): RebirthCtx => ({
     now: new Date(),
     rules: {
       enabled: true,
@@ -39,6 +39,7 @@ describe.skipIf(!url)("renaissance (base réelle)", () => {
       zeniTiers: SETTING_DEFAULTS["prestige.zeniTiers"],
       zeniCap: SETTING_DEFAULTS["prestige.zeniCap"],
       recycleMultiplier: 5,
+      ...rules,
     },
     values: { [rarity]: 10 },
     rarityOrder: [rarity],
@@ -128,9 +129,51 @@ describe.skipIf(!url)("renaissance (base réelle)", () => {
     const regained = await prisma.discovery.findMany({ where: { userId: id, regainedAt: { not: null } }, select: { cardId: true } });
     expect(regained.map((d) => d.cardId).sort()).toEqual([cards[1], cards[2]].sort());
     expect(await prisma.prestigeCycle.count({ where: { userId: id, number: 1 } })).toBe(1);
-    // Le nouveau cycle commence avec le booster offert
+    // Le nouveau cycle commence avec le booster offert, gardé dans la photo du cycle
     expect(out.boosters).toEqual({ slug: boosterSlug, count: 1 });
     expect(await credits(id)).toBe(1);
+    expect((await prisma.prestigeCycle.findFirstOrThrow({ where: { userId: id, number: 1 }, select: { boosters: true } })).boosters).toEqual({ slug: boosterSlug, count: 1 });
+  });
+
+  it("une héritière d'un cycle passé qui part doit avoir été nommée et confirmée", async () => {
+    const id = await collector(0);
+    const heir = await prisma.userCard.findFirstOrThrow({ where: { ownerId: id, cardId: cards[0] }, select: { id: true } });
+    await prisma.userCard.update({ where: { id: heir.id }, data: { heritage: 2 } });
+    const keep = { copyIds: [], cardIds: [] };
+    expect((await previewRebirthWith(prisma, id, keep, ctx())).heirs).toEqual([{ id: heir.id, cardId: cards[0], heritage: 2 }]);
+    const base = { userId: id, expectedPrestige: 0, keep, expectedZeni: 40, sacrificedEngraved: [] };
+    expect(await code(rebirthWith(prisma, { ...base, sacrificedHeirs: [] }, ctx()))).toBe("STALE");
+    expect(await prisma.userCard.count({ where: { ownerId: id } })).toBe(4);
+    expect((await rebirthWith(prisma, { ...base, sacrificedHeirs: [heir.id] }, ctx())).zeni).toBe(40);
+  });
+
+  it("carte cochée sans exemplaire ordinaire ou cochée deux fois : KEEP_INVALID, qui nomme la carte", async () => {
+    const id = await collector(0);
+    await prisma.userCard.updateMany({ where: { ownerId: id, cardId: cards[1] }, data: { heritage: 1 } });
+    const err = await previewRebirthWith(prisma, id, { copyIds: [], cardIds: [cards[1], cards[2]] }, ctx()).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(RebirthError);
+    expect(err).toMatchObject({ code: "KEEP_INVALID", cardIds: [cards[1]] });
+    expect(await code(previewRebirthWith(prisma, id, { copyIds: [], cardIds: [cards[2], cards[2]] }, ctx()))).toBe("KEEP_INVALID");
+  });
+
+  it("plafond d'héritage abaissé sous l'héritage acquis : l'héritière reprise ne perd rien", async () => {
+    const id = await collector(0);
+    const heir = await prisma.userCard.findFirstOrThrow({ where: { ownerId: id, cardId: cards[0] }, select: { id: true } });
+    await prisma.userCard.update({ where: { id: heir.id }, data: { heritage: 4 } });
+    const lowered = ctx(undefined, { heritageMax: 3 });
+    const keep = { copyIds: [heir.id], cardIds: [] };
+    expect(await previewRebirthWith(prisma, id, keep, lowered)).toMatchObject({ leaving: 3, zeni: 30, heirs: [] });
+    const out = await rebirthWith(prisma, { userId: id, expectedPrestige: 0, keep, expectedZeni: 30, sacrificedEngraved: [], sacrificedHeirs: [] }, lowered);
+    expect(out.heirs).toMatchObject([{ userCardId: heir.id, before: 4, after: 4 }]);
+    expect((await prisma.userCard.findUniqueOrThrow({ where: { id: heir.id }, select: { heritage: true } })).heritage).toBe(4);
+  });
+
+  it("collection au-delà de prestige.maxCopies : TOO_MANY, sans rien toucher", async () => {
+    const id = await collector(2);
+    expect(await code(rebirthWith(prisma, { userId: id, expectedPrestige: 0, keep: { copyIds: [], cardIds: [] }, expectedZeni: 60, sacrificedEngraved: [] }, ctx(undefined, { maxCopies: 5 })))).toBe(
+      "TOO_MANY",
+    );
+    expect(await prisma.userCard.count({ where: { ownerId: id } })).toBe(6);
   });
 
   it("deux renaissances simultanées : une seule passe, un seul booster offert", async () => {

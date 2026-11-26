@@ -1,10 +1,12 @@
 import "server-only";
+import type { FudaCopy } from "@/components/fuda/Fuda";
 import { contentsLabel } from "@/lib/boosters/catalog";
 import { effectiveSlotFloors, isRewardableKind, localize } from "@/lib/boosters/types";
 import type { CardView } from "@/lib/boosters/view";
 import { SPECIAL_COPY } from "@/lib/collection/copies";
 import type { RebirthBoosterView } from "@/lib/prestige/cinematic";
 import type { Eligibility } from "@/lib/prestige/eligibility";
+import { fudaCopyOf } from "@/lib/prestige/printing";
 import { nextRebirthAt } from "@/lib/prestige/rules";
 import { cardViews } from "../boosters/display";
 import { getBoosterTypeEntry } from "../boosters/pools";
@@ -14,7 +16,7 @@ import { getRarities } from "../catalog/rarities";
 import { prisma } from "../db";
 import { getSetting } from "../settings";
 import { busyWith, eligibilityWith, type RebirthBooster, type RebirthCtx } from "./prestige-core";
-import { getPrestigeRules, getPrintingRules } from "./rules";
+import { getPrestigeRules, getPrintingRules, getPrintingSeals } from "./rules";
 
 // Lectures du prestige : page /prestige (accès, blocages, héritières possibles), cycles d'un joueur.
 
@@ -59,7 +61,7 @@ export async function printingsUnlockedAt(prestige: number): Promise<boolean> {
 /** Un élément qui bloque la renaissance, avec où aller le régler. */
 export type Blocker = { kind: "AUCTION" | "BATTLE" | "EXPEDITION" | "CASINO" | "LISTINGS" | "OFFERS" | "TRADES"; count: number; href: string };
 
-export type SpecialCopyView = { userCardId: string; card: CardView; heritage: number; printing: number | null; serial: number | null };
+export type SpecialCopyView = { userCardId: string; card: CardView; heritage: number; printing: number | null; serial: number | null; copy: FudaCopy | null };
 
 export type CycleView = { number: number; globalRank: number; uniqueCards: number; zeni: number; createdAt: Date };
 
@@ -102,12 +104,15 @@ export async function getSpecialCopies(userId: string, locale: string): Promise<
     where: { ownerId: userId, status: "COLLECTION", ...SPECIAL_COPY },
     orderBy: [{ heritage: "desc" }, { obtainedAt: "asc" }],
     take: 200,
-    select: { id: true, cardId: true, heritage: true, printing: true, serial: true },
+    select: { id: true, cardId: true, heritage: true, printing: true, serial: true, edition: { select: { size: true } } },
   });
-  const views = await cardViews(rows.map((r) => r.cardId), locale);
+  // Une carte remise en brouillon reste montrée : son exemplaire partirait sinon sans avoir été vu
+  const [views, seals] = await Promise.all([cardViews(rows.map((r) => r.cardId), locale, { includeDrafts: true }), getPrintingSeals()]);
   return rows.flatMap((r) => {
     const card = views.get(r.cardId);
-    return card ? [{ userCardId: r.id, card, heritage: r.heritage, printing: r.printing, serial: r.serial }] : [];
+    // Sceau du tirage et taille avec le numéro : deux tirages redonnent les mêmes numéros
+    const copy = fudaCopyOf({ heritage: r.heritage, printing: r.printing, serial: r.serial, size: r.edition?.size ?? null }, seals);
+    return card ? [{ userCardId: r.id, card, heritage: r.heritage, printing: r.printing, serial: r.serial, copy }] : [];
   });
 }
 

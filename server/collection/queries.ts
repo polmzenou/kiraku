@@ -33,6 +33,7 @@ type Row = {
   titleEnglish: string | null;
   copies: number;
   free: number;
+  ordinary: number;
   inShowcase: boolean;
   maxHeritage: number;
   engraved: boolean;
@@ -100,6 +101,7 @@ function toItem(row: Row, locale: string): CollectionItem {
     series: seriesTitle(row, locale),
     copies: row.copies,
     free: row.free,
+    ordinary: row.ordinary,
     recyclable: Math.max(0, row.free - 1),
     inShowcase: row.inShowcase,
     heritage: row.maxHeritage,
@@ -128,6 +130,7 @@ export async function getCollectionPage(
            c.power, c.ki, c.spoiler, s."titleRomaji", s."titleEnglish",
            COUNT(*)::int AS copies,
            (COUNT(*) FILTER (WHERE uc.status = 'COLLECTION'))::int AS free,
+           (COUNT(*) FILTER (WHERE uc.status = 'COLLECTION' AND uc.heritage = 0 AND uc.printing IS NULL))::int AS ordinary,
            BOOL_OR(EXISTS (SELECT 1 FROM "ShowcaseItem" sh WHERE sh."userCardId" = uc.id)) AS "inShowcase",
            MAX(uc.heritage)::int AS "maxHeritage",
            BOOL_OR(uc.printing IS NOT NULL) AS engraved,

@@ -38,6 +38,12 @@ export function readHeirs(raw: unknown): CycleHeir[] {
   });
 }
 
+/** Boosters offerts par une renaissance (PrestigeCycle.boosters, { slug, count }) ; null si absents ou illisibles. */
+export function readCycleBoosters(raw: unknown): { slug: string; count: number } | null {
+  if (!isObject(raw) || typeof raw.slug !== "string" || raw.slug.length === 0 || !positiveInt(raw.count)) return null;
+  return { slug: raw.slug, count: raw.count };
+}
+
 /** « du cycle 1 au cycle 5 » : premier et dernier prestige qui ont gardé l'exemplaire, ou null. */
 export function keptSpan(cycles: readonly number[]): { from: number; to: number } | null {
   return cycles.length > 0 ? { from: cycles[0], to: cycles[cycles.length - 1] } : null;

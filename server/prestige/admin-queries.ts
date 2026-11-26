@@ -112,7 +112,7 @@ export async function printingOverview(): Promise<PrintingOverview[]> {
 export async function adminUserPrestige(userId: string) {
   const [user, cycles, special, consecrated] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { prestige: true, prestigedAt: true } }),
-    prisma.prestigeCycle.findMany({ where: { userId }, orderBy: { number: "desc" }, select: { number: true, globalRank: true, zeni: true, uniqueCards: true, createdAt: true } }),
+    prisma.prestigeCycle.findMany({ where: { userId }, orderBy: { number: "desc" }, select: { number: true, globalRank: true, zeni: true, uniqueCards: true, boosters: true, createdAt: true } }),
     prisma.userCard.findMany({
       where: { ownerId: userId, ...SPECIAL_COPY },
       orderBy: [{ heritage: "desc" }, { obtainedAt: "asc" }],

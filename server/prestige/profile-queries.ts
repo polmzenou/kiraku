@@ -32,7 +32,15 @@ export async function getEmakis(userId: string, locale: string): Promise<EmakiVi
   if (cycles.length === 0) return [];
   const heirsOf = cycles.map((c) => readHeirs(c.heirs));
   const all = heirsOf.flat();
-  const [views, seals] = await Promise.all([cardViews(all.map((h) => h.cardId), locale), getPrintingSeals()]);
+  // Taille des tirages des gravées, relue au compteur (jamais supprimé tant que la carte existe) : la photo ne la
+  // garde pas, et le numéro se lit toujours avec son sceau et sa taille
+  const printed = all.flatMap((h) => (h.printing !== null ? [{ cardId: h.cardId, printing: h.printing }] : []));
+  const [views, seals, printings] = await Promise.all([
+    cardViews(all.map((h) => h.cardId), locale),
+    getPrintingSeals(),
+    printed.length > 0 ? prisma.cardPrinting.findMany({ where: { OR: printed }, select: { cardId: true, printing: true, size: true } }) : [],
+  ]);
+  const sizeOf = new Map(printings.map((p) => [`${p.cardId}:${p.printing}`, p.size]));
   return cycles.map((c, i) => ({
     number: c.number,
     globalRank: c.globalRank,
@@ -41,7 +49,8 @@ export async function getEmakis(userId: string, locale: string): Promise<EmakiVi
     createdAt: c.createdAt,
     heirs: heirsOf[i].flatMap((h) => {
       const view = views.get(h.cardId);
-      return view ? [{ ...view, copy: fudaCopyOf({ heritage: h.heritage, printing: h.printing, serial: h.serial }, seals) }] : [];
+      const size = h.printing !== null ? (sizeOf.get(`${h.cardId}:${h.printing}`) ?? null) : null;
+      return view ? [{ ...view, copy: fudaCopyOf({ heritage: h.heritage, printing: h.printing, serial: h.serial, size }, seals) }] : [];
     }),
   }));
 }

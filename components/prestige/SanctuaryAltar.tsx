@@ -82,16 +82,17 @@ export function SanctuaryAltar({ relics, labels }: { relics: Relic[]; labels: { 
             </div>
           </div>
           <p className="text-xs font-bold text-text-muted">{labels.journey}</p>
-          <ol className="flex flex-col gap-1.5">
+          {/* Lignes de 44 px : chaque profil du parcours est une zone tactile à part entière */}
+          <ol className="flex flex-col">
             {shown.owners.map((o, i) => (
-              <li key={i} className="min-h-6 border-l-2 border-border pl-3 text-xs leading-6">
+              <li key={i} className="flex min-h-11 flex-wrap items-center gap-x-1 border-l-2 border-border pl-3 text-xs">
                 {o.username ? (
-                  <Link href={`/u/${o.username}`} className="font-bold text-link underline underline-offset-4">
+                  <Link href={`/u/${o.username}`} className="inline-flex min-h-11 items-center font-bold text-link underline underline-offset-4">
                     {o.name}
                   </Link>
                 ) : (
                   <b>{o.name}</b>
-                )}{" "}
+                )}
                 <span className="text-text-muted">· {o.via}</span>
               </li>
             ))}

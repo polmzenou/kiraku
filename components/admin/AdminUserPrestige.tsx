@@ -1,5 +1,6 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { readCycleBoosters } from "@/lib/prestige/journey";
 import { toRoman } from "@/lib/prestige/roman";
 import { adminUserPrestige } from "@/server/prestige/admin-queries";
 
@@ -21,13 +22,18 @@ export async function AdminUserPrestige({ userId }: { userId: string }) {
       </p>
       {data.cycles.length > 0 && (
         <ul className="flex flex-col gap-1 text-sm">
-          {data.cycles.map((c) => (
-            <li key={c.number} className="flex flex-wrap gap-x-3 border-t border-border py-1.5">
-              <b>{t("cycle", { number: c.number })}</b>
-              <span className="text-text-muted">{t("cycleRow", { rank: c.globalRank, cards: c.uniqueCards, zeni: c.zeni })}</span>
-              <span className="text-text-muted">{format.dateTime(c.createdAt, { dateStyle: "medium" })}</span>
-            </li>
-          ))}
+          {data.cycles.map((c) => {
+            // Boosters crédités par cette renaissance, tels qu'enregistrés (absents des cycles d'avant cette trace)
+            const boosters = readCycleBoosters(c.boosters);
+            return (
+              <li key={c.number} className="flex flex-wrap gap-x-3 border-t border-border py-1.5">
+                <b>{t("cycle", { number: c.number })}</b>
+                <span className="text-text-muted">{t("cycleRow", { rank: c.globalRank, cards: c.uniqueCards, zeni: c.zeni })}</span>
+                {boosters && <span className="text-kin">{t("cycleBoosters", { count: boosters.count, slug: boosters.slug })}</span>}
+                <span className="text-text-muted">{format.dateTime(c.createdAt, { dateStyle: "medium" })}</span>
+              </li>
+            );
+          })}
         </ul>
       )}
       {data.special.length > 0 && (

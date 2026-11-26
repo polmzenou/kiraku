@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import type { FudaCard } from "@/components/fuda/Fuda";
 import { consecrateAction } from "@/server/actions/prestige";
@@ -22,6 +23,7 @@ export function ConsecrateButton({ userCardId, card, username }: { userCardId: s
   const t = useTranslations("prestige.consecrate");
   const reduced = useReducedFx();
   const startRite = useConsecrationRite();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,14 @@ export function ConsecrateButton({ userCardId, card, username }: { userCardId: s
   const consecrate = useCallback(() => {
     setError(null);
     start(async () => {
-      const res = await consecrateAction({ userCardId });
+      // Coupure réseau ou erreur relancée par l'action : un message dans la feuille, pas l'écran d'erreur de la page,
+      // et la fiche relue (la consécration a pu passer avant la coupure)
+      const res = await consecrateAction({ userCardId }).catch(() => null);
+      if (!res) {
+        setError(t("errors.UNAVAILABLE"));
+        router.refresh();
+        return;
+      }
       if (!res.ok) {
         setError(t(`errors.${res.error}`));
         return;
@@ -38,7 +47,7 @@ export function ConsecrateButton({ userCardId, card, username }: { userCardId: s
       setOpen(false);
       startRite?.({ card, username });
     });
-  }, [card, startRite, t, userCardId, username]);
+  }, [card, router, startRite, t, userCardId, username]);
 
   return (
     <>

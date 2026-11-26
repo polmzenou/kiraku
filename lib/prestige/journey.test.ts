@@ -4,7 +4,7 @@ import { conditionSchema, evaluateCondition, type ProfileStats } from "../profil
 import { isFrameStyle } from "../profile/frames";
 import { isNameColorStyle } from "../profile/name-colors";
 import { PRESTIGE_COSMETICS } from "./cosmetics";
-import { keptSpan, readHeirs, readJourney } from "./journey";
+import { keptSpan, readCycleBoosters, readHeirs, readJourney } from "./journey";
 
 describe("parcours d'un exemplaire consacré", () => {
   it("relit les propriétaires et les cycles, sans faire confiance au JSON", () => {
@@ -45,6 +45,15 @@ describe("parcours d'un exemplaire consacré", () => {
       { userCardId: "u1", cardId: "c1", heritage: 2, printing: null, serial: null },
       { userCardId: "u2", cardId: "c2", heritage: 1, printing: 1, serial: 17 },
     ]);
+  });
+
+  it("relit les boosters offerts par une renaissance, sans rien deviner", () => {
+    expect(readCycleBoosters({ slug: "mythique", count: 1 })).toEqual({ slug: "mythique", count: 1 });
+    expect(readCycleBoosters(null)).toBeNull();
+    expect(readCycleBoosters({ slug: "", count: 1 })).toBeNull();
+    expect(readCycleBoosters({ slug: "mythique", count: 0 })).toBeNull();
+    expect(readCycleBoosters({ slug: "mythique", count: "2" })).toBeNull();
+    expect(readCycleBoosters([{ slug: "mythique", count: 1 }])).toBeNull();
   });
 });
 

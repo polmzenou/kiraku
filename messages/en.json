@@ -4771,6 +4771,7 @@
       "seal": "Seal of printing {printing}",
       "keys": {
         "enabled": "Prestige open to players",
+        "staffLiveWhenDisabled": "Staff: real rebirth and consecration while prestige is off",
         "requiredPercent": "Access threshold per rarity (%)",
         "keepSlots": "Heirlooms kept",
         "minDaysBetween": "Days between two rebirths",
@@ -4793,6 +4794,7 @@
       },
       "hints": {
         "enabled": "Off: 404 for players, preview for the team, no \"Evolve\" button. Roman numerals already earned stay visible.",
+        "staffLiveWhenDisabled": "Yes (as until now): ADMIN and DEV are really reborn and really consecrate even while off (collection recycled, Zeni and booster granted, global rank taken). No: preview and summary only, no button; trials then happen on a local database.",
         "requiredPercent": "Share of the rarity's published cards the player must own (rounded up). Empty: rarity ignored; 0: ignored too.",
         "keepSlots": "Copies the player keeps at rebirth; each gains one heritage level.",
         "minDaysBetween": "0: no wait between two rebirths.",
@@ -4847,7 +4849,8 @@
         "errors": {
           "FORBIDDEN": "Admins only.",
           "INVALID": "Invalid request.",
-          "RATE_LIMITED": "Too many attempts. Try again in a minute."
+          "RATE_LIMITED": "Too many attempts. Try again in a minute.",
+          "UNAVAILABLE": "Installation not possible right now. Try again."
         }
       },
       "user": {
@@ -4856,6 +4859,7 @@
         "level": "Prestige {roman} ({level}) · last rebirth on {date}",
         "cycle": "Cycle {number}",
         "cycleRow": "rank {rank} · {cards, number} cards · {zeni, number} Zeni",
+        "cycleBoosters": "{count, plural, one {# booster granted} other {# boosters granted}} ({slug})",
         "special": "{count, plural, one {# special copy} other {# special copies}}",
         "edition": "printing {printing} · no. {serial} / {size}",
         "editionShort": "printing {printing} · no. {serial}",
@@ -8869,8 +8873,11 @@
       "count": "{count} / {slots}",
       "specialTitle": "Your special copies",
       "cardsTitle": "Your cards",
+      "noOrdinary": "A greyed-out card only has special copies in your collection: keep them one by one above.",
+      "keepDropped": "{count, plural, one {A ticked card no longer has an ordinary copy to keep: it has been unticked.} other {# ticked cards no longer have an ordinary copy to keep: they have been unticked.}}",
       "heirCopy": "Heritage {level}",
       "engravedCopy": "Edition no. {serial}",
+      "engravedCopyOf": "<seal></seal>no. {serial} / {size}",
       "pick": "Keep {name}",
       "cancel": "Cancel",
       "next": "See the summary",
@@ -8885,11 +8892,16 @@
       "engravedTitle": "Engraved copies you give up",
       "engravedIntro": "These numbered editions go with the rest: their number will never come back. Tick each one to confirm.",
       "engravedConfirm": "I give up {name}, edition no. {serial}",
+      "engravedConfirmOf": "I give up {name}, edition <seal></seal>no. {serial} / {size}",
+      "heirsTitle": "Heirs left behind",
+      "heirsIntro": "These copies have already been through rebirths. You did not pick them: they leave with the rest and their heritage is lost. Tick each one to confirm.",
+      "heirConfirm": "I let {name} go, heritage {level}",
       "final": "The rebirth is final: recycled cards don't come back.",
       "hold": "Hold to be reborn",
       "holdConfirm": "Tap again to be reborn",
       "holding": "Rebirth…",
       "holdHint": "Hold the button until it fills: the rebirth is final.",
+      "previewOnly": "Preview: prestige is switched off, the rebirth cannot be started from here.",
       "back": "Change my heirlooms",
       "boosterLabel": "Gift",
       "booster": "{count, plural, one {# {name} booster} other {# {name} boosters}}"
@@ -8930,7 +8942,7 @@
     },
     "profile": {
       "evolve": "Evolve",
-      "evolveReady": "You can be reborn",
+      "evolveReady": "Rebirth thresholds reached",
       "level": "Prestige {level}",
       "rank": "Kiraku's {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} rebirth"
     },
@@ -8972,7 +8984,8 @@
         "GUEST": "For registered accounts only.",
         "BANNED": "Your account is suspended.",
         "FROZEN": "Your account is being deleted.",
-        "NOT_ELIGIBLE": "This card can no longer be consecrated (it moved or changed hands): reload the page."
+        "NOT_ELIGIBLE": "This card can no longer be consecrated (it moved or changed hands): reload the page.",
+        "UNAVAILABLE": "Not possible right now. Try again."
       },
       "rite": {
         "label": "Consecration rite",

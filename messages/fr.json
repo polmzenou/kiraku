@@ -4771,6 +4771,7 @@
       "seal": "Sceau du tirage {printing}",
       "keys": {
         "enabled": "Prestige ouvert aux joueurs",
+        "staffLiveWhenDisabled": "Équipe : renaissance et consécration réelles quand le prestige est coupé",
         "requiredPercent": "Seuil d'accès par rareté (%)",
         "keepSlots": "Héritières gardées",
         "minDaysBetween": "Jours entre deux renaissances",
@@ -4793,6 +4794,7 @@
       },
       "hints": {
         "enabled": "Coupé : 404 pour les joueurs, aperçu pour l'équipe, aucun bouton « Évoluer ». Les chiffres romains déjà gagnés restent affichés.",
+        "staffLiveWhenDisabled": "Oui (comme jusqu'ici) : ADMIN et DEV renaissent et consacrent pour de vrai même coupé (collection recyclée, Zeni et booster versés, rang global pris). Non : aperçu et récapitulatif seulement, sans bouton ; les essais se font alors sur une base locale.",
         "requiredPercent": "Part des cartes publiées de la rareté que le joueur doit posséder (arrondie au supérieur). Vide : rareté ignorée ; 0 : ignorée aussi.",
         "keepSlots": "Exemplaires que le joueur garde à la renaissance ; chacun monte d'un niveau d'héritage.",
         "minDaysBetween": "0 : aucune attente entre deux renaissances.",
@@ -4847,7 +4849,8 @@
         "errors": {
           "FORBIDDEN": "Réservé aux admins.",
           "INVALID": "Demande invalide.",
-          "RATE_LIMITED": "Trop d'essais. Réessaie dans une minute."
+          "RATE_LIMITED": "Trop d'essais. Réessaie dans une minute.",
+          "UNAVAILABLE": "Installation impossible pour le moment. Réessaie."
         }
       },
       "user": {
@@ -4856,6 +4859,7 @@
         "level": "Prestige {roman} ({level}) · dernière renaissance le {date}",
         "cycle": "Cycle {number}",
         "cycleRow": "rang {rank} · {cards, number} cartes · {zeni, number} Zeni",
+        "cycleBoosters": "{count, plural, one {# booster offert} other {# boosters offerts}} ({slug})",
         "special": "{count, plural, one {# exemplaire spécial} other {# exemplaires spéciaux}}",
         "edition": "tirage {printing} · n° {serial} / {size}",
         "editionShort": "tirage {printing} · n° {serial}",
@@ -8869,8 +8873,11 @@
       "count": "{count} / {slots}",
       "specialTitle": "Tes exemplaires spéciaux",
       "cardsTitle": "Tes cartes",
+      "noOrdinary": "Une carte grisée n'a chez toi que des exemplaires spéciaux : garde-les un par un plus haut.",
+      "keepDropped": "{count, plural, one {Une carte cochée n'a plus d'exemplaire ordinaire à garder : elle a été décochée.} other {# cartes cochées n'ont plus d'exemplaire ordinaire à garder : elles ont été décochées.}}",
       "heirCopy": "Héritage {level}",
       "engravedCopy": "Édition n° {serial}",
+      "engravedCopyOf": "<seal></seal>n° {serial} / {size}",
       "pick": "Garder {name}",
       "cancel": "Annuler",
       "next": "Voir le récapitulatif",
@@ -8885,11 +8892,16 @@
       "engravedTitle": "Gravées sacrifiées",
       "engravedIntro": "Ces éditions numérotées partent avec le reste : leur numéro ne ressortira jamais. Coche chacune pour confirmer.",
       "engravedConfirm": "Je sacrifie {name}, édition n° {serial}",
+      "engravedConfirmOf": "Je sacrifie {name}, édition <seal></seal>n° {serial} / {size}",
+      "heirsTitle": "Héritières non gardées",
+      "heirsIntro": "Ces exemplaires ont déjà traversé des renaissances. Tu ne les as pas choisis : ils partent avec le reste et leur héritage se perd. Coche chacun pour confirmer.",
+      "heirConfirm": "Je laisse partir {name}, héritage {level}",
       "final": "La renaissance est définitive : les cartes recyclées ne reviennent pas.",
       "hold": "Maintiens pour renaître",
       "holdConfirm": "Appuie encore pour renaître",
       "holding": "Renaissance…",
       "holdHint": "Maintiens le bouton jusqu'à ce qu'il soit rempli : la renaissance est définitive.",
+      "previewOnly": "Aperçu : le prestige est coupé, la renaissance ne se lance pas d'ici.",
       "back": "Modifier mes héritières",
       "boosterLabel": "Offert",
       "booster": "{count, plural, one {# booster {name}} other {# boosters {name}}}"
@@ -8930,7 +8942,7 @@
     },
     "profile": {
       "evolve": "Évoluer",
-      "evolveReady": "Tu peux renaître",
+      "evolveReady": "Seuils de la renaissance atteints",
       "level": "Prestige {level}",
       "rank": "{rank, select, 1 {1re} other {{rank}ᵉ}} renaissance de Kiraku"
     },
@@ -8972,7 +8984,8 @@
         "GUEST": "Réservé aux comptes inscrits.",
         "BANNED": "Ton compte est suspendu.",
         "FROZEN": "Ton compte est en cours de suppression.",
-        "NOT_ELIGIBLE": "Cette carte ne peut plus être consacrée (elle a changé de place ou de main) : recharge la fiche."
+        "NOT_ELIGIBLE": "Cette carte ne peut plus être consacrée (elle a changé de place ou de main) : recharge la fiche.",
+        "UNAVAILABLE": "Action impossible pour le moment. Réessaie."
       },
       "rite": {
         "label": "Rite de consécration",

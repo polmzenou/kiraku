@@ -10,6 +10,8 @@ export type CollectionItem = CardView & {
   free: number;
   /** Doublons recyclables : exemplaires en collection moins celui qu'on garde. */
   recyclable: number;
+  /** Exemplaires ordinaires en collection (ni héritiers ni gravés) : sans eux, la renaissance ne garde pas la carte cochée. */
+  ordinary?: number;
   inShowcase: boolean;
   /** Collection d'un autre joueur : le visiteur possède déjà cette carte (absent sinon). */
   viewerOwns?: boolean;

@@ -12,7 +12,9 @@ import { useRitualFx } from "../opening/useRitualFx";
 import { Button } from "../ui/Button";
 import { ButtonLink } from "../ui/ButtonLink";
 import { departedByRarity, type RarityInfo } from "./RebirthFlow";
+// Poudre d'or (.pr-speck) et rotation des rayons (pr-spin) viennent de la feuille du profil
 import "./prestige.css";
+import "./prestige-rites.css";
 
 /** Cartes dessinées au plus dans la nuée (le reste est compté, pas dessiné). */
 const MAX_PARTICLES = 48;
@@ -94,6 +96,9 @@ export function RebirthCinematic({
     const fx: typeof play = (name, haptic) => {
       if (!timeline.skipped) play(name, haptic);
     };
+    // Le dialogue des rites (RiteDialog) s'ouvre sur son premier élément focalisable, un lien de fin encore invisible :
+    // le focus va sur « Passer » (autoFocus agirait avant l'ouverture du dialogue)
+    q("[data-skip]").focus();
 
     const run = async () => {
       // Le bloc du logo part centré sur l'écran (là où converge la lumière), puis remontera à sa place
@@ -243,7 +248,8 @@ export function RebirthCinematic({
   };
 
   return (
-    <div ref={root} role="dialog" aria-modal="true" aria-label={t("label")} className="pr-cine" onClick={() => tl.current && skip(tl.current)}>
+    // Rôle et libellé portés par le <dialog> de RiteDialog, qui l'enveloppe
+    <div ref={root} className="pr-cine" onClick={() => tl.current && skip(tl.current)}>
       <span data-veil className="pr-cine-veil" />
 
       {/* Nuée des cartes parties, puis points de lumière : centrée sur l'écran */}
@@ -339,7 +345,7 @@ export function RebirthCinematic({
 
       <button
         type="button"
-        autoFocus
+        data-skip
         onClick={(e) => {
           e.stopPropagation();
           if (tl.current) skip(tl.current);

@@ -26,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * (404), sauf pour l'équipe qui en voit l'aperçu.
  */
 export default async function PrestigePage() {
-  const [user, t, tRarity, locale, format, ctx, definitions, riteStyle] = await Promise.all([
+  const [user, t, tRarity, locale, format, ctx, definitions, riteStyle, staffLive] = await Promise.all([
     getCurrentUser(),
     getTranslations("prestige"),
     getTranslations("rarity"),
@@ -35,9 +35,12 @@ export default async function PrestigePage() {
     rebirthCtx(),
     getRarityDefinitions(),
     getSetting("prestige.riteStyle"),
+    getSetting("prestige.staffLiveWhenDisabled"),
   ]);
   const staff = isStaff(user?.role);
   if (!ctx.rules.enabled && !staff) notFound();
+  // Coupé, l'équipe renaît pour de vrai seulement si le réglage le permet (sinon : aperçu sans bouton, comme l'action)
+  const live = ctx.rules.enabled || staffLive;
   if (!user) {
     return (
       <PageShell>
@@ -126,6 +129,7 @@ export default async function PrestigePage() {
         rarities={rarities}
         player={{ username: user.username, image: user.image, frame: user.decor.frame, agreement: user.titleAgreement }}
         riteStyle={riteStyle}
+        live={live}
       />
     </PageShell>
   );

@@ -14,7 +14,7 @@ import { PlayerAvatar } from "../social/PlayerAvatar";
 import { Button } from "../ui/Button";
 import { ButtonLink } from "../ui/ButtonLink";
 import { departedByRarity, type RarityInfo } from "./RebirthFlow";
-import "./prestige.css";
+import "./prestige-rites.css";
 
 /**
  * Rite de renaissance (転生) en bain d'encre, joué après la transaction (tout est déjà décidé par le serveur). Les
@@ -46,6 +46,7 @@ export function RebirthRite({
 
   const piles = departedByRarity(rarities, result.departed);
   const gone = piles.reduce((sum, p) => sum + p.count, 0);
+  // Vingt fuda au plus à l'écran ; le libellé compte toutes les héritières (jusqu'à prestige.keepSlots)
   const heirs = result.heirs.slice(0, 20);
 
   useEffect(() => {
@@ -61,17 +62,24 @@ export function RebirthRite({
       if (!alive) a.cancel();
       return a;
     };
+    // Passé (appui, mouvement réduit), le rite file sans bruit (sinon tous les sons partiraient d'un coup)
+    const sound: typeof play = (name, haptic) => {
+      if (!timeline.skipped) play(name, haptic);
+    };
     const q = <T extends Element>(sel: string) => el.querySelector<T>(sel);
+    // Le dialogue des rites (RiteDialog) s'ouvre sur son premier élément focalisable, un lien de fin encore invisible :
+    // le focus va sur « Passer » (autoFocus agirait avant l'ouverture du dialogue)
+    q<HTMLElement>("[data-skip]")?.focus();
     const qa = (sel: string) => [...el.querySelectorAll<HTMLElement>(sel)];
     const zeniNum = q<HTMLElement>("[data-zeni]");
     const level = q<HTMLElement>("[data-level]");
 
     const run = async () => {
-      play("taiko", [30, 40, 30]);
+      sound("taiko", [30, 40, 30]);
       animate(timeline, q("[data-dim]")!, [{ opacity: 0 }, { opacity: 0.42 }], { duration: 400 });
       await wait(timeline, 250);
       animate(timeline, q("[data-ink]")!, [{ opacity: 0, transform: "translateY(20px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 450 });
-      play("brush");
+      sound("brush");
       await wait(timeline, 500);
 
       // Les piles s'enfoncent dans la pierre à encre, l'une après l'autre ; des ondes s'élargissent à chaque arrivée
@@ -87,7 +95,7 @@ export function RebirthRite({
           const r = stack.getBoundingClientRect();
           const dx = fx - (r.left + r.width / 2);
           const dy = fy - (r.top + r.height / 2);
-          play("whoosh");
+          sound("whoosh");
           await animate(
             timeline,
             stack,
@@ -99,7 +107,7 @@ export function RebirthRite({
             { duration: 760, easing: "cubic-bezier(.45,0,.8,.7)" },
           ).finished;
           if (timeline.skipped) return;
-          play("brush");
+          sound("brush");
           for (let k = 0; k < 2; k++) {
             const ripple = document.createElement("span");
             ripple.className = "pr-ripple";
@@ -116,7 +124,7 @@ export function RebirthRite({
 
       // Les Zeni montent
       animate(timeline, q("[data-zeni-box]")!, [{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
-      if (result.zeni > 0) play("coin");
+      if (result.zeni > 0) sound("coin");
       for (let k = 1; k <= 10 && !timeline.skipped; k++) {
         if (zeniNum) zeniNum.textContent = format.number(Math.round((result.zeni * k) / 10));
         await wait(timeline, 55);
@@ -124,7 +132,7 @@ export function RebirthRite({
       if (zeniNum) zeniNum.textContent = format.number(result.zeni);
 
       // Un pétale de plus se dore sur la fleur de cerisier de chaque héritière
-      play("chime");
+      sound("chime");
       await Promise.all(
         qa("[data-heir]").map(async (card, i) => {
           await wait(timeline, i * 85);
@@ -136,7 +144,7 @@ export function RebirthRite({
       await wait(timeline, 200);
 
       // Le chiffre romain est frappé sur l'avatar
-      play("stamp", [20, 30, 60]);
+      sound("stamp", [20, 30, 60]);
       animate(timeline, q("[data-next]")!, [{ opacity: 0 }, { opacity: 1 }], { duration: 120 });
       const oldPlate = q("[data-old] .prestige-plate");
       if (oldPlate) animate(timeline, oldPlate, [{ opacity: 1 }, { opacity: 0 }], { duration: 120 });
@@ -149,12 +157,12 @@ export function RebirthRite({
       const emaki = q<HTMLElement>("[data-emaki]")!;
       await animate(timeline, emaki, [{ opacity: 0 }, { opacity: 1 }], { duration: 150 }).finished;
       const move = [{ transform: "translateX(0)" }, { transform: `translateX(${emaki.clientWidth - 12}px)` }];
-      play("tear");
+      sound("tear");
       await Promise.all([
         animate(timeline, q("[data-rod]")!, move, { duration: 900, easing: "cubic-bezier(.3,.7,.2,1)" }).finished,
         animate(timeline, q("[data-cover]")!, move, { duration: 900, easing: "cubic-bezier(.3,.7,.2,1)" }).finished,
       ]);
-      play("bell");
+      sound("bell");
       await animate(timeline, q("[data-done]")!, [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 350 }).finished;
       q<HTMLElement>("[data-done] a, [data-done] button")?.focus();
     };
@@ -168,14 +176,8 @@ export function RebirthRite({
   }, []);
 
   return (
-    <div
-      ref={root}
-      role="dialog"
-      aria-modal="true"
-      aria-label={t("label")}
-      className="pr-rite is-scroll"
-      onClick={() => tl.current && skip(tl.current)}
-    >
+    // Rôle et libellé portés par le <dialog> de RiteDialog, qui l'enveloppe
+    <div ref={root} className="pr-rite is-scroll" onClick={() => tl.current && skip(tl.current)}>
       {/* Paysage d'encre nocturne : portrait sur téléphone, paysage sur un écran large */}
       <picture className="pr-rite-bg">
         <source media="(orientation: landscape)" srcSet={PRESTIGE_ASSETS.rite.landscape} />
@@ -200,12 +202,13 @@ export function RebirthRite({
           </div>
         </div>
 
-        <p className="text-xs font-bold tracking-widest text-[#a89f92] uppercase">{t("heirs", { count: heirs.length })}</p>
+        <p className="text-xs font-bold tracking-widest text-[#a89f92] uppercase">{t("heirs", { count: result.heirs.length })}</p>
         <div className="pr-heirs">
           {heirs.map((h) => (
             <div key={h.userCardId} data-heir className="relative">
               <Fuda
-                card={{ ...h.card, copy: { heritage: h.before } }}
+                // Marque complète de l'exemplaire (sceau, numéro et taille d'une gravée), héritage d'avant le rite
+                card={{ ...h.card, copy: { ...h.copy, heritage: h.before } }}
                 size="sm"
                 still
                 describeImage
@@ -291,7 +294,7 @@ export function RebirthRite({
       </div>
       <button
         type="button"
-        autoFocus
+        data-skip
         onClick={(e) => {
           e.stopPropagation();
           if (tl.current) skip(tl.current);

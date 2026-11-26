@@ -1,9 +1,12 @@
 import type { ThemeMedia } from "../showcase/theme-registry";
 
 // Images du prestige, générées puis converties par scripts/prestige-assets.mjs (public/prestige/). Les noms portent une
-// version : la relever ici et dans le script quand une image change (le navigateur garde /prestige une semaine).
+// version : quand une image change, la relever ici, dans le script ET dans les URL « -vN » écrites en dur dans
+// components/prestige/prestige*.css et components/opening/BarenReveal.css (le navigateur garde /prestige une semaine).
+// lib/prestige/assets.test.ts échoue tant que l'un des quatre est en retard.
 
 const V = 1;
+export const PRESTIGE_ASSET_VERSION = V;
 
 /** Image fixe d'une scène : portrait sur téléphone, paysage au-delà. */
 export type SceneStill = { portrait: string; landscape: string };
@@ -21,10 +24,7 @@ export const PRESTIGE_ASSETS = {
     mobile: { still: `/prestige/sanctuaire/still-mobile-v${V}.webp`, loop: `/prestige/sanctuaire/loop-mobile-v${V}.mp4` },
     desktop: { still: `/prestige/sanctuaire/still-desktop-v${V}.webp`, loop: `/prestige/sanctuaire/loop-desktop-v${V}.mp4` },
   } satisfies ThemeMedia,
-  /** Autel à gradins (3:2) ; les plateaux portent les cartes à 21 %, 39 % et 63 % de sa hauteur (prestige.css). */
-  altar: `/prestige/fx/autel-gradins-v${V}.webp`,
-  /** Cloche du sanctuaire (1:3) et zuiun, nuées porte-bonheur en laque d'or (2:1). */
-  suzu: `/prestige/fx/suzu-v${V}.webp`,
+  /** Zuiun, nuées porte-bonheur en laque d'or (2:1). */
   zuiun: [1, 2, 3].map((k) => `/prestige/fx/zuiun-${k}-v${V}.webp`),
 } as const;
 
@@ -33,6 +33,7 @@ export function scrollCover(n: number): string {
   return `/prestige/fx/rouleau-${SCROLL_COLORS[(Math.max(n, 1) - 1) % SCROLL_COLORS.length]}-v${V}.webp`;
 }
 
-// Les autres images (pierre à encre et onde du rite, poudre d'or, baren et encre d'estampe, halo de nacre, rayon, éclat,
-// rayons et nuages de Raigō, papier et baguettes des rouleaux) sont des fonds CSS : voir components/prestige/prestige.css
-// et components/opening/BarenReveal.css. La pierre à encre est en 2:1, le centre de son bassin à 42 % de sa hauteur.
+// Les autres images (pierre à encre et onde du rite, poudre d'or, baren et encre d'estampe, autel à gradins, cloche,
+// halo de nacre, rayon, éclat, rayons et nuages de Raigō, papier et baguettes des rouleaux) sont des fonds CSS : voir
+// components/prestige/prestige.css, prestige-rites.css et components/opening/BarenReveal.css. La pierre à encre est en
+// 2:1, le centre de son bassin à 42 % de sa hauteur ; l'autel (3:2) porte les cartes à 21 %, 39 % et 63 % de sa hauteur.

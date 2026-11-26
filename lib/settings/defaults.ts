@@ -608,6 +608,8 @@ export const SETTING_SCHEMAS = {
   "features.casino": z.boolean(),
   // Prestige (étape 16) : caché tant que l'admin ne l'allume pas
   "prestige.enabled": z.boolean(),
+  // Prestige coupé : l'équipe (ADMIN, DEV) renaît et consacre pour de vrai (oui) ou ne voit que l'aperçu (non)
+  "prestige.staffLiveWhenDisabled": z.boolean(),
   "prestige.requiredPercent": prestigePercent,
   "prestige.keepSlots": z.number().int().min(1).max(100),
   "prestige.minDaysBetween": z.number().int().min(0).max(365),
@@ -1091,6 +1093,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "discord.socialPromo": SOCIAL_PROMO_DEFAULT, // masquée par défaut
   "features.casino": true,
   "prestige.enabled": false, // caché tant que l'admin ne l'allume pas
+  "prestige.staffLiveWhenDisabled": true, // comme avant : les essais de l'équipe sont réels (choix à trancher)
   // Variantes à 40 % : le booster standard n'en donne presque pas (Gold 2 sur 100 000, BR, VR, MR et XR jamais)
   "prestige.requiredPercent": { COMMON: 85, UNCOMMON: 85, RARE: 85, EPIC: 80, LEGENDARY: 80, MYTHIC: 70, BR: 40, AR: 40, VR: 40, GOLD: 40, MR: 40, XR: 40 },
   "prestige.keepSlots": 20,

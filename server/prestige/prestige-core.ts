@@ -34,7 +34,11 @@ export type RebirthErrorCode =
   | "KEEP_INVALID";
 
 export class RebirthError extends Error {
-  constructor(readonly code: RebirthErrorCode) {
+  /** KEEP_INVALID : cartes cochées dont le joueur n'a plus d'exemplaire ordinaire en collection (à décocher). */
+  constructor(
+    readonly code: RebirthErrorCode,
+    readonly cardIds?: readonly string[],
+  ) {
     super(code);
   }
 }
@@ -57,6 +61,8 @@ export type KeepRequest = { copyIds: readonly string[]; cardIds: readonly string
 
 export type Departed = { rarity: string; engraved: boolean; count: number };
 export type LeavingEngraved = { id: string; cardId: string; printing: number; serial: number };
+/** Héritière d'un cycle passé (non gravée) qui partirait : à confirmer une à une, comme les gravées. */
+export type LeavingHeir = { id: string; cardId: string; heritage: number };
 
 const TX = { maxWait: 10_000, timeout: 30_000 };
 /** Verrou consultatif du rang global : deux renaissances simultanées ne prennent jamais le même. */
@@ -155,13 +161,17 @@ async function resolveKeep(tx: Tx, userId: string, keep: KeepRequest, slots: num
     : 0;
   if (designated !== copyIds.length) throw new RebirthError("KEEP_INVALID");
   const picked = cardIds.length
-    ? await tx.$queryRaw<{ id: string }[]>`
-        SELECT DISTINCT ON ("cardId") id FROM "UserCard"
+    ? await tx.$queryRaw<{ id: string; cardId: string }[]>`
+        SELECT DISTINCT ON ("cardId") id, "cardId" FROM "UserCard"
         WHERE "ownerId" = ${userId} AND status = 'COLLECTION' AND heritage = 0 AND printing IS NULL
           AND "cardId" = ANY(${cardIds}::text[]) AND id <> ALL(${copyIds}::text[])
         ORDER BY "cardId", "obtainedAt", id`
     : [];
-  if (picked.length !== cardIds.length) throw new RebirthError("KEEP_INVALID");
+  if (picked.length !== cardIds.length) {
+    // Carte cochée sans exemplaire ordinaire (seulement des spéciaux, à choisir un par un) : le client la décoche
+    const found = new Set(picked.map((p) => p.cardId));
+    throw new RebirthError("KEEP_INVALID", cardIds.filter((c) => !found.has(c)));
+  }
   return [...copyIds, ...picked.map((p) => p.id)];
 }
 
@@ -171,6 +181,17 @@ async function engravedLeaving(db: Pick<Tx, "$queryRaw">, userId: string, keepId
     SELECT id, "cardId", printing, serial FROM "UserCard"
     WHERE "ownerId" = ${userId} AND status = 'COLLECTION' AND printing IS NOT NULL AND id <> ALL(${[...keepIds]}::text[])
     ORDER BY "cardId", printing, serial`;
+}
+
+/**
+ * Héritières non gravées qui partiraient (les gravées sont déjà dans la liste précédente) : la pièce la plus longue à
+ * reconstituer ne part jamais sans avoir été nommée et confirmée.
+ */
+async function heirsLeaving(db: Pick<Tx, "$queryRaw">, userId: string, keepIds: readonly string[]): Promise<LeavingHeir[]> {
+  return db.$queryRaw<LeavingHeir[]>`
+    SELECT id, "cardId", heritage FROM "UserCard"
+    WHERE "ownerId" = ${userId} AND status = 'COLLECTION' AND heritage > 0 AND printing IS NULL AND id <> ALL(${[...keepIds]}::text[])
+    ORDER BY heritage DESC, "cardId", id`;
 }
 
 /**
@@ -220,22 +241,25 @@ export type RebirthPreview = {
   leaving: number;
   zeni: number;
   engraved: LeavingEngraved[];
+  /** Héritières non gravées qui partent, à confirmer comme les gravées. */
+  heirs: LeavingHeir[];
 };
 
-/** Récapitulatif d'une renaissance, sans rien écrire : ce qui part, les Zeni, les gravées à confirmer. */
+/** Récapitulatif d'une renaissance, sans rien écrire : ce qui part, les Zeni, les gravées et héritières à confirmer. */
 export async function previewRebirthWith(db: PrismaClient, userId: string, keep: KeepRequest, ctx: RebirthCtx): Promise<RebirthPreview> {
   return db.$transaction(async (tx) => {
     const keepIds = await resolveKeep(tx, userId, keep, ctx.rules.keepSlots);
-    const [departed, engraved] = await Promise.all([
+    const [departed, engraved, heirs] = await Promise.all([
       tx.$queryRaw<Departed[]>`
         SELECT c."rarityKey" AS rarity, (uc.printing IS NOT NULL) AS engraved, count(*)::int AS count
         FROM "UserCard" uc JOIN "Card" c ON c.id = uc."cardId"
         WHERE uc."ownerId" = ${userId} AND uc.status = 'COLLECTION' AND uc.id <> ALL(${keepIds}::text[])
         GROUP BY 1, 2`,
       engravedLeaving(tx, userId, keepIds),
+      heirsLeaving(tx, userId, keepIds),
     ]);
     const zeni = rebirthZeni(rebirthRawValue(departed, ctx.values, ctx.rules.recycleMultiplier), ctx.rules.zeniTiers, ctx.rules.zeniCap);
-    return { keepIds, departed, leaving: departed.reduce((sum, d) => sum + d.count, 0), zeni, engraved };
+    return { keepIds, departed, leaving: departed.reduce((sum, d) => sum + d.count, 0), zeni, engraved, heirs };
   }, TX);
 }
 
@@ -248,6 +272,8 @@ export type RebirthInput = {
   expectedZeni: number;
   /** Gravées sacrifiées, confirmées une à une : le serveur compare à la sienne. */
   sacrificedEngraved: readonly string[];
+  /** Héritières non gravées sacrifiées, confirmées de même (absent = aucune). */
+  sacrificedHeirs?: readonly string[];
 };
 
 export type RebirthHeir = { userCardId: string; cardId: string; before: number; after: number; printing: number | null; serial: number | null };
@@ -299,6 +325,9 @@ export async function rebirthWith(db: PrismaClient, input: RebirthInput, ctx: Re
     // Les gravées qui partent sont celles que le joueur a confirmées, ni plus ni moins
     const engraved = await engravedLeaving(tx, userId, keepIds);
     if (!sameSet(engraved.map((e) => e.id), input.sacrificedEngraved)) throw new RebirthError("STALE");
+    // Les héritières d'un cycle passé qui partent aussi : nommées dans le récapitulatif, confirmées une à une
+    const lostHeirs = await heirsLeaving(tx, userId, keepIds);
+    if (!sameSet(lostHeirs.map((h) => h.id), input.sacrificedHeirs ?? [])) throw new RebirthError("STALE");
     const peak = await peakStatsWith(tx, userId);
 
     // Suppression et décompte en une seule requête : les Zeni correspondent exactement aux exemplaires partis
@@ -345,6 +374,8 @@ export async function rebirthWith(db: PrismaClient, input: RebirthInput, ctx: Re
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${RANK_LOCK}::bigint)`;
     const [{ rank }] = await tx.$queryRaw<{ rank: number }[]>`SELECT (COALESCE(MAX("globalRank"), 0) + 1)::int AS rank FROM "PrestigeCycle"`;
     const cycleId = randomUUID();
+    // Le nouveau cycle commence avec des boosters à ouvrir (un Mythique par défaut), gardés dans la photo du cycle
+    const boosters = await grantRebirthBoosters(tx, userId, ctx.booster);
     await tx.prestigeCycle.create({
       data: {
         id: cycleId,
@@ -355,6 +386,8 @@ export async function rebirthWith(db: PrismaClient, input: RebirthInput, ctx: Re
         zeni,
         heirs: heirs.map((h) => ({ userCardId: h.userCardId, cardId: h.cardId, heritage: h.after, printing: h.printing, serial: h.serial })),
         stats: peak,
+        // Ce que la renaissance a crédité, tel quel : le réglage peut changer ensuite, la trace reste
+        ...(boosters && { boosters }),
         createdAt: now,
       },
     });
@@ -364,9 +397,6 @@ export async function rebirthWith(db: PrismaClient, input: RebirthInput, ctx: Re
         : (await tx.user.findUniqueOrThrow({ where: { id: userId }, select: { coins: true } })).coins;
     const bumped = await tx.user.updateMany({ where: { id: userId, prestige: player.prestige }, data: { prestige: { increment: 1 }, prestigedAt: now } });
     if (bumped.count !== 1) throw new RebirthError("STALE");
-
-    // Le nouveau cycle commence avec des boosters à ouvrir (un Mythique par défaut)
-    const boosters = await grantRebirthBoosters(tx, userId, ctx.booster);
 
     // Contrôle final : il ne reste au joueur que ses héritières
     if ((await tx.userCard.count({ where: { ownerId: userId } })) !== keepIds.length) throw new RebirthError("STALE");

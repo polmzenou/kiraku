@@ -2,6 +2,7 @@
 
 import { getLocale } from "next-intl/server";
 import { refresh, updateTag } from "next/cache";
+import type { FudaCopy } from "@/components/fuda/Fuda";
 import { isStaff } from "@/lib/admin/roles";
 import type { CardView } from "@/lib/boosters/view";
 import type { RebirthBoosterView } from "@/lib/prestige/cinematic";
@@ -9,11 +10,13 @@ import { z } from "@/lib/zod";
 import { cardViews } from "../boosters/display";
 import { LEADERBOARD_TAG } from "../collection/leaderboard";
 import { prisma } from "../db";
+import { copyMarksOf } from "../prestige/copy-marks";
 import { consecrateWith, ConsecrateError, type ConsecrateErrorCode } from "../prestige/consecrate-core";
 import { previewRebirthWith, rebirthWith, RebirthError, type Departed, type RebirthErrorCode, type RebirthHeir } from "../prestige/prestige-core";
 import { printingsUnlockedAt, rebirthBoosterView, rebirthCtx } from "../prestige/queries";
 import { getPrestigeRules } from "../prestige/rules";
 import { rateLimit } from "../ratelimit";
+import { getSetting } from "../settings";
 import { requireActiveUser } from "../user";
 
 // Prestige. Ordre des contrôles : session → Zod → interrupteur → rate limit, puis tout est relu sous le verrou
@@ -22,7 +25,8 @@ import { requireActiveUser } from "../user";
 
 export type PrestigeActionError = "NO_SESSION" | "INVALID" | "DISABLED" | "RATE_LIMITED" | RebirthErrorCode;
 
-type Failure = { ok: false; error: PrestigeActionError };
+/** `cardIds` (KEEP_INVALID) : cartes cochées sans exemplaire ordinaire, que le choix décoche. */
+type Failure = { ok: false; error: PrestigeActionError; cardIds?: string[] };
 
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
 const keepSchema = {
@@ -36,6 +40,7 @@ const rebirthSchema = z
     expectedPrestige: z.number().int().min(0).max(100_000),
     expectedZeni: z.number().int().min(0).max(100_000_000),
     sacrificedEngraved: z.array(id).max(5_000),
+    sacrificedHeirs: z.array(id).max(5_000),
   })
   .strict();
 
@@ -44,8 +49,17 @@ async function allowed(role: string | null | undefined, enabled: boolean) {
   return enabled || isStaff(role);
 }
 
+/**
+ * Renaissance et consécration réelles : interrupteur allumé, ou équipe tant que prestige.staffLiveWhenDisabled le
+ * permet (oui par défaut ; éteint, l'équipe ne garde que l'aperçu et le récapitulatif, sans rien écrire).
+ */
+async function allowedLive(role: string | null | undefined, enabled: boolean) {
+  if (enabled) return true;
+  return isStaff(role) && (await getSetting("prestige.staffLiveWhenDisabled"));
+}
+
 function failure(scope: string, e: unknown): Failure {
-  if (e instanceof RebirthError) return { ok: false, error: e.code };
+  if (e instanceof RebirthError) return e.cardIds && e.cardIds.length > 0 ? { ok: false, error: e.code, cardIds: [...e.cardIds] } : { ok: false, error: e.code };
   console.error(`[prestige] ${scope}`, e);
   throw e;
 }
@@ -54,8 +68,10 @@ export type RebirthPreviewView = {
   departed: Departed[];
   leaving: number;
   zeni: number;
-  /** Gravées qui partiraient : à confirmer une à une. */
-  engraved: { id: string; serial: number; printing: number; card: CardView }[];
+  /** Gravées qui partiraient : à confirmer une à une (sceau et taille du tirage avec le numéro). */
+  engraved: { id: string; serial: number; printing: number; seal: string | null; size: number | null; card: CardView }[];
+  /** Héritières non gravées qui partiraient : à confirmer de même. */
+  heirs: { id: string; heritage: number; card: CardView }[];
   /** Boosters offerts avec la renaissance. */
   booster: RebirthBoosterView | null;
 };
@@ -74,7 +90,13 @@ export async function previewRebirthAction(input: unknown): Promise<{ ok: true; 
   try {
     const preview = await previewRebirthWith(prisma, user.id, { copyIds: parsed.data.keepCopyIds, cardIds: parsed.data.keepCardIds }, ctx);
     const locale = await getLocale();
-    const [views, booster] = await Promise.all([cardViews(preview.engraved.map((e) => e.cardId), locale), rebirthBoosterView(ctx.booster, locale)]);
+    // Brouillons compris : chaque exemplaire à confirmer a sa vue (la carte existe tant qu'un exemplaire la porte),
+    // sinon la liste envoyée ne correspondrait jamais à celle du serveur (STALE sans fin)
+    const [views, marks, booster] = await Promise.all([
+      cardViews([...preview.engraved, ...preview.heirs].map((e) => e.cardId), locale, { includeDrafts: true }),
+      copyMarksOf(preview.engraved.map((e) => e.id)),
+      rebirthBoosterView(ctx.booster, locale),
+    ]);
     return {
       ok: true,
       preview: {
@@ -83,7 +105,12 @@ export async function previewRebirthAction(input: unknown): Promise<{ ok: true; 
         zeni: preview.zeni,
         engraved: preview.engraved.flatMap((e) => {
           const card = views.get(e.cardId);
-          return card ? [{ id: e.id, serial: e.serial, printing: e.printing, card }] : [];
+          const mark = marks.get(e.id);
+          return card ? [{ id: e.id, serial: e.serial, printing: e.printing, seal: mark?.seal ?? null, size: mark?.size ?? null, card }] : [];
+        }),
+        heirs: preview.heirs.flatMap((h) => {
+          const card = views.get(h.cardId);
+          return card ? [{ id: h.id, heritage: h.heritage, card }] : [];
         }),
         booster,
       },
@@ -97,9 +124,9 @@ export type RebirthResultView = {
   prestige: number;
   globalRank: number;
   zeni: number;
-  coins: number;
   departed: Departed[];
-  heirs: (RebirthHeir & { card: CardView })[];
+  /** Héritières, avec la marque complète de leur exemplaire (sceau et taille d'une gravée). */
+  heirs: (RebirthHeir & { card: CardView; copy: FudaCopy | null })[];
   /** Boosters crédités par la renaissance (à ouvrir depuis l'accueil ou le lien de fin du rite). */
   booster: RebirthBoosterView | null;
   /** Les éditions gravées tombent déjà à ce prestige (box de la cinématique). */
@@ -113,7 +140,7 @@ export async function rebirthAction(input: unknown): Promise<{ ok: true; result:
   const parsed = rebirthSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const ctx = await rebirthCtx();
-  if (!(await allowed(user.role, ctx.rules.enabled))) return { ok: false, error: "DISABLED" };
+  if (!(await allowedLive(user.role, ctx.rules.enabled))) return { ok: false, error: "DISABLED" };
   if (!(await rateLimit(`prestige-rebirth:${user.id}`, { limit: 3, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
   try {
     const outcome = await rebirthWith(
@@ -124,6 +151,7 @@ export async function rebirthAction(input: unknown): Promise<{ ok: true; result:
         keep: { copyIds: parsed.data.keepCopyIds, cardIds: parsed.data.keepCardIds },
         expectedZeni: parsed.data.expectedZeni,
         sacrificedEngraved: parsed.data.sacrificedEngraved,
+        sacrificedHeirs: parsed.data.sacrificedHeirs,
       },
       ctx,
     );
@@ -131,8 +159,9 @@ export async function rebirthAction(input: unknown): Promise<{ ok: true; result:
     updateTag(LEADERBOARD_TAG);
     refresh();
     const locale = await getLocale();
-    const [views, booster, printingsUnlocked] = await Promise.all([
-      cardViews(outcome.heirs.map((h) => h.cardId), locale),
+    const [views, marks, booster, printingsUnlocked] = await Promise.all([
+      cardViews(outcome.heirs.map((h) => h.cardId), locale, { includeDrafts: true }),
+      copyMarksOf(outcome.heirs.map((h) => h.userCardId)),
       rebirthBoosterView(outcome.boosters, locale),
       printingsUnlockedAt(outcome.prestige),
     ]);
@@ -142,11 +171,10 @@ export async function rebirthAction(input: unknown): Promise<{ ok: true; result:
         prestige: outcome.prestige,
         globalRank: outcome.globalRank,
         zeni: outcome.zeni,
-        coins: outcome.coins,
         departed: outcome.departed,
         heirs: outcome.heirs.flatMap((h) => {
           const card = views.get(h.cardId);
-          return card ? [{ ...h, card }] : [];
+          return card ? [{ ...h, card, copy: marks.get(h.userCardId) ?? null }] : [];
         }),
         booster,
         printingsUnlocked,
@@ -171,7 +199,7 @@ export async function consecrateAction(input: unknown): Promise<{ ok: true; card
   const parsed = consecrateSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const rules = await getPrestigeRules();
-  if (!(await allowed(user.role, rules.enabled))) return { ok: false, error: "DISABLED" };
+  if (!(await allowedLive(user.role, rules.enabled))) return { ok: false, error: "DISABLED" };
   // Propriété, statut, héritage et garde : vérifiés sous le verrou du joueur, dans la requête qui déplace l'exemplaire
   if (!(await rateLimit(`prestige-consecrate:${user.id}`, { limit: 5, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
   try {
