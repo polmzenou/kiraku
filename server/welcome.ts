@@ -3,6 +3,7 @@ import type { FudaCard } from "@/components/fuda/Fuda";
 import { announcementDue } from "@/lib/casino/phase";
 import { referralAnnouncementAt } from "@/lib/referral/announce";
 import { ANNOUNCEMENTS, pendingAnnouncement, type Announcement } from "@/lib/welcome/release";
+import { spoilerKeyOf } from "@/lib/spoiler";
 import { getCasinoRules } from "./casino/queries";
 import { prisma } from "./db";
 import { getSetting } from "./settings";
@@ -49,9 +50,11 @@ export type ShowcaseCard = FudaCard & { id: string };
 async function showcaseCards(ids: readonly string[]): Promise<ShowcaseCard[]> {
   const cards = await prisma.card.findMany({
     where: { id: { in: [...ids] }, status: { not: "ARCHIVED" } },
-    select: { id: true, name: true, nameNative: true, imageUrl: true, rank: true, rarity: true, power: true, ki: true, appearance: true, formName: true, spoiler: true },
+    select: { id: true, name: true, nameNative: true, imageUrl: true, rank: true, rarity: true, power: true, ki: true, appearance: true, formName: true, spoiler: true, seriesId: true, series: { select: { universeId: true } } },
   });
-  return cards.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+  return cards
+    .sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
+    .map(({ seriesId, series, ...card }) => ({ ...card, spoilerKey: card.spoiler ? spoilerKeyOf({ id: seriesId, universeId: series.universeId }) : null }));
 }
 
 export const getV2ShowcaseCards = () => showcaseCards(V2_SHOWCASE_CARD_IDS);

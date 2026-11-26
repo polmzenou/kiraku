@@ -13,6 +13,7 @@ import { wikiCardState, type WikiCollection } from "@/lib/catalog/wiki-state";
 import { getWikiCards } from "@/server/catalog/ownership";
 import type { CatalogCardDetail, CatalogCardSummary } from "@/server/catalog/queries";
 import { WikiBiography, WikiBiographySkeleton } from "./WikiBiography";
+import { spoilerImageAttrs } from "@/lib/spoiler";
 
 type DetailProps = {
   card: CatalogCardDetail;
@@ -74,7 +75,7 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
       <li key={other.anilistId} className="min-w-0">
         <Link href={`/wiki/${other.anilistId}`} aria-label={`${name} · ${tRarity(other.rarity)} · ${relatedStatus}`} className="flex min-h-24 items-center gap-3 lacquer rounded-card p-3 transition-colors hover:bg-surface-2">
           <div aria-hidden="true" className="relative aspect-[5/7] w-12 shrink-0 overflow-hidden rounded-md border border-border bg-surface-2">
-            <Image src={other.imageUrl} alt="" fill sizes="48px" className={`object-cover object-top${known ? "" : " grayscale"}`} data-spoiler={other.spoiler || undefined} />
+            <Image src={other.imageUrl} alt="" fill sizes="48px" className={`object-cover object-top${known ? "" : " grayscale"}`} {...spoilerImageAttrs(other.spoiler, other.spoilerKey)} />
             {!known && <span className="absolute inset-0 flex items-center justify-center bg-bg/70 font-title text-3xl font-bold text-text">?</span>}
           </div>
           <div aria-hidden="true" className="min-w-0">

@@ -98,7 +98,7 @@ export const StageCard = memo(function StageCard({ slot, card, state, atkBonus, 
             <span className="stage-flip" data-face={face}>
               <span className="stage-face">
                 {/* Parties lancées avant le mode spoiler : pas de champ, pas de flou */}
-                <Fuda card={{ ...card, spoiler: card.spoiler === true }} size="sm" variant="battle" tilt={false} sizes={sizes} />
+                <Fuda card={{ ...card, spoiler: card.spoiler === true, spoilerKey: card.universe?.key }} size="sm" variant="battle" tilt={false} sizes={sizes} />
               </span>
               <span className="stage-face stage-back">
                 <CardBack flat />

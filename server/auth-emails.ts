@@ -6,7 +6,7 @@ import type { Locale } from "@/i18n/routing";
 import { createToken, TOKEN_TTL_MS } from "@/lib/auth/tokens";
 import { prisma } from "./db";
 import { appUrl } from "./env";
-import { sendMail } from "./mail";
+import { type MailResult, sendMail } from "./mail";
 
 const PATHS = { VERIFY_EMAIL: "/verifier-email", RESET_PASSWORD: "/connexion/reinitialiser" } as const;
 
@@ -15,9 +15,9 @@ const NAMESPACES = { VERIFY_EMAIL: "email.verify", RESET_PASSWORD: "email.reset"
 /**
  * Crée un jeton à usage unique, envoie son lien, puis annule les précédents du même type, seulement
  * si l'e-mail est parti : un envoi raté laisse valide le dernier lien reçu par le joueur.
- * Ne lève jamais (renvoie false) : l'inscription ou l'action sur le compte continue sans e-mail.
+ * Ne lève jamais (renvoie un échec) : l'inscription ou l'action sur le compte continue sans e-mail.
  */
-async function sendLink(userId: string, email: string, type: AuthTokenType, locale: Locale): Promise<boolean> {
+async function sendLink(userId: string, email: string, type: AuthTokenType, locale: Locale): Promise<MailResult> {
   try {
     const { token, tokenHash } = createToken();
     const [t, created] = await Promise.all([
@@ -29,7 +29,7 @@ async function sendLink(userId: string, email: string, type: AuthTokenType, loca
     ]);
     const path = getPathname({ href: { pathname: PATHS[type], query: { token } }, locale });
     const sent = await sendMail({ to: email, subject: t("subject"), text: t("body", { link: `${appUrl()}${path}` }) });
-    if (sent) {
+    if (sent.ok) {
       await prisma.authToken.updateMany({
         where: { userId, type, usedAt: null, id: { not: created.id } },
         data: { usedAt: new Date() },
@@ -38,7 +38,7 @@ async function sendLink(userId: string, email: string, type: AuthTokenType, loca
     return sent;
   } catch (e) {
     console.error(`[mail] lien ${type} non envoyé`, e instanceof Error ? e.message : e);
-    return false;
+    return { ok: false, reason: "error" };
   }
 }
 

@@ -191,7 +191,32 @@
     "label": "Mode spoiler",
     "show": "Tout afficher",
     "hide": "Flouter les spoils",
-    "hint": "Floute l'illustration des personnages et des transformations qui dévoilent l'histoire. Le nom, la rareté et les stats restent visibles."
+    "hint": "Par défaut, l'illustration des personnages et des transformations qui dévoilent l'histoire est floutée. Le nom, la rareté et les stats restent visibles. Réglage enregistré sur ton compte.",
+    "saveFailed": "Réglage non enregistré. Réessaie.",
+    "byUniverseLink": "Choisir par univers",
+    "universes": {
+      "title": "Spoilers par univers",
+      "intro": "Toutes les cartes spoil sont floutées par défaut. Décoche un univers que tu as rattrapé pour voir ses cartes en clair ; un nouvel univers arrive toujours flouté.",
+      "legend": "Univers dont les cartes spoil sont floutées",
+      "search": "Chercher un univers",
+      "summary": "{shown, plural, =0 {Tout est flouté} one {# univers en clair} other {# univers en clair}} sur {total}",
+      "reset": "Tout reflouter",
+      "cards": "{count, plural, one {# carte spoil} other {# cartes spoil}}",
+      "blurred": "flouté",
+      "shown": "en clair",
+      "switchLabel": "Flouter les cartes spoil de {name}",
+      "showAllActive": "« Tout afficher » est actif : aucune carte n'est floutée. Choisis « Flouter les spoils » pour régler univers par univers.",
+      "empty": "Aucune carte spoil pour le moment.",
+      "noMatch": "Aucun univers ne correspond.",
+      "errors": {
+        "NO_SESSION": "Session expirée : recharge la page.",
+        "INVALID": "Univers inconnu.",
+        "RATE_LIMITED": "Trop de changements d'un coup : patiente un instant.",
+        "UNKNOWN_UNIVERSE": "Cet univers n'a plus de carte spoil : recharge la page.",
+        "FULL": "Trop d'univers en clair : refloute-en avant d'en ajouter.",
+        "UNEXPECTED": "Réglage non enregistré. Réessaie."
+      }
+    }
   },
   "locale": {
     "label": "Langue",
@@ -298,7 +323,8 @@
       "tokenInvalid": "Ce lien n'est plus valable. Demande-en un nouveau.",
       "unexpected": "Une erreur est survenue. Réessaie.",
       "tooFast": "Envoi trop rapide : patiente un instant puis réessaie.",
-      "formExpired": "Le formulaire a expiré : recharge la page puis réessaie."
+      "formExpired": "Le formulaire a expiré : recharge la page puis réessaie.",
+      "mailFailed": "L'e-mail n'a pas pu partir. Réessaie dans quelques minutes."
     },
     "fieldErrors": {
       "required": "Champ obligatoire.",
@@ -3632,6 +3658,37 @@
       "reasonHint": "Interne : visible seulement dans le journal admin.",
       "message": "Message au joueur (facultatif)",
       "messagePlaceholder": "Ex. : récompense événement. Affiché avec la notification."
+    },
+    "mail": {
+      "title": "E-mails",
+      "intro": "Liens de vérification d'adresse et de mot de passe oublié, envoyés par Resend. L'expéditeur doit être sur un domaine vérifié chez Resend (DKIM, SPF).",
+      "state": "État",
+      "states": {
+        "on": "Configuré",
+        "test": "Expéditeur de test",
+        "off": "Non configuré"
+      },
+      "sender": "Domaine d'expédition",
+      "none": "aucun",
+      "offHelp": "RESEND_API_KEY ou MAIL_FROM manquant dans le .env du serveur : aucun e-mail ne part. Sur le VPS, les clés vont dans ~/kiraku/.env (pas .env.local, qui n'est pas copié dans la release), puis on redéploie.",
+      "testHelp": "MAIL_FROM utilise l'adresse de test @resend.dev : Resend ne livre qu'au propriétaire du compte Resend et refuse tous les joueurs. Vérifie kiraku-kun.com chez Resend puis mets MAIL_FROM=\"Kiraku <noreply@kiraku-kun.com>\".",
+      "testTo": "Envoyer un e-mail de test à",
+      "send": "Envoyer un e-mail de test",
+      "sending": "Envoi…",
+      "sent": "E-mail parti. Vérifie la boîte de réception (et les indésirables).",
+      "testSubject": "Kiraku : e-mail de test",
+      "testBody": "Bonjour {name},\n\nCet e-mail de test confirme que Kiraku peut envoyer des e-mails (vérification d'adresse, mot de passe oublié).\n\nL'équipe Kiraku",
+      "reasons": {
+        "disabled": "Envoi non configuré sur ce serveur (RESEND_API_KEY ou MAIL_FROM manquant).",
+        "refused": "Resend a refusé l'e-mail :",
+        "unreachable": "Resend ne répond pas :",
+        "error": "Erreur inattendue pendant l'envoi."
+      },
+      "errors": {
+        "FORBIDDEN": "Réservé aux admins.",
+        "INVALID": "Adresse e-mail invalide.",
+        "RATE_LIMITED": "Trop d'essais : 5 e-mails de test par heure."
+      }
     },
     "general": {
       "title": "Général",
@@ -7174,7 +7231,6 @@
       "consent": "Retient tes choix de cookies.",
       "theme": "Retient le thème Yoru ou Washi.",
       "motion": "Retient si les animations sont coupées.",
-      "spoiler": "Retient si les illustrations spoil sont floutées (mode spoiler).",
       "locale": "Retient la langue choisie.",
       "sound": "Retient si le son est activé.",
       "discordLater": "Retient quand tu as repoussé l'invitation Discord (« Plus tard »).",

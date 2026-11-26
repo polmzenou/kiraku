@@ -4,6 +4,7 @@ import type { Rarity } from "@/lib/catalog/rarity";
 import type { ShowcaseCard } from "@/lib/collection/view";
 import { fudaCopyOf } from "@/lib/prestige/printing";
 import { layoutCapacity, type ShowcaseLayoutId } from "@/lib/showcase/layouts";
+import { spoilerKeyOf } from "@/lib/spoiler";
 import { prisma } from "../db";
 import { getPrintingSeals } from "../prestige/rules";
 import { storedLayout } from "./core";
@@ -67,7 +68,8 @@ export async function getShowcaseCards(showcaseId: string, ownerId: string, layo
               power: true,
               ki: true,
               spoiler: true,
-              series: { select: { titleRomaji: true, titleEnglish: true } },
+              seriesId: true,
+              series: { select: { titleRomaji: true, titleEnglish: true, universeId: true } },
             },
           },
         },
@@ -93,6 +95,7 @@ export async function getShowcaseCards(showcaseId: string, ownerId: string, layo
       power: c.power,
       ki: c.ki,
       spoiler: c.spoiler,
+      spoilerKey: c.spoiler ? spoilerKeyOf({ id: c.seriesId, universeId: c.series.universeId }) : null,
       series: seriesTitle(c.series, locale),
       copy: fudaCopyOf({ heritage, printing, serial, size: edition?.size ?? null }, seals),
     };

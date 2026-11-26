@@ -5,7 +5,6 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { isActive, MOBILE_NAV_ITEMS, MOBILE_NAV_MORE, type NavAlerts, type NavBadges, type NavFeatures } from "@/lib/nav";
 import type { Theme } from "@/lib/theme";
-import type { SpoilerMode } from "@/lib/spoiler";
 import { logout } from "@/server/actions/account";
 import { LocaleSwitcher } from "../LocaleSwitcher";
 import { SpoilerToggle } from "../SpoilerToggle";
@@ -20,7 +19,6 @@ import { AlertDot, NavLinks, stackRowClass } from "./NavLinks";
  */
 export function MobileMenu({
   theme,
-  spoiler,
   isAdmin,
   accountHref,
   signedIn,
@@ -29,7 +27,6 @@ export function MobileMenu({
   badges = {},
 }: {
   theme: Theme;
-  spoiler: SpoilerMode;
   isAdmin: boolean;
   accountHref: string;
   signedIn: boolean;
@@ -164,7 +161,7 @@ export function MobileMenu({
           <section className="flex flex-col gap-5">
             <h3 className="text-sm font-bold text-text-muted">{t("preferences")}</h3>
             <ThemeToggle initial={theme} />
-            <SpoilerToggle initial={spoiler} />
+            <SpoilerToggle showUniversesLink />
             <LocaleSwitcher />
           </section>
 

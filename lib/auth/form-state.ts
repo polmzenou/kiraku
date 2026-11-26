@@ -12,6 +12,7 @@ export const FORM_ERROR_CODES = [
   "tokenInvalid",
   "tooFast",
   "formExpired",
+  "mailFailed", // Resend a refusé l'e-mail ou ne répond pas (le lien précédent reste valable)
   "unexpected",
 ] as const;
 export type FormErrorCode = (typeof FORM_ERROR_CODES)[number];

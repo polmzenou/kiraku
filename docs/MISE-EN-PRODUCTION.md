@@ -33,7 +33,16 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
   `https://DOMAINE/api/auth/callback/discord`, et `ADMIN_DISCORD_ID` relus.
 - [ ] Si les annonces de liaison Discord sont utilisées : `DISCORD_BOT_TOKEN` et
   `DISCORD_LINK_CHANNEL_ID` configurés, permissions du salon vérifiées.
-- [ ] Resend : `RESEND_API_KEY`, `MAIL_FROM`, domaine vérifié, SPF et DKIM valides.
+- [ ] Resend : domaine vérifié, puis `RESEND_API_KEY` et `MAIL_FROM` dans `~/kiraku/.env` (pas `.env.local`).
+  1. Resend, Domains, Add domain : `kiraku-kun.com`, région UE.
+  2. Zone DNS du domaine : les enregistrements affichés par Resend (TXT `resend._domainkey` pour DKIM, MX et TXT SPF
+     sur `send`), plus un TXT `_dmarc` = `v=DMARC1; p=none;`. Le MX de la racine (boîte de réception) ne change pas.
+     Verify quand Resend les voit.
+  3. Clé API « Sending access » limitée au domaine : `RESEND_API_KEY=re_…`.
+  4. `MAIL_FROM="Kiraku <noreply@kiraku-kun.com>"`. Jamais `@resend.dev` : Resend ne livre alors qu'au propriétaire
+     du compte (`check-deploy-env` avertit).
+  5. Redéployer (`.env` est copié dans la release au build), puis /admin/general, « Envoyer un e-mail de test ».
+     Un refus affiche la raison donnée par Resend (aussi dans `pm2 logs kiraku`, préfixe `[mail]`).
 - [ ] `APP_URL` correspond à l'origine HTTPS définitive, sans chemin.
 - [ ] Limitation anti-abus : en base (table `RateLimit`), rien à configurer. Supprimer les anciennes variables `UPSTASH_REDIS_REST_*` / `KV_REST_API_*` si elles traînent encore.
   Aucun repli mémoire en production ; vérifier les quotas et les erreurs Redis.

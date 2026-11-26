@@ -271,7 +271,9 @@ export async function resendVerification(): Promise<FormState> {
     return { error: "rateLimited" };
   }
   const sent = await sendVerificationEmail(user.id, user.email, await getLocale());
-  return { done: true, mailNotSent: !sent };
+  if (sent.ok) return { done: true };
+  // Envoi pas configuré : avis « pas encore activé » ; refus de Resend ou panne : réessayer plus tard
+  return sent.reason === "disabled" ? { done: true, mailNotSent: true } : { error: "mailFailed" };
 }
 
 class FormError extends Error {
