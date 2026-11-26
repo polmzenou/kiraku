@@ -30,7 +30,8 @@ export async function getPlayerDecor(userId: string): Promise<PlayerDecor> {
 export type DecorColumns = { frameStyle: string | null; nameColor: string | null; prestige: number };
 
 /** Joueur tel que les listes sociales et le Marché l'affichent. */
-export type PlayerRef = { id: string; username: string; image: string | null; isGuest: boolean; decor: PlayerDecor };
+/** `masked` : pseudo remplacé par un libellé (profil caché à ce lecteur), à afficher sans lien ni avatar. */
+export type PlayerRef = { id: string; username: string; image: string | null; isGuest: boolean; decor: PlayerDecor; masked?: true };
 
 export const playerRefSelect = { id: true, username: true, image: true, isGuest: true, ...decorSelect } as const satisfies Prisma.UserSelect;
 

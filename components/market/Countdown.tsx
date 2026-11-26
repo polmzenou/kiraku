@@ -37,7 +37,7 @@ export function Countdown({
   // Moins de 2 minutes : la fenêtre anti-sniping, en vermillon
   const urgent = remaining > 0 && remaining < 120_000;
   return (
-    <span className={`tabular-nums ${urgent ? "font-bold text-shu" : ""} ${className}`}>
+    <span role="timer" className={`tabular-nums ${urgent ? "font-bold text-shu" : ""} ${className}`}>
       {remaining > 0 ? t("endsIn", { time: format(remaining) }) : t("ended")}
     </span>
   );

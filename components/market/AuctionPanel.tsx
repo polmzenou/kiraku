@@ -149,7 +149,9 @@ export function AuctionPanel({
   const leader = shown.leader ?? anonymousPlayer(t("detail.anonymous"));
 
   return (
-    <section className="flex flex-col gap-4 lacquer rounded-card p-4" aria-live="polite">
+    // Pas de région aria-live sur tout le panneau : le compte à rebours (role="timer") y était relu chaque seconde ;
+    // le message d'état garde son propre role status ou alert
+    <section className="flex flex-col gap-4 lacquer rounded-card p-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col">
           <span className="text-sm text-text-muted">

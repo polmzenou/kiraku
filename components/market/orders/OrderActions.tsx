@@ -38,8 +38,12 @@ export function SellToOrder({ orderId, price, net, primary = true }: { orderId: 
       setError(null);
       try {
         const res = await fillBuyOrderAction({ orderId, expectedPrice: price });
-        if (res.ok) setSold(res.net);
-        else {
+        if (res.ok) {
+          setSold(res.net);
+          // La page (avis rempli, solde de l'en-tête) se recharge une fois le message lu : rechargée tout de suite par
+          // l'action, elle démontait cette tuile avant qu'il s'affiche
+          setTimeout(() => router.refresh(), 2500);
+        } else {
           setError(res.error);
           setConfirming(false);
           if (res.error === "STALE" || res.error === "CLOSED") router.refresh();

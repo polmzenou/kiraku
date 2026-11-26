@@ -7,7 +7,7 @@
 // les blocages et un exemplaire libre de chaque côté sont relus, puis les deux exemplaires changent
 // de propriétaire par des écritures conditionnelles (moveCopy). Une annonce ou une offre promet un exemplaire
 // ordinaire, sauf si son auteur a désigné une pièce spéciale (userCardId), revérifiée à l'acceptation.
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import type { Rarity } from "@/lib/catalog/rarity";
 import {
   checkExchanger,
@@ -420,22 +420,28 @@ export async function declineOfferWith(
  * offre en attente) et ferme leurs offres. Balayage paresseux, à la lecture de « Mes échanges ».
  */
 export async function expireListingsFor(db: PrismaClient, userId: string, now = new Date()) {
+  await expireListingsWhere(db, { OR: [{ ownerId: userId }, { offers: { some: { bidderId: userId, status: "PENDING" } } }] }, now, 100);
+}
+
+/** Cron du marché : annonces échues de tous les joueurs, par lot. Rend le nombre d'annonces closes. */
+export async function expireDueListingsWith(db: PrismaClient, now = new Date(), limit = 100): Promise<number> {
+  return expireListingsWhere(db, {}, now, limit);
+}
+
+async function expireListingsWhere(db: PrismaClient, scope: Prisma.TradeListingWhereInput, now: Date, limit: number): Promise<number> {
   const due = await db.tradeListing.findMany({
-    where: {
-      status: "OPEN",
-      expiresAt: { lte: now },
-      OR: [{ ownerId: userId }, { offers: { some: { bidderId: userId, status: "PENDING" } } }],
-    },
+    where: { ...scope, status: "OPEN", expiresAt: { lte: now } },
     select: { id: true },
-    take: 100,
+    take: limit,
   });
-  if (due.length === 0) return;
+  if (due.length === 0) return 0;
   const ids = due.map((l) => l.id);
   await db.$transaction([
     db.tradeListing.updateMany({ where: { id: { in: ids }, status: "OPEN" }, data: { status: "EXPIRED", resolvedAt: now } }),
     db.listingOffer.updateMany({ where: { listingId: { in: ids }, status: "PENDING" }, data: { status: "CLOSED", resolvedAt: now } }),
     db.discordPost.updateMany({ where: { listingId: { in: ids }, attempts: 0 }, data: { nextAttemptAt: now } }),
   ]);
+  return due.length;
 }
 
 /** L'offrant a vu la révélation des cartes reçues. */

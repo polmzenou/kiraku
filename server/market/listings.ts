@@ -8,6 +8,7 @@ import { copyMarksOf, withCopy } from "../prestige/copy-marks";
 import { ownedCardIds } from "../collection/owned";
 import { promisedCopyWhere, type PromisedCopy } from "../collection/transfer";
 import { prisma } from "../db";
+import { maskablePlayerSelect, maskedPlayerRefs } from "../collection/public-names";
 import { playerRefSelect as playerSelect, toPlayerRef, type PlayerRef } from "../profile/decor";
 import { expireListingsFor } from "./listing-core";
 
@@ -85,7 +86,17 @@ export async function listListings(input: {
   const others = input.filter === "missing" || input.filter === "canAccept";
   const excluded = others ? [...blocked, input.viewerId] : blocked;
   const and: Prisma.TradeListingWhereInput[] = [];
-  if (q) and.push({ OR: [{ card: { searchText: { contains: q } } }, { owner: { username: { contains: q, mode: "insensitive" } } }] });
+  // Pseudo cherché tel quel (un « _ » ou un « - » y est permis), et seulement parmi les profils publics : un profil
+  // privé ou réservé aux amis ne se retrouve pas par son pseudo
+  const name = input.q.trim().slice(0, SEARCH_MAX_LENGTH);
+  if (q || name) {
+    and.push({
+      OR: [
+        ...(q ? [{ card: { searchText: { contains: q } } }] : []),
+        ...(name ? [{ owner: { username: { contains: name, mode: "insensitive" as const }, profileVisibility: "PUBLIC" as const } }] : []),
+      ],
+    });
+  }
   if (input.filter === "missing") and.push({ card: { copies: { none: { ownerId: input.viewerId } } } });
   if (input.filter === "canAccept") and.push({ wants: { some: { card: { copies: { some: { ownerId: input.viewerId, status: "COLLECTION" } } } } } });
   if (input.filter === "mine") and.push({ offers: { some: { bidderId: input.viewerId, status: "PENDING" } } });
@@ -110,7 +121,7 @@ export async function listListings(input: {
       cardId: true,
       userCardId: true,
       note: true,
-      owner: { select: playerSelect },
+      owner: { select: maskablePlayerSelect },
       wants: { select: { cardId: true } },
       offers: { where: { status: "PENDING" }, select: { id: true, bidderId: true, cardId: true, userCardId: true } },
     },
@@ -119,6 +130,8 @@ export async function listListings(input: {
   const nextCursor = rows.length > LISTINGS_PAGE_SIZE ? (page[page.length - 1]?.id ?? null) : null;
 
   const wantIds = [...new Set(page.flatMap((r) => r.wants.map((w) => w.cardId)))];
+  // Tableau public : auteur masqué comme sur le reste du site (profil privé, réservé aux amis, banni, supprimé)
+  const owners = await maskedPlayerRefs(input.viewerId, page.map((r) => r.owner));
   const [ownerFree, viewerFree, views, viewerOwned, marks] = await Promise.all([
     availableListings(page.map((r) => ({ id: r.id, ownerId: r.owner.id, cardId: r.cardId, userCardId: r.userCardId }))),
     wantIds.length
@@ -148,7 +161,7 @@ export async function listListings(input: {
         id: r.id,
         createdAt: r.createdAt,
         expiresAt: r.expiresAt,
-        owner: toPlayerRef(r.owner),
+        owner: owners.get(r.owner.id) ?? toPlayerRef(r.owner),
         card: withCopy(card, r.userCardId, marks),
         viewerOwns: !mine && owned.has(r.cardId),
         note: r.note,

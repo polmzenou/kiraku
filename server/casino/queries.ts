@@ -16,9 +16,8 @@ import { cardViews } from "../boosters/display";
 import { copyMarksOf, withCopy } from "../prestige/copy-marks";
 import { getRarityDefinitions } from "../catalog/rarities";
 import { prisma } from "../db";
-import { NO_DECOR } from "@/lib/profile/decor";
-import { publicNamesFor } from "../collection/public-names";
-import { playerRefSelect, toPlayerRef, type PlayerRef } from "../profile/decor";
+import { maskablePlayerSelect, maskedPlayerRefs } from "../collection/public-names";
+import { toPlayerRef, type PlayerRef } from "../profile/decor";
 import { getSetting } from "../settings";
 import type { CoinFlipContext } from "./coinflip-core";
 
@@ -124,25 +123,15 @@ async function toViews(rows: readonly FlipRecord[], viewerId: string | null, loc
   const playerIds = [...new Set(rows.flatMap((r) => [r.creatorId, r.reservedForId, r.opponentId].filter((x): x is string => x !== null)))];
   const cardIds = rows.flatMap((r) => [r.creatorCardId, ...(r.opponentCardId ? [r.opponentCardId] : [])]);
   const [players, cards, marks] = await Promise.all([
-    prisma.user.findMany({
-      where: { id: { in: playerIds } },
-      select: { ...playerRefSelect, profileVisibility: true, bannedAt: true, anonymizedAt: true },
-    }),
+    prisma.user.findMany({ where: { id: { in: playerIds } }, select: maskablePlayerSelect }),
     cardViews(cardIds, locale),
     // Une héritière ou une gravée misée : la table, le salon et le résultat montrent l'exemplaire
     copyMarksOf(rows.flatMap((r) => [r.creatorUserCardId, r.opponentUserCardId])),
   ]);
   // Mêmes règles que le reste du site : un profil privé, réservé aux amis, banni ou supprimé reste « Joueur », sans
   // avatar ni décor, sauf pour les joueurs de sa propre table (ils jouent l'un contre l'autre, la réservation se fait au pseudo)
-  const shown = await publicNamesFor(viewerId, players);
   const real = new Map(players.map((p) => [p.id, toPlayerRef(p)]));
-  const masked = new Map(
-    players.map((p) => {
-      const ref = real.get(p.id)!;
-      const name = shown(p);
-      return [p.id, name.name === p.username ? ref : { ...ref, username: name.name, image: null, decor: NO_DECOR }];
-    }),
-  );
+  const masked = await maskedPlayerRefs(viewerId, players);
   return rows.flatMap((r) => {
     const seated = viewerId !== null && [r.creatorId, r.opponentId, r.reservedForId].includes(viewerId);
     const byId = seated ? real : masked;

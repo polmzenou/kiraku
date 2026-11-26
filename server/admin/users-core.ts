@@ -22,6 +22,7 @@ import { writeAdminLog } from "./log";
 import { consumeWishlist } from "../collection/wishlist-core";
 import { recordDiscoveries } from "../collection/discovery";
 import { withdrawCasinoFor } from "../casino/coinflip-core";
+import { withdrawMarketFor } from "../market/withdraw";
 
 export class AdminUserMutationError extends Error {
   constructor(readonly code: AdminUserError) { super(code); }
@@ -164,7 +165,11 @@ export async function mutateAdminUserWith(db: PrismaClient, adminId: string, inp
   await mutateUnderLock(db, adminId, input, onNotified);
   // Bannissement : ses tables de pile ou face se ferment après coup (verrou des tables avant celui des joueurs).
   // Entre-temps, un joueur banni ne pose plus et ses tables ne se relèvent plus.
-  if (input.kind === "account" && input.banned) await withdrawCasinoFor(db, input.userId, new Date());
+  if (input.kind === "account" && input.banned) {
+    const now = new Date();
+    await withdrawCasinoFor(db, input.userId, now);
+    await withdrawMarketFor(db, { userId: input.userId, adminId, now }, onNotified);
+  }
 }
 
 async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUserMutation, onNotified?: OnNotified) {

@@ -35,6 +35,8 @@ export function shownPlayer(shown: string | ShownName, player: { username: strin
 }
 
 /** Depuis un PlayerRef (échanges) : `name` est le nom affiché, qui diffère du pseudo pour un invité. */
-export function shownPlayerRef(name: string, player: { username: string; image: string | null; decor: PlayerDecor }): ShownPlayer {
+export function shownPlayerRef(name: string, player: { username: string; image: string | null; decor: PlayerDecor; masked?: true }): ShownPlayer {
+  // Pseudo masqué par le serveur (profil privé, banni…) : le libellé seul, ni lien vers un profil ni avatar
+  if (player.masked) return anonymousPlayer(name);
   return { name, profile: player.username, image: player.image, color: player.decor.nameColor, frame: player.decor.frame, prestige: player.decor.prestige };
 }

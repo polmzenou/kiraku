@@ -2,8 +2,10 @@ import "server-only";
 import { cache } from "react";
 import { getTranslations } from "next-intl/server";
 import { shownNameFor, type NamedPlayer, type ShownName } from "@/lib/collection/display-name";
+import type { Prisma } from "@/generated/prisma/client";
+import { NO_DECOR } from "@/lib/profile/decor";
 import { prisma } from "../db";
-import { decorSelect } from "../profile/decor";
+import { decorSelect, playerRefSelect, toPlayerRef, type PlayerRef } from "../profile/decor";
 import { getCurrentUser } from "../user";
 
 /** Champs à sélectionner sur un User pour décider de l'affichage de son pseudo. */
@@ -18,6 +20,28 @@ export const revealsHiddenNames = cache(async (viewerId: string | null): Promise
   const viewer = await getCurrentUser();
   return viewer?.id === viewerId && viewer.role === "ADMIN" && !viewer.bannedAt;
 });
+
+/** Champs d'un joueur affiché avec son avatar et son décor, plus ce qu'il faut pour décider s'il est masqué. */
+export const maskablePlayerSelect = { ...playerRefSelect, profileVisibility: true, bannedAt: true, anonymizedAt: true } as const;
+
+/**
+ * Joueurs à afficher avec avatar et décor (casino, annonces d'échange) : mêmes règles que le profil public. Un profil
+ * privé, réservé aux amis, banni ou supprimé devient « Joueur » (ou « Compte supprimé »), sans avatar ni décor ; un
+ * admin lit le vrai pseudo. Rend une Map id → PlayerRef.
+ */
+export async function maskedPlayerRefs(
+  viewerId: string | null,
+  players: readonly Prisma.UserGetPayload<{ select: typeof maskablePlayerSelect }>[],
+): Promise<Map<string, PlayerRef>> {
+  const shown = await publicNamesFor(viewerId, players);
+  return new Map(
+    players.map((p) => {
+      const ref = toPlayerRef(p);
+      const name = shown(p).name;
+      return [p.id, name === p.username ? ref : { ...ref, username: name, image: null, decor: NO_DECOR, masked: true as const }];
+    }),
+  );
+}
 
 /**
  * Prépare l'affichage des pseudos de plusieurs joueurs pour un visiteur : une requête pour les

@@ -150,7 +150,7 @@ export async function fillBuyOrderAction(input: unknown): Promise<FillBuyOrderRe
       { sellerId: g.user.id, orderId: parsed.data.orderId, expectedPrice: parsed.data.expectedPrice, now: new Date(), rules: await getMarketRules() },
       pushLater,
     );
-    refresh();
+    // Pas de refresh() ici : la tuile qui affiche « Vendu » serait démontée ; le client recharge après l'avoir montrée
     return { ok: true, net: res.net, coins: res.coins };
   } catch (e) {
     return failure("vente", e);

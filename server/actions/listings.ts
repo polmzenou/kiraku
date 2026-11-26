@@ -173,8 +173,11 @@ export async function acceptOfferAction(input: unknown): Promise<{ ok: true; car
         if (offer) await syncDiscordListing(offer.listingId);
       } catch { console.warn("[discord] synchronisation d’un échange reportée au prochain passage."); }
     });
-    refresh();
-    if (!res.ok) return { ok: false, error: res.code };
+    // Réussite : pas de refresh(), qui démontait la révélation de la carte reçue (le client recharge à sa fermeture)
+    if (!res.ok) {
+      refresh();
+      return { ok: false, error: res.code };
+    }
     const view = (await cardViews([res.received.cardId], await getLocale())).get(res.received.cardId);
     if (!view) return { ok: false, error: "UNAVAILABLE" };
     return { ok: true, card: { ...view, userCardId: res.received.userCardId, isNew: res.received.isNew, wished: res.received.wished, featured: false } };

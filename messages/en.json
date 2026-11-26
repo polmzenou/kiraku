@@ -7635,7 +7635,8 @@
       "CLOSED": "This trade is no longer open.",
       "NOT_OFFERED": "This card isn't part of the offer.",
       "CARD_GONE": "One of the cards is no longer available: the trade is cancelled.",
-      "CHOOSE_COPY": "Only special copies of this card are left (heirloom or engraved). Choose the one that goes."
+      "CHOOSE_COPY": "Only special copies of this card are left (heirloom or engraved). Choose the one that goes.",
+      "TOO_NEW": "Your account is too new to trade: come back in a few hours."
     },
     "noteFrom": "Note from {name}",
     "declineNoteFrom": "{name}'s reason for declining",

@@ -7,6 +7,7 @@ import { banState, followDecision, ipBanKey, ipKeyPatterns, signalBanKey, type B
 import { writeAdminLog } from "../admin/log";
 import { banAccountWith } from "../admin/users-core";
 import { withdrawCasinoFor } from "../casino/coinflip-core";
+import { withdrawMarketFor } from "../market/withdraw";
 import { lockPlayers } from "../social/lock";
 
 type Db = PrismaClient | Prisma.TransactionClient;
@@ -194,7 +195,10 @@ export async function banNetworkWith(
     return { bans: toBan.length, account };
   }, TX);
   // Comme pour l'édition du compte : ses tables de pile ou face se ferment après coup
-  if (result.account) await withdrawCasinoFor(db, input.userId, input.now);
+  if (result.account) {
+    await withdrawCasinoFor(db, input.userId, input.now);
+    await withdrawMarketFor(db, { userId: input.userId, adminId: input.adminId, now: input.now });
+  }
   return result;
 }
 
@@ -214,7 +218,10 @@ export async function banGroupWith(
     await assertAdmin(tx, input.adminId);
     return banGroupInTx(tx, input);
   }, TX);
-  for (const id of result.banned) await withdrawCasinoFor(db, id, input.now);
+  for (const id of result.banned) {
+    await withdrawCasinoFor(db, id, input.now);
+    await withdrawMarketFor(db, { userId: id, adminId: input.adminId, now: input.now });
+  }
   return { accounts: result.banned.length, bans: result.bans, skipped: result.skipped };
 }
 

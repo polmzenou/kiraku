@@ -7635,7 +7635,8 @@
       "CLOSED": "Cet échange n'est plus ouvert.",
       "NOT_OFFERED": "Cette carte ne fait pas partie de l'offre.",
       "CARD_GONE": "Une des cartes n'est plus disponible : l'échange est annulé.",
-      "CHOOSE_COPY": "Il ne reste que des exemplaires spéciaux de cette carte (héritière ou gravée). Choisis celui qui part."
+      "CHOOSE_COPY": "Il ne reste que des exemplaires spéciaux de cette carte (héritière ou gravée). Choisis celui qui part.",
+      "TOO_NEW": "Ton compte est trop récent pour échanger : reviens dans quelques heures."
     },
     "noteFrom": "Mot de {name}",
     "declineNoteFrom": "Motif du refus de {name}",

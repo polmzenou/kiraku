@@ -30,7 +30,7 @@ import { getCurrentUser } from "../user";
 // interrupteurs → rate limit → propriété et règles relues sous verrou (server/social/trade-core.ts).
 // Le client n'envoie que des ids de cartes et un pseudo ; les exemplaires sont choisis par le serveur.
 
-export type TradeActionError = TradeErrorCode | "NO_SESSION" | "INVALID" | "GUEST" | "DISABLED" | "RATE_LIMITED" | "UNAVAILABLE";
+export type TradeActionError = TradeErrorCode | "NO_SESSION" | "INVALID" | "GUEST" | "DISABLED" | "RATE_LIMITED" | "UNAVAILABLE" | "TOO_NEW";
 type Failure = { ok: false; error: TradeActionError };
 
 const id = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
@@ -73,6 +73,10 @@ async function guard<S extends z.ZodType>(input: unknown, schema: S, bucket: str
   if (user.isGuest) return { error: "GUEST" as const };
   if (user.bannedAt || isFrozen(user)) return { error: "UNAVAILABLE" as const };
   if (!(await getSetting("social.enabled")) || !(await getSetting("trades.enabled"))) return { error: "DISABLED" as const };
+  // Barrière anti-multicomptes du Marché, des cadeaux et du casino : le seul transfert de carte qui y échappait.
+  // Comptée depuis l'inscription (un invité peut exister longtemps avant), pour proposer comme pour accepter
+  const since = (user.registeredAt ?? user.createdAt).getTime();
+  if (Date.now() - since < (await getSetting("market.minAccountAgeHours")) * 3_600_000) return { error: "TOO_NEW" as const };
   if (!(await rateLimit(`${bucket}:${user.id}`, rule)).success) return { error: "RATE_LIMITED" as const };
   return { user, data: parsed.data as z.infer<S> };
 }
@@ -127,8 +131,11 @@ export async function acceptTradeAction(input: unknown): Promise<{ ok: true; car
       },
       pushLater,
     );
-    refresh();
-    if (!res.ok) return { ok: false, error: res.code };
+    // Réussite : pas de refresh(), qui démontait la révélation de la carte reçue (le client recharge à sa fermeture)
+    if (!res.ok) {
+      refresh();
+      return { ok: false, error: res.code };
+    }
     const view = (await cardViews([res.received.cardId], await getLocale())).get(res.received.cardId);
     if (!view) return { ok: false, error: "UNAVAILABLE" };
     return { ok: true, card: { ...view, userCardId: res.received.userCardId, isNew: res.received.isNew, wished: res.received.wished, featured: false } };

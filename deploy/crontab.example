@@ -8,7 +8,8 @@
 #   3. vérifier le lendemain : grep CRON /var/log/syslog et `pm2 logs` (lignes [cron]).
 # Adapter le port s'il n'est pas 3000. Les heures sont celles du VPS (UTC par défaut sur Ubuntu).
 
-0 4 * * *  curl -fsS -m 120 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/market   >/dev/null
+# Marché : ventes terminées réglées, avis et annonces échus clos, toutes les 5 minutes (route bornée à 45 s).
+*/5 * * * * curl -fsS -m 55 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/market >/dev/null
 15 4 * * * curl -fsS -m 120 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/battle   >/dev/null
 30 4 * * * curl -fsS -m 120 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/accounts >/dev/null
 45 4 * * * curl -fsS -m 120 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/casino   >/dev/null

@@ -5,6 +5,7 @@ import { planClawback, sumGrants, type ClawbackPlan, type RewardGrant } from "@/
 import { writeAdminLog } from "../admin/log";
 import { banGroupInTx } from "../anticheat/network-ban-core";
 import { withdrawCasinoFor } from "../casino/coinflip-core";
+import { withdrawMarketFor } from "../market/withdraw";
 import { consumeBoostersUpTo } from "../economy/credits";
 import { debit } from "../economy/ledger";
 import { lockPlayers } from "../social/lock";
@@ -207,6 +208,9 @@ export async function revokeReferralWith(
     });
     return { banned, reports };
   }, TX);
-  for (const id of outcome.banned) await withdrawCasinoFor(db, id, input.now);
+  for (const id of outcome.banned) {
+    await withdrawCasinoFor(db, id, input.now);
+    await withdrawMarketFor(db, { userId: id, adminId: input.staffId, now: input.now });
+  }
   return outcome;
 }
