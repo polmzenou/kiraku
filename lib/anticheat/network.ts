@@ -140,7 +140,7 @@ export type BanState =
   | "BANNED" // déjà banni
   | "STAFF" // un compte de l'équipe l'utilise : jamais (on ne s'exclut pas soi-même)
   | "PRIVATE" // IP privée, locale ou réservée
-  | "CAP"; // IP vue sur plus de multiAccount.sharedIpCap comptes : réseau public ou opérateur
+  | "CAP"; // IP utilisée par plus de multiAccount.sharedIpCap autres comptes actifs : réseau public ou opérateur
 
 export type KeyFacts = {
   kind: NetworkKind;
@@ -158,7 +158,9 @@ export function banState(facts: KeyFacts, sharedIpCap: number): BanState {
   if (facts.banned) return "BANNED";
   if (facts.kind === "IP" && !isBannableIp(facts.key)) return "PRIVATE";
   if (facts.staffSeen) return "STAFF";
-  if (facts.kind === "IP" && facts.accounts > sharedIpCap) return "CAP";
+  // Le plafond se juge sur les comptes actifs HORS de ceux qu'on bannit : une ferme de 9 comptes sur une IP
+  // reste bannissable, alors qu'une IP où 9 autres joueurs actifs passent est un réseau public
+  if (facts.kind === "IP" && facts.othersActive > sharedIpCap) return "CAP";
   return facts.othersActive > 0 ? "SHARED" : "OK";
 }
 

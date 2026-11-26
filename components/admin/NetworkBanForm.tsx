@@ -42,7 +42,8 @@ export function NetworkBanForm({ userId, rows, accountBanned }: { userId: string
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const chosen = rows.filter((r) => selected.has(r.signalIds[0]));
+  // Une ligne devenue « Déjà bannie » après un ban sort de la sélection (la confirmation ne la compte plus)
+  const chosen = rows.filter((r) => r.selectable && selected.has(r.signalIds[0]));
   const cut = chosen.reduce((n, r) => n + r.othersCount, 0);
   const withAccount = banAccount && !accountBanned;
   const canSubmit = reason.trim() !== "" && (chosen.length > 0 || withAccount);
@@ -59,7 +60,10 @@ export function NetworkBanForm({ userId, rows, accountBanned }: { userId: string
   function submit() {
     if (!window.confirm(t("confirm", { count: chosen.length, cut, account: withAccount ? "yes" : "no" }))) return;
     startTransition(async () => {
-      const res = await banNetworkAction({ userId, signalIds: chosen.flatMap((r) => r.signalIds), banAccount: withAccount, reason: reason.trim() });
+      // Un relevé par ligne suffit : le serveur retrouve la clé (IPv4, /64 ou appareil). Tous les relevés d'un /64
+      // (une adresse par jour et par appareil) dépassaient vite la borne de l'action
+      const signalIds = chosen.map((r) => r.signalIds[0]).filter((s): s is string => Boolean(s));
+      const res = await banNetworkAction({ userId, signalIds, banAccount: withAccount, reason: reason.trim() });
       if (res.ok) {
         setMessage({ tone: "ok", text: t("done", { count: res.bans, account: res.account ? "yes" : "no" }) });
         setReason("");

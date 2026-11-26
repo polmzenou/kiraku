@@ -34,7 +34,7 @@ function failure(scope: string, e: unknown): Failure {
   return { ok: false, error: "UNAVAILABLE" };
 }
 
-const banSchema = z.object({ userId: id, signalIds: z.array(id).max(50), banAccount: z.boolean(), reason }).strict();
+const banSchema = z.object({ userId: id, signalIds: z.array(id).max(200), banAccount: z.boolean(), reason }).strict();
 
 /** Fiche joueur : bannit les IP et appareils cochés de ce compte, et le compte si demandé. */
 export async function banNetworkAction(input: unknown): Promise<{ ok: true; bans: number; account: boolean } | Failure> {

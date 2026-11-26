@@ -85,7 +85,8 @@ export function stripLocale(pathname: string): string {
 // Chemins lisibles depuis un réseau banni (server/anticheat/network-ban.ts) : les textes légaux, et la connexion avec
 // son mot de passe oublié, pour qu'un membre de l'équipe déconnecté puisse revenir (elle refuse tout autre compte).
 // Pas la page d'erreur de connexion : un refus Discord y mène, l'écran du ban doit s'y afficher.
-const NETWORK_GATE_FREE = ["/connexion/mot-de-passe-oublie", "/connexion/reinitialiser", ...LEGAL_SLUGS.map((s) => `/${s}`)];
+// /compte/donnees : export et suppression restent possibles depuis un réseau banni (droits RGPD), comme leurs actions
+const NETWORK_GATE_FREE = ["/connexion/mot-de-passe-oublie", "/connexion/reinitialiser", "/compte/donnees", ...LEGAL_SLUGS.map((s) => `/${s}`)];
 
 const startsWithAny = (paths: readonly string[], pathname: string) => {
   const path = stripLocale(pathname);

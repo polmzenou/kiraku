@@ -3,6 +3,9 @@
 // (server/anticheat/queries.ts), ce module décide. Un score élevé est un soupçon à vérifier, pas une preuve.
 
 import { emailStem, normalizeEmail, textStem } from "./email";
+import { ipBanKey } from "./network";
+import { ANONYMIZED_PREFIX } from "../account/deletion";
+import { GUEST_PREFIX } from "../username";
 
 export const REASON_WEIGHTS = {
   device: 60, // même cookie appareil : même navigateur
@@ -77,6 +80,9 @@ class PairBook {
   }
 }
 
+/** Plafond des groupes « même appareil » et « même boîte e-mail » (indices forts). */
+const STRONG_LINK_CAP = 50;
+
 /** Groupes « même valeur » : chaque paire du groupe reçoit l'indice, si le groupe n'est pas trop commun. */
 function linkGroups(book: PairBook, groups: Map<string, Set<string>>, cap: number, add: (draft: Draft, key: string) => void) {
   for (const [key, members] of groups) {
@@ -102,6 +108,10 @@ function groupBy<T>(rows: readonly T[], key: (row: T) => string | null, id: (row
 export function scorePairs(input: DetectionInput): SuspectPair[] {
   const book = new PairBook();
   const cap = input.sharedCap;
+  // Le plafond « valeur trop commune » vise les IP publiques (4G, école) et les racines de pseudos. Un même appareil
+  // ou une même boîte e-mail sur 9 comptes est au contraire l'indice le plus fort d'une ferme : plafond propre, large
+  // (il borne seulement le nombre de paires calculées)
+  const strongCap = Math.max(cap, STRONG_LINK_CAP);
   // Seuls les comptes de `users` comptent (invités et comptes anonymisés écartés par l'appelant)
   const known = new Set(input.users.map((u) => u.id));
   const isKnown = (...ids: string[]) => ids.every((id) => known.has(id));
@@ -109,11 +119,12 @@ export function scorePairs(input: DetectionInput): SuspectPair[] {
   // Appareils et IP
   const signals = input.signals.filter((s) => isKnown(s.userId));
   const devices = groupBy(signals.filter((s) => s.kind === "DEVICE"), (s) => s.value, (s) => s.userId);
-  linkGroups(book, devices, cap, (d) => {
+  linkGroups(book, devices, strongCap, (d) => {
     const prev = d.reasons.get("device");
     d.reasons.set("device", { kind: "device", count: (prev?.kind === "device" ? prev.count : 0) + 1 });
   });
-  const ips = groupBy(signals.filter((s) => s.kind === "IP"), (s) => s.value, (s) => s.userId);
+  // IP comparées par leur clé de ban : l'IPv4 exacte, l'IPv6 par son /64 (adresses temporaires d'un même foyer)
+  const ips = groupBy(signals.filter((s) => s.kind === "IP"), (s) => ipBanKey(s.value) ?? s.value, (s) => s.userId);
   linkGroups(book, ips, cap, (d, ip) => {
     const prev = d.reasons.get("ip");
     d.reasons.set("ip", { kind: "ip", values: [...(prev?.kind === "ip" ? prev.values : []), ip] });
@@ -121,12 +132,14 @@ export function scorePairs(input: DetectionInput): SuspectPair[] {
 
   // E-mails et pseudos
   const aliases = groupBy(input.users, (u) => normalizeEmail(u.email), (u) => u.id);
-  linkGroups(book, aliases, cap, (d) => d.reasons.set("emailAlias", { kind: "emailAlias" }));
+  linkGroups(book, aliases, strongCap, (d) => d.reasons.set("emailAlias", { kind: "emailAlias" }));
   const emailStems = groupBy(input.users, (u) => emailStem(u.email), (u) => u.id);
   linkGroups(book, emailStems, cap, (d, stem) => {
     if (!d.reasons.has("emailAlias")) d.reasons.set("emailStem", { kind: "emailStem", stem });
   });
-  const nameStems = groupBy(input.users, (u) => textStem(u.username), (u) => u.id);
+  // Pseudos générés (invités, comptes supprimés) : leur racine commune (« guest ») ne relie personne
+  const generated = (name: string) => name.startsWith(GUEST_PREFIX) || name.startsWith(ANONYMIZED_PREFIX);
+  const nameStems = groupBy(input.users, (u) => (generated(u.username) ? null : textStem(u.username)), (u) => u.id);
   linkGroups(book, nameStems, cap, (d, stem) => d.reasons.set("usernameStem", { kind: "usernameStem", stem }));
 
   // Parrainage et ami unique

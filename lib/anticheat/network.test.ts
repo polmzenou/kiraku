@@ -78,9 +78,14 @@ describe("état d'une clé au moment de bannir", () => {
     expect(banState(ip({ banned: true, staffSeen: true }), 8)).toBe("BANNED");
     expect(banState(ip({ key: "192.168.1.1", staffSeen: true }), 8)).toBe("PRIVATE");
     expect(banState(ip({ staffSeen: true, accounts: 20 }), 8)).toBe("STAFF");
-    expect(banState(ip({ accounts: 9 }), 8)).toBe("CAP");
+    expect(banState(ip({ accounts: 12, othersActive: 9 }), 8)).toBe("CAP");
     expect(banState(ip({ accounts: 8, othersActive: 2 }), 8)).toBe("SHARED");
     expect(banState(ip({ accounts: 3 }), 8)).toBe("OK");
+  });
+
+  it("une ferme de comptes reste bannissable : seuls les comptes actifs hors du groupe visé comptent pour le plafond", () => {
+    expect(banState(ip({ accounts: 10, othersActive: 0 }), 8)).toBe("OK");
+    expect(banState(ip({ accounts: 14, othersActive: 4 }), 8)).toBe("SHARED");
   });
 
   it("n'applique ni la plage ni la limite de partage à un appareil", () => {

@@ -3,6 +3,9 @@
 
 /** 86.245.12.3 → 86.245.x.x ; 2a01:cb00:1:2::5 → 2a01:cb00:… */
 export function maskIp(ip: string): string {
+  // IPv4 encapsulée d'un serveur en double pile (::ffff:86.245.12.3) : masquée comme une IPv4, sinon elle restait entière
+  const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i.exec(ip);
+  if (mapped) return maskIp(mapped[1]);
   if (ip.includes(":")) {
     const groups = ip.split(":").filter(Boolean);
     return `${groups.slice(0, 2).join(":")}:…`;

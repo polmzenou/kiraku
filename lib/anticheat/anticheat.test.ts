@@ -99,6 +99,28 @@ describe("détection des multi-comptes", () => {
     expect(scorePairs(input({ users, signals, sharedCap: 5 }))).toHaveLength(10);
   });
 
+  it("relie une ferme de comptes sur un même appareil, même au-delà du plafond des IP communes", () => {
+    const users = Array.from({ length: 10 }, (_, i) => ({ id: `f${i}`, username: `ferme${i}x`, email: null, createdAt: at(i * 1000) }));
+    const signals = users.map((u) => ({ userId: u.id, kind: "DEVICE" as const, value: "appareil-commun" }));
+    const pairs = scorePairs(input({ users, signals, sharedCap: 8 }));
+    expect(pairs).toHaveLength(45);
+    expect(pairs.every((p) => p.reasons.some((r) => r.kind === "device"))).toBe(true);
+  });
+
+  it("relie deux adresses IPv6 du même foyer (même /64)", () => {
+    const pairs = scorePairs(
+      input({
+        users: [main, other],
+        signals: [
+          { userId: "main", kind: "IP", value: "2a01:cb00:1234:5600:1111:2222:3333:4444" },
+          { userId: "other", kind: "IP", value: "2a01:cb00:1234:5600:aaaa:bbbb:cccc:dddd" },
+        ],
+      }),
+    );
+    expect(pairs).toHaveLength(1);
+    expect(pairs[0].reasons.map((r) => r.kind)).toContain("ip");
+  });
+
   it("n'utilise pas les comptes absents de la liste (invités, anonymisés)", () => {
     const pairs = scorePairs(
       input({
