@@ -163,15 +163,18 @@ function countedMythicRate(rules: DrawRules): number {
 
   let dist = new Float64Array(T);
   dist[0] = 1;
+  // Deux tampons réutilisés (aucune allocation par pas) ; le départ du cycle est copié à part
+  let next = new Float64Array(T);
+  const start = new Float64Array(T);
   let rate = 0;
-  // Borne de calcul : jamais plus de ~50 M d'opérations, même avec des réglages extrêmes
-  const maxCycles = Math.max(50, Math.floor(50_000_000 / (G * T)));
+  // Borne de calcul : jamais plus de ~50 M d'opérations, même avec des réglages extrêmes (au moins un cycle)
+  const maxCycles = Math.max(1, Math.floor(50_000_000 / (G * T)));
   for (let cycle = 0; cycle < maxCycles; cycle++) {
-    const start = dist;
+    start.set(dist);
     let mythics = 0;
     for (let c = 0; c < G; c++) {
       const base = baseAt(c);
-      const next = new Float64Array(T);
+      next.fill(0);
       for (let p = 0; p < T; p++) {
         const mass = dist[p];
         if (mass === 0) continue;
@@ -180,7 +183,7 @@ function countedMythicRate(rules: DrawRules): number {
         next[0] += mass * q;
         if (p + 1 < T) next[p + 1] += mass * (1 - q);
       }
-      dist = next;
+      [dist, next] = [next, dist];
     }
     rate = mythics / G;
     // Stabilisé quand la répartition de la pitié ne bouge plus d'un cycle à l'autre

@@ -15,6 +15,7 @@ import {
   type SealedKind,
   GuaranteeEmptyError,
 } from "@/lib/boosters/draw";
+import { discoveriesToRecord } from "@/lib/boosters/discoveries";
 import { stillDrawable } from "@/lib/boosters/drawable";
 import { isIncenseActive } from "@/lib/boosters/incense";
 import type { Rng } from "@/lib/boosters/rng";
@@ -38,6 +39,7 @@ export type OpenErrorCode =
   | "NO_BOOSTER"
   | "EMPTY_POOL"
   | "NEEDS_PAYMENT"
+  | "PRICE_CHANGED"
   | "NOT_ENOUGH_ZENI"
   | "NOT_FOR_SALE"
   | "GUARANTEE_EMPTY";
@@ -60,6 +62,8 @@ export type OpenInput = {
   count: number;
   /** Le joueur accepte de payer en Zeni si le stock gratuit ne couvre pas l'ouverture. */
   pay?: boolean;
+  /** Montant en Zeni que le joueur a confirmé : un prix qui a changé depuis n'est jamais débité (PRICE_CHANGED). */
+  expectedZeni?: number;
   /**
    * Ouvre des boosters crédités (BoosterCredit : cadeaux d'amis, boutique, missions, parrainage)
    * au lieu du stock : ni prix, ni booster doré ou sachet scellé (un crédit ne fait pas avancer le
@@ -200,6 +204,9 @@ async function persistDraw(
   const seen = new Set(known.map((k) => k.cardId));
   // Prestige : une carte découverte lors d'un cycle passé, pas encore obtenue dans celui-ci, est « Retrouvée »
   const regainable = new Set(input.prestige > 0 ? known.filter((k) => k.regainedAt === null).map((k) => k.cardId) : []);
+  // Seules les cartes nouvelles ou retrouvées ont quelque chose à écrire : liste prise avant la boucle ci-dessous, qui
+  // marque les cartes comme vues (calculée après, elle restait vide et plus aucune ouverture n'écrivait de découverte)
+  const toRecord = discoveriesToRecord(drawnIds, known, input.prestige);
   // Les cartes obtenues quittent la liste de souhaits ; le premier exemplaire garde la pastille
   const wished = await consumeWishlist(tx, userId, drawnIds);
 
@@ -253,8 +260,8 @@ async function persistDraw(
   if (engraved.length > 0) {
     await tx.userCardOwner.createMany({ data: engraved.map((c) => ({ userCardId: c.userCardId, ownerId: userId, via: "DRAW" as const, at: now })) });
   }
-  // Seules les cartes nouvelles ou retrouvées ont quelque chose à écrire : un tirage sans nouveauté n'écrit rien
-  await recordDiscoveries(tx, drawnIds.filter((id) => !seen.has(id) || regainable.has(id)).map((cardId) => ({ userId, cardId })), now);
+  // Un tirage sans nouveauté n'écrit rien
+  await recordDiscoveries(tx, toRecord.map((cardId) => ({ userId, cardId })), now);
   await tx.boosterOpening.createMany({
     data: boosters.map((b) => ({
       id: b.id,
@@ -339,6 +346,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         stock = consumeStock(current, count, stockRules);
       } else if (price.kind === "zeni") {
         if (!input.pay) throw new OpenError("NEEDS_PAYMENT");
+        if (input.expectedZeni !== undefined && input.expectedZeni !== price.amount) throw new OpenError("PRICE_CHANGED");
         if (user.coins < price.amount) throw new OpenError("NOT_ENOUGH_ZENI");
         total = price.amount;
       } else {

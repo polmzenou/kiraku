@@ -31,11 +31,12 @@ async function incenseFor(draw: DrawRules): Promise<IncenseDraw> {
 /**
  * Ouvre `count` boosters du type `slug` pour ce joueur : type lu en base (actif, dans ses dates,
  * pool suffisant), réglages de l'admin, hasard cryptographique. `pay` : le joueur accepte de payer
- * en Zeni si le stock gratuit ne suffit pas (jamais de débit sans cet accord). `credit` : ouvre des
+ * en Zeni si le stock gratuit ne suffit pas (jamais de débit sans cet accord) ; `expectedZeni` : le montant
+ * qu'il a confirmé, refusé (PRICE_CHANGED) si le prix a changé depuis. `credit` : ouvre des
  * boosters crédités (cadeau, boutique, récompense) ; ils restent ouvrables après la fin d'un
  * événement, tant que le type existe et que son pool n'est pas vide.
  */
-export async function openBoosters(userId: string, slug: string, count: number, pay: boolean, credit = false) {
+export async function openBoosters(userId: string, slug: string, count: number, pay: boolean, credit = false, expectedZeni?: number) {
   const [entry, offers, rules, sealed, printing] = await Promise.all([getBoosterTypeEntry(slug), getBoosterOffers(), getBoosterRules(), sealedEntries(), getPrintingRules()]);
   const offer = offers.find((o) => o.type.slug === slug);
   if (!entry || entry.type.filter === null) throw new OpenError("NOT_FOR_SALE");
@@ -50,6 +51,7 @@ export async function openBoosters(userId: string, slug: string, count: number, 
     type,
     count,
     pay: credit ? false : pay,
+    expectedZeni: credit ? undefined : expectedZeni,
     credit,
     rules: { draw, stock: rules.stock },
     tables: buildRarityTables(draw.rates),

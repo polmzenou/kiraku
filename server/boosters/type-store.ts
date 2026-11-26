@@ -16,7 +16,7 @@ import {
 import type { Rarity } from "@/lib/catalog/rarity";
 import type { BoosterSeed } from "@/prisma/seed/booster-types";
 
-type Db = Pick<PrismaClient, "boosterType" | "card"> | Pick<Prisma.TransactionClient, "boosterType" | "card">;
+type Db = Pick<PrismaClient, "boosterType" | "card" | "$executeRaw"> | Pick<Prisma.TransactionClient, "boosterType" | "card" | "$executeRaw">;
 
 /** Ligne BoosterType → vue validée (thème, noms et filtre contrôlés par Zod). */
 export function toBoosterTypeView(row: Omit<BoosterTypeRow, "poolCardIds">): BoosterTypeView {
@@ -180,18 +180,22 @@ export async function recomputeBoosterPools(
     const view = toBoosterTypeView(row);
     const cards = computePoolCards(view, candidates, ctx);
     const counts = poolCounts(groupByRarity(cards));
-    await db.boosterType.update({
-      where: { id: row.id },
-      // updatedAt explicite : sinon Prisma le pose un instant après poolComputedAt, et le pool
-      // paraîtrait toujours plus ancien que son type.
-      data: {
-        poolCardIds: cards.map((c) => c.id),
-        poolCounts: counts,
-        focusCardIds: focusCards(cards, view.focusSeriesIds),
-        poolComputedAt: now,
-        updatedAt: now,
-      },
-    });
+    const ids = cards.map((c) => c.id);
+    const focus = focusCards(cards, view.focusSeriesIds);
+    // Pool inchangé (le cas courant d'une retouche du catalogue) : seule la date du calcul avance. Le tableau
+    // (~250 Ko par type) n'est ni réécrit ni renvoyé, et updatedAt ne bouge pas (types gardés en cache).
+    const unchanged = await db.$executeRaw`
+      UPDATE "BoosterType" SET "poolComputedAt" = ${now}
+      WHERE id = ${row.id} AND "poolCardIds" = ${ids}::text[] AND "focusCardIds" = ${focus}::text[]`;
+    if (unchanged === 0) {
+      await db.boosterType.update({
+        where: { id: row.id },
+        select: { id: true },
+        // updatedAt explicite : sinon Prisma le pose un instant après poolComputedAt, et le pool
+        // paraîtrait toujours plus ancien que son type.
+        data: { poolCardIds: ids, poolCounts: counts, focusCardIds: focus, poolComputedAt: now, updatedAt: now },
+      });
+    }
     reports.push({ slug: row.slug, size: cards.length, counts });
   }
   return reports;
@@ -238,10 +242,10 @@ export async function upsertBoosterSeeds(
       active: seed.active ?? true,
     };
     if (!existing.has(seed.slug)) {
-      await db.boosterType.create({ data: { slug: seed.slug, ...data } });
+      await db.boosterType.create({ data: { slug: seed.slug, ...data }, select: { id: true } });
       result.created.push(seed.slug);
     } else if (opts.force) {
-      await db.boosterType.update({ where: { slug: seed.slug }, data });
+      await db.boosterType.update({ where: { slug: seed.slug }, data, select: { id: true } });
       result.updated.push(seed.slug);
     } else {
       result.kept.push(seed.slug);

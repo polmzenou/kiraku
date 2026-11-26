@@ -152,7 +152,7 @@ export default async function AdminBoosterTypesPage() {
                         ))}
                       </p>
                       <div className="mt-1 flex flex-wrap gap-2">
-                        <ButtonLink href={`/admin/boosters/types/${type.slug}`} className="min-h-9 px-3 text-sm">
+                        <ButtonLink href={`/admin/boosters/types/${type.slug}`} size="sm">
                           {t("edit")}
                         </ButtonLink>
                         <ReadOnly when={readOnly}>

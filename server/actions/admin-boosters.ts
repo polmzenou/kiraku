@@ -79,7 +79,9 @@ export async function saveBoosterType(input: unknown): Promise<AdminBoosterResul
   }
 
   const minPool = v.minPoolSize ?? (await getSetting("booster.minPool"));
-  const poolSize = await poolSizeFor({ filter, featuredCardIds: featured, includeCustom: v.includeCustom });
+  // Id du type existant : les créations cochées pour lui comptent dans la taille du pool, comme au recalcul
+  const existingId = (await prisma.boosterType.findUnique({ where: { slug: v.slug }, select: { id: true } }))?.id;
+  const poolSize = await poolSizeFor({ id: existingId, filter, featuredCardIds: featured, includeCustom: v.includeCustom });
   if (v.active && poolSize < minPool) return { ok: false, error: "POOL_TOO_SMALL", poolSize };
 
   // Champs écrits un par un, jamais l'objet reçu
@@ -112,7 +114,7 @@ export async function saveBoosterType(input: unknown): Promise<AdminBoosterResul
   };
 
   const result = await prisma.$transaction(async (tx) => {
-    const before = await tx.boosterType.findUnique({ where: { slug: v.slug } });
+    const before = await tx.boosterType.findUnique({ where: { slug: v.slug }, omit: { poolCardIds: true } });
     if (v.mode === "update" && !before) return "NOT_FOUND" as const;
     if (v.mode === "create" && before) return "SLUG_TAKEN" as const;
     const sortOrder =
@@ -121,8 +123,8 @@ export async function saveBoosterType(input: unknown): Promise<AdminBoosterResul
     const activatedAt = v.active && !before?.active ? { activatedAt: new Date() } : {};
     const after =
       v.mode === "create"
-        ? await tx.boosterType.create({ data: { slug: v.slug, sortOrder, ...data, ...activatedAt } })
-        : await tx.boosterType.update({ where: { slug: v.slug }, data: { ...data, ...activatedAt } });
+        ? await tx.boosterType.create({ data: { slug: v.slug, sortOrder, ...data, ...activatedAt }, omit: { poolCardIds: true } })
+        : await tx.boosterType.update({ where: { slug: v.slug }, data: { ...data, ...activatedAt }, omit: { poolCardIds: true } });
     await writeAdminLog(tx, {
       adminId: g.admin.id,
       action: v.mode === "create" ? (v.kind === "BANNER" ? "BANNER_CREATE" : v.kind === "FOCUS" ? "FOCUS_CREATE" : "BOOSTER_TYPE_CREATE") : "BOOSTER_TYPE_UPDATE",
@@ -150,7 +152,7 @@ export async function toggleBoosterType(input: unknown): Promise<AdminBoosterRes
   if (!parsed.success) return { ok: false, error: "INVALID" };
   const { slug, active } = parsed.data;
 
-  const row = await prisma.boosterType.findUnique({ where: { slug } });
+  const row = await prisma.boosterType.findUnique({ where: { slug }, omit: { poolCardIds: true } });
   if (!row) return { ok: false, error: "NOT_FOUND" };
   const type = toBoosterTypeView(row);
   const poolSize = await poolSizeFor(type);
@@ -158,7 +160,7 @@ export async function toggleBoosterType(input: unknown): Promise<AdminBoosterRes
   if (active && poolSize < minPool) return { ok: false, error: "POOL_TOO_SMALL", poolSize };
 
   await prisma.$transaction(async (tx) => {
-    await tx.boosterType.update({ where: { slug }, data: { active, ...(active && !row.active ? { activatedAt: new Date() } : {}) } });
+    await tx.boosterType.update({ where: { slug }, data: { active, ...(active && !row.active ? { activatedAt: new Date() } : {}) }, select: { id: true } });
     await writeAdminLog(tx, {
       adminId: g.admin.id,
       action: "BOOSTER_TYPE_UPDATE",

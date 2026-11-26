@@ -4,7 +4,7 @@ import { AnimatePresence, domMax, LazyMotion, m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { preload } from "react-dom";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { choiceCount, effectiveChoice, OPEN_COUNTS, openAllCount, type OpenChoice } from "@/lib/boosters/catalog";
 import type { ApocalypseOutcome, SealedKind } from "@/lib/boosters/draw";
 import { priceFor, type BoosterShape, type BoosterTheme, type Price } from "@/lib/boosters/types";
@@ -130,6 +130,7 @@ export function OpeningStage({
   const rarities = useRarities();
   const t = useTranslations("opening");
   const tSealed = useTranslations("sealed");
+  const router = useRouter();
   const level = useFxLevel();
   const reduced = level === "reduced";
   const lite = level === "lite";
@@ -261,9 +262,15 @@ export function OpeningStage({
     const res = await open(
       creditMode
         ? { booster: type.slug, count: effectiveCount, credit: true }
-        : { booster: type.slug, count: effectiveCount, pay: price.kind === "zeni" },
+        : price.kind === "zeni"
+          ? { booster: type.slug, count: effectiveCount, pay: true, expectedZeni: price.amount }
+          : { booster: type.slug, count: effectiveCount },
     ).catch(() => ({ ok: false as const, error: "UNAVAILABLE" as const }));
-    if (!res.ok) return fail(res.error);
+    if (!res.ok) {
+      // Prix changé depuis l'affichage (réglage de l'admin) : la page se recharge avec le nouveau prix à confirmer
+      if (res.error === "PRICE_CHANGED") router.refresh();
+      return fail(res.error);
+    }
     // Sachets dessinables seulement : un type supprimé entre-temps reste dans l'inventaire de l'accueil
     dropsRef.current = res.drops.filter((d) => sealedTypes[d.kind]);
     setDrops(dropsRef.current);

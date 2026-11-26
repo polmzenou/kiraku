@@ -379,7 +379,7 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, focusSerie
           <Check label={t("usesFreeStock")} checked={v.usesFreeStock} onChange={(c) => set("usesFreeStock", c)} />
           <Field label={t("priceZeni")} hint={v.usesFreeStock ? t("priceHint") : undefined}>
             {(id) => (
-              <input id={id} type="number" inputMode="numeric" min={0} className={input} value={v.priceZeni ?? ""} onChange={(e) => set("priceZeni", numOrNull(e.target.value))} />
+              <input id={id} type="number" inputMode="numeric" min={1} className={input} value={v.priceZeni ?? ""} onChange={(e) => set("priceZeni", numOrNull(e.target.value))} />
             )}
           </Field>
           <Check label={t("countsForPity")} checked={v.countsForPity} onChange={(c) => set("countsForPity", c)} />

@@ -1166,6 +1166,7 @@
       "RATE_LIMITED": "Doucement ! Réessaie dans un instant.",
       "NO_BOOSTER": "Plus assez de sachets pour cette ouverture.",
       "NEEDS_PAYMENT": "Ton stock a changé : confirme le paiement en Zeni.",
+      "PRICE_CHANGED": "Le prix vient de changer : vérifie-le et confirme à nouveau.",
       "NOT_ENOUGH_ZENI": "Pas assez de Zeni pour cette ouverture.",
       "NOT_FOR_SALE": "Ce booster n'est pas disponible en ce moment.",
       "GUARANTEE_EMPTY": "Ce booster attend encore des cartes de sa rareté : il reste dans tes boosters à ouvrir, réessaie plus tard.",

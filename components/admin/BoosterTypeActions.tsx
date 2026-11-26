@@ -18,9 +18,14 @@ export function RecomputePoolsButton() {
         disabled={pending}
         onClick={() =>
           start(async () => {
-            const res = await recomputePoolsAction();
-            setMessage(res.ok ? t("types.recomputed", { count: res.count }) : t(`form.errors.${res.error}`, { count: 0 }));
-            router.refresh();
+            // Délai dépassé ou base indisponible : un message, jamais la page d'erreur de l'admin
+            try {
+              const res = await recomputePoolsAction();
+              setMessage(res.ok ? t("types.recomputed", { count: res.count }) : t(`form.errors.${res.error}`, { count: 0 }));
+              router.refresh();
+            } catch {
+              setMessage(t("form.errors.unexpected"));
+            }
           })
         }
       >
@@ -43,13 +48,17 @@ export function ToggleTypeButton({ slug, active }: { slug: string; active: boole
     <span className="flex flex-wrap items-center gap-2">
       <Button
         variant={active ? "secondary" : "primary"}
-        className="min-h-9 px-3 text-sm"
+        size="sm"
         disabled={pending}
         onClick={() =>
           start(async () => {
-            const res = await toggleBoosterType({ slug, active: !active });
-            setError(res.ok ? null : t(`form.errors.${res.error}`, { count: res.poolSize ?? 0 }));
-            router.refresh();
+            try {
+              const res = await toggleBoosterType({ slug, active: !active });
+              setError(res.ok ? null : t(`form.errors.${res.error}`, { count: res.poolSize ?? 0 }));
+              router.refresh();
+            } catch {
+              setError(t("form.errors.unexpected"));
+            }
           })
         }
       >

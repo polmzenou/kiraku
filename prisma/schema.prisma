@@ -770,6 +770,7 @@ model NotablePull {
   createdAt        DateTime         @default(now())
 
   @@index([createdAt])
+  @@index([rarity, createdAt]) // fil des gros tirages : rareté suffisante, puis les plus récents
   @@index([userId]) // suppression d'un compte (cascade)
 }
 

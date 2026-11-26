@@ -29,6 +29,7 @@ export type OpenBoosterError =
   | "RATE_LIMITED"
   | "NO_BOOSTER"
   | "NEEDS_PAYMENT"
+  | "PRICE_CHANGED"
   | "NOT_ENOUGH_ZENI"
   | "NOT_FOR_SALE"
   | "GUARANTEE_EMPTY"
@@ -53,13 +54,16 @@ const openSchema = z.object({
   // ×1 / ×5 / ×10 ou « Tous » (le reste du stock ou des crédits) : stock et prix revérifiés sous verrou
   count: z.number().int().min(1).max(MAX_OPEN_COUNT),
   pay: z.boolean().default(false),
+  // Montant affiché au joueur et confirmé par lui : exigé pour payer, le serveur ne débite jamais un autre prix
+  expectedZeni: z.number().int().min(1).max(100_000_000).optional(),
   // Booster crédité (cadeau, boutique, récompense) : jamais payé en plus
   credit: z.boolean().default(false),
-}).refine((v) => !v.credit || !v.pay);
+}).refine((v) => !v.credit || !v.pay).refine((v) => !v.pay || v.expectedZeni !== undefined);
 
 const PUBLIC_ERRORS: Partial<Record<OpenErrorCode, OpenBoosterError>> = {
   NO_BOOSTER: "NO_BOOSTER",
   NEEDS_PAYMENT: "NEEDS_PAYMENT",
+  PRICE_CHANGED: "PRICE_CHANGED",
   NOT_ENOUGH_ZENI: "NOT_ENOUGH_ZENI",
   NOT_FOR_SALE: "NOT_FOR_SALE",
   GUARANTEE_EMPTY: "GUARANTEE_EMPTY",
@@ -81,7 +85,7 @@ export async function openBoosterAction(input: unknown): Promise<OpenBoosterResu
 
   let opened: Awaited<ReturnType<typeof openBoosters>>;
   try {
-    opened = await openBoosters(user.id, parsed.data.booster, parsed.data.count, parsed.data.pay, parsed.data.credit);
+    opened = await openBoosters(user.id, parsed.data.booster, parsed.data.count, parsed.data.pay, parsed.data.credit, parsed.data.expectedZeni);
   } catch (e) {
     if (e instanceof OpenError) return { ok: false, error: PUBLIC_ERRORS[e.code] ?? "UNAVAILABLE" };
     console.error("[boosters] ouverture impossible", e);

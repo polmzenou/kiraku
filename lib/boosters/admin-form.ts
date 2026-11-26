@@ -44,7 +44,8 @@ export const boosterTypeFormSchema = z
     filter: z.preprocess((raw) => (raw && typeof raw === "object" ? cleanFilter(raw as Record<string, unknown>) : raw), poolFilterSchema),
     slotFloors: z.array(rarityKeySchema).max(20),
     usesFreeStock: z.boolean(),
-    priceZeni: z.number().int().min(0).max(1_000_000).nullable(),
+    // null : pas d'achat. 0 est refusé : un type ouvrable sans limite ni journal par simple erreur de saisie
+    priceZeni: z.number().int().min(1).max(1_000_000).nullable(),
     countsForPity: z.boolean(),
     resetsPity: z.boolean(),
     bonusEligible: z.boolean(),

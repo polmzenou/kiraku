@@ -207,7 +207,8 @@ export function priceFor(
   count: number,
 ): Price {
   if (type.usesFreeStock && stock >= count) return { kind: "free" };
-  if (type.priceZeni !== null && type.priceZeni >= 0) return { kind: "zeni", amount: type.priceZeni * count };
+  // Un prix nul ou négatif (donnée ancienne) n'ouvre jamais un achat gratuit et illimité
+  if (type.priceZeni !== null && type.priceZeni > 0) return { kind: "zeni", amount: type.priceZeni * count };
   return { kind: "unavailable" };
 }
 
@@ -233,7 +234,7 @@ export function availability(
   if (type.endsAt && type.endsAt <= now) return "hidden";
   if (poolSize < minPool) return "hidden";
   if (type.kind === "PRESTIGE") return channel === "shop" ? "open" : "hidden";
-  if (!type.usesFreeStock && type.priceZeni === null) return "locked";
+  if (!type.usesFreeStock && (type.priceZeni === null || type.priceZeni <= 0)) return "locked";
   return "open";
 }
 

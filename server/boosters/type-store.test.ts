@@ -12,7 +12,10 @@ describe("seed ciblé de booster", () => {
     const boosterType = { findMany: vi.fn().mockResolvedValue([]), create: vi.fn(), update: vi.fn() };
     const result = await upsertBoosterSeeds({ boosterType } as unknown as PrismaClient, BOOSTER_SEEDS, { slugs: ["antagonistes"] });
     expect(result.created).toEqual(["antagonistes"]);
-    expect(boosterType.create).toHaveBeenCalledExactlyOnceWith({ data: expect.objectContaining({ slug: "antagonistes", family: "personnage", sortOrder: 3 }) });
+    expect(boosterType.create).toHaveBeenCalledExactlyOnceWith({
+      data: expect.objectContaining({ slug: "antagonistes", family: "personnage", sortOrder: 3 }),
+      select: { id: true },
+    });
     expect(boosterType.update).not.toHaveBeenCalled();
   });
 
