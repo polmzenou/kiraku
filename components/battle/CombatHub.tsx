@@ -27,7 +27,7 @@ type Intent =
   | { kind: "JOIN_CODE"; code: string }
   | { kind: "CHALLENGE"; inviteeId: string; name: string };
 
-/** Accueil du combat : exhibition, classé (9b), salle d'amis ; partie en cours à reprendre. */
+/** Accueil du combat : exhibition, classé, salle d'amis ; partie en cours à reprendre. */
 export function CombatHub({
   activity,
   candidates,
@@ -36,6 +36,7 @@ export function CombatHub({
   lastTeam,
   queueSeconds,
   queuePollSeconds,
+  rankedBotOnDemand,
   challenge,
   rank,
   atelier = false,
@@ -47,6 +48,8 @@ export function CombatHub({
   lastTeam: string[];
   queueSeconds: number;
   queuePollSeconds: number;
+  /** Classé : bot proposé tout de suite pendant l'attente (ranked.botOnDemand) ; toujours en exhibition. */
+  rankedBotOnDemand: boolean;
   /** Ami à défier (lien « Défier » de son profil) : le choix d'équipe s'ouvre directement. */
   challenge: { id: string; name: string } | null;
   /** Rang du joueur ; null si le classé est fermé. */
@@ -60,7 +63,7 @@ export function CombatHub({
   const [intent, setIntent] = useState<Intent | null>(() =>
     challenge && activity.kind === "NONE" ? { kind: "CHALLENGE", inviteeId: challenge.id, name: challenge.name } : null,
   );
-  const [queue, setQueue] = useState(activity.kind === "QUEUE" ? { joinedAt: activity.joinedAt, botAt: activity.botAt } : null);
+  const [queue, setQueue] = useState(activity.kind === "QUEUE" ? { joinedAt: activity.joinedAt, botAt: activity.botAt, mode: activity.mode } : null);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -80,7 +83,7 @@ export function CombatHub({
         if (!res.ok) return fail(res.error, res.battleId);
         setIntent(null);
         if (res.state === "MATCHED") return router.push(`/combat/${res.battleId}`);
-        if (res.state === "WAITING") setQueue({ joinedAt: res.joinedAt, botAt: res.botAt });
+        if (res.state === "WAITING") setQueue({ joinedAt: res.joinedAt, botAt: res.botAt, mode: intent.kind });
         return;
       }
       const res = await (
@@ -104,7 +107,17 @@ export function CombatHub({
     [errorText, router],
   );
 
-  if (queue) return <QueueWaiting joinedAt={queue.joinedAt} botAt={queue.botAt} pollSeconds={queuePollSeconds} onLeft={onLeft} />;
+  if (queue) {
+    return (
+      <QueueWaiting
+        joinedAt={queue.joinedAt}
+        botAt={queue.botAt}
+        pollSeconds={queuePollSeconds}
+        botOnDemand={queue.mode !== "RANKED" || rankedBotOnDemand}
+        onLeft={onLeft}
+      />
+    );
+  }
 
   const busy = activity.kind === "ROOM" || activity.kind === "BATTLE";
 

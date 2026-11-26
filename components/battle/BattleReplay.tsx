@@ -6,7 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { applyAction, createState, other } from "@/lib/battle/engine";
 import type { Action, BattleSetup, BattleState } from "@/lib/battle/types";
 import type { BattleView } from "@/lib/battle/view";
-import { LADDER, rankOf } from "@/lib/ranked/rules";
+import { storedRankedSide } from "@/lib/ranked/rules";
 import { RankedResult } from "../ranked/RankedResult";
 import { BattleResult } from "./BattleResult";
 import { useLogLine } from "./BattleLog";
@@ -79,16 +79,7 @@ export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup
   const showResult = index >= total && !animating && !resultHidden;
 
   // Bilan classé relu de la partie (montée ou descente déduite des PC ; le top 100 n'est pas rejoué)
-  const before = view.ranked?.before[mySide] ?? null;
-  const delta = view.ranked?.delta[mySide] ?? null;
-  const rankedSide =
-    before !== null && delta !== null && view.ladder
-      ? (() => {
-          const ladder = view.ladder!;
-          const idx = (pc: number) => LADDER.indexOf(rankOf(pc, false, ladder).tier as (typeof LADDER)[number]);
-          return { before, after: before + delta, delta, promoted: idx(before + delta) > idx(before), demoted: idx(before + delta) < idx(before), saved: false, protection: 0, grandBefore: false, grandAfter: false };
-        })()
-      : null;
+  const rankedSide = view.ranked && view.ladder ? storedRankedSide(view.ranked.before[mySide], view.ranked.delta[mySide], view.ladder) : null;
 
   const last = [...director.feed].reverse().find((f) => line(f.event));
   const progress = t("replay.progress", { n: index, total });

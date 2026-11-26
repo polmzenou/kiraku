@@ -7,7 +7,6 @@ import type { Action, BattleSetup, BattleState, Keyword, Side } from "./types";
 // Adversaire de secours quand la file d'attente reste vide : affiché comme bot, équipe différente à chaque fois.
 
 export const BOT_NAMES = ["TENGU", "KITSUNE", "KAPPA", "TANUKI", "ONI", "KARASU", "YUREI", "RONIN"] as const;
-export type BotName = (typeof BOT_NAMES)[number];
 
 /** Raretés de l'équipe du bot : celles du joueur, chacune avec une petite chance de monter d'un cran. */
 export function botRarities(player: readonly Rarity[], rng: Rng, upgradePct: number, order: readonly Rarity[] = RARITIES): Rarity[] {

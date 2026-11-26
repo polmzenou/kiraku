@@ -1,6 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_RANKED_RULES as R } from "./defaults";
-import { applyResult, botDelta, divisionRange, isCrushing, ladderRanges, ladderTier, LADDER, matchRange, pcDelta, rankOf, rowOf } from "./rules";
+import { SETTING_SCHEMAS } from "@/lib/settings/defaults";
+import {
+  applyResult,
+  botDelta,
+  cappedBotGain,
+  divisionRange,
+  isCrushing,
+  ladderRanges,
+  ladderTier,
+  LADDER,
+  matchRange,
+  pairGameCounts,
+  pcDelta,
+  rankOf,
+  rowOf,
+  storedRankedSide,
+} from "./rules";
 import { nextSeasonBoundary, resetPc, rewardTier } from "./season";
 
 describe("rangs et divisions", () => {
@@ -152,5 +168,43 @@ describe("paliers des divisions", () => {
   it("division d'un rang, Grand Champion compris", () => {
     expect(divisionRange({ tier: "GOLD", division: 2 }, R)).toEqual({ min: 700, max: 799 });
     expect(divisionRange({ tier: "GRAND_CHAMPION", division: null }, R)).toEqual({ min: 1800, max: null });
+  });
+});
+
+describe("anti-farm du classé", () => {
+  it("plafond des PC gagnés contre le bot : le reste du jour, jamais une perte", () => {
+    const capped = { ...R, botDailyPcCap: 40 };
+    expect(cappedBotGain(15, 0, capped)).toBe(15);
+    expect(cappedBotGain(15, 30, capped)).toBe(10);
+    expect(cappedBotGain(15, 45, capped)).toBe(0);
+    expect(cappedBotGain(-8, 45, capped)).toBe(-8);
+    // 0 : sans plafond (défaut)
+    expect(cappedBotGain(15, 10_000, R)).toBe(15);
+  });
+
+  it("parties entre deux mêmes joueurs : les N premières des 24 h comptent", () => {
+    const capped = { ...R, samePairDailyCap: 3 };
+    expect([0, 1, 2, 3, 9].map((played) => pairGameCounts(played, capped))).toEqual([true, true, true, false, false]);
+    // 0 : sans limite (défaut)
+    expect(pairGameCounts(1_000, R)).toBe(true);
+  });
+
+  it("le réglage de la durée des saisons n'accepte que les diviseurs de 12", () => {
+    const schema = SETTING_SCHEMAS["ranked.seasonMonths"];
+    expect([1, 2, 3, 4, 6, 12].every((m) => schema.safeParse(m).success)).toBe(true);
+    expect([5, 7, 8, 9, 10, 11, 0, 13].some((m) => schema.safeParse(m).success)).toBe(false);
+  });
+});
+
+describe("bilan relu d'une partie terminée", () => {
+  it("montée et descente déduites des PC gardés, le reste à faux", () => {
+    expect(storedRankedSide(290, 24, R)).toEqual({ before: 290, after: 314, delta: 24, promoted: true, demoted: false, saved: false, protection: 0, grandBefore: false, grandAfter: false });
+    expect(storedRankedSide(305, -13, R)).toMatchObject({ after: 292, promoted: false, demoted: true });
+    expect(storedRankedSide(400, 0, R)).toMatchObject({ after: 400, promoted: false, demoted: false });
+  });
+
+  it("rien sans PC (camp du bot)", () => {
+    expect(storedRankedSide(null, null, R)).toBeNull();
+    expect(storedRankedSide(300, null, R)).toBeNull();
   });
 });

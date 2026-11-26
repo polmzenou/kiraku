@@ -93,7 +93,9 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/[loc
 async function RankedBoard() {
   const tRanked = await getTranslations("ranked");
   const rules = await getRankedRules();
-  const [entries, season] = await Promise.all([getRankedLeaderboard(rules), ensureSeason(rules)]);
+  // Saison close d'abord (paresseux) : le top se lit après la remise à zéro, sous la clé de la nouvelle saison
+  const season = await ensureSeason(rules);
+  const entries = await getRankedLeaderboard(rules, season?.number ?? null);
   const rankName = (e: RankedEntry) =>
     e.division ? tRanked("rank", { tier: tRanked(`tiers.${e.tier}`), division: tRanked(`divisions.${e.division}`) }) : tRanked(`tiers.${e.tier}`);
   if (entries.length === 0) return <p className="text-sm text-text-muted">{tRanked("board.empty")}</p>;

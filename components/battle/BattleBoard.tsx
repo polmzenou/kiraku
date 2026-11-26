@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { other } from "@/lib/battle/engine";
 import type { Action, BattleSetup, BattleState } from "@/lib/battle/types";
@@ -24,6 +24,9 @@ import { BattleStage } from "./stage/BattleStage";
 import { useBoardControls } from "./stage/useBoardControls";
 import { useStageKit } from "./stage/useStageKit";
 import { useBattleError } from "./useBattleError";
+
+/** Pause avant la fin de tour automatique, une fois la dernière animation jouée : le joueur voit son dernier coup. */
+const AUTO_END_TURN_MS = 1_200;
 
 function toClient(a: Action): ClientAction {
   if (a.type === "ATTACK") return { type: "ATTACK", actor: a.actor, target: a.target };
@@ -175,6 +178,22 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
   };
 
   const controls = useBoardControls({ setup, shown, mySide, canAct, send: (a) => void send(toClient(a)) });
+
+  // Plus aucune carte ne peut agir (toutes ont joué, ou actions du premier tour épuisées) : le tour se termine seul
+  // après un court instant, au lieu d'attendre le minuteur, qui le compterait comme manqué (deux d'affilée valent un
+  // abandon). Une seule fois par version : un refus ne relance pas la fin de tour en boucle.
+  const autoEnded = useRef<number | null>(null);
+  const nothingLeft = canAct && controls.ready.size === 0;
+  const endTurnNow = useEffectEvent(() => {
+    if (autoEnded.current === version.current) return;
+    autoEnded.current = version.current;
+    controls.endTurn();
+  });
+  useEffect(() => {
+    if (!nothingLeft) return;
+    const id = setTimeout(endTurnNow, AUTO_END_TURN_MS);
+    return () => clearTimeout(id);
+  }, [nothingLeft]);
 
   // Fin : le verdict au pinceau, puis le résultat (tout de suite en mouvement réduit)
   const over = final.finished && shown.finished && !animating;

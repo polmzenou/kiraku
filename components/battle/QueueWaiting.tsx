@@ -17,11 +17,14 @@ export function QueueWaiting({
   joinedAt,
   botAt,
   pollSeconds,
+  botOnDemand,
   onLeft,
 }: {
   joinedAt: string;
   botAt: string;
   pollSeconds: number;
+  /** Bouton « Combattre contre un bot » avant l'heure (en classé, selon ranked.botOnDemand ; le serveur revérifie). */
+  botOnDemand: boolean;
   onLeft: (error?: BattleActionError) => void;
 }) {
   const t = useTranslations("battle.queue");
@@ -157,7 +160,7 @@ export function QueueWaiting({
         <p className="text-sm text-text-muted">{untilBot > 0 ? t("botSoon", { seconds: untilBot }) : t("botNow")}</p>
       </div>
       <div className="flex flex-wrap justify-center gap-3">
-        {untilBot > 0 && (
+        {botOnDemand && untilBot > 0 && (
           <Button variant="primary" onClick={fightBot} disabled={leaving}>
             {t("fightBot")}
           </Button>

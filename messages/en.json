@@ -3036,11 +3036,13 @@
         "value": "value",
         "botMistakePct": "Bot random moves (%)",
         "botUpgradePct": "Chance a bot card goes up one rarity (%)",
+        "botTurnGraceMs": "Time given back to the player per bot move (ms, 0: none)",
         "exhibition": "Exhibition",
         "bot": "Against a bot",
         "friend": "Between friends",
         "ranked": "Ranked (step 9b)",
         "dailyCap": "Rewarded battles per day",
+        "rewardMinTurns": "Minimum turn for a reward (forfeit or timeout before: no Zeni, no PC)",
         "safetyPollSeconds": "Safety resync with Ably (s)",
         "queuePollSeconds": "Queue polling (s)",
         "lobbyPollSeconds": "Friend room polling (s)",
@@ -3114,6 +3116,7 @@
       "noLot": "None",
       "keys": {
         "enabled": "Ranked open",
+        "botOnDemand": "On-demand bot in ranked (no waiting)",
         "min": "Minimum RP",
         "win": "Win",
         "crushWin": "Crushing win",
@@ -3128,7 +3131,9 @@
         "perSecond": "Widening per second",
         "max": "Maximum range",
         "botPcPct": "RP against a bot (%)",
-        "seasonMonths": "Season length (months)",
+        "botDailyPcCap": "PC won against a bot per day (0: no cap)",
+        "samePairDailyCap": "Ranked games that count between the same two players over 24 h (0: no limit)",
+        "seasonMonths": "Season length (months: 1, 2, 3, 4, 6 or 12)",
         "pivot": "Reset pivot (RP)",
         "keepPct": "Kept above the pivot (%)"
       },
@@ -6579,9 +6584,9 @@
       "title": "Rules",
       "items": {
         "turn": "On your turn, each standing card acts once: a free attack or a technique.",
-        "orbs": "Orbs pay for techniques: 1 on the first turn, one more each turn, up to {max}.",
-        "damage": "Damage: attacker's attack × 100 / (100 + target's defense), with 10% critical hits.",
-        "timer": "{seconds} s per turn. Two expired turns in a row count as a forfeit.",
+        "orbs": "Orbs pay for techniques: {start} on the first turn, {perTurn, plural, =0 {no} one {one} other {#}} more each turn, up to {max}.",
+        "damage": "Damage: attacker's attack × 100 / (100 + target's defense), with {critPct, number}% critical hits.",
+        "timer": "{seconds} s per turn. {missed, plural, one {An expired turn counts} other {# expired turns in a row count}} as a forfeit.",
         "end": "The first team with no card standing loses. Your cards always return to your collection.",
         "synergy": "Three cards from the same universe gain +{pct}% attack until their team's first death. A card saved by Rebirth breaks nothing."
       }

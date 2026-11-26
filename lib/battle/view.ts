@@ -1,6 +1,7 @@
 import type { Rarity } from "@/lib/catalog/rarity";
 import type { PlayerDecor } from "@/lib/profile/decor";
 import type { RankedRules } from "@/lib/ranked/rules";
+import type { BattleSeed } from "./engine";
 import type { BoardTier } from "./tiers";
 import type { BattleEvent, BattleSetup, BattleState, EndReason, Keyword, Side, Technique, Ultimate, UniverseRef } from "./types";
 
@@ -23,7 +24,8 @@ export type BattleView = {
   codeExpiresAt: string | null;
   /** Salle réservée au joueur qui la regarde (invitation) : il peut la rejoindre. */
   canJoin: boolean;
-  seed: number;
+  /** Hasard de la partie pour la rediffusion (clé v2, ou graine v1) ; 0 tant qu'elle n'est pas terminée. */
+  seed: BattleSeed;
   setup: BattleSetup | null;
   state: BattleState | null;
   version: number;

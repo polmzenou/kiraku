@@ -64,29 +64,3 @@ export function applyEvent(state: BattleState, e: BattleEvent): BattleState {
   }
   return next;
 }
-
-/** Durée d'affichage d'un événement, en ms (0 avec prefers-reduced-motion). */
-export function eventDuration(e: BattleEvent, reduced: boolean): number {
-  if (reduced) return 0;
-  switch (e.t) {
-    case "attack":
-      return 380;
-    case "ultimate":
-      return 900;
-    case "damage":
-    case "heal":
-    case "poison":
-    case "block":
-      return 320;
-    case "ko":
-    case "revive":
-    case "raise":
-      return 520;
-    case "turn":
-      return 450;
-    case "end":
-      return 0;
-    default:
-      return 220;
-  }
-}

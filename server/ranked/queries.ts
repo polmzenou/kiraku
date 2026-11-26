@@ -87,12 +87,13 @@ async function playersAhead(pc: number, r: RankedRules): Promise<number | null> 
 }
 
 export async function getRankView(userId: string, r: RankedRules, locale: string): Promise<RankView> {
-  const [user, season, reward] = await Promise.all([
+  // Saison close d'abord (paresseux) : PC remis à zéro et lot à réclamer se lisent après la clôture, pas pendant
+  const season = await ensureSeason(r);
+  const [user, reward] = await Promise.all([
     prisma.user.findUniqueOrThrow({
       where: { id: userId },
       select: { rankPoints: true, rankProtection: true, seasonGames: true, seasonPeakPc: true, seasonPeakGrand: true },
     }),
-    ensureSeason(r),
     getPendingSeasonReward(userId),
   ]);
   const ahead = await playersAhead(user.rankPoints, r);
@@ -128,33 +129,39 @@ export type RankedEntry = {
   decor: PlayerDecor;
 };
 
-type Row = { position: number; username: string; image: string | null; pc: number; public: boolean } & DecorColumns;
+type Row = { position: number; ahead: number; username: string; image: string | null; pc: number; public: boolean } & DecorColumns;
 
 /**
- * Top du classé : la position compte tous les joueurs inscrits non bannis (c'est elle qui fait les
- * Grands Champions), mais seuls les profils publics sont affichés. En cache 60 s.
+ * Top du classé : la position compte tous les joueurs inscrits non bannis (c'est elle qui ordonne la liste),
+ * mais seuls les profils publics sont affichés. `ahead` (joueurs strictement devant) fait les Grands Champions,
+ * place partagée à égalité de PC comme sur la page de rang et à la clôture. En cache 60 s, par saison (`season`
+ * fait partie de la clé : une clôture, d'où qu'elle vienne, ne laisse pas le top d'avant la remise à zéro).
  */
 const loadRankedTop = unstable_cache(
-  async (size: number) =>
-    prisma.$queryRaw<Row[]>`
+  async (size: number, season: number | null) => {
+    void season;
+    return prisma.$queryRaw<Row[]>`
       SELECT * FROM (
         SELECT (ROW_NUMBER() OVER (ORDER BY u."rankPoints" DESC, u."createdAt" ASC))::int AS position,
+               (RANK() OVER (ORDER BY u."rankPoints" DESC))::int - 1 AS ahead,
                u.username, u.image, u."rankPoints" AS pc, (u."profileVisibility" = 'PUBLIC') AS public, ${decorColumns}
         FROM "User" u
         WHERE u."bannedAt" IS NULL AND u."isGuest" = false AND u."rankPoints" > 0
       ) ranked
       WHERE position <= ${size}
-      ORDER BY position`,
-  ["ranked-top-v3"],
+      ORDER BY position`;
+  },
+  ["ranked-top-v4"],
   { tags: [RANKED_TAG], revalidate: 60 },
 );
 
-export async function getRankedLeaderboard(r: RankedRules): Promise<RankedEntry[]> {
-  const rows = await loadRankedTop(Math.max(100, r.grandChampion.top));
+/** `season` : numéro de la saison ouverte (ensureSeason), pour la clé du cache. */
+export async function getRankedLeaderboard(r: RankedRules, season: number | null): Promise<RankedEntry[]> {
+  const rows = await loadRankedTop(Math.max(100, r.grandChampion.top), season);
   return rows
     .filter((row) => row.public)
     .map((row) => {
-      const rank = rankOf(row.pc, row.position <= r.grandChampion.top, r);
+      const rank = rankOf(row.pc, row.ahead < r.grandChampion.top, r);
       return {
         position: row.position,
         username: row.username,
@@ -204,18 +211,25 @@ function divisionQuery(min: number, max: number | null, grand: boolean, gc: { mi
     ) division`;
 }
 
+// Clé par saison, comme le top : une clôture ne laisse pas en cache les divisions d'avant la remise à zéro
 const loadDivision = unstable_cache(
-  async (min: number, max: number | null, grand: boolean, gcMin: number, gcTop: number) =>
-    prisma.$queryRaw<DivisionRow[]>`${divisionQuery(min, max, grand, { min: gcMin, top: gcTop })} WHERE division.public ORDER BY position LIMIT ${DIVISION_SIZE}`,
-  ["ranked-division-v2"],
+  async (min: number, max: number | null, grand: boolean, gcMin: number, gcTop: number, season: number | null) => {
+    void season;
+    return prisma.$queryRaw<DivisionRow[]>`${divisionQuery(min, max, grand, { min: gcMin, top: gcTop })} WHERE division.public ORDER BY position LIMIT ${DIVISION_SIZE}`;
+  },
+  ["ranked-division-v3"],
   { tags: [RANKED_TAG], revalidate: 60 },
 );
 
-export async function getDivisionBoard(userId: string, rank: Pick<RankView, "tier" | "division">, r: RankedRules): Promise<DivisionBoard> {
+export async function getDivisionBoard(
+  userId: string,
+  rank: Pick<RankView, "tier" | "division" | "season">,
+  r: RankedRules,
+): Promise<DivisionBoard> {
   const grand = rank.tier === "GRAND_CHAMPION";
   const { min, max } = divisionRange(rank, r);
   const [rows, [self]] = await Promise.all([
-    loadDivision(min, max, grand, r.grandChampion.min, r.grandChampion.top),
+    loadDivision(min, max, grand, r.grandChampion.min, r.grandChampion.top, rank.season?.number ?? null),
     // Le joueur toujours listé, même privé ou hors des premiers (lecture non mise en cache)
     prisma.$queryRaw<DivisionRow[]>`${divisionQuery(min, max, grand, r.grandChampion)} WHERE division.id = ${userId}`,
   ]);

@@ -3,18 +3,24 @@
 // qu'il a vue et une intention (attaquer telle carte avec telle autre) : tout est revérifié ici par le
 // moteur pur (lib/battle/engine.ts), sous le verrou de la partie.
 //
-// Ordre des verrous, partout : le joueur (lockPlayers), puis la partie ou la ligne de file. Une partie
-// en cours se verrouille seule (FOR UPDATE) : deux actions sur la même version, une seule passe.
+// Ordre des verrous : à l'entrée (file, salle, bot), le joueur (lockPlayers), puis la partie ou la ligne de file. Une
+// partie en cours se verrouille d'abord (FOR UPDATE : deux actions sur la même version, une seule passe), puis, quand
+// elle se termine, ses deux joueurs ensemble par id croissant (lockPlayers, comme partout ailleurs), avant les Zeni et les PC.
+//
+// Hasard : une clé secrète de 32 octets par partie (rngKey, v2), jamais envoyée au navigateur avant la fin ; les
+// parties d'avant la clé gardent leur graine de 31 bits (seed), pour que leurs rediffusions restent identiques.
 // Les cartes engagées passent en BATTLE par updateMany conditionnel et reviennent en COLLECTION à la
 // fin, quelle qu'elle soit (K.O., abandon, minuteur, salle expirée, file quittée).
 import { Prisma, type BattleMode, type PrismaClient } from "@/generated/prisma/client";
 import { BOT_NAMES, botAction, botRarities } from "@/lib/battle/bot";
 import type { ClientAction } from "@/lib/battle/client-action";
+import { endedTooEarly } from "@/lib/battle/anti-farm";
 import { engineRules, type BattleRules } from "@/lib/battle/config";
-import { applyAction, createState } from "@/lib/battle/engine";
+import { applyAction, createState, type BattleSeed } from "@/lib/battle/engine";
 import type { Kit } from "@/lib/battle/loadout";
 import { buildSetup, fighterFrom, type FighterCard } from "@/lib/battle/stats";
 import { universeOf } from "@/lib/battle/synergy";
+import { botTurnGraceMs, queueFreshSeconds, queueStaleSeconds } from "@/lib/battle/timing";
 import {
   IllegalAction,
   TEAM_SIZE,
@@ -26,7 +32,8 @@ import {
   type Side,
 } from "@/lib/battle/types";
 import { type Rarity } from "@/lib/catalog/rarity";
-import { mixSeed, seededRng, type Rng } from "@/lib/rng";
+import { keyedRng, mixSeed, seededRng, type Rng } from "@/lib/rng";
+import { bytesToHex } from "@/lib/sha256";
 import { COPY_MARKS } from "@/lib/collection/copies";
 import { fudaCopyOf } from "@/lib/prestige/printing";
 import { pickLoanCopy } from "@/lib/social/gifts";
@@ -76,8 +83,6 @@ export class BattleError extends Error {
 }
 
 const TX = { maxWait: 10_000, timeout: 20_000 };
-/** Sans nouvelle d'un joueur en file depuis ce délai, sa place est libérée. */
-export const QUEUE_STALE_SECONDS = 15;
 /** Alphabet des codes ami : sans 0/O/1/I/L. */
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 export const CODE_LENGTH = 6;
@@ -111,6 +116,7 @@ type LockedBattle = {
   code: string | null;
   codeExpiresAt: Date | null;
   seed: number;
+  rngKey: string | null;
   p1Id: string;
   p2Id: string | null;
   botName: string | null;
@@ -126,16 +132,18 @@ async function lockBattle(tx: Tx, where: { id: string } | { code: string }): Pro
   const rows =
     "id" in where
       ? await tx.$queryRaw<LockedBattle[]>`
-          SELECT id, mode::text AS mode, status::text AS status, code, "codeExpiresAt", seed, "p1Id", "p2Id", "botName",
+          SELECT id, mode::text AS mode, status::text AS status, code, "codeExpiresAt", seed, "rngKey", "p1Id", "p2Id", "botName",
                  "p1Team", "p2Team", setup, state, version, "turnEndsAt"
           FROM "Battle" WHERE id = ${where.id} FOR UPDATE`
       : await tx.$queryRaw<LockedBattle[]>`
-          SELECT id, mode::text AS mode, status::text AS status, code, "codeExpiresAt", seed, "p1Id", "p2Id", "botName",
+          SELECT id, mode::text AS mode, status::text AS status, code, "codeExpiresAt", seed, "rngKey", "p1Id", "p2Id", "botName",
                  "p1Team", "p2Team", setup, state, version, "turnEndsAt"
           FROM "Battle" WHERE code = ${where.code} FOR UPDATE`;
   return rows[0] ?? null;
 }
 
+/** Hasard de la partie : la clé v2, ou la graine v1 d'une partie lancée avant elle. */
+const seedOf = (b: Pick<LockedBattle, "seed" | "rngKey">): BattleSeed => b.rngKey ?? b.seed;
 const setupOf = (b: LockedBattle) => b.setup as unknown as BattleSetup;
 const stateOf = (b: LockedBattle) => b.state as unknown as BattleState;
 const sideOf = (b: Pick<LockedBattle, "p1Id" | "p2Id">, userId: string): Side | null =>
@@ -276,12 +284,14 @@ export async function botFighters(tx: Tx, rarities: readonly Rarity[], ctx: Ctx)
 // --- Déroulé d'une partie ---
 
 const json = (v: unknown) => v as Prisma.InputJsonValue;
-const newSeed = (random: Rng) => random(2 ** 31);
-const botRng = (seed: number, seq: number) => seededRng(mixSeed(seed ^ 0x0b07b07, seq));
+/** Clé du hasard d'une nouvelle partie : 32 octets du hasard du serveur (crypto.randomInt), en hexadécimal minuscule. */
+const newRngKey = (random: Rng) => bytesToHex(Uint8Array.from({ length: 32 }, () => random(256)));
+/** Coups du bot : tirés à part des actions (étiquette « bot »), de la clé ou de l'ancienne graine. */
+const botRng = (seed: BattleSeed, seq: number) => (typeof seed === "number" ? seededRng(mixSeed(seed ^ 0x0b07b07, seq)) : keyedRng(seed, `bot:${seq}`));
 
 type Progress = { state: BattleState; events: BattleEvent[]; actions: { seq: number; side: Side; action: Action }[] };
 
-function apply(setup: BattleSetup, seed: number, p: Progress, action: Action) {
+function apply(setup: BattleSetup, seed: BattleSeed, p: Progress, action: Action) {
   const seq = p.state.seq;
   const res = applyAction(setup, seed, p.state, action);
   p.state = res.state;
@@ -290,20 +300,21 @@ function apply(setup: BattleSetup, seed: number, p: Progress, action: Action) {
 }
 
 /** Fait jouer le bot tant que c'est son tour. */
-function runBot(setup: BattleSetup, seed: number, p: Progress, side: Side | null, mistakePct: number) {
+function runBot(setup: BattleSetup, seed: BattleSeed, p: Progress, side: Side | null, mistakePct: number) {
   for (let i = 0; side !== null && !p.state.finished && p.state.active === side; i++) {
     const action = i >= MAX_BOT_ACTIONS ? { type: "END_TURN" as const, side } : botAction(setup, p.state, side, botRng(seed, p.state.seq), mistakePct);
     apply(setup, seed, p, action);
   }
 }
 
-/** Zeni du gagnant selon le mode, dans la limite des combats récompensés par jour. */
+/**
+ * Zeni du gagnant selon le mode, dans la limite des combats récompensés par jour (joueurs déjà verrouillés par persist).
+ * Anti-farm : rien pour un abandon ou un minuteur avant battle.rewardMinTurns, même règle que les PC du classé.
+ */
 async function rewardFor(tx: Tx, b: LockedBattle, winnerId: string, state: BattleState, ctx: Ctx): Promise<number> {
   const r = ctx.rules.rewards;
   const base = botSide(b) !== null ? r.bot : b.mode === "FRIEND" ? r.friend : b.mode === "RANKED" ? r.ranked : r.exhibition;
-  // Anti-farm : pas de gain pour un abandon ou un minuteur avant que chaque camp ait joué un tour
-  if (base <= 0 || state.turn < 3) return 0;
-  await lockPlayers(tx, [winnerId]);
+  if (base <= 0 || endedTooEarly(state, ctx.rules.rewardMinTurns)) return 0;
   const today = await tx.coinTransaction.count({ where: { userId: winnerId, reason: "BATTLE_WIN", createdAt: { gte: ctx.dayStart } } });
   return today < r.dailyCap ? base : 0;
 }
@@ -318,6 +329,9 @@ async function persist(tx: Tx, b: LockedBattle, p: Progress, ctx: Ctx, nextDeadl
   let rewardZeni = 0;
   let ranked: { outcome: RankedOutcome; data: Prisma.BattleUncheckedUpdateManyInput } | null = null;
   if (p.state.finished) {
+    // Les deux joueurs ensemble, par id croissant, avant le gain et les PC : jamais le gagnant seul puis le perdant,
+    // à rebours d'une autre transaction qui les prendrait dans l'ordre des ids
+    await lockPlayers(tx, [b.p1Id, b.p2Id].filter((id): id is string => id !== null));
     await releaseTeam(tx, b.p1Id, b.p1Team);
     await releaseTeam(tx, b.p2Id, b.p2Team);
     const winnerId = p.state.winner === 0 ? b.p1Id : p.state.winner === 1 ? b.p2Id : null;
@@ -326,7 +340,9 @@ async function persist(tx: Tx, b: LockedBattle, p: Progress, ctx: Ctx, nextDeadl
       if (rewardZeni > 0) await credit(tx, { userId: winnerId, amount: rewardZeni, reason: "BATTLE_WIN", refId: b.id, now: ctx.now });
     }
     // Classé : PC des deux camps, dans la même transaction que la fin de partie
-    if (b.mode === "RANKED") ranked = await applyRankedWith(tx, b, setupOf(b), p.state, ctx.ranked);
+    if (b.mode === "RANKED") {
+      ranked = await applyRankedWith(tx, b, setupOf(b), p.state, ctx.ranked, { now: ctx.now, dayStart: ctx.dayStart, minTurn: ctx.rules.rewardMinTurns });
+    }
   }
   const turnEndsAt = p.state.finished ? null : nextDeadline(prev);
   // version = nombre d'actions appliquées : le client renvoie celle qu'il a vue
@@ -359,10 +375,13 @@ function update(b: LockedBattle, p: Progress, saved: { turnEndsAt: Date | null; 
   };
 }
 
-/** Nouveau tour → nouveau minuteur ; même tour → même échéance. */
-const deadlineAfter = (ctx: Ctx, p: Progress, current: Date | null) => (prev: BattleState) =>
+/**
+ * Nouveau tour → nouveau minuteur ; même tour → même échéance. Contre le bot, le tour qu'il vient de jouer dans la
+ * même requête s'anime sur le temps du joueur : battle.botTurnGraceMs par coup lui est rendu (0 par défaut).
+ */
+const deadlineAfter = (ctx: Ctx, p: Progress, current: Date | null, bot: Side | null) => (prev: BattleState) =>
   prev.turn !== p.state.turn || prev.active !== p.state.active || !current
-    ? new Date(ctx.now.getTime() + ctx.rules.turnSeconds * 1_000)
+    ? new Date(ctx.now.getTime() + ctx.rules.turnSeconds * 1_000 + botTurnGraceMs(p.actions, bot, ctx.rules.botTurnGraceMs, ctx.rules.turnSeconds))
     : current;
 
 /**
@@ -372,13 +391,15 @@ const deadlineAfter = (ctx: Ctx, p: Progress, current: Date | null) => (prev: Ba
  */
 async function start(
   tx: Tx,
-  base: { id?: string; mode: BattleMode; seed: number; p1Id: string; p2Id: string | null; botName: string | null; p1Team: string[]; p2Team: string[] },
+  base: { id?: string; mode: BattleMode; p1Id: string; p2Id: string | null; botName: string | null; p1Team: string[]; p2Team: string[] },
   teams: [FighterSetup[], FighterSetup[]],
   ctx: Ctx,
 ): Promise<BattleUpdate> {
   const bot = botSide(base);
   const human = bot === null ? undefined : bot === 0 ? 1 : 0;
-  const setup = buildSetup(teams, engineRules(ctx.rules), seededRng(mixSeed(base.seed, 0x51de)), human);
+  // Clé tirée au lancement, gardée en base et jamais envoyée avant la fin ; la graine v1 reste à 0
+  const rngKey = newRngKey(ctx.random);
+  const setup = buildSetup(teams, engineRules(ctx.rules), keyedRng(rngKey, "setup"), human);
   const first = createState(setup);
   const p: Progress = { state: first.state, events: first.events, actions: [] };
   const turnEndsAt = p.state.finished ? null : new Date(ctx.now.getTime() + ctx.rules.turnSeconds * 1_000);
@@ -391,7 +412,8 @@ async function start(
     status: "ACTIVE" as const,
     code: null,
     codeExpiresAt: null,
-    seed: base.seed,
+    seed: 0,
+    rngKey,
     p1Id: base.p1Id,
     p2Id: base.p2Id,
     botName: base.botName,
@@ -433,15 +455,17 @@ export async function playActionWith(
       if (expired) return expired;
     }
     const setup = setupOf(b);
+    const seed = seedOf(b);
     const p: Progress = { state: stateOf(b), events: [], actions: [] };
     try {
-      apply(setup, b.seed, p, { ...input.action, side } as Action);
+      apply(setup, seed, p, { ...input.action, side } as Action);
     } catch (e) {
       if (e instanceof IllegalAction) throw new BattleError("ILLEGAL", e.code);
       throw e;
     }
-    runBot(setup, b.seed, p, botSide(b), ctx.rules.botMistakePct);
-    const saved = await persist(tx, b, p, ctx, deadlineAfter(ctx, p, b.turnEndsAt));
+    const bot = botSide(b);
+    runBot(setup, seed, p, bot, ctx.rules.botMistakePct);
+    const saved = await persist(tx, b, p, ctx, deadlineAfter(ctx, p, b.turnEndsAt, bot));
     return update(b, p, saved);
   }, TX);
 }
@@ -454,14 +478,17 @@ export async function playActionWith(
 async function expireInTx(tx: Tx, b: LockedBattle, ctx: Ctx, chain: boolean): Promise<BattleUpdate | null> {
   if (b.status !== "ACTIVE" || !b.turnEndsAt || b.turnEndsAt > ctx.now) return null;
   const setup = setupOf(b);
+  const seed = seedOf(b);
   const p: Progress = { state: stateOf(b), events: [], actions: [] };
   let deadline = b.turnEndsAt;
   const bot = botSide(b);
   do {
-    apply(setup, b.seed, p, { type: "TIMEOUT", side: p.state.active });
-    runBot(setup, b.seed, p, bot, ctx.rules.botMistakePct);
+    apply(setup, seed, p, { type: "TIMEOUT", side: p.state.active });
+    runBot(setup, seed, p, bot, ctx.rules.botMistakePct);
     deadline = new Date((chain ? deadline.getTime() : ctx.now.getTime()) + ctx.rules.turnSeconds * 1_000);
   } while (chain && !p.state.finished && deadline <= ctx.now);
+  // Le joueur reprend la main en direct : le tour du bot joué ici s'anime sur son temps (pas pour une partie oubliée)
+  if (!chain) deadline = new Date(deadline.getTime() + botTurnGraceMs(p.actions, bot, ctx.rules.botTurnGraceMs, ctx.rules.turnSeconds));
   const saved = await persist(tx, b, p, ctx, () => deadline);
   return update(b, p, saved);
 }
@@ -478,7 +505,7 @@ export async function claimTimeoutWith(db: PrismaClient, input: { userId: string
   }, TX);
 }
 
-// --- File d'attente (exhibition ; le classé s'y branchera en 9b) ---
+// --- File d'attente (exhibition et classé, une file par mode) ---
 
 export type QueueStatus =
   | { state: "MATCHED"; battleId: string; update: BattleUpdate | null }
@@ -527,7 +554,8 @@ function rankedRange(me: QueueRow, ctx: Ctx): Prisma.Sql {
 }
 
 async function findOpponent(tx: Tx, me: QueueRow, ctx: Ctx): Promise<QueueRow | null> {
-  const fresh = new Date(ctx.now.getTime() - QUEUE_STALE_SECONDS * 1_000);
+  // Présent = a sondé récemment, au rythme de battle.queuePollSeconds
+  const fresh = new Date(ctx.now.getTime() - queueFreshSeconds(ctx.rules.queuePollSeconds) * 1_000);
   const rows = await tx.$queryRaw<QueueRow[]>`
     SELECT q."userId", q.mode::text AS mode, q."rankPoints", q.team, q."joinedAt"
     FROM "BattleQueue" q
@@ -550,12 +578,7 @@ async function matchInTx(tx: Tx, me: QueueRow, ctx: Ctx): Promise<BattleUpdate |
   await tx.battleQueue.deleteMany({ where: { userId: { in: [me.userId, opp.userId] } } });
   // Le plus ancien en file est p1
   const teams: [FighterSetup[], FighterSetup[]] = [await fightersOf(tx, opp.team, ctx.rules), await fightersOf(tx, me.team, ctx.rules)];
-  return start(
-    tx,
-    { mode: me.mode, seed: newSeed(ctx.random), p1Id: opp.userId, p2Id: me.userId, botName: null, p1Team: opp.team, p2Team: me.team },
-    teams,
-    ctx,
-  );
+  return start(tx, { mode: me.mode, p1Id: opp.userId, p2Id: me.userId, botName: null, p1Team: opp.team, p2Team: me.team }, teams, ctx);
 }
 
 /** Partie en cours du joueur (pour le renvoyer dessus après un appariement fait par l'autre). */
@@ -617,6 +640,20 @@ export async function pollQueueWith(db: PrismaClient, input: { userId: string },
   }, TX);
 }
 
+/**
+ * Compte fermé (anonymisation) : sa place en file disparaît et ses trois cartes engagées reviennent en collection, dans
+ * la transaction de l'appelant (joueur déjà verrouillé). Une place qu'un appariement tient en ce moment est laissée à la
+ * partie qu'il lance (SKIP LOCKED : pas d'attente sur un appariement qui attend lui-même le joueur).
+ */
+export async function dropQueueSeatInTx(tx: Tx, userId: string) {
+  const [row] = await tx.$queryRaw<QueueRow[]>`
+    SELECT "userId", mode::text AS mode, "rankPoints", team, "joinedAt"
+    FROM "BattleQueue" WHERE "userId" = ${userId} FOR UPDATE SKIP LOCKED`;
+  if (!row) return;
+  await tx.battleQueue.delete({ where: { userId } });
+  await releaseTeam(tx, userId, row.team);
+}
+
 export async function leaveQueueWith(db: PrismaClient, input: { userId: string }): Promise<QueueStatus> {
   return db.$transaction(async (tx) => {
     const row = await lockOwnQueue(tx, input.userId);
@@ -632,14 +669,16 @@ export async function leaveQueueWith(db: PrismaClient, input: { userId: string }
 
 /**
  * Personne en vue après battle.queueSeconds : un bot prend la place, avec une équipe de même rareté.
- * `skipWait` : le joueur a demandé le bot lui-même, sans attendre la fin du délai.
+ * `skipWait` : le joueur a demandé le bot lui-même, sans attendre la fin du délai (en classé, seulement si
+ * ranked.botOnDemand le permet).
  */
 export async function startBotBattleWith(db: PrismaClient, input: { userId: string; skipWait?: boolean }, ctx: Ctx): Promise<BattleUpdate> {
   return db.$transaction(async (tx) => {
     const row = await lockOwnQueue(tx, input.userId);
     if (!row) throw new BattleError("NOT_QUEUED");
     if (queueClosed(row, ctx)) throw new BattleError("DISABLED");
-    if (!input.skipWait && row.joinedAt.getTime() + ctx.rules.queueSeconds * 1_000 > ctx.now.getTime()) throw new BattleError("TOO_EARLY");
+    const skipWait = input.skipWait && (row.mode !== "RANKED" || ctx.ranked.botOnDemand);
+    if (!skipWait && row.joinedAt.getTime() + ctx.rules.queueSeconds * 1_000 > ctx.now.getTime()) throw new BattleError("TOO_EARLY");
     // Dernière chance : un vrai joueur est peut-être arrivé entre-temps
     const matched = await matchInTx(tx, row, ctx);
     if (matched) return matched;
@@ -650,7 +689,6 @@ export async function startBotBattleWith(db: PrismaClient, input: { userId: stri
       tx,
       {
         mode: row.mode,
-        seed: newSeed(ctx.random),
         p1Id: input.userId,
         p2Id: null,
         botName: BOT_NAMES[ctx.random(BOT_NAMES.length)],
@@ -705,7 +743,8 @@ export async function createRoomWith(
           status: "WAITING",
           code,
           codeExpiresAt: expiresAt,
-          seed: newSeed(ctx.random),
+          // Hasard tiré au lancement (rngKey, dans start) : la graine v1 reste à 0
+          seed: 0,
           p1Id: input.userId,
           p2Id: input.inviteeId,
           p1Team: team,
@@ -746,7 +785,7 @@ export async function joinRoomWith(
     const teams: [FighterSetup[], FighterSetup[]] = [await fightersOf(tx, b.p1Team, ctx.rules), await fightersOf(tx, team, ctx.rules)];
     return start(
       tx,
-      { id: b.id, mode: "FRIEND", seed: b.seed, p1Id: b.p1Id, p2Id: input.userId, botName: null, p1Team: b.p1Team, p2Team: team },
+      { id: b.id, mode: "FRIEND", p1Id: b.p1Id, p2Id: input.userId, botName: null, p1Team: b.p1Team, p2Team: team },
       teams,
       ctx,
     );
@@ -768,7 +807,7 @@ async function cancelInTx(tx: Tx, b: LockedBattle, ctx: Ctx) {
   await tx.battle.update({ where: { id: b.id }, data: { status: "CANCELLED", code: null, endedAt: ctx.now } });
 }
 
-// --- Balayage (cloche, page de la partie, cron quotidien) ---
+// --- Balayage (cloche, page de la partie, cron toutes les 5 minutes) ---
 
 /** `failed` : parties, salles ou places en erreur (journalisées), sautées pour ne pas bloquer le reste du balayage. */
 export type SweepResult = { expired: BattleUpdate[]; roomsClosed: number; queueCleared: number; failed: number };
@@ -823,7 +862,7 @@ export async function sweepStaleWith(db: PrismaClient, ctx: Ctx, opts: { userId?
     }, TX));
   }
 
-  const stale = new Date(ctx.now.getTime() - 4 * QUEUE_STALE_SECONDS * 1_000);
+  const stale = new Date(ctx.now.getTime() - queueStaleSeconds(ctx.rules.queuePollSeconds) * 1_000);
   const gone = await db.battleQueue.findMany({
     where: { seenAt: { lte: stale }, ...(opts.userId ? { userId: opts.userId } : {}) },
     select: { userId: true },

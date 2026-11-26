@@ -1,4 +1,4 @@
-import { mixSeed, seededRng, type Rng } from "@/lib/rng";
+import { keyedRng, mixSeed, seededRng, type Rng } from "@/lib/rng";
 import { armorReductionPct, atkBonusPct, executeBonusPct } from "./modifiers";
 import {
   IllegalAction,
@@ -17,11 +17,20 @@ import {
 } from "./types";
 
 // Moteur du combat : fonctions pures et déterministes. Une partie = setup + graine + liste d'actions.
-// Le hasard de l'action n° seq vient de seededRng(mixSeed(graine, seq)) : aucun état de générateur à sauvegarder.
+// Le hasard de l'action n° seq ne dépend que de la graine et de seq : aucun état de générateur à sauvegarder.
 // Toute l'arithmétique est entière : le même journal redonne exactement les mêmes chiffres partout.
 
-export function rngFor(seed: number, seq: number): Rng {
-  return seededRng(mixSeed(seed, seq));
+/**
+ * Hasard d'une partie, secret jusqu'à sa fin (il ne sert qu'à la rediffusion).
+ * - nombre : graine v1 (parties d'avant la clé), 31 bits, action n° seq = seededRng(mixSeed(graine, seq)). Gardée
+ *   telle quelle pour que leurs rediffusions restent identiques, mais retrouvable par force brute en quelques coups.
+ * - chaîne : clé v2, 32 octets en hexadécimal tirés par le serveur (Battle.rngKey) ; action n° seq =
+ *   HMAC-SHA256(clé, « action:seq ») (lib/rng.ts › keyedRng) : sans la clé, les coups joués n'annoncent rien des suivants.
+ */
+export type BattleSeed = number | string;
+
+export function rngFor(seed: BattleSeed, seq: number): Rng {
+  return typeof seed === "number" ? seededRng(mixSeed(seed, seq)) : keyedRng(seed, `action:${seq}`);
 }
 
 export const other = (side: Side): Side => (side === 0 ? 1 : 0);
@@ -449,7 +458,7 @@ function spend(c: Ctx, side: Side, actor: number, charged = true) {
 /** Applique une action légale ; renvoie le nouvel état (l'ancien n'est pas modifié) et les événements à animer. */
 export function applyAction(
   setup: BattleSetup,
-  seed: number,
+  seed: BattleSeed,
   prev: BattleState,
   action: Action,
 ): { state: BattleState; events: BattleEvent[] } {
@@ -545,7 +554,7 @@ export function outcome(setup: BattleSetup, state: BattleState): [SideOutcome, S
 export type ReplayStep = { action: Action | null; events: BattleEvent[] };
 
 /** Rejoue une partie entière depuis son journal : même graine + mêmes actions = mêmes événements. */
-export function replay(setup: BattleSetup, seed: number, actions: readonly Action[]) {
+export function replay(setup: BattleSetup, seed: BattleSeed, actions: readonly Action[]) {
   let { state, events } = createState(setup);
   const steps: ReplayStep[] = [{ action: null, events }];
   for (const action of actions) {
@@ -553,4 +562,9 @@ export function replay(setup: BattleSetup, seed: number, actions: readonly Actio
     steps.push({ action, events });
   }
   return { state, steps };
+}
+
+/** Événements des actions jouées à partir de la version `from` (steps[0] : ouverture ; steps[i + 1] : action n° i). */
+export function eventsSince(steps: readonly ReplayStep[], from: number): BattleEvent[] {
+  return steps.slice(from + 1).flatMap((s) => s.events);
 }

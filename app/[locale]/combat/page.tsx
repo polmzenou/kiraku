@@ -77,7 +77,7 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
   const [lastTeam, board] = await Promise.all([
     getLastTeam(user.id, candidates),
     // Classement à droite des règles : top de la saison et division du joueur
-    rank ? Promise.all([getRankedLeaderboard(ctx.ranked), getDivisionBoard(user.id, rank, ctx.ranked)]) : null,
+    rank ? Promise.all([getRankedLeaderboard(ctx.ranked, rank.season?.number ?? null), getDivisionBoard(user.id, rank, ctx.ranked)]) : null,
   ]);
   const name = (p: PlayerView | null) => (!p ? "—" : "bot" in p ? t("board.bot", { name: t(`bots.${p.bot}` as "bots.TENGU") }) : p.username);
 
@@ -92,6 +92,7 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
         lastTeam={lastTeam}
         queueSeconds={ctx.rules.queueSeconds}
         queuePollSeconds={ctx.rules.queuePollSeconds}
+        rankedBotOnDemand={ctx.ranked.botOnDemand}
         challenge={challenge}
         rank={rank}
         atelier={ctx.rules.abilityShopEnabled}
@@ -102,9 +103,9 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
           <SectionTitle title={t("rules.title")} />
           <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-text-muted">
             <li>{t("rules.items.turn")}</li>
-            <li>{t("rules.items.orbs", { max: ctx.rules.orbs.max })}</li>
-            <li>{t("rules.items.damage")}</li>
-            <li>{t("rules.items.timer", { seconds: ctx.rules.turnSeconds })}</li>
+            <li>{t("rules.items.orbs", { start: ctx.rules.orbs.start, perTurn: ctx.rules.orbs.perTurn, max: ctx.rules.orbs.max })}</li>
+            <li>{t("rules.items.damage", { critPct: ctx.rules.damage.critPermille / 10 })}</li>
+            <li>{t("rules.items.timer", { seconds: ctx.rules.turnSeconds, missed: ctx.rules.maxMissedTurns })}</li>
             {ctx.rules.synergyAtkPct > 0 && <li>{t("rules.items.synergy", { pct: ctx.rules.synergyAtkPct })}</li>}
             <li>{t("rules.items.end")}</li>
           </ul>

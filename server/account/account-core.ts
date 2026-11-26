@@ -7,7 +7,7 @@
 import { randomBytes } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { anonymizedUsername, deletionDueAt } from "@/lib/account/deletion";
-import { leaveQueueWith } from "../battle/battle-core";
+import { dropQueueSeatInTx, leaveQueueWith } from "../battle/battle-core";
 import { withdrawCasinoFor } from "../casino/coinflip-core";
 import { forgetKyaraImportsFor } from "../kyara/import-core";
 import { keepRefereeFingerprints } from "../referral/fingerprint";
@@ -121,6 +121,8 @@ export async function anonymizeUserWith(
 ): Promise<boolean> {
   // Tables du casino fermées avant de verrouiller le compte (ordre des verrous d'une relève : la table, puis le joueur)
   await withdrawCasinoFor(db, input.userId, input.now);
+  // File de combat quittée de même (cartes engagées rendues) : un appariement en cours attend le joueur, pas l'inverse
+  await leaveQueueWith(db, { userId: input.userId });
   return db.$transaction(async (tx) => {
     const user = await lockAccount(tx, input.userId);
     if (!user) throw new AccountError("NO_USER");
@@ -152,6 +154,12 @@ export async function anonymizeUserWith(
         profileVisibility: "PRIVATE",
         showCollection: false,
         battleTeam: [],
+        // Hors du classé : plus de place dans les positions, le top du Grand Champion, les divisions ni le bilan de saison
+        rankPoints: 0,
+        seasonPeakPc: 0,
+        seasonPeakGrand: false,
+        seasonGames: 0,
+        rankProtection: 0,
         lastSeenAt: null,
         appearOffline: false,
         anonymizedAt: input.now,
@@ -182,7 +190,8 @@ export async function anonymizeUserWith(
     await tx.trade.updateMany({ where: { proposerId: userId, note: { not: null } }, data: { note: null } });
     await tx.trade.updateMany({ where: { recipientId: userId, declineNote: { not: null } }, data: { declineNote: null } });
     await tx.listingOffer.updateMany({ where: { listing: { ownerId: userId }, declineNote: { not: null } }, data: { declineNote: null } });
-    await tx.battleQueue.deleteMany({ where: { userId } });
+    // Place reprise depuis la sortie de file ci-dessus : supprimée, et ses trois cartes engagées reviennent en collection
+    await dropQueueSeatInTx(tx, userId);
     // Provenance des exemplaires spéciaux : le joueur y devient « compte supprimé », chez lui comme chez les autres
     await tx.userCardOwner.updateMany({ where: { ownerId: userId }, data: { ownerId: null } });
 

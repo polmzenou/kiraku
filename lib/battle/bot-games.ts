@@ -1,14 +1,17 @@
 import { seededRng } from "@/lib/rng";
 import { botAction } from "./bot";
-import { applyAction, createState, legalActions, outcome } from "./engine";
+import { applyAction, createState, legalActions, outcome, type BattleSeed } from "./engine";
 import { fighter, RULES, setupOf } from "./fixtures";
 import { KEYWORDS, TECHNIQUES, ULTIMATES, type Action, type BattleSetup, type Keyword, type Side, type Technique, type Ultimate } from "./types";
 
 // Parties bot contre bot des tests de robustesse (aucune base requise). Les 2 000 parties sont
 // réparties sur plusieurs fichiers *.sim.test.ts pour tourner en parallèle.
 
-/** Partie complète bot contre bot, avec erreurs volontaires pour varier les coups. */
-export function botGame(seed: number, setup: BattleSetup) {
+/**
+ * Partie complète bot contre bot, avec erreurs volontaires pour varier les coups. `engineSeed` : hasard du moteur
+ * (graine v1 par défaut, ou clé v2) ; les coups des bots viennent toujours de `seed`.
+ */
+export function botGame(seed: number, setup: BattleSetup, engineSeed: BattleSeed = seed) {
   const rng = seededRng(seed ^ 0x5eed);
   let { state } = createState(setup);
   const actions: Action[] = [];
@@ -20,7 +23,7 @@ export function botGame(seed: number, setup: BattleSetup) {
     const key = JSON.stringify(action);
     if (!legal.some((a) => JSON.stringify(a) === key)) throw new Error(`coup illégal du bot : ${key}`);
     actions.push(action);
-    state = applyAction(setup, seed, state, action).state;
+    state = applyAction(setup, engineSeed, state, action).state;
     for (const team of state.fighters) for (const f of team) {
       if (f.hp < 0 || f.hp > f.maxHp) throw new Error(`PV hors bornes : ${f.hp}/${f.maxHp}`);
       if (f.charge !== undefined && (f.charge < 0 || f.charge > 100 || (f.ultUsed && f.charge !== 0))) throw new Error(`jauge hors bornes : ${f.charge}`);

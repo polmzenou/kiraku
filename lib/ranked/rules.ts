@@ -1,4 +1,5 @@
 import type { BoardTier } from "@/lib/battle/tiers";
+import type { RankedSideView } from "@/lib/battle/view";
 import type { SettingValue } from "@/lib/settings/defaults";
 
 // Mode classé (étape 9b) : rangs, divisions, barème des points de classement (PC), protection et
@@ -20,6 +21,12 @@ export type RankedRules = {
   protectionGames: number;
   matchRange: SettingValue<"ranked.matchRange">;
   botPcPct: number;
+  /** Bot tout de suite en classé (« Combattre contre un bot ») ; sinon seulement après battle.queueSeconds. */
+  botOnDemand: boolean;
+  /** PC gagnés contre le bot par jour de jeu (0 : sans plafond). */
+  botDailyPcCap: number;
+  /** Parties classées entre deux mêmes joueurs qui comptent sur 24 h glissantes (0 : sans limite). */
+  samePairDailyCap: number;
   seasonMonths: number;
   reset: SettingValue<"ranked.reset">;
   rewardLots: SettingValue<"ranked.rewardLots">;
@@ -171,6 +178,31 @@ export function botDelta(delta: number, r: Pick<RankedRules, "botPcPct">): numbe
   return Math.sign(delta) * Math.round((Math.abs(delta) * r.botPcPct) / 100);
 }
 
+/** Gain contre le bot dans la limite du plafond du jour (botDailyPcCap, 0 : sans plafond) ; une perte n'est pas touchée. */
+export function cappedBotGain(delta: number, gainedToday: number, r: Pick<RankedRules, "botDailyPcCap">): number {
+  if (delta <= 0 || r.botDailyPcCap <= 0) return delta;
+  return Math.min(delta, Math.max(0, r.botDailyPcCap - gainedToday));
+}
+
+/**
+ * Une partie classée entre deux joueurs compte-t-elle encore, après `played` parties entre eux sur 24 h glissantes
+ * (samePairDailyCap, 0 : sans limite) ? Au-delà, elle se joue sans PC pour personne.
+ */
+export function pairGameCounts(played: number, r: Pick<RankedRules, "samePairDailyCap">): boolean {
+  return r.samePairDailyCap <= 0 || played < r.samePairDailyCap;
+}
+
+/**
+ * Bilan classé d'un camp relu d'une partie terminée (PC avant et variation gardés sur la partie) : montée ou descente
+ * déduites des PC. Protection, sauvetage et top du Grand Champion ne sont pas gardés : rendus à faux et 0. Null sans PC.
+ */
+export function storedRankedSide(before: number | null, delta: number | null, r: Pick<RankedRules, "tiers">): RankedSideView | null {
+  if (before === null || delta === null) return null;
+  const at = (pc: number) => LADDER.indexOf(ladderTier(pc, r));
+  const after = before + delta;
+  return { before, after, delta, promoted: at(after) > at(before), demoted: at(after) < at(before), saved: false, protection: 0, grandBefore: false, grandAfter: false };
+}
+
 export const RANKED_SETTING_KEYS = [
   "ranked.enabled",
   "ranked.tiers",
@@ -181,6 +213,9 @@ export const RANKED_SETTING_KEYS = [
   "ranked.protectionGames",
   "ranked.matchRange",
   "ranked.botPcPct",
+  "ranked.botOnDemand",
+  "ranked.botDailyPcCap",
+  "ranked.samePairDailyCap",
   "ranked.seasonMonths",
   "ranked.reset",
   "ranked.rewardLots",
@@ -199,6 +234,9 @@ export function rankedRulesFrom(get: <K extends RankedSettingKey>(key: K) => Set
     protectionGames: get("ranked.protectionGames"),
     matchRange: get("ranked.matchRange"),
     botPcPct: get("ranked.botPcPct"),
+    botOnDemand: get("ranked.botOnDemand"),
+    botDailyPcCap: get("ranked.botDailyPcCap"),
+    samePairDailyCap: get("ranked.samePairDailyCap"),
     seasonMonths: get("ranked.seasonMonths"),
     reset: get("ranked.reset"),
     rewardLots: get("ranked.rewardLots"),

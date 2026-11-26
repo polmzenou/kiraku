@@ -3036,11 +3036,13 @@
         "value": "valeur",
         "botMistakePct": "Coups au hasard du bot (%)",
         "botUpgradePct": "Chance qu'une carte du bot monte d'une rareté (%)",
+        "botTurnGraceMs": "Temps rendu au joueur par coup du bot (ms, 0 : aucun)",
         "exhibition": "Exhibition",
         "bot": "Contre un bot",
         "friend": "Entre amis",
         "ranked": "Classé (étape 9b)",
         "dailyCap": "Combats récompensés par jour",
+        "rewardMinTurns": "Tour minimal d'un gain (abandon ou minuteur avant : ni Zeni ni PC)",
         "safetyPollSeconds": "Resynchronisation de secours avec Ably (s)",
         "queuePollSeconds": "Sondage de la file d'attente (s)",
         "lobbyPollSeconds": "Sondage du salon d'un code ami (s)",
@@ -3114,6 +3116,7 @@
       "noLot": "Aucune",
       "keys": {
         "enabled": "Classé ouvert",
+        "botOnDemand": "Bot à la demande en classé (sans attendre le délai)",
         "min": "PC minimum",
         "win": "Victoire",
         "crushWin": "Victoire écrasante",
@@ -3128,7 +3131,9 @@
         "perSecond": "Élargissement par seconde",
         "max": "Écart maximum",
         "botPcPct": "PC contre un bot (%)",
-        "seasonMonths": "Durée d'une saison (mois)",
+        "botDailyPcCap": "PC gagnés contre un bot par jour (0 : sans plafond)",
+        "samePairDailyCap": "Parties classées qui comptent entre deux mêmes joueurs sur 24 h (0 : sans limite)",
+        "seasonMonths": "Durée d'une saison (mois : 1, 2, 3, 4, 6 ou 12)",
         "pivot": "Pivot de remise à zéro (PC)",
         "keepPct": "Part gardée au-dessus du pivot (%)"
       },
@@ -6579,9 +6584,9 @@
       "title": "Règles",
       "items": {
         "turn": "À ton tour, chaque carte debout agit une fois : attaque gratuite ou technique.",
-        "orbs": "Les orbes paient les techniques : 1 au premier tour, un de plus à chaque tour, jusqu'à {max}.",
-        "damage": "Dégâts : attaque de l'attaquant × 100 / (100 + défense de la cible), avec 10 % de coups critiques.",
-        "timer": "{seconds} s par tour. Deux tours expirés d'affilée valent un abandon.",
+        "orbs": "Les orbes paient les techniques : {start} au premier tour, {perTurn, plural, =0 {aucun} one {un} other {#}} de plus à chaque tour, jusqu'à {max}.",
+        "damage": "Dégâts : attaque de l'attaquant × 100 / (100 + défense de la cible), avec {critPct, number} % de coups critiques.",
+        "timer": "{seconds} s par tour. {missed, plural, one {Un tour expiré vaut} other {# tours expirés d'affilée valent}} un abandon.",
         "end": "La première équipe sans carte debout perd. Tes cartes reviennent toujours dans ta collection.",
         "synergy": "Trois cartes du même univers gagnent +{pct} % d'attaque, jusqu'à la première mort de leur équipe. Une carte sauvée par Renaissance ne rompt rien."
       }

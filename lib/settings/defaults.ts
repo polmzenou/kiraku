@@ -505,7 +505,11 @@ export const SETTING_SCHEMAS = {
   // Bot : part de coups au hasard, chance qu'une de ses cartes monte d'une rareté
   "battle.botMistakePct": z.number().int().min(0).max(100),
   "battle.botUpgradePct": z.number().int().min(0).max(100),
+  // Marge ajoutée au tour du joueur par coup du bot (animé sur son temps), au plus la durée d'un tour ; 0 : aucune
+  "battle.botTurnGraceMs": z.number().int().min(0).max(10_000),
   "battle.rewards": battleRewards,
+  // Anti-farm : un abandon ou un minuteur avant ce tour ne rapporte ni Zeni ni PC au gagnant (1 : sans anti-farm)
+  "battle.rewardMinTurns": z.number().int().min(1).max(50),
   // Sondage de secours du plateau quand le temps réel (Ably) n'est pas configuré
   "battle.pollSeconds": z.number().int().min(1).max(30),
   // Resynchronisation de secours du plateau quand le temps réel est actif
@@ -545,7 +549,19 @@ export const SETTING_SCHEMAS = {
   }),
   // Part des PC gagnés ou perdus contre un bot
   "ranked.botPcPct": z.number().int().min(0).max(100),
-  "ranked.seasonMonths": z.number().int().min(1).max(12),
+  // Anti-farm : bot tout de suite en classé (sinon après battle.queueSeconds), PC gagnés contre le bot par jour de jeu
+  // (0 : sans plafond), parties classées entre deux mêmes joueurs qui comptent sur 24 h glissantes (0 : sans limite ;
+  // au-delà, la partie se joue sans PC pour personne)
+  "ranked.botOnDemand": z.boolean(),
+  "ranked.botDailyPcCap": z.number().int().min(0).max(100_000),
+  "ranked.samePairDailyCap": z.number().int().min(0).max(1_000),
+  // Un diviseur de 12 : les saisons découpent l'année civile (5 donnerait janvier, juin, novembre, puis janvier)
+  "ranked.seasonMonths": z
+    .number()
+    .int()
+    .min(1)
+    .max(12)
+    .refine((m) => 12 % m === 0, { message: "Diviseur de 12 : 1, 2, 3, 4, 6 ou 12" }),
   // Fin de saison : au-dessus du pivot, on garde keepPct % de l'excédent
   "ranked.reset": z.object({ pivot: z.number().int().min(0).max(100_000), keepPct: z.number().int().min(0).max(100) }),
   "ranked.rewardLots": rankedRewardLots,
@@ -962,7 +978,9 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "battle.roomMinutes": 10,
   "battle.botMistakePct": 20,
   "battle.botUpgradePct": 10,
+  "battle.botTurnGraceMs": 0, // aucune marge : le comportement d'avant, à trancher (1 500 couvrirait l'animation d'un coup)
   "battle.rewards": { exhibition: 20, bot: 10, friend: 0, ranked: 25, dailyCap: 10 },
+  "battle.rewardMinTurns": 3, // chaque camp a fini son premier tour
   "battle.pollSeconds": 3,
   "battle.safetyPollSeconds": 30,
   "battle.queuePollSeconds": 5,
@@ -1033,6 +1051,9 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "ranked.protectionGames": 3,
   "ranked.matchRange": { base: 150, perSecond: 5, max: 600 },
   "ranked.botPcPct": 50,
+  "ranked.botOnDemand": true, // bouton « Combattre contre un bot » en classé aussi : le comportement d'avant, à trancher
+  "ranked.botDailyPcCap": 0, // sans plafond : le comportement d'avant, à trancher
+  "ranked.samePairDailyCap": 0, // sans limite : le comportement d'avant, à trancher
   "ranked.seasonMonths": 2,
   "ranked.reset": { pivot: 600, keepPct: 50 },
   "ranked.rewardLots": { BRONZE: null, SILVER: null, GOLD: null, EMERALD: null, ELITE: null, CHAMPION: null, GRAND_CHAMPION: null },

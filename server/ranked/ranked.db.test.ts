@@ -65,13 +65,13 @@ describe.skipIf(!url)("classé atomique (base réelle)", () => {
   }
 
   /** Deux fins de tour (on atteint le 3e tour) puis abandon de `loser`. */
-  async function finishAfterTurns(battleId: string, ids: [string, string], loser: string, turns = 2) {
+  async function finishAfterTurns(battleId: string, ids: [string, string], loser: string, turns = 2, c?: Ctx) {
     for (let i = 0; i < turns; i++) {
       const row = await battle(battleId);
-      await playActionWith(prisma, { userId: ids[row.state.active], battleId, version: row.version, action: { type: "END_TURN" } }, ctx());
+      await playActionWith(prisma, { userId: ids[row.state.active], battleId, version: row.version, action: { type: "END_TURN" } }, c ?? ctx());
     }
     const row = await battle(battleId);
-    return playActionWith(prisma, { userId: loser, battleId, version: row.version, action: { type: "FORFEIT" } }, ctx());
+    return playActionWith(prisma, { userId: loser, battleId, version: row.version, action: { type: "FORFEIT" } }, c ?? ctx());
   }
 
   beforeAll(async () => {
@@ -159,6 +159,30 @@ describe.skipIf(!url)("classé atomique (base réelle)", () => {
     const expected = end.ranked?.crushing ? -14 : -10;
     expect(await pcOf(a)).toBe(1000 + expected);
     expect(end.ranked?.sides[1]).toBeNull();
+  }, 60_000);
+
+  it("même adversaire en boucle : au-delà de samePairDailyCap parties sur 24 h, plus de PC pour personne", async () => {
+    const c = ctx({ samePairDailyCap: 1 });
+    const { a, b, battleId } = await rankedMatch(400, 400, c);
+    await finishAfterTurns(battleId, [a, b], b, 2, c);
+    const pc = [await pcOf(a), await pcOf(b)];
+    expect(pc[0]).toBeGreaterThan(400);
+    // Deuxième partie entre les deux mêmes joueurs (a, arrivé le premier, est p1) : elle se joue, sans PC
+    await joinQueueWith(prisma, { userId: a, cardIds: team(), mode: "RANKED" }, c);
+    const again = await joinQueueWith(prisma, { userId: b, cardIds: team(), mode: "RANKED" }, c);
+    if (again.state !== "MATCHED") throw new Error("pas d'appariement");
+    const u = await finishAfterTurns(again.battleId, [a, b], b, 2, c);
+    expect(u.ranked?.sides.map((s) => s?.delta)).toEqual([0, 0]);
+    expect([await pcOf(a), await pcOf(b)]).toEqual(pc);
+  }, 120_000);
+
+  it("bot à la demande coupé en classé : refusé avant battle.queueSeconds, accepté ensuite", async () => {
+    const a = await player(500);
+    await joinQueueWith(prisma, { userId: a, cardIds: team(), mode: "RANKED" }, ctx());
+    await expect(startBotBattleWith(prisma, { userId: a, skipWait: true }, ctx({ botOnDemand: false }))).rejects.toMatchObject({ code: "TOO_EARLY" });
+    const u = await startBotBattleWith(prisma, { userId: a, skipWait: true }, ctx({ botOnDemand: false }, new Date(Date.now() + 60_000)));
+    const row = await battle(u.battleId);
+    await playActionWith(prisma, { userId: a, battleId: u.battleId, version: row.version, action: { type: "FORFEIT" } }, ctx());
   }, 60_000);
 
   it("protection : une montée de rang protège 3 parties du retour au rang inférieur", async () => {

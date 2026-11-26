@@ -1,8 +1,9 @@
 import "server-only";
 import { cache } from "react";
 import { randomInt } from "node:crypto";
+import { replaySeed, requeueTeam } from "@/lib/battle/access";
 import { battleRulesFrom, BATTLE_SETTING_KEYS, type BattleRules } from "@/lib/battle/config";
-import { replay } from "@/lib/battle/engine";
+import { eventsSince, replay } from "@/lib/battle/engine";
 import { isKeyword, isTechnique, type AbilityKind, type Kit } from "@/lib/battle/loadout";
 import { combatStats, keywordsFor, techniqueFor, ultimateFor } from "@/lib/battle/stats";
 import { universeOf } from "@/lib/battle/synergy";
@@ -11,6 +12,7 @@ import type { Activity, BattleUpdateView, BattleView, CandidateCard, DeckView, H
 import { parseBoardTier, type BoardTier } from "@/lib/battle/tiers";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { periodWindow } from "@/lib/economy/period";
+import { storedRankedSide } from "@/lib/ranked/rules";
 import type { SettingValue } from "@/lib/settings/defaults";
 import { Prisma } from "@/generated/prisma/client";
 import { decorFromRelations } from "@/lib/profile/decor";
@@ -25,7 +27,7 @@ import { loadKitDetails, loadKits } from "./kits";
 import { publishBattle } from "./realtime";
 
 // Lectures du combat. Les parties dont le tour a expiré sont réglées au passage (paresseux), comme
-// les ventes du marché ; le cron quotidien balaie le reste.
+// les ventes du marché ; le cron du combat (toutes les 5 minutes) balaie le reste.
 
 export const getBattleRules = cache(async (): Promise<BattleRules> => {
   const values = await Promise.all(BATTLE_SETTING_KEYS.map((k) => getSetting(k)));
@@ -74,6 +76,7 @@ export async function getBattleView(
       code: true,
       codeExpiresAt: true,
       seed: true,
+      rngKey: true,
       p1Id: true,
       p2Id: true,
       botName: true,
@@ -112,8 +115,8 @@ export async function getBattleView(
     code: b.status === "WAITING" && mySide === 0 ? b.code : null,
     codeExpiresAt: b.status === "WAITING" ? (b.codeExpiresAt?.toISOString() ?? null) : null,
     canJoin: waitingForMe,
-    // La graine ne sert qu'au replay : elle reste secrète tant que la partie se joue
-    seed: finished ? b.seed : 0,
+    // Le hasard ne sert qu'au replay : il reste secret tant que la partie se joue
+    seed: replaySeed(b),
     setup: b.setup as BattleView["setup"],
     state: b.state as BattleView["state"],
     version: b.version,
@@ -127,7 +130,7 @@ export async function getBattleView(
     safetyPollSeconds: timing.safetyPollSeconds,
     lobbyPollSeconds: timing.lobbyPollSeconds,
     turnSeconds: timing.turnSeconds,
-    // Le rang d'une partie classée sera figé au lancement (étape 9b)
+    // Rangs d'une partie classée, figés au lancement (start › startTiers)
     tier: previewTier ?? parseBoardTier(mySide === 0 ? b.p1Tier : b.p2Tier),
     tiers: previewTier ? [previewTier, previewTier] : [parseBoardTier(b.p1Tier), parseBoardTier(b.p2Tier)],
     ranked:
@@ -143,26 +146,46 @@ export async function getBattleView(
  * rejouée depuis son journal, la graine ne quitte pas le serveur. null si le joueur est déjà à jour.
  */
 export async function getUpdateSince(battleId: string, viewerId: string, from: number): Promise<BattleUpdateView | null> {
+  // Cas le plus courant d'un sondage : le joueur est à jour. Participants et version d'abord, sans setup ni state (JSON)
+  const head = await prisma.battle.findUnique({ where: { id: battleId }, select: { p1Id: true, p2Id: true, version: true } });
+  if (!head || (head.p1Id !== viewerId && head.p2Id !== viewerId) || from >= head.version) return null;
   const b = await prisma.battle.findUnique({
     where: { id: battleId },
-    select: { p1Id: true, p2Id: true, setup: true, seed: true, version: true, state: true, status: true, turnEndsAt: true, rewardZeni: true },
+    select: {
+      mode: true,
+      setup: true,
+      seed: true,
+      rngKey: true,
+      version: true,
+      state: true,
+      status: true,
+      turnEndsAt: true,
+      rewardZeni: true,
+      crushing: true,
+      pcBeforeP1: true,
+      pcBeforeP2: true,
+      pcDeltaP1: true,
+      pcDeltaP2: true,
+    },
   });
-  if (!b || (b.p1Id !== viewerId && b.p2Id !== viewerId) || !b.setup || !b.state) return null;
-  if (from >= b.version) return null;
+  if (!b?.setup || !b.state) return null;
   const actions = await prisma.battleAction.findMany({ where: { battleId }, orderBy: { seq: "asc" }, select: { payload: true } });
-  const { steps } = replay(b.setup as unknown as BattleSetup, b.seed, actions.map((a) => a.payload as unknown as Action));
+  const { steps } = replay(b.setup as unknown as BattleSetup, b.rngKey ?? b.seed, actions.map((a) => a.payload as unknown as Action));
+  const finished = b.status === "FINISHED";
+  // Fin de partie classée arrivée par ce rattrapage (message en direct manqué) : bilan relu des PC gardés sur la partie
+  const ladder = b.mode === "RANKED" && finished ? await getRankedRules() : null;
   return {
     battleId,
     from,
     version: b.version,
-    // steps[0] : ouverture de la partie ; steps[i + 1] : action n° i
-    events: steps.slice(from + 1).flatMap((s) => s.events),
+    events: eventsSince(steps, from),
     state: b.state as unknown as BattleState,
     turnEndsAt: b.turnEndsAt?.toISOString() ?? null,
-    finished: b.status === "FINISHED",
+    finished,
     rewardZeni: b.rewardZeni,
-    // Le détail classé arrive avec la mise à jour en direct ; un rattrapage relit la page
-    ranked: null,
+    ranked: ladder
+      ? { crushing: b.crushing, sides: [storedRankedSide(b.pcBeforeP1, b.pcDeltaP1, ladder), storedRankedSide(b.pcBeforeP2, b.pcDeltaP2, ladder)] }
+      : null,
   };
 }
 
@@ -369,13 +392,12 @@ export async function requeueTeamOf(
     where: { id: battleId },
     select: { mode: true, status: true, p1Id: true, p2Id: true, p1Team: true, p2Team: true },
   });
-  if (!b || b.status !== "FINISHED" || b.mode === "FRIEND") return null;
-  const team = b.p1Id === userId ? b.p1Team : b.p2Id === userId ? b.p2Team : null;
-  if (!team) return null;
-  const copies = await prisma.userCard.findMany({ where: { id: { in: team } }, select: { id: true, cardId: true } });
+  const last = b ? requeueTeam(b, userId) : null;
+  if (!last) return null;
+  const copies = await prisma.userCard.findMany({ where: { id: { in: last.team } }, select: { id: true, cardId: true } });
   const byId = new Map(copies.map((c) => [c.id, c.cardId]));
   // Un exemplaire disparu depuis (vendu, échangé) : l'équipe revient incomplète
-  return { mode: b.mode, cardIds: team.flatMap((id) => byId.get(id) ?? []) };
+  return { mode: last.mode, cardIds: last.team.flatMap((id) => byId.get(id) ?? []) };
 }
 
 export async function getHistory(userId: string, take = 20): Promise<HistoryItem[]> {

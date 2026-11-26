@@ -19,7 +19,9 @@ export const BATTLE_SETTING_KEYS = [
   "battle.roomMinutes",
   "battle.botMistakePct",
   "battle.botUpgradePct",
+  "battle.botTurnGraceMs",
   "battle.rewards",
+  "battle.rewardMinTurns",
   "battle.pollSeconds",
   "battle.safetyPollSeconds",
   "battle.queuePollSeconds",
@@ -52,7 +54,9 @@ export type BattleRules = {
   roomMinutes: number;
   botMistakePct: number;
   botUpgradePct: number;
+  botTurnGraceMs: number;
   rewards: SettingValue<"battle.rewards">;
+  rewardMinTurns: number;
   pollSeconds: number;
   safetyPollSeconds: number;
   queuePollSeconds: number;
@@ -84,7 +88,9 @@ export function battleRulesFrom(get: <K extends BattleSettingKey>(key: K) => Set
     roomMinutes: get("battle.roomMinutes"),
     botMistakePct: get("battle.botMistakePct"),
     botUpgradePct: get("battle.botUpgradePct"),
+    botTurnGraceMs: get("battle.botTurnGraceMs"),
     rewards: get("battle.rewards"),
+    rewardMinTurns: get("battle.rewardMinTurns"),
     pollSeconds: get("battle.pollSeconds"),
     safetyPollSeconds: get("battle.safetyPollSeconds"),
     queuePollSeconds: get("battle.queuePollSeconds"),

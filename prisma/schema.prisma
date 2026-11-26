@@ -1828,7 +1828,8 @@ model Battle {
   status        BattleStatus     @default(WAITING)
   code          String?          @unique // code ami tant que la salle attend
   codeExpiresAt DateTime?
-  seed          Int // 0 ≤ seed < 2^31, tirée par le serveur
+  seed          Int // graine v1 (0 ≤ seed < 2^31) des parties d'avant rngKey ; 0 pour les suivantes
+  rngKey        String?          @db.Char(64) // clé du hasard v2 (32 octets en hexadécimal, CHECK dans la migration), secrète jusqu'à la fin
   p1Id          String
   p1            User             @relation("battleP1", fields: [p1Id], references: [id], onDelete: Cascade)
   p2Id          String? // null = bot
@@ -1862,6 +1863,8 @@ model Battle {
   @@index([p2Id, createdAt])
   @@index([status, turnEndsAt])
   @@index([createdAt], type: Brin) // fenêtres de dates du tableau de bord admin
+  // Index partiels dans la migration 20261126135700_combat_cle_hasard : partie ouverte ou en cours d'un joueur (p1Id
+  // WHERE status IN (WAITING, ACTIVE), p2Id WHERE status = ACTIVE)
 }
 
 // Journal des actions d'une partie, dans l'ordre (seq = BattleState.seq avant l'action)

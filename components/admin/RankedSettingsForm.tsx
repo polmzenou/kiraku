@@ -75,6 +75,7 @@ export function RankedSettingsForm({ initial, lots }: { initial: RankedSettings;
       <fieldset className="flex flex-col gap-2 lacquer rounded-card p-4">
         <legend className="px-1 font-bold">{t("switches")}</legend>
         <Toggle label={key("enabled")} checked={draft["ranked.enabled"]} onChange={(v) => set({ ...draft, "ranked.enabled": v })} />
+        <Toggle label={key("botOnDemand")} checked={draft["ranked.botOnDemand"]} onChange={(v) => set({ ...draft, "ranked.botOnDemand": v })} />
       </fieldset>
 
       <fieldset className="flex flex-col gap-3 lacquer rounded-card p-4">
@@ -93,6 +94,8 @@ export function RankedSettingsForm({ initial, lots }: { initial: RankedSettings;
         {num(key("crushHpPct"), draft["ranked.crushHpPct"], (v) => set({ ...draft, "ranked.crushHpPct": v }))}
         {num(key("protectionGames"), draft["ranked.protectionGames"], (v) => set({ ...draft, "ranked.protectionGames": v }))}
         {num(key("botPcPct"), draft["ranked.botPcPct"], (v) => set({ ...draft, "ranked.botPcPct": v }))}
+        {num(key("botDailyPcCap"), draft["ranked.botDailyPcCap"], (v) => set({ ...draft, "ranked.botDailyPcCap": v }))}
+        {num(key("samePairDailyCap"), draft["ranked.samePairDailyCap"], (v) => set({ ...draft, "ranked.samePairDailyCap": v }))}
       </fieldset>
 
       <fieldset className={box}>

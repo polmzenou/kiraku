@@ -1,7 +1,7 @@
 import type { BoardTier } from "./tiers";
 
 // Arènes du combat : une par palier du classé. Le décor est purement visuel (aucune règle de jeu) ;
-// l'attribution par palier se règle dans l'admin (battle.arenas, étape 3 du chantier).
+// chaque palier a la sienne (ARENA_BY_TIER).
 
 export const ARENAS = ["dojo", "chikurin", "torii", "suiu", "tenshu", "himatsuri", "takamagahara"] as const;
 export type ArenaId = (typeof ARENAS)[number];
@@ -27,7 +27,3 @@ export const ARENA_KANJI: Record<ArenaId, string> = {
   himatsuri: "火祭り",
   takamagahara: "高天原",
 };
-
-export function parseArena(raw: unknown): ArenaId | null {
-  return typeof raw === "string" && (ARENAS as readonly string[]).includes(raw) ? (raw as ArenaId) : null;
-}

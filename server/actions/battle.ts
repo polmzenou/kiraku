@@ -6,7 +6,7 @@ import { clientActionSchema } from "@/lib/battle/client-action";
 import { cleanDeckName } from "@/lib/battle/decks";
 import type { Kit } from "@/lib/battle/loadout";
 import { KEYWORDS, LEGACY_KEYWORDS, TEAM_SIZE, TECHNIQUES } from "@/lib/battle/types";
-import type { Activity, BattleUpdateView, BattleView } from "@/lib/battle/view";
+import type { BattleUpdateView, BattleView } from "@/lib/battle/view";
 import { isFrozen } from "@/lib/account/deletion";
 import { prisma } from "../db";
 import {
@@ -27,7 +27,7 @@ import {
 } from "../battle/battle-core";
 import { buyAbilityWith, equipWith } from "../battle/ability-shop-core";
 import { deleteDeckWith, renameDeckWith, saveDeckWith } from "../battle/deck-core";
-import { battleCtx, getActivity, getBattleRules, getBattleView, getUpdateSince, requeueTeamOf, sweepBattlesFor } from "../battle/queries";
+import { battleCtx, getBattleRules, getBattleView, getUpdateSince, requeueTeamOf, sweepBattlesFor } from "../battle/queries";
 import { publishBattle, publishMatched, toMessage } from "../battle/realtime";
 import { pushLater } from "../market/queries";
 import { ensureSeason } from "../ranked/queries";
@@ -180,7 +180,10 @@ export type StartResult = { ok: true; battleId: string } | Failure;
 
 const botSchema = z.object({ skipWait: z.boolean() }).strict().optional();
 
-/** Sans argument : le délai d'attente doit être écoulé. `{ skipWait: true }` : le joueur demande le bot tout de suite. */
+/**
+ * Sans argument : le délai d'attente doit être écoulé. `{ skipWait: true }` : le joueur demande le bot tout de suite
+ * (en classé, seulement si ranked.botOnDemand le permet ; sinon TOO_EARLY jusqu'à la fin du délai).
+ */
 export async function startBotBattleAction(input?: unknown): Promise<StartResult> {
   const parsed = botSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
@@ -449,16 +452,4 @@ export async function battleSinceAction(input: unknown): Promise<SinceResult> {
     await sweepBattlesFor(user.id);
   }
   return { ok: true, update: await getUpdateSince(parsed.data.battleId, user.id, parsed.data.version) };
-}
-
-export type ActivityResult = { ok: true; activity: Activity } | Failure;
-
-export async function activityAction(): Promise<ActivityResult> {
-  const user = await requireActiveUser();
-  if (!user) return { ok: false, error: "NO_SESSION" };
-  if (!(await rateLimit(`battle-activity:${user.id}`, { limit: 30, windowSeconds: MINUTE }, { store: "memory" })).success) {
-    return { ok: false, error: "RATE_LIMITED" };
-  }
-  const ctx = await battleCtx();
-  return { ok: true, activity: await getActivity(user.id, ctx.rules.queueSeconds) };
 }

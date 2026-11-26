@@ -1,12 +1,15 @@
+import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { seededRng } from "@/lib/rng";
 import { botGame, randomTeam } from "./bot-games";
-import { applyAction, createState, legalActions, orbsFor, replay } from "./engine";
+import { applyAction, createState, eventsSince, legalActions, orbsFor, replay, rngFor, type BattleSeed } from "./engine";
 import { atkBonusPct, rageBonusPct } from "./modifiers";
 import { FLAT_RULES, RULES, fighter, setupOf } from "./fixtures";
 import { LEGACY_KEYWORDS, LEGACY_TECHNIQUES, NEW_TECHNIQUES, type Action, type BattleEvent, type BattleSetup, type BattleState, type EngineRules, type Side } from "./types";
 
-const play = (setup: BattleSetup, state: BattleState, action: Action, seed = 1) => applyAction(setup, seed, state, action);
+const play = (setup: BattleSetup, state: BattleState, action: Action, seed: BattleSeed = 1) => applyAction(setup, seed, state, action);
+/** Clé v2 de test (32 octets en hexadécimal). */
+const KEY = "00112233445566778899aabbccddeeff".repeat(2);
 
 function team3(over: Parameters<typeof fighter>[0] = {}) {
   return [fighter(over), fighter(over), fighter(over)];
@@ -788,6 +791,63 @@ describe("déterminisme et robustesse", () => {
     const b = replay(setup, 7, actions);
     expect(a).toEqual(b);
     expect(a.state).toEqual(state);
+  });
+
+  it("graine v1 : mêmes tirages qu'avant la clé (les rediffusions des anciennes parties ne bougent pas)", () => {
+    const r = rngFor(123456789, 7);
+    expect([r(1000), r(1000), r(21), r(100), r(2)]).toEqual([868, 812, 1, 42, 1]);
+    const top = rngFor(2 ** 31 - 1, 0);
+    expect([top(1000), top(1000), top(21)]).toEqual([690, 361, 4]);
+  });
+
+  it("clé v2 : action n° seq tirée de HMAC-SHA256(clé, « action:seq »), une autre que la graine v1", () => {
+    const r = rngFor(KEY, 4);
+    const word = createHmac("sha256", Buffer.from(KEY, "hex")).update("action:4:0").digest().readUInt32BE(0);
+    expect(r(1000)).toBe(Math.floor((word / 2 ** 32) * 1000));
+    const draws = (seed: number | string, seq: number) => {
+      const rng = rngFor(seed, seq);
+      return Array.from({ length: 8 }, () => rng(1_000_000));
+    };
+    expect(draws(KEY, 4)).toEqual(draws(KEY, 4));
+    expect(draws(KEY, 4)).not.toEqual(draws(KEY, 5));
+    expect(draws(KEY, 4)).not.toEqual(draws(4, 4));
+  });
+
+  it("clé v2 : la partie jouée se rejoue à l'identique, une autre clé donne une autre partie", () => {
+    const rng = seededRng(43);
+    for (let i = 0; i < 10; i++) {
+      const setup = setupOf(randomTeam(rng), randomTeam(rng), RULES, (i % 2) as Side);
+      const key = (i + 1).toString(16).padStart(2, "0").repeat(32);
+      const { state, actions } = botGame(i, setup, key);
+      expect(replay(setup, key, actions).state).toEqual(state);
+    }
+    const setup = setupOf(team3(), team3(), RULES);
+    const s = createState(setup).state;
+    const amounts = new Set(
+      Array.from({ length: 20 }, (_, n) => {
+        const d = play(setup, s, { type: "ATTACK", side: 0, actor: 0, target: 0 }, n.toString(16).padStart(64, "0")).events.find((e) => e.t === "damage");
+        return d?.t === "damage" ? d.amount : -1;
+      }),
+    );
+    expect(amounts.size).toBeGreaterThan(1);
+  });
+
+  it("rattrapage : les événements depuis la version k sont ceux des actions k à N − 1", () => {
+    const rng = seededRng(44);
+    const setup = setupOf(randomTeam(rng), randomTeam(rng), RULES);
+    const { actions } = botGame(3, setup, KEY);
+    const { steps } = replay(setup, KEY, actions);
+    // Partie rejouée pas à pas : événements de chaque action, dans l'ordre
+    let { state } = createState(setup);
+    const perAction: BattleEvent[][] = [];
+    for (const action of actions) {
+      const res = applyAction(setup, KEY, state, action);
+      perAction.push(res.events);
+      state = res.state;
+    }
+    for (const k of [0, 1, Math.floor(actions.length / 2), actions.length - 1, actions.length]) {
+      expect(eventsSince(steps, k)).toEqual(perAction.slice(k).flat());
+    }
   });
 
   it("une autre graine donne d'autres chiffres", () => {
