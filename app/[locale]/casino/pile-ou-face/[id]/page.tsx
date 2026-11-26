@@ -10,6 +10,7 @@ import { isFrozen } from "@/lib/account/deletion";
 import type { CasinoActionError } from "@/server/actions/casino";
 import { sweepCasinoWith } from "@/server/casino/coinflip-core";
 import { casinoView, getTable, joinableRarities } from "@/server/casino/queries";
+import { namedPlayerSelect, publicNamesFor } from "@/server/collection/public-names";
 import { prisma } from "@/server/db";
 import { pushLater } from "@/server/market/queries";
 import { getCurrentUser } from "@/server/user";
@@ -19,9 +20,11 @@ const ID = /^[A-Za-z0-9_-]{1,40}$/;
 export async function generateMetadata({ params }: PageProps<"/[locale]/casino/pile-ou-face/[id]">): Promise<Metadata> {
   const { id } = await params;
   const t = await getTranslations("casino");
-  const row = ID.test(id) ? await prisma.coinFlip.findUnique({ where: { id }, select: { creator: { select: { username: true } } } }) : null;
+  const row = ID.test(id) ? await prisma.coinFlip.findUnique({ where: { id }, select: { creator: { select: namedPlayerSelect } } }) : null;
+  // Titre vu dans l'aperçu d'un lien partagé : pseudo masqué comme ailleurs si le profil du créateur le cache
+  const name = row ? (await publicNamesFor(null, [row.creator]))(row.creator).name : null;
   // Page partageable (lien d'invitation), jamais indexée
-  return { title: row ? t("table.tableOf", { name: row.creator.username }) : t("salon.title"), robots: { index: false, follow: false } };
+  return { title: name ? t("table.tableOf", { name }) : t("salon.title"), robots: { index: false, follow: false } };
 }
 
 /** Une table : attente, relève, lancer, résultat et vérification du tirage. */

@@ -179,7 +179,8 @@ export async function createTableWith(db: PrismaClient, input: CreateInput, ctx:
       if (tier === null) throw new CoinFlipError("RARITY");
       const [copies, openTables, today] = await Promise.all([
         copiesOutsideCasino(tx, input.userId, input.cardId),
-        tx.coinFlip.count({ where: { creatorId: input.userId, status: "OPEN" } }),
+        // Une table échue mais pas encore balayée ne compte plus (« Mes tables » ne l'affiche pas non plus)
+        tx.coinFlip.count({ where: { creatorId: input.userId, status: "OPEN", expiresAt: { gt: now } } }),
         flipsToday(tx, input.userId, ctx.dayStart),
       ]);
       const blocked = checkCreate(

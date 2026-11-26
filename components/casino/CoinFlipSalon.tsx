@@ -54,6 +54,12 @@ type Props = {
 
 /** Au-delà, un rendu restitué par le cache du navigateur (retour arrière) est rechargé dès l'affichage. */
 const STALE_RENDER_MS = 15_000;
+/**
+ * Premier affichage de chaque rendu du serveur (serverNow → heure de l'appareil). L'âge d'un rendu se mesure
+ * avec la seule horloge de l'appareil : comparée à celle du serveur, une horloge en avance rechargeait la page
+ * sans fin (chaque rechargement apportait un nouveau serverNow, toujours « vieux »).
+ */
+const firstSeen = new Map<number, number>();
 
 /** Pastille de rareté du pot : sceau et nom. */
 function RarityPill({ rarity }: { rarity: string }) {
@@ -187,10 +193,11 @@ export function CoinFlipSalon(props: Props) {
     const res = await coinFlipLobbyAction({ tier: tierOrder, cursor: null });
     if (!res.ok) return false;
     const ids = res.page.items.map((i) => i.id).join(",");
-    const changed = ids !== shownIds.current;
+    if (ids === shownIds.current) return false;
     shownIds.current = ids;
+    // La première page a changé : elle remplace la liste ; sinon les pages chargées par « Voir plus » restent
     setLobby(res.page);
-    return changed;
+    return true;
   }, [tab, tierOrder]);
   usePoll(poll, { seconds: props.pollSeconds, enabled: tab === "tables", backoff: true });
 
@@ -214,8 +221,18 @@ export function CoinFlipSalon(props: Props) {
 
   // Page restituée par le cache du navigateur (retour arrière) : on la recharge plutôt que d'afficher l'ancien état
   const renderedAt = props.serverNow;
+  const staleRefreshed = useRef(false);
   useEffect(() => {
-    if (Date.now() - renderedAt > STALE_RENDER_MS) router.refresh();
+    const seen = firstSeen.get(renderedAt);
+    if (seen === undefined) {
+      firstSeen.set(renderedAt, Date.now());
+      return;
+    }
+    // Rendu déjà vu il y a longtemps (retour arrière) : un seul rechargement par affichage
+    if (!staleRefreshed.current && Date.now() - seen > STALE_RENDER_MS) {
+      staleRefreshed.current = true;
+      router.refresh();
+    }
   }, [renderedAt, router]);
 
   const loadMore = async () => {

@@ -69,12 +69,13 @@ const pushLater = (ids: string[]) => after(() => pushNotifications(ids));
 type Rule = { limit: number; windowSeconds: number };
 
 /** Session, schéma, compte inscrit actif, casino ouvert (ou aperçu de l'équipe) et jeu allumé, rate limit. */
-async function guard<S extends z.ZodType>(input: unknown, schema: S, bucket: string, rule: Rule, store: "db" | "memory" = "db") {
+async function guard<S extends z.ZodType>(input: unknown, schema: S, bucket: string, rule: Rule, store: "db" | "memory" = "db", opts: { guests?: boolean } = {}) {
   const user = await getCurrentUser();
   if (!user) return { error: "NO_SESSION" as const };
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { error: "INVALID" as const };
-  if (user.isGuest) return { error: "GUEST" as const };
+  // Lecture seule (salon) : un invité voit les tables se mettre à jour ; il ne peut ni poser ni relever
+  if (user.isGuest && !opts.guests) return { error: "GUEST" as const };
   if (user.bannedAt || isFrozen(user)) return { error: "UNAVAILABLE" as const };
   const rules = await getCasinoRules();
   if (!casinoAccess(rules, Date.now(), isStaff(user.role)).canEnter) return { error: "CLOSED" as const };
@@ -95,7 +96,10 @@ export async function createCoinFlipAction(input: unknown): Promise<{ ok: true; 
   try {
     let reservedForId: string | null = null;
     if (g.data.reservedFor) {
-      const target = await prisma.user.findFirst({ where: { username: { equals: g.data.reservedFor, mode: "insensitive" } }, select: { id: true } });
+      // Comparaison sans la casse, puis contrôle exact : un « _ » du pseudo ne doit jamais servir de joker
+      const wanted = g.data.reservedFor.toLowerCase();
+      const candidates = await prisma.user.findMany({ where: { username: { equals: g.data.reservedFor, mode: "insensitive" } }, select: { id: true, username: true }, take: 5 });
+      const target = candidates.find((c) => c.username.toLowerCase() === wanted);
       if (!target) return { ok: false, error: "RESERVE_TARGET" };
       reservedForId = target.id;
     }
@@ -198,7 +202,7 @@ export async function markCoinFlipsSeenAction(input: unknown): Promise<{ ok: tru
 
 /** Sondage du salon (complété par le rechargement après chaque action). */
 export async function coinFlipLobbyAction(input: unknown): Promise<{ ok: true; page: LobbyPage } | Failure> {
-  const g = await guard(input, lobbySchema, "coinflip-lobby", { limit: 30, windowSeconds: MINUTE }, "memory");
+  const g = await guard(input, lobbySchema, "coinflip-lobby", { limit: 30, windowSeconds: MINUTE }, "memory", { guests: true });
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
   const page = await listLobby({ viewerId: g.user.id, tier: g.data.tier, cursor: g.data.cursor, locale: await getLocale() });
   return { ok: true, page };
