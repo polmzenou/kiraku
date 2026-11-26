@@ -3,18 +3,26 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 import { MOTION_PREFS } from "@/lib/motion-pref";
+import { requestTiltPermission, tiltPermission, type TiltPermission } from "@/lib/tilt-dom";
 import { useFxLevel, useMotionPreference } from "../motion/MotionPreference";
+import { Button } from "../ui/Button";
 import { Radio } from "../ui/Choice";
 
-/** Engrenage de l'ouverture, à côté du son : niveau des animations sur cet appareil. */
+/**
+ * Engrenage de l'ouverture, à côté du son : niveau des animations sur cet appareil et, sur iPhone, accès à
+ * l'inclinaison du téléphone (Safari ne la livre qu'après un accord donné d'un geste).
+ */
 export function SettingsMenu() {
   const t = useTranslations("header");
   const { pref, setPref } = useMotionPreference();
   const level = useFxLevel();
   const [open, setOpen] = useState(false);
+  // Lu à l'ouverture du panneau (jamais au rendu serveur) : « unneeded » hors iPhone, rien à afficher
+  const [tilt, setTilt] = useState<TiltPermission>("unneeded");
   const root = useRef<HTMLDivElement>(null);
   const panelId = useId();
   const hintId = useId();
+  const tiltId = useId();
 
   // Fermeture au clic dehors ou à Échap
   useEffect(() => {
@@ -43,7 +51,10 @@ export function SettingsMenu() {
         title={t("settings")}
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          setOpen((o) => !o);
+          setTilt(tiltPermission());
+        }}
         className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface/80 text-text-muted backdrop-blur hover:text-text aria-expanded:border-kin aria-expanded:text-kin"
       >
         <GearIcon />
@@ -70,6 +81,26 @@ export function SettingsMenu() {
               </label>
             ))}
           </fieldset>
+          {tilt !== "unneeded" && (
+            <div role="group" aria-labelledby={tiltId} className="mt-3 flex flex-col items-start gap-2 border-t border-border pt-3">
+              <p id={tiltId} className="text-sm font-bold">
+                {t("tilt.title")}
+              </p>
+              <p role="status" className="text-xs text-text-muted">
+                {t(`tilt.${tilt}`)}
+              </p>
+              {tilt !== "granted" && (
+                <Button
+                  type="button"
+                  size="sm"
+                  // Demande faite dans le geste même (Safari la refuse sinon)
+                  onClick={() => void requestTiltPermission().then(() => setTilt(tiltPermission()))}
+                >
+                  {t(tilt === "denied" ? "tilt.retry" : "tilt.enable")}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -2,37 +2,9 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { liteFx, MOTION_EVENT, prefersReducedMotion } from "@/lib/motion-pref-dom";
+// Inclinaison du téléphone partagée (un seul écouteur et une seule image par frame pour tout l'écran)
+import { listenTilt } from "@/lib/tilt-dom";
 import "./FudaTilt.css";
-
-// Inclinaison du téléphone partagée : un seul écouteur et une seule image par frame pour toutes les
-// fuda à l'écran (une pile de 50 cartes n'en pose plus 50).
-type TiltListener = (x: number, y: number) => void;
-const tiltListeners = new Set<TiltListener>();
-let tiltFrame = 0;
-let tiltX = 0.5;
-let tiltY = 0.5;
-const flushTilt = () => {
-  tiltFrame = 0;
-  for (const listener of tiltListeners) listener(tiltX, tiltY);
-};
-// gamma : gauche/droite (−90…90), beta : avant/arrière (−180…180), autour d'une tenue à ~45°
-const onOrientation = (e: DeviceOrientationEvent) => {
-  if (e.gamma === null || e.beta === null) return;
-  tiltX = 0.5 + e.gamma / 60;
-  tiltY = 0.5 + (e.beta - 45) / 60;
-  if (!tiltFrame) tiltFrame = requestAnimationFrame(flushTilt);
-};
-function listenTilt(listener: TiltListener) {
-  if (tiltListeners.size === 0) window.addEventListener("deviceorientation", onOrientation, { passive: true });
-  tiltListeners.add(listener);
-  return () => {
-    tiltListeners.delete(listener);
-    if (tiltListeners.size > 0) return;
-    window.removeEventListener("deviceorientation", onOrientation);
-    if (tiltFrame) cancelAnimationFrame(tiltFrame);
-    tiltFrame = 0;
-  };
-}
 
 /**
  * Fait suivre l'effet de matière des fuda (laque, or, nacre) à la souris ou à l'inclinaison du

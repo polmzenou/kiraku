@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countdownParts } from "./time";
+import { countdownParts, countdownStep } from "./time";
 import { isActive, NAV_ITEMS } from "./nav";
 
 describe("countdownParts", () => {
@@ -21,6 +21,39 @@ describe("countdownParts", () => {
     expect(countdownParts(ms, { days: true })).toEqual({ unit: "dayHour", days: 2, hours: 4 });
     expect(countdownParts(ms)).toEqual({ unit: "hourMin", hours: 52, minutes: 30 });
     expect(countdownParts(23 * 3_600_000, { days: true })).toEqual({ unit: "hourMin", hours: 23, minutes: 0 });
+  });
+});
+
+describe("countdownStep", () => {
+  // Le texte change quand countdownParts change : on le vérifie seconde par seconde autour de chaque réveil
+  const parts = (s: number, days: boolean) => JSON.stringify(countdownParts(s * 1000, { days }));
+  const check = (s: number, days: boolean) => {
+    const step = countdownStep(s * 1000, { days });
+    for (let k = 1; k < step; k++) expect(parts(s - k, days)).toBe(parts(s, days));
+    expect(parts(s - step, days)).not.toBe(parts(s, days));
+  };
+
+  it("chaque seconde sous une heure", () => {
+    expect(countdownStep(59 * 60_000 + 30_000)).toBe(1);
+    expect(countdownStep(500)).toBe(1);
+    check(3599, false);
+    check(61, false);
+  });
+
+  it("à la minute au-delà d'une heure, jusqu'au passage sous l'heure", () => {
+    expect(countdownStep(3 * 3_600_000 + 5 * 60_000 + 42_000)).toBe(43);
+    expect(countdownStep(3_600_000)).toBe(1);
+    for (const s of [3600, 3601, 3659, 3660, 7322, 90_000]) check(s, false);
+  });
+
+  it("à l'heure au-delà d'un jour avec days, puis à la minute", () => {
+    expect(countdownStep(2 * 86_400_000 + 4 * 3_600_000 + 30 * 60_000, { days: true })).toBe(30 * 60 + 1);
+    for (const s of [86_400, 86_401, 90_000, 2 * 86_400 + 3599, 86_399]) check(s, true);
+  });
+
+  it("zéro une fois fini", () => {
+    expect(countdownStep(0)).toBe(0);
+    expect(countdownStep(-5000, { days: true })).toBe(0);
   });
 });
 

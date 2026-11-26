@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { CHANCE_ROWS, chanceRows, wishlistInPool } from "./panel";
+import { boxPacks, CHANCE_ROWS, chanceRows, wishlistInPool } from "./panel";
+
+describe("sachets d'un jūbako", () => {
+  it("planchers de la boîte divisés par ceux du sachet standard", () => {
+    expect(boxPacks(20, 4)).toBe(5);
+    expect(boxPacks(30, 4)).toBe(8);
+    expect(boxPacks(20, 5)).toBe(4);
+  });
+
+  it("au moins un sachet, même pour une petite boîte ou un réglage vide", () => {
+    expect(boxPacks(1, 4)).toBe(1);
+    expect(boxPacks(0, 4)).toBe(1);
+    expect(boxPacks(6, 0)).toBe(6);
+  });
+});
 
 describe("souhaits dans un booster", () => {
   const pool = { COMMON: ["a", "b"], RARE: ["c"], MYTHIC: [] };

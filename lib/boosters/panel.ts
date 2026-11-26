@@ -8,6 +8,8 @@ import { priceFor, typeDrawRules, type Availability, type BoosterTypeView, type 
 
 export type BoosterPanelData = {
   slotFloors: Rarity[];
+  /** Jūbako : sachets standard que représente la boîte (« 5 × 袋 ») ; null hors jūbako. */
+  packs: number | null;
   /** Meilleur plancher garanti. */
   best: Rarity;
   /** P(au moins une ≥ R), paliers vides du pool repliés comme au tirage. */
@@ -50,6 +52,7 @@ export function boosterPanelData(input: {
   const featuredTotal = input.featuredCounts ? RARITIES.reduce((s, r) => s + input.featuredCounts![r], 0) : 0;
   return {
     slotFloors,
+    packs: type.shape === "JUBAKO" ? boxPacks(slotFloors.length, input.rules.slotFloors.length) : null,
     best,
     odds: atLeastOdds(rules.rates, slotFloors, counts),
     inPool: RARITIES.filter((r) => (counts[r] ?? 0) > 0),
@@ -74,6 +77,14 @@ export function boosterPanelData(input: {
     price: priceFor(type, user.stock, 1),
     availability: input.availability,
   };
+}
+
+/**
+ * Sachets standard que représente un jūbako : le serveur n'y tire que ses planchers (20 dans le seed), un
+ * sachet standard en compte autant que le réglage booster.slotFloors (4 par défaut). Au moins un.
+ */
+export function boxPacks(boxFloors: number, packFloors: number): number {
+  return Math.max(1, Math.round(boxFloors / Math.max(1, packFloors)));
 }
 
 /** Seuils de chances toujours affichés. */

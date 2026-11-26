@@ -29,50 +29,64 @@ export function BarenReveal({ copy, delay, onInked, onDone }: { copy: FudaCopy; 
   });
 
   useEffect(() => {
-    const box = root.current?.getBoundingClientRect();
-    if (!box || !baren.current || !ink.current || !seal.current) return;
+    // Nœuds lus une fois : au démontage, React remet les refs à null alors que le déroulé reprend encore après
+    // son attente en cours (dispose la lève tout de suite)
+    const nodes = { root: root.current, baren: baren.current, ink: ink.current, seal: seal.current, bands: [...bands.current] };
+    const box = nodes.root?.getBoundingClientRect();
+    if (!box || !nodes.root || !nodes.baren || !nodes.ink || !nodes.seal) return;
+    const { root: rootNode, baren: pad, ink: inkNode, seal: sealNode } = nodes;
     const tl = createTimeline(false);
+    // Démontée (carte suivante), la séquence s'arrête à la reprise suivante : ni animation ni rappel au parent
+    let alive = true;
     const { width: w, height: h } = box;
     const run = async () => {
       await wait(tl, delay);
+      if (!alive) return;
       const rub = PATH.length - 1;
       const step = 820 / rub;
-      animate(tl, baren.current!, [{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 1, offset: 0.9 }, { opacity: 0 }], { duration: 820 + 120, easing: "linear" });
+      animate(tl, pad, [{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 1, offset: 0.9 }, { opacity: 0 }], { duration: 820 + 120, easing: "linear" });
       animate(
         tl,
-        baren.current!,
+        pad,
         PATH.map(([x, y], i) => ({ transform: `translate(${Math.round(x * w)}px, ${Math.round(y * h)}px) rotate(${i % 2 ? 9 : -9}deg)` })),
         { duration: 820 + 120, easing: "ease-in-out" },
       );
       later(tl, 60, () => callbacks.current.play("brush"));
       later(tl, 480, () => callbacks.current.play("brush"));
       // Chaque bande apparaît quand la baren la traverse
-      bands.current.forEach((band, i) => {
+      nodes.bands.forEach((band, i) => {
         if (band) animate(tl, band, [{ opacity: 0 }, { opacity: 1 }], { duration: 260, delay: 90 + i * step, easing: EASE });
       });
       await wait(tl, 820 + 140);
+      if (!alive) return;
       // Gravure définitive sur la carte : les bandes s'effacent derrière elle
       callbacks.current.onInked();
-      bands.current.forEach((band) => band && animate(tl, band, [{ opacity: 1 }, { opacity: 0 }], { duration: 220 }));
+      nodes.bands.forEach((band) => band && animate(tl, band, [{ opacity: 1 }, { opacity: 0 }], { duration: 220 }));
       // Le numéro s'écrit au pinceau, puis le sceau du tirage se pose
-      animate(tl, ink.current!, [
+      animate(tl, inkNode, [
         { opacity: 0, transform: "translateY(6px) scaleX(.7)" },
         { opacity: 1, transform: "translateY(0) scaleX(1)" },
       ], { duration: 320, easing: EASE });
       later(tl, 40, () => callbacks.current.play("brush"));
       await wait(tl, 360);
-      animate(tl, seal.current!, [
+      if (!alive) return;
+      animate(tl, sealNode, [
         { opacity: 0, transform: "scale(2.4) rotate(-24deg)" },
         { opacity: 1, transform: "scale(1) rotate(-8deg)" },
       ], { duration: 260, easing: SPRING });
       later(tl, 120, () => callbacks.current.play("stamp", 40));
       await wait(tl, 520);
-      animate(tl, root.current!, [{ opacity: 1 }, { opacity: 0 }], { duration: 240 });
+      if (!alive) return;
+      animate(tl, rootNode, [{ opacity: 1 }, { opacity: 0 }], { duration: 240 });
       await wait(tl, 260);
+      if (!alive) return;
       callbacks.current.onDone();
     };
-    void run();
-    return () => dispose(tl);
+    run().catch(() => undefined);
+    return () => {
+      alive = false;
+      dispose(tl);
+    };
   }, [delay]);
 
   return (

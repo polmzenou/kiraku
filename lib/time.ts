@@ -18,3 +18,16 @@ export function countdownParts(ms: number, opts: { days?: boolean } = {}): Count
   if (minutes > 0) return { unit: "minSec", minutes, seconds };
   return { unit: "sec", seconds };
 }
+
+/**
+ * Secondes avant que countdownParts(ms) change d'affichage, 0 une fois le compte à rebours fini : à chaque seconde
+ * sous une heure, à la minute au-delà (« 1 h 05 min »), à l'heure au-delà d'un jour avec `days` (« 2 j 4 h »).
+ * Un compte à rebours long n'a pas à se rendre chaque seconde pour un texte qui ne change pas.
+ */
+export function countdownStep(ms: number, opts: { days?: boolean } = {}): number {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  if (total === 0) return 0;
+  if (opts.days && total >= 86_400) return (total % 3600) + 1;
+  if (total >= 3600) return (total % 60) + 1;
+  return 1;
+}

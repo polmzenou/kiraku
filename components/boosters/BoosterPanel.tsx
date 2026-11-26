@@ -1,33 +1,16 @@
 
 import { useRaritySeals } from "@/lib/catalog/use-rarities";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
-import { chanceRows, type BoosterPanelData, type WishlistInPool } from "@/lib/boosters/panel";
+import type { BoosterPanelData, WishlistInPool } from "@/lib/boosters/panel";
 import type { FilterContext } from "@/lib/boosters/pool-filter";
 import { localize, type BoosterTypeView } from "@/lib/boosters/types";
-import type { Rarity } from "@/lib/catalog/rarity";
 import type { BoosterState } from "@/server/boosters/state";
 import { BoosterArt } from "./BoosterArt";
+import { ChanceList } from "./ChanceList";
 import { FilterText } from "./FilterText";
-import { RARITY_BG, usePercent } from "./format";
+import { RARITY_BG, RARITY_TEXT } from "./format";
 import { NextFreeIn } from "./NextFreeIn";
 import { OpenLink } from "./OpenLink";
-
-/** Couleur du texte des seuils de rareté (planche : bleu, violet, or, vermillon). */
-export const RARITY_TEXT: Record<Rarity, string> = {
-  COMMON: "text-text-muted",
-  UNCOMMON: "text-rarity-uncommon",
-  RARE: "text-ai",
-  EPIC: "text-[#b391db]",
-  LEGENDARY: "text-kin",
-  MYTHIC: "text-shu",
-  AR: "text-rarity-ar",
-  GOLD: "text-rarity-gold",
-  MR: "text-rarity-mr",
-  VR: "text-rarity-vr",
-  SR: "text-rarity-sr",
-  XR: "text-rarity-xr",
-  BR: "text-rarity-br",
-};
 
 type Props = {
   type: BoosterTypeView;
@@ -43,19 +26,18 @@ type Props = {
 
 /** Panneau « Booster sélectionné » : contenu, garanties, compteurs, chances calculées et bouton Ouvrir. */
 export function BoosterPanel({ type, panel, ctx, state, wishlist = null, withOpen = true, headingId = "selected-booster" }: Props) {
-  const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("boosters");
   const tRarity = useTranslations("rarity");
   const format = useFormatter();
   const locale = useLocale();
-  const percent = usePercent();
   const name = localize(type.name, locale);
   const isBox = type.shape === "JUBAKO";
 
+  // Terme puis valeur dans chaque groupe de la liste (modèle de <dl>) ; flex-col-reverse garde le chiffre au-dessus
   const stat = (value: string, label: string, tone = "") => (
-    <div className="flex min-w-0 flex-col gap-1 rounded-control bg-surface-2 p-3">
-      <dd className={`font-title text-lg leading-none font-bold tabular-nums ${tone}`}>{value}</dd>
+    <div className="flex min-w-0 flex-col-reverse justify-end gap-1 rounded-control bg-surface-2 p-3">
       <dt className="text-xs leading-snug text-text-muted">{label}</dt>
+      <dd className={`font-title text-lg leading-none font-bold tabular-nums ${tone}`}>{value}</dd>
     </div>
   );
 
@@ -81,7 +63,7 @@ export function BoosterPanel({ type, panel, ctx, state, wishlist = null, withOpe
       </div>
 
       <dl className="grid grid-cols-2 gap-2">
-        {stat(String(panel.slotFloors.length), isBox ? t("cardsInBox") : t("cardsPerBooster"))}
+        {stat(String(panel.slotFloors.length), isBox ? t("cardsInBox", { packs: panel.packs ?? 1 }) : t("cardsPerBooster"))}
         {stat(tRarity(panel.best), isBox ? t("guaranteedBox") : t("guaranteed"), RARITY_TEXT[panel.best])}
         {panel.pityLeft !== null
           ? stat(format.number(panel.pityLeft), t("pityLeft"), "text-shu")
@@ -108,45 +90,7 @@ export function BoosterPanel({ type, panel, ctx, state, wishlist = null, withOpe
 
       <div className="flex flex-col gap-2">
         <h3 className="text-xs font-bold">{t("chances")}</h3>
-        <ul className="flex flex-col gap-2">
-          {chanceRows(panel).map((r) => (
-            <li key={r} className="grid grid-cols-[minmax(0,7rem)_1fr_auto] items-center gap-3 text-xs">
-              <span className={`flex min-w-0 items-center gap-1.5 font-bold ${RARITY_TEXT[r]}`}>
-                <span aria-hidden="true" lang="ja" className="font-seal text-sm">
-                  {RARITY_SEAL[r]}
-                </span>
-                <span className="truncate">{tRarity(r)}</span>
-              </span>
-              <span aria-hidden="true" className="h-1.5 overflow-hidden rounded-full bg-surface-2">
-                <span
-                  className={`block h-full origin-left rounded-full ${RARITY_BG[r]}`}
-                  style={{ transform: `scaleX(${Math.max(panel.odds[r], 0.02)})` }}
-                />
-              </span>
-              <span className="text-right tabular-nums">
-                <span className="sr-only">{t("chanceRow", { rarity: tRarity(r), value: percent(panel.odds[r]) })}</span>
-                <span aria-hidden="true">{percent(panel.odds[r])}</span>
-              </span>
-            </li>
-          ))}
-          {panel.featured && (
-            <li className="grid grid-cols-[minmax(0,7rem)_1fr_auto] items-center gap-3 text-xs">
-              <span className="flex min-w-0 items-center gap-1.5 font-bold text-kin">
-                <span aria-hidden="true" lang="ja" className="font-seal text-sm">
-                  星
-                </span>
-                <span className="truncate">{t(panel.featured.focus ? "focusChance" : "featuredChance")}</span>
-              </span>
-              <span aria-hidden="true" className="h-1.5 overflow-hidden rounded-full bg-surface-2">
-                <span className="block h-full origin-left rounded-full bg-kin" style={{ transform: `scaleX(${Math.max(panel.featured.chance, 0.02)})` }} />
-              </span>
-              <span className="text-right tabular-nums">
-                <span className="sr-only">{t(panel.featured.focus ? "focusRow" : "featuredRow", { value: percent(panel.featured.chance) })}</span>
-                <span aria-hidden="true">{percent(panel.featured.chance)}</span>
-              </span>
-            </li>
-          )}
-        </ul>
+        <ChanceList panel={panel} variant="panel" />
         {panel.duplicateGuard && (
           <p className="text-xs leading-relaxed text-text-muted">
             {t("duplicateNote", {
@@ -175,8 +119,11 @@ export function BoosterPanel({ type, panel, ctx, state, wishlist = null, withOpe
   );
 }
 
-/** Emplacements du booster, du plancher le plus bas au plus haut ; jūbako : « 5 × 袋 » puis la garantie. */
-export function BoosterComposition({ panel, isBox }: { panel: Pick<BoosterPanelData, "slotFloors" | "best">; isBox: boolean }) {
+/**
+ * Emplacements du booster, du plancher le plus bas au plus haut ; jūbako : « 5 × 袋 » (nombre de sachets
+ * calculé par le serveur à partir des planchers réglés dans l'admin) puis la garantie.
+ */
+export function BoosterComposition({ panel, isBox }: { panel: Pick<BoosterPanelData, "slotFloors" | "best" | "packs">; isBox: boolean }) {
   const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("boosters");
   const tRarity = useTranslations("rarity");
@@ -185,7 +132,7 @@ export function BoosterComposition({ panel, isBox }: { panel: Pick<BoosterPanelD
     return (
       <p className="flex gap-1.5">
         <span className="inline-flex h-8 flex-1 items-center justify-center rounded-control bg-surface-2 text-sm font-bold">
-          5 × <span aria-hidden="true" lang="ja" className="ml-1 font-seal">袋</span>
+          {panel.packs ?? 1} × <span aria-hidden="true" lang="ja" className="ml-1 font-seal">袋</span>
         </span>
         <span className={`inline-flex h-8 flex-1 items-center justify-center gap-0.5 rounded-control font-seal text-base text-washi-paper ${RARITY_BG[panel.best]}`}>
           <span aria-hidden="true">{RARITY_SEAL[panel.best]}+</span>

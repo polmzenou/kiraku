@@ -118,9 +118,17 @@ export default function SpectralCanvas(props: SpectralCanvasProps) {
     let readySent = false;
     const born = performance.now();
     let appearAt: number | null = null;
+    // Écran tactile lu une fois au montage, et taille relue seulement quand le ResizeObserver la signale : lire
+    // clientWidth à chaque image forçait un recalcul du style et de la mise en page (FudaTilt vient d'écrire --mx)
+    const coarse = matchMedia("(pointer: coarse)").matches;
+    let sized = false;
+    // Teinte convertie seulement quand elle change, pas à chaque image
+    let tintHex: string | null = null;
+    let tint: [number, number, number] = [0, 0, 0];
 
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, matchMedia("(pointer: coarse)").matches ? 1.5 : 2);
+      sized = true;
+      const dpr = Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : 2);
       const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
       const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
       if (canvas.width !== w || canvas.height !== h) {
@@ -136,7 +144,12 @@ export default function SpectralCanvas(props: SpectralCanvasProps) {
       level = approach(level, p.still ? 0 : speedToLevel(currentSpeed(now)), dt);
       if (p.appear === "now" && appearAt === null) appearAt = now;
       const presence = p.appear === undefined ? 1 : appearAt === null ? 0 : presenceAt((now - appearAt) / MATERIALIZE_MS);
-      resize();
+      if (!sized) resize();
+      const hex = p.tint ?? "#9fe3ec";
+      if (hex !== tintHex) {
+        tintHex = hex;
+        tint = hexToRgb(hex);
+      }
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.uniform2f(uni.res, canvas.width, canvas.height);
@@ -150,7 +163,7 @@ export default function SpectralCanvas(props: SpectralCanvasProps) {
       gl.uniform1f(uni.idle, p.idle);
       gl.uniform1f(uni.presence, p.still && p.appear !== "hidden" ? 1 : presence);
       gl.uniform1f(uni.seed, p.seed);
-      gl.uniform3f(uni.tint, ...hexToRgb(p.tint ?? "#9fe3ec"));
+      gl.uniform3f(uni.tint, ...tint);
       gl.uniform1f(uni.veil, p.veil === false ? 0 : 1);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       if (!readySent) {
@@ -205,6 +218,8 @@ export default function SpectralCanvas(props: SpectralCanvasProps) {
     });
     observer.observe(canvas);
     const resizer = new ResizeObserver(() => {
+      // Nouvelle taille relue à la prochaine image (carte vivante) ou tout de suite (carte figée)
+      sized = false;
       if (live.current.still && texture) draw(performance.now());
     });
     // Changement de réglage ou d'apparition sur une carte figée : une image de plus

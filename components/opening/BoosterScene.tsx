@@ -12,6 +12,7 @@ import { leakFor } from "./RarityFx";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import { PRISM, prismShake } from "@/lib/opening/prism";
 import { PrismBurst, PrismHalo } from "./PrismLight";
+import { listenTilt } from "@/lib/tilt-dom";
 
 /** Part du geste à partir de laquelle l'ouverture est envoyée au serveur. */
 const TRIGGER_AT = 0.55;
@@ -122,7 +123,9 @@ export function BoosterScene(props: Props) {
     onPrismRef.current?.();
   }, [wow]);
 
-  useTilt(tilt, !reduced && !opened);
+  // Effets allégés : plus de gyroscope pendant l'ouverture (le booster entier, en preserve-3d, était réorienté à
+  // chaque évènement du capteur), la souris reste
+  useTilt(tilt, !reduced && !opened, !lite);
 
   useEffect(() => () => {
     if (fallback.current) clearTimeout(fallback.current);
@@ -411,14 +414,20 @@ function PeekCards({ count, dropped, frontRef }: { count: number; dropped: boole
 
 function Done({ onDone, delay }: { onDone: () => void; delay: number }) {
   const called = useRef(false);
+  // Rappel lu au moment voulu : `finish` est recréé à chaque rendu de la scène (arrivée du tirage, prisme…), et
+  // en dépendre relançait la minuterie à chaque fois
+  const onDoneRef = useRef(onDone);
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  }, [onDone]);
   useEffect(() => {
     const id = setTimeout(() => {
       if (called.current) return;
       called.current = true;
-      onDone();
+      onDoneRef.current();
     }, delay);
     return () => clearTimeout(id);
-  }, [onDone, delay]);
+  }, [delay]);
   return null;
 }
 
@@ -729,9 +738,10 @@ function Leak({
 /**
  * Inclinaison 3D du booster (souris ou gyroscope), appliquée en requestAnimationFrame. `--tx` n'est
  * posée que sur le reflet qui la lit : sur le booster entier, elle invalidait le style de tout le
- * dessin (et des morceaux de bande) à chaque image.
+ * dessin (et des morceaux de bande) à chaque image. Le gyroscope passe par l'écouteur partagé des fuda
+ * (permission de l'iPhone comprise) ; `gyro` faux (effets allégés) : la souris seule, comme les fuda.
  */
-function useTilt(ref: React.RefObject<HTMLDivElement | null>, enabled: boolean) {
+function useTilt(ref: React.RefObject<HTMLDivElement | null>, enabled: boolean, gyro: boolean) {
   useEffect(() => {
     const el = ref.current;
     if (!el || !enabled) return;
@@ -751,18 +761,21 @@ function useTilt(ref: React.RefObject<HTMLDivElement | null>, enabled: boolean) 
       if (e.pointerType !== "mouse") return;
       schedule(e.clientX / window.innerWidth, e.clientY / window.innerHeight);
     };
-    const onTilt = (e: DeviceOrientationEvent) => {
-      if (e.gamma === null || e.beta === null) return;
-      schedule(0.5 + e.gamma / 70, 0.5 + (e.beta - 45) / 70);
+    // L'écouteur partagé donne 0,5 + gamma / 60 : ramené à l'amplitude du booster (gamma / 70), appliqué tout de
+    // suite (on est déjà dans son image)
+    const onTilt = (x: number, y: number) => {
+      target = { x: Math.min(1, Math.max(0, 0.5 + ((x - 0.5) * 60) / 70)), y: Math.min(1, Math.max(0, 0.5 + ((y - 0.5) * 60) / 70)) };
+      if (frame) cancelAnimationFrame(frame);
+      apply();
     };
     window.addEventListener("pointermove", onPointer);
-    window.addEventListener("deviceorientation", onTilt);
+    const unlistenTilt = gyro ? listenTilt(onTilt) : null;
     return () => {
       window.removeEventListener("pointermove", onPointer);
-      window.removeEventListener("deviceorientation", onTilt);
+      unlistenTilt?.();
       if (frame) cancelAnimationFrame(frame);
       el.style.removeProperty("transform");
       for (const glint of glints) glint.style.removeProperty("--tx");
     };
-  }, [ref, enabled]);
+  }, [ref, enabled, gyro]);
 }

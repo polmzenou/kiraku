@@ -12,7 +12,11 @@ const motes = [
 export function CardAura({ rarity, reduced = false, compact = false }: { rarity?: Rarity; reduced?: boolean; compact?: boolean }) {
   return (
     <span aria-hidden="true" className="card-aura-fx" data-rarity={rarity} data-static={reduced || undefined} data-compact={compact || undefined}>
-      <span className="card-aura-glow" />
+      <span className="card-aura-glow">
+        {/* Or tant que la carte est cachée, puis la matière de sa rareté : fondu d'opacity entre deux halos colorés */}
+        <span className="card-aura-tint" data-tint="gold" />
+        <span className="card-aura-tint" />
+      </span>
       {!reduced && motes.slice(0, compact ? 6 : motes.length).map(([x, y], index) => (
         <span key={index} className="card-aura-mote" style={{
           "--x": `${x}%`, "--y": `${y}%`,

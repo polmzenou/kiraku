@@ -3,7 +3,8 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useSyncExternalStore } from "react";
-import { countdownParts } from "@/lib/time";
+import { COUNTDOWN_RETRY_MS, countdownRefreshDue, type RefreshSeen } from "@/lib/boosters/countdown-refresh";
+import { countdownParts, countdownStep } from "@/lib/time";
 
 // Horloge partagée à la seconde : premier rendu à l'heure du serveur (pas d'écart d'hydratation),
 // puis l'heure du navigateur recalée sur celle du serveur. Le client affiche un compte à rebours, il ne
@@ -29,15 +30,50 @@ const subscribe = (tick: () => void) => {
 let skew: number | null = null;
 const secondNow = () => Math.floor((Date.now() + (skew ?? 0)) / 1000) * 1000;
 
-export function useClock(serverNow: number) {
+// Abonnement qui ne fait rien : un compte à rebours sans échéance ne se rend plus à chaque seconde
+const idle = () => () => {};
+
+/** Heure du serveur à la seconde ; `live` faux : lue au rendu, sans s'abonner au tic (rien à décompter). */
+export function useClock(serverNow: number, live = true) {
   useEffect(() => {
     skew ??= serverNow - Date.now();
   }, [serverNow]);
-  return useSyncExternalStore(subscribe, secondNow, () => serverNow);
+  return useSyncExternalStore(live ? subscribe : idle, secondNow, () => serverNow);
 }
 
 /** Délai maximal d'un setTimeout (environ 24 jours) : au-delà, il partirait tout de suite. */
 const MAX_TIMEOUT = 2 ** 31 - 1;
+
+/**
+ * Comme useClock pour un compte à rebours vers `deadline`, mais réveillé seulement quand son texte change
+ * (countdownStep) : chaque seconde sous une heure, chaque minute au-delà, chaque heure au-delà d'un jour avec `days`.
+ */
+export function useCountdownClock(deadline: number, serverNow: number, opts: { days?: boolean } = {}): number {
+  useEffect(() => {
+    skew ??= serverNow - Date.now();
+  }, [serverNow]);
+  const days = opts.days ?? false;
+  const subscribeChange = useCallback(
+    (notify: () => void) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      // Réarmée à chaque changement : réveil juste après la seconde où le texte change (plafonné)
+      const arm = () => {
+        const now = secondNow();
+        const step = countdownStep(deadline - now, { days });
+        if (step === 0) return;
+        const wake = now + step * 1000 - (Date.now() + (skew ?? 0));
+        timer = setTimeout(() => {
+          notify();
+          arm();
+        }, Math.min(Math.max(0, wake) + 20, MAX_TIMEOUT));
+      };
+      arm();
+      return () => clearTimeout(timer);
+    },
+    [deadline, days],
+  );
+  return useSyncExternalStore(subscribeChange, secondNow, () => serverNow);
+}
 
 /**
  * Vrai une fois `deadline` atteinte sur la même horloge que useClock (seconde entière, heure du serveur), sans
@@ -74,17 +110,15 @@ export function useDeadlinePassed(deadline: number | null, serverNow: number): b
 
 // Échéances déjà rafraîchies, pour toute la page : plusieurs comptes à rebours sur le même `nextAt`
 // (panneau, vitrine, récap) ne demandent qu'un seul nouveau rendu serveur. Si le serveur renvoie encore
-// la même échéance, nouvel essai un peu plus tard, trois fois au plus.
-const refreshed = new Map<number, { at: number; count: number }>();
-const RETRY_MS = 15_000;
-const MAX_REFRESHES = 3;
+// la même échéance, nouvel essai un peu plus tard, trois fois au plus (lib/boosters/countdown-refresh.ts).
+const refreshed = new Map<number, RefreshSeen>();
 
 /**
- * Temps restant avant `nextAt` (null si le stock est plein). À zéro, redemande la page au serveur,
- * qui recalcule le stock ; onglet caché, au retour seulement.
+ * Temps restant avant `nextAt` (null si le stock est plein, et alors aucun rendu à chaque seconde). À zéro,
+ * redemande la page au serveur, qui recalcule le stock ; onglet caché, au retour seulement.
  */
 export function useBoosterCountdown(nextAt: number | null, serverNow: number) {
-  const now = useClock(serverNow);
+  const now = useClock(serverNow, nextAt !== null);
   const router = useRouter();
   const remaining = nextAt === null ? null : Math.max(0, nextAt - now);
 
@@ -93,11 +127,10 @@ export function useBoosterCountdown(nextAt: number | null, serverNow: number) {
     let retry: ReturnType<typeof setTimeout> | undefined;
     const go = () => {
       const seen = refreshed.get(nextAt);
-      if (seen && (seen.count >= MAX_REFRESHES || Date.now() - seen.at < RETRY_MS)) return;
-      if (document.visibilityState !== "visible") return;
+      if (!countdownRefreshDue(seen, Date.now(), document.visibilityState === "visible")) return;
       refreshed.set(nextAt, { at: Date.now(), count: (seen?.count ?? 0) + 1 });
       router.refresh();
-      retry = setTimeout(go, RETRY_MS);
+      retry = setTimeout(go, COUNTDOWN_RETRY_MS);
     };
     go();
     document.addEventListener("visibilitychange", go);

@@ -21,12 +21,11 @@ import type { SoundName } from "@/lib/sound/synth";
 
 /** Ordre de révélation : de la moins rare à la plus rare (une vedette après les autres de sa rareté). */
 export function revealOrder<T extends { rarity: Rarity; featured?: boolean }>(cards: readonly T[], order: readonly string[] = RARITIES): T[] {
-  const RARITIES = order;
   return cards
     .map((card, i) => ({ card, i }))
     .sort(
       (a, b) =>
-        RARITIES.indexOf(a.card.rarity) - RARITIES.indexOf(b.card.rarity) ||
+        order.indexOf(a.card.rarity) - order.indexOf(b.card.rarity) ||
         Number(a.card.featured ?? false) - Number(b.card.featured ?? false) ||
         a.i - b.i,
     )
@@ -34,9 +33,9 @@ export function revealOrder<T extends { rarity: Rarity; featured?: boolean }>(ca
 }
 
 /**
- * Passage rapide : index de la première carte « grand moment » (Légendaire ou mieux) à partir de `from`,
- * s'il reste au moins `min` cartes à sauter avant elle ; -1 sinon. L'ordre de révélation allant de la moins
- * rare à la plus rare, c'est la Légendaire, ou la Mythique d'un pack qui n'a pas de Légendaire.
+ * Passage rapide : index de la première carte « grand moment » (`isBig` ; la pile vise la première carte au moins
+ * Mythique dans l'ordre du registre, AR et Gold compris, une Légendaire ne compte pas) à partir de `from`, s'il
+ * reste au moins `min` cartes à sauter avant elle ; -1 sinon.
  */
 export function skipTarget<T extends { rarity: Rarity }>(order: readonly T[], from: number, isBig: (rarity: Rarity) => boolean, min = SKIP_MIN): number {
   const at = order.findIndex((card, i) => i >= from && isBig(card.rarity));
@@ -73,7 +72,7 @@ const ARRIVE_MAX_DELAY = 0.4;
 const VISIBLE_BACKS = 4;
 const STEP_PX = 3;
 
-/** Passage rapide vers la première Légendaire ou mieux : proposé s'il reste au moins autant de cartes avant elle. */
+/** Passage rapide vers la première carte au moins Mythique : proposé s'il reste au moins autant de cartes avant elle. */
 const SKIP_MIN = 3;
 
 /** Emplacements sous la pile : écart (px, `gap-2`) et largeur max sur desktop. */

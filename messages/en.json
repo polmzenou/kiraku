@@ -657,7 +657,15 @@
       "reduced": "Reduced"
     },
     "motionAutoFull": "Your device keeps up: full effects.",
-    "motionAutoLite": "Your device struggles: light effects."
+    "motionAutoLite": "Your device struggles: light effects.",
+    "tilt": {
+      "title": "Phone tilt",
+      "prompt": "Cards and the booster follow your phone's tilt, once you allow it in the browser.",
+      "granted": "On: cards follow your phone's tilt.",
+      "denied": "The browser denied access to the tilt.",
+      "enable": "Turn on",
+      "retry": "Try again"
+    }
   },
   "market": {
     "title": "Auction house",
@@ -988,7 +996,7 @@
     },
     "selected": "Selected booster",
     "cardsPerBooster": "cards per booster",
-    "cardsInBox": "cards, in 5 packs",
+    "cardsInBox": "cards, in {packs, plural, one {# pack} other {# packs}}",
     "guaranteed": "or better, guaranteed",
     "guaranteedBox": "guaranteed in the box",
     "pityLeft": "until a sure Mythic (shared pity)",
@@ -1005,7 +1013,6 @@
     "chanceRow": "{rarity} or better: {value}",
     "featuredChance": "Featured",
     "featuredRow": "At least one featured card: {value}",
-    "summaryLine": "{rarity}+ {value}",
     "filter": "AniList filter",
     "filterText": {
       "none": "No filter",
@@ -1125,7 +1132,6 @@
     "revealAll": "Reveal all",
     "skipToBig": "Skip to the big pull",
     "toRecap": "See the recap",
-    "gridHint": "{count} cards: tap them one by one, or reveal them all",
     "recapCounts": "{boosters, plural, one {# booster} other {# boosters}} · {cards, plural, one {# card} other {# cards}}",
     "boostersDetail": "{count, plural, one {Pack details} other {Details of the # packs}}",
     "freeLeft": "Free · {count} left",

@@ -63,6 +63,16 @@ export function groupByFamily<T extends ShowcaseEntry>(
 }
 
 /**
+ * Anneau de pitié de la vitrine : part déjà parcourue vers la Mythique sûre, entre 0 (rien de compté) et 1.
+ * null pour un booster hors pitié (pityLeft null) : aucun anneau, un anneau plein laisserait croire à une
+ * pitié atteinte. Un seuil abaissé dans l'admin sous le compteur ne fait pas déborder l'anneau.
+ */
+export function pityRingFraction(left: number | null, threshold: number): number | null {
+  if (left === null) return null;
+  return Math.min(1, Math.max(0, 1 - left / Math.max(threshold, 1)));
+}
+
+/**
  * Sélection à l'arrivée sur la page : le booster demandé (?b) s'il est sélectionnable, sinon le
  * premier de la famille demandée (?f), sinon « standard », sinon le premier sélectionnable.
  */

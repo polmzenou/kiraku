@@ -2,24 +2,27 @@
 
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { OPEN_COUNTS, choiceCount, contentsLabel, openAllCount, type OpenChoice } from "@/lib/boosters/catalog";
-import { CHANCE_ROWS, chanceRows } from "@/lib/boosters/panel";
+import { choiceCount, contentsLabel, openAllCount, type OpenChoice } from "@/lib/boosters/catalog";
+import { CHANCE_ROWS } from "@/lib/boosters/panel";
 import type { FilterContext } from "@/lib/boosters/pool-filter";
 import { familyRows, firstSelectable, positionInFamily } from "@/lib/boosters/showcase";
 import { localize, priceFor, type BoosterFamily } from "@/lib/boosters/types";
 import { useRaritySeals } from "@/lib/catalog/use-rarities";
+import { prefersReducedMotion } from "@/lib/motion-pref-dom";
 import type { BoosterState } from "@/server/boosters/state";
-import { segmentedFillClass, segmentedItemClass, segmentedTrackClass } from "../../ui/Segmented";
 import { BoosterArt } from "../BoosterArt";
-import { BoosterPanel, RARITY_TEXT } from "../BoosterPanel";
-import { RARITY_BG, usePercent } from "../format";
+import { BoosterPanel } from "../BoosterPanel";
+import { ChanceList } from "../ChanceList";
+import { RARITY_TEXT, usePercent } from "../format";
 import { NextFreeIn } from "../NextFreeIn";
 import { OpenLink } from "../OpenLink";
 import { RatesSheet } from "../RatesSheet";
 import { EndsIn } from "../EndsIn";
 import { AllBoostersSheet } from "./AllBoostersSheet";
 import { FocusBanner, type FocusAnnouncement } from "./FocusBanner";
+import { PityRing } from "./PityRing";
 import { ShowcaseBackdrop } from "./ShowcaseBackdrop";
+import { ShowcaseCountPicker } from "./ShowcaseCountPicker";
 import { ShowcaseList } from "./ShowcaseList";
 import { BoosterStripTile } from "./ShowcaseRow";
 import type { Entry, ShowcaseFamily, ShowcaseItem } from "./types";
@@ -52,7 +55,6 @@ type Props = {
 export function BoosterShowcase({ items, families, initial, state, ctx, rotationNote, banner, focus, heading }: Props) {
   const t = useTranslations("boosters.showcase");
   const tb = useTranslations("boosters");
-  const tOpening = useTranslations("opening");
   const tRarity = useTranslations("rarity");
   const RARITY_SEAL = useRaritySeals();
   const format = useFormatter();
@@ -113,8 +115,9 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
   const heroRef = useRef<HTMLElement>(null);
   const openFocus = (focusSlug: string) => {
     select(focusSlug);
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    heroRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    // Réglage du système ou « Animations coupées » de l'engrenage : l'option passée ici l'emporterait sur le
+    // scroll-behavior: auto du CSS global des animations réduites
+    heroRef.current?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
   };
   const pickFamily = (next: BoosterFamily) => {
     setQuery("");
@@ -134,47 +137,11 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
   const allCount = openAllCount(type.usesFreeStock ? state.stock : 0);
   const choice: OpenChoice = count === "all" && allCount === 0 ? 1 : count;
   const price = priceFor(type, state.stock, choiceCount(choice, allCount));
-  const chipClass = (tone: "hero" | "page") =>
-    tone === "hero"
-      ? "min-w-11 px-2 text-sm font-bold text-[var(--ink-2)] tabular-nums transition-colors aria-pressed:bg-[var(--ink)] aria-pressed:text-[var(--ink-bg)] disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
-      : `${segmentedItemClass} min-w-11 px-2! tabular-nums disabled:cursor-not-allowed disabled:opacity-40`;
   const locked = panel?.availability === "locked";
   const strip = familyRows(entries, family);
 
   const countPicker = (tone: "hero" | "page") => (
-    <fieldset className={tone === "hero" ? "shrink-0" : "w-full"}>
-      <legend className="sr-only">{tOpening("count")}</legend>
-      <div
-        className={
-          tone === "hero"
-            ? "inline-grid h-14 grid-flow-col overflow-hidden rounded-control border border-[var(--chip-b)] bg-[var(--chip)]"
-            : `${segmentedTrackClass} ${segmentedFillClass} h-12`
-        }
-      >
-        {OPEN_COUNTS.map((n) => (
-          <button
-            key={n}
-            type="button"
-            aria-pressed={choice === n}
-            disabled={priceFor(type, state.stock, n).kind === "unavailable"}
-            onClick={() => setCount(n)}
-            className={chipClass(tone)}
-          >
-            {tOpening("times", { n })}
-          </button>
-        ))}
-        <button
-          type="button"
-          aria-pressed={choice === "all"}
-          aria-label={allCount > 0 ? tOpening("allCount", { n: allCount }) : undefined}
-          disabled={allCount === 0}
-          onClick={() => setCount("all")}
-          className={chipClass(tone)}
-        >
-          {tOpening("all")}
-        </button>
-      </div>
-    </fieldset>
+    <ShowcaseCountPicker tone={tone} type={type} stock={state.stock} choice={choice} allCount={allCount} onChange={setCount} />
   );
 
   const openLink = (className: string) => (
@@ -188,29 +155,6 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
       className={className}
     />
   );
-
-  // Anneau de pitié : la part déjà parcourue vers la Mythique sûre (rien tant qu'aucun booster n'est compté)
-  const pityRing = (left: number) => {
-    const done = 119.4 * (1 - left / Math.max(state.pityThreshold, 1));
-    return (
-      <svg width="40" height="40" viewBox="0 0 46 46" aria-hidden="true" className="shrink-0">
-        <circle cx="23" cy="23" r="19" fill="none" stroke="var(--track)" strokeWidth="4" />
-        {done > 0.5 && (
-          <circle
-            cx="23"
-            cy="23"
-            r="19"
-            fill="none"
-            stroke="var(--ink)"
-            strokeWidth="4"
-            strokeLinecap="round"
-            strokeDasharray={`${done.toFixed(1)} 119.4`}
-            transform="rotate(-90 23 23)"
-          />
-        )}
-      </svg>
-    );
-  };
 
   // Ligne de stat : rangée « libellé · valeur » en mobile, tuile en desktop
   const stat = (label: string, value: ReactNode) => (
@@ -231,7 +175,9 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
           <button
             type="button"
             onClick={() => select(banner.slug)}
-            className="inline-flex min-h-11 items-center gap-2.5 rounded-pill border border-kin/55 bg-[linear-gradient(90deg,#24386a,var(--color-bg)_85%)] py-1 pr-4 pl-1.5 text-left text-[13px] font-bold text-[#f1e9da]"
+            // Fond sombre plein dans les deux thèmes (fin du dégradé = fond de Yoru) : sous Washi, var(--color-bg) le
+            // finissait en crème et le texte crème y tombait sous 1,5:1
+            className="inline-flex min-h-11 items-center gap-2.5 rounded-pill border border-kin/55 bg-[linear-gradient(90deg,#24386a,#15120f_85%)] py-1 pr-4 pl-1.5 text-left text-[13px] font-bold text-[#f1e9da]"
           >
             <span aria-hidden="true" lang="ja" className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#080e20] font-seal text-base text-kin">
               星
@@ -349,7 +295,7 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
 
               {panel && (
                 <dl className="grid gap-1.5 lg:grid-cols-2 lg:gap-2.5">
-                  {stat(isBox ? tb("cardsInBox") : tb("cardsPerBooster"), panel.slotFloors.length)}
+                  {stat(isBox ? tb("cardsInBox", { packs: panel.packs ?? 1 }) : tb("cardsPerBooster"), panel.slotFloors.length)}
                   {stat(
                     isBox ? tb("guaranteedBox") : tb("guaranteed"),
                     <>
@@ -362,7 +308,7 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
                   {stat(tb("possible"), format.number(panel.poolSize))}
                   <div className="flex items-center gap-2.5 pt-0.5 lg:rounded-control lg:border lg:border-[var(--chip-b)] lg:bg-[var(--chip)] lg:px-3.5 lg:py-2">
                     {/* Booster hors pitié : aucun anneau (un anneau plein laissait croire à une pitié atteinte) */}
-                    {panel.pityLeft !== null && pityRing(panel.pityLeft)}
+                    <PityRing left={panel.pityLeft} threshold={state.pityThreshold} />
                     <div className="flex flex-col-reverse gap-0.5">
                       <dt className="text-xs text-[var(--ink-2)]">{panel.pityLeft !== null ? t("pity") : tb("noPity")}</dt>
                       <dd className="text-sm font-black tabular-nums lg:font-title lg:text-[1.4rem] lg:leading-none lg:font-extrabold">
@@ -388,42 +334,7 @@ export function BoosterShowcase({ items, families, initial, state, ctx, rotation
                         {ratesPanel("selected-booster-desktop")}
                       </RatesSheet>
                     </div>
-                    <ul className="flex flex-col gap-2">
-                      {chanceRows(panel).map((r) => (
-                        <li key={r} className="grid grid-cols-[8rem_minmax(0,1fr)_3.75rem] items-center gap-3 text-[13px] font-bold">
-                          <span className="flex min-w-0 items-center gap-1.5">
-                            <span aria-hidden="true" lang="ja" className="font-seal">
-                              {RARITY_SEAL[r]}
-                            </span>
-                            <span className="truncate">{tRarity(r)}</span>
-                          </span>
-                          <span aria-hidden="true" className="h-1.5 overflow-hidden rounded-full bg-[var(--track)]">
-                            <span className={`block h-full origin-left rounded-full ${RARITY_BG[r]}`} style={{ transform: `scaleX(${Math.max(panel.odds[r], 0.02)})` }} />
-                          </span>
-                          <span className="text-right tabular-nums">
-                            <span className="sr-only">{tb("chanceRow", { rarity: tRarity(r), value: percent(panel.odds[r]) })}</span>
-                            <span aria-hidden="true">{percent(panel.odds[r])}</span>
-                          </span>
-                        </li>
-                      ))}
-                      {panel.featured && (
-                        <li className="grid grid-cols-[8rem_minmax(0,1fr)_3.75rem] items-center gap-3 text-[13px] font-bold">
-                          <span className="flex min-w-0 items-center gap-1.5">
-                            <span aria-hidden="true" lang="ja" className="font-seal text-kin">
-                              星
-                            </span>
-                            <span className="truncate">{tb(panel.featured.focus ? "focusChance" : "featuredChance")}</span>
-                          </span>
-                          <span aria-hidden="true" className="h-1.5 overflow-hidden rounded-full bg-[var(--track)]">
-                            <span className="block h-full origin-left rounded-full bg-kin" style={{ transform: `scaleX(${Math.max(panel.featured.chance, 0.02)})` }} />
-                          </span>
-                          <span className="text-right tabular-nums">
-                            <span className="sr-only">{tb(panel.featured.focus ? "focusRow" : "featuredRow", { value: percent(panel.featured.chance) })}</span>
-                            <span aria-hidden="true">{percent(panel.featured.chance)}</span>
-                          </span>
-                        </li>
-                      )}
-                    </ul>
+                    <ChanceList panel={panel} variant="hero" />
                   </section>
                   <div className="flex flex-col gap-2">
                     {/* Colonne étroite (tablette, petit desktop) : le bouton passe sous le sélecteur plutôt que d'être écrasé */}

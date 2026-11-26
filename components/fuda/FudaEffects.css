@@ -1,13 +1,21 @@
 /* Calque 2,5 fois plus grand que la carte (rognée par .fuda) qui glisse en transform : même rendu
-   qu'un background-position animé, sans repeindre la carte à chaque image. */
-.fuda-effect { position:absolute; left:0; top:0; width:250%; height:250%; z-index:5; pointer-events:none; opacity:var(--fx-intensity,.45); mix-blend-mode:screen; background-size:100% 100%; transform:translate(calc(var(--mx,.5) * -60%),calc(var(--my,.5) * -60%)); animation:fuda-fx-shift var(--fx-duration,8s) ease-in-out infinite alternate paused; }
+   qu'un background-position animé, sans repeindre la carte à chaque image.
+   La dérive anime transform ; le pointeur et l'inclinaison (--mx / --my, posées par FudaTilt sur une carte
+   vivante) décalent la propriété translate, qui se compose avec elle : une animation, même en pause,
+   l'emporte sur une déclaration de transform, et le calque ne suivait jamais le pointeur. Dérive et décalage
+   se partagent la course du calque (de 0 à -60 %, au-delà un bord de la carte se découvrirait) : 45 + 15 %
+   en largeur, 36 + 12 % en hauteur. Hors carte vivante, --mx et --my sont absentes : aucun décalage, la carte
+   figée garde la première image de la dérive. */
+.fuda-effect { position:absolute; left:0; top:0; width:250%; height:250%; z-index:5; pointer-events:none; opacity:var(--fx-intensity,.45); mix-blend-mode:screen; background-size:100% 100%; transform:translate(0,-12%); translate:calc(var(--mx,0) * -15%) calc(var(--my,0) * -12%); transition:translate .2s ease-out; animation:fuda-fx-shift var(--fx-duration,8s) ease-in-out infinite alternate paused; }
 .fuda-live .fuda-effect { animation-play-state:running; }
 .fuda-effect-holographic { background-image:linear-gradient(115deg,transparent 12%,#ff67ba 27%,#78bfff 39%,#63ffba 51%,#ffe881 63%,transparent 80%); mix-blend-mode:color-dodge; }
 .fuda-effect-gold { background-image:linear-gradient(125deg,transparent 20%,#976821 30%,#ffeab0 43%,#bb8c34 55%,transparent 70%); }
-.fuda-effect-pearl { background-image:conic-gradient(from 45deg at calc(var(--mx,.5)*100%) calc(var(--my,.5)*100%),#ffd4ef88,#b8edff88,#fff4d088,#ddceff88,#ffd4ef88); }
+/* Nacre : centre du dégradé conique fixe (celui du repos), c'est le calque entier qui suit le pointeur (translate) ;
+   un centre posé sur --mx / --my repeignait ce calque de 250 % à chaque mouvement */
+.fuda-effect-pearl { background-image:conic-gradient(from 45deg at 50% 50%,#ffd4ef88,#b8edff88,#fff4d088,#ddceff88,#ffd4ef88); }
 .fuda-effect-sparkles { background-image:radial-gradient(circle,#fff 0 1px,transparent 2px),radial-gradient(circle,var(--fx-color) 0 1px,transparent 2px); background-size:23px 31px,41px 37px; }
-.fuda-effect-aura { width:100%; height:100%; transform:none; animation:none; border-radius:inherit; box-shadow:inset 0 0 24px 10px var(--fx-color); }
-@keyframes fuda-fx-shift { from { transform:translate(0,-12%); } to { transform:translate(-60%,-48%); } }
+.fuda-effect-aura { width:100%; height:100%; transform:none; translate:none; animation:none; border-radius:inherit; box-shadow:inset 0 0 24px 10px var(--fx-color); }
+@keyframes fuda-fx-shift { from { transform:translate(0,-12%); } to { transform:translate(-45%,-48%); } }
 /* Effets allégés : les reflets restent, figés */
 :root[data-fx="lite"] .fuda-live .fuda-effect { animation-play-state:paused; }
 @media(prefers-reduced-motion:reduce) { .fuda-live .fuda-effect { animation:none; } }

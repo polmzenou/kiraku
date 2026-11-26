@@ -1,15 +1,10 @@
-@property --card-aura-color {
-  syntax: "<color>";
-  inherits: true;
-  initial-value: #d9b556;
-}
-
+/* Couleur posée sans transition : une couleur animée repeignait le halo (deux fois plus grand que la carte) et les
+   particules à chaque image du retournement. Le passage de l'or à la rareté se fait par le fondu des deux halos. */
 .card-aura-fx {
   --card-aura-color: #d9b556;
   position: absolute;
   inset: 0;
   pointer-events: none;
-  transition: --card-aura-color .45s ease;
 }
 .card-aura-fx[data-rarity="COMMON"] { --card-aura-color: var(--color-rarity-common); }
 .card-aura-fx[data-rarity="UNCOMMON"] { --card-aura-color: var(--color-rarity-uncommon); }
@@ -29,6 +24,13 @@
   position: absolute;
   inset: -35% -50%;
   z-index: 0;
+}
+/* Deux halos déjà colorés dans le calque qui respire : l'or d'avant la révélation, puis la matière de la rareté,
+   qui se relaient par un fondu d'opacity */
+.card-aura-tint {
+  position: absolute;
+  inset: 0;
+  transition: opacity .45s ease;
   /* Chaque dégradé devient transparent avant son bord. Aucune découpe arrondie du halo. */
   background:
     radial-gradient(ellipse closest-side at 46% 43%,
@@ -44,6 +46,9 @@
   /* Pas de filter: blur : les dégradés s'éteignent déjà en douceur, et un flou sur un calque qui
      respire en continu se recalculait à chaque image sur les téléphones. */
 }
+.card-aura-tint[data-tint="gold"] { --card-aura-color: #d9b556; }
+.card-aura-fx[data-rarity] .card-aura-tint[data-tint="gold"],
+.card-aura-fx:not([data-rarity]) .card-aura-tint:not([data-tint]) { opacity: 0; }
 .card-aura-mote {
   position: absolute;
   z-index: 20;
@@ -57,7 +62,7 @@
   opacity: .7;
 }
 .card-aura-fx[data-compact] .card-aura-glow { opacity: .65; }
-.card-aura-fx[data-static] { transition: none; }
+.card-aura-fx[data-static] .card-aura-tint { transition: none; }
 @media (prefers-reduced-motion: no-preference) {
   :root:not([data-motion="reduced"]) .card-aura-fx:not([data-static]) .card-aura-glow { animation: card-aura-breathe 4.8s ease-in-out infinite; }
   :root:not([data-motion="reduced"]) .card-aura-fx:not([data-static]) .card-aura-mote { animation: card-aura-float var(--t) ease-in-out var(--d) infinite; }
@@ -66,10 +71,10 @@
 :root[data-fx="lite"] .card-aura-glow { animation: none !important; }
 :root[data-fx="lite"] .card-aura-mote { display: none; }
 @media (prefers-reduced-motion: reduce) {
-  .card-aura-fx { transition: none; }
+  .card-aura-tint { transition: none; }
   .card-aura-mote { display: none; }
 }
-:root[data-motion="reduced"] .card-aura-fx { transition: none; }
+:root[data-motion="reduced"] .card-aura-tint { transition: none; }
 :root[data-motion="reduced"] .card-aura-mote { display: none; }
 @keyframes card-aura-breathe {
   0%, 100% { opacity: .7; transform: scale(.97); }

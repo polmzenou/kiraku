@@ -6,10 +6,31 @@ import {
   groupByFamily,
   initialSelection,
   normalizeSearch,
+  pityRingFraction,
   positionInFamily,
   searchEntries,
   type ShowcaseEntry,
 } from "./showcase";
+
+describe("anneau de pitié de la vitrine", () => {
+  it("aucun anneau pour un booster hors pitié (tous les boosters payants du seed)", () => {
+    expect(pityRingFraction(null, 50)).toBeNull();
+  });
+
+  it("vide tant qu'aucun booster n'est compté, presque plein juste avant la Mythique sûre", () => {
+    expect(pityRingFraction(50, 50)).toBe(0);
+    expect(pityRingFraction(25, 50)).toBe(0.5);
+    expect(pityRingFraction(1, 50)).toBeCloseTo(0.98);
+  });
+
+  it("plein à zéro, sans déborder ni passer sous zéro", () => {
+    expect(pityRingFraction(0, 50)).toBe(1);
+    // Seuil abaissé dans l'admin sous le compteur restant, ou seuil nul
+    expect(pityRingFraction(80, 50)).toBe(0);
+    expect(pityRingFraction(-3, 50)).toBe(1);
+    expect(pityRingFraction(1, 0)).toBe(0);
+  });
+});
 import { BOOSTER_FAMILIES, type BoosterFamily } from "./types";
 
 const e = (slug: string, family: BoosterFamily, name: string, selectable = true, tagline = ""): ShowcaseEntry => ({

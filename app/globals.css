@@ -46,6 +46,21 @@
   --k-lacquer-light: rgb(255 255 255 / 0.035);
   --k-float-shadow: 0 12px 28px rgb(0 0 0 / 0.55);
   --k-raised-shadow: 0 10px 24px rgb(0 0 0 / 0.4);
+  /* Noms et sceaux de rareté écrits en texte (lignes de chances, garantie) : les matières de Yoru,
+     assombries sous Washi (les jetons rarity-* des fuda restent identiques dans les deux thèmes) */
+  --k-rarity-label-common: var(--k-text-muted);
+  --k-rarity-label-uncommon: #5c7f45;
+  --k-rarity-label-rare: var(--k-ai);
+  --k-rarity-label-epic: #b391db;
+  --k-rarity-label-legendary: var(--k-kin);
+  --k-rarity-label-mythic: var(--k-shu);
+  --k-rarity-label-ar: #f08ab0;
+  --k-rarity-label-gold: #d9b556;
+  --k-rarity-label-mr: #d8d3c8;
+  --k-rarity-label-vr: #a98be0;
+  --k-rarity-label-sr: #7fc8d6;
+  --k-rarity-label-xr: #e0609f;
+  --k-rarity-label-br: #a8a5a3;
   /* La capsule de nav flotte : sa hauteur, ses marges et la zone sûre forment la réserve du bas. */
   --mobile-nav-bar: 3.75rem;
   --mobile-nav-gap: 0.75rem;
@@ -80,6 +95,21 @@
   --k-lacquer-light: rgb(255 255 255 / 0.4);
   --k-float-shadow: 0 12px 28px rgb(70 52 30 / 0.22);
   --k-raised-shadow: 0 10px 24px rgb(70 52 30 / 0.16);
+  /* Au moins 4,5:1 sur surface-2 (#e2d7c0), la plus sombre des surfaces Washi : entre 4,54:1 (AR) et 6,45:1 (Black) ;
+     5,1 à 7:1 sur surface, 5,5 à 7,8:1 sur le fond. Rare garde l'ai de Washi (8,65:1). Les teintes de Yoru
+     y tombaient à 1,05:1 (MR) ou 1,4:1 (Esprit). */
+  --k-rarity-label-common: #5f584f;
+  --k-rarity-label-uncommon: #46622f;
+  --k-rarity-label-epic: #6e4796;
+  --k-rarity-label-legendary: #75541c;
+  --k-rarity-label-mythic: #a8291f;
+  --k-rarity-label-ar: #9e3a63;
+  --k-rarity-label-gold: #75541c;
+  --k-rarity-label-mr: #57534e;
+  --k-rarity-label-vr: #5f45a0;
+  --k-rarity-label-sr: #1f6170;
+  --k-rarity-label-xr: #a52a63;
+  --k-rarity-label-br: #4a4746;
 }
 
 /* Wiki labels must retain 4.5:1 contrast on Washi's surfaces and filter chips. */
@@ -102,6 +132,19 @@
   --color-hisui: var(--k-hisui);
   --color-sakura: var(--k-sakura);
   --color-link: var(--k-link);
+  --color-rarity-label-common: var(--k-rarity-label-common);
+  --color-rarity-label-uncommon: var(--k-rarity-label-uncommon);
+  --color-rarity-label-rare: var(--k-rarity-label-rare);
+  --color-rarity-label-epic: var(--k-rarity-label-epic);
+  --color-rarity-label-legendary: var(--k-rarity-label-legendary);
+  --color-rarity-label-mythic: var(--k-rarity-label-mythic);
+  --color-rarity-label-ar: var(--k-rarity-label-ar);
+  --color-rarity-label-gold: var(--k-rarity-label-gold);
+  --color-rarity-label-mr: var(--k-rarity-label-mr);
+  --color-rarity-label-vr: var(--k-rarity-label-vr);
+  --color-rarity-label-sr: var(--k-rarity-label-sr);
+  --color-rarity-label-xr: var(--k-rarity-label-xr);
+  --color-rarity-label-br: var(--k-rarity-label-br);
 
   --font-heading: var(--font-dela-gothic), var(--font-shippori), "Hiragino Sans", sans-serif;
   --font-title: var(--font-shippori), "Hiragino Mincho ProN", serif;

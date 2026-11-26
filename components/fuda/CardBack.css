@@ -17,11 +17,15 @@
 /* Images déjà au format 5:7 : elles couvrent tout le dos */
 .kb-art { object-fit: cover; user-select: none; -webkit-user-drag: none; }
 .kb-iridescence, .kb-sheen { position: absolute; pointer-events: none; }
+/* Dégradé conique de centre fixe sur un calque deux fois plus grand que le dos, déplacé en transform : ses couleurs
+   ne dépendent que de l'angle autour du centre, le rendu est celui d'un centre posé en --mx / --my, sans repeindre
+   le calque à chaque mouvement du pointeur ou du téléphone. Décalé de ±25 % (la moitié du dos), il le couvre toujours. */
 .kb-iridescence {
-  inset: 0;
-  background: conic-gradient(from 35deg at calc(var(--mx) * 100%) calc(var(--my) * 100%), transparent 10%, #e3b1e64a, #a2e8ec38, #f5e5b93b, transparent 65%, #81afa51c, transparent);
+  inset: -50%;
+  background: conic-gradient(from 35deg at 50% 50%, transparent 10%, #e3b1e64a, #a2e8ec38, #f5e5b93b, transparent 65%, #81afa51c, transparent);
   mix-blend-mode: screen;
   opacity: .25;
+  transform: translate(calc((var(--mx) - .5) * 50%), calc((var(--my) - .5) * 50%));
 }
 .kb-sheen {
   inset: -70%;
