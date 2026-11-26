@@ -19,6 +19,15 @@ server {
         proxy_next_upstream error timeout http_502;
         proxy_next_upstream_tries 2;
 
+        # 4. Les en-têtes de réponse de Next dépassent le tampon par défaut de Nginx (4 Ko, une page mémoire) :
+        #    préchargement des polices (Link, ~1,7 Ko), CSP avec nonce (~1,2 Ko), liens hreflang (qui reprennent
+        #    l'adresse demandée), cookies. Au-delà, Nginx répond 502 (« upstream sent too big header while reading
+        #    response header from upstream ») : vu le 2026-11-26 sur les liens ?ref= et /i/CODE (cookie du parrainage),
+        #    /en, /cgu, /parrainage et /ouvrir/… ; l'accueil passait de justesse (3 966 octets).
+        proxy_buffer_size 16k;
+        proxy_buffers 8 16k;
+        proxy_busy_buffers_size 32k;
+
         # … proxy_set_header et autres directives existantes, inchangés …
     }
 }
