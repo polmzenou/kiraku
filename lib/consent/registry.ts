@@ -15,7 +15,6 @@ export type StoragePurpose =
   | "consent"
   | "theme"
   | "motion"
-  | "spoiler"
   | "nav"
   | "locale"
   | "sound"
@@ -110,15 +109,6 @@ export const STORAGE_REGISTRY: readonly StorageEntry[] = [
     kind: "cookie",
     category: "preferences",
     purpose: "motion",
-    duration: { unit: "days", value: 365 },
-    provider: "kiraku",
-    exempt: true,
-  },
-  {
-    name: "kiraku-spoiler",
-    kind: "cookie",
-    category: "preferences",
-    purpose: "spoiler",
     duration: { unit: "days", value: 365 },
     provider: "kiraku",
     exempt: true,

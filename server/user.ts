@@ -50,6 +50,8 @@ function lookupUser(id: string) {
       vanityCode: true,
       profileVisibility: true,
       showCollection: true,
+      spoilerBlur: true,
+      spoilerShown: true,
       locale: true,
       termsVersion: true,
       deletionRequestedAt: true,

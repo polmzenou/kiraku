@@ -2,40 +2,61 @@
 
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
-import { SPOILER_MODES, type SpoilerMode } from "@/lib/spoiler";
-import { applySpoilerMode } from "@/lib/spoiler-dom";
+import { setSpoilerBlurAction } from "@/server/actions/spoiler";
+import { Link } from "@/i18n/navigation";
+import { useSpoilerPreference } from "./spoiler/SpoilerPreference";
 import { segmentedFillClass, segmentedItemClass, segmentedTrackClass } from "./ui/Segmented";
 
-/** Mode spoiler : floute l'illustration des cartes spoil, sans recharger la page (comme le thème). */
-export function SpoilerToggle({ initial }: { initial: SpoilerMode }) {
+const MODES = [
+  { blur: true, label: "hide" },
+  { blur: false, label: "show" },
+] as const;
+
+/**
+ * Mode spoiler du compte : floute l'illustration des cartes spoil (par défaut) ou affiche tout. Appliqué tout de
+ * suite, sans recharger, puis enregistré ; un échec rétablit le réglage précédent. Masqué sans compte.
+ */
+export function SpoilerToggle({ showUniversesLink = false }: { showUniversesLink?: boolean }) {
   const t = useTranslations("spoiler");
   const hint = useId();
-  const [mode, setMode] = useState<SpoilerMode>(initial);
+  const { prefs, setPrefs, canSave } = useSpoilerPreference();
+  const [failed, setFailed] = useState(false);
+  if (!canSave) return null;
 
-  function choose(next: SpoilerMode) {
-    setMode(next);
-    applySpoilerMode(next);
+  async function choose(blur: boolean) {
+    if (blur === prefs.blur) return;
+    setFailed(false);
+    setPrefs((p) => ({ ...p, blur }));
+    const result = await setSpoilerBlurAction({ blur }).catch(() => null);
+    if (!result?.ok) {
+      setPrefs((p) => ({ ...p, blur: !blur }));
+      setFailed(true);
+    }
   }
 
   return (
     <fieldset className="flex flex-col gap-2" aria-describedby={hint}>
       <legend className="mb-2 text-sm font-bold text-text-muted">{t("label")}</legend>
       <div className={`${segmentedTrackClass} ${segmentedFillClass}`}>
-        {SPOILER_MODES.map((value) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={mode === value}
-            onClick={() => choose(value)}
-            className={segmentedItemClass}
-          >
-            {t(value)}
+        {MODES.map(({ blur, label }) => (
+          <button key={label} type="button" aria-pressed={prefs.blur === blur} onClick={() => choose(blur)} className={segmentedItemClass}>
+            {t(label)}
           </button>
         ))}
       </div>
       <p id={hint} className="text-xs text-text-muted">
         {t("hint")}
       </p>
+      {failed && (
+        <p role="alert" className="text-xs text-shu">
+          {t("saveFailed")}
+        </p>
+      )}
+      {showUniversesLink && (
+        <Link href="/compte/spoilers" className="inline-flex min-h-11 w-fit items-center text-sm font-bold text-ai underline-offset-4 hover:underline">
+          {t("byUniverseLink")}
+        </Link>
+      )}
     </fieldset>
   );
 }

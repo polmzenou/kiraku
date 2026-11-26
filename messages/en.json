@@ -191,7 +191,32 @@
     "label": "Spoiler mode",
     "show": "Show everything",
     "hide": "Blur spoilers",
-    "hint": "Blurs the art of characters and transformations that give away the story. The name, rarity and stats stay visible."
+    "hint": "By default, the art of characters and transformations that give away the story is blurred. The name, rarity and stats stay visible. Saved to your account.",
+    "saveFailed": "Setting not saved. Try again.",
+    "byUniverseLink": "Choose by universe",
+    "universes": {
+      "title": "Spoilers by universe",
+      "intro": "Every spoiler card is blurred by default. Untick a universe you've caught up with to see its cards clearly; a new universe always starts blurred.",
+      "legend": "Universes whose spoiler cards are blurred",
+      "search": "Search a universe",
+      "summary": "{shown, plural, =0 {Everything is blurred} one {# universe shown} other {# universes shown}} out of {total}",
+      "reset": "Blur everything again",
+      "cards": "{count, plural, one {# spoiler card} other {# spoiler cards}}",
+      "blurred": "blurred",
+      "shown": "shown",
+      "switchLabel": "Blur {name} spoiler cards",
+      "showAllActive": "\"Show everything\" is on: no card is blurred. Pick \"Blur spoilers\" to choose universe by universe.",
+      "empty": "No spoiler cards yet.",
+      "noMatch": "No universe matches.",
+      "errors": {
+        "NO_SESSION": "Session expired: reload the page.",
+        "INVALID": "Unknown universe.",
+        "RATE_LIMITED": "Too many changes at once: wait a moment.",
+        "UNKNOWN_UNIVERSE": "This universe no longer has spoiler cards: reload the page.",
+        "FULL": "Too many universes shown: blur some before adding more.",
+        "UNEXPECTED": "Setting not saved. Try again."
+      }
+    }
   },
   "locale": {
     "label": "Language",
@@ -7206,7 +7231,6 @@
       "consent": "Remembers your cookie choices.",
       "theme": "Remembers the Yoru or Washi theme.",
       "motion": "Remembers whether animations are turned off.",
-      "spoiler": "Remembers whether spoiler art is blurred (spoiler mode).",
       "locale": "Remembers the chosen language.",
       "sound": "Remembers whether sound is on.",
       "discordLater": "Remembers when you postponed the Discord invitation (\"Later\").",

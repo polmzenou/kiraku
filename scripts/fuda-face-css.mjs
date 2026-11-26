@@ -335,14 +335,15 @@ ${perRarity}
 
 /* Mode spoiler (data-spoiler="hide" sur <html>) : seule l'illustration d'une carte spoil est floutée ; cadre, rareté,
    nom et stats restent. Le rayon suit la largeur de la carte ; \`scale\` (indépendant du cadrage en \`transform\`)
-   repousse les bords flous hors du papier. Les filtres déjà posés (ton or, gris des fiches non découvertes) sont repris. */
-.kn-art img[data-spoiler] { --kn-spoiler-blur: blur(max(4px, 6cqw)); }
-:root[data-spoiler="hide"] .kn-art img[data-spoiler] { filter: var(--kn-spoiler-blur); scale: 1.18; }
-:root[data-spoiler="hide"] .kn-art img[data-spoiler].grayscale { filter: grayscale(1) var(--kn-spoiler-blur); }
-:root[data-spoiler="hide"] .kn-art img[data-spoiler].fuda-art-gold { filter: sepia(1) saturate(2.4) hue-rotate(-14deg) brightness(1.04) contrast(1.08) var(--kn-spoiler-blur); }
-:root[data-spoiler="hide"] .kn-cutout[data-spoiler] { display: none; }
+   repousse les bords flous hors du papier. Les filtres déjà posés (ton or, gris des fiches non découvertes) sont repris.
+   Univers remis en clair par le joueur : la feuille de lib/spoiler.ts (spoilerRevealCss) règle les variables
+   --kn-spoiler-* sur la fuda qui porte sa clé (data-spoiler-u) ; sans elles, le flou s'applique. */
+:root[data-spoiler="hide"] .kn-art img[data-spoiler] { filter: var(--kn-spoiler-blur, blur(max(4px, 6cqw))); scale: var(--kn-spoiler-scale, 1.18); }
+:root[data-spoiler="hide"] .kn-art img[data-spoiler].grayscale { filter: grayscale(1) var(--kn-spoiler-blur, blur(max(4px, 6cqw))); }
+:root[data-spoiler="hide"] .kn-art img[data-spoiler].fuda-art-gold { filter: sepia(1) saturate(2.4) hue-rotate(-14deg) brightness(1.04) contrast(1.08) var(--kn-spoiler-blur, blur(max(4px, 6cqw))); }
+:root[data-spoiler="hide"] .kn-cutout[data-spoiler] { display: var(--kn-spoiler-cutout, none); }
 .kn-spoiler { display: none; }
-:root[data-spoiler="hide"] .kn-spoiler { position: absolute; inset: 0 0 34cqw; display: grid; place-items: center; pointer-events: none; }
+:root[data-spoiler="hide"] .kn-spoiler { position: absolute; inset: 0 0 34cqw; display: var(--kn-spoiler-pill, grid); place-items: center; pointer-events: none; }
 .kn-spoiler > span {
   padding: .5cqw 3.5cqw; border-radius: 999px; background: rgb(21 18 15 / .72); color: #f1e9da;
   font-size: max(9px, 7cqw); font-weight: 700; line-height: 1.3; letter-spacing: .06em;

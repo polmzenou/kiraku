@@ -191,7 +191,32 @@
     "label": "Mode spoiler",
     "show": "Tout afficher",
     "hide": "Flouter les spoils",
-    "hint": "Floute l'illustration des personnages et des transformations qui dévoilent l'histoire. Le nom, la rareté et les stats restent visibles."
+    "hint": "Par défaut, l'illustration des personnages et des transformations qui dévoilent l'histoire est floutée. Le nom, la rareté et les stats restent visibles. Réglage enregistré sur ton compte.",
+    "saveFailed": "Réglage non enregistré. Réessaie.",
+    "byUniverseLink": "Choisir par univers",
+    "universes": {
+      "title": "Spoilers par univers",
+      "intro": "Toutes les cartes spoil sont floutées par défaut. Décoche un univers que tu as rattrapé pour voir ses cartes en clair ; un nouvel univers arrive toujours flouté.",
+      "legend": "Univers dont les cartes spoil sont floutées",
+      "search": "Chercher un univers",
+      "summary": "{shown, plural, =0 {Tout est flouté} one {# univers en clair} other {# univers en clair}} sur {total}",
+      "reset": "Tout reflouter",
+      "cards": "{count, plural, one {# carte spoil} other {# cartes spoil}}",
+      "blurred": "flouté",
+      "shown": "en clair",
+      "switchLabel": "Flouter les cartes spoil de {name}",
+      "showAllActive": "« Tout afficher » est actif : aucune carte n'est floutée. Choisis « Flouter les spoils » pour régler univers par univers.",
+      "empty": "Aucune carte spoil pour le moment.",
+      "noMatch": "Aucun univers ne correspond.",
+      "errors": {
+        "NO_SESSION": "Session expirée : recharge la page.",
+        "INVALID": "Univers inconnu.",
+        "RATE_LIMITED": "Trop de changements d'un coup : patiente un instant.",
+        "UNKNOWN_UNIVERSE": "Cet univers n'a plus de carte spoil : recharge la page.",
+        "FULL": "Trop d'univers en clair : refloute-en avant d'en ajouter.",
+        "UNEXPECTED": "Réglage non enregistré. Réessaie."
+      }
+    }
   },
   "locale": {
     "label": "Langue",
@@ -7206,7 +7231,6 @@
       "consent": "Retient tes choix de cookies.",
       "theme": "Retient le thème Yoru ou Washi.",
       "motion": "Retient si les animations sont coupées.",
-      "spoiler": "Retient si les illustrations spoil sont floutées (mode spoiler).",
       "locale": "Retient la langue choisie.",
       "sound": "Retient si le son est activé.",
       "discordLater": "Retient quand tu as repoussé l'invitation Discord (« Plus tard »).",

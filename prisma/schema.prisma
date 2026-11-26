@@ -119,6 +119,10 @@ model User {
   referralTreeHidden  Boolean           @default(false)
   profileVisibility   ProfileVisibility @default(PUBLIC) // invités créés en PRIVATE
   showCollection      Boolean           @default(true) // collection complète visible sur le profil
+  // Mode spoiler : illustrations des cartes spoil floutées (par défaut), sauf les univers choisis par le joueur.
+  // Clé d'univers = Series.universeId ?? Series.id (lib/spoiler.ts) ; CHECK : 300 univers au plus (migration)
+  spoilerBlur         Boolean           @default(true)
+  spoilerShown        String[]          @default([])
   showcaseLayout      ShowcaseLayout    @default(GRID) // ancienne vitrine unique, plus lue (voir Showcase)
   privacyChosenAt     DateTime? // réglé par le joueur : l'inscription ne le change plus
   // Personnalisation du profil (étape 12h) : bio, accord des titres, titre et cadre débloqués, ordre des badges

@@ -66,6 +66,8 @@ export type NewsCardView = {
   appearance: unknown;
   formName: string | null;
   spoiler: boolean;
+  /** Clé d'univers d'une carte spoil (lib/spoiler.ts), null sinon. */
+  spoilerKey?: string | null;
 };
 export type NewsBoosterView = { slug: string; name: string; emblem: string; shape: BoosterShape; theme: BoosterTheme; endsAt: string | null };
 export type NewsVisualView =

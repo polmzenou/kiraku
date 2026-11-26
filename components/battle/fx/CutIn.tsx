@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import type { BattleSetup, Side } from "@/lib/battle/types";
 import { resolveAppearance } from "@/lib/catalog/appearance";
 import type { Banner, CutIn as CutInState } from "../stage/useDirector";
+import { spoilerImageAttrs } from "@/lib/spoiler";
 
 /**
  * Cut-in de technique : un bandeau oblique traverse l'écran avec l'image de la carte et le nom traduit
@@ -33,7 +34,7 @@ export function CutIn({ cutin, setup, mySide }: { cutin: CutInState; setup: Batt
         <span className="cutin-lines" />
         <span className="cutin-art">
           {/* eslint-disable-next-line @next/next/no-img-element -- image déjà chargée par la carte, recadrée au point focal */}
-          <img src={card.imageUrl} alt="" draggable={false} style={{ objectPosition: `${look.focalX}% ${look.focalY}%` }} data-spoiler={card.spoiler || undefined} />
+          <img src={card.imageUrl} alt="" draggable={false} style={{ objectPosition: `${look.focalX}% ${look.focalY}%` }} {...spoilerImageAttrs(card.spoiler, card.universe?.key)} />
         </span>
         <span className="cutin-text">
           {ultimate && <small className="cutin-kicker">{t("board.ultimateKicker")}</small>}

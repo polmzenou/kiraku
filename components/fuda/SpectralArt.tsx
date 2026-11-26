@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { useReducedFx } from "@/components/motion/MotionPreference";
+import { useSpoilerBlurred } from "@/components/spoiler/SpoilerPreference";
 import { acquireGl } from "@/lib/fx/gl-budget";
 import { spectralSeed } from "@/lib/fx/spectral";
 
@@ -21,8 +22,11 @@ type Props = {
   tint?: string;
   /** Voile sombre sous le nom, peint par le shader (pleine carte). */
   veil: boolean;
-  /** Illustration à flouter en mode spoiler : le canvas n'est pas monté, le repli CSS (flouté) reste. */
+  /** Carte spoil : floutée pour le joueur (mode spoiler, univers pas remis en clair), le canvas n'est pas monté et
+   *  le repli CSS (flouté) reste ; il se démonte ou se remonte quand le réglage change. */
   spoiler: boolean;
+  /** Clé d'univers de la carte (lib/spoiler.ts) ; sans clé, une carte spoil reste floutée. */
+  spoilerKey?: string | null;
   appear?: "hidden" | "now";
 };
 
@@ -39,16 +43,17 @@ function markLive(el: HTMLElement | null, on: boolean) {
  * WebGL2 présent et une place libre dans le budget. Sinon (et tant que le canvas n'a rien peint), l'image et le
  * repli CSS de FudaSpectral.css restent. Prêt, il pose `data-spectral-live` sur la fuda.
  */
-export function SpectralArt({ spoiler, appear, name, ...settings }: Props) {
+export function SpectralArt({ spoiler, spoilerKey, appear, name, ...settings }: Props) {
   const anchor = useRef<HTMLSpanElement>(null);
   const reduced = useReducedFx();
+  const blurred = useSpoilerBlurred(spoiler, spoilerKey);
   const [slot, setSlot] = useState<(() => void) | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const el = anchor.current;
     if (!el || reduced || failed || typeof WebGL2RenderingContext === "undefined") return;
-    if (spoiler && document.documentElement.dataset.spoiler === "hide") return;
+    if (blurred) return;
     let release: (() => void) | null = null;
     // Les cartes préchargées en `visibility: hidden` sont dans l'écran mais pas vues : pas de contexte pour elles
     const seen = () => (typeof el.checkVisibility === "function" ? el.checkVisibility({ visibilityProperty: true }) : true);
@@ -68,7 +73,7 @@ export function SpectralArt({ spoiler, appear, name, ...settings }: Props) {
       release?.();
       setSlot(null);
     };
-  }, [reduced, failed, spoiler]);
+  }, [reduced, failed, blurred]);
 
   useEffect(() => {
     const el = anchor.current;

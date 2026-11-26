@@ -2,6 +2,7 @@ import Image from "next/image";
 import { resolveAppearance } from "@/lib/catalog/appearance";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import type { CardView } from "@/lib/boosters/view";
+import { spoilerImageAttrs } from "@/lib/spoiler";
 import "../../fuda/FudaEffects.css";
 
 /**
@@ -27,7 +28,7 @@ export function CardThumb({ card, highlight = false, dim = false, size = "md" }:
         className={`object-cover object-top${gilded ? " fuda-art-gold" : ""}`}
         style={{ objectPosition: `${visual.focalX}% ${visual.focalY}%`, transform: `scale(${visual.zoom})`, transformOrigin: `${visual.focalX}% ${visual.focalY}%` }}
         draggable={false}
-        data-spoiler={card.spoiler || undefined}
+        {...spoilerImageAttrs(card.spoiler, card.spoilerKey)}
       />
       {gilded && <span aria-hidden="true" className="fuda-gilt" />}
       <span className="sr-only">{card.name}</span>

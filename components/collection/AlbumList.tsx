@@ -10,6 +10,7 @@ import { type Rarity } from "@/lib/catalog/rarity";
 import { albumRarities, albumRatio, type Album, type AlbumPage } from "@/lib/collection/albums";
 import { loadAlbumPageAction } from "@/server/actions/collection";
 import { Button } from "../ui/Button";
+import { spoilerImageAttrs } from "@/lib/spoiler";
 
 // Classes complètes pour que Tailwind les détecte
 const RARITY_TEXT: Record<Rarity, string> = {
@@ -94,7 +95,7 @@ function AlbumTile({ album }: { album: Album }) {
             fill
             sizes="64px"
             className={`object-cover ${album.owned === 0 ? "opacity-40 grayscale" : ""}`}
-            data-spoiler={album.coverSpoiler || undefined}
+            {...spoilerImageAttrs(album.coverSpoiler, album.coverSpoilerKey)}
           />
         )}
       </span>

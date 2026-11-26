@@ -72,6 +72,8 @@ describe("migration du catalogue sur PostgreSQL isolé", () => {
       // Vraie migration du mode spoiler : colonne lue par la collection et la couverture des albums
       await db.exec(readFileSync(resolve(root, "20261110120000_cartes_spoiler", "migration.sql"), "utf8"));
       await db.exec(`UPDATE "Card" SET spoiler = true WHERE id='custom'`);
+      // Vraie migration des univers : la clé d'univers d'une carte spoil (mode spoiler) vient de la série
+      await db.exec(readFileSync(resolve(root, "20261105120000_univers", "migration.sql"), "utf8"));
       reader.query.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) => {
         const query = Prisma.sql(strings, ...values);
         return (await db.query(query.text, [...query.values])).rows;
@@ -80,10 +82,14 @@ describe("migration du catalogue sur PostgreSQL isolé", () => {
       expect(collection.items.map((c) => c.rarity)).toEqual(["CELESTIAL", "MYTHIC"]);
       expect(collection.items[0].anilistId).toBe(custom.publicId);
       expect(collection.items.map((c) => c.spoiler)).toEqual([true, false]);
+      // Série rangée dans aucun univers : la clé est la série seule ; rien pour une carte non spoil
+      expect(collection.items.map((c) => c.spoilerKey)).toEqual(["custom-universe", null]);
       const albums = await getAlbumPage("owner", { q: "", sort: "az", all: true }, 0, "fr");
       expect(albums.items.find((a) => a.seriesId === "custom-universe")?.byRarity.CELESTIAL).toEqual({ owned: 1, total: 1 });
       expect(albums.items.find((a) => a.seriesId === "custom-universe")?.coverSpoiler).toBe(true);
+      expect(albums.items.find((a) => a.seriesId === "custom-universe")?.coverSpoilerKey).toBe("custom-universe");
       expect(albums.items.find((a) => a.seriesId === "series")?.coverSpoiler).toBe(false);
+      expect(albums.items.find((a) => a.seriesId === "series")?.coverSpoilerKey).toBeNull();
 
       // Exécution des vraies requêtes de l'importeur actuel, après une édition admin.
       await db.exec(`UPDATE "Card" SET name='Admin name', power=123, "rarityKey"='CELESTIAL', status='ARCHIVED', "adminOverrides"='{name,power,rarity,status}' WHERE id='active'`);
