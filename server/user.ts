@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { isFrozen } from "@/lib/account/deletion";
 import { decorFromRelations } from "@/lib/profile/decor";
-import { blocks, requestNetworkBan } from "./anticheat/network-ban";
+import { blockingBan, requestNetworkBan } from "./anticheat/network-ban";
 import { auth } from "./auth";
 import { prisma } from "./db";
 import { decorSelect } from "./profile/decor";
@@ -20,7 +20,7 @@ export const getCurrentUser = cache(async () => {
   if (!user) return null;
   // Le hash ne quitte jamais ce module
   const { passwordHash, frame, nameColor, ...rest } = user;
-  const bannedAt = rest.bannedAt ?? (blocks(networkBan, rest.role) ? networkBan.since : null);
+  const bannedAt = rest.bannedAt ?? blockingBan(networkBan, rest.role)?.since ?? null;
   return { ...rest, bannedAt, hasPassword: passwordHash !== null, decor: decorFromRelations({ frame, nameColor, prestige: rest.prestige }) };
 });
 

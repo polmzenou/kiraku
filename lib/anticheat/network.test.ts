@@ -1,6 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { isNetworkGateFree } from "@/lib/legal/legal";
-import { banState, followDecision, ipBanKey, ipKeyPatterns, isBannableIp, selectionOf, signalBanKey, type KeyFacts } from "./network";
+import { SEAL_GLYPHS } from "@/lib/seal-glyphs";
+import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
+import {
+  adminBanExpiry,
+  banState,
+  followDecision,
+  ipBanKey,
+  ipKeyPatterns,
+  isBannableIp,
+  isIpv4Key,
+  NETWORK_BAN_KANJI,
+  selectionOf,
+  signalBanKey,
+  type KeyFacts,
+} from "./network";
 
 describe("clé de ban d'une IP", () => {
   it("garde une IPv4 telle quelle, sans zéros de tête", () => {
@@ -100,7 +114,7 @@ describe("état d'une clé au moment de bannir", () => {
 });
 
 describe("le ban suit l'appareil", () => {
-  const base = { enabled: true, ipKey: "86.245.12.3", staffSeen: false, othersActive: 0, maxOthers: 0, autoBans: 0, perDevice: 5 };
+  const base = { enabled: true, ipv4: true, ipKey: "86.245.12.3", exempt: false, staffSeen: false, othersActive: 0, maxOthers: 0, autoBans: 0, perDevice: 5 };
 
   it("bannit une nouvelle IP propre", () => {
     expect(followDecision(base)).toBe("FOLLOW");
@@ -114,6 +128,41 @@ describe("le ban suit l'appareil", () => {
     expect(followDecision({ ...base, staffSeen: true })).toBe("STAFF");
     expect(followDecision({ ...base, autoBans: 5 })).toBe("LIMIT");
     expect(followDecision({ ...base, othersActive: 1 })).toBe("SHARED");
+  });
+
+  it("ne reprend jamais une IP exemptée par l'admin", () => {
+    expect(followDecision({ ...base, exempt: true })).toBe("EXEMPT");
+  });
+
+  it("réglage IPv4 coupé : seuls les /64 IPv6 sont suivis", () => {
+    const v4Off = { ...base, ipv4: false };
+    expect(followDecision(v4Off)).toBe("IPV4");
+    expect(followDecision({ ...v4Off, ipKey: "2a01:cb00:1:2::/64" })).toBe("FOLLOW");
+    // Par défaut (réglage allumé), une IPv4 se suit comme avant
+    expect(SETTING_DEFAULTS["multiAccount.followDeviceIpv4"]).toBe(true);
+  });
+});
+
+describe("expiration d'un ban posé par l'admin", () => {
+  const now = new Date("2026-11-26T12:00:00Z");
+
+  it("par défaut (0 jour), tout ban de l'admin est définitif", () => {
+    expect(SETTING_DEFAULTS["multiAccount.ipv4BanDays"]).toBe(0);
+    expect(adminBanExpiry("IP", "86.245.12.3", 0, now)).toBeNull();
+  });
+
+  it("avec une durée, seule une IPv4 expire : jamais un /64 IPv6 ni un appareil", () => {
+    expect(adminBanExpiry("IP", "86.245.12.3", 90, now)).toEqual(new Date("2027-02-24T12:00:00Z"));
+    expect(adminBanExpiry("IP", "2a01:cb00:1:2::/64", 90, now)).toBeNull();
+    expect(adminBanExpiry("DEVICE", "a".repeat(32), 90, now)).toBeNull();
+    expect(isIpv4Key("86.245.12.3")).toBe(true);
+    expect(isIpv4Key("2a01:cb00:1:2::/64")).toBe(false);
+  });
+});
+
+describe("écran d'un réseau banni", () => {
+  it("son sceau est dans la police des sceaux", () => {
+    expect(SEAL_GLYPHS).toContain(NETWORK_BAN_KANJI);
   });
 });
 

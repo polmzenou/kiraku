@@ -7,6 +7,7 @@
 // Un cron de secours tire à la date de clôture si l'équipe ne l'a pas fait. Client injecté : serveur ou tests.
 import { randomBytes, randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
+import type { DetectionScoring } from "@/lib/anticheat/scoring";
 import { commitOf, seedHex } from "@/lib/casino/fairness";
 import { drawOmikuji, ticketsHash } from "@/lib/ennichi/omikuji";
 import { ennichiPhase, ennichiSchedule, rankBand, rankRecruiters, type EnnichiRules, type EnnichiTitle } from "@/lib/ennichi/rules";
@@ -80,7 +81,7 @@ export function unfoldPool(pool: EnnichiRules["omikuji"]): { lotId: string | nul
 /** « Contrôler » : score de chaque parrainage de la fête recalculé ; au-dessus du seuil, « À vérifier ». */
 export async function checkEnnichiWith(
   db: PrismaClient,
-  input: { staffId: string; edition: number; now: Date; rules: Pick<ReferralV2Rules, "holdScore">; sharedCap: number },
+  input: { staffId: string; edition: number; now: Date; rules: Pick<ReferralV2Rules, "holdScore">; sharedCap: number; scoring?: DetectionScoring },
 ): Promise<{ checked: number; held: number }> {
   const referrals = await db.referral.findMany({
     where: { ennichiEdition: input.edition, revokedAt: null, reviewedAt: null, heldAt: null },
@@ -88,7 +89,7 @@ export async function checkEnnichiWith(
   });
   let held = 0;
   for (const r of referrals) {
-    const reason = await db.$transaction((tx) => applyHold(tx, r, input.rules, { withScore: true, sharedCap: input.sharedCap, now: input.now }), TX);
+    const reason = await db.$transaction((tx) => applyHold(tx, r, input.rules, { withScore: true, sharedCap: input.sharedCap, scoring: input.scoring, now: input.now }), TX);
     if (reason) held++;
   }
   await db.$transaction(async (tx) => {

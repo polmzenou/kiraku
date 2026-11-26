@@ -91,6 +91,7 @@ export async function reviewReferralAction(input: unknown): Promise<{ ok: true; 
       reason: reason ?? "",
       now,
       sharedIpCap: await getSetting("multiAccount.sharedIpCap"),
+      ipv4BanDays: await getSetting("multiAccount.ipv4BanDays"),
     });
     refresh();
     return { ok: true, paid: 0, banned: banned.length };
@@ -182,8 +183,8 @@ export async function rescoreReferralAction(input: unknown): Promise<{ ok: true;
   try {
     const referral = await prisma.referral.findUnique({ where: { id: parsed.data.referralId }, select: { id: true, version: true, referrerId: true, refereeId: true } });
     if (!referral || referral.version !== 2) return { ok: false, error: "NOT_FOUND" };
-    const [rules, sharedCap] = await Promise.all([referralV2Rules(), getSetting("multiAccount.sharedIpCap")]);
-    const held = await prisma.$transaction((tx) => applyHold(tx, referral, rules, { withScore: true, sharedCap, now: new Date() }));
+    const [rules, sharedCap, scoring] = await Promise.all([referralV2Rules(), getSetting("multiAccount.sharedIpCap"), getSetting("multiAccount.scoring")]);
+    const held = await prisma.$transaction((tx) => applyHold(tx, referral, rules, { withScore: true, sharedCap, scoring, now: new Date() }));
     refresh();
     return { ok: true, held: held !== null };
   } catch (e) {
@@ -268,8 +269,8 @@ export async function checkEnnichiAction(input: unknown): Promise<{ ok: true; ch
     const state = await ennichiState(now);
     if (state.rules.edition !== parsed.data.edition) return { ok: false, error: "STALE" };
     if (state.phase !== "closing") return { ok: false, error: state.phase === "closed" ? "ALREADY_DRAWN" : "NOT_CLOSING" };
-    const [rules, sharedCap] = await Promise.all([referralV2Rules(), getSetting("multiAccount.sharedIpCap")]);
-    const out = await checkEnnichiWith(prisma, { staffId: user.id, edition: state.rules.edition, now, rules, sharedCap });
+    const [rules, sharedCap, scoring] = await Promise.all([referralV2Rules(), getSetting("multiAccount.sharedIpCap"), getSetting("multiAccount.scoring")]);
+    const out = await checkEnnichiWith(prisma, { staffId: user.id, edition: state.rules.edition, now, rules, sharedCap, scoring });
     refresh();
     return { ok: true, ...out };
   } catch (e) {

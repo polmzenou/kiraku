@@ -52,7 +52,7 @@ export default async function AdminReferralFichePage({ params }: PageProps<"/[lo
   const { id } = await params;
   if (!/^[A-Za-z0-9_-]{1,40}$/.test(id)) notFound();
   const now = new Date();
-  const [t, tSteps, format, locale, rules, timeZone, sharedCap, held] = await Promise.all([
+  const [t, tSteps, format, locale, rules, timeZone, sharedCap, scoring, held] = await Promise.all([
     getTranslations("admin.referralV2.fiche"),
     getTranslations("referralV2.steps"),
     getFormatter(),
@@ -60,9 +60,10 @@ export default async function AdminReferralFichePage({ params }: PageProps<"/[lo
     referralV2Rules(),
     getSetting("game.timeZone"),
     getSetting("multiAccount.sharedIpCap"),
+    getSetting("multiAccount.scoring"),
     heldReferralCount(),
   ]);
-  const fiche = await referralFiche(id, rules, { timeZone, locale, now, sharedCap });
+  const fiche = await referralFiche(id, rules, { timeZone, locale, now, sharedCap, scoring });
   if (!fiche) notFound();
 
   const date = (iso: string) => format.dateTime(new Date(iso), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone });

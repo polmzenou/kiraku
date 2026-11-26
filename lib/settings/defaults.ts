@@ -6,6 +6,7 @@ import { rotationPinSchema } from "@/lib/boosters/rotation";
 import { slugSchema } from "@/lib/boosters/types";
 import { KEYWORDS, LEGACY_KEYWORDS, TECHNIQUES, ULTIMATES } from "@/lib/battle/types";
 import { JOIN_MODAL_DEFAULT, joinModalSchema } from "@/lib/discord/join-modal";
+import { DETECTION_SCORING_DEFAULT, detectionScoringSchema } from "@/lib/anticheat/scoring";
 import { SOCIAL_PROMO_DEFAULT, socialPromoSchema } from "@/lib/discord/social-promo";
 import { NEWS_DEFAULT, newsSchema } from "@/lib/home/news-schema";
 import { alertThresholdsSchema, DEFAULT_ALERT_THRESHOLDS } from "@/lib/usage/quota";
@@ -551,12 +552,19 @@ export const SETTING_SCHEMAS = {
   "multiAccount.seenThrottleMinutes": z.number().int().min(1).max(1_440),
   "multiAccount.sharedIpCap": z.number().int().min(2).max(100),
   "multiAccount.minScore": z.number().int().min(1).max(500),
+  // Barème de la détection (poids des indices, seuils) : décide aussi des mises « À vérifier » du parrainage v2
+  "multiAccount.scoring": detectionScoringSchema,
   // Bans réseau : un appareil banni revenu avec une nouvelle IP la fait bannir (si elle ne coupe pas d'autres
-  // comptes actifs au-delà de autoBanMaxOthers), pour autoBanDays jours, et au plus autoBanPerDevice IP par appareil
+  // comptes actifs au-delà de autoBanMaxOthers), pour autoBanDays jours, et au plus autoBanPerDevice IP par appareil.
+  // followDeviceIpv4 : le suivi prend aussi les IPv4 (une IPv4 d'opérateur mobile ou de box se partage souvent ;
+  // un /64 IPv6 reste propre à une ligne).
   "multiAccount.followDevice": z.boolean(),
+  "multiAccount.followDeviceIpv4": z.boolean(),
   "multiAccount.autoBanMaxOthers": z.number().int().min(0).max(5),
   "multiAccount.autoBanDays": z.number().int().min(1).max(365),
   "multiAccount.autoBanPerDevice": z.number().int().min(1).max(50),
+  // Bans d'une IPv4 posés par l'admin (fiche joueur, groupe, « Révoquer et bannir ») : expiration en jours, 0 = définitif
+  "multiAccount.ipv4BanDays": z.number().int().min(0).max(365),
   "discord.linkBonusZeni": z.number().int().min(0).max(100_000),
   // Modal « Rejoins notre Discord » : lien, textes fr/en, déclencheur et fréquence
   "discord.joinModal": joinModalSchema,
@@ -1025,10 +1033,13 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "multiAccount.seenThrottleMinutes": 30,
   "multiAccount.sharedIpCap": 8,
   "multiAccount.minScore": 40,
+  "multiAccount.scoring": DETECTION_SCORING_DEFAULT, // barème d'origine (appareil 60, IP 30…)
   "multiAccount.followDevice": true,
+  "multiAccount.followDeviceIpv4": true, // le suivi prend les IPv4 comme les /64 IPv6, comme avant le réglage
   "multiAccount.autoBanMaxOthers": 0, // aucun autre joueur actif coupé par un ban automatique
   "multiAccount.autoBanDays": 30, // un ban automatique n'est jamais définitif sans l'admin
   "multiAccount.autoBanPerDevice": 5,
+  "multiAccount.ipv4BanDays": 0, // un ban posé par l'admin vaut jusqu'à sa levée, IPv4 comprise
   "discord.linkBonusZeni": 500, // versé une seule fois, à la première liaison
   "discord.joinModal": JOIN_MODAL_DEFAULT, // désactivé par défaut
   "discord.marketEnabled": false,

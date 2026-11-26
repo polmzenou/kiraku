@@ -45,8 +45,8 @@ export async function banNetworkAction(input: unknown): Promise<{ ok: true; bans
   if (!(await rateLimit(`admin-netban:${admin.id}`, { limit: 20, windowSeconds: MINUTE })).success) return { ok: false, error: "RATE_LIMITED" };
   try {
     const { userId, signalIds, banAccount, reason } = parsed.data;
-    const sharedIpCap = await getSetting("multiAccount.sharedIpCap");
-    const res = await banNetworkWith(prisma, { adminId: admin.id, userId, signalIds, banAccount, reason, now: new Date(), sharedIpCap });
+    const [sharedIpCap, ipv4BanDays] = await Promise.all([getSetting("multiAccount.sharedIpCap"), getSetting("multiAccount.ipv4BanDays")]);
+    const res = await banNetworkWith(prisma, { adminId: admin.id, userId, signalIds, banAccount, reason, now: new Date(), sharedIpCap, ipv4BanDays });
     refresh();
     return { ok: true, bans: res.bans, account: res.account };
   } catch (e) {
@@ -64,8 +64,8 @@ export async function banGroupAction(input: unknown): Promise<{ ok: true; accoun
   if (!parsed.success) return { ok: false, error: "INVALID" };
   if (!(await rateLimit(`admin-netban-group:${admin.id}`, { limit: 10, windowSeconds: MINUTE })).success) return { ok: false, error: "RATE_LIMITED" };
   try {
-    const sharedIpCap = await getSetting("multiAccount.sharedIpCap");
-    const res = await banGroupWith(prisma, { adminId: admin.id, userIds: parsed.data.userIds, reason: parsed.data.reason, now: new Date(), sharedIpCap });
+    const [sharedIpCap, ipv4BanDays] = await Promise.all([getSetting("multiAccount.sharedIpCap"), getSetting("multiAccount.ipv4BanDays")]);
+    const res = await banGroupWith(prisma, { adminId: admin.id, userIds: parsed.data.userIds, reason: parsed.data.reason, now: new Date(), sharedIpCap, ipv4BanDays });
     refresh();
     return { ok: true, accounts: res.accounts, bans: res.bans, skipped: res.skipped };
   } catch (e) {
@@ -74,16 +74,18 @@ export async function banGroupAction(input: unknown): Promise<{ ok: true; accoun
 }
 
 const banIdSchema = z.object({ banId: id, reason }).strict();
+// exempt : « Lever et ne plus suivre ici » (ban automatique qui suit un appareil)
+const liftSchema = banIdSchema.extend({ exempt: z.boolean().optional() }).strict();
 
-/** Lève un ban (et les IP qu'un appareil levé avait fait bannir). */
+/** Lève un ban (et les IP qu'un appareil levé avait fait bannir), en exemptant l'IP du suivi si demandé. */
 export async function liftNetworkBanAction(input: unknown): Promise<{ ok: true } | Failure> {
   const admin = await getAdmin();
   if (!admin) return { ok: false, error: "FORBIDDEN" };
-  const parsed = banIdSchema.safeParse(input);
+  const parsed = liftSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
   if (!(await rateLimit(`admin-netban-lift:${admin.id}`, { limit: 30, windowSeconds: MINUTE })).success) return { ok: false, error: "RATE_LIMITED" };
   try {
-    await liftNetworkBanWith(prisma, { adminId: admin.id, banId: parsed.data.banId, reason: parsed.data.reason });
+    await liftNetworkBanWith(prisma, { adminId: admin.id, banId: parsed.data.banId, reason: parsed.data.reason, exempt: parsed.data.exempt === true });
     refresh();
     return { ok: true };
   } catch (e) {
@@ -91,7 +93,7 @@ export async function liftNetworkBanAction(input: unknown): Promise<{ ok: true }
   }
 }
 
-/** Rend définitif un ban automatique (le ban qui suit l'appareil expire sinon). */
+/** Rend définitif un ban qui expire (ban automatique, IPv4 posée avec une durée). */
 export async function keepNetworkBanAction(input: unknown): Promise<{ ok: true } | Failure> {
   const admin = await getAdmin();
   if (!admin) return { ok: false, error: "FORBIDDEN" };

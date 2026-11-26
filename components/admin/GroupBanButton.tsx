@@ -62,7 +62,7 @@ export function GroupBanButton({ userIds }: { userIds: string[] }) {
           <ul className="flex flex-col gap-1">
             {skipped.map((s, i) => (
               <li key={i} className="break-all">
-                {t(`kinds.${s.kind}`)} {s.value} : {t(`states.${s.state}`, { count: 0 })}
+                {t("groupSkippedItem", { kind: t(`kinds.${s.kind}`), value: s.value, state: t(`states.${s.state}`, { count: 0 }) })}
               </li>
             ))}
           </ul>

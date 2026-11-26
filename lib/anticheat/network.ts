@@ -11,6 +11,16 @@ export type NetworkKind = "IP" | "DEVICE";
 /** Comptes au plus dans un ban de groupe (/admin/multi-comptes) ; au-delà, on bannit depuis les fiches. */
 export const GROUP_BAN_MAX = 20;
 
+/** Sceau de l'écran « Accès bloqué » (components/anticheat/NetworkBanScreen.tsx), dans la police des sceaux. */
+export const NETWORK_BAN_KANJI = "禁";
+
+/**
+ * Appareils distincts comptés au plus par ban d'IP (empreintes courtes gardées sur la ligne du ban) : au-delà de
+ * SHARED_DEVICES_HINT, l'IP coupe sans doute plusieurs foyers (sortie d'opérateur mobile, IPv4 partagée).
+ */
+export const BLOCKED_DEVICES_MAX = 20;
+export const SHARED_DEVICES_HINT = 3;
+
 /** Quatre octets d'une IPv4 écrite en décimal pointé, ou null. */
 function parseIpv4(ip: string): number[] | null {
   const parts = ip.split(".");
@@ -74,6 +84,20 @@ export function ipBanKey(ip: string): string | null {
   if (!parsed) return null;
   if ("v4" in parsed) return parsed.v4.join(".");
   return `${parsed.v6.slice(0, 4).map((g) => g.toString(16)).join(":")}::/64`;
+}
+
+/** Clé de ban d'une IPv4 (adresse exacte), par opposition au /64 d'une IPv6. */
+export function isIpv4Key(key: string): boolean {
+  return parseIpv4(key) !== null;
+}
+
+/**
+ * Expiration d'un ban posé par l'admin (fiche joueur, groupe) : seule une IPv4 expire, après `ipv4Days` jours
+ * (multiAccount.ipv4BanDays, 0 = définitif). Un /64 IPv6 et un appareil désignent une seule ligne : définitifs.
+ */
+export function adminBanExpiry(kind: NetworkKind, key: string, ipv4Days: number, now: Date): Date | null {
+  if (kind !== "IP" || ipv4Days <= 0 || !isIpv4Key(key)) return null;
+  return new Date(now.getTime() + ipv4Days * 86_400_000);
 }
 
 /** Plages IPv4 jamais bannies : [adresse de réseau, longueur du préfixe]. */
@@ -170,11 +194,15 @@ export function selectionOf(state: BanState): { selectable: boolean; checked: bo
 }
 
 /** Le ban suit l'appareil : pourquoi la nouvelle IP d'un appareil banni est bannie à son tour, ou pas. */
-export type FollowDecision = "FOLLOW" | "OFF" | "NOT_BANNABLE" | "STAFF" | "SHARED" | "LIMIT";
+export type FollowDecision = "FOLLOW" | "OFF" | "NOT_BANNABLE" | "IPV4" | "EXEMPT" | "STAFF" | "SHARED" | "LIMIT";
 
 export function followDecision(input: {
   enabled: boolean;
+  /** Le suivi prend aussi les IPv4 (multiAccount.followDeviceIpv4) ; sinon, seulement les /64 IPv6. */
+  ipv4: boolean;
   ipKey: string | null;
+  /** L'admin a levé un ban automatique sur cette IP en demandant de ne plus la suivre. */
+  exempt: boolean;
   staffSeen: boolean;
   /** Comptes actifs, hors comptes bannis, qui ont utilisé cette IP. */
   othersActive: number;
@@ -185,6 +213,8 @@ export function followDecision(input: {
 }): FollowDecision {
   if (!input.enabled) return "OFF";
   if (!input.ipKey || !isBannableIp(input.ipKey)) return "NOT_BANNABLE";
+  if (!input.ipv4 && isIpv4Key(input.ipKey)) return "IPV4";
+  if (input.exempt) return "EXEMPT";
   if (input.staffSeen) return "STAFF";
   if (input.autoBans >= input.perDevice) return "LIMIT";
   return input.othersActive > input.maxOthers ? "SHARED" : "FOLLOW";

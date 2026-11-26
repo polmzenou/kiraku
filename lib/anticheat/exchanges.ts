@@ -27,7 +27,7 @@ export function sortExchanges<T extends { at: Date; id: string }>(rows: readonly
   return [...rows].sort((x, y) => y.at.getTime() - x.at.getTime() || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
 }
 
-export type ExchangeTotals = {
+type ExchangeTotals = {
   total: number;
   byKind: Record<ExchangeKind, number>;
   /** Transferts orientés (cadeaux, ventes, pile ou face) de a vers b et de b vers a ; les échanges n'ont pas de sens */

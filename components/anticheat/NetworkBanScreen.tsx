@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { NETWORK_BAN_KANJI } from "@/lib/anticheat/network";
 import { getSetting } from "@/server/settings";
 
 const link = "inline-flex min-h-11 items-center font-medium text-ai underline underline-offset-4";
@@ -13,7 +14,7 @@ export async function NetworkBanScreen() {
   return (
     <main className="mx-auto flex min-h-[calc(100dvh-3.5rem-var(--mobile-nav-height))] w-full max-w-xl flex-col justify-center gap-5 px-4 py-8">
       <span aria-hidden="true" lang="ja" className="font-seal text-4xl text-shu">
-        禁
+        {NETWORK_BAN_KANJI}
       </span>
       <h1 className="font-heading text-2xl font-extrabold">{t("title")}</h1>
       <p className="text-text-muted">{t("body")}</p>

@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import { maskedKey } from "@/server/anticheat/network-ban-core";
 import { listNetworkBans, networkBanRows } from "@/server/anticheat/network-ban-queries";
+import { getSetting } from "@/server/settings";
 import { NetworkBanForm, type NetworkBanFormRow } from "./NetworkBanForm";
 import { NetworkBanList } from "./NetworkBanList";
 import { ReadOnly } from "./ReadOnly";
@@ -10,7 +11,13 @@ import { ReadOnly } from "./ReadOnly";
  * compte, et les bans déjà venus de lui. Le DEV voit tout en lecture seule, valeurs masquées avant le rendu.
  */
 export async function NetworkBanPanel({ userId, readOnly, accountBanned, staffTarget }: { userId: string; readOnly: boolean; accountBanned: boolean; staffTarget: boolean }) {
-  const [rows, bans, t, format] = await Promise.all([networkBanRows(userId), listNetworkBans({ userId, take: 50 }), getTranslations("admin.networkBans"), getFormatter()]);
+  const [rows, bans, t, format, ipv4Days] = await Promise.all([
+    networkBanRows(userId),
+    listNetworkBans({ userId, take: 50 }),
+    getTranslations("admin.networkBans"),
+    getFormatter(),
+    getSetting("multiAccount.ipv4BanDays"),
+  ]);
   const formRows: NetworkBanFormRow[] = rows.map((r) => ({
     signalIds: r.signalIds,
     kind: r.kind,
@@ -27,7 +34,7 @@ export async function NetworkBanPanel({ userId, readOnly, accountBanned, staffTa
     <div className="flex flex-col gap-3">
       <div>
         <h4 className="font-title text-lg font-bold">{t("panelTitle")}</h4>
-        <p className="text-sm text-text-muted">{t("panelIntro")}</p>
+        <p className="text-sm text-text-muted">{t("panelIntro", { days: ipv4Days })}</p>
       </div>
       {staffTarget ? (
         <p className="text-sm text-text-muted">{t("staffTarget")}</p>

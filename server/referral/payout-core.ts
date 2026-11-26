@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
+import type { DetectionScoring } from "@/lib/anticheat/scoring";
 import type { RewardGrant } from "@/lib/referral/clawback";
 import { scoreIsFresh } from "@/lib/referral/hold";
 import { planPayouts, type DueReward, type PaidReward } from "@/lib/referral/payout";
@@ -23,6 +24,8 @@ export type PayoutDeps = {
   now: Date;
   /** Au-delà de ce nombre de comptes, une IP ne relie plus (multiAccount.sharedIpCap). */
   sharedCap: number;
+  /** Barème du score de la paire (multiAccount.scoring) ; absent : barème d'origine. */
+  scoring?: DetectionScoring;
   /** Multiplicateur des étapes 1 et 2 pour un ami arrivé pendant l'Ennichi. */
   ennichiMultiplier: number;
   lotDeps: LotDeps;
@@ -194,7 +197,7 @@ export async function payDueRewardsWith(db: PrismaClient, referralId: string, de
 
   // Grosse récompense : score de la paire recalculé s'il n'est plus récent ; au-dessus du seuil, tout attend l'équipe
   if (due.some((d) => d.big) && !scoreIsFresh(referral.scoredAt, deps.now, deps.rules)) {
-    const held = await db.$transaction((tx) => applyHold(tx, referral, deps.rules, { withScore: true, sharedCap: deps.sharedCap, now: deps.now }), TX);
+    const held = await db.$transaction((tx) => applyHold(tx, referral, deps.rules, { withScore: true, sharedCap: deps.sharedCap, scoring: deps.scoring, now: deps.now }), TX);
     if (held) return 0;
   }
 

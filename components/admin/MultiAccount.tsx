@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { maskEmail, maskIp, shortDevice } from "@/lib/anticheat/mask";
 import { reasonWeight, type Reason, type SuspectPair } from "@/lib/anticheat/score";
 import type { MemberInfo, SignalRow } from "@/server/anticheat/queries";
+import { getSetting } from "@/server/settings";
 
 // Blocs de la détection des multi-comptes (page /admin/multi-comptes et fiche joueur). Composants serveur :
 // `masked` (DEV) masque IP et e-mails ici, avant le rendu ; rien de brut ne part vers le navigateur.
@@ -20,15 +21,18 @@ export function ScoreBadge({ score, label }: { score: number; label: string }) {
   return <span className={`inline-flex min-h-7 items-center rounded-pill border px-3 text-sm font-bold tabular-nums ${tone}`}>{label}</span>;
 }
 
-/** Puces des indices d'une paire, avec leur poids. Les transferts (flux, échanges) mènent au détail de la paire. */
+/** Listes courtes (IP, pseudos, transferts) : séparateurs de la langue, sans « et » final. */
+const SHORT_LIST = { type: "conjunction", style: "narrow" } as const;
+
+/** Puces des indices d'une paire, avec leur poids (barème multiAccount.scoring). Les transferts (flux, échanges) mènent au détail de la paire. */
 export async function ReasonChips({ reasons, members, masked, pair }: { reasons: readonly Reason[]; members: Map<string, MemberInfo>; masked: boolean; pair?: { a: string; b: string } }) {
-  const t = await getTranslations("admin.multiAccounts.reasons");
+  const [t, format, scoring] = await Promise.all([getTranslations("admin.multiAccounts.reasons"), getFormatter(), getSetting("multiAccount.scoring")]);
   const text = (r: Reason): string => {
     switch (r.kind) {
       case "device":
         return t("device", { count: r.count });
       case "ip":
-        return t("ip", { count: r.values.length, ips: r.values.map((v) => (masked ? maskIp(v) : v)).join(", ") });
+        return t("ip", { count: r.values.length, ips: format.list(r.values.map((v) => (masked ? maskIp(v) : v)), SHORT_LIST) });
       case "emailAlias":
         return t("emailAlias");
       case "emailStem":
@@ -39,11 +43,14 @@ export async function ReasonChips({ reasons, members, masked, pair }: { reasons:
         return t("flow", {
           from: name(members, r.fromId),
           to: name(members, r.toId),
-          items: [
-            r.gifts > 0 ? t("flowGifts", { count: r.gifts }) : null,
-            r.sales > 0 ? t("flowSales", { count: r.sales }) : null,
-            r.flips > 0 ? t("flowFlips", { count: r.flips }) : null,
-          ].filter(Boolean).join(", "),
+          items: format.list(
+            [
+              r.gifts > 0 ? t("flowGifts", { count: r.gifts }) : null,
+              r.sales > 0 ? t("flowSales", { count: r.sales }) : null,
+              r.flips > 0 ? t("flowFlips", { count: r.flips }) : null,
+            ].filter((item): item is string => item !== null),
+            SHORT_LIST,
+          ),
         });
       case "interactions":
         return t("interactions", { count: r.total });
@@ -52,7 +59,7 @@ export async function ReasonChips({ reasons, members, masked, pair }: { reasons:
       case "createdClose":
         return t(r.withIp ? "createdCloseIp" : "createdClose", { minutes: r.minutes });
       case "onlyFriend":
-        return t("onlyFriend", { names: r.userIds.map((id) => name(members, id)).join(", ") });
+        return t("onlyFriend", { names: format.list(r.userIds.map((id) => name(members, id)), SHORT_LIST) });
     }
   };
   return (
@@ -61,7 +68,7 @@ export async function ReasonChips({ reasons, members, masked, pair }: { reasons:
         const content = (
           <>
             <span>{text(r)}</span>
-            <span className="font-bold tabular-nums text-text-muted">+{reasonWeight(r)}</span>
+            <span className="font-bold tabular-nums text-text-muted">+{reasonWeight(r, scoring)}</span>
           </>
         );
         const detail = pair && (r.kind === "interactions" || r.kind === "flow");
@@ -194,9 +201,14 @@ export async function SignalTable({ rows, masked }: { rows: readonly SignalRow[]
               <span className="text-text-muted">{t("noOther")}</span>
             ) : (
               <span className="text-xs break-all">
-                {s.others.map((o, i) => (
-                  <span key={o.id}>{i > 0 && ", "}<Link href={`/admin/utilisateurs/${o.id}`} className="underline underline-offset-2">{o.username}</Link></span>
-                ))}
+                {format.list(
+                  s.others.map((o) => (
+                    <Link key={o.id} href={`/admin/utilisateurs/${o.id}`} className="underline underline-offset-2">
+                      {o.username}
+                    </Link>
+                  )),
+                  SHORT_LIST,
+                )}
                 {s.otherCount > s.others.length && ` ${t("more", { count: s.otherCount - s.others.length })}`}
               </span>
             ),

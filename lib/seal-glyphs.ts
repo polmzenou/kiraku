@@ -30,4 +30,5 @@ export const SEAL_GLYPHS = [
   "越", // import Kyara
   "確定", // sceau « garanti » des boosters garantis
   "実績市縁段旅歳", // succès : titre de la page et sceaux des catégories (marché, liens, classé, voyages, ancienneté)
+  "禁", // écran « Accès bloqué » d'un réseau banni (lib/anticheat/network.ts)
 ].join("");

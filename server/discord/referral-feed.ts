@@ -1,6 +1,7 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Reason } from "@/lib/anticheat/score";
+import type { DetectionScoring } from "@/lib/anticheat/scoring";
 import {
   ambassadorDecisionMessage,
   clueText,
@@ -95,7 +96,7 @@ async function enqueue(channelId: string, since: Date): Promise<void> {
   });
 }
 
-type Context = { rules: ReferralV2Rules; timeZone: string; sharedCap: number; now: Date; rarity: (key: string) => string; origin: string };
+type Context = { rules: ReferralV2Rules; timeZone: string; sharedCap: number; scoring?: DetectionScoring; now: Date; rarity: (key: string) => string; origin: string };
 
 /** Joueurs et paire du parrainage, tels que le message les montre. */
 function feedBase(f: ReferralFiche, now: Date): FeedReferral {
@@ -120,7 +121,7 @@ const rewardsOf = (f: ReferralFiche): FicheReward[] => [...f.steps.flatMap((s) =
 const sameRun = (a: FicheReward, b: FicheReward) => Math.abs(new Date(a.at).getTime() - new Date(b.at).getTime()) <= SAME_RUN_MS;
 
 async function ficheOf(referralId: string, ctx: Context): Promise<ReferralFiche | null> {
-  return referralFiche(referralId, ctx.rules, { timeZone: ctx.timeZone, locale: "fr", now: ctx.now, sharedCap: ctx.sharedCap });
+  return referralFiche(referralId, ctx.rules, { timeZone: ctx.timeZone, locale: "fr", now: ctx.now, sharedCap: ctx.sharedCap, scoring: ctx.scoring });
 }
 
 function joinLots(rewards: readonly FicheReward[], ctx: Context): string | null {
@@ -189,7 +190,7 @@ async function holdPayload(referralId: string, ctx: Context): Promise<DiscordMes
   const clues = [
     ...(ev.device?.withReferrer === true ? ["Même appareil que le parrain"] : []),
     ...(siblings > 0 ? [`Même appareil que ${siblings} autre${siblings > 1 ? "s" : ""} filleul${siblings > 1 ? "s" : ""} du parrain`] : []),
-    ...reasons.map(clueText),
+    ...reasons.map((r) => clueText(r, ctx.scoring)),
   ];
   const base = feedBase(fiche, ctx.now);
   return holdMessage(
@@ -314,9 +315,9 @@ export async function syncDiscordReferrals(deadline = Date.now() + 15_000): Prom
     console.warn("[discord] salon du parrainage inaccessible ou lisible par les joueurs : rien n'est posté.");
     return { relayed: 0, failed: posts.length };
   }
-  const [rules, timeZone, sharedCap, rarities] = await Promise.all([referralV2Rules(), getSetting("game.timeZone"), getSetting("multiAccount.sharedIpCap"), getRarityDefinitions()]);
+  const [rules, timeZone, sharedCap, scoring, rarities] = await Promise.all([referralV2Rules(), getSetting("game.timeZone"), getSetting("multiAccount.sharedIpCap"), getSetting("multiAccount.scoring"), getRarityDefinitions()]);
   const names = new Map(rarities.map((r) => [r.key, r.nameFr]));
-  const ctx: Context = { rules, timeZone, sharedCap, now, rarity: (key) => names.get(key) ?? key, origin: appUrl() };
+  const ctx: Context = { rules, timeZone, sharedCap, scoring, now, rarity: (key) => names.get(key) ?? key, origin: appUrl() };
   for (const post of posts) {
     if (Date.now() + 5_000 > deadline) break;
     try {

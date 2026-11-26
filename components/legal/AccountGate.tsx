@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { Link } from "@/i18n/navigation";
 import { deletionDueAt } from "@/lib/account/deletion";
 import { isNetworkGateFree, isTermsGateFree, needsTermsAcceptance } from "@/lib/legal/legal";
-import { blocks, noteBlocked, requestNetworkBan } from "@/server/anticheat/network-ban";
+import { blockingBan, noteBlocked, requestNetworkBan } from "@/server/anticheat/network-ban";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
 import { NetworkBanScreen } from "../anticheat/NetworkBanScreen";
@@ -23,8 +23,9 @@ export async function AccountGate({ children }: { children: ReactNode }) {
     requestNetworkBan(),
     headers().then((h) => h.get("x-kiraku-path") ?? "/"),
   ]);
-  if (blocks(networkBan, user?.role) && !isNetworkGateFree(path)) {
-    after(() => noteBlocked(networkBan));
+  const blocking = blockingBan(networkBan, user?.role);
+  if (blocking && !isNetworkGateFree(path)) {
+    after(() => noteBlocked(blocking));
     return <NetworkBanScreen />;
   }
   if (!user) return children;

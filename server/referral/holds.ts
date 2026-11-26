@@ -1,5 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client";
 import type { Reason } from "@/lib/anticheat/score";
+import type { DetectionScoring } from "@/lib/anticheat/scoring";
 import { holdReason, referralPairScore, type HoldReason } from "@/lib/referral/hold";
 import type { ReferralV2Rules } from "@/lib/referral/rules";
 import { loadPairInput } from "../anticheat/pair";
@@ -31,8 +32,8 @@ export async function sharedDevices(db: Tx, referral: { id: string; referrerId: 
 }
 
 /** Score de la paire, recalculé maintenant et gardé sur le parrainage. */
-export async function rescore(db: Tx, referral: { id: string; referrerId: string; refereeId: string }, sharedCap: number, now: Date) {
-  const input = await loadPairInput(db, referral.referrerId, referral.refereeId, sharedCap);
+export async function rescore(db: Tx, referral: { id: string; referrerId: string; refereeId: string }, sharedCap: number, now: Date, scoring?: DetectionScoring) {
+  const input = await loadPairInput(db, referral.referrerId, referral.refereeId, sharedCap, scoring);
   const scored = input ? referralPairScore(input) : { score: 0, reasons: [] };
   await db.referral.update({ where: { id: referral.id }, data: { score: scored.score, scoredAt: now }, select: { id: true } });
   return scored;
@@ -46,10 +47,10 @@ export async function applyHold(
   db: Tx,
   referral: { id: string; referrerId: string; refereeId: string },
   rules: Pick<ReferralV2Rules, "holdScore">,
-  options: { withScore: boolean; sharedCap: number; now: Date },
+  options: { withScore: boolean; sharedCap: number; now: Date; scoring?: DetectionScoring },
 ): Promise<HoldReason | null> {
   const device = await sharedDevices(db, referral);
-  const scored = options.withScore ? await rescore(db, referral, options.sharedCap, options.now) : null;
+  const scored = options.withScore ? await rescore(db, referral, options.sharedCap, options.now, options.scoring) : null;
   const reason = holdReason({ sharedDevice: device !== undefined, score: scored?.score ?? null }, rules);
   if (!reason) return null;
   const evidence: HoldEvidence = { ...(device && { device }), ...(scored && { score: { value: scored.score, reasons: scored.reasons } }) };

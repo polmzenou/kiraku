@@ -276,7 +276,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     db.networkBan.findMany({
       where: { userId },
       orderBy: { createdAt: "asc" },
-      select: { kind: true, value: true, source: true, createdAt: true, expiresAt: true },
+      select: { kind: true, value: true, source: true, createdAt: true, expiresAt: true, liftedAt: true },
     }),
     db.dataRequest.findMany({
       where: { userId },

@@ -22,7 +22,7 @@ vi.mock("server-only", () => ({}));
 
 const url = process.env.DATABASE_URL_TEST;
 const CAP = 8;
-const RULES: FollowRules = { enabled: true, maxOthers: 0, days: 30, perDevice: 5 };
+const RULES: FollowRules = { enabled: true, ipv4: true, maxOthers: 0, days: 30, perDevice: 5 };
 
 describe.skipIf(!url)("bans réseau (base réelle)", () => {
   const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });
@@ -49,8 +49,8 @@ describe.skipIf(!url)("bans réseau (base réelle)", () => {
       return e instanceof NetworkBanError ? e.code : String(e);
     }
   };
-  const ban = (adminId: string, userId: string, ids: string[], banAccount = false) =>
-    banNetworkWith(prisma, { adminId, userId, signalIds: ids, banAccount, reason: "triche", now: new Date(), sharedIpCap: CAP });
+  const ban = (adminId: string, userId: string, ids: string[], banAccount = false, ipv4BanDays = 0) =>
+    banNetworkWith(prisma, { adminId, userId, signalIds: ids, banAccount, reason: "triche", now: new Date(), sharedIpCap: CAP, ipv4BanDays });
 
   afterAll(async () => {
     await prisma.networkBan.deleteMany({ where: { OR: [{ userId: { in: users } }, { createdById: { in: users } }] } });
@@ -113,7 +113,7 @@ describe.skipIf(!url)("bans réseau (base réelle)", () => {
     await seen(outsider, "IP", shared);
     await seen(a, "DEVICE", devA);
 
-    const res = await banGroupWith(prisma, { adminId: admin, userIds: [a, b], reason: "doubles", now: new Date(), sharedIpCap: CAP });
+    const res = await banGroupWith(prisma, { adminId: admin, userIds: [a, b], reason: "doubles", now: new Date(), sharedIpCap: CAP, ipv4BanDays: 0 });
     expect(res.accounts).toBe(2);
     expect(res.bans).toBe(2);
     expect(res.skipped).toEqual([{ kind: "IP", value: expect.stringMatching(/^81\.\d+\.x\.x$/), state: "SHARED" }]);
@@ -122,7 +122,7 @@ describe.skipIf(!url)("bans réseau (base réelle)", () => {
     expect((await prisma.user.findUniqueOrThrow({ where: { id: outsider } })).bannedAt).toBeNull();
 
     const staff = await player("DEV");
-    expect(await code(banGroupWith(prisma, { adminId: admin, userIds: [outsider, staff], reason: "x", now: new Date(), sharedIpCap: CAP }))).toBe("STAFF_TARGET");
+    expect(await code(banGroupWith(prisma, { adminId: admin, userIds: [outsider, staff], reason: "x", now: new Date(), sharedIpCap: CAP, ipv4BanDays: 0 }))).toBe("STAFF_TARGET");
   });
 
   it("fait suivre le ban d'un appareil sur ses nouvelles IP, avec ses garde-fous", async () => {
@@ -159,17 +159,71 @@ describe.skipIf(!url)("bans réseau (base réelle)", () => {
     // Plafond par appareil, et réglage coupé
     expect(await follow(ip(), { ...RULES, perDevice: 3 })).toBe("LIMIT");
     expect(await follow(ip(), { ...RULES, enabled: false })).toBe("OFF");
+    // Réglage IPv4 coupé : une IPv4 n'est plus suivie
+    expect(await follow(ip(), { ...RULES, ipv4: false })).toBe("IPV4");
 
     // Rendu définitif : il ne suit plus l'appareil et survit à sa levée
     await keepNetworkBanWith(prisma, { adminId: admin, banId: auto.id, reason: "confirmé" });
     expect(await prisma.networkBan.findUniqueOrThrow({ where: { id: auto.id } })).toMatchObject({ expiresAt: null, parentId: null });
-    expect(await code(keepNetworkBanWith(prisma, { adminId: admin, banId: deviceBan.id, reason: "x" }))).toBe("NOT_AUTO");
+    expect(await code(keepNetworkBanWith(prisma, { adminId: admin, banId: deviceBan.id, reason: "x" }))).toBe("NOT_EXPIRING");
 
     // Lever l'appareil lève les IP qu'il suit encore
     await liftNetworkBanWith(prisma, { adminId: admin, banId: deviceBan.id, reason: "erreur" });
     expect(await prisma.networkBan.count({ where: { value: { in: [dev, twice, ownIp] } } })).toBe(0);
     expect(await prisma.networkBan.count({ where: { id: auto.id } })).toBe(1);
     expect(await code(liftNetworkBanWith(prisma, { adminId: admin, banId: deviceBan.id, reason: "erreur" }))).toBe("NOT_FOUND");
+  });
+
+  it("bannit une ferme de 10 comptes sur une IP, mais pas une IP où 9 joueurs actifs hors du groupe passent", async () => {
+    const admin = await player("ADMIN");
+    const farm = await Promise.all(Array.from({ length: 10 }, () => player()));
+    const [farmIp, publicIp] = [ip(), ip()];
+    for (const id of farm) await seen(id, "IP", farmIp);
+    await seen(farm[0], "IP", publicIp);
+    for (let i = 0; i < CAP + 1; i++) await seen(await player(), "IP", publicIp);
+
+    const res = await banGroupWith(prisma, { adminId: admin, userIds: farm, reason: "ferme", now: new Date(), sharedIpCap: CAP, ipv4BanDays: 0 });
+    expect(res.accounts).toBe(10);
+    expect(await prisma.networkBan.count({ where: { kind: "IP", value: farmIp, source: "GROUP" } })).toBe(1);
+    expect(res.skipped).toEqual([{ kind: "IP", value: expect.stringMatching(/^81\.\d+\.x\.x$/), state: "CAP" }]);
+    expect(await prisma.networkBan.count({ where: { value: publicIp } })).toBe(0);
+  });
+
+  it("ban d'IPv4 à durée (multiAccount.ipv4BanDays) : l'IPv4 expire, l'appareil reste définitif, « Rendre définitif » la garde", async () => {
+    const [admin, cheat] = [await player("ADMIN"), await player()];
+    const [address, dev] = [ip(), device()];
+    await seen(cheat, "IP", address);
+    await seen(cheat, "DEVICE", dev);
+    expect(await ban(admin, cheat, await signalIds(cheat), false, 90)).toEqual({ bans: 2, account: false });
+    const v4 = await prisma.networkBan.findUniqueOrThrow({ where: { kind_value: { kind: "IP", value: address } } });
+    expect(v4.expiresAt!.getTime() - Date.now()).toBeGreaterThan(89 * 86_400_000);
+    expect((await prisma.networkBan.findUniqueOrThrow({ where: { kind_value: { kind: "DEVICE", value: dev } } })).expiresAt).toBeNull();
+    await keepNetworkBanWith(prisma, { adminId: admin, banId: v4.id, reason: "confirmé" });
+    expect((await prisma.networkBan.findUniqueOrThrow({ where: { id: v4.id } })).expiresAt).toBeNull();
+  });
+
+  it("« Lever et ne plus suivre ici » : le suivi ne reprend plus l'IP, jusqu'à un nouveau ban de l'admin", async () => {
+    const [admin, cheat] = [await player("ADMIN"), await player()];
+    const dev = device();
+    await seen(cheat, "DEVICE", dev);
+    await ban(admin, cheat, await signalIds(cheat), true);
+    const [deviceBan] = await findNetworkBans(prisma, { ipKey: null, device: dev }, new Date());
+    const follow = (ipKey: string) => followDeviceWith(prisma, { deviceBan, device: dev, ipKey, now: new Date() }, RULES);
+
+    const shared = ip();
+    expect(await follow(shared)).toBe("FOLLOW");
+    const auto = await prisma.networkBan.findUniqueOrThrow({ where: { kind_value: { kind: "IP", value: shared } } });
+    // Un ban qui ne suit pas d'appareil ne s'exempte pas
+    expect(await code(liftNetworkBanWith(prisma, { adminId: admin, banId: deviceBan.id, reason: "x", exempt: true }))).toBe("NOT_AUTO");
+    await liftNetworkBanWith(prisma, { adminId: admin, banId: auto.id, reason: "IP de lycée", exempt: true });
+    expect(await findNetworkBans(prisma, { ipKey: shared, device: null }, new Date())).toHaveLength(0);
+    expect(await follow(shared)).toBe("EXEMPT");
+
+    // L'admin bannit lui-même l'IP : l'exemption cède la place au ban
+    const target = await player();
+    await seen(target, "IP", shared);
+    expect(await ban(admin, target, await signalIds(target))).toEqual({ bans: 1, account: false });
+    expect(await prisma.networkBan.findUniqueOrThrow({ where: { kind_value: { kind: "IP", value: shared } } })).toMatchObject({ source: "MANUAL", liftedAt: null });
   });
 
   it("garde le ban quand le compte disparaît, et ignore un ban automatique expiré", async () => {

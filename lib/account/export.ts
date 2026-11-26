@@ -89,8 +89,9 @@ export const EXPORT_FIELDS = {
   pushSubscriptions: ["endpoint", "createdAt", "lastSentAt"],
   // IP et appareils relevés contre les multi-comptes (conservés multiAccount.retentionDays)
   signals: ["kind", "value", "firstEvent", "firstSeenAt", "lastSeenAt"],
-  // IP et appareils bannis venus de ce compte (gardés tant que le ban dure)
-  networkBans: ["kind", "value", "source", "createdAt", "expiresAt"],
+  // IP et appareils bannis venus de ce compte (gardés tant que le ban dure) ; liftedAt : ban automatique levé, gardé
+  // comme exemption du suivi de l'appareil
+  networkBans: ["kind", "value", "source", "createdAt", "expiresAt", "liftedAt"],
   dataRequests: ["kind", "status", "requestedAt", "dueAt", "processedAt"],
 } as const;
 

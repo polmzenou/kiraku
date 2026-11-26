@@ -96,7 +96,7 @@ export async function progressReferralWith(db: PrismaClient, referralId: string,
 
   // Appareil commun : « À vérifier » avant tout versement (le score, plus coûteux, attend les grosses récompenses)
   if (!referral.heldAt && !referral.reviewedAt) {
-    await db.$transaction((tx) => applyHold(tx, referral, deps.rules, { withScore: false, sharedCap: deps.sharedCap, now: deps.now }));
+    await db.$transaction((tx) => applyHold(tx, referral, deps.rules, { withScore: false, sharedCap: deps.sharedCap, scoring: deps.scoring, now: deps.now }));
   }
   const paid = await payDueRewardsWith(db, referral.id, deps);
   return { reached, paid };

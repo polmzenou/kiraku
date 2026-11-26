@@ -1,5 +1,6 @@
 import "server-only";
-import { selectionOf, type BanState, type NetworkKind } from "@/lib/anticheat/network";
+import type { Prisma } from "@/generated/prisma/client";
+import { ipBanKey, selectionOf, type BanState, type NetworkKind } from "@/lib/anticheat/network";
 import { prisma } from "../db";
 import { getSetting } from "../settings";
 import { activeBan, keyStates, networkKeysOf } from "./network-ban-core";
@@ -54,16 +55,28 @@ export type NetworkBanItem = {
   expiresAt: Date | null;
   hits: number;
   lastHitAt: Date | null;
+  /** Ban d'IP : appareils déjà connus qu'il a bloqués (BLOCKED_DEVICES_MAX au plus). */
+  devices: number;
   /** AUTO : l'appareil suivi. */
   parent: { kind: NetworkKind; value: string } | null;
-  /** IP qu'un appareil banni a fait bannir. */
+  /** IP qu'un appareil banni a fait bannir (exemptions non comptées). */
   followed: number;
 };
 
-/** Bans en place, les plus récents d'abord ; `userId` : ceux venus de ce compte. */
-export async function listNetworkBans(options: { userId?: string; take: number }, now = new Date()): Promise<NetworkBanItem[]> {
+/**
+ * Recherche d'une IP dans les bans (plainte d'un joueur) : une adresse complète trouve le ban de sa clé (IPv4 exacte,
+ * ou son /64) ; sinon le début de la clé, en minuscules.
+ */
+function ipFilter(search: string): Prisma.NetworkBanWhereInput {
+  const text = search.trim().toLowerCase();
+  const key = ipBanKey(text);
+  return { kind: "IP", value: key ? key : { startsWith: text } };
+}
+
+/** Bans en place, les plus récents d'abord ; `userId` : ceux venus de ce compte ; `ip` : recherche de l'admin. */
+export async function listNetworkBans(options: { userId?: string; ip?: string; take: number }, now = new Date()): Promise<NetworkBanItem[]> {
   const rows = await prisma.networkBan.findMany({
-    where: { ...activeBan(now), ...(options.userId ? { userId: options.userId } : {}) },
+    where: { AND: [activeBan(now), options.userId ? { userId: options.userId } : {}, options.ip ? ipFilter(options.ip) : {}] },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: options.take,
     select: {
@@ -76,13 +89,14 @@ export async function listNetworkBans(options: { userId?: string; take: number }
       expiresAt: true,
       hits: true,
       lastHitAt: true,
+      deviceTags: true,
       user: { select: { id: true, username: true } },
       createdBy: { select: { username: true } },
       parent: { select: { kind: true, value: true } },
-      _count: { select: { children: true } },
+      _count: { select: { children: { where: { liftedAt: null } } } },
     },
   });
-  return rows.map(({ createdBy, _count, ...r }) => ({ ...r, createdBy: createdBy?.username ?? null, followed: _count.children }));
+  return rows.map(({ createdBy, _count, deviceTags, ...r }) => ({ ...r, createdBy: createdBy?.username ?? null, devices: deviceTags.length, followed: _count.children }));
 }
 
 /** Nombre de bans en place (lien de /admin/multi-comptes). */

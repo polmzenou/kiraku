@@ -7,7 +7,7 @@ vi.mock("./auth", () => ({ auth: mocks.auth }));
 vi.mock("./db", () => ({ prisma: { user: { findUnique: mocks.findUnique } } }));
 vi.mock("./anticheat/network-ban", () => ({
   requestNetworkBan: mocks.networkBan,
-  blocks: (ban: unknown, role: string) => ban !== null && role !== "ADMIN" && role !== "DEV",
+  blockingBan: (ban: unknown, role: string) => (ban !== null && role !== "ADMIN" && role !== "DEV" ? ban : null),
 }));
 import { getCurrentUser, requireActiveUser } from "./user";
 

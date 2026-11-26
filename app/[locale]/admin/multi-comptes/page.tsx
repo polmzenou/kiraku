@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { inputClass, selectClass } from "@/components/ui/Field";
 import { Link } from "@/i18n/navigation";
 import { maskIp } from "@/lib/anticheat/mask";
-import { GROUP_BAN_MAX, ipBanKey } from "@/lib/anticheat/network";
+import { GROUP_BAN_MAX } from "@/lib/anticheat/network";
+import type { SuspectCluster } from "@/lib/anticheat/score";
 import { z } from "@/lib/zod";
 import { requireAdminView } from "@/server/admin";
 import { bannedIpKeys, countNetworkBans } from "@/server/anticheat/network-ban-queries";
@@ -20,7 +21,7 @@ const paramsSchema = z.object({
   q: z.string().trim().max(40).catch(""),
   filter: z.enum(FILTERS).catch("all"),
   guests: z.literal("1").optional().catch(undefined),
-  // Recherche par IP (admin seulement) : chiffres, points, deux-points et hexadécimal, rien qui touche au LIKE
+  // Recherche par IP (admin seulement, sans casse) : chiffres, points, deux-points et hexadécimal
   ip: z.string().trim().regex(/^[0-9a-fA-F:.]{3,64}$/).optional().catch(undefined),
 });
 
@@ -47,12 +48,58 @@ export default async function AdminMultiAccountsPage({ searchParams }: PageProps
   ]);
   const { members, minScore } = detection;
   const query = params.q.toLowerCase();
-  const clusters = detection.clusters.filter((c) => {
+  const filtered = detection.clusters.filter((c) => {
     if (query && !c.userIds.some((id) => members.get(id)?.username.toLowerCase().includes(query))) return false;
     if (params.filter === "all") return true;
     const kind = params.filter === "device" ? "device" : params.filter === "ip" ? "ip" : "flow";
     return c.pairs.some((p) => p.reasons.some((r) => r.kind === kind));
   });
+  // Un groupe déjà traité (tous ses comptes bannis) garde son score et ses relevés 90 jours : il passe dans une section
+  // repliée, pour ne pas cacher les nouveaux groupes. Un groupe banni qui gagne un compte actif, créé après le dernier
+  // ban du groupe, revient en tête de liste (contournement probable).
+  const bannedIn = (c: SuspectCluster) => c.userIds.filter((id) => members.get(id)?.banned).length;
+  const newSinceBan = (c: SuspectCluster) => {
+    const lastBan = Math.max(0, ...c.userIds.map((id) => members.get(id)?.bannedAt?.getTime() ?? 0));
+    return lastBan > 0 && c.userIds.some((id) => {
+      const m = members.get(id);
+      return m !== undefined && !m.banned && m.createdAt.getTime() > lastBan;
+    });
+  };
+  const clusters = filtered.filter((c) => bannedIn(c) < c.userIds.length);
+  const handled = filtered.filter((c) => bannedIn(c) === c.userIds.length);
+
+  const badge = "inline-flex min-h-7 items-center rounded-pill border border-shu bg-shu/15 px-3 text-sm font-bold text-shu";
+  const card = (c: SuspectCluster, i: number) => {
+    const banned = bannedIn(c);
+    return (
+      <li key={c.userIds.join("|")} className="@container flex min-w-0 flex-col gap-3 lacquer rounded-card p-3">
+        <header className="flex flex-wrap items-center gap-2">
+          <h4 className="font-title text-base font-bold">{t("clusterTitle", { index: i + 1, count: c.userIds.length })}</h4>
+          <ScoreBadge score={c.score} label={t("score", { score: c.score })} />
+          {banned > 0 && banned < c.userIds.length && <span className={badge}>{t(newSinceBan(c) ? "newSinceBan" : "partlyBanned", { count: banned })}</span>}
+        </header>
+        <MemberGrid ids={c.userIds} members={members} masked={masked} />
+        {/* Liens et ban sur une ligne ; le détail ouvert ou le formulaire de ban prennent toute la largeur */}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <details className="min-w-0 open:basis-full">
+            <summary className="flex min-h-11 cursor-pointer items-center text-sm font-bold">{t("pairsTitle", { count: c.pairs.length })}</summary>
+            <div className="mt-2">
+              <PairList pairs={c.pairs} members={members} masked={masked} minScore={minScore} />
+            </div>
+          </details>
+          {!masked && banned < c.userIds.length && (
+            <div className="has-[input]:basis-full">
+              {c.userIds.length <= GROUP_BAN_MAX ? <GroupBanButton userIds={c.userIds} /> : <p className="text-sm text-text-muted">{nb("groupTooBig", { max: GROUP_BAN_MAX })}</p>}
+            </div>
+          )}
+        </div>
+      </li>
+    );
+  };
+  // Grille de cartes plutôt qu'une liste : plusieurs groupes par écran, chacun se lit d'un coup d'œil
+  const grid = "grid items-start gap-3 xl:grid-cols-2 min-[112.5rem]:grid-cols-3";
+  // Contournement probable d'abord (compte créé après le ban du groupe), puis l'ordre du score
+  const ordered = [...clusters].sort((x, y) => Number(newSinceBan(y)) - Number(newSinceBan(x)));
 
   return (
     <div className="flex flex-col gap-6">
@@ -83,35 +130,15 @@ export default async function AdminMultiAccountsPage({ searchParams }: PageProps
 
       <section className="flex flex-col gap-4">
         <h3 className="font-title text-xl font-bold">{t("clustersTitle", { count: clusters.length })}</h3>
-        {clusters.length === 0 ? <p className="text-sm text-text-muted">{t("noClusters")}</p> : (
-          // Grille de cartes plutôt qu'une liste : plusieurs groupes par écran, chacun se lit d'un coup d'œil
-          <ul className="grid items-start gap-3 xl:grid-cols-2 min-[112.5rem]:grid-cols-3">
-            {clusters.slice(0, SHOWN).map((c, i) => (
-              <li key={c.userIds.join("|")} className="@container flex min-w-0 flex-col gap-3 lacquer rounded-card p-3">
-                <header className="flex flex-wrap items-center gap-2">
-                  <h4 className="font-title text-base font-bold">{t("clusterTitle", { index: i + 1, count: c.userIds.length })}</h4>
-                  <ScoreBadge score={c.score} label={t("score", { score: c.score })} />
-                </header>
-                <MemberGrid ids={c.userIds} members={members} masked={masked} />
-                {/* Liens et ban sur une ligne ; le détail ouvert ou le formulaire de ban prennent toute la largeur */}
-                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-                  <details className="min-w-0 open:basis-full">
-                    <summary className="flex min-h-11 cursor-pointer items-center text-sm font-bold">{t("pairsTitle", { count: c.pairs.length })}</summary>
-                    <div className="mt-2">
-                      <PairList pairs={c.pairs} members={members} masked={masked} minScore={minScore} />
-                    </div>
-                  </details>
-                  {!masked && (
-                    <div className="has-[input]:basis-full">
-                      {c.userIds.length <= GROUP_BAN_MAX ? <GroupBanButton userIds={c.userIds} /> : <p className="text-sm text-text-muted">{nb("groupTooBig", { max: GROUP_BAN_MAX })}</p>}
-                    </div>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+        {clusters.length === 0 ? <p className="text-sm text-text-muted">{t("noClusters")}</p> : <ul className={grid}>{ordered.slice(0, SHOWN).map(card)}</ul>}
         {clusters.length > SHOWN && <p className="text-sm text-text-muted">{t("moreClusters", { count: clusters.length - SHOWN })}</p>}
+        {handled.length > 0 && (
+          <details className="flex flex-col gap-3">
+            <summary className="flex min-h-11 cursor-pointer items-center font-bold">{t("handledTitle", { count: handled.length })}</summary>
+            <ul className={`mt-3 ${grid}`}>{handled.slice(0, SHOWN).map(card)}</ul>
+            {handled.length > SHOWN && <p className="mt-3 text-sm text-text-muted">{t("moreClusters", { count: handled.length - SHOWN })}</p>}
+          </details>
+        )}
       </section>
 
       <section className="flex flex-col gap-3">
@@ -143,15 +170,21 @@ export default async function AdminMultiAccountsPage({ searchParams }: PageProps
                   <span className="flex flex-col">
                     <span className="tabular-nums">{masked ? maskIp(ip.value) : ip.value}</span>
                     {ip.accounts > cap && <span className="text-xs text-text-muted">{t("publicIp")}</span>}
-                    {bannedIps.has(ipBanKey(ip.value) ?? "") && <span className="text-xs font-bold text-shu">{nb("bannedBadge")}</span>}
+                    {/* La ligne porte déjà la clé de ban (IPv4, ou /64 d'une IPv6) */}
+                    {bannedIps.has(ip.value) && <span className="text-xs font-bold text-shu">{nb("bannedBadge")}</span>}
                   </span>
                 ),
                 accounts: format.number(ip.accounts),
                 users: (
                   <span className="text-xs break-all">
-                    {ip.usernames.map((u, i) => (
-                      <span key={u.id}>{i > 0 && ", "}<Link href={`/admin/utilisateurs/${u.id}`} className="underline underline-offset-2">{u.username}</Link></span>
-                    ))}
+                    {format.list(
+                      ip.usernames.map((u) => (
+                        <Link key={u.id} href={`/admin/utilisateurs/${u.id}`} className="underline underline-offset-2">
+                          {u.username}
+                        </Link>
+                      )),
+                      { type: "conjunction", style: "narrow" },
+                    )}
                     {ip.accounts > ip.usernames.length && ` ${t("more", { count: ip.accounts - ip.usernames.length })}`}
                   </span>
                 ),

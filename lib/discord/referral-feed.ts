@@ -1,4 +1,5 @@
 import { reasonWeight, type Reason } from "@/lib/anticheat/score";
+import type { DetectionScoring } from "@/lib/anticheat/scoring";
 import { absolute, discordText, KIN, SHU, type DiscordMessageBody } from "./community";
 
 // Fil du parrainage v2 dans le salon Discord privé de l'équipe (DISCORD_REFERRAL_CHANNEL_ID ; design « message
@@ -37,7 +38,7 @@ const plural = (n: number, one: string, many: string) => `${nf.format(n)} ${n > 
  * Indice du score de la paire, en clair et avec son poids (« Même appareil +60 ») : jamais d'adresse IP, de boîte
  * e-mail ou de pseudo, seulement leur nombre ou leur nature.
  */
-export function clueText(r: Reason): string {
+export function clueText(r: Reason, scoring?: DetectionScoring): string {
   const label = ((): string => {
     switch (r.kind) {
       case "device":
@@ -62,7 +63,7 @@ export function clueText(r: Reason): string {
         return "Ami unique";
     }
   })();
-  return `${label} +${reasonWeight(r)}`;
+  return `${label} +${reasonWeight(r, scoring)}`;
 }
 
 /** « moins d'un jour », « 12 jours », « 5 mois », « 2 ans ». */

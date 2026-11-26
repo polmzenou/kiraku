@@ -3692,10 +3692,13 @@
           "seenThrottleMinutes": "Recording while present (minutes)",
           "sharedIpCap": "Accounts above which an IP is public",
           "minScore": "Minimum score of a suspicious group",
+          "scoring": "Detection scoring",
           "followDevice": "Bans follow the device",
+          "followDeviceIpv4": "Following also takes IPv4 addresses",
           "autoBanMaxOthers": "Other active accounts allowed on an automatically banned IP",
           "autoBanDays": "Automatic ban length (days)",
-          "autoBanPerDevice": "Most IPs banned per banned device"
+          "autoBanPerDevice": "Most IPs banned per banned device",
+          "ipv4BanDays": "Length of an IPv4 ban set by an admin (days)"
         }
       },
       "hints": {
@@ -3722,13 +3725,32 @@
           "seenThrottleMinutes": "A logged-in player is recorded at most once per this delay.",
           "sharedIpCap": "Mobile data, school, office: an IP (or e-mail root) shared by more accounts no longer links them, and can't be banned.",
           "minScore": "Sum of a pair's clues needed to form a group in Multi-accounts.",
+          "scoring": "Weight of each clue in a pair's score, then thresholds. Also decides which referrals are put \"To review\" (pair score). Original scale: device 60, alias 50, IP 30, e-mail root 30, flow 20, referral 15, created close together 10 (doubled with a shared IP), username 10, only friend 10, exchanges 10; 15 min, 3 transfers, 80%, 5 exchanges.",
           "followDevice": "A banned device that comes back from a new IP (mobile data, another Wi-Fi) gets that IP banned too, unless a team member uses it.",
+          "followDeviceIpv4": "Off: a device ban only follows IPv6 /64 prefixes, which belong to one line. A mobile carrier or ISP IPv4 address is often shared by several households.",
           "autoBanMaxOthers": "0 recommended: an IP already used by other players who aren't banned is never cut automatically.",
           "autoBanDays": "An automatic ban expires after this delay, unless an admin makes it permanent in Network bans.",
-          "autoBanPerDevice": "Caps how many IPs one banned device can get banned, should it go through a café or school Wi-Fi on purpose."
+          "autoBanPerDevice": "Caps how many IPs one banned device can get banned, should it go through a café or school Wi-Fi on purpose.",
+          "ipv4BanDays": "0 = permanent until lifted. Otherwise, an IPv4 address banned from a player page, a group or the referral queue expires after this delay (IPv4 addresses often change hands); \"Make permanent\" keeps it. IPv6 /64 prefixes and devices stay permanent."
         }
       },
-      "multiAccountSection": "Multi-accounts"
+      "multiAccountSection": "Multi-accounts",
+      "scoring": {
+        "device": "Same device",
+        "emailAlias": "Same mailbox (alias)",
+        "ip": "Same IP (IPv6: same /64)",
+        "emailStem": "Similar e-mails",
+        "flow": "One-way flow",
+        "referral": "Referral",
+        "createdClose": "Created close together (doubled with a shared IP)",
+        "usernameStem": "Similar usernames",
+        "onlyFriend": "Only friend",
+        "interactions": "Many exchanges",
+        "createdCloseMinutes": "Created close together: largest gap (minutes)",
+        "flowMin": "Flow: fewest directed transfers",
+        "flowSharePct": "Flow: share of the main direction (%)",
+        "interactionsMin": "Exchanges: smallest count"
+      }
     },
     "catalog": {
       "title": "Card catalogue",
@@ -4848,8 +4870,11 @@
       "noClusters": "No group reaches the threshold with these filters.",
       "clusterTitle": "Group {index} · {count} accounts",
       "moreClusters": "{count, plural, one {# more group} other {# more groups}}, less suspicious: narrow the search.",
+      "handledTitle": "{count, plural, one {# group already banned} other {# groups already banned}}",
       "score": "Score {score}",
       "belowThreshold": "below threshold",
+      "partlyBanned": "{count, plural, one {# account already banned} other {# accounts already banned}}",
+      "newSinceBan": "{count, plural, one {# account banned} other {# accounts banned}}, an account created since: workaround?",
       "pairsTitle": "{count, plural, one {Details of # link} other {Details of # links}}",
       "memberStatus": {
         "banned": "Banned",
@@ -4866,7 +4891,7 @@
       "memberNeverSeen": "never seen",
       "moreMembers": "{count, plural, one {Show the other account} other {Show the # other accounts}}",
       "ipsTitle": "Shared IPs",
-      "ipsIntro": "IPs seen for several accounts since recording started. Above {cap} accounts, an IP is considered public (mobile, school, office) and no longer links accounts.",
+      "ipsIntro": "IPs seen for several accounts since recording started, an IPv6 address by its /64 prefix (devices in one household change address within it). Above {cap} accounts, an IP is considered public (mobile, school, office) and no longer links accounts.",
       "searchIp": "Search an IP (start of the address)",
       "searchIpButton": "Search",
       "noIpResult": "No IP starts like this.",
@@ -4955,7 +4980,7 @@
     },
     "networkBans": {
       "panelTitle": "Ban the network",
-      "panelIntro": "Cut all access from their IPs and devices recorded by the detection: no account plays from them anymore, except the team. An IPv6 address is banned by its /64 prefix. A ban set here is permanent until lifted.",
+      "panelIntro": "Cut all access from their IPs and devices recorded by the detection: no account plays from them anymore, except the team. An IPv6 address is banned by its /64 prefix. {days, plural, =0 {A ban set here is permanent until lifted.} one {A ban set here is permanent until lifted, except an IPv4 address: it expires after # day.} other {A ban set here is permanent until lifted, except an IPv4 address: it expires after # days.}}",
       "staffTarget": "Team accounts can't be banned here.",
       "userBansTitle": "Bans from this account",
       "noKeys": "No IP or device recorded for this account: only the account can be banned.",
@@ -4984,9 +5009,12 @@
       "submit": "Cut access",
       "lift": "Lift",
       "keep": "Make permanent",
+      "exempt": "Lift and stop following here",
       "liftReason": "Reason for lifting",
       "keepReason": "Reason",
       "liftConfirm": "Lift the ban",
+      "exemptConfirm": "Lift and exempt the IP",
+      "exemptHint": "The IP is no longer banned and the banned device won't get it banned again. The exemption goes with the device's ban, or if you ban this IP again.",
       "keepConfirm": "Confirm",
       "cancel": "Cancel",
       "groupOpen": "Ban this group",
@@ -4995,6 +5023,7 @@
       "groupConfirm": "Ban the {count} accounts in this group and cut access from their network?",
       "groupDone": "{accounts, plural, =0 {No new account banned} one {# account banned} other {# accounts banned}}, {bans, plural, =0 {no IP or device cut} one {# IP or device cut} other {# IPs and devices cut}}.",
       "groupSkipped": "Skipped, ban them from a player page if needed:",
+      "groupSkippedItem": "{kind} {value}: {state}",
       "groupTooBig": "Group of more than {max} accounts: ban them from their pages.",
       "bannedBadge": "Banned",
       "listLink": "{count, plural, =0 {Network bans} other {Network bans ({count})}}",
@@ -5004,7 +5033,7 @@
         "account": "Account",
         "reason": "Reason",
         "created": "Set",
-        "hits": "Blocked visits",
+        "hits": "Blocked visits (1 per 10 min)",
         "actions": "Actions"
       },
       "sources": {
@@ -5020,14 +5049,20 @@
       "by": "by {admin}",
       "hits": "{count, plural, =0 {none} one {# visit} other {# visits}}",
       "lastHit": "last {date}",
+      "devices": "{count, plural, one {# known device blocked} other {# known devices blocked}}{full, select, yes { or more} other {}}",
+      "devicesHint": "Several households behind this IP? Check before keeping the ban.",
       "back": "← Multi-accounts",
       "pageTitle": "Network bans",
       "pageIntro": "Banned IPs and devices: no one plays from them anymore, except the team (an \"Access blocked\" screen, except legal pages and sign-in). A ban is set from a player page or on a multi-account group.",
-      "followOn": "Bans follow the device: a banned device coming back from a new IP gets it banned for {days} days, if it cuts no other active account.",
+      "followOn": "Bans follow the device: a banned device coming back from a new {ipv4, select, yes {IP} other {IPv6 network (/64 prefix)}} gets it banned for {days} days, if it cuts {max, plural, =0 {no other active account} one {at most one other active account} other {at most # other active accounts}}.",
       "followOff": "Bans don't follow the device (setting in General).",
+      "ipv4Expiry": "An IPv4 ban set from a player page, a group or the referral queue expires after {days, plural, one {# day} other {# days}} (setting in General).",
       "maskedNote": "DEV access: IPs masked, no actions.",
       "empty": "No network ban in place.",
       "truncated": "Only the {count} most recent bans are shown.",
+      "searchIp": "Search an IP (full address, or start of the banned IP)",
+      "searchIpButton": "Search",
+      "noIpResult": "No ban in place for this IP (an IPv6 address is found by its /64: paste the full address).",
       "errors": {
         "FORBIDDEN": "Admins only.",
         "NOT_FOUND": "Not found: this page is out of date, reload it.",
@@ -5035,7 +5070,8 @@
         "STAFF_TARGET": "Team accounts can't be banned here.",
         "NOTHING": "Nothing to ban: tick an IP, a device or the account.",
         "REFUSED": "A chosen IP or device can't be banned (team, private address or public network). Reload the page.",
-        "NOT_AUTO": "Only an automatic ban can be made permanent.",
+        "NOT_AUTO": "Only an automatic ban that follows a device can be lifted with an exemption.",
+        "NOT_EXPIRING": "This ban is already permanent.",
         "INVALID": "Invalid request.",
         "RATE_LIMITED": "Too many requests, try again in a minute.",
         "UNAVAILABLE": "Unavailable right now, try again."

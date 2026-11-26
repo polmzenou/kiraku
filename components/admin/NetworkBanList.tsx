@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import { ResponsiveTable, type TableColumn } from "@/components/admin/ResponsiveTable";
 import { Link } from "@/i18n/navigation";
+import { BLOCKED_DEVICES_MAX, SHARED_DEVICES_HINT } from "@/lib/anticheat/network";
 import { maskedKey } from "@/server/anticheat/network-ban-core";
 import type { NetworkBanItem } from "@/server/anticheat/network-ban-queries";
 import { NetworkBanRowActions } from "./NetworkBanRowActions";
@@ -9,7 +10,8 @@ type Key = "value" | "source" | "account" | "reason" | "created" | "hits" | "act
 
 /**
  * Bans réseau en place (fiche joueur, /admin/multi-comptes/bans). `masked` (DEV) : IP masquées ici, avant le rendu,
- * et aucune action. Un appareil ne montre jamais que le début de son identifiant.
+ * et aucune action. Un appareil ne montre jamais que le début de son identifiant. Passages comptés une fois par
+ * 10 minutes et par réseau ; un ban d'IP compte en plus les appareils distincts qu'il bloque.
  */
 export async function NetworkBanList({ bans, masked, caption }: { bans: readonly NetworkBanItem[]; masked: boolean; caption: string }) {
   const [t, format] = await Promise.all([getTranslations("admin.networkBans"), getFormatter()]);
@@ -65,9 +67,16 @@ export async function NetworkBanList({ bans, masked, caption }: { bans: readonly
             <span className="flex flex-col text-sm">
               <span className="tabular-nums">{t("hits", { count: b.hits })}</span>
               {b.lastHitAt && <span className="text-xs text-text-muted">{t("lastHit", { date: date(b.lastHitAt) })}</span>}
+              {/* Ban d'IP : appareils déjà connus qu'il bloque ; plusieurs foyers derrière une même IP se voient ici */}
+              {b.kind === "IP" && b.devices > 0 && (
+                <span className={`text-xs tabular-nums ${b.devices > SHARED_DEVICES_HINT ? "font-bold text-kin" : "text-text-muted"}`}>
+                  {t("devices", { count: b.devices, full: b.devices >= BLOCKED_DEVICES_MAX ? "yes" : "no" })}
+                </span>
+              )}
+              {b.kind === "IP" && b.devices > SHARED_DEVICES_HINT && <span className="text-xs text-kin">{t("devicesHint")}</span>}
             </span>
           ),
-          actions: masked ? null : <NetworkBanRowActions banId={b.id} auto={b.source === "AUTO" && b.expiresAt !== null} />,
+          actions: masked ? null : <NetworkBanRowActions banId={b.id} expiring={b.expiresAt !== null} followsDevice={b.source === "AUTO" && b.parent !== null} />,
         },
       }))}
     />

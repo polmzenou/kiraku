@@ -1,6 +1,7 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Reason } from "@/lib/anticheat/score";
+import type { DetectionScoring } from "@/lib/anticheat/scoring";
 import { localize, parseLocalized } from "@/lib/boosters/types";
 import { periodWindow } from "@/lib/economy/period";
 import { referralPairScore } from "@/lib/referral/hold";
@@ -195,7 +196,7 @@ export type ReferralFiche = {
 const asText = (v: unknown) => (typeof v === "string" && v.trim() ? v : null);
 
 /** Fiche d'un parrainage v2, ou null s'il n'existe pas (ou est un parrainage v1). */
-export async function referralFiche(id: string, rules: ReferralV2Rules, ctx: { timeZone: string; locale: string; now: Date; sharedCap: number }): Promise<ReferralFiche | null> {
+export async function referralFiche(id: string, rules: ReferralV2Rules, ctx: { timeZone: string; locale: string; now: Date; sharedCap: number; scoring?: DetectionScoring }): Promise<ReferralFiche | null> {
   const r = await prisma.referral.findUnique({
     where: { id },
     select: {
@@ -239,7 +240,7 @@ export async function referralFiche(id: string, rules: ReferralV2Rules, ctx: { t
       select: { action: true, createdAt: true, after: true, admin: { select: { username: true } } },
     }),
     sharedDevices(prisma, r),
-    loadPairInput(prisma, r.referrerId, r.refereeId, ctx.sharedCap),
+    loadPairInput(prisma, r.referrerId, r.refereeId, ctx.sharedCap, ctx.scoring),
     membersById([r.referrerId, r.refereeId]),
   ]);
   const lots = await lotViews(r.rewards.flatMap((w) => (w.lotId ? [w.lotId] : [])), ctx.locale);

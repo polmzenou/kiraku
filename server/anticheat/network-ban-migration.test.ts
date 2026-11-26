@@ -39,14 +39,28 @@ describe("migration des bans réseau", () => {
     expect(await count()).toBe(2);
   });
 
-  it("réserve le parent et l'expiration aux bans automatiques", async () => {
+  it("réserve le parent aux bans automatiques, et l'expiration d'un ban de l'admin aux IP", async () => {
     await ban(`('dev', 'DEVICE', '${"a".repeat(32)}', 'MANUAL', 'triche', 'cheater', 'admin', NULL, NULL)`);
     await expect(ban(`('m1', 'IP', '1.1.1.1', 'MANUAL', 'triche', 'cheater', 'admin', 'dev', NULL)`)).rejects.toThrow();
-    await expect(ban(`('m2', 'IP', '1.1.1.2', 'GROUP', 'triche', 'cheater', 'admin', NULL, now())`)).rejects.toThrow();
+    // multiAccount.ipv4BanDays : une IP posée par l'admin peut expirer, jamais un appareil
+    await ban(`('m2', 'IP', '1.1.1.2', 'GROUP', 'triche', 'cheater', 'admin', NULL, now() + interval '90 days')`);
+    await expect(ban(`('m3', 'DEVICE', '${"b".repeat(32)}', 'MANUAL', 'triche', 'cheater', 'admin', NULL, now())`)).rejects.toThrow();
     await ban(`('a1', 'IP', '1.1.1.3', 'AUTO', 'triche', 'cheater', 'admin', 'dev', now() + interval '30 days')`);
     // Rendu définitif : plus de parent ni d'expiration, toujours AUTO
     await ban(`('a2', 'IP', '1.1.1.4', 'AUTO', 'triche', 'cheater', 'admin', NULL, NULL)`);
     await expect(pg.exec(`UPDATE "NetworkBan" SET hits = -1 WHERE id = 'a1'`)).rejects.toThrow();
+  });
+
+  it("garde une exemption du suivi seulement sur un ban automatique, et part avec l'appareil", async () => {
+    await ban(`('dev', 'DEVICE', '${"a".repeat(32)}', 'MANUAL', 'triche', 'cheater', 'admin', NULL, NULL)`);
+    await ban(`('a1', 'IP', '1.1.1.3', 'AUTO', 'triche', 'cheater', 'admin', 'dev', NULL)`);
+    await pg.exec(`UPDATE "NetworkBan" SET "liftedAt" = now() WHERE id = 'a1'`);
+    await expect(pg.exec(`UPDATE "NetworkBan" SET "liftedAt" = now() WHERE id = 'dev'`)).rejects.toThrow();
+    // Appareils bloqués : liste vide par défaut
+    const tags = (await pg.query<{ n: number }>(`SELECT cardinality("deviceTags")::int AS n FROM "NetworkBan" WHERE id = 'dev'`)).rows[0].n;
+    expect(tags).toBe(0);
+    await pg.exec(`DELETE FROM "NetworkBan" WHERE id = 'dev'`);
+    expect(await count()).toBe(0);
   });
 
   it("garde le ban quand le compte d'origine ou l'admin disparaît", async () => {

@@ -18,10 +18,13 @@ export const GENERAL_SETTING_KEYS = [
   "multiAccount.seenThrottleMinutes",
   "multiAccount.sharedIpCap",
   "multiAccount.minScore",
+  "multiAccount.scoring",
   "multiAccount.followDevice",
+  "multiAccount.followDeviceIpv4",
   "multiAccount.autoBanMaxOthers",
   "multiAccount.autoBanDays",
   "multiAccount.autoBanPerDevice",
+  "multiAccount.ipv4BanDays",
 ] as const satisfies readonly SettingKey[];
 
 export type GeneralSettingKey = (typeof GENERAL_SETTING_KEYS)[number];

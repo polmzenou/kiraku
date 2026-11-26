@@ -4,28 +4,13 @@
 
 import { emailStem, normalizeEmail, textStem } from "./email";
 import { ipBanKey } from "./network";
+import { DETECTION_SCORING_DEFAULT, type DetectionScoring } from "./scoring";
 import { ANONYMIZED_PREFIX } from "../account/deletion";
 import { GUEST_PREFIX } from "../username";
 
-export const REASON_WEIGHTS = {
-  device: 60, // même cookie appareil : même navigateur
-  emailAlias: 50, // même boîte de réception (alias +, points Gmail)
-  ip: 30, // même IP, partagée par peu de comptes
-  emailStem: 30, // même racine d'e-mail (paulmehr, paul.mehr68)
-  flow: 20, // valeur qui va presque toujours dans le même sens
-  referral: 15, // l'un a parrainé l'autre
-  createdClose: 10, // comptes créés à quelques minutes d'écart (20 avec une IP commune)
-  usernameStem: 10, // même racine de pseudo
-  onlyFriend: 10, // l'un est le seul ami de l'autre
-  interactions: 10, // nombreux échanges entre eux, sans sens dominant
-} as const;
+// Poids des indices et seuils : réglage multiAccount.scoring (lib/anticheat/scoring.ts), barème d'origine par défaut
 
-export type ReasonKind = keyof typeof REASON_WEIGHTS;
-
-export const CREATED_CLOSE_MINUTES = 15;
-const FLOW_MIN = 3; // transferts orientés minimum pour juger d'un sens
-const FLOW_SHARE = 0.8; // part d'un sens pour le dire dominant
-const INTERACTIONS_MIN = 5;
+type ReasonKind = Reason["kind"];
 
 export type Reason =
   | { kind: "device"; count: number }
@@ -52,14 +37,16 @@ export type DetectionInput = {
   /** Au-delà de ce nombre de comptes, une IP ou une racine est jugée commune et ne relie plus */
   sharedCap: number;
   minScore: number;
+  /** Barème (multiAccount.scoring) ; absent : barème d'origine. */
+  scoring?: DetectionScoring;
 };
 
 export type SuspectPair = { a: string; b: string; score: number; reasons: Reason[] };
 export type SuspectCluster = { score: number; userIds: string[]; pairs: SuspectPair[] };
 
-export function reasonWeight(reason: Reason): number {
-  if (reason.kind === "createdClose" && reason.withIp) return REASON_WEIGHTS.createdClose * 2;
-  return REASON_WEIGHTS[reason.kind];
+export function reasonWeight(reason: Reason, scoring: DetectionScoring = DETECTION_SCORING_DEFAULT): number {
+  if (reason.kind === "createdClose" && reason.withIp) return scoring.createdClose * 2;
+  return scoring[reason.kind];
 }
 
 const pairKey = (x: string, y: string) => (x < y ? `${x}|${y}` : `${y}|${x}`);
@@ -108,6 +95,7 @@ function groupBy<T>(rows: readonly T[], key: (row: T) => string | null, id: (row
 export function scorePairs(input: DetectionInput): SuspectPair[] {
   const book = new PairBook();
   const cap = input.sharedCap;
+  const scoring = input.scoring ?? DETECTION_SCORING_DEFAULT;
   // Le plafond « valeur trop commune » vise les IP publiques (4G, école) et les racines de pseudos. Un même appareil
   // ou une même boîte e-mail sur 9 comptes est au contraire l'indice le plus fort d'une ferme : plafond propre, large
   // (il borne seulement le nombre de paires calculées)
@@ -171,10 +159,11 @@ export function scorePairs(input: DetectionInput): SuspectPair[] {
     const ab = d.flow.ab.gift + d.flow.ab.sale + d.flow.ab.flip;
     const ba = d.flow.ba.gift + d.flow.ba.sale + d.flow.ba.flip;
     const directed = ab + ba;
-    if (directed >= FLOW_MIN && Math.max(ab, ba) >= FLOW_SHARE * directed) {
+    // Part du sens dominant en entiers (flowSharePct %) : même résultat que l'ancien seuil 0,8 × total
+    if (directed >= scoring.flowMin && Math.max(ab, ba) * 100 >= scoring.flowSharePct * directed) {
       const [fromId, toId, side] = ab >= ba ? [d.a, d.b, d.flow.ab] : [d.b, d.a, d.flow.ba];
       d.reasons.set("flow", { kind: "flow", fromId, toId, gifts: side.gift, sales: side.sale, flips: side.flip });
-    } else if (directed + d.flow.swaps >= INTERACTIONS_MIN) {
+    } else if (directed + d.flow.swaps >= scoring.interactionsMin) {
       d.reasons.set("interactions", { kind: "interactions", total: directed + d.flow.swaps });
     }
 
@@ -183,12 +172,13 @@ export function scorePairs(input: DetectionInput): SuspectPair[] {
     const ub = users.get(d.b);
     if (d.reasons.size > 0 && ua && ub) {
       const minutes = Math.abs(ua.createdAt.getTime() - ub.createdAt.getTime()) / 60_000;
-      if (minutes <= CREATED_CLOSE_MINUTES) d.reasons.set("createdClose", { kind: "createdClose", minutes: Math.round(minutes), withIp: d.reasons.has("ip") });
+      if (minutes <= scoring.createdCloseMinutes) d.reasons.set("createdClose", { kind: "createdClose", minutes: Math.round(minutes), withIp: d.reasons.has("ip") });
     }
 
     if (d.reasons.size === 0) continue;
-    const reasons = [...d.reasons.values()].sort((x, y) => reasonWeight(y) - reasonWeight(x));
-    pairs.push({ a: d.a, b: d.b, score: reasons.reduce((sum, r) => sum + reasonWeight(r), 0), reasons });
+    const weight = (r: Reason) => reasonWeight(r, scoring);
+    const reasons = [...d.reasons.values()].sort((x, y) => weight(y) - weight(x));
+    pairs.push({ a: d.a, b: d.b, score: reasons.reduce((sum, r) => sum + weight(r), 0), reasons });
   }
   return pairs.sort((x, y) => y.score - x.score);
 }

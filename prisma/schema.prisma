@@ -342,7 +342,8 @@ enum NetworkBanSource {
 
 // Bans réseau : une IP (IPv4 exacte, IPv6 par préfixe /64) ou un appareil (cookie kiraku.device). Tout l'accès est
 // coupé depuis ce réseau, l'équipe exceptée (server/anticheat/network-ban.ts). Définitif jusqu'à la levée par un
-// admin, qui supprime la ligne ; seuls les bans AUTO expirent (multiAccount.autoBanDays).
+// admin, qui supprime la ligne ; les bans AUTO expirent (multiAccount.autoBanDays), ceux d'une IPv4 posés par
+// l'admin aussi si multiAccount.ipv4BanDays > 0 (CHECK : jamais un /64 ni un appareil).
 model NetworkBan {
   id          String           @id @default(cuid())
   kind        SignalKind
@@ -355,13 +356,20 @@ model NetworkBan {
   createdById String?
   createdBy   User?            @relation("networkBanCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   // AUTO : le ban d'appareil suivi ; lever l'appareil lève les IP qu'il a fait bannir. Seul un AUTO a un parent
-  // ou une expiration (CHECK) ; rendu définitif par l'admin, il perd les deux.
+  // (CHECK) ; rendu définitif par l'admin, il perd parent et expiration.
   parentId    String?
   parent      NetworkBan?      @relation("networkBanParent", fields: [parentId], references: [id], onDelete: Cascade)
   children    NetworkBan[]     @relation("networkBanParent")
   expiresAt   DateTime? // null : définitif
-  hits        Int              @default(0) // accès bloqués
+  hits        Int              @default(0) // passages bloqués (un par 10 minutes et par réseau)
   lastHitAt   DateTime?
+  // Ban d'IP : empreintes courtes (sha-256 tronqué) des appareils déjà connus qu'il a bloqués, BLOCKED_DEVICES_MAX
+  // au plus (lib/anticheat/network.ts). Plusieurs appareils : l'IP coupe sans doute plusieurs foyers.
+  deviceTags  String[]         @default([])
+  // AUTO levé par « Lever et ne plus suivre ici » : la ligne reste comme exemption (plus un ban, ignorée par
+  // activeBan) et le suivi de l'appareil ne reprend plus cette IP ; elle part avec le ban de l'appareil (cascade)
+  // ou quand l'admin bannit de nouveau l'IP. Seul un AUTO est levé ainsi (CHECK).
+  liftedAt    DateTime?
   createdAt   DateTime         @default(now())
 
   @@unique([kind, value])

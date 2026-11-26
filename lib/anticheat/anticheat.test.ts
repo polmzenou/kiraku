@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { emailStem, normalizeEmail, textStem } from "./email";
+import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
 import { maskEmail, maskIp } from "./mask";
-import { detectClusters, scorePairs, type DetectionInput } from "./score";
+import { detectClusters, reasonWeight, scorePairs, type DetectionInput } from "./score";
+import { DETECTION_SCORING_DEFAULT, detectionScoringSchema } from "./scoring";
 import { isDeviceId, isRecordableIp } from "./signals";
 
 const t0 = new Date("2026-11-01T10:00:00Z");
@@ -136,6 +138,42 @@ describe("détection des multi-comptes", () => {
     const data = input({ users: [main, other], referrals: [{ referrerId: "main", refereeId: "other" }] });
     expect(scorePairs(data)[0].score).toBe(15 + 10); // parrainage + créés à 3 min
     expect(detectClusters(data)).toEqual([]);
+  });
+
+  it("barème réglable : poids et seuils lus dans multiAccount.scoring, barème d'origine par défaut", () => {
+    // Valeurs d'origine (avant le réglage) : un changement de défaut changerait les mises « À vérifier » du parrainage
+    expect(SETTING_DEFAULTS["multiAccount.scoring"]).toEqual(DETECTION_SCORING_DEFAULT);
+    expect(DETECTION_SCORING_DEFAULT).toEqual({
+      device: 60, emailAlias: 50, ip: 30, emailStem: 30, flow: 20, referral: 15, createdClose: 10, usernameStem: 10, onlyFriend: 10, interactions: 10,
+      createdCloseMinutes: 15, flowMin: 3, flowSharePct: 80, interactionsMin: 5,
+    });
+    expect(detectionScoringSchema.safeParse(DETECTION_SCORING_DEFAULT).success).toBe(true);
+
+    const signals = [
+      { userId: "main", kind: "DEVICE" as const, value: "d1" },
+      { userId: "other", kind: "DEVICE" as const, value: "d1" },
+      { userId: "main", kind: "IP" as const, value: "1.2.3.4" },
+      { userId: "other", kind: "IP" as const, value: "1.2.3.4" },
+    ];
+    const scoring = { ...DETECTION_SCORING_DEFAULT, device: 100, ip: 5, createdClose: 7, createdCloseMinutes: 2 };
+    // Créés à 3 min d'écart : hors de la fenêtre de 2 min
+    const [pair] = scorePairs(input({ users: [main, other], signals, scoring }));
+    expect(pair.reasons.map((r) => r.kind)).toEqual(["device", "ip"]);
+    expect(pair.score).toBe(105);
+    expect(reasonWeight({ kind: "createdClose", minutes: 1, withIp: true }, scoring)).toBe(14);
+    expect(reasonWeight({ kind: "createdClose", minutes: 1, withIp: true })).toBe(20);
+  });
+
+  it("seuils du flux : nombre de transferts et part du sens dominant", () => {
+    const transfers = [
+      { fromId: "main", toId: "other", kind: "gift" as const, count: 3 },
+      { fromId: "other", toId: "main", kind: "gift" as const, count: 1 },
+    ];
+    const kinds = (over: Partial<DetectionInput>) => scorePairs(input({ users: [main, other], transfers, ...over }))[0]?.reasons.map((r) => r.kind) ?? [];
+    // 3 sur 4 dans le même sens = 75 % : sous les 80 % d'origine, au-dessus d'un seuil de 70 %
+    expect(kinds({})).not.toContain("flow");
+    expect(kinds({ scoring: { ...DETECTION_SCORING_DEFAULT, flowSharePct: 70 } })).toContain("flow");
+    expect(kinds({ scoring: { ...DETECTION_SCORING_DEFAULT, flowSharePct: 70, flowMin: 5 } })).not.toContain("flow");
   });
 
   it("distingue des échanges fréquents sans sens dominant d'un flux à sens unique", () => {

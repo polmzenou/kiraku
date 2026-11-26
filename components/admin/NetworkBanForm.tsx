@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Link } from "@/i18n/navigation";
 import type { BanState, NetworkKind } from "@/lib/anticheat/network";
@@ -36,6 +36,7 @@ const STATE_TONE: Record<BanState, string> = {
  */
 export function NetworkBanForm({ userId, rows, accountBanned }: { userId: string; rows: NetworkBanFormRow[]; accountBanned: boolean }) {
   const t = useTranslations("admin.networkBans");
+  const format = useFormatter();
   const [selected, setSelected] = useState(() => new Set(rows.filter((r) => r.checked).map((r) => r.signalIds[0])));
   const [banAccount, setBanAccount] = useState(!accountBanned);
   const [reason, setReason] = useState("");
@@ -98,14 +99,14 @@ export function NetworkBanForm({ userId, rows, accountBanned }: { userId: string
                   {r.others.length > 0 && (
                     <span className="text-xs break-all">
                       {t("cuts")}{" "}
-                      {r.others.map((o, i) => (
-                        <span key={o.id}>
-                          {i > 0 && ", "}
-                          <Link href={`/admin/utilisateurs/${o.id}`} className="underline underline-offset-2">
+                      {format.list(
+                        r.others.map((o) => (
+                          <Link key={o.id} href={`/admin/utilisateurs/${o.id}`} className="underline underline-offset-2">
                             {o.username}
                           </Link>
-                        </span>
-                      ))}
+                        )),
+                        { type: "conjunction", style: "narrow" },
+                      )}
                       {r.othersCount > r.others.length && ` ${t("more", { count: r.othersCount - r.others.length })}`}
                     </span>
                   )}

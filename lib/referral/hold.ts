@@ -1,4 +1,5 @@
 import { scorePairs, type DetectionInput, type Reason } from "@/lib/anticheat/score";
+import type { DetectionScoring } from "@/lib/anticheat/scoring";
 import type { ReferralV2Rules } from "./rules";
 
 // Mise « À vérifier » d'un parrainage v2. Un appareil commun (même cookie kiraku.device chez le parrain et le filleul,
@@ -6,6 +7,7 @@ import type { ReferralV2Rules } from "./rules";
 // grosse récompense, bloque à partir de holdScore. Le score reprend lib/anticheat/score.ts sans les indices
 // « referral » (toujours présent, par définition) ni « onlyFriend » (le parrain est souvent le seul ami d'un nouveau
 // joueur). Les IP vues sur plus de sharedCap comptes sont retirées par l'appelant, qui les compte sur tout le serveur.
+// Barème : réglage multiAccount.scoring, transmis par l'appelant (absent : barème d'origine).
 
 export type PairPerson = DetectionInput["users"][number];
 
@@ -15,6 +17,7 @@ export type PairScoreInput = {
   signals: DetectionInput["signals"];
   transfers: DetectionInput["transfers"];
   sharedCap: number;
+  scoring?: DetectionScoring;
 };
 
 export function referralPairScore(input: PairScoreInput): { score: number; reasons: Reason[] } {
@@ -27,6 +30,7 @@ export function referralPairScore(input: PairScoreInput): { score: number; reaso
     transfers: input.transfers.filter((t) => ids.has(t.fromId) && ids.has(t.toId)),
     sharedCap: input.sharedCap,
     minScore: 0,
+    scoring: input.scoring,
   });
   return pair ? { score: pair.score, reasons: pair.reasons } : { score: 0, reasons: [] };
 }

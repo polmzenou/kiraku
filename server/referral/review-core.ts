@@ -157,7 +157,7 @@ export async function previewRevokeWith(db: PrismaClient, referralId: string): P
 
 export async function revokeReferralWith(
   db: PrismaClient,
-  input: { staffId: string; referralId: string; ban: boolean; reason: string; now: Date; sharedIpCap: number },
+  input: { staffId: string; referralId: string; ban: boolean; reason: string; now: Date; sharedIpCap: number; ipv4BanDays?: number },
 ): Promise<RevokeOutcome> {
   const outcome = await db.$transaction(async (tx): Promise<RevokeOutcome> => {
     const r = await lockReferral(tx, input.referralId);
@@ -197,7 +197,7 @@ export async function revokeReferralWith(
     const accounts = await tx.user.findMany({ where: { id: { in: [r.referrerId, r.refereeId] } }, select: { id: true, role: true } });
     const targets = accounts.filter((a) => !isStaff(a.role) && a.id !== input.staffId).map((a) => a.id);
     const { banned } = targets.length
-      ? await banGroupInTx(tx, { adminId: input.staffId, userIds: targets, reason: input.reason, now: input.now, sharedIpCap: input.sharedIpCap })
+      ? await banGroupInTx(tx, { adminId: input.staffId, userIds: targets, reason: input.reason, now: input.now, sharedIpCap: input.sharedIpCap, ipv4BanDays: input.ipv4BanDays ?? 0 })
       : { banned: [] as string[] };
     await writeAdminLog(tx, {
       adminId: input.staffId,

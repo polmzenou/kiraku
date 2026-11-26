@@ -3,7 +3,7 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { isStaff } from "@/lib/admin/roles";
 import { maskIp, shortDevice } from "@/lib/anticheat/mask";
-import { banState, followDecision, ipBanKey, ipKeyPatterns, signalBanKey, type BanState, type FollowDecision, type NetworkKind } from "@/lib/anticheat/network";
+import { adminBanExpiry, banState, followDecision, ipBanKey, ipKeyPatterns, signalBanKey, type BanState, type FollowDecision, type NetworkKind } from "@/lib/anticheat/network";
 import { writeAdminLog } from "../admin/log";
 import { banAccountWith } from "../admin/users-core";
 import { withdrawCasinoFor } from "../casino/coinflip-core";
@@ -22,7 +22,8 @@ export type NetworkBanErrorCode =
   | "STAFF_TARGET" // un compte de l'équipe ne se bannit pas ici
   | "NOTHING" // rien à bannir
   | "REFUSED" // une IP ou un appareil choisi ne peut pas l'être (équipe, privée, trop partagée)
-  | "NOT_AUTO"; // seul un ban automatique se rend définitif
+  | "NOT_EXPIRING" // ban déjà définitif
+  | "NOT_AUTO"; // seul un ban automatique qui suit un appareil se lève en gardant une exemption
 
 export class NetworkBanError extends Error {
   constructor(readonly code: NetworkBanErrorCode) {
@@ -33,8 +34,11 @@ export class NetworkBanError extends Error {
 /** Valeur montrable d'une clé (journal, comptes rendus) : jamais l'IP ni l'appareil en entier. */
 export const maskedKey = (kind: NetworkKind, key: string) => (kind === "IP" ? maskIp(key) : shortDevice(key));
 
-/** Un ban automatique expire ; les autres valent jusqu'à leur levée (expiresAt vide). */
-export const activeBan = (now: Date): Prisma.NetworkBanWhereInput => ({ OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] });
+/**
+ * Ban en place : pas expiré (un ban automatique expire, une IPv4 posée par l'admin aussi si multiAccount.ipv4BanDays
+ * le veut ; les autres valent jusqu'à leur levée) et pas levé en exemption (liftedAt : ce n'est plus un ban).
+ */
+export const activeBan = (now: Date): Prisma.NetworkBanWhereInput => ({ liftedAt: null, OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] });
 
 export type MatchedBan = {
   id: string;
@@ -43,6 +47,8 @@ export type MatchedBan = {
   userId: string | null;
   createdById: string | null;
   createdAt: Date;
+  /** Ban d'IP : empreintes des appareils déjà comptés (noteBlocked). */
+  deviceTags: string[];
 };
 
 /** Bans actifs qui visent cette IP (clé) ou cet appareil : une requête sur l'index unique (kind, value). */
@@ -54,21 +60,23 @@ export async function findNetworkBans(db: Db, target: { ipKey: string | null; de
   if (targets.length === 0) return [];
   return db.networkBan.findMany({
     where: { AND: [{ OR: targets }, activeBan(now)] },
-    select: { id: true, kind: true, reason: true, userId: true, createdById: true, createdAt: true },
+    select: { id: true, kind: true, reason: true, userId: true, createdById: true, createdAt: true, deviceTags: true },
   });
 }
 
 /** Un compte qui a utilisé une IP ou un appareil (relevés UserSignal). */
-export type KeyAccount = { userId: string; role: string; banned: boolean; anonymized: boolean };
+type KeyAccount = { userId: string; role: string; banned: boolean; anonymized: boolean };
 
+/** Clé des listes rendues par accountsOnKeys. */
 export const keyId = (kind: NetworkKind, key: string) => `${kind}:${key}`;
 
 /** Ni banni ni anonymisé : un ban réseau le couperait. */
-export const isActiveAccount = (a: KeyAccount) => !a.banned && !a.anonymized;
+const isActiveAccount = (a: KeyAccount) => !a.banned && !a.anonymized;
 
 /**
  * Comptes qui ont utilisé chaque IP (clé) ou appareil, d'après les relevés encore conservés. Une IPv6 relevée est
- * une adresse complète : préfiltre SQL sur son début, puis comparaison exacte des clés /64.
+ * une adresse complète : préfiltre SQL sur son début (en minuscules, comme la clé), puis comparaison exacte des clés
+ * /64. Aussi lue par le score de paire du parrainage (server/anticheat/pair.ts), qui compte les comptes par clé.
  */
 export async function accountsOnKeys(db: Db, keys: readonly { kind: NetworkKind; key: string }[]): Promise<Map<string, KeyAccount[]>> {
   const out = new Map(keys.map((k) => [keyId(k.kind, k.key), [] as KeyAccount[]]));
@@ -80,7 +88,7 @@ export async function accountsOnKeys(db: Db, keys: readonly { kind: NetworkKind;
     SELECT DISTINCT s."userId", s.kind::text AS kind, s.value, u.role::text AS role, u."bannedAt", u."anonymizedAt"
     FROM "UserSignal" s JOIN "User" u ON u.id = s."userId"
     WHERE (s.kind = 'DEVICE' AND s.value = ANY(${devices}::text[]))
-       OR (s.kind = 'IP' AND s.value LIKE ANY(${patterns}::text[]))`;
+       OR (s.kind = 'IP' AND lower(s.value) LIKE ANY(${patterns}::text[]))`;
   for (const r of rows) {
     const key = r.kind === "DEVICE" ? r.value : ipBanKey(r.value);
     if (!key || (r.kind === "IP" && !ipKeys.has(key))) continue;
@@ -92,7 +100,7 @@ export async function accountsOnKeys(db: Db, keys: readonly { kind: NetworkKind;
 }
 
 /** Une IP (clé /64 pour une IPv6) ou un appareil relevé pour des comptes : ses relevés, ses comptes, sa dernière vue. */
-export type NetworkKey = { kind: NetworkKind; key: string; signalIds: string[]; userIds: string[]; lastSeenAt: Date };
+type NetworkKey = { kind: NetworkKind; key: string; signalIds: string[]; userIds: string[]; lastSeenAt: Date };
 
 /** IP et appareils relevés pour ces comptes, regroupés par clé (plusieurs adresses d'un même /64 : une seule clé). */
 export async function networkKeysOf(db: Db, userIds: readonly string[]): Promise<NetworkKey[]> {
@@ -115,7 +123,7 @@ export async function networkKeysOf(db: Db, userIds: readonly string[]): Promise
 }
 
 /** Une clé et son état pour un ban visant `targets` : ban en place, comptes actifs coupés en plus. */
-export type KeyStateView = NetworkKey & { state: BanState; banId: string | null; others: string[] };
+type KeyStateView = NetworkKey & { state: BanState; banId: string | null; others: string[] };
 
 export async function keyStates(db: Db, keys: readonly NetworkKey[], targets: ReadonlySet<string>, sharedIpCap: number, now: Date): Promise<KeyStateView[]> {
   if (keys.length === 0) return [];
@@ -139,12 +147,15 @@ export async function keyStates(db: Db, keys: readonly NetworkKey[], targets: Re
 }
 
 /**
- * Un ban automatique expiré garde sa ligne jusqu'au ménage du cron : elle est retirée avant d'en poser un neuf sur la
- * même clé (l'index unique le sauterait sinon sans rien dire).
+ * Un ban expiré garde sa ligne jusqu'au ménage du cron, une exemption du suivi (ban automatique levé, liftedAt) la
+ * garde tant que l'appareil reste banni : elles sont retirées avant de poser un ban neuf sur la même clé (l'index
+ * unique le sauterait sinon sans rien dire). Le suivi d'un appareil consulte l'exemption avant d'en arriver là.
  */
 async function clearExpired(db: Db, keys: readonly { kind: NetworkKind; key: string }[], now: Date) {
   if (keys.length === 0) return;
-  await db.networkBan.deleteMany({ where: { expiresAt: { lte: now }, OR: keys.map((k) => ({ kind: k.kind, value: k.key })) } });
+  await db.networkBan.deleteMany({
+    where: { AND: [{ OR: keys.map((k) => ({ kind: k.kind, value: k.key })) }, { OR: [{ expiresAt: { lte: now } }, { liftedAt: { not: null } }] }] },
+  });
 }
 
 /** Admin non banni, revérifié dans la transaction : une session ouverte ne conserve pas des droits retirés. */
@@ -158,11 +169,12 @@ const REFUSED_STATES: readonly BanState[] = ["STAFF", "PRIVATE", "CAP"];
 /**
  * Fiche joueur : bannit les IP et appareils choisis parmi les relevés de ce compte (propriété vérifiée ici), et le
  * compte si demandé. Une IP partagée avec d'autres comptes actifs se bannit si l'admin l'a cochée (l'écran les
- * nomme) ; une IP de l'équipe, privée ou trop partagée jamais. Une clé déjà bannie entre-temps est sautée.
+ * nomme) ; une IP de l'équipe, privée ou trop partagée jamais. Une clé déjà bannie entre-temps est sautée. Une IPv4
+ * expire après `ipv4BanDays` jours (multiAccount.ipv4BanDays, 0 = définitif).
  */
 export async function banNetworkWith(
   db: PrismaClient,
-  input: { adminId: string; userId: string; signalIds: readonly string[]; banAccount: boolean; reason: string; now: Date; sharedIpCap: number },
+  input: { adminId: string; userId: string; signalIds: readonly string[]; banAccount: boolean; reason: string; now: Date; sharedIpCap: number; ipv4BanDays: number },
 ): Promise<{ bans: number; account: boolean }> {
   const result = await db.$transaction(async (tx) => {
     await lockPlayers(tx, [input.adminId, input.userId]);
@@ -181,7 +193,15 @@ export async function banNetworkWith(
 
     await clearExpired(tx, toBan, input.now);
     await tx.networkBan.createMany({
-      data: toBan.map((s) => ({ kind: s.kind, value: s.key, source: "MANUAL" as const, reason: input.reason, userId: target.id, createdById: input.adminId })),
+      data: toBan.map((s) => ({
+        kind: s.kind,
+        value: s.key,
+        source: "MANUAL" as const,
+        reason: input.reason,
+        userId: target.id,
+        createdById: input.adminId,
+        expiresAt: adminBanExpiry(s.kind, s.key, input.ipv4BanDays, input.now),
+      })),
       skipDuplicates: true,
     });
     const account = input.banAccount ? await banAccountWith(tx, target.id, input.now) : false;
@@ -211,7 +231,7 @@ export type SkippedKey = { kind: NetworkKind; value: string; state: BanState };
  */
 export async function banGroupWith(
   db: PrismaClient,
-  input: { adminId: string; userIds: readonly string[]; reason: string; now: Date; sharedIpCap: number },
+  input: { adminId: string; userIds: readonly string[]; reason: string; now: Date; sharedIpCap: number; ipv4BanDays: number },
 ): Promise<{ accounts: number; bans: number; skipped: SkippedKey[] }> {
   const result = await db.$transaction(async (tx) => {
     await lockPlayers(tx, [input.adminId, ...input.userIds]);
@@ -228,11 +248,12 @@ export async function banGroupWith(
 /**
  * Bannissement d'un groupe dans la transaction de l'appelant, qui a vérifié le droit de l'auteur (ADMIN pour
  * /admin/multi-comptes ; ADMIN ou DEV pour la file « À vérifier » du parrainage) et verrouillé les comptes. L'appelant
- * retire ensuite les tables de pile ou face des comptes bannis (withdrawCasinoFor), hors de la transaction.
+ * retire ensuite les tables de pile ou face des comptes bannis (withdrawCasinoFor), hors de la transaction. Une IPv4
+ * expire après `ipv4BanDays` jours (multiAccount.ipv4BanDays, 0 = définitif).
  */
 export async function banGroupInTx(
   tx: Prisma.TransactionClient,
-  input: { adminId: string; userIds: readonly string[]; reason: string; now: Date; sharedIpCap: number },
+  input: { adminId: string; userIds: readonly string[]; reason: string; now: Date; sharedIpCap: number; ipv4BanDays: number },
 ): Promise<{ banned: string[]; bans: number; skipped: SkippedKey[] }> {
   const ids = [...new Set(input.userIds)];
   if (ids.includes(input.adminId)) throw new NetworkBanError("SELF");
@@ -244,7 +265,15 @@ export async function banGroupInTx(
   const toBan = states.filter((s) => s.state === "OK");
   await clearExpired(tx, toBan, input.now);
   await tx.networkBan.createMany({
-    data: toBan.map((s) => ({ kind: s.kind, value: s.key, source: "GROUP" as const, reason: input.reason, userId: s.userIds[0], createdById: input.adminId })),
+    data: toBan.map((s) => ({
+      kind: s.kind,
+      value: s.key,
+      source: "GROUP" as const,
+      reason: input.reason,
+      userId: s.userIds[0],
+      createdById: input.adminId,
+      expiresAt: adminBanExpiry(s.kind, s.key, input.ipv4BanDays, input.now),
+    })),
     skipDuplicates: true,
   });
   const banned: string[] = [];
@@ -266,35 +295,48 @@ export async function banGroupInTx(
   return { banned, bans: toBan.length, skipped };
 }
 
-/** Lève un ban (la ligne part : l'IP n'est plus gardée) ; lever un appareil lève les IP qu'il a fait bannir. */
-export async function liftNetworkBanWith(db: PrismaClient, input: { adminId: string; banId: string; reason: string }): Promise<void> {
+/**
+ * Lève un ban (la ligne part : l'IP n'est plus gardée) ; lever un appareil lève les IP qu'il a fait bannir.
+ * `exempt` (« Lever et ne plus suivre ici », ban automatique qui suit un appareil) : la ligne reste, levée, pour que
+ * le suivi ne repose pas le ban au prochain passage de l'appareil ; elle part avec le ban de l'appareil.
+ */
+export async function liftNetworkBanWith(db: PrismaClient, input: { adminId: string; banId: string; reason: string; exempt?: boolean }): Promise<void> {
   await db.$transaction(async (tx) => {
     await assertAdmin(tx, input.adminId);
     const ban = await tx.networkBan.findUnique({
       where: { id: input.banId },
-      select: { id: true, kind: true, value: true, source: true, userId: true, _count: { select: { children: true } } },
+      select: { id: true, kind: true, value: true, source: true, userId: true, parentId: true, liftedAt: true, _count: { select: { children: { where: { liftedAt: null } } } } },
     });
-    if (!ban) throw new NetworkBanError("NOT_FOUND");
-    const { count } = await tx.networkBan.deleteMany({ where: { id: ban.id } });
-    if (count !== 1) throw new NetworkBanError("NOT_FOUND");
+    if (!ban || ban.liftedAt) throw new NetworkBanError("NOT_FOUND");
+    if (input.exempt) {
+      if (ban.source !== "AUTO" || ban.parentId === null) throw new NetworkBanError("NOT_AUTO");
+      const { count } = await tx.networkBan.updateMany({ where: { id: ban.id, liftedAt: null }, data: { liftedAt: new Date(), expiresAt: null } });
+      if (count !== 1) throw new NetworkBanError("NOT_FOUND");
+    } else {
+      const { count } = await tx.networkBan.deleteMany({ where: { id: ban.id } });
+      if (count !== 1) throw new NetworkBanError("NOT_FOUND");
+    }
     await writeAdminLog(tx, {
       adminId: input.adminId,
       action: "USER_NETWORK_UNBAN",
       targetType: ban.userId ? "User" : "NetworkBan",
       targetId: ban.userId ?? ban.id,
       before: json({ kind: ban.kind, value: maskedKey(ban.kind, ban.value), source: ban.source, followed: ban._count.children }),
-      after: json({ reason: input.reason }),
+      after: json({ reason: input.reason, ...(input.exempt ? { exempt: true } : {}) }),
     });
   }, TX);
 }
 
-/** Rend définitif un ban automatique : plus d'expiration, et il ne suit plus l'appareil (il survit à sa levée). */
+/**
+ * Rend définitif un ban qui expire : un ban automatique (il ne suit plus l'appareil et survit à sa levée) ou une IPv4
+ * posée par l'admin avec multiAccount.ipv4BanDays.
+ */
 export async function keepNetworkBanWith(db: PrismaClient, input: { adminId: string; banId: string; reason: string }): Promise<void> {
   await db.$transaction(async (tx) => {
     await assertAdmin(tx, input.adminId);
-    const ban = await tx.networkBan.findUnique({ where: { id: input.banId }, select: { id: true, kind: true, value: true, source: true, userId: true } });
-    if (!ban) throw new NetworkBanError("NOT_FOUND");
-    if (ban.source !== "AUTO") throw new NetworkBanError("NOT_AUTO");
+    const ban = await tx.networkBan.findUnique({ where: { id: input.banId }, select: { id: true, kind: true, value: true, source: true, userId: true, expiresAt: true, liftedAt: true } });
+    if (!ban || ban.liftedAt) throw new NetworkBanError("NOT_FOUND");
+    if (ban.expiresAt === null) throw new NetworkBanError("NOT_EXPIRING");
     await tx.networkBan.update({ where: { id: ban.id }, data: { expiresAt: null, parentId: null } });
     await writeAdminLog(tx, {
       adminId: input.adminId,
@@ -306,34 +348,43 @@ export async function keepNetworkBanWith(db: PrismaClient, input: { adminId: str
   }, TX);
 }
 
-/** Ménage quotidien (cron des comptes) : bans automatiques expirés, pour que leur IP ne reste pas en base. */
+/**
+ * Ménage quotidien (cron des comptes) : bans expirés (automatiques, IPv4 à durée), pour que leur IP ne reste pas en
+ * base. Une exemption du suivi n'expire pas : elle part avec le ban de son appareil.
+ */
 export async function purgeExpiredNetworkBans(db: Db, now: Date): Promise<number> {
   const { count } = await db.networkBan.deleteMany({ where: { expiresAt: { lte: now } } });
   return count;
 }
 
-/** Réglages du ban qui suit l'appareil (multiAccount.*), lus par l'appelant. */
-export type FollowRules = { enabled: boolean; maxOthers: number; days: number; perDevice: number };
+/** Réglages du ban qui suit l'appareil (multiAccount.*), lus par l'appelant. `ipv4` : multiAccount.followDeviceIpv4. */
+export type FollowRules = { enabled: boolean; ipv4: boolean; maxOthers: number; days: number; perDevice: number };
 
 /**
  * Le ban suit l'appareil : la nouvelle IP d'un appareil banni est bannie à son tour (source AUTO, expiration), si
  * personne de l'équipe ne l'utilise et qu'elle ne coupe pas d'autres comptes actifs (ceux qui ont déjà servi sur
- * l'appareil banni ne comptent pas : ce sont les siens). Deux accès simultanés ne créent qu'un ban (index unique).
+ * l'appareil banni ne comptent pas : ce sont les siens). Jamais une IP que l'admin a exemptée en levant son ban
+ * automatique, ni une IPv4 si multiAccount.followDeviceIpv4 est coupé. Deux accès simultanés ne créent qu'un ban
+ * (index unique).
  */
 export async function followDeviceWith(
   db: Db,
   input: { deviceBan: MatchedBan; device: string; ipKey: string; now: Date },
   rules: FollowRules,
 ): Promise<FollowDecision> {
-  const [accounts, autoBans] = await Promise.all([
+  const [accounts, autoBans, exemption] = await Promise.all([
     accountsOnKeys(db, [{ kind: "IP", key: input.ipKey }, { kind: "DEVICE", key: input.device }]),
-    db.networkBan.count({ where: { parentId: input.deviceBan.id } }),
+    // Les exemptions ne comptent pas : elles ne bannissent rien
+    db.networkBan.count({ where: { parentId: input.deviceBan.id, liftedAt: null } }),
+    db.networkBan.findFirst({ where: { kind: "IP", value: input.ipKey, liftedAt: { not: null } }, select: { id: true } }),
   ]);
   const onIp = accounts.get(keyId("IP", input.ipKey)) ?? [];
   const onDevice = new Set((accounts.get(keyId("DEVICE", input.device)) ?? []).map((a) => a.userId));
   const decision = followDecision({
     enabled: rules.enabled,
+    ipv4: rules.ipv4,
     ipKey: input.ipKey,
+    exempt: exemption !== null,
     staffSeen: onIp.some((a) => isStaff(a.role)),
     othersActive: onIp.filter((a) => isActiveAccount(a) && !onDevice.has(a.userId)).length,
     maxOthers: rules.maxOthers,
