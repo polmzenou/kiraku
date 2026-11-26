@@ -298,7 +298,8 @@
       "tokenInvalid": "Ce lien n'est plus valable. Demande-en un nouveau.",
       "unexpected": "Une erreur est survenue. Réessaie.",
       "tooFast": "Envoi trop rapide : patiente un instant puis réessaie.",
-      "formExpired": "Le formulaire a expiré : recharge la page puis réessaie."
+      "formExpired": "Le formulaire a expiré : recharge la page puis réessaie.",
+      "mailFailed": "L'e-mail n'a pas pu partir. Réessaie dans quelques minutes."
     },
     "fieldErrors": {
       "required": "Champ obligatoire.",
@@ -3632,6 +3633,37 @@
       "reasonHint": "Interne : visible seulement dans le journal admin.",
       "message": "Message au joueur (facultatif)",
       "messagePlaceholder": "Ex. : récompense événement. Affiché avec la notification."
+    },
+    "mail": {
+      "title": "E-mails",
+      "intro": "Liens de vérification d'adresse et de mot de passe oublié, envoyés par Resend. L'expéditeur doit être sur un domaine vérifié chez Resend (DKIM, SPF).",
+      "state": "État",
+      "states": {
+        "on": "Configuré",
+        "test": "Expéditeur de test",
+        "off": "Non configuré"
+      },
+      "sender": "Domaine d'expédition",
+      "none": "aucun",
+      "offHelp": "RESEND_API_KEY ou MAIL_FROM manquant dans le .env du serveur : aucun e-mail ne part. Sur le VPS, les clés vont dans ~/kiraku/.env (pas .env.local, qui n'est pas copié dans la release), puis on redéploie.",
+      "testHelp": "MAIL_FROM utilise l'adresse de test @resend.dev : Resend ne livre qu'au propriétaire du compte Resend et refuse tous les joueurs. Vérifie kiraku-kun.com chez Resend puis mets MAIL_FROM=\"Kiraku <noreply@kiraku-kun.com>\".",
+      "testTo": "Envoyer un e-mail de test à",
+      "send": "Envoyer un e-mail de test",
+      "sending": "Envoi…",
+      "sent": "E-mail parti. Vérifie la boîte de réception (et les indésirables).",
+      "testSubject": "Kiraku : e-mail de test",
+      "testBody": "Bonjour {name},\n\nCet e-mail de test confirme que Kiraku peut envoyer des e-mails (vérification d'adresse, mot de passe oublié).\n\nL'équipe Kiraku",
+      "reasons": {
+        "disabled": "Envoi non configuré sur ce serveur (RESEND_API_KEY ou MAIL_FROM manquant).",
+        "refused": "Resend a refusé l'e-mail :",
+        "unreachable": "Resend ne répond pas :",
+        "error": "Erreur inattendue pendant l'envoi."
+      },
+      "errors": {
+        "FORBIDDEN": "Réservé aux admins.",
+        "INVALID": "Adresse e-mail invalide.",
+        "RATE_LIMITED": "Trop d'essais : 5 e-mails de test par heure."
+      }
     },
     "general": {
       "title": "Général",

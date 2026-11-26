@@ -19,24 +19,24 @@ beforeEach(() => {
 
 describe("liens envoyés par e-mail", () => {
   it("annule les anciens liens seulement après un envoi réussi, jamais le nouveau", async () => {
-    m.sendMail.mockResolvedValue(true);
-    expect(await sendVerificationEmail("u1", "a@b.c", "fr")).toBe(true);
+    m.sendMail.mockResolvedValue({ ok: true });
+    expect(await sendVerificationEmail("u1", "a@b.c", "fr")).toEqual({ ok: true });
     expect(m.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { userId: "u1", type: "VERIFY_EMAIL", usedAt: null, id: { not: "new-token" } } }),
     );
   });
 
   it("un envoi raté laisse valide le lien précédent", async () => {
-    m.sendMail.mockResolvedValue(false);
-    expect(await sendPasswordResetEmail("u1", "a@b.c", "fr")).toBe(false);
+    m.sendMail.mockResolvedValue({ ok: false, reason: "refused", detail: "validation_error" });
+    expect(await sendPasswordResetEmail("u1", "a@b.c", "fr")).toEqual({ ok: false, reason: "refused", detail: "validation_error" });
     expect(m.updateMany).not.toHaveBeenCalled();
   });
 
   it("ne lève jamais, même si la base ou l'envoi lèvent", async () => {
     m.create.mockRejectedValue(new Error("base indisponible"));
-    await expect(sendVerificationEmail("u1", "a@b.c", "fr")).resolves.toBe(false);
+    await expect(sendVerificationEmail("u1", "a@b.c", "fr")).resolves.toEqual({ ok: false, reason: "error" });
     m.create.mockResolvedValue({ id: "t" });
     m.sendMail.mockRejectedValue(new Error("inattendu"));
-    await expect(sendPasswordResetEmail("u1", "a@b.c", "en")).resolves.toBe(false);
+    await expect(sendPasswordResetEmail("u1", "a@b.c", "en")).resolves.toEqual({ ok: false, reason: "error" });
   });
 });

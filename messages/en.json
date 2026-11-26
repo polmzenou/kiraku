@@ -298,7 +298,8 @@
       "tokenInvalid": "This link is no longer valid. Request a new one.",
       "unexpected": "Something went wrong. Please try again.",
       "tooFast": "Sent too quickly: wait a moment and try again.",
-      "formExpired": "The form expired: reload the page and try again."
+      "formExpired": "The form expired: reload the page and try again.",
+      "mailFailed": "The email couldn't be sent. Try again in a few minutes."
     },
     "fieldErrors": {
       "required": "Required.",
@@ -3632,6 +3633,37 @@
       "reasonHint": "Internal: only shown in the admin log.",
       "message": "Message to the player (optional)",
       "messagePlaceholder": "E.g. event reward. Shown with the notification."
+    },
+    "mail": {
+      "title": "Emails",
+      "intro": "Address verification and password reset links, sent through Resend. The sender must be on a domain verified with Resend (DKIM, SPF).",
+      "state": "Status",
+      "states": {
+        "on": "Configured",
+        "test": "Test sender",
+        "off": "Not configured"
+      },
+      "sender": "Sending domain",
+      "none": "none",
+      "offHelp": "RESEND_API_KEY or MAIL_FROM is missing from the server's .env: no email goes out. On the VPS, the keys go in ~/kiraku/.env (not .env.local, which isn't copied into the release), then redeploy.",
+      "testHelp": "MAIL_FROM uses the @resend.dev test address: Resend only delivers to the Resend account owner and refuses every player. Verify kiraku-kun.com with Resend, then set MAIL_FROM=\"Kiraku <noreply@kiraku-kun.com>\".",
+      "testTo": "Send a test email to",
+      "send": "Send a test email",
+      "sending": "Sending…",
+      "sent": "Email sent. Check the inbox (and the spam folder).",
+      "testSubject": "Kiraku: test email",
+      "testBody": "Hi {name},\n\nThis test email confirms that Kiraku can send emails (address verification, password reset).\n\nThe Kiraku team",
+      "reasons": {
+        "disabled": "Sending isn't configured on this server (RESEND_API_KEY or MAIL_FROM missing).",
+        "refused": "Resend refused the email:",
+        "unreachable": "Resend isn't responding:",
+        "error": "Unexpected error while sending."
+      },
+      "errors": {
+        "FORBIDDEN": "Admins only.",
+        "INVALID": "Invalid email address.",
+        "RATE_LIMITED": "Too many tries: 5 test emails per hour."
+      }
     },
     "general": {
       "title": "General",
