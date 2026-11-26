@@ -5,7 +5,7 @@ import { battleCtx } from "@/server/battle/queries";
 import { publishBattle } from "@/server/battle/realtime";
 import { rollSeasonWith } from "@/server/ranked/ranked-core";
 
-// Balayage quotidien du combat (vercel.json, plan Hobby) : filet de sécurité derrière le balayage
+// Balayage du combat (deploy/crontab.example) : filet de sécurité derrière le balayage
 // paresseux (page de la partie, sondage de la cloche). Termine les parties oubliées, ferme les salles
 // périmées, libère les places de file abandonnées ; toutes les cartes engagées reviennent en collection.
 // Clôt aussi la saison du classé quand elle est terminée.
@@ -18,17 +18,25 @@ export async function GET(request: Request) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
   const started = Date.now();
-  const result = { expired: 0, roomsClosed: 0, queueCleared: 0, seasonClosed: null as number | null };
-  // Fin de saison du classé (idempotente ; aussi faite à l'affichage de /combat)
-  const ctx0 = await battleCtx();
-  const season = await rollSeasonWith(prisma, ctx0.now, ctx0.ranked, ctx0.timeZone);
-  result.seasonClosed = season.closed?.number ?? null;
+  const result = { expired: 0, roomsClosed: 0, queueCleared: 0, failed: 0, seasonClosed: null as number | null, seasonError: false };
+  // Fin de saison du classé (idempotente ; aussi faite à l'affichage de /combat). Une clôture en erreur n'empêche pas
+  // le balayage des parties
+  try {
+    const ctx0 = await battleCtx();
+    const season = await rollSeasonWith(prisma, ctx0.now, ctx0.ranked, ctx0.timeZone);
+    result.seasonClosed = season.closed?.number ?? null;
+  } catch (e) {
+    console.error("[cron combat] clôture de saison", e);
+    result.seasonError = true;
+  }
   for (;;) {
     const batch = await sweepStaleWith(prisma, await battleCtx(), { limit: 100 });
     await Promise.all(batch.expired.map(publishBattle));
     result.expired += batch.expired.length;
     result.roomsClosed += batch.roomsClosed;
     result.queueCleared += batch.queueCleared;
+    result.failed += batch.failed;
+    // Les échecs ne relancent pas une passe : les mêmes parties en erreur reviendraient en tête du lot suivant
     const n = batch.expired.length + batch.roomsClosed + batch.queueCleared;
     if (n < 100 || Date.now() - started > 45_000) break;
   }

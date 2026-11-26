@@ -13,7 +13,7 @@ const db = vi.hoisted(() => ({
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("../db", () => ({ prisma: db }));
-vi.mock("../env", () => ({ ablyEnabled: false, env: {}, appUrl: () => "https://kiraku.example" }));
+vi.mock("../env", () => ({ ablyEnabled: false, isProduction: false, env: {}, appUrl: () => "https://kiraku.example" }));
 
 const { botFighters, fightersOf } = await import("./battle-core");
 const { getCandidates } = await import("./queries");

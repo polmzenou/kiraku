@@ -10,7 +10,8 @@
 
 # Marché : ventes terminées réglées, avis et annonces échus clos, toutes les 5 minutes (route bornée à 45 s).
 */5 * * * * curl -fsS -m 55 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/market >/dev/null
-15 4 * * * curl -fsS -m 120 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/battle   >/dev/null
+# Combat : parties oubliées terminées, salles et places de file libérées, saison close, toutes les 5 minutes.
+*/5 * * * * curl -fsS -m 55 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/battle >/dev/null
 30 4 * * * curl -fsS -m 120 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/accounts >/dev/null
 45 4 * * * curl -fsS -m 120 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/casino   >/dev/null
 

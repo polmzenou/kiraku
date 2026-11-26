@@ -426,6 +426,12 @@ export async function playActionWith(
     if (side === null) throw new BattleError("NOT_PARTICIPANT");
     if (b.status !== "ACTIVE") throw new BattleError("CLOSED");
     if (b.version !== input.version) throw new BattleError("STALE");
+    // Tour échu depuis plus que la marge de latence : l'échéance s'applique d'abord (fin de tour forcée, tour manqué
+    // compté) et l'action n'est pas jouée ; sinon une action hors délai repartait avec une échéance neuve
+    if (b.turnEndsAt && b.turnEndsAt.getTime() <= ctx.now.getTime() - LATE_ACTION_GRACE_MS) {
+      const expired = await expireInTx(tx, b, ctx, false);
+      if (expired) return expired;
+    }
     const setup = setupOf(b);
     const p: Progress = { state: stateOf(b), events: [], actions: [] };
     try {
@@ -582,6 +588,14 @@ export async function joinQueueWith(
   }, TX);
 }
 
+/** Marge accordée à une action arrivée juste après l'échéance du tour (latence du réseau). */
+const LATE_ACTION_GRACE_MS = 2_000;
+
+/** La file de ce joueur est-elle fermée (combat coupé, ou classé coupé pour une place classée) ? */
+function queueClosed(row: { mode: string }, ctx: Ctx): boolean {
+  return !ctx.rules.enabled || (row.mode === "RANKED" && !ctx.ranked.enabled);
+}
+
 /** Sondage de la file : « je suis toujours là » + nouvel essai d'appariement. */
 export async function pollQueueWith(db: PrismaClient, input: { userId: string }, ctx: Ctx): Promise<QueueStatus> {
   return db.$transaction(async (tx) => {
@@ -589,6 +603,12 @@ export async function pollQueueWith(db: PrismaClient, input: { userId: string },
     if (!row) {
       const battleId = await currentBattleId(tx, input.userId);
       return battleId ? { state: "MATCHED", battleId, update: null } : { state: "NONE" };
+    }
+    // Combat ou classé coupé par l'équipe pendant l'attente : la place est rendue, plus d'appariement ni de bot
+    if (queueClosed(row, ctx)) {
+      await tx.battleQueue.delete({ where: { userId: input.userId } });
+      await releaseTeam(tx, input.userId, row.team);
+      return { state: "NONE" };
     }
     await tx.battleQueue.update({ where: { userId: input.userId }, data: { seenAt: ctx.now } });
     const matched = await matchInTx(tx, row, ctx);
@@ -618,6 +638,7 @@ export async function startBotBattleWith(db: PrismaClient, input: { userId: stri
   return db.$transaction(async (tx) => {
     const row = await lockOwnQueue(tx, input.userId);
     if (!row) throw new BattleError("NOT_QUEUED");
+    if (queueClosed(row, ctx)) throw new BattleError("DISABLED");
     if (!input.skipWait && row.joinedAt.getTime() + ctx.rules.queueSeconds * 1_000 > ctx.now.getTime()) throw new BattleError("TOO_EARLY");
     // Dernière chance : un vrai joueur est peut-être arrivé entre-temps
     const matched = await matchInTx(tx, row, ctx);
@@ -749,7 +770,8 @@ async function cancelInTx(tx: Tx, b: LockedBattle, ctx: Ctx) {
 
 // --- Balayage (cloche, page de la partie, cron quotidien) ---
 
-export type SweepResult = { expired: BattleUpdate[]; roomsClosed: number; queueCleared: number };
+/** `failed` : parties, salles ou places en erreur (journalisées), sautées pour ne pas bloquer le reste du balayage. */
+export type SweepResult = { expired: BattleUpdate[]; roomsClosed: number; queueCleared: number; failed: number };
 
 /**
  * Termine les tours expirés, ferme les salles périmées et vide les places de file abandonnées.
@@ -758,7 +780,17 @@ export type SweepResult = { expired: BattleUpdate[]; roomsClosed: number; queueC
 export async function sweepStaleWith(db: PrismaClient, ctx: Ctx, opts: { userId?: string; limit?: number } = {}): Promise<SweepResult> {
   const limit = opts.limit ?? 50;
   const mine = opts.userId ? { OR: [{ p1Id: opts.userId }, { p2Id: opts.userId }] } : {};
-  const result: SweepResult = { expired: [], roomsClosed: 0, queueCleared: 0 };
+  const result: SweepResult = { expired: [], roomsClosed: 0, queueCleared: 0, failed: 0 };
+  // Une transaction en erreur (interblocage, délai, état incohérent) est journalisée et sautée : elle ne doit pas
+  // arrêter tout le lot, ni bloquer chaque passage en restant en tête de la liste
+  const safely = async (what: string, id: string, run: () => Promise<void>) => {
+    try {
+      await run();
+    } catch (e) {
+      result.failed += 1;
+      console.error(`[combat] balayage : ${what} ${id}`, e);
+    }
+  };
 
   const due = await db.battle.findMany({
     where: { status: "ACTIVE", turnEndsAt: { lte: ctx.now }, ...mine },
@@ -767,11 +799,13 @@ export async function sweepStaleWith(db: PrismaClient, ctx: Ctx, opts: { userId?
     take: limit,
   });
   for (const { id } of due) {
-    const u = await db.$transaction(async (tx) => {
-      const b = await lockBattle(tx, { id });
-      return b ? expireInTx(tx, b, ctx, true) : null;
-    }, TX);
-    if (u) result.expired.push(u);
+    await safely("partie", id, async () => {
+      const u = await db.$transaction(async (tx) => {
+        const b = await lockBattle(tx, { id });
+        return b ? expireInTx(tx, b, ctx, true) : null;
+      }, TX);
+      if (u) result.expired.push(u);
+    });
   }
 
   const rooms = await db.battle.findMany({
@@ -780,13 +814,13 @@ export async function sweepStaleWith(db: PrismaClient, ctx: Ctx, opts: { userId?
     take: limit,
   });
   for (const { id } of rooms) {
-    await db.$transaction(async (tx) => {
+    await safely("salle", id, () => db.$transaction(async (tx) => {
       const b = await lockBattle(tx, { id });
       if (b?.status === "WAITING" && b.codeExpiresAt && b.codeExpiresAt <= ctx.now) {
         await cancelInTx(tx, b, ctx);
         result.roomsClosed += 1;
       }
-    }, TX);
+    }, TX));
   }
 
   const stale = new Date(ctx.now.getTime() - 4 * QUEUE_STALE_SECONDS * 1_000);
@@ -796,7 +830,7 @@ export async function sweepStaleWith(db: PrismaClient, ctx: Ctx, opts: { userId?
     take: limit,
   });
   for (const { userId } of gone) {
-    await db.$transaction(async (tx) => {
+    await safely("place de file", userId, () => db.$transaction(async (tx) => {
       const [row] = await tx.$queryRaw<QueueRow[]>`
         SELECT "userId", mode::text AS mode, "rankPoints", team, "joinedAt"
         FROM "BattleQueue" WHERE "userId" = ${userId} AND "seenAt" <= ${stale} FOR UPDATE SKIP LOCKED`;
@@ -804,7 +838,7 @@ export async function sweepStaleWith(db: PrismaClient, ctx: Ctx, opts: { userId?
       await tx.battleQueue.delete({ where: { userId } });
       await releaseTeam(tx, userId, row.team);
       result.queueCleared += 1;
-    }, TX);
+    }, TX));
   }
   return result;
 }
