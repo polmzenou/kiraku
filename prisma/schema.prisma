@@ -2424,6 +2424,7 @@ model Expedition {
   outcome       ExpeditionOutcome?
   roll          Int? // tirage de 0 à 9 999, fait à la clôture
   rewardCardIds String[]           @default([]) // cartes versées par le lot bonus (révélation)
+  lotGrant      Json? // lot bonus versé à la clôture : { zeni, boosters: [{ boosterTypeId, count }] } (rapport, journal)
   settledAt     DateTime?
   revealedAt    DateTime? // résultat vu par le joueur
   abandonedAt   DateTime?

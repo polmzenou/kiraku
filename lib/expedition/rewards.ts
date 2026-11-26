@@ -39,8 +39,3 @@ export function rewardsByOutcome(
     FAILURE: { zeni: Math.floor((type.zeni * rules.failRewardPct) / 100), boosters: 0, extraLot: false },
   };
 }
-
-/** Rien à verser ? (versements à 0 ignorés : le grand livre refuse un montant nul.) */
-export function isEmptyReward(reward: RewardBundle): boolean {
-  return reward.zeni <= 0 && reward.boosters <= 0 && !reward.extraLot;
-}

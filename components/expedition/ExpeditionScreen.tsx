@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { useClock, useFormatCountdown } from "@/components/boosters/useBoosterClock";
+import { useClock, useDeadlinePassed, useFormatCountdown } from "@/components/boosters/useBoosterClock";
 import { useReducedFx } from "@/components/motion/MotionPreference";
 import type { ExpeditionPageView, OfferView } from "@/lib/expedition/view";
 import { markExpeditionRevealedAction } from "@/server/actions/expedition";
@@ -20,38 +20,74 @@ import "./expedition.css";
 const LaunchSequence = dynamic(() => import("./LaunchSequence").then((mod) => mod.LaunchSequence), { ssr: false });
 const ResultReveal = dynamic(() => import("./ResultReveal").then((mod) => mod.ResultReveal), { ssr: false });
 
+/** « Nouvelles routes dans … » : seul ce texte suit l'horloge, pas tout l'écran. */
+function ResetCountdown({ nextResetAt, serverNow }: { nextResetAt: number; serverNow: number }) {
+  const t = useTranslations("expedition.board");
+  const formatCountdown = useFormatCountdown();
+  const now = useClock(serverNow);
+  return <span className="text-xs tabular-nums text-text-muted">{t("resetIn", { time: formatCountdown(Math.max(0, nextResetAt - now)) })}</span>;
+}
+
+/** Repos après un abandon : une bougie qui se consume sur toute la durée de l'attente, et le temps qui reste. */
+function RestPanel({ from, until, fallbackHours, serverNow }: { from: number | null; until: number; fallbackHours: number; serverNow: number }) {
+  const t = useTranslations("expedition.rest");
+  const formatCountdown = useFormatCountdown();
+  const now = useClock(serverNow);
+  const left = Math.max(0, until - now);
+  // Durée réelle de cette attente (le réglage a pu changer depuis l'abandon), bougie jamais plus haute que neuve
+  const total = from !== null && until > from ? until - from : fallbackHours * 3_600_000;
+  const height = Math.min(1, Math.max(0.08, left / Math.max(1, total)));
+  return (
+    <section className="flex items-center gap-4 lacquer rounded-card p-4">
+      <span aria-hidden="true" className="relative flex h-16 w-6 shrink-0 items-end justify-center">
+        <span className="exp-flicker absolute -top-1 h-4 w-2.5 rounded-full bg-kin shadow-[0_0_12px_rgb(217_181_86/0.8)]" />
+        <span className="block h-12 w-4 origin-bottom rounded-sm bg-washi-paper/80 transition-transform duration-1000" style={{ transform: `scaleY(${height})` }} />
+      </span>
+      <div className="flex flex-col gap-1">
+        <h2 className="font-title text-lg font-extrabold">{t("title")}</h2>
+        {/* Minuteur : pas d'annonce à chaque seconde par les lecteurs d'écran */}
+        <p role="timer" className="text-sm tabular-nums text-text-muted">
+          {t("body", { time: formatCountdown(left) })}
+        </p>
+      </div>
+    </section>
+  );
+}
+
 /**
  * Page des expéditions : rapport à ouvrir, expédition en route (rouleau peint) ou repos après un abandon,
  * puis les trois laissez-passer du jour et le journal. Le client n'envoie que l'offre et l'équipe choisies ;
- * tout le reste vient du serveur.
+ * tout le reste vient du serveur. L'écran ne suit pas l'horloge : seuls les comptes à rebours (ResetCountdown,
+ * RestPanel, rouleau) se rendent chaque seconde, l'écran une fois à chaque échéance.
  */
 export function ExpeditionScreen({ view }: { view: ExpeditionPageView }) {
   const t = useTranslations("expedition");
   const format = useFormatter();
-  const formatCountdown = useFormatCountdown();
   const reduced = useReducedFx();
   const router = useRouter();
   const serverNow = Date.parse(view.serverNow);
-  const now = useClock(serverNow);
   const [choosing, setChoosing] = useState<OfferView | null>(null);
   const [launching, setLaunching] = useState<LaunchedTeam | null>(null);
   const [revealing, setRevealing] = useState(false);
 
   const cooldownEnd = view.cooldownUntil ? Date.parse(view.cooldownUntil) : null;
-  const resting = cooldownEnd !== null && cooldownEnd > now && !view.active;
-  const blockedReason = !view.canLaunch ? ("PREVIEW_OFF" as const) : view.active ? ("ACTIVE" as const) : resting ? ("COOLDOWN" as const) : null;
-  const resetIn = Math.max(0, Date.parse(view.nextResetAt) - now);
+  const restOver = useDeadlinePassed(cooldownEnd, serverNow);
+  const resting = cooldownEnd !== null && !restOver && !view.active;
+  const blockedReason = view.active ? ("ACTIVE" as const) : resting ? ("COOLDOWN" as const) : null;
+  const nextResetAt = Date.parse(view.nextResetAt);
+  const dayOver = useDeadlinePassed(nextResetAt, serverNow);
 
   // Nouveau jour ou fin du repos : le serveur redonne le plateau
   useEffect(() => {
-    if (resetIn > 0) return;
+    if (!dayOver) return;
     const id = setTimeout(() => router.refresh(), 1200);
     return () => clearTimeout(id);
-  }, [resetIn, router]);
-  const restOver = cooldownEnd !== null && cooldownEnd <= now;
+  }, [dayOver, router]);
   useEffect(() => {
     if (restOver) router.refresh();
   }, [restOver, router]);
+
+  const closeSheet = useCallback(() => setChoosing(null), []);
 
   const onLaunched = useCallback(
     (team: LaunchedTeam) => {
@@ -104,19 +140,12 @@ export function ExpeditionScreen({ view }: { view: ExpeditionPageView }) {
 
         {/* Repos après un abandon : une bougie qui se consume */}
         {resting && cooldownEnd !== null && (
-          <section className="flex items-center gap-4 lacquer rounded-card p-4" aria-live="polite">
-            <span aria-hidden="true" className="relative flex h-16 w-6 shrink-0 items-end justify-center">
-              <span className="exp-flicker absolute -top-1 h-4 w-2.5 rounded-full bg-kin shadow-[0_0_12px_rgb(217_181_86/0.8)]" />
-              <span
-                className="block h-12 w-4 origin-bottom rounded-sm bg-washi-paper/80 transition-transform duration-1000"
-                style={{ transform: `scaleY(${Math.max(0.08, (cooldownEnd - now) / Math.max(1, view.rules.abandonCooldownHours * 3_600_000))})` }}
-              />
-            </span>
-            <div className="flex flex-col gap-1">
-              <h2 className="font-title text-lg font-extrabold">{t("rest.title")}</h2>
-              <p className="text-sm tabular-nums text-text-muted">{t("rest.body", { time: formatCountdown(cooldownEnd - now) })}</p>
-            </div>
-          </section>
+          <RestPanel
+            from={view.cooldownFrom ? Date.parse(view.cooldownFrom) : null}
+            until={cooldownEnd}
+            fallbackHours={view.rules.abandonCooldownHours}
+            serverNow={serverNow}
+          />
         )}
 
         {/* Les routes du jour */}
@@ -125,7 +154,7 @@ export function ExpeditionScreen({ view }: { view: ExpeditionPageView }) {
             <h2 id="exp-board-title" className="font-heading text-xl font-extrabold">
               {t("board.title")}
             </h2>
-            <span className="text-xs tabular-nums text-text-muted">{t("board.resetIn", { time: formatCountdown(resetIn) })}</span>
+            <ResetCountdown nextResetAt={nextResetAt} serverNow={serverNow} />
           </div>
           {blockedReason === "ACTIVE" && <p className="text-sm text-text-muted">{t("board.oneAtATime")}</p>}
           {view.offers.length === 0 ? (
@@ -145,7 +174,11 @@ export function ExpeditionScreen({ view }: { view: ExpeditionPageView }) {
               ))}
             </ul>
           )}
-          <p className="text-xs text-text-muted">{t("board.rules", { hours: view.rules.abandonCooldownHours, discovery: format.number(view.discoveryPct) })}</p>
+          <p className="text-xs text-text-muted">
+            {view.rules.abandonCooldownHours > 0
+              ? t("board.rules", { hours: view.rules.abandonCooldownHours, discovery: format.number(view.discoveryPct) })
+              : t("board.rulesFree", { discovery: format.number(view.discoveryPct) })}
+          </p>
         </section>
 
         {/* Journal */}
@@ -175,9 +208,12 @@ export function ExpeditionScreen({ view }: { view: ExpeditionPageView }) {
                       {t(`history.outcome.${h.outcome}`)} · {format.dateTime(new Date(h.startedAt), { dateStyle: "medium" })}
                     </span>
                   </span>
-                  {h.outcome !== "ABANDONED" && (h.zeni > 0 || h.boosters > 0) && (
-                    <span className="shrink-0 text-right text-xs tabular-nums text-text-muted">
-                      {t("history.gains", { zeni: format.number(h.zeni), boosters: h.boosters })}
+                  {/* Chaque gain seulement s'il y en a : pas de « +0 Zeni » ni de « 0 booster » */}
+                  {h.outcome !== "ABANDONED" && (h.zeni > 0 || h.boosters > 0 || h.cards > 0) && (
+                    <span className="flex shrink-0 flex-col items-end text-xs tabular-nums text-text-muted">
+                      {h.zeni > 0 && <span>{t("history.zeni", { zeni: format.number(h.zeni) })}</span>}
+                      {h.boosters > 0 && <span>{t("history.boosters", { count: h.boosters })}</span>}
+                      {h.cards > 0 && <span>{t("history.cards", { count: h.cards })}</span>}
                     </span>
                   )}
                 </li>
@@ -194,7 +230,7 @@ export function ExpeditionScreen({ view }: { view: ExpeditionPageView }) {
           dayKey={view.dayKey}
           cardBonus={view.rules.cardBonus}
           suggestionCards={view.suggestionCards}
-          onClose={() => setChoosing(null)}
+          onClose={closeSheet}
           onLaunched={onLaunched}
         />
       )}

@@ -45,9 +45,7 @@ export type TeamMemberView = CardView & { bonus: number };
 
 export type ActiveExpeditionView = {
   id: string;
-  slot: number;
   name: string;
-  lore: string;
   minRarity: string;
   risk: ExpeditionRisk;
   startedAt: string;
@@ -57,6 +55,7 @@ export type ActiveExpeditionView = {
   triumphPct: number;
   rewards: OutcomeRewards;
   boosterName: string;
+  /** Lot bonus tel que recopié au départ (ou relu, pour une photo d'avant la copie). */
   extraLot: ExtraLotView | null;
   team: TeamMemberView[];
 };
@@ -65,13 +64,16 @@ export type ExpeditionResultView = {
   id: string;
   name: string;
   minRarity: string;
-  risk: ExpeditionRisk;
   outcome: ExpeditionOutcome;
   reward: RewardBundle;
   boosterName: string;
   /** Slug du booster versé (lien « Ouvrir mes boosters »). */
   boosterSlug: string | null;
+  /** Zeni et boosters du lot bonus réellement versés (0 sans lot, ou pour une expédition close avant ce relevé). */
+  lotZeni: number;
+  lotBoosters: number;
   team: TeamMemberView[];
+  /** Toutes les cartes du lot bonus. */
   bonusCards: CardView[];
 };
 
@@ -82,8 +84,10 @@ export type HistoryEntryView = {
   /** Issue, ou ABANDONED. */
   outcome: ExpeditionOutcome | "ABANDONED";
   startedAt: string;
+  /** Gains de l'issue et du lot bonus versé. */
   zeni: number;
   boosters: number;
+  cards: number;
 };
 
 export type ExpeditionPageView = {
@@ -95,12 +99,14 @@ export type ExpeditionPageView = {
   dayKey: string;
   nextResetAt: string;
   serverNow: string;
-  rules: { cardBonus: CardBonus; abandonCooldownHours: number; triumphRewardPct: number; failRewardPct: number };
+  rules: { cardBonus: CardBonus; abandonCooldownHours: number };
   discoveryPct: number;
   offers: OfferView[];
   active: ActiveExpeditionView | null;
   /** Dernier résultat pas encore révélé. */
   result: ExpeditionResultView | null;
+  /** Repos après un abandon : début (l'abandon, null s'il n'est pas connu) et fin. */
+  cooldownFrom: string | null;
   cooldownUntil: string | null;
   history: HistoryEntryView[];
   /** Cartes des équipes proposées, par id de Card. */

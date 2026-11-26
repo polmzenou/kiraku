@@ -21,7 +21,7 @@ export function OfferCard({
   index: number;
   discoveryPct: number;
   /** Une expédition est déjà en route, ou le groupe se repose : rien ne se lance. */
-  blockedReason: "ACTIVE" | "COOLDOWN" | "PREVIEW_OFF" | null;
+  blockedReason: "ACTIVE" | "COOLDOWN" | null;
   reduced: boolean;
   onChoose: () => void;
 }) {
@@ -51,11 +51,12 @@ export function OfferCard({
       animate={{ opacity: 1, y: 0, rotate: 0 }}
       transition={reduced ? { duration: 0.2 } : { type: "spring", stiffness: 180, damping: 22, delay: 0.08 * index }}
     >
+      {/* Pas d'aria-label : le nom vient du contenu (rareté exigée, risque, durée, chances, gains et statut, dont la
+          raison d'un laissez-passer grisé), qu'un nom court masquerait aux lecteurs d'écran */}
       <button
         type="button"
         onClick={onChoose}
         disabled={!open}
-        aria-label={t("chooseLabel", { name: offer.name })}
         className={`exp-tegata ${tier.className} group flex w-full items-stretch rounded-card border border-border text-left shadow-raised transition-transform duration-200 enabled:active:scale-[.985] enabled:hover:-translate-y-0.5 motion-reduce:transition-none ${
           open ? "" : "opacity-75"
         }`}

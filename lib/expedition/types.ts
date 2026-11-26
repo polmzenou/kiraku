@@ -14,6 +14,9 @@ export const EXPEDITION_TEAM_SIZE = 3;
 /** Tirage du résultat : entier de 0 à ROLL_SCALE − 1, comparé aux chances en points de base. */
 export const ROLL_SCALE = 10_000;
 
+/** Plafond du réglage expedition.offersPerDay : borne aussi l'emplacement accepté au lancement (0 à 4). */
+export const MAX_OFFERS_PER_DAY = 5;
+
 export type CardBonus = SettingValue<"expedition.cardBonus">;
 
 /** Réglages globaux (GameSetting expedition.*). */
@@ -40,16 +43,3 @@ export type RewardRules = {
   boosters: number;
   extraLotId: string | null;
 };
-
-/** Un modèle d'expédition tel que le lisent le tirage des offres, le lancement et l'admin. */
-export type ExpeditionTypeRules = ChanceRules &
-  RewardRules & {
-    id: string;
-    slug: string;
-    risk: ExpeditionRisk;
-    durationMinutes: number;
-    minDiscoveryPct: number;
-    boosterTypeId: string;
-    weight: number;
-    active: boolean;
-  };

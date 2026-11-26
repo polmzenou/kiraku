@@ -69,7 +69,9 @@ export function ResultReveal({ result, reduced, onClose }: { result: ExpeditionR
   const stamp = STAMP[result.outcome];
   const opened = phase !== "letter";
   const showRewards = phase === "rewards";
-  const bonus = result.bonusCards[0];
+  // Tout ce que le lot bonus a versé : ses cartes (toutes), ses Zeni (ajoutés au total) et ses boosters
+  const bonus = result.bonusCards;
+  const zeni = result.reward.zeni + result.lotZeni;
   const [bonusFront, setBonusFront] = useState(reduced);
   const fanned = Math.min(5, result.reward.boosters);
 
@@ -92,14 +94,15 @@ export function ResultReveal({ result, reduced, onClose }: { result: ExpeditionR
     };
   }, [phase, result.outcome]);
 
+  const hasBonus = bonus.length > 0;
   useEffect(() => {
-    if (!showRewards || !bonus || reduced) return;
+    if (!showRewards || !hasBonus || reduced) return;
     const id = setTimeout(() => {
       setBonusFront(true);
       playSound("flip", 0.5);
     }, 900);
     return () => clearTimeout(id);
-  }, [showRewards, bonus, reduced]);
+  }, [showRewards, hasBonus, reduced]);
 
   const breakSeal = () => {
     if (phase !== "letter") return;
@@ -184,14 +187,14 @@ export function ResultReveal({ result, reduced, onClose }: { result: ExpeditionR
                 {t(`body.${result.outcome}`)}
               </m.p>
               <ul className="flex w-full flex-col gap-2">
-                {result.reward.zeni > 0 && (
+                {zeni > 0 && (
                   <m.li {...item(1)} className="flex items-center justify-between rounded-control bg-washi-paper/10 px-4 py-3">
                     <span className="flex items-center gap-2 text-sm">
                       <ZeniCoin size={20} />
                       {t("zeni")}
                     </span>
                     <span className="font-heading text-2xl tabular-nums text-kin">
-                      +<ZeniCount value={result.reward.zeni} reduced={reduced} />
+                      +<ZeniCount value={zeni} reduced={reduced} />
                     </span>
                   </m.li>
                 )}
@@ -221,14 +224,30 @@ export function ResultReveal({ result, reduced, onClose }: { result: ExpeditionR
                     </span>
                   </m.li>
                 )}
+                {result.lotBoosters > 0 && (
+                  <m.li {...item(2)} className="flex items-center justify-between gap-3 rounded-control bg-washi-paper/10 px-4 py-3 text-sm">
+                    {tReward("bonusBoosters", { count: result.lotBoosters })}
+                  </m.li>
+                )}
               </ul>
 
-              {bonus && (
-                <m.div {...item(3)} className="flex flex-col items-center gap-2">
-                  <span className="text-xs font-bold tracking-wide text-kin uppercase">{t("bonusCard")}</span>
-                  <div className="w-36">
-                    <FlipCard card={{ ...bonus, userCardId: bonus.cardId, isNew: false, featured: false }} phase={bonusFront ? "front" : "charging"} size="md" reduced={reduced} compactFx />
-                  </div>
+              {hasBonus && (
+                <m.div {...item(3)} className="flex w-full flex-col items-center gap-2">
+                  <span className="text-xs font-bold tracking-wide text-kin uppercase">{t("bonusCard", { count: bonus.length })}</span>
+                  {/* Une carte : grande ; plusieurs : petite grille, toutes retournées ensemble */}
+                  <ul className={bonus.length === 1 ? "w-36" : "grid w-full max-w-[16rem] grid-cols-3 gap-2"}>
+                    {bonus.map((card, i) => (
+                      <li key={`${card.cardId}-${i}`}>
+                        <FlipCard
+                          card={{ ...card, userCardId: `${card.cardId}-${i}`, isNew: false, featured: false }}
+                          phase={bonusFront ? "front" : "charging"}
+                          size={bonus.length === 1 ? "md" : "sm"}
+                          reduced={reduced}
+                          compactFx
+                        />
+                      </li>
+                    ))}
+                  </ul>
                 </m.div>
               )}
 

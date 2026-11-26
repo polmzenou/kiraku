@@ -5648,15 +5648,15 @@
       "unavailable": "No longer offered today",
       "locked": "Unlocks at {need}% of the catalog discovered (you're at {have}%)",
       "needCard": "You need a free {rarity} card",
-      "choose": "Build the team",
-      "chooseLabel": "Build the team for {name}"
+      "choose": "Build the team"
     },
     "board": {
       "title": "Today's roads",
       "resetIn": "New roads in {time}",
       "empty": "No roads today. Come back later!",
       "oneAtATime": "One expedition at a time: wait for your party to come back.",
-      "rules": "Each road can be taken once a day. Giving up brings your cards back right away, but your party then rests for {hours} h. Catalog discovered: {discovery}%."
+      "rules": "Each road can be taken once a day. Giving up brings your cards back right away, but your party then rests for {hours} h. Catalog discovered: {discovery}%.",
+      "rulesFree": "Each road can be taken once a day. Giving up brings your cards back right away, with no wait before the next one. Catalog discovered: {discovery}%."
     },
     "team": {
       "title": "Team · {name}",
@@ -5738,7 +5738,7 @@
         "FAILURE": "The road was too rough this time. The party is home safe, with a small consolation."
       },
       "zeni": "Zeni",
-      "bonusCard": "Find",
+      "bonusCard": "{count, plural, one {Find} other {Finds}}",
       "cardsBack": "Your cards are back",
       "openBoosters": "Open my boosters",
       "again": "Back to the roads"
@@ -5755,7 +5755,9 @@
         "FAILURE": "Failure",
         "ABANDONED": "Given up"
       },
-      "gains": "+{zeni} Zeni · {boosters, plural, one {# booster} other {# boosters}}"
+      "zeni": "+{zeni} Zeni",
+      "boosters": "{count, plural, one {+# booster} other {+# boosters}}",
+      "cards": "{count, plural, one {+# card} other {+# cards}}"
     },
     "errors": {
       "NO_SESSION": "Your session expired: reload the page.",

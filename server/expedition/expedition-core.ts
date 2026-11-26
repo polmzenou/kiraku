@@ -8,7 +8,7 @@ import { pickLoanCopy } from "@/lib/social/gifts";
 import { checkTeam, teamChances, toBasisPoints } from "@/lib/expedition/chance";
 import { boardSeed, generateBoard } from "@/lib/expedition/offers";
 import { outcomeFor, rewardsByOutcome, type RewardBundle } from "@/lib/expedition/rewards";
-import { loreOf, parseSnapshot, snapshotSchema, type ExpeditionSnapshot } from "@/lib/expedition/snapshot";
+import { loreOf, parseSnapshotPayout, snapshotSchema, type ExpeditionSnapshot, type LotGrantSummary } from "@/lib/expedition/snapshot";
 import { parseLocalized } from "@/lib/boosters/types";
 import { tierOf } from "@/lib/expedition/tiers";
 import { DEFAULT_EXPEDITIONS, DEFAULT_EXPEDITION_BOOSTER_SLUG } from "@/lib/expedition/catalog";
@@ -17,7 +17,7 @@ import type { Rng } from "@/lib/rng";
 import { writeAdminLog } from "../admin/log";
 import { grantBoosters, MAX_CREDIT_GRANT } from "../economy/credits";
 import { credit } from "../economy/ledger";
-import { grantLot, LotError, type LotDeps } from "../economy/lots";
+import { grantLot, grantLotContent, loadLotPayload, LotError, LotPoolError, type LotDeps } from "../economy/lots";
 import { lockPlayers, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 
@@ -79,6 +79,15 @@ export async function bestFreeTier(db: PrismaClient | Tx, userId: string, defini
   return best;
 }
 
+/** Cartes libres du joueur, distinctes, comptées par rareté (offres jouables sans charger de cartes). */
+export async function freeCardsByRarityWith(db: PrismaClient | Tx, userId: string): Promise<{ rarity: string; cards: number }[]> {
+  return db.$queryRaw<{ rarity: string; cards: number }[]>`
+    SELECT c."rarityKey" AS rarity, COUNT(DISTINCT uc."cardId")::int AS cards
+    FROM "UserCard" uc JOIN "Card" c ON c.id = uc."cardId"
+    WHERE uc."ownerId" = ${userId} AND uc.status = 'COLLECTION'
+    GROUP BY c."rarityKey"`;
+}
+
 /**
  * Offres du jour du joueur : relues si déjà tirées, sinon tirées (graine joueur + jour) et figées.
  * Un catalogue vide ne fige rien : les offres apparaîtront dès que l'admin aura installé des modèles.
@@ -102,8 +111,18 @@ export async function ensureBoardWith(db: PrismaClient, userId: string, ctx: Pic
   return (await db.expeditionBoard.findUnique({ where, select: { typeIds: true } }))?.typeIds ?? typeIds;
 }
 
-/** Part du catalogue publié déjà découverte, en pourcentage (0 à 100, décimales comprises). */
-export async function discoveryPctWith(db: PrismaClient | Tx, userId: string): Promise<number> {
+/**
+ * Part du catalogue publié déjà découverte, en pourcentage (0 à 100, décimales comprises). `publishedTotal` : nombre
+ * de cartes publiées déjà connu (cache du catalogue, affichage de la page) ; sans lui, compté ici (lancement).
+ */
+export async function discoveryPctWith(db: PrismaClient | Tx, userId: string, publishedTotal?: number): Promise<number> {
+  if (publishedTotal !== undefined) {
+    const [row] = await db.$queryRaw<{ found: number }[]>`
+      SELECT COUNT(*)::int AS found FROM "Discovery" d JOIN "Card" c ON c.id = d."cardId"
+      WHERE d."userId" = ${userId} AND c.status = 'PUBLISHED'`;
+    // Cache un instant en retard sur une publication : jamais plus de 100 %
+    return publishedTotal > 0 ? Math.min(100, (100 * (row?.found ?? 0)) / publishedTotal) : 0;
+  }
   const [row] = await db.$queryRaw<{ found: number; total: number }[]>`
     SELECT (SELECT COUNT(*)::int FROM "Discovery" d JOIN "Card" c ON c.id = d."cardId"
             WHERE d."userId" = ${userId} AND c.status = 'PUBLISHED') AS found,
@@ -137,7 +156,10 @@ async function lockCopies(tx: Tx, userId: string, cardIds: readonly string[]): P
   return ids;
 }
 
-/** Rend les exemplaires partis : ce qui manque (retiré entre-temps par l'admin) est signalé, sans bloquer. */
+/**
+ * Rend les exemplaires partis. Aucun autre chemin ne prend un exemplaire EXPEDITION (retrait admin, recyclage, marché
+ * et reprise d'un parrainage ne touchent qu'à COLLECTION) : un manque est une anomalie, signalée sans bloquer.
+ */
 async function releaseCopies(tx: Tx, userId: string, userCardIds: readonly string[], expeditionId: string) {
   if (userCardIds.length === 0) return;
   const back = await tx.userCard.updateMany({
@@ -147,14 +169,19 @@ async function releaseCopies(tx: Tx, userId: string, userCardIds: readonly strin
   if (back.count !== userCardIds.length) console.warn(`[expedition] ${expeditionId} : ${back.count}/${userCardIds.length} cartes rendues`);
 }
 
-/** Attente en cours après un abandon (la plus lointaine), ou null. */
-export async function cooldownUntil(db: PrismaClient | Tx, userId: string, now: Date): Promise<Date | null> {
+/** Attente en cours après un abandon (la plus lointaine) : début (abandon) et fin, ou null. */
+export async function restWindow(db: PrismaClient | Tx, userId: string, now: Date): Promise<{ from: Date | null; until: Date } | null> {
   const row = await db.expedition.findFirst({
     where: { userId, status: "ABANDONED", cooldownUntil: { gt: now } },
     orderBy: { cooldownUntil: "desc" },
-    select: { cooldownUntil: true },
+    select: { abandonedAt: true, cooldownUntil: true },
   });
-  return row?.cooldownUntil ?? null;
+  return row?.cooldownUntil ? { from: row.abandonedAt, until: row.cooldownUntil } : null;
+}
+
+/** Fin de l'attente en cours après un abandon, ou null. */
+export async function cooldownUntil(db: PrismaClient | Tx, userId: string, now: Date): Promise<Date | null> {
+  return (await restWindow(db, userId, now))?.until ?? null;
 }
 
 export async function launchWith(db: PrismaClient, input: LaunchInput, ctx: ExpeditionCtx): Promise<{ id: string; endsAt: Date }> {
@@ -197,6 +224,8 @@ export async function launchWith(db: PrismaClient, input: LaunchInput, ctx: Expe
       if (!chances.qualifies) throw new ExpeditionError("NOT_QUALIFIED");
 
       const userCardIds = await lockCopies(tx, input.userId, input.cardIds);
+      // Lot bonus recopié tel qu'affiché au départ : c'est cette copie qui sera versée, quoi que l'admin en fasse
+      const lot = type.extraLotId ? await loadLotPayload(tx, type.extraLotId) : null;
       // Validée avant écriture : une photo illisible ne verserait rien à la clôture
       const snapshot: ExpeditionSnapshot = snapshotSchema.parse({
         v: 1,
@@ -208,6 +237,7 @@ export async function launchWith(db: PrismaClient, input: LaunchInput, ctx: Expe
         durationMinutes: type.durationMinutes,
         boosterTypeId: type.boosterTypeId,
         extraLotId: type.extraLotId,
+        lot: lot ? { zeni: lot.zeni, items: [...lot.items] } : null,
         rewards: rewardsByOutcome(type, ctx.rules),
         bonuses: chances.breakdown.map((c) => c.bonus),
       });
@@ -252,9 +282,10 @@ async function settleLocked(tx: Tx, id: string, now: Date, deps: SettleDeps): Pr
   if (!exp || exp.status !== "ACTIVE" || exp.endsAt > now) return null;
   const roll = deps.rng(ROLL_SCALE);
   const outcome = outcomeFor(roll, exp.successPct, exp.triumphPct);
-  const snapshot = parseSnapshot(exp.snapshot);
-  if (!snapshot) console.error(`[expedition] ${id} : photo illisible, aucun gain versé`);
-  const reward = snapshot?.rewards[outcome] ?? NOTHING;
+  // Seuls les gains sont exigés : un nom ou une ambiance illisibles n'annulent rien
+  const payout = parseSnapshotPayout(exp.snapshot);
+  if (!payout) console.error(`[expedition] ${id} : gains de la photo illisibles, aucun gain versé`);
+  const reward = payout?.rewards[outcome] ?? NOTHING;
 
   const closed = await tx.expedition.updateMany({
     where: { id, status: "ACTIVE" },
@@ -263,21 +294,31 @@ async function settleLocked(tx: Tx, id: string, now: Date, deps: SettleDeps): Pr
   if (closed.count !== 1) return null;
 
   if (reward.zeni > 0) await credit(tx, { userId: exp.userId, amount: reward.zeni, reason: "EXPEDITION", refId: id, now });
-  if (reward.boosters > 0 && snapshot) {
+  if (reward.boosters > 0 && payout) {
     // Un type de booster supprimé depuis le lancement ne bloque pas la clôture
-    const type = await tx.boosterType.findUnique({ where: { id: snapshot.boosterTypeId }, select: { id: true } });
+    const type = await tx.boosterType.findUnique({ where: { id: payout.boosterTypeId }, select: { id: true } });
     if (type) await grantBoosters(tx, exp.userId, type.id, Math.min(reward.boosters, MAX_CREDIT_GRANT));
-    else console.warn(`[expedition] ${id} : type de booster ${snapshot.boosterTypeId} introuvable`);
+    else console.warn(`[expedition] ${id} : type de booster ${payout.boosterTypeId} introuvable`);
   }
-  if (reward.extraLot && snapshot?.extraLotId) {
+  if (reward.extraLot && payout && (payout.lot || payout.extraLotId)) {
+    const ledger = { reason: "EXPEDITION" as const, refId: id };
     try {
-      const granted = await grantLot(tx, exp.userId, snapshot.extraLotId, { reason: "EXPEDITION", refId: id }, deps.lot, now);
-      if (granted.cards.length > 0) {
-        await tx.expedition.update({ where: { id }, data: { rewardCardIds: granted.cards.map((c) => c.cardId) } });
-      }
+      // Copie prise au lancement ; photo d'avant la copie : le lot tel qu'il est aujourd'hui
+      const granted = payout.lot
+        ? await grantLotContent(tx, exp.userId, payout.lot, ledger, deps.lot, now)
+        : await grantLot(tx, exp.userId, payout.extraLotId!, ledger, deps.lot, now);
+      // Résumé pour le rapport et le journal (Zeni et boosters du lot, cartes tirées)
+      const lotGrant: LotGrantSummary = { zeni: granted.zeni, boosters: granted.boosters.map((b) => ({ boosterTypeId: b.boosterTypeId, count: b.count })) };
+      await tx.expedition.update({
+        where: { id },
+        data: { rewardCardIds: granted.cards.map((c) => c.cardId), lotGrant: lotGrant as unknown as Prisma.InputJsonValue },
+      });
     } catch (e) {
-      if (!(e instanceof LotError)) throw e;
-      console.warn(`[expedition] ${id} : lot bonus ${snapshot.extraLotId} supprimé`);
+      // Rien n'a été écrit dans ces deux cas (levés avant tout versement) : l'expédition rentre sans son lot
+      // plutôt que de rester bloquée en route à chaque nouvel essai
+      if (e instanceof LotError) console.warn(`[expedition] ${id} : lot bonus ${payout.extraLotId} supprimé`);
+      else if (e instanceof LotPoolError) console.error(`[expedition] ${id} : lot bonus non versé, aucune carte à tirer (pool vide)`);
+      else throw e;
     }
   }
   await releaseCopies(tx, exp.userId, exp.userCardIds, id);
@@ -334,6 +375,11 @@ export async function sweepDueWith(db: PrismaClient, now: Date, limit: number, d
     }
   }
   return { due: due.length, settled };
+}
+
+/** Expéditions encore en route alors qu'elles sont rentrées avant `before` : la clôture échoue sur elles (alerte du cron). */
+export async function overdueCountWith(db: PrismaClient, before: Date): Promise<number> {
+  return db.expedition.count({ where: { status: "ACTIVE", endsAt: { lt: before } } });
 }
 
 // --- Abandon, révélation, rappel ---

@@ -1,5 +1,6 @@
 "use server";
 
+import { MAX_OFFERS_PER_DAY } from "@/lib/expedition/types";
 import { z } from "@/lib/zod";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
@@ -22,7 +23,7 @@ const idSchema = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
 const launchSchema = z
   .object({
     dayKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    slot: z.number().int().min(0).max(4),
+    slot: z.number().int().min(0).max(MAX_OFFERS_PER_DAY - 1),
     typeId: idSchema,
     cardIds: z.array(idSchema).length(3),
   })
@@ -43,8 +44,9 @@ export async function launchExpeditionAction(input: unknown): Promise<{ ok: true
   if (!parsed.success) return { ok: false, error: "INVALID" };
   if (!(await rateLimit(`expedition-launch:${user.id}`, { limit: 6, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
   const ctx = await expeditionCtx(user.role === "ADMIN");
-  // L'expédition précédente vient peut-être de rentrer : close d'abord, la relance est alors immédiate
-  await settleExpeditionsFor(user.id, ctx.now);
+  // L'expédition précédente vient peut-être de rentrer : close d'abord, la relance est alors immédiate. Une clôture
+  // en erreur est journalisée : le lancement répond alors ACTIVE au lieu d'une erreur serveur
+  await settleExpeditionsFor(user.id, ctx.now).catch((e) => console.error("[expedition] clôture avant lancement", e));
   try {
     const launched = await launchWith(prisma, { userId: user.id, ...parsed.data }, ctx);
     return { ok: true, id: launched.id, endsAt: launched.endsAt.toISOString() };

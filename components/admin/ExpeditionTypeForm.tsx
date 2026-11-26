@@ -3,6 +3,7 @@
 import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { SLUG_PATTERN } from "@/lib/boosters/types";
 import { useRarities, useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import { expeditionTypeInputSchema, MAX_EXPEDITION_BOOSTERS, MAX_EXPEDITION_MINUTES, MAX_EXPEDITION_ZENI, type ExpeditionTypeInput } from "@/lib/expedition/admin-form";
 import { balanceFor } from "@/lib/expedition/balance";
@@ -103,7 +104,7 @@ export function ExpeditionTypeForm({
           hint={t("fields.slugHint")}
           value={draft.slug}
           maxLength={40}
-          invalid={draft.slug !== "" && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.slug)}
+          invalid={draft.slug !== "" && !SLUG_PATTERN.test(draft.slug)}
           onChange={(slug) => update({ slug: slug.trim().toLowerCase() })}
         />
         <SelectField

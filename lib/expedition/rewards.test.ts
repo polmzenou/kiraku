@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isEmptyReward, outcomeFor, rewardsByOutcome } from "./rewards";
+import { outcomeFor, rewardsByOutcome } from "./rewards";
 
 const rules = { triumphRewardPct: 150, failRewardPct: 25 };
 
@@ -35,8 +35,7 @@ describe("issue d'une expédition", () => {
   it("gère les gains nuls", () => {
     const r = rewardsByOutcome({ zeni: 0, boosters: 3, extraLotId: null }, { triumphRewardPct: 100, failRewardPct: 0 });
     expect(r.FAILURE).toEqual({ zeni: 0, boosters: 0, extraLot: false });
-    expect(isEmptyReward(r.FAILURE)).toBe(true);
-    expect(isEmptyReward(r.SUCCESS)).toBe(false);
+    expect(r.SUCCESS).toEqual({ zeni: 0, boosters: 3, extraLot: false });
     expect(r.TRIUMPH).toEqual(r.SUCCESS);
   });
 });

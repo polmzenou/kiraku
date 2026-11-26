@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { EMAKI_FRAME, EMAKI_IMAGE, sampleTrail, TRAIL, TRAIL_PATH, TRAIL_POINTS, TRAIL_STATIONS, trailPointAt, walkedPath } from "./trail";
+import { EMAKI_IMAGE, sampleTrail, TRAIL, TRAIL_PATH, TRAIL_POINTS, TRAIL_STATIONS, trailPointAt, walkedPath } from "./trail";
+
+/** Rouleau de ExpeditionEmaki : hauteur fixe (h-56) et largeur maximale (conteneur de 1 200 px moins ses marges). */
+const EMAKI_FRAME = { height: 224, maxWidth: 1168 } as const;
 
 describe("tracé du rouleau d'expédition", () => {
   it("part du premier point et arrive au dernier", () => {

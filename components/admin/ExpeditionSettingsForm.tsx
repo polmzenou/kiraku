@@ -4,19 +4,12 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { CardBonus } from "@/lib/expedition/types";
 import { EXPEDITION_SETTING_KEYS, expeditionSettingsSchema, type ExpeditionSettings } from "@/lib/settings/expedition-form";
-import { changedSettingKeys } from "@/lib/settings/form";
+import { changedSettingKeys, numberBounds } from "@/lib/settings/form";
 import { updateExpeditionSettings } from "@/server/actions/admin-settings";
 import { NumberField, Toggle } from "./fields";
 import { SettingsSaveBar } from "./SettingsSaveBar";
 
 type NumberKey = "expedition.offersPerDay" | "expedition.abandonCooldownHours" | "expedition.triumphRewardPct" | "expedition.failRewardPct";
-
-const LIMITS: Record<NumberKey, [number, number]> = {
-  "expedition.offersPerDay": [1, 5],
-  "expedition.abandonCooldownHours": [0, 72],
-  "expedition.triumphRewardPct": [100, 500],
-  "expedition.failRewardPct": [0, 100],
-};
 
 const BONUS_KEYS = ["below2", "below1", "same", "above1", "above2", "above3"] as const satisfies readonly (keyof CardBonus)[];
 
@@ -32,17 +25,21 @@ export function ExpeditionSettingsForm({ initial }: { initial: ExpeditionSetting
   const label = (k: keyof ExpeditionSettings) => t(`keys.${short(k)}`);
   const bonus = draft["expedition.cardBonus"];
 
-  const num = (key: NumberKey) => (
-    <NumberField
-      key={key}
-      label={label(key)}
-      hint={t(`hints.${short(key)}`)}
-      value={draft[key]}
-      min={LIMITS[key][0]}
-      max={LIMITS[key][1]}
-      onChange={(v) => setDraft((d) => ({ ...d, [key]: v }))}
-    />
-  );
+  const num = (key: NumberKey) => {
+    // Bornes lues dans le schéma du réglage (defaults.ts), jamais recopiées
+    const [min, max] = numberBounds(key);
+    return (
+      <NumberField
+        key={key}
+        label={label(key)}
+        hint={t(`hints.${short(key)}`)}
+        value={draft[key]}
+        min={min}
+        max={max}
+        onChange={(v) => setDraft((d) => ({ ...d, [key]: v }))}
+      />
+    );
+  };
 
   return (
     <form className="flex max-w-2xl flex-col gap-6" onSubmit={(e) => e.preventDefault()}>

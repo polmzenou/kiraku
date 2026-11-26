@@ -12,6 +12,7 @@ import { NEWS_DEFAULT, newsSchema } from "@/lib/home/news-schema";
 import { alertThresholdsSchema, DEFAULT_ALERT_THRESHOLDS } from "@/lib/usage/quota";
 import { KYARA_PROFILE_INPUT_MAX, parseKyaraProfileUrl } from "@/lib/kyara/profile-url";
 import { ACHIEVEMENTS, achievementByKey } from "@/lib/achievements/catalog";
+import { MAX_OFFERS_PER_DAY } from "@/lib/expedition/types";
 
 // Seuils de rareté en points de base (300 = top 3 %), du plus rare au plus courant
 const rarityThresholds = z
@@ -311,7 +312,7 @@ export const SETTING_SCHEMAS = {
   // Offres par jour et par joueur, attente après un abandon, bonus de chance de chaque carte selon son écart
   // de palier avec la rareté exigée, gains du triomphe et consolation d'un échec (en % des gains de réussite)
   "expedition.enabled": z.boolean(),
-  "expedition.offersPerDay": z.number().int().min(1).max(5),
+  "expedition.offersPerDay": z.number().int().min(1).max(MAX_OFFERS_PER_DAY),
   "expedition.abandonCooldownHours": z.number().int().min(0).max(72),
   "expedition.cardBonus": expeditionCardBonus,
   "expedition.triumphRewardPct": z.number().int().min(100).max(500),

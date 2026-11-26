@@ -414,14 +414,15 @@ export async function getAchievementStatsWith(db: Db, userId: string, needed: Re
     );
   }
 
-  // 旅 Expéditions
+  // 旅 Expéditions. Le risque est celui du départ, lu dans la photo (lib/expedition/snapshot.ts) : reclasser un
+  // modèle ensuite ne change pas les compteurs déjà acquis
   if (want("EXPEDITIONS", "TRIUMPHS", "RISKY_SUCCESS")) {
     tasks.push(
       db.$queryRaw<Record<string, number>[]>`
         SELECT count(*)::int AS done,
           count(*) FILTER (WHERE e.outcome = 'TRIUMPH')::int AS triumphs,
-          count(*) FILTER (WHERE t.risk = 'RISKY' AND e.outcome IN ('SUCCESS', 'TRIUMPH'))::int AS risky
-        FROM "Expedition" e JOIN "ExpeditionType" t ON t.id = e."typeId"
+          count(*) FILTER (WHERE e.snapshot->>'risk' = 'RISKY' AND e.outcome IN ('SUCCESS', 'TRIUMPH'))::int AS risky
+        FROM "Expedition" e
         WHERE e."userId" = ${userId} AND e.status = 'COMPLETED'`.then(([r]) => {
         set("EXPEDITIONS", r?.done);
         set("TRIUMPHS", r?.triumphs);

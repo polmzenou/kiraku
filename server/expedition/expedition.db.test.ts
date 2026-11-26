@@ -13,7 +13,10 @@ import {
   ExpeditionError,
   launchWith,
   markRevealedWith,
+  overdueCountWith,
+  recallWith,
   settleExpeditionWith,
+  sweepDueWith,
   type ExpeditionCtx,
   type SettleDeps,
 } from "./expedition-core";
@@ -33,6 +36,7 @@ describe.skipIf(!url)("expéditions (base réelle)", () => {
   const cards = Array.from({ length: 6 }, (_, i) => `test-card-${tag}-${i}`);
   const users: string[] = [];
   const typeIds: string[] = [];
+  const lots: string[] = [];
   let boosterTypeId = "";
 
   const rules = {
@@ -77,6 +81,48 @@ describe.skipIf(!url)("expéditions (base réelle)", () => {
   }
 
   const team = (...idx: number[]) => idx.map((i) => cards[i]);
+
+  /** Périlleuse d'une minute (Mythique exigée, 100 Zeni) dont le lot bonus verse 50 Zeni et une Mythique au hasard. */
+  async function lotType() {
+    const lot = await prisma.lot.create({
+      data: { name: { fr: `Lot ${tag}`, en: "" }, zeni: 50, items: { create: [{ kind: "RARITY_CARD", rarity: "MYTHIC", quantity: 1 }] } },
+      select: { id: true },
+    });
+    lots.push(lot.id);
+    const type = await prisma.expeditionType.create({
+      data: {
+        slug: `test-lot-${tag}-${lots.length}`,
+        name: { fr: "Lot", en: "" },
+        lore: {},
+        minRarity: "MYTHIC",
+        risk: "RISKY",
+        durationMinutes: 1,
+        baseSuccessPct: 0,
+        maxSuccessPct: 80,
+        maxTriumphPct: 10,
+        zeni: 100,
+        boosterTypeId,
+        boosters: 0,
+        extraLotId: lot.id,
+        weight: 0,
+        active: true,
+      },
+      select: { id: true },
+    });
+    typeIds.push(type.id);
+    return { lotId: lot.id, typeId: type.id, slot: typeIds.length - 1 };
+  }
+
+  /** Tirage 0 (réussite) ; les cartes « par rareté » des lots sortent de `pool`. */
+  const lotDeps = (pool: Record<string, string[]>): SettleDeps => ({ rng: () => 0, lot: { rng: () => 0, loadPool: async () => pool } });
+
+  /** Réécrit la photo d'une expédition (photo corrompue, gains hors bornes). */
+  async function patchSnapshot(id: string, patch: (snap: Record<string, unknown>) => void) {
+    const row = await prisma.expedition.findUniqueOrThrow({ where: { id }, select: { snapshot: true } });
+    const snap = structuredClone(row.snapshot) as Record<string, unknown>;
+    patch(snap);
+    await prisma.expedition.update({ where: { id }, data: { snapshot: snap as never } });
+  }
 
   beforeAll(async () => {
     await prisma.series.create({ data: { id: seriesId, type: "ANIME", titleRomaji: "Expéditions" } });
@@ -132,9 +178,11 @@ describe.skipIf(!url)("expéditions (base réelle)", () => {
       prisma.expedition.deleteMany({ where }),
       prisma.expeditionBoard.deleteMany({ where }),
       prisma.showcase.deleteMany({ where }),
+      prisma.adminLog.deleteMany({ where: { adminId: { in: users } } }),
       prisma.userCard.deleteMany({ where: { ownerId: { in: users } } }),
       prisma.user.deleteMany({ where: { id: { in: users } } }),
       prisma.expeditionType.deleteMany({ where: { id: { in: typeIds } } }),
+      prisma.lot.deleteMany({ where: { id: { in: lots } } }),
       prisma.boosterType.deleteMany({ where: { id: boosterTypeId } }),
       prisma.card.deleteMany({ where: { id: { in: cards } } }),
       prisma.series.deleteMany({ where: { id: seriesId } }),
@@ -247,6 +295,88 @@ describe.skipIf(!url)("expéditions (base réelle)", () => {
     expect((await prisma.expedition.findUniqueOrThrow({ where: { id } })).outcome).toBe("FAILURE");
     expect((await prisma.user.findUniqueOrThrow({ where: { id: a } })).coins).toBe(500);
     expect(await prisma.boosterCredit.count({ where: { userId: a } })).toBe(0);
+  }, 60_000);
+
+  it("lot bonus : la copie prise au départ est versée même si l'admin vide le lot, et résumée pour le rapport", async () => {
+    const a = await player();
+    for (const c of team(0, 3, 4)) await give(a, c);
+    const { lotId, typeId, slot } = await lotType();
+    await board(a);
+    const { id } = await launchWith(prisma, { userId: a, dayKey: DAY, slot, typeId, cardIds: team(0, 3, 4) }, ctx(new Date(Date.now() - 120_000)));
+    await prisma.lot.update({ where: { id: lotId }, data: { zeni: 0, items: { deleteMany: {} } } });
+    // 1 Mythique : 10 % ; tirage 0 → réussite (Zeni du modèle et lot)
+    const settled = await settleExpeditionWith(prisma, id, new Date(), lotDeps({ MYTHIC: [cards[2]] }));
+    expect(settled?.outcome).toBe("SUCCESS");
+    const row = await prisma.expedition.findUniqueOrThrow({ where: { id } });
+    expect(row.rewardCardIds).toEqual([cards[2]]);
+    expect(row.lotGrant).toEqual({ zeni: 50, boosters: [] });
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: a } })).coins).toBe(150);
+    expect(await prisma.userCard.count({ where: { ownerId: a, cardId: cards[2] } })).toBe(1);
+  }, 60_000);
+
+  it("pool vide : l'expédition rentre sans son lot au lieu de rester bloquée", async () => {
+    const a = await player();
+    for (const c of team(0, 3, 4)) await give(a, c);
+    const { typeId, slot } = await lotType();
+    await board(a);
+    const { id } = await launchWith(prisma, { userId: a, dayKey: DAY, slot, typeId, cardIds: team(0, 3, 4) }, ctx(new Date(Date.now() - 120_000)));
+    expect((await settleExpeditionWith(prisma, id, new Date(), lotDeps({ MYTHIC: [] })))?.outcome).toBe("SUCCESS");
+    expect(await prisma.expedition.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: "COMPLETED", rewardCardIds: [], lotGrant: null });
+    // Zeni du modèle seulement, cartes rendues
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: a } })).coins).toBe(100);
+    expect(await prisma.userCard.count({ where: { ownerId: a, status: "EXPEDITION" } })).toBe(0);
+  }, 60_000);
+
+  it("photo au nom illisible : la clôture verse quand même les gains", async () => {
+    const a = await player();
+    for (const c of team(0, 3, 4)) await give(a, c);
+    await board(a);
+    const { id } = await launchWith(prisma, { userId: a, dayKey: DAY, slot: 2, typeId: typeIds[2], cardIds: team(0, 3, 4) }, ctx(new Date(Date.now() - 120_000)));
+    await patchSnapshot(id, (snap) => {
+      snap.name = 42;
+      snap.lore = null;
+    });
+    expect((await settleExpeditionWith(prisma, id, new Date(), deps(1, 0)))?.outcome).toBe("SUCCESS");
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: a } })).coins).toBe(2000);
+    expect((await prisma.boosterCredit.findUniqueOrThrow({ where: { userId_boosterTypeId: { userId: a, boosterTypeId } } })).count).toBe(8);
+  }, 60_000);
+
+  it("abandon et clôture simultanés à l'arrivée : une seule issue, gains versés une fois", async () => {
+    const a = await player();
+    for (const c of team(0, 3, 4)) await give(a, c);
+    await board(a);
+    const { id } = await launchWith(prisma, { userId: a, dayKey: DAY, slot: 2, typeId: typeIds[2], cardIds: team(0, 3, 4) }, ctx(new Date(Date.now() - 120_000)));
+    const now = new Date();
+    await Promise.allSettled([abandonWith(prisma, { userId: a, expeditionId: id }, ctx(now), deps(1, 0)), settleExpeditionWith(prisma, id, now, deps(1, 0))]);
+    expect((await prisma.expedition.findUniqueOrThrow({ where: { id } })).status).toBe("COMPLETED");
+    expect(await prisma.coinTransaction.count({ where: { userId: a, refId: id } })).toBe(1);
+    expect(await prisma.userCard.count({ where: { ownerId: a, status: "EXPEDITION" } })).toBe(0);
+  }, 60_000);
+
+  it("balayage : une clôture en échec n'arrête pas les autres, reste comptée, puis le rappel admin la débloque", async () => {
+    const [a, b] = [await player(), await player()];
+    for (const u of [a, b]) {
+      for (const c of team(0, 3, 4)) await give(u, c);
+      await board(u);
+    }
+    const start = new Date(Date.now() - 120_000);
+    const bad = await launchWith(prisma, { userId: a, dayKey: DAY, slot: 2, typeId: typeIds[2], cardIds: team(0, 3, 4) }, ctx(start));
+    const good = await launchWith(prisma, { userId: b, dayKey: DAY, slot: 2, typeId: typeIds[2], cardIds: team(0, 3, 4) }, ctx(start));
+    // Gains au-delà de ce qu'accepte le grand livre : la clôture de `bad` échoue à chaque essai
+    await patchSnapshot(bad.id, (snap) => {
+      for (const r of Object.values(snap.rewards as Record<string, { zeni: number }>)) r.zeni = 1e15;
+    });
+    const now = new Date();
+    expect((await sweepDueWith(prisma, now, 100, deps(1, 0))).settled).toBeGreaterThanOrEqual(1);
+    expect((await prisma.expedition.findUniqueOrThrow({ where: { id: bad.id } })).status).toBe("ACTIVE");
+    expect((await prisma.expedition.findUniqueOrThrow({ where: { id: good.id } })).status).toBe("COMPLETED");
+    expect(await overdueCountWith(prisma, now)).toBeGreaterThanOrEqual(1);
+    // Rappel : cartes rendues, sans gain ni attente, journal admin
+    await recallWith(prisma, { adminId: b, expeditionId: bad.id, now });
+    expect(await prisma.expedition.findUniqueOrThrow({ where: { id: bad.id } })).toMatchObject({ status: "ABANDONED", cooldownUntil: null });
+    expect(await prisma.userCard.count({ where: { ownerId: a, status: "EXPEDITION" } })).toBe(0);
+    expect(await prisma.coinTransaction.count({ where: { userId: a } })).toBe(0);
+    expect(await prisma.adminLog.count({ where: { action: "EXPEDITION_RECALL", targetId: bad.id } })).toBe(1);
   }, 60_000);
 
   it("fige le plateau du jour à la première lecture", async () => {

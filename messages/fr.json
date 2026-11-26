@@ -5648,15 +5648,15 @@
       "unavailable": "Plus proposée aujourd'hui",
       "locked": "Débloquée à {need} % du catalogue découvert (tu es à {have} %)",
       "needCard": "Il te faut une carte {rarity} libre",
-      "choose": "Préparer l'équipe",
-      "chooseLabel": "Préparer l'équipe pour {name}"
+      "choose": "Préparer l'équipe"
     },
     "board": {
       "title": "Les routes du jour",
       "resetIn": "Nouvelles routes dans {time}",
       "empty": "Aucune route aujourd'hui. Reviens plus tard !",
       "oneAtATime": "Une seule expédition à la fois : attends le retour de ton groupe.",
-      "rules": "Chaque route se fait une fois par jour. Abandonner rend tes cartes tout de suite, mais impose {hours} h de repos. Catalogue découvert : {discovery} %."
+      "rules": "Chaque route se fait une fois par jour. Abandonner rend tes cartes tout de suite, mais impose {hours} h de repos. Catalogue découvert : {discovery} %.",
+      "rulesFree": "Chaque route se fait une fois par jour. Abandonner rend tes cartes tout de suite, sans attente avant la suivante. Catalogue découvert : {discovery} %."
     },
     "team": {
       "title": "Équipe · {name}",
@@ -5738,7 +5738,7 @@
         "FAILURE": "La route a été trop rude cette fois. Le groupe rentre sain et sauf, avec un petit dédommagement."
       },
       "zeni": "Zeni",
-      "bonusCard": "Trouvaille",
+      "bonusCard": "{count, plural, one {Trouvaille} other {Trouvailles}}",
       "cardsBack": "Tes cartes sont de retour",
       "openBoosters": "Ouvrir mes boosters",
       "again": "Retour aux routes"
@@ -5755,7 +5755,9 @@
         "FAILURE": "Échec",
         "ABANDONED": "Abandonnée"
       },
-      "gains": "+{zeni} Zeni · {boosters, plural, one {# booster} other {# boosters}}"
+      "zeni": "+{zeni} Zeni",
+      "boosters": "{count, plural, one {+# booster} other {+# boosters}}",
+      "cards": "{count, plural, one {+# carte} other {+# cartes}}"
     },
     "errors": {
       "NO_SESSION": "Ta session a expiré : recharge la page.",

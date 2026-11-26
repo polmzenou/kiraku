@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "slug": "gorges-de-l-oni-rouge",
+  "name": { "fr": "Gorges de l'Oni rouge", "en": "Red Oni Gorge" },
+  "lore": { "fr": "Un oni garde le pont de cordes. Il n'aime pas les visiteurs.", "en": "An oni guards the rope bridge. It dislikes visitors." },
+  "minRarity": "EPIC",
+  "risk": "RISKY",
+  "durationMinutes": 240,
+  "boosterTypeId": "cmhb0standard00000000000",
+  "extraLotId": "cmhb0lotmythic0000000000",
+  "rewards": {
+    "SUCCESS": { "zeni": 800, "boosters": 4, "extraLot": true },
+    "TRIUMPH": { "zeni": 1200, "boosters": 6, "extraLot": true },
+    "FAILURE": { "zeni": 200, "boosters": 0, "extraLot": false }
+  },
+  "bonuses": [10, 2, 0]
+}

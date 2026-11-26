@@ -66,10 +66,11 @@ export function TeamSheet({
 
   const toggle = (card: CardView) => {
     setError(null);
+    // Son joué ici, d'après l'équipe affichée : la mise à jour d'état reste pure (React peut la rejouer)
+    if (!reduced && !selected.has(card.cardId) && team.length < EXPEDITION_TEAM_SIZE) playSound("flip", 0.4);
     setTeam((current) => {
       if (current.some((c) => c.cardId === card.cardId)) return current.filter((c) => c.cardId !== card.cardId);
       if (current.length >= EXPEDITION_TEAM_SIZE) return current;
-      if (!reduced) playSound("flip", 0.4);
       return [...current, card];
     });
   };

@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useEffect, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { countdownParts } from "@/lib/time";
 
 // Horloge partagée à la seconde : premier rendu à l'heure du serveur (pas d'écart d'hydratation),
@@ -34,6 +34,42 @@ export function useClock(serverNow: number) {
     skew ??= serverNow - Date.now();
   }, [serverNow]);
   return useSyncExternalStore(subscribe, secondNow, () => serverNow);
+}
+
+/** Délai maximal d'un setTimeout (environ 24 jours) : au-delà, il partirait tout de suite. */
+const MAX_TIMEOUT = 2 ** 31 - 1;
+
+/**
+ * Vrai une fois `deadline` atteinte sur la même horloge que useClock (seconde entière, heure du serveur), sans
+ * s'abonner au tic : un composant qui ne fait qu'attendre une échéance ne se rend qu'une fois, à l'échéance.
+ */
+export function useDeadlinePassed(deadline: number | null, serverNow: number): boolean {
+  useEffect(() => {
+    skew ??= serverNow - Date.now();
+  }, [serverNow]);
+  const subscribeDeadline = useCallback(
+    (notify: () => void) => {
+      if (deadline === null) return () => {};
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      // Réarmée tant que l'échéance n'est pas passée (minuterie plafonnée, réveil un peu en avance)
+      const arm = () => {
+        const left = Math.ceil(deadline / 1000) * 1000 - (Date.now() + (skew ?? 0));
+        if (left <= 0) return notify();
+        timer = setTimeout(() => {
+          notify();
+          arm();
+        }, Math.min(left + 20, MAX_TIMEOUT));
+      };
+      arm();
+      return () => clearTimeout(timer);
+    },
+    [deadline],
+  );
+  return useSyncExternalStore(
+    subscribeDeadline,
+    () => deadline !== null && secondNow() >= deadline,
+    () => deadline !== null && serverNow >= deadline,
+  );
 }
 
 // Échéances déjà rafraîchies, pour toute la page : plusieurs comptes à rebours sur le même `nextAt`

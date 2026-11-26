@@ -6,9 +6,6 @@
 
 export const EMAKI_IMAGE = { width: 2048, height: 768 } as const;
 
-/** Rouleau : hauteur fixe (h-56) et largeur maximale (conteneur de 1 200 px moins ses marges). */
-export const EMAKI_FRAME = { height: 224, maxWidth: 1168 } as const;
-
 /**
  * Points relevés sur l'image : [x, y, profondeur]. Profondeur 1 = premier plan ; plus elle est
  * petite, plus le point est loin (la lanterne et les relais y rapetissent, et y avancent moins vite).

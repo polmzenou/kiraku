@@ -4,7 +4,7 @@ import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
 import { expeditionTypeInputSchema } from "./admin-form";
 import { balanceFor } from "./balance";
 import { DEFAULT_EXPEDITIONS } from "./catalog";
-import { parseSnapshot } from "./snapshot";
+import { parseSnapshotPayout, readSnapshot, snapshotSchema } from "./snapshot";
 import { rewardsByOutcome } from "./rewards";
 import { headroom } from "./tiers";
 
@@ -73,7 +73,7 @@ describe("catalogue par défaut", () => {
     expect(estimate.minimal.zeni).toBe(700);
   });
 
-  it("relit une photo valide et rejette le reste", () => {
+  it("les modèles par défaut donnent une photo valide, relue telle quelle", () => {
     const d = DEFAULT_EXPEDITIONS[0];
     const snap = {
       v: 1,
@@ -88,9 +88,9 @@ describe("catalogue par défaut", () => {
       rewards: rewardsByOutcome({ zeni: d.zeni, boosters: d.boosters, extraLotId: null }, rules),
       bonuses: [10, 0, 0],
     };
-    expect(parseSnapshot(snap)).toEqual(snap);
-    expect(parseSnapshot({ ...snap, v: 2 })).toBeNull();
-    expect(parseSnapshot(null)).toBeNull();
+    expect(snapshotSchema.safeParse(snap).success).toBe(true);
+    expect(readSnapshot(snap)).toEqual(snap);
+    expect(parseSnapshotPayout(snap)?.rewards).toEqual(snap.rewards);
   });
 });
 

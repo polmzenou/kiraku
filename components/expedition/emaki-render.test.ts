@@ -17,9 +17,7 @@ const reward = { zeni: 100, boosters: 1, extraLot: false };
 
 const active: ActiveExpeditionView = {
   id: "exp",
-  slot: 0,
   name: "Sentier des lucioles",
-  lore: "",
   minRarity: "EPIC",
   risk: "SAFE",
   startedAt: new Date(START).toISOString(),

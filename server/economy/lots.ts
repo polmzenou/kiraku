@@ -6,7 +6,7 @@ import type { CoinReason, Prisma } from "@/generated/prisma/client";
 import { guardState, pickCard, type CardPool, type DuplicateGuard, type GuardState } from "@/lib/boosters/draw";
 import type { Rng } from "@/lib/boosters/rng";
 import type { Rarity } from "@/lib/catalog/rarity";
-import { parseLotItemRow } from "@/lib/economy/lots";
+import { parseLotItemRow, type LotItemInput } from "@/lib/economy/lots";
 import { grantBoosters } from "./credits";
 import { credit } from "./ledger";
 import { consumeWishlist } from "../collection/wishlist-core";
@@ -42,6 +42,29 @@ export class LotError extends Error {
   }
 }
 
+/**
+ * Cartes « par rareté » à tirer dans un pool vide (booster standard absent ou sans carte publiée) : levée avant
+ * toute écriture, la transaction de l'appelant reste utilisable (une expédition peut alors rentrer sans son lot).
+ */
+export class LotPoolError extends Error {
+  constructor() {
+    super("EMPTY_POOL");
+  }
+}
+
+/** Contenu d'un lot à verser : relu en base (grantLot) ou recopié plus tôt (photo d'une expédition). */
+export type LotPayload = { zeni: number; items: readonly LotItemInput[] };
+
+/** Lot tel qu'en base, null s'il n'existe plus. Une ligne incohérente (type ou carte supprimés) est écartée. */
+export async function loadLotPayload(tx: Tx, lotId: string): Promise<LotPayload | null> {
+  const lot = await tx.lot.findUnique({
+    where: { id: lotId },
+    select: { zeni: true, items: { select: { kind: true, boosterTypeId: true, cardId: true, rarity: true, quantity: true } } },
+  });
+  if (!lot) return null;
+  return { zeni: lot.zeni, items: lot.items.flatMap((row) => parseLotItemRow(row) ?? []) };
+}
+
 export async function grantLot(
   tx: Tx,
   userId: string,
@@ -50,11 +73,26 @@ export async function grantLot(
   deps: LotDeps,
   now: Date = new Date(),
 ): Promise<LotGrant> {
-  const lot = await tx.lot.findUnique({
-    where: { id: lotId },
-    select: { zeni: true, items: { select: { kind: true, boosterTypeId: true, cardId: true, rarity: true, quantity: true } } },
-  });
+  const lot = await loadLotPayload(tx, lotId);
   if (!lot) throw new LotError("NO_LOT");
+  return grantLotContent(tx, userId, lot, ledger, deps, now);
+}
+
+/** Verse un contenu de lot déjà lu (grantLot, ou la copie prise au lancement d'une expédition). */
+export async function grantLotContent(
+  tx: Tx,
+  userId: string,
+  lot: LotPayload,
+  ledger: { reason: CoinReason; refId: string },
+  deps: LotDeps,
+  now: Date = new Date(),
+): Promise<LotGrant> {
+  // Pool vérifié avant le premier versement : sans aucune carte à tirer, rien n'est écrit (LotPoolError)
+  let pool: CardPool | null = null;
+  if (lot.items.some((item) => item.kind === "RARITY_CARD")) {
+    pool = await deps.loadPool();
+    if (Object.values(pool).every((ids) => ids.length === 0)) throw new LotPoolError();
+  }
 
   const grant: LotGrant = { zeni: 0, boosters: [], sealedIds: [], cards: [], coins: null };
   if (lot.zeni > 0) {
@@ -62,14 +100,10 @@ export async function grantLot(
     grant.zeni = lot.zeni;
   }
 
-  let pool: CardPool | null = null;
   // Préparé au premier tirage « par rareté » : exemplaires du joueur et cartes déjà versées par ce lot
   let guard: GuardState | null | undefined;
   const drawn: { cardId: string; rarity: Rarity }[] = [];
-  for (const row of lot.items) {
-    // Une ligne incohérente (type ou carte supprimés) est ignorée plutôt que de bloquer le versement
-    const item = parseLotItemRow(row);
-    if (!item) continue;
+  for (const item of lot.items) {
     if (item.kind === "BOOSTER") {
       const type = await tx.boosterType.findUnique({ where: { id: item.boosterTypeId }, select: { kind: true } });
       if (!type) continue;
