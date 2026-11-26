@@ -1346,6 +1346,9 @@ model Referral {
   grandReferrer     User?               @relation("grandReferrer", fields: [grandReferrerId], references: [id], onDelete: SetNull)
   // Édition de l'Ennichi pendant laquelle le filleul est arrivé (bonus, lanternes, banzuke, omikuji)
   ennichiEdition    Int?
+  // Multiplicateur des étapes 1 et 2 figé au rattachement (ennichi.stepMultiplier en vigueur), null hors fête : un
+  // réglage changé ensuite ne touche plus les amis déjà arrivés (CHECK dans la migration)
+  ennichiMultiplier Int?                @db.SmallInt
   rewards           ReferralReward[]
   fingerprints      RefereeFingerprint[]
 
@@ -1465,11 +1468,12 @@ enum EnnichiAwardKind {
 }
 
 /// Une édition de l'Ennichi : graine engagée au lancement (seule son empreinte est publiée), contrôle de fin de fête,
-/// tirage (liste des tickets et cagnotte figées, graine révélée). Une ligne par édition.
+/// tirage (liste des tickets, cagnotte et rangs figés, graine révélée). Une ligne par édition.
 model EnnichiDraw {
   edition     Int       @id
   seedHash    String    @db.Char(64)
-  seed        String    @db.Char(64) // secrète jusqu'au tirage : jamais lue par une page avant drawnAt
+  seed        String?   @db.Char(64) // en clair une fois le tirage fait (hexadécimal) ; dès l'engagement pour les éditions d'avant seedNonce
+  seedNonce   String?   @db.Char(64) // nonce tiré à l'engagement : graine = HMAC(clé dérivée d'AUTH_SECRET, nonce), jamais en base avant le tirage (CHECK)
   committedAt DateTime  @default(now())
   checkedAt   DateTime? // « Contrôler » : scores recalculés, file « À vérifier » remplie
   checkedById String?
@@ -1477,7 +1481,8 @@ model EnnichiDraw {
   drawnById   String? // null : cron de secours
   ticketsHash String?   @db.Char(64)
   tickets     Json? // libellés des tickets figés à la clôture (« n · pseudo »)
-  prizes      Json? // cagnotte dépliée et figée : [{ lotId, oneOfOne }]
+  prizes      Json? // cagnotte dépliée et figée : [{ lotId, oneOfOne, line }]
+  ranks       Json? // rangs du banzuke figés au tirage (ennichi.ranks) : les résultats ne suivent plus les réglages
 }
 
 /// Palier de lanternes atteint : figé (lot et bons du moment), avec l'avancement de son envoi à tous les éligibles.

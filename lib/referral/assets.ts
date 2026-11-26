@@ -26,7 +26,7 @@ export const REFERRAL_IMAGES = {
   "ennichi-rue/washi/telephone": { src: "/images/referral/ennichi-rue-washi-telephone-v1.webp", width: 1080, height: 720 },
   "ennichi-rue/yoru/ordinateur": { src: "/images/referral/ennichi-rue-yoru-ordinateur-v1.webp", width: 2400, height: 700 },
   "ennichi-rue/yoru/telephone": { src: "/images/referral/ennichi-rue-yoru-telephone-v1.webp", width: 1080, height: 720 },
-  "hanabi": { src: "/images/referral/hanabi-v1.webp", width: 1080, height: 1080 },
+  "hanabi": { src: "/images/referral/hanabi-v2.webp", width: 560, height: 560 },
   "hanko11": { src: "/images/referral/hanko11-v1.webp", width: 256, height: 256 },
   "hero/washi/ordinateur": { src: "/images/referral/hero-washi-ordinateur-v1.webp", width: 2400, height: 600 },
   "hero/washi/telephone": { src: "/images/referral/hero-washi-telephone-v1.webp", width: 1080, height: 720 },

@@ -1,13 +1,11 @@
 import { getFormatter, getTranslations } from "next-intl/server";
-import type { EnnichiTitle } from "@/lib/ennichi/rules";
+import { rankBand, type EnnichiTitle } from "@/lib/ennichi/rules";
 import type { BanzukeRow, BanzukeView, EnnichiView, RankView } from "@/server/ennichi/queries";
 import { LotGifts } from "../referral/LotGifts";
 import { PlayerAvatar } from "../social/PlayerAvatar";
 import { bgOf, DohyoRing, Hanabi, Lantern, Tsuna, themedBg } from "./parts";
 
 export const TITLE_KANJI: Record<EnnichiTitle, string> = { yokozuna: "横綱", ozeki: "大関", sekiwake: "関脇" };
-
-const bandOf = (rank: number, ranks: readonly RankView[]) => ranks.find((b) => rank >= b.from && rank <= b.to) ?? null;
 
 /** Ce qu'une ligne de lots donne : le lot, les bons, la carte 1/1 (le titre est dit à part). */
 export async function RankPrize({ band, compact = true }: { band: RankView; compact?: boolean }) {
@@ -57,7 +55,7 @@ export async function BanzukePoster({ view, bz }: { view: EnnichiView; bz: Banzu
       </div>
     );
   });
-  const out = bz.me && !bandOf(bz.me.rank, view.ranks);
+  const out = bz.me && !rankBand(bz.me.rank, view.ranks);
   return (
     <div className="bzk" style={bgOf("banzuke-papier", "cover", "50% 0%")}>
       <div className="bzk-head">
@@ -119,7 +117,7 @@ export async function DohyoStage({ view, top }: { view: EnnichiView; top: (Banzu
       <div className="m3-nobs" aria-hidden="true">
         {col.map((r, i) => {
           const rank = [2, 1, 3][i];
-          const title = bandOf(rank, view.ranks)?.title ?? null;
+          const title = rankBand(rank, view.ranks)?.title ?? null;
           const name = r?.name ?? "";
           const room = pos[i] === "c" ? 118 : 90;
           const fs = Math.max(9, Math.min(pos[i] === "c" ? 18 : 15, Math.floor(room / Math.max(1, [...name].length))));

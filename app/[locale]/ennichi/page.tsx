@@ -3,7 +3,10 @@ import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { countdownTarget, streetLit } from "@/components/ennichi/EnnichiBanner";
 import { Countdown } from "@/components/ennichi/Countdown";
 import { EnnichiHelp } from "@/components/ennichi/Help";
-import { Seal, Street } from "@/components/ennichi/parts";
+import { EnnichiNotStarted } from "@/components/ennichi/NotStarted";
+import { Street } from "@/components/ennichi/parts";
+import { Seal } from "@/components/ennichi/Seal";
+import "@/components/ennichi/ennichi-base.css";
 import "@/components/ennichi/ennichi.css";
 import { PageShell } from "@/components/PageShell";
 import { LotGifts } from "@/components/referral/LotGifts";
@@ -68,7 +71,7 @@ async function MyFeteCard({ view, mine, rank }: { view: EnnichiView; mine: MyFet
       <div className="mine">
         <Box n={format.number(mine.arrived)} label={t("arrived", { count: mine.arrived })} />
         <Box n={format.number(mine.installed)} label={t("installed", { count: mine.installed })} className="text-hisui" />
-        <Box n={format.number(mine.installed)} label={t("tickets", { count: mine.installed })} />
+        <Box n={format.number(mine.tickets)} label={t("tickets", { count: mine.tickets })} />
       </div>
       {mine.received && (
         <div className="m3-won">
@@ -89,24 +92,15 @@ async function MyFeteCard({ view, mine, rank }: { view: EnnichiView; mine: MyFet
 export default async function EnnichiPage() {
   const [t, format, locale, user] = await Promise.all([getTranslations("ennichi"), getFormatter(), getLocale(), getCurrentUser()]);
   const view = await ennichiView(locale);
-  if (view.phase === "off" || view.phase === "before") {
-    return (
-      <PageShell>
-        <section className="flex flex-col gap-3 lacquer rounded-card p-4">
-          <div className="flex items-center gap-3">
-            <Seal kanji="祭" />
-            <h1 className="font-heading text-2xl">{t("title")}</h1>
-          </div>
-          <p>{view.phase === "before" && view.startsAt ? t("page.startsOn", { date: format.dateTime(new Date(view.startsAt), { day: "numeric", month: "long", hour: "numeric", minute: "2-digit" }) }) : t("page.off")}</p>
-        </section>
-      </PageShell>
-    );
-  }
+  if (view.phase === "off" || view.phase === "before") return <EnnichiNotStarted view={view} />;
   const member = user && !user.isGuest ? user : null;
   const [mine, bz] = await Promise.all([member ? myFete(member.id, view) : null, member ? banzukeView(view, member.id) : null]);
   const live = view.phase === "live";
   const target = countdownTarget(view);
   const dateHour = (iso: string | null) => (iso ? format.dateTime(new Date(iso), { day: "numeric", month: "long", hour: "numeric", minute: "2-digit" }) : "");
+  // Clôture : jours qui restent aux amis de la fête pour s'installer (0 une fois la date de clôture passée)
+  const now = new Date();
+  const closingLeft = view.closesAt ? Math.max(0, Math.ceil((new Date(view.closesAt).getTime() - now.getTime()) / 86_400_000)) : 0;
 
   const tile = (kanji: string, href: "/ennichi/lanternes" | "/ennichi/banzuke" | "/ennichi/omikuji", name: string, say: string, topic: "lanternes" | "banzuke" | "omikuji") => (
     <div className="tile lacquer rounded-card">
@@ -151,13 +145,13 @@ export default async function EnnichiPage() {
           <section className="m3-a-cd flex flex-col gap-2 lacquer rounded-card p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-[11px] font-bold tracking-wide text-text-muted uppercase">{t(`phase.${view.phase}`)}</span>
-              {target && view.phase !== "closed" && <Countdown target={target} serverNow={new Date().toISOString()} />}
+              {target && view.phase !== "closed" && <Countdown target={target} serverNow={now.toISOString()} />}
             </div>
             <p className="text-xs text-text-muted">
               {view.phase === "closed"
                 ? t("page.closedSub", { date: dateHour(view.drawnAt) })
                 : view.phase === "closing"
-                  ? t("page.closingSub", { days: view.closingDays, date: dateHour(view.closesAt) })
+                  ? t("page.closingSub", { days: closingLeft, date: dateHour(view.closesAt) })
                   : t("page.liveSub", { end: dateHour(view.endsAt), days: view.closingDays })}
             </p>
           </section>

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  arrivesDuringFete,
   ennichiPhase,
   ennichiSchedule,
   lastPaidRank,
@@ -8,6 +7,7 @@ import {
   rankBand,
   rankRecruiters,
   streetLampsLit,
+  tierKanji,
   tierProgress,
   tiersReachedBy,
 } from "./rules";
@@ -36,11 +36,6 @@ describe("calendrier et phase de l'Ennichi", () => {
     expect(ennichiPhase({ ...rules, startsAt: null }, at(1), null)).toBe("off");
   });
 
-  it("seul un ami arrivé pendant la fête compte", () => {
-    expect(arrivesDuringFete(rules, at(2), null)).toBe(true);
-    expect(arrivesDuringFete(rules, at(15), null)).toBe(false);
-    expect(arrivesDuringFete(rules, at(-0.5), null)).toBe(false);
-  });
 });
 
 describe("lanternes", () => {
@@ -51,6 +46,8 @@ describe("lanternes", () => {
     // Un palier déjà atteint reste atteint, même si des lanternes s'éteignent (parrainage révoqué)
     expect(nextTierIndex(20, tiers, [true])).toBe(1);
     expect(tiersReachedBy(200, tiers)).toEqual([0, 1, 2]);
+    expect(tiersReachedBy(24, tiers)).toEqual([]);
+    expect([0, 3, 4].map(tierKanji)).toEqual(["一", "四", "5"]);
     expect(tierProgress(30, tiers, 1)).toBe(20);
     expect(tierProgress(10, tiers, 0)).toBe(40);
     expect(tierProgress(999, tiers, null)).toBe(100);

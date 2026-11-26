@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { luckOf } from "@/lib/ennichi/omikuji";
+import { useReducedFx } from "../motion/MotionPreference";
 import { Button } from "../ui/Button";
 
 const PAGE_MS = 1400;
@@ -12,13 +13,16 @@ export type ReelDraw = { n: number; line: number; name: string; me: boolean };
 /**
  * Rediffusion du tirage de l'omikuji (maquette « Rouleaux ») : les feuilles se déroulent page par page dans l'ordre du
  * tirage, puis restent les feuilles qui comptent (la grande chance, les lots du joueur, un lot de chaque ligne).
- * Rejouable, passable ; avec le mouvement réduit, le résumé directement (règles de ennichi.css).
+ * Rejouable, passable ; avec le mouvement réduit (système ou réglage du jeu), le résumé directement, sans rediffusion
+ * ni « Passer ».
  */
 export function OmikujiReel({ draws, lotNames, stageStyle }: { draws: ReelDraw[]; lotNames: string[]; /** Fond du sanctuaire (variables de themedBg). */ stageStyle?: CSSProperties }) {
   const t = useTranslations("ennichi.omikuji");
+  const reduced = useReducedFx();
   const [per, setPer] = useState(4);
   const [run, setRun] = useState(0);
-  const [playing, setPlaying] = useState(true);
+  const [started, setPlaying] = useState(true);
+  const playing = started && !reduced;
 
   useEffect(() => {
     const desk = window.matchMedia("(min-width: 768px)");
@@ -106,16 +110,18 @@ export function OmikujiReel({ draws, lotNames, stageStyle }: { draws: ReelDraw[]
       <div className="m3-kuji-ctl">
         <span className="text-xs text-text-muted">{playing ? t("replaying", { count: draws.length }) : t("summary")}</span>
         <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => {
-              setRun((r) => r + 1);
-              setPlaying(true);
-            }}
-          >
-            {t("replay")}
-          </Button>
+          {!reduced && (
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setRun((r) => r + 1);
+                setPlaying(true);
+              }}
+            >
+              {t("replay")}
+            </Button>
+          )}
           {playing && (
             <Button type="button" size="sm" variant="ghost" onClick={() => setPlaying(false)}>
               {t("skip")}

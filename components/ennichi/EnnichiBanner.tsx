@@ -2,13 +2,15 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { streetLampsLit, tierProgress } from "@/lib/ennichi/rules";
 import { prisma } from "@/server/db";
-import { banzukeView, ennichiView, type EnnichiView } from "@/server/ennichi/queries";
+import { ennichiView, myAwards, type EnnichiView } from "@/server/ennichi/queries";
 import { LotGifts } from "../referral/LotGifts";
 import { buttonClasses } from "../ui/Button";
 import { Countdown } from "./Countdown";
 import { EnnichiHelp } from "./Help";
-import { Lantern, Seal, Street, streetHooks } from "./parts";
-import "./ennichi.css";
+import { Lantern, Street, streetHooks } from "./parts";
+import { Seal } from "./Seal";
+// Seulement la petite feuille commune (bannière, explications, titres) : celle des pages de la fête reste sur /ennichi
+import "./ennichi-base.css";
 
 /** Échéance montrée par le compte à rebours : fin de la fête, puis clôture. */
 export const countdownTarget = (view: EnnichiView) => (view.phase === "before" ? view.startsAt : view.phase === "live" ? view.endsAt : view.closesAt);
@@ -39,9 +41,11 @@ export async function EnnichiBanner({ locale, userId }: { locale: string; userId
   );
 
   if (view.phase === "closed") {
-    const bz = userId ? await banzukeView(view, userId) : null;
-    const wins = userId ? await prisma.ennichiAward.count({ where: { edition: view.edition, kind: "OMIKUJI", userId } }) : 0;
-    const band = bz?.me ? view.ranks.find((r) => bz.me!.rank >= r.from && bz.me!.rank <= r.to) : null;
+    // La place du joueur seulement (pas tout le classement), et ses lots de l'omikuji qui n'ont pas été écartés
+    const [result, awards] = userId
+      ? await Promise.all([prisma.ennichiResult.findFirst({ where: { edition: view.edition, userId }, select: { rank: true, title: true } }), myAwards(view.edition, userId)])
+      : [null, []];
+    const wins = awards.filter((a) => a.kind === "OMIKUJI" && a.state !== "SKIPPED").length;
     return (
       <section className="enn">
         <div className="lacquer rounded-card banner m3-b m3-b-end">
@@ -50,7 +54,7 @@ export async function EnnichiBanner({ locale, userId }: { locale: string; userId
             <Lantern kanji="祭" on width={34} />
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <p>
-                {bz?.me ? t("banner.finished", { rank: bz.me.rank, title: band?.title ?? "none" }) : t("banner.thanks")}
+                {result ? t("banner.finished", { rank: result.rank, title: result.title ?? "none" }) : t("banner.thanks")}
                 {wins > 0 && ` ${t("banner.wins", { count: wins })}`}
               </p>
               <p className="text-xs text-text-muted">{t("banner.resultsReady")}</p>

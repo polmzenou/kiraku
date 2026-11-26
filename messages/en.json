@@ -2841,13 +2841,15 @@
             "tiers": "Lantern tiers",
             "ranks": "Banzuke prizes",
             "omikuji": "Omikuji pool",
-            "tierGrantsPerIp": "Accounts served per IP"
+            "tierGrantsPerIp": "Accounts served per IP",
+            "excludeStaff": "Team accounts left out of the banzuke and the omikuji"
           },
           "hints": {
             "startsAt": "In your browser's time. Changing the date during the festival shifts it.",
             "edition": "A new edition starts from scratch (lanterns, banzuke, seed); the previous one keeps its results.",
             "stepMultiplier": "Steps 1 and 2 of a friend who arrives during the festival, on both sides.",
             "tierGrantsPerIp": "Lantern prizes, against multi-accounts.",
+            "excludeStaff": "ADMIN and DEV are neither ranked nor drawn (they keep the lantern gifts). Off: the team plays like everyone else.",
             "tiers": "Four tiers, with strictly increasing thresholds. A reached tier is frozen: changing its prize no longer changes anything for it.",
             "ranks": "Ranks follow each other from 1st: each line starts right after the previous one.",
             "omikuji": "Drawn top to bottom, rarest first; each ticket wins at most one prize. A line without a prize isn't given out."
@@ -8524,7 +8526,7 @@
       "days": "{count, plural, one {day} other {days}}",
       "hours": "h",
       "minutes": "min",
-      "aria": "{days} days, {hours} hours and {minutes} minutes",
+      "aria": "{days, plural, one {# day} other {# days}}, {hours, plural, one {# hour} other {# hours}} and {minutes, plural, one {# minute} other {# minutes}}",
       "done": "Over"
     },
     "help": {
@@ -8544,7 +8546,7 @@
         "title": "The banzuke",
         "l1": "The ranking of the festival's recruiters.",
         "l2": "It counts your friends who arrived during the festival and settled in.",
-        "l3": "From 1st to {last}th, sumo titles and extra gifts, paid automatically at closing."
+        "l3": "From 1st to {last, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, sumo titles and extra gifts, paid automatically at closing."
       },
       "omikuji": {
         "name": "Omikuji",
@@ -8582,7 +8584,7 @@
       "days": "{count, plural, one {# day of festival} other {# days of festival}}",
       "day": "day {n}",
       "closedSub": "Banzuke frozen and omikuji drawn on {date}.",
-      "closingSub": "The festival is over: friends who arrived during it still have {days, plural, one {# day} other {# days}} to settle in. Omikuji draw at closing, on {date}.",
+      "closingSub": "{days, plural, =0 {Closing time has passed: the omikuji draw happens in the next few minutes.} one {The festival is over: friends who arrived during it still have # day to settle in. Omikuji draw at closing, on {date}.} other {The festival is over: friends who arrived during it still have # days to settle in. Omikuji draw at closing, on {date}.}}",
       "liveSub": "Until {end}, then {days, plural, one {# day} other {# days}} of closing before the omikuji draw."
     },
     "parts": {
@@ -8619,7 +8621,6 @@
       "frozen": "Frozen on {date} · {count, plural, one {# ranked recruiter} other {# ranked recruiters}}",
       "closing": "Closing · frozen on {date}",
       "live": "Live · frozen at closing, on {date}",
-      "off": "The festival hasn't started",
       "place": "Your place",
       "ord": "{rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
       "titles": {
@@ -8649,14 +8650,15 @@
       "freePlace": "free spot",
       "oneOfOne": "1 card 1/1 of your choice",
       "vouchers": "{count, plural, one {# Mythic of your choice} other {# Mythics of your choice}}",
-      "bandLabel": "{from, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}{to, select, 1 {} other { to {to}th}}",
+      "bandLabel": "{from, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}{to, select, 1 {} other { to {to, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}}}",
       "paid": "Your gifts have arrived, paid automatically.",
       "paying": "Your gifts are on their way, paid automatically.",
+      "skipped": "Your gifts were not paid: this account can no longer receive them.",
       "chooseCards": "Choose my cards",
       "thanks": "Thank you for celebrating with us",
       "outThisTime": "You finished {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, out of the prizes this time.",
       "notRanked": "You weren't ranked this time.",
-      "titleChip": "{title} · Ennichi {year}",
+      "titleChip": "{title} · Ennichi no. {edition}",
       "titleStays": "The title stays on your profile.",
       "topN": "Top {count}",
       "eachGets": "Each one gets",
@@ -8687,6 +8689,8 @@
       "youWon": "{count, plural, one {You won a prize} other {You won # prizes}}",
       "chooseOneOfOne": "Choose my 1/1 card",
       "paidAlone": "Paid automatically.{left, plural, =0 {} one { Your other ticket drew nothing.} other { Your # other tickets drew nothing.}}",
+      "payingAlone": "Being paid automatically.{left, plural, =0 {} one { Your other ticket drew nothing.} other { Your # other tickets drew nothing.}}",
+      "skippedAlone": "Not paid: this account can no longer receive prizes.",
       "noLuck": "No prize this time",
       "noLuckBody": "{count, plural, one {Your ticket drew nothing.} other {Your # tickets drew nothing.}}",
       "noTicketThen": "You had no ticket",
@@ -8729,6 +8733,11 @@
       "from": "Ennichi banzuke",
       "chip": "{title, select, yokozuna {Yokozuna} ozeki {Ōzeki} other {Sekiwake}} · Ennichi no. {edition}",
       "stays": "The title stays on your profile."
+    },
+    "cosmetic": {
+      "label": "{title} · Ennichi no. {edition}",
+      "hintOne": "Finish {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} in the banzuke of Ennichi no. {edition}.",
+      "hintRange": "Finish between {from, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} and {to, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} in the banzuke of Ennichi no. {edition}."
     }
   },
   "prestige": {

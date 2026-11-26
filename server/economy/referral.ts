@@ -54,8 +54,10 @@ export async function attachReferral(userId: string, code: string): Promise<{ ok
         now: new Date(),
         rules,
         attachWindowDays,
-        // Ennichi : un ami qui arrive pendant la fête porte l'édition (×2, lanterne, banzuke, omikuji), plafond levé si réglé
+        // Ennichi : un ami qui arrive pendant la fête porte l'édition (lanterne, banzuke, omikuji) et le multiplicateur
+        // du moment (×2 des étapes 1 et 2, figé) ; plafond levé si réglé
         ennichiEdition: ennichi.edition,
+        ennichiMultiplier: ennichi.multiplier,
         ennichiLiftCap: ennichi.liftCap,
         fingerprintKey: referralFingerprintKey(),
       });

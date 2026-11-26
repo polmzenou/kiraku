@@ -16,7 +16,7 @@ import { pushLater } from "../market/queries";
 import { previewRevokeWith, ReviewError, revokeReferralWith, validateReferralWith, type ReviewErrorCode } from "../referral/review-core";
 import { getSetting } from "../settings";
 import { checkEnnichiWith, drawEnnichiWith, EnnichiCloseError, payAwardsWith, type EnnichiCloseErrorCode } from "../ennichi/close-core";
-import { ennichiPayDeps, ennichiState } from "../ennichi/deps";
+import { ennichiDrawSecrets, ennichiPayDeps, ennichiState } from "../ennichi/deps";
 import { ENNICHI_TAG } from "../ennichi/tag";
 import { writeAdminLog } from "../admin/log";
 import { publishReferralAnnouncement } from "../discord/referral-announce";
@@ -294,7 +294,7 @@ export async function drawEnnichiAction(
     const now = new Date();
     const state = await ennichiState(now);
     if (state.rules.edition !== parsed.data.edition) return { ok: false, error: "STALE" };
-    const out = await drawEnnichiWith(prisma, { staffId: user.id, rules: state.rules, now });
+    const out = await drawEnnichiWith(prisma, { staffId: user.id, rules: state.rules, now, ...(await ennichiDrawSecrets()) });
     // Les pages de la fête passent tout de suite aux résultats
     updateTag(ENNICHI_TAG);
     const { paid } = await payAwardsWith(prisma, state.rules.edition, { ...ennichiPayDeps(now), deadline: Date.now() + 20_000 });

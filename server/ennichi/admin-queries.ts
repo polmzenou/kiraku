@@ -1,9 +1,10 @@
 import "server-only";
+import { awardState } from "@/lib/ennichi/awards";
 import { rankBand } from "@/lib/ennichi/rules";
 import { prisma } from "../db";
-import { ticketsWith } from "./close-core";
+import { ticketCountWith } from "./close-core";
 import { pendingCountWith } from "./lanterns-core";
-import { banzukeView, freshEnnichiView, type BanzukeRow, type EnnichiView, type RankView } from "./queries";
+import { banzukeView, freshEnnichiView, iso, type BanzukeRow, type EnnichiView, type RankView } from "./queries";
 
 // Suivi de l'Ennichi dans l'admin (étape 18d, maquette « Tableau de bord ») : la vue de la fête relue sans cache, l'envoi
 // de chaque palier atteint, les parrainages de l'édition « À vérifier », le haut du banzuke et l'état du tirage. La
@@ -38,9 +39,6 @@ export type EnnichiAdminView = {
 };
 
 const TOP = 10;
-const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
-const isSkipped = (g: unknown) => !!g && typeof g === "object" && !Array.isArray(g) && "skipped" in g;
-const isEmpty = (g: unknown) => !g || (typeof g === "object" && !Array.isArray(g) && Object.keys(g).length === 0);
 
 export async function ennichiAdminView(locale: string, now = new Date()): Promise<EnnichiAdminView> {
   const view = await freshEnnichiView(locale, now);
@@ -64,15 +62,16 @@ export async function ennichiAdminView(locale: string, now = new Date()): Promis
   const banzuke = { final: bz.final, total: bz.rows.length, top };
 
   if (!row?.drawnAt) {
-    const tickets = (await ticketsWith(prisma, edition, until)).length;
+    const tickets = await ticketCountWith(prisma, edition, until, { excludeStaff: view.excludeStaff });
     return { view, committedAt: iso(row?.committedAt), sending, held, tickets, prizes, banzuke, draw: null };
   }
   const [awards, by] = await Promise.all([
     prisma.ennichiAward.findMany({ where: { edition }, select: { kind: true, granted: true } }),
     row.drawnById ? prisma.user.findUnique({ where: { id: row.drawnById }, select: { username: true } }) : null,
   ]);
-  const skipped = awards.filter((a) => isSkipped(a.granted)).length;
-  const pending = awards.filter((a) => isEmpty(a.granted)).length;
+  const states = awards.map((a) => awardState(a.granted));
+  const skipped = states.filter((s) => s === "SKIPPED").length;
+  const pending = states.filter((s) => s === "PENDING").length;
   return {
     view,
     committedAt: iso(row.committedAt),
@@ -83,7 +82,7 @@ export async function ennichiAdminView(locale: string, now = new Date()): Promis
     banzuke,
     draw: {
       by: by?.username ?? null,
-      seed: row.seed,
+      seed: row.seed ?? "",
       ticketsHash: row.ticketsHash,
       paid: awards.length - skipped - pending,
       skipped,

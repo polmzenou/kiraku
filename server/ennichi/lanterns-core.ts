@@ -6,7 +6,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { ipBanKey } from "@/lib/anticheat/network";
-import type { EnnichiRules, EnnichiSchedule } from "@/lib/ennichi/rules";
+import { tiersReachedBy, type EnnichiRules, type EnnichiSchedule } from "@/lib/ennichi/rules";
 import type { LotDeps } from "../economy/lots";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { grantPrizeInTx } from "./prize";
@@ -29,8 +29,8 @@ export async function lanternCountsWith(db: Db, edition: number, until: Date): P
 /** Fige les paliers que ces lanternes atteignent (une fois chacun) ; renvoie les paliers atteints à l'instant. */
 export async function recordReachedTiersWith(db: Db, rules: Pick<EnnichiRules, "edition" | "tiers">, lit: number, now: Date): Promise<number[]> {
   const reached: number[] = [];
-  for (const [tier, t] of rules.tiers.entries()) {
-    if (lit < t.lanterns) continue;
+  for (const tier of tiersReachedBy(lit, rules.tiers)) {
+    const t = rules.tiers[tier];
     const inserted = await db.$executeRaw`
       INSERT INTO "EnnichiTierReached" (edition, tier, lanterns, "lotId", "choiceVouchers", "reachedAt")
       VALUES (${rules.edition}, ${tier}, ${t.lanterns}, ${t.lotId}, ${t.choiceVouchers}, ${now})

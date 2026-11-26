@@ -3,7 +3,8 @@ import { REFERRAL_IMAGES, type ReferralImage } from "@/lib/referral/assets";
 
 // Briques visuelles de l'Ennichi (maquettes validées, module 3 du prototype) : lanterne chōchin (PV2-LANTERNE), rue des
 // lanternes (PV2-ENNICHI-RUE, une lanterne à chaque crochet de l'image), fonds selon le thème et l'appareil, corde du
-// Yokozuna. Pas de hook : utilisables côté serveur comme côté client. Styles : components/ennichi/ennichi.css (.enn).
+// Yokozuna (le sceau est dans Seal.tsx). Pas de hook : utilisables côté serveur comme côté client. Styles :
+// components/ennichi/ennichi-base.css et ennichi.css (.enn).
 
 const img = (key: string): ReferralImage | null => (REFERRAL_IMAGES as Record<string, ReferralImage>)[key] ?? null;
 const url = (key: string) => {
@@ -117,18 +118,4 @@ export function Hanabi() {
 /** Dohyō (PV2-DOHYO) : l'image du cadrage, posée au bas de la scène. */
 export function DohyoRing() {
   return <div aria-hidden="true" className="m3-ring" style={{ ["--ring-t" as string]: url("dohyo/telephone"), ["--ring-d" as string]: url("dohyo/ordinateur") }} />;
-}
-
-/** Sceau carré vermillon d'un écran (« 祭 », « 番 »…). */
-export function Seal({ kanji, size = 34, className = "" }: { kanji: string; size?: number; className?: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      lang="ja"
-      className={`flex shrink-0 items-center justify-center rounded-sm bg-shu-btn font-seal text-washi-paper ${className}`}
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.5) }}
-    >
-      {kanji}
-    </span>
-  );
 }

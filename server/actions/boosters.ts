@@ -112,8 +112,8 @@ export async function openBoosterAction(input: unknown): Promise<OpenBoosterResu
 
   // Un filleul qui ouvre des boosters avance vers sa qualification (vérifiée après la réponse)
   if (user.referredById) qualifyLater(user.id);
-  // Ennichi : paliers de lanternes déjà atteints que le joueur n'a pas encore reçus
-  ennichiCatchUpLater(user.id);
+  // Ennichi : paliers de lanternes déjà atteints que le joueur n'a pas encore reçus (jamais pour un invité)
+  if (!user.isGuest) ennichiCatchUpLater(user.id);
 
   // En-tête (stock, ensō, solde) à jour sans recharger la page
   refresh();

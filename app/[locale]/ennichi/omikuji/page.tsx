@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { EnnichiHelp } from "@/components/ennichi/Help";
+import { EnnichiNotStarted } from "@/components/ennichi/NotStarted";
 import { OmikujiReel } from "@/components/ennichi/OmikujiReel";
 import { OmikujiVerify } from "@/components/ennichi/OmikujiVerify";
-import { Seal, themedBg } from "@/components/ennichi/parts";
+import { themedBg } from "@/components/ennichi/parts";
+import { Seal } from "@/components/ennichi/Seal";
+import "@/components/ennichi/ennichi-base.css";
 import "@/components/ennichi/ennichi.css";
 import { PageShell } from "@/components/PageShell";
 import { LotGifts } from "@/components/referral/LotGifts";
 import { buttonClasses } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
+import { awardsState } from "@/lib/ennichi/awards";
 import { luckOf } from "@/lib/ennichi/omikuji";
 import { boosterWord } from "@/lib/referral/lot-text";
 import { ennichiView, mergeLotViews, myFete, omikujiView, type PoolLineView } from "@/server/ennichi/queries";
@@ -27,8 +31,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function OmikujiPage() {
   const [t, tGifts, format, locale, user] = await Promise.all([getTranslations("ennichi.omikuji"), getTranslations("referralV2.gifts"), getFormatter(), getLocale(), getCurrentUser()]);
   const view = await ennichiView(locale);
+  // Fête coupée ou annoncée : ni tickets ni cagnotte en direct
+  if (view.phase === "off" || view.phase === "before") return <EnnichiNotStarted view={view} />;
   const viewer = user && !user.isGuest ? user.id : null;
-  const mine = viewer && view.phase !== "off" ? await myFete(viewer, view) : null;
+  const mine = viewer ? await myFete(viewer, view) : null;
   const om = await omikujiView(view, viewer, mine);
   const dateHour = (iso: string | null) => (iso ? format.dateTime(new Date(iso), { day: "numeric", month: "long", hour: "numeric", minute: "2-digit" }) : "");
 
@@ -51,6 +57,8 @@ export default async function OmikujiPage() {
   const poolLine = (line: number) => view.pool.find((p) => p.line === line);
 
   const myWins = om.draws?.filter((d) => d.me) ?? [];
+  // Lots gagnés : versés, encore à verser (le cron s'en charge) ou écartés (compte banni ou supprimé)
+  const myState = awardsState(myWins.map((d) => d.state));
   const myLine = om.draws
     ? myWins.length
       ? t("myLineWon", { tickets: om.myTickets, draws: myWins.map((d) => d.n).join(", ") })
@@ -69,8 +77,8 @@ export default async function OmikujiPage() {
             <h1 className="m3-h2 font-heading">{t("title")}</h1>
             {om.draws && <p className="text-xs text-text-muted">{t("drawnOn", { date: dateHour(view.drawnAt) })}</p>}
           </div>
-          {view.phase !== "off" && <OmikujiVerify proof={om.proof} seedHash={view.seedHash} myLine={myLine} drawnAt={view.drawnAt ? dateHour(view.drawnAt) : null} />}
-          {view.phase !== "off" && <EnnichiHelp topic="omikuji" view={view} />}
+          <OmikujiVerify proof={om.proof} seedHash={view.seedHash} myLine={myLine} drawnAt={view.drawnAt ? dateHour(view.drawnAt) : null} />
+          <EnnichiHelp topic="omikuji" view={view} />
         </div>
 
         {!om.draws ? (
@@ -141,7 +149,11 @@ export default async function OmikujiPage() {
                       {t("chooseOneOfOne")}
                     </Link>
                   )}
-                  <p className="text-xs text-text-muted">{t("paidAlone", { left: Math.max(0, om.myTickets - myWins.length) })}</p>
+                  <p className="text-xs text-text-muted">
+                    {myState === "SKIPPED"
+                      ? t("skippedAlone")
+                      : t(myState === "PENDING" ? "payingAlone" : "paidAlone", { left: Math.max(0, om.myTickets - myWins.length) })}
+                  </p>
                 </section>
               ) : (
                 <section className="flex flex-col gap-1 lacquer rounded-card p-4">

@@ -15,6 +15,7 @@ export const ENNICHI_SETTING_KEYS = [
   "ennichi.ranks",
   "ennichi.omikuji",
   "ennichi.tierGrantsPerIp",
+  "ennichi.excludeStaff",
 ] as const;
 
 export type EnnichiTier = SettingValue<"ennichi.tiers">[number];
@@ -34,6 +35,8 @@ export type EnnichiRules = {
   ranks: readonly EnnichiRank[];
   omikuji: readonly EnnichiPrize[];
   tierGrantsPerIp: number;
+  /** Comptes de l'équipe (ADMIN, DEV) écartés du banzuke et de l'omikuji. */
+  excludeStaff: boolean;
 };
 
 type EnnichiSettings = { [K in (typeof ENNICHI_SETTING_KEYS)[number]]: SettingValue<K> };
@@ -52,6 +55,7 @@ export function ennichiRulesFrom(s: EnnichiSettings): EnnichiRules {
     ranks: s["ennichi.ranks"],
     omikuji: s["ennichi.omikuji"],
     tierGrantsPerIp: s["ennichi.tierGrantsPerIp"],
+    excludeStaff: s["ennichi.excludeStaff"],
   };
 }
 
@@ -82,12 +86,11 @@ export function ennichiPhase(rules: Pick<EnnichiRules, "enabled" | "startsAt" | 
   return "closing";
 }
 
-/** Un ami qui se rattache à cet instant arrive-t-il pendant la fête (bonus, lanterne, banzuke, omikuji) ? */
-export function arrivesDuringFete(rules: Pick<EnnichiRules, "enabled" | "startsAt" | "days" | "closingDays">, now: Date, drawnAt: Date | null): boolean {
-  return ennichiPhase(rules, now, drawnAt) === "live";
-}
-
 /* ---------------- Lanternes ---------------- */
+
+/** Kanji de chaque palier de lanternes (sceaux et lanternes des écrans). */
+export const TIER_KANJI = ["一", "二", "三", "四"] as const;
+export const tierKanji = (i: number) => TIER_KANJI[i] ?? String(i + 1);
 
 /** Index du prochain palier de lanternes (le premier pas encore atteint), ou null s'ils le sont tous. */
 export function nextTierIndex(lit: number, tiers: readonly { lanterns: number }[], reached: readonly boolean[] = []): number | null {

@@ -34,8 +34,11 @@ export type PayoutInput = {
     referrerId: string;
     refereeId: string;
     grandReferrerId: string | null;
-    /** Arrivé pendant une édition de l'Ennichi : étapes 1 et 2 multipliées. */
-    ennichiEdition: number | null;
+    /**
+     * Arrivé pendant une édition de l'Ennichi : multiplicateur des étapes 1 et 2 figé au rattachement (null hors fête).
+     * Un réglage changé ensuite ne touche plus ce parrainage, même pour une étape ou une validation tardive.
+     */
+    ennichiMultiplier: number | null;
     times: StepTimes;
     trust: Trust;
   };
@@ -46,7 +49,6 @@ export type PayoutInput = {
   installed: number;
   /** Le grand-parrain peut toucher (son parrainage du parrain n'est pas révoqué, son compte n'est pas banni). */
   grandAllowed: boolean;
-  ennichiMultiplier: number;
 };
 
 export function planPayouts(input: PayoutInput, rules: Pick<ReferralV2Rules, "stepLots" | "grandLotId" | "milestones">): DueReward[] {
@@ -60,7 +62,7 @@ export function planPayouts(input: PayoutInput, rules: Pick<ReferralV2Rules, "st
     if (!at) return;
     const step = i + 1;
     const lots = rules.stepLots[i];
-    const multiplier = referral.ennichiEdition !== null && step <= 2 ? Math.max(1, input.ennichiMultiplier) : 1;
+    const multiplier = referral.ennichiMultiplier !== null && step <= 2 ? Math.max(1, referral.ennichiMultiplier) : 1;
     const big = step >= 3;
     if (lots.referee && !done("STEP", "REFEREE", step)) {
       due.push({ ...base, kind: "STEP", side: "REFEREE", step, userId: referral.refereeId, actorId: referral.referrerId, lotId: lots.referee, multiplier, big });

@@ -54,6 +54,37 @@ describe("migration de l'Ennichi", () => {
     expect(award.rows[0]).toEqual({ userId: null, name: "u2" });
   });
 
+  it("graine scellée : un nonce jusqu'au tirage, la graine en clair seulement une fois tiré", async () => {
+    // Édition scellée : nonce sans graine ; ni l'une ni l'autre est refusé
+    await pg.exec(`INSERT INTO "EnnichiDraw" (edition, "seedHash", "seedNonce") VALUES (3, '${HEX}', '${HEX}')`);
+    await refused(`INSERT INTO "EnnichiDraw" (edition, "seedHash") VALUES (4, '${HEX}')`, /EnnichiDraw_seed_sealed/);
+    await refused(`INSERT INTO "EnnichiDraw" (edition, "seedHash", "seedNonce") VALUES (5, '${HEX}', 'PAS-HEX')`, /EnnichiDraw_hex_check/);
+    // Pas tirée : la graine ne s'écrit pas à côté du nonce ; tirée : elle doit l'être
+    await refused(`UPDATE "EnnichiDraw" SET seed = '${HEX}' WHERE edition = 3`, /EnnichiDraw_seed_sealed/);
+    await refused(`UPDATE "EnnichiDraw" SET "drawnAt" = now(), "ticketsHash" = '${HEX}', tickets = '[]', prizes = '[]' WHERE edition = 3`, /EnnichiDraw_seed_sealed/);
+    await pg.exec(`UPDATE "EnnichiDraw" SET "drawnAt" = now(), seed = '${HEX}', "ticketsHash" = '${HEX}', tickets = '[]', prizes = '[]', ranks = '[]' WHERE edition = 3`);
+  });
+
+  it("multiplicateur de l'Ennichi figé seulement sur un ami arrivé pendant une fête", async () => {
+    await pg.exec(`INSERT INTO "User" (id, username, "battleTeam", "isGuest") VALUES ('u3', 'u3', '{}', false), ('u4', 'u4', '{}', false)`);
+    await refused(`INSERT INTO "Referral" (id, "referrerId", "refereeId", "ennichiMultiplier") VALUES ('r0', 'u1', 'u3', 2)`, /Referral_ennichi_multiplier_check/);
+    await refused(`INSERT INTO "Referral" (id, "referrerId", "refereeId", "ennichiEdition", "ennichiMultiplier") VALUES ('r0', 'u1', 'u3', 1, 0)`, /Referral_ennichi_multiplier_check/);
+    await pg.exec(`INSERT INTO "Referral" (id, "referrerId", "refereeId", "ennichiEdition", "ennichiMultiplier") VALUES ('r1', 'u1', 'u3', 1, 2), ('r2', 'u1', 'u4', NULL, NULL)`);
+  });
+
+  it("parrainages déjà arrivés pendant une fête : multiplicateur rempli avec le réglage, 2 par défaut", async () => {
+    // Le remplissage de la migration, rejoué sur un ami de la fête sans multiplicateur
+    const fill = read("20261126135000_ennichi_multiplicateur_fige").match(/UPDATE "Referral"[\s\S]*?;/)![0];
+    const multiplierOf = async (id: string) => (await pg.query<{ m: number | null }>(`SELECT "ennichiMultiplier" AS m FROM "Referral" WHERE id = '${id}'`)).rows[0].m;
+    await pg.exec(`UPDATE "Referral" SET "ennichiMultiplier" = NULL WHERE id = 'r1'`);
+    await pg.exec(fill);
+    expect(await multiplierOf("r1")).toBe(2);
+    expect(await multiplierOf("r2")).toBeNull();
+    await pg.exec(`INSERT INTO "GameSetting" (key, value, "updatedAt") VALUES ('ennichi.stepMultiplier', '3', now())`);
+    await pg.exec(fill);
+    expect(await multiplierOf("r1")).toBe(3);
+  });
+
   it("le nouveau motif de mouvement et la nouvelle notification existent", async () => {
     const reasons = await pg.query<{ v: string }>(`SELECT unnest(enum_range(NULL::"CoinReason"))::text AS v`);
     expect(reasons.rows.map((r) => r.v)).toContain("ENNICHI");

@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { EnnichiHelp } from "@/components/ennichi/Help";
-import { Lantern, Seal } from "@/components/ennichi/parts";
+import { EnnichiNotStarted } from "@/components/ennichi/NotStarted";
+import { Lantern } from "@/components/ennichi/parts";
+import { Seal } from "@/components/ennichi/Seal";
+import "@/components/ennichi/ennichi-base.css";
 import "@/components/ennichi/ennichi.css";
 import { PageShell } from "@/components/PageShell";
 import { LotGifts } from "@/components/referral/LotGifts";
@@ -21,7 +24,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function LanternsPage() {
   const [t, tPage, format, locale, user] = await Promise.all([getTranslations("ennichi.lanternes"), getTranslations("ennichi.page"), getFormatter(), getLocale(), getCurrentUser()]);
   const view = await ennichiView(locale);
-  const mine = user && !user.isGuest && view.phase !== "off" ? await myFete(user.id, view) : null;
+  // Fête coupée ou annoncée : ni paliers ni « ouvre un booster » (une ouverture ne compte qu'à partir du début)
+  if (view.phase === "off" || view.phase === "before") return <EnnichiNotStarted view={view} />;
+  const mine = user && !user.isGuest ? await myFete(user.id, view) : null;
   const elig = mine?.eligible ?? false;
   const dateHour = (iso: string) => format.dateTime(new Date(iso), { day: "numeric", month: "long", hour: "numeric", minute: "2-digit" });
   return (
@@ -33,7 +38,7 @@ export default async function LanternsPage() {
         <div className="flex items-center gap-3">
           <Seal kanji="灯" />
           <h1 className="m3-h2 font-heading">{t("title")}</h1>
-          {view.phase !== "off" && <EnnichiHelp topic="lanternes" view={view} className="ml-auto" />}
+          <EnnichiHelp topic="lanternes" view={view} className="ml-auto" />
         </div>
         <p className="text-xs text-text-muted">{t("lead")}</p>
         <div className="m3-lant">

@@ -4,6 +4,7 @@ import { EnnichiCloseActions } from "@/components/admin/referral/EnnichiCloseAct
 import { EnnichiSettingsForm } from "@/components/admin/referral/EnnichiSettingsForm";
 import { ReferralAdminTabs } from "@/components/admin/referral/ReferralAdminTabs";
 import { SettingLogList } from "@/components/admin/SettingLogList";
+import { Seal } from "@/components/ennichi/Seal";
 import { LotGifts } from "@/components/referral/LotGifts";
 import { Link } from "@/i18n/navigation";
 import { canManageReferrals } from "@/lib/admin/roles";
@@ -16,15 +17,6 @@ import { getSetting } from "@/server/settings";
 
 type T = Awaited<ReturnType<typeof getTranslations<"admin.referralV2.ennichi">>>;
 type Format = Awaited<ReturnType<typeof getFormatter>>;
-
-function Seal({ kanji, tone = "shu" }: { kanji: string; tone?: "shu" | "kin" | "mut" }) {
-  const color = tone === "kin" ? "bg-kin text-bg" : tone === "mut" ? "bg-surface-2 text-text-muted" : "bg-shu-btn text-washi-paper";
-  return (
-    <span aria-hidden="true" lang="ja" className={`flex size-7 shrink-0 items-center justify-center rounded-sm font-seal text-sm ${color}`}>
-      {kanji}
-    </span>
-  );
-}
 
 function Bar({ pct }: { pct: number }) {
   return (
@@ -72,7 +64,7 @@ function LiveCard({ data, t, format, pill }: { data: EnnichiAdminView; t: T; for
           <div key={tier.index} className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
               <span className="flex items-center gap-2">
-                <Seal kanji={tier.kanji} tone={s ? "shu" : "mut"} />
+                <Seal kanji={tier.kanji} size={28} tone={s ? "shu" : "mut"} />
                 <b className="text-sm">{t("live.tier", { n: tier.index + 1, lanterns: tier.lanterns })}</b>
               </span>
               <span className="text-xs text-text-muted tabular-nums">{right}</span>

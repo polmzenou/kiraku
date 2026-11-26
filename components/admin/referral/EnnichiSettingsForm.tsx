@@ -3,11 +3,12 @@
 import { useFormatter, useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
 import { luckOf } from "@/lib/ennichi/omikuji";
-import { ennichiSchedule } from "@/lib/ennichi/rules";
+import { ennichiSchedule, tierKanji } from "@/lib/ennichi/rules";
 import { ENNICHI_TITLES, SETTING_SCHEMAS } from "@/lib/settings/defaults";
 import { ENNICHI_FORM_KEYS, ennichiSettingsSchema, type EnnichiSettings } from "@/lib/settings/ennichi-form";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { updateEnnichiSettings } from "@/server/actions/admin-settings";
+import { Seal } from "../../ennichi/Seal";
 import { Button } from "../../ui/Button";
 import { Field, inputClass, NumberField, SelectField, Toggle, toLocalInput } from "../fields";
 import { SettingsSaveBar } from "../SettingsSaveBar";
@@ -27,25 +28,12 @@ const LIMITS: Record<NumberKey, [number, number]> = {
 };
 const MAX_RANKS = 12;
 const MAX_POOL = 8;
-const TIER_KANJI = ["一", "二", "三", "四"] as const;
 
 type Short<K> = K extends `ennichi.${infer S}` ? S : never;
 const short = <K extends keyof EnnichiSettings>(key: K) => key.replace(/^ennichi\./, "") as Short<K>;
 
 /** Rangs qui se suivent sans trou : chacun commence juste après le précédent, le premier au 1er. */
 const chain = (ranks: Rank[]) => ranks.map((r, i) => ({ ...r, from: i === 0 ? 1 : ranks[i - 1].to + 1 }));
-
-function Seal({ kanji, tone = "shu" }: { kanji: string; tone?: "shu" | "kin" }) {
-  return (
-    <span
-      aria-hidden="true"
-      lang="ja"
-      className={`flex h-7 min-w-7 shrink-0 items-center justify-center rounded-sm px-1 font-seal text-sm ${tone === "kin" ? "bg-kin text-bg" : "bg-shu-btn text-washi-paper"}`}
-    >
-      {kanji}
-    </span>
-  );
-}
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
@@ -134,13 +122,17 @@ export function EnnichiSettingsForm({ initial, lots }: { initial: EnnichiSetting
           {num("ennichi.tierGrantsPerIp", "tierGrantsPerIp")}
         </div>
         <Toggle label={label("ennichi.liftCap")} checked={draft["ennichi.liftCap"]} onChange={(v) => set("ennichi.liftCap", v)} />
+        <div className="flex flex-col gap-1">
+          <Toggle label={label("ennichi.excludeStaff")} checked={draft["ennichi.excludeStaff"]} onChange={(v) => set("ennichi.excludeStaff", v)} />
+          <p className="text-xs text-text-muted">{t("hints.excludeStaff")}</p>
+        </div>
       </Section>
 
       <Section title={label("ennichi.tiers")} hint={t("hints.tiers")}>
         {tiers.map((tier, i) => (
           <div key={i} className="flex flex-col gap-3 rounded-control border border-border p-3">
             <div className="flex items-center gap-2">
-              <Seal kanji={TIER_KANJI[i] ?? String(i + 1)} />
+              <Seal kanji={tierKanji(i)} size={28} />
               <b className="text-sm">{t("tier", { n: i + 1 })}</b>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -182,7 +174,7 @@ export function EnnichiSettingsForm({ initial, lots }: { initial: EnnichiSetting
           <div key={i} className="flex flex-col gap-3 rounded-control border border-border p-3">
             <div className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-2">
-                <Seal kanji={luckOf(i)} tone="kin" />
+                <Seal kanji={luckOf(i)} size={28} tone="kin" />
                 <b className="text-sm">{t("line", { n: i + 1 })}</b>
               </span>
               <Button type="button" variant="ghost" size="sm" onClick={() => set("ennichi.omikuji", pool.filter((_, j) => j !== i))}>

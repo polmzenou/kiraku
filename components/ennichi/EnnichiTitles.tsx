@@ -2,7 +2,8 @@ import { getTranslations } from "next-intl/server";
 import { ennichiTitlesOf } from "@/server/ennichi/queries";
 import { TITLE_KANJI } from "./Banzuke";
 import { Tsuna } from "./parts";
-import "./ennichi.css";
+// Seulement la petite feuille commune : le profil ne charge pas celle des pages de la fête
+import "./ennichi-base.css";
 
 /** Titres sumo gagnés au banzuke de l'Ennichi, sur le profil : permanents, marqués de l'édition (la corde du Yokozuna). */
 export async function EnnichiTitles({ userId }: { userId: string }) {

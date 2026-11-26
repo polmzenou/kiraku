@@ -39,9 +39,9 @@ describe.skipIf(!url)("décisions de l'équipe sur un parrainage (base réelle)"
   const seriesId = `test-series-rev-${tag}`;
   const mythic = `test-rev-mythic-${tag}`;
 
-  const deps = (now: Date): ProgressDeps => ({ rules, now, sharedCap: 4, ennichiMultiplier: 1, lotDeps, timeZone: "Europe/Paris" });
+  const deps = (now: Date): ProgressDeps => ({ rules, now, sharedCap: 4, lotDeps, timeZone: "Europe/Paris" });
   const attach = (referee: string, referrer: string) =>
-    attachReferralV2With(prisma, { refereeId: users[referee].id, code: users[referrer].code, now: T0, rules, attachWindowDays: 7, ennichiEdition: null, fingerprintKey: KEY });
+    attachReferralV2With(prisma, { refereeId: users[referee].id, code: users[referrer].code, now: T0, rules, attachWindowDays: 7, ennichiEdition: null, ennichiMultiplier: null, fingerprintKey: KEY });
   const state = async (name: string) => {
     const id = users[name].id;
     const [user, ledger, credits] = await Promise.all([

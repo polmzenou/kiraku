@@ -438,6 +438,8 @@ export const SETTING_SCHEMAS = {
   "ennichi.omikuji": ennichiOmikuji,
   // Lots des lanternes : au plus ce nombre de comptes servis par IP vue pendant la fête (multicomptes)
   "ennichi.tierGrantsPerIp": z.number().int().min(1).max(100),
+  // Comptes de l'équipe (ADMIN, DEV) écartés du banzuke et de l'omikuji (ils gardent les lots des lanternes)
+  "ennichi.excludeStaff": z.boolean(),
   // Hôtel des ventes (étape 8) ; taux en points de base (500 = 5 %)
   "market.enabled": z.boolean(),
   "market.feeBp": z.number().int().min(0).max(5_000),
@@ -883,6 +885,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
     { lotId: null, oneOfOne: false, count: 55 }, // lot : 1 booster Mythique (posé par le seed)
   ],
   "ennichi.tierGrantsPerIp": 3,
+  "ennichi.excludeStaff": false, // à trancher par Tristan : l'équipe joue comme tout le monde (comportement d'origine)
   "market.enabled": true,
   "market.feeBp": 500, // taxe de 5 % : retire des Zeni du jeu
   "market.minIncrementBp": 500, // surenchère minimale de 5 % (au moins 1 Zeni)

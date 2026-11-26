@@ -2841,13 +2841,15 @@
             "tiers": "Paliers de lanternes",
             "ranks": "Prix du banzuke",
             "omikuji": "Cagnotte de l'omikuji",
-            "tierGrantsPerIp": "Comptes servis par IP"
+            "tierGrantsPerIp": "Comptes servis par IP",
+            "excludeStaff": "Comptes de l'équipe écartés du banzuke et de l'omikuji"
           },
           "hints": {
             "startsAt": "À l'heure de ton navigateur. Changer la date pendant la fête la décale.",
             "edition": "Une nouvelle édition repart de zéro (lanternes, banzuke, graine) ; la précédente garde ses résultats.",
             "stepMultiplier": "Étapes 1 et 2 d'un ami arrivé pendant la fête, des deux côtés.",
             "tierGrantsPerIp": "Lots des lanternes, contre les multicomptes.",
+            "excludeStaff": "ADMIN et DEV ne sont ni classés ni tirés (ils gardent les cadeaux des lanternes). Coupé : l'équipe joue comme tout le monde.",
             "tiers": "Quatre paliers, aux seuils strictement croissants. Un palier atteint se fige : changer son lot ne change plus rien pour lui.",
             "ranks": "Les rangs se suivent à partir du 1er : chaque ligne commence juste après la précédente.",
             "omikuji": "Tirée de haut en bas, du plus rare au moins rare ; chaque ticket gagne au plus un lot. Une ligne sans lot ne part pas."
@@ -8524,7 +8526,7 @@
       "days": "{count, plural, one {jour} other {jours}}",
       "hours": "h",
       "minutes": "min",
-      "aria": "{days} jours, {hours} heures et {minutes} minutes",
+      "aria": "{days, plural, one {# jour} other {# jours}}, {hours, plural, one {# heure} other {# heures}} et {minutes, plural, one {# minute} other {# minutes}}",
       "done": "Terminé"
     },
     "help": {
@@ -8544,7 +8546,7 @@
         "title": "Le banzuke",
         "l1": "Le classement des recruteurs de la fête.",
         "l2": "On compte tes amis arrivés pendant la fête et installés.",
-        "l3": "Du 1er au {last}e, des titres sumo et des cadeaux en plus, versés tout seuls à la clôture."
+        "l3": "Du 1er au {last, selectordinal, one {#er} other {#e}}, des titres sumo et des cadeaux en plus, versés tout seuls à la clôture."
       },
       "omikuji": {
         "name": "Omikuji",
@@ -8582,7 +8584,7 @@
       "days": "{count, plural, one {# jour de fête} other {# jours de fête}}",
       "day": "jour {n}",
       "closedSub": "Banzuke figé et omikuji tiré le {date}.",
-      "closingSub": "La fête est finie : les amis arrivés pendant la fête ont encore {days, plural, one {# jour} other {# jours}} pour s'installer. Tirage de l'omikuji à la clôture, le {date}.",
+      "closingSub": "{days, plural, =0 {La clôture est passée : le tirage de l'omikuji se fait dans les prochaines minutes.} one {La fête est finie : les amis arrivés pendant la fête ont encore # jour pour s'installer. Tirage de l'omikuji à la clôture, le {date}.} other {La fête est finie : les amis arrivés pendant la fête ont encore # jours pour s'installer. Tirage de l'omikuji à la clôture, le {date}.}}",
       "liveSub": "Jusqu'au {end}, puis {days, plural, one {# jour} other {# jours}} de clôture avant le tirage de l'omikuji."
     },
     "parts": {
@@ -8619,7 +8621,6 @@
       "frozen": "Arrêté le {date} · {count, plural, one {# recruteur classé} other {# recruteurs classés}}",
       "closing": "Clôture · figé le {date}",
       "live": "En direct · figé à la clôture, le {date}",
-      "off": "La fête n'est pas lancée",
       "place": "Ta place",
       "ord": "{rank, selectordinal, one {#er} other {#e}}",
       "titles": {
@@ -8652,11 +8653,12 @@
       "bandLabel": "{from, plural, =1 {1er} other {#e}}{to, select, 1 {} other { à {to}e}}",
       "paid": "Tes cadeaux sont arrivés, versés tout seuls.",
       "paying": "Tes cadeaux arrivent, versés tout seuls.",
+      "skipped": "Tes cadeaux n'ont pas été versés : ce compte ne peut plus les recevoir.",
       "chooseCards": "Choisir mes cartes",
       "thanks": "Merci d'avoir fêté avec nous",
       "outThisTime": "Tu finis {rank, selectordinal, one {#er} other {#e}}, hors des lots cette fois.",
       "notRanked": "Tu n'as pas fini au classement cette fois.",
-      "titleChip": "{title} · Ennichi {year}",
+      "titleChip": "{title} · Ennichi n° {edition}",
       "titleStays": "Le titre reste sur ton profil.",
       "topN": "Top {count}",
       "eachGets": "Chacun reçoit",
@@ -8687,6 +8689,8 @@
       "youWon": "{count, plural, one {Tu as gagné un lot} other {Tu as gagné # lots}}",
       "chooseOneOfOne": "Choisir ma carte 1/1",
       "paidAlone": "Versé tout seul.{left, plural, =0 {} one { Ton autre ticket n'a rien tiré.} other { Tes # autres tickets n'ont rien tiré.}}",
+      "payingAlone": "En cours de versement, tout seul.{left, plural, =0 {} one { Ton autre ticket n'a rien tiré.} other { Tes # autres tickets n'ont rien tiré.}}",
+      "skippedAlone": "Pas versé : ce compte ne peut plus recevoir de lots.",
       "noLuck": "Pas de lot cette fois",
       "noLuckBody": "{count, plural, one {Ton ticket n'a rien tiré.} other {Tes # tickets n'ont rien tiré.}}",
       "noTicketThen": "Tu n'avais pas de ticket",
@@ -8729,6 +8733,11 @@
       "from": "Banzuke de l'Ennichi",
       "chip": "{title, select, yokozuna {Yokozuna} ozeki {Ōzeki} other {Sekiwake}} · Ennichi n° {edition}",
       "stays": "Le titre reste sur ton profil."
+    },
+    "cosmetic": {
+      "label": "{title} · Ennichi n° {edition}",
+      "hintOne": "Finir {rank, selectordinal, one {#er} other {#e}} au banzuke de l'Ennichi n° {edition}.",
+      "hintRange": "Finir entre le {from, selectordinal, one {#er} other {#e}} et le {to, selectordinal, one {#er} other {#e}} au banzuke de l'Ennichi n° {edition}."
     }
   },
   "prestige": {

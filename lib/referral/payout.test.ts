@@ -17,12 +17,11 @@ const RULES: ReferralV2Rules = {
 };
 const times = (n: number): StepTimes => [0, 1, 2, 3].map((i) => (i < n ? at : null)) as unknown as StepTimes;
 const input = (over: Partial<PayoutInput> = {}, referral: Partial<PayoutInput["referral"]> = {}): PayoutInput => ({
-  referral: { referrerId: "par", refereeId: "lea", grandReferrerId: null, ennichiEdition: null, times: times(1), trust: "HIGH", ...referral },
+  referral: { referrerId: "par", refereeId: "lea", grandReferrerId: null, ennichiMultiplier: null, times: times(1), trust: "HIGH", ...referral },
   paid: [],
   paidMilestones: [],
   installed: 0,
   grandAllowed: true,
-  ennichiMultiplier: 2,
   ...over,
 });
 const keys = (due: ReturnType<typeof planPayouts>) => due.map((d) => `${d.kind}:${d.side ?? "-"}:${d.step ?? d.milestone?.installed ?? "-"}:${d.userId}`);
@@ -54,10 +53,19 @@ describe("ce qu'un parrainage doit verser", () => {
   });
 
   it("Ennichi : étapes 1 et 2 multipliées, pas les suivantes", () => {
-    const due = planPayouts(input({}, { times: times(3), ennichiEdition: 1 }), RULES);
+    const due = planPayouts(input({}, { times: times(3), ennichiMultiplier: 2 }), RULES);
     expect(due.filter((d) => d.step === 1 || d.step === 2).every((d) => d.multiplier === 2)).toBe(true);
     expect(due.filter((d) => d.step === 3).every((d) => d.multiplier === 1)).toBe(true);
     expect(planPayouts(input(), RULES).every((d) => d.multiplier === 1)).toBe(true);
+  });
+
+  it("Ennichi : le multiplicateur figé au rattachement fait foi, quel que soit le réglage du moment", () => {
+    // Ami arrivé quand la fête valait ×3 : son étape 2, tombée plus tard, reste à ×3
+    const paid = ["REFEREE", "REFERRER"].map((side) => ({ kind: "STEP" as const, side: side as "REFEREE", step: 1, milestone: null }));
+    const due = planPayouts(input({ paid }, { times: times(2), ennichiMultiplier: 3 }), RULES);
+    expect(due.filter((d) => d.step === 2).map((d) => d.multiplier)).toEqual([3, 3, 3]);
+    // Un multiplicateur figé mal formé ne retire rien : au moins ×1
+    expect(planPayouts(input({}, { ennichiMultiplier: 0 }), RULES).every((d) => d.multiplier === 1)).toBe(true);
   });
 
   it("grand-parrainage à l'étape 2, une fois, s'il est permis", () => {

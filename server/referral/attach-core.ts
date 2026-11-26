@@ -30,6 +30,11 @@ export type AttachV2Input = {
   attachWindowDays: number;
   /** Édition de l'Ennichi en cours (bonus des étapes 1 et 2), sinon null. */
   ennichiEdition: number | null;
+  /**
+   * ennichi.stepMultiplier en vigueur, figé sur le parrainage s'il arrive pendant la fête (ignoré hors fête) : les
+   * versements le relisent ici, même longtemps après (étape 2, validation de l'équipe).
+   */
+  ennichiMultiplier: number | null;
   /** ennichi.liftCap : pendant la fête, le plafond mensuel ne s'applique pas (par défaut oui). */
   ennichiLiftCap?: boolean;
   fingerprintKey: Buffer;
@@ -94,6 +99,7 @@ export async function attachReferralV2With(db: PrismaClient, input: AttachV2Inpu
         version: 2,
         grandReferrerId: grand?.referredById ?? null,
         ennichiEdition: input.ennichiEdition,
+        ennichiMultiplier: input.ennichiEdition !== null ? Math.min(10, Math.max(1, input.ennichiMultiplier ?? 1)) : null,
         discordCreatedAt: discord ? snowflakeDate(discord.providerAccountId) : null,
       },
       select: { id: true },

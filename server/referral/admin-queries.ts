@@ -9,7 +9,6 @@ import { refereeTrust } from "@/lib/referral/trust";
 import { membersById, type MemberInfo } from "../anticheat/queries";
 import { prisma } from "../db";
 import { lotViews, type LotLine, type LotView } from "../economy/lot-view";
-import { getSetting } from "../settings";
 import { installedCount } from "./payout-core";
 
 // Lectures de l'admin du parrainage v2 (étape 18) : la file « À vérifier » (design « cartes » de l'atelier équipe), les
@@ -112,8 +111,6 @@ const lineKey = (l: LotLine) => (l.kind === "BOOSTER" ? `B:${l.look.slug}` : l.k
 
 /** File « À vérifier », du plus ancien blocage au plus récent, avec la fiche courte des comptes cités. */
 export async function referralQueue(rules: ReferralV2Rules, locale: string, take = 50): Promise<{ items: QueueItem[]; members: Map<string, MemberInfo> }> {
-  // ×2 de l'Ennichi sur les étapes 1 et 2 d'un ami arrivé pendant la fête
-  const multiplier = await getSetting("ennichi.stepMultiplier");
   const rows = await prisma.referral.findMany({
     where: QUEUE_WHERE,
     orderBy: { heldAt: "asc" },
@@ -123,7 +120,8 @@ export async function referralQueue(rules: ReferralV2Rules, locale: string, take
       referrerId: true,
       refereeId: true,
       grandReferrerId: true,
-      ennichiEdition: true,
+      // ×2 de l'Ennichi sur les étapes 1 et 2 d'un ami arrivé pendant la fête, figé à son rattachement
+      ennichiMultiplier: true,
       holdReason: true,
       heldAt: true,
       holdEvidence: true,
@@ -152,7 +150,7 @@ export async function referralQueue(rules: ReferralV2Rules, locale: string, take
           referrerId: r.referrerId,
           refereeId: r.refereeId,
           grandReferrerId: null,
-          ennichiEdition: r.ennichiEdition,
+          ennichiMultiplier: r.ennichiMultiplier,
           times,
           trust: refereeTrust({ createdAt: r.discordCreatedAt, linkedAt: r.referee.discordLinkedAt }, rules),
         },
@@ -160,7 +158,6 @@ export async function referralQueue(rules: ReferralV2Rules, locale: string, take
         paidMilestones: [],
         installed: 0,
         grandAllowed: false,
-        ennichiMultiplier: multiplier,
       },
       rules,
     ).filter((d) => d.kind === "STEP" || d.kind === "TRUST_BONUS");

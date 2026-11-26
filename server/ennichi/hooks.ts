@@ -9,17 +9,19 @@ import { catchUpTiersWith } from "./lanterns-core";
 // multiplicateur du cadeau de bienvenue montré à un invité pendant la fête.
 
 /**
- * Après la réponse à l'ouverture d'un booster : le joueur reçoit chaque palier de lanternes déjà atteint qu'il n'a pas
- * encore (il vient peut-être de devenir éligible), au plus une fois par minute.
+ * Après la réponse à l'ouverture d'un booster (compte inscrit : l'appelant écarte les invités) : le joueur reçoit chaque
+ * palier de lanternes déjà atteint qu'il n'a pas encore (il vient peut-être de devenir éligible), au plus une fois par
+ * minute.
  */
 export function ennichiCatchUpLater(userId: string): void {
   after(async () => {
     try {
+      // La limite d'abord (en mémoire) : les ouvertures en rafale ne relisent ni l'état ni les paliers
+      if (!(await rateLimit(`ennichi-catchup:${userId}`, { limit: 1, windowSeconds: 60 }, { store: "memory" })).success) return;
       const state = await ennichiState();
       // Aussi après le tirage : un joueur éligible pendant la fête qui n'a pas encore reçu un palier atteint le reçoit
       if (state.phase === "off" || !state.schedule) return;
       if (!(await prisma.ennichiTierReached.count({ where: { edition: state.rules.edition } }))) return;
-      if (!(await rateLimit(`ennichi-catchup:${userId}`, { limit: 1, windowSeconds: 60 }, { store: "memory" })).success) return;
       await catchUpTiersWith(prisma, { edition: state.rules.edition, userId, schedule: state.schedule, perIp: state.rules.tierGrantsPerIp }, ennichiPayDeps());
     } catch (e) {
       console.error("[ennichi] rattrapage des lanternes impossible", e);

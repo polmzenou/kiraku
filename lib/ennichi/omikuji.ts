@@ -72,9 +72,26 @@ export async function drawOmikuji(seed: string, ticketCount: number, prizeCount:
   return draws;
 }
 
-/** Lots de la cagnotte dépliés dans l'ordre (un par unité), chacun désigné par l'index de sa ligne. */
-export function unfoldPrizes(pool: readonly { count: number }[]): number[] {
-  return pool.flatMap((p, line) => Array.from({ length: Math.max(0, p.count) }, () => line));
+/** Un lot de la cagnotte dépliée, tel que le tirage le fige (EnnichiDraw.prizes). */
+export type UnfoldedPrize = { lotId: string | null; oneOfOne: boolean; line: number };
+
+/**
+ * Cagnotte dépliée dans l'ordre (le plus rare d'abord), un lot par unité, chacun avec l'index de sa ligne réglée ; une
+ * ligne sans lot ni carte 1/1 ne part pas (ses lots ne sont pas tirés).
+ */
+export function unfoldPool(pool: readonly { lotId: string | null; oneOfOne: boolean; count: number }[]): UnfoldedPrize[] {
+  return pool.flatMap((p, line) => (p.oneOfOne || p.lotId ? Array.from({ length: Math.max(0, p.count) }, () => ({ lotId: p.lotId, oneOfOne: p.oneOfOne, line })) : []));
+}
+
+/** L'inverse, pour l'affichage après le tirage : les lignes de la cagnotte figée, dans l'ordre, avec leur nombre de lots. */
+export function foldPool(prizes: readonly UnfoldedPrize[]): { line: number; lotId: string | null; oneOfOne: boolean; count: number }[] {
+  const lines = new Map<number, { line: number; lotId: string | null; oneOfOne: boolean; count: number }>();
+  for (const p of prizes) {
+    const l = lines.get(p.line);
+    if (l) l.count++;
+    else lines.set(p.line, { line: p.line, lotId: p.lotId, oneOfOne: p.oneOfOne, count: 1 });
+  }
+  return [...lines.values()].sort((a, b) => a.line - b.line);
 }
 
 export type OmikujiProof = { seed: string; seedHash: string; tickets: readonly string[]; ticketsHash: string; prizeCount: number; draws: readonly OmikujiDraw[] };

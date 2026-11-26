@@ -26,8 +26,6 @@ export type PayoutDeps = {
   sharedCap: number;
   /** Barème du score de la paire (multiAccount.scoring) ; absent : barème d'origine. */
   scoring?: DetectionScoring;
-  /** Multiplicateur des étapes 1 et 2 pour un ami arrivé pendant l'Ennichi. */
-  ennichiMultiplier: number;
   lotDeps: LotDeps;
   onNotified?: OnNotified;
 };
@@ -41,6 +39,8 @@ type ReferralRow = {
   refereeId: string;
   grandReferrerId: string | null;
   ennichiEdition: number | null;
+  /** Multiplicateur des étapes 1 et 2 figé au rattachement pendant l'Ennichi (null hors fête). */
+  ennichiMultiplier: number | null;
   step1At: Date | null;
   step2At: Date | null;
   step3At: Date | null;
@@ -148,6 +148,7 @@ export async function payDueRewardsWith(db: PrismaClient, referralId: string, de
       refereeId: true,
       grandReferrerId: true,
       ennichiEdition: true,
+      ennichiMultiplier: true,
       step1At: true,
       step2At: true,
       step3At: true,
@@ -181,7 +182,7 @@ export async function payDueRewardsWith(db: PrismaClient, referralId: string, de
         referrerId: referral.referrerId,
         refereeId: referral.refereeId,
         grandReferrerId: referral.grandReferrerId,
-        ennichiEdition: referral.ennichiEdition,
+        ennichiMultiplier: referral.ennichiMultiplier,
         times,
         trust: refereeTrust({ createdAt: referral.discordCreatedAt, linkedAt: referee?.discordLinkedAt ?? null }, deps.rules),
       },
@@ -189,7 +190,6 @@ export async function payDueRewardsWith(db: PrismaClient, referralId: string, de
       paidMilestones: paidMilestones.map((m) => m.milestone).filter((m): m is number => m !== null),
       installed,
       grandAllowed: grand !== null && !grand.referrer.bannedAt,
-      ennichiMultiplier: deps.ennichiMultiplier,
     },
     deps.rules,
   );

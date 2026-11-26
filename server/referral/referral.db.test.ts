@@ -35,7 +35,7 @@ describe.skipIf(!url)("parrainage v2 (base réelle)", () => {
   let rules: ReferralV2Rules;
   const emails: string[] = [];
 
-  const deps = (now: Date): ProgressDeps => ({ rules, now, sharedCap: 4, ennichiMultiplier: 2, lotDeps, timeZone: "Europe/Paris" });
+  const deps = (now: Date): ProgressDeps => ({ rules, now, sharedCap: 4, lotDeps, timeZone: "Europe/Paris" });
   const attach = (referee: string, referrer: string, now = T0) =>
     attachReferralV2With(prisma, {
       refereeId: users[referee].id,
@@ -44,6 +44,7 @@ describe.skipIf(!url)("parrainage v2 (base réelle)", () => {
       rules,
       attachWindowDays: 7,
       ennichiEdition: null,
+      ennichiMultiplier: null,
       fingerprintKey: KEY,
     });
   const coins = async (name: string) => (await prisma.user.findUniqueOrThrow({ where: { id: users[name].id }, select: { coins: true } })).coins;
@@ -227,7 +228,7 @@ describe.skipIf(!url)("parrainage v2 (base réelle)", () => {
 
   it("refus : soi-même, code inconnu, cycle même lointain", async () => {
     await expect(attach("par", "par")).rejects.toMatchObject({ code: "SELF" });
-    await expect(attachReferralV2With(prisma, { refereeId: users.a1.id, code: "ZZZZ2222", now: T0, rules, attachWindowDays: 7, ennichiEdition: null, fingerprintKey: KEY })).rejects.toMatchObject({ code: "INVALID_CODE" });
+    await expect(attachReferralV2With(prisma, { refereeId: users.a1.id, code: "ZZZZ2222", now: T0, rules, attachWindowDays: 7, ennichiEdition: null, ennichiMultiplier: null, fingerprintKey: KEY })).rejects.toMatchObject({ code: "INVALID_CODE" });
     // Papi → Tristren → Léa : Papi ne peut pas devenir le filleul de Léa
     await expect(attach("papi", "lea")).rejects.toMatchObject({ code: "INVALID_CODE" });
   });

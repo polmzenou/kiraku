@@ -5,8 +5,9 @@ import { verifyOmikuji } from "@/lib/ennichi/omikuji";
 import type { EnnichiRules } from "@/lib/ennichi/rules";
 import { createPgAdapter } from "@/server/pg-adapter";
 import type { LotDeps } from "../economy/lots";
-import { commitSeedWith, drawEnnichiWith, EnnichiCloseError, payAwardsWith } from "./close-core";
+import { commitSeedWith, drawEnnichiWith, EnnichiCloseError, payAwardsWith, type TitleText } from "./close-core";
 import { catchUpTiersWith, grantTierWith, lanternCountsWith, pendingCountWith, recordReachedTiersWith, sendTierWith } from "./lanterns-core";
+import { ennichiSeedKey } from "./seed";
 
 vi.mock("server-only", () => ({}));
 
@@ -20,6 +21,11 @@ const url = process.env.DATABASE_URL_TEST;
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
 const lotDeps: LotDeps = { rng: () => 0, loadPool: async () => ({ COMMON: [], UNCOMMON: [], RARE: [], EPIC: [], LEGENDARY: [], MYTHIC: [] }) };
+const SEED_KEY = ennichiSeedKey("secret-de-test-assez-long-pour-auth-secret");
+const titleText: TitleText = (title, band, edition) => ({
+  label: { fr: `${title} · ${edition}`, en: `${title} · ${edition}` },
+  hint: { fr: `${band.from}-${band.to}`, en: `${band.from}-${band.to}` },
+});
 
 describe.skipIf(!url)("Ennichi (base réelle)", () => {
   const prisma = new PrismaClient({ adapter: createPgAdapter(url!) });
@@ -81,6 +87,7 @@ describe.skipIf(!url)("Ennichi (base réelle)", () => {
         { lotId: lots.myth, oneOfOne: false, count: 10 },
       ],
       tierGrantsPerIp: 2,
+      excludeStaff: false,
     };
     // Parrainages de la fête : papa en installe 3, mama 2 (dont la 2e plus tôt que la 3e de papa), solo 1 ;
     // un bloqué, un révoqué, et un installé après la clôture ne comptent pas
@@ -107,7 +114,9 @@ describe.skipIf(!url)("Ennichi (base réelle)", () => {
     await prisma.userSignal.createMany({
       data: ["ip1", "ip2", "ip3"].map((n) => ({ userId: users[n], kind: "IP" as const, value: `203.0.113.${tag.length}`, firstEvent: "LOGIN" as const })),
     });
-    await commitSeedWith(prisma, edition, startsAt);
+    await commitSeedWith(prisma, edition, startsAt, SEED_KEY);
+    // Graine scellée : la base n'a que le nonce et l'empreinte jusqu'au tirage
+    expect(await prisma.ennichiDraw.findUniqueOrThrow({ where: { edition }, select: { seed: true, seedNonce: true } })).toMatchObject({ seed: null, seedNonce: expect.stringMatching(/^[0-9a-f]{64}$/) });
   }, 60_000);
 
   afterAll(async () => {
@@ -179,7 +188,11 @@ describe.skipIf(!url)("Ennichi (base réelle)", () => {
   });
 
   it("tirage lancé deux fois en même temps : un seul résultat ; banzuke sans bloqués ni révoqués ; prix versés une fois", async () => {
-    const outcomes = await Promise.all([0, 1].map(() => drawEnnichiWith(prisma, { staffId: null, rules, now }).then(() => "OK", (e) => (e instanceof EnnichiCloseError ? e.code : String(e)))));
+    // Une autre clé que celle de l'engagement ne tire jamais (graine qui ne redonne pas l'empreinte)
+    await expect(drawEnnichiWith(prisma, { staffId: null, rules, now, seedKey: ennichiSeedKey("une-autre-cle-de-test-assez-longue-pour-auth"), titleText })).rejects.toThrow(/illisible/);
+    const outcomes = await Promise.all(
+      [0, 1].map(() => drawEnnichiWith(prisma, { staffId: null, rules, now, seedKey: SEED_KEY, titleText }).then(() => "OK", (e) => (e instanceof EnnichiCloseError ? e.code : String(e)))),
+    );
     expect(outcomes.sort()).toEqual(["ALREADY_DRAWN", "OK"]);
 
     // papa 3 (le bloqué ne compte pas), mama 2 (le révoqué non plus), solo 1
@@ -194,12 +207,18 @@ describe.skipIf(!url)("Ennichi (base réelle)", () => {
     expect(omikuji).toHaveLength(6);
     expect(omikuji.map((a) => (a.prize as Record<string, unknown>).line)).toEqual([0, 1, 1, 2, 2, 2]);
     expect(await prisma.cosmetic.count({ where: { slug: { startsWith: `ennichi-${edition}-` } } })).toBe(2);
+    // Consigne du titre construite sur la plage de rangs réglée
+    const ozeki = await prisma.cosmetic.findUniqueOrThrow({ where: { slug: `ennichi-${edition}-ozeki` }, select: { hint: true } });
+    expect(ozeki.hint).toEqual({ fr: "2-2", en: "2-2" });
 
     // Le tirage se refait à l'identique avec la graine révélée
     const draw = await prisma.ennichiDraw.findUniqueOrThrow({ where: { edition } });
     const tickets = draw.tickets as string[];
+    // Graine révélée au tirage ; rangs figés avec la cagnotte
+    expect(draw.seed).toMatch(/^[0-9a-f]{64}$/);
+    expect(draw.ranks).toEqual(rules.ranks);
     const proof = {
-      seed: draw.seed,
+      seed: draw.seed!,
       seedHash: draw.seedHash,
       tickets,
       ticketsHash: draw.ticketsHash!,

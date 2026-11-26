@@ -94,7 +94,7 @@ describe.skipIf(!url)("fil Discord du parrainage (base réelle)", () => {
     referrals.lea = (
       await prisma.referral.create({ data: { referrerId: users.par, refereeId: users.lea, version: 2, createdAt: stepAt, step1At: stepAt }, select: { id: true } })
     ).id;
-    const deps = { rules, now: stepAt, sharedCap: 4, ennichiMultiplier: 1, lotDeps: { rng: () => 0, loadPool: async () => ({ COMMON: [], UNCOMMON: [], RARE: [], EPIC: [], LEGENDARY: [], MYTHIC: [] }) }, timeZone: "Europe/Paris" };
+    const deps = { rules, now: stepAt, sharedCap: 4, lotDeps: { rng: () => 0, loadPool: async () => ({ COMMON: [], UNCOMMON: [], RARE: [], EPIC: [], LEGENDARY: [], MYTHIC: [] }) }, timeZone: "Europe/Paris" };
     expect(await payDueRewardsWith(prisma, referrals.lea, deps)).toBe(2);
 
     // Max : bloqué il y a 2 h (même appareil), puis validé il y a 1 h

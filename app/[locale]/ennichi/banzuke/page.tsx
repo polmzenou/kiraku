@@ -2,14 +2,19 @@ import type { Metadata } from "next";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { BanzukePoster, DohyoStage, RankPrize, TITLE_KANJI } from "@/components/ennichi/Banzuke";
 import { EnnichiHelp } from "@/components/ennichi/Help";
-import { Lantern, Seal, Tsuna } from "@/components/ennichi/parts";
+import { EnnichiNotStarted } from "@/components/ennichi/NotStarted";
+import { Lantern, Tsuna } from "@/components/ennichi/parts";
+import { Seal } from "@/components/ennichi/Seal";
+import "@/components/ennichi/ennichi-base.css";
 import "@/components/ennichi/ennichi.css";
 import { PageShell } from "@/components/PageShell";
 import { PlayerAvatar } from "@/components/social/PlayerAvatar";
 import { buttonClasses } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
+import { awardsState } from "@/lib/ennichi/awards";
+import { rankBand } from "@/lib/ennichi/rules";
 import { prisma } from "@/server/db";
-import { banzukeView, ennichiView, type RankView } from "@/server/ennichi/queries";
+import { banzukeView, ennichiView, myAwards } from "@/server/ennichi/queries";
 import { getCurrentUser } from "@/server/user";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -17,20 +22,20 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("title") };
 }
 
-const bandOf = (rank: number, ranks: readonly RankView[]) => ranks.find((b) => rank >= b.from && rank <= b.to) ?? null;
-
 /**
  * Banzuke : en direct, l'affiche du jour (maquette « Tableau de sumo ») et la place du joueur ; après le tirage, le
- * podium Dohyō, les lots des trois premiers, chaque ligne de lots et la place du joueur (prix versés tout seuls).
+ * podium Dohyō, les lots des trois premiers, chaque ligne de lots et la place du joueur (prix versés tout seuls). Après
+ * le tirage, les rangs et leurs lots sont ceux figés par le tirage (la vue les relit), pas les réglages du moment.
  */
 export default async function BanzukePage() {
   const [t, format, locale, user] = await Promise.all([getTranslations("ennichi.banzuke"), getFormatter(), getLocale(), getCurrentUser()]);
   const view = await ennichiView(locale);
+  if (view.phase === "off" || view.phase === "before") return <EnnichiNotStarted view={view} />;
   const viewer = user && !user.isGuest ? user.id : null;
   const bz = await banzukeView(view, viewer);
   const dateHour = (iso: string | null) => (iso ? format.dateTime(new Date(iso), { day: "numeric", month: "long", hour: "numeric", minute: "2-digit" }) : "");
   const me = bz.me;
-  const myBand = me ? bandOf(me.rank, view.ranks) : null;
+  const myBand = me ? rankBand(me.rank, view.ranks) : null;
   const header = (
     <>
       <Link href="/ennichi" className="inline-flex min-h-11 items-center gap-1 self-start text-sm font-bold text-text-muted hover:text-text">
@@ -45,12 +50,10 @@ export default async function BanzukePage() {
               ? t("frozen", { date: dateHour(view.drawnAt), count: bz.rows.length })
               : view.phase === "closing"
                 ? t("closing", { date: dateHour(view.closesAt) })
-                : view.phase === "live"
-                  ? t("live", { date: dateHour(view.closesAt) })
-                  : t("off")}
+                : t("live", { date: dateHour(view.closesAt) })}
           </p>
         </div>
-        {view.phase !== "off" && <EnnichiHelp topic="banzuke" view={view} />}
+        <EnnichiHelp topic="banzuke" view={view} />
       </div>
     </>
   );
@@ -118,7 +121,8 @@ export default async function BanzukePage() {
   const lists = view.ranks
     .map((b) => ({ ...b, from: Math.max(b.from, 4) }))
     .filter((b) => b.from <= b.to);
-  const received = viewer ? await prisma.ennichiAward.findMany({ where: { edition: view.edition, kind: "BANZUKE", userId: viewer }, select: { ref: true } }) : [];
+  // Prix du rang : versé, encore à verser (le cron s'en charge) ou écarté (compte banni ou supprimé entre-temps)
+  const received = awardsState(viewer ? (await myAwards(view.edition, viewer)).filter((a) => a.kind === "BANZUKE").map((a) => a.state) : []);
 
   return (
     <PageShell>
@@ -157,7 +161,7 @@ export default async function BanzukePage() {
                       {t("ord", { rank: me.rank })}
                       {myBand.title ? ` · ${t(`titles.${myBand.title}`)}` : ""}
                     </b>
-                    <div className="text-xs text-text-muted">{received.length ? t("paid") : t("paying")}</div>
+                    <div className="text-xs text-text-muted">{received === "PAID" ? t("paid") : received === "SKIPPED" ? t("skipped") : t("paying")}</div>
                   </div>
                 </div>
                 <RankPrize band={myBand} compact={false} />
@@ -181,7 +185,7 @@ export default async function BanzukePage() {
                 <b className="m3-pm-name">{me.name}</b>
                 <span className={`title-chip ${myBand.title === "yokozuna" ? "yoko" : ""}`}>
                   <b lang="ja">{TITLE_KANJI[myBand.title]}</b>
-                  {t("titleChip", { title: t(`titles.${myBand.title}`), year: view.year })}
+                  {t("titleChip", { title: t(`titles.${myBand.title}`), edition: view.edition })}
                 </span>
                 <span className="text-xs text-text-muted">{t("titleStays")}</span>
               </section>

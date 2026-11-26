@@ -1,165 +1,19 @@
-/* Ennichi 縁日 (étape 18d) : lanternes, rue de la fête, bannière, page de la fête, banzuke (affiche et podium Dohyō),
-   omikuji (rouleaux), vérification, explications. Porté du prototype validé (module 3, avec les vraies images) ; portée
-   .enn sur la racine des écrans. Animations en transform et opacity seulement ; le mouvement réduit coupe tout. Les
-   images passent par des variables : --i-lanterne-* ici, --img posée sur l'élément par le composant. */
-.enn {
-  --i-lanterne-allumee: url("/images/referral/lanterne-allumee-v1.webp");
-  --i-lanterne-eteinte: url("/images/referral/lanterne-eteinte-v1.webp");
-  --i-mikuji-papier: url("/images/referral/mikuji-papier-v1.webp");
-}
-/* =====================================================================================================
-   Module 3 : l'Ennichi. Règles reprises de l'atelier 3 (atelier-ennichi.html) pour les propositions
-   choisies, puis les ajouts du prototype (podium retravaillé, rediffusion de l'omikuji, mise en page
-   ordinateur). Animations en transform et opacity seulement ; .reduced coupe tout ce qui bouge.
-   ===================================================================================================== */
+/* Ennichi 縁日 (étape 18d), pages de la fête : page de la fête, lanternes, banzuke (affiche et podium Dohyō), omikuji
+   (rouleaux), vérification. Porté du prototype validé (module 3, avec les vraies images) ; portée .enn sur la racine des
+   écrans. S'ajoute à ennichi-base.css (lanterne, rue, bannière, compte à rebours, explications, titres), importé avant
+   lui par les mêmes pages. Animations en transform et opacity seulement ; le mouvement réduit coupe tout. Les images
+   passent par des variables : --i-* (ennichi-base.css), --img posée sur l'élément par le composant. */
 
-/* ---------- Pièces propres à l'atelier 3 ---------- */
-.enn .q { position: relative; width: 32px; height: 32px; padding: 0; border-radius: 50%; border: 1px solid var(--k-border); background: var(--k-surface-2); display: inline-grid; place-items: center; font-weight: 800; font-size: 14px; color: var(--k-text); flex: none; }
-
-.enn .q::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; }
-
-.enn .x2 { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 10px; border: 0; border-radius: 999px; background: linear-gradient(90deg, #c8372d, #e0533f); color: #f8f2e4; font-size: 12px; font-weight: 800; }
-
-.enn button.x2 { position: relative; }
-
-.enn button.x2::after { content: ""; position: absolute; inset: -9px -2px; }
-
-.enn .grab { width: 40px; height: 4px; border-radius: 999px; background: var(--k-border); margin: 8px auto 0; }
-
-.enn .btn-sm { position: relative; }
-
-.enn .btn-sm::after { content: ""; position: absolute; inset: -4px 0; }
-
+/* ---------- Pièces des pages ---------- */
 .enn .m3-h2 { font-family: var(--font-heading); font-weight: 400; font-size: 22px; line-height: 1.15; }
 
 .enn .m3-h3 { font-family: var(--font-title); font-weight: 800; font-size: 18px; line-height: 1.25; }
-
-.enn .m3-grow { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-
-.enn .m3-ctas { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-
-.enn .m3-self-start { align-self: flex-start; }
-
-.enn .m3-chips { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-
-.enn .m3-strong { color: var(--k-text); }
-
-.enn .m3-hisui { color: var(--k-hisui); }
 
 .enn .m3-ellip { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .enn .m3-won { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--k-surface-2); }
 
 .enn .m3-col, .enn .m3-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-
-/* ---------- Lanterne (chōchin) : images PV2-LANTERNE allumée et éteinte (même cadrage), kanji du palier au centre du papier ---------- */
-.enn .lt { position: relative; isolation: isolate; display: inline-block; flex: none; width: var(--w, 40px); aspect-ratio: 256 / 360; }
-
-/* Halo de la flamme derrière le papier (lueur, pas un dessin de la lanterne) */
-.enn .lt::after { content: ""; position: absolute; left: -38%; right: -38%; top: 8%; bottom: 12%; z-index: -1; border-radius: 50%; background: radial-gradient(closest-side, rgb(242 154 69 / .5), rgb(242 154 69 / .14) 62%, transparent); }
-
-.enn .lt.off::after { display: none; }
-
-.enn .lt-body { position: absolute; inset: 0; background: var(--i-lanterne-allumee) 50% 50% / contain no-repeat; }
-
-.enn .lt.off .lt-body { background-image: var(--i-lanterne-eteinte); }
-
-/* Le papier éteint posé sur la lanterne allumée : il s'efface quand le palier est atteint */
-.enn .lt-body::after { content: ""; position: absolute; inset: 0; opacity: 0; background: var(--i-lanterne-eteinte) 50% 50% / contain no-repeat; }
-
-.enn .lt-k { position: absolute; left: 0; right: 0; top: 47%; translate: 0 -50%; z-index: 1; text-align: center; font: 400 calc(var(--w, 40px) * .36)/1 var(--font-seal); color: #4a1a0c; }
-
-.enn .lt.off .lt-k { color: rgb(70 50 36 / .6); }
-
-/* La flamme vacille : la lanterne allumée respire un peu (comme dans l'atelier), le halo reste libre pour l'allumage */
-.enn .lt.flicker .lt-body { animation: m3-flick 3.2s ease-in-out infinite; }
-
-@keyframes m3-flick { 50% { opacity: .86; } }
-
-/* Palier atteint : le papier éteint s'efface et la lueur monte (une fois) */
-.enn .lt.lit-now .lt-body::after { animation: m3-lightup .9s ease-out both; animation-delay: var(--ld, 0ms); }
-
-.enn .lt.lit-now::after { animation: m3-glowin .9s ease-out both; animation-delay: var(--ld, 0ms); }
-
-@keyframes m3-lightup { 0% { opacity: 1; } 40% { opacity: .85; } 100% { opacity: 0; } }
-
-@keyframes m3-glowin { from { opacity: 0; transform: scale(.5); } }
-
-/* ---------- Rue des lanternes : PV2-ENNICHI-RUE et ses guirlandes ; les lanternes posées en code pendent à leurs crochets ----------
-   Le plateau .rue-board a le cadrage de l'image recouvrant le cadre (cover, calculé en unités de conteneur) :
-   une lanterne placée en % de l'image tombe sur son crochet quelle que soit la taille du cadre. */
-/* width et min-width explicites : avec aspect-ratio, min-height et max-height se reporteraient sur la largeur */
-.enn .street { position: relative; border-radius: 22px; overflow: hidden; width: 100%; min-width: 0; min-height: 190px; aspect-ratio: var(--img-ar, 3 / 2); container-type: size; background: #0e0a08; }
-
-[data-theme="washi"] .enn .street { background: #faf3e7; }
-
-.enn .rue-board { position: absolute; left: 50%; top: 50%; width: max(100cqw, calc(100cqh * var(--img-r, 1.5))); aspect-ratio: var(--img-ar, 3 / 2); translate: -50% -50%; background: var(--img) 50% 50% / 100% 100% no-repeat; }
-
-.enn .street-l { position: absolute; translate: -50% -3%; container-type: inline-size; }
-
-.enn .street-l .lt { width: 100%; }
-
-.enn .street-l .lt-k { font-size: 34cqw; }
-
-/* Bas de la rue voilé sous le compte et le titre : assombri en Yoru, éclairci en Washi */
-.enn .street::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 56%; z-index: 1; pointer-events: none; background: linear-gradient(0deg, rgb(14 10 8 / .9), rgb(14 10 8 / .5) 48%, transparent); }
-
-[data-theme="washi"] .enn .street::after { height: 50%; background: linear-gradient(0deg, rgb(250 243 231 / .92), rgb(250 243 231 / .5) 48%, transparent); }
-
-/* L'image des explications n'a pas de texte posé dessus : pas de voile */
-.enn .expl-art.street::after { display: none; }
-
-.enn .street-over, .enn .ehero-in { text-shadow: 0 1px 3px rgb(0 0 0 / .55); }
-
-[data-theme="washi"] .enn .street-over, [data-theme="washi"] .enn .ehero-in { text-shadow: 0 1px 2px rgb(255 250 240 / .8); }
-
-.enn .street-over .x2, .enn .ehero-in .x2, .enn .ehero-in .count-chip { text-shadow: none; }
-
-.enn .street-over { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 2; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; color: #f8f2e4; }
-
-[data-theme="washi"] .enn .street-over { color: #1f1b17; }
-
-.enn .street-count b { display: block; font: 400 30px/1 var(--font-heading); }
-
-.enn .street-count span { font-size: 12px; opacity: .85; }
-
-.enn .count-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 4px 10px; border-radius: 999px; background: rgb(10 8 7 / .55); color: #f8f2e4; font-size: 12px; font-weight: 700; }
-
-/* ---------- Bannière de l'accueil · A ---------- */
-.enn .banner { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
-
-.enn .banner-h { display: flex; align-items: center; gap: 10px; }
-
-.enn .banner-h .seal { width: 34px; height: 34px; font-size: 18px; }
-
-.enn .banner-h h3 { font-family: var(--font-title); font-weight: 800; font-size: 17px; }
-
-.enn .banner-h .q { margin-left: auto; }
-
-.enn .m3-b-info { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-
-.enn .m3-cd-row { display: flex; align-items: center; gap: 10px; justify-content: space-between; flex-wrap: wrap; }
-
-.enn .next-gift { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--k-surface-2); }
-
-.enn .next-gift p { font-size: 13px; }
-
-.enn .bar { height: 8px; border-radius: 999px; background: var(--k-surface-2); overflow: hidden; }
-
-.enn .bar i { display: block; height: 100%; width: var(--v, 0%); border-radius: inherit; background: linear-gradient(90deg, #f29a45, #c8372d); }
-
-.enn .countdown { display: inline-flex; gap: 4px; font-weight: 700; font-variant-numeric: tabular-nums; }
-
-.enn .countdown span { display: inline-grid; place-items: center; min-width: 34px; padding: 4px 6px; border-radius: 8px; background: var(--k-surface-2); font-size: 14px; line-height: 1.2; }
-
-.enn .countdown small { display: block; font-size: 9.5px; font-weight: 500; color: var(--k-text-muted); }
-
-@media (min-width: 768px) {
-.enn .banner.m3-b { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 12px 18px; align-items: start; padding: 14px; }
-.enn .banner.m3-b .banner-h { grid-column: 1 / -1; }
-.enn .banner.m3-b-end { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
-.enn .banner.m3-b-end .next-gift { background: transparent; padding: 0; }
-}
 
 /* ---------- Page de la fête · B ---------- */
 .enn .m3-page { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
@@ -308,17 +162,9 @@
 
 .enn .procl h2, .enn .procl h3 { font-family: var(--font-heading); font-weight: 400; font-size: 22px; }
 
-.enn .title-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--k-kin) 60%, transparent); background: var(--k-surface-2); font-size: 12.5px; font-weight: 700; }
-
-.enn .title-chip b { display: grid; place-items: center; height: 24px; padding: 0 8px; border-radius: 999px; background: #1f1b17; color: #f1e9da; font: 400 13px/1 var(--font-seal); }
-
-.enn .title-chip.yoko b { background: repeating-linear-gradient(115deg, #fbf5e4 0 4px, #d9cfbc 4px 7px); color: #1f1b17; box-shadow: 0 0 0 1.5px #d9b556; }
-
 .enn .prof-mini { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px; text-align: center; }
 
 .enn .m3-pm-name { font-family: var(--font-title); font-weight: 800; font-size: 18px; }
-
-.enn .m3-titles .m3-chips { gap: 8px; }
 
 .enn .m3-plaque { gap: 10px; }
 
@@ -331,10 +177,6 @@
 .enn .m3-pl-t > b { font-family: var(--font-title); font-weight: 800; font-size: 14.5px; }
 
 .enn .m3-band { overflow: hidden; }
-
-.enn .m3-band .card-pad { padding-bottom: 10px; }
-
-.enn .m3-band .sec-t h3 { display: inline-flex; align-items: baseline; gap: 8px; }
 
 .enn .m3-k { font: 400 18px/1 var(--font-seal); color: var(--k-shu); }
 
@@ -385,12 +227,6 @@
 
 @keyframes m3-hb-burst { 0% { opacity: 0; transform: scale(.25); } 12% { opacity: 1; } 55% { opacity: .95; transform: scale(1); } 100% { opacity: 0; transform: scale(1.05) translateY(2%); } }
 
-/* Mouvement réduit demandé par le système : gerbes, lanternes et nobori immobiles */
-@media (prefers-reduced-motion: reduce) { .enn .hb { animation: none !important; opacity: 1; transform: none; } .enn .lt-body, .enn .lt::after, .enn .lt-body::after, .enn .m3-nob-art { animation: none !important; } }
-
-/* Corde tressée PV2-TSUNA (shide comprises) : l'image entière, posée sur l'avatar du Yokozuna */
-.enn .m3-tsuna { position: relative; width: 112px; height: auto; aspect-ratio: 512 / 160; flex: none; overflow: visible; filter: drop-shadow(0 2px 3px rgb(0 0 0 / .45)); }
-
 .enn .m3-toi { margin-top: 4px; padding: 1px 8px; border-radius: 999px; background: #d9b556; color: #1f1b17; font-size: 11px; font-weight: 800; }
 
 /* ---------- Maquette A · Dohyō ---------- */
@@ -432,7 +268,8 @@
 
 .enn .m3-nob-n { flex: none; display: flex; flex-direction: column; align-items: center; gap: 1px; font: 800 14px/1 var(--font-body); }
 
-.enn .m3-nob-n small { font-size: 9px; font-weight: 700; opacity: .8; }
+/* « amis » sous le nombre : 12 px au moins */
+.enn .m3-nob-n small { font-size: 12px; font-weight: 700; opacity: .8; }
 
 .enn .m3-nob.is-me .m3-nob-art { filter: drop-shadow(0 0 2px #d9b556) drop-shadow(0 0 10px rgb(217 181 86 / .6)) drop-shadow(0 10px 12px rgb(0 0 0 / .4)); }
 
@@ -458,8 +295,6 @@
 .enn .m3-tsuna-rk { margin-top: -12px; z-index: 2; }
 
 .enn .m3-rk.is-me .av { box-shadow: 0 0 0 3px #1f1b17, 0 0 0 6px #e0533f, 0 0 22px rgb(224 83 63 / .6); }
-
-.enn .m3-tsuna-dais { width: 96px; margin-top: -12px; z-index: 2; }
 
 /* ---------- Entrée orchestrée (rejouable, reprise au bon moment si l'écran se redessine) ---------- */
 .enn .m3-play.m3-stage { animation: m3-fade .5s ease-out both; animation-delay: var(--el); }
@@ -512,21 +347,20 @@
 
 [data-theme="washi"] .enn .kuji-stage { background-color: #e7d7b8; }
 
-.enn .expl-art { background-color: #2a1a14; }
-
 .enn .rolls { display: flex; gap: 10px; justify-content: center; align-items: flex-start; }
 
 /* Feuille d'omikuji PV2-MIKUJI-PAPIER : l'image entière (marges transparentes de part et d'autre, rattrapées par les marges
-   négatives) ; la chance sous le cartouche du tampon, laissé vide, le lot et le gagnant au milieu, le numéro en bas */
-.enn .roll { position: relative; width: 90px; aspect-ratio: 420 / 1200; flex: none; margin: 0 -17px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 36px 22px 16px; color: #1f1b17; background: var(--i-mikuji-papier) 50% 0 / 100% 100% no-repeat; filter: drop-shadow(0 6px 8px rgb(0 0 0 / .35)); transform-origin: 50% 0; transform: scaleY(.15); transition: transform .5s cubic-bezier(.2, .8, .2, 1); }
+   négatives) ; la chance sous le cartouche du tampon, laissé vide, le lot et le gagnant au milieu, le numéro en bas.
+   Feuille élargie (100 px au lieu de 90) pour écrire le lot, le gagnant et le numéro en 12 px */
+.enn .roll { position: relative; width: 100px; aspect-ratio: 420 / 1200; flex: none; margin: 0 -19px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 40px 23px 18px; color: #1f1b17; background: var(--i-mikuji-papier) 50% 0 / 100% 100% no-repeat; filter: drop-shadow(0 6px 8px rgb(0 0 0 / .35)); transform-origin: 50% 0; transform: scaleY(.15); transition: transform .5s cubic-bezier(.2, .8, .2, 1); }
 
 .enn .roll.is-on { transform: none; }
 
 .enn .roll b { font: 400 24px/1 var(--font-seal); color: #b5302a; writing-mode: vertical-rl; letter-spacing: .06em; }
 
-.enn .roll span { font-size: 10px; font-weight: 700; text-align: center; line-height: 1.3; overflow-wrap: anywhere; }
+.enn .roll span { font-size: 12px; font-weight: 700; text-align: center; line-height: 1.25; overflow-wrap: anywhere; }
 
-.enn .roll i { margin-top: auto; font-style: normal; font-size: 9.5px; font-weight: 700; color: #6b645a; }
+.enn .roll i { margin-top: auto; font-style: normal; font-size: 12px; font-weight: 700; color: #6b645a; }
 
 .enn .roll.me { filter: drop-shadow(0 0 2px #d9b556) drop-shadow(0 0 9px rgb(217 181 86 / .75)) drop-shadow(0 6px 8px rgb(0 0 0 / .35)); }
 
@@ -587,16 +421,6 @@
 .enn .hash { display: block; margin-top: 4px; padding: 6px 8px; border-radius: 8px; background: var(--k-bg); font-size: 11.5px; letter-spacing: .04em; color: var(--k-text-muted); overflow-wrap: anywhere; }
 
 /* ---------- Vérification · B · En bref (feuille posée sur l'omikuji) ---------- */
-.enn .m3-verif-bg { opacity: .4; }
-
-.enn .m3-veil-route { padding: 0 8px 84px; }
-
-@media (min-width: 768px) {
-.enn .m3-veil-route { padding: 0; }
-}
-
-.enn .m3-veil-route .sheet { border-radius: 24px; max-height: calc(100% - 24px); overflow: auto; }
-
 .enn .verify { display: flex; flex-direction: column; gap: 10px; padding: 8px 16px 18px; }
 
 .enn .verify summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
@@ -607,63 +431,19 @@
 
 .enn .m3-myline { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; background: var(--k-surface-2); font-size: 13.5px; }
 
-/* ---------- Explications « ? » · B · Carte dorée ---------- */
-.enn .m3-gold-sheet { background: transparent; border: 0; box-shadow: none; padding: 0 14px 14px; overflow: visible; }
-
-.enn .m3-gold { border-radius: 18px; padding: 4px; background: linear-gradient(135deg, #8a6a1f 0%, #e4c56a 35%, #b8902f 60%, #f0d98c 100%); box-shadow: var(--k-float-shadow); }
-
-.enn .m3-gold-in { border-radius: 14px; overflow: hidden; background: var(--k-surface); }
-
-.enn .expl { display: flex; flex-direction: column; gap: 12px; padding: 0 0 18px; }
-
-.enn .expl-art { height: 150px; min-height: 150px; border-radius: 0; }
-
-.enn .expl-body { padding: 0 18px; display: flex; flex-direction: column; gap: 10px; }
-
-.enn .expl-body h3 { font-family: var(--font-heading); font-weight: 400; font-size: 22px; }
-
-.enn .expl-body ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; }
-
-.enn .expl-body li .gifts { margin-top: 6px; }
-
-/* ---------- Titres sur le profil ---------- */
-.enn .m3-titles { align-items: flex-start; }
-
-.enn .m3-tsuna-prof, .enn .m3-tsuna-card { width: 140px; height: 36px; }
-
-.enn .m3-tsuna-prof { align-self: center; }
-
-/* Mouvement réduit (système ou engrenage du jeu) : rien ne bouge */
+/* Mouvement réduit (système ou engrenage du jeu) : rien ne bouge (lanternes : ennichi-base.css) */
 @media (prefers-reduced-motion: reduce) {
-.enn .lt-body, .enn .lt-body::after, .enn .lt::after { animation: none !important; }
 .enn .hb { animation: none !important; opacity: 1; transform: none; }
+.enn .m3-nob-art { animation: none !important; }
 .enn .m3-stage, .enn .m3-stage *, .enn .m3-stage *::before, .enn .m3-stage *::after { animation: none !important; }
 .enn .roll { transform: none; transition: none; }
 .enn .m3-reel-track, .enn .m3-reel .roll, .enn .m3-reel-bar i { animation: none !important; }
 }
-[data-motion="reduced"] .enn .lt-body, [data-motion="reduced"] .enn .lt-body::after, [data-motion="reduced"] .enn .lt::after { animation: none !important; }
 [data-motion="reduced"] .enn .hb { animation: none !important; opacity: 1; transform: none; }
 [data-motion="reduced"] .enn .m3-stage, [data-motion="reduced"] .enn .m3-stage *, [data-motion="reduced"] .enn .m3-stage *::before, [data-motion="reduced"] .enn .m3-stage *::after { animation: none !important; }
 [data-motion="reduced"] .enn .roll { transform: none; transition: none; }
 [data-motion="reduced"] .enn .m3-reel-track, [data-motion="reduced"] .enn .m3-reel .roll, [data-motion="reduced"] .enn .m3-reel-bar i { animation: none !important; }
 
-/* ---------- Ajouts de l'app : images posées par les composants (cadrages, thèmes) ---------- */
-/* Rue : un cadrage par appareil, l'image du thème en fond (variables posées par Street) */
-.enn .street { --img-ar: 1080 / 720; --img-r: 1.5; }
-.enn .rue-board.is-desk { display: none; }
-[data-theme="washi"] .enn .rue-board { background-image: var(--img-w); }
-@media (min-width: 768px) {
-  .enn .street { --img-ar: 2400 / 700; --img-r: 3.4286; }
-  .enn .rue-board.is-phone { display: none; }
-  .enn .rue-board.is-desk { display: block; }
-}
-/* Fond selon le thème et l'appareil (sanctuaire…) : variables posées par themedBg */
-.enn .themed-bg { background-image: var(--bg-yt); background-size: cover; background-position: 50% 50%; background-repeat: no-repeat; }
-[data-theme="washi"] .enn .themed-bg { background-image: var(--bg-wt); }
-@media (min-width: 768px) {
-  .enn .themed-bg { background-image: var(--bg-yd); }
-  [data-theme="washi"] .enn .themed-bg { background-image: var(--bg-wd); }
-}
 /* Dohyō : l'image du cadrage, posée en bas de la scène */
 .enn .m3-ring { background: var(--ring-t) 50% 100% / contain no-repeat; aspect-ratio: 1080 / 400; }
 @media (min-width: 768px) { .enn .m3-ring { background-image: var(--ring-d); aspect-ratio: 1800 / 480; } }

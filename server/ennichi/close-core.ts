@@ -5,11 +5,13 @@
 //      révoqués), tickets et cagnotte figés avec leur empreinte, graine révélée, omikuji tiré (lib/ennichi/omikuji.ts),
 //      titres créés, prix inscrits ; puis chaque prix est versé une fois, dans sa propre transaction.
 // Un cron de secours tire à la date de clôture si l'équipe ne l'a pas fait. Client injecté : serveur ou tests.
+// La graine est scellée (server/ennichi/seed.ts) : la base n'en garde qu'un nonce jusqu'au tirage.
 import { randomBytes, randomUUID } from "node:crypto";
-import type { Prisma, PrismaClient } from "@/generated/prisma/client";
+import { Prisma, type PrismaClient } from "@/generated/prisma/client";
+import { STAFF_ROLES } from "@/lib/admin/roles";
 import type { DetectionScoring } from "@/lib/anticheat/scoring";
 import { commitOf, seedHex } from "@/lib/casino/fairness";
-import { drawOmikuji, ticketsHash } from "@/lib/ennichi/omikuji";
+import { drawOmikuji, ticketsHash, unfoldPool } from "@/lib/ennichi/omikuji";
 import { ennichiPhase, ennichiSchedule, rankBand, rankRecruiters, type EnnichiRules, type EnnichiTitle } from "@/lib/ennichi/rules";
 import type { ReferralV2Rules } from "@/lib/referral/rules";
 import { writeAdminLog } from "../admin/log";
@@ -17,6 +19,7 @@ import type { LotDeps } from "../economy/lots";
 import { applyHold } from "../referral/holds";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { grantPrizeInTx, readPrize } from "./prize";
+import { editionSeed, ennichiSealedSeed } from "./seed";
 
 type Db = PrismaClient | Prisma.TransactionClient;
 const TX = { maxWait: 10_000, timeout: 60_000 };
@@ -29,54 +32,70 @@ export class EnnichiCloseError extends Error {
   }
 }
 
-/** Graine de l'édition, tirée et engagée une fois (seule son empreinte est publiée). */
-export async function commitSeedWith(db: Db, edition: number, now: Date): Promise<{ seedHash: string; committedAt: Date }> {
-  const seed = seedHex(randomBytes(32));
-  const hash = await commitOf(seed);
+/**
+ * Graine de l'édition, engagée une fois (seule son empreinte est publiée) : la base ne garde que le nonce, la graine
+ * se retrouve avec la clé du serveur (`seedKey`, dérivée d'AUTH_SECRET) et n'est écrite en clair qu'au tirage.
+ */
+export async function commitSeedWith(db: Db, edition: number, now: Date, seedKey: Uint8Array): Promise<{ seedHash: string; committedAt: Date }> {
+  const nonce = seedHex(randomBytes(32));
+  const hash = await commitOf(ennichiSealedSeed(seedKey, nonce));
   await db.$executeRaw`
-    INSERT INTO "EnnichiDraw" (edition, "seedHash", seed, "committedAt") VALUES (${edition}, ${hash}, ${seed}, ${now})
+    INSERT INTO "EnnichiDraw" (edition, "seedHash", "seedNonce", "committedAt") VALUES (${edition}, ${hash}, ${nonce}, ${now})
     ON CONFLICT (edition) DO NOTHING`;
   return db.ennichiDraw.findUniqueOrThrow({ where: { edition }, select: { seedHash: true, committedAt: true } });
 }
 
-// Un parrainage de la fête compte s'il n'est ni révoqué, ni bloqué sans décision, et si aucun des deux comptes n'est
-// banni (même prédicat dans les deux requêtes ci-dessous).
+/** Qui compte au banzuke et à l'omikuji : réglage ennichi.excludeStaff (comptes de l'équipe écartés ou non). */
+export type FeteCount = { excludeStaff: boolean };
+
+/**
+ * Parrainages de la fête qui comptent (alias r, parrain u, filleul e) : ami arrivé pendant l'édition et installé avant
+ * `until`, ni révoqué, ni bloqué sans décision ; parrain ni banni, ni gelé, ni anonymisé (ni de l'équipe si le réglage
+ * l'écarte) ; filleul pas banni. Le même prédicat pour le banzuke, les tickets et leur compte.
+ */
+const feteReferralWhere = (edition: number, until: Date, count: FeteCount) => Prisma.sql`
+  r."ennichiEdition" = ${edition} AND r."step2At" IS NOT NULL AND r."step2At" <= ${until}
+  AND r."revokedAt" IS NULL AND r.status <> 'REVOKED' AND (r."heldAt" IS NULL OR r."reviewDecision" = 'VALIDATED')
+  AND u."bannedAt" IS NULL AND u."deletionRequestedAt" IS NULL AND u."anonymizedAt" IS NULL AND e."bannedAt" IS NULL
+  ${count.excludeStaff ? Prisma.sql`AND u.role::text NOT IN (${Prisma.join(STAFF_ROLES)})` : Prisma.empty}`;
 
 export type RecruiterRow = { userId: string; name: string; count: number; reachedAt: Date };
 
-/** Recruteurs de la fête : amis arrivés pendant l'édition et installés avant `until`, par parrain (comptes non bannis). */
-export async function recruitersWith(db: Db, edition: number, until: Date): Promise<RecruiterRow[]> {
+/** Recruteurs de la fête : amis arrivés pendant l'édition et installés avant `until`, par parrain. */
+export async function recruitersWith(db: Db, edition: number, until: Date, count: FeteCount): Promise<RecruiterRow[]> {
   return db.$queryRaw<RecruiterRow[]>`
     SELECT r."referrerId" AS "userId", u.username AS name, COUNT(*)::int AS count, MAX(r."step2At") AS "reachedAt"
     FROM "Referral" r
     JOIN "User" u ON u.id = r."referrerId"
     JOIN "User" e ON e.id = r."refereeId"
-    WHERE r."ennichiEdition" = ${edition} AND r."step2At" IS NOT NULL AND r."step2At" <= ${until}
-      AND r."revokedAt" IS NULL AND r.status <> 'REVOKED' AND (r."heldAt" IS NULL OR r."reviewDecision" = 'VALIDATED')
-      AND u."bannedAt" IS NULL AND u."deletionRequestedAt" IS NULL AND u."anonymizedAt" IS NULL AND e."bannedAt" IS NULL
+    WHERE ${feteReferralWhere(edition, until, count)}
     GROUP BY r."referrerId", u.username`;
 }
 
 /** Tickets de l'omikuji : un par ami arrivé pendant la fête et installé, dans l'ordre des installations. */
-export async function ticketsWith(db: Db, edition: number, until: Date): Promise<{ userId: string; name: string }[]> {
+export async function ticketsWith(db: Db, edition: number, until: Date, count: FeteCount): Promise<{ userId: string; name: string }[]> {
   return db.$queryRaw<{ userId: string; name: string }[]>`
     SELECT r."referrerId" AS "userId", u.username AS name
     FROM "Referral" r
     JOIN "User" u ON u.id = r."referrerId"
     JOIN "User" e ON e.id = r."refereeId"
-    WHERE r."ennichiEdition" = ${edition} AND r."step2At" IS NOT NULL AND r."step2At" <= ${until}
-      AND r."revokedAt" IS NULL AND r.status <> 'REVOKED' AND (r."heldAt" IS NULL OR r."reviewDecision" = 'VALIDATED')
-      AND u."bannedAt" IS NULL AND u."deletionRequestedAt" IS NULL AND u."anonymizedAt" IS NULL AND e."bannedAt" IS NULL
+    WHERE ${feteReferralWhere(edition, until, count)}
     ORDER BY r."step2At" ASC, r.id ASC`;
+}
+
+/** Nombre de tickets en jeu (compté en base, sans lire la liste), d'un joueur seulement si `userId` est donné. */
+export async function ticketCountWith(db: Db, edition: number, until: Date, count: FeteCount, userId?: string): Promise<number> {
+  const [row] = await db.$queryRaw<{ n: number }[]>`
+    SELECT COUNT(*)::int AS n
+    FROM "Referral" r
+    JOIN "User" u ON u.id = r."referrerId"
+    JOIN "User" e ON e.id = r."refereeId"
+    WHERE ${feteReferralWhere(edition, until, count)} ${userId ? Prisma.sql`AND r."referrerId" = ${userId}` : Prisma.empty}`;
+  return row?.n ?? 0;
 }
 
 /** Libellé public d'un ticket figé (« 12 · Léa »). */
 export const ticketLabel = (n: number, name: string) => `${n} · ${name}`;
-
-/** Cagnotte dépliée dans l'ordre (le plus rare d'abord) ; une ligne sans lot ni carte 1/1 ne part pas. */
-export function unfoldPool(pool: EnnichiRules["omikuji"]): { lotId: string | null; oneOfOne: boolean; line: number }[] {
-  return pool.flatMap((p, line) => (p.oneOfOne || p.lotId ? Array.from({ length: Math.max(0, p.count) }, () => ({ lotId: p.lotId, oneOfOne: p.oneOfOne, line })) : []));
-}
 
 /** « Contrôler » : score de chaque parrainage de la fête recalculé ; au-dessus du seuil, « À vérifier ». */
 export async function checkEnnichiWith(
@@ -99,30 +118,38 @@ export async function checkEnnichiWith(
   return { checked: referrals.length, held };
 }
 
-const TITLE_LABEL: Record<EnnichiTitle, { fr: string; en: string; rank: { fr: string; en: string } }> = {
-  yokozuna: { fr: "Yokozuna", en: "Yokozuna", rank: { fr: "1er", en: "1st" } },
-  ozeki: { fr: "Ōzeki", en: "Ōzeki", rank: { fr: "2e ou 3e", en: "2nd or 3rd" } },
-  sekiwake: { fr: "Sekiwake", en: "Sekiwake", rank: { fr: "4e à 10e", en: "4th to 10th" } },
-};
+/**
+ * Libellé et consigne d'un titre sumo créé au tirage, en français et en anglais (messages ennichi.cosmetic), d'après la
+ * plage de rangs réglée qui le donne. Construit par le serveur (server/ennichi/deps.ts) ; les tests en passent un.
+ */
+export type TitleText = (title: EnnichiTitle, band: { from: number; to: number }, edition: number) => { label: { fr: string; en: string }; hint: { fr: string; en: string } };
 
-/** Titres sumo de l'édition, en cosmétiques (créés au tirage s'ils manquent), débloqués par le classement final. */
-async function ensureTitles(tx: Prisma.TransactionClient, edition: number, year: number, titles: readonly EnnichiTitle[]) {
+/** Titres sumo gagnés, en cosmétiques (créés au tirage s'ils manquent), débloqués par le classement final. */
+async function ensureTitles(tx: Prisma.TransactionClient, edition: number, ranks: EnnichiRules["ranks"], titles: readonly EnnichiTitle[], text: TitleText) {
   const unique = [...new Set(titles)];
   if (unique.length === 0) return;
   await tx.cosmetic.createMany({
-    data: unique.map((title, i) => ({
-      kind: "TITLE" as const,
-      slug: `ennichi-${edition}-${title}`,
-      label: { fr: `${TITLE_LABEL[title].fr} · Ennichi ${year}`, en: `${TITLE_LABEL[title].en} · Ennichi ${year}` },
-      hint: { fr: `Finir ${TITLE_LABEL[title].rank.fr} au banzuke de l'Ennichi ${year}.`, en: `Finish ${TITLE_LABEL[title].rank.en} in the Ennichi ${year} banzuke.` },
-      condition: { type: "ENNICHI_TITLE", edition, title },
-      sortOrder: 9_000 + edition * 10 + i,
-    })),
+    data: unique.map((title, i) => {
+      // Plage de rangs réelle du titre (du premier rang de sa première ligne au dernier de sa dernière)
+      const bands = ranks.filter((r) => r.title === title);
+      const { label, hint } = text(title, { from: Math.min(...bands.map((b) => b.from)), to: Math.max(...bands.map((b) => b.to)) }, edition);
+      return {
+        kind: "TITLE" as const,
+        slug: `ennichi-${edition}-${title}`,
+        label,
+        hint,
+        condition: { type: "ENNICHI_TITLE", edition, title },
+        sortOrder: 9_000 + edition * 10 + i,
+      };
+    }),
     skipDuplicates: true,
   });
 }
 
 export type DrawOutcome = { ranked: number; tickets: number; draws: number; awards: number };
+
+/** Ce que le tirage reçoit du serveur : la clé des graines scellées et les textes des titres sumo. */
+export type DrawSecrets = { seedKey: Uint8Array; titleText: TitleText };
 
 /**
  * « Arrêter et tirer » (ou cron de secours, `staffId` null) : tout se fige dans une transaction, la ligne de l'édition
@@ -130,34 +157,43 @@ export type DrawOutcome = { ranked: number; tickets: number; draws: number; awar
  */
 export async function drawEnnichiWith(
   db: PrismaClient,
-  input: { staffId: string | null; rules: EnnichiRules; now: Date },
+  input: { staffId: string | null; rules: EnnichiRules; now: Date } & DrawSecrets,
 ): Promise<DrawOutcome> {
   const { rules, now } = input;
   const edition = rules.edition;
   return db.$transaction(async (tx) => {
-    const [draw] = await tx.$queryRaw<{ seed: string; drawnAt: Date | null }[]>`
-      SELECT seed, "drawnAt" FROM "EnnichiDraw" WHERE edition = ${edition} FOR UPDATE`;
+    const [draw] = await tx.$queryRaw<{ seed: string | null; seedNonce: string | null; seedHash: string; drawnAt: Date | null }[]>`
+      SELECT seed, "seedNonce", "seedHash", "drawnAt" FROM "EnnichiDraw" WHERE edition = ${edition} FOR UPDATE`;
     if (!draw) throw new EnnichiCloseError("NO_SEED");
     if (draw.drawnAt) throw new EnnichiCloseError("ALREADY_DRAWN");
     if (ennichiPhase(rules, now, null) !== "closing") throw new EnnichiCloseError("NOT_CLOSING");
+    // Graine retrouvée avec la clé du serveur ; une graine qui ne redonne pas l'empreinte publiée (clé changée, copie
+    // de la base avec un autre AUTH_SECRET) ne tire jamais : les joueurs ne pourraient pas vérifier le tirage
+    const seed = editionSeed(draw, input.seedKey);
+    if (!seed || (await commitOf(seed)) !== draw.seedHash) throw new Error(`Graine de l'Ennichi n° ${edition} illisible avec la clé du serveur`);
 
     // Comptés jusqu'à la clôture annoncée (« figé le … »), même si le tirage se fait après (cron de secours, retard)
     const schedule = ennichiSchedule(rules);
     const until = schedule && schedule.closesAt < now ? schedule.closesAt : now;
-    const ranked = rankRecruiters(await recruitersWith(tx, edition, until));
-    const tickets = await ticketsWith(tx, edition, until);
+    const count = { excludeStaff: rules.excludeStaff };
+    const ranked = rankRecruiters(await recruitersWith(tx, edition, until, count));
+    const tickets = await ticketsWith(tx, edition, until, count);
     const labels = tickets.map((t, i) => ticketLabel(i + 1, t.name));
     const prizes = unfoldPool(rules.omikuji);
-    const draws = await drawOmikuji(draw.seed, tickets.length, prizes.length);
+    const draws = await drawOmikuji(seed, tickets.length, prizes.length);
 
     await tx.ennichiDraw.update({
       where: { edition },
       data: {
         drawnAt: now,
         drawnById: input.staffId,
+        // La graine est révélée avec les résultats (vérification du joueur)
+        seed,
         ticketsHash: await ticketsHash(labels),
         tickets: labels,
         prizes: prizes.map(({ lotId, oneOfOne, line }) => ({ lotId, oneOfOne, line })),
+        // Rangs figés : les pages de résultats ne suivent plus un réglage changé après le tirage
+        ranks: rules.ranks.map((r) => ({ from: r.from, to: r.to, title: r.title, lotId: r.lotId, choiceVouchers: r.choiceVouchers, oneOfOne: r.oneOfOne })),
       },
       select: { edition: true },
     });
@@ -179,8 +215,7 @@ export async function drawEnnichiWith(
       }),
     ];
     if (awards.length) await tx.ennichiAward.createMany({ data: awards.map((a) => ({ id: randomUUID(), edition, ...a, createdAt: now })) });
-    const year = new Date(rules.startsAt ?? now).getUTCFullYear();
-    await ensureTitles(tx, edition, year, ranked.flatMap((r) => rankBand(r.rank, rules.ranks)?.title ?? []));
+    await ensureTitles(tx, edition, rules.ranks, ranked.flatMap((r) => rankBand(r.rank, rules.ranks)?.title ?? []), input.titleText);
     if (input.staffId) {
       await writeAdminLog(tx, {
         adminId: input.staffId,
