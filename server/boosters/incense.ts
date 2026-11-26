@@ -1,8 +1,13 @@
 import "server-only";
 import { cardsToNextIncense, incenseAvailable, isIncenseActive, type IncenseSettings } from "@/lib/boosters/incense";
+import { pulledTally } from "@/lib/boosters/pulled-tally";
 import { prisma } from "../db";
 import { getSetting } from "../settings";
-import { activateIncenseWith, cardsPulled } from "./incense-core";
+import { activateIncenseWith, cardsPulledLoaders } from "./incense-core";
+
+// Affichage (accueil, profil) : compteur en cache par joueur, exact sans invalidation. L'activation,
+// elle, recompte tout sous le verrou du joueur (activateIncenseWith).
+const displayedPulled = pulledTally(cardsPulledLoaders(prisma));
 
 /** Réglages de l'Encens, lus dans GameSetting. */
 export async function getIncenseSettings(): Promise<IncenseSettings> {
@@ -34,7 +39,7 @@ export async function getIncenseState(userId: string, now = new Date()): Promise
   const [settings, user, pulled] = await Promise.all([
     getIncenseSettings(),
     prisma.user.findUnique({ where: { id: userId }, select: { incenseUsed: true, incenseBonus: true, incenseUntil: true } }),
-    cardsPulled(prisma, userId),
+    displayedPulled(userId, now),
   ]);
   if (!user) return null;
   return {

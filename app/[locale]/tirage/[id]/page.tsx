@@ -26,10 +26,10 @@ async function load(id: string) {
   return { opening, type: entry?.type ?? null, boosterName: entry ? localize(entry.type.name, locale) : opening.slug };
 }
 
-/** Pseudo affiché : « Un joueur » si le profil le cache, « Invité-XXXX » pour un invité. */
+/** Pseudo affiché : « Invité-XXXX » pour un invité, sinon celui que getPublicOpening a choisi selon la visibilité du profil. */
 function ownerName(
   loaded: { opening: { owner: { name: string; guestCode: string | null } } },
-  t: { anonymous: () => string; guest: (code: string) => string },
+  t: { guest: (code: string) => string },
 ): string {
   return loaded.opening.owner.guestCode ? t.guest(loaded.opening.owner.guestCode) : loaded.opening.owner.name;
 }
@@ -40,7 +40,7 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/[lo
   if (!loaded) return {};
   const [t, tAccount, locale] = await Promise.all([getTranslations("draw"), getTranslations("account"), getLocale()]);
   const { boosterName } = loaded;
-  const name = ownerName(loaded, { anonymous: () => t("anonymous"), guest: (code) => tAccount("guestName", { code }) });
+  const name = ownerName(loaded, { guest: (code) => tAccount("guestName", { code }) });
   const title = t("title", { name });
   const description = t("description", { name, booster: boosterName });
   return {
@@ -65,7 +65,7 @@ export default async function DrawPage({ params }: PageProps<"/[locale]/tirage/[
     getTranslations("opening"),
     getFormatter(),
   ]);
-  const name = ownerName(loaded, { anonymous: () => t("anonymous"), guest: (code) => tAccount("guestName", { code }) });
+  const name = ownerName(loaded, { guest: (code) => tAccount("guestName", { code }) });
 
   return (
     <PageShell>

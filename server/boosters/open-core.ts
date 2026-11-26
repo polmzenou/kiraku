@@ -22,6 +22,7 @@ import type { Rng } from "@/lib/boosters/rng";
 import { computeStock, consumeStock, stockRulesFor, type StockSettings, type StockState } from "@/lib/boosters/stock";
 import { bonusesFor, creditBonuses, priceFor, type BoosterTypeView } from "@/lib/boosters/types";
 import type { Rarity } from "@/lib/catalog/rarity";
+import { isNotablePull } from "@/lib/home/notable-pulls";
 import { printingSize, rollEngravings, type Edition, type PrintingRules } from "@/lib/prestige/printing";
 import type { OpeningSource } from "@/lib/referral/steps";
 import { consumeBoosters, CreditError } from "../economy/credits";
@@ -286,7 +287,7 @@ async function persistDraw(
   });
   // Gros tirages pour le carrousel « En direct » de l'accueil (la rareté affichée se règle à la lecture)
   // Pas pour un booster garanti : le fil montre la chance, pas les cadeaux de l'équipe
-  const notable = type.kind === "GUARANTEED" ? [] : boosters.flatMap((b) => b.cards.filter((c) => rarityOrder.indexOf(c.rarity) >= rarityOrder.indexOf("EPIC")));
+  const notable = type.kind === "GUARANTEED" ? [] : boosters.flatMap((b) => b.cards.filter((c) => isNotablePull(c.rarity, rarityOrder)));
   if (notable.length > 0) {
     await tx.notablePull.createMany({
       data: notable.map((c) => ({

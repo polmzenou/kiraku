@@ -2,16 +2,16 @@ import { describe, expect, it } from "vitest";
 import { RARITIES, VARIANT_RARITIES, type Rarity } from "@/lib/catalog/rarity";
 import { BOOSTER_SEEDS } from "@/prisma/seed/booster-types";
 import { apocalypseSparedShare } from "./draw";
-import { DEFAULT_RULES, NO_BONUS } from "./fixtures";
+import { DEFAULT_RULES, DEFAULT_RUIN, NO_BONUS } from "./fixtures";
 import {
   atLeastOdds,
   boosterChances,
   dropRates,
   featuredBoosterChance,
-  featuredMeanGap,
   longRunMythicRate,
   mythicsPerDay,
   resolveRarity,
+  sealedOdds,
   slotDistribution,
   type PoolCounts,
 } from "./odds";
@@ -210,11 +210,34 @@ describe("chances vedette (bannière)", () => {
     const p = featuredBoosterChance(rates, DEFAULT_RULES.slotFloors, { rate: 0, featured, counts: pool });
     expect(p).toBeCloseTo(atLeastOdds(rates, DEFAULT_RULES.slotFloors).MYTHIC / 200, 6);
   });
+});
 
-  it("la pitié vedette borne l'écart moyen", () => {
-    expect(featuredMeanGap(0, 100)).toBe(100);
-    expect(featuredMeanGap(1, 100)).toBe(1);
-    expect(featuredMeanGap(0.01, 100)).toBeCloseTo((1 - 0.99 ** 100) / 0.01, 9);
-    expect(featuredMeanGap(0.01, 0)).toBeCloseTo(100, 9);
+describe("chances d'un sachet scellé (fiche admin)", () => {
+  const pool = counts(NO_VARIANTS);
+
+  it("Divin : planchers divins, une Mythique à coup sûr, quels que soient les planchers du type", () => {
+    const own = { ...DEFAULT_RULES, slotFloors: ["COMMON", "COMMON", "COMMON", "COMMON", "COMMON"] as Rarity[] };
+    const { atLeast, divineFloors, sparedShare } = sealedOdds("divin", own, DEFAULT_RUIN, pool);
+    expect(divineFloors).toEqual(["EPIC", "EPIC", "EPIC", "EPIC", "MYTHIC"]);
+    expect(atLeast.EPIC).toBeCloseTo(1, 12);
+    expect(atLeast.MYTHIC).toBeCloseTo(1, 12);
+    expect(sparedShare).toBeNull();
+  });
+
+  it("Apocalyptique : Mythique seulement épargné (karma compris), jamais au-dessus du plafond une fois ruiné", () => {
+    const { atLeast, sparedShare } = sealedOdds("apocalypse", DEFAULT_RULES, DEFAULT_RUIN, pool);
+    const share = apocalypseSparedShare(DEFAULT_RULES.apocalypseWinRate, DEFAULT_RULES.apocalypseKarma);
+    expect(sparedShare).toBeCloseTo(share, 12);
+    expect(atLeast.MYTHIC).toBeCloseTo(share, 12);
+    expect(atLeast.RARE).toBeCloseTo(share, 12);
+    // Les planchers de ruine comptent une Peu commune : toujours au moins une
+    expect(atLeast.UNCOMMON).toBeCloseTo(1, 12);
+  });
+
+  it("Apocalyptique toujours ruiné : les chances de la ruine seule", () => {
+    const { atLeast } = sealedOdds("apocalypse", { ...DEFAULT_RULES, apocalypseWinRate: 0, apocalypseKarma: 0 }, DEFAULT_RUIN, pool);
+    expect(atLeast.RARE).toBe(0);
+    expect(atLeast.MYTHIC).toBe(0);
+    expect(atLeast.COMMON).toBeCloseTo(1, 12);
   });
 });

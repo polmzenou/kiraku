@@ -1,5 +1,15 @@
 import { RARITIES, type Rarity } from "@/lib/catalog/rarity";
-import { apocalypseSparedShare, floorsFor, ratesFrom, rarityIndex, type DrawBonuses, type DrawRules, type RarityRates } from "./draw";
+import {
+  apocalypseSparedShare,
+  capRates,
+  floorsFor,
+  ratesFrom,
+  rarityIndex,
+  type DrawRules,
+  type RarityRates,
+  type RuinRules,
+  type SealedKind,
+} from "./draw";
 
 // Probabilités exactes (sans hasard) d'un booster : affichées dans le panneau « Chance par booster »,
 // dans l'aperçu d'impact de l'admin, et comparées à la simulation dans les tests.
@@ -58,15 +68,38 @@ export function atLeastOdds(rates: RarityRates, floors: readonly Rarity[], count
   return result;
 }
 
-/** Règles d'un type : sans doré ni sachets scellés s'il n'y a pas droit, sans pitié s'il n'y compte pas. */
-export function rulesWithBonuses(rules: DrawRules, bonuses: DrawBonuses): DrawRules {
-  return {
-    ...rules,
-    goldenEvery: bonuses.golden ? rules.goldenEvery : 0,
-    divineOdds: bonuses.drop ? rules.divineOdds : 0,
-    apocalypseOdds: bonuses.drop ? rules.apocalypseOdds : 0,
-    pityThreshold: bonuses.pity ? rules.pityThreshold : Number.MAX_SAFE_INTEGER,
-  };
+/** Chances d'un sachet scellé, avec les planchers réellement tirés. */
+export type SealedOdds = {
+  atLeast: RarityOdds;
+  /** Planchers du contenu divin (Divin, Apocalyptique épargné) : seul le nombre d'emplacements du type compte. */
+  divineFloors: Rarity[];
+  /** Apocalyptique : part épargnée sur le long terme (karma compris) ; null pour un Divin. */
+  sparedShare: number | null;
+};
+
+/**
+ * Chances d'un sachet scellé, comme à son ouverture (drawSealed) : Divin avec les planchers divins (tout
+ * Épique ou mieux, dernière Mythique ou mieux) ; Apocalyptique en moyenne sur le long terme, épargné
+ * (contenu d'un Divin) ou ruiné (planchers et plafond de ruine, pool plafonné).
+ */
+export function sealedOdds(
+  kind: SealedKind,
+  rules: Pick<DrawRules, "rates" | "slotFloors" | "goldenFloor" | "rarities" | "apocalypseWinRate" | "apocalypseKarma">,
+  ruin: RuinRules,
+  counts: PoolCounts,
+): SealedOdds {
+  const order = rules.rarities ?? Object.keys(rules.rates);
+  const divineFloors = floorsFor(rules.slotFloors, { golden: false, divine: true, goldenFloor: rules.goldenFloor, rarities: order });
+  const divine = atLeastOdds(rules.rates, divineFloors, counts);
+  if (kind === "divin") return { atLeast: divine, divineFloors, sparedShare: null };
+
+  const spared = apocalypseSparedShare(rules.apocalypseWinRate, rules.apocalypseKarma);
+  // Ruiné : rien au-dessus du plafond, ni dans les parts ni dans le pool (un palier vide ne remonte pas au-delà)
+  const max = order.indexOf(ruin.ceiling);
+  const capped = Object.fromEntries(Object.keys(counts).map((r) => [r, max >= 0 && order.indexOf(r) > max ? 0 : counts[r]])) as PoolCounts;
+  const ruined = atLeastOdds(capRates(rules.rates, ruin.ceiling), ruin.floors, capped);
+  const atLeast = Object.fromEntries(Object.keys(divine).map((r) => [r, spared * divine[r] + (1 - spared) * (ruined[r] ?? 0)])) as RarityOdds;
+  return { atLeast, divineFloors, sparedShare: spared };
 }
 
 /**
@@ -115,13 +148,6 @@ export function featuredBoosterChance(
   input: { rate: number; featured: PoolCounts; counts: PoolCounts },
 ): number {
   return 1 - floors.reduce((none, f) => none * (1 - featuredSlotChance(rates, f, input)), 1);
-}
-
-/** Écart moyen entre deux vedettes avec une pitié au N-ième booster : Σ (1 − q)^k pour k < N. */
-export function featuredMeanGap(perBooster: number, pityThreshold: number): number {
-  if (pityThreshold <= 0) return perBooster > 0 ? 1 / perBooster : Infinity;
-  if (perBooster <= 0) return pityThreshold;
-  return (1 - (1 - perBooster) ** pityThreshold) / perBooster;
 }
 
 /** Au-delà, la pitié est considérée hors d'atteinte (seuil désactivé). */

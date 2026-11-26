@@ -1184,9 +1184,7 @@
   "draw": {
     "title": "{name}'s pull",
     "description": "{name} opened a {booster} pack on Kiraku.",
-    "openedBy": "Opened by {name}",
-    "cta": "Open my packs",
-    "anonymous": "Mystery player"
+    "cta": "Open my packs"
   },
   "admin": {
     "devReadOnly": "DEV access: you can view settings and data but not change them; only an admin saves changes or turns features on. In the catalog, you prepare drafts for an admin to publish. The test benches (battle, opening) stay usable; nothing there is saved. Exceptions: the Kyara import and referrals, which the whole team handles and configures.",
@@ -1900,11 +1898,24 @@
       },
       "oddsTitle": "Exact odds on the current pool",
       "oddsHint": "Computed with the global shares and this pool's empty tiers, exactly as drawn.",
+      "sealedFloors": "Sealed pack: drawn with the divine floors above (all Epic or better, the last one Mythic or better), not with the type's own floors, of which only the number counts.",
+      "sealedApocalypse": "Long-run average odds: spared {share} of the time, karma included (divine contents), otherwise ruined, with nothing above the ruin ceiling:",
       "guaranteedLast": "Last card: always {rarity} ({count, plural, =0 {no card in the pool: the booster cannot be opened} one {# card in the pool} other {# cards in the pool}}). The table only counts the other cards.",
       "back": "All types",
       "editTitle": "Edit “{name}”",
       "newBannerTitle": "New featured banner",
-      "newFocus": "New series focus"
+      "newFocus": "New series focus",
+      "kinds": {
+        "STANDARD": "Standard",
+        "RARITY": "Rarity",
+        "FILTERED": "Filtered",
+        "BANNER": "Banner",
+        "FORMAT": "Format",
+        "FOCUS": "Series focus",
+        "DROP": "Sealed pack",
+        "PRESTIGE": "Prestige",
+        "GUARANTEED": "Guaranteed"
+      }
     },
     "form": {
       "identity": "Identity",
@@ -1961,6 +1972,7 @@
       "slotFloors": "Minimum rarity of each card",
       "slotFloorsGlobal": "Global contents ({count} cards)",
       "useOwnFloors": "Contents specific to this booster",
+      "sealedFloorsHint": "Sealed pack: these floors are not used by the draw, only their number counts. The Divine pack (and a spared Apocalyptic one) always draws Epic or better, the last card Mythic or better; a ruined Apocalyptic pack follows the ruin floors of the booster settings.",
       "addSlot": "Add a card",
       "removeSlot": "Remove card {n}",
       "slot": "Card {n}",
@@ -2008,7 +2020,29 @@
       "focusEndsHint": "Required: the booster disappears at this date and a countdown is shown.",
       "includeCustom": "Automatically include original creations",
       "includeCustomOn": "Hand-made cards join this booster as soon as they pass its filter, like AniList cards: nothing to check on their page. Exclusive variants still need to be checked.",
-      "includeCustomOff": "Only original creations checked on their page join this booster (sealed packs, Prestige, events)."
+      "includeCustomOff": "Only original creations checked on their page join this booster (sealed packs, Prestige, events).",
+      "patterns": {
+        "asanoha": "Asanoha (hemp leaf)",
+        "seigaiha": "Seigaiha (waves)",
+        "ichimatsu": "Ichimatsu (checkerboard)",
+        "shippo": "Shippō (interlocking circles)",
+        "uroko": "Uroko (scales)",
+        "yagasuri": "Yagasuri (arrow feathers)",
+        "kumo": "Kumo (clouds)",
+        "sakura": "Sakura (cherry blossoms)",
+        "kin": "Kin (gold leaf)",
+        "raden": "Raden (mother-of-pearl)",
+        "goko": "Gokō (golden halo, Divine)",
+        "kikko": "Kikkō (tortoiseshell)",
+        "none": "Plain",
+        "yami": "Yami (black lacquer, Black Rare)",
+        "suminagashi": "Suminagashi (marbled ink, AR)",
+        "vitrail": "Stained glass (Vitrail Rare)",
+        "kinpaku": "Kinpaku (gold squares, Gold)",
+        "shuchusen": "Shūchūsen (speed lines, Manga Rare)",
+        "hitodama": "Hitodama (wisps, Spirit)",
+        "prisme": "Prism (holographic, Xtreme Rare)"
+      }
     },
     "banners": {
       "title": "Featured banners",

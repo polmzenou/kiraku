@@ -4,7 +4,7 @@ import { updateTag } from "next/cache";
 import { z } from "@/lib/zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { boosterTypeFormSchema } from "@/lib/boosters/admin-form";
-import { filterContext } from "@/lib/boosters/pool-filter";
+import { filterContext, type PoolCandidate } from "@/lib/boosters/pool-filter";
 import { ROTATING_FAMILIES, type RotationPin } from "@/lib/boosters/rotation";
 import { slugSchema } from "@/lib/boosters/types";
 import { SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
@@ -18,6 +18,7 @@ import { forgetSettings, getSetting, SETTINGS_TAG } from "../settings";
 import { writeAdminLog } from "../admin/log";
 import { getRarities } from "../catalog/rarities";
 import { publishedCardCandidates } from "../catalog/card-search";
+import { readCatalogVersion } from "../catalog/version";
 
 // Types de boosters et bannières depuis /admin. Ordre : rôle admin → Zod → rate limit → transaction
 // avec une ligne AdminLog (avant / après) → recalcul du pool → cache invalidé (effet immédiat).
@@ -41,10 +42,13 @@ async function guard() {
   return { admin };
 }
 
-/** Taille du pool qu'aurait ce type aujourd'hui (pour refuser d'activer un pool trop petit). */
-async function poolSizeFor(type: Parameters<typeof computePoolCards>[0]) {
-  const [candidates, tz] = await Promise.all([loadCandidates(prisma), getSetting("game.timeZone")]);
-  return computePoolCards(type, candidates, filterContext(new Date(), tz)).length;
+/**
+ * Taille du pool qu'aurait ce type aujourd'hui (pour refuser d'activer un pool trop petit), sur le
+ * catalogue donné ou relu.
+ */
+async function poolSizeFor(type: Parameters<typeof computePoolCards>[0], candidates?: readonly PoolCandidate[]) {
+  const [loaded, tz] = await Promise.all([candidates ?? loadCandidates(prisma), getSetting("game.timeZone")]);
+  return computePoolCards(type, loaded, filterContext(new Date(), tz)).length;
 }
 
 const snapshot = (row: Record<string, unknown>) => {
@@ -81,7 +85,10 @@ export async function saveBoosterType(input: unknown): Promise<AdminBoosterResul
   const minPool = v.minPoolSize ?? (await getSetting("booster.minPool"));
   // Id du type existant : les créations cochées pour lui comptent dans la taille du pool, comme au recalcul
   const existingId = (await prisma.boosterType.findUnique({ where: { slug: v.slug }, select: { id: true } }))?.id;
-  const poolSize = await poolSizeFor({ id: existingId, filter, featuredCardIds: featured, includeCustom: v.includeCustom });
+  // Catalogue lu une fois pour la taille du pool et pour le recalcul qui suit l'enregistrement (~10 000 cartes)
+  const catalogVersion = await readCatalogVersion(prisma);
+  const candidates = await loadCandidates(prisma);
+  const poolSize = await poolSizeFor({ id: existingId, filter, featuredCardIds: featured, includeCustom: v.includeCustom }, candidates);
   if (v.active && poolSize < minPool) return { ok: false, error: "POOL_TOO_SMALL", poolSize };
 
   // Champs écrits un par un, jamais l'objet reçu
@@ -137,7 +144,13 @@ export async function saveBoosterType(input: unknown): Promise<AdminBoosterResul
   });
   if (result) return { ok: false, error: result };
 
-  await recomputeBoosterPools(prisma, filterContext(new Date(), await getSetting("game.timeZone")), { slugs: [v.slug] });
+  // Une édition du catalogue passée entre-temps (sa version a bougé) : catalogue relu, pour ne pas
+  // enregistrer un pool périmé daté de maintenant
+  const sameCatalog = (await readCatalogVersion(prisma)) === catalogVersion;
+  await recomputeBoosterPools(prisma, filterContext(new Date(), await getSetting("game.timeZone")), {
+    slugs: [v.slug],
+    candidates: sameCatalog ? candidates : undefined,
+  });
   updateTag(BOOSTER_TYPES_TAG);
   return { ok: true, poolSize };
 }

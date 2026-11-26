@@ -20,7 +20,6 @@ export const guaranteeGrantSchema = z
     message: noteSchema,
   })
   .strict();
-export type GuaranteeGrant = z.input<typeof guaranteeGrantSchema>;
 
 /** Cartes de la rareté garantie dans le pool du type (poolCounts en base, { COMMON: n, … }). */
 export function guaranteedPoolCount(poolCounts: unknown, rarity: Rarity): number {

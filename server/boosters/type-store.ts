@@ -155,12 +155,13 @@ export type PoolReport = { slug: string; size: number; counts: Record<Rarity, nu
 
 /**
  * Recalcule et enregistre le pool de chaque type (ou des slugs donnés). Avec `onlyStale`, seuls les
- * pools périmés sont refaits, et le catalogue n'est pas lu s'il n'y en a aucun.
+ * pools périmés sont refaits, et le catalogue n'est pas lu s'il n'y en a aucun. `candidates` : catalogue
+ * déjà chargé par l'appelant (loadCandidates), à jour, pour ne pas le relire.
  */
 export async function recomputeBoosterPools(
   db: Db,
   ctx: FilterContext,
-  opts: { slugs?: string[]; now?: Date; onlyStale?: { catalogVersion: number; timeZone: string } } = {},
+  opts: { slugs?: string[]; now?: Date; onlyStale?: { catalogVersion: number; timeZone: string }; candidates?: readonly PoolCandidate[] } = {},
 ): Promise<PoolReport[]> {
   const now = opts.now ?? new Date();
   // Requêtes l'une après l'autre : `db` peut être une transaction, qui n'a qu'une connexion.
@@ -174,7 +175,7 @@ export async function recomputeBoosterPools(
       })
     : all;
   if (rows.length === 0) return [];
-  const candidates = await loadCandidates(db);
+  const candidates = opts.candidates ?? (await loadCandidates(db));
   const reports: PoolReport[] = [];
   for (const row of rows) {
     const view = toBoosterTypeView(row);

@@ -250,7 +250,7 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, focusSerie
                 <select id={id} className={input} value={v.theme.pattern} onChange={(e) => set("theme", { ...v.theme, pattern: e.target.value as FormValues["theme"]["pattern"] })}>
                   {WAGARA.map((w) => (
                     <option key={w} value={w}>
-                      {w}
+                      {t(`patterns.${w}`)}
                     </option>
                   ))}
                 </select>
@@ -334,6 +334,8 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, focusSerie
         </Section>
 
         <Section title={t("composition")}>
+          {/* Sachet scellé : planchers fixes au tirage (lib/boosters/draw.ts, floorsFor), seul leur nombre compte */}
+          {v.kind === "DROP" && <p className="text-xs text-text-muted">{t("sealedFloorsHint")}</p>}
           <Check label={t("useOwnFloors")} checked={ownFloors} onChange={setOwnFloors} />
           {!ownFloors ? (
             <p className="text-sm text-text-muted">{t("slotFloorsGlobal", { count: globalCards })}</p>
@@ -403,7 +405,7 @@ export function BoosterTypeForm({ initial, featured: initialFeatured, focusSerie
                 <option value="">{t("rateBoostNone")}</option>
                 {RARITIES.map((r) => (
                   <option key={r} value={r}>
-                    {RARITY_SEAL[r]} {r}
+                    {RARITY_SEAL[r]} {tRarity(r)}
                   </option>
                 ))}
               </select>

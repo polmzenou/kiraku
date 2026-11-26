@@ -3,6 +3,7 @@
 import { useRarities } from "@/lib/catalog/use-rarities";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { notablePullRarities } from "@/lib/home/notable-pulls";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { PULL_FEED_SETTING_KEYS, pullFeedSettingsSchema, type PullFeedSettings } from "@/lib/settings/pull-feed-form";
 import { updatePullFeedSettings } from "@/server/actions/admin-settings";
@@ -27,8 +28,8 @@ export function PullFeedSettingsForm({ initial }: { initial: PullFeedSettings })
   const t = useTranslations("admin.pullFeed");
   const tRarity = useTranslations("rarity");
   const rarities = useRarities();
-  // Les tirages enregistrés commencent à Épique (NotablePull)
-  const pullRarities = rarities.slice(Math.max(0, rarities.indexOf("EPIC")));
+  // Seules les raretés enregistrées comme gros tirages (NotablePull) peuvent s'afficher
+  const pullRarities = notablePullRarities(rarities);
   const [draft, setDraft] = useState(initial);
   const valid = pullFeedSettingsSchema.safeParse(draft).success;
   const changed = valid ? changedSettingKeys(PULL_FEED_SETTING_KEYS, initial, draft) : [];

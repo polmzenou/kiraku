@@ -1184,9 +1184,7 @@
   "draw": {
     "title": "Tirage de {name}",
     "description": "{name} a ouvert un sachet {booster} sur Kiraku.",
-    "openedBy": "Ouvert par {name}",
-    "cta": "Ouvrir mes sachets",
-    "anonymous": "Joueur mystère"
+    "cta": "Ouvrir mes sachets"
   },
   "admin": {
     "devReadOnly": "Accès DEV : tu consultes les réglages et les données sans pouvoir les modifier, seul un admin enregistre ou active une fonctionnalité. Dans le catalogue, tu prépares des brouillons que l'admin publie. Les bancs de test (combat, ouverture) restent utilisables, rien n'y est enregistré. Exceptions : l'import Kyara et le parrainage, que toute l'équipe traite et règle.",
@@ -1900,11 +1898,24 @@
       },
       "oddsTitle": "Chances exactes sur le pool actuel",
       "oddsHint": "Calculées avec les parts globales et les paliers vides de ce pool, comme au tirage.",
+      "sealedFloors": "Sachet scellé : tiré avec les planchers divins ci-dessus (tout Épique ou mieux, la dernière Mythique ou mieux), pas avec ceux du type, dont seul le nombre compte.",
+      "sealedApocalypse": "Chances moyennes sur le long terme : épargné {share} du temps, karma compris (contenu divin), sinon ruiné, sans rien au-dessus du plafond de ruine :",
       "guaranteedLast": "Dernière carte : toujours {rarity} ({count, plural, =0 {aucune carte dans le pool : le booster ne peut pas s'ouvrir} one {# carte dans le pool} other {# cartes dans le pool}}). Le tableau ne compte que les autres cartes.",
       "back": "Tous les types",
       "editTitle": "Modifier « {name} »",
       "newBannerTitle": "Nouvelle bannière vedette",
-      "newFocus": "Nouveau Focus série"
+      "newFocus": "Nouveau Focus série",
+      "kinds": {
+        "STANDARD": "Standard",
+        "RARITY": "Rareté",
+        "FILTERED": "Filtré",
+        "BANNER": "Bannière",
+        "FORMAT": "Format",
+        "FOCUS": "Focus série",
+        "DROP": "Sachet scellé",
+        "PRESTIGE": "Prestige",
+        "GUARANTEED": "Garanti"
+      }
     },
     "form": {
       "identity": "Identité",
@@ -1961,6 +1972,7 @@
       "slotFloors": "Rareté minimale de chaque carte",
       "slotFloorsGlobal": "Composition globale ({count} cartes)",
       "useOwnFloors": "Composition propre à ce booster",
+      "sealedFloorsHint": "Sachet scellé : ces planchers ne servent pas au tirage, seul leur nombre compte. Le Divin (et l'Apocalyptique épargné) tire toujours Épique ou mieux, la dernière carte Mythique ou mieux ; l'Apocalyptique ruiné suit les planchers de ruine des réglages des boosters.",
       "addSlot": "Ajouter une carte",
       "removeSlot": "Retirer la carte {n}",
       "slot": "Carte {n}",
@@ -2008,7 +2020,29 @@
       "focusEndsHint": "Obligatoire : le booster disparaît à cette date et un compte à rebours s’affiche.",
       "includeCustom": "Inclure automatiquement les créations originales",
       "includeCustomOn": "Les cartes créées à la main entrent dans ce booster dès qu'elles passent son filtre, comme les cartes AniList : rien à cocher sur leur fiche. Les variantes exclusives restent à cocher.",
-      "includeCustomOff": "Seules les créations originales cochées sur leur fiche entrent dans ce booster (sachets scellés, Prestige, événements)."
+      "includeCustomOff": "Seules les créations originales cochées sur leur fiche entrent dans ce booster (sachets scellés, Prestige, événements).",
+      "patterns": {
+        "asanoha": "Asanoha (feuille de chanvre)",
+        "seigaiha": "Seigaiha (vagues)",
+        "ichimatsu": "Ichimatsu (damier)",
+        "shippo": "Shippō (cercles entrelacés)",
+        "uroko": "Uroko (écailles)",
+        "yagasuri": "Yagasuri (empennes de flèches)",
+        "kumo": "Kumo (nuages)",
+        "sakura": "Sakura (fleurs de cerisier)",
+        "kin": "Kin (feuille d'or)",
+        "raden": "Raden (nacre)",
+        "goko": "Gokō (auréole d'or, Divin)",
+        "kikko": "Kikkō (écaille de tortue)",
+        "none": "Uni",
+        "yami": "Yami (laque noire, Black Rare)",
+        "suminagashi": "Suminagashi (encre marbrée, AR)",
+        "vitrail": "Vitrail (Vitrail Rare)",
+        "kinpaku": "Kinpaku (carrés d'or, Gold)",
+        "shuchusen": "Shūchūsen (lignes de vitesse, Manga Rare)",
+        "hitodama": "Hitodama (lueurs, Esprit)",
+        "prisme": "Prisme (holographique, Xtreme Rare)"
+      }
     },
     "banners": {
       "title": "Bannières vedettes",

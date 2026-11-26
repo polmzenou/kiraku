@@ -1,8 +1,7 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
-import type { BoosterType as BoosterTypeRow } from "@/generated/prisma/client";
-import { groupByRarity, poolCounts, poolSize, type CardPool } from "@/lib/boosters/draw";
+import { groupByRarity, poolCounts, type CardPool } from "@/lib/boosters/draw";
 import { dayKey, filterContext, isDynamicFilter, type FilterContext } from "@/lib/boosters/pool-filter";
 import {
   isRotatingFamily,
@@ -28,32 +27,55 @@ import { computePool, loadCandidates, toBoosterTypeView } from "./type-store";
 
 export const BOOSTER_TYPES_TAG = "booster-types";
 
-type TypeRow = Omit<BoosterTypeRow, "poolCardIds">;
+/** Type validé, gardé en cache avec ce qui sert à lire son pool. */
+type CachedType = { type: BoosterTypeView; poolCounts: unknown; stamp: number; dynamic: boolean };
 
 /** unstable_cache sérialise en JSON : les dates reviennent en chaînes. */
-const DATE_FIELDS = ["startsAt", "endsAt", "activatedAt", "poolComputedAt", "createdAt", "updatedAt"] as const;
-function revive(row: TypeRow): TypeRow {
-  const out = { ...row };
+const DATE_FIELDS = ["startsAt", "endsAt", "activatedAt"] as const;
+function revive(cached: CachedType): CachedType {
+  const type = { ...cached.type };
   for (const k of DATE_FIELDS) {
-    const v = out[k] as unknown;
-    if (typeof v === "string") (out as Record<string, unknown>)[k] = new Date(v);
+    const v = type[k] as unknown;
+    if (typeof v === "string") type[k] = new Date(v);
   }
-  return out;
+  return { ...cached, type };
 }
 
-// Les versions du catalogue et des types sont dans la clé : imports et seeds
-// lancés par script sont visibles immédiatement, sans attendre l'expiration du cache.
+// Les versions du catalogue et des types sont dans la clé : imports et seeds lancés par script
+// sont visibles en une minute au plus (durée de vie des deux versions), sans attendre l'expiration du cache.
 // Aucune expiration ici ni pour les pools : leurs clés changent avec ce qui les modifie, et
 // relire toutes les heures des pools de ~10 000 ids ne servait qu'à consommer du trafic.
 const NO_EXPIRY: { tags: string[]; revalidate: false } = { tags: [BOOSTER_TYPES_TAG], revalidate: false };
 
-const loadTypeRows = unstable_cache(
-  async (_catalogVersion: number, _typesVersion: string) => {
+// Version des types (nombre de lignes et dernière modification) : relue au plus une fois par minute,
+// comme celle du catalogue, au lieu d'un aggregate à chaque requête qui touche aux boosters. Les
+// écritures de l'admin purgent BOOSTER_TYPES_TAG : leur effet reste immédiat.
+const loadTypesVersion = unstable_cache(
+  async (): Promise<string> => {
+    const types = await prisma.boosterType.aggregate({ _count: { _all: true }, _max: { updatedAt: true } });
+    return `${types._count._all}:${types._max.updatedAt?.getTime() ?? 0}`;
+  },
+  ["booster-types-version"],
+  { tags: [BOOSTER_TYPES_TAG], revalidate: 60 },
+);
+
+// Lignes validées une fois ici (noms, thème, filtre passés par Zod), pas à chaque requête
+const loadTypes = unstable_cache(
+  async (_catalogVersion: number, _typesVersion: string): Promise<CachedType[]> => {
     void _catalogVersion;
     void _typesVersion;
-    return prisma.boosterType.findMany({ omit: { poolCardIds: true }, orderBy: [{ family: "asc" }, { sortOrder: "asc" }] });
+    const rows = await prisma.boosterType.findMany({ omit: { poolCardIds: true }, orderBy: [{ family: "asc" }, { sortOrder: "asc" }] });
+    return rows.map((row) => {
+      const type = toBoosterTypeView(row);
+      return {
+        type,
+        poolCounts: row.poolCounts,
+        stamp: Math.max(row.updatedAt.getTime(), row.poolComputedAt?.getTime() ?? 0),
+        dynamic: type.filter !== null && isDynamicFilter(type.filter),
+      };
+    });
   },
-  ["booster-types"],
+  ["booster-types-views"],
   NO_EXPIRY,
 );
 
@@ -74,22 +96,9 @@ function parseCounts(raw: unknown, rarities: readonly string[]): Record<Rarity, 
 
 /** Tous les types (actifs ou non), dans l'ordre des familles. Lu une fois par requête. */
 export const getBoosterTypes = cache(async (): Promise<BoosterTypeEntry[]> => {
-  const rarities = await getRarities();
-  const [catalogVersion, types] = await Promise.all([
-    getCatalogVersion(),
-    prisma.boosterType.aggregate({ _count: { _all: true }, _max: { updatedAt: true } }),
-  ]);
-  const typesVersion = `${types._count._all}:${types._max.updatedAt?.getTime() ?? 0}`;
-  const rows = (await loadTypeRows(catalogVersion, typesVersion)).map(revive);
-  return rows.map((row) => {
-    const type = toBoosterTypeView(row);
-    return {
-      type,
-      storedCounts: parseCounts(row.poolCounts, rarities),
-      stamp: Math.max(row.updatedAt.getTime(), row.poolComputedAt?.getTime() ?? 0),
-      dynamic: type.filter !== null && isDynamicFilter(type.filter),
-    };
-  });
+  const [rarities, catalogVersion, typesVersion] = await Promise.all([getRarities(), getCatalogVersion(), loadTypesVersion()]);
+  const cached = (await loadTypes(catalogVersion, typesVersion)).map(revive);
+  return cached.map(({ type, poolCounts, stamp, dynamic }) => ({ type, storedCounts: parseCounts(poolCounts, rarities), stamp, dynamic }));
 });
 
 export async function getBoosterTypeEntry(slug: string): Promise<BoosterTypeEntry | null> {
@@ -226,5 +235,3 @@ export const getBoosterOffers = cache(async (): Promise<BoosterOffer[]> => {
       : { ...offer, availability: "hidden" as const, shopAvailability: "hidden" as const, rotation: "resting" as const };
   });
 });
-
-export { poolSize };

@@ -131,7 +131,7 @@ export default async function AdminBoosterTypesPage() {
                         </span>
                       </div>
                       <p className="text-xs text-text-muted">
-                        {type.slug} · {type.kind} ·{" "}
+                        {type.slug} · {t(`kinds.${type.kind}`)} ·{" "}
                         {type.usesFreeStock
                           ? type.priceZeni !== null
                             ? t("price.freeOr", { amount: type.priceZeni })

@@ -77,7 +77,6 @@ export const WAGARA = [
   "hitodama",
   "prisme",
 ] as const;
-export type Wagara = (typeof WAGARA)[number];
 
 const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 

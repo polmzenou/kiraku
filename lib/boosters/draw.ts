@@ -468,10 +468,6 @@ export function poolCounts(pool: CardPool): Record<Rarity, number> {
   return Object.fromEntries(Object.keys(pool).map((r) => [r, pool[r].length])) as Record<Rarity, number>;
 }
 
-export function poolSize(pool: CardPool): number {
-  return Object.values(pool).reduce((sum, ids) => sum + ids.length, 0);
-}
-
 /** Vedettes d'une bannière, rangées par rareté d'après le pool (une vedette hors pool est ignorée). */
 export function featuredFromPool(
   featuredIds: readonly string[],

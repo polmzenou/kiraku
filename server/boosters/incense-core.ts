@@ -2,6 +2,7 @@
 // server/db.ts ici. Les Encens disponibles sont recalculés sous le verrou du joueur.
 import type { PrismaClient } from "@/generated/prisma/client";
 import { extendIncense, incenseAvailable, type IncenseSettings } from "@/lib/boosters/incense";
+import type { PulledLoaders } from "@/lib/boosters/pulled-tally";
 import type { Tx } from "../social/lock";
 
 export type IncenseErrorCode = "NO_USER" | "BANNED" | "NO_INCENSE";
@@ -18,6 +19,25 @@ export async function cardsPulled(db: PrismaClient | Tx, userId: string): Promis
     SELECT COALESCE(SUM(cardinality("catalogCardIds")), 0)::int AS n
     FROM "BoosterOpening" WHERE "userId" = ${userId}`;
   return row?.n ?? 0;
+}
+
+/** Même somme, coupée à une date : lectures du compteur en cache de l'affichage (lib/boosters/pulled-tally.ts). */
+export function cardsPulledLoaders(db: PrismaClient): PulledLoaders {
+  return {
+    split: async (userId, cutoff) => {
+      const [row] = await db.$queryRaw<{ before: number; since: number }[]>`
+        SELECT COALESCE(SUM(cardinality("catalogCardIds")) FILTER (WHERE "createdAt" < ${cutoff}), 0)::int AS before,
+               COALESCE(SUM(cardinality("catalogCardIds")) FILTER (WHERE "createdAt" >= ${cutoff}), 0)::int AS since
+        FROM "BoosterOpening" WHERE "userId" = ${userId}`;
+      return { before: row?.before ?? 0, since: row?.since ?? 0 };
+    },
+    since: async (userId, cutoff) => {
+      const [row] = await db.$queryRaw<{ n: number }[]>`
+        SELECT COALESCE(SUM(cardinality("catalogCardIds")), 0)::int AS n
+        FROM "BoosterOpening" WHERE "userId" = ${userId} AND "createdAt" >= ${cutoff}`;
+      return row?.n ?? 0;
+    },
+  };
 }
 
 export type IncenseActivation = { until: Date; available: number };
