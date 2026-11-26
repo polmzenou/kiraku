@@ -7,7 +7,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { cleanDeckName, DECK_NAME_MAX } from "@/lib/battle/decks";
 import { teamSynergy } from "@/lib/battle/synergy";
 import { TEAM_SIZE } from "@/lib/battle/types";
-import type { CandidateCard, DeckView } from "@/lib/battle/view";
+import type { DeckView } from "@/lib/battle/view";
 import { deleteDeckAction, renameDeckAction, saveDeckAction, type BattleActionError, type DeckResult } from "@/server/actions/battle";
 import { Button } from "../ui/Button";
 import { inputClass } from "../ui/Field";
@@ -16,7 +16,9 @@ import { Sheet } from "../ui/Sheet";
 import type { AbilityRules } from "./AbilityGuide";
 import { StaticFilament } from "./stage/SynergyFilament";
 import { TeamBuilder, TeamConfirmBar, toggleTeam } from "./TeamBuilder";
+import { PoolPending } from "./TeamPicker";
 import { useBattleError } from "./useBattleError";
+import { useCandidatePool, type CandidatePool } from "./useCandidatePool";
 
 // Action qui lève (serveur injoignable, panne) : erreur traduite au lieu d'un écran d'erreur
 const UNAVAILABLE = { ok: false, error: "UNAVAILABLE" } as const;
@@ -42,13 +44,11 @@ function TrashIcon() {
 /** Mes decks : créer, modifier, renommer et supprimer. Le serveur revérifie tout à l'enregistrement. */
 export function DeckManager({
   decks,
-  candidates,
   abilities,
   maxDecks,
   atelier = false,
 }: {
   decks: DeckView[];
-  candidates: CandidateCard[];
   abilities: AbilityRules;
   maxDecks: number;
   /** Lien vers l'atelier, où se changent les capacités des cartes. */
@@ -59,6 +59,8 @@ export function DeckManager({
   const router = useRouter();
   const battleError = useBattleError();
   const [sheet, setSheet] = useState<Sheets>(null);
+  // Cartes de l'éditeur, chargées à sa première ouverture
+  const pool = useCandidatePool(sheet?.kind === "EDIT");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const full = decks.length >= maxDecks;
@@ -159,7 +161,7 @@ export function DeckManager({
         <DeckEditor
           deck={sheet.deck}
           decks={decks}
-          candidates={candidates}
+          pool={pool}
           abilities={abilities}
           pending={pending}
           error={error}
@@ -212,7 +214,7 @@ function useDefaultName(decks: readonly DeckView[]) {
 function DeckEditor({
   deck,
   decks,
-  candidates,
+  pool,
   abilities,
   pending,
   error,
@@ -221,7 +223,7 @@ function DeckEditor({
 }: {
   deck: DeckView | null;
   decks: readonly DeckView[];
-  candidates: readonly CandidateCard[];
+  pool: CandidatePool;
   abilities: AbilityRules;
   pending: boolean;
   error: string | null;
@@ -238,18 +240,25 @@ function DeckEditor({
   return (
     <Sheet open onClose={onClose} title={deck ? t("editTitle") : t("newTitle")} wide="xl">
       <p className="text-sm text-text-muted">{t("editHint")}</p>
-      <TeamBuilder
-        candidates={candidates}
-        abilities={abilities}
-        team={team}
-        onToggle={(id) => setTeam((cur) => toggleTeam(cur, id))}
-        extra={extra}
-        above={<NameField value={name} valid={validName} onChange={setName} />}
-      />
+      {pool.status === "ready" ? (
+        <TeamBuilder
+          candidates={pool.candidates}
+          abilities={abilities}
+          team={team}
+          onToggle={(id) => setTeam((cur) => toggleTeam(cur, id))}
+          extra={extra}
+          above={<NameField value={name} valid={validName} onChange={setName} />}
+        />
+      ) : (
+        <>
+          <NameField value={name} valid={validName} onChange={setName} />
+          <PoolPending pool={pool} />
+        </>
+      )}
       <TeamConfirmBar
         count={team.length}
         label={t("save")}
-        disabled={team.length !== TEAM_SIZE || !validName || pending}
+        disabled={pool.status !== "ready" || team.length !== TEAM_SIZE || !validName || pending}
         onConfirm={() => onSave(name, team)}
         error={error}
       />

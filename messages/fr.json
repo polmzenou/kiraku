@@ -3061,6 +3061,7 @@
         "damagePct": "Jauge : points pour 100 % des PV perdus"
       },
       "valueHint": "Valeur : multiplicateur en % (Éclair, Danse des lames, Percée, Coup absolu, Double frappe), soin, bonus ou poison en % (Soin, Encouragement, Pluie de soin, Brume toxique), orbes gagnés (Méditation), inutilisée (Protection, Sceau).",
+      "abilityField": "{name} : {field}",
       "save": "Enregistrer",
       "saving": "Enregistrement…",
       "saved": "{count, plural, one {# réglage enregistré} other {# réglages enregistrés}}.",
@@ -3070,8 +3071,6 @@
         "INVALID": "Valeurs refusées par le serveur.",
         "RATE_LIMITED": "Trop d'enregistrements : attends une minute.",
         "unexpected": "Erreur inattendue. Réessaie.",
-        "CLOSED": "Cette vente est déjà terminée.",
-        "NOT_FOUND": "Vente introuvable.",
         "UNAVAILABLE": "Action impossible pour le moment."
       },
       "log": "Derniers changements",
@@ -3144,10 +3143,9 @@
       "errors": {
         "FORBIDDEN": "Accès refusé.",
         "INVALID": "Valeurs refusées par le serveur.",
+        "STALE": "Cette saison n'est plus ouverte : recharge la page.",
         "RATE_LIMITED": "Trop d'enregistrements : attends une minute.",
         "unexpected": "Erreur inattendue. Réessaie.",
-        "CLOSED": "Cette vente est déjà terminée.",
-        "NOT_FOUND": "Vente introuvable.",
         "UNAVAILABLE": "Action impossible pour le moment."
       },
       "log": "Derniers changements",
@@ -6610,6 +6608,8 @@
       "search": "Chercher une carte",
       "none": "Aucune carte disponible : ouvre des boosters !",
       "noMatch": "Aucune carte ne correspond.",
+      "loading": "Chargement de tes cartes…",
+      "retry": "Réessayer",
       "confirm": "Valider l'équipe",
       "remove": "Retirer {name}",
       "add": "Ajouter {name}",
@@ -6666,7 +6666,6 @@
       "attack": "Attaque",
       "attackShort": "ATQ",
       "defenseShort": "DEF",
-      "technique": "{name} · {cost, plural, one {# orbe} other {# orbes}}",
       "endTurn": "Fin du tour",
       "forfeit": "Abandonner",
       "forfeitConfirm": "Abandonner la partie ? Elle compte comme une défaite.",
@@ -6708,7 +6707,6 @@
       "ultimateSpent": "Ultime {name} : déjà lancé",
       "raiseTarget": "Peut être relevée",
       "ultimateKicker": "Ultime",
-      "ultimateTitle": "Ultime · {name}",
       "frozen": "Figée"
     },
     "errors": {
@@ -6756,6 +6754,8 @@
       "requeue": "Relancer",
       "again": "Nouveau combat",
       "replay": "Revoir la partie",
+      "viewBoard": "Voir le plateau",
+      "show": "Afficher le bilan",
       "back": "Retour aux combats",
       "cardsBack": "Tes cartes sont de retour dans ta collection."
     },
@@ -6879,7 +6879,6 @@
       "RONIN": "Rōnin"
     },
     "log": {
-      "title": "Journal du combat",
       "empty": "Le combat commence.",
       "attack": "{actor} attaque {target}.",
       "technique": "{actor} lance {technique}.",
@@ -6906,11 +6905,6 @@
       "ultimateOn": "{actor} déchaîne {ultimate} sur {target} !",
       "raise": "{target} se relève avec {hp} PV.",
       "shatter": "La barrière de {target} vole en éclats."
-    },
-    "detail": {
-      "title": "Carte",
-      "hint": "Touche une de tes cartes pour voir sa technique et ses passifs.",
-      "stats": "ATQ {atk} · DEF {def} · {hp}/{max} PV"
     },
     "arena": {
       "dojo": "Le Dōjō de la lanterne",

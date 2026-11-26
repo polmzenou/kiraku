@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { ComponentType } from "react";
+import { memo, type ComponentType } from "react";
 import type { ArenaId } from "@/lib/battle/arenas";
 import type { ArenaProps } from "./shared";
 
@@ -19,7 +19,9 @@ const VIEWS: Record<ArenaId, ComponentType<ArenaProps>> = {
   takamagahara: dynamic(() => import("./takamagahara/TakamagaharaArena").then((m) => m.TakamagaharaArena), { ssr: false, loading: Fallback }),
 };
 
-export function ArenaHost({ id, ...props }: ArenaProps & { id: ArenaId }) {
+// Mémoïsée : ses props (arène, niveau d'effets, poignée et port de son stables) ne bougent pas pendant la partie,
+// le décor n'est plus réconcilié à chaque pas du metteur en scène (événement, chiffre, cut-in, bannière)
+export const ArenaHost = memo(function ArenaHost({ id, ...props }: ArenaProps & { id: ArenaId }) {
   const View = VIEWS[id];
   return <View {...props} />;
-}
+});

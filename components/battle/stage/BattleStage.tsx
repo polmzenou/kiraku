@@ -12,7 +12,7 @@ import type { PlayerView } from "@/lib/battle/view";
 import { ArenaHost } from "../arenas/ArenaHost";
 import { CutIn, TurnBanner } from "../fx/CutIn";
 import { Incense, KiOrbs, PlayerBanner, Ticker } from "../hud/Hud";
-import { usePlayerName } from "../BoardLayout";
+import { usePlayerName } from "../usePlayerName";
 import { StageCard } from "./StageCard";
 import { SynergyFilament } from "./SynergyFilament";
 import type { ArenaHandle, Director, SoundPort, StageNumber } from "./useDirector";
@@ -52,11 +52,10 @@ export function BattleStage({
   timer,
   tablets,
   menu,
-  side,
   overlay,
-  paused,
   sound,
   intro = false,
+  arenaKey,
 }: {
   setup: BattleSetup;
   director: Director;
@@ -72,16 +71,17 @@ export function BattleStage({
   mine?: RowProps;
   theirs?: RowProps;
   ticker: { text: string | null; tone: "mine" | "theirs" | "error" | "hint" };
-  timer?: { endsAt: string | null; total: number } | null;
+  /** Encens du tour ; `skew` : horloge du serveur − horloge de l'appareil, en ms. */
+  timer?: { endsAt: string | null; total: number; skew?: number } | null;
   tablets?: ReactNode;
   menu?: ReactNode;
-  side?: ReactNode;
   overlay?: ReactNode;
-  paused?: boolean;
   /** Sons du décor de l'arène. */
   sound?: { current: SoundPort | null };
-  /** Entrée en arène en cours : le filament de synergie s'allume à sa fin. */
+  /** Entrée en arène en cours : le filament de synergie s'allume à sa fin, les cartes n'apparaissent qu'à la distribution. */
   intro?: boolean;
+  /** Change à chaque « Recommencer » du replay : l'arène repart de zéro (voile, déluge, vidéo ralentie de la fin effacés). */
+  arenaKey?: number;
 }) {
   const t = useTranslations("battle.board");
   const name = usePlayerName();
@@ -139,11 +139,12 @@ export function BattleStage({
       data-tier={tier ?? undefined}
       data-level={level}
       data-light={director.light === mySide ? "near" : "far"}
-      data-paused={paused || undefined}
+      // Avant la distribution de l'entrée, les cartes restent cachées (sinon elles apparaissent posées, puis repartent)
+      data-dealing={(intro && !director.dealStarted) || undefined}
       onPointerDown={() => director.accelerate()}
     >
       <div className="stage-arena">
-        <ArenaHost id={arena} level={level} handleRef={arenaRef} sound={sound} />
+        <ArenaHost key={arenaKey} id={arena} level={level} handleRef={arenaRef} sound={sound} />
       </div>
       <div className="stage-light" aria-hidden="true">
         <span className="stage-light-near" />
@@ -165,7 +166,7 @@ export function BattleStage({
                 {row(opp, theirs, "far")}
                 <div className="stage-front">
                   <span className="stage-front-line" aria-hidden="true" />
-                  {timer && <Incense endsAt={timer.endsAt} total={timer.total} />}
+                  {timer && <Incense endsAt={timer.endsAt} total={timer.total} skew={timer.skew} />}
                   {director.banner && live && <TurnBanner banner={director.banner} mySide={mySide} theirName={name(players[opp])} />}
                 </div>
                 {row(mySide, mine, "near")}
@@ -173,7 +174,6 @@ export function BattleStage({
               <div ref={layer} className="stage-layer" aria-hidden="true" />
             </div>
           </div>
-          {side && <aside className="stage-side">{side}</aside>}
         </div>
 
         <footer className="stage-hud stage-hud-bottom">

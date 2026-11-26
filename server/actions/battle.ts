@@ -6,7 +6,7 @@ import { clientActionSchema } from "@/lib/battle/client-action";
 import { cleanDeckName } from "@/lib/battle/decks";
 import type { Kit } from "@/lib/battle/loadout";
 import { KEYWORDS, LEGACY_KEYWORDS, TEAM_SIZE, TECHNIQUES } from "@/lib/battle/types";
-import type { BattleUpdateView, BattleView } from "@/lib/battle/view";
+import type { BattleUpdateView, BattleView, CandidateCard } from "@/lib/battle/view";
 import { isFrozen } from "@/lib/account/deletion";
 import { prisma } from "../db";
 import {
@@ -27,7 +27,7 @@ import {
 } from "../battle/battle-core";
 import { buyAbilityWith, equipWith } from "../battle/ability-shop-core";
 import { deleteDeckWith, renameDeckWith, saveDeckWith } from "../battle/deck-core";
-import { battleCtx, getBattleRules, getBattleView, getUpdateSince, requeueTeamOf, sweepBattlesFor } from "../battle/queries";
+import { battleCtx, getBattleRules, getBattleView, getCandidates, getLastTeam, getUpdateSince, requeueTeamOf, sweepBattlesFor } from "../battle/queries";
 import { publishBattle, publishMatched, toMessage } from "../battle/realtime";
 import { pushLater } from "../market/queries";
 import { ensureSeason } from "../ranked/queries";
@@ -167,7 +167,8 @@ export async function pollQueueAction(): Promise<QueueResult> {
 }
 
 export async function leaveQueueAction(): Promise<QueueResult> {
-  const g = await session("battle-queue", { limit: 12, windowSeconds: MINUTE });
+  // Seau à part : des entrées, relances ou demandes de bot répétées ne doivent jamais empêcher de quitter la file
+  const g = await session("battle-queue-leave", { limit: 12, windowSeconds: MINUTE });
   if ("error" in g) return { ok: false, error: g.error };
   try {
     return await queueResult(await leaveQueueWith(prisma, { userId: g.user.id }));
@@ -187,7 +188,8 @@ const botSchema = z.object({ skipWait: z.boolean() }).strict().optional();
 export async function startBotBattleAction(input?: unknown): Promise<StartResult> {
   const parsed = botSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
-  const g = await session("battle-queue", { limit: 12, windowSeconds: MINUTE });
+  // Seau à part : les nouveaux essais espacés de l'attente ne vident pas celui de l'entrée en file
+  const g = await session("battle-queue-bot", { limit: 12, windowSeconds: MINUTE });
   if ("error" in g) return { ok: false, error: g.error };
   try {
     const u = await startBotBattleWith(prisma, { userId: g.user.id, skipWait: parsed.data?.skipWait ?? false }, await battleCtx());
@@ -254,6 +256,27 @@ export async function cancelRoomAction(input: unknown): Promise<{ ok: true } | F
     return { ok: true };
   } catch (e) {
     return failure("fermeture de salle", e);
+  }
+}
+
+// --- Choix d'équipe ---
+
+export type CandidatesResult = { ok: true; candidates: CandidateCard[]; lastTeam: string[] } | Failure;
+
+/**
+ * Cartes proposées au choix d'équipe et à l'éditeur de deck, chargées à leur ouverture (plutôt qu'avec chaque
+ * affichage de /combat et de /combat/decks) : même lecture plafonnée, et la dernière équipe encore disponible.
+ */
+export async function teamCandidatesAction(): Promise<CandidatesResult> {
+  const g = await session("battle-candidates", { limit: 30, windowSeconds: MINUTE });
+  if ("error" in g) return { ok: false, error: g.error };
+  try {
+    const rules = await getBattleRules();
+    if (!rules.enabled) return { ok: false, error: "DISABLED" };
+    const candidates = await getCandidates(g.user.id, rules);
+    return { ok: true, candidates, lastTeam: await getLastTeam(g.user.id, candidates) };
+  } catch (e) {
+    return failure("cartes du choix d'équipe", e);
   }
 }
 
@@ -433,7 +456,8 @@ export async function battleViewAction(input: unknown): Promise<ViewResult> {
   return view ? { ok: true, view } : { ok: false, error: "NOT_FOUND" };
 }
 
-export type SinceResult = { ok: true; update: BattleUpdateView | null } | Failure;
+/** `serverNow` même sans nouveauté : chaque sondage recale l'horloge du plateau sur celle du serveur. */
+export type SinceResult = { ok: true; update: BattleUpdateView | null; serverNow: string } | Failure;
 
 const sinceSchema = z.object({ battleId: idSchema, version: z.number().int().min(0).max(100_000) }).strict();
 
@@ -451,5 +475,6 @@ export async function battleSinceAction(input: unknown): Promise<SinceResult> {
   if ((await rateLimit(`battle-sweep:${user.id}`, { limit: 1, windowSeconds: 30 }, { store: "memory" })).success) {
     await sweepBattlesFor(user.id);
   }
-  return { ok: true, update: await getUpdateSince(parsed.data.battleId, user.id, parsed.data.version) };
+  const update = await getUpdateSince(parsed.data.battleId, user.id, parsed.data.version);
+  return { ok: true, update, serverNow: new Date().toISOString() };
 }

@@ -191,18 +191,21 @@ export function slash(run: FxRun, to: Box, tilt = -24, delay = 0) {
   const w = run.world.clientWidth * 1.5;
   const s = node(run.screen, "vfx-slash");
   s.style.width = `${w}px`;
+  // Origine posée une fois sur l'élément : dans les images-clés, elle renverrait l'animation sur le fil principal
+  s.style.transformOrigin = "0 50%";
   const base = `translate(${to.x - w / 2}px, ${to.y}px) rotate(${tilt}deg)`;
   play(run, s, [
-    { transform: `${base} scaleX(0) scaleY(1)`, opacity: 1, transformOrigin: "0 50%" },
-    { transform: `${base} scaleX(1) scaleY(1)`, opacity: 1, offset: 0.25, transformOrigin: "0 50%" },
-    { transform: `${base} scaleX(1) scaleY(.1)`, opacity: 0, transformOrigin: "0 50%" },
+    { transform: `${base} scaleX(0) scaleY(1)`, opacity: 1 },
+    { transform: `${base} scaleX(1) scaleY(1)`, opacity: 1, offset: 0.25 },
+    { transform: `${base} scaleX(1) scaleY(.1)`, opacity: 0 },
   ], { duration: 360, delay, easing: SNAP });
   const red = node(run.screen, "vfx-slash vfx-slash-shu");
   red.style.width = `${w}px`;
+  red.style.transformOrigin = "0 50%";
   play(run, red, [
-    { transform: `translate(${to.x - w / 2}px, ${to.y + 6}px) rotate(${tilt}deg) scaleX(0)`, opacity: 0.9, transformOrigin: "0 50%" },
-    { transform: `translate(${to.x - w / 2}px, ${to.y + 6}px) rotate(${tilt}deg) scaleX(1)`, opacity: 0.9, offset: 0.3, transformOrigin: "0 50%" },
-    { transform: `translate(${to.x - w / 2}px, ${to.y + 6}px) rotate(${tilt}deg) scaleX(1) scaleY(.1)`, opacity: 0, transformOrigin: "0 50%" },
+    { transform: `translate(${to.x - w / 2}px, ${to.y + 6}px) rotate(${tilt}deg) scaleX(0)`, opacity: 0.9 },
+    { transform: `translate(${to.x - w / 2}px, ${to.y + 6}px) rotate(${tilt}deg) scaleX(1)`, opacity: 0.9, offset: 0.3 },
+    { transform: `translate(${to.x - w / 2}px, ${to.y + 6}px) rotate(${tilt}deg) scaleX(1) scaleY(.1)`, opacity: 0 },
   ], { duration: 420, delay: delay + 40, easing: SNAP });
 }
 
@@ -212,11 +215,12 @@ export function pierce(run: FxRun, from: Box, to: Box) {
   const len = Math.hypot(to.x - from.x, to.y - from.y) * 1.6;
   const beam = node(run.layer, "vfx-beam");
   beam.style.width = `${len}px`;
+  beam.style.transformOrigin = "0 50%";
   const base = `translate(${from.x}px, ${from.y}px) rotate(${deg(a)}deg)`;
   play(run, beam, [
-    { transform: `${base} scaleX(0)`, opacity: 1, transformOrigin: "0 50%" },
-    { transform: `${base} scaleX(1)`, opacity: 1, offset: 0.35, transformOrigin: "0 50%" },
-    { transform: `${base} scaleX(1) scaleY(.15)`, opacity: 0, transformOrigin: "0 50%" },
+    { transform: `${base} scaleX(0)`, opacity: 1 },
+    { transform: `${base} scaleX(1)`, opacity: 1, offset: 0.35 },
+    { transform: `${base} scaleX(1) scaleY(.15)`, opacity: 0 },
   ], { duration: 420, easing: SNAP });
   shards(run, to, a, "vfx-shard", 9);
 }
@@ -258,10 +262,11 @@ export function bladeStorm(run: FxRun, targets: readonly Box[]) {
 /** 癒し : colonne de lumière et pétales qui montent. */
 export function healColumn(run: FxRun, at: Box) {
   const c = size(node(run.layer, "vfx-column"), at.w * 1.3, at.h * 2.2);
+  c.style.transformOrigin = "50% 100%";
   play(run, c, [
-    { transform: `${on({ x: at.x, y: at.y - at.h * 0.3 }, at.w * 1.3, at.h * 2.2)} scaleY(0)`, opacity: 0, transformOrigin: "50% 100%" },
-    { transform: `${on({ x: at.x, y: at.y - at.h * 0.3 }, at.w * 1.3, at.h * 2.2)} scaleY(1)`, opacity: 0.9, offset: 0.3, transformOrigin: "50% 100%" },
-    { transform: `${on({ x: at.x, y: at.y - at.h * 0.3 }, at.w * 1.3, at.h * 2.2)} scaleY(1) scaleX(.6)`, opacity: 0, transformOrigin: "50% 100%" },
+    { transform: `${on({ x: at.x, y: at.y - at.h * 0.3 }, at.w * 1.3, at.h * 2.2)} scaleY(0)`, opacity: 0 },
+    { transform: `${on({ x: at.x, y: at.y - at.h * 0.3 }, at.w * 1.3, at.h * 2.2)} scaleY(1)`, opacity: 0.9, offset: 0.3 },
+    { transform: `${on({ x: at.x, y: at.y - at.h * 0.3 }, at.w * 1.3, at.h * 2.2)} scaleY(1) scaleX(.6)`, opacity: 0 },
   ], { duration: 900 });
   for (let i = 0; i < n(run, 14); i++) {
     const p = size(node(run.layer, i % 2 ? "vfx-petal" : "vfx-petal vfx-petal-jade"), 9 + noise(i, 3) * 6, 6 + noise(i, 5) * 4);
@@ -302,10 +307,11 @@ export function flames(run: FxRun, at: Box, delay = 0) {
     const f = size(node(run.layer, i % 3 ? "vfx-flame" : "vfx-flame vfx-flame-shu"), at.w * (0.22 + noise(i, 3) * 0.14), at.w * (0.42 + noise(i, 5) * 0.3));
     const x = at.x + (i / 6 - 0.5) * at.w * 0.95;
     const y = at.y + at.h * 0.42;
+    f.style.transformOrigin = "50% 100%";
     play(run, f, [
-      { transform: `translate(${x - at.w * 0.12}px, ${y}px) scale(.3, .2)`, opacity: 0, transformOrigin: "50% 100%" },
-      { transform: `translate(${x - at.w * 0.12}px, ${y - at.h * 0.35}px) scale(1, 1.1)`, opacity: 1, offset: 0.4, transformOrigin: "50% 100%" },
-      { transform: `translate(${x - at.w * 0.12}px, ${y - at.h * 0.75}px) scale(.5, 1.3)`, opacity: 0, transformOrigin: "50% 100%" },
+      { transform: `translate(${x - at.w * 0.12}px, ${y}px) scale(.3, .2)`, opacity: 0 },
+      { transform: `translate(${x - at.w * 0.12}px, ${y - at.h * 0.35}px) scale(1, 1.1)`, opacity: 1, offset: 0.4 },
+      { transform: `translate(${x - at.w * 0.12}px, ${y - at.h * 0.75}px) scale(.5, 1.3)`, opacity: 0 },
     ], { duration: 820, delay: delay + noise(i, 7) * 200 });
   }
 }
@@ -363,10 +369,11 @@ export function shieldBreak(run: FxRun, at: Box, from: Pt | null) {
 /** 毒 : encre violette qui monte dans la carte. */
 export function poisonSeep(run: FxRun, at: Box) {
   const p = size(node(run.layer, "vfx-venom"), at.w * 1.05, at.h);
+  p.style.transformOrigin = "50% 100%";
   play(run, p, [
-    { transform: `${on({ x: at.x, y: at.y + at.h * 0.35 }, at.w * 1.05, at.h)} scaleY(.2)`, opacity: 0, transformOrigin: "50% 100%" },
-    { transform: `${on({ x: at.x, y: at.y + at.h * 0.1 }, at.w * 1.05, at.h)} scaleY(1)`, opacity: 0.85, offset: 0.4, transformOrigin: "50% 100%" },
-    { transform: `${on({ x: at.x, y: at.y }, at.w * 1.05, at.h)} scaleY(1)`, opacity: 0, transformOrigin: "50% 100%" },
+    { transform: `${on({ x: at.x, y: at.y + at.h * 0.35 }, at.w * 1.05, at.h)} scaleY(.2)`, opacity: 0 },
+    { transform: `${on({ x: at.x, y: at.y + at.h * 0.1 }, at.w * 1.05, at.h)} scaleY(1)`, opacity: 0.85, offset: 0.4 },
+    { transform: `${on({ x: at.x, y: at.y }, at.w * 1.05, at.h)} scaleY(1)`, opacity: 0 },
   ], { duration: 900 });
   bubbles(run, at);
 }
@@ -442,11 +449,12 @@ export function revive(run: FxRun, at: Box, label: string) {
     ], { duration: 560, delay: noise(i, 9) * 160, easing: IN });
   }
   const c = size(node(run.layer, "vfx-column vfx-column-kin"), at.w * 1.3, at.h * 2.2);
+  c.style.transformOrigin = "50% 100%";
   const pos = on({ x: at.x, y: at.y - at.h * 0.3 }, at.w * 1.3, at.h * 2.2);
   play(run, c, [
-    { transform: `${pos} scaleY(0)`, opacity: 0, transformOrigin: "50% 100%" },
-    { transform: `${pos} scaleY(1)`, opacity: 1, offset: 0.4, transformOrigin: "50% 100%" },
-    { transform: `${pos} scaleY(1) scaleX(.5)`, opacity: 0, transformOrigin: "50% 100%" },
+    { transform: `${pos} scaleY(0)`, opacity: 0 },
+    { transform: `${pos} scaleY(1)`, opacity: 1, offset: 0.4 },
+    { transform: `${pos} scaleY(1) scaleX(.5)`, opacity: 0 },
   ], { duration: 900, delay: 480 });
   stamp(run, at, label, "kin", 700);
 }
@@ -578,12 +586,13 @@ export function frameMie(run: FxRun, from: Box, to: Box, finisher: boolean, ms: 
     if (run.lite && i === 2) return;
     const k = node(run.screen, "vfx-kumadori");
     k.style.width = `${W * 1.2}px`;
+    k.style.transformOrigin = "0 50%";
     const base = `translate(${-W * 0.1}px, ${H * s.y}px) rotate(${s.r}deg)`;
     play(run, k, [
-      { transform: `${base} scaleX(0)`, opacity: 1, transformOrigin: "0 50%" },
-      { transform: `${base} scaleX(1)`, opacity: 1, offset: 0.3, transformOrigin: "0 50%" },
-      { transform: `${base} scaleX(1)`, opacity: 1, offset: 0.75, transformOrigin: "0 50%" },
-      { transform: `${base} scaleX(1)`, opacity: 0, transformOrigin: "0 50%" },
+      { transform: `${base} scaleX(0)`, opacity: 1 },
+      { transform: `${base} scaleX(1)`, opacity: 1, offset: 0.3 },
+      { transform: `${base} scaleX(1)`, opacity: 1, offset: 0.75 },
+      { transform: `${base} scaleX(1)`, opacity: 0 },
     ], { duration: ms - s.d, delay: s.d, easing: SNAP });
   });
   stamp(run, { ...from, y: from.y - from.h * 0.55 }, label, "shu", ms - 420);

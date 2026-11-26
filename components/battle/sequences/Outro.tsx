@@ -8,9 +8,10 @@ import "./sequences.css";
 
 /**
  * Fin du combat : le kanji 勝, 負 ou 引 se trace au pinceau (trois bandes qui apparaissent de haut en
- * bas), puis la tablette du résultat monte. Un toucher passe au résultat ; directement en mouvement réduit.
+ * bas), puis la tablette du résultat monte (seulement si elle a un contenu : en direct, le bilan arrive à
+ * part). Un toucher passe au résultat ; directement en mouvement réduit.
  */
-export function Outro({ outcome, reason, level, children }: { outcome: "victory" | "defeat" | "draw"; reason: string | null; level: FxLevel; children: ReactNode }) {
+export function Outro({ outcome, reason, level, children }: { outcome: "victory" | "defeat" | "draw"; reason: string | null; level: FxLevel; children?: ReactNode }) {
   const t = useTranslations("battle.result");
   const [phase, setPhase] = useState<"verdict" | "result">(level === "reduced" ? "result" : "verdict");
   useEffect(() => {
@@ -30,7 +31,7 @@ export function Outro({ outcome, reason, level, children }: { outcome: "victory"
         <b className="outro-label">{t(outcome === "victory" ? "WIN" : outcome === "defeat" ? "LOSS" : "DRAW")}</b>
         {reason && <span className="outro-reason">{reason}</span>}
       </div>
-      {phase === "result" && <div className="outro-tablet">{children}</div>}
+      {phase === "result" && children != null && <div className="outro-tablet">{children}</div>}
     </div>
   );
 }

@@ -138,6 +138,7 @@ export async function getBattleView(
         ? { crushing: b.crushing, before: [b.pcBeforeP1, b.pcBeforeP2], delta: [b.pcDeltaP1, b.pcDeltaP2] }
         : null,
     ladder: b.mode === "RANKED" && ladder ? { tiers: ladder.tiers, grandChampion: ladder.grandChampion } : null,
+    serverNow: new Date().toISOString(),
   };
 }
 
@@ -186,6 +187,7 @@ export async function getUpdateSince(battleId: string, viewerId: string, from: n
     ranked: ladder
       ? { crushing: b.crushing, sides: [storedRankedSide(b.pcBeforeP1, b.pcDeltaP1, ladder), storedRankedSide(b.pcBeforeP2, b.pcDeltaP2, ladder)] }
       : null,
+    serverNow: new Date().toISOString(),
   };
 }
 

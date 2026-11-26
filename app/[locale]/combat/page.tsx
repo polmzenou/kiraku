@@ -12,9 +12,9 @@ import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { abilityRules } from "@/lib/battle/config";
 import type { PlayerView } from "@/lib/battle/view";
-import { battleCtx, challengeTarget, getActivity, getCandidates, getDecks, getHistory, getLastTeam, sweepBattlesFor } from "@/server/battle/queries";
+import { battleCtx, challengeTarget, getActivity, getDecks, getHistory, sweepBattlesFor } from "@/server/battle/queries";
 import { RankedBoardPanel } from "@/components/ranked/RankedBoardPanel";
-import { SeasonReward } from "@/components/ranked/SeasonReward";
+import { SeasonRewardSlot } from "@/components/ranked/SeasonReward";
 import { ensureSeason, getDivisionBoard, getPendingSeasonReward, getRankedLeaderboard, getRankView } from "@/server/ranked/queries";
 import { getCurrentUser } from "@/server/user";
 
@@ -49,7 +49,7 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
     return (
       <PageShell>
         {header}
-        {reward && <SeasonReward {...reward} />}
+        <SeasonRewardSlot reward={reward} />
         <aside className="flex flex-col items-start gap-3 lacquer rounded-card p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm">{user.isGuest ? t("guest") : t("disabled")}</p>
           {user.isGuest && (
@@ -66,19 +66,18 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
   await sweepBattlesFor(user.id);
   // ?defier=pseudo (bouton du profil) : seulement un ami accepté, la salle le revérifie à la création
   const { defier } = await searchParams;
-  const [activity, candidates, decks, history, rank, challenge] = await Promise.all([
+  // Les cartes du choix d'équipe ne partent plus avec la page : le sélecteur les charge à son ouverture
+  const [activity, decks, history, rank, pendingReward, challenge] = await Promise.all([
     getActivity(user.id, ctx.rules.queueSeconds),
-    getCandidates(user.id, ctx.rules),
     getDecks(user.id, ctx.rules),
     getHistory(user.id),
     ctx.ranked.enabled ? getRankView(user.id, ctx.ranked, await getLocale()) : null,
+    // Classé fermé, combat ouvert : le cron continue de clore les saisons, le lot reste à réclamer ici
+    ctx.ranked.enabled ? null : ensureSeason(ctx.ranked).then(() => getPendingSeasonReward(user.id)),
     typeof defier === "string" ? challengeTarget(user.id, defier) : null,
   ]);
-  const [lastTeam, board] = await Promise.all([
-    getLastTeam(user.id, candidates),
-    // Classement à droite des règles : top de la saison et division du joueur
-    rank ? Promise.all([getRankedLeaderboard(ctx.ranked, rank.season?.number ?? null), getDivisionBoard(user.id, rank, ctx.ranked)]) : null,
-  ]);
+  // Classement à droite des règles : top de la saison et division du joueur
+  const board = rank ? await Promise.all([getRankedLeaderboard(ctx.ranked, rank.season?.number ?? null), getDivisionBoard(user.id, rank, ctx.ranked)]) : null;
   const name = (p: PlayerView | null) => (!p ? "—" : "bot" in p ? t("board.bot", { name: t(`bots.${p.bot}` as "bots.TENGU") }) : p.username);
 
   return (
@@ -86,15 +85,15 @@ export default async function CombatPage({ searchParams }: PageProps<"/[locale]/
       {header}
       <CombatHub
         activity={activity}
-        candidates={candidates}
         decks={decks}
         abilities={abilityRules(ctx.rules)}
-        lastTeam={lastTeam}
         queueSeconds={ctx.rules.queueSeconds}
         queuePollSeconds={ctx.rules.queuePollSeconds}
         rankedBotOnDemand={ctx.ranked.botOnDemand}
         challenge={challenge}
         rank={rank}
+        reward={rank ? rank.reward : pendingReward}
+        serverNow={ctx.now.getTime()}
         atelier={ctx.rules.abilityShopEnabled}
       />
 

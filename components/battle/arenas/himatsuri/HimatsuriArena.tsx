@@ -2,7 +2,7 @@
 
 import { useId, useRef } from "react";
 import { noise } from "../../fx/vfx";
-import { ArenaBackdrop, canvasPoint, moteStyle, particles, play, pulse, useArenaHandle, type ArenaProps } from "../shared";
+import { ArenaBackdrop, canvasPoint, moteStyle, particles, play, pulse, useArenaHandle, useArenaTimers, type ArenaProps } from "../shared";
 import "../arena.css";
 import "./himatsuri.css";
 
@@ -236,6 +236,7 @@ export function HimatsuriArena({ level, handleRef, sound }: ArenaProps) {
   const crowd = useRef<HTMLDivElement>(null);
   const dim = useRef<HTMLDivElement>(null);
   const shots = useRef(0);
+  const later = useArenaTimers();
 
   const cheer = () => {
     pulse(crowd.current, [{ transform: "translateY(0px)" }, { transform: "translateY(-6%)", offset: 0.25 }, { transform: "translateY(-2%)", offset: 0.5 }, { transform: "translateY(-5%)", offset: 0.7 }, { transform: "translateY(0px)" }], { duration: 1_200 });
@@ -318,7 +319,7 @@ export function HimatsuriArena({ level, handleRef, sound }: ArenaProps) {
         case "victory":
           cheer();
           wave();
-          [0.22, 0.52, 0.8].forEach((x, i) => setTimeout(() => burst(x, 0.1 + i * 0.03, 100, i, particles(level, 18), 0.55), i * 380));
+          [0.22, 0.52, 0.8].forEach((x, i) => later(() => burst(x, 0.1 + i * 0.03, 100, i, particles(level, 18), 0.55), i * 380));
           play(sound, "cheer");
           play(sound, "firework");
           break;

@@ -63,6 +63,8 @@ export function useBattleSound(arena: ArenaId, active: boolean) {
     });
     return () => {
       cancelled = true;
+      // Scène démontée : un son programmé après (plongeon du koi, fin d'une distribution) ne sort plus
+      port.current = null;
       eng.current?.stopAmbience();
     };
   }, [active, arena, enabled]);

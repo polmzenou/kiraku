@@ -8,13 +8,14 @@ import { abilityRules, DEFAULT_BATTLE_RULES } from "@/lib/battle/config";
 import { createState } from "@/lib/battle/engine";
 import { fighter, setupOf } from "@/lib/battle/fixtures";
 import { ACTION_KANJI } from "@/lib/battle/glyphs";
-import { KEYWORDS, TECHNIQUES, ULTIMATES, type Keyword } from "@/lib/battle/types";
+import { KEYWORDS, TECHNIQUES, ULTIMATES, type BattleEvent, type BattleSetup, type Keyword } from "@/lib/battle/types";
+import type { PlayerView } from "@/lib/battle/view";
 import { AbilityLists } from "./AbilityGuide";
-import { CardDetail } from "./BattleLog";
 import { CutIn } from "./fx/CutIn";
 import { PlayerBanner, Tablets } from "./hud/Hud";
 import { StageCard } from "./stage/StageCard";
 import { SynergyFilament } from "./stage/SynergyFilament";
+import { useLogLine } from "./useLogLine";
 
 // Techniques, passifs et états s'affichent par leur nom traduit, jamais en kanji : seules les icônes des
 // tablettes d'action en gardent, doublées de leur libellé.
@@ -157,19 +158,6 @@ describe.each(["fr", "en"] as const)("libellés du combat (%s)", (locale) => {
     expect(out).toContain(String(DEFAULT_BATTLE_RULES.keywordValues.executeThresholdPct));
   });
 
-  it("le détail d'une carte écrit chaque capacité avec ses chiffres", () => {
-    const rules = setupOf([fighter()], [fighter()]).rules;
-    for (const keyword of KEYWORDS) {
-      for (const technique of TECHNIQUES) {
-        const card = fighter({ keywords: [keyword], technique });
-        const out = render(locale, createElement(CardDetail, { card, hp: 100, maxHp: 200, rules }));
-        expect(out).toContain(battle.keywords[keyword].name);
-        expect(out).toContain(battle.techniques[technique].name);
-        expect(out).not.toMatch(/\{[a-z]+[,}]/);
-      }
-    }
-  });
-
   it("le cut-in d'un ulti le nomme en toutes lettres, sur le bandeau doré", () => {
     for (const ultimate of ULTIMATES) {
       const setup = setupOf([fighter({ ultimate, name: "Akane" }), fighter(), fighter()], [fighter(), fighter(), fighter()]);
@@ -239,13 +227,65 @@ describe.each(["fr", "en"] as const)("libellés du combat (%s)", (locale) => {
     expect(target).toContain(html(battle.board.raiseTarget));
   });
 
-  it("le détail d'une carte décrit son ulti et la règle de charge", () => {
-    const rules = setupOf([fighter()], [fighter()]).rules;
-    for (const ultimate of ULTIMATES) {
-      const out = render(locale, createElement(CardDetail, { card: fighter({ ultimate }), hp: 100, maxHp: 200, rules }));
-      expect(out).toContain(battle.ultimates[ultimate].name);
-      expect(out).not.toMatch(/\{[a-z]+[,}]/);
+  it("le fil des actions a une phrase complète pour chaque événement, noms des cartes et des joueurs compris", () => {
+    const setup = setupOf(
+      [fighter({ name: "Akane" }), fighter({ name: "Benkei" }), fighter({ name: "Chiyo" })],
+      [fighter({ name: "Daigo" }), fighter({ name: "Emi" }), fighter({ name: "Fuyu" })],
+    );
+    const withSynergy = { ...setup, synergy: [{ key: "u1", name: "Yozakura", atkPct: 10 }, null] as BattleSetup["synergy"] };
+    // Un exemple par type d'événement : un type ajouté au moteur sans phrase ici ne compile pas
+    const one: { [K in BattleEvent["t"]]: Extract<BattleEvent, { t: K }> } = {
+      turn: { t: "turn", side: 0, turn: 3, orbs: 2 },
+      attack: { t: "attack", side: 0, actor: 0, target: 1, technique: null },
+      ultimate: { t: "ultimate", side: 0, actor: 0, target: null, ultimate: "FUDO" },
+      damage: { t: "damage", side: 1, index: 1, amount: 12, crit: false, hp: 30 },
+      block: { t: "block", side: 1, index: 0 },
+      heal: { t: "heal", side: 0, index: 2, amount: 8, hp: 50 },
+      lifesteal: { t: "lifesteal", side: 0, index: 0 },
+      orbs: { t: "orbs", side: 1, orbs: 4 },
+      poisoned: { t: "poisoned", side: 1, index: 2 },
+      poison: { t: "poison", side: 1, index: 2, amount: 5, hp: 20 },
+      riposte: { t: "riposte", side: 1, index: 0 },
+      ko: { t: "ko", side: 1, index: 1 },
+      synergy_break: { t: "synergy_break", side: 0 },
+      revive: { t: "revive", side: 1, index: 1, hp: 40 },
+      raise: { t: "raise", side: 0, index: 1, hp: 35 },
+      barrier: { t: "barrier", side: 0, index: 2 },
+      buff: { t: "buff", side: 0, pct: 20 },
+      seal: { t: "seal", side: 1, index: 0 },
+      timeout: { t: "timeout", side: 1 },
+      forfeit: { t: "forfeit", side: 0 },
+      end: { t: "end", winner: 0, reason: "KO" },
+    };
+    const variants: BattleEvent[] = [
+      { t: "attack", side: 0, actor: 1, target: null, technique: "SHUGO" },
+      { t: "attack", side: 0, actor: 1, target: 2, technique: "IYASHI" },
+      { t: "attack", side: 1, actor: 0, target: 0, technique: "ISSEN" },
+      { t: "ultimate", side: 0, actor: 2, target: 1, ultimate: "KISHI" },
+      { t: "ultimate", side: 1, actor: 0, target: 2, ultimate: "TENCHU" },
+      { t: "damage", side: 0, index: 0, amount: 30, crit: true, hp: 10 },
+      { t: "block", side: 0, index: 1, pierced: true },
+    ];
+    const players: [PlayerView, PlayerView | null] = [{ username: "Tristren", image: null, isGuest: false, decor: { frame: null, nameColor: null, prestige: 0 } }, { bot: "ONI" }];
+    const lines: (string | null)[] = [];
+    function Lines({ events }: { events: BattleEvent[] }) {
+      const line = useLogLine(withSynergy, players);
+      for (const e of events) lines.push(line(e));
+      return null;
     }
+    render(locale, createElement(Lines, { events: [...Object.values(one), ...variants] }));
+    const said = lines.slice(0, -variants.length);
+    // Fin de partie : rien dans le fil (le verdict s'affiche à part)
+    expect(said.at(-1)).toBeNull();
+    for (const text of [...said.slice(0, -1), ...lines.slice(-variants.length)]) {
+      expect(text).toBeTruthy();
+      expect(text).not.toMatch(/[{}]|\?/);
+      expect(text).toMatch(/Akane|Benkei|Chiyo|Daigo|Emi|Fuyu|Tristren|Oni/);
+    }
+    // Un soin nul ne dit rien
+    lines.length = 0;
+    render(locale, createElement(Lines, { events: [{ t: "heal", side: 0, index: 0, amount: 0, hp: 50 }] }));
+    expect(lines).toEqual([null]);
   });
 
   it("la bannière porte la puce de synergie et nomme l'univers aux lecteurs d'écran", () => {

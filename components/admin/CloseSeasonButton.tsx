@@ -27,10 +27,17 @@ export function CloseSeasonButton({ number }: { number: number }) {
             disabled={pending}
             onClick={() =>
               startTransition(async () => {
-                const res = await closeSeasonAction({ number });
-                setOpen(false);
-                setMessage(res.ok ? t("closed", { number: res.number, count: res.results }) : t(`errors.${res.error === "STALE" ? "INVALID" : res.error === "FORBIDDEN" ? "FORBIDDEN" : res.error === "RATE_LIMITED" ? "RATE_LIMITED" : "UNAVAILABLE"}`));
-                router.refresh();
+                try {
+                  const res = await closeSeasonAction({ number });
+                  setOpen(false);
+                  // STALE : saison déjà close (cron, autre admin) ; la page relue montre la suivante
+                  setMessage(res.ok ? t("closed", { number: res.number, count: res.results }) : t(`errors.${res.error}`));
+                  router.refresh();
+                } catch {
+                  // Action qui lève (serveur injoignable) : message au lieu de l'écran d'erreur, comme les autres formulaires
+                  setOpen(false);
+                  setMessage(t("errors.unexpected"));
+                }
               })
             }
           >

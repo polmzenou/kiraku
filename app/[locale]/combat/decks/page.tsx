@@ -8,7 +8,7 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { Link, redirect } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { abilityRules } from "@/lib/battle/config";
-import { getBattleRules, getCandidates, getDecks, sweepBattlesFor } from "@/server/battle/queries";
+import { getBattleRules, getDecks, sweepBattlesFor } from "@/server/battle/queries";
 import { getCurrentUser } from "@/server/user";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/combat/decks">): Promise<Metadata> {
@@ -32,9 +32,9 @@ export default async function DecksPage() {
   const rules = await getBattleRules();
   if (user.isGuest || !rules.enabled) return redirect({ href: "/combat", locale: await getLocale() });
 
-  // Cartes rendues par une partie expirée : disponibles avant l'affichage
+  // Cartes rendues par une partie expirée : disponibles avant l'affichage. Celles de l'éditeur se chargent à son ouverture.
   await sweepBattlesFor(user.id);
-  const [decks, candidates] = await Promise.all([getDecks(user.id, rules), getCandidates(user.id, rules)]);
+  const decks = await getDecks(user.id, rules);
 
   return (
     <PageShell>
@@ -44,7 +44,6 @@ export default async function DecksPage() {
       </Link>
       <DeckManager
         decks={decks}
-        candidates={candidates}
         abilities={abilityRules(rules)}
         maxDecks={rules.maxDecks}
         atelier={rules.abilityShopEnabled}

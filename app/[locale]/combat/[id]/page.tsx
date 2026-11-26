@@ -7,7 +7,7 @@ import { GuestBootstrap } from "@/components/GuestBootstrap";
 import { routing } from "@/i18n/routing";
 import { abilityRules } from "@/lib/battle/config";
 import { parseBoardTier } from "@/lib/battle/tiers";
-import { battleCtx, getBattleView, getCandidates, getDecks, getLastTeam, sweepBattlesFor } from "@/server/battle/queries";
+import { battleCtx, getBattleView, getDecks, sweepBattlesFor } from "@/server/battle/queries";
 import { getCurrentUser } from "@/server/user";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/combat/[id]">): Promise<Metadata> {
@@ -34,19 +34,12 @@ export default async function BattlePage({ params, searchParams }: PageProps<"/[
   const previewTier = user.role === "ADMIN" ? parseBoardTier(rang) : null;
   const view = await getBattleView(id, user.id, ctx.rules, previewTier, ctx.ranked);
   if (!view) notFound();
-  const candidates = view.canJoin ? await getCandidates(user.id, ctx.rules) : [];
-  const lastTeam = view.canJoin ? await getLastTeam(user.id, candidates) : [];
+  // Invité d'une salle : ses decks en raccourcis ; ses cartes se chargent à l'ouverture du choix d'équipe
   const decks = view.canJoin ? await getDecks(user.id, ctx.rules) : [];
 
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-      <BattleScreen
-        view={view}
-        candidates={candidates}
-        decks={decks}
-        abilities={abilityRules(ctx.rules)}
-        lastTeam={lastTeam}
-      />
+      <BattleScreen view={view} decks={decks} abilities={abilityRules(ctx.rules)} />
     </div>
   );
 }

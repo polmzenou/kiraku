@@ -1,9 +1,11 @@
 import { useId } from "react";
+import { isBotName, type BotName } from "@/lib/battle/bot-names";
 
 // Masques des bots, dessinés pour Kiraku d'après les figures du folklore : un disque laqué et le
-// masque par-dessus. Décoratifs : le nom du bot est lu à côté.
+// masque par-dessus. Décoratifs : le nom du bot est lu à côté. La liste vient du serveur (BOT_NAMES) : un
+// bot ajouté sans masque fait échouer la vérification des types ici.
 
-type Bot = "TENGU" | "KITSUNE" | "KAPPA" | "TANUKI" | "ONI" | "KARASU" | "YUREI" | "RONIN";
+type Bot = BotName;
 
 function Face({ bot }: { bot: Bot }) {
   switch (bot) {
@@ -91,14 +93,17 @@ function Face({ bot }: { bot: Bot }) {
           <path d="M15.5 26h3M21.5 26h3" stroke="#d9b556" strokeWidth="1.4" strokeLinecap="round" />
         </g>
       );
+    default: {
+      // Un bot de BOT_NAMES sans masque ne compile pas
+      const missing: never = bot;
+      return missing;
+    }
   }
 }
 
-const BOTS = new Set<string>(["TENGU", "KITSUNE", "KAPPA", "TANUKI", "ONI", "KARASU", "YUREI", "RONIN"]);
-
 export function BotMask({ bot, size }: { bot: string | null; size: number }) {
   const id = useId();
-  const known = bot && BOTS.has(bot) ? (bot as Bot) : "RONIN";
+  const known: Bot = isBotName(bot) ? bot : "RONIN";
   return (
     <svg aria-hidden="true" width={size} height={size} viewBox="0 0 40 40" className="bot-mask">
       <defs>

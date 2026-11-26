@@ -20,7 +20,7 @@ vi.mock("@/i18n/navigation", async () => {
     useRouter: () => ({ push: () => {}, refresh: () => {} }),
   };
 });
-vi.mock("@/server/actions/battle", () => ({ buyAbilityAction: vi.fn(), equipAbilitiesAction: vi.fn() }));
+vi.mock("@/server/actions/battle", () => ({ buyAbilityAction: vi.fn(), equipAbilitiesAction: vi.fn(), teamCandidatesAction: vi.fn() }));
 // La face de la carte a ses propres tests : on ne garde que son identité et son mode figé
 vi.mock("@/components/fuda/Fuda", async () => {
   const { createElement: h } = await import("react");
@@ -82,7 +82,7 @@ describe("grilles de cartes du combat", () => {
   it("choix d'équipe : 400 cartes, seules les premières sont montées avant la mise en page, toutes figées", () => {
     const candidates = Array.from({ length: 400 }, (_, i) => candidate(i));
     const out = render(
-      createElement(TeamPicker, { open: true, onClose: () => {}, candidates, decks: [], abilities, initial: [], confirmLabel: "OK", pending: false, onConfirm: () => {} }),
+      createElement(TeamPicker, { open: true, onClose: () => {}, pool: { status: "ready", candidates, lastTeam: [] }, decks: [], abilities, confirmLabel: "OK", pending: false, onConfirm: () => {} }),
     );
     const cards = fudas(out);
     expect(cards).toHaveLength(FIRST_PAINT_ITEMS);
@@ -97,7 +97,7 @@ describe("grilles de cartes du combat", () => {
   it("choix d'équipe : une petite collection s'affiche en entier", () => {
     const candidates = Array.from({ length: 5 }, (_, i) => candidate(i));
     const out = render(
-      createElement(TeamPicker, { open: true, onClose: () => {}, candidates, decks: [], abilities, initial: [], confirmLabel: "OK", pending: false, onConfirm: () => {} }),
+      createElement(TeamPicker, { open: true, onClose: () => {}, pool: { status: "ready", candidates, lastTeam: [] }, decks: [], abilities, confirmLabel: "OK", pending: false, onConfirm: () => {} }),
     );
     expect(fudas(out).map((c) => c.id)).toEqual(["c0", "c1", "c2", "c3", "c4"]);
   });
@@ -105,7 +105,7 @@ describe("grilles de cartes du combat", () => {
   it("choix d'équipe : les cartes déjà dans l'équipe restent en haut, numérotées, hors de la grille", () => {
     const candidates = Array.from({ length: 400 }, (_, i) => candidate(i));
     const out = render(
-      createElement(TeamPicker, { open: true, onClose: () => {}, candidates, decks: [], abilities, initial: ["c300", "c301", "c302"], confirmLabel: "OK", pending: false, onConfirm: () => {} }),
+      createElement(TeamPicker, { open: true, onClose: () => {}, pool: { status: "ready", candidates, lastTeam: ["c300", "c301", "c302"] }, decks: [], abilities, confirmLabel: "OK", pending: false, onConfirm: () => {} }),
     );
     // Les 3 emplacements montrent l'équipe même quand ses cartes sont loin dans la liste
     for (const id of ["c300", "c301", "c302"]) expect(out).toContain(`aria-label="Retirer Carte ${id.slice(1)}"`);

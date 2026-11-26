@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { memo, useLayoutEffect, useRef } from "react";
+import { memo, useLayoutEffect, useMemo, useRef } from "react";
 import { CardBack } from "@/components/fuda/CardBack";
 import { Fuda } from "@/components/fuda/Fuda";
 import type { Slot } from "@/lib/battle/choreography";
@@ -47,6 +47,10 @@ export const StageCard = memo(function StageCard({ slot, card, state, atkBonus, 
     register(slot, { root: root.current, move: move.current, hit: hit.current, flash: flash.current, crack: crack.current });
     return () => register(slot, null);
   }, [register, slot]);
+
+  // La face ne dépend que de la carte : gardée d'un rendu à l'autre, elle n'est pas recalculée à chaque coup
+  // (parties lancées avant le mode spoiler : pas de champ, pas de flou)
+  const art = useMemo(() => <Fuda card={{ ...card, spoiler: card.spoiler === true }} size="sm" variant="battle" tilt={false} sizes={sizes} />, [card, sizes]);
 
   const dead = state.hp <= 0;
   const hp = Math.max(0, Math.min(1, state.hp / Math.max(1, state.maxHp)));
@@ -96,10 +100,7 @@ export const StageCard = memo(function StageCard({ slot, card, state, atkBonus, 
             style={{ animationDelay: `${-slot.index * 1.1 - slot.side * 0.6}s` }}
           >
             <span className="stage-flip" data-face={face}>
-              <span className="stage-face">
-                {/* Parties lancées avant le mode spoiler : pas de champ, pas de flou */}
-                <Fuda card={{ ...card, spoiler: card.spoiler === true }} size="sm" variant="battle" tilt={false} sizes={sizes} />
-              </span>
+              <span className="stage-face">{art}</span>
               <span className="stage-face stage-back">
                 <CardBack flat />
               </span>

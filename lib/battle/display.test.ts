@@ -86,3 +86,33 @@ describe("ultis à l'affichage", () => {
     expect(launched).toBeGreaterThan(0);
   });
 });
+
+describe("copie sur écriture", () => {
+  it("ne modifie jamais l'état reçu, sur une partie entière", () => {
+    const rng = seededRng(13);
+    const team = () => [fighter({ ultimate: "FUDO", keywords: ["POISON"] }), fighter({ technique: "KOBU", keywords: ["REVIVE"] }), fighter({ technique: "FUIN" })];
+    const setup = setupOf(team(), team(), RULES);
+    let { state } = createState(setup);
+    for (let i = 0; i < 300 && !state.finished; i++) {
+      const res = applyAction(setup, 17, state, botAction(setup, state, state.active, rng, 20));
+      const before = structuredClone(state);
+      res.events.reduce(applyEvent, state);
+      expect(state).toEqual(before);
+      state = res.state;
+    }
+    expect(state.finished).toBe(true);
+  });
+
+  it("seul le combattant touché change d'objet : les autres cartes et l'autre camp restent les mêmes", () => {
+    const setup = setupOf([fighter(), fighter(), fighter()], [fighter(), fighter(), fighter()]);
+    const state = createState(setup).state;
+    const hit = applyEvent(state, { t: "damage", side: 1, index: 2, amount: 10, hp: 40, crit: false });
+    expect(hit.fighters[1][2].hp).toBe(40);
+    expect(hit.fighters[1][2]).not.toBe(state.fighters[1][2]);
+    expect(hit.fighters[1][0]).toBe(state.fighters[1][0]);
+    expect(hit.fighters[1][1]).toBe(state.fighters[1][1]);
+    expect(hit.fighters[0]).toBe(state.fighters[0]);
+    // Un événement sans effet sur l'affichage rend le même état
+    expect(applyEvent(state, { t: "riposte", side: 0, index: 0 })).toBe(state);
+  });
+});

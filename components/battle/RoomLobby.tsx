@@ -1,49 +1,43 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore, useTransition } from "react";
 import { getPathname, Link, useRouter } from "@/i18n/navigation";
 import { withShareCode } from "@/lib/referral/share";
 import { useShareCode } from "../referral/ShareCode";
-import type { BattleView, CandidateCard, DeckView } from "@/lib/battle/view";
+import type { BattleView, DeckView } from "@/lib/battle/view";
 import { battleViewAction, cancelRoomAction, joinRoomAction } from "@/server/actions/battle";
 import { useHoldAwake } from "../realtime/activity";
 import { useRealtime } from "../realtime/RealtimeProvider";
 import { usePoll } from "../realtime/usePoll";
 import { Button, buttonClasses } from "../ui/Button";
-import { usePlayerName } from "./BoardLayout";
+import { usePlayerName } from "./usePlayerName";
 import type { AbilityRules } from "./AbilityGuide";
 import { TeamPicker } from "./TeamPicker";
 import { useBattleError } from "./useBattleError";
+import { useCandidatePool } from "./useCandidatePool";
+import { useTickingNow } from "./useTickingNow";
 
-function useCountdown(until: string | null) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1_000);
-    return () => clearInterval(id);
-  }, []);
-  if (!until) return null;
+/**
+ * Durée de vie restante du code, en m:ss. Son propre compte à rebours : seul ce texte se re-rend chaque seconde,
+ * pas le choix d'équipe ouvert à côté ; au rendu serveur et à l'hydratation, l'heure du rendu serveur.
+ */
+function RoomExpiry({ until, serverNow, className }: { until: string; serverNow: number; className: string }) {
+  const t = useTranslations("battle.room");
+  const now = useTickingNow(serverNow);
   const s = Math.max(0, Math.floor((new Date(until).getTime() - now) / 1_000));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  return <p className={className}>{t("expires", { time: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` })}</p>;
 }
+
+// Partage natif : lu après l'hydratation (le serveur n'a pas navigator.share, le téléphone si)
+const noSubscribe = () => () => {};
+const canShare = () => typeof navigator !== "undefined" && "share" in navigator;
 
 // Action qui lève (serveur injoignable, panne) : erreur traduite au lieu d'un écran d'erreur
 const UNAVAILABLE = { ok: false, error: "UNAVAILABLE", battleId: undefined } as const;
 
 /** Salle d'amis ouverte : le créateur partage son code et attend ; l'invité choisit son équipe et entre. */
-export function RoomLobby({
-  view,
-  candidates,
-  abilities,
-  lastTeam,
-  decks,
-}: {
-  view: BattleView;
-  candidates: CandidateCard[];
-  abilities: AbilityRules;
-  lastTeam: string[];
-  decks: DeckView[];
-}) {
+export function RoomLobby({ view, abilities, decks }: { view: BattleView; abilities: AbilityRules; decks: DeckView[] }) {
   const t = useTranslations("battle");
   const locale = useLocale();
   const shareCode = useShareCode();
@@ -53,7 +47,10 @@ export function RoomLobby({
   const [picking, setPicking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const time = useCountdown(view.codeExpiresAt);
+  const share = useSyncExternalStore(noSubscribe, canShare, () => false);
+  // Cartes du choix d'équipe de l'invité, chargées à sa première ouverture
+  const pool = useCandidatePool(picking);
+  const serverNow = Date.parse(view.serverNow);
 
   // Le créateur attend : dès que la partie démarre (signal « matched » en direct, ou sondage de
   // secours) ou que la salle ferme, la page se recharge
@@ -81,7 +78,7 @@ export function RoomLobby({
           {t("title")}
         </span>
         <h2 className="font-heading text-xl font-bold">{t("room.invited", { name: name(view.players[0]) })}</h2>
-        {time && <p className="text-sm text-text-muted">{t("room.expires", { time })}</p>}
+        {view.codeExpiresAt && <RoomExpiry until={view.codeExpiresAt} serverNow={serverNow} className="text-sm text-text-muted" />}
         {error && (
           <p role="alert" className="text-sm text-shu">
             {error}
@@ -93,10 +90,9 @@ export function RoomLobby({
         <TeamPicker
           open={picking}
           onClose={() => setPicking(false)}
-          candidates={candidates}
+          pool={pool}
           decks={decks}
           abilities={abilities}
-          initial={lastTeam}
           pending={pending}
           confirmLabel={t("friend.join")}
           onConfirm={(cardIds) =>
@@ -142,7 +138,7 @@ export function RoomLobby({
             >
               {copied ? t("room.copied") : t("room.copy")}
             </Button>
-            {typeof navigator !== "undefined" && "share" in navigator && (
+            {share && (
               <Button onClick={() => void navigator.share({ text: t("room.shareText", { code }), url: withShareCode(new URL(getPathname({ href: "/combat", locale }), window.location.origin).href, shareCode) }).catch(() => undefined)}>{t("room.share")}</Button>
             )}
           </div>
@@ -152,7 +148,7 @@ export function RoomLobby({
         <span aria-hidden="true" className="inline-block size-3 animate-pulse rounded-full bg-shu motion-reduce:animate-none" />
         {t("room.waiting")}
       </p>
-      {time && <p className="text-xs text-text-muted">{t("room.expires", { time })}</p>}
+      {view.codeExpiresAt && <RoomExpiry until={view.codeExpiresAt} serverNow={serverNow} className="text-xs text-text-muted" />}
       {error && (
         <p role="alert" className="text-sm text-shu">
           {error}

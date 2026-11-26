@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { other } from "@/lib/battle/engine";
+import { claimDelay, deadlineDelay, nextSkew, updateStep } from "@/lib/battle/live-sync";
 import type { Action, BattleSetup, BattleState } from "@/lib/battle/types";
 import type { BattleUpdateView, BattleView, RankedOutcomeView } from "@/lib/battle/view";
 import { battleSinceAction, claimTimeoutAction, playAction } from "@/server/actions/battle";
@@ -14,8 +15,8 @@ import { usePoll } from "../realtime/usePoll";
 import { Button } from "../ui/Button";
 import { Sheet } from "../ui/Sheet";
 import { RankedResult } from "../ranked/RankedResult";
-import { BattleResult } from "./BattleResult";
-import { useLogLine } from "./BattleLog";
+import { BattleResult, ShowResultButton } from "./BattleResult";
+import { useLogLine } from "./useLogLine";
 import { Tablets, ultimateTablet } from "./hud/Hud";
 import { StageMenu } from "./hud/StageMenu";
 import { Intro } from "./sequences/Intro";
@@ -65,6 +66,14 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
   const syncing = useRef(false);
   const line = useLogLine(setup, view.players);
 
+  // Écart entre l'horloge du serveur et celle de l'appareil (ms), relevé à chaque réponse et message : l'encens et
+  // la réclamation de fin de tour suivent l'heure du serveur, même sur un téléphone en avance ou en retard
+  const [skew, setSkew] = useState(() => nextSkew(null, Date.parse(view.serverNow) - Date.now()));
+  const measure = useCallback((serverNow: string) => {
+    const sample = Date.parse(serverNow) - Date.now();
+    setSkew((cur) => nextSkew(cur, sample));
+  }, []);
+
   const apply = useCallback(
     (u: BattleUpdateView) => {
       version.current = u.version;
@@ -81,6 +90,7 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
     syncing.current = true;
     try {
       const res = await battleSinceAction({ battleId: view.id, version: version.current });
+      if (res.ok) measure(res.serverNow);
       if (res.ok && res.update && res.update.version > version.current) {
         apply(res.update);
         return true;
@@ -92,15 +102,16 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
     } finally {
       syncing.current = false;
     }
-  }, [apply, view.id]);
+  }, [apply, measure, view.id]);
 
   const receive = useCallback(
     (u: BattleUpdateView) => {
-      if (u.version <= version.current) return; // déjà vu (notre propre action, ou doublon)
-      if (u.from !== version.current) return void resync();
-      apply(u);
+      if (u.serverNow) measure(u.serverNow);
+      const step = updateStep(version.current, u);
+      if (step === "resync") return void resync();
+      if (step === "apply") apply(u);
     },
-    [apply, resync],
+    [apply, measure, resync],
   );
 
   // Temps réel (connexion Ably partagée) si configuré, sinon sondage ; rien onglet caché, rattrapage
@@ -135,28 +146,35 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
 
   const canAct = !intro && !shown.finished && shown.active === mySide && !animating && !pending;
 
-  // Minuteur : à l'échéance, n'importe quel joueur réclame la fin du tour (le serveur vérifie l'échéance).
-  // Un seul délai par échéance, l'encens tenant sa propre horloge : le plateau ne se re-rend plus quatre
-  // fois par seconde. `attempt` relance la réclamation après un échec réseau.
+  // Minuteur : à l'échéance (heure du serveur), n'importe quel joueur réclame la fin du tour (le serveur vérifie
+  // l'échéance). Un seul délai par échéance, l'encens tenant sa propre horloge : le plateau ne se re-rend plus
+  // quatre fois par seconde. `attempt` relance la réclamation, de plus en plus espacée, après un refus.
   const [due, setDue] = useState<{ endsAt: string; attempt: number } | null>(null);
   useEffect(() => {
     if (shown.finished || !turnEndsAt) return;
-    const id = setTimeout(() => setDue({ endsAt: turnEndsAt, attempt: 0 }), Math.max(0, new Date(turnEndsAt).getTime() - Date.now()));
+    const id = setTimeout(
+      () => setDue((d) => (d && d.endsAt === turnEndsAt ? d : { endsAt: turnEndsAt, attempt: 0 })),
+      deadlineDelay(turnEndsAt, Date.now(), skew),
+    );
     return () => clearTimeout(id);
-  }, [shown.finished, turnEndsAt]);
+  }, [shown.finished, skew, turnEndsAt]);
   useEffect(() => {
     if (shown.finished || !due || due.endsAt !== turnEndsAt || claimed.current === turnEndsAt || animating) return;
-    claimed.current = turnEndsAt;
+    const wait = claimDelay(due.attempt);
+    if (wait === null) return;
     const id = setTimeout(async () => {
+      // Posée ici et pas avant l'attente : une animation qui démarre pendant ce délai l'annule sans bloquer la réclamation
+      claimed.current = turnEndsAt;
       const res = await claimTimeoutAction({ battleId: view.id }).catch(() => null);
-      // Action qui lève (serveur injoignable) : réclamation rouverte, nouvel essai au passage suivant
-      if (!res) {
+      // Action qui lève (serveur injoignable), ou échéance pas encore atteinte pour le serveur : réclamation rouverte,
+      // nouvel essai un peu plus tard
+      if (!res || (!res.ok && res.error === "TOO_EARLY")) {
         claimed.current = null;
         setDue((d) => (d && d.endsAt === due.endsAt ? { ...d, attempt: d.attempt + 1 } : d));
       }
       if (res?.ok && res.update) receive(res.update);
       else void resync();
-    }, 1_000);
+    }, wait);
     return () => clearTimeout(id);
   }, [animating, due, receive, resync, shown.finished, turnEndsAt, view.id]);
 
@@ -198,6 +216,8 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
   // Fin : le verdict au pinceau, puis le résultat (tout de suite en mouvement réduit)
   const over = final.finished && shown.finished && !animating;
   const [resultReady, setResultReady] = useState(false);
+  // Bilan refermé (Échap, « Voir le plateau ») pour regarder la table finale ; un bouton le rouvre
+  const [resultHidden, setResultHidden] = useState(false);
   useEffect(() => {
     if (!over) return;
     const id = setTimeout(() => setResultReady(true), level === "reduced" ? 0 : 2_200);
@@ -231,7 +251,7 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
         mine={{ selected: controls.selected, ready: controls.selected === null && canAct ? controls.ready : undefined, targets: controls.allyTargets, onPress: controls.pressMine }}
         theirs={{ targets: controls.enemyTargets, onPress: controls.pressTheirs }}
         ticker={ticker}
-        timer={!intro && !shown.finished ? { endsAt: turnEndsAt, total: view.turnSeconds } : null}
+        timer={!intro && !shown.finished ? { endsAt: turnEndsAt, total: view.turnSeconds, skew } : null}
         tablets={
           <Tablets
             mode={controls.mode}
@@ -266,9 +286,7 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
               sound={sound.port}
             />
           ) : over ? (
-            <Outro outcome={outcome} reason={reason} level={level}>
-              {null}
-            </Outro>
+            <Outro outcome={outcome} reason={reason} level={level} />
           ) : null
         }
       />
@@ -289,13 +307,15 @@ export function BattleBoard({ view }: { view: BattleView & { setup: BattleSetup;
         </div>
       </Sheet>
 
-      {over && resultReady && (
+      {over && resultReady && resultHidden && <ShowResultButton onPress={() => setResultHidden(false)} />}
+      {over && resultReady && !resultHidden && (
         <BattleResult
           winner={shown.winner}
           mySide={mySide}
           reason={shown.endReason}
           rewardZeni={final.rewardZeni}
           onReplay={() => router.refresh()}
+          onDismiss={() => setResultHidden(true)}
           requeueId={view.mode === "FRIEND" ? undefined : view.id}
           ranked={
             final.ranked?.sides[mySide] && view.ladder ? (

@@ -3061,6 +3061,7 @@
         "damagePct": "Gauge: points for 100% HP lost"
       },
       "valueHint": "Value: multiplier in % (Flash, Blade dance, Piercing strike, All-out strike, Double strike), heal, bonus or poison in % (Healing, Encouragement, Healing rain, Toxic mist), orbs gained (Meditation), unused (Protection, Seal).",
+      "abilityField": "{name}: {field}",
       "save": "Save",
       "saving": "Saving…",
       "saved": "{count, plural, one {# setting saved} other {# settings saved}}.",
@@ -3070,8 +3071,6 @@
         "INVALID": "Values rejected by the server.",
         "RATE_LIMITED": "Too many saves: wait a minute.",
         "unexpected": "Unexpected error. Try again.",
-        "CLOSED": "This sale has already ended.",
-        "NOT_FOUND": "Sale not found.",
         "UNAVAILABLE": "Action not possible right now."
       },
       "log": "Latest changes",
@@ -3144,10 +3143,9 @@
       "errors": {
         "FORBIDDEN": "Access denied.",
         "INVALID": "Values rejected by the server.",
+        "STALE": "This season is no longer open: reload the page.",
         "RATE_LIMITED": "Too many saves: wait a minute.",
         "unexpected": "Unexpected error. Try again.",
-        "CLOSED": "This sale has already ended.",
-        "NOT_FOUND": "Sale not found.",
         "UNAVAILABLE": "Action not possible right now."
       },
       "log": "Latest changes",
@@ -6610,6 +6608,8 @@
       "search": "Search a card",
       "none": "No card available: open some boosters!",
       "noMatch": "No card matches.",
+      "loading": "Loading your cards…",
+      "retry": "Try again",
       "confirm": "Confirm team",
       "remove": "Remove {name}",
       "add": "Add {name}",
@@ -6666,7 +6666,6 @@
       "attack": "Attack",
       "attackShort": "ATK",
       "defenseShort": "DEF",
-      "technique": "{name} · {cost, plural, one {# orb} other {# orbs}}",
       "endTurn": "End turn",
       "forfeit": "Forfeit",
       "forfeitConfirm": "Forfeit the battle? It counts as a defeat.",
@@ -6708,7 +6707,6 @@
       "ultimateSpent": "Ultimate {name}: already used",
       "raiseTarget": "Can be revived",
       "ultimateKicker": "Ultimate",
-      "ultimateTitle": "Ultimate · {name}",
       "frozen": "Frozen"
     },
     "errors": {
@@ -6756,6 +6754,8 @@
       "requeue": "Play again",
       "again": "New battle",
       "replay": "Watch the replay",
+      "viewBoard": "View the board",
+      "show": "Show the result",
       "back": "Back to battles",
       "cardsBack": "Your cards are back in your collection."
     },
@@ -6879,7 +6879,6 @@
       "RONIN": "Rōnin"
     },
     "log": {
-      "title": "Battle log",
       "empty": "The battle begins.",
       "attack": "{actor} attacks {target}.",
       "technique": "{actor} uses {technique}.",
@@ -6906,11 +6905,6 @@
       "ultimateOn": "{actor} unleashes {ultimate} on {target}!",
       "raise": "{target} rises again with {hp} HP.",
       "shatter": "{target}'s barrier shatters."
-    },
-    "detail": {
-      "title": "Card",
-      "hint": "Tap one of your cards to see its technique and passives.",
-      "stats": "ATK {atk} · DEF {def} · {hp}/{max} HP"
     },
     "arena": {
       "dojo": "The Lantern Dōjō",

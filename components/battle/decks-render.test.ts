@@ -8,6 +8,7 @@ import { abilityRules, DEFAULT_BATTLE_RULES } from "@/lib/battle/config";
 import type { CandidateCard, DeckView } from "@/lib/battle/view";
 import { DeckManager } from "./DeckManager";
 import { TeamPicker } from "./TeamPicker";
+import type { CandidatePool } from "./useCandidatePool";
 
 vi.mock("@/i18n/navigation", async () => {
   const { createElement: h } = await import("react");
@@ -16,7 +17,7 @@ vi.mock("@/i18n/navigation", async () => {
     useRouter: () => ({ push: () => {}, refresh: () => {} }),
   };
 });
-vi.mock("@/server/actions/battle", () => ({ saveDeckAction: vi.fn(), renameDeckAction: vi.fn(), deleteDeckAction: vi.fn() }));
+vi.mock("@/server/actions/battle", () => ({ saveDeckAction: vi.fn(), renameDeckAction: vi.fn(), deleteDeckAction: vi.fn(), teamCandidatesAction: vi.fn() }));
 // La face de la carte a ses propres tests : seuls les calques des decks comptent ici
 vi.mock("@/components/fuda/Fuda", () => ({ Fuda: () => null }));
 
@@ -64,9 +65,12 @@ const ready: DeckView = { id: "d1", name: "Deck CSM", cards: [card("a"), card("b
 const sold: DeckView = { id: "d2", name: "Deck JJK", cards: [card("a"), card("b"), card("z")], unavailable: ["z"], playable: false };
 const trio: DeckView = { id: "d3", name: "Trio", cards: [card("x", JJK), card("y", JJK), card("w", JJK)], unavailable: [], playable: true };
 
-const manager = (decks: DeckView[], maxDecks = 10) => createElement(DeckManager, { decks, candidates: [], abilities, maxDecks });
+/** Cartes du choix d'équipe déjà chargées (le sélecteur les demande à son ouverture). */
+const loaded = (candidates: CandidateCard[], lastTeam: string[] = []): CandidatePool => ({ status: "ready", candidates, lastTeam });
+
+const manager = (decks: DeckView[], maxDecks = 10) => createElement(DeckManager, { decks, abilities, maxDecks });
 const picker = (decks: DeckView[]) =>
-  createElement(TeamPicker, { open: true, onClose: () => {}, candidates: [], decks, abilities, initial: [], confirmLabel: "OK", pending: false, onConfirm: () => {} });
+  createElement(TeamPicker, { open: true, onClose: () => {}, pool: loaded([]), decks, abilities, confirmLabel: "OK", pending: false, onConfirm: () => {} });
 
 describe.each(["fr", "en"] as const)("decks (%s)", (locale) => {
   const t = MESSAGES[locale].battle.decks;
@@ -89,7 +93,7 @@ describe.each(["fr", "en"] as const)("decks (%s)", (locale) => {
 
   it("renvoie vers l'atelier quand il est ouvert", () => {
     expect(render(locale, manager([]))).not.toContain('href="/combat/atelier"');
-    const out = render(locale, createElement(DeckManager, { decks: [], candidates: [], abilities, maxDecks: 10, atelier: true }));
+    const out = render(locale, createElement(DeckManager, { decks: [], abilities, maxDecks: 10, atelier: true }));
     expect(out).toContain('href="/combat/atelier"');
   });
 
@@ -126,7 +130,7 @@ describe.each(["fr", "en"] as const)("decks (%s)", (locale) => {
 
     it("l'équipe du même univers affiche l'aperçu, sinon le rappel de la règle", () => {
       const pickerWith = (team: string[], candidates: CandidateCard[]) =>
-        createElement(TeamPicker, { open: true, onClose: () => {}, candidates, decks: [], abilities, initial: team, confirmLabel: "OK", pending: false, onConfirm: () => {} });
+        createElement(TeamPicker, { open: true, onClose: () => {}, pool: loaded(candidates, team), decks: [], abilities, confirmLabel: "OK", pending: false, onConfirm: () => {} });
       const same = render(locale, pickerWith(["x", "y", "w"], trio.cards));
       expect(same).toContain(preview("Jujutsu Kaisen"));
       expect(same).not.toContain(html(s.hint.replace("{pct}", "10")));
@@ -136,11 +140,32 @@ describe.each(["fr", "en"] as const)("decks (%s)", (locale) => {
 
     it("à 0 %, la synergie disparaît de l'écran", () => {
       const off = { ...abilities, synergyAtkPct: 0 };
-      const out = render(locale, createElement(TeamPicker, { open: true, onClose: () => {}, candidates: trio.cards, decks: [trio], abilities: off, initial: ["x", "y", "w"], confirmLabel: "OK", pending: false, onConfirm: () => {} }));
+      const out = render(locale, createElement(TeamPicker, { open: true, onClose: () => {}, pool: loaded(trio.cards, ["x", "y", "w"]), decks: [trio], abilities: off, confirmLabel: "OK", pending: false, onConfirm: () => {} }));
       expect(out).not.toContain(preview("Jujutsu Kaisen"));
       expect(out).not.toContain(html(s.hint.replace("{pct}", "0")));
       expect(out).not.toContain(html(s.deckMark.replace("{universe}", "Jujutsu Kaisen")));
     });
+  });
+
+  it("le choix d'équipe attend ses cartes (chargées à l'ouverture), puis propose de réessayer après un refus", () => {
+    const team = MESSAGES[locale].battle.team;
+    const sheet = (pool: CandidatePool) =>
+      render(locale, createElement(TeamPicker, { open: true, onClose: () => {}, pool, decks: [ready], abilities, confirmLabel: "OK", pending: false, onConfirm: () => {} }));
+    const loading = sheet({ status: "loading" });
+    expect(loading).toContain(`role="status"`);
+    expect(loading).toContain(team.loading);
+    expect(loading).toMatch(/<button[^>]*disabled=""[^>]*>OK<\/button>/);
+    const failed = sheet({ status: "error", error: "Boom", retry: () => {} });
+    expect(failed).toContain(">Boom<");
+    expect(failed).toContain(team.retry);
+  });
+
+  it("la dernière équipe se pré-remplit quand les cartes sont là", () => {
+    const out = render(
+      locale,
+      createElement(TeamPicker, { open: true, onClose: () => {}, pool: loaded(ready.cards, ["a", "b", "c"]), decks: [], abilities, confirmLabel: "OK", pending: false, onConfirm: () => {} }),
+    );
+    expect(out).not.toMatch(/<button[^>]*disabled=""[^>]*>OK<\/button>/);
   });
 
   it("sans deck, le choix d'équipe n'offre qu'un lien de création", () => {
@@ -156,7 +181,7 @@ describe.each(["fr", "en"] as const)("decks (%s)", (locale) => {
     const gold = { ...card("g"), rarity: "GOLD", ultimate: "HYAKKA" as const };
     const out = render(
       locale,
-      createElement(TeamPicker, { open: true, onClose: () => {}, candidates: [gold, card("a")], decks: [], abilities, initial: [], confirmLabel: "OK", pending: false, onConfirm: () => {} }),
+      createElement(TeamPicker, { open: true, onClose: () => {}, pool: loaded([gold, card("a")]), decks: [], abilities, confirmLabel: "OK", pending: false, onConfirm: () => {} }),
     );
     expect(out).toContain(html(team.ultimateChip.replace("{name}", ult)));
     expect(out.split(html(team.ultimateChip.replace("{name}", ult)))).toHaveLength(2);

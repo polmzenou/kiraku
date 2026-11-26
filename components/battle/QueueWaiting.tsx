@@ -7,6 +7,8 @@ import { leaveQueueAction, pollQueueAction, startBotBattleAction, type BattleAct
 import { useHoldAwake } from "../realtime/activity";
 import { useRealtime } from "../realtime/RealtimeProvider";
 import { Button } from "../ui/Button";
+import { useBattleError } from "./useBattleError";
+import { useTickingNow } from "./useTickingNow";
 
 /**
  * Attente en file : un ensō qui tourne, le temps écoulé, Annuler. Le sondage prouve qu'on est
@@ -18,6 +20,7 @@ export function QueueWaiting({
   botAt,
   pollSeconds,
   botOnDemand,
+  serverNow,
   onLeft,
 }: {
   joinedAt: string;
@@ -25,12 +28,16 @@ export function QueueWaiting({
   pollSeconds: number;
   /** Bouton « Combattre contre un bot » avant l'heure (en classé, selon ranked.botOnDemand ; le serveur revérifie). */
   botOnDemand: boolean;
+  /** Heure du rendu serveur (ms) : compteurs identiques au rendu serveur et à l'hydratation. */
+  serverNow: number;
   onLeft: (error?: BattleActionError) => void;
 }) {
   const t = useTranslations("battle.queue");
   const router = useRouter();
-  const [now, setNow] = useState(() => Date.now());
+  const errorText = useBattleError();
+  const now = useTickingNow(serverNow, 500);
   const [leaving, setLeaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   // Relance la boucle de sondage après une sortie de file ratée (elle s'arrête dès qu'on part)
   const [restart, setRestart] = useState(0);
   const botRequested = useRef(false);
@@ -39,11 +46,6 @@ export function QueueWaiting({
   const bot = new Date(botAt).getTime();
   const { subscribe } = useRealtime();
   useHoldAwake();
-
-  useEffect(() => {
-    const tick = setInterval(() => setNow(Date.now()), 500);
-    return () => clearInterval(tick);
-  }, []);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -106,18 +108,19 @@ export function QueueWaiting({
 
   const leave = async () => {
     setLeaving(true);
+    setError(null);
     done.current = true;
     const res = await leaveQueueAction().catch(() => null);
-    if (!res) {
-      // Action qui lève (serveur injoignable) : on reste en file, bouton et sondage rendus ; le
-      // sondage dira si la sortie a quand même eu lieu
-      done.current = false;
-      setLeaving(false);
-      setRestart((n) => n + 1);
-      return;
-    }
-    if (res.ok && res.state === "MATCHED") return router.push(`/combat/${res.battleId}`);
-    onLeft(res.ok ? undefined : res.error);
+    if (res?.ok && res.state === "MATCHED") return router.push(`/combat/${res.battleId}`);
+    // Sortie faite (ou déjà hors file), ou plus de session : l'accueil reprend la main
+    if (res && (res.ok || res.error === "NO_SESSION" || res.error === "GUEST")) return onLeft(res.ok ? undefined : res.error);
+    // Action qui lève (serveur injoignable) ou refus passager (rate limit, indisponible) : la place et l'équipe
+    // restent prises côté serveur, on reste donc en file, bouton et sondage rendus ; le sondage dira si la
+    // sortie a quand même eu lieu
+    if (res) setError(errorText(res.error));
+    done.current = false;
+    setLeaving(false);
+    setRestart((n) => n + 1);
   };
 
   // Le joueur ne veut pas attendre : bot tout de suite (un vrai adversaire arrivé entre-temps reste prioritaire côté serveur)
@@ -145,8 +148,10 @@ export function QueueWaiting({
   const elapsed = Math.max(0, Math.floor((now - start) / 1_000));
   const untilBot = Math.max(0, Math.ceil((bot - now) / 1_000));
 
+  // Les compteurs (role="timer") ne sont pas relus à chaque seconde : seule la petite région polie annonce
+  // les changements d'état (recherche, bot imminent)
   return (
-    <section aria-live="polite" className="flex flex-col items-center gap-5 lacquer rounded-card px-4 py-8 text-center">
+    <section className="flex flex-col items-center gap-5 lacquer rounded-card px-4 py-8 text-center">
       <span aria-hidden="true" className="relative inline-flex size-24 items-center justify-center">
         <span className="absolute inset-0 rounded-full border-4 border-border" />
         <span className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-shu [animation-duration:1.6s] motion-reduce:animate-none" />
@@ -154,11 +159,23 @@ export function QueueWaiting({
           {t("searching")}
         </span>
       </span>
+      <p aria-live="polite" className="sr-only">
+        {untilBot > 0 ? t("searching") : t("botNow")}
+      </p>
       <div className="flex flex-col gap-1">
         <h2 className="font-heading text-xl font-bold">{t("title")}</h2>
-        <p className="text-2xl font-bold tabular-nums">{t("elapsed", { seconds: elapsed })}</p>
-        <p className="text-sm text-text-muted">{untilBot > 0 ? t("botSoon", { seconds: untilBot }) : t("botNow")}</p>
+        <p role="timer" className="text-2xl font-bold tabular-nums">
+          {t("elapsed", { seconds: elapsed })}
+        </p>
+        <p role="timer" className="text-sm text-text-muted">
+          {untilBot > 0 ? t("botSoon", { seconds: untilBot }) : t("botNow")}
+        </p>
       </div>
+      {error && (
+        <p role="alert" className="text-sm text-shu">
+          {error}
+        </p>
+      )}
       <div className="flex flex-wrap justify-center gap-3">
         {botOnDemand && untilBot > 0 && (
           <Button variant="primary" onClick={fightBot} disabled={leaving}>

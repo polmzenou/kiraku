@@ -447,7 +447,9 @@ export async function playActionWith(
     const side = sideOf(b, input.userId);
     if (side === null) throw new BattleError("NOT_PARTICIPANT");
     if (b.status !== "ACTIVE") throw new BattleError("CLOSED");
-    if (b.version !== input.version) throw new BattleError("STALE");
+    // L'abandon vaut à tout moment, quel que soit l'état vu : confirmé pendant un coup adverse pas encore reçu,
+    // il n'est pas refusé en STALE (le joueur rattrape la partie avec la réponse)
+    if (b.version !== input.version && input.action.type !== "FORFEIT") throw new BattleError("STALE");
     // Tour échu depuis plus que la marge de latence : l'échéance s'applique d'abord (fin de tour forcée, tour manqué
     // compté) et l'action n'est pas jouée ; sinon une action hors délai repartait avec une échéance neuve
     if (b.turnEndsAt && b.turnEndsAt.getTime() <= ctx.now.getTime() - LATE_ACTION_GRACE_MS) {

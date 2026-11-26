@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { legalActions } from "@/lib/battle/engine";
 import { TECHNIQUE_TARGET, ULTIMATE_TARGET, type Action, type BattleSetup, type BattleState, type Side } from "@/lib/battle/types";
 
@@ -19,10 +19,20 @@ const isCardAction = (a: Action): a is CardAction => a.type === "ATTACK" || a.ty
 export function useBoardControls({ setup, shown, mySide, canAct, send }: { setup: BattleSetup; shown: BattleState; mySide: Side; canAct: boolean; send: (a: Action) => void }) {
   const [selected, setSelected] = useState<number | null>(null);
   const [mode, setMode] = useState<ControlMode>("ATTACK");
+  // Tour fini sans action (encens éteint, fin automatique) : la carte choisie et le mode ne passent pas au tour suivant
+  const turnKey = `${shown.turn}:${shown.active}`;
+  const [seenTurn, setSeenTurn] = useState(turnKey);
+  if (seenTurn !== turnKey) {
+    setSeenTurn(turnKey);
+    setSelected(null);
+    setMode("ATTACK");
+  }
   const legal = useMemo(() => (canAct ? legalActions(setup, shown, mySide) : []), [canAct, setup, shown, mySide]);
   const myTurn = !shown.finished && shown.active === mySide;
+  const ready = new Set(legal.filter(isCardAction).map((a) => a.actor));
 
-  const pick = selected !== null && canAct ? selected : null;
+  // Une carte qui ne peut plus agir (tombée, scellée) n'est plus tenue pour choisie
+  const pick = selected !== null && canAct && ready.has(selected) ? selected : null;
   const actorActions = pick === null ? [] : legal.filter(isCardAction).filter((a) => a.actor === pick);
   const technique = pick === null ? null : setup.teams[mySide][pick].technique;
   const techniqueKind = technique ? TECHNIQUE_TARGET[technique] : null;
@@ -30,7 +40,6 @@ export function useBoardControls({ setup, shown, mySide, canAct, send }: { setup
   const ultimate = pick === null ? null : (setup.teams[mySide][pick].ultimate ?? null);
   const ultimateKind = ultimate ? ULTIMATE_TARGET[ultimate] : null;
   const ultimateActions = actorActions.filter((a) => a.type === "ULTIMATE");
-  const ready = new Set(legal.filter(isCardAction).map((a) => a.actor));
 
   // Cibles du mode en cours : ennemis (attaque, technique ou ulti offensifs), alliés (soin, protection) ou alliés à terre (Résurrection)
   const targetsOf = (kind: "ENEMY" | "ALLY" | "DEAD_ALLY") =>
@@ -103,6 +112,14 @@ export function useBoardControls({ setup, shown, mySide, canAct, send }: { setup
               ? "pickAlly"
               : "pickTarget";
 
+  // Touchers des cartes stables d'un rendu à l'autre : la mémoïsation des cartes de la scène (StageCard) tient
+  const presses = useRef({ pressMine, pressTheirs });
+  useLayoutEffect(() => {
+    presses.current = { pressMine, pressTheirs };
+  });
+  const stableMine = useCallback((i: number) => presses.current.pressMine(i), []);
+  const stableTheirs = useCallback((i: number) => presses.current.pressTheirs(i), []);
+
   const fighter = pick === null ? null : shown.fighters[mySide][pick];
   return {
     selected: pick,
@@ -120,8 +137,8 @@ export function useBoardControls({ setup, shown, mySide, canAct, send }: { setup
     ultimateEnabled: canAct && ultimateActions.length > 0,
     /** Ulti sans cible armé : le prochain toucher sur la tablette le lance. */
     ultimateArmed: mode === "ULTIMATE" && ultimateKind === "NONE" && ultimateActions.length > 0,
-    pressMine,
-    pressTheirs,
+    pressMine: stableMine,
+    pressTheirs: stableTheirs,
     pressTechnique,
     pressUltimate,
     endTurn,

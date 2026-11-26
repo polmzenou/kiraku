@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { BattleSetup, BattleState } from "@/lib/battle/types";
-import type { BattleView, CandidateCard, DeckView } from "@/lib/battle/view";
+import type { BattleView, DeckView } from "@/lib/battle/view";
 import { buttonClasses } from "../ui/Button";
 import type { AbilityRules } from "./AbilityGuide";
 import { RoomLobby } from "./RoomLobby";
@@ -18,21 +18,9 @@ type Ready = BattleView & { setup: BattleSetup; state: BattleState };
 const ready = (v: BattleView): v is Ready => v.setup !== null && v.state !== null;
 
 /** /combat/[id] : salle d'attente, partie en direct ou replay selon l'état de la partie. */
-export function BattleScreen({
-  view,
-  candidates,
-  abilities,
-  lastTeam,
-  decks,
-}: {
-  view: BattleView;
-  candidates: CandidateCard[];
-  abilities: AbilityRules;
-  lastTeam: string[];
-  decks: DeckView[];
-}) {
+export function BattleScreen({ view, abilities, decks }: { view: BattleView; abilities: AbilityRules; decks: DeckView[] }) {
   const t = useTranslations("battle");
-  if (view.status === "WAITING") return <RoomLobby view={view} candidates={candidates} abilities={abilities} lastTeam={lastTeam} decks={decks} />;
+  if (view.status === "WAITING") return <RoomLobby view={view} abilities={abilities} decks={decks} />;
   if (view.status === "ACTIVE" && ready(view)) return <BattleBoard key={view.id} view={view} />;
   if (view.status === "FINISHED" && ready(view)) return <BattleReplay key={view.id} view={view} />;
   return (

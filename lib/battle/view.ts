@@ -51,6 +51,8 @@ export type BattleView = {
   ranked: { crushing: boolean; before: [number | null, number | null]; delta: [number | null, number | null] } | null;
   /** Classé : rangs et barème, pour situer les PC dans l'écran de fin. */
   ladder: Pick<RankedRules, "tiers" | "grandChampion"> | null;
+  /** Heure du serveur à la lecture (ISO) : les comptes à rebours (tour, code ami) corrigent l'écart avec l'appareil. */
+  serverNow: string;
 };
 
 /** Ce que pousse le serveur après chaque action (Ably ou sondage). */
@@ -65,6 +67,8 @@ export type BattleUpdateView = {
   finished: boolean;
   rewardZeni: number;
   ranked: RankedOutcomeView | null;
+  /** Heure du serveur à l'envoi (ISO), pour recaler l'encens sur son horloge. */
+  serverNow: string;
 };
 
 /** Résultat classé d'un camp (diffusé avec la fin de partie). */

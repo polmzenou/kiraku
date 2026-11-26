@@ -1,66 +1,66 @@
-import type { BattleEvent, BattleState } from "./types";
+import type { BattleEvent, BattleState, FighterState, Side } from "./types";
 
 // État affiché pendant qu'on anime des événements : chaque événement porte les PV après coup, on
 // avance donc pas à pas depuis l'état précédent. À la fin de la file, l'état du serveur fait foi.
+// Copie sur écriture : seul le combattant touché (et son camp) change d'objet, les autres restent les
+// mêmes ; l'état reçu n'est jamais modifié, et les cartes intactes ne se redessinent pas.
+
+type Fighters = BattleState["fighters"];
+
+/** Remplace des combattants d'un camp (`patch` reçoit chacun et rend sa version, ou le même objet s'il ne change pas). */
+function withSide(state: BattleState, side: Side, patch: (f: FighterState, index: number) => FighterState): BattleState {
+  const row = state.fighters[side].map(patch);
+  if (row.every((f, i) => f === state.fighters[side][i])) return state;
+  const fighters = [...state.fighters] as Fighters;
+  fighters[side] = row;
+  return { ...state, fighters };
+}
+
+const withFighter = (state: BattleState, side: Side, index: number, change: Partial<FighterState>) =>
+  withSide(state, side, (f, i) => (i === index ? { ...f, ...change } : f));
 
 export function applyEvent(state: BattleState, e: BattleEvent): BattleState {
-  const next = structuredClone(state);
   switch (e.t) {
     case "turn":
-      next.active = e.side;
-      next.turn = e.turn;
-      next.orbs = e.orbs;
-      break;
+      return { ...state, active: e.side, turn: e.turn, orbs: e.orbs };
     case "damage":
     case "heal":
     case "poison":
-      next.fighters[e.side][e.index].hp = e.hp;
-      break;
+      return withFighter(state, e.side, e.index, { hp: e.hp });
     case "revive":
-      next.fighters[e.side][e.index].hp = e.hp;
-      next.fighters[e.side][e.index].revived = true;
-      break;
+      return withFighter(state, e.side, e.index, { hp: e.hp, revived: true });
     case "raise":
       // Relevée par un ulti : la Renaissance reste telle quelle
-      next.fighters[e.side][e.index].hp = e.hp;
-      break;
-    case "ultimate": {
-      Object.assign(next.fighters[e.side][e.actor], { charge: 0, ultUsed: true });
+      return withFighter(state, e.side, e.index, { hp: e.hp });
+    case "ultimate":
       // Rempart absolu retire aussi le poison : les barrières suivent, chacune avec son événement
-      if (e.ultimate === "FUDO") for (const f of next.fighters[e.side]) if (f.hp > 0) f.poisonTurns = 0;
-      break;
-    }
+      return withSide(state, e.side, (f, i) => {
+        const next = i === e.actor ? { ...f, charge: 0, ultUsed: true } : f;
+        return e.ultimate === "FUDO" && next.hp > 0 && next.poisonTurns !== 0 ? { ...next, poisonTurns: 0 } : next;
+      });
     case "ko":
-      Object.assign(next.fighters[e.side][e.index], { hp: 0, barrier: false, sealed: false, poisonTurns: 0, buffTurns: 0, actionsLeft: 0 });
-      break;
-    case "synergy_break":
-      if (next.synergy) next.synergy[e.side] = false;
-      break;
+      return withFighter(state, e.side, e.index, { hp: 0, barrier: false, sealed: false, poisonTurns: 0, buffTurns: 0, actionsLeft: 0 });
+    case "synergy_break": {
+      if (!state.synergy) return state;
+      const synergy = [...state.synergy] as NonNullable<BattleState["synergy"]>;
+      synergy[e.side] = false;
+      return { ...state, synergy };
+    }
     case "orbs":
-      next.orbs = e.orbs;
-      break;
+      return { ...state, orbs: e.orbs };
     case "block":
-      next.fighters[e.side][e.index].barrier = false;
-      break;
+      return withFighter(state, e.side, e.index, { barrier: false });
     case "barrier":
-      next.fighters[e.side][e.index].barrier = true;
-      break;
+      return withFighter(state, e.side, e.index, { barrier: true });
     case "poisoned":
-      next.fighters[e.side][e.index].poisonTurns = Math.max(1, next.fighters[e.side][e.index].poisonTurns);
-      break;
+      return withFighter(state, e.side, e.index, { poisonTurns: Math.max(1, state.fighters[e.side][e.index].poisonTurns) });
     case "seal":
-      next.fighters[e.side][e.index].sealed = true;
-      break;
+      return withFighter(state, e.side, e.index, { sealed: true });
     case "buff":
-      for (const f of next.fighters[e.side]) if (f.hp > 0) Object.assign(f, { buffPct: e.pct, buffTurns: Math.max(f.buffTurns, 1) });
-      break;
+      return withSide(state, e.side, (f) => (f.hp > 0 ? { ...f, buffPct: e.pct, buffTurns: Math.max(f.buffTurns, 1) } : f));
     case "end":
-      next.finished = true;
-      next.winner = e.winner;
-      next.endReason = e.reason;
-      break;
+      return { ...state, finished: true, winner: e.winner, endReason: e.reason };
     default:
-      break;
+      return state;
   }
-  return next;
 }

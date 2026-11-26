@@ -15,7 +15,7 @@ import { KEYWORDS, TECHNIQUES, type Action, type BattleSetup, type EngineRules, 
 import type { PlayerView } from "@/lib/battle/view";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { seededRng } from "@/lib/rng";
-import { useLogLine } from "../BattleLog";
+import { useLogLine } from "../useLogLine";
 import { Tablets, ultimateTablet } from "../hud/Hud";
 import { StageMenu } from "../hud/StageMenu";
 import { Intro } from "../sequences/Intro";
@@ -217,7 +217,7 @@ function Battle({
       mine={human ? { selected: controls.selected, ready: controls.selected === null && canAct ? controls.ready : undefined, targets: controls.allyTargets, onPress: controls.pressMine } : undefined}
       theirs={human ? { targets: controls.enemyTargets, onPress: controls.pressTheirs } : undefined}
       ticker={ticker}
-      timer={phase === "fight" && !shown.finished ? { endsAt: new Date(turnStart + 30_000).toISOString(), total: 30 } : null}
+      timer={phase === "fight" && !shown.finished ? { endsAt: new Date(turnStart + DEFAULT_BATTLE_RULES.turnSeconds * 1_000).toISOString(), total: DEFAULT_BATTLE_RULES.turnSeconds } : null}
       tablets={
         human ? (
           <Tablets
@@ -250,7 +250,8 @@ function Battle({
         ) : phase === "outro" ? (
           <Outro outcome={outcome} reason={reason} level={level}>
             <div className="sandbox-result">
-              <p>{outcome === "victory" ? t("result.zeni", { amount: 25 }) : t("result.noZeni")}</p>
+              {/* Le bac à sable oppose toujours un bot : son gain par défaut (battle.rewards.bot) */}
+              <p>{outcome === "victory" ? t("result.zeni", { amount: DEFAULT_BATTLE_RULES.rewards.bot }) : t("result.noZeni")}</p>
               <button type="button" className="tablet" onClick={onRestart}>
                 <span aria-hidden="true" className="tablet-kanji">
                   再

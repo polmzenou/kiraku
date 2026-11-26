@@ -273,12 +273,14 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
 
   const camera = (c: Extract<Cue, { k: "camera" }>) => {
     if (c.mode === "slowmo") {
-      slow.current = 0.35;
-      applyRate();
-      setTimeout(() => {
+      // Durée comptée en temps virtuel, à la vitesse d'avant le ralenti (×2, ×4 et passage accéléré compris) ;
+      // annulée avec le reste par snap() et au démontage
+      later(c.ms, () => {
         slow.current = 1;
         applyRate();
-      }, c.ms);
+      });
+      slow.current = 0.35;
+      applyRate();
       return;
     }
     const r = rig.current;
@@ -655,13 +657,20 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
       timers.current.forEach(clearTimeout);
       timers.current.clear();
       cards.current.forEach((c) => (c.root.style.zIndex = ""));
+      // Ralenti en cours : sa fin, programmée par later(), vient d'être annulée
+      if (slow.current !== 1) {
+        slow.current = 1;
+        applyRate();
+      }
       setNumbers({});
       setCutin(null);
       setBanner(null);
+      // Le fil ne garde pas un coup du milieu de la partie (aller à la fin, recommencer)
+      setFeed([]);
       setLight(state.active);
       setShown(state);
     },
-    [setShown],
+    [applyRate, setShown],
   );
 
   /** Un toucher pendant une séquence : la suite défile quatre fois plus vite. */
@@ -677,11 +686,14 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
    */
   const dealToken = useRef(0);
   const dealAnims = useRef(new Set<Animation>());
+  // Distribution lancée (ou passée) : la scène montre les cartes à partir de là
+  const [dealStarted, setDealStarted] = useState(false);
   const deal = useCallback(
     async (order: Slot[]) => {
       const my = epoch.current;
       const token = ++dealToken.current;
       const reduced = optsRef.current.level === "reduced";
+      setDealStarted(true);
       setFaces(Object.fromEntries(order.map((s) => [key(s), reduced ? "front" : "back"])));
       if (reduced) return;
       const start = vnow();
@@ -706,12 +718,14 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
       });
       await until(start + order.length * 90 + 640, my);
       for (let i = 0; i < order.length; i++) {
-        if (epoch.current !== my || dealToken.current !== token) return;
+        // Scène démontée : chaque attente se résout aussitôt, la boucle jouerait d'un coup les six sons
+        if (epoch.current !== my || dealToken.current !== token || !alive.current) return;
         const s = order[i];
         setFaces((cur) => ({ ...cur, [key(s)]: "front" }));
         optsRef.current.sound?.current?.play("orb");
         await until(vnow() + 150, my);
       }
+      if (!alive.current) return;
       await until(vnow() + 420, my);
     },
     [animate, fxRun, later, until],
@@ -719,6 +733,7 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
 
   /** Entrée passée d'un toucher : la distribution se termine d'un coup, toutes les cartes face visible. */
   const finishDeal = useCallback(() => {
+    setDealStarted(true);
     dealToken.current += 1;
     dealAnims.current.forEach((a) => {
       try {
@@ -740,6 +755,7 @@ export function useDirector(initial: BattleState, opts: DirectorOptions) {
     cutin,
     light,
     faces,
+    dealStarted,
     play,
     snap,
     accelerate,

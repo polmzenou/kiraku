@@ -8,8 +8,8 @@ import type { Action, BattleSetup, BattleState } from "@/lib/battle/types";
 import type { BattleView } from "@/lib/battle/view";
 import { storedRankedSide } from "@/lib/ranked/rules";
 import { RankedResult } from "../ranked/RankedResult";
-import { BattleResult } from "./BattleResult";
-import { useLogLine } from "./BattleLog";
+import { BattleResult, ShowResultButton } from "./BattleResult";
+import { useLogLine } from "./useLogLine";
 import { StageMenu } from "./hud/StageMenu";
 import { Intro } from "./sequences/Intro";
 import { BattleStage } from "./stage/BattleStage";
@@ -41,6 +41,8 @@ export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup
   const [index, setIndex] = useState(0); // dernière étape jouée
   const [playing, setPlaying] = useState(true);
   const [resultHidden, setResultHidden] = useState(false);
+  // Chaque « Recommencer » remonte l'arène : les réactions de fin (voile, déluge, vidéo ralentie) n'y restent pas
+  const [run, setRun] = useState(0);
   const total = steps.length - 1;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const line = useLogLine(setup, view.players);
@@ -73,10 +75,12 @@ export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup
     snap(finals[0]);
     setIndex(0);
     setResultHidden(false);
+    setRun((n) => n + 1);
     setPlaying(true);
   };
-  // Résultat affiché une fois la dernière action animée
-  const showResult = index >= total && !animating && !resultHidden;
+  // Résultat affiché une fois la dernière action animée (refermé : un bouton le rouvre)
+  const ended = index >= total && !animating;
+  const showResult = ended && !resultHidden;
 
   // Bilan classé relu de la partie (montée ou descente déduite des PC ; le top 100 n'est pas rejoué)
   const rankedSide = view.ranked && view.ladder ? storedRankedSide(view.ranked.before[mySide], view.ranked.delta[mySide], view.ladder) : null;
@@ -97,6 +101,7 @@ export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup
         arena={arena}
         level={level}
         arenaRef={arenaRef}
+        arenaKey={run}
         sound={sound.port}
         ticker={{ text: last ? line(last.event) : progress, tone: "hint" }}
         menu={
@@ -135,6 +140,7 @@ export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup
           ) : null
         }
       />
+      {ended && resultHidden && <ShowResultButton onPress={() => setResultHidden(false)} />}
       {showResult && (
         <BattleResult
           winner={view.winnerSide}
@@ -142,6 +148,7 @@ export function BattleReplay({ view }: { view: BattleView & { setup: BattleSetup
           reason={view.endReason}
           rewardZeni={view.rewardZeni}
           onReplay={restart}
+          onDismiss={() => setResultHidden(true)}
           requeueId={view.mode === "FRIEND" ? undefined : view.id}
           ranked={
             rankedSide && view.ladder ? (

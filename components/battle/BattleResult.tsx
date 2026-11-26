@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useTransition, type ReactNode } from "react";
+import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { EndReason, Side } from "@/lib/battle/types";
 import { requeueAction } from "@/server/actions/battle";
@@ -12,13 +12,18 @@ import { useBattleError } from "./useBattleError";
 // Action qui lève (serveur injoignable, panne) : erreur traduite au lieu d'un écran d'erreur
 const UNAVAILABLE = { ok: false, error: "UNAVAILABLE", battleId: undefined } as const;
 
-/** Écran de fin : sceau de victoire ou de défaite, raison, Zeni gagnés, puis relancer, nouveau combat ou revoir. */
+/**
+ * Écran de fin : sceau de victoire ou de défaite, raison, Zeni gagnés, puis relancer, nouveau combat ou revoir.
+ * Un vrai dialogue modal (<dialog> natif : focus sur le titre, Tab gardé dedans) ; Échap ou « Voir le plateau »
+ * le referme pour regarder la table finale (`onDismiss`), le parent offre de le rouvrir.
+ */
 export function BattleResult({
   winner,
   mySide,
   reason,
   rewardZeni,
   onReplay,
+  onDismiss,
   requeueId,
   ranked,
 }: {
@@ -27,6 +32,7 @@ export function BattleResult({
   reason: EndReason | null;
   rewardZeni: number;
   onReplay?: () => void;
+  onDismiss: () => void;
   /** Partie de file (exhibition, classé) : « Relancer » remet en file avec le même mode et les mêmes cartes. */
   requeueId?: string;
   /** Bilan classé (emblème, PC) sous le résultat. */
@@ -38,6 +44,16 @@ export function BattleResult({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const outcome = winner === null ? "DRAW" : winner === mySide ? "WIN" : "LOSS";
+  const dialog = useRef<HTMLDialogElement>(null);
+  const title = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    const el = dialog.current;
+    if (!el) return;
+    if (!el.open) el.showModal();
+    title.current?.focus();
+    return () => el.close();
+  }, []);
 
   const requeue = () =>
     startTransition(async () => {
@@ -53,11 +69,22 @@ export function BattleResult({
     });
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="battle-result-title" className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-4 sm:items-center">
-      <div className="flex w-full max-w-sm flex-col items-center gap-4 rounded-2xl border border-border bg-bg p-6 text-center">
+    <dialog
+      ref={dialog}
+      aria-labelledby="battle-result-title"
+      // Échap : le bilan s'efface devant le plateau (le parent le démonte)
+      onCancel={(e) => {
+        e.preventDefault();
+        onDismiss();
+      }}
+      className="fixed inset-x-4 top-auto bottom-4 mx-auto my-0 max-h-[calc(100dvh-2rem)] w-auto max-w-sm overflow-y-auto border-0 bg-transparent p-0 text-text backdrop:bg-black/60 sm:inset-0 sm:m-auto sm:h-fit sm:w-full"
+    >
+      <div className="flex w-full flex-col items-center gap-4 rounded-2xl border border-border bg-bg p-6 text-center">
         <h2
+          ref={title}
           id="battle-result-title"
-          className={`flex min-h-24 rotate-[-6deg] items-center justify-center rounded-md border-4 px-4 py-3 font-heading text-3xl font-extrabold ${
+          tabIndex={-1}
+          className={`flex min-h-24 rotate-[-6deg] items-center justify-center rounded-md border-4 px-4 py-3 font-heading text-3xl font-extrabold outline-none ${
             outcome === "WIN" ? "border-kin text-kin" : outcome === "LOSS" ? "border-shu text-shu" : "border-border text-text-muted"
           }`}
         >
@@ -93,8 +120,23 @@ export function BattleResult({
               {t("replay")}
             </Button>
           )}
+          <Button className="w-full" onClick={onDismiss}>
+            {t("viewBoard")}
+          </Button>
         </div>
       </div>
+    </dialog>
+  );
+}
+
+/** Bilan refermé : un bouton au bas de la scène le rouvre. */
+export function ShowResultButton({ onPress }: { onPress: () => void }) {
+  const t = useTranslations("battle.result");
+  return (
+    <div className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex justify-center px-4">
+      <Button variant="primary" className="pointer-events-auto" onClick={onPress}>
+        {t("show")}
+      </Button>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRef } from "react";
 import { visibleCanvas, type CanvasView } from "@/lib/battle/arena-backdrop";
 import { noise } from "../../fx/vfx";
-import { ArenaBackdrop, canvasPoint, flashAt, particles, play, pulse, rainBurst, useArenaHandle, type ArenaProps } from "../shared";
+import { ArenaBackdrop, canvasPoint, flashAt, particles, play, pulse, rainBurst, useArenaHandle, useArenaTimers, type ArenaProps } from "../shared";
 import "../arena.css";
 import "./suiu.css";
 
@@ -87,6 +87,7 @@ export function SuiuArena({ level, handleRef, sound }: ArenaProps) {
   const dim = useRef<HTMLDivElement>(null);
   const turns = useRef(0);
   const leaps = useRef(0);
+  const later = useArenaTimers();
 
   /** Le koi bondit en arc hors de l'étang, là où l'étang se voit, puis replonge dans une gerbe. */
   const leap = () => {
@@ -122,7 +123,7 @@ export function SuiuArena({ level, handleRef, sound }: ArenaProps) {
     ripples(layer, [to], 150, 1_050);
     droplets(layer, from, particles(level, 8), 0);
     droplets(layer, to, particles(level, 10), 1_050);
-    setTimeout(() => play(sound, "splash"), 1_100);
+    later(() => play(sound, "splash"), 1_100);
   };
 
   useArenaHandle(handleRef, [{ ref: far, depth: 0.25 }], (reaction) => {

@@ -145,7 +145,7 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
           (["cost", "value"] as const).map((sub) => (
             <NumberField
               key={`${tech}.${sub}`}
-              label={`${tBattle(`techniques.${tech}.name`)} : ${key(sub)}`}
+              label={t("abilityField", { name: tBattle(`techniques.${tech}.name`), field: key(sub) })}
               value={draft["battle.techniques"][tech][sub]}
               onChange={(v) =>
                 set({ ...draft, "battle.techniques": { ...draft["battle.techniques"], [tech]: { ...draft["battle.techniques"][tech], [sub]: v } } })
@@ -164,7 +164,7 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
         {ULTIMATES.map((u) => (
           <NumberField
             key={`ultimate.${u}`}
-            label={`${tBattle(`ultimates.${u}.name`)} : ${key("value")}`}
+            label={t("abilityField", { name: tBattle(`ultimates.${u}.name`), field: key("value") })}
             value={draft["battle.ultimates"][u]}
             onChange={(v) => set({ ...draft, "battle.ultimates": { ...draft["battle.ultimates"], [u]: v } })}
             min={0}

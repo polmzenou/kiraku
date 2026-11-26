@@ -8,6 +8,19 @@ import { Button } from "../ui/Button";
 import { useRankName } from "./RankBadge";
 import { RankEmblem } from "./RankEmblem";
 
+type PendingReward = { seasonId: string; seasonNumber: number; peakTier: BoardTier };
+
+/**
+ * Place de la bannière de fin de saison, toujours montée : la page relue après la réclamation n'a plus de lot
+ * en attente, mais la bannière reste pour annoncer ce qui a été reçu (Zeni, boosters, cartes). Un autre lot
+ * arrivé ensuite la remplace.
+ */
+export function SeasonRewardSlot({ reward }: { reward: PendingReward | null }) {
+  const [kept, setKept] = useState(reward);
+  if (reward && reward.seasonId !== kept?.seasonId) setKept(reward);
+  return kept ? <SeasonReward key={kept.seasonId} {...kept} /> : null;
+}
+
 /** Bannière de fin de saison : emblème du meilleur rang atteint et lot à réclamer (une fois). */
 export function SeasonReward({ seasonId, seasonNumber, peakTier }: { seasonId: string; seasonNumber: number; peakTier: BoardTier }) {
   const t = useTranslations("ranked");
@@ -19,7 +32,8 @@ export function SeasonReward({ seasonId, seasonNumber, peakTier }: { seasonId: s
   const claim = () =>
     startTransition(async () => {
       setError(null);
-      const res = await claimSeasonRewardAction({ seasonId });
+      // Action qui lève (serveur injoignable) : message traduit au lieu de l'écran d'erreur
+      const res = await claimSeasonRewardAction({ seasonId }).catch(() => ({ ok: false, error: "UNAVAILABLE" }) as const);
       if (!res.ok) return setError(t(`errors.${res.error}`));
       const parts = [
         res.zeni > 0 ? t("reward.zeni", { amount: res.zeni }) : null,

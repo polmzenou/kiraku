@@ -6,11 +6,13 @@ import { Link } from "@/i18n/navigation";
 import { sameTeam } from "@/lib/battle/decks";
 import { teamSynergy } from "@/lib/battle/synergy";
 import { TEAM_SIZE } from "@/lib/battle/types";
-import type { CandidateCard, DeckView } from "@/lib/battle/view";
+import type { DeckView } from "@/lib/battle/view";
+import { Button } from "../ui/Button";
 import { chipClasses } from "../ui/Chip";
 import { Sheet } from "../ui/Sheet";
 import type { AbilityRules } from "./AbilityGuide";
 import { TeamBuilder, TeamConfirmBar, toggleTeam } from "./TeamBuilder";
+import type { CandidatePool } from "./useCandidatePool";
 
 const LINK = "inline-flex min-h-11 items-center self-start text-sm font-bold text-shu underline-offset-4 hover:underline";
 
@@ -70,49 +72,81 @@ function DeckShortcuts({
   );
 }
 
+/** Cartes pas encore là (chargées à l'ouverture), ou refusées : à la place de la grille. */
+export function PoolPending({ pool }: { pool: Exclude<CandidatePool, { status: "ready" }> }) {
+  const t = useTranslations("battle.team");
+  if (pool.status === "loading") {
+    return (
+      <p role="status" className="lacquer rounded-card p-4 text-center text-sm text-text-muted">
+        {t("loading")}
+      </p>
+    );
+  }
+  return (
+    <div className="flex flex-col items-center gap-3 lacquer rounded-card p-4 text-center">
+      <p role="alert" className="text-sm text-shu">
+        {pool.error}
+      </p>
+      <Button onClick={pool.retry}>{t("retry")}</Button>
+    </div>
+  );
+}
+
 /**
  * Choix d'équipe dans une feuille qui monte du bas (grand écran : large panneau), avec le bouton de
- * validation toujours visible. La dernière équipe est pré-remplie, les decks du joueur en un appui.
+ * validation toujours visible. Les cartes arrivent à l'ouverture (`pool`) ; la dernière équipe est alors
+ * pré-remplie, les decks du joueur en un appui.
  */
 export function TeamPicker({
   open,
   onClose,
-  candidates,
+  pool,
   decks,
   abilities,
-  initial,
   confirmLabel,
   pending,
   onConfirm,
 }: {
   open: boolean;
   onClose: () => void;
-  candidates: readonly CandidateCard[];
+  pool: CandidatePool;
   decks: readonly DeckView[];
   abilities: AbilityRules;
-  initial: readonly string[];
   confirmLabel: string;
   pending: boolean;
   onConfirm: (cardIds: string[]) => void;
 }) {
   const t = useTranslations("battle.team");
-  const [team, setTeam] = useState<string[]>(() => initial.slice(0, TEAM_SIZE));
+  const ready = pool.status === "ready" ? pool : null;
+  const [team, setTeam] = useState<string[]>(() => (ready ? ready.lastTeam.slice(0, TEAM_SIZE) : []));
+  // Cartes arrivées après l'ouverture : la dernière équipe se pré-remplit, sauf si le joueur a déjà choisi
+  const [prefilled, setPrefilled] = useState(ready !== null);
+  if (ready && !prefilled) {
+    setPrefilled(true);
+    if (team.length === 0) setTeam(ready.lastTeam.slice(0, TEAM_SIZE));
+  }
   const extra = useMemo(() => decks.flatMap((d) => d.cards), [decks]);
+  // Raccourcis des decks au-dessus de la grille, une fois les cartes là (leurs emplacements s'affichent avec elle)
+  const shortcuts = <DeckShortcuts decks={decks} team={team} synergyAtkPct={abilities.synergyAtkPct} onPick={setTeam} />;
 
   return (
     <Sheet open={open} onClose={onClose} title={t("title")} wide="xl">
       <p className="text-sm text-text-muted">{t("hint")}</p>
 
-      <TeamBuilder
-        candidates={candidates}
-        abilities={abilities}
-        team={team}
-        onToggle={(id) => setTeam((cur) => toggleTeam(cur, id))}
-        above={<DeckShortcuts decks={decks} team={team} synergyAtkPct={abilities.synergyAtkPct} onPick={setTeam} />}
-        extra={extra}
-      />
+      {pool.status === "ready" ? (
+        <TeamBuilder
+          candidates={pool.candidates}
+          abilities={abilities}
+          team={team}
+          onToggle={(id) => setTeam((cur) => toggleTeam(cur, id))}
+          above={shortcuts}
+          extra={extra}
+        />
+      ) : (
+        <PoolPending pool={pool} />
+      )}
 
-      <TeamConfirmBar count={team.length} label={confirmLabel} disabled={team.length !== TEAM_SIZE || pending} onConfirm={() => onConfirm(team)} />
+      <TeamConfirmBar count={team.length} label={confirmLabel} disabled={!ready || team.length !== TEAM_SIZE || pending} onConfirm={() => onConfirm(team)} />
     </Sheet>
   );
 }

@@ -9,11 +9,11 @@ import type { BattleUpdate } from "./battle-core";
 export const battleChannel = (battleId: string) => `kiraku:battle:${battleId}`;
 export { userChannel };
 
-/** Message diffusé aux deux joueurs : tout l'état est public, rien n'est caché. */
-export type BattleMessage = Omit<BattleUpdate, "turnEndsAt"> & { turnEndsAt: string | null };
+/** Message diffusé aux deux joueurs : tout l'état est public, rien n'est caché. `serverNow` : heure d'envoi. */
+export type BattleMessage = Omit<BattleUpdate, "turnEndsAt"> & { turnEndsAt: string | null; serverNow: string };
 
 export function toMessage(u: BattleUpdate): BattleMessage {
-  return { ...u, turnEndsAt: u.turnEndsAt?.toISOString() ?? null };
+  return { ...u, turnEndsAt: u.turnEndsAt?.toISOString() ?? null, serverNow: new Date().toISOString() };
 }
 
 /** Publie sans jamais faire échouer l'action : en cas de panne, les clients se resynchronisent. */

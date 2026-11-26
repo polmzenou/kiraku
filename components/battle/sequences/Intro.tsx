@@ -10,7 +10,7 @@ import type { FxLevel } from "@/lib/battle/choreography";
 import type { BoardTier } from "@/lib/battle/tiers";
 import type { Side } from "@/lib/battle/types";
 import type { PlayerView } from "@/lib/battle/view";
-import { usePlayerName } from "../BoardLayout";
+import { usePlayerName } from "../usePlayerName";
 import { BotMask } from "../hud/BotMask";
 import type { SoundPort } from "../stage/useDirector";
 import "./sequences.css";
@@ -64,6 +64,8 @@ export function Intro({
   const [phase, setPhase] = useState<Phase>(level === "reduced" ? "done" : "title");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const ended = useRef(false);
+  // Démontée pendant la distribution : sa fin ne joue plus de son ni ne programme rien
+  const mounted = useRef(true);
   const opp = (mySide === 0 ? 1 : 0) as Side;
 
   const end = () => {
@@ -76,6 +78,7 @@ export function Intro({
   };
 
   useEffect(() => {
+    mounted.current = true;
     if (level === "reduced") {
       end();
       return;
@@ -91,14 +94,17 @@ export function Intro({
     at(2_750, () => {
       setPhase("deal");
       void deal().then(() => {
-        if (ended.current) return;
+        if (ended.current || !mounted.current) return;
         setPhase("first");
         sound?.current?.play("clack");
         at(1_050, end);
       });
     });
     const pending = timers.current;
-    return () => pending.forEach(clearTimeout);
+    return () => {
+      mounted.current = false;
+      pending.forEach(clearTimeout);
+    };
     // L'entrée ne se joue qu'une fois, au montage
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

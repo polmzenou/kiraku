@@ -3,18 +3,19 @@
 import { useTranslations } from "next-intl";
 import { useCallback, useState, useTransition } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
-import type { Activity, CandidateCard, DeckView } from "@/lib/battle/view";
+import type { Activity, DeckView } from "@/lib/battle/view";
 import { createRoomAction, joinQueueAction, joinRoomAction, type BattleActionError } from "@/server/actions/battle";
 import { Button } from "../ui/Button";
 import { buttonClasses } from "../ui/Button";
 import type { RankView } from "@/server/ranked/queries";
 import { RankBadge } from "../ranked/RankBadge";
 import { SeasonRewardPreview } from "../ranked/SeasonRewardPreview";
-import { SeasonReward } from "../ranked/SeasonReward";
+import { SeasonRewardSlot } from "../ranked/SeasonReward";
 import { QueueWaiting } from "./QueueWaiting";
 import { useBattleError } from "./useBattleError";
 import type { AbilityRules } from "./AbilityGuide";
 import { TeamPicker } from "./TeamPicker";
+import { useCandidatePool } from "./useCandidatePool";
 import { inputClass } from "../ui/Field";
 
 // Action qui lève (serveur injoignable, panne) : erreur traduite au lieu d'un écran d'erreur
@@ -27,25 +28,25 @@ type Intent =
   | { kind: "JOIN_CODE"; code: string }
   | { kind: "CHALLENGE"; inviteeId: string; name: string };
 
+const queueOf = (a: Activity) => (a.kind === "QUEUE" ? { joinedAt: a.joinedAt, botAt: a.botAt, mode: a.mode } : null);
+
 /** Accueil du combat : exhibition, classé, salle d'amis ; partie en cours à reprendre. */
 export function CombatHub({
   activity,
-  candidates,
   decks,
   abilities,
-  lastTeam,
   queueSeconds,
   queuePollSeconds,
   rankedBotOnDemand,
   challenge,
   rank,
+  reward,
+  serverNow,
   atelier = false,
 }: {
   activity: Activity;
-  candidates: CandidateCard[];
   decks: DeckView[];
   abilities: AbilityRules;
-  lastTeam: string[];
   queueSeconds: number;
   queuePollSeconds: number;
   /** Classé : bot proposé tout de suite pendant l'attente (ranked.botOnDemand) ; toujours en exhibition. */
@@ -54,6 +55,10 @@ export function CombatHub({
   challenge: { id: string; name: string } | null;
   /** Rang du joueur ; null si le classé est fermé. */
   rank: RankView | null;
+  /** Lot d'une saison terminée à réclamer, même classé fermé (le cron continue de clore les saisons). */
+  reward: RankView["reward"];
+  /** Heure du rendu serveur (ms) : l'attente en file s'hydrate sans écart de texte. */
+  serverNow: number;
   /** Lien vers l'atelier (battle.abilityShopEnabled). */
   atelier?: boolean;
 }) {
@@ -63,7 +68,15 @@ export function CombatHub({
   const [intent, setIntent] = useState<Intent | null>(() =>
     challenge && activity.kind === "NONE" ? { kind: "CHALLENGE", inviteeId: challenge.id, name: challenge.name } : null,
   );
-  const [queue, setQueue] = useState(activity.kind === "QUEUE" ? { joinedAt: activity.joinedAt, botAt: activity.botAt, mode: activity.mode } : null);
+  // Cartes du choix d'équipe, chargées à sa première ouverture
+  const pool = useCandidatePool(intent !== null);
+  const [queue, setQueue] = useState(() => queueOf(activity));
+  // Page relue (sortie de file, refus du serveur) : l'attente suit ce que dit le serveur, pas seulement le premier affichage
+  const [seenActivity, setSeenActivity] = useState(activity);
+  if (seenActivity !== activity) {
+    setSeenActivity(activity);
+    setQueue(queueOf(activity));
+  }
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -114,6 +127,7 @@ export function CombatHub({
         botAt={queue.botAt}
         pollSeconds={queuePollSeconds}
         botOnDemand={queue.mode !== "RANKED" || rankedBotOnDemand}
+        serverNow={serverNow}
         onLeft={onLeft}
       />
     );
@@ -138,7 +152,7 @@ export function CombatHub({
         </p>
       )}
 
-      {rank?.reward && <SeasonReward {...rank.reward} />}
+      <SeasonRewardSlot reward={reward} />
 
       {/* Classé : le panneau prend la couleur du rang du joueur */}
       <section className="battle-board battle-rim rounded-[18px] p-[3px]" data-tier={rank?.tier}>
@@ -235,10 +249,9 @@ export function CombatHub({
         <TeamPicker
           open
           onClose={() => setIntent(null)}
-          candidates={candidates}
+          pool={pool}
           decks={decks}
           abilities={abilities}
-          initial={lastTeam}
           pending={pending}
           confirmLabel={
             intent.kind === "EXHIBITION"

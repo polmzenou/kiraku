@@ -61,9 +61,11 @@ export function AbilityWorkshop({ card, coins, rules, onClose }: { card: Worksho
       const res = await action().catch(() => UNAVAILABLE);
       if (!res.ok) {
         setMessage({ tone: "error", text: errorText(res.error) });
-        // Prix changé ou carte partie : la page se relit derrière la feuille, et la liste réaffiche le prix à jour
-        if (res.error === "STALE" || res.error === "NOT_OWNED" || res.error === "ALREADY_OWNED") {
+        // Prix changé, carte partie, solde dépensé ailleurs ou kit périmé : la page se relit derrière la feuille, la
+        // liste réaffiche prix et solde à jour. Les réponses gardées d'un achat précédent cèdent la place aux props relues.
+        if (res.error === "STALE" || res.error === "NOT_OWNED" || res.error === "ALREADY_OWNED" || res.error === "NOT_ENOUGH_ZENI" || res.error === "BAD_KIT") {
           setOffer(null);
+          setFresh(null);
           router.refresh();
         }
         return;
