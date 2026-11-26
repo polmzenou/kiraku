@@ -31,4 +31,13 @@ export const SEAL_GLYPHS = [
   "確定", // sceau « garanti » des boosters garantis
   "実績市縁段旅歳", // succès : titre de la page et sceaux des catégories (marché, liens, classé, voyages, ancienneté)
   "禁", // écran « Accès bloqué » d'un réseau banni (lib/anticheat/network.ts)
+  "工房登録探速声送私競", // titres de section : atelier, inscription, recherche d'amis, gros tirages, avis, échanges envoyés, données, enchères
+  "換", // échanges : marché, amis, notifications
+  "使先認募", // badges du profil (Ambassadeur, Pionnier, Vérifié, Recruteur) ; 使 aussi sur le pack et l'admin des ambassadeurs
+  "漆螺桜雲波紅鳳", // cadres d'avatar (lib/profile/frames.ts)
+  "屏床絵", // décors des vitrines (lib/showcase/theme-registry.ts) ; 絵 aussi sur les légendes du parrainage
+  "壱信系迷階孫決", // parrainage : premier légende, part « confiance », arbre des liens, lien inconnu, suivi de l'admin (palier, grand-parrainage, décision)
+  "横綱関末吉籤", // Ennichi : titres du banzuke, sorts et tickets de l'omikuji
+  "唯", // sceau des éditions 1/1 (lib/prestige/printing.ts)
+  "注望香話消全年約菓宝賞謝今近推", // alerte, souhaits, encens, chat, album complet, Wrapped, CGU, cookies, sanctuaire, saison, accueil, emblème d'un Focus
 ].join("");
