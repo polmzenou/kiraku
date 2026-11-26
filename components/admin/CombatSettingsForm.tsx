@@ -11,6 +11,7 @@ import { changedSettingKeys } from "@/lib/settings/form";
 import { updateCombatSettings } from "@/server/actions/admin-settings";
 import { Button } from "../ui/Button";
 import { FormMessage, NumberField, Toggle } from "./fields";
+import { useSettingsDraft } from "./SettingsSaveBar";
 
 // Bornes larges côté champ : le schéma Zod de chaque clé (lib/settings/defaults.ts) tranche à l'enregistrement
 const MAX = 100_000;
@@ -23,13 +24,14 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
   const t = useTranslations("admin.combat");
   const tRarity = useTranslations("rarity");
   const tBattle = useTranslations("battle");
+  const tForm = useTranslations("admin.settingsForm");
   const router = useRouter();
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
   const valid = combatSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(COMBAT_SETTING_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(COMBAT_SETTING_KEYS, base, draft) : [];
   const set = (next: CombatSettings) => {
     setDraft(next);
     setMessage(null);
@@ -55,12 +57,15 @@ export function CombatSettingsForm({ initial }: { initial: CombatSettings }) {
   const save = () =>
     startTransition(async () => {
       try {
-        const res = await updateCombatSettings(draft);
+        // Base et brouillon : le serveur n'écrit que les clés modifiées (STALE si l'une a changé en base depuis)
+        const sent = { base, draft };
+        const res = await updateCombatSettings(sent);
         if (res.ok) {
           setMessage({ tone: "ok", text: t("saved", { count: res.changed.length }) });
+          saved(sent);
           router.refresh();
         } else {
-          setMessage({ tone: "error", text: t(`errors.${res.error}`) });
+          setMessage({ tone: "error", text: res.error === "STALE" ? tForm("errors.STALE") : t(`errors.${res.error}`) });
         }
       } catch {
         setMessage({ tone: "error", text: t("errors.unexpected") });

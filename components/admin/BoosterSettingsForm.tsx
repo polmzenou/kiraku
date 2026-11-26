@@ -17,6 +17,7 @@ import {
 import { updateBoosterSettings, type UpdateSettingsResult } from "@/server/actions/admin-settings";
 import { usePercent } from "../boosters/format";
 import { Button } from "../ui/Button";
+import { useSettingsDraft } from "./SettingsSaveBar";
 
 type FieldName =
   | "intervalMinutes"
@@ -142,11 +143,12 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
   const RARITIES = useRarities();
   const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("admin.boosters");
+  const tForm = useTranslations("admin.settingsForm");
   const tRarity = useTranslations("rarity");
   const format = useFormatter();
   const percent = usePercent();
   const router = useRouter();
-  const [draft, setDraft] = useState<BoosterSettings>(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const [reviewing, setReviewing] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
@@ -158,7 +160,7 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
   };
 
   const valid = boosterSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedKeys(initial, draft) : [];
+  const changed = valid ? changedKeys(base, draft) : [];
   const deferred = useDeferredValue(draft);
   const orderKey = JSON.stringify(RARITIES);
   const current = useMemo(() => metrics(initial, JSON.parse(orderKey)), [initial, orderKey]);
@@ -174,19 +176,22 @@ export function BoosterSettingsForm({ initial }: { initial: BoosterSettings }) {
 
   const save = () =>
     startTransition(async () => {
+      // Base et brouillon : le serveur n'écrit que les clés modifiées (STALE si l'une a changé en base depuis)
+      const sent = { base, draft };
       let res: UpdateSettingsResult;
       try {
-        res = await updateBoosterSettings(draft);
+        res = await updateBoosterSettings(sent);
       } catch {
         setMessage({ tone: "error", text: t("errors.unexpected") });
         return;
       }
       setReviewing(false);
       if (!res.ok) {
-        setMessage({ tone: "error", text: t(`errors.${res.error}`) });
+        setMessage({ tone: "error", text: res.error === "STALE" ? tForm("errors.STALE") : t(`errors.${res.error}`) });
         return;
       }
       setMessage({ tone: "ok", text: t("saved", { count: res.changed.length }) });
+      saved(sent);
       router.refresh();
     });
 

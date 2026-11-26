@@ -1,18 +1,17 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { FEATURE_SETTING_KEYS, featureSettingsSchema, type FeatureSettings } from "@/lib/settings/features-form";
 import { updateFeatureSettings } from "@/server/actions/admin-settings";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
 /** Tous les interrupteurs de fonctionnalités sur une page, avec la relecture avant d'enregistrer. */
 export function FeatureSettingsForm({ initial, premiumReady }: { initial: FeatureSettings; premiumReady: boolean }) {
   const t = useTranslations("admin.features");
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const valid = featureSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(FEATURE_SETTING_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(FEATURE_SETTING_KEYS, base, draft) : [];
 
   return (
     <form className="flex max-w-2xl flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
@@ -37,7 +36,7 @@ export function FeatureSettingsForm({ initial, premiumReady }: { initial: Featur
           </li>
         ))}
       </ul>
-      <SettingsSaveBar valid={valid} changedLabels={changed.map((k) => t(`keys.${k}`))} save={() => updateFeatureSettings(draft)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map((k) => t(`keys.${k}`))} base={base} draft={draft} saved={saved} save={updateFeatureSettings} />
     </form>
   );
 }

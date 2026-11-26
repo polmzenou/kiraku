@@ -1,13 +1,12 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import type { CardBonus } from "@/lib/expedition/types";
 import { EXPEDITION_SETTING_KEYS, expeditionSettingsSchema, type ExpeditionSettings } from "@/lib/settings/expedition-form";
 import { changedSettingKeys, numberBounds } from "@/lib/settings/form";
 import { updateExpeditionSettings } from "@/server/actions/admin-settings";
 import { NumberField, Toggle } from "./fields";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
 type NumberKey = "expedition.offersPerDay" | "expedition.abandonCooldownHours" | "expedition.triumphRewardPct" | "expedition.failRewardPct";
 
@@ -19,9 +18,9 @@ const short = <K extends keyof ExpeditionSettings>(key: K) => key.slice("expedit
 /** Réglages des expéditions : interrupteur, offres, attente après abandon, barème des cartes, triomphe et échec. */
 export function ExpeditionSettingsForm({ initial }: { initial: ExpeditionSettings }) {
   const t = useTranslations("admin.expeditions");
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const valid = expeditionSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(EXPEDITION_SETTING_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(EXPEDITION_SETTING_KEYS, base, draft) : [];
   const label = (k: keyof ExpeditionSettings) => t(`keys.${short(k)}`);
   const bonus = draft["expedition.cardBonus"];
 
@@ -70,7 +69,7 @@ export function ExpeditionSettingsForm({ initial }: { initial: ExpeditionSetting
           ))}
         </div>
       </fieldset>
-      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} save={() => updateExpeditionSettings(draft)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} base={base} draft={draft} saved={saved} save={updateExpeditionSettings} />
     </form>
   );
 }

@@ -10,14 +10,18 @@ vi.mock("../admin/log", () => ({ writeAdminLog: mocks.log }));
 vi.mock("../catalog/rarities", () => ({ getRarities: vi.fn() }));
 vi.mock("../home/news", () => ({ resolveNewsVisuals: mocks.visuals }));
 vi.mock("../db", () => ({
-  prisma: { $transaction: (fn: (tx: unknown) => unknown) => fn({ gameSetting: { findMany: mocks.findMany, upsert: mocks.upsert } }) },
+  prisma: { $transaction: (fn: (tx: unknown) => unknown) => fn({ $queryRaw: vi.fn(), gameSetting: { findMany: mocks.findMany, upsert: mocks.upsert } }) },
 }));
 import { previewNewsVisuals, updateNewsSettings } from "./admin-settings";
 
 const stored: NewsConfig = { ...NEWS_DEFAULT, revision: 4, publishedAt: "2026-10-30T12:00:00.000Z" };
 const NOW = new Date("2026-11-02T09:30:00.000Z");
 const HOST = "store.public.blob.vercel-storage.com";
-const draft = (over: Partial<NewsConfig> = {}) => ({ "home.news": { ...stored, title: { fr: "Kiraku-kun v2.6", en: "" }, ...over } });
+// Envoi du formulaire : la base est la valeur en vigueur à l'ouverture de la page
+const draft = (over: Partial<NewsConfig> = {}) => ({
+  base: { "home.news": stored },
+  draft: { "home.news": { ...stored, title: { fr: "Kiraku-kun v2.6", en: "" }, ...over } },
+});
 const written = () => mocks.upsert.mock.calls[0]?.[0].update.value as NewsConfig;
 
 beforeEach(() => {
@@ -60,7 +64,14 @@ describe("publication de l'encart Nouveautés", () => {
   });
 
   it("n'écrit rien quand rien ne change et qu'on ne rouvre pas", async () => {
-    expect(await updateNewsSettings({ "home.news": stored }, false)).toEqual({ ok: true, changed: [] });
+    expect(await updateNewsSettings({ base: { "home.news": stored }, draft: { "home.news": stored } }, false)).toEqual({ ok: true, changed: [] });
+    expect(mocks.upsert).not.toHaveBeenCalled();
+  });
+
+  it("refuse l'ancien format (brouillon seul) et un encart republié entre-temps par un autre", async () => {
+    expect(await updateNewsSettings(draft().draft, true)).toEqual({ ok: false, error: "INVALID" });
+    mocks.findMany.mockResolvedValue([{ key: "home.news", value: { ...stored, revision: 5 } }]);
+    expect(await updateNewsSettings(draft(), true)).toEqual({ ok: false, error: "STALE" });
     expect(mocks.upsert).not.toHaveBeenCalled();
   });
 

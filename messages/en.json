@@ -3283,6 +3283,7 @@
         "FORBIDDEN": "Access denied.",
         "INVALID": "Values rejected by the server.",
         "RATE_LIMITED": "Too many saves. Try again in a minute.",
+        "STALE": "Another team member changed these settings since you opened this page. Reload the page to see the current values, then make your changes again.",
         "unexpected": "Unexpected error. Try again."
       }
     },

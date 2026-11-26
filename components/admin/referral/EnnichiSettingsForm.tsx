@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormatter, useTranslations } from "next-intl";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { luckOf } from "@/lib/ennichi/omikuji";
 import { ennichiSchedule, tierKanji } from "@/lib/ennichi/rules";
 import { ENNICHI_TITLES, SETTING_SCHEMAS } from "@/lib/settings/defaults";
@@ -11,7 +11,7 @@ import { updateEnnichiSettings } from "@/server/actions/admin-settings";
 import { Seal } from "../../ennichi/Seal";
 import { Button } from "../../ui/Button";
 import { Field, inputClass, NumberField, SelectField, Toggle, toLocalInput } from "../fields";
-import { SettingsSaveBar } from "../SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "../SettingsSaveBar";
 
 type NumberKey = "ennichi.edition" | "ennichi.days" | "ennichi.closingDays" | "ennichi.stepMultiplier" | "ennichi.tierGrantsPerIp";
 type Tier = EnnichiSettings["ennichi.tiers"][number];
@@ -54,9 +54,9 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 export function EnnichiSettingsForm({ initial, lots }: { initial: EnnichiSettings; lots: { id: string; name: string }[] }) {
   const t = useTranslations("admin.referralV2.ennichi.settings");
   const format = useFormatter();
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const valid = ennichiSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(ENNICHI_FORM_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(ENNICHI_FORM_KEYS, base, draft) : [];
   const toFix = valid ? [] : ENNICHI_FORM_KEYS.filter((k) => !SETTING_SCHEMAS[k].safeParse(draft[k]).success);
   const label = (k: keyof EnnichiSettings) => t(`keys.${short(k)}`);
   const set = <K extends keyof EnnichiSettings>(key: K, value: EnnichiSettings[K]) => setDraft((d) => ({ ...d, [key]: value }));
@@ -212,7 +212,7 @@ export function EnnichiSettingsForm({ initial, lots }: { initial: EnnichiSetting
           {t("toFix", { list: toFix.map(label).join(", ") })}
         </p>
       )}
-      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} save={() => updateEnnichiSettings(draft)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} base={base} draft={draft} saved={saved} save={updateEnnichiSettings} />
       <p className="text-xs text-text-muted">{t("savedBy")}</p>
     </form>
   );

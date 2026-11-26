@@ -10,13 +10,14 @@ vi.mock("../admin/log", () => ({ writeAdminLog: mocks.log }));
 vi.mock("../catalog/rarities", () => ({ getRarities: mocks.rarities }));
 vi.mock("../home/news", () => ({ resolveNewsVisuals: vi.fn() }));
 vi.mock("../db", () => ({
-  prisma: { $transaction: (fn: (tx: unknown) => unknown) => fn({ gameSetting: { findMany: mocks.findMany, upsert: mocks.upsert } }) },
+  prisma: { $transaction: (fn: (tx: unknown) => unknown) => fn({ $queryRaw: vi.fn(), gameSetting: { findMany: mocks.findMany, upsert: mocks.upsert } }) },
 }));
 import { updateShowcaseSettings } from "./admin-settings";
 
+// Envoi du formulaire ouvert sur les valeurs en base (6 vitrines, thèmes par défaut)
 const input = (themes: Record<string, unknown> = {}, maxPerPlayer = 6) => ({
-  "showcase.maxPerPlayer": maxPerPlayer,
-  "showcase.themes": { ...THEMES_DEFAULT, ...themes },
+  base: { "showcase.maxPerPlayer": 6, "showcase.themes": THEMES_DEFAULT },
+  draft: { "showcase.maxPerPlayer": maxPerPlayer, "showcase.themes": { ...THEMES_DEFAULT, ...themes } },
 });
 const written = (key: string) => mocks.upsert.mock.calls.find((c) => c[0].where.key === key)?.[0].update.value;
 

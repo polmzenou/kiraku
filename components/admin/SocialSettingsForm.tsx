@@ -9,6 +9,7 @@ import { useId, useState, useTransition } from "react";
 import { changedSocialKeys, socialSettingsSchema, type SocialSettings } from "@/lib/settings/social-form";
 import { updateSocialSettings } from "@/server/actions/admin-settings";
 import { Button } from "../ui/Button";
+import { useSettingsDraft } from "./SettingsSaveBar";
 
 const input =
   "min-h-11 w-full min-w-0 rounded-control border border-border bg-surface-2 px-3 text-base tabular-nums aria-invalid:border-shu";
@@ -88,15 +89,16 @@ export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
   const RARITIES = useRarities();
   const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("admin.social");
+  const tForm = useTranslations("admin.settingsForm");
   const tRarity = useTranslations("rarity");
   const router = useRouter();
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const [reviewing, setReviewing] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
   const valid = socialSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSocialKeys(initial, draft) : [];
+  const changed = valid ? changedSocialKeys(base, draft) : [];
 
   const update = <K extends keyof SocialSettings>(key: K, value: SocialSettings[K]) => {
     setDraft({ ...draft, [key]: value });
@@ -118,13 +120,16 @@ export function SocialSettingsForm({ initial }: { initial: SocialSettings }) {
   const save = () =>
     startTransition(async () => {
       try {
-        const res = await updateSocialSettings(draft);
+        // Base et brouillon : le serveur n'écrit que les clés modifiées (STALE si l'une a changé en base depuis)
+        const sent = { base, draft };
+        const res = await updateSocialSettings(sent);
         setReviewing(false);
         if (!res.ok) {
-          setMessage({ tone: "error", text: t(`errors.${res.error}`) });
+          setMessage({ tone: "error", text: res.error === "STALE" ? tForm("errors.STALE") : t(`errors.${res.error}`) });
           return;
         }
         setMessage({ tone: "ok", text: t("saved", { count: res.changed.length }) });
+        saved(sent);
         router.refresh();
       } catch {
         setMessage({ tone: "error", text: t("errors.unexpected") });

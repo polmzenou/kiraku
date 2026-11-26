@@ -10,6 +10,7 @@ import { updateRankedSettings } from "@/server/actions/admin-settings";
 import { RankEmblem } from "../ranked/RankEmblem";
 import { Button } from "../ui/Button";
 import { FormMessage, NumberField, SelectField, Toggle } from "./fields";
+import { useSettingsDraft } from "./SettingsSaveBar";
 
 // Bornes larges côté champ : le schéma Zod (lib/settings/defaults.ts) tranche à l'enregistrement
 const MAX = 100_000;
@@ -19,13 +20,14 @@ const ROW_KEYS = ["min", "win", "crushWin", "loss", "crushLoss"] as const;
 export function RankedSettingsForm({ initial, lots }: { initial: RankedSettings; lots: { id: string; name: string }[] }) {
   const t = useTranslations("admin.ranked");
   const tRanked = useTranslations("ranked");
+  const tForm = useTranslations("admin.settingsForm");
   const router = useRouter();
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
   const valid = rankedSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(RANKED_FORM_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(RANKED_FORM_KEYS, base, draft) : [];
   const set = (next: RankedSettings) => {
     setDraft(next);
     setMessage(null);
@@ -50,12 +52,16 @@ export function RankedSettingsForm({ initial, lots }: { initial: RankedSettings;
   const save = () =>
     startTransition(async () => {
       try {
-        const res = await updateRankedSettings(draft);
+        // Base et brouillon : le serveur n'écrit que les clés modifiées (STALE si l'une a changé en base depuis ;
+        // message commun, admin.ranked.errors.STALE parle de la saison close)
+        const sent = { base, draft };
+        const res = await updateRankedSettings(sent);
         if (res.ok) {
           setMessage({ tone: "ok", text: t("saved", { count: res.changed.length }) });
+          saved(sent);
           router.refresh();
         } else {
-          setMessage({ tone: "error", text: t(`errors.${res.error}`) });
+          setMessage({ tone: "error", text: res.error === "STALE" ? tForm("errors.STALE") : t(`errors.${res.error}`) });
         }
       } catch {
         setMessage({ tone: "error", text: t("errors.unexpected") });

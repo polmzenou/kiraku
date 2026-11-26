@@ -9,7 +9,7 @@ import { DISCORD_SETTING_KEYS, discordSettingsSchema, type DiscordSettings } fro
 import { updateDiscordSettings } from "@/server/actions/admin-settings";
 import { useRarities } from "@/lib/catalog/use-rarities";
 import { Field, inputClass, NumberField, SelectField, Toggle } from "./fields";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
 /** Date ISO → valeur d'un champ datetime-local (heure locale du navigateur de l'admin). */
 function toLocalInput(iso: string | null): string {
@@ -24,7 +24,7 @@ export function DiscordSettingsForm({ initial }: { initial: DiscordSettings }) {
   const t = useTranslations("admin.discord");
   const tRarity = useTranslations("rarity");
   const rarities = useRarities();
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const modal = draft["discord.joinModal"];
   const setModal = (patch: Partial<JoinModalConfig>) => setDraft((d) => ({ ...d, "discord.joinModal": { ...d["discord.joinModal"], ...patch } }));
   const promo = draft["discord.socialPromo"];
@@ -34,7 +34,7 @@ export function DiscordSettingsForm({ initial }: { initial: DiscordSettings }) {
   const promoState = socialPromoState(promo, now);
 
   const valid = discordSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(DISCORD_SETTING_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(DISCORD_SETTING_KEYS, base, draft) : [];
 
   return (
     <form className="flex max-w-2xl flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
@@ -235,7 +235,7 @@ export function DiscordSettingsForm({ initial }: { initial: DiscordSettings }) {
         </div>
       </fieldset>
 
-      <SettingsSaveBar valid={valid} changedLabels={changed.map((k) => t(`keys.${k}`))} save={() => updateDiscordSettings(draft)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map((k) => t(`keys.${k}`))} base={base} draft={draft} saved={saved} save={updateDiscordSettings} />
     </form>
   );
 }

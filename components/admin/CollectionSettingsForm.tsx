@@ -13,6 +13,7 @@ import {
 } from "@/lib/settings/collection-form";
 import { updateCollectionSettings } from "@/server/actions/admin-settings";
 import { Button } from "../ui/Button";
+import { useSettingsDraft } from "./SettingsSaveBar";
 
 const input =
   "min-h-11 w-full min-w-0 rounded-control border border-border bg-surface-2 px-3 text-base tabular-nums aria-invalid:border-shu";
@@ -46,15 +47,16 @@ export function CollectionSettingsForm({ initial }: { initial: CollectionSetting
   const RARITIES = useRarities();
   const RARITY_SEAL = useRaritySeals();
   const t = useTranslations("admin.collection");
+  const tForm = useTranslations("admin.settingsForm");
   const tRarity = useTranslations("rarity");
   const router = useRouter();
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const [reviewing, setReviewing] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
   const valid = collectionSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedCollectionKeys(initial, draft) : [];
+  const changed = valid ? changedCollectionKeys(base, draft) : [];
   const values = draft["collection.recycleValues"];
 
   const update = (next: CollectionSettings) => {
@@ -66,13 +68,16 @@ export function CollectionSettingsForm({ initial }: { initial: CollectionSetting
   const save = () =>
     startTransition(async () => {
       try {
-        const res = await updateCollectionSettings(draft);
+        // Base et brouillon : le serveur n'écrit que les clés modifiées (STALE si l'une a changé en base depuis)
+        const sent = { base, draft };
+        const res = await updateCollectionSettings(sent);
         setReviewing(false);
         if (!res.ok) {
-          setMessage({ tone: "error", text: t(`errors.${res.error}`) });
+          setMessage({ tone: "error", text: res.error === "STALE" ? tForm("errors.STALE") : t(`errors.${res.error}`) });
           return;
         }
         setMessage({ tone: "ok", text: t("saved", { count: res.changed.length }) });
+        saved(sent);
         router.refresh();
       } catch {
         setMessage({ tone: "error", text: t("errors.unexpected") });

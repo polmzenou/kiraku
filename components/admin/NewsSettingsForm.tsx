@@ -22,7 +22,7 @@ import { searchFeaturedCards, type FeaturedCandidate } from "@/server/actions/ad
 import { previewNewsVisuals, updateNewsSettings } from "@/server/actions/admin-settings";
 import { Button, buttonClasses } from "../ui/Button";
 import { Field, inputClass, SelectField, Toggle } from "./fields";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
 type Lang = "fr" | "en";
 type Text = { fr: string; en: string };
@@ -421,7 +421,7 @@ function lookupsOf(items: readonly NewsItem[]) {
  */
 export function NewsSettingsForm({ initial, boosters, initialVisuals }: { initial: NewsSettings; boosters: NewsBoosterOption[]; initialVisuals: NewsVisuals }) {
   const t = useTranslations("admin.news");
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const [reopen, setReopen] = useState(true);
   const [previewLang, setPreviewLang] = useState<Lang>("fr");
   const [visuals, setVisuals] = useState(initialVisuals);
@@ -465,7 +465,7 @@ export function NewsSettingsForm({ initial, boosters, initialVisuals }: { initia
   }, [lookupKey, remember]);
 
   const valid = newsSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(NEWS_SETTING_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(NEWS_SETTING_KEYS, base, draft) : [];
   const preview = localizeNews({ ...news, enabled: true }, previewLang, visuals);
   // Les liens de l'aperçu ne quittent pas le formulaire (les modifications en cours seraient perdues)
   const stayHere = (e: MouseEvent) => {
@@ -535,7 +535,10 @@ export function NewsSettingsForm({ initial, boosters, initialVisuals }: { initia
         <SettingsSaveBar
           valid={valid}
           changedLabels={changed.map(() => t(reopen ? "changeReopen" : "changeQuiet"))}
-          save={() => updateNewsSettings(draft, reopen)}
+          base={base}
+          draft={draft}
+          saved={saved}
+          save={(sent) => updateNewsSettings(sent, reopen)}
         />
       </div>
     </form>

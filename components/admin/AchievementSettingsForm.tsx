@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { RANK_SEAL, type AchievementRank } from "@/lib/achievements/catalog";
 import { normalizeGoals } from "@/lib/achievements/evaluate";
 import { RANK_STYLE } from "@/lib/achievements/style";
@@ -9,7 +8,7 @@ import { ACHIEVEMENT_SETTING_KEYS, achievementSettingsSchema, type AchievementSe
 import { changedSettingKeys } from "@/lib/settings/form";
 import { updateAchievementSettings } from "@/server/actions/admin-settings";
 import { inputClass, Toggle } from "./fields";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
 export type AdminAchievementRow = {
   key: string;
@@ -34,10 +33,10 @@ const LABEL_KEY = {
 /** Succès : interrupteur, seuil de chaque succès réglable (vide = catalogue) et succès actifs. */
 export function AchievementSettingsForm({ initial, groups }: { initial: Settings; groups: AdminAchievementGroup[] }) {
   const t = useTranslations("admin.achievements");
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const normalized: Settings = { ...draft, "achievements.goals": normalizeGoals(draft["achievements.goals"]) };
   const valid = achievementSettingsSchema.safeParse(normalized).success && Object.values(draft["achievements.goals"]).every((g) => Number.isInteger(g) && g >= 1);
-  const changed = valid ? changedSettingKeys(ACHIEVEMENT_SETTING_KEYS, initial, normalized) : [];
+  const changed = valid ? changedSettingKeys(ACHIEVEMENT_SETTING_KEYS, base, normalized) : [];
   const disabled = new Set(draft["achievements.disabled"]);
 
   const setGoal = (key: string, value: number) =>
@@ -113,7 +112,7 @@ export function AchievementSettingsForm({ initial, groups }: { initial: Settings
         </section>
       ))}
 
-      <SettingsSaveBar valid={valid} changedLabels={changed.map((k) => t(`settings.${LABEL_KEY[k]}`))} save={() => updateAchievementSettings(normalized)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map((k) => t(`settings.${LABEL_KEY[k]}`))} base={base} draft={normalized} saved={saved} save={updateAchievementSettings} />
     </form>
   );
 }

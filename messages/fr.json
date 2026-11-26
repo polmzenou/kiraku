@@ -3283,6 +3283,7 @@
         "FORBIDDEN": "Accès refusé.",
         "INVALID": "Valeurs refusées par le serveur.",
         "RATE_LIMITED": "Trop d'enregistrements. Réessaie dans une minute.",
+        "STALE": "Un autre membre de l'équipe a changé ces réglages depuis l'ouverture de la page. Recharge la page pour voir les valeurs en vigueur, puis refais tes modifications.",
         "unexpected": "Erreur inattendue. Réessaie."
       }
     },

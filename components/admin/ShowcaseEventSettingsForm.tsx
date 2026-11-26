@@ -1,12 +1,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { SHOWCASE_EVENT_SETTING_KEYS, showcaseEventSettingsSchema, type ShowcaseEventSettings } from "@/lib/settings/showcase-event-form";
 import { updateShowcaseEventSettings } from "@/server/actions/admin-settings";
 import { Field, inputClass, NumberField, TextField, Toggle } from "./fields";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
 /** Date ISO → valeur d'un champ datetime-local (heure locale du navigateur de l'admin). */
 function toLocalInput(iso: string): string {
@@ -29,9 +28,9 @@ const short = <K extends keyof ShowcaseEventSettings>(key: K) => key.slice("even
 /** Réglages de l'event vitrines : visibilité, édition, fenêtre, minimum de cartes et taille des pages. */
 export function ShowcaseEventSettingsForm({ initial }: { initial: ShowcaseEventSettings }) {
   const t = useTranslations("admin.showcaseEvent");
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const valid = showcaseEventSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(SHOWCASE_EVENT_SETTING_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(SHOWCASE_EVENT_SETTING_KEYS, base, draft) : [];
   const label = (k: keyof ShowcaseEventSettings) => t(`keys.${short(k)}`);
 
   const num = (key: NumberKey) => (
@@ -88,7 +87,7 @@ export function ShowcaseEventSettingsForm({ initial }: { initial: ShowcaseEventS
         {num("event.showcase.minCards")}
         {num("event.showcase.pageSize")}
       </fieldset>
-      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} save={() => updateShowcaseEventSettings(draft)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} base={base} draft={draft} saved={saved} save={updateShowcaseEventSettings} />
     </form>
   );
 }

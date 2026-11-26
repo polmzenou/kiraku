@@ -2,34 +2,19 @@
 
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import type { ProfileCondition } from "@/lib/profile/conditions";
-import {
-  changedShowcaseKeys,
-  normalizeThemes,
-  showcaseSettingsSchema,
-  type ShowcaseSettingKey,
-  type ShowcaseSettings,
-} from "@/lib/settings/showcase-form";
+import { changedShowcaseKeys, showcaseSettingsSchema, type ShowcaseSettingKey, type ShowcaseSettings } from "@/lib/settings/showcase-form";
 import { DEFAULT_THEME, SHOWCASE_THEMES, THEME_IDS, THEME_STATUSES, type ShowcaseThemeId } from "@/lib/showcase/theme-registry";
-import { themeConfig, type ThemeConfig, type ThemesSetting } from "@/lib/showcase/themes";
+import { themeConfig, type ThemeConfig } from "@/lib/showcase/themes";
 import { updateShowcaseSettings } from "@/server/actions/admin-settings";
 import { ConditionFields } from "./ConditionFields";
 import { NumberField, SelectField } from "./fields";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
 const LABEL_KEY = {
   "showcase.maxPerPlayer": "maxPerPlayer",
   "showcase.themes": "themes",
 } as const satisfies Record<ShowcaseSettingKey, string>;
-
-/** Chaque thème du registre avec son réglage en vigueur (valeur par défaut s'il n'a jamais été réglé). */
-function withEveryTheme(settings: ShowcaseSettings): ShowcaseSettings {
-  const stored = settings["showcase.themes"];
-  const themes: ThemesSetting = { ...stored };
-  for (const id of THEME_IDS) themes[id] = themeConfig(stored, id);
-  return { ...settings, "showcase.themes": normalizeThemes(themes) };
-}
 
 /** Aperçu d'un thème : l'image fixe de son fond vidéo, sinon son kanji. */
 function ThemePreview({ id }: { id: ShowcaseThemeId }) {
@@ -69,9 +54,9 @@ export function ShowcaseThemesForm({
   seriesTitles: Record<string, string>;
 }) {
   const t = useTranslations("admin.showcases");
-  // Même base pour le brouillon et la comparaison : seuls les vrais changements sont relus
-  const [base] = useState(() => withEveryTheme(initial));
-  const [draft, setDraft] = useState(base);
+  // Valeurs en vigueur telles quelles (un thème jamais réglé s'affiche avec son défaut, themeConfig) : la base
+  // envoyée au serveur est celle de la base de données, comparée sans faux conflit
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const valid = showcaseSettingsSchema.safeParse(draft).success;
   const changed = valid ? changedShowcaseKeys(base, draft) : [];
   const themes = draft["showcase.themes"];
@@ -138,7 +123,7 @@ export function ShowcaseThemesForm({
         </ul>
       </section>
 
-      <SettingsSaveBar valid={valid} changedLabels={changed.map((k) => t(`keys.${LABEL_KEY[k]}`))} save={() => updateShowcaseSettings(draft)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map((k) => t(`keys.${LABEL_KEY[k]}`))} base={base} draft={draft} saved={saved} save={updateShowcaseSettings} />
     </form>
   );
 }

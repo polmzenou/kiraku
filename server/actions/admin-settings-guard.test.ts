@@ -13,13 +13,15 @@ vi.mock("../admin/log", () => ({ writeAdminLog: vi.fn() }));
 vi.mock("../catalog/rarities", () => ({ getRarities: mocks.rarities }));
 vi.mock("../home/news", () => ({ resolveNewsVisuals: vi.fn() }));
 vi.mock("../db", () => ({
-  prisma: { $transaction: (fn: (tx: unknown) => unknown) => fn({ gameSetting: { findMany: mocks.findMany, upsert: mocks.upsert } }) },
+  prisma: { $transaction: (fn: (tx: unknown) => unknown) => fn({ $queryRaw: vi.fn(), gameSetting: { findMany: mocks.findMany, upsert: mocks.upsert } }) },
 }));
 import { updateBoosterSettings } from "./admin-settings";
 
 const REGISTRY = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "AR", "GOLD", "MR", "VR", "SR", "XR", "BR"];
-const draft = (over: Partial<BoosterSettings> = {}): BoosterSettings =>
+const settings = (over: Partial<BoosterSettings> = {}): BoosterSettings =>
   ({ ...Object.fromEntries(BOOSTER_SETTING_KEYS.map((k) => [k, SETTING_DEFAULTS[k]])), ...over }) as BoosterSettings;
+// Envoi du formulaire ouvert sur les valeurs par défaut (rien en base)
+const draft = (over: Partial<BoosterSettings> = {}) => ({ base: settings(), draft: settings(over) });
 
 beforeEach(() => {
   vi.resetAllMocks();

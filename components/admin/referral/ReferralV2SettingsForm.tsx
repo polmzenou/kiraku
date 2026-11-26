@@ -1,14 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { MAX_REFERRAL_V2_MILESTONES } from "@/lib/settings/defaults";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { REFERRAL_V2_FORM_KEYS, referralV2SettingsSchema, type ReferralV2Settings } from "@/lib/settings/referral-v2-form";
 import { updateReferralV2Settings } from "@/server/actions/admin-settings";
 import { Button } from "../../ui/Button";
 import { Field, inputClass, NumberField, SelectField, Toggle, toLocalInput } from "../fields";
-import { SettingsSaveBar } from "../SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "../SettingsSaveBar";
 
 type NumberKey =
   | "referral.v2.maxPerMonth"
@@ -56,9 +55,9 @@ type StepLot = ReferralV2Settings["referral.v2.stepLots"][number];
  */
 export function ReferralV2SettingsForm({ initial, lots }: { initial: ReferralV2Settings; lots: { id: string; name: string }[] }) {
   const t = useTranslations("admin.referralV2.settings");
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const valid = referralV2SettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(REFERRAL_V2_FORM_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(REFERRAL_V2_FORM_KEYS, base, draft) : [];
   const label = (k: keyof ReferralV2Settings) => t(`keys.${short(k)}`);
   const set = <K extends keyof ReferralV2Settings>(key: K, value: ReferralV2Settings[K]) => setDraft((d) => ({ ...d, [key]: value }));
   const num = (key: NumberKey) => (
@@ -183,7 +182,7 @@ export function ReferralV2SettingsForm({ initial, lots }: { initial: ReferralV2S
           {t("invalid")}
         </p>
       )}
-      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} save={() => updateReferralV2Settings(draft)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} base={base} draft={draft} saved={saved} save={updateReferralV2Settings} />
     </form>
   );
 }

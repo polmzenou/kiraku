@@ -1,13 +1,12 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { EVENT_GAUGE_SETTING_KEYS, eventGaugeSettingsSchema, type EventGaugeSettings } from "@/lib/settings/event-gauge-form";
 import { updateEventGaugeSettings } from "@/server/actions/admin-settings";
 import { Link } from "@/i18n/navigation";
 import { Field, inputClass, NumberField, SelectField, Toggle } from "./fields";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
 /** Date ISO → valeur d'un champ datetime-local (heure locale du navigateur de l'admin). */
 function toLocalInput(iso: string): string {
@@ -41,9 +40,9 @@ export function EventGaugeSettingsForm({
   reached: boolean;
 }) {
   const t = useTranslations("admin.eventGauge");
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const valid = eventGaugeSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(EVENT_GAUGE_SETTING_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(EVENT_GAUGE_SETTING_KEYS, base, draft) : [];
   const label = (k: keyof EventGaugeSettings) => t(`keys.${short(k)}`);
 
   const num = (key: NumberKey) => (
@@ -111,7 +110,7 @@ export function EventGaugeSettingsForm({
           </Link>
         )}
       </fieldset>
-      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} save={() => updateEventGaugeSettings(draft)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} base={base} draft={draft} saved={saved} save={updateEventGaugeSettings} />
     </form>
   );
 }

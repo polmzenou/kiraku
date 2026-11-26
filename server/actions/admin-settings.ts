@@ -2,7 +2,7 @@
 
 import { updateTag } from "next/cache";
 import { z } from "@/lib/zod";
-import type { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { BOOSTER_SETTING_KEYS, boosterSettingsSchema, type BoosterSettingKey } from "@/lib/settings/booster-form";
 import {
   COLLECTION_SETTING_KEYS,
@@ -43,7 +43,13 @@ import { CASINO_FORM_KEYS, casinoSettingsSchema, type CasinoFormKey } from "@/li
 import { KYARA_FORM_KEYS, kyaraSettingsSchema, type KyaraFormKey } from "@/lib/settings/kyara-form";
 import { REFERRAL_V2_FORM_KEYS, referralV2SettingsSchema, type ReferralV2FormKey } from "@/lib/settings/referral-v2-form";
 import { ENNICHI_FORM_KEYS, ennichiSettingsSchema, type EnnichiFormKey } from "@/lib/settings/ennichi-form";
-import { changedSettingKeys, type SettingsOf } from "@/lib/settings/form";
+import {
+  changedSettingKeys,
+  mergeSettingsSubmission,
+  settingsSubmissionSchema,
+  type SettingsOf,
+  type SettingsSubmission,
+} from "@/lib/settings/form";
 import { canManageReferrals, canProcessKyaraImports } from "@/lib/admin/roles";
 import { getAdmin, getStaff } from "../admin";
 import { prisma } from "../db";
@@ -56,29 +62,46 @@ import { ENNICHI_TAG } from "../ennichi/tag";
 import { isRewardableKind } from "@/lib/boosters/types";
 
 // Réglages de jeu depuis /admin. Ordre : rôle admin vérifié → Zod par clé → rate limit.
-// Chaque clé modifiée écrit sa ligne GameSetting et une ligne AdminLog (avant / après).
+// Chaque formulaire envoie { base, draft } (SettingsSubmission, lib/settings/form.ts) : seules les clés modifiées à
+// l'écran s'écrivent, chacune avec sa ligne GameSetting et une ligne AdminLog (avant / après) ; une clé modifiée qui a
+// changé en base depuis l'ouverture de la page fait refuser l'enregistrement (STALE).
 // Exceptions au rôle admin, ouvertes à toute l'équipe : les réglages de l'import Kyara (kyaraStaff), ceux du
 // parrainage v2 et ceux de l'Ennichi (referralStaff).
 
 export type UpdateSettingsResult<K extends SettingKey = SettingKey> =
   | { ok: true; changed: K[] }
-  | { ok: false; error: "FORBIDDEN" | "INVALID" | "RATE_LIMITED" };
+  | { ok: false; error: "FORBIDDEN" | "INVALID" | "RATE_LIMITED" | "STALE" };
+
+/** Brouillon d'un envoi, pour les contrôles propres à une action avant saveSettings ; null si l'envoi est invalide. */
+function draftOf<K extends SettingKey>(keys: readonly K[], schema: z.ZodType, input: unknown): SettingsOf<K> | null {
+  const parsed = settingsSubmissionSchema(keys, schema).safeParse(input);
+  return parsed.success ? (parsed.data.draft as SettingsOf<K>) : null;
+}
 
 async function saveSettings<K extends SettingKey>(
   keys: readonly K[],
   schema: z.ZodType,
   input: unknown,
-  // Champs que le serveur décide d'après les valeurs en vigueur, lues dans la transaction
-  finalize?: (next: SettingsOf<K>, before: SettingsOf<K>) => SettingsOf<K>,
-  // Qui peut enregistrer, si ce n'est pas l'admin seul
-  editor?: () => Promise<{ id: string } | null>,
+  {
+    finalize,
+    editor,
+    holds,
+  }: {
+    // Champs que le serveur décide d'après les valeurs en vigueur, lues dans la transaction
+    finalize?: (next: SettingsOf<K>, before: SettingsOf<K>) => SettingsOf<K>;
+    // Qui peut enregistrer, si ce n'est pas l'admin seul
+    editor?: () => Promise<{ id: string } | null>;
+    // Règle propre à l'action sur les valeurs qui seront en vigueur (brouillon appliqué sur la base), hors schéma
+    holds?: (after: SettingsOf<K>) => boolean;
+  } = {},
 ): Promise<UpdateSettingsResult<K>> {
   const admin = editor ? await editor() : await getAdmin();
   if (!admin) return { ok: false, error: "FORBIDDEN" };
 
-  const parsed = schema.safeParse(input);
+  const parsed = settingsSubmissionSchema(keys, schema).safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
-  const next = parsed.data as SettingsOf<K>;
+  const submission = parsed.data as SettingsSubmission<K>;
+  const next = submission.draft;
   const rarityKeyed = keys.filter((k) => RARITY_KEYED[k]);
   if (rarityKeyed.length > 0) {
     const registry = await getRarities();
@@ -94,17 +117,31 @@ async function saveSettings<K extends SettingKey>(
     return { ok: false, error: "RATE_LIMITED" };
   }
 
-  const changed = await prisma.$transaction(async (tx) => {
-    // Valeurs en vigueur lues en base (pas dans le cache) : l'avant du journal est exact
+  const outcome = await prisma.$transaction(async (tx) => {
+    // Lignes du formulaire verrouillées (ordre fixe) : deux enregistrements simultanés ne se croisent pas entre la
+    // vérification du conflit et l'écriture
+    await tx.$queryRaw`SELECT key FROM "GameSetting" WHERE key IN (${Prisma.join([...keys])}) ORDER BY key FOR UPDATE`;
+    // Valeurs en vigueur lues en base (pas dans le cache) : l'avant du journal et le conflit sont exacts
     const rows = await tx.gameSetting.findMany({
       where: { key: { in: [...keys] } },
       select: { key: true, value: true },
     });
     const stored = new Map(rows.map((r) => [r.key, r.value]));
     const before = Object.fromEntries(keys.map((k) => [k, parseSetting(k, stored.get(k))])) as SettingsOf<K>;
-    const after = finalize ? (schema.parse(finalize(next, before)) as SettingsOf<K>) : next;
 
-    const changedKeys = changedSettingKeys(keys, before, after);
+    // Seules les clés modifiées à l'écran prennent la valeur du brouillon ; les autres gardent la valeur en base
+    const merge = mergeSettingsSubmission(keys, submission, before);
+    if (!merge.ok) return { stale: true } as const;
+    // Contrôles croisés du schéma sur ce qui sera en vigueur : le brouillon seul était valide, un échec vient donc
+    // d'un autre réglage du formulaire changé entre-temps
+    const checked = schema.safeParse(merge.merged);
+    if (!checked.success) return { stale: true } as const;
+    const merged = checked.data as SettingsOf<K>;
+    const after = finalize ? (schema.parse(finalize(merged, before)) as SettingsOf<K>) : merged;
+    if (holds && !holds(after)) return { stale: true } as const;
+
+    // Jamais une clé non modifiée à l'écran, même si finalize la retouche
+    const changedKeys = changedSettingKeys(merge.edited, before, after);
     for (const key of changedKeys) {
       const value = after[key] as Prisma.InputJsonValue;
       await tx.gameSetting.upsert({
@@ -121,15 +158,16 @@ async function saveSettings<K extends SettingKey>(
         after: value,
       });
     }
-    return changedKeys;
+    return { stale: false, changed: changedKeys } as const;
   });
 
-  // Effet immédiat dans tout le jeu, sans redéployer
-  if (changed.length > 0) {
+  // Effet immédiat dans tout le jeu, sans redéployer. Conflit : la page lisait peut-être un cache périmé (réglage
+  // écrit par un script) ; il est oublié aussi pour que la page rechargée montre les valeurs en base
+  if (outcome.stale || outcome.changed.length > 0) {
     updateTag(SETTINGS_TAG);
     forgetSettings();
   }
-  return { ok: true, changed };
+  return outcome.stale ? { ok: false, error: "STALE" } : { ok: true, changed: outcome.changed };
 }
 
 export async function updateBoosterSettings(input: unknown): Promise<UpdateSettingsResult<BoosterSettingKey>> {
@@ -147,17 +185,16 @@ export async function updateCollectionSettings(input: unknown): Promise<UpdateSe
 export async function updateShowcaseSettings(input: unknown): Promise<UpdateSettingsResult<ShowcaseSettingKey>> {
   const admin = await getAdmin();
   if (!admin) return { ok: false, error: "FORBIDDEN" };
-  const parsed = showcaseSettingsSchema.safeParse(input);
+  const draft = draftOf(SHOWCASE_SETTING_KEYS, showcaseSettingsSchema, input);
   // Limité avant la lecture du registre des raretés (bucket à part de celui de l'écriture)
   if (!(await rateLimit(`admin-check:${admin.id}`, { limit: 20, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
-  if (parsed.success) {
+  if (draft) {
     const registry = await getRarities();
-    if (themeConditionRarities(parsed.data["showcase.themes"]).some((r) => !registry.includes(r))) return { ok: false, error: "INVALID" };
+    if (themeConditionRarities(draft["showcase.themes"]).some((r) => !registry.includes(r))) return { ok: false, error: "INVALID" };
   }
-  return saveSettings(SHOWCASE_SETTING_KEYS, showcaseSettingsSchema, input, (next) => ({
-    ...next,
-    "showcase.themes": normalizeThemes(next["showcase.themes"]),
-  }));
+  return saveSettings(SHOWCASE_SETTING_KEYS, showcaseSettingsSchema, input, {
+    finalize: (next) => ({ ...next, "showcase.themes": normalizeThemes(next["showcase.themes"]) }),
+  });
 }
 
 export async function updateSocialSettings(input: unknown): Promise<UpdateSettingsResult<SocialSettingKey>> {
@@ -170,21 +207,20 @@ export async function updateProfileSettings(input: unknown): Promise<UpdateSetti
 
 /** Succès : seuils figés ou égaux au défaut du catalogue écartés (le catalogue fait foi quand rien n'est réglé). */
 export async function updateAchievementSettings(input: unknown): Promise<UpdateSettingsResult<AchievementSettingKey>> {
-  return saveSettings(ACHIEVEMENT_SETTING_KEYS, achievementSettingsSchema, input, (next) => ({
-    ...next,
-    "achievements.goals": normalizeGoals(next["achievements.goals"]),
-  }));
+  return saveSettings(ACHIEVEMENT_SETTING_KEYS, achievementSettingsSchema, input, {
+    finalize: (next) => ({ ...next, "achievements.goals": normalizeGoals(next["achievements.goals"]) }),
+  });
 }
 
 export async function updateAmbassadorSettings(input: unknown): Promise<UpdateSettingsResult<AmbassadorSettingKey>> {
   const admin = await getAdmin();
   if (!admin) return { ok: false, error: "FORBIDDEN" };
-  const parsed = ambassadorSettingsSchema.safeParse(input);
+  const draft = draftOf(AMBASSADOR_SETTING_KEYS, ambassadorSettingsSchema, input);
   // Limité avant la vérification du type en base (bucket à part de celui de l'écriture)
   if (!(await rateLimit(`admin-check:${admin.id}`, { limit: 20, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
   // Le pack donne des boosters à ouvrir : le type doit exister et ne pas être un sachet scellé
-  if (parsed.success) {
-    const type = await prisma.boosterType.findUnique({ where: { slug: parsed.data["ambassador.weeklyBoosterSlug"] }, select: { kind: true } });
+  if (draft) {
+    const type = await prisma.boosterType.findUnique({ where: { slug: draft["ambassador.weeklyBoosterSlug"] }, select: { kind: true } });
     if (!type || !isRewardableKind(type.kind)) return { ok: false, error: "INVALID" };
   }
   return saveSettings(AMBASSADOR_SETTING_KEYS, ambassadorSettingsSchema, input);
@@ -193,15 +229,15 @@ export async function updateAmbassadorSettings(input: unknown): Promise<UpdateSe
 export async function updateEconomySettings(input: unknown): Promise<UpdateSettingsResult<EconomySettingKey>> {
   const admin = await getAdmin();
   if (!admin) return { ok: false, error: "FORBIDDEN" };
-  const parsed = economySettingsSchema.safeParse(input);
+  const draft = draftOf(ECONOMY_SETTING_KEYS, economySettingsSchema, input);
   // Limité avant la vérification des lots en base (bucket à part de celui de l'écriture)
   if (!(await rateLimit(`admin-check:${admin.id}`, { limit: 20, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
   // Un lot de parrainage doit exister : sinon la réclamation échouerait chez les joueurs
-  if (parsed.success) {
+  if (draft) {
     const lotIds = [
-      parsed.data["referral.referrerLotId"],
-      parsed.data["referral.refereeLotId"],
-      ...parsed.data["referral.milestones"].map((m) => m.lotId),
+      draft["referral.referrerLotId"],
+      draft["referral.refereeLotId"],
+      ...draft["referral.milestones"].map((m) => m.lotId),
     ].filter((id): id is string => id !== null);
     if (lotIds.length > 0) {
       const found = await prisma.lot.count({ where: { id: { in: [...new Set(lotIds)] } } });
@@ -222,12 +258,12 @@ export async function updateCombatSettings(input: unknown): Promise<UpdateSettin
 export async function updateRankedSettings(input: unknown): Promise<UpdateSettingsResult<RankedSettingKey>> {
   const admin = await getAdmin();
   if (!admin) return { ok: false, error: "FORBIDDEN" };
-  const parsed = rankedSettingsSchema.safeParse(input);
+  const draft = draftOf(RANKED_FORM_KEYS, rankedSettingsSchema, input);
   // Limité avant la vérification des lots en base (bucket à part de celui de l'écriture)
   if (!(await rateLimit(`admin-check:${admin.id}`, { limit: 20, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
   // Chaque lot de fin de saison doit exister : sinon la réclamation échouerait chez les joueurs
-  if (parsed.success) {
-    const lotIds = [...new Set(Object.values(parsed.data["ranked.rewardLots"]).filter((id): id is string => id !== null))];
+  if (draft) {
+    const lotIds = [...new Set(Object.values(draft["ranked.rewardLots"]).filter((id): id is string => id !== null))];
     if (lotIds.length > 0 && (await prisma.lot.count({ where: { id: { in: lotIds } } })) !== lotIds.length) {
       return { ok: false, error: "INVALID" };
     }
@@ -246,12 +282,14 @@ export async function updateDiscordSettings(input: unknown): Promise<UpdateSetti
 export async function updateNewsSettings(input: unknown, reopen: unknown): Promise<UpdateSettingsResult<NewsSettingKey>> {
   if (!(await getAdmin())) return { ok: false, error: "FORBIDDEN" };
   // Images de bannière : seulement celles téléversées dans le stockage du site (/api/admin/nouveautes/upload)
-  const parsed = newsSettingsSchema.safeParse(input);
-  const foreign = parsed.success && parsed.data["home.news"].items.some((i) => i.visual.kind === "image" && !validNewsImageUrl(i.visual.url, process.env.BLOB_PUBLIC_HOST));
+  const draft = draftOf(NEWS_SETTING_KEYS, newsSettingsSchema, input);
+  const foreign = draft?.["home.news"].items.some((i) => i.visual.kind === "image" && !validNewsImageUrl(i.visual.url, process.env.BLOB_PUBLIC_HOST));
   if (foreign) return { ok: false, error: "INVALID" };
-  return saveSettings(NEWS_SETTING_KEYS, newsSettingsSchema, input, (next, before) => ({
-    "home.news": nextPublication(before["home.news"], next["home.news"], reopen === true, new Date()),
-  }));
+  return saveSettings(NEWS_SETTING_KEYS, newsSettingsSchema, input, {
+    finalize: (next, before) => ({
+      "home.news": nextPublication(before["home.news"], next["home.news"], reopen === true, new Date()),
+    }),
+  });
 }
 
 const previewSchema = z
@@ -293,7 +331,7 @@ async function kyaraStaff() {
 }
 
 export async function updateKyaraImportSettings(input: unknown): Promise<UpdateSettingsResult<KyaraFormKey>> {
-  return saveSettings(KYARA_FORM_KEYS, kyaraSettingsSchema, input, undefined, kyaraStaff);
+  return saveSettings(KYARA_FORM_KEYS, kyaraSettingsSchema, input, { editor: kyaraStaff });
 }
 
 /** Parrainage v2 : toute l'équipe (ADMIN et DEV) le règle, interrupteur compris, comme elle tient la file (lib/admin/roles.ts). */
@@ -303,24 +341,28 @@ async function referralStaff() {
 }
 
 export async function updateReferralV2Settings(input: unknown): Promise<UpdateSettingsResult<ReferralV2FormKey>> {
-  return saveSettings(REFERRAL_V2_FORM_KEYS, referralV2SettingsSchema, input, undefined, referralStaff);
+  return saveSettings(REFERRAL_V2_FORM_KEYS, referralV2SettingsSchema, input, { editor: referralStaff });
 }
+
+/**
+ * La fête ne s'allume pas avec un palier vide : il se figerait sans rien à donner et annoncerait quand même « ton lot
+ * est arrivé ». Vérifié sur le brouillon (INVALID), puis sur ce qui sera en vigueur (STALE si un autre a vidé un palier).
+ */
+const ennichiTiersReady = (v: SettingsOf<EnnichiFormKey>) => !(v["ennichi.enabled"] && v["ennichi.tiers"].some((t) => !t.lotId && t.choiceVouchers === 0));
 
 /** Ennichi : toute l'équipe aussi (canManageReferrals) ; les pages de la fête suivent tout de suite. */
 export async function updateEnnichiSettings(input: unknown): Promise<UpdateSettingsResult<EnnichiFormKey>> {
   const staff = await referralStaff();
   if (!staff) return { ok: false, error: "FORBIDDEN" };
-  const parsed = ennichiSettingsSchema.safeParse(input);
-  if (parsed.success) {
-    const v = parsed.data as SettingsOf<EnnichiFormKey>;
+  const v = draftOf(ENNICHI_FORM_KEYS, ennichiSettingsSchema, input);
+  if (v) {
     if (!(await rateLimit(`admin-check:${staff.id}`, { limit: 20, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
-    // Les lots cités doivent exister (sinon chaque versement échouerait), et la fête ne s'allume pas avec un palier
-    // vide : il se figerait sans rien à donner et annoncerait quand même « ton lot est arrivé »
+    // Les lots cités doivent exister (sinon chaque versement échouerait)
     const lotIds = [...new Set([...v["ennichi.tiers"], ...v["ennichi.ranks"], ...v["ennichi.omikuji"]].flatMap((x) => (x.lotId ? [x.lotId] : [])))];
     if (lotIds.length > 0 && (await prisma.lot.count({ where: { id: { in: lotIds } } })) !== lotIds.length) return { ok: false, error: "INVALID" };
-    if (v["ennichi.enabled"] && v["ennichi.tiers"].some((t) => !t.lotId && t.choiceVouchers === 0)) return { ok: false, error: "INVALID" };
+    if (!ennichiTiersReady(v)) return { ok: false, error: "INVALID" };
   }
-  const result = await saveSettings(ENNICHI_FORM_KEYS, ennichiSettingsSchema, input, undefined, referralStaff);
+  const result = await saveSettings(ENNICHI_FORM_KEYS, ennichiSettingsSchema, input, { editor: referralStaff, holds: ennichiTiersReady });
   if (result.ok && result.changed.length > 0) updateTag(ENNICHI_TAG);
   return result;
 }
@@ -328,11 +370,11 @@ export async function updateEnnichiSettings(input: unknown): Promise<UpdateSetti
 export async function updateEventGaugeSettings(input: unknown): Promise<UpdateSettingsResult<EventGaugeSettingKey>> {
   const admin = await getAdmin();
   if (!admin) return { ok: false, error: "FORBIDDEN" };
-  const parsed = eventGaugeSettingsSchema.safeParse(input);
+  const draft = draftOf(EVENT_GAUGE_SETTING_KEYS, eventGaugeSettingsSchema, input);
   // Limité avant la vérification du lot en base (bucket à part de celui de l'écriture)
   if (!(await rateLimit(`admin-check:${admin.id}`, { limit: 20, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
   // La récompense promise doit exister : sinon la jauge afficherait un lot introuvable
-  const lotId = parsed.success ? parsed.data["home.eventGauge.rewardLotId"] : null;
+  const lotId = draft ? draft["home.eventGauge.rewardLotId"] : null;
   if (lotId && !(await prisma.lot.findUnique({ where: { id: lotId }, select: { id: true } }))) return { ok: false, error: "INVALID" };
   return saveSettings(EVENT_GAUGE_SETTING_KEYS, eventGaugeSettingsSchema, input);
 }

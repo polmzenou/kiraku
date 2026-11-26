@@ -2,13 +2,12 @@
 
 import { useRarities } from "@/lib/catalog/use-rarities";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { notablePullRarities } from "@/lib/home/notable-pulls";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { PULL_FEED_SETTING_KEYS, pullFeedSettingsSchema, type PullFeedSettings } from "@/lib/settings/pull-feed-form";
 import { updatePullFeedSettings } from "@/server/actions/admin-settings";
 import { NumberField, SelectField, Toggle } from "./fields";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
 type NumberKey = Exclude<keyof PullFeedSettings, "home.pullFeed.enabled" | "home.pullFeed.minRarity">;
 
@@ -30,9 +29,9 @@ export function PullFeedSettingsForm({ initial }: { initial: PullFeedSettings })
   const rarities = useRarities();
   // Seules les raretés enregistrées comme gros tirages (NotablePull) peuvent s'afficher
   const pullRarities = notablePullRarities(rarities);
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const valid = pullFeedSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(PULL_FEED_SETTING_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(PULL_FEED_SETTING_KEYS, base, draft) : [];
   const label = (k: keyof PullFeedSettings) => t(`keys.${short(k)}`);
 
   const num = (key: NumberKey) => (
@@ -69,7 +68,7 @@ export function PullFeedSettingsForm({ initial }: { initial: PullFeedSettings })
         {num("home.pullFeed.refreshSeconds")}
         {num("home.pullFeed.cacheSeconds")}
       </fieldset>
-      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} save={() => updatePullFeedSettings(draft)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} base={base} draft={draft} saved={saved} save={updatePullFeedSettings} />
     </form>
   );
 }

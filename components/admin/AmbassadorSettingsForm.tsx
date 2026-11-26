@@ -1,19 +1,18 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { AMBASSADOR_SETTING_KEYS, ambassadorSettingsSchema, type AmbassadorSettingKey, type AmbassadorSettings } from "@/lib/settings/ambassador-form";
 import { updateAmbassadorSettings } from "@/server/actions/admin-settings";
 import { NumberField, SelectField } from "./fields";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
 /** Rôle Ambassadeur : stock de boosters gratuits et pack hebdomadaire (type et nombre). */
 export function AmbassadorSettingsForm({ initial, boosterTypes }: { initial: AmbassadorSettings; boosterTypes: { slug: string; name: string }[] }) {
   const t = useTranslations("admin.boosters.ambassador");
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const valid = ambassadorSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(AMBASSADOR_SETTING_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(AMBASSADOR_SETTING_KEYS, base, draft) : [];
   const label = (k: AmbassadorSettingKey) => t(`fields.${k.slice("ambassador.".length) as "maxStock" | "weeklyBoosters" | "weeklyBoosterSlug"}`);
 
   return (
@@ -43,7 +42,7 @@ export function AmbassadorSettingsForm({ initial, boosterTypes }: { initial: Amb
           onChange={(v) => setDraft((d) => ({ ...d, "ambassador.weeklyBoosterSlug": v }))}
         />
       </div>
-      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} save={() => updateAmbassadorSettings(draft)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} base={base} draft={draft} saved={saved} save={updateAmbassadorSettings} />
     </form>
   );
 }

@@ -1,12 +1,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { PROFILE_SETTING_KEYS, profileSettingsSchema, type ProfileSettings } from "@/lib/settings/profile-form";
 import { updateProfileSettings } from "@/server/actions/admin-settings";
 import { Field, inputClass, NumberField } from "./fields";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
 const LABEL_KEY = {
   "profile.pioneerUntil": "pioneerUntil",
@@ -17,9 +16,9 @@ const LABEL_KEY = {
 /** Badges dérivés : date limite du badge Pionnier, filleuls requis pour Parrain et Recruteur. */
 export function ProfileSettingsForm({ initial }: { initial: ProfileSettings }) {
   const t = useTranslations("admin.cosmetics");
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const valid = profileSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(PROFILE_SETTING_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(PROFILE_SETTING_KEYS, base, draft) : [];
   const label = (k: keyof ProfileSettings) => t(`settings.${LABEL_KEY[k]}`);
 
   return (
@@ -52,7 +51,7 @@ export function ProfileSettingsForm({ initial }: { initial: ProfileSettings }) {
         max={1_000}
         onChange={(v) => setDraft((d) => ({ ...d, "profile.recruiterReferrals": v }))}
       />
-      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} save={() => updateProfileSettings(draft)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} base={base} draft={draft} saved={saved} save={updateProfileSettings} />
     </form>
   );
 }

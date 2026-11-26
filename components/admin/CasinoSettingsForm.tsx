@@ -1,14 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { useRarities, useRaritySeals } from "@/lib/catalog/use-rarities";
 import { CASINO_FORM_KEYS, casinoSettingsSchema, type CasinoSettings } from "@/lib/settings/casino-form";
 import { changedSettingKeys, numberBounds } from "@/lib/settings/form";
 import { updateCasinoSettings } from "@/server/actions/admin-settings";
 import { Button } from "../ui/Button";
 import { Field, inputClass, NumberField, SelectField, Toggle } from "./fields";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
 /** Date ISO → valeur d'un champ datetime-local (heure locale du navigateur de l'admin). */
 function toLocalInput(iso: string | null): string {
@@ -35,9 +34,9 @@ export function CasinoSettingsForm({ initial }: { initial: CasinoSettings }) {
   const tRarity = useTranslations("rarity");
   const rarities = useRarities();
   const seals = useRaritySeals();
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const valid = casinoSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(CASINO_FORM_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(CASINO_FORM_KEYS, base, draft) : [];
   const label = (k: keyof CasinoSettings) => t(`keys.${short(k)}`);
   const set = <K extends keyof CasinoSettings>(key: K, value: CasinoSettings[K]) => setDraft((d) => ({ ...d, [key]: value }));
 
@@ -138,7 +137,7 @@ export function CasinoSettingsForm({ initial }: { initial: CasinoSettings }) {
         )}
       </fieldset>
 
-      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} save={() => updateCasinoSettings(draft)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} base={base} draft={draft} saved={saved} save={updateCasinoSettings} />
     </form>
   );
 }

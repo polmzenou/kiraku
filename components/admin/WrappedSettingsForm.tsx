@@ -1,12 +1,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { WRAPPED_SETTING_KEYS, wrappedSettingsSchema, type WrappedSettings } from "@/lib/settings/wrapped-form";
 import { updateWrappedSettings } from "@/server/actions/admin-settings";
 import { Field, inputClass, NumberField, Toggle } from "./fields";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
 /** Date ISO → valeur d'un champ datetime-local (heure locale du navigateur de l'admin). */
 function toLocalInput(iso: string): string {
@@ -21,9 +20,9 @@ const short = (key: keyof WrappedSettings) => key.slice("wrapped.".length) as "e
 /** Wrapped de l'année : interrupteur, année racontée et période d'ouverture. */
 export function WrappedSettingsForm({ initial }: { initial: WrappedSettings }) {
   const t = useTranslations("admin.wrapped");
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const valid = wrappedSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(WRAPPED_SETTING_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(WRAPPED_SETTING_KEYS, base, draft) : [];
   const label = (k: keyof WrappedSettings) => t(`keys.${short(k)}`);
 
   const date = (key: DateKey) => (
@@ -61,7 +60,7 @@ export function WrappedSettingsForm({ initial }: { initial: WrappedSettings }) {
         {date("wrapped.closesAt")}
         {!valid && <p role="alert" className="text-sm font-bold text-shu">{t("invalid")}</p>}
       </fieldset>
-      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} save={() => updateWrappedSettings(draft)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} base={base} draft={draft} saved={saved} save={updateWrappedSettings} />
     </form>
   );
 }

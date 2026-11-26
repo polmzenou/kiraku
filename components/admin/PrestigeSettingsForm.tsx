@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { useRarities } from "@/lib/catalog/use-rarities";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { PRESTIGE_SETTING_KEYS, prestigeSettingsSchema, type PrestigeSettings } from "@/lib/settings/prestige-form";
@@ -9,7 +8,7 @@ import { updatePrestigeSettings } from "@/server/actions/admin-settings";
 import { Button } from "../ui/Button";
 import { inputClass } from "../ui/Field";
 import { NumberField, OptionalNumberField, SelectField, Toggle } from "./fields";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
 type NumberKey =
   | "prestige.keepSlots"
@@ -55,9 +54,9 @@ export function PrestigeSettingsForm({ initial, boosterTypes }: { initial: Prest
   const t = useTranslations("admin.prestige");
   const tRarity = useTranslations("rarity");
   const rarities = useRarities();
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const valid = prestigeSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(PRESTIGE_SETTING_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(PRESTIGE_SETTING_KEYS, base, draft) : [];
   const name = (k: keyof PrestigeSettings) => t(`keys.${short(k)}`);
 
   const num = (key: NumberKey) => (
@@ -216,7 +215,7 @@ export function PrestigeSettingsForm({ initial, boosterTypes }: { initial: Prest
       </fieldset>
       {byRarity("prestige.printing.chanceBp")}
       {byRarity("prestige.printing.sizes")}
-      <SettingsSaveBar valid={valid} changedLabels={changed.map(name)} save={() => updatePrestigeSettings(draft)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map(name)} base={base} draft={draft} saved={saved} save={updatePrestigeSettings} />
     </form>
   );
 }

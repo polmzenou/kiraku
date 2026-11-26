@@ -1,14 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { DETECTION_SCORING_FIELDS, detectionScoringSchema, type DetectionScoring } from "@/lib/anticheat/scoring";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { GENERAL_SETTING_KEYS, generalSettingsSchema, type GeneralSettings } from "@/lib/settings/general-form";
 import type { z } from "@/lib/zod";
 import { updateGeneralSettings } from "@/server/actions/admin-settings";
 import { Field, inputClass, NumberField, Toggle } from "./fields";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
 type NumberKey = Exclude<keyof GeneralSettings, "game.timeZone" | "multiAccount.followDevice" | "multiAccount.followDeviceIpv4" | "multiAccount.scoring">;
 type BooleanKey = "multiAccount.followDevice" | "multiAccount.followDeviceIpv4";
@@ -40,9 +39,9 @@ const LIMITS: Record<NumberKey, [number, number]> = {
 /** Réglages généraux : Zeni de départ, fuseau du jeu, invités, droits du joueur sur ses données, multi-comptes. */
 export function GeneralSettingsForm({ initial }: { initial: GeneralSettings }) {
   const t = useTranslations("admin.general");
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const valid = generalSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(GENERAL_SETTING_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(GENERAL_SETTING_KEYS, base, draft) : [];
   const label = (k: keyof GeneralSettings) => t(`keys.${k}`);
 
   const num = (key: NumberKey) => (
@@ -127,7 +126,7 @@ export function GeneralSettingsForm({ initial }: { initial: GeneralSettings }) {
         {num("multiAccount.autoBanPerDevice")}
         {num("multiAccount.ipv4BanDays")}
       </fieldset>
-      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} save={() => updateGeneralSettings(draft)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} base={base} draft={draft} saved={saved} save={updateGeneralSettings} />
     </form>
   );
 }

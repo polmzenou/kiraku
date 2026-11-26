@@ -9,6 +9,7 @@ import { MARKET_SETTING_KEYS, marketSettingsSchema, parseDurations, type MarketS
 import { updateMarketSettings } from "@/server/actions/admin-settings";
 import { Button } from "../ui/Button";
 import { Field, FormMessage, inputClass, NumberField, Toggle } from "./fields";
+import { useSettingsDraft } from "./SettingsSaveBar";
 
 type NumKey = Exclude<
   keyof MarketSettings,
@@ -57,8 +58,9 @@ export function MarketSettingsForm({ initial }: { initial: MarketSettings }) {
   const tRarity = useTranslations("rarity");
   const rarities = useRarities();
   const seals = useRaritySeals();
+  const tForm = useTranslations("admin.settingsForm");
   const router = useRouter();
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const [durations, setDurations] = useState(initial["market.durationsHours"].join(", "));
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
@@ -66,7 +68,7 @@ export function MarketSettingsForm({ initial }: { initial: MarketSettings }) {
   const parsedDurations = parseDurations(durations);
   const next = parsedDurations ? { ...draft, "market.durationsHours": parsedDurations } : null;
   const valid = next !== null && marketSettingsSchema.safeParse(next).success;
-  const changed = valid ? changedSettingKeys(MARKET_SETTING_KEYS, initial, next) : [];
+  const changed = valid ? changedSettingKeys(MARKET_SETTING_KEYS, base, next) : [];
   const update = <K extends keyof MarketSettings>(key: K, value: MarketSettings[K]) => {
     setDraft({ ...draft, [key]: value });
     setMessage(null);
@@ -86,12 +88,15 @@ export function MarketSettingsForm({ initial }: { initial: MarketSettings }) {
     startTransition(async () => {
       if (!next) return;
       try {
-        const res = await updateMarketSettings(next);
+        // Base et brouillon : le serveur n'écrit que les clés modifiées (STALE si l'une a changé en base depuis)
+        const sent = { base, draft: next };
+        const res = await updateMarketSettings(sent);
         if (res.ok) {
           setMessage({ tone: "ok", text: t("saved", { count: res.changed.length }) });
+          saved(sent);
           router.refresh();
         } else {
-          setMessage({ tone: "error", text: t(`errors.${res.error}`) });
+          setMessage({ tone: "error", text: res.error === "STALE" ? tForm("errors.STALE") : t(`errors.${res.error}`) });
         }
       } catch {
         setMessage({ tone: "error", text: t("errors.unexpected") });
@@ -126,6 +131,9 @@ export function MarketSettingsForm({ initial }: { initial: MarketSettings }) {
               aria-invalid={parsedDurations === null || undefined}
               onChange={(e) => {
                 setDurations(e.target.value);
+                // Durées lisibles reportées dans le brouillon : leur base suit la règle commune (useSettingsDraft)
+                const parsed = parseDurations(e.target.value);
+                if (parsed) setDraft((d) => ({ ...d, "market.durationsHours": parsed }));
                 setMessage(null);
               }}
               className={inputClass}

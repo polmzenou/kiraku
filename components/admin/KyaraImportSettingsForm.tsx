@@ -1,14 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { KYARA_BASE_RARITY, KYARA_CODES } from "@/lib/kyara/codes";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { KYARA_FORM_KEYS, kyaraSettingsSchema, type KyaraSettings } from "@/lib/settings/kyara-form";
 import { updateKyaraImportSettings } from "@/server/actions/admin-settings";
 import { Button } from "../ui/Button";
 import { Field, inputClass, NumberField, toLocalInput, Toggle } from "./fields";
-import { SettingsSaveBar } from "./SettingsSaveBar";
+import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
 type NumberKey =
   | "kyaraImport.windowDays"
@@ -40,9 +39,9 @@ const short = <K extends keyof KyaraSettings>(key: K) => key.replace(/^kyaraImpo
 export function KyaraImportSettingsForm({ initial }: { initial: KyaraSettings }) {
   const t = useTranslations("admin.kyara.settings");
   const tRarity = useTranslations("rarity");
-  const [draft, setDraft] = useState(initial);
+  const { draft, base, setDraft, saved } = useSettingsDraft(initial);
   const valid = kyaraSettingsSchema.safeParse(draft).success;
-  const changed = valid ? changedSettingKeys(KYARA_FORM_KEYS, initial, draft) : [];
+  const changed = valid ? changedSettingKeys(KYARA_FORM_KEYS, base, draft) : [];
   const label = (k: keyof KyaraSettings) => t(`keys.${short(k)}`);
   const set = <K extends keyof KyaraSettings>(key: K, value: KyaraSettings[K]) => setDraft((d) => ({ ...d, [key]: value }));
   const num = (key: NumberKey) => (
@@ -137,7 +136,7 @@ export function KyaraImportSettingsForm({ initial }: { initial: KyaraSettings })
           {t("invalid")}
         </p>
       )}
-      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} save={() => updateKyaraImportSettings(draft)} />
+      <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} base={base} draft={draft} saved={saved} save={updateKyaraImportSettings} />
     </form>
   );
 }
