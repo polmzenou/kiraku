@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { kyaraProfileInputSchema, kyaraProfileUrl, parseKyaraProfileUrl } from "./profile-url";
+import { kyaraProfileUrl, parseKyaraProfileUrl } from "./profile-url";
 
 const ID = "2af84af1-f619-45a3-bc8b-7072d0a8fd10";
 
@@ -31,10 +31,5 @@ describe("adresse d'un profil Kyara", () => {
     ]) {
       expect(parseKyaraProfileUrl(bad), bad).toBeNull();
     }
-  });
-
-  it("le champ du formulaire renvoie l'uuid ou une erreur", () => {
-    expect(kyaraProfileInputSchema.parse(`https://kyara.games/profil/${ID}`)).toBe(ID);
-    expect(kyaraProfileInputSchema.safeParse("https://kyara.games/").success).toBe(false);
   });
 });

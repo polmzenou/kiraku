@@ -47,7 +47,8 @@ function sandbox(opts: { origin?: string; path?: string; token?: string | null; 
     prompt: () => null,
     console: { log: () => {} },
     document: { title: "" },
-    setTimeout: (fn: () => void) => setTimeout(fn, 0),
+    // Pause entre deux pages sans attente réelle (300 pages au plafond)
+    setTimeout: (fn: () => void) => queueMicrotask(fn),
     TextEncoder,
     Response,
     Blob,
@@ -72,6 +73,8 @@ describe("favori de l'équipe", () => {
     expect(decoded.ok).toBe(true);
     if (!decoded.ok) return;
     expect(decoded.payload).toMatchObject({ build: BOOKMARKLET_BUILD, kyaraUserId: ID, key: KEY, pseudo: "Joueur", avatarUrl: AVATAR, total: 3, copies: 4 });
+    // Dernière page atteinte, rien d'écarté, chaque personnage avec son characterId : versable d'office
+    expect(decoded.payload).toMatchObject({ complete: true, dropped: 0, idFallbacks: 0 });
     expect(decoded.payload.entries).toEqual([
       { anilistId: 5, qty: 1, code: "C" },
       { anilistId: 40, qty: 2, code: "M" },
@@ -100,6 +103,47 @@ describe("favori de l'équipe", () => {
     const decoded = decodeKyaraFragment(s.assigned[0].split("#")[1], inflate);
     expect(decoded.ok && decoded.payload.entries).toEqual([{ anilistId: 40, qty: 1, code: "M" }]);
   });
+
+  it("compte les éléments écartés et les personnages sans characterId (id de repli)", async () => {
+    const s = sandbox({
+      routes: {
+        [`/api/users/${ID}`]: { body: { pseudo: "Joueur", avatar: AVATAR } },
+        [`/api/me/friends/${ID}/collection?page=1`]: {
+          body: {
+            items: [
+              { characterId: 40, qty: 1, rarity: "M" },
+              // Sans characterId : id gardé, mais compté
+              { id: 41, qty: 1, rarity: "L" },
+              // Rareté inconnue, quantité illisible, id absent : écartés
+              { characterId: 42, qty: 1, rarity: "S" },
+              { characterId: 43, qty: "deux", rarity: "C" },
+              { qty: 1, rarity: "C" },
+            ],
+            total: 5,
+            more: false,
+          },
+        },
+      },
+    });
+    await s.run();
+    expect(s.alerts).toEqual([]);
+    const decoded = decodeKyaraFragment(s.assigned[0].split("#")[1], inflate);
+    expect(decoded.ok && decoded.payload).toMatchObject({ complete: true, dropped: 3, idFallbacks: 1 });
+    expect(decoded.ok && decoded.payload.entries.map((e) => e.anilistId)).toEqual([40, 41]);
+  });
+
+  it("arrêtée au plafond de pages : lecture marquée incomplète", async () => {
+    const routes: Record<string, Reply> = { [`/api/users/${ID}`]: { body: { pseudo: "Joueur", avatar: AVATAR } } };
+    for (let page = 1; page <= 301; page++) {
+      routes[`/api/me/friends/${ID}/collection?page=${page}`] = { body: { items: [{ characterId: page, qty: 1, rarity: "C" }], more: true } };
+    }
+    const s = sandbox({ routes });
+    await s.run();
+    expect(s.calls.filter((c) => c.includes("/collection?page="))).toHaveLength(300);
+    const decoded = decodeKyaraFragment(s.assigned[0].split("#")[1], inflate);
+    expect(decoded.ok && decoded.payload).toMatchObject({ complete: false, dropped: 0, idFallbacks: 0, total: null });
+    expect(decoded.ok && decoded.payload.entries).toHaveLength(300);
+  }, 20_000);
 
   it("ne lit rien hors d'un profil kyara.games, ni sans session Kyara", async () => {
     for (const opts of [{ origin: "https://evil.example" }, { path: "/collection" }, { path: `/profil/${ID}/cartes` }]) {

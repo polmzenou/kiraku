@@ -91,3 +91,14 @@ export function planKyaraImport(input: KyaraPlanInput): KyaraPlan {
   const zeni = Math.min(zeniRaw, Math.max(0, input.zeniCap));
   return { outcomes, grant, zeniRaw, zeni, capped: zeni < zeniRaw, extraCopies, byKind };
 }
+
+/** Plafonds du versement automatique (kyaraImport.autoMaxCards, kyaraImport.autoMaxZeni) ; 0 = sans plafond. */
+export type KyaraAutoCaps = { maxCards: number; maxZeni: number };
+
+/**
+ * Gros lot : plus de cartes ou de Zeni que les plafonds du versement automatique. Il n'est pas versé d'office et
+ * seul un autre membre de l'équipe que celui qui l'a reçu peut le verser (contrôle à deux).
+ */
+export function exceedsAutoCaps(plan: Pick<KyaraPlan, "grant" | "zeni">, caps: KyaraAutoCaps): boolean {
+  return (caps.maxCards > 0 && plan.grant.length > caps.maxCards) || (caps.maxZeni > 0 && plan.zeni > caps.maxZeni);
+}

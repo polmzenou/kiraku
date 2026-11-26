@@ -2,15 +2,16 @@
 // jamais Kyara : la collection arrive par le favori de l'équipe (lib/kyara/payload.ts) et tout est revérifié ici.
 // Le joueur demande l'import sans rien coller ; l'équipe lit le profil de l'ami sur Kyara avec son favori, la demande
 // est retrouvée par l'ID Discord de l'avatar Kyara et versée tout de suite. Une lecture douteuse (avatar sans ID
-// Discord, lecture incomplète ou vide) attend l'équipe en READY, avec son motif (reviewReason).
+// Discord, lecture incomplète ou vide, lot au-dessus des plafonds du versement automatique) attend l'équipe en READY,
+// avec son motif (reviewReason).
 // Ordre des verrous partout : le joueur (lockPlayers), puis la demande (FOR UPDATE) — comme l'anonymisation.
 import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { isFrozen } from "@/lib/account/deletion";
 import { discordIdFromAvatarUrl } from "@/lib/discord/avatar";
 import type { KyaraRejectCode, KyaraReviewReason } from "@/lib/kyara/codes";
-import { parseSnapshot, snapshotOf, type KyaraPayload } from "@/lib/kyara/payload";
-import { planKyaraImport, type KyaraEntry, type KyaraPlan, type KyaraPlanInput } from "@/lib/kyara/plan";
+import { parseSnapshot, reviewReasonOf, snapshotOf, type KyaraPayload } from "@/lib/kyara/payload";
+import { exceedsAutoCaps, planKyaraImport, type KyaraAutoCaps, type KyaraEntry, type KyaraPlan, type KyaraPlanInput } from "@/lib/kyara/plan";
 import type { KyaraRules } from "@/lib/kyara/rules";
 import { importSummary } from "@/lib/kyara/summary";
 import { kyaraEligibility, type KyaraIneligibility } from "@/lib/kyara/window";
@@ -37,6 +38,10 @@ export type KyaraErrorCode =
   | "NO_REQUEST"
   | "SELF"
   | "KEY_INVALID"
+  | "KEY_EXPIRED"
+  | "SECOND_STAFF_REQUIRED"
+  | "EMPTY_SNAPSHOT"
+  | "REMIND_TOO_SOON"
   | "DISCORD_MISMATCH"
   | "DISCORD_UNVERIFIED"
   | "KYARA_TAKEN"
@@ -60,7 +65,26 @@ const APPLY_TX = { maxWait: 10_000, timeout: 60_000 };
 const ACTIVE = ["PENDING", "READY", "DONE"] as const;
 /** Ce que la purge efface d'un import versé : la photo et ce qui vient de Kyara ; restent les ids et les totaux. */
 const PURGED = { snapshot: Prisma.DbNull, kyaraUsername: null, kyaraAvatarUrl: null, kyaraDiscordId: null };
+/** Ce qu'une lecture a écrit, effacé quand la demande repart en attente (relecture, réouverture d'un refus). */
+const UNREAD = {
+  kyaraUserId: null,
+  reviewReason: null,
+  snapshot: Prisma.DbNull,
+  snapshotCards: null,
+  snapshotCopies: null,
+  snapshotTotal: null,
+  bookmarkletBuild: null,
+  kyaraUsername: null,
+  kyaraAvatarUrl: null,
+  kyaraDiscordId: null,
+  discordVerified: null,
+  readAt: null,
+  receivedAt: null,
+  receivedById: null,
+};
 const CREATE_BATCH = 1_000;
+const DAY_MS = 86_400_000;
+const HOUR_MS = 3_600_000;
 
 const isUniqueViolation = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 
@@ -70,17 +94,8 @@ type LockedImport = {
   status: string;
   discordId: string;
   snapshot: unknown;
+  receivedById: string | null;
 };
-
-/** Lecture douteuse, ou null : sans ID Discord dans l'avatar, rien de lu, moins de personnages lus qu'annoncés. */
-export function reviewReasonOf(payload: Pick<KyaraPayload, "avatarUrl" | "total" | "entries">): KyaraReviewReason | null {
-  if (discordIdFromAvatarUrl(payload.avatarUrl) === null) return "DISCORD_UNVERIFIED";
-  if (payload.entries.length === 0) return "EMPTY";
-  // Sans total annoncé, rien ne prouve que la lecture est complète : l'équipe vérifie avant un versement définitif
-  if (payload.total === null) return "TOTAL_UNKNOWN";
-  if (payload.total > payload.entries.length) return "TRUNCATED";
-  return null;
-}
 
 /** Verrouille le joueur de la demande, puis la demande, et la relit après les deux verrous. */
 async function lockRequest(tx: Tx, importId: string): Promise<LockedImport> {
@@ -88,7 +103,7 @@ async function lockRequest(tx: Tx, importId: string): Promise<LockedImport> {
   if (!peek) throw new KyaraImportError("NOT_FOUND");
   if (peek.userId) await lockPlayers(tx, [peek.userId]);
   const [row] = await tx.$queryRaw<LockedImport[]>`
-    SELECT id, "userId", status::text AS status, "discordId", snapshot
+    SELECT id, "userId", status::text AS status, "discordId", snapshot, "receivedById"
     FROM "KyaraImport" WHERE id = ${importId} FOR UPDATE`;
   if (!row) throw new KyaraImportError("NOT_FOUND");
   return row;
@@ -223,9 +238,10 @@ async function targetOf(tx: Tx, kyaraDiscordId: string | null, input: { importId
 }
 
 /**
- * Collection lue sur Kyara par l'équipe. La clé doit être celle du favori de ce membre ; la demande est celle du
- * compte Discord de l'avatar Kyara (sans ID Discord dans l'avatar : celle que l'équipe choisit et confirme).
- * Lecture sûre : versée tout de suite, dans la même transaction. Lecture douteuse : la demande attend l'équipe (READY).
+ * Collection lue sur Kyara par l'équipe. La clé doit être celle du favori de ce membre (et pas plus vieille que
+ * `staffKeyDays` jours, 0 = sans fin) ; la demande est celle du compte Discord de l'avatar Kyara (sans ID Discord dans
+ * l'avatar : celle que l'équipe choisit et confirme). Lecture sûre et sous les plafonds `autoCaps` : versée tout de
+ * suite, dans la même transaction. Lecture douteuse ou gros lot : la demande attend l'équipe (READY).
  */
 export async function receivePayloadWith(
   db: PrismaClient,
@@ -235,16 +251,22 @@ export async function receivePayloadWith(
     importId: string | null;
     confirmWithoutDiscord: boolean;
     staffKyaraUserId: string | null;
+    autoCaps: KyaraAutoCaps;
+    staffKeyDays: number;
     now: Date;
   },
   onNotified?: OnNotified,
 ): Promise<KyaraReceiveResult> {
   const p = input.payload;
-  const stored = await db.kyaraStaffKey.findUnique({ where: { userId: input.staffId }, select: { keyHash: true } });
+  const stored = await db.kyaraStaffKey.findUnique({ where: { userId: input.staffId }, select: { keyHash: true, createdAt: true } });
   if (!stored || !staffKeyMatches(stored.keyHash, p.key)) throw new KyaraImportError("KEY_INVALID");
+  // Une clé qui a fui (historique, console) ne sert pas indéfiniment : « Générer un nouveau favori »
+  if (input.staffKeyDays > 0 && input.now.getTime() >= stored.createdAt.getTime() + input.staffKeyDays * DAY_MS) {
+    throw new KyaraImportError("KEY_EXPIRED");
+  }
   if (p.kyaraUserId === input.staffKyaraUserId) throw new KyaraImportError("OWN_STAFF_PROFILE");
   const kyaraDiscordId = discordIdFromAvatarUrl(p.avatarUrl);
-  const reason = reviewReasonOf(p);
+  const doubt = reviewReasonOf(p);
   try {
     return await notifyingTransaction(
       db,
@@ -257,38 +279,60 @@ export async function receivePayloadWith(
         if (row.userId === input.staffId) throw new KyaraImportError("SELF");
         const userId = row.userId;
 
-        await tx.kyaraImport.update({
-          where: { id: row.id },
-          data: {
-            status: "READY",
-            kyaraUserId: p.kyaraUserId,
-            reviewReason: reason,
-            snapshot: snapshotOf(p.entries),
-            snapshotCards: p.entries.length,
-            snapshotCopies: p.copies,
-            snapshotTotal: p.total,
-            bookmarkletBuild: p.build,
-            kyaraUsername: p.pseudo,
-            kyaraAvatarUrl: p.avatarUrl,
-            kyaraDiscordId,
-            discordVerified: kyaraDiscordId !== null,
-            // Heure du navigateur de l'équipe : jamais dans le futur
-            readAt: p.readAt.getTime() > input.now.getTime() ? input.now : p.readAt,
-            receivedAt: input.now,
-            receivedById: input.staffId,
-          },
-        });
-        await writeAdminLog(tx, {
-          adminId: input.staffId,
-          action: "KYARA_IMPORT_RECEIVE",
-          targetType: "KyaraImport",
-          targetId: row.id,
-          after: { cards: p.entries.length, copies: p.copies, total: p.total, build: p.build, discordVerified: kyaraDiscordId !== null, reviewReason: reason },
-        });
-        if (reason !== null) return { status: "READY", importId: row.id, userId, reason };
+        /** La demande passe « lue » (READY), avec le motif qui la fait attendre l'équipe ou null. */
+        const markRead = async (reason: KyaraReviewReason | null) => {
+          await tx.kyaraImport.update({
+            where: { id: row.id },
+            data: {
+              status: "READY",
+              kyaraUserId: p.kyaraUserId,
+              reviewReason: reason,
+              snapshot: snapshotOf(p.entries),
+              snapshotCards: p.entries.length,
+              snapshotCopies: p.copies,
+              snapshotTotal: p.total,
+              bookmarkletBuild: p.build,
+              kyaraUsername: p.pseudo,
+              // L'adresse de l'avatar ne sert qu'à lire l'ID Discord : elle n'est pas gardée
+              kyaraDiscordId,
+              discordVerified: kyaraDiscordId !== null,
+              // Heure du navigateur de l'équipe : jamais dans le futur
+              readAt: p.readAt.getTime() > input.now.getTime() ? input.now : p.readAt,
+              receivedAt: input.now,
+              receivedById: input.staffId,
+            },
+          });
+          await writeAdminLog(tx, {
+            adminId: input.staffId,
+            action: "KYARA_IMPORT_RECEIVE",
+            targetType: "KyaraImport",
+            targetId: row.id,
+            after: {
+              cards: p.entries.length,
+              copies: p.copies,
+              total: p.total,
+              build: p.build,
+              complete: p.complete,
+              dropped: p.dropped,
+              idFallbacks: p.idFallbacks,
+              discordVerified: kyaraDiscordId !== null,
+              reviewReason: reason,
+            },
+          });
+        };
 
-        await assertPlayerAvailable(tx, userId);
+        if (doubt !== null) {
+          await markRead(doubt);
+          return { status: "READY", importId: row.id, userId, reason: doubt };
+        }
         const planInput = await loadPlanInput(tx, userId, p.entries);
+        // Gros lot : jamais versé d'office, même lu sans défaut (lot forgé, session volée)
+        if (exceedsAutoCaps(planKyaraImport(planInput), input.autoCaps)) {
+          await markRead("LARGE");
+          return { status: "READY", importId: row.id, userId, reason: "LARGE" };
+        }
+        await markRead(null);
+        await assertPlayerAvailable(tx, userId);
         const granted = await grantPlan(tx, { importId: row.id, userId, planInput, staffId: input.staffId, auto: true, now: input.now });
         return { status: "DONE", importId: row.id, userId, ...granted };
       },
@@ -366,7 +410,10 @@ async function grantPlan(
   return { cards: cardIds.length, zeni: plan.zeni };
 }
 
-/** Aperçu d'une demande lue (READY), recalculé à chaque affichage ; null si elle n'est pas (ou plus) lisible. */
+/**
+ * Aperçu d'une demande lue (READY), recalculé à chaque affichage ; null si elle n'est pas (ou plus) lisible. La photo
+ * n'est lue qu'ici : la fiche de l'équipe ne la sélectionne pas.
+ */
 export async function previewImportWith(db: PrismaClient, importId: string): Promise<{ userId: string; plan: KyaraPlan } | null> {
   const row = await db.kyaraImport.findUnique({ where: { id: importId }, select: { userId: true, status: true, snapshot: true } });
   if (!row || row.status !== "READY" || !row.userId) return null;
@@ -377,11 +424,12 @@ export async function previewImportWith(db: PrismaClient, importId: string): Pro
 
 /**
  * Versement d'une lecture laissée à l'équipe, après son aperçu : recalculé sous verrou, refusé (STALE) s'il diffère
- * de l'aperçu validé.
+ * de l'aperçu validé. Jamais une lecture vide (le versement fermerait l'import pour toujours), et un gros lot
+ * (au-dessus de `autoCaps`) ne se verse pas par le membre qui l'a reçu : un second membre le contrôle.
  */
 export async function applyImportWith(
   db: PrismaClient,
-  input: { staffId: string; importId: string; expectedCards: number; expectedZeni: number; now: Date },
+  input: { staffId: string; importId: string; expectedCards: number; expectedZeni: number; autoCaps: KyaraAutoCaps; now: Date },
   onNotified?: OnNotified,
 ): Promise<{ cards: number; zeni: number }> {
   return notifyingTransaction(
@@ -395,9 +443,12 @@ export async function applyImportWith(
       await assertPlayerAvailable(tx, row.userId);
       const entries = parseSnapshot(row.snapshot);
       if (!entries) throw new KyaraImportError("SNAPSHOT_INVALID");
+      // Rien de lu : à relire ou à refuser
+      if (entries.length === 0) throw new KyaraImportError("EMPTY_SNAPSHOT");
 
       const planInput = await loadPlanInput(tx, row.userId, entries);
       const plan = planKyaraImport(planInput);
+      if (row.receivedById === input.staffId && exceedsAutoCaps(plan, input.autoCaps)) throw new KyaraImportError("SECOND_STAFF_REQUIRED");
       if (plan.grant.length !== input.expectedCards || plan.zeni !== input.expectedZeni) throw new KyaraImportError("STALE");
       return grantPlan(tx, { importId: row.id, userId: row.userId, planInput, staffId: input.staffId, auto: false, now: input.now });
     },
@@ -452,14 +503,14 @@ export async function rejectImportWith(
   );
 }
 
-/** Refus annulé (erreur de l'équipe, ami ajouté entre-temps) : la demande repart en attente. */
 /**
  * Relance d'une demande en attente : le joueur reçoit une notification qui lui rappelle de montrer sa collection au
- * compte Kiraku sur Kyara. La demande ne change pas ; chaque relance est écrite dans le journal admin.
+ * compte Kiraku sur Kyara. La demande ne change pas ; chaque relance est écrite dans le journal admin, qui sert aussi
+ * de compteur (le joueur peut effacer ses notifications). Pas deux relances à moins de `cooldownHours` heures (0 = libre).
  */
 export async function remindImportWith(
   db: PrismaClient,
-  input: { staffId: string; importId: string; now: Date },
+  input: { staffId: string; importId: string; cooldownHours: number; now: Date },
   onNotified?: OnNotified,
 ): Promise<void> {
   await notifyingTransaction(
@@ -468,6 +519,15 @@ export async function remindImportWith(
       const row = await lockRequest(tx, input.importId);
       if (row.status !== "PENDING") throw new KyaraImportError("NOT_PENDING");
       if (!row.userId) throw new KyaraImportError("PLAYER_UNAVAILABLE");
+      if (input.cooldownHours > 0) {
+        // Sous le verrou de la demande : deux membres qui relancent en même temps n'envoient qu'une relance
+        const last = await tx.adminLog.findFirst({
+          where: { action: "KYARA_IMPORT_REMIND", targetType: "KyaraImport", targetId: row.id },
+          orderBy: { createdAt: "desc" },
+          select: { createdAt: true },
+        });
+        if (last && input.now.getTime() < last.createdAt.getTime() + input.cooldownHours * HOUR_MS) throw new KyaraImportError("REMIND_TOO_SOON");
+      }
       await notify(tx, { userId: row.userId, type: "KYARA_IMPORT_REMINDER", actorId: row.userId, refId: row.id, now: input.now });
       await writeAdminLog(tx, { adminId: input.staffId, action: "KYARA_IMPORT_REMIND", targetType: "KyaraImport", targetId: row.id });
     },
@@ -476,19 +536,38 @@ export async function remindImportWith(
   );
 }
 
-export async function reopenImportWith(db: PrismaClient, input: { staffId: string; importId: string; now: Date }): Promise<void> {
+/**
+ * Refus annulé (erreur de l'équipe, ami ajouté entre-temps) : la demande repart en attente, sans rien de l'ancienne
+ * lecture (elle sera relue), et le joueur est prévenu.
+ */
+export async function reopenImportWith(db: PrismaClient, input: { staffId: string; importId: string; now: Date }, onNotified?: OnNotified): Promise<void> {
   try {
-    await db.$transaction(async (tx) => {
-      const row = await lockRequest(tx, input.importId);
-      if (row.status !== "REJECTED") throw new KyaraImportError("NOT_REOPENABLE");
-      if (!row.userId) throw new KyaraImportError("PLAYER_UNAVAILABLE");
-      if (row.userId === input.staffId) throw new KyaraImportError("SELF");
-      await tx.kyaraImport.update({
-        where: { id: row.id },
-        data: { status: "PENDING", rejectCode: null, rejectNote: null, rejectedAt: null, rejectedById: null, closedAt: null, reopenCount: { increment: 1 } },
-      });
-      await writeAdminLog(tx, { adminId: input.staffId, action: "KYARA_IMPORT_REOPEN", targetType: "KyaraImport", targetId: row.id });
-    }, TX);
+    await notifyingTransaction(
+      db,
+      async (tx) => {
+        const row = await lockRequest(tx, input.importId);
+        if (row.status !== "REJECTED") throw new KyaraImportError("NOT_REOPENABLE");
+        if (!row.userId) throw new KyaraImportError("PLAYER_UNAVAILABLE");
+        if (row.userId === input.staffId) throw new KyaraImportError("SELF");
+        await tx.kyaraImport.update({
+          where: { id: row.id },
+          data: {
+            status: "PENDING",
+            ...UNREAD,
+            rejectCode: null,
+            rejectNote: null,
+            rejectedAt: null,
+            rejectedById: null,
+            closedAt: null,
+            reopenCount: { increment: 1 },
+          },
+        });
+        await notify(tx, { userId: row.userId, type: "KYARA_IMPORT_REOPENED", actorId: row.userId, refId: row.id, now: input.now });
+        await writeAdminLog(tx, { adminId: input.staffId, action: "KYARA_IMPORT_REOPEN", targetType: "KyaraImport", targetId: row.id });
+      },
+      TX,
+      onNotified,
+    );
   } catch (e) {
     if (isUniqueViolation(e)) throw new KyaraImportError("CONFLICT");
     throw e;
@@ -503,23 +582,7 @@ export async function rereadImportWith(db: PrismaClient, input: { staffId: strin
     if (row.userId === input.staffId) throw new KyaraImportError("SELF");
     await tx.kyaraImport.update({
       where: { id: row.id },
-      data: {
-        status: "PENDING",
-        kyaraUserId: null,
-        reviewReason: null,
-        snapshot: Prisma.DbNull,
-        snapshotCards: null,
-        snapshotCopies: null,
-        snapshotTotal: null,
-        bookmarkletBuild: null,
-        kyaraUsername: null,
-        kyaraAvatarUrl: null,
-        kyaraDiscordId: null,
-        discordVerified: null,
-        readAt: null,
-        receivedAt: null,
-        receivedById: null,
-      },
+      data: { status: "PENDING", ...UNREAD },
     });
     await writeAdminLog(tx, { adminId: input.staffId, action: "KYARA_IMPORT_REREAD", targetType: "KyaraImport", targetId: row.id });
   }, TX);

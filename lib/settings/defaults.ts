@@ -663,6 +663,13 @@ export const SETTING_SCHEMAS = {
   "kyaraImport.zeniByRarity": z.object({ C: kyaraZeni, U: kyaraZeni, R: kyaraZeni, E: kyaraZeni, L: kyaraZeni, M: kyaraZeni }).strict(),
   "kyaraImport.zeniCap": z.number().int().min(0).max(10_000_000),
   "kyaraImport.retentionDays": z.number().int().min(7).max(365),
+  // Plafonds du versement automatique (0 = sans plafond) : au-delà, la lecture attend l'équipe (motif LARGE) et seul
+  // un autre membre que celui qui l'a reçue peut la verser
+  "kyaraImport.autoMaxCards": z.number().int().min(0).max(100_000),
+  "kyaraImport.autoMaxZeni": z.number().int().min(0).max(10_000_000),
+  // Délai minimal entre deux relances d'une même demande (0 = aucun) ; durée de vie de la clé du favori (0 = sans fin)
+  "kyaraImport.reminderCooldownHours": z.number().int().min(0).max(720),
+  "kyaraImport.staffKeyDays": z.number().int().min(0).max(365),
   // Carrousel « En direct · Gros tirages » de l'accueil (étape 12c)
   "home.pullFeed.enabled": z.boolean(),
   "home.pullFeed.minRarity": rarityKeySchema,
@@ -1125,6 +1132,11 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "kyaraImport.zeniByRarity": { C: 1, U: 1, R: 3, E: 10, L: 40, M: 150 },
   "kyaraImport.zeniCap": 10_000, // 50 boosters : ne bride que les collections hors norme
   "kyaraImport.retentionDays": 90,
+  // Comportement d'avant les plafonds, à choisir par l'admin : sans plafond, relance libre, clé sans fin
+  "kyaraImport.autoMaxCards": 0,
+  "kyaraImport.autoMaxZeni": 0,
+  "kyaraImport.reminderCooldownHours": 0,
+  "kyaraImport.staffKeyDays": 0,
   "home.pullFeed.enabled": true,
   "home.pullFeed.minRarity": "LEGENDARY",
   "home.pullFeed.size": 20,

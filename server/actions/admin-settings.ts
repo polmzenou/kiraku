@@ -286,8 +286,7 @@ export async function updateCasinoSettings(input: unknown): Promise<UpdateSettin
   return saveSettings(CASINO_FORM_KEYS, casinoSettingsSchema, input);
 }
 
-/** Import Kyara (/admin/kyara) : réservé à l'admin, comme tous les réglages (l'équipe entière traite la file). */
-/** Import Kyara : toute l'équipe (ADMIN et DEV) le règle, comme elle traite la file (lib/admin/roles.ts). */
+/** Import Kyara (/admin/kyara) : toute l'équipe (ADMIN et DEV) le règle, comme elle traite la file (lib/admin/roles.ts). */
 async function kyaraStaff() {
   const staff = await getStaff();
   return staff && canProcessKyaraImports(staff.user.role) ? staff.user : null;

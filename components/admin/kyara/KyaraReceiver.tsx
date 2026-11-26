@@ -41,15 +41,23 @@ export function KyaraReceiver({ pending: requests }: { pending: PendingKyaraRequ
   const [picked, setPicked] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [pending, start] = useTransition();
+  // Dernier envoi : le lot reste en mémoire (il n'est plus dans l'adresse) pour « Réessayer » après une coupure
+  const [lastSent, setLastSent] = useState<{ value: string; importId: string | null } | null>(null);
   const lot = pastedLot ?? fromUrl;
 
   const send = (value: string, importId: string | null) =>
     start(async () => {
       setFailure(null);
       setResult(null);
-      const res = await receiveKyaraPayloadAction({ fragment: value, importId, confirmWithoutDiscord: importId !== null });
-      if (res.ok) setResult(res);
-      else setFailure(res);
+      setLastSent({ value, importId });
+      try {
+        const res = await receiveKyaraPayloadAction({ fragment: value, importId, confirmWithoutDiscord: importId !== null });
+        if (res.ok) setResult(res);
+        else setFailure(res);
+      } catch {
+        // Réseau coupé, action introuvable après une mise à jour : le lot n'est pas perdu
+        setFailure({ ok: false, error: "UNAVAILABLE" });
+      }
     });
   const sendFromUrl = useEffectEvent((value: string) => send(value, null));
 
@@ -83,6 +91,11 @@ export function KyaraReceiver({ pending: requests }: { pending: PendingKyaraRequ
         <div role="alert" className="flex flex-col gap-1">
           <p className="font-bold text-shu">{tError(failure.error)}</p>
           {failure.profile && <p className="text-sm text-text-muted">{t("readProfile", { pseudo: failure.profile.pseudo ?? "—" })}</p>}
+          {(failure.error === "UNAVAILABLE" || failure.error === "RATE_LIMITED") && lastSent && (
+            <Button type="button" disabled={pending} onClick={() => send(lastSent.value, lastSent.importId)} className="w-fit">
+              {t("retry")}
+            </Button>
+          )}
         </div>
       )}
 

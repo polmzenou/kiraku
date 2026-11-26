@@ -35,9 +35,12 @@ export const EXPORT_FIELDS = {
   linkedAccounts: ["provider", "providerAccountId"],
   cards: ["id", "cardId", "cardName", "rarity", "status", "obtainedAt", "heritage", "keptByOwner", "printing", "serial"],
   discoveries: ["cardId", "cardName", "createdAt", "regainedAt", "imported"],
-  // Import Kyara : demandes, collection lue (gardée retentionDays jours après la clôture) et versement
+  // Import Kyara : demandes, collection lue (gardée retentionDays jours après la clôture) et versement ; les comptes
+  // Discord comparés (celui lié à Kiraku à la demande, celui lu dans l'avatar Kyara)
   kyaraImports: [
     "id",
+    "discordId",
+    "kyaraDiscordId",
     "kyaraUserId",
     "kyaraUsername",
     "status",

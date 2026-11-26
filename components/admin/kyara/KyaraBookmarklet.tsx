@@ -1,10 +1,11 @@
 "use client";
 
 import { useFormatter, useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { bookmarkletHref, bookmarkletSource, BOOKMARKLET_BUILD, type BookmarkletTexts } from "@/lib/kyara/bookmarklet";
 import { issueKyaraStaffKeyAction, type KyaraStaffError } from "@/server/actions/admin-kyara";
 import { Button } from "../../ui/Button";
+import { inputClass } from "../../ui/Field";
 
 /**
  * Favori « Envoyer à Kiraku » de ce membre de l'équipe : « Générer mon favori » crée sa clé (montrée une seule fois,
@@ -18,17 +19,26 @@ export function KyaraBookmarklet({ receiveUrl, texts, issuedAt }: { receiveUrl: 
   const [code, setCode] = useState<{ href: string; console: string } | null>(null);
   const [error, setError] = useState<KyaraStaffError | null>(null);
   const [copied, setCopied] = useState<"href" | "console" | "error" | null>(null);
+  // Copie refusée par le navigateur : le code s'affiche, à copier à la main
+  const [manual, setManual] = useState<"href" | "console" | null>(null);
   const [pending, start] = useTransition();
+  const manualId = useId();
 
   const generate = () => {
     if (issuedAt !== null && !window.confirm(t("regenerateConfirm"))) return;
     start(async () => {
       setError(null);
       setCopied(null);
-      const res = await issueKyaraStaffKeyAction();
-      if (!res.ok) return setError(res.error);
-      const source = (mode: "navigate" | "print") => bookmarkletSource({ receiveUrl, staffKey: res.key, texts, mode });
-      setCode({ href: bookmarkletHref(source("navigate")), console: source("print") });
+      setManual(null);
+      try {
+        const res = await issueKyaraStaffKeyAction();
+        if (!res.ok) return setError(res.error);
+        const source = (mode: "navigate" | "print") => bookmarkletSource({ receiveUrl, staffKey: res.key, texts, mode });
+        setCode({ href: bookmarkletHref(source("navigate")), console: source("print") });
+      } catch {
+        // La clé a pu changer côté serveur sans arriver ici : en générer une autre remplace l'ancien favori
+        setError("UNAVAILABLE");
+      }
     });
   };
   const copy = async (what: "href" | "console") => {
@@ -36,8 +46,10 @@ export function KyaraBookmarklet({ receiveUrl, texts, issuedAt }: { receiveUrl: 
     try {
       await navigator.clipboard.writeText(what === "href" ? code.href : code.console);
       setCopied(what);
+      setManual(null);
     } catch {
       setCopied("error");
+      setManual(what);
     }
   };
 
@@ -63,6 +75,21 @@ export function KyaraBookmarklet({ receiveUrl, texts, issuedAt }: { receiveUrl: 
               {t("copyConsole")}
             </Button>
           </div>
+          {manual && (
+            <div className="flex flex-col gap-1">
+              <label htmlFor={manualId} className="text-sm font-bold">
+                {t(manual === "href" ? "manualBookmarklet" : "manualConsole")}
+              </label>
+              <textarea
+                id={manualId}
+                readOnly
+                rows={4}
+                value={manual === "href" ? code.href : code.console}
+                onFocus={(e) => e.currentTarget.select()}
+                className={`${inputClass} py-2 text-xs break-all`}
+              />
+            </div>
+          )}
         </>
       ) : (
         <Button type="button" variant="primary" disabled={pending} onClick={generate} className="w-full sm:w-fit">

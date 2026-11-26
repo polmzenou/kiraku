@@ -1547,6 +1547,7 @@
         "title": "Settings",
         "launchSection": "Launch",
         "zeniSection": "Cards converted into Zeni",
+        "guardSection": "Team safeguards",
         "upkeepSection": "Retention",
         "launchNow": "Launch now",
         "clearDate": "Clear the date",
@@ -1559,7 +1560,11 @@
           "staffProfileUrl": "Kyara profile of the Kiraku account",
           "zeniByRarity": "Zeni per Kyara rarity",
           "zeniCap": "Zeni cap per import",
-          "retentionDays": "Read collections kept (days)"
+          "retentionDays": "Read collections kept (days)",
+          "autoMaxCards": "Card cap for automatic grants",
+          "autoMaxZeni": "Zeni cap for automatic grants",
+          "reminderCooldownHours": "Delay between two reminders (hours)",
+          "staffKeyDays": "Bookmarklet lifetime (days)"
         },
         "hints": {
           "launchAt": "Accounts registered before this date get their window from it, new ones from their registration.",
@@ -1567,7 +1572,11 @@
           "staffProfileUrl": "Address of the “My public profile” button of the account players add as a friend.",
           "zeniByRarity": "For a card missing from our catalog, not published, or rarer here than on Kyara. A card already owned is worth its recycling value.",
           "zeniCap": "Maximum Zeni for one import; 0 = no conversion.",
-          "retentionDays": "After a request closes: read collection, Kyara nickname and avatar erased. The locking ids remain."
+          "retentionDays": "After a request closes: read collection, Kyara nickname and avatar erased. The locking ids remain.",
+          "autoMaxCards": "Above this, the read collection waits in “To check” and only a team member other than the one who received it can grant it. 0 = no cap.",
+          "autoMaxZeni": "Same rule for the import's Zeni (after the per-import cap). 0 = no cap.",
+          "reminderCooldownHours": "A new reminder for the same request is refused before this delay. 0 = no delay.",
+          "staffKeyDays": "Past this, the bookmarklet is refused and everyone generates a new one. 0 = never expires."
         }
       },
       "queue": {
@@ -1603,6 +1612,8 @@
         "copiedBookmarklet": "Bookmarklet copied: paste it as the address of a new bookmark.",
         "copiedConsole": "Code copied: paste it in the kyara.games console (F12), then paste the printed batch on the receive page.",
         "copyFailed": "Copy failed: allow clipboard access.",
+        "manualBookmarklet": "Copy this code by hand, then paste it as the address of a new bookmark:",
+        "manualConsole": "Copy this code by hand, then paste it into the kyara.games console (F12):",
         "texts": {
           "wrongPage": "First open a friend's profile on kyara.games.",
           "noToken": "Log in to Kyara with the Kiraku account.",
@@ -1629,6 +1640,7 @@
         "confirmSend": "Confirm and keep the collection",
         "pasteLabel": "Paste a batch (console variant)",
         "pasteSend": "Send the batch",
+        "retry": "Try again",
         "done": "Granted to {player}: {cards, plural, one {# card} other {# cards}} and {zeni, number} Zeni.",
         "review": "{player}'s collection kept, to check: {reason}.",
         "openDetail": "Open the request",
@@ -1675,8 +1687,11 @@
         },
         "extraCopies": "{count, plural, one {# extra copy ignored} other {# extra copies ignored}}",
         "truncated": "Incomplete read: {read, number} characters read out of {total, number} announced. Read again before approving.",
+        "emptySnapshot": "No card read: nothing to grant. Read the collection again on Kyara or decline the request.",
+        "secondStaff": "Large batch you received yourself: another team member has to grant it.",
         "done": "Granted on {date}: {cards, number} cards and {zeni, number} Zeni.",
-        "rejected": "Declined on {date}: {reason}.",
+        "rejected": "Declined on {date}: {reason, select, NOT_FRIEND {Kiraku account not a friend} COLLECTION_HIDDEN {collection not shown} PROFILE_NOT_FOUND {profile not found} DISCORD_MISMATCH {different Discord} ALREADY_IMPORTED {already imported} SUSPECT {doubtful profile} other {other reason}}.",
+        "rejectNote": "“{note}”",
         "removeFriend": "After processing, remove the player from the Kiraku account's friends on Kyara.",
         "review": "To check: {reason}.",
         "notRead": "Not read yet"
@@ -1737,13 +1752,21 @@
         "NOT_REOPENABLE": "This request can't be reopened.",
         "ALREADY_READ": "Collection already read: it's waiting in “To check”.",
         "NO_REQUEST": "No waiting request for this Discord account: the player must first request the import on Kiraku, with the same Discord.",
-        "KEY_INVALID": "Unknown or replaced bookmarklet: generate yours on /admin/kyara and reinstall it."
+        "KEY_INVALID": "Unknown or replaced bookmarklet: generate yours on /admin/kyara and reinstall it.",
+        "KEY_EXPIRED": "Bookmarklet expired: generate a new one on /admin/kyara and reinstall it.",
+        "SECOND_STAFF_REQUIRED": "Large batch: a team member other than the one who received it has to grant it.",
+        "EMPTY_SNAPSHOT": "No card read: read the collection again or decline the request.",
+        "REMIND_TOO_SOON": "This player was just reminded: wait before sending another reminder."
       },
       "reviewReasons": {
         "DISCORD_UNVERIFIED": "avatar without a Discord ID",
         "EMPTY": "no card read",
+        "OLD_BOOKMARKLET": "bookmarklet older than version 4 (reinstall it from /admin/kyara)",
         "TRUNCATED": "incomplete read",
-        "TOTAL_UNKNOWN": "total not given by Kyara"
+        "DROPPED": "items dropped by the bookmarklet (no rarity or unreadable id)",
+        "ID_FALLBACK": "characters without a characterId on Kyara: compare the cards before granting",
+        "TOTAL_UNKNOWN": "total not given by Kyara",
+        "LARGE": "large batch, above the automatic grant caps"
       }
     },
     "boosters": {
@@ -6144,6 +6167,7 @@
     "kyaraImportDone": "Your Kyara collection has arrived: {cards, plural, =0 {no cards} one {# card} other {# cards}} and {zeni, number} Zeni.",
     "kyaraImportRejected": "Your Kyara import request was declined: {reason, select, NOT_FRIEND {the Kiraku account isn't in your Kyara friends} COLLECTION_HIDDEN {your collection isn't visible to the Kiraku account} PROFILE_NOT_FOUND {this Kyara profile can't be found} DISCORD_MISMATCH {this Kyara profile isn't linked to your Discord account} ALREADY_IMPORTED {this Kyara profile was already imported} SUSPECT {the team couldn't verify this profile} other {see the team's note}}.",
     "kyaraImportReminder": "The Kiraku account has been added on Kyara: go show it your collection to get your whole collection!\n1. Still on Kyara: Friends → messages tab, open your conversation with Kiraku and click “Show my collection”.\n⚠️ Being friends isn't enough: without this click, we can't see your cards.\n2. The team reads your collection, and your cards arrive on your account with a notification.",
+    "kyaraImportReopened": "Your Kyara import request is open again: the team will read your collection again. On Kyara, check that the Kiraku account is in your friends and that you showed it your collection.",
     "referralReward": "{kind, select, STEP {{side, select, REFEREE {Step {step, select, 1 {1 · Arrival} 2 {2 · Settled} 3 {3 · Hooked} other {4 · Loyal}} reached: your gifts have arrived{multiplier, select, 2 { (×2 Ennichi)} other {}}.} other {{name} reached step {step, select, 1 {1 · Arrival} 2 {2 · Settled} 3 {3 · Hooked} other {4 · Loyal}}: your gifts have arrived{multiplier, select, 2 { (×2 Ennichi)} other {}}.}}} TRUST_BONUS {{name}: your Mythic boosters from step {step} have arrived.} MILESTONE {{milestone, number} friends settled in: your milestone gifts have arrived.} GRAND {A friend of {name} settled in: your grand-referrer gifts have arrived.} other {Referral: your gifts have arrived.}}",
     "ennichiReward": "{kind, select, TIER {Lantern tier {tier} reached: your festival prize has arrived.} BANZUKE {Ennichi banzuke: you finished {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, your prizes have arrived.} OMIKUJI {Omikuji: your ticket won a prize (draw no. {draw}).} other {Ennichi: your prize has arrived.}}"
   },
@@ -8136,6 +8160,7 @@
     "cancel": {
       "button": "Cancel my request",
       "confirm": "Cancel your import request? You can make a new one while the window is open.",
+      "confirmClosed": "Cancel your import request? Your import window is closed: you won't be able to make a new one.",
       "pending": "Cancelling…"
     },
     "ready": {
@@ -8204,7 +8229,11 @@
       "NOT_REOPENABLE": "This request can't be reopened.",
       "ALREADY_READ": "Your collection was already read.",
       "NO_REQUEST": "No waiting request for this Discord account.",
-      "KEY_INVALID": "Invalid team bookmarklet."
+      "KEY_INVALID": "Invalid team bookmarklet.",
+      "KEY_EXPIRED": "Team bookmarklet expired.",
+      "SECOND_STAFF_REQUIRED": "Another team member has to approve this import.",
+      "EMPTY_SNAPSHOT": "No card read in this collection.",
+      "REMIND_TOO_SOON": "Reminder too close to the previous one."
     }
   },
   "referralV2": {

@@ -46,9 +46,28 @@ export function playerKyaraPhase(e: KyaraEligibility, latest: KyaraRow | null, d
   }
 }
 
-/** Bannière de l'accueil : seulement quand le joueur peut agir (s'inscrire, lier Discord ou demander). */
-export function showKyaraBanner(phase: PlayerKyaraPhase): boolean {
-  return phase.kind === "OPEN" || phase.kind === "GUEST" || (phase.kind === "CLOSED" && phase.reason === "NO_DISCORD");
+/** Cookie « Plus tard » de la bannière de l'accueil : lu au rendu serveur, qui ne la montre plus (préférence exemptée). */
+export const KYARA_BANNER_COOKIE = "kiraku-kyara-banner";
+
+export type KyaraBannerView = { kind: "OPEN" | "GUEST" | "NO_DISCORD"; deadline: number | null };
+
+/**
+ * Bannière de l'accueil : seulement quand le joueur peut agir (s'inscrire, lier Discord, demander, ou redemander
+ * après un refus). Jamais pour un Discord qui a déjà servi ailleurs : sa page lui dirait que c'est fini.
+ */
+export function kyaraBannerOf(phase: PlayerKyaraPhase): KyaraBannerView | null {
+  switch (phase.kind) {
+    case "OPEN":
+      return { kind: "OPEN", deadline: phase.deadline };
+    case "GUEST":
+      return { kind: "GUEST", deadline: null };
+    case "CLOSED":
+      return phase.reason === "NO_DISCORD" ? { kind: "NO_DISCORD", deadline: phase.deadline } : null;
+    case "REJECTED":
+      return phase.canRetry ? { kind: "OPEN", deadline: phase.deadline } : null;
+    default:
+      return null;
+  }
 }
 
 /** Tuile du Compte : tant qu'il y a quelque chose à faire ou à relire. */

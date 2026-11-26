@@ -13,8 +13,12 @@ import { KYARA_PAYLOAD_VERSION } from "./codes";
 // Être ami ne suffit pas : Kyara répond 403 « not_shared » tant que le joueur n'a pas cliqué « Montrer ma collection »
 // dans sa conversation avec le compte Kiraku (essai du 23/11 en production). Un refus affiche la raison de Kyara.
 // Rien n'est affaibli : le lot n'est accepté qu'avec la clé du membre connecté à Kiraku et le même compte Discord.
+// Version 4 : le lot dit si la lecture est allée jusqu'à la dernière page (e, et non arrêtée au plafond MAX_PAGES),
+// combien d'éléments ont été écartés (d : sans rareté, sans id ou quantité lisible) et combien de personnages n'avaient
+// pas de `characterId` (f : id pris dans `id`, qui peut être celui de l'exemplaire). Le serveur ne verse d'office que
+// si e est vrai et d et f nuls (lib/kyara/payload.ts, reviewReasonOf).
 
-export const BOOKMARKLET_BUILD = 3;
+export const BOOKMARKLET_BUILD = 4;
 
 export type BookmarkletTexts = {
   /** Pas sur un profil kyara.games. */
@@ -59,13 +63,14 @@ try{
 const prof=await get("/users/"+id,0);
 let path="/me/friends/"+id+"/collection?";
 try{const me=await get("/me",1);if(String(me.id??(me.user&&me.user.id)??"").toLowerCase()===id)path="/me/collection?lean=1&"}catch(e){}
-const items=[];let total=null;
+const items=[];let total=null,end=false;
 for(let page=1;page<=K.x;page++){const d=await get(path+"page="+page,1),it=list(d);items.push(...it);
 if(d&&Number.isInteger(d.total))total=d.total;document.title=T.reading.replace("{n}",items.length);
-if(!(d&&d.more)||it.length===0)break;await new Promise(r=>setTimeout(r,K.w))}
+if(!(d&&d.more)||it.length===0){end=true;break}await new Promise(r=>setTimeout(r,K.w))}
 const rar={};if(items.some(i=>!i.rarity)){for(const c of list(await get("/characters",0)))rar[c.id]=c.rarity}
-const c=items.map(i=>{const a=i.characterId??i.id;return[a,i.qty??i.quantity??1,i.rarity??rar[a]]}).filter(e=>Number.isInteger(e[0])&&e[0]>0&&Number.isInteger(e[1])&&e[1]>0&&/^[CURELM]$/.test(e[2]||""));
-const json=JSON.stringify({v:K.v,b:K.b,k:id,s:K.s,p:typeof prof.pseudo==="string"?prof.pseudo:null,a:typeof prof.avatar==="string"?prof.avatar:null,r:new Date().toISOString(),t:total,c});
+const c=[];let f=0;for(const i of items){const n=i.characterId==null,a=n?i.id:i.characterId,q=i.qty??i.quantity??1,r=i.rarity??rar[a];
+if(Number.isInteger(a)&&a>0&&Number.isInteger(q)&&q>0&&/^[CURELM]$/.test(r||"")){c.push([a,q,r]);if(n)f++}}
+const json=JSON.stringify({v:K.v,b:K.b,k:id,s:K.s,p:typeof prof.pseudo==="string"?prof.pseudo:null,a:typeof prof.avatar==="string"?prof.avatar:null,r:new Date().toISOString(),t:total,c,e:end,d:items.length-c.length,f});
 let bytes=new TextEncoder().encode(json),tag="v"+K.v;
 if(typeof CompressionStream==="function"){bytes=new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream("deflate-raw"))).arrayBuffer());tag+="z"}
 let bin="";for(let i=0;i<bytes.length;i+=32768)bin+=String.fromCharCode(...bytes.subarray(i,i+32768));

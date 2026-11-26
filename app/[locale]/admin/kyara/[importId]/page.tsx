@@ -3,18 +3,19 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { KyaraDecision } from "@/components/admin/kyara/KyaraDecision";
 import { Link } from "@/i18n/navigation";
 import { canProcessKyaraImports } from "@/lib/admin/roles";
-import { isKyaraReviewReason } from "@/lib/kyara/codes";
+import { isKyaraRejectCode, isKyaraReviewReason } from "@/lib/kyara/codes";
+import { exceedsAutoCaps } from "@/lib/kyara/plan";
 import { kyaraProfileUrl } from "@/lib/kyara/profile-url";
 import { CONVERTED_KINDS } from "@/lib/kyara/summary";
 import { requireAdminView } from "@/server/admin";
 import { prisma } from "@/server/db";
-import { kyaraImportDetail } from "@/server/kyara/queries";
+import { getKyaraGuards, kyaraImportDetail } from "@/server/kyara/queries";
 
 /** Fiche d'une demande d'import Kyara : joueur, vérification Discord, collection lue, aperçu et décisions. */
 export default async function AdminKyaraImportPage({ params }: PageProps<"/[locale]/admin/kyara/[importId]">) {
   const { user } = await requireAdminView();
   const { importId } = await params;
-  const [t, format, detail] = await Promise.all([getTranslations("admin.kyara"), getFormatter(), kyaraImportDetail(importId)]);
+  const [t, format, detail, guards] = await Promise.all([getTranslations("admin.kyara"), getFormatter(), kyaraImportDetail(importId), getKyaraGuards()]);
   if (!detail) notFound();
   const { row, preview, sameProfile } = detail;
   const now = new Date().getTime();
@@ -23,6 +24,10 @@ export default async function AdminKyaraImportPage({ params }: PageProps<"/[loca
     : null;
   const canProcess = canProcessKyaraImports(user.role) && row.userId !== user.id;
   const when = (d: Date | null) => (d ? format.dateTime(d, { dateStyle: "medium", timeStyle: "short" }) : "—");
+  // Rien à verser d'une lecture vide ; un gros lot se verse par un autre membre que celui qui l'a reçu (contrôle à deux)
+  const empty = preview !== null && preview.outcomes.length === 0;
+  const secondStaff = preview !== null && row.receivedById === user.id && exceedsAutoCaps(preview, guards.autoCaps);
+  const rejectReason = isKyaraRejectCode(row.rejectCode) ? row.rejectCode : "OTHER";
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
@@ -116,6 +121,8 @@ export default async function AdminKyaraImportPage({ params }: PageProps<"/[loca
           {row.snapshotTotal !== null && row.snapshotCards !== null && row.snapshotTotal > row.snapshotCards && (
             <p className="font-bold text-shu">{t("detail.truncated", { read: row.snapshotCards, total: row.snapshotTotal })}</p>
           )}
+          {empty && <p className="font-bold text-shu">{t("detail.emptySnapshot")}</p>}
+          {secondStaff && <p className="font-bold text-kin">{t("detail.secondStaff")}</p>}
         </section>
       )}
 
@@ -124,8 +131,8 @@ export default async function AdminKyaraImportPage({ params }: PageProps<"/[loca
       )}
       {row.status === "REJECTED" && (
         <p className="text-sm">
-          {t("detail.rejected", { reason: row.rejectCode ?? "OTHER", date: when(row.rejectedAt) })}
-          {row.rejectNote && ` « ${row.rejectNote} »`}
+          {t("detail.rejected", { reason: rejectReason, date: when(row.rejectedAt) })}
+          {row.rejectNote && ` ${t("detail.rejectNote", { note: row.rejectNote })}`}
         </p>
       )}
 
@@ -133,7 +140,7 @@ export default async function AdminKyaraImportPage({ params }: PageProps<"/[loca
         <KyaraDecision
           importId={row.id}
           status={row.status}
-          expected={preview ? { cards: preview.grant.length, zeni: preview.zeni } : null}
+          expected={preview && !empty && !secondStaff ? { cards: preview.grant.length, zeni: preview.zeni } : null}
         />
       )}
       <p className="text-xs text-text-muted">{t("detail.removeFriend")}</p>

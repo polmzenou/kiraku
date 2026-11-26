@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BASE_DEFINITIONS } from "@/lib/catalog/definitions";
 import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
-import { mergeEntries, planKyaraImport, type KyaraCatalogCard, type KyaraEntry, type KyaraPlanInput } from "./plan";
+import { exceedsAutoCaps, mergeEntries, planKyaraImport, type KyaraCatalogCard, type KyaraEntry, type KyaraPlanInput } from "./plan";
 
 const SORT = new Map(BASE_DEFINITIONS.map((d) => [d.key, d.sortOrder]));
 const RECYCLE = SETTING_DEFAULTS["collection.recycleValues"];
@@ -111,5 +111,20 @@ describe("plan d'un import Kyara", () => {
     ];
     expect(mergeEntries(entries).map((e) => e.anilistId)).toEqual([3, 9]);
     expect(planKyaraImport(input(entries, [])).outcomes).toEqual(planKyaraImport(input([...entries].reverse(), [])).outcomes);
+  });
+});
+
+describe("plafonds du versement automatique", () => {
+  const plan = { grant: [{ cardId: "a", rarity: "COMMON" }, { cardId: "b", rarity: "RARE" }], zeni: 500 };
+
+  it("0 = sans plafond : rien n'est un gros lot (comportement d'avant les plafonds)", () => {
+    expect(exceedsAutoCaps(plan, { maxCards: 0, maxZeni: 0 })).toBe(false);
+  });
+
+  it("au-delà du plafond de cartes ou de Zeni, pas au plafond lui-même", () => {
+    expect(exceedsAutoCaps(plan, { maxCards: 2, maxZeni: 500 })).toBe(false);
+    expect(exceedsAutoCaps(plan, { maxCards: 1, maxZeni: 0 })).toBe(true);
+    expect(exceedsAutoCaps(plan, { maxCards: 0, maxZeni: 499 })).toBe(true);
+    expect(exceedsAutoCaps({ grant: [], zeni: 0 }, { maxCards: 1, maxZeni: 1 })).toBe(false);
   });
 });

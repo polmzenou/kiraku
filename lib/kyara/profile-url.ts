@@ -1,4 +1,3 @@
-import { z } from "@/lib/zod";
 import { KYARA_HOST, KYARA_ORIGIN } from "./codes";
 
 // Adresse d'un profil public Kyara (bouton « Mon profil public ») : https://kyara.games/profil/<uuid>.
@@ -33,16 +32,3 @@ export function parseKyaraProfileUrl(input: string): string | null {
   const id = PROFILE_PATH.exec(url.pathname)?.[1]?.toLowerCase();
   return id && isKyaraUserId(id) ? id : null;
 }
-
-/** Champ « adresse de ton profil Kyara » : renvoie l'uuid. */
-export const kyaraProfileInputSchema = z
-  .string()
-  .max(KYARA_PROFILE_INPUT_MAX)
-  .transform((value, ctx) => {
-    const id = parseKyaraProfileUrl(value);
-    if (id === null) {
-      ctx.addIssue({ code: "custom", message: "Adresse de profil Kyara invalide" });
-      return z.NEVER;
-    }
-    return id;
-  });

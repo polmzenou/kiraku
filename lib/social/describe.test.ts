@@ -41,6 +41,7 @@ describe("describeNotification", () => {
   it("relance de l'import Kyara → rappel de la marche à suivre et page de l'import", () => {
     const base = { actor: { username: "akira", isGuest: false }, gift: null, card: null };
     expect(describeNotification({ ...base, type: "KYARA_IMPORT_REMINDER", kyara: null }, tr)).toEqual({ text: "kyaraImportReminder:{}", href: "/compte/import-kyara" });
+    expect(describeNotification({ ...base, type: "KYARA_IMPORT_REOPENED", kyara: null }, tr)).toEqual({ text: "kyaraImportReopened:{}", href: "/compte/import-kyara" });
   });
 
   it("versement du parrainage v2 → page Parrainage, avec l'étape, le côté et le ×2", () => {

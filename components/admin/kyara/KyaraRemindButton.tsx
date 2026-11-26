@@ -7,7 +7,8 @@ import { Button } from "../../ui/Button";
 
 /**
  * « Relance » d'une demande en attente dans la file de /admin/kyara : le joueur reçoit une notification qui lui
- * rappelle d'aller montrer sa collection au compte Kiraku sur Kyara. Une fois envoyée, le bouton reste grisé.
+ * rappelle d'aller montrer sa collection au compte Kiraku sur Kyara. Une fois envoyée, le bouton reste grisé ; le
+ * serveur refuse aussi une relance trop proche de la précédente (kyaraImport.reminderCooldownHours).
  */
 export function KyaraRemindButton({ importId, player }: { importId: string; player: string }) {
   const t = useTranslations("admin.kyara.queue");
@@ -25,9 +26,13 @@ export function KyaraRemindButton({ importId, player }: { importId: string; play
         onClick={() =>
           start(async () => {
             setError(null);
-            const res = await remindKyaraImportAction({ importId });
-            if (res.ok) setSent(true);
-            else setError(res.error);
+            try {
+              const res = await remindKyaraImportAction({ importId });
+              if (res.ok) setSent(true);
+              else setError(res.error);
+            } catch {
+              setError("UNAVAILABLE");
+            }
           })
         }
       >

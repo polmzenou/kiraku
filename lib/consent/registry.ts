@@ -171,7 +171,17 @@ export const STORAGE_REGISTRY: readonly StorageEntry[] = [
     exempt: true,
   },
   {
-    // Bannière de l'import Kyara masquée sur cet appareil (components/kyara/KyaraImportBanner.tsx)
+    // Bannière de l'import Kyara masquée sur cet appareil (components/kyara/KyaraImportBanner.tsx) : le cookie, lu au
+    // rendu serveur pour ne plus la rendre, et le stockage local en secours
+    name: "kiraku-kyara-banner",
+    kind: "cookie",
+    category: "preferences",
+    purpose: "kyaraBanner",
+    duration: { unit: "days", value: 365 },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
     name: "kiraku.kyara-banner",
     kind: "localStorage",
     category: "preferences",

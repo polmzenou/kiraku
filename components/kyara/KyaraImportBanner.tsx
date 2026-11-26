@@ -1,11 +1,13 @@
 "use client";
 
 import { useFormatter, useTranslations } from "next-intl";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { KYARA_SEAL } from "@/lib/kyara/codes";
+import { KYARA_BANNER_COOKIE } from "@/lib/kyara/phase";
 import { ButtonLink } from "../ui/ButtonLink";
 
 const KEY = "kiraku.kyara-banner";
+const ONE_YEAR = 60 * 60 * 24 * 365;
 const noop = () => () => {};
 
 function hiddenHere(): boolean {
@@ -16,23 +18,34 @@ function hiddenHere(): boolean {
   }
 }
 
+/** « Plus tard » retenu pour le rendu serveur suivant : la bannière n'est plus rendue (préférence exemptée, lib/consent/registry.ts). */
+function rememberDismissed() {
+  const secure = location.protocol === "https:" ? "; secure" : "";
+  document.cookie = `${KYARA_BANNER_COOKIE}=1; path=/; max-age=${ONE_YEAR}; samesite=lax${secure}`;
+}
+
 /**
  * Invitation à importer sa collection Kyara, sur l'accueil, tant que le joueur peut agir (s'inscrire, lier Discord
- * ou demander). Masquable sur cet appareil ; le rendu serveur la montre toujours.
+ * ou demander). Masquable sur cet appareil : un cookie, que le serveur lit pour ne plus la rendre, et le stockage
+ * local en secours (masquage d'avant le cookie, recopié dans le cookie à la visite suivante).
  */
 export function KyaraImportBanner({ kind, deadline }: { kind: "OPEN" | "GUEST" | "NO_DISCORD"; deadline: number | null }) {
   const t = useTranslations("kyaraImport.banner");
   const format = useFormatter();
   const stored = useSyncExternalStore(noop, hiddenHere, () => false);
   const [dismissed, setDismissed] = useState(false);
+  useEffect(() => {
+    if (stored) rememberDismissed();
+  }, [stored]);
   if (stored || dismissed) return null;
 
   const dismiss = () => {
     setDismissed(true);
+    rememberDismissed();
     try {
       window.localStorage.setItem(KEY, "1");
     } catch {
-      /* rien à garder */
+      /* le cookie suffit */
     }
   };
   const date = deadline !== null ? format.dateTime(new Date(deadline), { dateStyle: "long" }) : "";

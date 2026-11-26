@@ -16,7 +16,10 @@ import { inputClass, selectClass } from "../../ui/Field";
 type Props = {
   importId: string;
   status: "PENDING" | "READY" | "DONE" | "REJECTED" | "CANCELLED";
-  /** Aperçu validé par l'équipe (READY) : renvoyé tel quel au versement, qui le compare sous verrou. */
+  /**
+   * Aperçu validé par l'équipe (READY) : renvoyé tel quel au versement, qui le compare sous verrou. null : rien à
+   * verser ici (lecture vide, ou gros lot que ce membre a reçu lui-même).
+   */
   expected: { cards: number; zeni: number } | null;
 };
 
@@ -36,9 +39,14 @@ export function KyaraDecision({ importId, status, expected }: Props) {
     start(async () => {
       setError(null);
       setDone(null);
-      const res = await action();
-      if (res.ok) setDone(label);
-      else setError(res.error);
+      try {
+        const res = await action();
+        if (res.ok) setDone(label);
+        else setError(res.error);
+      } catch {
+        // Réseau coupé, action introuvable après une mise à jour : la fiche reste affichée
+        setError("UNAVAILABLE");
+      }
     });
 
   return (
@@ -46,19 +54,22 @@ export function KyaraDecision({ importId, status, expected }: Props) {
       <h3 id={`${id}-title`} className="font-title text-lg font-bold">
         {t("title")}
       </h3>
-      {status === "READY" && expected && (
+      {/* Sans aperçu versable (lecture vide, gros lot reçu par ce membre) : seulement relire ou refuser */}
+      {status === "READY" && (
         <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="primary"
-            disabled={pending}
-            onClick={() => {
-              if (!window.confirm(t("applyConfirm", { cards: expected.cards, zeni: expected.zeni }))) return;
-              run(t("applied"), () => applyKyaraImportAction({ importId, expectedCards: expected.cards, expectedZeni: expected.zeni }));
-            }}
-          >
-            {t("apply", { cards: expected.cards, zeni: expected.zeni })}
-          </Button>
+          {expected && (
+            <Button
+              type="button"
+              variant="primary"
+              disabled={pending}
+              onClick={() => {
+                if (!window.confirm(t("applyConfirm", { cards: expected.cards, zeni: expected.zeni }))) return;
+                run(t("applied"), () => applyKyaraImportAction({ importId, expectedCards: expected.cards, expectedZeni: expected.zeni }));
+              }}
+            >
+              {t("apply", { cards: expected.cards, zeni: expected.zeni })}
+            </Button>
+          )}
           <Button type="button" disabled={pending} onClick={() => run(t("reread"), () => rereadKyaraImportAction({ importId }))}>
             {t("rereadButton")}
           </Button>

@@ -403,10 +403,10 @@ model KyaraImport {
   status          KyaraImportStatus @default(PENDING)
   requestedAt     DateTime          @default(now())
   deadlineAt      DateTime? // fin de la fenêtre du joueur à la demande (null : demande de test de l'équipe)
-  reviewReason    String?           @db.VarChar(24) // READY : pourquoi la lecture attend l'équipe (DISCORD_UNVERIFIED, TRUNCATED)
+  reviewReason    String?           @db.VarChar(24) // READY : pourquoi la lecture attend l'équipe (KYARA_REVIEW_REASONS de lib/kyara/codes.ts)
   // Lecture de l'équipe (READY)
   kyaraUsername   String?           @db.VarChar(64)
-  kyaraAvatarUrl  String?           @db.VarChar(500)
+  kyaraAvatarUrl  String?           @db.VarChar(500) // plus écrit : l'ID Discord de l'avatar suffit (kyaraDiscordId) ; vidé par la purge
   kyaraDiscordId  String?           @db.VarChar(25) // lu dans l'avatar Kyara ; null si avatar par défaut
   discordVerified Boolean? // l'ID de l'avatar est celui du joueur ; false : confirmé à la main par l'équipe
   snapshot        Json? // [[anilistId, quantité, code]], une entrée par personnage (lib/kyara/payload.ts)
@@ -1115,6 +1115,7 @@ enum NotificationType {
   KYARA_IMPORT_DONE // l'import de ta collection Kyara est fait (refId = id du KyaraImport)
   KYARA_IMPORT_REJECTED // ta demande d'import Kyara est refusée, avec un motif (refId = id du KyaraImport)
   KYARA_IMPORT_REMINDER // l'équipe relance le joueur : montrer sa collection au compte Kiraku sur Kyara (refId = id du KyaraImport)
+  KYARA_IMPORT_REOPENED // l'équipe annule le refus : la demande d'import Kyara attend de nouveau (refId = id du KyaraImport)
   REFERRAL_REWARD // parrainage v2 : étape, part « confiance », palier ou grand-parrainage versé (refId = id du ReferralReward)
   ENNICHI_REWARD // Ennichi : palier de lanternes, prix du banzuke ou lot de l'omikuji versé (payload : kind, édition)
 }

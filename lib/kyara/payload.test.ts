@@ -1,6 +1,18 @@
 import { deflateRawSync, inflateRawSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { decodeKyaraFragment, encodeKyaraPayload, KYARA_PAYLOAD_LIMITS, toBase64Url, type InflateRaw, type KyaraPayloadJson } from "./payload";
+import { decodeKyaraFragment, KYARA_PAYLOAD_LIMITS, reviewReasonOf, type InflateRaw, type KyaraPayload, type KyaraPayloadJson } from "./payload";
+
+function toBase64Url(bytes: Uint8Array): string {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/** Encodage du lot, comme le favori le fait en ligne (lib/kyara/bookmarklet.ts). */
+function encodeKyaraPayload(json: KyaraPayloadJson, deflateRaw?: (bytes: Uint8Array) => Uint8Array): string {
+  const bytes = new TextEncoder().encode(JSON.stringify(json));
+  return deflateRaw ? `v2z.${toBase64Url(deflateRaw(bytes))}` : `v2.${toBase64Url(bytes)}`;
+}
 
 const inflate: InflateRaw = (bytes, max) => {
   try {
@@ -81,5 +93,50 @@ describe("lot du favori de l'équipe", () => {
     const bomb = `v2z.${toBase64Url(deflate(new Uint8Array(KYARA_PAYLOAD_LIMITS.inflatedBytes + 10).fill(32)))}`;
     expect(bomb.length).toBeLessThan(10_000);
     expect(decodeKyaraFragment(bomb, inflate)).toEqual({ ok: false, error: "PAYLOAD_TOO_LARGE" });
+  });
+
+  it("favori 4 : complétude, éléments écartés et ids de repli lus ; absents (favori 3) : inconnus", () => {
+    const v4 = decodeKyaraFragment(encodeKyaraPayload(json({ b: 4, e: true, d: 2, f: 1 }), deflate), inflate);
+    expect(v4.ok && v4.payload).toMatchObject({ build: 4, complete: true, dropped: 2, idFallbacks: 1 });
+    const v3 = decodeKyaraFragment(encodeKyaraPayload(json({ b: 3 })), inflate);
+    expect(v3.ok && v3.payload).toMatchObject({ complete: null, dropped: null, idFallbacks: null });
+    for (const bad of [{ e: "oui" }, { d: -1 }, { f: 1.5 }] as unknown as Partial<KyaraPayloadJson>[]) {
+      expect(decodeKyaraFragment(encodeKyaraPayload(json(bad)), inflate), JSON.stringify(bad)).toEqual({ ok: false, error: "PAYLOAD_INVALID" });
+    }
+  });
+});
+
+describe("lecture douteuse : jamais versée d'office", () => {
+  const entries = [
+    { anilistId: 5, qty: 1, code: "C" as const },
+    { anilistId: 40, qty: 2, code: "M" as const },
+  ];
+  const sure: Pick<KyaraPayload, "avatarUrl" | "total" | "entries" | "complete" | "dropped" | "idFallbacks"> = {
+    avatarUrl: AVATAR,
+    total: 2,
+    entries,
+    complete: true,
+    dropped: 0,
+    idFallbacks: 0,
+  };
+
+  it("lecture complète du favori 4, total annoncé et atteint : versée", () => {
+    expect(reviewReasonOf(sure)).toBeNull();
+    // Kyara compte moins qu'on a lu (copies fusionnées) : rien ne manque
+    expect(reviewReasonOf({ ...sure, total: 1 })).toBeNull();
+  });
+
+  it("chaque doute a son motif, dans l'ordre", () => {
+    expect(reviewReasonOf({ ...sure, avatarUrl: "https://cdn.discordapp.com/embed/avatars/2.png" })).toBe("DISCORD_UNVERIFIED");
+    expect(reviewReasonOf({ ...sure, entries: [] })).toBe("EMPTY");
+    expect(reviewReasonOf({ ...sure, complete: null, dropped: null, idFallbacks: null })).toBe("OLD_BOOKMARKLET");
+    expect(reviewReasonOf({ ...sure, dropped: null })).toBe("OLD_BOOKMARKLET");
+    // Arrêtée au plafond de pages du favori
+    expect(reviewReasonOf({ ...sure, complete: false })).toBe("TRUNCATED");
+    expect(reviewReasonOf({ ...sure, dropped: 1 })).toBe("DROPPED");
+    expect(reviewReasonOf({ ...sure, idFallbacks: 3 })).toBe("ID_FALLBACK");
+    expect(reviewReasonOf({ ...sure, total: null })).toBe("TOTAL_UNKNOWN");
+    expect(reviewReasonOf({ ...sure, total: 3 })).toBe("TRUNCATED");
+    expect(reviewReasonOf({ ...sure, complete: false, dropped: 1, total: null })).toBe("TRUNCATED");
   });
 });

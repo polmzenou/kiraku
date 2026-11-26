@@ -5,8 +5,11 @@ import { useState, useTransition } from "react";
 import { cancelKyaraImportAction, type KyaraImportActionError } from "@/server/actions/kyara-import";
 import { Button } from "../ui/Button";
 
-/** Annule une demande encore en attente (avant la lecture par l'équipe). */
-export function KyaraCancelButton({ importId }: { importId: string }) {
+/**
+ * Annule une demande encore en attente (avant la lecture par l'équipe). `windowClosed` : la fenêtre du joueur est
+ * passée (la demande, faite à temps, reste traitable) ; l'avertissement dit qu'aucune autre demande ne sera possible.
+ */
+export function KyaraCancelButton({ importId, windowClosed }: { importId: string; windowClosed: boolean }) {
   const t = useTranslations("kyaraImport.cancel");
   const tError = useTranslations("kyaraImport.errors");
   const [error, setError] = useState<KyaraImportActionError | null>(null);
@@ -18,7 +21,7 @@ export function KyaraCancelButton({ importId }: { importId: string }) {
         type="button"
         disabled={pending}
         onClick={() => {
-          if (!window.confirm(t("confirm"))) return;
+          if (!window.confirm(t(windowClosed ? "confirmClosed" : "confirm"))) return;
           setError(null);
           start(async () => {
             try {

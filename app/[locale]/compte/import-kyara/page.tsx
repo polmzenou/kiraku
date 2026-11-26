@@ -46,7 +46,9 @@ export default async function KyaraImportPage() {
     );
   }
 
-  const { phase, rules, request } = await playerKyaraView(user, new Date());
+  const at = new Date();
+  const now = at.getTime();
+  const { phase, rules, request } = await playerKyaraView(user, at);
   if (phase.kind === "HIDDEN") notFound();
   const date = (at: number | Date | null) => (at === null ? "" : format.dateTime(new Date(at), { dateStyle: "long", timeStyle: "short" }));
   const staffUrl = rules.staffKyaraUserId ? kyaraProfileUrl(rules.staffKyaraUserId) : null;
@@ -149,7 +151,7 @@ export default async function KyaraImportPage() {
           </p>
           <p className="text-sm text-text-muted">{t("pending.sameDiscord")}</p>
           {request && <p className="text-xs text-text-muted">{t("pending.requested", { date: date(request.requestedAt) })}</p>}
-          {request && <KyaraCancelButton importId={request.id} />}
+          {request && <KyaraCancelButton importId={request.id} windowClosed={request.deadlineAt !== null && now >= request.deadlineAt.getTime()} />}
         </>
       );
       break;

@@ -103,6 +103,7 @@ export type DescribeTranslators = {
       | "kyaraImportDone"
       | "kyaraImportRejected"
       | "kyaraImportReminder"
+      | "kyaraImportReopened"
       | "referralReward"
       | "ennichiReward"
       | "aCard",
@@ -227,6 +228,9 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
     // Relance de l'équipe : le texte porte le rappel de la marche à suivre, sur plusieurs lignes
     case "KYARA_IMPORT_REMINDER":
       return { text: t("kyaraImportReminder"), href: "/compte/import-kyara" };
+    // Refus annulé par l'équipe : la demande attend de nouveau la lecture de la collection
+    case "KYARA_IMPORT_REOPENED":
+      return { text: t("kyaraImportReopened"), href: "/compte/import-kyara" };
     case "REFERRAL_REWARD": {
       const r = n.referral;
       const values = {

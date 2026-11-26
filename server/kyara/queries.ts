@@ -1,9 +1,11 @@
 import "server-only";
+import { cookies } from "next/headers";
 import { cache } from "react";
 import { isFrozen } from "@/lib/account/deletion";
 import { isStaff } from "@/lib/admin/roles";
 import { isKyaraRejectCode, type KyaraImportStatus } from "@/lib/kyara/codes";
-import { playerKyaraPhase, type PlayerKyaraPhase } from "@/lib/kyara/phase";
+import { KYARA_BANNER_COOKIE, kyaraBannerOf, playerKyaraPhase, showKyaraTile, type KyaraBannerView, type PlayerKyaraPhase } from "@/lib/kyara/phase";
+import type { KyaraAutoCaps } from "@/lib/kyara/plan";
 import { KYARA_SETTING_KEYS, kyaraRulesFrom, type KyaraRules } from "@/lib/kyara/rules";
 import { parseImportSummary, type KyaraImportSummary } from "@/lib/kyara/summary";
 import { kyaraEligibility } from "@/lib/kyara/window";
@@ -18,6 +20,19 @@ export const getKyaraRules = cache(async (): Promise<KyaraRules> => {
   const values = await Promise.all(KYARA_SETTING_KEYS.map((key) => getSetting(key)));
   const byKey = new Map<string, unknown>(KYARA_SETTING_KEYS.map((key, i) => [key, values[i]]));
   return kyaraRulesFrom((key) => byKey.get(key) as SettingValue<typeof key>);
+});
+
+export type KyaraGuards = { autoCaps: KyaraAutoCaps; staffKeyDays: number; reminderCooldownHours: number };
+
+/** Garde-fous de l'équipe : plafonds du versement automatique, durée de la clé du favori, délai entre deux relances. */
+export const getKyaraGuards = cache(async (): Promise<KyaraGuards> => {
+  const [maxCards, maxZeni, staffKeyDays, reminderCooldownHours] = await Promise.all([
+    getSetting("kyaraImport.autoMaxCards"),
+    getSetting("kyaraImport.autoMaxZeni"),
+    getSetting("kyaraImport.staffKeyDays"),
+    getSetting("kyaraImport.reminderCooldownHours"),
+  ]);
+  return { autoCaps: { maxCards, maxZeni }, staffKeyDays, reminderCooldownHours };
 });
 
 /** Ce que les lectures du joueur demandent à son compte (getCurrentUser). */
@@ -40,6 +55,8 @@ export type KyaraRequestView = {
   kyaraUserId: string | null;
   status: KyaraImportStatus;
   requestedAt: Date;
+  /** Fin de la fenêtre du joueur à la demande ; null pour une demande de test de l'équipe. */
+  deadlineAt: Date | null;
   rejectNote: string | null;
   grantedCards: number | null;
   grantedZeni: number | null;
@@ -50,32 +67,27 @@ export type KyaraRequestView = {
 
 export type KyaraPlayerView = { phase: PlayerKyaraPhase; rules: KyaraRules; request: KyaraRequestView | null };
 
-/** Page /compte/import-kyara : phase du joueur, réglages utiles à l'affichage et sa dernière demande. */
-export async function playerKyaraView(user: KyaraUser, now: Date): Promise<KyaraPlayerView> {
-  const [rules, discord, latest] = await Promise.all([
-    getKyaraRules(),
+/** Dernière demande du joueur, ce qu'en lit sa phase. */
+type LatestRow = { status: KyaraImportStatus; rejectCode: string | null } | null;
+
+const latestOf = (userId: string) =>
+  prisma.kyaraImport.findFirst({ where: { userId }, orderBy: { requestedAt: "desc" }, select: { status: true, rejectCode: true } });
+
+/**
+ * Phase du joueur (lib/kyara/phase.ts), la même pour sa page, la bannière de l'accueil et la tuile du Compte : sa
+ * dernière demande (lue en même temps que son Discord), puis, s'il n'a rien en cours, si ce Discord a déjà servi.
+ */
+async function phaseFor(user: KyaraUser, rules: KyaraRules, latest: LatestRow | Promise<LatestRow>, now: number, staff: boolean): Promise<PlayerKyaraPhase> {
+  const [last, discord] = await Promise.all([
+    latest,
     prisma.account.findFirst({ where: { userId: user.id, provider: "discord" }, select: { providerAccountId: true } }),
-    prisma.kyaraImport.findFirst({
-      where: { userId: user.id },
-      orderBy: { requestedAt: "desc" },
-      select: {
-        id: true,
-        kyaraUserId: true,
-        status: true,
-        requestedAt: true,
-        rejectCode: true,
-        rejectNote: true,
-        grantedCards: true,
-        grantedZeni: true,
-        zeniRaw: true,
-        appliedAt: true,
-        summary: true,
-      },
-    }),
   ]);
+  // Une demande en cours ou versée décide seule de la phase : inutile de chercher le Discord ailleurs
+  const settled = last !== null && (ACTIVE as readonly string[]).includes(last.status);
   // Ce Discord a-t-il déjà servi ailleurs (compte supprimé compris, dont la ligne n'a plus de joueur) ?
   const usedElsewhere =
     discord !== null &&
+    !settled &&
     (await prisma.kyaraImport.count({
       where: { discordId: discord.providerAccountId, status: { in: [...ACTIVE] }, OR: [{ userId: null }, { userId: { not: user.id } }] },
     })) > 0;
@@ -86,14 +98,42 @@ export async function playerKyaraView(user: KyaraUser, now: Date): Promise<Kyara
       createdAt: user.createdAt,
       discordLinked: discord !== null,
       unavailable: user.bannedAt !== null || isFrozen(user),
-      staff: isStaff(user.role),
+      staff,
     },
     rules,
-    now.getTime(),
+    now,
   );
-  const row = latest ? { status: latest.status, rejectCode: isKyaraRejectCode(latest.rejectCode) ? latest.rejectCode : null } : null;
+  const row = last ? { status: last.status, rejectCode: isKyaraRejectCode(last.rejectCode) ? last.rejectCode : null } : null;
+  return playerKyaraPhase(eligibility, row, usedElsewhere);
+}
+
+/** Page /compte/import-kyara : phase du joueur, réglages utiles à l'affichage et sa dernière demande. */
+export async function playerKyaraView(user: KyaraUser, now: Date): Promise<KyaraPlayerView> {
+  const rules = await getKyaraRules();
+  // Une seule requête, attendue par la phase et par la page
+  const latestRequest = Promise.resolve(
+    prisma.kyaraImport.findFirst({
+      where: { userId: user.id },
+      orderBy: { requestedAt: "desc" },
+      select: {
+        id: true,
+        kyaraUserId: true,
+        status: true,
+        requestedAt: true,
+        deadlineAt: true,
+        rejectCode: true,
+        rejectNote: true,
+        grantedCards: true,
+        grantedZeni: true,
+        zeniRaw: true,
+        appliedAt: true,
+        summary: true,
+      },
+    }),
+  );
+  const [phase, latest] = await Promise.all([phaseFor(user, rules, latestRequest, now.getTime(), isStaff(user.role)), latestRequest]);
   return {
-    phase: playerKyaraPhase(eligibility, row, usedElsewhere),
+    phase,
     rules,
     request: latest
       ? {
@@ -101,6 +141,7 @@ export async function playerKyaraView(user: KyaraUser, now: Date): Promise<Kyara
           kyaraUserId: latest.kyaraUserId,
           status: latest.status,
           requestedAt: latest.requestedAt,
+          deadlineAt: latest.deadlineAt,
           rejectNote: latest.rejectNote,
           grantedCards: latest.grantedCards,
           grantedZeni: latest.grantedZeni,
@@ -112,44 +153,35 @@ export async function playerKyaraView(user: KyaraUser, now: Date): Promise<Kyara
   };
 }
 
-export type KyaraBanner = { kind: "OPEN" | "GUEST" | "NO_DISCORD"; deadline: number | null };
-
 /**
- * Bannière de l'accueil : seulement quand le joueur peut agir. Hors fenêtre, aucune requête (réglages en cache et
- * compte déjà lu) ; dans la fenêtre, deux lectures (demande déjà faite, Discord lié).
+ * Bannière de l'accueil : seulement quand le joueur peut agir (kyaraBannerOf). Masquée par « Plus tard » (cookie) ou
+ * hors fenêtre : aucune requête (réglages en cache et compte déjà lu) ; sinon la phase du joueur, comme sa page.
  */
-export async function kyaraBannerFor(user: KyaraUser | null, now: number): Promise<KyaraBanner | null> {
+export async function kyaraBannerFor(user: KyaraUser | null, now: number): Promise<KyaraBannerView | null> {
   if (!user || user.bannedAt !== null || isFrozen(user)) return null;
+  if ((await cookies()).get(KYARA_BANNER_COOKIE)?.value === "1") return null;
   const rules = await getKyaraRules();
+  // Discord supposé lié : seule la fenêtre compte ici, la phase tranche ensuite
   const e = kyaraEligibility(
     { isGuest: user.isGuest, registeredAt: user.registeredAt, createdAt: user.createdAt, discordLinked: true, unavailable: false, staff: false },
     rules,
     now,
   );
   if (!e.ok) return e.reason === "GUEST" ? { kind: "GUEST", deadline: null } : null;
-  const [request, discord] = await Promise.all([
-    prisma.kyaraImport.findFirst({ where: { userId: user.id, status: { in: [...ACTIVE] } }, select: { id: true } }),
-    prisma.account.findFirst({ where: { userId: user.id, provider: "discord" }, select: { id: true } }),
-  ]);
-  if (request) return null;
-  return { kind: discord ? "OPEN" : "NO_DISCORD", deadline: e.deadline };
+  // L'équipe voit la bannière comme un joueur
+  return kyaraBannerOf(await phaseFor(user, rules, latestOf(user.id), now, false));
 }
 
 /**
- * Tuile du Compte : une demande existe (à suivre ou à relire), ou le joueur est dans sa fenêtre. Au plus une
- * lecture ; l'équipe la voit aussi hors lancement (demande de test).
+ * Tuile du Compte : tant qu'il y a quelque chose à faire ou à relire (showKyaraTile) ; l'équipe la voit aussi hors
+ * lancement (demande de test). Import coupé et aucune demande : une seule lecture.
  */
 export async function kyaraTileVisible(user: KyaraUser, now: number): Promise<boolean> {
   const rules = await getKyaraRules();
   const staff = isStaff(user.role);
-  if ((await prisma.kyaraImport.count({ where: { userId: user.id, status: { not: "CANCELLED" } } })) > 0) return true;
-  if (!rules.enabled && !staff) return false;
-  const e = kyaraEligibility(
-    { isGuest: user.isGuest, registeredAt: user.registeredAt, createdAt: user.createdAt, discordLinked: true, unavailable: user.bannedAt !== null || isFrozen(user), staff },
-    rules,
-    now,
-  );
-  return e.ok;
+  const latest = await latestOf(user.id);
+  if (latest === null && !rules.enabled && !staff) return false;
+  return showKyaraTile(await phaseFor(user, rules, latest, now, staff));
 }
 
 export const QUEUE_TABS = ["PENDING", "READY", "DONE", "REJECTED"] as const;
@@ -157,7 +189,7 @@ export type QueueTab = (typeof QUEUE_TABS)[number];
 
 /**
  * File de /admin/kyara : demandes d'un statut, les plus anciennes d'abord (les traitées, les plus récentes). En attente :
- * relances déjà envoyées (nombre et dernière), lues dans les notifications des joueurs.
+ * relances déjà envoyées (nombre et dernière), lues dans le journal admin (le joueur peut effacer ses notifications).
  */
 export async function kyaraQueue(tab: QueueTab, take = 50) {
   const rows = await prisma.kyaraImport.findMany({
@@ -180,26 +212,52 @@ export async function kyaraQueue(tab: QueueTab, take = 50) {
       user: { select: { id: true, username: true, createdAt: true } },
     },
   });
-  const userIds = tab === "PENDING" ? rows.flatMap((r) => (r.user ? [r.user.id] : [])) : [];
-  // Par joueur d'abord : l'index (userId, createdAt) des notifications borne la lecture
+  const ids = tab === "PENDING" ? rows.map((r) => r.id) : [];
   const sent =
-    userIds.length > 0
-      ? await prisma.notification.groupBy({
-          by: ["refId"],
-          where: { userId: { in: userIds }, type: "KYARA_IMPORT_REMINDER", refId: { in: rows.map((r) => r.id) } },
+    ids.length > 0
+      ? await prisma.adminLog.groupBy({
+          by: ["targetId"],
+          where: { action: "KYARA_IMPORT_REMIND", targetType: "KyaraImport", targetId: { in: ids } },
           _count: { _all: true },
           _max: { createdAt: true },
         })
       : [];
-  const byImport = new Map(sent.flatMap((s) => (s.refId && s._max.createdAt ? [[s.refId, { count: s._count._all, lastAt: s._max.createdAt }] as const] : [])));
+  const byImport = new Map(sent.flatMap((s) => (s.targetId && s._max.createdAt ? [[s.targetId, { count: s._count._all, lastAt: s._max.createdAt }] as const] : [])));
   return rows.map((r) => ({ ...r, reminders: byImport.get(r.id) ?? null }));
 }
 
-/** Fiche d'une demande pour l'équipe, avec l'aperçu recalculé si elle est lue. */
+/**
+ * Fiche d'une demande pour l'équipe, avec l'aperçu recalculé si elle est lue. Sans la photo de la collection (lourde) :
+ * seul l'aperçu d'une demande lue la relit.
+ */
 export async function kyaraImportDetail(importId: string) {
   const row = await prisma.kyaraImport.findUnique({
     where: { id: importId },
-    include: { user: { select: { id: true, username: true, createdAt: true, registeredAt: true, bannedAt: true } } },
+    select: {
+      id: true,
+      userId: true,
+      status: true,
+      discordId: true,
+      requestedAt: true,
+      deadlineAt: true,
+      reviewReason: true,
+      kyaraUserId: true,
+      kyaraUsername: true,
+      kyaraDiscordId: true,
+      discordVerified: true,
+      snapshotCards: true,
+      snapshotCopies: true,
+      snapshotTotal: true,
+      readAt: true,
+      receivedById: true,
+      grantedCards: true,
+      grantedZeni: true,
+      appliedAt: true,
+      rejectCode: true,
+      rejectNote: true,
+      rejectedAt: true,
+      user: { select: { id: true, username: true, createdAt: true, bannedAt: true } },
+    },
   });
   if (!row) return null;
   const [preview, others] = await Promise.all([

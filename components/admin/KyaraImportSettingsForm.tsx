@@ -10,19 +10,33 @@ import { Button } from "../ui/Button";
 import { Field, inputClass, NumberField, toLocalInput, Toggle } from "./fields";
 import { SettingsSaveBar } from "./SettingsSaveBar";
 
-type NumberKey = "kyaraImport.windowDays" | "kyaraImport.zeniCap" | "kyaraImport.retentionDays";
+type NumberKey =
+  | "kyaraImport.windowDays"
+  | "kyaraImport.zeniCap"
+  | "kyaraImport.retentionDays"
+  | "kyaraImport.autoMaxCards"
+  | "kyaraImport.autoMaxZeni"
+  | "kyaraImport.reminderCooldownHours"
+  | "kyaraImport.staffKeyDays";
 
 // Bornes des champs (les mêmes que les schémas Zod de lib/settings/defaults.ts)
 const LIMITS: Record<NumberKey, [number, number]> = {
   "kyaraImport.windowDays": [1, 90],
   "kyaraImport.zeniCap": [0, 10_000_000],
   "kyaraImport.retentionDays": [7, 365],
+  "kyaraImport.autoMaxCards": [0, 100_000],
+  "kyaraImport.autoMaxZeni": [0, 10_000_000],
+  "kyaraImport.reminderCooldownHours": [0, 720],
+  "kyaraImport.staffKeyDays": [0, 365],
 };
 
 type Short<K> = K extends `kyaraImport.${infer S}` ? S : never;
 const short = <K extends keyof KyaraSettings>(key: K) => key.replace(/^kyaraImport\./, "") as Short<K>;
 
-/** Import Kyara : sortie et fenêtre, profil du compte Kiraku sur Kyara, barème des cartes converties, entretien. */
+/**
+ * Import Kyara : sortie et fenêtre, profil du compte Kiraku sur Kyara, barème des cartes converties, garde-fous de
+ * l'équipe (plafonds du versement automatique, délai des relances, durée de la clé du favori), entretien.
+ */
 export function KyaraImportSettingsForm({ initial }: { initial: KyaraSettings }) {
   const t = useTranslations("admin.kyara.settings");
   const tRarity = useTranslations("rarity");
@@ -101,6 +115,16 @@ export function KyaraImportSettingsForm({ initial }: { initial: KyaraSettings })
           ))}
         </div>
         {num("kyaraImport.zeniCap")}
+      </fieldset>
+
+      <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">
+        <legend className="px-1 font-title text-lg font-bold">{t("guardSection")}</legend>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {num("kyaraImport.autoMaxCards")}
+          {num("kyaraImport.autoMaxZeni")}
+          {num("kyaraImport.reminderCooldownHours")}
+          {num("kyaraImport.staffKeyDays")}
+        </div>
       </fieldset>
 
       <fieldset className="flex min-w-0 flex-col gap-4 lacquer rounded-card p-4">

@@ -11,6 +11,10 @@ export const KYARA_FORM_KEYS = [
   "kyaraImport.zeniByRarity",
   "kyaraImport.zeniCap",
   "kyaraImport.retentionDays",
+  "kyaraImport.autoMaxCards",
+  "kyaraImport.autoMaxZeni",
+  "kyaraImport.reminderCooldownHours",
+  "kyaraImport.staffKeyDays",
 ] as const satisfies readonly SettingKey[];
 
 export type KyaraFormKey = (typeof KYARA_FORM_KEYS)[number];

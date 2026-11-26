@@ -7,7 +7,7 @@ import { SettingLogList } from "@/components/admin/SettingLogList";
 import { Link } from "@/i18n/navigation";
 import { canProcessKyaraImports } from "@/lib/admin/roles";
 import type { BookmarkletTexts } from "@/lib/kyara/bookmarklet";
-import { isKyaraReviewReason } from "@/lib/kyara/codes";
+import { isKyaraRejectCode, isKyaraReviewReason } from "@/lib/kyara/codes";
 import { kyaraProfileUrl } from "@/lib/kyara/profile-url";
 import { KYARA_FORM_KEYS, type KyaraSettings } from "@/lib/settings/kyara-form";
 import { recentSettingLogs, requireAdminView } from "@/server/admin";
@@ -137,7 +137,7 @@ export default async function AdminKyaraPage({ searchParams }: PageProps<"/[loca
                     {row.snapshotCards !== null && ` · ${t("queue.cards", { count: row.snapshotCards })}`}
                     {tab === "READY" && isKyaraReviewReason(row.reviewReason) && ` · ${t(`reviewReasons.${row.reviewReason}`)}`}
                     {row.grantedCards !== null && ` · ${t("queue.granted", { cards: row.grantedCards, zeni: row.grantedZeni ?? 0 })}`}
-                    {row.rejectCode && ` · ${t(`rejectCodes.${row.rejectCode as "OTHER"}`)}`}
+                    {isKyaraRejectCode(row.rejectCode) && ` · ${t(`rejectCodes.${row.rejectCode}`)}`}
                     {row.reminders && ` · ${t("queue.reminded", { count: row.reminders.count, date: format.relativeTime(row.reminders.lastAt, now) })}`}
                   </span>
                   {row.kyaraUserId && (

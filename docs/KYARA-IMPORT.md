@@ -15,8 +15,11 @@ clic, Kyara refuse la collection (`403 not_shared`). Côté équipe, rien à pr�
    réception de Kiraku, qui vérifie ta clé et retrouve la demande par l'ID Discord de l'avatar Kyara.
    - **Lecture sûre** : les cartes et les Zeni sont versés tout de suite, le joueur est prévenu.
    - **Lecture douteuse** : la collection est gardée dans l'onglet « À vérifier » de `/admin/kyara`, avec le motif
-     (avatar sans ID Discord, aucune carte lue, lecture incomplète). Sur la fiche : « Verser », « Relire sur Kyara » ou
-     « Refuser » avec un motif.
+     (avatar sans ID Discord, aucune carte lue, favori d'avant la version 4, lecture incomplète ou arrêtée au plafond
+     de pages, éléments écartés par le favori, personnages sans `characterId`, total non annoncé par Kyara, gros lot
+     au-dessus des plafonds du versement automatique). Sur la fiche : « Verser », « Relire sur Kyara » ou « Refuser »
+     avec un motif. Une lecture vide ne se verse pas (relire ou refuser) ; un gros lot se verse par un autre membre
+     de l'équipe que celui qui l'a reçu.
    - **Avatar sans ID Discord** (avatar par défaut) : la page te demande de choisir la demande du joueur et de
      confirmer ; compare les pseudos. La collection attend ensuite dans « À vérifier ».
    - **Aucune demande en attente** pour ce Discord : le joueur n'a pas demandé l'import sur Kiraku, ou son compte Kyara
@@ -42,6 +45,15 @@ affiché se colle sur la page de réception.
 Après chaque changement du favori, `BOOKMARKLET_BUILD` augmente (`lib/kyara/bookmarklet.ts`) et chacun en génère un
 nouveau. Un favori d'un ancien format est refusé (« Favori trop ancien »).
 
+Version 4 (26/11) : le lot dit si la lecture est allée jusqu'à la dernière page de Kyara (et non au plafond de 300
+pages), combien d'éléments le favori a écartés (sans rareté, sans id ou quantité lisible) et combien de personnages
+n'avaient pas de `characterId` (l'`id` de l'élément est alors gardé, mais il peut être celui de l'exemplaire). Le
+versement automatique n'a lieu que pour une lecture complète, sans élément écarté ni id de repli. Une lecture d'un
+favori 3 ou plus ancien attend toujours l'équipe (« favori d'avant la version 4 ») : réinstalle ton favori.
+
+Garde-fous réglables dans `/admin/kyara` (0 = désactivé) : plafonds de cartes et de Zeni du versement automatique,
+délai entre deux relances, durée de vie d'un favori.
+
 ## Routes de Kyara utilisées
 
 Ce ne sont pas des routes officielles : elles viennent de projets tiers et peuvent changer sans préavis.
@@ -50,7 +62,7 @@ Ce ne sont pas des routes officielles : elles viennent de projets tiers et peuve
 | --- | --- | --- |
 | `GET /api/users/<uuid>` | public | `pseudo`, `avatar` (`https://cdn.discordapp.com/avatars/<id Discord>/<hash>.png`) |
 | `GET /api/me` | `Authorization: Bearer <kyara_token>` | `id` (uuid du compte connecté) : reconnaît son propre profil |
-| `GET /api/me/friends/<uuid>/collection?page=N` | `Authorization: Bearer <kyara_token>` | `items[]` (`characterId` ou `id`, `qty`, `rarity`), `total`, `more` ; `403 not_shared` tant que le joueur n'a pas cliqué « Montrer ma collection » |
+| `GET /api/me/friends/<uuid>/collection?page=N` | `Authorization: Bearer <kyara_token>` | `items[]` (`characterId`, à défaut `id`, compté à part ; `qty`, `rarity`), `total`, `more` ; `403 not_shared` tant que le joueur n'a pas cliqué « Montrer ma collection » |
 | `GET /api/me/collection?lean=1&page=N` | `Authorization: Bearer <kyara_token>` | sa propre collection (essai) : tableau de `characterId`, `qty`, sans rareté |
 | `GET /api/characters` | public | `id`, `rarity` (`C`, `U`, `R`, `E`, `L`, `M`), seulement si les cartes lues n'ont pas de rareté |
 
@@ -93,7 +105,8 @@ sans le lien.
 ## Reste à essayer
 
 - [ ] La pagination de la collection d'un ami (`page`, `more`, `total`) avec une collection de plusieurs pages, et les
-  champs d'un élément (variantes ?). `total` compte-t-il les personnages ou les exemplaires ?
+  champs d'un élément (variantes ?). `total` compte-t-il les personnages ou les exemplaires ? Un élément a-t-il bien
+  `characterId` (sinon chaque lecture du favori 4 attend l'équipe, motif « personnages sans characterId ») ?
 - [ ] Un avatar par défaut (sans ID Discord) : ce que renvoie le profil public.
 - [ ] Le favori dans Firefox et Edge.
 - [ ] Les codes d'erreur restants : ami absent, profil inconnu, session expirée.

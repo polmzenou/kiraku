@@ -20,7 +20,7 @@ import {
   type KyaraErrorCode,
 } from "../kyara/import-core";
 import { decodeFragment } from "../kyara/payload";
-import { getKyaraRules } from "../kyara/queries";
+import { getKyaraGuards, getKyaraRules } from "../kyara/queries";
 import { pushLater } from "../market/queries";
 import { rateLimit } from "../ratelimit";
 
@@ -95,7 +95,7 @@ export async function receiveKyaraPayloadAction(input: unknown): Promise<KyaraRe
   if (!decoded.ok) return { ok: false, error: decoded.error };
   const profile = { pseudo: decoded.payload.pseudo, kyaraUserId: decoded.payload.kyaraUserId };
   try {
-    const rules = await getKyaraRules();
+    const [rules, guards] = await Promise.all([getKyaraRules(), getKyaraGuards()]);
     const res = await receivePayloadWith(
       prisma,
       {
@@ -104,6 +104,8 @@ export async function receiveKyaraPayloadAction(input: unknown): Promise<KyaraRe
         importId: parsed.data.importId,
         confirmWithoutDiscord: parsed.data.confirmWithoutDiscord,
         staffKyaraUserId: rules.staffKyaraUserId,
+        autoCaps: guards.autoCaps,
+        staffKeyDays: guards.staffKeyDays,
         now: new Date(),
       },
       pushLater,
@@ -120,7 +122,10 @@ export async function receiveKyaraPayloadAction(input: unknown): Promise<KyaraRe
   }
 }
 
-/** Versement d'une lecture « à vérifier », avec les totaux de l'aperçu validé : refusé (STALE) s'ils ont changé. */
+/**
+ * Versement d'une lecture « à vérifier », avec les totaux de l'aperçu validé : refusé (STALE) s'ils ont changé, et
+ * refusé au membre qui a reçu un gros lot (SECOND_STAFF_REQUIRED).
+ */
 export async function applyKyaraImportAction(input: unknown): Promise<{ ok: true; cards: number; zeni: number } | Fail> {
   const user = await staff();
   if (!user) return { ok: false, error: "FORBIDDEN" };
@@ -128,7 +133,8 @@ export async function applyKyaraImportAction(input: unknown): Promise<{ ok: true
   if (!parsed.success) return { ok: false, error: "INVALID" };
   if (await limited(user.id, "apply", 10)) return { ok: false, error: "RATE_LIMITED" };
   try {
-    const res = await applyImportWith(prisma, { staffId: user.id, ...parsed.data, now: new Date() }, pushLater);
+    const { autoCaps } = await getKyaraGuards();
+    const res = await applyImportWith(prisma, { staffId: user.id, ...parsed.data, autoCaps, now: new Date() }, pushLater);
     // Les cartes versées comptent au classement des collectionneurs
     updateTag(LEADERBOARD_TAG);
     refresh();
@@ -154,7 +160,10 @@ export async function rejectKyaraImportAction(input: unknown): Promise<{ ok: tru
   }
 }
 
-/** Relance du joueur d'une demande en attente : notification avec le rappel de la marche à suivre sur Kyara. */
+/**
+ * Relance du joueur d'une demande en attente : notification avec le rappel de la marche à suivre sur Kyara, pas plus
+ * d'une fois par délai kyaraImport.reminderCooldownHours.
+ */
 export async function remindKyaraImportAction(input: unknown): Promise<{ ok: true } | Fail> {
   const user = await staff();
   if (!user) return { ok: false, error: "FORBIDDEN" };
@@ -162,7 +171,8 @@ export async function remindKyaraImportAction(input: unknown): Promise<{ ok: tru
   if (!parsed.success) return { ok: false, error: "INVALID" };
   if (await limited(user.id, "remind", 30)) return { ok: false, error: "RATE_LIMITED" };
   try {
-    await remindImportWith(prisma, { staffId: user.id, importId: parsed.data.importId, now: new Date() }, pushLater);
+    const { reminderCooldownHours } = await getKyaraGuards();
+    await remindImportWith(prisma, { staffId: user.id, importId: parsed.data.importId, cooldownHours: reminderCooldownHours, now: new Date() }, pushLater);
     refresh();
     return { ok: true };
   } catch (e) {
@@ -170,6 +180,7 @@ export async function remindKyaraImportAction(input: unknown): Promise<{ ok: tru
   }
 }
 
+/** Refus annulé : la demande repart en attente, le joueur est prévenu. */
 export async function reopenKyaraImportAction(input: unknown): Promise<{ ok: true } | Fail> {
   const user = await staff();
   if (!user) return { ok: false, error: "FORBIDDEN" };
@@ -177,7 +188,7 @@ export async function reopenKyaraImportAction(input: unknown): Promise<{ ok: tru
   if (!parsed.success) return { ok: false, error: "INVALID" };
   if (await limited(user.id, "reopen", 30)) return { ok: false, error: "RATE_LIMITED" };
   try {
-    await reopenImportWith(prisma, { staffId: user.id, importId: parsed.data.importId, now: new Date() });
+    await reopenImportWith(prisma, { staffId: user.id, importId: parsed.data.importId, now: new Date() }, pushLater);
     refresh();
     return { ok: true };
   } catch (e) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { playerKyaraPhase, showKyaraBanner, showKyaraTile } from "./phase";
+import { kyaraBannerOf, playerKyaraPhase, showKyaraTile } from "./phase";
 import type { KyaraEligibility } from "./window";
 
 const OPEN: KyaraEligibility = { ok: true, deadline: 1_000 };
@@ -29,15 +29,24 @@ describe("ce que voit le joueur", () => {
   });
 
   it("bannière quand le joueur peut agir, tuile tant qu'il y a quelque chose à faire ou à relire", () => {
-    expect(showKyaraBanner({ kind: "OPEN", deadline: 1 })).toBe(true);
-    expect(showKyaraBanner({ kind: "GUEST" })).toBe(true);
-    expect(showKyaraBanner({ kind: "CLOSED", reason: "NO_DISCORD", deadline: 1 })).toBe(true);
-    expect(showKyaraBanner({ kind: "CLOSED", reason: "EXPIRED", deadline: 1 })).toBe(false);
-    expect(showKyaraBanner({ kind: "PENDING" })).toBe(false);
+    expect(kyaraBannerOf({ kind: "OPEN", deadline: 1 })).toEqual({ kind: "OPEN", deadline: 1 });
+    expect(kyaraBannerOf({ kind: "GUEST" })).toEqual({ kind: "GUEST", deadline: null });
+    expect(kyaraBannerOf({ kind: "CLOSED", reason: "NO_DISCORD", deadline: 1 })).toEqual({ kind: "NO_DISCORD", deadline: 1 });
+    expect(kyaraBannerOf({ kind: "CLOSED", reason: "EXPIRED", deadline: 1 })).toBeNull();
+    expect(kyaraBannerOf({ kind: "PENDING" })).toBeNull();
+    // Refus : de nouveau l'invitation, si une nouvelle demande est possible
+    expect(kyaraBannerOf({ kind: "REJECTED", code: "NOT_FRIEND", canRetry: true, deadline: 1 })).toEqual({ kind: "OPEN", deadline: 1 });
+    expect(kyaraBannerOf({ kind: "REJECTED", code: "NOT_FRIEND", canRetry: false, deadline: 1 })).toBeNull();
     expect(showKyaraTile({ kind: "DONE" })).toBe(true);
     expect(showKyaraTile({ kind: "PENDING" })).toBe(true);
     expect(showKyaraTile({ kind: "GUEST" })).toBe(false);
     expect(showKyaraTile({ kind: "CLOSED", reason: "EXPIRED", deadline: 1 })).toBe(false);
     expect(showKyaraTile({ kind: "SOON", opensAt: null })).toBe(false);
+  });
+
+  it("Discord déjà utilisé par un autre compte : ni bannière ni tuile (la page dirait que c'est fini)", () => {
+    const phase = playerKyaraPhase(OPEN, null, true);
+    expect(kyaraBannerOf(phase)).toBeNull();
+    expect(showKyaraTile(phase)).toBe(false);
   });
 });

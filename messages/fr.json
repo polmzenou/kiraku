@@ -1547,6 +1547,7 @@
         "title": "Réglages",
         "launchSection": "Sortie",
         "zeniSection": "Cartes converties en Zeni",
+        "guardSection": "Garde-fous de l'équipe",
         "upkeepSection": "Conservation",
         "launchNow": "Sortir maintenant",
         "clearDate": "Effacer la date",
@@ -1559,7 +1560,11 @@
           "staffProfileUrl": "Profil Kyara du compte Kiraku",
           "zeniByRarity": "Zeni par rareté Kyara",
           "zeniCap": "Plafond de Zeni par import",
-          "retentionDays": "Conservation des collections lues (jours)"
+          "retentionDays": "Conservation des collections lues (jours)",
+          "autoMaxCards": "Plafond de cartes du versement automatique",
+          "autoMaxZeni": "Plafond de Zeni du versement automatique",
+          "reminderCooldownHours": "Délai entre deux relances (heures)",
+          "staffKeyDays": "Durée de vie d'un favori (jours)"
         },
         "hints": {
           "launchAt": "Les comptes inscrits avant cette date ont leur fenêtre à partir d'elle, les nouveaux à partir de leur inscription.",
@@ -1567,7 +1572,11 @@
           "staffProfileUrl": "Adresse du bouton « Mon profil public » du compte que les joueurs ajoutent en ami.",
           "zeniByRarity": "Pour une carte absente de notre catalogue, non publiée ou plus rare chez nous que chez Kyara. Une carte déjà possédée vaut sa valeur de recyclage.",
           "zeniCap": "Total maximum de Zeni pour un import ; 0 = aucune conversion.",
-          "retentionDays": "Après la clôture d'une demande : collection lue, pseudo et avatar Kyara effacés. Les ids qui verrouillent restent."
+          "retentionDays": "Après la clôture d'une demande : collection lue, pseudo et avatar Kyara effacés. Les ids qui verrouillent restent.",
+          "autoMaxCards": "Au-delà, la collection lue attend dans « À vérifier » et seul un autre membre de l'équipe que celui qui l'a reçue peut la verser. 0 = sans plafond.",
+          "autoMaxZeni": "Même règle pour les Zeni de l'import (après le plafond par import). 0 = sans plafond.",
+          "reminderCooldownHours": "Une nouvelle relance de la même demande est refusée avant ce délai. 0 = sans délai.",
+          "staffKeyDays": "Au-delà, le favori est refusé et chacun en génère un nouveau. 0 = sans fin."
         }
       },
       "queue": {
@@ -1603,6 +1612,8 @@
         "copiedBookmarklet": "Favori copié : colle-le comme adresse d'un nouveau favori.",
         "copiedConsole": "Code copié : colle-le dans la console de kyara.games (F12), puis colle le lot affiché sur la page de réception.",
         "copyFailed": "Copie impossible : autorise le presse-papiers.",
+        "manualBookmarklet": "Copie ce code à la main, puis colle-le comme adresse d'un nouveau favori :",
+        "manualConsole": "Copie ce code à la main, puis colle-le dans la console de kyara.games (F12) :",
         "texts": {
           "wrongPage": "Ouvre d'abord le profil d'un ami sur kyara.games.",
           "noToken": "Connecte-toi à Kyara avec le compte Kiraku.",
@@ -1629,6 +1640,7 @@
         "confirmSend": "Confirmer et garder la collection",
         "pasteLabel": "Coller un lot (variante console)",
         "pasteSend": "Envoyer le lot",
+        "retry": "Réessayer",
         "done": "Versé à {player} : {cards, plural, one {# carte} other {# cartes}} et {zeni, number} Zeni.",
         "review": "Collection de {player} gardée, à vérifier : {reason}.",
         "openDetail": "Ouvrir la fiche",
@@ -1675,8 +1687,11 @@
         },
         "extraCopies": "{count, plural, one {# copie en plus ignorée} other {# copies en plus ignorées}}",
         "truncated": "Lecture incomplète : {read, number} personnages lus sur {total, number} annoncés. Relis avant de valider.",
+        "emptySnapshot": "Aucune carte lue : rien à verser. Relis la collection sur Kyara ou refuse la demande.",
+        "secondStaff": "Gros lot que tu as reçu toi-même : un autre membre de l'équipe doit le verser.",
         "done": "Versé le {date} : {cards, number} cartes et {zeni, number} Zeni.",
-        "rejected": "Refusée le {date} : {reason}.",
+        "rejected": "Refusée le {date} : {reason, select, NOT_FRIEND {compte Kiraku pas en ami} COLLECTION_HIDDEN {collection non montrée} PROFILE_NOT_FOUND {profil introuvable} DISCORD_MISMATCH {Discord différent} ALREADY_IMPORTED {déjà importé} SUSPECT {profil douteux} other {autre motif}}.",
+        "rejectNote": "« {note} »",
         "removeFriend": "Après le traitement, retire le joueur des amis du compte Kiraku sur Kyara.",
         "review": "À vérifier : {reason}.",
         "notRead": "Pas encore lu"
@@ -1737,13 +1752,21 @@
         "NOT_REOPENABLE": "Cette demande ne peut pas être rouverte.",
         "ALREADY_READ": "Collection déjà lue : elle attend dans « À vérifier ».",
         "NO_REQUEST": "Aucune demande en attente pour ce compte Discord : le joueur doit d'abord demander l'import sur Kiraku, avec le même Discord.",
-        "KEY_INVALID": "Favori inconnu ou remplacé : génère ton favori sur /admin/kyara et réinstalle-le."
+        "KEY_INVALID": "Favori inconnu ou remplacé : génère ton favori sur /admin/kyara et réinstalle-le.",
+        "KEY_EXPIRED": "Favori expiré : génère-en un nouveau sur /admin/kyara et réinstalle-le.",
+        "SECOND_STAFF_REQUIRED": "Gros lot : un autre membre de l'équipe que celui qui l'a reçu doit le verser.",
+        "EMPTY_SNAPSHOT": "Aucune carte lue : relis la collection ou refuse la demande.",
+        "REMIND_TOO_SOON": "Ce joueur vient d'être relancé : attends avant une nouvelle relance."
       },
       "reviewReasons": {
         "DISCORD_UNVERIFIED": "avatar sans ID Discord",
         "EMPTY": "aucune carte lue",
+        "OLD_BOOKMARKLET": "favori d'avant la version 4 (réinstalle-le depuis /admin/kyara)",
         "TRUNCATED": "lecture incomplète",
-        "TOTAL_UNKNOWN": "total non annoncé par Kyara"
+        "DROPPED": "éléments écartés par le favori (sans rareté ou sans id lisible)",
+        "ID_FALLBACK": "personnages sans characterId chez Kyara : compare les cartes avant de verser",
+        "TOTAL_UNKNOWN": "total non annoncé par Kyara",
+        "LARGE": "gros lot, au-dessus des plafonds du versement automatique"
       }
     },
     "boosters": {
@@ -6144,6 +6167,7 @@
     "kyaraImportDone": "Ta collection Kyara est arrivée : {cards, plural, =0 {aucune carte} one {# carte} other {# cartes}} et {zeni, number} Zeni.",
     "kyaraImportRejected": "Ta demande d'import Kyara est refusée : {reason, select, NOT_FRIEND {le compte Kiraku n'est pas dans tes amis Kyara} COLLECTION_HIDDEN {ta collection n'est pas visible pour le compte Kiraku} PROFILE_NOT_FOUND {ce profil Kyara est introuvable} DISCORD_MISMATCH {ce profil Kyara n'est pas lié à ton compte Discord} ALREADY_IMPORTED {ce profil Kyara a déjà été importé} SUSPECT {l'équipe n'a pas pu vérifier ce profil} other {voir le mot de l'équipe}}.",
     "kyaraImportReminder": "Le compte Kiraku a été ajouté sur Kyara, va lui montrer ta collection pour récupérer ta collection entière !\n1. Toujours sur Kyara : Amis → onglet des messages, ouvre ta conversation avec Kiraku et clique « Montrer ma collection ».\n⚠️ Être ami ne suffit pas : sans ce clic, on ne voit pas tes cartes.\n2. L'équipe lit ta collection, et tes cartes arrivent sur ton compte avec une notification.",
+    "kyaraImportReopened": "Ta demande d'import Kyara est rouverte : l'équipe va relire ta collection. Vérifie sur Kyara que le compte Kiraku est dans tes amis et que tu lui as montré ta collection.",
     "referralReward": "{kind, select, STEP {{side, select, REFEREE {Étape {step, select, 1 {1 · Arrivée} 2 {2 · Installé} 3 {3 · Accro} other {4 · Fidèle}} franchie : tes cadeaux sont arrivés{multiplier, select, 2 { (×2 de l'Ennichi)} other {}}.} other {{name} a franchi l'étape {step, select, 1 {1 · Arrivée} 2 {2 · Installé} 3 {3 · Accro} other {4 · Fidèle}} : tes cadeaux sont arrivés{multiplier, select, 2 { (×2 de l'Ennichi)} other {}}.}}} TRUST_BONUS {{name} : tes boosters Mythiques de l'étape {step} sont arrivés.} MILESTONE {{milestone, number} amis installés : tes cadeaux de palier sont arrivés.} GRAND {Un ami de {name} s'est installé : tes cadeaux de grand-parrain sont arrivés.} other {Parrainage : tes cadeaux sont arrivés.}}",
     "ennichiReward": "{kind, select, TIER {Palier {tier} des lanternes atteint : ton lot de la fête est arrivé.} BANZUKE {Banzuke de l'Ennichi : tu finis {rank, selectordinal, one {#er} other {#e}}, tes prix sont arrivés.} OMIKUJI {Omikuji : ton ticket a tiré un lot (tirage n° {draw}).} other {Ennichi : ton lot est arrivé.}}"
   },
@@ -8136,6 +8160,7 @@
     "cancel": {
       "button": "Annuler ma demande",
       "confirm": "Annuler ta demande d'import ? Tu pourras en refaire une tant que la fenêtre est ouverte.",
+      "confirmClosed": "Annuler ta demande d'import ? Ta fenêtre d'import est fermée : tu ne pourras pas en refaire une.",
       "pending": "Annulation…"
     },
     "ready": {
@@ -8204,7 +8229,11 @@
       "NOT_REOPENABLE": "Cette demande ne peut pas être rouverte.",
       "ALREADY_READ": "Ta collection a déjà été lue.",
       "NO_REQUEST": "Aucune demande en attente pour ce compte Discord.",
-      "KEY_INVALID": "Favori de l'équipe invalide."
+      "KEY_INVALID": "Favori de l'équipe invalide.",
+      "KEY_EXPIRED": "Favori de l'équipe expiré.",
+      "SECOND_STAFF_REQUIRED": "Un autre membre de l'équipe doit valider cet import.",
+      "EMPTY_SNAPSHOT": "Aucune carte lue dans cette collection.",
+      "REMIND_TOO_SOON": "Relance trop proche de la précédente."
     }
   },
   "referralV2": {

@@ -19,10 +19,6 @@ export const KYARA_BASE_RARITY: Readonly<Record<KyaraCode, BaseRarity>> = {
   M: "MYTHIC",
 };
 
-export function isKyaraCode(value: unknown): value is KyaraCode {
-  return typeof value === "string" && (KYARA_CODES as readonly string[]).includes(value);
-}
-
 /** Statuts d'une demande ; seules PENDING, READY et DONE verrouillent le compte, le Discord ou le profil Kyara. */
 export const KYARA_IMPORT_STATUSES = ["PENDING", "READY", "DONE", "REJECTED", "CANCELLED"] as const;
 export type KyaraImportStatus = (typeof KYARA_IMPORT_STATUSES)[number];
@@ -48,10 +44,22 @@ export const KYARA_PAYLOAD_VERSION = 2;
 
 /**
  * Pourquoi une collection lue attend l'équipe (READY) au lieu d'être versée tout de suite : avatar Kyara sans ID
- * Discord (demande choisie à la main), rien de lu, moins de personnages lus qu'annoncés par Kyara, ou total que
- * Kyara n'a pas donné (impossible de savoir si la lecture est complète : le versement est définitif).
+ * Discord (demande choisie à la main), rien de lu, favori d'avant la version 4 (qui ne dit pas si la lecture est
+ * complète), lecture arrêtée avant la fin de la collection ou moins de personnages lus qu'annoncés par Kyara (TRUNCATED),
+ * éléments écartés par le favori (sans rareté ni id lisible), id de personnage pris dans `id` faute de `characterId`,
+ * total que Kyara n'a pas donné (impossible de savoir si la lecture est complète : le versement est définitif), ou lot
+ * au-dessus des plafonds du versement automatique (kyaraImport.autoMaxCards, kyaraImport.autoMaxZeni).
  */
-export const KYARA_REVIEW_REASONS = ["DISCORD_UNVERIFIED", "EMPTY", "TRUNCATED", "TOTAL_UNKNOWN"] as const;
+export const KYARA_REVIEW_REASONS = [
+  "DISCORD_UNVERIFIED",
+  "EMPTY",
+  "OLD_BOOKMARKLET",
+  "TRUNCATED",
+  "DROPPED",
+  "ID_FALLBACK",
+  "TOTAL_UNKNOWN",
+  "LARGE",
+] as const;
 export type KyaraReviewReason = (typeof KYARA_REVIEW_REASONS)[number];
 
 export function isKyaraReviewReason(value: unknown): value is KyaraReviewReason {

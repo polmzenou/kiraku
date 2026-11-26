@@ -299,6 +299,8 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       orderBy: { requestedAt: "asc" },
       select: {
         id: true,
+        discordId: true,
+        kyaraDiscordId: true,
         kyaraUserId: true,
         kyaraUsername: true,
         status: true,

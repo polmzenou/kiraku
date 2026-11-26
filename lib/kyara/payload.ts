@@ -1,5 +1,6 @@
+import { discordIdFromAvatarUrl } from "@/lib/discord/avatar";
 import { z } from "@/lib/zod";
-import { KYARA_CODES, KYARA_PAYLOAD_VERSION, type KyaraCode } from "./codes";
+import { KYARA_CODES, KYARA_PAYLOAD_VERSION, type KyaraCode, type KyaraReviewReason } from "./codes";
 import { mergeEntries, type KyaraEntry } from "./plan";
 import { isKyaraUserId } from "./profile-url";
 
@@ -9,7 +10,11 @@ import { isKyaraUserId } from "./profile-url";
 // n'est de toute façon versée qu'après la vérification de la clé du membre de l'équipe et du compte Discord.
 //
 // JSON : { v: 2, b: version du favori, k: uuid du profil lu, s: clé du favori du membre de l'équipe, p: pseudo Kyara,
-//          a: avatar Kyara, r: lu le (ISO), t: total annoncé par Kyara ou null, c: [[anilistId, quantité, code]] }
+//          a: avatar Kyara, r: lu le (ISO), t: total annoncé par Kyara ou null, c: [[anilistId, quantité, code]],
+//          et depuis le favori 4 : e: lecture allée jusqu'à la dernière page de Kyara (pas arrêtée au plafond de
+//          pages), d: éléments écartés par le favori, f: personnages gardés dont l'id vient de `id` faute de
+//          `characterId` }
+// Un lot sans e, d et f (favori 3 ou plus ancien) reste lisible, mais n'est jamais versé d'office (OLD_BOOKMARKLET).
 // v1 (code par demande, #kiraku=…) n'est plus accepté : PAYLOAD_VERSION, il faut régénérer son favori.
 
 export const KYARA_PAYLOAD_LIMITS = { fragmentChars: 700_000, inflatedBytes: 2_000_000, entries: 20_000 } as const;
@@ -29,6 +34,9 @@ const payloadSchema = z
     r: z.string().datetime(),
     t: z.number().int().min(0).max(1_000_000).nullable(),
     c: z.array(entrySchema).max(KYARA_PAYLOAD_LIMITS.entries),
+    e: z.boolean().optional(),
+    d: z.number().int().min(0).max(1_000_000).optional(),
+    f: z.number().int().min(0).max(1_000_000).optional(),
   })
   .strict();
 
@@ -48,7 +56,35 @@ export type KyaraPayload = {
   entries: KyaraEntry[];
   /** Exemplaires lus, copies comprises. */
   copies: number;
+  /** Lecture allée jusqu'à la dernière page de Kyara (et non arrêtée au plafond de pages) ; null avant le favori 4. */
+  complete: boolean | null;
+  /** Éléments lus mais écartés par le favori (sans rareté, sans id ou quantité lisible) ; null avant le favori 4. */
+  dropped: number | null;
+  /** Personnages gardés dont l'id vient du champ `id` de Kyara, faute de `characterId` ; null avant le favori 4. */
+  idFallbacks: number | null;
 };
+
+/**
+ * Lecture douteuse, ou null : une collection n'est versée d'office que si rien ne permet d'en douter, le versement
+ * étant unique et sans retour. Sinon elle attend l'équipe (READY) avec ce motif.
+ */
+export function reviewReasonOf(
+  p: Pick<KyaraPayload, "avatarUrl" | "total" | "entries" | "complete" | "dropped" | "idFallbacks">,
+): KyaraReviewReason | null {
+  if (discordIdFromAvatarUrl(p.avatarUrl) === null) return "DISCORD_UNVERIFIED";
+  if (p.entries.length === 0) return "EMPTY";
+  // Favori 3 ou plus ancien : il ne dit ni s'il a lu jusqu'au bout, ni ce qu'il a écarté
+  if (p.complete === null || p.dropped === null || p.idFallbacks === null) return "OLD_BOOKMARKLET";
+  // Arrêtée au plafond de pages du favori, pas à la dernière page de Kyara
+  if (!p.complete) return "TRUNCATED";
+  if (p.dropped > 0) return "DROPPED";
+  // `id` peut être celui de l'exemplaire chez Kyara, pas celui du personnage : l'équipe compare avant de verser
+  if (p.idFallbacks > 0) return "ID_FALLBACK";
+  // Sans total annoncé, rien ne prouve que la lecture est complète : l'équipe vérifie avant un versement définitif
+  if (p.total === null) return "TOTAL_UNKNOWN";
+  if (p.total > p.entries.length) return "TRUNCATED";
+  return null;
+}
 
 export type KyaraDecodeError = "PAYLOAD_INVALID" | "PAYLOAD_TOO_LARGE" | "PAYLOAD_VERSION";
 
@@ -75,7 +111,7 @@ function cleanPseudo(value: string | null): string | null {
   return clean.length > 0 ? clean : null;
 }
 
-/** Seuls les avatars servis par Discord sont gardés (affichés dans l'admin, lus pour l'ID Discord). */
+/** Seuls les avatars servis par Discord sont gardés, le temps d'y lire l'ID Discord (l'adresse n'est pas stockée). */
 function cleanAvatar(value: string | null): string | null {
   if (value === null) return null;
   try {
@@ -92,18 +128,6 @@ function fromBase64Url(text: string): Uint8Array {
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
-}
-
-export function toBase64Url(bytes: Uint8Array): string {
-  let bin = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-/** Encodage du lot (tests et variante console du favori, qui fait la même chose en ligne). */
-export function encodeKyaraPayload(json: KyaraPayloadJson, deflateRaw?: (bytes: Uint8Array) => Uint8Array): string {
-  const bytes = new TextEncoder().encode(JSON.stringify(json));
-  return deflateRaw ? `v2z.${toBase64Url(deflateRaw(bytes))}` : `v2.${toBase64Url(bytes)}`;
 }
 
 export function decodeKyaraFragment(
@@ -159,6 +183,9 @@ export function decodeKyaraFragment(
       total: data.t,
       entries,
       copies: entries.reduce((sum, e) => sum + e.qty, 0),
+      complete: data.e ?? null,
+      dropped: data.d ?? null,
+      idFallbacks: data.f ?? null,
     },
   };
 }
