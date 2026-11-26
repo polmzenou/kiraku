@@ -79,10 +79,15 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
       ? [salesTabs, EXCHANGE_TABS]
       : [salesTabs];
   const now = new Date();
-  const page = enabled && !exchangeTab && !ordersTab ? await listAuctions({ params, cursor: null, viewerId: user.id, locale, now }) : null;
-  // Vendre depuis le Marché : onglets des ventes, membres seulement (les échanges ont leur propre bouton)
-  const sellBase = page && !user.isGuest ? await sellBaseFor(user.id, now) : null;
-  const incoming = exchangesOn && !user.isGuest ? await countIncomingOffers(user.id, now) : 0;
+  const salesShown = enabled && !exchangeTab && !ordersTab;
+  // Lectures indépendantes, en parallèle. Vendre depuis le Marché : onglets des ventes, membres seulement (les échanges
+  // ont leur propre bouton)
+  const [page, sellBase, incoming, antiSnipeSeconds] = await Promise.all([
+    salesShown ? listAuctions({ params, cursor: null, viewerId: user.id, locale, now }) : null,
+    salesShown && !user.isGuest ? sellBaseFor(user.id, now) : null,
+    exchangesOn && !user.isGuest ? countIncomingOffers(user.id, now) : 0,
+    salesShown ? getSetting("market.antiSnipeSeconds") : 0,
+  ]);
   const tabHref = (tab: string) => (tab === "all" ? "/marche" : `/marche?onglet=${tab}`);
   const current = ordersTab ? "avis" : (exchangeTab ?? params.tab);
 
@@ -167,6 +172,7 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
             nextCursor={page.nextCursor}
             query={Object.fromEntries(marketSearchParams(params))}
             serverNow={now.getTime()}
+            urgentMs={antiSnipeSeconds * 1000}
             emptyText={t(`empty.${params.tab}`)}
           />
         </>

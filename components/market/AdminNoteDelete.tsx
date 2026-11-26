@@ -1,16 +1,17 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { clearMarketNoteAction } from "@/server/actions/admin-market";
 import { Button } from "../ui/Button";
 import { IconButton } from "../ui/IconButton";
 
-/** Poubelle de la modération à côté d'un commentaire public : rendue seulement pour un admin. */
+/**
+ * Poubelle de la modération à côté d'un commentaire public : rendue seulement pour un admin. L'action rafraîchit la
+ * page côté serveur : pas de second rafraîchissement ici.
+ */
 export function AdminNoteDelete({ kind, id }: { kind: "LISTING" | "AUCTION"; id: string }) {
   const t = useTranslations("market.adminNote");
-  const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -19,8 +20,7 @@ export function AdminNoteDelete({ kind, id }: { kind: "LISTING" | "AUCTION"; id:
     startTransition(async () => {
       try {
         const res = await clearMarketNoteAction({ kind, id });
-        if (res.ok) router.refresh();
-        else setError(t(`errors.${res.error}`));
+        if (!res.ok) setError(t(`errors.${res.error}`));
       } catch {
         setError(t("errors.UNAVAILABLE"));
       }

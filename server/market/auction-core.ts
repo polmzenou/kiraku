@@ -17,7 +17,6 @@ import {
   checkTrader,
   extendedEndsAt,
   listingEndsAt,
-  minNextBid,
   priceCap,
   saleFee,
   type ListingRefusal,
@@ -51,6 +50,8 @@ export type AuctionErrorCode =
   | "HAS_BIDS"
   | "NO_BUYOUT"
   | "STALE"
+  // Verrou du parrainage de l'autre partie (le vendeur, à l'achat immédiat) : il ne cède pas encore ses cartes
+  | "PARTNER_LOCKED"
   | LockRefusal;
 
 export class AuctionError extends Error {
@@ -207,16 +208,19 @@ async function bidInTx(tx: Tx, req: BidRequest): Promise<BidOutcome> {
     amount = a.buyoutPrice;
   } else {
     if (!Number.isSafeInteger(req.amount)) throw new AuctionError("INVALID_PRICE");
-    // Une mise qui atteint l'achat immédiat achète au prix d'achat immédiat, pas au-delà
-    amount = canBuyout && req.amount >= a.buyoutPrice! ? a.buyoutPrice! : req.amount;
-    const card = await tx.card.findUnique({ where: { id: a.cardId }, select: { rarity: true } });
-    const bounds = bidBounds(a.currentBid, a.startPrice, rules.minIncrementBp, priceCap(rules, card?.rarity ?? null));
-    // L'achat immédiat affiché reste honoré même si le plafond a baissé depuis la mise en vente
-    if (!(canBuyout && amount === a.buyoutPrice)) {
+    if (canBuyout && a.buyoutPrice !== null && req.amount >= a.buyoutPrice) {
+      // Une mise qui atteint l'achat immédiat est un achat immédiat, à son prix et pas au-delà : ni plafond (l'achat
+      // affiché reste honoré même si le plafond a baissé depuis la mise en vente) ni mise minimale (l'enchère peut être
+      // à moins d'une surenchère de l'achat immédiat, la mise minimale le dépasserait)
+      amount = a.buyoutPrice;
+    } else {
+      amount = req.amount;
+      const card = await tx.card.findUnique({ where: { id: a.cardId }, select: { rarity: true } });
+      const bounds = bidBounds(a.currentBid, a.startPrice, rules.minIncrementBp, priceCap(rules, card?.rarity ?? null));
       if (!bounds) throw new AuctionError("CAP_REACHED");
       if (amount > bounds.max) throw new AuctionError("INVALID_PRICE");
+      if (amount < bounds.min) throw new AuctionError("TOO_LOW");
     }
-    if (amount < (bounds?.min ?? minNextBid(a.currentBid, a.startPrice, rules.minIncrementBp))) throw new AuctionError("TOO_LOW");
   }
   const sold = canBuyout && amount === a.buyoutPrice;
 
@@ -230,6 +234,11 @@ async function bidInTx(tx: Tx, req: BidRequest): Promise<BidOutcome> {
   // Les Zeni du filleul n'achètent pas la carte de son parrain, ni l'inverse
   const locked = await checkReferralLocks(tx, { actorId: req.bidderId, counterpartyId: a.sellerId, ownItems: false, mutual: true, now });
   if (locked) throw new AuctionError(locked);
+  // Achat immédiat : la vente se conclut ici, le verrou du vendeur est revérifié comme à la mise en vente (rattaché
+  // depuis à un parrain, il ne cède pas encore sa carte)
+  if (sold && (await checkReferralLocks(tx, { actorId: a.sellerId, counterpartyId: null, ownItems: true, mutual: false, now }))) {
+    throw new AuctionError("PARTNER_LOCKED");
+  }
 
   let coins: number;
   try {
@@ -336,12 +345,13 @@ async function returnCard(tx: Tx, a: Pick<LockedAuction, "id" | "sellerId" | "us
   if (back.count !== 1) throw new Error(`Vente ${a.id} : exemplaire réservé introuvable`);
 }
 
-export type SettleOutcome = { settled: false } | { settled: true; status: "SOLD" | "EXPIRED" };
+export type SettleOutcome = { settled: false } | { settled: true; status: "SOLD" | "EXPIRED" | "CANCELLED" };
 
 /**
- * Clôt une vente terminée. Idempotent : le passage ACTIVE → SOLD | EXPIRED est un updateMany
+ * Clôt une vente terminée. Idempotent : le passage ACTIVE → SOLD | EXPIRED | CANCELLED est un updateMany
  * conditionnel ; si une autre clôture (cron, page affichée) est passée avant, count = 0 et on
  * s'arrête. La condition sur currentBid écarte aussi une mise validée entre la lecture et l'écriture.
+ * Une vente que les verrous du parrainage refusent à la conclusion est annulée : mise rendue, carte rendue.
  */
 export async function settleAuctionWith(
   db: PrismaClient,
@@ -359,15 +369,32 @@ export async function settleAuctionWith(
       if (!a || a.status !== "ACTIVE" || a.endsAt > now) return { settled: false };
 
       const sold = a.currentBid !== null && a.currentBidderId !== null;
+      // Verrous du parrainage revérifiés à la conclusion, comme à la mise en vente et à chaque mise : un vendeur
+      // rattaché à un parrain depuis ne cède pas encore sa carte, et une vente menée par son parrain ne lui revient pas
+      const locked = sold
+        ? await checkReferralLocks(tx, { actorId: a.sellerId, counterpartyId: a.currentBidderId, ownItems: true, mutual: true, now })
+        : null;
       const closed = await tx.auction.updateMany({
         where: { id: a.id, status: "ACTIVE", endsAt: { lte: now }, currentBid: a.currentBid, currentBidderId: a.currentBidderId },
-        data: sold
-          ? { status: "SOLD", settledAt: now, finalPrice: a.currentBid, fee: saleFee(a.currentBid!, a.feeBp) }
-          : { status: "EXPIRED", settledAt: now },
+        data: locked
+          ? { status: "CANCELLED", cancelledAt: now }
+          : sold
+            ? { status: "SOLD", settledAt: now, finalPrice: a.currentBid, fee: saleFee(a.currentBid!, a.feeBp) }
+            : { status: "EXPIRED", settledAt: now },
       });
       if (closed.count !== 1) return { settled: false };
       await touchDiscordPost(tx, a.id, now);
 
+      if (locked) {
+        // Pas de vente : le séquestre revient au meneur, la carte au vendeur, et chacun sait pourquoi
+        await lockPlayers(tx, [a.currentBidderId!]);
+        await credit(tx, { userId: a.currentBidderId!, amount: a.currentBid!, reason: "BID_REFUND", refId: a.id, now });
+        await returnCard(tx, a);
+        const payload = { auctionId: a.id, cardId: a.cardId, amount: a.currentBid, locked: true as const };
+        await notify(tx, { userId: a.currentBidderId!, type: "AUCTION_CANCELLED", actorId: a.sellerId, refId: a.id, payload, now });
+        await notify(tx, { userId: a.sellerId, type: "AUCTION_CANCELLED", actorId: a.sellerId, refId: a.id, payload, now });
+        return { settled: true, status: "CANCELLED" };
+      }
       if (sold) {
         await deliverSale(tx, { ...a, currentBid: a.currentBid!, currentBidderId: a.currentBidderId! }, now);
         return { settled: true, status: "SOLD" };

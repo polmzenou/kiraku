@@ -11,14 +11,14 @@
 // puis les joueurs, triés par id (lockPlayers).
 import type { PrismaClient } from "@/generated/prisma/client";
 import { isFrozen } from "@/lib/account/deletion";
-import { checkOrder, orderExpiresAt, orderOpen, shouldAlert, type OrderRefusal } from "@/lib/market/buy-orders";
+import { alertsLeft, checkOrder, orderExpiresAt, orderOpen, shouldAlert, type OrderRefusal } from "@/lib/market/buy-orders";
 import { checkTrader, saleFee, type MarketRules, type TraderRefusal } from "@/lib/market/rules";
 import { ORDINARY_COPY } from "@/lib/collection/copies";
 import type { LockRefusal } from "@/lib/referral/locks";
 import { applyEntries, credit, debit, LedgerError } from "../economy/ledger";
 import { checkReferralLocks } from "../referral/locks";
 import { lockPlayers, type Tx } from "../social/lock";
-import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
+import { notify, notifyingTransaction, notifyMany, type OnNotified } from "../social/notify";
 import { recordDiscoveries } from "../collection/discovery";
 import { chooseCopy, moveCopy } from "../collection/transfer";
 import { consumeWishlist } from "../collection/wishlist-core";
@@ -82,7 +82,8 @@ export type CreateOrderInput = {
   maxOpen: number;
 };
 
-export type CreatedOrder = { orderId: string; cardId: string; price: number; expiresAt: Date; coins: number };
+/** `rarity` : celle de la carte, pour comparer l'avis à la référence de sa rareté avant d'alerter. */
+export type CreatedOrder = { orderId: string; cardId: string; rarity: string; price: number; expiresAt: Date; coins: number };
 
 /** Publie un avis : le prix est bloqué tout de suite, refusé au-delà du plafond de la rareté. */
 export async function createOrderWith(db: PrismaClient, input: CreateOrderInput): Promise<CreatedOrder> {
@@ -113,7 +114,7 @@ export async function createOrderWith(db: PrismaClient, input: CreateOrderInput)
       if (e instanceof LedgerError && e.code === "NOT_ENOUGH_ZENI") throw new BuyOrderError("NOT_ENOUGH_ZENI");
       throw e;
     }
-    return { orderId: order.id, cardId: input.cardId, price: input.price, expiresAt, coins };
+    return { orderId: order.id, cardId: input.cardId, rarity: card.rarity, price: input.price, expiresAt, coins };
   }, TX);
 }
 
@@ -166,7 +167,7 @@ export async function expireOrderWith(db: PrismaClient, orderId: string, now: Da
 
 /**
  * Expire les avis échus, les plus anciens d'abord : balayage du cron, ou ceux d'un seul acheteur
- * (`buyerId`) quand il ouvre ses avis, pour qu'il retrouve ses Zeni sans attendre le cron quotidien.
+ * (`buyerId`) quand il ouvre ses avis, pour qu'il retrouve ses Zeni sans attendre le cron du marché.
  * Un échec n'arrête pas le balayage.
  */
 export async function expireDueWith(
@@ -270,10 +271,19 @@ export async function fillOrderWith(db: PrismaClient, input: FillOrderInput, onN
 
 // --- Alerte aux détenteurs ---
 
+export type AlertOptions = {
+  /** Alertes qu'un même acheteur peut déclencher sur 24 h glissantes (market.orderAlertsPerDay ; 0 : sans plafond). */
+  perDay?: number;
+  /** Sans cote de la carte, comparer à la référence de sa rareté (market.orderAlertRarityRef) ; absent : on prévient. */
+  rarity?: { reference: number | null };
+};
+
 /**
- * Prévient les joueurs qui ont un exemplaire libre de la carte qu'un avis la cherche, si l'offre
- * dépasse la cote (ou s'il n'y en a pas). Au plus une alerte par joueur et par carte sur 24 h.
- * Transaction séparée, après la publication : une alerte ratée ne fait pas échouer l'avis.
+ * Prévient les joueurs qui ont un exemplaire libre de la carte qu'un avis la cherche, si l'offre dépasse la cote (sans
+ * cote : voir shouldAlert). Au plus une alerte par joueur et par carte sur 24 h, jamais à un joueur que l'acheteur
+ * bloque ou qui le bloque, et au plus `perDay` alertes par acheteur sur 24 h. L'avis est relu sous verrou : annulé
+ * ou rempli entre-temps, il n'alerte personne. Transaction séparée, après la publication : une alerte ratée ne fait
+ * pas échouer l'avis.
  */
 export async function alertOwnersWith(
   db: PrismaClient,
@@ -281,34 +291,64 @@ export async function alertOwnersWith(
   quotePrice: number | null,
   now: Date,
   onNotified?: OnNotified,
+  options: AlertOptions = {},
 ): Promise<number> {
-  if (!shouldAlert(order.price, quotePrice)) return 0;
+  if (!shouldAlert(order.price, quotePrice, options.rarity)) return 0;
   return notifyingTransaction(
     db,
     async (tx) => {
+      // Même ordre de verrous que partout : l'avis, puis l'acheteur (le plafond se compte sous son verrou)
+      const current = await lockOrder(tx, order.orderId);
+      if (!current || current.buyerId !== order.buyerId || !orderOpen(current, now)) return 0;
+      await lockPlayers(tx, [order.buyerId]);
+      const since = new Date(now.getTime() - DAY);
+      const perDay = options.perDay ?? 0;
+      const sent = perDay > 0 ? await tx.notification.count({ where: { type: "BUY_ORDER_WANTED", actorId: order.buyerId, createdAt: { gt: since } } }) : 0;
+      const left = alertsLeft(perDay, sent);
+      if (left <= 0) return 0;
+
       const holders = await tx.userCard.findMany({
-        where: { cardId: order.cardId, status: "COLLECTION", ...ORDINARY_COPY, ownerId: { not: order.buyerId }, owner: { bannedAt: null, isGuest: false } },
+        where: {
+          cardId: order.cardId,
+          status: "COLLECTION",
+          ...ORDINARY_COPY,
+          ownerId: { not: order.buyerId },
+          owner: {
+            bannedAt: null,
+            isGuest: false,
+            deletionRequestedAt: null,
+            anonymizedAt: null,
+            // Ni ceux que l'acheteur bloque, ni ceux qui le bloquent
+            blocking: { none: { blockedId: order.buyerId } },
+            blockedBy: { none: { blockerId: order.buyerId } },
+          },
+        },
         distinct: ["ownerId"],
         select: { ownerId: true },
         take: MAX_ALERTS,
       });
       if (holders.length === 0) return 0;
       const recent = await tx.notification.findMany({
-        where: { type: "BUY_ORDER_WANTED", refId: order.cardId, userId: { in: holders.map((h) => h.ownerId) }, createdAt: { gt: new Date(now.getTime() - DAY) } },
+        where: { type: "BUY_ORDER_WANTED", refId: order.cardId, userId: { in: holders.map((h) => h.ownerId) }, createdAt: { gt: since } },
         select: { userId: true },
       });
       const already = new Set(recent.map((r) => r.userId));
-      const targets = holders.map((h) => h.ownerId).filter((id) => !already.has(id));
-      for (const userId of targets) {
-        await notify(tx, {
+      const targets = holders
+        .map((h) => h.ownerId)
+        .filter((id) => !already.has(id))
+        .slice(0, left);
+      // Une seule insertion pour tous les détenteurs (jusqu'à MAX_ALERTS)
+      await notifyMany(
+        tx,
+        targets.map((userId) => ({
           userId,
-          type: "BUY_ORDER_WANTED",
+          type: "BUY_ORDER_WANTED" as const,
           actorId: order.buyerId,
           refId: order.cardId,
           payload: { orderId: order.orderId, cardId: order.cardId, amount: order.price },
           now,
-        });
-      }
+        })),
+      );
       return targets.length;
     },
     TX,

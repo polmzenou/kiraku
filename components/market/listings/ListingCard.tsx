@@ -20,27 +20,28 @@ import { Sheet } from "../../ui/Sheet";
 import { AdminNoteDelete } from "../AdminNoteDelete";
 import { CardThumb } from "./CardThumb";
 
-/** Ce que le joueur s'apprête à proposer : une carte demandée, ou une carte choisie dans sa collection. */
-/** Carte proposée, et l'exemplaire désigné s'il s'agit d'une pièce spéciale (sinon le serveur en prend un ordinaire). */
+/**
+ * Ce que le joueur s'apprête à proposer (une carte demandée, ou une carte choisie dans sa collection), et l'exemplaire
+ * désigné s'il s'agit d'une pièce spéciale (sinon le serveur en prend un ordinaire).
+ */
 type Pending = { cardId: string; name: string; userCardId?: string | null };
 
 /**
  * Une annonce : la carte donnée à gauche, les cartes demandées à droite (cerclées d'or quand le
  * lecteur peut les donner), puis « Donner X » ou « Proposer autre chose ». L'auteur, lui, voit le
- * nombre d'offres et peut retirer l'annonce.
+ * nombre d'offres et peut retirer l'annonce (après confirmation : ses offres reçues sont fermées).
+ * Les actions rafraîchissent la page côté serveur : pas de second rafraîchissement ici.
  */
 export function ListingCard({
   listing,
   guest,
   isAdmin,
   allowOther,
-  onChanged,
 }: {
   listing: ListingView;
   guest: boolean;
   isAdmin: boolean;
   allowOther: boolean;
-  onChanged: () => void;
 }) {
   const t = useTranslations("listings");
   const tAccount = useTranslations("account");
@@ -48,6 +49,7 @@ export function ListingCard({
   const format = useFormatter();
   const now = useNow();
   const [confirm, setConfirm] = useState<Pending | null>(null);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [picking, setPicking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
@@ -65,7 +67,6 @@ export function ListingCard({
           return;
         }
         after?.();
-        onChanged();
       } catch {
         setError(t("errors.UNAVAILABLE"));
       }
@@ -131,12 +132,29 @@ export function ListingCard({
       {!guest && (
         <footer className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
           {listing.mine ? (
-            <>
-              <p className="mr-auto text-sm text-text-muted">{t("offerCount", { count: listing.offerCount })}</p>
-              <Button type="button" onClick={() => run(() => cancelListingAction({ listingId: listing.id }))} disabled={pending}>
-                {t("cancelListing")}
-              </Button>
-            </>
+            confirmingCancel ? (
+              <>
+                <p className="mr-auto text-sm font-bold">{t("confirmCancel", { count: listing.offerCount })}</p>
+                <Button type="button" onClick={() => setConfirmingCancel(false)} disabled={pending}>
+                  {t("keepListing")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() => run(() => cancelListingAction({ listingId: listing.id }), () => setConfirmingCancel(false))}
+                  disabled={pending}
+                >
+                  {pending ? t("pending") : t("yesCancel")}
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="mr-auto text-sm text-text-muted">{t("offerCount", { count: listing.offerCount })}</p>
+                <Button type="button" onClick={() => setConfirmingCancel(true)} disabled={pending}>
+                  {t("cancelListing")}
+                </Button>
+              </>
+            )
           ) : listing.myOffer || sent ? (
             <>
               <p className="mr-auto text-sm">

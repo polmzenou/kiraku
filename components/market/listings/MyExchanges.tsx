@@ -92,6 +92,8 @@ function MyListing({ listing }: { listing: MyListingView }) {
   const now = useNow();
   const name = usePlayerName();
   const [error, setError] = useState<string | null>(null);
+  // Retirer l'annonce ferme toutes les offres reçues (leurs auteurs sont prévenus) : confirmation d'abord
+  const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const cancel = () =>
@@ -103,6 +105,7 @@ function MyListing({ listing }: { listing: MyListingView }) {
       } catch {
         setError(t("errors.UNAVAILABLE"));
       }
+      setConfirming(false);
     });
 
   return (
@@ -122,10 +125,23 @@ function MyListing({ listing }: { listing: MyListingView }) {
           </ul>
           <p className="text-xs text-text-muted tabular-nums">{t("expires", { when: format.relativeTime(listing.expiresAt, now) })}</p>
         </div>
-        <Button type="button" onClick={cancel} disabled={pending}>
-          {t("cancelListing")}
-        </Button>
+        {!confirming && (
+          <Button type="button" onClick={() => setConfirming(true)} disabled={pending}>
+            {t("cancelListing")}
+          </Button>
+        )}
       </header>
+      {confirming && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <p className="mr-auto text-sm font-bold">{t("confirmCancel", { count: listing.offers.length })}</p>
+          <Button type="button" onClick={() => setConfirming(false)} disabled={pending}>
+            {t("keepListing")}
+          </Button>
+          <Button type="button" variant="primary" onClick={cancel} disabled={pending}>
+            {pending ? t("pending") : t("yesCancel")}
+          </Button>
+        </div>
+      )}
       {listing.note && <NoteText text={listing.note} label={t("yourNote")} />}
       {error && (
         <p role="alert" className="text-sm text-shu">

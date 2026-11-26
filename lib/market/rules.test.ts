@@ -128,6 +128,14 @@ describe("qui peut vendre et miser", () => {
   it("refuse tout quand le marché est coupé", () => {
     expect(checkTrader({ isGuest: false, bannedAt: null, createdAt: old }, now, { ...rules, enabled: false })).toBe("DISABLED");
   });
+
+  it("compte l'âge depuis l'inscription, pas depuis la création du compte invité", () => {
+    const justRegistered = new Date(now.getTime() - 3_600_000);
+    expect(checkTrader({ isGuest: false, bannedAt: null, createdAt: old, registeredAt: justRegistered }, now, rules)).toBe("TOO_NEW");
+    expect(checkTrader({ isGuest: false, bannedAt: null, createdAt: old, registeredAt: old }, now, rules)).toBeNull();
+    // Sans date d'inscription (compte d'avant la colonne) : la création fait foi
+    expect(checkTrader({ isGuest: false, bannedAt: null, createdAt: old, registeredAt: null }, now, rules)).toBeNull();
+  });
 });
 
 describe("achat immédiat", () => {

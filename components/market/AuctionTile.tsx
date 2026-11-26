@@ -9,7 +9,7 @@ import { ZeniCoin } from "../layout/ZeniCoin";
 import { Countdown } from "./Countdown";
 
 /** Une vente dans la liste du marché : fuda, prix, mises, fin et badges (à toi, en tête, immédiat). */
-export function AuctionTile({ item, serverNow, preload }: { item: AuctionListItem; serverNow: number; preload: boolean }) {
+export function AuctionTile({ item, serverNow, urgentMs, preload }: { item: AuctionListItem; serverNow: number; urgentMs: number; preload: boolean }) {
   const t = useTranslations("market");
   const open = item.status === "ACTIVE";
   return (
@@ -42,7 +42,7 @@ export function AuctionTile({ item, serverNow, preload }: { item: AuctionListIte
         </p>
         <p className="text-xs text-text-muted">{t("bids", { count: item.bidCount })}</p>
         <p className="text-xs text-text-muted">
-          {open ? <Countdown endsAt={new Date(item.endsAt).getTime()} serverNow={serverNow} /> : t(`status.${item.status}`)}
+          {open ? <Countdown endsAt={new Date(item.endsAt).getTime()} serverNow={serverNow} urgentMs={urgentMs} /> : t(`status.${item.status}`)}
         </p>
       </div>
     </Link>

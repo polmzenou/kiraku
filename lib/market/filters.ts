@@ -85,11 +85,14 @@ export function marketSearchParams(p: MarketParams): URLSearchParams {
   return s;
 }
 
-/** Position dans la liste : valeur de la colonne triée (date en ms ou prix) et id, pour départager. */
-export type MarketCursor = { v: number; id: string };
+/**
+ * Position dans la liste : valeur de la colonne triée (date en ms ou prix) et id, pour départager. `closed` :
+ * « Mes ventes » et « Mes enchères » listent les ventes en cours puis les closes ; le curseur est dans les closes.
+ */
+export type MarketCursor = { v: number; id: string; closed?: true };
 
 export function encodeMarketCursor(c: MarketCursor): string {
-  return Buffer.from(`${c.v}.${c.id}`, "utf8").toString("base64url");
+  return Buffer.from(`${c.closed ? "c." : ""}${c.v}.${c.id}`, "utf8").toString("base64url");
 }
 
 export function decodeMarketCursor(raw: string | null | undefined): MarketCursor | null {
@@ -100,6 +103,7 @@ export function decodeMarketCursor(raw: string | null | undefined): MarketCursor
   } catch {
     return null;
   }
-  const m = /^(\d{1,15})\.([A-Za-z0-9_-]{1,40})$/.exec(text);
-  return m ? { v: Number(m[1]), id: m[2] } : null;
+  const m = /^(c\.)?(\d{1,15})\.([A-Za-z0-9_-]{1,40})$/.exec(text);
+  if (!m) return null;
+  return m[1] ? { v: Number(m[2]), id: m[3], closed: true } : { v: Number(m[2]), id: m[3] };
 }

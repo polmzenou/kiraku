@@ -70,6 +70,8 @@ describe.skipIf(!url)("hôtel des ventes atomique (base réelle)", () => {
         coins: START,
         role,
         createdAt: new Date(Date.now() - 72 * HOUR),
+        // L'âge anti-multicomptes se compte depuis l'inscription (sans elle, le trigger la poserait à maintenant)
+        registeredAt: new Date(Date.now() - 72 * HOUR),
       },
       select: { id: true },
     });
@@ -432,6 +434,45 @@ describe.skipIf(!url)("hôtel des ventes atomique (base réelle)", () => {
     expect((await coinsOf([bidder])).get(bidder)).toBe(START);
     expect(await balanceMatchesLedger(bidder)).toBe(true);
     expect(await prisma.adminLog.count({ where: { adminId: admin, targetId: auctionId } })).toBe(1);
+  }, 60_000);
+
+  it("enchère à moins d'une surenchère de l'achat immédiat : une mise au-delà achète au prix affiché", async () => {
+    // 100 en tête : la surenchère minimale (105) dépasse l'achat immédiat (104), une mise de 500 achète à 104
+    const { sellerId, auctionId } = await listing({ startPrice: 100, buyoutPrice: 104 });
+    const [a, b] = await players(2);
+    await placeBidWith(prisma, { bidderId: a, auctionId, amount: 100, now: new Date(), rules });
+    expect(minNextBid(100, 100, rules.minIncrementBp)).toBeGreaterThan(104);
+    const res = await placeBidWith(prisma, { bidderId: b, auctionId, amount: 500, now: new Date(), rules });
+    expect(res).toMatchObject({ sold: true, currentBid: 104 });
+    const sold = await auction(auctionId);
+    expect(sold).toMatchObject({ status: "SOLD", finalPrice: 104 });
+    expect(sold.userCard).toMatchObject({ ownerId: b, status: "COLLECTION" });
+    const coins = await coinsOf([a, b, sellerId]);
+    expect(coins.get(a)).toBe(START);
+    expect(coins.get(b)).toBe(START - 104);
+    expect(coins.get(sellerId)).toBe(START + 104 - saleFee(104, rules.feeBp));
+    for (const id of [a, b, sellerId]) expect(await balanceMatchesLedger(id)).toBe(true);
+  }, 60_000);
+
+  it("vendeur rattaché au meneur (son parrain) après la mise en vente : à la clôture, vente annulée, mise et carte rendues", async () => {
+    const { sellerId, auctionId } = await listing({ startPrice: 100 });
+    const [bidder] = await players(1);
+    await placeBidWith(prisma, { bidderId: bidder, auctionId, amount: 200, now: new Date(), rules });
+    // Verrou du filleul (cardLockDays) et de la paire (pairLockDays), posés après la mise
+    await prisma.user.update({ where: { id: sellerId }, data: { referredById: bidder, referredAt: new Date() } });
+    await prisma.auction.update({ where: { id: auctionId }, data: { endsAt: new Date(Date.now() - 1_000) } });
+    expect(await settleAuctionWith(prisma, auctionId, new Date())).toEqual({ settled: true, status: "CANCELLED" });
+    expect(await settleAuctionWith(prisma, auctionId, new Date())).toEqual({ settled: false });
+    const a = await auction(auctionId);
+    expect(a.status).toBe("CANCELLED");
+    expect(a.userCard).toMatchObject({ ownerId: sellerId, status: "COLLECTION" });
+    const coins = await coinsOf([bidder, sellerId]);
+    expect(coins.get(bidder)).toBe(START);
+    expect(coins.get(sellerId)).toBe(START);
+    for (const id of [bidder, sellerId]) expect(await balanceMatchesLedger(id)).toBe(true);
+    const notices = await prisma.notification.findMany({ where: { type: "AUCTION_CANCELLED", refId: auctionId }, select: { userId: true, payload: true } });
+    expect(new Set(notices.map((n) => n.userId))).toEqual(new Set([bidder, sellerId]));
+    expect(notices.every((n) => (n.payload as { locked?: boolean }).locked === true)).toBe(true);
   }, 60_000);
 
   it("bilan : Σ soldes + Σ séquestre + Σ taxes = Σ dépôts, et Σ soldes = Σ journal", async () => {

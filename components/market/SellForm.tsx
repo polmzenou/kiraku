@@ -35,7 +35,9 @@ export function useSellBlockReason(info: Pick<SellBase, "block" | "minAccountAge
  */
 export function SellForm({ cardId, info, onSold }: { cardId: string; info: SellInfo; onSold?: () => void }) {
   const t = useTranslations("market");
-  const [start, setStart] = useState("100");
+  // Prix suggéré : 100 Zeni ramenés dans les bornes de l'admin (prix de départ minimal, plafond de la rareté), pour
+  // que la feuille ne s'ouvre jamais sur une valeur refusée
+  const [start, setStart] = useState(() => String(Math.min(info.maxPrice, Math.max(info.minStartPrice, 100))));
   const [withBuyout, setWithBuyout] = useState(false);
   const [buyout, setBuyout] = useState("");
   const [note, setNote] = useState("");

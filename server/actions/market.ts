@@ -51,7 +51,8 @@ export type MarketActionError =
   | "NO_BUYOUT"
   | "STALE"
   | "REFEREE_LOCKED"
-  | "PAIR_LOCKED";
+  | "PAIR_LOCKED"
+  | "PARTNER_LOCKED";
 
 type Failure = { ok: false; error: MarketActionError };
 

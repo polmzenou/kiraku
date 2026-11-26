@@ -39,6 +39,8 @@ export type ListingErrorCode =
   | "OFFER_GONE"
   | "WANT_GONE"
   | "NOT_FOUND"
+  // Verrou du parrainage de l'autre partie (l'offrant, à l'acceptation) : il ne cède pas encore ses cartes
+  | "PARTNER_LOCKED"
   | LockRefusal;
 
 export class ListingError extends Error {
@@ -127,17 +129,20 @@ export async function createListingWith(db: PrismaClient, input: CreateListingIn
     // Ce que l'annonce promet : l'exemplaire désigné, sinon un ordinaire (jamais une pièce spéciale par défaut)
     const offeredCopy = await chooseCopy(tx, input.ownerId, input.cardId, input.userCardId);
     const [cards, ownedWants, duplicate, active, createdLastDay] = await Promise.all([
-      tx.card.findMany({ where: { id: { in: [input.cardId, ...wants] }, status: "PUBLISHED" }, select: { id: true, rarity: true } }),
+      // La carte offerte peut être archivée (sortie du top à l'import) : elle reste vendable et échangeable ailleurs.
+      // Les cartes demandées, elles, doivent être publiées (une carte archivée ne se choisit plus).
+      tx.card.findMany({ where: { id: { in: [input.cardId, ...wants] }, status: { not: "DRAFT" } }, select: { id: true, rarity: true, status: true } }),
       tx.userCard.count({ where: { ownerId: input.ownerId, cardId: { in: wants } } }),
       tx.tradeListing.count({ where: { ownerId: input.ownerId, cardId: input.cardId, status: "OPEN", expiresAt: { gt: now } } }),
       tx.tradeListing.count({ where: { ownerId: input.ownerId, status: "OPEN", expiresAt: { gt: now } } }),
       tx.tradeListing.count({ where: { ownerId: input.ownerId, createdAt: { gt: new Date(now.getTime() - DAY_MS) } } }),
     ]);
     const rarity = new Map(cards.map((c) => [c.id, c.rarity as Rarity]));
+    const published = new Set(cards.filter((c) => c.status === "PUBLISHED").map((c) => c.id));
     const offeredRarity = rarity.get(input.cardId);
     if (!offeredRarity) throw new ListingError("CARD_GONE");
     if (!offeredCopy.ok) throw new ListingError(offeredCopy.reason === "CHOOSE_COPY" ? "CHOOSE_COPY" : "CARD_GONE");
-    if (wants.some((id) => !rarity.has(id))) throw new ListingError("WANT_GONE");
+    if (wants.some((id) => !published.has(id))) throw new ListingError("WANT_GONE");
 
     const listingRefusal = checkTradeListing({
       offered: { cardId: input.cardId, rarity: offeredRarity },
@@ -319,6 +324,11 @@ export async function acceptOfferWith(
       if (blocks.byMe || blocks.byThem) throw new ListingError("BLOCKED");
       const locked = await checkReferralLocks(tx, { actorId: listing.ownerId, counterpartyId: offer.bidderId, ownItems: true, mutual: true, now });
       if (locked) throw new ListingError(locked);
+      // L'offrant cède aussi sa carte : son propre verrou est revérifié ici, pas seulement à la création de l'offre
+      // (rattaché à un parrain entre-temps, il ne cède rien pendant cardLockDays). L'offre reste en attente.
+      if (await checkReferralLocks(tx, { actorId: offer.bidderId, counterpartyId: null, ownItems: true, mutual: false, now })) {
+        throw new ListingError("PARTNER_LOCKED");
+      }
       const rarities = await tx.card.findMany({ where: { id: { in: [listing.cardId, offer.cardId] } }, select: { rarity: true } });
       const allowed = new Set(input.allowedRarities);
       if (rarities.length !== 2 || rarities.some((c) => !allowed.has(c.rarity as Rarity))) throw new ListingError("RARITY");

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatBadge,
+  parseAuctionPayload,
   parseBuyOrderPayload,
   parseCoinFlipPayload,
   parseGiftPayload,
@@ -16,6 +17,14 @@ describe("formatBadge", () => {
     expect(formatBadge(3)).toBe("3");
     expect(formatBadge(9)).toBe("9");
     expect(formatBadge(10)).toBe("9+");
+  });
+});
+
+describe("parseAuctionPayload", () => {
+  it("garde la marque d'une vente annulée par les verrous du parrainage, seulement si elle vaut true", () => {
+    expect(parseAuctionPayload({ auctionId: "a1", cardId: "c1", amount: 300 })).toEqual({ auctionId: "a1", cardId: "c1", amount: 300 });
+    expect(parseAuctionPayload({ auctionId: "a1", cardId: "c1", amount: 300, locked: true })).toEqual({ auctionId: "a1", cardId: "c1", amount: 300, locked: true });
+    expect(parseAuctionPayload({ auctionId: "a1", cardId: "c1", amount: null, locked: "oui" })).toEqual({ auctionId: "a1", cardId: "c1", amount: null });
   });
 });
 

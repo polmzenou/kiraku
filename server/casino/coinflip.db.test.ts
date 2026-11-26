@@ -82,7 +82,14 @@ describe.skipIf(!url)("pile ou face atomique (base réelle)", () => {
 
   async function player(over: { createdAt?: Date; isGuest?: boolean } = {}) {
     const user = await prisma.user.create({
-      data: { username: `cf-${randomBytes(4).toString("hex")}`, isGuest: over.isGuest ?? false, coins: 0, createdAt: over.createdAt ?? OLD },
+      // Inscription à la même date que le compte : l'âge du Marché se compte depuis elle (sinon le trigger la pose à maintenant)
+      data: {
+        username: `cf-${randomBytes(4).toString("hex")}`,
+        isGuest: over.isGuest ?? false,
+        coins: 0,
+        createdAt: over.createdAt ?? OLD,
+        ...(over.isGuest ? {} : { registeredAt: over.createdAt ?? OLD }),
+      },
     });
     users.push(user.id);
     return user.id;

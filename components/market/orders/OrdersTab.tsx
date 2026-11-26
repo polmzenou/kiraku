@@ -10,8 +10,8 @@ import { prisma } from "@/server/db";
 import { ZeniCoin } from "../../layout/ZeniCoin";
 import { CancelOrder, SellToOrder } from "./OrderActions";
 
-/** Une carte cherchée : fuda, prix offert, acheteur et échéance, plus le geste possible. */
-function OrderTile({ order, action, expires, by }: { order: OrderWithCard; action?: ReactNode; expires: string; by: string }) {
+/** Une carte cherchée : fuda, prix offert (déjà formaté), acheteur et échéance, plus le geste possible. */
+function OrderTile({ order, price, action, expires, by }: { order: OrderWithCard; price: string; action?: ReactNode; expires: string; by: string }) {
   return (
     <li className="flex flex-col gap-2 lacquer rounded-card p-2">
       <Link href={`/wiki/${order.card.anilistId}`} className="block">
@@ -21,7 +21,7 @@ function OrderTile({ order, action, expires, by }: { order: OrderWithCard; actio
         <p className="truncate text-sm font-bold">{order.card.name}</p>
         <p className="flex items-center gap-1">
           <ZeniCoin size={14} />
-          <span className="font-bold tabular-nums text-kin">{order.price}</span>
+          <span className="font-bold tabular-nums text-kin">{price}</span>
         </p>
         <p className="truncate text-xs text-text-muted">{by}</p>
         <p className="text-xs text-text-muted">{expires}</p>
@@ -39,16 +39,18 @@ const grid = "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-
  */
 export async function OrdersTab({ userId, guest, locale, sort, page }: { userId: string; guest: boolean; locale: string; sort: "price" | "newest"; page: number }) {
   const now = new Date();
-  // Ses avis échus rendent leurs Zeni dès qu'il les regarde, sans attendre le cron quotidien
+  // Ses avis échus rendent leurs Zeni dès qu'il les regarde, sans attendre le cron du marché
   if (!guest) await expireDueWith(prisma, now, 20, pushLater, userId);
   const [t, format, fillable, mine, board] = await Promise.all([
     getTranslations("market.orders"),
     getFormatter(),
     guest ? [] : ordersYouCanFill(userId, locale, now),
     guest ? null : myOrders(userId, locale, now),
-    openOrdersBoard({ viewerId: userId, locale, rarity: null, sort, page, now }),
+    openOrdersBoard({ viewerId: userId, locale, sort, page, now }),
   ]);
+  // Dates dans le fuseau du jeu (timeZone de i18n/request.ts), prix avec séparateur de milliers
   const date = (d: Date) => format.dateTime(d, { day: "numeric", month: "short" });
+  const price = (o: OrderWithCard) => format.number(o.price);
   const by = (o: OrderWithCard) => t("byShort", { name: o.mine ? t("you") : (o.buyerName ?? t("someone")) });
   const pageHref = (p: number, s = sort) => `/marche?onglet=avis${s === "newest" ? "&tri=recent" : ""}${p > 0 ? `&page=${p}` : ""}`;
 
@@ -64,7 +66,7 @@ export async function OrdersTab({ userId, guest, locale, sort, page }: { userId:
           ) : (
             <ul className={grid}>
               {fillable.map((o) => (
-                <OrderTile key={o.id} order={o} by={by(o)} expires={t("until", { date: date(o.expiresAt) })} action={<SellToOrder orderId={o.id} price={o.price} net={orderNet(o.price, o.feeBp)} />} />
+                <OrderTile key={o.id} order={o} price={price(o)} by={by(o)} expires={t("until", { date: date(o.expiresAt) })} action={<SellToOrder orderId={o.id} price={o.price} net={orderNet(o.price, o.feeBp)} />} />
               ))}
             </ul>
           )}
@@ -79,7 +81,7 @@ export async function OrdersTab({ userId, guest, locale, sort, page }: { userId:
           ) : (
             <ul className={grid}>
               {mine.open.map((o) => (
-                <OrderTile key={o.id} order={o} by={t("you")} expires={t("until", { date: date(o.expiresAt) })} action={<CancelOrder orderId={o.id} />} />
+                <OrderTile key={o.id} order={o} price={price(o)} by={t("you")} expires={t("until", { date: date(o.expiresAt) })} action={<CancelOrder orderId={o.id} />} />
               ))}
             </ul>
           )}
@@ -117,7 +119,7 @@ export async function OrdersTab({ userId, guest, locale, sort, page }: { userId:
         ) : (
           <ul className={grid}>
             {board.items.map((o) => (
-              <OrderTile key={o.id} order={o} by={by(o)} expires={t("until", { date: date(o.expiresAt) })} />
+              <OrderTile key={o.id} order={o} price={price(o)} by={by(o)} expires={t("until", { date: date(o.expiresAt) })} />
             ))}
           </ul>
         )}

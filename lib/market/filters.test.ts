@@ -42,6 +42,13 @@ describe("curseur du marché", () => {
     expect(decodeMarketCursor(encodeMarketCursor(c))).toEqual(c);
   });
 
+  it("aller-retour d'un curseur dans les ventes closes (« Mes ventes », « Mes enchères »)", () => {
+    const c = { v: 1_760_000_000_000, id: "cmabc123", closed: true as const };
+    expect(decodeMarketCursor(encodeMarketCursor(c))).toEqual(c);
+    expect(decodeMarketCursor(encodeMarketCursor({ v: 5, id: "x" }))).not.toHaveProperty("closed");
+    expect(decodeMarketCursor(Buffer.from("d.5.x").toString("base64url"))).toBeNull();
+  });
+
   it("refuse un curseur forgé", () => {
     expect(decodeMarketCursor(null)).toBeNull();
     expect(decodeMarketCursor("pas-un-curseur")).toBeNull();

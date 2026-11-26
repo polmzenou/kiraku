@@ -96,7 +96,8 @@ const loadHistory = unstable_cache(
     const rules = { windowDays, minSales, minSellers };
     return { quote: quoteFor(sales, now, rules), rules, historyDays, series: priceSeries(sales, now, historyDays, windowDays, timeZone) };
   },
-  ["market-card-history-v3"],
+  // v4 : la courbe compte une voix par joueur (lib/market/quotes.ts, priceSeries)
+  ["market-card-history-v4"],
   { revalidate: CACHE_SECONDS, tags: ["market-quotes"] },
 );
 

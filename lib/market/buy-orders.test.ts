@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkOrder, compareOrders, orderExpiresAt, orderNet, orderOpen, shouldAlert } from "./buy-orders";
+import { alertsLeft, checkOrder, compareOrders, orderExpiresAt, orderNet, orderOpen, shouldAlert } from "./buy-orders";
 
 const rules = { minStartPrice: 10, maxPrice: 100_000, maxPriceByRarity: { COMMON: 500 } };
 
@@ -40,6 +40,22 @@ describe("avis de recherche", () => {
     expect(shouldAlert(101, 100)).toBe(true);
     expect(shouldAlert(100, 100)).toBe(false);
     expect(shouldAlert(80, 100)).toBe(false);
+  });
+
+  it("sans cote, compare à la référence de la rareté quand le réglage le demande", () => {
+    // La cote de la carte passe avant la référence
+    expect(shouldAlert(150, 200, { reference: 100 })).toBe(false);
+    expect(shouldAlert(101, null, { reference: 100 })).toBe(true);
+    expect(shouldAlert(100, null, { reference: 100 })).toBe(false);
+    // Ni cote ni référence : personne n'est prévenu
+    expect(shouldAlert(1_000_000, null, { reference: null })).toBe(false);
+  });
+
+  it("plafonne les alertes d'un acheteur sur 24 h (0 : sans plafond)", () => {
+    expect(alertsLeft(0, 5_000)).toBe(Number.POSITIVE_INFINITY);
+    expect(alertsLeft(50, 20)).toBe(30);
+    expect(alertsLeft(50, 50)).toBe(0);
+    expect(alertsLeft(50, 70)).toBe(0);
   });
 
   it("paie le vendeur moins la taxe figée", () => {

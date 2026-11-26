@@ -157,12 +157,14 @@ export type PriceSeries = {
 
 /**
  * Historique d'une carte sur `historyDays` jours. La ligne suit la cote telle qu'elle était chaque jour :
- * médiane des ventes des `windowDays` jours précédant la dernière vente du jour. Comme la cote affichée,
- * elle ne saute pas pour une vente isolée hors norme ; chaque vente reste visible en point. `sales` doit
+ * médiane des voix des `windowDays` jours précédant la dernière vente du jour, une voix par joueur qui a fixé
+ * le prix comme pour la cote affichée (un vendeur qui enchaîne des ventes à prix absurde ne pèse qu'une voix).
+ * Elle ne saute pas pour une vente isolée hors norme ; chaque vente reste visible en point. Contrairement à la
+ * cote, la ligne n'attend ni minSales ni minSellers : un marché qui s'ouvre a déjà sa courbe. `sales` doit
  * couvrir aussi les `windowDays` jours avant la période, pour la cote des premiers jours.
  */
 export function priceSeries(
-  sales: readonly Pick<Sale, "price" | "at">[],
+  sales: readonly Pick<Sale, "price" | "at" | "setter">[],
   now: Date,
   historyDays: number,
   windowDays: number,
@@ -177,7 +179,7 @@ export function priceSeries(
     const entry = byDay.get(day) ?? { last: 0, count: 0 };
     byDay.set(day, { last: Math.max(entry.last, sale.at.getTime()), count: entry.count + 1 });
   }
-  const rolling = (at: number) => median(sorted.filter((s) => s.at.getTime() > at - windowDays * DAY_MS && s.at.getTime() <= at).map((s) => s.price))!;
+  const rolling = (at: number) => median(setterVotes(sorted.filter((s) => s.at.getTime() > at - windowDays * DAY_MS && s.at.getTime() <= at)))!;
   return {
     days: [...byDay].map(([day, { last, count }]) => ({ day, price: rolling(last), sales: count })),
     sales: kept.map((s) => ({ price: s.price, at: s.at.toISOString() })),

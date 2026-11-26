@@ -61,8 +61,11 @@ export function parseGiftPayload(raw: unknown): GiftPayload | null {
   return null;
 }
 
-/** Contenu d'une notification de l'hôtel des ventes : la vente, la carte et le montant en jeu. */
-export type AuctionPayload = { auctionId: string; cardId: string; amount: number | null };
+/**
+ * Contenu d'une notification de l'hôtel des ventes : la vente, la carte et le montant en jeu. `locked` : vente annulée
+ * à la clôture par les verrous du parrainage (et non par la modération).
+ */
+export type AuctionPayload = { auctionId: string; cardId: string; amount: number | null; locked?: true };
 
 export function parseAuctionPayload(raw: unknown): AuctionPayload | null {
   if (!raw || typeof raw !== "object") return null;
@@ -70,7 +73,7 @@ export function parseAuctionPayload(raw: unknown): AuctionPayload | null {
   const id = (v: unknown): v is string => typeof v === "string" && v.length > 0 && v.length <= 40;
   if (!id(r.auctionId) || !id(r.cardId)) return null;
   const amount = Number.isSafeInteger(r.amount) && (r.amount as number) >= 0 ? (r.amount as number) : null;
-  return { auctionId: r.auctionId, cardId: r.cardId, amount };
+  return { auctionId: r.auctionId, cardId: r.cardId, amount, ...(r.locked === true && { locked: true as const }) };
 }
 
 /** Contenu d'une invitation en combat : la salle réservée au joueur invité. */

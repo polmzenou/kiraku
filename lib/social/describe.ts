@@ -74,6 +74,7 @@ export type DescribeTranslators = {
       | "auctionSold"
       | "auctionExpired"
       | "auctionCancelled"
+      | "auctionLocked"
       | "battleInvite"
       | "teamGift"
       | "teamGiftCards"
@@ -150,7 +151,8 @@ export function describeNotification(n: DescribableNotification, tr: DescribeTra
     case "AUCTION_SOLD":
     case "AUCTION_EXPIRED":
     case "AUCTION_CANCELLED": {
-      const key = AUCTION_KEYS[n.type];
+      // Annulée à la clôture par les verrous du parrainage : pas « par la modération »
+      const key = n.type === "AUCTION_CANCELLED" && n.auction?.locked ? "auctionLocked" : AUCTION_KEYS[n.type];
       const card = n.card?.name ?? t("aCard");
       return { text: t(key, { name, card, amount: n.auction?.amount ?? 0 }), href: n.auction ? `/marche/${n.auction.auctionId}` : "/marche" };
     }

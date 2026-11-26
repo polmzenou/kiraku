@@ -2,14 +2,15 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 // Garde-fou du parrainage v2 : chaque point de transfert (cadeaux, échanges, annonces et offres du Marché, enchères et
-// mises, avis de recherche, pile ou face) passe par checkReferralLocks (server/referral/locks.ts) dans sa transaction.
+// mises, avis de recherche, pile ou face) passe par checkReferralLocks (server/referral/locks.ts) dans sa transaction,
+// à l'engagement comme à la conclusion (offre acceptée, échange accepté, enchère réglée, avis rempli).
 // Un point oublié laisserait un filleul récent céder ses cartes, ou faire passer de la valeur à son parrain.
 
 const GUARDED: Record<string, string[]> = {
   "server/social/gift-core.ts": ["checkUnderLock"],
   "server/social/trade-core.ts": ["proposeTradeWith", "acceptTradeWith"],
   "server/market/listing-core.ts": ["createListingWith", "makeOfferWith", "acceptOfferWith"],
-  "server/market/auction-core.ts": ["createAuctionWith", "bidInTx"],
+  "server/market/auction-core.ts": ["createAuctionWith", "bidInTx", "settleAuctionWith"],
   "server/market/buy-order-core.ts": ["fillOrderWith"],
   "server/casino/coinflip-core.ts": ["createTableWith", "joinTableWith"],
 };
@@ -34,6 +35,15 @@ describe("verrous de transfert du parrainage v2", () => {
       });
     }
   }
+
+  it("à la conclusion d'un troc, les deux joueurs qui cèdent une carte sont revérifiés", () => {
+    const offer = functionBody(readFileSync("server/market/listing-core.ts", "utf8"), "acceptOfferWith") ?? "";
+    expect(offer.match(/checkReferralLocks\(\s*tx,/g)).toHaveLength(2);
+    expect(offer).toMatch(/actorId: offer\.bidderId/);
+    const trade = functionBody(readFileSync("server/social/trade-core.ts", "utf8"), "acceptTradeWith") ?? "";
+    expect(trade.match(/checkReferralLocks\(\s*tx,/g)).toHaveLength(2);
+    expect(trade).toMatch(/actorId: trade\.proposerId/);
+  });
 
   it("les trois cadeaux passent par le contrôle commun", () => {
     const source = readFileSync("server/social/gift-core.ts", "utf8");

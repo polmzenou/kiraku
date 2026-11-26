@@ -66,7 +66,8 @@ describe.skipIf(!url)("combat atomique (base réelle)", () => {
   /** Joueur inscrit avec un exemplaire de chacune des cartes de test. */
   async function player() {
     const user = await prisma.user.create({
-      data: { username: `test-${randomBytes(4).toString("hex")}`, isGuest: false, coins: 0, createdAt: new Date(Date.now() - 72 * HOUR) },
+      // Inscrit depuis 72 h : l'âge du Marché se compte depuis l'inscription (sinon le trigger la pose à maintenant)
+      data: { username: `test-${randomBytes(4).toString("hex")}`, isGuest: false, coins: 0, createdAt: new Date(Date.now() - 72 * HOUR), registeredAt: new Date(Date.now() - 72 * HOUR) },
       select: { id: true },
     });
     await prisma.userCard.createMany({ data: cardIds.map((cardId) => ({ ownerId: user.id, cardId })) });

@@ -12,7 +12,14 @@ import { Field, FormMessage, inputClass, NumberField, Toggle } from "./fields";
 
 type NumKey = Exclude<
   keyof MarketSettings,
-  "market.enabled" | "market.ordersEnabled" | "market.durationsHours" | "market.maxPriceByRarity" | "listings.enabled" | "listings.allowOther" | "listings.allowedRarities"
+  | "market.enabled"
+  | "market.ordersEnabled"
+  | "market.orderAlertRarityRef"
+  | "market.durationsHours"
+  | "market.maxPriceByRarity"
+  | "listings.enabled"
+  | "listings.allowOther"
+  | "listings.allowedRarities"
 >;
 
 // Bornes des champs (les mêmes que les schémas Zod de lib/settings/defaults.ts)
@@ -33,6 +40,7 @@ const BOUNDS: Record<NumKey, [number, number]> = {
   "market.quoteHistoryDays": [30, 365],
   "market.orderDurationDays": [1, 30],
   "market.maxOpenOrders": [1, 100],
+  "market.orderAlertsPerDay": [0, 10_000],
   "listings.expiryHours": [1, 24 * 30],
   "listings.maxWants": [1, 10],
   "listings.maxActive": [1, 100],
@@ -143,6 +151,10 @@ export function MarketSettingsForm({ initial }: { initial: MarketSettings }) {
         </div>
         {num("market.orderDurationDays")}
         {num("market.maxOpenOrders")}
+        {num("market.orderAlertsPerDay")}
+        <div className="sm:col-span-2">
+          <Toggle label={t("keys.orderAlertRarityRef")} checked={draft["market.orderAlertRarityRef"]} onChange={(v) => update("market.orderAlertRarityRef", v)} />
+        </div>
       </fieldset>
 
       <fieldset className="grid gap-4 lacquer rounded-card p-4 sm:grid-cols-3">

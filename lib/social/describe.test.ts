@@ -115,6 +115,14 @@ describe("describeNotification", () => {
     expect(gone.text).toContain("aCard");
   });
 
+  it("vente annulée : par la modération, ou à la clôture par les verrous du parrainage → fiche de la vente", () => {
+    const base = { type: "AUCTION_CANCELLED" as const, actor: { username: "mika", isGuest: false }, gift: null, card: { anilistId: 7, name: "Makima", rarity: "MYTHIC" } };
+    const moderated = describeNotification({ ...base, auction: { auctionId: "a1", cardId: "c1", amount: 300 } }, tr);
+    expect(moderated.text).toMatch(/^auctionCancelled:/);
+    expect(moderated.href).toBe("/marche/a1");
+    expect(describeNotification({ ...base, auction: { auctionId: "a1", cardId: "c1", amount: 300, locked: true } }, tr).text).toMatch(/^auctionLocked:/);
+  });
+
   it("sans auteur : « un joueur »", () => {
     const d = describeNotification({ type: "FRIEND_ACCEPTED", actor: null, gift: null, card: null }, tr);
     expect(d.href).toBe("/amis");

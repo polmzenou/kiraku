@@ -8,16 +8,19 @@ import { refreshWhenVisible } from "../realtime/refresh-when-visible";
 
 /**
  * Temps restant avant la fin d'une vente, à la seconde. Le client affiche, le serveur décide : à
- * zéro, `refreshOnEnd` redemande la page (qui clôt la vente si besoin).
+ * zéro, `refreshOnEnd` redemande la page (qui clôt la vente si besoin). `urgentMs` : la fenêtre
+ * anti-sniping (market.antiSnipeSeconds), en vermillon ; 0 ou absent, jamais.
  */
 export function Countdown({
   endsAt,
   serverNow,
+  urgentMs = 0,
   refreshOnEnd = false,
   className = "",
 }: {
   endsAt: number;
   serverNow: number;
+  urgentMs?: number;
   refreshOnEnd?: boolean;
   className?: string;
 }) {
@@ -34,8 +37,8 @@ export function Countdown({
     return refreshWhenVisible(() => router.refresh());
   }, [refreshOnEnd, remaining, endsAt, router]);
 
-  // Moins de 2 minutes : la fenêtre anti-sniping, en vermillon
-  const urgent = remaining > 0 && remaining < 120_000;
+  // Dans la fenêtre anti-sniping (réglée dans l'admin) : en vermillon
+  const urgent = remaining > 0 && remaining < urgentMs;
   return (
     <span role="timer" className={`tabular-nums ${urgent ? "font-bold text-shu" : ""} ${className}`}>
       {remaining > 0 ? t("endsIn", { time: format(remaining) }) : t("ended")}

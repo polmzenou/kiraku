@@ -18,7 +18,8 @@ import { expireListingsFor } from "./listing-core";
 export const LISTINGS_PAGE_SIZE = 20;
 export const WANTABLE_PAGE_SIZE = 24;
 const HISTORY_SIZE = 20;
-
+/** Pages lues au plus pour une page d'annonces affichable (les annonces sans exemplaire libre sont tues). */
+const MAX_EMPTY_SCANS = 5;
 
 export type ListingWantView = CardView & { /** Le lecteur en a un exemplaire libre. */ givable: boolean };
 
@@ -109,31 +110,45 @@ export async function listListings(input: {
     ...(and.length ? { AND: and } : {}),
   };
 
-  const rows = await prisma.tradeListing.findMany({
-    where,
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    take: LISTINGS_PAGE_SIZE + 1,
-    ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
-    select: {
-      id: true,
-      createdAt: true,
-      expiresAt: true,
-      cardId: true,
-      userCardId: true,
-      note: true,
-      owner: { select: maskablePlayerSelect },
-      wants: { select: { cardId: true } },
-      offers: { where: { status: "PENDING" }, select: { id: true, bidderId: true, cardId: true, userCardId: true } },
-    },
-  });
-  const page = rows.slice(0, LISTINGS_PAGE_SIZE);
-  const nextCursor = rows.length > LISTINGS_PAGE_SIZE ? (page[page.length - 1]?.id ?? null) : null;
+  const select = {
+    id: true,
+    createdAt: true,
+    expiresAt: true,
+    cardId: true,
+    userCardId: true,
+    note: true,
+    owner: { select: maskablePlayerSelect },
+    wants: { select: { cardId: true } },
+    // L'écran ne montre que l'offre en attente du lecteur, et à l'auteur leur nombre : pas toutes les offres
+    offers: { where: { status: "PENDING" as const, bidderId: input.viewerId }, take: 1, select: { id: true, cardId: true, userCardId: true } },
+    _count: { select: { offers: { where: { status: "PENDING" as const } } } },
+  } satisfies Prisma.TradeListingSelect;
+
+  // Une annonce dont l'auteur n'a plus d'exemplaire libre ne peut pas conclure : on la tait. Si toute une page l'est,
+  // on lit la suivante (quelques pages au plus) plutôt que de renvoyer une page vide avec « Voir plus »
+  let cursor = input.cursor;
+  let page: Prisma.TradeListingGetPayload<{ select: typeof select }>[] = [];
+  let nextCursor: string | null = null;
+  for (let scan = 0; scan < MAX_EMPTY_SCANS; scan++) {
+    const rows = await prisma.tradeListing.findMany({
+      where,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: LISTINGS_PAGE_SIZE + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      select,
+    });
+    const batch = rows.slice(0, LISTINGS_PAGE_SIZE);
+    nextCursor = rows.length > LISTINGS_PAGE_SIZE ? (batch[batch.length - 1]?.id ?? null) : null;
+    const free = await availableListings(batch.map((r) => ({ id: r.id, ownerId: r.owner.id, cardId: r.cardId, userCardId: r.userCardId })));
+    page = batch.filter((r) => free.has(r.id));
+    if (page.length > 0 || !nextCursor) break;
+    cursor = nextCursor;
+  }
 
   const wantIds = [...new Set(page.flatMap((r) => r.wants.map((w) => w.cardId)))];
   // Tableau public : auteur masqué comme sur le reste du site (profil privé, réservé aux amis, banni, supprimé)
   const owners = await maskedPlayerRefs(input.viewerId, page.map((r) => r.owner));
-  const [ownerFree, viewerFree, views, viewerOwned, marks] = await Promise.all([
-    availableListings(page.map((r) => ({ id: r.id, ownerId: r.owner.id, cardId: r.cardId, userCardId: r.userCardId }))),
+  const [viewerFree, views, viewerOwned, marks] = await Promise.all([
     wantIds.length
       ? prisma.userCard.groupBy({ by: ["cardId"], where: { ownerId: input.viewerId, status: "COLLECTION", cardId: { in: wantIds } } })
       : Promise.resolve([]),
@@ -150,10 +165,9 @@ export async function listListings(input: {
 
   const items = page.flatMap((r): ListingView[] => {
     const card = views.get(r.cardId);
-    // Une annonce dont l'auteur n'a plus d'exemplaire libre ne peut pas conclure : on la tait
-    if (!card || !ownerFree.has(r.id)) return [];
+    if (!card) return [];
     const mine = r.owner.id === input.viewerId;
-    const myOffer = r.offers.find((o) => o.bidderId === input.viewerId);
+    const myOffer = r.offers[0];
     const myOfferView = myOffer ? views.get(myOffer.cardId) : undefined;
     const myOfferCard = myOffer && myOfferView ? withCopy(myOfferView, myOffer.userCardId, marks) : undefined;
     return [
@@ -170,7 +184,7 @@ export async function listListings(input: {
           return view ? [{ ...view, givable: !mine && givable.has(w.cardId) }] : [];
         }),
         mine,
-        offerCount: mine ? r.offers.length : 0,
+        offerCount: mine ? r._count.offers : 0,
         myOffer: myOffer && myOfferCard ? { id: myOffer.id, card: myOfferCard } : null,
       },
     ];

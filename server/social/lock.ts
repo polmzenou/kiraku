@@ -8,6 +8,8 @@ export type LockedPlayer = {
   isGuest: boolean;
   bannedAt: Date | null;
   createdAt: Date;
+  /** Inscription (trigger) : l'âge anti-multicomptes du Marché se compte depuis elle (lib/market/rules.ts). */
+  registeredAt: Date | null;
   coins: number;
 };
 
@@ -20,7 +22,7 @@ export async function lockPlayers(tx: Tx, ids: readonly string[]): Promise<Map<s
   const players = new Map<string, LockedPlayer>();
   for (const id of [...new Set(ids)].sort()) {
     const [row] = await tx.$queryRaw<LockedPlayer[]>`
-      SELECT id, "isGuest", "bannedAt", "createdAt", coins FROM "User" WHERE id = ${id} FOR UPDATE`;
+      SELECT id, "isGuest", "bannedAt", "createdAt", "registeredAt", coins FROM "User" WHERE id = ${id} FOR UPDATE`;
     if (row) players.set(id, row);
   }
   return players;

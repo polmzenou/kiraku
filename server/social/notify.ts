@@ -82,6 +82,23 @@ export async function notify(tx: Tx, n: NewNotification) {
   created.get(tx)?.push(row.id);
 }
 
+/** Plusieurs notifications d'un coup (une seule requête), remises au push comme celles de notify. */
+export async function notifyMany(tx: Tx, rows: readonly NewNotification[]) {
+  if (rows.length === 0) return;
+  const inserted = await tx.notification.createManyAndReturn({
+    data: rows.map((n) => ({
+      userId: n.userId,
+      type: n.type,
+      actorId: n.actorId,
+      refId: n.refId ?? null,
+      payload: (n.payload ?? {}) as Prisma.InputJsonValue,
+      createdAt: n.now,
+    })),
+    select: { id: true },
+  });
+  created.get(tx)?.push(...inserted.map((r) => r.id));
+}
+
 /** Retire la notification de demande d'ami encore non lue (demande annulée, blocage). */
 export async function retractFriendRequest(tx: Tx, userId: string, actorId: string) {
   await tx.notification.deleteMany({ where: { userId, actorId, type: "FRIEND_REQUEST", readAt: null } });

@@ -147,7 +147,7 @@ export function ListingBoard({
         <ul className="flex flex-col gap-3">
           {items.map((listing) => (
             <li key={listing.id}>
-              <ListingCard listing={listing} guest={guest} isAdmin={isAdmin} allowOther={allowOther} onChanged={() => router.refresh()} />
+              <ListingCard listing={listing} guest={guest} isAdmin={isAdmin} allowOther={allowOther} />
             </li>
           ))}
         </ul>
@@ -164,15 +164,8 @@ export function ListingBoard({
         </Button>
       )}
 
-      {composing && (
-        <ListingComposer
-          maxWants={maxWants}
-          onClose={() => {
-            setComposing(false);
-            router.refresh();
-          }}
-        />
-      )}
+      {/* La publication rafraîchit déjà la page côté serveur : la fermeture n'en rejoue pas un second */}
+      {composing && <ListingComposer maxWants={maxWants} onClose={() => setComposing(false)} />}
     </section>
   );
 }

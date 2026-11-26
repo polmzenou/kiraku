@@ -127,6 +127,16 @@ describe("historique d'une carte", () => {
     expect(series.days.map((d) => d.price)).toEqual([100, 100, 100, 100]);
     expect(series.sales.map((s) => s.price)).toContain(10_000);
   });
+
+  it("un seul vendeur qui enchaîne les ventes à prix absurde ne pèse qu'une voix sur la ligne", () => {
+    const fair = [daysAgo(6), daysAgo(5), daysAgo(4)].map((at, i) => ({ price: 100, at, setter: `v${i}` }));
+    const spam = [daysAgo(3), daysAgo(3), daysAgo(2), daysAgo(2), daysAgo(1)].map((at) => ({ price: 10_000, at, setter: "spam" }));
+    const series = priceSeries([...fair, ...spam], now, 90, 30, "Europe/Paris");
+    // Voix 100, 100, 100 et 10 000 : la médiane reste 100 (sans voix par joueur, 5 ventes sur 8 la tiraient à 10 000)
+    expect(series.days.at(-1)?.price).toBe(100);
+    // Marché sain, un vendeur par vente : la ligne ne change pas
+    expect(priceSeries(fair, now, 90, 30, "Europe/Paris").days.map((d) => d.price)).toEqual([100, 100, 100]);
+  });
 });
 
 describe("valeur de la collection", () => {

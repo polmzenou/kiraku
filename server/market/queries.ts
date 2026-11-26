@@ -31,7 +31,8 @@ import { getSetting } from "../settings";
 import { settleAuctionWith } from "./auction-core";
 
 // Lectures de l'hôtel des ventes. Les ventes terminées affichées sont closes au passage (clôture
-// paresseuse), comme celles du joueur à chaque sondage de la cloche ; le cron quotidien balaie le reste.
+// paresseuse), comme celles du joueur à chaque sondage de la cloche ; le cron du marché (toutes les
+// 5 minutes) balaie le reste.
 
 // Web Push après la réponse : défini avec l'envoi (server/push/send.ts), gardé ici pour les modules qui l'importent du Marché
 export { pushLater };
@@ -84,9 +85,9 @@ async function settleDue(where: Prisma.AuctionWhereInput, now: Date) {
 }
 
 /**
- * Ventes terminées du joueur (vendeur ou meneur), closes à chaque sondage de la cloche : sur le
- * plan Hobby de Vercel, le cron ne passe qu'une fois par jour, c'est ce sondage qui prévient le
- * gagnant et paie le vendeur en moins d'une minute tant qu'ils ont le jeu ouvert.
+ * Ventes terminées du joueur (vendeur ou meneur), closes à chaque sondage de la cloche : le gagnant
+ * est prévenu et le vendeur payé en moins d'une minute tant qu'ils ont le jeu ouvert, sans attendre
+ * le cron du marché (toutes les 5 minutes).
  */
 export async function settleDueFor(userId: string, now: Date) {
   await settleDue({ OR: [{ sellerId: userId }, { currentBidderId: userId }] }, now);
@@ -94,18 +95,16 @@ export async function settleDueFor(userId: string, now: Date) {
 
 export type AuctionStatusView = "ACTIVE" | "SOLD" | "EXPIRED" | "CANCELLED";
 
+// La tuile ne montre pas le vendeur : ni son pseudo ni sa jointure ne sont lus pour la liste
 export type AuctionListItem = {
   id: string;
   card: CardView;
   status: AuctionStatusView;
   price: number;
-  hasBids: boolean;
   bidCount: number;
   /** Prix d'achat immédiat s'il est encore proposé. */
   buyoutPrice: number | null;
   endsAt: Date;
-  /** null : profil caché à ce visiteur (« Un joueur »). */
-  sellerName: string | null;
   mine: boolean;
   leading: boolean;
   /** Le lecteur possède déjà cette carte (jamais sur ses propres ventes). */
@@ -128,7 +127,6 @@ const listSelect = {
   endsAt: true,
   createdAt: true,
   sellerId: true,
-  seller: { select: namedPlayerSelect },
 } as const;
 
 type ListRow = Prisma.AuctionGetPayload<{ select: typeof listSelect }>;
@@ -145,14 +143,19 @@ function cursorValue(row: ListRow, sort: MarketSort): number {
   return col === "price" ? row.price : row[col].getTime();
 }
 
-/** Lignes strictement après le curseur, dans l'ordre du tri (départage par id). */
-function afterCursor(sort: MarketSort, c: MarketCursor): Prisma.AuctionWhereInput {
-  const { col, dir } = SORTS[sort];
+/** Lignes strictement après le curseur, dans l'ordre `col` `dir` (départage par id). */
+function afterCursorOn(col: "endsAt" | "createdAt" | "price", dir: "asc" | "desc", c: MarketCursor): Prisma.AuctionWhereInput {
   const cmp = dir === "asc" ? "gt" : "lt";
   const value = col === "price" ? c.v : new Date(c.v);
   return {
     OR: [{ [col]: { [cmp]: value } }, { [col]: value, id: { [cmp]: c.id } }],
   } as Prisma.AuctionWhereInput;
+}
+
+/** Lignes strictement après le curseur, dans l'ordre du tri. */
+function afterCursor(sort: MarketSort, c: MarketCursor): Prisma.AuctionWhereInput {
+  const { col, dir } = SORTS[sort];
+  return afterCursorOn(col, dir, c);
 }
 
 function scopeOf(params: MarketParams, viewerId: string | null, now: Date): Prisma.AuctionWhereInput | null {
@@ -178,37 +181,51 @@ export async function listAuctions(input: {
     ...(params.rarity ? { rarity: params.rarity } : {}),
     ...(params.q ? { searchText: { contains: params.q } } : {}),
   };
-  const where: Prisma.AuctionWhereInput = {
-    AND: [
-      scope,
-      Object.keys(card).length > 0 ? { card } : {},
-      params.minPrice !== null || params.maxPrice !== null
-        ? { price: { ...(params.minPrice !== null ? { gte: params.minPrice } : {}), ...(params.maxPrice !== null ? { lte: params.maxPrice } : {}) } }
-        : {},
-      params.buyout ? { status: "ACTIVE", buyoutPrice: { not: null } } : {},
-      input.cursor ? afterCursor(params.sort, input.cursor) : {},
-    ],
-  };
-  const { col, dir } = SORTS[params.sort];
-  const rows = await prisma.auction.findMany({
-    where,
-    orderBy: [{ [col]: dir }, { id: dir }],
-    take: MARKET_PAGE_SIZE + 1,
-    select: listSelect,
-  });
-  const page = rows.slice(0, MARKET_PAGE_SIZE);
-  const [views, nameOf, ownedIds, marks] = await Promise.all([
+  const filters: Prisma.AuctionWhereInput[] = [
+    scope,
+    Object.keys(card).length > 0 ? { card } : {},
+    params.minPrice !== null || params.maxPrice !== null
+      ? { price: { ...(params.minPrice !== null ? { gte: params.minPrice } : {}), ...(params.maxPrice !== null ? { lte: params.maxPrice } : {}) } }
+      : {},
+    params.buyout ? { status: "ACTIVE", buyoutPrice: { not: null } } : {},
+  ];
+  const find = (extra: Prisma.AuctionWhereInput[], orderBy: Prisma.AuctionOrderByWithRelationInput[], take: number) =>
+    prisma.auction.findMany({ where: { AND: [...filters, ...extra] }, orderBy, take, select: listSelect });
+
+  // « Mes ventes » et « Mes enchères » au tri par défaut : les ventes en cours d'abord (la plus proche de sa fin en
+  // tête), puis les closes, les plus récentes d'abord. Un seul tri « fin croissante » mettait en tête les ventes
+  // closes depuis longtemps et repoussait les ventes en cours au-delà de la première page. Le curseur dit dans
+  // quelle partie de la liste on en est.
+  const split = params.tab !== "all" && params.sort === "ending";
+  let rows: { row: ListRow; closed: boolean }[];
+  if (!split) {
+    const { col, dir } = SORTS[params.sort];
+    const found = await find([input.cursor ? afterCursor(params.sort, input.cursor) : {}], [{ [col]: dir }, { id: dir }], MARKET_PAGE_SIZE + 1);
+    rows = found.map((row) => ({ row, closed: false }));
+  } else {
+    const cursor = input.cursor;
+    const active = cursor?.closed
+      ? []
+      : await find([{ status: "ACTIVE" }, cursor ? afterCursorOn("endsAt", "asc", cursor) : {}], [{ endsAt: "asc" }, { id: "asc" }], MARKET_PAGE_SIZE + 1);
+    const room = MARKET_PAGE_SIZE + 1 - active.length;
+    const closed =
+      room > 0
+        ? await find([{ status: { not: "ACTIVE" } }, cursor?.closed ? afterCursorOn("endsAt", "desc", cursor) : {}], [{ endsAt: "desc" }, { id: "desc" }], room)
+        : [];
+    rows = [...active.map((row) => ({ row, closed: false })), ...closed.map((row) => ({ row, closed: true }))];
+  }
+  const page = rows.slice(0, MARKET_PAGE_SIZE).map((r) => r.row);
+  const [views, ownedIds, marks] = await Promise.all([
     cardViews(
       page.map((r) => r.cardId),
       input.locale,
     ),
-    publicNamesFor(viewerId, page.map((r) => r.seller)),
     ownedCardIds(viewerId, page.map((r) => r.cardId)),
     // Héritière ou gravée mise en vente : l'acheteur voit l'exemplaire, pas seulement la carte
     copyMarksOf(page.map((r) => r.userCardId)),
   ]);
   const owned = new Set(ownedIds);
-  const last = page.at(-1);
+  const last = rows[MARKET_PAGE_SIZE - 1];
   return {
     items: page.flatMap((r) => {
       const view = views.get(r.cardId);
@@ -219,18 +236,19 @@ export async function listAuctions(input: {
           card: withCopy(view, r.userCardId, marks),
           status: r.status,
           price: r.price,
-          hasBids: r.currentBid !== null,
           bidCount: r.bidCount,
           buyoutPrice: r.status === "ACTIVE" && buyoutAvailable(r.buyoutPrice, r.currentBid) ? r.buyoutPrice : null,
           endsAt: r.endsAt,
-          sellerName: nameOf(r.seller).name,
           mine: r.sellerId === viewerId,
           leading: viewerId !== null && r.currentBidderId === viewerId,
           viewerOwns: r.sellerId !== viewerId && owned.has(r.cardId),
         },
       ];
     }),
-    nextCursor: rows.length > MARKET_PAGE_SIZE && last ? encodeMarketCursor({ v: cursorValue(last, params.sort), id: last.id }) : null,
+    nextCursor:
+      rows.length > MARKET_PAGE_SIZE && last
+        ? encodeMarketCursor({ v: split ? last.row.endsAt.getTime() : cursorValue(last.row, params.sort), id: last.row.id, ...(last.closed && { closed: true }) })
+        : null,
   };
 }
 
@@ -272,37 +290,48 @@ function toLive(
   leaderName: ShownName | null,
 ): AuctionLive {
   const bounds = bidBounds(a.currentBid, a.startPrice, rules.minIncrementBp, priceCap(rules, a.card.rarity));
+  const buyoutPrice = a.status === "ACTIVE" && buyoutAvailable(a.buyoutPrice, a.currentBid) ? a.buyoutPrice : null;
+  const minNext = bounds?.min ?? minNextBid(a.currentBid, a.startPrice, rules.minIncrementBp);
   return {
     status: a.status,
     price: a.price,
     currentBid: a.currentBid,
-    minNext: bounds?.min ?? minNextBid(a.currentBid, a.startPrice, rules.minIncrementBp),
+    // Enchère à moins d'une surenchère de l'achat immédiat : la mise minimale est l'achat immédiat (jamais au-dessus)
+    minNext: buyoutPrice !== null ? Math.min(minNext, buyoutPrice) : minNext,
     maxBid: bounds?.max ?? null,
     bidCount: a.bidCount,
     endsAt: a.endsAt,
-    buyoutPrice: a.status === "ACTIVE" && buyoutAvailable(a.buyoutPrice, a.currentBid) ? a.buyoutPrice : null,
+    buyoutPrice,
     leader: a.currentBidder && leaderName !== null ? shownPlayer(leaderName, a.currentBidder) : null,
     leading: viewerId !== null && a.currentBidderId === viewerId,
     finalPrice: a.finalPrice,
   };
 }
 
-export async function auctionLive(id: string, viewerId: string | null, now: Date): Promise<AuctionLive | null> {
-  const [minIncrementBp, maxPrice, maxPriceByRarity, first] = await Promise.all([
+async function liveRules() {
+  const [minIncrementBp, maxPrice, maxPriceByRarity] = await Promise.all([
     getSetting("market.minIncrementBp"),
     getSetting("market.maxPrice"),
     getSetting("market.maxPriceByRarity"),
-    prisma.auction.findUnique({ where: { id }, select: liveSelect }),
   ]);
-  if (!first) return null;
-  const rules = { minIncrementBp, maxPrice, maxPriceByRarity };
-  const withName = async (a: typeof first) =>
-    toLive(a, viewerId, rules, a.currentBidder ? (await publicNamesFor(viewerId, [a.currentBidder]))(a.currentBidder) : null);
-  if (first.status !== "ACTIVE" || first.endsAt > now) return withName(first);
-  // Terminée mais pas encore close : on la clôt avant de répondre
+  return { minIncrementBp, maxPrice, maxPriceByRarity };
+}
+
+/**
+ * Lit une vente (`read`) ; terminée mais pas encore close, elle est close avant d'être relue : l'état renvoyé est
+ * le résultat, jamais une vente « en cours » déjà finie.
+ */
+async function readSettled<T extends { status: string; endsAt: Date }>(id: string, read: () => Promise<T | null>, now: Date): Promise<T | null> {
+  const first = await read();
+  if (!first || first.status !== "ACTIVE" || first.endsAt > now) return first;
   await settleDue({ id }, now);
-  const a = await prisma.auction.findUnique({ where: { id }, select: liveSelect });
-  return a ? withName(a) : null;
+  return read();
+}
+
+export async function auctionLive(id: string, viewerId: string | null, now: Date): Promise<AuctionLive | null> {
+  const [rules, a] = await Promise.all([liveRules(), readSettled(id, () => prisma.auction.findUnique({ where: { id }, select: liveSelect }), now)]);
+  if (!a) return null;
+  return toLive(a, viewerId, rules, a.currentBidder ? (await publicNamesFor(viewerId, [a.currentBidder]))(a.currentBidder) : null);
 }
 
 export type AuctionDetail = {
@@ -324,39 +353,37 @@ export type AuctionDetail = {
 
 export const BID_HISTORY = 20;
 
+/** La fiche entière en une lecture : état en direct, vendeur et dernières mises. */
+const detailSelect = {
+  ...liveSelect,
+  cardId: true,
+  userCardId: true,
+  sellerId: true,
+  feeBp: true,
+  fee: true,
+  createdAt: true,
+  note: true,
+  seller: { select: shownPlayerSelect },
+  bids: {
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: BID_HISTORY,
+    select: { id: true, amount: true, createdAt: true, bidderId: true, bidder: { select: shownPlayerSelect } },
+  },
+} as const satisfies Prisma.AuctionSelect;
+
 /** Fiche d'une vente : carte, vendeur, état en direct et dernières mises. */
 export async function getAuctionDetail(id: string, viewerId: string | null, locale: string, now: Date): Promise<AuctionDetail | null> {
-  const live = await auctionLive(id, viewerId, now);
-  if (!live) return null;
-  const a = await prisma.auction.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      cardId: true,
-      userCardId: true,
-      sellerId: true,
-      startPrice: true,
-      feeBp: true,
-      fee: true,
-      createdAt: true,
-      note: true,
-      seller: { select: shownPlayerSelect },
-      bids: {
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-        take: BID_HISTORY,
-        select: { id: true, amount: true, createdAt: true, bidderId: true, bidder: { select: shownPlayerSelect } },
-      },
-    },
-  });
+  const [rules, a] = await Promise.all([liveRules(), readSettled(id, () => prisma.auction.findUnique({ where: { id }, select: detailSelect }), now)]);
   if (!a) return null;
   const [views, nameOf, owned, marks] = await Promise.all([
     cardViews([a.cardId], locale),
-    publicNamesFor(viewerId, [a.seller, ...a.bids.map((b) => b.bidder)]),
+    publicNamesFor(viewerId, [a.seller, ...a.bids.map((b) => b.bidder), ...(a.currentBidder ? [a.currentBidder] : [])]),
     ownedCardIds(viewerId, [a.cardId]),
     copyMarksOf([a.userCardId]),
   ]);
   const card = views.get(a.cardId);
   if (!card) return null;
+  const live = toLive(a, viewerId, rules, a.currentBidder ? nameOf(a.currentBidder) : null);
   return {
     id: a.id,
     card: withCopy(card, a.userCardId, marks),
@@ -385,7 +412,7 @@ export async function activeAuctionCount(sellerId: string): Promise<number> {
 export async function sellBaseFor(userId: string, now: Date): Promise<SellBase> {
   const [rules, player, active] = await Promise.all([
     getMarketRules(),
-    prisma.user.findUnique({ where: { id: userId }, select: { isGuest: true, bannedAt: true, createdAt: true } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { isGuest: true, bannedAt: true, createdAt: true, registeredAt: true } }),
     activeAuctionCount(userId),
   ]);
   return {

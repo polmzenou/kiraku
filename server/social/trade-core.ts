@@ -30,6 +30,8 @@ export type TradeErrorCode =
   | "NOT_OFFERED"
   | "CARD_GONE"
   | "CHOOSE_COPY"
+  // Verrou du parrainage de l'autre partie (le proposant, à l'acceptation) : il ne cède pas encore ses cartes
+  | "PARTNER_LOCKED"
   | LockRefusal;
 
 export class TradeError extends Error {
@@ -220,6 +222,11 @@ export async function acceptTradeWith(
       if (relation.blocked) throw new TradeError("BLOCKED");
       const locked = await checkReferralLocks(tx, { actorId: trade.recipientId, counterpartyId: trade.proposerId, ownItems: true, mutual: true, now });
       if (locked) throw new TradeError(locked);
+      // Le proposant cède aussi sa carte : son propre verrou est revérifié à la conclusion, pas seulement à la proposition
+      // (rattaché à un parrain entre-temps, il ne cède rien pendant cardLockDays). La proposition reste ouverte.
+      if (await checkReferralLocks(tx, { actorId: trade.proposerId, counterpartyId: null, ownItems: true, mutual: false, now })) {
+        throw new TradeError("PARTNER_LOCKED");
+      }
       const wantedRarity = await tx.card.findUnique({ where: { id: trade.wantedCardId }, select: { rarity: true } });
       const allowed = new Set(input.allowedRarities);
       if (!wantedRarity || !allowed.has(wantedRarity.rarity as Rarity) || !allowed.has(offered.card.rarity as Rarity)) {

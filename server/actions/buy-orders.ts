@@ -10,6 +10,7 @@ import { getBuyOrderRules } from "../market/buy-order-queries";
 import { getMarketRules, pushLater } from "../market/queries";
 import { getMarketQuotes } from "../market/quotes";
 import { rateLimit } from "../ratelimit";
+import { getSetting } from "../settings";
 import { getCurrentUser } from "../user";
 
 // Avis de recherche. Ordre des contrôles : Zod → session → compte autorisé → interrupteurs → rate limit,
@@ -93,11 +94,16 @@ export async function createBuyOrderAction(input: unknown): Promise<CreateBuyOrd
       durationDays: orderRules.durationDays,
       maxOpen: orderRules.maxOpen,
     });
-    // Alerte aux détenteurs après la réponse : elle ne ralentit ni ne fait échouer la publication
+    // Alerte aux détenteurs après la réponse : elle ne ralentit ni ne fait échouer la publication. L'avis y est relu
+    // (annulé aussitôt, il n'alerte personne) ; plafond par acheteur et référence de la rareté réglés dans l'admin
     after(async () => {
       try {
-        const quote = (await getMarketQuotes()).byCard[order.cardId]?.price ?? null;
-        await alertOwnersWith(prisma, { orderId: order.orderId, buyerId: g.user.id, cardId: order.cardId, price: order.price }, quote, now, pushLater);
+        const [quotes, perDay, rarityRef] = await Promise.all([getMarketQuotes(), getSetting("market.orderAlertsPerDay"), getSetting("market.orderAlertRarityRef")]);
+        const quote = quotes.byCard[order.cardId]?.price ?? null;
+        await alertOwnersWith(prisma, { orderId: order.orderId, buyerId: g.user.id, cardId: order.cardId, price: order.price }, quote, new Date(), pushLater, {
+          perDay,
+          ...(rarityRef && { rarity: { reference: quotes.byRarity[order.rarity] ?? null } }),
+        });
       } catch (e) {
         console.warn("[avis] alerte aux détenteurs", e);
       }

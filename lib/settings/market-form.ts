@@ -24,6 +24,8 @@ export const MARKET_SETTING_KEYS = [
   "market.ordersEnabled",
   "market.orderDurationDays",
   "market.maxOpenOrders",
+  "market.orderAlertsPerDay",
+  "market.orderAlertRarityRef",
   "listings.enabled",
   "listings.expiryHours",
   "listings.maxWants",

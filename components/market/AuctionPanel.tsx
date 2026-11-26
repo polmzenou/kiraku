@@ -53,7 +53,7 @@ export function AuctionPanel({
   block: TradeBlock;
   pollSeconds: number;
   serverNow: number;
-  rules: { increment: number; window: number; extend: number; fee: number };
+  rules: { increment: number; antiSnipeSeconds: number; extendSeconds: number; fee: number };
 }) {
   const t = useTranslations("market");
   const router = useRouter();
@@ -141,12 +141,17 @@ export function AuctionPanel({
   const amount = typed ?? String(shown.minNext);
   const bid = Number(amount);
   const capReached = shown.maxBid === null;
+  // Une mise qui atteint l'achat immédiat achète à son prix : c'est ce montant qui est confirmé et débité
+  const charged = shown.buyoutPrice !== null ? Math.min(bid, shown.buyoutPrice) : bid;
   const validBid =
     Number.isSafeInteger(bid) &&
     bid >= shown.minNext &&
     (bid <= (shown.maxBid ?? 0) || (shown.buyoutPrice !== null && bid >= shown.buyoutPrice));
   const endsAt = new Date(shown.endsAt).getTime();
   const leader = shown.leader ?? anonymousPlayer(t("detail.anonymous"));
+  // Durées des règles en minutes et secondes, sans arrondi (30 s ne devient pas « 1 min », ni 20 s « 0 min »)
+  const span = (seconds: number) => t("detail.span", { minutes: Math.floor(seconds / 60), seconds: seconds % 60 });
+  const snipe = rules.antiSnipeSeconds > 0 && rules.extendSeconds > 0;
 
   return (
     // Pas de région aria-live sur tout le panneau : le compte à rebours (role="timer") y était relu chaque seconde ;
@@ -163,7 +168,7 @@ export function AuctionPanel({
           </span>
           <span className="text-sm text-text-muted">{t("bids", { count: shown.bidCount })}</span>
         </div>
-        {open && <Countdown endsAt={endsAt} serverNow={serverNow} refreshOnEnd className="text-sm" />}
+        {open && <Countdown endsAt={endsAt} serverNow={serverNow} urgentMs={rules.antiSnipeSeconds * 1000} refreshOnEnd className="text-sm" />}
       </div>
 
       {open && shown.bidCount > 0 && !shown.leading && (
@@ -240,9 +245,9 @@ export function AuctionPanel({
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!validBid) return;
-                if (bid > coins) return setMessage({ tone: "error", text: t("detail.notEnough", { amount: coins }) });
+                if (charged > coins) return setMessage({ tone: "error", text: t("detail.notEnough", { amount: coins }) });
                 setMessage(null);
-                setConfirming({ kind: "bid", amount: bid });
+                setConfirming({ kind: "bid", amount: charged });
               }}
             >
               <label className="flex flex-col gap-1 text-sm">
@@ -289,7 +294,13 @@ export function AuctionPanel({
         </p>
       )}
 
-      {open && <p className="text-xs text-text-muted">{t("detail.rules", rules)}</p>}
+      {open && (
+        <p className="text-xs text-text-muted">
+          {t("detail.rules", { increment: rules.increment, fee: rules.fee })}
+          {/* Anti-sniping coupé (fenêtre ou prolongation à 0) : la phrase n'a pas lieu d'être */}
+          {snipe && ` ${t("detail.rulesSnipe", { window: span(rules.antiSnipeSeconds), extend: span(rules.extendSeconds) })}`}
+        </p>
+      )}
     </section>
   );
 }

@@ -129,16 +129,25 @@ export function listingEndsAt(now: Date, durationHours: number): Date {
   return new Date(now.getTime() + durationHours * HOUR);
 }
 
-export type Trader = { isGuest: boolean; bannedAt: Date | null; createdAt: Date };
+/** `registeredAt` : inscription (posée par trigger) ; absente pour un invité ou un compte d'avant la colonne. */
+export type Trader = { isGuest: boolean; bannedAt: Date | null; createdAt: Date; registeredAt?: Date | null };
 
 export type TraderRefusal = "DISABLED" | "GUEST" | "BANNED" | "TOO_NEW";
+
+/**
+ * Âge du compte pour la barrière anti-multicomptes : compté depuis l'inscription, pas depuis la création du compte
+ * invité (un invité peut exister des jours avant de s'inscrire). Même règle que les échanges directs et le parrainage.
+ */
+export function accountAgeMs(player: Pick<Trader, "createdAt" | "registeredAt">, now: Date): number {
+  return now.getTime() - (player.registeredAt ?? player.createdAt).getTime();
+}
 
 /** Un joueur peut-il vendre ou miser ? Invités en consultation seule, comptes récents exclus. */
 export function checkTrader(player: Trader, now: Date, rules: MarketRules): TraderRefusal | null {
   if (!rules.enabled) return "DISABLED";
   if (player.isGuest) return "GUEST";
   if (player.bannedAt) return "BANNED";
-  if (now.getTime() - player.createdAt.getTime() < rules.minAccountAgeHours * HOUR) return "TOO_NEW";
+  if (accountAgeMs(player, now) < rules.minAccountAgeHours * HOUR) return "TOO_NEW";
   return null;
 }
 

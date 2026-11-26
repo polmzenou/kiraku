@@ -101,6 +101,9 @@ describe("joueur", () => {
     [{ isGuest: true, bannedAt: null, createdAt: old }, "GUEST"],
     [{ isGuest: false, bannedAt: now, createdAt: old }, "BANNED"],
     [{ isGuest: false, bannedAt: null, createdAt: new Date(now.getTime() - 3_600_000) }, "TOO_NEW"],
+    // Invité de longue date tout juste inscrit : l'âge se compte depuis l'inscription
+    [{ isGuest: false, bannedAt: null, createdAt: old, registeredAt: new Date(now.getTime() - 3_600_000) }, "TOO_NEW"],
+    [{ isGuest: false, bannedAt: null, createdAt: old, registeredAt: old }, null],
   ] as const)("%o → %s", (player, code) => {
     expect(checkExchanger(player, now, rules)).toBe(code);
   });

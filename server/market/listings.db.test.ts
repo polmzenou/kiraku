@@ -4,7 +4,7 @@ import { PrismaClient } from "@/generated/prisma/client";
 import { RARITIES } from "@/lib/catalog/rarity";
 import type { ListingRules } from "@/lib/market/listings";
 import { createPgAdapter } from "@/server/pg-adapter";
-import { acceptOfferWith, createListingWith, declineOfferWith, ListingError, makeOfferWith } from "./listing-core";
+import { acceptOfferWith, cancelListingWith, createListingWith, declineOfferWith, expireListingsFor, ListingError, makeOfferWith } from "./listing-core";
 
 // Concurrence des échanges ouverts du Marché sur une vraie base (base de test isolée) : sauté sans
 // DATABASE_URL_TEST.
@@ -144,5 +144,67 @@ describe.skipIf(!url)("échanges ouverts atomiques (base réelle)", () => {
     ]);
     expect(offer.status).toBe("FAILED");
     expect(listing.status).toBe("OPEN");
+  }, 60_000);
+
+  it("retrait de l'annonce contre acceptation simultanée : une seule issue", async () => {
+    const [owner, bidder] = [await player(), await player()];
+    const [listed, wanted] = cards;
+    await give(owner, listed);
+    await give(bidder, wanted);
+    const { listingId } = await createListingWith(prisma, { ownerId: owner, cardId: listed, wantedCardIds: [wanted], rules });
+    const { offerId } = await makeOfferWith(prisma, { bidderId: bidder, listingId, cardId: wanted, rules });
+    const [cancel, accept] = await Promise.allSettled([
+      cancelListingWith(prisma, { userId: owner, listingId }),
+      acceptOfferWith(prisma, { userId: owner, offerId, allowedRarities: rules.allowedRarities }),
+    ]);
+    const [listing, offer] = await Promise.all([
+      prisma.tradeListing.findUniqueOrThrow({ where: { id: listingId }, select: { status: true } }),
+      prisma.listingOffer.findUniqueOrThrow({ where: { id: offerId }, select: { status: true } }),
+    ]);
+    if (listing.status === "TRADED") {
+      expect(cancel.status).toBe("rejected");
+      expect(offer.status).toBe("ACCEPTED");
+      expect(await owned(bidder, listed)).toBe(1);
+    } else {
+      expect(listing.status).toBe("CANCELLED");
+      expect(accept.status).toBe("rejected");
+      expect(offer.status).toBe("CLOSED");
+      expect(await owned(owner, listed)).toBe(1);
+      expect(await owned(bidder, wanted)).toBe(1);
+    }
+  }, 60_000);
+
+  it("annonce échue : le balayage paresseux la clôt avec ses offres, et elle ne conclut plus", async () => {
+    const [owner, bidder] = [await player(), await player()];
+    const [listed, wanted] = cards;
+    await give(owner, listed);
+    await give(bidder, wanted);
+    const { listingId } = await createListingWith(prisma, { ownerId: owner, cardId: listed, wantedCardIds: [wanted], rules });
+    const { offerId } = await makeOfferWith(prisma, { bidderId: bidder, listingId, cardId: wanted, rules });
+    await prisma.tradeListing.update({ where: { id: listingId }, data: { expiresAt: new Date(Date.now() - 1_000) } });
+    // Deux balayages simultanés (les deux joueurs ouvrent « Mes échanges ») : l'annonce n'est close qu'une fois
+    await Promise.all([expireListingsFor(prisma, owner), expireListingsFor(prisma, bidder)]);
+    const [listing, offer] = await Promise.all([
+      prisma.tradeListing.findUniqueOrThrow({ where: { id: listingId }, select: { status: true } }),
+      prisma.listingOffer.findUniqueOrThrow({ where: { id: offerId }, select: { status: true } }),
+    ]);
+    expect(listing.status).toBe("EXPIRED");
+    expect(offer.status).toBe("CLOSED");
+    await expect(acceptOfferWith(prisma, { userId: owner, offerId, allowedRarities: rules.allowedRarities })).rejects.toMatchObject({ code: "CLOSED" });
+    expect(await owned(owner, listed)).toBe(1);
+  }, 60_000);
+
+  it("offrant rattaché à un parrain après son offre : l'acceptation est refusée, l'offre reste en attente", async () => {
+    const [owner, bidder, sponsor] = [await player(), await player(), await player()];
+    const [listed, wanted] = cards;
+    await give(owner, listed);
+    await give(bidder, wanted);
+    const { listingId } = await createListingWith(prisma, { ownerId: owner, cardId: listed, wantedCardIds: [wanted], rules });
+    const { offerId } = await makeOfferWith(prisma, { bidderId: bidder, listingId, cardId: wanted, rules });
+    await prisma.user.update({ where: { id: bidder }, data: { referredById: sponsor, referredAt: new Date() } });
+    await expect(acceptOfferWith(prisma, { userId: owner, offerId, allowedRarities: rules.allowedRarities })).rejects.toMatchObject({ code: "PARTNER_LOCKED" });
+    expect((await prisma.listingOffer.findUniqueOrThrow({ where: { id: offerId }, select: { status: true } })).status).toBe("PENDING");
+    expect(await owned(owner, listed)).toBe(1);
+    expect(await owned(bidder, wanted)).toBe(1);
   }, 60_000);
 });

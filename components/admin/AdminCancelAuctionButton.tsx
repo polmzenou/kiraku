@@ -1,15 +1,16 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { adminCancelAuctionAction } from "@/server/actions/market";
 import { Button } from "../ui/Button";
 
-/** Annulation d'une vente par la modération, avec confirmation : la mise en tête est rendue. */
+/**
+ * Annulation d'une vente par la modération, avec confirmation : la mise en tête est rendue. L'action rafraîchit la
+ * page côté serveur : pas de second rafraîchissement ici.
+ */
 export function AdminCancelAuctionButton({ auctionId }: { auctionId: string }) {
   const t = useTranslations("admin.market");
-  const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -18,8 +19,7 @@ export function AdminCancelAuctionButton({ auctionId }: { auctionId: string }) {
     startTransition(async () => {
       try {
         const res = await adminCancelAuctionAction({ auctionId });
-        if (res.ok) router.refresh();
-        else setError(t(`errors.${res.error === "CLOSED" || res.error === "NOT_FOUND" || res.error === "RATE_LIMITED" || res.error === "INVALID" ? res.error : "UNAVAILABLE"}`));
+        if (!res.ok) setError(t(`errors.${res.error === "CLOSED" || res.error === "NOT_FOUND" || res.error === "RATE_LIMITED" || res.error === "INVALID" ? res.error : "UNAVAILABLE"}`));
       } catch {
         setError(t("errors.unexpected"));
       }

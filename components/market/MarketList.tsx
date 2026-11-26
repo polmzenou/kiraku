@@ -10,18 +10,21 @@ import { AuctionTile } from "./AuctionTile";
 /**
  * Grille des ventes : la première page vient du serveur, la suite par curseur (« Voir plus »).
  * `query` = paramètres d'URL déjà filtrés, renvoyés tels quels au serveur qui les revalide.
+ * `urgentMs` : fenêtre anti-sniping, où le compte à rebours passe en vermillon.
  */
 export function MarketList({
   initial,
   nextCursor: firstCursor,
   query,
   serverNow,
+  urgentMs,
   emptyText,
 }: {
   initial: AuctionListItem[];
   nextCursor: string | null;
   query: Record<string, string>;
   serverNow: number;
+  urgentMs: number;
   emptyText: string;
 }) {
   const t = useTranslations("market");
@@ -61,7 +64,7 @@ export function MarketList({
       <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 md:gap-3 lg:grid-cols-6">
         {items.map((item, i) => (
           <li key={item.id}>
-            <AuctionTile item={item} serverNow={serverNow} preload={i < 4} />
+            <AuctionTile item={item} serverNow={serverNow} urgentMs={urgentMs} preload={i < 4} />
           </li>
         ))}
       </ul>

@@ -137,12 +137,12 @@ export async function myOrders(userId: string, locale: string, now = new Date())
   return { open: openViews, closed: closedViews.map((o) => ({ ...o, status: statusById.get(o.id) ?? "EXPIRED" })) };
 }
 
-/** Tous les avis ouverts du marché (filtre de rareté), les plus hauts ou les plus récents d'abord. */
-export async function openOrdersBoard(input: { viewerId: string | null; locale: string; rarity: string | null; sort: "price" | "newest"; page: number; now?: Date }) {
+/** Tous les avis ouverts du marché, les plus hauts ou les plus récents d'abord. */
+export async function openOrdersBoard(input: { viewerId: string | null; locale: string; sort: "price" | "newest"; page: number; now?: Date }) {
   const now = input.now ?? new Date();
   const page = Math.max(0, Math.min(200, Math.trunc(input.page)));
   const rows = await prisma.buyOrder.findMany({
-    where: { ...sellable(now), ...(input.rarity && { card: { rarity: input.rarity } }) },
+    where: sellable(now),
     orderBy: input.sort === "newest" ? [{ createdAt: "desc" }, { id: "desc" }] : bestFirst,
     skip: page * ORDERS_PAGE,
     take: ORDERS_PAGE + 1,
@@ -150,11 +150,4 @@ export async function openOrdersBoard(input: { viewerId: string | null; locale: 
   });
   const items = await withCards(await toViews(rows.slice(0, ORDERS_PAGE), input.viewerId), input.locale);
   return { items, hasMore: rows.length > ORDERS_PAGE };
-}
-
-/** Avis ouverts et Zeni en séquestre (admin). */
-export async function orderTotals(now: Date) {
-  const open = await prisma.buyOrder.aggregate({ where: { status: "OPEN" }, _count: true, _sum: { price: true } });
-  const due = await prisma.buyOrder.count({ where: { status: "OPEN", expiresAt: { lte: now } } });
-  return { open: open._count, escrow: open._sum.price ?? 0, due };
 }

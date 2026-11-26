@@ -43,10 +43,13 @@ describe.skipIf(!url)("avis de recherche atomiques (base réelle)", () => {
   const tag = randomBytes(4).toString("hex");
   let seriesId: string;
   let cardId: string;
+  /** Cartes jetables propres à un test (ses détenteurs ne sont pas ceux des autres tests). */
+  const extraCards: string[] = [];
 
   async function player(coins = START) {
     const user = await prisma.user.create({
-      data: { username: `test-${randomBytes(4).toString("hex")}`, isGuest: false, coins, createdAt: new Date(Date.now() - 72 * HOUR) },
+      // L'âge anti-multicomptes se compte depuis l'inscription (sans elle, le trigger la poserait à maintenant)
+      data: { username: `test-${randomBytes(4).toString("hex")}`, isGuest: false, coins, createdAt: new Date(Date.now() - 72 * HOUR), registeredAt: new Date(Date.now() - 72 * HOUR) },
       select: { id: true },
     });
     await prisma.coinTransaction.create({ data: { userId: user.id, amount: coins, reason: "SIGNUP", balanceAfter: coins } });
@@ -96,15 +99,17 @@ describe.skipIf(!url)("avis de recherche atomiques (base réelle)", () => {
 
   afterAll(async () => {
     const mine = { userId: { in: users } };
+    const testCards = { in: [cardId, ...extraCards] };
     await prisma.$transaction([
       prisma.notification.deleteMany({ where: { OR: [mine, { actorId: { in: users } }] } }),
-      prisma.buyOrder.deleteMany({ where: { cardId } }),
+      prisma.buyOrder.deleteMany({ where: { cardId: testCards } }),
       prisma.discovery.deleteMany({ where: mine }),
       prisma.wishlistEntry.deleteMany({ where: mine }),
-      prisma.userCard.deleteMany({ where: { cardId } }),
+      prisma.userCard.deleteMany({ where: { cardId: testCards } }),
       prisma.coinTransaction.deleteMany({ where: mine }),
+      prisma.userBlock.deleteMany({ where: { OR: [{ blockerId: { in: users } }, { blockedId: { in: users } }] } }),
       prisma.user.deleteMany({ where: { id: { in: users } } }),
-      prisma.card.deleteMany({ where: { id: cardId } }),
+      prisma.card.deleteMany({ where: { id: testCards } }),
       prisma.series.deleteMany({ where: { id: seriesId } }),
     ]);
     await prisma.$disconnect();
@@ -223,5 +228,43 @@ describe.skipIf(!url)("avis de recherche atomiques (base réelle)", () => {
     expect(await alertOwnersWith(prisma, payload, null, new Date())).toBe(0); // déjà prévenu aujourd'hui
     expect(await prisma.notification.count({ where: { userId: owner, type: "BUY_ORDER_WANTED", refId: cardId } })).toBe(1);
     expect(await prisma.notification.count({ where: { userId: buyer, type: "BUY_ORDER_WANTED" } })).toBe(0);
+  });
+
+  it("alertes : blocages écartés, plafond par acheteur, avis annulé relu avant d'alerter", async () => {
+    // Carte propre au test : seuls ses détenteurs comptent
+    const own = await prisma.card.create({
+      data: { name: `Carte ${tag} b`, imageUrl: "x", favorites: 1, rarity: "EPIC", power: 1, ki: 1, seriesId, searchText: `${tag}b`, status: "PUBLISHED" },
+      select: { id: true },
+    });
+    extraCards.push(own.id);
+    const ownerOf = async () => {
+      const id = await player();
+      await prisma.userCard.create({ data: { ownerId: id, cardId: own.id } });
+      return id;
+    };
+    const buyer = await player();
+    const [h1, h2, h3, blocker, blocked] = [await ownerOf(), await ownerOf(), await ownerOf(), await ownerOf(), await ownerOf()];
+    await prisma.userBlock.create({ data: { blockerId: blocker, blockedId: buyer } });
+    await prisma.userBlock.create({ data: { blockerId: buyer, blockedId: blocked } });
+    const placed = await createOrderWith(prisma, { buyerId: buyer, cardId: own.id, price: 100, now: new Date(), rules, durationDays: DURATION, maxOpen: MAX_OPEN });
+    const payload = { orderId: placed.orderId, buyerId: buyer, cardId: own.id, price: 100 };
+
+    // Plafond de 2 alertes par acheteur sur 24 h, jamais ceux des blocages
+    expect(await alertOwnersWith(prisma, payload, null, new Date(), undefined, { perDay: 2 })).toBe(2);
+    expect(await alertOwnersWith(prisma, payload, null, new Date(), undefined, { perDay: 2 })).toBe(0);
+    // Sans plafond : le troisième détenteur seulement (les deux autres ont déjà été prévenus aujourd'hui)
+    expect(await alertOwnersWith(prisma, payload, null, new Date())).toBe(1);
+    const alerted = await prisma.notification.findMany({ where: { type: "BUY_ORDER_WANTED", refId: own.id }, select: { userId: true } });
+    expect(new Set(alerted.map((n) => n.userId))).toEqual(new Set([h1, h2, h3]));
+    // Carte sans cote, référence de rareté demandée mais absente : personne
+    expect(await alertOwnersWith(prisma, payload, null, new Date(), undefined, { rarity: { reference: null } })).toBe(0);
+
+    // Avis annulé avant l'alerte (elle part après la réponse) : personne n'est prévenu
+    const late = await ownerOf();
+    const other = await player();
+    const cancelled = await createOrderWith(prisma, { buyerId: other, cardId: own.id, price: 100, now: new Date(), rules, durationDays: DURATION, maxOpen: MAX_OPEN });
+    await cancelOrderWith(prisma, { buyerId: other, orderId: cancelled.orderId, now: new Date() });
+    expect(await alertOwnersWith(prisma, { orderId: cancelled.orderId, buyerId: other, cardId: own.id, price: 100 }, null, new Date())).toBe(0);
+    expect(await prisma.notification.count({ where: { userId: late, type: "BUY_ORDER_WANTED" } })).toBe(0);
   });
 });

@@ -470,6 +470,10 @@ export const SETTING_SCHEMAS = {
   "market.ordersEnabled": z.boolean(),
   "market.orderDurationDays": z.number().int().min(1).max(30),
   "market.maxOpenOrders": z.number().int().min(1).max(100),
+  // Alertes aux détenteurs qu'un même acheteur peut déclencher sur 24 h glissantes (0 : sans plafond)
+  "market.orderAlertsPerDay": z.number().int().min(0).max(10_000),
+  // Carte sans cote : n'alerter que si l'avis dépasse la référence de sa rareté (et personne sans référence)
+  "market.orderAlertRarityRef": z.boolean(),
   // Échanges ouverts du Marché : annonces « celle-ci contre l'une de celles-là », offres acceptées ou refusées
   "listings.enabled": z.boolean(),
   "listings.expiryHours": z.number().int().min(1).max(24 * 30),
@@ -906,6 +910,8 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "market.ordersEnabled": true,
   "market.orderDurationDays": 7, // un avis non rempli rend ses Zeni au bout d'une semaine
   "market.maxOpenOrders": 10, // avis ouverts par joueur, comme les ventes
+  "market.orderAlertsPerDay": 0, // sans plafond : le comportement d'avant, à trancher
+  "market.orderAlertRarityRef": false, // sans cote, on prévient toujours : le comportement d'avant, à trancher
   "listings.enabled": true,
   "listings.expiryHours": 48,
   "listings.maxWants": 5,

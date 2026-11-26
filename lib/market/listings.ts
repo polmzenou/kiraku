@@ -2,6 +2,7 @@
 // (server/market/listing-core.ts). « Je donne celle-ci contre l'une de celles-là » : n'importe quel
 // joueur propose une de ses cartes, l'auteur de l'annonce accepte ou refuse.
 import type { Rarity } from "../catalog/rarity";
+import { accountAgeMs, type Trader } from "./rules";
 
 export type ListingRules = {
   expiryHours: number;
@@ -18,11 +19,14 @@ export type ListingRules = {
 
 export type ExchangerRefusal = "GUEST" | "BANNED" | "TOO_NEW";
 
-/** Un joueur peut-il publier ou faire une offre ? Invités en consultation seule, comptes récents exclus. */
-export function checkExchanger(player: { isGuest: boolean; bannedAt: Date | null; createdAt: Date }, now: Date, rules: Pick<ListingRules, "minAccountAgeHours">): ExchangerRefusal | null {
+/**
+ * Un joueur peut-il publier ou faire une offre ? Invités en consultation seule, comptes récents exclus (âge compté
+ * depuis l'inscription, comme au Marché).
+ */
+export function checkExchanger(player: Trader, now: Date, rules: Pick<ListingRules, "minAccountAgeHours">): ExchangerRefusal | null {
   if (player.isGuest) return "GUEST";
   if (player.bannedAt) return "BANNED";
-  if (now.getTime() - player.createdAt.getTime() < rules.minAccountAgeHours * 3_600_000) return "TOO_NEW";
+  if (accountAgeMs(player, now) < rules.minAccountAgeHours * 3_600_000) return "TOO_NEW";
   return null;
 }
 

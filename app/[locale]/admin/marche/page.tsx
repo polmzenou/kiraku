@@ -19,7 +19,8 @@ export default async function AdminMarketPage() {
     marketTotals(now),
     adminActiveAuctions(locale),
     adminRecentNotes(locale),
-    recentSettingLogs(["market."]),
+    // Le formulaire enregistre aussi les réglages des échanges ouverts : leur journal est ici
+    recentSettingLogs(["market.", "listings."]),
   ]);
   const settings = Object.fromEntries(MARKET_SETTING_KEYS.map((k, i) => [k, values[i]])) as MarketSettings;
 

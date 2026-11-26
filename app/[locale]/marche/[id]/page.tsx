@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { OwnedBadge } from "@/components/collection/OwnedBadge";
 import { Fuda } from "@/components/fuda/Fuda";
 import { FudaTurnover } from "@/components/fuda/FudaTurnover";
@@ -14,7 +14,6 @@ import { PageShell } from "@/components/PageShell";
 import { Link } from "@/i18n/navigation";
 import { getRaritySeals } from "@/server/catalog/rarities";
 import { checkTrader } from "@/lib/market/rules";
-import { prisma } from "@/server/db";
 import { getAuctionDetail, getMarketRules } from "@/server/market/queries";
 import { getSetting } from "@/server/settings";
 import { getCurrentUser } from "@/server/user";
@@ -25,16 +24,16 @@ const idSchema = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
 
 /** Fiche d'une vente : carte, prix en direct, mise, achat immédiat et dernières mises. */
 export default async function AuctionPage({ params }: PageProps<"/[locale]/marche/[id]">) {
-  const RARITY_SEAL = await getRaritySeals();
   const { id: raw } = await params;
   const id = idSchema.safeParse(raw);
   if (!id.success) notFound();
-  const [t, tRarity, format, user, locale] = await Promise.all([
+  const [t, tRarity, format, user, locale, RARITY_SEAL] = await Promise.all([
     getTranslations("market"),
     getTranslations("rarity"),
     getFormatter(),
     getCurrentUser(),
     getLocale(),
+    getRaritySeals(),
   ]);
   if (!user) {
     return (
@@ -45,14 +44,10 @@ export default async function AuctionPage({ params }: PageProps<"/[locale]/march
   }
 
   const now = new Date();
-  const [detail, rules, pollSeconds, account] = await Promise.all([
-    getAuctionDetail(id.data, user.id, locale, now),
-    getMarketRules(),
-    getSetting("market.pollSeconds"),
-    prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { createdAt: true } }),
-  ]);
+  const [detail, rules, pollSeconds] = await Promise.all([getAuctionDetail(id.data, user.id, locale, now), getMarketRules(), getSetting("market.pollSeconds")]);
   if (!detail) notFound();
-  const refusal = checkTrader({ isGuest: user.isGuest, bannedAt: user.bannedAt, createdAt: account.createdAt }, now, rules);
+  // Âge du compte compté depuis l'inscription, comme sous verrou à la mise (getCurrentUser lit déjà les deux dates)
+  const refusal = checkTrader({ isGuest: user.isGuest, bannedAt: user.bannedAt, createdAt: user.createdAt, registeredAt: user.registeredAt }, now, rules);
   const block: TradeBlock = refusal;
 
   return (
@@ -97,8 +92,9 @@ export default async function AuctionPage({ params }: PageProps<"/[locale]/march
             serverNow={now.getTime()}
             rules={{
               increment: rules.minIncrementBp / 100,
-              window: Math.round(rules.antiSnipeSeconds / 60),
-              extend: Math.round(rules.extendSeconds / 60),
+              // En secondes : le panneau les écrit telles quelles (30 s ne devient plus « 1 min »)
+              antiSnipeSeconds: rules.antiSnipeSeconds,
+              extendSeconds: rules.extendSeconds,
               fee: detail.feeBp / 100,
             }}
           />
