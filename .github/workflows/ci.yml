@@ -1,9 +1,9 @@
 # Contrôles de chaque push et pull request (CLAUDE.md, « Façon de travailler »).
-# Les tests sur base réelle (*.db.test.ts) sont sautés ici : ils demandent DATABASE_URL_TEST
-# (base de test isolée, jamais la prod) et se lancent à la main avant une mise en production.
 #
 # Trois jobs en parallèle (lint et types, tests unitaires, simulations *.sim.test.ts), puis « checks »
 # qui ne passe que si les trois passent : c'est le contrôle à exiger avant une fusion.
+# Les tests sur base réelle (*.db.test.ts), sautés dans « unit » faute de DATABASE_URL_TEST, tournent à part
+# dans « database » sur une base Postgres jetable, pour l'instant sans bloquer (voir ce job).
 name: CI
 
 on:
@@ -57,6 +57,46 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
       - run: npm run test:sim
+
+  # Tests sur base réelle (*.db.test.ts) : Postgres 17 jetable (service du runner, détruit en fin de job), toutes les
+  # migrations, un catalogue synthétique (scripts/seed-test-catalog.mts) et les boosters de départ, puis les tests.
+  # Aucun secret : la base ne vit que le temps du job, mot de passe et AUTH_SECRET sont des valeurs factices.
+  # NON BLOQUANT pour l'instant : ces tests ont longtemps tourné seulement à la main, certains peuvent échouer.
+  # Un échec s'affiche sur ce job sans faire échouer la CI ni « checks ». Pour le rendre bloquant, une fois au vert :
+  # retirer « continue-on-error: true » ci-dessous et ajouter « database » aux needs de « checks ».
+  database:
+    name: Tests sur base (non bloquant)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: kiraku
+          POSTGRES_PASSWORD: ci-factice
+          POSTGRES_DB: kiraku_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kiraku -d kiraku_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      # localhost : server/pg-adapter.ts n'active pas TLS en local. Une seule base, jetable : migrations, seed et tests.
+      DATABASE_URL: postgresql://kiraku:ci-factice@localhost:5432/kiraku_test
+      DATABASE_URL_TEST: postgresql://kiraku:ci-factice@localhost:5432/kiraku_test
+      # server/env.ts valide l'environnement à l'import (32 caractères minimum)
+      AUTH_SECRET: ci-factice-auth-secret-sans-usage-hors-de-ce-job
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npx prisma migrate deploy
+      - run: npx tsx scripts/seed-test-catalog.mts
+      - run: npx tsx scripts/seed-boosters.mts
+      # Délai par test relevé : les tests de concurrence partagent la base entre fichiers lancés en parallèle.
+      - run: npx vitest run .db.test.ts --testTimeout=30000
 
   # Garde le nom du contrôle historique : une règle de branche qui exige « checks » couvre les trois jobs.
   checks:
