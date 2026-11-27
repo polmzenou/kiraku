@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { DETECTION_SCORING_FIELDS, detectionScoringSchema, type DetectionScoring } from "@/lib/anticheat/scoring";
-import { changedSettingKeys } from "@/lib/settings/form";
+import { changedSettingKeys, numberBounds } from "@/lib/settings/form";
 import { GENERAL_SETTING_KEYS, generalSettingsSchema, type GeneralSettings } from "@/lib/settings/general-form";
 import type { z } from "@/lib/zod";
 import { updateGeneralSettings } from "@/server/actions/admin-settings";
@@ -18,24 +18,6 @@ function scoringBounds(field: keyof DetectionScoring): [number, number] {
   return [schema.minValue ?? 0, schema.maxValue ?? 1_000];
 }
 
-const LIMITS: Record<NumberKey, [number, number]> = {
-  "economy.startingZeni": [0, 1_000_000],
-  "catalog.newCardHours": [0, 720],
-  "guest.createPerHourPerIp": [1, 1_000],
-  "guest.retentionDays": [0, 365],
-  "account.deletionGraceDays": [0, 365],
-  "account.usernameChangeDays": [0, 365],
-  "account.exportsPerDay": [1, 50],
-  "multiAccount.retentionDays": [1, 365],
-  "multiAccount.seenThrottleMinutes": [1, 1_440],
-  "multiAccount.sharedIpCap": [2, 100],
-  "multiAccount.minScore": [1, 500],
-  "multiAccount.autoBanMaxOthers": [0, 5],
-  "multiAccount.autoBanDays": [1, 365],
-  "multiAccount.autoBanPerDevice": [1, 50],
-  "multiAccount.ipv4BanDays": [0, 365],
-};
-
 /** Réglages généraux : Zeni de départ, fuseau du jeu, invités, droits du joueur sur ses données, multi-comptes. */
 export function GeneralSettingsForm({ initial }: { initial: GeneralSettings }) {
   const t = useTranslations("admin.general");
@@ -44,17 +26,21 @@ export function GeneralSettingsForm({ initial }: { initial: GeneralSettings }) {
   const changed = valid ? changedSettingKeys(GENERAL_SETTING_KEYS, base, draft) : [];
   const label = (k: keyof GeneralSettings) => t(`keys.${k}`);
 
-  const num = (key: NumberKey) => (
-    <NumberField
-      key={key}
-      label={label(key)}
-      hint={t(`hints.${key}`)}
-      value={draft[key]}
-      min={LIMITS[key][0]}
-      max={LIMITS[key][1]}
-      onChange={(v) => setDraft((d) => ({ ...d, [key]: v }))}
-    />
-  );
+  // Bornes lues dans le schéma de chaque réglage (lib/settings/defaults.ts) : plus de copie qui peut s'en écarter
+  const num = (key: NumberKey) => {
+    const [min, max] = numberBounds(key);
+    return (
+      <NumberField
+        key={key}
+        label={label(key)}
+        hint={t(`hints.${key}`)}
+        value={draft[key]}
+        min={min}
+        max={max}
+        onChange={(v) => setDraft((d) => ({ ...d, [key]: v }))}
+      />
+    );
+  };
 
   const toggle = (key: BooleanKey) => (
     <div className="flex flex-col gap-1">

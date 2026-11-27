@@ -52,7 +52,8 @@ export function NewsPanelView({
   const [pageVisible, setPageVisible] = useState(true);
   const slides = news.items;
   const count = slides.length;
-  const date = news.publishedAt ? format.dateTime(new Date(news.publishedAt), { day: "numeric", month: "long", timeZone: "Europe/Paris" }) : null;
+  // Jour dans le fuseau du jeu (game.timeZone, celui du fournisseur de traductions)
+  const date = news.publishedAt ? format.dateTime(new Date(news.publishedAt), { day: "numeric", month: "long" }) : null;
 
   const toggle = () => {
     const next = !collapsed;

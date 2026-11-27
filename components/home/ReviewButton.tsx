@@ -61,9 +61,14 @@ function ReviewForm({ own, onDone }: { own: Own; onDone: (saved: { rating: numbe
         if (rating < 1) return setError("NO_RATING");
         setError(null);
         start(async () => {
-          const res = await submitReview({ rating, body });
-          if (res.ok) onDone({ rating: res.rating, body: res.body });
-          else setError(res.error);
+          // Réseau coupé ou déploiement en cours : un message, pas l'écran d'erreur (l'avis tapé reste dans le champ)
+          try {
+            const res = await submitReview({ rating, body });
+            if (res.ok) onDone({ rating: res.rating, body: res.body });
+            else setError(res.error);
+          } catch {
+            setError("UNAVAILABLE");
+          }
         });
       }}
     >

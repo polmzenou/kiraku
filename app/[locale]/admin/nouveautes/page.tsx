@@ -30,7 +30,7 @@ export default async function AdminNewsPage() {
         <p className="max-w-prose text-sm text-text-muted">{t("intro")}</p>
         <p className="text-sm font-bold tabular-nums">
           {news.publishedAt
-            ? t("revision", { revision: news.revision, date: format.dateTime(new Date(news.publishedAt), { dateStyle: "long", timeZone: "Europe/Paris" }) })
+            ? t("revision", { revision: news.revision, date: format.dateTime(new Date(news.publishedAt), { dateStyle: "long" }) })
             : t("revisionNever", { revision: news.revision })}
         </p>
       </div>

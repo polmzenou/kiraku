@@ -69,41 +69,40 @@ describe("annonces uniques par compte", () => {
     expect(await claimAnnouncementAction("player", "v2")).toBe(true);
   });
 
-  it("présente la v2.5 une fois la v2 vue", async () => {
-    mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: v2.at });
-    expect(await claimAnnouncementAction("player", "v2")).toBe(false);
-    expect(await claimAnnouncementAction("player", "v25")).toBe(true);
-    expect(mocks.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { v1WelcomeSeenAt: v25.at } }));
-  });
-
-  it("la v2.5 remplace l'attente de la v3, déjà vue ou non", async () => {
-    mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: new Date("2026-10-28T12:00:00Z") });
-    expect(await claimAnnouncementAction("player", "v3Teaser")).toBe(false);
-    expect(await claimAnnouncementAction("player", "v25")).toBe(true);
+  it("la v2.5, borne sans modal, ne se réserve pas : ni après la v2, ni pour un compte neuf", async () => {
+    for (const seenAt of [v2.at, new Date("2026-10-28T12:00:00Z"), null]) {
+      mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: seenAt });
+      expect(await claimAnnouncementAction("player", "v2")).toBe(false);
+      expect(await claimAnnouncementAction("player", "v25")).toBe(false);
+      expect(await claimAnnouncementAction("player", "v3Teaser")).toBe(false);
+    }
+    expect(mocks.updateMany).not.toHaveBeenCalled();
   });
 
   it("enregistre la date de l'annonce sur le joueur de la session", async () => {
-    expect(await claimAnnouncementAction("player", "v25")).toBe(true);
+    mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: apology.at });
+    expect(await claimAnnouncementAction("player", "v2")).toBe(true);
     expect(mocks.updateMany).toHaveBeenCalledWith({
       where: {
         id: "player",
-        OR: [{ v1WelcomeSeenAt: null }, { v1WelcomeSeenAt: { lt: v25.at } }],
+        OR: [{ v1WelcomeSeenAt: null }, { v1WelcomeSeenAt: { lt: v2.at } }],
         bannedAt: null,
         deletionRequestedAt: null,
         anonymizedAt: null,
       },
-      data: { v1WelcomeSeenAt: v25.at },
+      data: { v1WelcomeSeenAt: v2.at },
     });
   });
 
   it("n'autorise qu'un seul de deux appareils ou onglets simultanés", async () => {
+    mocks.user.mockResolvedValue({ id: "player", v1WelcomeSeenAt: apology.at });
     let seen = false;
     mocks.updateMany.mockImplementation(async () => {
       if (seen) return { count: 0 };
       seen = true;
       return { count: 1 };
     });
-    expect(await Promise.all([claimAnnouncementAction("player", "v25"), claimAnnouncementAction("player", "v25")])).toEqual([true, false]);
+    expect(await Promise.all([claimAnnouncementAction("player", "v2"), claimAnnouncementAction("player", "v2")])).toEqual([true, false]);
   });
 
   it("ne marque rien lorsque la limite est atteinte", async () => {
@@ -139,6 +138,18 @@ describe("annonce de l'ouverture du casino", () => {
     expect(mocks.updateMany).not.toHaveBeenCalled();
   });
 
+  it("aussi à qui a vu la v2 ou les excuses sans jamais passer la borne v2.5", async () => {
+    const rules = opened(1);
+    mocks.casinoRules.mockResolvedValue(rules);
+    mocks.user.mockResolvedValue({ ...veteran, v1WelcomeSeenAt: v2.at });
+    expect(await claimAnnouncementAction("player", "casino")).toBe(true);
+    expect(mocks.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { v1WelcomeSeenAt: new Date(rules.opensAt!) } }));
+    // Les excuses seulement : la v2 d'abord, le casino à la visite suivante
+    mocks.user.mockResolvedValue({ ...veteran, v1WelcomeSeenAt: apology.at });
+    expect(await claimAnnouncementAction("player", "casino")).toBe(false);
+    expect(await claimAnnouncementAction("player", "v2")).toBe(true);
+  });
+
   it("pas avant l'ouverture", async () => {
     mocks.casinoRules.mockResolvedValue({ ...DEFAULT_CASINO_RULES, opensAt: Date.now() + DAY });
     mocks.user.mockResolvedValue(veteran);
@@ -160,6 +171,12 @@ describe("annonce du nouveau parrainage", () => {
     mocks.user.mockResolvedValue(veteran);
     expect(await claimAnnouncementAction("player", "referral")).toBe(true);
     expect(mocks.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { v1WelcomeSeenAt: new Date(at) } }));
+  });
+
+  it("aussi à qui s'était arrêté avant la borne v2.5", async () => {
+    announced(new Date(Date.now() - DAY).toISOString());
+    mocks.user.mockResolvedValue({ ...veteran, v1WelcomeSeenAt: v2.at });
+    expect(await claimAnnouncementAction("player", "referral")).toBe(true);
   });
 
   it("rien sans date, parrainage v2 coupé, ni pour un compte créé après l'annonce", async () => {

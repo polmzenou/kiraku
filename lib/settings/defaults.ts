@@ -47,13 +47,22 @@ const printingChance = z.record(rarityKeySchema, z.number().int().min(0).max(10_
 const printingSizes = z.record(rarityKeySchema, z.number().int().min(1).max(10_000));
 const printingSeals = z.record(z.string().regex(/^[1-9][0-9]{0,2}$/), z.string().min(1).max(4));
 
+// game.timeZone est relu à chaque requête (i18n/request.ts) et par chaque page : construire un DateTimeFormat à chaque
+// lecture coûtait ~65 µs, plus que tous les autres réglages réunis. Réponse gardée par fuseau (quelques valeurs au plus).
+const TIME_ZONES_CHECKED = new Map<string, boolean>();
+
 function isTimeZone(tz: string): boolean {
+  const known = TIME_ZONES_CHECKED.get(tz);
+  if (known !== undefined) return known;
+  let valid: boolean;
   try {
     new Intl.DateTimeFormat("en", { timeZone: tz });
-    return true;
+    valid = true;
   } catch {
-    return false;
+    valid = false;
   }
+  if (TIME_ZONES_CHECKED.size < 64) TIME_ZONES_CHECKED.set(tz, valid);
+  return valid;
 }
 
 // Parts de tirage par rareté, en millièmes de % (entiers : aucun arrondi de flottant au tirage)
@@ -684,12 +693,12 @@ export const SETTING_SCHEMAS = {
   "home.pullFeed.cacheSeconds": z.number().int().min(5).max(600),
   // Apparitions max d'un même joueur dans le carrousel : au-delà, ses plus anciens tirages en sortent
   "home.pullFeed.maxPerPlayer": z.number().int().min(1).max(50),
-  // Jauge communautaire au-dessus de la vitrine : boosters ouverts par les inscrits, dans la fenêtre
   // Wrapped (récap de l'année, lib/wrapped) : livré éteint, allumé depuis /admin/wrapped
   "wrapped.enabled": z.boolean(),
   "wrapped.year": z.number().int().min(2025).max(2100),
   "wrapped.opensAt": z.string().datetime(),
   "wrapped.closesAt": z.string().datetime(),
+  // Jauge communautaire au-dessus de la vitrine : boosters ouverts par les inscrits (ou lancers joués), dans la fenêtre
   "home.eventGauge.enabled": z.boolean(),
   "home.eventGauge.startsAt": z.string().datetime(),
   "home.eventGauge.endsAt": z.string().datetime(),
@@ -735,8 +744,12 @@ export const RARITY_KEYED: Partial<Record<SettingKey, "subset" | "all">> = {
   "battle.keywordsByRarity": "all",
   "booster.slotFloors": "subset",
   "booster.goldenFloor": "subset",
+  "booster.apocalypseRuinFloors": "subset",
+  "booster.apocalypseRuinCeiling": "subset",
+  "incense.boostFrom": "subset",
   "gifts.allowedRarities": "subset",
   "trades.allowedRarities": "subset",
+  "listings.allowedRarities": "subset",
   "home.pullFeed.minRarity": "subset",
   "market.maxPriceByRarity": "subset",
   "booster.duplicateGuardRarities": "subset",

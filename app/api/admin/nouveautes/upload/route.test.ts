@@ -76,6 +76,7 @@ describe("téléversement des images de bannière Nouveautés", () => {
   it("n'accepte pas une adresse rendue hors du dossier des bannières, et retire l'image sans trace", async () => {
     mocks.put.mockResolvedValueOnce({ url: `https://${host}/cards/unique.png`, pathname: "cards/unique.png" });
     expect((await POST(request())).status).toBe(503);
+    expect(mocks.del).toHaveBeenCalledWith(`https://${host}/cards/unique.png`, { token: "test-token" });
     mocks.log.mockRejectedValueOnce(new Error("journal indisponible"));
     expect((await POST(request())).status).toBe(500);
     expect(mocks.del).toHaveBeenCalledWith(`https://${host}/news/unique.png`, { token: "test-token" });

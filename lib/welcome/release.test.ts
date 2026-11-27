@@ -40,6 +40,23 @@ describe("annonces de l'équipe", () => {
     expect(pendingAnnouncement(list[1].at, NOW, shuffled)?.key).toBe("casino");
   });
 
+  it("une borne sans modal ne bloque pas les annonces suivantes", () => {
+    const withBound: Announcement[] = [...list, { key: "v25", at: new Date("2026-10-30T12:00:00Z"), silent: true }];
+    const withCasino: Announcement[] = [...withBound, { key: "casino", at: new Date("2026-11-10T19:00:00Z") }];
+    // Qui a vu la v2 passait à la borne et n'en sortait plus : le casino n'arrivait jamais
+    expect(pendingAnnouncement(list[1].at, NOW, withCasino)?.key).toBe("casino");
+    expect(pendingAnnouncement(list[0].at, NOW, withCasino)?.key).toBe("v2");
+    expect(pendingAnnouncement(list[1].at, NOW, withBound)).toBeNull();
+    // Compte neuf : rien quand la dernière est la borne, la suivante dès qu'elle passe
+    expect(pendingAnnouncement(null, NOW, withBound)).toBeNull();
+    expect(pendingAnnouncement(null, NOW, withCasino)?.key).toBe("casino");
+  });
+
+  it("la v2.5 du code est une borne", () => {
+    expect(pendingAnnouncement(new Date("2026-10-27T18:00:00Z"), NOW)).toBeNull();
+    expect(pendingAnnouncement(null, NOW)).toBeNull();
+  });
+
   it("toutes les clés sont connues pour la réservation", () => {
     expect(ANNOUNCEMENT_KEYS).toEqual(expect.arrayContaining(["apology", "v2", "v25", "casino", "referral"]));
   });

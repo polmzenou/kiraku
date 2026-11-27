@@ -34,7 +34,7 @@ export default async function AdminFocusPage() {
                   <BoosterArt shape={type.shape} theme={type.theme} emblem={type.emblem} name="" contents="" compact />
                 </div>
                 <div className="flex min-w-0 flex-col gap-1 text-sm">
-                  <Link href={`/admin/boosters/types/${type.slug}`} className="font-bold underline-offset-4 hover:underline">
+                  <Link href={`/admin/boosters/types/${type.slug}`} className="inline-flex min-h-11 w-fit items-center font-bold underline-offset-4 hover:underline">
                     {localize(type.name, locale)}
                   </Link>
                   <span className="text-text-muted">{series.length > 0 ? format.list(series, { type: "conjunction" }) : t("focus.noSeries")}</span>

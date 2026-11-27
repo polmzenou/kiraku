@@ -2,7 +2,7 @@
 
 import { after } from "next/server";
 import { getLocale } from "next-intl/server";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import { isFrozen } from "@/lib/account/deletion";
 import type { EventGaugeView } from "@/lib/home/event-gauge";
 import { getCurrentUser, requireActiveUser } from "../user";

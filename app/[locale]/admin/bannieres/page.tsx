@@ -30,7 +30,7 @@ export default async function AdminBannersPage() {
                 <BoosterArt shape={b.shape} theme={b.theme} emblem={b.emblem} name="" contents="" compact />
               </div>
               <div className="flex min-w-0 flex-col gap-1 text-sm">
-                <Link href={`/admin/boosters/types/${b.slug}`} className="font-bold underline-offset-4 hover:underline">
+                <Link href={`/admin/boosters/types/${b.slug}`} className="inline-flex min-h-11 w-fit items-center font-bold underline-offset-4 hover:underline">
                   {localize(b.name, locale)}
                 </Link>
                 <span className="text-text-muted">

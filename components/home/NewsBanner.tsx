@@ -89,7 +89,8 @@ export function NewsBanner({ item, index, count, active, first }: { item: NewsIt
   const { visual } = item;
   const booster = visual.kind === "booster" ? visual.booster : null;
   const style = booster ? ({ "--nb-base": booster.theme.base, "--nb-dark": booster.theme.dark } as CSSProperties) : undefined;
-  const until = booster?.endsAt ? format.dateTime(new Date(booster.endsAt), { day: "numeric", month: "long", timeZone: "Europe/Paris" }) : null;
+  // Jour de fin dans le fuseau du jeu (game.timeZone, celui du fournisseur de traductions)
+  const until = booster?.endsAt ? format.dateTime(new Date(booster.endsAt), { day: "numeric", month: "long" }) : null;
   const link = item.link.kind !== "none"
     ? item.link
     : booster

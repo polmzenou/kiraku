@@ -138,10 +138,11 @@ export function ReviewsCarousel({ reviews }: { reviews: ReviewCard[] }) {
               onClick={() => setPage(i)}
               className="group flex size-11 items-center justify-center"
             >
+              {/* Point actif étiré par transform (pas par sa largeur), comme ceux de l'encart Nouveautés */}
               <span
                 aria-hidden="true"
-                className={`block h-2 rounded-full transition-[width,background-color] duration-300 motion-reduce:transition-none ${
-                  i === page ? "w-5 bg-kin" : "w-2 bg-border group-hover:bg-text-muted"
+                className={`block size-2 rounded-full transition-[transform,background-color] duration-300 motion-reduce:transition-none ${
+                  i === page ? "scale-x-[2.5] bg-kin" : "bg-border group-hover:bg-text-muted"
                 }`}
               />
             </button>

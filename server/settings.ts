@@ -6,7 +6,7 @@ import { prisma } from "./db";
 export const SETTINGS_TAG = "settings";
 
 // Toute la table est petite : on la lit d'un bloc et on la garde en cache.
-// Une sauvegarde dans l'admin appellera revalidateTag(SETTINGS_TAG).
+// Chaque écriture de l'admin appelle updateTag(SETTINGS_TAG), puis forgetSettings().
 const loadSettings = unstable_cache(
   async () => {
     const rows = await prisma.gameSetting.findMany({ select: { key: true, value: true } });

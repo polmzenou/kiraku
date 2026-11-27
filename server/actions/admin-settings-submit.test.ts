@@ -45,7 +45,8 @@ beforeEach(() => {
   mocks.admin.mockResolvedValue({ id: "admin" });
   mocks.staff.mockResolvedValue({ user: { id: "dev", role: "DEV" } });
   mocks.rateLimit.mockResolvedValue({ success: true });
-  mocks.rarities.mockResolvedValue(["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC"]);
+  // Registre complet, variantes comprises : les raretés des échanges ouverts (listings.allowedRarities) y sont vérifiées
+  mocks.rarities.mockResolvedValue(["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "BR", "AR", "VR", "GOLD", "MR", "SR", "XR"]);
   storeRows({});
 });
 

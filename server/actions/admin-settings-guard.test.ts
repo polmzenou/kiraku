@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BOOSTER_SETTING_KEYS, type BoosterSettings } from "@/lib/settings/booster-form";
 import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
+import { MARKET_SETTING_KEYS, type MarketSettings } from "@/lib/settings/market-form";
 
 // Enregistrement des doublons des grandes raretés dans /admin/boosters : raretés vérifiées par le registre.
 
@@ -15,7 +16,7 @@ vi.mock("../home/news", () => ({ resolveNewsVisuals: vi.fn() }));
 vi.mock("../db", () => ({
   prisma: { $transaction: (fn: (tx: unknown) => unknown) => fn({ $queryRaw: vi.fn(), gameSetting: { findMany: mocks.findMany, upsert: mocks.upsert } }) },
 }));
-import { updateBoosterSettings } from "./admin-settings";
+import { updateBoosterSettings, updateMarketSettings } from "./admin-settings";
 
 const REGISTRY = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "AR", "GOLD", "MR", "VR", "SR", "XR", "BR"];
 const settings = (over: Partial<BoosterSettings> = {}): BoosterSettings =>
@@ -40,5 +41,25 @@ describe("réglages des doublons des grandes raretés", () => {
   it("refuse une rareté inconnue du registre, sans rien écrire", async () => {
     expect(await updateBoosterSettings(draft({ "booster.duplicateGuardRarities": ["MYTHIC", "INCONNUE"] }))).toEqual({ ok: false, error: "INVALID" });
     expect(mocks.upsert).not.toHaveBeenCalled();
+  });
+});
+
+// Une rareté inconnue y passait le schéma (clé bien formée) : l'Encens ne boostait plus rien, l'Apocalyptique ruiné
+// visait une rareté sans cartes, les échanges ouverts filtraient sur une rareté qui n'existe pas
+describe("autres réglages qui citent une rareté", () => {
+  it.each([
+    ["incense.boostFrom", "INCONNUE"],
+    ["booster.apocalypseRuinCeiling", "INCONNUE"],
+    ["booster.apocalypseRuinFloors", ["COMMON", "INCONNUE"]],
+  ] as const)("refuse %s hors du registre", async (key, value) => {
+    expect(await updateBoosterSettings(draft({ [key]: value }))).toEqual({ ok: false, error: "INVALID" });
+    expect(await updateBoosterSettings(draft({ "incense.boostFrom": "MYTHIC", "booster.apocalypseRuinCeiling": "RARE" }))).toMatchObject({ ok: true });
+  });
+
+  it("refuse une rareté inconnue dans les échanges ouverts du Marché", async () => {
+    const market = (over: Partial<MarketSettings> = {}) =>
+      ({ ...Object.fromEntries(MARKET_SETTING_KEYS.map((k) => [k, SETTING_DEFAULTS[k]])), ...over }) as MarketSettings;
+    expect(await updateMarketSettings({ base: market(), draft: market({ "listings.allowedRarities": ["COMMON", "INCONNUE"] }) })).toEqual({ ok: false, error: "INVALID" });
+    expect(await updateMarketSettings({ base: market(), draft: market({ "listings.allowedRarities": ["COMMON", "GOLD"] }) })).toMatchObject({ ok: true });
   });
 });

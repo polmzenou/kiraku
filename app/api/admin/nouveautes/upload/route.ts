@@ -25,7 +25,11 @@ export async function POST(request: Request) {
     const image = await optimizeImage(upload.bytes, upload.type, BANNER_WIDTH);
     // Jeton passé explicitement : sinon le SDK préfère VERCEL_OIDC_TOKEN, refusé hors de Vercel
     const blob = await put(`news/${crypto.randomUUID()}.${image.extension}`, image.data, { access: "public", contentType: image.type, addRandomSuffix: true, token });
-    if (!validNewsImageUrl(blob.url, process.env.BLOB_PUBLIC_HOST)) return Response.json({ error: "STORAGE_UNAVAILABLE" }, { status: 503 });
+    if (!validNewsImageUrl(blob.url, process.env.BLOB_PUBLIC_HOST)) {
+      // Stockage mal réglé (hôte public différent) : l'image refusée est retirée, pas laissée orpheline
+      await del(blob.url, { token }).catch(() => {});
+      return Response.json({ error: "STORAGE_UNAVAILABLE" }, { status: 503 });
+    }
     try {
       await writeAdminLog(prisma, { adminId: admin.id, action: "NEWS_IMAGE_UPLOAD", targetType: "NewsImage", targetId: blob.pathname, after: { url: blob.url, size: image.data.length, originalSize: upload.size } });
     } catch (error) {

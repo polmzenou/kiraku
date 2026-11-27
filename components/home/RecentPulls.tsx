@@ -168,7 +168,8 @@ function PullList({ pulls, owned, now, pendingLikeIds, onLike, copy = false }: {
               aria-label={p.likes.canLike ? t(p.likes.liked ? "unlike" : "like", { name: p.card.name }) : t("likeUnavailable")}
               title={p.likes.canLike ? t(p.likes.liked ? "unlike" : "like", { name: p.card.name }) : t("likeUnavailable")}
               onClick={() => onLike(p)}
-              className={`absolute right-0.5 top-0.5 z-40 flex size-8 items-center justify-center rounded-full transition-[color,transform] active:scale-90 disabled:cursor-default motion-reduce:transition-none ${p.likes.liked ? "text-shu" : "text-white enabled:hover:text-shu"}`}
+              // Cœur de 32 px sur la carte, zone tactile étendue à 44 px par le pseudo-élément
+              className={`absolute right-0.5 top-0.5 z-40 flex size-8 items-center justify-center rounded-full transition-[color,transform] after:absolute after:-inset-1.5 after:content-[''] active:scale-90 disabled:cursor-default motion-reduce:transition-none ${p.likes.liked ? "text-shu" : "text-white enabled:hover:text-shu"}`}
             >
               <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill={p.likes.liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
                 <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" />

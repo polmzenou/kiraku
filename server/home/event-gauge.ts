@@ -43,10 +43,18 @@ function cachedCount(seconds: number) {
   return counter;
 }
 
+// Lot promis, partagé par tous les visiteurs : relu une fois par minute au plus, et non plus à chaque vue de l'accueil
+// et à chaque sondage de la jauge (un autre lot réglé change la clé ; un nom retouché suit dans la minute)
+const loadRewardLot = unstable_cache(
+  async (lotId: string) => prisma.lot.findUnique({ where: { id: lotId }, select: { name: true } }),
+  ["home-event-gauge-reward-v1"],
+  { revalidate: 60 },
+);
+
 /** Nom du lot promis à tous, dans la langue du lecteur ; null sans lot ou s'il a disparu. */
 async function rewardName(lotId: string | null): Promise<string | null> {
   if (!lotId) return null;
-  const [lot, locale] = await Promise.all([prisma.lot.findUnique({ where: { id: lotId }, select: { name: true } }), getLocale()]);
+  const [lot, locale] = await Promise.all([loadRewardLot(lotId), getLocale()]);
   return lot ? localize(parseLocalized(lot.name), locale) : null;
 }
 

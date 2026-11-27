@@ -112,6 +112,7 @@ function CardPicker({
   remember: (cards: KnownCard[]) => void;
 }) {
   const t = useTranslations("admin.news");
+  const tRarity = useTranslations("rarity");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<FeaturedCandidate[]>([]);
   const searchable = query.trim().length >= 2;
@@ -154,13 +155,13 @@ function CardPicker({
                   <img src={card.imageUrl} alt="" className="h-9 w-7 rounded-[3px] object-cover" />
                 )}
                 <span className="max-w-36 truncate text-sm">{name}</span>
-                <button type="button" aria-label={t("cardLeft", { name })} disabled={i === 0} onClick={() => move(i, -1)} className="min-h-11 min-w-9 text-sm disabled:opacity-30">
+                <button type="button" aria-label={t("cardLeft", { name })} disabled={i === 0} onClick={() => move(i, -1)} className="min-h-11 min-w-11 text-sm disabled:opacity-30">
                   ←
                 </button>
-                <button type="button" aria-label={t("cardRight", { name })} disabled={i === ids.length - 1} onClick={() => move(i, 1)} className="min-h-11 min-w-9 text-sm disabled:opacity-30">
+                <button type="button" aria-label={t("cardRight", { name })} disabled={i === ids.length - 1} onClick={() => move(i, 1)} className="min-h-11 min-w-11 text-sm disabled:opacity-30">
                   →
                 </button>
-                <button type="button" aria-label={t("cardRemove", { name })} onClick={() => onChange(ids.filter((x) => x !== id))} className="min-h-11 min-w-9 text-base">
+                <button type="button" aria-label={t("cardRemove", { name })} onClick={() => onChange(ids.filter((x) => x !== id))} className="min-h-11 min-w-11 text-base">
                   ×
                 </button>
               </li>
@@ -192,7 +193,7 @@ function CardPicker({
                   <img src={r.imageUrl} alt="" className="h-10 w-7 shrink-0 rounded-[3px] object-cover" />
                   <span className="min-w-0 flex-1 truncate">{r.name}</span>
                   <span className="shrink-0 text-xs text-text-muted">
-                    {r.series} · {r.rarity}
+                    {r.series} · {tRarity(r.rarity)}
                   </span>
                 </button>
               </li>

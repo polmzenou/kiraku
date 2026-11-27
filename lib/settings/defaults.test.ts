@@ -14,6 +14,13 @@ describe("réglages de jeu", () => {
     expect(parseSetting("economy.startingZeni", 800)).toBe(800);
   });
 
+  it("fuseau du jeu : un fuseau connu passe, un inconnu retombe sur le défaut, même relu", () => {
+    for (let i = 0; i < 2; i++) {
+      expect(parseSetting("game.timeZone", "America/New_York")).toBe("America/New_York");
+      expect(parseSetting("game.timeZone", "Mars/Olympus")).toBe("Europe/Paris");
+    }
+  });
+
   it("retombe sur la valeur par défaut si elle est absente ou invalide", () => {
     expect(parseSetting("economy.startingZeni", undefined)).toBe(500);
     expect(parseSetting("booster.maxStock", -3)).toBe(10);

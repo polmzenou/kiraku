@@ -76,7 +76,9 @@ export async function HostUsage({ snapshot, thresholds }: { snapshot: HostSnapsh
                     aria-label={t(`metrics.${r.key}`)}
                     aria-valuemin={0}
                     aria-valuemax={100}
-                    aria-valuenow={percent}
+                    // Une charge au-delà des cœurs dépasse 100 % : la jauge (et sa valeur lue) s'arrête au maximum
+                    aria-valuenow={Math.min(100, percent)}
+                    aria-valuetext={t("percent", { value: percent })}
                     className="h-2 overflow-hidden rounded-pill bg-surface-2"
                   >
                     <div className={`h-full origin-left rounded-pill ${BAR[level]}`} style={{ transform: `scaleX(${Math.min(1, share[r.key] ?? 0)})` }} />
