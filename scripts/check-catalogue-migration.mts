@@ -62,9 +62,12 @@ try {
     if (!after && (bounds.min < 1 || bounds.max >= 1_000_000_000)) throw new Error("La plage des numéros AniList nécessite une adaptation avant migration.");
     const tables: Record<string, { count: number; fingerprint: string | null }> = {};
     for (const [table, excluded] of Object.entries(additions)) {
+      // Nom de table pris dans la constante `additions` ci-dessus, jamais dans une entrée
+      // eslint-disable-next-line no-restricted-properties
+      const from = Prisma.raw(`"${table}"`);
       const [row] = await tx.$queryRaw<{ count: number; fingerprint: string | null }[]>(Prisma.sql`
         SELECT count(*)::int AS count,md5(string_agg(md5((to_jsonb(t) - ${excluded}::text[])::text),'' ORDER BY md5((to_jsonb(t) - ${excluded}::text[])::text))) AS fingerprint
-        FROM ${Prisma.raw(`"${table}"`)} t`);
+        FROM ${from} t`);
       tables[table] = row;
     }
     return { migration, phase: after ? "after" : "before", pending, legacyRarities: rarities.values, tables };

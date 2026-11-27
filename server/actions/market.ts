@@ -219,8 +219,12 @@ export async function adminCancelAuctionAction(input: unknown): Promise<SimpleMa
 
 export type MarketPageResult = { ok: true; items: AuctionListItem[]; nextCursor: string | null } | Failure;
 
+// Paramètres d'URL déjà filtrés par la page (sept au plus) : le nombre de clés est borné, comme pour la collection
 const pageSchema = z
-  .object({ params: z.record(z.string().max(20), z.string().max(80)), cursor: z.string().max(120) })
+  .object({
+    params: z.record(z.string().max(20), z.string().max(80)).refine((p) => Object.keys(p).length <= 10),
+    cursor: z.string().max(120),
+  })
   .strict();
 
 /** Pages suivantes du marché (la première est rendue par le serveur). Consultation ouverte aux invités. */

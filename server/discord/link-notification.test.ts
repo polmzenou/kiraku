@@ -49,9 +49,16 @@ describe("annonce Discord de première liaison", () => {
   it("empêche les noms d'injecter des mentions ou de la mise en forme", async () => {
     await notifyDiscordLink({ ...link, displayName: "**@everyone**\n[piège](https://example.com)" });
     const body = JSON.parse(request.mock.calls[0][1]!.body as string);
-    expect(body.content).toContain("\\*\\*@everyone\\*\\* \\[piège\\]\\(https://example.com\\)");
+    expect(body.content).toContain("\\*\\*@everyone\\*\\* \\[piège\\]\\(https:\\/\\/example.com\\)");
     expect(body.content).not.toContain("\n");
     expect(body.allowed_mentions).toEqual({ parse: [] });
+  });
+
+  it("ne laisse pas un nom Discord devenir un lien cliquable", async () => {
+    await notifyDiscordLink({ ...link, displayName: "https://nitro.example discord.gg/piege" });
+    const body = JSON.parse(request.mock.calls[0][1]!.body as string);
+    expect(body.content).toContain("**https:\\/\\/nitro.example discord.gg\\/piege**");
+    expect(body.content).not.toMatch(/https:\/\/nitro|discord\.gg\//);
   });
 
   it.each([401, 403, 429, 500])("ne bloque pas la liaison si Discord répond %s", async (status) => {

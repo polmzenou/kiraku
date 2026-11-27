@@ -47,9 +47,13 @@ export function rolesMessage(roles: readonly SelfRole[]): DiscordMessageBody {
   };
 }
 
-/** Texte des joueurs : pas de mise en forme, de liens cachés ou de mentions injectés. */
+/**
+ * Texte des joueurs : pas de mise en forme, de liens (cachés ou en clair) ni de mentions injectés. La barre oblique est
+ * échappée aussi : un nom Discord « https://… » ou « discord.gg/… » deviendrait sinon un lien cliquable dans le message
+ * du bot (Discord l'affiche telle quelle, sans la barre inverse).
+ */
 export function discordText(value: string, max = 256): string {
-  return value.slice(0, max).replace(/[\r\n\t]/g, " ").replace(/([\\`*_{}\[\]()<>|~])/g, "\\$1");
+  return value.slice(0, max).replace(/[\r\n\t]/g, " ").replace(/([\\`*_{}\[\]()<>|~/])/g, "\\$1");
 }
 
 /** Couleurs des encadrés : or (kin) et vermillon (shu) de la DA. */

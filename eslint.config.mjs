@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
         "error",
         { property: "$queryRawUnsafe", message: "Interdit : utilise $queryRaw en template balisé." },
         { property: "$executeRawUnsafe", message: "Interdit : utilise $executeRaw en template balisé." },
+        // Un fragment brut glissé dans un template balisé contourne les paramètres liés, comme $queryRawUnsafe
+        { object: "Prisma", property: "raw", message: "Interdit : Prisma.raw insère du SQL sans paramètre lié ; utilise Prisma.sql." },
       ],
       "react/no-danger": "error",
       "no-restricted-syntax": [
