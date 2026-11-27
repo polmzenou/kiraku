@@ -74,5 +74,6 @@ describe("police des sceaux", () => {
       if (absent.length > 0) found[name] = absent.join("");
     }
     expect(found).toEqual({});
-  });
+    // Lecture de tous les fichiers de app/ et components/ : ~3 s seul, plus de 6 s quand toute la suite tourne
+  }, 30_000);
 });
