@@ -102,7 +102,8 @@ function toItem(row: Row, locale: string): CollectionItem {
     copies: row.copies,
     free: row.free,
     ordinary: row.ordinary,
-    recyclable: Math.max(0, row.free - 1),
+    // Comme le recyclage (planRecycle) et la fiche : seuls les ordinaires partent, une pièce spéciale jamais
+    recyclable: Math.max(0, row.ordinary - 1),
     inShowcase: row.inShowcase,
     heritage: row.maxHeritage,
     engraved: row.engraved,
@@ -205,7 +206,6 @@ export async function getOwnedSeries(ownerId: string, locale: string) {
     FROM "UserCard" uc
     JOIN "Card" c ON c.id = uc."cardId"
     JOIN "Series" s ON s.id = c."seriesId"
-    JOIN "RarityDefinition" rd ON rd.key = c."rarityKey"
     WHERE uc."ownerId" = ${ownerId}
     GROUP BY s.id
     ORDER BY cards DESC, s."titleRomaji" ASC

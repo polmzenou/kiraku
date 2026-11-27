@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { BASE_DEFINITIONS, orderedKeys } from "../catalog/definitions";
 import { SETTING_DEFAULTS } from "../settings/defaults";
 import { copyRecycleValue, planRecycle, recycleValue, type OwnedCopy } from "./recycle";
 
@@ -83,6 +84,18 @@ describe("recyclage des doublons", () => {
     expect(plan.byCard.has("c")).toBe(false);
     expect(plan.byRarity.LEGENDARY.copies).toBe(0);
     expect(plan.gain).toBe(2 * values.COMMON + 2 * values.EPIC);
+  });
+
+  it("« jusqu'à Mythique » suit l'ordre du registre : une BR (même rang que Mythique) n'en fait pas partie", () => {
+    // Ordre de l'écran (RecycleAllSheet) et du serveur (recycle-core) : compareRarities, la rareté de base d'abord
+    const order = orderedKeys(BASE_DEFINITIONS);
+    expect(order.indexOf("MYTHIC")).toBe(order.indexOf("BR") - 1);
+    const owned = [...copies("m", "MYTHIC", 2), ...copies("br", "BR", 2)];
+    const upToMythic = planRecycle(owned, { values, rarities: order, maxRarity: "MYTHIC" });
+    expect(upToMythic.byCard.has("br")).toBe(false);
+    expect(upToMythic.gain).toBe(values.MYTHIC);
+    const upToBr = planRecycle(owned, { values, rarities: order, maxRarity: "BR" });
+    expect(upToBr.gain).toBe(values.MYTHIC + values.BR);
   });
 
   it("limite le nombre recyclé par carte, en partant des plus récents", () => {

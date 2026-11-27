@@ -4,7 +4,7 @@ import { getRarities } from "@/server/catalog/rarities";
 import { rarityKeySchema } from "@/lib/catalog/definitions";
 
 import { getLocale } from "next-intl/server";
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { z } from "@/lib/zod";
 import { ALBUM_MAX_OFFSET, parseAlbumParams, type AlbumPage } from "@/lib/collection/albums";
 import { parseCollectionParams } from "@/lib/collection/params";
@@ -16,6 +16,7 @@ import type { FudaCopy } from "@/components/fuda/Fuda";
 import { isSpecialCopy } from "@/lib/collection/copies";
 import { fudaCopyOf } from "@/lib/prestige/printing";
 import { getAlbumPage } from "../collection/albums";
+import { getTopCollectors, LEADERBOARD_TAG } from "../collection/leaderboard";
 import { accessFor, findProfileOwner } from "../collection/profile";
 import { getCollectionPage, getOwnedCopies, MAX_OFFSET } from "../collection/queries";
 import { RecycleError, recycleWith, type RecycleRequest } from "../collection/recycle-core";
@@ -50,7 +51,7 @@ const cardIdSchema = z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/);
 const albumPageSchema = z.object({
   query: z.record(z.string().max(16), z.string().max(200)).refine((q) => Object.keys(q).length <= 10),
   offset: z.number().int().min(0).max(ALBUM_MAX_OFFSET),
-});
+}).strict();
 
 /** Albums suivants de sa propre collection (la première page est rendue par le serveur). */
 export async function loadAlbumPageAction(input: unknown): Promise<({ ok: true } & AlbumPage) | Failure> {
@@ -69,7 +70,7 @@ const pageSchema = z.object({
   username: z.string().regex(USERNAME_REGEX).optional(),
   query: z.record(z.string().max(16), z.string().max(200)).refine((q) => Object.keys(q).length <= 10),
   offset: z.number().int().min(0).max(MAX_OFFSET),
-});
+}).strict();
 
 /** Pages suivantes de la liste (la première est rendue par le serveur). */
 export async function loadCollectionPage(input: unknown): Promise<({ ok: true } & CollectionPage) | Failure> {
@@ -139,12 +140,12 @@ export async function copiesOfCardAction(input: unknown): Promise<{ ok: true; co
 
 export type RecycleResult = { ok: true; recycled: number; gain: number; coins: number } | Failure;
 
-const recycleCardSchema = z.object({ cardId: cardIdSchema, count: z.number().int().min(1).max(10_000) });
+const recycleCardSchema = z.object({ cardId: cardIdSchema, count: z.number().int().min(1).max(10_000) }).strict();
 const recycleCopySchema = z.object({ userCardId: cardIdSchema, expected: z.number().int().min(0).max(100_000_000) }).strict();
 const recycleAllSchema = z.object({
   maxRarity: rarityKeySchema,
   expected: z.number().int().min(1).max(100_000_000),
-});
+}).strict();
 
 async function runRecycle(request: RecycleRequest, userId: string): Promise<RecycleResult> {
   if (!(await rateLimit(`recycle:${userId}`, { limit: 10, windowSeconds: 10 })).success) {
@@ -201,7 +202,7 @@ export async function recycleAllAction(input: unknown): Promise<RecycleResult> {
 
 // --- Confidentialité ---
 
-const privacySchema = z.object({ visibility: z.enum(PROFILE_VISIBILITIES), showCollection: z.boolean() });
+const privacySchema = z.object({ visibility: z.enum(PROFILE_VISIBILITIES), showCollection: z.boolean() }).strict();
 
 export async function updatePrivacyAction(input: unknown): Promise<{ ok: true } | Failure> {
   const user = await requireActiveUser();
@@ -220,6 +221,11 @@ export async function updatePrivacyAction(input: unknown): Promise<{ ok: true } 
       privacyChosenAt: new Date(),
     },
   });
+  // Un profil qui n'est plus public quitte le classement tout de suite, au lieu d'y rester (pseudo, avatar) le temps
+  // du cache (cinq minutes) ; seulement s'il y figure : rien à retirer sinon, et pas de recalcul offert à chaque clic
+  if (parsed.data.visibility !== "PUBLIC" && (await getTopCollectors()).some((c) => c.username === user.username)) {
+    updateTag(LEADERBOARD_TAG);
+  }
   refresh();
   return { ok: true };
 }

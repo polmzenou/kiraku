@@ -1,6 +1,7 @@
 // Recyclage atomique des doublons en Zeni. Le client Prisma est injecté (serveur ou test de
 // concurrence) : pas de server/db.ts ici. Le serveur choisit les exemplaires et calcule le gain.
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
+import { compareRarities } from "@/lib/catalog/definitions";
 import { type Rarity } from "@/lib/catalog/rarity";
 import { COPY_MARKS, isSpecialCopy } from "@/lib/collection/copies";
 import { copyRecycleValue, planRecycle, type RecyclePlan, type RecycleValues } from "@/lib/collection/recycle";
@@ -52,7 +53,10 @@ export async function recycleWith(
       }
       if (user.bannedAt) throw new RecycleError("BANNED");
 
-      const RARITIES = (await tx.rarityDefinition.findMany({ orderBy: [{ sortOrder: "asc" }, { key: "asc" }], select: { key: true } })).map((r) => r.key);
+      // Ordre du registre (compareRarities), celui de l'écran qui a calculé `expected` : à rang égal, la rareté de
+      // base passe d'abord. Trié par clé, BR (500) passait avant Mythique (500) : « jusqu'à Mythique » prenait aussi
+      // les BR, « jusqu'à BR » laissait les Mythiques, et le gain confirmé ne tombait jamais juste (STALE sans fin)
+      const RARITIES = (await tx.rarityDefinition.findMany({ select: { key: true, sortOrder: true } })).sort(compareRarities).map((r) => r.key);
       const allowed = request.kind === "all" ? RARITIES.slice(0, RARITIES.indexOf(request.maxRarity) + 1) : RARITIES;
       const [copies, showcase] = await Promise.all([
         tx.userCard.findMany({

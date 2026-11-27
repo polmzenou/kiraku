@@ -150,12 +150,16 @@ export async function deleteCatalogCardWith(db: PrismaClient, adminId: string, i
     const { _count: counts, ...card } = before;
     if (!canDeleteCatalogCard(scope, card.status)) throw new CatalogMutationError("FORBIDDEN");
     if (!deletableCard(card, counts)) throw new CatalogMutationError("IN_USE");
-    const [openings, gifts, boosters, teams, decks] = await Promise.all([
+    // Avis d'achat et cartes demandées d'une annonce : posés sans posséder la carte (une archivée jamais tirée en a
+    // peut-être). Sans eux, l'avis (clé étrangère Restrict) faisait échouer la suppression sur une erreur générique,
+    // et la demande disparaissait de l'annonce en silence (Cascade).
+    const [openings, gifts, boosters, teams, decks, buyOrders, listingWants] = await Promise.all([
       tx.boosterOpening.count({ where: { catalogCardIds: { has: id } } }), tx.gift.count({ where: { cardId: id } }),
       tx.boosterType.count({ where: { featuredCardIds: { has: id } } }), tx.user.count({ where: { battleTeam: { has: id } } }),
-      tx.deck.count({ where: { cardIds: { has: id } } }),
+      tx.deck.count({ where: { cardIds: { has: id } } }), tx.buyOrder.count({ where: { cardId: id } }),
+      tx.tradeListingWant.count({ where: { cardId: id } }),
     ]);
-    if (openings + gifts + boosters + teams + decks) throw new CatalogMutationError("IN_USE");
+    if (openings + gifts + boosters + teams + decks + buyOrders + listingWants) throw new CatalogMutationError("IN_USE");
     await tx.card.delete({ where: { id } });
     await writeAdminLog(tx, { adminId, action: "CARD_DELETE", targetType: "Card", targetId: id, before: json(card) });
     await updatePools(tx);
