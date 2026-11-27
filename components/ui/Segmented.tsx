@@ -7,8 +7,9 @@ export const segmentedTrackClass = "lacquer inline-flex max-w-full items-center 
 /** À ajouter quand la piste peut déborder (petits écrans) : défilement horizontal sans barre. */
 export const segmentedScrollClass = "overflow-x-auto [scrollbar-width:none]";
 
+// min-h-11 : 44 px, la zone tactile minimale de la règle 6 (la piste ajoute 4 px autour)
 const segmentedItemBase =
-  "inline-flex min-h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-pill text-sm font-bold whitespace-nowrap text-text-muted " +
+  "inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-pill text-sm font-bold whitespace-nowrap text-text-muted " +
   "transition-[background-color,color,transform] duration-150 hover:text-text active:scale-[.97] motion-reduce:transition-none " +
   "aria-[current=page]:bg-text aria-[current=page]:text-bg aria-[current=true]:bg-text aria-[current=true]:text-bg " +
   "aria-pressed:bg-text aria-pressed:text-bg aria-selected:bg-text aria-selected:text-bg " +

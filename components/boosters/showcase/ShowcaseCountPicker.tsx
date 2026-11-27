@@ -38,7 +38,7 @@ export function ShowcaseCountPicker({
         className={
           tone === "hero"
             ? "inline-grid h-14 grid-flow-col overflow-hidden rounded-control border border-[var(--chip-b)] bg-[var(--chip)]"
-            : `${segmentedTrackClass} ${segmentedFillClass} h-12`
+            : `${segmentedTrackClass} ${segmentedFillClass} h-13`
         }
       >
         {OPEN_COUNTS.map((n) => (
