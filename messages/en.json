@@ -6053,6 +6053,7 @@
       "SELF": "That's you!",
       "BLOCKED_BY_ME": "You blocked this player: unblock them first.",
       "LIMIT_FRIENDS": "You've reached the maximum number of friends.",
+      "LIMIT_THEIRS": "This player has reached the maximum number of friends since sending the request.",
       "LIMIT_OUTGOING": "Too many pending requests: cancel some first.",
       "UNAVAILABLE": "Can't do that right now. Try again."
     },
@@ -6087,6 +6088,7 @@
       "SELF": "That's you!",
       "BLOCKED_BY_ME": "You blocked this player: unblock them first.",
       "LIMIT_FRIENDS": "You've reached the maximum number of friends.",
+      "LIMIT_THEIRS": "This player has reached the maximum number of friends.",
       "LIMIT_OUTGOING": "Too many pending requests: cancel some first.",
       "UNAVAILABLE": "Can't do that right now. Try again.",
       "NOT_FRIENDS": "You can only give to a friend.",

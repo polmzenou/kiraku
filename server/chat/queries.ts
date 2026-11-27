@@ -80,9 +80,19 @@ export async function listConversations(me: string, since: Date, onlineSeconds: 
   }));
 }
 
-/** Total des messages non lus (pastille). */
-export function unreadChatCount(me: string, since: Date) {
-  return prisma.chatMessage.count({ where: { recipientId: me, readAt: null, createdAt: { gt: since } } });
+/**
+ * Total des messages non lus (pastille), avec les mêmes amis que listConversations : un ancien ami (retiré ou bloqué)
+ * ou un compte banni ne se lit plus, ses messages ne gonflaient la pastille que jusqu'à leur expiration.
+ */
+export async function unreadChatCount(me: string, since: Date): Promise<number> {
+  const [row] = await prisma.$queryRaw<{ n: number }[]>`
+    SELECT COUNT(*)::int AS n
+    FROM "ChatMessage" m
+    JOIN "Friendship" f ON f."pairKey" = m."pairKey" AND f.status = 'ACCEPTED'
+    JOIN "User" u ON u.id = m."senderId"
+    WHERE m."recipientId" = ${me} AND m."readAt" IS NULL AND m."createdAt" > ${since}
+      AND u."bannedAt" IS NULL AND u."anonymizedAt" IS NULL`;
+  return row?.n ?? 0;
 }
 
 /** Les deux joueurs sont-ils amis, sans blocage dans un sens ou l'autre ? */

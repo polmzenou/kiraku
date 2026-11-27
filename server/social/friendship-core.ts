@@ -14,6 +14,8 @@ export type SocialErrorCode =
   | "SELF"
   | "BLOCKED_BY_ME"
   | "LIMIT_FRIENDS"
+  /** Le joueur qui m'a demandé en ami a atteint friends.max depuis sa demande. */
+  | "LIMIT_THEIRS"
   | "LIMIT_OUTGOING";
 
 export class SocialError extends Error {
@@ -138,7 +140,7 @@ export async function respondWith(
   onNotified?: OnNotified,
 ): Promise<void> {
   await notifyingTransaction(db, async (tx) => {
-    await lockPair(tx, userId, requesterId);
+    const { other } = await lockPair(tx, userId, requesterId);
     const now = new Date();
     const row = await tx.friendship.findUnique({
       where: { pairKey: pairKey(userId, requesterId) },
@@ -148,7 +150,14 @@ export async function respondWith(
     if (!row || row.status !== "PENDING" || row.addresseeId !== userId || row.declinedAt) {
       throw new SocialError("NOT_FOUND");
     }
-    if (accept && (await countFriends(tx, userId)) >= limits.maxFriends) throw new SocialError("LIMIT_FRIENDS");
+    if (accept) {
+      // Le demandeur a pu être banni ou remplir sa liste depuis sa demande (il en envoie plusieurs à la fois) :
+      // même règle que l'acceptation par l'envoi (decideSend), relue sous verrou
+      if (!other || other.bannedAt) throw new SocialError("NOT_FOUND");
+      const [mine, theirs] = await Promise.all([countFriends(tx, userId), countFriends(tx, requesterId)]);
+      if (mine >= limits.maxFriends) throw new SocialError("LIMIT_FRIENDS");
+      if (theirs >= limits.maxFriends) throw new SocialError("LIMIT_THEIRS");
+    }
     await settleFriendRequest(tx, userId, requesterId, now);
     if (!accept) {
       // Refus silencieux : l'expéditeur n'est pas prévenu et ne peut pas relancer
@@ -184,15 +193,36 @@ export async function removeFriendWith(db: PrismaClient, userId: string, friendI
 }
 
 /**
- * Bloque un joueur : amitié et demandes supprimées, ses notifications effacées. Le bloqué n'est
- * pas prévenu ; ses demandes suivantes sont enregistrées comme refusées.
+ * Bloque un joueur : amitié et demandes supprimées, ses notifications effacées, échanges en attente entre les deux
+ * refermés. Le bloqué n'est pas prévenu ; ses demandes suivantes sont enregistrées comme refusées.
  */
 export async function blockWith(db: PrismaClient, userId: string, targetId: string) {
   if (userId === targetId) throw new SocialError("SELF");
   await db.$transaction(async (tx) => {
+    const now = new Date();
+    // Propositions d'échange encore ouvertes entre les deux, verrouillées avant les joueurs (ordre de leur
+    // acceptation : la proposition, puis les joueurs). Sinon l'acceptation échouait sur « échange impossible »,
+    // ce qui trahissait le blocage, et le bloqueur gardait celles du bloqué dans ses échanges reçus.
+    const trades = await tx.$queryRaw<{ id: string; proposerId: string }[]>`
+      SELECT id, "proposerId" FROM "Trade"
+      WHERE status = 'PENDING' AND "expiresAt" > ${now}
+        AND (("proposerId" = ${userId} AND "recipientId" = ${targetId}) OR ("proposerId" = ${targetId} AND "recipientId" = ${userId}))
+      ORDER BY id
+      FOR UPDATE`;
     const players = await lockPlayers(tx, [userId, targetId]);
     if (!players.has(userId)) throw new SocialError("NO_USER");
     if (!players.has(targetId)) throw new SocialError("NOT_FOUND");
+    // Les miennes sont retirées, leur notification avec (comme cancelTradeWith) ; les siennes refusées en silence,
+    // sans notification, comme ses demandes d'ami
+    const mine = trades.filter((t) => t.proposerId === userId).map((t) => t.id);
+    const theirs = trades.filter((t) => t.proposerId === targetId).map((t) => t.id);
+    if (mine.length > 0) {
+      await tx.trade.updateMany({ where: { id: { in: mine }, status: "PENDING" }, data: { status: "CANCELLED", resolvedAt: now } });
+      await tx.notification.deleteMany({ where: { type: "TRADE_PROPOSED", refId: { in: mine } } });
+    }
+    if (theirs.length > 0) {
+      await tx.trade.updateMany({ where: { id: { in: theirs }, status: "PENDING" }, data: { status: "DECLINED", resolvedAt: now } });
+    }
     await tx.userBlock.upsert({
       where: { blockerId_blockedId: { blockerId: userId, blockedId: targetId } },
       create: { blockerId: userId, blockedId: targetId },

@@ -8,7 +8,36 @@ import {
   parseKyaraImportPayload,
   parseReferralRewardPayload,
   parseTeamGiftPayload,
+  hasPlayerNote,
+  hiddenWhenBlocked,
+  KEPT_WHEN_BLOCKED,
+  NOTIFICATION_TYPES,
 } from "./notifications";
+
+describe("notifications d'un joueur bloqué", () => {
+  it("cache ce qu'il envoie de lui-même : demande, cadeau, invitation, proposition, offre, alerte d'avis", () => {
+    for (const type of ["FRIEND_REQUEST", "GIFT_RECEIVED", "BATTLE_INVITE", "TRADE_PROPOSED", "LISTING_OFFER", "COINFLIP_INVITE", "BUY_ORDER_WANTED"] as const) {
+      expect(hiddenWhenBlocked(type)).toBe(true);
+    }
+  });
+
+  it("garde ce qui parle des biens du lecteur : surenchère, vente, échange conclu, table relevée, lot de l'équipe", () => {
+    for (const type of ["OUTBID", "AUCTION_SOLD", "AUCTION_WON", "TRADE_ACCEPTED", "LISTING_ACCEPTED", "COINFLIP_RESOLVED", "BUY_ORDER_FILLED", "LOT_GRANTED", "TEAM_GIFT", "REFERRAL_REWARD"] as const) {
+      expect(hiddenWhenBlocked(type)).toBe(false);
+      expect(KEPT_WHEN_BLOCKED).toContain(type);
+    }
+  });
+
+  it("partage tous les types entre cachés et gardés", () => {
+    expect(KEPT_WHEN_BLOCKED.length + NOTIFICATION_TYPES.filter(hiddenWhenBlocked).length).toBe(NOTIFICATION_TYPES.length);
+  });
+
+  it("ne garde jamais le mot libre d'un refus écrit par le joueur bloqué", () => {
+    expect(hasPlayerNote("TRADE_DECLINED")).toBe(true);
+    expect(hasPlayerNote("LISTING_DECLINED")).toBe(true);
+    expect(hasPlayerNote("TEAM_GIFT")).toBe(false); // mot de l'équipe
+  });
+});
 
 describe("formatBadge", () => {
   it("cache la pastille à zéro et plafonne à 9+", () => {

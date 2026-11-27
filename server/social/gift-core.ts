@@ -217,7 +217,7 @@ export async function giftSealedWith(
     const refusal = checkSealedGift({
       giftable: drop.giftable,
       hasDiscord: discord > 0,
-      senderCreatedAt: sender.createdAt,
+      sender,
       sentInWindow,
       now,
       rules: ctx.sealedRules,

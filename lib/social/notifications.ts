@@ -38,6 +38,35 @@ export const NOTIFICATION_TYPES = [
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
+/**
+ * Types où un joueur vient vers le lecteur (demande, cadeau, invitation, proposition, offre, alerte d'avis) : rien de
+ * lui une fois bloqué. Les autres parlent des biens ou des actions du lecteur (surenchère, vente conclue, échange
+ * accepté, table relevée, lot de l'équipe…) : ils restent, sans le nom du joueur bloqué (« Un joueur »).
+ */
+const FROM_PLAYER_TYPES: readonly NotificationType[] = [
+  "FRIEND_REQUEST",
+  "FRIEND_ACCEPTED",
+  "GIFT_RECEIVED",
+  "BATTLE_INVITE",
+  "TRADE_PROPOSED",
+  "LISTING_OFFER",
+  "COINFLIP_INVITE",
+  "BUY_ORDER_WANTED",
+];
+
+/** Notification masquée quand son auteur est un joueur que le lecteur a bloqué. */
+export function hiddenWhenBlocked(type: NotificationType): boolean {
+  return FROM_PLAYER_TYPES.includes(type);
+}
+
+/** Types gardés malgré le blocage, pour le filtre en base (complément de hiddenWhenBlocked). */
+export const KEPT_WHEN_BLOCKED: readonly NotificationType[] = NOTIFICATION_TYPES.filter((type) => !hiddenWhenBlocked(type));
+
+/** Mot libre écrit par l'auteur de la notification (motif d'un refus) : jamais montré quand il est bloqué. */
+export function hasPlayerNote(type: NotificationType): boolean {
+  return type === "TRADE_DECLINED" || type === "LISTING_DECLINED";
+}
+
 /** Texte de la pastille : rien à 0, « 9+ » au-delà de 9. */
 export function formatBadge(count: number): string | null {
   if (!Number.isFinite(count) || count <= 0) return null;

@@ -18,9 +18,21 @@ export function NotificationList({ initial, initialCursor }: { initial: Notifica
   const router = useRouter();
   const [items, setItems] = useState(initial);
   const [cursor, setCursor] = useState(initialCursor);
+  const [rendered, setRendered] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const unread = items.filter((n) => !n.read).length;
+
+  // Nouveau rendu serveur (router.refresh() d'un toast arrivé sur cette page, ou après une action) : les nouvelles
+  // notifications passent en tête et l'état des autres suit le serveur ; les pages déjà chargées et leur curseur restent
+  if (rendered !== initial) {
+    setRendered(initial);
+    setItems((list) => {
+      const fresh = new Map(initial.map((n) => [n.id, n]));
+      const known = new Set(list.map((n) => n.id));
+      return [...initial.filter((n) => !known.has(n.id)), ...list.map((n) => fresh.get(n.id) ?? n)];
+    });
+  }
 
   const markAll = () =>
     startTransition(async () => {

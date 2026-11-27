@@ -40,6 +40,10 @@ describe("checkGift", () => {
     expect(checkGift({ ...ok, sender: { ...player, createdAt: daysAgo(1) } })).toBe("ACCOUNT_TOO_NEW");
     expect(checkGift({ ...ok, friendsSince: new Date(now.getTime() - 3_600_000) })).toBe("FRIENDSHIP_TOO_NEW");
     expect(checkGift({ ...ok, sender: { ...player, createdAt: daysAgo(2) } })).toBeNull();
+    // Invité de longue date tout juste inscrit : l'âge se compte depuis l'inscription
+    expect(checkGift({ ...ok, sender: { ...player, createdAt: daysAgo(30), registeredAt: daysAgo(1) } })).toBe("ACCOUNT_TOO_NEW");
+    expect(checkGift({ ...ok, sender: { ...player, createdAt: daysAgo(30), registeredAt: daysAgo(2) } })).toBeNull();
+    expect(checkGift({ ...ok, sender: { ...player, createdAt: daysAgo(30), registeredAt: null } })).toBeNull();
   });
 
   it("applique les quotas du jour envoyés et reçus", () => {
@@ -97,7 +101,7 @@ describe("checkSealedGift", () => {
   const sealedOk = {
     giftable: true,
     hasDiscord: true,
-    senderCreatedAt: daysAgo(30),
+    sender: { createdAt: daysAgo(30) },
     sentInWindow: 0,
     now,
     rules: { requiresDiscord: true, minAccountDays: 7, perWindow: 2, windowDays: 3 },
@@ -114,8 +118,9 @@ describe("checkSealedGift", () => {
   it("garde-fous contre le farm : Discord, ancienneté, limite de la fenêtre glissante", () => {
     expect(checkSealedGift({ ...sealedOk, hasDiscord: false })).toBe("NEEDS_DISCORD");
     expect(checkSealedGift({ ...sealedOk, hasDiscord: false, rules: { ...sealedOk.rules, requiresDiscord: false } })).toBeNull();
-    expect(checkSealedGift({ ...sealedOk, senderCreatedAt: daysAgo(6) })).toBe("SEALED_ACCOUNT_TOO_NEW");
-    expect(checkSealedGift({ ...sealedOk, senderCreatedAt: daysAgo(7) })).toBeNull();
+    expect(checkSealedGift({ ...sealedOk, sender: { createdAt: daysAgo(6) } })).toBe("SEALED_ACCOUNT_TOO_NEW");
+    expect(checkSealedGift({ ...sealedOk, sender: { createdAt: daysAgo(7) } })).toBeNull();
+    expect(checkSealedGift({ ...sealedOk, sender: { createdAt: daysAgo(30), registeredAt: daysAgo(6) } })).toBe("SEALED_ACCOUNT_TOO_NEW");
     expect(checkSealedGift({ ...sealedOk, sentInWindow: 1 })).toBeNull();
     expect(checkSealedGift({ ...sealedOk, sentInWindow: 2 })).toBe("SEALED_LIMIT");
     expect(checkSealedGift({ ...sealedOk, rules: { ...sealedOk.rules, perWindow: 0 } })).toBe("SEALED_LIMIT");

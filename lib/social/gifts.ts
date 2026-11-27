@@ -1,6 +1,7 @@
 // Règles anti-abus des cadeaux entre amis. Fonction pure : gift-core.ts l'applique sous le
 // verrou des deux joueurs, la feuille « Offrir » s'en sert pour afficher ce qui reste possible.
 import { isSpecialCopy, type CopyMarks } from "../collection/copies";
+import { accountAgeMs } from "../market/rules";
 
 export type GiftRules = {
   enabled: boolean;
@@ -12,7 +13,8 @@ export type GiftRules = {
   minFriendshipHours: number;
 };
 
-export type GiftPlayer = { isGuest: boolean; bannedAt: Date | null; createdAt: Date };
+/** `registeredAt` : inscription (posée par trigger) ; absente pour un invité ou un compte d'avant la colonne. */
+export type GiftPlayer = { isGuest: boolean; bannedAt: Date | null; createdAt: Date; registeredAt?: Date | null };
 
 export type GiftCheck = {
   sender: GiftPlayer;
@@ -48,7 +50,8 @@ export function checkGift(c: GiftCheck): GiftRefusal | null {
   if (c.sender.bannedAt) return "BANNED";
   // Un destinataire invité, banni ou bloqué ne peut pas être un ami : même réponse
   if (!c.friendsSince || c.blocked || c.recipient.isGuest || c.recipient.bannedAt) return "NOT_FRIENDS";
-  if (c.now.getTime() - c.sender.createdAt.getTime() < c.rules.minAccountAgeHours * HOUR) return "ACCOUNT_TOO_NEW";
+  // Depuis l'inscription, comme le Marché et les échanges : un invité ancien tout juste inscrit n'offre pas aussitôt
+  if (accountAgeMs(c.sender, c.now) < c.rules.minAccountAgeHours * HOUR) return "ACCOUNT_TOO_NEW";
   if (c.now.getTime() - c.friendsSince.getTime() < c.rules.minFriendshipHours * HOUR) return "FRIENDSHIP_TOO_NEW";
   if (c.sentToday >= c.rules.perDaySent) return "SENT_LIMIT";
   if (c.receivedToday >= c.rules.perDayReceived) return "RECEIVED_LIMIT";
@@ -77,7 +80,8 @@ export function checkSealedGift(c: {
   /** Sachet tombé d'un tirage, jamais offert. */
   giftable: boolean;
   hasDiscord: boolean;
-  senderCreatedAt: Date;
+  /** Ancienneté comptée depuis l'inscription (registeredAt), sinon depuis la création du compte. */
+  sender: Pick<GiftPlayer, "createdAt" | "registeredAt">;
   /** Sachets offerts par l'expéditeur depuis le début de la fenêtre glissante. */
   sentInWindow: number;
   now: Date;
@@ -85,7 +89,7 @@ export function checkSealedGift(c: {
 }): SealedGiftRefusal | null {
   if (!c.giftable) return "NOT_GIFTABLE";
   if (c.rules.requiresDiscord && !c.hasDiscord) return "NEEDS_DISCORD";
-  if (c.now.getTime() - c.senderCreatedAt.getTime() < c.rules.minAccountDays * 24 * HOUR) return "SEALED_ACCOUNT_TOO_NEW";
+  if (accountAgeMs(c.sender, c.now) < c.rules.minAccountDays * 24 * HOUR) return "SEALED_ACCOUNT_TOO_NEW";
   if (c.sentInWindow >= c.rules.perWindow) return "SEALED_LIMIT";
   return null;
 }

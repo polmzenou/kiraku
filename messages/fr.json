@@ -6053,6 +6053,7 @@
       "SELF": "C'est toi !",
       "BLOCKED_BY_ME": "Tu as bloqué ce joueur : débloque-le d'abord.",
       "LIMIT_FRIENDS": "Tu as atteint le nombre maximum d'amis.",
+      "LIMIT_THEIRS": "Ce joueur a atteint le nombre maximum d'amis depuis sa demande.",
       "LIMIT_OUTGOING": "Trop de demandes en attente : annule-en quelques-unes d'abord.",
       "UNAVAILABLE": "Action impossible pour le moment. Réessaie."
     },
@@ -6087,6 +6088,7 @@
       "SELF": "C'est toi !",
       "BLOCKED_BY_ME": "Tu as bloqué ce joueur : débloque-le d'abord.",
       "LIMIT_FRIENDS": "Tu as atteint le nombre maximum d'amis.",
+      "LIMIT_THEIRS": "Ce joueur a atteint le nombre maximum d'amis.",
       "LIMIT_OUTGOING": "Trop de demandes en attente : annule-en quelques-unes d'abord.",
       "UNAVAILABLE": "Action impossible pour le moment. Réessaie.",
       "NOT_FRIENDS": "Tu ne peux offrir qu'à un ami.",

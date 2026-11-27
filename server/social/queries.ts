@@ -2,6 +2,8 @@ import "server-only";
 import { cache } from "react";
 import { Prisma } from "@/generated/prisma/client";
 import {
+  hasPlayerNote,
+  KEPT_WHEN_BLOCKED,
   parseAuctionPayload,
   parseBattlePayload,
   parseBuyOrderPayload,
@@ -205,14 +207,20 @@ const notificationSelect = {
 } as const;
 
 /**
- * Rien d'un joueur que le lecteur a bloqué depuis. Les joueurs bloqués sont lus d'abord (presque
- * toujours aucun) : un filtre de relation sous un OR faisait évaluer une sous-requête sur toute la
- * table User à chaque lecture. `notIn` écarte aussi les NULL, d'où le cas sans acteur à part.
+ * Notifications du lecteur, et les joueurs qu'il a bloqués (lus d'abord, presque toujours aucun : un filtre de
+ * relation sous un OR faisait évaluer une sous-requête sur toute la table User à chaque lecture). D'un joueur
+ * bloqué, rien de ce qu'il envoie de lui-même (hiddenWhenBlocked) ; ce qui parle des biens du lecteur (surenchère,
+ * vente conclue, échange accepté, lot de l'équipe…) reste, son nom masqué par toViews. `notIn` écarte aussi les
+ * NULL, d'où le cas sans acteur à part.
  */
-async function visibleTo(userId: string) {
-  const blocked = await prisma.userBlock.findMany({ where: { blockerId: userId }, select: { blockedId: true } });
-  if (blocked.length === 0) return { userId };
-  return { userId, OR: [{ actorId: null }, { actorId: { notIn: blocked.map((b) => b.blockedId) } }] };
+async function visibleTo(userId: string): Promise<{ where: Prisma.NotificationWhereInput; blocked: ReadonlySet<string> }> {
+  const rows = await prisma.userBlock.findMany({ where: { blockerId: userId }, select: { blockedId: true } });
+  if (rows.length === 0) return { where: { userId }, blocked: new Set() };
+  const blocked = rows.map((b) => b.blockedId);
+  return {
+    where: { userId, OR: [{ actorId: null }, { actorId: { notIn: blocked } }, { type: { in: [...KEPT_WHEN_BLOCKED] } }] },
+    blocked: new Set(blocked),
+  };
 }
 
 type NotificationRow = {
@@ -262,8 +270,11 @@ async function notesFor(rows: { id: string; type: NotificationType; refId: strin
   return new Map(rows.flatMap((r) => (r.refId && byRef.has(r.refId) ? [[r.id, byRef.get(r.refId)!] as const] : [])));
 }
 
-/** Lignes → vues : cartes offertes ou vendues résolues en une seule requête. */
-async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
+/**
+ * Lignes → vues : cartes offertes ou vendues résolues en une seule requête. Auteur bloqué par le lecteur (`blocked`) :
+ * ni son nom ni le mot qu'il a écrit (« Un joueur a surenchéri… »).
+ */
+async function toViews(rows: NotificationRow[], blocked: ReadonlySet<string>): Promise<NotificationView[]> {
   const gifts = rows.map((r) => (r.type === "GIFT_RECEIVED" ? parseGiftPayload(r.payload) : null));
   const auctions = rows.map((r) => (AUCTION_TYPES.has(r.type) ? parseAuctionPayload(r.payload) : null));
   const trades = rows.map((r) => (r.type.startsWith("TRADE_") ? parseTradePayload(r.payload) : null));
@@ -305,6 +316,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
     const coinFlip = coinFlips[i];
     const buyOrder = buyOrders[i];
     const offered = listing ? cardById.get(listing.offeredCardId) : undefined;
+    const masked = r.actor !== null && blocked.has(r.actor.id);
     const card =
       gift?.kind === "CARD"
         ? cardById.get(gift.cardId)
@@ -328,7 +340,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
       type: r.type,
       createdAt: r.createdAt,
       read: r.readAt !== null,
-      actor: r.actor,
+      actor: masked ? null : r.actor,
       gift,
       auction,
       battle: r.type === "BATTLE_INVITE" ? parseBattlePayload(r.payload) : null,
@@ -344,7 +356,7 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
       kyara: r.type.startsWith("KYARA_IMPORT_") ? parseKyaraImportPayload(r.payload) : null,
       referral: r.type === "REFERRAL_REWARD" ? parseReferralRewardPayload(r.payload) : null,
       ennichi: r.type === "ENNICHI_REWARD" ? parseEnnichiRewardPayload(r.payload) : null,
-      note: notes.get(r.id) ?? null,
+      note: masked && hasPlayerNote(r.type) ? null : (notes.get(r.id) ?? null),
       card: card ? { anilistId: card.publicId, name: card.name, rarity: card.rarity } : null,
     };
   });
@@ -352,18 +364,19 @@ async function toViews(rows: NotificationRow[]): Promise<NotificationView[]> {
 
 /**
  * Notifications du joueur, les plus récentes d'abord, par curseur (id de la dernière lue).
- * Le texte est rendu à la lecture : pseudo à jour, et rien d'un joueur bloqué depuis.
+ * Le texte est rendu à la lecture : pseudo à jour, et d'un joueur bloqué depuis, ni ce qu'il envoie ni son nom.
  */
 export async function listNotifications(userId: string, cursor: string | null) {
+  const { where, blocked } = await visibleTo(userId);
   const rows = await prisma.notification.findMany({
-    where: await visibleTo(userId),
+    where,
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: NOTIFICATIONS_PAGE + 1,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     select: notificationSelect,
   });
   const page = rows.slice(0, NOTIFICATIONS_PAGE);
-  const views = await toViews(page);
+  const views = await toViews(page, blocked);
   // Échanges ouverts : les deux cartes en visuel, et les boutons tant que l'offre attend
   const offerIds = views.flatMap((v) => (v.listing ? [v.listing.offerId] : []));
   if (offerIds.length > 0) {
@@ -380,7 +393,8 @@ export const TOASTS_MAX = 3;
  * et combien d'autres sont arrivées en plus.
  */
 export async function notificationsSince(userId: string, since: Date) {
-  const where = { ...(await visibleTo(userId)), readAt: null, createdAt: { gt: since } };
+  const visible = await visibleTo(userId);
+  const where = { ...visible.where, readAt: null, createdAt: { gt: since } };
   const [rows, total] = await Promise.all([
     prisma.notification.findMany({
       where,
@@ -390,7 +404,7 @@ export async function notificationsSince(userId: string, since: Date) {
     }),
     prisma.notification.count({ where }),
   ]);
-  return { items: await toViews(rows), more: Math.max(0, total - rows.length) };
+  return { items: await toViews(rows, visible.blocked), more: Math.max(0, total - rows.length) };
 }
 
 /** Purge paresseuse : les notifications lues plus vieilles que la rétention disparaissent. */
@@ -433,16 +447,18 @@ export function isUniqueViolation(e: unknown) {
 
 /**
  * Une notification pour le Web Push, telle que son destinataire la verrait : null si elle n'existe
- * pas (transaction annulée), est déjà lue ou vient d'un joueur bloqué entre-temps.
+ * pas (transaction annulée), est déjà lue ou vient d'un joueur bloqué entre-temps (sauf l'issue d'une vente, d'un
+ * échange… : elle part, sans son nom).
  */
 export async function notificationForPush(id: string): Promise<(NotificationView & { userId: string }) | null> {
   const head = await prisma.notification.findUnique({ where: { id }, select: { userId: true } });
   if (!head) return null;
+  const visible = await visibleTo(head.userId);
   const row = await prisma.notification.findFirst({
-    where: { ...(await visibleTo(head.userId)), id, readAt: null },
+    where: { ...visible.where, id, readAt: null },
     select: notificationSelect,
   });
   if (!row) return null;
-  const [view] = await toViews([row]);
+  const [view] = await toViews([row], visible.blocked);
   return { ...view, userId: head.userId };
 }

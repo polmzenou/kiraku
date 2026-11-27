@@ -11,7 +11,8 @@ export default async function AdminSocialPage() {
     getTranslations("admin.social"),
     getFormatter(),
     Promise.all(SOCIAL_SETTING_KEYS.map((k) => getSetting(k))),
-    recentSettingLogs(["social.", "friends.", "gifts.", "notifications."]),
+    // Toutes les clés du formulaire (échanges, chat, temps réel, activité et présence compris)
+    recentSettingLogs(SOCIAL_SETTING_KEYS),
     recentGifts(),
   ]);
   const settings = Object.fromEntries(SOCIAL_SETTING_KEYS.map((k, i) => [k, values[i]])) as SocialSettings;

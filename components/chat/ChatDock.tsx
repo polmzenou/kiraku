@@ -157,8 +157,8 @@ export function ChatDock({ pollSeconds, safetySeconds, initialUnread, maxLength,
     const username = chat.with;
     const first = messages[0];
     if (!username || !first) return;
-    const res = await loadConversationAction({ username, before: first.at });
-    if (!res.ok) return;
+    const res = await loadConversationAction({ username, before: first.at }).catch(() => null);
+    if (!res?.ok) return;
     append(username, res.messages, true);
     setThread((t) => (t && t.username === username ? { ...t, hasMore: res.hasMore } : t));
   };

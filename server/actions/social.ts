@@ -38,6 +38,7 @@ export type SocialActionError =
   | "SELF"
   | "BLOCKED_BY_ME"
   | "LIMIT_FRIENDS"
+  | "LIMIT_THEIRS"
   | "LIMIT_OUTGOING"
   | "UNAVAILABLE";
 
@@ -90,6 +91,7 @@ function socialFailure(e: unknown): Failure {
       case "SELF":
       case "BLOCKED_BY_ME":
       case "LIMIT_FRIENDS":
+      case "LIMIT_THEIRS":
       case "LIMIT_OUTGOING":
       case "GUEST":
         return { ok: false, error: e.code };
