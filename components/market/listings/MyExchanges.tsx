@@ -11,7 +11,7 @@ import type { ExchangeHistoryView, MyExchanges as MyExchangesData, MyListingView
 import type { PlayerRef } from "@/server/social/queries";
 import { OwnedOverlay } from "../../collection/OwnedBadge";
 import { Fuda } from "../../fuda/Fuda";
-import { displayName } from "../../profile/ProfileHeader";
+import { displayName } from "@/lib/username";
 import { SectionTitle } from "../../SectionTitle";
 import { playerLinkTag } from "../../social/PlayerLink";
 import { Button } from "../../ui/Button";

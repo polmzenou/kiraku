@@ -2,12 +2,9 @@ import { getEventGaugeNow } from "@/server/home/event-gauge";
 import { getSetting } from "@/server/settings";
 import { requireActiveUser } from "@/server/user";
 import { getV2ShowcaseCards, pendingAnnouncementFor } from "@/server/welcome";
-import { CasinoAnnouncementModal } from "../casino/CasinoAnnouncementModal";
 import { ReferralStory } from "../referral/ReferralStory";
-import { EventGauge } from "../home/EventGauge";
 import { DiscordJoinGate } from "../discord/DiscordJoinGate";
-import { V1WelcomeModal } from "./V1WelcomeModal";
-import { V2AnnouncementModal } from "./V2AnnouncementModal";
+import { CasinoAnnouncementModal, EventGauge, V1WelcomeModal, V2AnnouncementModal } from "./AnnouncementModals";
 
 /**
  * Le dernier message de l'équipe a priorité : pas de deuxième modal Discord par-dessus. La v2.5 n'a

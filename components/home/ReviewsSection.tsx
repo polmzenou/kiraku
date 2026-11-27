@@ -1,6 +1,6 @@
 import { useFormatter, useTranslations } from "next-intl";
 import type { PublicReview, ReviewSummary } from "@/server/social/reviews";
-import { displayName } from "../profile/ProfileHeader";
+import { displayName } from "@/lib/username";
 import { SectionTitle } from "../SectionTitle";
 import { ButtonLink } from "../ui/ButtonLink";
 import { ReviewButton } from "./ReviewButton";

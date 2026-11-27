@@ -102,9 +102,3 @@ export function ProfileHeader({
     </header>
   );
 }
-
-/** Nom affiché d'un joueur, pour les titres de page. */
-export function displayName(username: string, isGuest: boolean, guestLabel: (code: string) => string) {
-  const code = guestCode(username);
-  return isGuest && code ? guestLabel(code) : username;
-}

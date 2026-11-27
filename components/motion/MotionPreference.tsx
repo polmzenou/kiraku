@@ -1,7 +1,7 @@
 "use client";
 
 import { MotionConfig, useReducedMotion } from "motion/react";
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { MotionPref } from "@/lib/motion-pref";
 import { applyMotionPref, MOTION_EVENT } from "@/lib/motion-pref-dom";
 import { useMeasuredTier } from "./fx-tier";
@@ -20,10 +20,18 @@ export type FxLevel = "full" | "lite" | "reduced";
  */
 export function MotionPreferenceProvider({ initial, children }: { initial: MotionPref; children: ReactNode }) {
   const [pref, setState] = useState(initial);
-  const setPref = (next: MotionPref) => {
-    setState(next);
-    applyMotionPref(next);
-  };
+  // Valeur stable tant que le réglage ne change pas : chaque rendu du fournisseur (rafraîchissement du layout,
+  // mesure de fluidité) ne re-rend plus la cinquantaine de composants qui lisent le contexte
+  const value = useMemo<Value>(
+    () => ({
+      pref,
+      setPref: (next: MotionPref) => {
+        setState(next);
+        applyMotionPref(next);
+      },
+    }),
+    [pref],
+  );
   const measured = useMeasuredTier();
   const lite = pref === "lite" || (pref === "auto" && measured === "lite");
   useEffect(() => {
@@ -34,7 +42,7 @@ export function MotionPreferenceProvider({ initial, children }: { initial: Motio
     window.dispatchEvent(new Event(MOTION_EVENT));
   }, [lite]);
   return (
-    <MotionPreferenceContext.Provider value={{ pref, setPref }}>
+    <MotionPreferenceContext.Provider value={value}>
       <MotionConfig reducedMotion={pref === "reduced" ? "always" : "user"}>{children}</MotionConfig>
     </MotionPreferenceContext.Provider>
   );

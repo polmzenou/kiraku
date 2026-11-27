@@ -11,7 +11,7 @@ import { CopyPicker } from "../collection/CopyPicker";
 import type { TradeView } from "@/server/social/trades";
 import { OwnedOverlay } from "../collection/OwnedBadge";
 import { Fuda } from "../fuda/Fuda";
-import { displayName } from "../profile/ProfileHeader";
+import { displayName } from "@/lib/username";
 import { Button } from "../ui/Button";
 import { NoteField } from "../ui/NoteField";
 import { NoteText } from "../ui/NoteText";

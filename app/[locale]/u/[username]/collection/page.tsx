@@ -5,7 +5,7 @@ import { CollectionFilters } from "@/components/collection/CollectionFilters";
 import { CollectionGrid } from "@/components/collection/CollectionGrid";
 import { CollectionStats } from "@/components/collection/CollectionStats";
 import { PageShell } from "@/components/PageShell";
-import { displayName } from "@/components/profile/ProfileHeader";
+import { displayName } from "@/lib/username";
 import { Link, redirect } from "@/i18n/navigation";
 import { collectionQuery, hasFilters, parseCollectionParams } from "@/lib/collection/params";
 import { loadProfile } from "@/server/collection/profile-page";

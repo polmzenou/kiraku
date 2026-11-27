@@ -24,6 +24,16 @@ export function guestCode(username: string): string | null {
   return username.startsWith(GUEST_PREFIX) ? username.slice(GUEST_PREFIX.length) : null;
 }
 
+/**
+ * Nom affiché d'un joueur : « Invité-3A046F » (libellé traduit) pour un invité, son pseudo sinon. Rangé ici plutôt
+ * qu'avec l'en-tête du profil : le chat de l'en-tête, présent sur toutes les pages, l'importait de ProfileHeader et
+ * embarquait avec lui le catalogue des succès (9 Ko) dans le JavaScript de chaque page.
+ */
+export function displayName(username: string, isGuest: boolean, guestLabel: (code: string) => string) {
+  const code = guestCode(username);
+  return isGuest && code ? guestLabel(code) : username;
+}
+
 /** Pseudo dérivé d'un nom Discord : caractères autorisés seulement, jamais un préfixe réservé, sinon null. */
 export function sanitizeUsername(raw: string | null | undefined): string | null {
   if (!raw) return null;

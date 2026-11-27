@@ -1,22 +1,31 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Link } from "@/i18n/navigation";
+import { GUEST_NOTICE_COOKIE, GUEST_NOTICE_HIDE_SECONDS } from "@/lib/account/guest-retention";
 import { buttonClasses } from "../ui/Button";
 
-// « Plus tard » masque le bandeau 24 h sur cet appareil (confort seulement : sans stockage, il reste)
+// « Plus tard » masque le bandeau 24 h sur cet appareil (confort seulement : sans cookie ni stockage, il reste).
+// Le cookie est lu par le rendu serveur (AppHeader), qui ne rend plus le bandeau ; le stockage local garde les
+// reports faits avant le cookie, recopiés dans le cookie à la visite suivante.
 const KEY = "kiraku.guestNotice.hiddenUntil";
-const HIDE_MS = 24 * 3_600_000;
 
 const noop = () => () => {};
 
-function hiddenOnThisDevice(): boolean {
+/** Fin du report enregistrée sur cet appareil (0 : aucun report en cours). */
+function hiddenUntil(): number {
   try {
-    return (Number(localStorage.getItem(KEY)) || 0) > Date.now();
+    const until = Number(localStorage.getItem(KEY)) || 0;
+    return until > Date.now() ? until : 0;
   } catch {
     // Stockage bloqué : le bandeau reste affiché
-    return false;
+    return 0;
   }
+}
+
+function rememberHidden(seconds: number) {
+  const secure = location.protocol === "https:" ? "; secure" : "";
+  document.cookie = `${GUEST_NOTICE_COOKIE}=1; path=/; max-age=${Math.max(1, Math.round(seconds))}; samesite=lax${secure}`;
 }
 
 /**
@@ -24,17 +33,21 @@ function hiddenOnThisDevice(): boolean {
  * sans visite (cron des comptes). Textes traduits côté serveur (AppHeader).
  */
 export function GuestRetentionNotice({ text, cta, later }: { text: string; cta: string; later: string }) {
-  // Masqué au rendu serveur, lu sur l'appareil ensuite : pas d'écart d'hydratation
-  const hiddenStored = useSyncExternalStore(noop, hiddenOnThisDevice, () => true);
+  // Rendu serveur affiché (le serveur ne le rend pas pendant un report : cookie) ; un ancien report local le retire
+  const storedUntil = useSyncExternalStore(noop, hiddenUntil, () => 0);
   const [dismissed, setDismissed] = useState(false);
-  if (hiddenStored || dismissed) return null;
+  useEffect(() => {
+    if (storedUntil > 0) rememberHidden((storedUntil - Date.now()) / 1000);
+  }, [storedUntil]);
+  if (storedUntil > 0 || dismissed) return null;
 
   const hide = () => {
     setDismissed(true);
+    rememberHidden(GUEST_NOTICE_HIDE_SECONDS);
     try {
-      localStorage.setItem(KEY, String(Date.now() + HIDE_MS));
+      localStorage.setItem(KEY, String(Date.now() + GUEST_NOTICE_HIDE_SECONDS * 1000));
     } catch {
-      // Stockage bloqué : masqué pour cette page seulement
+      // Stockage bloqué : le cookie suffit
     }
   };
 

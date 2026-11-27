@@ -17,7 +17,9 @@ type Props = { stock: number; max: number; nextAt: number | null; intervalMs: nu
 export function StockEnso({ stock: renderedStock, max, nextAt: renderedNextAt, intervalMs, serverNow }: Props) {
   const t = useTranslations("header");
   const format = useFormatCountdown();
-  const now = useClock(serverNow);
+  // Stock plein au rendu serveur : rien ne bouge avant le prochain rendu (une ouverture le recalcule), donc pas de
+  // tic. Avant, l'en-tête se rendait chaque seconde sur toutes les pages pour réécrire le même « plein ».
+  const now = useClock(serverNow, renderedNextAt !== null);
   const projected =
     renderedNextAt === null ? null : computeStock(renderedStock, new Date(renderedNextAt - intervalMs), new Date(now), { max, intervalMs });
   const stock = projected?.stock ?? renderedStock;

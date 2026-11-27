@@ -2,7 +2,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Link } from "@/i18n/navigation";
 import type { PlayerDecor } from "@/lib/profile/decor";
-import { displayName } from "../profile/ProfileHeader";
+import { displayName } from "@/lib/username";
 import { PlayerAvatar } from "./PlayerAvatar";
 import { PlayerName } from "./PlayerName";
 

@@ -12,7 +12,7 @@ import type { ListingView } from "@/server/market/listings";
 import { CardPickGrid } from "../../collection/CardPickGrid";
 import { OwnedBadge } from "../../collection/OwnedBadge";
 import { Fuda } from "../../fuda/Fuda";
-import { displayName } from "../../profile/ProfileHeader";
+import { displayName } from "@/lib/username";
 import { Button } from "../../ui/Button";
 import { playerLinkTag } from "../../social/PlayerLink";
 import { NoteText } from "../../ui/NoteText";

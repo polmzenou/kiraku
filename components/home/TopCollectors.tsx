@@ -2,7 +2,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { toRoman } from "@/lib/prestige/roman";
 import type { Collector } from "@/server/collection/leaderboard";
-import { displayName } from "../profile/ProfileHeader";
+import { displayName } from "@/lib/username";
 import { SectionTitle } from "../SectionTitle";
 import { PlayerAvatar } from "../social/PlayerAvatar";
 import { PlayerName } from "../social/PlayerName";

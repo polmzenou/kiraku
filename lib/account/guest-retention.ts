@@ -3,6 +3,13 @@
 
 const DAY_MS = 86_400_000;
 
+/**
+ * Bandeau des invités repoussé de 24 h (« Plus tard ») : un cookie que le rendu serveur lit pour ne plus le rendre.
+ * Lu seulement dans le navigateur, le bandeau apparaissait après l'hydratation et poussait toute la page vers le bas.
+ */
+export const GUEST_NOTICE_COOKIE = "kiraku-guest-notice";
+export const GUEST_NOTICE_HIDE_SECONDS = 24 * 3_600;
+
 /** Date limite de la purge, ou null si elle est désactivée (guest.retentionDays = 0). */
 export function guestCutoff(now: Date, days: number): Date | null {
   if (!Number.isInteger(days) || days <= 0) return null;

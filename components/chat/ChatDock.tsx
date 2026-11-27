@@ -11,7 +11,7 @@ import {
   sendChatMessageAction,
 } from "@/server/actions/chat";
 import type { ChatMessageView, Conversation } from "@/server/chat/queries";
-import { displayName } from "../profile/ProfileHeader";
+import { displayName } from "@/lib/username";
 import { useRealtime } from "../realtime/RealtimeProvider";
 import { usePoll } from "../realtime/usePoll";
 import { PlayerAvatar } from "../social/PlayerAvatar";

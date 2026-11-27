@@ -1,4 +1,6 @@
 import { getTranslations } from "next-intl/server";
+import { cookies } from "next/headers";
+import { GUEST_NOTICE_COOKIE } from "@/lib/account/guest-retention";
 import { isStaff } from "@/lib/admin/roles";
 import { MAIN_CONTENT_ID, type NavBadges } from "@/lib/nav";
 import { Link } from "@/i18n/navigation";
@@ -34,7 +36,7 @@ import { ZeniCoin } from "./ZeniCoin";
  * Le stock est calculé ici, côté serveur ; le client n'affiche que le compte à rebours.
  */
 export async function AppHeader({ theme, spoiler }: { theme: Theme; spoiler: SpoilerMode }) {
-  const [t, user] = await Promise.all([getTranslations(), getCurrentUser()]);
+  const [t, user, jar] = await Promise.all([getTranslations(), getCurrentUser(), cookies()]);
   const accountHref = user ? `/u/${user.username}` : "/connexion";
   // Lien « Admin » pour toute l'équipe : le DEV y trouve le catalogue seulement
   const isAdmin = isStaff(user?.role);
@@ -163,8 +165,9 @@ export async function AppHeader({ theme, spoiler }: { theme: Theme; spoiler: Spo
         </div>
       </header>
       <NavRail features={features} alerts={alerts} badges={badges} />
-      {/* Invité : sans compte, sa progression est supprimée après guest.retentionDays jours sans visite */}
-      {user?.isGuest && guestDays > 0 && (
+      {/* Invité : sans compte, sa progression est supprimée après guest.retentionDays jours sans visite ; « Plus tard »
+          (cookie) le retire du rendu serveur pendant 24 h, sans bandeau qui apparaît puis disparaît */}
+      {user?.isGuest && guestDays > 0 && jar.get(GUEST_NOTICE_COOKIE)?.value !== "1" && (
         <GuestRetentionNotice
           text={t("guestNotice.text", { days: guestDays })}
           cta={t("guestNotice.cta")}

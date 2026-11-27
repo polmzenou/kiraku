@@ -207,7 +207,17 @@ export const STORAGE_REGISTRY: readonly StorageEntry[] = [
     exempt: true,
   },
   {
-    // Bandeau des invités repoussé 24 h (« Plus tard », components/account/GuestRetentionNotice.tsx)
+    // Bandeau des invités repoussé 24 h (« Plus tard », components/account/GuestRetentionNotice.tsx) : le cookie, lu au
+    // rendu serveur pour ne plus le rendre, et le stockage local en secours (reports d'avant le cookie)
+    name: "kiraku-guest-notice",
+    kind: "cookie",
+    category: "preferences",
+    purpose: "guestNotice",
+    duration: { unit: "days", value: 1 },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
     name: "kiraku.guestNotice.hiddenUntil",
     kind: "localStorage",
     category: "preferences",
