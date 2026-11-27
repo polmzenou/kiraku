@@ -16,13 +16,13 @@ const LABEL_KEY = {
   "showcase.themes": "themes",
 } as const satisfies Record<ShowcaseSettingKey, string>;
 
-/** Aperçu d'un thème : l'image fixe de son fond vidéo, sinon son kanji. */
+/** Aperçu d'un thème : la vignette de son fond vidéo, sinon son kanji. */
 function ThemePreview({ id }: { id: ShowcaseThemeId }) {
   const media = SHOWCASE_THEMES[id].media;
   if (media) {
     return (
       <Image
-        src={media.mobile.still}
+        src={media.thumb}
         alt=""
         width={60}
         height={80}

@@ -14,22 +14,26 @@ export type ThemeMedia = {
   desktop: { still: string; loop: string };
 };
 
+/** Fond d'un thème de vitrine, et sa vignette (image fixe 3:4 réduite à 480 px) pour le choix du thème et l'étagère. */
+export type ShowcaseMedia = ThemeMedia & { thumb: string };
+
 export type ShowcaseThemeDef = {
   kanji: string;
   /** plain : la page telle quelle ; video : fond vidéo en boucle et son image fixe. */
   kind: "plain" | "video";
-  media?: ThemeMedia;
+  media?: ShowcaseMedia;
 };
 
 /**
- * Fichiers versionnés de public/vitrines/<id>/, refaits par scripts/vitrine-video.mjs. Le navigateur les
- * garde une semaine : quand un fond change, relever sa version ici et dans le script.
+ * Fichiers versionnés de public/vitrines/<id>/, refaits par scripts/vitrine-video.mjs (vignette : scripts/vitrine-thumbs.mjs).
+ * Le navigateur les garde une semaine : quand un fond change, relever sa version ici et dans le script.
  */
-function videoMedia(id: string, version = 1): ThemeMedia {
+function videoMedia(id: string, version = 1): ShowcaseMedia {
   const v = `v${version}`;
   return {
     mobile: { still: `/vitrines/${id}/still-mobile-${v}.webp`, loop: `/vitrines/${id}/loop-mobile-${v}.mp4` },
     desktop: { still: `/vitrines/${id}/still-desktop-${v}.webp`, loop: `/vitrines/${id}/loop-desktop-${v}.mp4` },
+    thumb: `/vitrines/${id}/thumb-${v}.webp`,
   };
 }
 

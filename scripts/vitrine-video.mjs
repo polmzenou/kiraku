@@ -5,7 +5,7 @@
 // fondue sur 12 images dans le début. La jointure est vérifiée sur la sortie non compressée : elle doit
 // valoir le pas naturel de la source. Images fixes en WebP de 350 Ko au plus. Demande ffmpeg et ffprobe.
 // Les fichiers produits portent la version du thème (loop-mobile-v2.mp4…) ; les autres versions du
-// dossier sont retirées une fois les nouvelles écrites.
+// dossier sont retirées une fois les nouvelles écrites. Ensuite : npm run vitrines:thumbs (vignettes des aperçus).
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";

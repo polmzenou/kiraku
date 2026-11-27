@@ -63,12 +63,13 @@ describe("section Vitrines du profil", () => {
     expect(html.indexOf("vt-plate")).toBeLessThan(message);
   });
 
-  it("l'étagère montre le décor de chaque vitrine, rien pour Sans décor", () => {
+  it("l'étagère montre le décor de chaque vitrine (sa vignette, pas l'image fixe entière), rien pour Sans décor", () => {
     const html = render([gold, eclat, plain], true);
     const items = html.split('<li class="vt-shelf-item').slice(1);
     expect(items).toHaveLength(2);
     expect(items[0]).toContain('data-media=""');
-    expect(items[0]).toContain(`src="${SHOWCASE_THEMES.eclat.media!.mobile.still}"`);
+    expect(items[0]).toContain(`src="${SHOWCASE_THEMES.eclat.media!.thumb}"`);
+    expect(items[0]).not.toContain(SHOWCASE_THEMES.eclat.media!.mobile.still);
     expect(items[1]).not.toContain("data-media");
     expect(items[1]).not.toContain("<img");
   });

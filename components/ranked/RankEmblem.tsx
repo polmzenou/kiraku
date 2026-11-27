@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { BoardTier } from "@/lib/battle/tiers";
-import { rankArtworkPath } from "@/lib/ranked/artwork";
+import { rankEmblemSrc } from "@/lib/ranked/artwork";
 
 type Division = 1 | 2 | 3 | null;
 
@@ -22,7 +22,8 @@ export function RankEmblem({
   label?: string;
   className?: string;
 }) {
-  const src = rankArtworkPath(tier, division);
+  // WebP à la taille affichée (8 Ko pour une ligne du classement, au lieu du PNG source de 62 Ko en moyenne)
+  const src = rankEmblemSrc(tier, division, size);
 
   return (
     <Image

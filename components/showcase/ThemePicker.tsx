@@ -4,14 +4,14 @@ import { useTranslations } from "next-intl";
 import { SHOWCASE_THEMES, type ShowcaseThemeId, type ThemeChoice } from "@/lib/showcase/theme-registry";
 import { conditionText } from "./condition-text";
 
-/** Aperçu d'un thème : l'image fixe de son fond vidéo (rien pour Sans décor). */
+/** Aperçu d'un thème : la vignette de son fond vidéo (rien pour Sans décor). */
 export function ThemeThumb({ theme }: { theme: ShowcaseThemeId }) {
   const def = SHOWCASE_THEMES[theme];
   return (
     <span aria-hidden="true" className="vt-theme-thumb" data-vt-tone={theme}>
       {def.media && (
         // eslint-disable-next-line @next/next/no-img-element -- fichier public déjà dimensionné, sans optimisation
-        <img src={def.media.mobile.still} alt="" loading="lazy" decoding="async" className="vt-theme-thumb-media" />
+        <img src={def.media.thumb} alt="" loading="lazy" decoding="async" className="vt-theme-thumb-media" />
       )}
       <span className="vt-theme-thumb-kanji">{def.kanji}</span>
     </span>

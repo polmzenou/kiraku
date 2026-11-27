@@ -121,7 +121,7 @@ export function ProfileShowcases({
           {/* scroll-px-4 : l'accroche du défilement s'aligne sur la marge de la page, pas sur le bord de l'écran */}
           <ul className="-mx-4 flex snap-x scroll-px-4 gap-2.5 overflow-x-auto px-4 pb-2 lg:mx-0 lg:scroll-px-0 lg:px-0">
             {others.map((s) => {
-              const still = SHOWCASE_THEMES[s.theme].media?.mobile.still;
+              const still = SHOWCASE_THEMES[s.theme].media?.thumb;
               return (
                 <li key={s.id} className="vt-shelf-item flex w-40 shrink-0 snap-start flex-col gap-2 rounded-card p-2.5" data-vt-tone={s.theme} data-media={still ? "" : undefined}>
                   {still && (

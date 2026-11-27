@@ -67,9 +67,10 @@ const nextConfig: NextConfig = {
         // cache évite un aller-retour (304) par fichier à chaque chargement. Renommer un fichier quand il
         // change : les décors d'arène, les fonds des thèmes de vitrine et les images du prestige portent un numéro
         // de version (arenas/<id>/loop-v1.mp4, vitrines/<thème>/loop-mobile-v1.mp4, prestige/fx/baren-v1.webp,
-        // frames/rang-or-192-v1.avif, expedition/emaki-dawn-v1.webp, images/referral/bon-or-v1.webp…). fx/ et ranks/,
-        // aux noms sans version, restent revalidés à chaque chargement : les y ajouter après les avoir renommés.
-        source: "/:dir(brand|card-backs|icons|arenas|vitrines|casino|prestige|frames|expedition|images)/:file*",
+        // frames/rang-or-192-v1.avif, expedition/emaki-dawn-v1.webp, images/referral/bon-or-v1.webp,
+        // ranks/gold-2-128-v1.webp…). Les PNG de ranks/ ne servent qu'à l'image Discord, lue sur disque. fx/, aux noms
+        // sans version, reste revalidé à chaque chargement : l'y ajouter après avoir renommé ses fichiers.
+        source: "/:dir(brand|card-backs|icons|arenas|vitrines|casino|prestige|frames|expedition|images|ranks)/:file*",
         headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }],
       },
       {
