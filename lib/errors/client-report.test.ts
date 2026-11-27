@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientErrorReport, clientErrorSchema } from "./client-report";
+import { clientErrorReport, clientErrorSchema, logLine } from "./client-report";
 
 describe("rapport d'une erreur du navigateur", () => {
   it("garde le nom, le message, la référence et le début de la pile", () => {
@@ -20,6 +20,15 @@ describe("rapport d'une erreur du navigateur", () => {
   it("accepte une valeur qui n'est pas une Error", () => {
     expect(clientErrorReport("chaîne lancée", "/", "page")).toMatchObject({ name: "Error", message: "chaîne lancée" });
     expect(clientErrorReport(null, "/", "page")).toMatchObject({ name: "Error", message: "" });
+  });
+
+  it("ligne des logs : ni retour à la ligne, ni contrôle C0 ou C1, ni séparateur Unicode", () => {
+    const c = (code: number) => String.fromCharCode(code);
+    // Saut de ligne, échappement ANSI (ESC [), CSI C1 (U+009B), NEL (U+0085), séparateurs de ligne et de paragraphe
+    const forged = `a\nb\r${c(0x1b)}[31mc${c(0x9b)}2Jd${c(0x85)}e${c(0x2028)}f${c(0x2029)}g${c(0x7f)}h`;
+    expect(logLine(forged)).toBe("a b [31mc 2Jd e f g h");
+    // Le texte ordinaire, accents et kanji compris, passe tel quel
+    expect(logLine("Fuda 稀 · été")).toBe("Fuda 稀 · été");
   });
 
   it("refuse un champ en trop", () => {

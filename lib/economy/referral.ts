@@ -34,6 +34,8 @@ export type AttachCheck = {
   reverse: boolean;
   /** Blocage dans un sens ou dans l'autre. */
   blocked: boolean;
+  /** Parrain gelé : suppression du compte demandée ou compte anonymisé (son code standard existe encore). */
+  referrerFrozen: boolean;
   /** Filleuls déjà rattachés au parrain sur les 30 derniers jours. */
   referrerRecent: number;
   now: Date;
@@ -53,7 +55,7 @@ const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
 /**
- * Première règle enfreinte, ou null. Un parrain invité, banni, bloqué ou en cycle répond comme un
+ * Première règle enfreinte, ou null. Un parrain invité, banni, gelé, bloqué ou en cycle répond comme un
  * code inconnu : on ne révèle rien du compte qui se cache derrière un code.
  */
 export function checkAttach(c: AttachCheck): AttachRefusal | null {
@@ -62,7 +64,7 @@ export function checkAttach(c: AttachCheck): AttachRefusal | null {
   if (c.referee.isGuest) return "GUEST";
   if (c.alreadyReferred) return "ALREADY_REFERRED";
   if (c.now.getTime() - c.referee.createdAt.getTime() > c.rules.attachWindowDays * DAY) return "TOO_LATE";
-  if (c.referrer.isGuest || c.referrer.bannedAt || c.blocked || c.reverse) return "INVALID_CODE";
+  if (c.referrer.isGuest || c.referrer.bannedAt || c.referrerFrozen || c.blocked || c.reverse) return "INVALID_CODE";
   if (c.referrerRecent >= c.rules.maxPerMonth) return "REFERRER_FULL";
   return null;
 }

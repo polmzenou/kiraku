@@ -6,7 +6,7 @@ import { z } from "zod";
 import { isFrozen } from "@/lib/account/deletion";
 import type { EventGaugeView } from "@/lib/home/event-gauge";
 import { getCurrentUser, requireActiveUser } from "../user";
-import { clientIp, rateLimit } from "../ratelimit";
+import { clientNetworkKey, rateLimit } from "../ratelimit";
 import { getRecentPulls, purgeOldPulls, type RecentPull } from "../home/pulls";
 import { ownedCardIds } from "../collection/owned";
 import { pullLikes } from "../home/pull-likes";
@@ -16,12 +16,12 @@ const pullsInput = z.object({}).strict();
 
 /**
  * Rafraîchissement du carrousel « Gros tirages » (lecture publique). La session est lue pour
- * limiter par joueur quand il y en a un, sinon par IP.
+ * limiter par joueur quand il y en a un, sinon par IP (une IPv6 par son /64).
  */
 export async function recentPullsAction(input: unknown): Promise<{ ok: true; pulls: RecentPull[]; owned: string[] } | { ok: false; error: "INVALID" | "RATE_LIMITED" | "DISABLED" }> {
   const user = await getCurrentUser();
   if (!pullsInput.safeParse(input).success) return { ok: false, error: "INVALID" };
-  const who = user?.id ?? (await clientIp());
+  const who = user?.id ?? (await clientNetworkKey());
   if (!(await rateLimit(`pull-feed:${who}`, { limit: 12, windowSeconds: 60 }, { store: "memory" })).success) return { ok: false, error: "RATE_LIMITED" };
   const viewerId = user && !user.bannedAt && !isFrozen(user) ? user.id : null;
   const pulls = await getRecentPulls(await getLocale(), viewerId);
@@ -37,7 +37,7 @@ const gaugeInput = z.object({}).strict();
 export async function eventGaugeAction(input: unknown): Promise<{ ok: true; gauge: EventGaugeView } | { ok: false; error: "INVALID" | "RATE_LIMITED" | "DISABLED" }> {
   const user = await getCurrentUser();
   if (!gaugeInput.safeParse(input).success) return { ok: false, error: "INVALID" };
-  const who = user?.id ?? (await clientIp());
+  const who = user?.id ?? (await clientNetworkKey());
   if (!(await rateLimit(`event-gauge:${who}`, { limit: 12, windowSeconds: 60 }, { store: "memory" })).success) return { ok: false, error: "RATE_LIMITED" };
   const gauge = await getEventGauge();
   return gauge ? { ok: true, gauge } : { ok: false, error: "DISABLED" };

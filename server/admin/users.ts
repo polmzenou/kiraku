@@ -24,9 +24,19 @@ const USER_ORDER = {
   discoveries: (dir) => [{ discoveries: { _count: dir } }],
 } satisfies Record<UserSort, (dir: SortDir) => Prisma.UserOrderByWithRelationInput[]>;
 
-export async function listAdminUsers({ query, filter, page: requestedPage, sort, dir }: UserListParams) {
+/**
+ * Une page de la liste des joueurs. `emails` faux (DEV, lecture seule) : ni recherche ni tri sur l'e-mail, qui
+ * révéleraient l'adresse d'un joueur (« ce compte a-t-il cette adresse ? ») sans jamais l'afficher.
+ */
+export async function listAdminUsers({ query, filter, page: requestedPage, sort: requestedSort, dir }: UserListParams, { emails }: { emails: boolean }) {
+  const sort = !emails && requestedSort === "email" ? "created" : requestedSort;
+  const matches: Prisma.UserWhereInput[] = [
+    { username: { contains: query, mode: "insensitive" } },
+    ...(emails ? [{ email: { contains: query, mode: "insensitive" as const } }] : []),
+    { id: query },
+  ];
   const where: Prisma.UserWhereInput = {
-    ...(query ? { OR: [{ username: { contains: query, mode: "insensitive" } }, { email: { contains: query, mode: "insensitive" } }, { id: query }] } : {}),
+    ...(query ? { OR: matches } : {}),
     ...(filter === "registered" ? { isGuest: false } : filter === "guests" ? { isGuest: true } : filter === "admins" ? { role: { in: ["ADMIN", "DEV"] } } : filter === "ambassadors" ? { ambassadorSince: { not: null } } : filter === "banned" ? { bannedAt: { not: null } } : {}),
   };
   const total = await prisma.user.count({ where });

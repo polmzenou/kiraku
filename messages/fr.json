@@ -1212,6 +1212,7 @@
       "intro": "Recherche un joueur pour gérer son compte, ses Zeni, ses cartes, ses boosters et sa progression. Chaque modification est tracée dans le journal admin.",
       "search": "Rechercher un joueur",
       "searchPlaceholder": "Pseudo, e-mail ou identifiant exact",
+      "searchPlaceholderNoEmail": "Pseudo ou identifiant exact",
       "filter": "Comptes",
       "filters": {
         "all": "Tous",

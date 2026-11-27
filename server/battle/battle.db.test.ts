@@ -318,6 +318,8 @@ describe.skipIf(!url)("combat atomique (base réelle)", () => {
     const room = await createRoomWith(prisma, { userId: host, cardIds: team(), inviteeId: null }, ctx());
     expect(room.code).toMatch(/^[A-Z2-9]{6}$/);
     await expect(joinRoomWith(prisma, { userId: host, cardIds: team(), code: room.code }, ctx())).rejects.toMatchObject({ code: "OWN_ROOM" });
+    // Salle sans invité : son id seul (sans le code) n'y fait entrer personne
+    await expect(joinRoomWith(prisma, { userId: intruder, cardIds: team(), battleId: room.battleId }, ctx())).rejects.toMatchObject({ code: "NOT_FOUND" });
     const results = await Promise.allSettled(
       [guest, intruder].map((userId) => joinRoomWith(prisma, { userId, cardIds: team(), code: room.code }, ctx())),
     );

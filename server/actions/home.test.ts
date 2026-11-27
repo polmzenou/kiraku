@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({ user: vi.fn(), rateLimit: vi.fn(), pulls: vi.f
 vi.mock("next/server", () => ({ after: vi.fn() }));
 vi.mock("next-intl/server", () => ({ getLocale: async () => "fr" }));
 vi.mock("../user", () => ({ getCurrentUser: mocks.user, requireActiveUser: mocks.user }));
-vi.mock("../ratelimit", () => ({ rateLimit: mocks.rateLimit, clientIp: async () => "local" }));
+vi.mock("../ratelimit", () => ({ rateLimit: mocks.rateLimit, clientNetworkKey: async () => "local" }));
 vi.mock("../home/pulls", () => ({ getRecentPulls: mocks.pulls, purgeOldPulls: vi.fn() }));
 vi.mock("../home/pull-likes", () => ({ pullLikes: { set: mocks.setLike } }));
 vi.mock("../collection/owned", () => ({ ownedCardIds: async () => [] }));

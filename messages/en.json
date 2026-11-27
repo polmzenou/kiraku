@@ -1212,6 +1212,7 @@
       "intro": "Find a player to manage their account, Zeni, cards, boosters and progress. Every change is recorded in the admin log.",
       "search": "Find a player",
       "searchPlaceholder": "Username, email or exact ID",
+      "searchPlaceholderNoEmail": "Username or exact ID",
       "filter": "Accounts",
       "filters": {
         "all": "All",

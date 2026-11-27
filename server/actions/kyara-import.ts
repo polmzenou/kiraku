@@ -6,7 +6,7 @@ import { z } from "@/lib/zod";
 import { prisma } from "../db";
 import { cancelImportWith, KyaraImportError, requestImportWith, type KyaraErrorCode } from "../kyara/import-core";
 import { getKyaraRules } from "../kyara/queries";
-import { clientIp, rateLimit } from "../ratelimit";
+import { clientNetworkKey, rateLimit } from "../ratelimit";
 import { requireActiveUser } from "../user";
 
 // Import Kyara, côté joueur. Ordre des contrôles : session → Zod → rate limit, puis tout est relu sous le verrou
@@ -28,10 +28,10 @@ function failure(scope: string, e: unknown): Result {
 export async function requestKyaraImportAction(): Promise<Result> {
   const user = await requireActiveUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
-  // Par joueur, et par adresse pour freiner les comptes en série
+  // Par joueur, et par adresse pour freiner les comptes en série (une IPv6 par son /64)
   const [mine, network] = await Promise.all([
     rateLimit(`kyara-request:${user.id}`, { limit: 5, windowSeconds: 3_600 }),
-    rateLimit(`kyara-request-ip:${await clientIp()}`, { limit: 10, windowSeconds: 86_400 }),
+    rateLimit(`kyara-request-ip:${await clientNetworkKey()}`, { limit: 10, windowSeconds: 86_400 }),
   ]);
   if (!mine.success || !network.success) return { ok: false, error: "RATE_LIMITED" };
   try {

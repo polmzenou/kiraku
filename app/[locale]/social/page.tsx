@@ -14,7 +14,7 @@ import { isFrozen } from "@/lib/account/deletion";
 import { parsePlayerQuery, PLAYER_QUERY_MAX, PLAYER_QUERY_MIN } from "@/lib/social/search";
 import { tradeOfferable } from "@/lib/social/trades";
 import { getTopCollectors } from "@/server/collection/leaderboard";
-import { clientIp, rateLimit } from "@/server/ratelimit";
+import { clientNetworkKey, rateLimit } from "@/server/ratelimit";
 import { getSetting } from "@/server/settings";
 import { searchPlayers } from "@/server/social/search";
 import { getCurrentUser } from "@/server/user";
@@ -131,10 +131,10 @@ async function SearchResults({ viewerId, q }: { viewerId: string; q: string }) {
     getSetting("trades.maxOffered"),
     getSetting("trades.allowedRarities"),
   ]);
-  // Par joueur puis par appareil : on ne balaie pas les pseudos en changeant de compte
+  // Par joueur puis par appareil (une IPv6 par son /64) : on ne balaie pas les pseudos en changeant de compte
   const allowed =
     (await rateLimit(`social-search:${viewerId}`, { limit: perMinute, windowSeconds: 60 })).success &&
-    (await rateLimit(`social-search-ip:${await clientIp()}`, { limit: perMinuteIp, windowSeconds: 60 })).success;
+    (await rateLimit(`social-search-ip:${await clientNetworkKey()}`, { limit: perMinuteIp, windowSeconds: 60 })).success;
   if (!allowed) {
     return (
       <p role="alert" className="text-sm text-shu">

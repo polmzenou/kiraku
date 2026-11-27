@@ -219,13 +219,15 @@ export async function coinFlipMineAction(input: unknown): Promise<{ ok: true; si
 
 /**
  * Sondage de la page d'une table (secours du temps réel) : le créateur qui attend voit sa table relevée.
- * Ses tables échues sont balayées au passage, au plus une fois par minute.
+ * Ses tables échues sont balayées au passage, au plus une fois par minute. Même accès que la page de la table :
+ * casino ouvert, ou aperçu de l'équipe.
  */
 export async function coinFlipTableAction(input: unknown): Promise<{ ok: true; table: CoinFlipTableView } | Failure> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "NO_SESSION" };
   const parsed = flipIdSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "INVALID" };
+  if (!casinoAccess(await getCasinoRules(), Date.now(), isStaff(user.role)).canEnter) return { ok: false, error: "CLOSED" };
   if (!(await rateLimit(`coinflip-table:${user.id}`, { limit: 40, windowSeconds: MINUTE }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }

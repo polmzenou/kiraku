@@ -780,6 +780,9 @@ export async function joinRoomWith(
     if (b.status !== "WAITING" || !b.codeExpiresAt || b.codeExpiresAt <= ctx.now) throw new BattleError("CLOSED");
     if (b.p1Id === input.userId) throw new BattleError("OWN_ROOM");
     if (b.p2Id && b.p2Id !== input.userId) throw new BattleError("RESERVED");
+    // Sans code, seul l'invité désigné entre (RoomLobby) : une salle ouverte à tous ne s'ouvre qu'avec son code, pas avec
+    // son id (vu dans l'adresse de la page de l'hôte)
+    if (!input.code && b.p2Id !== input.userId) throw new BattleError("NOT_FOUND");
     const blocks = await blocksBetween(tx, input.userId, b.p1Id);
     if (blocks.byMe || blocks.byThem) throw new BattleError("BLOCKED");
     await assertFree(tx, input.userId);

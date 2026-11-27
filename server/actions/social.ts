@@ -8,7 +8,7 @@ import { isFrozen } from "@/lib/account/deletion";
 import { findProfileOwner } from "../collection/profile";
 import { prisma } from "../db";
 import { pushNotifications } from "../push/send";
-import { clientIp, rateLimit } from "../ratelimit";
+import { clientNetworkKey, rateLimit } from "../ratelimit";
 import { getSetting } from "../settings";
 import {
   blockWith,
@@ -112,10 +112,10 @@ export type SendResult = { ok: true; status: SendOutcome } | Failure;
 export async function sendFriendRequestAction(input: unknown): Promise<SendResult> {
   const g = await guard(input, usernameSchema, "friend-req", { limit: 10, windowSeconds: HOUR });
   if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
-  // Par jour et par IP en plus : un même appareil ne balaie pas les pseudos avec plusieurs comptes
+  // Par jour et par IP en plus (une IPv6 par son /64) : un même appareil ne balaie pas les pseudos avec plusieurs comptes
   const [daily, byIp] = await Promise.all([
     rateLimit(`friend-req-day:${g.user.id}`, { limit: 30, windowSeconds: 24 * HOUR }),
-    rateLimit(`friend-req-ip:${await clientIp()}`, { limit: 30, windowSeconds: HOUR }),
+    rateLimit(`friend-req-ip:${await clientNetworkKey()}`, { limit: 30, windowSeconds: HOUR }),
   ]);
   if (!daily.success || !byIp.success) return { ok: false, error: "RATE_LIMITED" };
 

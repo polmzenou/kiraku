@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ query: vi.fn(), limit: vi.fn() }));
 vi.mock("@/server/db", () => ({ prisma: { $queryRaw: mocks.query } }));
-vi.mock("@/server/ratelimit", () => ({ rateLimit: mocks.limit, clientIp: async () => "1.2.3.4" }));
+vi.mock("@/server/ratelimit", () => ({ rateLimit: mocks.limit, clientNetworkKey: async () => "1.2.3.4" }));
 import { GET } from "./route";
 
 beforeEach(() => {

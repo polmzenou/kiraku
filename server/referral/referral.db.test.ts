@@ -61,7 +61,7 @@ describe.skipIf(!url)("parrainage v2 (base réelle)", () => {
     });
 
   beforeAll(async () => {
-    for (const name of ["par", "lea", "papi", "max", "a1", "a2", "cible", "ghost", "ghost2", "mue", "mue2"]) {
+    for (const name of ["par", "lea", "papi", "max", "a1", "a2", "cible", "ghost", "ghost2", "mue", "mue2", "gele", "nouveau"]) {
       // ghost.player.<tag>+v2@gmail.com et ghostplayer<tag>@gmail.com arrivent dans la même boîte
       const email = name === "ghost" ? `ghost.player.${tag}+v2@gmail.com` : name === "ghost2" ? `ghostplayer${tag}@gmail.com` : `${name}.${tag}@exemple.fr`;
       emails.push(email);
@@ -231,5 +231,8 @@ describe.skipIf(!url)("parrainage v2 (base réelle)", () => {
     await expect(attachReferralV2With(prisma, { refereeId: users.a1.id, code: "ZZZZ2222", now: T0, rules, attachWindowDays: 7, ennichiEdition: null, ennichiMultiplier: null, fingerprintKey: KEY })).rejects.toMatchObject({ code: "INVALID_CODE" });
     // Papi → Tristren → Léa : Papi ne peut pas devenir le filleul de Léa
     await expect(attach("papi", "lea")).rejects.toMatchObject({ code: "INVALID_CODE" });
+    // Suppression demandée : le code standard du parrain existe encore, il ne rattache plus personne
+    await prisma.user.update({ where: { id: users.gele.id }, data: { deletionRequestedAt: T0 } });
+    await expect(attach("nouveau", "gele")).rejects.toMatchObject({ code: "INVALID_CODE" });
   });
 });

@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
+import { isFrozen } from "@/lib/account/deletion";
 import { snowflakeDate } from "@/lib/discord/snowflake";
 import { parseInviteCode } from "@/lib/referral/codes";
 import type { ReferralV2Rules } from "@/lib/referral/rules";
@@ -9,8 +10,9 @@ import { fingerprintTaken, recordFingerprints, userFingerprints } from "./finger
 // perso est accepté. Les deux joueurs sont verrouillés (deux rattachements simultanés d'un même filleul n'en gardent
 // qu'un, le plafond est compté sous verrou). Refusés : soi-même, un invité, un filleul déjà rattaché ou dont le compte
 // Discord ou la boîte e-mail ont déjà servi (empreintes), hors de la fenêtre de saisie (comptée depuis l'inscription),
-// un parrain invité, banni, bloqué ou descendant du filleul (cycle, même lointain), un parrain au plafond (levé pendant
-// l'Ennichi). Rien n'est versé ici : progressReferralWith fait tomber l'étape 1 juste après.
+// un parrain invité, banni, gelé (suppression demandée ou compte anonymisé : son code standard existe encore), bloqué ou
+// descendant du filleul (cycle, même lointain), un parrain au plafond (levé pendant l'Ennichi). Rien n'est versé ici :
+// progressReferralWith fait tomber l'étape 1 juste après.
 
 export type AttachV2Refusal = "DISABLED" | "INVALID_CODE" | "NO_USER" | "SELF" | "GUEST" | "ALREADY_REFERRED" | "TOO_LATE" | "REFERRER_FULL";
 
@@ -63,7 +65,7 @@ export async function attachReferralV2With(db: PrismaClient, input: AttachV2Inpu
     if (referee.id === referrer.id) throw new ReferralV2Error("SELF");
     if (referee.isGuest) throw new ReferralV2Error("GUEST");
 
-    const [account, existing, blocks, recent, cycle, prints, discord, grand] = await Promise.all([
+    const [account, existing, blocks, recent, cycle, prints, discord, referrerAccount] = await Promise.all([
       tx.user.findUnique({ where: { id: referee.id }, select: { registeredAt: true, createdAt: true, referredById: true } }),
       tx.referral.findUnique({ where: { refereeId: referee.id }, select: { id: true } }),
       blocksBetween(tx, referee.id, referrer.id),
@@ -80,14 +82,17 @@ export async function attachReferralV2With(db: PrismaClient, input: AttachV2Inpu
         SELECT EXISTS (SELECT 1 FROM chain WHERE id = ${referee.id}) AS found`,
       userFingerprints(tx, referee.id, input.fingerprintKey),
       tx.account.findFirst({ where: { userId: referee.id, provider: "discord" }, select: { providerAccountId: true } }),
-      tx.user.findUnique({ where: { id: referrer.id }, select: { referredById: true } }),
+      tx.user.findUnique({ where: { id: referrer.id }, select: { referredById: true, deletionRequestedAt: true, anonymizedAt: true } }),
     ]);
     if (!account) throw new ReferralV2Error("NO_USER");
     if (existing || account.referredById) throw new ReferralV2Error("ALREADY_REFERRED");
     const since = account.registeredAt ?? account.createdAt;
     if (input.now.getTime() - since.getTime() > input.attachWindowDays * DAY) throw new ReferralV2Error("TOO_LATE");
-    // Comme en v1 : un parrain qu'on ne peut pas choisir répond comme un code inconnu
-    if (referrer.isGuest || referrer.bannedAt || blocks.byMe || blocks.byThem || cycle[0]?.found) throw new ReferralV2Error("INVALID_CODE");
+    // Comme en v1 : un parrain qu'on ne peut pas choisir répond comme un code inconnu. Gelé : l'anonymisation retire le
+    // code perso, pas le code standard (relu sous le verrou du parrain : une suppression demandée entre-temps compte)
+    if (referrer.isGuest || referrer.bannedAt || !referrerAccount || isFrozen(referrerAccount) || blocks.byMe || blocks.byThem || cycle[0]?.found) {
+      throw new ReferralV2Error("INVALID_CODE");
+    }
     if (recent >= input.rules.maxPerMonth) throw new ReferralV2Error("REFERRER_FULL");
     if (await fingerprintTaken(tx, prints)) throw new ReferralV2Error("ALREADY_REFERRED");
 
@@ -97,7 +102,7 @@ export async function attachReferralV2With(db: PrismaClient, input: AttachV2Inpu
         refereeId: referee.id,
         createdAt: input.now,
         version: 2,
-        grandReferrerId: grand?.referredById ?? null,
+        grandReferrerId: referrerAccount.referredById,
         ennichiEdition: input.ennichiEdition,
         ennichiMultiplier: input.ennichiEdition !== null ? Math.min(10, Math.max(1, input.ennichiMultiplier ?? 1)) : null,
         discordCreatedAt: discord ? snowflakeDate(discord.providerAccountId) : null,

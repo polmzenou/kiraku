@@ -14,14 +14,15 @@ import { listAdminUsers } from "@/server/admin/users";
 import { inputClass, selectClass } from "@/components/ui/Field";
 
 export default async function AdminUsersPage({ searchParams }: PageProps<"/[locale]/admin/utilisateurs">) {
-  // DEV : liste en lecture seule, sans envoi, sans sélection pour suppression et sans e-mails
+  // DEV : liste en lecture seule, sans envoi, sans sélection pour suppression et sans e-mails (ni affichés, ni cherchés,
+  // ni triés)
   const { user: admin, readOnly } = await requireAdminView();
   const params = parseUserListParams(await searchParams);
   const [t, format, locale, result, boosterTypes, registered] = await Promise.all([
     getTranslations("admin.users"),
     getFormatter(),
     getLocale(),
-    listAdminUsers(params),
+    listAdminUsers(params, { emails: !readOnly }),
     prisma.boosterType.findMany({ orderBy: [{ family: "asc" }, { sortOrder: "asc" }], select: { id: true, name: true } }),
     countBroadcastAudience(prisma, "REGISTERED"),
   ]);
@@ -50,7 +51,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/[loca
       </ReadOnly>
       <form className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto_auto_auto]">
         <label className="flex flex-col gap-1 text-sm">{t("search")}
-          <input name="q" defaultValue={params.query} maxLength={100} placeholder={t("searchPlaceholder")} className={inputClass} />
+          <input name="q" defaultValue={params.query} maxLength={100} placeholder={t(readOnly ? "searchPlaceholderNoEmail" : "searchPlaceholder")} className={inputClass} />
         </label>
         <label className="flex flex-col gap-1 text-sm">{t("filter")}
           <select name="filter" defaultValue={params.filter} className={selectClass}>
@@ -59,7 +60,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/[loca
         </label>
         <label className="flex flex-col gap-1 text-sm">{t("sortBy")}
           <select name="sort" defaultValue={params.sort} className={selectClass}>
-            {USER_SORTS.map((s) => <option key={s} value={s}>{t(`sorts.${s}`)}</option>)}
+            {USER_SORTS.filter((s) => !readOnly || s !== "email").map((s) => <option key={s} value={s}>{t(`sorts.${s}`)}</option>)}
           </select>
         </label>
         <label className="flex flex-col gap-1 text-sm">{t("sortDir")}

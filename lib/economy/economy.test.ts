@@ -158,6 +158,7 @@ describe("parrainage", () => {
     alreadyReferred: false,
     reverse: false,
     blocked: false,
+    referrerFrozen: false,
     referrerRecent: 0,
     now: NOW,
     rules,
@@ -182,9 +183,11 @@ describe("parrainage", () => {
     expect(checkAttach(check({ referee: player("filleul", { createdAt: new Date(NOW.getTime() - 8 * 24 * HOUR) }) }))).toBe("TOO_LATE");
   });
 
-  it("un parrain invité, banni, bloqué ou en cycle répond comme un code inconnu", () => {
+  it("un parrain invité, banni, gelé, bloqué ou en cycle répond comme un code inconnu", () => {
     expect(checkAttach(check({ referrer: player("parrain", { isGuest: true }) }))).toBe("INVALID_CODE");
     expect(checkAttach(check({ referrer: player("parrain", { bannedAt: NOW }) }))).toBe("INVALID_CODE");
+    // Suppression demandée ou compte anonymisé : le code standard existe encore, il ne rattache plus personne
+    expect(checkAttach(check({ referrerFrozen: true }))).toBe("INVALID_CODE");
     expect(checkAttach(check({ blocked: true }))).toBe("INVALID_CODE");
     expect(checkAttach(check({ reverse: true }))).toBe("INVALID_CODE");
   });

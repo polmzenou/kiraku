@@ -2,6 +2,7 @@
 // Rien n'est versé au rattachement : seulement quand le filleul est qualifié (compte inscrit et
 // vérifié, assez ancien, assez actif), et chacun réclame son lot une seule fois.
 import type { PrismaClient } from "@/generated/prisma/client";
+import { isFrozen } from "@/lib/account/deletion";
 import {
   checkAttach,
   isQualified,
@@ -52,13 +53,15 @@ export async function attachReferralWith(
     if (!referee) throw new ReferralError("NO_USER");
     if (!referrer) throw new ReferralError("INVALID_CODE");
 
-    const [existing, reverse, blocks, recent] = await Promise.all([
+    const [existing, reverse, blocks, recent, referrerAccount] = await Promise.all([
       tx.referral.findUnique({ where: { refereeId: referee.id }, select: { id: true } }),
       tx.referral.findFirst({ where: { referrerId: referee.id, refereeId: referrer.id }, select: { id: true } }),
       referee.id === referrer.id ? Promise.resolve({ byMe: false, byThem: false }) : blocksBetween(tx, referee.id, referrer.id),
       tx.referral.count({
         where: { referrerId: referrer.id, createdAt: { gt: new Date(input.now.getTime() - REFERRAL_WINDOW_MS) } },
       }),
+      // Relu sous le verrou du parrain : l'anonymisation garde son code standard
+      tx.user.findUnique({ where: { id: referrer.id }, select: { deletionRequestedAt: true, anonymizedAt: true } }),
     ]);
 
     const refusal = checkAttach({
@@ -67,6 +70,7 @@ export async function attachReferralWith(
       alreadyReferred: existing !== null,
       reverse: reverse !== null,
       blocked: blocks.byMe || blocks.byThem,
+      referrerFrozen: !referrerAccount || isFrozen(referrerAccount),
       referrerRecent: recent,
       now: input.now,
       rules: input.rules,

@@ -21,7 +21,7 @@ import { getCollectionPage, getOwnedCopies, MAX_OFFSET } from "../collection/que
 import { RecycleError, recycleWith, type RecycleRequest } from "../collection/recycle-core";
 import { EVENT_ACHIEVEMENTS, unlockAchievementWith } from "../achievements/unlock";
 import { prisma } from "../db";
-import { clientIp, rateLimit } from "../ratelimit";
+import { clientNetworkKey, rateLimit } from "../ratelimit";
 import { getSetting } from "../settings";
 import { getPrintingSeals } from "../prestige/rules";
 import { getCurrentUser, requireActiveUser } from "../user";
@@ -89,7 +89,8 @@ export async function loadCollectionPage(input: unknown): Promise<({ ok: true } 
     ownerId = viewer.id;
   }
 
-  const key = viewer ? viewer.id : `ip:${await clientIp()}`;
+  // Visiteur sans session : par IP, une IPv6 par son /64
+  const key = viewer ? viewer.id : `ip:${await clientNetworkKey()}`;
   if (!(await rateLimit(`collection:${key}`, { limit: 60, windowSeconds: 60 }, { store: "memory" })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }

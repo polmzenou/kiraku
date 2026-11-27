@@ -21,6 +21,15 @@ export const clientErrorSchema = z
 
 export type ClientErrorReport = z.infer<typeof clientErrorSchema>;
 
+/**
+ * Texte venu du navigateur (donc falsifiable), prêt pour une ligne des logs du serveur : sans caractère de contrôle
+ * (C0, DEL et C1, dont le CSI U+009B que certains terminaux interprètent en lisant pm2 logs) ni séparateur de ligne
+ * Unicode, pour qu'un faux rapport ne puisse ni imiter une autre ligne ni piloter le terminal qui les affiche.
+ */
+export function logLine(text: string): string {
+  return text.replace(/[\u0000-\u001f\u007f-\u009f\p{Zl}\p{Zp}]+/gu, " ");
+}
+
 const clip = (value: unknown, max: number) => String(value ?? "").slice(0, max);
 
 /** Rapport d'une erreur attrapée par une page d'erreur, coupé aux limites du schéma. */

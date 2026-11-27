@@ -7,7 +7,7 @@ import { REFERRAL_COOKIE_MAX_AGE, referralCookieName } from "@/lib/referral/cook
 import { prisma } from "../db";
 import { isProduction } from "../env";
 import { pushNotifications } from "../push/send";
-import { clientIp, rateLimit } from "../ratelimit";
+import { clientNetworkKey, rateLimit } from "../ratelimit";
 import { attachReferralV2With, ReferralV2Error, type AttachV2Refusal } from "../referral/attach-core";
 import { progressDeps, referralFingerprintKey, referralV2Rules } from "../referral/deps";
 import { fingerprintTaken, recordFingerprints, refereeFingerprints } from "../referral/fingerprint";
@@ -38,11 +38,11 @@ export async function pendingReferralCode(): Promise<string | null> {
 export type AttachError = ReferralErrorCode | AttachV2Refusal | "RATE_LIMITED";
 
 /**
- * Rattache un joueur au parrain d'un code. Limité par IP (3 rattachements par jour, rien n'est
- * stocké en base) : un même appareil ne fabrique pas une série de filleuls.
+ * Rattache un joueur au parrain d'un code. Limité par IP (3 rattachements par jour, une IPv6 par son /64 ; rien
+ * n'est stocké en base) : un même appareil ne fabrique pas une série de filleuls.
  */
 export async function attachReferral(userId: string, code: string): Promise<{ ok: true } | { ok: false; error: AttachError }> {
-  if (!(await rateLimit(`referral-ip:${await clientIp()}`, { limit: 3, windowSeconds: DAY })).success) {
+  if (!(await rateLimit(`referral-ip:${await clientNetworkKey()}`, { limit: 3, windowSeconds: DAY })).success) {
     return { ok: false, error: "RATE_LIMITED" };
   }
   try {
