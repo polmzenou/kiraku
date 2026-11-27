@@ -66,7 +66,12 @@ export function CardPickGrid({
             setError(res.error === "FORBIDDEN" ? "FORBIDDEN" : "OTHER");
             return;
           }
-          setItems((current) => (offset === 0 ? res.items : [...current, ...res.items]));
+          // Une carte déjà affichée (collection modifiée entre deux pages) n'est pas répétée
+          setItems((current) => {
+            if (offset === 0) return res.items;
+            const seen = new Set(current.map((i) => i.cardId));
+            return [...current, ...res.items.filter((i) => !seen.has(i.cardId))];
+          });
           setNextOffset(res.nextOffset);
         },
         () => {

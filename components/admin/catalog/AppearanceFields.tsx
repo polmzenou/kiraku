@@ -22,7 +22,7 @@ export function AppearanceFields({ value, defaults, onChange, animation = false 
       <SelectField label={t("easing")} value={displayed.easing ?? "easeOut"} onChange={(easing) => set({ easing })} options={(["easeOut", "easeInOut", "linear"] as const).map((v) => ({ value: v as "easeOut" | "easeInOut" | "linear", label: t(v) }))} />
     </> : <>
       {(["frame", "paper", "ink", "effectColor"] as const).map((key) => <Field key={key} label={t(key)}>
-        {(id) => <div className="flex gap-2"><input id={id} type="color" value={displayed[key] ?? (key === "ink" ? "#241e1a" : key === "paper" ? "#f4ede0" : "#c8a35b")} onChange={(e) => set({ [key]: e.target.value })} className="h-11 w-16 rounded-control border border-border" /><button type="button" className="text-xs underline" onClick={() => { const next = { ...value }; delete next[key]; onChange(next); }}>{t("inherit")}</button></div>}
+        {(id) => <div className="flex gap-2"><input id={id} type="color" value={displayed[key] ?? (key === "ink" ? "#241e1a" : key === "paper" ? "#f4ede0" : "#c8a35b")} onChange={(e) => set({ [key]: e.target.value })} className="h-11 w-16 rounded-control border border-border" /><button type="button" className="min-h-11 text-xs underline" onClick={() => { const next = { ...value }; delete next[key]; onChange(next); }}>{t("inherit")}</button></div>}
       </Field>)}
       <TextField label={t("seal")} maxLength={8} value={value.seal ?? ""} onChange={(seal) => set({ seal: seal || undefined })} />
       <SelectField label={t("artTone")} hint={t("artToneHint")} value={value.artTone ?? ""} onChange={(artTone) => { const next = { ...value }; if (artTone) next.artTone = artTone; else delete next.artTone; onChange(next); }}

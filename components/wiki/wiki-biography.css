@@ -1,0 +1,13 @@
+/* Biographie AniList (WikiBiography) : passages qu'AniList marque comme spoilers (~!…!~). Soulignés en pointillé pour
+   les distinguer ; en mode spoiler (data-spoiler="hide" sur <html>, réglage du joueur), floutés comme l'illustration
+   d'une carte spoil. Ombre portée plutôt que filter : le flou tient aussi sur un passage coupé en plusieurs lignes. */
+.wiki-spoiler {
+  text-decoration: underline dotted var(--color-text-muted);
+  text-underline-offset: 3px;
+}
+:root[data-spoiler="hide"] .wiki-spoiler {
+  color: transparent;
+  text-shadow: 0 0 7px var(--color-text);
+  text-decoration: none;
+  user-select: none;
+}

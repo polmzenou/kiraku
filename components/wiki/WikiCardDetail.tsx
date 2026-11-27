@@ -117,7 +117,7 @@ export function WikiCardDetail({ card, related, locale, total, collection, wishl
         <h1 className="break-words text-4xl font-extrabold leading-tight md:text-6xl">{card.name}</h1>
         <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-text-muted">
           {card.nameNative && <p lang="ja" className="font-title text-base">{card.nameNative}</p>}
-          <p className="font-mono text-xs">{t("number", { number: cardNumber(card.rank) })}{card.rank !== null && ` / ${total.toLocaleString(locale)}`}</p>
+          <p className="text-xs tabular-nums">{t("number", { number: cardNumber(card.rank) })}{card.rank !== null && ` / ${total.toLocaleString(locale)}`}</p>
         </div>
         {card.status === "ARCHIVED" && <p className="mt-4 text-sm font-medium text-text">{t("outOfCatalog")}</p>}
         {wishlistAction && <div className="mt-5">{wishlistAction}</div>}

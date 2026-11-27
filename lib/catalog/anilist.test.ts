@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeCharacter, pageWindow } from "./anilist";
+import { aniListParagraphs, normalizeCharacter, pageWindow } from "./anilist";
 import { rawCharacter, rawMedia } from "./fixtures";
 
 describe("normalizeCharacter", () => {
@@ -86,5 +86,38 @@ describe("fenêtres de pagination", () => {
       const w = pageWindow(page, 30);
       expect(w.localPage * 30).toBeLessThanOrEqual(5000);
     }
+  });
+});
+
+describe("biographie AniList", () => {
+  const plain = (text: string) => ({ text, spoiler: false });
+  const hidden = (text: string) => ({ text, spoiler: true });
+
+  it("retire le gras, l'italique, les liens, les <br> et le centrage", () => {
+    expect(aniListParagraphs("__Age:__ 17<br>__Height:__ 170 cm\n\nFriend of [Luffy](https://anilist.co/character/40) and _very_ loyal. ~~~Fin~~~")).toEqual([
+      [plain("Age: 17\nHeight: 170 cm")],
+      [plain("Friend of Luffy and very loyal. Fin")],
+    ]);
+  });
+
+  it("garde les soulignés et astérisques qui ne sont pas du markdown", () => {
+    expect(aniListParagraphs("snake_case_name, 5 * 3 * 2")).toEqual([[plain("snake_case_name, 5 * 3 * 2")]]);
+  });
+
+  it("marque les passages ~!…!~ comme spoilers, même sur plusieurs paragraphes", () => {
+    expect(aniListParagraphs("He is brave. ~!He dies in the end.\n\nHis sister avenges him.!~ Remembered by all.")).toEqual([
+      [plain("He is brave. "), hidden("He dies in the end.")],
+      [hidden("His sister avenges him."), plain(" Remembered by all.")],
+    ]);
+  });
+
+  it("un spoiler ouvert sans fin court jusqu'au bout ; un « !~ » isolé reste du texte", () => {
+    expect(aniListParagraphs("Intro ~!secret\n\nencore")).toEqual([[plain("Intro "), hidden("secret")], [hidden("encore")]]);
+    expect(aniListParagraphs("Yatta!~ Hello")).toEqual([[plain("Yatta!~ Hello")]]);
+  });
+
+  it("ne garde aucun paragraphe vide", () => {
+    expect(aniListParagraphs("\n\n  \n\nTexte\n\n\n\n~!!~")).toEqual([[plain("Texte")]]);
+    expect(aniListParagraphs("")).toEqual([]);
   });
 });

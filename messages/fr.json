@@ -485,6 +485,7 @@
       "unknown": "Non renseigné"
     },
     "activeFilters": "Filtres actifs",
+    "activeFilter": "{label} : {value}",
     "removeFilter": "Retirer le filtre {filter}",
     "resetFilters": "Tout réinitialiser",
     "done": "Voir les personnages",
@@ -3835,6 +3836,11 @@
       "seriesTitle": "Titre de l’univers",
       "seriesTitleEn": "Titre anglais",
       "mediaType": "Type d’univers",
+      "mediaTypes": {
+        "CUSTOM": "Personnalisé",
+        "ANIME": "Anime",
+        "MANGA": "Manga"
+      },
       "genres": "Genres (séparés par des virgules)",
       "tags": "Tags (séparés par des virgules)",
       "metadata": "Métadonnées et filtres",
@@ -3842,6 +3848,11 @@
       "female": "Féminin",
       "male": "Masculin",
       "role": "Rôle",
+      "roles": {
+        "MAIN": "Principal",
+        "SUPPORTING": "Second rôle",
+        "BACKGROUND": "Figurant"
+      },
       "birthMonth": "Mois de naissance",
       "birthDay": "Jour de naissance",
       "frame": "Couleur du cadre",
@@ -3922,6 +3933,7 @@
       },
       "template": "Modèle de départ",
       "rarityKey": "Clé (majuscules, chiffres, _)",
+      "rarityKeyShown": "Clé : {key}",
       "sortOrder": "Ordre de rareté (croissant)",
       "rarityWeight": "Poids global de tirage",
       "recycleValue": "Zeni par doublon recyclé",
@@ -3952,6 +3964,12 @@
       "year": "Année de sortie",
       "studio": "Studio",
       "season": "Saison",
+      "seasons": {
+        "WINTER": "Hiver",
+        "SPRING": "Printemps",
+        "SUMMER": "Été",
+        "FALL": "Automne"
+      },
       "seasonYear": "Année de la saison",
       "change": "Changer",
       "clearChoice": "Retirer : {label}",

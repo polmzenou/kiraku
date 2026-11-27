@@ -29,7 +29,7 @@ export function RarityEditor({ initial, templates }: { initial: RarityDraft; tem
       <h3 className="font-title text-2xl font-bold">{t(draft.create ? "newRarity" : "editRarity")}</h3>
       {draft.create && <SelectField label={t("template")} value={draft.template} onChange={(key) => { const template = templates.find((v) => v.key === key)!; update({ ...template, appearance: { ...materialAppearance(key), ...template.appearance }, key: draft.key, nameFr: draft.nameFr, nameEn: draft.nameEn, create: true, updatedAt: undefined, template: key, sortOrder: draft.sortOrder, rate: 0 }); }} options={templates.map((v) => ({ value: v.key, label: v.nameFr }))} />}
       <div className="grid gap-4 sm:grid-cols-2">
-        {draft.create ? <TextField label={t("rarityKey")} maxLength={40} value={draft.key} onChange={(key) => update({ key: key.toUpperCase() })} /> : <p className="text-sm text-text-muted">{t("rarityKey")} : {draft.key}</p>}
+        {draft.create ? <TextField label={t("rarityKey")} maxLength={40} value={draft.key} onChange={(key) => update({ key: key.toUpperCase() })} /> : <p className="text-sm text-text-muted">{t("rarityKeyShown", { key: draft.key })}</p>}
         <NumberField label={t("sortOrder")} min={-100_000} max={100_000} value={draft.sortOrder} onChange={(sortOrder) => update({ sortOrder })} />
         <TextField label={t("nameFr")} maxLength={80} value={draft.nameFr} onChange={(nameFr) => update({ nameFr })} /><TextField label={t("nameEn")} maxLength={80} value={draft.nameEn} onChange={(nameEn) => update({ nameEn })} />
         <TextField label={t("seal")} maxLength={8} value={draft.seal} onChange={(seal) => update({ seal })} />

@@ -42,7 +42,7 @@ function NumberInput({ label, value, onChange, min, max }: { label: React.ReactN
   );
 }
 
-/** Réglages de la collection : Zeni par doublon recyclé et taille de la vitrine. */
+/** Réglages de la collection : Zeni par doublon recyclé, rareté par rareté. */
 export function CollectionSettingsForm({ initial }: { initial: CollectionSettings }) {
   const RARITIES = useRarities();
   const RARITY_SEAL = useRaritySeals();

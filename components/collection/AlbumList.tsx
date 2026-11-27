@@ -6,20 +6,11 @@ import Image from "next/image";
 import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Link } from "@/i18n/navigation";
-import { type Rarity } from "@/lib/catalog/rarity";
 import { albumRarities, albumRatio, type Album, type AlbumPage } from "@/lib/collection/albums";
 import { loadAlbumPageAction } from "@/server/actions/collection";
+// Jetons rarity-label-* : lisibles sous Washi et définis pour les variantes (les rarity-* des fuda n'y font pas 4,5:1)
+import { RARITY_TEXT } from "../boosters/format";
 import { Button } from "../ui/Button";
-
-// Classes complètes pour que Tailwind les détecte
-const RARITY_TEXT: Record<Rarity, string> = {
-  COMMON: "text-rarity-common",
-  UNCOMMON: "text-rarity-uncommon",
-  RARE: "text-rarity-rare",
-  EPIC: "text-rarity-epic",
-  LEGENDARY: "text-rarity-legendary",
-  MYTHIC: "text-rarity-mythic",
-};
 
 /** Grille d'albums (une tuile par série), pages suivantes chargées au défilement. */
 export function AlbumList({ initial, query }: { initial: AlbumPage; query: Record<string, string> }) {
@@ -33,13 +24,18 @@ export function AlbumList({ initial, query }: { initial: AlbumPage; query: Recor
   const loadMore = () => {
     if (nextOffset === null || pending) return;
     startTransition(async () => {
-      const res = await loadAlbumPageAction({ query, offset: nextOffset });
-      if (!res.ok) {
+      // Réseau coupé ou action périmée après un déploiement : une erreur levée ici partirait à la page d'erreur
+      const res = await loadAlbumPageAction({ query, offset: nextOffset }).catch(() => null);
+      if (!res?.ok) {
         setFailed(true);
         return;
       }
       setFailed(false);
-      setItems((prev) => [...prev, ...res.items]);
+      // Un album déjà affiché (liste modifiée entre deux pages) n'est pas répété
+      setItems((prev) => {
+        const seen = new Set(prev.map((a) => a.seriesId));
+        return [...prev, ...res.items.filter((a) => !seen.has(a.seriesId))];
+      });
       setNextOffset(res.nextOffset);
     });
   };
@@ -118,7 +114,7 @@ function AlbumTile({ album }: { album: Album }) {
         </span>
         <ul className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs tabular-nums" aria-label={t("byRarity")}>
           {albumRarities(album.byRarity, RARITIES).map((r) => (
-            <li key={r} className={`flex items-center gap-1 ${album.byRarity[r].owned === 0 ? "text-text-muted" : RARITY_TEXT[r]}`}>
+            <li key={r} className={`flex items-center gap-1 ${album.byRarity[r].owned === 0 ? "text-text-muted" : (RARITY_TEXT[r] ?? "")}`}>
               <span aria-hidden="true" lang="ja" className="font-seal">
                 {RARITY_SEAL[r]}
               </span>

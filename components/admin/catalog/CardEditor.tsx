@@ -84,8 +84,8 @@ export function CardEditor({ scope, initial, options, context }: { scope: Catalo
     return () => { window.removeEventListener("beforeunload", unload); document.removeEventListener("click", navigate, true); };
   }, [dirty, t]);
   useEffect(() => {
-    // Ctrl/Cmd + S enregistre sans quitter la page.
-    const save = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); form.current?.requestSubmit(); } };
+    // Ctrl/Cmd + S enregistre sans quitter la page (la touche maintenue ne relance rien : voir onSubmit).
+    const save = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); if (!e.repeat) form.current?.requestSubmit(); } };
     window.addEventListener("keydown", save); return () => window.removeEventListener("keydown", save);
   }, []);
   useEffect(() => { if (error) alert.current?.focus(); }, [error]);
@@ -168,9 +168,11 @@ export function CardEditor({ scope, initial, options, context }: { scope: Catalo
   const cutout = localCutout || draft.appearance.cutoutUrl;
   const previewDraft = localCutout ? { ...draft, appearance: { ...draft.appearance, cutoutUrl: localCutout } } : draft;
   const sections = [["info", t("information")], ...(variantRequired || draft.variantOfId ? [["variant", t("variant")]] : []), ["image", t("image")], ["appearance", t("appearance")], ["animations", t("animations")], ["distribution", t("distribution")]] as const;
-  return <form ref={form} onSubmit={(e) => { e.preventDefault(); save(draft.status); }} className="flex min-w-0 flex-col gap-5">
+  // requestSubmit (Ctrl+S) passe outre le fieldset désactivé : sans ce garde, un second appui pendant l'envoi créait une
+  // seconde carte (et une seconde série nouvelle), et la fiche en lecture seule tentait d'enregistrer
+  return <form ref={form} onSubmit={(e) => { e.preventDefault(); if (!pending && context.editable) save(draft.status); }} className="flex min-w-0 flex-col gap-5">
     <fieldset disabled={pending || !context.editable} aria-busy={pending} className="contents">
-    <header className="flex flex-wrap items-center justify-between gap-3"><div><Link href="/admin/catalogue" className="text-sm text-link underline">{t("back")}</Link><h2 className="mt-2 font-heading text-3xl font-bold">{t(draft.id ? "edit" : draft.variantOfId ? "createVariant" : "create")}</h2></div><span role="status" className="rounded-pill border border-border px-3 py-2 text-xs">{t(`statuses.${draft.status}`)}{dirty ? ` · ${t("unsaved")}` : ""}</span></header>
+    <header className="flex flex-wrap items-center justify-between gap-3"><div><Link href="/admin/catalogue" className="inline-flex min-h-11 items-center text-sm text-link underline">{t("back")}</Link><h2 className="mt-2 font-heading text-3xl font-bold">{t(draft.id ? "edit" : draft.variantOfId ? "createVariant" : "create")}</h2></div><span role="status" className="rounded-pill border border-border px-3 py-2 text-xs">{t(`statuses.${draft.status}`)}{dirty ? ` · ${t("unsaved")}` : ""}</span></header>
     {scope === "drafts" && <p role="status" className="rounded-control border border-border bg-surface-2 p-3 text-sm text-text-muted">{t(context.editable ? "devReviewNote" : "devReadOnly")}</p>}
     <nav aria-label={t("sections")} className="-mx-1 flex gap-1 overflow-x-auto pb-1">{sections.map(([id, label]) => <a key={id} href={`#${id}`} className="inline-flex min-h-11 shrink-0 items-center rounded-pill border border-border px-3 text-xs">{label}</a>)}</nav>
     <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -190,11 +192,11 @@ export function CardEditor({ scope, initial, options, context }: { scope: Catalo
             <div className="flex items-center justify-between gap-2"><strong className="text-sm">{t("newSeries")}</strong><button type="button" className="min-h-11 text-xs text-link underline" onClick={() => update({ newSeries: null, seriesId: series?.id ?? null })}>{t("existingSeries")}</button></div>
             <TextField label={t("seriesTitle")} value={draft.newSeries.title} maxLength={300} onChange={(title) => update({ newSeries: { ...draft.newSeries!, title } })} />
             <TextField label={t("seriesTitleEn")} value={draft.newSeries.titleEnglish} maxLength={300} onChange={(titleEnglish) => update({ newSeries: { ...draft.newSeries!, titleEnglish } })} />
-            <SelectField label={t("mediaType")} value={draft.newSeries.type} onChange={(type) => update({ newSeries: { ...draft.newSeries!, type } })} options={["CUSTOM", "ANIME", "MANGA"].map((v) => ({ value: v as "CUSTOM" | "ANIME" | "MANGA", label: v }))} />
+            <SelectField label={t("mediaType")} value={draft.newSeries.type} onChange={(type) => update({ newSeries: { ...draft.newSeries!, type } })} options={(["CUSTOM", "ANIME", "MANGA"] as const).map((v) => ({ value: v, label: t(`mediaTypes.${v}`) }))} />
             {(["genres", "tags"] as const).map((key) => <TextField key={key} label={t(key)} value={draft.newSeries![key].join(", ")} maxLength={1000} onChange={(raw) => update({ newSeries: { ...draft.newSeries!, [key]: raw.split(",").map((s) => s.trim()) } })} />)}
             <OptionalNumberField label={t("year")} value={draft.newSeries.year ?? null} min={1900} max={2100} onChange={(year) => update({ newSeries: { ...draft.newSeries!, year } })} />
             <TextField label={t("studio")} value={draft.newSeries.studio || ""} maxLength={200} onChange={(studio) => update({ newSeries: { ...draft.newSeries!, studio } })} />
-            <SelectField label={t("season")} value={draft.newSeries.season || ""} onChange={(season) => update({ newSeries: { ...draft.newSeries!, season: season as "WINTER" | "SPRING" | "SUMMER" | "FALL" || null } })} options={["", "WINTER", "SPRING", "SUMMER", "FALL"].map((v) => ({ value: v, label: v || "—" }))} />
+            <SelectField label={t("season")} value={draft.newSeries.season || ""} onChange={(season) => update({ newSeries: { ...draft.newSeries!, season: season as "WINTER" | "SPRING" | "SUMMER" | "FALL" || null } })} options={(["", "WINTER", "SPRING", "SUMMER", "FALL"] as const).map((v) => ({ value: v, label: v ? t(`seasons.${v}`) : "—" }))} />
             <OptionalNumberField label={t("seasonYear")} value={draft.newSeries.seasonYear ?? null} min={1900} max={2100} onChange={(seasonYear) => update({ newSeries: { ...draft.newSeries!, seasonYear } })} />
           </div> : <div className="grid gap-1 sm:col-span-2">
             <SearchPicker kind="series" label={t("series")} required value={series} onChange={(value) => { setSeries(value); update({ seriesId: value?.id ?? null }); }} />
@@ -202,7 +204,7 @@ export function CardEditor({ scope, initial, options, context }: { scope: Catalo
           </div>}
         </div><details className="mt-4"><summary className="min-h-11 cursor-pointer text-sm font-bold">{t("metadata")}</summary><div className="grid gap-4 sm:grid-cols-2">
           <SelectField label={t("gender")} value={draft.gender || ""} onChange={(gender) => update({ gender: gender || null })} options={[{ value: "", label: "—" }, { value: "Female", label: t("female") }, { value: "Male", label: t("male") }]} />
-          <SelectField label={t("role")} value={draft.role || ""} onChange={(role) => update({ role: role as CardDraft["role"] || null })} options={["", "MAIN", "SUPPORTING", "BACKGROUND"].map((v) => ({ value: v, label: v || "—" }))} />
+          <SelectField label={t("role")} value={draft.role || ""} onChange={(role) => update({ role: role as CardDraft["role"] || null })} options={(["", "MAIN", "SUPPORTING", "BACKGROUND"] as const).map((v) => ({ value: v, label: v ? t(`roles.${v}`) : "—" }))} />
           <OptionalNumberField label={t("birthMonth")} value={draft.birthMonth} min={1} max={12} onChange={(birthMonth) => update({ birthMonth })} /><OptionalNumberField label={t("birthDay")} value={draft.birthDay} min={1} max={31} onChange={(birthDay) => update({ birthDay })} />
         </div></details></Section>
         {(variantRequired || draft.variantOfId) && <Section id="variant" title={t("variant")} highlight={variantRequired}>

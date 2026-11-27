@@ -49,19 +49,27 @@ export function WikiFilters({ params, options, counts, action }: {
   const [seriesSearch, setSeriesSearch] = useState("");
   const [search, setSearch] = useState(params.q);
   const [previousQuery, setPreviousQuery] = useState(params.q);
+  // Dernière recherche partie de ce champ : quand l'URL la rattrape, le joueur a pu taper la suite entre-temps
+  const [sentQuery, setSentQuery] = useState(params.q);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const id = useId();
 
-  // Une navigation (y compris précédent/suivant) resynchronise le champ sans perdre son focus.
+  // Une navigation venue d'ailleurs (précédent/suivant, lien) resynchronise le champ sans perdre son focus. Sa propre
+  // recherche qui arrive ne le touche pas : la remettre effaçait les lettres tapées pendant le chargement, et la frappe
+  // en attente était annulée avec elles.
   if (previousQuery !== params.q) {
     setPreviousQuery(params.q);
-    setSearch(params.q);
+    if (params.q !== sentQuery) {
+      setSentQuery(params.q);
+      setSearch(params.q);
+    }
   }
-  useEffect(() => () => clearTimeout(timer.current), [params.q]);
+  useEffect(() => () => clearTimeout(timer.current), []);
 
   function go(next: Partial<WikiParams>) {
     clearTimeout(timer.current);
     const updated = { ...filters, q: search.trim(), ...next, after: null };
+    setSentQuery(updated.q);
     startTransition(() => {
       setFilters(updated);
       router.replace({ pathname: "/wiki", query: wikiQuery(updated) }, { scroll: false });
@@ -79,10 +87,10 @@ export function WikiFilters({ params, options, counts, action }: {
     return t.has(key) ? t(key) : genre;
   };
   const activeFilters = [
-    ...(filters.series ? [{ key: "series" as const, label: `${t("series")} : ${options.series.find((s) => s.id === filters.series)?.title ?? filters.series}` }] : []),
-    ...(filters.demographic ? [{ key: "demographic" as const, label: `${t("demographic")} : ${t(`demographics.${filters.demographic}`)}` }] : []),
-    ...(filters.genre ? [{ key: "genre" as const, label: `${t("genre")} : ${genreLabel(filters.genre)}` }] : []),
-    ...(filters.gender ? [{ key: "gender" as const, label: `${t("gender")} : ${t(`genders.${filters.gender}`)}` }] : []),
+    ...(filters.series ? [{ key: "series" as const, label: t("activeFilter", { label: t("series"), value: options.series.find((s) => s.id === filters.series)?.title ?? filters.series }) }] : []),
+    ...(filters.demographic ? [{ key: "demographic" as const, label: t("activeFilter", { label: t("demographic"), value: t(`demographics.${filters.demographic}`) }) }] : []),
+    ...(filters.genre ? [{ key: "genre" as const, label: t("activeFilter", { label: t("genre"), value: genreLabel(filters.genre) }) }] : []),
+    ...(filters.gender ? [{ key: "gender" as const, label: t("activeFilter", { label: t("gender"), value: t(`genders.${filters.gender}`) }) }] : []),
   ];
   const filterCount = activeFilters.length + filters.rarities.length + Number(filters.ownership !== "all");
   const sortChanged = filters.sort !== WIKI_DEFAULT_SORT || filters.dir !== WIKI_DEFAULT_DIR[WIKI_DEFAULT_SORT];

@@ -43,7 +43,7 @@ export function SearchPicker({ kind, label, value, onChange, name, hint, require
     {value && !open ? <div className="flex min-h-11 items-center gap-2 rounded-control border border-border bg-surface px-3">
       <span className="min-w-0 flex-1 truncate text-sm">{value.label}</span>
       <button type="button" className="min-h-11 text-xs text-link underline" onClick={() => { setOpen(true); setTimeout(() => input.current?.focus(), 0); }}>{t("change")}</button>
-      <button type="button" className="min-h-11 text-xs underline" aria-label={t("clearChoice", { label })} onClick={() => onChange(null)}>×</button>
+      <button type="button" className="min-h-11 min-w-11 text-xs underline" aria-label={t("clearChoice", { label })} onClick={() => onChange(null)}>×</button>
     </div> : <input ref={input} id={id} role="combobox" aria-expanded={open} aria-controls={listId} aria-autocomplete="list"
       aria-activedescendant={open && options[active] ? `${listId}-${active}` : undefined} autoComplete="off"
       className={inputClass} value={query} maxLength={100} placeholder={t("searchPlaceholder")}

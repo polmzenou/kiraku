@@ -485,6 +485,7 @@
       "unknown": "Unspecified"
     },
     "activeFilters": "Active filters",
+    "activeFilter": "{label}: {value}",
     "removeFilter": "Remove filter {filter}",
     "resetFilters": "Reset all",
     "done": "View characters",
@@ -3835,6 +3836,11 @@
       "seriesTitle": "Universe title",
       "seriesTitleEn": "English title",
       "mediaType": "Universe type",
+      "mediaTypes": {
+        "CUSTOM": "Custom",
+        "ANIME": "Anime",
+        "MANGA": "Manga"
+      },
       "genres": "Genres (comma separated)",
       "tags": "Tags (comma separated)",
       "metadata": "Metadata and filters",
@@ -3842,6 +3848,11 @@
       "female": "Female",
       "male": "Male",
       "role": "Role",
+      "roles": {
+        "MAIN": "Main",
+        "SUPPORTING": "Supporting",
+        "BACKGROUND": "Background"
+      },
       "birthMonth": "Birth month",
       "birthDay": "Birth day",
       "frame": "Frame colour",
@@ -3922,6 +3933,7 @@
       },
       "template": "Starting template",
       "rarityKey": "Key (uppercase, digits, _)",
+      "rarityKeyShown": "Key: {key}",
       "sortOrder": "Rarity order (ascending)",
       "rarityWeight": "Global draw weight",
       "recycleValue": "Zeni per recycled duplicate",
@@ -3952,6 +3964,12 @@
       "year": "Release year",
       "studio": "Studio",
       "season": "Season",
+      "seasons": {
+        "WINTER": "Winter",
+        "SPRING": "Spring",
+        "SUMMER": "Summer",
+        "FALL": "Fall"
+      },
       "seasonYear": "Season year",
       "change": "Change",
       "clearChoice": "Remove: {label}",

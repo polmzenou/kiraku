@@ -270,3 +270,51 @@ export function normalizeCharacter(raw: unknown, minTagRank: number): NormalizeR
   });
   return lenient.success ? { ok: true, character: lenient.data } : { ok: false, reason: "invalid" };
 }
+
+// --- Biographie : markdown d'AniList (description(asHtml: false)) ---
+
+/** Morceau d'un paragraphe de biographie ; `spoiler` : passage qu'AniList cache derrière `~!…!~`. */
+export type BiographySegment = { text: string; spoiler: boolean };
+
+/**
+ * Biographie AniList en paragraphes de texte simple, pour la fiche du wiki. La description brute est du markdown
+ * maison : gras `__…__`, italique `_…_`, liens `[libellé](url)`, `<br>`, centrage `~~~` et surtout spoilers `~!…!~`,
+ * qui s'affichaient tels quels (le spoiler en clair, entre ses balises). Liens réduits à leur libellé, balises et
+ * marques retirées, passages spoilers marqués (un spoiler peut couvrir plusieurs paragraphes ; ouvert sans fin, il
+ * court jusqu'au bout). Rien n'est interprété comme du HTML : React échappe le texte.
+ */
+export function aniListParagraphs(markdown: string): BiographySegment[][] {
+  const text = markdown
+    .replace(/\r\n?/g, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/?[a-z][^>]*>/gi, "")
+    .replace(/!?\[([^\]\n]*)\]\([^)\s]*\)/g, "$1")
+    .replace(/~~~/g, "")
+    .replace(/(\*\*|__)(?=\S)([\s\S]*?\S)\1/g, "$2")
+    .replace(/(^|[^\p{L}\p{N}*_])([*_])(?=\S)([^*_\n]*?\S)\2(?![\p{L}\p{N}*_])/gu, "$1$3");
+
+  const paragraphs: BiographySegment[][] = [[]];
+  let spoiler = false;
+  for (const part of text.split(/(~!|!~)/)) {
+    if (part === "~!") { spoiler = true; continue; }
+    // Un « !~ » hors spoiler est du texte (« Yatta!~ ») : il reste tel quel
+    if (part === "!~" && spoiler) { spoiler = false; continue; }
+    part.split(/\n[ \t]*\n\s*/).forEach((piece, i) => {
+      if (i > 0) paragraphs.push([]);
+      if (!piece) return;
+      const current = paragraphs[paragraphs.length - 1];
+      const last = current.at(-1);
+      if (last?.spoiler === spoiler) last.text += piece;
+      else current.push({ text: piece, spoiler });
+    });
+  }
+  return paragraphs.flatMap((segments) => {
+    const kept = segments.map((s) => ({ ...s }));
+    if (kept.length > 0) {
+      kept[0].text = kept[0].text.trimStart();
+      kept[kept.length - 1].text = kept[kept.length - 1].text.trimEnd();
+    }
+    const nonEmpty = kept.filter((s) => s.text !== "");
+    return nonEmpty.some((s) => s.text.trim() !== "") ? [nonEmpty] : [];
+  });
+}

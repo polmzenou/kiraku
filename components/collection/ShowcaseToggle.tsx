@@ -38,12 +38,14 @@ export function ShowcaseToggle({
   const [error, setError] = useState(false);
   const [pending, startTransition] = useTransition();
 
+  // Réseau coupé ou action périmée après un déploiement : l'erreur s'affiche dans la feuille au lieu de partir à la
+  // page d'erreur (une erreur levée dans une transition remonte jusqu'à elle)
   const load = () => {
     setOpen(true);
     setError(false);
     startTransition(async () => {
-      const res = await showcasesForCardAction({ cardId });
-      if (!res.ok) {
+      const res = await showcasesForCardAction({ cardId }).catch(() => null);
+      if (!res?.ok) {
         setError(true);
         return;
       }
@@ -54,10 +56,11 @@ export function ShowcaseToggle({
   const toggle = (option: CardShowcaseOption) =>
     startTransition(async () => {
       setError(false);
-      const res = option.hasCard
-        ? await removeShowcaseCardAction({ showcaseId: option.id, cardId })
-        : await addShowcaseCardsAction({ showcaseId: option.id, cardIds: [cardId] });
-      if (!res.ok) {
+      const res = await (option.hasCard
+        ? removeShowcaseCardAction({ showcaseId: option.id, cardId })
+        : addShowcaseCardsAction({ showcaseId: option.id, cardIds: [cardId] })
+      ).catch(() => null);
+      if (!res?.ok) {
         setError(true);
         return;
       }
@@ -78,7 +81,7 @@ export function ShowcaseToggle({
       {open && (
         <Sheet open onClose={() => setOpen(false)} title={t("addToShowcase")}>
           {options === null ? (
-            <p className="text-sm text-text-muted">{tShowcase("loading")}</p>
+            !error && <p className="text-sm text-text-muted">{tShowcase("loading")}</p>
           ) : options.length === 0 ? (
             <p className="text-sm text-text-muted">
               {t.rich("noShowcase", {

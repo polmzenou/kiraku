@@ -1,19 +1,30 @@
 import { getTranslations } from "next-intl/server";
 import { useTranslations } from "next-intl";
+import { Fragment } from "react";
+import { aniListParagraphs, type BiographySegment } from "@/lib/catalog/anilist";
 import { getCharacterBiography } from "@/server/catalog/biography";
+import "./wiki-biography.css";
 
 export async function WikiBiography({ anilistId, description, locale = "fr" }: { anilistId: number | null; description?: unknown; locale?: string }) {
   const descriptions = description && typeof description === "object" ? description as Record<string, unknown> : {};
   const custom = String(descriptions[locale] || descriptions.fr || "");
   const [t, biography] = await Promise.all([getTranslations("wiki"), custom ? { status: "ready", text: custom } : anilistId ? getCharacterBiography(anilistId) : { status: "empty", text: null }]);
+  // Texte de l'admin : paragraphes tels quels. Biographie AniList : son markdown nettoyé, spoilers ~!…!~ marqués
+  const paragraphs: BiographySegment[][] = biography.status !== "ready" || !biography.text ? []
+    : custom ? biography.text.split(/\r?\n\s*\r?\n/).map((text) => [{ text, spoiler: false }])
+    : aniListParagraphs(biography.text);
   return (
     <section aria-labelledby="wiki-biography-title" className="lacquer rounded-card p-5 md:p-7">
       <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-text-muted">{t("characterFile")}</p>
       <h2 id="wiki-biography-title" className="text-2xl font-extrabold md:text-3xl">{t("biography")}</h2>
       {biography.status === "ready" ? (
         <div className="mt-5 space-y-4 text-sm leading-7 text-text">
-          {biography.text!.split(/\r?\n\s*\r?\n/).map((paragraph, i) => (
-            <p key={i} className="whitespace-pre-line break-words">{paragraph}</p>
+          {paragraphs.map((segments, i) => (
+            <p key={i} className="whitespace-pre-line break-words">
+              {segments.map((s, j) => (
+                <Fragment key={j}>{s.spoiler ? <span className="wiki-spoiler">{s.text}</span> : s.text}</Fragment>
+              ))}
+            </p>
           ))}
         </div>
       ) : (

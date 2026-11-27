@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   const v = parsed.data;
   const [entries, rules, ctx, all, existing, series] = await Promise.all([
     getBoosterTypes(), getBoosterRules(), getFilterContext(), candidates(await getCatalogVersion()),
-    v.id ? prisma.card.findUnique({ where: { id: v.id } }) : null,
+    v.id ? prisma.card.findUnique({ where: { id: v.id }, select: { id: true, anilistId: true, origin: true } }) : null,
     v.newSeries ? { ...v.newSeries, anilistId: null } : v.seriesId ? prisma.series.findUnique({ where: { id: v.seriesId } }) : null,
   ]);
   if (!rules.draw.rarities?.includes(v.rarity)) return Response.json({ error: "UNKNOWN_RARITY" }, { status: 400 });
@@ -53,12 +53,16 @@ export async function POST(request: Request) {
     seriesAnilistId: series?.anilistId ?? null, mediaType: series?.type ?? "CUSTOM", genres: series?.genres ?? [], tags: series?.tags ?? [],
     year: series?.year ?? null, season: series?.season ?? null, seasonYear: series?.seasonYear ?? null, studio: series?.studio ?? null };
   const updated = [...all.filter((c) => c.id !== targetId), ...(v.dropWeight > 0 ? [candidate] : [])];
-  const result = entries.filter((e) => v.boosterIds.includes(e.type.id) || computePool(e.type, updated, ctx)[v.rarity]?.includes(targetId)).map(({ type }) => {
+  // Un pool par booster (tout le catalogue à chaque fois) : calculé une fois, puis gardé si la carte y entre ou si
+  // l'admin a coché ce booster
+  const result = entries.flatMap(({ type }) => {
     const pool = computePool(type, updated, ctx);
-    return { id: type.id, name: type.name, slug: type.slug, eligible: Boolean(pool[v.rarity]?.includes(targetId)),
+    const eligible = Boolean(pool[v.rarity]?.includes(targetId));
+    if (!eligible && !v.boosterIds.includes(type.id)) return [];
+    return [{ id: type.id, name: type.name, slug: type.slug, eligible,
       ...cardOdds({ targetId, pool, rules: { ...typeDrawRules(type, rules.draw), cardWeights: { ...rules.draw.cardWeights, [targetId]: v.dropWeight } },
         featured: featuredFromPool([...type.featuredCardIds, ...focusCards(updated, type.focusSeriesIds)], pool, { rate: type.featuredRate, pityThreshold: type.featuredPity }),
-        scenario: v.scenario, pityEligible: type.countsForPity, bonusEligible: type.bonusEligible, featuredPity: v.featuredPity && type.featuredPity > 0 }) };
+        scenario: v.scenario, pityEligible: type.countsForPity, bonusEligible: type.bonusEligible, featuredPity: v.featuredPity && type.featuredPity > 0 }) }];
   });
   return Response.json(result, { headers: { "Cache-Control": "no-store" } });
 }

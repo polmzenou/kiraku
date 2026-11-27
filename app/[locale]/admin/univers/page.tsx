@@ -16,7 +16,8 @@ export default async function AdminUniversesPage({ searchParams }: PageProps<"/[
   const { readOnly } = await requireAdminView();
   const sp = await searchParams;
   const q = (one(sp.q) ?? "").trim().slice(0, 100);
-  const page = Math.max(1, Math.floor(Number(one(sp.page))) || 1);
+  // Borné : ?page=Infinity ou 1e20 donnaient un `skip` que Prisma refuse (erreur 500)
+  const page = Math.min(Math.max(1, Math.floor(Number(one(sp.page))) || 1), 10_000);
   const contains = { contains: q, mode: "insensitive" } as const;
   const where: Prisma.UniverseWhereInput = q
     ? { OR: [{ name: contains }, { series: { some: { OR: [{ titleRomaji: contains }, { titleEnglish: contains }] } } }] }

@@ -45,6 +45,7 @@ export function CollectionFilters({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const search = useRef<HTMLInputElement>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const searchId = useId();
   const seriesId = useId();
@@ -53,8 +54,11 @@ export function CollectionFilters({
 
   function go(next: Partial<CollectionParams>) {
     clearTimeout(timer.current);
+    // Recherche tapée mais pas encore partie (délai annulé ci-dessus) : elle accompagne le filtre choisi, sinon le champ
+    // la montrait alors que la liste l'ignorait
+    const q = next.q ?? search.current?.value.trim() ?? params.q;
     startTransition(() => {
-      router.replace({ pathname, query: collectionQuery({ ...params, ...next }) }, { scroll: false });
+      router.replace({ pathname, query: collectionQuery({ ...params, ...next, q }) }, { scroll: false });
     });
   }
 
@@ -75,6 +79,7 @@ export function CollectionFilters({
           {t("searchLabel")}
         </label>
         <input
+          ref={search}
           id={searchId}
           name="q"
           type="search"

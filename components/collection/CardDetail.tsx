@@ -64,6 +64,8 @@ export async function CardDetail({
   const rarity = card.rarity as Rarity;
   const series = seriesTitle(card.series, locale);
   const Heading = headingLevel === 1 ? "h1" : "h2";
+  // Titres des sections un cran sous celui de la carte (h2 en page, h3 dans la feuille), à la police des h3
+  const Sub = headingLevel === 1 ? "h2" : "h3";
 
   const inCollection = copies.filter((c) => c.status === "COLLECTION").length;
   // Prestige : les exemplaires spéciaux (héritiers, gravés) ne partent jamais par un choix du serveur ; les
@@ -122,7 +124,7 @@ export async function CardDetail({
         ) : (
           <>
             <section className="flex flex-col gap-2 lacquer rounded-card p-4">
-              <h3 className="font-bold">{t("copiesTitle", { count: copies.length })}</h3>
+              <Sub className="font-title font-bold">{t("copiesTitle", { count: copies.length })}</Sub>
               <ul className="flex flex-col gap-1 text-sm text-text-muted">
                 <li>{t("inCollection", { count: inCollection })}</li>
                 {byStatus("AUCTION") > 0 && <li>{t("inAuction", { count: byStatus("AUCTION") })}</li>}
@@ -135,7 +137,7 @@ export async function CardDetail({
 
             {special.length > 0 && (
               <section className="flex flex-col gap-3 lacquer rounded-card p-4">
-                <h3 className="font-bold">{t("specialTitle", { count: special.length })}</h3>
+                <Sub className="font-title font-bold">{t("specialTitle", { count: special.length })}</Sub>
                 <ul className="flex flex-col gap-4">
                   {special.map((c) => {
                     const copy = fudaCopyOf(c, seals);
@@ -187,7 +189,7 @@ export async function CardDetail({
             {kit && (
               <section className="flex flex-col gap-3 lacquer rounded-card p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-bold">{tAtelier("kitTitle")}</h3>
+                  <Sub className="font-title font-bold">{tAtelier("kitTitle")}</Sub>
                   {rules.abilityShopEnabled && !isGuest && (
                     <ButtonLink href={`/combat/atelier?carte=${encodeURIComponent(card.id)}`} size="sm">
                       {tAtelier("kitEdit")}
@@ -214,7 +216,7 @@ export async function CardDetail({
             )}
 
             <section className="flex flex-col gap-3 lacquer rounded-card p-4">
-              <h3 className="font-bold">{t("recycleTitle")}</h3>
+              <Sub className="font-title font-bold">{t("recycleTitle")}</Sub>
               <p className="text-sm text-text-muted">{t("unitValue", { zeni: values[rarity] })}</p>
               <RecycleControl
                 cardId={card.id}
