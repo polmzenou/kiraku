@@ -12,6 +12,7 @@ import { currentTermsVersion } from "../legal";
 import { rateLimit } from "../ratelimit";
 import { SESSION_COOKIE } from "../session";
 import { getSetting } from "../settings";
+import { lockUsername } from "../social/lock";
 import { getCurrentUser } from "../user";
 
 // Droits du joueur sur ses données (onglet « Mes données » du Compte) et acceptation des CGU.
@@ -129,6 +130,8 @@ export async function changeUsernameAction(input: unknown): Promise<Result> {
 
   try {
     const outcome = await prisma.$transaction(async (tx) => {
+      // Casse ignorée, sous le verrou du pseudo : « Sakura » et « sakura » choisis au même instant, un seul passe
+      await lockUsername(tx, username);
       const taken = await tx.user.findFirst({
         where: { username: { equals: username, mode: "insensitive" }, NOT: { id: user.id } },
         select: { id: true },

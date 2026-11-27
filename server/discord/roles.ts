@@ -32,16 +32,26 @@ export async function syncLinkedDiscordRole(discordId: string): Promise<"linked"
   const now = new Date();
   const leaseId = randomUUID();
   const where = { guildId_discordId: { guildId, discordId } };
-  const release = (delay: number) => prisma.discordRoleSync.updateMany({
-    where: { guildId, discordId, leaseId },
-    data: { attempts: 0, leaseId: null, leaseUntil: null, nextAttemptAt: new Date(Date.now() + delay) },
-  });
+  // Échéance lue juste après la prise de la lease. Une remise en tête de file pendant la synchro (ban, demande de
+  // suppression, liaison : requeueLinkedDiscordRoleWith, queueLinkedDiscordRole) la change, et le compte relu ici est
+  // alors peut-être déjà périmé : la libération garde cette échéance (le cron de la minute repasse) au lieu de la
+  // repousser d'un jour. Sans cela, un ban validé pendant la synchro laissait le rôle « vérifié » jusqu'à 24 h.
+  let queuedAt: Date | undefined;
+  const release = async (delay: number, reset: { attempts?: number } = { attempts: 0 }) => {
+    const freed = { ...reset, leaseId: null, leaseUntil: null };
+    const pushed = await prisma.discordRoleSync.updateMany({
+      where: { guildId, discordId, leaseId, ...(queuedAt && { nextAttemptAt: queuedAt }) },
+      data: { ...freed, nextAttemptAt: new Date(Date.now() + delay) },
+    });
+    if (!pushed.count) await prisma.discordRoleSync.updateMany({ where: { guildId, discordId, leaseId }, data: freed });
+  };
   const claim = await prisma.discordRoleSync.updateMany({
     where: { guildId, discordId, OR: [{ leaseUntil: null }, { leaseUntil: { lte: now } }] },
     data: { leaseId, leaseUntil: new Date(now.getTime() + 60_000), attempts: { increment: 1 } },
   });
   if (!claim.count) return "pending";
   try {
+    queuedAt = (await prisma.discordRoleSync.findUniqueOrThrow({ where, select: { nextAttemptAt: true } })).nextAttemptAt;
     const linked = await linkedAccount(discordId);
     let member: { roles: string[]; pending?: boolean };
     try { member = await discordBotRequest(`/guilds/${guildId}/members/${discordId}`); }
@@ -64,7 +74,8 @@ export async function syncLinkedDiscordRole(discordId: string): Promise<"linked"
   } catch (e) {
     const job = await prisma.discordRoleSync.findUniqueOrThrow({ where });
     const delay = Math.max(e instanceof DiscordApiError ? e.retryAfterMs : 0, Math.min(3_600_000, 30_000 * 2 ** Math.min(job.attempts, 7)));
-    await prisma.discordRoleSync.updateMany({ where: { guildId, discordId, leaseId }, data: { leaseId: null, leaseUntil: null, nextAttemptAt: new Date(Date.now() + delay) } });
+    // Tentatives gardées : elles espacent la reprise suivante
+    await release(delay, {});
     console.warn(`[discord] rôle de compte lié non synchronisé (${e instanceof DiscordApiError ? e.status : "base"}).`);
     // Un incident pour le rôle, pas un par joueur : une permission cassée touche tout le monde à la fois
     await recordDiscordAlert("linked-role", roleId, e instanceof DiscordApiError ? e.status : undefined);

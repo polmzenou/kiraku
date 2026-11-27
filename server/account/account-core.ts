@@ -266,6 +266,11 @@ async function scrubAdminLogs(tx: Tx, userId: string) {
  * pseudo et son avatar Discord (qui porte l'id de son compte). Repéré par le pseudo du moment, faute d'id dans la photo.
  */
 async function scrubSeasonSnapshots(tx: Tx, username: string) {
+  // Bilans verrouillés avant leur lecture (une ligne par saison close, quelques-unes) : deux anonymisations au même
+  // moment (le cron et « Anonymiser maintenant » de l'admin) réécrivaient chacune le bilan depuis sa propre lecture, et
+  // la seconde y remettait le joueur que la première venait d'en retirer. La clôture de saison ne verrouille que la
+  // saison ouverte, sans bilan : pas d'attente croisée.
+  await tx.$queryRaw`SELECT id FROM "Season" WHERE "leaderboardSnapshot" IS NOT NULL ORDER BY id FOR UPDATE`;
   const seasons = await tx.season.findMany({
     where: { leaderboardSnapshot: { not: Prisma.DbNull } },
     select: { id: true, leaderboardSnapshot: true },

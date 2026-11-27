@@ -82,6 +82,24 @@ describe("rôle Discord de compte Kiraku lié", () => {
     expect(request.mock.calls.every(([, init]) => init?.method === "GET")).toBe(true);
     expect(db.updateMany.mock.calls.at(-1)![0].data.nextAttemptAt.getTime()).toBeGreaterThan(Date.now() + 100_000);
   });
+  it("garde une remise en tête de file arrivée pendant la synchro (ban validé entre la relecture et la libération)", async () => {
+    const queuedAt = new Date(Date.now() - 60_000);
+    db.findUniqueOrThrow.mockResolvedValue({ nextAttemptAt: queuedAt, attempts: 1 });
+    // Prise de la lease, puis libération conditionnée à l'échéance lue (changée entre-temps), puis lease seule rendue
+    db.updateMany.mockResolvedValueOnce({ count: 1 }).mockResolvedValueOnce({ count: 0 }).mockResolvedValueOnce({ count: 1 });
+    expect(await syncLinkedDiscordRole(userId)).toBe("linked");
+    const [, pushed, freed] = db.updateMany.mock.calls.map(([arg]) => arg);
+    expect(pushed.where).toMatchObject({ leaseId: expect.any(String), nextAttemptAt: queuedAt });
+    expect(freed.where).toEqual({ guildId: config.DISCORD_GUILD_ID, discordId: userId, leaseId: pushed.where.leaseId });
+    expect(freed.data).toEqual({ attempts: 0, leaseId: null, leaseUntil: null });
+  });
+  it("repousse la tâche d'un jour quand rien ne l'a remise en file", async () => {
+    const queuedAt = new Date(Date.now() - 60_000);
+    db.findUniqueOrThrow.mockResolvedValue({ nextAttemptAt: queuedAt, attempts: 1 });
+    expect(await syncLinkedDiscordRole(userId)).toBe("linked");
+    expect(db.updateMany).toHaveBeenCalledTimes(2);
+    expect(db.updateMany.mock.calls[1][0].data.nextAttemptAt.getTime()).toBeGreaterThan(Date.now() + 86_000_000);
+  });
   it("ne concurrence pas une tâche déjà en cours", async () => {
     db.updateMany.mockResolvedValue({ count: 0 });
     expect(await syncLinkedDiscordRole(userId)).toBe("pending");

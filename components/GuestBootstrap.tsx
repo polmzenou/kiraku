@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { oneTabAtATime } from "@/lib/account/guest-lock";
 import { ensureGuest } from "@/server/actions/auth";
 import { Button } from "./ui/Button";
 
@@ -17,8 +18,9 @@ export function GuestBootstrap() {
 
   const run = useCallback(() => {
     startTransition(async () => {
-      // Le cookie de session posé par l'action fait re-rendre la page dans la même réponse
-      const result = await ensureGuest();
+      // Le cookie de session posé par l'action fait re-rendre la page dans la même réponse. Un onglet à la fois : un
+      // second onglet ouvert en même temps reprend l'invité du premier au lieu d'en créer un autre
+      const result = await oneTabAtATime(() => ensureGuest());
       if (!result.ok) setFailure(result.error);
     });
   }, []);

@@ -16,7 +16,7 @@ import { applyEntries, type LedgerEntry } from "../economy/ledger";
 import { incenseAvailable, incenseBonusFor } from "@/lib/boosters/incense";
 import { readBannerPity } from "../boosters/open-core";
 import { cardsPulled } from "../boosters/incense-core";
-import { lockPlayers, type Tx } from "../social/lock";
+import { lockPlayers, lockUsername, type Tx } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { writeAdminLog } from "./log";
 import { consumeWishlist } from "../collection/wishlist-core";
@@ -207,6 +207,8 @@ async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUs
     switch (input.kind) {
       case "account": {
         if (userId === adminId && (input.banned || input.role !== "ADMIN")) throw new AdminUserMutationError("SELF_PROTECTED");
+        // Nouveau pseudo vérifié sous son verrou (casse ignorée), comme l'inscription et le changement par le joueur
+        if (input.username !== user.username) await lockUsername(tx, input.username);
         const taken = await tx.user.findFirst({ where: { username: { equals: input.username, mode: "insensitive" }, id: { not: userId } }, select: { id: true } });
         if (taken) throw new AdminUserMutationError("USERNAME_TAKEN");
         before = { username: user.username, role: user.role, banned: !!user.bannedAt, profileVisibility: user.profileVisibility, showCollection: user.showCollection };

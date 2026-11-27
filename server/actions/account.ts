@@ -28,6 +28,7 @@ import { destroyCurrentSession, startSession } from "../session";
 import { checkFormGuard } from "../form-guard";
 import { currentTermsVersion } from "../legal";
 import { getSetting } from "../settings";
+import { lockUsername } from "../social/lock";
 import { getCurrentUser } from "../user";
 
 // Formulaires de compte. Ordre des contrôles : session → Zod → propriété → rate limit.
@@ -82,6 +83,8 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
   let userId: string;
   try {
     userId = await prisma.$transaction(async (tx) => {
+      // Casse ignorée, sous le verrou du pseudo : deux inscriptions « Sakura » et « sakura » au même instant, une seule passe
+      await lockUsername(tx, username);
       const [usernameTaken, emailTaken] = await Promise.all([
         tx.user.findFirst({
           where: { username: { equals: username, mode: "insensitive" }, NOT: { id: current?.id ?? "" } },

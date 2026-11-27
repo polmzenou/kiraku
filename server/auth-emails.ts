@@ -24,14 +24,16 @@ async function sendLink(userId: string, email: string, type: AuthTokenType, loca
       getTranslations({ locale, namespace: NAMESPACES[type] }),
       prisma.authToken.create({
         data: { userId, type, tokenHash, expires: new Date(Date.now() + TOKEN_TTL_MS[type]) },
-        select: { id: true },
+        select: { id: true, createdAt: true },
       }),
     ]);
     const path = getPathname({ href: { pathname: PATHS[type], query: { token } }, locale });
     const sent = await sendMail({ to: email, subject: t("subject"), text: t("body", { link: `${appUrl()}${path}` }) });
     if (sent) {
+      // Seulement les liens plus anciens que celui-ci : deux envois simultanés (deux onglets) annulaient chacun le
+      // jeton de l'autre, et aucun des deux e-mails reçus ne marchait. Le plus récent reste valide.
       await prisma.authToken.updateMany({
-        where: { userId, type, usedAt: null, id: { not: created.id } },
+        where: { userId, type, usedAt: null, createdAt: { lt: created.createdAt } },
         data: { usedAt: new Date() },
       });
     }

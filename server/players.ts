@@ -4,16 +4,20 @@ import type { Prisma } from "@/generated/prisma/client";
 import { guestUsername, sanitizeUsername } from "@/lib/username";
 import { credit } from "./economy/ledger";
 import { getSetting } from "./settings";
+import { lockUsername } from "./social/lock";
 
 type Tx = Prisma.TransactionClient;
 
 // Nom venu de Discord : casse ignorée, comme l'inscription, le changement de pseudo et l'admin (« tristan » ne crée
 // pas un « Tristan » de plus : même profil /u/…, même cible des recherches par pseudo de l'équipe). Pseudo d'invité
 // généré : comparaison exacte (index unique), aucun joueur ne peut plus choisir le préfixe guest-.
-const usernameTaken = async (tx: Tx, username: string, anyCase: boolean) =>
-  (anyCase
-    ? await tx.user.findFirst({ where: { username: { equals: username, mode: "insensitive" } }, select: { id: true } })
-    : await tx.user.findUnique({ where: { username }, select: { id: true } })) !== null;
+// Casse ignorée : verrou du pseudo d'abord (lockUsername), sinon deux liaisons Discord « tristan » et « Tristan » au même
+// instant passaient toutes les deux.
+const usernameTaken = async (tx: Tx, username: string, anyCase: boolean) => {
+  if (!anyCase) return (await tx.user.findUnique({ where: { username }, select: { id: true } })) !== null;
+  await lockUsername(tx, username);
+  return (await tx.user.findFirst({ where: { username: { equals: username, mode: "insensitive" } }, select: { id: true } })) !== null;
+};
 
 /** Pseudo libre dérivé de `base`, avec un suffixe aléatoire si déjà pris. */
 export async function availableUsername(tx: Tx, base: string | null): Promise<string> {
