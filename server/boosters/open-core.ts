@@ -33,6 +33,7 @@ import { notify, notifyingTransaction, type OnNotified } from "../social/notify"
 import { loadOwnedCopies } from "./duplicate-guard";
 import { recordDiscoveries } from "../collection/discovery";
 import { takeSerial } from "../prestige/printing-core";
+import { awardFrescoPieces, coinsAfter, grantFrescoLots, type AwardedFresco, type FrescoDropInput, type FrescoGrant } from "../fresco/award-core";
 
 export type OpenErrorCode =
   | "NO_USER"
@@ -82,6 +83,8 @@ export type OpenInput = {
   incense?: IncenseDraw;
   /** Éditions gravées (prestige) : réglages du moment ; absent ou null quand le prestige est coupé. */
   printing?: PrintingRules | null;
+  /** Fresques qui peuvent tomber (un jet par booster) ; absent ou null quand rien n'est publié ou que c'est coupé. */
+  fresco?: FrescoDropInput | null;
   rng: Rng;
 };
 
@@ -113,6 +116,8 @@ export type OpenedBoosterRow = {
     /** Édition gravée tirée (prestige), ou null pour un exemplaire ordinaire. */
     edition: Edition | null;
   }[];
+  /** Fragment de fresque glissé dans ce booster, et ses récompenses inscrites. */
+  fresco?: AwardedFresco | null;
 };
 
 /** Sachet scellé tombé pendant l'ouverture, à sa place dans la série. */
@@ -134,6 +139,8 @@ export type OpenOutcome = {
   ambassadorSince: Date | null;
   /** Les boosters ont été tirés sous Encens. */
   incenseActive: boolean;
+  /** Lots versés par les fragments de fresque de cette ouverture. */
+  frescoGrants: FrescoGrant[];
 };
 
 type LockedUser = {
@@ -183,6 +190,8 @@ async function persistDraw(
     sealedDropId?: string;
     /** Gravure (prestige) : réglages et générateur de l'ouverture, consommé après le tirage des cartes. */
     engrave?: { rules: PrintingRules; rng: Rng } | null;
+    /** Fresques : un jet par booster enregistré, après les cartes. */
+    fresco?: FrescoDropInput | null;
   },
 ): Promise<OpenedBoosterRow[]> {
   const { userId, type, rules, now } = input;
@@ -300,6 +309,13 @@ async function persistDraw(
       })),
     });
   }
+  // Fragments de fresque : jamais pour un booster garanti (un cadeau de l'équipe, pas un tirage)
+  if (input.fresco && type.kind !== "GUARANTEED") {
+    const awarded = await awardFrescoPieces(tx, { userId, boosterTypeId: type.id, count: boosters.length, drop: input.fresco, now });
+    awarded.forEach((a, i) => {
+      boosters[i].fresco = a;
+    });
+  }
   return boosters;
 }
 
@@ -399,6 +415,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         prestige: user.prestige,
         source: price.kind === "credit" ? "CREDIT" : price.kind === "free" ? "FREE" : "PAID",
         engrave: input.printing ? { rules: input.printing, rng: input.rng } : null,
+        fresco: input.fresco ?? null,
         drawn: drawn.boosters.flatMap((b) =>
           b.drop
             ? []
@@ -445,6 +462,10 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         select: { id: true },
       });
 
+      // Lots des fragments de fresque, après le débit : leurs Zeni ne paient pas cette ouverture
+      const frescoGrants = input.fresco ? await grantFrescoLots(tx, userId, boosters.map((b) => b.fresco ?? null), input.fresco.lotDeps, now) : [];
+      coins = coinsAfter(frescoGrants, coins);
+
       return {
         boosters,
         drops,
@@ -457,6 +478,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
         credits,
         ambassadorSince: user.ambassadorSince,
         incenseActive: incense !== null,
+        frescoGrants,
       };
     },
     TX,
@@ -475,10 +497,12 @@ export type OpenSealedInput = {
   incense?: IncenseDraw;
   /** Éditions gravées (prestige) ; absent ou null quand le prestige est coupé. */
   printing?: PrintingRules | null;
+  /** Fresques qui peuvent tomber de ce sachet (un jet) ; absent ou null sinon. */
+  fresco?: FrescoDropInput | null;
   rng: Rng;
 };
 
-export type OpenSealedOutcome = { booster: OpenedBoosterRow; karma: number; incenseActive: boolean };
+export type OpenSealedOutcome = { booster: OpenedBoosterRow; karma: number; incenseActive: boolean; frescoGrants: FrescoGrant[] };
 
 /**
  * Ouvre un sachet scellé du joueur : le sachet est réclamé par un UPDATE conditionnel (deux clics ou
@@ -525,6 +549,7 @@ export async function openSealedWith(db: PrismaClient, input: OpenSealedInput, o
       prestige: user.prestige,
       source: "SEALED",
       engrave: input.printing ? { rules: input.printing, rng: input.rng } : null,
+      fresco: input.fresco ?? null,
       drawn: [{
         id: randomUUID(),
         golden: false,
@@ -558,6 +583,7 @@ export async function openSealedWith(db: PrismaClient, input: OpenSealedInput, o
         now,
       });
     }
-    return { booster, karma: sealed.karma, incenseActive: incense !== null };
+    const frescoGrants = input.fresco ? await grantFrescoLots(tx, userId, [booster.fresco ?? null], input.fresco.lotDeps, now) : [];
+    return { booster, karma: sealed.karma, incenseActive: incense !== null, frescoGrants };
   }, TX, onNotified);
 }

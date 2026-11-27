@@ -90,6 +90,9 @@ export async function listFriends(userId: string, q: string, page: number, onlin
   const rows = await prisma.user.findMany({
     where: {
       id: { in: links.map((l) => (l.requesterId === userId ? l.addresseeId : l.requesterId)) },
+      // Un ami banni (ou anonymisé) disparaît de la liste, comme de la messagerie ; l'amitié reste en base
+      bannedAt: null,
+      anonymizedAt: null,
       ...(q ? { username: { contains: q, mode: "insensitive" as const } } : {}),
     },
     orderBy: { username: "asc" },
@@ -112,14 +115,15 @@ export async function listFriends(userId: string, q: string, page: number, onlin
 export async function listRequests(userId: string) {
   const [incoming, outgoing] = await Promise.all([
     prisma.friendship.findMany({
-      where: { addresseeId: userId, status: "PENDING", declinedAt: null },
+      // Demandes d'un joueur banni : plus montrées
+      where: { addresseeId: userId, status: "PENDING", declinedAt: null, requester: { bannedAt: null } },
       orderBy: { createdAt: "desc" },
       take: 100,
       select: { createdAt: true, requester: { select: playerRefSelect } },
     }),
     // Une demande refusée reste « en attente » pour l'expéditeur : le refus ne se voit pas
     prisma.friendship.findMany({
-      where: { requesterId: userId, status: "PENDING" },
+      where: { requesterId: userId, status: "PENDING", addressee: { bannedAt: null } },
       orderBy: { createdAt: "desc" },
       take: 100,
       select: { createdAt: true, addressee: { select: playerRefSelect } },
@@ -142,7 +146,7 @@ export async function listBlocked(userId: string): Promise<PlayerRef[]> {
 }
 
 export const countIncomingRequests = cache((userId: string) =>
-  prisma.friendship.count({ where: { addresseeId: userId, status: "PENDING", declinedAt: null } }),
+  prisma.friendship.count({ where: { addresseeId: userId, status: "PENDING", declinedAt: null, requester: { bannedAt: null } } }),
 );
 
 export const unreadNotifications = cache((userId: string) =>

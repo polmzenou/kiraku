@@ -18,6 +18,7 @@ import { rateLimit } from "../ratelimit";
 import { getCurrentUser } from "../user";
 import { getPrintingSeals } from "../prestige/rules";
 import { ennichiCatchUpLater } from "../ennichi/hooks";
+import { frescoDropViews } from "../fresco/drop-views";
 
 // Ouverture de boosters. Ordre des contrôles : session → Zod → propriété → rate limit.
 // Le client n'envoie qu'une intention (quel booster, combien, accepte-t-il de payer) ;
@@ -93,11 +94,13 @@ export async function openBoosterAction(input: unknown): Promise<OpenBoosterResu
   }
 
   const { outcome, rules } = opened;
-  const [views, seals] = await Promise.all([
-    cardViews(outcome.boosters.flatMap((b) => b.cards.map((c) => c.cardId)), await getLocale()),
+  const locale = await getLocale();
+  const [views, seals, frescoes] = await Promise.all([
+    cardViews(outcome.boosters.flatMap((b) => b.cards.map((c) => c.cardId)), locale),
     getPrintingSeals(),
+    frescoDropViews(user.id, outcome.boosters.map((b) => b.fresco), outcome.frescoGrants, locale),
   ]);
-  const boosters = outcome.boosters.map((b) => toView(b, views, seals));
+  const boosters = outcome.boosters.map((b, i) => ({ ...toView(b, views, seals), fresco: frescoes[i] }));
   const state = boosterStateFrom(
     {
       boosterStock: outcome.stock.stock,
@@ -181,8 +184,13 @@ export async function openSealedAction(input: unknown): Promise<OpenSealedResult
     console.error("[boosters] ouverture d'un sachet scellé impossible", e);
     return { ok: false, error: "UNAVAILABLE" };
   }
-  const { booster, karma } = opened.outcome;
-  const [views, seals] = await Promise.all([cardViews(booster.cards.map((c) => c.cardId), await getLocale()), getPrintingSeals()]);
+  const { booster, karma, frescoGrants } = opened.outcome;
+  const locale = await getLocale();
+  const [views, seals, [fresco]] = await Promise.all([
+    cardViews(booster.cards.map((c) => c.cardId), locale),
+    getPrintingSeals(),
+    frescoDropViews(user.id, [booster.fresco], frescoGrants, locale),
+  ]);
   refresh();
-  return { ok: true, booster: toView(booster, views, seals), karma };
+  return { ok: true, booster: { ...toView(booster, views, seals), fresco }, karma };
 }

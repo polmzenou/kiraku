@@ -44,6 +44,7 @@ enum CoinReason {
   KYARA_IMPORT // cartes Kyara converties en Zeni à l'import (refId = id du KyaraImport)
   REFERRAL_CLAWBACK // reprise d'un parrainage v2 révoqué et banni (refId = id du Referral)
   ENNICHI // lot de l'Ennichi : palier de lanternes, prix du banzuke ou de l'omikuji (refId = id du versement)
+  FRESCO // lot d'une fresque : fragment, ligne, colonne ou fresque complète (refId = fresque:type:index)
 }
 
 // Qui voit le profil public (/u/[username]) ; FRIENDS = amis acceptés seulement
@@ -119,6 +120,10 @@ model User {
   referralTreeHidden  Boolean           @default(false)
   profileVisibility   ProfileVisibility @default(PUBLIC) // invités créés en PRIVATE
   showCollection      Boolean           @default(true) // collection complète visible sur le profil
+  // Mode spoiler : illustrations des cartes spoil floutées (par défaut), sauf les univers choisis par le joueur.
+  // Clé d'univers = Series.universeId ?? Series.id (lib/spoiler.ts) ; CHECK : 300 univers au plus (migration)
+  spoilerBlur         Boolean           @default(true)
+  spoilerShown        String[]          @default([])
   showcaseLayout      ShowcaseLayout    @default(GRID) // ancienne vitrine unique, plus lue (voir Showcase)
   privacyChosenAt     DateTime? // réglé par le joueur : l'inscription ne le change plus
   // Personnalisation du profil (étape 12h) : bio, accord des titres, titre et cadre débloqués, ordre des badges
@@ -171,6 +176,8 @@ model User {
 
   showcaseEventEntries ShowcaseEventEntry[]
   showcaseEventVotes   ShowcaseEventVote[]
+  frescoPieces         UserFrescoPiece[]
+  frescoRewards        FrescoReward[]
 
   sentFriends   Friendship[]       @relation("requester")
   recvFriends   Friendship[]       @relation("addressee")
@@ -546,6 +553,7 @@ model Universe {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   series    Series[]
+  frescoes  Fresco[]
 }
 
 // Le personnage (le modèle de carte) ; l'exemplaire possédé sera UserCard
@@ -935,6 +943,10 @@ model Showcase {
   name      String?        @db.VarChar(32)
   layout    String
   theme     String         @default("none")
+  // Fresque mise en avant (mini-navigation « Cartes · Fresque » du profil) ; frescoFirst : elle s'ouvre d'abord
+  frescoId    String?
+  fresco      Fresco?        @relation(fields: [frescoId], references: [id], onDelete: SetNull)
+  frescoFirst Boolean        @default(false)
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
   items     ShowcaseItem[]
@@ -954,6 +966,104 @@ model ShowcaseItem {
   @@id([showcaseId, position])
   @@unique([showcaseId, userCardId])
   @@index([userCardId])
+}
+
+// --- Fresques 絵 ---
+
+// DRAFT : invisible des joueurs (ni chute, ni onglet, ni image) ; PUBLISHED : tombe des boosters ;
+// ARCHIVED : ne tombe plus, ses détenteurs la gardent et peuvent toujours l'exposer.
+enum FrescoStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// Ce qu'une fresque récompense : chaque nouveau fragment, chaque ligne ou colonne remplie, la fresque entière.
+enum FrescoRewardKind {
+  PIECE
+  ROW
+  COLUMN
+  COMPLETE
+}
+
+// Une grande image découpée en cols × rows fragments (4 × 3), chacun tiré d'un booster. Les images sont
+// découpées à l'envoi (/api/admin/fresques/upload) sous des noms aléatoires : un joueur ne reçoit que les
+// fragments qu'il possède, et l'image entière seulement une fois la fresque complète.
+model Fresco {
+  id             String       @id @default(cuid())
+  name           Json // { fr, en }
+  status         FrescoStatus @default(DRAFT)
+  publishedAt    DateTime? // première publication (onglet « Nouvelles fresques »)
+  cols           Int          @default(4)
+  rows           Int          @default(3)
+  imageUrl       String? // image entière recadrée
+  teaserUrl      String? // aperçu flou de 48 px (Nouveautés), jamais l'image
+  width          Int?
+  height         Int?
+  // Mode spoiler : clé d'univers et marquage, comme une carte
+  universeId     String?
+  universe       Universe?    @relation(fields: [universeId], references: [id], onDelete: SetNull)
+  spoiler        Boolean      @default(false)
+  boosterTypeIds String[]     @default([]) // types de booster d'où elle tombe ; vide = tous
+  dropWeight     Int          @default(1) // poids au tirage entre fresques publiées
+  pieceLotId     String?
+  pieceLot       Lot?         @relation("frescoPieceLot", fields: [pieceLotId], references: [id], onDelete: SetNull)
+  rowLotId       String?
+  rowLot         Lot?         @relation("frescoRowLot", fields: [rowLotId], references: [id], onDelete: SetNull)
+  columnLotId    String?
+  columnLot      Lot?         @relation("frescoColumnLot", fields: [columnLotId], references: [id], onDelete: SetNull)
+  completeLotId  String?
+  completeLot    Lot?         @relation("frescoCompleteLot", fields: [completeLotId], references: [id], onDelete: SetNull)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  pieces         FrescoPiece[]
+  owners         UserFrescoPiece[]
+  rewards        FrescoReward[]
+  showcases      Showcase[]
+
+  @@index([status, publishedAt])
+}
+
+// Fragment d'une fresque : position 0 à cols × rows − 1, ligne par ligne.
+model FrescoPiece {
+  id       String            @id @default(cuid())
+  frescoId String
+  fresco   Fresco            @relation(fields: [frescoId], references: [id], onDelete: Cascade)
+  position Int
+  imageUrl String
+  owners   UserFrescoPiece[]
+
+  @@unique([frescoId, position])
+}
+
+// Fragment possédé. Jamais de doublon : on tire toujours un fragment manquant.
+model UserFrescoPiece {
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pieceId    String
+  piece      FrescoPiece @relation(fields: [pieceId], references: [id], onDelete: Restrict)
+  frescoId   String
+  fresco     Fresco      @relation(fields: [frescoId], references: [id], onDelete: Restrict)
+  obtainedAt DateTime    @default(now())
+
+  @@id([userId, pieceId])
+  @@index([userId, frescoId])
+  @@index([frescoId])
+}
+
+// Récompense versée, une seule fois par (joueur, fresque, type, index) : la clé rend le versement idempotent.
+// index = position du fragment, numéro de ligne ou de colonne, 0 pour la fresque complète.
+model FrescoReward {
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  frescoId  String
+  fresco    Fresco           @relation(fields: [frescoId], references: [id], onDelete: Restrict)
+  kind      FrescoRewardKind
+  index     Int
+  lotId     String? // lot versé, gardé pour l'historique
+  grantedAt DateTime         @default(now())
+
+  @@id([userId, frescoId, kind, index])
 }
 
 // Event vitrines (/event) : une vitrine engagée, photographiée à l'inscription. La photo garde des ids de
@@ -1223,6 +1333,10 @@ model Lot {
   grants     LotGrant[]
   broadcasts LotBroadcast[]
   expeditionTypes ExpeditionType[]
+  frescoPieceLots    Fresco[] @relation("frescoPieceLot")
+  frescoRowLots      Fresco[] @relation("frescoRowLot")
+  frescoColumnLots   Fresco[] @relation("frescoColumnLot")
+  frescoCompleteLots Fresco[] @relation("frescoCompleteLot")
 }
 
 model LotItem {

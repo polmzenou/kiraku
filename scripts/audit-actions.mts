@@ -38,6 +38,7 @@ const EXCEPTIONS: Record<string, { skip: Check[]; why: string }> = {
   "auth.ts:ensureGuest": { skip: ["session", "zod"], why: "crée la session invitée, limité par IP, aucune entrée" },
   "data.ts:cancelDeletionAction": { skip: ["zod"], why: "aucune entrée" },
   "discord.ts:joinDiscordAction": { skip: ["zod"], why: "aucune entrée" },
+  "spoiler.ts:resetSpoilerUniversesAction": { skip: ["zod"], why: "aucune entrée" },
 };
 
 type Fn = { name: string; exported: boolean; body: string; params: number };

@@ -8,6 +8,7 @@ import { getAdmin } from "../admin";
 import { mutateAdminUserWith, AdminUserMutationError } from "../admin/users-core";
 import { deleteUserWith, UserDeleteError, type UserDeleteErrorCode } from "../admin/users-delete-core";
 import { LEADERBOARD_TAG } from "../collection/leaderboard";
+import { refreshLeaderboardsAfterBan } from "../social/ban-caches";
 import { pushLater } from "../market/queries";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
@@ -27,8 +28,11 @@ export async function mutateAdminUserAction(input: unknown): Promise<AdminUserRe
     if (e && typeof e === "object" && "code" in e && e.code === "P2002") return { ok: false, error: "USERNAME_TAKEN" };
     throw e;
   }
-  updateTag(LEADERBOARD_TAG);
-  if (parsed.data.kind === "account") updateTag(REVIEWS_TAG);
+  // Ban ou levée du ban : les deux classements se recalculent (le joueur en sort ou y revient)
+  if (parsed.data.kind === "account") {
+    refreshLeaderboardsAfterBan();
+    updateTag(REVIEWS_TAG);
+  } else updateTag(LEADERBOARD_TAG);
   refresh();
   return { ok: true };
 }

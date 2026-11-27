@@ -24,6 +24,7 @@ import { SHOWCASE_EVENT_SETTING_KEYS, showcaseEventSettingsSchema, type Showcase
 import { EXPEDITION_SETTING_KEYS, expeditionSettingsSchema, type ExpeditionSettingKey } from "@/lib/settings/expedition-form";
 import { PRESTIGE_SETTING_KEYS, prestigeSettingsSchema, type PrestigeSettingKey } from "@/lib/settings/prestige-form";
 import { USAGE_SETTING_KEYS, usageSettingsSchema, type UsageSettingKey } from "@/lib/settings/usage-form";
+import { FRESCO_SETTING_KEYS, frescoSettingsSchema, type FrescoSettingKey } from "@/lib/settings/fresco-form";
 import { ECONOMY_SETTING_KEYS, economySettingsSchema, type EconomySettingKey } from "@/lib/settings/economy-form";
 import { RANKED_FORM_KEYS, rankedSettingsSchema, type RankedSettingKey } from "@/lib/settings/ranked-form";
 import { MARKET_SETTING_KEYS, marketSettingsSchema, type MarketSettingKey } from "@/lib/settings/market-form";
@@ -402,4 +403,9 @@ export async function updateExpeditionSettings(input: unknown): Promise<UpdateSe
 
 export async function updateUsageSettings(input: unknown): Promise<UpdateSettingsResult<UsageSettingKey>> {
   return saveSettings(USAGE_SETTING_KEYS, usageSettingsSchema, input);
+}
+
+/** Fresques : interrupteur des chutes, chance par booster, badge « Nouveau » de l'onglet Nouveautés. */
+export async function updateFrescoSettings(input: unknown): Promise<UpdateSettingsResult<FrescoSettingKey>> {
+  return saveSettings(FRESCO_SETTING_KEYS, frescoSettingsSchema, input);
 }

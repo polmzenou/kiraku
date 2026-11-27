@@ -40,4 +40,5 @@ export const SEAL_GLYPHS = [
   "横綱関末吉籤", // Ennichi : titres du banzuke, sorts et tickets de l'omikuji
   "唯", // sceau des éditions 1/1 (lib/prestige/printing.ts)
   "注望香話消全年約菓宝賞謝今近推", // alerte, souhaits, encens, chat, album complet, Wrapped, CGU, cookies, sanctuaire, saison, accueil, emblème d'un Focus
+  "絵片完", // fresques : sceau, fragment, tampon « complète »
 ].join("");

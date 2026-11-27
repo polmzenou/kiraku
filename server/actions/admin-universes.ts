@@ -1,6 +1,6 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { cleanUniverseName } from "@/lib/catalog/universes";
 import { z } from "@/lib/zod";
 import { getAdmin } from "../admin";
@@ -14,6 +14,7 @@ import {
   UniverseError,
   type UniverseErrorCode,
 } from "../catalog/universes-core";
+import { CATALOG_TAG } from "../catalog/queries";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
 
@@ -45,6 +46,8 @@ async function guarded<T>(schema: z.ZodType<T>, input: unknown, write: (adminId:
     console.error("[admin-universes]", e);
     return { ok: false, error: "UNEXPECTED" };
   }
+  // Clés d'univers des cartes en cache (mode spoiler, liste des univers à remettre en clair) : relues tout de suite
+  updateTag(CATALOG_TAG);
   refresh();
   return { ok: true };
 }

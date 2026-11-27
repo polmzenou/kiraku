@@ -15,6 +15,7 @@ import {
 } from "../anticheat/network-ban-core";
 import { prisma } from "../db";
 import { rateLimit } from "../ratelimit";
+import { refreshLeaderboardsAfterBan } from "../social/ban-caches";
 import { getSetting } from "../settings";
 
 // Bans réseau depuis l'admin : fiche joueur, groupes de /admin/multi-comptes, liste des bans. Ordre des contrôles :
@@ -47,6 +48,7 @@ export async function banNetworkAction(input: unknown): Promise<{ ok: true; bans
     const { userId, signalIds, banAccount, reason } = parsed.data;
     const [sharedIpCap, ipv4BanDays] = await Promise.all([getSetting("multiAccount.sharedIpCap"), getSetting("multiAccount.ipv4BanDays")]);
     const res = await banNetworkWith(prisma, { adminId: admin.id, userId, signalIds, banAccount, reason, now: new Date(), sharedIpCap, ipv4BanDays });
+    if (res.account) refreshLeaderboardsAfterBan();
     refresh();
     return { ok: true, bans: res.bans, account: res.account };
   } catch (e) {
@@ -66,6 +68,7 @@ export async function banGroupAction(input: unknown): Promise<{ ok: true; accoun
   try {
     const [sharedIpCap, ipv4BanDays] = await Promise.all([getSetting("multiAccount.sharedIpCap"), getSetting("multiAccount.ipv4BanDays")]);
     const res = await banGroupWith(prisma, { adminId: admin.id, userIds: parsed.data.userIds, reason: parsed.data.reason, now: new Date(), sharedIpCap, ipv4BanDays });
+    if (res.accounts > 0) refreshLeaderboardsAfterBan();
     refresh();
     return { ok: true, accounts: res.accounts, bans: res.bans, skipped: res.skipped };
   } catch (e) {

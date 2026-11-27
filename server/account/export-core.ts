@@ -85,6 +85,8 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     consecrated,
     provenance,
     kyaraImports,
+    frescoPieces,
+    frescoRewards,
   ] = await Promise.all([
     db.account.findMany({ where: { userId }, select: { provider: true, providerAccountId: true } }),
     db.userCard.findMany({
@@ -126,7 +128,7 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     db.showcase.findMany({
       where: { userId },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      select: { id: true, name: true, layout: true, theme: true, sortOrder: true, createdAt: true, updatedAt: true, items: { orderBy: { position: "asc" }, select: { position: true, userCardId: true } } },
+      select: { id: true, name: true, layout: true, theme: true, sortOrder: true, frescoId: true, createdAt: true, updatedAt: true, items: { orderBy: { position: "asc" }, select: { position: true, userCardId: true } } },
     }),
     // Event vitrines : vitrines engagées (photo figée) et votes donnés
     db.showcaseEventEntry.findMany({
@@ -325,6 +327,13 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
         snapshot: true,
       },
     }),
+    // Fresques : fragments obtenus et récompenses versées
+    db.userFrescoPiece.findMany({
+      where: { userId },
+      orderBy: { obtainedAt: "asc" },
+      select: { frescoId: true, obtainedAt: true, pieceId: true },
+    }),
+    db.frescoReward.findMany({ where: { userId }, orderBy: { grantedAt: "asc" }, select: { frescoId: true, kind: true, index: true, lotId: true, grantedAt: true } }),
   ]);
 
   const [
@@ -383,6 +392,9 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     db.ennichiTierGrant.findMany({ where: { userId }, orderBy: { createdAt: "asc" }, select: { edition: true, tier: true, granted: true, createdAt: true } }),
   ]);
 
+  // Position de chaque fragment, lue à part (une jointure de plus dans le lot parallèle ci-dessus ne passe pas partout)
+  const pieceRows = frescoPieces.length ? await db.frescoPiece.findMany({ where: { id: { in: frescoPieces.map((p) => p.pieceId) } }, select: { id: true, position: true } }) : [];
+  const positionOf = new Map(pieceRows.map((p) => [p.id, p.position]));
   const input: ExportInput = {
     profile,
     achievements,
@@ -417,9 +429,12 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       theme: s.theme,
       sortOrder: s.sortOrder,
       cards: s.items.map((i) => ({ position: i.position, userCardId: i.userCardId })),
+      frescoId: s.frescoId,
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
     })),
+    frescoPieces: frescoPieces.map((p) => ({ frescoId: p.frescoId, position: positionOf.get(p.pieceId) ?? null, obtainedAt: p.obtainedAt })),
+    frescoRewards,
     showcaseEventEntries,
     showcaseEventVotes,
     boosterCredits: credits,

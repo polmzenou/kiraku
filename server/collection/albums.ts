@@ -2,12 +2,14 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { ALBUM_PAGE_SIZE, likePattern, type Album, type AlbumPage, type AlbumParams } from "@/lib/collection/albums";
 import { seriesTitle } from "@/lib/catalog/display";
+import { spoilerKeyOf } from "@/lib/spoiler";
 import { prisma } from "../db";
 
 type AlbumRow = {
   id: string;
   titleRomaji: string;
   titleEnglish: string | null;
+  universeId: string | null;
   cover: string | null;
   coverSpoiler: boolean | null;
   owned: number;
@@ -36,7 +38,7 @@ export async function getAlbumPage(ownerId: string, params: AlbumParams, offset:
 
   const rows = await prisma.$queryRaw<AlbumRow[]>`
     WITH owned AS (SELECT DISTINCT "cardId" FROM "UserCard" WHERE "ownerId" = ${ownerId})
-    SELECT s.id, s."titleRomaji", s."titleEnglish",
+    SELECT s.id, s."titleRomaji", s."titleEnglish", s."universeId",
       COALESCE(
         (array_agg(c."imageUrl" ORDER BY rd."sortOrder" DESC, c.rank ASC, c.id) FILTER (WHERE o."cardId" IS NOT NULL))[1],
         (array_agg(c."imageUrl" ORDER BY c.rank ASC, c.id))[1]
@@ -71,6 +73,8 @@ export async function getAlbumPage(ownerId: string, params: AlbumParams, offset:
     title: seriesTitle(r, locale),
     cover: r.cover,
     coverSpoiler: r.coverSpoiler === true,
+    // Album = une série : la clé d'univers de la couverture est celle de la série (mode spoiler)
+    coverSpoilerKey: r.coverSpoiler === true ? spoilerKeyOf({ id: r.id, universeId: r.universeId }) : null,
     owned: r.owned,
     total: r.total,
     byRarity: r.byRarity,

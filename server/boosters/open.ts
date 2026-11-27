@@ -10,6 +10,7 @@ import { OpenError, openBoostersWith, openSealedWith, type IncenseDraw } from ".
 import { getBoosterOffers, getBoosterPool, getBoosterTypeEntry, type BoosterTypeEntry } from "./pools";
 import { getBoosterRules } from "./rules";
 import { getPrintingRules } from "../prestige/rules";
+import { frescoDropInput } from "../fresco/drops";
 
 /** Types des sachets scellés en service (actifs, pool non vide) : un sachet sans type ne tombe pas. */
 async function sealedEntries(): Promise<Partial<Record<SealedKind, BoosterTypeEntry>>> {
@@ -37,7 +38,14 @@ async function incenseFor(draw: DrawRules): Promise<IncenseDraw> {
  * événement, tant que le type existe et que son pool n'est pas vide.
  */
 export async function openBoosters(userId: string, slug: string, count: number, pay: boolean, credit = false, expectedZeni?: number) {
-  const [entry, offers, rules, sealed, printing] = await Promise.all([getBoosterTypeEntry(slug), getBoosterOffers(), getBoosterRules(), sealedEntries(), getPrintingRules()]);
+  const [entry, offers, rules, sealed, printing, fresco] = await Promise.all([
+    getBoosterTypeEntry(slug),
+    getBoosterOffers(),
+    getBoosterRules(),
+    sealedEntries(),
+    getPrintingRules(),
+    frescoDropInput(),
+  ]);
   const offer = offers.find((o) => o.type.slug === slug);
   if (!entry || entry.type.filter === null) throw new OpenError("NOT_FOR_SALE");
   if (!credit && (!offer || offer.availability !== "open")) throw new OpenError("NOT_FOR_SALE");
@@ -61,6 +69,7 @@ export async function openBoosters(userId: string, slug: string, count: number, 
     sealedTypes: Object.fromEntries(Object.entries(sealed).map(([kind, e]) => [kind, e.type.id])),
     incense,
     printing,
+    fresco,
     rng: (max) => randomInt(0, max),
   });
   return { outcome, rules, type };
@@ -84,7 +93,7 @@ export async function findOwnSealed(userId: string, dropId: string, { includeOpe
 export async function openSealed(userId: string, dropId: string, onNotified?: OnNotified) {
   const found = await findOwnSealed(userId, dropId);
   if (!found) throw new OpenError("NO_BOOSTER");
-  const [entry, rules, printing] = await Promise.all([getBoosterTypeEntry(found.kind), getBoosterRules(), getPrintingRules()]);
+  const [entry, rules, printing, fresco] = await Promise.all([getBoosterTypeEntry(found.kind), getBoosterRules(), getPrintingRules(), frescoDropInput()]);
   if (!entry || entry.type.filter === null) throw new OpenError("NOT_FOR_SALE");
 
   const pool = await getBoosterPool(entry);
@@ -100,6 +109,7 @@ export async function openSealed(userId: string, dropId: string, onNotified?: On
     pool,
     incense,
     printing,
+    fresco,
     rng: (max) => randomInt(0, max),
   }, onNotified);
   return { outcome, rules, type: entry.type };

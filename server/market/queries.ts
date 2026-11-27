@@ -29,6 +29,7 @@ import { prisma } from "../db";
 import { pushLater } from "../push/send";
 import { getSetting } from "../settings";
 import { settleAuctionWith } from "./auction-core";
+import { possessionCardWhere } from "./possession";
 
 // Lectures de l'hôtel des ventes. Les ventes terminées affichées sont closes au passage (clôture
 // paresseuse), comme celles du joueur à chaque sondage de la cloche ; le cron du marché (toutes les
@@ -177,9 +178,12 @@ export async function listAuctions(input: {
   if (!scope) return { items: [], nextCursor: null };
   if (params.tab !== "all" && !input.cursor) await settleDue(scope, now);
 
+  // « Mes ventes » : toutes les cartes sont au vendeur, le filtre d'acquisition n'y a pas de sens
+  const possession = params.tab === "selling" ? null : possessionCardWhere(params.possession, viewerId);
   const card: Prisma.CardWhereInput = {
     ...(params.rarity ? { rarity: params.rarity } : {}),
     ...(params.q ? { searchText: { contains: params.q } } : {}),
+    ...possession,
   };
   const filters: Prisma.AuctionWhereInput[] = [
     scope,

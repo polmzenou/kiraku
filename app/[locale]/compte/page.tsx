@@ -20,7 +20,6 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Link } from "@/i18n/navigation";
 import { stockRulesFor } from "@/lib/boosters/stock";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
-import { parseSpoilerMode, SPOILER_COOKIE } from "@/lib/spoiler";
 import { NAV_LAYOUT_COOKIE, parseNavLayout } from "@/lib/nav-layout";
 import { guestCode } from "@/lib/username";
 import { logout } from "@/server/actions/account";
@@ -47,10 +46,10 @@ const ACCOUNT_TILES = [
 ] as const;
 
 export default async function AccountPage() {
-  const [t, user, [theme, spoiler, navLayout]] = await Promise.all([
+  const [t, user, [theme, navLayout]] = await Promise.all([
     getTranslations(),
     getCurrentUser(),
-    cookies().then((c) => [parseTheme(c.get(THEME_COOKIE)?.value), parseSpoilerMode(c.get(SPOILER_COOKIE)?.value), parseNavLayout(c.get(NAV_LAYOUT_COOKIE)?.value)] as const),
+    cookies().then((c) => [parseTheme(c.get(THEME_COOKIE)?.value), parseNavLayout(c.get(NAV_LAYOUT_COOKIE)?.value)] as const),
   ]);
 
   if (!user) {
@@ -226,7 +225,7 @@ export default async function AccountPage() {
       <section className="flex flex-col gap-5 lacquer rounded-card p-4">
         <h2 className="text-lg font-bold">{t("account.settings")}</h2>
         <ThemeToggle initial={theme} />
-        <SpoilerToggle initial={spoiler} />
+        <SpoilerToggle showUniversesLink />
         <NavLayoutToggle initial={navLayout} />
         <LocaleSwitcher />
       </section>

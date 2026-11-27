@@ -11,6 +11,7 @@ import { loadAlbumPageAction } from "@/server/actions/collection";
 // Jetons rarity-label-* : lisibles sous Washi et définis pour les variantes (les rarity-* des fuda n'y font pas 4,5:1)
 import { RARITY_TEXT } from "../boosters/format";
 import { Button } from "../ui/Button";
+import { spoilerImageAttrs } from "@/lib/spoiler";
 
 /** Grille d'albums (une tuile par série), pages suivantes chargées au défilement. */
 export function AlbumList({ initial, query }: { initial: AlbumPage; query: Record<string, string> }) {
@@ -90,7 +91,7 @@ function AlbumTile({ album }: { album: Album }) {
             fill
             sizes="64px"
             className={`object-cover ${album.owned === 0 ? "opacity-40 grayscale" : ""}`}
-            data-spoiler={album.coverSpoiler || undefined}
+            {...spoilerImageAttrs(album.coverSpoiler, album.coverSpoilerKey)}
           />
         )}
       </span>

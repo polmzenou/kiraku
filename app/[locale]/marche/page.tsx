@@ -19,7 +19,8 @@ import { segmentedCompactItemClass, segmentedFillClass, segmentedTrackClass } fr
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { MARKET_TABS, marketSearchParams, parseMarketParams } from "@/lib/market/filters";
-import { parseListingFilter } from "@/lib/market/listings";
+import { parseListingFilter, parseListingPossession } from "@/lib/market/listings";
+import { parsePossession, POSSESSION_PARAM } from "@/lib/market/possession";
 import { countIncomingOffers, listListings, listMyExchanges } from "@/server/market/listings";
 import { listAuctions, sellBaseFor } from "@/server/market/queries";
 import { getSetting } from "@/server/settings";
@@ -153,7 +154,16 @@ export default async function MarketPage({ searchParams }: PageProps<"/[locale]/
 
           {exchangeTab === "echanges" && <ExchangeBoard userId={user.id} guest={user.isGuest} isAdmin={user.role === "ADMIN"} locale={locale} raw={raw} />}
           {exchangeTab === "mes-echanges" && <MyExchangesTab userId={user.id} locale={locale} />}
-          {ordersTab && <OrdersTab userId={user.id} guest={user.isGuest} locale={locale} sort={ordersSort} page={ordersPage} />}
+          {ordersTab && (
+            <OrdersTab
+              userId={user.id}
+              guest={user.isGuest}
+              locale={locale}
+              sort={ordersSort}
+              page={ordersPage}
+              possession={parsePossession(one(raw[POSSESSION_PARAM]))}
+            />
+          )}
         </>
       )}
 
@@ -195,12 +205,13 @@ async function ExchangeBoard({
   raw: Record<string, string | string[] | undefined>;
 }) {
   const filter = guest ? "all" : parseListingFilter(raw.filtre);
+  const possession = guest ? "all" : parseListingPossession(raw.filtre, raw[POSSESSION_PARAM]);
   const q = (one(raw.q) ?? "").slice(0, 100);
   const rawListingId = one(raw.annonce);
   const listingId = rawListingId && /^[A-Za-z0-9_-]{1,40}$/.test(rawListingId) ? rawListingId : undefined;
   const t = await getTranslations("listings");
   const [page, maxWants, allowOther] = await Promise.all([
-    listListings({ viewerId: userId, q, filter, cursor: null, locale, listingId }),
+    listListings({ viewerId: userId, q, filter, possession, cursor: null, locale, listingId }),
     getSetting("listings.maxWants"),
     getSetting("listings.allowOther"),
   ]);
@@ -211,6 +222,7 @@ async function ExchangeBoard({
         initial={page.items}
         nextCursor={page.nextCursor}
         filter={filter}
+        possession={possession}
         q={q}
         guest={guest}
         isAdmin={isAdmin}

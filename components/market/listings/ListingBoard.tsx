@@ -4,7 +4,8 @@ import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
-import { LISTING_FILTERS, type ListingFilter } from "@/lib/market/listings";
+import type { ListingFilter } from "@/lib/market/listings";
+import { POSSESSION_PARAM, possessionValue, type Possession } from "@/lib/market/possession";
 import { loadListingsPageAction } from "@/server/actions/listings";
 import type { ListingView } from "@/server/market/listings";
 import { Button } from "../../ui/Button";
@@ -16,21 +17,32 @@ import { ListingComposer } from "./ListingComposer";
 const DEBOUNCE_MS = 400;
 
 /** Lien de l'onglet « Échanges » avec ses filtres (seulement ce qui diffère du défaut). */
-export function listingsHref(filter: ListingFilter, q: string) {
+export function listingsHref(filter: ListingFilter, q: string, possession: Possession = "all") {
   const s = new URLSearchParams({ onglet: "echanges" });
   if (filter !== "all") s.set("filtre", filter);
+  const owned = possessionValue(possession);
+  if (owned) s.set(POSSESSION_PARAM, owned);
   if (q) s.set("q", q);
   return `/marche?${s.toString()}`;
 }
 
+/** Puces de la liste : l'acquisition d'abord (exclusives entre elles), puis les filtres d'échange. */
+const CHIPS = [
+  { kind: "possession", value: "owned" },
+  { kind: "possession", value: "missing" },
+  { kind: "filter", value: "canAccept" },
+  { kind: "filter", value: "mine" },
+] as const;
+
 /**
- * Onglet « Échanges » du Marché : « Proposer une carte », recherche, filtres (que je n'ai pas, que
+ * Onglet « Échanges » du Marché : « Proposer une carte », recherche, filtres (acquises ou non, que
  * je peux accepter, mes offres) et la liste des annonces ouvertes, paginée par « Voir plus ».
  */
 export function ListingBoard({
   initial,
   nextCursor: initialCursor,
   filter,
+  possession,
   q: initialQ,
   guest,
   isAdmin,
@@ -40,6 +52,7 @@ export function ListingBoard({
   initial: ListingView[];
   nextCursor: string | null;
   filter: ListingFilter;
+  possession: Possession;
   q: string;
   guest: boolean;
   /** Le lecteur est admin : poubelle à côté des commentaires. */
@@ -74,7 +87,7 @@ export function ListingBoard({
     startTransition(async () => {
       setError(null);
       try {
-        const res = await loadListingsPageAction({ q: initialQ, filter, cursor });
+        const res = await loadListingsPageAction({ q: initialQ, filter, possession, cursor });
         if (!res.ok) {
           setError(t(`errors.${res.error}` as "errors.UNAVAILABLE"));
           return;
@@ -116,23 +129,22 @@ export function ListingBoard({
             const value = e.currentTarget.value;
             setQ(value);
             clearTimeout(timer.current);
-            timer.current = setTimeout(() => router.replace(listingsHref(filter, value.trim()), { scroll: false }), DEBOUNCE_MS);
+            timer.current = setTimeout(() => router.replace(listingsHref(filter, value.trim(), possession), { scroll: false }), DEBOUNCE_MS);
           }}
           className={`${inputClass} md:max-w-sm`}
         />
         {!guest && (
           <ul className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:px-0" aria-label={t("filtersLabel")}>
-            {LISTING_FILTERS.filter((f) => f !== "all").map((f) => {
-              const active = filter === f;
+            {CHIPS.map((chip) => {
+              const active = chip.kind === "filter" ? filter === chip.value : possession === chip.value;
+              const next =
+                chip.kind === "filter"
+                  ? listingsHref(active ? "all" : chip.value, q.trim(), possession)
+                  : listingsHref(filter, q.trim(), active ? "all" : chip.value);
               return (
-                <li key={f}>
-                  <button
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => router.replace(listingsHref(active ? "all" : f, q.trim()), { scroll: false })}
-                    className={chipClasses(active)}
-                  >
-                    {t(`filters.${f}`)}
+                <li key={chip.value}>
+                  <button type="button" aria-pressed={active} onClick={() => router.replace(next, { scroll: false })} className={chipClasses(active)}>
+                    {t(`filters.${chip.value}`)}
                   </button>
                 </li>
               );
@@ -142,7 +154,7 @@ export function ListingBoard({
       </div>
 
       {items.length === 0 ? (
-        <p className="lacquer rounded-card p-6 text-center text-text-muted">{t(`empty.${filter}`)}</p>
+        <p className="lacquer rounded-card p-6 text-center text-text-muted">{t(`empty.${filter === "all" ? possession : filter}`)}</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {items.map((listing) => (

@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { getSetting } from "@/server/settings";
 import { getTopMovers } from "@/server/market/quotes";
+import { spoilerImageAttrs } from "@/lib/spoiler";
 
 /**
  * « Plus fortes hausses » du marché : cartes dont la cote monte le plus par rapport à la période
@@ -37,7 +38,7 @@ export async function TopMovers() {
                 className="flex h-full items-center gap-3 lacquer rounded-card p-3 transition-colors hover:bg-surface-2"
               >
                 <div aria-hidden="true" className="relative aspect-[5/7] w-12 shrink-0 overflow-hidden rounded-md border border-border bg-surface-2">
-                  <Image src={card.imageUrl} alt="" fill sizes="48px" className="object-cover object-top" data-spoiler={card.spoiler || undefined} />
+                  <Image src={card.imageUrl} alt="" fill sizes="48px" className="object-cover object-top" {...spoilerImageAttrs(card.spoiler, card.spoilerKey)} />
                 </div>
                 <div aria-hidden="true" className="flex min-w-0 flex-col gap-0.5">
                   <p className="truncate text-sm font-bold">{name}</p>

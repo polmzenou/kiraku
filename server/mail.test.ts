@@ -16,21 +16,33 @@ afterEach(() => {
 });
 
 describe("sendMail", () => {
-  it("renvoie true quand Resend accepte", async () => {
+  it("réussit quand Resend accepte", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 200 })));
-    expect(await sendMail(mail)).toBe(true);
+    expect(await sendMail(mail)).toEqual({ ok: true });
   });
 
-  it.each([429, 403, 500])("renvoie false sans lever quand Resend répond %i", async (status) => {
+  it.each([429, 403, 500])("échoue sans lever quand Resend répond %i", async (status) => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status })));
-    expect(await sendMail(mail)).toBe(false);
+    expect(await sendMail(mail)).toEqual({ ok: false, reason: "refused", detail: `HTTP ${status}` });
   });
 
-  it("renvoie false sans lever quand Resend est injoignable ou trop lent", async () => {
+  it("garde et journalise la raison donnée par Resend, tronquée", async () => {
+    const body = { name: "validation_error", message: "You can only send testing emails to your own email address." };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(body, { status: 403 })));
+    const result = await sendMail(mail);
+    expect(result).toEqual({ ok: false, reason: "refused", detail: `${body.name} : ${body.message}` });
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining("validation_error"));
+
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ message: "x".repeat(1000) }, { status: 422 })));
+    const long = await sendMail(mail);
+    expect(!long.ok && long.detail?.length).toBe(300);
+  });
+
+  it("échoue sans lever quand Resend est injoignable ou trop lent", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fetch failed")));
-    expect(await sendMail(mail)).toBe(false);
+    expect(await sendMail(mail)).toEqual({ ok: false, reason: "unreachable", detail: "fetch failed" });
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new DOMException("timeout", "TimeoutError")));
-    expect(await sendMail(mail)).toBe(false);
+    expect(await sendMail(mail)).toMatchObject({ ok: false, reason: "unreachable" });
   });
 
   it("passe un délai maximal à la requête", async () => {

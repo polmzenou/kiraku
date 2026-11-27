@@ -256,7 +256,7 @@ export async function signalsFor(userId: string): Promise<SignalRow[]> {
   });
 }
 
-type SharedIp = { value: string; accounts: number; usernames: { id: string; username: string }[] };
+type SharedIp = { value: string; accounts: number; usernames: { id: string; username: string; banned: boolean }[] };
 
 /**
  * IP partagées par plusieurs comptes, par clé de ban (une IPv6 par son /64), les plus partagées d'abord. `prefix` :
@@ -281,12 +281,33 @@ export async function sharedIps(options: { prefix?: string; take: number }): Pro
     .map(([value, g]) => ({ value, accounts: g.users.size, ids: [...g.users].sort().slice(0, 8) }));
   const users = await prisma.user.findMany({
     where: { id: { in: [...new Set(found.flatMap((r) => r.ids))] } },
-    select: { id: true, username: true },
+    select: { id: true, username: true, bannedAt: true },
   });
-  const names = new Map(users.map((u) => [u.id, u]));
+  const names = new Map(users.map((u) => [u.id, { id: u.id, username: u.username, banned: u.bannedAt !== null }]));
   return found.map((r) => ({
     value: r.value,
     accounts: r.accounts,
     usernames: r.ids.flatMap((id) => names.get(id) ?? []),
   }));
+}
+
+export type BannedAccount = { id: string; username: string; email: string | null; isGuest: boolean; bannedAt: Date; lastSeenAt: Date | null };
+
+/** Comptes bannis (filtre « Comptes bannis » de /admin/multi-comptes), les plus récents d'abord. */
+export async function bannedAccounts(options: { q: string; take: number }): Promise<{ rows: BannedAccount[]; total: number }> {
+  const where = {
+    bannedAt: { not: null },
+    anonymizedAt: null,
+    ...(options.q ? { username: { contains: options.q, mode: "insensitive" as const } } : {}),
+  };
+  const [rows, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      orderBy: [{ bannedAt: "desc" }, { id: "asc" }],
+      take: options.take,
+      select: { id: true, username: true, email: true, isGuest: true, bannedAt: true, lastSeenAt: true },
+    }),
+    prisma.user.count({ where }),
+  ]);
+  return { rows: rows.map((r) => ({ ...r, bannedAt: r.bannedAt! })), total };
 }

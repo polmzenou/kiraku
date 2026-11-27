@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { localize, parseLocalized, parseTheme } from "@/lib/boosters/types";
 import { NEWS_BOOSTER_CARDS, type NewsBoosterView, type NewsCardView, type NewsVisuals } from "@/lib/home/news";
 import type { NewsVisual } from "@/lib/home/news-schema";
+import { spoilerKeyOf } from "@/lib/spoiler";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "../db";
 import { BOOSTER_TYPES_TAG } from "../boosters/pools";
@@ -11,7 +12,7 @@ import { CATALOG_TAG } from "../catalog/queries";
 // Visuels des bannières Nouveautés : cartes publiées (éventail) et boosters actifs (sachet, vedettes).
 // Une carte retirée ou un booster éteint est ignoré : la bannière retombe sur son sceau.
 
-const CARD_FIELDS = { id: true, name: true, nameNative: true, imageUrl: true, rank: true, rarity: true, power: true, ki: true, appearance: true, formName: true, spoiler: true } as const;
+const CARD_FIELDS = { id: true, name: true, nameNative: true, imageUrl: true, rank: true, rarity: true, power: true, ki: true, appearance: true, formName: true, spoiler: true, seriesId: true, series: { select: { universeId: true } } } as const;
 
 type Loaded = { cards: NewsCardView[]; boosters: (NewsBoosterView & { featured: string[] })[] };
 
@@ -42,7 +43,9 @@ export async function readNewsVisuals(
     featured: t.featuredCardIds.slice(0, NEWS_BOOSTER_CARDS),
   }));
   const wanted = [...new Set([...cardIds, ...boosters.flatMap((b) => b.featured)])];
-  const cards = wanted.length ? await db.card.findMany({ where: { id: { in: wanted }, status: "PUBLISHED" }, select: CARD_FIELDS }) : [];
+  const rows = wanted.length ? await db.card.findMany({ where: { id: { in: wanted }, status: "PUBLISHED" }, select: CARD_FIELDS }) : [];
+  // Clé d'univers d'une carte spoil (mode spoiler), identique pour tous dans le cache partagé
+  const cards = rows.map(({ seriesId, series, ...card }) => ({ ...card, spoilerKey: card.spoiler ? spoilerKeyOf({ id: seriesId, universeId: series.universeId }) : null }));
   return { cards, boosters };
 }
 

@@ -23,16 +23,19 @@ export const NEWS_ICONS = {
   REFERRAL: "招",
   FRIENDS: "友",
   CASINO: "賭",
+  FRESCO: "絵",
 } as const;
 export type NewsIcon = keyof typeof NEWS_ICONS;
 export const NEWS_ICON_KEYS = Object.keys(NEWS_ICONS) as [NewsIcon, ...NewsIcon[]];
 
 /** Étiquette au-dessus du titre d'une bannière (traduite, clés news.tags.*). */
-export const NEWS_TAGS = ["NEW", "NEW_CARDS", "NEW_BOOSTER", "EVENT", "UPDATE", "SOON"] as const;
+export const NEWS_TAGS = ["NEW", "NEW_CARDS", "NEW_BOOSTER", "NEW_FRESCO", "EVENT", "UPDATE", "SOON"] as const;
 export type NewsTag = (typeof NEWS_TAGS)[number];
 
 /** Page de la dernière sortie : une bannière « Nouvelles cartes » sans bouton choisi y mène. */
 export const NEW_CARDS_PATH = "/wiki/nouveautes";
+/** Onglet « Nouvelles fresques » de la même page. */
+export const NEW_FRESCOES_PATH = "/wiki/nouveautes?onglet=fresques";
 
 export const NEWS_MAX_ITEMS = 6;
 /** Cartes en éventail sur une bannière. */
@@ -66,6 +69,8 @@ export type NewsCardView = {
   appearance: unknown;
   formName: string | null;
   spoiler: boolean;
+  /** Clé d'univers d'une carte spoil (lib/spoiler.ts), null sinon. */
+  spoilerKey?: string | null;
 };
 export type NewsBoosterView = { slug: string; name: string; emblem: string; shape: BoosterShape; theme: BoosterTheme; endsAt: string | null };
 export type NewsVisualView =

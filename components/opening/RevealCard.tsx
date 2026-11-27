@@ -18,6 +18,7 @@ import { BASE_RARITIES, RARITY_SEAL } from "@/lib/catalog/rarity";
 import { REVEAL_SCENES, revealSceneKey } from "@/lib/opening/reveal-scenes";
 import type { FudaCopy } from "../fuda/Fuda";
 import { isEngraved } from "@/lib/collection/copies";
+import { spoilerImageAttrs } from "@/lib/spoiler";
 
 // Révélation d'une gravée à la baren : chargée seulement quand une carte sort gravée
 const BarenReveal = dynamic(() => import("./BarenReveal").then((mod) => mod.BarenReveal), { ssr: false });
@@ -278,7 +279,7 @@ function GhostArt({ card }: { card: OpenedCardView }) {
   return (
     <span className="absolute inset-0 overflow-hidden rounded-[14px] bg-[var(--fuda-frame,#f08ab0)]">
       <span className="absolute inset-1.5 overflow-hidden rounded-[9px]">
-        <Image src={card.imageUrl} alt="" fill sizes="(min-width: 768px) 320px, 80vw" draggable={false} className="object-cover object-top" data-spoiler={card.spoiler || undefined} />
+        <Image src={card.imageUrl} alt="" fill sizes="(min-width: 768px) 320px, 80vw" draggable={false} className="object-cover object-top" {...spoilerImageAttrs(card.spoiler, card.spoilerKey)} />
       </span>
     </span>
   );

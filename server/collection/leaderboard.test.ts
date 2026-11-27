@@ -8,7 +8,8 @@ import { Prisma } from "@/generated/prisma/client";
 const reader = vi.hoisted(() => ({ query: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ unstable_cache: <T,>(fn: T) => fn }));
-vi.mock("../db", () => ({ prisma: { $queryRaw: reader.query } }));
+// user.findMany : bans relus après le cache (server/social/banned.ts), aucun ici depuis le calcul
+vi.mock("../db", () => ({ prisma: { $queryRaw: reader.query, user: { findMany: async () => [] } } }));
 import { getTopCollectors } from "./leaderboard";
 
 // Classement des collectionneurs, sur le schéma à jour : la requête par joueur (LATERAL) rend exactement ce que

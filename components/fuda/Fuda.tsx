@@ -31,6 +31,11 @@ export type FudaCard = {
    */
   spoiler: boolean;
   /**
+   * Clé d'univers de la carte (`series.universeId ?? series.id`, lib/spoiler.ts) : le joueur peut remettre en clair
+   * les cartes spoil d'un univers. Absente (anciennes données), une carte spoil reste floutée.
+   */
+  spoilerKey?: string | null;
+  /**
    * Exemplaire précis montré (prestige) : héritage (fleur de cerisier) et édition gravée (cartouche vermillon
    * « 初摺 17 / 25 »). Absent ou ordinaire : la fuda est inchangée, toutes les sources actuelles continuent de marcher.
    */
@@ -242,12 +247,14 @@ export function Fuda({
   // Anciennes données (copie d'un combat d'avant le mode spoiler) : champ absent = pas spoil
   const spoiler = !locked && card.spoiler === true;
   const spoilerAttr = spoiler ? { "data-spoiler": "" } : undefined;
+  // Clé d'univers sur la fuda : les variables --kn-spoiler-* de la feuille des univers en clair héritent jusqu'à l'image
+  const spoilerKey = spoiler && card.spoilerKey ? card.spoilerKey : undefined;
   // Exemplaire précis (prestige) : héritière et gravée ; rien pour une silhouette ni un exemplaire ordinaire
   const copy = !locked ? card.copy ?? null : null;
   const engraved = isEngraved(copy);
 
   const content = (
-    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} data-spectral={spectral || undefined} style={customStyle}>
+    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} data-spectral={spectral || undefined} data-spoiler-u={spoilerKey} style={customStyle}>
       {/* Papier posé en absolu dans le cadre : sa hauteur ne dépend pas d'un pourcentage (WebKit la résolvait mal sous aspect-ratio) */}
       <div className={`fuda-paper absolute ${l.inset} overflow-hidden ${l.inner}`}>
         <div className="kn-art">
@@ -283,6 +290,7 @@ export function Fuda({
               tint={visual.frame}
               veil={fullArt}
               spoiler={spoiler}
+              spoilerKey={spoilerKey}
               appear={appear}
             />
           )}
