@@ -13,8 +13,8 @@ import { CardAura } from "./CardAura";
 import { RevealScene, XR_ECHOES, type SceneBox } from "./RevealScene";
 import { resolveAppearance } from "@/lib/catalog/appearance";
 import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
-import { isTopTier } from "@/lib/catalog/tiers";
-import { RARITY_SEAL } from "@/lib/catalog/rarity";
+import { fxTier, isTopTier } from "@/lib/catalog/tiers";
+import { BASE_RARITIES, RARITY_SEAL } from "@/lib/catalog/rarity";
 import { REVEAL_SCENES, revealSceneKey } from "@/lib/opening/reveal-scenes";
 import type { FudaCopy } from "../fuda/Fuda";
 import { isEngraved } from "@/lib/collection/copies";
@@ -110,8 +110,8 @@ export function FeaturedSeal({ delay = 0, animated = true }: { delay?: number; a
   );
 }
 
-/** Face arrière du retournement, partagée avec les fiches collection et wiki. */
-export function CardBack({ glow = false, static: still = false, premium = false }: { glow?: boolean; static?: boolean; premium?: boolean }) {
+/** Face arrière du retournement (dos retourné de 180° derrière la face). */
+function CardBack({ glow = false, static: still = false, premium = false }: { glow?: boolean; static?: boolean; premium?: boolean }) {
   return (
     <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]">
       <FudaBack glow={glow} static={still} premium={premium} />
@@ -141,14 +141,19 @@ const BR_RIM = "rgb(209 205 204 / 0.5)";
  * Une fuda face cachée qui se retourne. Avant le retournement (« charging »), une Épique+ frémit et
  * une Légendaire+ s'illumine d'or ; à l'endroit, l'effet de sa rareté se joue autour d'elle.
  */
-export function FlipCard({ card, phase, size, reduced, compactFx = false, scene = false, engraving = false }: Props) {
+export function FlipCard({ card, phase, size, reduced, compactFx: compactProp = false, scene = false, engraving = false }: Props) {
   const definitions = useRarityDefinitions();
   const root = useRef<HTMLDivElement>(null);
+  // Figé au montage : un passage en effets allégés pendant la révélation (mesure de fluidité) vaut pour les cartes
+  // suivantes, sans recalculer en plein vol les particules de celle-ci
+  const [compactFx] = useState(compactProp);
   const definition = definitions.find((r) => r.key === card.rarity);
   const visual = resolveAppearance(definition?.appearance, card.appearance);
   const front = phase === "front";
   const charging = phase === "charging";
-  const rank = definitions.findIndex((r) => r.key === card.rarity);
+  // Palier de base (Commune → Mythique), comme la charge et les effets : une rareté personnalisée glissée entre deux
+  // raretés de base ne décale pas le tremblement (Épique et +), le dos doré (Légendaire et +) ni les délais
+  const rank = BASE_RARITIES.indexOf(fxTier(card.rarity, definitions));
   // AR sort d'une faille (étirée depuis le centre), Gold brise son dos : pas de retournement
   const variant = card.rarity === "AR" || card.rarity === "GOLD" ? card.rarity : null;
   // Dos premium : la grosse carte se trahit en arrivant en haut de la pile

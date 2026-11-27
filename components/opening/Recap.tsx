@@ -34,6 +34,8 @@ type Props = {
   /** Boosters qu'ouvrirait « Tous » (0 : choix désactivé). */
   allCount: number;
   onCount: (n: OpenChoice) => void;
+  /** Booster du stock gratuit (ni crédité, ni sachet scellé) : compte à rebours du prochain sachet gratuit. */
+  nextFree: boolean;
 };
 
 /** Au-delà, un seul booster passe lui aussi en grille plutôt qu'en éventail. */
@@ -45,7 +47,7 @@ const FAN_MAX = 6;
  * téléphone) ; plusieurs boosters, en grille serrée. Puis les compteurs (ensō de pitié qui se
  * referme). Les actions pour enchaîner vivent dans `RecapActionBar`, toujours à portée du pouce.
  */
-export function Recap({ name, emblem, boosters, state, reduced, play, counters, zeniSpent, choice, maxCount, allCount, onCount }: Props) {
+export function Recap({ name, emblem, boosters, state, reduced, play, counters, zeniSpent, choice, maxCount, allCount, onCount, nextFree }: Props) {
   const RARITIES = useRarities();
   const RARITY_SEAL = useRaritySeals();
   const definitions = useRarityDefinitions();
@@ -107,7 +109,7 @@ export function Recap({ name, emblem, boosters, state, reduced, play, counters, 
       </div>
 
       <m.header className="flex flex-col items-center gap-2 text-center" {...appear(0)}>
-        <h2 id="recap-title" className="font-heading text-3xl font-extrabold text-balance sm:text-5xl">
+        <h2 id="recap-title" tabIndex={-1} className="font-heading text-3xl font-extrabold text-balance sm:text-5xl">
           {name}
         </h2>
         {many && <p className="text-sm text-text-muted tabular-nums">{t("recapCounts", { boosters: boosters.length, cards: cards.length })}</p>}
@@ -205,18 +207,12 @@ export function Recap({ name, emblem, boosters, state, reduced, play, counters, 
       <m.div className="flex w-full max-w-md flex-col items-center gap-4" {...appear(0.7)}>
         {(counters.pity || counters.golden || counters.featured || zeniSpent > 0) && (
           <div className="flex w-full items-center gap-4 rounded-card border border-border bg-surface/60 px-4 py-3">
+            {/* Décor : les lignes de texte à côté disent la même chose (le lecteur d'écran ne la lit qu'une fois) */}
             {(counters.pity || (counters.featured && counters.featured.threshold > 0)) && (
-              <div className="flex shrink-0 gap-2">
-                {counters.pity && (
-                  <ProgressEnso progress={pityProgress} glyph="神" tone="border-shu" label={t("pityLine", { count: state.pityLeft })} />
-                )}
+              <div aria-hidden="true" className="flex shrink-0 gap-2">
+                {counters.pity && <ProgressEnso progress={pityProgress} glyph="神" tone="border-shu" />}
                 {counters.featured && counters.featured.threshold > 0 && (
-                  <ProgressEnso
-                    progress={1 - (counters.featured.left - 1) / counters.featured.threshold}
-                    glyph="星"
-                    tone="border-kin"
-                    label={t("featuredLine", { count: counters.featured.left })}
-                  />
+                  <ProgressEnso progress={1 - (counters.featured.left - 1) / counters.featured.threshold} glyph="星" tone="border-kin" />
                 )}
               </div>
             )}
@@ -237,7 +233,7 @@ export function Recap({ name, emblem, boosters, state, reduced, play, counters, 
         )}
 
         {(maxCount > 1 || allCount > 0) && <CountPicker value={choice} max={maxCount} all={allCount} onChange={onCount} />}
-        <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} />
+        {nextFree && <NextFreeIn nextAt={state.nextAt} serverNow={state.serverNow} />}
       </m.div>
     </section>
   );
@@ -313,12 +309,12 @@ function Badge({ glyph, label }: { glyph: string; label: string }) {
 }
 
 /** Ensō de progression (deux demi-anneaux qui tournent) avec un sceau au centre. */
-function ProgressEnso({ progress, glyph, tone, label }: { progress: number; glyph: string; tone: string; label: string }) {
+function ProgressEnso({ progress, glyph, tone }: { progress: number; glyph: string; tone: string }) {
   const p = Math.min(1, Math.max(0, progress));
   const firstHalf = Math.min(p, 0.5) * 360;
   const secondHalf = Math.max(p - 0.5, 0) * 360;
   return (
-    <span role="img" aria-label={label} className="relative inline-flex size-12 items-center justify-center">
+    <span className="relative inline-flex size-12 items-center justify-center">
       <span aria-hidden="true" className="absolute inset-0 rounded-full border-4 border-border" />
       <span aria-hidden="true" className="absolute inset-0 [clip-path:inset(0_0_0_50%)]">
         <m.span

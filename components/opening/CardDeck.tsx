@@ -140,6 +140,7 @@ type Props = {
  */
 export function CardDeck({ cards, from, origin, reduced, lite = false, play, onMythic, onMoment, onDone }: Props) {
   const t = useTranslations("opening");
+  const tRarity = useTranslations("rarity");
   const rarities = useRarities();
   const definitions = useRarityDefinitions();
   const [order] = useState(() => revealOrder(cards, rarities));
@@ -227,8 +228,10 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
     if (done) finish();
   }, [done, finish]);
 
+  // Carte suivante, ou focus tombé sur <body> (le booster ou le bouton « Déchirer » viennent de disparaître) : la
+  // carte du dessus le prend, la pile se joue alors au clavier sans repartir du haut de la page
   const focusTop = useCallback((node: HTMLButtonElement | null) => {
-    if (node && focusNext.current) {
+    if (node && (focusNext.current || !document.activeElement || document.activeElement === document.body)) {
       node.focus({ preventScroll: true });
       focusNext.current = false;
     }
@@ -317,6 +320,13 @@ export function CardDeck({ cards, from, origin, reduced, lite = false, play, onM
 
   return (
     <div className="flex w-full flex-col items-center gap-5">
+      {/* Lecteur d'écran : la carte du dessus est un bouton dont le libellé dit l'action (« Carte suivante ») et dont le
+          contenu n'est pas lu ; la carte retournée est annoncée ici, hors du compteur que les scènes masquent */}
+      <p aria-live="polite" className="sr-only">
+        {current && phase === "front"
+          ? t("revealedCard", { name: current.name, rarity: tRarity.has(current.rarity) ? tRarity(current.rarity) : current.rarity, isNew: current.isNew ? "yes" : "no" })
+          : ""}
+      </p>
       {/* Le nom d'une grande rareté prend un moment la place du compteur, au-dessus de la carte */}
       <m.div className="relative z-10 flex min-h-14 w-full flex-col items-center justify-end" {...appear(0.3)}>
         <p

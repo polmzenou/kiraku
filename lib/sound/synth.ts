@@ -1,5 +1,6 @@
-// Sons de l'ouverture, synthétisés en Web Audio : aucun fichier à charger. Le contexte audio n'est
-// créé qu'au premier geste du joueur (règle des navigateurs) et seulement si le son est activé.
+// Sons de l'ouverture, synthétisés en Web Audio : aucun fichier à charger. Le contexte audio est créé
+// au premier son joué (donc seulement si le son est activé) ; un contexte qui ne tourne pas encore, ou plus
+// (créé hors d'un geste, Safari revenu du fond), ne reçoit aucun son avant son réveil (whenRunning).
 
 export type SoundName =
   | "tear"
@@ -34,8 +35,30 @@ export function audio(): AudioContext | null {
     if (!Ctor) return null;
     ctx = new Ctor();
   }
-  if (ctx.state === "suspended") void ctx.resume();
+  // Suspendu (créé hors d'un geste) ou interrompu (Safari : appel, retour du fond) : réveil demandé ; refusé hors
+  // d'un geste, il sera redemandé au son suivant
+  if (ctx.state !== "running" && ctx.state !== "closed") ctx.resume().catch(() => {});
   return ctx;
+}
+
+/** Au-delà (ms), un son qui attendait le réveil du contexte est abandonné : il ne collerait plus à l'image. */
+export const LATE_SOUND_MS = 400;
+
+/**
+ * Programme `schedule` sur un contexte qui tourne. L'horloge d'un contexte suspendu est figée : les sons programmés
+ * s'y empileraient et partiraient tous ensemble au premier geste qui le réveille (déchirure, whoosh et claquements
+ * d'un coup au premier appui sur une carte). Le son attend donc le réveil, et il est perdu s'il arrive trop tard.
+ */
+export function whenRunning(ac: AudioContext, schedule: () => void, now: () => number = () => performance.now()): void {
+  if (ac.state === "running") return schedule();
+  if (ac.state === "closed") return;
+  const asked = now();
+  ac.resume().then(
+    () => {
+      if (ac.state === "running" && now() - asked <= LATE_SOUND_MS) schedule();
+    },
+    () => {},
+  );
 }
 
 /**
@@ -89,10 +112,14 @@ export function burst(ac: AudioContext, out: AudioNode, at: number, opts: { dura
   src.stop(at + opts.duration + 0.05);
 }
 
-/** Joue un son (sans effet si le Web Audio est indisponible). */
+/** Joue un son (sans effet si le Web Audio est indisponible, ni si le contexte ne se réveille pas à temps). */
 export function playSound(name: SoundName, volume = 0.6) {
   const ac = audio();
   if (!ac) return;
+  whenRunning(ac, () => synth(ac, name, volume));
+}
+
+function synth(ac: AudioContext, name: SoundName, volume: number) {
   const out = ac.createGain();
   out.gain.value = volume;
   out.connect(ac.destination);

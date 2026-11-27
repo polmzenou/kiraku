@@ -20,7 +20,7 @@ import { Fuda } from "../fuda/Fuda";
 import { ZeniCoin } from "../layout/ZeniCoin";
 import { Button, buttonClasses } from "../ui/Button";
 import { BoosterScene, type SceneHandle } from "./BoosterScene";
-import { ApocalypseOmen, SealedTransform } from "./SealedFx";
+import { ApocalypseOmen, SealedTransform, sealedGlyph } from "./SealedFx";
 import { CardDeck, revealOrder, type DeckFrom } from "./CardDeck";
 import { CountPicker } from "./CountPicker";
 import { GoldenDust } from "./GoldenDust";
@@ -181,6 +181,12 @@ export function OpeningStage({
     wantFocus.current = false;
     el.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus({ preventScroll: true });
   }, []);
+  // Le booster ou la pile démontés, le focus est tombé sur <body> : il rejoint le titre de l'étape qui arrive
+  // (transformation, récap), sans défilement, au lieu de repartir du haut de la page au clavier
+  const landing = useCallback((el: HTMLDivElement | null) => {
+    if (!el || (document.activeElement && document.activeElement !== document.body)) return;
+    el.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+  }, []);
   const mounted = useRef(false);
 
   // État le plus récent entre la page (rafraîchie par le serveur) et la réponse de l'ouverture
@@ -250,6 +256,8 @@ export function OpeningStage({
       // Action qui lève (serveur injoignable, panne) : la scène revient au booster intact
       const res = await openSealed({ drop: sealedOpen.id }).catch(() => ({ ok: false as const, error: "UNAVAILABLE" as const }));
       if (!res.ok) return fail(res.error);
+      // Sachet déjà payé : le récap n'affiche pas les Zeni de l'ouverture précédente
+      setZeniSpent(0);
       setKarma(res.karma);
       setOutcome(res.booster.apocalypse ?? null);
       omenRef.current = res.booster.apocalypse ?? null;
@@ -276,16 +284,17 @@ export function OpeningStage({
     setDrops(dropsRef.current);
     setOpenedSealed(null);
     setLatest(res.state);
+    // Compteurs du serveur posés avant tout : même sans rien à montrer, les crédits ont été consommés
+    setFeaturedCount(res.featuredCount);
+    setZeniSpent(res.zeniSpent);
+    setOpenedCredit(creditMode);
+    setCreditLeft(creditMode ? res.credits : 0);
     // Rien à montrer ici (sachet tombé mais pas dessinable) : nouvelle scène, le sachet attend sur l'accueil
     if (dropsRef.current.length === 0 && res.boosters.every((b) => b.cards.length === 0)) {
       again();
       setNotice(tSealed("kept"));
       return;
     }
-    setFeaturedCount(res.featuredCount);
-    setZeniSpent(res.zeniSpent);
-    setOpenedCredit(creditMode);
-    setCreditLeft(creditMode ? res.credits : 0);
     setBoosters(res.boosters);
     result.current = res.boosters;
     goReveal();
@@ -310,16 +319,29 @@ export function OpeningStage({
     return () => clearTimeout(id);
   }, [prismOn, play]);
 
+  // Retour à la pénombre de la pile après une Mythique : annulé si la scène change avant (récap, autre booster)
+  const mythicDim = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearMythicDim = useCallback(() => {
+    if (mythicDim.current) clearTimeout(mythicDim.current);
+    mythicDim.current = null;
+  }, []);
+  useEffect(() => clearMythicDim, [clearMythicDim]);
+
   const onMythic = useCallback(() => {
     setDepth(1);
     setShake((s) => s + 1);
-    setTimeout(() => setDepth(0.25), 2200);
-  }, []);
+    clearMythicDim();
+    mythicDim.current = setTimeout(() => {
+      mythicDim.current = null;
+      setDepth(0.25);
+    }, 2200);
+  }, [clearMythicDim]);
 
   const toRecap = useCallback(() => {
+    clearMythicDim();
     setStage("recap");
     setDepth(0);
-  }, []);
+  }, [clearMythicDim]);
 
   /** Nouveau booster intact ; `next` : sachet scellé à ouvrir sur la scène (sinon le booster de la page). */
   const again = (next: SealedTarget | null = null) => {
@@ -330,6 +352,9 @@ export function OpeningStage({
     omenRef.current = null;
     transformSeen.current = false;
     omenSeen.current = false;
+    // Le nouveau booster s'affiche sur le fond du rituel au repos (la transformation et la Mythique l'assombrissaient)
+    clearMythicDim();
+    setDepth(0);
     setPrismOn(false);
     setBoosters(null);
     setError(null);
@@ -440,8 +465,10 @@ export function OpeningStage({
           <SoundToggle enabled={fx.enabled} onChange={fx.setEnabled} />
         </div>
 
+        {/* Région présente dès le départ (une région montée avec son texte n'est pas lue) : l'ouverture en cours, puis
+            l'issue de l'Apocalyptique, que le sceau fendu montre sans texte à focaliser */}
         <p aria-live="polite" className="sr-only">
-          {stage === "opening" ? t("opening") : ""}
+          {stage === "opening" ? t("opening") : stage === "omen" && outcome ? tSealed(outcome === "SPARED" ? "spared" : "ruined") : ""}
         </p>
 
         {error && (
@@ -531,7 +558,7 @@ export function OpeningStage({
                   {sealedOpen ? (
                     <p className={`flex items-center gap-1.5 text-center text-sm font-bold ${sealedOpen.kind === "divin" || blessed ? "text-kin" : "text-shu"}`}>
                       <span aria-hidden="true" lang="ja" className="font-seal">
-                        {sealedOpen.kind === "divin" ? "天" : "滅"}
+                        {sealedGlyph(sealedOpen.kind)}
                       </span>
                       {sealedOpen.kind === "divin"
                         ? tSealed("readyDivin")
@@ -563,7 +590,7 @@ export function OpeningStage({
           )}
 
           {stage === "transform" && firstDrop && dropDisplay && (
-            <m.div key="transform" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+            <m.div key="transform" ref={landing} className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
               <SealedTransform display={dropDisplay} more={drops.length - 1} lite={lite} reduced={reduced}>
                 {deckCards.length > 0 ? (
                   // D'autres boosters ont des cartes : la pile d'abord, le sachet attend au récap
@@ -615,10 +642,10 @@ export function OpeningStage({
           )}
 
           {stage === "recap" && boosters && (
-            <m.div key="recap" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <m.div key="recap" ref={landing} className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               {drops.length > 0 && (
                 <section aria-labelledby="recap-sealed" className="mx-auto mb-6 flex w-full max-w-md flex-col gap-2 rounded-card border border-kin bg-surface p-4">
-                  <h2 id="recap-sealed" className="flex items-center gap-2 font-title text-lg font-bold">
+                  <h2 id="recap-sealed" tabIndex={-1} className="flex items-center gap-2 font-title text-lg font-bold">
                     <span aria-hidden="true" lang="ja" className="font-seal text-kin">
                       封
                     </span>
@@ -629,7 +656,7 @@ export function OpeningStage({
                       <li key={d.id} className="flex flex-wrap items-center justify-between gap-2">
                         <span className="flex items-center gap-1.5 font-bold">
                           <span aria-hidden="true" lang="ja" className="font-seal">
-                            {d.kind === "divin" ? "天" : "滅"}
+                            {sealedGlyph(d.kind)}
                           </span>
                           {sealedTypes[d.kind]?.name}
                         </span>
@@ -675,6 +702,8 @@ export function OpeningStage({
                   setCount(n);
                   setConfirmed(null);
                 }}
+                // Comme sur l'écran prêt : seulement pour un booster du stock gratuit
+                nextFree={type.usesFreeStock && !openedSealed && !openedCredit}
               />
               {isGuest && <GuestSignupPrompt invite={guestInvite} />}
             </m.div>

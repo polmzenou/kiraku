@@ -1122,6 +1122,7 @@
     "newCard": "Nouveau",
     "regainedCard": "Retrouvée",
     "revealCard": "Retourner la carte",
+    "revealedCard": "{name} : {rarity}{isNew, select, yes {, nouvelle carte} other {}}",
     "nextCard": "Carte suivante",
     "deckProgress": "Carte {current} sur {total}",
     "deckDone": "Toutes les cartes sont sorties",

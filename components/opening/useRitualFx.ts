@@ -38,14 +38,13 @@ const snapshot = () => memory ?? (memory = read());
 export function useRitualFx() {
   const enabled = useSyncExternalStore(subscribe, snapshot, () => false);
 
-  const play = useCallback(
-    (name: SoundName, haptic?: number | number[]) => {
-      if (!enabled) return;
-      playSound(name);
-      if (haptic !== undefined) vibrate(haptic);
-    },
-    [enabled],
-  );
+  // Le réglage est lu au moment de jouer, pas à la création de `play` : un son déjà programmé (repère d'une scène,
+  // retournement après la charge, rite lancé une fois) se tait si le joueur coupe le son entre-temps
+  const play = useCallback((name: SoundName, haptic?: number | number[]) => {
+    if (!snapshot()) return;
+    playSound(name);
+    if (haptic !== undefined) vibrate(haptic);
+  }, []);
 
   return { enabled, setEnabled: write, play };
 }

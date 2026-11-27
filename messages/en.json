@@ -1122,6 +1122,7 @@
     "newCard": "New",
     "regainedCard": "Found again",
     "revealCard": "Flip the card",
+    "revealedCard": "{name}: {rarity}{isNew, select, yes {, new card} other {}}",
     "nextCard": "Next card",
     "deckProgress": "Card {current} of {total}",
     "deckDone": "Every card is out",

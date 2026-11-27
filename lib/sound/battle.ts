@@ -1,6 +1,6 @@
 import type { ArenaId } from "@/lib/battle/arenas";
 import type { BattleSound } from "@/lib/battle/choreography";
-import { audio, burst, noise, tone } from "./synth";
+import { audio, burst, noise, tone, whenRunning } from "./synth";
 
 // Sons du combat, synthétisés en Web Audio (aucun fichier à charger) et chargés à la demande. Bus
 // commun : compresseur, puis réverbération générée (bruit qui décroît) pour donner de l'ampleur aux
@@ -75,10 +75,14 @@ function taiko(ac: AudioContext, out: AudioNode, at: number, peak = 0.9) {
   burst(ac, out, at, { duration: 0.1, from: 700, to: 180, q: 0.6, peak: peak * 0.4 });
 }
 
-/** Joue un bruitage du combat. */
+/** Joue un bruitage du combat (jamais dans un contexte qui dort : les coups partiraient tous ensemble au réveil). */
 export function playBattleSound(name: BattleSound) {
   const ac = audio();
   if (!ac) return;
+  whenRunning(ac, () => battleSound(ac, name));
+}
+
+function battleSound(ac: AudioContext, name: BattleSound) {
   const out = busFor(ac).sfx;
   const t = ac.currentTime + 0.01;
   switch (name) {

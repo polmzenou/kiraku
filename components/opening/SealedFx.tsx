@@ -76,7 +76,7 @@ export function SealedTransform({
         />
       </div>
       <div className="sealed-title relative z-10 flex flex-col items-center gap-1 text-center">
-        <h2 id="sealed-transform-title" className="font-heading text-3xl font-extrabold tracking-wide uppercase sm:text-4xl">
+        <h2 id="sealed-transform-title" tabIndex={-1} className="font-heading text-3xl font-extrabold tracking-wide uppercase sm:text-4xl">
           {t(kind === "divin" ? "transformDivin" : "transformApocalypse")}
         </h2>
         <p className="text-sm text-text-muted">{display.tagline}</p>
@@ -117,8 +117,9 @@ export function ApocalypseOmen({
     return () => clearTimeout(id);
   }, [reduced]);
   const spared = outcome === "SPARED";
+  // L'issue est annoncée par la région live de la scène (OpeningStage) : celle-ci, montée avec son texte, ne l'était pas
   return (
-    <div className="omen" data-outcome={outcome} role="status" aria-live="assertive">
+    <div className="omen" data-outcome={outcome}>
       <div className="omen-seal" aria-hidden="true">
         {spared && !reduced && <span className="omen-light" />}
         {(["left", "right"] as const).map((side) => (
@@ -153,7 +154,7 @@ export function ApocalypseOmen({
   );
 }
 
-/** Kanji et libellé d'un sachet scellé (badges du récap). */
+/** Kanji d'un sachet scellé (sachet sur la scène, sachets tombés du récap). */
 export function sealedGlyph(kind: SealedKind): string {
   return kind === "divin" ? "天" : "滅";
 }

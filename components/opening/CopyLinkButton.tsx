@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getPathname } from "@/i18n/navigation";
 import { withShareCode } from "@/lib/referral/share";
 import { useShareCode } from "../referral/ShareCode";
@@ -12,13 +12,19 @@ export function CopyLinkButton({ openingId }: { openingId: string }) {
   const locale = useLocale();
   const [copied, setCopied] = useState(false);
   const shareCode = useShareCode();
+  // « Copié » reste 2 s après la dernière copie : la minuterie repart à chaque copie et s'arrête au démontage
+  const reset = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (reset.current) clearTimeout(reset.current);
+  }, []);
 
   async function copy() {
     const url = withShareCode(new URL(getPathname({ href: `/tirage/${openingId}`, locale }), window.location.origin).href, shareCode);
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (reset.current) clearTimeout(reset.current);
+      reset.current = setTimeout(() => setCopied(false), 2000);
     } catch {
       window.prompt(t("copyLink"), url);
     }
