@@ -32,9 +32,9 @@ La clé publique ne remplace ni le jeton du bot ni `AUTH_DISCORD_SECRET`.
 
 ### Activer le règlement
 
-1. Appliquer `npm run db:deploy` avec la base du VPS, construire l'application avec `npm run build`,
-   puis redémarrer `pm2 restart kiraku --update-env`. Ne pas utiliser la base locale obsolète pour
-   cette migration. Le redémarrage est nécessaire après modification de l'environnement.
+1. Sur le VPS, `bash deploy/deploy.sh` : migrations, build et bascule. Il faut un déploiement après toute
+   modification de l'environnement : la release en ligne lit la copie du `.env` faite à son build
+   (`deploy/README.md`, « Changer une variable d'environnement »).
 2. Donner **Gérer les rôles** au bot et placer son rôle au-dessus de **Membre**, sous l'équipe.
 3. Dans le salon du règlement, autoriser au bot **Voir le salon**, **Voir l'historique**,
    **Envoyer des messages** et **Intégrer des liens**.
@@ -58,9 +58,9 @@ supprimé sur Discord, la prochaine publication le recrée.
 1. Ajouter les six nouvelles variables `DISCORD_ROLES_CHANNEL_ID`, `DISCORD_MERCHANT_ROLE_ID`,
    `DISCORD_COLLECTOR_ROLE_ID`, `DISCORD_FIGHTER_ROLE_ID`, `DISCORD_LINKED_ROLE_ID` et
    `DISCORD_RANKED_CHANNEL_ID` dans l'environnement de l'application du VPS.
-2. Appliquer `npm run db:deploy`, puis `npm run build` et `pm2 restart kiraku --update-env`.
+2. `bash deploy/deploy.sh` sur le VPS (migrations, build et bascule).
    La migration `20261030140000_discord_roles_ranked` ajoute la file des comptes liés et le
-   classement figé des saisons. Ne pas la lancer sur la base locale obsolète.
+   classement figé des saisons.
 3. Placer **Marchand**, **Collectionneur**, **Fighter** et **Joueur Kiraku vérifié** sous le rôle du
    bot. Ces quatre rôles n'ont besoin d'aucune permission de gestion. Le bot conserve **Gérer les rôles**.
 4. Dans `#rôles`, donner au bot **Voir le salon**, **Voir l'historique**, **Envoyer des messages**
@@ -158,7 +158,7 @@ ni du port interne de l'application ni du conteneur PostgreSQL.
    **Voir l'historique**, **Envoyer des messages**, **Intégrer des liens** et **Joindre des fichiers**
    (la bande-annonce de l'ouverture est jointe au message).
 2. Ajouter `DISCORD_CASINO_CHANNEL_ID="…"` à l'environnement de l'application du VPS, puis
-   `npm run build` et `pm2 restart kiraku --update-env`.
+   `bash deploy/deploy.sh`.
 3. Dans `/admin/discord`, activer **Annonces du casino sur Discord**, choisir la rareté à partir de laquelle
    un lancer est relayé (Légendaire par défaut), puis enregistrer.
 4. Quelques jours avant l'ouverture, une fois la date réglée dans `/admin/casino`, cliquer sur
@@ -179,8 +179,8 @@ Les messages viennent de `lib/discord/casino-message.ts` ; les images (`public/c
 
 1. Créer un salon d'annonces du prestige, en lecture seule pour les membres (ou réutiliser celui du casino). Donner au
    bot **Voir le salon**, **Voir l'historique**, **Envoyer des messages** et **Intégrer des liens**.
-2. Ajouter `DISCORD_PRESTIGE_CHANNEL_ID="…"` à l'environnement de l'application du VPS, puis `npm run build` et
-   `pm2 restart kiraku --update-env`.
+2. Ajouter `DISCORD_PRESTIGE_CHANNEL_ID="…"` à l'environnement de l'application du VPS, puis
+   `bash deploy/deploy.sh`.
 3. Dans `/admin/discord`, activer **Annonces du prestige sur Discord** (coupé par défaut), puis enregistrer.
 4. Le cron minute (`/api/cron/discord`) relaie alors, dans la minute :
    - chaque renaissance (`prestige:rebirth:<cycle>`) : chiffre romain atteint, rang global (« 7ᵉ renaissance de
@@ -199,8 +199,8 @@ Le Marché et le casino annoncent aussi l'exemplaire quand il est spécial (« G
    Donner au bot **Voir le salon**, **Voir l'historique**, **Envoyer des messages** et **Intégrer des liens**.
    Un rôle d'équipe sans droit de gestion (nouveau rôle de modération) s'ajoute par
    `DISCORD_STAFF_ROLE_IDS="id,id"` ; sinon le salon est refusé et une alerte `referral-channel` part dans #logs-bot.
-2. Ajouter `DISCORD_REFERRAL_CHANNEL_ID="…"` à l'environnement de l'application du VPS, puis `npm run build` et
-   `pm2 restart kiraku --update-env`. Sans cette variable, rien n'est posté et le parrainage marche pareil.
+2. Ajouter `DISCORD_REFERRAL_CHANNEL_ID="…"` à l'environnement de l'application du VPS, puis
+   `bash deploy/deploy.sh`. Sans cette variable, rien n'est posté et le parrainage marche pareil.
 3. Le cron minute (`/api/cron/discord`) relaie alors, dans l'ordre d'arrivée :
    - chaque étape versée (`referral:step:<parrainage>:<n>`) : ce que le filleul et le parrain ont reçu, l'Ennichi,
      l'âge et la confiance du filleul, ses boosters hors cadeau et ses jours actifs, la paire (appareil et IP communs
@@ -215,8 +215,8 @@ Le Marché et le casino annoncent aussi l'exemplaire quand il est spécial (« G
 
 1. Choisir le salon des annonces de la communauté. Donner au bot **Voir le salon**, **Envoyer des messages**,
    **Intégrer des liens** et **Mentionner @everyone, @here et tous les rôles**.
-2. Ajouter `DISCORD_ANNOUNCE_CHANNEL_ID="…"` à l'environnement de l'application du VPS, puis `npm run build` et
-   `pm2 restart kiraku --update-env`.
+2. Ajouter `DISCORD_ANNOUNCE_CHANNEL_ID="…"` à l'environnement de l'application du VPS, puis
+   `bash deploy/deploy.sh`.
 3. Dans `/admin/parrainage/annonce`, relire l'aperçu (montants réglés en ce moment, Ennichi s'il est annoncé ou en
    cours) puis « Publier » : le message part avec @everyone. « Mettre à jour » corrige le même message plus tard, sans
    notifier de nouveau. Toute l'équipe peut publier ; chaque publication va au journal admin. Aucun cron ne reprend
@@ -251,8 +251,8 @@ ne doivent pas pouvoir le voir. Le compte du bot a un accès explicite pour voir
 envoyer et intégrer des liens. Les rôles de préférences n'ont aucun accès supplémentaire.
 
 1. Ajouter `DISCORD_ALERTS_CHANNEL_ID="1565779152106291380"` à l'environnement de l'application du VPS.
-2. Appliquer `npm run db:deploy` (migration `20261030150000_discord_technical_alerts`), construire
-   avec `npm run build`, puis redémarrer `pm2 restart kiraku --update-env`.
+2. `bash deploy/deploy.sh` sur le VPS : il applique la migration `20261030150000_discord_technical_alerts`,
+   construit et bascule.
 3. Dans **Administration → Discord → Alertes techniques privées**, cliquer sur
    **Tester le salon des alertes**. Le test vérifie que le salon appartient au serveur et que seuls
    les rôles de l'équipe et le bot ont un accès explicite en lecture.
@@ -382,10 +382,9 @@ déjà liés avant l'activation ne sont pas annoncés rétroactivement.
    ni préfixé par `NEXT_PUBLIC_`.
 
 En local, ajouter ces variables dans `.env.local`, puis redémarrer `npm run dev`.
-Sur Vercel, ouvrir le projet → **Paramètres** → **Variables d'environnement**, ajouter les deux
-variables pour **Production**, puis redéployer la version contenant ce code. Les libellés Vercel
-peuvent être en anglais (`Settings`, `Environment Variables`, `Redeploy`). Configurer les
-environnements de test séparément si les annonces doivent aussi y être actives.
+En production, les ajouter à `~/kiraku/.env` sur le VPS, puis `bash deploy/deploy.sh` (la release en ligne
+lit la copie du `.env` faite à son build). Configurer les environnements de test séparément si les annonces
+doivent aussi y être actives.
 
 ## Vérification
 

@@ -37,11 +37,25 @@ die() { printf '\n\033[1;31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
 trap 'die "Échec à la ligne $LINENO : la version en ligne n’a pas changé (sauf mention contraire plus haut)."' ERR
 
 command -v pm2 >/dev/null || die "pm2 introuvable."
+# Le verrou (descripteur 9) ne doit pas passer à pm2 : si son démon n'est pas lancé, la première commande pm2 le
+# démarre, et il garderait le verrou tant qu'il vit, bloquant tous les déploiements suivants.
+pm2() { command pm2 "$@" 9>&-; }
 mkdir -p "$ROOT/releases"
 exec 9>"$ROOT/.lock"
 flock -n 9 || die "Un déploiement est déjà en cours."
 START=$(date +%s)
 CURRENT=$(readlink -f "$ROOT/current" 2>/dev/null || true)
+
+# Release en préparation : effacée si le déploiement s'arrête avant qu'elle soit en ligne (copie incomplète,
+# version qui ne répond pas), pour qu'un --rollback ne tombe jamais dessus.
+PENDING=""
+discard_pending() {
+  [ -n "$PENDING" ] && [ -d "$PENDING" ] || return 0
+  [ "$(readlink -f "$ROOT/current" 2>/dev/null || true)" = "$(readlink -f "$PENDING")" ] && return 0
+  rm -rf -- "$PENDING"
+  printf '  Release inachevée effacée : %s\n' "$(basename "$PENDING")" >&2
+}
+trap discard_pending EXIT
 
 # Prête quand la base répond (/api/health) et que l'accueil s'affiche en entier.
 healthy() {
@@ -109,7 +123,9 @@ else
   nice -n 10 npm ci --no-audit --no-fund
   echo "$LOCK_HASH" > "$ROOT/.lock-hash"
 fi
-node scripts/check-deploy-env.mjs
+# --production : NODE_ENV n'est pas posé dans ce shell, le précontrôle jugerait sinon un environnement local et ne
+# vérifierait ni APP_URL en https ni CRON_SECRET, sans lesquels la nouvelle version refuse de démarrer.
+node scripts/check-deploy-env.mjs --production
 
 # La CI (lint, types, tests) est-elle verte pour ce commit ? Si oui, le build ne refait pas le typecheck.
 ci_green() {
@@ -136,7 +152,9 @@ fi
 SKIP_BUILD_TYPECHECK=$SKIP nice -n 10 npm run build
 
 step "Migrations"
-npx prisma migrate deploy
+if ! npx prisma migrate deploy; then
+  die "Migrations en échec : la version en ligne n'a pas changé, mais les migrations passées avant l'erreur restent appliquées. État : npx prisma migrate status. Une migration en échec bloque les suivantes jusqu'à « npx prisma migrate resolve » (voir la doc de Prisma), une fois sa cause corrigée."
+fi
 if [ "$SEED" = 1 ]; then
   step "Seeds de départ"
   npx tsx scripts/seed-boosters.mts
@@ -145,6 +163,7 @@ fi
 
 step "Release"
 REL="$ROOT/releases/$(date +%Y%m%d-%H%M%S)-${SHA:0:7}"
+PENDING="$REL"
 cp -a .next/standalone "$REL"
 mkdir -p "$REL/public" "$REL/.next/static"
 cp -a public/. "$REL/public/"
@@ -157,6 +176,7 @@ chmod 600 "$REL"/.env* 2>/dev/null || true
 info "$(du -sh "$REL" | cut -f1) dans $REL"
 
 switch_to "$REL"
+PENDING=""
 
 # Ménage : les $KEEP releases les plus récentes restent pour un retour arrière
 ls -1dt "$ROOT"/releases/*/ | tail -n +"$((KEEP + 1))" | while read -r old; do

@@ -46,8 +46,8 @@ const rulesKeys = ["DISCORD_PUBLIC_KEY", "DISCORD_RULES_CHANNEL_ID", "DISCORD_ME
 if (rulesKeys.some(present)) requireKeys(["DISCORD_BOT_TOKEN", "AUTH_DISCORD_ID", "DISCORD_GUILD_ID", ...rulesKeys]);
 if (present("DISCORD_MARKET_CHANNEL_ID")) requireKeys(["DISCORD_BOT_TOKEN", "DISCORD_GUILD_ID"]);
 if (present("DISCORD_ROLES_CHANNEL_ID")) requireKeys(["DISCORD_BOT_TOKEN", "AUTH_DISCORD_ID", "DISCORD_PUBLIC_KEY", "DISCORD_GUILD_ID", "DISCORD_MEMBER_ROLE_ID"]);
-if (["DISCORD_LINKED_ROLE_ID", "DISCORD_RANKED_CHANNEL_ID", "DISCORD_ALERTS_CHANNEL_ID", "DISCORD_CASINO_CHANNEL_ID", "DISCORD_REFERRAL_CHANNEL_ID", "DISCORD_ANNOUNCE_CHANNEL_ID"].some(present)) requireKeys(["DISCORD_BOT_TOKEN", "DISCORD_GUILD_ID"]);
-for (const key of ["DISCORD_LINK_CHANNEL_ID", "DISCORD_GUILD_ID", "DISCORD_RULES_CHANNEL_ID", "DISCORD_MEMBER_ROLE_ID", "DISCORD_MARKET_CHANNEL_ID", "DISCORD_ROLES_CHANNEL_ID", "DISCORD_MERCHANT_ROLE_ID", "DISCORD_COLLECTOR_ROLE_ID", "DISCORD_FIGHTER_ROLE_ID", "DISCORD_LINKED_ROLE_ID", "DISCORD_RANKED_CHANNEL_ID", "DISCORD_ALERTS_CHANNEL_ID", "DISCORD_CASINO_CHANNEL_ID", "DISCORD_GUIDE_CHANNEL_ID", "DISCORD_REFERRAL_CHANNEL_ID", "DISCORD_ANNOUNCE_CHANNEL_ID"]) {
+if (["DISCORD_LINKED_ROLE_ID", "DISCORD_RANKED_CHANNEL_ID", "DISCORD_ALERTS_CHANNEL_ID", "DISCORD_CASINO_CHANNEL_ID", "DISCORD_PRESTIGE_CHANNEL_ID", "DISCORD_REFERRAL_CHANNEL_ID", "DISCORD_ANNOUNCE_CHANNEL_ID"].some(present)) requireKeys(["DISCORD_BOT_TOKEN", "DISCORD_GUILD_ID"]);
+for (const key of ["DISCORD_LINK_CHANNEL_ID", "DISCORD_GUILD_ID", "DISCORD_RULES_CHANNEL_ID", "DISCORD_MEMBER_ROLE_ID", "DISCORD_MARKET_CHANNEL_ID", "DISCORD_ROLES_CHANNEL_ID", "DISCORD_MERCHANT_ROLE_ID", "DISCORD_COLLECTOR_ROLE_ID", "DISCORD_FIGHTER_ROLE_ID", "DISCORD_LINKED_ROLE_ID", "DISCORD_RANKED_CHANNEL_ID", "DISCORD_ALERTS_CHANNEL_ID", "DISCORD_CASINO_CHANNEL_ID", "DISCORD_PRESTIGE_CHANNEL_ID", "DISCORD_GUIDE_CHANNEL_ID", "DISCORD_REFERRAL_CHANNEL_ID", "DISCORD_ANNOUNCE_CHANNEL_ID"]) {
   if (present(key) && !/^[0-9]{17,20}$/.test(env[key])) errors.push(`${key} invalide`);
 }
 if (present("DISCORD_STAFF_ROLE_IDS") && !/^[0-9]{17,20}(,[0-9]{17,20})*$/.test(env.DISCORD_STAFF_ROLE_IDS)) errors.push("DISCORD_STAFF_ROLE_IDS invalide (« id,id »)");
@@ -61,6 +61,10 @@ if (present("ABLY_API_KEY") && !/^[^.:\s]+\.[^.:\s]+:\S+$/.test(env.ABLY_API_KEY
 if (present("VAPID_PUBLIC_KEY") && !/^[A-Za-z0-9_-]{80,100}$/.test(env.VAPID_PUBLIC_KEY)) errors.push("VAPID_PUBLIC_KEY invalide");
 if (present("VAPID_PRIVATE_KEY") && !/^[A-Za-z0-9_-]{40,50}$/.test(env.VAPID_PRIVATE_KEY)) errors.push("VAPID_PRIVATE_KEY invalide");
 if (present("VAPID_SUBJECT") && !/^(mailto:|https:\/\/)/.test(env.VAPID_SUBJECT)) errors.push("VAPID_SUBJECT invalide");
+// Mêmes formats que server/env.ts, qui refuse de démarrer sinon : mieux vaut l'apprendre avant le build et les migrations
+if (present("APP_ENV") && !["production", "preview", "development"].includes(env.APP_ENV)) errors.push("APP_ENV invalide (production, preview ou development)");
+if (present("ADS_ENABLED") && !["0", "1"].includes(env.ADS_ENABLED)) errors.push("ADS_ENABLED invalide (0 ou 1)");
+if (present("BLOB_PUBLIC_HOST") && !/^[a-z0-9-]+\.public\.blob\.vercel-storage\.com$/.test(env.BLOB_PUBLIC_HOST)) errors.push("BLOB_PUBLIC_HOST invalide (domaine du stockage, sans https:// ni chemin)");
 if (production) {
   // Sans APP_URL, l'application refuse de démarrer (server/env.ts)
   requireKeys(["APP_URL", "CRON_SECRET"]);

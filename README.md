@@ -1,45 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kiraku
 
-## Getting Started
+Application web mobile first d'ouverture de boosters de cartes de personnages d'anime (sachets → fuda), avec
+collection, amis, vitrines, hôtel des ventes en Zeni, combats 1v1 et mode classé.
 
-First, run the development server:
+## Documentation
+
+- `docs/PLAN.md` : le plan complet (jeu, architecture, sécurité, roadmap). Il fait foi.
+- `CLAUDE.md` : la stack, les règles non négociables et la direction artistique, en bref.
+- `deploy/README.md` : déploiement sur le VPS, crons, sauvegarde et restauration de la base.
+- `docs/MISE-EN-PRODUCTION.md` : la liste à cocher avant chaque lancement.
+- Guides par sujet : `docs/DISCORD.md`, `docs/admin-catalogue.md`, `docs/catalog-import.md`,
+  `docs/KYARA-IMPORT.md`.
+
+## Développement
+
+Node 22 (voir `engines` dans `package.json`) et une base PostgreSQL 17 à soi, jamais celle de la production.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm ci                         # dépendances, puis prisma generate
+cp .env.example .env.local     # à remplir (aucune variable NEXT_PUBLIC_)
+npx prisma migrate deploy      # schéma sur la base de .env.local
+npm run dev                    # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Avant de pousser, les contrôles de la CI :
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run lint
+npm run typecheck
+npm run test:unit
+npm run test:sim
+npm run audit:actions
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Les tests sur base réelle (`*.db.test.ts`) ne tournent qu'avec `DATABASE_URL_TEST`, qui vise une base jetable.
+
+## Production
+
+Un VPS OVH : le serveur Next.js autonome sous pm2 derrière Nginx, PostgreSQL 17 sur la même machine. Une mise à
+jour se fait par `bash deploy/deploy.sh` sur le VPS, une fois la PR fusionnée sur `main` (`deploy/README.md`).
 
 ## Images
 
 Les illustrations AniList et les avatars Discord sont chargés directement depuis leurs CDN.
 L'optimisation de `next/image` est désactivée globalement avec `images.unoptimized: true`
-dans `next.config.ts` pour éviter que les quotas de transformation Vercel bloquent leur affichage
+dans `next.config.ts` : à l'époque de Vercel, les quotas de transformation bloquaient leur affichage
 (`402 OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED`). Ce réglage couvre aussi les futures images.
 Le chargement différé et les dimensions des composants `Image` sont conservés.
 La disponibilité des fichiers dépend toujours des CDN d'origine.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

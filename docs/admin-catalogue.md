@@ -12,11 +12,12 @@ archive la remet en brouillon. Les exemplaires et historiques ne sont jamais sup
    puis contrôler la base cible avant `npm run db:deploy`. Les URL `DATABASE_URL` et
    `DIRECT_URL` restent inchangées ; local et production peuvent partager la même base.
    Redémarrer `npm run dev` après migration. Aucun merge Git n’est nécessaire pour le SQL.
-3. Dans Vercel, connecter un stockage **Blob public** au projet.
-4. Ajouter `BLOB_READ_WRITE_TOKEN` et `BLOB_PUBLIC_HOST` aux environnements concernés.
-   Le second est le domaine exact du stockage, par exemple
+3. Dans le tableau de bord Vercel, créer un stockage **Blob public** (le service de stockage reste chez
+   Vercel, même avec l’application sur le VPS) et copier son jeton de lecture-écriture.
+4. Ajouter `BLOB_READ_WRITE_TOKEN` et `BLOB_PUBLIC_HOST` aux environnements concernés (en production :
+   `~/kiraku/.env` sur le VPS). Le second est le domaine exact du stockage, par exemple
    `mon-stockage.public.blob.vercel-storage.com`, sans protocole ni chemin.
-5. Reconstruire l’application pour actualiser les domaines autorisés pour les images.
+5. Redéployer (`bash deploy/deploy.sh` sur le VPS) pour actualiser les domaines autorisés pour les images.
 
 Sans Blob, la création de brouillons et l’édition des autres champs restent possibles.
 L’envoi d’une nouvelle image affiche une erreur de configuration et conserve le formulaire.
@@ -43,8 +44,8 @@ La migration ne crée aucune carte de test et ne modifie ni les taux ni les para
 L’ajout de raretés et la publication de cartes personnalisées doivent être coordonnés avec
 le déploiement du nouveau code : une ancienne interface ne connaît pas ces nouveaux paliers.
 
-`npm run db:deploy` applique les migrations à la base configurée ; `vercel-build` le fait
-également avant la construction. Ne jamais exécuter les tests de mutations `*.db.test.ts`
+`npm run db:deploy` applique les migrations à la base configurée ; sur le VPS, `deploy/deploy.sh`
+le fait aussi, après la construction et avant la bascule. Ne jamais exécuter les tests de mutations `*.db.test.ts`
 contre cette base partagée : ils restent réservés à `DATABASE_URL_TEST`.
 
 L’import habituel reste `npm run catalog:import`. L’import complet

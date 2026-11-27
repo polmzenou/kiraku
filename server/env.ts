@@ -3,7 +3,7 @@ import { deploymentEnv, resolveAppUrl } from "@/lib/deployment";
 import { z } from "@/lib/zod";
 
 const schema = z.object({
-  DATABASE_URL: z.url(), // URL poolée (Supabase : pooler en mode transaction, port 6543), utilisée à l'exécution
+  DATABASE_URL: z.url(), // URL de la base utilisée à l'exécution (VPS : Postgres sur la même machine, 127.0.0.1)
   AUTH_SECRET: z.string().min(32),
   // Discord en attente : sans ces deux variables, la liaison est simplement masquée
   AUTH_DISCORD_ID: z.string().min(1).optional(),
@@ -50,7 +50,7 @@ const schema = z.object({
   BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
   BLOB_PUBLIC_HOST: z.string().regex(/^[a-z0-9-]+\.public\.blob\.vercel-storage\.com$/).optional(),
   ABLY_API_KEY: z.string().regex(/^[^.:\s]+\.[^.:\s]+:\S+$/).optional(),
-  // Vercel Cron (clôture des ventes) : envoyé par Vercel en « Authorization: Bearer … »
+  // Tâches planifiées (/api/cron/*) : envoyé par la crontab du VPS en « Authorization: Bearer … »
   CRON_SECRET: z.string().min(16).optional(),
   // Publicité AdSense : « 1 » charge le script et ouvre la CSP aux domaines Google (lib/ads/config.ts)
   ADS_ENABLED: z.enum(["0", "1"]).optional(),

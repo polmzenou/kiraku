@@ -3,9 +3,9 @@ import { prisma } from "@/server/db";
 import { overdueExpeditions, sweepExpeditions } from "@/server/expedition/queries";
 
 // Expéditions rentrées (étape 14) : clôture, gains, cartes rendues et notification « De retour ! », même
-// quand le joueur n'a pas le jeu ouvert. Sur le VPS toutes les 5 minutes (deploy/crontab.example) ; vercel.json
-// garde un appel par jour pour un déploiement Vercel. Filet derrière la clôture paresseuse (page, sondage de la
-// cloche) : la clôture est idempotente, un appel en double ne verse rien deux fois. Purge aussi les vieux plateaux
+// quand le joueur n'a pas le jeu ouvert. Sur le VPS toutes les 5 minutes (deploy/crontab.example). Filet derrière la
+// clôture paresseuse (page, sondage de la cloche) : la clôture est idempotente, un appel en double ne verse rien deux
+// fois. Purge aussi les vieux plateaux
 // d'offres, et compte les expéditions dont la clôture échoue encore (overdue) pour alerter.
 
 export const dynamic = "force-dynamic";

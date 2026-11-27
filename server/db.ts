@@ -1,6 +1,5 @@
 import "server-only";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { attachDatabasePool } from "@vercel/functions";
 import { PrismaClient } from "@/generated/prisma/client";
 import { env, isProduction } from "./env";
 import { createPgPool } from "./pg-adapter";
@@ -11,10 +10,8 @@ import { createPgPool } from "./pg-adapter";
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient; prismaClass?: typeof PrismaClient };
 
 function createClient() {
+  // Processus pm2 permanent sur le VPS : le pool ferme lui-même ses connexions inactives (server/pg-adapter.ts)
   const pool = createPgPool(env.DATABASE_URL);
-  // Fluid compute : l'instance reste en vie le temps de fermer les connexions inactives,
-  // au lieu de les laisser ouvertes côté Supabase quand elle se met en veille.
-  if (isProduction) attachDatabasePool(pool);
   // disposeExternalPool : en dev, le client remplacé après un `prisma generate` ferme son pool.
   return new PrismaClient({ adapter: new PrismaPg(pool, { disposeExternalPool: true }) });
 }

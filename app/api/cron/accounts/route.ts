@@ -12,7 +12,7 @@ import { purgeExpiredRateLimits } from "@/server/ratelimit";
 import { purgeReadNotifications } from "@/server/social/queries";
 import { getSetting } from "@/server/settings";
 
-// Tâches quotidiennes de ménage (vercel.json) :
+// Tâches quotidiennes de ménage (deploy/crontab.example, 04 h 30 sur le VPS) :
 // - anonymisation des comptes dont la suppression est arrivée à échéance (idempotente : un compte
 //   déjà anonymisé est ignoré) ;
 // - comptes invités abandonnés (créés il y a plus de guest.retentionDays jours, sans activité depuis) ;

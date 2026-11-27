@@ -20,7 +20,8 @@ function check(values: Record<string, string>) {
   });
 }
 
-describe("précontrôle de déploiement", () => {
+// Chaque cas lance un ou plusieurs processus Node : sous la charge de la suite complète, 5 s ne suffisent pas toujours
+describe("précontrôle de déploiement", { timeout: 30_000 }, () => {
   it("accepte le bot sans salon de liaison, mais refuse un accueil Discord incomplet", () => {
     expect(check({ DISCORD_BOT_TOKEN: "bot-secret" }).status).toBe(0);
     const result = check({ DISCORD_RULES_CHANNEL_ID: "1565778336947634266" });
@@ -39,6 +40,19 @@ describe("précontrôle de déploiement", () => {
     expect(missing.stderr).toContain("DISCORD_GUILD_ID manquante");
     expect(check({ DISCORD_CASINO_CHANNEL_ID: "wrong", DISCORD_GUILD_ID: "123456789012345678", DISCORD_BOT_TOKEN: "bot" }).stderr).toContain("DISCORD_CASINO_CHANNEL_ID invalide");
     expect(check({ DISCORD_CASINO_CHANNEL_ID: "1565778336947634266", DISCORD_GUILD_ID: "123456789012345678", DISCORD_BOT_TOKEN: "bot" }).status).toBe(0);
+  });
+  it("vérifie le salon du prestige comme les autres salons du bot", () => {
+    expect(check({ DISCORD_PRESTIGE_CHANNEL_ID: "1565778336947634266" }).stderr).toContain("DISCORD_GUILD_ID manquante");
+    expect(check({ DISCORD_PRESTIGE_CHANNEL_ID: "wrong", DISCORD_GUILD_ID: "123456789012345678", DISCORD_BOT_TOKEN: "bot" }).stderr).toContain("DISCORD_PRESTIGE_CHANNEL_ID invalide");
+  });
+  it("refuse les valeurs que server/env.ts rejetterait au démarrage", () => {
+    for (const [key, value] of [["APP_ENV", "prod"], ["ADS_ENABLED", "true"], ["BLOB_PUBLIC_HOST", "https://x.public.blob.vercel-storage.com"]]) {
+      const result = check({ [key]: value });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(`${key} invalide`);
+    }
+    const valid = check({ APP_ENV: "preview", ADS_ENABLED: "1", BLOB_PUBLIC_HOST: "abc-123.public.blob.vercel-storage.com" });
+    expect(valid.status, valid.stderr).toBe(0);
   });
   it("refuse de lancer les tests contre l'application même via l'hôte direct", () => {
     const result = check({ DATABASE_URL_TEST: "postgresql://postgres:secret@db.abcref.supabase.co:5432/postgres" });

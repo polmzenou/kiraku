@@ -1,11 +1,16 @@
-# Tâches planifiées de Kiraku sur le VPS (remplacent les crons de vercel.json, que seul Vercel exécute).
+# Tâches planifiées de Kiraku sur le VPS : la seule source des crons de la production.
 #
-# Installation, sur le VPS, avec l'utilisateur qui fait tourner pm2 :
+# Première installation, sur le VPS, avec l'utilisateur qui fait tourner pm2 :
 #   1. mkdir -p ~/.config/kiraku && install -m 600 /dev/null ~/.config/kiraku/cron-secret
 #      puis y écrire la valeur de CRON_SECRET de l'app (même valeur que dans son fichier d'env) ;
-#   2. crontab -l > /tmp/crontab.old 2>/dev/null; cat /tmp/crontab.old deploy/crontab.example | crontab -
+#   2. sauvegarde de la base : préparer la phrase de passe (deploy/README.md, « Sauvegarde de la base ») ;
+#   3. crontab -l > /tmp/crontab.old 2>/dev/null; cat /tmp/crontab.old deploy/crontab.example | crontab -
 #      (ou copier les lignes ci-dessous dans `crontab -e`) ;
-#   3. vérifier le lendemain : grep CRON /var/log/syslog et `pm2 logs` (lignes [cron]).
+#   4. vérifier le lendemain : grep CRON /var/log/syslog, `pm2 logs` (lignes [cron]) et ~/kiraku-backups/backup.log.
+# Mise à jour (lignes ajoutées ou changées ici) : NE PAS relancer l'étape 3, qui doublerait les lignes déjà en place.
+# Voir l'écart, depuis ~/kiraku :
+#   diff <(crontab -l | grep -v '^#' | grep . | sort) <(grep -v '^#' deploy/crontab.example | grep . | sort)
+# (« < » : ligne en place à retirer ou à changer ; « > » : ligne à ajouter), puis corriger avec `crontab -e`.
 # Adapter le port s'il n'est pas 3000. Les heures sont celles du VPS (UTC par défaut sur Ubuntu).
 
 # Marché : ventes terminées réglées, avis et annonces échus clos, toutes les 5 minutes (route bornée à 45 s).
@@ -28,3 +33,9 @@
 # Ennichi : paliers de lanternes versés à tous les joueurs éligibles, tirage de secours à la clôture et prix versés,
 # toutes les 5 minutes (sans effet tant que ennichi.enabled est coupé).
 */5 * * * * curl -fsS -m 60 -H "Authorization: Bearer $(cat $HOME/.config/kiraku/cron-secret)" http://127.0.0.1:3000/api/cron/ennichi >/dev/null
+
+# Sauvegarde de la base (deploy/backup.sh) : dump chiffré et vérifié, rotation, copie hors du serveur si réglée.
+# Journal : ~/kiraku-backups/backup.log. 03 h 17 : creux de trafic, loin des crons de 04 h. Pendant le dump (une à
+# deux minutes), une migration qui modifie une table attendrait sa fin en bloquant cette table : ne pas déployer à
+# cette heure-là.
+17 3 * * * bash $HOME/kiraku/deploy/backup.sh

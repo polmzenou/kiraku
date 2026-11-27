@@ -1,5 +1,9 @@
 # Bascule Neon → Supabase (25/10/2026)
 
+> **Historique.** La production a quitté Supabase pour le VPS OVH le 28/10/2026 (PostgreSQL 17 sur la même
+> machine que l'app). Ce document ne décrit plus la production ; il reste pour ses commandes de copie et de
+> vérification. Sauvegarde et restauration actuelles : `deploy/README.md`, « Sauvegarde de la base ».
+
 **Pourquoi.** Depuis le 25/10 vers 01 h UTC, Neon refuse toutes les connexions avec l'erreur `53000`
 (« exceeded the quota »), y compris en lecture. Les digests vus en prod (`1045450991`, `3382162756`, …)
 viennent tous de là.
@@ -142,31 +146,8 @@ après chaque `migrate deploy` qui ajoute des tables.
 - **Après la réactivation** : les nouvelles écritures sont sur Supabase. Revenir à Neon les perdrait.
   On corrige donc en avant, sur Supabase.
 
-## Sauvegardes quotidiennes (plan gratuit)
+## Sauvegardes
 
-Le plan gratuit Supabase ne fait aucune sauvegarde. Le workflow `.github/workflows/backup.yml`
-en fait une chaque nuit (03 h 17 UTC) : dump du schéma `public`, chiffré en AES-256, gardé 7 jours
-comme artefact GitHub. Coût : ~15 Mo de trafic Supabase par jour.
-
-**Mise en place (une fois)** : GitHub → dépôt → Settings → Secrets and variables → Actions →
-*New repository secret* :
-- `BACKUP_DATABASE_URL` : l'URL du pooler en **mode session** (port 5432), la même que `DIRECT_URL` ;
-- `BACKUP_PASSPHRASE` : une longue phrase secrète, à garder aussi **hors de GitHub** (gestionnaire
-  de mots de passe). Sans elle, les sauvegardes sont illisibles.
-
-Puis Actions → « Sauvegarde base » → *Run workflow* pour vérifier qu'un premier artefact apparaît.
-
-## Restaurer une sauvegarde
-
-1. Actions → « Sauvegarde base » → le run voulu → *Artifacts* : télécharger et dézipper
-   `kiraku-<date>.dump.gpg` dans `.migration/` (dossier ignoré par git).
-2. Déchiffrer :
-   ```bash
-   gpg --decrypt --output .migration/kiraku.dump .migration/kiraku-<date>.dump.gpg
-   ```
-3. Restaurer dans une base **vide** (nouveau projet Supabase, ou Postgres local pour inspecter) :
-   même commandes que les étapes 2.b et 2.c ci-dessus, avec l'image `postgres:17` et `TARGET_URL`
-   vers cette base. Restaurer par-dessus la base en service écraserait les données récentes :
-   restaurer à côté, comparer avec `scripts/compare-databases.mts`, puis basculer comme à
-   l'étape 5.
-4. Refaire le durcissement de l'étape 4, puis supprimer `.migration/kiraku.dump`.
+L'ancien workflow GitHub `.github/workflows/backup.yml` visait le pooler Supabase ; il n'a jamais abouti
+(toutes ses exécutions depuis le 26/10/2026 ont échoué) et a été retiré. Sauvegarde nocturne et restauration de la base du VPS :
+`deploy/README.md`, « Sauvegarde de la base ».

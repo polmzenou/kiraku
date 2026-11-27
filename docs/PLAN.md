@@ -98,16 +98,17 @@ La tâche planifiée appelle une route du serveur ; elle ne parle jamais directe
 | Besoin | Choix | Pourquoi |
 | --- | --- | --- |
 | Framework | Next.js App Router, TypeScript | Server Components pour les pages, Server Actions pour les mutations |
-| ORM | Prisma + `@prisma/adapter-pg` | Driver `pg` en TCP, transactions interactives OK ; TLS vérifié avec la CA Supabase épinglée (`server/pg-adapter.ts`) |
-| BDD | Supabase Postgres (Neon jusqu'au 25/10/2026) | Pooler en mode transaction (6543) au runtime, mode session (5432) pour les migrations ; Data API désactivée, RLS active sans politique |
+| ORM | Prisma + `@prisma/adapter-pg` | Driver `pg` en TCP, transactions interactives OK ; sans TLS vers la base locale, TLS vérifié vers tout autre hôte (`server/pg-adapter.ts`) |
+| BDD | PostgreSQL 17 sur le VPS OVH depuis le 28/10/2026 (Supabase du 25 au 28/10, Neon avant) | Conteneur Docker sur la même machine que l'app (`127.0.0.1:5432`), même URL au runtime et pour les migrations ; sauvegarde nocturne chiffrée (`deploy/backup.sh`) |
+| Hébergement | VPS OVH : serveur Next.js autonome sous pm2, derrière Nginx | `deploy/deploy.sh` (build, migrations, bascule sans coupure), crons de `deploy/crontab.example` ; mode d'emploi `deploy/README.md` |
 | Auth | Auth.js (NextAuth) + adaptateur Prisma | Discord/Google en un clic, sessions en base |
 | Validation | Zod | Chaque Server Action valide ses entrées |
-| Images | Vercel Blob ou Cloudinary + `next/image` | WebP redimensionné, servi par CDN |
+| Images | Vercel Blob (`@vercel/blob`, utilisable hors de Vercel) + `next/image` | WebP redimensionné à l'envoi, servi par le CDN du stockage ; optimiseur de `next/image` coupé (`images.unoptimized`) |
 | Anti-abus | Rate limit en base (table `RateLimit`, `server/ratelimit.ts`) | Limite ouvertures, enchères, défis ; lectures et sondages limités en mémoire, sans requête |
 | UI | Tailwind + Framer Motion | Animation d'ouverture et effet holo des cartes |
 | Temps réel | Ably (`ABLY_API_KEY`, facultatif en dev) | Combat en direct : le serveur publie, les navigateurs s'abonnent avec un jeton limité |
 
-Mets la région de la base et la région des fonctions Vercel au même endroit (Supabase eu-west-1, c'est-à-dire Dublin, et Vercel `dub1` dans `vercel.json`) : c'est le gain de latence le plus simple.
+La base tourne sur la même machine que l'app : aucun aller-retour réseau entre les deux (sur Vercel et Supabase, il fallait aligner leurs régions).
 
 ## Écrans et navigation (mobile first)
 
@@ -564,7 +565,7 @@ export async function placeBid(auctionId: string, amount: number) {
 
 Clôture : une fonction `settleAuction(id)` fait passer la vente de `ACTIVE` à `SOLD` ou `EXPIRED` avec un `updateMany({ where: { id, status: "ACTIVE" } })` ; si `count` vaut 0, quelqu'un l'a déjà clôturée et on s'arrête. Ensuite : la carte change de propriétaire (ou revient au vendeur), le vendeur reçoit le prix moins 5 %, l'exemplaire quitte les vitrines où il était exposé.
 
-Elle est appelée à deux endroits : quand quelqu'un affiche une vente terminée, et par une tâche planifiée qui balaie `status = ACTIVE AND endsAt < now()` (Vercel Cron). L'index `[status, endsAt]` rend ce balayage instantané.
+Elle est appelée à deux endroits : quand quelqu'un affiche une vente terminée, et par une tâche planifiée qui balaie `status = ACTIVE AND endsAt < now()` (crontab du VPS, toutes les 5 minutes). L'index `[status, endsAt]` rend ce balayage instantané.
 
 Pour la page du marché : liste paginée par curseur, filtres rareté/série/prix, tri « finit bientôt » par défaut. Rafraîchis le prix d'une vente ouverte toutes les 5 s (SWR) ; pas besoin de WebSocket au départ.
 
@@ -575,7 +576,7 @@ Pour la page du marché : liste paginée par curseur, filtres rareté/série/pri
 - **Ordre des verrous** : toujours la vente (`FOR UPDATE` ou `updateMany` conditionnel), puis les joueurs triés par id (`lockPlayers`), tous d'un coup (enchérisseur, ancien meneur, vendeur si achat immédiat). Deux mises croisées attendent au lieu de s'interbloquer.
 - **Cœur** (`server/market/auction-core.ts`, client injecté) : `createAuctionWith` (le serveur choisit l'exemplaire, hors vitrine de préférence), `placeBidWith` (surenchère `minNextBid`, anti-sniping `extendedEndsAt`, une mise qui atteint l'achat immédiat conclut la vente à ce prix), `buyNowWith` (`STALE` si le prix vu a changé), `cancelAuctionWith` (vendeur, seulement sans mise), `adminCancelAuctionWith` (rembourse, `AdminLog`), `settleAuctionWith` idempotent (`updateMany` sur `status = ACTIVE, endsAt ≤ now, currentBid` lu), `settleDueWith` (balayage). Règles pures et testées dans `lib/market/rules.ts`, filtres et curseur dans `lib/market/filters.ts`.
 - **Accès** : invités en consultation seule ; comptes de moins de `market.minAccountAgeHours` exclus ; `market.maxActivePerSeller` compté sous le verrou du vendeur. Tous les réglages `market.*` sont dans `/admin/marche`.
-- **Clôture (gratuite, plan Hobby)** : le sondage de la cloche (toutes les `notifications.pollSeconds`, onglet visible) clôt les ventes terminées du joueur, vendeur ou meneur, avant de lire ses notifications : gagnant prévenu et vendeur payé en moins d'une minute tant qu'ils ont le jeu ouvert. La fiche d'une vente terminée, « Mes ventes » et « Mes enchères » clôturent aussi ce qu'elles affichent. Filet de sécurité : Vercel Cron une fois par jour à 4 h UTC (`vercel.json` → `/api/cron/market`, balayage par lots de 100 pendant 45 s au plus, `Authorization: Bearer $CRON_SECRET` comparé en temps constant ; `CRON_SECRET` obligatoire en production, vérifié par `check-deploy-env`). Passer en Pro permettrait `* * * * *` sans autre changement.
+- **Clôture (gratuite, plan Hobby)** : le sondage de la cloche (toutes les `notifications.pollSeconds`, onglet visible) clôt les ventes terminées du joueur, vendeur ou meneur, avant de lire ses notifications : gagnant prévenu et vendeur payé en moins d'une minute tant qu'ils ont le jeu ouvert. La fiche d'une vente terminée, « Mes ventes » et « Mes enchères » clôturent aussi ce qu'elles affichent. Filet de sécurité : `/api/cron/market` toutes les 5 minutes par la crontab du VPS (`deploy/crontab.example` ; une fois par jour au temps de Vercel), balayage par lots de 100 pendant 45 s au plus, `Authorization: Bearer $CRON_SECRET` comparé en temps constant ; `CRON_SECRET` obligatoire en production, vérifié par `check-deploy-env`.
 - **Écrans** : `/marche` (onglets Toutes · Mes ventes · Mes enchères, filtres en formulaire GET repliable, curseur), `/marche/[id]` (prix sondé toutes les `market.pollSeconds`, mise en deux temps avec `useOptimistic`, achat immédiat, retrait), « Mettre en vente » dans la fiche carte de la collection. Notifications `OUTBID`, `AUCTION_WON`, `AUCTION_SOLD`, `AUCTION_EXPIRED`, `AUCTION_CANCELLED`. `/admin/economie` affiche les Zeni en séquestre.
 - **Tests** : `lib/market/*.test.ts` ; `server/market/market.db.test.ts` (50 enchères simultanées sur une vente, 12 clôtures simultanées, un enchérisseur sur 50 ventes, mises croisées, annulation contre mises, double mise en vente, achat immédiat contre mises, anti-sniping, expiration, annulation admin, bilan global), sauté sans `DATABASE_URL_TEST`.
 
@@ -761,7 +762,7 @@ Mini-jeu PvE sur `/expedition` (étape 14) : chaque jour, chaque joueur reçoit 
 - **Risques** : sûre (base = plafond = 100 %, gains modestes), équilibrée, périlleuse (gros gains, peut exiger une part du catalogue découvert, `Discovery`). Catalogue par défaut (`lib/expedition/catalog.ts`, installé depuis l'admin) : 18 modèles, trois par palier, d'1 h (Épique sûre, 150 Zeni + 1 booster) à 24 h (XR périlleuse, 5 000 Zeni + 20 boosters + 1 Mythique tirée).
 - **Offres du jour** (`ExpeditionBoard`) : tirage à graine (joueur + jour du fuseau du jeu), figé à la première lecture. La première est sûre (dans un palier que le joueur peut remplir), la dernière périlleuse, paliers et durées tous différents, pondérés par `weight`. Chaque offre se joue une fois par jour ; un abandon la laisse rejouable.
 - **Cycle** : une seule expédition en route (index unique partiel). Les cartes passent en `CardStatus.EXPEDITION` : marché, échanges, cadeaux, recyclage et combat les refusent d'eux-mêmes (ils exigent `COLLECTION`) ; elles restent dans les vitrines. Abandon : cartes rendues, aucun gain, `expedition.abandonCooldownHours` (3 h) d'attente. Fin normale : relance immédiate.
-- **Résultat** : tiré à la clôture (jamais au lancement), `crypto.randomInt(0, 10 000)` contre les chances photographiées au départ (`Expedition.snapshot`, `successPct`, `triumphPct` en points de base). Clôture idempotente sous le verrou du joueur : Zeni par le grand livre (`CoinReason.EXPEDITION`), boosters en `BoosterCredit`, lot bonus par `grantLot`, cartes rendues, notification `EXPEDITION_RETURNED` (Web Push). Déclenchée à l'affichage de la page, au sondage de la cloche et par `/api/cron/expedition` (toutes les 5 min sur le VPS, une fois par jour sur Vercel), même jeu coupé.
+- **Résultat** : tiré à la clôture (jamais au lancement), `crypto.randomInt(0, 10 000)` contre les chances photographiées au départ (`Expedition.snapshot`, `successPct`, `triumphPct` en points de base). Clôture idempotente sous le verrou du joueur : Zeni par le grand livre (`CoinReason.EXPEDITION`), boosters en `BoosterCredit`, lot bonus par `grantLot`, cartes rendues, notification `EXPEDITION_RETURNED` (Web Push). Déclenchée à l'affichage de la page, au sondage de la cloche et par `/api/cron/expedition` (toutes les 5 min, crontab du VPS), même jeu coupé.
 - **Écran** : laissez-passer (tegata) du jour, feuille d'équipe avec jauge ensō en direct et équipes proposées (optimale, économe), départ en maintenant le bouton, séquence de départ (sceau 遠征), rouleau peint (emakimono) du voyage avec compte à rebours et carnet de route, rapport scellé à ouvrir (大成功 · 成功 · 失敗), repos après abandon, journal. Animations en transform et opacity, mouvement réduit respecté, séquences en import dynamique.
 - **Admin** (`/admin/expeditions`) : interrupteur (aussi sur `/admin/fonctionnalites`), réglages, modèles par palier avec l'aperçu d'équilibrage (chances et gains attendus, Zeni par heure), installation du catalogue par défaut, suppression d'un modèle jamais joué (sinon désactivation), expéditions en route et rappel (cartes rendues sans gain, `AdminLog`), chiffres des 7 derniers jours.
 - **Code** : règles pures dans `lib/expedition/` (testées), écritures dans `server/expedition/expedition-core.ts` (client injecté), lectures dans `server/expedition/queries.ts`, actions dans `server/actions/expedition.ts` et `admin-expedition.ts`, écran dans `components/expedition/`. Export RGPD : section `expeditions`. Tests de base : `server/expedition/expedition.db.test.ts`.
@@ -1100,8 +1101,8 @@ Cinq pages publiques, liées depuis le pied de page et depuis l'inscription, cou
 
 | Page | Route | Contenu minimum |
 | --- | --- | --- |
-| Mentions légales | `/mentions-legales` | Éditeur (un particulier peut rester anonyme s'il a donné son identité à l'hébergeur), contact, directeur de publication, hébergeur (Vercel) et adresse |
-| Politique de confidentialité | `/confidentialite` | Responsable du traitement, données collectées (pseudo, e-mail, avatar et id Discord, adresse IP, journaux), finalités et base légale de chacune, durées de conservation, sous-traitants (Vercel, Supabase, Resend, Ably, Discord, Stripe plus tard), transferts hors UE, droits et comment les exercer, réclamation à la CNIL |
+| Mentions légales | `/mentions-legales` | Éditeur (un particulier peut rester anonyme s'il a donné son identité à l'hébergeur), contact, directeur de publication, hébergeur (OVHcloud, Vercel jusqu'au 28/10/2026) et adresse |
+| Politique de confidentialité | `/confidentialite` | Responsable du traitement, données collectées (pseudo, e-mail, avatar et id Discord, adresse IP, journaux), finalités et base légale de chacune, durées de conservation, sous-traitants (OVHcloud pour le serveur et la base, Vercel pour le stockage des images, Resend, Ably, Discord, Stripe plus tard), transferts hors UE, droits et comment les exercer, réclamation à la CNIL |
 | Politique cookies | `/cookies` | Liste des cookies et stockages locaux, rôle, durée, et lien pour modifier son choix |
 | Conditions d'utilisation | `/cgu` | Compte (un par personne), règles de jeu, Zeni et cartes sans valeur monétaire, sanctions et contestation, propriété des personnages, responsabilité |
 | Conditions de vente | `/cgv` | Seulement quand Stripe sera branché : prix, paiement, renonciation au droit de rétractation pour un contenu numérique livré immédiatement, remboursements |
@@ -1121,7 +1122,7 @@ Acceptation des CGU : chaque page légale porte un numéro de version. Le joueur
 
 ### Mise en œuvre (étape 10)
 
-- **Pages légales versionnées** (`LegalPage`) : `/mentions-legales`, `/confidentialite`, `/cookies`, `/cgu`, rendues avec `react-markdown` sans HTML brut (liens https, mailto et internes seulement), anciennes versions via `?v=N`. Textes v1 à compléter dans `prisma/seed/legal/*.md` (repères `[[…]]`), publiés par `npm run seed:legal` (aussi dans `vercel-build`, seulement si la table est vide). `/admin/legal` : brouillon fr/en, aperçu, publication, réacceptation forcée des CGU (`legal.termsRequiredVersion`).
+- **Pages légales versionnées** (`LegalPage`) : `/mentions-legales`, `/confidentialite`, `/cookies`, `/cgu`, rendues avec `react-markdown` sans HTML brut (liens https, mailto et internes seulement), anciennes versions via `?v=N`. Textes v1 à compléter dans `prisma/seed/legal/*.md` (repères `[[…]]`), publiés par `npm run seed:legal` (aussi par `deploy/deploy.sh --seed`, seulement si la table est vide). `/admin/legal` : brouillon fr/en, aperçu, publication, réacceptation forcée des CGU (`legal.termsRequiredVersion`).
 - **CGU** : case obligatoire à l'inscription e-mail ; `AccountGate` (layout) montre l'écran d'acceptation à tout compte inscrit en retard de version, Discord compris. Les invités voient une mention dans le pied de page.
 - **Mes données** (`/compte/donnees`) : export JSON (`POST /api/me/export`, liste blanche de champs, `account.exportsPerDay`), changement de pseudo (`account.usernameChangeDays`), langue mémorisée, suppression annulable (`account.deletionGraceDays`, compte gelé), anonymisation par `/api/cron/accounts` ou depuis `/admin/donnees`. Historique dans `DataRequest`.
 - **Cookies** : registre unique `lib/consent/registry.ts` (page Cookies générée depuis lui) ; bandeau CNIL prêt mais masqué tant que tout est exempté ; « Gérer les cookies » en pied de page.
@@ -1158,13 +1159,13 @@ Les trois risques réels sont la duplication de cartes ou de Zeni (concurrence),
 
 Performance :
 
-- Un seul `PrismaClient` partagé (singleton dans `lib/prisma.ts`), branché sur `@prisma/adapter-pg` et l'URL poolée (mode transaction).
+- Un seul `PrismaClient` partagé (singleton dans `server/db.ts`), branché sur `@prisma/adapter-pg` et un pool `pg` par processus (`server/pg-adapter.ts`).
 - Pages en Server Components ; seuls les éléments interactifs (ouverture, enchère, timer) sont des Client Components.
 - Catalogue et pages de cartes en cache (`revalidateTag` à l'ajout de cartes).
 - Images de cartes en WebP, deux tailles (vignette \~300 px, détail \~800 px), via CDN.
 - Pagination par curseur partout (marché, historique) ; la collection, bornée par la taille du catalogue, pagine par décalage.
 
-Consommation Vercel (plan Hobby : 1 M d'invocations, 4 h de CPU actif, 1 M de requêtes CDN, 10 Go de transfert d'origine sur 30 jours ; dépassées en octobre 2026, projet mis en pause) :
+Sobriété des requêtes, née des quotas de Vercel (plan Hobby : 1 M d'invocations, 4 h de CPU actif, 1 M de requêtes CDN, 10 Go de transfert d'origine sur 30 jours ; dépassées en octobre 2026, projet mis en pause). Depuis le passage au VPS le 28/10/2026, ces règles ménagent son processeur et sa base ; les mentions de Vercel et de Supabase ci-dessous décrivent les mesures de l'admin conçues pour eux :
 
 - Une seule connexion Ably par onglet (`components/realtime/RealtimeProvider.tsx`), ouverte seulement quand le joueur est là. Cloche, chat, file d'attente, salon et combat arrivent en direct ; les sondages ne sont que des secours (`realtime.safetyPollSeconds`, `battle.safetyPollSeconds`).
 - Tous les sondages passent par `usePoll` (`lib/realtime/schedule.ts`) : rien onglet caché ni après `activity.idleSeconds` sans geste, délai doublé sans nouveauté jusqu'à `activity.backoffMax`, reprise immédiate au retour. La cloche et la pastille du chat partagent un seul appel.
@@ -1207,7 +1208,7 @@ Aucune donnée envoyée par un joueur n'est jamais exécutée, ni comme SQL, ni 
 | En-têtes HTTP | Content-Security-Policy stricte avec nonce (scripts du site seulement, images AniList et Discord autorisées), HSTS, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` minimale, `frame-ancestors 'none'`. |
 | Redirections | Les `callbackUrl` d'Auth.js et tout paramètre de redirection sont limités à des chemins internes. |
 | Contenu de l'admin | Le lien Discord n'accepte que `https://discord.gg/…` ou `https://discord.com/invite/…` ; les URL d'images que les domaines listés dans `next.config` (`remotePatterns`). |
-| Abus et robots | Rate limit en base (repli en mémoire si la base ne répond pas) sur l'ouverture, les enchères, les défis, l'inscription et les formulaires ; protection anti-robots et pare-feu Vercel. |
+| Abus et robots | Rate limit en base (repli en mémoire si la base ne répond pas) sur l'ouverture, les enchères, les défis, l'inscription et les formulaires ; pare-feu du VPS (22, 80 et 443 seulement) et Nginx devant l'app, robots d'IA refusés (`app/robots.ts`). |
 | Comptes en série, ban contourné | Détection des multi-comptes (IP et appareil relevés) et bans réseau : une IP ou un appareil banni coupe tout l'accès, l'équipe exceptée (voir « Multi-comptes et bans réseau »). |
 | Secrets | Variables d'environnement côté serveur uniquement (jamais `NEXT_PUBLIC_`), modules marqués `server-only`, messages d'erreur génériques côté client, détails dans les logs. |
 | Dépendances | `npm audit` en CI, Dependabot ou Renovate, versions verrouillées. |
@@ -1391,7 +1392,7 @@ Objectif : un téléphone milieu de gamme en 4G charge une page en moins de 2,5 
 - **Polices** : `next/font`, avec des sous-ensembles pour les polices japonaises (Yuji Syuku ne sert qu'aux quelques kanji des sceaux et emblèmes), sinon elles pèsent plusieurs mégaoctets.
 - **Listes longues** : collection et marché virtualisés (TanStack Virtual) au-delà de quelques centaines de cartes.
 - **Poids du JavaScript** : composants client petits, imports dynamiques pour le replay de combat, l'admin et les sons ; budget suivi à chaque build.
-- **Mesure** : Vercel Speed Insights en production et Lighthouse en CI, avec un seuil qui bloque une régression.
+- **Mesure** : Lighthouse mobile (`npm run lighthouse`, seuils de `docs/MISE-EN-PRODUCTION.md`) ; Vercel Speed Insights n'est monté que sur Vercel, donc absent du VPS.
 
 ## Schéma Prisma
 
@@ -1405,8 +1406,8 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")  // URL poolée (Supabase, mode transaction)
-  directUrl = env("DIRECT_URL")    // pooler en mode session, pour migrate
+  url       = env("DATABASE_URL")  // base du VPS (127.0.0.1:5432) ; aujourd'hui dans prisma.config.ts
+  directUrl = env("DIRECT_URL")    // URL des migrations (la même sur le VPS)
 }
 
 enum Rarity { COMMON UNCOMMON RARE EPIC LEGENDARY MYTHIC }

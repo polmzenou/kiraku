@@ -52,5 +52,10 @@ next-env.d.ts
 /.import/
 /.migration
 
+# dumps de la base (sauvegardes, restaurations d'essai) : données des joueurs, dépôt public
+*.dump
+*.dump.gpg
+*.dump.gpg.sha256
+
 # caches des contrôles (ESLint)
 .eslintcache

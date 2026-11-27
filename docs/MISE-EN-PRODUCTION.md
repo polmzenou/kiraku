@@ -2,24 +2,29 @@
 
 Cette liste est à cocher pour **chaque lancement**. Une case vide reste une vérification à faire,
 même si le code est livré. Ne jamais lancer les tests `*.db.test.ts` contre la base utilisée par
-les joueurs. Le développement utilise actuellement la même base que la production : créer une
-base isolée (projet ou branche Supabase distinct) pour ces tests et pour les futurs développements
-qui modifient des données.
+les joueurs : `DATABASE_URL_TEST` vise toujours une base jetable (Postgres local, ou celle de la CI).
+
+La production tourne sur le VPS OVH depuis le 28/10/2026 : l'app sous pm2 derrière Nginx, PostgreSQL 17 dans un
+conteneur Docker sur la même machine. Déploiement, crons et sauvegarde : `deploy/README.md`. `bash deploy/deploy.sh`
+applique les migrations après le build et avant la bascule : les mentions « avant le redémarrage PM2 » ci-dessous
+sont tenues d'office par le script.
 
 ## Environnement et base
 
-- [ ] Relire toutes les variables de `.env.example` dans Vercel, en distinguant Production et Preview.
-  `DATABASE_URL` est le pooler Supabase en mode transaction (port 6543) ; `DIRECT_URL` vise le même
-  projet par le pooler en mode session (port 5432) : l'hôte direct `db.<ref>.supabase.co` est en IPv6
-  seulement, injoignable depuis Vercel. `AUTH_SECRET` a au moins 32 caractères.
+- [ ] Relire toutes les variables de `.env.example` dans `~/kiraku/.env` sur le VPS (recopié dans chaque release
+  au build : une variable changée n'est vue qu'au déploiement suivant). `DATABASE_URL` et `DIRECT_URL` visent la
+  base du VPS (`127.0.0.1:5432`). `AUTH_SECRET` a au moins 32 caractères.
 - [ ] Configurer `DATABASE_URL_TEST` sur une base **distincte** et appliquer les migrations
   sur cette base avant les tests. Garder cette variable hors du déploiement public.
-- [ ] `node scripts/check-deploy-env.mjs --production` termine sans erreur avec les valeurs de production.
-  Le script masque les secrets et vérifie les groupes de clés, les URL et la séparation de la base de test.
-- [ ] Projet Supabase de production choisi ; sauvegardes (et PITR selon le plan) activées et restauration vérifiée.
-- [ ] Data API Supabase désactivée et RLS active sur toutes les tables de `public` (advisors Supabase sans alerte de sécurité).
+- [ ] `node scripts/check-deploy-env.mjs --production` termine sans erreur avec les valeurs de production
+  (`deploy/deploy.sh` le lance à chaque déploiement). Le script masque les secrets et vérifie les groupes de clés,
+  les URL et la séparation de la base de test.
+- [ ] Sauvegarde nocturne installée (`deploy/backup.sh`, `deploy/README.md`, « Sauvegarde de la base ») : phrase de
+  passe aussi dans le gestionnaire de mots de passe, copie hors du serveur choisie, restauration testée sur un PC.
+- [ ] Postgres joignable seulement depuis le VPS : port publié sur `127.0.0.1`, pare-feu limité à 22, 80 et 443
+  (`sudo ufw status`).
 - [ ] `npm run db:status`, puis `npm run db:deploy` si nécessaire (`prisma migrate deploy`, jamais `db push`).
-  `vercel-build` fait déjà ce déploiement avant les seeds et le build.
+  `deploy/deploy.sh` fait déjà ce déploiement après le build, avant la bascule.
 
 Si Auth.js signale `AdapterError` puis `SessionTokenError` avec une colonne inexistante : vérifier
 d'abord `npm run db:status`. Le 16 octobre 2026, les migrations
@@ -36,21 +41,22 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
 - [ ] Resend : `RESEND_API_KEY`, `MAIL_FROM`, domaine vérifié, SPF et DKIM valides.
 - [ ] `APP_URL` correspond à l'origine HTTPS définitive, sans chemin.
 - [ ] Limitation anti-abus : en base (table `RateLimit`), rien à configurer. Supprimer les anciennes variables `UPSTASH_REDIS_REST_*` / `KV_REST_API_*` si elles traînent encore.
-  Aucun repli mémoire en production ; vérifier les quotas et les erreurs Redis.
+  Si la base ne répond pas, repli en mémoire par processus, journalisé `[ratelimit] base indisponible`.
 - [ ] Ably : `ABLY_API_KEY`, publication et abonnement autorisés, connexion de combat vérifiée.
 - [ ] Push : clés `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` configurées pour cet environnement.
-- [ ] `CRON_SECRET` aléatoire (au moins 16 caractères) ; crons installés dans la crontab du VPS
-  (`deploy/crontab.example`, `vercel.json` n'est lu que par Vercel) : `/api/cron/market` à 04:00,
-  `/api/cron/battle` à 04:15, `/api/cron/accounts` à 04:30. Sans eux : ni effacements RGPD à
-  échéance, ni purge des invités, de RateLimit, du chat et des tirages.
+- [ ] `CRON_SECRET` aléatoire (au moins 16 caractères) ; toutes les lignes de `deploy/crontab.example`
+  installées dans la crontab du VPS (commande de comparaison en tête du fichier) : marché, combat, expéditions et
+  Ennichi toutes les 5 minutes, Discord chaque minute, parrainage chaque heure, comptes et casino chaque nuit,
+  sauvegarde de la base à 03 h 17. Sans eux : ventes et expéditions closes seulement quand un joueur passe, ni
+  effacements RGPD à échéance, ni purge des invités, de RateLimit, du chat et des tirages, ni sauvegarde.
 - [ ] Domaine définitif et HTTPS valides. Soumettre au préchargement HSTS **uniquement une fois
   le domaine définitif**, après vérification de ses sous-domaines.
 
 ## Catalogue, contenu et réglages
 
 - [ ] Import du catalogue terminé, pools recalculés, saison classée ouverte.
-- [ ] Tous les repères `[[…]]` des contenus légaux remplis (éditeur, contact, hébergeur Vercel Inc.
-  et adresse vérifiée). Relire les versions française et anglaise.
+- [ ] Tous les repères `[[…]]` des contenus légaux remplis (éditeur, contact, hébergeur OVHcloud, et non plus
+  Vercel, et adresse vérifiée). Relire les versions française et anglaise.
 - [ ] Relecture juridique effectuée ; CGU v1 publiées et parcours d'acceptation validé.
 - [ ] `discord.joinModal.enabled = false`, `shop.premiumEnabled = false`.
 - [ ] État de `features.casino` décidé ; taux, prix et pools de boosters relus dans l'admin.
@@ -176,7 +182,8 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
   (toutes les 5 minutes : envoi des paliers de lanternes, tirage de secours à la date de clôture, prix restants).
 - [ ] Discord : salon **privé** de l'équipe créé, bot autorisé, `DISCORD_REFERRAL_CHANNEL_ID` posé (voir
   `docs/DISCORD.md`, « Activer le fil du parrainage ») ; salon public des annonces : `DISCORD_ANNOUNCE_CHANNEL_ID`,
-  bot autorisé à y écrire et à mentionner @everyone. Puis `npm run build` et redémarrage PM2.
+  bot autorisé à y écrire et à mentionner @everyone. Puis `bash deploy/deploy.sh` (les variables ne sont lues
+  qu'au build).
 - [ ] Tests sur base réelle passés sur la base de test (`DATABASE_URL_TEST`) : `server/referral/*.db.test.ts`,
   `server/ennichi/ennichi.db.test.ts`, `server/collection/transfer-guard.test.ts`.
 - [ ] `/admin/parrainage/reglages` relu par l'équipe : lots des étapes des deux côtés, part « confiance », paliers,
@@ -236,9 +243,8 @@ Après un changement de schéma, régénérer le client et redémarrer le serveu
   Essai : `style-src-elem 'self' 'nonce-…'`, `style-src-attr 'unsafe-inline'`.
   Si Next.js injecte une balise sans nonce, conserver la politique compatible et consigner la preuve
   dans `docs/AUDIT-10D.md` avant de cocher.
-- [ ] Speed Insights activé dans Vercel ; script `/_vercel/speed-insights/script.js` sur la même
-  origine, compatible avec `strict-dynamic`, collecte visible après déploiement.
-  Le composant est chargé sur Vercel ; le serveur local n'expose pas cette route.
+- [ ] Speed Insights : le composant n'est monté que sur Vercel (`VERCEL=1`), il est donc absent du VPS ;
+  rien à vérifier tant que la production n'y retourne pas.
 
 ## Lighthouse mobile
 
@@ -266,10 +272,12 @@ node scripts/lighthouse.mjs --base http://localhost:3001 --profile /u/PSEUDO_PUB
 
 - [ ] iPhone Safari, vrai appareil en 375 px : installation PWA, push, ouverture de booster, combat.
 - [ ] Android Chrome, vrai appareil en 375 px : mêmes parcours, plus installation par le bouton.
-- [ ] Vercel : pare-feu, protection anti-robots et Speed Insights activés ; logs et alertes surveillés.
-- [ ] Repli : déploiement précédent identifié et Instant Rollback accessible. Les migrations livrées
-  sont additives ; confirmer la compatibilité du déploiement précédent avant le lancement.
-  Un rollback Vercel ne restaure pas la base ; ne pas annuler une migration destructive par improvisation.
+- [ ] VPS : pare-feu (`ufw` : 22, 80 et 443 seulement), Nginx à jour de `deploy/nginx.conf.example`, mises à
+  jour de sécurité du système ; `pm2 logs kiraku` et `~/kiraku-backups/backup.log` surveillés.
+- [ ] Repli : `bash deploy/deploy.sh --rollback` remet la release précédente en quelques secondes. Les
+  migrations livrées sont additives ; confirmer la compatibilité de la release précédente avant le lancement.
+  Un retour arrière ne restaure pas la base ; ne pas annuler une migration destructive par improvisation
+  (restauration d'une sauvegarde : `deploy/README.md`).
 - [ ] Dernier tour : robots et sitemap, pages 404 et 500, parcours invité → Discord → CGU acceptées.
 
 Le bilan réellement exécuté et les réserves sont dans `docs/AUDIT-10D.md`.
