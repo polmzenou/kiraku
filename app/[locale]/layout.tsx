@@ -13,7 +13,8 @@ import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { SessionRefresh } from "@/components/auth/SessionRefresh";
 import { routing } from "@/i18n/routing";
 import { pickClientMessages } from "@/i18n/client-messages";
-import { parseTheme, THEME_COOKIE } from "@/lib/theme";
+import { parseTheme, THEME_COLORS, THEME_COOKIE } from "@/lib/theme";
+import { MAIN_CONTENT_ID } from "@/lib/nav";
 import { parseSpoilerMode, SPOILER_COOKIE } from "@/lib/spoiler";
 import { MOTION_COOKIE, parseMotionPref } from "@/lib/motion-pref";
 import { NAV_LAYOUT_COOKIE, parseNavLayout } from "@/lib/nav-layout";
@@ -51,15 +52,13 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
   };
 }
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#15120F" },
-    { media: "(prefers-color-scheme: light)", color: "#F3ECDF" },
-  ],
-};
+// Barre du navigateur aux couleurs du thème choisi (cookie), comme <html data-theme> : le thème ne suit pas celui
+// du système, une couleur par prefers-color-scheme peignait une barre claire au-dessus de Yoru (lib/theme-dom.ts
+// la suit quand le joueur change de thème)
+export async function generateViewport(): Promise<Viewport> {
+  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
+  return { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: THEME_COLORS[theme] };
+}
 
 export default async function LocaleLayout({ children, params }: LayoutProps<"/[locale]">) {
   const { locale } = await params;
@@ -85,10 +84,13 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
           <MotionPreferenceProvider initial={motion}>
             <RealtimeRoot>
               <AppHeader theme={theme} spoiler={spoiler} />
-              <AccountGate>
-                <SwipeNav>{children}</SwipeNav>
-                <PlayerAnnouncements />
-              </AccountGate>
+              {/* Cible du lien d'évitement de l'en-tête, décalée de la hauteur de l'en-tête collant */}
+              <div id={MAIN_CONTENT_ID} className="scroll-mt-[calc(4rem+env(safe-area-inset-top))]">
+                <AccountGate>
+                  <SwipeNav>{children}</SwipeNav>
+                  <PlayerAnnouncements />
+                </AccountGate>
+              </div>
             </RealtimeRoot>
             <ConsentManager />
             <ServiceWorkerRegister />

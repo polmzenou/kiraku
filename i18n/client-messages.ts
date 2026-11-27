@@ -1,10 +1,11 @@
 import type { AbstractIntlMessages } from "next-intl";
 
-// Namespaces lus par les composants client et leurs imports (dont Fuda et PageShell).
-// Les textes réservés au serveur et l'admin ne traversent pas le fournisseur public.
+// Namespaces lus par les composants client et leurs imports (dont Fuda). Les textes réservés au serveur et l'admin
+// ne traversent pas le fournisseur public : ni le pied de page (PageShell, ArcadeFooterLink et XFollowLink sont rendus
+// au serveur, footer et arcadePromo restent donc ici absents), ni les pages elles-mêmes.
 export const CLIENT_NAMESPACES = [
-  "account", "achievements", "ambassador", "arcadePromo", "auth", "battle", "boosters", "cardBack", "casino", "chat", "collection",
-  "common", "consent", "data", "discordJoin", "economy", "error", "event", "expedition", "footer", "friends", "prestige",
+  "account", "achievements", "ambassador", "auth", "battle", "boosters", "cardBack", "casino", "chat", "collection",
+  "common", "consent", "data", "discordJoin", "economy", "error", "event", "expedition", "friends", "prestige",
   "fuda", "gifts", "header", "home", "incense", "kyaraImport", "legal", "locale", "mail", "market", "nav",
   "news", "notifications", "opening", "playerName", "presence", "privacy", "profile", "push", "pwa", "ranked", "rarity", "referralV2", "invite", "ennichi", "sealed",
   "listings", "showcase", "spoiler", "theme", "time", "trades", "v1Welcome", "v2Announcement", "wiki", "wishlist", "wrapped",

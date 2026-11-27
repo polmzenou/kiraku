@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { isStaff } from "@/lib/admin/roles";
-import type { NavBadges } from "@/lib/nav";
+import { MAIN_CONTENT_ID, type NavBadges } from "@/lib/nav";
 import { Link } from "@/i18n/navigation";
 import type { Theme } from "@/lib/theme";
 import type { SpoilerMode } from "@/lib/spoiler";
@@ -80,6 +80,13 @@ export async function AppHeader({ theme, spoiler }: { theme: Theme; spoiler: Spo
 
   return (
     <>
+      {/* Lien d'évitement : premier arrêt du clavier, visible seulement au focus, il saute la navigation (WCAG 2.4.1) */}
+      <a
+        href={`#${MAIN_CONTENT_ID}`}
+        className="sr-only focus:not-sr-only focus:fixed focus:top-[calc(0.5rem+env(safe-area-inset-top))] focus:left-2 focus:z-50 focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-pill focus:bg-surface focus:px-4 focus:text-sm focus:font-bold focus:text-text focus:shadow-float"
+      >
+        {t("nav.skipToContent")}
+      </a>
       <header className="sticky top-0 z-40 border-b border-border/60 bg-bg/95 pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center gap-2 px-4 md:h-16 md:gap-4">
           {/* En barre latérale, le sceau du logo passe en haut du rail */}

@@ -33,16 +33,20 @@ export const AI_CRAWLERS = [
 // (un espace de crawl sans fin) et versions archivées des pages légales
 const PRIVATE = ["/api/", "/admin/", "/compte", "/collection", "/tirage/"];
 const VARIANTS = ["/wiki?", "/*?v="];
+// Images de partage (lib/seo/open-graph.ts) : leur adresse porte aussi « ?v=N » (version du dessin). Sans cette
+// exception, « /*?v= » les fermait à tous les robots, dont Twitterbot et LinkedInBot qui suivent robots.txt : les
+// liens partagés sur X s'affichaient sans image. La règle la plus longue l'emporte (/og-image contre /*?v=).
+const SHARE_IMAGES = ["/og-image"];
 
 function localized(paths: readonly string[]): string[] {
   return paths.flatMap((p) => (p.startsWith("/*") ? [p] : [p, `/en${p}`]));
 }
 
-export type RobotsRule = { userAgent: string | string[]; allow?: string; disallow: string | string[] };
+export type RobotsRule = { userAgent: string | string[]; allow?: string | string[]; disallow: string | string[] };
 
 export function productionRobotsRules(): RobotsRule[] {
   return [
     { userAgent: [...AI_CRAWLERS], disallow: "/" },
-    { userAgent: "*", allow: "/", disallow: [...localized(PRIVATE), ...localized(VARIANTS)] },
+    { userAgent: "*", allow: ["/", ...localized(SHARE_IMAGES)], disallow: [...localized(PRIVATE), ...localized(VARIANTS)] },
   ];
 }

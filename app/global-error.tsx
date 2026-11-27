@@ -7,9 +7,10 @@ import "./globals.css";
 /**
  * Dernier filet : une erreur dans le layout lui-même. Il remplace tout le document, sans
  * next-intl ni thème : le texte est donc fixe, dans les deux langues, et ne dit rien de l'erreur.
- * L'erreur part dans les logs du serveur (app/api/client-error).
+ * L'erreur part dans les logs du serveur (app/api/client-error). « Réessayer » relit la page sur le serveur
+ * (`retry`) : `reset` seul rejouait la réponse déjà reçue, en erreur.
  */
-export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function GlobalError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
   useEffect(() => {
     sendClientError(clientErrorReport(error, window.location.pathname, "global"));
   }, [error]);
@@ -20,7 +21,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         <p className="text-text-muted">Réessaie dans un instant. · Please try again in a moment.</p>
         <button
           type="button"
-          onClick={reset}
+          onClick={retry}
           className="inline-flex min-h-11 items-center rounded-control bg-shu-btn px-5 font-medium text-washi-paper"
         >
           Réessayer · Try again

@@ -335,13 +335,6 @@
 /* Fuda : cadre dans la matière de sa rareté, effets de matière (laque, or, nacre) qui suivent
    l'inclinaison (variables --mx / --my posées par FudaTilt, 0,5 = au repos). */
 @layer components {
-  .welcome-v1-card {
-    background:
-      linear-gradient(135deg, rgb(217 181 86 / 0.18), transparent 55%),
-      repeating-linear-gradient(45deg, transparent 0 7px, rgb(217 181 86 / 0.06) 7px 8px),
-      var(--k-surface);
-  }
-
   .fuda-sheen {
     position: absolute;
     inset: -50%;
@@ -1230,11 +1223,6 @@
   .fx-tremble {
     animation: fx-tremble 0.08s linear infinite;
   }
-  .fx-nacre {
-    background: conic-gradient(from var(--a, 0deg), #ffd9ec, #c9f1ff, #e6ffd4, #fff1c4, #e2d4ff, #ffd9ec);
-    mix-blend-mode: overlay;
-    animation: light-rays 6s linear infinite;
-  }
 }
 
 @keyframes ritual-dust {
@@ -1469,7 +1457,6 @@
   display: none;
 }
 :root[data-fx="lite"] .light-rays,
-:root[data-fx="lite"] .fx-nacre,
 :root[data-fx="lite"] .fuda-live .fuda-sheen,
 :root[data-fx="lite"] .booster-halo-breathe,
 :root[data-fx="lite"] .booster-floor-float,
@@ -1484,7 +1471,11 @@
   animation: fx-fade-in 0.8s ease-out 0.35s forwards;
 }
 
-/* Carrousel « Gros tirages » : la piste contient deux fois la liste, -50 % boucle sans saut */
+/* Filet du mouvement réduit (réglage du système, puis engrenage : <html data-motion="reduced">) : toute animation et
+   toute transition CSS se termine aussitôt, même sans variante motion-reduce dans le composant. En !important, il
+   passe devant les utilitaires et les attributs style ; tout le site s'y fie, ne pas l'affaiblir. Les animations Web
+   (element.animate) n'y passent pas : elles lisent useReducedFx ou prefersReducedMotion ; Motion suit MotionConfig
+   (components/motion/MotionPreference.tsx). */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

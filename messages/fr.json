@@ -593,6 +593,7 @@
   },
   "nav": {
     "label": "Navigation principale",
+    "skipToContent": "Aller au contenu",
     "home": "Kiraku, accueil",
     "boosters": "Boosters",
     "collection": "Collection",

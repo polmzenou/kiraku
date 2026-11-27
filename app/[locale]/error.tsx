@@ -10,8 +10,10 @@ import { clientErrorReport, sendClientError } from "@/lib/errors/client-report";
  * Erreur inattendue dans une page : message générique (aucun détail technique côté client), la
  * référence `digest` relie l'incident aux logs du serveur. L'erreur part aussi dans ces logs
  * (app/api/client-error) : sans ça, un plantage dans le navigateur d'un joueur ne laisse aucune trace.
+ * « Réessayer » passe par `retry` (relecture de la page sur le serveur, puis nouveau rendu) : `reset` seul
+ * rejouait la réponse déjà reçue, et une erreur d'un composant serveur (base lente…) revenait aussitôt.
  */
-export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function ErrorPage({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
   const t = useTranslations("error");
   useEffect(() => {
     console.error(error);
@@ -27,7 +29,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
       <p className="text-text-muted">{t("body")}</p>
       {error.digest && <p className="text-xs text-text-muted">{t("reference", { digest: error.digest })}</p>}
       <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="primary" onClick={reset}>
+        <Button type="button" variant="primary" onClick={retry}>
           {t("retry")}
         </Button>
         <Link href="/" className="inline-flex min-h-11 items-center px-2 text-link underline underline-offset-4">

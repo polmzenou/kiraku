@@ -4,6 +4,9 @@
 // `feature` : masquée si l'interrupteur admin est coupé. Les pastilles « Bientôt » / « Nouveau » d'une entrée
 // accessible (casino : teaser, puis lancement) sont calculées par le serveur (NavBadges).
 
+/** Bloc du contenu (sous l'en-tête), cible du lien d'évitement « Aller au contenu » de l'en-tête. */
+export const MAIN_CONTENT_ID = "contenu";
+
 export type NavKey =
   | "boosters"
   | "missions"

@@ -45,10 +45,12 @@ const schema = z.object({
   VAPID_PUBLIC_KEY: z.string().regex(/^[A-Za-z0-9_-]{80,100}$/).optional(),
   VAPID_PRIVATE_KEY: z.string().regex(/^[A-Za-z0-9_-]{40,50}$/).optional(),
   VAPID_SUBJECT: z.string().regex(/^(mailto:|https:\/\/)/).optional(), // contact pour les services push
-  // Ably (temps réel du combat) : clé « appId.keyId:secret », jamais transmise au navigateur. Sans
-  // elle, le plateau sonde la partie toutes les battle.pollSeconds.
+  // Stockage Blob des images téléversées depuis l'admin (illustrations du catalogue, bannières Nouveautés) : jeton
+  // d'écriture côté serveur seulement, hôte public autorisé dans la CSP, next.config.ts et les images de partage
   BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
   BLOB_PUBLIC_HOST: z.string().regex(/^[a-z0-9-]+\.public\.blob\.vercel-storage\.com$/).optional(),
+  // Ably (temps réel du combat) : clé « appId.keyId:secret », jamais transmise au navigateur. Sans
+  // elle, le plateau sonde la partie toutes les battle.pollSeconds.
   ABLY_API_KEY: z.string().regex(/^[^.:\s]+\.[^.:\s]+:\S+$/).optional(),
   // Tâches planifiées (/api/cron/*) : envoyé par la crontab du VPS en « Authorization: Bearer … »
   CRON_SECRET: z.string().min(16).optional(),
