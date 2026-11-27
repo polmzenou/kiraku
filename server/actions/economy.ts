@@ -12,7 +12,7 @@ import { prisma } from "../db";
 import { lotDeps } from "../economy/deps";
 import { LotError, type LotGrant } from "../economy/lots";
 import { claimMissionWith, MissionError, playerMissionsWith } from "../economy/missions-core";
-import { listLedger, type LedgerRow } from "../economy/queries";
+import { forgetClaimableMission, listLedger, type LedgerRow } from "../economy/queries";
 import { attachReferral, qualifyLater } from "../economy/referral";
 import { claimReferralMilestoneWith, claimReferralWith, ReferralError } from "../economy/referral-core";
 import { buyWithZeniWith, ShopError } from "../economy/shop-core";
@@ -108,6 +108,7 @@ export async function claimMissionAction(input: unknown): Promise<ClaimResult> {
       { userId: g.user.id, missionId: parsed.data.missionId, now: new Date(), timeZone: await getSetting("game.timeZone") },
       lotDeps(),
     );
+    forgetClaimableMission(g.user.id);
     refresh();
     return { ok: true, reward: await summarize(grant) };
   } catch (e) {
@@ -155,6 +156,7 @@ export async function claimAllMissionsAction(): Promise<ClaimResult> {
     console.error("[economie] missions (tout réclamer)", e);
   }
   if (claimed === 0) return { ok: false, error: "NOT_DONE" };
+  forgetClaimableMission(g.user.id);
   refresh();
   return { ok: true, reward: await summarize(total) };
 }

@@ -45,7 +45,7 @@ vi.mock("../economy/deps", () => ({ lotDeps: () => ({}) }));
 vi.mock("../boosters/display", () => ({ cardViews: async () => new Map() }));
 vi.mock("../economy/lots", () => ({ LotError: class extends Error {} }));
 vi.mock("../economy/missions-core", () => ({ claimMissionWith: vi.fn(), MissionError: class extends Error {} }));
-vi.mock("../economy/queries", () => ({ listLedger: vi.fn() }));
+vi.mock("../economy/queries", () => ({ listLedger: vi.fn(), forgetClaimableMission: vi.fn() }));
 vi.mock("../economy/referral", () => ({ attachReferral: vi.fn(), qualifyLater: vi.fn() }));
 vi.mock("../economy/referral-core", () => ({ claimReferralWith: vi.fn(), ReferralError: class extends Error {} }));
 

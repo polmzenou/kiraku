@@ -12,6 +12,37 @@ import { canDeleteCatalogCard, canEditCatalogCard, type CatalogScope } from "@/l
 
 const PAGE_SIZE = 24;
 const usage = { copies: true, discoveries: true, wishedBy: true, lotItems: true, auctions: true, notablePulls: true, tradesWanted: true, tradesChosen: true, tradeOffers: true, variants: true, abilityPurchases: true, consecrations: true } as const;
+type UsageKey = keyof typeof usage;
+type Usage = Record<UsageKey, number>;
+const emptyUsage = (): Usage => Object.fromEntries(Object.keys(usage).map((k) => [k, 0])) as Usage;
+
+/**
+ * Mêmes comptes que `_count: { select: usage }`, pour les cartes de la page seulement. Dans un findMany, le
+ * `_count` de Prisma agrégeait chacune de ces tables en entier (UserCard et Discovery comprises) à chaque vue de
+ * la liste, avant de joindre les 24 cartes. Une fiche seule (findUnique) n'a pas ce défaut : Postgres y pousse l'id.
+ */
+export async function cardUsageCounts(ids: string[]): Promise<Map<string, Usage>> {
+  const byCard = new Map(ids.map((id) => [id, emptyUsage()]));
+  if (ids.length === 0) return byCard;
+  const rows = await prisma.$queryRaw<{ k: UsageKey; id: string; n: number }[]>`
+    SELECT 'copies' AS k, "cardId" AS id, COUNT(*)::int AS n FROM "UserCard" WHERE "cardId" = ANY(${ids}) GROUP BY 2
+    UNION ALL SELECT 'discoveries', "cardId", COUNT(*)::int FROM "Discovery" WHERE "cardId" = ANY(${ids}) GROUP BY 2
+    UNION ALL SELECT 'wishedBy', "cardId", COUNT(*)::int FROM "WishlistEntry" WHERE "cardId" = ANY(${ids}) GROUP BY 2
+    UNION ALL SELECT 'lotItems', "cardId", COUNT(*)::int FROM "LotItem" WHERE "cardId" = ANY(${ids}) GROUP BY 2
+    UNION ALL SELECT 'auctions', "cardId", COUNT(*)::int FROM "Auction" WHERE "cardId" = ANY(${ids}) GROUP BY 2
+    UNION ALL SELECT 'notablePulls', "cardId", COUNT(*)::int FROM "NotablePull" WHERE "cardId" = ANY(${ids}) GROUP BY 2
+    UNION ALL SELECT 'tradesWanted', "wantedCardId", COUNT(*)::int FROM "Trade" WHERE "wantedCardId" = ANY(${ids}) GROUP BY 2
+    UNION ALL SELECT 'tradesChosen', "chosenCardId", COUNT(*)::int FROM "Trade" WHERE "chosenCardId" = ANY(${ids}) GROUP BY 2
+    UNION ALL SELECT 'tradeOffers', "cardId", COUNT(*)::int FROM "TradeOffer" WHERE "cardId" = ANY(${ids}) GROUP BY 2
+    UNION ALL SELECT 'variants', "variantOfId", COUNT(*)::int FROM "Card" WHERE "variantOfId" = ANY(${ids}) GROUP BY 2
+    UNION ALL SELECT 'abilityPurchases', "cardId", COUNT(*)::int FROM "AbilityPurchase" WHERE "cardId" = ANY(${ids}) GROUP BY 2
+    UNION ALL SELECT 'consecrations', "cardId", COUNT(*)::int FROM "ConsecratedCard" WHERE "cardId" = ANY(${ids}) GROUP BY 2`;
+  for (const r of rows) {
+    const counts = byCard.get(r.id);
+    if (counts && r.k in counts) counts[r.k] = r.n;
+  }
+  return byCard;
+}
 
 export async function adminCatalogList(raw: Record<string, string | string[] | undefined>) {
   const filters = parseAdminCatalogParams(raw);
@@ -34,12 +65,19 @@ export async function adminCatalogList(raw: Record<string, string | string[] | u
   const page = Math.min(pages, filters.page);
   const rows = await prisma.card.findMany({ where, orderBy: [...orderBy, { id: "asc" }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE,
     select: { id: true, publicId: true, name: true, nameNative: true, formName: true, imageUrl: true, appearance: true, rarity: true, rank: true, power: true, ki: true,
-      status: true, origin: true, updatedAt: true, variantOfId: true, spoiler: true, series: { select: { titleRomaji: true } }, _count: { select: usage } } });
-  // Détenteurs distincts des cartes de la page (le nombre d'exemplaires vient déjà de _count.copies)
-  const owned = rows.length ? await prisma.$queryRaw<{ cardId: string; owners: number }[]>`
-    SELECT "cardId", COUNT(DISTINCT "ownerId")::int AS owners FROM "UserCard" WHERE "cardId" IN (${Prisma.join(rows.map((r) => r.id))}) GROUP BY "cardId"` : [];
+      status: true, origin: true, updatedAt: true, variantOfId: true, spoiler: true, series: { select: { titleRomaji: true } } } });
+  // Usages et détenteurs distincts des cartes de la page
+  const ids = rows.map((r) => r.id);
+  const [usages, owned] = await Promise.all([
+    cardUsageCounts(ids),
+    ids.length ? prisma.$queryRaw<{ cardId: string; owners: number }[]>`
+      SELECT "cardId", COUNT(DISTINCT "ownerId")::int AS owners FROM "UserCard" WHERE "cardId" IN (${Prisma.join(ids)}) GROUP BY "cardId"` : [],
+  ]);
   const owners = new Map(owned.map((o) => [o.cardId, o.owners]));
-  const cards = rows.map(({ _count, ...c }) => ({ ...c, updatedAt: c.updatedAt.toISOString(), variants: _count.variants, copies: _count.copies, owners: owners.get(c.id) ?? 0, deletable: deletableCard(c, _count) }));
+  const cards = rows.map((c) => {
+    const counts = usages.get(c.id) ?? emptyUsage();
+    return { ...c, updatedAt: c.updatedAt.toISOString(), variants: counts.variants, copies: counts.copies, owners: owners.get(c.id) ?? 0, deletable: deletableCard(c, counts) };
+  });
   const counts = Object.fromEntries(grouped.map((g) => [g.status, g._count._all])) as Partial<Record<"DRAFT" | "PUBLISHED" | "ARCHIVED", number>>;
   return { cards, total, page, pages, filters: { ...filters, page }, counts };
 }

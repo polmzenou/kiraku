@@ -227,7 +227,9 @@ export async function getOwnedCopies(ownerId: string, cardId: string) {
       printing: true,
       serial: true,
       edition: { select: { size: true } },
-      _count: { select: { showcaseItems: true } },
+      // Les vitrines de ces exemplaires (six au plus chacun), lues par l'index userCardId : un `_count` agrégeait
+      // toutes les cartes en vitrine de tous les joueurs à chaque fiche
+      showcaseItems: { select: { showcaseId: true } },
     },
   });
   return copies.map((c) => ({
@@ -243,7 +245,7 @@ export async function getOwnedCopies(ownerId: string, cardId: string) {
     /** Taille figée du tirage d'une gravée. */
     size: c.edition?.size ?? null,
     /** Exposé dans au moins une vitrine du joueur. */
-    inShowcase: c._count.showcaseItems > 0,
+    inShowcase: c.showcaseItems.length > 0,
   }));
 }
 

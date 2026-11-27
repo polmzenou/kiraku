@@ -193,22 +193,27 @@ const DIVISION_SIZE = 50;
  * saison). Grand Champion à part : le rang se décide au top (`ahead` = joueurs strictement devant,
  * même règle que getRankView), d'où `grand` = true pour n'en garder que les Grands Champions, false
  * pour les exclure de Champion I. Position = celle du classement général. En cache 60 s par division.
+ * Le décor (cadre, couleur) est lu après le filtre, pour les seules lignes de la division : dans la sous-requête du
+ * classement général, ses deux sous-requêtes sur Cosmetic tournaient pour chaque inscrit, à chaque vue de la page
+ * (la ligne du joueur n'est pas en cache) ; en production, sans doute la plus grosse part des 6,8 millions de
+ * parcours de Cosmetic relevés en un mois.
  */
 function divisionQuery(min: number, max: number | null, grand: boolean, gc: { min: number; top: number }) {
   return Prisma.sql`
-    SELECT * FROM (
+    SELECT division.*, ${decorColumns} FROM (
       SELECT ranked.*, (COUNT(*) OVER ())::int AS total FROM (
         SELECT (ROW_NUMBER() OVER (ORDER BY u."rankPoints" DESC, u."createdAt" ASC))::int AS position,
                (RANK() OVER (ORDER BY u."rankPoints" DESC))::int - 1 AS ahead,
                u.id, u.username, u.image, u."rankPoints" AS pc, u."seasonGames" AS games,
-               (u."profileVisibility" = 'PUBLIC') AS public, ${decorColumns}
+               (u."profileVisibility" = 'PUBLIC') AS public
         FROM "User" u
         WHERE u."bannedAt" IS NULL AND u."isGuest" = false
       ) ranked
       WHERE ranked.pc >= ${min} AND (${max}::int IS NULL OR ranked.pc <= ${max}::int)
         AND (ranked.pc > 0 OR ranked.games > 0)
         AND ((ranked.pc >= ${gc.min} AND ranked.ahead < ${gc.top}) = ${grand})
-    ) division`;
+    ) division
+    JOIN "User" u ON u.id = division.id`;
 }
 
 // Clé par saison, comme le top : une clôture ne laisse pas en cache les divisions d'avant la remise à zéro

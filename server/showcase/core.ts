@@ -68,12 +68,13 @@ async function pickCopies(tx: Tx, userId: string, cardIds: readonly string[]): P
       OR: [{ status: "COLLECTION" }, { status: { in: ["BATTLE", "CASINO", "EXPEDITION"] }, showcaseItems: { some: {} } }],
     },
     orderBy: [{ obtainedAt: "asc" }, { id: "asc" }],
-    select: { id: true, cardId: true, ...COPY_MARKS, _count: { select: { showcaseItems: true } } },
+    // Vitrines de ces exemplaires (index userCardId) : un `_count` agrégeait toutes les cartes en vitrine de tous les joueurs
+    select: { id: true, cardId: true, ...COPY_MARKS, showcaseItems: { select: { showcaseId: true } } },
   });
   // Rang : déjà exposé (2), pièce spéciale (1), ordinaire (0) ; à rang égal, le plus ancien (ordre de lecture)
   const chosen = new Map<string, { id: string; rank: number }>();
   for (const c of copies) {
-    const rank = c._count.showcaseItems > 0 ? 2 : isSpecialCopy(c) ? 1 : 0;
+    const rank = c.showcaseItems.length > 0 ? 2 : isSpecialCopy(c) ? 1 : 0;
     const current = chosen.get(c.cardId);
     if (!current || rank > current.rank) chosen.set(c.cardId, { id: c.id, rank });
   }

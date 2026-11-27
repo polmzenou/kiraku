@@ -161,10 +161,19 @@ export type GuardState = {
   release: (cardId: string) => void;
 };
 
+/**
+ * Cartes du pool que la règle des doublons protège (raretés protégées, rareté du pool) : seuls leurs
+ * exemplaires comptent pour guardState, la base n'a donc rien d'autre à lire.
+ */
+export function guardedCardIds(guard: DuplicateGuard | undefined, pool: CardPool): string[] {
+  if (!guard || guard.rarities.length === 0) return [];
+  return [...new Set(guard.rarities.flatMap((r) => pool[r] ?? []))];
+}
+
 /** Suivi des doublons d'un tirage ; null quand aucune rareté protégée n'a de carte dans le pool. */
 export function guardState(guard: DuplicateGuard | undefined, owned: OwnedCopies | undefined, pool: CardPool, weights: CardWeights = {}): GuardState | null {
   if (!guard || guard.rarities.length === 0) return null;
-  const guarded = new Set(guard.rarities.flatMap((r) => pool[r] ?? []));
+  const guarded = new Set(guardedCardIds(guard, pool));
   if (guarded.size === 0) return null;
   const copies = new Map(owned ?? []);
   const count = (id: string) => (guarded.has(id) ? (copies.get(id) ?? 0) : 0);

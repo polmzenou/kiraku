@@ -44,18 +44,42 @@ export async function listAdminUsers({ query, filter, page: requestedPage, sort:
   const page = Math.min(requestedPage, pages - 1);
   const rows = await prisma.user.findMany({ where, orderBy: [...USER_ORDER[sort](dir), { id: dir }], skip: page * ADMIN_USER_PAGE_SIZE, take: ADMIN_USER_PAGE_SIZE,
     select: { id: true, username: true, email: true, role: true, bannedAt: true, isGuest: true, coins: true, createdAt: true, ambassadorSince: true,
-      deletionRequestedAt: true, anonymizedAt: true,
-      _count: { select: {
-        cards: true, discoveries: { where: { card: { status: "PUBLISHED" } } },
-        // Une amitié est une seule ligne, dans un sens ou dans l'autre
-        sentFriends: { where: { status: "ACCEPTED" } }, recvFriends: { where: { status: "ACCEPTED" } },
-      } } },
+      deletionRequestedAt: true, anonymizedAt: true },
   });
-  const previews = await friendPreviews(rows.map((u) => u.id));
-  const users = rows.map(({ _count: { sentFriends, recvFriends, ...count }, ...u }) => ({
-    ...u, _count: count, friends: { count: sentFriends + recvFriends, preview: previews.get(u.id) ?? [] },
-  }));
+  const ids = rows.map((u) => u.id);
+  const [counts, previews] = await Promise.all([pageCounts(ids), friendPreviews(ids)]);
+  const users = rows.map((u) => {
+    const c = counts.get(u.id);
+    return {
+      ...u,
+      _count: { cards: c?.cards ?? 0, discoveries: c?.discoveries ?? 0 },
+      friends: { count: c?.friends ?? 0, preview: previews.get(u.id) ?? [] },
+    };
+  });
   return { users, total, page, pages };
+}
+
+/**
+ * Exemplaires, découvertes publiées et amis des joueurs de la page, lus par leurs index. Un `_count` de Prisma
+ * dans le findMany agrégeait UserCard, Discovery et Friendship en entier à chaque vue de la liste, puis joignait
+ * le résultat : en production, les seuls parcours complets de Discovery (1 703 de 134 000 lignes en un mois). Le
+ * tri par nombre de cartes ou de découvertes garde son agrégat (orderBy), le seul moyen de classer tous les joueurs.
+ */
+async function pageCounts(userIds: string[]): Promise<Map<string, { cards: number; discoveries: number; friends: number }>> {
+  const counts = new Map(userIds.map((id) => [id, { cards: 0, discoveries: 0, friends: 0 }]));
+  if (userIds.length === 0) return counts;
+  const [cards, discoveries, sent, received] = await Promise.all([
+    prisma.userCard.groupBy({ by: ["ownerId"], where: { ownerId: { in: userIds } }, _count: { _all: true } }),
+    prisma.discovery.groupBy({ by: ["userId"], where: { userId: { in: userIds }, card: { status: "PUBLISHED" } }, _count: { _all: true } }),
+    // Une amitié est une seule ligne, dans un sens ou dans l'autre
+    prisma.friendship.groupBy({ by: ["requesterId"], where: { requesterId: { in: userIds }, status: "ACCEPTED" }, _count: { _all: true } }),
+    prisma.friendship.groupBy({ by: ["addresseeId"], where: { addresseeId: { in: userIds }, status: "ACCEPTED" }, _count: { _all: true } }),
+  ]);
+  for (const r of cards) counts.get(r.ownerId)!.cards = r._count._all;
+  for (const r of discoveries) counts.get(r.userId)!.discoveries = r._count._all;
+  for (const r of sent) counts.get(r.requesterId)!.friends += r._count._all;
+  for (const r of received) counts.get(r.addresseeId)!.friends += r._count._all;
+  return counts;
 }
 
 /** Amis montrés dans la liste des joueurs, les plus récents d'abord ; la fiche les montre tous. */

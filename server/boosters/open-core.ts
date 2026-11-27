@@ -361,7 +361,7 @@ export async function openBoostersWith(db: PrismaClient, input: OpenInput): Prom
       const incense = input.incense && isIncenseActive(user.incenseUntil, now) ? input.incense : null;
       const drawRules = incense?.draw ?? rules.draw;
       // Doublons des grandes raretés : exemplaires lus sous le verrou du joueur
-      const owned = await loadOwnedCopies(tx, userId, drawRules.duplicateGuard);
+      const owned = await loadOwnedCopies(tx, userId, drawRules.duplicateGuard, input.pool);
       const drawn = drawGuarded(() => drawBoosters(input.rng, {
         pool: input.pool,
         rules: {
@@ -514,7 +514,7 @@ export async function openSealedWith(db: PrismaClient, input: OpenSealedInput, o
       ruin: rules.ruin,
       karma: user.apocalypseKarma,
       tables: incense?.tables ?? input.tables,
-      owned: await loadOwnedCopies(tx, userId, sealedRules.duplicateGuard),
+      owned: await loadOwnedCopies(tx, userId, sealedRules.duplicateGuard, input.pool),
     });
     const [booster] = await persistDraw(tx, {
       userId,

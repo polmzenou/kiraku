@@ -127,7 +127,7 @@ export async function grantLotContent(
       pool ??= await deps.loadPool();
       if (guard === undefined) {
         const rules = await deps.duplicateGuard?.();
-        guard = guardState(rules, await loadOwnedCopies(tx, userId, rules), pool);
+        guard = guardState(rules, await loadOwnedCopies(tx, userId, rules, pool), pool);
         for (const c of drawn) guard?.take(c.cardId);
       }
       for (let i = 0; i < item.quantity; i++) {

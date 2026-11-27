@@ -137,22 +137,27 @@ export type MemberInfo = {
 /** Fiche courte de ces comptes (pseudo, rôle, ban, Discord…), pour les puces d'indices et les tableaux de membres. */
 export async function membersById(ids: string[]): Promise<Map<string, MemberInfo>> {
   if (ids.length === 0) return new Map();
-  const rows = await prisma.user.findMany({
-    where: { id: { in: ids } },
-    select: {
-      id: true,
-      username: true,
-      email: true,
-      role: true,
-      isGuest: true,
-      bannedAt: true,
-      discordLinkedAt: true,
-      createdAt: true,
-      lastSeenAt: true,
-      coins: true,
-      _count: { select: { cards: true } },
-    },
-  });
+  // Exemplaires comptés pour ces comptes seulement (index ownerId) : un `_count` de Prisma dans le findMany
+  // agrégeait toute la table UserCard à chaque fiche ou tableau de membres
+  const [rows, copies] = await Promise.all([
+    prisma.user.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        isGuest: true,
+        bannedAt: true,
+        discordLinkedAt: true,
+        createdAt: true,
+        lastSeenAt: true,
+        coins: true,
+      },
+    }),
+    prisma.userCard.groupBy({ by: ["ownerId"], where: { ownerId: { in: ids } }, _count: { _all: true } }),
+  ]);
+  const cards = new Map(copies.map((c) => [c.ownerId, c._count._all]));
   return new Map(
     rows.map((u) => [
       u.id,
@@ -168,7 +173,7 @@ export async function membersById(ids: string[]): Promise<Map<string, MemberInfo
         createdAt: u.createdAt,
         lastSeenAt: u.lastSeenAt,
         coins: u.coins,
-        cards: u._count.cards,
+        cards: cards.get(u.id) ?? 0,
       },
     ]),
   );

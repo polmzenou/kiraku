@@ -33,10 +33,12 @@ export async function listShowcases(ownerId: string): Promise<ShowcaseSummary[]>
       layout: true,
       theme: true,
       sortOrder: true,
-      _count: { select: { items: { where: { userCard: { ownerId } } } } },
+      // Cases de ces vitrines seulement (clé showcaseId, position) : un `_count` agrégeait les cartes en vitrine de
+      // tous les joueurs à chaque vue d'un profil
+      items: { where: { userCard: { ownerId } }, select: { position: true } },
     },
   });
-  return rows.map((r) => ({ id: r.id, name: r.name, layout: storedLayout(r.layout), theme: r.theme, sortOrder: r.sortOrder, count: r._count.items }));
+  return rows.map((r) => ({ id: r.id, name: r.name, layout: storedLayout(r.layout), theme: r.theme, sortOrder: r.sortOrder, count: r.items.length }));
 }
 
 /** Cartes d'une vitrine, case par case (null = vide), sur la capacité de sa disposition. */

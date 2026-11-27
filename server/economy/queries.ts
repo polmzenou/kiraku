@@ -3,6 +3,7 @@ import { cache } from "react";
 import { SEALED_KINDS } from "@/lib/boosters/draw";
 import type { SealedDropView } from "@/lib/boosters/view";
 import { LEDGER_PAGE, ledgerWhere, type CoinReason, type LedgerFilter } from "@/lib/economy/ledger-view";
+import { missionDotCache } from "@/lib/economy/mission-dot";
 import { prisma } from "../db";
 import { getSetting } from "../settings";
 import { playerMissionsWith } from "./missions-core";
@@ -77,17 +78,29 @@ export async function ledgerTotals(userId: string, now = new Date()) {
   return { earned: earned._sum.amount ?? 0, spent: Math.abs(spent._sum.amount ?? 0) };
 }
 
+// En mémoire du processus, une entrée par joueur pour quelques secondes (lib/economy/mission-dot.ts) : l'en-tête
+// recalculait toutes les missions à chaque rendu (en production : 250 545 parcours de Mission et 637 282 de
+// RarityDefinition en un mois, presque 2 millions de comptes d'ouvertures par joueur).
+const missionDots = missionDotCache(async (userId) => {
+  const timeZone = await getSetting("game.timeZone");
+  return (await playerMissionsWith(prisma, userId, new Date(), timeZone)).some((m) => m.state === "CLAIMABLE");
+});
+
 /**
  * Au moins une mission terminée mais pas encore réclamée (pastille de la navigation). Missions coupées,
  * joueur banni ou erreur de calcul : pas de pastille, la navigation ne doit jamais casser pour ça.
  */
 export const hasClaimableMission = cache(async (userId: string): Promise<boolean> => {
   try {
-    const [enabled, timeZone] = await Promise.all([getSetting("missions.enabled"), getSetting("game.timeZone")]);
-    if (!enabled) return false;
-    return (await playerMissionsWith(prisma, userId, new Date(), timeZone)).some((m) => m.state === "CLAIMABLE");
+    if (!(await getSetting("missions.enabled"))) return false;
+    return await missionDots.get(userId);
   } catch (e) {
     console.error("[missions] pastille impossible", e);
     return false;
   }
 });
+
+/** Après une réclamation : l'en-tête rendu ensuite relit les missions du joueur (pastille éteinte tout de suite). */
+export function forgetClaimableMission(userId: string): void {
+  missionDots.forget(userId);
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Rarity } from "@/lib/catalog/rarity";
-import { drawBoosters, drawSealed, featuredFromPool, guardState, pickCard, type CardPool, type DrawnCard, type DrawRules, type DuplicateGuard } from "./draw";
+import { drawBoosters, drawSealed, featuredFromPool, guardedCardIds, guardState, pickCard, type CardPool, type DrawnCard, type DrawRules, type DuplicateGuard } from "./draw";
 import { DEFAULT_RULES, DEFAULT_RUIN, fakePool, NO_BONUS } from "./fixtures";
 import { seededRng, type Rng } from "./rng";
 import { SETTING_DEFAULTS, SETTING_SCHEMAS } from "@/lib/settings/defaults";
@@ -127,6 +127,17 @@ describe("doublons des grandes raretés", () => {
     expect(guardState({ ...GUARD, rarities: [] }, new Map([["MYTHIC-0", 5]]), fakePool())).toBeNull();
     expect(guardState(GUARD, new Map(), fakePool(10, ["MYTHIC", "AR", "GOLD"]))).toBeNull();
     expect(guardState(undefined, new Map(), fakePool())).toBeNull();
+  });
+
+  it("cartes à lire en base : celles des raretés protégées du pool, sans doublon, et aucune sans règle", () => {
+    const pool: CardPool = { ...fakePool(2), MYTHIC: ["m1", "m2"], AR: ["a1"], GOLD: [] };
+    expect(guardedCardIds(GUARD, pool).sort()).toEqual(["a1", "m1", "m2"]);
+    // Un exemplaire hors de cette liste ne change rien au tirage : guardState ne le compte pas
+    const guard = guardState(GUARD, new Map([["m1", 1], ["c-hors-pool", 5]]), pool);
+    expect(guard?.owned("m1")).toBe(true);
+    expect(guard?.owned("c-hors-pool")).toBe(false);
+    expect(guardedCardIds(undefined, pool)).toEqual([]);
+    expect(guardedCardIds({ ...GUARD, rarities: [] }, pool)).toEqual([]);
   });
 
   it("réglages par défaut : Mythique et au-dessus, une chance sur 10 000, plus aucune en double", () => {

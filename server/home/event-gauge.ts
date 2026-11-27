@@ -12,11 +12,24 @@ import { getSetting } from "../settings";
  * - BOOSTERS : boosters ouverts par des comptes inscrits et non bannis. Un invité qui s'inscrit apporte ses
  *   ouvertures faites depuis le début de l'event (aucune date d'inscription en base).
  * - COINFLIPS : tables de pile ou face jouées (les deux joueurs sont forcément inscrits).
+ * Les ouvertures se comptent joueur par joueur, sur l'index (userId, createdAt) sans lire les lignes : compter la
+ * fenêtre sur toute la table lisait chaque ouverture (tableaux d'ids, ~1,2 Ko la ligne, 159 Mo en tout, plus que
+ * shared_buffers) à chaque expiration du cache. En production (28/10 au 26/11), sans doute l'origine des 2 492
+ * parcours séquentiels de BoosterOpening d'environ 28 000 lignes (sa taille pendant l'event du 4 au 10/11) et
+ * des lectures par son index BRIN.
  */
-function countMetric(metric: EventGaugeMetric, startsAt: string, endsAt: string): Promise<number> {
+async function countMetric(metric: EventGaugeMetric, startsAt: string, endsAt: string): Promise<number> {
   const window = { gte: new Date(startsAt), lt: new Date(endsAt) };
   if (metric === "COINFLIPS") return prisma.coinFlip.count({ where: { status: "DONE", resolvedAt: window } });
-  return prisma.boosterOpening.count({ where: { createdAt: window, user: { isGuest: false, bannedAt: null } } });
+  const [row] = await prisma.$queryRaw<{ n: number }[]>`
+    SELECT COALESCE(SUM(o.n), 0)::int AS n
+    FROM "User" u
+    CROSS JOIN LATERAL (
+      SELECT COUNT(*) AS n FROM "BoosterOpening" b
+      WHERE b."userId" = u.id AND b."createdAt" >= ${window.gte} AND b."createdAt" < ${window.lt}
+    ) o
+    WHERE u."isGuest" = false AND u."bannedAt" IS NULL`;
+  return row?.n ?? 0;
 }
 
 // Une fonction en cache par durée (home.eventGauge.cacheSeconds) : la durée d'unstable_cache est fixée à sa création

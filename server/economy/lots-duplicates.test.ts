@@ -30,11 +30,13 @@ const deps = (guard: DuplicateGuard | undefined, seed = 1): LotDeps => ({ rng: s
 const grant = (tx: Prisma.TransactionClient, d: LotDeps) => grantLot(tx, "joueur", "lot", { reason: "MISSION", refId: "m1" }, d);
 
 describe("lots et doublons des grandes raretés", () => {
-  it("compte les exemplaires des raretés protégées du joueur, en une requête groupée", async () => {
+  it("compte les exemplaires des cartes protégées du pool, en une requête groupée sans jointure au catalogue", async () => {
     const { tx, groupBy } = fakeTx({ x: 2, y: 1 }, []);
-    expect(await loadOwnedCopies(tx, "joueur", GUARD)).toEqual(new Map([["x", 2], ["y", 1]]));
-    expect(groupBy).toHaveBeenCalledWith({ by: ["cardId"], where: { ownerId: "joueur", card: { rarity: { in: ["MYTHIC", "AR", "GOLD"] } } }, _count: { _all: true } });
-    expect(await loadOwnedCopies(tx, "joueur", undefined)).toEqual(new Map());
+    expect(await loadOwnedCopies(tx, "joueur", GUARD, pool)).toEqual(new Map([["x", 2], ["y", 1]]));
+    expect(groupBy).toHaveBeenCalledWith({ by: ["cardId"], where: { ownerId: "joueur", cardId: { in: ["x", "y"] } }, _count: { _all: true } });
+    expect(await loadOwnedCopies(tx, "joueur", undefined, pool)).toEqual(new Map());
+    // Aucune carte protégée dans ce pool : rien à lire
+    expect(await loadOwnedCopies(tx, "joueur", GUARD, { ...pool, MYTHIC: [] })).toEqual(new Map());
     expect(groupBy).toHaveBeenCalledTimes(1);
   });
 
