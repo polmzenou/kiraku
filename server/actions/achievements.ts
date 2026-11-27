@@ -1,6 +1,5 @@
 "use server";
 
-import { refresh } from "next/cache";
 import { achievementByKey } from "@/lib/achievements/catalog";
 import { isFrozen } from "@/lib/account/deletion";
 import { z } from "@/lib/zod";
@@ -42,6 +41,8 @@ export async function featureAchievementAction(input: unknown): Promise<{ ok: tr
   if (!(await rateLimit(`achievement-feature:${user.id}`, { limit: 10, windowSeconds: 60 })).success) return { ok: false, error: "RATE_LIMITED" };
 
   await prisma.user.update({ where: { id: user.id }, data: { featuredAchievement: key }, select: { id: true } });
-  refresh();
+  // Pas de refresh() : la grille de /succes garde la mise en avant dans son état, et un nouveau rendu y relancerait
+  // tout le calcul des succès (syncAchievements, une quarantaine de requêtes) pour rien. Le profil, seul autre écran
+  // qui l'affiche, est relu à la prochaine visite.
   return { ok: true };
 }

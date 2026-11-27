@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MISSION_SEEDS } from "@/prisma/seed/economy";
 import { missionInputSchema, MISSION_PERIODS } from "./missions";
-import { missionDifficulty, selectMissionRotation, type RotationMission } from "./mission-rotation";
+import { missionDifficulty, missionsShown, selectMissionRotation, type RotationMission } from "./mission-rotation";
 
 const catalogue = MISSION_SEEDS.map((m) => ({ ...m, id: m.key, rarity: m.rarity ?? null }));
 const NOW = new Date("2026-10-15T12:00:00Z");
@@ -65,6 +65,19 @@ describe("rotation des missions", () => {
       expect(selected).toHaveLength(5);
       expect(new Set(selected.map((m) => m.id)).size).toBe(5);
     }
+  });
+
+  it("annonce le nombre de missions réellement proposées (Journée parfaite), pas le nombre d'actives", () => {
+    const daily = catalogue.filter((m) => m.period === "DAILY");
+    expect(daily.length).toBeGreaterThan(5);
+    for (let n = 0; n <= daily.length; n++) {
+      for (let day = 0; day < 7; day++) {
+        const shown = selectMissionRotation(daily.slice(0, n), new Date(NOW.getTime() + day * DAY), TZ);
+        expect(shown).toHaveLength(missionsShown(n));
+      }
+    }
+    expect(missionsShown(daily.length)).toBe(5);
+    expect(missionsShown(-1)).toBe(0);
   });
 
   it("valide les données de départ et les classe dans le palier récompensé", () => {

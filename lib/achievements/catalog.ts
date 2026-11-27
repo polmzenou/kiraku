@@ -40,8 +40,6 @@ export const CATEGORY_KANJI: Record<AchievementCategory, string> = {
 export const ACHIEVEMENT_RANKS = [1, 2, 3, 4, 5, 6] as const;
 export type AchievementRank = (typeof ACHIEVEMENT_RANKS)[number];
 export const RANK_SEAL: Record<AchievementRank, string> = { 1: "並", 2: "良", 3: "稀", 4: "秀", 5: "金", 6: "神" };
-/** Clé de rareté dont le rang reprend la couleur (--color-rarity-*). */
-export const RANK_RARITY: Record<AchievementRank, string> = { 1: "COMMON", 2: "UNCOMMON", 3: "RARE", 4: "EPIC", 5: "LEGENDARY", 6: "MYTHIC" };
 
 /**
  * Comment se lit la valeur d'une métrique :
@@ -355,7 +353,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 
   // 秘 Secrets
   def("birthday-pull", "secret", 3, "BIRTHDAY_PULL", 1, { secret: true }),
-  // param : heure de début (fuseau du jeu), l'heure suivante comprise jusqu'à sa fin
+  // param : heure du jeu (game.timeZone), de h:00 à h:59 (« entre 3 h et 4 h »)
   def("night-owl", "secret", 2, "NIGHT_OPENING", 1, { param: "3", secret: true }),
   def("double-mythic", "secret", 6, "DOUBLE_MYTHIC", 1, { secret: true }),
   def("cursed", "secret", 4, "APOC_RUINED_STREAK", 3, { secret: true }),
@@ -364,7 +362,6 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   def("sacrilege", "secret", 2, "MYTHIC_RECYCLED", 1, { secret: true }),
 ];
 
-export const ACHIEVEMENT_KEYS = ACHIEVEMENTS.map((a) => a.key);
 const BY_KEY = new Map(ACHIEVEMENTS.map((a) => [a.key, a]));
 
 export function achievementByKey(key: string): AchievementDef | undefined {

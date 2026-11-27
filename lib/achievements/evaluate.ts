@@ -1,5 +1,5 @@
 // Évaluation des succès : fonctions pures, testables sans base. Les statistiques sont rassemblées par
-// server/achievements/stats.ts ; les déblocages sont enregistrés par server/achievements/sync.ts.
+// server/achievements/stats-core.ts ; les déblocages sont enregistrés par server/achievements/sync.ts.
 import { ACHIEVEMENTS, metricKind, isAdjustable, statKey, type AchievementDef, type MetricKind } from "./catalog";
 
 /** Valeurs lues dans l'historique du joueur, par clé de statistique (statKey), et seuils fournis par les données. */

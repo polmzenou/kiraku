@@ -6,6 +6,7 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { metricOf, type AchievementStats } from "@/lib/achievements/evaluate";
 import { longestDayRun, longestRun } from "@/lib/achievements/streaks";
 import { BOARD_TIERS } from "@/lib/battle/tiers";
+import { missionsShown } from "@/lib/economy/mission-rotation";
 import { SPEND_REASONS } from "@/lib/economy/missions";
 import type { ProfileStats } from "@/lib/profile/conditions";
 import { isLayoutId, layoutCapacity } from "@/lib/showcase/layouts";
@@ -258,9 +259,11 @@ export async function getAchievementStatsWith(db: Db, userId: string, needed: Re
   }
   if (want("MISSIONS")) tasks.push(db.userMission.count({ where: { userId } }).then((n) => set("MISSIONS", n)));
   if (want("PERFECT_DAY")) {
-    // Un jour où le joueur a réclamé autant de missions quotidiennes qu'il y en a d'actives
+    // Un jour où le joueur a réclamé toutes les missions quotidiennes proposées : la rotation n'en montre que
+    // missionsShown(actives) par jour (5 sur la vingtaine du catalogue), jamais toutes les actives
     tasks.push(
-      db.mission.count({ where: { active: true, period: "DAILY" } }).then(async (daily) => {
+      db.mission.count({ where: { active: true, period: "DAILY" } }).then(async (active) => {
+        const daily = missionsShown(active);
         if (daily === 0) return void set("PERFECT_DAY", 0);
         const [r] = await db.$queryRaw<{ ok: boolean }[]>`
           SELECT EXISTS (

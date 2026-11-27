@@ -213,19 +213,24 @@ export async function runLotBroadcastWith(
     for (const { id: userId } of batch) {
       if (Date.now() - started > input.budgetMs) break;
       try {
-        await notifyingTransaction(
+        const served = await notifyingTransaction(
           db,
           async (tx) => {
-            // Même verrou qu'un envoi à un seul joueur (le joueur, puis la ligne de l'envoi)
-            await lockPlayers(tx, [userId]);
+            // Même verrou qu'un envoi à un seul joueur (le joueur, puis la ligne de l'envoi). Le paquet a été lu avant :
+            // un invité purgé entre-temps (sa ligne User n'existe plus, la clé étrangère ferait échouer tout l'envoi) ou
+            // un joueur banni ou gelé depuis est sauté, comme il l'aurait été à la lecture du paquet
+            if (!(await lockPlayers(tx, [userId])).has(userId)) return false;
+            if ((await tx.user.count({ where: { id: userId, ...eligibleWhere(audience) } })) === 0) return false;
             await tx.lotGrant.create({ data: { lotId: broadcast.lotId, userId, adminId: broadcast.adminId, broadcastId: broadcast.id } });
             await grantLot(tx, userId, broadcast.lotId, { reason: "ADMIN", refId: broadcast.id }, deps, input.now);
             await notify(tx, { userId, type: "LOT_GRANTED", actorId: broadcast.adminId, refId: broadcast.id, now: input.now });
             await tx.lotBroadcast.update({ where: { id: broadcast.id }, data: { granted: { increment: 1 }, lastUserId: userId } });
+            return true;
           },
           TX,
           onNotified,
         );
+        if (!served) await db.lotBroadcast.update({ where: { id: broadcast.id }, data: { lastUserId: userId } });
       } catch (e) {
         // Déjà servi (envoi relancé en parallèle) : on avance sans rien verser
         if (!(e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002")) throw e;

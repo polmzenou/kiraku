@@ -50,12 +50,3 @@ export async function consumeBoostersUpTo(tx: Tx, userId: string, boosterTypeId:
     RETURNING LEAST(before."count", ${max}::int) AS taken`;
   return rows.length === 0 ? 0 : Number(rows[0].taken);
 }
-
-/** Boosters à ouvrir d'un type. */
-export async function creditCount(tx: Tx, userId: string, boosterTypeId: string): Promise<number> {
-  const row = await tx.boosterCredit.findUnique({
-    where: { userId_boosterTypeId: { userId, boosterTypeId } },
-    select: { count: true },
-  });
-  return row?.count ?? 0;
-}

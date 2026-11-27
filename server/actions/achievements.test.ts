@@ -7,7 +7,6 @@ const mocks = vi.hoisted(() => ({
   owned: vi.fn(),
   update: vi.fn(),
 }));
-vi.mock("next/cache", () => ({ refresh: vi.fn() }));
 vi.mock("../user", () => ({ getCurrentUser: mocks.user }));
 vi.mock("../ratelimit", () => ({ rateLimit: mocks.rateLimit }));
 vi.mock("../achievements/sync", () => ({ getAchievementSettings: mocks.settings }));

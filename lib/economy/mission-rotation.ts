@@ -40,6 +40,15 @@ export function missionDifficulty(mission: Pick<RotationMission, "period" | "met
   return mission.goal <= limits[0] ? "EASY" : mission.goal <= limits[1] ? "MEDIUM" : "HARD";
 }
 
+/**
+ * Missions proposées sur une période quand `poolSize` missions de cette période sont actives : toutes s'il y en a
+ * peu, sinon MISSIONS_PER_PERIOD (selectMissionRotation). C'est le « toutes les missions du jour » du succès
+ * Journée parfaite, pas le nombre de missions actives.
+ */
+export function missionsShown(poolSize: number): number {
+  return Math.max(0, Math.min(poolSize, MISSIONS_PER_PERIOD));
+}
+
 /** Jour civil et semaine du lundi : pas de saut de sélection aux changements d'heure. */
 function rotationIndex(period: MissionPeriod, now: Date, timeZone: string): number {
   const { year, month, day } = filterContext(now, timeZone);
