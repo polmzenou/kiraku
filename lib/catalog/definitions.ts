@@ -39,6 +39,13 @@ const isBase = (key: string) => (BASE_RARITIES as readonly string[]).includes(ke
 export function compareRarities(a: { key: string; sortOrder: number }, b: { key: string; sortOrder: number }) {
   return a.sortOrder - b.sortOrder || Number(isBase(b.key)) - Number(isBase(a.key)) || a.key.localeCompare(b.key);
 }
+/**
+ * Clés des raretés lues en base, dans l'ordre du registre. Jamais `orderBy: [sortOrder, key]` : à rang égal, l'ordre
+ * des clés mettait BR (500) avant Mythique (500), et « Mythique ou mieux » ne comptait plus les BR.
+ */
+export function rarityKeyOrder(rows: readonly { key: string; sortOrder: number }[]): string[] {
+  return [...rows].sort(compareRarities).map((r) => r.key);
+}
 export function orderedKeys(definitions: readonly RarityDefinition[]) {
   return [...definitions].sort(compareRarities).map((r) => r.key);
 }

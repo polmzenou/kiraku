@@ -2,6 +2,7 @@
 // cadeaux, amitiés) : aucun compteur à tenir à jour dans les chemins chauds, et la progression
 // recalculée sous verrou au moment de réclamer est forcément la vraie. Client injecté.
 import type { Prisma } from "@/generated/prisma/client";
+import { rarityKeyOrder } from "@/lib/catalog/definitions";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { raritiesFrom, SPEND_REASONS, type MissionMetric } from "@/lib/economy/missions";
 import type { PeriodWindow } from "@/lib/economy/period";
@@ -19,8 +20,9 @@ export async function measureProgress(db: Db, userId: string, measure: Measure, 
     case "OPEN_BOOSTERS":
       return db.boosterOpening.count({ where: { userId, createdAt } });
     case "PULL_RARITY": {
-      const registry = await db.rarityDefinition.findMany({ orderBy: [{ sortOrder: "asc" }, { key: "asc" }], select: { key: true } });
-      const wanted = raritiesFrom(measure.rarity ?? "COMMON", registry.map((r) => r.key));
+      // Ordre du registre : « Mythique ou mieux » compte aussi les BR, de même rang
+      const registry = rarityKeyOrder(await db.rarityDefinition.findMany({ select: { key: true, sortOrder: true } }));
+      const wanted = raritiesFrom(measure.rarity ?? "COMMON", registry);
       // Cartes tirées (ids de Card gardés par chaque ouverture, même après recyclage ou vente)
       const [row] = await db.$queryRaw<{ n: number }[]>`
         SELECT count(*)::int AS n

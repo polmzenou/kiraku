@@ -21,7 +21,7 @@ const findClaims = vi.fn();
 const findClaim = vi.fn();
 const createClaim = vi.fn();
 const db = {
-  rarityDefinition: { findMany: vi.fn(async () => BASE_RARITIES.map((key) => ({ key }))) },
+  rarityDefinition: { findMany: vi.fn(async () => BASE_RARITIES.map((key, i) => ({ key, sortOrder: (i + 1) * 100 }))) },
   mission: { findMany: findMissions },
   userMission: { findMany: findClaims, findUnique: findClaim, create: createClaim },
   $transaction: (run: (tx: unknown) => Promise<unknown>) => run(db),

@@ -2,6 +2,7 @@
 // Réclamer : verrou User → mission relue → progression recalculée sous verrou → UserMission (la
 // clé primaire interdit la double réclamation) → lot versé, dans la même transaction.
 import type { PrismaClient } from "@/generated/prisma/client";
+import { rarityKeyOrder } from "@/lib/catalog/definitions";
 import type { Rarity } from "@/lib/catalog/rarity";
 import { missionDifficulty, selectMissionRotation, type MissionDifficulty } from "@/lib/economy/mission-rotation";
 import {
@@ -50,7 +51,8 @@ export async function playerMissionsWith(db: PrismaClient, userId: string, now: 
     orderBy: [{ period: "asc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
     select: { id: true, key: true, period: true, metric: true, goal: true, rarity: true, title: true, lotId: true },
   });
-  const order = (await db.rarityDefinition.findMany({ orderBy: [{ sortOrder: "asc" }, { key: "asc" }], select: { key: true } })).map((r) => r.key);
+  // Même ordre que la réclamation (claimMissionWith) : celui du registre
+  const order = rarityKeyOrder(await db.rarityDefinition.findMany({ select: { key: true, sortOrder: true } }));
   const missions = selectMissionRotation(candidates, now, timeZone, order);
   if (missions.length === 0) return [];
 
@@ -105,7 +107,7 @@ export async function claimMissionWith(
       select: { id: true, key: true, period: true, metric: true, goal: true, rarity: true, lotId: true },
     });
     // Une ancienne URL ou un identifiant deviné ne donne pas accès au reste du pool.
-    const order = (await tx.rarityDefinition.findMany({ orderBy: [{ sortOrder: "asc" }, { key: "asc" }], select: { key: true } })).map((r) => r.key);
+    const order = rarityKeyOrder(await tx.rarityDefinition.findMany({ select: { key: true, sortOrder: true } }));
     const mission = selectMissionRotation(candidates, input.now, input.timeZone, order).find((m) => m.id === input.missionId);
     if (!mission) throw new MissionError("NOT_FOUND");
 

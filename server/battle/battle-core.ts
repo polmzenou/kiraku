@@ -31,6 +31,7 @@ import {
   type FighterSetup,
   type Side,
 } from "@/lib/battle/types";
+import { rarityKeyOrder } from "@/lib/catalog/definitions";
 import { type Rarity } from "@/lib/catalog/rarity";
 import { keyedRng, mixSeed, seededRng, type Rng } from "@/lib/rng";
 import { bytesToHex } from "@/lib/sha256";
@@ -262,7 +263,7 @@ export async function fightersOf(tx: Tx, userCardIds: readonly string[], rules: 
 
 /** Une carte au hasard de chaque rareté demandée, toutes différentes. Les bots gardent le tirage de leurs cartes. */
 export async function botFighters(tx: Tx, rarities: readonly Rarity[], ctx: Ctx): Promise<FighterSetup[]> {
-  const RARITIES = (await tx.rarityDefinition.findMany({ orderBy: [{ sortOrder: "asc" }, { key: "asc" }], select: { key: true } })).map((r) => r.key);
+  const RARITIES = rarityKeyOrder(await tx.rarityDefinition.findMany({ select: { key: true, sortOrder: true } }));
   const picked: FighterSetup[] = [];
   for (const wanted of botRarities(rarities, ctx.random, ctx.rules.botUpgradePct, RARITIES)) {
     // Rareté vide (petit catalogue) : on descend jusqu'à en trouver une
