@@ -36,9 +36,25 @@ version en quelques secondes, sans erreur, une fois qu'elle répond.
 | `bash deploy/deploy.sh --seed` | lance aussi les seeds de départ (types de boosters, pages légales), comme l'ancien build Vercel |
 | `bash deploy/deploy.sh --typecheck` | garde la vérification des types même avec une CI verte |
 | `bash deploy/deploy.sh --rollback` | revient à la release précédente en quelques secondes (sans build ; les migrations restent) |
+| `bash deploy/deploy.sh --restart` | redémarre la release en ligne sans coupure (secours sur 3001, puis 3000) : rend la mémoire, applique les réglages pm2 ci-dessous ; garde son `.env` |
 
 Le retour arrière reprend la release précédente telle quelle, avec le `.env` copié à son build : si un secret a
 changé depuis (mot de passe de la base, clé d'un service), corriger d'abord le `.env` de cette release.
+
+## Mémoire
+
+Le VPS a 3,8 Go de RAM pour l'app, Postgres et le build. Le 27/11/2026, le seul processus Next tenait 1,9 Go au
+bout de 18 h (swap entamé) : ~650 Mo de tas JavaScript, ~630 Mo d'arènes malloc gardées par les threads de sharp,
+le reste en tampons. Le script démarre donc l'app avec :
+
+- `MALLOC_ARENA_MAX=2` : deux arènes malloc au plus, au lieu d'une par thread (16 sur 2 cœurs) ;
+- `--max-old-space-size=1024` (`KIRAKU_HEAP_MB`) : tas JavaScript borné (Node le laisse sinon monter vers 2 Go) ;
+- `--max-memory-restart 1600M` (`KIRAKU_MAX_MEMORY`) : filet ; au-delà, pm2 redémarre le processus (quelques
+  secondes d'erreurs, le secours n'étant pas lancé).
+
+sharp est réglé dans `server/media/sharp.ts` (sans cache d'opérations, un thread par image). Pour suivre :
+`pm2 show kiraku` (Used Heap Size) et `grep RssAnon /proc/$(pgrep -f next-server)/status`. Si la mémoire remonte
+jour après jour, `bash deploy/deploy.sh --restart` la rend sans coupure en attendant d'en trouver la cause.
 
 ## Changer une variable d'environnement
 

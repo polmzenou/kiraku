@@ -5,6 +5,7 @@
 #   bash deploy/deploy.sh --seed       idem, puis les seeds de départ (boosters, pages légales)
 #   bash deploy/deploy.sh --typecheck  garde la vérification des types même si la CI est verte
 #   bash deploy/deploy.sh --rollback   revient à la release précédente (ni build ni migration)
+#   bash deploy/deploy.sh --restart    redémarre la release en ligne sans coupure (mémoire rendue, réglages pm2 repris)
 #
 # Le site continue de tourner pendant tout le build : il sert une release copiée à part
 # (~/kiraku-releases/current), jamais les fichiers que le build réécrit. La nouvelle version démarre
@@ -20,13 +21,22 @@ PORT="${KIRAKU_PORT:-3000}"
 STANDBY_PORT="${KIRAKU_STANDBY_PORT:-3001}"
 KEEP="${KIRAKU_KEEP_RELEASES:-3}"
 
-SEED=0 TYPECHECK=0 ROLLBACK=0
+# Mémoire du processus Next (VPS de 3,8 Go ; relevé du 27/11/2026 : 1,9 Go au bout de 18 h, swap entamé) :
+# - MALLOC_ARENA_MAX=2 : glibc donne une arène malloc de 64 Mo à chaque thread qui alloue (sharp/libvips, libuv) et
+#   ne la rend jamais ; 18 arènes tenaient ~630 Mo ;
+# - --max-old-space-size : tas JavaScript borné (Node le laisse sinon monter vers 2 Go, la moitié de la RAM) ;
+# - --max-memory-restart : filet ; au-delà, pm2 redémarre le processus (quelques secondes d'erreurs, le secours
+#   n'étant pas lancé) plutôt que de laisser la machine s'enfoncer dans le swap. --restart le fait sans coupure.
+HEAP_MB="${KIRAKU_HEAP_MB:-1024}"
+MAX_MEMORY="${KIRAKU_MAX_MEMORY:-1600M}"
+SEED=0 TYPECHECK=0 ROLLBACK=0 RESTART=0
 for arg in "$@"; do
   case "$arg" in
     --seed) SEED=1 ;;
     --typecheck) TYPECHECK=1 ;;
     --rollback) ROLLBACK=1 ;;
-    -h | --help) sed -n '2,12p' "$0"; exit 0 ;;
+    --restart) RESTART=1 ;;
+    -h | --help) sed -n '2,13p' "$0"; exit 0 ;;
     *) echo "Option inconnue : $arg (voir --help)" >&2; exit 2 ;;
   esac
 done
@@ -76,7 +86,8 @@ healthy() {
 pm2_run() {
   local name=$1 dir=$2 port=$3
   pm2 delete "$name" >/dev/null 2>&1 || true
-  (cd "$dir" && PORT="$port" HOSTNAME=0.0.0.0 NODE_ENV=production pm2 start server.js --name "$name" --cwd "$dir" --time >/dev/null)
+  (cd "$dir" && PORT="$port" HOSTNAME=0.0.0.0 NODE_ENV=production MALLOC_ARENA_MAX=2 pm2 start server.js --name "$name" --cwd "$dir" --time \
+    --node-args="--max-old-space-size=$HEAP_MB" --max-memory-restart "$MAX_MEMORY" >/dev/null)
 }
 
 switch_to() {
@@ -99,6 +110,13 @@ switch_to() {
   pm2 save >/dev/null
   info "En ligne : $(basename "$rel")"
 }
+
+if [ "$RESTART" = 1 ]; then
+  [ -n "$CURRENT" ] || die "Aucune release en ligne."
+  switch_to "$CURRENT"
+  info "Redémarré sans coupure en $(($(date +%s) - START)) s."
+  exit 0
+fi
 
 if [ "$ROLLBACK" = 1 ]; then
   [ -n "$CURRENT" ] || die "Aucune release en ligne."

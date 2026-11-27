@@ -1,5 +1,6 @@
 import "server-only";
 import { CARD_IMAGE_LIMIT, CARD_IMAGE_TYPES, imageSignature } from "@/lib/catalog/media";
+import { loadSharp } from "./sharp";
 
 // Téléversements d'images de l'admin (cartes du catalogue, bannières Nouveautés) : lecture bornée du
 // corps, contrôle du type et de la signature, puis WebP redimensionné par sharp.
@@ -45,7 +46,8 @@ export async function readImageUpload(request: Request, limit = CARD_IMAGE_LIMIT
 /** WebP orienté, sans métadonnées, au plus `width` px de large. Sans sharp (binaire absent), l'original est gardé. */
 export async function optimizeImage(bytes: Uint8Array, type: string, width: number): Promise<{ data: Buffer; type: string; extension: string }> {
   try {
-    const { default: sharp } = await import("sharp");
+    const sharp = await loadSharp();
+    if (!sharp) throw new Error("sharp indisponible");
     const data = await sharp(bytes, { limitInputPixels: 40_000_000 }).rotate().resize({ width, withoutEnlargement: true }).webp({ quality: 82 }).toBuffer();
     return { data, type: "image/webp", extension: "webp" };
   } catch (error) {
